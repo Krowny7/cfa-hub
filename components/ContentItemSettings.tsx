@@ -222,13 +222,13 @@ export function ContentItemSettings({
           <div className="text-sm font-medium">{isFr ? "Titre" : "Title"}</div>
           <div className="mt-2 flex flex-wrap gap-2">
             <input
-              className="w-full min-w-0 flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:min-w-[240px]"
+              className="box-border w-full min-w-0 flex-1 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:min-w-[240px]"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
             <button
               type="button"
-              className="w-full whitespace-nowrap rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+              className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto sm:whitespace-nowrap"
               disabled={busy || !title.trim()}
               onClick={save}
             >
@@ -245,7 +245,7 @@ export function ContentItemSettings({
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
-              className={`rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 ${
+              className={`box-border w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto ${
                 shareMode === "private" ? "bg-white/10" : "bg-transparent"
               }`}
               onClick={() => setShareMode("private")}
@@ -255,7 +255,7 @@ export function ContentItemSettings({
 
             <button
               type="button"
-              className={`rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 ${
+              className={`box-border w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto ${
                 shareMode === "groups" ? "bg-white/10" : "bg-transparent"
               }`}
               onClick={() => {
@@ -268,7 +268,7 @@ export function ContentItemSettings({
 
             <button
               type="button"
-              className={`rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 ${
+              className={`box-border w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto ${
                 shareMode === "public" ? "bg-white/10" : "bg-transparent"
               }`}
               onClick={() => setShareMode("public")}
@@ -283,10 +283,10 @@ export function ContentItemSettings({
             </div>
           ) : null}
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
             <button
               type="button"
-              className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+              className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
               disabled={busy}
               onClick={save}
             >
@@ -295,14 +295,14 @@ export function ContentItemSettings({
 
             <button
               type="button"
-              className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 disabled:opacity-50"
+              className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 disabled:opacity-50 sm:w-auto"
               disabled={busy}
               onClick={remove}
             >
               {isFr ? "Supprimer" : "Delete"}
             </button>
 
-            {msg ? <span className="text-sm">{msg}</span> : null}
+            {msg ? <span className="w-full text-sm break-words [overflow-wrap:anywhere] sm:w-auto">{msg}</span> : null}
           </div>
         </div>
 

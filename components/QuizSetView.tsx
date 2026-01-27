@@ -294,12 +294,12 @@ export function QuizSetView({
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
       {canEdit && (
         <div className="rounded-2xl border p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="font-semibold">{t("qcm.importExport")}</div>
               <div className="text-xs opacity-70">JSON (copie/coller) — pratique pour partager rapidement.</div>
             </div>
-            <div className="flex flex-wrap gap-2 min-w-0">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
               <button
                 type="button"
                 className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
@@ -328,7 +328,7 @@ export function QuizSetView({
 
           <div className="mt-4 grid gap-3">
             <textarea
-              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
               rows={3}
               value={questionPrompt}
               onChange={(e) => setQuestionPrompt(e.target.value)}
@@ -336,27 +336,27 @@ export function QuizSetView({
             />
 
             <textarea
-              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
               rows={4}
               value={choicesText}
               onChange={(e) => setChoicesText(e.target.value)}
               placeholder={t("qcm.choicesPlaceholder")}
             />
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
               <input
                 type="number"
                 min={1}
                 max={6}
-                className="w-24 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
                 value={correct}
                 onChange={(e) => setCorrect(Number(e.target.value))}
               />
             </div>
 
             <input
-              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
               value={explanation}
               onChange={(e) => setExplanation(e.target.value)}
               placeholder={t("qcm.explanationPlaceholder")}
@@ -364,7 +364,7 @@ export function QuizSetView({
 
             <button
               type="button"
-              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+              className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
               disabled={busy}
               onClick={addQuestion}
             >
@@ -392,7 +392,7 @@ export function QuizSetView({
                   <div key={q.id} className="rounded-xl border border-white/10 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">
+                        <div className="text-sm font-medium break-words sm:truncate">
                           Q{idx + 1}. {q.prompt}
                         </div>
                         <div className="mt-1 text-xs opacity-70">
@@ -400,11 +400,11 @@ export function QuizSetView({
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
                         {!isEditing ? (
                           <button
                             type="button"
-                            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                            className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
                             onClick={() => startEdit(q)}
                           >
                             Modifier
@@ -412,7 +412,7 @@ export function QuizSetView({
                         ) : (
                           <button
                             type="button"
-                            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                            className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
                             onClick={cancelEdit}
                           >
                             Annuler
@@ -421,7 +421,7 @@ export function QuizSetView({
 
                         <button
                           type="button"
-                          className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20"
+                          className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
                           disabled={busy}
                           onClick={() => deleteQuestion(q.id)}
                         >
@@ -433,33 +433,33 @@ export function QuizSetView({
                     {isEditing && (
                       <div className="mt-3 grid gap-2">
                         <textarea
-                          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
                           rows={3}
                           value={editPrompt}
                           onChange={(e) => setEditPrompt(e.target.value)}
                         />
 
                         <textarea
-                          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
                           rows={4}
                           value={editChoicesText}
                           onChange={(e) => setEditChoicesText(e.target.value)}
                         />
 
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <label className="text-sm opacity-80">Bonne réponse (1 = 1ère ligne)</label>
                           <input
                             type="number"
                             min={1}
                             max={6}
-                            className="w-24 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                            className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
                             value={editCorrect}
                             onChange={(e) => setEditCorrect(Number(e.target.value))}
                           />
                         </div>
 
                         <input
-                          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
                           value={editExplanation}
                           onChange={(e) => setEditExplanation(e.target.value)}
                           placeholder="Explication (optionnelle)"
@@ -467,7 +467,7 @@ export function QuizSetView({
 
                         <button
                           type="button"
-                          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+                          className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
                           disabled={busy}
                           onClick={saveEdit}
                         >
@@ -492,10 +492,10 @@ export function QuizSetView({
             <div className="font-semibold">{t("qcm.title")}</div>
             <div className="text-xs opacity-70">{questions.length} question(s)</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
-              className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+              className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
               disabled={!canRun}
               onClick={() => resetRun()}
             >
@@ -538,7 +538,7 @@ export function QuizSetView({
                       setSelected(idx);
                     }}
                   >
-                    <div className="opacity-90">{c}</div>
+                    <div className="opacity-90 break-words [overflow-wrap:anywhere]">{c}</div>
                   </button>
                 );
               })}
@@ -548,7 +548,7 @@ export function QuizSetView({
               <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
                 <div className="font-semibold">Correction</div>
                 <div className="mt-2 opacity-90">✅ {current.choices[current.correct_index]}</div>
-                {current.explanation && <div className="mt-2 whitespace-pre-wrap opacity-80">{current.explanation}</div>}
+                {current.explanation && <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">{current.explanation}</div>}
               </div>
             )}
 
@@ -556,11 +556,11 @@ export function QuizSetView({
               <div className="text-sm opacity-70">
                 {t("qcm.score")}: {score}
               </div>
-              <div className="flex gap-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
                 {!showCorrection ? (
                   <button
                     type="button"
-                    className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+                    className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
                     disabled={selected == null}
                     onClick={() => {
                       if (selected == null) return;
@@ -606,7 +606,7 @@ export function QuizSetView({
             <div className="mt-1 text-2xl font-semibold">
               {score}/{questions.length}
             </div>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
                 className="rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"

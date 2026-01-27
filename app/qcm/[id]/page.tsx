@@ -37,7 +37,7 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <main className="mx-auto w-full max-w-5xl px-4 py-10 overflow-x-hidden">
         <h1 className="text-2xl font-semibold">{t(locale, "auth.login")}</h1>
       </main>
     );
@@ -51,7 +51,7 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   if (!set) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <main className="mx-auto w-full max-w-5xl px-4 py-10 overflow-x-hidden">
         <h1 className="text-2xl font-semibold">{t(locale, "qcm.notFound")}</h1>
         <p className="mt-2 text-sm opacity-70">{t(locale, "qcm.notFoundDesc")}</p>
       </main>
@@ -99,7 +99,7 @@ export default async function QuizSetPage({ params }: PageProps) {
   }));
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
+    <main className="mx-auto w-full max-w-5xl px-4 py-10 overflow-x-hidden">
       <ContentDetailHeader
         backHref="/qcm"
         backLabel={t(locale, "nav.qcm")}
