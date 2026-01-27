@@ -40,7 +40,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   const count = (cards ?? []).length;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 min-w-0">
       <div className="rounded-2xl border p-6">
         <h1 className="text-xl font-semibold">{(set as any).title}</h1>
         <p className="mt-2 text-sm opacity-80">
@@ -60,8 +60,8 @@ export default async function FlashcardSetPage({ params }: PageProps) {
           {(cards ?? []).map((c: any) => (
             <div key={c.id} className="rounded-xl border p-3">
               <div className="text-xs opacity-70">#{c.position}</div>
-              <div className="mt-1 whitespace-pre-wrap text-sm font-medium">{c.front}</div>
-              <div className="mt-2 whitespace-pre-wrap text-sm opacity-80">{c.back}</div>
+              <div className="mt-1 whitespace-pre-wrap break-words text-sm font-medium">{c.front}</div>
+              <div className="mt-2 whitespace-pre-wrap break-words text-sm opacity-80">{c.back}</div>
             </div>
           ))}
           {(cards ?? []).length === 0 && (

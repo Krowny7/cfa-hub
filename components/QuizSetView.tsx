@@ -299,17 +299,17 @@ export function QuizSetView({
               <div className="font-semibold">{t("qcm.importExport")}</div>
               <div className="text-xs opacity-70">JSON (copie/coller) — pratique pour partager rapidement.</div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <button
                 type="button"
-                className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
                 onClick={exportJson}
               >
                 {t("qcm.exportJson")}
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
                 onClick={importJson}
               >
                 {t("qcm.importJson")}
@@ -400,11 +400,11 @@ export function QuizSetView({
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                         {!isEditing ? (
                           <button
                             type="button"
-                            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                            className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
                             onClick={() => startEdit(q)}
                           >
                             Modifier
@@ -412,7 +412,7 @@ export function QuizSetView({
                         ) : (
                           <button
                             type="button"
-                            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                            className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
                             onClick={cancelEdit}
                           >
                             Annuler
@@ -421,7 +421,7 @@ export function QuizSetView({
 
                         <button
                           type="button"
-                          className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20"
+                          className="w-full sm:w-auto rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20"
                           disabled={busy}
                           onClick={() => deleteQuestion(q.id)}
                         >
@@ -492,7 +492,7 @@ export function QuizSetView({
             <div className="font-semibold">{t("qcm.title")}</div>
             <div className="text-xs opacity-70">{questions.length} question(s)</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <button
               type="button"
               className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
@@ -511,7 +511,7 @@ export function QuizSetView({
             <div className="text-xs opacity-70">
               {i + 1}/{questions.length}
             </div>
-            <div className="mt-2 whitespace-pre-wrap text-base font-medium">{current.prompt}</div>
+            <div className="mt-2 break-words whitespace-pre-wrap text-base font-medium">{current.prompt}</div>
 
             <div className="mt-4 grid gap-2">
               {current.choices.map((c, idx) => {
@@ -538,7 +538,7 @@ export function QuizSetView({
                       setSelected(idx);
                     }}
                   >
-                    <div className="opacity-90">{c}</div>
+                    <div className="opacity-90 break-words whitespace-pre-wrap">{c}</div>
                   </button>
                 );
               })}
@@ -547,8 +547,8 @@ export function QuizSetView({
             {showCorrection && (current.explanation || current.correct_index != null) && (
               <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
                 <div className="font-semibold">Correction</div>
-                <div className="mt-2 opacity-90">✅ {current.choices[current.correct_index]}</div>
-                {current.explanation && <div className="mt-2 whitespace-pre-wrap opacity-80">{current.explanation}</div>}
+                <div className="mt-2 opacity-90 break-words whitespace-pre-wrap">✅ {current.choices[current.correct_index]}</div>
+                {current.explanation && <div className="mt-2 break-words whitespace-pre-wrap opacity-80">{current.explanation}</div>}
               </div>
             )}
 

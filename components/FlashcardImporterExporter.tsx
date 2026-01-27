@@ -1,103 +1,80 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/browser";
-import { useI18n } from "@/components/I18nProvider";
+import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
-export function FlashcardImporterExporter({ setId }: { setId: string }) {
-  const supabase = useMemo(() => createClient(), []);
+export function FlashcardImporterExporter(props: {
+  onImport: (rows: { front: string; back: string }[]) => Promise<void>;
+  onExport: () => Promise<string>;
+}) {
   const { t } = useI18n();
-
-  const [tsv, setTsv] = useState("");
+  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  async function exportTsv() {
-    setMsg(null);
-    const { data, error } = await supabase
-      .from("flashcards")
-      .select("front,back,position")
-      .eq("set_id", setId)
-      .order("position", { ascending: true });
-
-    if (error) {
-      setMsg(`❌ ${error.message}`);
-      return;
-    }
-
-    const out = (data ?? [])
-      .map((c) => `${(c.front ?? "").replaceAll("\t", " ")}\t${(c.back ?? "").replaceAll("\t", " ")}`)
-      .join("\n");
-
-    await navigator.clipboard.writeText(out);
-    setMsg("✅");
-  }
-
-  async function importTsv() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const lines = tsv
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter(Boolean);
-
-      if (lines.length === 0) throw new Error("Empty");
-
-      const rows = lines.map((line, i) => {
-        const parts = line.split("\t");
-        if (parts.length < 2) throw new Error(`Line ${i + 1} needs a TAB`);
-        const front = parts[0].trim();
-        const back = parts.slice(1).join("\t").trim();
-        return { set_id: setId, front, back, position: i + 1 };
-      });
-
-      const ins = await supabase.from("flashcards").insert(rows);
-      if (ins.error) throw ins.error;
-
-      setTsv("");
-      setMsg("✅");
-      window.location.reload();
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
-    } finally {
-      setBusy(false);
-    }
+  function parse(): { front: string; back: string }[] {
+    return text
+      .split("\n")
+      .map((l) => l.trimEnd())
+      .filter(Boolean)
+      .map((line) => {
+        const [front, back] = line.split("\t");
+        return { front: (front ?? "").trim(), back: (back ?? "").trim() };
+      })
+      .filter((r) => r.front && r.back);
   }
 
   return (
-    <div className="rounded-2xl border p-4">
+    <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold">{t("flashcards.importing")}</h3>
+        <h2 className="text-base font-semibold">Import / Export</h2>
         <button
-          className="rounded-lg border px-3 py-1 text-sm hover:bg-white/5"
-          type="button"
-          onClick={exportTsv}
+          className="w-full sm:w-auto rounded-lg border border-white/15 px-3 py-1 text-sm hover:bg-white/5"
+          onClick={async () => {
+            setExporting(true);
+            try {
+              const out = await props.onExport();
+              await navigator.clipboard.writeText(out);
+              alert(t("flashcards.copied"));
+            } finally {
+              setExporting(false);
+            }
+          }}
+          disabled={exporting}
         >
-          {t("flashcards.export")}
+          {exporting ? t("common.loading") : t("flashcards.exportCopy")}
         </button>
       </div>
 
-      <p className="mt-1 text-sm opacity-80">{t("flashcards.subtitle")}</p>
-
       <textarea
-        className="mt-3 h-40 w-full rounded-xl border bg-transparent p-3 text-sm"
-        value={tsv}
-        onChange={(e) => setTsv(e.target.value)}
+        className="mt-3 h-40 w-full min-w-0 max-w-full rounded-xl border border-white/15 bg-transparent p-3 text-sm"
         placeholder={t("flashcards.importPlaceholder")}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
-          type="button"
-          disabled={busy || !tsv.trim()}
-          onClick={importTsv}
+          className="w-full sm:w-auto rounded-lg bg-white px-4 py-2 text-center text-sm font-medium leading-snug text-black whitespace-normal break-words disabled:opacity-50"
+          onClick={async () => {
+            const rows = parse();
+            if (!rows.length) return;
+            setBusy(true);
+            try {
+              await props.onImport(rows);
+              setText("");
+            } finally {
+              setBusy(false);
+            }
+          }}
+          disabled={busy}
         >
-          {busy ? t("common.saving") : t("flashcards.import")}
+          {busy ? t("common.loading") : t("flashcards.import")}
         </button>
-        {msg && <div className="text-sm">{msg}</div>}
+        <div className="text-xs text-white/60">
+          {t("flashcards.importHint")}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
