@@ -1,56 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { useI18n } from "@/lib/i18n";
+import { useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/browser";
+import { useI18n } from "@/components/I18nProvider";
 
-export function FlashcardQuickAdd(props: {
-  onAdd: (front: string, back: string) => Promise<void>;
-}) {
+export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; nextPosition: number }) {
+  const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
+
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  async function handleAdd() {
-    if (!front.trim() || !back.trim()) return;
-    setSaving(true);
-    try {
-      await props.onAdd(front.trim(), back.trim());
-      setFront("");
-      setBack("");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <h2 className="text-base font-semibold">{t("flashcards.quickAdd")}</h2>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+    <div className="rounded-2xl border p-4 min-w-0 max-w-full overflow-x-hidden">
+      <h3 className="font-semibold">{t("flashcards.quickAddTitle")}</h3>
+      <div className="mt-3 grid gap-2 min-w-0">
         <textarea
-          className="h-24 w-full min-w-0 rounded-xl border bg-transparent p-3 text-sm"
-          placeholder={t("flashcards.front")}
+          className="h-24 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+          placeholder={t("flashcards.frontPlaceholder")}
           value={front}
           onChange={(e) => setFront(e.target.value)}
         />
         <textarea
-          className="h-24 w-full min-w-0 rounded-xl border bg-transparent p-3 text-sm"
-          placeholder={t("flashcards.back")}
+          className="h-24 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+          placeholder={t("flashcards.backPlaceholder")}
           value={back}
           onChange={(e) => setBack(e.target.value)}
         />
-      </div>
-
-      <div className="mt-3 grid">
         <button
-          className="w-full rounded-lg bg-white px-4 py-2 text-center text-sm font-medium leading-snug text-black whitespace-normal break-words disabled:opacity-50"
-          onClick={handleAdd}
-          disabled={saving || !front.trim() || !back.trim()}
+          className="w-full sm:w-auto rounded-lg bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50"
+          disabled={busy || !front.trim() || !back.trim()}
+          onClick={async () => {
+            setBusy(true);
+            setMsg(null);
+            try {
+              const ins = await supabase.from("flashcards").insert({
+                set_id: setId,
+                front: front.trim(),
+                back: back.trim(),
+                position: nextPosition
+              });
+              if (ins.error) throw ins.error;
+              setFront("");
+              setBack("");
+              setMsg("✅");
+              window.location.reload();
+            } catch (e: any) {
+              setMsg(`❌ ${e?.message ?? t("common.error")}`);
+            } finally {
+              setBusy(false);
+            }
+          }}
+          type="button"
         >
-          {saving ? t("common.saving") : t("flashcards.addCard")}
+          {busy ? t("common.saving") : t("flashcards.addCard")}
         </button>
+        {msg && <div className="text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
       </div>
-    </section>
+    </div>
   );
 }
