@@ -22,13 +22,13 @@ export function ContentDetailHeader({
 
   return (
     <div className="rounded-2xl border p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-[220px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <Link href={backHref} className="text-sm opacity-80 hover:underline">
             ← {backLabel}
           </Link>
 
-          <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
+          <h1 className="mt-2 break-words text-2xl font-semibold">{title}</h1>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <VisibilityBadge visibility={v} />
@@ -36,7 +36,11 @@ export function ContentDetailHeader({
           </div>
         </div>
 
-        {rightSlot ? <div className="flex items-center gap-2">{rightSlot}</div> : null}
+        {rightSlot ? (
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+            {rightSlot}
+          </div>
+        ) : null}
       </div>
     </div>
   );

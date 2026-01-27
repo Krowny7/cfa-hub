@@ -83,7 +83,7 @@ export function FolderPicker({
   return (
     <div className="rounded-xl border border-white/10 p-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="min-w-[220px]">
+        <div className="w-full sm:min-w-[220px] sm:w-auto">
           <div className="text-sm font-medium">{t("folders.folder")}</div>
           <select
             className="mt-2 w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm text-white"
@@ -99,8 +99,8 @@ export function FolderPicker({
           </select>
         </div>
 
-        <div className="flex flex-1 flex-wrap items-end gap-2">
-          <div className="flex-1 min-w-[220px]">
+        <div className="flex w-full flex-1 flex-wrap items-end gap-2 sm:w-auto">
+          <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
             <div className="text-xs opacity-70">{t("folders.new")}</div>
             <input
               className="mt-2 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
@@ -112,7 +112,7 @@ export function FolderPicker({
 
           <button
             type="button"
-            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+            className="w-full whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
             disabled={busy || !newName.trim()}
             onClick={async () => {
               setBusy(true);
