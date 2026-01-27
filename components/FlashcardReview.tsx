@@ -42,19 +42,16 @@ function CardPanel({
       ].join(" ")}
       onClick={onFlip}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
         <div className="text-xs font-semibold tracking-wide opacity-70">
           {flipped ? labelBack : labelFront}
         </div>
-        <div className="text-xs opacity-60">{labelHint}</div>
+        <div className="text-xs opacity-60 break-words [overflow-wrap:anywhere]">{labelHint}</div>
       </div>
 
       {/* Body zone takes remaining space */}
       <div
-        className={[
-          "mt-5 flex-1 min-w-0",
-          shouldCenter ? "flex items-center justify-center" : ""
-        ].join(" ")}
+        className={["mt-5 flex-1 min-w-0", shouldCenter ? "flex items-center justify-center" : ""].join(" ")}
       >
         {/* ✅ critical: break very long strings without spaces */}
         <div
@@ -67,9 +64,7 @@ function CardPanel({
         </div>
       </div>
 
-      {showBottomHint ? (
-        <div className="mt-5 text-xs opacity-60">{labelHint}</div>
-      ) : null}
+      {showBottomHint ? <div className="mt-5 text-xs opacity-60">{labelHint}</div> : null}
     </button>
   );
 }
@@ -121,16 +116,18 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
 
   const shell = (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <div>
+      {/* Header: stack on mobile to prevent overflow */}
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h3 className="font-semibold">{t("flashcards.review")}</h3>
-          <div className="mt-1 text-xs opacity-70">{t("flashcards.reviewHint")}</div>
+          <div className="mt-1 text-xs opacity-70 break-words [overflow-wrap:anywhere]">{t("flashcards.reviewHint")}</div>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="text-sm opacity-70">{progress}</span>
           <button
             type="button"
-            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+            className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
             onClick={() => setFullscreen(true)}
           >
             {t("flashcards.fullscreen")}
@@ -149,9 +146,10 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
         />
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
+      {/* Nav: stack buttons on mobile */}
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <button
-          className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+          className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
           disabled={i === 0}
           onClick={goPrev}
           type="button"
@@ -159,7 +157,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
           {t("flashcards.prev")}
         </button>
         <button
-          className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+          className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
           disabled={i >= total - 1}
           onClick={goNext}
           type="button"
@@ -177,16 +175,18 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
       {fullscreen && (
         <div className="fixed inset-0 z-50 bg-black/70 p-3 sm:p-4 backdrop-blur">
           <div className="mx-auto flex h-full w-full max-w-6xl flex-col rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl">
-            <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
-              <div>
+            {/* Fullscreen header: stack on mobile */}
+            <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <div className="text-sm font-semibold">{t("flashcards.review")}</div>
-                <div className="text-xs opacity-70">
+                <div className="text-xs opacity-70 break-words [overflow-wrap:anywhere]">
                   {progress} • {t("flashcards.reviewHint")}
                 </div>
               </div>
+
               <button
                 type="button"
-                className="rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5"
+                className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
                 onClick={() => setFullscreen(false)}
               >
                 {t("common.close")}
@@ -216,9 +216,10 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                 </div>
 
                 <div className="mx-auto mt-5 w-full max-w-5xl">
-                  <div className="flex items-center justify-between gap-2">
+                  {/* Fullscreen nav: stack on mobile */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <button
-                      className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                      className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
                       disabled={i === 0}
                       onClick={goPrev}
                       type="button"
@@ -226,7 +227,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                       {t("flashcards.prev")}
                     </button>
                     <button
-                      className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                      className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
                       disabled={i >= total - 1}
                       onClick={goNext}
                       type="button"
@@ -235,9 +236,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                     </button>
                   </div>
 
-                  <div className="mt-3 text-center text-xs opacity-60">
-                    {t("flashcards.shortcuts")}
-                  </div>
+                  <div className="mt-3 text-center text-xs opacity-60">{t("flashcards.shortcuts")}</div>
                 </div>
               </div>
             </div>

@@ -66,11 +66,13 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
   }
 
   return (
-    <div className="rounded-2xl border p-4 min-w-0 max-w-full overflow-x-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+    <div className="w-full min-w-0 max-w-full rounded-2xl border p-4">
+      {/* Header: stack on mobile to avoid any horizontal overflow */}
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="font-semibold">{t("flashcards.importing")}</h3>
+
         <button
-          className="rounded-lg border px-3 py-1 text-sm hover:bg-white/5 w-full sm:w-auto"
+          className="box-border w-full rounded-lg border px-3 py-2 text-sm hover:bg-white/5 sm:w-auto sm:whitespace-nowrap"
           type="button"
           onClick={exportTsv}
         >
@@ -81,21 +83,22 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
       <p className="mt-1 text-sm opacity-80 break-words [overflow-wrap:anywhere]">{t("flashcards.subtitle")}</p>
 
       <textarea
-        className="mt-3 h-40 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm"
+        className="box-border mt-3 h-40 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
         value={tsv}
         onChange={(e) => setTsv(e.target.value)}
         placeholder={t("flashcards.importPlaceholder")}
       />
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 min-w-0">
+      <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
         <button
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 w-full sm:w-auto whitespace-normal"
+          className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto"
           type="button"
           disabled={busy || !tsv.trim()}
           onClick={importTsv}
         >
           {busy ? t("common.saving") : t("flashcards.import")}
         </button>
+
         {msg && <div className="text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
       </div>
     </div>
