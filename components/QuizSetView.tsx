@@ -291,38 +291,38 @@ export function QuizSetView({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
       {canEdit && (
         <div className="rounded-2xl border p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
             <div>
               <div className="font-semibold">{t("qcm.importExport")}</div>
               <div className="text-xs opacity-70">JSON (copie/coller) — pratique pour partager rapidement.</div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 min-w-0">
               <button
                 type="button"
-                className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
                 onClick={exportJson}
               >
                 {t("qcm.exportJson")}
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
                 onClick={importJson}
               >
                 {t("qcm.importJson")}
               </button>
             </div>
           </div>
-          {msg && <div className="mt-2 text-sm">{msg}</div>}
+          {msg && <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
         </div>
       )}
 
       {canEdit && (
         <div className="rounded-2xl border p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
             <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
           </div>
 
@@ -481,7 +481,7 @@ export function QuizSetView({
             )}
           </div>
 
-          {msg && <div className="mt-2 text-sm">{msg}</div>}
+          {msg && <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
         </div>
       )}
 

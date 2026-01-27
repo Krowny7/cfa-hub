@@ -66,11 +66,11 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
   }
 
   return (
-    <div className="rounded-2xl border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="rounded-2xl border p-4 min-w-0 max-w-full overflow-x-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
         <h3 className="font-semibold">{t("flashcards.importing")}</h3>
         <button
-          className="rounded-lg border px-3 py-1 text-sm hover:bg-white/5"
+          className="rounded-lg border px-3 py-1 text-sm hover:bg-white/5 w-full sm:w-auto"
           type="button"
           onClick={exportTsv}
         >
@@ -78,25 +78,25 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
         </button>
       </div>
 
-      <p className="mt-1 text-sm opacity-80">{t("flashcards.subtitle")}</p>
+      <p className="mt-1 text-sm opacity-80 break-words [overflow-wrap:anywhere]">{t("flashcards.subtitle")}</p>
 
       <textarea
-        className="mt-3 h-40 w-full rounded-xl border bg-transparent p-3 text-sm"
+        className="mt-3 h-40 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm"
         value={tsv}
         onChange={(e) => setTsv(e.target.value)}
         placeholder={t("flashcards.importPlaceholder")}
       />
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2 min-w-0">
         <button
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 w-full sm:w-auto whitespace-normal"
           type="button"
           disabled={busy || !tsv.trim()}
           onClick={importTsv}
         >
           {busy ? t("common.saving") : t("flashcards.import")}
         </button>
-        {msg && <div className="text-sm">{msg}</div>}
+        {msg && <div className="text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
       </div>
     </div>
   );
