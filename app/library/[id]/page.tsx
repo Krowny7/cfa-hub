@@ -97,7 +97,7 @@ export default async function DocumentPage({ params }: PageProps) {
         rightSlot={
           (doc as any).external_url ? (
             <a
-              className="rounded-lg border px-3 py-2 text-sm hover:bg-white/5"
+              className="w-full whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-center text-sm hover:bg-white/5 sm:w-auto"
               href={(doc as any).external_url}
               target="_blank"
               rel="noreferrer"

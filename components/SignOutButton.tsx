@@ -9,7 +9,7 @@ export function SignOutButton() {
 
   return (
     <button
-      className="rounded-lg border px-3 py-1 text-sm hover:bg-white/5"
+      className="whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5"
       type="button"
       onClick={async () => {
         await supabase.auth.signOut();

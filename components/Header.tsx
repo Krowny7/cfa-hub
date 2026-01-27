@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/SignOutButton";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SignOutButton } from "@/components/SignOutButton";
 
 function initialsFromEmail(email: string | null | undefined) {
   if (!email) return "U";
@@ -37,98 +37,149 @@ export async function Header() {
     avatarUrl = (profile as any)?.avatar_url ?? null;
   }
 
+  const nav = [
+    { href: "/dashboard", label: t(locale, "nav.dashboard") },
+    { href: "/library", label: t(locale, "nav.library") },
+    { href: "/flashcards", label: t(locale, "nav.flashcards") },
+    { href: "/qcm", label: t(locale, "nav.qcm") },
+    { href: "/people", label: t(locale, "nav.people") }
+  ];
+
   return (
     <header className="border-b border-white/10">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="font-semibold">
-            {t(locale, "appName")}
-          </Link>
-
-          {user && (
-            <>
-              <nav className="hidden items-center gap-3 text-sm sm:flex">
-                <Link className="hover:underline" href="/dashboard">
-                  {t(locale, "nav.dashboard")}
-                </Link>
-                <Link className="hover:underline" href="/library">
-                  {t(locale, "nav.library")}
-                </Link>
-                <Link className="hover:underline" href="/flashcards">
-                  {t(locale, "nav.flashcards")}
-                </Link>
-                <Link className="hover:underline" href="/qcm">
-                  {t(locale, "nav.qcm")}
-                </Link>
-                <Link className="hover:underline" href="/people">
-                  {t(locale, "nav.people")}
-                </Link>
-
-                {/* ✅ Settings removed from header nav */}
-              </nav>
-
-              {/* Mobile menu */}
-              <details className="sm:hidden">
-                <summary className="cursor-pointer select-none rounded-lg border px-3 py-1 text-sm hover:bg-white/5">
-                  {t(locale, "common.menu")}
-                </summary>
-                <div className="mt-2 grid gap-2 rounded-xl border bg-neutral-950 p-3 text-sm">
-                  <Link className="hover:underline" href="/dashboard">
-                    {t(locale, "nav.dashboard")}
-                  </Link>
-                  <Link className="hover:underline" href="/library">
-                    {t(locale, "nav.library")}
-                  </Link>
-                  <Link className="hover:underline" href="/flashcards">
-                    {t(locale, "nav.flashcards")}
-                  </Link>
-                  <Link className="hover:underline" href="/qcm">
-                    {t(locale, "nav.qcm")}
-                  </Link>
-                  <Link className="hover:underline" href="/people">
-                    {t(locale, "nav.people")}
-                  </Link>
-
-                  {/* ✅ Settings removed from mobile menu */}
-                </div>
-              </details>
-            </>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-
-          {user ? (
-            <>
-              {/* ✅ Clicking profile goes to /settings (same behavior as old Settings link) */}
-              <Link
-                href="/settings"
-                className="flex items-center gap-2 rounded-lg border px-2 py-1 text-xs hover:bg-white/5"
-                title={t(locale, "nav.settings")}
-              >
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="avatar" className="h-6 w-6 rounded-full object-cover" />
-                ) : (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
-                    {initialsFromEmail(user.email)}
-                  </div>
-                )}
-
-                {/* show name/email only on sm+ to keep mobile clean */}
-                <span className="hidden max-w-[160px] truncate opacity-80 sm:inline">
-                  {username || user.email}
-                </span>
-              </Link>
-
-              <SignOutButton />
-            </>
-          ) : (
-            <Link className="rounded-lg border px-3 py-1 text-sm hover:bg-white/5" href="/login">
-              {t(locale, "auth.login")}
+      <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between gap-3">
+          {/* Brand + desktop nav */}
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/" className="whitespace-nowrap font-semibold tracking-tight">
+              {t(locale, "appName")}
             </Link>
-          )}
+
+            {user ? (
+              <nav className="hidden items-center gap-3 text-sm sm:flex">
+                {nav.map((it) => (
+                  <Link key={it.href} className="hover:underline" href={it.href}>
+                    {it.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+          </div>
+
+          {/* Desktop actions */}
+          <div className="hidden items-center gap-2 sm:flex">
+            <LanguageSwitcher />
+
+            {user ? (
+              <>
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1 text-xs hover:bg-white/5"
+                  title={t(locale, "nav.settings")}
+                >
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="avatar" className="h-6 w-6 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
+                      {initialsFromEmail(user.email)}
+                    </div>
+                  )}
+
+                  <span className="hidden max-w-[160px] truncate opacity-80 md:inline">
+                    {username || user.email}
+                  </span>
+                </Link>
+
+                <SignOutButton />
+              </>
+            ) : (
+              <Link
+                className="whitespace-nowrap rounded-lg border border-white/10 px-3 py-1 text-sm hover:bg-white/5"
+                href="/login"
+              >
+                {t(locale, "auth.login")}
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile menu (single entry point to avoid header overflow) */}
+          <div className="sm:hidden">
+            <details className="relative">
+              <summary className="cursor-pointer list-none select-none rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5">
+                {t(locale, "common.menu")}
+              </summary>
+
+              <div className="absolute right-0 z-50 mt-2 w-[min(86vw,20rem)] rounded-2xl border border-white/10 bg-neutral-950/95 p-2 shadow-lg backdrop-blur">
+                <div className="grid gap-1">
+                  {user ? (
+                    <>
+                      {nav.map((it) => (
+                        <Link
+                          key={it.href}
+                          href={it.href}
+                          className="rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                        >
+                          {it.label}
+                        </Link>
+                      ))}
+
+                      <div className="my-1 h-px bg-white/10" />
+
+                      <div className="px-2 py-1">
+                        <div className="text-xs font-semibold opacity-70">{t(locale, "locale.label")}</div>
+                        <div className="mt-2">
+                          <LanguageSwitcher />
+                        </div>
+                      </div>
+
+                      <div className="my-1 h-px bg-white/10" />
+
+                      <Link
+                        href="/settings"
+                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                        title={t(locale, "nav.settings")}
+                      >
+                        <div className="flex items-center gap-2">
+                          {avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={avatarUrl} alt="avatar" className="h-6 w-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
+                              {initialsFromEmail(user.email)}
+                            </div>
+                          )}
+                          <span className="min-w-0 flex-1 truncate opacity-90">{username || user.email}</span>
+                        </div>
+                      </Link>
+
+                      <div className="px-2 py-1">
+                        <SignOutButton />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="px-2 py-1">
+                        <div className="text-xs font-semibold opacity-70">{t(locale, "locale.label")}</div>
+                        <div className="mt-2">
+                          <LanguageSwitcher />
+                        </div>
+                      </div>
+
+                      <div className="my-1 h-px bg-white/10" />
+
+                      <Link
+                        href="/login"
+                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                      >
+                        {t(locale, "auth.login")}
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+            </details>
+          </div>
         </div>
       </div>
     </header>

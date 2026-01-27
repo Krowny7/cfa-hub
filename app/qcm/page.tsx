@@ -105,7 +105,7 @@ export default async function QcmPage({ searchParams }: PageProps) {
       {/* Top row: Info + Create aligned */}
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <div className="rounded-2xl border p-8 h-full flex flex-col justify-center">
+          <div className="flex h-full flex-col justify-center rounded-2xl border p-4 sm:p-8">
             <div className="text-sm font-semibold opacity-80">{L.infoTitle}</div>
             <div className="mt-3 text-3xl font-semibold leading-tight">{L.hero1}</div>
             <div className="mt-3 text-base opacity-80 max-w-[56ch]">{L.hero2}</div>
@@ -124,17 +124,17 @@ export default async function QcmPage({ searchParams }: PageProps) {
           <div className="text-xs opacity-70">{totalCount}</div>
         </div>
 
-        <form className="mt-3 flex flex-wrap gap-2" action="/qcm" method="get">
+        <form className="mt-3 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/qcm" method="get">
           <input
             name="q"
             defaultValue={q}
             placeholder={L.searchPlaceholder}
-            className="w-full flex-1 min-w-[220px] rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="w-full min-w-0 flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:min-w-[220px]"
           />
           <select
             name="scope"
             defaultValue={scope}
-            className="min-w-[180px] rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm text-white"
+            className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm text-white sm:w-auto sm:min-w-[180px]"
           >
             <option value="all">{L.all}</option>
             <option value="private">{L.private}</option>
@@ -143,13 +143,13 @@ export default async function QcmPage({ searchParams }: PageProps) {
           </select>
           <button
             type="submit"
-            className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+            className="w-full whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
           >
             {L.filterBtn}
           </button>
 
           {q || scope !== "all" ? (
-            <Link href="/qcm" className="rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5">
+            <Link href="/qcm" className="w-full whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-center text-sm hover:bg-white/5 sm:w-auto">
               {L.reset}
             </Link>
           ) : null}
