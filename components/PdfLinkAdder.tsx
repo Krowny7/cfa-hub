@@ -38,20 +38,20 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
   const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <div className="rounded-2xl border p-4">
-      <h2 className="font-semibold">{t("library.addTitle")}</h2>
-      <p className="mt-1 text-sm opacity-80">{t("library.addSubtitle")}</p>
+    <div className="card p-6">
+      <h2 className="text-base font-semibold">{t("library.addTitle")}</h2>
+      <p className="mt-2 text-sm text-white/80">{t("library.addSubtitle")}</p>
 
       <div className="mt-4 grid gap-3">
         <input
-          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2"
+          className="input"
           placeholder={t("library.titlePlaceholder")}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
 
         <input
-          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2"
+          className="input"
           placeholder={t("library.urlPlaceholder")}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -59,32 +59,26 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
 
         <FolderPicker kind="documents" value={folderId} onChange={setFolderId} />
 
-        <div className="rounded-xl border border-white/10 p-3">
+        <div className="card-soft p-4">
           <div className="text-sm font-medium">{t("sharing.title")}</div>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
-              className={`rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 ${
-                shareMode === "private" ? "bg-white/10" : "bg-transparent"
-              }`}
+              className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
               onClick={() => setShareMode("private")}
             >
               {t("common.private")}
             </button>
             <button
               type="button"
-              className={`rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 ${
-                shareMode === "groups" ? "bg-white/10" : "bg-transparent"
-              }`}
+              className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
               onClick={() => setShareMode("groups")}
             >
               {t("sharing.someGroups")}
             </button>
             <button
               type="button"
-              className={`rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 ${
-                shareMode === "public" ? "bg-white/10" : "bg-transparent"
-              }`}
+              className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
               onClick={() => setShareMode("public")}
             >
               {t("common.public")}
@@ -98,7 +92,7 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
         </div>
 
         <button
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+          className="btn btn-primary"
           disabled={busy || !title.trim() || !url.trim() || (shareMode === "groups" && groupIds.length === 0)}
           onClick={async () => {
             setMsg(null);
@@ -160,7 +154,7 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
           {busy ? t("library.saving") : t("library.saveLink")}
         </button>
 
-        <div className="text-xs opacity-70">{t("library.advice")}</div>
+        <div className="text-xs text-white/70">{t("library.advice")}</div>
 
         {msg && <div className="text-sm">{msg}</div>}
       </div>

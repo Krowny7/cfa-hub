@@ -24,17 +24,9 @@ function labelForVisibility(v: Visibility) {
 export function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const label = labelForVisibility(visibility);
   const cls =
-    visibility === "private"
-      ? "border-white/15 bg-white/5 text-white/80"
-      : visibility === "public"
-      ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-100"
-      : "border-blue-400/25 bg-blue-400/10 text-blue-100";
+    visibility === "private" ? "badge-private" : visibility === "public" ? "badge-public" : "badge-shared";
 
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] ${cls}`}>
-      {label}
-    </span>
-  );
+  return <span className={`badge ${cls}`}>{label}</span>;
 }
 
 export function SectionHeader({
@@ -63,7 +55,7 @@ export function SectionHeader({
       : "bg-emerald-400/5";
 
   return (
-    <div className={`rounded-xl border ${border} ${bg} p-4`}>
+    <div className={`card-soft ${border} ${bg} p-4`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm font-semibold">{title}</div>
@@ -95,14 +87,14 @@ export function FolderBlocks<T extends BaseItem>({
       {folderNames.map((folder) => {
         const folderItems = grouped.get(folder) ?? [];
         return (
-          <details key={folder} className="rounded-xl border border-white/10">
-            <summary className="cursor-pointer list-none select-none rounded-xl px-4 py-3 hover:bg-white/5">
+          <details key={folder} className="group card-soft">
+            <summary className="cursor-pointer list-none select-none rounded-xl px-4 py-3 transition hover:bg-white/[0.06]">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{folder}</div>
                   <div className="text-xs opacity-70">{folderItems.length}</div>
                 </div>
-                <div className="text-xs opacity-60">▼</div>
+                <div className="text-xs opacity-60 transition group-open:rotate-180">▼</div>
               </div>
             </summary>
 
@@ -114,7 +106,7 @@ export function FolderBlocks<T extends BaseItem>({
                     <Link
                       key={it.id}
                       href={`${basePath}/${it.id}`}
-                      className="group rounded-xl border border-white/10 p-4 hover:bg-white/5"
+                      className="card-soft group p-4 transition hover:bg-white/[0.06]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">

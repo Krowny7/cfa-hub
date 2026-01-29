@@ -43,21 +43,17 @@ export default function LoginPage() {
   async function signInWithGoogle() {
     setError(null);
     setBusy(true);
+
     try {
-      const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback`
-          : undefined;
+      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo
-        }
+        options: { redirectTo }
       });
 
       if (error) throw error;
-      // Redirection gérée par Supabase OAuth.
+      // Redirection handled by Supabase OAuth.
     } catch (e: any) {
       setError(e?.message ?? (isFr ? "Erreur de connexion." : "Login error."));
       setBusy(false);
@@ -65,137 +61,107 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* LEFT - Hero */}
-        <section className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs opacity-90">
-            <span className="h-2 w-2 rounded-full bg-white/60" />
-            {isFr ? "Espace d’étude centralisé" : "Centralized study hub"}
-          </div>
+    <div className="grid gap-6 lg:grid-cols-2">
+      {/* LEFT: Value prop */}
+      <section className="card order-2 p-8 lg:order-1">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs">
+          <span className="h-2 w-2 rounded-full bg-blue-400/80" />
+          {isFr ? "Espace d’étude centralisé" : "Centralized study hub"}
+        </div>
 
-          <h1 className="mt-4 text-3xl font-semibold leading-tight">
-            {isFr ? (
-              <>
-                CFA Hub —{" "}
-                <span className="opacity-80">
-                  flashcards, PDFs et QCM au même endroit.
-                </span>
-              </>
-            ) : (
-              <>
-                CFA Hub —{" "}
-                <span className="opacity-80">
-                  flashcards, PDFs & quizzes in one place.
-                </span>
-              </>
-            )}
-          </h1>
+        <h1 className="mt-5 text-3xl font-semibold leading-tight">
+          {isFr ? (
+            <>
+              CFA Hub — <span className="opacity-80">PDF, flashcards et QCM au même endroit.</span>
+            </>
+          ) : (
+            <>
+              CFA Hub — <span className="opacity-80">PDFs, flashcards & quizzes in one place.</span>
+            </>
+          )}
+        </h1>
 
-          <p className="mt-3 text-sm opacity-70">
-            {isFr
-              ? "Connecte-toi pour retrouver tes sets, partager avec tes groupes et suivre ton ELO."
-              : "Sign in to access your sets, share with groups, and track your ELO."}
-          </p>
+        <p className="mt-3 text-sm text-white/80">
+          {isFr
+            ? "Organise tes ressources, révise vite, et partage avec tes groupes (classement ELO inclus)."
+            : "Organize resources, revise fast, and share with your groups (ELO ranking included)."}
+        </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="text-sm font-semibold">
-                {isFr ? "Organisation" : "Organization"}
-              </div>
-              <div className="mt-1 text-xs opacity-70">
-                {isFr
-                  ? "Dossiers, visibilité (privé/groupe/public), recherche."
-                  : "Folders, visibility (private/group/public), search."}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="text-sm font-semibold">
-                {isFr ? "Apprentissage" : "Learning"}
-              </div>
-              <div className="mt-1 text-xs opacity-70">
-                {isFr
-                  ? "Flashcards rapides, PDFs, QCM avec correction."
-                  : "Fast flashcards, PDFs, quizzes with feedback."}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="text-sm font-semibold">{isFr ? "Groupes" : "Groups"}</div>
-              <div className="mt-1 text-xs opacity-70">
-                {isFr
-                  ? "Partage multi-groupes, contrôle via RLS."
-                  : "Multi-group sharing, enforced by RLS."}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="text-sm font-semibold">{isFr ? "Progression" : "Progress"}</div>
-              <div className="mt-1 text-xs opacity-70">
-                {isFr
-                  ? "ELO + historique des tentatives."
-                  : "ELO + attempt history."}
-              </div>
+        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+          <div className="card-soft p-4">
+            <div className="text-sm font-semibold">{isFr ? "Bibliothèque" : "Library"}</div>
+            <div className="mt-1 text-xs opacity-70">
+              {isFr ? "Ajoute des liens PDF, classe par dossiers." : "Add PDF links, organize with folders."}
             </div>
           </div>
 
-          <div className="mt-6 text-xs opacity-60">
-            {isFr
-              ? "Sécurité : authentification via Google, et accès contrôlé côté base de données."
-              : "Security: Google authentication, database-level access control."}
-          </div>
-        </section>
-
-        {/* RIGHT - Login Card */}
-        <section className="rounded-2xl border border-white/10 p-8">
-          <h2 className="text-xl font-semibold">{isFr ? "Connexion" : "Sign in"}</h2>
-          <p className="mt-2 text-sm opacity-70">
-            {isFr
-              ? "Connecte-toi avec Google pour accéder à ton espace."
-              : "Sign in with Google to access your workspace."}
-          </p>
-
-          <button
-            type="button"
-            onClick={signInWithGoogle}
-            disabled={busy}
-            className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
-          >
-            <GoogleIcon />
-            {busy
-              ? isFr
-                ? "Connexion…"
-                : "Signing in…"
-              : isFr
-                ? "Se connecter avec Google"
-                : "Continue with Google"}
-          </button>
-
-          {error ? (
-            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-100">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs opacity-75">
-            <div className="font-semibold opacity-90">{isFr ? "Astuce dev" : "Dev tip"}</div>
-            <div className="mt-1">
-              {isFr ? (
-                <>
-                  En local, ajoute cette URL dans <span className="font-mono">Redirect URLs</span> Supabase :{" "}
-                  <span className="font-mono opacity-90">http://localhost:3000/auth/callback</span>
-                </>
-              ) : (
-                <>
-                  Locally, add this URL in Supabase <span className="font-mono">Redirect URLs</span>:{" "}
-                  <span className="font-mono opacity-90">http://localhost:3000/auth/callback</span>
-                </>
-              )}
+          <div className="card-soft p-4">
+            <div className="text-sm font-semibold">{isFr ? "Flashcards" : "Flashcards"}</div>
+            <div className="mt-1 text-xs opacity-70">
+              {isFr
+                ? "Import/export Quizlet et mode révision plein écran."
+                : "Quizlet import/export and fullscreen review."}
             </div>
           </div>
-        </section>
-      </div>
-    </main>
+
+          <div className="card-soft p-4">
+            <div className="text-sm font-semibold">{isFr ? "QCM" : "Quizzes"}</div>
+            <div className="mt-1 text-xs opacity-70">
+              {isFr ? "Mode examen + correction et explications." : "Exam mode + feedback and explanations."}
+            </div>
+          </div>
+
+          <div className="card-soft p-4">
+            <div className="text-sm font-semibold">{isFr ? "Groupes" : "Groups"}</div>
+            <div className="mt-1 text-xs opacity-70">
+              {isFr
+                ? "Partage multi-groupes (privé / groupes / public)."
+                : "Multi-group sharing (private / groups / public)."}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 text-xs text-white/60">
+          {isFr
+            ? "Astuce : commence par ajouter tes PDFs, puis crée un set de flashcards ou un QCM."
+            : "Tip: start by adding your PDFs, then create a flashcard set or a quiz."}
+        </div>
+      </section>
+
+      {/* RIGHT: Sign in */}
+      <section className="card order-1 p-8 lg:order-2">
+        <h2 className="text-lg font-semibold">{isFr ? "Connexion" : "Sign in"}</h2>
+        <p className="mt-2 text-sm text-white/80">
+          {isFr ? "Connecte-toi pour accéder à ton espace." : "Sign in to access your workspace."}
+        </p>
+
+        <button
+          type="button"
+          onClick={signInWithGoogle}
+          disabled={busy}
+          className="btn mt-5 w-full bg-white text-black hover:bg-white/90"
+        >
+          <GoogleIcon />
+          {busy ? (isFr ? "Redirection…" : "Redirecting…") : isFr ? "Continuer avec Google" : "Continue with Google"}
+        </button>
+
+        {error ? <div className="mt-3 text-sm text-red-100">❌ {error}</div> : null}
+
+        <div className="mt-6 card-soft p-4">
+          <div className="text-sm font-semibold">{isFr ? "Ce que tu verras en premier" : "What you’ll see first"}</div>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-white/80">
+            <li>{isFr ? "Dashboard avec tes stats" : "Dashboard with your stats"}</li>
+            <li>{isFr ? "Accès rapide à PDF / Flashcards / QCM" : "Quick access to PDFs / Flashcards / Quizzes"}</li>
+            <li>{isFr ? "Partage via groupes (Réglages)" : "Group sharing (Settings)"}</li>
+          </ol>
+        </div>
+
+        <div className="mt-4 text-xs text-white/60">
+          {isFr
+            ? "En continuant, tu autorises l’authentification via Google. Aucune donnée n’est partagée publiquement par défaut."
+            : "By continuing, you authorize Google authentication. Nothing is public by default."}
+        </div>
+      </section>
+    </div>
   );
 }

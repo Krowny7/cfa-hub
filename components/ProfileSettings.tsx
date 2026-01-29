@@ -101,16 +101,16 @@ export function ProfileSettings() {
   }
 
   return (
-    <div className="rounded-2xl border p-4">
-      <h2 className="font-semibold">{t("settings.profileTitle")}</h2>
+    <div className="card p-6">
+      <h2 className="text-base font-semibold">{t("settings.profileTitle")}</h2>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border p-4">
+        <div className="card-soft p-4">
           <div className="text-sm font-medium">{t("settings.usernameLabel")}</div>
           <div className="mt-1 text-xs opacity-70">{t("settings.usernameHint")}</div>
 
           <input
-            className="mt-3 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input mt-3"
             placeholder={t("settings.usernamePlaceholder")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -118,7 +118,7 @@ export function ProfileSettings() {
           />
 
           <button
-            className="mt-3 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+            className="btn btn-primary mt-3"
             onClick={saveUsername}
             disabled={loading || busy}
             type="button"
@@ -127,7 +127,7 @@ export function ProfileSettings() {
           </button>
         </div>
 
-        <div className="rounded-xl border p-4">
+        <div className="card-soft p-4">
           <div className="text-sm font-medium">{t("settings.avatarLabel")}</div>
           <div className="mt-1 text-xs opacity-70">{t("settings.avatarHint")}</div>
 
@@ -141,7 +141,7 @@ export function ProfileSettings() {
               </div>
             )}
 
-            <label className="cursor-pointer rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5">
+            <label className="btn btn-secondary cursor-pointer">
               {t("settings.upload")}
               <input
                 className="hidden"

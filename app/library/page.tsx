@@ -101,10 +101,10 @@ export default async function LibraryPage({ searchParams }: PageProps) {
       {/* Top row: Info + Add aligned */}
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <div className="flex h-full flex-col justify-center rounded-2xl border p-4 sm:p-8">
+          <div className="card flex h-full flex-col justify-center p-6 sm:p-8">
             <div className="text-sm font-semibold opacity-80">{L.infoTitle}</div>
             <div className="mt-3 text-3xl font-semibold leading-tight">{L.hero1}</div>
-            <div className="mt-3 text-base opacity-80 max-w-[56ch]">{L.hero2}</div>
+            <div className="mt-3 max-w-[56ch] text-base text-white/80">{L.hero2}</div>
           </div>
         </div>
 
@@ -114,41 +114,35 @@ export default async function LibraryPage({ searchParams }: PageProps) {
       </div>
 
       {/* Bottom: Vos PDFs */}
-      <div className="rounded-2xl border p-4">
+      <div className="card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold">{L.your}</h2>
           <div className="text-xs opacity-70">{totalCount}</div>
         </div>
 
-        <form className="mt-3 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/library" method="get">
+        <form className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/library" method="get">
           <input
             name="q"
             defaultValue={q}
             placeholder={L.searchPlaceholder}
-            className="w-full min-w-0 flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:min-w-[220px]"
+            className="input min-w-0 flex-1 sm:min-w-[220px]"
           />
           <select
             name="scope"
             defaultValue={scope}
-            className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm text-white sm:w-auto sm:min-w-[180px]"
+            className="select sm:w-auto sm:min-w-[180px]"
           >
             <option value="all">{L.all}</option>
             <option value="private">{L.private}</option>
             <option value="shared">{L.shared}</option>
             <option value="public">{L.public}</option>
           </select>
-          <button
-            type="submit"
-            className="w-full whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-          >
+          <button type="submit" className="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
             {L.filterBtn}
           </button>
 
           {q || scope !== "all" ? (
-            <Link
-              href="/library"
-              className="w-full whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-center text-sm hover:bg-white/5 sm:w-auto"
-            >
+            <Link href="/library" className="btn btn-ghost w-full whitespace-nowrap text-center sm:w-auto">
               {L.reset}
             </Link>
           ) : null}

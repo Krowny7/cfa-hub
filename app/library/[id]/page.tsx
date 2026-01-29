@@ -37,9 +37,9 @@ export default async function DocumentPage({ params }: PageProps) {
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-5xl">
         <h1 className="text-2xl font-semibold">{t(locale, "auth.login")}</h1>
-      </main>
+      </div>
     );
   }
 
@@ -51,9 +51,9 @@ export default async function DocumentPage({ params }: PageProps) {
 
   if (!doc) {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-5xl">
         <h1 className="text-2xl font-semibold">{t(locale, "library.empty")}</h1>
-      </main>
+      </div>
     );
   }
 
@@ -87,7 +87,7 @@ export default async function DocumentPage({ params }: PageProps) {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <ContentDetailHeader
         backHref="/library"
         backLabel={t(locale, "nav.library")}
@@ -97,7 +97,7 @@ export default async function DocumentPage({ params }: PageProps) {
         rightSlot={
           (doc as any).external_url ? (
             <a
-              className="w-full whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-center text-sm hover:bg-white/5 sm:w-auto"
+              className="btn btn-secondary w-full whitespace-nowrap sm:w-auto"
               href={(doc as any).external_url}
               target="_blank"
               rel="noreferrer"
@@ -108,12 +108,12 @@ export default async function DocumentPage({ params }: PageProps) {
         }
       />
 
-      <div className="mt-6 rounded-2xl border p-4">
+      <div className="card p-4">
         {(doc as any).preview_url ? (
           <iframe
             title={(doc as any).title}
             src={(doc as any).preview_url}
-            className="h-[70vh] w-full rounded-xl border border-white/10"
+            className="h-[70vh] w-full rounded-xl border border-white/10 bg-black/20"
             allow="autoplay"
           />
         ) : (
@@ -123,7 +123,7 @@ export default async function DocumentPage({ params }: PageProps) {
 
       {/* For non-owners who still can edit/delete (groups), show safe actions (no share sync) */}
       {canEditDoc && !isOwner ? (
-        <div className="mt-6">
+        <div>
           <DocumentActions
             documentId={(doc as any).id}
             initialTitle={(doc as any).title}
@@ -136,19 +136,26 @@ export default async function DocumentPage({ params }: PageProps) {
 
       {/* Keep full settings owner-only (shares sync + visibility changes) */}
       {isOwner ? (
-        <div className="mt-6">
-          <ContentItemSettings
-            type="documents"
+        <div>
+                    <ContentItemSettings
+            title={t(locale, "common.settings")}
+            subtitle={
+              locale === "fr" ? "Renommer, classer et gérer la visibilité." : "Rename, organize and manage visibility."
+            }
             itemId={(doc as any).id}
+            table="documents"
+            visibility={(doc as any).visibility}
+            folderId={(doc as any).folder_id ?? null}
+            folderKind="documents"
+            shareTable="document_shares"
+            shareFk="document_id"
+            rootLabel={locale === "fr" ? "Sans dossier" : "No folder"}
             activeGroupId={activeGroupId}
-            initialTitle={(doc as any).title}
-            initialVisibility={(doc as any).visibility}
-            initialFolderId={(doc as any).folder_id ?? null}
             initialSharedGroupIds={sharedGroupIds}
             legacyGroupId={(doc as any).group_id ?? null}
           />
         </div>
       ) : null}
-    </main>
+    </div>
   );
 }

@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
+import { levelInfoFromXp } from "@/lib/leveling";
 
 type Profile = {
   id: string;
   username?: string | null;
-  full_name?: string | null;
   avatar_url?: string | null;
+  xp_total?: number | null;
 };
 
 type Rating = {
@@ -80,7 +81,8 @@ export default async function PeoplePage({ searchParams }: PageProps) {
       if (memberIds.length > 0) {
         const profilesRes = await supabase
           .from("profiles")
-          .select("id,username,full_name,avatar_url")
+          // Privacy: do not fetch or display Google full_name here.
+          .select("id,username,avatar_url,xp_total")
           .in("id", memberIds)
           .order("username", { ascending: true });
 
@@ -91,12 +93,13 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     // ALL PROFILES (limit for scalability)
     let queryBuilder = supabase
       .from("profiles")
-      .select("id,username,full_name,avatar_url")
+      // Privacy: do not fetch or display Google full_name here.
+      .select("id,username,avatar_url,xp_total")
       .order("username", { ascending: true })
       .limit(200);
 
     if (q) {
-      queryBuilder = queryBuilder.or(`username.ilike.%${q}%,full_name.ilike.%${q}%`);
+      queryBuilder = queryBuilder.or(`username.ilike.%${q}%`);
     }
 
     const profilesRes = await queryBuilder;
@@ -140,7 +143,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     topUserIds.length > 0
       ? await supabase
           .from("profiles")
-          .select("id,username,full_name,avatar_url")
+          .select("id,username,avatar_url,xp_total")
           .in("id", topUserIds)
       : { data: [] as any[] };
 
@@ -152,8 +155,8 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     return {
       user_id: r.user_id,
       username: p?.username ?? shortId(r.user_id),
-      full_name: p?.full_name ?? null,
       avatar_url: p?.avatar_url ?? null,
+      xp_total: Number((p as any)?.xp_total ?? 0) || 0,
       elo: r.elo ?? 1200,
       games_played: r.games_played ?? 0
     };
@@ -162,15 +165,15 @@ export default async function PeoplePage({ searchParams }: PageProps) {
   const isFr = locale === "fr";
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="rounded-2xl border border-white/10 p-6">
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="mt-2 text-sm opacity-70">{subtitle}</p>
+    <div className="grid gap-4">
+      <div className="card p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <p className="mt-2 text-sm text-white/80">{subtitle}</p>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         {/* LEFT: Directory */}
-        <section className="rounded-2xl border border-white/10 p-5">
+        <section className="card p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="text-sm font-semibold">{isFr ? "Annuaire" : "Directory"}</div>
@@ -182,15 +185,13 @@ export default async function PeoplePage({ searchParams }: PageProps) {
             <div className="flex gap-2">
               <Link
                 href={`/people?view=all${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`rounded-lg border px-3 py-2 text-sm hover:bg-white/5 ${view === "all" ? "bg-white/5" : ""}`}
+                className={`chip ${view === "all" ? "chip-active" : ""}`}
               >
                 {isFr ? "Tous" : "All"}
               </Link>
               <Link
                 href={`/people?view=groups${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`rounded-lg border px-3 py-2 text-sm hover:bg-white/5 ${
-                  view === "groups" ? "bg-white/5" : ""
-                }`}
+                className={`chip ${view === "groups" ? "chip-active" : ""}`}
               >
                 {isFr ? "Mes groupes" : "My groups"}
               </Link>
@@ -204,11 +205,11 @@ export default async function PeoplePage({ searchParams }: PageProps) {
               name="q"
               defaultValue={q}
               placeholder={isFr ? "Rechercher un profil…" : "Search a profile…"}
-              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+              className="input"
             />
             <button
               type="submit"
-              className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+              className="btn btn-secondary whitespace-nowrap"
             >
               {isFr ? "Filtrer" : "Filter"}
             </button>
@@ -224,12 +225,16 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                 const elo = rating?.elo ?? 1200;
                 const games = rating?.games_played ?? 0;
 
-                const display = p.username || p.full_name || shortId(p.id);
+                const xpTotal = Number((p as any).xp_total ?? 0) || 0;
+                const lvl = levelInfoFromXp(xpTotal).level;
+
+                const display = p.username || shortId(p.id);
 
                 return (
-                  <div
+                  <Link
                     key={p.id}
-                    className={`rounded-xl border border-white/10 p-4 ${p.id === user.id ? "bg-white/5" : ""}`}
+                    href={`/people/${p.id}`}
+                    className={`card-soft p-4 transition hover:bg-white/[0.06] ${p.id === user.id ? "bg-white/[0.06]" : ""}`}
                   >
                     <div className="flex items-center gap-3">
                       {p.avatar_url ? (
@@ -245,13 +250,12 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                         <div className="truncate text-sm font-semibold">
                           {display} <span className="opacity-60">{shortId(p.id)}</span>
                         </div>
-                        {p.full_name ? <div className="truncate text-xs opacity-70">{p.full_name}</div> : null}
                         <div className="mt-1 text-xs opacity-80">
-                          Elo: {elo} • {games} {isFr ? "parties" : "games"}
+                          Niveau {lvl} • {xpTotal} XP • Elo: {elo} • {games} {isFr ? "parties" : "games"}
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })
             )}
@@ -265,7 +269,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
         </section>
 
         {/* RIGHT: Elo Leaderboard */}
-        <aside className="rounded-2xl border border-white/10 p-5">
+        <aside className="card p-6">
           <div className="text-sm font-semibold">{isFr ? "Classement ELO" : "ELO Ranking"}</div>
           <div className="mt-1 text-xs opacity-70">{isFr ? "Top 20 (global)." : "Top 20 (global)."}</div>
 
@@ -274,10 +278,11 @@ export default async function PeoplePage({ searchParams }: PageProps) {
               <div className="text-sm opacity-70">{isFr ? "Aucun classement." : "No ranking yet."}</div>
             ) : (
               leaderboard.map((row, idx) => (
-                <div
+                <Link
                   key={row.user_id}
-                  className={`flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 ${
-                    row.user_id === user.id ? "bg-white/5" : ""
+                  href={`/people/${row.user_id}`}
+                  className={`card-soft flex items-center justify-between px-3 py-2 transition hover:bg-white/[0.06] ${
+                    row.user_id === user.id ? "bg-white/[0.06]" : ""
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -295,18 +300,18 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium">{row.username}</div>
                       <div className="text-[11px] opacity-70">
-                        {row.games_played} {isFr ? "parties" : "games"}
+                        Niveau {levelInfoFromXp(Number((row as any).xp_total ?? 0) || 0).level} • {row.games_played} {isFr ? "parties" : "games"}
                       </div>
                     </div>
                   </div>
 
                   <div className="text-sm font-semibold">{row.elo}</div>
-                </div>
+                </Link>
               ))
             )}
           </div>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }
