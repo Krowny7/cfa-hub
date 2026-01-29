@@ -81,12 +81,13 @@ export function GroupMultiPicker({
   }, [supabase]);
 
   return (
-    <div className="rounded-xl border border-white/10 p-3">
+    <div className="card-soft p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="text-sm font-medium">{t("sharing.groups")}</div>
         <label className="flex items-center gap-2 text-xs opacity-80">
           <input
             type="checkbox"
+            className="accent-blue-400"
             checked={allSelected}
             disabled={loading || groups.length === 0}
             onChange={(e) => {
@@ -109,10 +110,11 @@ export function GroupMultiPicker({
             return (
               <label
                 key={g.id}
-                className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm"
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm transition hover:bg-white/[0.05]"
               >
                 <input
                   type="checkbox"
+                  className="accent-blue-400"
                   checked={checked}
                   onChange={(e) => {
                     if (e.target.checked) onChange([...new Set([...value, g.id])]);

@@ -5,6 +5,7 @@ import { FlashcardReview } from "@/components/FlashcardReview";
 import { FlashcardQuickAdd } from "@/components/FlashcardQuickAdd";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
+import Link from "next/link";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -30,7 +31,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
 
   if (setErr || !set) {
     return (
-      <div className="rounded-2xl border p-6">
+      <div className="card p-6">
         <h1 className="text-xl font-semibold break-words">{t(locale, "flashcards.notFound")}</h1>
         <p className="mt-2 text-sm opacity-80 break-words">{t(locale, "flashcards.notFoundDesc")}</p>
       </div>
@@ -40,9 +41,15 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   const count = (cards ?? []).length;
 
   return (
-    <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
-      <div className="rounded-2xl border p-6">
-        <h1 className="text-xl font-semibold break-words">{(set as any).title}</h1>
+    <div className="mx-auto w-full max-w-5xl grid gap-4 min-w-0 max-w-full overflow-x-hidden">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href="/flashcards" className="btn btn-secondary">
+          ← {t(locale, "nav.flashcards")}
+        </Link>
+      </div>
+
+      <div className="card p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight break-words">{(set as any).title}</h1>
         <p className="mt-2 text-sm opacity-80 break-words">
           {String((set as any).visibility).toUpperCase()} • {count} {t(locale, "flashcards.cards")}
         </p>
@@ -54,11 +61,11 @@ export default async function FlashcardSetPage({ params }: PageProps) {
 
       <FlashcardReview cards={(cards ?? []) as any} />
 
-      <div className="rounded-2xl border p-4 min-w-0 max-w-full">
-        <h3 className="font-semibold">{t(locale, "flashcards.cards")}</h3>
+      <div className="card p-5 min-w-0 max-w-full">
+        <h3 className="text-base font-semibold">{t(locale, "flashcards.cards")}</h3>
         <div className="mt-3 grid gap-2">
           {(cards ?? []).map((c: any) => (
-            <div key={c.id} className="rounded-xl border p-3">
+            <div key={c.id} className="card-soft p-3">
               <div className="text-xs opacity-70">#{c.position}</div>
               <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">{c.front}</div>
               <div className="mt-2 whitespace-pre-wrap text-sm opacity-80 break-words [overflow-wrap:anywhere]">{c.back}</div>

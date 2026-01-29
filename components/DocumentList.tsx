@@ -19,14 +19,14 @@ export function DocumentList({ docs }: { docs: Doc[] }) {
   const [openExternal, setOpenExternal] = useState<string | null>(null);
 
   return (
-    <div className="rounded-2xl border p-4">
+    <div className="card p-6">
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <h2 className="font-semibold">{t("library.yourPdfs")}</h2>
           <p className="mt-1 text-sm opacity-80">{t("library.yourPdfsDesc")}</p>
         </div>
         {openExternal && (
-          <a className="text-sm underline" href={openExternal} target="_blank" rel="noreferrer">
+          <a className="btn btn-secondary" href={openExternal} target="_blank" rel="noreferrer">
             {t("library.openInNewTab")}
           </a>
         )}
@@ -35,10 +35,7 @@ export function DocumentList({ docs }: { docs: Doc[] }) {
       <div className="mt-4 grid gap-2">
         {docs.length === 0 && <div className="text-sm opacity-70">{t("library.empty")}</div>}
         {docs.map((d) => (
-          <div
-            key={d.id}
-            className="flex flex-col gap-2 rounded-xl border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-          >
+          <div key={d.id} className="card-soft flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="truncate text-sm font-medium">{d.title}</div>
               <div className="text-xs opacity-70">
@@ -49,7 +46,7 @@ export function DocumentList({ docs }: { docs: Doc[] }) {
               </div>
             </div>
             <button
-              className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto sm:py-1"
+              className="btn btn-secondary w-full sm:w-auto"
               onClick={() => {
                 setOpenExternal(d.external_url);
                 setOpenUrl(d.preview_url ?? null);
@@ -63,7 +60,7 @@ export function DocumentList({ docs }: { docs: Doc[] }) {
       </div>
 
       {(openUrl || openExternal) && (
-        <div className="mt-4 overflow-hidden rounded-2xl border">
+        <div className="card-soft mt-4 overflow-hidden bg-black/20">
           {openUrl ? (
             <iframe title="PDF preview" src={openUrl} className="h-[60vh] w-full sm:h-[70vh]" />
           ) : (

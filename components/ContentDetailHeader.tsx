@@ -21,18 +21,18 @@ export function ContentDetailHeader({
   const v = normalizeVisibility(visibility);
 
   return (
-    <div className="rounded-2xl border p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="card p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <Link href={backHref} className="text-sm opacity-80 hover:underline">
+          <Link href={backHref} className="text-sm text-white/80 hover:text-white">
             ← {backLabel}
           </Link>
 
           <h1 className="mt-2 break-words text-2xl font-semibold">{title}</h1>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <VisibilityBadge visibility={v} />
-            <div className="text-xs opacity-70">{folderName ? `📁 ${folderName}` : "📁 (root)"}</div>
+            <span className="badge badge-neutral">{folderName ? folderName : "(root)"}</span>
           </div>
         </div>
 

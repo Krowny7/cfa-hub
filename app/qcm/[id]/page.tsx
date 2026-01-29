@@ -37,9 +37,9 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   if (!user) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-4 py-10 overflow-x-hidden">
+      <div className="mx-auto w-full max-w-5xl overflow-x-hidden">
         <h1 className="text-2xl font-semibold">{t(locale, "auth.login")}</h1>
-      </main>
+      </div>
     );
   }
 
@@ -51,10 +51,10 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   if (!set) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-4 py-10 overflow-x-hidden">
+      <div className="mx-auto w-full max-w-5xl overflow-x-hidden">
         <h1 className="text-2xl font-semibold">{t(locale, "qcm.notFound")}</h1>
         <p className="mt-2 text-sm opacity-70">{t(locale, "qcm.notFoundDesc")}</p>
-      </main>
+      </div>
     );
   }
 
@@ -99,7 +99,7 @@ export default async function QuizSetPage({ params }: PageProps) {
   }));
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10 overflow-x-hidden">
+    <div className="mx-auto w-full max-w-5xl space-y-6 overflow-x-hidden">
       <ContentDetailHeader
         backHref="/qcm"
         backLabel={t(locale, "nav.qcm")}
@@ -109,24 +109,31 @@ export default async function QuizSetPage({ params }: PageProps) {
       />
 
       {isOwner ? (
-        <div className="mt-6">
+        <div>
           <ContentItemSettings
-            type="quizzes"
+            title={t(locale, "common.settings")}
+            subtitle={
+              locale === "fr" ? "Renommer, classer et gérer la visibilité." : "Rename, organize and manage visibility."
+            }
             itemId={(set as any).id}
+            table="quiz_sets"
+            visibility={(set as any).visibility}
+            folderId={(set as any).folder_id ?? null}
+            folderKind="quizzes"
+            shareTable="quiz_set_shares"
+            shareFk="set_id"
+            rootLabel={locale === "fr" ? "Sans dossier" : "No folder"}
             activeGroupId={activeGroupId}
-            initialTitle={(set as any).title}
-            initialVisibility={(set as any).visibility}
-            initialFolderId={(set as any).folder_id ?? null}
             initialSharedGroupIds={sharedGroupIds}
             legacyGroupId={(set as any).group_id ?? null}
           />
-        </div>
+</div>
       ) : null}
 
-      <div className="mt-6">
+      <div>
         {/* IMPORTANT: we pass canEditQuestions into isOwner prop (component uses it as "can edit") */}
         <QuizSetView setId={(set as any).id} isOwner={canEditQuestions} initialQuestions={initialQuestions as any} />
       </div>
-    </main>
+    </div>
   );
 }

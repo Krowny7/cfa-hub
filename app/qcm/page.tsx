@@ -12,6 +12,9 @@ type SetRow = {
   title: string;
   visibility: string | null;
   created_at: string | null;
+  is_official?: boolean | null;
+  official_published?: boolean | null;
+  difficulty?: number | null;
   library_folders?: { name: string | null } | null;
 };
 
@@ -61,6 +64,12 @@ export default async function QcmPage({ searchParams }: PageProps) {
     subtitleShared: isFR ? "Visibles pour certains groupes." : "Visible to selected groups.",
     subtitlePublic: isFR ? "Visibles par tous (selon tes règles)." : "Visible to everyone (per your rules).",
 
+    officialTitle: isFR ? "QCM officiels (XP)" : "Official quizzes (XP)",
+    officialSubtitle: isFR
+      ? "Seuls les QCM officiels donnent de l’XP (questions justes)."
+      : "Only official quizzes grant XP (correct answers).",
+    emptyOfficial: isFR ? "Aucun QCM officiel pour l’instant." : "No official quizzes yet.",
+
     emptyPrivate: isFR ? "Aucun QCM privé." : "No private MCQ.",
     emptyShared: isFR ? "Aucun QCM partagé." : "No shared MCQ.",
     emptyPublic: isFR ? "Aucun QCM public." : "No public MCQ.",
@@ -75,12 +84,12 @@ export default async function QcmPage({ searchParams }: PageProps) {
   const q = (sp.q ?? "").trim();
   const scope = normalizeScope(sp.scope) as ScopeFilter;
 
-  const [{ data: profile }, setsRes] = await Promise.all([
+  const [{ data: profile }, setsRes, officialRes] = await Promise.all([
     supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
     (async () => {
       let query = supabase
         .from("quiz_sets")
-        .select("id,title,visibility,created_at, library_folders(name)")
+        .select("id,title,visibility,created_at,is_official,official_published,difficulty, library_folders(name)")
         .order("created_at", { ascending: false });
 
       if (q) query = query.ilike("title", `%${q}%`);
@@ -89,23 +98,40 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
       return await query;
     })()
+    ,
+    (async () => {
+      let query = supabase
+        .from("quiz_sets")
+        .select("id,title,visibility,created_at,is_official,official_published,difficulty, library_folders(name)")
+        .eq("is_official", true)
+        .eq("official_published", true)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (q) query = query.ilike("title", `%${q}%`);
+      return await query;
+    })()
   ]);
 
   const activeGroupId = (profile as any)?.active_group_id ?? null;
 
   const all = (setsRes.data ?? []) as unknown as SetRow[];
 
+  // Official (XP) quiz sets. Only these can grant XP.
+  const official = (officialRes.data ?? []) as unknown as SetRow[];
+
   const priv = all.filter((s) => sectionForVisibility(s.visibility) === "private");
   const shared = all.filter((s) => sectionForVisibility(s.visibility) === "shared");
   const pub = all.filter((s) => sectionForVisibility(s.visibility) === "public");
   const totalCount = all.length;
+  const officialCount = official.length;
 
   return (
     <div className="grid gap-4">
       {/* Top row: Info + Create aligned */}
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <div className="flex h-full flex-col justify-center rounded-2xl border p-4 sm:p-8">
+          <div className="card flex h-full flex-col justify-center p-6 sm:p-8">
             <div className="text-sm font-semibold opacity-80">{L.infoTitle}</div>
             <div className="mt-3 text-3xl font-semibold leading-tight">{L.hero1}</div>
             <div className="mt-3 text-base opacity-80 max-w-[56ch]">{L.hero2}</div>
@@ -118,44 +144,54 @@ export default async function QcmPage({ searchParams }: PageProps) {
       </div>
 
       {/* Bottom: Vos QCM */}
-      <div className="rounded-2xl border p-4">
+      <div className="card p-5">
+        {official.length ? (
+          <div className="mb-6 grid gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-semibold">{isFR ? "QCM officiels (XP)" : "Official quizzes (XP)"}</h2>
+              <div className="text-xs opacity-70">{official.length}</div>
+            </div>
+            <div className="text-sm opacity-70">
+              {isFR
+                ? "L’XP est gagnée uniquement sur ces QCM (questions justes, 1x par question)."
+                : "XP is earned only on these quizzes (correct answers, once per question)."}
+            </div>
+            <FolderBlocks
+              locale={localeStr}
+              items={official}
+              rootLabel={L.root}
+              openLabel={L.open}
+              basePath="/qcm"
+            />
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold">{L.your}</h2>
           <div className="text-xs opacity-70">{totalCount}</div>
         </div>
 
-        <form className="mt-3 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/qcm" method="get">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder={L.searchPlaceholder}
-            className="w-full min-w-0 flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:min-w-[220px]"
-          />
-          <select
-            name="scope"
-            defaultValue={scope}
-            className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm text-white sm:w-auto sm:min-w-[180px]"
-          >
+        <form className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/qcm" method="get">
+          <input name="q" defaultValue={q} placeholder={L.searchPlaceholder} className="input flex-1 sm:min-w-[220px]" />
+          <select name="scope" defaultValue={scope} className="select sm:w-auto sm:min-w-[180px]">
             <option value="all">{L.all}</option>
             <option value="private">{L.private}</option>
             <option value="shared">{L.shared}</option>
             <option value="public">{L.public}</option>
           </select>
-          <button
-            type="submit"
-            className="w-full whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-          >
+          <button type="submit" className="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
             {L.filterBtn}
           </button>
 
           {q || scope !== "all" ? (
-            <Link href="/qcm" className="w-full whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-center text-sm hover:bg-white/5 sm:w-auto">
+            <Link href="/qcm" className="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
               {L.reset}
             </Link>
           ) : null}
         </form>
 
         <div className="mt-4 grid gap-4">
+
           {scope === "all" || scope === "private" ? (
             <div className="grid gap-3">
               <SectionHeader title={L.private} subtitle={L.subtitlePrivate} count={priv.length} tone="private" />

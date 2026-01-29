@@ -62,6 +62,7 @@ export function QuizSetView({
     setScore(0);
     setStartedAt(Date.now());
     setFinished(false);
+    setMsg(null);
   }
 
   async function fetchQuestions(): Promise<Question[]> {
@@ -97,9 +98,11 @@ export function QuizSetView({
     try {
       const lines = parseChoices(choicesText);
       if (!questionPrompt.trim()) throw new Error(t("common.error"));
-      if (lines.length < 2 || lines.length > 6) throw new Error(t("qcm.choicesPlaceholder"));
+      if (lines.length < 2 || lines.length > 6)
+        throw new Error(t("qcm.choicesPlaceholder"));
 
-      const idx0 = Math.max(1, Math.min(lines.length, Number(correct) || 1)) - 1;
+      const idx0 =
+        Math.max(1, Math.min(lines.length, Number(correct) || 1)) - 1;
       const pos = questions.length;
 
       const ins = await supabase.from("quiz_questions").insert({
@@ -152,9 +155,11 @@ export function QuizSetView({
     try {
       const lines = parseChoices(editChoicesText);
       if (!editPrompt.trim()) throw new Error(t("common.error"));
-      if (lines.length < 2 || lines.length > 6) throw new Error(t("qcm.choicesPlaceholder"));
+      if (lines.length < 2 || lines.length > 6)
+        throw new Error(t("qcm.choicesPlaceholder"));
 
-      const idx0 = Math.max(1, Math.min(lines.length, Number(editCorrect) || 1)) - 1;
+      const idx0 =
+        Math.max(1, Math.min(lines.length, Number(editCorrect) || 1)) - 1;
 
       const upd = await supabase
         .from("quiz_questions")
@@ -184,7 +189,11 @@ export function QuizSetView({
     // if positions have gaps, normalize them
     const tasks = rows.map((q, idx) => {
       if (q.position === idx) return null;
-      return supabase.from("quiz_questions").update({ position: idx }).eq("id", q.id).eq("set_id", setId);
+      return supabase
+        .from("quiz_questions")
+        .update({ position: idx })
+        .eq("id", q.id)
+        .eq("set_id", setId);
     });
 
     const real = tasks.filter(Boolean) as any[];
@@ -203,7 +212,11 @@ export function QuizSetView({
     setBusy(true);
 
     try {
-      const del = await supabase.from("quiz_questions").delete().eq("id", id).eq("set_id", setId);
+      const del = await supabase
+        .from("quiz_questions")
+        .delete()
+        .eq("id", id)
+        .eq("set_id", setId);
       if (del.error) throw del.error;
 
       await reindexPositions();
@@ -277,7 +290,9 @@ export function QuizSetView({
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return;
-      const duration = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
+      const duration = startedAt
+        ? Math.round((Date.now() - startedAt) / 1000)
+        : null;
       await supabase.from("quiz_attempts").insert({
         user_id: auth.user.id,
         set_id: setId,
@@ -290,6 +305,29 @@ export function QuizSetView({
     }
   }
 
+  async function awardXpForAnswer(questionId: string, selectedIndex: number) {
+    try {
+      const { data, error } = await supabase.rpc("award_quiz_question_xp", {
+        p_question_id: questionId,
+        p_selected_index: selectedIndex
+      });
+
+      if (error) {
+        setMsg(`❌ XP error: ${error.message}`);
+        return;
+      }
+
+      // Function returns a single-row table
+      const row = Array.isArray(data) ? (data[0] as any) : (data as any);
+      const xp = Number(row?.xp_awarded ?? 0) || 0;
+
+      if (xp > 0) setMsg(`✅ +${xp} XP`);
+      else setMsg("ℹ️ Pas d'XP (déjà validée ou non-officiel)");
+    } catch (e: any) {
+      setMsg(`❌ XP exception: ${e?.message ?? "unknown"}`);
+    }
+  }
+
   return (
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
       {canEdit && (
@@ -297,7 +335,9 @@ export function QuizSetView({
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="font-semibold">{t("qcm.importExport")}</div>
-              <div className="text-xs opacity-70">JSON (copie/coller) — pratique pour partager rapidement.</div>
+              <div className="text-xs opacity-70">
+                JSON (copie/coller) — pratique pour partager rapidement.
+              </div>
             </div>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
               <button
@@ -316,7 +356,11 @@ export function QuizSetView({
               </button>
             </div>
           </div>
-          {msg && <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
+          {msg && (
+            <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">
+              {msg}
+            </div>
+          )}
         </div>
       )}
 
@@ -344,7 +388,9 @@ export function QuizSetView({
             />
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
+              <label className="text-sm opacity-80">
+                {t("qcm.correctIndexLabel")}
+              </label>
               <input
                 type="number"
                 min={1}
@@ -380,7 +426,9 @@ export function QuizSetView({
       {canEdit && (
         <div className="rounded-2xl border p-4">
           <div className="font-semibold">Gestion des questions</div>
-          <div className="mt-1 text-xs opacity-70">Modifier / supprimer (autorisé si owner ou membre du groupe).</div>
+          <div className="mt-1 text-xs opacity-70">
+            Modifier / supprimer (autorisé si owner ou membre du groupe).
+          </div>
 
           <div className="mt-4 grid gap-2">
             {questions.length === 0 ? (
@@ -396,7 +444,8 @@ export function QuizSetView({
                           Q{idx + 1}. {q.prompt}
                         </div>
                         <div className="mt-1 text-xs opacity-70">
-                          {q.choices.length} choix • bonne réponse #{(q.correct_index ?? 0) + 1}
+                          {q.choices.length} choix • bonne réponse #
+                          {(q.correct_index ?? 0) + 1}
                         </div>
                       </div>
 
@@ -447,7 +496,9 @@ export function QuizSetView({
                         />
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <label className="text-sm opacity-80">Bonne réponse (1 = 1ère ligne)</label>
+                          <label className="text-sm opacity-80">
+                            Bonne réponse (1 = 1ère ligne)
+                          </label>
                           <input
                             type="number"
                             min={1}
@@ -481,7 +532,11 @@ export function QuizSetView({
             )}
           </div>
 
-          {msg && <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
+          {msg && (
+            <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">
+              {msg}
+            </div>
+          )}
         </div>
       )}
 
@@ -504,6 +559,13 @@ export function QuizSetView({
           </div>
         </div>
 
+        {/* Show messages also during the run */}
+        {msg && (
+          <div className="mt-3 text-sm break-words [overflow-wrap:anywhere]">
+            {msg}
+          </div>
+        )}
+
         {!canRun && <div className="mt-4 text-sm opacity-70">{t("qcm.noQuestions")}</div>}
 
         {canRun && current && !finished && (
@@ -511,7 +573,9 @@ export function QuizSetView({
             <div className="text-xs opacity-70">
               {i + 1}/{questions.length}
             </div>
-            <div className="mt-2 whitespace-pre-wrap text-base font-medium">{current.prompt}</div>
+            <div className="mt-2 whitespace-pre-wrap text-base font-medium">
+              {current.prompt}
+            </div>
 
             <div className="mt-4 grid gap-2">
               {current.choices.map((c, idx) => {
@@ -538,7 +602,9 @@ export function QuizSetView({
                       setSelected(idx);
                     }}
                   >
-                    <div className="opacity-90 break-words [overflow-wrap:anywhere]">{c}</div>
+                    <div className="opacity-90 break-words [overflow-wrap:anywhere]">
+                      {c}
+                    </div>
                   </button>
                 );
               })}
@@ -547,8 +613,14 @@ export function QuizSetView({
             {showCorrection && (current.explanation || current.correct_index != null) && (
               <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
                 <div className="font-semibold">Correction</div>
-                <div className="mt-2 opacity-90">✅ {current.choices[current.correct_index]}</div>
-                {current.explanation && <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">{current.explanation}</div>}
+                <div className="mt-2 opacity-90">
+                  ✅ {current.choices[current.correct_index]}
+                </div>
+                {current.explanation && (
+                  <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">
+                    {current.explanation}
+                  </div>
+                )}
               </div>
             )}
 
@@ -565,7 +637,15 @@ export function QuizSetView({
                     onClick={() => {
                       if (selected == null) return;
                       const correctIdx = current.correct_index;
-                      if (selected === correctIdx) setScore((s) => s + 1);
+
+                      // award XP only when the answer is correct
+                      if (selected === correctIdx) {
+                        setScore((s) => s + 1);
+                        void awardXpForAnswer(current.id, selected);
+                      } else {
+                        setMsg("❌ Mauvaise réponse (pas d'XP)");
+                      }
+
                       setShowCorrection(true);
                     }}
                   >

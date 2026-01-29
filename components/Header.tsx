@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SignOutButton } from "@/components/SignOutButton";
+import { HeaderNav } from "@/components/HeaderNav";
 
 function initialsFromEmail(email: string | null | undefined) {
   if (!email) return "U";
@@ -38,7 +39,6 @@ export async function Header() {
   }
 
   const nav = [
-    { href: "/dashboard", label: t(locale, "nav.dashboard") },
     { href: "/library", label: t(locale, "nav.library") },
     { href: "/flashcards", label: t(locale, "nav.flashcards") },
     { href: "/qcm", label: t(locale, "nav.qcm") },
@@ -46,24 +46,17 @@ export async function Header() {
   ];
 
   return (
-    <header className="border-b border-white/10">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/70 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           {/* Brand + desktop nav */}
           <div className="flex min-w-0 items-center gap-3">
-            <Link href="/" className="whitespace-nowrap font-semibold tracking-tight">
+            <Link href="/" className="flex items-center gap-2 whitespace-nowrap font-semibold tracking-tight">
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-blue-400/90 shadow-[0_0_0_3px_rgba(59,130,246,0.18)]" />
               {t(locale, "appName")}
             </Link>
 
-            {user ? (
-              <nav className="hidden items-center gap-3 text-sm sm:flex">
-                {nav.map((it) => (
-                  <Link key={it.href} className="hover:underline" href={it.href}>
-                    {it.label}
-                  </Link>
-                ))}
-              </nav>
-            ) : null}
+            {user ? <HeaderNav items={nav} /> : null}
           </div>
 
           {/* Desktop actions */}
@@ -74,7 +67,7 @@ export async function Header() {
               <>
                 <Link
                   href="/settings"
-                  className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-1 text-xs hover:bg-white/5"
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs hover:bg-white/[0.06]"
                   title={t(locale, "nav.settings")}
                 >
                   {avatarUrl ? (
@@ -95,7 +88,7 @@ export async function Header() {
               </>
             ) : (
               <Link
-                className="whitespace-nowrap rounded-lg border border-white/10 px-3 py-1 text-sm hover:bg-white/5"
+                className="btn btn-secondary whitespace-nowrap"
                 href="/login"
               >
                 {t(locale, "auth.login")}
@@ -106,7 +99,7 @@ export async function Header() {
           {/* Mobile menu (single entry point to avoid header overflow) */}
           <div className="sm:hidden">
             <details className="relative">
-              <summary className="cursor-pointer list-none select-none rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5">
+              <summary className="cursor-pointer list-none select-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm hover:bg-white/[0.06]">
                 {t(locale, "common.menu")}
               </summary>
 
@@ -118,7 +111,7 @@ export async function Header() {
                         <Link
                           key={it.href}
                           href={it.href}
-                          className="rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                          className="rounded-xl px-3 py-2 text-sm hover:bg-white/[0.06]"
                         >
                           {it.label}
                         </Link>
@@ -137,7 +130,7 @@ export async function Header() {
 
                       <Link
                         href="/settings"
-                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/[0.06]"
                         title={t(locale, "nav.settings")}
                       >
                         <div className="flex items-center gap-2">
@@ -170,7 +163,7 @@ export async function Header() {
 
                       <Link
                         href="/login"
-                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/5"
+                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/[0.06]"
                       >
                         {t(locale, "auth.login")}
                       </Link>

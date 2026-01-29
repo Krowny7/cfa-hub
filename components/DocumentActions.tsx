@@ -77,35 +77,38 @@ export function DocumentActions({
   }
 
   return (
-    <details className="rounded-2xl border">
-      <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold hover:bg-white/5">
-        {isFr ? "Modifier / supprimer" : "Edit / delete"}
+    <details className="group card-soft">
+      <summary className="cursor-pointer list-none select-none rounded-2xl px-4 py-3 text-sm font-semibold transition hover:bg-white/[0.06]">
+        <div className="flex items-center justify-between gap-3">
+          <span>{isFr ? "Modifier / supprimer" : "Edit / delete"}</span>
+          <span className="text-xs opacity-60 transition group-open:rotate-180">▼</span>
+        </div>
       </summary>
 
       <div className="space-y-4 p-4">
-        <div className="rounded-xl border border-white/10 p-3">
+        <div className="card-soft p-4">
           <div className="text-sm font-medium">{isFr ? "Titre" : "Title"}</div>
           <input
-            className="mt-2 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input mt-2"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
-        <div className="rounded-xl border border-white/10 p-3">
+        <div className="card-soft p-4">
           <div className="text-sm font-medium">{isFr ? "Lien (PDF)" : "External link"}</div>
           <input
-            className="mt-2 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input mt-2"
             value={externalUrl}
             onChange={(e) => setExternalUrl(e.target.value)}
             placeholder="https://..."
           />
         </div>
 
-        <div className="rounded-xl border border-white/10 p-3">
+        <div className="card-soft p-4">
           <div className="text-sm font-medium">{isFr ? "Lien d'aperçu (iframe)" : "Preview link (iframe)"}</div>
           <input
-            className="mt-2 w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input mt-2"
             value={previewUrl}
             onChange={(e) => setPreviewUrl(e.target.value)}
             placeholder="https://..."
@@ -115,7 +118,7 @@ export function DocumentActions({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+            className="btn btn-primary"
             disabled={busy || !title.trim()}
             onClick={save}
           >
@@ -124,7 +127,7 @@ export function DocumentActions({
 
           <button
             type="button"
-            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 disabled:opacity-50"
+            className="btn btn-danger"
             disabled={busy}
             onClick={remove}
           >

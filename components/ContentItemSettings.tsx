@@ -1,315 +1,347 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
-import { FolderPicker, type FolderKind } from "@/components/FolderPicker";
-import { GroupMultiPicker } from "@/components/GroupMultiPicker";
-import { normalizeVisibility, type Visibility } from "@/lib/content/visibility";
 import { useI18n } from "@/components/I18nProvider";
+import { GroupMultiPicker } from "@/components/GroupMultiPicker";
+import type { FolderKind } from "@/components/FolderPicker";
 
-type ContentType = "documents" | "quizzes";
+type ShareMode = "private" | "public" | "groups";
 
-type Config = {
-  baseTable: "documents" | "quiz_sets";
-  idColumn: "id";
-  titleColumn: "title";
-  visibilityColumn: "visibility";
-  folderIdColumn: "folder_id";
-  legacyGroupIdColumn: "group_id";
-  shareTable: "document_shares" | "quiz_set_shares";
-  shareFk: "document_id" | "set_id";
-  folderKind: FolderKind;
-  afterDeleteRedirect: string;
-};
-
-const CONFIG: Record<ContentType, Config> = {
-  documents: {
-    baseTable: "documents",
-    idColumn: "id",
-    titleColumn: "title",
-    visibilityColumn: "visibility",
-    folderIdColumn: "folder_id",
-    legacyGroupIdColumn: "group_id",
-    shareTable: "document_shares",
-    shareFk: "document_id",
-    folderKind: "documents",
-    afterDeleteRedirect: "/library"
-  },
-  quizzes: {
-    baseTable: "quiz_sets",
-    idColumn: "id",
-    titleColumn: "title",
-    visibilityColumn: "visibility",
-    folderIdColumn: "folder_id",
-    legacyGroupIdColumn: "group_id",
-    shareTable: "quiz_set_shares",
-    shareFk: "set_id",
-    folderKind: "quizzes",
-    afterDeleteRedirect: "/qcm"
-  }
-};
-
-function unique(arr: string[]) {
-  return Array.from(new Set(arr.filter(Boolean)));
-}
+type Folder = { id: string; name: string; parent_id: string | null };
 
 export function ContentItemSettings({
-  type,
+  title,
+  subtitle,
   itemId,
+  table,
+  visibility,
+  folderId,
+  folderKind,
+  shareTable,
+  shareFk,
+  rootLabel,
   activeGroupId,
-  initialTitle,
-  initialVisibility,
-  initialFolderId,
-  initialSharedGroupIds,
-  legacyGroupId
+  initialSharedGroupIds = [],
+  legacyGroupId = null,
+  onDeleted,
+  onUpdated
 }: {
-  type: ContentType;
+  title: string;
+  subtitle: string;
   itemId: string;
+  table: "documents" | "flashcard_sets" | "quiz_sets";
+  visibility: string | null;
+  folderId: string | null;
+  folderKind: FolderKind;
+  shareTable: "document_shares" | "flashcard_set_shares" | "quiz_set_shares";
+  shareFk: "document_id" | "set_id";
+  rootLabel: string;
   activeGroupId: string | null;
-  initialTitle: string;
-  initialVisibility: Visibility | string | null | undefined;
-  initialFolderId: string | null;
-  initialSharedGroupIds: string[];
+  initialSharedGroupIds?: string[];
   legacyGroupId?: string | null;
+  onDeleted?: () => void;
+  onUpdated?: () => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const router = useRouter();
-  const { locale, t } = useI18n();
-  const isFr = locale === "fr";
+  const { t } = useI18n();
 
-  const cfg = CONFIG[type];
+  const defaultRedirect = table === "documents" ? "/library" : table === "flashcard_sets" ? "/flashcards" : "/qcm";
 
-  const [title, setTitle] = useState(initialTitle);
-  const [folderId, setFolderId] = useState<string | null>(initialFolderId);
+  const [draftTitle, setDraftTitle] = useState(title);
+  const [shareMode, setShareMode] = useState<ShareMode>(
+    visibility === "public" ? "public" : visibility === "group" || visibility === "groups" ? "groups" : "private"
+  );
+  const [groupIds, setGroupIds] = useState<string[]>(() => {
+    const base = [...(initialSharedGroupIds ?? []), ...(legacyGroupId ? [legacyGroupId] : [])].filter(Boolean) as string[];
+    return Array.from(new Set(base));
+  });
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderId);
+  const [newFolderName, setNewFolderName] = useState("");
 
-  // We only use "private" | "groups" | "public" in the UI.
-  const [shareMode, setShareMode] = useState<"private" | "groups" | "public">("private");
-  const [groupIds, setGroupIds] = useState<string[]>(unique(initialSharedGroupIds));
+  const [loadingShares, setLoadingShares] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
-  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
 
   useEffect(() => {
-    const v = normalizeVisibility(initialVisibility);
-    if (v === "public") {
-      setShareMode("public");
-      return;
-    }
+    setDraftTitle(title);
+  }, [title]);
 
-    if (v === "groups" || v === "group") {
-      setShareMode("groups");
+  useEffect(() => {
+    setSelectedFolderId(folderId);
+  }, [folderId]);
 
-      // If it's an old "group" row (single group_id), preselect it.
-      if (groupIds.length === 0 && legacyGroupId) {
-        setGroupIds([legacyGroupId]);
+  useEffect(() => {
+    // Load folders for this kind
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("library_folders")
+          .select("id,name,parent_id")
+          .eq("kind", folderKind)
+          .order("name", { ascending: true });
+        setFolders((data ?? []) as any);
+      } catch {
+        setFolders([]);
       }
-      return;
-    }
+    })();
+  }, [supabase, folderKind]);
 
-    setShareMode("private");
+  useEffect(() => {
+    // Load share targets if the item uses group sharing.
+    if (shareMode !== "groups") return;
+    (async () => {
+      setLoadingShares(true);
+      try {
+        const { data, error } = await (supabase as any)
+          .from(shareTable)
+          .select("group_id")
+          .eq(shareFk, itemId);
+        if (error) throw error;
+        const ids = (data ?? []).map((r: any) => r.group_id).filter(Boolean);
+        setGroupIds((prev) => Array.from(new Set([...prev, ...ids])));
+      } catch {
+        // Keep the current selection (legacy/initial IDs) if reading shares fails.
+      } finally {
+        setLoadingShares(false);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [shareMode, itemId, shareTable]);
 
-  async function syncShares(nextVisibility: Visibility, nextGroupIds: string[]) {
-    // Keep share table in sync when visibility == "groups".
-    // If not groups: delete everything.
+  async function createFolder() {
+    setErrorText(null);
+    setMsg(null);
 
-    if (nextVisibility !== "groups") {
-      await supabase
-        .from(cfg.shareTable)
-        .delete()
-        .eq(cfg.shareFk, itemId)
-        .throwOnError();
-      return;
-    }
+    const name = newFolderName.trim();
+    if (!name) return;
 
-    const wanted = unique(nextGroupIds);
+    setCreatingFolder(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("Not authenticated");
 
-    const { data: existingRows } = await supabase
-      .from(cfg.shareTable)
-      .select("group_id")
-      .eq(cfg.shareFk, itemId)
-      .throwOnError();
+      const { data, error } = await supabase
+        .from("library_folders")
+        .insert({ owner_id: auth.user.id, kind: folderKind, name, parent_id: null })
+        .select("id,name,parent_id")
+        .maybeSingle();
 
-    const existing = unique((existingRows ?? []).map((r: any) => r.group_id));
+      if (error) throw error;
 
-    const toAdd = wanted.filter((g) => !existing.includes(g));
-    const toRemove = existing.filter((g) => !wanted.includes(g));
-
-    if (toRemove.length > 0) {
-      await supabase
-        .from(cfg.shareTable)
-        .delete()
-        .eq(cfg.shareFk, itemId)
-        .in("group_id", toRemove)
-        .throwOnError();
-    }
-
-    if (toAdd.length > 0) {
-      const rows = toAdd.map((g) => ({ [cfg.shareFk]: itemId, group_id: g }));
-      await supabase.from(cfg.shareTable).insert(rows as any).throwOnError();
+      setNewFolderName("");
+      // refresh list locally (avoid extra query)
+      if (data?.id) {
+        setFolders((prev) => [...prev, data as any].sort((a, b) => a.name.localeCompare(b.name)));
+        setSelectedFolderId(data.id);
+      }
+    } catch (e: any) {
+      setErrorText(e?.message ?? t("common.error"));
+    } finally {
+      setCreatingFolder(false);
     }
   }
 
-  async function save() {
+  async function saveAll() {
+    setErrorText(null);
     setMsg(null);
 
-    const nextVisibility: Visibility =
-      shareMode === "public" ? "public" : shareMode === "groups" ? "groups" : "private";
-
-    const cleanGroups = unique(groupIds);
-
-    if (nextVisibility === "groups" && cleanGroups.length === 0) {
-      setMsg(isFr ? "❌ Sélectionne au moins un groupe." : "❌ Select at least one group.");
-      return;
-    }
-
-    setBusy(true);
+    setSaving(true);
     try {
-      await supabase
-        .from(cfg.baseTable)
-        .update({
-          [cfg.titleColumn]: title.trim(),
-          [cfg.visibilityColumn]: nextVisibility,
-          [cfg.folderIdColumn]: folderId,
-          // Ensure we don't keep legacy single-group fields around.
-          [cfg.legacyGroupIdColumn]: null
-        } as any)
-        .eq(cfg.idColumn, itemId)
-        .throwOnError();
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("Not authenticated");
 
-      await syncShares(nextVisibility, cleanGroups);
+      const normalizedVisibility = shareMode === "groups" ? "groups" : shareMode;
 
-      setMsg(isFr ? "✅ Enregistré." : "✅ Saved.");
-      router.refresh();
+      // Update main row
+      const { error: upErr } = await (supabase as any)
+        .from(table)
+        .update({ title: draftTitle.trim(), visibility: normalizedVisibility, folder_id: selectedFolderId })
+        .eq("id", itemId);
+      if (upErr) throw upErr;
+
+      // Update shares
+      await (supabase as any).from(shareTable).delete().eq(shareFk as any, itemId);
+      if (shareMode === "groups" && groupIds.length) {
+        const rows = groupIds.map((gid) => ({ [shareFk]: itemId, group_id: gid }));
+        const { error } = await (supabase as any).from(shareTable).insert(rows as any);
+        if (error) throw error;
+      }
+
+      setMsg(t("common.saved"));
+      onUpdated?.();
     } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+      setErrorText(e?.message ?? t("common.error"));
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
-  async function remove() {
-    const ok = window.confirm(
-      isFr
-        ? "Supprimer définitivement ? Cette action est irréversible."
-        : "Delete permanently? This action cannot be undone."
-    );
-    if (!ok) return;
-
-    setBusy(true);
+  async function deleteItem() {
+    setErrorText(null);
     setMsg(null);
 
+    if (!confirm(t("common.confirmDelete"))) return;
+
+    setSaving(true);
     try {
-      await supabase.from(cfg.baseTable).delete().eq(cfg.idColumn, itemId).throwOnError();
-      window.location.href = cfg.afterDeleteRedirect;
+      await (supabase as any).from(shareTable).delete().eq(shareFk as any, itemId);
+      const { error } = await (supabase as any).from(table).delete().eq("id", itemId);
+      if (error) throw error;
+
+      setMsg(t("common.deleted"));
+      if (onDeleted) onDeleted();
+      else window.location.href = defaultRedirect;
     } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+      setErrorText(e?.message ?? t("common.error"));
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
   return (
-    <details className="rounded-2xl border">
-      <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold hover:bg-white/5">
-        {isFr ? "Réglages" : "Settings"}
+    <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.05]">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">{title}</div>
+          <div className="mt-0.5 text-xs text-white/60">{subtitle}</div>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-white/70">
+          <span className="hidden sm:inline">{t("common.edit")}</span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.02]">
+            ▾
+          </span>
+        </div>
       </summary>
 
-      <div className="space-y-4 p-4">
-        <div className="rounded-xl border border-white/10 p-3">
-          <div className="text-sm font-medium">{isFr ? "Titre" : "Title"}</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <input
-              className="box-border w-full min-w-0 flex-1 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:min-w-[240px]"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+      <div className="mt-4 grid gap-5">
+        {/* Title */}
+        <div className="grid gap-2">
+          <div className="text-sm font-semibold">{t("common.title")}</div>
+          <input
+            className="input"
+            value={draftTitle}
+            onChange={(e) => setDraftTitle(e.target.value)}
+            placeholder={t("common.title")}
+          />
+        </div>
+
+        {/* Folder */}
+        <div className="grid gap-3">
+          <div className="text-sm font-semibold">{t("folders.folder")}</div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="sm:col-span-2">
+              <select
+                className="select"
+                value={selectedFolderId ?? ""}
+                onChange={(e) => setSelectedFolderId(e.target.value ? e.target.value : null)}
+              >
+                <option value="">{rootLabel}</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
               type="button"
-              className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto sm:whitespace-nowrap"
-              disabled={busy || !title.trim()}
-              onClick={save}
+              className="btn btn-secondary"
+              onClick={() => setSelectedFolderId(null)}
+              disabled={saving}
             >
-              {busy ? t("common.saving") : t("common.save")}
+              {t("common.reset")}
             </button>
+          </div>
+
+          <div className="card-soft p-4">
+            <div className="text-xs font-semibold opacity-80">{t("folders.new")}</div>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <input
+                className="input sm:col-span-2"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder={t("folders.newPlaceholder")}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={createFolder}
+                disabled={creatingFolder || !newFolderName.trim()}
+              >
+                {creatingFolder ? t("common.saving") : t("folders.create")}
+              </button>
+            </div>
           </div>
         </div>
 
-        <FolderPicker kind={cfg.folderKind} value={folderId} onChange={setFolderId} />
+        {/* Sharing */}
+        <div className="grid gap-3">
+          <div className="text-sm font-semibold">{t("sharing.title")}</div>
 
-        <div className="rounded-xl border border-white/10 p-3">
-          <div className="text-sm font-medium">{t("sharing.title")}</div>
-
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className={`box-border w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto ${
-                shareMode === "private" ? "bg-white/10" : "bg-transparent"
-              }`}
+              className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
               onClick={() => setShareMode("private")}
+              disabled={saving}
             >
               {t("common.private")}
             </button>
-
             <button
               type="button"
-              className={`box-border w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto ${
-                shareMode === "groups" ? "bg-white/10" : "bg-transparent"
-              }`}
-              onClick={() => {
-                setShareMode("groups");
-                if (groupIds.length === 0 && activeGroupId) setGroupIds([activeGroupId]);
-              }}
+              className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
+              onClick={() => setShareMode("groups")}
+              disabled={saving}
             >
               {t("sharing.someGroups")}
             </button>
-
             <button
               type="button"
-              className={`box-border w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto ${
-                shareMode === "public" ? "bg-white/10" : "bg-transparent"
-              }`}
+              className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
               onClick={() => setShareMode("public")}
+              disabled={saving}
             >
               {t("common.public")}
             </button>
           </div>
 
           {shareMode === "groups" ? (
-            <div className="mt-3">
+            <div className="grid gap-2">
+              {loadingShares ? <div className="text-xs text-white/70">{t("common.loading")}</div> : null}
               <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
             </div>
           ) : null}
-
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
-              disabled={busy}
-              onClick={save}
-            >
-              {busy ? t("common.saving") : t("common.save")}
-            </button>
-
-            <button
-              type="button"
-              className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 disabled:opacity-50 sm:w-auto"
-              disabled={busy}
-              onClick={remove}
-            >
-              {isFr ? "Supprimer" : "Delete"}
-            </button>
-
-            {msg ? <span className="w-full text-sm break-words [overflow-wrap:anywhere] sm:w-auto">{msg}</span> : null}
-          </div>
         </div>
 
-        <div className="text-xs opacity-70">
-          {isFr
-            ? "Astuce : en passant un ancien partage “Groupe” en “Certains groupes”, tu migres automatiquement vers le modèle multi-groupes." 
-            : "Tip: switching legacy “Group” to “Selected groups” automatically migrates to the multi-group model."}
+        {errorText ? (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            ❌ {errorText}
+          </div>
+        ) : null}
+
+        {msg ? <div className="text-sm text-white/80">✅ {msg}</div> : null}
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={saveAll}
+            disabled={saving || !draftTitle.trim() || (shareMode === "groups" && groupIds.length === 0)}
+          >
+            {saving ? t("common.saving") : t("common.save")}
+          </button>
+
+          <button type="button" className="btn btn-danger" onClick={deleteItem} disabled={saving}>
+            {t("common.delete")}
+          </button>
         </div>
       </div>
     </details>

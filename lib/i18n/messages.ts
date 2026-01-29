@@ -178,7 +178,12 @@ export const MESSAGES = {
       create: "Créer",
       joinGroup: "Rejoindre un groupe",
       joinPlaceholder: "Code d’invitation",
-      join: "Rejoindre"
+      join: "Rejoindre",
+      rename: "Renommer",
+      delete: "Supprimer",
+      leave: "Quitter",
+      confirmLeaveGroup: "Quitter ce groupe ?",
+      confirmDeleteGroup: "Supprimer définitivement ce groupe ? Cette action affectera tous les membres."
     }
   },
   en: {
@@ -360,7 +365,12 @@ export const MESSAGES = {
       create: "Create",
       joinGroup: "Join group",
       joinPlaceholder: "Invite code",
-      join: "Join"
+      join: "Join",
+      rename: "Rename",
+      delete: "Delete",
+      leave: "Leave",
+      confirmLeaveGroup: "Leave this group?",
+      confirmDeleteGroup: "Permanently delete this group? This will affect all members."
     }
   }
 } as const;
