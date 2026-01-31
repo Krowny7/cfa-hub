@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
 import { FolderPicker } from "@/components/FolderPicker";
+import { TagPicker } from "@/components/TagPicker";
 
 type ShareMode = "private" | "public" | "groups";
 
@@ -16,15 +17,13 @@ export function FlashcardSetCreator({ activeGroupId }: { activeGroupId: string |
   const [shareMode, setShareMode] = useState<ShareMode>("private");
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [folderId, setFolderId] = useState<string | null>(null);
+  const [tagIds, setTagIds] = useState<string[]>([]);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <div className="card p-6">
-      <h2 className="text-base font-semibold">{t("flashcards.createTitle")}</h2>
-
-      <div className="mt-4 grid gap-3">
+    <div className="grid gap-3">
         <input
           className="input"
           placeholder={t("flashcards.setTitlePlaceholder")}
@@ -33,6 +32,8 @@ export function FlashcardSetCreator({ activeGroupId }: { activeGroupId: string |
         />
 
         <FolderPicker kind="flashcards" value={folderId} onChange={setFolderId} />
+
+        <TagPicker value={tagIds} onChange={setTagIds} />
 
         <div className="card-soft p-4">
           <div className="text-sm font-medium">{t("sharing.title")}</div>
@@ -91,7 +92,13 @@ export function FlashcardSetCreator({ activeGroupId }: { activeGroupId: string |
                 .maybeSingle();
 
               if (res.error) throw res.error;
-              const setId = (res.data as any)?.id;
+              const setId = (res.data as any)?.id as string | undefined;
+
+              if (setId && tagIds.length) {
+                const rows = tagIds.map((tid) => ({ owner_id: auth.user.id, set_id: setId, tag_id: tid }));
+                const tagRes = await supabase.from("flashcard_set_tags").insert(rows);
+                if (tagRes.error) throw tagRes.error;
+              }
 
               if (shareMode === "groups" && setId) {
                 const rows = groupIds.map((gid) => ({ set_id: setId, group_id: gid }));
@@ -103,6 +110,7 @@ export function FlashcardSetCreator({ activeGroupId }: { activeGroupId: string |
               setShareMode("private");
               setGroupIds([]);
               setFolderId(null);
+              setTagIds([]);
               setMsg("✅");
               window.location.reload();
             } catch (e: any) {
@@ -117,7 +125,6 @@ export function FlashcardSetCreator({ activeGroupId }: { activeGroupId: string |
         </button>
 
         {msg && <div className="text-sm">{msg}</div>}
-      </div>
     </div>
   );
 }

@@ -8,6 +8,14 @@ export const metadata = {
   description: "Your shared CFA study workspace"
 };
 
+// Ensure iOS safe-area insets (env(safe-area-inset-*)) work reliably for fixed UI
+// like the bottom navigation bar.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover"
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
 
@@ -22,7 +30,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900" />
           </div>
           <Header />
-          <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+          {/* Reserve space on mobile for the bottom navigation bar */}
+          <main className="mx-auto w-full max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:pb-8">{children}</main>
         </Providers>
       </body>
     </html>

@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { ContentDetailHeader } from "@/components/ContentDetailHeader";
 import { ContentItemSettings } from "@/components/ContentItemSettings";
+import { fetchFoldersWithAncestors, buildFolderPathMap } from "@/lib/content/folders";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -45,7 +46,7 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   const { data: set } = await supabase
     .from("quiz_sets")
-    .select("id,title,owner_id,visibility,folder_id,group_id,library_folders(name)")
+    .select("id,title,owner_id,visibility,folder_id,group_id,library_folders(id,name,parent_id)")
     .eq("id", id)
     .maybeSingle();
 
@@ -58,7 +59,14 @@ export default async function QuizSetPage({ params }: PageProps) {
     );
   }
 
-  const folderName = (set as any)?.library_folders?.name ?? null;
+  const rootLabel = t(locale, "folders.none");
+  const folderId = (set as any)?.folder_id ?? null;
+  let folderName: string | null = (set as any)?.library_folders?.name ?? null;
+  if (folderId) {
+    const rows = await fetchFoldersWithAncestors(supabase as any, [folderId]);
+    const paths = buildFolderPathMap(rows, rootLabel);
+    folderName = paths.get(folderId) ?? folderName;
+  }
   const isOwner = (set as any).owner_id === user.id;
 
   const { data: profile } = await supabase

@@ -3,17 +3,39 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { FolderTreePicker, type FolderNode } from "@/components/FolderTreePicker";
+import { FolderManager } from "@/components/FolderManager";
 
 export type FolderKind = "documents" | "flashcards" | "quizzes";
-type Folder = { id: string; name: string; parent_id: string | null };
+
+type Folder = FolderNode;
+
+const RECENTS_KEY = (kind: FolderKind) => `cfa-hub:recentFolders:${kind}`;
+
+function readRecents(kind: FolderKind): string[] {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY(kind));
+    const arr = raw ? (JSON.parse(raw) as unknown) : [];
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((x): x is string => typeof x === "string");
+  } catch {
+    return [];
+  }
+}
+
+function writeRecents(kind: FolderKind, ids: string[]) {
+  try {
+    localStorage.setItem(RECENTS_KEY(kind), JSON.stringify(ids.slice(0, 8)));
+  } catch {
+    // ignore
+  }
+}
 
 function formatSupabaseError(err: any): string {
   if (!err) return "Unknown error";
-  // PostgrestError shape often has these fields
   const msg = err?.message ?? err?.error_description ?? err?.hint ?? err?.details;
   if (typeof msg === "string" && msg.trim().length > 0) return msg;
 
-  // Try a richer fallback (includes non-enumerable sometimes)
   try {
     const parts: string[] = [];
     if (err?.code) parts.push(`code=${err.code}`);
@@ -41,8 +63,30 @@ export function FolderPicker({
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newName, setNewName] = useState("");
+  const [newParentId, setNewParentId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+
+  // Keep the default parent for new folders aligned with the current selection.
+  useEffect(() => {
+    setNewParentId(value ?? null);
+  }, [value]);
+
+  // Load recents per kind
+  useEffect(() => {
+    setRecentIds(readRecents(kind));
+  }, [kind]);
+
+  // Persist recents when selection changes
+  useEffect(() => {
+    if (!value) return;
+    setRecentIds((prev) => {
+      const next = [value, ...prev.filter((id) => id !== value)].slice(0, 8);
+      writeRecents(kind, next);
+      return next;
+    });
+  }, [value, kind]);
 
   async function refresh() {
     setErrorText(null);
@@ -54,7 +98,6 @@ export function FolderPicker({
         return;
       }
 
-      // order by name (safe even if created_at missing)
       const { data } = await supabase
         .from("library_folders")
         .select("id,name,parent_id")
@@ -83,31 +126,43 @@ export function FolderPicker({
   return (
     <div className="card-soft p-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="w-full sm:min-w-[220px] sm:w-auto">
+        <div className="w-full sm:min-w-[260px] sm:w-auto">
           <div className="text-sm font-medium">{t("folders.folder")}</div>
-          <select
-            className="select mt-2"
-            value={value ?? ""}
-            onChange={(e) => onChange(e.target.value ? e.target.value : null)}
-          >
-            <option value="">{t("folders.none")}</option>
-            {folders.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
+
+          <div className="mt-2">
+            <FolderTreePicker
+              folders={folders}
+              value={value}
+              onChange={onChange}
+              label={t("folders.pick")}
+              noneLabel={t("folders.none")}
+              recentIds={recentIds}
+            />
+          </div>
         </div>
 
         <div className="flex w-full flex-1 flex-wrap items-end gap-2 sm:w-auto">
-          <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
+          <div className="w-full min-w-0 flex-1 sm:min-w-[260px]">
             <div className="text-xs opacity-70">{t("folders.new")}</div>
-            <input
-              className="input mt-2"
-              value={newName}
-              placeholder={t("folders.newPlaceholder")}
-              onChange={(e) => setNewName(e.target.value)}
-            />
+
+            <div className="mt-2 grid gap-2">
+              <FolderTreePicker
+                folders={folders}
+                value={newParentId}
+                onChange={setNewParentId}
+                label={t("folders.pickParent")}
+                noneLabel={t("folders.none")}
+                recentIds={recentIds}
+                buttonClassName="btn btn-secondary w-full justify-between gap-3 text-left"
+              />
+
+              <input
+                className="input"
+                value={newName}
+                placeholder={t("folders.newPlaceholder")}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
           </div>
 
           <button
@@ -134,7 +189,7 @@ export function FolderPicker({
                     owner_id: user.id,
                     kind,
                     name,
-                    parent_id: null
+                    parent_id: newParentId ?? null
                   })
                   .throwOnError();
 
@@ -163,6 +218,24 @@ export function FolderPicker({
           {errorText}
         </div>
       ) : null}
+
+      <div className="mt-3">
+        <details className="group card-soft">
+          <summary className="cursor-pointer list-none select-none rounded-xl px-4 py-3 transition hover:bg-white/[0.06]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{t("folders.manageTitle")}</div>
+                <div className="mt-1 text-xs opacity-70">{t("folders.manageDesc")}</div>
+              </div>
+              <div className="text-sm opacity-60 transition group-open:rotate-180">▼</div>
+            </div>
+          </summary>
+
+          <div className="border-t border-white/10 p-4">
+            <FolderManager kind={kind} folders={folders} onFoldersChanged={refresh} defaultFolderId={value ?? null} />
+          </div>
+        </details>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { t } from "@/lib/i18n/core";
 import { ContentDetailHeader } from "@/components/ContentDetailHeader";
 import { ContentItemSettings } from "@/components/ContentItemSettings";
 import { DocumentActions } from "@/components/DocumentActions";
+import { fetchFoldersWithAncestors, buildFolderPathMap } from "@/lib/content/folders";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -45,7 +46,7 @@ export default async function DocumentPage({ params }: PageProps) {
 
   const { data: doc } = await supabase
     .from("documents")
-    .select("id,title,external_url,preview_url,created_at,visibility,folder_id,group_id,owner_id,library_folders(name)")
+    .select("id,title,external_url,preview_url,created_at,visibility,folder_id,group_id,owner_id,library_folders(id,name,parent_id)")
     .eq("id", id)
     .maybeSingle();
 
@@ -57,7 +58,14 @@ export default async function DocumentPage({ params }: PageProps) {
     );
   }
 
-  const folderName = (doc as any)?.library_folders?.name ?? null;
+  const rootLabel = t(locale, "folders.none");
+  const folderId = (doc as any)?.folder_id ?? null;
+  let folderName: string | null = (doc as any)?.library_folders?.name ?? null;
+  if (folderId) {
+    const rows = await fetchFoldersWithAncestors(supabase as any, [folderId]);
+    const paths = buildFolderPathMap(rows, rootLabel);
+    folderName = paths.get(folderId) ?? folderName;
+  }
   const isOwner = (doc as any).owner_id === user.id;
 
   const visibility = String((doc as any).visibility ?? "private");
