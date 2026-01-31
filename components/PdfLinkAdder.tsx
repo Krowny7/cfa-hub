@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
 import { FolderPicker } from "@/components/FolderPicker";
+import { TagPicker } from "@/components/TagPicker";
 
 type ShareMode = "private" | "public" | "groups";
 
@@ -33,16 +34,14 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
   const [shareMode, setShareMode] = useState<ShareMode>("private");
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [folderId, setFolderId] = useState<string | null>(null);
+  const [tagIds, setTagIds] = useState<string[]>([]);
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <div className="card p-6">
-      <h2 className="text-base font-semibold">{t("library.addTitle")}</h2>
-      <p className="mt-2 text-sm text-white/80">{t("library.addSubtitle")}</p>
-
-      <div className="mt-4 grid gap-3">
+    <div className="grid gap-3">
+      <p className="text-sm text-white/80">{t("library.addSubtitle")}</p>
         <input
           className="input"
           placeholder={t("library.titlePlaceholder")}
@@ -58,6 +57,8 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
         />
 
         <FolderPicker kind="documents" value={folderId} onChange={setFolderId} />
+
+        <TagPicker value={tagIds} onChange={setTagIds} />
 
         <div className="card-soft p-4">
           <div className="text-sm font-medium">{t("sharing.title")}</div>
@@ -130,6 +131,12 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
               if (insert.error) throw insert.error;
               const docId = (insert.data as any)?.id;
 
+              if (docId && tagIds.length) {
+                const rows = tagIds.map((tid) => ({ owner_id: user.id, document_id: docId, tag_id: tid }));
+                const tagRes = await supabase.from("document_tags").insert(rows);
+                if (tagRes.error) throw tagRes.error;
+              }
+
               if (shareMode === "groups" && docId) {
                 const rows = groupIds.map((gid) => ({ document_id: docId, group_id: gid }));
                 const share = await supabase.from("document_shares").insert(rows);
@@ -141,6 +148,7 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
               setShareMode("private");
               setGroupIds([]);
               setFolderId(null);
+              setTagIds([]);
               setMsg(t("library.added"));
               window.location.reload();
             } catch (e: any) {
@@ -157,7 +165,6 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
         <div className="text-xs text-white/70">{t("library.advice")}</div>
 
         {msg && <div className="text-sm">{msg}</div>}
-      </div>
     </div>
   );
 }

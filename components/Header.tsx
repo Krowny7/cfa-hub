@@ -5,6 +5,8 @@ import { t } from "@/lib/i18n/core";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SignOutButton } from "@/components/SignOutButton";
 import { HeaderNav } from "@/components/HeaderNav";
+import { MobileNavSheet } from "@/components/MobileNavSheet";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 function initialsFromEmail(email: string | null | undefined) {
   if (!email) return "U";
@@ -45,10 +47,72 @@ export async function Header() {
     { href: "/people", label: t(locale, "nav.people") }
   ];
 
+  const icon = {
+    book: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+        <path
+          d="M4.5 5.5c0-1.1.9-2 2-2H19v16.5H6.5c-1.1 0-2 .9-2 2V5.5Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path d="M19 3.5v17" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    ),
+    cards: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+        <path
+          d="M6.5 7.5h11c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2h-11c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path d="M7.5 4.5h9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M7.5 7.5v-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    ),
+    quiz: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+        <path
+          d="M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path d="M8.5 8.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M8.5 12h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M8.5 15.5h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    ),
+    people: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+        <path
+          d="M16 20c0-2.2-1.8-4-4-4s-4 1.8-4 4"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+        <path
+          d="M12 13.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+        />
+      </svg>
+    )
+  };
+
+  const bottomNav = [
+    { href: "/library", label: t(locale, "nav.library"), icon: icon.book },
+    { href: "/flashcards", label: t(locale, "nav.flashcards"), icon: icon.cards },
+    { href: "/qcm", label: t(locale, "nav.qcm"), icon: icon.quiz },
+    { href: "/people", label: t(locale, "nav.people"), icon: icon.people }
+  ];
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/70 backdrop-blur">
-      <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
-        <div className="flex items-center justify-between gap-3">
+    <>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/70 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
           {/* Brand + desktop nav */}
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/" className="flex items-center gap-2 whitespace-nowrap font-semibold tracking-tight">
@@ -96,85 +160,25 @@ export async function Header() {
             )}
           </div>
 
-          {/* Mobile menu (single entry point to avoid header overflow) */}
-          <div className="sm:hidden">
-            <details className="relative">
-              <summary className="cursor-pointer list-none select-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm hover:bg-white/[0.06]">
-                {t(locale, "common.menu")}
-              </summary>
-
-              <div className="absolute right-0 z-50 mt-2 w-[min(86vw,20rem)] rounded-2xl border border-white/10 bg-neutral-950/95 p-2 shadow-lg backdrop-blur">
-                <div className="grid gap-1">
-                  {user ? (
-                    <>
-                      {nav.map((it) => (
-                        <Link
-                          key={it.href}
-                          href={it.href}
-                          className="rounded-xl px-3 py-2 text-sm hover:bg-white/[0.06]"
-                        >
-                          {it.label}
-                        </Link>
-                      ))}
-
-                      <div className="my-1 h-px bg-white/10" />
-
-                      <div className="px-2 py-1">
-                        <div className="text-xs font-semibold opacity-70">{t(locale, "locale.label")}</div>
-                        <div className="mt-2">
-                          <LanguageSwitcher />
-                        </div>
-                      </div>
-
-                      <div className="my-1 h-px bg-white/10" />
-
-                      <Link
-                        href="/settings"
-                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/[0.06]"
-                        title={t(locale, "nav.settings")}
-                      >
-                        <div className="flex items-center gap-2">
-                          {avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={avatarUrl} alt="avatar" className="h-6 w-6 rounded-full object-cover" />
-                          ) : (
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
-                              {initialsFromEmail(user.email)}
-                            </div>
-                          )}
-                          <span className="min-w-0 flex-1 truncate opacity-90">{username || user.email}</span>
-                        </div>
-                      </Link>
-
-                      <div className="px-2 py-1">
-                        <SignOutButton />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="px-2 py-1">
-                        <div className="text-xs font-semibold opacity-70">{t(locale, "locale.label")}</div>
-                        <div className="mt-2">
-                          <LanguageSwitcher />
-                        </div>
-                      </div>
-
-                      <div className="my-1 h-px bg-white/10" />
-
-                      <Link
-                        href="/login"
-                        className="rounded-xl px-3 py-2 text-sm hover:bg-white/[0.06]"
-                      >
-                        {t(locale, "auth.login")}
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </details>
-          </div>
+          {/* Mobile menu (drawer) */}
+          <MobileNavSheet
+            isAuthed={!!user}
+            nav={nav}
+            menuLabel={t(locale, "common.menu")}
+            settingsLabel={t(locale, "nav.settings")}
+            localeLabel={t(locale, "locale.label")}
+            loginLabel={t(locale, "auth.login")}
+            signOutSlot={user ? <SignOutButton /> : null}
+            languageSwitcherSlot={<LanguageSwitcher />}
+            userLabel={user ? (username || user.email || null) : null}
+            avatarUrl={user ? avatarUrl : null}
+          />
         </div>
       </div>
     </header>
+
+    {/* Mobile: bottom navigation for thumb-reach primary destinations */}
+    <MobileBottomNav enabled={!!user} items={bottomNav} />
+    </>
   );
 }

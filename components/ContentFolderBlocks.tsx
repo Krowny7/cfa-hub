@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { ContentItemCard } from "@/components/ContentItemCard";
+import type { TagRow } from "@/components/TagMultiSelect";
 import { groupByFolderName, type FolderJoin } from "@/lib/content/grouping";
 import { normalizeVisibility, type Visibility } from "@/lib/content/visibility";
 
@@ -6,6 +7,7 @@ type BaseItem = FolderJoin & {
   id: string;
   title: string;
   visibility: string | null;
+  tag_ids?: string[] | null;
 };
 
 function labelForVisibility(v: Visibility) {
@@ -72,57 +74,62 @@ export function FolderBlocks<T extends BaseItem>({
   items,
   rootLabel,
   openLabel,
-  basePath
+  basePath,
+  allTags,
+  tagRelation
 }: {
   locale: string;
   items: T[];
   rootLabel: string;
   openLabel: string;
   basePath: string; // e.g. "/flashcards" | "/qcm" | "/library"
+  allTags?: TagRow[];
+  tagRelation?: {
+    table: "document_tags" | "flashcard_set_tags" | "quiz_set_tags";
+    itemColumn: "document_id" | "set_id" | "quiz_set_id";
+  };
 }) {
-  const { grouped, folderNames } = groupByFolderName<T>(locale, items, rootLabel);
+  // folderNames are user-facing labels; folderIds are stable keys
+  const { grouped, folderNames, folderIds } = groupByFolderName<T>(locale, items, rootLabel);
 
   return (
-    <div className="grid gap-3">
-      {folderNames.map((folder) => {
-        const folderItems = grouped.get(folder) ?? [];
+    <div className="grid gap-3 sm:grid-cols-2">
+      {folderIds.map((folderId, idx) => {
+        const group = grouped.get(folderId);
+        const folderLabel = folderNames[idx] ?? rootLabel;
+        const folderItems = group?.items ?? [];
         return (
-          <details key={folder} className="group card-soft">
+          <details key={folderId} className="group card-soft h-full">
             <summary className="cursor-pointer list-none select-none rounded-xl px-4 py-3 transition hover:bg-white/[0.06]">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{folder}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="shrink-0 opacity-70">📁</span>
+                    <div className="truncate text-sm font-semibold">{folderLabel}</div>
+                  </div>
                   <div className="text-xs opacity-70">{folderItems.length}</div>
                 </div>
-                <div className="text-xs opacity-60 transition group-open:rotate-180">▼</div>
+                <div className="text-sm opacity-60 transition group-open:rotate-180">▼</div>
               </div>
             </summary>
 
             <div className="border-t border-white/10 p-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {folderItems.map((it) => {
-                  const vis = normalizeVisibility(it.visibility);
-                  return (
-                    <Link
-                      key={it.id}
-                      href={`${basePath}/${it.id}`}
-                      className="card-soft group p-4 transition hover:bg-white/[0.06]"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold">{it.title}</div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <VisibilityBadge visibility={vis} />
-                            {folder !== rootLabel ? (
-                              <span className="truncate text-xs opacity-60">{folder}</span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <span className="shrink-0 text-sm opacity-70 group-hover:opacity-100">{openLabel}</span>
-                      </div>
-                    </Link>
-                  );
-                })}
+                {folderItems.map((it) => (
+                  <ContentItemCard
+                    key={it.id}
+                    itemId={it.id}
+                    href={`${basePath}/${it.id}`}
+                    title={it.title}
+                    visibility={it.visibility}
+                    openLabel={openLabel}
+                    folderLabel={folderLabel}
+                    rootLabel={rootLabel}
+                    tags={(it.tag_ids ?? []) as any}
+                    allTags={allTags}
+                    relation={tagRelation as any}
+                  />
+                ))}
               </div>
             </div>
           </details>

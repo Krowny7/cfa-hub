@@ -5,6 +5,7 @@ export const MESSAGES = {
       save: "Enregistrer",
       saving: "Enregistrement…",
       cancel: "Annuler",
+      search: "Rechercher…",
       open: "Ouvrir",
       close: "Fermer",
       public: "Public",
@@ -13,7 +14,16 @@ export const MESSAGES = {
       error: "Erreur",
       success: "Succès",
       loading: "Chargement…",
-      menu: "Menu"
+      menu: "Menu",
+      title: "Titre",
+      settings: "Réglages",
+      edit: "Modifier",
+      reset: "Réinitialiser",
+      delete: "Supprimer",
+      saved: "✅ Enregistré.",
+      deleted: "✅ Supprimé.",
+      confirmDelete: "Supprimer cet élément ?"
+
     },
     nav: {
       dashboard: "Dashboard",
@@ -34,9 +44,61 @@ export const MESSAGES = {
     folders: {
       folder: "Dossier",
       none: "Aucun (racine)",
+      root: "Racine",
+      pick: "Choisir un dossier",
+      pickParent: "Choisir un dossier parent",
       new: "Nouveau dossier",
       newPlaceholder: "Nom du dossier",
-      create: "Créer"
+      create: "Créer",
+      manageTitle: "Gérer les dossiers",
+      manageDesc: "Renommer et déplacer les dossiers pour garder une arborescence propre.",
+      selectToManage: "Sélectionne un dossier dans l’arborescence.",
+      renameLabel: "Renommer",
+      renamePlaceholder: "Nouveau nom",
+      moveLabel: "Déplacer",
+      movePlaceholder: "Choisir un nouveau parent",
+      updated: "✅ Mise à jour.",
+      invalidMove: "Déplacement invalide (cycle)."
+      ,
+      // Compat keys used by FolderManager (kept for backwards compatibility)
+      manage: "Gérer les dossiers",
+      pickToManage: "Sélectionne un dossier dans l’arborescence.",
+      selected: "Sélection",
+      rename: "Renommer",
+      move: "Déplacer",
+      applyMove: "Appliquer"
+    },
+    tags: {
+      title: "Tags",
+      add: "Ajouter des tags",
+      none: "Aucun tag",
+      selectLabel: "Sélection",
+      create: "Créer un tag",
+      createHint: "Créer",
+      createPlaceholder: "Nom du tag",
+      createBtn: "Créer",
+      loading: "Chargement…",
+      error: "Erreur",
+      created: "✅ Tag créé.",
+      edit: "Modifier les tags",
+      editTitle: "Paramètres"
+
+    },
+    views: {
+      title: "Vues",
+      select: "Choisir une vue",
+      none: "Aucune vue enregistrée",
+      save: "Enregistrer la vue",
+      saveHint: "Enregistre les filtres actuels",
+      namePrompt: "Nom de la vue (ex : Ethics – tags + privés)",
+      saved: "✅ Vue enregistrée.",
+      saveError: "Erreur lors de l’enregistrement.",
+      delete: "Supprimer",
+      deleteConfirm: "Supprimer cette vue ?",
+      deleteHint: "Supprimer la vue sélectionnée",
+      deleted: "✅ Vue supprimée.",
+      deleteError: "Erreur lors de la suppression.",
+      note: "Les vues sauvegardent : recherche, scope et tags."
     },
     auth: {
       login: "Se connecter",
@@ -192,6 +254,7 @@ export const MESSAGES = {
       save: "Save",
       saving: "Saving…",
       cancel: "Cancel",
+      search: "Search…",
       open: "Open",
       close: "Close",
       public: "Public",
@@ -200,7 +263,16 @@ export const MESSAGES = {
       error: "Error",
       success: "Success",
       loading: "Loading…",
-      menu: "Menu"
+      menu: "Menu",
+      title: "Title",
+      settings: "Settings",
+      edit: "Edit",
+      reset: "Reset",
+      delete: "Delete",
+      saved: "✅ Saved.",
+      deleted: "✅ Deleted.",
+      confirmDelete: "Delete this item?"
+
     },
     nav: {
       dashboard: "Dashboard",
@@ -221,9 +293,61 @@ export const MESSAGES = {
     folders: {
       folder: "Folder",
       none: "None (root)",
+      root: "Root",
+      pick: "Choose a folder",
+      pickParent: "Choose a parent folder",
       new: "New folder",
       newPlaceholder: "Folder name",
-      create: "Create"
+      create: "Create",
+      manageTitle: "Manage folders",
+      manageDesc: "Rename and move folders to keep a clean tree.",
+      selectToManage: "Select a folder in the tree.",
+      renameLabel: "Rename",
+      renamePlaceholder: "New name",
+      moveLabel: "Move",
+      movePlaceholder: "Choose new parent",
+      updated: "✅ Updated.",
+      invalidMove: "Invalid move (cycle)."
+      ,
+      // Compat keys used by FolderManager (kept for backwards compatibility)
+      manage: "Manage folders",
+      pickToManage: "Select a folder in the tree.",
+      selected: "Selected",
+      rename: "Rename",
+      move: "Move",
+      applyMove: "Apply"
+    },
+    tags: {
+      title: "Tags",
+      add: "Add tags",
+      none: "No tags",
+      selectLabel: "Selection",
+      create: "Create a tag",
+      createHint: "Create",
+      createPlaceholder: "Tag name",
+      createBtn: "Create",
+      loading: "Loading…",
+      error: "Error",
+      created: "✅ Tag created.",
+      edit: "Edit tags",
+      editTitle: "Settings"
+
+    },
+    views: {
+      title: "Views",
+      select: "Choose a view",
+      none: "No saved views",
+      save: "Save view",
+      saveHint: "Save current filters",
+      namePrompt: "View name (e.g. Ethics – private + tags)",
+      saved: "✅ View saved.",
+      saveError: "Error while saving.",
+      delete: "Delete",
+      deleteConfirm: "Delete this view?",
+      deleteHint: "Delete selected view",
+      deleted: "✅ View deleted.",
+      deleteError: "Error while deleting.",
+      note: "Views store: search, scope and tags."
     },
     auth: {
       login: "Login",
