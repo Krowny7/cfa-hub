@@ -43,9 +43,9 @@ type PageProps = {
 export default async function LibraryPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
 
-  const localeRaw = await getLocale();
-  const locale = String(localeRaw || "fr");
-  const isFR = locale.toLowerCase().startsWith("fr");
+  // getLocale() retourne déjà un union type ("fr" | "en") : on garde le typage.
+  const locale = (await getLocale()) ?? "fr";
+  const isFR = locale === "fr";
 
   const L = {
     // Hero
