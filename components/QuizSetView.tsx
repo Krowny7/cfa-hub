@@ -31,6 +31,14 @@ export function QuizSetView({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  // UX: keep the default flow focused on studying.
+  const [viewMode, setViewMode] = useState<"study" | "edit">("study");
+
+  const [jsonOpen, setJsonOpen] = useState(false);
+  const [jsonMode, setJsonMode] = useState<"import" | "export">("export");
+  const [jsonText, setJsonText] = useState("");
+  const [jsonBusy, setJsonBusy] = useState(false);
+
   // --- Add state
   const [questionPrompt, setQuestionPrompt] = useState("");
   const [choicesText, setChoicesText] = useState("");
@@ -237,52 +245,204 @@ export function QuizSetView({
     }
   }
 
-  async function exportJson() {
+  function getExampleJson() {
     const payload = {
       version: 1,
-      questions: questions.map((q) => ({
-        prompt: q.prompt,
-        choices: q.choices,
-        correct_index: q.correct_index,
-        explanation: q.explanation
-      }))
+      kind: "quiz_set",
+      title: "Mon QCM",
+      questions: [
+        {
+          prompt: "Question 1 (texte)",
+          choices: ["Choix A", "Choix B", "Choix C"],
+          // 1-based index for humans (1 = premier choix)
+          correct: 2,
+          explanation: "Optionnel"
+        },
+        {
+          prompt: "Question 2 (texte)",
+          choices: ["Vrai", "Faux"],
+          correct: 1
+        }
+      ]
     };
-    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    setMsg("✅");
+    return JSON.stringify(payload, null, 2);
   }
 
-  async function importJson() {
-    setBusy(true);
+  function normalizeChoices(value: any): string[] {
+    if (Array.isArray(value)) return value.map((x) => String(x));
+    const s = String(value ?? "").trim();
+    if (!s) return [];
+    return s
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+  }
+
+  async function exportJson() {
     setMsg(null);
+    setJsonBusy(true);
     try {
-      const text = window.prompt("Colle le JSON ici") ?? "";
-      if (!text.trim()) return;
-      const obj = JSON.parse(text);
-      const arr = Array.isArray(obj?.questions) ? obj.questions : [];
-      if (arr.length === 0) throw new Error(t("qcm.noQuestions"));
+      // Export latest DB state (not just local state)
+      const { data, error } = await supabase
+        .from("quiz_questions")
+        .select("prompt,choices,correct_index,explanation,created_at")
+        .eq("set_id", setId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const rows = (data ?? []) as any[];
+
+      const payload = {
+        version: 1,
+        kind: "quiz_set",
+        set_id: setId,
+        exported_at: new Date().toISOString(),
+        questions: rows.map((q) => {
+          const ci = Number(q.correct_index ?? 0) || 0;
+          return {
+            prompt: String(q.prompt ?? ""),
+            choices: Array.isArray(q.choices) ? q.choices : [],
+            correct_index: ci,
+            correct: ci + 1,
+            explanation: q.explanation ? String(q.explanation) : ""
+          };
+        })
+      };
+
+      const str = JSON.stringify(payload, null, 2);
+      setJsonText(str);
+      setJsonMode("export");
+      setJsonOpen(true);
+
+      try {
+        await navigator.clipboard.writeText(str);
+        setMsg("✅ JSON copié.");
+      } catch {
+        setMsg("ℹ️ Copie non autorisée par le navigateur. JSON affiché dans la fenêtre.");
+      }
+    } catch (e: any) {
+      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+    } finally {
+      setJsonBusy(false);
+    }
+  }
+
+  async function downloadJson() {
+    try {
+      const str = jsonText || (function () { return ""; })();
+      const blob = new Blob([str], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quiz-${setId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+    }
+  }
+
+  async function runImport(raw: string) {
+    setJsonBusy(true);
+    setMsg(null);
+
+    try {
+      const obj = JSON.parse(raw);
+      const arr = Array.isArray((obj as any)?.questions) ? (obj as any).questions : null;
+      if (!arr || arr.length === 0) throw new Error("Format invalide: questions[] manquant ou vide.");
+
+      const rows = arr
+        .map((q: any, k: number) => {
+          const prompt = String(q?.prompt ?? q?.question ?? "").trim();
+          const choices = normalizeChoices(q?.choices ?? q?.options ?? q?.answers ?? "");
+          const ci0 = q?.correct_index;
+          const ci1 = q?.correct;
+
+          let correctIndex = 0;
+          if (typeof ci0 !== "undefined" && ci0 !== null && String(ci0).trim() !== "") {
+            correctIndex = Number(ci0) || 0;
+          } else if (typeof ci1 !== "undefined" && ci1 !== null && String(ci1).trim() !== "") {
+            correctIndex = (Number(ci1) || 1) - 1;
+          }
+
+          // Clamp
+          if (correctIndex < 0) correctIndex = 0;
+          if (choices.length > 0 && correctIndex >= choices.length) correctIndex = choices.length - 1;
+
+          if (!prompt) return null;
+          if (choices.length < 2) return null;
+
+          return {
+            set_id: setId,
+            prompt,
+            choices: choices.slice(0, 6),
+            correct_index: correctIndex,
+            explanation: q?.explanation ? String(q.explanation) : null,
+            position: k
+          };
+        })
+        .filter(Boolean) as any[];
+
+      if (rows.length === 0) throw new Error("Aucune question valide après validation (min 2 choix).");
 
       // Replace existing questions
       const del = await supabase.from("quiz_questions").delete().eq("set_id", setId);
       if (del.error) throw del.error;
 
-      const rows = arr.map((q: any, k: number) => ({
-        set_id: setId,
-        prompt: String(q.prompt ?? "").trim(),
-        choices: Array.isArray(q.choices) ? q.choices.map((x: any) => String(x)) : [],
-        correct_index: Number(q.correct_index ?? 0),
-        explanation: q.explanation ? String(q.explanation) : null,
-        position: k
-      }));
-
       const ins = await supabase.from("quiz_questions").insert(rows);
       if (ins.error) throw ins.error;
 
       await refreshQuestions();
-      setMsg("✅");
+      setI(0);
+      setSelected(null);
+      setShowCorrection(false);
+      setFinished(false);
+      setScore(0);
+
+      setJsonOpen(false);
+      setJsonText("");
+      setMsg("✅ Import terminé.");
     } catch (e: any) {
       setMsg(`❌ ${e?.message ?? t("common.error")}`);
     } finally {
-      setBusy(false);
+      setJsonBusy(false);
+    }
+  }
+
+  async function importJson() {
+    setMsg(null);
+    setJsonMode("import");
+    setJsonText("");
+    setJsonOpen(true);
+  }
+
+  async function copyExampleJson() {
+    const ex = getExampleJson();
+    try {
+      await navigator.clipboard.writeText(ex);
+      setMsg("✅ Exemple JSON copié.");
+    } catch {
+      // fallback: open export modal with the example
+      setJsonText(ex);
+      setJsonMode("export");
+      setJsonOpen(true);
+      setMsg("ℹ️ Copie non autorisée. Exemple affiché dans la fenêtre.");
+    }
+  }
+
+  // Used inside the import modal: helps the user by both inserting the example and copying it.
+  async function insertExampleJson() {
+    const ex = getExampleJson();
+    setJsonText(ex);
+    try {
+      await navigator.clipboard.writeText(ex);
+      setMsg("✅ Exemple JSON copié.");
+    } catch {
+      // Clipboard may be blocked; the textarea still contains the example.
+      setMsg("ℹ️ Copie non autorisée. Exemple inséré dans le champ.");
     }
   }
 
@@ -330,217 +490,309 @@ export function QuizSetView({
 
   return (
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
-      {canEdit && (
-        <div className="rounded-2xl border p-4">
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="font-semibold">{t("qcm.importExport")}</div>
+      {/* Import / Export modal */}
+      {jsonOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-3xl rounded-2xl border border-white/10 bg-neutral-950 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-semibold">{jsonMode === "import" ? "Importer JSON" : "Exporter JSON"}</div>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setJsonOpen(false)}
+                disabled={jsonBusy}
+              >
+                ✕
+              </button>
+            </div>
+
+            {jsonMode === "import" ? (
+              <div className="mt-3 text-xs opacity-70">
+                Colle ton JSON ici. Besoin d’un exemple ? Clique sur “{t("qcm.copyExample")}".
+              </div>
+            ) : (
+              <div className="mt-3 text-xs opacity-70">
+                Le JSON est prêt (et normalement copié). Tu peux aussi le télécharger.
+              </div>
+            )}
+
+            <textarea
+              className="mt-3 box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+              rows={16}
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              placeholder={jsonMode === "import" ? "Colle le JSON ici…" : ""}
+            />
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-xs opacity-70">
-                JSON (copie/coller) — pratique pour partager rapidement.
+                {jsonMode === "import"
+                  ? "L’import remplace toutes les questions existantes."
+                  : "Astuce: tu peux coller ce JSON dans ChatGPT pour générer des questions compatibles."}
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {jsonMode === "import" ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={insertExampleJson}
+                    disabled={jsonBusy}
+                  >
+                    {t("qcm.copyExample")}
+                  </button>
+                ) : null}
+
+                {jsonMode === "export" ? (
+                  <button type="button" className="btn btn-secondary" onClick={downloadJson} disabled={jsonBusy}>
+                    Télécharger .json
+                  </button>
+                ) : null}
+
+                {jsonMode === "import" ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => runImport(jsonText)}
+                    disabled={jsonBusy || !jsonText.trim()}
+                  >
+                    {jsonBusy ? t("common.saving") : "Importer"}
+                  </button>
+                ) : null}
               </div>
             </div>
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
-                onClick={exportJson}
-              >
-                {t("qcm.exportJson")}
-              </button>
-              <button
-                type="button"
-                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
-                onClick={importJson}
-              >
-                {t("qcm.importJson")}
-              </button>
-            </div>
           </div>
-          {msg && (
-            <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">
-              {msg}
-            </div>
-          )}
         </div>
-      )}
+      ) : null}
 
-      {canEdit && (
-        <div className="rounded-2xl border p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-            <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
+      {/* Tabs (study first) */}
+      {canEdit ? (
+        <div className="rounded-2xl border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs opacity-70">{msg ?? ""}</div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-2 text-sm border border-white/10 ${
+                  viewMode === "study" ? "bg-white text-black" : "bg-neutral-900/60 hover:bg-white/5"
+                }`}
+                onClick={() => setViewMode("study")}
+              >
+                Study
+              </button>
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-2 text-sm border border-white/10 ${
+                  viewMode === "edit" ? "bg-white text-black" : "bg-neutral-900/60 hover:bg-white/5"
+                }`}
+                onClick={() => setViewMode("edit")}
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : msg ? (
+        <div className="text-sm break-words [overflow-wrap:anywhere]">{msg}</div>
+      ) : null}
+
+      {/* Edit tools (hidden by default) */}
+      {canEdit && viewMode === "edit" ? (
+        <>
+          <div className="rounded-2xl border p-4">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="font-semibold">{t("qcm.importExport")}</div>
+                <div className="text-xs opacity-70">JSON (copie/coller) — pratique pour partager rapidement.</div>
+              </div>
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                  onClick={exportJson}
+                  disabled={jsonBusy}
+                >
+                  {jsonBusy ? t("common.saving") : t("qcm.exportJson")}
+                </button>
+                <button
+                  type="button"
+                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                  onClick={importJson}
+                  disabled={jsonBusy}
+                >
+                  {t("qcm.importJson")}
+                </button>
+                <button
+                  type="button"
+                  className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                  onClick={copyExampleJson}
+                  disabled={jsonBusy}
+                >
+                  {t("qcm.copyExample")}
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 grid gap-3">
-            <textarea
-              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-              rows={3}
-              value={questionPrompt}
-              onChange={(e) => setQuestionPrompt(e.target.value)}
-              placeholder={t("qcm.promptPlaceholder")}
-            />
+          <div className="rounded-2xl border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+              <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
+            </div>
 
-            <textarea
-              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-              rows={4}
-              value={choicesText}
-              onChange={(e) => setChoicesText(e.target.value)}
-              placeholder={t("qcm.choicesPlaceholder")}
-            />
-
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label className="text-sm opacity-80">
-                {t("qcm.correctIndexLabel")}
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={6}
-                className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
-                value={correct}
-                onChange={(e) => setCorrect(Number(e.target.value))}
+            <div className="mt-4 grid gap-3">
+              <textarea
+                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                rows={3}
+                value={questionPrompt}
+                onChange={(e) => setQuestionPrompt(e.target.value)}
+                placeholder={t("qcm.promptPlaceholder")}
               />
+
+              <textarea
+                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                rows={4}
+                value={choicesText}
+                onChange={(e) => setChoicesText(e.target.value)}
+                placeholder={t("qcm.choicesPlaceholder")}
+              />
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={6}
+                  className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
+                  value={correct}
+                  onChange={(e) => setCorrect(Number(e.target.value))}
+                />
+              </div>
+
+              <input
+                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                value={explanation}
+                onChange={(e) => setExplanation(e.target.value)}
+                placeholder={t("qcm.explanationPlaceholder")}
+              />
+
+              <button
+                type="button"
+                className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                disabled={busy}
+                onClick={addQuestion}
+              >
+                {busy ? t("common.saving") : t("qcm.addQuestion")}
+              </button>
             </div>
-
-            <input
-              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-              value={explanation}
-              onChange={(e) => setExplanation(e.target.value)}
-              placeholder={t("qcm.explanationPlaceholder")}
-            />
-
-            <button
-              type="button"
-              className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
-              disabled={busy}
-              onClick={addQuestion}
-            >
-              {busy ? t("common.saving") : t("qcm.addQuestion")}
-            </button>
-
-            {msg && <div className="text-sm">{msg}</div>}
-          </div>
-        </div>
-      )}
-
-      {/* Manage existing questions */}
-      {canEdit && (
-        <div className="rounded-2xl border p-4">
-          <div className="font-semibold">Gestion des questions</div>
-          <div className="mt-1 text-xs opacity-70">
-            Modifier / supprimer (autorisé si owner ou membre du groupe).
           </div>
 
-          <div className="mt-4 grid gap-2">
-            {questions.length === 0 ? (
-              <div className="text-sm opacity-70">{t("qcm.noQuestions")}</div>
-            ) : (
-              questions.map((q, idx) => {
-                const isEditing = editingId === q.id;
-                return (
-                  <div key={q.id} className="rounded-xl border border-white/10 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium break-words sm:truncate">
-                          Q{idx + 1}. {q.prompt}
+          <div className="rounded-2xl border p-4">
+            <div className="font-semibold">Gestion des questions</div>
+            <div className="mt-1 text-xs opacity-70">Modifier / supprimer (autorisé si owner ou membre du groupe).</div>
+
+            <div className="mt-4 grid gap-2">
+              {questions.length === 0 ? (
+                <div className="text-sm opacity-70">{t("qcm.noQuestions")}</div>
+              ) : (
+                questions.map((q, idx) => {
+                  const isEditing = editingId === q.id;
+                  return (
+                    <div key={q.id} className="rounded-xl border border-white/10 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium break-words sm:truncate">
+                            Q{idx + 1}. {q.prompt}
+                          </div>
+                          <div className="mt-1 text-xs opacity-70">
+                            {q.choices.length} choix • bonne réponse #{(q.correct_index ?? 0) + 1}
+                          </div>
                         </div>
-                        <div className="mt-1 text-xs opacity-70">
-                          {q.choices.length} choix • bonne réponse #
-                          {(q.correct_index ?? 0) + 1}
+
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                          {!isEditing ? (
+                            <button
+                              type="button"
+                              className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                              onClick={() => startEdit(q)}
+                            >
+                              Modifier
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                              onClick={cancelEdit}
+                            >
+                              Annuler
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
+                            disabled={busy}
+                            onClick={() => deleteQuestion(q.id)}
+                          >
+                            Supprimer
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
-                        {!isEditing ? (
-                          <button
-                            type="button"
-                            className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-                            onClick={() => startEdit(q)}
-                          >
-                            Modifier
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-                            onClick={cancelEdit}
-                          >
-                            Annuler
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
-                          disabled={busy}
-                          onClick={() => deleteQuestion(q.id)}
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                      <div className="mt-3 grid gap-2">
-                        <textarea
-                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                          rows={3}
-                          value={editPrompt}
-                          onChange={(e) => setEditPrompt(e.target.value)}
-                        />
-
-                        <textarea
-                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                          rows={4}
-                          value={editChoicesText}
-                          onChange={(e) => setEditChoicesText(e.target.value)}
-                        />
-
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <label className="text-sm opacity-80">
-                            Bonne réponse (1 = 1ère ligne)
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={6}
-                            className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
-                            value={editCorrect}
-                            onChange={(e) => setEditCorrect(Number(e.target.value))}
+                      {isEditing && (
+                        <div className="mt-3 grid gap-2">
+                          <textarea
+                            className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                            rows={3}
+                            value={editPrompt}
+                            onChange={(e) => setEditPrompt(e.target.value)}
                           />
+
+                          <textarea
+                            className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                            rows={4}
+                            value={editChoicesText}
+                            onChange={(e) => setEditChoicesText(e.target.value)}
+                          />
+
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <label className="text-sm opacity-80">Bonne réponse (1 = 1ère ligne)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={6}
+                              className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
+                              value={editCorrect}
+                              onChange={(e) => setEditCorrect(Number(e.target.value))}
+                            />
+                          </div>
+
+                          <input
+                            className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                            value={editExplanation}
+                            onChange={(e) => setEditExplanation(e.target.value)}
+                            placeholder="Explication (optionnelle)"
+                          />
+
+                          <button
+                            type="button"
+                            className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                            disabled={busy}
+                            onClick={saveEdit}
+                          >
+                            {busy ? t("common.saving") : "Enregistrer"}
+                          </button>
                         </div>
-
-                        <input
-                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                          value={editExplanation}
-                          onChange={(e) => setEditExplanation(e.target.value)}
-                          placeholder="Explication (optionnelle)"
-                        />
-
-                        <button
-                          type="button"
-                          className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
-                          disabled={busy}
-                          onClick={saveEdit}
-                        >
-                          {busy ? t("common.saving") : "Enregistrer"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {msg && (
-            <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">
-              {msg}
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        </>
+      ) : null}
 
-      {/* Runner */}
+      {/* Runner (always visible) */}
       <div className="rounded-2xl border p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -583,20 +835,27 @@ export function QuizSetView({
                 const correctIdx = current.correct_index;
                 const isCorrect = idx === correctIdx;
                 const show = showCorrection;
-                const bg =
-                  show && picked
-                    ? isCorrect
-                      ? "bg-green-500/15"
-                      : "bg-red-500/15"
-                    : show && isCorrect
-                      ? "bg-green-500/10"
-                      : "bg-neutral-900/40";
+                const baseBtn =
+                  "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40";
+                const state =
+                  show
+                    ? picked
+                      ? isCorrect
+                        ? "border-green-500/40 bg-green-500/15"
+                        : "border-red-500/40 bg-red-500/15"
+                      : isCorrect
+                        ? "border-green-500/25 bg-green-500/10"
+                        : "border-white/10 bg-neutral-900/40 hover:bg-white/5"
+                    : picked
+                      ? "border-blue-500/40 bg-blue-500/10"
+                      : "border-white/10 bg-neutral-900/40 hover:bg-white/5";
 
                 return (
                   <button
                     key={idx}
                     type="button"
-                    className={`w-full rounded-xl border border-white/10 px-4 py-3 text-left text-sm hover:bg-white/5 ${bg}`}
+                    aria-pressed={picked}
+                    className={`${baseBtn} ${state}`}
                     onClick={() => {
                       if (showCorrection) return;
                       setSelected(idx);
@@ -700,4 +959,5 @@ export function QuizSetView({
       </div>
     </div>
   );
+
 }

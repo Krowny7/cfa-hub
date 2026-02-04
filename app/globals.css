@@ -63,7 +63,8 @@
 
   /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50;
+    /* Mobile: make touch targets easier to hit */
+    @apply inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50;
   }
 
   .btn-primary {
@@ -84,7 +85,11 @@
 
   /* Inputs */
   .input {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none transition;
+    /*
+      iOS Safari zooms into form fields when font-size < 16px.
+      Use 16px on small screens, keep the tighter 14px on >=sm.
+    */
+    @apply w-full min-h-[44px] touch-manipulation rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[16px] sm:text-sm text-white placeholder:text-white/40 outline-none transition;
   }
 
   .input:focus {
@@ -92,7 +97,7 @@
   }
 
   .select {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white outline-none transition;
+    @apply w-full min-h-[44px] touch-manipulation rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[16px] sm:text-sm text-white outline-none transition;
   }
 
   .select:focus {
@@ -124,7 +129,7 @@
 
   /* Chips (segmented controls) */
   .chip {
-    @apply inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm transition hover:bg-white/[0.06];
+    @apply inline-flex min-h-[44px] touch-manipulation items-center rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm transition hover:bg-white/[0.06];
   }
 
   .chip-active {

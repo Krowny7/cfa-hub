@@ -55,27 +55,38 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         </p>
       </div>
 
-      <FlashcardQuickAdd setId={id} nextPosition={count + 1} />
-
-      <FlashcardImporterExporter setId={id} />
-
       <FlashcardReview cards={(cards ?? []) as any} />
 
-      <div className="card p-5 min-w-0 max-w-full">
-        <h3 className="text-base font-semibold">{t(locale, "flashcards.cards")}</h3>
-        <div className="mt-3 grid gap-2">
-          {(cards ?? []).map((c: any) => (
-            <div key={c.id} className="card-soft p-3">
-              <div className="text-xs opacity-70">#{c.position}</div>
-              <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">{c.front}</div>
-              <div className="mt-2 whitespace-pre-wrap text-sm opacity-80 break-words [overflow-wrap:anywhere]">{c.back}</div>
+      {/* Editing tools are useful but should not block the main "review" flow. */}
+      <details className="card p-5 min-w-0 max-w-full">
+        <summary className="cursor-pointer select-none text-base font-semibold">
+          {t(locale, "common.settings")}
+          <span className="ml-2 text-xs opacity-70">(ajout, import/export, liste)</span>
+        </summary>
+
+        <div className="mt-4 grid gap-4">
+          <FlashcardQuickAdd setId={id} nextPosition={count + 1} />
+          <FlashcardImporterExporter setId={id} />
+
+          <div className="card-soft p-4 min-w-0 max-w-full">
+            <h3 className="text-base font-semibold">{t(locale, "flashcards.cards")}</h3>
+            <div className="mt-3 grid gap-2">
+              {(cards ?? []).map((c: any) => (
+                <div key={c.id} className="card-soft p-3">
+                  <div className="text-xs opacity-70">#{c.position}</div>
+                  <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">
+                    {c.front}
+                  </div>
+                  <div className="mt-2 whitespace-pre-wrap text-sm opacity-80 break-words [overflow-wrap:anywhere]">
+                    {c.back}
+                  </div>
+                </div>
+              ))}
+              {(cards ?? []).length === 0 && <div className="text-sm opacity-70">{t(locale, "flashcards.none")}</div>}
             </div>
-          ))}
-          {(cards ?? []).length === 0 && (
-            <div className="text-sm opacity-70">{t(locale, "flashcards.none")}</div>
-          )}
+          </div>
         </div>
-      </div>
+      </details>
     </div>
   );
 }

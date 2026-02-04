@@ -237,6 +237,40 @@ as $$
   order by d.day;
 $$;
 
+-- Public activity chart (per-user)
+--
+-- This enables showing the XP chart on other users' public profiles.
+-- Access is limited to authenticated users.
+create or replace function public.get_xp_daily_for_user(p_user_id uuid, p_days integer default 90)
+returns table(day date, xp integer)
+language sql
+security definer
+set search_path = public
+as $$
+  with bounds as (
+    select (current_date - greatest(1, coalesce(p_days, 90)) + 1)::date as d0,
+           current_date::date as d1
+  ),
+  days as (
+    select generate_series((select d0 from bounds), (select d1 from bounds), interval '1 day')::date as day
+  ),
+  agg as (
+    select (e.occurred_at at time zone 'UTC')::date as day,
+           sum(e.xp)::int as xp
+    from public.xp_events e
+    where auth.uid() is not null
+      and e.user_id = p_user_id
+      and e.occurred_at >= (select d0 from bounds)
+      and e.occurred_at < (select d1 from bounds) + interval '1 day'
+    group by 1
+  )
+  select d.day,
+         coalesce(a.xp, 0) as xp
+  from days d
+  left join agg a using (day)
+  order by d.day;
+$$;
+
 -- NOTE:
 -- To create official quizzes:
 -- 1) Insert your user_id into public.app_admins.

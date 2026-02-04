@@ -3,17 +3,39 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { FolderTreePicker, type FolderNode } from "@/components/FolderTreePicker";
+import { FolderManager } from "@/components/FolderManager";
 
-export type FolderKind = "documents" | "flashcards" | "quizzes";
-type Folder = { id: string; name: string; parent_id: string | null };
+export type FolderKind = "documents" | "flashcards" | "quizzes" | "exercises";
+
+type Folder = FolderNode;
+
+const RECENTS_KEY = (kind: FolderKind) => `cfa-hub:recentFolders:${kind}`;
+
+function readRecents(kind: FolderKind): string[] {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY(kind));
+    const arr = raw ? (JSON.parse(raw) as unknown) : [];
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((x): x is string => typeof x === "string");
+  } catch {
+    return [];
+  }
+}
+
+function writeRecents(kind: FolderKind, ids: string[]) {
+  try {
+    localStorage.setItem(RECENTS_KEY(kind), JSON.stringify(ids.slice(0, 8)));
+  } catch {
+    // ignore
+  }
+}
 
 function formatSupabaseError(err: any): string {
   if (!err) return "Unknown error";
-  // PostgrestError shape often has these fields
   const msg = err?.message ?? err?.error_description ?? err?.hint ?? err?.details;
   if (typeof msg === "string" && msg.trim().length > 0) return msg;
 
-  // Try a richer fallback (includes non-enumerable sometimes)
   try {
     const parts: string[] = [];
     if (err?.code) parts.push(`code=${err.code}`);
@@ -30,19 +52,47 @@ function formatSupabaseError(err: any): string {
 export function FolderPicker({
   kind,
   value,
-  onChange
+  onChange,
+  compact = false
 }: {
   kind: FolderKind;
   value: string | null;
   onChange: (next: string | null) => void;
+  /**
+   * Compact mode: by default, only shows the folder selector.
+   * Folder creation/management is tucked into an "Advanced" disclosure.
+   */
+  compact?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newName, setNewName] = useState("");
+  const [newParentId, setNewParentId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+
+  // Keep the default parent for new folders aligned with the current selection.
+  useEffect(() => {
+    setNewParentId(value ?? null);
+  }, [value]);
+
+  // Load recents per kind
+  useEffect(() => {
+    setRecentIds(readRecents(kind));
+  }, [kind]);
+
+  // Persist recents when selection changes
+  useEffect(() => {
+    if (!value) return;
+    setRecentIds((prev) => {
+      const next = [value, ...prev.filter((id) => id !== value)].slice(0, 8);
+      writeRecents(kind, next);
+      return next;
+    });
+  }, [value, kind]);
 
   async function refresh() {
     setErrorText(null);
@@ -54,7 +104,6 @@ export function FolderPicker({
         return;
       }
 
-      // order by name (safe even if created_at missing)
       const { data } = await supabase
         .from("library_folders")
         .select("id,name,parent_id")
@@ -64,12 +113,7 @@ export function FolderPicker({
 
       setFolders((data ?? []) as any);
     } catch (err: any) {
-      console.error("FolderPicker.refresh error (raw):", err);
-      console.error("FolderPicker.refresh error (message):", err?.message);
-      console.error("FolderPicker.refresh error (details):", err?.details);
-      console.error("FolderPicker.refresh error (hint):", err?.hint);
-      console.error("FolderPicker.refresh error (code):", err?.code);
-
+      console.error("FolderPicker.refresh error:", err);
       setFolders([]);
       setErrorText(formatSupabaseError(err));
     }
@@ -80,89 +124,128 @@ export function FolderPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
+  const picker = (
+    <div className="w-full">
+      <div className="text-sm font-medium">{t("folders.folder")}</div>
+      <div className="mt-2">
+        <FolderTreePicker
+          folders={folders}
+          value={value}
+          onChange={onChange}
+          label={t("folders.pick")}
+          noneLabel={t("folders.none")}
+          recentIds={recentIds}
+        />
+      </div>
+    </div>
+  );
+
+  const advancedContent = (
+    <div className="grid gap-3">
+      <div className="grid gap-2">
+        <div className="text-xs opacity-70">{t("folders.new")}</div>
+        <FolderTreePicker
+          folders={folders}
+          value={newParentId}
+          onChange={setNewParentId}
+          label={t("folders.pickParent")}
+          noneLabel={t("folders.none")}
+          recentIds={recentIds}
+          buttonClassName="btn btn-secondary w-full justify-between gap-3 text-left"
+        />
+
+        <input
+          className="input"
+          value={newName}
+          placeholder={t("folders.newPlaceholder")}
+          onChange={(e) => setNewName(e.target.value)}
+        />
+
+        <button
+          type="button"
+          className="btn btn-secondary w-full whitespace-nowrap"
+          disabled={busy || !newName.trim()}
+          onClick={async () => {
+            setBusy(true);
+            setErrorText(null);
+
+            try {
+              const { data: auth } = await supabase.auth.getUser();
+              const user = auth.user;
+              if (!user) {
+                setErrorText("Not authenticated.");
+                return;
+              }
+
+              const name = newName.trim();
+
+              await supabase
+                .from("library_folders")
+                .insert({
+                  owner_id: user.id,
+                  kind,
+                  name,
+                  parent_id: newParentId ?? null
+                })
+                .throwOnError();
+
+              setNewName("");
+              await refresh();
+            } catch (err: any) {
+              console.error("FolderPicker.insert error:", err);
+              setErrorText(formatSupabaseError(err));
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? t("common.saving") : t("folders.create")}
+        </button>
+      </div>
+
+      <details className="group card-soft">
+        <summary className="cursor-pointer list-none select-none rounded-xl px-4 py-3 transition hover:bg-white/[0.06]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">{t("folders.manageTitle")}</div>
+              <div className="mt-1 text-xs opacity-70">{t("folders.manageDesc")}</div>
+            </div>
+            <div className="text-sm opacity-60 transition group-open:rotate-180">▼</div>
+          </div>
+        </summary>
+
+        <div className="border-t border-white/10 p-4">
+          <FolderManager kind={kind} folders={folders} onFoldersChanged={refresh} defaultFolderId={value ?? null} />
+        </div>
+      </details>
+    </div>
+  );
+
   return (
     <div className="card-soft p-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="w-full sm:min-w-[220px] sm:w-auto">
-          <div className="text-sm font-medium">{t("folders.folder")}</div>
-          <select
-            className="select mt-2"
-            value={value ?? ""}
-            onChange={(e) => onChange(e.target.value ? e.target.value : null)}
-          >
-            <option value="">{t("folders.none")}</option>
-            {folders.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex w-full flex-1 flex-wrap items-end gap-2 sm:w-auto">
-          <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
-            <div className="text-xs opacity-70">{t("folders.new")}</div>
-            <input
-              className="input mt-2"
-              value={newName}
-              placeholder={t("folders.newPlaceholder")}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-          </div>
-
-          <button
-            type="button"
-            className="btn btn-secondary w-full whitespace-nowrap sm:w-auto"
-            disabled={busy || !newName.trim()}
-            onClick={async () => {
-              setBusy(true);
-              setErrorText(null);
-
-              try {
-                const { data: auth } = await supabase.auth.getUser();
-                const user = auth.user;
-                if (!user) {
-                  setErrorText("Not authenticated.");
-                  return;
-                }
-
-                const name = newName.trim();
-
-                await supabase
-                  .from("library_folders")
-                  .insert({
-                    owner_id: user.id,
-                    kind,
-                    name,
-                    parent_id: null
-                  })
-                  .throwOnError();
-
-                setNewName("");
-                await refresh();
-              } catch (err: any) {
-                console.error("FolderPicker.insert error (raw):", err);
-                console.error("FolderPicker.insert error (message):", err?.message);
-                console.error("FolderPicker.insert error (details):", err?.details);
-                console.error("FolderPicker.insert error (hint):", err?.hint);
-                console.error("FolderPicker.insert error (code):", err?.code);
-
-                setErrorText(formatSupabaseError(err));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {busy ? t("common.saving") : t("folders.create")}
-          </button>
-        </div>
-      </div>
+      {picker}
 
       {errorText ? (
         <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {errorText}
         </div>
       ) : null}
+
+      {compact ? (
+        <div className="mt-3">
+          <details className="group card-soft">
+            <summary className="cursor-pointer list-none select-none rounded-xl px-4 py-3 transition hover:bg-white/[0.06]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-medium">{t("common.advanced")}</div>
+                <div className="text-sm opacity-60 transition group-open:rotate-180">▼</div>
+              </div>
+            </summary>
+            <div className="border-t border-white/10 p-4">{advancedContent}</div>
+          </details>
+        </div>
+      ) : (
+        <div className="mt-3">{advancedContent}</div>
+      )}
     </div>
   );
 }
