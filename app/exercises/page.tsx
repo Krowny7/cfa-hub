@@ -256,8 +256,8 @@ export default async function ExercisesPage({ searchParams }: PageProps) {
                   title={s.title}
                   href={`/exercises/${s.id}`}
                   visibility="public"
-                  tone="public"
-                  subtitle={isFR ? "Référence" : "Reference"}
+                  folderLabel={isFR ? "Exercices" : "Exercises"}
+                  rootLabel={isFR ? "Bibliothèque" : "Library"}
                 />
               ))
             )}
