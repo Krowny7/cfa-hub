@@ -80,7 +80,8 @@ export default function ChallengeDetailClient() {
   const [questions, setQuestions] = useState<QuestionRow[]>([]);
 
   const [ratingEvent, setRatingEvent] = useState<RatingEventRow | null>(null);
-  const [elos, setElos] = useState<{ challenger?: number; opponent?: number }>({});
+  const [elos, setElos] = useState<Record<string, number | null>>({});
+
 
   useEffect(() => {
     let alive = true;
@@ -278,12 +279,12 @@ export default function ChallengeDetailClient() {
           .select("user_id,elo")
           .in("user_id", [created_by, opponent_id]);
 
-        const byUser = new Map<string, number>();
-        (ratingsRaw ?? []).forEach((r: any) => byUser.set(String(r.user_id), Number(r.elo)));
-        setElos({
-          challenger: byUser.get(created_by) ?? null,
-          opponent: byUser.get(opponent_id) ?? null
+        const nextElos: Record<string, number | null> = {};
+        (ratingsRaw ?? []).forEach((r: any) => {
+          nextElos[String(r.user_id)] = r.elo == null ? null : Number(r.elo);
         });
+        setElos(nextElos);
+
 
         // Questions already returned by the RPC (and translated when available).
       } catch (e: any) {
