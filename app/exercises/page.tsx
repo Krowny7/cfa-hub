@@ -253,12 +253,14 @@ export default async function ExercisesPage({ searchParams }: PageProps) {
               official.slice(0, 10).map((s) => (
                 <ContentItemCard
                   key={s.id}
+                  itemId={s.id}
                   title={s.title}
                   href={`/exercises/${s.id}`}
                   visibility="public"
                   folderLabel={isFR ? "Exercices" : "Exercises"}
                   rootLabel={isFR ? "Bibliothèque" : "Library"}
                 />
+
               ))
             )}
           </div>
