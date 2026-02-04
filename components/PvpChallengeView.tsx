@@ -237,6 +237,8 @@ export function PvpChallengeView({
     return t(locale, "pvp.draw");
   }
 
+  const isRated = challenge.rated === true;
+
   function eloDisplay(userId: string) {
     const base = elos?.[userId] ?? null;
     if (!ratingEvent) {
@@ -458,11 +460,12 @@ export function PvpChallengeView({
                 return (
                   <div className="mt-2 text-[11px] text-white/70">
                     Elo {e.elo}
-                    {deltaText ? (
+                    {typeof delta === "number" ? (
                       <span className={delta >= 0 ? "text-emerald-400" : "text-red-400"}>{deltaText}</span>
                     ) : (
-                      <span className="opacity-60"> (not rated)</span>
+                      <span className="opacity-60">{isRated ? " (rated)" : " (not rated)"}</span>
                     )}
+
                   </div>
                 );
               })()}
@@ -485,11 +488,12 @@ export function PvpChallengeView({
                 return (
                   <div className="mt-2 text-[11px] text-white/70">
                     Elo {e.elo}
-                    {deltaText ? (
+                    {typeof delta === "number" ? (
                       <span className={delta >= 0 ? "text-emerald-400" : "text-red-400"}>{deltaText}</span>
                     ) : (
-                      <span className="opacity-60"> (not rated)</span>
+                      <span className="opacity-60">{isRated ? " (rated)" : " (not rated)"}</span>
                     )}
+
                   </div>
                 );
               })()}
