@@ -174,7 +174,7 @@ export function AdminTranslationsPanel({
           const id = String(q.id ?? "").trim();
           if (!id) throw new Error(locale === "fr" ? "question.id manquant." : "Missing question.id");
           const prompt = String(q.prompt ?? "").trim();
-          const choices = Array.isArray(q.choices) ? q.choices.map((c) => String(c)) : [];
+          const choices = Array.isArray(q.choices) ? q.choices.map((c: unknown) => String(c)) : [];
           const explanation = q.explanation != null ? String(q.explanation) : null;
           if (!prompt) throw new Error(locale === "fr" ? `prompt manquant pour ${id}` : `Missing prompt for ${id}`);
           if (choices.length < 2) throw new Error(locale === "fr" ? `choices insuffisants pour ${id}` : `Not enough choices for ${id}`);
