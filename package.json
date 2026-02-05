@@ -6,12 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "audit:json": "npm audit --json > audit.json"
   },
   "dependencies": {
     "@supabase/ssr": "0.6.1",
     "@supabase/supabase-js": "2.91.1",
-    "next": "15.5.9",
+    "next": "15.5.12",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
@@ -23,6 +25,8 @@
     "autoprefixer": "10.4.23",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "15.5.12"
   }
 }
