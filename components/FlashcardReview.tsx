@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import { RichContent } from "@/components/RichContent";
 
 type Card = { id: string; front: string; back: string };
 
-type Rating = "again" | "hard" | "good" | "easy";
+type Rating = "review" | "mastered";
 
 function shuffleArray<T>(arr: T[]) {
   const a = [...arr];
@@ -14,6 +15,14 @@ function shuffleArray<T>(arr: T[]) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function stripImageLines(text: string) {
+  return (text ?? "")
+    .split("\n")
+    .filter((l) => !l.trim().match(/^\[\[img:(.+)\]\]$/i))
+    .join("\n")
+    .trim();
 }
 
 function CardPanel({
@@ -29,7 +38,8 @@ function CardPanel({
   onFlip: () => void;
   flipped: boolean;
 }) {
-  const shouldCenter = text.length <= 140 && !text.includes("\n");
+  const plain = stripImageLines(text);
+  const shouldCenter = plain.length <= 140 && !plain.includes("\n");
 
   return (
     <button
@@ -50,14 +60,16 @@ function CardPanel({
         <div className="text-xs opacity-60 break-words [overflow-wrap:anywhere]">{subtitle}</div>
       </div>
 
-      <div className={["mt-5 flex-1 min-w-0", shouldCenter ? "flex items-center justify-center" : ""].join(" ")}>
+      <div className={["mt-5 flex-1 min-w-0", shouldCenter ? "flex items-center justify-center" : ""].join(" ")}
+      >
         <div
           className={[
-            "whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-lg leading-relaxed",
-            shouldCenter ? "text-center max-w-[70ch]" : "text-left w-full"
+            "w-full min-w-0",
+            "text-lg leading-relaxed",
+            shouldCenter ? "text-center max-w-[70ch]" : "text-left"
           ].join(" ")}
         >
-          {text}
+          <RichContent text={text} />
         </div>
       </div>
 
@@ -66,7 +78,7 @@ function CardPanel({
   );
 }
 
-function RatingButton({
+function RateButton({
   label,
   hint,
   onClick,
@@ -75,18 +87,12 @@ function RatingButton({
   label: string;
   hint: string;
   onClick: () => void;
-  variant: "neutral" | "danger" | "warning" | "ok" | "good";
+  variant: "warning" | "ok";
 }) {
   const cls =
-    variant === "danger"
-      ? "border-red-500/30 bg-red-500/10 hover:bg-red-500/15"
-      : variant === "warning"
-        ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15"
-        : variant === "ok"
-          ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15"
-          : variant === "good"
-            ? "border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/15"
-            : "border-white/10 bg-neutral-900/60 hover:bg-white/5";
+    variant === "warning"
+      ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15"
+      : "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15";
 
   return (
     <button
@@ -115,7 +121,10 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [shuffle, setShuffle] = useState(false);
   const [reverse, setReverse] = useState(false);
-  const [stats, setStats] = useState({ again: 0, hard: 0, good: 0, easy: 0 });
+
+  // Session-only evaluation
+  const [toReviewIds, setToReviewIds] = useState<Set<string>>(new Set());
+  const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
 
   const total = deck.length;
   const done = total === 0 || i >= total;
@@ -128,7 +137,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
     return Math.round((num / total) * 100);
   }, [i, total]);
 
-  const restart = (opts?: { shuffle?: boolean; reverse?: boolean }) => {
+  const restartAll = (opts?: { shuffle?: boolean; reverse?: boolean }) => {
     const nextShuffle = opts?.shuffle ?? shuffle;
     const nextReverse = opts?.reverse ?? reverse;
     setShuffle(nextShuffle);
@@ -139,16 +148,28 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
     setDeck(nextDeck);
     setI(0);
     setFlipped(false);
-    setStats({ again: 0, hard: 0, good: 0, easy: 0 });
+    setToReviewIds(new Set());
+    setMasteredIds(new Set());
   };
 
-  // Init + refresh when cards change
+  const restartReviewOnly = () => {
+    const ids = Array.from(toReviewIds);
+    const next = (cards ?? []).filter((c) => ids.includes(c.id));
+    const nextDeck = shuffle ? shuffleArray(next) : next;
+    setDeck(nextDeck);
+    setI(0);
+    setFlipped(false);
+    setToReviewIds(new Set());
+    setMasteredIds(new Set());
+  };
+
   useEffect(() => {
     const base = [...(cards ?? [])];
     setDeck(shuffle ? shuffleArray(base) : base);
     setI(0);
     setFlipped(false);
-    setStats({ again: 0, hard: 0, good: 0, easy: 0 });
+    setToReviewIds(new Set());
+    setMasteredIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards]);
 
@@ -165,30 +186,20 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
   const rate = (r: Rating) => {
     if (!current) return;
 
-    setStats((s) => ({ ...s, [r]: (s as any)[r] + 1 }));
+    const id = current.id;
+    setToReviewIds((prev) => {
+      const next = new Set(prev);
+      if (r === "review") next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    setMasteredIds((prev) => {
+      const next = new Set(prev);
+      if (r === "mastered") next.add(id);
+      else next.delete(id);
+      return next;
+    });
 
-    // Best practice: rate AFTER seeing the answer.
-    // We keep it simple (session-only):
-    // - AGAIN: reinsert the card soon (≈ +3)
-    // - HARD:  reinsert later (≈ +6)
-    // - GOOD/EASY: move forward
-    if (r === "again" || r === "hard") {
-      const offset = r === "again" ? 3 : 6;
-      setDeck((d) => {
-        if (i >= d.length) return d;
-        const copy = [...d];
-        const card = copy[i];
-        copy.splice(i, 1);
-        const insertPos = Math.min(i + offset, copy.length);
-        copy.splice(insertPos, 0, card);
-        return copy;
-      });
-      // stay on same index (next card slides into place)
-      setFlipped(false);
-      return;
-    }
-
-    // good/easy
     setI((v) => Math.min(total, v + 1));
     setFlipped(false);
   };
@@ -231,16 +242,13 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
         return;
       }
       if (e.key.toLowerCase() === "s") {
-        restart({ shuffle: !shuffle });
+        restartAll({ shuffle: !shuffle });
         return;
       }
 
       if (!flipped) return;
-
-      if (e.key === "1") rate("again");
-      if (e.key === "2") rate("hard");
-      if (e.key === "3") rate("good");
-      if (e.key === "4") rate("easy");
+      if (e.key === "1") rate("review");
+      if (e.key === "2") rate("mastered");
     };
 
     window.addEventListener("keydown", onKey);
@@ -274,7 +282,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
             "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
             shuffle ? "border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/15" : "border-white/10 bg-neutral-900/60 hover:bg-white/5"
           ].join(" ")}
-          onClick={() => restart({ shuffle: !shuffle })}
+          onClick={() => restartAll({ shuffle: !shuffle })}
         >
           {shuffle ? t("flashcards.shuffleOn") : t("flashcards.shuffleOff")}
         </button>
@@ -294,7 +302,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
         <button
           type="button"
           className="rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          onClick={() => restart()}
+          onClick={() => restartAll()}
         >
           {t("flashcards.restart")}
         </button>
@@ -318,6 +326,9 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
     </div>
   );
 
+  const reviewCount = toReviewIds.size;
+  const masteredCount = masteredIds.size;
+
   const content = done ? (
     <div className="mt-6 rounded-2xl border border-white/10 bg-neutral-900/40 p-6">
       <div className="text-lg font-semibold">{t("flashcards.sessionComplete")}</div>
@@ -325,30 +336,34 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
 
       <div className="mt-4 grid gap-2 text-sm">
         <div className="flex items-center justify-between rounded-lg border border-white/10 bg-neutral-950/40 px-3 py-2">
-          <span>{t("flashcards.again")}</span>
-          <span className="opacity-80">{stats.again}</span>
+          <span>{t("flashcards.toReview")}</span>
+          <span className="opacity-80">{reviewCount}</span>
         </div>
         <div className="flex items-center justify-between rounded-lg border border-white/10 bg-neutral-950/40 px-3 py-2">
-          <span>{t("flashcards.hard")}</span>
-          <span className="opacity-80">{stats.hard}</span>
-        </div>
-        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-neutral-950/40 px-3 py-2">
-          <span>{t("flashcards.good")}</span>
-          <span className="opacity-80">{stats.good}</span>
-        </div>
-        <div className="flex items-center justify-between rounded-lg border border-white/10 bg-neutral-950/40 px-3 py-2">
-          <span>{t("flashcards.easy")}</span>
-          <span className="opacity-80">{stats.easy}</span>
+          <span>{t("flashcards.mastered")}</span>
+          <span className="opacity-80">{masteredCount}</span>
         </div>
       </div>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        {reviewCount > 0 ? (
+          <button
+            type="button"
+            className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm hover:bg-amber-500/15 sm:w-auto"
+            onClick={() => restartReviewOnly()}
+          >
+            {t("flashcards.reviewOnly")} ({reviewCount})
+          </button>
+        ) : (
+          <div className="text-sm text-emerald-300">{t("flashcards.allMastered")}</div>
+        )}
+
         <button
           type="button"
           className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-          onClick={() => restart()}
+          onClick={() => restartAll()}
         >
-          {t("flashcards.restart")}
+          {t("flashcards.restartAll")}
         </button>
       </div>
     </div>
@@ -394,36 +409,24 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
 
       <div className="mt-4 rounded-2xl border border-white/10 bg-neutral-900/30 p-4">
         <div className="text-sm font-semibold">{t("flashcards.rateTitle")}</div>
-        <div className="mt-1 text-xs opacity-70">{t("flashcards.rateHint")}</div>
+        <div className="mt-1 text-xs opacity-70">{t("flashcards.rateHint2")}</div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-4">
-          <RatingButton
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <RateButton
             label={t("flashcards.again")}
             hint="1"
-            variant="danger"
-            onClick={() => flipped && rate("again")}
-          />
-          <RatingButton
-            label={t("flashcards.hard")}
-            hint="2"
             variant="warning"
-            onClick={() => flipped && rate("hard")}
+            onClick={() => flipped && rate("review")}
           />
-          <RatingButton
-            label={t("flashcards.good")}
-            hint="3"
-            variant="good"
-            onClick={() => flipped && rate("good")}
-          />
-          <RatingButton
-            label={t("flashcards.easy")}
-            hint="4"
+          <RateButton
+            label={t("flashcards.mastered")}
+            hint="2"
             variant="ok"
-            onClick={() => flipped && rate("easy")}
+            onClick={() => flipped && rate("mastered")}
           />
         </div>
 
-        <div className="mt-3 text-xs opacity-60">{t("flashcards.shortcuts")}</div>
+        <div className="mt-3 text-xs opacity-60">{t("flashcards.shortcuts2")}</div>
       </div>
     </>
   );
@@ -483,30 +486,18 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                     />
                   </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                    <RatingButton
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <RateButton
                       label={t("flashcards.again")}
                       hint="1"
-                      variant="danger"
-                      onClick={() => flipped && rate("again")}
-                    />
-                    <RatingButton
-                      label={t("flashcards.hard")}
-                      hint="2"
                       variant="warning"
-                      onClick={() => flipped && rate("hard")}
+                      onClick={() => flipped && rate("review")}
                     />
-                    <RatingButton
-                      label={t("flashcards.good")}
-                      hint="3"
-                      variant="good"
-                      onClick={() => flipped && rate("good")}
-                    />
-                    <RatingButton
-                      label={t("flashcards.easy")}
-                      hint="4"
+                    <RateButton
+                      label={t("flashcards.mastered")}
+                      hint="2"
                       variant="ok"
-                      onClick={() => flipped && rate("easy")}
+                      onClick={() => flipped && rate("mastered")}
                     />
                   </div>
 
@@ -519,6 +510,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                     >
                       {t("flashcards.prev")}
                     </button>
+
                     <button
                       className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                       disabled={i >= total - 1}
@@ -529,7 +521,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                     </button>
                   </div>
 
-                  <div className="mt-3 text-center text-xs opacity-60">{t("flashcards.shortcuts")}</div>
+                  <div className="mt-3 text-xs opacity-60">{t("flashcards.shortcuts2")}</div>
                 </div>
               )}
             </div>

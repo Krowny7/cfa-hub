@@ -3,6 +3,21 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { ImageInsertButton } from "@/components/ImageInsertButton";
+import { RichContent } from "@/components/RichContent";
+
+function appendTag(prev: string, tag: string) {
+  const p = (prev ?? "").toString();
+  if (!p.trim()) return tag;
+  const endsWithNl = p.endsWith("\n");
+  return p + (endsWithNl ? "" : "\n") + tag;
+}
+
+function previewText(v: string) {
+  const s = (v ?? "").toString();
+  const first = s.split("\n").find((l) => !!l.trim() && !l.trim().match(/^\[\[img:(.+)\]\]$/i)) ?? "";
+  return first.length > 80 ? first.slice(0, 77) + "…" : first;
+}
 
 type Question = {
   id: string;
@@ -508,7 +523,7 @@ export function QuizSetView({
 
             {jsonMode === "import" ? (
               <div className="mt-3 text-xs opacity-70">
-                Colle ton JSON ici. Besoin d’un exemple ? Clique sur “{t("qcm.copyExample")}".
+                Colle ton JSON ici. Besoin d’un exemple ? Clique sur &quot;{t("qcm.copyExample")}&quot;.
               </div>
             ) : (
               <div className="mt-3 text-xs opacity-70">
@@ -640,21 +655,31 @@ export function QuizSetView({
             </div>
 
             <div className="mt-4 grid gap-3">
-              <textarea
-                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                rows={3}
-                value={questionPrompt}
-                onChange={(e) => setQuestionPrompt(e.target.value)}
-                placeholder={t("qcm.promptPlaceholder")}
-              />
+              <div className="grid gap-2">
+                <textarea
+                  className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  rows={3}
+                  value={questionPrompt}
+                  onChange={(e) => setQuestionPrompt(e.target.value)}
+                  placeholder={t("qcm.promptPlaceholder")}
+                />
+                <div className="flex items-center justify-end">
+                  <ImageInsertButton onInsert={(tag) => setQuestionPrompt((p) => appendTag(p, tag))} />
+                </div>
+              </div>
 
-              <textarea
-                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                rows={4}
-                value={choicesText}
-                onChange={(e) => setChoicesText(e.target.value)}
-                placeholder={t("qcm.choicesPlaceholder")}
-              />
+              <div className="grid gap-2">
+                <textarea
+                  className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  rows={4}
+                  value={choicesText}
+                  onChange={(e) => setChoicesText(e.target.value)}
+                  placeholder={t("qcm.choicesPlaceholder")}
+                />
+                <div className="flex items-center justify-end">
+                  <ImageInsertButton onInsert={(tag) => setChoicesText((p) => appendTag(p, tag))} />
+                </div>
+              </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
@@ -668,12 +693,17 @@ export function QuizSetView({
                 />
               </div>
 
-              <input
-                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                value={explanation}
-                onChange={(e) => setExplanation(e.target.value)}
-                placeholder={t("qcm.explanationPlaceholder")}
-              />
+              <div className="grid gap-2">
+                <input
+                  className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  value={explanation}
+                  onChange={(e) => setExplanation(e.target.value)}
+                  placeholder={t("qcm.explanationPlaceholder")}
+                />
+                <div className="flex items-center justify-end">
+                  <ImageInsertButton onInsert={(tag) => setExplanation((p) => appendTag(p, tag))} />
+                </div>
+              </div>
 
               <button
                 type="button"
@@ -701,7 +731,7 @@ export function QuizSetView({
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="text-sm font-medium break-words sm:truncate">
-                            Q{idx + 1}. {q.prompt}
+                            Q{idx + 1}. {previewText(q.prompt)}
                           </div>
                           <div className="mt-1 text-xs opacity-70">
                             {q.choices.length} choix • bonne réponse #{(q.correct_index ?? 0) + 1}
@@ -747,12 +777,20 @@ export function QuizSetView({
                             onChange={(e) => setEditPrompt(e.target.value)}
                           />
 
+                          <div className="flex items-center justify-end">
+                            <ImageInsertButton onInsert={(tag) => setEditPrompt((p) => appendTag(p, tag))} />
+                          </div>
+
                           <textarea
                             className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
                             rows={4}
                             value={editChoicesText}
                             onChange={(e) => setEditChoicesText(e.target.value)}
                           />
+
+                          <div className="flex items-center justify-end">
+                            <ImageInsertButton onInsert={(tag) => setEditChoicesText((p) => appendTag(p, tag))} />
+                          </div>
 
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <label className="text-sm opacity-80">Bonne réponse (1 = 1ère ligne)</label>
@@ -766,12 +804,17 @@ export function QuizSetView({
                             />
                           </div>
 
-                          <input
-                            className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                            value={editExplanation}
-                            onChange={(e) => setEditExplanation(e.target.value)}
-                            placeholder="Explication (optionnelle)"
-                          />
+                          <div className="grid gap-2">
+                            <input
+                              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                              value={editExplanation}
+                              onChange={(e) => setEditExplanation(e.target.value)}
+                              placeholder={t("qcm.explanationPlaceholder")}
+                            />
+                            <div className="flex items-center justify-end">
+                              <ImageInsertButton onInsert={(tag) => setEditExplanation((p) => appendTag(p, tag))} />
+                            </div>
+                          </div>
 
                           <button
                             type="button"
@@ -825,8 +868,8 @@ export function QuizSetView({
             <div className="text-xs opacity-70">
               {i + 1}/{questions.length}
             </div>
-            <div className="mt-2 whitespace-pre-wrap text-base font-medium">
-              {current.prompt}
+            <div className="mt-2 text-base font-medium">
+              <RichContent text={current.prompt} />
             </div>
 
             <div className="mt-4 grid gap-2">
@@ -862,7 +905,7 @@ export function QuizSetView({
                     }}
                   >
                     <div className="opacity-90 break-words [overflow-wrap:anywhere]">
-                      {c}
+                      <RichContent text={c} />
                     </div>
                   </button>
                 );
@@ -873,11 +916,11 @@ export function QuizSetView({
               <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
                 <div className="font-semibold">Correction</div>
                 <div className="mt-2 opacity-90">
-                  ✅ {current.choices[current.correct_index]}
+                  ✅ <RichContent text={current.choices[current.correct_index]} />
                 </div>
                 {current.explanation && (
-                  <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">
-                    {current.explanation}
+                  <div className="mt-2 opacity-80">
+                    <RichContent text={current.explanation} />
                   </div>
                 )}
               </div>

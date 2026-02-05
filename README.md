@@ -38,3 +38,29 @@ Plateforme de révision (QCM, flashcards, exercices) avec **auth Supabase**, **b
 - Chaque nouvelle fonctionnalité ajoute :
   - un fichier `docs_v0/features/<feature>.md` (ou une section dans `06_features.md`)
   - et, si besoin, une mini-décision d'architecture (ADR) via `docs_v0/templates/adr_template.md`.
+
+
+## Diagnostics (Supabase ↔ code cohesion)
+
+Open: `/admin/diagnostics`
+
+- Provides **schema checks** (tables/columns/RPCs/storage) and **RLS access checks**.
+- Includes an **Export JSON** button to copy/paste a full diagnostics report into ChatGPT or a ticket.
+- Recommended: set `SUPABASE_SERVICE_ROLE_KEY` (server-only) so schema checks bypass RLS.
+
+See: `docs_v0/DIAGNOSTICS_GUIDE.md`
+
+## Quality commands
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Audit:
+
+```bash
+npm audit
+npm run audit:json
+```

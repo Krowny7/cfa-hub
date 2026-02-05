@@ -8,6 +8,9 @@
     --accent: 59 130 246; /* blue-500 */
     --accent2: 16 185 129; /* emerald-500 */
     --violet: 168 85 247; /* violet-500 */
+
+    /* Layout */
+    --bottom-nav-height: 64px;
   }
 
   html {

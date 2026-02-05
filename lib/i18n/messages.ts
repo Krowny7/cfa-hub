@@ -24,7 +24,10 @@ export const MESSAGES = {
       delete: "Supprimer",
       saved: "✅ Enregistré.",
       deleted: "✅ Supprimé.",
-      confirmDelete: "Supprimer cet élément ?"
+      confirmDelete: "Supprimer cet élément ?",
+      addImage: "Ajouter une image",
+      uploading: "Upload…",
+      imageTooLarge: "Image trop lourde (max {mb} MB)."
 
     },
     nav: {
@@ -237,13 +240,20 @@ export const MESSAGES = {
       reverse: "Inverser (recto/verso)",
       restart: "Recommencer",
       rateTitle: "Évaluer la carte",
-      rateHint: "Retourne d’abord la carte, puis évalue (raccourcis 1–4).",
+      rateHint: "Retourne d’abord la carte, puis évalue.",
+      rateHint2: "Retourne d’abord la carte, puis choisis : À revoir ou Maîtrisé (raccourcis 1–2).",
       again: "À revoir",
+      toReview: "À revoir",
       hard: "Difficile",
       good: "Bien",
       easy: "Facile",
+      mastered: "Maîtrisé",
+      reviewOnly: "Réviser seulement À revoir",
+      allMastered: "Tout est maîtrisé 🎉",
+      restartAll: "Recommencer (tout)",
       sessionComplete: "Session terminée",
-      sessionCompleteHint: "Résumé de ta session (non sauvegardé pour l’instant)."
+      sessionCompleteHint: "Résumé de ta session (non sauvegardé pour l’instant).",
+      shortcuts2: "Raccourcis : ← → • Espace/Entrée • 1=À revoir • 2=Maîtrisé • Esc pour fermer"
     },
     qcm: {
       title: "QCM",
@@ -358,7 +368,10 @@ export const MESSAGES = {
       delete: "Delete",
       saved: "✅ Saved.",
       deleted: "✅ Deleted.",
-      confirmDelete: "Delete this item?"
+      confirmDelete: "Delete this item?",
+      addImage: "Add image",
+      uploading: "Uploading…",
+      imageTooLarge: "Image too large (max {mb} MB)."
 
     },
     nav: {
@@ -572,13 +585,20 @@ export const MESSAGES = {
       reverse: "Reverse (front/back)",
       restart: "Restart",
       rateTitle: "Rate the card",
-      rateHint: "Flip first, then rate (shortcuts 1–4).",
-      again: "Again",
+      rateHint: "Flip first, then rate.",
+      rateHint2: "Flip first, then choose: Review or Mastered (shortcuts 1–2).",
+      again: "Review",
+      toReview: "Review",
       hard: "Hard",
       good: "Good",
       easy: "Easy",
+      mastered: "Mastered",
+      reviewOnly: "Review only",
+      allMastered: "All mastered 🎉",
+      restartAll: "Restart (all)",
       sessionComplete: "Session complete",
-      sessionCompleteHint: "Session summary (not saved yet)."
+      sessionCompleteHint: "Session summary (not saved yet).",
+      shortcuts2: "Shortcuts: ← → • Space/Enter • 1=Review • 2=Mastered • Esc"
     },
     qcm: {
       title: "MCQ",

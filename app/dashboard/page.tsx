@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
@@ -73,12 +74,12 @@ export default async function Dashboard() {
             <p className="mt-1 max-w-[72ch] text-sm text-white/80">{t(locale, "dashboard.dailySubtitle")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <a href="/qcm" className="btn btn-secondary">
+            <Link href="/qcm" className="btn btn-secondary">
               {t(locale, "dashboard.dailyGoQcm")}
-            </a>
-            <a href="/exercises" className="btn btn-ghost">
+            </Link>
+            <Link href="/exercises" className="btn btn-ghost">
               {t(locale, "dashboard.dailyGoExercises")}
-            </a>
+            </Link>
           </div>
         </div>
 

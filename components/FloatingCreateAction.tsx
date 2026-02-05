@@ -16,7 +16,7 @@ export function FloatingCreateAction({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+18px)] right-4 z-[70] sm:hidden">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+var(--bottom-nav-height)+12px)] right-4 z-[70] sm:hidden">
       <CreateAction title={title} buttonLabel={buttonLabel}>
         {children}
       </CreateAction>
