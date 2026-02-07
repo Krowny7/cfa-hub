@@ -3,65 +3,48 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PdfLinkAdder } from "@/components/PdfLinkAdder";
 import { getLocale } from "@/lib/i18n/server";
-import { FolderBlocks, SectionHeader } from "@/components/ContentFolderBlocks";
+import { t, type Locale } from "@/lib/i18n/core";
+import { SectionHeader } from "@/components/ContentFolderBlocks";
 import { normalizeScope, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
+import { CreateAction } from "@/components/CreateAction";
+import { FloatingCreateAction } from "@/components/FloatingCreateAction";
+import { VisibilityTabs } from "@/components/VisibilityTabs";
+import { FolderDriveView, type FolderRow } from "@/components/FolderDriveView";
 
 type DocRow = {
   id: string;
   title: string;
   visibility: string | null;
   created_at: string | null;
-  library_folders?: { name: string | null } | null;
+  external_url?: string | null;
+  preview_url?: string | null;
+  folder_id?: string | null;
+  library_folders?: { id: string | null; name: string | null; parent_id: string | null } | null;
 };
 
 type SearchParams = {
   q?: string;
   scope?: string;
+  folder?: string;
 };
 
 type PageProps = {
   searchParams?: Promise<SearchParams>;
 };
 
+function buildResetHref(basePath: string, scope: ScopeFilter, folder: string | null) {
+  const sp = new URLSearchParams();
+  if (scope && scope !== "private") sp.set("scope", scope);
+  if (folder) sp.set("folder", folder);
+  const qs = sp.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
 export default async function LibraryPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
 
-  const localeRaw = await getLocale();
-  const locale = String(localeRaw || "fr");
-  const isFR = locale.toLowerCase().startsWith("fr");
-
-  const L = {
-    // Hero
-    infoTitle: isFR ? "Bibliothèque PDF" : "PDF Library",
-    hero1: isFR ? "Centralise tes PDFs CFA." : "Centralize your CFA PDFs.",
-    hero2: isFR
-      ? "Ajoute des liens (Drive/OneDrive…), classe-les, et partage-les à tes groupes."
-      : "Add links (Drive/OneDrive…), organize them, and share with your groups.",
-
-    // List
-    your: isFR ? "Vos PDFs" : "Your PDFs",
-    searchPlaceholder: isFR ? "Rechercher un PDF…" : "Search a PDF…",
-    filterBtn: isFR ? "Filtrer" : "Filter",
-    reset: "Reset",
-    all: isFR ? "Tous" : "All",
-    private: isFR ? "Privés" : "Private",
-    shared: isFR ? "Groupes" : "Groups",
-    public: isFR ? "Publics" : "Public",
-    open: isFR ? "Ouvrir →" : "Open →",
-
-    // folder naming
-    root: isFR ? "Sans dossier" : "No folder",
-
-    // section subtitles
-    subtitlePrivate: isFR ? "Visible uniquement par toi." : "Visible only to you.",
-    subtitleShared: isFR ? "Visibles pour certains groupes." : "Visible to selected groups.",
-    subtitlePublic: isFR ? "Visibles par tous (selon tes règles)." : "Visible to everyone (per your rules).",
-
-    emptyPrivate: isFR ? "Aucun PDF privé." : "No private PDF.",
-    emptyShared: isFR ? "Aucun PDF partagé." : "No shared PDF.",
-    emptyPublic: isFR ? "Aucun PDF public." : "No public PDF.",
-    nothingFound: isFR ? "Aucun PDF trouvé." : "No PDF found."
-  };
+  const locale: Locale = await getLocale();
+  const isFR = locale === "fr";
 
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -69,139 +52,164 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   if (!user) redirect("/login");
 
   const q = (sp.q ?? "").trim();
-  const scope = normalizeScope(sp.scope) as ScopeFilter;
+  const rawScope = normalizeScope(sp.scope ?? "private") as ScopeFilter;
+  const scope = (rawScope === "all" ? "private" : rawScope) as ScopeFilter;
+  const folder = (sp.folder ?? "").trim() || null;
 
-  const [{ data: profile }, docsRes] = await Promise.all([
+  const currentQuery = {
+    ...(q ? { q } : {}),
+    ...(scope && scope !== "private" ? { scope } : {}),
+    ...(folder ? { folder } : {})
+  };
+
+  const rootLabel = t(locale, "folders.none");
+
+  const [{ data: profile }, docsRes, foldersRes] = await Promise.all([
     supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
     (async () => {
       let query = supabase
         .from("documents")
-        .select("id,title,visibility,created_at, library_folders(name)")
+        .select("id,title,visibility,created_at,external_url,preview_url,folder_id, library_folders(id,name,parent_id)")
         .order("created_at", { ascending: false });
 
       if (q) query = query.ilike("title", `%${q}%`);
-      if (scope === "private" || scope === "public") query = query.eq("visibility", scope);
-      if (scope === "shared") query = query.in("visibility", ["group", "groups"]);
 
       return await query;
-    })()
+    })(),
+    supabase.from("library_folders").select("id,name,parent_id").eq("kind", "documents").order("name", { ascending: true })
   ]);
 
   const activeGroupId = (profile as any)?.active_group_id ?? null;
 
-  const all = (docsRes.data ?? []) as unknown as DocRow[];
+  let allRaw = (docsRes.data ?? []) as unknown as DocRow[];
+  const folders = (foldersRes.data ?? []) as unknown as FolderRow[];
+
+  // Note: Tags were removed from the UX to keep the library simple.
+  const all = allRaw;
 
   const priv = all.filter((d) => sectionForVisibility(d.visibility) === "private");
   const shared = all.filter((d) => sectionForVisibility(d.visibility) === "shared");
   const pub = all.filter((d) => sectionForVisibility(d.visibility) === "public");
-  const totalCount = all.length;
+
+  const L = {
+    infoTitle: t(locale, "library.title"),
+    hero1: t(locale, "library.subtitle"),
+
+    your: t(locale, "library.your"),
+    searchPlaceholder: isFR ? "Rechercher un document…" : "Search a document…",
+    filterBtn: isFR ? "Filtrer" : "Filter",
+    reset: isFR ? "Réinitialiser" : "Reset",
+
+    private: isFR ? "Privés" : "Private",
+    shared: isFR ? "Groupes" : "Groups",
+    public: isFR ? "Publics" : "Public",
+
+    open: t(locale, "library.open"),
+
+    subtitlePrivate: isFR ? "Visible uniquement par toi." : "Visible only to you.",
+    subtitleShared: isFR ? "Visibles pour certains groupes." : "Visible to selected groups.",
+    subtitlePublic: isFR ? "Visibles par tous (selon tes règles)." : "Visible to everyone (per your rules).",
+
+    emptyPrivate: isFR ? "Aucun document privé." : "No private document.",
+    emptyShared: isFR ? "Aucun document partagé." : "No shared document.",
+    emptyPublic: isFR ? "Aucun document public." : "No public document."
+  };
+
+  const resetHref = buildResetHref("/library", scope, folder);
+
+  function renderScopeSection(tone: "private" | "shared" | "public", title: string, subtitle: string, items: any[], empty: string) {
+    return (
+      <div className="mt-4">
+        <SectionHeader title={title} subtitle={subtitle} count={items.length} tone={tone} />
+        <div className="mt-3">
+          <FolderDriveView
+            folders={folders}
+            items={items}
+            currentFolderId={folder}
+            basePath="/library"
+            currentQuery={currentQuery}
+            rootLabel={rootLabel}
+            homeLabel={isFR ? "Tous les documents" : "All documents"}
+            openLabel={L.open}
+            emptyLabel={empty}
+            upLabel={isFR ? "↑ Retour" : "↑ Up"}
+            folderKind="documents"
+            itemActions={{ table: "documents", shareTable: "document_shares", shareFk: "document_id", activeGroupId }}
+            enableLocalSearch={false}
+            newFolderLabel={isFR ? "+ Dossier" : "+ Folder"}
+            newFolderPlaceholder={t(locale, "folders.newPlaceholder")}
+            createFolderLabel={t(locale, "folders.create")}
+            cancelLabel={isFR ? "Annuler" : "Cancel"}
+            savingLabel={t(locale, "common.saving")}
+            subfoldersLabel={isFR ? "sous-dossiers" : "subfolders"}
+            itemsLabel={isFR ? "éléments" : "items"}
+            emptyFolderLabel={isFR ? "Vide" : "Empty"}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-4">
-      {/* Top row: Info + Add aligned */}
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <div className="card flex h-full flex-col justify-center p-6 sm:p-8">
+      {/* Hero */}
+      <div className="card p-6 sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
             <div className="text-sm font-semibold opacity-80">{L.infoTitle}</div>
-            <div className="mt-3 text-3xl font-semibold leading-tight">{L.hero1}</div>
-            <div className="mt-3 max-w-[56ch] text-base text-white/80">{L.hero2}</div>
+            <div className="mt-3 max-w-[68ch] text-base text-white/80">{L.hero1}</div>
           </div>
-        </div>
-
-        <div className="lg:col-span-5">
-          <PdfLinkAdder activeGroupId={activeGroupId} />
+          <div className="hidden sm:block">
+            <CreateAction title={t(locale, "library.addTitle")} buttonLabel={isFR ? "Ajouter" : "Add"} iconOnly={true}>
+              <PdfLinkAdder activeGroupId={activeGroupId} />
+            </CreateAction>
+          </div>
         </div>
       </div>
 
-      {/* Bottom: Vos PDFs */}
+      {/* Mobile floating + */}
+      <FloatingCreateAction title={t(locale, "library.addTitle")} buttonLabel={isFR ? "Ajouter" : "Add"}>
+        <PdfLinkAdder activeGroupId={activeGroupId} />
+      </FloatingCreateAction>
+
+      {/* Documents */}
       <div className="card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold">{L.your}</h2>
-          <div className="text-xs opacity-70">{totalCount}</div>
+          <div className="text-xs opacity-70">{all.length}</div>
         </div>
 
-        <form className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/library" method="get">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder={L.searchPlaceholder}
-            className="input min-w-0 flex-1 sm:min-w-[220px]"
+        <div className="mt-4">
+          <VisibilityTabs
+            basePath="/library"
+            currentQuery={currentQuery}
+            active={(scope as any)}
+            labels={{ private: L.private, shared: L.shared, public: L.public }}
+            counts={{ private: priv.length, shared: shared.length, public: pub.length }}
           />
-          <select
-            name="scope"
-            defaultValue={scope}
-            className="select sm:w-auto sm:min-w-[180px]"
-          >
-            <option value="all">{L.all}</option>
-            <option value="private">{L.private}</option>
-            <option value="shared">{L.shared}</option>
-            <option value="public">{L.public}</option>
-          </select>
-          <button type="submit" className="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
+        </div>
+
+        {/* Search (tags removed to simplify the UX) */}
+        <form className="mt-4 flex flex-wrap items-center gap-2" action="/library" method="get">
+          <input name="q" defaultValue={q} placeholder={L.searchPlaceholder} className="input sm:w-[260px]" />
+          <input type="hidden" name="scope" value={scope} />
+          <input type="hidden" name="folder" value={folder ?? ""} />
+
+          <button type="submit" className="btn btn-secondary whitespace-nowrap">
             {L.filterBtn}
           </button>
 
-          {q || scope !== "all" ? (
-            <Link href="/library" className="btn btn-ghost w-full whitespace-nowrap text-center sm:w-auto">
+          {q || scope !== "private" ? (
+            <Link href={resetHref} className="btn btn-ghost whitespace-nowrap">
               {L.reset}
             </Link>
           ) : null}
         </form>
 
-        <div className="mt-4 grid gap-4">
-          {scope === "all" || scope === "private" ? (
-            <div className="grid gap-3">
-              <SectionHeader title={L.private} subtitle={L.subtitlePrivate} count={priv.length} tone="private" />
-              {priv.length ? (
-                <FolderBlocks
-                  locale={locale}
-                  items={priv}
-                  rootLabel={L.root}
-                  openLabel={L.open}
-                  basePath="/library"
-                />
-              ) : (
-                <div className="text-sm opacity-70">{L.emptyPrivate}</div>
-              )}
-            </div>
-          ) : null}
-
-          {scope === "all" || scope === "shared" ? (
-            <div className="grid gap-3">
-              <SectionHeader title={L.shared} subtitle={L.subtitleShared} count={shared.length} tone="shared" />
-              {shared.length ? (
-                <FolderBlocks
-                  locale={locale}
-                  items={shared}
-                  rootLabel={L.root}
-                  openLabel={L.open}
-                  basePath="/library"
-                />
-              ) : (
-                <div className="text-sm opacity-70">{L.emptyShared}</div>
-              )}
-            </div>
-          ) : null}
-
-          {scope === "all" || scope === "public" ? (
-            <div className="grid gap-3">
-              <SectionHeader title={L.public} subtitle={L.subtitlePublic} count={pub.length} tone="public" />
-              {pub.length ? (
-                <FolderBlocks
-                  locale={locale}
-                  items={pub}
-                  rootLabel={L.root}
-                  openLabel={L.open}
-                  basePath="/library"
-                />
-              ) : (
-                <div className="text-sm opacity-70">{L.emptyPublic}</div>
-              )}
-            </div>
-          ) : null}
-
-          {totalCount === 0 ? <div className="text-sm opacity-70">{L.nothingFound}</div> : null}
-        </div>
+        {/* Content */}
+        {scope === "private" ? renderScopeSection("private", L.private, L.subtitlePrivate, priv, L.emptyPrivate) : null}
+        {scope === "shared" ? renderScopeSection("shared", L.shared, L.subtitleShared, shared, L.emptyShared) : null}
+        {scope === "public" ? renderScopeSection("public", L.public, L.subtitlePublic, pub, L.emptyPublic) : null}
       </div>
     </div>
   );
