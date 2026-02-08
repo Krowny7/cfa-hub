@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
@@ -12,14 +13,14 @@ export default async function Dashboard() {
   if (!user) redirect("/login");
 
   const [{ data: ratingRow }, { data: profileRow }, { count: docsCount }, { count: setsCount }, { count: qcmCount }] = await Promise.all([
-    supabase.from("ratings").select("rating,games_played").eq("user_id", user.id).maybeSingle(),
+    supabase.from("ratings").select("elo,games_played").eq("user_id", user.id).maybeSingle(),
     supabase.from("profiles").select("xp_total").eq("id", user.id).maybeSingle(),
     supabase.from("documents").select("*", { count: "exact", head: true }),
     supabase.from("flashcard_sets").select("*", { count: "exact", head: true }),
     supabase.from("quiz_sets").select("*", { count: "exact", head: true })
   ]);
 
-  const rating = (ratingRow as any)?.rating ?? 1200;
+  const rating = (ratingRow as any)?.elo ?? 1200;
   const games = (ratingRow as any)?.games_played ?? 0;
 
   const xpTotal = Number((profileRow as any)?.xp_total ?? 0) || 0;
@@ -63,6 +64,52 @@ export default async function Dashboard() {
             <div className="mt-1 text-2xl font-semibold">{qcmCount ?? 0}</div>
           </div>
         </div>
+      </div>
+
+      {/* Daily activity (UI-only for now) */}
+      <div className="card p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">{t(locale, "dashboard.dailyTitle")}</h2>
+            <p className="mt-1 max-w-[72ch] text-sm text-white/80">{t(locale, "dashboard.dailySubtitle")}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/qcm" className="btn btn-secondary">
+              {t(locale, "dashboard.dailyGoQcm")}
+            </Link>
+            <Link href="/exercises" className="btn btn-ghost">
+              {t(locale, "dashboard.dailyGoExercises")}
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="card-soft p-4">
+            <div className="text-xs font-medium opacity-70">{t(locale, "dashboard.dailyQcm")}</div>
+            <div className="mt-3 grid gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <label key={`q-${i}`} className="flex items-center gap-2 text-sm opacity-90">
+                  <input type="checkbox" disabled className="accent-white/80" />
+                  <span>{t(locale, "dashboard.dailyQcmItem", { n: i + 1 })}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-soft p-4">
+            <div className="text-xs font-medium opacity-70">{t(locale, "dashboard.dailyExercises")}</div>
+            <div className="mt-3 grid gap-2">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <label key={`e-${i}`} className="flex items-center gap-2 text-sm opacity-90">
+                  <input type="checkbox" disabled className="accent-white/80" />
+                  <span>{t(locale, "dashboard.dailyExerciseItem", { n: i + 1 })}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 text-xs opacity-70">{t(locale, "dashboard.dailyFootnote")}</div>
       </div>
 
       <div className="card p-6">

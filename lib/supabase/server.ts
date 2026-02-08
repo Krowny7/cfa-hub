@@ -1,14 +1,17 @@
 import { cookies } from "next/headers";
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
+import { assertSupabaseEnv } from "@/lib/env";
+import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 
+/**
+ * Server Supabase client using the ANON key + Next cookies.
+ * This respects RLS and represents the current logged-in user (if any).
+ */
 export async function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) throw new Error("Missing NEXT_PUBLIC_SUPABASE_* env vars");
-
+  const env = assertSupabaseEnv();
   const cookieStore = await cookies();
 
-  return createServerClient(url, anon, {
+  return createServerClient(env.url, env.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -23,5 +26,18 @@ export async function createClient() {
         }
       }
     }
+  });
+}
+
+/**
+ * Server-only admin client (bypasses RLS) if SUPABASE_SERVICE_ROLE_KEY is configured.
+ * NEVER import or use this in client components.
+ */
+export function createAdminClient() {
+  const env = assertSupabaseEnv();
+  if (!env.serviceRoleKey) return null;
+
+  return createSupabaseJsClient(env.url, env.serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
   });
 }
