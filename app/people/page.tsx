@@ -113,6 +113,22 @@ export default async function PeoplePage({ searchParams }: PageProps) {
   // -----------------------------
   const ratingByUser = new Map<string, Rating>();
 
+  // Admin badge (public): best-effort read of admin list for displayed users
+  const adminIds = new Set<string>();
+  try {
+    if (peopleIds.length > 0) {
+      const { data: adminsRaw } = await supabase
+        .from("app_admins")
+        .select("user_id")
+        .in("user_id", peopleIds);
+      (adminsRaw ?? []).forEach((r: any) => {
+        if (r?.user_id) adminIds.add(String(r.user_id));
+      });
+    }
+  } catch {
+    // If SQL patch not applied yet, we simply don't show badges.
+  }
+
   if (peopleIds.length > 0) {
     const { data: ratingsRaw } = await supabase
       .from("ratings")
@@ -138,6 +154,19 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     .limit(20);
 
   const topUserIds = (topRatingsRaw ?? []).map((r: any) => r.user_id).filter(Boolean);
+
+  // Include leaderboard users for admin badges
+  try {
+    const missing = topUserIds.filter((id) => !adminIds.has(String(id)));
+    if (missing.length > 0) {
+      const { data: adminsTop } = await supabase.from("app_admins").select("user_id").in("user_id", missing);
+      (adminsTop ?? []).forEach((r: any) => {
+        if (r?.user_id) adminIds.add(String(r.user_id));
+      });
+    }
+  } catch {
+    // ignore
+  }
 
   const { data: topProfilesRaw } =
     topUserIds.length > 0
@@ -247,8 +276,11 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                       )}
 
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">
-                          {display} <span className="opacity-60">{shortId(p.id)}</span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <div className="truncate text-sm font-semibold">
+                            {display} <span className="opacity-60">{shortId(p.id)}</span>
+                          </div>
+                          {adminIds.has(p.id) ? <span className="badge badge-public">Admin</span> : null}
                         </div>
                         <div className="mt-1 text-xs opacity-80">
                           Niveau {lvl} • {xpTotal} XP • Elo: {elo} • {games} {isFr ? "parties" : "games"}
@@ -298,7 +330,10 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                     )}
 
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium">{row.username}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="truncate text-sm font-medium">{row.username}</div>
+                        {adminIds.has(row.user_id) ? <span className="badge badge-public">Admin</span> : null}
+                      </div>
                       <div className="text-[11px] opacity-70">
                         Niveau {levelInfoFromXp(Number((row as any).xp_total ?? 0) || 0).level} • {row.games_played} {isFr ? "parties" : "games"}
                       </div>
