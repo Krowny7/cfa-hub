@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { QuizSetView } from "@/components/QuizSetView";
+import { DailyQcmRunner } from "@/components/DailyQcmRunner";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { ContentDetailHeader } from "@/components/ContentDetailHeader";
@@ -9,8 +10,9 @@ import { PvpInviteButton } from "@/components/PvpInviteButton";
 import { AdminTranslationsPanel } from "@/components/AdminTranslationsPanel";
 import { fetchFoldersWithAncestors, buildFolderPathMap } from "@/lib/content/folders";
 
-type PageProps = {
+type Props = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 async function isMemberOfGroup(supabase: any, userId: string, groupId: string | null) {
@@ -30,8 +32,11 @@ async function hasAnyShareRowForSet(supabase: any, setId: string) {
   return (data?.length ?? 0) > 0;
 }
 
-export default async function QuizSetPage({ params }: PageProps) {
+export default async function QuizSetPage({ params, searchParams }: Props) {
   const { id } = await params;
+
+  const sp = (await searchParams) ?? {};
+  const isDaily = String(sp?.daily ?? "") === "1";
 
   const locale = await getLocale();
   const supabase = await createClient();
@@ -52,7 +57,9 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   const { data: set } = await supabase
     .from("quiz_sets")
-    .select("id,title,owner_id,visibility,folder_id,group_id,is_official,official_published,difficulty,published_at,library_folders(id,name,parent_id)")
+    .select(
+      "id,title,owner_id,visibility,folder_id,group_id,is_official,official_published,difficulty,published_at,library_folders(id,name,parent_id)"
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -73,17 +80,13 @@ export default async function QuizSetPage({ params }: PageProps) {
     const paths = buildFolderPathMap(rows, rootLabel);
     folderName = paths.get(folderId) ?? folderName;
   }
+
   const isOwner = (set as any).owner_id === user.id;
   const isOfficial = Boolean((set as any).is_official);
   const isPublished = Boolean((set as any).official_published);
   const canChallenge = isOfficial && isPublished;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("active_group_id")
-    .eq("id", user.id)
-    .maybeSingle();
-
+  const { data: profile } = await supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle();
   const activeGroupId = (profile as any)?.active_group_id ?? null;
 
   // --- Permissions per your rules:
@@ -95,7 +98,7 @@ export default async function QuizSetPage({ params }: PageProps) {
   const sharedMember = await hasAnyShareRowForSet(supabase, (set as any).id);
 
   const isGroups = visibility === "group" || visibility === "groups";
-  const canEditQuestions = isOfficial ? isAdmin : (isOwner || (isGroups && (legacyMember || sharedMember)));
+  const canEditQuestions = isOfficial ? isAdmin : isOwner || (isGroups && (legacyMember || sharedMember));
 
   // settings panel: keep OWNER-ONLY (avoid share-sync issues for non-owner)
   let sharedGroupIds: string[] = [];
@@ -112,7 +115,7 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   const initialQuestions = (questions ?? []).map((q: any) => ({
     ...q,
-    choices: Array.isArray(q.choices) ? q.choices : []
+    choices: Array.isArray(q.choices) ? q.choices : [],
   }));
 
   // Localize official content (EN): best-effort translation layer.
@@ -128,8 +131,9 @@ export default async function QuizSetPage({ params }: PageProps) {
       .eq("content_id", (set as any).id)
       .eq("lang", "en")
       .maybeSingle();
-    const sp = (setTr as any)?.payload as any;
-    if (sp?.title) displayTitle = String(sp.title);
+
+    const trSetPayload = (setTr as any)?.payload as any;
+    if (trSetPayload?.title) displayTitle = String(trSetPayload.title);
 
     // Questions
     const ids = (questions ?? []).map((q: any) => String(q.id));
@@ -158,7 +162,7 @@ export default async function QuizSetPage({ params }: PageProps) {
         ...q,
         prompt: tr?.prompt ? String(tr.prompt) : q.prompt,
         choices: Array.isArray(tr?.choices) ? tr.choices : q.choices,
-        explanation: tr?.explanation != null ? String(tr.explanation) : q.explanation
+        explanation: tr?.explanation != null ? String(tr.explanation) : q.explanation,
       };
     });
   }
@@ -175,7 +179,15 @@ export default async function QuizSetPage({ params }: PageProps) {
       />
 
       {/* Study first: the main runner is always immediately available. */}
-      <QuizSetView setId={(set as any).id} isOwner={canEditQuestions} initialQuestions={localizedQuestions as any} />
+      {isDaily ? (
+        <DailyQcmRunner
+          setId={String((set as any).id)}
+          canEdit={canEditQuestions}
+          initialQuestions={localizedQuestions as any}
+        />
+      ) : (
+        <QuizSetView setId={(set as any).id} isOwner={canEditQuestions} initialQuestions={localizedQuestions as any} />
+      )}
 
       {(isAdmin || (isOwner && !isOfficial)) || isAdmin ? (
         <details className="rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
@@ -190,9 +202,7 @@ export default async function QuizSetPage({ params }: PageProps) {
             {isAdmin || (isOwner && !isOfficial) ? (
               <ContentItemSettings
                 title={t(locale, "common.settings")}
-                subtitle={
-                  locale === "fr" ? "Renommer, classer et gérer la visibilité." : "Rename, organize and manage visibility."
-                }
+                subtitle={locale === "fr" ? "Renommer, classer et gérer la visibilité." : "Rename, organize and manage visibility."}
                 itemId={(set as any).id}
                 table="quiz_sets"
                 visibility={(set as any).visibility}
@@ -218,7 +228,7 @@ export default async function QuizSetPage({ params }: PageProps) {
                   official_published: Boolean((set as any).official_published),
                   difficulty: (set as any).difficulty ?? 1,
                   published_at: (set as any).published_at ?? null,
-                  visibility: (set as any).visibility ?? null
+                  visibility: (set as any).visibility ?? null,
                 }}
               />
             ) : null}
@@ -232,7 +242,7 @@ export default async function QuizSetPage({ params }: PageProps) {
                   id: String(q.id),
                   prompt: String(q.prompt ?? ""),
                   choices: Array.isArray(q.choices) ? q.choices : [],
-                  explanation: q.explanation ?? null
+                  explanation: q.explanation ?? null,
                 }))}
               />
             ) : null}

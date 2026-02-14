@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
 import { RichContent } from "@/components/RichContent";
 
@@ -116,7 +116,17 @@ function RateButton({
   );
 }
 
-export function FlashcardReview({ cards }: { cards: Card[] }) {
+export function FlashcardReview({
+  cards,
+  dailyMode,
+  dailyGoal = 10,
+  onDailyComplete
+}: {
+  cards: Card[];
+  dailyMode?: boolean;
+  dailyGoal?: number;
+  onDailyComplete?: (stats: { reviewed: number; mastered: number; toReview: number }) => void;
+}) {
   const { t } = useI18n();
 
   const [deck, setDeck] = useState<Card[]>([]);
@@ -130,9 +140,17 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
   const [toReviewIds, setToReviewIds] = useState<Set<string>>(new Set());
   const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
 
+
   const total = deck.length;
   const done = total === 0 || i >= total;
   const current = !done ? deck[i] : null;
+
+  // Daily mode: mark as complete once the user has rated enough cards.
+  const dailyTarget = useMemo(() => {
+    const g = Math.max(1, Number(dailyGoal) || 10);
+    return Math.min(g, Math.max(1, total || g));
+  }, [dailyGoal, total]);
+  const dailyCompletedRef = useRef(false);
 
   const progressText = useMemo(() => (total ? `${Math.min(i + 1, total)}/${total}` : "0/0"), [i, total]);
   const progressPct = useMemo(() => {
@@ -207,6 +225,18 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
     setI((v) => Math.min(total, v + 1));
     setFlipped(false);
   };
+
+  useEffect(() => {
+    if (!dailyMode) return;
+    if (dailyCompletedRef.current) return;
+    if (!total) return;
+    const reviewed = Math.min(i, total);
+    if (reviewed < dailyTarget) return;
+    dailyCompletedRef.current = true;
+    const mastered = masteredIds.size;
+    const toReview = toReviewIds.size;
+    onDailyComplete?.({ reviewed, mastered, toReview });
+  }, [dailyMode, i, total, dailyTarget, masteredIds, toReviewIds, onDailyComplete]);
 
   // Keyboard shortcuts (works in normal + fullscreen, but ignores inputs)
   useEffect(() => {

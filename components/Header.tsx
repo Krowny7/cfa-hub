@@ -5,6 +5,8 @@ import { t } from "@/lib/i18n/core";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SignOutButton } from "@/components/SignOutButton";
 import { HeaderNav } from "@/components/HeaderNav";
+import { StudyMenu } from "@/components/StudyMenu";
+import { UserMenu } from "@/components/UserMenu";
 import { MobileNavSheet } from "@/components/MobileNavSheet";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
@@ -30,6 +32,7 @@ export async function Header() {
   let username: string | null = null;
   let avatarUrl: string | null = null;
   let elo: number | null = null;
+  let isAdmin = false;
 
   if (user) {
     const { data: profile } = await supabase
@@ -47,22 +50,44 @@ export async function Header() {
       .eq("user_id", user.id)
       .maybeSingle();
     elo = (rating as any)?.elo ?? null;
+
+    // Admin membership (best-effort)
+    try {
+      const { data: adminRow } = await supabase
+        .from("app_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      isAdmin = !!(adminRow as any)?.user_id;
+    } catch {
+      isAdmin = false;
+    }
   }
 
+  // Keep the top bar minimal: primary destinations + grouped "Study" dropdown.
   const nav = [
-    { href: "/library", label: t(locale, "nav.library") },
-    { href: "/flashcards", label: t(locale, "nav.flashcards") },
-    { href: "/qcm", label: t(locale, "nav.qcm") },
-    { href: "/exercises", label: t(locale, "nav.exercises") },
+    { href: "/dashboard", label: t(locale, "nav.dashboard") },
     { href: "/challenges", label: t(locale, "nav.challenges") },
     { href: "/people", label: t(locale, "nav.people") }
   ];
 
+  const studyItems = [
+    { href: "/library", label: t(locale, "nav.library") },
+    { href: "/flashcards", label: t(locale, "nav.flashcards") },
+    { href: "/qcm", label: t(locale, "nav.qcm") },
+    { href: "/exercises", label: t(locale, "nav.exercises") }
+  ];
+
   // On mobile, primary destinations are already available in the bottom tab bar.
   // Keep the drawer focused on secondary destinations to avoid duplicate navigation.
-  const mobileNav = nav.filter(
-    (i) => !["/library", "/flashcards", "/qcm", "/exercises"].includes(i.href)
-  );
+  // On mobile, primary study destinations are already in the bottom tab bar.
+  // Keep the drawer focused on secondary destinations to avoid duplicates.
+  const mobileNav = [
+    { href: "/dashboard", label: t(locale, "nav.dashboard") },
+    { href: "/challenges", label: t(locale, "nav.challenges") },
+    { href: "/people", label: t(locale, "nav.people") },
+    { href: "/settings", label: t(locale, "nav.settings") }
+  ];
 
   const icon = {
     book: (
@@ -170,7 +195,12 @@ export async function Header() {
               {t(locale, "appName")}
             </Link>
 
-            {user ? <HeaderNav items={nav} /> : null}
+            {user ? (
+              <div className="hidden items-center gap-1 sm:flex">
+                <HeaderNav items={nav} />
+                <StudyMenu items={studyItems} />
+              </div>
+            ) : null}
           </div>
 
           {/* Desktop actions */}
@@ -178,34 +208,14 @@ export async function Header() {
             <LanguageSwitcher />
 
             {user ? (
-              <>
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs hover:bg-white/[0.06]"
-                  title={t(locale, "profile.title")}
-                >
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="avatar" className="h-6 w-6 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[10px]">
-                      {initialsFromEmail(user.email)}
-                    </div>
-                  )}
-
-                  <span className="hidden max-w-[160px] truncate opacity-80 md:inline">
-                    {username || user.email}
-                  </span>
-
-                  {typeof elo === "number" ? (
-                    <span className="hidden rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/80 md:inline">
-                      Elo {elo}
-                    </span>
-                  ) : null}
-                </Link>
-
-                <SignOutButton />
-              </>
+              <UserMenu
+                avatarUrl={avatarUrl}
+                initials={initialsFromEmail(user.email)}
+                usernameOrEmail={username || user.email || ""}
+                elo={elo}
+                isAdmin={isAdmin}
+                signOutSlot={<SignOutButton />}
+              />
             ) : (
               <Link
                 className="btn btn-secondary whitespace-nowrap"

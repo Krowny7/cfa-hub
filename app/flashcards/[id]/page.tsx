@@ -2,17 +2,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FlashcardImporterExporter } from "@/components/FlashcardImporterExporter";
 import { FlashcardReview } from "@/components/FlashcardReview";
+import { DailyFlashcardsRunner } from "@/components/DailyFlashcardsRunner";
 import { FlashcardQuickAdd } from "@/components/FlashcardQuickAdd";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import Link from "next/link";
 
-type PageProps = {
+type Props = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function FlashcardSetPage({ params }: PageProps) {
+export default async function FlashcardSetPage({ params, searchParams }: Props) {
   const { id } = await params;
+
+  const sp = (await searchParams) ?? {};
+  const isDaily = String(sp?.daily ?? "") === "1";
 
   const locale = await getLocale();
   const supabase = await createClient();
@@ -79,7 +84,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       return {
         ...c,
         front: tr?.front ? String(tr.front) : c.front,
-        back: tr?.back ? String(tr.back) : c.back
+        back: tr?.back ? String(tr.back) : c.back,
       };
     });
   }
@@ -101,7 +106,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         </p>
       </div>
 
-      <FlashcardReview cards={(cards ?? []) as any} />
+      {isDaily ? <DailyFlashcardsRunner cards={(cards ?? []) as any} /> : <FlashcardReview cards={(cards ?? []) as any} />}
 
       {/* Editing tools are useful but should not block the main "review" flow. */}
       <details className="card p-5 min-w-0 max-w-full">

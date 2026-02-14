@@ -32,6 +32,7 @@ export const MESSAGES = {
     },
     nav: {
       dashboard: "Dashboard",
+      study: "Étudier",
       library: "Bibliothèque",
       flashcards: "Flashcards",
       qcm: "QCM",
@@ -43,6 +44,11 @@ export const MESSAGES = {
     profile: {
       title: "Profil",
       adminBadge: "Admin"
+    },
+
+    admin: {
+      studio: "Admin Studio",
+      qod: "Question du jour"
     },
 
     pvp: {
@@ -160,6 +166,7 @@ export const MESSAGES = {
       title: "Dashboard",
       subtitle:
         "Auth Google, bibliothèque PDF, flashcards, partage par groupe, et fondations pour un classement Elo.",
+      level: "Niveau {n}",
       elo: "Elo (bêta)",
       games: "{n} parties",
       pdfs: "PDFs accessibles",
@@ -176,10 +183,74 @@ export const MESSAGES = {
       dailyQcmItem: "QCM #{n}",
       dailyExerciseItem: "Exercice #{n}",
       dailyFootnote: "Disponible jusqu’à la fin de la journée.",
+
+      sections: {
+        today: "Aujourd’hui",
+        todayHint: "Ta session guidée + la question du jour.",
+        progress: "Progression",
+        progressHint: "Ton objectif CFA + tes indicateurs clés."
+      },
+
+      progress: {
+        title: "Tes indicateurs",
+        subtitle: "En un coup d’œil (simple, sans bruit)."
+      },
+
+      countdown: {
+        title: "Compte à rebours",
+        subtitle: "Configure ta date d’examen CFA (par défaut : variables d’environnement).",
+        defaultLabel: "Examen CFA",
+        label: "Libellé",
+        date: "Date",
+        notSet: "Aucune date configurée.",
+        notSetHint: "Clique sur “Modifier” pour définir ta date d’examen.",
+        remaining: "Temps restant",
+        past: "Date dépassée",
+        days: "jours",
+        hms: "hh:mm:ss"
+      },
+
       nextTitle: "Prochaines étapes",
       next1: "QCM / Exam mode (timer + corrections + logs d’erreurs).",
       next2: "Progression CFA (Topic → Reading → LOS) + planning.",
       next3: "Classement Elo sur des “challenges” partagés."
+    },
+
+    daily: {
+      title: "Session du jour",
+      subtitle: "10 minutes guidées pour garder le rythme.",
+      streak: "Streak",
+      continue: "Reprendre",
+      session: "Session",
+      sessionDuration: "10 min",
+      progress: "{done}/{total} étapes",
+      stepFlashcards: "5 min flashcards",
+      stepQcm: "5 min QCM",
+      go: "Go",
+      finish: "Valider la session",
+      done: "✅ Session terminée",
+      hint: "Fais les 2 étapes : la session se valide automatiquement.",
+      smartPick: "Sélection automatique",
+      pickFlashcards: "Flashcards du jour",
+      pickQcm: "QCM du jour",
+      localNote: "MVP : progression stockée localement sur cet appareil.",
+      suggestionFlashcards: "Basé sur ton set le plus récent.",
+      suggestionQcm: "Basé sur ton quiz le plus récent.",
+      noFlashcards: "Aucun set de flashcards pour l’instant.",
+      noQcm: "Aucun set de QCM pour l’instant."
+    },
+
+    qod: {
+      title: "Question du jour",
+      subtitle: "Même question pour tous • {date}",
+      loading: "Chargement…",
+      unavailable: "Aucune question dispo (upload côté admin).",
+      choose: "Choisis une réponse.",
+      validate: "Valider",
+      retry: "Rejouer",
+      correct: "✅ Correct",
+      wrong: "❌ Incorrect",
+      correction: "Correction"
     },
     library: {
       title: "Bibliothèque",
@@ -401,6 +472,7 @@ export const MESSAGES = {
     },
     nav: {
       dashboard: "Dashboard",
+      study: "Study",
       library: "Library",
       flashcards: "Flashcards",
       qcm: "MCQ",
@@ -412,6 +484,11 @@ export const MESSAGES = {
     profile: {
       title: "Profile",
       adminBadge: "Admin"
+    },
+
+    admin: {
+      studio: "Admin Studio",
+      qod: "Question of the day"
     },
 
     pvp: {
@@ -529,6 +606,7 @@ export const MESSAGES = {
       title: "Dashboard",
       subtitle:
         "Google Auth, PDF library, flashcards, group sharing, and Elo foundations.",
+      level: "Level {n}",
       elo: "Elo (beta)",
       games: "{n} games",
       pdfs: "Accessible PDFs",
@@ -545,10 +623,73 @@ export const MESSAGES = {
       dailyQcmItem: "MCQ #{n}",
       dailyExerciseItem: "Exercise #{n}",
       dailyFootnote: "Available until the end of the day.",
+
+      sections: {
+        today: "Today",
+        todayHint: "Your guided session + the question of the day.",
+        progress: "Progress",
+        progressHint: "Your CFA target + key indicators."
+      },
+
+      progress: {
+        title: "Your indicators",
+        subtitle: "Quick glance (simple, no noise)."
+      },
+
+      countdown: {
+        title: "Countdown",
+        subtitle: "Set your CFA exam date (default: environment variables).",
+        defaultLabel: "CFA Exam",
+        label: "Label",
+        date: "Date",
+        notSet: "No date configured.",
+        notSetHint: "Click \"Edit\" to set your exam date.",
+        remaining: "Time remaining",
+        past: "Date passed",
+        days: "days",
+        hms: "hh:mm:ss"
+      },
       nextTitle: "Next steps",
       next1: "QCM / Exam mode (timer + corrections + error logs).",
       next2: "CFA progress (Topic → Reading → LOS) + planning.",
       next3: "Elo leaderboard for shared challenges."
+    },
+
+    daily: {
+      title: "Daily session",
+      subtitle: "A guided 10-minute session to keep momentum.",
+      streak: "Streak",
+      continue: "Continue",
+      session: "Session",
+      sessionDuration: "10 min",
+      progress: "{done}/{total} steps",
+      stepFlashcards: "5 min flashcards",
+      stepQcm: "5 min MCQ",
+      go: "Go",
+      finish: "Validate session",
+      done: "✅ Session completed",
+      hint: "Do the 2 steps: the session validates automatically.",
+      smartPick: "Smart pick",
+      pickFlashcards: "Today's flashcards",
+      pickQcm: "Today's MCQ",
+      localNote: "MVP: progress is stored locally on this device.",
+      suggestionFlashcards: "Based on your most recent set.",
+      suggestionQcm: "Based on your most recent quiz.",
+      noFlashcards: "No flashcard set yet.",
+      noQcm: "No MCQ set yet."
+    },
+
+    qod: {
+      title: "Question of the Day",
+      subtitle: "Same question for everyone • {date}",
+      loading: "Loading…",
+      unavailable: "No question available (admin upload needed).",
+      choose: "Choose an answer.",
+      validate: "Validate",
+      retry: "Retry",
+      correct: "✅ Correct",
+      wrong: "❌ Wrong",
+      correction: "Correction"
     },
     library: {
       title: "Library",

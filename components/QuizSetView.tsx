@@ -31,11 +31,15 @@ type Question = {
 export function QuizSetView({
   setId,
   isOwner,
-  initialQuestions
+  initialQuestions,
+  dailyMode,
+  onDailyComplete
 }: {
   setId: string;
   isOwner: boolean; // used as "canEdit"
   initialQuestions: Question[];
+  dailyMode?: boolean;
+  onDailyComplete?: (stats: { score: number; total: number }) => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
@@ -971,6 +975,13 @@ export function QuizSetView({
                     className="rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
                     onClick={async () => {
                       setFinished(true);
+                      if (dailyMode) {
+                        try {
+                          onDailyComplete?.({ score, total: questions.length });
+                        } catch {
+                          // ignore
+                        }
+                      }
                       await submitAttempt(score);
                     }}
                   >
