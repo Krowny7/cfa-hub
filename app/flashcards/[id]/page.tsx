@@ -2,17 +2,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FlashcardImporterExporter } from "@/components/FlashcardImporterExporter";
 import { FlashcardReview } from "@/components/FlashcardReview";
+import { DailyFlashcardsRunner } from "@/components/DailyFlashcardsRunner";
 import { FlashcardQuickAdd } from "@/components/FlashcardQuickAdd";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import Link from "next/link";
 
-type PageProps = {
+type Props = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function FlashcardSetPage({ params }: PageProps) {
+export default async function FlashcardSetPage({ params, searchParams }: Props) {
   const { id } = await params;
+
+  const sp = (await searchParams) ?? {};
+  const isDaily = String(sp?.daily ?? "") === "1";
 
   const locale = await getLocale();
   const supabase = await createClient();
@@ -20,7 +25,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   const user = data.user;
   if (!user) redirect("/login");
 
-  const [{ data: set, error: setErr }, { data: cards }] = await Promise.all([
+  const [{ data: set, error: setErr }, { data: cardsRaw }] = await Promise.all([
     supabase.from("flashcard_sets").select("id,title,visibility").eq("id", id).maybeSingle(),
     supabase
       .from("flashcards")
@@ -38,7 +43,53 @@ export default async function FlashcardSetPage({ params }: PageProps) {
     );
   }
 
-  const count = (cards ?? []).length;
+  let cards = (cardsRaw ?? []) as any[];
+
+  // Best-effort localization (EN) for set title and cards.
+  let displayTitle = String((set as any).title ?? "(set)");
+  if (locale === "en") {
+    const { data: setTr } = await supabase
+      .from("content_translations")
+      .select("payload")
+      .eq("content_type", "flashcard_set")
+      .eq("content_id", (set as any).id)
+      .eq("lang", "en")
+      .maybeSingle();
+
+    const ids = cards.map((c) => String(c.id));
+    const chunkSize = 500;
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += chunkSize) chunks.push(ids.slice(i, i + chunkSize));
+
+    const cardTr: any[] = [];
+    for (const chunk of chunks) {
+      const { data } = await supabase
+        .from("content_translations")
+        .select("content_id,payload")
+        .eq("content_type", "flashcard")
+        .eq("lang", "en")
+        .in("content_id", chunk);
+      if (data?.length) cardTr.push(...(data as any[]));
+    }
+
+    const p = (setTr as any)?.payload as any;
+    if (p?.title) displayTitle = String(p.title);
+
+    const byId = new Map<string, any>();
+    (cardTr ?? []).forEach((r: any) => byId.set(String(r.content_id), (r as any).payload));
+
+    cards = cards.map((c: any) => {
+      const tr = byId.get(String(c.id));
+      if (!tr) return c;
+      return {
+        ...c,
+        front: tr?.front ? String(tr.front) : c.front,
+        back: tr?.back ? String(tr.back) : c.back,
+      };
+    });
+  }
+
+  const count = cards.length;
 
   return (
     <div className="mx-auto w-full max-w-5xl grid gap-4 min-w-0 max-w-full overflow-x-hidden">
@@ -49,33 +100,44 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       </div>
 
       <div className="card p-6 sm:p-8">
-        <h1 className="text-2xl font-semibold tracking-tight break-words">{(set as any).title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight break-words">{displayTitle}</h1>
         <p className="mt-2 text-sm opacity-80 break-words">
           {String((set as any).visibility).toUpperCase()} • {count} {t(locale, "flashcards.cards")}
         </p>
       </div>
 
-      <FlashcardQuickAdd setId={id} nextPosition={count + 1} />
+      {isDaily ? <DailyFlashcardsRunner cards={(cards ?? []) as any} /> : <FlashcardReview cards={(cards ?? []) as any} />}
 
-      <FlashcardImporterExporter setId={id} />
+      {/* Editing tools are useful but should not block the main "review" flow. */}
+      <details className="card p-5 min-w-0 max-w-full">
+        <summary className="cursor-pointer select-none text-base font-semibold">
+          {t(locale, "common.settings")}
+          <span className="ml-2 text-xs opacity-70">(ajout, import/export, liste)</span>
+        </summary>
 
-      <FlashcardReview cards={(cards ?? []) as any} />
+        <div className="mt-4 grid gap-4">
+          <FlashcardQuickAdd setId={id} nextPosition={count + 1} />
+          <FlashcardImporterExporter setId={id} />
 
-      <div className="card p-5 min-w-0 max-w-full">
-        <h3 className="text-base font-semibold">{t(locale, "flashcards.cards")}</h3>
-        <div className="mt-3 grid gap-2">
-          {(cards ?? []).map((c: any) => (
-            <div key={c.id} className="card-soft p-3">
-              <div className="text-xs opacity-70">#{c.position}</div>
-              <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">{c.front}</div>
-              <div className="mt-2 whitespace-pre-wrap text-sm opacity-80 break-words [overflow-wrap:anywhere]">{c.back}</div>
+          <div className="card-soft p-4 min-w-0 max-w-full">
+            <h3 className="text-base font-semibold">{t(locale, "flashcards.cards")}</h3>
+            <div className="mt-3 grid gap-2">
+              {(cards ?? []).map((c: any) => (
+                <div key={c.id} className="card-soft p-3">
+                  <div className="text-xs opacity-70">#{c.position}</div>
+                  <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">
+                    {c.front}
+                  </div>
+                  <div className="mt-2 whitespace-pre-wrap text-sm opacity-80 break-words [overflow-wrap:anywhere]">
+                    {c.back}
+                  </div>
+                </div>
+              ))}
+              {(cards ?? []).length === 0 && <div className="text-sm opacity-70">{t(locale, "flashcards.none")}</div>}
             </div>
-          ))}
-          {(cards ?? []).length === 0 && (
-            <div className="text-sm opacity-70">{t(locale, "flashcards.none")}</div>
-          )}
+          </div>
         </div>
-      </div>
+      </details>
     </div>
   );
 }

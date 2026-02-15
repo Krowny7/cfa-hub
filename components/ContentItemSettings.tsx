@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
@@ -24,29 +25,35 @@ export function ContentItemSettings({
   activeGroupId,
   initialSharedGroupIds = [],
   legacyGroupId = null,
+  compact = false,
   onDeleted,
   onUpdated
 }: {
   title: string;
   subtitle: string;
   itemId: string;
-  table: "documents" | "flashcard_sets" | "quiz_sets";
+  table: "documents" | "flashcard_sets" | "quiz_sets" | "exercise_sets";
   visibility: string | null;
   folderId: string | null;
   folderKind: FolderKind;
-  shareTable: "document_shares" | "flashcard_set_shares" | "quiz_set_shares";
+  shareTable: "document_shares" | "flashcard_set_shares" | "quiz_set_shares" | "exercise_set_shares";
   shareFk: "document_id" | "set_id";
   rootLabel: string;
   activeGroupId: string | null;
   initialSharedGroupIds?: string[];
   legacyGroupId?: string | null;
+
+  // When used inside a modal, `compact` removes the accordion wrapper.
+  compact?: boolean;
+
   onDeleted?: () => void;
   onUpdated?: () => void;
 }) {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
 
-  const defaultRedirect = table === "documents" ? "/library" : table === "flashcard_sets" ? "/flashcards" : "/qcm";
+  const defaultRedirect = table === "documents" ? "/library" : table === "flashcard_sets" ? "/flashcards" : table === "quiz_sets" ? "/qcm" : "/exercises";
 
   const [draftTitle, setDraftTitle] = useState(title);
   const [shareMode, setShareMode] = useState<ShareMode>(
@@ -56,6 +63,7 @@ export function ContentItemSettings({
     const base = [...(initialSharedGroupIds ?? []), ...(legacyGroupId ? [legacyGroupId] : [])].filter(Boolean) as string[];
     return Array.from(new Set(base));
   });
+
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderId);
   const [newFolderName, setNewFolderName] = useState("");
@@ -66,6 +74,12 @@ export function ContentItemSettings({
 
   const [msg, setMsg] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
+
+  // Force dark dropdown options on browsers that render option lists with white background.
+  const optionStyle: CSSProperties = {
+    backgroundColor: "rgba(10, 10, 12, 0.98)",
+    color: "rgba(255, 255, 255, 0.92)"
+  };
 
   useEffect(() => {
     setDraftTitle(title);
@@ -97,10 +111,7 @@ export function ContentItemSettings({
     (async () => {
       setLoadingShares(true);
       try {
-        const { data, error } = await (supabase as any)
-          .from(shareTable)
-          .select("group_id")
-          .eq(shareFk, itemId);
+        const { data, error } = await (supabase as any).from(shareTable).select("group_id").eq(shareFk, itemId);
         if (error) throw error;
         const ids = (data ?? []).map((r: any) => r.group_id).filter(Boolean);
         setGroupIds((prev) => Array.from(new Set([...prev, ...ids])));
@@ -157,14 +168,14 @@ export function ContentItemSettings({
 
       const normalizedVisibility = shareMode === "groups" ? "groups" : shareMode;
 
-      // Update main row
+      // 1) Update main row
       const { error: upErr } = await (supabase as any)
         .from(table)
         .update({ title: draftTitle.trim(), visibility: normalizedVisibility, folder_id: selectedFolderId })
         .eq("id", itemId);
       if (upErr) throw upErr;
 
-      // Update shares
+      // 2) Update shares
       await (supabase as any).from(shareTable).delete().eq(shareFk as any, itemId);
       if (shareMode === "groups" && groupIds.length) {
         const rows = groupIds.map((gid) => ({ [shareFk]: itemId, group_id: gid }));
@@ -174,6 +185,8 @@ export function ContentItemSettings({
 
       setMsg(t("common.saved"));
       onUpdated?.();
+      // Keep server components in sync
+      router.refresh();
     } catch (e: any) {
       setErrorText(e?.message ?? t("common.error"));
     } finally {
@@ -203,6 +216,132 @@ export function ContentItemSettings({
     }
   }
 
+  const body = (
+    <div className={compact ? "grid gap-5" : "mt-4 grid gap-5"}>
+      {/* Title */}
+      <div className="grid gap-2">
+        <div className="text-sm font-semibold">{t("common.title")}</div>
+        <input
+          className="input"
+          value={draftTitle}
+          onChange={(e) => setDraftTitle(e.target.value)}
+          placeholder={t("common.title")}
+        />
+      </div>
+
+      {/* Folder */}
+      <div className="grid gap-3">
+        <div className="text-sm font-semibold">{t("folders.folder")}</div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <select
+              className="select"
+              value={selectedFolderId ?? ""}
+              onChange={(e) => setSelectedFolderId(e.target.value ? e.target.value : null)}
+              style={{ colorScheme: "dark" }}
+            >
+              <option value="" style={optionStyle}>{rootLabel}</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id} style={optionStyle}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button type="button" className="btn btn-secondary" onClick={() => setSelectedFolderId(null)} disabled={saving}>
+            {t("common.reset")}
+          </button>
+        </div>
+
+        <div className="card-soft p-4">
+          <div className="text-xs font-semibold opacity-80">{t("folders.new")}</div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <input
+              className="input sm:col-span-2"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder={t("folders.newPlaceholder")}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={createFolder}
+              disabled={creatingFolder || !newFolderName.trim()}
+            >
+              {creatingFolder ? t("common.saving") : t("folders.create")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sharing */}
+      <div className="grid gap-3">
+        <div className="text-sm font-semibold">{t("sharing.title")}</div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
+            onClick={() => setShareMode("private")}
+            disabled={saving}
+          >
+            {t("common.private")}
+          </button>
+          <button
+            type="button"
+            className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
+            onClick={() => setShareMode("groups")}
+            disabled={saving}
+          >
+            {t("sharing.someGroups")}
+          </button>
+          <button
+            type="button"
+            className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
+            onClick={() => setShareMode("public")}
+            disabled={saving}
+          >
+            {t("common.public")}
+          </button>
+        </div>
+
+        {shareMode === "groups" ? (
+          <div className="grid gap-2">
+            {loadingShares ? <div className="text-xs text-white/70">{t("common.loading")}</div> : null}
+            <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
+          </div>
+        ) : null}
+      </div>
+
+      {errorText ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          ❌ {errorText}
+        </div>
+      ) : null}
+
+      {msg ? <div className="text-sm text-white/80">✅ {msg}</div> : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4">
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={saveAll}
+          disabled={saving || !draftTitle.trim() || (shareMode === "groups" && groupIds.length === 0)}
+        >
+          {saving ? t("common.saving") : t("common.save")}
+        </button>
+
+        <button type="button" className="btn btn-danger" onClick={deleteItem} disabled={saving}>
+          {t("common.delete")}
+        </button>
+      </div>
+    </div>
+  );
+
+  if (compact) return body;
+
   return (
     <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.05]">
@@ -213,137 +352,11 @@ export function ContentItemSettings({
 
         <div className="flex items-center gap-2 text-xs text-white/70">
           <span className="hidden sm:inline">{t("common.edit")}</span>
-          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.02]">
-            ▾
-          </span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.02]">▾</span>
         </div>
       </summary>
 
-      <div className="mt-4 grid gap-5">
-        {/* Title */}
-        <div className="grid gap-2">
-          <div className="text-sm font-semibold">{t("common.title")}</div>
-          <input
-            className="input"
-            value={draftTitle}
-            onChange={(e) => setDraftTitle(e.target.value)}
-            placeholder={t("common.title")}
-          />
-        </div>
-
-        {/* Folder */}
-        <div className="grid gap-3">
-          <div className="text-sm font-semibold">{t("folders.folder")}</div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <select
-                className="select"
-                value={selectedFolderId ?? ""}
-                onChange={(e) => setSelectedFolderId(e.target.value ? e.target.value : null)}
-              >
-                <option value="">{rootLabel}</option>
-                {folders.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setSelectedFolderId(null)}
-              disabled={saving}
-            >
-              {t("common.reset")}
-            </button>
-          </div>
-
-          <div className="card-soft p-4">
-            <div className="text-xs font-semibold opacity-80">{t("folders.new")}</div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              <input
-                className="input sm:col-span-2"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder={t("folders.newPlaceholder")}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={createFolder}
-                disabled={creatingFolder || !newFolderName.trim()}
-              >
-                {creatingFolder ? t("common.saving") : t("folders.create")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Sharing */}
-        <div className="grid gap-3">
-          <div className="text-sm font-semibold">{t("sharing.title")}</div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("private")}
-              disabled={saving}
-            >
-              {t("common.private")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("groups")}
-              disabled={saving}
-            >
-              {t("sharing.someGroups")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("public")}
-              disabled={saving}
-            >
-              {t("common.public")}
-            </button>
-          </div>
-
-          {shareMode === "groups" ? (
-            <div className="grid gap-2">
-              {loadingShares ? <div className="text-xs text-white/70">{t("common.loading")}</div> : null}
-              <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
-            </div>
-          ) : null}
-        </div>
-
-        {errorText ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            ❌ {errorText}
-          </div>
-        ) : null}
-
-        {msg ? <div className="text-sm text-white/80">✅ {msg}</div> : null}
-
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={saveAll}
-            disabled={saving || !draftTitle.trim() || (shareMode === "groups" && groupIds.length === 0)}
-          >
-            {saving ? t("common.saving") : t("common.save")}
-          </button>
-
-          <button type="button" className="btn btn-danger" onClick={deleteItem} disabled={saving}>
-            {t("common.delete")}
-          </button>
-        </div>
-      </div>
+      {body}
     </details>
   );
 }

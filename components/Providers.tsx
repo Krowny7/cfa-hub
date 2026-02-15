@@ -1,6 +1,7 @@
 "use client";
 
 import { I18nProvider } from "@/components/I18nProvider";
+import { RouteTracker } from "@/components/RouteTracker";
 import type { Locale } from "@/lib/i18n/core";
 
 export function Providers({
@@ -10,5 +11,10 @@ export function Providers({
   children: React.ReactNode;
   initialLocale: Locale;
 }) {
-  return <I18nProvider initialLocale={initialLocale}>{children}</I18nProvider>;
+  return (
+    <I18nProvider initialLocale={initialLocale}>
+      <RouteTracker />
+      {children}
+    </I18nProvider>
+  );
 }
