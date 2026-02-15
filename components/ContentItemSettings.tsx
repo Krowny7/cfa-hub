@@ -67,6 +67,12 @@ export function ContentItemSettings({
   const [msg, setMsg] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
 
+  // Force dark dropdown options on browsers that render option lists with white background.
+  const optionStyle: React.CSSProperties = {
+    backgroundColor: "rgba(10, 10, 12, 0.98)",
+    color: "rgba(255, 255, 255, 0.92)"
+  };
+
   useEffect(() => {
     setDraftTitle(title);
   }, [title]);
@@ -97,10 +103,7 @@ export function ContentItemSettings({
     (async () => {
       setLoadingShares(true);
       try {
-        const { data, error } = await (supabase as any)
-          .from(shareTable)
-          .select("group_id")
-          .eq(shareFk, itemId);
+        const { data, error } = await (supabase as any).from(shareTable).select("group_id").eq(shareFk, itemId);
         if (error) throw error;
         const ids = (data ?? []).map((r: any) => r.group_id).filter(Boolean);
         setGroupIds((prev) => Array.from(new Set([...prev, ...ids])));
@@ -213,9 +216,7 @@ export function ContentItemSettings({
 
         <div className="flex items-center gap-2 text-xs text-white/70">
           <span className="hidden sm:inline">{t("common.edit")}</span>
-          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.02]">
-            ▾
-          </span>
+          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.02]">▾</span>
         </div>
       </summary>
 
@@ -241,22 +242,21 @@ export function ContentItemSettings({
                 className="select"
                 value={selectedFolderId ?? ""}
                 onChange={(e) => setSelectedFolderId(e.target.value ? e.target.value : null)}
+                // Important: ensures native UI uses dark palette where possible
+                style={{ colorScheme: "dark" }}
               >
-                <option value="">{rootLabel}</option>
+                <option value="" style={optionStyle}>
+                  {rootLabel}
+                </option>
                 {folders.map((f) => (
-                  <option key={f.id} value={f.id}>
+                  <option key={f.id} value={f.id} style={optionStyle}>
                     {f.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setSelectedFolderId(null)}
-              disabled={saving}
-            >
+            <button type="button" className="btn btn-secondary" onClick={() => setSelectedFolderId(null)} disabled={saving}>
               {t("common.reset")}
             </button>
           </div>
@@ -322,9 +322,7 @@ export function ContentItemSettings({
         </div>
 
         {errorText ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            ❌ {errorText}
-          </div>
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">❌ {errorText}</div>
         ) : null}
 
         {msg ? <div className="text-sm text-white/80">✅ {msg}</div> : null}
