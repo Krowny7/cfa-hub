@@ -32,6 +32,16 @@ export default async function PersonProfilePage({ params }: PageProps) {
   const user = auth.user;
   if (!user) redirect("/login");
 
+  // Badge should be visible to everyone: fetch admin status for the viewed profile.
+  let isTargetAdmin = false;
+  try {
+    const { data: targetAdminData } = await supabase.rpc("is_user_app_admin", { p_user_id: id });
+    isTargetAdmin = Boolean(targetAdminData);
+  } catch {
+    // Backward compatibility if SQL patch not applied yet.
+    isTargetAdmin = false;
+  }
+
   const [{ data: profile }, { data: ratingRow }] = await Promise.all([
     supabase
       .from("profiles")
@@ -66,17 +76,13 @@ export default async function PersonProfilePage({ params }: PageProps) {
   const isMe = user.id === id;
 
   let xpDaily: XpDay[] | null = null;
-  if (isMe) {
-    try {
-      const { data } = await supabase.rpc("get_xp_daily", { p_days: 90 });
-      if (Array.isArray(data)) {
-        xpDaily = data
-          .slice(0, 90)
-          .map((d: any) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
-      }
-    } catch {
-      // If the SQL file hasn't been applied yet, the chart will simply not show.
+  try {
+    const { data } = await supabase.rpc("get_xp_daily_for_user", { p_user_id: id, p_days: 90 });
+    if (Array.isArray(data)) {
+      xpDaily = data.slice(0, 90).map((d: any) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
     }
+  } catch {
+    // If the SQL file hasn't been applied yet, the chart will simply not show.
   }
 
   return (
@@ -92,7 +98,7 @@ export default async function PersonProfilePage({ params }: PageProps) {
             </div>
           </div>
 
-          {isMe ? (
+          {user.id === id ? (
             <Link href="/settings" className="btn btn-secondary">
               {t(locale, "nav.settings")}
             </Link>
@@ -115,6 +121,9 @@ export default async function PersonProfilePage({ params }: PageProps) {
             </h1>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="badge badge-private">Niveau {lvlInfo.level}</span>
+              {isTargetAdmin ? (
+                <span className="badge badge-public">{t(locale, "profile.adminBadge")}</span>
+              ) : null}
               <span className="badge badge-shared">{xpTotal} XP</span>
               <span className="badge badge-public">Elo: {elo}</span>
               <span className="badge badge-shared">
@@ -148,24 +157,20 @@ export default async function PersonProfilePage({ params }: PageProps) {
 
           <div className="mt-4 text-xs opacity-70">
             {locale === "fr"
-              ? "XP gagnée uniquement sur les QCM officiels (questions justes)."
-              : "XP is earned only on official quizzes (correct answers)."}
+              ? "XP gagnée uniquement sur les QCM de référence (questions justes)."
+              : "XP is earned only on reference quizzes (correct answers)."}
           </div>
         </div>
 
-        {isMe && xpDaily ? (
+        {xpDaily ? (
           <XpBarChart data={xpDaily} title={locale === "fr" ? "XP gagnée par jour (90 jours)" : "Daily XP (90 days)"} />
         ) : (
           <div className="card p-6">
             <h2 className="font-semibold">{locale === "fr" ? "Stats" : "Stats"}</h2>
             <div className="mt-2 text-sm text-white/80">
-              {isMe
-                ? locale === "fr"
-                  ? "Applique le fichier SQL Supabase pour activer le graphe."
-                  : "Apply the Supabase SQL file to enable the chart."
-                : locale === "fr"
-                  ? "Le graphe détaillé est visible sur ton propre profil."
-                  : "Detailed chart is visible on your own profile."}
+              {locale === "fr"
+                ? "Applique le fichier SQL Supabase pour activer le graphe."
+                : "Apply the Supabase SQL file to enable the chart."}
             </div>
           </div>
         )}

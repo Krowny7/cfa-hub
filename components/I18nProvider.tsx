@@ -12,6 +12,8 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
 export function I18nProvider({
   initialLocale,
   children
@@ -31,12 +33,31 @@ export function I18nProvider({
     async (nextLocale: Locale) => {
       if (!isLocale(nextLocale) || nextLocale === locale) return;
 
-      await fetch("/api/locale", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale: nextLocale })
-      });
+      // 1) Immediate client-side cookie fallback (prevents UX crash even if API fails)
+      try {
+        document.cookie = `cfa_locale=${nextLocale}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+      } catch {
+        // ignore
+      }
 
+      // 2) Best-effort API call (never throw — avoid runtime crash on click)
+      try {
+        const res = await fetch("/api/locale", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale: nextLocale }),
+          cache: "no-store",
+          credentials: "same-origin"
+        });
+
+        if (!res.ok) {
+          console.warn("Locale API returned non-OK:", res.status);
+        }
+      } catch (err) {
+        console.warn("Locale API fetch failed, using cookie fallback:", err);
+      }
+
+      // 3) Apply locally + refresh server components
       setLocaleState(nextLocale);
       router.refresh();
     },
