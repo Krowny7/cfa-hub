@@ -12,6 +12,8 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
 export function I18nProvider({
   initialLocale,
   children
@@ -20,7 +22,9 @@ export function I18nProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [locale, setLocaleState] = useState<Locale>(initialLocale && isLocale(initialLocale) ? initialLocale : DEFAULT_LOCALE);
+  const [locale, setLocaleState] = useState<Locale>(
+    initialLocale && isLocale(initialLocale) ? initialLocale : DEFAULT_LOCALE
+  );
 
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => tCore(locale, key, vars),
@@ -31,12 +35,35 @@ export function I18nProvider({
     async (nextLocale: Locale) => {
       if (!isLocale(nextLocale) || nextLocale === locale) return;
 
-      await fetch("/api/locale", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale: nextLocale })
-      });
+      // 1) Fallback immédiat côté client (évite crash + permet refresh serveur)
+      try {
+        // Samesite=lax, path=/, durée 1 an
+        document.cookie = `cfa_locale=${nextLocale}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+      } catch {
+        // ignore
+      }
 
+      // 2) Tentative “propre” via API (utile si tu veux centraliser / tracer)
+      try {
+        const res = await fetch("/api/locale", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale: nextLocale }),
+          cache: "no-store",
+          credentials: "same-origin"
+        });
+
+        // Même si ça rate, on ne throw pas (on veut zéro crash UX)
+        if (!res.ok) {
+          // on log mais on continue
+          console.warn("Locale API returned non-OK:", res.status);
+        }
+      } catch (err) {
+        console.warn("Locale API fetch failed, using cookie fallback:", err);
+        // Pas de throw -> UX stable
+      }
+
+      // 3) On applique localement + refresh serveur
       setLocaleState(nextLocale);
       router.refresh();
     },
