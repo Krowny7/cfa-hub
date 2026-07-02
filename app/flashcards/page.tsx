@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FlashcardSetCreator } from "@/components/FlashcardSetCreator";
+import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
@@ -76,6 +77,9 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
 
   return (
     <div className="grid gap-4">
+      {/* Reprendre où on en était — priorité visuelle sur la création */}
+      <ContinueReviewing />
+
       {/* Header: title + creator toggle */}
       <details>
         <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">

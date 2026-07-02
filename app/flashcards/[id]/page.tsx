@@ -5,6 +5,7 @@ import { FlashcardReview } from "@/components/FlashcardReview";
 import { FlashcardQuickAdd } from "@/components/FlashcardQuickAdd";
 import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
 import { ShareButton } from "@/components/ShareButton";
+import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import Link from "next/link";
@@ -41,9 +42,11 @@ export default async function FlashcardSetPage({ params }: PageProps) {
 
   return (
     <div className="grid gap-4">
-      {/* Header */}
+      <RecentFlashcardSetTracker id={id} title={set.title} />
+
+      {/* Header — compact, ne mange pas d'espace vertical sur mobile */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <Link href="/flashcards" className="text-xs text-white/50 hover:text-white/80">
             ← {t(locale, "nav.flashcards")}
           </Link>
@@ -57,11 +60,31 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         )}
       </div>
 
-      <FlashcardQuickAdd setId={id} nextPosition={cards.length + 1} />
-      <FlashcardImporterExporter setId={id} />
+      {/* La révision est l'usage quotidien -> premier contenu visible, sans scroll */}
       <FlashcardReview cards={cards} />
 
-      <FlashcardCardEditor setId={id} initialCards={cards} isOwner={isOwner} />
+      {/* Outils de création/import — repliés, réservés au propriétaire du set */}
+      {isOwner && (
+        <details className="card p-4">
+          <summary className="cursor-pointer select-none text-sm font-semibold">
+            {t(locale, "flashcards.manageCards")}
+          </summary>
+          <div className="mt-3 grid gap-3">
+            <FlashcardQuickAdd setId={id} nextPosition={cards.length + 1} />
+            <FlashcardImporterExporter setId={id} />
+          </div>
+        </details>
+      )}
+
+      {/* Liste complète des cartes — repliée par défaut, consultable par tous */}
+      <details className="card p-4">
+        <summary className="cursor-pointer select-none text-sm font-semibold">
+          {t(locale, "flashcards.allCards")} ({cards.length})
+        </summary>
+        <div className="mt-3">
+          <FlashcardCardEditor setId={id} initialCards={cards} isOwner={isOwner} />
+        </div>
+      </details>
     </div>
   );
 }

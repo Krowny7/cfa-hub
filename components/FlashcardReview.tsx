@@ -26,8 +26,10 @@ function CardPanel({
 }) {
   const text = flipped ? current.back : current.front;
 
-  // ✅ Center only when it's "short" (otherwise keep top-left + scroll)
-  const shouldCenter = text.length <= 140 && !text.includes("\n");
+  // Centre verticalement la plupart des cartes (nos contenus CFA font souvent
+  // 150-350 caractères) ; seuls les très longs blocs ou les formules multi-lignes
+  // restent alignés en haut avec scroll, pour éviter un pavé de texte écrasé.
+  const shouldCenter = text.length <= 420 && !text.includes("\n");
 
   return (
     <button
@@ -114,6 +116,8 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
     );
   }
 
+  const pct = total ? Math.round(((i + 1) / total) * 100) : 0;
+
   const shell = (
     <>
       {/* Header: stack on mobile to prevent overflow */}
@@ -124,7 +128,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-sm opacity-70">{progress}</span>
+          <span className="text-sm opacity-70 tabular-nums">{progress}</span>
           <button
             type="button"
             className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
@@ -135,6 +139,14 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
         </div>
       </div>
 
+      {/* Barre de progression — repère visuel rapide dans le set */}
+      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div
+          className="h-full rounded-full bg-emerald-400/70 transition-[width] duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
       <div className="mt-4">
         <CardPanel
           current={current}
@@ -143,6 +155,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
           labelFront={t("flashcards.front")}
           labelBack={t("flashcards.back")}
           labelHint={t("flashcards.tapToFlip")}
+          className="min-h-[42vh] sm:min-h-[360px]"
         />
       </div>
 
@@ -173,7 +186,13 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
       <div className="rounded-2xl border p-4">{shell}</div>
 
       {fullscreen && (
-        <div className="fixed inset-0 z-50 bg-black/70 p-3 sm:p-4 backdrop-blur">
+        // z-[100] : au-dessus de la bottom nav mobile (z-50) pour qu'elle ne
+        // recouvre plus les boutons Précédente/Suivante en bas de l'écran.
+        // paddingBottom réserve la zone home-indicator iOS (safe area).
+        <div
+          className="fixed inset-0 z-[100] bg-black/70 p-3 sm:p-4 backdrop-blur"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           <div className="mx-auto flex h-full w-full max-w-6xl flex-col rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl">
             {/* Fullscreen header: stack on mobile */}
             <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -193,8 +212,8 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
               </button>
             </div>
 
-            <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
-              <div className="flex h-full flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              <div className="flex h-full min-h-full flex-col">
                 <div className="flex-1">
                   <div className="mx-auto h-full w-full max-w-5xl">
                     <CardPanel
@@ -207,9 +226,9 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                       showBottomHint={false}
                       className={[
                         "h-full",
-                        "min-h-[62vh] sm:min-h-[68vh]",
-                        "p-8 sm:p-10",
-                        "text-[20px] sm:text-[22px] leading-relaxed"
+                        "min-h-[38vh] sm:min-h-[68vh]",
+                        "p-6 sm:p-10",
+                        "text-[17px] sm:text-[22px] leading-relaxed"
                       ].join(" ")}
                     />
                   </div>

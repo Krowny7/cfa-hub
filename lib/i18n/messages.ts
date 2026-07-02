@@ -201,7 +201,10 @@ export const MESSAGES = {
       prev: "Précédente",
       next: "Suivante",
       cards: "Cartes",
-      none: "Aucune carte."
+      none: "Aucune carte.",
+      continueReviewing: "Reprendre la révision",
+      manageCards: "Gérer les cartes",
+      allCards: "Toutes les cartes"
     },
     qcm: {
       title: "QCM",
@@ -556,7 +559,10 @@ export const MESSAGES = {
       prev: "Prev",
       next: "Next",
       cards: "Cards",
-      none: "No cards."
+      none: "No cards.",
+      continueReviewing: "Continue reviewing",
+      manageCards: "Manage cards",
+      allCards: "All cards"
     },
     qcm: {
       title: "MCQ",
