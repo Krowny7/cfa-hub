@@ -268,6 +268,32 @@ CREATE POLICY "folders_insert_own"   ON library_folders FOR INSERT TO authentica
 CREATE POLICY "folders_update_own"   ON library_folders FOR UPDATE TO authenticated USING (owner_id = auth.uid());
 CREATE POLICY "folders_delete_own"   ON library_folders FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
+-- ── Helpers SECURITY DEFINER pour éviter les récursions RLS ────────
+-- Utilisés par les policies des tables *_shares (voir chaque section
+-- ci-dessous). Sans ça, une policy sur ex. flashcard_set_shares qui
+-- interroge flashcard_sets redéclenche la policy RLS de flashcard_sets,
+-- qui elle-même interroge flashcard_set_shares -> cycle infini.
+CREATE OR REPLACE FUNCTION public.user_owns_document(p_document_id uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM documents WHERE id = p_document_id AND owner_id = auth.uid());
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_owns_flashcard_set(p_set_id uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM flashcard_sets WHERE id = p_set_id AND owner_id = auth.uid());
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_owns_quiz_set(p_set_id uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM quiz_sets WHERE id = p_set_id AND owner_id = auth.uid());
+$$;
+
 -- ── documents ─────────────────────────────────────────────────────
 CREATE POLICY "docs_select" ON documents FOR SELECT TO authenticated
   USING (
@@ -287,12 +313,17 @@ CREATE POLICY "docs_update_own"  ON documents FOR UPDATE TO authenticated USING 
 CREATE POLICY "docs_delete_own"  ON documents FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
 -- ── document_shares ───────────────────────────────────────────────
+-- NB: passe par une fonction SECURITY DEFINER (user_owns_document) plutôt
+-- qu'une sous-requête directe sur documents, pour éviter une récursion
+-- infinie RLS (documents.docs_select référence document_shares, qui
+-- référençait documents en retour -> cycle détecté par Postgres).
+-- Voir migration_fix_rls_recursion.sql.
 CREATE POLICY "doc_shares_select" ON document_shares FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM documents d WHERE d.id = document_shares.document_id AND d.owner_id = auth.uid()));
+  USING (user_owns_document(document_id));
 CREATE POLICY "doc_shares_insert" ON document_shares FOR INSERT TO authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM documents d WHERE d.id = document_shares.document_id AND d.owner_id = auth.uid()));
+  WITH CHECK (user_owns_document(document_id));
 CREATE POLICY "doc_shares_delete" ON document_shares FOR DELETE TO authenticated
-  USING (EXISTS (SELECT 1 FROM documents d WHERE d.id = document_shares.document_id AND d.owner_id = auth.uid()));
+  USING (user_owns_document(document_id));
 
 -- ── flashcard_sets ────────────────────────────────────────────────
 CREATE POLICY "fsets_select" ON flashcard_sets FOR SELECT TO authenticated
@@ -313,12 +344,15 @@ CREATE POLICY "fsets_update_own"  ON flashcard_sets FOR UPDATE TO authenticated 
 CREATE POLICY "fsets_delete_own"  ON flashcard_sets FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
 -- ── flashcard_set_shares ──────────────────────────────────────────
+-- NB: passe par user_owns_flashcard_set (SECURITY DEFINER) pour éviter
+-- la récursion RLS avec flashcard_sets.fsets_select. Voir
+-- migration_fix_rls_recursion.sql.
 CREATE POLICY "fset_shares_select" ON flashcard_set_shares FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM flashcard_sets fs WHERE fs.id = flashcard_set_shares.set_id AND fs.owner_id = auth.uid()));
+  USING (user_owns_flashcard_set(set_id));
 CREATE POLICY "fset_shares_insert" ON flashcard_set_shares FOR INSERT TO authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM flashcard_sets fs WHERE fs.id = flashcard_set_shares.set_id AND fs.owner_id = auth.uid()));
+  WITH CHECK (user_owns_flashcard_set(set_id));
 CREATE POLICY "fset_shares_delete" ON flashcard_set_shares FOR DELETE TO authenticated
-  USING (EXISTS (SELECT 1 FROM flashcard_sets fs WHERE fs.id = flashcard_set_shares.set_id AND fs.owner_id = auth.uid()));
+  USING (user_owns_flashcard_set(set_id));
 
 -- ── flashcards ────────────────────────────────────────────────────
 -- Une carte est lisible si son set est lisible (délégué à la policy du set via EXISTS)
@@ -365,12 +399,15 @@ CREATE POLICY "qsets_update_own"  ON quiz_sets FOR UPDATE TO authenticated USING
 CREATE POLICY "qsets_delete_own"  ON quiz_sets FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
 -- ── quiz_set_shares ───────────────────────────────────────────────
+-- NB: passe par user_owns_quiz_set (SECURITY DEFINER) pour éviter la
+-- récursion RLS avec quiz_sets.qsets_select. Voir
+-- migration_fix_rls_recursion.sql.
 CREATE POLICY "qset_shares_select" ON quiz_set_shares FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM quiz_sets qs WHERE qs.id = quiz_set_shares.set_id AND qs.owner_id = auth.uid()));
+  USING (user_owns_quiz_set(set_id));
 CREATE POLICY "qset_shares_insert" ON quiz_set_shares FOR INSERT TO authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM quiz_sets qs WHERE qs.id = quiz_set_shares.set_id AND qs.owner_id = auth.uid()));
+  WITH CHECK (user_owns_quiz_set(set_id));
 CREATE POLICY "qset_shares_delete" ON quiz_set_shares FOR DELETE TO authenticated
-  USING (EXISTS (SELECT 1 FROM quiz_sets qs WHERE qs.id = quiz_set_shares.set_id AND qs.owner_id = auth.uid()));
+  USING (user_owns_quiz_set(set_id));
 
 -- ── quiz_questions ────────────────────────────────────────────────
 CREATE POLICY "questions_select" ON quiz_questions FOR SELECT TO authenticated

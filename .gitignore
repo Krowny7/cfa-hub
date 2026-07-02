@@ -7,3 +7,5 @@ out
 _backup_before_nav_rework/
 tsconfig.tsbuildinfo
 .claude/
+.vercel
+.env*
