@@ -208,6 +208,7 @@ export const MESSAGES = {
     },
     qcm: {
       title: "QCM",
+      continueReviewing: "Reprendre le QCM",
       hero1: "Entraîne-toi en conditions réelles.",
       hero2: "Crée tes QCM, partage-les à tes groupes, et progresse question après question.",
       searchPlaceholder: "Rechercher un QCM…",
@@ -566,6 +567,7 @@ export const MESSAGES = {
     },
     qcm: {
       title: "MCQ",
+      continueReviewing: "Continue MCQ",
       hero1: "Train under real conditions.",
       hero2: "Create MCQs, share with your groups, and improve question by question.",
       searchPlaceholder: "Search a MCQ…",

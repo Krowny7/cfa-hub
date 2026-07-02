@@ -393,271 +393,7 @@ export function QuizSetView({
   return (
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
 
-      {/* ---- Import / Export ---- */}
-      {isOwner && (
-        <div className="rounded-2xl border p-4">
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="font-semibold">{t("qcm.importExport")}</div>
-              <div className="text-xs opacity-70">{t("qcm.importExportHint")}</div>
-            </div>
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
-                onClick={exportJson}
-              >
-                {t("qcm.exportJson")}
-              </button>
-              <button
-                type="button"
-                className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
-                onClick={() => {
-                  setShowImportInput((v) => !v);
-                  setImportMsg(null);
-                }}
-              >
-                {t("qcm.importJson")}
-              </button>
-            </div>
-          </div>
-
-          {showImportInput && (
-            <div className="mt-3 grid gap-2">
-              <textarea
-                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-mono"
-                rows={6}
-                value={importJsonText}
-                onChange={(e) => setImportJsonText(e.target.value)}
-                placeholder={t("qcm.importJsonPlaceholder")}
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
-                  disabled={busy || !importJsonText.trim()}
-                  onClick={importJson}
-                >
-                  {busy ? t("common.saving") : t("qcm.importConfirm")}
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5"
-                  onClick={() => {
-                    setShowImportInput(false);
-                    setImportJsonText("");
-                    setImportMsg(null);
-                  }}
-                >
-                  {t("common.cancel")}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <StatusMsg msg={importMsg} />
-        </div>
-      )}
-
-      {/* ---- Add question form ---- */}
-      {isOwner && (
-        <div className="rounded-2xl border p-4">
-          <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
-
-          <div className="mt-4 grid gap-3">
-            <textarea
-              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-              rows={3}
-              value={questionPrompt}
-              onChange={(e) => setQuestionPrompt(e.target.value)}
-              placeholder={t("qcm.promptPlaceholder")}
-            />
-
-            <textarea
-              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-              rows={4}
-              value={choicesText}
-              onChange={(e) => setChoicesText(e.target.value)}
-              placeholder={t("qcm.choicesPlaceholder")}
-            />
-
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
-              <input
-                type="number"
-                min={1}
-                max={6}
-                className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
-                value={correct}
-                onChange={(e) => setCorrect(Number(e.target.value))}
-              />
-            </div>
-
-            <input
-              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-              value={explanation}
-              onChange={(e) => setExplanation(e.target.value)}
-              placeholder={t("qcm.explanationPlaceholder")}
-            />
-
-            <TopicSelector value={topicId} onChange={setTopicId} disabled={busy} />
-
-            <button
-              type="button"
-              className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
-              disabled={busy}
-              onClick={addQuestion}
-            >
-              {busy ? t("common.saving") : t("qcm.addQuestion")}
-            </button>
-
-            <StatusMsg msg={editorMsg} />
-          </div>
-        </div>
-      )}
-
-      {/* ---- Manage existing questions ---- */}
-      {isOwner && (
-        <div className="rounded-2xl border p-4">
-          <div className="font-semibold">{t("qcm.manageTitle")}</div>
-          <div className="mt-1 text-xs opacity-70">{t("qcm.manageDesc")}</div>
-
-          <div className="mt-4 grid gap-2">
-            {questions.length === 0 ? (
-              <div className="text-sm opacity-70">{t("qcm.noQuestions")}</div>
-            ) : (
-              questions.map((q, idx) => {
-                const isEditing = editingId === q.id;
-                const isConfirmingDelete = confirmDeleteId === q.id;
-
-                return (
-                  <div key={q.id} className="rounded-xl border border-white/10 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium break-words sm:truncate">
-                          Q{idx + 1}. {q.prompt}
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70">
-                          <span>{t("qcm.choiceCount", { n: q.choices.length })} • {t("qcm.correctAnswerN", { n: q.correct_index + 1 })}</span>
-                          <TopicBadge topicId={(q as QuizQuestion & { topic_id?: number | null }).topic_id ?? null} />
-                        </div>
-                      </div>
-
-                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
-                        {!isEditing ? (
-                          <button
-                            type="button"
-                            className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-                            onClick={() => startEdit(q)}
-                          >
-                            {t("qcm.editQuestion")}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
-                            onClick={cancelEdit}
-                          >
-                            {t("common.cancel")}
-                          </button>
-                        )}
-
-                        {isConfirmingDelete ? (
-                          <div className="flex w-full gap-2 sm:w-auto">
-                            <button
-                              type="button"
-                              className="box-border flex-1 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm text-red-100 hover:bg-red-500/30 sm:flex-none"
-                              disabled={busy}
-                              onClick={() => deleteQuestion(q.id)}
-                            >
-                              {t("common.confirm")}
-                            </button>
-                            <button
-                              type="button"
-                              className="box-border flex-1 rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:flex-none"
-                              onClick={() => setConfirmDeleteId(null)}
-                            >
-                              {t("common.cancel")}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
-                            disabled={busy}
-                            onClick={() => {
-                              setConfirmDeleteId(q.id);
-                              cancelEdit();
-                            }}
-                          >
-                            {t("qcm.deleteQuestion")}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                      <div className="mt-3 grid gap-2">
-                        <textarea
-                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                          rows={3}
-                          value={editPrompt}
-                          onChange={(e) => setEditPrompt(e.target.value)}
-                          placeholder={t("qcm.promptPlaceholder")}
-                        />
-
-                        <textarea
-                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                          rows={4}
-                          value={editChoicesText}
-                          onChange={(e) => setEditChoicesText(e.target.value)}
-                          placeholder={t("qcm.choicesPlaceholder")}
-                        />
-
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <label className="text-sm opacity-80">
-                            {t("qcm.correctIndexLabel")}
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={6}
-                            className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
-                            value={editCorrect}
-                            onChange={(e) => setEditCorrect(Number(e.target.value))}
-                          />
-                        </div>
-
-                        <input
-                          className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
-                          value={editExplanation}
-                          onChange={(e) => setEditExplanation(e.target.value)}
-                          placeholder={t("qcm.explanationPlaceholder")}
-                        />
-
-                        <TopicSelector value={editTopicId} onChange={setEditTopicId} disabled={busy} />
-
-                        <button
-                          type="button"
-                          className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
-                          disabled={busy}
-                          onClick={saveEdit}
-                        >
-                          {busy ? t("common.saving") : t("common.save")}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <StatusMsg msg={manageMsg} />
-        </div>
-      )}
-
-      {/* ---- Exam runner ---- */}
+      {/* ---- Exam runner — usage quotidien, premier contenu visible ---- */}
       <div className="rounded-2xl border p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -811,6 +547,275 @@ export function QuizSetView({
           </div>
         )}
       </div>
+
+      {/* ---- Outils de création/gestion — repliés, réservés au propriétaire ---- */}
+      {isOwner && (
+        <details className="rounded-2xl border p-4">
+          <summary className="cursor-pointer select-none font-semibold">
+            {t("qcm.manageTitle")}
+          </summary>
+
+          <div className="mt-4 grid gap-4">
+            {/* Import / Export */}
+            <div className="rounded-xl border border-white/10 p-4">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="font-semibold">{t("qcm.importExport")}</div>
+                  <div className="text-xs opacity-70">{t("qcm.importExportHint")}</div>
+                </div>
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                    onClick={exportJson}
+                  >
+                    {t("qcm.exportJson")}
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+                    onClick={() => {
+                      setShowImportInput((v) => !v);
+                      setImportMsg(null);
+                    }}
+                  >
+                    {t("qcm.importJson")}
+                  </button>
+                </div>
+              </div>
+
+              {showImportInput && (
+                <div className="mt-3 grid gap-2">
+                  <textarea
+                    className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-mono"
+                    rows={6}
+                    value={importJsonText}
+                    onChange={(e) => setImportJsonText(e.target.value)}
+                    placeholder={t("qcm.importJsonPlaceholder")}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+                      disabled={busy || !importJsonText.trim()}
+                      onClick={importJson}
+                    >
+                      {busy ? t("common.saving") : t("qcm.importConfirm")}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5"
+                      onClick={() => {
+                        setShowImportInput(false);
+                        setImportJsonText("");
+                        setImportMsg(null);
+                      }}
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <StatusMsg msg={importMsg} />
+            </div>
+
+            {/* Add question form */}
+            <div className="rounded-xl border border-white/10 p-4">
+              <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
+
+              <div className="mt-4 grid gap-3">
+                <textarea
+                  className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  rows={3}
+                  value={questionPrompt}
+                  onChange={(e) => setQuestionPrompt(e.target.value)}
+                  placeholder={t("qcm.promptPlaceholder")}
+                />
+
+                <textarea
+                  className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  rows={4}
+                  value={choicesText}
+                  onChange={(e) => setChoicesText(e.target.value)}
+                  placeholder={t("qcm.choicesPlaceholder")}
+                />
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={6}
+                    className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
+                    value={correct}
+                    onChange={(e) => setCorrect(Number(e.target.value))}
+                  />
+                </div>
+
+                <input
+                  className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                  value={explanation}
+                  onChange={(e) => setExplanation(e.target.value)}
+                  placeholder={t("qcm.explanationPlaceholder")}
+                />
+
+                <TopicSelector value={topicId} onChange={setTopicId} disabled={busy} />
+
+                <button
+                  type="button"
+                  className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                  disabled={busy}
+                  onClick={addQuestion}
+                >
+                  {busy ? t("common.saving") : t("qcm.addQuestion")}
+                </button>
+
+                <StatusMsg msg={editorMsg} />
+              </div>
+            </div>
+
+            {/* Manage existing questions */}
+            <div className="rounded-xl border border-white/10 p-4">
+              <div className="font-semibold">{t("qcm.manageTitle")}</div>
+              <div className="mt-1 text-xs opacity-70">{t("qcm.manageDesc")}</div>
+
+              <div className="mt-4 grid gap-2">
+                {questions.length === 0 ? (
+                  <div className="text-sm opacity-70">{t("qcm.noQuestions")}</div>
+                ) : (
+                  questions.map((q, idx) => {
+                    const isEditing = editingId === q.id;
+                    const isConfirmingDelete = confirmDeleteId === q.id;
+
+                    return (
+                      <div key={q.id} className="rounded-xl border border-white/10 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium break-words sm:truncate">
+                              Q{idx + 1}. {q.prompt}
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70">
+                              <span>{t("qcm.choiceCount", { n: q.choices.length })} • {t("qcm.correctAnswerN", { n: q.correct_index + 1 })}</span>
+                              <TopicBadge topicId={(q as QuizQuestion & { topic_id?: number | null }).topic_id ?? null} />
+                            </div>
+                          </div>
+
+                          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                            {!isEditing ? (
+                              <button
+                                type="button"
+                                className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                                onClick={() => startEdit(q)}
+                              >
+                                {t("qcm.editQuestion")}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                                onClick={cancelEdit}
+                              >
+                                {t("common.cancel")}
+                              </button>
+                            )}
+
+                            {isConfirmingDelete ? (
+                              <div className="flex w-full gap-2 sm:w-auto">
+                                <button
+                                  type="button"
+                                  className="box-border flex-1 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm text-red-100 hover:bg-red-500/30 sm:flex-none"
+                                  disabled={busy}
+                                  onClick={() => deleteQuestion(q.id)}
+                                >
+                                  {t("common.confirm")}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="box-border flex-1 rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:flex-none"
+                                  onClick={() => setConfirmDeleteId(null)}
+                                >
+                                  {t("common.cancel")}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
+                                disabled={busy}
+                                onClick={() => {
+                                  setConfirmDeleteId(q.id);
+                                  cancelEdit();
+                                }}
+                              >
+                                {t("qcm.deleteQuestion")}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {isEditing && (
+                          <div className="mt-3 grid gap-2">
+                            <textarea
+                              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                              rows={3}
+                              value={editPrompt}
+                              onChange={(e) => setEditPrompt(e.target.value)}
+                              placeholder={t("qcm.promptPlaceholder")}
+                            />
+
+                            <textarea
+                              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                              rows={4}
+                              value={editChoicesText}
+                              onChange={(e) => setEditChoicesText(e.target.value)}
+                              placeholder={t("qcm.choicesPlaceholder")}
+                            />
+
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <label className="text-sm opacity-80">
+                                {t("qcm.correctIndexLabel")}
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={6}
+                                className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
+                                value={editCorrect}
+                                onChange={(e) => setEditCorrect(Number(e.target.value))}
+                              />
+                            </div>
+
+                            <input
+                              className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                              value={editExplanation}
+                              onChange={(e) => setEditExplanation(e.target.value)}
+                              placeholder={t("qcm.explanationPlaceholder")}
+                            />
+
+                            <TopicSelector value={editTopicId} onChange={setEditTopicId} disabled={busy} />
+
+                            <button
+                              type="button"
+                              className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                              disabled={busy}
+                              onClick={saveEdit}
+                            >
+                              {busy ? t("common.saving") : t("common.save")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <StatusMsg msg={manageMsg} />
+            </div>
+          </div>
+        </details>
+      )}
     </div>
   );
 }

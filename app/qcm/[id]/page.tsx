@@ -7,6 +7,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { ContentDetailHeader } from "@/components/ContentDetailHeader";
 import { ContentItemSettings } from "@/components/ContentItemSettings";
+import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
 import type { QuizQuestion, Visibility } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -105,6 +106,8 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   return (
     <div className="grid gap-5">
+      <RecentFlashcardSetTracker id={set.id} title={set.title} kind="qcm" />
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ContentDetailHeader
           backHref="/qcm"

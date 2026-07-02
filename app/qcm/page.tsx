@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { QuizSetCreator } from "@/components/QuizSetCreator";
+import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
 import { normalizeScope, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
 import type { Profile } from "@/lib/types";
@@ -97,6 +98,9 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
   return (
     <div className="grid gap-4">
+      {/* Reprendre où on en était — priorité visuelle sur la création */}
+      <ContinueReviewing kind="qcm" basePath="/qcm" />
+
       {/* Header: title + creator toggle */}
       <details>
         <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">
