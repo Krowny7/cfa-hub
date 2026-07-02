@@ -20,8 +20,7 @@ export function DocumentActions({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-  const { locale, t } = useI18n();
-  const isFr = locale === "fr";
+  const { t } = useI18n();
 
   const [title, setTitle] = useState(initialTitle);
   const [externalUrl, setExternalUrl] = useState(initialExternalUrl);
@@ -29,6 +28,7 @@ export function DocumentActions({
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   async function save() {
     setBusy(true);
@@ -45,23 +45,16 @@ export function DocumentActions({
 
       if (error) throw error;
 
-      setMsg(isFr ? "✅ Enregistré." : "✅ Saved.");
+      setMsg(`✅ ${t("common.saved")}`);
       router.refresh();
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+    } catch (e: unknown) {
+      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
 
   async function remove() {
-    const ok = window.confirm(
-      isFr
-        ? "Supprimer définitivement ce document ? Cette action est irréversible."
-        : "Delete this document permanently? This action cannot be undone."
-    );
-    if (!ok) return;
-
     setBusy(true);
     setMsg(null);
     try {
@@ -69,10 +62,10 @@ export function DocumentActions({
       if (error) throw error;
 
       window.location.href = afterDeleteRedirect;
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
-    } finally {
+    } catch (e: unknown) {
+      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
       setBusy(false);
+      setShowConfirmDelete(false);
     }
   }
 
@@ -80,14 +73,14 @@ export function DocumentActions({
     <details className="group card-soft">
       <summary className="cursor-pointer list-none select-none rounded-2xl px-4 py-3 text-sm font-semibold transition hover:bg-white/[0.06]">
         <div className="flex items-center justify-between gap-3">
-          <span>{isFr ? "Modifier / supprimer" : "Edit / delete"}</span>
+          <span>{t("library.editTitle")}</span>
           <span className="text-xs opacity-60 transition group-open:rotate-180">▼</span>
         </div>
       </summary>
 
       <div className="space-y-4 p-4">
         <div className="card-soft p-4">
-          <div className="text-sm font-medium">{isFr ? "Titre" : "Title"}</div>
+          <div className="text-sm font-medium">{t("common.title")}</div>
           <input
             className="input mt-2"
             value={title}
@@ -96,7 +89,7 @@ export function DocumentActions({
         </div>
 
         <div className="card-soft p-4">
-          <div className="text-sm font-medium">{isFr ? "Lien (PDF)" : "External link"}</div>
+          <div className="text-sm font-medium">{t("library.externalLinkLabel")}</div>
           <input
             className="input mt-2"
             value={externalUrl}
@@ -106,7 +99,7 @@ export function DocumentActions({
         </div>
 
         <div className="card-soft p-4">
-          <div className="text-sm font-medium">{isFr ? "Lien d'aperçu (iframe)" : "Preview link (iframe)"}</div>
+          <div className="text-sm font-medium">{t("library.previewLinkLabel")}</div>
           <input
             className="input mt-2"
             value={previewUrl}
@@ -125,14 +118,36 @@ export function DocumentActions({
             {busy ? t("common.saving") : t("common.save")}
           </button>
 
-          <button
-            type="button"
-            className="btn btn-danger"
-            disabled={busy}
-            onClick={remove}
-          >
-            {isFr ? "Supprimer" : "Delete"}
-          </button>
+          {showConfirmDelete ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm opacity-80">{t("library.confirmDeleteDocument")}</span>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={busy}
+                onClick={remove}
+              >
+                {t("common.confirm")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={busy}
+                onClick={() => setShowConfirmDelete(false)}
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={busy}
+              onClick={() => setShowConfirmDelete(true)}
+            >
+              {t("common.delete")}
+            </button>
+          )}
 
           {msg ? <span className="text-sm">{msg}</span> : null}
         </div>

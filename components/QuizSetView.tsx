@@ -3,69 +3,95 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
+import type { QuizQuestion, AwardXpResult } from "@/lib/types";
 
-type Question = {
-  id: string;
-  prompt: string;
-  choices: string[];
-  correct_index: number; // 0-based
-  explanation: string | null;
-  position: number;
-};
+function parseChoices(text: string): string[] {
+  return text
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function clampCorrectIndex(value: number, choices: string[]): number {
+  return Math.max(0, Math.min(choices.length - 1, value - 1));
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function StatusMsg({ msg }: { msg: string | null }) {
+  if (!msg) return null;
+  return (
+    <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export function QuizSetView({
   setId,
   isOwner,
-  initialQuestions
+  initialQuestions,
 }: {
   setId: string;
-  isOwner: boolean; // used as "canEdit"
-  initialQuestions: Question[];
+  isOwner: boolean;
+  initialQuestions: QuizQuestion[];
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
 
-  const canEdit = isOwner;
-
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
 
-  // --- Add state
+  // Per-section feedback messages
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [editorMsg, setEditorMsg] = useState<string | null>(null);
+  const [manageMsg, setManageMsg] = useState<string | null>(null);
+  const [runnerMsg, setRunnerMsg] = useState<string | null>(null);
+
+  // Add question form
   const [questionPrompt, setQuestionPrompt] = useState("");
   const [choicesText, setChoicesText] = useState("");
-  const [correct, setCorrect] = useState(1); // 1-based in UI
+  const [correct, setCorrect] = useState(1);
   const [explanation, setExplanation] = useState("");
+  const [topicId, setTopicId] = useState<number | null>(null);
 
-  // --- Edit state
+  // Edit question form
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [editChoicesText, setEditChoicesText] = useState("");
-  const [editCorrect, setEditCorrect] = useState(1); // 1-based in UI
+  const [editCorrect, setEditCorrect] = useState(1);
   const [editExplanation, setEditExplanation] = useState("");
+  const [editTopicId, setEditTopicId] = useState<number | null>(null);
 
-  // --- Runner state
-  const [i, setI] = useState(0);
+  // Delete confirmation (inline — no window.confirm)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Import JSON (textarea — no window.prompt)
+  const [showImportInput, setShowImportInput] = useState(false);
+  const [importJsonText, setImportJsonText] = useState("");
+
+  // Exam runner
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [showCorrection, setShowCorrection] = useState(false);
   const [score, setScore] = useState(0);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
+  const [examStarted, setExamStarted] = useState(false);
 
-  const current = questions[i] ?? null;
+  const current = questions[questionIndex] ?? null;
   const canRun = questions.length > 0;
 
-  function resetRun() {
-    setI(0);
-    setSelected(null);
-    setShowCorrection(false);
-    setScore(0);
-    setStartedAt(Date.now());
-    setFinished(false);
-    setMsg(null);
-  }
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
-  async function fetchQuestions(): Promise<Question[]> {
+  async function fetchQuestions(): Promise<QuizQuestion[]> {
     const { data, error } = await supabase
       .from("quiz_questions")
       .select("id,prompt,choices,correct_index,explanation,position")
@@ -74,10 +100,10 @@ export function QuizSetView({
 
     if (error) return questions;
 
-    return (data ?? []).map((q: any) => ({
+    return (data ?? []).map((q) => ({
       ...q,
-      choices: Array.isArray(q.choices) ? q.choices : []
-    })) as any;
+      choices: Array.isArray(q.choices) ? q.choices : [],
+    })) as QuizQuestion[];
   }
 
   async function refreshQuestions() {
@@ -85,58 +111,89 @@ export function QuizSetView({
     setQuestions(next);
   }
 
-  function parseChoices(text: string) {
-    return text
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  async function reindexPositions(rows: QuizQuestion[]) {
+    const tasks = rows
+      .map((q, idx) => {
+        if (q.position === idx) return null;
+        return supabase
+          .from("quiz_questions")
+          .update({ position: idx })
+          .eq("id", q.id)
+          .eq("set_id", setId);
+      })
+      .filter((t) => t !== null);
+
+    if (tasks.length > 0) {
+      const results = await Promise.all(tasks);
+      const firstErr = results.find((r) => r?.error)?.error;
+      if (firstErr) throw new Error(firstErr.message);
+    }
   }
 
+  function resetRun() {
+    setQuestionIndex(0);
+    setSelected(null);
+    setShowCorrection(false);
+    setScore(0);
+    setStartedAt(Date.now());
+    setFinished(false);
+    setRunnerMsg(null);
+    setExamStarted(true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Add question
+  // ---------------------------------------------------------------------------
+
   async function addQuestion() {
-    setMsg(null);
+    setEditorMsg(null);
     setBusy(true);
     try {
-      const lines = parseChoices(choicesText);
       if (!questionPrompt.trim()) throw new Error(t("common.error"));
-      if (lines.length < 2 || lines.length > 6)
-        throw new Error(t("qcm.choicesPlaceholder"));
+      const lines = parseChoices(choicesText);
+      if (lines.length < 2 || lines.length > 6) throw new Error(t("qcm.choicesError"));
 
-      const idx0 =
-        Math.max(1, Math.min(lines.length, Number(correct) || 1)) - 1;
-      const pos = questions.length;
+      const idx0 = clampCorrectIndex(correct, lines);
 
-      const ins = await supabase.from("quiz_questions").insert({
+      const { error } = await supabase.from("quiz_questions").insert({
         set_id: setId,
         prompt: questionPrompt.trim(),
         choices: lines,
         correct_index: idx0,
-        explanation: explanation.trim() ? explanation.trim() : null,
-        position: pos
+        explanation: explanation.trim() || null,
+        position: questions.length,
+        topic_id: topicId,
       });
 
-      if (ins.error) throw ins.error;
+      if (error) throw new Error(error.message);
 
       setQuestionPrompt("");
       setChoicesText("");
       setCorrect(1);
       setExplanation("");
-
+      setTopicId(null);
       await refreshQuestions();
-      setMsg("✅");
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+      setEditorMsg("✅");
+    } catch (e: unknown) {
+      setEditorMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
 
-  function startEdit(q: Question) {
-    setMsg(null);
+  // ---------------------------------------------------------------------------
+  // Edit question
+  // ---------------------------------------------------------------------------
+
+  function startEdit(q: QuizQuestion & { topic_id?: number | null }) {
+    setManageMsg(null);
+    setConfirmDeleteId(null);
     setEditingId(q.id);
-    setEditPrompt(q.prompt ?? "");
-    setEditChoicesText((q.choices ?? []).join("\n"));
-    setEditCorrect((q.correct_index ?? 0) + 1); // show 1-based
+    setEditPrompt(q.prompt);
+    setEditChoicesText(q.choices.join("\n"));
+    setEditCorrect(q.correct_index + 1);
     setEditExplanation(q.explanation ?? "");
+    setEditTopicId(q.topic_id ?? null);
   }
 
   function cancelEdit() {
@@ -145,97 +202,82 @@ export function QuizSetView({
     setEditChoicesText("");
     setEditCorrect(1);
     setEditExplanation("");
+    setEditTopicId(null);
   }
 
   async function saveEdit() {
     if (!editingId) return;
-    setMsg(null);
+    setManageMsg(null);
     setBusy(true);
-
     try {
-      const lines = parseChoices(editChoicesText);
       if (!editPrompt.trim()) throw new Error(t("common.error"));
-      if (lines.length < 2 || lines.length > 6)
-        throw new Error(t("qcm.choicesPlaceholder"));
+      const lines = parseChoices(editChoicesText);
+      if (lines.length < 2 || lines.length > 6) throw new Error(t("qcm.choicesError"));
 
-      const idx0 =
-        Math.max(1, Math.min(lines.length, Number(editCorrect) || 1)) - 1;
+      const idx0 = clampCorrectIndex(editCorrect, lines);
 
-      const upd = await supabase
+      const { error } = await supabase
         .from("quiz_questions")
         .update({
           prompt: editPrompt.trim(),
           choices: lines,
           correct_index: idx0,
-          explanation: editExplanation.trim() ? editExplanation.trim() : null
+          explanation: editExplanation.trim() || null,
+          topic_id: editTopicId,
         })
         .eq("id", editingId)
         .eq("set_id", setId);
 
-      if (upd.error) throw upd.error;
+      if (error) throw new Error(error.message);
 
       await refreshQuestions();
       cancelEdit();
-      setMsg("✅");
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+      setManageMsg("✅");
+    } catch (e: unknown) {
+      setManageMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
 
-  async function reindexPositions() {
-    const rows = await fetchQuestions();
-    // if positions have gaps, normalize them
-    const tasks = rows.map((q, idx) => {
-      if (q.position === idx) return null;
-      return supabase
-        .from("quiz_questions")
-        .update({ position: idx })
-        .eq("id", q.id)
-        .eq("set_id", setId);
-    });
-
-    const real = tasks.filter(Boolean) as any[];
-    if (real.length > 0) {
-      const res = await Promise.all(real);
-      const err = res.find((r) => r?.error)?.error;
-      if (err) throw err;
-    }
-  }
+  // ---------------------------------------------------------------------------
+  // Delete question
+  // ---------------------------------------------------------------------------
 
   async function deleteQuestion(id: string) {
-    const ok = window.confirm("Supprimer cette question ? ( reliably )");
-    if (!ok) return;
-
-    setMsg(null);
+    setManageMsg(null);
     setBusy(true);
-
     try {
-      const del = await supabase
+      const { error } = await supabase
         .from("quiz_questions")
         .delete()
         .eq("id", id)
         .eq("set_id", setId);
-      if (del.error) throw del.error;
 
-      await reindexPositions();
+      if (error) throw new Error(error.message);
+
+      const updated = await fetchQuestions();
+      await reindexPositions(updated);
       await refreshQuestions();
 
-      // keep runner safe
-      setI(0);
+      setConfirmDeleteId(null);
+      setQuestionIndex(0);
       setSelected(null);
       setShowCorrection(false);
       setFinished(false);
       setScore(0);
-
-      setMsg("✅");
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+      setExamStarted(false);
+      setManageMsg("✅");
+    } catch (e: unknown) {
+      setManageMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Import / Export JSON
+  // ---------------------------------------------------------------------------
 
   async function exportJson() {
     const payload = {
@@ -244,47 +286,61 @@ export function QuizSetView({
         prompt: q.prompt,
         choices: q.choices,
         correct_index: q.correct_index,
-        explanation: q.explanation
-      }))
+        explanation: q.explanation,
+      })),
     };
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    setMsg("✅");
+    setImportMsg("✅ Copié dans le presse-papier");
   }
 
   async function importJson() {
     setBusy(true);
-    setMsg(null);
+    setImportMsg(null);
     try {
-      const text = window.prompt("Colle le JSON ici") ?? "";
-      if (!text.trim()) return;
-      const obj = JSON.parse(text);
+      const text = importJsonText.trim();
+      if (!text) return;
+
+      const obj = JSON.parse(text) as { questions?: unknown[] };
       const arr = Array.isArray(obj?.questions) ? obj.questions : [];
       if (arr.length === 0) throw new Error(t("qcm.noQuestions"));
 
-      // Replace existing questions
-      const del = await supabase.from("quiz_questions").delete().eq("set_id", setId);
-      if (del.error) throw del.error;
+      const { error: delError } = await supabase
+        .from("quiz_questions")
+        .delete()
+        .eq("set_id", setId);
+      if (delError) throw new Error(delError.message);
 
-      const rows = arr.map((q: any, k: number) => ({
-        set_id: setId,
-        prompt: String(q.prompt ?? "").trim(),
-        choices: Array.isArray(q.choices) ? q.choices.map((x: any) => String(x)) : [],
-        correct_index: Number(q.correct_index ?? 0),
-        explanation: q.explanation ? String(q.explanation) : null,
-        position: k
-      }));
+      const rows = arr.map((q: unknown, k: number) => {
+        const question = q as Record<string, unknown>;
+        return {
+          set_id: setId,
+          prompt: String(question.prompt ?? "").trim(),
+          choices: Array.isArray(question.choices)
+            ? question.choices.map((x) => String(x))
+            : [],
+          correct_index: Number(question.correct_index ?? 0),
+          explanation: question.explanation ? String(question.explanation) : null,
+          position: k,
+        };
+      });
 
-      const ins = await supabase.from("quiz_questions").insert(rows);
-      if (ins.error) throw ins.error;
+      const { error: insError } = await supabase.from("quiz_questions").insert(rows);
+      if (insError) throw new Error(insError.message);
 
       await refreshQuestions();
-      setMsg("✅");
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+      setImportJsonText("");
+      setShowImportInput(false);
+      setImportMsg("✅");
+    } catch (e: unknown) {
+      setImportMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Exam runner
+  // ---------------------------------------------------------------------------
 
   async function submitAttempt(finalScore: number) {
     try {
@@ -298,10 +354,10 @@ export function QuizSetView({
         set_id: setId,
         score: finalScore,
         total: questions.length,
-        duration_seconds: duration
+        duration_seconds: duration,
       });
     } catch {
-      // ignore
+      // Non-critical: swallow silently
     }
   }
 
@@ -309,35 +365,40 @@ export function QuizSetView({
     try {
       const { data, error } = await supabase.rpc("award_quiz_question_xp", {
         p_question_id: questionId,
-        p_selected_index: selectedIndex
+        p_selected_index: selectedIndex,
       });
 
       if (error) {
-        setMsg(`❌ XP error: ${error.message}`);
+        setRunnerMsg(`❌ XP error: ${error.message}`);
         return;
       }
 
-      // Function returns a single-row table
-      const row = Array.isArray(data) ? (data[0] as any) : (data as any);
+      const row = (Array.isArray(data) ? data[0] : data) as AwardXpResult | null;
       const xp = Number(row?.xp_awarded ?? 0) || 0;
 
-      if (xp > 0) setMsg(`✅ +${xp} XP`);
-      else setMsg("ℹ️ Pas d'XP (déjà validée ou non-officiel)");
-    } catch (e: any) {
-      setMsg(`❌ XP exception: ${e?.message ?? "unknown"}`);
+      if (xp > 0) setRunnerMsg(`✅ +${xp} XP`);
+      else setRunnerMsg(`ℹ️ ${t("qcm.noXp")}`);
+    } catch (e: unknown) {
+      setRunnerMsg(
+        `❌ XP exception: ${e instanceof Error ? e.message : "unknown"}`
+      );
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   return (
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
-      {canEdit && (
+
+      {/* ---- Import / Export ---- */}
+      {isOwner && (
         <div className="rounded-2xl border p-4">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="font-semibold">{t("qcm.importExport")}</div>
-              <div className="text-xs opacity-70">
-                JSON (copie/coller) — pratique pour partager rapidement.
-              </div>
+              <div className="text-xs opacity-70">{t("qcm.importExportHint")}</div>
             </div>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
               <button
@@ -350,25 +411,57 @@ export function QuizSetView({
               <button
                 type="button"
                 className="w-full sm:w-auto rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
-                onClick={importJson}
+                onClick={() => {
+                  setShowImportInput((v) => !v);
+                  setImportMsg(null);
+                }}
               >
                 {t("qcm.importJson")}
               </button>
             </div>
           </div>
-          {msg && (
-            <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">
-              {msg}
+
+          {showImportInput && (
+            <div className="mt-3 grid gap-2">
+              <textarea
+                className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-mono"
+                rows={6}
+                value={importJsonText}
+                onChange={(e) => setImportJsonText(e.target.value)}
+                placeholder={t("qcm.importJsonPlaceholder")}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+                  disabled={busy || !importJsonText.trim()}
+                  onClick={importJson}
+                >
+                  {busy ? t("common.saving") : t("qcm.importConfirm")}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5"
+                  onClick={() => {
+                    setShowImportInput(false);
+                    setImportJsonText("");
+                    setImportMsg(null);
+                  }}
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
             </div>
           )}
+
+          <StatusMsg msg={importMsg} />
         </div>
       )}
 
-      {canEdit && (
+      {/* ---- Add question form ---- */}
+      {isOwner && (
         <div className="rounded-2xl border p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-            <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
-          </div>
+          <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
 
           <div className="mt-4 grid gap-3">
             <textarea
@@ -388,9 +481,7 @@ export function QuizSetView({
             />
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label className="text-sm opacity-80">
-                {t("qcm.correctIndexLabel")}
-              </label>
+              <label className="text-sm opacity-80">{t("qcm.correctIndexLabel")}</label>
               <input
                 type="number"
                 min={1}
@@ -408,6 +499,8 @@ export function QuizSetView({
               placeholder={t("qcm.explanationPlaceholder")}
             />
 
+            <TopicSelector value={topicId} onChange={setTopicId} disabled={busy} />
+
             <button
               type="button"
               className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
@@ -417,18 +510,16 @@ export function QuizSetView({
               {busy ? t("common.saving") : t("qcm.addQuestion")}
             </button>
 
-            {msg && <div className="text-sm">{msg}</div>}
+            <StatusMsg msg={editorMsg} />
           </div>
         </div>
       )}
 
-      {/* Manage existing questions */}
-      {canEdit && (
+      {/* ---- Manage existing questions ---- */}
+      {isOwner && (
         <div className="rounded-2xl border p-4">
-          <div className="font-semibold">Gestion des questions</div>
-          <div className="mt-1 text-xs opacity-70">
-            Modifier / supprimer (autorisé si owner ou membre du groupe).
-          </div>
+          <div className="font-semibold">{t("qcm.manageTitle")}</div>
+          <div className="mt-1 text-xs opacity-70">{t("qcm.manageDesc")}</div>
 
           <div className="mt-4 grid gap-2">
             {questions.length === 0 ? (
@@ -436,6 +527,8 @@ export function QuizSetView({
             ) : (
               questions.map((q, idx) => {
                 const isEditing = editingId === q.id;
+                const isConfirmingDelete = confirmDeleteId === q.id;
+
                 return (
                   <div key={q.id} className="rounded-xl border border-white/10 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -443,9 +536,9 @@ export function QuizSetView({
                         <div className="text-sm font-medium break-words sm:truncate">
                           Q{idx + 1}. {q.prompt}
                         </div>
-                        <div className="mt-1 text-xs opacity-70">
-                          {q.choices.length} choix • bonne réponse #
-                          {(q.correct_index ?? 0) + 1}
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70">
+                          <span>{t("qcm.choiceCount", { n: q.choices.length })} • {t("qcm.correctAnswerN", { n: q.correct_index + 1 })}</span>
+                          <TopicBadge topicId={(q as QuizQuestion & { topic_id?: number | null }).topic_id ?? null} />
                         </div>
                       </div>
 
@@ -456,7 +549,7 @@ export function QuizSetView({
                             className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
                             onClick={() => startEdit(q)}
                           >
-                            Modifier
+                            {t("qcm.editQuestion")}
                           </button>
                         ) : (
                           <button
@@ -464,18 +557,41 @@ export function QuizSetView({
                             className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
                             onClick={cancelEdit}
                           >
-                            Annuler
+                            {t("common.cancel")}
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
-                          disabled={busy}
-                          onClick={() => deleteQuestion(q.id)}
-                        >
-                          Supprimer
-                        </button>
+                        {isConfirmingDelete ? (
+                          <div className="flex w-full gap-2 sm:w-auto">
+                            <button
+                              type="button"
+                              className="box-border flex-1 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm text-red-100 hover:bg-red-500/30 sm:flex-none"
+                              disabled={busy}
+                              onClick={() => deleteQuestion(q.id)}
+                            >
+                              {t("common.confirm")}
+                            </button>
+                            <button
+                              type="button"
+                              className="box-border flex-1 rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:flex-none"
+                              onClick={() => setConfirmDeleteId(null)}
+                            >
+                              {t("common.cancel")}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="box-border w-full rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
+                            disabled={busy}
+                            onClick={() => {
+                              setConfirmDeleteId(q.id);
+                              cancelEdit();
+                            }}
+                          >
+                            {t("qcm.deleteQuestion")}
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -486,6 +602,7 @@ export function QuizSetView({
                           rows={3}
                           value={editPrompt}
                           onChange={(e) => setEditPrompt(e.target.value)}
+                          placeholder={t("qcm.promptPlaceholder")}
                         />
 
                         <textarea
@@ -493,11 +610,12 @@ export function QuizSetView({
                           rows={4}
                           value={editChoicesText}
                           onChange={(e) => setEditChoicesText(e.target.value)}
+                          placeholder={t("qcm.choicesPlaceholder")}
                         />
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <label className="text-sm opacity-80">
-                            Bonne réponse (1 = 1ère ligne)
+                            {t("qcm.correctIndexLabel")}
                           </label>
                           <input
                             type="number"
@@ -513,8 +631,10 @@ export function QuizSetView({
                           className="box-border w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
                           value={editExplanation}
                           onChange={(e) => setEditExplanation(e.target.value)}
-                          placeholder="Explication (optionnelle)"
+                          placeholder={t("qcm.explanationPlaceholder")}
                         />
+
+                        <TopicSelector value={editTopicId} onChange={setEditTopicId} disabled={busy} />
 
                         <button
                           type="button"
@@ -522,7 +642,7 @@ export function QuizSetView({
                           disabled={busy}
                           onClick={saveEdit}
                         >
-                          {busy ? t("common.saving") : "Enregistrer"}
+                          {busy ? t("common.saving") : t("common.save")}
                         </button>
                       </div>
                     )}
@@ -532,57 +652,51 @@ export function QuizSetView({
             )}
           </div>
 
-          {msg && (
-            <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">
-              {msg}
-            </div>
-          )}
+          <StatusMsg msg={manageMsg} />
         </div>
       )}
 
-      {/* Runner */}
+      {/* ---- Exam runner ---- */}
       <div className="rounded-2xl border p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="font-semibold">{t("qcm.title")}</div>
-            <div className="text-xs opacity-70">{questions.length} question(s)</div>
+            <div className="text-xs opacity-70">
+              {questions.length} question{questions.length !== 1 ? "s" : ""}
+            </div>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              className="box-border w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
-              disabled={!canRun}
-              onClick={() => resetRun()}
-            >
-              {t("qcm.start")}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="box-border rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+            disabled={!canRun}
+            onClick={resetRun}
+          >
+            {t("qcm.start")}
+          </button>
         </div>
 
-        {/* Show messages also during the run */}
-        {msg && (
-          <div className="mt-3 text-sm break-words [overflow-wrap:anywhere]">
-            {msg}
-          </div>
+        <StatusMsg msg={runnerMsg} />
+
+        {!canRun && (
+          <div className="mt-4 text-sm opacity-70">{t("qcm.noQuestions")}</div>
         )}
 
-        {!canRun && <div className="mt-4 text-sm opacity-70">{t("qcm.noQuestions")}</div>}
-
-        {canRun && current && !finished && (
+        {examStarted && canRun && current && !finished && (
           <div className="mt-4">
             <div className="text-xs opacity-70">
-              {i + 1}/{questions.length}
+              {questionIndex + 1}/{questions.length}
             </div>
+
             <div className="mt-2 whitespace-pre-wrap text-base font-medium">
               {current.prompt}
             </div>
 
             <div className="mt-4 grid gap-2">
-              {current.choices.map((c, idx) => {
+              {current.choices.map((choice, idx) => {
                 const picked = selected === idx;
-                const correctIdx = current.correct_index;
-                const isCorrect = idx === correctIdx;
+                const isCorrect = idx === current.correct_index;
                 const show = showCorrection;
+
                 const bg =
                   show && picked
                     ? isCorrect
@@ -602,17 +716,17 @@ export function QuizSetView({
                       setSelected(idx);
                     }}
                   >
-                    <div className="opacity-90 break-words [overflow-wrap:anywhere]">
-                      {c}
-                    </div>
+                    <span className="opacity-90 break-words [overflow-wrap:anywhere]">
+                      {choice}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            {showCorrection && (current.explanation || current.correct_index != null) && (
+            {showCorrection && (
               <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
-                <div className="font-semibold">Correction</div>
+                <div className="font-semibold">{t("qcm.correction")}</div>
                 <div className="mt-2 opacity-90">
                   ✅ {current.choices[current.correct_index]}
                 </div>
@@ -628,6 +742,7 @@ export function QuizSetView({
               <div className="text-sm opacity-70">
                 {t("qcm.score")}: {score}
               </div>
+
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
                 {!showCorrection ? (
                   <button
@@ -636,29 +751,26 @@ export function QuizSetView({
                     disabled={selected == null}
                     onClick={() => {
                       if (selected == null) return;
-                      const correctIdx = current.correct_index;
-
-                      // award XP only when the answer is correct
-                      if (selected === correctIdx) {
+                      if (selected === current.correct_index) {
                         setScore((s) => s + 1);
                         void awardXpForAnswer(current.id, selected);
                       } else {
-                        setMsg("❌ Mauvaise réponse (pas d'XP)");
+                        setRunnerMsg(`❌ ${t("qcm.wrongAnswer")}`);
                       }
-
                       setShowCorrection(true);
                     }}
                   >
-                    Valider
+                    {t("qcm.validate")}
                   </button>
-                ) : i < questions.length - 1 ? (
+                ) : questionIndex < questions.length - 1 ? (
                   <button
                     type="button"
                     className="rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
                     onClick={() => {
-                      setI((v) => v + 1);
+                      setQuestionIndex((v) => v + 1);
                       setSelected(null);
                       setShowCorrection(false);
+                      setRunnerMsg(null);
                     }}
                   >
                     {t("qcm.next")}
@@ -686,13 +798,13 @@ export function QuizSetView({
             <div className="mt-1 text-2xl font-semibold">
               {score}/{questions.length}
             </div>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <div className="mt-4">
               <button
                 type="button"
                 className="rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
                 onClick={resetRun}
               >
-                Recommencer
+                {t("qcm.restart")}
               </button>
             </div>
           </div>

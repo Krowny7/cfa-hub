@@ -1,22 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
+import { useI18n } from "@/components/I18nProvider";
 
 export type XpDay = { day: string; xp: number };
 
-/**
- * Lightweight bar chart (no external libs).
- * Expects `day` as YYYY-MM-DD.
- */
 export function XpBarChart({ data, title }: { data: XpDay[]; title?: string }) {
+  const { t } = useI18n();
   const maxXp = useMemo(() => Math.max(0, ...data.map((d) => d.xp || 0)), [data]);
   const safeMax = maxXp || 1;
 
   return (
     <div className="card-soft p-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold">{title ?? "XP (90 jours)"}</div>
-        <div className="text-xs opacity-70">max/jour: {maxXp}</div>
+        <div className="text-sm font-semibold">{title ?? t("people.xpDailyChart")}</div>
+        <div className="text-xs opacity-70">{t("people.xpMaxPerDay", { n: maxXp })}</div>
       </div>
 
       <div className="mt-4 grid grid-cols-[repeat(90,minmax(0,1fr))] items-end gap-[2px]">

@@ -7,11 +7,13 @@ import { GroupMultiPicker } from "@/components/GroupMultiPicker";
 import { FolderPicker } from "@/components/FolderPicker";
 
 type ShareMode = "private" | "public" | "groups";
+type Subject = "cfa" | "personal";
 
 export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
 
+  const [subject, setSubject] = useState<Subject>("cfa");
   const [title, setTitle] = useState("");
   const [shareMode, setShareMode] = useState<ShareMode>("private");
   const [groupIds, setGroupIds] = useState<string[]>([]);
@@ -24,6 +26,36 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
       <h2 className="text-base font-semibold">{t("qcm.createTitle")}</h2>
 
       <div className="mt-4 grid gap-3">
+        {/* Subject toggle */}
+        <div className="flex gap-1 rounded-xl border border-white/[0.08] p-1">
+          <button
+            type="button"
+            onClick={() => setSubject("cfa")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
+              subject === "cfa"
+                ? "bg-blue-500/20 text-blue-300"
+                : "text-white/45 hover:text-white/70"
+            }`}
+          >
+            📊 {t("subject.cfa")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubject("personal")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
+              subject === "personal"
+                ? "bg-violet-500/20 text-violet-300"
+                : "text-white/45 hover:text-white/70"
+            }`}
+          >
+            📚 {t("subject.personal")}
+          </button>
+        </div>
+
+        {subject === "personal" && (
+          <p className="text-xs text-violet-300/70">{t("subject.personalHint")}</p>
+        )}
+
         <input
           className="input"
           placeholder={t("qcm.setTitlePlaceholder")}
@@ -58,7 +90,6 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
               {t("common.public")}
             </button>
           </div>
-
           {shareMode === "groups" && (
             <div className="mt-3">
               <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
@@ -83,15 +114,16 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
                 .insert({
                   title: title.trim(),
                   visibility,
+                  subject,
                   group_id: null,
                   folder_id: folderId,
-                  owner_id: auth.user.id
+                  owner_id: auth.user.id,
                 })
                 .select("id")
                 .maybeSingle();
 
               if (res.error) throw res.error;
-              const setId = (res.data as any)?.id;
+              const setId = (res.data as { id: string } | null)?.id;
 
               if (shareMode === "groups" && setId) {
                 const rows = groupIds.map((gid) => ({ set_id: setId, group_id: gid }));
@@ -100,13 +132,14 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
               }
 
               setTitle("");
+              setSubject("cfa");
               setShareMode("private");
               setGroupIds([]);
               setFolderId(null);
               setMsg("✅");
               window.location.reload();
-            } catch (e: any) {
-              setMsg(`❌ ${e?.message ?? t("common.error")}`);
+            } catch (e: unknown) {
+              setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
             } finally {
               setBusy(false);
             }

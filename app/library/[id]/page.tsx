@@ -1,107 +1,92 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { ContentDetailHeader } from "@/components/ContentDetailHeader";
 import { ContentItemSettings } from "@/components/ContentItemSettings";
 import { DocumentActions } from "@/components/DocumentActions";
+import type { Visibility } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-type PageProps = {
-  params: Promise<{ id: string }>;
+type PageProps = { params: Promise<{ id: string }> };
+
+type DocumentRow = {
+  id: string;
+  title: string;
+  external_url: string;
+  preview_url: string | null;
+  visibility: Visibility;
+  owner_id: string;
+  group_id: string | null;
+  folder_id: string | null;
+  library_folders: { name: string } | null;
 };
 
-async function isMemberOfGroup(supabase: any, userId: string, groupId: string | null) {
+async function isMemberOfGroup(supabase: SupabaseClient, userId: string, groupId: string | null): Promise<boolean> {
   if (!groupId) return false;
-  const { data } = await supabase
-    .from("group_memberships")
-    .select("group_id")
-    .eq("user_id", userId)
-    .eq("group_id", groupId)
-    .limit(1);
+  const { data } = await supabase.from("group_memberships").select("group_id").eq("user_id", userId).eq("group_id", groupId).limit(1);
   return (data?.length ?? 0) > 0;
 }
 
-async function hasAnyShareRowForDoc(supabase: any, docId: string) {
-  // RLS: members will only see shares for groups they're in; owners see all.
+async function hasAnyShareRowForDoc(supabase: SupabaseClient, docId: string): Promise<boolean> {
   const { data } = await supabase.from("document_shares").select("group_id").eq("document_id", docId).limit(1);
   return (data?.length ?? 0) > 0;
 }
 
 export default async function DocumentPage({ params }: PageProps) {
   const { id } = await params;
-
   const locale = await getLocale();
   const supabase = await createClient();
 
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
+  if (!user) redirect("/login");
 
-  if (!user) {
-    return (
-      <div className="mx-auto w-full max-w-5xl">
-        <h1 className="text-2xl font-semibold">{t(locale, "auth.login")}</h1>
-      </div>
-    );
-  }
-
-  const { data: doc } = await supabase
+  const { data: docData } = await supabase
     .from("documents")
-    .select("id,title,external_url,preview_url,created_at,visibility,folder_id,group_id,owner_id,library_folders(name)")
+    .select("id,title,external_url,preview_url,visibility,folder_id,group_id,owner_id,library_folders(name)")
     .eq("id", id)
     .maybeSingle();
 
-  if (!doc) {
+  if (!docData) {
     return (
-      <div className="mx-auto w-full max-w-5xl">
-        <h1 className="text-2xl font-semibold">{t(locale, "library.empty")}</h1>
+      <div className="grid gap-3">
+        <h1 className="text-xl font-semibold">{t(locale, "library.empty")}</h1>
       </div>
     );
   }
 
-  const folderName = (doc as any)?.library_folders?.name ?? null;
-  const isOwner = (doc as any).owner_id === user.id;
+  const doc = docData as unknown as DocumentRow;
+  const folderName = doc.library_folders?.name ?? null;
+  const isOwner = doc.owner_id === user.id;
+  const isGroups = doc.visibility === "group" || doc.visibility === "groups";
 
-  const visibility = String((doc as any).visibility ?? "private");
-  const isGroups = visibility === "group" || visibility === "groups";
+  const [legacyMember, sharedMember, profileData] = await Promise.all([
+    isMemberOfGroup(supabase, user.id, doc.group_id),
+    hasAnyShareRowForDoc(supabase, doc.id),
+    supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
+  ]);
 
-  const legacyMember = await isMemberOfGroup(supabase, user.id, (doc as any).group_id ?? null);
-  const sharedMember = await hasAnyShareRowForDoc(supabase, (doc as any).id);
-
-  // per your rules:
-  // private -> owner only
-  // public -> creator (owner) only
-  // groups/group -> member OR owner
   const canEditDoc = isOwner || (isGroups && (legacyMember || sharedMember));
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("active_group_id")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const activeGroupId = (profile as any)?.active_group_id ?? null;
+  const activeGroupId = (profileData.data as { active_group_id: string | null } | null)?.active_group_id ?? null;
 
   let sharedGroupIds: string[] = [];
   if (isOwner) {
-    const { data: shares } = await supabase.from("document_shares").select("group_id").eq("document_id", (doc as any).id);
-    sharedGroupIds = (shares ?? []).map((s: any) => s.group_id).filter(Boolean);
+    const { data: shares } = await supabase.from("document_shares").select("group_id").eq("document_id", doc.id);
+    sharedGroupIds = (shares ?? []).map((s: { group_id: string }) => s.group_id).filter(Boolean);
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6">
+    <div className="grid gap-5">
       <ContentDetailHeader
         backHref="/library"
         backLabel={t(locale, "nav.library")}
-        title={(doc as any).title}
-        visibility={(doc as any).visibility}
+        title={doc.title}
+        visibility={doc.visibility}
         folderName={folderName}
         rightSlot={
-          (doc as any).external_url ? (
-            <a
-              className="btn btn-secondary w-full whitespace-nowrap sm:w-auto"
-              href={(doc as any).external_url}
-              target="_blank"
-              rel="noreferrer"
-            >
+          doc.external_url ? (
+            <a className="btn btn-secondary whitespace-nowrap" href={doc.external_url} target="_blank" rel="noreferrer">
               {t(locale, "library.openInNewTab")}
             </a>
           ) : null
@@ -109,53 +94,45 @@ export default async function DocumentPage({ params }: PageProps) {
       />
 
       <div className="card p-4">
-        {(doc as any).preview_url ? (
+        {doc.preview_url ? (
           <iframe
-            title={(doc as any).title}
-            src={(doc as any).preview_url}
+            title={doc.title}
+            src={doc.preview_url}
             className="h-[70vh] w-full rounded-xl border border-white/10 bg-black/20"
             allow="autoplay"
           />
         ) : (
-          <div className="text-sm opacity-80">{t(locale, "library.previewUnavailable")}</div>
+          <div className="text-sm text-white/60">{t(locale, "library.previewUnavailable")}</div>
         )}
       </div>
 
-      {/* For non-owners who still can edit/delete (groups), show safe actions (no share sync) */}
-      {canEditDoc && !isOwner ? (
-        <div>
-          <DocumentActions
-            documentId={(doc as any).id}
-            initialTitle={(doc as any).title}
-            initialExternalUrl={(doc as any).external_url ?? ""}
-            initialPreviewUrl={(doc as any).preview_url ?? ""}
-            afterDeleteRedirect="/library"
-          />
-        </div>
-      ) : null}
+      {canEditDoc && !isOwner && (
+        <DocumentActions
+          documentId={doc.id}
+          initialTitle={doc.title}
+          initialExternalUrl={doc.external_url ?? ""}
+          initialPreviewUrl={doc.preview_url ?? ""}
+          afterDeleteRedirect="/library"
+        />
+      )}
 
-      {/* Keep full settings owner-only (shares sync + visibility changes) */}
-      {isOwner ? (
-        <div>
-                    <ContentItemSettings
-            title={t(locale, "common.settings")}
-            subtitle={
-              locale === "fr" ? "Renommer, classer et gérer la visibilité." : "Rename, organize and manage visibility."
-            }
-            itemId={(doc as any).id}
-            table="documents"
-            visibility={(doc as any).visibility}
-            folderId={(doc as any).folder_id ?? null}
-            folderKind="documents"
-            shareTable="document_shares"
-            shareFk="document_id"
-            rootLabel={locale === "fr" ? "Sans dossier" : "No folder"}
-            activeGroupId={activeGroupId}
-            initialSharedGroupIds={sharedGroupIds}
-            legacyGroupId={(doc as any).group_id ?? null}
-          />
-        </div>
-      ) : null}
+      {isOwner && (
+        <ContentItemSettings
+          title={t(locale, "common.settings")}
+          subtitle={t(locale, "qcm.settingsSubtitle")}
+          itemId={doc.id}
+          table="documents"
+          visibility={doc.visibility}
+          folderId={doc.folder_id}
+          folderKind="documents"
+          shareTable="document_shares"
+          shareFk="document_id"
+          rootLabel={t(locale, "common.noFolder")}
+          activeGroupId={activeGroupId}
+          initialSharedGroupIds={sharedGroupIds}
+          legacyGroupId={doc.group_id}
+        />
+      )}
     </div>
   );
 }

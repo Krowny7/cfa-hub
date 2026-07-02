@@ -34,10 +34,11 @@ export function ProfileSettings() {
 
         if (error) throw error;
 
-        setUsername((profile as any)?.username ?? "");
-        setAvatarUrl((profile as any)?.avatar_url ?? null);
-      } catch (e: any) {
-        setMsg(`❌ ${e?.message ?? t("common.error")}`);
+        const p = profile as { username: string | null; avatar_url: string | null } | null;
+        setUsername(p?.username ?? "");
+        setAvatarUrl(p?.avatar_url ?? null);
+      } catch (e: unknown) {
+        setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
       } finally {
         setLoading(false);
       }
@@ -61,12 +62,13 @@ export function ProfileSettings() {
       if (error) throw error;
 
       setMsg(t("settings.updated"));
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+    } catch (e: unknown) {
+      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
+
 
   async function uploadAvatar(file: File) {
     setMsg(null);
@@ -93,69 +95,70 @@ export function ProfileSettings() {
 
       setAvatarUrl(publicUrl);
       setMsg(t("settings.updated"));
-    } catch (e: any) {
-      setMsg(`❌ ${e?.message ?? t("common.error")}`);
+    } catch (e: unknown) {
+      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="card p-6">
+    <div className="card p-5">
       <h2 className="text-base font-semibold">{t("settings.profileTitle")}</h2>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("settings.usernameLabel")}</div>
-          <div className="mt-1 text-xs opacity-70">{t("settings.usernameHint")}</div>
+      {/* Avatar */}
+      <div className="mt-4 flex items-center gap-4">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="avatar" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs opacity-70">
+            —
+          </div>
+        )}
+        <div className="min-w-0">
+          <div className="text-sm font-medium">{t("settings.avatarLabel")}</div>
+          <div className="mt-0.5 text-xs text-white/50">{t("settings.avatarHint")}</div>
+          <label className="btn btn-secondary mt-2 cursor-pointer text-xs">
+            {t("settings.upload")}
+            <input
+              className="hidden"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={loading || busy}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadAvatar(f);
+                e.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
+      </div>
 
+      {/* Separator */}
+      <div className="mt-4 border-t border-white/[0.07]" />
+
+      {/* Username */}
+      <div className="mt-4">
+        <div className="text-sm font-medium">{t("settings.usernameLabel")}</div>
+        <div className="mt-0.5 text-xs text-white/50">{t("settings.usernameHint")}</div>
+        <div className="mt-3 flex gap-2">
           <input
-            className="input mt-3"
+            className="input flex-1"
             placeholder={t("settings.usernamePlaceholder")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading || busy}
           />
-
           <button
-            className="btn btn-primary mt-3"
+            className="btn btn-primary shrink-0"
             onClick={saveUsername}
             disabled={loading || busy}
             type="button"
           >
-            {busy ? t("common.saving") : t("settings.update")}
+            {busy ? "…" : t("settings.update")}
           </button>
-        </div>
-
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("settings.avatarLabel")}</div>
-          <div className="mt-1 text-xs opacity-70">{t("settings.avatarHint")}</div>
-
-          <div className="mt-3 flex items-center gap-3">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="avatar" className="h-14 w-14 rounded-full object-cover" />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-xs opacity-70">
-                —
-              </div>
-            )}
-
-            <label className="btn btn-secondary cursor-pointer">
-              {t("settings.upload")}
-              <input
-                className="hidden"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                disabled={loading || busy}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) uploadAvatar(f);
-                  e.currentTarget.value = "";
-                }}
-              />
-            </label>
-          </div>
         </div>
       </div>
 

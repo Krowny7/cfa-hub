@@ -10,6 +10,9 @@ type ShareMode = "private" | "public" | "groups";
 
 type Folder = { id: string; name: string; parent_id: string | null };
 
+type ShareRow = { group_id: string };
+type UpdateError = { message: string } | null;
+
 export function ContentItemSettings({
   title,
   subtitle,
@@ -46,6 +49,11 @@ export function ContentItemSettings({
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
 
+  // Dynamic table names can't be narrowed by Supabase's generated types.
+  // We use a single cast here; result shapes are annotated explicitly below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawSb = supabase as any;
+
   const defaultRedirect = table === "documents" ? "/library" : table === "flashcard_sets" ? "/flashcards" : "/qcm";
 
   const [draftTitle, setDraftTitle] = useState(title);
@@ -63,6 +71,7 @@ export function ContentItemSettings({
   const [loadingShares, setLoadingShares] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const [msg, setMsg] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -76,7 +85,6 @@ export function ContentItemSettings({
   }, [folderId]);
 
   useEffect(() => {
-    // Load folders for this kind
     (async () => {
       try {
         const { data } = await supabase
@@ -84,7 +92,7 @@ export function ContentItemSettings({
           .select("id,name,parent_id")
           .eq("kind", folderKind)
           .order("name", { ascending: true });
-        setFolders((data ?? []) as any);
+        setFolders((data ?? []) as Folder[]);
       } catch {
         setFolders([]);
       }
@@ -92,20 +100,19 @@ export function ContentItemSettings({
   }, [supabase, folderKind]);
 
   useEffect(() => {
-    // Load share targets if the item uses group sharing.
     if (shareMode !== "groups") return;
     (async () => {
       setLoadingShares(true);
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await rawSb
           .from(shareTable)
           .select("group_id")
-          .eq(shareFk, itemId);
-        if (error) throw error;
-        const ids = (data ?? []).map((r: any) => r.group_id).filter(Boolean);
+          .eq(shareFk, itemId) as { data: ShareRow[] | null; error: UpdateError };
+        if (error) throw new Error(error.message);
+        const ids = (data ?? []).map((r) => r.group_id).filter(Boolean) as string[];
         setGroupIds((prev) => Array.from(new Set([...prev, ...ids])));
       } catch {
-        // Keep the current selection (legacy/initial IDs) if reading shares fails.
+        // Keep current selection if reading shares fails.
       } finally {
         setLoadingShares(false);
       }
@@ -134,13 +141,12 @@ export function ContentItemSettings({
       if (error) throw error;
 
       setNewFolderName("");
-      // refresh list locally (avoid extra query)
       if (data?.id) {
-        setFolders((prev) => [...prev, data as any].sort((a, b) => a.name.localeCompare(b.name)));
+        setFolders((prev) => [...prev, data as Folder].sort((a, b) => a.name.localeCompare(b.name)));
         setSelectedFolderId(data.id);
       }
-    } catch (e: any) {
-      setErrorText(e?.message ?? t("common.error"));
+    } catch (e: unknown) {
+      setErrorText(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setCreatingFolder(false);
     }
@@ -149,7 +155,6 @@ export function ContentItemSettings({
   async function saveAll() {
     setErrorText(null);
     setMsg(null);
-
     setSaving(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
@@ -157,25 +162,23 @@ export function ContentItemSettings({
 
       const normalizedVisibility = shareMode === "groups" ? "groups" : shareMode;
 
-      // Update main row
-      const { error: upErr } = await (supabase as any)
+      const { error: upErr } = await rawSb
         .from(table)
         .update({ title: draftTitle.trim(), visibility: normalizedVisibility, folder_id: selectedFolderId })
-        .eq("id", itemId);
-      if (upErr) throw upErr;
+        .eq("id", itemId) as { error: UpdateError };
+      if (upErr) throw new Error(upErr.message);
 
-      // Update shares
-      await (supabase as any).from(shareTable).delete().eq(shareFk as any, itemId);
+      await rawSb.from(shareTable).delete().eq(shareFk, itemId);
       if (shareMode === "groups" && groupIds.length) {
         const rows = groupIds.map((gid) => ({ [shareFk]: itemId, group_id: gid }));
-        const { error } = await (supabase as any).from(shareTable).insert(rows as any);
-        if (error) throw error;
+        const { error } = await rawSb.from(shareTable).insert(rows) as { error: UpdateError };
+        if (error) throw new Error(error.message);
       }
 
       setMsg(t("common.saved"));
       onUpdated?.();
-    } catch (e: any) {
-      setErrorText(e?.message ?? t("common.error"));
+    } catch (e: unknown) {
+      setErrorText(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setSaving(false);
     }
@@ -184,22 +187,20 @@ export function ContentItemSettings({
   async function deleteItem() {
     setErrorText(null);
     setMsg(null);
-
-    if (!confirm(t("common.confirmDelete"))) return;
-
     setSaving(true);
     try {
-      await (supabase as any).from(shareTable).delete().eq(shareFk as any, itemId);
-      const { error } = await (supabase as any).from(table).delete().eq("id", itemId);
-      if (error) throw error;
+      await rawSb.from(shareTable).delete().eq(shareFk, itemId);
+      const { error } = await rawSb.from(table).delete().eq("id", itemId) as { error: UpdateError };
+      if (error) throw new Error(error.message);
 
       setMsg(t("common.deleted"));
       if (onDeleted) onDeleted();
       else window.location.href = defaultRedirect;
-    } catch (e: any) {
-      setErrorText(e?.message ?? t("common.error"));
+    } catch (e: unknown) {
+      setErrorText(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setSaving(false);
+      setShowConfirmDelete(false);
     }
   }
 
@@ -339,9 +340,36 @@ export function ContentItemSettings({
             {saving ? t("common.saving") : t("common.save")}
           </button>
 
-          <button type="button" className="btn btn-danger" onClick={deleteItem} disabled={saving}>
-            {t("common.delete")}
-          </button>
+          {showConfirmDelete ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm opacity-80">{t("common.confirmDelete")}</span>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={deleteItem}
+                disabled={saving}
+              >
+                {t("common.confirm")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowConfirmDelete(false)}
+                disabled={saving}
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => setShowConfirmDelete(true)}
+              disabled={saving}
+            >
+              {t("common.delete")}
+            </button>
+          )}
         </div>
       </div>
     </details>

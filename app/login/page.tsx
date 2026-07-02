@@ -34,9 +34,8 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const supabase = useMemo(() => createClient(), []);
-  const { locale } = useI18n();
+  const { t } = useI18n();
 
-  const isFr = locale === "fr";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,9 +52,8 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
-      // Redirection handled by Supabase OAuth.
-    } catch (e: any) {
-      setError(e?.message ?? (isFr ? "Erreur de connexion." : "Login error."));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : t("common.error"));
       setBusy(false);
     }
   }
@@ -66,74 +64,44 @@ export default function LoginPage() {
       <section className="card order-2 p-8 lg:order-1">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs">
           <span className="h-2 w-2 rounded-full bg-blue-400/80" />
-          {isFr ? "Espace d’étude centralisé" : "Centralized study hub"}
+          {t("login.studyHub")}
         </div>
 
         <h1 className="mt-5 text-3xl font-semibold leading-tight">
-          {isFr ? (
-            <>
-              CFA Hub — <span className="opacity-80">PDF, flashcards et QCM au même endroit.</span>
-            </>
-          ) : (
-            <>
-              CFA Hub — <span className="opacity-80">PDFs, flashcards & quizzes in one place.</span>
-            </>
-          )}
+          CFA Hub — <span className="opacity-80">{t("login.heroSuffix")}</span>
         </h1>
 
-        <p className="mt-3 text-sm text-white/80">
-          {isFr
-            ? "Organise tes ressources, révise vite, et partage avec tes groupes (classement ELO inclus)."
-            : "Organize resources, revise fast, and share with your groups (ELO ranking included)."}
-        </p>
+        <p className="mt-3 text-sm text-white/80">{t("login.heroDesc")}</p>
 
         <div className="mt-7 grid gap-3 sm:grid-cols-2">
           <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{isFr ? "Bibliothèque" : "Library"}</div>
-            <div className="mt-1 text-xs opacity-70">
-              {isFr ? "Ajoute des liens PDF, classe par dossiers." : "Add PDF links, organize with folders."}
-            </div>
+            <div className="text-sm font-semibold">{t("nav.library")}</div>
+            <div className="mt-1 text-xs opacity-70">{t("login.libraryDesc")}</div>
           </div>
 
           <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{isFr ? "Flashcards" : "Flashcards"}</div>
-            <div className="mt-1 text-xs opacity-70">
-              {isFr
-                ? "Import/export Quizlet et mode révision plein écran."
-                : "Quizlet import/export and fullscreen review."}
-            </div>
+            <div className="text-sm font-semibold">{t("nav.flashcards")}</div>
+            <div className="mt-1 text-xs opacity-70">{t("login.flashcardsDesc")}</div>
           </div>
 
           <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{isFr ? "QCM" : "Quizzes"}</div>
-            <div className="mt-1 text-xs opacity-70">
-              {isFr ? "Mode examen + correction et explications." : "Exam mode + feedback and explanations."}
-            </div>
+            <div className="text-sm font-semibold">{t("login.quizzesTitle")}</div>
+            <div className="mt-1 text-xs opacity-70">{t("login.quizzesDesc")}</div>
           </div>
 
           <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{isFr ? "Groupes" : "Groups"}</div>
-            <div className="mt-1 text-xs opacity-70">
-              {isFr
-                ? "Partage multi-groupes (privé / groupes / public)."
-                : "Multi-group sharing (private / groups / public)."}
-            </div>
+            <div className="text-sm font-semibold">{t("login.groupsTitle")}</div>
+            <div className="mt-1 text-xs opacity-70">{t("login.groupsDesc")}</div>
           </div>
         </div>
 
-        <div className="mt-6 text-xs text-white/60">
-          {isFr
-            ? "Astuce : commence par ajouter tes PDFs, puis crée un set de flashcards ou un QCM."
-            : "Tip: start by adding your PDFs, then create a flashcard set or a quiz."}
-        </div>
+        <div className="mt-6 text-xs text-white/60">{t("login.tipStartBy")}</div>
       </section>
 
       {/* RIGHT: Sign in */}
       <section className="card order-1 p-8 lg:order-2">
-        <h2 className="text-lg font-semibold">{isFr ? "Connexion" : "Sign in"}</h2>
-        <p className="mt-2 text-sm text-white/80">
-          {isFr ? "Connecte-toi pour accéder à ton espace." : "Sign in to access your workspace."}
-        </p>
+        <h2 className="text-lg font-semibold">{t("login.signinTitle")}</h2>
+        <p className="mt-2 text-sm text-white/80">{t("login.signinDesc")}</p>
 
         <button
           type="button"
@@ -142,25 +110,21 @@ export default function LoginPage() {
           className="btn mt-5 w-full bg-white text-black hover:bg-white/90"
         >
           <GoogleIcon />
-          {busy ? (isFr ? "Redirection…" : "Redirecting…") : isFr ? "Continuer avec Google" : "Continue with Google"}
+          {busy ? t("login.redirecting") : t("login.googleButton")}
         </button>
 
         {error ? <div className="mt-3 text-sm text-red-100">❌ {error}</div> : null}
 
         <div className="mt-6 card-soft p-4">
-          <div className="text-sm font-semibold">{isFr ? "Ce que tu verras en premier" : "What you’ll see first"}</div>
+          <div className="text-sm font-semibold">{t("login.firstStepsTitle")}</div>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-white/80">
-            <li>{isFr ? "Dashboard avec tes stats" : "Dashboard with your stats"}</li>
-            <li>{isFr ? "Accès rapide à PDF / Flashcards / QCM" : "Quick access to PDFs / Flashcards / Quizzes"}</li>
-            <li>{isFr ? "Partage via groupes (Réglages)" : "Group sharing (Settings)"}</li>
+            <li>{t("login.step1")}</li>
+            <li>{t("login.step2")}</li>
+            <li>{t("login.step3")}</li>
           </ol>
         </div>
 
-        <div className="mt-4 text-xs text-white/60">
-          {isFr
-            ? "En continuant, tu autorises l’authentification via Google. Aucune donnée n’est partagée publiquement par défaut."
-            : "By continuing, you authorize Google authentication. Nothing is public by default."}
-        </div>
+        <div className="mt-4 text-xs text-white/60">{t("login.legalNote")}</div>
       </section>
     </div>
   );

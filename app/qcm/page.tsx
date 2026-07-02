@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { QuizSetCreator } from "@/components/QuizSetCreator";
-import { FolderBlocks, SectionHeader } from "@/components/ContentFolderBlocks";
+import { FolderBlocks } from "@/components/ContentFolderBlocks";
 import { normalizeScope, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
+import type { Profile } from "@/lib/types";
 
 type SetRow = {
   id: string;
@@ -15,225 +17,199 @@ type SetRow = {
   is_official?: boolean | null;
   official_published?: boolean | null;
   difficulty?: number | null;
+  subject?: string | null;
   library_folders?: { name: string | null } | null;
 };
 
-type SearchParams = {
-  q?: string;
-  scope?: string;
-};
+type SearchParams = { q?: string; scope?: string };
+type PageProps = { searchParams?: Promise<SearchParams> };
 
-type PageProps = {
-  searchParams?: Promise<SearchParams>;
-};
+function tabCls(active: boolean) {
+  return (
+    "px-4 py-2.5 text-sm border-b-2 transition-colors whitespace-nowrap " +
+    (active
+      ? "border-blue-400 text-blue-300 font-medium"
+      : "border-transparent text-white/50 hover:text-white/70")
+  );
+}
 
 export default async function QcmPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
-
-  // ✅ garde le type “locale” attendu par t()
-  const locale = (await getLocale()) ?? "fr";
-  const localeStr = String(locale || "fr");
-  const isFR = localeStr.toLowerCase().startsWith("fr");
-
-  const L = {
-    // Hero
-    infoTitle: isFR ? "QCM" : "MCQ",
-    hero1: isFR ? "Entraîne-toi en conditions réelles." : "Train under real conditions.",
-    hero2: isFR
-      ? "Crée tes QCM, partage-les à tes groupes, et progresse question après question."
-      : "Create MCQs, share them with your groups, and improve question by question.",
-
-    // List
-    your: isFR ? "Vos QCM" : "Your MCQs",
-    searchPlaceholder: isFR ? "Rechercher un QCM…" : "Search a MCQ…",
-    filterBtn: isFR ? "Filtrer" : "Filter",
-    reset: "Reset",
-    all: isFR ? "Tous" : "All",
-    private: isFR ? "Privés" : "Private",
-    shared: isFR ? "Groupes" : "Groups",
-    public: isFR ? "Publics" : "Public",
-
-    // ✅ plus d’erreur ici
-    open: t(locale, "qcm.open"),
-
-    // folder naming
-    root: isFR ? "Sans dossier" : "No folder",
-
-    // section subtitles
-    subtitlePrivate: isFR ? "Visible uniquement par toi." : "Visible only to you.",
-    subtitleShared: isFR ? "Visibles pour certains groupes." : "Visible to selected groups.",
-    subtitlePublic: isFR ? "Visibles par tous (selon tes règles)." : "Visible to everyone (per your rules).",
-
-    officialTitle: isFR ? "QCM officiels (XP)" : "Official quizzes (XP)",
-    officialSubtitle: isFR
-      ? "Seuls les QCM officiels donnent de l’XP (questions justes)."
-      : "Only official quizzes grant XP (correct answers).",
-    emptyOfficial: isFR ? "Aucun QCM officiel pour l’instant." : "No official quizzes yet.",
-
-    emptyPrivate: isFR ? "Aucun QCM privé." : "No private MCQ.",
-    emptyShared: isFR ? "Aucun QCM partagé." : "No shared MCQ.",
-    emptyPublic: isFR ? "Aucun QCM public." : "No public MCQ.",
-    nothingFound: isFR ? "Aucun QCM trouvé." : "No MCQ found."
-  };
-
+  const locale = await getLocale();
   const supabase = await createClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const user = authData.user;
+
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
   if (!user) redirect("/login");
 
   const q = (sp.q ?? "").trim();
   const scope = normalizeScope(sp.scope) as ScopeFilter;
 
-  const [{ data: profile }, setsRes, officialRes] = await Promise.all([
+  const admin = createAdminClient();
+
+  const [{ data: profileData }, setsRes, officialRes] = await Promise.all([
     supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
     (async () => {
       let query = supabase
         .from("quiz_sets")
-        .select("id,title,visibility,created_at,is_official,official_published,difficulty, library_folders(name)")
+        .select("id,title,visibility,created_at,is_official,official_published,difficulty,subject,library_folders(name)")
         .order("created_at", { ascending: false });
-
       if (q) query = query.ilike("title", `%${q}%`);
-      if (scope === "private" || scope === "public") query = query.eq("visibility", scope);
-      if (scope === "shared") query = query.in("visibility", ["group", "groups"]);
-
       return await query;
-    })()
-    ,
+    })(),
     (async () => {
-      let query = supabase
+      let query = admin
         .from("quiz_sets")
-        .select("id,title,visibility,created_at,is_official,official_published,difficulty, library_folders(name)")
+        .select("id,title,visibility,created_at,is_official,official_published,difficulty,subject")
         .eq("is_official", true)
         .eq("official_published", true)
         .order("created_at", { ascending: false })
         .limit(50);
-
       if (q) query = query.ilike("title", `%${q}%`);
       return await query;
-    })()
+    })(),
   ]);
 
-  const activeGroupId = (profile as any)?.active_group_id ?? null;
-
+  const activeGroupId =
+    (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
   const all = (setsRes.data ?? []) as unknown as SetRow[];
-
-  // Official (XP) quiz sets. Only these can grant XP.
   const official = (officialRes.data ?? []) as unknown as SetRow[];
-
   const priv = all.filter((s) => sectionForVisibility(s.visibility) === "private");
   const shared = all.filter((s) => sectionForVisibility(s.visibility) === "shared");
   const pub = all.filter((s) => sectionForVisibility(s.visibility) === "public");
-  const totalCount = all.length;
-  const officialCount = official.length;
+
+  const displayItems =
+    scope === "private" ? priv :
+    scope === "shared" ? shared :
+    scope === "public" ? pub :
+    all;
+
+  // Official sets have their own block at the top — exclude from subject sections
+  const officialIds = new Set(official.map((s) => s.id));
+  const userItems = displayItems.filter((s) => !officialIds.has(s.id));
+  const cfaItems = userItems.filter((s) => (s.subject ?? "cfa") !== "personal");
+  const personalItems = userItems.filter((s) => s.subject === "personal");
+
+  const noFolder = t(locale, "common.noFolder");
+  const openLabel = t(locale, "qcm.open");
+  const scopeLink = (v: string) =>
+    `/qcm?scope=${v}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
   return (
     <div className="grid gap-4">
-      {/* Top row: Info + Create aligned */}
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <div className="card flex h-full flex-col justify-center p-6 sm:p-8">
-            <div className="text-sm font-semibold opacity-80">{L.infoTitle}</div>
-            <div className="mt-3 text-3xl font-semibold leading-tight">{L.hero1}</div>
-            <div className="mt-3 text-base opacity-80 max-w-[56ch]">{L.hero2}</div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5">
+      {/* Header: title + creator toggle */}
+      <details>
+        <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">
+          <h1 className="text-xl font-semibold tracking-tight">{t(locale, "qcm.title")}</h1>
+          <span className="btn btn-secondary shrink-0 text-sm">
+            + {locale === "fr" ? "Créer" : "Create"}
+          </span>
+        </summary>
+        <div className="mt-3 card p-4">
           <QuizSetCreator activeGroupId={activeGroupId} />
         </div>
-      </div>
+      </details>
 
-      {/* Bottom: Vos QCM */}
-      <div className="card p-5">
-        {official.length ? (
-          <div className="mb-6 grid gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-semibold">{isFR ? "QCM officiels (XP)" : "Official quizzes (XP)"}</h2>
-              <div className="text-xs opacity-70">{official.length}</div>
-            </div>
-            <div className="text-sm opacity-70">
-              {isFR
-                ? "L’XP est gagnée uniquement sur ces QCM (questions justes, 1x par question)."
-                : "XP is earned only on these quizzes (correct answers, once per question)."}
-            </div>
-            <FolderBlocks
-              locale={localeStr}
-              items={official}
-              rootLabel={L.root}
-              openLabel={L.open}
-              basePath="/qcm"
-            />
+      {/* Official sets — always shown at the top, outside tabs */}
+      {official.length > 0 && (
+        <div className="card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-sm font-semibold">{t(locale, "qcm.officialTitle")}</span>
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+              ★ Officiel
+            </span>
           </div>
-        ) : null}
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold">{L.your}</h2>
-          <div className="text-xs opacity-70">{totalCount}</div>
+          <p className="mb-3 text-xs text-white/55">{t(locale, "qcm.officialXpNote")}</p>
+          <FolderBlocks
+            locale={locale}
+            items={official}
+            rootLabel={noFolder}
+            openLabel={openLabel}
+            basePath="/qcm"
+            itemUnit="QCM"
+          />
         </div>
+      )}
 
-        <form className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center" action="/qcm" method="get">
-          <input name="q" defaultValue={q} placeholder={L.searchPlaceholder} className="input flex-1 sm:min-w-[220px]" />
-          <select name="scope" defaultValue={scope} className="select sm:w-auto sm:min-w-[180px]">
-            <option value="all">{L.all}</option>
-            <option value="private">{L.private}</option>
-            <option value="shared">{L.shared}</option>
-            <option value="public">{L.public}</option>
-          </select>
-          <button type="submit" className="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
-            {L.filterBtn}
-          </button>
-
-          {q || scope !== "all" ? (
-            <Link href="/qcm" className="btn btn-secondary w-full whitespace-nowrap sm:w-auto">
-              {L.reset}
-            </Link>
-          ) : null}
-        </form>
-
-        <div className="mt-4 grid gap-4">
-
-          {scope === "all" || scope === "private" ? (
-            <div className="grid gap-3">
-              <SectionHeader title={L.private} subtitle={L.subtitlePrivate} count={priv.length} tone="private" />
-              {priv.length ? (
-                <FolderBlocks locale={localeStr} items={priv} rootLabel={L.root} openLabel={L.open} basePath="/qcm" />
-              ) : (
-                <div className="text-sm opacity-70">{L.emptyPrivate}</div>
-              )}
-            </div>
-          ) : null}
-
-          {scope === "all" || scope === "shared" ? (
-            <div className="grid gap-3">
-              <SectionHeader title={L.shared} subtitle={L.subtitleShared} count={shared.length} tone="shared" />
-              {shared.length ? (
-                <FolderBlocks
-                  locale={localeStr}
-                  items={shared}
-                  rootLabel={L.root}
-                  openLabel={L.open}
-                  basePath="/qcm"
-                />
-              ) : (
-                <div className="text-sm opacity-70">{L.emptyShared}</div>
-              )}
-            </div>
-          ) : null}
-
-          {scope === "all" || scope === "public" ? (
-            <div className="grid gap-3">
-              <SectionHeader title={L.public} subtitle={L.subtitlePublic} count={pub.length} tone="public" />
-              {pub.length ? (
-                <FolderBlocks locale={localeStr} items={pub} rootLabel={L.root} openLabel={L.open} basePath="/qcm" />
-              ) : (
-                <div className="text-sm opacity-70">{L.emptyPublic}</div>
-              )}
-            </div>
-          ) : null}
-
-          {totalCount === 0 ? <div className="text-sm opacity-70">{L.nothingFound}</div> : null}
-        </div>
+      {/* Scope tabs */}
+      <div className="flex border-b border-white/[0.07]">
+        <Link href={scopeLink("all")} className={tabCls(scope === "all")}>
+          {t(locale, "common.all")} · {all.length}
+        </Link>
+        <Link href={scopeLink("private")} className={tabCls(scope === "private")}>
+          {t(locale, "content.sectionPrivate")} · {priv.length}
+        </Link>
+        <Link href={scopeLink("shared")} className={tabCls(scope === "shared")}>
+          {t(locale, "content.sectionShared")} · {shared.length}
+        </Link>
+        <Link href={scopeLink("public")} className={tabCls(scope === "public")}>
+          {t(locale, "content.sectionPublic")} · {pub.length}
+        </Link>
       </div>
+
+      {/* Search */}
+      <form className="flex flex-wrap gap-2" action="/qcm" method="get">
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder={t(locale, "qcm.searchPlaceholder")}
+          className="input min-w-0 flex-1 sm:min-w-[220px]"
+        />
+        <input type="hidden" name="scope" value={scope} />
+        <button type="submit" className="btn btn-secondary whitespace-nowrap">
+          {t(locale, "common.filter")}
+        </button>
+        {(q || scope !== "all") && (
+          <Link href="/qcm" className="btn btn-ghost whitespace-nowrap">
+            {t(locale, "common.reset")}
+          </Link>
+        )}
+      </form>
+
+      {/* Empty state */}
+      {displayItems.length === 0 && (
+        <p className="text-sm opacity-60">{t(locale, "qcm.empty")}</p>
+      )}
+
+      {/* CFA section */}
+      {cfaItems.length > 0 && (
+        <div className="card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-sm font-semibold">📊 {t(locale, "subject.cfa")}</span>
+            <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+              {cfaItems.length}
+            </span>
+          </div>
+          <FolderBlocks
+            locale={locale}
+            items={cfaItems}
+            rootLabel={noFolder}
+            openLabel={openLabel}
+            basePath="/qcm"
+            itemUnit="QCM"
+          />
+        </div>
+      )}
+
+      {/* Personal section */}
+      {personalItems.length > 0 && (
+        <div className="card border-l-2 border-l-violet-400/40 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-sm font-semibold">📚 {t(locale, "subject.personal")}</span>
+            <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+              {personalItems.length}
+            </span>
+          </div>
+          <FolderBlocks
+            locale={locale}
+            items={personalItems}
+            rootLabel={noFolder}
+            openLabel={openLabel}
+            basePath="/qcm"
+            itemUnit="QCM"
+          />
+        </div>
+      )}
     </div>
   );
 }

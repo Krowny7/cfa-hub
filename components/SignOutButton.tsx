@@ -1,22 +1,22 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { useI18n } from "@/components/I18nProvider";
 
 export function SignOutButton() {
   const supabase = createClient();
-  const { t } = useI18n();
 
   return (
     <button
-      className="btn btn-secondary whitespace-nowrap"
       type="button"
+      title="Se déconnecter"
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-white/35 transition hover:bg-white/[0.06] hover:text-white/70"
       onClick={async () => {
         await supabase.auth.signOut();
         window.location.href = "/login";
       }}
     >
-      {t("auth.logout")}
+      <LogOut size={15} />
     </button>
   );
 }

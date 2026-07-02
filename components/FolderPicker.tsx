@@ -7,18 +7,18 @@ import { useI18n } from "@/components/I18nProvider";
 export type FolderKind = "documents" | "flashcards" | "quizzes";
 type Folder = { id: string; name: string; parent_id: string | null };
 
-function formatSupabaseError(err: any): string {
+function formatSupabaseError(err: unknown): string {
   if (!err) return "Unknown error";
-  // PostgrestError shape often has these fields
-  const msg = err?.message ?? err?.error_description ?? err?.hint ?? err?.details;
+  if (err instanceof Error) return err.message;
+  if (typeof err !== "object") return String(err);
+  const e = err as Record<string, unknown>;
+  const msg = e["message"] ?? e["error_description"] ?? e["hint"] ?? e["details"];
   if (typeof msg === "string" && msg.trim().length > 0) return msg;
-
-  // Try a richer fallback (includes non-enumerable sometimes)
   try {
     const parts: string[] = [];
-    if (err?.code) parts.push(`code=${err.code}`);
-    if (err?.status) parts.push(`status=${err.status}`);
-    if (err?.statusText) parts.push(`statusText=${err.statusText}`);
+    if (e["code"]) parts.push(`code=${e["code"]}`);
+    if (e["status"]) parts.push(`status=${e["status"]}`);
+    if (e["statusText"]) parts.push(`statusText=${e["statusText"]}`);
     const s = JSON.stringify(err, Object.getOwnPropertyNames(err));
     if (s && s !== "{}") parts.push(s);
     return parts.length ? parts.join(" | ") : String(err);
@@ -62,14 +62,8 @@ export function FolderPicker({
         .order("name", { ascending: true })
         .throwOnError();
 
-      setFolders((data ?? []) as any);
-    } catch (err: any) {
-      console.error("FolderPicker.refresh error (raw):", err);
-      console.error("FolderPicker.refresh error (message):", err?.message);
-      console.error("FolderPicker.refresh error (details):", err?.details);
-      console.error("FolderPicker.refresh error (hint):", err?.hint);
-      console.error("FolderPicker.refresh error (code):", err?.code);
-
+      setFolders((data ?? []) as Folder[]);
+    } catch (err: unknown) {
       setFolders([]);
       setErrorText(formatSupabaseError(err));
     }
@@ -140,13 +134,7 @@ export function FolderPicker({
 
                 setNewName("");
                 await refresh();
-              } catch (err: any) {
-                console.error("FolderPicker.insert error (raw):", err);
-                console.error("FolderPicker.insert error (message):", err?.message);
-                console.error("FolderPicker.insert error (details):", err?.details);
-                console.error("FolderPicker.insert error (hint):", err?.hint);
-                console.error("FolderPicker.insert error (code):", err?.code);
-
+              } catch (err: unknown) {
                 setErrorText(formatSupabaseError(err));
               } finally {
                 setBusy(false);

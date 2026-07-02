@@ -1,6 +1,8 @@
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { Header } from "@/components/Header";
+import { TopBar } from "@/components/TopBar";
+import { Sidebar } from "@/components/Sidebar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = {
@@ -21,8 +23,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="absolute inset-0 opacity-[0.18] bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:56px_56px]" />
             <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900" />
           </div>
-          <Header />
-          <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+
+          {/* Top bar */}
+          <TopBar />
+
+          {/* Page shell */}
+          <div className="flex min-h-[calc(100vh-3rem)]">
+            {/* Sidebar (desktop only) */}
+            <Sidebar />
+
+            {/* Main content */}
+            <main className="flex-1 min-w-0 px-4 py-6 pb-24 md:pb-8 md:px-8">
+              <div className="mx-auto max-w-4xl">
+                {children}
+              </div>
+            </main>
+          </div>
+
+          {/* Mobile bottom nav */}
+          <MobileBottomNav />
         </Providers>
       </body>
     </html>

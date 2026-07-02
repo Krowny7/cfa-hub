@@ -8,12 +8,12 @@ export function isLocale(value: unknown): value is Locale {
   return value === "fr" || value === "en";
 }
 
-function getByPath(obj: any, path: string): string | undefined {
+function getByPath(obj: unknown, path: string): string | undefined {
   const parts = path.split(".");
-  let cur = obj;
+  let cur: unknown = obj;
   for (const p of parts) {
-    if (cur == null) return undefined;
-    cur = cur[p];
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[p];
   }
   return typeof cur === "string" ? cur : undefined;
 }

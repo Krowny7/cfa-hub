@@ -4,32 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { levelInfoFromXp } from "@/lib/leveling";
+import type { Profile, Rating } from "@/lib/types";
 
-type Profile = {
-  id: string;
-  username?: string | null;
-  avatar_url?: string | null;
-  xp_total?: number | null;
-};
+type SearchParams = { q?: string; view?: string };
+type PageProps = { searchParams?: Promise<SearchParams> };
 
-type Rating = {
-  user_id: string;
-  elo?: number | null;
-  games_played?: number | null;
-};
-
-type SearchParams = {
-  q?: string;
-  view?: string;
-};
-
-type PageProps = {
-  searchParams?: Promise<SearchParams>;
-};
-
-function uniq<T>(arr: T[]) {
-  return Array.from(new Set(arr));
-}
+type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
+type RatingRow = Pick<Rating, "user_id" | "elo" | "games_played">;
 
 function shortId(id: string) {
   return id ? id.split("-")[0] : "";
@@ -38,7 +19,7 @@ function shortId(id: string) {
 export default async function PeoplePage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
-  const view = ((sp.view ?? "all") as "all" | "groups");
+  const view = (sp.view ?? "all") as "all" | "groups";
 
   const locale = await getLocale();
   const supabase = await createClient();
@@ -47,71 +28,60 @@ export default async function PeoplePage({ searchParams }: PageProps) {
   const user = auth.user;
   if (!user) redirect("/login");
 
-  const title = t(locale, "nav.people");
-  const subtitle =
-    locale === "fr"
-      ? "Annuaire global + classement ELO."
-      : "Global directory + ELO leaderboard.";
-
-  // -----------------------------
-  // 1) Fetch group ids of current user
-  // -----------------------------
   const { data: myGroupsRaw } = await supabase
     .from("group_memberships")
     .select("group_id")
     .eq("user_id", user.id);
 
-  const myGroupIds = uniq((myGroupsRaw ?? []).map((r: any) => r.group_id).filter(Boolean));
+  const myGroupIds = [
+    ...new Set(
+      (myGroupsRaw ?? [])
+        .map((r: { group_id: string }) => r.group_id)
+        .filter(Boolean)
+    ),
+  ];
 
-  // -----------------------------
-  // 2) Fetch profiles (ALL) with search, OR group-only list
-  // -----------------------------
-  let people: Profile[] = [];
+  let people: ProfileRow[] = [];
 
   if (view === "groups") {
-    // members of any of my groups (dedup)
     if (myGroupIds.length > 0) {
       const { data: membersRaw } = await supabase
         .from("group_memberships")
         .select("user_id")
         .in("group_id", myGroupIds);
 
-      const memberIds = uniq((membersRaw ?? []).map((m: any) => m.user_id).filter(Boolean));
+      const memberIds = [
+        ...new Set(
+          (membersRaw ?? [])
+            .map((m: { user_id: string }) => m.user_id)
+            .filter(Boolean)
+        ),
+      ];
 
       if (memberIds.length > 0) {
-        const profilesRes = await supabase
+        const { data } = await supabase
           .from("profiles")
-          // Privacy: do not fetch or display Google full_name here.
           .select("id,username,avatar_url,xp_total")
           .in("id", memberIds)
           .order("username", { ascending: true });
-
-        people = (profilesRes.data ?? []) as any;
+        people = (data ?? []) as ProfileRow[];
       }
     }
   } else {
-    // ALL PROFILES (limit for scalability)
     let queryBuilder = supabase
       .from("profiles")
-      // Privacy: do not fetch or display Google full_name here.
       .select("id,username,avatar_url,xp_total")
       .order("username", { ascending: true })
       .limit(200);
 
-    if (q) {
-      queryBuilder = queryBuilder.or(`username.ilike.%${q}%`);
-    }
+    if (q) queryBuilder = queryBuilder.or(`username.ilike.%${q}%`);
 
-    const profilesRes = await queryBuilder;
-    people = (profilesRes.data ?? []) as any;
+    const { data } = await queryBuilder;
+    people = (data ?? []) as ProfileRow[];
   }
 
   const peopleIds = people.map((p) => p.id);
-
-  // -----------------------------
-  // 3) Fetch ratings for people list (elo + games)
-  // -----------------------------
-  const ratingByUser = new Map<string, Rating>();
+  const ratingByUser = new Map<string, RatingRow>();
 
   if (peopleIds.length > 0) {
     const { data: ratingsRaw } = await supabase
@@ -119,25 +89,20 @@ export default async function PeoplePage({ searchParams }: PageProps) {
       .select("user_id,elo,games_played")
       .in("user_id", peopleIds);
 
-    (ratingsRaw ?? []).forEach((r: any) => {
-      ratingByUser.set(r.user_id, {
-        user_id: r.user_id,
-        elo: r.elo ?? null,
-        games_played: r.games_played ?? null
-      });
+    (ratingsRaw ?? []).forEach((r: RatingRow) => {
+      ratingByUser.set(r.user_id, r);
     });
   }
 
-  // -----------------------------
-  // 4) Leaderboard (Top 20)
-  // -----------------------------
   const { data: topRatingsRaw } = await supabase
     .from("ratings")
     .select("user_id,elo,games_played")
     .order("elo", { ascending: false })
     .limit(20);
 
-  const topUserIds = (topRatingsRaw ?? []).map((r: any) => r.user_id).filter(Boolean);
+  const topUserIds = (topRatingsRaw ?? [])
+    .map((r: RatingRow) => r.user_id)
+    .filter(Boolean);
 
   const { data: topProfilesRaw } =
     topUserIds.length > 0
@@ -145,114 +110,108 @@ export default async function PeoplePage({ searchParams }: PageProps) {
           .from("profiles")
           .select("id,username,avatar_url,xp_total")
           .in("id", topUserIds)
-      : { data: [] as any[] };
+      : { data: [] as ProfileRow[] };
 
-  const topProfileById = new Map<string, Profile>();
-  (topProfilesRaw ?? []).forEach((p: any) => topProfileById.set(p.id, p));
+  const topProfileById = new Map<string, ProfileRow>();
+  (topProfilesRaw ?? []).forEach((p: ProfileRow) => topProfileById.set(p.id, p));
 
-  const leaderboard = (topRatingsRaw ?? []).map((r: any) => {
+  const leaderboard = (topRatingsRaw ?? []).map((r: RatingRow) => {
     const p = topProfileById.get(r.user_id);
     return {
       user_id: r.user_id,
       username: p?.username ?? shortId(r.user_id),
       avatar_url: p?.avatar_url ?? null,
-      xp_total: Number((p as any)?.xp_total ?? 0) || 0,
+      xp_total: Number(p?.xp_total ?? 0) || 0,
       elo: r.elo ?? 1200,
-      games_played: r.games_played ?? 0
+      games_played: r.games_played ?? 0,
     };
   });
 
-  const isFr = locale === "fr";
-
   return (
     <div className="grid gap-4">
-      <div className="card p-6 sm:p-8">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-2 text-sm text-white/80">{subtitle}</p>
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">{t(locale, "people.title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t(locale, "people.subtitle")}</p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        {/* LEFT: Directory */}
-        <section className="card p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div className="text-sm font-semibold">{isFr ? "Annuaire" : "Directory"}</div>
-              <div className="mt-1 text-xs opacity-70">
-                {isFr ? "Recherche + filtre (Tous / Mes groupes)." : "Search + filter (All / My groups)."}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Link
-                href={`/people?view=all${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`chip ${view === "all" ? "chip-active" : ""}`}
-              >
-                {isFr ? "Tous" : "All"}
-              </Link>
-              <Link
-                href={`/people?view=groups${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className={`chip ${view === "groups" ? "chip-active" : ""}`}
-              >
-                {isFr ? "Mes groupes" : "My groups"}
-              </Link>
-            </div>
+      {/* Two-column: directory + leaderboard */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
+        {/* Directory */}
+        <div className="card p-5">
+          {/* View toggle + search */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <Link
+              href={`/people?view=all${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`rounded-full border px-3 py-1 text-xs transition ${
+                view === "all"
+                  ? "border-white/15 bg-white/[0.10] text-white"
+                  : "border-transparent text-white/60 hover:border-white/10 hover:bg-white/[0.06]"
+              }`}
+            >
+              {t(locale, "people.all")}
+            </Link>
+            <Link
+              href={`/people?view=groups${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`rounded-full border px-3 py-1 text-xs transition ${
+                view === "groups"
+                  ? "border-white/15 bg-white/[0.10] text-white"
+                  : "border-transparent text-white/60 hover:border-white/10 hover:bg-white/[0.06]"
+              }`}
+            >
+              {t(locale, "people.myGroups")}
+            </Link>
           </div>
 
-          {/* Search */}
-          <form className="mt-4 flex gap-2" action="/people" method="get">
+          <form className="flex gap-2 mb-4" action="/people" method="get">
             <input type="hidden" name="view" value={view} />
             <input
               name="q"
               defaultValue={q}
-              placeholder={isFr ? "Rechercher un profil…" : "Search a profile…"}
-              className="input"
+              placeholder={t(locale, "people.searchPlaceholder")}
+              className="input flex-1"
             />
-            <button
-              type="submit"
-              className="btn btn-secondary whitespace-nowrap"
-            >
-              {isFr ? "Filtrer" : "Filter"}
+            <button type="submit" className="btn btn-secondary whitespace-nowrap">
+              {t(locale, "common.filter")}
             </button>
           </form>
 
-          {/* List */}
-          <div className="mt-4 grid gap-2">
+          <div className="grid gap-2">
             {people.length === 0 ? (
-              <div className="text-sm opacity-70">{isFr ? "Aucun profil trouvé." : "No profiles found."}</div>
+              <div className="text-sm opacity-60">{t(locale, "people.notFound")}</div>
             ) : (
               people.map((p) => {
                 const rating = ratingByUser.get(p.id);
                 const elo = rating?.elo ?? 1200;
                 const games = rating?.games_played ?? 0;
-
-                const xpTotal = Number((p as any).xp_total ?? 0) || 0;
+                const xpTotal = Number(p.xp_total ?? 0) || 0;
                 const lvl = levelInfoFromXp(xpTotal).level;
-
                 const display = p.username || shortId(p.id);
 
                 return (
                   <Link
                     key={p.id}
                     href={`/people/${p.id}`}
-                    className={`card-soft p-4 transition hover:bg-white/[0.06] ${p.id === user.id ? "bg-white/[0.06]" : ""}`}
+                    className={`card-soft flex items-center gap-3 p-3 transition hover:bg-white/[0.06] ${
+                      p.id === user.id ? "bg-white/[0.06]" : ""
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      {p.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.avatar_url} alt="avatar" className="h-10 w-10 rounded-full object-cover" />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xs">
-                          {display.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">
-                          {display} <span className="opacity-60">{shortId(p.id)}</span>
-                        </div>
-                        <div className="mt-1 text-xs opacity-80">
-                          Niveau {lvl} • {xpTotal} XP • Elo: {elo} • {games} {isFr ? "parties" : "games"}
-                        </div>
+                    {p.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.avatar_url} alt="avatar" className="h-9 w-9 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs">
+                        {display.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">
+                        {display}{" "}
+                        <span className="text-white/40">{shortId(p.id)}</span>
+                      </div>
+                      <div className="mt-0.5 text-xs text-white/50">
+                        {t(locale, "common.levelN", { n: lvl })} · {xpTotal} XP · Elo {elo} ·{" "}
+                        {t(locale, "common.gamesN", { n: games })}
                       </div>
                     </div>
                   </Link>
@@ -261,51 +220,44 @@ export default async function PeoplePage({ searchParams }: PageProps) {
             )}
           </div>
 
-          <div className="mt-3 text-xs opacity-60">
-            {isFr
-              ? "Note: liste limitée à 200 profils (scalable via pagination plus tard)."
-              : "Note: list limited to 200 profiles (paginate later for scale)."}
-          </div>
-        </section>
+          <div className="mt-3 text-xs text-white/40">{t(locale, "people.limitNote")}</div>
+        </div>
 
-        {/* RIGHT: Elo Leaderboard */}
-        <aside className="card p-6">
-          <div className="text-sm font-semibold">{isFr ? "Classement ELO" : "ELO Ranking"}</div>
-          <div className="mt-1 text-xs opacity-70">{isFr ? "Top 20 (global)." : "Top 20 (global)."}</div>
+        {/* Leaderboard */}
+        <aside className="card p-5">
+          <div className="mb-1 text-sm font-semibold">{t(locale, "people.eloRanking")}</div>
+          <div className="mb-4 text-xs text-white/55">{t(locale, "people.top20")}</div>
 
-          <div className="mt-4 grid gap-2">
+          <div className="grid gap-1.5">
             {leaderboard.length === 0 ? (
-              <div className="text-sm opacity-70">{isFr ? "Aucun classement." : "No ranking yet."}</div>
+              <div className="text-sm opacity-60">{t(locale, "people.noRanking")}</div>
             ) : (
               leaderboard.map((row, idx) => (
                 <Link
                   key={row.user_id}
                   href={`/people/${row.user_id}`}
-                  className={`card-soft flex items-center justify-between px-3 py-2 transition hover:bg-white/[0.06] ${
+                  className={`card-soft flex items-center justify-between px-3 py-2.5 transition hover:bg-white/[0.06] ${
                     row.user_id === user.id ? "bg-white/[0.06]" : ""
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 text-xs opacity-70">{idx + 1}</div>
-
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+                    <div className="w-6 shrink-0 text-xs text-white/40 text-right">{idx + 1}</div>
                     {row.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={row.avatar_url} alt="avatar" className="h-7 w-7 rounded-full object-cover" />
+                      <img src={row.avatar_url} alt="avatar" className="h-7 w-7 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-[10px]">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px]">
                         {String(row.username).slice(0, 2).toUpperCase()}
                       </div>
                     )}
-
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium">{row.username}</div>
-                      <div className="text-[11px] opacity-70">
-                        Niveau {levelInfoFromXp(Number((row as any).xp_total ?? 0) || 0).level} • {row.games_played} {isFr ? "parties" : "games"}
+                      <div className="text-[11px] text-white/45">
+                        {t(locale, "common.levelN", { n: levelInfoFromXp(row.xp_total).level })}
                       </div>
                     </div>
                   </div>
-
-                  <div className="text-sm font-semibold">{row.elo}</div>
+                  <div className="shrink-0 text-sm font-semibold">{row.elo}</div>
                 </Link>
               ))
             )}

@@ -6,10 +6,11 @@ import { t } from "@/lib/i18n/core";
 import { LevelBar } from "@/components/LevelBar";
 import { XpBarChart, type XpDay } from "@/components/XpBarChart";
 import { levelInfoFromXp } from "@/lib/leveling";
+import type { Profile, Rating } from "@/lib/types";
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
+type PageProps = { params: Promise<{ id: string }> };
+type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
+type RatingRow = Pick<Rating, "elo" | "games_played">;
 
 function shortId(id: string) {
   return id ? id.split("-")[0] : "";
@@ -18,9 +19,7 @@ function shortId(id: string) {
 function initials(label: string) {
   const base = (label || "U").replace(/[^a-zA-Z0-9]+/g, " ").trim();
   const parts = base.split(" ").filter(Boolean);
-  const a = parts[0]?.[0] ?? "U";
-  const b = parts[1]?.[0] ?? "";
-  return (a + b).toUpperCase();
+  return ((parts[0]?.[0] ?? "U") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
 export default async function PersonProfilePage({ params }: PageProps) {
@@ -32,37 +31,33 @@ export default async function PersonProfilePage({ params }: PageProps) {
   const user = auth.user;
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: ratingRow }] = await Promise.all([
-    supabase
-      .from("profiles")
-      // Privacy: do not fetch or display Google full_name here.
-      .select("id,username,avatar_url,xp_total")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase.from("ratings").select("elo,games_played").eq("user_id", id).maybeSingle()
+  const [{ data: profileData }, { data: ratingData }] = await Promise.all([
+    supabase.from("profiles").select("id,username,avatar_url,xp_total").eq("id", id).maybeSingle(),
+    supabase.from("ratings").select("elo,games_played").eq("user_id", id).maybeSingle(),
   ]);
 
-  if (!profile) notFound();
+  if (!profileData) notFound();
 
-  // Mutual groups (best-effort): count intersection between group memberships.
   const [{ data: myGroups }, { data: theirGroups }] = await Promise.all([
     supabase.from("group_memberships").select("group_id").eq("user_id", user.id),
-    supabase.from("group_memberships").select("group_id").eq("user_id", id)
+    supabase.from("group_memberships").select("group_id").eq("user_id", id),
   ]);
 
-  const myIds = new Set((myGroups ?? []).map((g: any) => g.group_id).filter(Boolean));
-  const mutualCount = (theirGroups ?? []).map((g: any) => g.group_id).filter(Boolean).filter((gid: any) => myIds.has(gid)).length;
+  const myIds = new Set((myGroups ?? []).map((g: { group_id: string }) => g.group_id).filter(Boolean));
+  const mutualCount = (theirGroups ?? [])
+    .map((g: { group_id: string }) => g.group_id)
+    .filter(Boolean)
+    .filter((gid) => myIds.has(gid)).length;
 
-  const username = (profile as any)?.username ?? null;
-  const avatarUrl = (profile as any)?.avatar_url ?? null;
+  const profile = profileData as ProfileRow;
+  const rating = ratingData as RatingRow | null;
+  const username = profile.username ?? null;
+  const avatarUrl = profile.avatar_url ?? null;
   const display = username || shortId(id);
-
-  const xpTotal = Number((profile as any)?.xp_total ?? 0) || 0;
+  const xpTotal = Number(profile.xp_total ?? 0) || 0;
   const lvlInfo = levelInfoFromXp(xpTotal);
-
-  const elo = (ratingRow as any)?.elo ?? 1200;
-  const games = (ratingRow as any)?.games_played ?? 0;
-
+  const elo = rating?.elo ?? 1200;
+  const games = rating?.games_played ?? 0;
   const isMe = user.id === id;
 
   let xpDaily: XpDay[] | null = null;
@@ -72,133 +67,98 @@ export default async function PersonProfilePage({ params }: PageProps) {
       if (Array.isArray(data)) {
         xpDaily = data
           .slice(0, 90)
-          .map((d: any) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
+          .map((d: { day: string; xp: number }) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
       }
     } catch {
-      // If the SQL file hasn't been applied yet, the chart will simply not show.
+      // RPC not available yet
     }
   }
 
   return (
     <div className="grid gap-4">
-      <div className="card p-6 sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">{t(locale, "nav.people")}</div>
-            <div className="mt-1 text-xs opacity-70">
-              <Link href="/people" className="hover:underline">
-                {locale === "fr" ? "Retour à l’annuaire" : "Back to directory"}
-              </Link>
-            </div>
-          </div>
+      {/* Compact header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/people" className="text-xs text-white/50 hover:text-white/80">
+          ← {t(locale, "people.backToDirectory")}
+        </Link>
+        {isMe && (
+          <Link href="/settings" className="btn btn-secondary text-xs">
+            {t(locale, "nav.settings")}
+          </Link>
+        )}
+      </div>
 
-          {isMe ? (
-            <Link href="/settings" className="btn btn-secondary">
-              {t(locale, "nav.settings")}
-            </Link>
-          ) : null}
-        </div>
-
-        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+      {/* Profile card */}
+      <div className="card p-5">
+        <div className="flex items-center gap-4">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="avatar" className="h-16 w-16 rounded-full object-cover" />
+            <img src={avatarUrl} alt="avatar" className="h-14 w-14 rounded-full object-cover shrink-0" />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-sm">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-medium">
               {initials(display)}
             </div>
           )}
-
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-semibold tracking-tight">
-              {display} <span className="text-sm font-medium opacity-60">{shortId(id)}</span>
+            <h1 className="truncate text-xl font-semibold tracking-tight">
+              {display}
+              <span className="ml-2 text-sm font-normal text-white/40">{shortId(id)}</span>
             </h1>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="badge badge-private">Niveau {lvlInfo.level}</span>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="badge badge-private">{t(locale, "common.levelN", { n: lvlInfo.level })}</span>
               <span className="badge badge-shared">{xpTotal} XP</span>
-              <span className="badge badge-public">Elo: {elo}</span>
-              <span className="badge badge-shared">
-                {games} {locale === "fr" ? "parties" : "games"}
-              </span>
-              <span className="badge badge-private">
-                {mutualCount} {locale === "fr" ? "groupe(s) en commun" : "mutual group(s)"}
-              </span>
+              <span className="badge badge-public">Elo {elo}</span>
+              <span className="badge badge-shared">{t(locale, "common.gamesN", { n: games })}</span>
+              {mutualCount > 0 && (
+                <span className="badge badge-private">{t(locale, "common.mutualGroupsN", { n: mutualCount })}</span>
+              )}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Stats two-column */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="card p-6">
-          <h2 className="font-semibold">{locale === "fr" ? "Progression" : "Progress"}</h2>
-          <div className="mt-2">
-            <LevelBar xpTotal={xpTotal} />
-          </div>
-
+        <div className="card p-5">
+          <h2 className="mb-3 text-sm font-semibold">{t(locale, "people.progress")}</h2>
+          <LevelBar xpTotal={xpTotal} />
           <div className="mt-4 grid gap-2 text-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="opacity-70">{locale === "fr" ? "XP total" : "Total XP"}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-white/60">{t(locale, "common.xpTotal")}</span>
               <span className="font-medium">{xpTotal}</span>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="opacity-70">{locale === "fr" ? "Niveau" : "Level"}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-white/60">{t(locale, "common.level")}</span>
               <span className="font-medium">{lvlInfo.level}</span>
             </div>
           </div>
-
-          <div className="mt-4 text-xs opacity-70">
-            {locale === "fr"
-              ? "XP gagnée uniquement sur les QCM officiels (questions justes)."
-              : "XP is earned only on official quizzes (correct answers)."}
-          </div>
+          <p className="mt-3 text-xs text-white/40">{t(locale, "people.xpNote")}</p>
         </div>
 
         {isMe && xpDaily ? (
-          <XpBarChart data={xpDaily} title={locale === "fr" ? "XP gagnée par jour (90 jours)" : "Daily XP (90 days)"} />
+          <XpBarChart data={xpDaily} title={t(locale, "people.xpDailyChart")} />
         ) : (
-          <div className="card p-6">
-            <h2 className="font-semibold">{locale === "fr" ? "Stats" : "Stats"}</h2>
-            <div className="mt-2 text-sm text-white/80">
-              {isMe
-                ? locale === "fr"
-                  ? "Applique le fichier SQL Supabase pour activer le graphe."
-                  : "Apply the Supabase SQL file to enable the chart."
-                : locale === "fr"
-                  ? "Le graphe détaillé est visible sur ton propre profil."
-                  : "Detailed chart is visible on your own profile."}
-            </div>
+          <div className="card p-5">
+            <h2 className="mb-2 text-sm font-semibold">{t(locale, "people.stats")}</h2>
+            <p className="text-sm text-white/60">
+              {isMe ? t(locale, "people.chartMine") : t(locale, "people.chartHint")}
+            </p>
           </div>
         )}
       </div>
 
-      <div className="card p-6">
-        <h2 className="font-semibold">{locale === "fr" ? "Informations" : "Information"}</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="card-soft p-4">
-            <div className="text-xs opacity-70">{locale === "fr" ? "Identité" : "Identity"}</div>
-            <div className="mt-1 text-sm font-medium">
-              {locale === "fr" ? "Pseudo" : "Handle"}: <span className="opacity-90">{username ?? "—"}</span>
-            </div>
-            <div className="mt-1 text-xs opacity-70">
-              {locale === "fr"
-                ? "On n’affiche pas le nom Google (full_name) pour respecter la confidentialité."
-                : "We do not display the Google name (full_name) for privacy."}
-            </div>
-          </div>
-
-          <div className="card-soft p-4">
-            <div className="text-xs opacity-70">{locale === "fr" ? "Actions" : "Actions"}</div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link href="/people" className="btn btn-secondary">
-                {locale === "fr" ? "Voir d’autres profils" : "Browse people"}
-              </Link>
-              {!isMe ? (
-                <button type="button" className="btn btn-ghost" disabled>
-                  {locale === "fr" ? "Ajouter en ami (bientôt)" : "Add friend (soon)"}
-                </button>
-              ) : null}
-            </div>
-          </div>
+      {/* Actions */}
+      <div className="card p-5">
+        <h2 className="mb-3 text-sm font-semibold">{t(locale, "people.actions")}</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/people" className="btn btn-secondary text-sm">
+            {t(locale, "people.browseProfiles")}
+          </Link>
+          {!isMe && (
+            <button type="button" className="btn btn-ghost text-sm" disabled>
+              {t(locale, "people.addFriendSoon")}
+            </button>
+          )}
         </div>
       </div>
     </div>

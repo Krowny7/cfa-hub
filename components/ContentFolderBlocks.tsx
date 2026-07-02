@@ -40,22 +40,15 @@ export function SectionHeader({
   count: number;
   tone: "private" | "shared" | "public";
 }) {
-  const border =
+  const accent =
     tone === "private"
-      ? "border-white/10"
+      ? "border-l-2 border-l-white/30"
       : tone === "shared"
-      ? "border-blue-400/25"
-      : "border-emerald-400/25";
-
-  const bg =
-    tone === "private"
-      ? "bg-white/0"
-      : tone === "shared"
-      ? "bg-blue-400/5"
-      : "bg-emerald-400/5";
+      ? "border-l-2 border-l-blue-400/70"
+      : "border-l-2 border-l-emerald-400/70";
 
   return (
-    <div className={`card-soft ${border} ${bg} p-4`}>
+    <div className={`card-soft ${accent} p-4`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm font-semibold">{title}</div>
@@ -72,13 +65,15 @@ export function FolderBlocks<T extends BaseItem>({
   items,
   rootLabel,
   openLabel,
-  basePath
+  basePath,
+  itemUnit = "",
 }: {
   locale: string;
   items: T[];
   rootLabel: string;
   openLabel: string;
-  basePath: string; // e.g. "/flashcards" | "/qcm" | "/library"
+  basePath: string;
+  itemUnit?: string;
 }) {
   const { grouped, folderNames } = groupByFolderName<T>(locale, items, rootLabel);
 
@@ -92,7 +87,9 @@ export function FolderBlocks<T extends BaseItem>({
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">{folder}</div>
-                  <div className="text-xs opacity-70">{folderItems.length}</div>
+                  <div className="text-xs opacity-70">
+                    {folderItems.length}{itemUnit ? ` ${itemUnit}` : ""}
+                  </div>
                 </div>
                 <div className="text-xs opacity-60 transition group-open:rotate-180">▼</div>
               </div>

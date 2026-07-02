@@ -59,12 +59,16 @@ export function GroupMultiPicker({
         return;
       }
 
-      const raw: GroupOption[] = (data ?? [])
-        .map((row: any) => ({
+      type MembershipRow = {
+        group_id: string;
+        study_groups?: { id: string; name: string } | null;
+      };
+      const raw: GroupOption[] = ((data ?? []) as unknown as MembershipRow[])
+        .map((row) => ({
           id: row.study_groups?.id ?? row.group_id,
           name: row.study_groups?.name ?? "(group)"
         }))
-        .filter((x: any) => Boolean(x.id));
+        .filter((x) => Boolean(x.id));
 
       const unique = dedupeGroups(raw);
 
