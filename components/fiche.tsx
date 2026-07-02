@@ -192,8 +192,8 @@ export function FTable({
   rows: (string | ReactNode)[][];
 }) {
   return (
-    <div className="card overflow-hidden mb-2">
-      <table className="w-full text-[13px] border-collapse">
+    <div className="card overflow-x-auto mb-2">
+      <table className="w-full min-w-max text-[13px] border-collapse">
         <thead>
           <tr>
             {headers.map((h, i) => (

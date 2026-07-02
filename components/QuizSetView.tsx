@@ -364,6 +364,7 @@ export function QuizSetView({
   async function awardXpForAnswer(questionId: string, selectedIndex: number) {
     try {
       const { data, error } = await supabase.rpc("award_quiz_question_xp", {
+        p_set_id: setId,
         p_question_id: questionId,
         p_selected_index: selectedIndex,
       });

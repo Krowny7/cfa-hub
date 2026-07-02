@@ -311,9 +311,12 @@ export function SessionClient({
 
     if (isOfficial) {
       try {
+        // La RPC vérifie elle-même la bonne réponse côté serveur (p_selected_index) —
+        // ne jamais se fier au seul isCorrect calculé ici pour décider de l'XP.
         const { data } = await supabase.rpc("award_quiz_question_xp", {
           p_set_id: selSetId,
           p_question_id: currentQ.id,
+          p_selected_index: selectedChoice,
         });
         const result = data as AwardXpResult | null;
         if (result && result.xp_awarded > 0) setXpEarned((x) => x + result.xp_awarded);
