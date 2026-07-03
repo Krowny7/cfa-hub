@@ -108,7 +108,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
   const statusLabel = (s: string) =>
     s === "draft" ? "Brouillon" : s === "open" ? "Ouvert" : "Clôturé";
   const statusColor = (s: string) =>
-    s === "draft" ? "text-white/40" : s === "open" ? "text-green-400" : "text-white/30";
+    s === "draft" ? "text-muted" : s === "open" ? "text-green-400" : "text-white/30";
 
   return (
     <div className="card p-5">
@@ -186,13 +186,13 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
 
       <div className="mt-4 grid gap-2">
         {exams.length === 0 && (
-          <div className="text-sm text-white/40">Aucun examen créé.</div>
+          <div className="text-sm text-muted">Aucun examen créé.</div>
         )}
         {exams.map((e) => (
           <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 px-4 py-3">
             <div className="min-w-0">
               <div className="text-sm font-medium">{e.title}</div>
-              <div className="text-xs text-white/40">
+              <div className="text-xs text-muted">
                 {new Date(e.scheduled_at).toLocaleString("fr-FR")} · {e.duration_minutes}min · {e.question_count}Q
                 {" · "}<span className={statusColor(e.status)}>{statusLabel(e.status)}</span>
               </div>

@@ -65,7 +65,7 @@ export default async function FichesPage() {
         <div className="text-[11px] font-semibold uppercase tracking-widest text-white/30 mb-2">
           À venir
         </div>
-        <div className="grid gap-2 text-[13px] text-white/40">
+        <div className="grid gap-2 text-[13px] text-muted">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
             Quantitative Methods (R1–R11)

@@ -102,7 +102,7 @@ export default async function PersonProfilePage({ params }: PageProps) {
           <div className="min-w-0">
             <h1 className="truncate text-xl font-semibold tracking-tight">
               {display}
-              <span className="ml-2 text-sm font-normal text-white/40">{shortId(id)}</span>
+              <span className="ml-2 text-sm font-normal text-muted">{shortId(id)}</span>
             </h1>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <span className="badge badge-private">{t(locale, "common.levelN", { n: lvlInfo.level })}</span>
@@ -132,7 +132,7 @@ export default async function PersonProfilePage({ params }: PageProps) {
               <span className="font-medium">{lvlInfo.level}</span>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/40">{t(locale, "people.xpNote")}</p>
+          <p className="mt-3 text-xs text-muted">{t(locale, "people.xpNote")}</p>
         </div>
 
         {isMe && xpDaily ? (

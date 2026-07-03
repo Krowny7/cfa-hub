@@ -46,7 +46,7 @@ export function SidebarNav({
         {sections.map((section, i) => (
           <div key={i}>
             {section.label && (
-              <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+              <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-faint">
                 {section.label}
               </div>
             )}

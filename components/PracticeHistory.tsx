@@ -104,7 +104,7 @@ export function PracticeHistory() {
             <div key={s.id} className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{s.set_title}</div>
-                <div className="text-xs text-white/40">
+                <div className="text-xs text-muted">
                   {s.mode === "qcm" ? "QCM" : "Flashcards"} · {relDate(s.occurred_at)}
                 </div>
               </div>

@@ -310,7 +310,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                                   ? "bg-green-400/10 text-green-300 font-medium"
                                   : isSelected
                                   ? "bg-red-400/10 text-red-300"
-                                  : "text-white/45"
+                                  : "text-muted"
                               }`}
                             >
                               {String.fromCharCode(65 + ci)}. {choice}
@@ -352,7 +352,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
       <div className="card p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-xs text-white/45">Question</div>
+            <div className="text-xs text-muted">Question</div>
             <div className="text-sm font-semibold">{idx + 1} / {questions.length}</div>
           </div>
           <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
@@ -439,7 +439,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
         >
           ← Préc.
         </button>
-        <span className="text-xs text-white/40">
+        <span className="text-xs text-muted">
           {answeredCount} / {questions.length} répondues
         </span>
         <button

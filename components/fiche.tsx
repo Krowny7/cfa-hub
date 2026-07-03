@@ -14,7 +14,7 @@ export function FCard({
   return (
     <div className="card p-3.5 mb-2">
       {title && <div className="text-[13px] font-semibold mb-0.5">{title}</div>}
-      {en && <div className="text-[11px] text-white/30 italic mb-2">{en}</div>}
+      {en && <div className="text-[11px] text-muted italic mb-2">{en}</div>}
       <div className="text-[13px] text-white/65 leading-[1.7]">{children}</div>
     </div>
   );
@@ -62,7 +62,7 @@ export function Sec({
 }) {
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-white/30 mb-3">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint mb-3">
         {los && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-400/25">
             {los}
@@ -199,7 +199,7 @@ export function FTable({
             {headers.map((h, i) => (
               <th
                 key={i}
-                className="text-[11px] font-medium text-white/30 pb-2 pt-2.5 px-3 border-b border-white/[0.07] text-left uppercase tracking-[0.04em]"
+                className="text-[11px] font-medium text-faint pb-2 pt-2.5 px-3 border-b border-white/[0.07] text-left uppercase tracking-[0.04em]"
               >
                 {h}
               </th>

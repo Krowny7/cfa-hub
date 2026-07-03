@@ -130,7 +130,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
       {/* Exam not yet published */}
       {exam.status === "draft" && !isAdmin && (
-        <div className="card p-6 text-center text-sm text-white/40">
+        <div className="card p-6 text-center text-sm text-muted">
           Cet examen n'est pas encore ouvert aux inscriptions.
         </div>
       )}
@@ -178,14 +178,14 @@ export default async function MockExamDetailPage({ params }: PageProps) {
                       {(Array.isArray(r.profiles) ? r.profiles[0] : r.profiles)?.username ?? "Anonyme"}{isMe && " (moi)"}
                     </div>
                     {durationMin && (
-                      <div className="text-xs text-white/40">{durationMin} min</div>
+                      <div className="text-xs text-muted">{durationMin} min</div>
                     )}
                   </div>
                   <div className="text-right shrink-0">
                     <div className={`text-base font-bold tabular-nums ${pct >= 70 ? "text-green-400" : pct >= 60 ? "text-yellow-400" : "text-red-400"}`}>
                       {pct}%
                     </div>
-                    <div className="text-xs text-white/40">{r.score}/{r.total}</div>
+                    <div className="text-xs text-muted">{r.score}/{r.total}</div>
                   </div>
                 </div>
               );

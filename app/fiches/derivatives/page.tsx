@@ -22,7 +22,7 @@ export default function DerivativesFiche() {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-white/25 shrink-0 mr-2">DRV ·</span>
           {NAV.map(({ id, label }) => (
             <a key={id} href={`#${id}`}
-              className="text-[12px] font-medium text-white/45 hover:text-white/80 whitespace-nowrap px-2 py-1 rounded-full hover:bg-white/5 transition-colors">
+              className="text-[12px] font-medium text-muted hover:text-white/80 whitespace-nowrap px-2 py-1 rounded-full hover:bg-white/5 transition-colors">
               {label}
             </a>
           ))}

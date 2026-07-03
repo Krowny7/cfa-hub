@@ -613,7 +613,7 @@ export function SessionClient({
             )}
           </div>
 
-          <div className="mt-3 text-center text-xs text-white/40">
+          <div className="mt-3 text-center text-xs text-muted">
             {totalAnswered > 0 && `${totalCorrect}/${totalAnswered} · ${Math.round((totalCorrect / totalAnswered) * 100)}%`}
           </div>
         </div>
@@ -664,7 +664,7 @@ export function SessionClient({
           disabled={isPaused}
           onClick={() => setFlipped((f) => !f)}
         >
-          <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
             {flipped ? t("flashcards.back") : t("flashcards.front")}
           </div>
           <p className="text-base leading-relaxed">{flipped ? currentF.back : currentF.front}</p>
@@ -698,7 +698,7 @@ export function SessionClient({
           )}
         </div>
 
-        <div className="mt-3 text-center text-xs text-white/40">
+        <div className="mt-3 text-center text-xs text-muted">
           {totalReviewed > 0 && `${totalReviewed} maîtrisées · ${totalAgain} à revoir`}
         </div>
       </div>

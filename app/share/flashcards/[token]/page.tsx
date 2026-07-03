@@ -21,7 +21,7 @@ export default async function ShareFlashcardsPage({ params }: PageProps) {
   return (
     <div className="grid gap-4">
       <div className="card p-5">
-        <div className="text-xs text-white/40 mb-1">Set partagé · lecture seule</div>
+        <div className="text-xs text-muted mb-1">Set partagé · lecture seule</div>
         <h1 className="text-xl font-semibold tracking-tight break-words">{set.title}</h1>
         <p className="mt-0.5 text-sm text-white/50">{cards.length} carte(s)</p>
       </div>
@@ -31,7 +31,7 @@ export default async function ShareFlashcardsPage({ params }: PageProps) {
         <div className="grid gap-2">
           {cards.map((c) => (
             <div key={c.id} className="card-soft p-3">
-              <div className="text-xs text-white/40">#{c.position}</div>
+              <div className="text-xs text-muted">#{c.position}</div>
               <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">
                 {c.front}
               </div>

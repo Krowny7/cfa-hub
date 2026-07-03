@@ -48,7 +48,7 @@ export function MobileBottomNav() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("nav.more")}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">{t("nav.more")}</span>
               <button
                 type="button"
                 onClick={() => setMoreOpen(false)}
@@ -104,7 +104,7 @@ export function MobileBottomNav() {
                       : "text-white"
                     : isSession
                     ? "text-blue-400/60 hover:text-blue-300"
-                    : "text-white/40 hover:text-white/70")
+                    : "text-muted hover:text-white/70")
                 }
               >
                 <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
@@ -119,7 +119,7 @@ export function MobileBottomNav() {
             aria-label={t("nav.more")}
             className={
               "flex flex-col items-center justify-center gap-1 text-[10px] transition-all " +
-              (moreActive ? "text-white" : "text-white/40 hover:text-white/70")
+              (moreActive ? "text-white" : "text-muted hover:text-white/70")
             }
           >
             <MoreHorizontal size={20} strokeWidth={moreActive ? 2.2 : 1.8} />

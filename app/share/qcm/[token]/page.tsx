@@ -22,7 +22,7 @@ export default async function ShareQcmPage({ params }: PageProps) {
   return (
     <div className="grid gap-4">
       <div className="card p-5">
-        <div className="text-xs text-white/40 mb-1">QCM partagé · lecture seule</div>
+        <div className="text-xs text-muted mb-1">QCM partagé · lecture seule</div>
         <h1 className="text-xl font-semibold tracking-tight break-words">{set.title}</h1>
         <p className="mt-0.5 text-sm text-white/50">{questions.length} question(s)</p>
       </div>
@@ -30,7 +30,7 @@ export default async function ShareQcmPage({ params }: PageProps) {
       <div className="grid gap-3">
         {questions.map((q, idx) => (
           <div key={q.id} className="card p-4">
-            <div className="text-xs text-white/40 mb-1">Q{idx + 1}</div>
+            <div className="text-xs text-muted mb-1">Q{idx + 1}</div>
             <div className="text-sm font-medium whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
               {q.prompt}
             </div>

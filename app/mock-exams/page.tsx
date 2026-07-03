@@ -17,7 +17,7 @@ type RegRow = { exam_id: string };
 
 function statusBadge(status: string) {
   if (status === "open") return <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-300">Ouvert</span>;
-  if (status === "closed") return <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/40">Clôturé</span>;
+  if (status === "closed") return <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-muted">Clôturé</span>;
   return <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">À venir</span>;
 }
 
@@ -59,7 +59,7 @@ export default async function MockExamsPage() {
       {/* Upcoming */}
       {upcoming.length > 0 && (
         <div className="grid gap-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-white/40">À venir & ouverts</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted">À venir & ouverts</div>
           {upcoming.map((e) => {
             const registered = myRegs.has(e.id);
             const date = new Date(e.scheduled_at);
@@ -77,7 +77,7 @@ export default async function MockExamsPage() {
                     {e.description && (
                       <div className="mt-1 text-sm text-white/50">{e.description}</div>
                     )}
-                    <div className="mt-2 text-xs text-white/40">
+                    <div className="mt-2 text-xs text-muted">
                       {date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                       {" · "}{date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                       {" · "}{e.duration_minutes}min · {e.question_count} questions
@@ -92,7 +92,7 @@ export default async function MockExamsPage() {
       )}
 
       {upcoming.length === 0 && past.length === 0 && (
-        <div className="card p-8 text-center text-sm text-white/40">
+        <div className="card p-8 text-center text-sm text-muted">
           Aucun examen blanc planifié pour le moment.
         </div>
       )}
@@ -100,7 +100,7 @@ export default async function MockExamsPage() {
       {/* Past */}
       {past.length > 0 && (
         <div className="grid gap-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-white/40">Passés</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted">Passés</div>
           {past.map((e) => {
             const registered = myRegs.has(e.id);
             const date = new Date(e.scheduled_at);
@@ -112,10 +112,10 @@ export default async function MockExamsPage() {
                       <span className="font-semibold">{e.title}</span>
                       {statusBadge(e.status)}
                       {registered && (
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/40">Participé</span>
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-muted">Participé</span>
                       )}
                     </div>
-                    <div className="mt-1 text-xs text-white/40">
+                    <div className="mt-1 text-xs text-muted">
                       {date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                       {" · "}{e.question_count} questions
                     </div>

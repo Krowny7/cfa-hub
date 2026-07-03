@@ -207,7 +207,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">
                         {display}{" "}
-                        <span className="text-white/40">{shortId(p.id)}</span>
+                        <span className="text-muted">{shortId(p.id)}</span>
                       </div>
                       <div className="mt-0.5 text-xs text-white/50">
                         {t(locale, "common.levelN", { n: lvl })} · {xpTotal} XP · Elo {elo} ·{" "}
@@ -220,7 +220,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
             )}
           </div>
 
-          <div className="mt-3 text-xs text-white/40">{t(locale, "people.limitNote")}</div>
+          <div className="mt-3 text-xs text-muted">{t(locale, "people.limitNote")}</div>
         </div>
 
         {/* Leaderboard */}
@@ -241,7 +241,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
-                    <div className="w-6 shrink-0 text-xs text-white/40 text-right">{idx + 1}</div>
+                    <div className="w-6 shrink-0 text-xs text-muted text-right">{idx + 1}</div>
                     {row.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={row.avatar_url} alt="avatar" className="h-7 w-7 rounded-full object-cover shrink-0" />
@@ -252,7 +252,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                     )}
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium">{row.username}</div>
-                      <div className="text-[11px] text-white/45">
+                      <div className="text-[11px] text-muted">
                         {t(locale, "common.levelN", { n: levelInfoFromXp(row.xp_total).level })}
                       </div>
                     </div>

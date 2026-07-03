@@ -35,7 +35,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
               subject === "cfa"
                 ? "bg-blue-500/20 text-blue-300"
-                : "text-white/45 hover:text-white/70"
+                : "text-muted hover:text-white/70"
             }`}
           >
             📊 {t("subject.cfa")}
@@ -46,7 +46,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
               subject === "personal"
                 ? "bg-violet-500/20 text-violet-300"
-                : "text-white/45 hover:text-white/70"
+                : "text-muted hover:text-white/70"
             }`}
           >
             📚 {t("subject.personal")}

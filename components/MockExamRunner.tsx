@@ -152,7 +152,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
               const isCorrect = sel === q.correct_index;
               return (
                 <div key={q.id} className={`card p-4 border-l-2 ${isCorrect ? "border-l-green-500/50" : sel === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
-                  <div className="text-xs text-white/40 mb-1">Q{i + 1}</div>
+                  <div className="text-xs text-muted mb-1">Q{i + 1}</div>
                   <div className="text-sm font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
                   <div className="mt-3 grid gap-1.5">
                     {q.choices.map((c, ci) => (
@@ -188,13 +188,13 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
       <div className="card p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-xs text-white/40">Temps restant</div>
+            <div className="text-xs text-muted">Temps restant</div>
             <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
               {fmtTime(secondsLeft)}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-white/40">{answered}/{questions.length} répondues</div>
+            <div className="text-xs text-muted">{answered}/{questions.length} répondues</div>
             <div className="text-sm font-medium">Q{idx + 1}/{questions.length}</div>
           </div>
           <button
@@ -218,7 +218,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
       {/* Question */}
       {current && (
         <div className="card p-5">
-          <div className="text-xs text-white/40 mb-2">Question {idx + 1}</div>
+          <div className="text-xs text-muted mb-2">Question {idx + 1}</div>
           <div className="text-base font-medium whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {current.prompt}
           </div>

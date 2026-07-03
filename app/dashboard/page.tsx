@@ -133,14 +133,14 @@ export default async function Dashboard() {
                   ? "L'examen est aujourd'hui !"
                   : `Examen passé il y a ${Math.abs(daysUntilExam)}j`}
               </div>
-              <div className="text-xs text-white/45">{examDate}</div>
+              <div className="text-xs text-muted">{examDate}</div>
             </div>
             {globalAccuracy !== null && (
               <div className="text-right">
                 <div className={`text-xl font-bold ${globalAccuracy >= 70 ? "text-green-400" : globalAccuracy >= 55 ? "text-yellow-400" : "text-red-400"}`}>
                   {globalAccuracy}%
                 </div>
-                <div className="text-[10px] text-white/40">{agg?.total_sessions} sessions</div>
+                <div className="text-[10px] text-muted">{agg?.total_sessions} sessions</div>
               </div>
             )}
           </div>
@@ -151,7 +151,7 @@ export default async function Dashboard() {
           <div className="card-soft flex items-center justify-between gap-4 px-4 py-3">
             <div>
               <div className="text-sm font-semibold">Précision globale</div>
-              <div className="text-xs text-white/45">{agg.total_sessions} sessions · {agg.total_answered} réponses</div>
+              <div className="text-xs text-muted">{agg.total_sessions} sessions · {agg.total_answered} réponses</div>
             </div>
             <div className={`text-2xl font-bold ${globalAccuracy >= 70 ? "text-green-400" : globalAccuracy >= 55 ? "text-yellow-400" : "text-red-400"}`}>
               {globalAccuracy}%
@@ -195,7 +195,7 @@ export default async function Dashboard() {
               style={{ width: `${Math.round(lvlInfo.progressPct * 100)}%` }}
             />
           </div>
-          <div className="mt-1.5 text-xs text-white/45">
+          <div className="mt-1.5 text-xs text-muted">
             {t(locale, "common.xpToNextLevelN", { n: lvlInfo.xpToNextLevel })}
           </div>
         </div>
@@ -290,7 +290,7 @@ export default async function Dashboard() {
       {/* ── Right column: activity heatmap ── */}
       <div className="hidden md:block">
         <div className="card-soft sticky top-20 p-4">
-          <div className="mb-1 text-xs font-semibold text-white/40">Activité — 5 semaines</div>
+          <div className="mb-1 text-xs font-semibold text-muted">Activité — 5 semaines</div>
           <ActivityHeatmap days={xpDays} />
           <div className="mt-4 grid gap-1.5 text-xs text-white/50">
             <div className="flex items-center gap-2">
@@ -310,7 +310,7 @@ export default async function Dashboard() {
               <span>150+ XP</span>
             </div>
           </div>
-          <div className="mt-4 border-t border-white/[0.07] pt-3 text-xs text-white/40">
+          <div className="mt-4 border-t border-white/[0.07] pt-3 text-xs text-muted">
             Elo {elo} · {games} parties
           </div>
         </div>

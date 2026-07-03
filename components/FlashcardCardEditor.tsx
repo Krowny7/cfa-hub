@@ -112,7 +112,7 @@ export function FlashcardCardEditor({
           return (
             <div key={c.id} className="card-soft p-3">
               <div className="flex items-start justify-between gap-2">
-                <div className="text-xs text-white/40">#{c.position}</div>
+                <div className="text-xs text-muted">#{c.position}</div>
                 {isOwner && !isEditing && (
                   <div className="flex shrink-0 gap-1">
                     <button
