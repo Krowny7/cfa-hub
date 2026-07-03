@@ -74,7 +74,11 @@ export default async function PeoplePage({ searchParams }: PageProps) {
       .order("username", { ascending: true })
       .limit(200);
 
-    if (q) queryBuilder = queryBuilder.or(`username.ilike.%${q}%`);
+    // .ilike direct plutôt que .or() avec interpolation : la syntaxe .or() de
+    // PostgREST interprète virgules/parenthèses comme séparateurs de clauses,
+    // ce qui permettrait à une recherche malicieuse d'injecter des filtres
+    // supplémentaires non voulus.
+    if (q) queryBuilder = queryBuilder.ilike("username", `%${q}%`);
 
     const { data } = await queryBuilder;
     people = (data ?? []) as ProfileRow[];
@@ -83,22 +87,18 @@ export default async function PeoplePage({ searchParams }: PageProps) {
   const peopleIds = people.map((p) => p.id);
   const ratingByUser = new Map<string, RatingRow>();
 
-  if (peopleIds.length > 0) {
-    const { data: ratingsRaw } = await supabase
-      .from("ratings")
-      .select("user_id,elo,games_played")
-      .in("user_id", peopleIds);
+  // Deux requêtes indépendantes (ratings des personnes affichées + top 20
+  // classement) -> parallélisées plutôt qu'enchaînées séquentiellement.
+  const [{ data: ratingsRaw }, { data: topRatingsRaw }] = await Promise.all([
+    peopleIds.length > 0
+      ? supabase.from("ratings").select("user_id,elo,games_played").in("user_id", peopleIds)
+      : Promise.resolve({ data: [] as RatingRow[] }),
+    supabase.from("ratings").select("user_id,elo,games_played").order("elo", { ascending: false }).limit(20),
+  ]);
 
-    (ratingsRaw ?? []).forEach((r: RatingRow) => {
-      ratingByUser.set(r.user_id, r);
-    });
-  }
-
-  const { data: topRatingsRaw } = await supabase
-    .from("ratings")
-    .select("user_id,elo,games_played")
-    .order("elo", { ascending: false })
-    .limit(20);
+  (ratingsRaw ?? []).forEach((r: RatingRow) => {
+    ratingByUser.set(r.user_id, r);
+  });
 
   const topUserIds = (topRatingsRaw ?? [])
     .map((r: RatingRow) => r.user_id)

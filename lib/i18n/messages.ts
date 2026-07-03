@@ -53,6 +53,9 @@ export const MESSAGES = {
       settings: "Réglages",
       session: "Session",
       exam: "Examen",
+      fiches: "Fiches de Révision",
+      mockExams: "Examens blancs",
+      more: "Plus",
       sectionContent: "Contenu",
       sectionSocial: "Social"
     },
@@ -412,6 +415,9 @@ export const MESSAGES = {
       settings: "Settings",
       session: "Session",
       exam: "Exam",
+      fiches: "Study Sheets",
+      mockExams: "Mock Exams",
+      more: "More",
       sectionContent: "Content",
       sectionSocial: "Social"
     },

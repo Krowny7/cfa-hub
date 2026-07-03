@@ -48,13 +48,13 @@ export async function Sidebar() {
         { href: "/library", label: t(locale, "nav.library"), icon: <BookOpen size={16} /> },
         { href: "/flashcards", label: t(locale, "nav.flashcards"), icon: <Layers size={16} /> },
         { href: "/qcm", label: t(locale, "nav.qcm"), icon: <ClipboardList size={16} /> },
-        { href: "/fiches", label: "Fiches de Révision", icon: <BookMarked size={16} /> },
+        { href: "/fiches", label: t(locale, "nav.fiches"), icon: <BookMarked size={16} /> },
       ],
     },
     {
       label: t(locale, "nav.sectionSocial"),
       items: [
-        { href: "/mock-exams", label: "Examens blancs", icon: <Trophy size={16} /> },
+        { href: "/mock-exams", label: t(locale, "nav.mockExams"), icon: <Trophy size={16} /> },
         { href: "/people", label: t(locale, "nav.people"), icon: <Users size={16} /> },
       ],
     },

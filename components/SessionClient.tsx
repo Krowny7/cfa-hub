@@ -121,6 +121,26 @@ function fmtTime(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
+// ── Mémoire du dernier choix (mode + set) ───────────────────────────────────
+// Évite de repartir de zéro (mode="qcm" + premier set) à chaque ouverture de
+// /session — friction identifiée comme le principal frein à l'usage quotidien.
+const LAST_SESSION_KEY = "cfahub:lastSession";
+
+function loadLastSession(): { mode: Mode; setId: string } | null {
+  try {
+    const raw = localStorage.getItem(LAST_SESSION_KEY);
+    return raw ? (JSON.parse(raw) as { mode: Mode; setId: string }) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastSession(mode: Mode, setId: string) {
+  try {
+    localStorage.setItem(LAST_SESSION_KEY, JSON.stringify({ mode, setId }));
+  } catch {}
+}
+
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -169,6 +189,7 @@ export function SessionClient({
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [totalCorrect, setTotalCorrect] = useState(0);
   const [xpEarned, setXpEarned] = useState(0);
+  const [lastXpGain, setLastXpGain] = useState<number | null>(null);
 
   // Flashcard state
   const [flipped, setFlipped] = useState(false);
@@ -214,11 +235,29 @@ export function SessionClient({
     }
   }, [phase, savePracticeSession]);
 
-  // Auto-select first set when mode changes
+  // Restaure le dernier mode utilisé au montage (une seule fois) — évite de
+  // repartir sur "qcm" par défaut si l'utilisateur révise habituellement en
+  // flashcards.
   useEffect(() => {
-    const first = (mode === "qcm" ? qcmSets : flashSets)[0]?.id ?? "";
-    setSelSetId(first);
+    const last = loadLastSession();
+    if (last) setMode(last.mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sélectionne le dernier set utilisé pour ce mode s'il est toujours
+  // disponible, sinon le premier de la liste.
+  useEffect(() => {
+    const list = mode === "qcm" ? qcmSets : flashSets;
+    const last = loadLastSession();
+    const remembered = last && last.mode === mode ? last.setId : null;
+    const nextId = remembered && list.some((s) => s.id === remembered) ? remembered : (list[0]?.id ?? "");
+    setSelSetId(nextId);
   }, [mode, qcmSets, flashSets]);
+
+  // Mémorise le choix courant pour la prochaine ouverture de /session.
+  useEffect(() => {
+    if (phase === "setup" && selSetId) saveLastSession(mode, selSetId);
+  }, [mode, selSetId, phase]);
 
   // Fetch content + load SRS state
   useEffect(() => {
@@ -319,7 +358,10 @@ export function SessionClient({
           p_selected_index: selectedChoice,
         });
         const result = data as AwardXpResult | null;
-        if (result && result.xp_awarded > 0) setXpEarned((x) => x + result.xp_awarded);
+        if (result && result.xp_awarded > 0) {
+          setXpEarned((x) => x + result.xp_awarded);
+          setLastXpGain(result.xp_awarded);
+        }
       } catch {}
     }
   }
@@ -334,6 +376,7 @@ export function SessionClient({
     }
     setSelectedChoice(null);
     setShowCorr(false);
+    setLastXpGain(null);
   }
 
   function markFlashcard(gotIt: boolean) {
@@ -628,8 +671,15 @@ export function SessionClient({
           </div>
 
           {showCorr && (
-            <div className={`mt-4 text-sm font-semibold ${selectedChoice === currentQ.correct_index ? "text-green-400" : "text-red-400"}`}>
-              {selectedChoice === currentQ.correct_index ? t("session.correct") : t("session.wrong")}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className={`text-sm font-semibold ${selectedChoice === currentQ.correct_index ? "text-green-400" : "text-red-400"}`}>
+                {selectedChoice === currentQ.correct_index ? t("session.correct") : t("session.wrong")}
+              </span>
+              {lastXpGain !== null && lastXpGain > 0 && (
+                <span className="rounded-full bg-yellow-400/15 px-2.5 py-0.5 text-xs font-semibold text-yellow-300">
+                  +{lastXpGain} XP
+                </span>
+              )}
             </div>
           )}
 
