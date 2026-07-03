@@ -9,7 +9,7 @@ export function LoginButton() {
 
   return (
     <button
-      className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+      className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
       type="button"
       onClick={async () => {
         await supabase.auth.signInWithOAuth({

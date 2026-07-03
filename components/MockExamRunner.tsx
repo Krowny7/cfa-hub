@@ -156,7 +156,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
                   <div className="text-sm font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
                   <div className="mt-3 grid gap-1.5">
                     {q.choices.map((c, ci) => (
-                      <div key={ci} className={`rounded-lg border px-3 py-2 text-sm ${
+                      <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
                         ci === q.correct_index
                           ? "border-green-500/40 bg-green-500/10 text-green-300"
                           : ci === sel && sel !== q.correct_index

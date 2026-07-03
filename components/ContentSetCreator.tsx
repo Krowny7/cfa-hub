@@ -10,7 +10,23 @@ import { FolderPicker } from "@/components/FolderPicker";
 type ShareMode = "private" | "public" | "groups";
 type Subject = "cfa" | "personal";
 
-export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null }) {
+// Formulaire de création d'un set (flashcards ou QCM) — les deux composants
+// étaient ~100% identiques à l'exception de la table cible et de 4 clés i18n ;
+// factorisés ici pour éviter qu'un correctif appliqué à l'un soit oublié
+// sur l'autre (déjà arrivé une fois cette session avec un mismatch de props).
+export function ContentSetCreator({
+  activeGroupId,
+  table,
+  shareTable,
+  folderKind,
+  i18nPrefix,
+}: {
+  activeGroupId: string | null;
+  table: "flashcard_sets" | "quiz_sets";
+  shareTable: "flashcard_set_shares" | "quiz_set_shares";
+  folderKind: "flashcards" | "quizzes";
+  i18nPrefix: "flashcards" | "qcm";
+}) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
 
@@ -24,7 +40,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
 
   return (
     <div className="card p-6">
-      <h2 className="text-base font-semibold">{t("qcm.createTitle")}</h2>
+      <h2 className="text-base font-semibold">{t(`${i18nPrefix}.createTitle`)}</h2>
 
       <div className="mt-4 grid gap-3">
         {/* Subject toggle */}
@@ -32,7 +48,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
           <button
             type="button"
             onClick={() => setSubject("cfa")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition ${
               subject === "cfa"
                 ? "bg-blue-500/20 text-blue-300"
                 : "text-muted hover:text-white/70"
@@ -43,7 +59,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
           <button
             type="button"
             onClick={() => setSubject("personal")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition ${
               subject === "personal"
                 ? "bg-violet-500/20 text-violet-300"
                 : "text-muted hover:text-white/70"
@@ -59,12 +75,12 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
 
         <input
           className="input"
-          placeholder={t("qcm.setTitlePlaceholder")}
+          placeholder={t(`${i18nPrefix}.setTitlePlaceholder`)}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        <FolderPicker kind="quizzes" value={folderId} onChange={setFolderId} />
+        <FolderPicker kind={folderKind} value={folderId} onChange={setFolderId} />
 
         <div className="card-soft p-4">
           <div className="text-sm font-medium">{t("sharing.title")}</div>
@@ -111,7 +127,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
               const visibility = shareMode === "groups" ? "groups" : shareMode;
 
               const res = await supabase
-                .from("quiz_sets")
+                .from(table)
                 .insert({
                   title: title.trim(),
                   visibility,
@@ -128,7 +144,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
 
               if (shareMode === "groups" && setId) {
                 const rows = groupIds.map((gid) => ({ set_id: setId, group_id: gid }));
-                const share = await supabase.from("quiz_set_shares").insert(rows);
+                const share = await supabase.from(shareTable).insert(rows);
                 if (share.error) throw share.error;
               }
 
@@ -147,7 +163,7 @@ export function QuizSetCreator({ activeGroupId }: { activeGroupId: string | null
           }}
           type="button"
         >
-          {busy ? t("common.saving") : t("qcm.create")}
+          {busy ? t("common.saving") : t(`${i18nPrefix}.create`)}
         </button>
 
         {msg && <div className="text-sm">{msg}</div>}

@@ -201,7 +201,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
               {e.status === "draft" && (
                 <button
                   type="button"
-                  className="rounded-lg bg-green-500/20 px-3 py-1.5 text-xs text-green-300 hover:bg-green-500/30 disabled:opacity-50"
+                  className="rounded-xl bg-green-500/20 px-3 py-1.5 text-xs text-green-300 hover:bg-green-500/30 disabled:opacity-50"
                   disabled={busy === e.id}
                   onClick={() => publish(e.id)}
                 >
@@ -211,7 +211,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
               {e.status === "open" && (
                 <button
                   type="button"
-                  className="rounded-lg bg-orange-500/20 px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/30 disabled:opacity-50"
+                  className="rounded-xl bg-orange-500/20 px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/30 disabled:opacity-50"
                   disabled={busy === e.id}
                   onClick={() => close(e.id)}
                 >
@@ -220,7 +220,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
               )}
               <button
                 type="button"
-                className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/20 disabled:opacity-50"
+                className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/20 disabled:opacity-50"
                 disabled={busy === e.id + "-del"}
                 onClick={() => deleteExam(e.id)}
               >

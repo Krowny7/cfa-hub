@@ -24,7 +24,7 @@ export function TopicSelector({
 }) {
   return (
     <select
-      className="rounded-lg border border-white/10 bg-neutral-900/60 px-2 py-1.5 text-xs text-white/80 disabled:opacity-50"
+      className="rounded-xl border border-white/10 bg-neutral-900/60 px-2 py-1.5 text-xs text-white/80 disabled:opacity-50"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
       disabled={disabled}

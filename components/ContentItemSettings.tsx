@@ -215,7 +215,7 @@ export function ContentItemSettings({
 
         <div className="flex items-center gap-2 text-xs text-white/70">
           <span className="hidden sm:inline">{t("common.edit")}</span>
-          <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.02]">
+          <span className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-white/[0.02]">
             ▾
           </span>
         </div>

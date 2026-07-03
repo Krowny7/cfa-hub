@@ -34,7 +34,7 @@ export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; next
         />
 
         <button
-          className="box-border w-full rounded-lg bg-white px-4 py-2 text-center text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto sm:justify-self-start"
+          className="box-border w-full rounded-xl bg-white px-4 py-2 text-center text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto sm:justify-self-start"
           disabled={busy || !front.trim() || !back.trim()}
           onClick={async () => {
             setBusy(true);

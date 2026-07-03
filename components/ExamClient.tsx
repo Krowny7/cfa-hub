@@ -305,7 +305,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                           return (
                             <div
                               key={ci}
-                              className={`rounded-lg px-3 py-1.5 text-xs ${
+                              className={`rounded-xl px-3 py-1.5 text-xs ${
                                 isCorrectChoice
                                   ? "bg-green-400/10 text-green-300 font-medium"
                                   : isSelected
@@ -321,7 +321,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                         })}
                       </div>
                       {a.question.explanation && (
-                        <div className="mt-2 rounded-lg bg-white/[0.04] px-3 py-2 text-xs text-white/55 leading-relaxed">
+                        <div className="mt-2 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-white/55 leading-relaxed">
                           💡 {a.question.explanation}
                         </div>
                       )}

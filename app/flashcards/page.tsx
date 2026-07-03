@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { FlashcardSetCreator } from "@/components/FlashcardSetCreator";
+import { ContentSetCreator } from "@/components/ContentSetCreator";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
@@ -89,7 +89,13 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
           </span>
         </summary>
         <div className="mt-3 card p-4">
-          <FlashcardSetCreator activeGroupId={activeGroupId} />
+          <ContentSetCreator
+            activeGroupId={activeGroupId}
+            table="flashcard_sets"
+            shareTable="flashcard_set_shares"
+            folderKind="flashcards"
+            i18nPrefix="flashcards"
+          />
         </div>
       </details>
 

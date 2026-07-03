@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
-import { QuizSetCreator } from "@/components/QuizSetCreator";
+import { ContentSetCreator } from "@/components/ContentSetCreator";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
 import { normalizeScope, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
@@ -110,7 +110,13 @@ export default async function QcmPage({ searchParams }: PageProps) {
           </span>
         </summary>
         <div className="mt-3 card p-4">
-          <QuizSetCreator activeGroupId={activeGroupId} />
+          <ContentSetCreator
+            activeGroupId={activeGroupId}
+            table="quiz_sets"
+            shareTable="quiz_set_shares"
+            folderKind="quizzes"
+            i18nPrefix="qcm"
+          />
         </div>
       </details>
 

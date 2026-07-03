@@ -73,7 +73,7 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
         <h3 className="font-semibold">{t("flashcards.importing")}</h3>
 
         <button
-          className="box-border w-full rounded-lg border px-3 py-2 text-sm hover:bg-white/5 sm:w-auto sm:whitespace-nowrap"
+          className="box-border w-full rounded-xl border px-3 py-2 text-sm hover:bg-white/5 sm:w-auto sm:whitespace-nowrap"
           type="button"
           onClick={exportTsv}
         >
@@ -92,7 +92,7 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
 
       <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
         <button
-          className="box-border w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto"
+          className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto"
           type="button"
           disabled={busy || !tsv.trim()}
           onClick={importTsv}

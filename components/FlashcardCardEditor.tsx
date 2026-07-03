@@ -159,14 +159,14 @@ export function FlashcardCardEditor({
               {isEditing ? (
                 <div className="mt-2 grid gap-2">
                   <textarea
-                    className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm"
+                    className="box-border w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
                     rows={2}
                     value={editFront}
                     onChange={(e) => setEditFront(e.target.value)}
                     placeholder="Recto"
                   />
                   <textarea
-                    className="box-border w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white/70"
+                    className="box-border w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white/70"
                     rows={2}
                     value={editBack}
                     onChange={(e) => setEditBack(e.target.value)}
@@ -176,7 +176,7 @@ export function FlashcardCardEditor({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-black disabled:opacity-50"
+                      className="rounded-xl bg-white px-3 py-1.5 text-sm font-medium text-black disabled:opacity-50"
                       disabled={busy}
                       onClick={saveEdit}
                     >
@@ -184,7 +184,7 @@ export function FlashcardCardEditor({
                     </button>
                     <button
                       type="button"
-                      className="rounded-lg border border-white/10 px-3 py-1.5 text-sm hover:bg-white/5"
+                      className="rounded-xl border border-white/10 px-3 py-1.5 text-sm hover:bg-white/5"
                       onClick={cancelEdit}
                     >
                       Annuler

@@ -219,7 +219,7 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
 
               <button
                 type="button"
-                className="w-full rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                className="w-full rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
                 onClick={() => setFullscreen(false)}
               >
                 {t("common.close")}

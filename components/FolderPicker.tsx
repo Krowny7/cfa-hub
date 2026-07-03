@@ -147,7 +147,7 @@ export function FolderPicker({
       </div>
 
       {errorText ? (
-        <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <div className="mt-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {errorText}
         </div>
       ) : null}

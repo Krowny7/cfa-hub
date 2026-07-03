@@ -38,7 +38,7 @@ export default async function ShareQcmPage({ params }: PageProps) {
               {(Array.isArray(q.choices) ? q.choices : []).map((choice, cidx) => (
                 <div
                   key={cidx}
-                  className={`rounded-lg border px-3 py-2 text-sm ${
+                  className={`rounded-xl border px-3 py-2 text-sm ${
                     cidx === q.correct_index
                       ? "border-green-500/40 bg-green-500/10 text-green-300"
                       : "border-white/10 text-white/70"
@@ -49,7 +49,7 @@ export default async function ShareQcmPage({ params }: PageProps) {
               ))}
             </div>
             {q.explanation && (
-              <div className="mt-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-white/55 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              <div className="mt-3 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-white/55 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                 {q.explanation}
               </div>
             )}
