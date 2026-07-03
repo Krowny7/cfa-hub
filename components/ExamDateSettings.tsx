@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 
 export function ExamDateSettings() {
@@ -40,7 +41,7 @@ export function ExamDateSettings() {
       if (error) throw new Error(error.message);
       setMsg("✅ Sauvegardé");
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }

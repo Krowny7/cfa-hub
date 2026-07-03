@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
@@ -146,7 +147,7 @@ export function ContentItemSettings({
         setSelectedFolderId(data.id);
       }
     } catch (e: unknown) {
-      setErrorText(e instanceof Error ? e.message : t("common.error"));
+      setErrorText(friendlyError(e, t("common.error")));
     } finally {
       setCreatingFolder(false);
     }
@@ -178,7 +179,7 @@ export function ContentItemSettings({
       setMsg(t("common.saved"));
       onUpdated?.();
     } catch (e: unknown) {
-      setErrorText(e instanceof Error ? e.message : t("common.error"));
+      setErrorText(friendlyError(e, t("common.error")));
     } finally {
       setSaving(false);
     }
@@ -197,7 +198,7 @@ export function ContentItemSettings({
       if (onDeleted) onDeleted();
       else window.location.href = defaultRedirect;
     } catch (e: unknown) {
-      setErrorText(e instanceof Error ? e.message : t("common.error"));
+      setErrorText(friendlyError(e, t("common.error")));
     } finally {
       setSaving(false);
       setShowConfirmDelete(false);

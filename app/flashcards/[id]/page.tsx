@@ -61,7 +61,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       </div>
 
       {/* La révision est l'usage quotidien -> premier contenu visible, sans scroll */}
-      <FlashcardReview cards={cards} />
+      <FlashcardReview cards={cards} setId={id} />
 
       {/* Outils de création/import — repliés, réservés au propriétaire du set */}
       {isOwner && (

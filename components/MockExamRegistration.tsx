@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -45,7 +46,7 @@ export function MockExamRegistration({
       }
       router.refresh();
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }

@@ -48,3 +48,28 @@ export function levelInfoFromXp(xpTotal: number): LevelInfo {
     level += 1;
   }
 }
+
+// Partagé entre le dashboard et la Session (badge streak visible pendant
+// l'effort, pas seulement avant/après) — une seule source de vérité pour
+// le calcul du streak à partir des events XP quotidiens.
+export type XpDay = { day: string; xp: number };
+
+export function calcStreakAndToday(days: XpDay[]): { streak: number; xpToday: number } {
+  const today = new Date().toISOString().slice(0, 10);
+  const map = new Map(days.map((d) => [d.day, d.xp]));
+  const xpToday = map.get(today) ?? 0;
+
+  let streak = 0;
+  const cur = new Date(today + "T00:00:00Z");
+  for (;;) {
+    const dayStr = cur.toISOString().slice(0, 10);
+    if ((map.get(dayStr) ?? 0) > 0) {
+      streak++;
+      cur.setUTCDate(cur.getUTCDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  return { streak, xpToday };
+}

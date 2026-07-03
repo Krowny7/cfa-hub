@@ -211,6 +211,7 @@ export const MESSAGES = {
     },
     qcm: {
       title: "QCM",
+      runnerHint: "pratique ciblée, sans limite de temps",
       continueReviewing: "Reprendre le QCM",
       hero1: "Entraîne-toi en conditions réelles.",
       hero2: "Crée tes QCM, partage-les à tes groupes, et progresse question après question.",
@@ -325,7 +326,7 @@ export const MESSAGES = {
     },
     session: {
       title: "Session du jour",
-      subtitle: "15 minutes de révision, chaque matin.",
+      subtitle: "15 min de révision quotidienne, contenu mélangé et ordonné intelligemment. Pour un entraînement ciblé sur un thème précis, va plutôt dans QCM ou Flashcards.",
       modeTitle: "Mode de révision",
       modeQcm: "QCM",
       modeQcmDesc: "Questions à choix multiples",
@@ -573,6 +574,7 @@ export const MESSAGES = {
     },
     qcm: {
       title: "MCQ",
+      runnerHint: "focused practice, no time limit",
       continueReviewing: "Continue MCQ",
       hero1: "Train under real conditions.",
       hero2: "Create MCQs, share with your groups, and improve question by question.",
@@ -687,7 +689,7 @@ export const MESSAGES = {
     },
     session: {
       title: "Daily Session",
-      subtitle: "15 minutes of practice, every morning.",
+      subtitle: "15 min of daily practice, mixed content ordered smartly. For focused practice on one topic, use MCQ or Flashcards instead.",
       modeTitle: "Practice mode",
       modeQcm: "MCQ",
       modeQcmDesc: "Multiple choice questions",

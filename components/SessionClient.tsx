@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { saveAnswerResult } from "@/lib/session-stats";
+import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
 import type { QuizQuestion, Flashcard, AwardXpResult } from "@/lib/types";
 
 export type SetOption = { id: string; title: string; isOfficial: boolean };
@@ -13,105 +14,6 @@ type Mode = "qcm" | "flashcards";
 type Phase = "setup" | "active" | "done";
 
 const SESSION_SECONDS = 15 * 60;
-
-// ── SRS (SM-2 simplified) ──────────────────────────────────────────────────
-
-type CardSRS = {
-  interval: number; // days until next review
-  ef: number;       // ease factor (1.3–2.5)
-  due: number;      // unix timestamp (ms)
-  reps: number;     // successful repetitions
-};
-
-function srsKey(setId: string) {
-  return `cfa_srs_${setId}`;
-}
-
-function loadSRS(setId: string): Record<string, CardSRS> {
-  try {
-    const raw = localStorage.getItem(srsKey(setId));
-    return raw ? (JSON.parse(raw) as Record<string, CardSRS>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveSRS(setId: string, state: Record<string, CardSRS>) {
-  try {
-    localStorage.setItem(srsKey(setId), JSON.stringify(state));
-  } catch {}
-}
-
-function applyReview(
-  state: Record<string, CardSRS>,
-  cardId: string,
-  gotIt: boolean
-): Record<string, CardSRS> {
-  const now = Date.now();
-  const prev = state[cardId] ?? { interval: 0, ef: 2.5, due: now, reps: 0 };
-
-  if (gotIt) {
-    const newReps = prev.reps + 1;
-    let newInterval: number;
-    if (newReps === 1) newInterval = 1;
-    else if (newReps === 2) newInterval = 6;
-    else newInterval = Math.round(prev.interval * prev.ef);
-    const newEf = Math.min(2.5, Math.max(1.3, prev.ef + 0.05));
-    return {
-      ...state,
-      [cardId]: {
-        interval: newInterval,
-        ef: newEf,
-        due: now + newInterval * 86_400_000,
-        reps: newReps,
-      },
-    };
-  } else {
-    return {
-      ...state,
-      [cardId]: {
-        interval: 1,
-        ef: Math.max(1.3, prev.ef - 0.2),
-        due: now + 86_400_000,
-        reps: 0,
-      },
-    };
-  }
-}
-
-function sortBySRS(cards: Flashcard[], state: Record<string, CardSRS>): Flashcard[] {
-  const now = Date.now();
-  return [...cards].sort((a, b) => {
-    const sa = state[a.id];
-    const sb = state[b.id];
-    const aDue = sa?.due ?? now;
-    const bDue = sb?.due ?? now;
-    const aNew = !sa;
-    const bNew = !sb;
-    const aOver = aDue <= now;
-    const bOver = bDue <= now;
-    // Order: overdue → new → upcoming
-    if (aOver && !bOver) return -1;
-    if (!aOver && bOver) return 1;
-    if (!aOver && !bOver) {
-      if (aNew && !bNew) return -1;
-      if (!aNew && bNew) return 1;
-    }
-    return aDue - bDue;
-  });
-}
-
-function getSRSCounts(cards: Flashcard[], state: Record<string, CardSRS>) {
-  const now = Date.now();
-  let due = 0;
-  let newCount = 0;
-  for (const c of cards) {
-    const s = state[c.id];
-    if (!s) { newCount++; }
-    else if (s.due <= now) { due++; }
-  }
-  return { due, newCount };
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -155,9 +57,11 @@ function shuffleArr<T>(arr: T[]): T[] {
 export function SessionClient({
   qcmSets,
   flashSets,
+  streak = 0,
 }: {
   qcmSets: SetOption[];
   flashSets: SetOption[];
+  streak?: number;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
@@ -605,7 +509,14 @@ export function SessionClient({
     <div className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-xs text-white/50">{t("session.timer")}</div>
+          <div className="flex items-center gap-2 text-xs text-white/50">
+            <span>{t("session.timer")}</span>
+            {streak > 0 && (
+              <span className="rounded-full bg-orange-400/15 px-2 py-0.5 font-medium text-orange-300">
+                🔥 {streak}
+              </span>
+            )}
+          </div>
           <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
             {fmtTime(secondsLeft)}
           </div>

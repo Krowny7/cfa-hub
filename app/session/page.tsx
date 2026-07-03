@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SessionClient, type SetOption } from "@/components/SessionClient";
+import { calcStreakAndToday, type XpDay } from "@/lib/leveling";
 
 type SetRow = {
   id: string;
@@ -16,7 +17,7 @@ export default async function SessionPage() {
   const user = auth.user;
   if (!user) redirect("/login");
 
-  const [qcmRes, flashRes] = await Promise.all([
+  const [qcmRes, flashRes, xpDailyRes] = await Promise.all([
     supabase
       .from("quiz_sets")
       .select("id,title,is_official,official_published")
@@ -26,7 +27,16 @@ export default async function SessionPage() {
       .from("flashcard_sets")
       .select("id,title")
       .order("created_at", { ascending: false }),
+    (async () => {
+      try {
+        return await supabase.rpc("get_xp_daily", { p_days: 30 });
+      } catch {
+        return { data: null };
+      }
+    })(),
   ]);
+
+  const { streak } = calcStreakAndToday((xpDailyRes.data ?? []) as XpDay[]);
 
   const qcmSets: SetOption[] = ((qcmRes.data ?? []) as SetRow[])
     .filter((s) => s.id && s.title)
@@ -42,7 +52,7 @@ export default async function SessionPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <SessionClient qcmSets={qcmSets} flashSets={flashSets} />
+      <SessionClient qcmSets={qcmSets} flashSets={flashSets} streak={streak} />
     </div>
   );
 }

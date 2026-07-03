@@ -3,35 +3,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
-import { levelInfoFromXp } from "@/lib/leveling";
+import { levelInfoFromXp, calcStreakAndToday, type XpDay } from "@/lib/leveling";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import { PracticeHistory } from "@/components/PracticeHistory";
 import type { Profile, Rating } from "@/lib/types";
 
-type XpDay = { day: string; xp: number };
 type ProfileRow = Pick<Profile, "xp_total" | "username" | "active_group_id"> & { exam_date?: string | null } | null;
 
 type PracticeAggregate = { total_sessions: number; total_correct: number; total_answered: number };
-
-function calcStreakAndToday(days: XpDay[]): { streak: number; xpToday: number } {
-  const today = new Date().toISOString().slice(0, 10);
-  const map = new Map(days.map((d) => [d.day, d.xp]));
-  const xpToday = map.get(today) ?? 0;
-
-  let streak = 0;
-  const cur = new Date(today + "T00:00:00Z");
-  for (;;) {
-    const dayStr = cur.toISOString().slice(0, 10);
-    if ((map.get(dayStr) ?? 0) > 0) {
-      streak++;
-      cur.setUTCDate(cur.getUTCDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  return { streak, xpToday };
-}
 
 export default async function Dashboard() {
   const locale = await getLocale();
@@ -126,19 +105,20 @@ export default async function Dashboard() {
           <p className="mt-1 text-sm text-white/60">{t(locale, "dashboard.subtitle")}</p>
         </div>
 
-        {/* Session CTA */}
+        {/* Session CTA — action principale de la page : signal visuel fort au
+            repos (pas seulement au survol, inutile sur mobile sans hover) */}
         <Link
           href="/session"
-          className="card group flex items-center gap-4 overflow-hidden p-5 transition hover:border-blue-400/40 hover:bg-white/[0.04]"
+          className="card group flex items-center gap-4 overflow-hidden border-blue-400/25 bg-blue-500/[0.06] p-5 transition hover:border-blue-400/50 hover:bg-blue-500/[0.10]"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/20 text-xl transition group-hover:bg-blue-500/30">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/25 text-xl transition group-hover:bg-blue-500/35">
             ⏱
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-semibold">{t(locale, "dashboard.sessionCta")}</div>
             <div className="mt-0.5 text-sm text-white/55">{t(locale, "dashboard.sessionDesc")}</div>
           </div>
-          <div className="text-white/30 transition group-hover:text-white/70">→</div>
+          <div className="text-blue-300/60 transition group-hover:text-blue-200">→</div>
         </Link>
 
         {/* Exam countdown */}

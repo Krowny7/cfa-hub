@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
 
@@ -65,7 +66,7 @@ export function FlashcardCardEditor({
       cancelEdit();
       setMsg("✅");
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }
@@ -91,7 +92,7 @@ export function FlashcardCardEditor({
       setConfirmDeleteId(null);
       setMsg("✅");
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }

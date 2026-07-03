@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/I18nProvider";
+import { loadSRS, sortBySRS } from "@/lib/srs";
 
 type Card = { id: string; front: string; back: string };
 
@@ -71,14 +72,27 @@ function CardPanel({
   );
 }
 
-export function FlashcardReview({ cards }: { cards: Card[] }) {
+export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: string }) {
   const { t } = useI18n();
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
-  const current = cards[i] ?? null;
-  const total = cards.length;
+  // Même ordre de priorité que la Session (dues en retard → nouvelles →
+  // à venir) quand un setId est fourni, pour que "Reprendre" depuis /flashcards
+  // ne fasse pas perdre la planification de répétition espacée construite en
+  // Session. Lecture seule ici : seule la Session écrit les mises à jour.
+  const orderedCards = useMemo(() => {
+    if (!setId) return cards;
+    try {
+      return sortBySRS(cards, loadSRS(setId));
+    } catch {
+      return cards;
+    }
+  }, [cards, setId]);
+
+  const current = orderedCards[i] ?? null;
+  const total = orderedCards.length;
 
   const progress = useMemo(() => (total ? `${i + 1}/${total}` : "0/0"), [i, total]);
 
@@ -131,7 +145,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
           <span className="text-sm opacity-70 tabular-nums">{progress}</span>
           <button
             type="button"
-            className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+            className="btn btn-secondary w-full sm:w-auto"
             onClick={() => setFullscreen(true)}
           >
             {t("flashcards.fullscreen")}
@@ -162,7 +176,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
       {/* Nav: stack buttons on mobile */}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <button
-          className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
+          className="btn btn-secondary w-full sm:w-auto"
           disabled={i === 0}
           onClick={goPrev}
           type="button"
@@ -170,7 +184,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
           {t("flashcards.prev")}
         </button>
         <button
-          className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
+          className="btn btn-secondary w-full sm:w-auto"
           disabled={i >= total - 1}
           onClick={goNext}
           type="button"
@@ -238,7 +252,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                   {/* Fullscreen nav: stack on mobile */}
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <button
-                      className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
+                      className="btn btn-secondary w-full sm:w-auto"
                       disabled={i === 0}
                       onClick={goPrev}
                       type="button"
@@ -246,7 +260,7 @@ export function FlashcardReview({ cards }: { cards: Card[] }) {
                       {t("flashcards.prev")}
                     </button>
                     <button
-                      className="w-full rounded-lg border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50 sm:w-auto"
+                      className="btn btn-secondary w-full sm:w-auto"
                       disabled={i >= total - 1}
                       onClick={goNext}
                       type="button"

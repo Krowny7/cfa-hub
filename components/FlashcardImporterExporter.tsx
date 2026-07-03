@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -59,7 +60,7 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
       setMsg("✅");
       window.location.reload();
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }

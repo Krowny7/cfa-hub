@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 
 type Exam = {
@@ -58,7 +59,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       await refresh();
       setMsg("✅ Examen créé");
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(null);
     }
@@ -73,7 +74,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       await refresh();
       setMsg("✅ Publié — questions tirées aléatoirement");
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(null);
     }
@@ -88,7 +89,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       await refresh();
       setMsg("✅ Examen clôturé");
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : "Erreur"}`);
+      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(null);
     }

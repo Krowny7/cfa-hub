@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -38,7 +39,7 @@ export function ProfileSettings() {
         setUsername(p?.username ?? "");
         setAvatarUrl(p?.avatar_url ?? null);
       } catch (e: unknown) {
-        setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+        setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
       } finally {
         setLoading(false);
       }
@@ -63,7 +64,7 @@ export function ProfileSettings() {
 
       setMsg(t("settings.updated"));
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -96,7 +97,7 @@ export function ProfileSettings() {
       setAvatarUrl(publicUrl);
       setMsg(t("settings.updated"));
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }

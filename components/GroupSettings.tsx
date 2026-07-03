@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 
@@ -99,7 +100,7 @@ export function GroupSettings({
       if (error) throw error;
       window.location.reload();
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setRowBusyId(null);
     }
@@ -126,7 +127,7 @@ export function GroupSettings({
       setEditName("");
       window.location.reload();
     } catch (e: unknown) {
-      setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setRowBusyId(null);
     }
@@ -165,7 +166,7 @@ export function GroupSettings({
       }
       window.location.reload();
     } catch (e: unknown) {
-      const base = e instanceof Error ? e.message : t("common.error");
+      const base = friendlyError(e, t("common.error"));
       if (action === "delete") {
         setMsg(`❌ ${base}. ${t("settings.leave")} : ${t("settings.confirmLeaveGroup")}`);
       } else {
@@ -333,7 +334,7 @@ export function GroupSettings({
                   setName("");
                   window.location.reload();
                 } catch (e: unknown) {
-                  setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+                  setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
                 } finally {
                   setBusy(false);
                 }
@@ -367,7 +368,7 @@ export function GroupSettings({
                   setInvite("");
                   window.location.reload();
                 } catch (e: unknown) {
-                  setMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+                  setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
                 } finally {
                   setBusy(false);
                 }

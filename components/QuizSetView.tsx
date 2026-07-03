@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
@@ -175,7 +176,7 @@ export function QuizSetView({
       await refreshQuestions();
       setEditorMsg("✅");
     } catch (e: unknown) {
-      setEditorMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setEditorMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -234,7 +235,7 @@ export function QuizSetView({
       cancelEdit();
       setManageMsg("✅");
     } catch (e: unknown) {
-      setManageMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setManageMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -269,7 +270,7 @@ export function QuizSetView({
       setExamStarted(false);
       setManageMsg("✅");
     } catch (e: unknown) {
-      setManageMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setManageMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -332,7 +333,7 @@ export function QuizSetView({
       setShowImportInput(false);
       setImportMsg("✅");
     } catch (e: unknown) {
-      setImportMsg(`❌ ${e instanceof Error ? e.message : t("common.error")}`);
+      setImportMsg(`❌ ${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -381,7 +382,7 @@ export function QuizSetView({
       else setRunnerMsg(`ℹ️ ${t("qcm.noXp")}`);
     } catch (e: unknown) {
       setRunnerMsg(
-        `❌ XP exception: ${e instanceof Error ? e.message : "unknown"}`
+        `❌ XP exception: ${friendlyError(e, "unknown")}`
       );
     }
   }
@@ -399,7 +400,7 @@ export function QuizSetView({
           <div>
             <div className="font-semibold">{t("qcm.title")}</div>
             <div className="text-xs opacity-70">
-              {questions.length} question{questions.length !== 1 ? "s" : ""}
+              {questions.length} question{questions.length !== 1 ? "s" : ""} · {t("qcm.runnerHint")}
             </div>
           </div>
           <button
