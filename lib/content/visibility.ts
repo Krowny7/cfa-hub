@@ -1,11 +1,16 @@
 export type Visibility = "private" | "group" | "groups" | "public";
 export type ScopeFilter = "all" | "private" | "shared" | "public";
 export type VisibilitySection = "private" | "shared" | "public";
+export type ContentView = "system" | "community";
 
 export function normalizeScope(value: string | null | undefined): ScopeFilter {
   if (value === "private" || value === "public" || value === "all" || value === "shared") return value;
   if (value === "group" || value === "groups") return "shared";
   return "all";
+}
+
+export function normalizeView(value: string | null | undefined): ContentView {
+  return value === "community" ? "community" : "system";
 }
 
 export function normalizeVisibility(value: string | null | undefined): Visibility {

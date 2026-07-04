@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { LineChart, BookOpen } from "lucide-react";
+import { LineChart, BookOpen, Star, Users } from "lucide-react";
 import { t } from "@/lib/i18n/core";
 import type { Locale } from "@/lib/i18n/core";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
-import type { ScopeFilter } from "@/lib/content/visibility";
+import type { ContentView, ScopeFilter } from "@/lib/content/visibility";
 import type { ReactNode } from "react";
 
 export type ContentSetRow = {
@@ -24,17 +24,25 @@ function tabCls(active: boolean) {
   );
 }
 
-// Squelette partagé entre /flashcards et /qcm — les deux pages étaient
-// ~90% le même JSX dupliqué (onglets de scope, recherche, sections CFA/
-// personnel), risque déjà matérialisé une fois cette session (un correctif
-// UX appliqué à l'un et oublié sur l'autre). La récupération des données
-// reste dans chaque page.tsx (elle diffère réellement : QCM a un bloc
-// "sets officiels" en plus) ; seul le rendu est mutualisé ici.
+function viewTabCls(active: boolean) {
+  return (
+    "flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition " +
+    (active ? "bg-blue-500/20 text-blue-300" : "text-muted hover:text-white/70")
+  );
+}
+
+// Squelette partagé entre /flashcards, /qcm et /exercises — deux niveaux
+// de regroupement : Système (contenu vérifié par l'équipe, mis en avant)
+// vs Communautaire (les 4 anciens onglets tous/privé/groupes/public, qui
+// ne portent que sur ce que les utilisateurs créent eux-mêmes). Avant ce
+// changement, le contenu Système apparaissait AUSSI dans "Tous"/"Public",
+// dupliqué visuellement et sans lien clair entre les deux blocs.
 export function ContentListPage({
   locale,
   basePath,
   titleKey,
   i18nPrefix,
+  view,
   scope,
   q,
   all,
@@ -47,12 +55,14 @@ export function ContentListPage({
   itemUnit,
   continueReviewingSlot,
   creatorSlot,
-  extraTopSlot,
+  systemSlot,
+  systemCount,
 }: {
   locale: Locale;
   basePath: string;
   titleKey: string;
   i18nPrefix: string;
+  view: ContentView;
   scope: ScopeFilter;
   q: string;
   all: ContentSetRow[];
@@ -65,12 +75,15 @@ export function ContentListPage({
   itemUnit: string;
   continueReviewingSlot: ReactNode;
   creatorSlot: ReactNode;
-  extraTopSlot?: ReactNode;
+  systemSlot?: ReactNode;
+  systemCount: number;
 }) {
   const noFolder = t(locale, "common.noFolder");
   const openLabel = t(locale, `${i18nPrefix}.open`);
   const scopeLink = (v: string) =>
-    `${basePath}?scope=${v}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+    `${basePath}?view=community&scope=${v}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
+  const viewLink = (v: ContentView) =>
+    `${basePath}?view=${v}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
   return (
     <div className="grid gap-4">
@@ -88,90 +101,105 @@ export function ContentListPage({
         <div className="mt-3 card p-4">{creatorSlot}</div>
       </details>
 
-      {extraTopSlot}
-
-      {/* Scope tabs */}
-      <div className="flex border-b border-white/[0.07]">
-        <Link href={scopeLink("all")} className={tabCls(scope === "all")}>
-          {t(locale, "common.all")} · {all.length}
+      {/* Système vs Communautaire */}
+      <div className="flex gap-1 rounded-xl border border-white/[0.08] p-1">
+        <Link href={viewLink("system")} className={viewTabCls(view === "system")}>
+          <Star size={14} /> Système · {systemCount}
         </Link>
-        <Link href={scopeLink("private")} className={tabCls(scope === "private")}>
-          {t(locale, "content.sectionPrivate")} · {priv.length}
-        </Link>
-        <Link href={scopeLink("shared")} className={tabCls(scope === "shared")}>
-          {t(locale, "content.sectionShared")} · {shared.length}
-        </Link>
-        <Link href={scopeLink("public")} className={tabCls(scope === "public")}>
-          {t(locale, "content.sectionPublic")} · {pub.length}
+        <Link href={viewLink("community")} className={viewTabCls(view === "community")}>
+          <Users size={14} /> Communautaire · {all.length}
         </Link>
       </div>
 
-      {/* Search */}
-      <form className="flex flex-wrap gap-2" action={basePath} method="get">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder={t(locale, `${i18nPrefix}.searchPlaceholder`)}
-          className="input min-w-0 flex-1 sm:min-w-[220px]"
-        />
-        <input type="hidden" name="scope" value={scope} />
-        <button type="submit" className="btn btn-secondary whitespace-nowrap">
-          {t(locale, "common.filter")}
-        </button>
-        {(q || scope !== "all") && (
-          <Link href={basePath} className="btn btn-ghost whitespace-nowrap">
-            {t(locale, "common.reset")}
-          </Link>
-        )}
-      </form>
-
-      {/* Empty state */}
-      {displayItems.length === 0 && (
-        <p className="text-sm opacity-60">{t(locale, `${i18nPrefix}.empty`)}</p>
-      )}
-
-      {/* CFA section */}
-      {cfaItems.length > 0 && (
-        <div className="card p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-sm font-semibold">
-              <LineChart size={15} className="text-blue-300" /> {t(locale, "subject.cfa")}
-            </span>
-            <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
-              {cfaItems.length}
-            </span>
+      {view === "system" ? (
+        systemSlot ?? <p className="text-sm opacity-60">{t(locale, `${i18nPrefix}.empty`)}</p>
+      ) : (
+        <>
+          {/* Scope tabs */}
+          <div className="flex border-b border-white/[0.07]">
+            <Link href={scopeLink("all")} className={tabCls(scope === "all")}>
+              {t(locale, "common.all")} · {all.length}
+            </Link>
+            <Link href={scopeLink("private")} className={tabCls(scope === "private")}>
+              {t(locale, "content.sectionPrivate")} · {priv.length}
+            </Link>
+            <Link href={scopeLink("shared")} className={tabCls(scope === "shared")}>
+              {t(locale, "content.sectionShared")} · {shared.length}
+            </Link>
+            <Link href={scopeLink("public")} className={tabCls(scope === "public")}>
+              {t(locale, "content.sectionPublic")} · {pub.length}
+            </Link>
           </div>
-          <FolderBlocks
-            locale={locale}
-            items={cfaItems}
-            rootLabel={noFolder}
-            openLabel={openLabel}
-            basePath={basePath}
-            itemUnit={itemUnit}
-          />
-        </div>
-      )}
 
-      {/* Personal section */}
-      {personalItems.length > 0 && (
-        <div className="card border-l-2 border-l-violet-400/40 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-sm font-semibold">
-              <BookOpen size={15} className="text-violet-300" /> {t(locale, "subject.personal")}
-            </span>
-            <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-300">
-              {personalItems.length}
-            </span>
-          </div>
-          <FolderBlocks
-            locale={locale}
-            items={personalItems}
-            rootLabel={noFolder}
-            openLabel={openLabel}
-            basePath={basePath}
-            itemUnit={itemUnit}
-          />
-        </div>
+          {/* Search */}
+          <form className="flex flex-wrap gap-2" action={basePath} method="get">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder={t(locale, `${i18nPrefix}.searchPlaceholder`)}
+              className="input min-w-0 flex-1 sm:min-w-[220px]"
+            />
+            <input type="hidden" name="view" value="community" />
+            <input type="hidden" name="scope" value={scope} />
+            <button type="submit" className="btn btn-secondary whitespace-nowrap">
+              {t(locale, "common.filter")}
+            </button>
+            {(q || scope !== "all") && (
+              <Link href={viewLink("community")} className="btn btn-ghost whitespace-nowrap">
+                {t(locale, "common.reset")}
+              </Link>
+            )}
+          </form>
+
+          {/* Empty state */}
+          {displayItems.length === 0 && (
+            <p className="text-sm opacity-60">{t(locale, `${i18nPrefix}.empty`)}</p>
+          )}
+
+          {/* CFA section */}
+          {cfaItems.length > 0 && (
+            <div className="card p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <LineChart size={15} className="text-blue-300" /> {t(locale, "subject.cfa")}
+                </span>
+                <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+                  {cfaItems.length}
+                </span>
+              </div>
+              <FolderBlocks
+                locale={locale}
+                items={cfaItems}
+                rootLabel={noFolder}
+                openLabel={openLabel}
+                basePath={basePath}
+                itemUnit={itemUnit}
+              />
+            </div>
+          )}
+
+          {/* Personal section */}
+          {personalItems.length > 0 && (
+            <div className="card border-l-2 border-l-violet-400/40 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <BookOpen size={15} className="text-violet-300" /> {t(locale, "subject.personal")}
+                </span>
+                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+                  {personalItems.length}
+                </span>
+              </div>
+              <FolderBlocks
+                locale={locale}
+                items={personalItems}
+                rootLabel={noFolder}
+                openLabel={openLabel}
+                basePath={basePath}
+                itemUnit={itemUnit}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

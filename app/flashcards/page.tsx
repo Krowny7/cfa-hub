@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContentSetCreator } from "@/components/ContentSetCreator";
@@ -8,7 +7,7 @@ import { ContentListPage } from "@/components/ContentListPage";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
-import { normalizeScope, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
+import { normalizeScope, normalizeView, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
 import type { Profile } from "@/lib/types";
 import type { ContentSetRow } from "@/components/ContentListPage";
 
@@ -17,7 +16,7 @@ type FlashcardRow = ContentSetRow & {
   official_published?: boolean | null;
 };
 
-type SearchParams = { q?: string; scope?: string };
+type SearchParams = { q?: string; scope?: string; view?: string };
 type PageProps = { searchParams?: Promise<SearchParams> };
 
 export default async function FlashcardsPage({ searchParams }: PageProps) {
@@ -31,6 +30,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
 
   const q = (sp.q ?? "").trim();
   const scope = normalizeScope(sp.scope) as ScopeFilter;
+  const view = normalizeView(sp.view);
 
   const admin = createAdminClient();
 
@@ -59,8 +59,12 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
 
   const activeGroupId =
     (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
-  const all = (setsRes.data ?? []) as unknown as FlashcardRow[];
   const system = (systemRes.data ?? []) as unknown as FlashcardRow[];
+  const systemIds = new Set(system.map((s) => s.id));
+
+  // "Communautaire" ne couvre que ce que les utilisateurs créent eux-mêmes —
+  // le contenu Système a son propre onglet, plus de double affichage.
+  const all = ((setsRes.data ?? []) as unknown as FlashcardRow[]).filter((s) => !systemIds.has(s.id));
   const priv = all.filter((s) => sectionForVisibility(s.visibility) === "private");
   const shared = all.filter((s) => sectionForVisibility(s.visibility) === "shared");
   const pub = all.filter((s) => sectionForVisibility(s.visibility) === "public");
@@ -71,10 +75,8 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
     scope === "public" ? pub :
     all;
 
-  const systemIds = new Set(system.map((s) => s.id));
-  const userItems = displayItems.filter((s) => !systemIds.has(s.id));
-  const cfaItems = userItems.filter((s) => (s.subject ?? "cfa") !== "personal");
-  const personalItems = userItems.filter((s) => s.subject === "personal");
+  const cfaItems = displayItems.filter((s) => (s.subject ?? "cfa") !== "personal");
+  const personalItems = displayItems.filter((s) => s.subject === "personal");
 
   const noFolder = t(locale, "common.noFolder");
   const openLabel = t(locale, "flashcards.open");
@@ -85,6 +87,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       basePath="/flashcards"
       titleKey="flashcards.title"
       i18nPrefix="flashcards"
+      view={view}
       scope={scope}
       q={q}
       all={all}
@@ -95,6 +98,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       personalItems={personalItems}
       displayItems={displayItems}
       itemUnit="set"
+      systemCount={system.length}
       continueReviewingSlot={<ContinueReviewing />}
       creatorSlot={
         <ContentSetCreator
@@ -105,16 +109,10 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
           i18nPrefix="flashcards"
         />
       }
-      extraTopSlot={
+      systemSlot={
         system.length > 0 ? (
-          <div className="card p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-sm font-semibold">{t(locale, "flashcards.systemTitle")}</span>
-              <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
-                <Star size={10} /> Système
-              </span>
-            </div>
-            <p className="mb-3 text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>
+          <>
+            <p className="text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>
             <FolderBlocks
               locale={locale}
               items={system}
@@ -123,8 +121,8 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
               basePath="/flashcards"
               itemUnit="set"
             />
-          </div>
-        ) : null
+          </>
+        ) : undefined
       }
     />
   );
