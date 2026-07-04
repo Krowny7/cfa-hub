@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Timer, GraduationCap, Flame, Zap, CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
@@ -111,20 +112,23 @@ export default async function Dashboard() {
           href="/session"
           className="card group flex items-center gap-4 overflow-hidden border-blue-400/25 bg-blue-500/[0.06] p-5 transition hover:border-blue-400/50 hover:bg-blue-500/[0.10]"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/25 text-xl transition group-hover:bg-blue-500/35">
-            ⏱
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/25 transition group-hover:bg-blue-500/35">
+            <Timer size={20} className="text-blue-200" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-semibold">{t(locale, "dashboard.sessionCta")}</div>
             <div className="mt-0.5 text-sm text-white/55">{t(locale, "dashboard.sessionDesc")}</div>
           </div>
-          <div className="text-blue-300/60 transition group-hover:text-blue-200">→</div>
+          <ArrowRight size={18} className="text-blue-300/60 transition group-hover:text-blue-200" />
         </Link>
 
-        {/* Exam countdown */}
+        {/* Primary KPI — ce que l'utilisateur veut savoir en premier :
+            "est-ce que je suis dans les temps ?" (F-pattern : top-left) */}
         {daysUntilExam !== null && (
           <div className={`card p-4 flex items-center gap-4 ${daysUntilExam <= 30 ? "border-orange-500/30" : ""}`}>
-            <div className="text-2xl">🎓</div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06]">
+              <GraduationCap size={18} className="text-white/70" />
+            </div>
             <div className="flex-1">
               <div className="text-sm font-semibold">
                 {daysUntilExam > 0
@@ -159,44 +163,47 @@ export default async function Dashboard() {
           </div>
         )}
 
-        {/* Streak + XP today */}
-        <div className="flex flex-wrap gap-3">
-          <div className="card-soft flex items-center gap-3 px-4 py-2.5">
-            <span className="text-lg leading-none">🔥</span>
-            <div>
-              <div className="text-sm font-semibold">
-                {streak > 0
-                  ? t(locale, "dashboard.streakN", { n: streak })
-                  : t(locale, "dashboard.streakZero")}
-              </div>
-              <div className="text-xs opacity-55">{t(locale, "dashboard.streak")}</div>
-            </div>
-          </div>
-          {xpToday > 0 && (
-            <div className="card-soft flex items-center gap-3 px-4 py-2.5">
-              <span className="text-lg leading-none">⚡</span>
+        {/* Progression — série, XP du jour et niveau regroupés dans une seule
+            carte (au lieu de 3 cartes flottantes séparées) : ce sont trois
+            facettes de la même information ("où j'en suis"), les grouper
+            réduit le bruit visuel et clarifie la hiérarchie de la page. */}
+        <div className="card-soft p-4">
+          <div className="flex flex-wrap items-center gap-5">
+            <div className="flex items-center gap-2.5">
+              <Flame size={18} className={streak > 0 ? "text-orange-400" : "text-white/30"} />
               <div>
-                <div className="text-sm font-semibold">+{xpToday} XP</div>
-                <div className="text-xs opacity-55">{t(locale, "dashboard.xpToday")}</div>
+                <div className="text-sm font-semibold">
+                  {streak > 0
+                    ? t(locale, "dashboard.streakN", { n: streak })
+                    : t(locale, "dashboard.streakZero")}
+                </div>
+                <div className="text-xs opacity-55">{t(locale, "dashboard.streak")}</div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* XP progress bar */}
-        <div className="card-soft px-4 py-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">{t(locale, "common.levelN", { n: lvlInfo.level })}</span>
-            <span className="text-xs opacity-55">{xpTotal} XP</span>
+            {xpToday > 0 && (
+              <div className="flex items-center gap-2.5">
+                <Zap size={18} className="text-yellow-400" />
+                <div>
+                  <div className="text-sm font-semibold">+{xpToday} XP</div>
+                  <div className="text-xs opacity-55">{t(locale, "dashboard.xpToday")}</div>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
-            <div
-              className="h-full rounded-full bg-blue-500 transition-all"
-              style={{ width: `${Math.round(lvlInfo.progressPct * 100)}%` }}
-            />
-          </div>
-          <div className="mt-1.5 text-xs text-muted">
-            {t(locale, "common.xpToNextLevelN", { n: lvlInfo.xpToNextLevel })}
+          <div className="mt-4 border-t border-white/[0.06] pt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">{t(locale, "common.levelN", { n: lvlInfo.level })}</span>
+              <span className="text-xs opacity-55">{xpTotal} XP</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all"
+                style={{ width: `${Math.round(lvlInfo.progressPct * 100)}%` }}
+              />
+            </div>
+            <div className="mt-1.5 text-xs text-muted">
+              {t(locale, "common.xpToNextLevelN", { n: lvlInfo.xpToNextLevel })}
+            </div>
           </div>
         </div>
 
@@ -220,24 +227,6 @@ export default async function Dashboard() {
             <div className="mt-1 text-2xl font-semibold">{qcmCount ?? 0}</div>
           </div>
         </div>
-
-        {/* Quick links when setup complete */}
-        {onboardingDone && (
-          <div className="flex flex-wrap gap-2">
-            <Link href="/library" className="card-soft px-4 py-2.5 text-sm text-white/65 transition hover:bg-white/[0.06] hover:text-white/90">
-              📚 {t(locale, "nav.library")}
-            </Link>
-            <Link href="/flashcards" className="card-soft px-4 py-2.5 text-sm text-white/65 transition hover:bg-white/[0.06] hover:text-white/90">
-              🗂 {t(locale, "nav.flashcards")}
-            </Link>
-            <Link href="/qcm" className="card-soft px-4 py-2.5 text-sm text-white/65 transition hover:bg-white/[0.06] hover:text-white/90">
-              📝 {t(locale, "nav.qcm")}
-            </Link>
-            <Link href="/people" className="card-soft px-4 py-2.5 text-sm text-white/65 transition hover:bg-white/[0.06] hover:text-white/90">
-              👥 {t(locale, "nav.people")}
-            </Link>
-          </div>
-        )}
 
         {/* Practice history (localStorage) */}
         <PracticeHistory />
@@ -273,7 +262,11 @@ export default async function Dashboard() {
                     step.done ? "opacity-50" : "bg-white/[0.02]"
                   }`}
                 >
-                  <span className="text-base">{step.done ? "✅" : "⬜"}</span>
+                  {step.done ? (
+                    <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+                  ) : (
+                    <Circle size={16} className="shrink-0 text-white/25" />
+                  )}
                   <span className="flex-1">{step.label}</span>
                   {!step.done && (
                     <Link href={step.href} className="shrink-0 text-xs text-blue-400 hover:underline">

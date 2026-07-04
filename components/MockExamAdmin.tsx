@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Settings2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -57,9 +58,9 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       setDuration(180); setQuestionCount(60);
       setShowCreate(false);
       await refresh();
-      setMsg("✅ Examen créé");
+      setMsg("Examen créé");
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(null);
     }
@@ -72,9 +73,9 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       const { error } = await supabase.rpc("publish_mock_exam", { p_exam_id: id });
       if (error) throw new Error(error.message);
       await refresh();
-      setMsg("✅ Publié — questions tirées aléatoirement");
+      setMsg("Publié — questions tirées aléatoirement");
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(null);
     }
@@ -87,9 +88,9 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       const { error } = await supabase.rpc("close_mock_exam", { p_exam_id: id });
       if (error) throw new Error(error.message);
       await refresh();
-      setMsg("✅ Examen clôturé");
+      setMsg("Examen clôturé");
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(null);
     }
@@ -113,7 +114,9 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-amber-300">⚙️ Admin — Gestion des examens</div>
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-300">
+          <Settings2 size={15} /> Admin — Gestion des examens
+        </div>
         <button
           type="button"
           className="btn btn-secondary text-xs"

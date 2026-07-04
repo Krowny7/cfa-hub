@@ -42,11 +42,11 @@ export function MockExamRegistration({
           .insert({ exam_id: examId, user_id: auth.user.id });
         if (error) throw new Error(error.message);
         setRegistered(true);
-        setMsg("✅ Inscription confirmée ! Tu recevras un rappel.");
+        setMsg("Inscription confirmée ! Tu recevras un rappel.");
       }
       router.refresh();
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }
@@ -56,7 +56,7 @@ export function MockExamRegistration({
     <div className="card p-5 flex flex-wrap items-center justify-between gap-4">
       <div>
         <div className="font-semibold">
-          {registered ? "✅ Tu es inscrit(e)" : "Inscription"}
+          {registered ? "Tu es inscrit(e)" : "Inscription"}
         </div>
         <div className="mt-0.5 text-sm text-white/50">
           {registrantCount > 0

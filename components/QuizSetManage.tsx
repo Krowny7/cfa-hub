@@ -145,9 +145,9 @@ export function QuizSetManage({
       setExplanation("");
       setTopicId(null);
       await refreshQuestions();
-      setEditorMsg("✅");
+      setEditorMsg(t("common.saved"));
     } catch (e: unknown) {
-      setEditorMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setEditorMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -204,9 +204,9 @@ export function QuizSetManage({
 
       await refreshQuestions();
       cancelEdit();
-      setManageMsg("✅");
+      setManageMsg(t("common.saved"));
     } catch (e: unknown) {
-      setManageMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setManageMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -233,9 +233,9 @@ export function QuizSetManage({
       await refreshQuestions();
 
       setConfirmDeleteId(null);
-      setManageMsg("✅");
+      setManageMsg(t("common.saved"));
     } catch (e: unknown) {
-      setManageMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setManageMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -256,7 +256,7 @@ export function QuizSetManage({
       })),
     };
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    setImportMsg("✅ Copié dans le presse-papier");
+    setImportMsg("Copié dans le presse-papier");
   }
 
   async function importJson() {
@@ -296,9 +296,9 @@ export function QuizSetManage({
       await refreshQuestions();
       setImportJsonText("");
       setShowImportInput(false);
-      setImportMsg("✅");
+      setImportMsg(t("common.saved"));
     } catch (e: unknown) {
-      setImportMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setImportMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }

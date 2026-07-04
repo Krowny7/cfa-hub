@@ -325,11 +325,11 @@ export function ContentItemSettings({
 
         {errorText ? (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            ❌ {errorText}
+            {errorText}
           </div>
         ) : null}
 
-        {msg ? <div className="text-sm text-white/80">✅ {msg}</div> : null}
+        {msg ? <div className="text-sm text-white/80">{msg}</div> : null}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4">
           <button

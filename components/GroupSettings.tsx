@@ -100,7 +100,7 @@ export function GroupSettings({
       if (error) throw error;
       window.location.reload();
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setRowBusyId(null);
     }
@@ -127,7 +127,7 @@ export function GroupSettings({
       setEditName("");
       window.location.reload();
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setRowBusyId(null);
     }
@@ -168,9 +168,9 @@ export function GroupSettings({
     } catch (e: unknown) {
       const base = friendlyError(e, t("common.error"));
       if (action === "delete") {
-        setMsg(`❌ ${base}. ${t("settings.leave")} : ${t("settings.confirmLeaveGroup")}`);
+        setMsg(`${base}. ${t("settings.leave")} : ${t("settings.confirmLeaveGroup")}`);
       } else {
-        setMsg(`❌ ${base}`);
+        setMsg(`${base}`);
       }
     } finally {
       setRowBusyId(null);
@@ -334,7 +334,7 @@ export function GroupSettings({
                   setName("");
                   window.location.reload();
                 } catch (e: unknown) {
-                  setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+                  setMsg(`${friendlyError(e, t("common.error"))}`);
                 } finally {
                   setBusy(false);
                 }
@@ -368,7 +368,7 @@ export function GroupSettings({
                   setInvite("");
                   window.location.reload();
                 } catch (e: unknown) {
-                  setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+                  setMsg(`${friendlyError(e, t("common.error"))}`);
                 } finally {
                   setBusy(false);
                 }

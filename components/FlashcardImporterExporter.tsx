@@ -22,7 +22,7 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
       .order("position", { ascending: true });
 
     if (error) {
-      setMsg(`❌ ${error.message}`);
+      setMsg(`${error.message}`);
       return;
     }
 
@@ -31,7 +31,7 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
       .join("\n");
 
     await navigator.clipboard.writeText(out);
-    setMsg("✅");
+    setMsg(t("common.saved"));
   }
 
   async function importTsv() {
@@ -57,10 +57,10 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
       if (ins.error) throw ins.error;
 
       setTsv("");
-      setMsg("✅");
+      setMsg(t("common.saved"));
       window.location.reload();
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }

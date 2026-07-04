@@ -144,7 +144,7 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
               setMsg(t("library.added"));
               window.location.reload();
             } catch (e: any) {
-              setMsg(`❌ ${e?.message ?? t("common.error")}`);
+              setMsg(`${e?.message ?? t("common.error")}`);
             } finally {
               setBusy(false);
             }

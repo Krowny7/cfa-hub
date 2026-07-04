@@ -39,7 +39,7 @@ export function ProfileSettings() {
         setUsername(p?.username ?? "");
         setAvatarUrl(p?.avatar_url ?? null);
       } catch (e: unknown) {
-        setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+        setMsg(`${friendlyError(e, t("common.error"))}`);
       } finally {
         setLoading(false);
       }
@@ -64,7 +64,7 @@ export function ProfileSettings() {
 
       setMsg(t("settings.updated"));
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -97,7 +97,7 @@ export function ProfileSettings() {
       setAvatarUrl(publicUrl);
       setMsg(t("settings.updated"));
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }

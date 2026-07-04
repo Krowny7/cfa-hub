@@ -113,7 +113,7 @@ export default function LoginPage() {
           {busy ? t("login.redirecting") : t("login.googleButton")}
         </button>
 
-        {error ? <div className="mt-3 text-sm text-red-100">❌ {error}</div> : null}
+        {error ? <div className="mt-3 text-sm text-red-100">{error}</div> : null}
 
         <div className="mt-6 card-soft p-4">
           <div className="text-sm font-semibold">{t("login.firstStepsTitle")}</div>

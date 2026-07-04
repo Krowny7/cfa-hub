@@ -49,10 +49,10 @@ export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; next
               if (ins.error) throw ins.error;
               setFront("");
               setBack("");
-              setMsg("✅");
+              setMsg(t("common.saved"));
               window.location.reload();
             } catch (e: unknown) {
-              setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+              setMsg(`${friendlyError(e, t("common.error"))}`);
             } finally {
               setBusy(false);
             }

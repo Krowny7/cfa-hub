@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Star, GraduationCap, BookOpen, Check, X, Lightbulb } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import type { QuizQuestion } from "@/lib/types";
 
@@ -168,8 +169,8 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                   />
                   <span className="flex-1 text-sm">{s.title}</span>
                   {s.isOfficial && (
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
-                      ★ Officiel
+                    <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                      <Star size={10} /> Officiel
                     </span>
                   )}
                 </label>
@@ -238,7 +239,11 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
     return (
       <div className="grid gap-5">
         <div className="card p-8 text-center">
-          <div className="text-5xl">{isPassing ? "🎓" : "📚"}</div>
+          {isPassing ? (
+            <GraduationCap size={40} className="mx-auto text-green-400" />
+          ) : (
+            <BookOpen size={40} className="mx-auto text-white/60" />
+          )}
           <h2 className="mt-4 text-2xl font-semibold">Résultat</h2>
 
           <div className="mx-auto mt-6 grid max-w-sm gap-3">
@@ -252,8 +257,9 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
               </div>
               <div className="mt-2 text-sm text-white/60">{correct} / {total} correctes</div>
             </div>
-            <div className={`card-soft p-3 text-sm font-medium ${isPassing ? "text-green-400" : "text-red-400/80"}`}>
-              {isPassing ? "Au-dessus du seuil (~70%) ✓" : "En dessous du seuil (~70%)"}
+            <div className={`card-soft flex items-center justify-center gap-1.5 p-3 text-sm font-medium ${isPassing ? "text-green-400" : "text-red-400/80"}`}>
+              {isPassing && <Check size={14} />}
+              {isPassing ? "Au-dessus du seuil (~70%)" : "En dessous du seuil (~70%)"}
             </div>
             {answered < total && (
               <div className="card-soft p-3 text-xs text-white/50">
@@ -292,7 +298,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                 >
                   <div className="flex items-start gap-3">
                     <span className={`shrink-0 font-semibold ${isCorrect ? "text-green-400" : "text-red-400"}`}>
-                      {isCorrect ? "✓" : "✗"}
+                      {isCorrect ? <Check size={16} /> : <X size={16} />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium leading-snug">
@@ -314,15 +320,16 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                               }`}
                             >
                               {String.fromCharCode(65 + ci)}. {choice}
-                              {isCorrectChoice && " ✓"}
+                              {isCorrectChoice && <Check size={12} className="ml-1 inline" />}
                               {isSelected && !isCorrectChoice && " ← ta réponse"}
                             </div>
                           );
                         })}
                       </div>
                       {a.question.explanation && (
-                        <div className="mt-2 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-white/55 leading-relaxed">
-                          💡 {a.question.explanation}
+                        <div className="mt-2 flex items-start gap-1.5 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-white/55 leading-relaxed">
+                          <Lightbulb size={13} className="mt-0.5 shrink-0" />
+                          {a.question.explanation}
                         </div>
                       )}
                     </div>

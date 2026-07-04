@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LineChart, BookOpen } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
@@ -54,7 +55,7 @@ export function ContentSetCreator({
                 : "text-muted hover:text-white/70"
             }`}
           >
-            📊 {t("subject.cfa")}
+            <LineChart size={15} /> {t("subject.cfa")}
           </button>
           <button
             type="button"
@@ -65,7 +66,7 @@ export function ContentSetCreator({
                 : "text-muted hover:text-white/70"
             }`}
           >
-            📚 {t("subject.personal")}
+            <BookOpen size={15} /> {t("subject.personal")}
           </button>
         </div>
 
@@ -153,10 +154,10 @@ export function ContentSetCreator({
               setShareMode("private");
               setGroupIds([]);
               setFolderId(null);
-              setMsg("✅");
+              setMsg(t("common.saved"));
               window.location.reload();
             } catch (e: unknown) {
-              setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+              setMsg(`${friendlyError(e, t("common.error"))}`);
             } finally {
               setBusy(false);
             }

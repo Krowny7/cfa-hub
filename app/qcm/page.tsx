@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/server";
@@ -111,8 +112,8 @@ export default async function QcmPage({ searchParams }: PageProps) {
           <div className="card p-4">
             <div className="mb-3 flex items-center gap-2">
               <span className="text-sm font-semibold">{t(locale, "qcm.officialTitle")}</span>
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
-                ★ Officiel
+              <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
+                <Star size={10} /> Officiel
               </span>
             </div>
             <p className="mb-3 text-xs text-white/55">{t(locale, "qcm.officialXpNote")}</p>

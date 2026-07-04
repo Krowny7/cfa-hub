@@ -119,18 +119,18 @@ export function QuizSetView({
       });
 
       if (error) {
-        setRunnerMsg(`❌ XP error: ${error.message}`);
+        setRunnerMsg(`XP error: ${error.message}`);
         return;
       }
 
       const row = (Array.isArray(data) ? data[0] : data) as AwardXpResult | null;
       const xp = Number(row?.xp_awarded ?? 0) || 0;
 
-      if (xp > 0) setRunnerMsg(`✅ +${xp} XP`);
+      if (xp > 0) setRunnerMsg(`+${xp} XP`);
       else setRunnerMsg(`ℹ️ ${t("qcm.noXp")}`);
     } catch (e: unknown) {
       setRunnerMsg(
-        `❌ XP exception: ${friendlyError(e, "unknown")}`
+        `XP exception: ${friendlyError(e, "unknown")}`
       );
     }
   }
@@ -214,7 +214,7 @@ export function QuizSetView({
               <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
                 <div className="font-semibold">{t("qcm.correction")}</div>
                 <div className="mt-2 opacity-90">
-                  ✅ {current.choices[current.correct_index]}
+                  {current.choices[current.correct_index]}
                 </div>
                 {current.explanation && (
                   <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">
@@ -241,7 +241,7 @@ export function QuizSetView({
                         setScore((s) => s + 1);
                         void awardXpForAnswer(current.id, selected);
                       } else {
-                        setRunnerMsg(`❌ ${t("qcm.wrongAnswer")}`);
+                        setRunnerMsg(`${t("qcm.wrongAnswer")}`);
                       }
                       setShowCorrection(true);
                     }}

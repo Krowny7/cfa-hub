@@ -25,6 +25,11 @@ export async function Sidebar() {
     {
       items: [
         {
+          href: "/dashboard",
+          label: t(locale, "nav.dashboard"),
+          icon: <LayoutDashboard size={16} />,
+        },
+        {
           href: "/session",
           label: t(locale, "nav.session"),
           icon: <Timer size={16} />,
@@ -34,11 +39,6 @@ export async function Sidebar() {
           href: "/exam",
           label: t(locale, "nav.exam"),
           icon: <GraduationCap size={16} />,
-        },
-        {
-          href: "/dashboard",
-          label: t(locale, "nav.dashboard"),
-          icon: <LayoutDashboard size={16} />,
         },
       ],
     },

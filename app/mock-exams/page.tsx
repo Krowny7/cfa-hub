@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { MockExamAdmin } from "@/components/MockExamAdmin";
 
@@ -71,7 +72,9 @@ export default async function MockExamsPage() {
                       <span className="font-semibold">{e.title}</span>
                       {statusBadge(e.status)}
                       {registered && (
-                        <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">Inscrit ✓</span>
+                        <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+                          <Check size={10} /> Inscrit
+                        </span>
                       )}
                     </div>
                     {e.description && (

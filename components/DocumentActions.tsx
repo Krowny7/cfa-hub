@@ -46,10 +46,10 @@ export function DocumentActions({
 
       if (error) throw error;
 
-      setMsg(`✅ ${t("common.saved")}`);
+      setMsg(`${t("common.saved")}`);
       router.refresh();
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
     } finally {
       setBusy(false);
     }
@@ -64,7 +64,7 @@ export function DocumentActions({
 
       window.location.href = afterDeleteRedirect;
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, t("common.error"))}`);
+      setMsg(`${friendlyError(e, t("common.error"))}`);
       setBusy(false);
       setShowConfirmDelete(false);
     }

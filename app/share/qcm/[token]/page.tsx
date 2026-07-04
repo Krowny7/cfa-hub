@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import { Check } from "lucide-react";
 
 type PageProps = { params: Promise<{ token: string }> };
 
@@ -44,7 +45,7 @@ export default async function ShareQcmPage({ params }: PageProps) {
                       : "border-white/10 text-white/70"
                   }`}
                 >
-                  {cidx === q.correct_index && "✓ "}{choice}
+                  {cidx === q.correct_index && <Check size={13} className="mr-1 inline" />}{choice}
                 </div>
               ))}
             </div>

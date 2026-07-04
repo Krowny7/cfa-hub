@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { Medal } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { MockExamRunner } from "@/components/MockExamRunner";
 import { MockExamRegistration } from "@/components/MockExamRegistration";
@@ -170,8 +171,8 @@ export default async function MockExamDetailPage({ params }: PageProps) {
                   key={r.user_id}
                   className={`flex items-center gap-4 rounded-xl px-4 py-3 ${isMe ? "border border-blue-400/30 bg-blue-500/10" : "bg-white/[0.02]"}`}
                 >
-                  <div className={`w-6 shrink-0 text-center text-sm font-bold ${rank === 0 ? "text-yellow-400" : rank === 1 ? "text-white/60" : rank === 2 ? "text-orange-400/80" : "text-white/30"}`}>
-                    {rank === 0 ? "🥇" : rank === 1 ? "🥈" : rank === 2 ? "🥉" : rank + 1}
+                  <div className={`flex w-6 shrink-0 items-center justify-center text-sm font-bold ${rank === 0 ? "text-yellow-400" : rank === 1 ? "text-white/60" : rank === 2 ? "text-orange-400/80" : "text-white/30"}`}>
+                    {rank <= 2 ? <Medal size={16} /> : rank + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">

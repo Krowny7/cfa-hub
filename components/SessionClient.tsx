@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { Repeat, Sparkles, CheckCircle2, PartyPopper, Flame, Pause } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { saveAnswerResult } from "@/lib/session-stats";
@@ -397,18 +398,18 @@ export function SessionClient({
               {mode === "flashcards" && srsCounts && !loadingContent && contentCount > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {srsCounts.due > 0 && (
-                    <span className="rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-300">
-                      🔁 {srsCounts.due} à réviser
+                    <span className="flex items-center gap-1 rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-300">
+                      <Repeat size={12} /> {srsCounts.due} à réviser
                     </span>
                   )}
                   {srsCounts.newCount > 0 && (
-                    <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-300">
-                      ✨ {srsCounts.newCount} nouvelles
+                    <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-300">
+                      <Sparkles size={12} /> {srsCounts.newCount} nouvelles
                     </span>
                   )}
                   {srsCounts.due === 0 && srsCounts.newCount === 0 && (
-                    <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-300">
-                      ✅ Tout à jour
+                    <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-300">
+                      <CheckCircle2 size={12} /> Tout à jour
                     </span>
                   )}
                 </div>
@@ -435,7 +436,7 @@ export function SessionClient({
     return (
       <div className="grid gap-5">
         <div className="card p-8 text-center">
-          <div className="text-5xl">🎉</div>
+          <PartyPopper size={40} className="mx-auto text-blue-300" />
           <h2 className="mt-4 text-2xl font-semibold tracking-tight">{t("session.summaryTitle")}</h2>
 
           <div className="mx-auto mt-6 grid max-w-sm gap-3">
@@ -512,8 +513,8 @@ export function SessionClient({
           <div className="flex items-center gap-2 text-xs text-white/50">
             <span>{t("session.timer")}</span>
             {streak > 0 && (
-              <span className="rounded-full bg-orange-400/15 px-2 py-0.5 font-medium text-orange-300">
-                🔥 {streak}
+              <span className="flex items-center gap-1 rounded-full bg-orange-400/15 px-2 py-0.5 font-medium text-orange-300">
+                <Flame size={12} /> {streak}
               </span>
             )}
           </div>
@@ -635,21 +636,27 @@ export function SessionClient({
       <TimerBar />
       <div className="card p-6">
         {isPaused && (
-          <div className="mb-5 rounded-xl bg-white/[0.04] p-4 text-center text-sm text-white/60">
-            ⏸ {t("session.pauseTimer")}
+          <div className="mb-5 flex items-center justify-center gap-1.5 rounded-xl bg-white/[0.04] p-4 text-center text-sm text-white/60">
+            <Pause size={14} /> {t("session.pauseTimer")}
           </div>
         )}
 
         {/* SRS badge */}
         <div className="mb-3 flex items-center gap-2">
           {isNew && (
-            <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">✨ Nouvelle</span>
+            <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+              <Sparkles size={10} /> Nouvelle
+            </span>
           )}
           {!isNew && isDue && (
-            <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-medium text-orange-300">🔁 À réviser</span>
+            <span className="flex items-center gap-1 rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-medium text-orange-300">
+              <Repeat size={10} /> À réviser
+            </span>
           )}
           {!isNew && !isDue && (
-            <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-300">✅ Maîtrisée</span>
+            <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-300">
+              <CheckCircle2 size={10} /> Maîtrisée
+            </span>
           )}
           {cardSRS && (
             <span className="text-[10px] text-white/30">intervalle {cardSRS.interval}j</span>

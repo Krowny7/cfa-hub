@@ -7,8 +7,8 @@ import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Tro
 import { useI18n } from "@/components/I18nProvider";
 
 const items = [
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { href: "/session", labelKey: "nav.session", icon: Timer },
-  { href: "/library", labelKey: "nav.library", icon: BookOpen },
   { href: "/flashcards", labelKey: "nav.flashcards", icon: Layers },
   { href: "/qcm", labelKey: "nav.qcm", icon: ClipboardList },
 ] as const;
@@ -16,9 +16,9 @@ const items = [
 // Regroupées dans le menu "Plus" : contenu moins consulté quotidiennement,
 // mais qui restait invisible sur mobile faute de place dans la barre à 5 slots.
 const moreItems = [
+  { href: "/library", labelKey: "nav.library", icon: BookOpen },
   { href: "/fiches", labelKey: "nav.fiches", icon: BookMarked },
   { href: "/mock-exams", labelKey: "nav.mockExams", icon: Trophy },
-  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { href: "/exam", labelKey: "nav.exam", icon: GraduationCap },
   { href: "/people", labelKey: "nav.people", icon: Users },
   { href: "/settings", labelKey: "nav.settings", icon: Settings },

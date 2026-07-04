@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, Link2 } from "lucide-react";
 
 export function ShareButton({ token, base }: { token: string; base: "flashcards" | "qcm" }) {
   const [copied, setCopied] = useState(false);
@@ -17,9 +18,10 @@ export function ShareButton({ token, base }: { token: string; base: "flashcards"
     <button
       type="button"
       onClick={copy}
-      className="btn btn-secondary text-sm"
+      className="btn btn-secondary flex items-center gap-1.5 text-sm"
     >
-      {copied ? "✅ Lien copié !" : "🔗 Partager"}
+      {copied ? <Check size={14} /> : <Link2 size={14} />}
+      {copied ? "Lien copié" : "Partager"}
     </button>
   );
 }

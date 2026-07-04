@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
+import { ClipboardList, Trophy, BarChart3, AlertTriangle, Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 
 type Question = {
@@ -96,13 +97,14 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
   if (phase === "ready") {
     return (
       <div className="card p-6 text-center">
-        <div className="text-4xl">📝</div>
+        <ClipboardList size={36} className="mx-auto text-white/70" />
         <h2 className="mt-3 text-xl font-semibold">Prêt à commencer ?</h2>
         <div className="mt-2 text-sm text-white/55">
           {questions.length} questions · {durationMinutes} minutes
         </div>
-        <div className="mx-auto mt-4 max-w-sm rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          ⚠️ Pas de correction pendant l'examen. Tu verras tes résultats à la fin.
+        <div className="mx-auto mt-4 flex max-w-sm items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <AlertTriangle size={16} className="shrink-0" />
+          Pas de correction pendant l'examen. Tu verras tes résultats à la fin.
         </div>
         <button
           type="button"
@@ -124,7 +126,11 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
     return (
       <div className="grid gap-4">
         <div className="card p-6 text-center">
-          <div className="text-5xl">{pct !== null && pct >= 60 ? "🎉" : "📊"}</div>
+          {pct !== null && pct >= 60 ? (
+            <Trophy size={40} className="mx-auto text-yellow-400" />
+          ) : (
+            <BarChart3 size={40} className="mx-auto text-white/60" />
+          )}
           <h2 className="mt-3 text-2xl font-semibold">
             {alreadyDone && score === null ? "Examen déjà passé" : `${score ?? "?"} / ${questions.length}`}
           </h2>
@@ -163,7 +169,11 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
                           ? "border-red-500/40 bg-red-500/10 text-red-300"
                           : "border-white/10 text-white/60"
                       }`}>
-                        {ci === q.correct_index ? "✓ " : ci === sel ? "✗ " : ""}{c}
+                        <span className="inline-flex items-center gap-1.5">
+                          {ci === q.correct_index && <Check size={14} className="shrink-0" />}
+                          {ci === sel && ci !== q.correct_index && <X size={14} className="shrink-0" />}
+                          {c}
+                        </span>
                       </div>
                     ))}
                   </div>

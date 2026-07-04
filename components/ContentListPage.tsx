@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LineChart, BookOpen } from "lucide-react";
 import { t } from "@/lib/i18n/core";
 import type { Locale } from "@/lib/i18n/core";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
@@ -133,7 +134,9 @@ export function ContentListPage({
       {cfaItems.length > 0 && (
         <div className="card p-4">
           <div className="mb-3 flex items-center gap-2">
-            <span className="text-sm font-semibold">📊 {t(locale, "subject.cfa")}</span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <LineChart size={15} className="text-blue-300" /> {t(locale, "subject.cfa")}
+            </span>
             <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
               {cfaItems.length}
             </span>
@@ -153,7 +156,9 @@ export function ContentListPage({
       {personalItems.length > 0 && (
         <div className="card border-l-2 border-l-violet-400/40 p-4">
           <div className="mb-3 flex items-center gap-2">
-            <span className="text-sm font-semibold">📚 {t(locale, "subject.personal")}</span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <BookOpen size={15} className="text-violet-300" /> {t(locale, "subject.personal")}
+            </span>
             <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-300">
               {personalItems.length}
             </span>

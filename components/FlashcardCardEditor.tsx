@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { X } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
@@ -64,9 +65,9 @@ export function FlashcardCardEditor({
       if (error) throw new Error(error.message);
       await refresh();
       cancelEdit();
-      setMsg("✅");
+      setMsg("Enregistré");
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }
@@ -90,9 +91,9 @@ export function FlashcardCardEditor({
       );
       await refresh();
       setConfirmDeleteId(null);
-      setMsg("✅");
+      setMsg("Enregistré");
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }
@@ -137,7 +138,7 @@ export function FlashcardCardEditor({
                           className="rounded px-2 py-0.5 text-xs border border-white/10 hover:bg-white/5"
                           onClick={() => setConfirmDeleteId(null)}
                         >
-                          ✕
+                          <X size={12} />
                         </button>
                       </>
                     ) : (

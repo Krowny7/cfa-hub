@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { GraduationCap } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -39,9 +40,9 @@ export function ExamDateSettings() {
         .update({ exam_date: examDate || null })
         .eq("id", auth.user.id);
       if (error) throw new Error(error.message);
-      setMsg("✅ Sauvegardé");
+      setMsg("Sauvegardé");
     } catch (e: unknown) {
-      setMsg(`❌ ${friendlyError(e, "Erreur")}`);
+      setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
       setBusy(false);
     }
@@ -50,7 +51,7 @@ export function ExamDateSettings() {
   return (
     <div className="card p-5">
       <div className="flex items-center gap-2">
-        <span className="text-lg">🎓</span>
+        <GraduationCap size={18} className="text-white/70" />
         <div>
           <div className="text-sm font-semibold">Date d'examen CFA</div>
           <div className="text-xs text-white/50">Affiche un compteur J- sur le dashboard</div>
