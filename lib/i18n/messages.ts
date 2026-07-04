@@ -174,6 +174,8 @@ export const MESSAGES = {
     flashcards: {
       title: "Flashcards",
       searchPlaceholder: "Rechercher un set…",
+      systemTitle: "Flashcards Système",
+      systemNote: "Contenu vérifié et maintenu par l'équipe — les sets perso restent privés par défaut.",
       emptyPrivate: "Aucun set privé.",
       emptyShared: "Aucun set partagé.",
       emptyPublic: "Aucun set public.",
@@ -575,6 +577,8 @@ export const MESSAGES = {
     flashcards: {
       title: "Flashcards",
       searchPlaceholder: "Search a set…",
+      systemTitle: "System flashcards",
+      systemNote: "Content verified and maintained by the team — personal sets stay private by default.",
       emptyPrivate: "No private set.",
       emptyShared: "No shared set.",
       emptyPublic: "No public set.",

@@ -143,7 +143,7 @@ export function QuizSetView({
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
 
       {/* ---- Exam runner — usage quotidien, premier contenu visible ---- */}
-      <div className="rounded-2xl border p-4">
+      <div className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="font-semibold">{t("qcm.title")}</div>
@@ -153,7 +153,7 @@ export function QuizSetView({
           </div>
           <button
             type="button"
-            className="box-border rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+            className="btn btn-secondary"
             disabled={!canRun}
             onClick={resetRun}
           >
@@ -211,7 +211,7 @@ export function QuizSetView({
             </div>
 
             {showCorrection && (
-              <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4 text-sm">
+              <div className="mt-4 card-soft p-4 text-sm">
                 <div className="font-semibold">{t("qcm.correction")}</div>
                 <div className="mt-2 opacity-90">
                   {current.choices[current.correct_index]}
@@ -233,7 +233,7 @@ export function QuizSetView({
                 {!showCorrection ? (
                   <button
                     type="button"
-                    className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                    className="btn btn-primary w-full sm:w-auto"
                     disabled={selected == null}
                     onClick={() => {
                       if (selected == null) return;
@@ -251,7 +251,7 @@ export function QuizSetView({
                 ) : questionIndex < questions.length - 1 ? (
                   <button
                     type="button"
-                    className="rounded-xl border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
+                    className="btn btn-secondary"
                     onClick={() => {
                       setQuestionIndex((v) => v + 1);
                       setSelected(null);
@@ -264,7 +264,7 @@ export function QuizSetView({
                 ) : (
                   <button
                     type="button"
-                    className="rounded-xl border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
+                    className="btn btn-secondary"
                     onClick={async () => {
                       setFinished(true);
                       await submitAttempt(score);
@@ -279,7 +279,7 @@ export function QuizSetView({
         )}
 
         {finished && (
-          <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4">
+          <div className="mt-4 card-soft p-4">
             <div className="text-sm opacity-70">{t("qcm.score")}</div>
             <div className="mt-1 text-2xl font-semibold">
               {score}/{questions.length}
@@ -287,7 +287,7 @@ export function QuizSetView({
             <div className="mt-4">
               <button
                 type="button"
-                className="rounded-xl border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
+                className="btn btn-secondary"
                 onClick={resetRun}
               >
                 {t("qcm.restart")}
@@ -301,7 +301,7 @@ export function QuizSetView({
           Chargés à la demande (dynamic import) : leur JS n'est jamais envoyé
           aux visiteurs qui viennent juste répondre au quiz. ---- */}
       {isOwner && (
-        <details className="rounded-2xl border p-4">
+        <details className="card p-4">
           <summary className="cursor-pointer select-none font-semibold">
             {t("qcm.manageTitle")}
           </summary>

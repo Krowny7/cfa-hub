@@ -311,7 +311,7 @@ export function QuizSetManage({
   return (
     <div className="mt-4 grid gap-4">
       {/* Import / Export */}
-      <div className="rounded-xl border border-white/10 p-4">
+      <div className="card-soft p-4">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="font-semibold">{t("qcm.importExport")}</div>
@@ -320,14 +320,14 @@ export function QuizSetManage({
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
             <button
               type="button"
-              className="w-full sm:w-auto rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+              className="btn btn-secondary w-full sm:w-auto"
               onClick={exportJson}
             >
               {t("qcm.exportJson")}
             </button>
             <button
               type="button"
-              className="w-full sm:w-auto rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5"
+              className="btn btn-secondary w-full sm:w-auto"
               onClick={() => {
                 setShowImportInput((v) => !v);
                 setImportMsg(null);
@@ -341,7 +341,7 @@ export function QuizSetManage({
         {showImportInput && (
           <div className="mt-3 grid gap-2">
             <textarea
-              className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm font-mono"
+              className="input box-border w-full min-w-0 max-w-full font-mono"
               rows={6}
               value={importJsonText}
               onChange={(e) => setImportJsonText(e.target.value)}
@@ -350,7 +350,7 @@ export function QuizSetManage({
             <div className="flex gap-2">
               <button
                 type="button"
-                className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+                className="btn btn-primary"
                 disabled={busy || !importJsonText.trim()}
                 onClick={importJson}
               >
@@ -358,7 +358,7 @@ export function QuizSetManage({
               </button>
               <button
                 type="button"
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-white/5"
+                className="btn btn-secondary"
                 onClick={() => {
                   setShowImportInput(false);
                   setImportJsonText("");
@@ -375,12 +375,12 @@ export function QuizSetManage({
       </div>
 
       {/* Add question form */}
-      <div className="rounded-xl border border-white/10 p-4">
+      <div className="card-soft p-4">
         <h2 className="font-semibold">{t("qcm.addQuestionTitle")}</h2>
 
         <div className="mt-4 grid gap-3">
           <textarea
-            className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input box-border w-full min-w-0 max-w-full"
             rows={3}
             value={questionPrompt}
             onChange={(e) => setQuestionPrompt(e.target.value)}
@@ -388,7 +388,7 @@ export function QuizSetManage({
           />
 
           <textarea
-            className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input box-border w-full min-w-0 max-w-full"
             rows={4}
             value={choicesText}
             onChange={(e) => setChoicesText(e.target.value)}
@@ -401,14 +401,14 @@ export function QuizSetManage({
               type="number"
               min={1}
               max={6}
-              className="box-border w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
+              className="input box-border w-full sm:w-24"
               value={correct}
               onChange={(e) => setCorrect(Number(e.target.value))}
             />
           </div>
 
           <input
-            className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input box-border w-full min-w-0 max-w-full"
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
             placeholder={t("qcm.explanationPlaceholder")}
@@ -418,7 +418,7 @@ export function QuizSetManage({
 
           <button
             type="button"
-            className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+            className="btn btn-primary w-full sm:w-auto"
             disabled={busy}
             onClick={addQuestion}
           >
@@ -430,7 +430,7 @@ export function QuizSetManage({
       </div>
 
       {/* Manage existing questions */}
-      <div className="rounded-xl border border-white/10 p-4">
+      <div className="card-soft p-4">
         <div className="font-semibold">{t("qcm.manageTitle")}</div>
         <div className="mt-1 text-xs opacity-70">{t("qcm.manageDesc")}</div>
 
@@ -443,7 +443,7 @@ export function QuizSetManage({
               const isConfirmingDelete = confirmDeleteId === q.id;
 
               return (
-                <div key={q.id} className="rounded-xl border border-white/10 p-3">
+                <div key={q.id} className="card-soft p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-medium break-words sm:truncate">
@@ -459,7 +459,7 @@ export function QuizSetManage({
                       {!isEditing ? (
                         <button
                           type="button"
-                          className="box-border w-full rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                          className="btn btn-secondary w-full sm:w-auto"
                           onClick={() => startEdit(q)}
                         >
                           {t("qcm.editQuestion")}
@@ -467,7 +467,7 @@ export function QuizSetManage({
                       ) : (
                         <button
                           type="button"
-                          className="box-border w-full rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                          className="btn btn-secondary w-full sm:w-auto"
                           onClick={cancelEdit}
                         >
                           {t("common.cancel")}
@@ -478,7 +478,7 @@ export function QuizSetManage({
                         <div className="flex w-full gap-2 sm:w-auto">
                           <button
                             type="button"
-                            className="box-border flex-1 rounded-xl border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm text-red-100 hover:bg-red-500/30 sm:flex-none"
+                            className="btn btn-danger flex-1 sm:flex-none"
                             disabled={busy}
                             onClick={() => deleteQuestion(q.id)}
                           >
@@ -486,7 +486,7 @@ export function QuizSetManage({
                           </button>
                           <button
                             type="button"
-                            className="box-border flex-1 rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:flex-none"
+                            className="btn btn-secondary flex-1 sm:flex-none"
                             onClick={() => setConfirmDeleteId(null)}
                           >
                             {t("common.cancel")}
@@ -495,7 +495,7 @@ export function QuizSetManage({
                       ) : (
                         <button
                           type="button"
-                          className="box-border w-full rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
+                          className="btn btn-danger w-full sm:w-auto"
                           disabled={busy}
                           onClick={() => {
                             setConfirmDeleteId(q.id);
@@ -511,7 +511,7 @@ export function QuizSetManage({
                   {isEditing && (
                     <div className="mt-3 grid gap-2">
                       <textarea
-                        className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                        className="input box-border w-full min-w-0 max-w-full"
                         rows={3}
                         value={editPrompt}
                         onChange={(e) => setEditPrompt(e.target.value)}
@@ -519,7 +519,7 @@ export function QuizSetManage({
                       />
 
                       <textarea
-                        className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                        className="input box-border w-full min-w-0 max-w-full"
                         rows={4}
                         value={editChoicesText}
                         onChange={(e) => setEditChoicesText(e.target.value)}
@@ -534,14 +534,14 @@ export function QuizSetManage({
                           type="number"
                           min={1}
                           max={6}
-                          className="box-border w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm sm:w-24"
+                          className="input box-border w-full sm:w-24"
                           value={editCorrect}
                           onChange={(e) => setEditCorrect(Number(e.target.value))}
                         />
                       </div>
 
                       <input
-                        className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                        className="input box-border w-full min-w-0 max-w-full"
                         value={editExplanation}
                         onChange={(e) => setEditExplanation(e.target.value)}
                         placeholder={t("qcm.explanationPlaceholder")}
@@ -551,7 +551,7 @@ export function QuizSetManage({
 
                       <button
                         type="button"
-                        className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                        className="btn btn-primary w-full sm:w-auto"
                         disabled={busy}
                         onClick={saveEdit}
                       >

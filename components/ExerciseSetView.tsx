@@ -116,7 +116,7 @@ export function ExerciseSetView({
 
   return (
     <div className="grid gap-4 min-w-0 max-w-full overflow-x-hidden">
-      <div className="rounded-2xl border p-4">
+      <div className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="font-semibold">{t("exercises.title")}</div>
@@ -126,7 +126,7 @@ export function ExerciseSetView({
           </div>
           <button
             type="button"
-            className="box-border rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+            className="btn btn-secondary"
             disabled={!canRun}
             onClick={resetRun}
           >
@@ -187,7 +187,7 @@ export function ExerciseSetView({
               {!checked ? (
                 <button
                   type="button"
-                  className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                  className="btn btn-primary w-full sm:w-auto"
                   disabled={busy || !answerInput.trim()}
                   onClick={checkAnswer}
                 >
@@ -196,7 +196,7 @@ export function ExerciseSetView({
               ) : (
                 <button
                   type="button"
-                  className="rounded-xl border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
+                  className="btn btn-secondary"
                   onClick={goNext}
                 >
                   {questionIndex < questions.length - 1 ? t("exercises.next") : t("exercises.finish")}
@@ -207,7 +207,7 @@ export function ExerciseSetView({
         )}
 
         {finished && (
-          <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900/40 p-4">
+          <div className="mt-4 card-soft p-4">
             <div className="text-sm opacity-70">{t("exercises.score")}</div>
             <div className="mt-1 text-2xl font-semibold">
               {score}/{questions.length}
@@ -215,7 +215,7 @@ export function ExerciseSetView({
             <div className="mt-4">
               <button
                 type="button"
-                className="rounded-xl border border-white/10 bg-neutral-900/60 px-4 py-2 text-sm hover:bg-white/5"
+                className="btn btn-secondary"
                 onClick={resetRun}
               >
                 {t("exercises.restart")}
@@ -226,7 +226,7 @@ export function ExerciseSetView({
       </div>
 
       {isOwner && (
-        <details className="rounded-2xl border p-4">
+        <details className="card p-4">
           <summary className="cursor-pointer select-none font-semibold">{t("exercises.manageTitle")}</summary>
           <ExerciseSetManage setId={setId} questions={questions} onQuestionsChange={handleQuestionsChange} />
         </details>

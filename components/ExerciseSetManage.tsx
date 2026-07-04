@@ -188,12 +188,12 @@ export function ExerciseSetManage({
   return (
     <div className="mt-4 grid gap-4">
       {/* Add exercise form */}
-      <div className="rounded-xl border border-white/10 p-4">
+      <div className="card-soft p-4">
         <h2 className="font-semibold">{t("exercises.addTitle")}</h2>
 
         <div className="mt-4 grid gap-3">
           <textarea
-            className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input box-border w-full min-w-0 max-w-full"
             rows={4}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -234,7 +234,7 @@ export function ExerciseSetManage({
           </div>
 
           <textarea
-            className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+            className="input box-border w-full min-w-0 max-w-full"
             rows={4}
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
@@ -243,7 +243,7 @@ export function ExerciseSetManage({
 
           <button
             type="button"
-            className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+            className="btn btn-primary w-full sm:w-auto"
             disabled={busy}
             onClick={addQuestion}
           >
@@ -255,7 +255,7 @@ export function ExerciseSetManage({
       </div>
 
       {/* Manage existing exercises */}
-      <div className="rounded-xl border border-white/10 p-4">
+      <div className="card-soft p-4">
         <div className="font-semibold">{t("exercises.manageTitle")}</div>
 
         <div className="mt-4 grid gap-2">
@@ -267,7 +267,7 @@ export function ExerciseSetManage({
               const isConfirmingDelete = confirmDeleteId === q.id;
 
               return (
-                <div key={q.id} className="rounded-xl border border-white/10 p-3">
+                <div key={q.id} className="card-soft p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-medium break-words sm:truncate">
@@ -282,7 +282,7 @@ export function ExerciseSetManage({
                       {!isEditing ? (
                         <button
                           type="button"
-                          className="box-border w-full rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                          className="btn btn-secondary w-full sm:w-auto"
                           onClick={() => startEdit(q)}
                         >
                           {t("qcm.editQuestion")}
@@ -290,7 +290,7 @@ export function ExerciseSetManage({
                       ) : (
                         <button
                           type="button"
-                          className="box-border w-full rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                          className="btn btn-secondary w-full sm:w-auto"
                           onClick={cancelEdit}
                         >
                           {t("common.cancel")}
@@ -301,7 +301,7 @@ export function ExerciseSetManage({
                         <div className="flex w-full gap-2 sm:w-auto">
                           <button
                             type="button"
-                            className="box-border flex-1 rounded-xl border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm text-red-100 hover:bg-red-500/30 sm:flex-none"
+                            className="btn btn-danger flex-1 sm:flex-none"
                             disabled={busy}
                             onClick={() => deleteQuestion(q.id)}
                           >
@@ -309,7 +309,7 @@ export function ExerciseSetManage({
                           </button>
                           <button
                             type="button"
-                            className="box-border flex-1 rounded-xl border border-white/10 bg-neutral-900/60 px-3 py-2 text-sm hover:bg-white/5 sm:flex-none"
+                            className="btn btn-secondary flex-1 sm:flex-none"
                             onClick={() => setConfirmDeleteId(null)}
                           >
                             {t("common.cancel")}
@@ -318,7 +318,7 @@ export function ExerciseSetManage({
                       ) : (
                         <button
                           type="button"
-                          className="box-border w-full rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 hover:bg-red-500/20 sm:w-auto"
+                          className="btn btn-danger w-full sm:w-auto"
                           disabled={busy}
                           onClick={() => {
                             setConfirmDeleteId(q.id);
@@ -334,7 +334,7 @@ export function ExerciseSetManage({
                   {isEditing && (
                     <div className="mt-3 grid gap-2">
                       <textarea
-                        className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                        className="input box-border w-full min-w-0 max-w-full"
                         rows={4}
                         value={editPrompt}
                         onChange={(e) => setEditPrompt(e.target.value)}
@@ -362,14 +362,14 @@ export function ExerciseSetManage({
                         />
                       </div>
                       <textarea
-                        className="box-border w-full min-w-0 max-w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
+                        className="input box-border w-full min-w-0 max-w-full"
                         rows={4}
                         value={editExplanation}
                         onChange={(e) => setEditExplanation(e.target.value)}
                       />
                       <button
                         type="button"
-                        className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50 sm:w-auto"
+                        className="btn btn-primary w-full sm:w-auto"
                         disabled={busy}
                         onClick={saveEdit}
                       >

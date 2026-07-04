@@ -48,11 +48,11 @@ export default async function ExercisesPage({ searchParams }: PageProps) {
     (async () => {
       let query = admin
         .from("exercise_sets")
-        .select("id,title,visibility,created_at,is_official,official_published,difficulty,subject")
+        .select("id,title,visibility,created_at,is_official,official_published,difficulty,subject,library_folders(name)")
         .eq("is_official", true)
         .eq("official_published", true)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
       if (q) query = query.ilike("title", `%${q}%`);
       return await query;
     })(),
