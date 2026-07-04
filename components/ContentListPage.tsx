@@ -24,12 +24,6 @@ function tabCls(active: boolean) {
   );
 }
 
-function viewTabCls(active: boolean) {
-  return (
-    "flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition " +
-    (active ? "bg-blue-500/20 text-blue-300" : "text-muted hover:text-white/70")
-  );
-}
 
 // Squelette partagé entre /flashcards, /qcm et /exercises — deux niveaux
 // de regroupement : Système (contenu vérifié par l'équipe, mis en avant)
@@ -101,12 +95,14 @@ export function ContentListPage({
         <div className="mt-3 card p-4">{creatorSlot}</div>
       </details>
 
-      {/* Système vs Communautaire */}
-      <div className="flex gap-1 rounded-xl border border-white/[0.08] p-1">
-        <Link href={viewLink("system")} className={viewTabCls(view === "system")}>
+      {/* Système vs Communautaire — même style visuel que les onglets de
+          scope juste en dessous (soulignement), pour une hiérarchie
+          cohérente plutôt que deux langages de tabs différents. */}
+      <div className="flex border-b border-white/[0.07]">
+        <Link href={viewLink("system")} className={tabCls(view === "system") + " flex items-center gap-1.5"}>
           <Star size={14} /> Système · {systemCount}
         </Link>
-        <Link href={viewLink("community")} className={viewTabCls(view === "community")}>
+        <Link href={viewLink("community")} className={tabCls(view === "community") + " flex items-center gap-1.5"}>
           <Users size={14} /> Communautaire · {all.length}
         </Link>
       </div>
