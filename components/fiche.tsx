@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export function FCard({
   title,
@@ -99,88 +97,6 @@ export function Reading({
       </div>
       {children}
     </section>
-  );
-}
-
-type QuizCardProps =
-  | { q: string; a: ReactNode; choices?: undefined; answer?: undefined; explain?: undefined }
-  | { q: string; choices: string[]; answer: number; explain: ReactNode; a?: undefined };
-
-export function QuizCard(props: QuizCardProps) {
-  const { q } = props;
-  const [shown, setShown] = useState(false);
-  const [picked, setPicked] = useState<number | null>(null);
-
-  if (props.choices) {
-    const { choices, answer, explain } = props;
-    return (
-      <div className="card p-4 mb-3">
-        <div className="text-[13px] font-medium mb-2.5">{q}</div>
-        <div className="flex flex-col gap-2">
-          {choices.map((choice, i) => {
-            const isPicked = picked === i;
-            const isCorrect = i === answer;
-            const revealed = picked !== null;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setPicked(i)}
-                className={
-                  "text-left text-[13px] px-3 py-1.5 rounded-md border transition-colors " +
-                  (revealed && isCorrect
-                    ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-                    : revealed && isPicked && !isCorrect
-                    ? "border-red-400/40 bg-red-400/10 text-red-200"
-                    : "border-white/[0.10] text-white/65 hover:bg-white/5")
-                }
-              >
-                {choice}
-              </button>
-            );
-          })}
-        </div>
-        {picked !== null && (
-          <div className="text-[13px] text-white/65 bg-white/[0.04] rounded-md px-3 py-2 mt-2 leading-[1.6]">
-            {explain}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const { a } = props;
-  return (
-    <div
-      className="card p-4 mb-3 cursor-pointer select-none"
-      onClick={() => setShown((v) => !v)}
-    >
-      <div className="text-[13px] font-medium mb-2.5">{q}</div>
-      <button
-        type="button"
-        className="text-[11px] font-medium border border-white/[0.13] text-white/50 px-2.5 py-0.5 rounded-full hover:bg-white/5 hover:text-white/80 transition-colors"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {shown ? "Masquer" : "Révéler"}
-      </button>
-      {shown && (
-        <div className="text-[13px] text-white/65 bg-white/[0.04] rounded-md px-3 py-2 mt-2 leading-[1.6]">
-          {a}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function QuizSec({ children }: { children: ReactNode }) {
-  return (
-    <div className="mt-6">
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-white/25 mb-3.5">
-        Quiz Flash
-        <span className="flex-1 h-px bg-white/[0.07]" />
-      </div>
-      {children}
-    </div>
   );
 }
 

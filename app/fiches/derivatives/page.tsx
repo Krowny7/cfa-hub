@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FCard, Rule, Formula, Sec, Reading, QuizCard, QuizSec, FTable } from "@/components/fiche";
+import { FCard, Rule, Formula, Sec, Reading, FTable } from "@/components/fiche";
 
 const NAV = [
   { id: "r66", label: "R66" }, { id: "r67", label: "R67" }, { id: "r68", label: "R68" },
@@ -107,26 +107,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Un investisseur achète un contrat futures sur le S&P 500 via une bourse. Quelle est sa contrepartie effective ?"
-            choices={["Le vendeur du contrat futures", "La chambre de compensation", "La banque dépositaire", "L'émetteur de l'indice S&P 500"]}
-            answer={1}
-            explain="Dans les marchés organisés, la chambre de compensation s'interpose entre les deux parties et devient la contrepartie de chacune, éliminant le risque de contrepartie bilatéral."
-          />
-          <QuizCard
-            q="Lequel de ces instruments N'EST PAS un forward commitment ?"
-            choices={["Un futures sur pétrole", "Un IRS plain vanilla", "Un put option européen", "Un forward FX à 3 mois"]}
-            answer={2}
-            explain="Le put option est un contingent claim : l'acheteur a le DROIT (pas l'obligation) d'exercer. Les forward commitments (futures, IRS, forward) imposent une obligation d'exécution aux deux parties."
-          />
-          <QuizCard
-            q="Pourquoi les CDS ont-ils été soumis à une obligation de compensation centralisée après 2008 ?"
-            choices={["Pour augmenter leur liquidité sur les marchés", "Pour réduire les coûts de transaction", "Pour atténuer le risque systémique lié aux expositions bilatérales non transparentes", "Pour standardiser les notionnels minimums"]}
-            answer={2}
-            explain="Les CDS OTC bilatéraux créaient des réseaux opaques d'expositions (interconnexion AIG/Goldman par exemple). La compensation centralisée impose la transparence et mutualise le risque de contrepartie."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R67 ══════════ */}
@@ -231,32 +211,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Un call européen a X = 45, prime = 3. S_T = 50. Quel est le profit de l'acheteur ?"
-            choices={["+2", "+5", "+3", "+8"]}
-            answer={0}
-            explain="Payoff = max(0, 50 − 45) = 5. Profit = 5 − 3 (prime) = +2."
-          />
-          <QuizCard
-            q="Une entreprise doit verser 1M€ dans 6 mois. Elle veut se couvrir contre une hausse de l'EUR/USD mais conserver le bénéfice d'une baisse. Quel instrument utiliser ?"
-            choices={["Forward d'achat EUR", "Long call EUR", "Short put EUR", "Futures EUR short"]}
-            answer={1}
-            explain="Le long call sur EUR lui donne le DROIT d'acheter EUR à un prix fixé. Si l'EUR monte, elle exerce et est protégée. Si l'EUR baisse, elle n'exerce pas et profite du taux de marché. C'est un contingent claim qui préserve l'upside."
-          />
-          <QuizCard
-            q="Une swaption payeur donne à son détenteur le droit de :"
-            choices={["Recevoir le taux fixe dans un IRS", "Payer le taux fixe dans un IRS", "Entrer dans un CDS en tant qu'acheteur de protection", "Livrer un bond à terme"]}
-            answer={1}
-            explain="Une swaption payeur = option d'entrer dans un IRS en tant que payeur du taux fixe (et receveur du variable). Utile pour se protéger contre une hausse des taux si on a une dette variable."
-          />
-          <QuizCard
-            q="À l'initiation, pourquoi la valeur d'un forward est-elle nulle ?"
-            choices={["Parce que le sous-jacent ne change pas de mains", "Parce que F₀ est fixé de sorte qu'aucune valeur n'est transférée entre les parties", "Parce que les forwards ne requièrent pas de marge", "Parce que le taux sans risque est nul"]}
-            answer={1}
-            explain="F₀ est calculé par no-arbitrage de façon à ce que les deux parties soient indifférentes entre signer le contrat ou ne pas le signer. Aucun avantage initial → valeur = 0."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R68 ══════════ */}
@@ -319,26 +273,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Une compagnie aérienne veut fixer son coût de carburant pour les 6 prochains mois. Quel dérivé est le plus approprié ?"
-            choices={["Short put sur le kérosène", "Long call sur le kérosène", "Long futures sur le crude oil", "Short forward sur le Brent"]}
-            answer={2}
-            explain="La compagnie veut se protéger contre une HAUSSE du prix du carburant. Un long futures l'oblige à acheter à un prix fixé, ce qui plafonne son coût. (Attention : basis risk possible entre crude et kérosène.)"
-          />
-          <QuizCard
-            q="Un investisseur détient un portefeuille d'actions de 500 000€. Il achète des puts sur indice pour un notionnel équivalent. Si le marché baisse de 15%, la couverture :"
-            choices={["Élimine toute perte car le put est exercé", "Protège contre la perte de marché moins la prime payée", "Plafonne les gains mais n'élimine pas les pertes", "N'a aucun effet car le put n'est exercé qu'à l'échéance"]}
-            answer={1}
-            explain="Le long put offre une protection contre la baisse, mais le coût de la prime réduit le résultat net. Le portfolio dispose d'un floor = X − prime payée. L'upside est préservé si le marché monte."
-          />
-          <QuizCard
-            q="Lequel de ces agents est un HEDGER (et non un spéculateur) ?"
-            choices={["Un trader qui achète des calls sur Tesla sans détenir d'actions", "Un exportateur qui vend des devises à terme pour sécuriser ses recettes", "Un hedge fund qui prend une position short sur les obligations à 10 ans", "Un arbitrageur qui exploite un écart de prix entre deux marchés"]}
-            answer={1}
-            explain="Le hedger utilise les dérivés pour couvrir un risque existant (ici, le risque de change sur des recettes en devise étrangère). Le spéculateur prend une position sans risque sous-jacent à couvrir."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R69 ══════════ */}
@@ -412,32 +346,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Le cuivre spot coûte 8 500$/t. r = 4%, stockage γ = 2%, convenience yield θ = 1%. Quel est F₀ à 6 mois (T = 0,5) ?"
-            choices={["8 713$", "8 756$", "8 670$", "8 500$"]}
-            answer={0}
-            explain="F₀ = 8500 × e^((0.04 + 0.02 − 0.01) × 0.5) = 8500 × e^(0.025) ≈ 8500 × 1.0253 ≈ 8 715$. La réponse la plus proche est 8 713$."
-          />
-          <QuizCard
-            q="Un marché de futures pétroliers est en backwardation. Cela signifie que :"
-            choices={["Les coûts de stockage sont très élevés", "Le convenience yield est élevé et dépasse les coûts de portage", "Le marché anticipe une baisse durable des prix du pétrole", "Le taux sans risque est négatif"]}
-            answer={1}
-            explain="La backwardation (F₀ < S₀) survient quand le convenience yield (valeur de détenir physiquement le pétrole maintenant) est suffisamment élevé pour dépasser le coût de financement et de stockage."
-          />
-          <QuizCard
-            q="Comment répliquer un long forward sur une action ne versant pas de dividendes ?"
-            choices={["Acheter un call et vendre un put de même X et T", "Acheter l'action spot en finançant par emprunt au taux sans risque", "Vendre l'action à découvert et placer le produit au taux sans risque", "Acheter un futures de même maturité"]}
-            answer={1}
-            explain="Long forward = Long actif + Short bond (emprunter PV(F₀) = S₀). À T, on livre l'actif et paie F₀ = S₀(1+r)^T. C'est exactement le payoff d'un long forward."
-          />
-          <QuizCard
-            q="Deux obligations ont des cash flows identiques dans tous les états du monde. La première se négocie à 102 et la seconde à 98. Quelle est la stratégie d'arbitrage ?"
-            choices={["Acheter les deux obligations simultanément", "Acheter la première (102) et vendre la seconde (98)", "Acheter la seconde (98) et vendre la première (102) à découvert", "Attendre que les prix convergent naturellement"]}
-            answer={2}
-            explain="Acheter le sous-évalué (98) et vendre le sur-évalué (102) à découvert. Profit immédiat de 4 sans risque car les flux futurs s'annulent exactement."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R70 ══════════ */}
@@ -518,32 +426,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Un forward sur une action a été conclu il y a 3 mois avec F₀ = 105. Aujourd'hui S_t = 110, r = 5%, il reste 9 mois. Quelle est la valeur V_t du long ?"
-            choices={["5,00", "8,77", "5,00 × (1,05)^0.75", "110 − 105"]}
-            answer={1}
-            explain="V_t = S_t − F₀/(1+r)^(T−t) = 110 − 105/(1,05)^0.75 = 110 − 105/1,03727 ≈ 110 − 101,23 = 8,77."
-          />
-          <QuizCard
-            q="Le taux 6M est 5% et le taux 9M est 5,4%. Quel est le FRA 6×9 (approximation) ?"
-            choices={["5,4%", "5,8%", "6,2%", "4,6%"]}
-            answer={2}
-            explain="FRA(6×9) ≈ [(1,054 × 9/12) / (1,05 × 6/12) − 1] × 4 ≈ [(1,0405)/(1,025) − 1] × 4 ≈ 1,5122% × 4 ≈ 6,05% ≈ 6,2%. La mécanique donne un taux supérieur au 9M puisqu'on extrait le taux marginal de la dernière tranche."
-          />
-          <QuizCard
-            q="Une devise étrangère a un taux d'intérêt de 6%, la devise domestique 2%. Selon la parité des taux d'intérêt couverte, le cours forward de la devise étrangère devrait être :"
-            choices={["Plus élevé que le spot (prime forward)", "Égal au spot", "Plus bas que le spot (décote forward)", "Indéterminé sans connaître la volatilité"]}
-            answer={2}
-            explain="F₀ = S₀ × (1+r_d)/(1+r_f) = S₀ × 1,02/1,06. Comme r_f > r_d, F₀ < S₀ : la devise étrangère est en décote forward. La devise avec le taux le plus élevé est attendue en dépréciation pour maintenir la parité."
-          />
-          <QuizCard
-            q="Pourquoi soustrait-on PV(dividendes) du spot pour calculer le prix forward d'une action ?"
-            choices={["Parce que les dividendes réduisent la volatilité de l'action", "Parce que le détenteur du forward ne reçoit pas les dividendes versés pendant la vie du contrat", "Parce que les dividendes créent un risque de contrepartie", "Parce que les dividendes doivent être actualisés au taux forward"]}
-            answer={1}
-            explain="L'acheteur du forward n'est propriétaire de l'action qu'à T. Les dividendes versés entre 0 et T vont au détenteur spot. Le forward price doit donc être réduit de la valeur actuelle de ces dividendes pour maintenir l'équité."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R71 ══════════ */}
@@ -593,26 +475,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Pour un contrat futures, l'ajustement quotidien du prix de règlement (settlement) d'un jour à l'autre entraîne :"
-            choices={["Seulement un changement de la valeur du contrat", "Un changement à la fois du prix ET de la valeur du contrat", "Seulement un changement du prix du contrat", "Aucun changement tant que la position n'est pas clôturée"]}
-            answer={1}
-            explain="Contrairement au forward (où seule la valeur bouge, le prix restant fixe), le futures voit son PRIX de référence changer chaque jour ET sa valeur être remise à zéro via le règlement (MTM)."
-          />
-          <QuizCard
-            q="Les futures longs sont préférés aux forwards équivalents lorsque les taux d'intérêt sont :"
-            choices={["Négativement corrélés au prix du sous-jacent", "Positivement corrélés au prix du sous-jacent", "Nuls", "Sans lien avec le prix du sous-jacent"]}
-            answer={1}
-            explain="Corrélation positive (ex: actions) → gains MTM réinvestis à taux plus élevés en période de hausse → avantage à la position longue futures → Futures > Forward."
-          />
-          <QuizCard
-            q="Comparé à un futures de taux d'intérêt équivalent, un FRA :"
-            choices={["A des paiements identiques dans tous les cas", "A un BPV parfaitement symétrique comme le futures", "Présente une plus grande convexité (exhibits greater convexity)", "A toujours des paiements inférieurs au futures"]}
-            answer={2}
-            explain="Réponse officielle Schweser : le FRA &quot;exhibits greater convexity&quot; car ses paiements sont actualisés au taux réalisé au début de la période (non-linéaire), alors que les paiements du futures de taux sont LINÉAIRES (BPV constant, aucune convexité). Piège : ne pas confondre avec la formulation &quot;paiements plus élevés pour une baisse de taux&quot;, qui est un distracteur officiellement incorrect malgré sa proximité conceptuelle."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R72 ══════════ */}
@@ -673,32 +535,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Dans un IRS plain vanilla, le payeur fixe veut se couvrir contre :"
-            choices={["Une baisse des taux d'intérêt", "Une hausse des taux d'intérêt", "Une hausse de la volatilité des taux", "Un aplatissement de la courbe"]}
-            answer={1}
-            explain="Le payeur fixe paie un taux fixe et reçoit le taux variable. Si les taux montent, ses recettes variables augmentent mais ses paiements fixes restent constants → gain. Donc il est couvert contre une hausse des taux (ou il anticipe la hausse s'il spécule)."
-          />
-          <QuizCard
-            q="Z_1 = 0,970, Z_2 = 0,942, Z_3 = 0,915. Quel est le SFR pour un IRS 3 périodes ?"
-            choices={["2,90%", "3,01%", "3,10%", "2,82%"]}
-            answer={1}
-            explain="SFR = (1 − Z_3) / (Z_1 + Z_2 + Z_3) = (1 − 0,915) / (0,970 + 0,942 + 0,915) = 0,085 / 2,827 ≈ 3,01%."
-          />
-          <QuizCard
-            q="Comment un IRS payeur fixe est-il équivalent en termes de bilan ?"
-            choices={["Long bond fixe + Short bond variable", "Short bond fixe + Long bond variable", "Long deux bonds fixes de maturités différentes", "Long call sur taux + Short put sur taux"]}
-            answer={1}
-            explain="Payeur fixe = SHORT sur un bond à taux fixe (obligation de payer les coupons fixes) + LONG sur un bond à taux variable (reçoit les coupons flottants). Le notionnel s'annule car les deux bonds ont la même valeur nominale."
-          />
-          <QuizCard
-            q="En quoi un currency swap diffère-t-il d'un IRS plain vanilla ?"
-            choices={["Le currency swap n'a pas de taux fixe", "Le notionnel est échangé au début et à la fin dans deux devises différentes", "Le currency swap est toujours OTC et ne peut pas être compensé", "Les paiements d'un currency swap sont toujours en taux variable"]}
-            answer={1}
-            explain="Dans un currency swap, les deux contreparties échangent le principal dans deux devises à l'initiation (et le récupèrent à l'échéance). Les flux d'intérêts dans chaque devise peuvent être fixes ou variables selon les termes."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R73 ══════════ */}
@@ -774,32 +610,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="Un put X = 60, prix = 7, S = 55. Quelle est la valeur intrinsèque et la valeur temps ?"
-            choices={["VI = 5, VT = 2", "VI = 7, VT = 0", "VI = 0, VT = 7", "VI = 5, VT = 7"]}
-            answer={0}
-            explain="VI = max(0, X − S) = max(0, 60 − 55) = 5. VT = Prix − VI = 7 − 5 = 2."
-          />
-          <QuizCard
-            q="Toutes choses égales par ailleurs, quelle est l'unique variable qui augmente simultanément la valeur d'un call ET d'un put ?"
-            choices={["Le prix du sous-jacent", "Le strike", "La volatilité", "Le taux sans risque"]}
-            answer={2}
-            explain="La volatilité augmente toujours les deux types d'options. L'acheteur bénéficie de l'asymétrie : hausse de S profite au call (exercé), baisse de S profite au put (exercé). Les mouvements extremes dans les deux sens augmentent la valeur de chacun."
-          />
-          <QuizCard
-            q="Pourquoi le prix d'un call européen doit-il être au moins max(0, S − PV(X)) ?"
-            choices={["Parce que le call peut être exercé à tout moment", "Si ce n'était pas le cas, on pourrait créer un profit d'arbitrage en achetant le call et vendant l'actif à terme", "Parce que le call est toujours plus cher que le put", "Parce que le taux sans risque est positif"]}
-            answer={1}
-            explain="Si c < S − PV(X), on peut acheter le call (−c), vendre le sous-jacent à découvert (+S) et placer PV(X) au taux sans risque. À T : on exerce le call (−X) ou non, et on reçoit X du placement. Profit certain = S − PV(X) − c > 0."
-          />
-          <QuizCard
-            q="Un call américain sur une action sans dividende devrait-il être exercé avant l'échéance ?"
-            choices={["Oui, dès qu'il est profondément ITM", "Non, il vaut toujours mieux le vendre que l'exercer car la valeur temps est positive", "Oui, si le taux sans risque est élevé", "Oui, si la volatilité baisse"]}
-            answer={1}
-            explain="Pour un call américain sur actif sans dividende, l'exercice anticipé est sous-optimal car on sacrifie la valeur temps résiduelle. Il vaut toujours mieux vendre le call sur le marché (qui inclut la valeur temps) plutôt que l'exercer (qui capture seulement la valeur intrinsèque)."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R74 ══════════ */}
@@ -865,32 +675,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="c = 12, S₀ = 80, X = 75, r = 3%, T = 1 an. Quel est le prix du put européen ?"
-            choices={["4,82", "7,18", "5,18", "6,00"]}
-            answer={0}
-            explain="PV(X) = 75/1,03 = 72,82. p = c + PV(X) − S₀ = 12 + 72,82 − 80 = 4,82."
-          />
-          <QuizCard
-            q="Un investisseur veut créer une position synthétique équivalente à un long forward sans utiliser un contrat forward. Il doit :"
-            choices={["Acheter un call et acheter un put de même X et T", "Acheter un call et vendre un put de même X et T", "Vendre un call et acheter un put de même X et T", "Acheter un put et vendre une action"]}
-            answer={1}
-            explain="Long call + Short put (même X, même T) = Long forward synthétique. Payoff = (S_T − X) si S_T > X [call] − (X − S_T) si S_T < X [put exercé contre vous] = S_T − X toujours."
-          />
-          <QuizCard
-            q="Un call vaut 5 et un put de même X et T vaut 8. Le prix actuel de l'action est 90, X = 95, r = 4%, T = 0,5. Y a-t-il un arbitrage ?"
-            choices={["Non, les prix sont cohérents avec la parité", "Oui, acheter call + placer X(1+Rf)^-T, vendre put + action", "Oui, vendre call + placer X(1+Rf)^-T, acheter put + action", "Impossible à déterminer sans connaître la volatilité"]}
-            answer={1}
-            explain="Parité : c + X(1+Rf)^-T = p + S₀ → 5 + 95/(1,04)^0,5 = 5 + 93,16 = 98,16. Mais p + S₀ = 8 + 90 = 98. Écart = 0,16 en faveur de A. Acheter A (call + placement) = 98,16, vendre B (put + action) = 98 → profit = 0,16 par contrat."
-          />
-          <QuizCard
-            q="Selon la put-call forward parity, si F₀ = X, alors :"
-            choices={["Le call vaut zéro", "Le put vaut zéro", "Call et put ont le même prix", "La parité ne s'applique pas"]}
-            answer={2}
-            explain="Si F₀ = X, alors c − p = [F₀ − X](1+Rf)^-T = 0, donc c = p. C'est la propriété des options ATM forward : call et put au même prix d'exercice = prix forward ont le même prix."
-          />
-        </QuizSec>
       </Reading>
 
       {/* ══════════ R75 ══════════ */}
@@ -986,32 +770,6 @@ export default function DerivativesFiche() {
           </FCard>
         </Sec>
 
-        <QuizSec>
-          <QuizCard
-            q="S₀ = 100, u = 1,10, d = 0,90, r = 4%, X = 105 (call). Quel est π ?"
-            choices={["0,60", "0,70", "0,50", "0,75"]}
-            answer={1}
-            explain="π = ((1+r) − d) / (u − d) = (1,04 − 0,90) / (1,10 − 0,90) = 0,14 / 0,20 = 0,70."
-          />
-          <QuizCard
-            q="Avec les mêmes paramètres (S₀ = 100, u = 1,10, d = 0,90, r = 4%, X = 105), quel est le prix du call ?"
-            choices={["3,37", "5,00", "4,00", "1,92"]}
-            answer={0}
-            explain="S_u = 110, c_u = max(0, 110 − 105) = 5. S_d = 90, c_d = 0. c₀ = (0,70 × 5 + 0,30 × 0) / 1,04 = 3,50 / 1,04 = 3,37. Vérification par delta hedge : h = (5−0)/(110−90) = 0,25 ; PV = (0,25×110−5)/1,04 = 21,63 ; c₀ = 0,25×100 − 21,63 = 3,37 ✓."
-          />
-          <QuizCard
-            q="Que représentent les probabilités risque-neutres π dans le modèle binomial ?"
-            choices={["Les probabilités historiques de hausse de l'actif", "Les probabilités impliquées par les options sur le marché", "Les probabilités fictives qui font que tout actif rapporte le taux sans risque en espérance", "Les probabilités de défaut de l'émetteur"]}
-            answer={2}
-            explain="π est une probabilité fictive (mesure martingale / risque-neutre Q) qui permet de pricer les dérivés par espérance actualisée au taux sans risque. Elle ne reflète pas les probabilités réelles du marché (mesure P), mais donne le bon prix de no-arbitrage."
-          />
-          <QuizCard
-            q="Pour une option américaine deep ITM, l'exercice anticipé peut être optimal car :"
-            choices={["La volatilité est trop élevée", "La valeur d'exercice immédiat dépasse la valeur de continuation (valeur temps quasi nulle, intérêts sur le strike élevés)", "Les options américaines sont toujours exercées avant l'échéance", "Le delta est égal à 1"]}
-            answer={1}
-            explain="Pour un put américain deep ITM, X − S est élevé. En exerçant maintenant, on reçoit X − S et on peut placer ce montant au taux sans risque. Si PV(intérêts) > valeur temps résiduelle → exercice anticipé optimal. C'est la décision max(VI, valeur continuation) à chaque nœud."
-          />
-        </QuizSec>
       </Reading>
     </>
   );
