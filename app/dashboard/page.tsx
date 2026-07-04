@@ -96,11 +96,20 @@ export default async function Dashboard() {
     ? t(locale, "dashboard.greeting", { name: username })
     : t(locale, "dashboard.greetingAnon");
 
+  const accuracyColor = (p: number) =>
+    p >= 70 ? "text-green-400" : p >= 55 ? "text-yellow-400" : "text-red-400";
+
+  const stats = [
+    { label: t(locale, "dashboard.elo"), value: elo, sub: t(locale, "dashboard.games", { n: games }) },
+    { label: t(locale, "dashboard.pdfs"), value: docsCount ?? 0 },
+    { label: t(locale, "dashboard.sets"), value: setsCount ?? 0 },
+    { label: t(locale, "qcm.title"), value: qcmCount ?? 0 },
+  ];
+
   return (
-    <div className="grid gap-5 md:grid-cols-[1fr_220px] md:items-start">
-      {/* ── Left column ── */}
+    <div className="grid gap-5 md:grid-cols-[1fr_240px] md:items-start">
+      {/* ── Main column : ce qui compte pour agir aujourd'hui ── */}
       <div className="grid gap-4">
-        {/* Greeting */}
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{greeting}</h1>
           <p className="mt-1 text-sm text-white/60">{t(locale, "dashboard.subtitle")}</p>
@@ -122,53 +131,47 @@ export default async function Dashboard() {
           <ArrowRight size={18} className="text-blue-300/60 transition group-hover:text-blue-200" />
         </Link>
 
-        {/* Primary KPI — ce que l'utilisateur veut savoir en premier :
-            "est-ce que je suis dans les temps ?" (F-pattern : top-left) */}
-        {daysUntilExam !== null && (
-          <div className={`card p-4 flex items-center gap-4 ${daysUntilExam <= 30 ? "border-orange-500/30" : ""}`}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06]">
-              <GraduationCap size={18} className="text-white/70" />
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold">
-                {daysUntilExam > 0
-                  ? `J-${daysUntilExam} avant l'examen`
-                  : daysUntilExam === 0
-                  ? "L'examen est aujourd'hui !"
-                  : `Examen passé il y a ${Math.abs(daysUntilExam)}j`}
-              </div>
-              <div className="text-xs text-muted">{examDate}</div>
-            </div>
-            {globalAccuracy !== null && (
-              <div className="text-right">
-                <div className={`text-xl font-bold ${globalAccuracy >= 70 ? "text-green-400" : globalAccuracy >= 55 ? "text-yellow-400" : "text-red-400"}`}>
-                  {globalAccuracy}%
+        {/* Progression — une seule carte composite (échéance/précision,
+            série + XP du jour, niveau) au lieu de 4 cartes flottantes
+            séparées. Ce sont des facettes de la même question ("où j'en
+            suis ?") : les regrouper avec de simples séparateurs internes,
+            plutôt que des bordures individuelles, évite l'effet
+            "empilement de sous-widgets" et se lit comme UNE section. */}
+        <div className="card divide-y divide-white/[0.06] p-0">
+          {daysUntilExam !== null ? (
+            <div className="flex items-center gap-3 p-4">
+              <GraduationCap size={17} className="shrink-0 text-white/60" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold">
+                  {daysUntilExam > 0
+                    ? `J-${daysUntilExam} avant l'examen`
+                    : daysUntilExam === 0
+                    ? "L'examen est aujourd'hui !"
+                    : `Examen passé il y a ${Math.abs(daysUntilExam)}j`}
                 </div>
-                <div className="text-[10px] text-muted">{agg?.total_sessions} sessions</div>
+                <div className="text-xs text-muted">{examDate}</div>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Practice aggregate (when no exam date) */}
-        {daysUntilExam === null && globalAccuracy !== null && agg && (
-          <div className="card-soft flex items-center justify-between gap-4 px-4 py-3">
-            <div>
-              <div className="text-sm font-semibold">Précision globale</div>
-              <div className="text-xs text-muted">{agg.total_sessions} sessions · {agg.total_answered} réponses</div>
+              {globalAccuracy !== null && (
+                <div className="shrink-0 text-right">
+                  <div className={`text-lg font-bold ${accuracyColor(globalAccuracy)}`}>{globalAccuracy}%</div>
+                  <div className="text-[10px] text-muted">{agg?.total_sessions} sessions</div>
+                </div>
+              )}
             </div>
-            <div className={`text-2xl font-bold ${globalAccuracy >= 70 ? "text-green-400" : globalAccuracy >= 55 ? "text-yellow-400" : "text-red-400"}`}>
-              {globalAccuracy}%
-            </div>
-          </div>
-        )}
+          ) : (
+            globalAccuracy !== null &&
+            agg && (
+              <div className="flex items-center justify-between gap-4 p-4">
+                <div>
+                  <div className="text-sm font-semibold">Précision globale</div>
+                  <div className="text-xs text-muted">{agg.total_sessions} sessions · {agg.total_answered} réponses</div>
+                </div>
+                <div className={`text-xl font-bold ${accuracyColor(globalAccuracy)}`}>{globalAccuracy}%</div>
+              </div>
+            )
+          )}
 
-        {/* Progression — série, XP du jour et niveau regroupés dans une seule
-            carte (au lieu de 3 cartes flottantes séparées) : ce sont trois
-            facettes de la même information ("où j'en suis"), les grouper
-            réduit le bruit visuel et clarifie la hiérarchie de la page. */}
-        <div className="card-soft p-4">
-          <div className="flex flex-wrap items-center gap-5">
+          <div className="flex flex-wrap items-center gap-5 p-4">
             <div className="flex items-center gap-2.5">
               <Flame size={18} className={streak > 0 ? "text-orange-400" : "text-white/30"} />
               <div>
@@ -190,7 +193,8 @@ export default async function Dashboard() {
               </div>
             )}
           </div>
-          <div className="mt-4 border-t border-white/[0.06] pt-3">
+
+          <div className="p-4">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium">{t(locale, "common.levelN", { n: lvlInfo.level })}</span>
               <span className="text-xs opacity-55">{xpTotal} XP</span>
@@ -207,29 +211,20 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="card-soft p-4">
-            <div className="text-xs opacity-55">{t(locale, "dashboard.elo")}</div>
-            <div className="mt-1 text-2xl font-semibold">{elo}</div>
-            <div className="text-xs opacity-55">{t(locale, "dashboard.games", { n: games })}</div>
-          </div>
-          <div className="card-soft p-4">
-            <div className="text-xs opacity-55">{t(locale, "dashboard.pdfs")}</div>
-            <div className="mt-1 text-2xl font-semibold">{docsCount ?? 0}</div>
-          </div>
-          <div className="card-soft p-4">
-            <div className="text-xs opacity-55">{t(locale, "dashboard.sets")}</div>
-            <div className="mt-1 text-2xl font-semibold">{setsCount ?? 0}</div>
-          </div>
-          <div className="card-soft p-4">
-            <div className="text-xs opacity-55">{t(locale, "qcm.title")}</div>
-            <div className="mt-1 text-2xl font-semibold">{qcmCount ?? 0}</div>
-          </div>
+        {/* Aperçu — une carte, quatre colonnes séparées par un trait fin :
+            même logique de regroupement que ci-dessus. Reste lisible à
+            l'échelle (les compteurs grandissent, la structure ne bouge
+            pas), contrairement à une liste qui s'allongerait avec le
+            contenu. */}
+        <div className="card grid grid-cols-2 divide-x divide-y divide-white/[0.06] p-0 sm:grid-cols-4 sm:divide-y-0">
+          {stats.map((s) => (
+            <div key={s.label} className="p-4">
+              <div className="text-xs opacity-55">{s.label}</div>
+              <div className="mt-1 text-2xl font-semibold">{s.value}</div>
+              {s.sub && <div className="text-xs opacity-55">{s.sub}</div>}
+            </div>
+          ))}
         </div>
-
-        {/* Practice history (localStorage) */}
-        <PracticeHistory />
 
         {/* Onboarding checklist */}
         {!onboardingDone && (
@@ -280,9 +275,11 @@ export default async function Dashboard() {
         )}
       </div>
 
-      {/* ── Right column: activity heatmap ── */}
-      <div className="hidden md:block">
-        <div className="card-soft sticky top-20 p-4">
+      {/* ── Side column : contexte secondaire (consultatif, pas actionnable
+          au quotidien) — regroupe activité + historique au même endroit
+          plutôt que de les disperser dans la colonne principale. ── */}
+      <div className="grid gap-4 md:sticky md:top-20 md:self-start">
+        <div className="card-soft p-4">
           <div className="mb-1 text-xs font-semibold text-muted">Activité — 5 semaines</div>
           <ActivityHeatmap days={xpDays} />
           <div className="mt-4 grid gap-1.5 text-xs text-white/50">
@@ -307,6 +304,8 @@ export default async function Dashboard() {
             Elo {elo} · {games} parties
           </div>
         </div>
+
+        <PracticeHistory />
       </div>
     </div>
   );
