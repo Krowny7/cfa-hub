@@ -1,6 +1,6 @@
 export const MESSAGES = {
   fr: {
-    appName: "CFA Hub",
+    appName: "Locked In",
     common: {
       save: "Enregistrer",
       saving: "Enregistrement…",
@@ -363,7 +363,7 @@ export const MESSAGES = {
     }
   },
   en: {
-    appName: "CFA Hub",
+    appName: "Locked In",
     common: {
       save: "Save",
       saving: "Saving…",

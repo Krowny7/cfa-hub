@@ -1,8 +1,8 @@
-# CFA Hub — Contexte du projet
+# Locked In — Contexte du projet
 
 ## Objectif
 
-CFA Hub est une **plateforme collaborative d'étude pour la préparation à l'examen CFA (Chartered Financial Analyst)**. Elle est conçue pour un usage personnel et entre amis/collègues qui préparent le CFA ensemble.
+Locked In (nom de code interne : CFA Hub) est une **plateforme collaborative d'étude pour la préparation à l'examen CFA (Chartered Financial Analyst)**. Elle est conçue pour un usage personnel et entre amis/collègues qui préparent le CFA ensemble.
 
 L'idée centrale : centraliser tous les outils d'étude (documents, flashcards, quiz) dans un seul endroit, avec un système de partage par groupes et une gamification légère via XP et ELO pour maintenir la motivation.
 
