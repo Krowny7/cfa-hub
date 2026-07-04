@@ -23,7 +23,7 @@ export type GroupMembership = {
 export type LibraryFolder = {
   id: string;
   name: string;
-  kind: "documents" | "flashcards" | "quizzes";
+  kind: "documents" | "flashcards" | "quizzes" | "exercises";
   owner_id: string;
 };
 
@@ -74,6 +74,30 @@ export type QuizQuestion = {
   prompt: string;
   choices: string[];
   correct_index: number;
+  explanation: string | null;
+  position: number;
+};
+
+export type ExerciseSet = {
+  id: string;
+  title: string;
+  visibility: Visibility;
+  owner_id: string;
+  group_id: string | null;
+  folder_id: string | null;
+  is_official: boolean;
+  official_published: boolean;
+  difficulty: 1 | 2 | 3 | null;
+  published_at: string | null;
+};
+
+export type ExerciseQuestion = {
+  id: string;
+  set_id: string;
+  prompt: string;
+  correct_answer: number;
+  tolerance: number;
+  unit: string | null;
   explanation: string | null;
   position: number;
 };

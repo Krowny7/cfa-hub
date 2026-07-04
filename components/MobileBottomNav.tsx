@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Trophy, Users, LayoutDashboard, GraduationCap, Settings, X } from "lucide-react";
+import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Trophy, Users, LayoutDashboard, GraduationCap, Settings, X, Calculator } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 
 const items = [
@@ -17,6 +17,7 @@ const items = [
 // mais qui restait invisible sur mobile faute de place dans la barre à 5 slots.
 const moreItems = [
   { href: "/library", labelKey: "nav.library", icon: BookOpen },
+  { href: "/exercises", labelKey: "nav.exercises", icon: Calculator },
   { href: "/fiches", labelKey: "nav.fiches", icon: BookMarked },
   { href: "/mock-exams", labelKey: "nav.mockExams", icon: Trophy },
   { href: "/exam", labelKey: "nav.exam", icon: GraduationCap },

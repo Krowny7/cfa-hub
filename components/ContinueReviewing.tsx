@@ -31,7 +31,11 @@ export function ContinueReviewing({
     <div className="card p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <RotateCcw size={15} className="text-emerald-300" />
-        {kind === "qcm" ? t("qcm.continueReviewing") : t("flashcards.continueReviewing")}
+        {kind === "qcm"
+          ? t("qcm.continueReviewing")
+          : kind === "exercises"
+          ? t("exercises.continueReviewing")
+          : t("flashcards.continueReviewing")}
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {recent.map((entry) => (

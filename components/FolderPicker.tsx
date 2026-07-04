@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 
-export type FolderKind = "documents" | "flashcards" | "quizzes";
+export type FolderKind = "documents" | "flashcards" | "quizzes" | "exercises";
 type Folder = { id: string; name: string; parent_id: string | null };
 
 function formatSupabaseError(err: unknown): string {

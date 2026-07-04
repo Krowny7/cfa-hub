@@ -170,7 +170,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                   <span className="flex-1 text-sm">{s.title}</span>
                   {s.isOfficial && (
                     <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
-                      <Star size={10} /> Officiel
+                      <Star size={10} /> Système
                     </span>
                   )}
                 </label>

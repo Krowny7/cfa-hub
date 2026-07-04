@@ -23,10 +23,10 @@ export function ContentSetCreator({
   i18nPrefix,
 }: {
   activeGroupId: string | null;
-  table: "flashcard_sets" | "quiz_sets";
-  shareTable: "flashcard_set_shares" | "quiz_set_shares";
-  folderKind: "flashcards" | "quizzes";
-  i18nPrefix: "flashcards" | "qcm";
+  table: "flashcard_sets" | "quiz_sets" | "exercise_sets";
+  shareTable: "flashcard_set_shares" | "quiz_set_shares" | "exercise_set_shares";
+  folderKind: "flashcards" | "quizzes" | "exercises";
+  i18nPrefix: "flashcards" | "qcm" | "exercises";
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();

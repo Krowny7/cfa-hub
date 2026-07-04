@@ -12,7 +12,7 @@ import { normalizeScope, sectionForVisibility, type ScopeFilter } from "@/lib/co
 import type { Profile } from "@/lib/types";
 import type { ContentSetRow } from "@/components/ContentListPage";
 
-type OfficialRow = ContentSetRow & {
+type ExerciseRow = ContentSetRow & {
   is_official?: boolean | null;
   official_published?: boolean | null;
   difficulty?: number | null;
@@ -21,7 +21,7 @@ type OfficialRow = ContentSetRow & {
 type SearchParams = { q?: string; scope?: string };
 type PageProps = { searchParams?: Promise<SearchParams> };
 
-export default async function QcmPage({ searchParams }: PageProps) {
+export default async function ExercisesPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
   const locale = await getLocale();
   const supabase = await createClient();
@@ -35,11 +35,11 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
   const admin = createAdminClient();
 
-  const [{ data: profileData }, setsRes, officialRes] = await Promise.all([
+  const [{ data: profileData }, setsRes, systemRes] = await Promise.all([
     supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
     (async () => {
       let query = supabase
-        .from("quiz_sets")
+        .from("exercise_sets")
         .select("id,title,visibility,created_at,is_official,official_published,difficulty,subject,library_folders(name)")
         .order("created_at", { ascending: false });
       if (q) query = query.ilike("title", `%${q}%`);
@@ -47,7 +47,7 @@ export default async function QcmPage({ searchParams }: PageProps) {
     })(),
     (async () => {
       let query = admin
-        .from("quiz_sets")
+        .from("exercise_sets")
         .select("id,title,visibility,created_at,is_official,official_published,difficulty,subject")
         .eq("is_official", true)
         .eq("official_published", true)
@@ -60,8 +60,8 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
   const activeGroupId =
     (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
-  const all = (setsRes.data ?? []) as unknown as OfficialRow[];
-  const official = (officialRes.data ?? []) as unknown as OfficialRow[];
+  const all = (setsRes.data ?? []) as unknown as ExerciseRow[];
+  const system = (systemRes.data ?? []) as unknown as ExerciseRow[];
   const priv = all.filter((s) => sectionForVisibility(s.visibility) === "private");
   const shared = all.filter((s) => sectionForVisibility(s.visibility) === "shared");
   const pub = all.filter((s) => sectionForVisibility(s.visibility) === "public");
@@ -72,21 +72,20 @@ export default async function QcmPage({ searchParams }: PageProps) {
     scope === "public" ? pub :
     all;
 
-  // Official sets have their own block at the top — exclude from subject sections
-  const officialIds = new Set(official.map((s) => s.id));
-  const userItems = displayItems.filter((s) => !officialIds.has(s.id));
+  const systemIds = new Set(system.map((s) => s.id));
+  const userItems = displayItems.filter((s) => !systemIds.has(s.id));
   const cfaItems = userItems.filter((s) => (s.subject ?? "cfa") !== "personal");
   const personalItems = userItems.filter((s) => s.subject === "personal");
 
   const noFolder = t(locale, "common.noFolder");
-  const openLabel = t(locale, "qcm.open");
+  const openLabel = t(locale, "exercises.open");
 
   return (
     <ContentListPage
       locale={locale}
-      basePath="/qcm"
-      titleKey="qcm.title"
-      i18nPrefix="qcm"
+      basePath="/exercises"
+      titleKey="exercises.title"
+      i18nPrefix="exercises"
       scope={scope}
       q={q}
       all={all}
@@ -96,34 +95,34 @@ export default async function QcmPage({ searchParams }: PageProps) {
       cfaItems={cfaItems}
       personalItems={personalItems}
       displayItems={displayItems}
-      itemUnit="QCM"
-      continueReviewingSlot={<ContinueReviewing kind="qcm" basePath="/qcm" />}
+      itemUnit="exercice"
+      continueReviewingSlot={<ContinueReviewing kind="exercises" basePath="/exercises" />}
       creatorSlot={
         <ContentSetCreator
           activeGroupId={activeGroupId}
-          table="quiz_sets"
-          shareTable="quiz_set_shares"
-          folderKind="quizzes"
-          i18nPrefix="qcm"
+          table="exercise_sets"
+          shareTable="exercise_set_shares"
+          folderKind="exercises"
+          i18nPrefix="exercises"
         />
       }
       extraTopSlot={
-        official.length > 0 ? (
+        system.length > 0 ? (
           <div className="card p-4">
             <div className="mb-3 flex items-center gap-2">
-              <span className="text-sm font-semibold">{t(locale, "qcm.officialTitle")}</span>
+              <span className="text-sm font-semibold">{t(locale, "exercises.systemTitle")}</span>
               <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
                 <Star size={10} /> Système
               </span>
             </div>
-            <p className="mb-3 text-xs text-white/55">{t(locale, "qcm.officialXpNote")}</p>
+            <p className="mb-3 text-xs text-white/55">{t(locale, "exercises.systemXpNote")}</p>
             <FolderBlocks
               locale={locale}
-              items={official}
+              items={system}
               rootLabel={noFolder}
               openLabel={openLabel}
-              basePath="/qcm"
-              itemUnit="QCM"
+              basePath="/exercises"
+              itemUnit="exercice"
             />
           </div>
         ) : null

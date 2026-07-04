@@ -34,11 +34,11 @@ export function ContentItemSettings({
   title: string;
   subtitle: string;
   itemId: string;
-  table: "documents" | "flashcard_sets" | "quiz_sets";
+  table: "documents" | "flashcard_sets" | "quiz_sets" | "exercise_sets";
   visibility: string | null;
   folderId: string | null;
   folderKind: FolderKind;
-  shareTable: "document_shares" | "flashcard_set_shares" | "quiz_set_shares";
+  shareTable: "document_shares" | "flashcard_set_shares" | "quiz_set_shares" | "exercise_set_shares";
   shareFk: "document_id" | "set_id";
   rootLabel: string;
   activeGroupId: string | null;

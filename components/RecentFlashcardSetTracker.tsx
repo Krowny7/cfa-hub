@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export type RecentSetKind = "flashcards" | "qcm";
+export type RecentSetKind = "flashcards" | "qcm" | "exercises";
 
 const MAX = 6;
 

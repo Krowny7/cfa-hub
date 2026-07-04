@@ -49,6 +49,8 @@ let userId = null;
 let flashcardSetId = null;
 let quizSetId = null;
 let quizQuestionId = null;
+let exerciseSetId = null;
+let exerciseQuestionId = null;
 
 async function cleanup() {
   // Best-effort — le ON DELETE CASCADE sur owner_id/set_id nettoie le reste
@@ -174,6 +176,75 @@ async function main() {
     });
     check(
       "Anti-farming : rejouer la question ne redonne pas d'XP",
+      !again.error && again.data?.xp_awarded === 0 && again.data?.is_correct === true,
+      again.error?.message ?? JSON.stringify(again.data)
+    );
+  }
+
+  // 3b. Exercices — même trio de checks XP (mauvaise/bonne réponse, anti-farming),
+  // mais avec une réponse NUMÉRIQUE tolérante plutôt qu'un index de choix.
+  const exset = await db
+    .from("exercise_sets")
+    .insert({
+      title: "Smoke Test Exercices",
+      visibility: "private",
+      subject: "cfa",
+      owner_id: userId,
+      is_official: true,
+      official_published: true,
+      difficulty: 1,
+    })
+    .select("id")
+    .single();
+  check("Créer un exercise_set système", !exset.error && !!exset.data?.id, exset.error?.message);
+  exerciseSetId = exset.data?.id ?? null;
+
+  if (exerciseSetId) {
+    const exquestion = await db
+      .from("exercise_questions")
+      .insert({
+        set_id: exerciseSetId,
+        prompt: "Combien font 2 + 2 ?",
+        correct_answer: 4,
+        tolerance: 0.01,
+        position: 0,
+      })
+      .select("id")
+      .single();
+    check("Créer une exercise_question", !exquestion.error && !!exquestion.data?.id, exquestion.error?.message);
+    exerciseQuestionId = exquestion.data?.id ?? null;
+  }
+
+  if (exerciseSetId && exerciseQuestionId) {
+    const wrong = await db.rpc("award_exercise_xp", {
+      p_set_id: exerciseSetId,
+      p_question_id: exerciseQuestionId,
+      p_answer: 3,
+    });
+    check(
+      "Exercice : mauvaise réponse → 0 XP",
+      !wrong.error && wrong.data?.xp_awarded === 0 && wrong.data?.is_correct === false,
+      wrong.error?.message ?? JSON.stringify(wrong.data)
+    );
+
+    const right = await db.rpc("award_exercise_xp", {
+      p_set_id: exerciseSetId,
+      p_question_id: exerciseQuestionId,
+      p_answer: 4,
+    });
+    check(
+      "Exercice : bonne réponse → XP > 0",
+      !right.error && right.data?.xp_awarded > 0 && right.data?.is_correct === true,
+      right.error?.message ?? JSON.stringify(right.data)
+    );
+
+    const again = await db.rpc("award_exercise_xp", {
+      p_set_id: exerciseSetId,
+      p_question_id: exerciseQuestionId,
+      p_answer: 4,
+    });
+    check(
+      "Exercice : anti-farming, rejouer ne redonne pas d'XP",
       !again.error && again.data?.xp_awarded === 0 && again.data?.is_correct === true,
       again.error?.message ?? JSON.stringify(again.data)
     );
