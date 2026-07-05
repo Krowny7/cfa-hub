@@ -137,7 +137,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
 
   if (phase === "setup") {
     return (
-      <div className="mx-auto max-w-xl">
+      <div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mode Examen</h1>
           <p className="mt-1 text-sm text-muted">

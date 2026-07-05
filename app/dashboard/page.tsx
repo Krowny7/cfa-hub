@@ -108,7 +108,7 @@ export default async function Dashboard() {
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto grid max-w-xl gap-1">
+    <div className="grid gap-1">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{greeting}</h1>
         <p className="mt-1 text-sm text-muted">{t(locale, "dashboard.subtitle")}</p>

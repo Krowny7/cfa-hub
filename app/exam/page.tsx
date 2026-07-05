@@ -28,9 +28,5 @@ export default async function ExamPage() {
       isOfficial: Boolean(s.is_official && s.official_published),
     }));
 
-  return (
-    <div className="mx-auto max-w-2xl">
-      <ExamClient sets={sets} />
-    </div>
-  );
+  return <ExamClient sets={sets} />;
 }

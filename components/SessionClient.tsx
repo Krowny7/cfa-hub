@@ -337,7 +337,7 @@ export function SessionClient({
     const srsCounts = mode === "flashcards" ? getSRSCounts(cards, srsState) : null;
 
     return (
-      <div className="mx-auto max-w-xl">
+      <div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t("session.title")}</h1>
           <p className="mt-1 text-sm text-muted">{t("session.subtitle")}</p>

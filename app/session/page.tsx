@@ -50,9 +50,5 @@ export default async function SessionPage() {
     .filter((s) => s.id && s.title)
     .map((s) => ({ id: s.id, title: s.title, isOfficial: false }));
 
-  return (
-    <div className="mx-auto max-w-2xl">
-      <SessionClient qcmSets={qcmSets} flashSets={flashSets} streak={streak} />
-    </div>
-  );
+  return <SessionClient qcmSets={qcmSets} flashSets={flashSets} streak={streak} />;
 }
