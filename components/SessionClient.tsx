@@ -337,90 +337,84 @@ export function SessionClient({
     const srsCounts = mode === "flashcards" ? getSRSCounts(cards, srsState) : null;
 
     return (
-      <div className="grid gap-5">
+      <div className="mx-auto max-w-xl">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t("session.title")}</h1>
-          <p className="mt-1 text-sm text-white/60">{t("session.subtitle")}</p>
+          <p className="mt-1 text-sm text-muted">{t("session.subtitle")}</p>
         </div>
 
         {/* Mode picker */}
-        <div className="card p-5">
-          <div className="mb-3 text-sm font-semibold">{t("session.modeTitle")}</div>
-          <div className="grid grid-cols-2 gap-3">
-            {(["qcm", "flashcards"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                className={`card-soft rounded-2xl p-4 text-left transition ${
-                  mode === m ? "ring-2 ring-blue-400" : "hover:bg-white/[0.04]"
-                }`}
-                onClick={() => setMode(m)}
-              >
-                <div className="font-semibold">
-                  {t(m === "qcm" ? "session.modeQcm" : "session.modeFlash")}
-                </div>
-                <div className="mt-1 text-xs text-white/55">
-                  {t(m === "qcm" ? "session.modeQcmDesc" : "session.modeFlashDesc")}
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="mt-7 text-xs font-medium uppercase tracking-wide text-faint">{t("session.modeTitle")}</div>
+        <div className="mt-2.5 flex gap-6 border-b border-white/[0.08] pb-4">
+          {(["qcm", "flashcards"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              className={`text-left transition ${mode === m ? "" : "opacity-45 hover:opacity-70"}`}
+              onClick={() => setMode(m)}
+            >
+              <div className="text-sm font-medium">
+                {t(m === "qcm" ? "session.modeQcm" : "session.modeFlash")}
+              </div>
+              <div className="mt-0.5 text-xs text-faint">
+                {t(m === "qcm" ? "session.modeQcmDesc" : "session.modeFlashDesc")}
+              </div>
+            </button>
+          ))}
         </div>
 
         {/* Set picker */}
-        <div className="card p-5">
-          <div className="mb-3 text-sm font-semibold">{t("session.setTitle")}</div>
-          {activeSets.length === 0 ? (
-            <p className="text-sm text-white/55">{t("session.noSets")}</p>
-          ) : (
-            <>
-              <select
-                className="select"
-                value={selSetId}
-                onChange={(e) => setSelSetId(e.target.value)}
-              >
-                {activeSets.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}{s.isOfficial ? " ★" : ""}
-                  </option>
-                ))}
-              </select>
+        <div className="mt-6 text-xs font-medium uppercase tracking-wide text-faint">{t("session.setTitle")}</div>
+        {activeSets.length === 0 ? (
+          <p className="mt-2.5 text-sm text-muted">{t("session.noSets")}</p>
+        ) : (
+          <div className="mt-2.5 border-b border-white/[0.08] pb-4">
+            <select
+              className="select"
+              value={selSetId}
+              onChange={(e) => setSelSetId(e.target.value)}
+            >
+              {activeSets.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}{s.isOfficial ? " ★" : ""}
+                </option>
+              ))}
+            </select>
 
-              <div className="mt-2 text-xs text-white/50">
-                {loadingContent
-                  ? t("session.loading")
-                  : contentCount > 0
-                  ? t(mode === "qcm" ? "session.questionsCount" : "session.cardsCount", { n: contentCount })
-                  : t("session.noSets")}
+            <div className="mt-2 text-xs text-muted">
+              {loadingContent
+                ? t("session.loading")
+                : contentCount > 0
+                ? t(mode === "qcm" ? "session.questionsCount" : "session.cardsCount", { n: contentCount })
+                : t("session.noSets")}
+            </div>
+
+            {/* SRS status badge for flashcards */}
+            {mode === "flashcards" && srsCounts && !loadingContent && contentCount > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {srsCounts.due > 0 && (
+                  <span className="flex items-center gap-1 rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-300">
+                    <Repeat size={12} /> {srsCounts.due} à réviser
+                  </span>
+                )}
+                {srsCounts.newCount > 0 && (
+                  <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-300">
+                    <Sparkles size={12} /> {srsCounts.newCount} nouvelles
+                  </span>
+                )}
+                {srsCounts.due === 0 && srsCounts.newCount === 0 && (
+                  <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-300">
+                    <CheckCircle2 size={12} /> Tout à jour
+                  </span>
+                )}
               </div>
-
-              {/* SRS status badge for flashcards */}
-              {mode === "flashcards" && srsCounts && !loadingContent && contentCount > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {srsCounts.due > 0 && (
-                    <span className="flex items-center gap-1 rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-300">
-                      <Repeat size={12} /> {srsCounts.due} à réviser
-                    </span>
-                  )}
-                  {srsCounts.newCount > 0 && (
-                    <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-300">
-                      <Sparkles size={12} /> {srsCounts.newCount} nouvelles
-                    </span>
-                  )}
-                  {srsCounts.due === 0 && srsCounts.newCount === 0 && (
-                    <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-300">
-                      <CheckCircle2 size={12} /> Tout à jour
-                    </span>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         <button
           type="button"
-          className="btn btn-primary w-full py-4 text-base font-semibold"
+          className="btn btn-primary mt-7 w-full py-4 text-base font-semibold"
           disabled={!canStart}
           onClick={startSession}
         >

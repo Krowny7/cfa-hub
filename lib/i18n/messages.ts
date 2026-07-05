@@ -1,6 +1,6 @@
 export const MESSAGES = {
   fr: {
-    appName: "Locked In",
+    appName: "Ranked Lobby",
     common: {
       save: "Enregistrer",
       saving: "Enregistrement…",
@@ -403,7 +403,7 @@ export const MESSAGES = {
     }
   },
   en: {
-    appName: "Locked In",
+    appName: "Ranked Lobby",
     common: {
       save: "Save",
       saving: "Saving…",

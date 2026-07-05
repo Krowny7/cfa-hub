@@ -68,7 +68,7 @@ export default function LoginPage() {
         </div>
 
         <h1 className="mt-5 text-3xl font-semibold leading-tight">
-          Locked In — <span className="opacity-80">{t("login.heroSuffix")}</span>
+          Ranked Lobby — <span className="opacity-80">{t("login.heroSuffix")}</span>
         </h1>
 
         <p className="mt-3 text-sm text-white/80">{t("login.heroDesc")}</p>

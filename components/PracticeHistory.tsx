@@ -87,21 +87,22 @@ export function PracticeHistory() {
   if (loading || sessions.length === 0) return null;
 
   return (
-    <div className="card p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold">Historique de pratique</div>
-        <div className="flex items-center gap-2">
-          {fromSupabase && (
-            <span className="text-[10px] text-white/30">synchronisé</span>
-          )}
-          <span className="text-xs text-white/35">{sessions.length} session(s)</span>
-        </div>
+    <div>
+      <div className="flex items-center justify-between gap-2 text-xs font-medium uppercase tracking-wide text-faint">
+        <span>Historique de pratique</span>
+        <span className="normal-case tracking-normal">
+          {fromSupabase && <span className="mr-2 text-white/30">synchronisé</span>}
+          {sessions.length} session(s)
+        </span>
       </div>
-      <div className="grid gap-2.5">
+      <div className="mt-2.5">
         {sessions.slice(0, 8).map((s) => {
           const p = pct(s.correct, s.total);
           return (
-            <div key={s.id} className="flex items-center justify-between gap-3">
+            <div
+              key={s.id}
+              className="flex items-center justify-between gap-3 border-b border-white/[0.06] py-2.5 last:border-0"
+            >
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{s.set_title}</div>
                 <div className="text-xs text-muted">
@@ -117,7 +118,7 @@ export function PracticeHistory() {
         })}
       </div>
       {sessions.length > 8 && (
-        <div className="mt-3 text-xs text-white/35">+ {sessions.length - 8} session(s) supplémentaire(s)</div>
+        <div className="mt-2 text-xs text-white/35">+ {sessions.length - 8} session(s) supplémentaire(s)</div>
       )}
     </div>
   );

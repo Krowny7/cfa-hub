@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Star, GraduationCap, BookOpen, Check, X, Lightbulb } from "lucide-react";
+import { Star, GraduationCap, BookOpen, Check, X, Lightbulb, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import type { QuizQuestion } from "@/lib/types";
 
@@ -137,77 +137,73 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
 
   if (phase === "setup") {
     return (
-      <div className="grid gap-5">
+      <div className="mx-auto max-w-xl">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mode Examen</h1>
-          <p className="mt-1 text-sm text-white/60">
+          <p className="mt-1 text-sm text-muted">
             Simulation d'examen CFA — pas de correction pendant l'examen.
           </p>
         </div>
 
-        <div className="card p-5">
-          <div className="mb-3 text-sm font-semibold">Sources de questions</div>
-          {sets.length === 0 ? (
-            <p className="text-sm text-white/55">
-              Aucun QCM disponible.{" "}
-              <Link href="/qcm" className="text-blue-400 hover:underline">
-                Créer un QCM →
-              </Link>
-            </p>
-          ) : (
-            <div className="grid gap-1.5">
-              {sets.map(s => (
-                <label
-                  key={s.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/[0.03]"
-                >
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded accent-blue-400"
-                    checked={selectedSetIds.includes(s.id)}
-                    onChange={() => toggleSet(s.id)}
-                  />
-                  <span className="flex-1 text-sm">{s.title}</span>
-                  {s.isOfficial && (
-                    <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">
-                      <Star size={10} /> Système
-                    </span>
-                  )}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="card p-5">
-          <div className="mb-3 text-sm font-semibold">Format</div>
-          <div className="grid gap-2">
-            {EXAM_CONFIGS.map((c, i) => {
-              const h = Math.floor(c.minutes / 60);
-              const m = c.minutes % 60;
-              const dur = h > 0 ? `${h}h${m > 0 ? String(m).padStart(2, "0") : ""}` : `${c.minutes}min`;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className={`rounded-xl border p-4 text-left transition ${
-                    configIdx === i
-                      ? "border-blue-400/60 bg-blue-500/10"
-                      : "border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.04]"
-                  }`}
-                  onClick={() => setConfigIdx(i)}
-                >
-                  <div className="text-sm font-semibold">{c.label}</div>
-                  <div className="mt-0.5 text-xs text-white/50">~{dur} · 1,5 min/question (standard CFA)</div>
-                </button>
-              );
-            })}
+        <div className="mt-7 text-xs font-medium uppercase tracking-wide text-faint">Sources de questions</div>
+        {sets.length === 0 ? (
+          <p className="mt-2.5 text-sm text-muted">
+            Aucun QCM disponible.{" "}
+            <Link href="/qcm" className="text-blue-400 hover:underline">
+              Créer un QCM →
+            </Link>
+          </p>
+        ) : (
+          <div className="mt-2.5 border-b border-white/[0.08] pb-1">
+            {sets.map(s => (
+              <label
+                key={s.id}
+                className="flex cursor-pointer items-center gap-3 border-b border-white/[0.06] py-2.5 last:border-0"
+              >
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded accent-blue-400"
+                  checked={selectedSetIds.includes(s.id)}
+                  onChange={() => toggleSet(s.id)}
+                />
+                <span className="flex-1 text-sm">{s.title}</span>
+                {s.isOfficial && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-blue-300/80">
+                    <Star size={10} /> Système
+                  </span>
+                )}
+              </label>
+            ))}
           </div>
+        )}
+
+        <div className="mt-6 text-xs font-medium uppercase tracking-wide text-faint">Format</div>
+        <div className="mt-2.5 border-b border-white/[0.08] pb-1">
+          {EXAM_CONFIGS.map((c, i) => {
+            const h = Math.floor(c.minutes / 60);
+            const m = c.minutes % 60;
+            const dur = h > 0 ? `${h}h${m > 0 ? String(m).padStart(2, "0") : ""}` : `${c.minutes}min`;
+            const active = configIdx === i;
+            return (
+              <button
+                key={i}
+                type="button"
+                className="flex w-full items-center justify-between border-b border-white/[0.06] py-2.5 text-left last:border-0"
+                onClick={() => setConfigIdx(i)}
+              >
+                <div>
+                  <div className={`text-sm ${active ? "font-medium" : "text-muted"}`}>{c.label}</div>
+                  <div className="mt-0.5 text-xs text-faint">~{dur} · 1,5 min/question (standard CFA)</div>
+                </div>
+                {active && <CheckCircle2 size={16} className="shrink-0 text-blue-400" />}
+              </button>
+            );
+          })}
         </div>
 
         <button
           type="button"
-          className="btn btn-primary w-full py-4 text-base font-semibold"
+          className="btn btn-primary mt-7 w-full py-4 text-base font-semibold"
           disabled={selectedSetIds.length === 0}
           onClick={startExam}
         >

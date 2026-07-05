@@ -6,7 +6,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = {
-  title: "Locked In",
+  title: "Ranked Lobby",
   description: "Your shared CFA study workspace"
 };
 
