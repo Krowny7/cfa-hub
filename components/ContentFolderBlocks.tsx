@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Folder, ChevronDown, ArrowRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { groupByFolderName, type FolderJoin } from "@/lib/content/grouping";
 import { normalizeVisibility, type Visibility } from "@/lib/content/visibility";
 
@@ -83,18 +83,17 @@ export function FolderBlocks<T extends BaseItem>({
       {folderNames.map((folder) => {
         const folderItems = grouped.get(folder) ?? [];
         return (
-          <details key={folder} className="group card-soft overflow-hidden">
-            <summary className="flex cursor-pointer list-none select-none items-center gap-3 px-4 py-3.5 transition hover:bg-white/[0.06]">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300">
-                <Folder size={16} />
+          <details key={folder} className="group card card-hover overflow-hidden">
+            <summary className="cursor-pointer list-none select-none p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30">
+                    {folderItems.length}{itemUnit ? ` ${itemUnit}` : ""}
+                  </div>
+                  <div className="text-lg font-semibold tracking-tight">{folder}</div>
+                </div>
+                <ChevronDown size={18} className="mt-0.5 shrink-0 text-white/20 transition-colors group-hover:text-white/50 group-open:rotate-180" />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{folder}</div>
-              </div>
-              <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-muted">
-                {folderItems.length}{itemUnit ? ` ${itemUnit}` : ""}
-              </span>
-              <ChevronDown size={16} className="shrink-0 text-white/40 transition group-open:rotate-180" />
             </summary>
 
             <div className="border-t border-white/[0.07] p-4">
@@ -105,7 +104,7 @@ export function FolderBlocks<T extends BaseItem>({
                     <Link
                       key={it.id}
                       href={`${basePath}/${it.id}`}
-                      className="card-soft group/item p-4 transition hover:border-white/20 hover:bg-white/[0.06]"
+                      className="card-soft card-hover group/item p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -117,7 +116,9 @@ export function FolderBlocks<T extends BaseItem>({
                             ) : null}
                           </div>
                         </div>
-                        <ArrowRight size={15} className="mt-0.5 shrink-0 text-white/40 transition group-hover/item:translate-x-0.5 group-hover/item:text-white/80" />
+                        <span className="mt-0.5 shrink-0 text-white/20 transition-colors group-hover/item:text-white/50">
+                          →
+                        </span>
                       </div>
                     </Link>
                   );
