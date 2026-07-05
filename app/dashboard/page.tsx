@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
@@ -9,7 +9,7 @@ import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import { PracticeHistory } from "@/components/PracticeHistory";
 import type { Profile, Rating } from "@/lib/types";
 
-type ProfileRow = Pick<Profile, "xp_total" | "username" | "active_group_id"> & { exam_date?: string | null } | null;
+type ProfileRow = Pick<Profile, "xp_total" | "username"> & { exam_date?: string | null } | null;
 
 type PracticeAggregate = { total_sessions: number; total_correct: number; total_answered: number };
 
@@ -48,19 +48,11 @@ export default async function Dashboard() {
   const [
     { data: ratingRow },
     { data: profileRow },
-    { count: docsCount },
-    { count: setsCount },
-    { count: qcmCount },
-    { count: groupCount },
     xpDailyResult,
     practiceAgg,
   ] = await Promise.all([
     supabase.from("ratings").select("elo,games_played").eq("user_id", user.id).maybeSingle(),
-    supabase.from("profiles").select("xp_total,username,active_group_id,exam_date").eq("id", user.id).maybeSingle(),
-    supabase.from("documents").select("*", { count: "exact", head: true }),
-    supabase.from("flashcard_sets").select("*", { count: "exact", head: true }),
-    supabase.from("quiz_sets").select("*", { count: "exact", head: true }),
-    supabase.from("group_memberships").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("profiles").select("xp_total,username,exam_date").eq("id", user.id).maybeSingle(),
     xpDailyCall,
     practiceAggCall,
   ]);
@@ -84,11 +76,6 @@ export default async function Dashboard() {
 
   const xpDays = Array.isArray(xpDailyResult.data) ? (xpDailyResult.data as XpDay[]) : [];
   const { streak } = calcStreakAndToday(xpDays);
-
-  const hasUsername = Boolean(username);
-  const hasGroup = (groupCount ?? 0) > 0;
-  const hasContent = (docsCount ?? 0) > 0 || (setsCount ?? 0) > 0 || (qcmCount ?? 0) > 0;
-  const onboardingDone = hasUsername && hasGroup;
 
   const greeting = username
     ? t(locale, "dashboard.greeting", { name: username })
@@ -137,51 +124,6 @@ export default async function Dashboard() {
       </div>
 
       <div className="mt-4 text-xs text-faint">{summaryParts.join(" · ")}</div>
-
-      {!onboardingDone && (
-        <div className="mt-8">
-          <div className="text-sm font-medium">{t(locale, "dashboard.onboardingTitle")}</div>
-          <div className="mt-2 grid">
-            {[
-              {
-                done: hasUsername,
-                label: t(locale, "dashboard.onboardingUsername"),
-                href: "/settings",
-                linkLabel: t(locale, "nav.settings"),
-              },
-              {
-                done: hasGroup,
-                label: t(locale, "dashboard.onboardingGroup"),
-                href: "/settings",
-                linkLabel: t(locale, "nav.settings"),
-              },
-              {
-                done: hasContent,
-                label: t(locale, "dashboard.onboardingContent"),
-                href: "/library",
-                linkLabel: t(locale, "nav.library"),
-              },
-            ].map((step) => (
-              <div
-                key={step.label}
-                className="flex items-center gap-3 border-b border-white/[0.06] py-2.5 text-sm last:border-0"
-              >
-                {step.done ? (
-                  <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />
-                ) : (
-                  <Circle size={15} className="shrink-0 text-faint" />
-                )}
-                <span className={`flex-1 ${step.done ? "text-faint" : ""}`}>{step.label}</span>
-                {!step.done && (
-                  <Link href={step.href} className="shrink-0 text-xs text-blue-400 hover:underline">
-                    {step.linkLabel} →
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="mt-8 text-xs font-medium uppercase tracking-wide text-faint">Activité</div>
       <div className="mt-2.5">
