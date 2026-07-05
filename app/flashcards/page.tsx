@@ -34,7 +34,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
 
   const admin = createAdminClient();
 
-  const [{ data: profileData }, setsRes, systemRes] = await Promise.all([
+  const [{ data: profileData }, setsRes, systemRes, systemFoldersRes] = await Promise.all([
     supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
     (async () => {
       let query = supabase
@@ -55,12 +55,14 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       if (q) query = query.ilike("title", `%${q}%`);
       return await query;
     })(),
+    admin.from("library_folders").select("name").eq("kind", "flashcards").ilike("name", "%(Système)%"),
   ]);
 
   const activeGroupId =
     (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
   const system = (systemRes.data ?? []) as unknown as FlashcardRow[];
   const systemIds = new Set(system.map((s) => s.id));
+  const systemFolderNames = (systemFoldersRes.data ?? []).map((f) => f.name as string);
 
   // "Communautaire" ne couvre que ce que les utilisateurs créent eux-mêmes —
   // le contenu Système a son propre onglet, plus de double affichage.
@@ -110,19 +112,18 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
         />
       }
       systemSlot={
-        system.length > 0 ? (
-          <>
-            <p className="text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>
-            <FolderBlocks
-              locale={locale}
-              items={system}
-              rootLabel={noFolder}
-              openLabel={openLabel}
-              basePath="/flashcards"
-              itemUnit="set"
-            />
-          </>
-        ) : undefined
+        <>
+          <p className="text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>
+          <FolderBlocks
+            locale={locale}
+            items={system}
+            rootLabel={noFolder}
+            openLabel={openLabel}
+            basePath="/flashcards"
+            itemUnit="set"
+            extraFolderNames={systemFolderNames}
+          />
+        </>
       }
     />
   );

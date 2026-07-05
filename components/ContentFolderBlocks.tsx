@@ -68,6 +68,8 @@ export function FolderBlocks<T extends BaseItem>({
   openLabel,
   basePath,
   itemUnit = "",
+  extraFolderNames = [],
+  emptyLabel = "À venir",
 }: {
   locale: string;
   items: T[];
@@ -75,13 +77,34 @@ export function FolderBlocks<T extends BaseItem>({
   openLabel: string;
   basePath: string;
   itemUnit?: string;
+  extraFolderNames?: string[];
+  emptyLabel?: string;
 }) {
-  const { grouped, folderNames } = groupByFolderName<T>(locale, items, rootLabel);
+  const { grouped, folderNames } = groupByFolderName<T>(locale, items, rootLabel, extraFolderNames);
 
   return (
     <div className="grid gap-3">
       {folderNames.map((folder) => {
         const folderItems = grouped.get(folder) ?? [];
+        const isEmpty = folderItems.length === 0;
+
+        if (isEmpty) {
+          // Dossier préparé à l'avance, pas encore de contenu — pas de
+          // <details>/chevron puisqu'il n'y a rien à déplier.
+          return (
+            <div key={folder} className="card p-5 opacity-60">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30">
+                    {emptyLabel}
+                  </div>
+                  <div className="text-lg font-semibold tracking-tight">{folder}</div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <details key={folder} className="group card card-hover overflow-hidden">
             <summary className="cursor-pointer list-none select-none p-5">

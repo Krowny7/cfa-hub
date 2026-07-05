@@ -35,7 +35,7 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
   const admin = createAdminClient();
 
-  const [{ data: profileData }, setsRes, officialRes] = await Promise.all([
+  const [{ data: profileData }, setsRes, officialRes, systemFoldersRes] = await Promise.all([
     supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
     (async () => {
       let query = supabase
@@ -56,12 +56,14 @@ export default async function QcmPage({ searchParams }: PageProps) {
       if (q) query = query.ilike("title", `%${q}%`);
       return await query;
     })(),
+    admin.from("library_folders").select("name").eq("kind", "quizzes").ilike("name", "%(Système)%"),
   ]);
 
   const activeGroupId =
     (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
   const official = (officialRes.data ?? []) as unknown as OfficialRow[];
   const officialIds = new Set(official.map((s) => s.id));
+  const systemFolderNames = (systemFoldersRes.data ?? []).map((f) => f.name as string);
 
   // "Communautaire" ne couvre que ce que les utilisateurs créent eux-mêmes —
   // le contenu Système a son propre onglet, plus de double affichage.
@@ -111,19 +113,18 @@ export default async function QcmPage({ searchParams }: PageProps) {
         />
       }
       systemSlot={
-        official.length > 0 ? (
-          <>
-            <p className="text-xs text-white/55">{t(locale, "qcm.officialXpNote")}</p>
-            <FolderBlocks
-              locale={locale}
-              items={official}
-              rootLabel={noFolder}
-              openLabel={openLabel}
-              basePath="/qcm"
-              itemUnit="QCM"
-            />
-          </>
-        ) : undefined
+        <>
+          <p className="text-xs text-white/55">{t(locale, "qcm.officialXpNote")}</p>
+          <FolderBlocks
+            locale={locale}
+            items={official}
+            rootLabel={noFolder}
+            openLabel={openLabel}
+            basePath="/qcm"
+            itemUnit="QCM"
+            extraFolderNames={systemFolderNames}
+          />
+        </>
       }
     />
   );
