@@ -81,76 +81,82 @@ export function FolderBlocks<T extends BaseItem>({
   emptyLabel?: string;
 }) {
   const { grouped, folderNames } = groupByFolderName<T>(locale, items, rootLabel, extraFolderNames);
+  const nonEmptyFolders = folderNames.filter((f) => (grouped.get(f)?.length ?? 0) > 0);
+  const emptyFolders = folderNames.filter((f) => (grouped.get(f)?.length ?? 0) === 0);
 
   return (
     <div className="grid gap-3">
-      {folderNames.map((folder) => {
-        const folderItems = grouped.get(folder) ?? [];
-        const isEmpty = folderItems.length === 0;
-
-        if (isEmpty) {
-          // Dossier préparé à l'avance, pas encore de contenu — pas de
-          // <details>/chevron puisqu'il n'y a rien à déplier.
-          return (
-            <div key={folder} className="card p-5 opacity-60">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30">
-                    {emptyLabel}
-                  </div>
-                  <div className="text-lg font-semibold tracking-tight">{folder}</div>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        return (
-          <details key={folder} className="group card card-hover overflow-hidden">
-            <summary className="cursor-pointer list-none select-none p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30">
-                    {folderItems.length}{itemUnit ? ` ${itemUnit}` : ""}
-                  </div>
-                  <div className="text-lg font-semibold tracking-tight">{folder}</div>
-                </div>
-                <ChevronDown size={18} className="mt-0.5 shrink-0 text-white/20 transition-colors group-hover:text-white/50 group-open:rotate-180" />
-              </div>
-            </summary>
-
-            <div className="border-t border-white/[0.07] p-4">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {folderItems.map((it) => {
-                  const vis = normalizeVisibility(it.visibility);
-                  return (
-                    <Link
-                      key={it.id}
-                      href={`${basePath}/${it.id}`}
-                      className="card-soft card-hover group/item p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold">{it.title}</div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <VisibilityBadge visibility={vis} />
-                            {folder !== rootLabel ? (
-                              <span className="truncate text-xs text-faint">{folder}</span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <span className="mt-0.5 shrink-0 text-white/20 transition-colors group-hover/item:text-white/50">
-                          →
-                        </span>
+      {/* Dossiers avec du contenu — même grille 2 colonnes que /fiches */}
+      {nonEmptyFolders.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {nonEmptyFolders.map((folder) => {
+            const folderItems = grouped.get(folder) ?? [];
+            return (
+              <details key={folder} className="group card card-hover overflow-hidden">
+                <summary className="cursor-pointer list-none select-none p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-white/30">
+                        {folderItems.length}{itemUnit ? ` ${itemUnit}` : ""}
                       </div>
-                    </Link>
-                  );
-                })}
+                      <div className="text-lg font-semibold tracking-tight">{folder}</div>
+                    </div>
+                    <ChevronDown size={18} className="mt-0.5 shrink-0 text-white/20 transition-colors group-hover:text-white/50 group-open:rotate-180" />
+                  </div>
+                </summary>
+
+                <div className="border-t border-white/[0.07] p-4">
+                  <div className="grid gap-3">
+                    {folderItems.map((it) => {
+                      const vis = normalizeVisibility(it.visibility);
+                      return (
+                        <Link
+                          key={it.id}
+                          href={`${basePath}/${it.id}`}
+                          className="card-soft card-hover group/item p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold">{it.title}</div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <VisibilityBadge visibility={vis} />
+                                {folder !== rootLabel ? (
+                                  <span className="truncate text-xs text-faint">{folder}</span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <span className="mt-0.5 shrink-0 text-white/20 transition-colors group-hover/item:text-white/50">
+                              →
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Dossiers pas encore peuplés — liste compacte, identique au bloc
+          "À venir" de /fiches, plutôt que des cartes cliquables vides */}
+      {emptyFolders.length > 0 && (
+        <div className="card p-4">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-white/30">
+            {emptyLabel}
+          </div>
+          <div className="grid gap-2 text-[13px] text-muted">
+            {emptyFolders.map((folder) => (
+              <div key={folder} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+                {folder}
               </div>
-            </div>
-          </details>
-        );
-      })}
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
