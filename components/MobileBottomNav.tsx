@@ -11,13 +11,16 @@ const items = [
   { href: "/session", labelKey: "nav.session", icon: Timer },
   { href: "/flashcards", labelKey: "nav.flashcards", icon: Layers },
   { href: "/qcm", labelKey: "nav.qcm", icon: ClipboardList },
+  // Rituel quotidien à part entière (1h le midi, calculs/formules) — pas un
+  // contenu secondaire, promu depuis "Plus" pour être aussi accessible que
+  // flashcards/QCM.
+  { href: "/exercises", labelKey: "nav.exercises", icon: Calculator },
 ] as const;
 
 // Regroupées dans le menu "Plus" : contenu moins consulté quotidiennement,
 // mais qui restait invisible sur mobile faute de place dans la barre à 5 slots.
 const moreItems = [
   { href: "/library", labelKey: "nav.library", icon: BookOpen },
-  { href: "/exercises", labelKey: "nav.exercises", icon: Calculator },
   { href: "/fiches", labelKey: "nav.fiches", icon: BookMarked },
   { href: "/mock-exams", labelKey: "nav.mockExams", icon: Trophy },
   { href: "/exam", labelKey: "nav.exam", icon: GraduationCap },
@@ -88,7 +91,7 @@ export function MobileBottomNav() {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t border-white/[0.08] bg-neutral-950/90 backdrop-blur"
         aria-label="Mobile navigation"
       >
-        <div className="grid h-full grid-cols-5">
+        <div className="grid h-full grid-cols-6">
           {items.map(({ href, labelKey, icon: Icon }) => {
             const active = isActivePath(pathname, href);
             const isSession = href === "/session";

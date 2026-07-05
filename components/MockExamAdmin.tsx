@@ -109,7 +109,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
   const statusLabel = (s: string) =>
     s === "draft" ? "Brouillon" : s === "open" ? "Ouvert" : "Clôturé";
   const statusColor = (s: string) =>
-    s === "draft" ? "text-muted" : s === "open" ? "text-green-400" : "text-white/30";
+    s === "draft" ? "text-muted" : s === "open" ? "text-green-400" : "text-faint";
 
   return (
     <div className="card p-5">

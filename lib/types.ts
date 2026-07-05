@@ -73,8 +73,12 @@ export type QuizQuestion = {
   set_id: string;
   prompt: string;
   choices: string[];
-  correct_index: number;
-  explanation: string | null;
+  // Absents pour un simple visiteur qui répond au quiz — la page ne les
+  // envoie que si le viewer peut éditer les questions (propriétaire). Sinon
+  // révélés uniquement via la réponse de award_quiz_question_xp, après
+  // tentative (voir migration_fix_answer_leak.sql).
+  correct_index?: number;
+  explanation?: string | null;
   position: number;
 };
 
@@ -95,10 +99,12 @@ export type ExerciseQuestion = {
   id: string;
   set_id: string;
   prompt: string;
-  correct_answer: number;
-  tolerance: number;
+  // Mêmes règles que QuizQuestion.correct_index ci-dessus : absents pour un
+  // visiteur qui n'a pas encore répondu, révélés via award_exercise_xp.
+  correct_answer?: number;
+  tolerance?: number;
   unit: string | null;
-  explanation: string | null;
+  explanation?: string | null;
   position: number;
 };
 
@@ -121,4 +127,10 @@ export type AwardXpResult = {
   is_correct: boolean;
   xp_awarded: number;
   xp_total: number;
+  // Renvoyés par award_quiz_question_xp / award_exercise_xp respectivement —
+  // c'est la SEULE source de vérité pour révéler la bonne réponse au client,
+  // après tentative (voir migration_fix_answer_leak.sql).
+  correct_index?: number;
+  correct_answer?: number;
+  explanation?: string | null;
 };

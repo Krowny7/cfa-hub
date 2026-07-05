@@ -5,6 +5,7 @@ import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
+import { StatusMsg } from "@/components/StatusMsg";
 import type { QuizQuestion } from "@/lib/types";
 
 function parseChoices(text: string): string[] {
@@ -16,13 +17,6 @@ function parseChoices(text: string): string[] {
 
 function clampCorrectIndex(value: number, choices: string[]): number {
   return Math.max(0, Math.min(choices.length - 1, value - 1));
-}
-
-function StatusMsg({ msg }: { msg: string | null }) {
-  if (!msg) return null;
-  return (
-    <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>
-  );
 }
 
 // Outils de création/gestion des questions — extraits de QuizSetView pour que
@@ -163,7 +157,7 @@ export function QuizSetManage({
     setEditingId(q.id);
     setEditPrompt(q.prompt);
     setEditChoicesText(q.choices.join("\n"));
-    setEditCorrect(q.correct_index + 1);
+    setEditCorrect((q.correct_index ?? 0) + 1);
     setEditExplanation(q.explanation ?? "");
     setEditTopicId(q.topic_id ?? null);
   }
@@ -450,7 +444,7 @@ export function QuizSetManage({
                         Q{idx + 1}. {q.prompt}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs opacity-70">
-                        <span>{t("qcm.choiceCount", { n: q.choices.length })} • {t("qcm.correctAnswerN", { n: q.correct_index + 1 })}</span>
+                        <span>{t("qcm.choiceCount", { n: q.choices.length })} • {t("qcm.correctAnswerN", { n: (q.correct_index ?? 0) + 1 })}</span>
                         <TopicBadge topicId={(q as QuizQuestion & { topic_id?: number | null }).topic_id ?? null} />
                       </div>
                     </div>

@@ -99,9 +99,15 @@ export default async function QuizSetPage({ params }: PageProps) {
     .eq("set_id", set.id)
     .order("position", { ascending: true });
 
+  // correct_index/explanation ne sont envoyés que si le viewer peut éditer
+  // les questions (propriétaire) — sinon un visiteur qui répond au quiz
+  // verrait la bonne réponse dans le payload avant même d'avoir répondu.
+  // Révélés autrement via award_quiz_question_xp après tentative.
   const initialQuestions: QuizQuestion[] = (questionsData ?? []).map((q) => ({
     ...q,
     choices: Array.isArray(q.choices) ? q.choices : [],
+    correct_index: canEditQuestions ? q.correct_index : undefined,
+    explanation: canEditQuestions ? q.explanation : undefined,
   })) as QuizQuestion[];
 
   return (

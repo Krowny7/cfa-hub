@@ -5,17 +5,13 @@ import dynamic from "next/dynamic";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { StatusMsg } from "@/components/StatusMsg";
 import type { ExerciseQuestion, AwardXpResult } from "@/lib/types";
 
 const ExerciseSetManage = dynamic(
   () => import("@/components/ExerciseSetManage").then((m) => m.ExerciseSetManage),
   { loading: () => <div className="mt-4 text-sm opacity-60">…</div> }
 );
-
-function StatusMsg({ msg }: { msg: string | null }) {
-  if (!msg) return null;
-  return <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>;
-}
 
 export function ExerciseSetView({
   setId,
@@ -40,6 +36,10 @@ export function ExerciseSetView({
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const [busy, setBusy] = useState(false);
+  // La bonne réponse n'est connue qu'APRÈS soumission (voir
+  // migration_fix_answer_leak.sql) — révélée par award_exercise_xp, jamais
+  // lue depuis current.correct_answer qui peut être undefined.
+  const [revealed, setRevealed] = useState<{ correctAnswer: number; explanation: string | null } | null>(null);
 
   const current = questions[questionIndex] ?? null;
   const canRun = questions.length > 0;
@@ -52,6 +52,7 @@ export function ExerciseSetView({
     setFinished(false);
     setScore(0);
     setStarted(false);
+    setRevealed(null);
   }
 
   function resetRun() {
@@ -62,6 +63,7 @@ export function ExerciseSetView({
     setFinished(false);
     setRunnerMsg(null);
     setStarted(true);
+    setRevealed(null);
   }
 
   async function checkAnswer() {
@@ -81,7 +83,7 @@ export function ExerciseSetView({
       });
 
       if (error) {
-        setRunnerMsg(`XP error: ${error.message}`);
+        setRunnerMsg(friendlyError(error, "unknown"));
         setChecked(true);
         return;
       }
@@ -90,6 +92,9 @@ export function ExerciseSetView({
       const correct = Boolean(row?.is_correct);
       const xp = Number(row?.xp_awarded ?? 0) || 0;
 
+      if (typeof row?.correct_answer === "number") {
+        setRevealed({ correctAnswer: row.correct_answer, explanation: row?.explanation ?? null });
+      }
       setIsCorrect(correct);
       if (correct) setScore((s) => s + 1);
       setRunnerMsg(xp > 0 ? `+${xp} XP` : correct ? t("exercises.correctNoXp") : null);
@@ -111,6 +116,7 @@ export function ExerciseSetView({
       setAnswerInput("");
       setChecked(false);
       setRunnerMsg(null);
+      setRevealed(null);
     }
   }
 
@@ -168,13 +174,15 @@ export function ExerciseSetView({
                 <div className={`font-semibold ${isCorrect ? "text-emerald-300" : "text-red-300"}`}>
                   {isCorrect ? t("exercises.correct") : t("exercises.incorrect")}
                 </div>
-                <div className="mt-1 opacity-90">
-                  {t("exercises.correctAnswerLabel")}: {current.correct_answer}
-                  {current.unit ? ` ${current.unit}` : ""}
-                </div>
-                {current.explanation && (
+                {revealed && (
+                  <div className="mt-1 opacity-90">
+                    {t("exercises.correctAnswerLabel")}: {revealed.correctAnswer}
+                    {current.unit ? ` ${current.unit}` : ""}
+                  </div>
+                )}
+                {revealed?.explanation && (
                   <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">
-                    {current.explanation}
+                    {revealed.explanation}
                   </div>
                 )}
               </div>

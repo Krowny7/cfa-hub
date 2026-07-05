@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { StatusMsg } from "@/components/StatusMsg";
 import type { QuizQuestion, AwardXpResult } from "@/lib/types";
 
 // Chargé uniquement pour le propriétaire (voir isOwner plus bas) : les
@@ -15,17 +16,6 @@ const QuizSetManage = dynamic(
   () => import("@/components/QuizSetManage").then((m) => m.QuizSetManage),
   { loading: () => <div className="mt-4 text-sm opacity-60">…</div> }
 );
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function StatusMsg({ msg }: { msg: string | null }) {
-  if (!msg) return null;
-  return (
-    <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -55,6 +45,11 @@ export function QuizSetView({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
   const [examStarted, setExamStarted] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // La bonne réponse n'est connue qu'APRÈS soumission (voir
+  // migration_fix_answer_leak.sql) — révélée par award_quiz_question_xp,
+  // jamais lue depuis current.correct_index qui peut être undefined.
+  const [revealed, setRevealed] = useState<{ correctIndex: number; explanation: string | null } | null>(null);
 
   const current = questions[questionIndex] ?? null;
   const canRun = questions.length > 0;
@@ -74,6 +69,7 @@ export function QuizSetView({
     setFinished(false);
     setScore(0);
     setExamStarted(false);
+    setRevealed(null);
   }
 
   function resetRun() {
@@ -85,6 +81,7 @@ export function QuizSetView({
     setFinished(false);
     setRunnerMsg(null);
     setExamStarted(true);
+    setRevealed(null);
   }
 
   // ---------------------------------------------------------------------------
@@ -105,12 +102,18 @@ export function QuizSetView({
         total: questions.length,
         duration_seconds: duration,
       });
-    } catch {
-      // Non-critical: swallow silently
+    } catch (e) {
+      // Non-critical pour l'utilisateur (le score reste affiché localement),
+      // mais on log pour ne pas perdre le signal en cas de bug silencieux.
+      console.error("submitAttempt failed:", e);
     }
   }
 
-  async function awardXpForAnswer(questionId: string, selectedIndex: number) {
+  // Soumet la réponse au serveur, qui la corrige ET renvoie la bonne réponse
+  // (correct_index/explanation) — le client ne les connaît jamais avant cet
+  // appel (voir migration_fix_answer_leak.sql).
+  async function submitAnswer(questionId: string, selectedIndex: number) {
+    setBusy(true);
     try {
       const { data, error } = await supabase.rpc("award_quiz_question_xp", {
         p_set_id: setId,
@@ -119,19 +122,26 @@ export function QuizSetView({
       });
 
       if (error) {
-        setRunnerMsg(`XP error: ${error.message}`);
+        setRunnerMsg(friendlyError(error, t("qcm.noXp")));
         return;
       }
 
       const row = (Array.isArray(data) ? data[0] : data) as AwardXpResult | null;
       const xp = Number(row?.xp_awarded ?? 0) || 0;
+      const isCorrect = Boolean(row?.is_correct);
+      const correctIndex = row?.correct_index;
 
-      if (xp > 0) setRunnerMsg(`+${xp} XP`);
-      else setRunnerMsg(`ℹ️ ${t("qcm.noXp")}`);
+      if (typeof correctIndex === "number") {
+        setRevealed({ correctIndex, explanation: row?.explanation ?? null });
+      }
+      if (isCorrect) setScore((s) => s + 1);
+      setRunnerMsg(isCorrect ? (xp > 0 ? `+${xp} XP` : `ℹ️ ${t("qcm.noXp")}`) : t("qcm.wrongAnswer"));
+      setShowCorrection(true);
     } catch (e: unknown) {
-      setRunnerMsg(
-        `XP exception: ${friendlyError(e, "unknown")}`
-      );
+      setRunnerMsg(friendlyError(e, "unknown"));
+      setShowCorrection(true);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -180,7 +190,7 @@ export function QuizSetView({
             <div className="mt-4 grid gap-2">
               {current.choices.map((choice, idx) => {
                 const picked = selected === idx;
-                const isCorrect = idx === current.correct_index;
+                const isCorrect = showCorrection && idx === revealed?.correctIndex;
                 const show = showCorrection;
 
                 const bg =
@@ -210,15 +220,15 @@ export function QuizSetView({
               })}
             </div>
 
-            {showCorrection && (
+            {showCorrection && revealed && (
               <div className="mt-4 card-soft p-4 text-sm">
                 <div className="font-semibold">{t("qcm.correction")}</div>
                 <div className="mt-2 opacity-90">
-                  {current.choices[current.correct_index]}
+                  {current.choices[revealed.correctIndex]}
                 </div>
-                {current.explanation && (
+                {revealed.explanation && (
                   <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">
-                    {current.explanation}
+                    {revealed.explanation}
                   </div>
                 )}
               </div>
@@ -234,19 +244,13 @@ export function QuizSetView({
                   <button
                     type="button"
                     className="btn btn-primary w-full sm:w-auto"
-                    disabled={selected == null}
+                    disabled={selected == null || busy}
                     onClick={() => {
                       if (selected == null) return;
-                      if (selected === current.correct_index) {
-                        setScore((s) => s + 1);
-                        void awardXpForAnswer(current.id, selected);
-                      } else {
-                        setRunnerMsg(`${t("qcm.wrongAnswer")}`);
-                      }
-                      setShowCorrection(true);
+                      void submitAnswer(current.id, selected);
                     }}
                   >
-                    {t("qcm.validate")}
+                    {busy ? t("common.saving") : t("qcm.validate")}
                   </button>
                 ) : questionIndex < questions.length - 1 ? (
                   <button
@@ -257,6 +261,7 @@ export function QuizSetView({
                       setSelected(null);
                       setShowCorrection(false);
                       setRunnerMsg(null);
+                      setRevealed(null);
                     }}
                   >
                     {t("qcm.next")}

@@ -402,8 +402,13 @@ CREATE POLICY "fsets_select" ON flashcard_sets FOR SELECT TO authenticated
       )
     )
   );
-CREATE POLICY "fsets_insert_own"  ON flashcard_sets FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
-CREATE POLICY "fsets_update_own"  ON flashcard_sets FOR UPDATE TO authenticated USING (owner_id = auth.uid());
+-- WITH CHECK empêche un non-admin de créer/laisser un set en is_official/
+-- official_published=true (voir migration_fix_content_admin_only.sql).
+CREATE POLICY "fsets_insert_own"  ON flashcard_sets FOR INSERT TO authenticated
+  WITH CHECK (owner_id = auth.uid() AND (is_app_admin() OR (is_official IS NOT TRUE AND official_published IS NOT TRUE)));
+CREATE POLICY "fsets_update_own"  ON flashcard_sets FOR UPDATE TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid() AND (is_app_admin() OR (is_official IS NOT TRUE AND official_published IS NOT TRUE)));
 CREATE POLICY "fsets_delete_own"  ON flashcard_sets FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
 -- ── flashcard_set_shares ──────────────────────────────────────────
@@ -457,8 +462,11 @@ CREATE POLICY "qsets_select" ON quiz_sets FOR SELECT TO authenticated
       )
     )
   );
-CREATE POLICY "qsets_insert_own"  ON quiz_sets FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
-CREATE POLICY "qsets_update_own"  ON quiz_sets FOR UPDATE TO authenticated USING (owner_id = auth.uid());
+CREATE POLICY "qsets_insert_own"  ON quiz_sets FOR INSERT TO authenticated
+  WITH CHECK (owner_id = auth.uid() AND (is_app_admin() OR (is_official IS NOT TRUE AND official_published IS NOT TRUE)));
+CREATE POLICY "qsets_update_own"  ON quiz_sets FOR UPDATE TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid() AND (is_app_admin() OR (is_official IS NOT TRUE AND official_published IS NOT TRUE)));
 CREATE POLICY "qsets_delete_own"  ON quiz_sets FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
 -- ── quiz_set_shares ───────────────────────────────────────────────
@@ -512,8 +520,11 @@ CREATE POLICY "exsets_select" ON exercise_sets FOR SELECT TO authenticated
       )
     )
   );
-CREATE POLICY "exsets_insert_own" ON exercise_sets FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
-CREATE POLICY "exsets_update_own" ON exercise_sets FOR UPDATE TO authenticated USING (owner_id = auth.uid());
+CREATE POLICY "exsets_insert_own" ON exercise_sets FOR INSERT TO authenticated
+  WITH CHECK (owner_id = auth.uid() AND (is_app_admin() OR (is_official IS NOT TRUE AND official_published IS NOT TRUE)));
+CREATE POLICY "exsets_update_own" ON exercise_sets FOR UPDATE TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid() AND (is_app_admin() OR (is_official IS NOT TRUE AND official_published IS NOT TRUE)));
 CREATE POLICY "exsets_delete_own" ON exercise_sets FOR DELETE TO authenticated USING (owner_id = auth.uid());
 
 -- ── exercise_set_shares ───────────────────────────────────────────
@@ -669,6 +680,7 @@ DECLARE
   v_published     boolean;
   v_difficulty    integer;
   v_correct_index integer;
+  v_explanation   text;
   v_is_correct    boolean;
   v_already       boolean;
   v_xp            integer := 0;
@@ -680,18 +692,23 @@ BEGIN
   FROM quiz_sets WHERE id = p_set_id;
 
   -- Récupérer la vraie bonne réponse pour CETTE question, dans CE set
-  SELECT correct_index INTO v_correct_index
+  SELECT correct_index, explanation INTO v_correct_index, v_explanation
   FROM quiz_questions
   WHERE id = p_question_id AND set_id = p_set_id;
 
   v_is_correct := (v_correct_index IS NOT NULL AND p_selected_index = v_correct_index);
 
+  -- correct_index/explanation ne sont renvoyés qu'ICI, après la tentative de
+  -- réponse — jamais dans le SELECT initial de la page (voir
+  -- migration_fix_answer_leak.sql).
   IF NOT (COALESCE(v_official, false) AND COALESCE(v_published, false)) OR NOT v_is_correct THEN
     SELECT xp_total INTO v_xp_total FROM profiles WHERE id = auth.uid();
     RETURN json_build_object(
       'xp_awarded', 0,
       'xp_total', COALESCE(v_xp_total, 0),
-      'is_correct', COALESCE(v_is_correct, false)
+      'is_correct', COALESCE(v_is_correct, false),
+      'correct_index', v_correct_index,
+      'explanation', v_explanation
     );
   END IF;
 
@@ -703,7 +720,10 @@ BEGIN
 
   IF v_already THEN
     SELECT xp_total INTO v_xp_total FROM profiles WHERE id = auth.uid();
-    RETURN json_build_object('xp_awarded', 0, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true);
+    RETURN json_build_object(
+      'xp_awarded', 0, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true,
+      'correct_index', v_correct_index, 'explanation', v_explanation
+    );
   END IF;
 
   -- XP selon la difficulté (défaut : 10)
@@ -731,7 +751,10 @@ BEGIN
   WHERE id = auth.uid()
   RETURNING xp_total INTO v_xp_total;
 
-  RETURN json_build_object('xp_awarded', v_xp, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true);
+  RETURN json_build_object(
+    'xp_awarded', v_xp, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true,
+    'correct_index', v_correct_index, 'explanation', v_explanation
+  );
 END;
 $$;
 
@@ -754,6 +777,7 @@ DECLARE
   v_difficulty    integer;
   v_correct       numeric;
   v_tolerance     numeric;
+  v_explanation   text;
   v_is_correct    boolean;
   v_already       boolean;
   v_xp            integer := 0;
@@ -763,7 +787,7 @@ BEGIN
   INTO v_official, v_published, v_difficulty
   FROM exercise_sets WHERE id = p_set_id;
 
-  SELECT correct_answer, tolerance INTO v_correct, v_tolerance
+  SELECT correct_answer, tolerance, explanation INTO v_correct, v_tolerance, v_explanation
   FROM exercise_questions
   WHERE id = p_question_id AND set_id = p_set_id;
 
@@ -774,7 +798,9 @@ BEGIN
     RETURN json_build_object(
       'xp_awarded', 0,
       'xp_total', COALESCE(v_xp_total, 0),
-      'is_correct', COALESCE(v_is_correct, false)
+      'is_correct', COALESCE(v_is_correct, false),
+      'correct_answer', v_correct,
+      'explanation', v_explanation
     );
   END IF;
 
@@ -785,7 +811,10 @@ BEGIN
 
   IF v_already THEN
     SELECT xp_total INTO v_xp_total FROM profiles WHERE id = auth.uid();
-    RETURN json_build_object('xp_awarded', 0, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true);
+    RETURN json_build_object(
+      'xp_awarded', 0, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true,
+      'correct_answer', v_correct, 'explanation', v_explanation
+    );
   END IF;
 
   v_xp := CASE COALESCE(v_difficulty, 1)
@@ -809,7 +838,10 @@ BEGIN
   WHERE id = auth.uid()
   RETURNING xp_total INTO v_xp_total;
 
-  RETURN json_build_object('xp_awarded', v_xp, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true);
+  RETURN json_build_object(
+    'xp_awarded', v_xp, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true,
+    'correct_answer', v_correct, 'explanation', v_explanation
+  );
 END;
 $$;
 
@@ -837,6 +869,248 @@ ALTER TABLE flashcard_sets ADD COLUMN IF NOT EXISTS subject text NOT NULL DEFAUL
 
 ALTER TABLE quiz_sets ADD COLUMN IF NOT EXISTS subject text NOT NULL DEFAULT 'cfa'
   CHECK (subject IN ('cfa', 'personal'));
+
+-- Le bloc ci-dessous (practice_sessions, cfa_topics, share_token,
+-- profiles.exam_date) vient de migration_features.sql, déjà appliqué en
+-- prod — copié ici tel quel pour que ce fichier de référence reflète
+-- fidèlement la base réelle (il en manquait avant ce commit).
+
+CREATE TABLE IF NOT EXISTS practice_sessions (
+  id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid        REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  set_id        uuid        NOT NULL,
+  set_title     text        NOT NULL,
+  mode          text        CHECK (mode IN ('qcm','flashcards')) NOT NULL,
+  correct       int         NOT NULL DEFAULT 0,
+  total         int         NOT NULL DEFAULT 0,
+  duration_seconds int,
+  occurred_at   timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE practice_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "practice_sessions_own" ON practice_sessions
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS practice_sessions_user_occurred
+  ON practice_sessions(user_id, occurred_at DESC);
+
+CREATE TABLE IF NOT EXISTS cfa_topics (
+  id       smallint  PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  code     text      UNIQUE NOT NULL,
+  name_fr  text      NOT NULL,
+  name_en  text      NOT NULL
+);
+
+INSERT INTO cfa_topics (code, name_fr, name_en) VALUES
+  ('ethics',      'Éthique et standards professionnels',  'Ethics & Professional Standards'),
+  ('quant',       'Méthodes quantitatives',               'Quantitative Methods'),
+  ('economics',   'Économie',                             'Economics'),
+  ('fra',         'Analyse des états financiers',         'Financial Reporting & Analysis'),
+  ('corporate',   'Finance d''entreprise',                'Corporate Finance'),
+  ('equity',      'Actions',                              'Equity Investments'),
+  ('derivatives', 'Produits dérivés',                     'Derivatives'),
+  ('fixed',       'Titres à revenu fixe',                 'Fixed Income'),
+  ('alts',        'Investissements alternatifs',          'Alternative Investments'),
+  ('portfolio',   'Gestion de portefeuille',              'Portfolio Management')
+ON CONFLICT (code) DO NOTHING;
+
+ALTER TABLE quiz_questions ADD COLUMN IF NOT EXISTS topic_id smallint REFERENCES cfa_topics(id);
+ALTER TABLE flashcards     ADD COLUMN IF NOT EXISTS topic_id smallint REFERENCES cfa_topics(id);
+
+ALTER TABLE flashcard_sets ADD COLUMN IF NOT EXISTS share_token uuid DEFAULT gen_random_uuid() UNIQUE;
+ALTER TABLE quiz_sets      ADD COLUMN IF NOT EXISTS share_token uuid DEFAULT gen_random_uuid() UNIQUE;
+UPDATE flashcard_sets SET share_token = gen_random_uuid() WHERE share_token IS NULL;
+UPDATE quiz_sets      SET share_token = gen_random_uuid() WHERE share_token IS NULL;
+
+-- Fonctions SECURITY DEFINER pour les routes /share/* (bypasse le RLS)
+CREATE OR REPLACE FUNCTION get_flashcard_set_by_token(p_token uuid)
+RETURNS SETOF flashcard_sets
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public
+AS $$
+  SELECT * FROM flashcard_sets WHERE share_token = p_token;
+$$;
+
+CREATE OR REPLACE FUNCTION get_flashcards_by_share_token(p_token uuid)
+RETURNS SETOF flashcards
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public
+AS $$
+  SELECT f.* FROM flashcards f
+  JOIN flashcard_sets fs ON fs.id = f.set_id
+  WHERE fs.share_token = p_token
+  ORDER BY f.position;
+$$;
+
+CREATE OR REPLACE FUNCTION get_quiz_set_by_token(p_token uuid)
+RETURNS SETOF quiz_sets
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public
+AS $$
+  SELECT * FROM quiz_sets WHERE share_token = p_token;
+$$;
+
+CREATE OR REPLACE FUNCTION get_quiz_questions_by_share_token(p_token uuid)
+RETURNS SETOF quiz_questions
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public
+AS $$
+  SELECT q.* FROM quiz_questions q
+  JOIN quiz_sets qs ON qs.id = q.set_id
+  WHERE qs.share_token = p_token
+  ORDER BY q.position;
+$$;
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS exam_date date;
+
+-- Le bloc ci-dessous (mock_exams et tables associées) vient de
+-- migration_mock_exams.sql, déjà appliqué en prod — copié ici tel quel,
+-- même raison que le bloc practice_sessions/cfa_topics ci-dessus.
+
+CREATE TABLE IF NOT EXISTS mock_exams (
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  title            text        NOT NULL,
+  description      text,
+  scheduled_at     timestamptz NOT NULL,
+  duration_minutes int         NOT NULL DEFAULT 180,
+  question_count   int         NOT NULL DEFAULT 60,
+  -- draft = pas encore publié, open = inscriptions ouvertes, closed = terminé
+  status           text        CHECK (status IN ('draft','open','closed')) NOT NULL DEFAULT 'draft',
+  created_by       uuid        REFERENCES profiles(id) NOT NULL,
+  created_at       timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS mock_exam_questions (
+  id          uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id     uuid    REFERENCES mock_exams(id) ON DELETE CASCADE NOT NULL,
+  question_id uuid    REFERENCES quiz_questions(id) ON DELETE CASCADE NOT NULL,
+  position    int     NOT NULL,
+  UNIQUE(exam_id, question_id)
+);
+
+CREATE TABLE IF NOT EXISTS mock_exam_registrations (
+  id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id       uuid        REFERENCES mock_exams(id) ON DELETE CASCADE NOT NULL,
+  user_id       uuid        REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  registered_at timestamptz DEFAULT now(),
+  UNIQUE(exam_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS mock_exam_results (
+  id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id          uuid        REFERENCES mock_exams(id) ON DELETE CASCADE NOT NULL,
+  user_id          uuid        REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  score            int         NOT NULL,
+  total            int         NOT NULL,
+  duration_seconds int,
+  completed_at     timestamptz DEFAULT now(),
+  UNIQUE(exam_id, user_id)
+);
+
+ALTER TABLE mock_exams              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mock_exam_questions     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mock_exam_registrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mock_exam_results       ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "mock_exams_read" ON mock_exams
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "mock_exams_admin_write" ON mock_exams
+  FOR ALL TO authenticated
+  USING (is_app_admin())
+  WITH CHECK (is_app_admin());
+
+CREATE POLICY "mock_exam_questions_read" ON mock_exam_questions
+  FOR SELECT TO authenticated
+  USING (
+    is_app_admin()
+    OR EXISTS (
+      SELECT 1 FROM mock_exam_registrations r
+      WHERE r.exam_id = mock_exam_questions.exam_id
+        AND r.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "mock_exam_questions_admin_write" ON mock_exam_questions
+  FOR ALL TO authenticated
+  USING (is_app_admin())
+  WITH CHECK (is_app_admin());
+
+CREATE POLICY "mock_exam_registrations_own" ON mock_exam_registrations
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "mock_exam_registrations_read_inscrit" ON mock_exam_registrations
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM mock_exam_registrations r2
+      WHERE r2.exam_id = mock_exam_registrations.exam_id
+        AND r2.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "mock_exam_results_own_write" ON mock_exam_results
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "mock_exam_results_read_inscrit" ON mock_exam_results
+  FOR SELECT TO authenticated
+  USING (
+    user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM mock_exam_registrations r
+      WHERE r.exam_id = mock_exam_results.exam_id
+        AND r.user_id = auth.uid()
+    )
+  );
+
+CREATE OR REPLACE FUNCTION publish_mock_exam(p_exam_id uuid)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_count int;
+BEGIN
+  IF NOT is_app_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  SELECT question_count INTO v_count FROM mock_exams WHERE id = p_exam_id;
+
+  DELETE FROM mock_exam_questions WHERE exam_id = p_exam_id;
+
+  INSERT INTO mock_exam_questions (exam_id, question_id, position)
+  SELECT
+    p_exam_id,
+    qq.id,
+    row_number() OVER (ORDER BY random()) - 1
+  FROM quiz_questions qq
+  JOIN quiz_sets qs ON qs.id = qq.set_id
+  WHERE qs.is_official = true
+    AND qs.official_published = true
+  ORDER BY random()
+  LIMIT v_count;
+
+  UPDATE mock_exams SET status = 'open' WHERE id = p_exam_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION close_mock_exam(p_exam_id uuid)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  IF NOT is_app_admin() THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  UPDATE mock_exams SET status = 'closed' WHERE id = p_exam_id;
+END;
+$$;
+
+CREATE INDEX IF NOT EXISTS mock_exams_scheduled_at ON mock_exams(scheduled_at DESC);
+CREATE INDEX IF NOT EXISTS mock_exam_registrations_exam ON mock_exam_registrations(exam_id);
+CREATE INDEX IF NOT EXISTS mock_exam_results_exam ON mock_exam_results(exam_id, score DESC);
 
 
 -- ----------------------------------------------------------------

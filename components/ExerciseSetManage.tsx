@@ -4,14 +4,8 @@ import { useState } from "react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { StatusMsg } from "@/components/StatusMsg";
 import type { ExerciseQuestion } from "@/lib/types";
-
-function StatusMsg({ msg }: { msg: string | null }) {
-  if (!msg) return null;
-  return (
-    <div className="mt-2 text-sm break-words [overflow-wrap:anywhere]">{msg}</div>
-  );
-}
 
 // Outils de création/gestion des exercices — même découpage que QuizSetManage
 // (chargé uniquement pour le propriétaire via dynamic import côté appelant).

@@ -94,7 +94,15 @@ export default async function ExerciseSetPage({ params }: PageProps) {
     .eq("set_id", set.id)
     .order("position", { ascending: true });
 
-  const initialQuestions: ExerciseQuestion[] = (questionsData ?? []) as ExerciseQuestion[];
+  // correct_answer/tolerance/explanation ne sont envoyés que si le viewer
+  // peut éditer les questions (propriétaire) — voir la même remarque dans
+  // app/qcm/[id]/page.tsx. Révélés via award_exercise_xp après tentative.
+  const initialQuestions: ExerciseQuestion[] = (questionsData ?? []).map((q) => ({
+    ...q,
+    correct_answer: canEditQuestions ? q.correct_answer : undefined,
+    tolerance: canEditQuestions ? q.tolerance : undefined,
+    explanation: canEditQuestions ? q.explanation : undefined,
+  })) as ExerciseQuestion[];
 
   return (
     <div className="grid gap-5">

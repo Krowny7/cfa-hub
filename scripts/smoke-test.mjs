@@ -110,8 +110,32 @@ async function main() {
     );
   }
 
-  // 3. QCM officiel — créer set + question, tester le RPC XP
-  const qset = await db
+  // 2b. RLS : un non-admin ne peut PAS créer un set is_official=true
+  // (migration_fix_content_admin_only.sql — voir aussi le test symétrique
+  // sur exercise_sets plus bas).
+  const escalate = await db
+    .from("quiz_sets")
+    .insert({
+      title: "Smoke Test Escalation",
+      visibility: "private",
+      subject: "cfa",
+      owner_id: userId,
+      is_official: true,
+      official_published: true,
+      difficulty: 3,
+    })
+    .select("id")
+    .single();
+  check(
+    "RLS : un non-admin ne peut pas créer un set is_official=true",
+    !!escalate.error,
+    escalate.error ? undefined : `insert accepté sans erreur, id=${escalate.data?.id}`
+  );
+
+  // 3. QCM officiel — créé via le service role (le smoke test simule un
+  // admin qui publie du contenu système ; l'insertion en tant qu'utilisateur
+  // normal est justement ce que 2b vérifie comme étant refusée).
+  const qset = await admin
     .from("quiz_sets")
     .insert({
       title: "Smoke Test QCM",
@@ -128,7 +152,7 @@ async function main() {
   quizSetId = qset.data?.id ?? null;
 
   if (quizSetId) {
-    const question = await db
+    const question = await admin
       .from("quiz_questions")
       .insert({
         set_id: quizSetId,
@@ -183,7 +207,7 @@ async function main() {
 
   // 3b. Exercices — même trio de checks XP (mauvaise/bonne réponse, anti-farming),
   // mais avec une réponse NUMÉRIQUE tolérante plutôt qu'un index de choix.
-  const exset = await db
+  const exset = await admin
     .from("exercise_sets")
     .insert({
       title: "Smoke Test Exercices",
@@ -200,7 +224,7 @@ async function main() {
   exerciseSetId = exset.data?.id ?? null;
 
   if (exerciseSetId) {
-    const exquestion = await db
+    const exquestion = await admin
       .from("exercise_questions")
       .insert({
         set_id: exerciseSetId,
