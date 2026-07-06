@@ -98,7 +98,7 @@ export function ContentListPage({
       {/* Système vs Communautaire — même style visuel que les onglets de
           scope juste en dessous (soulignement), pour une hiérarchie
           cohérente plutôt que deux langages de tabs différents. */}
-      <div className="flex border-b border-white/[0.07]">
+      <div className="flex overflow-x-auto border-b border-white/[0.07] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link href={viewLink("system")} className={tabCls(view === "system") + " flex items-center gap-1.5"}>
           <Star size={14} /> Système · {systemCount}
         </Link>
@@ -112,7 +112,7 @@ export function ContentListPage({
       ) : (
         <>
           {/* Scope tabs */}
-          <div className="flex border-b border-white/[0.07]">
+          <div className="flex overflow-x-auto border-b border-white/[0.07] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Link href={scopeLink("all")} className={tabCls(scope === "all")}>
               {t(locale, "common.all")} · {all.length}
             </Link>
