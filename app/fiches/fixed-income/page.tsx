@@ -71,7 +71,7 @@ export default function FixedIncomeFiche() {
       <div className="mt-1 text-xs text-faint">m = nombre de périodes de composition par an</div>
     </FCard>
     <FCard title="Duration effective (approximation)">
-      <KFormula lines={String.raw`\text{ApproxDur} = \dfrac{PV_{-} - PV_{+}}{2 \times \Delta Yield \times PV_0}`} />
+      <KFormula lines={String.raw`\text{ApproxDur} = \dfrac{V_{-} - V_{+}}{2 \times V_0 \times \Delta YTM}`} />
     </FCard>
     <FCard title="Duration monétaire (money duration) & PVBP">
       <KFormula lines={[
@@ -80,10 +80,10 @@ export default function FixedIncomeFiche() {
       ]} />
     </FCard>
     <FCard title="Convexité (approximation)">
-      <KFormula lines={String.raw`\text{ApproxConv} = \dfrac{PV_{-} + PV_{+} - 2 \times PV_0}{\Delta Yield^2 \times PV_0}`} />
+      <KFormula lines={String.raw`\text{ApproxConv} = \dfrac{V_{-} + V_{+} - 2 \times V_0}{(\Delta YTM)^2 \times V_0}`} />
     </FCard>
     <FCard title="Variation de prix estimée (duration + convexité)">
-      <KFormula lines={String.raw`\%\Delta Prix \approx -\text{ModDur} \times \Delta Yield + \tfrac{1}{2} \times \text{Convexité} \times \Delta Yield^2`} />
+      <KFormula lines={String.raw`\%\Delta Prix \approx -\text{ModDur} \times \Delta YTM + \tfrac{1}{2} \times \text{Convexité} \times (\Delta YTM)^2`} />
     </FCard>
     <Rule c="blue">Duration = sensibilité (linéaire) du prix au taux. Convexité = correction de courbure — toujours positive pour une obligation classique (sans option), ce qui avantage le porteur des deux côtés d'un mouvement de taux.</Rule>
     <Rule c="amber">Duration de portefeuille = moyenne pondérée (par valeur de marché) des durations de chaque position.</Rule>

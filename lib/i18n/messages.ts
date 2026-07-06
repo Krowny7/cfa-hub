@@ -210,7 +210,13 @@ export const MESSAGES = {
       none: "Aucune carte.",
       continueReviewing: "Reprendre la révision",
       manageCards: "Gérer les cartes",
-      allCards: "Toutes les cartes"
+      allCards: "Toutes les cartes",
+      mastered: "Je maîtrise",
+      notMastered: "À revoir",
+      reviewUnmastered: "Repasser sur les non maîtrisées",
+      backToAll: "Revenir à toutes les cartes",
+      unmasteredMode: "Mode révision — cartes non maîtrisées",
+      allMastered: "Toutes les cartes de cette passe sont maîtrisées"
     },
     qcm: {
       title: "QCM",
@@ -613,7 +619,13 @@ export const MESSAGES = {
       none: "No cards.",
       continueReviewing: "Continue reviewing",
       manageCards: "Manage cards",
-      allCards: "All cards"
+      allCards: "All cards",
+      mastered: "I know this",
+      notMastered: "Review again",
+      reviewUnmastered: "Go over the ones I don't know",
+      backToAll: "Back to all cards",
+      unmasteredMode: "Review mode — cards not yet mastered",
+      allMastered: "Every card in this pass is mastered"
     },
     qcm: {
       title: "MCQ",
