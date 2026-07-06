@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FCard, Rule, Formula, Sec, Reading, FTable } from "@/components/fiche";
 
 const NAV = [
+  { id: "resume", label: "Résumé" },
   { id: "r66", label: "R66" }, { id: "r67", label: "R67" }, { id: "r68", label: "R68" },
   { id: "r69", label: "R69" }, { id: "r70", label: "R70" }, { id: "r71", label: "R71" },
   { id: "r72", label: "R72" }, { id: "r73", label: "R73" }, { id: "r74", label: "R74" },
@@ -36,6 +37,7 @@ export default function DerivativesFiche() {
         <p className="text-sm text-white/50 mb-4">Readings 66–75 · Marchés, instruments, valorisation, réplication, parité put-call, modèle binomial.</p>
         <div className="flex flex-wrap gap-1.5">
           {[
+            ["#resume","Résumé — Essentiels"],
             ["#r66","R66 — Instrument & Market Features"],
             ["#r67","R67 — Forward Commitments & Contingent Claims"],
             ["#r68","R68 — Benefits, Risks & Uses"],
@@ -54,6 +56,70 @@ export default function DerivativesFiche() {
           ))}
         </div>
       </div>
+
+      {/* ══════════ Résumé ══════════ */}
+      <Reading id="resume" number="Essentiels" title="Fiche résumé — formules et définitions clés">
+        <p className="text-sm text-white/50 -mt-4 mb-6">Condensé par priorité d'examen — pas d'explication, juste l'essentiel à avoir en tête avant un exercice ou un QCM.</p>
+
+        <Sec label="Pricing forwards & futures (cost of carry)">
+          <FCard title="Prix forward (sans revenus/coûts)">
+            <Formula>{`F0(T) = S0 × (1+r)^T`}</Formula>
+          </FCard>
+          <FCard title="Modèle cost of carry (avec revenus/coûts)">
+            <Formula>{`F0(T) = [S0 − PV(revenus) + PV(coûts)] × (1+r)^T
+       = FV(S0) + FV(coûts) − FV(revenus)`}</Formula>
+          </FCard>
+          <FCard title="Valeur du contrat forward en cours de vie">
+            <Formula>{`Vt(T) = PV[Ft(T) − F0(T)]   (actualisé à r sur (T−t))
+À l'échéance : VT(T) = ST − F0(T)`}</Formula>
+          </FCard>
+          <Rule c="green">Futures ≈ forward en valeur théorique quand les taux sont constants/non corrélés au sous-jacent — différence pratique : appels de marge quotidiens (mark-to-market).</Rule>
+        </Sec>
+
+        <Sec label="Parité put-call">
+          <FCard title="Relation fondamentale (options européennes, même strike/échéance)">
+            <Formula>{`c0 + PV(X) = p0 + S0
+→ p0 = c0 + PV(X) − S0
+→ c0 = p0 + S0 − PV(X)`}</Formula>
+          </FCard>
+          <Rule c="blue">Call + obligation zéro-coupon (valeur X) = Put + sous-jacent — deux façons de répliquer le même payoff.</Rule>
+        </Sec>
+
+        <Sec label="Modèle binomial (une période)">
+          <FCard title="Probabilité risque-neutre">
+            <Formula>{`π = (1+r − d) / (u − d)`}</Formula>
+          </FCard>
+          <FCard title="Valeur de l'option">
+            <Formula>{`V0 = [π × Cu + (1−π) × Cd] / (1+r)`}</Formula>
+          </FCard>
+          <Rule c="amber">u = facteur de hausse du sous-jacent, d = facteur de baisse — u &gt; (1+r) &gt; d pour exclure l'arbitrage.</Rule>
+        </Sec>
+
+        <Sec label="Payoffs & valorisation des swaps">
+          <FCard title="Payoffs à l'échéance">
+            <Formula>{`Call : max(0, ST − X)
+Put  : max(0, X − ST)`}</Formula>
+          </FCard>
+          <FCard title="Valeur d'un swap taux fixe/flottant">
+            <Formula>{`Valeur (payeur du fixe) = PV(jambe flottante) − PV(jambe fixe)`}</Formula>
+          </FCard>
+          <Rule c="green">Le taux swap est fixé à l'initiation pour que la valeur du swap soit nulle des deux côtés.</Rule>
+        </Sec>
+
+        <Sec label="Définitions essentielles">
+          <FTable
+            headers={["Terme", "Définition"]}
+            rows={[
+              ["Forward commitment", "Engagement ferme, bilatéral (forward, futures, swap) — obligation symétrique"],
+              ["Contingent claim", "Droit optionnel, unilatéral (option) — payoff asymétrique"],
+              ["Arbitrage", "Profit sans risque ni mise de fonds nette — base de la valorisation par absence d'arbitrage"],
+              ["Réplication", "Construire un portefeuille synthétique au payoff identique à l'instrument cible"],
+              ["Moneyness", "In-the-money / at-the-money / out-of-the-money selon S vs X"],
+              ["Notional (swap)", "Montant de référence servant à calculer les flux, jamais échangé"],
+            ]}
+          />
+        </Sec>
+      </Reading>
 
       {/* ══════════ R66 ══════════ */}
       <Reading id="r66" number="Reading 66" title="Derivative Instrument and Derivative Market Features">

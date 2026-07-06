@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FCard, Rule, Formula, Sec, Reading, FTable } from "@/components/fiche";
 
 const NAV = [
+  { id: "resume", label: "Résumé" },
   { id: "r47", label: "R47" }, { id: "r48", label: "R48" }, { id: "r49", label: "R49" },
   { id: "r50", label: "R50" }, { id: "r51", label: "R51" }, { id: "r52", label: "R52" },
   { id: "r53", label: "R53" }, { id: "r54", label: "R54" }, { id: "r55", label: "R55" },
@@ -39,6 +40,7 @@ export default function FixedIncomeFiche() {
         <p className="text-sm text-white/50 mb-4">Readings 47–65 · Concepts clés et formules.</p>
         <div className="flex flex-wrap gap-1.5">
           {[
+            ["#resume","Résumé – Essentiels"],
             ["#r47","R47 – Instrument Features"],["#r48","R48 – Cash Flows & Types"],
             ["#r49","R49 – Issuance & Trading"],["#r50","R50 – Corporate Markets"],
             ["#r51","R51 – Gov. Markets"],["#r52","R52 – Bond Valuation"],
@@ -56,6 +58,99 @@ export default function FixedIncomeFiche() {
           ))}
         </div>
       </div>
+
+<Reading id="resume" number="Essentiels" title="Fiche résumé — formules et définitions clés">
+  <p className="text-sm text-white/50 -mt-4 mb-6">Condensé par priorité d'examen — pas d'explication, juste l'essentiel à avoir en tête avant un exercice ou un QCM.</p>
+
+  <Sec label="Duration & convexité">
+    <FCard title="Duration de Macaulay">
+      <Formula>{`MacDur = Σ [t × PV(CFt)] / Prix`}</Formula>
+    </FCard>
+    <FCard title="Duration modifiée">
+      <Formula>{`ModDur = MacDur / (1 + YTM/m)   (m = nb périodes/an)`}</Formula>
+    </FCard>
+    <FCard title="Duration effective (approximation)">
+      <Formula>{`ApproxDur = (PV− − PV+) / (2 × ΔYield × PV0)`}</Formula>
+    </FCard>
+    <FCard title="Duration monétaire (money duration) & PVBP">
+      <Formula>{`MoneyDur = ModDur × Prix
+PVBP = MoneyDur × 0.0001`}</Formula>
+    </FCard>
+    <FCard title="Convexité (approximation)">
+      <Formula>{`ApproxConv = (PV− + PV+ − 2×PV0) / (ΔYield² × PV0)`}</Formula>
+    </FCard>
+    <FCard title="Variation de prix estimée (duration + convexité)">
+      <Formula>{`%ΔPrix ≈ −ModDur × ΔYield + ½ × Convexité × ΔYield²`}</Formula>
+    </FCard>
+    <Rule c="blue">Duration = sensibilité (linéaire) du prix au taux. Convexité = correction de courbure — toujours positive pour une obligation classique (sans option), ce qui avantage le porteur des deux côtés d'un mouvement de taux.</Rule>
+    <Rule c="amber">Duration de portefeuille = moyenne pondérée (par valeur de marché) des durations de chaque position.</Rule>
+  </Sec>
+
+  <Sec label="Mesures de rendement (yield) et spreads">
+    <FCard title="Rendement courant (current yield)">
+      <Formula>{`Current Yield = Coupon annuel / Prix`}</Formula>
+    </FCard>
+    <FCard title="Yield to Maturity (YTM)">
+      <Formula>{`Prix = Σ [C / (1+YTM/m)^t] + FV / (1+YTM/m)^N`}</Formula>
+    </FCard>
+    <FCard title="G-spread / I-spread / Z-spread / OAS">
+      <Formula>{`G-spread = YTM(obligation) − rendement Trésor interpolé
+I-spread = YTM(obligation) − taux swap
+Z-spread = spread constant ajouté à CHAQUE point de la courbe spot
+           tel que PV(cash flows) = Prix
+OAS = Z-spread − coût de l'option intégrée`}</Formula>
+    </FCard>
+    <Rule c="green">Spread qui s'élargit (widens) → prix baisse. Spread qui se resserre (tightens) → prix monte.</Rule>
+  </Sec>
+
+  <Sec label="Valorisation obligataire">
+    <FCard title="Prix / valeur actuelle">
+      <Formula>{`Prix (dirty) = Σ CFt / (1+r)^t
+Prix clean = Prix dirty − intérêts courus`}</Formula>
+    </FCard>
+    <FCard title="Intérêts courus (accrued interest)">
+      <Formula>{`AI = Coupon périodique × (jours écoulés / jours période)`}</Formula>
+    </FCard>
+    <Rule c="blue">Prix au pair si coupon = YTM · Prime si coupon &gt; YTM · Décote (discount) si coupon &lt; YTM.</Rule>
+  </Sec>
+
+  <Sec label="Structure par terme des taux">
+    <FCard title="Taux forward à partir des taux spot">
+      <Formula>{`(1+z_N)^N = (1+z_(N-1))^(N-1) × (1 + f)`}</Formula>
+    </FCard>
+    <Rule c="amber">Courbe normale (croissante) = anticipation de hausse/croissance · Courbe inversée = anticipation de récession/baisse des taux · Par rate = taux d'une obligation hypothétique cotée au pair sur la courbe spot.</Rule>
+    <FCard title="Rendement total attendu (rolling yield)">
+      <Formula>{`Rolling yield ≈ revenu du coupon + rendement de roll-down
+                 + variation de prix anticipée (vue de marché)`}</Formula>
+    </FCard>
+  </Sec>
+
+  <Sec label="Risque de crédit">
+    <FCard title="Composantes du spread de crédit">
+      <Formula>{`Spread ≈ prime de risque de défaut + prime de liquidité`}</Formula>
+    </FCard>
+    <Rule c="red">Perte attendue = Probabilité de défaut × Perte en cas de défaut (LGD = 1 − taux de recouvrement).</Rule>
+    <Rule c="blue">Séniorité : Secured &gt; Senior unsecured &gt; Subordinated — priorité de paiement en cas de défaut.</Rule>
+  </Sec>
+
+  <Sec label="Définitions essentielles (instruments, cash flows, titrisation)">
+    <FTable
+      headers={["Terme", "Définition"]}
+      rows={[
+        ["Bullet bond", "Remboursement du principal en une fois, à l'échéance"],
+        ["Amortizing bond", "Principal remboursé progressivement sur la durée de vie"],
+        ["Sinking fund", "Clause de remboursement anticipé partiel programmé"],
+        ["Floating-rate note (FRN)", "Coupon indexé sur un taux de référence + marge (quoted margin)"],
+        ["Callable bond", "L'émetteur peut rembourser par anticipation — désavantage l'acheteur si taux baissent"],
+        ["Putable bond", "Le porteur peut exiger le remboursement anticipé — avantage l'acheteur si taux montent"],
+        ["Pass-through (MBS)", "Les flux du pool de prêts sont reversés directement aux porteurs"],
+        ["CMO", "Tranches structurées à partir d'un pool pour redistribuer le risque de prépaiement"],
+        ["Prepayment risk", "Contraction risk (prépaiement plus rapide) / Extension risk (plus lent) que prévu"],
+        ["WAC / WAM", "Weighted Average Coupon / Maturity du pool de prêts sous-jacent"],
+      ]}
+    />
+  </Sec>
+</Reading>
 
 <Reading id="r47" number="Reading 47" title="Fixed-Income Instrument Features">
 
