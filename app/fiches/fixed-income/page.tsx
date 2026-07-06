@@ -234,8 +234,12 @@ export default function FixedIncomeFiche() {
         <li><strong>Deferred coupon</strong> : pas de coupons pendant une période initiale, puis paiements réguliers. Premier versement = intérêts accumulés.</li>
         <li><strong>Zero-coupon</strong> : un seul paiement à maturité. Élimine le risque de réinvestissement. Ne peut jamais dépasser le pair si taux {'>'} 0.</li>
       </ul>
+      <KFormula lines={[
+        String.raw`\text{Principal ajusté} = \text{Nominal} \times (1 + \text{ajustement inflation})`,
+        String.raw`\text{Coupon} = \text{Principal ajusté} \times \dfrac{\text{coupon rate}}{2}`,
+      ]} />
       <Formula>
-        TIPS — Exemple : par 100 000 $, coupon 4% semestriel, inflation annuelle 2,5%{"\n"}
+        Exemple : par 100 000 $, coupon 4% semestriel, inflation annuelle 2,5%{"\n"}
         Ajustement 6 mois = 2,5% / 2 = 1,25%{"\n"}
         Principal ajusté = 100 000 × 1,0125 = 101 250 ${"\n"}
         Coupon = 101 250 × 4% / 2 = 2 025 $
@@ -256,10 +260,12 @@ export default function FixedIncomeFiche() {
     </FCard>
 
     <FCard title="Convertibles — formules" en="Convertible bond formulas">
+      <KFormula lines={[
+        String.raw`\text{Conversion ratio} = \dfrac{\text{Par value}}{\text{Prix de conversion}}`,
+        String.raw`\text{Conversion value} = \text{Ratio} \times \text{Cours de l'action}`,
+      ]} />
       <Formula>
-        Conversion ratio = Par value / Prix de conversion{"\n"}
-        Ex : par 1 000 $, prix conversion 40 $ → ratio = 25 actions{"\n\n"}
-        Conversion value = Ratio × Cours de l&apos;action{"\n"}
+        Ex : par 1 000 $, prix conversion 40 $ → ratio = 25 actions{"\n"}
         Ex : 25 actions × 50 $ = 1 250 $
       </Formula>
     </FCard>
@@ -405,14 +411,14 @@ export default function FixedIncomeFiche() {
   <Sec los="LOS 50.b" label="Repurchase agreements (repos)">
     <FCard title="Mécanisme et formules repo" en="Repo mechanism and formulas">
       Un <strong>repo</strong> = vente d&apos;un titre avec engagement de rachat à date et prix futurs prédéfinis. Économiquement = emprunt collatéralisé.
+      <KFormula lines={[
+        String.raw`\text{Prix d'achat} = \dfrac{\text{Valeur marché collatéral}}{\text{Initial margin}}`,
+        String.raw`\text{Prix de rachat} = \text{Prix d'achat} \times \left[1 + \left(\text{repo rate} \times \dfrac{T}{360}\right)\right]`,
+        String.raw`\text{Haircut} = 1 - \dfrac{1}{\text{Initial margin}}`,
+      ]} />
       <Formula>
-        Prix d&apos;achat (loan amount) = Valeur marché collatéral / Initial margin{"\n"}
-        Ex : MV = 1 000 000 $, initial margin = 103%{"\n"}
-        Prix d&apos;achat = 1 000 000 / 1,03 = 970 874 ${"\n\n"}
-        Prix de rachat = Prix d&apos;achat × [1 + (repo rate × T/360)]{"\n"}
-        Ex : repo rate 2%, T = 90 jours{"\n"}
-        Prix de rachat = 970 874 × [1 + (0,02 × 90/360)] = 975 728 ${"\n\n"}
-        Haircut = 1 − 1/initial margin{"\n"}
+        Ex : MV = 1 000 000 $, initial margin = 103% → Prix d&apos;achat = 1 000 000 / 1,03 = 970 874 ${"\n"}
+        Ex : repo rate 2%, T = 90 jours → Prix de rachat = 970 874 × [1 + (0,02 × 90/360)] = 975 728 ${"\n"}
         Ex : haircut = 1 − 1/1,03 = 2,91%{"\n\n"}
         Variation margin : si MV collatéral baisse sous (initial margin × adjusted purchase price){"\n"}
         → l&apos;emprunteur doit poster du collatéral supplémentaire
@@ -512,6 +518,7 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 52.a" label="Calcul du prix d&apos;une obligation">
     <FCard title="Formule et calculatrice — obligations annuelles et semi-annuelles" en="Bond pricing formula and calculator">
+      <KFormula lines={String.raw`\text{Prix} = \sum_{t=1}^{N} \dfrac{PMT}{(1+I/Y)^t} + \dfrac{FV}{(1+I/Y)^N}`} />
       <Formula>
         Obligation annuelle — 5 ans, coupon 10%, YTM = 8%{"\n"}
         N = 5 ; PMT = 10 ; FV = 100 ; I/Y = 8 → PV = −107,99 (prime : coupon {'>'} YTM){"\n\n"}
@@ -528,18 +535,16 @@ export default function FixedIncomeFiche() {
     </FCard>
 
     <FCard title="Prix plein, prix pied de coupon et coupon couru" en="Full price, flat price, accrued interest">
+      <KFormula lines={[
+        String.raw`AI = \text{Coupon période} \times \dfrac{\text{jours depuis dernier coupon}}{\text{jours dans la période}}`,
+        String.raw`\text{Prix plein (dirty)} = \text{Prix pied de coupon (flat/clean)} + AI`,
+        String.raw`\text{Full price} = PV_{\text{dernier coupon}} \times \left(1+\dfrac{YTM}{m}\right)^{t/T}`,
+      ]} />
+      <div className="mt-1 text-xs text-faint">t = jours depuis dernier coupon, T = jours dans la période · Day count : actual/actual (souverain) ou 30/360 (corporate, convention d&apos;exam).</div>
       <Formula>
-        Coupon couru (AI) = Coupon période × (jours depuis dernier coupon / jours dans la période){"\n\n"}
-        Prix plein (dirty / invoice price) = Prix pied de coupon (flat / clean) + AI{"\n"}
         Prix coté = flat price. Transaction réglée au full price.{"\n\n"}
-        Day count : actual/actual pour obligations souveraines{"\n"}
-        {'             '}30/360 pour obligations corporate (convention d&apos;exam){"\n\n"}
-        Calcul du full price entre deux coupons :{"\n"}
-        Étape 1 : PV sur la dernière date de coupon{"\n"}
-        Étape 2 : full price = PV_last_coupon × (1 + YTM/périodes)^(t/T){"\n"}
-        où t = jours depuis dernier coupon, T = jours dans la période{"\n\n"}
         Exemple : obligation 5%, coupons 15 juin / 15 déc., YTM = 4%, règlement 21 août, 4 coupons restants{"\n"}
-        Étape 1 : N=4, PMT=2,5, FV=100, I/Y=2 → PV = 101,904{"\n"}
+        Étape 1 (PV sur dernier coupon) : N=4, PMT=2,5, FV=100, I/Y=2 → PV = 101,904{"\n"}
         Étape 2 : jours 15 juin→15 déc = 183j ; jours 15 juin→21 août = 67j{"\n"}
         Full price = 101,904 × (1,02)^(67/183) = 102,645{"\n"}
         AI = 2,5 × (67/183) = 0,915{"\n"}
@@ -568,9 +573,8 @@ export default function FixedIncomeFiche() {
         <li><strong>Pull to par (constant-yield price trajectory)</strong> : à YTM constant, le prix converge vers le pair à l&apos;approche de la maturité. Obligation à prime : prix baisse progressivement. Obligation à discount : prix monte progressivement.</li>
         <li><strong>Matrix pricing</strong> : pour les obligations peu liquides ou non cotées, on estime le YTM par interpolation linéaire à partir d&apos;obligations comparables (même rating, maturités encadrantes).</li>
       </ul>
+      <KFormula lines={String.raw`YTM_{\text{cible}} = YTM_A + \dfrac{T_{\text{cible}} - T_A}{T_B - T_A} \times (YTM_B - YTM_A)`} />
       <Formula>
-        Matrix pricing — interpolation linéaire :{"\n"}
-        YTM_cible = YTM_A + (T_cible − T_A) / (T_B − T_A) × (YTM_B − YTM_A){"\n\n"}
         Exemple : obligation 4 ans, rating A ; comparables : 3 ans @ 3,2% et 6 ans @ 5,0%{"\n"}
         YTM_4ans = 3,2% + (4−3)/(6−3) × (5,0%−3,2%) = 3,2% + 0,6% = 3,8%
       </Formula>
@@ -584,11 +588,12 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 53.a" label="Mesures de rendement — obligations taux fixe">
     <FCard title="Périodicité, EAY, BEY, Street convention" en="Periodicity, EAY, BEY">
+      <KFormula lines={[
+        String.raw`EAY = (1 + r_{\text{période}})^m - 1`,
+        String.raw`BEY \to EAY : EAY = \left(1+\dfrac{BEY}{2}\right)^2 - 1`,
+        String.raw`EAY \to BEY : BEY = 2 \times \left[(1+EAY)^{1/2} - 1\right]`,
+      ]} />
       <Formula>
-        EAY (Effective Annual Yield) = (1 + r_periode)^m − 1{"\n"}
-        BEY (Bond Equivalent Yield) = taux semestriel × 2{"\n\n"}
-        BEY → EAY : EAY = (1 + BEY/2)² − 1{"\n"}
-        EAY → BEY : BEY = 2 × [(1 + EAY)^(1/2) − 1]{"\n"}
         Exemple : BEY=6% → EAY=(1.03)²−1=6.09%{"\n\n"}
         Périodicité m ↑ → stated YTM ↓ (pour même EAY){"\n"}
         Ex: EAY=5%; m=2: BEY=4.94%; m=4: BEY=4.91%
@@ -596,9 +601,9 @@ export default function FixedIncomeFiche() {
       <Rule c="blue">Street convention = dates coupon nominales. True yield = dates réelles (légèrement inférieur). Current yield = coupon annuel / prix. Simple yield = current yield ± amortissement linéaire prime/discount.</Rule>
     </FCard>
     <FCard title="YTC, YTP, YTW" en="Yield to call/put/worst">
+      <KFormula lines={String.raw`YTW = \min(YTM,\ YTC_1,\ YTC_2,\ \ldots)`} />
+      <div className="mt-1 text-xs text-faint">YTC : N = périodes jusqu&apos;au call × m ; FV = call price ; PMT = coupon/m.</div>
       <Formula>
-        YTC : N=périodes jusqu&apos;au call × m; FV=call price; PMT=coupon/m{"\n"}
-        YTW = min(YTM, YTC₁, YTC₂, ...) pour obligations callables{"\n\n"}
         Exemple : 15yr 10% semi, prix=1150, callable 5yr à 1100{"\n"}
         YTM: N=30,PMT=50,FV=1000,PV=-1150 → I/Y=4.18% → ×2=8.35%{"\n"}
         YTC: N=10,PMT=50,FV=1100,PV=-1150 → I/Y=4.17% → ×2=8.34%{"\n"}
@@ -622,14 +627,18 @@ export default function FixedIncomeFiche() {
       <Rule c="amber">Callable: OAS {'<'} Z-spread. Putable: OAS {'>'} Z-spread. G-spread et I-spread corrects SEULEMENT si courbe des taux plate (piège Q10 exam: disadvantage = only correct if yield curve is FLAT).</Rule>
     </FCard>
     <FCard title="Z-spread et OAS — exemples numériques" en="Z-spread and OAS examples">
+      <KFormula lines={[
+        String.raw`\text{Prix} = \sum_t \dfrac{CF_t}{(1+z_t+ZS)^t} \quad \text{(résolu par itération sur } ZS \text{)}`,
+        String.raw`OAS = \text{Z-spread} - \text{valeur de l'option}`,
+      ]} />
       <Formula>
         Z-spread : 3yr 9% corporate, prix=89.464{"\n"}
         Spot Trésor : z₁=4%, z₂=8.167%, z₃=12.377%; YTM Trésor 3yr=12%{"\n"}
         G-spread = 13.50% − 12.00% = 1.50%{"\n"}
-        Z-spread ZS : 89.464 = 9/(1.04+ZS) + 9/(1.08167+ZS)² + 109/(1.12377+ZS)³{"\n"}
+        89.464 = 9/(1.04+ZS) + 9/(1.08167+ZS)² + 109/(1.12377+ZS)³{"\n"}
         → ZS = 1.67% (167 bps) par essais successifs{"\n\n"}
         OAS : callable bond, Z-spread=180bp, valeur call=60bp{"\n"}
-        OAS = Z-spread − option value = 180 − 60 = 120 bp
+        OAS = 180 − 60 = 120 bp
       </Formula>
     </FCard>
   </Sec>
@@ -655,8 +664,8 @@ export default function FixedIncomeFiche() {
       <Rule c="red">Piège : DM {'>'} QM → FRN à DISCOUNT. DM {'<'} QM → FRN à PRIME. Q3 exam : si DM {'<'} QM → credit quality improved → trade at premium.</Rule>
     </FCard>
     <FCard title="Valorisation d&apos;un FRN" en="FRN valuation">
+      <KFormula lines={String.raw`\text{Prix} = \sum_{t=1}^{n} \dfrac{\frac{MRR+QM}{m} \times FV}{\left(1+\frac{MRR+DM}{m}\right)^t} + \dfrac{FV}{\left(1+\frac{MRR+DM}{m}\right)^n}`} />
       <Formula>
-        Prix = Σ[(MRR+QM)/m × FV / (1+(MRR+DM)/m)^t] + FV/(1+(MRR+DM)/m)^n{"\n\n"}
         Exemple Schweser : FRN $100k semi-annual, 5yr, MRR=3.0%, QM=120bps, DM=150bps{"\n"}
         Coupon annualisé = 3.0%+1.2% = 4.2% → PMT semestriel = 2.1% × 100 = 2.1{"\n"}
         I/Y per period = (3.0%+1.5%)/2 = 2.25%{"\n"}
@@ -677,12 +686,12 @@ export default function FixedIncomeFiche() {
           ["HPY (Holding Period Yield)","(FV−Prix)/Prix","N/A","Rendement non annualisé"],
         ]}
       />
+      <KFormula lines={String.raw`BEY = AOR \times \dfrac{365}{360}`} />
       <Formula>
         Exemple T-bill : FV=1000, Prix=980, T=90j{"\n"}
         DR = (20/1000) × (360/90) = 8.000%{"\n"}
         AOR = (20/980) × (360/90) = 8.163%{"\n"}
         BEY = (20/980) × (365/90) = 8.282%{"\n\n"}
-        Conversion AOR 360j → BEY 365j : BEY = AOR × 365/360{"\n"}
         Ex: AOR=1.5%/360 → BEY = 1.5% × 365/360 = 1.5208%
       </Formula>
       <Rule c="blue">Ordre : DR {'<'} AOR {'<'} BEY. BEY = add-on yield basé 365j (définition). CDs et repos quotés AOR/360. T-bills et CP quotés DR/360. Q9 exam : BEY = add-on yield 365j.</Rule>
@@ -695,8 +704,8 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 55.a" label="Taux spot et valorisation sans arbitrage">
     <FCard title="Taux spot — définition et prix d&apos;une obligation" en="Spot rates and bond pricing">
+      <KFormula lines={String.raw`\text{Prix}_{\text{no-arbitrage}} = \dfrac{C_1}{1+S_1} + \dfrac{C_2}{(1+S_2)^2} + \cdots + \dfrac{C_n+FV}{(1+S_n)^n}`} />
       <Formula>
-        Prix no-arbitrage = C₁/(1+S₁) + C₂/(1+S₂)² + ... + (C_n+FV)/(1+S_n)^n{"\n\n"}
         Exemple : 3yr coupon 5%, FV=100; S₁=3%, S₂=4%, S₃=5%{"\n"}
         = 5/1.03 + 5/1.04² + 105/1.05³ = 4.854 + 4.623 + 90.703 = 100.180{"\n"}
         → YTM = 4.93% (N=3,PMT=5,FV=100,PV=-100.180 → I/Y=4.93%)
@@ -707,24 +716,25 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 55.b" label="Taux par et taux forward">
     <FCard title="Taux forward — notation CFA et formules" en="Forward rates">
+      <KFormula lines={[
+        String.raw`(1+S_2)^2 = (1+S_1)(1+f_{1,1}) \Rightarrow f_{1,1} = \dfrac{(1+S_2)^2}{1+S_1} - 1`,
+        String.raw`(1+S_3)^3 = (1+S_2)^2(1+f_{2,1}) \Rightarrow f_{2,1} = \dfrac{(1+S_3)^3}{(1+S_2)^2} - 1`,
+        String.raw`S_n = \left[(1+S_1)(1+f_{1,1})\cdots(1+f_{n-1,1})\right]^{1/n} - 1`,
+        String.raw`f_{2,2} = \left[\dfrac{(1+S_4)^4}{(1+S_2)^2}\right]^{1/2} - 1`,
+      ]} />
+      <div className="mt-1 text-xs text-faint">Notation f<sub>A,B</sub> = taux forward B-ans démarrant dans A ans (notation CFA : AyBy — ex : 2y1y = f₂,₁ = 1 an dans 2 ans).</div>
       <Formula>
-        Notation CFA : AyBy = taux B-ans démarrant dans A ans{"\n"}
-        Ex: 1y1y = 1yr dans 1yr; 2y1y = 1yr dans 2yr; 2y2y = 2yr dans 2yr{"\n\n"}
-        (1+S₂)² = (1+S₁)(1+1y1y) → 1y1y = (1+S₂)²/(1+S₁) − 1{"\n"}
-        Ex: S₁=4%, S₂=8% → 1y1y = (1.08)²/1.04 − 1 = 12.154%{"\n\n"}
-        (1+S₃)³ = (1+S₂)²(1+2y1y) → 2y1y = (1+S₃)³/(1+S₂)² − 1{"\n"}
-        Ex: S₁=4%, S₂=8%, S₃=12% → 2y1y = (1.12)³/(1.08)² − 1 = 20.45%{"\n\n"}
-        Spot depuis forwards : S_n = [(1+S₁)(1+1y1y)...(1+(n-1)y1y)]^(1/n) − 1{"\n"}
-        Ex: S₁=2%, 1y1y=3%, 2y1y=4% → S₃=[(1.02)(1.03)(1.04)]^(1/3)−1 = 2.997%{"\n\n"}
-        Multi-période : 2y2y = [(1+S₄)⁴/(1+S₂)²]^(1/2) − 1{"\n"}
+        Ex: S₁=4%, S₂=8% → 1y1y = (1.08)²/1.04 − 1 = 12.154%{"\n"}
+        Ex: S₁=4%, S₂=8%, S₃=12% → 2y1y = (1.12)³/(1.08)² − 1 = 20.45%{"\n"}
+        Ex: S₁=2%, 1y1y=3%, 2y1y=4% → S₃=[(1.02)(1.03)(1.04)]^(1/3)−1 = 2.997%{"\n"}
         Ex: S₂=6%, S₄=8% → 2y2y = [(1.08)⁴/(1.06)²]^(1/2) − 1 = 10.04%
       </Formula>
       <Rule c="amber">Approximation : AyBy ≈ [(A+B)×S_{"{A+B}"} − A×S_A] / B. Ex: 2y1y ≈ 3(12%)−2(8%) = 20% (vs exact 20.45%). Utile pour vérifier la cohérence sur l&apos;examen.</Rule>
     </FCard>
     <FCard title="Taux par (par yield)" en="Par yield">
+      <KFormula lines={String.raw`\dfrac{PMT}{1+S_1} + \dfrac{PMT}{(1+S_2)^2} + \dfrac{PMT+100}{(1+S_3)^3} = 100`} />
+      <div className="mt-1 text-xs text-faint">Par yield = taux coupon pour lequel une obligation est valorisée exactement au pair.</div>
       <Formula>
-        Par yield = taux coupon pour lequel une obligation est valorisée exactement au pair{"\n\n"}
-        PMT/(1+S₁) + PMT/(1+S₂)² + (PMT+100)/(1+S₃)³ = 100{"\n\n"}
         Avec S₁=1%, S₂=2%, S₃=3% → PMT = 2.96 → par yield 3yr = 2.96%{"\n\n"}
         Valorisation avec forwards : S₁=4%, 1y1y=5%, 2y1y=6%, coupon 5%, FV=1000{"\n"}
         = 50/1.04 + 50/(1.04×1.05) + 1050/(1.04×1.05×1.06) = $1,000.98
@@ -760,6 +770,7 @@ export default function FixedIncomeFiche() {
       <Rule c="blue">YTM réalisé seulement si réinvestissement au YTM ET détention jusqu&apos;à maturité. Capital gain/loss mesuré vs carrying value, pas le prix d&apos;achat original. Zero-coupon held to maturity → pas de gain/perte en capital.</Rule>
     </FCard>
     <FCard title="Horizon return — exemples clés Schweser" en="Horizon return examples">
+      <KFormula lines={String.raw`\text{Horizon return} = \left(\dfrac{\text{FV(coupons + réinvestissement)} + \text{Prix de vente}}{\text{Prix d'achat}}\right)^{1/n} - 1`} />
       <Formula>
         Bond 3yr 6% annuel, YTM achat=7%, prix=97.376{"\n\n"}
         YTM stable, held to maturity :{"\n"}
@@ -788,20 +799,16 @@ export default function FixedIncomeFiche() {
           ["Horizon = MacDur","Risques équilibrés","≈ YTM","≈ YTM"],
         ]}
       />
-      <Formula>
-        Duration gap = MacDur − Investment horizon{"\n"}
-        Gap {'>'} 0 → price risk dominant{"\n"}
-        Gap {'<'} 0 → reinvestment risk dominant{"\n"}
-        Gap = 0 → immunisation (risques s&apos;annulent exactement)
-      </Formula>
+      <KFormula lines={String.raw`\text{Duration gap} = \text{MacDur} - \text{Investment horizon}`} />
+      <div className="mt-1 text-xs text-faint">Gap &gt; 0 → price risk dominant · Gap &lt; 0 → reinvestment risk dominant · Gap = 0 → immunisation.</div>
       <Rule c="red">Q14: price risk dominates when duration gap POSITIVE. Q1: MacDur=5.3, horizon=3yr, YTM ↓ → gap positif → price risk dominant → prix ↑ {'>'} réinvest. ↓ → realized yield {'>'} YTM at purchase. Q13: investor concerned about price risk → MacDur ≈ horizon = 5.25yr.</Rule>
     </FCard>
   </Sec>
 
   <Sec los="LOS 56.c" label="Duration de Macaulay">
     <FCard title="MacDur — calcul et interprétation" en="Macaulay duration">
+      <KFormula lines={String.raw`\text{MacDur} = \sum_t t \times \dfrac{PV_t}{\text{Prix}}`} />
       <Formula>
-        MacDur = Σ t × (PV_t / Prix) = moyenne pondérée du temps jusqu&apos;à chaque flux{"\n\n"}
         Exemple : 5yr 11% annuel, YTM=15%, prix=86.59{"\n"}
         t=1: PV=9.565, W=0.1105 → 0.1105×1=0.1105{"\n"}
         t=2: PV=8.318, W=0.0961 → 0.0961×2=0.1922{"\n"}
@@ -822,15 +829,15 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 57.a" label="Modified Duration, Money Duration, PVBP">
     <FCard title="ModDur — formule et exemples Schweser" en="Modified Duration">
+      <KFormula lines={[
+        String.raw`\text{ModDur} = \dfrac{\text{MacDur}}{1+\frac{YTM}{m}}`,
+        String.raw`\%\Delta Prix \approx -\text{ModDur} \times \Delta YTM`,
+        String.raw`\text{ApproxModDur} = \dfrac{V_{-} - V_{+}}{2 \times V_0 \times \Delta YTM}`,
+      ]} />
       <Formula>
-        ModDur = MacDur / (1 + YTM/m){"\n"}
-        Ex: MacDur=4.03, YTM=15%, m=1 → ModDur=4.03/1.15=3.50{"\n\n"}
-        %ΔPrix ≈ −ModDur × ΔYTM{"\n"}
-        Ex: ΔYTM=+0.5% → ΔPrix ≈ −3.50×0.005 = −1.75%{"\n"}
-        Prix estimé = 86.59×(1−0.0175) = 85.075 (exact=85.092){"\n\n"}
-        Approximate ModDur = (V− − V+) / (2×V₀×ΔYTM){"\n"}
-        Ex: V₀=86.59, V+=85.092, V−=88.127, ΔYTM=0.005{"\n"}
-        ApproxMod = (88.127−85.092) / (2×86.59×0.005) = 3.505{"\n\n"}
+        Ex: MacDur=4.03, YTM=15%, m=1 → ModDur=4.03/1.15=3.50{"\n"}
+        Ex: ΔYTM=+0.5% → ΔPrix ≈ −3.50×0.005 = −1.75%, Prix estimé = 86.59×(1−0.0175) = 85.075 (exact=85.092){"\n\n"}
+        Ex: V₀=86.59, V+=85.092, V−=88.127, ΔYTM=0.005 → ApproxMod = (88.127−85.092) / (2×86.59×0.005) = 3.505{"\n\n"}
         Q13: 25yr 7.5% semi YTM=9.25% (ΔYTM=50bp):{"\n"}
         V+ (YTM=9.75%): PV=79.859; V− (YTM=8.75%): PV=90.856{"\n"}
         ApproxMod = (90.856−79.859)/(2×85.134×0.005) = 12.93
@@ -838,12 +845,13 @@ export default function FixedIncomeFiche() {
       <Rule c="blue">ModDur toujours {'<'} MacDur. Duration donne approximation LINÉAIRE → convexity corrige. Q4: si YTM ↑ 100bp, ModDur=7.5 → %ΔP ≈ −7.5%. Q8: duration alone underestimates price GAIN (YTM↓).</Rule>
     </FCard>
     <FCard title="Money Duration et PVBP" en="Money Duration and PVBP">
+      <KFormula lines={[
+        String.raw`\text{Money Duration} = \text{ModDur} \times \text{Full price position}`,
+        String.raw`\text{PVBP} = \dfrac{V_{-} - V_{+}}{2} = \text{MoneyDur} \times 0.0001`,
+      ]} />
       <Formula>
-        Money Duration = annual ModDur × full price position{"\n"}
         Ex Q10: ModDur=8.0, position=$12M → MoneyDur=$96M{"\n"}
         Ex Schweser: ModDur=7.42, pos $2,030,000 → $15,063,000{"\n\n"}
-        PVBP = (V− − V+) / 2{"\n"}
-        = MoneyDur × 0.0001{"\n\n"}
         Ex Q17: 6yr 4.2% semi à 958.97 (YTM=4.95%){"\n"}
         V+ (YTM+1bp): 958.47; V− (YTM−1bp): 959.47{"\n"}
         PVBP = (959.47−958.47)/2 = 0.500 per $100 par
@@ -876,8 +884,11 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 58.a" label="Convexité — calcul et interprétation">
     <FCard title="Convexité — formule et calcul Schweser" en="Bond convexity calculation">
+      <KFormula lines={[
+        String.raw`\text{Convexité flux}_t = \dfrac{t \times (t+1)}{(1+r)^2} \quad (r = YTM/m)`,
+        String.raw`\text{ApproxConvexity} = \dfrac{V_{+} + V_{-} - 2 \times V_0}{(\Delta YTM)^2 \times V_0}`,
+      ]} />
       <Formula>
-        Convexité flux en période t = t×(t+1) / (1+r)²   (r = YTM/m){"\n\n"}
         Exemple : 5yr 11% annuel, YTM=15%, prix=86.59{"\n"}
         t=1: conv=1×2/1.15²=1.512, W=0.1105 → 0.167{"\n"}
         t=2: conv=2×3/1.15²=4.537, W=0.0961 → 0.436{"\n"}
@@ -885,35 +896,29 @@ export default function FixedIncomeFiche() {
         t=4: conv=4×5/1.15²=15.123, W=0.0726 → 1.098{"\n"}
         t=5: conv=5×6/1.15²=22.684, W=0.6373 → 14.457{"\n"}
         Convexité = 16.915{"\n\n"}
-        Approximate convexity = (V+ + V− − 2×V₀) / ((ΔYTM)² × V₀){"\n"}
-        Ex: V₀=86.591, V+=85.092, V−=88.127, ΔYTM=0.005{"\n"}
-        ≈ (85.092+88.127−2×86.591)/(0.005²×86.591) = 16.916
+        Approximate convexity : ≈ (85.092+88.127−2×86.591)/(0.005²×86.591) = 16.916 (V₀=86.591, V+=85.092, V−=88.127, ΔYTM=0.005)
       </Formula>
       <Rule c="green">Convexité toujours positive pour obligation standard → TOUJOURS avantageuse : gain {'>'} estimation duration (YTM↓), perte {'<'} estimation duration (YTM↑). Plus la convexité est élevée, mieux l&apos;obligation performe sous tout mouvement de taux.</Rule>
     </FCard>
     <FCard title="Effective Convexity — obligations avec options" en="Effective convexity">
-      <Formula>
-        EffConv = (V+ + V− − 2×V₀) / ((ΔY)² × V₀){"\n"}
-        (même formule que approximate convexity)
-      </Formula>
+      <KFormula lines={String.raw`\text{EffConv} = \dfrac{V_{+} + V_{-} - 2 \times V_0}{(\Delta Y)^2 \times V_0}`} />
+      <div className="mt-1 text-xs text-faint">Même formule que l&apos;approximate convexity, avec un choc de courbe (ΔY) plutôt qu&apos;un ΔYTM.</div>
       <Rule c="amber">Callable bond: quand call proche → prix plafonné → EffConv NÉGATIVE (désavantage investisseur). Putable bond: EffConv {'>'} 0 (= avantage). MBS: convexité négative à faible taux (prepayment risk).</Rule>
     </FCard>
   </Sec>
 
   <Sec los="LOS 58.b" label="Estimation du ΔPrix avec duration + convexité">
     <FCard title="Formule combinée — duration + convexity adjustment" en="Price change with convexity">
+      <KFormula lines={[
+        String.raw`\%\Delta Prix \approx -\text{ModDur} \times \Delta YTM + \tfrac{1}{2} \times \text{Convexité} \times (\Delta YTM)^2`,
+        String.raw`\Delta \text{Valeur} = -\text{MoneyDur} \times \Delta YTM + \tfrac{1}{2} \times \text{MoneyConv} \times (\Delta YTM)^2`,
+      ]} />
       <Formula>
-        %ΔPrix ≈ −ModDur×ΔYTM + (1/2)×Convexité×(ΔYTM)²{"\n\n"}
         Exemple : ModDur=3.50, Convexité=16.9, ΔYTM=−0.5%{"\n"}
-        Duration effect = −3.50×(−0.005) = +1.750%{"\n"}
-        Convexity adjustment = 0.5×16.9×(0.005)² = +0.021%{"\n"}
-        %ΔPrix total = +1.771%{"\n"}
-        Prix estimé = 86.591×1.01771 = 88.124 (exact=88.127 ✓){"\n\n"}
-        ΔYTM=+0.5% :{"\n"}
-        Duration = −1.750%; Convexity = +0.021%{"\n"}
-        %ΔPrix = −1.729% → 86.591×(1−0.01729) = 85.094 (exact=85.092 ✓){"\n\n"}
-        Money convexity = Convexité × full price{"\n"}
-        ΔValeur = −MoneyDur×ΔYTM + (1/2)×MoneyConv×(ΔYTM)²
+        Duration effect = −3.50×(−0.005) = +1.750% ; Convexity adjustment = 0.5×16.9×(0.005)² = +0.021%{"\n"}
+        %ΔPrix total = +1.771% → Prix estimé = 86.591×1.01771 = 88.124 (exact=88.127 ✓){"\n\n"}
+        ΔYTM=+0.5% : Duration = −1.750%; Convexity = +0.021% → %ΔPrix = −1.729%{"\n"}
+        → 86.591×(1−0.01729) = 85.094 (exact=85.092 ✓)
       </Formula>
       <Rule c="blue">Terme convexité TOUJOURS POSITIF (ΔYTM)² {'>'} 0. Q5: duration underestimates gain → convexity makes return HIGHER than duration estimate. Q7: convexity adjustment = ½ × Conv × (ΔYTM)².</Rule>
     </FCard>
@@ -921,9 +926,11 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 58.c" label="Duration et convexité portefeuille — limites">
     <FCard title="Portefeuille — calcul et limites" en="Portfolio duration and convexity">
+      <KFormula lines={[
+        String.raw`\text{Duration}_{\text{port}} = \sum_i W_i \times \text{ModDur}_i`,
+        String.raw`\text{Convexité}_{\text{port}} = \sum_i W_i \times \text{Conv}_i`,
+      ]} />
       <Formula>
-        Duration port = Σ(Wᵢ × ModDurᵢ){"\n"}
-        Convexité port = Σ(Wᵢ × Convᵢ){"\n\n"}
         Exemple : 40% bond A (ModDur=3, Conv=80) + 60% bond B (ModDur=7, Conv=120){"\n"}
         Duration port = 0.4×3 + 0.6×7 = 5.4{"\n"}
         Convexité port = 0.4×80 + 0.6×120 = 104
@@ -944,10 +951,10 @@ export default function FixedIncomeFiche() {
   <Sec los="LOS 59.a" label="Effective Duration et convexité — obligations avec options">
     <FCard title="Pourquoi l'Effective Duration ?" en="Why Effective Duration?">
       Bonds avec options (callable, putable, MBS) : flux futurs incertains → pas de YTM unique → ModDur/convexité classiques inapplicables. On utilise un choc de la <strong>courbe benchmark</strong> (ΔCurve) plutôt que ΔYTM.
-      <Formula>
-        EffDur = (V− − V+) / (2 × V₀ × ΔCurve){"\n"}
-        EffConv = (V− + V+ − 2×V₀) / ((ΔCurve)² × V₀)
-      </Formula>
+      <KFormula lines={[
+        String.raw`\text{EffDur} = \dfrac{V_{-} - V_{+}}{2 \times V_0 \times \Delta \text{Curve}}`,
+        String.raw`\text{EffConv} = \dfrac{V_{-} + V_{+} - 2 \times V_0}{(\Delta \text{Curve})^2 \times V_0}`,
+      ]} />
       <Rule c="red">EffDur sépare l&apos;effet des taux benchmark de celui du spread crédit/liquidité (contrairement à ModDur). Q27: mesure appropriée pour bond avec embedded option = EFFECTIVE duration (pas Macaulay ni modified).</Rule>
     </FCard>
     <FCard title="Convexité négative — callable bonds" en="Negative convexity">
@@ -962,8 +969,8 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 59.b" label="Estimation du ΔPrix avec EffDur et EffConv">
     <FCard title="Formule et exemples Schweser/questions" en="Price change with EffDur/EffConv">
+      <KFormula lines={String.raw`\%\Delta Prix \approx -\text{EffDur} \times \Delta \text{Curve} + \tfrac{1}{2} \times \text{EffConv} \times (\Delta \text{Curve})^2`} />
       <Formula>
-        %ΔPrix ≈ −EffDur×ΔCurve + ½×EffConv×(ΔCurve)²{"\n\n"}
         Q5: EffDur=10.5, EffConv=97.3, ΔCurve=−2%{"\n"}
         = [−10.5×(−0.02) + 0.5×97.3×(0.02)²]×100 = 21.0%+1.95% = 22.95%{"\n\n"}
         Q9: ModDur=10.27, Conv=143, ΔY=+1.25%{"\n"}
@@ -977,8 +984,8 @@ export default function FixedIncomeFiche() {
   <Sec los="LOS 59.c" label="Key Rate Duration">
     <FCard title="Key Rate Duration (Partial Duration)" en="Key Rate Duration">
       La <strong>key rate duration</strong> mesure la sensibilité du prix à un déplacement d&apos;un <em>seul point</em> de la courbe (autres taux constants), utile pour le <strong>shaping risk</strong> (torsions non-parallèles).
+      <KFormula lines={String.raw`\text{KRD}_{\text{flux}} = \text{ModDur du flux} \times \text{poids dans le portefeuille}`} />
       <Formula>
-        Key rate duration (flux) = ModDur du flux × poids dans le portefeuille{"\n\n"}
         Ex Schweser: 50% zero 5yr yield 5% + 50% bond 10yr yield 6%{"\n"}
         KRD(5yr) = [5/1.05]×0.5 = 2.381; KRD(10yr) = [10/1.06]×0.5 = 4.717{"\n"}
         Δ5yr=+50bp → −2.381×0.005=−1.19%; Δ10yr=−25bp → −4.717×(−0.0025)=+1.18%{"\n"}
@@ -1019,11 +1026,13 @@ export default function FixedIncomeFiche() {
         ["Covenants","Termes légaux","",""],
         ["Character","Intégrité emprunteur","",""],
       ]}/>
+      <KFormula lines={[
+        String.raw`\text{Expected Loss} = PD \times LGD\%`,
+        String.raw`LGD\% = \text{Expected exposure} \times (1 - \text{Recovery rate})`,
+        String.raw`\text{Credit spread} \approx PD \times LGD\%`,
+      ]} />
       <Formula>
-        Expected Loss = Probability of Default (PD) × Loss Given Default (LGD%){"\n"}
-        LGD% = Expected exposure × (1 − Recovery rate) = Loss severity × exposure{"\n\n"}
         Ex Q12: composantes credit risk = bond rating + recovery rate + yield volatility{"\n\n"}
-        Credit spread ≈ PD × LGD% (compensation équitable pour risque de crédit){"\n"}
         Ex: 4% coupon bond au pair, PD=3%, recovery=75%, gov yield=2.5%{"\n"}
         Spread réel = 4%−2.5% = 1.5%; Spread estimé = 0.03×0.25 = 0.75%{"\n"}
         → Investisseur SUR-compensé (1.5% {'>'} 0.75%)
@@ -1056,13 +1065,15 @@ export default function FixedIncomeFiche() {
           ["Equity faible / stress marché","Spreads s'élargissent — flight to quality"],
         ]}
       />
+      <KFormula lines={[
+        String.raw`\text{Liquidity spread} \approx Yield_{\text{bid}} - Yield_{\text{offer}}`,
+        String.raw`\%\Delta Prix \approx -\text{ModDur} \times \Delta \text{Spread} + \tfrac{1}{2} \times \text{Conv} \times (\Delta \text{Spread})^2`,
+      ]} />
       <Formula>
-        Décomposition yield spread: liquidity spread ≈ Yield(bid) − Yield(offer){"\n"}
         Ex: 10yr 5% coupon, bid/offer=99.5/100.5, benchmark=3%{"\n"}
         Yield spread total = 5%−3% = 2.0%{"\n"}
         Yield(bid)=5.065%, Yield(offer)=4.935% → liquidity=0.13%{"\n"}
-        Credit spread = 2.0%−0.13% = 1.87%{"\n\n"}
-        ΔPrix avec spread: %ΔP ≈ −ModDur×ΔSpread + ½×Conv×(ΔSpread)²
+        Credit spread = 2.0%−0.13% = 1.87%
       </Formula>
       <Rule c="red">HY spreads plus volatils que IG. Longer-duration bonds = plus d&apos;incertitude créditworthiness (Q7). Credit curves s&apos;inversent en récession pour HY (near-term default risk domine).</Rule>
     </FCard>
@@ -1133,9 +1144,12 @@ export default function FixedIncomeFiche() {
           ["Leverage", "RCF/Net debt", "RCF / (Dette−Cash)", "Ratio plus élevé"],
         ]}
       />
+      <KFormula lines={[
+        String.raw`FFO = \text{Net income} + D\&A + \text{impôts différés} + \text{non-cash items}`,
+        String.raw`RCF = CFO - \text{Dividendes}`,
+      ]} />
+      <div className="mt-1 text-xs text-faint">FFO exclut la variation du BFR, contrairement au CFO.</div>
       <Formula>
-        FFO = Net income + D&amp;A + impôts différés + non-cash items (EXCLUT ΔBFR, contrairement au CFO){"\n"}
-        RCF = CFO − Dividendes{"\n\n"}
         Q1: NI=503, D&amp;A=256, CapEx=140, CFO=361, Div=72{"\n"}
         FFO = 503+256 = 759 (CapEx et CFO non utilisés dans FFO){"\n\n"}
         Q3: Debt/EBITDA moyen 3 ans (opérant income+D&amp;A)/dette{"\n"}
@@ -1234,6 +1248,7 @@ export default function FixedIncomeFiche() {
         <li><strong>Excess spread</strong> : rendement collatéral − coupon ABS = buffer qui absorbe pertes de crédit.</li>
         <li><strong>Credit tranching (subordination/waterfall)</strong> : tranches junior absorbent pertes en premier.</li>
       </ul>
+      <KFormula lines={String.raw`\text{Excess spread} = \text{rendement collatéral} - \text{coût moyen pondéré des tranches}`} />
       <Formula>
         Ex Schweser: Tranche A=$300M (MRR+0.5%), B=$80M (MRR+1.5%), C=$30M (equity){"\n"}
         Pertes ≤$30M → absorbées par C seule. Pertes $30-110M → B absorbe l'excédent.{"\n"}
@@ -1295,9 +1310,11 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 65.b" label="Caractéristiques des prêts hypothécaires résidentiels">
     <FCard title="Recours, LTV, DTI" en="Recourse, LTV, DTI">
+      <KFormula lines={[
+        String.raw`LTV = \dfrac{\text{Montant prêt}}{\text{Valeur du bien}}`,
+        String.raw`DTI = \dfrac{\text{Paiement mensuel dette}}{\text{Revenu brut mensuel}}`,
+      ]} />
       <Formula>
-        LTV = Montant prêt / Valeur du bien{"\n"}
-        DTI = Paiement mensuel dette / Revenu brut mensuel{"\n\n"}
         Ex: prêt $300k sur bien $400k → LTV=75%{"\n"}
         Prêt 6% annuel, 25 ans mensuel, revenu annuel $80k{"\n"}
         PMT = N=300,I/Y=0.5,PV=300000,FV=0 → PMT=$1,932.90{"\n"}
@@ -1321,8 +1338,12 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 65.c" label="Pass-through securities et CMO">
     <FCard title="Mortgage Pass-Through — WAM et WAC" en="Pass-through, WAM, WAC">
+      <KFormula lines={[
+        String.raw`WAM = \sum_i \text{terme}_i \times \dfrac{\text{solde}_i}{\text{solde total}}`,
+        String.raw`WAC = \sum_i \text{taux}_i \times \dfrac{\text{solde}_i}{\text{solde total}}`,
+      ]} />
+      <div className="mt-1 text-xs text-faint">Pass-through rate (net coupon) &lt; WAC (frais de servicing/garantie prélevés).</div>
       <Formula>
-        Pass-through rate (net coupon) {'<'} WAC (frais de servicing/garantie prélevés){"\n\n"}
         Ex Schweser (pondéré par current balance):{"\n"}
         A: taux 2.6%, solde 90k, terme restant 210m{"\n"}
         B: taux 1.0%, solde 72k, terme restant 100m{"\n"}
@@ -1347,11 +1368,11 @@ export default function FixedIncomeFiche() {
 
   <Sec los="LOS 65.d" label="Commercial MBS (CMBS)">
     <FCard title="CMBS — analyse et call protection" en="CMBS analysis and call protection">
-      <Formula>
-        DSCR = NOI / Service de la dette (plus élevé = meilleure qualité){"\n"}
-        LTV = Montant prêt / Valeur actuelle du bien (plus bas = meilleure qualité){"\n"}
-        WAMP = Weighted Average proceeds (équivalent WAC pour CMBS)
-      </Formula>
+      <KFormula lines={[
+        String.raw`DSCR = \dfrac{NOI}{\text{Service de la dette}}`,
+        String.raw`LTV = \dfrac{\text{Montant prêt}}{\text{Valeur actuelle du bien}}`,
+      ]} />
+      <div className="mt-1 text-xs text-faint">DSCR plus élevé = meilleure qualité · LTV plus bas = meilleure qualité · WAMP = Weighted Average proceeds (équivalent WAC pour CMBS).</div>
       <ul className="list-disc pl-5 text-sm space-y-1">
         <li>Prêts <strong>non-recourse</strong> uniquement — remboursés par les revenus locatifs, pas par l&apos;emprunteur.</li>
         <li>Moins de diversification que RMBS (parfois un seul prêt/bien) → analyse focalisée sur le CRÉDIT DE LA PROPRIÉTÉ, pas de l&apos;emprunteur.</li>
