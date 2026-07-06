@@ -79,11 +79,11 @@ function CardPanel({
     <button
       type="button"
       onClick={onFlip}
-      className={["w-full text-left [perspective:1400px]", className || ""].join(" ")}
+      className={["relative w-full text-left [perspective:1400px]", className || ""].join(" ")}
     >
       <div
         className={[
-          "relative h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0.2,0.2,1)] [transform-style:preserve-3d]",
+          "absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.4,0.2,0.2,1)] [transform-style:preserve-3d]",
           flipped ? "[transform:rotateY(180deg)]" : "",
         ].join(" ")}
       >
