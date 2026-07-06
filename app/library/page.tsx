@@ -71,7 +71,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
     `/library?scope=${v}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       {/* Header: title + creator toggle */}
       <details>
         <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">

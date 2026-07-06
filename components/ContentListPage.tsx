@@ -80,7 +80,7 @@ export function ContentListPage({
     `${basePath}?view=${v}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       {/* Reprendre où on en était — priorité visuelle sur la création */}
       {continueReviewingSlot}
 
