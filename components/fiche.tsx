@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import katex from "katex";
 
 export function FCard({
   title,
@@ -46,6 +47,28 @@ export function Formula({ children }: { children: ReactNode }) {
     <pre className="font-mono text-[12px] bg-black/60 border border-white/[0.13] rounded-md px-3.5 py-3 my-3 text-white/85 leading-[1.9] overflow-x-auto whitespace-pre">
       {children}
     </pre>
+  );
+}
+
+/**
+ * Formule rendue avec KaTeX (vraie notation mathématique — fractions,
+ * exposants, Σ, etc.) plutôt qu'en texte ASCII brut. `lines` accepte une ou
+ * plusieurs expressions LaTeX, chacune affichée sur sa propre ligne.
+ */
+export function KFormula({ lines }: { lines: string | string[] }) {
+  const items = Array.isArray(lines) ? lines : [lines];
+  return (
+    <div className="bg-black/60 border border-white/[0.13] rounded-md px-4 py-3.5 my-3 overflow-x-auto grid gap-2.5">
+      {items.map((tex, i) => (
+        <div
+          key={i}
+          className="katex-formula text-white/90"
+          dangerouslySetInnerHTML={{
+            __html: katex.renderToString(tex, { throwOnError: false, displayMode: true }),
+          }}
+        />
+      ))}
+    </div>
   );
 }
 

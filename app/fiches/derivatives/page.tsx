@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FCard, Rule, Formula, Sec, Reading, FTable } from "@/components/fiche";
+import { FCard, Rule, Formula, KFormula, Sec, Reading, FTable } from "@/components/fiche";
 
 const NAV = [
   { id: "resume", label: "Résumé" },
@@ -63,45 +63,53 @@ export default function DerivativesFiche() {
 
         <Sec label="Pricing forwards & futures (cost of carry)">
           <FCard title="Prix forward (sans revenus/coûts)">
-            <Formula>{`F0(T) = S0 × (1+r)^T`}</Formula>
+            <KFormula lines={String.raw`F_0(T) = S_0 \times (1+r)^T`} />
           </FCard>
           <FCard title="Modèle cost of carry (avec revenus/coûts)">
-            <Formula>{`F0(T) = [S0 − PV(revenus) + PV(coûts)] × (1+r)^T
-       = FV(S0) + FV(coûts) − FV(revenus)`}</Formula>
+            <KFormula lines={[
+              String.raw`F_0(T) = [S_0 - PV(\text{revenus}) + PV(\text{coûts})] \times (1+r)^T`,
+              String.raw`F_0(T) = FV(S_0) + FV(\text{coûts}) - FV(\text{revenus})`,
+            ]} />
           </FCard>
           <FCard title="Valeur du contrat forward en cours de vie">
-            <Formula>{`Vt(T) = PV[Ft(T) − F0(T)]   (actualisé à r sur (T−t))
-À l'échéance : VT(T) = ST − F0(T)`}</Formula>
+            <KFormula lines={[
+              String.raw`V_t(T) = PV[F_t(T) - F_0(T)]`,
+              String.raw`V_T(T) = S_T - F_0(T) \quad \text{(à l'échéance)}`,
+            ]} />
           </FCard>
           <Rule c="green">Futures ≈ forward en valeur théorique quand les taux sont constants/non corrélés au sous-jacent — différence pratique : appels de marge quotidiens (mark-to-market).</Rule>
         </Sec>
 
         <Sec label="Parité put-call">
           <FCard title="Relation fondamentale (options européennes, même strike/échéance)">
-            <Formula>{`c0 + PV(X) = p0 + S0
-→ p0 = c0 + PV(X) − S0
-→ c0 = p0 + S0 − PV(X)`}</Formula>
+            <KFormula lines={[
+              String.raw`c_0 + PV(X) = p_0 + S_0`,
+              String.raw`p_0 = c_0 + PV(X) - S_0`,
+              String.raw`c_0 = p_0 + S_0 - PV(X)`,
+            ]} />
           </FCard>
           <Rule c="blue">Call + obligation zéro-coupon (valeur X) = Put + sous-jacent — deux façons de répliquer le même payoff.</Rule>
         </Sec>
 
         <Sec label="Modèle binomial (une période)">
           <FCard title="Probabilité risque-neutre">
-            <Formula>{`π = (1+r − d) / (u − d)`}</Formula>
+            <KFormula lines={String.raw`\pi = \dfrac{(1+r) - d}{u - d}`} />
           </FCard>
           <FCard title="Valeur de l'option">
-            <Formula>{`V0 = [π × Cu + (1−π) × Cd] / (1+r)`}</Formula>
+            <KFormula lines={String.raw`V_0 = \dfrac{\pi \times C_u + (1-\pi) \times C_d}{1+r}`} />
           </FCard>
           <Rule c="amber">u = facteur de hausse du sous-jacent, d = facteur de baisse — u &gt; (1+r) &gt; d pour exclure l'arbitrage.</Rule>
         </Sec>
 
         <Sec label="Payoffs & valorisation des swaps">
           <FCard title="Payoffs à l'échéance">
-            <Formula>{`Call : max(0, ST − X)
-Put  : max(0, X − ST)`}</Formula>
+            <KFormula lines={[
+              String.raw`\text{Call} : \max(0,\ S_T - X)`,
+              String.raw`\text{Put} : \max(0,\ X - S_T)`,
+            ]} />
           </FCard>
           <FCard title="Valeur d'un swap taux fixe/flottant">
-            <Formula>{`Valeur (payeur du fixe) = PV(jambe flottante) − PV(jambe fixe)`}</Formula>
+            <KFormula lines={String.raw`V_{\text{payeur fixe}} = PV(\text{jambe flottante}) - PV(\text{jambe fixe})`} />
           </FCard>
           <Rule c="green">Le taux swap est fixé à l'initiation pour que la valeur du swap soit nulle des deux côtés.</Rule>
         </Sec>

@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { FCard, Rule, Formula, Sec, Reading, FTable } from "@/components/fiche";
+import { FCard, Rule, Formula, KFormula, Sec, Reading, FTable } from "@/components/fiche";
 
 const NAV = [
   { id: "resume", label: "Résumé" },
@@ -64,23 +64,26 @@ export default function FixedIncomeFiche() {
 
   <Sec label="Duration & convexité">
     <FCard title="Duration de Macaulay">
-      <Formula>{`MacDur = Σ [t × PV(CFt)] / Prix`}</Formula>
+      <KFormula lines={String.raw`\text{MacDur} = \dfrac{\sum_{t=1}^{n} t \times PV(CF_t)}{\text{Prix}}`} />
     </FCard>
     <FCard title="Duration modifiée">
-      <Formula>{`ModDur = MacDur / (1 + YTM/m)   (m = nb périodes/an)`}</Formula>
+      <KFormula lines={String.raw`\text{ModDur} = \dfrac{\text{MacDur}}{1 + \frac{YTM}{m}}`} />
+      <div className="mt-1 text-xs text-faint">m = nombre de périodes de composition par an</div>
     </FCard>
     <FCard title="Duration effective (approximation)">
-      <Formula>{`ApproxDur = (PV− − PV+) / (2 × ΔYield × PV0)`}</Formula>
+      <KFormula lines={String.raw`\text{ApproxDur} = \dfrac{PV_{-} - PV_{+}}{2 \times \Delta Yield \times PV_0}`} />
     </FCard>
     <FCard title="Duration monétaire (money duration) & PVBP">
-      <Formula>{`MoneyDur = ModDur × Prix
-PVBP = MoneyDur × 0.0001`}</Formula>
+      <KFormula lines={[
+        String.raw`\text{MoneyDur} = \text{ModDur} \times \text{Prix}`,
+        String.raw`\text{PVBP} = \text{MoneyDur} \times 0.0001`,
+      ]} />
     </FCard>
     <FCard title="Convexité (approximation)">
-      <Formula>{`ApproxConv = (PV− + PV+ − 2×PV0) / (ΔYield² × PV0)`}</Formula>
+      <KFormula lines={String.raw`\text{ApproxConv} = \dfrac{PV_{-} + PV_{+} - 2 \times PV_0}{\Delta Yield^2 \times PV_0}`} />
     </FCard>
     <FCard title="Variation de prix estimée (duration + convexité)">
-      <Formula>{`%ΔPrix ≈ −ModDur × ΔYield + ½ × Convexité × ΔYield²`}</Formula>
+      <KFormula lines={String.raw`\%\Delta Prix \approx -\text{ModDur} \times \Delta Yield + \tfrac{1}{2} \times \text{Convexité} \times \Delta Yield^2`} />
     </FCard>
     <Rule c="blue">Duration = sensibilité (linéaire) du prix au taux. Convexité = correction de courbure — toujours positive pour une obligation classique (sans option), ce qui avantage le porteur des deux côtés d'un mouvement de taux.</Rule>
     <Rule c="amber">Duration de portefeuille = moyenne pondérée (par valeur de marché) des durations de chaque position.</Rule>
@@ -88,48 +91,45 @@ PVBP = MoneyDur × 0.0001`}</Formula>
 
   <Sec label="Mesures de rendement (yield) et spreads">
     <FCard title="Rendement courant (current yield)">
-      <Formula>{`Current Yield = Coupon annuel / Prix`}</Formula>
+      <KFormula lines={String.raw`\text{Current Yield} = \dfrac{\text{Coupon annuel}}{\text{Prix}}`} />
     </FCard>
     <FCard title="Yield to Maturity (YTM)">
-      <Formula>{`Prix = Σ [C / (1+YTM/m)^t] + FV / (1+YTM/m)^N`}</Formula>
+      <KFormula lines={String.raw`\text{Prix} = \sum_{t=1}^{N} \dfrac{C}{\left(1+\frac{YTM}{m}\right)^t} + \dfrac{FV}{\left(1+\frac{YTM}{m}\right)^N}`} />
     </FCard>
-    <FCard title="G-spread / I-spread / Z-spread / OAS">
-      <Formula>{`G-spread = YTM(obligation) − rendement Trésor interpolé
-I-spread = YTM(obligation) − taux swap
-Z-spread = spread constant ajouté à CHAQUE point de la courbe spot
-           tel que PV(cash flows) = Prix
-OAS = Z-spread − coût de l'option intégrée`}</Formula>
+    <FCard title="G-spread / I-spread / OAS">
+      <KFormula lines={[
+        String.raw`\text{G-spread} = YTM_{\text{obligation}} - \text{rendement Trésor interpolé}`,
+        String.raw`\text{I-spread} = YTM_{\text{obligation}} - \text{taux swap}`,
+        String.raw`OAS = \text{Z-spread} - \text{coût de l'option intégrée}`,
+      ]} />
+      <div className="mt-1 text-xs text-faint">Z-spread : spread constant ajouté à chaque point de la courbe spot tel que PV(cash flows) = Prix.</div>
     </FCard>
     <Rule c="green">Spread qui s'élargit (widens) → prix baisse. Spread qui se resserre (tightens) → prix monte.</Rule>
   </Sec>
 
   <Sec label="Valorisation obligataire">
     <FCard title="Prix / valeur actuelle">
-      <Formula>{`Prix (dirty) = Σ CFt / (1+r)^t
-Prix clean = Prix dirty − intérêts courus`}</Formula>
+      <KFormula lines={[
+        String.raw`\text{Prix}_{dirty} = \sum_{t} \dfrac{CF_t}{(1+r)^t}`,
+        String.raw`\text{Prix}_{clean} = \text{Prix}_{dirty} - \text{Intérêts courus}`,
+      ]} />
     </FCard>
     <FCard title="Intérêts courus (accrued interest)">
-      <Formula>{`AI = Coupon périodique × (jours écoulés / jours période)`}</Formula>
+      <KFormula lines={String.raw`AI = \text{Coupon périodique} \times \dfrac{\text{jours écoulés}}{\text{jours période}}`} />
     </FCard>
     <Rule c="blue">Prix au pair si coupon = YTM · Prime si coupon &gt; YTM · Décote (discount) si coupon &lt; YTM.</Rule>
   </Sec>
 
   <Sec label="Structure par terme des taux">
     <FCard title="Taux forward à partir des taux spot">
-      <Formula>{`(1+z_N)^N = (1+z_(N-1))^(N-1) × (1 + f)`}</Formula>
+      <KFormula lines={String.raw`(1+z_N)^N = (1+z_{N-1})^{N-1} \times (1+f)`} />
     </FCard>
     <Rule c="amber">Courbe normale (croissante) = anticipation de hausse/croissance · Courbe inversée = anticipation de récession/baisse des taux · Par rate = taux d'une obligation hypothétique cotée au pair sur la courbe spot.</Rule>
-    <FCard title="Rendement total attendu (rolling yield)">
-      <Formula>{`Rolling yield ≈ revenu du coupon + rendement de roll-down
-                 + variation de prix anticipée (vue de marché)`}</Formula>
-    </FCard>
+    <Rule c="green">Rolling yield ≈ revenu du coupon + rendement de roll-down + variation de prix anticipée (vue de marché).</Rule>
   </Sec>
 
   <Sec label="Risque de crédit">
-    <FCard title="Composantes du spread de crédit">
-      <Formula>{`Spread ≈ prime de risque de défaut + prime de liquidité`}</Formula>
-    </FCard>
-    <Rule c="red">Perte attendue = Probabilité de défaut × Perte en cas de défaut (LGD = 1 − taux de recouvrement).</Rule>
+    <Rule c="red">Spread de crédit ≈ prime de risque de défaut + prime de liquidité. Perte attendue = Probabilité de défaut × Perte en cas de défaut (LGD = 1 − taux de recouvrement).</Rule>
     <Rule c="blue">Séniorité : Secured &gt; Senior unsecured &gt; Subordinated — priorité de paiement en cas de défaut.</Rule>
   </Sec>
 
