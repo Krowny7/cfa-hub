@@ -383,7 +383,7 @@ export default function DerivativesFiche() {
           <FCard title="Définition et formule générale">
             Le cost of carry est le coût NET de posséder (porter) le sous-jacent de t=0 à t=T. Il détermine le prix forward.
           </FCard>
-          <Formula>F₀(T) = S₀ × e^((r + γ − θ − δ)×T)</Formula>
+          <KFormula lines={String.raw`F_0(T) = S_0 \times e^{(r+\gamma-\theta-\delta) \times T}`} />
           <FCard title="Composantes du cost of carry">
             <strong>r (taux sans risque) :</strong> coût d'opportunité du capital immobilisé pour acheter l'actif spot. Augmente F₀.
             <br /><br />
@@ -409,8 +409,8 @@ export default function DerivativesFiche() {
           </FCard>
           <FCard title="Forward sur devises — Parité des taux d'intérêt">
             Cas particulier du cost of carry où r = taux domestique et le "bénéfice" = taux de la devise étrangère (elle-même porte intérêt).
+            <KFormula lines={String.raw`\text{Forward}_{\text{prix/base}} = \text{Spot} \times \dfrac{1+r_{\text{price}}}{1+r_{\text{base}}}`} />
             <Formula>
-              Forward (prix/base) = Spot × (1+r_price)/(1+r_base){"\n\n"}
               Ex: EUR/USD spot=1.10 (1€=1.10$), r_USD=2%, r_EUR=3%{"\n"}
               Forward = 1.10 × 1.02/1.03 = 1.0893{"\n\n"}
               Vérif no-arbitrage: emprunter 100$ à 2%, convertir en €(90.91€), placer à 3% → 93.64€{"\n"}
@@ -471,9 +471,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Formule (taux nominaux) :</strong>
           </FCard>
-          <Formula>
-            FRA(j,k) = [(1 + r_k × k/360) / (1 + r_j × j/360) − 1] × [360/(k−j)]
-          </Formula>
+          <KFormula lines={String.raw`FRA(j,k) = \left[\dfrac{1+r_k \times k/360}{1+r_j \times j/360} - 1\right] \times \dfrac{360}{k-j}`} />
           <FCard title="Exemple numérique — FRA 3×6">
             Taux 3M (90 jours) = 4,00%. Taux 6M (180 jours) = 4,50%.
             <br /><br />
@@ -490,9 +488,9 @@ export default function DerivativesFiche() {
           </FCard>
           <FCard title="Taux forward implicites (implied forward rates)">
             Un taux forward est implicite dans deux taux spot de maturités différentes.
+            <KFormula lines={String.raw`(1+Z_n)^n = (1+Z_m)^m \times (1+F_{m,n-m})^{n-m}`} />
+            <div className="mt-1 text-xs text-faint">Notation : F<sub>2,1</sub> = taux forward 1 an dans 2 ans (&quot;2y1y&quot;).</div>
             <Formula>
-              (1+Z_n)^n = (1+Z_m)^m × (1+F_m,n−m)^(n−m){"\n\n"}
-              Notation: F_2,1 = taux forward 1 an dans 2 ans (&quot;2y1y&quot;){"\n\n"}
               Ex: Z₂=2%, Z₃=3%{"\n"}
               F_2,1 = (1.03³/1.02²) − 1 = 1.0927/1.0404 − 1 = 5.03%
             </Formula>
@@ -530,9 +528,11 @@ export default function DerivativesFiche() {
             <strong>Corrélation négative</strong> (ex: obligations) : pertes MTM surviennent quand les taux sont élevés (coût de financement du call plus cher) → <strong>Futures {'<'} Forward</strong>.
           </FCard>
           <FCard title="Futures de taux d'intérêt — Prix et BPV">
+            <KFormula lines={[
+              String.raw`\text{Futures price} = 100 - (100 \times MRR_{A,B-A})`,
+              String.raw`BPV = \text{Notionnel} \times \text{Période} \times 0.01\%`,
+            ]} />
             <Formula>
-              Futures price = 100 − (100 × MRR_A,B−A){"\n\n"}
-              BPV = Notionnel × Période × 0,01%{"\n"}
               Ex: notionnel 1M€, période 6m → BPV = 1,000,000 × (0.0001/2) = 50€
             </Formula>
           </FCard>
@@ -579,7 +579,7 @@ export default function DerivativesFiche() {
           <FCard title="Formule du SFR">
             Le SFR est le par yield du swap : le taux fixe qui rend la valeur initiale nulle. En utilisant les facteurs d'actualisation (discount factors) Z_t pour chaque période t :
           </FCard>
-          <Formula>SFR = (1 − Z_N) / (Z_1 + Z_2 + ... + Z_N)</Formula>
+          <KFormula lines={String.raw`SFR = \dfrac{1-Z_N}{Z_1+Z_2+\cdots+Z_N}`} />
           <FCard title="Exemple numérique — IRS 3 ans">
             Facteurs d'actualisation : Z_1 = 0,9709 (r_1 = 3%), Z_2 = 0,9426 (r_2 = 3,1%), Z_3 = 0,9151 (r_3 = 3,0%).
             <br /><br />
@@ -702,7 +702,7 @@ export default function DerivativesFiche() {
             Mêmes payoffs dans tous les états → même prix aujourd'hui.
             <Rule c="blue">Terminologie officielle Schweser : &quot;fiduciary call&quot; = call + bond sans risque ; &quot;protective put&quot; = put + actif sous-jacent. Ces deux portefeuilles ont le même payoff futur — c&apos;est la formulation canonique de la parité put-call.</Rule>
           </FCard>
-          <Formula>c + X(1+Rf)^-T = p + S₀</Formula>
+          <KFormula lines={String.raw`c + X(1+R_f)^{-T} = p + S_0`} />
           <FCard title="Exemple numérique">
             c = 9, S₀ = 100, X = 95, r = 4%, T = 0,5 an.
             <br /><br />
@@ -732,7 +732,10 @@ export default function DerivativesFiche() {
           <FCard title="Formule et dérivation">
             Quand S₀ n'est pas directement observable (commodities, taux), on utilise le prix forward F₀ :
           </FCard>
-          <Formula>c₀ + X(1+Rf)^-T = F₀(T)(1+Rf)^-T + p₀     ↔     c − p = [F₀(T) − X](1+Rf)^-T</Formula>
+          <KFormula lines={[
+            String.raw`c_0 + X(1+R_f)^{-T} = F_0(T)(1+R_f)^{-T} + p_0`,
+            String.raw`c - p = [F_0(T) - X](1+R_f)^{-T}`,
+          ]} />
           <FCard title="Dérivation">
             On substitue S₀ = F₀(T)(1+Rf)^-T dans la parité standard :
             <br />c + X(1+Rf)^-T = p + F₀(T)(1+Rf)^-T
@@ -774,7 +777,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Condition :</strong> h × S_u − c_u = h × S_d − c_d
           </FCard>
-          <Formula>h (delta) = (c_u − c_d) / (S_u − S_d)</Formula>
+          <KFormula lines={String.raw`h\ (\text{delta}) = \dfrac{c_u - c_d}{S_u - S_d}`} />
           <FCard title="Suite méthode 1">
             La valeur certaine du portefeuille à T = h × S_u − c_u (identique dans les deux états).
             <br /><br />
@@ -785,7 +788,7 @@ export default function DerivativesFiche() {
           <FCard title="Méthode 2 — Probabilités risque-neutres">
             Les probabilités risque-neutres π permettent de calculer l'espérance sous la mesure risque-neutre :
           </FCard>
-          <Formula>π = ((1+r) − d) / (u − d)</Formula>
+          <KFormula lines={String.raw`\pi = \dfrac{(1+r) - d}{u - d}`} />
           <FCard title="Suite méthode 2">
             1 − π = probabilité risque-neutre de baisse = (u − (1+r)) / (u − d)
             <br /><br />
@@ -816,7 +819,8 @@ export default function DerivativesFiche() {
           </FCard>
           <FCard title="Portefeuille sans risque pour un PUT">
             Pour un put, le portefeuille sans risque est <strong>long h actions + LONG le put</strong> (pas short, contrairement au call où l'on est short le call).
-            <Formula>h_put = (p_d − p_u) / (S_u − S_d)  (en valeur absolue, mêmes principes)</Formula>
+            <KFormula lines={String.raw`h_{\text{put}} = \dfrac{p_d - p_u}{S_u - S_d}`} />
+            <div className="mt-1 text-xs text-faint">En valeur absolue, mêmes principes que pour le call.</div>
           </FCard>
         </Sec>
 
