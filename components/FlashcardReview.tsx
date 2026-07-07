@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
-import { loadSRS, saveSRS, applyReview, sortBySRS, type CardSRS } from "@/lib/srs";
+import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
 
 type Card = { id: string; front: string; back: string };
 
@@ -99,50 +99,45 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [srsState, setSrsState] = useState<Record<string, CardSRS>>({});
-  // Marques de cette passe uniquement (pas persistées) : sert à filtrer les
-  // "non maîtrisées" pour le mode révision ciblée, sans se substituer au SRS
-  // (qui reste la seule source de vérité pour la planification long terme).
-  const [sessionMarks, setSessionMarks] = useState<Record<string, boolean>>({});
-  const [reviewMode, setReviewMode] = useState<"all" | "unmastered">("all");
 
-  useEffect(() => {
-    if (!setId) return;
-    setSrsState(loadSRS(setId));
-  }, [setId]);
-
-  // Même ordre de priorité que la Session (dues en retard → nouvelles →
-  // à venir) quand un setId est fourni, pour que "Reprendre" depuis /flashcards
-  // ne fasse pas perdre la planification de répétition espacée construite en
-  // Session.
-  const orderedCards = useMemo(() => {
+  // La passe de révision est un instantané figé au montage — jamais recalculé
+  // pendant la passe. C'est le même principe que les vrais outils de
+  // répétition espacée (Anki, SuperMemo…) : l'ordre de la file du jour est
+  // tiré UNE fois ; les mises à jour de planification (dates d'échéance,
+  // ease factor) sont écrites pour LA PROCHAINE fois, jamais pour réordonner
+  // la file en cours. Auparavant, `orderedCards` était un useMemo dépendant de
+  // srsState : marquer une carte changeait son échéance → retriait tout le
+  // tableau → décalait l'index en plein milieu de la passe → symptôme
+  // observé : cartes sautées et d'autres revues plusieurs fois.
+  const [deck] = useState<Card[]>(() => {
     if (!setId) return cards;
     try {
-      return sortBySRS(cards, srsState);
+      return sortBySRS(cards, loadSRS(setId));
     } catch {
       return cards;
     }
-  }, [cards, setId, srsState]);
+  });
 
-  const workingCards = useMemo(() => {
-    if (reviewMode === "all") return orderedCards;
-    return orderedCards.filter((c) => sessionMarks[c.id] === false);
-  }, [orderedCards, reviewMode, sessionMarks]);
+  // Idem : snapshot figé au moment où l'utilisateur choisit "repasser sur les
+  // non maîtrisées", pas une liste dérivée en direct de sessionMarks (qui
+  // aurait le même bug de décalage d'index si on retire une carte en cours de
+  // repasse).
+  const [reviewMode, setReviewMode] = useState<"all" | "unmastered">("all");
+  const [unmasteredSnapshot, setUnmasteredSnapshot] = useState<Card[]>([]);
+
+  // Marques de cette passe (pas persistées) : sert uniquement à compter/lister
+  // les "non maîtrisées" pour proposer la repasse ciblée — ne remplace pas le
+  // SRS, qui reste la seule source de vérité pour la planification long terme.
+  const [sessionMarks, setSessionMarks] = useState<Record<string, boolean>>({});
+
+  const activeDeck = reviewMode === "all" ? deck : unmasteredSnapshot;
+  const current = activeDeck[i] ?? null;
+  const total = activeDeck.length;
 
   const notMasteredCount = useMemo(
-    () => orderedCards.filter((c) => sessionMarks[c.id] === false).length,
-    [orderedCards, sessionMarks]
+    () => deck.filter((c) => sessionMarks[c.id] === false).length,
+    [deck, sessionMarks]
   );
-
-  const current = workingCards[Math.min(i, workingCards.length - 1)] ?? null;
-  const total = workingCards.length;
-
-  // Si une carte marquée "maîtrisée" disparaît de la liste (mode unmastered),
-  // l'index peut dépasser la nouvelle longueur — le clamp ci-dessus gère déjà
-  // l'affichage, mais on resynchronise l'état pour que goPrev/goNext restent cohérents.
-  useEffect(() => {
-    if (i > 0 && i >= total) setI(Math.max(0, total - 1));
-  }, [i, total]);
 
   const progress = useMemo(() => (total ? `${Math.min(i + 1, total)}/${total}` : "0/0"), [i, total]);
 
@@ -159,22 +154,15 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
     if (!current) return;
     setSessionMarks((prev) => ({ ...prev, [current.id]: gotIt }));
     if (setId) {
-      setSrsState((prev) => {
-        const next = applyReview(prev, current.id, gotIt);
-        saveSRS(setId, next);
-        return next;
-      });
+      // Écrit pour LA PROCHAINE session — n'affecte jamais l'ordre de celle-ci.
+      const next = applyReview(loadSRS(setId), current.id, gotIt);
+      saveSRS(setId, next);
     }
-    // En mode "non maîtrisées", une carte marquée maîtrisée sort de la liste au
-    // prochain rendu — rester sur le même index revient donc à avancer.
-    if (reviewMode === "unmastered" && gotIt) {
-      setFlipped(false);
-    } else {
-      goNext();
-    }
+    goNext();
   }
 
   function startUnmasteredReview() {
+    setUnmasteredSnapshot(deck.filter((c) => sessionMarks[c.id] === false));
     setReviewMode("unmastered");
     setI(0);
     setFlipped(false);
