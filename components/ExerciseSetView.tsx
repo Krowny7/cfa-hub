@@ -8,6 +8,8 @@ import { useI18n } from "@/components/I18nProvider";
 import { StatusMsg } from "@/components/StatusMsg";
 import type { ExerciseQuestion, AwardXpResult } from "@/lib/types";
 
+const LETTERS = ["A", "B", "C", "D", "E", "F"];
+
 const ExerciseSetManage = dynamic(
   () => import("@/components/ExerciseSetManage").then((m) => m.ExerciseSetManage),
   { loading: () => <div className="mt-4 text-sm opacity-60">…</div> }
@@ -29,17 +31,16 @@ export function ExerciseSetView({
   const [runnerMsg, setRunnerMsg] = useState<string | null>(null);
 
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [answerInput, setAnswerInput] = useState("");
-  const [checked, setChecked] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [showCorrection, setShowCorrection] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const [busy, setBusy] = useState(false);
   // La bonne réponse n'est connue qu'APRÈS soumission (voir
   // migration_fix_answer_leak.sql) — révélée par award_exercise_xp, jamais
-  // lue depuis current.correct_answer qui peut être undefined.
-  const [revealed, setRevealed] = useState<{ correctAnswer: number; explanation: string | null } | null>(null);
+  // lue depuis current.correct_index qui peut être undefined.
+  const [revealed, setRevealed] = useState<{ correctIndex: number; explanation: string | null } | null>(null);
 
   const current = questions[questionIndex] ?? null;
   const canRun = questions.length > 0;
@@ -47,8 +48,8 @@ export function ExerciseSetView({
   function handleQuestionsChange(next: ExerciseQuestion[]) {
     setQuestions(next);
     setQuestionIndex(0);
-    setAnswerInput("");
-    setChecked(false);
+    setSelected(null);
+    setShowCorrection(false);
     setFinished(false);
     setScore(0);
     setStarted(false);
@@ -57,8 +58,8 @@ export function ExerciseSetView({
 
   function resetRun() {
     setQuestionIndex(0);
-    setAnswerInput("");
-    setChecked(false);
+    setSelected(null);
+    setShowCorrection(false);
     setScore(0);
     setFinished(false);
     setRunnerMsg(null);
@@ -66,42 +67,37 @@ export function ExerciseSetView({
     setRevealed(null);
   }
 
-  async function checkAnswer() {
-    if (!current) return;
-    const answer = Number(answerInput);
-    if (!Number.isFinite(answer)) {
-      setRunnerMsg(t("exercises.answerError"));
-      return;
-    }
-
+  // Soumet la réponse au serveur, qui la corrige ET renvoie la bonne réponse
+  // (correct_index/explanation) — le client ne les connaît jamais avant cet
+  // appel (voir migration_fix_answer_leak.sql).
+  async function submitAnswer(questionId: string, selectedIndex: number) {
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc("award_exercise_xp", {
         p_set_id: setId,
-        p_question_id: current.id,
-        p_answer: answer,
+        p_question_id: questionId,
+        p_selected_index: selectedIndex,
       });
 
       if (error) {
         setRunnerMsg(friendlyError(error, "unknown"));
-        setChecked(true);
         return;
       }
 
       const row = (Array.isArray(data) ? data[0] : data) as AwardXpResult | null;
-      const correct = Boolean(row?.is_correct);
       const xp = Number(row?.xp_awarded ?? 0) || 0;
+      const isCorrect = Boolean(row?.is_correct);
+      const correctIndex = row?.correct_index;
 
-      if (typeof row?.correct_answer === "number") {
-        setRevealed({ correctAnswer: row.correct_answer, explanation: row?.explanation ?? null });
+      if (typeof correctIndex === "number") {
+        setRevealed({ correctIndex, explanation: row?.explanation ?? null });
       }
-      setIsCorrect(correct);
-      if (correct) setScore((s) => s + 1);
-      setRunnerMsg(xp > 0 ? `+${xp} XP` : correct ? t("exercises.correctNoXp") : null);
-      setChecked(true);
+      if (isCorrect) setScore((s) => s + 1);
+      setRunnerMsg(isCorrect ? (xp > 0 ? `+${xp} XP` : t("exercises.correctNoXp")) : t("exercises.incorrect"));
+      setShowCorrection(true);
     } catch (e: unknown) {
       setRunnerMsg(friendlyError(e, "unknown"));
-      setChecked(true);
+      setShowCorrection(true);
     } finally {
       setBusy(false);
     }
@@ -113,8 +109,8 @@ export function ExerciseSetView({
       setFinished(true);
     } else {
       setQuestionIndex((v) => v + 1);
-      setAnswerInput("");
-      setChecked(false);
+      setSelected(null);
+      setShowCorrection(false);
       setRunnerMsg(null);
       setRevealed(null);
     }
@@ -152,35 +148,47 @@ export function ExerciseSetView({
 
             <div className="mt-2 whitespace-pre-wrap text-base font-medium">{current.prompt}</div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <input
-                type="number"
-                step="any"
-                className="input w-full sm:w-48"
-                value={answerInput}
-                disabled={checked}
-                onChange={(e) => setAnswerInput(e.target.value)}
-                placeholder={t("exercises.answerPlaceholder")}
-              />
-              {current.unit && <span className="text-sm opacity-60">{current.unit}</span>}
+            <div className="mt-4 grid gap-2">
+              {current.choices.map((choice, idx) => {
+                const picked = selected === idx;
+                const isCorrect = showCorrection && idx === revealed?.correctIndex;
+                const show = showCorrection;
+
+                const bg =
+                  show && picked
+                    ? isCorrect
+                      ? "bg-green-500/15"
+                      : "bg-red-500/15"
+                    : show && isCorrect
+                      ? "bg-green-500/10"
+                      : "bg-neutral-900/40";
+
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`w-full rounded-xl border border-white/10 px-4 py-3 text-left text-sm hover:bg-white/5 ${bg}`}
+                    onClick={() => {
+                      if (showCorrection) return;
+                      setSelected(idx);
+                    }}
+                  >
+                    <span className="opacity-90 break-words [overflow-wrap:anywhere]">
+                      <span className="mr-2 font-semibold opacity-60">{LETTERS[idx]}.</span>
+                      {choice}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {checked && (
-              <div
-                className={`mt-4 rounded-xl border p-4 text-sm ${
-                  isCorrect ? "border-emerald-500/30 bg-emerald-500/10" : "border-red-500/30 bg-red-500/10"
-                }`}
-              >
-                <div className={`font-semibold ${isCorrect ? "text-emerald-300" : "text-red-300"}`}>
-                  {isCorrect ? t("exercises.correct") : t("exercises.incorrect")}
+            {showCorrection && revealed && (
+              <div className="mt-4 card-soft p-4 text-sm">
+                <div className="font-semibold">{t("exercises.correction")}</div>
+                <div className="mt-2 opacity-90">
+                  {LETTERS[revealed.correctIndex]}. {current.choices[revealed.correctIndex]}
                 </div>
-                {revealed && (
-                  <div className="mt-1 opacity-90">
-                    {t("exercises.correctAnswerLabel")}: {revealed.correctAnswer}
-                    {current.unit ? ` ${current.unit}` : ""}
-                  </div>
-                )}
-                {revealed?.explanation && (
+                {revealed.explanation && (
                   <div className="mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] opacity-80">
                     {revealed.explanation}
                   </div>
@@ -192,24 +200,30 @@ export function ExerciseSetView({
               <div className="text-sm opacity-70">
                 {t("exercises.score")}: {score}
               </div>
-              {!checked ? (
-                <button
-                  type="button"
-                  className="btn btn-primary w-full sm:w-auto"
-                  disabled={busy || !answerInput.trim()}
-                  onClick={checkAnswer}
-                >
-                  {busy ? t("common.saving") : t("exercises.check")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={goNext}
-                >
-                  {questionIndex < questions.length - 1 ? t("exercises.next") : t("exercises.finish")}
-                </button>
-              )}
+
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+                {!showCorrection ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary w-full sm:w-auto"
+                    disabled={selected == null || busy}
+                    onClick={() => {
+                      if (selected == null) return;
+                      void submitAnswer(current.id, selected);
+                    }}
+                  >
+                    {busy ? t("common.saving") : t("exercises.check")}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={goNext}
+                  >
+                    {questionIndex < questions.length - 1 ? t("exercises.next") : t("exercises.finish")}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

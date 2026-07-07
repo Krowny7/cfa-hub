@@ -99,11 +99,10 @@ export type ExerciseQuestion = {
   id: string;
   set_id: string;
   prompt: string;
-  // Mêmes règles que QuizQuestion.correct_index ci-dessus : absents pour un
-  // visiteur qui n'a pas encore répondu, révélés via award_exercise_xp.
-  correct_answer?: number;
-  tolerance?: number;
-  unit: string | null;
+  choices: string[];
+  // Mêmes règles que QuizQuestion.correct_index ci-dessus : absent pour un
+  // visiteur qui n'a pas encore répondu, révélé via award_exercise_xp.
+  correct_index?: number;
   explanation?: string | null;
   position: number;
 };

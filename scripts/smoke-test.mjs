@@ -206,7 +206,7 @@ async function main() {
   }
 
   // 3b. Exercices — même trio de checks XP (mauvaise/bonne réponse, anti-farming),
-  // mais avec une réponse NUMÉRIQUE tolérante plutôt qu'un index de choix.
+  // même format QCM à 3 options (A/B/C) qu'award_quiz_question_xp.
   const exset = await admin
     .from("exercise_sets")
     .insert({
@@ -228,9 +228,9 @@ async function main() {
       .from("exercise_questions")
       .insert({
         set_id: exerciseSetId,
-        prompt: "Combien font 2 + 2 ?",
-        correct_answer: 4,
-        tolerance: 0.01,
+        prompt: "2 + 2 is closest to:",
+        choices: ["3", "4", "5"],
+        correct_index: 1,
         position: 0,
       })
       .select("id")
@@ -243,7 +243,7 @@ async function main() {
     const wrong = await db.rpc("award_exercise_xp", {
       p_set_id: exerciseSetId,
       p_question_id: exerciseQuestionId,
-      p_answer: 3,
+      p_selected_index: 0,
     });
     check(
       "Exercice : mauvaise réponse → 0 XP",
@@ -254,7 +254,7 @@ async function main() {
     const right = await db.rpc("award_exercise_xp", {
       p_set_id: exerciseSetId,
       p_question_id: exerciseQuestionId,
-      p_answer: 4,
+      p_selected_index: 1,
     });
     check(
       "Exercice : bonne réponse → XP > 0",
@@ -265,7 +265,7 @@ async function main() {
     const again = await db.rpc("award_exercise_xp", {
       p_set_id: exerciseSetId,
       p_question_id: exerciseQuestionId,
-      p_answer: 4,
+      p_selected_index: 1,
     });
     check(
       "Exercice : anti-farming, rejouer ne redonne pas d'XP",

@@ -203,14 +203,14 @@ CREATE TABLE IF NOT EXISTS exercise_set_shares (
   PRIMARY KEY (set_id, group_id)
 );
 
--- Questions d'exercices (réponse numérique + tolérance, corrigé toujours révélé)
+-- Questions d'exercices — format QCM à 3 options (A/B/C), fidèle au format
+-- CFA réel ("... is closest to:"), corrigé toujours révélé après réponse.
 CREATE TABLE IF NOT EXISTS exercise_questions (
   id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   set_id         uuid        NOT NULL REFERENCES exercise_sets(id) ON DELETE CASCADE,
   prompt         text        NOT NULL,
-  correct_answer numeric     NOT NULL,
-  tolerance      numeric     NOT NULL DEFAULT 0.01,
-  unit           text,
+  choices        jsonb       NOT NULL,
+  correct_index  integer     NOT NULL,
   explanation    text,
   position       integer     NOT NULL DEFAULT 0,
   created_at     timestamptz NOT NULL DEFAULT now()
@@ -759,13 +759,12 @@ END;
 $$;
 
 -- Attribue de l'XP pour une réponse correcte à un exercice (calcul/formule).
--- Miroir exact de award_quiz_question_xp, mais compare une réponse numérique
--- (avec tolérance) au lieu d'un index de choix — la correction se fait
--- ENTIÈREMENT côté serveur.
+-- Miroir exact de award_quiz_question_xp (choix à 3 options, comme le format
+-- CFA réel) — la correction se fait ENTIÈREMENT côté serveur.
 CREATE OR REPLACE FUNCTION award_exercise_xp(
   p_set_id uuid,
   p_question_id uuid,
-  p_answer numeric
+  p_selected_index integer
 )
 RETURNS json
 LANGUAGE plpgsql
@@ -775,8 +774,7 @@ DECLARE
   v_official      boolean;
   v_published     boolean;
   v_difficulty    integer;
-  v_correct       numeric;
-  v_tolerance     numeric;
+  v_correct_index integer;
   v_explanation   text;
   v_is_correct    boolean;
   v_already       boolean;
@@ -787,11 +785,11 @@ BEGIN
   INTO v_official, v_published, v_difficulty
   FROM exercise_sets WHERE id = p_set_id;
 
-  SELECT correct_answer, tolerance, explanation INTO v_correct, v_tolerance, v_explanation
+  SELECT correct_index, explanation INTO v_correct_index, v_explanation
   FROM exercise_questions
   WHERE id = p_question_id AND set_id = p_set_id;
 
-  v_is_correct := (v_correct IS NOT NULL AND abs(p_answer - v_correct) <= COALESCE(v_tolerance, 0.01));
+  v_is_correct := (v_correct_index IS NOT NULL AND p_selected_index = v_correct_index);
 
   IF NOT (COALESCE(v_official, false) AND COALESCE(v_published, false)) OR NOT v_is_correct THEN
     SELECT xp_total INTO v_xp_total FROM profiles WHERE id = auth.uid();
@@ -799,7 +797,7 @@ BEGIN
       'xp_awarded', 0,
       'xp_total', COALESCE(v_xp_total, 0),
       'is_correct', COALESCE(v_is_correct, false),
-      'correct_answer', v_correct,
+      'correct_index', v_correct_index,
       'explanation', v_explanation
     );
   END IF;
@@ -813,7 +811,7 @@ BEGIN
     SELECT xp_total INTO v_xp_total FROM profiles WHERE id = auth.uid();
     RETURN json_build_object(
       'xp_awarded', 0, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true,
-      'correct_answer', v_correct, 'explanation', v_explanation
+      'correct_index', v_correct_index, 'explanation', v_explanation
     );
   END IF;
 
@@ -840,7 +838,7 @@ BEGIN
 
   RETURN json_build_object(
     'xp_awarded', v_xp, 'xp_total', COALESCE(v_xp_total, 0), 'is_correct', true,
-    'correct_answer', v_correct, 'explanation', v_explanation
+    'correct_index', v_correct_index, 'explanation', v_explanation
   );
 END;
 $$;

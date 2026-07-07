@@ -90,17 +90,17 @@ export default async function ExerciseSetPage({ params }: PageProps) {
   const qClient = isSystem ? admin : supabase;
   const { data: questionsData } = await qClient
     .from("exercise_questions")
-    .select("id,set_id,prompt,correct_answer,tolerance,unit,explanation,position")
+    .select("id,set_id,prompt,choices,correct_index,explanation,position")
     .eq("set_id", set.id)
     .order("position", { ascending: true });
 
-  // correct_answer/tolerance/explanation ne sont envoyés que si le viewer
-  // peut éditer les questions (propriétaire) — voir la même remarque dans
+  // correct_index/explanation ne sont envoyés que si le viewer peut éditer
+  // les questions (propriétaire) — voir la même remarque dans
   // app/qcm/[id]/page.tsx. Révélés via award_exercise_xp après tentative.
   const initialQuestions: ExerciseQuestion[] = (questionsData ?? []).map((q) => ({
     ...q,
-    correct_answer: canEditQuestions ? q.correct_answer : undefined,
-    tolerance: canEditQuestions ? q.tolerance : undefined,
+    choices: Array.isArray(q.choices) ? q.choices : [],
+    correct_index: canEditQuestions ? q.correct_index : undefined,
     explanation: canEditQuestions ? q.explanation : undefined,
   })) as ExerciseQuestion[];
 

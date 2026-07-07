@@ -7,8 +7,23 @@ import { useI18n } from "@/components/I18nProvider";
 import { StatusMsg } from "@/components/StatusMsg";
 import type { ExerciseQuestion } from "@/lib/types";
 
+const LETTERS = ["A", "B", "C"];
+
+function parseChoices(text: string): string[] {
+  return text
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function clampCorrectIndex(value: number, choices: string[]): number {
+  return Math.max(0, Math.min(choices.length - 1, value - 1));
+}
+
 // Outils de création/gestion des exercices — même découpage que QuizSetManage
 // (chargé uniquement pour le propriétaire via dynamic import côté appelant).
+// Format QCM à 3 options (A/B/C), fidèle au format CFA réel, au lieu d'une
+// réponse numérique libre à taper.
 export function ExerciseSetManage({
   setId,
   questions,
@@ -27,17 +42,15 @@ export function ExerciseSetManage({
 
   // Add exercise form
   const [prompt, setPrompt] = useState("");
-  const [correctAnswer, setCorrectAnswer] = useState("");
-  const [tolerance, setTolerance] = useState("0.01");
-  const [unit, setUnit] = useState("");
+  const [choicesText, setChoicesText] = useState("");
+  const [correct, setCorrect] = useState(1);
   const [explanation, setExplanation] = useState("");
 
   // Edit form
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
-  const [editCorrectAnswer, setEditCorrectAnswer] = useState("");
-  const [editTolerance, setEditTolerance] = useState("0.01");
-  const [editUnit, setEditUnit] = useState("");
+  const [editChoicesText, setEditChoicesText] = useState("");
+  const [editCorrect, setEditCorrect] = useState(1);
   const [editExplanation, setEditExplanation] = useState("");
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -45,12 +58,15 @@ export function ExerciseSetManage({
   async function fetchQuestions(): Promise<ExerciseQuestion[]> {
     const { data, error } = await supabase
       .from("exercise_questions")
-      .select("id,set_id,prompt,correct_answer,tolerance,unit,explanation,position")
+      .select("id,set_id,prompt,choices,correct_index,explanation,position")
       .eq("set_id", setId)
       .order("position", { ascending: true });
 
     if (error) return questions;
-    return (data ?? []) as ExerciseQuestion[];
+    return (data ?? []).map((q) => ({
+      ...q,
+      choices: Array.isArray(q.choices) ? q.choices : [],
+    })) as ExerciseQuestion[];
   }
 
   async function refreshQuestions() {
@@ -77,25 +93,24 @@ export function ExerciseSetManage({
     setBusy(true);
     try {
       if (!prompt.trim()) throw new Error(t("common.error"));
-      const answer = Number(correctAnswer);
-      if (!Number.isFinite(answer)) throw new Error(t("exercises.answerError"));
-      const tol = Number(tolerance);
+      const lines = parseChoices(choicesText);
+      if (lines.length !== 3) throw new Error(t("exercises.choicesError"));
+
+      const idx0 = clampCorrectIndex(correct, lines);
 
       const { error } = await supabase.from("exercise_questions").insert({
         set_id: setId,
         prompt: prompt.trim(),
-        correct_answer: answer,
-        tolerance: Number.isFinite(tol) && tol >= 0 ? tol : 0.01,
-        unit: unit.trim() || null,
+        choices: lines,
+        correct_index: idx0,
         explanation: explanation.trim() || null,
         position: questions.length,
       });
       if (error) throw new Error(error.message);
 
       setPrompt("");
-      setCorrectAnswer("");
-      setTolerance("0.01");
-      setUnit("");
+      setChoicesText("");
+      setCorrect(1);
       setExplanation("");
       await refreshQuestions();
       setEditorMsg(t("common.saved"));
@@ -111,18 +126,16 @@ export function ExerciseSetManage({
     setConfirmDeleteId(null);
     setEditingId(q.id);
     setEditPrompt(q.prompt);
-    setEditCorrectAnswer(String(q.correct_answer));
-    setEditTolerance(String(q.tolerance));
-    setEditUnit(q.unit ?? "");
+    setEditChoicesText(q.choices.join("\n"));
+    setEditCorrect((q.correct_index ?? 0) + 1);
     setEditExplanation(q.explanation ?? "");
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditPrompt("");
-    setEditCorrectAnswer("");
-    setEditTolerance("0.01");
-    setEditUnit("");
+    setEditChoicesText("");
+    setEditCorrect(1);
     setEditExplanation("");
   }
 
@@ -132,17 +145,17 @@ export function ExerciseSetManage({
     setBusy(true);
     try {
       if (!editPrompt.trim()) throw new Error(t("common.error"));
-      const answer = Number(editCorrectAnswer);
-      if (!Number.isFinite(answer)) throw new Error(t("exercises.answerError"));
-      const tol = Number(editTolerance);
+      const lines = parseChoices(editChoicesText);
+      if (lines.length !== 3) throw new Error(t("exercises.choicesError"));
+
+      const idx0 = clampCorrectIndex(editCorrect, lines);
 
       const { error } = await supabase
         .from("exercise_questions")
         .update({
           prompt: editPrompt.trim(),
-          correct_answer: answer,
-          tolerance: Number.isFinite(tol) && tol >= 0 ? tol : 0.01,
-          unit: editUnit.trim() || null,
+          choices: lines,
+          correct_index: idx0,
           explanation: editExplanation.trim() || null,
         })
         .eq("id", editingId)
@@ -194,37 +207,27 @@ export function ExerciseSetManage({
             placeholder={t("exercises.promptPlaceholder")}
           />
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <div>
-              <label className="text-xs opacity-70">{t("exercises.correctAnswerLabel")}</label>
-              <input
-                type="number"
-                step="any"
-                className="input mt-1"
-                value={correctAnswer}
-                onChange={(e) => setCorrectAnswer(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs opacity-70">{t("exercises.toleranceLabel")}</label>
-              <input
-                type="number"
-                step="any"
-                min={0}
-                className="input mt-1"
-                value={tolerance}
-                onChange={(e) => setTolerance(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs opacity-70">{t("exercises.unitLabel")}</label>
-              <input
-                className="input mt-1"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="%, $, ans…"
-              />
-            </div>
+          <textarea
+            className="input box-border w-full min-w-0 max-w-full font-mono text-sm"
+            rows={3}
+            value={choicesText}
+            onChange={(e) => setChoicesText(e.target.value)}
+            placeholder={t("exercises.choicePlaceholder")}
+          />
+
+          <div>
+            <label className="text-xs opacity-70">{t("exercises.correctChoiceLabel")}</label>
+            <select
+              className="select mt-1"
+              value={correct}
+              onChange={(e) => setCorrect(Number(e.target.value))}
+            >
+              {LETTERS.map((letter, idx) => (
+                <option key={letter} value={idx + 1}>
+                  {letter}
+                </option>
+              ))}
+            </select>
           </div>
 
           <textarea
@@ -268,7 +271,7 @@ export function ExerciseSetManage({
                         Q{idx + 1}. {q.prompt}
                       </div>
                       <div className="mt-1 text-xs opacity-70">
-                        {t("exercises.correctAnswerLabel")}: {q.correct_answer}{q.unit ? ` ${q.unit}` : ""} (± {q.tolerance})
+                        {t("exercises.correctChoiceLabel")}: {LETTERS[q.correct_index ?? 0]}
                       </div>
                     </div>
 
@@ -333,28 +336,23 @@ export function ExerciseSetManage({
                         value={editPrompt}
                         onChange={(e) => setEditPrompt(e.target.value)}
                       />
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        <input
-                          type="number"
-                          step="any"
-                          className="input"
-                          value={editCorrectAnswer}
-                          onChange={(e) => setEditCorrectAnswer(e.target.value)}
-                        />
-                        <input
-                          type="number"
-                          step="any"
-                          min={0}
-                          className="input"
-                          value={editTolerance}
-                          onChange={(e) => setEditTolerance(e.target.value)}
-                        />
-                        <input
-                          className="input"
-                          value={editUnit}
-                          onChange={(e) => setEditUnit(e.target.value)}
-                        />
-                      </div>
+                      <textarea
+                        className="input box-border w-full min-w-0 max-w-full font-mono text-sm"
+                        rows={3}
+                        value={editChoicesText}
+                        onChange={(e) => setEditChoicesText(e.target.value)}
+                      />
+                      <select
+                        className="select"
+                        value={editCorrect}
+                        onChange={(e) => setEditCorrect(Number(e.target.value))}
+                      >
+                        {LETTERS.map((letter, i) => (
+                          <option key={letter} value={i + 1}>
+                            {letter}
+                          </option>
+                        ))}
+                      </select>
                       <textarea
                         className="input box-border w-full min-w-0 max-w-full"
                         rows={4}
