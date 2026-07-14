@@ -41,13 +41,18 @@ export async function getOwnerId() {
   return owner.id;
 }
 
+// Recherche par nom+kind SEULEMENT (pas de filtre owner_id) — le contenu
+// Système peut avoir été créé par un autre compte admin (piège déjà
+// rencontré : filtrer par owner_id a fait créer des dossiers dupliqués et
+// laissé les anciens sets génériques orphelins, invisibles aux scripts
+// suivants). Un dossier "Système" doit être unique par nom+kind, peu
+// importe qui l'a créé.
 export async function ensureFolder(ownerId, folderName, kind) {
   let { data: folder } = await supabase
     .from("library_folders")
     .select("id")
     .eq("name", folderName)
     .eq("kind", kind)
-    .eq("owner_id", ownerId)
     .maybeSingle();
 
   if (!folder) {
@@ -65,7 +70,13 @@ export async function ensureFolder(ownerId, folderName, kind) {
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) {
   const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
-  await supabase.from("quiz_sets").delete().eq("owner_id", ownerId).in("title", titlesToDelete);
+  // is_official (pas owner_id) : le contenu Système remplacé peut avoir été
+  // créé par un autre compte admin — voir la note sur ensureFolder.
+  const { data: toDelete } = await supabase.from("quiz_sets").select("id").eq("is_official", true).in("title", titlesToDelete);
+  if (toDelete?.length) {
+    await supabase.from("quiz_questions").delete().in("set_id", toDelete.map((s) => s.id));
+    await supabase.from("quiz_sets").delete().in("id", toDelete.map((s) => s.id));
+  }
 
   let total = 0;
   for (const set of sets) {
@@ -106,7 +117,12 @@ export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) 
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedExerciseSets({ ownerId, folderId, sets, oldTitles = [] }) {
   const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
-  await supabase.from("exercise_sets").delete().eq("owner_id", ownerId).in("title", titlesToDelete);
+  // is_official (pas owner_id) — voir la note sur seedQuizSets.
+  const { data: toDelete } = await supabase.from("exercise_sets").select("id").eq("is_official", true).in("title", titlesToDelete);
+  if (toDelete?.length) {
+    await supabase.from("exercise_questions").delete().in("set_id", toDelete.map((s) => s.id));
+    await supabase.from("exercise_sets").delete().in("id", toDelete.map((s) => s.id));
+  }
 
   let total = 0;
   for (const set of sets) {
