@@ -544,13 +544,13 @@ export default function DerivativesFiche() {
           <FCard title="Convexity bias — Futures de taux vs FRA équivalent">
             Le futures a un profil de gain/perte SYMÉTRIQUE (BPV constant, ex: ±$50 pour ±1bp), alors que le FRA équivalent est ASYMÉTRIQUE car actualisé au taux réalisé.
             <Formula>
-              FRA équivalent, notionnel implicite BPV=$50/bp{"\n"}
-              Si MRR=2.51% (+1bp): long reçoit 50/(1.0251/2) = 49.3803$ {'<'} 50$ (moins que le futures){"\n"}
-              Si MRR=2.49% (−1bp): long paie 50/(1.0249/2) = 49.3852$ {'<'} 50$ (moins que le futures){"\n\n"}
-              → La baisse de taux génère un gain PLUS ÉLEVÉ en valeur absolue que la perte symétrique{"\n"}
-              → &quot;Convexity bias&quot; favorable au FRA vs futures
+              FRA équivalent (long = payeur fixe / receveur variable), notionnel implicite BPV=$50/bp{"\n"}
+              Si MRR=2.51% (+1bp): le long REÇOIT 50/(1.0251/2) = 49.3803$ (gain, {'<'} 50$){"\n"}
+              Si MRR=2.49% (−1bp): le long PAIE 50/(1.0249/2) = 49.3852$ (perte, {'<'} 50$ en valeur absolue){"\n\n"}
+              → Pour un mouvement symétrique de ±1bp, le paiement (49,3852$) est LÉGÈREMENT SUPÉRIEUR en valeur absolue au gain (49,3803$){"\n"}
+              → C&apos;est la &quot;convexity bias&quot; du FRA : contrairement au futures (BPV rigoureusement symétrique, exactement 50$ dans les deux sens), le FRA est actualisé au taux RÉALISÉ, ce qui introduit une légère asymétrie
             </Formula>
-            <Rule c="red">Piège Schweser: le futures de taux, PAS le FRA, a un BPV parfaitement symétrique — le FRA a un léger avantage de convexité (paiements plus favorables au détenteur long) à cause de l&apos;actualisation au taux réalisé.</Rule>
+            <Rule c="red">Piège Schweser: le futures de taux a un BPV parfaitement symétrique (±50$ exactement), PAS le FRA — l&apos;actualisation du FRA au taux réalisé introduit une légère asymétrie de convexité entre les deux instruments, sans qu&apos;un côté (long/short) en soit systématiquement &quot;avantagé&quot;.</Rule>
           </FCard>
         </Sec>
 
