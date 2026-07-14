@@ -156,6 +156,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>5. Credit Derivatives (CDS)</strong> — Transfert du risque de crédit d'une entité de référence. L'acheteur de protection paie une prime périodique ; en cas de défaut, il reçoit la valeur nominale. Peut être vu comme une option sur l'événement de crédit.
           </FCard>
+          <Rule c="amber">Piège classique : sur un <strong>forward de taux d&apos;intérêt</strong>, une HAUSSE du taux est un GAIN pour l&apos;acheteur (long). C&apos;est l&apos;inverse d&apos;un <strong>forward obligataire</strong>, où une hausse des taux fait BAISSER le prix de l&apos;obligation → PERTE pour l&apos;acheteur. Le sous-jacent change la direction du payoff.</Rule>
         </Sec>
 
         <Sec los="LOS 66.b" label="Marchés OTC vs Marchés Organisés">
@@ -342,6 +343,7 @@ export default function DerivativesFiche() {
               ["Spéculateur (vue directionnelle)", "Aucun risque à couvrir", "Call ou put ou futures", "Long call si haussier, long put si baissier", "Levier pour amplifier les rendements (et pertes)"],
             ]}
           />
+          <Rule c="green">Piège classique : pour garder l&apos;upside d&apos;une action déjà détenue tout en se protégeant à la baisse → <strong>acheter un put</strong> (protective put). Vendre un call (covered call) PLAFONNE l&apos;upside. Acheter un call en plus d&apos;être déjà long double l&apos;exposition haussière — ce n&apos;est pas une couverture.</Rule>
           <FCard title="Hedge accounting — 3 catégories (émetteurs)">
             <FTable headers={["Type", "Objectif", "Exemple"]} rows={[
               ["Cash flow hedge", "Réduire la volatilité de FLUX FUTURS", "Forward FX sur des ventes export prévues ; swap qui convertit une dette VARIABLE en fixe"],
@@ -550,7 +552,7 @@ export default function DerivativesFiche() {
               → Pour un mouvement symétrique de ±1bp, le paiement (49,3852$) est LÉGÈREMENT SUPÉRIEUR en valeur absolue au gain (49,3803$){"\n"}
               → C&apos;est la &quot;convexity bias&quot; du FRA : contrairement au futures (BPV rigoureusement symétrique, exactement 50$ dans les deux sens), le FRA est actualisé au taux RÉALISÉ, ce qui introduit une légère asymétrie
             </Formula>
-            <Rule c="red">Piège Schweser: le futures de taux a un BPV parfaitement symétrique (±50$ exactement), PAS le FRA — l&apos;actualisation du FRA au taux réalisé introduit une légère asymétrie de convexité entre les deux instruments, sans qu&apos;un côté (long/short) en soit systématiquement &quot;avantagé&quot;.</Rule>
+            <Rule c="red">Formule officielle CFA : comparé à un futures de taux, un FRA équivalent <strong>exhibits greater convexity</strong> — le futures a un payoff parfaitement LINÉAIRE (BPV symétrique, ±50$ exactement), le FRA est CONVEXE à cause de son actualisation au taux réalisé.</Rule>
           </FCard>
         </Sec>
 
@@ -644,6 +646,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Pourquoi VI {'<'} prix option ?</strong> La valeur temps est ≥ 0 mais peut tendre vers 0 pour les options deep ITM — surtout les puts américains, ce qui explique pourquoi leur exercice anticipé peut devenir optimal (cf. LOS 73.c).
           </FCard>
+          <Rule c="blue">Piège classique : à l&apos;échéance, valeur d&apos;exercice = valeur temps SEULEMENT pour une option OUT-OF-THE-MONEY (les deux valent zéro). Pour une option ITM à l&apos;échéance, la valeur temps est nulle mais la valeur d&apos;exercice ne l&apos;est PAS — elles ne sont donc pas égales.</Rule>
         </Sec>
 
         <Sec los="LOS 73.b" label="Arbitrage/réplication — Forward commitments vs Contingent claims">
