@@ -294,8 +294,10 @@ export default function DerivativesFiche() {
           <FCard title="Gestion du risque (Hedging)">
             Les dérivés permettent de transférer les risques non désirés vers des contreparties prêtes à les assumer (spéculateurs, autres hedgers). Sans dérivés, la seule alternative pour éliminer un risque serait de vendre l'actif sous-jacent — coûteux, inefficace et parfois impossible.
           </FCard>
-          <FCard title="Price Discovery">
-            Les prix des contrats futures reflètent les anticipations agrégées du marché sur les prix futurs. Un agriculteur peut observer le prix futures du blé à 6 mois pour décider combien planter. Les marchés de futures pour le pétrole ou les matières premières fournissent des signaux de prix essentiels pour les décisions d'investissement.
+          <FCard title="Information Discovery (terme officiel — pas &quot;Price Discovery&quot;)">
+            Les prix des options dépendent de variables observables (taux, prix du sous-jacent, temps à échéance, strike) et d&apos;une variable inobservable : la volatilité future anticipée. En combinant prix de marché des options et variables observables, on peut estimer la volatilité implicite anticipée par le marché.
+            <br /><br />
+            Les futures/forwards permettent d&apos;estimer le prix futur attendu du sous-jacent. Les futures de taux d&apos;intérêt sur différentes maturités permettent d&apos;inférer les taux futurs anticipés et même le nombre de changements de taux directeurs attendus des banques centrales.
           </FCard>
           <FCard title="Efficience, Arbitrage et Réduction des Coûts">
             Les arbitrageurs utilisent les dérivés pour maintenir la cohérence des prix entre marchés → amélioration de l'efficience informationnelle.
@@ -321,6 +323,9 @@ export default function DerivativesFiche() {
             <strong>Rollover risk :</strong> en maintenant une exposition via des contrats courts (ex: futures mensuels), le renouvellement peut se faire à des prix défavorables (backwardation ou contango défavorable).
             <br /><br />
             <strong>Basis risk :</strong> le dérivé ne couvre pas parfaitement le risque réel. Ex : une compagnie aérienne couvre le kérosène avec des futures sur crude oil → la base (kérosène − crude) peut varier → couverture imparfaite.
+          </FCard>
+          <FCard title="Risque systémique (Systemic Risk)">
+            Une spéculation excessive via les dérivés peut créer un impact généralisé sur les marchés financiers et les institutions (ex : CDS sur subprimes d&apos;AIG en 2008). Les régulateurs cherchent à réduire ce risque via la réglementation — notamment l&apos;obligation de compensation centrale (central clearing mandate) pour les marchés de swaps, qui réduit le risque de contrepartie propagé entre intermédiaires.
           </FCard>
         </Sec>
 
