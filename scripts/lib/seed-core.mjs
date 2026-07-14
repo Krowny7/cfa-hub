@@ -160,6 +160,48 @@ export async function seedExerciseSets({ ownerId, folderId, sets, oldTitles = []
   return total;
 }
 
+// sets: [{ title, cards: [[front, back], ...] }]
+export async function seedFlashcardSets({ ownerId, folderId, sets, oldTitles = [] }) {
+  const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
+  // is_official (pas owner_id) — voir la note sur seedQuizSets.
+  const { data: toDelete } = await supabase.from("flashcard_sets").select("id").eq("is_official", true).in("title", titlesToDelete);
+  if (toDelete?.length) {
+    await supabase.from("flashcards").delete().in("set_id", toDelete.map((s) => s.id));
+    await supabase.from("flashcard_sets").delete().in("id", toDelete.map((s) => s.id));
+  }
+
+  let total = 0;
+  for (const set of sets) {
+    const { data: newSet, error: setErr } = await supabase
+      .from("flashcard_sets")
+      .insert({
+        title: set.title,
+        visibility: "public",
+        subject: "cfa",
+        owner_id: ownerId,
+        folder_id: folderId,
+        is_official: true,
+        official_published: true,
+      })
+      .select("id")
+      .single();
+    if (setErr) throw setErr;
+
+    const rows = set.cards.map(([front, back], i) => ({
+      set_id: newSet.id,
+      front,
+      back,
+      position: i + 1,
+    }));
+    const { error: cErr } = await supabase.from("flashcards").insert(rows);
+    if (cErr) throw cErr;
+
+    console.log(`  ✓ Flashcards "${set.title}" — ${rows.length} cartes (set ${newSet.id})`);
+    total += rows.length;
+  }
+  return total;
+}
+
 export function loadJson(scratchpadFile) {
   const base = "C:\\Users\\chaum\\AppData\\Local\\Temp\\claude\\C--Users-chaum-Documents-M-moire-Code-memoire\\93b73519-41cb-401d-844c-42e8f5c2d955\\scratchpad";
   return JSON.parse(readFileSync(join(base, scratchpadFile), "utf8"));
