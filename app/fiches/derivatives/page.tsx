@@ -212,6 +212,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>À distinguer du CDS :</strong> le <strong>total return swap</strong> échange le rendement TOTAL d'une obligation contre un taux fixe/variable (le vendeur du TRS assume le risque de prix ET de crédit, contrairement au CDS qui isole le risque de crédit). Le <strong>credit-linked note</strong> est un titre dont les flux proviennent d'une obligation sous-jacente (combine dette + position CDS vendue).
           </FCard>
+          <Rule c="red">Piège classique : le CDS est le MOINS PRÉCISÉMENT décrit comme un forward commitment — c&apos;est un contingent claim (le paiement du vendeur dépend d&apos;un événement de crédit futur), au même titre qu&apos;une option.</Rule>
           <FCard title="Mécanique des marges — Futures">
             <strong>Initial margin</strong> : dépôt requis avant d'ouvrir une position (≈ variation de prix maximale attendue en une journée). <strong>Maintenance margin</strong> : solde minimum à maintenir. Si le solde tombe SOUS la maintenance margin (via le MTM quotidien), l'investisseur doit déposer des fonds pour ramener le compte à l'<strong>INITIAL margin</strong> (pas à la maintenance margin — piège classique).
             <Formula>
@@ -256,6 +257,7 @@ export default function DerivativesFiche() {
               ["Short forward", "F₀", "Illimité", "F₀"],
             ]}
           />
+          <Rule c="blue">Le breakeven est LE MÊME pour l&apos;acheteur ET le vendeur d&apos;un même call (X + c₀) ou d&apos;un même put (X − p₀) — ce n&apos;est pas un point différent pour chaque côté, puisque le profit de l&apos;un est exactement la perte de l&apos;autre (jeu à somme nulle).</Rule>
           <FCard title="Exemple numérique — Call">
             S₀ = 50, X = 52, prime c₀ = 4, T = 1 an.
             <br /><br />
@@ -284,6 +286,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Hedging avec forward vs put :</strong> Un producteur qui vend un forward FX fixe exactement son prix de vente — il ne bénéficiera pas si la devise s'apprécie (il renonce à l'upside). Avec un put FX, il est protégé si la devise se déprécie MAIS conserve l'upside si elle s'apprécie. La flexibilité a un coût = la prime du put.
           </FCard>
+          <Rule c="green">Le CDS : l&apos;acheteur de protection VERSE une série de paiements (comme une prime d&apos;assurance) au vendeur — il n&apos;échange pas le rendement d&apos;une obligation (ça, c&apos;est le total return swap) et n&apos;émet pas de titre (ça, c&apos;est le credit-linked note).</Rule>
         </Sec>
 
       </Reading>
@@ -310,6 +313,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Levier :</strong> contrôler une large position notionnelle avec un capital limité. Un futures sur l'indice CAC 40 d'une valeur de 200 000€ ne nécessite qu'une marge initiale de 5-10%. Le levier amplifie les rendements — mais aussi les pertes.
           </FCard>
+          <Rule c="amber">La <strong>liquidité</strong> est à la fois un avantage ET un risque des dérivés : le faible cash requis permet des transactions importantes à bas coût (avantage), mais ce même levier implicite amplifie les pertes potentielles bien au-delà du marché cash (risque).</Rule>
         </Sec>
 
         <Sec los="LOS 68.a" label="Risques des dérivés">
@@ -400,6 +404,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>δ (revenus : dividendes, coupons) :</strong> bénéfice du détenteur de l'actif spot que l'acheteur forward ne reçoit pas. Réduit F₀.
           </FCard>
+          <Rule c="blue">Piège classique : un convenience yield PLUS FAIBLE (moins de bénéfice à détenir l&apos;actif) fait AUGMENTER F₀ — c&apos;est l&apos;inverse d&apos;un raisonnement rapide qui associerait &quot;yield plus bas&quot; à &quot;prix plus bas&quot;. Bénéfice ↓ → F₀ ↑ (comme un coût qui augmente).</Rule>
           <FCard title="Contango vs Backwardation">
             <strong>Contango :</strong> F₀ {'>'} S₀ → situation normale quand les coûts de stockage dominent. La courbe des futures est en pente montante. Détenteurs spot perdent sur le portage → exigent un prix forward supérieur.
             <br /><br />
@@ -493,6 +498,7 @@ export default function DerivativesFiche() {
             <br /><br />
             Notation moderne (MRR) : même logique avec la notation A×B (A=début en mois, B=fin en mois) sur le market reference rate.
           </FCard>
+          <Rule c="green">Le FRA est un <strong>forward commitment</strong> (pas un contingent claim) utilisé pour VERROUILLER un taux d&apos;emprunt/prêt futur. Échanger un flux variable contre un flux fixe sur PLUSIEURS périodes se fait via un <strong>swap</strong>, pas un FRA (qui ne couvre qu&apos;une seule période).</Rule>
           <FCard title="Taux forward implicites (implied forward rates)">
             Un taux forward est implicite dans deux taux spot de maturités différentes.
             <KFormula lines={String.raw`(1+Z_n)^n = (1+Z_m)^m \times (1+F_{m,n-m})^{n-m}`} />
@@ -534,6 +540,7 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Corrélation négative</strong> (ex: obligations) : pertes MTM surviennent quand les taux sont élevés (coût de financement du call plus cher) → <strong>Futures {'<'} Forward</strong>.
           </FCard>
+          <Rule c="amber">Si le prix forward observé est SUPÉRIEUR au prix futures équivalent, l&apos;explication la plus probable est une corrélation NÉGATIVE entre taux et prix du sous-jacent — PAS une opportunité d&apos;arbitrage (le MTM quotidien justifie légitimement l&apos;écart).</Rule>
           <FCard title="Futures de taux d'intérêt — Prix et BPV">
             <KFormula lines={[
               String.raw`\text{Futures price} = 100 - (100 \times MRR_{A,B-A})`,
@@ -605,6 +612,7 @@ export default function DerivativesFiche() {
             <br />— Payeur fixe : profite d'une hausse des taux (les flux variables reçus augmentent, les fixes payés restent constants).
             <br />— Receveur fixe : profite d'une baisse des taux.
           </FCard>
+          <Rule c="blue">Symétrique de l&apos;équivalence bond : le <strong>payeur variable / receveur fixe</strong> se réplique en empruntant à taux VARIABLE et en achetant un bond à taux FIXE avec le produit — l&apos;inverse exact du payeur fixe.</Rule>
           <FCard title="Exemple — Valeur du swap après changement de taux">
             IRS 2 ans, notionnel 1M$, SFR = 4% (payé), SOFR reçu. Après 1 an, la courbe se déplace : taux 1 an passe à 5%.
             <br /><br />
@@ -665,6 +673,7 @@ export default function DerivativesFiche() {
             <br />p₀ ≥ max[0, X(1+Rf)^-T − S₀] (borne inférieure)
             <br />p_t ≤ X(1+Rf)^-(T-t) (borne supérieure : ne peut valoir plus que la valeur actualisée du strike)
           </FCard>
+          <Rule c="red">Seules les options (contingent claims) ont des bornes inférieure ET supérieure de non-arbitrage — les forward commitments n&apos;en ont pas (hormis une borne triviale à zéro si le sous-jacent ne peut être négatif), car aucune prime n&apos;est versée à l&apos;initiation.</Rule>
         </Sec>
 
         <Sec los="LOS 73.c" label="Les facteurs déterminant le prix d'une option">
@@ -720,6 +729,7 @@ export default function DerivativesFiche() {
             <br /><br />
             Vérification : si p cotait 3 (trop cher), l'arbitrage serait : acheter call (−9), placer X(1+Rf)^-T (−93,16), vendre put (+3), vendre action (+100). Flux net = 0,84 {'>'} 0. ✓
           </FCard>
+          <Rule c="amber">Recette d&apos;arbitrage : si le put coté est SOUS-évalué par rapport à la parité, on ACHÈTE le put, on VEND le call, on emprunte PV(X), et on ACHÈTE l&apos;action (l&apos;inverse exact de la recette ci-dessus pour un put SUR-évalué).</Rule>
           <FCard title="Les 4 positions synthétiques">
             <strong>1. Long call synthétique :</strong> c = p + S − X(1+Rf)^-T → Long put + Long action + Emprunt X(1+Rf)^-T
             <br /><br />
@@ -840,6 +850,8 @@ export default function DerivativesFiche() {
             <br /><br />
             <strong>Clé :</strong> le prix de no-arbitrage est identique peu importe les préférences des investisseurs pour le risque — le pricing risk-neutral s'applique à tout modèle utilisant des mouvements futurs du sous-jacent. On peut donc calculer dans le cadre le plus simple (risque-neutre) et obtenir le bon prix.
           </FCard>
+          <Rule c="red">Piège classique : la valeur d&apos;une option n&apos;est affectée QUE par les probabilités risque-neutres (attendues), JAMAIS par les probabilités réelles/actuelles de hausse ou de baisse du marché.</Rule>
+          <Rule c="blue">Le pricing risk-neutral nécessite la <strong>volatilité</strong> attendue du sous-jacent — PAS le rendement attendu. C&apos;est justement parce qu&apos;on n&apos;a pas besoin d&apos;estimer le rendement attendu (ni les préférences de risque des investisseurs) que la méthode fonctionne peu importe l&apos;aversion au risque réelle du marché.</Rule>
           <FCard title="Exemple numérique — Put européen (mêmes paramètres)">
             S₀ = 50, u = 1,25, d = 0,80, r = 5%, X = 52.
             <br /><br />
