@@ -26,8 +26,8 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
-  const [duration, setDuration] = useState(180);
-  const [questionCount, setQuestionCount] = useState(60);
+  const [duration, setDuration] = useState(135);
+  const [questionCount, setQuestionCount] = useState(90);
 
   async function refresh() {
     const { data } = await supabase
@@ -55,7 +55,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
       });
       if (error) throw new Error(error.message);
       setTitle(""); setDescription(""); setScheduledAt("");
-      setDuration(180); setQuestionCount(60);
+      setDuration(135); setQuestionCount(90);
       setShowCreate(false);
       await refresh();
       setMsg("Examen créé");

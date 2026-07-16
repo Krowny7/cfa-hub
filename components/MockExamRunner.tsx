@@ -1,24 +1,40 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
-import { ClipboardList, Trophy, BarChart3, AlertTriangle, Check, X } from "lucide-react";
+import { ClipboardList, Trophy, XCircle, AlertTriangle, Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { friendlyError } from "@/lib/errors";
 
-type Question = {
+// Reçu pendant l'examen — jamais correct_index/explanation (voir
+// migration_mock_exam_secure_submit.sql, correction entièrement serveur).
+type ActiveQuestion = {
   id: string;
   position: number;
   prompt: string;
   choices: string[];
+};
+
+// Reçu uniquement après soumission (via submit_mock_exam ou
+// get_mock_exam_review) — c'est la SEULE source de correct_index côté client.
+type ReviewQuestion = {
+  question_id: string;
+  prompt: string;
+  choices: string[];
   correct_index: number;
   explanation: string | null;
+  selected_index: number | null;
+  is_correct: boolean;
 };
 
 type Props = {
   examId: string;
   durationMinutes: number;
-  questions: Question[];
+  questions: ActiveQuestion[];
+  review: ReviewQuestion[];
   alreadyDone: boolean;
 };
+
+const PASS_THRESHOLD = 70;
 
 function fmtTime(s: number) {
   const h = Math.floor(s / 3600);
@@ -28,7 +44,7 @@ function fmtTime(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone }: Props) {
+export function MockExamRunner({ examId, durationMinutes, questions, review: initialReview, alreadyDone }: Props) {
   const supabase = useMemo(() => createClient(), []);
 
   type Phase = "ready" | "active" | "done";
@@ -36,9 +52,10 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
   const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
   const [idx, setIdx] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
-  const [score, setScore] = useState<number | null>(null);
+  const [review, setReview] = useState<ReviewQuestion[]>(initialReview);
   const [submitting, setSubmitting] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(0);
 
@@ -66,28 +83,26 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
   async function submit() {
     if (submitting) return;
     setSubmitting(true);
+    setError(null);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const finalAnswers = answers;
-    const finalScore = questions.reduce((acc, q, i) => acc + (finalAnswers[i] === q.correct_index ? 1 : 0), 0);
     const duration = Math.round((Date.now() - startedAtRef.current) / 1000);
+    const payload = questions.map((q, i) => ({ question_id: q.id, selected_index: answers[i] }));
 
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      if (auth.user) {
-        await supabase.from("mock_exam_results").insert({
-          exam_id: examId,
-          user_id: auth.user.id,
-          score: finalScore,
-          total: questions.length,
-          duration_seconds: duration,
-        });
-      }
-    } catch {}
-
-    setScore(finalScore);
-    setPhase("done");
-    setSubmitting(false);
+      const { data, error: rpcError } = await supabase.rpc("submit_mock_exam", {
+        p_exam_id: examId,
+        p_answers: payload,
+        p_duration_seconds: duration,
+      });
+      if (rpcError) throw new Error(rpcError.message);
+      setReview((data?.review ?? []) as ReviewQuestion[]);
+      setPhase("done");
+    } catch (e: unknown) {
+      setError(friendlyError(e, "Erreur lors de la soumission"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const answered = answers.filter((a) => a !== null).length;
@@ -104,14 +119,14 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
         </div>
         <div className="mx-auto mt-4 flex max-w-sm items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
           <AlertTriangle size={16} className="shrink-0" />
-          Pas de correction pendant l'examen. Tu verras tes résultats à la fin.
+          Pas de correction pendant l&apos;examen. Tu verras tes résultats à la fin.
         </div>
         <button
           type="button"
           className="btn btn-primary mx-auto mt-6 px-8 py-3 text-base"
           onClick={start}
         >
-          Commencer l'examen
+          Commencer l&apos;examen
         </button>
       </div>
     );
@@ -119,70 +134,69 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
 
   // ── DONE ──
   if (phase === "done") {
-    const pct = score !== null && questions.length > 0
-      ? Math.round((score / questions.length) * 100)
-      : null;
+    const total = review.length;
+    const score = review.filter((r) => r.is_correct).length;
+    const pct = total > 0 ? Math.round((score / total) * 100) : null;
+    const passed = pct !== null && pct >= PASS_THRESHOLD;
 
     return (
       <div className="grid gap-4">
         <div className="card p-6 text-center">
-          {pct !== null && pct >= 60 ? (
+          {passed ? (
             <Trophy size={40} className="mx-auto text-yellow-400" />
           ) : (
-            <BarChart3 size={40} className="mx-auto text-white/60" />
+            <XCircle size={40} className="mx-auto text-red-400/80" />
           )}
-          <h2 className="mt-3 text-2xl font-semibold">
-            {alreadyDone && score === null ? "Examen déjà passé" : `${score ?? "?"} / ${questions.length}`}
+          <h2 className={`mt-3 text-2xl font-semibold ${passed ? "text-green-400" : "text-red-400"}`}>
+            {total > 0 ? (passed ? "PASS" : "DID NOT PASS") : "Résultats indisponibles"}
           </h2>
           {pct !== null && (
-            <div className={`mt-1 text-3xl font-bold ${pct >= 70 ? "text-green-400" : pct >= 60 ? "text-yellow-400" : "text-red-400"}`}>
-              {pct}%
-            </div>
+            <>
+              <div className="mt-1 text-3xl font-bold tabular-nums">{pct}%</div>
+              <div className="mt-1 text-sm text-white/50">{score} / {total} bonnes réponses</div>
+              <div className="mt-1 text-xs text-muted">Seuil de passage (indicatif) : {PASS_THRESHOLD}%</div>
+            </>
           )}
-          <div className="mt-2 text-sm text-white/50">
-            {pct !== null && pct >= 60 ? "Au-dessus de la barre de passage" : pct !== null ? "En dessous de la barre de passage" : ""}
-          </div>
-          <button
-            type="button"
-            className="btn btn-secondary mx-auto mt-5"
-            onClick={() => setShowReview((v) => !v)}
-          >
-            {showReview ? "Masquer la correction" : "Voir la correction"}
-          </button>
+          {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
+          {total > 0 && (
+            <button
+              type="button"
+              className="btn btn-secondary mx-auto mt-5"
+              onClick={() => setShowReview((v) => !v)}
+            >
+              {showReview ? "Masquer la correction" : "Voir la correction"}
+            </button>
+          )}
         </div>
 
         {showReview && (
           <div className="grid gap-3">
-            {questions.map((q, i) => {
-              const sel = answers[i];
-              const isCorrect = sel === q.correct_index;
-              return (
-                <div key={q.id} className={`card p-4 border-l-2 ${isCorrect ? "border-l-green-500/50" : sel === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
-                  <div className="text-xs text-muted mb-1">Q{i + 1}</div>
-                  <div className="text-sm font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
-                  <div className="mt-3 grid gap-1.5">
-                    {q.choices.map((c, ci) => (
-                      <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
-                        ci === q.correct_index
-                          ? "border-green-500/40 bg-green-500/10 text-green-300"
-                          : ci === sel && sel !== q.correct_index
-                          ? "border-red-500/40 bg-red-500/10 text-red-300"
-                          : "border-white/10 text-white/60"
-                      }`}>
-                        <span className="inline-flex items-center gap-1.5">
-                          {ci === q.correct_index && <Check size={14} className="shrink-0" />}
-                          {ci === sel && ci !== q.correct_index && <X size={14} className="shrink-0" />}
-                          {c}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {q.explanation && (
-                    <div className="mt-2 text-xs text-white/50 whitespace-pre-wrap break-words">{q.explanation}</div>
-                  )}
+            {review.map((q, i) => (
+              <div key={q.question_id} className={`card p-4 border-l-2 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
+                <div className="text-xs text-muted mb-1">Q{i + 1}</div>
+                <div className="text-sm font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
+                <div className="mt-3 grid gap-1.5">
+                  {q.choices.map((c, ci) => (
+                    <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
+                      ci === q.correct_index
+                        ? "border-green-500/40 bg-green-500/10 text-green-300"
+                        : ci === q.selected_index && q.selected_index !== q.correct_index
+                        ? "border-red-500/40 bg-red-500/10 text-red-300"
+                        : "border-white/10 text-white/60"
+                    }`}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {ci === q.correct_index && <Check size={14} className="shrink-0" />}
+                        {ci === q.selected_index && ci !== q.correct_index && <X size={14} className="shrink-0" />}
+                        {c}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
+                {q.explanation && (
+                  <div className="mt-2 text-xs text-white/50 whitespace-pre-wrap break-words">{q.explanation}</div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -216,6 +230,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, alreadyDone
             {submitting ? "…" : "Remettre la copie"}
           </button>
         </div>
+        {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
         {/* Progress bar */}
         <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.07]">
           <div

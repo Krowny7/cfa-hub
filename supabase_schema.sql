@@ -1000,6 +1000,10 @@ CREATE TABLE IF NOT EXISTS mock_exam_results (
   score            int         NOT NULL,
   total            int         NOT NULL,
   duration_seconds int,
+  -- Réponses données par l'utilisateur ([{"question_id","selected_index"}, ...])
+  -- pour reconstruire la correction à la demande, pas seulement juste après
+  -- la soumission. Voir submit_mock_exam / get_mock_exam_review.
+  answers          jsonb,
   completed_at     timestamptz DEFAULT now(),
   UNIQUE(exam_id, user_id)
 );
@@ -1063,6 +1067,11 @@ CREATE POLICY "mock_exam_results_read_inscrit" ON mock_exam_results
     )
   );
 
+-- Tirage pondéré par topic (poids officiels du curriculum CFA Level I,
+-- milieu de chaque fourchette) au lieu d'un tirage uniforme — sinon les
+-- gros topics (FSA, Equity, Fixed Income) seraient sur-représentés par
+-- rapport aux petits (Alt Investments, Corporate). Voir
+-- migration_mock_exam_weighted_selection.sql pour le détail.
 CREATE OR REPLACE FUNCTION publish_mock_exam(p_exam_id uuid)
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -1079,16 +1088,60 @@ BEGIN
   DELETE FROM mock_exam_questions WHERE exam_id = p_exam_id;
 
   INSERT INTO mock_exam_questions (exam_id, question_id, position)
-  SELECT
-    p_exam_id,
-    qq.id,
-    row_number() OVER (ORDER BY random()) - 1
-  FROM quiz_questions qq
-  JOIN quiz_sets qs ON qs.id = qq.set_id
-  WHERE qs.is_official = true
-    AND qs.official_published = true
-  ORDER BY random()
-  LIMIT v_count;
+  WITH weights(folder_name, weight) AS (
+    VALUES
+      ('Éthique et Standards Professionnels (Système)', 17.5),
+      ('Méthodes Quantitatives (Système)', 7.5),
+      ('Économie (Système)', 7.5),
+      ('Analyse des États Financiers (Système)', 12.5),
+      ('Finance d''Entreprise (Système)', 7.5),
+      ('Investissements en Actions (Système)', 12.5),
+      ('Fixed Income (Système)', 12.5),
+      ('Instruments Dérivés (Système)', 6.5),
+      ('Investissements Alternatifs (Système)', 8.5),
+      ('Gestion de Portefeuille (Système)', 10.0)
+  ),
+  total_weight AS (
+    SELECT sum(weight) AS tw FROM weights
+  ),
+  raw_alloc AS (
+    SELECT
+      w.folder_name,
+      floor(w.weight / tw.tw * v_count)::int AS base_count,
+      (w.weight / tw.tw * v_count) - floor(w.weight / tw.tw * v_count) AS remainder
+    FROM weights w, total_weight tw
+  ),
+  leftover AS (
+    SELECT greatest(v_count - (SELECT coalesce(sum(base_count), 0) FROM raw_alloc), 0) AS n
+  ),
+  ranked AS (
+    SELECT folder_name, base_count, row_number() OVER (ORDER BY remainder DESC) AS rn
+    FROM raw_alloc
+  ),
+  final_alloc AS (
+    SELECT
+      folder_name,
+      base_count + CASE WHEN rn <= (SELECT n FROM leftover) THEN 1 ELSE 0 END AS alloc
+    FROM ranked
+  ),
+  picked AS (
+    SELECT
+      qq.id AS question_id,
+      fa.folder_name,
+      row_number() OVER (PARTITION BY fa.folder_name ORDER BY random()) AS rn
+    FROM final_alloc fa
+    JOIN library_folders lf ON lf.name = fa.folder_name AND lf.kind = 'quizzes'
+    JOIN quiz_sets qs ON qs.folder_id = lf.id AND qs.is_official = true AND qs.official_published = true
+    JOIN quiz_questions qq ON qq.set_id = qs.id
+  ),
+  selected AS (
+    SELECT p.question_id
+    FROM picked p
+    JOIN final_alloc fa ON fa.folder_name = p.folder_name
+    WHERE p.rn <= fa.alloc
+  )
+  SELECT p_exam_id, question_id, row_number() OVER (ORDER BY random()) - 1
+  FROM selected;
 
   UPDATE mock_exams SET status = 'open' WHERE id = p_exam_id;
 END;
@@ -1103,6 +1156,126 @@ BEGIN
     RAISE EXCEPTION 'Not authorized';
   END IF;
   UPDATE mock_exams SET status = 'closed' WHERE id = p_exam_id;
+END;
+$$;
+
+-- Correction ENTIÈREMENT côté serveur (mêmes principes que
+-- award_quiz_question_xp) : le client n'a jamais accès à correct_index avant
+-- d'avoir soumis ses réponses.
+CREATE OR REPLACE FUNCTION submit_mock_exam(p_exam_id uuid, p_answers jsonb, p_duration_seconds int)
+RETURNS json
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_registered  boolean;
+  v_status      text;
+  v_score       int := 0;
+  v_total       int := 0;
+  v_review      json;
+BEGIN
+  SELECT EXISTS(
+    SELECT 1 FROM mock_exam_registrations
+    WHERE exam_id = p_exam_id AND user_id = auth.uid()
+  ) INTO v_registered;
+
+  IF NOT v_registered THEN
+    RAISE EXCEPTION 'Not registered for this exam';
+  END IF;
+
+  SELECT status INTO v_status FROM mock_exams WHERE id = p_exam_id;
+  IF v_status IS DISTINCT FROM 'open' THEN
+    RAISE EXCEPTION 'Exam is not open';
+  END IF;
+
+  IF EXISTS(SELECT 1 FROM mock_exam_results WHERE exam_id = p_exam_id AND user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'Already submitted';
+  END IF;
+
+  WITH given AS (
+    SELECT
+      (elem->>'question_id')::uuid AS question_id,
+      NULLIF(elem->>'selected_index', '')::int AS selected_index
+    FROM jsonb_array_elements(p_answers) AS elem
+  ),
+  scored AS (
+    SELECT
+      meq.position,
+      qq.id AS question_id,
+      qq.prompt,
+      qq.choices,
+      qq.correct_index,
+      qq.explanation,
+      g.selected_index,
+      (g.selected_index IS NOT NULL AND g.selected_index = qq.correct_index) AS is_correct
+    FROM mock_exam_questions meq
+    JOIN quiz_questions qq ON qq.id = meq.question_id
+    LEFT JOIN given g ON g.question_id = qq.id
+    WHERE meq.exam_id = p_exam_id
+    ORDER BY meq.position
+  )
+  SELECT
+    count(*) FILTER (WHERE is_correct),
+    count(*),
+    json_agg(json_build_object(
+      'question_id', question_id,
+      'prompt', prompt,
+      'choices', choices,
+      'correct_index', correct_index,
+      'explanation', explanation,
+      'selected_index', selected_index,
+      'is_correct', is_correct
+    ) ORDER BY position)
+  INTO v_score, v_total, v_review
+  FROM scored;
+
+  INSERT INTO mock_exam_results (exam_id, user_id, score, total, duration_seconds, answers)
+  VALUES (p_exam_id, auth.uid(), v_score, v_total, p_duration_seconds, p_answers);
+
+  RETURN json_build_object('score', v_score, 'total', v_total, 'review', v_review);
+END;
+$$;
+
+-- Reconstruit la correction pour un utilisateur ayant déjà rendu sa copie
+-- (revisite la page plus tard) — même forme que submit_mock_exam, mais ne
+-- fait rien tant qu'aucun résultat n'existe déjà pour cet utilisateur.
+CREATE OR REPLACE FUNCTION get_mock_exam_review(p_exam_id uuid)
+RETURNS json
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_answers jsonb;
+  v_review  json;
+BEGIN
+  SELECT answers INTO v_answers
+  FROM mock_exam_results
+  WHERE exam_id = p_exam_id AND user_id = auth.uid();
+
+  IF v_answers IS NULL THEN
+    RAISE EXCEPTION 'No submitted result for this exam';
+  END IF;
+
+  WITH given AS (
+    SELECT
+      (elem->>'question_id')::uuid AS question_id,
+      NULLIF(elem->>'selected_index', '')::int AS selected_index
+    FROM jsonb_array_elements(v_answers) AS elem
+  )
+  SELECT json_agg(json_build_object(
+    'question_id', qq.id,
+    'prompt', qq.prompt,
+    'choices', qq.choices,
+    'correct_index', qq.correct_index,
+    'explanation', qq.explanation,
+    'selected_index', g.selected_index,
+    'is_correct', (g.selected_index IS NOT NULL AND g.selected_index = qq.correct_index)
+  ) ORDER BY meq.position)
+  INTO v_review
+  FROM mock_exam_questions meq
+  JOIN quiz_questions qq ON qq.id = meq.question_id
+  LEFT JOIN given g ON g.question_id = qq.id
+  WHERE meq.exam_id = p_exam_id;
+
+  RETURN v_review;
 END;
 $$;
 

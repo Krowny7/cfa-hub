@@ -7,14 +7,28 @@ import { MockExamRegistration } from "@/components/MockExamRegistration";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-type Question = {
+// Question sans correct_index/explanation — c'est tout ce que le client
+// reçoit pendant que l'examen est en cours. La correction n'arrive que via
+// submit_mock_exam / get_mock_exam_review, entièrement côté serveur (voir
+// migration_mock_exam_secure_submit.sql).
+type ActiveQuestion = {
   id: string;
   position: number;
   prompt: string;
   choices: string[];
+};
+
+type ReviewQuestion = {
+  question_id: string;
+  prompt: string;
+  choices: string[];
   correct_index: number;
   explanation: string | null;
+  selected_index: number | null;
+  is_correct: boolean;
 };
+
+const WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // ±3 jours autour de scheduled_at
 
 type ResultRow = {
   user_id: string;
@@ -66,28 +80,39 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
   const now = new Date();
   const scheduledAt = new Date(exam.scheduled_at);
-  const examStarted = now >= scheduledAt;
+  const windowStart = new Date(scheduledAt.getTime() - WINDOW_MS);
+  const windowEnd = new Date(scheduledAt.getTime() + WINDOW_MS);
+  const withinWindow = now >= windowStart && now <= windowEnd;
+  const windowClosed = now > windowEnd;
   const alreadyDone = Boolean(myResult);
 
-  // Fetch questions only if registered + exam started (or closed) + not already done
-  let questions: Question[] = [];
-  if (isRegistered && (examStarted || exam.status === "closed") && exam.status !== "draft") {
-    const { data: qData } = await supabase
-      .from("mock_exam_questions")
-      .select("position,quiz_questions(id,prompt,choices,correct_index,explanation)")
-      .eq("exam_id", id)
-      .order("position");
+  // Pendant l'examen : uniquement id/prompt/choices/position, jamais
+  // correct_index/explanation (voir migration_mock_exam_secure_submit.sql).
+  let activeQuestions: ActiveQuestion[] = [];
+  let review: ReviewQuestion[] = [];
 
-    questions = ((qData ?? []) as unknown as { position: number; quiz_questions: Omit<Question, "position"> }[])
-      .map((row) => ({ ...row.quiz_questions, position: row.position }))
-      .filter((q): q is Question => Boolean(q.id));
+  if (isRegistered && exam.status !== "draft") {
+    if (alreadyDone) {
+      const { data: reviewData } = await supabase.rpc("get_mock_exam_review", { p_exam_id: id });
+      review = (reviewData ?? []) as ReviewQuestion[];
+    } else if (withinWindow && exam.status === "open") {
+      const { data: qData } = await supabase
+        .from("mock_exam_questions")
+        .select("position,quiz_questions(id,prompt,choices)")
+        .eq("exam_id", id)
+        .order("position");
+
+      activeQuestions = ((qData ?? []) as unknown as { position: number; quiz_questions: Omit<ActiveQuestion, "position"> }[])
+        .map((row) => ({ ...row.quiz_questions, position: row.position }))
+        .filter((q): q is ActiveQuestion => Boolean(q.id));
+    }
   }
 
-  const showRunner = isRegistered && examStarted && exam.status !== "draft";
+  const showRunner = isRegistered && exam.status !== "draft" && (alreadyDone || (withinWindow && exam.status === "open"));
   const showLeaderboard = allResults.length > 0;
 
-  const daysUntil = Math.ceil((scheduledAt.getTime() - now.getTime()) / 86_400_000);
-  const hoursUntil = Math.ceil((scheduledAt.getTime() - now.getTime()) / 3_600_000);
+  const daysUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 86_400_000);
+  const hoursUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 3_600_000);
 
   return (
     <div className="grid gap-5">
@@ -109,19 +134,27 @@ export default async function MockExamDetailPage({ params }: PageProps) {
           <span>{exam.duration_minutes} min</span>
           <span>·</span>
           <span>{exam.question_count} questions</span>
-          {exam.status === "open" && !examStarted && (
+          {exam.status === "open" && !withinWindow && !windowClosed && (
             <>
               <span>·</span>
               <span className="text-blue-300">
-                {hoursUntil < 24 ? `dans ${hoursUntil}h` : `dans ${daysUntil}j`}
+                fenêtre dans {hoursUntil < 24 ? `${hoursUntil}h` : `${daysUntil}j`}
+              </span>
+            </>
+          )}
+          {exam.status === "open" && withinWindow && (
+            <>
+              <span>·</span>
+              <span className="text-green-300">
+                fenêtre ouverte jusqu'au {windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
               </span>
             </>
           )}
         </div>
       </div>
 
-      {/* Registration card (if exam is open and not yet started) */}
-      {exam.status === "open" && !examStarted && (
+      {/* Registration card — reste disponible tant que la fenêtre n'est pas terminée */}
+      {exam.status === "open" && !windowClosed && !alreadyDone && (
         <MockExamRegistration
           examId={exam.id}
           isRegistered={isRegistered}
@@ -136,14 +169,22 @@ export default async function MockExamDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Waiting for start */}
-      {exam.status === "open" && isRegistered && !examStarted && (
+      {/* Registered, but the ±3-jours window n'a pas encore commencé */}
+      {isRegistered && !alreadyDone && !withinWindow && !windowClosed && (
         <div className="card p-5 text-center">
           <div className="text-3xl">⏳</div>
           <div className="mt-2 font-semibold">Tu es inscrit(e)</div>
           <div className="mt-1 text-sm text-white/50">
-            L'examen commencera {hoursUntil < 24 ? `dans ${hoursUntil}h` : `dans ${daysUntil}j`}. Reviens à l'heure prévue.
+            Tu pourras passer l'examen à partir du {windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+            {" "}(jusqu'au {windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}).
           </div>
+        </div>
+      )}
+
+      {/* Registered but never attempted, and the window is now over */}
+      {isRegistered && !alreadyDone && windowClosed && (
+        <div className="card p-5 text-center text-sm text-muted">
+          La fenêtre pour passer cet examen (jusqu'au {windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}) est terminée.
         </div>
       )}
 
@@ -152,7 +193,8 @@ export default async function MockExamDetailPage({ params }: PageProps) {
         <MockExamRunner
           examId={exam.id}
           durationMinutes={exam.duration_minutes}
-          questions={questions}
+          questions={activeQuestions}
+          review={review}
           alreadyDone={alreadyDone}
         />
       )}
