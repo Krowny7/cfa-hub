@@ -40,7 +40,19 @@ export function MockExamRegistration({
         const { error } = await supabase
           .from("mock_exam_registrations")
           .insert({ exam_id: examId, user_id: auth.user.id });
-        if (error) throw new Error(error.message);
+        if (error) {
+          // 23505 = violation de la contrainte unique(exam_id, user_id) —
+          // l'inscription existe déjà côté serveur (ex: double clic, ou
+          // l'état local était périmé). On se resynchronise au lieu
+          // d'afficher une erreur qui laisse le bouton dans un état faux.
+          if (error.code === "23505") {
+            setRegistered(true);
+            setMsg("Tu étais déjà inscrit(e).");
+            router.refresh();
+            return;
+          }
+          throw new Error(error.message);
+        }
         setRegistered(true);
         setMsg("Inscription confirmée ! Tu recevras un rappel.");
       }
