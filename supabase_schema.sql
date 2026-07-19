@@ -1021,16 +1021,26 @@ CREATE POLICY "mock_exams_admin_write" ON mock_exams
   USING (is_app_admin())
   WITH CHECK (is_app_admin());
 
+-- SECURITY DEFINER pour casser la récursion RLS : une policy SELECT sur
+-- mock_exam_registrations qui se référence elle-même dans une sous-requête
+-- déclenche un cycle ("infinite recursion detected in policy for relation
+-- mock_exam_registrations") — même classe de bug déjà rencontrée pour
+-- flashcard_sets/quiz_sets. Cette fonction bypass la RLS en interne, donc
+-- plus de cycle, et sert aussi aux policies d'autres tables qui ont besoin
+-- de vérifier une inscription (mock_exam_questions, mock_exam_results).
+CREATE OR REPLACE FUNCTION public.user_registered_for_mock_exam(p_exam_id uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM mock_exam_registrations
+    WHERE exam_id = p_exam_id AND user_id = auth.uid()
+  );
+$$;
+
 CREATE POLICY "mock_exam_questions_read" ON mock_exam_questions
   FOR SELECT TO authenticated
-  USING (
-    is_app_admin()
-    OR EXISTS (
-      SELECT 1 FROM mock_exam_registrations r
-      WHERE r.exam_id = mock_exam_questions.exam_id
-        AND r.user_id = auth.uid()
-    )
-  );
+  USING (is_app_admin() OR user_registered_for_mock_exam(exam_id));
 
 CREATE POLICY "mock_exam_questions_admin_write" ON mock_exam_questions
   FOR ALL TO authenticated
@@ -1044,13 +1054,7 @@ CREATE POLICY "mock_exam_registrations_own" ON mock_exam_registrations
 
 CREATE POLICY "mock_exam_registrations_read_inscrit" ON mock_exam_registrations
   FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM mock_exam_registrations r2
-      WHERE r2.exam_id = mock_exam_registrations.exam_id
-        AND r2.user_id = auth.uid()
-    )
-  );
+  USING (user_registered_for_mock_exam(exam_id));
 
 CREATE POLICY "mock_exam_results_own_write" ON mock_exam_results
   FOR INSERT TO authenticated
@@ -1058,14 +1062,7 @@ CREATE POLICY "mock_exam_results_own_write" ON mock_exam_results
 
 CREATE POLICY "mock_exam_results_read_inscrit" ON mock_exam_results
   FOR SELECT TO authenticated
-  USING (
-    user_id = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM mock_exam_registrations r
-      WHERE r.exam_id = mock_exam_results.exam_id
-        AND r.user_id = auth.uid()
-    )
-  );
+  USING (user_id = auth.uid() OR user_registered_for_mock_exam(exam_id));
 
 -- Tirage pondéré par topic (poids officiels du curriculum CFA Level I,
 -- milieu de chaque fourchette) au lieu d'un tirage uniforme — sinon les
