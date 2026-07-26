@@ -28,6 +28,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
   const [scheduledAt, setScheduledAt] = useState("");
   const [duration, setDuration] = useState(135);
   const [questionCount, setQuestionCount] = useState(90);
+  const [windowDays, setWindowDays] = useState(3);
 
   async function refresh() {
     const { data } = await supabase
@@ -50,12 +51,13 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
         scheduled_at: scheduledAt,
         duration_minutes: duration,
         question_count: questionCount,
+        window_days: windowDays,
         created_by: auth.user.id,
         status: "draft",
       });
       if (error) throw new Error(error.message);
       setTitle(""); setDescription(""); setScheduledAt("");
-      setDuration(135); setQuestionCount(90);
+      setDuration(135); setQuestionCount(90); setWindowDays(3);
       setShowCreate(false);
       await refresh();
       setMsg("Examen créé");
@@ -141,7 +143,7 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <div>
               <div className="mb-1 text-xs text-white/50">Date & heure</div>
               <input
@@ -171,6 +173,17 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
                 max={120}
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-xs text-white/50">Fenêtre (±jours)</div>
+              <input
+                className="input w-full"
+                type="number"
+                min={0}
+                max={14}
+                value={windowDays}
+                onChange={(e) => setWindowDays(Number(e.target.value))}
               />
             </div>
           </div>

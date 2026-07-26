@@ -28,8 +28,6 @@ type ReviewQuestion = {
   is_correct: boolean;
 };
 
-const WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // ±3 jours autour de scheduled_at
-
 type ResultRow = {
   user_id: string;
   score: number;
@@ -48,7 +46,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
   const [examRes, regRes, resultRes, adminRes] = await Promise.all([
     supabase
       .from("mock_exams")
-      .select("id,title,description,scheduled_at,duration_minutes,question_count,status")
+      .select("id,title,description,scheduled_at,duration_minutes,question_count,status,window_days")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -69,7 +67,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
   const exam = examRes.data as {
     id: string; title: string; description: string | null;
-    scheduled_at: string; duration_minutes: number; question_count: number;
+    scheduled_at: string; duration_minutes: number; question_count: number; window_days: number;
     status: "draft" | "open" | "closed";
   };
   const isRegistered = Boolean(regRes.data);
@@ -80,8 +78,9 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
   const now = new Date();
   const scheduledAt = new Date(exam.scheduled_at);
-  const windowStart = new Date(scheduledAt.getTime() - WINDOW_MS);
-  const windowEnd = new Date(scheduledAt.getTime() + WINDOW_MS);
+  const windowMs = exam.window_days * 24 * 60 * 60 * 1000;
+  const windowStart = new Date(scheduledAt.getTime() - windowMs);
+  const windowEnd = new Date(scheduledAt.getTime() + windowMs);
   const withinWindow = now >= windowStart && now <= windowEnd;
   const windowClosed = now > windowEnd;
   const alreadyDone = Boolean(myResult);

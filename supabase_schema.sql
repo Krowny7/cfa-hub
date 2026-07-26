@@ -971,6 +971,9 @@ CREATE TABLE IF NOT EXISTS mock_exams (
   scheduled_at     timestamptz NOT NULL,
   duration_minutes int         NOT NULL DEFAULT 180,
   question_count   int         NOT NULL DEFAULT 60,
+  -- Fenêtre de passage = ±window_days autour de scheduled_at (configurable
+  -- par examen, voir migration_mock_exam_window_days.sql).
+  window_days      int         NOT NULL DEFAULT 3,
   -- draft = pas encore publié, open = inscriptions ouvertes, closed = terminé
   status           text        CHECK (status IN ('draft','open','closed')) NOT NULL DEFAULT 'draft',
   created_by       uuid        REFERENCES profiles(id) NOT NULL,
