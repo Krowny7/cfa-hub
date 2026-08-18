@@ -24,6 +24,7 @@ type ReviewQuestion = {
   choices: string[];
   correct_index: number;
   explanation: string | null;
+  topic: string | null;
   selected_index: number | null;
   is_correct: boolean;
 };

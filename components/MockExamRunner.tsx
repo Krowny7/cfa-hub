@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
-import { ClipboardList, Trophy, XCircle, AlertTriangle, Check, X } from "lucide-react";
+import { ClipboardList, Trophy, XCircle, AlertTriangle, Check, X, Copy, ClipboardCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 
@@ -22,9 +22,32 @@ type ReviewQuestion = {
   choices: string[];
   correct_index: number;
   explanation: string | null;
+  topic: string | null;
   selected_index: number | null;
   is_correct: boolean;
 };
+
+const LETTERS = ["A", "B", "C"];
+
+function buildAiExportText(review: ReviewQuestion[], score: number, total: number) {
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+  const header = `EXAMEN BLANC CFA — ${score}/${total} (${pct}%)\n` +
+    `Voici mes réponses à un examen blanc CFA Level I. Pour chaque question : mon énoncé, mes choix, ma réponse, la bonne réponse et l'explication officielle. ` +
+    `Peux-tu me faire un bilan de mes points faibles par thème, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
+  const body = review.map((q, i) => {
+    const choicesText = q.choices.map((c, ci) => `${LETTERS[ci]}) ${c}`).join("\n");
+    const myAnswer = q.selected_index === null ? "Non répondue" : `${LETTERS[q.selected_index]}) ${q.choices[q.selected_index]}`;
+    const correctAnswer = `${LETTERS[q.correct_index]}) ${q.choices[q.correct_index]}`;
+    return (
+      `Q${i + 1} [${q.topic ?? "?"}] — ${q.is_correct ? "CORRECT" : "INCORRECT"}\n` +
+      `${q.prompt}\n${choicesText}\n` +
+      `Ma réponse : ${myAnswer}\n` +
+      `Bonne réponse : ${correctAnswer}\n` +
+      (q.explanation ? `Explication : ${q.explanation}\n` : "")
+    );
+  }).join("\n");
+  return header + body;
+}
 
 type Props = {
   examId: string;
@@ -55,6 +78,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
   const [review, setReview] = useState<ReviewQuestion[]>(initialReview);
   const [submitting, setSubmitting] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(0);
@@ -139,6 +163,30 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
     const pct = total > 0 ? Math.round((score / total) * 100) : null;
     const passed = pct !== null && pct >= PASS_THRESHOLD;
 
+    // Répartition par topic, façon relevé de notes CFA (weakest first).
+    const byTopic = new Map<string, { correct: number; total: number }>();
+    for (const q of review) {
+      const key = q.topic ?? "Autre";
+      const entry = byTopic.get(key) ?? { correct: 0, total: 0 };
+      entry.total += 1;
+      if (q.is_correct) entry.correct += 1;
+      byTopic.set(key, entry);
+    }
+    const topicStats = [...byTopic.entries()]
+      .map(([topic, s]) => ({ topic, ...s, pct: Math.round((s.correct / s.total) * 100) }))
+      .sort((a, b) => a.pct - b.pct);
+
+    async function copyForAi() {
+      const text = buildAiExportText(review, score, total);
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch {
+        setError("Impossible de copier automatiquement — sélectionne et copie manuellement depuis la correction ci-dessous.");
+      }
+    }
+
     return (
       <div className="grid gap-4">
         <div className="card p-6 text-center">
@@ -159,15 +207,47 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
           )}
           {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
           {total > 0 && (
-            <button
-              type="button"
-              className="btn btn-secondary mx-auto mt-5"
-              onClick={() => setShowReview((v) => !v)}
-            >
-              {showReview ? "Masquer la correction" : "Voir la correction"}
-            </button>
+            <div className="mx-auto mt-5 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowReview((v) => !v)}
+              >
+                {showReview ? "Masquer la correction" : "Voir la correction"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary inline-flex items-center gap-1.5"
+                onClick={copyForAi}
+              >
+                {copied ? <ClipboardCheck size={15} className="text-green-400" /> : <Copy size={15} />}
+                {copied ? "Copié !" : "Copier pour IA"}
+              </button>
+            </div>
           )}
         </div>
+
+        {topicStats.length > 0 && (
+          <div className="card p-5">
+            <div className="mb-3 text-sm font-semibold">Répartition par thème</div>
+            <div className="grid gap-2">
+              {topicStats.map((t) => (
+                <div key={t.topic} className="flex items-center gap-3">
+                  <div className="w-40 shrink-0 truncate text-xs text-white/60">{t.topic}</div>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
+                    <div
+                      className={`h-full rounded-full ${t.pct >= 70 ? "bg-green-500" : t.pct >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
+                      style={{ width: `${t.pct}%` }}
+                    />
+                  </div>
+                  <div className={`w-24 shrink-0 text-right text-xs tabular-nums ${t.pct >= 70 ? "text-green-400" : t.pct >= 50 ? "text-yellow-400" : "text-red-400"}`}>
+                    {t.pct}% ({t.correct}/{t.total})
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showReview && (
           <div className="grid gap-3">

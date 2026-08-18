@@ -1205,10 +1205,13 @@ BEGIN
       qq.choices,
       qq.correct_index,
       qq.explanation,
+      lf.name AS topic,
       g.selected_index,
       (g.selected_index IS NOT NULL AND g.selected_index = qq.correct_index) AS is_correct
     FROM mock_exam_questions meq
     JOIN quiz_questions qq ON qq.id = meq.question_id
+    JOIN quiz_sets qs ON qs.id = qq.set_id
+    LEFT JOIN library_folders lf ON lf.id = qs.folder_id
     LEFT JOIN given g ON g.question_id = qq.id
     WHERE meq.exam_id = p_exam_id
     ORDER BY meq.position
@@ -1222,6 +1225,7 @@ BEGIN
       'choices', choices,
       'correct_index', correct_index,
       'explanation', explanation,
+      'topic', topic,
       'selected_index', selected_index,
       'is_correct', is_correct
     ) ORDER BY position)
@@ -1266,12 +1270,15 @@ BEGIN
     'choices', qq.choices,
     'correct_index', qq.correct_index,
     'explanation', qq.explanation,
+    'topic', lf.name,
     'selected_index', g.selected_index,
     'is_correct', (g.selected_index IS NOT NULL AND g.selected_index = qq.correct_index)
   ) ORDER BY meq.position)
   INTO v_review
   FROM mock_exam_questions meq
   JOIN quiz_questions qq ON qq.id = meq.question_id
+  JOIN quiz_sets qs ON qs.id = qq.set_id
+  LEFT JOIN library_folders lf ON lf.id = qs.folder_id
   LEFT JOIN given g ON g.question_id = qq.id
   WHERE meq.exam_id = p_exam_id;
 
