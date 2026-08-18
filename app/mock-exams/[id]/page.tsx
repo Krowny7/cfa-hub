@@ -38,6 +38,15 @@ type ResultRow = {
   profiles: { username: string | null; avatar_url: string | null } | { username: string | null; avatar_url: string | null }[] | null;
 };
 
+type TopicBreakdownRow = {
+  user_id: string;
+  username: string | null;
+  topic: string | null;
+  correct: number;
+  total: number;
+  pct: number;
+};
+
 export default async function MockExamDetailPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
@@ -91,10 +100,16 @@ export default async function MockExamDetailPage({ params }: PageProps) {
   let activeQuestions: ActiveQuestion[] = [];
   let review: ReviewQuestion[] = [];
 
+  let topicBreakdownAll: TopicBreakdownRow[] = [];
+
   if (isRegistered && exam.status !== "draft") {
     if (alreadyDone) {
-      const { data: reviewData } = await supabase.rpc("get_mock_exam_review", { p_exam_id: id });
+      const [{ data: reviewData }, { data: topicData }] = await Promise.all([
+        supabase.rpc("get_mock_exam_review", { p_exam_id: id }),
+        supabase.rpc("get_mock_exam_topic_breakdown_all", { p_exam_id: id }),
+      ]);
       review = (reviewData ?? []) as ReviewQuestion[];
+      topicBreakdownAll = (topicData ?? []) as TopicBreakdownRow[];
     } else if (withinWindow && exam.status === "open") {
       const { data: qData } = await supabase
         .from("mock_exam_questions")
@@ -110,6 +125,29 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
   const showRunner = isRegistered && exam.status !== "draft" && (alreadyDone || (withinWindow && exam.status === "open"));
   const showLeaderboard = allResults.length > 0;
+
+  // Comparaison par thème entre participants — seulement si au moins 2
+  // personnes ont déjà soumis (sinon c'est déjà affiché par MockExamRunner).
+  const topicUsers = [...new Map(topicBreakdownAll.map((r) => [r.user_id, r.username ?? "Anonyme"])).entries()];
+  const topicNames = [...new Set(topicBreakdownAll.map((r) => r.topic ?? "Autre"))];
+  const topicMatrix = topicNames
+    .map((topic) => ({
+      topic,
+      byUser: Object.fromEntries(
+        topicUsers.map(([uid]) => {
+          const row = topicBreakdownAll.find((r) => r.user_id === uid && (r.topic ?? "Autre") === topic);
+          return [uid, row ?? null];
+        })
+      ),
+    }))
+    .sort((a, b) => {
+      const avg = (m: typeof a.byUser) => {
+        const vals = Object.values(m).filter((v): v is TopicBreakdownRow => v !== null);
+        return vals.length ? vals.reduce((s, v) => s + v.pct, 0) / vals.length : 100;
+      };
+      return avg(a.byUser) - avg(b.byUser);
+    });
+  const showTopicComparison = topicUsers.length > 1;
 
   const daysUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 86_400_000);
   const hoursUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 3_600_000);
@@ -234,6 +272,46 @@ export default async function MockExamDetailPage({ params }: PageProps) {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Comparaison par thème entre participants */}
+      {showTopicComparison && (
+        <div className="card p-5 overflow-x-auto">
+          <div className="mb-4 text-sm font-semibold">Répartition par thème — tous les participants</div>
+          <table className="w-full min-w-[480px] border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="border-b border-white/10 px-2 py-2 text-left font-medium text-white/50">Thème</th>
+                {topicUsers.map(([uid, name]) => (
+                  <th key={uid} className={`border-b border-white/10 px-2 py-2 text-right font-medium ${uid === auth.user!.id ? "text-blue-300" : "text-white/50"}`}>
+                    {name}{uid === auth.user!.id && " (moi)"}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {topicMatrix.map(({ topic, byUser }) => (
+                <tr key={topic}>
+                  <td className="border-b border-white/5 px-2 py-2 text-white/70">{topic}</td>
+                  {topicUsers.map(([uid]) => {
+                    const r = byUser[uid];
+                    return (
+                      <td key={uid} className="border-b border-white/5 px-2 py-2 text-right tabular-nums">
+                        {r ? (
+                          <span className={r.pct >= 70 ? "text-green-400" : r.pct >= 50 ? "text-yellow-400" : "text-red-400"}>
+                            {r.pct}% <span className="text-white/30">({r.correct}/{r.total})</span>
+                          </span>
+                        ) : (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
