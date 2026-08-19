@@ -4,6 +4,7 @@ import { Medal } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { MockExamRunner } from "@/components/MockExamRunner";
 import { MockExamRegistration } from "@/components/MockExamRegistration";
+import { MockExamRetake } from "@/components/MockExamRetake";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -45,6 +46,15 @@ type TopicBreakdownRow = {
   correct: number;
   total: number;
   pct: number;
+};
+
+type PastAttempt = {
+  id: string;
+  mode: "full" | "wrong_only";
+  score: number;
+  total: number;
+  duration_seconds: number | null;
+  completed_at: string;
 };
 
 export default async function MockExamDetailPage({ params }: PageProps) {
@@ -101,15 +111,23 @@ export default async function MockExamDetailPage({ params }: PageProps) {
   let review: ReviewQuestion[] = [];
 
   let topicBreakdownAll: TopicBreakdownRow[] = [];
+  let pastAttempts: PastAttempt[] = [];
 
   if (isRegistered && exam.status !== "draft") {
     if (alreadyDone) {
-      const [{ data: reviewData }, { data: topicData }] = await Promise.all([
+      const [{ data: reviewData }, { data: topicData }, { data: attemptsData }] = await Promise.all([
         supabase.rpc("get_mock_exam_review", { p_exam_id: id }),
         supabase.rpc("get_mock_exam_topic_breakdown_all", { p_exam_id: id }),
+        supabase
+          .from("mock_exam_attempts")
+          .select("id,mode,score,total,duration_seconds,completed_at")
+          .eq("exam_id", id)
+          .eq("user_id", auth.user.id)
+          .order("completed_at", { ascending: false }),
       ]);
       review = (reviewData ?? []) as ReviewQuestion[];
       topicBreakdownAll = (topicData ?? []) as TopicBreakdownRow[];
+      pastAttempts = (attemptsData ?? []) as PastAttempt[];
     } else if (withinWindow && exam.status === "open") {
       const { data: qData } = await supabase
         .from("mock_exam_questions")
@@ -273,6 +291,17 @@ export default async function MockExamDetailPage({ params }: PageProps) {
             })}
           </div>
         </div>
+      )}
+
+      {/* Repasser l'examen en entraînement (score seul conservé, pas les réponses) */}
+      {alreadyDone && (
+        <MockExamRetake
+          examId={exam.id}
+          durationMinutes={exam.duration_minutes}
+          wrongCount={review.filter((r) => !r.is_correct).length}
+          totalCount={review.length}
+          pastAttempts={pastAttempts}
+        />
       )}
 
       {/* Comparaison par thème entre participants */}
