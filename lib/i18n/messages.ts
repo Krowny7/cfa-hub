@@ -56,6 +56,7 @@ export const MESSAGES = {
       exam: "Examen",
       fiches: "Fiches de Révision",
       mockExams: "Examens blancs",
+      practice: "Entraînement ciblé",
       more: "Plus",
       sectionContent: "Contenu",
       sectionSocial: "Social"
@@ -464,6 +465,7 @@ export const MESSAGES = {
       exam: "Exam",
       fiches: "Study Sheets",
       mockExams: "Mock Exams",
+      practice: "Targeted Practice",
       more: "More",
       sectionContent: "Content",
       sectionSocial: "Social"

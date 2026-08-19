@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Trophy, Users, LayoutDashboard, GraduationCap, Settings, X, Calculator } from "lucide-react";
+import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Trophy, Users, LayoutDashboard, GraduationCap, Settings, X, Calculator, Target } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 
 const items = [
@@ -23,6 +23,7 @@ const moreItems = [
   { href: "/library", labelKey: "nav.library", icon: BookOpen },
   { href: "/fiches", labelKey: "nav.fiches", icon: BookMarked },
   { href: "/mock-exams", labelKey: "nav.mockExams", icon: Trophy },
+  { href: "/practice", labelKey: "nav.practice", icon: Target },
   { href: "/exam", labelKey: "nav.exam", icon: GraduationCap },
   { href: "/people", labelKey: "nav.people", icon: Users },
   { href: "/settings", labelKey: "nav.settings", icon: Settings },

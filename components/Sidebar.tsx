@@ -14,6 +14,7 @@ import {
   Trophy,
   BookMarked,
   Calculator,
+  Target,
 } from "lucide-react";
 
 export async function Sidebar() {
@@ -51,6 +52,7 @@ export async function Sidebar() {
         { href: "/qcm", label: t(locale, "nav.qcm"), icon: <ClipboardList size={16} /> },
         { href: "/exercises", label: t(locale, "nav.exercises"), icon: <Calculator size={16} /> },
         { href: "/fiches", label: t(locale, "nav.fiches"), icon: <BookMarked size={16} /> },
+        { href: "/practice", label: t(locale, "nav.practice"), icon: <Target size={16} /> },
       ],
     },
     {
