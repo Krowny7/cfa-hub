@@ -1684,14 +1684,20 @@ $$;
 -- ----------------------------------------------------------------
 -- 7ter. QUICK NOTES (presse-papier perso, page cachée /scratch)
 -- ----------------------------------------------------------------
--- Voir migration_quick_notes.sql. Aucun lien avec le reste du site : sert
--- juste à se passer du code entre deux ordinateurs connectés au même
--- compte, message supprimé après 5 minutes.
+-- Voir migration_quick_notes.sql / migration_quick_notes_files.sql. Aucun
+-- lien avec le reste du site : sert juste à se passer du code (ou un
+-- fichier, ex. zip) entre deux ordinateurs connectés au même compte,
+-- supprimé après 5 minutes.
 
 CREATE TABLE IF NOT EXISTS quick_notes (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    uuid        REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  content    text        NOT NULL,
+  content    text,
+  -- Fichier joint optionnel, stocké dans le bucket privé "quick-files"
+  -- sous ${user_id}/... (voir policies storage.objects ci-dessous).
+  file_path  text,
+  file_name  text,
+  file_size  bigint,
   created_at timestamptz DEFAULT now(),
   expires_at timestamptz NOT NULL DEFAULT (now() + interval '5 minutes')
 );
@@ -1704,6 +1710,22 @@ CREATE POLICY "quick_notes_own" ON quick_notes
   WITH CHECK (user_id = auth.uid());
 
 CREATE INDEX IF NOT EXISTS quick_notes_user_expires ON quick_notes(user_id, expires_at);
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('quick-files', 'quick-files', false)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "quick_files_own_insert" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'quick-files' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "quick_files_own_select" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'quick-files' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "quick_files_own_delete" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (bucket_id = 'quick-files' AND (storage.foldername(name))[1] = auth.uid()::text);
 
 
 -- ----------------------------------------------------------------
