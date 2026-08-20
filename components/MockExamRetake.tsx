@@ -87,6 +87,12 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(0);
   const submittingRef = useRef(false);
+  // Le timeout auto-submit garde une closure figée sur `answers` tel qu'il
+  // était au montage du timer — sans ce ref à jour, l'auto-submit renvoyait
+  // toujours le tableau initial (tout à null), écrasant les vraies réponses
+  // par un score de 0.
+  const answersRef = useRef<(number | null)[]>(answers);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
   useEffect(() => {
     if (phase !== "active") return;
@@ -145,7 +151,7 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
     if (timerRef.current) clearInterval(timerRef.current);
 
     const duration = Math.round((Date.now() - startedAtRef.current) / 1000);
-    const payload = questions.map((q, i) => ({ question_id: q.id, selected_index: answers[i] }));
+    const payload = questions.map((q, i) => ({ question_id: q.id, selected_index: answersRef.current[i] }));
 
     try {
       const { data, error: rpcError } = await supabase.rpc("submit_mock_exam_attempt", {
