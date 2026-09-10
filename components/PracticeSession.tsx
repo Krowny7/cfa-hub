@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
-import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History } from "lucide-react";
+import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
+import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 
 // Poids officiels du curriculum CFA Level I (milieu de chaque fourchette),
 // mêmes valeurs et mêmes topics que publish_mock_exam — voir
@@ -81,6 +82,17 @@ function topicLabel(key: string) {
   return TOPICS.find((t) => t.key === key)?.label ?? key;
 }
 
+const TOPIC_LABELS: Record<string, string> = Object.fromEntries(TOPICS.map((t) => [t.key, t.label]));
+
+// Trophée coloré selon le nombre de sujets choisis pour la session — plus on
+// couvre de topics à la fois, plus le trophée "monte en grade".
+function trophyTier(topicCount: number) {
+  if (topicCount >= 7) return { label: "Diamant", className: "text-cyan-300" };
+  if (topicCount >= 4) return { label: "Or", className: "text-yellow-400" };
+  if (topicCount >= 2) return { label: "Argent", className: "text-slate-300" };
+  return { label: "Bronze", className: "text-amber-600" };
+}
+
 export function PracticeSession({ pastSessions: initialPast }: { pastSessions: PastSession[] }) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -99,7 +111,12 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
   const [showReview, setShowReview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [xpAwarded, setXpAwarded] = useState(0);
   const [pastSessions, setPastSessions] = useState<PastSession[]>(initialPast);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [historyReviews, setHistoryReviews] = useState<Record<string, ReviewQuestion[]>>({});
+  const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
+  const [copiedHistoryId, setCopiedHistoryId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(0);
   const submittingRef = useRef(false);
@@ -193,6 +210,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       setReview((data?.review ?? []) as ReviewQuestion[]);
       setScore(data?.score ?? 0);
       setTotal(data?.total ?? 0);
+      setXpAwarded(data?.xp_awarded ?? 0);
       setPastSessions((prev) => [
         { id: crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
         ...prev,
@@ -223,6 +241,42 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     setReview([]);
     setQuestions([]);
     setError(null);
+    setXpAwarded(0);
+  }
+
+  async function toggleHistoryReview(sessionId: string) {
+    if (expandedHistoryId === sessionId) {
+      setExpandedHistoryId(null);
+      return;
+    }
+    setExpandedHistoryId(sessionId);
+    if (historyReviews[sessionId]) return;
+    setLoadingHistoryId(sessionId);
+    setError(null);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("get_practice_session_review", {
+        p_session_id: sessionId,
+      });
+      if (rpcError) throw new Error(rpcError.message);
+      setHistoryReviews((prev) => ({ ...prev, [sessionId]: (data ?? []) as ReviewQuestion[] }));
+    } catch (e: unknown) {
+      setError(friendlyError(e, "Erreur lors du chargement de la correction"));
+    } finally {
+      setLoadingHistoryId(null);
+    }
+  }
+
+  async function copyHistoryForAi(session: PastSession) {
+    const rev = historyReviews[session.id];
+    if (!rev) return;
+    const text = buildAiExportText(rev, session.score, session.total);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedHistoryId(session.id);
+      setTimeout(() => setCopiedHistoryId((v) => (v === session.id ? null : v)), 2000);
+    } catch {
+      setError("Impossible de copier automatiquement.");
+    }
   }
 
   // ── BUILDER ──
@@ -288,6 +342,8 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
           </button>
         </div>
 
+        <PracticeProgressChart pastSessions={pastSessions} topicLabels={TOPIC_LABELS} />
+
         {pastSessions.length > 0 && (
           <div className="card p-5">
             <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-white/50">
@@ -296,14 +352,77 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
             <div className="grid gap-1.5">
               {pastSessions.map((s) => {
                 const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+                const tier = trophyTier(s.topics.length);
+                const expanded = expandedHistoryId === s.id;
+                const rev = historyReviews[s.id];
                 return (
-                  <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/[0.02] px-3 py-2 text-xs">
-                    <span className="text-white/60 truncate">
-                      {s.topics.map((k) => topicLabel(k)).join(", ")} · {s.format}Q · {new Date(s.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                    </span>
-                    <span className={`shrink-0 font-semibold tabular-nums ${pct >= 70 ? "text-green-400" : pct >= 50 ? "text-yellow-400" : "text-red-400"}`}>
-                      {pct}% ({s.score}/{s.total})
-                    </span>
+                  <div key={s.id} className="rounded-lg bg-white/[0.02]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Trophy size={15} className={`shrink-0 ${tier.className}`} />
+                        <span className="text-white/60 truncate">
+                          {s.topics.map((k) => topicLabel(k)).join(", ")} · {s.format}Q · {new Date(s.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span className={`font-semibold tabular-nums ${pct >= 70 ? "text-green-400" : pct >= 50 ? "text-yellow-400" : "text-red-400"}`}>
+                          {pct}% ({s.score}/{s.total})
+                        </span>
+                        <button
+                          type="button"
+                          className="text-white/40 hover:text-white/70"
+                          onClick={() => toggleHistoryReview(s.id)}
+                        >
+                          {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </button>
+                      </span>
+                    </div>
+
+                    {expanded && (
+                      <div className="border-t border-white/[0.06] p-3">
+                        {loadingHistoryId === s.id && <div className="text-xs text-white/40">Chargement…</div>}
+                        {rev && (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-secondary mb-2 inline-flex items-center gap-1.5 py-1 text-xs"
+                              onClick={() => copyHistoryForAi(s)}
+                            >
+                              {copiedHistoryId === s.id ? <ClipboardCheck size={13} className="text-green-400" /> : <Copy size={13} />}
+                              {copiedHistoryId === s.id ? "Copié !" : "Copier pour IA"}
+                            </button>
+                            <div className="grid gap-2">
+                              {rev.map((q, i) => (
+                                <div key={q.question_id} className={`rounded-lg border-l-2 bg-white/[0.02] p-3 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
+                                  <div className="text-[10px] text-muted mb-1">Q{i + 1} · {q.topic ?? "?"}</div>
+                                  <div className="text-xs font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
+                                  <div className="mt-2 grid gap-1">
+                                    {q.choices.map((c, ci) => (
+                                      <div key={ci} className={`rounded-lg border px-2 py-1.5 text-xs ${
+                                        ci === q.correct_index
+                                          ? "border-green-500/40 bg-green-500/10 text-green-300"
+                                          : ci === q.selected_index && q.selected_index !== q.correct_index
+                                          ? "border-red-500/40 bg-red-500/10 text-red-300"
+                                          : "border-white/10 text-white/60"
+                                      }`}>
+                                        <span className="inline-flex items-center gap-1.5">
+                                          {ci === q.correct_index && <Check size={12} className="shrink-0" />}
+                                          {ci === q.selected_index && ci !== q.correct_index && <X size={12} className="shrink-0" />}
+                                          {c}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {q.explanation && (
+                                    <div className="mt-1.5 text-[11px] text-white/50 whitespace-pre-wrap break-words">{q.explanation}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -351,16 +470,25 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       .map(([topic, s]) => ({ topic, ...s, pct: Math.round((s.correct / s.total) * 100) }))
       .sort((a, b) => a.pct - b.pct);
 
+    const tier = trophyTier(selected.size);
+
     return (
       <div className="grid gap-4">
         <div className="card p-6 text-center">
-          {passed ? <Trophy size={36} className="mx-auto text-yellow-400" /> : <XCircle size={36} className="mx-auto text-red-400/80" />}
-          <div className="mt-2 text-xs uppercase tracking-wide text-white/40">Session d&apos;entraînement</div>
+          {passed ? <Trophy size={36} className={`mx-auto ${tier.className}`} /> : <XCircle size={36} className="mx-auto text-red-400/80" />}
+          <div className="mt-2 text-xs uppercase tracking-wide text-white/40">
+            Session d&apos;entraînement{passed ? ` — trophée ${tier.label}` : ""}
+          </div>
           {pct !== null && (
             <>
               <div className="mt-1 text-3xl font-bold tabular-nums">{pct}%</div>
               <div className="mt-1 text-sm text-white/50">{score} / {total} bonnes réponses</div>
             </>
+          )}
+          {xpAwarded > 0 && (
+            <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-blue-300">
+              <Sparkles size={13} /> +{xpAwarded} XP
+            </div>
           )}
           {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
           <div className="mx-auto mt-5 flex flex-wrap justify-center gap-2">
