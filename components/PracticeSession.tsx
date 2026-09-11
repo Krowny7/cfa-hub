@@ -86,6 +86,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
   const [pastSessions, setPastSessions] = useState<PastSession[]>(initialPast);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [historyReviews, setHistoryReviews] = useState<Record<string, ReviewQuestion[]>>({});
+  const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
   const [copiedHistoryId, setCopiedHistoryId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -221,9 +222,8 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       return;
     }
     setExpandedHistoryId(sessionId);
-    if (historyReviews[sessionId]) return;
+    if (historyReviews[sessionId] || historyErrors[sessionId]) return;
     setLoadingHistoryId(sessionId);
-    setError(null);
     try {
       const { data, error: rpcError } = await supabase.rpc("get_practice_session_review", {
         p_session_id: sessionId,
@@ -231,7 +231,11 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       if (rpcError) throw new Error(rpcError.message);
       setHistoryReviews((prev) => ({ ...prev, [sessionId]: (data ?? []) as ReviewQuestion[] }));
     } catch (e: unknown) {
-      setError(friendlyError(e, "Erreur lors du chargement de la correction"));
+      const raw = e instanceof Error ? e.message : String(e ?? "");
+      const msg = raw.toLowerCase().includes("no stored answers")
+        ? "Session réalisée avant l'activation de la sauvegarde des corrections — indisponible pour celle-ci."
+        : friendlyError(e, "Erreur lors du chargement de la correction.");
+      setHistoryErrors((prev) => ({ ...prev, [sessionId]: msg }));
     } finally {
       setLoadingHistoryId(null);
     }
@@ -353,6 +357,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                     {expanded && (
                       <div className="border-t border-white/[0.06] p-3">
                         {loadingHistoryId === s.id && <div className="text-xs text-white/40">Chargement…</div>}
+                        {historyErrors[s.id] && <div className="text-xs text-amber-300/80">{historyErrors[s.id]}</div>}
                         {rev && (
                           <>
                             <button
