@@ -6,6 +6,8 @@ import { t } from "@/lib/i18n/core";
 import { LevelBar } from "@/components/LevelBar";
 import { XpBarChart, type XpDay } from "@/components/XpBarChart";
 import { PracticeTrophies } from "@/components/PracticeTrophies";
+import { PracticeProgressChart } from "@/components/PracticeProgressChart";
+import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
 import type { Profile, Rating } from "@/lib/types";
 
@@ -88,6 +90,15 @@ export default async function PersonProfilePage({ params }: PageProps) {
     // RPC not available yet
   }
 
+  type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
+  let progressSessions: ProgressRow[] = [];
+  try {
+    const { data } = await supabase.rpc("get_user_practice_progress", { p_user_id: id });
+    if (Array.isArray(data)) progressSessions = data as ProgressRow[];
+  } catch {
+    // RPC not available yet
+  }
+
   return (
     <div className="grid gap-4">
       {/* Compact header */}
@@ -162,6 +173,8 @@ export default async function PersonProfilePage({ params }: PageProps) {
       </div>
 
       <PracticeTrophies rows={trophyRows} />
+
+      <PracticeProgressChart pastSessions={progressSessions} topicLabels={TOPIC_LABELS} />
 
       {/* Actions */}
       <div className="card p-5">
