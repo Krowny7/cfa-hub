@@ -5,22 +5,7 @@ import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History, Spark
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
-
-// Poids officiels du curriculum CFA Level I (milieu de chaque fourchette),
-// mêmes valeurs et mêmes topics que publish_mock_exam — voir
-// migration_mock_exam_weighted_selection.sql / migration_practice_sessions.sql.
-const TOPICS = [
-  { key: "ethics", label: "Éthique et Standards Professionnels", weight: 17.5 },
-  { key: "quant", label: "Méthodes Quantitatives", weight: 7.5 },
-  { key: "economics", label: "Économie", weight: 7.5 },
-  { key: "fsa", label: "Analyse des États Financiers", weight: 12.5 },
-  { key: "corporate", label: "Finance d'Entreprise", weight: 7.5 },
-  { key: "equity", label: "Investissements en Actions", weight: 12.5 },
-  { key: "fixed_income", label: "Fixed Income", weight: 12.5 },
-  { key: "derivatives", label: "Instruments Dérivés", weight: 6.5 },
-  { key: "alternatives", label: "Investissements Alternatifs", weight: 8.5 },
-  { key: "portfolio", label: "Gestion de Portefeuille", weight: 10.0 },
-] as const;
+import { TOPICS, TOPIC_LABELS, topicLabel, trophyTier } from "@/lib/practiceTopics";
 
 type ActiveQuestion = { id: string; position: number; prompt: string; choices: string[] };
 
@@ -78,20 +63,6 @@ function fmtTime(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-function topicLabel(key: string) {
-  return TOPICS.find((t) => t.key === key)?.label ?? key;
-}
-
-const TOPIC_LABELS: Record<string, string> = Object.fromEntries(TOPICS.map((t) => [t.key, t.label]));
-
-// Trophée coloré selon le nombre de sujets choisis pour la session — plus on
-// couvre de topics à la fois, plus le trophée "monte en grade".
-function trophyTier(topicCount: number) {
-  if (topicCount >= 7) return { label: "Diamant", className: "text-cyan-300" };
-  if (topicCount >= 4) return { label: "Or", className: "text-yellow-400" };
-  if (topicCount >= 2) return { label: "Argent", className: "text-slate-300" };
-  return { label: "Bronze", className: "text-amber-600" };
-}
 
 export function PracticeSession({ pastSessions: initialPast }: { pastSessions: PastSession[] }) {
   const supabase = useMemo(() => createClient(), []);
@@ -352,6 +323,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
             <div className="grid gap-1.5">
               {pastSessions.map((s) => {
                 const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+                const passed = pct >= PASS_THRESHOLD;
                 const tier = trophyTier(s.topics.length);
                 const expanded = expandedHistoryId === s.id;
                 const rev = historyReviews[s.id];
@@ -359,7 +331,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                   <div key={s.id} className="rounded-lg bg-white/[0.02]">
                     <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
                       <span className="flex min-w-0 items-center gap-2">
-                        <Trophy size={15} className={`shrink-0 ${tier.className}`} />
+                        <Trophy size={15} className={`shrink-0 ${passed ? tier.className : "text-white/15"}`} />
                         <span className="text-white/60 truncate">
                           {s.topics.map((k) => topicLabel(k)).join(", ")} · {s.format}Q · {new Date(s.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                         </span>

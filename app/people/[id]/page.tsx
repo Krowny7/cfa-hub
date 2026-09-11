@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { LevelBar } from "@/components/LevelBar";
 import { XpBarChart, type XpDay } from "@/components/XpBarChart";
+import { PracticeTrophies } from "@/components/PracticeTrophies";
 import { levelInfoFromXp } from "@/lib/leveling";
 import type { Profile, Rating } from "@/lib/types";
 
@@ -72,6 +73,19 @@ export default async function PersonProfilePage({ params }: PageProps) {
     } catch {
       // RPC not available yet
     }
+  }
+
+  let trophyRows: { topic_count: number; trophy_count: number }[] = [];
+  try {
+    const { data } = await supabase.rpc("get_user_practice_trophies", { p_user_id: id });
+    if (Array.isArray(data)) {
+      trophyRows = data.map((r: { topic_count: number; trophy_count: number }) => ({
+        topic_count: Number(r.topic_count ?? 0) || 0,
+        trophy_count: Number(r.trophy_count ?? 0) || 0,
+      }));
+    }
+  } catch {
+    // RPC not available yet
   }
 
   return (
@@ -146,6 +160,8 @@ export default async function PersonProfilePage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      <PracticeTrophies rows={trophyRows} />
 
       {/* Actions */}
       <div className="card p-5">
