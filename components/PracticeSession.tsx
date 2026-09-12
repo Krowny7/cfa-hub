@@ -184,7 +184,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       setTotal(data?.total ?? 0);
       setXpAwarded(data?.xp_awarded ?? 0);
       setPastSessions((prev) => [
-        { id: crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
+        { id: data?.id ?? crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
         ...prev,
       ]);
       setPhase("done");

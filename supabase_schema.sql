@@ -1633,6 +1633,7 @@ DECLARE
   v_total      int := 0;
   v_review     json;
   v_xp_awarded int := 0;
+  v_id         uuid;
 BEGIN
   IF p_format NOT IN (90, 180) THEN
     RAISE EXCEPTION 'Invalid format';
@@ -1715,9 +1716,10 @@ BEGIN
   END IF;
 
   INSERT INTO practice_session_results (user_id, topics, format, question_count, score, total, duration_seconds, answers)
-  VALUES (auth.uid(), p_topics, p_format, v_total, v_score, v_total, p_duration_seconds, p_answers);
+  VALUES (auth.uid(), p_topics, p_format, v_total, v_score, v_total, p_duration_seconds, p_answers)
+  RETURNING id INTO v_id;
 
-  RETURN json_build_object('score', v_score, 'total', v_total, 'review', v_review, 'xp_awarded', v_xp_awarded);
+  RETURN json_build_object('id', v_id, 'score', v_score, 'total', v_total, 'review', v_review, 'xp_awarded', v_xp_awarded);
 END;
 $$;
 
