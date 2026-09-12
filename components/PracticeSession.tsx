@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
-import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History, Sparkles, ChevronDown, ChevronUp, Pause, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
@@ -89,8 +89,8 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
   const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
   const [copiedHistoryId, setCopiedHistoryId] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef = useRef<number>(0);
   const submittingRef = useRef(false);
   // Le timeout auto-submit garde une closure figée sur `answers` tel qu'il
   // était au montage du timer — sans ce ref à jour, l'auto-submit renvoyait
@@ -98,10 +98,18 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
   // par un score de 0.
   const answersRef = useRef<(number | null)[]>(answers);
   useEffect(() => { answersRef.current = answers; }, [answers]);
+  const pausedRef = useRef(false);
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
+  // Durée réellement passée sur la session, incrémentée uniquement quand ce
+  // n'est pas en pause — sert de source pour duration_seconds au lieu d'un
+  // simple Date.now() - début, qui compterait aussi le temps de pause.
+  const elapsedRef = useRef(0);
 
   useEffect(() => {
     if (phase !== "active") return;
     timerRef.current = setInterval(() => {
+      if (pausedRef.current) return;
+      elapsedRef.current += 1;
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
@@ -156,7 +164,8 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
 
   function start() {
     setIdx(0);
-    startedAtRef.current = Date.now();
+    elapsedRef.current = 0;
+    setPaused(false);
     setPhase("active");
   }
 
@@ -167,7 +176,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     setError(null);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const duration = Math.round((Date.now() - startedAtRef.current) / 1000);
+    const duration = elapsedRef.current;
     const payload = questions.map((q, i) => ({ question_id: q.id, selected_index: answersRef.current[i] }));
     const topicsArr = [...selected];
 
@@ -546,8 +555,8 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       <div className="card p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-xs text-muted">Temps restant</div>
-            <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
+            <div className="text-xs text-muted">{paused ? "En pause" : "Temps restant"}</div>
+            <div className={`font-mono text-3xl font-bold tabular-nums ${paused ? "text-white/30" : timeIsLow ? "text-red-400" : ""}`}>
               {fmtTime(secondsLeft)}
             </div>
           </div>
@@ -555,10 +564,23 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
             <div className="text-xs text-muted">{answered}/{questions.length} répondues</div>
             <div className="text-sm font-medium">Q{idx + 1}/{questions.length}</div>
           </div>
-          <button type="button" className="btn btn-secondary shrink-0 text-sm" disabled={busy} onClick={submit}>
-            {busy ? "…" : "Terminer"}
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary inline-flex items-center gap-1.5 text-sm"
+              onClick={() => setPaused((v) => !v)}
+            >
+              {paused ? <Play size={14} /> : <Pause size={14} />}
+              {paused ? "Reprendre" : "Pause"}
+            </button>
+            <button type="button" className="btn btn-secondary text-sm" disabled={busy} onClick={submit}>
+              {busy ? "…" : "Terminer"}
+            </button>
+          </div>
         </div>
+        {paused && (
+          <div className="mt-2 text-xs text-amber-300/80">Le chronomètre est en pause — clique sur "Reprendre" pour continuer.</div>
+        )}
         {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
         <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.07]">
           <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${Math.round((answered / questions.length) * 100)}%` }} />
