@@ -1851,6 +1851,23 @@ CREATE POLICY "quick_files_own_delete" ON storage.objects
   FOR DELETE TO authenticated
   USING (bucket_id = 'quick-files' AND (storage.foldername(name))[1] = auth.uid()::text);
 
+-- Bucket privé pour les fiches PDF (contenu de référence partagé, pas
+-- personnel comme quick-files) : lecture pour tout utilisateur
+-- authentifié, jamais d'accès public direct. Chaque page /fiches/[topic]
+-- génère une URL signée à la demande côté serveur.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('fiches', 'fiches', false)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "fiches_read_authenticated" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'fiches');
+
+CREATE POLICY "fiches_admin_write" ON storage.objects
+  FOR ALL TO authenticated
+  USING (bucket_id = 'fiches' AND is_app_admin())
+  WITH CHECK (bucket_id = 'fiches' AND is_app_admin());
+
 
 -- ----------------------------------------------------------------
 -- 8. NOTES

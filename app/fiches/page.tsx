@@ -11,8 +11,8 @@ export default async function FichesPage() {
     {
       href: "/fiches/fixed-income",
       label: "Fixed Income",
-      readings: "R47 – R65 · 19 lectures",
-      desc: "Instruments, valorisation, duration, convexité, crédit, titrisation, MBS/ABS.",
+      readings: "Vault Concept Sheet · 18 pages",
+      desc: "8 pages de synthèse par thème, chacune suivie d'une page de QCM d'entraînement (corrigé inclus).",
       color: "blue",
     },
     {
