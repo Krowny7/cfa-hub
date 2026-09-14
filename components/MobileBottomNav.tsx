@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Trophy, Users, LayoutDashboard, GraduationCap, Settings, X, Calculator, Target } from "lucide-react";
+import { Timer, BookOpen, Layers, ClipboardList, MoreHorizontal, BookMarked, Trophy, Users, LayoutDashboard, GraduationCap, Settings, X, FileStack, Target } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 
 const items = [
@@ -11,10 +11,10 @@ const items = [
   { href: "/session", labelKey: "nav.session", icon: Timer },
   { href: "/flashcards", labelKey: "nav.flashcards", icon: Layers },
   { href: "/qcm", labelKey: "nav.qcm", icon: ClipboardList },
-  // Rituel quotidien à part entière (1h le midi, calculs/formules) — pas un
-  // contenu secondaire, promu depuis "Plus" pour être aussi accessible que
-  // flashcards/QCM.
-  { href: "/exercises", labelKey: "nav.exercises", icon: Calculator },
+  // Ancien slot "Exercices" (rituel calculs) réaffecté aux mocks officiels —
+  // remplace la page /exercises supprimée. Même emplacement pour ne pas
+  // casser la mise en page à 5 slots + "Plus".
+  { href: "/official-exams", labelKey: "nav.officialMocks", icon: FileStack },
 ] as const;
 
 // Regroupées dans le menu "Plus" : contenu moins consulté quotidiennement,

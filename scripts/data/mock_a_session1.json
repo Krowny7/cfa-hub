@@ -1,0 +1,992 @@
+[
+  {
+    "num": 1,
+    "prompt": "Which of the following statements are consistent with the Standard relating to referral fees?\n\nStatement 1\tA member must disclose the nature of the benefit for referrals of clients and their estimated value.\nStatement 2\tDisclosures of referral fees allow clients to evaluate any partiality shown in any recommendation of services.\nStatement 3\tA member is required to advise the client only after entry into a formal agreement for services of benefits received for the recommendation of services provided by the member.",
+    "choices": [
+      "Only Statement 1",
+      "Only Statement 1 and Statement 2",
+      "Statement 1, Statement 2, and Statement 3"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to Standard VI (C), Referral Fees, the responsibility of members and candidates to inform their employer, clients, and prospective clients of any benefit received for referrals of customers and clients. Such disclosures allow clients or employers to evaluate (1) any partiality shown in any recommendation of services and (2) the full cost of the services. Members and candidates must disclose when they pay a fee or provide compensation to others who have referred prospective clients to the member or candidate.\nAppropriate disclosure means that members and candidates must advise the client or prospective client, before entry into any formal agreement for services, of any benefit given or received for the recommendation of any services provided by the member or candidate. In addition, the member or candidate must disclose the nature of the consideration or benefit—for example, flat fee or percentage basis, one-time or continuing benefit, based on performance, benefit in the form of provision of research or other noncash benefit—together with the estimated dollar value."
+  },
+  {
+    "num": 2,
+    "prompt": "When first becoming compliant with the GIPS standards, an investment firm with 12 years of investment performance history must initially present a minimum of:",
+    "choices": [
+      "5 years of annual investment performance.",
+      "10 years of annual investment performance.",
+      "12 years of annual investment performance."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because a firm is required to initially present, at a minimum, five years of annual investment performance that is compliant with the GIPS standards."
+  },
+  {
+    "num": 3,
+    "prompt": "Pia Nilsson is a sole proprietor investment advisor. An economic recession has reduced the number of clients she advises and caused revenues to decline. As a result, Nilsson has not paid her CFA Institute membership dues for the past two years. When a national financial publication recently interviewed Nilsson, she indicated that up until two years ago she had been a CFA charterholder and a CFA Institute member in good standing. In addition, she stated the completion of the CFA Program enhanced her portfolio management skills and enabled her to achieve superior returns on behalf of her clients. Which of Nilsson's following actions most likely violated the CFA Institute Standards of Professional Conduct?",
+    "choices": [
+      "Nonpayment of CFA Institute membership dues",
+      "Attributing her superior returns to participation in the CFA Program",
+      "Indicating that being a CFA charterholder has enhanced her portfolio management skills"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to Standard VII(B), Reference to CFA Institute, the CFA Designation, and the CFA Program, it is a violation to claim that the CFA charter helped her to achieve superior returns."
+  },
+  {
+    "num": 4,
+    "prompt": "Ritu Jain, CFA, is preparing to leave her firm and join a new employer. Prior to leaving the firm, Jain calls all her clients informing them of her decision to leave. When asked by the clients, Jain states lack of confidence in the firm's leadership as the reason for her departure and also mentions that more employees are likely to leave soon. Jain has violated the Standard(s) relating:",
+    "choices": [
+      "only to loyalty.",
+      "only to preservation of confidentiality.",
+      "both to loyalty and to preservation of confidentiality."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because Standard IV(A), Loyalty states that CFA Institute members and candidates must act for the benefit of their employer and not otherwise cause harm to their employer and Jain violates her duty of loyalty to her employer by making disparaging and harmful statements about the firm to its clients. Jain can call her clients to inform of her decision but cannot make disparaging statements about her employer. Also according to Standard III(E), Preservation of Confidentiality, members and candidates preserve the confidentiality of information communicated to them by their clients, prospective clients, and former clients. No client related information is being disclosed and information pertaining to an employer is not covered by this Standard. Hence only the Standard relating to preservation of confidentiality has been violated."
+  },
+  {
+    "num": 5,
+    "prompt": "Harbor Asset Management (HAM) manages both domestic and global portfolios for its clients. HAM includes the following statements in its promotional materials:\n\n• Statement 1: All investment consultants retained by HAM endorse the GIPS standards.\n\n• Statement 2: All domestic portfolios managed by HAM are in compliance with the GIPS standards.\n\n• Statement 3: The objective of the GIPS standards is to eliminate the need for in-depth due diligence by prospective investors.\n\nWhich of HAM's statements is most consistent with the GIPS standards?",
+    "choices": [
+      "Statement 1",
+      "Statement 2",
+      "Statement 3"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because according to the GIPS standards, investment consultants can claim to endorse the GIPS standards."
+  },
+  {
+    "num": 6,
+    "prompt": "Jonas Balsys, CFA, has a prospective client, Edith Clancy, who mentions that she donates to environmental causes. Balsys mentions Clancy to a friend who works for an environmental agency. The next week, Balsys prepares an IPS for Clancy. Clancy does not disclose information about assets outside of her ESG investments. Balsys prepares the IPS based on the partial information provided by Clancy and enters into a formal agreement with her. Balsys has most likely violated the Standard relating to:",
+    "choices": [
+      "suitability.",
+      "preservation of confidentiality.",
+      "diligence and reasonable basis."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to Standard III(E), Preservation of Confidentiality, members and candidates preserve the confidentiality of information communicated to them by their clients, prospective clients, and former clients."
+  },
+  {
+    "num": 7,
+    "prompt": "John McCay, CFA, is an analyst who has prepared a report on the cable industry based on research from a variety of sources and analysts. He compiles these findings to form his own opinion and distributes the report to clients without acknowledging his sources. McCay has violated the Standards by:",
+    "choices": [
+      "failing to cite the work of others.",
+      "failing to have a reasonable basis for his conclusions.",
+      "incorporating other analysts' research into his own work."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because according to Standard I(C), Misrepresentation, in order to prevent plagiarism, members and candidates may use and distribute other sources' research as long as they do not represent themselves as the authors. Members should disclose and cite the sources of their information, so that the client is not misled as to the level of expertise behind the report. One of the most egregious practices in violation of this standard is the preparation of research reports based on multiple sources of information without acknowledging the sources. Therefore, McCay violated this Standard by failing to cite the work of others."
+  },
+  {
+    "num": 8,
+    "prompt": "According to the GIPS standards, a firm’s definition of discretion establishes criteria to judge which of the following?",
+    "choices": [
+      "Investment strategy the firm must implement",
+      "Portfolios the firm must include in a composite",
+      "Accounts the firm may exclude based on performance criteria"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because the firm’s definition of discretion establishes criteria to judge which portfolios must be included in a composite and is based on the firm’s ability to implement its investment strategies."
+  },
+  {
+    "num": 9,
+    "prompt": "Which of the following statements is most accurate?",
+    "choices": [
+      "All legal behaviors are ethical.",
+      "All ethical behaviors are legal.",
+      "Some legal activities may be unethical."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because although laws frequently codify ethical actions, legal and ethical conduct are not always the same. Think about the diagram in Exhibit 1. Many types of conduct are both legal and ethical, but some conduct may be one and not the other. Some legal behaviors or activities may be considered unethical, and some behaviors or activi­ties considered ethical may be deemed illegal in certain jurisdictions."
+  },
+  {
+    "num": 10,
+    "prompt": "Employing an independent GIPS standards verifier:",
+    "choices": [
+      "improves the performance record of the firm's investment team.",
+      "increases confidence in the firm’s claim of compliance with the GIPS standards.",
+      "shifts responsibility for the firm's claim of compliance with the GIPS standards to the verifier."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to the GIPS standards once a firm claims compliance with the standards, they may voluntarily hire an independent third party to perform a verification in order to increase confidence in the firm’s claim of compliance."
+  },
+  {
+    "num": 11,
+    "prompt": "According to the Standard relating to loyalty, prudence, and care, a member with control of client assets should submit to each client an itemized statement of their security holdings and transactions at least:",
+    "choices": [
+      "quarterly.",
+      "semi-annually.",
+      "annually."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because according to Standard III(A), Loyalty, Prudence, and Care, members and candidates with control of client assets should submit to each client, at least quarterly, an itemized statement showing the funds and securities in the custody or possession of the member or candidate plus all debits, credits, and transactions that occurred during the period."
+  },
+  {
+    "num": 12,
+    "prompt": "According to the recommended procedures for compliance with the Standard relating to responsibilities of supervisors, a member should encourage her employer to:",
+    "choices": [
+      "integrate a code of ethics into compliance procedures.",
+      "build incentive structures based on how much revenue is generated for the firm.",
+      "write a code of ethics in plain language and without numerous detailed procedures."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because according to the recommended procedures for compliance with the Standard relating to responsibilities of supervisors, stand-alone codes of ethics should be written in plain language and should address general fiduciary concepts. They should be unencumbered by numerous detailed pro­cedures."
+  },
+  {
+    "num": 13,
+    "prompt": "Immediately after taking the CFA Level II exam, Tim Riley posts on social media broad topic areas that were not tested on the exam. He also posts an article on social media questioning the relevance of CFA Program for professional practice. Has Riley violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, by posting broad topic areas not tested on the exam",
+      "Yes, by questioning the relevance of CFA Program for professional practice"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to Standard VII (A), Conduct as Participants in CFA Institute Programs, examples of information that cannot be disclosed by candidates sitting for an exam include but are not limited to broad topical areas and formulas tested or not tested on the exam. Riley violates this Standard by posting on social media broad topical areas not tested on the exam."
+  },
+  {
+    "num": 14,
+    "prompt": "Which of the following is permitted according to the Standards? A member:",
+    "choices": [
+      "exploits market inefficiencies for personal trades.",
+      "disseminates information to give the impression of increased liquidity of an asset.",
+      "secures a dominant position in an underlying asset to control the price of its derivative."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because Standard II(B) is not intended to preclude transactions undertaken on legitimate trading strategies based on perceived market inefficiencies. The intent of the action is critical to determining whether it is a violation of this standard. Therefore, a member is permitted to exploit market inefficiencies for personal trades."
+  },
+  {
+    "num": 15,
+    "prompt": "Sherry Buckner, CFA, manages equity accounts for government entities whose portfolios are classified as being conservative and risk averse. Since the objective of her clients is to maximize returns with the lowest possible risk, Buckner considers adding to their holdings a new, thinly traded, leveraged derivative product that she believes has the potential for high returns. To make her investment decision, Buckner relies upon comprehensive research from an investment bank with a solid reputation for top quality research. After her review of that research, Buckner positions her accounts so each has a 10% allocation to the derivative product. Did Buckner most likely violate any CFA Institute Standards of Professional Conduct by purchasing the derivative product for her clients?",
+    "choices": [
+      "No",
+      "Yes, the Standard relating to suitability",
+      "Yes, the Standard relating to loyalty, prudence, and care"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because Buckner is in violation of Standard III(C), Suitability, since she did not consider issues such as the limited liquidity or any potential leverage of this new product when she invested a substantial percentage of her clients’ portfolios in these instruments."
+  },
+  {
+    "num": 16,
+    "prompt": "Adira Badawi, CFA, who owns a research and consulting company, is an independent board member of a leading cement manufacturer in a small local market. Because of Badawi’s expertise in the cement industry, a foreign cement manufacturer looking to enter the local market has hired him to undertake a feasibility study. Under what circumstances can Badawi most likely undertake the assignment without violating the Standards?",
+    "choices": [
+      "By making full disclosure to both companies",
+      "By receiving written permission from the local company",
+      "By signing confidentiality agreements with both companies"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because making full and fair disclosure of all matters that could reasonably be expected to impair one’s independence and objectivity or interfere with respective duties to one’s clients is required by Standard VI(A), Avoid or Disclose Conflicts."
+  },
+  {
+    "num": 17,
+    "prompt": "While waiting in the business class lounge before boarding an airplane, Becca Msafari, CFA, an equity analyst, overhears a conversation by a group of senior managers, including members of the Board, from a large publicly listed bank. The managers discuss staff changes necessary to accommodate their regional expansion plans. Msafari hears several staff names mentioned. Under what circumstances could Msafari most likely use this information when making an investment recommendation to her clients?",
+    "choices": [
+      "Under no circumstances",
+      "If she does not breach the confidentiality of names of staff",
+      "If the discussed changes are unlikely to affect investor perception of the bank"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because in order to comply with Standard II(A), Material Nonpublic Information, a member or candidate cannot use material nonpublic information when making investment recommendations. The information overheard would be considered material only if any public announcement of the staff removal would be likely to move the share price of the bank. In this case, the discussed changes are unlikely to affect investor perception of the bank, so Msafari could use the information when making an investment recommendation."
+  },
+  {
+    "num": 18,
+    "prompt": "According to the Code and Standards regarding knowledge of laws and regulations, CFA Institute Members and Candidates must:",
+    "choices": [
+      "understand the relevant regulations for all the countries where they trade securities.",
+      "have detailed knowledge of all the laws that could potentially govern the Member’s activities.",
+      "spend a minimum of five hours per calendar year on continuing education activities related to applicable laws and regulations."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because Standard I(A) requires Members and Candidates to understand applicable laws and regulations in those countries where they trade or conduct business. While an understanding of laws and regulations is required, Members and Candidates can rely on legal counsel and compliance to be subject matter experts in these areas."
+  },
+  {
+    "num": 19,
+    "prompt": "Lucie Hilbert, CFA, offers premium services to clients for an additional fee. She offers the premium services only by email to all of her clients. One client, who previously inquired about premium services, does not receive the offer due to a technical problem with the client's email system. One week later Hilbert makes an investment in an IPO on behalf of her clients. The issue is oversubscribed, so she excludes her sister, a regular fee-paying client of Hilbert's firm, to free up shares for other clients. Has Hilbert most likely violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, the Standard relating to fair dealing",
+      "Yes, the Standard relating to communication with clients and prospective clients"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to Standard III(B), Fair Dealing, if the investment professional’s family-member accounts are managed similarly to the accounts of other clients of the firm, the family-member accounts should not be excluded from buying such shares. In this case, Hilbert's sister is a regular fee-paying client, thus should not be excluded."
+  },
+  {
+    "num": 20,
+    "prompt": "Jessica Ash, CFA, Ryan Boyd, CFA and Jeffrey Cook, CFA, discuss how to remain consistent with the Standard relating to performance presentation practices. Ash states: \"Members must apply the GIPS Standards to meet their obligations.\" Boyd says: \"GIPS application is not mandatory, but members should present the performance of a single representative account rather than using the weighted composite of similar portfolios.\" Cook mentions: \"True, GIPS application is not mandatory, but members should include terminated accounts as part of performance history with a clear indication of when the accounts were terminated.\" Whose statement is correct?",
+    "choices": [
+      "Ash's statement",
+      "Boyd's statement",
+      "Cook's statement"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because under Standard III(D), Performance Presentation, members can meet their obligations without compliance with the GIPS Standards. Members and candidates can also meet their obligations under Standard III(D) by including terminated accounts as part of performance history with a clear indication of when the accounts were terminated."
+  },
+  {
+    "num": 21,
+    "prompt": "Members should encourage their firms to establish which of the following procedures to avoid violations of Standard relating to independence and objectivity?\n\nProcedure 1: Place a covered company on a restricted list if the firm is unwilling to disseminate adverse opinion on the company.\nProcedure 2: Prohibit employees from receiving reimbursement from corporate issuers for air transportation when attending meetings at the issuers' headquarters.",
+    "choices": [
+      "Procedure 1 only",
+      "Procedure 2 only",
+      "Both Procedure 1 and Procedure 2"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because according to the recommended procedures for compliance with Standard I(B), Independence and Objectivity, if the firm is unwilling to permit dissemination of adverse opinions about a corporate client, members and candidates should encourage the firm to remove the controversial company from the research universe and put it on a restricted list so that the firm disseminates only factual information about the company. Therefore, Procedure 1 is correct.\n\nIn addition, according to the recommended procedures for compliance with Standard I(B), Independence and Objectivity, when attending meetings at an issuer’s headquarters, members and candidates should pay for commercial transportation and hotel charges. No corporate issuer should reimburse members or candidates for air transportation. Employees should not receive reimbursement from issuers even the meetings are held at the issuer's headquarters. Therefore, Procedure 2 is correct."
+  },
+  {
+    "num": 22,
+    "prompt": "Kazuya Kato, CFA, is a widely followed economist at a global investment bank. When Kato opines on economic trends, markets react by moving stock valuations considerably. When Kato receives information of a temporary oversupply of rare earth metals, he issues a forecast that price trends for rare earth metals will be down significantly on a long-term basis. Kato also secretly sells his report to a widely followed internet site. Prior to issuing this forecast, Kato emailed all portfolio managers at his bank with a copy of his report indicating that his opinion would be reversed shortly so there will be trading opportunities. Kato least likely violated which of the following CFA Institute Code of Ethics and Standards of Professional Conduct?",
+    "choices": [
+      "Market Manipulation",
+      "Priority of Transactions",
+      "Additional Compensation Arrangements"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because Kato exaggerated the potential for negative price movement with rare earth metals and violated Standard II(B), Market Manipulation, by aiming to profit on the volatility created by his actions. Standard II(B) requires that members and candidates uphold market integrity by prohibiting market manipulation. Market manipulation includes the dissemination of false or misleading information and transactions that deceive or would be likely to mislead market participants by distorting the price-setting mechanism of financial instruments. Standard IV(B), Additional Compensation Arrangements, was violated when he sold his report to the internet site. Standard VI(B), Priority of Transactions, has not been violated as it relates to investment transactions for clients and employers having priority over Member or Candidate transactions."
+  },
+  {
+    "num": 23,
+    "prompt": "Joyce La Valle, CFA, is a portfolio manager at a global bank. La Valle has been told she should use a specific vendor for equity investment research that has been approved by the bank’s headquarters. Because La Valle is located in a country different from the bank’s headquarters, she is uncomfortable with the validity of the research provided by this vendor when it applies to her country and would like to use a local vendor on whom she has already conducted due diligence. Which research vendor(s) should La Valle use to avoid violating the Standards?",
+    "choices": [
+      "The local research vendor",
+      "The bank-approved research vendor",
+      "Both the local and the bank-approved research vendors."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because when a member has reason to suspect that either secondary or third-party research or information comes from a source that lacks a sound basis, the member must not rely on that information as required by Standard V(A), Diligence and Reasonable Basis."
+  },
+  {
+    "num": 24,
+    "prompt": "Tharushi Ranasinghe, CFA, is president of a small investment firm. Most of her clients are longtime associates or family members whose investment portfolios she has managed for many years. Ranasinghe is familiar with her clients’ investment profiles and is in regular contact with them. Ranasinghe makes appropriate adjustment in her clients' portfolios following significant events in their lives. She rarely updates her clients' records given her familiarity with their investment requirements. Ranasinghe has most likely violated the Standard(s) relating to:",
+    "choices": [
+      "fair dealing only.",
+      "record retention only.",
+      "both fair dealing and record retention."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because Standard V(C), Record Retention states, Members and Candidates must develop and maintain appropriate records to support their investment analyses, recommendations, actions, and other investment-related communications with clients and prospective clients. In this case, Ranasinghe has a responsibility as her clients’ adviser and as the president of her company to maintain appropriate records when client circumstances change. Without necessary, relevant, and up-to-date know-your-client information, Ranasinghe would have difficulty establishing and proving that her firm has identified the needs and circumstances of its clients and has taken them into account in recommending investments. So, Ranasinghe has violated this Standard."
+  },
+  {
+    "num": 25,
+    "prompt": "Raymond Tam, CFA, manages a fund with a mandate to invest in local equities. To improve returns for fund investors, he sells options on some of the stocks held in the fund. Three months later, the options expire and the fund reports higher returns. Tam does not mention the options in his next client update. Tam has violated the Standard(s) relating to:",
+    "choices": [
+      "fair dealing only.",
+      "communication with clients and prospective clients only.",
+      "both fair dealing and communication with clients and prospective clients."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because according to Standard V(B), Communication with Clients and Prospective Clients, members must disclose to clients and prospective clients the basic format and general principles of the investment processes they use to analyze investments, select securities, and construct portfolios and must promptly disclose any changes that might materially affect those processes. Even if the fund's returns have improved and the options have expired, Tam does not mention the options in his next client update and has therefore violated Standard V(B)."
+  },
+  {
+    "num": 26,
+    "prompt": "The Standard relating to misconduct addresses:",
+    "choices": [
+      "only all conduct that reflects poorly on members' professional integrity.",
+      "only all actions violating trust in members' professional and private lives.",
+      "both all conduct that reflects poorly on members' professional integrity and all actions violating trust in members' professional and private lives."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because Standard I (D), Misconduct, addresses all conduct that reflects poorly on the professional integrity, good reputation, or competence of members and candidates."
+  },
+  {
+    "num": 27,
+    "prompt": "Suzanna Bermi, CFA, manages portfolios for retail clients. A friend asks her if Bermi can provide investment advice in Bermi's spare time. The friend offers a donation to Bermi's favorite charity in exchange for Bermi's advice. Bermi accepts the offer and starts providing investment advice to her friend immediately after sending an email to her firm's compliance department about the arrangement, including the fact that she receives no cash payments from her friend. Has Bermi most likely violated the Standards?",
+    "choices": [
+      "No",
+      "Yes, the Standard relating to additional compensation arrangements",
+      "Yes, the Standard relating to communication with clients and prospective clients"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because Standard IV (B), Additional Compensation Arrangements, requires members and candidates to obtain permission from their employer before accepting compensation or other benefits from third parties for the services rendered to the employer or for any services that might create a conflict with their employer's interest. Compensation and benefits include direct compensation by the client and any indirect compensation or other benefits received from third parties. Bermi has violated this Standard because the donations to her favorite charity represent a form of compensation for services provided to her friend. In addition, her services constitute a conflict of interest with her employer since she provides a service that competes with her firm's service. Therefore, an email notification to the firm's compliance department will not suffice. Bermi has to obtain prior written permission from her employer."
+  },
+  {
+    "num": 28,
+    "prompt": "A company receives a subscription payment for a publication to be delivered next fiscal year. Ignoring income taxes, the company would recognize in the current fiscal year an increase in:",
+    "choices": [
+      "assets and revenue.",
+      "assets and liabilities.",
+      "liabilities and revenue."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because there are situations when a company receives cash in advance and actually delivers the product or service later, perhaps over a period of time. In this case, the company would record a liability for unearned revenue when the cash is initially received, and revenue would be recognized as being earned over time as products and services are delivered. An example would be a subscription payment received for a publication that is to be delivered periodically over time.\nTherefore, the liability for unearned revenue would be recognized, but no revenue recognized in the P&L as the payment was for delivery in future accounting periods. The cash received would be recognized as the asset."
+  },
+  {
+    "num": 29,
+    "prompt": "Under perfect competition, the optimal firm size is at the minimum point on the:",
+    "choices": [
+      "long-run average total cost curve.",
+      "long-run average variable cost curve.",
+      "short-run average variable cost curve."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because economies and diseconomies of scale can occur at the same time; the impact on long-run average total cost (LRAC) depends on which dominates. If economies of scale dominates, LRAC decreases with increases in output. The reverse holds true when diseconomies of scale prevail. The minimum point on the LRAC curve is referred to as the minimum efficient scale. The minimum efficient scale is the optimal firm size under perfect competition over the long run."
+  },
+  {
+    "num": 30,
+    "prompt": "Intangible assets are reported using the:",
+    "choices": [
+      "cost model only.",
+      "cost model or fair value model.",
+      "cost model or revaluation model."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because IFRS allows companies to report intangible assets using either a cost model or a revaluation model."
+  },
+  {
+    "num": 31,
+    "prompt": "In contrast to the Herfindahl–Hirschman index (HHI), the concentration ratio:",
+    "choices": [
+      "considers the elasticity of demand.",
+      "accounts for the possibility of new entrants.",
+      "is less affected by mergers among the top market incumbents."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because a disadvantage of the concentration ratio is that it tends to be unaffected by mergers among the top market incumbents. For example, if the largest and second-largest incumbents merge, the pricing power of the combined entity is likely to be larger than that of the two pre-existing companies. But the concentration ratio may not change much. To avoid the known issues with concentration ratios, economists O.C. Herfindahl and A.O. Hirschman suggested an index where the market shares of the top N companies are first squared and then added. The HHI for the top three companies in the example in the box above would be 0.352 + 0.252 + 0.202 = 0.225 before the merger, while after the merger, it would be 0.602 + 0.202 + 0.102 = 0.410, which is substantially higher than the initial 0.225. The HHI is widely used by competition regulators."
+  },
+  {
+    "num": 32,
+    "prompt": "The real exchange rate for a currency:",
+    "choices": [
+      "is quoted in global foreign exchange markets.",
+      "can be constructed relative to a basket of other currencies.",
+      "is almost perfectly correlated with its nominal exchange rate."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because the real exchange rate for a currency can be constructed for the domestic currency relative to a single foreign currency or relative to a basket of foreign currencies."
+  },
+  {
+    "num": 33,
+    "prompt": "An investor has the following cash flows and returns for a new account:\n\nYear\tBeginning-of-Year Cash Inflow into Account\tBeginning-of-Year Cash Outflow from Account\tReturn for the Year\n1\t€10,000\t€0\t–22%\n2\t€0\t€1,000\t24%\nThe account balance at the end of the second year is closest to:",
+    "choices": [
+      "€8,432.",
+      "€9,672.",
+      "€10,912."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because the initial deposit declines to €7,800 = €10,000 × (1 – 0.22) before the €1,000 withdrawal is made at the beginning of the second year, then the remaining balance in the account increases to €8,432, as the account earns 24% during the second year; [(€7,800 – €1,000) × (1 + 0.24)] = €8,432."
+  },
+  {
+    "num": 34,
+    "prompt": "An analyst gathers the following information:\n\nCAD/EUR spot exchange rate\t1.4356\nCAD 12-month risk-free rate\t2.0%\nEUR 12-month risk-free rate\t0.5%\nCAD/EUR is the amount of CAD per 1 EUR.\n\nThe CAD/EUR 12-month forward points are closest to:",
+    "choices": [
+      "–211.",
+      "21.",
+      "214."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because the 12-month forward rate is first calculated, then followed by the forward points.\n• The 12-month forward rate is (CAD/EUR) x ((1 + CAD interest rate) / (1 + EUR interest rate)) = 1.4356 x ((1 + 0.02)/(1 + 0.005)) ≈ 1.4570.\n\n• The forward points is the difference between the forward rate and the spot rate, and scaled up by 10,000 = (1.4570 – 1.4356) x 10,000 = 214."
+  },
+  {
+    "num": 35,
+    "prompt": "Which of the following statements about machine learning is most accurate? Machine learning:",
+    "choices": [
+      "does not have a broad application in Big Data analysis.",
+      "still requires human judgment in understanding the underlying data.",
+      "performs well even when insufficient data are available to train and validate the model."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because ML (machine learning) still requires human judgement in understanding the underlying data and selecting the appropriate techniques for data analysis. Before they can be used, the data must be clean and free of biases and spurious data."
+  },
+  {
+    "num": 36,
+    "prompt": "Which of the following requires management to report on the effectiveness of the company’s internal control over financial reporting in accordance with the Sarbanes–Oxley Act?",
+    "choices": [
+      "Securities and Exchange Commission",
+      "Financial Accounting Standards Board",
+      "International Accounting Standards Board"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because the Sarbanes–Oxley Act of 2002 created the Public Company Accounting Oversight Board (PCAOB) to oversee auditors. The SEC is responsible for carrying out the requirements of the act and overseeing the PCAOB. The act requires management to report on the effectiveness of the company’s internal control over financial reporting (including obtaining external auditor confirmation of the effectiveness of internal control)."
+  },
+  {
+    "num": 37,
+    "prompt": "Which of the following capital investments would most likely be classified as a going concern project?",
+    "choices": [
+      "Upgrade of older production facilities to reduce costs",
+      "Modification of production processes to comply with new regulation",
+      "Funding research on the creation of new products based on an innovative technology"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because going concern projects often known as maintenance capital expenditures, are investments to continue the company’s current operations and maintain the existing size of the business. Common going concern projects include replacing assets nearing the end of their useful life, maintaining IT hardware and software, and continuous improvements of existing facilities. Upgrade of older production facilities to reduce costs falls under going concern projects."
+  },
+  {
+    "num": 38,
+    "prompt": "A company's purchases can be estimated as cost of sales plus:",
+    "choices": [
+      "ending inventory less beginning inventory.",
+      "beginning inventory less ending inventory.",
+      "the average level of inventory for the period."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because if the amount of purchases is not directly available, it can be computed as cost of goods sold plus ending inventory less beginning inventory. Alternatively, cost of goods sold is sometimes used as an approximation of purchases."
+  },
+  {
+    "num": 39,
+    "prompt": "If a security appreciates by 33% over the first six months and then depreciates by 15% over the following six months, the holding period return over the 12-month period is closest to:",
+    "choices": [
+      "6.3%.",
+      "13.1%.",
+      "18.0%."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because a holding period return is the return earned from holding an asset for a single specified period of time. This return can be generalized and shown as a mathematical expression in which P is the price and I is the income:  R = (P1 − P0 + I1)/P0, where P0 is the initial investment, P1 is the price received at the end of the holding period, and I1 is the cash paid by the investment. Also, link or compound holding period returns to obtain an annual rate of return for the year (the time-weighted rate of return for the year). HPR1 = 0.33 and HPR2 = –0.15, such that the rate of return over the 12-month period = (1 + 0.33)(1 – 0.15) – 1 = 0.1305 ≈ 13.1%."
+  },
+  {
+    "num": 40,
+    "prompt": "With respect to the monetary transmission mechanism, a central bank's policy rate is initially transmitted through the economy via:",
+    "choices": [
+      "inflation.",
+      "asset prices.",
+      "reserve requirements."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because the implementation of the policy may begin to work through the economy via four interrelated channels. Those channels include bank lending rates, asset prices, agents' expectations, and exchange rates."
+  },
+  {
+    "num": 41,
+    "prompt": "For a sample size of 10 and sum of squared differences in ranks of 118, the Spearman rank correlation is closest to:",
+    "choices": [
+      "0.28.",
+      "0.72.",
+      "0.93."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because with n as the sample size, the Spearman rank correlation is given by\nrs = 1 – [6∑i=1ndi2] / [n(n2 – 1)] = 1 – 6(118) / [10(102 – 1)] = 0.28485 ≈ 0.28.\n\nNote that ∑i=1ndi2 = sum of squared differences in ranks = 118, as given."
+  },
+  {
+    "num": 42,
+    "prompt": "An analyst gathers the following information (in € thousands) about a company:\n\nBeginning retained earnings\t1,500\nEnding retained earnings\t2,000\nDividends declared and paid\t400\nIf there are no other items affecting shareholders' equity, net income (in € thousands) is:",
+    "choices": [
+      "100.",
+      "500.",
+      "900."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because ending retained earnings = beginning retained earnings + net income – dividends; 2,000 = 1,500 + net income – 400; net income = 900."
+  },
+  {
+    "num": 43,
+    "prompt": "Compared to the normal distribution, the lognormal distribution is more appropriate to model asset prices because it:",
+    "choices": [
+      "has negative skewness.",
+      "has a defined boundary to the left.",
+      "is completely defined by two parameters."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because the two most noteworthy observations about the lognormal distribution are that it is bounded below by 0 and it is skewed to the right (it has a long right tail).  In practice, the lognormal distribution has been found to be a usefully accurate description of the distribution of prices for many financial assets. However, the normal distribution is often a good approximation for returns."
+  },
+  {
+    "num": 44,
+    "prompt": "Unless it is impractical to do so, which of the following is reported through retrospective application?",
+    "choices": [
+      "Changes in accounting policies only",
+      "Changes in accounting estimates only",
+      "Both changes in accounting policies and accounting estimates"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because changes in accounting policies are reported through retrospective application unless it is impractical to do so. Retrospective application means that the financial statements for all fiscal years shown in a company’s financial report are presented as if the newly adopted accounting principle had been used throughout the entire period."
+  },
+  {
+    "num": 45,
+    "prompt": "Which of the following statements regarding inventory valuation is most accurate?",
+    "choices": [
+      "IFRS defines market value as net realizable value less a normal profit margin.",
+      "Both IFRS and US GAAP allow the reversal of write-downs back to the original cost.",
+      "Both IFRS and US GAAP allow agricultural inventories to be valued at net realizable value."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct. Both IFRS and US GAAP allow agricultural inventories to be valued at net realizable value."
+  },
+  {
+    "num": 46,
+    "prompt": "If wages and prices are rigid, which of the following policy combinations most likely leads to an increase in aggregate demand from the private sector relative to the public sector?",
+    "choices": [
+      "Easy fiscal policy and easy monetary policy",
+      "Easy fiscal policy and tight monetary policy",
+      "Tight fiscal policy and easy monetary policy"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because, under the assumption that wages and prices are rigid, if a fiscal contraction is accompanied by expansionary monetary policy and low interest rates, then the private sector will be stimulated and will increase as a share of GDP, while the public sector will shrink."
+  },
+  {
+    "num": 47,
+    "prompt": "Accounting choices within US GAAP that decrease reported performance in the current period and may increase performance in later periods are most likely examples of:",
+    "choices": [
+      "aggressive accounting.",
+      "conservative accounting.",
+      "earnings that are not sustainable."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because conservative accounting choices decrease the company’s reported performance and financial position in the current period and may increase its reported performance and financial position in later periods."
+  },
+  {
+    "num": 48,
+    "prompt": "All else being equal, a decrease in which of the following financial metrics would most likely result in a lower return on equity (ROE)?",
+    "choices": [
+      "Leverage",
+      "The tax rate",
+      "Days of sales outstanding"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because leverage is a component of the return on equity equation under the DuPont Analysis. If leverage decreases, so will return on equity.\nROE = Tax burden × Interest burden × Earnings before interest and taxes margin × Total asset turnover × Leverage"
+  },
+  {
+    "num": 49,
+    "prompt": "In monopolistic competition, the level of output that minimizes average cost is:",
+    "choices": [
+      "less than the actual level of output in the long run.",
+      "equal to the actual level of output in the long run.",
+      "greater than the actual level of output in the long run."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because unlike long-run equilibrium in perfect competition, in the market of monopolistic competition, the equilibrium position is at a higher level of average cost (i.e., the lower level of output) than the level of output that minimizes average cost."
+  },
+  {
+    "num": 50,
+    "prompt": "Organic growth represents changes in revenue due to the impact of changes in:",
+    "choices": [
+      "volume only.",
+      "price/mix only.",
+      "both volume and price/mix."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because changes in revenue attributable to volume or price/mix are organic growth and are shown separately from the impact of acquisitions and divestitures (scope change) and foreign exchange (forex impact in the model)."
+  },
+  {
+    "num": 51,
+    "prompt": "Deferred tax liabilities could arise when:",
+    "choices": [
+      "accounting profit is greater than taxable income.",
+      "the tax base of equipment is greater than its carrying value.",
+      "tax authorities do not allow an expense item for tax purposes."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because deferred tax liabilities result from temporary timing differences between a company's income as reported for tax purposes (taxable income) and income as reported for financial statement purposes (reported income). Deferred tax liabilities arise when a deficit amount is paid for income taxes and company expects to eliminate the deficit over the course of future operations. In this case, financial accounting income tax expense exceeds income taxes payable."
+  },
+  {
+    "num": 52,
+    "prompt": "All else being equal, a government's budget deficit is most likely reduced after the introduction of:",
+    "choices": [
+      "tariffs only.",
+      "export subsidies only.",
+      "both tariffs and export subsidies."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because tariffs are taxes that a government levies on imported goods. Therefore, all else being equal, the imposition of a tariff will increase government revenue and thereby reduce a government budget deficit."
+  },
+  {
+    "num": 53,
+    "prompt": "Which of the following statements about prediction intervals is most accurate? All else being equal:",
+    "choices": [
+      "the width of the prediction interval does not depend on the standard error of the estimate.",
+      "a smaller variation of the independent variable will result in a narrower prediction interval.",
+      "a larger sample size in the regression estimation will result in a smaller standard error of the forecast."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because the larger the sample size (n) in the regression estimation, the smaller the standard error of the forecast. This is evident from the equation for the standard error of the forecast, which is sf = se (1 + 1/n + (Xf –X)2 /Σi=1n (Xi –X)2)0.5"
+  },
+  {
+    "num": 54,
+    "prompt": "Selected year-end financial data for a company is as follows:\nNet income\t$200,000\nTax rate\t15%\nWeighted average number of common shares outstanding\t125,000\n12% bond convertible into 3,000 common shares (potentially dilutive)\t$60,000\nGiven this information, the diluted EPS of the company is closest to:",
+    "choices": [
+      "$1.51.",
+      "$1.60.",
+      "$1.61."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct. First determine the basic EPS, calculated as follows:\n\nNext, calculate diluted EPS using the if-converted method for the convertible debt:\n\nThe calculated diluted EPS is greater than the basic EPS. By definition, the diluted EPS is always equal to or less than basic EPS and this means that the diluted EPS will be $1.60."
+  },
+  {
+    "num": 55,
+    "prompt": "Samples are drawn from a population by selecting every kth member of the population. This sampling method is best described as:",
+    "choices": [
+      "cluster sampling.",
+      "systematic sampling.",
+      "stratified random sampling."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because with systematic sampling, we select every kth member until we have a sample of the desired size."
+  },
+  {
+    "num": 56,
+    "prompt": "A project has the following annual cash flows:\nYear 0\tYear 1\tYear 2\tYear 3\n–$606,061\t$2,151,515\t–$2,542,424\t$1,000,000\nWhich discount rate most likely provides a positive NPV?",
+    "choices": [
+      "15%",
+      "18%",
+      "21%"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because the NPV at 21% is $14.7, whereas the NPVs at other two discount rates are negative.\nYear\tCash Flow\tr = 15%\tr = 18%\tr = 21%\tCalculation\n0\t–$606,061\t–$606,061.00\t–$606,061.00\t–$606,061.00\t–606,061\n1\t2,151,515\t1,870,882.60\t1,823,317.80\t1,778,111.60\t+2,151,515/(1 + r)\n2\t–2,542,424\t–1,922,437.80\t–1,825,929.30\t–1,736,509.80\t–2,542,424/(1 + r)2\n3\t1,000,000\t657,516.20\t608,630.90\t564,473.90\t+1,000,000/(1 + r)3\n\nNPV\t–$100.00\t–$41.60\t+$14.70\tr = Discount rate"
+  },
+  {
+    "num": 57,
+    "prompt": "An example of an expansionary fiscal policy is:",
+    "choices": [
+      "a reduction in bank reserve requirements.",
+      "an increase in public spending on social goods and infrastructure.",
+      "the purchase of government bonds through open market operations."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because an expansionary fiscal policy could include new public spending on social goods and infrastructure, such as hospitals and schools, boosting personal incomes with the objective of raising aggregate demand."
+  },
+  {
+    "num": 58,
+    "prompt": "An analyst gathers the following information about a company's sources of capital:\n\nSource of Capital\tAmount Raised\tBefore-tax Cost of Capital\nEquity \t$15 million\t8%\nDebt\t$10 million\t4%\nPreferred stock\t  $1 million\t5%\nIf interest is tax-deductible, a 35% marginal tax rate results in a WACC closest to:",
+    "choices": [
+      "5.74%.",
+      "5.81%.",
+      "6.35%."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because WACC = wdrd(1–t) + wprp + were = 0.385×4%(1–35%) + 0.038×5% + 0.577×8% = 5.808% ≈ 5.81%.\n\nWhere,\n\nwd = $10 million/($15 million+$10 million+$1 million) = $10 million/$26 million = 0.385\n\nwp = $1 million/$26 million = 0.038\n\nwe = $15 million/$26 million = 0.577"
+  },
+  {
+    "num": 59,
+    "prompt": "Over a 4-year period, a portfolio has returns of 10%, −2%, 18%, and −12%. The geometric mean return across the period is closest to:",
+    "choices": [
+      "2.9%.",
+      "3.5%.",
+      "8.1%."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because the geometric mean return is:\nRG = <\nwhere Rt is the annual return.\n\nPlugging in the numbers, the geometric mean return is:\n\n= [(1 + 0.10) × (1 − 0.02) × (1 + 0.18) × (1 − 0.12)]0.25 − 1\n\n= 0.0286 ≈ 2.9%"
+  },
+  {
+    "num": 60,
+    "prompt": "An analyst collects the following information about a company:\n\nNet profit margin\t4%\nReturn on average assets\t8%\nReturn on average equity\t16%\nRevenue\t€2,500,000\nThe company's:",
+    "choices": [
+      "total asset turnover is 4.",
+      "financial leverage ratio is 4.",
+      "average shareholders' equity is €625,000."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because the company had net profit of €100,000 calculated as revenue × Net profit margin = €2,500,000 × 4% = €100,000. Return on equity = Net profit ÷ Average shareholders' equity. Therefore, average shareholders' equity = Net profit ÷ Return on Equity = €100,000 ÷ 16% = €625,000."
+  },
+  {
+    "num": 61,
+    "prompt": "The cost of which source of capital most likely requires adjustment for taxes in the calculation of a firm’s weighted average cost of capital?",
+    "choices": [
+      "Bonds",
+      "Common stock",
+      "Preferred stock"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct. Bonds are a form of debt that must be adjusted for taxes when calculating the weighted average cost of capital."
+  },
+  {
+    "num": 62,
+    "prompt": "The following information is available about a company ($ millions):\nYear Ended 31 December\tYear 2\tYear 1\nSales\t322.8\t320.1\nNet income\t27.2\t26.8\nCash flow from operations\t15.3\t38.1\nDuring Year 2, the company most likely experienced a significant decrease in:",
+    "choices": [
+      "inventory.",
+      "the proportion of sales made on a cash basis.",
+      "the proportion of interest-bearing debt relative to trade accounts payable."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because sales are nearly the same for the two years. A decrease in the proportion of cash sales implies an increase in the proportion of credit sales, which would increase accounts receivable and decrease cash flow from operations."
+  },
+  {
+    "num": 63,
+    "prompt": "The neutral policy rate for an economy is the real trend rate of growth and the:",
+    "choices": [
+      "short-term growth rate that gives rise to no inflation.",
+      "long-term growth rate that gives rise to stable inflation.",
+      "short-term growth rate that gives rise to stable inflation."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because the neutral policy rate for any economy comprises two components: real trend rate of growth of the underlying economy, and the real trend rate of growth of an economy that is achievable in the long run that gives rise to stable inflation. The formula is neutral rate = Trend growth + Inflation target."
+  },
+  {
+    "num": 64,
+    "prompt": "Which of the following stakeholders are most likely responsible for implementing a public corporation’s strategy?",
+    "choices": [
+      "Managers",
+      "Governments",
+      "Board of directors"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because managers, led by the chief executive officer of the company, are responsible for determining and implementing the corporation’s strategy under the oversight of the board of directors."
+  },
+  {
+    "num": 65,
+    "prompt": "Which organizational form of business has limited liability for some owners and passes through profits and losses to owners for taxation purposes?",
+    "choices": [
+      "Corporation",
+      "Limited partnership",
+      "Sole proprietorship"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because like sole proprietorships, partnerships are typically pass-through businesses for tax purposes. Pass-through businesses are not taxed at the entity level, passing on all their profits or losses to the partners who are taxed personally. In addition, in a limited partnership, there must be at least one general partner (GP) with unlimited liability that often manages the business. Remaining partners, however, called limited partners (LPs), have limited liability, meaning their losses are limited to the size of their investment in the limited partnership, and may not have any management responsibilities."
+  },
+  {
+    "num": 66,
+    "prompt": "Which of the following types of financial ratios is most likely to be positively affected by an inventory write-down compared to if the write-down had not occurred?",
+    "choices": [
+      "Activity ratios",
+      "Liquidity ratios",
+      "Solvency ratios"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because an inventory write-down reduces both profit and the carrying amount of inventory on the balance sheet and thus has a negative effect on profitability, liquidity, and solvency ratios. However, activity ratios (for example, inventory turnover and total asset turnover) will be positively affected by a write-down because the asset base (denominator) is reduced."
+  },
+  {
+    "num": 67,
+    "prompt": "In which stage of a company's life cycle is cash flow most likely to be negative?",
+    "choices": [
+      "Start-up",
+      "Growth",
+      "Mature"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because early in its life, a company is typically a cash consumer. Investment is required to advance concepts through the prototype stage and into commercial production. Revenues are zero or minimal, and risk of business failure is high. The company must raise capital, and since the timing and potential for cash flow generation are highly uncertain, it will generally raise equity rather than debt."
+  },
+  {
+    "num": 68,
+    "prompt": "An analyst gathers the following information (in € millions) about a company:\n\nCost of sales\t800\nDecrease in inventory\t250\nIncrease in accounts payable\t100\nCash paid to suppliers (in € millions) is:",
+    "choices": [
+      "450.",
+      "950.",
+      "1,150."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because Purchases from suppliers = Cost of goods sold – Decrease in inventory = €800 million – €250 million = €550 million. Cash paid to suppliers = Purchase from suppliers – Increase in accounts payable = €550 million – €100 million = €450 million."
+  },
+  {
+    "num": 69,
+    "prompt": "An analyst gathers the following probability distribution of a company’s EPS:\n\nProbability\tEPS ($)\n0.1\t22.0\n0.9\t30.0\nThe standard deviation of EPS is closest to:",
+    "choices": [
+      "$2.4.",
+      "$4.0.",
+      "$5.8."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because standard deviation is the positive square root of variance and the variance of a random variable is the expected value (the probability-weighted average) of squared deviations from the random variable’s expected value. Therefore, the expected value of EPS is equal to: E(EPS) = 0.1 × $22.0 + 0.9 × $30.0 = $2.2 + $27.0 = $29.2. The variance is equal to: σ2 (EPS) = P($22.0) × [$22.0 – E(EPS)]2 + P($30.0) × [$30.0 – E(EPS)]2 = 0.1 × [$22.0 – $29.2]2 + 0.9 × [$30.0 – $29.2]2 = $5.184 + $0.576 = $5.760. Therefore the standard deviation of EPS is σ = ($5.760)1/2 ≈ $2.4."
+  },
+  {
+    "num": 70,
+    "prompt": "An analyst gathers the following company P/E ratios:\n\n8\t13\t3\t12\t8\t10\nFor the data given, the:",
+    "choices": [
+      "median is greater than the mode.",
+      "mode is greater than the arithmetic mean.",
+      "arithmetic mean is greater than the median."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because the median of the data is equal to 9, which is greater than the mode of 8. The median is the value of the middle item of a set of items that has been sorted into ascending or descending order. In an even-numbered sample, we define the median as the mean of the values of items occupying the n/2 and ( n + 2)/2 positions (the two middle items). The items when sorted into ascending order are 3, 8, 8, 10, 12, 13. Hence, the median is (8 + 10)/2 = 9 since there are an even number of items. The mode is the most frequently occurring value in a distribution. Hence, the mode for the data given is 8 since this is the only value occurring twice."
+  },
+  {
+    "num": 71,
+    "prompt": "Conflicts of interest between shareholders and management most likely occur when:",
+    "choices": [
+      "executive remuneration plans include deferred shares.",
+      "shareholders do not influence the design of executive compensation packages.",
+      "risky projects that match shareholders' risk tolerance are pursued by the company."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because by allowing shareholders to express their views on remuneration matters, companies can limit the discretion of directors and managers in granting themselves excessive (or inadequate) remuneration, thus not allowing managers to have greater discretion over their own pay. Hence, if shareholders do not or miss to influence the design of executive compensation packages, conflicts of interest between shareholders and management may occur."
+  },
+  {
+    "num": 72,
+    "prompt": "Under the acquisition method, if the purchase price of an acquired company exceeds the sum of the fair value amounts that can be allocated to individual identifiable assets and liabilities, the acquiring company should record the excess as:",
+    "choices": [
+      "goodwill.",
+      "a gain reflected in profit and loss.",
+      "a gain reflected in other comprehensive income."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because under the acquisition method, the company identified as the acquirer allocates the purchase price to each asset acquired (and each liability assumed) on the basis of its fair value. If the purchase price exceeds the sum of the amounts that can be allocated to individual identifiable assets and liabilities, the excess is recorded as goodwill."
+  },
+  {
+    "num": 73,
+    "prompt": "Under IFRS, which component of the change in the net pension asset or liability each period is recognized in other comprehensive income?",
+    "choices": [
+      "Employees’ service costs",
+      "Actuarial gains and losses and other remeasurements",
+      "The net interest expense or income accrued on the beginning net pension plan asset or liability"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because under IFRS, the change in the net pension asset or liability each period is viewed as having three general components. Two of the components of this change are recognized as pension expense in profit and loss: (1) employees’ service costs and (2) the net interest expense or income accrued on the beginning net pension asset or liability. The third item, remeasurements, is recognized in other comprehensive income."
+  },
+  {
+    "num": 74,
+    "prompt": "With respect to geopolitics, which of the following is best described as a financial tool?",
+    "choices": [
+      "Common markets",
+      "Multilateral trade agreements",
+      "Free exchange of currencies across borders"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because examples of cooperative financial tools include the free exchange of currencies across borders and allowing foreign investment."
+  },
+  {
+    "num": 75,
+    "prompt": "An analyst runs a simple linear regression using 35 months of data to assess a country's short-term interest rate as a function of its inflation rate, with the following results:\n\n \tCoefficients\tStandard Error\nIntercept\t−0.5778\t0.3479\nInflation rate\t1.1300\t0.1806\nCritical t-values for a 1% level of significance:\n\nOne-sided, left side: −2.445\nOne-sided, right side: +2.445\nTwo-sided: ±2.733\n\nAt a 99% confidence level, the analyst should reject the null hypothesis that:",
+    "choices": [
+      "the intercept is zero.",
+      "the slope is less than or equal to 0.75.",
+      "there is no linear relationship between the country's inflation rate and short-term interest rate."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because we reject the null hypothesis that there is no linear relationship between the two variables, that is that the slope of the linear regression is zero, if the calculated t-statistic is less than −2.733 or greater than +2.733 (being a two-sided hypothesis test). Indeed, t-statistic = (1.1300 – 0.0000)/ 0.1806 = 6.2569, which is greater than +2.733"
+  },
+  {
+    "num": 76,
+    "prompt": "Which of the following test statistics is most appropriate for a hypothesis test concerning the mean difference between two normally distributed populations?",
+    "choices": [
+      "t-statistic",
+      "F-statistic",
+      "Chi-square statistic"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because for a Test of Mean Differences (Normally Distributed Populations, Unknown Population Variances), when we have data consisting of paired observations from samples generated by normally distributed populations with unknown variances, a t-test is based on t = (d − μd0)/sd, with n − 1 degrees of freedom, where n is the number of paired observations, d is the sample mean difference, and sd is the standard error of d."
+  },
+  {
+    "num": 77,
+    "prompt": "Globalization is primarily the result of:",
+    "choices": [
+      "political cooperation.",
+      "political non-cooperation.",
+      "economic and financial cooperation."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because globalization is the result of economic and financial cooperation. It is carried out mostly by non-state actors, such as corporations, individuals, or organizations."
+  },
+  {
+    "num": 78,
+    "prompt": "A company has announced that it is going to distribute a group of long-lived assets to its owners in a spin-off. The most appropriate way to account for the assets until the distribution occurs is to classify them as:",
+    "choices": [
+      "held for sale with no depreciation taken.",
+      "held for use until disposal with no deprecation taken.",
+      "held for use until disposal with depreciation continuing to be taken."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct. Long-lived assets that will be disposed of other than by sale, such as in a spin-off, an exchange for other assets, or abandonment, are classified as held for use until disposal and continue to be depreciated until that time."
+  },
+  {
+    "num": 79,
+    "prompt": "Credit cycles tend to be:",
+    "choices": [
+      "shorter than business cycles.",
+      "of the same length as business cycles.",
+      "longer than business cycles."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because credit cycles tend to be longer, deeper, and sharper than business cycles. Although the length of a business cycle varies from peak to trough, the average length of a credit cycle is mostly found to be longer than that of the business cycle."
+  },
+  {
+    "num": 80,
+    "prompt": "The continuously compounded return:",
+    "choices": [
+      "is higher than the holding period return for a given time period.",
+      "for multiple time periods is the sum of the one-period continuously compounded returns.",
+      "cannot be calculated for negative holding period returns because the natural logarithm of a negative number is not a real number."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because the continuously compounded return to time T is the sum of the one-period continuously compounded returns."
+  },
+  {
+    "num": 81,
+    "prompt": "Which of the following is an assumption in Modigliani and Miller’s capital structure framework?",
+    "choices": [
+      "Investors can lend and borrow at the risk free rate",
+      "Interest expense is deductible from income for tax purposes",
+      "Investors have heterogeneous expectations about future corporate earnings"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because given their assumptions, Modigliani and Miller proved that changing the capital structure does not affect firm value, in part because individual investors can create any capital structure they prefer for the company by borrowing and lending in their own accounts in addition to holding shares in the company. This 'homemade' leverage argument relies on the MM assumption that investors can lend and borrow at the risk-free rate."
+  },
+  {
+    "num": 82,
+    "prompt": "An expansionary fiscal policy is least likely to include an increase in:",
+    "choices": [
+      "tax rates.",
+      "budget deficit.",
+      "government expenditures."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct. An expansionary fiscal policy means that the government increases its purchases of goods and services and/or cuts tax rates to increase aggregate demand. Furthermore, an increase in the budget deficit would be associated with an expansionary fiscal policy."
+  },
+  {
+    "num": 83,
+    "prompt": "Which of the following strategies is most common in business-to-business markets where the universe of potential customers is relatively small and easily reached?",
+    "choices": [
+      "Direct sales",
+      "Omnichannel",
+      "Traditional channel"
+    ],
+    "correct_index": 0,
+    "explanation": "Correct because direct sales is a common strategy in B2B markets where the universe of potential customers is relatively small and easily reached."
+  },
+  {
+    "num": 84,
+    "prompt": "All else being equal, during periods of rising prices and constant inventory quantities, a company using the weighted average cost inventory valuation method most likely reports a:",
+    "choices": [
+      "higher gross profit margin than if using FIFO.",
+      "lower inventory turnover ratio than if using FIFO.",
+      "shorter cash conversion cycle than if using FIFO."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because the cash conversion cycle will be shorter using weighted average cost than FIFO. Cash conversion cycle = DOH + DSO (Days of Sales Outstanding) – Number of days of payables. The number of Days of Inventory on Hand (DOH) is lower under weighted average cost than FIFO, due to the higher Inventory Turnover ratio using weighted average cost. DOH = Number of days in period ÷ Inventory turnover. Inventory turnover = COGS ÷ Average inventory. Weighted average cost will have a higher Inventory Turnover ratio than FIFO as COGS is higher and Average Inventory is lower than under FIFO."
+  },
+  {
+    "num": 85,
+    "prompt": "A credit rating agency assesses a company’s corporate governance structure as favorable to creditor rights. The most likely impact of this assessment on the company is a(n):",
+    "choices": [
+      "reduction in its cost of debt.",
+      "increase in its risk of default.",
+      "reduction in its financial performance."
+    ],
+    "correct_index": 0,
+    "explanation": "Correct. Governance arrangements that help protect creditor rights can reduce a company’s cost of debt and default risk."
+  },
+  {
+    "num": 86,
+    "prompt": "Which of the following statements about dispersion measures is most accurate?",
+    "choices": [
+      "The range shows how the data are distributed",
+      "The variance is expressed in the same unit of measurement as the observations",
+      "The number of degrees of freedom in estimating the population variance with the sample variance is equal to the sample size minus one"
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because, in the formula for the sample variance, the quantity n – 1 is also known as the number of degrees of freedom in estimating the population variance, where n is the number of observations in the sample."
+  },
+  {
+    "num": 87,
+    "prompt": "Which of the following is most likely a drag on a company's liquidity position?",
+    "choices": [
+      "Reduced credit lines",
+      "Uncollected receivables",
+      "Early payment to suppliers"
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because a drag on liquidity is when receipts lag, creating pressure from the decreased available funds. Major drags on receipts involve pressures from credit management and deterioration in other assets and include the following: Uncollected receivables, Obsolete inventory and tight credit."
+  },
+  {
+    "num": 88,
+    "prompt": "An analyst gathers the following information (in € thousands) about a machine:\n\nCarrying amount prior to impairment\t50\nPresent value of expected future cash flows\t46\nFair value\t48\nCosts to sell\t3\nImpairment loss (in € thousands) is:",
+    "choices": [
+      "2.",
+      "4.",
+      "5."
+    ],
+    "correct_index": 1,
+    "explanation": "Correct because under IAS 36, an impairment loss is measured as the excess of carrying amount over the recoverable amount of the asset. The recoverable amount of an asset is defined as the higher of its fair value less costs to sell and its value in use. Value in use is based on the present value of expected future cash flows. Accordingly, Impairment loss = Carry amount – Max[(Fair value – Costs to sell), Present value of expected future cash flows] = 50 – Max[(48 – 3), 46] = 50 – 46 = 4."
+  },
+  {
+    "num": 89,
+    "prompt": "An analyst gathers the following information (in £ millions) about a company:\n\nTotal assets\t600\nTotal liabilities\t120\nTotal equity\t480\nTotal debt\t60\nBased only on this information, the financial leverage ratio is:",
+    "choices": [
+      "0.10.",
+      "0.25.",
+      "1.25."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because financial leverage ratio = Total assets / Total equity. Accordingly, Financial leverage = 600 / 480 = 1.25."
+  },
+  {
+    "num": 90,
+    "prompt": "When estimating a target capital structure, the equity weight associated with a debt-to-equity ratio of 0.6 is closest to:",
+    "choices": [
+      "37.5%",
+      "40.0%.",
+      "62.5%."
+    ],
+    "correct_index": 2,
+    "explanation": "Correct because a simple way of transforming a debt-to-equity ratio (D/E) into a weight that is, D/(D + E)is to divide D/E by 1 + D/E. In this case, Debt weight = 0.6/1.6 = 37.5%. If the weight of debt is 37.5%, the weight of equity will be (1-37.5%) = 62.5%."
+  }
+]

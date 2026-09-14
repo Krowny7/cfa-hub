@@ -13,7 +13,7 @@ import {
   GraduationCap,
   Trophy,
   BookMarked,
-  Calculator,
+  FileStack,
   Target,
 } from "lucide-react";
 
@@ -50,7 +50,7 @@ export async function Sidebar() {
         { href: "/library", label: t(locale, "nav.library"), icon: <BookOpen size={16} /> },
         { href: "/flashcards", label: t(locale, "nav.flashcards"), icon: <Layers size={16} /> },
         { href: "/qcm", label: t(locale, "nav.qcm"), icon: <ClipboardList size={16} /> },
-        { href: "/exercises", label: t(locale, "nav.exercises"), icon: <Calculator size={16} /> },
+        { href: "/official-exams", label: t(locale, "nav.officialMocks"), icon: <FileStack size={16} /> },
         { href: "/fiches", label: t(locale, "nav.fiches"), icon: <BookMarked size={16} /> },
         { href: "/practice", label: t(locale, "nav.practice"), icon: <Target size={16} /> },
       ],
