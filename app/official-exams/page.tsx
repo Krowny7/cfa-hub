@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileStack, ListChecks } from "lucide-react";
+import { FileStack, ListChecks, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 // Remplace l'ancienne page /exercises : au lieu de sets d'exercices de
@@ -10,14 +10,18 @@ import { createClient } from "@/lib/supabase/server";
 // Session 1 du Mock A). Les sets sont de simples quiz_sets officiels dans
 // le dossier "Mocks Officiels (Système)" — la page se contente de les
 // regrouper et retrouve /qcm/[id] pour l'expérience de quiz elle-même
-// (déjà interactif, XP, anti-farming, correction).
+// (déjà interactif, XP, anti-farming, correction). Chaque thème peut aussi
+// avoir un set "— Variantes" jumeau (2 variantes par question officielle,
+// voir scripts/seed-mock-*-variants-*.mjs) affiché comme un second bouton.
 const FOLDER_NAME = "Mocks Officiels (Système)";
 const TITLE_RE = /^(.+?)\s—\s(.+?)\s—\s(.+)$/;
+const VARIANTS_SUFFIX = " — Variantes";
 
 type SetRow = { id: string; title: string };
+type Topic = { id: string; label: string; count: number; variant: { id: string; count: number } | null };
 type ExamGroup = {
   exam: string;
-  sessions: Record<string, { topics: { id: string; label: string; count: number }[]; complete: { id: string; count: number } | null }>;
+  sessions: Record<string, { topics: Topic[]; complete: { id: string; count: number } | null }>;
 };
 
 export default async function OfficialExamsPage() {
@@ -56,6 +60,10 @@ export default async function OfficialExamsPage() {
   }
 
   const exams = new Map<string, ExamGroup>();
+  // Sets "— Variantes" en attente d'être rattachés à leur thème de base
+  // (les deux peuvent apparaître dans n'importe quel ordre côté requête).
+  const pendingVariants: { examName: string; sessionLabel: string; baseLabel: string; id: string; count: number }[] = [];
+
   for (const s of sets) {
     const m = TITLE_RE.exec(s.title);
     if (!m) continue;
@@ -64,11 +72,25 @@ export default async function OfficialExamsPage() {
     const group = exams.get(examName)!;
     if (!group.sessions[sessionLabel]) group.sessions[sessionLabel] = { topics: [], complete: null };
     const count = counts.get(s.id) ?? 0;
-    if (rest.startsWith("Complet")) {
+
+    if (rest.endsWith(VARIANTS_SUFFIX)) {
+      pendingVariants.push({
+        examName,
+        sessionLabel,
+        baseLabel: rest.slice(0, -VARIANTS_SUFFIX.length),
+        id: s.id,
+        count,
+      });
+    } else if (rest.startsWith("Complet")) {
       group.sessions[sessionLabel].complete = { id: s.id, count };
     } else {
-      group.sessions[sessionLabel].topics.push({ id: s.id, label: rest, count });
+      group.sessions[sessionLabel].topics.push({ id: s.id, label: rest, count, variant: null });
     }
+  }
+
+  for (const v of pendingVariants) {
+    const topic = exams.get(v.examName)?.sessions[v.sessionLabel]?.topics.find((t) => t.label === v.baseLabel);
+    if (topic) topic.variant = { id: v.id, count: v.count };
   }
 
   const examList = [...exams.values()].sort((a, b) => a.exam.localeCompare(b.exam));
@@ -112,13 +134,23 @@ export default async function OfficialExamsPage() {
                       </Link>
                     )}
                     {topics.map((t) => (
-                      <Link
-                        key={t.id}
-                        href={`/qcm/${t.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-white/70 transition hover:bg-white/[0.04]"
-                      >
-                        {t.label} ({t.count}Q)
-                      </Link>
+                      <span key={t.id} className="inline-flex overflow-hidden rounded-lg border border-white/10">
+                        <Link
+                          href={`/qcm/${t.id}`}
+                          className="px-3 py-1.5 text-xs text-white/70 transition hover:bg-white/[0.04]"
+                        >
+                          {t.label} ({t.count}Q)
+                        </Link>
+                        {t.variant && (
+                          <Link
+                            href={`/qcm/${t.variant.id}`}
+                            title="Variantes des mêmes questions (énoncés/chiffres différents)"
+                            className="flex items-center gap-1 border-l border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-purple-200 transition hover:bg-purple-500/10"
+                          >
+                            <Sparkles size={11} /> {t.variant.count}Q
+                          </Link>
+                        )}
+                      </span>
                     ))}
                   </div>
                 </div>
