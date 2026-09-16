@@ -11,11 +11,13 @@ import * as THREE from "three";
 // The grade was authored before three enabled colour management by default.
 THREE.ColorManagement.enabled = false;
 
+const NL = String.fromCharCode(10);
+
 const FONTS =
   "https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap";
 
 const CSS = `#rl-splash{ position:fixed; inset:0; z-index:200;
-  --void:#050506; --paper:#ecebe6; --dim:#83868a; --accent:#f2d027;
+  --void:#050506; --paper:#ecebe6; --dim:#83868a; 
   --gut:clamp(20px,4vw,58px); --gutT:clamp(18px,3vh,30px);
   background:var(--void); color:var(--paper); overflow:hidden;
   font-family:'Instrument Sans', system-ui, sans-serif; }
@@ -70,13 +72,16 @@ const CSS = `#rl-splash{ position:fixed; inset:0; z-index:200;
 #rl-splash .title.on .sub { animation:rlRise .8s cubic-bezier(.2,.8,.2,1) .95s both; }
 #rl-splash .title.on .cta { animation:rlRise .8s cubic-bezier(.2,.8,.2,1) 1.15s both; }
 #rl-splash .cta { margin:clamp(20px,3.2vh,34px) 0 0; }
-#rl-splash .pill { display:inline-flex; align-items:center; gap:10px; background:var(--accent); color:#0b0b0c;
-    border:0; border-radius:999px; padding:12px 22px; font-family:'DM Mono',monospace; font-size:11px;
-    letter-spacing:.15em; text-transform:uppercase; white-space:nowrap; opacity:0;
-    pointer-events:none; transform:translateY(10px);
-    transition:opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
+#rl-splash .pill { display:inline-flex; align-items:center; gap:10px;
+  background:transparent; color:var(--paper); border:1px solid rgba(236,235,230,.42);
+  border-radius:999px; padding:12px 22px; font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:.15em; text-transform:uppercase; white-space:nowrap; opacity:0;
+  pointer-events:none; transform:translateY(10px);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1),
+    background .3s ease, color .3s ease, border-color .3s ease; }
 #rl-splash .pill.on { opacity:1; transform:none; cursor:pointer; pointer-events:auto; }
-#rl-splash .pill.on:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(242,208,39,.34); }
+#rl-splash .pill.on:hover { transform:translateY(-2px); background:var(--paper);
+  color:#0b0b0c; border-color:var(--paper); }
 @keyframes rlRise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
 #rl-splash .fadeout { position:absolute; inset:0; background:var(--void); pointer-events:none; opacity:0; }
 #rl-splash .flash { position:absolute; inset:0; background:#fff; pointer-events:none; opacity:0; }
@@ -259,8 +264,26 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
   })();
 
   var inkMats=[];
-  function ink(op){ var m=new THREE.LineBasicMaterial({color:0xecebe6,transparent:true,
-    opacity:op,fog:false}); m.userData.base=op; inkMats.push(m); return m; }
+  // Graphite, not ink: pressure varies along each stroke and the paper tooth
+  // eats a little of it. vP is a per-vertex hash, so the grain sticks to the
+  // stroke instead of crawling when the camera moves.
+  var PENCIL_V=['varying float vP;','void main(){',
+    ' vP=fract(sin(dot(position,vec3(12.9898,78.233,37.719)))*43758.5453);',
+    ' gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }'].join(NL);
+  function ink(op){
+    var m=new THREE.ShaderMaterial({
+      uniforms:{ uOp:{value:op}, uCol:{value:new THREE.Color(0xecebe6)} },
+      vertexShader:PENCIL_V,
+      fragmentShader:['uniform float uOp; uniform vec3 uCol; varying float vP;',
+        'void main(){',
+        ' float tooth=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);',
+        ' float a=uOp*(0.50+0.50*vP)*(0.76+0.24*tooth);',
+        ' if(a<0.004) discard;',
+        ' gl_FragColor=vec4(uCol,a); }'].join(NL),
+      transparent:true, depthWrite:false
+    });
+    m.userData.base=op; inkMats.push(m); return m;
+  }
   var sheetGrp=new THREE.Group(); scene.add(sheetGrp);
   function resample(pts,step){
     var out=[pts[0].clone()];
@@ -273,9 +296,17 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     return out;
   }
   var strokes=[];
+  var strokeSeed=0;
   function stroke(view,pts,op,closed){
     if(closed) pts=pts.concat([pts[0].clone()]);
     var p=resample(pts,.11);
+    // a low-frequency wander, so the line reads as drawn rather than plotted
+    var sd=(strokeSeed++)*7.31;
+    for(var q=0;q<p.length;q++){
+      var u=q*0.13+sd;
+      p[q].x+=Math.sin(u*0.57+1.3)*0.030+Math.sin(u*1.73)*0.015;
+      p[q].z+=Math.cos(u*0.61+2.4)*0.030+Math.cos(u*1.91+0.7)*0.015;
+    }
     var line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),ink(op===undefined?.9:op));
     line.frustumCulled=false; sheetGrp.add(line);
     strokes.push({view:view,obj:line,pts:p,n:p.length});
@@ -377,7 +408,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     return head;
   }
   function viewOpacity(i,o){
-    views[i].forEach(function(s){ s.obj.material.opacity=s.obj.material.userData.base*o; });
+    views[i].forEach(function(s){ s.obj.material.uniforms.uOp.value=s.obj.material.userData.base*o; });
   }
   drawView(1,1);
 
@@ -420,14 +451,17 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
       uniforms:{ uOp:{value:baseOp}, uSweep:{value:9999}, uBuild:{value:-9999}, uDim:{value:1},
         uCol:{value:new THREE.Color(0xecebe6)}, uFog:{value:new THREE.Color(VOID)},
         uNear:{value:30}, uFar:{value:110} },
-      vertexShader:['varying float vLX,vD;','void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0);',
-        ' vLX=position.x; vD=-mv.z; gl_Position=projectionMatrix*mv; }'].join('\n'),
+      vertexShader:['varying float vLX,vD,vP;','void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0);',
+        ' vP=fract(sin(dot(position,vec3(12.9898,78.233,37.719)))*43758.5453);',
+        ' vLX=position.x; vD=-mv.z; gl_Position=projectionMatrix*mv; }'].join(NL),
       fragmentShader:['uniform float uOp,uSweep,uBuild,uDim,uNear,uFar; uniform vec3 uCol,uFog;',
-        'varying float vLX,vD;','void main(){',
+        'varying float vLX,vD,vP;','void main(){',
         ' if(vLX<uBuild) discard;',
         ' float inked=smoothstep(uSweep-0.35,uSweep+1.7,vLX);',
         ' float band=exp(-pow((vLX-uSweep)*1.25,2.0));',
         ' float a=uOp*(0.40+0.60*inked)+band*0.55+exp(-pow((vLX-uBuild)*1.9,2.0))*0.75;',
+        ' float tooth=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);',
+        ' a*=(0.54+0.46*vP)*(0.78+0.22*tooth);',
         ' float fg=smoothstep(uNear,uFar,vD);',
         ' gl_FragColor=vec4(mix(uCol+vec3(band*0.8),uFog,fg), a*uDim*(1.0-fg*0.85)); }'].join('\n'),
       transparent:true, depthWrite:false
@@ -813,7 +847,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     { id:'beat', label:'Verrière',     dur:.74, cut:true, aim:[3.20,.66,0], roll:-.04,
       hh:[1.75,2.05], fov:[30,30], az:[1.82,1.54], el:[ .42, .26], tau:.05 },
     { id:'name',            label:'Ranked Lobby',     dur:5.40, cut:true,
-      hh:[9.6,10.2], fov:[30,29],az:[2.15,2.48], el:[ .36, .44], lead:0,   tau:.055 }
+      hh:[7.0,7.5],  fov:[30,29],az:[2.15,2.48], el:[ .36, .44], lead:0,   tau:.055 }
   ];
   var starts=[], SEQ=0;
   for(var i=0;i<SHOTS.length;i++){ starts[i]=SEQ; SEQ+=SHOTS[i].dur; }
@@ -854,7 +888,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     if(s.cut) hh*=1-.09*(1-eOutExpo(Math.min(1,sinceCut/.34)));
     // the hero is framed on height, so a square or portrait viewport has to
     // pull back or the aircraft runs off the sides
-    if(si===NAME) hh*=Math.max(1,1.55/camera.aspect);
+    if(si===NAME) hh*=Math.max(1,1.32/camera.aspect);
     hh*=1-.42*enterPush;                 // pressing Entrer drives the camera in
     var dr=(s.id==='draw')?.35:1;
     var az=lerp(s.az[0],s.az[1],e)+Math.sin(t*.19)*.012*dr;
@@ -881,7 +915,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     if(s.roll) camera.rotateZ(s.roll*(1-e*.55));
 
     mx+=(tmx-mx)*.055; my+=(tmy-my)*.055;
-    var fx=(si===NAME)?-.27:0;
+    var fx=(si===NAME)?-.30:0;
     var shake=s.cut?Math.max(0,1-sinceCut/.26):0;
     camera.translateX(rig.hh*camera.aspect*fx+mx*rig.hh*.10+Math.sin(t*57)*shake*rig.hh*.016);
     camera.translateY(-my*rig.hh*.07+Math.sin(t*43+2)*shake*rig.hh*.016);
@@ -896,7 +930,6 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
   //  C2.  POST — bloom, chromatic aberration, vignette and grain.
   //  Hand-rolled so it stays one file and one dependency.
   // ======================================================================
-  var NL=String.fromCharCode(10);
   var quadScene=new THREE.Scene(), quadCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
   var quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2)); quadScene.add(quad);
   var VS=['varying vec2 vUv;','void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }'].join(NL);
