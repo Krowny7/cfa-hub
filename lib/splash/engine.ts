@@ -44,7 +44,7 @@ const CSS = `#rl-splash{ position:fixed; inset:0; z-index:200;
     justify-content:center; padding:0 var(--gut); opacity:0; }
 #rl-splash .title.on { opacity:1; }
 #rl-splash .word { font-family:'Anton', Impact, sans-serif; font-weight:400; text-transform:uppercase;
-    font-size:clamp(3.4rem,13.5vw,13rem); line-height:.86; letter-spacing:.005em;
+    font-size:clamp(2.4rem,8vw,7.5rem); line-height:.86; letter-spacing:.005em;
     color:var(--paper); margin:0; white-space:nowrap; }
 #rl-splash .word .l { display:inline-block; overflow:hidden; vertical-align:bottom; }
 #rl-splash .word .l i { display:inline-block; font-style:normal; transform:translateY(106%); }
@@ -63,7 +63,7 @@ const CSS = `#rl-splash{ position:fixed; inset:0; z-index:200;
 #rl-splash .title.on::after { animation:rlScanDown .95s cubic-bezier(.3,.7,.3,1) .2s both; }
 @keyframes rlScanDown{ 0%{ top:34%; opacity:0 } 18%{ opacity:.95 } 100%{ top:64%; opacity:0 } }
 #rl-splash .rule { height:1px; background:rgba(236,235,230,.34); margin:clamp(14px,2.4vh,26px) 0 0;
-    max-width:min(640px,72vw); transform:scaleX(0); transform-origin:left center; }
+    max-width:min(440px,48vw); transform:scaleX(0); transform-origin:left center; }
 #rl-splash .title.on .rule { animation:rlRuleIn .9s cubic-bezier(.2,.8,.2,1) .72s both; }
 @keyframes rlRuleIn{ to{transform:scaleX(1)} }
 #rl-splash .sub { margin:clamp(12px,2vh,18px) 0 0; max-width:48ch; font-size:clamp(12px,1.05vw,14px);
