@@ -17,6 +17,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-neutral-950 text-white antialiased">
+        {/* Hides the first paint until we know whether the splash plays */}
+        <div id="rl-precover" aria-hidden />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var c=document.getElementById('rl-precover');if(!c)return;" +
+              "var seen=false;try{seen=sessionStorage.getItem('rl-splash-seen')==='1';}catch(e){}" +
+              "if(seen)c.remove();else setTimeout(function(){if(c.parentNode)c.remove();},6000);})();"
+          }}
+        />
         <Providers initialLocale={locale}>
           {/* Ambient background */}
           <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">

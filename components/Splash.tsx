@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 const SEEN_KEY = "rl-splash-seen";
 
+/** Removes the first-paint cover. Safe to call more than once. */
+function dropCover() {
+  document.getElementById("rl-precover")?.remove();
+}
+
 /**
  * Plays the Ranked Lobby splash once per browser session, over whatever page
  * loaded first. The WebGL engine (and three.js with it) is imported lazily, so
@@ -20,7 +25,8 @@ export function Splash() {
     } catch {
       // private mode or blocked storage: play it, it is only a veil
     }
-    if (!seen) setActive(true);
+    if (seen) dropCover();
+    else setActive(true);
   }, []);
 
   useEffect(() => {
@@ -47,11 +53,16 @@ export function Splash() {
 
     import("@/lib/splash/engine")
       .then((mod) => {
-        if (cancelled || !hostRef.current) return;
+        if (cancelled || !hostRef.current) {
+          dropCover();
+          return;
+        }
         stop = mod.mountSplash(hostRef.current, finish);
+        dropCover(); // the splash itself covers the app from here on
       })
       .catch(() => {
         // WebGL or the chunk failed: skip straight to the app
+        dropCover();
         if (!cancelled) setActive(false);
       });
 
@@ -59,6 +70,7 @@ export function Splash() {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
       if (stop) stop();
+      dropCover();
       document.documentElement.style.overflow = previousOverflow;
     };
   }, [active]);

@@ -161,3 +161,8 @@
 .dark {
   color-scheme: dark;
 }
+
+/* Paints the very first frame black so the app is never glimpsed before the
+   splash takes over. Removed by an inline script for returning visitors, and
+   by the Splash component in every other case. */
+#rl-precover{ position:fixed; inset:0; z-index:300; background:#050506; }

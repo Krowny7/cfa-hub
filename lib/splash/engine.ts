@@ -201,10 +201,10 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     [-4.20,0.78,0.68,-0.02,2.5],[-5.60,0.70,0.64, 0.00,2.5],[-6.60,0.62,0.59, 0.02,2.5],
     [-7.30,0.55,0.53, 0.02,2.5],[-7.85,0.50,0.49, 0.02,2.5]
   ];
-  var WING=[[0.95,1.45,-6.95],[2.10,0.20,-6.86],[3.30,-1.10,-6.74],
+  var WING=[[0.52,1.45,-6.95],[2.10,0.20,-6.86],[3.30,-1.10,-6.74],
             [4.45,-2.35,-6.20],[5.20,-3.20,-5.55],[5.45,-3.55,-5.25]];
-  var CANARD=[[0.76,4.52,3.28],[1.28,4.14,3.20],[1.76,3.72,3.12]];
-  var FIN=[[0.80,-2.95,-6.95],[1.70,-3.68,-6.86],[2.50,-4.32,-6.76],[3.05,-4.86,-6.66]];
+  var CANARD=[[0.42,4.52,3.28],[1.28,4.14,3.20],[1.76,3.72,3.12]];
+  var FIN=[[0.44,-2.95,-6.95],[1.70,-3.68,-6.86],[2.50,-4.32,-6.76],[3.05,-4.86,-6.66]];
   var CANOPY=[[5.45,0.05,0.02],[5.00,0.24,0.18],[4.45,0.38,0.34],[3.70,0.44,0.44],
               [2.85,0.44,0.45],[2.00,0.40,0.36],[1.25,0.30,0.18],[0.80,0.16,0.03]];
   var INTAKE=[[2.95,0.30,0.36],[2.55,0.40,0.48],[1.90,0.46,0.54],
@@ -660,7 +660,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
 
   var brakeGrp=null;
   (function airbrakes(){
-    var hinge=V(-1.10,.69,0), gs=[box(1.42,.05,.44,-1.83,.69,.39),box(1.42,.05,.44,-1.83,.69,-.39)];
+    var hinge=V(-1.10,.655,0), gs=[box(1.42,.05,.44,-1.83,.655,.39),box(1.42,.05,.44,-1.83,.655,-.39)];
     var grp=new THREE.Group(); grp.position.copy(hinge); plane.add(grp);
     var meshes=[],lines=[];
     for(var i=0;i<gs.length;i++){
@@ -814,7 +814,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     { id:'beat', label:'Verrière',     dur:.74, cut:true, aim:[3.20,.66,0], roll:-.04,
       hh:[1.75,2.05], fov:[30,30], az:[1.82,1.54], el:[ .42, .26], tau:.05 },
     { id:'name',            label:'Ranked Lobby',     dur:5.40, cut:true,
-      hh:[12.2,13.0],fov:[30,29],az:[2.15,2.48], el:[ .36, .44], lead:0,   tau:.055 }
+      hh:[9.6,10.2], fov:[30,29],az:[2.15,2.48], el:[ .36, .44], lead:0,   tau:.055 }
   ];
   var starts=[], SEQ=0;
   for(var i=0;i<SHOTS.length;i++){ starts[i]=SEQ; SEQ+=SHOTS[i].dur; }
@@ -853,6 +853,9 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     var hh=lerp(s.hh[0],s.hh[1],e)*(si<LIFT?fitW:lerp(fitW,1,si===LIFT?e:1));
     // each cut lands tight and opens out — the punch that makes an edit read
     if(s.cut) hh*=1-.09*(1-eOutExpo(Math.min(1,sinceCut/.34)));
+    // the hero is framed on height, so a square or portrait viewport has to
+    // pull back or the aircraft runs off the sides
+    if(si===NAME) hh*=Math.max(1,1.55/camera.aspect);
     hh*=1-.42*enterPush;                 // pressing Entrer drives the camera in
     var dr=(s.id==='draw')?.35:1;
     var az=lerp(s.az[0],s.az[1],e)+Math.sin(t*.19)*.012*dr;
@@ -879,7 +882,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     if(s.roll) camera.rotateZ(s.roll*(1-e*.55));
 
     mx+=(tmx-mx)*.055; my+=(tmy-my)*.055;
-    var fx=(si===NAME)?-.22:0;
+    var fx=(si===NAME)?-.27:0;
     var shake=s.cut?Math.max(0,1-sinceCut/.26):0;
     camera.translateX(rig.hh*camera.aspect*fx+mx*rig.hh*.10+Math.sin(t*57)*shake*rig.hh*.016);
     camera.translateY(-my*rig.hh*.07+Math.sin(t*43+2)*shake*rig.hh*.016);
