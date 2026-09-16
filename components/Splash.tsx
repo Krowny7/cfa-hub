@@ -4,9 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 const SEEN_KEY = "rl-splash-seen";
 
-/** Removes the first-paint cover. Safe to call more than once. */
+/**
+ * Clears the first-paint cover. It is a CSS pseudo-element driven by a class
+ * on <html>, not a DOM node: removing a server-rendered node before hydration
+ * makes React bail out on the whole tree. Safe to call more than once.
+ */
 function dropCover() {
-  document.getElementById("rl-precover")?.remove();
+  document.documentElement.classList.remove("rl-booting");
 }
 
 /**

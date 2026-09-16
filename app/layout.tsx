@@ -17,14 +17,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-neutral-950 text-white antialiased">
-        {/* Hides the first paint until we know whether the splash plays */}
-        <div id="rl-precover" aria-hidden />
+        {/* Hides the first paint until we know whether the splash plays. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){var c=document.getElementById('rl-precover');if(!c)return;" +
-              "var seen=false;try{seen=sessionStorage.getItem('rl-splash-seen')==='1';}catch(e){}" +
-              "if(seen)c.remove();else setTimeout(function(){if(c.parentNode)c.remove();},6000);})();"
+              "(function(){var seen=false;" +
+              "try{seen=sessionStorage.getItem('rl-splash-seen')==='1';}catch(e){}" +
+              "if(seen)return;var d=document.documentElement;d.classList.add('rl-booting');" +
+              "setTimeout(function(){d.classList.remove('rl-booting');},6000);})();"
           }}
         />
         <Providers initialLocale={locale}>
