@@ -3,6 +3,7 @@ import { Providers } from "@/components/Providers";
 import { TopBar } from "@/components/TopBar";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { Splash } from "@/components/Splash";
 import { getLocale } from "@/lib/i18n/server";
 
 export const metadata = {
@@ -42,6 +43,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* Mobile bottom nav */}
           <MobileBottomNav />
+
+          {/* First-visit splash, over whatever page loaded */}
+          <Splash />
         </Providers>
       </body>
     </html>
