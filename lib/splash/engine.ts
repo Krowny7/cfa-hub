@@ -64,7 +64,7 @@ const CSS = `#rl-splash{ position:fixed; inset:0; z-index:200;
     max-width:min(640px,72vw); transform:scaleX(0); transform-origin:left center; }
 #rl-splash .title.on .rule { animation:rlRuleIn .9s cubic-bezier(.2,.8,.2,1) .72s both; }
 @keyframes rlRuleIn{ to{transform:scaleX(1)} }
-#rl-splash .sub { margin:clamp(12px,2vh,18px) 0 0; max-width:36ch; font-size:clamp(12px,1.05vw,14px);
+#rl-splash .sub { margin:clamp(12px,2vh,18px) 0 0; max-width:48ch; font-size:clamp(12px,1.05vw,14px);
     line-height:1.55; color:var(--dim); opacity:0; }
 #rl-splash .sub b { color:var(--paper); font-weight:500; }
 #rl-splash .title.on .sub { animation:rlRise .8s cubic-bezier(.2,.8,.2,1) .95s both; }
@@ -121,8 +121,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     '    <p class="word" data-w="RANKED"></p>',
     '    <p class="word" data-w="LOBBY"></p>',
     '    <div class="rule"></div>',
-    '    <p class="sub"><b>Construisez votre appareil, domaine par domaine.</b> ',
-    "     Entraînement chronométré, progression mesurée, classement.</p>",
+    '    <p class="sub"><b>La maîtrise s’assemble, pièce par pièce.</b></p>',
     '    <div class="cta"><button class="pill" type="button">Entrer <span aria-hidden="true">&rarr;</span></button></div>',
     "  </div>",
     '  <div class="flash"></div>',
