@@ -264,26 +264,8 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
   })();
 
   var inkMats=[];
-  // Graphite, not ink: pressure varies along each stroke and the paper tooth
-  // eats a little of it. vP is a per-vertex hash, so the grain sticks to the
-  // stroke instead of crawling when the camera moves.
-  var PENCIL_V=['varying float vP;','void main(){',
-    ' vP=fract(sin(dot(position,vec3(12.9898,78.233,37.719)))*43758.5453);',
-    ' gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }'].join(NL);
-  function ink(op){
-    var m=new THREE.ShaderMaterial({
-      uniforms:{ uOp:{value:op}, uCol:{value:new THREE.Color(0xecebe6)} },
-      vertexShader:PENCIL_V,
-      fragmentShader:['uniform float uOp; uniform vec3 uCol; varying float vP;',
-        'void main(){',
-        ' float tooth=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);',
-        ' float a=uOp*(0.50+0.50*vP)*(0.76+0.24*tooth);',
-        ' if(a<0.004) discard;',
-        ' gl_FragColor=vec4(uCol,a); }'].join(NL),
-      transparent:true, depthWrite:false
-    });
-    m.userData.base=op; inkMats.push(m); return m;
-  }
+  function ink(op){ var m=new THREE.LineBasicMaterial({color:0xecebe6,transparent:true,
+    opacity:op,fog:false}); m.userData.base=op; inkMats.push(m); return m; }
   var sheetGrp=new THREE.Group(); scene.add(sheetGrp);
   function resample(pts,step){
     var out=[pts[0].clone()];
@@ -296,17 +278,9 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     return out;
   }
   var strokes=[];
-  var strokeSeed=0;
   function stroke(view,pts,op,closed){
     if(closed) pts=pts.concat([pts[0].clone()]);
     var p=resample(pts,.11);
-    // a low-frequency wander, so the line reads as drawn rather than plotted
-    var sd=(strokeSeed++)*7.31;
-    for(var q=0;q<p.length;q++){
-      var u=q*0.13+sd;
-      p[q].x+=Math.sin(u*0.57+1.3)*0.030+Math.sin(u*1.73)*0.015;
-      p[q].z+=Math.cos(u*0.61+2.4)*0.030+Math.cos(u*1.91+0.7)*0.015;
-    }
     var line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),ink(op===undefined?.9:op));
     line.frustumCulled=false; sheetGrp.add(line);
     strokes.push({view:view,obj:line,pts:p,n:p.length});
@@ -408,7 +382,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     return head;
   }
   function viewOpacity(i,o){
-    views[i].forEach(function(s){ s.obj.material.uniforms.uOp.value=s.obj.material.userData.base*o; });
+    views[i].forEach(function(s){ s.obj.material.opacity=s.obj.material.userData.base*o; });
   }
   drawView(1,1);
 
@@ -451,17 +425,14 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
       uniforms:{ uOp:{value:baseOp}, uSweep:{value:9999}, uBuild:{value:-9999}, uDim:{value:1},
         uCol:{value:new THREE.Color(0xecebe6)}, uFog:{value:new THREE.Color(VOID)},
         uNear:{value:30}, uFar:{value:110} },
-      vertexShader:['varying float vLX,vD,vP;','void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0);',
-        ' vP=fract(sin(dot(position,vec3(12.9898,78.233,37.719)))*43758.5453);',
+      vertexShader:['varying float vLX,vD;','void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0);',
         ' vLX=position.x; vD=-mv.z; gl_Position=projectionMatrix*mv; }'].join(NL),
       fragmentShader:['uniform float uOp,uSweep,uBuild,uDim,uNear,uFar; uniform vec3 uCol,uFog;',
-        'varying float vLX,vD,vP;','void main(){',
+        'varying float vLX,vD;','void main(){',
         ' if(vLX<uBuild) discard;',
         ' float inked=smoothstep(uSweep-0.35,uSweep+1.7,vLX);',
         ' float band=exp(-pow((vLX-uSweep)*1.25,2.0));',
         ' float a=uOp*(0.40+0.60*inked)+band*0.55+exp(-pow((vLX-uBuild)*1.9,2.0))*0.75;',
-        ' float tooth=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);',
-        ' a*=(0.54+0.46*vP)*(0.78+0.22*tooth);',
         ' float fg=smoothstep(uNear,uFar,vD);',
         ' gl_FragColor=vec4(mix(uCol+vec3(band*0.8),uFog,fg), a*uDim*(1.0-fg*0.85)); }'].join('\n'),
       transparent:true, depthWrite:false
@@ -1058,8 +1029,8 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     // the drawing never leaves: it stays underneath as a ghost, so the
     // aircraft always has a ground, a scale and somewhere to be
     sheetGrp.visible=true;
-    var ghost=si<LIFT?1:(si===LIFT?lerp(1,.20,eOutCubic(cl((k-.22)/.42)))
-                        :(s.id==='beat'?.05:(si===NAME?.15:.20)));
+    var ghost=si<LIFT?1:(si===LIFT?lerp(1,.42,eOutCubic(cl((k-.22)/.42)))
+                        :(s.id==='beat'?.10:(si===NAME?.42:.42)));
     if(s.id==='draw'){
       var u=cl((x-.10)/(starts[LIFT]-.16));
       var dp=drawCurve(u);
@@ -1069,9 +1040,10 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
         focus.lerp(head,1-Math.exp(-dt/.85));   // long enough to ignore the hops
       }
     } else { drawView(0,1); viewOpacity(0,ghost); }
-    var paperOp=si<LIFT?1:(si===LIFT?1-eOutCubic(cl((k-.30)/.45)):0);
+    var paperFloor=s.id==='beat'?.10:.34;
+    var paperOp=si<LIFT?1:(si===LIFT?lerp(1,paperFloor,eOutCubic(cl((k-.30)/.45))):paperFloor);
     paperMat.uniforms.uOp.value=paperOp;
-    drawView(1,1); viewOpacity(1,Math.max(paperOp,ghost*.5));
+    drawView(1,1); viewOpacity(1,Math.max(paperOp,ghost*.8));
 
     if(head&&si<LIFT){
       tmpV.copy(head).project(camera);
