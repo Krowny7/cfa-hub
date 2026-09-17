@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star, GraduationCap, BookOpen, Check, X, Lightbulb, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import type { QuizQuestion } from "@/lib/types";
+import { QuestionPrompt } from "@/components/QuestionPrompt";
 
 export type ExamSetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -407,7 +408,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
 
       {/* Question */}
       <div className="card p-6">
-        <p className="mb-5 text-base font-medium leading-relaxed">{currentQ.prompt}</p>
+        <QuestionPrompt text={currentQ.prompt} className="mb-5 text-base font-medium leading-relaxed" />
         <div className="grid gap-2">
           {currentQ.choices.map((choice, ci) => {
             const isSelected = selectedChoice === ci;

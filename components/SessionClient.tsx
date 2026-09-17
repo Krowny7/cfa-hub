@@ -8,6 +8,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { saveAnswerResult } from "@/lib/session-stats";
 import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
 import type { QuizQuestion, Flashcard, AwardXpResult } from "@/lib/types";
+import { QuestionPrompt } from "@/components/QuestionPrompt";
 
 export type SetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -550,7 +551,7 @@ export function SessionClient({
           )}
 
           <div className="flex items-start justify-between gap-3">
-            <p className="text-base font-medium leading-relaxed">{currentQ.prompt}</p>
+            <QuestionPrompt text={currentQ.prompt} className="text-base font-medium leading-relaxed" />
             {isOfficial && (
               <span className="badge badge-shared shrink-0">{t("session.officialBadge")}</span>
             )}

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { StatusMsg } from "@/components/StatusMsg";
 import type { QuizQuestion, AwardXpResult } from "@/lib/types";
+import { QuestionPrompt } from "@/components/QuestionPrompt";
 
 // Chargé uniquement pour le propriétaire (voir isOwner plus bas) : les
 // formulaires de création/édition/import et leurs dépendances (TopicSelector)
@@ -183,9 +184,7 @@ export function QuizSetView({
               {questionIndex + 1}/{questions.length}
             </div>
 
-            <div className="mt-2 whitespace-pre-wrap text-base font-medium">
-              {current.prompt}
-            </div>
+            <QuestionPrompt text={current.prompt} className="mt-2 text-base font-medium leading-relaxed" />
 
             <div className="mt-4 grid gap-2">
               {current.choices.map((choice, idx) => {

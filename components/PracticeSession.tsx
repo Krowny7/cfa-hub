@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPICS, TOPIC_LABELS, topicLabel, trophyTier } from "@/lib/practiceTopics";
+import { QuestionPrompt } from "@/components/QuestionPrompt";
 
 type ActiveQuestion = { id: string; position: number; prompt: string; choices: string[] };
 
@@ -381,7 +382,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                               {rev.map((q, i) => (
                                 <div key={q.question_id} className={`rounded-lg border-l-2 bg-white/[0.02] p-3 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
                                   <div className="text-[10px] text-muted mb-1">Q{i + 1} · {q.topic ?? "?"}</div>
-                                  <div className="text-xs font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
+                                  <QuestionPrompt text={q.prompt} className="text-xs font-medium break-words" compact />
                                   <div className="mt-2 grid gap-1">
                                     {q.choices.map((c, ci) => (
                                       <div key={ci} className={`rounded-lg border px-2 py-1.5 text-xs ${
@@ -516,7 +517,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
             {review.map((q, i) => (
               <div key={q.question_id} className={`card p-4 border-l-2 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
                 <div className="text-xs text-muted mb-1">Q{i + 1}</div>
-                <div className="text-sm font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
+                <QuestionPrompt text={q.prompt} className="text-sm font-medium break-words" compact />
                 <div className="mt-3 grid gap-1.5">
                   {q.choices.map((c, ci) => (
                     <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
@@ -590,9 +591,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       {current && (
         <div className="card p-5">
           <div className="text-xs text-muted mb-2">Question {idx + 1}</div>
-          <div className="text-base font-medium whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {current.prompt}
-          </div>
+          <QuestionPrompt text={current.prompt} className="text-base font-medium break-words [overflow-wrap:anywhere] leading-relaxed" />
           <div className="mt-4 grid gap-2">
             {current.choices.map((c, ci) => {
               const picked = answers[idx] === ci;

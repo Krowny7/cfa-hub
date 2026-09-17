@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { ClipboardList, Trophy, XCircle, AlertTriangle, Check, X, Copy, ClipboardCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
+import { QuestionPrompt } from "@/components/QuestionPrompt";
 
 // Reçu pendant l'examen — jamais correct_index/explanation (voir
 // migration_mock_exam_secure_submit.sql, correction entièrement serveur).
@@ -260,7 +261,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
             {review.map((q, i) => (
               <div key={q.question_id} className={`card p-4 border-l-2 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
                 <div className="text-xs text-muted mb-1">Q{i + 1}</div>
-                <div className="text-sm font-medium whitespace-pre-wrap break-words">{q.prompt}</div>
+                <QuestionPrompt text={q.prompt} className="text-sm font-medium break-words" compact />
                 <div className="mt-3 grid gap-1.5">
                   {q.choices.map((c, ci) => (
                     <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
@@ -330,9 +331,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
       {current && (
         <div className="card p-5">
           <div className="text-xs text-muted mb-2">Question {idx + 1}</div>
-          <div className="text-base font-medium whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {current.prompt}
-          </div>
+          <QuestionPrompt text={current.prompt} className="text-base font-medium break-words [overflow-wrap:anywhere] leading-relaxed" />
           <div className="mt-4 grid gap-2">
             {current.choices.map((c, ci) => {
               const picked = answers[idx] === ci;
