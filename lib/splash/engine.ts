@@ -70,18 +70,6 @@ const CSS = `#rl-splash{ position:fixed; inset:0; z-index:200;
     line-height:1.55; color:var(--dim); opacity:0; }
 #rl-splash .sub b { color:var(--paper); font-weight:500; }
 #rl-splash .title.on .sub { animation:rlRise .8s cubic-bezier(.2,.8,.2,1) .95s both; }
-#rl-splash .title.on .cta { animation:rlRise .8s cubic-bezier(.2,.8,.2,1) 1.15s both; }
-#rl-splash .cta { margin:clamp(20px,3.2vh,34px) 0 0; }
-#rl-splash .pill { display:inline-flex; align-items:center; gap:10px;
-  background:transparent; color:var(--paper); border:1px solid rgba(236,235,230,.42);
-  border-radius:999px; padding:12px 22px; font-family:'DM Mono',monospace; font-size:11px;
-  letter-spacing:.15em; text-transform:uppercase; white-space:nowrap; opacity:0;
-  pointer-events:none; transform:translateY(10px);
-  transition:opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1),
-    background .3s ease, color .3s ease, border-color .3s ease; }
-#rl-splash .pill.on { opacity:1; transform:none; cursor:pointer; pointer-events:auto; }
-#rl-splash .pill.on:hover { transform:translateY(-2px); background:var(--paper);
-  color:#0b0b0c; border-color:var(--paper); }
 @keyframes rlRise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
 #rl-splash .fadeout { position:absolute; inset:0; background:var(--void); pointer-events:none; opacity:0; }
 #rl-splash .flash { position:absolute; inset:0; background:#fff; pointer-events:none; opacity:0; }
@@ -127,7 +115,6 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     '    <p class="word" data-w="LOBBY"></p>',
     '    <div class="rule"></div>',
     '    <p class="sub"><b>La maîtrise s’assemble, pièce par pièce.</b></p>',
-    '    <div class="cta"><button class="pill" type="button">Entrer <span aria-hidden="true">&rarr;</span></button></div>',
     "  </div>",
     '  <div class="flash"></div>',
     '  <div class="fadeout"></div>',
@@ -141,7 +128,6 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
   var penEl = root.querySelector(".pen");
   var skipEl = root.querySelector(".skip");
   var titleEl = root.querySelector(".title");
-  var pillEl = root.querySelector(".pill");
   var flashEl = root.querySelector(".flash");
   var fadeEl = root.querySelector(".fadeout");
 
@@ -759,13 +745,9 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
   })();
 
   (function sensors(){
-    var gs=[];
-    // a slimmer probe and a single flush sensor: the IRST and the gun port
-    // only read as clutter at this scale
-    gs.push(tubeX([[6.30,.034],[6.75,.044],[7.20,.034],[7.40,.018]],.24,.34,10));
-    gs.push(tubeX([[5.42,.03],[5.30,.085],[5.10,.085],[4.98,.04]],.30,-.24,14));
-    gs.push(box(.46,.22,.05,-3.10,.78,0));                                          // spine blade
-    IDX.sensors=addPart(gs,matDark,null);
+    // only the dorsal blade survives: the nose probe and sensor were small
+    // enough to read as specks rather than as parts
+    IDX.sensors=addPart([box(.46,.22,.05,-3.10,.78,0)],matDark,null);
   })();
 
   // Nothing is revealed by draw order any more: every part is live from the
@@ -987,7 +969,7 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     drawView(0,1); viewOpacity(0,0); sheetGrp.visible=false; paperMat.uniforms.uOp.value=0;
     setAll('uBuild',-9999); setAll('uSweep',-9999); setAll('uDim',.74);
     plane.position.y=2.40; plane.rotation.set(-.06,0,.18); dust.material.opacity=.34;
-    titleEl.classList.add('on'); pillEl.classList.add('on');
+    titleEl.classList.add('on');
     place(NAME,.5,0,1,null,9); allocRT(); renderFrame(0);
     reduceTimer=window.setTimeout(function(){ sceneEl.classList.add('gone'); onDone(); },2600);
     return dispose;
@@ -995,7 +977,6 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
 
   allocRT();
   function enter(){ if(entering<0) entering=performance.now(); }
-  pillEl.addEventListener('click',enter);
   skipEl.addEventListener('click',enter);
 
   var start=performance.now(), prev=start, lastShot=-1;
@@ -1022,7 +1003,6 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
     if(si!==lastShot){
       lastShot=si; if(s.cut) rigReady=false;      // snap: a glide is not a cut
       titleEl.classList.toggle('on',si===NAME);
-      pillEl.classList.toggle('on',si===NAME);
     }
 
     var head=null;
