@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ContentSetCreator } from "@/components/ContentSetCreator";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { ContentListPage } from "@/components/ContentListPage";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { normalizeScope, normalizeView, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
-import type { Profile } from "@/lib/types";
 import type { ContentSetRow } from "@/components/ContentListPage";
 
 type FlashcardRow = ContentSetRow & {
@@ -34,8 +32,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
 
   const admin = createAdminClient();
 
-  const [{ data: profileData }, setsRes, systemRes, systemFoldersRes] = await Promise.all([
-    supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
+  const [setsRes, systemRes, systemFoldersRes] = await Promise.all([
     (async () => {
       let query = supabase
         .from("flashcard_sets")
@@ -58,8 +55,6 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
     admin.from("library_folders").select("name").eq("kind", "flashcards").ilike("name", "%(Système)%"),
   ]);
 
-  const activeGroupId =
-    (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
   const system = (systemRes.data ?? []) as unknown as FlashcardRow[];
   const systemIds = new Set(system.map((s) => s.id));
   const systemFolderNames = (systemFoldersRes.data ?? []).map((f) => f.name as string);
@@ -102,15 +97,6 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       itemUnit="set"
       systemCount={system.length}
       continueReviewingSlot={<ContinueReviewing />}
-      creatorSlot={
-        <ContentSetCreator
-          activeGroupId={activeGroupId}
-          table="flashcard_sets"
-          shareTable="flashcard_set_shares"
-          folderKind="flashcards"
-          i18nPrefix="flashcards"
-        />
-      }
       systemSlot={
         <>
           <p className="text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>

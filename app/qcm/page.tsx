@@ -3,12 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
-import { ContentSetCreator } from "@/components/ContentSetCreator";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { ContentListPage } from "@/components/ContentListPage";
 import { FolderBlocks } from "@/components/ContentFolderBlocks";
 import { normalizeScope, normalizeView, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
-import type { Profile } from "@/lib/types";
 import type { ContentSetRow } from "@/components/ContentListPage";
 
 type OfficialRow = ContentSetRow & {
@@ -35,8 +33,7 @@ export default async function QcmPage({ searchParams }: PageProps) {
 
   const admin = createAdminClient();
 
-  const [{ data: profileData }, setsRes, officialRes, systemFoldersRes] = await Promise.all([
-    supabase.from("profiles").select("active_group_id").eq("id", user.id).maybeSingle(),
+  const [setsRes, officialRes, systemFoldersRes] = await Promise.all([
     (async () => {
       let query = supabase
         .from("quiz_sets")
@@ -59,8 +56,6 @@ export default async function QcmPage({ searchParams }: PageProps) {
     admin.from("library_folders").select("name").eq("kind", "quizzes").ilike("name", "%(Système)%"),
   ]);
 
-  const activeGroupId =
-    (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
   const official = (officialRes.data ?? []) as unknown as OfficialRow[];
   const officialIds = new Set(official.map((s) => s.id));
   const systemFolderNames = (systemFoldersRes.data ?? []).map((f) => f.name as string);
@@ -103,15 +98,6 @@ export default async function QcmPage({ searchParams }: PageProps) {
       itemUnit="QCM"
       systemCount={official.length}
       continueReviewingSlot={<ContinueReviewing kind="qcm" basePath="/qcm" />}
-      creatorSlot={
-        <ContentSetCreator
-          activeGroupId={activeGroupId}
-          table="quiz_sets"
-          shareTable="quiz_set_shares"
-          folderKind="quizzes"
-          i18nPrefix="qcm"
-        />
-      }
       systemSlot={
         <>
           <p className="text-xs text-white/55">{t(locale, "qcm.officialXpNote")}</p>

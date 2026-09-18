@@ -67,6 +67,35 @@
     @apply transition hover:bg-white/[0.06];
   }
 
+  /* Écho de la table à dessin de l'écran d'accueil (choix DA "Feuille de
+     route") : titre en serif élégant, libellés techniques en mono, coins
+     de planche sur les blocs qui servent de point d'entrée (Bibliothèque,
+     Entraînement). À utiliser avec parcimonie — c'est une signature, pas
+     un style par défaut. */
+  .font-display {
+    font-family: var(--font-display), Georgia, serif;
+  }
+
+  .kicker {
+    font-family: var(--font-mono-kicker), ui-monospace, monospace;
+    @apply text-[11px] uppercase tracking-[0.12em] text-white/40;
+  }
+
+  .plate {
+    @apply relative;
+  }
+  .plate::before,
+  .plate::after {
+    content: "";
+    @apply absolute w-[10px] h-[10px] border-blue-400/70;
+  }
+  .plate::before {
+    @apply -top-px -left-px border-t-2 border-l-2;
+  }
+  .plate::after {
+    @apply -bottom-px -right-px border-b-2 border-r-2;
+  }
+
   .card-soft {
     @apply rounded-2xl border border-white/10 bg-white/[0.025];
   }

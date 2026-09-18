@@ -1,10 +1,26 @@
 import "./globals.css";
+import { Fraunces, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { TopBar } from "@/components/TopBar";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Splash } from "@/components/Splash";
 import { getLocale } from "@/lib/i18n/server";
+
+// Écho de la planche technique de l'écran d'accueil : titres en serif
+// élégant (Fraunces), libellés techniques en mono (IBM Plex Mono).
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-display",
+  display: "swap",
+});
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono-kicker",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Ranked Lobby",
@@ -15,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
 
   return (
-    <html lang={locale} className="dark" suppressHydrationWarning>
+    <html lang={locale} className={`dark ${fraunces.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-neutral-950 text-white antialiased">
         {/* Hides the first paint until we know whether the splash plays. */}
         <script

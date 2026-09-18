@@ -68,7 +68,7 @@ export function ContentListPage({
   displayItems: ContentSetRow[];
   itemUnit: string;
   continueReviewingSlot: ReactNode;
-  creatorSlot: ReactNode;
+  creatorSlot?: ReactNode;
   systemSlot?: ReactNode;
   systemCount: number;
 }) {
@@ -84,16 +84,21 @@ export function ContentListPage({
       {/* Reprendre où on en était — priorité visuelle sur la création */}
       {continueReviewingSlot}
 
-      {/* Header: title + creator toggle */}
-      <details>
-        <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">
-          <h1 className="text-xl font-semibold tracking-tight">{t(locale, titleKey)}</h1>
-          <span className="btn btn-secondary shrink-0 text-sm">
-            + {locale === "fr" ? "Créer" : "Create"}
-          </span>
-        </summary>
-        <div className="mt-3 card p-4">{creatorSlot}</div>
-      </details>
+      {/* Header — la création de contenu communautaire est désactivée :
+          seul le contenu Système (seedé depuis le code) est publié ici. */}
+      {creatorSlot ? (
+        <details>
+          <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">
+            <h1 className="text-xl font-semibold tracking-tight">{t(locale, titleKey)}</h1>
+            <span className="btn btn-secondary shrink-0 text-sm">
+              + {locale === "fr" ? "Créer" : "Create"}
+            </span>
+          </summary>
+          <div className="mt-3 card p-4">{creatorSlot}</div>
+        </details>
+      ) : (
+        <h1 className="text-xl font-semibold tracking-tight">{t(locale, titleKey)}</h1>
+      )}
 
       {/* Système vs Communautaire — même style visuel que les onglets de
           scope juste en dessous (soulignement), pour une hiérarchie

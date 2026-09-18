@@ -2,21 +2,13 @@ import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { SidebarNav } from "@/components/SidebarNav";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
-import {
-  Timer,
-  BookOpen,
-  Layers,
-  ClipboardList,
-  Users,
-  Settings,
-  LayoutDashboard,
-  GraduationCap,
-  Trophy,
-  BookMarked,
-  FileStack,
-  Target,
-} from "lucide-react";
+import { BookOpen, Users, Settings, LayoutDashboard, Target } from "lucide-react";
 
+// Nav réduite à l'essentiel : Bibliothèque (Fiches + Flashcards) et
+// Entraînement (QCM + Mocks officiels + Entraînement ciblé + Examens blancs)
+// regroupent ce qui occupait 8 entrées auparavant. Session et Examen sont
+// masqués (retirés d'ici) sans être supprimés — leurs pages et routes
+// restent intactes.
 export async function Sidebar() {
   const locale = await getLocale();
   const { user } = await getSessionUserWithProfile();
@@ -26,39 +18,9 @@ export async function Sidebar() {
   const sections = [
     {
       items: [
-        {
-          href: "/dashboard",
-          label: t(locale, "nav.dashboard"),
-          icon: <LayoutDashboard size={16} />,
-        },
-        {
-          href: "/session",
-          label: t(locale, "nav.session"),
-          icon: <Timer size={16} />,
-          highlight: true,
-        },
-        {
-          href: "/exam",
-          label: t(locale, "nav.exam"),
-          icon: <GraduationCap size={16} />,
-        },
-      ],
-    },
-    {
-      label: t(locale, "nav.sectionContent"),
-      items: [
+        { href: "/dashboard", label: t(locale, "nav.dashboard"), icon: <LayoutDashboard size={16} /> },
         { href: "/library", label: t(locale, "nav.library"), icon: <BookOpen size={16} /> },
-        { href: "/flashcards", label: t(locale, "nav.flashcards"), icon: <Layers size={16} /> },
-        { href: "/qcm", label: t(locale, "nav.qcm"), icon: <ClipboardList size={16} /> },
-        { href: "/official-exams", label: t(locale, "nav.officialMocks"), icon: <FileStack size={16} /> },
-        { href: "/fiches", label: t(locale, "nav.fiches"), icon: <BookMarked size={16} /> },
-        { href: "/practice", label: t(locale, "nav.practice"), icon: <Target size={16} /> },
-      ],
-    },
-    {
-      label: t(locale, "nav.sectionSocial"),
-      items: [
-        { href: "/mock-exams", label: t(locale, "nav.mockExams"), icon: <Trophy size={16} /> },
+        { href: "/entrainement", label: t(locale, "nav.entrainement"), icon: <Target size={16} /> },
         { href: "/people", label: t(locale, "nav.people"), icon: <Users size={16} /> },
       ],
     },
