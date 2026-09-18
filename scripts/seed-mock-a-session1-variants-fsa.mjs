@@ -1,5 +1,13 @@
 // Variantes (2 par question) pour "Mock A — Session 1 — Analyse des États
 // Financiers".
+//
+// Règle de conception : une variante ne rejoue pas l'énoncé d'origine avec
+// d'autres chiffres. Pour chaque question source on produit
+//   (a) un ANGLE DIFFÉRENT — on inverse l'inconnue, on compare deux cas, on
+//       diagnostique une erreur, ou on applique le concept ailleurs ;
+//   (b) une MONTÉE EN DIFFICULTÉ — une étape de plus, un repère retiré, ou la
+//       combinaison de deux notions.
+// Les distracteurs correspondent à des erreurs réellement commises.
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Mocks Officiels (Système)";
@@ -9,315 +17,440 @@ const QUIZ_SETS = [
     title: "Mock A — Session 1 — Analyse des États Financiers — Variantes",
     difficulty: 2,
     questions: [
-      // Q28 — unearned revenue
+      // ---- Q28 — produits constatés d'avance ------------------------------
+      // (a) angle : que se passe-t-il quand le produit EST livré
       [
-        "A company receives a payment in advance for consulting services to be performed over the next 12 months, starting next fiscal year. Ignoring income taxes, the company would recognize in the current fiscal year an increase in:",
-        ["assets and revenue.", "assets and liabilities.", "liabilities and revenue."],
+        "A publisher previously recorded a customer's annual subscription payment entirely as unearned revenue (a liability). When the publisher delivers the first of four quarterly issues, it should recognize:",
+        [
+          "a decrease in the liability and an increase in cash, both equal to one-quarter of the total payment.",
+          "a decrease in the liability and an increase in revenue, both equal to one-quarter of the total payment.",
+          "no accounting entry until all four issues have been delivered.",
+        ],
         1,
-        "Cash received in advance for services to be delivered later is recorded as an asset (cash) and a liability (unearned revenue) — no revenue is recognized until the service is actually performed, which happens in future periods.",
+        "As each issue is delivered, the publisher has earned one-quarter of what it was paid in advance, so it reduces the unearned revenue liability and recognizes that amount as revenue. The cash was already received and recorded as an asset when the subscription was paid, so delivery does not create a new cash entry — it converts a liability into recognized revenue.",
       ],
+      // (b) difficulté : deux situations opposées dans la même question
       [
-        "A software company collects a one-year license fee in cash upfront, with the license period beginning next quarter. Ignoring taxes, at the moment cash is received the company should recognize an increase in:",
-        ["cash (an asset) and unearned revenue (a liability).", "cash and revenue.", "unearned revenue and revenue."],
+        "A consulting firm (1) delivers services in December but will not invoice or collect cash until January, and (2) receives a cash retainer in December for services it will deliver in January. Ignoring income taxes, the accounting effects in December are, respectively:",
+        [
+          "an increase in liabilities and revenue; an increase in assets and revenue.",
+          "an increase in assets and liabilities; an increase in assets and revenue.",
+          "an increase in assets and revenue; an increase in assets and liabilities.",
+        ],
+        2,
+        "Situation (1) is accrued revenue: the service has been earned, so an account receivable (asset) and revenue are recognized even though no cash has changed hands yet. Situation (2) is unearned revenue: cash (asset) has been received but the service has not been performed, so a liability is recorded and no revenue is recognized until the work is delivered. The two situations are mirror images of each other, which is exactly what makes them easy to mix up.",
+      ],
+
+      // ---- Q30 — actifs incorporels : modèle du coût ou de la réévaluation ---
+      // (a) angle : contraste avec les US GAAP
+      [
+        "Under US GAAP, intangible assets acquired outside of a business combination are most likely reported using the:",
+        ["cost model or fair value model.", "cost model only.", "cost model or revaluation model."],
+        1,
+        "Unlike IFRS, which permits a revaluation model for intangible assets with an active market, US GAAP does not allow upward revaluation of intangible assets — they are reported at cost, less accumulated amortization and any impairment. The revaluation option is specifically an IFRS feature.",
+      ],
+      // (b) difficulté : amortissement et réévaluation ne s'excluent pas
+      [
+        "Under IFRS, a company applies the revaluation model to an intangible asset with a finite useful life. Which of the following is most accurate regarding this asset?",
+        [
+          "The asset is no longer amortized once the revaluation model is adopted.",
+          "The revaluation model may only be applied to intangible assets with an indefinite useful life.",
+          "The asset continues to be amortized over its useful life, in addition to periodic revaluation to fair value.",
+        ],
+        2,
+        "Choosing the revaluation model changes how the asset's carrying amount is subsequently measured — periodically adjusted to fair value — but it does not suspend amortization for an asset with a finite useful life; the two mechanics operate side by side. The revaluation model is available for both finite- and indefinite-life intangibles, provided an active market exists to establish fair value.",
+      ],
+
+      // ---- Q36 — Sarbanes–Oxley -------------------------------------------
+      // (a) angle : quel organisme fait quoi
+      [
+        "Under the Sarbanes–Oxley Act, which body was created specifically to oversee the auditors of public companies, operating under the SEC's supervision?",
+        [
+          "The Financial Accounting Standards Board (FASB).",
+          "The Public Company Accounting Oversight Board (PCAOB).",
+          "The International Accounting Standards Board (IASB).",
+        ],
+        1,
+        "The PCAOB was created directly by the Sarbanes–Oxley Act of 2002 to oversee the auditors of public companies, and it in turn operates under the SEC's supervision. The FASB sets US GAAP and the IASB sets IFRS — neither was created by, nor is specifically tasked with enforcing, Sarbanes–Oxley.",
+      ],
+      // (b) difficulté : deux obligations distinctes, gestion et auditeur
+      [
+        "A company's CFO signs a certification, required under the Sarbanes–Oxley Act, personally attesting to the effectiveness of the company's internal control over financial reporting. Which of the following best describes the external auditor's role with respect to this certification?",
+        [
+          "The external auditor bears no responsibility related to internal control, only to the financial statements themselves.",
+          "The external auditor's role is limited to checking the certification for internal consistency, not to testing the controls themselves.",
+          "The external auditor must independently confirm the effectiveness of the internal control described in the certification.",
+        ],
+        2,
+        "Sarbanes–Oxley requires both a management certification and a separate external auditor confirmation of the effectiveness of internal control over financial reporting — the two obligations run in parallel rather than one relying on or replacing the other. It is not enough for the CFO alone to attest; the auditor must independently test and confirm the controls.",
+      ],
+
+      // ---- Q38 — estimer les achats --------------------------------------
+      // (a) angle : inverser — retrouver le stock initial
+      [
+        "A company's cost of sales was €500,000 and its purchases during the period were €520,000. If ending inventory was €80,000, beginning inventory was closest to:",
+        ["€20,000.", "€60,000.", "€100,000."],
+        1,
+        "Rearranging purchases = cost of sales + ending inventory − beginning inventory gives beginning inventory = €500,000 + €80,000 − €520,000 = €60,000. €100,000 comes from flipping the formula's signs (purchases − cost of sales + ending inventory); €20,000 ignores the ending inventory term entirely (purchases − cost of sales).",
+      ],
+      // (b) difficulté : partir de la marge brute, pas du coût des ventes
+      [
+        "A retailer had revenue of €900,000 and a gross profit margin of 40%. During the period, its inventory decreased by €30,000. The retailer's purchases during the period were closest to:",
+        ["€510,000.", "€540,000.", "€570,000."],
         0,
-        "The cash received creates an asset, matched by a liability (unearned/deferred revenue) since the license period — and thus the earning of that revenue — hasn't started yet. Revenue is recognized later, as the license period elapses.",
+        "Cost of sales is revenue × (1 − gross margin) = €900,000 × 60% = €540,000. Since inventory decreased, part of what was sold came out of existing stock rather than new purchases, so purchases = cost of sales − decrease in inventory = €540,000 − €30,000 = €510,000. €540,000 uses cost of sales directly and ignores the inventory change; €570,000 adds the decrease instead of subtracting it.",
       ],
-      // Q30 — intangible assets IFRS
+
+      // ---- Q42 — variation des bénéfices non distribués --------------------
+      // (a) angle : inverser — retrouver les dividendes
       [
-        "Under IFRS, a company may subsequently measure its intangible assets using the:",
-        ["cost model only.", "cost model or the revaluation model.", "fair value model only."],
+        "A company's beginning retained earnings were €1,500 thousand, its net income for the year was €900 thousand, and its ending retained earnings were €1,900 thousand. If there are no other items affecting shareholders' equity, dividends declared and paid during the year (in € thousands) were closest to:",
+        ["400.", "500.", "900."],
         1,
-        "IFRS allows companies to use either the cost model or the revaluation model for intangible assets, unlike US GAAP, which permits only the cost model.",
+        "Ending retained earnings = beginning retained earnings + net income − dividends, so dividends = €1,500 + €900 − €1,900 = €500 thousand. €400 and €900 are simply other figures from the underlying identity substituted in the wrong place.",
       ],
+      // (b) difficulté : un dividende en actions s'ajoute au dividende en numéraire
       [
-        "Which of the following is true regarding subsequent measurement of intangible assets? Under US GAAP, companies:",
-        [
-          "may choose between the cost and revaluation models, just like under IFRS.",
-          "may use only the cost model, whereas IFRS also permits a revaluation model.",
-          "must use fair value through profit or loss.",
-        ],
-        1,
-        "US GAAP permits only the cost model for intangible assets. IFRS is more flexible, allowing either the cost model or a revaluation model.",
-      ],
-      // Q36 — Sarbanes-Oxley / SEC
-      [
-        "Which US regulatory body is responsible for overseeing the Public Company Accounting Oversight Board (PCAOB), created under the Sarbanes–Oxley Act?",
-        ["Financial Accounting Standards Board (FASB).", "Securities and Exchange Commission (SEC).", "International Accounting Standards Board (IASB)."],
-        1,
-        "The Sarbanes–Oxley Act of 2002 created the PCAOB to oversee auditors, and the SEC is responsible for carrying out the act's requirements and overseeing the PCAOB. FASB sets US GAAP standards, and IASB sets IFRS — neither oversees the PCAOB.",
-      ],
-      [
-        "Under the Sarbanes–Oxley Act, which of the following is required regarding a company's internal control over financial reporting?",
-        [
-          "Reporting is voluntary and only required following a financial restatement.",
-          "Management must report on its effectiveness, including external auditor confirmation.",
-          "Only the audit committee needs to review it internally, with no public reporting requirement.",
-        ],
-        1,
-        "The Sarbanes–Oxley Act requires management to report on the effectiveness of the company's internal control over financial reporting, including obtaining external auditor confirmation of that effectiveness — this is a mandatory public disclosure, not a voluntary or internal-only process.",
-      ],
-      // Q38 — purchases estimate
-      [
-        "A company's cost of sales is $650,000, its ending inventory is $120,000, and its beginning inventory is $95,000. Purchases for the period are closest to:",
-        ["$625,000.", "$650,000.", "$675,000."],
+        "A company's beginning retained earnings were €1,500 thousand and its ending retained earnings were €2,000 thousand. During the year it declared and paid a cash dividend of €400 thousand, and it also issued a stock dividend that reduced retained earnings by a further €150 thousand (with an offsetting increase to contributed capital). Net income for the year (in € thousands) is closest to:",
+        ["750.", "900.", "1,050."],
         2,
-        "Purchases = cost of goods sold + ending inventory − beginning inventory = $650,000 + $120,000 − $95,000 = $675,000. $650,000 ignores the change in inventory; $625,000 subtracts the inventory change in the wrong direction.",
+        "Ending retained earnings = beginning + net income − cash dividend − stock dividend, so net income = €2,000 − €1,500 + €400 + €150 = €1,050 thousand. €900 forgets the stock dividend's additional reduction to retained earnings entirely; €750 subtracts the stock dividend instead of adding it back when solving for net income.",
       ],
+
+      // ---- Q44 — application rétrospective ---------------------------------
+      // (a) angle : le cas opposé — un changement d'estimation
       [
-        "A company's cost of sales is €900,000, its ending inventory is €80,000, and its beginning inventory is €110,000. Purchases for the period are closest to:",
-        ["€870,000.", "€900,000.", "€930,000."],
+        "A company revises its estimate of the useful life of its equipment. This change should most likely be accounted for:",
+        [
+          "retrospectively, restating all prior periods presented.",
+          "prospectively, in the period of change and future periods only.",
+          "retrospectively, but only if the change is judged to be material.",
+        ],
+        1,
+        "A change in an accounting estimate — such as a revised useful life — is applied prospectively: depreciation going forward reflects the new estimate, but prior periods are not restated. Retrospective application (with prior periods restated) is reserved for changes in accounting policy, not changes in estimate.",
+      ],
+      // (b) difficulté : identifier d'abord le TYPE de changement
+      [
+        "A company previously expensed certain development costs as incurred. This year, after concluding that similar costs now meet the criteria for capitalization under the applicable accounting standard, it begins capitalizing them going forward, without restating prior years. This treatment is most likely:",
+        [
+          "correct, because a change in which recognition criteria are met is treated as a change in accounting estimate, applied prospectively.",
+          "incorrect, because this is a change in accounting policy and should be applied retrospectively, absent impracticality.",
+          "correct, because retrospective application is prohibited for expense recognition changes.",
+        ],
+        1,
+        "Changing how a type of cost is recognized — expensed versus capitalized — is a change in accounting policy, not a change in estimate, even though it was triggered by a reassessment of the facts. Accounting policy changes require retrospective application, restating prior periods as if the new policy had always been used, unless doing so is impracticable. Simply applying the new treatment going forward, as described, is the wrong treatment for this type of change.",
+      ],
+
+      // ---- Q45 — dépréciation des stocks : reprise ------------------------
+      // (a) angle : la reprise de dépréciation, IFRS contre US GAAP
+      [
+        "Which of the following is most accurate regarding the reversal of a previously recognized inventory write-down?",
+        [
+          "IFRS permits reversal, up to the amount of the original write-down; US GAAP prohibits reversal.",
+          "US GAAP permits reversal, up to the amount of the original write-down; IFRS prohibits reversal.",
+          "Both IFRS and US GAAP prohibit any reversal of a previously recognized write-down.",
+        ],
         0,
-        "Purchases = cost of goods sold + ending inventory − beginning inventory = €900,000 + €80,000 − €110,000 = €870,000. €900,000 ignores the change in inventory; €930,000 applies the inventory adjustment in the wrong direction.",
+        "Under IFRS, if the circumstances that caused an inventory write-down no longer exist, the write-down can be reversed, but only up to the original cost — the reversal cannot create a gain beyond that. US GAAP does not permit reversing an inventory write-down once it has been recognized, even if the inventory's value later recovers.",
       ],
-      // Q42 — retained earnings roll-forward
+      // (b) difficulté : appliquer la règle avec des chiffres
       [
-        "An analyst gathers the following information (in $ thousands) about a company: Beginning retained earnings 2,200; Ending retained earnings 3,000; Dividends declared and paid 500. If there are no other items affecting shareholders' equity, net income (in $ thousands) is:",
-        ["$300.", "$800.", "$1,300."],
-        2,
-        "Ending retained earnings = beginning retained earnings + net income − dividends. 3,000 = 2,200 + net income − 500, so net income = $1,300 thousand. $800 ignores dividends; $300 subtracts dividends twice.",
-      ],
-      [
-        "An analyst gathers the following information (in € thousands) about a company: Beginning retained earnings 4,000; Ending retained earnings 4,600; Dividends declared and paid 250. If there are no other items affecting shareholders' equity, net income (in € thousands) is:",
-        ["€350.", "€600.", "€850."],
-        2,
-        "Ending retained earnings = beginning retained earnings + net income − dividends. 4,600 = 4,000 + net income − 250, so net income = €850 thousand. €600 ignores dividends; €350 subtracts dividends twice.",
-      ],
-      // Q44 — retrospective application
-      [
-        "A change in depreciation method, applied prospectively and affecting only the current and future periods, is best classified as a change in:",
-        ["accounting policy, requiring retrospective restatement.", "accounting estimate.", "an error correction requiring restatement."],
+        "A company writes inventory down from €100,000 cost to €70,000 net realizable value in Year 1. In Year 2, net realizable value recovers to €95,000, still below the original €100,000 cost. Under IFRS, the inventory should be reported in Year 2 at:",
+        ["€70,000.", "€95,000.", "€100,000."],
         1,
-        "Changes in accounting estimate (such as a depreciation method change reflecting new information) are applied prospectively — only current and future financial statements are affected, with no restatement of prior periods.",
+        "IFRS allows the write-down to be reversed as net realizable value recovers, but the reversal is capped at the original cost. Since the recovered value of €95,000 is still below the €100,000 original cost, the full recovery is recognized: the inventory is reported at €95,000. €70,000 wrongly applies the US GAAP no-reversal rule; €100,000 wrongly caps the reversal at cost even though the actual recovered value is lower than cost.",
       ],
+
+      // ---- Q47 — comptabilité conservatrice ---------------------------------
+      // (a) angle : le cas opposé — une comptabilité agressive
       [
-        "Unless impractical, which type of accounting change requires prior-period financial statements to be restated as if the new method had always been used?",
-        ["A change in accounting estimate.", "A change in accounting policy.", "Neither type of change requires restatement."],
+        "A company capitalizes an expenditure that, under a stricter interpretation of the accounting standard, could reasonably have been expensed immediately — a choice that increases current-period reported income relative to that stricter alternative. This is most likely an example of:",
+        ["conservative accounting.", "aggressive accounting.", "a change in accounting estimate."],
         1,
-        "Changes in accounting policy are applied retrospectively (unless impractical), restating all periods presented as if the new policy had always applied. Changes in accounting estimate are instead applied prospectively, with no restatement.",
+        "Aggressive accounting choices increase current-period reported income and financial position relative to a more conservative alternative, often at the expense of later periods. Conservative accounting does the opposite — it decreases reported performance now, potentially boosting it later — and this is not a change in accounting estimate, since it reflects a policy choice about how to treat the expenditure, not a revised estimate.",
       ],
-      // Q45 — inventory NRV agricultural
+      // (b) difficulté : ce que devient l'écart l'année suivante
       [
-        "Which of the following inventory measurement practices is permitted under both IFRS and US GAAP?",
+        "A company makes conservative accounting choices that reduce its reported net income in Year 1 relative to a less conservative alternative. All else equal, this choice is most likely to have which effect on reported net income in Year 2, relative to that same less conservative alternative?",
         [
-          "Reversing a previously recognized inventory write-down back to original cost.",
-          "Valuing agricultural inventory (such as harvested crops) at net realizable value.",
-          "Defining market value as net realizable value less a normal profit margin.",
+          "Lower, since conservative accounting permanently reduces total lifetime income.",
+          "No effect, since accounting choices affect only the period in which they are made.",
+          "Higher, since some of the income deferred from Year 1 is recognized in Year 2.",
         ],
-        1,
-        "Both IFRS and US GAAP allow agricultural inventories to be valued at net realizable value. US GAAP generally does not allow reversal of inventory write-downs, and the 'NRV less normal profit margin' definition of market value is a US GAAP-specific concept, not an IFRS one.",
-      ],
-      [
-        "A company that harvests and sells agricultural produce may value its inventory at net realizable value:",
-        ["under US GAAP only.", "under IFRS only.", "under both IFRS and US GAAP."],
         2,
-        "Both accounting frameworks provide an exception allowing agricultural inventory to be measured at net realizable value, unlike the general inventory measurement rules that otherwise differ between the two frameworks.",
+        "Conservative and aggressive accounting choices mainly shift the timing of reported income between periods rather than changing the underlying economics of the business — income deferred by a conservative choice in Year 1 tends to show up as relatively higher reported income in Year 2. It is a common misconception that conservative accounting destroys income permanently; over the life of the business, total income is the same regardless of the accounting choices made along the way.",
       ],
-      // Q47 — conservative vs aggressive accounting
+
+      // ---- Q48 — DuPont et rendement des capitaux propres ------------------
+      // (a) angle : un autre levier, dans l'autre sens
       [
-        "A company that recognizes revenue later, and expenses earlier, than its economic reality would suggest — thereby decreasing current performance and potentially increasing performance in later periods — is most likely engaging in:",
-        ["aggressive accounting.", "conservative accounting.", "fraudulent accounting."],
-        1,
-        "Conservative accounting choices decrease reported performance and financial position in the current period, potentially increasing them in later periods — the opposite of aggressive accounting, which inflates current performance at the expense of later periods.",
-      ],
-      [
-        "Which of the following best describes 'aggressive' accounting choices?",
-        [
-          "Choices that decrease current reported performance and increase later reported performance.",
-          "Choices that increase current reported performance and financial position, potentially decreasing performance in later periods.",
-          "Choices that have no effect on the timing of reported performance.",
-        ],
-        1,
-        "Aggressive accounting choices increase a company's reported performance and financial position in the current period, at the potential cost of decreasing them in later periods — the mirror image of conservative accounting.",
-      ],
-      // Q48 — DuPont ROE component
-      [
-        "All else being equal, an increase in which of the following would most likely result in a higher return on equity (ROE)?",
-        ["Days of sales outstanding.", "The effective tax rate.", "Total asset turnover."],
+        "All else being equal, an increase in which of the following would most likely result in a lower return on equity (ROE)?",
+        ["Total asset turnover.", "Net profit margin.", "The tax rate."],
         2,
-        "Under the DuPont decomposition, ROE = tax burden × interest burden × EBIT margin × total asset turnover × leverage — an increase in any one component (holding others constant) raises ROE. An increase in days of sales outstanding lowers asset turnover (lowering ROE), and a higher effective tax rate lowers the tax burden component (also lowering ROE).",
+        "A higher tax rate lowers the tax burden ratio (net income ÷ pretax income) in the DuPont decomposition, which directly reduces ROE. An increase in total asset turnover or net profit margin, by contrast, raises ROE — both are components that move in the same direction as ROE, not the opposite direction.",
       ],
+      // (b) difficulté : identifier le facteur par élimination
       [
-        "All else being equal, a decrease in which of the following would most likely increase return on equity (ROE)?",
-        ["Days of sales outstanding (DSO).", "Total asset turnover.", "Financial leverage."],
+        "A company's five-factor DuPont decomposition shows the following from Year 1 to Year 2: tax burden unchanged, interest burden unchanged, EBIT margin unchanged, and total asset turnover unchanged. Over the same period, ROE fell from 18% to 15%. This decline is most likely explained by a decrease in the company's:",
+        ["financial leverage.", "net profit margin.", "asset turnover."],
         0,
-        "A lower DSO means faster collection of receivables, which increases total asset turnover — and, holding the other DuPont components constant, a higher asset turnover raises ROE. Decreasing total asset turnover or leverage directly would instead lower ROE.",
+        "The five-factor DuPont decomposition is tax burden × interest burden × EBIT margin × asset turnover × financial leverage. Four of the five factors are explicitly stated as unchanged, and net profit margin and asset turnover are already covered by the stated-unchanged EBIT margin and turnover terms — by elimination, the one remaining factor, financial leverage, must be the one that fell to explain the drop in ROE.",
       ],
-      // Q50 — organic growth
+
+      // ---- Q50 — croissance organique --------------------------------------
+      // (a) angle : retrouver la croissance organique à partir du total
       [
-        "A company's revenue increased due to higher unit sales volume and favorable price/mix changes, excluding any impact from acquisitions, divestitures, or currency movements. This increase is best described as:",
-        ["a currency translation effect.", "organic growth.", "inorganic (scope) growth."],
+        "A retailer's total revenue increased by 12% year over year. Of this, 3 percentage points came from newly acquired stores and 1 percentage point from favorable foreign exchange translation. The retailer's organic growth rate is closest to:",
+        ["9%.", "8%.", "12%."],
         1,
-        "Organic growth captures revenue changes attributable to volume and price/mix, shown separately from the impact of acquisitions/divestitures (scope change) and foreign exchange movements.",
+        "Organic growth excludes the effects of acquisitions/divestitures and foreign exchange translation, leaving only growth from existing operations at constant currency: 12% − 3% − 1% = 8%. 12% is total revenue growth without removing either adjustment; 9% removes only one of the two adjustments.",
       ],
+      // (b) difficulté : décomposer la croissance organique elle-même
       [
-        "Which of the following would NOT be included in a company's 'organic growth' figure?",
-        ["Higher unit sales volume.", "Favorable price/mix changes.", "Revenue added through a recent acquisition."],
+        "A company's total revenue grew 10% year over year, of which 2 percentage points came from an acquisition completed mid-year. Of the remaining organic growth, unit volume contributed 5 percentage points. The price/mix contribution to organic growth was closest to:",
+        ["5%.", "8%.", "3%."],
         2,
-        "Organic growth reflects only volume and price/mix effects. Revenue contributed by a recent acquisition is a scope change and is reported separately from organic growth, not included within it.",
+        "Organic growth is total growth less the acquisition contribution: 10% − 2% = 8%. Organic growth is itself the sum of volume and price/mix effects, so price/mix = 8% − 5% (volume) = 3%. 8% is the total organic growth rate, not the price/mix component alone; 5% is only the volume component.",
       ],
-      // Q51 — deferred tax liabilities
+
+      // ---- Q51 — passifs et actifs d'impôts différés ------------------------
+      // (a) angle : le cas inverse — un actif d'impôt différé
       [
-        "A deferred tax liability is most likely to arise when:",
+        "Deferred tax assets most likely arise when:",
         [
-          "the tax base of an asset exceeds its carrying value.",
-          "accounting (pretax) profit exceeds taxable income for the period.",
-          "an expense is permanently disallowed for tax purposes.",
+          "accounting (pretax) profit is greater than taxable income.",
+          "the tax base of an asset is less than its carrying value.",
+          "taxable income is greater than accounting (pretax) profit.",
+        ],
+        2,
+        "When taxable income exceeds accounting profit in a period, the company pays more tax now than its accounting income statement implies — that excess tax paid is recoverable in future periods, creating a deferred tax asset. Accounting profit exceeding taxable income is instead the condition that creates a deferred tax liability, and an asset's tax base being less than its carrying value (carrying value > tax base) also points to a deferred tax liability, not an asset.",
+      ],
+      // (b) difficulté : appliquer la règle à un cas concret
+      [
+        "A company recognizes a warranty expense and a corresponding liability of €50,000 for accounting purposes in the year of sale, but tax authorities do not allow the deduction until warranty claims are actually paid in cash, which occurs in a later year. In the year of sale, this temporary difference gives rise to a:",
+        [
+          "deferred tax liability, since accounting profit exceeds taxable income in the year of sale.",
+          "no deferred tax item, since the warranty liability itself is not a tax-deductible expense.",
+          "deferred tax asset, since the expense is recognized for accounting purposes before it is deductible for tax purposes.",
+        ],
+        2,
+        "The warranty expense reduces accounting profit in the year of sale, but the tax authorities do not yet allow the deduction, so taxable income that year is higher than accounting profit — the company effectively prepays tax on income it has already expensed for accounting purposes, and recovers that prepayment through lower taxable income when the claims are later paid. Describing this as accounting profit exceeding taxable income reverses the actual direction of the difference; and a temporary difference clearly does exist here, so 'no deferred tax item' is not correct either.",
+      ],
+
+      // ---- Q54 — BPA dilué, méthode du "if-converted" -----------------------
+      // (a) angle : un convertible réellement DILUTIF, pas anti-dilutif
+      [
+        "A company has net income of $200,000, a 15% tax rate, and a weighted average of 125,000 common shares outstanding. It also has a 6% convertible bond with a face value of $60,000, convertible into 5,000 common shares. The company's diluted EPS is closest to:",
+        ["$1.56.", "$1.60.", "$1.62."],
+        0,
+        "Basic EPS is $200,000 / 125,000 = $1.60. The after-tax interest saved if the bond converts is $60,000 × 6% × (1 − 15%) = $3,060, so if-converted diluted EPS is ($200,000 + $3,060) / (125,000 + 5,000) = $203,060 / 130,000 ≈ $1.56. Because this is below basic EPS, the convertible is genuinely dilutive and must be included — unlike a convertible whose if-converted EPS would exceed basic EPS, in which case it would be antidilutive and excluded. $1.60 wrongly ignores the convertible entirely; $1.62 adds the interest savings to net income but forgets to add the 5,000 shares to the denominator.",
+      ],
+      // (b) difficulté : filtrer un titre dilutif parmi deux candidats
+      [
+        "The same company (net income $200,000, 15% tax rate, 125,000 weighted average shares, basic EPS $1.60) also has two potentially dilutive securities outstanding: a 12% convertible bond, face value $60,000, convertible into 3,000 shares; and an 8% convertible bond, face value $50,000, convertible into 4,000 shares. The company's diluted EPS is closest to:",
+        ["$1.58.", "$1.60.", "$1.61."],
+        0,
+        "Each convertible must be screened separately before being combined. The 12% bond's after-tax interest saved is $60,000 × 12% × 0.85 = $6,120, an incremental $6,120 / 3,000 = $2.04 per share — well above basic EPS, so it is antidilutive and excluded. The 8% bond's after-tax interest saved is $50,000 × 8% × 0.85 = $3,400, an incremental $3,400 / 4,000 = $0.85 per share — below basic EPS, so it is dilutive and included: diluted EPS = ($200,000 + $3,400) / (125,000 + 4,000) ≈ $1.58. $1.60 ignores both convertibles; $1.61 mistakenly includes the antidilutive 12% bond instead of the dilutive 8% bond.",
+      ],
+
+      // ---- Q60 — ratios liés au ROE et au ROA ------------------------------
+      // (a) angle : retrouver l'actif moyen, pas les ratios eux-mêmes
+      [
+        "An analyst collects the following information about a company: net profit margin 4%, return on average assets 8%, return on average equity 16%, revenue €2,500,000. The company's average total assets are closest to:",
+        ["€625,000.", "€1,250,000.", "€2,500,000."],
+        1,
+        "Net income is revenue × net profit margin = €2,500,000 × 4% = €100,000, and average total assets = net income ÷ ROA = €100,000 / 8% = €1,250,000. €625,000 divides net income by ROE instead of ROA, which gives average equity, not average assets; €2,500,000 simply repeats revenue without any calculation.",
+      ],
+      // (b) difficulté : combiner deux étapes pour obtenir le levier financier
+      [
+        "Using the same company (net profit margin 4%, return on average equity 16%, revenue €2,500,000, and average total assets of €1,250,000), the company's financial leverage ratio (average assets ÷ average equity) is closest to:",
+        ["0.50.", "2.00.", "2.50."],
+        1,
+        "Net income is €2,500,000 × 4% = €100,000, so average equity = net income ÷ ROE = €100,000 / 16% = €625,000. Financial leverage = average assets ÷ average equity = €1,250,000 / €625,000 = 2.00. 0.50 inverts the ratio (equity ÷ assets instead of assets ÷ equity) — a genuinely different ratio that answers a different question.",
+      ],
+
+      // ---- Q62 — flux de trésorerie et ventes au comptant -------------------
+      // (a) angle : le cas inverse — une hausse du CFO
+      [
+        "A company's sales and net income are roughly unchanged year over year, but its cash flow from operations increased significantly. The company most likely experienced an increase in:",
+        [
+          "days of inventory on hand.",
+          "the proportion of sales made on a cash basis.",
+          "the average collection period for receivables.",
         ],
         1,
-        "When accounting profit exceeds taxable income, financial-accounting income tax expense exceeds income taxes actually payable, giving rise to a deferred tax liability. A higher tax base than carrying value creates a deferred tax asset instead, and permanently disallowed expenses create a permanent difference, not a deferred tax item.",
+        "If sales and net income are stable but more of that revenue is collected immediately in cash rather than on credit, cash flow from operations rises without any change to the income statement. A longer collection period or more inventory on hand would each tie up more cash, not less — both would tend to reduce, not increase, cash flow from operations.",
       ],
+      // (b) difficulté : écarter une explication concurrente
       [
-        "Which of the following situations would most likely give rise to a deferred tax liability rather than a deferred tax asset?",
+        "A company's sales and net income were roughly unchanged year over year, but cash flow from operations fell sharply. During the same year, the company extended significantly more trade credit to a large new customer, while its accounts payable turnover stayed unchanged. The most likely explanation for the decline in cash flow from operations is:",
         [
-          "The tax base of an asset exceeds its carrying value.",
-          "The carrying value of an asset exceeds its tax base.",
-          "An expense is never deductible for tax purposes under any circumstance.",
+          "a deterioration in payables management.",
+          "an increase in the cash conversion cycle driven solely by slower inventory turnover.",
+          "a decrease in the proportion of cash sales, driven by the new credit sales to the large customer.",
         ],
-        1,
-        "A carrying value greater than the tax base implies the company will pay more tax in the future relative to accounting income already recognized — creating a deferred tax liability. The reverse (tax base greater than carrying value) creates a deferred tax asset, and a permanently disallowed expense creates a permanent difference with no deferred tax effect.",
-      ],
-      // Q54 — diluted EPS if-converted
-      [
-        "Selected year-end data: Net income $300,000; Tax rate 20%; Weighted average shares outstanding 150,000; 10% bond convertible into 5,000 shares (potentially dilutive), face value $80,000. The diluted EPS is closest to:",
-        ["$1.89.", "$1.98.", "$2.04."],
-        1,
-        "Basic EPS = $300,000/150,000 = $2.00. After-tax interest addback on the convertible bond = $80,000 × 10% × (1 − 20%) = $6,400. Diluted EPS (if-converted method) = ($300,000 + $6,400) / (150,000 + 5,000) = $306,400/155,000 ≈ $1.98. $2.04 wrongly omits the extra shares from the denominator (and is invalid since diluted EPS can never exceed basic EPS); $1.89 wrongly subtracts, instead of adds, the after-tax interest.",
-      ],
-      [
-        "Selected year-end data: Net income $500,000; Tax rate 25%; Weighted average shares outstanding 200,000; 8% bond convertible into 8,000 shares (potentially dilutive), face value $150,000. The diluted EPS is closest to:",
-        ["$2.36.", "$2.45.", "$2.55."],
-        1,
-        "Basic EPS = $500,000/200,000 = $2.50. After-tax interest addback = $150,000 × 8% × (1 − 25%) = $9,000. Diluted EPS = ($500,000 + $9,000) / (200,000 + 8,000) = $509,000/208,000 ≈ $2.45. $2.55 wrongly omits the extra shares from the denominator (invalid, since diluted EPS can't exceed basic EPS); $2.36 wrongly subtracts the after-tax interest instead of adding it.",
-      ],
-      // Q60 — ROA/ROE/leverage/equity
-      [
-        "An analyst collects the following about a company: Net profit margin 5%; Return on average assets 10%; Return on average equity 20%; Revenue $3,000,000. The company's:",
-        ["total asset turnover is 3.", "financial leverage ratio is 4.", "average shareholders' equity is closest to $750,000."],
         2,
-        "Net profit = $3,000,000 × 5% = $150,000. Average shareholders' equity = net profit ÷ ROE = $150,000 ÷ 20% = $750,000. (For reference: average total assets = $150,000 ÷ 10% = $1,500,000, giving asset turnover of 2.0, not 3; leverage = ROE ÷ ROA = 20%/10% = 2.0, not 4.)",
+        "The new trade credit extended to a large customer directly points to a shift from cash sales toward credit sales, which increases receivables and reduces cash flow from operations even though revenue and net income are unaffected. Payables management is explicitly ruled out, since accounts payable turnover is stated as unchanged, and nothing in the scenario points to an inventory problem.",
       ],
+
+      // ---- Q66 — dépréciation des stocks et types de ratios -----------------
+      // (a) angle : quel type de ratio est aussi PÉNALISÉ
       [
-        "An analyst collects the following about a company: Net profit margin 6%; Return on average assets 12%; Return on average equity 18%; Revenue £4,000,000. The company's:",
-        ["total asset turnover is 3.", "financial leverage ratio is 2.0.", "average shareholders' equity is closest to £1,333,333."],
+        "Following an inventory write-down, which of the following ratio types is most likely negatively affected, compared to if the write-down had not occurred?",
+        ["Activity ratios.", "None; only the balance sheet is affected, not any ratios.", "Solvency ratios."],
         2,
-        "Net profit = £4,000,000 × 6% = £240,000. Average shareholders' equity = net profit ÷ ROE = £240,000 ÷ 18% ≈ £1,333,333. (For reference: average total assets = £240,000 ÷ 12% = £2,000,000, giving asset turnover of 2.0, not 3; leverage = ROE ÷ ROA = 18%/12% = 1.5, not 2.0.)",
+        "A write-down reduces both the current period's profit and the carrying amount of inventory, which reduces retained earnings and therefore equity — this worsens solvency ratios that compare debt to equity. Activity ratios such as inventory turnover actually improve, because the write-down shrinks the inventory (denominator) more than it changes the flow measure in the numerator; the write-down clearly does affect the income statement and multiple balance-sheet-based ratios, not just the balance sheet in isolation.",
       ],
-      // Q62 — cash flow decrease explained
+      // (b) difficulté : la direction ET le mécanisme d'un ratio d'activité précis
       [
-        "The following information is available about a company ($ millions): Year 2 sales $410.5, Year 1 sales $405.2; Year 2 net income $34.0, Year 1 net income $33.5; Year 2 cash flow from operations $18.0, Year 1 cash flow from operations $40.2. During Year 2, the company most likely experienced a significant decrease in:",
-        ["the level of inventory.", "the proportion of sales made on a cash basis.", "the proportion of interest-bearing debt relative to trade payables."],
-        1,
-        "Sales and net income are nearly unchanged, but cash flow from operations fell sharply — consistent with a shift toward more credit (and less cash) sales, which increases accounts receivable and reduces operating cash flow without changing reported income. A decrease in inventory or an increase in payables would instead have increased, not decreased, cash from operations.",
-      ],
-      [
-        "The following information is available about a company (€ millions): Year 2 sales 615.0, Year 1 sales 610.4; Year 2 net income 48.2, Year 1 net income 47.9; Year 2 cash flow from operations 22.5, Year 1 cash flow from operations 51.0. During Year 2, the company most likely experienced a significant decrease in:",
-        ["accounts payable turnover due to slower supplier payments.", "the proportion of sales made on a cash basis.", "the level of inventory."],
-        1,
-        "With sales and net income essentially flat but operating cash flow sharply lower, the most likely explanation is a shift toward more credit sales (fewer cash sales), which raises receivables and drags down operating cash flow. Slower supplier payments (higher payables) or lower inventory would each have increased, not decreased, operating cash flow.",
-      ],
-      // Q66 — inventory write-down and activity ratios
-      [
-        "Which type of financial ratio is most likely to be positively affected by an inventory write-down, compared to if the write-down had not occurred?",
-        ["Profitability ratios.", "Solvency ratios.", "Activity ratios."],
-        2,
-        "An inventory write-down reduces both profit and the carrying amount of inventory, which hurts profitability, liquidity, and solvency ratios. Activity ratios such as inventory turnover, however, are positively affected because the write-down shrinks the asset base (the ratio's denominator).",
-      ],
-      [
-        "An inventory write-down reduces both reported profit and the carrying value of inventory. What effect does this most likely have on the inventory turnover ratio?",
-        ["It decreases the ratio, since cost of goods sold falls too.", "It increases the ratio, since average inventory (the denominator) falls.", "It has no effect on the ratio."],
-        1,
-        "Inventory turnover = COGS ÷ average inventory. A write-down lowers average inventory (the denominator) more directly than it affects COGS in that period, so the ratio rises — a rare case where a write-down positively affects a ratio, even though it hurts profitability overall.",
-      ],
-      // Q68 — cash paid to suppliers
-      [
-        "An analyst gathers the following (€ millions): Cost of sales 600; Decrease in inventory 150; Increase in accounts payable 60. Cash paid to suppliers (€ millions) is:",
-        ["390.", "690.", "810."],
+        "A company writes down €2 million of obsolete inventory. All else equal, this write-down will most likely cause its inventory turnover ratio (cost of goods sold ÷ average inventory) to:",
+        [
+          "increase, because average inventory (the denominator) falls as a result of the write-down.",
+          "decrease, because the write-down reduces cost of goods sold while inventory stays the same.",
+          "remain unchanged, because a write-down does not affect either cost of goods sold or inventory.",
+        ],
         0,
-        "Purchases = cost of goods sold − decrease in inventory = €600m − €150m = €450m. Cash paid to suppliers = purchases − increase in accounts payable = €450m − €60m = €390m. €690m and €810m both wrongly ADD the inventory decrease instead of subtracting it.",
+        "The write-down reduces the carrying amount of inventory, shrinking the denominator of the inventory turnover ratio — and a smaller denominator on its own is enough to push the ratio up, regardless of exactly how the write-down expense is classified on the income statement. It is incorrect that a write-down leaves inventory unaffected: that reduction in the balance sheet carrying amount is the whole point of recognizing it.",
       ],
+
+      // ---- Q68 — trésorerie versée aux fournisseurs -------------------------
+      // (a) angle : inverser — retrouver la variation des dettes fournisseurs
       [
-        "An analyst gathers the following ($ millions): Cost of sales 720; Decrease in inventory 80; Increase in accounts payable 40. Cash paid to suppliers ($ millions) is:",
-        ["600.", "760.", "840."],
+        "A company's cost of sales was €800 million, and inventory decreased by €250 million during the year. If cash paid to suppliers was €450 million, the change in accounts payable was:",
+        [
+          "an increase of €100 million.",
+          "a decrease of €100 million.",
+          "an increase of €350 million.",
+        ],
         0,
-        "Purchases = cost of goods sold − decrease in inventory = $720m − $80m = $640m. Cash paid to suppliers = purchases − increase in accounts payable = $640m − $40m = $600m. $760m and $840m both wrongly add the inventory decrease instead of subtracting it.",
+        "Purchases = cost of sales − decrease in inventory = €800M − €250M = €550M. Cash paid to suppliers = purchases − increase in accounts payable, so the increase in accounts payable = €550M − €450M = €100M. €350M forgets to adjust cost of sales for the change in inventory before comparing it to cash paid; €100M with the wrong sign would imply payables fell even though less cash was paid out than was purchased, which is the opposite of what a payables increase means.",
       ],
-      // Q72 — goodwill / bargain purchase
+      // (b) difficulté : stock ET dettes fournisseurs évoluent ensemble
       [
-        "Under the acquisition method, if the purchase price paid for an acquired company is LESS than the fair value of its identifiable net assets, the acquirer should most likely record the difference as a:",
-        ["reduction to goodwill.", "gain reflected in profit or loss.", "increase to other comprehensive income."],
-        1,
-        "A purchase price below the fair value of identifiable net assets acquired is a 'bargain purchase' — the difference is recognized immediately as a gain in profit or loss, not smoothed through OCI or netted against goodwill (which can't be negative under the acquisition method).",
-      ],
-      [
-        "Under the acquisition method, the excess of the purchase price paid over the fair value of the identifiable net assets acquired is recorded as:",
-        ["an immediate expense in the income statement.", "goodwill, an intangible asset on the balance sheet.", "a reduction to retained earnings."],
-        1,
-        "When the purchase price exceeds the fair value allocated to identifiable assets and liabilities, the excess is recorded as goodwill, an intangible asset — not expensed immediately or charged against retained earnings.",
-      ],
-      // Q73 — IFRS pension OCI
-      [
-        "Under IFRS pension accounting, which component of the periodic change in the net pension asset or liability is recognized in other comprehensive income rather than profit or loss?",
-        ["Current service cost.", "Net interest expense or income.", "Remeasurements (actuarial gains and losses)."],
+        "A company's cost of sales was €900 million. During the year, inventory increased by €40 million and accounts payable decreased by €60 million. Cash paid to suppliers during the year was closest to:",
+        ["€880 million.", "€940 million.", "€1,000 million."],
         2,
-        "IFRS recognizes service cost and net interest expense/income in profit or loss as pension expense, while the third component — remeasurements, including actuarial gains and losses — is recognized in other comprehensive income.",
+        "A rising inventory level means the company bought more than it sold, so purchases = cost of sales + increase in inventory = €900M + €40M = €940M. Because accounts payable fell, the company paid out more cash than it purchased on credit that year, so cash paid to suppliers = purchases + decrease in accounts payable = €940M + €60M = €1,000M. €940M stops after computing purchases and forgets the payables adjustment; €880M applies both adjustments with the signs reversed.",
       ],
+
+      // ---- Q72 — écart d'acquisition sous la méthode de l'acquisition -------
+      // (a) angle : le cas inverse — une acquisition à prix avantageux
       [
-        "Which of the following pension cost components is reported as pension expense in profit or loss under IFRS, rather than in other comprehensive income?",
-        ["Actuarial gains and losses.", "Net interest expense or income on the net pension liability or asset.", "Remeasurement gains on plan assets."],
-        1,
-        "Net interest expense/income, along with current service cost, flows through profit or loss as pension expense under IFRS. Actuarial gains/losses and other remeasurements are instead recognized in other comprehensive income.",
+        "Under the acquisition method, if the purchase price of an acquired company is LESS than the fair value of the net identifiable assets acquired, the acquirer should record the difference as a:",
+        [
+          "gain recognized immediately in profit or loss (a bargain purchase gain).",
+          "reduction of goodwill on the balance sheet.",
+          "gain recognized in other comprehensive income.",
+        ],
+        0,
+        "A purchase price below the fair value of the net identifiable assets acquired is a bargain purchase, and the resulting gain is recognized immediately in profit or loss — not deferred, and not routed through other comprehensive income. There is no goodwill to reduce in this case, since goodwill only arises when the purchase price exceeds fair value, the opposite situation.",
       ],
-      // Q78 — held for use vs held for sale
+      // (b) difficulté : calculer l'écart d'acquisition à partir des composantes
       [
-        "A company plans to dispose of a group of long-lived assets through an exchange for other productive assets, rather than a sale. Until the exchange occurs, these assets should most likely be classified as:",
-        ["held for sale, with depreciation suspended.", "held for use, continuing to be depreciated.", "held for use, with depreciation suspended."],
-        1,
-        "Long-lived assets to be disposed of other than by sale (an exchange, abandonment, or spin-off) remain classified as held for use and continue to be depreciated until the disposal actually occurs — only assets to be disposed of BY SALE are classified as held for sale (with depreciation stopped).",
+        "An acquirer pays €500 million for a target company. The fair value of the target's identifiable assets is €560 million and the fair value of its identifiable liabilities assumed is €110 million. The acquirer should recognize:",
+        ["goodwill of €50 million.", "a bargain purchase gain of €50 million.", "goodwill of €560 million."],
+        0,
+        "The fair value of net identifiable assets is €560M − €110M = €450M. Since the €500M purchase price exceeds this by €50M, goodwill of €50M is recognized. Calling this a bargain purchase gain reverses which side is larger; using €560M as the benchmark forgets to net out the assumed liabilities.",
       ],
+
+      // ---- Q73 — retraite sous IFRS et autres éléments du résultat global ----
+      // (a) angle : ce qui passe en résultat net, pas en AERG
       [
-        "Long-lived assets that a company plans to abandon, rather than sell, are most appropriately classified — until abandonment — as:",
-        ["held for sale, with no further depreciation.", "held for use, with depreciation continuing.", "immediately written off to zero value."],
-        1,
-        "Assets to be disposed of by means other than a sale (such as abandonment) are classified as held for use until disposal and continue to be depreciated — the held-for-sale classification (which halts depreciation) applies only when the disposal method is an actual sale.",
+        "Under IFRS, which of the following components of the periodic change in the net pension asset or liability is recognized in profit or loss, rather than in other comprehensive income?",
+        [
+          "Employees' service cost.",
+          "Actuarial gains and losses.",
+          "Remeasurements of plan assets due to a change in the discount rate.",
+        ],
+        0,
+        "Service cost and net interest expense or income on the pension asset or liability are recognized in profit or loss as ordinary pension expense. Actuarial gains and losses and other remeasurements — including the effect of discount rate changes on the plan's assets or obligation — are instead recognized in other comprehensive income.",
       ],
-      // Q84 — FIFO vs weighted average, rising prices
+      // (b) difficulté : le sort ultérieur de ce montant en AERG
       [
-        "During a period of rising prices and stable or growing inventory quantities, a company using FIFO, compared to one using weighted average cost, will most likely report a:",
-        ["lower gross profit margin.", "higher inventory turnover ratio.", "longer cash conversion cycle."],
+        "Under IFRS, actuarial gains and losses on a defined benefit pension plan are recognized in other comprehensive income. In subsequent periods, these amounts are most likely:",
+        [
+          "never reclassified to profit or loss.",
+          "reclassified to profit or loss once a corridor threshold is exceeded.",
+          "amortized into profit or loss over employees' expected remaining service life.",
+        ],
+        0,
+        "Under IFRS, pension remeasurements recognized in other comprehensive income are never subsequently reclassified ('recycled') into profit or loss — they remain in accumulated other comprehensive income permanently. Amortizing deferred actuarial gains and losses into profit or loss through a corridor approach was a feature of older US GAAP practice, not the current IFRS treatment.",
+      ],
+
+      // ---- Q78 — actifs long terme destinés à être cédés ---------------------
+      // (a) angle : le cas normal — une vente à un tiers
+      [
+        "A company commits to a plan to sell a group of long-lived assets to an outside buyer through a normal sale within the next 12 months, and the assets meet all applicable criteria to be classified as held for sale. Until the sale occurs, the assets should be:",
+        [
+          "classified as held for use, with depreciation continuing.",
+          "immediately written off, since a sale has already been committed to.",
+          "classified as held for sale, with depreciation suspended.",
+        ],
         2,
-        "In rising prices, FIFO allocates a lower amount to cost of sales and a higher amount to ending inventory than weighted average cost — this means higher days of inventory on hand and a longer cash conversion cycle under FIFO, along with a HIGHER (not lower) gross margin and a LOWER (not higher) inventory turnover ratio relative to weighted average cost.",
+        "When assets meet the held-for-sale criteria in connection with a genuine sale to an outside party, they are reclassified as held for sale and depreciation stops, since the assets are no longer being used to generate value through ongoing operations — they are simply awaiting sale, generally at the lower of carrying amount and fair value less costs to sell. This is the case where held-for-sale treatment genuinely applies, as distinct from a disposal by spin-off, exchange, or abandonment, which keeps the depreciation running.",
       ],
+      // (b) difficulté : un autre mode de cession que la vente ou la scission
       [
-        "All else equal, during a period of rising prices and stable inventory quantities, a company using weighted average cost, compared to one using FIFO, will most likely report a:",
-        ["lower cost of goods sold.", "lower gross profit margin.", "higher ending inventory balance."],
+        "A manufacturer plans to abandon a production line — disposing of the related equipment other than by sale — within the next six months. Until the abandonment occurs, the equipment should most likely be:",
+        [
+          "classified as held for use, with depreciation continuing until disposal.",
+          "classified as held for sale, with depreciation suspended.",
+          "immediately derecognized, since the decision to abandon has already been made.",
+        ],
+        0,
+        "Held-for-sale classification, with depreciation suspended, applies specifically to assets that will be disposed of through a sale. Assets disposed of by other means — a spin-off, an exchange for other assets, or abandonment, as here — remain classified as held for use and continue to be depreciated right up until the disposal actually occurs, even once management has committed to the decision.",
+      ],
+
+      // ---- Q84 — coût moyen pondéré contre FIFO en période de hausse des prix ---
+      // (a) angle : l'effet sur la marge brute, pas sur le cycle de conversion
+      [
+        "All else being equal, during a period of rising prices and constant inventory quantities, a company using the weighted average cost method most likely reports a gross profit margin, relative to if it had used FIFO, that is:",
+        [
+          "lower, because weighted average cost of goods sold blends in some of the higher-cost recent purchases sooner than FIFO does.",
+          "higher, because weighted average defers recognizing higher-cost purchases in cost of goods sold.",
+          "the same, because gross margin is unaffected by the choice of inventory cost method.",
+        ],
+        0,
+        "FIFO matches the oldest, cheapest costs to cost of goods sold during rising prices, leaving the higher-cost recent purchases in ending inventory — this produces the lowest cost of goods sold and the highest gross margin among the common methods. Weighted average cost blends some of those higher recent costs into cost of goods sold immediately, producing a higher cost of goods sold and therefore a lower gross margin than FIFO.",
+      ],
+      // (b) difficulté : chiffrer le cycle de conversion de trésorerie
+      [
+        "Company A uses FIFO and, during a period of rising prices, reports days of inventory on hand (DOH) of 60, days of sales outstanding (DSO) of 45, and days of payables of 40. If Company A instead used weighted average cost — with DSO and days of payables unaffected by the cost-flow method, and DOH 8 days lower due to the higher inventory turnover under weighted average — its cash conversion cycle under weighted average would be closest to:",
+        ["57 days.", "65 days.", "73 days."],
+        0,
+        "The cash conversion cycle is DOH + DSO − days of payables. Under FIFO it is 60 + 45 − 40 = 65 days; under weighted average, DOH falls by 8 days to 52, giving 52 + 45 − 40 = 57 days. 65 days is simply the unchanged FIFO figure; 73 days adds the 8-day adjustment instead of subtracting it.",
+      ],
+
+      // ---- Q88 — perte de valeur (IAS 36) -----------------------------------
+      // (a) angle : quand la valeur d'utilité, pas la juste valeur, domine
+      [
+        "An analyst gathers the following information about an asset (in € thousands): carrying amount prior to impairment 80; present value of expected future cash flows (value in use) 58; fair value 70; costs to sell 5. The impairment loss (in € thousands) is:",
+        ["10.", "15.", "22."],
         1,
-        "In rising prices, weighted average cost allocates a higher amount to COGS (blending older, cheaper costs with newer, pricier ones less aggressively than FIFO keeps them separate) and a lower amount to ending inventory than FIFO — resulting in a lower gross profit margin, not a lower COGS or higher ending inventory, relative to FIFO.",
+        "The recoverable amount is the higher of fair value less costs to sell (€70 − €5 = €65) and value in use (€58); here that is €65. The impairment loss is carrying amount minus recoverable amount: €80 − €65 = €15. €10 uses fair value directly without subtracting costs to sell; €22 uses value in use alone (€80 − €58) instead of taking the higher of the two candidate measures.",
       ],
-      // Q88 — impairment loss
+      // (b) difficulté : remonter à la valeur comptable à partir de la perte
       [
-        "An analyst gathers the following (€ thousands) about a machine: Carrying amount prior to impairment 80; Present value of expected future cash flows 68; Fair value 75; Costs to sell 5. Impairment loss (€ thousands) is:",
-        ["5.", "10.", "12."],
+        "An asset's fair value is €70 thousand and estimated costs to sell are €6 thousand. Its value in use is €68 thousand. If the recognized impairment loss was €9 thousand, the asset's carrying amount prior to impairment (in € thousands) was:",
+        ["73.", "77.", "85."],
         1,
-        "Recoverable amount = higher of (fair value − costs to sell) and value in use = max(75 − 5 = 70, 68) = 70. Impairment loss = carrying amount − recoverable amount = 80 − 70 = 10. €5 wrongly omits costs to sell from the recoverable amount; €12 wrongly uses the lower, instead of the higher, of the two values.",
+        "The recoverable amount is the higher of fair value less costs to sell (€70 − €6 = €64) and value in use (€68); here that is €68. Since impairment loss = carrying amount − recoverable amount, carrying amount = €68 + €9 = €77. €73 wrongly uses €64 (fair value less costs to sell) as the recoverable amount instead of the higher value-in-use figure; €85 adds costs to sell instead of subtracting it when evaluating the fair-value-based candidate.",
       ],
+
+      // ---- Q89 — ratio de levier financier -----------------------------------
+      // (a) angle : inverser — retrouver l'actif total
       [
-        "An analyst gathers the following ($ thousands) about a machine: Carrying amount prior to impairment 120; Present value of expected future cash flows 95; Fair value 105; Costs to sell 8. Impairment loss ($ thousands) is:",
-        ["$15.", "$23.", "$25."],
-        1,
-        "Recoverable amount = higher of (fair value − costs to sell) and value in use = max(105 − 8 = 97, 95) = 97. Impairment loss = carrying amount − recoverable amount = 120 − 97 = 23. $15 wrongly omits costs to sell from the recoverable amount; $25 wrongly uses the lower, instead of the higher, of the two values.",
-      ],
-      // Q89 — financial leverage ratio
-      [
-        "An analyst gathers the following ($ millions) about a company: Total assets 900; Total liabilities 300; Total equity 600; Total debt 150. Based only on this information, the financial leverage ratio is:",
-        ["0.17.", "0.50.", "1.50."],
+        "A company's financial leverage ratio is 1.80 and its total equity is £500 million. The company's total assets are closest to:",
+        ["£278 million.", "£500 million.", "£900 million."],
         2,
-        "Financial leverage ratio = total assets ÷ total equity = 900 ÷ 600 = 1.50. 0.17 is (incorrectly) total debt ÷ total assets, and 0.50 is (incorrectly) total liabilities ÷ total equity — neither is the financial leverage ratio.",
+        "Financial leverage ratio = total assets ÷ total equity, so total assets = leverage ratio × total equity = 1.80 × £500M = £900M. £278M divides equity by the leverage ratio instead of multiplying, inverting the formula; £500M simply repeats the equity figure without applying the ratio at all.",
       ],
+      // (b) difficulté : distinguer la dette totale des passifs totaux
       [
-        "An analyst gathers the following (£ millions) about a company: Total assets 450; Total liabilities 90; Total equity 360; Total debt 50. Based only on this information, the financial leverage ratio is:",
-        ["0.11.", "0.25.", "1.25."],
-        2,
-        "Financial leverage ratio = total assets ÷ total equity = 450 ÷ 360 = 1.25. 0.11 is (incorrectly) total debt ÷ total assets, and 0.25 is (incorrectly) total liabilities ÷ total equity — neither is the financial leverage ratio.",
+        "Using the same company (total assets £600 million, total liabilities £120 million, total equity £480 million, total debt £60 million), the debt-to-equity ratio, using total debt rather than total liabilities, is closest to:",
+        ["0.125.", "0.25.", "1.25."],
+        0,
+        "Debt-to-equity uses interest-bearing debt specifically, not all liabilities: £60M / £480M = 0.125. 0.25 is the common mix-up of using total liabilities (£120M) instead of total debt in the numerator — liabilities include non-interest-bearing items such as accounts payable, which are not part of 'debt' in this ratio. 1.25 is the company's financial leverage ratio (assets ÷ equity), a different ratio entirely.",
       ],
     ],
   },
@@ -326,7 +459,7 @@ const QUIZ_SETS = [
 async function main() {
   const ownerId = await getOwnerId();
   const folderId = await ensureFolder(ownerId, FOLDER_NAME, "quizzes");
-  console.log("Variantes — Mock A Session 1 — FSA...");
+  console.log("Variantes — Mock A Session 1 — Analyse des États Financiers...");
   const total = await seedQuizSets({ ownerId, folderId, sets: QUIZ_SETS });
   console.log(`\n✅ Terminé. ${total} questions ajoutées.`);
 }
