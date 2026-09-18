@@ -14,7 +14,7 @@ type Doc = {
 };
 
 export function DocumentList({ docs }: { docs: Doc[] }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [openUrl, setOpenUrl] = useState<string | null>(null);
   const [openExternal, setOpenExternal] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export function DocumentList({ docs }: { docs: Doc[] }) {
                 {d.visibility.toUpperCase()}
                 {d.library_folders?.name ? ` • ${d.library_folders.name}` : ""}
                 {" • "}
-                {new Date(d.created_at).toLocaleString(locale === "fr" ? "fr-FR" : "en-US")}
+                {new Date(d.created_at).toLocaleString("fr-FR")}
               </div>
             </div>
             <button

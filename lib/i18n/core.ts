@@ -5,7 +5,7 @@ export type Locale = keyof typeof MESSAGES;
 export const DEFAULT_LOCALE: Locale = "fr";
 
 export function isLocale(value: unknown): value is Locale {
-  return value === "fr" || value === "en";
+  return value === "fr";
 }
 
 function getByPath(obj: unknown, path: string): string | undefined {

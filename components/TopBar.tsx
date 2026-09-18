@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { getLocale } from "@/lib/i18n/server";
-import { t } from "@/lib/i18n/core";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { DEFAULT_LOCALE, t } from "@/lib/i18n/core";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 
@@ -15,7 +13,7 @@ function initialsFromEmail(email: string | null | undefined) {
 }
 
 export async function TopBar() {
-  const locale = await getLocale();
+  const locale = DEFAULT_LOCALE;
   const { user, profile } = await getSessionUserWithProfile();
   const username = profile?.username ?? null;
   const avatarUrl = profile?.avatar_url ?? null;
@@ -29,8 +27,6 @@ export async function TopBar() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-
           {user ? (
             <>
               <Link

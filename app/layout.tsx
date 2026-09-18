@@ -5,7 +5,6 @@ import { TopBar } from "@/components/TopBar";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Splash } from "@/components/Splash";
-import { getLocale } from "@/lib/i18n/server";
 
 // Écho de la planche technique de l'écran d'accueil : titres en serif
 // élégant (Fraunces), libellés techniques en mono (IBM Plex Mono).
@@ -27,11 +26,9 @@ export const metadata = {
   description: "Your shared CFA study workspace"
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale} className={`dark ${fraunces.variable} ${plexMono.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={`dark ${fraunces.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-neutral-950 text-white antialiased">
         {/* Hides the first paint until we know whether the splash plays. */}
         <script
@@ -43,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               "setTimeout(function(){d.classList.remove('rl-booting');},6000);})();"
           }}
         />
-        <Providers initialLocale={locale}>
+        <Providers>
           {/* Ambient background */}
           <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
             <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_10%,rgba(59,130,246,0.18),transparent_45%),radial-gradient(700px_circle_at_85%_0%,rgba(16,185,129,0.12),transparent_40%)]" />
