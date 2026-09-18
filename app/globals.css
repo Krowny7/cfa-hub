@@ -100,6 +100,11 @@
     @apply rounded-2xl border border-white/10 bg-white/[0.025];
   }
 
+  .ghost-btn {
+    font-family: var(--font-mono-kicker), ui-monospace, monospace;
+    @apply text-[11px] uppercase tracking-[0.06em] text-blue-300 border border-blue-400/40 rounded-lg px-3.5 py-2 transition hover:bg-blue-500/10;
+  }
+
   /* Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50;

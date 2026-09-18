@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History, Sparkles, ChevronDown, ChevronUp, Pause, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
@@ -70,7 +71,14 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
 
   type Phase = "builder" | "ready" | "active" | "done";
   const [phase, setPhase] = useState<Phase>("builder");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Pré-sélectionne le thème passé en query param (ex: lien "S'entraîner sur
+  // X" depuis le panneau Points faibles du dashboard) — sans forcer le choix,
+  // l'utilisateur peut toujours l'enlever ou en ajouter d'autres.
+  const searchParams = useSearchParams();
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    const fromUrl = searchParams.get("topic");
+    return fromUrl && TOPICS.some((x) => x.key === fromUrl) ? new Set([fromUrl]) : new Set();
+  });
   const [format, setFormat] = useState<90 | 180>(90);
   const [questions, setQuestions] = useState<ActiveQuestion[]>([]);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
