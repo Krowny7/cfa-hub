@@ -1,4 +1,12 @@
 // Variantes (2 par question) pour "Mock A — Session 1 — Économie".
+//
+// Règle de conception : une variante ne rejoue pas l'énoncé d'origine avec
+// d'autres chiffres. Pour chaque question source on produit
+//   (a) un ANGLE DIFFÉRENT — on inverse l'inconnue, on compare deux cas, on
+//       diagnostique une erreur, ou on applique le concept ailleurs ;
+//   (b) une MONTÉE EN DIFFICULTÉ — une étape de plus, un repère retiré, ou la
+//       combinaison de deux notions.
+// Les distracteurs correspondent à des erreurs réellement commises.
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Mocks Officiels (Système)";
@@ -8,255 +16,296 @@ const QUIZ_SETS = [
     title: "Mock A — Session 1 — Économie — Variantes",
     difficulty: 2,
     questions: [
-      // Q29 — perfect competition optimal firm size
+      // ---- Q29 — taille optimale de la firme en concurrence pure --------
+      // (a) angle : le lien entre prix d'équilibre de long terme et coût minimum
       [
-        "Under perfect competition, in the long run, a firm's equilibrium output level converges to the point where average cost is:",
+        "Under perfect competition, in long-run equilibrium, the market price will converge to a level equal to firms':",
         [
-          "at its minimum on the long-run average total cost curve.",
-          "at its minimum on the short-run average variable cost curve.",
-          "above the minimum efficient scale, since firms retain some pricing power.",
+          "minimum long-run average total cost.",
+          "minimum short-run average variable cost.",
+          "long-run marginal revenue, which exceeds average cost by the amount of economic profit.",
         ],
         0,
-        "The minimum point on the long-run average total cost (LRAC) curve is the minimum efficient scale — the optimal firm size under perfect competition in the long run, since competitive pressure drives firms to that point rather than the short-run AVC curve, and no firm retains pricing power under perfect competition.",
+        "Free entry and exit drive economic profit to zero in the long run, so price settles where P = minimum long-run average total cost (LRAC) = marginal cost — the minimum efficient scale. The short-run AVC curve governs the shutdown decision, not the long-run price level, and long-run economic profit is zero by construction, so there is no gap between marginal revenue and average cost to speak of.",
       ],
+      // (b) difficulté : réaction de long terme à un choc de demande
       [
-        "The 'minimum efficient scale' in a perfectly competitive market refers to the:",
+        "A perfectly competitive industry is in long-run equilibrium when industry demand permanently increases. Assuming the industry is not subject to significant economies or diseconomies of scale at the industry level, the most likely long-run adjustment is that:",
         [
-          "output level that maximizes short-run profit.",
-          "output level that minimizes long-run average total cost.",
-          "smallest output level at which a firm can operate at all.",
+          "existing firms each expand output well beyond the minimum efficient scale, and price settles above minimum LRAC.",
+          "new firms enter, industry output rises mainly through more firms each producing at the minimum efficient scale, and price returns to minimum LRAC.",
+          "the number of firms stays fixed, and price permanently exceeds minimum LRAC because entry is not possible in perfect competition.",
         ],
         1,
-        "Minimum efficient scale is the output level at the minimum point of the long-run average total cost curve — the optimal (lowest-average-cost) firm size that perfectly competitive firms converge to in the long run, not simply the smallest viable output or a short-run profit-maximizing point.",
+        "Perfect competition assumes free entry, so a permanent rise in demand raises price and short-run profits, which attracts new entrants until economic profit is again zero. In the new long-run equilibrium each firm — new or existing — still produces at the minimum efficient scale (minimum LRAC), and the extra industry output comes from a larger number of firms rather than each firm growing past that efficient scale.",
       ],
-      // Q31 — HHI computation / vs concentration ratio
+
+      // ---- Q31 — HHI et ratio de concentration ---------------------------
+      // (a) angle : appliquer la formule du ratio de concentration, pas du HHI
       [
-        "A market has three firms with market shares of 40%, 35%, and 25%. The Herfindahl–Hirschman Index (HHI) for this market is closest to:",
-        ["0.345.", "0.625.", "3,450."],
-        0,
-        "HHI = 0.40² + 0.35² + 0.25² = 0.16 + 0.1225 + 0.0625 = 0.345. 0.625 wrongly combines the two largest firms' shares before squaring; 3,450 comes from squaring the raw percentage numbers (40²+35²+25²) without converting to decimals first.",
-      ],
-      [
-        "Compared to the concentration ratio, the Herfindahl–Hirschman Index (HHI) is generally considered a better measure of market concentration mainly because it:",
-        [
-          "accounts for the price elasticity of demand in the market.",
-          "gives more weight to larger firms by squaring market shares, capturing the effect of mergers among top incumbents.",
-          "explicitly considers the likelihood of new firms entering the market.",
-        ],
+        "A market has five firms with market shares of 35%, 25%, 20%, 12%, and 8%. The three-firm concentration ratio (CR3) for this market is closest to:",
+        ["60%.", "80%.", "92%."],
         1,
-        "By squaring each firm's market share before summing, the HHI is much more sensitive to changes among the largest incumbents (e.g., a merger between the top two firms) than the concentration ratio, which can barely move even after such a merger. Neither measure accounts for demand elasticity or the threat of entry.",
+        "CR3 sums the market shares of the three largest firms: 35% + 25% + 20% = 80%. 60% mistakenly adds only the two largest firms; 92% mistakenly includes a fourth firm (35% + 25% + 20% + 12%), confusing CR3 with CR4.",
       ],
-      // Q32 — real exchange rate
+      // (b) difficulté : combiner HHI, fusion et comparaison avec le CR
       [
-        "The real exchange rate of a currency, unlike the nominal exchange rate, is best described as:",
-        [
-          "an index used to assess a currency's real purchasing power and a country's competitiveness, not something quoted or traded in FX markets.",
-          "a rate directly quoted and traded by commercial banks in the interbank market.",
-          "always equal to the nominal exchange rate, adjusted only for interest rate differentials.",
-        ],
-        0,
-        "Real exchange rates are not quoted or traded in FX markets — they are analytical indexes used to gauge a currency's real purchasing power and an economy's international competitiveness, built by adjusting the nominal exchange rate for relative price levels (not interest rate differentials).",
-      ],
-      [
-        "A real exchange rate index for a country's currency can most appropriately be constructed:",
-        [
-          "only relative to the US dollar.",
-          "relative to a single foreign currency or a basket of foreign currencies, adjusted for relative price levels.",
-          "using nominal exchange rates only, without any price-level adjustment.",
-        ],
-        1,
-        "A real exchange rate can be built for the domestic currency relative to a single foreign currency or a trade-weighted basket of currencies, adjusting the nominal rate for the relative price levels (inflation differentials) between the countries involved — not simply the raw nominal rate.",
-      ],
-      // Q34 — forward points calculation
-      [
-        "An analyst gathers the following information: USD/GBP spot exchange rate 1.2500; USD 12-month risk-free rate 3.0%; GBP 12-month risk-free rate 1.0%. USD/GBP is the amount of USD per 1 GBP. The USD/GBP 12-month forward points are closest to:",
-        ["–248.", "25.", "248."],
+        "A market has five firms with shares of 35%, 25%, 20%, 12%, and 8%. The two largest firms merge into a single firm with a 60% share, while the other three firms' shares are unchanged. The percentage increase in the HHI caused by the merger is closest to:",
+        ["15%.", "17%.", "71%."],
         2,
-        "Forward rate = 1.2500 × (1.03/1.01) ≈ 1.2748. Forward points = (1.2748 – 1.2500) × 10,000 ≈ 248. Using the interest rates in the wrong order (foreign over domestic) gives ≈ –248; scaling by 1,000 instead of 10,000 gives ≈ 25.",
+        "HHI before the merger is 0.35² + 0.25² + 0.20² + 0.12² + 0.08² = 0.2458. After the merger it is 0.60² + 0.20² + 0.12² + 0.08² = 0.4208, an increase of (0.4208 – 0.2458) / 0.2458 ≈ 71%. 17% mistakes the absolute change in the index (0.1750) for a percentage; 15% is instead the percentage change in the three-firm concentration ratio (80% to 92%), which moves far less than the HHI — exactly the disadvantage of the concentration ratio that this merger illustrates.",
       ],
+
+      // ---- Q32 — taux de change réel -------------------------------------
+      // (a) angle : appliquer la formule plutôt que la définir
       [
-        "An analyst gathers the following information: CHF/GBP spot exchange rate 1.1500; CHF 12-month risk-free rate 0.8%; GBP 12-month risk-free rate 4.5%. CHF/GBP is the amount of CHF per 1 GBP. The CHF/GBP 12-month forward points are closest to:",
-        ["–407.", "–41.", "421."],
-        0,
-        "Forward rate = 1.1500 × (1.008/1.045) ≈ 1.1093. Forward points = (1.1093 – 1.1500) × 10,000 ≈ –407. Scaling by 1,000 instead of 10,000 gives ≈ –41; using the interest rates in the wrong order (foreign over domestic) gives a positive value of ≈ 421.",
-      ],
-      // Q40 — monetary transmission mechanism
-      [
-        "A central bank's policy rate change is most likely first transmitted through the economy via which of the following channels?",
-        ["Government budget deficits.", "Asset prices.", "The level of national household savings."],
+        "The nominal CAD/EUR exchange rate is 1.5000 (CAD per EUR). Canada's CPI is 108 and the Eurozone's CPI is 104, both indexed to the same base period. The real CAD/EUR exchange rate is closest to:",
+        ["1.5000.", "1.4444.", "1.5577."],
         1,
-        "A policy rate change works through the economy via four interrelated channels: bank lending rates, asset prices, agents' expectations, and exchange rates. Government budget deficits and the savings rate are outcomes further down the causal chain, not initial transmission channels.",
+        "The real exchange rate adjusts the nominal rate for relative price levels: real (d/f) = nominal (d/f) × CPI_f / CPI_d = 1.5000 × 104/108 ≈ 1.4444. 1.5000 simply ignores the price-level adjustment altogether; 1.5577 inverts the CPI ratio (CPI_d / CPI_f instead of CPI_f / CPI_d).",
       ],
+      // (b) difficulté : construire un indice sur un panier de devises
       [
-        "Which of the following is NOT one of the recognized channels through which a central bank's policy rate is transmitted through the economy?",
-        ["Government tax policy.", "Bank lending rates.", "Exchange rates."],
-        0,
-        "The recognized transmission channels are bank lending rates, asset prices, agents' expectations, and exchange rates — government tax policy is a fiscal policy tool, not a channel of monetary policy transmission.",
-      ],
-      // Q46 — fiscal/monetary policy mix and sector shares
-      [
-        "If wages and prices are rigid, which combination of policies most likely leads to an increase in the public sector's share of aggregate demand relative to the private sector?",
-        [
-          "Tight fiscal policy and easy monetary policy.",
-          "Easy fiscal policy and tight monetary policy.",
-          "Easy fiscal policy and easy monetary policy.",
-        ],
+        "An analyst constructs a trade-weighted real exchange rate index for a country's currency against two trading partners. Partner A carries a 60% trade weight and has a bilateral real exchange rate index of 98; Partner B carries a 40% trade weight and has a bilateral real exchange rate index of 106. The trade-weighted real effective exchange rate index is closest to:",
+        ["102.0.", "101.2.", "102.8."],
         1,
-        "An expansionary (easy) fiscal policy directly raises government spending's share of output, while a tight monetary policy raises interest rates and dampens private-sector borrowing and spending — together shifting the composition of aggregate demand toward the public sector. Tight fiscal + easy monetary does the opposite (private sector grows relatively), and easy + easy is highly expansionary for both sectors without a clear compositional shift.",
+        "A real exchange rate constructed relative to a basket of currencies is a weighted average of the bilateral real rates, using each partner's trade weight: (0.60 × 98) + (0.40 × 106) = 58.8 + 42.4 = 101.2. 102.0 uses a simple (unweighted) average of the two indexes instead of the trade weights; 102.8 applies the two trade weights to the wrong partners.",
       ],
+
+      // ---- Q34 — points de terme --------------------------------------
+      // (a) angle : inverser l'inconnue — retrouver un taux d'intérêt
       [
-        "Under rigid wages and prices, an easy fiscal policy combined with a tight monetary policy will most likely result in:",
-        [
-          "lower interest rates and private-sector-led growth.",
-          "higher aggregate output, higher interest rates, and a public sector that grows as a larger share of national income.",
-          "a shrinking public sector relative to GDP.",
-        ],
-        1,
-        "Expansionary fiscal policy raises output, while the accompanying tight monetary policy (to offset inflationary pressure) raises interest rates, crowding out some private investment — the net effect is higher output, higher rates, and government spending becoming a larger share of national income, not a shrinking public sector.",
-      ],
-      // Q49 — monopolistic competition output vs cost-minimizing level
-      [
-        "In monopolistic competition, a firm's long-run equilibrium output level, compared to the output level that minimizes average cost, is:",
-        ["higher.", "equal.", "lower."],
+        "An analyst gathers the following information: AUD/USD spot exchange rate 1.5000; AUD 12-month risk-free rate 4.0%; AUD/USD is the amount of AUD per 1 USD. The 12-month AUD/USD forward points are quoted at 220. The USD 12-month risk-free rate implied by this forward quote is closest to:",
+        ["5.5%.", "6.2%.", "2.5%."],
         2,
-        "Unlike perfect competition, monopolistically competitive firms reach long-run equilibrium at an output level below the cost-minimizing level — equilibrium sits at a higher point on the average cost curve (i.e., a lower output) than the minimum-efficient-scale output.",
+        "The forward rate is 1.5000 + 220/10,000 = 1.5220. Since the forward rate equals spot × (1 + r_AUD) / (1 + r_USD), solving gives 1 + r_USD = 1.5000 × 1.04 / 1.5220 ≈ 1.0250, so r_USD ≈ 2.5%. Putting the interest rates on the wrong side of the ratio (inverting which currency is domestic) gives ≈ 5.5%; simply adding the point differential (2.2%) to the AUD rate without accounting for the compounding relationship gives 6.2%.",
       ],
+      // (b) difficulté : calcul des points ET interprétation prime/décote
       [
-        "Unlike firms in perfect competition, firms in monopolistic competition operate in long-run equilibrium at a point where average cost is:",
+        "An analyst gathers the following information: CHF/USD spot exchange rate 0.9000; CHF 12-month risk-free rate 1.5%; USD 12-month risk-free rate 5.0%; CHF/USD is the amount of CHF per 1 USD. The 12-month CHF/USD forward points, and the resulting forward premium/discount on the USD against the CHF, are closest to:",
         [
-          "exactly at its minimum, just like in perfect competition.",
-          "above its minimum, since equilibrium output is below the cost-minimizing level.",
-          "below its minimum, since firms overproduce relative to demand.",
-        ],
-        1,
-        "Monopolistically competitive firms' long-run equilibrium sits at a higher point on the average cost curve than the minimum — i.e., they produce less than the output that would minimize average cost, unlike perfectly competitive firms, which converge exactly to that minimum.",
-      ],
-      // Q52 — tariffs/export subsidies and the budget deficit
-      [
-        "All else being equal, a government's budget deficit is most likely increased after the introduction of:",
-        ["a tariff on imported goods.", "an export subsidy.", "both a tariff and an export subsidy."],
-        1,
-        "An export subsidy is a payment made by the government for each unit exported, which increases government spending and widens the budget deficit. A tariff, by contrast, is a tax on imports that raises government revenue and would reduce the deficit, all else equal.",
-      ],
-      [
-        "Which of the following government actions is most likely to reduce a budget deficit, all else equal?",
-        [
-          "Introducing an export subsidy.",
-          "Imposing a tariff on imported goods.",
-          "Simultaneously imposing a tariff and introducing an export subsidy.",
-        ],
-        1,
-        "A tariff raises government revenue by taxing imports, reducing the budget deficit, all else equal. An export subsidy does the opposite (it's a government payment, widening the deficit); combining both makes the net effect ambiguous rather than clearly deficit-reducing.",
-      ],
-      // Q57 — expansionary fiscal policy example
-      [
-        "Which of the following is an example of expansionary fiscal policy?",
-        [
-          "A reduction in the central bank's policy interest rate.",
-          "A cut in personal income tax rates.",
-          "An increase in bank reserve requirements.",
-        ],
-        1,
-        "Cutting income tax rates is a fiscal policy tool aimed at boosting aggregate demand by raising households' after-tax income. Changing the policy rate or reserve requirements are monetary policy tools implemented by the central bank, not fiscal policy.",
-      ],
-      [
-        "Which of the following actions is a monetary policy tool, rather than a fiscal policy tool?",
-        [
-          "An increase in public infrastructure spending.",
-          "A cut in the corporate tax rate.",
-          "Open market purchases of government securities by the central bank.",
+          "–300, so USD trades at a forward premium against CHF.",
+          "310, so USD trades at a forward premium against CHF.",
+          "–300, so USD trades at a forward discount against CHF.",
         ],
         2,
-        "Open market operations (buying/selling government securities) are a core monetary policy tool used by the central bank to influence bank reserves and interest rates. Infrastructure spending and tax cuts are both fiscal policy tools implemented by the government.",
+        "Forward rate = 0.9000 × (1.015/1.05) = 0.8700, so forward points = (0.8700 – 0.9000) × 10,000 = –300. Under covered interest rate parity the currency with the higher interest rate (USD, at 5.0%) must trade at a forward discount to prevent arbitrage, which matches the negative points. Pairing –300 with 'premium' gets the sign of the interpretation backwards; +310 comes from putting the interest rates in the wrong order in the parity ratio, which would incorrectly suggest USD trades at a premium.",
       ],
-      // Q63 — neutral policy rate
+
+      // ---- Q40 — mécanisme de transmission monétaire ---------------------
+      // (a) angle : distinguer un canal d'un objectif final
       [
-        "The neutral policy rate for an economy is best described as the sum of the real trend rate of economic growth and the:",
-        ["short-term unemployment rate.", "long-term inflation target.", "current account balance as a share of GDP."],
-        1,
-        "Neutral rate = real trend growth rate + long-term inflation target. It is not directly a function of the unemployment rate or the current account balance, which are separate macroeconomic indicators.",
+        "Which of the following is most accurately described as an ultimate goal of monetary policy, rather than one of the channels through which a policy rate change is transmitted through the economy?",
+        ["Inflation.", "Bank lending rates.", "Exchange rates."],
+        0,
+        "The policy rate is transmitted through four interrelated channels: bank lending rates, asset prices, agents' expectations, and exchange rates. Inflation is not itself one of these channels — it is the ultimate macroeconomic outcome that the transmission mechanism, acting through those channels, is meant to influence.",
       ],
+      // (b) difficulté : identifier deux canaux à partir d'un scénario
       [
-        "A central bank estimates its economy's real trend growth rate at 2.0% and targets long-term inflation of 2.5%. The neutral policy rate is closest to:",
-        ["2.0%.", "2.5%.", "4.5%."],
-        2,
-        "Neutral rate = trend growth + inflation target = 2.0% + 2.5% = 4.5%. 2.0% and 2.5% each reflect only one of the two components, not their sum.",
-      ],
-      // Q74 — geopolitics financial vs economic tools
-      [
-        "With respect to geopolitics, which of the following is best described as a cooperative economic (rather than financial) tool?",
+        "A central bank raises its policy rate. As a result, banks raise the interest rates they charge on new mortgages and business loans, while at the same time the present value of equities and real estate falls because their expected cash flows are discounted at a higher rate. These two effects correspond, respectively, to which transmission channels?",
         [
-          "A multilateral trade agreement.",
-          "Free exchange of currencies across borders.",
-          "Unrestricted cross-border foreign direct investment flows.",
+          "Exchange rates; agents' expectations.",
+          "Agents' expectations; bank lending rates.",
+          "Bank lending rates; asset prices.",
+        ],
+        2,
+        "Higher rates on new loans is the bank lending rate channel acting directly. The fall in the present value of equities and real estate, driven by a higher discount rate applied to future cash flows, is the asset price channel. Agents' expectations and exchange rates are the other two channels, but neither matches the two effects described here.",
+      ],
+
+      // ---- Q46 — mix budgétaire/monétaire et parts sectorielles ---------
+      // (a) angle : diagnostiquer le mix de politiques à partir de son effet
+      [
+        "Wages and prices are rigid. Following a change in the fiscal-monetary policy mix, interest rates fall and the private sector's share of aggregate demand rises relative to the public sector's. This outcome is most consistent with:",
+        [
+          "tight fiscal policy combined with easy monetary policy.",
+          "easy fiscal policy combined with tight monetary policy.",
+          "easy fiscal policy combined with easy monetary policy.",
         ],
         0,
-        "Multilateral trade agreements and common markets are examples of cooperative economic tools among states. Free currency exchange and open cross-border investment flows are classified as cooperative financial tools instead.",
+        "A fiscal contraction reduces the public sector's claim on output, while an accompanying monetary easing lowers interest rates and stimulates private borrowing and spending — together shifting the composition of aggregate demand toward the private sector, exactly as described. Easy fiscal with tight monetary would do the opposite (the public sector's share rises, rates rise), and easy fiscal with easy monetary stimulates both sectors without a clear compositional shift toward the private sector.",
       ],
+      // (b) difficulté : combiner deux effets attendus (taux et composition)
       [
-        "Which of the following is best described as a cooperative financial tool between states, as opposed to an economic tool?",
+        "Wages and prices are rigid. A central bank pursues tight monetary policy while the government simultaneously runs an easy fiscal policy. Compared with a scenario of a neutral fiscal-monetary mix, this combination is most likely to result in interest rates that are ______ and a public-sector share of GDP that is ______.",
+        ["higher; lower.", "lower; higher.", "higher; higher."],
+        2,
+        "Tight monetary policy pushes interest rates higher than under a neutral stance, while easy fiscal policy raises government spending and/or cuts taxes, increasing the public sector's share of GDP. Both effects point the same way here: higher interest rates and a larger public-sector share, with the higher rates also crowding out some private investment along the way.",
+      ],
+
+      // ---- Q49 — concurrence monopolistique et coût moyen minimal --------
+      // (a) angle : comparer à la concurrence pure via la notion de surcapacité
+      [
+        "Compared with a perfectly competitive firm in long-run equilibrium, a monopolistically competitive firm in long-run equilibrium most likely produces at:",
         [
-          "A common market.",
-          "Allowing free exchange of currencies and foreign investment across borders.",
-          "A multilateral trade agreement.",
+          "a higher output, closer to the cost-minimizing scale.",
+          "a lower output, below the cost-minimizing scale — a situation described as excess capacity.",
+          "the same output, since both types of firms earn zero economic profit in the long run.",
         ],
         1,
-        "Cooperative financial tools include the free exchange of currencies across borders and allowing foreign investment. Common markets and multilateral trade agreements are instead classified as cooperative economic tools.",
+        "Because each monopolistically competitive firm faces a downward-sloping demand curve tangent to its average cost curve, long-run equilibrium occurs to the left of the minimum-average-cost point — firms produce less than the cost-minimizing output, a condition known as excess capacity. A perfectly competitive firm, by contrast, is pushed by competition exactly to the minimum of its average cost curve. Zero economic profit holds for both market structures, but it does not imply the same output level.",
       ],
-      // Q77 — globalization driver
+      // (b) difficulté : combiner la relation prix/coût marginal et le coût moyen
       [
-        "Globalization is primarily driven by cooperation among:",
+        "In long-run equilibrium under monopolistic competition, which of the following relationships most likely holds, where P is price, MC is marginal cost, and AC is average cost?",
         [
-          "national governments only, through political treaties.",
-          "non-state actors such as corporations, individuals, and organizations, through economic and financial cooperation.",
-          "international courts, through binding legal rulings.",
+          "P = MC = minimum AC, exactly as in perfect competition.",
+          "P = AC, but AC is above its minimum, and P > MC.",
+          "P < AC, and P = MC.",
         ],
         1,
-        "Globalization results from economic and financial cooperation, carried out mostly by non-state actors (corporations, individuals, organizations) — political cooperation/non-cooperation is a separate lens used mainly to analyze state (government) actors.",
+        "Zero economic profit in the long run requires P = AC, but because the firm's downward-sloping demand curve is tangent to the AC curve at an output below the minimum-cost point, that AC is above its minimum — the excess-capacity result. Because the demand curve slopes downward, marginal revenue lies below price at the profit-maximizing quantity, so P > MC as well, unlike the P = MC = minimum AC outcome that holds under perfect competition.",
       ],
+
+      // ---- Q52 — tarifs, subventions et déficit budgétaire ---------------
+      // (a) angle : appliquer le même principe à une subvention domestique
       [
-        "Which of the following best explains the primary driver of globalization?",
+        "Which of the following government actions is least likely to increase a budget deficit, all else equal?",
         [
-          "Political cooperation between national governments.",
-          "Military alliances between neighboring countries.",
-          "Economic and financial cooperation, carried out mostly by non-state actors.",
+          "Granting a subsidy to domestic exporters.",
+          "Imposing a tariff on imported steel.",
+          "Granting a subsidy to domestic producers competing with steel imports.",
+        ],
+        1,
+        "A tariff is a tax on imports and raises government revenue, all else equal reducing the deficit. A subsidy is a government payment regardless of whether it targets exporters or import-competing domestic producers — both are outlays that widen the deficit. The principle is the same as for export subsidies: it is the direction of the cash flow (revenue in versus payment out) that determines the effect on the deficit, not which industry receives it.",
+      ],
+      // (b) difficulté : combiner un tarif et une subvention et calculer l'effet net
+      [
+        "A government simultaneously imposes a new tariff on imported automobiles, expected to raise $2 billion in annual revenue, and introduces a new subsidy for domestic renewable-energy exporters, expected to cost $3 billion annually. All else equal, the net first-order effect on the government's budget deficit is most likely a:",
+        [
+          "$1 billion narrowing of the deficit.",
+          "$5 billion widening of the deficit.",
+          "$1 billion widening of the deficit.",
         ],
         2,
-        "Globalization is the result of economic and financial cooperation, carried out predominantly by non-state actors such as corporations, individuals, and organizations — not primarily a function of intergovernmental political cooperation or military alliances.",
+        "The tariff raises $2 billion in revenue, reducing the deficit by that amount, while the subsidy costs $3 billion, increasing the deficit; netting the two opposite-signed effects gives a $1 billion net widening (–$2 billion + $3 billion). Reversing the sign of the net effect gives a $1 billion narrowing; treating both changes as if they widened the deficit (instead of netting the tariff's offsetting effect) gives $5 billion.",
       ],
-      // Q79 — credit cycles vs business cycles
+
+      // ---- Q57 — politique budgétaire expansionniste -----------------------
+      // (a) angle : distinguer les effets attendus, pas seulement l'outil
       [
-        "Compared to business cycles, credit cycles tend to be:",
-        ["shorter, but similarly deep.", "identical in length, though less predictable.", "longer, and often deeper and sharper."],
-        2,
-        "Credit cycles tend to be longer, deeper, and sharper than business cycles — although business cycle length varies from peak to trough, the average credit cycle is typically found to be longer than the average business cycle.",
-      ],
-      [
-        "Which of the following statements about credit cycles is most accurate?",
+        "A government increases spending on infrastructure projects, funded by new borrowing, while the central bank holds its policy rate unchanged. All else equal, this policy combination is most likely to result in:",
         [
-          "Credit cycles always peak and trough at exactly the same time as business cycles.",
-          "Credit cycles are typically longer, deeper, and sharper than business cycles.",
-          "Credit cycles are generally shorter and milder than business cycles.",
+          "higher aggregate demand and a wider budget deficit, with no direct change in the monetary policy stance.",
+          "higher aggregate demand and a narrower budget deficit, because infrastructure spending pays for itself.",
+          "lower aggregate demand, because the new government borrowing crowds out private investment one-for-one.",
+        ],
+        0,
+        "New infrastructure spending funded by borrowing is a straightforward expansionary fiscal action: it raises aggregate demand and, since it is debt-financed rather than tax-financed, widens the budget deficit, while the unchanged policy rate means monetary policy is not directly altered. Infrastructure spending does not finance itself through the resulting activity, and crowding out of private investment is a partial, not typically a complete (one-for-one), offset.",
+      ],
+      // (b) difficulté : apparier deux politiques, l'une fiscale et l'une monétaire
+      [
+        "Which of the following pairs consists of one expansionary fiscal policy action and one expansionary monetary policy action?",
+        [
+          "An increase in the central bank's policy rate; a cut in corporate tax rates.",
+          "A reduction in government spending; an increase in bank reserve requirements.",
+          "An increase in transfer payments to households; a reduction in the central bank's policy rate.",
+        ],
+        2,
+        "Higher transfer payments to households is an expansionary fiscal action (it boosts disposable income and spending), and a lower policy rate is an expansionary monetary action (it lowers borrowing costs) — the pairing correctly matches one of each. The second option mismatches an expansionary fiscal action (a tax cut) with a contractionary monetary action (a rate hike); the third pairs two contractionary actions, one fiscal and one monetary.",
+      ],
+
+      // ---- Q63 — taux directeur neutre -------------------------------------
+      // (a) angle : inverser l'inconnue — retrouver la croissance tendancielle
+      [
+        "A central bank's estimated neutral policy rate is 5.0%, and the economy's long-term inflation target is 2.0%. The real trend rate of economic growth implied by these figures is closest to:",
+        ["2.5%.", "3.0%.", "7.0%."],
+        1,
+        "The neutral policy rate equals the real trend rate of growth plus the long-term inflation target, so the trend growth rate is 5.0% – 2.0% = 3.0%. 2.5% wrongly averages the two figures instead of subtracting; 7.0% wrongly adds them, which would only make sense if solving for the neutral rate itself rather than one of its components.",
+      ],
+      // (b) difficulté : combiner le calcul du taux neutre et le diagnostic de la politique
+      [
+        "An economy's real trend growth rate is 2.5% and its long-term inflation target is 2.0%. If the central bank's actual current policy rate is 3.0%, monetary policy is most likely:",
+        [
+          "restrictive (tight), because the policy rate exceeds the real trend growth rate.",
+          "accommodative (easy), because the policy rate is below the neutral policy rate.",
+          "neutral, because the policy rate is positive in real terms.",
         ],
         1,
-        "Credit cycles tend to run longer than business cycles and are often deeper and sharper in amplitude — they are related to, but distinct from, business cycles, and do not necessarily turn at the same points in time.",
+        "The neutral policy rate is 2.5% + 2.0% = 4.5%. Comparing the actual policy rate of 3.0% against that benchmark, the policy rate sits below the neutral rate, which characterizes monetary policy as accommodative (stimulative) rather than neutral or restrictive. Comparing the policy rate only to the trend growth rate, and ignoring the inflation-target component of the neutral rate, is the wrong benchmark for classifying the stance.",
       ],
-      // Q82 — expansionary fiscal policy least likely
+
+      // ---- Q74 — outils géopolitiques -------------------------------------
+      // (a) angle : appliquer la même taxonomie au pôle conflictuel
       [
-        "An expansionary fiscal policy is least likely to include an increase in:",
+        "With respect to geopolitics, freezing a foreign government's central bank reserves held domestically is best described as a:",
+        ["conflictual financial tool.", "cooperative financial tool.", "conflictual trade tool."],
+        0,
+        "Freezing another state's reserves operates on the financial dimension — the same dimension as the free exchange of currencies and open foreign investment — but at the conflictual rather than cooperative end of the spectrum, alongside actions such as sanctions and asset seizures. It is not a trade tool, since it does not restrict the flow of goods and services directly.",
+      ],
+      // (b) difficulté : évaluer deux appariements outil/catégorie à la fois
+      [
+        "Consider the following two statements about geopolitical tools:\nI. A multilateral free-trade agreement is a cooperative trade tool.\nII. Restricting a country's access to international payment systems is a conflictual financial tool.\nWhich of the statements is (are) correctly matched?",
+        ["Only I.", "Only II.", "Both I and II."],
+        2,
+        "A multilateral free-trade agreement is a cooperative tool operating on the trade dimension, matching statement I. Restricting access to international payment systems targets the flow of money rather than goods, so it operates on the financial dimension, and being a restriction rather than an opening, it sits at the conflictual end of that dimension — matching statement II as well. Both statements correctly pair the tool with its dimension (trade vs. financial) and its position (cooperative vs. conflictual).",
+      ],
+
+      // ---- Q77 — moteur de la mondialisation -------------------------------
+      // (a) angle : diagnostiquer le moteur à partir d'un exemple concret
+      [
+        "Over the past three decades, multinational corporations have built extensive cross-border supply chains largely independent of formal intergovernmental treaties. This trend most directly illustrates that globalization is primarily driven by:",
+        [
+          "non-state actors engaging in economic and financial cooperation.",
+          "national governments negotiating political treaties.",
+          "international organizations imposing binding regulations on member states.",
+        ],
+        0,
+        "Cross-border supply chains built by corporations, without requiring formal treaties between governments, exemplify the point that globalization results mainly from economic and financial cooperation carried out by non-state actors — companies, individuals, and organizations — rather than from intergovernmental political action.",
+      ],
+      // (b) difficulté : distinguer le moteur principal d'un facteur secondaire
+      [
+        "Globalization is primarily the result of economic and financial cooperation carried out by non-state actors. The degree of political cooperation among national governments, by contrast, is best described as a factor that primarily affects:",
+        [
+          "nothing, since political cooperation is irrelevant to the globalization process.",
+          "the fundamental driving force of globalization, superseding economic and financial cooperation.",
+          "the pace and sustainability of globalization, rather than being its fundamental driving force.",
+        ],
+        2,
+        "Political cooperation or non-cooperation between states operates alongside, but is distinct from, the economic and financial cooperation that fundamentally drives globalization; a favorable political climate can accelerate and sustain globalization, while political friction can slow or reverse it, without political cooperation itself being the primary engine of the process.",
+      ],
+
+      // ---- Q79 — cycles de crédit vs cycles économiques --------------------
+      // (a) angle : diagnostiquer le phénomène décrit
+      [
+        "An economist observes that over the past 15 years, swings in the availability and price of credit have been larger in amplitude and have persisted longer than the corresponding swings in real GDP growth. This observation is most consistent with the well-documented tendency of:",
+        [
+          "credit cycles to be longer, deeper, and sharper than business cycles.",
+          "credit cycles to be shorter and shallower than business cycles.",
+          "credit and business cycles to be perfectly synchronized in both length and amplitude.",
+        ],
+        0,
+        "This description matches the standard characterization of credit cycles relative to business cycles: credit cycles tend to run longer and to show sharper, deeper swings than the underlying business cycle, even though the two are related and interact with each other.",
+      ],
+      // (b) difficulté : tirer une implication logique de cette relation de durée
+      [
+        "Because credit cycles tend to be longer than business cycles, a single credit cycle will most likely:",
+        [
+          "always begin and end at exactly the same time as a single business cycle.",
+          "be entirely contained within a single phase (expansion or contraction) of one business cycle.",
+          "span more than one business cycle, so credit-cycle and business-cycle turning points need not coincide.",
+        ],
+        2,
+        "If a credit cycle typically lasts longer on average than a business cycle, then over its course the economy can pass through more than one shorter business-cycle expansion and contraction — meaning the peaks and troughs of the two cycles are not required to line up. The reverse claim, that a credit cycle fits inside a single phase of one (necessarily shorter) business cycle, is inconsistent with the premise that credit cycles are the longer of the two.",
+      ],
+
+      // ---- Q82 — politique budgétaire expansionniste, exclusion --------
+      // (a) angle : inverser vers le cas contractionniste
+      [
+        "A contractionary fiscal policy is least likely to include a reduction in:",
         ["personal income tax rates.", "government infrastructure spending.", "the fiscal budget deficit."],
         0,
-        "An expansionary fiscal policy means the government increases spending and/or cuts tax rates to boost aggregate demand — raising tax rates works against that goal. A rise in the budget deficit and in infrastructure spending are both consistent with (and typical of) an expansionary stance.",
+        "A contractionary fiscal policy aims to reduce aggregate demand through lower government spending and/or higher tax rates, so it would not include a reduction in tax rates — cutting tax rates is an expansionary, not contractionary, action. A shrinking budget deficit and reduced infrastructure spending are both hallmarks of a contractionary fiscal stance.",
       ],
+      // (b) difficulté : combiner deux mesures et calculer l'effet net
       [
-        "Which of the following would NOT typically be part of an expansionary fiscal policy stance?",
+        "A government cuts personal income tax rates, reducing annual tax revenue by $10 billion, while simultaneously cutting infrastructure spending by $6 billion. All else equal, the net first-order effect on the government's budget deficit, and the resulting overall fiscal stance, are most likely a:",
         [
-          "Increasing spending on public infrastructure.",
-          "Allowing the budget deficit to widen.",
-          "Raising the corporate tax rate.",
+          "$4 billion widening of the deficit, and a net expansionary stance, since the tax cut's effect dominates the spending cut's.",
+          "$16 billion widening of the deficit, since both changes increase the deficit.",
+          "$4 billion narrowing of the deficit, and a net contractionary stance.",
         ],
-        2,
-        "Raising the corporate tax rate reduces after-tax income and works against the goal of boosting aggregate demand — the opposite of an expansionary fiscal stance. Increased infrastructure spending and a wider deficit are both hallmarks of expansionary fiscal policy.",
+        0,
+        "The tax cut reduces revenue by $10 billion, widening the deficit, while the spending cut reduces outlays by $6 billion, narrowing it; netting the two opposite-signed effects gives a $4 billion net widening (+$10 billion – $6 billion). Since the deficit widens on net, the overall stance is mildly expansionary despite the spending cut. Treating both changes as adding to the deficit (instead of netting the spending cut's offsetting effect) gives $16 billion; reversing the sign of the net effect gives a $4 billion narrowing and the opposite (contractionary) conclusion.",
       ],
     ],
   },
