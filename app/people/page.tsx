@@ -131,7 +131,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     <div className="grid gap-4">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{t(locale, "people.title")}</h1>
+        <h1 className="font-display text-xl font-medium tracking-tight">{t(locale, "people.title")}</h1>
         <p className="mt-1 text-sm text-white/60">{t(locale, "people.subtitle")}</p>
       </div>
 

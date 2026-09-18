@@ -83,7 +83,7 @@ export function Sec({
 }) {
   return (
     <div className="mb-7">
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-faint mb-3.5">
+      <div className="flex items-center gap-1.5 kicker mb-3.5">
         {los && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-400/25">
             {los}
@@ -115,7 +115,7 @@ export function Reading({
           <span className="shrink-0 font-mono text-[11px] font-bold tracking-widest text-blue-300 bg-blue-500/15 border border-blue-400/30 px-2.5 py-1 rounded-md uppercase">
             {number}
           </span>
-          <h2 className="text-base font-semibold tracking-tight text-white">{title}</h2>
+          <h2 className="font-display text-base font-medium tracking-tight text-white">{title}</h2>
         </div>
       </div>
       {children}

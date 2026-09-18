@@ -26,7 +26,7 @@ export default async function SettingsPage() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{t(locale, "settings.title")}</h1>
+        <h1 className="font-display text-xl font-medium tracking-tight">{t(locale, "settings.title")}</h1>
         <p className="mt-1 text-sm text-white/60">{t(locale, "settings.subtitle")}</p>
       </div>
 

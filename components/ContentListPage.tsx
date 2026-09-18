@@ -89,7 +89,7 @@ export function ContentListPage({
       {creatorSlot ? (
         <details>
           <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-4">
-            <h1 className="text-xl font-semibold tracking-tight">{t(locale, titleKey)}</h1>
+            <h1 className="font-display text-xl font-medium tracking-tight">{t(locale, titleKey)}</h1>
             <span className="btn btn-secondary shrink-0 text-sm">
               + {locale === "fr" ? "Créer" : "Create"}
             </span>
@@ -97,7 +97,7 @@ export function ContentListPage({
           <div className="mt-3 card p-4">{creatorSlot}</div>
         </details>
       ) : (
-        <h1 className="text-xl font-semibold tracking-tight">{t(locale, titleKey)}</h1>
+        <h1 className="font-display text-xl font-medium tracking-tight">{t(locale, titleKey)}</h1>
       )}
 
       {/* Système vs Communautaire — même style visuel que les onglets de

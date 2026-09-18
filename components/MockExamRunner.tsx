@@ -144,7 +144,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
     return (
       <div className="card p-6 text-center">
         <ClipboardList size={36} className="mx-auto text-white/70" />
-        <h2 className="mt-3 text-xl font-semibold">Prêt à commencer ?</h2>
+        <h2 className="mt-3 font-display text-xl font-medium">Prêt à commencer ?</h2>
         <div className="mt-2 text-sm text-white/55">
           {questions.length} questions · {durationMinutes} minutes
         </div>

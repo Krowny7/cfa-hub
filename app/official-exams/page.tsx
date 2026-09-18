@@ -98,7 +98,7 @@ export default async function OfficialExamsPage() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Mocks Officiels</h1>
+        <h1 className="font-display text-xl font-medium tracking-tight">Mocks Officiels</h1>
         <p className="mt-1 text-sm text-white/55">
           Rejoue tes examens blancs officiels avec exactement les mêmes questions — en entier,
           ou filtré sur un seul thème pour retravailler un point faible en particulier.
@@ -112,8 +112,8 @@ export default async function OfficialExamsPage() {
       )}
 
       {examList.map((group) => (
-        <div key={group.exam} className="card p-5">
-          <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold">
+        <div key={group.exam} className="card plate p-5">
+          <div className="mb-3 flex items-center gap-1.5 font-display text-sm font-medium">
             <FileStack size={15} /> {group.exam}
           </div>
           <div className="grid gap-4">
@@ -121,7 +121,7 @@ export default async function OfficialExamsPage() {
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([sessionLabel, { topics, complete }]) => (
                 <div key={sessionLabel} className="rounded-xl border border-white/10 p-4">
-                  <div className="mb-2.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/50">
+                  <div className="mb-2.5 flex items-center gap-1.5 kicker">
                     <ListChecks size={13} /> {sessionLabel}
                   </div>
                   <div className="flex flex-wrap gap-2">

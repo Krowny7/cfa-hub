@@ -177,7 +177,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
         <Link href="/mock-exams" className="text-xs text-white/50 hover:text-white/80">
           ← Examens blancs
         </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight break-words">{exam.title}</h1>
+        <h1 className="mt-1 font-display text-xl font-medium tracking-tight break-words">{exam.title}</h1>
         {exam.description && (
           <p className="mt-1 text-sm text-white/55">{exam.description}</p>
         )}

@@ -30,7 +30,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   if (setErr || !setData) {
     return (
       <div className="card p-6">
-        <h1 className="text-xl font-semibold">{t(locale, "flashcards.notFound")}</h1>
+        <h1 className="font-display text-xl font-medium">{t(locale, "flashcards.notFound")}</h1>
         <p className="mt-2 text-sm opacity-70">{t(locale, "flashcards.notFoundDesc")}</p>
       </div>
     );
@@ -50,7 +50,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
           <Link href="/flashcards" className="text-xs text-white/50 hover:text-white/80">
             ← {t(locale, "nav.flashcards")}
           </Link>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight break-words">{set.title}</h1>
+          <h1 className="mt-1 font-display text-xl font-medium tracking-tight break-words">{set.title}</h1>
           <p className="mt-0.5 text-sm text-white/50">
             {String(set.visibility).toUpperCase()} · {cards.length} {t(locale, "flashcards.cards")}
           </p>

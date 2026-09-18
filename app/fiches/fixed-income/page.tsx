@@ -66,7 +66,7 @@ export default async function FixedIncomeFiche() {
         <Link href="/fiches" className="text-xs text-white/50 hover:text-white/80">
           ← Fiches de révision
         </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">Fixed Income — Vault Concept Sheet</h1>
+        <h1 className="mt-1 font-display text-xl font-medium tracking-tight">Fixed Income — Vault Concept Sheet</h1>
         <p className="mt-1 text-sm text-white/55">
           8 pages de synthèse (une par grand thème), chacune suivie d'une page de QCM d'entraînement
           tirée de notre banque officielle. Corrigé complet en fin de document.

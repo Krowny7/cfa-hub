@@ -27,10 +27,8 @@ export default async function FichesPage() {
   return (
     <div className="grid gap-6">
       <div className="pb-5 border-b border-white/[0.07]">
-        <div className="text-[11px] font-semibold uppercase tracking-widest text-blue-300 mb-2">
-          CFA Level I — Révision
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight mb-1">Fiches de Révision</h1>
+        <div className="kicker mb-2">CFA Level I — Révision</div>
+        <h1 className="font-display text-2xl font-medium tracking-tight mb-1">Fiches de Révision</h1>
         <p className="text-sm text-white/50">
           Concepts clés, formules, règles mnémotechniques et quiz flash interactifs.
         </p>
@@ -41,14 +39,12 @@ export default async function FichesPage() {
           <Link
             key={t.href}
             href={t.href}
-            className="card card-hover p-5 grid gap-3 group"
+            className="card plate card-hover p-5 grid gap-3 group"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-white/30 mb-1">
-                  {t.readings}
-                </div>
-                <div className="text-lg font-semibold tracking-tight">
+                <div className="kicker mb-1">{t.readings}</div>
+                <div className="font-display text-lg font-medium tracking-tight">
                   {t.label}
                 </div>
               </div>
@@ -62,9 +58,7 @@ export default async function FichesPage() {
       </div>
 
       <div className="card p-4">
-        <div className="text-[11px] font-semibold uppercase tracking-widest text-white/30 mb-2">
-          À venir
-        </div>
+        <div className="kicker mb-2">À venir</div>
         <div className="grid gap-2 text-[13px] text-muted">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white/20" />

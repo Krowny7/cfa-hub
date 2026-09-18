@@ -97,7 +97,7 @@ export default async function Dashboard() {
   return (
     <div className="grid gap-1">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{greeting}</h1>
+        <h1 className="font-display text-2xl font-medium tracking-tight">{greeting}</h1>
         <p className="mt-1 text-sm text-muted">{t(locale, "dashboard.subtitle")}</p>
       </div>
 
@@ -125,7 +125,7 @@ export default async function Dashboard() {
 
       <div className="mt-4 text-xs text-faint">{summaryParts.join(" · ")}</div>
 
-      <div className="mt-8 text-xs font-medium uppercase tracking-wide text-faint">Activité</div>
+      <div className="mt-8 kicker">Activité</div>
       <div className="mt-2.5">
         <ActivityHeatmap days={xpDays} />
       </div>

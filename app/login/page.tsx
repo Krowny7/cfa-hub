@@ -67,31 +67,26 @@ export default function LoginPage() {
           {t("login.studyHub")}
         </div>
 
-        <h1 className="mt-5 text-3xl font-semibold leading-tight">
+        <h1 className="mt-5 font-display text-3xl font-medium leading-tight">
           Ranked Lobby — <span className="opacity-80">{t("login.heroSuffix")}</span>
         </h1>
 
         <p className="mt-3 text-sm text-white/80">{t("login.heroDesc")}</p>
 
-        <div className="mt-7 grid gap-3 sm:grid-cols-2">
-          <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{t("nav.library")}</div>
-            <div className="mt-1 text-xs opacity-70">{t("login.libraryDesc")}</div>
+        <div className="mt-7 grid gap-3 sm:grid-cols-3">
+          <div className="card-soft plate p-4">
+            <div className="kicker mb-1">{t("nav.library")}</div>
+            <div className="text-xs opacity-70">{t("login.libraryDesc")}</div>
           </div>
 
-          <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{t("nav.flashcards")}</div>
-            <div className="mt-1 text-xs opacity-70">{t("login.flashcardsDesc")}</div>
+          <div className="card-soft plate p-4">
+            <div className="kicker mb-1">{t("login.entrainementTitle")}</div>
+            <div className="text-xs opacity-70">{t("login.entrainementDesc")}</div>
           </div>
 
-          <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{t("login.quizzesTitle")}</div>
-            <div className="mt-1 text-xs opacity-70">{t("login.quizzesDesc")}</div>
-          </div>
-
-          <div className="card-soft p-4">
-            <div className="text-sm font-semibold">{t("login.groupsTitle")}</div>
-            <div className="mt-1 text-xs opacity-70">{t("login.groupsDesc")}</div>
+          <div className="card-soft plate p-4">
+            <div className="kicker mb-1">{t("login.groupsTitle")}</div>
+            <div className="text-xs opacity-70">{t("login.groupsDesc")}</div>
           </div>
         </div>
 
@@ -100,7 +95,7 @@ export default function LoginPage() {
 
       {/* RIGHT: Sign in */}
       <section className="card order-1 p-8 lg:order-2">
-        <h2 className="text-lg font-semibold">{t("login.signinTitle")}</h2>
+        <h2 className="font-display text-lg font-medium">{t("login.signinTitle")}</h2>
         <p className="mt-2 text-sm text-white/80">{t("login.signinDesc")}</p>
 
         <button

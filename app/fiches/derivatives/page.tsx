@@ -32,8 +32,8 @@ export default function DerivativesFiche() {
 
       {/* ── Hero ── */}
       <div className="mt-8 mb-10 pb-8 border-b border-white/[0.07]">
-        <div className="text-[11px] font-semibold uppercase tracking-widest text-emerald-300 mb-2">CFA Level I — Book 3</div>
-        <h1 className="text-2xl font-semibold tracking-tight mb-1">Derivatives</h1>
+        <div className="kicker text-emerald-300/70 mb-2">CFA Level I — Book 3</div>
+        <h1 className="font-display text-2xl font-medium tracking-tight mb-1">Derivatives</h1>
         <p className="text-sm text-white/50 mb-4">Readings 66–75 · Marchés, instruments, valorisation, réplication, parité put-call, modèle binomial.</p>
         <div className="flex flex-wrap gap-1.5">
           {[

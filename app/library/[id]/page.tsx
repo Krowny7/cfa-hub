@@ -51,7 +51,7 @@ export default async function DocumentPage({ params }: PageProps) {
   if (!docData) {
     return (
       <div className="grid gap-3">
-        <h1 className="text-xl font-semibold">{t(locale, "library.empty")}</h1>
+        <h1 className="font-display text-xl font-medium">{t(locale, "library.empty")}</h1>
       </div>
     );
   }

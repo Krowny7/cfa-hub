@@ -23,7 +23,7 @@ export async function TopBar() {
   return (
     <header className="sticky top-0 z-50 h-12 border-b border-white/[0.07] bg-neutral-950/80 backdrop-blur">
       <div className="flex h-full items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+        <Link href="/" className="flex items-center gap-2 font-display font-medium tracking-tight">
           <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-blue-400/90 shadow-[0_0_0_3px_rgba(59,130,246,0.18)]" />
           {t(locale, "appName")}
         </Link>

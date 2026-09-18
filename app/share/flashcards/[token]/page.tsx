@@ -21,8 +21,8 @@ export default async function ShareFlashcardsPage({ params }: PageProps) {
   return (
     <div className="grid gap-4">
       <div className="card p-5">
-        <div className="text-xs text-muted mb-1">Set partagé · lecture seule</div>
-        <h1 className="text-xl font-semibold tracking-tight break-words">{set.title}</h1>
+        <div className="kicker mb-1">Set partagé · lecture seule</div>
+        <h1 className="font-display text-xl font-medium tracking-tight break-words">{set.title}</h1>
         <p className="mt-0.5 text-sm text-white/50">{cards.length} carte(s)</p>
       </div>
 

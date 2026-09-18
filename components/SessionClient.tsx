@@ -340,7 +340,7 @@ export function SessionClient({
     return (
       <div>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("session.title")}</h1>
+          <h1 className="font-display text-2xl font-medium tracking-tight">{t("session.title")}</h1>
           <p className="mt-1 text-sm text-muted">{t("session.subtitle")}</p>
         </div>
 
@@ -432,7 +432,7 @@ export function SessionClient({
       <div className="grid gap-5">
         <div className="card p-8 text-center">
           <PartyPopper size={40} className="mx-auto text-blue-300" />
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight">{t("session.summaryTitle")}</h2>
+          <h2 className="mt-4 font-display text-2xl font-medium tracking-tight">{t("session.summaryTitle")}</h2>
 
           <div className="mx-auto mt-6 grid max-w-sm gap-3">
             {mode === "qcm" ? (

@@ -49,7 +49,7 @@ export default async function MockExamsPage() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Examens blancs</h1>
+        <h1 className="font-display text-xl font-medium tracking-tight">Examens blancs</h1>
         <p className="mt-1 text-sm text-white/55">
           Sessions officielles chronométrées — résultats et classement partagés entre participants.
         </p>

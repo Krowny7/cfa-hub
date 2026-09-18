@@ -30,7 +30,7 @@ export default async function PracticePage() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Entraînement ciblé</h1>
+        <h1 className="font-display text-xl font-medium tracking-tight">Entraînement ciblé</h1>
         <p className="mt-1 text-sm text-white/55">
           Choisis un ou plusieurs topics du curriculum CFA Level I : tu reçois le nombre de questions
           qu'ils représenteraient dans un vrai examen (proportions officielles), pour t'entraîner sur tes points faibles.

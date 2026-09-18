@@ -125,7 +125,7 @@ export default async function PersonProfilePage({ params }: PageProps) {
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight">
+            <h1 className="truncate font-display text-xl font-medium tracking-tight">
               {display}
               <span className="ml-2 text-sm font-normal text-muted">{shortId(id)}</span>
             </h1>

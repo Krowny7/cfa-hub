@@ -56,7 +56,7 @@ export default async function QuizSetPage({ params }: PageProps) {
   if (!setData) {
     return (
       <div className="grid gap-3">
-        <h1 className="text-xl font-semibold">{t(locale, "qcm.notFound")}</h1>
+        <h1 className="font-display text-xl font-medium">{t(locale, "qcm.notFound")}</h1>
         <p className="text-sm text-white/60">{t(locale, "qcm.notFoundDesc")}</p>
       </div>
     );
