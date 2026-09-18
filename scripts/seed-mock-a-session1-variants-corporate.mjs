@@ -1,7 +1,12 @@
-// Variantes (2 par question) pour "Mock A — Session 1 — Finance d'Entreprise"
-// — mêmes notions que les 13 questions officielles de cette session, avec
-// noms/chiffres/scénarios changés, pour pouvoir s'entraîner sans mémoriser
-// la question par cœur.
+// Variantes (2 par question) pour "Mock A — Session 1 — Finance d'Entreprise".
+//
+// Règle de conception : une variante ne rejoue pas l'énoncé d'origine avec
+// d'autres chiffres. Pour chaque question source on produit
+//   (a) un ANGLE DIFFÉRENT — on inverse l'inconnue, on compare deux cas, on
+//       diagnostique une erreur, ou on applique le concept ailleurs ;
+//   (b) une MONTÉE EN DIFFICULTÉ — une étape de plus, un repère retiré, ou la
+//       combinaison de deux notions.
+// Les distracteurs correspondent à des erreurs réellement commises.
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Mocks Officiels (Système)";
@@ -11,218 +16,264 @@ const QUIZ_SETS = [
     title: "Mock A — Session 1 — Finance d'Entreprise — Variantes",
     difficulty: 2,
     questions: [
-      // Q37 — going concern project
+      // ---- Q37 — catégories de projets d'investissement -------------------
+      // (a) angle : reconnaître un projet d'EXPANSION plutôt qu'un going concern
       [
-        "Which of the following capital investments would most likely be classified as a going concern project?",
+        "A beverage company opens a new factory in a country where it has never previously operated, roughly doubling its total production capacity. This capital investment is best classified as a(n):",
+        ["going concern project.", "expansion project.", "regulatory/compliance project."],
+        1,
+        "Expansion projects grow the scale of the business — new capacity, new markets — beyond what is needed to sustain current operations. A going concern (maintenance) project only keeps existing operations running at their present size, and nothing here points to a regulatory mandate.",
+      ],
+      // (b) difficulté : identifier le moteur PRINCIPAL quand deux motifs se mélangent
+      [
+        "A refinery installs new emissions-scrubbing equipment mandated by a recently passed environmental law. As a secondary effect, the equipment is also expected to lower the plant's operating costs. This project is best classified as a(n):",
+        ["going concern project.", "regulatory/compliance project.", "expansion project."],
+        1,
+        "Classification follows the primary driver of the investment, not an incidental side benefit. The equipment exists because the law requires it — the cost saving is a bonus, not the reason for the spend. It is not a going concern project, since the company was not free to simply choose whether to maintain current operations as-is, and it adds no capacity, so it is not expansion.",
+      ],
+
+      // ---- Q56 — VAN et flux non conventionnels ---------------------------
+      // (a) angle : que dit le profil de VAN sur le nombre de TRI possibles ?
+      [
+        "A project has the following annual cash flows: −$606,061 (Year 0), +$2,151,515 (Year 1), −$2,542,424 (Year 2), and +$1,000,000 (Year 3). Its NPV is −$100.00 at a 15% discount rate, −$41.66 at 18%, and +$14.70 at 21%. Which of the following statements about this project is most accurate?",
         [
-          "Building a new factory to enter an entirely new market segment.",
-          "Replacing an aging fleet of delivery trucks that have reached the end of their useful life.",
-          "Installing new pollution-control equipment mandated by a recently passed environmental law.",
+          "Its NPV profile is monotonically decreasing in the discount rate, as with a normal cash-flow project.",
+          "The cash flow pattern changes sign more than once, so the project could have more than one internal rate of return.",
+          "Because NPV is positive at 21%, NPV must also be positive at every discount rate above 21%.",
         ],
         1,
-        "Going concern (maintenance capex) projects continue current operations at their existing size — replacing worn-out assets is the classic example. Entering a new market is a new-lines-of-business project; complying with new regulation is a regulatory/compliance project.",
+        "The cash flow changes sign three times (−, +, −, +), so by Descartes' rule of signs the project can have up to three internal rates of return — and it does: NPV actually crosses zero near 10%, again near 20%, and again near 25%. That is precisely why NPV is not monotonic here: it is negative from about 12% to 20%, briefly positive around 21%–24%, then negative again above roughly 25%. A normal (single sign change) cash flow pattern would guarantee a single IRR and a monotonically decreasing NPV profile; this one does not.",
       ],
+      // (b) difficulté : exploiter le profil non monotone
       [
-        "A company's continuous, routine upgrade of its existing IT hardware and software to keep operations running smoothly is most likely classified as a:",
-        ["going concern project.", "new lines of business project.", "regulatory/compliance project."],
-        0,
-        "Maintaining IT hardware/software and making continuous improvements to existing facilities are textbook going concern (maintenance capex) projects — they sustain current operations rather than expand into new business or satisfy a new legal requirement.",
-      ],
-      // Q56 — NPV / discount rate
-      [
-        "A project has the following annual cash flows: Year 0: –$100,000; Year 1: $40,000; Year 2: $40,000; Year 3: $40,000. Which discount rate most likely provides a positive NPV?",
-        ["8%", "12%", "16%"],
-        0,
-        "NPV at 8% = 40,000/1.08 + 40,000/1.08² + 40,000/1.08³ − 100,000 ≈ 103,084 − 100,000 = +$3,084 (positive). At 12%, NPV ≈ 96,061 − 100,000 = −$3,939 (negative), and it is even more negative at 16% — so only 8% gives a positive NPV.",
-      ],
-      [
-        "A project has the following annual cash flows: Year 0: –$50,000; Years 1-4: $20,000 each year. Which discount rate most likely provides a positive NPV?",
-        ["20%", "28%", "35%"],
-        0,
-        "NPV at 20% = 20,000 × [1 − 1.20⁻⁴]/0.20 − 50,000 ≈ 20,000 × 2.5887 − 50,000 = 51,775 − 50,000 = +$1,775 (positive). At 28% and 35% the annuity factor shrinks enough that NPV turns negative (≈ −$5,183 and −$10,060 respectively).",
-      ],
-      // Q58 — WACC
-      [
-        "An analyst gathers the following: Equity $20 million at 9% before-tax cost; Debt $8 million at 5% before-tax cost; Preferred stock $2 million at 6% cost. With a 30% marginal tax rate, the WACC is closest to:",
-        ["7.21%.", "7.33%.", "7.73%."],
+        "For the project above, NPV is +$14.70 at a 21% discount rate. If the required rate of return were instead 30%, the project's NPV would most likely be:",
+        [
+          "positive, and larger than at 21%, since NPV increases with the discount rate beyond that point.",
+          "negative, because the project's non-normal cash-flow pattern means NPV is not monotonically related to the discount rate.",
+          "positive, but smaller than at 21%, since NPV decreases only gradually as the discount rate rises further.",
+        ],
         1,
-        "Weights: we=20/30=0.667, wd=8/30=0.267, wp=2/30=0.067. WACC = wd×rd×(1−t) + wp×rp + we×re = 0.267×5%×0.70 + 0.067×6% + 0.667×9% = 0.933% + 0.400% + 6.000% = 7.33%. 7.73% forgets the tax shield on debt; 7.21% wrongly tax-shields the preferred stock too.",
+        "Recomputing at 30% gives an NPV of about −$276, sharply negative rather than a small positive number. Because the cash flows change sign three times, the NPV curve rises and falls repeatedly with the discount rate instead of falling smoothly — a narrow band of positive NPV around 21%–24% does not imply NPV stays positive, or even declines gently, as the rate keeps rising.",
       ],
+
+      // ---- Q58 — coût moyen pondéré du capital -----------------------------
+      // (a) angle : comparer les contributions, pas seulement le total
       [
-        "An analyst gathers the following: Equity $12 million at 10% before-tax cost; Debt $6 million at 4% before-tax cost; Preferred stock $2 million at 7% cost. With a 25% marginal tax rate, the WACC is closest to:",
-        ["7.43%.", "7.60%.", "7.90%."],
-        1,
-        "Weights: we=12/20=0.60, wd=6/20=0.30, wp=2/20=0.10. WACC = 0.30×4%×0.75 + 0.10×7% + 0.60×10% = 0.90% + 0.70% + 6.00% = 7.60%. 7.90% skips the tax shield on debt; 7.43% incorrectly tax-shields the preferred stock as well.",
-      ],
-      // Q61 — cost of capital requiring tax adjustment
-      [
-        "Which of the following costs of capital is least likely to require an adjustment for taxes when calculating a firm's WACC?",
-        ["A bank loan.", "A corporate bond.", "Preferred stock."],
+        "A company's capital structure is $15 million of equity at an 8% cost, $10 million of debt at a 4% pre-tax cost, and $1 million of preferred stock at a 5% cost, with a 35% marginal tax rate. Which source of capital contributes the most to the company's WACC?",
+        ["Debt.", "Preferred stock.", "Equity."],
         2,
-        "Only the cost of debt (bank loans, bonds) is tax-adjusted in the WACC formula, because interest expense is tax-deductible. Preferred stock dividends are not tax-deductible, so the cost of preferred stock is used without a tax adjustment.",
+        "Each source's contribution is its weight times its (after-tax, for debt) cost: equity contributes 0.577 × 8% ≈ 4.62 percentage points, debt contributes 0.385 × 4% × (1 − 0.35) ≈ 1.00 point, and preferred stock contributes 0.038 × 5% ≈ 0.19 points. Equity dominates because it is both the largest weight and the most expensive source — a low cost (debt) or a small weight (preferred) does not automatically mean a small contribution, but here debt loses on both counts relative to equity.",
       ],
+      // (b) difficulté : recalculer le WACC après un changement de structure
       [
-        "A firm's cost of long-term debt must be adjusted for taxes when calculating WACC primarily because:",
+        "The same company raises an additional $9 million of debt at the same 4% pre-tax cost and uses the proceeds to repurchase $9 million of equity, leaving total capital unchanged at $26 million. Preferred stock, the tax rate, and all component costs stay the same. The company's new WACC is closest to:",
+        ["3.94%.", "4.96%.", "5.81%."],
+        0,
+        "The new weights are equity $6M/$26M = 0.231, debt $19M/$26M = 0.731, preferred $1M/$26M = 0.038. WACC = 0.731 × 4% × (1 − 0.35) + 0.038 × 5% + 0.231 × 8% ≈ 3.94%. 5.81% is the original WACC, unchanged — it wrongly ignores that the weights shifted toward the cheaper, now-larger debt tranche. 4.96% recomputes with the new weights but forgets the tax deductibility of interest.",
+      ],
+
+      // ---- Q61 — pourquoi seul le coût de la dette est ajusté fiscalement --
+      // (a) angle : le POURQUOI, pas la liste
+      [
+        "Which of the following best explains why the after-tax, rather than the pre-tax, cost of debt is used when calculating a firm's WACC?",
         [
-          "interest payments on debt are tax-deductible, unlike dividends on equity or preferred stock.",
-          "debt is always cheaper than equity.",
-          "tax authorities require it regardless of deductibility.",
+          "Interest expense is tax-deductible, which reduces the effective cost of borrowing to the firm.",
+          "Preferred dividends are tax-deductible for the issuing firm.",
+          "Equity financing carries no tax implications for investors.",
         ],
         0,
-        "Interest is a tax-deductible expense, so the after-tax cost of debt is rd × (1 − t). Dividends (common or preferred) are paid out of after-tax income and are not deductible, so their costs are not tax-adjusted.",
+        "The tax adjustment exists because interest payments reduce the firm's taxable income, so part of the stated interest cost is effectively subsidized by the tax savings it generates — the after-tax cost captures the true net cost to the firm. Preferred dividends, unlike interest, are not tax-deductible, which is exactly why the preferred cost of capital is left un-adjusted; the statement about equity is true but does not explain the debt adjustment.",
       ],
-      // Q64 — stakeholders implementing strategy
+      // (b) difficulté : appliquer le principe à un cas non standard
       [
-        "Which stakeholder group is most likely responsible for approving and overseeing — rather than directly implementing — a public corporation's strategy?",
-        ["Managers", "Employees", "Board of directors"],
+        "A firm partly finances a project with a hybrid security that pays a fixed coupon that is, under local tax law, not deductible against the firm's taxable income. When estimating this security's component cost of capital for the project's WACC, the firm should:",
+        [
+          "apply the same tax adjustment used for conventional debt.",
+          "use the security's pre-tax cost without any tax adjustment.",
+          "treat it as preferred stock regardless of its legal form as debt.",
+        ],
+        1,
+        "The tax adjustment for debt is a direct consequence of interest being deductible — it is not a blanket rule that applies to anything labelled 'debt'. Since this coupon generates no tax shield, there is no benefit to net out, so its full pre-tax cost is its true cost to the firm. Whether the instrument is legally debt or preferred stock is irrelevant to this specific question; what matters is deductibility.",
+      ],
+
+      // ---- Q64 — qui met en œuvre la stratégie -----------------------------
+      // (a) angle : surveillance (conseil) contre mise en œuvre (direction)
+      [
+        "Which of the following stakeholders is most likely responsible for overseeing, rather than directly implementing, a public corporation's strategy?",
+        ["Managers.", "Employees.", "The board of directors."],
         2,
-        "The board of directors approves strategic direction and oversees management on behalf of shareholders, but day-to-day implementation is carried out by managers (led by the CEO), with employees executing operational tasks under that direction.",
+        "The board's role is oversight and approval — it monitors and holds management accountable for the strategy's execution. Managers, led by the CEO, are the ones who actually design the operational plan and direct employees to carry it out; employees implement the tasks management assigns them, but do not set or oversee the strategy itself.",
       ],
+      // (b) difficulté : reconnaître une gouvernance normale, pas un abus
       [
-        "Employees most directly carry out a corporation's day-to-day strategy under the direction of:",
-        ["the board of directors.", "managers, led by the chief executive officer.", "the company's shareholders."],
+        "A company's CEO develops a five-year strategic plan and directs division heads to execute it, while the board of directors reviews performance against the plan at each quarterly meeting. Which statement about this arrangement is most accurate?",
+        [
+          "The board has improperly delegated its strategic responsibilities to management.",
+          "This reflects the standard governance division of labor: management implements strategy under board oversight.",
+          "Division heads, not the CEO, bear ultimate responsibility for the plan's implementation.",
+        ],
         1,
-        "Managers, led by the CEO, are responsible for determining and implementing corporate strategy under the board's oversight; employees execute tasks as directed by management, not directly by the board or shareholders.",
+        "This is exactly how the roles are meant to divide: management (led by the CEO) designs and executes the strategy, and the board monitors that execution without running the business itself. Nothing here describes an abuse of process — quarterly review is oversight, not delegation of the board's own duties. Responsibility for implementation still runs through the CEO, even though division heads carry out specific tasks.",
       ],
-      // Q65 — organizational forms
+
+      // ---- Q65 — formes juridiques et responsabilité limitée ---------------
+      // (a) angle : contraster avec l'entreprise individuelle
       [
-        "Which business form most likely provides limited liability to all of its owners while still being taxed as a pass-through entity?",
-        ["A limited liability company (LLC).", "A general partnership.", "A public corporation."],
+        "Which organizational form exposes its owner to unlimited personal liability for the firm's obligations, but avoids taxation of profits at the entity level?",
+        ["Limited partnership.", "Sole proprietorship.", "Corporation."],
+        1,
+        "A sole proprietorship has a single owner who is personally liable for all of the business's debts, with no legal separation between the owner and the firm — but profits pass through directly to the owner's personal tax return, so there is no entity-level tax. A limited partnership offers limited liability to its limited partners, and a corporation shields all owners with limited liability but is typically taxed at the entity level as well as on distributed dividends.",
+      ],
+      // (b) difficulté : déduire la forme à partir des rôles décrits
+      [
+        "A firm has one manager who bears full personal liability for the firm's obligations, and several passive investors whose potential losses are capped at the amount they invested. All of these owners report their share of the firm's profits or losses on their own personal tax returns. This firm is most likely organized as a:",
+        ["limited partnership.", "sole proprietorship.", "corporation."],
         0,
-        "An LLC combines limited liability for all owners (members) with pass-through taxation, avoiding both the unlimited personal liability of a general partnership and the double taxation of a corporation.",
+        "One owner with unlimited liability who manages the business is the general partner; the passive owners whose losses are capped at their investment are limited partners — this general/limited partner split, combined with pass-through taxation, defines a limited partnership. A sole proprietorship has only one owner, which does not fit multiple passive investors, and a corporation would tax profits at the entity level rather than pass them through.",
       ],
+
+      // ---- Q67 — cycle de vie et flux de trésorerie ------------------------
+      // (a) angle : identifier le stade à partir de la trajectoire du cash-flow
       [
-        "In a general partnership, each partner's liability for the business's obligations is best described as:",
-        [
-          "limited to the amount each partner invested.",
-          "unlimited, extending to each partner's personal assets.",
-          "fully protected, similar to a limited liability company.",
-        ],
-        1,
-        "General partners have unlimited liability — creditors can pursue their personal assets, not just their investment in the business. This contrasts with limited partners (who have limited liability) and LLC members (fully limited liability).",
-      ],
-      // Q67 — life cycle cash flow
-      [
-        "In which stage of the corporate life cycle does a company typically shift from being a persistent net cash consumer to generating its first — often still volatile — positive cash flows?",
-        ["Start-up", "Growth", "Decline"],
-        1,
-        "In the growth stage, execution and competitive risks decline relative to start-up, and cash flow typically turns positive, becoming more stable as the business matures further — unlike start-up (heavy cash consumption) or decline (shrinking, though often still positive, cash flow).",
-      ],
-      [
-        "A company in the decline stage of its life cycle is most likely to experience:",
-        [
-          "the highest cash burn rate of any life-cycle stage.",
-          "zero revenue and no customer base.",
-          "shrinking revenue, though cash flow often remains positive as investment needs fall.",
-        ],
+        "In which stage of a company's life cycle does revenue typically grow rapidly while cash flow moves from negative toward breakeven?",
+        ["Start-up.", "Mature.", "Growth."],
         2,
-        "In decline, revenue growth slows or reverses, but because reinvestment needs are minimal, cash flow can remain positive — unlike the start-up stage, which is the true high-cash-burn, near-zero-revenue phase.",
+        "In the growth stage, the company has moved past pure concept development and is scaling a proven product, so revenue rises quickly and losses narrow as the business approaches breakeven. In the start-up stage, revenue is still zero or minimal and cash flow is deeply negative; a mature company typically has already reached stable, positive cash flow rather than still moving toward it.",
       ],
-      // Q71 — shareholder/management conflicts
+      // (b) difficulté : déduire le stade à partir d'indicateurs combinés
       [
-        "A company's board grants senior managers a large stock option package with no shareholder input on its design (no say-on-pay vote). This practice is most likely to:",
+        "A company has revenue growing in the low single digits, consistent positive free cash flow, and has recently raised its dividend payout ratio. This company is most likely in which stage of its life cycle?",
+        ["Mature.", "Growth.", "Start-up."],
+        0,
+        "Slow, steady revenue growth combined with reliable positive free cash flow and a rising dividend payout is the classic profile of a mature company: it no longer needs to reinvest heavily to fund expansion, so it can return more cash to shareholders. A growth-stage company reinvests aggressively and rarely raises payouts, and a start-up has neither the revenue base nor the free cash flow to pay dividends at all.",
+      ],
+
+      // ---- Q71 — conflits actionnaires / direction --------------------------
+      // (a) angle : le mécanisme qui RÉDUIT le conflit, pas celui qui le cause
+      [
+        "Which of the following mechanisms is most likely to reduce conflicts of interest between shareholders and management over executive compensation?",
         [
-          "increase potential conflicts of interest between shareholders and management.",
-          "perfectly align management's interests with those of shareholders.",
-          "have no effect on the alignment between management and shareholder interests.",
+          "Giving shareholders a formal, non-binding advisory vote on executive pay ('say on pay').",
+          "Letting the board's compensation committee set pay without any external disclosure.",
+          "Linking the majority of pay to short-term stock price performance only.",
         ],
         0,
-        "Without shareholder input (e.g., a say-on-pay vote), directors and managers have more discretion to grant themselves excessive or poorly structured pay, increasing the risk that compensation is misaligned with shareholder interests.",
+        "Allowing shareholders to express their views on remuneration limits the discretion directors and managers have to set their own pay, which is exactly the channel through which this conflict arises — so a formal voice for shareholders reduces it. Setting pay without disclosure removes the check that limits discretion rather than adding one, and pay tied only to short-term price performance can itself create a new conflict by encouraging managers to prioritize the stock price over long-term value.",
       ],
+      // (b) difficulté : repérer un conflit caché derrière une structure qui semble alignée
       [
-        "Compensation structured heavily around short-term stock price performance, combined with no shareholder say-on-pay vote, is most likely to encourage managers to:",
+        "An executive's compensation package ties 80% of her pay to the current year's stock price, and includes a golden parachute that pays out in full regardless of company performance if she is terminated following an acquisition. This structure is most likely to encourage the executive to:",
         [
-          "take on excessive risk to boost the short-term share price.",
-          "act more conservatively than shareholders would prefer.",
-          "pursue only projects matching the risk tolerance of a diversified shareholder base.",
+          "pursue long-term, value-creating projects even if they depress short-term earnings.",
+          "favor decisions that boost the short-term stock price and make an acquisition more likely, since her downside is protected either way.",
+          "align fully with long-term shareholder interests, since most of her pay is linked to stock performance.",
         ],
-        0,
-        "Compensation dominated by short-term stock price incentives (e.g., stock options with near-term vesting) can motivate managers to take on excessive risk, since option holders benefit asymmetrically from upside price moves — a classic shareholder/management conflict of interest.",
+        1,
+        "With most of her pay tied to the current stock price and her downside already protected by a guaranteed payout on acquisition, the executive has little reason to bear the risk of long-term projects and every reason to push for decisions that lift the price now — including an acquisition she is paid to welcome. Tying pay to stock price sounds like alignment, but combined with a no-risk exit it can create exactly the short-termism that the compensation structure was supposed to prevent.",
       ],
-      // Q81 — Modigliani-Miller assumptions
+
+      // ---- Q81 — hypothèses de Modigliani-Miller ---------------------------
+      // (a) angle : ce qui N'EST PAS une hypothèse du modèle sans impôt
       [
-        "Under Modigliani and Miller's original (no-tax) capital structure irrelevance proposition, which assumption allows investors to replicate any capital structure through 'homemade leverage'?",
+        "Which of the following is NOT an assumption of Modigliani and Miller's original (no-tax) capital structure framework?",
         [
-          "Investors can borrow and lend at the risk-free rate.",
+          "Capital markets are frictionless, with no transaction costs.",
+          "Investors hold homogeneous expectations about the firm's future cash flows.",
           "Interest expense is tax-deductible.",
-          "Investors have heterogeneous expectations about future corporate earnings.",
         ],
-        0,
-        "MM's 'homemade leverage' argument relies on investors being able to borrow and lend at the risk-free rate in their own accounts, replicating any capital structure the firm might otherwise choose — which is why the firm's own leverage choice becomes irrelevant to value.",
+        2,
+        "The original MM propositions assume away taxes entirely, which is exactly why they conclude that capital structure is irrelevant to firm value — introducing deductible interest is a later extension of the model, not part of its original assumptions. Frictionless markets and homogeneous expectations are both genuine assumptions of the no-tax framework.",
       ],
+      // (b) difficulté : appliquer la proposition, pas seulement la citer
       [
-        "Which of the following is NOT an assumption of the Modigliani-Miller capital structure framework?",
+        "Under Modigliani and Miller's Proposition I (no taxes), a firm increases its debt-to-equity ratio from 0.5 to 1.5. All else equal, the firm's weighted average cost of capital will most likely:",
         [
-          "Investors have heterogeneous expectations about future corporate earnings.",
-          "There are no taxes, transaction costs, or bankruptcy costs.",
-          "Investors can borrow and lend at the risk-free rate.",
+          "remain unchanged, because the rise in the cost of equity exactly offsets the greater weight placed on cheaper debt.",
+          "decrease, because debt is a cheaper source of capital than equity.",
+          "increase, because debt is riskier for the firm than equity.",
         ],
         0,
-        "MM assumed investors have HOMOGENEOUS (not heterogeneous) expectations about future corporate earnings and their riskiness — along with a world of perfect capital markets (no taxes, transaction costs, bankruptcy costs) and the ability to borrow/lend at the risk-free rate.",
+        "MM Proposition I states that capital structure does not affect firm value, which implies WACC stays constant regardless of leverage. The mechanism is MM Proposition II: as leverage rises, the cost of equity rises just enough (because equity holders bear more financial risk) to exactly cancel out the effect of weighting more heavily toward cheaper debt. Naively assuming WACC falls simply because debt looks cheaper ignores that its weight is not the only thing that moves.",
       ],
-      // Q83 — B2B channel strategy
+
+      // ---- Q83 — stratégies de distribution B2B ----------------------------
+      // (a) angle : la situation inverse — clientèle large et dispersée
       [
-        "A company selling highly customized industrial machinery to a small number of large manufacturing clients would most likely rely on a channel strategy of:",
-        ["direct sales.", "mass-market retail.", "a traditional multi-tier distribution channel."],
-        0,
-        "Direct sales is the common strategy in B2B markets where the customer base is small, well-identified, and easily reached directly — as opposed to mass retail or multi-tier distribution, which suit large, dispersed customer bases.",
-      ],
-      [
-        "Compared to a traditional multi-tier distribution channel (manufacturer → wholesaler → retailer → customer), a direct sales strategy is most appropriate when:",
+        "A company sells a mass-market consumer product to millions of geographically dispersed retail customers. Which channel strategy is most likely most appropriate for this product?",
         [
-          "the customer base is very large and geographically dispersed.",
-          "the customer base is small, easily identified, and directly reachable.",
-          "products must pass through several intermediaries to reach end customers.",
+          "Direct sales to each individual customer.",
+          "A single exclusive retail location.",
+          "Distribution through intermediaries and multiple retail channels.",
         ],
+        2,
+        "When the customer universe is large and dispersed, reaching customers directly is impractical and costly, so firms rely on intermediaries — wholesalers, retailers, e-commerce platforms — to achieve reach at scale. Direct sales is the strategy suited to the opposite case: a small, easily reached universe of customers, as in typical B2B relationships. A single exclusive location cannot serve a geographically dispersed mass market at all.",
+      ],
+      // (b) difficulté : identifier le principe sous-jacent, pas l'étiquette
+      [
+        "A software company sells an enterprise product to a small number of large multinational clients requiring heavy customization and dedicated account management, while also selling a low-cost consumer version through third-party app stores to millions of individual users. This dual approach illustrates that channel strategy should be chosen primarily based on:",
+        [
+          "the size and reachability of the customer universe for each product line, not a single company-wide channel.",
+          "the total revenue generated by each product line, regardless of its customer base.",
+          "using the same channel for every product to preserve brand consistency.",
+        ],
+        0,
+        "The company uses direct engagement for the small, easily identifiable universe of enterprise clients and a scalable indirect channel for the large, dispersed universe of consumer users — the customer universe's size and reachability, not the product's revenue or a desire for uniform branding, is what should drive the choice. Forcing one channel for both products would serve neither segment well.",
+      ],
+
+      // ---- Q85 — gouvernance et coût de la dette ---------------------------
+      // (a) angle : le cas inverse — gouvernance dégradée
+      [
+        "A credit rating agency downgrades its assessment of a company's corporate governance after finding that its board offers weak protections for bondholders, such as no restriction on issuing additional senior debt. The most likely consequence for the company is a(n):",
+        ["reduction in its cost of debt.", "increase in its equity value.", "increase in its cost of debt."],
+        2,
+        "Weaker creditor protections raise the risk borne by existing bondholders — the firm could, for example, dilute their claim by issuing more senior debt — so lenders demand a higher yield to compensate, raising the cost of debt. This is the mirror image of favorable governance reducing the cost of debt: the direction of the governance change and the direction of the cost change move together.",
+      ],
+      // (b) difficulté : comparer deux émissions selon leurs clauses restrictives
+      [
+        "Two otherwise identical bonds are issued by companies with equally strong operating cash flow, but Bond A includes strict covenants protecting creditor rights (e.g., limits on additional borrowing) while Bond B has minimal covenants. All else equal, which statement is most accurate?",
+        [
+          "Bond A will likely carry a lower yield, reflecting the reduced credit risk from stronger creditor protections.",
+          "Bond B will likely carry a lower yield, since fewer covenants give the issuer more operating flexibility, which reduces default risk.",
+          "The two bonds will carry the same yield, since covenants have no effect on credit risk once cash flow strength is equal.",
+        ],
+        0,
+        "Covenants directly reduce the risk borne by bondholders by constraining actions — like piling on more debt — that could erode the value of their claim, so stronger covenants translate into a lower required yield even when the underlying operating cash flow is identical. Operating flexibility for the issuer is exactly what covenants trade away, in exchange for a lower cost of debt; it does not itself lower default risk for lenders.",
+      ],
+
+      // ---- Q87 — pressions ('drags') et tractions ('pulls') sur la liquidité ---
+      // (a) angle : reconnaître un 'pull', pas un 'drag'
+      [
+        "Which of the following is most likely a 'pull' on a company's liquidity position, as distinct from a 'drag'?",
+        [
+          "Uncollected receivables from customers.",
+          "Obsolete inventory that must be heavily discounted to sell.",
+          "Making early payments to suppliers, before payment is contractually due, to secure a discount.",
+        ],
+        2,
+        "A 'pull' on liquidity occurs when disbursements happen sooner than necessary, pulling cash out of the business ahead of schedule — paying suppliers early is a textbook example. Uncollected receivables and obsolete inventory are both 'drags': situations where cash that is owed to the company is slow to come in, tying up funds on the receipt side rather than the payment side.",
+      ],
+      // (b) difficulté : classer deux développements simultanément
+      [
+        "A company simultaneously experiences (1) a lender reducing its available credit line, and (2) a rise in the average collection period on its receivables. These two developments are best described, respectively, as a:",
+        ["pull and a drag.", "drag and a pull.", "pull and a pull."],
+        0,
+        "A reduced credit line is a pull: it removes a source of funds the company could otherwise draw on, effectively pulling available liquidity out from under it. A longer collection period is a drag: cash that is owed to the company arrives more slowly, delaying receipts rather than accelerating disbursements. Both developments weaken liquidity, but through opposite mechanisms — one on the funding side, one on the receipts side.",
+      ],
+
+      // ---- Q90 — conversion ratio dette/capitaux propres <-> pondération ---
+      // (a) angle : inverser — partir de la pondération pour retrouver le D/E
+      [
+        "A company's target capital structure implies a debt weight of 30% (that is, D/(D+E) = 30%). The company's target debt-to-equity ratio is closest to:",
+        ["0.30.", "0.43.", "0.70."],
         1,
-        "Direct sales works best precisely when the universe of potential customers is small and easily reached — typical of B2B markets — whereas a large, dispersed customer base usually favors a multi-tier or omnichannel approach.",
+        "Since D/(D+E) = 0.30, rearranging D/E = [D/(D+E)] / [1 − D/(D+E)] gives D/E = 0.30 / 0.70 ≈ 0.43. 0.30 confuses the debt weight itself with the debt-to-equity ratio, which are not the same figure; 0.70 is simply the equity weight, 1 − 0.30.",
       ],
-      // Q85 — governance and cost of debt
+      // (b) difficulté : partir de montants bruts, pas d'un ratio déjà donné
       [
-        "A rating agency downgrades its assessment of a company's board independence and minority-shareholder protections. All else equal, this is most likely to result in a(n):",
-        [
-          "increase in the company's cost of debt.",
-          "decrease in the company's cost of debt.",
-          "reduction in the company's business risk.",
-        ],
-        0,
-        "Weaker governance arrangements (less board independence, weaker shareholder/creditor protections) raise perceived default risk, which raises the cost of debt — the opposite of the favorable-governance case, where cost of debt tends to fall.",
-      ],
-      [
-        "Strong creditor-protective covenants and governance practices most likely allow a company to:",
-        [
-          "borrow at a lower cost of debt due to reduced perceived default risk.",
-          "avoid ever needing to raise equity capital.",
-          "eliminate all business risk from its operations.",
-        ],
-        0,
-        "Governance arrangements that protect creditor rights reduce a company's perceived default risk, which reduces its cost of debt — good governance affects financing costs, not the underlying business risk of operations or the firm's future need for equity.",
-      ],
-      // Q87 — liquidity drag vs pull
-      [
-        "Which of the following is most likely a 'drag' on a company's liquidity, rather than a 'pull'?",
-        ["Obsolete, slow-moving inventory.", "Early payment to suppliers.", "Reduced short-term credit limits."],
-        0,
-        "A drag on liquidity comes from receipts lagging — uncollected receivables, obsolete inventory, tight credit from customers. Early supplier payments and reduced credit limits are 'pulls' (disbursements paid too quickly / credit access restricted).",
-      ],
-      [
-        "A company's customers increasingly pay their invoices later than agreed. This is best described as a liquidity:",
-        ["drag, since receipts are lagging.", "pull, since disbursements are accelerating.", "non-issue, since it doesn't affect cash flow timing."],
-        0,
-        "Slower customer payments delay cash receipts — a classic drag on liquidity (pressure from the receipts side), distinct from a pull (pressure from the disbursement side, e.g. paying suppliers too quickly).",
-      ],
-      // Q90 — D/E to weight conversion
-      [
-        "When estimating a target capital structure, the equity weight associated with a debt-to-equity ratio of 0.8 is closest to:",
-        ["44.4%", "55.6%", "80.0%"],
-        1,
-        "Debt weight = (D/E) / (1 + D/E) = 0.8/1.8 = 44.4%. Equity weight = 1 − 44.4% = 55.6%.",
-      ],
-      [
-        "When estimating a target capital structure, the equity weight associated with a debt-to-equity ratio of 1.5 is closest to:",
-        ["40.0%", "60.0%", "150.0%"],
-        0,
-        "Debt weight = (D/E) / (1 + D/E) = 1.5/2.5 = 60.0%. Equity weight = 1 − 60.0% = 40.0%.",
+        "A company has $180 million of debt outstanding and a market capitalization of $420 million, and its target capital structure matches its current market-value mix. The equity weight used in the company's WACC calculation is closest to:",
+        ["30.0%.", "42.9%.", "70.0%."],
+        2,
+        "The equity weight is market capitalization divided by total capital: $420M / ($180M + $420M) = $420M / $600M = 70.0%. 30.0% is the debt weight instead of the equity weight; 42.9% is the implied debt-to-equity ratio ($180M / $420M), a related but different figure from either weight.",
       ],
     ],
   },
@@ -231,7 +282,7 @@ const QUIZ_SETS = [
 async function main() {
   const ownerId = await getOwnerId();
   const folderId = await ensureFolder(ownerId, FOLDER_NAME, "quizzes");
-  console.log("Variantes — Mock A Session 1 — Corporate...");
+  console.log("Variantes — Mock A Session 1 — Finance d'Entreprise...");
   const total = await seedQuizSets({ ownerId, folderId, sets: QUIZ_SETS });
   console.log(`\n✅ Terminé. ${total} questions ajoutées.`);
 }
