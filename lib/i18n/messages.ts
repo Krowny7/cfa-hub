@@ -334,6 +334,14 @@ export const MESSAGES = {
       confirmLeaveGroup: "Quitter ce groupe ?",
       confirmDeleteGroup: "Supprimer définitivement ce groupe ? Cette action affectera tous les membres."
     },
+    onboarding: {
+      title: "Complète ton profil",
+      subtitle: "Un pseudo et une photo de profil sont nécessaires avant de continuer — c'est ce qui te rend identifiable pour les autres membres de tes groupes.",
+      continue: "Continuer",
+      missingBoth: "Ajoute une photo de profil et un pseudo pour continuer.",
+      missingAvatar: "Ajoute une photo de profil pour continuer.",
+      missingUsername: "Choisis un pseudo pour continuer."
+    },
     session: {
       title: "Session du jour",
       subtitle: "15 min de révision quotidienne, contenu mélangé et ordonné intelligemment. Pour un entraînement ciblé sur un thème précis, va plutôt dans QCM ou Flashcards.",

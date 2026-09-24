@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 
+// Paths that must stay reachable even with an incomplete profile — the
+// onboarding page itself (or we'd redirect-loop), auth/login flows, and API
+// routes (a redirect response to a fetch() call isn't something callers
+// expect, so those are left to their own auth checks instead).
+const ONBOARDING_EXEMPT = ["/onboarding", "/login", "/auth", "/api"];
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers }
@@ -23,7 +29,26 @@ export async function middleware(request: NextRequest) {
   });
 
   // Refresh session if needed (also validates cookies)
-  await supabase.auth.getUser();
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+
+  const pathname = request.nextUrl.pathname;
+  const exempt = ONBOARDING_EXEMPT.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  if (user && !exempt) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username,avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const incomplete = !profile?.username || !profile?.avatar_url;
+    if (incomplete) {
+      const onboardingUrl = new URL("/onboarding", request.url);
+      onboardingUrl.searchParams.set("next", pathname + request.nextUrl.search);
+      return NextResponse.redirect(onboardingUrl);
+    }
+  }
 
   return response;
 }
