@@ -14,6 +14,16 @@ const nextConfig = {
   // If you have multiple lockfiles on your machine, Next can infer the wrong
   // workspace root. Force tracing to this project directory.
   outputFileTracingRoot: __dirname,
+  // the splash films' data files carry their version in the name
+  // (plan.v9.bin…), so a browser may keep them for good
+  async headers() {
+    return [
+      {
+        source: "/splash/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }]
+      }
+    ];
+  },
   experimental: {
     // keep defaults; we avoid bleeding-edge flags for stability
   }

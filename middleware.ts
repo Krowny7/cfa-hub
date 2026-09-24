@@ -29,5 +29,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"]
+  // splash/: the intro film's data files — static, public, and fetched
+  // before anything else, so no auth round-trip and never a redirect
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|splash/|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"]
 };

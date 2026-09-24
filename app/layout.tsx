@@ -36,7 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html:
               "(function(){var seen=false;" +
               "try{seen=sessionStorage.getItem('rl-splash-seen')==='1';}catch(e){}" +
-              "if(seen)return;var d=document.documentElement;d.classList.add('rl-booting');" +
+              "if(seen&&!/[?&]splash=/.test(location.search))return;" +
+              "var d=document.documentElement;d.classList.add('rl-booting');" +
               "setTimeout(function(){d.classList.remove('rl-booting');},6000);})();"
           }}
         />
