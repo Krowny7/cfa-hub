@@ -18,14 +18,17 @@ type Film = "plane" | "nyc";
 /**
  * Which film this session gets: New York or the aircraft, drawn at random.
  * `?splash=nyc` / `?splash=plane` forces one (and replays it). Visitors who
- * ask for less motion or less data get the aircraft: it is the lighter one
- * and has a still version.
+ * ask for less motion or less data, or who are on a slow connection, get the
+ * aircraft: it downloads nothing (New York streams ~7.5 MB of city) and has
+ * a still version.
  */
+type Connection = { saveData?: boolean; effectiveType?: string; downlink?: number };
 function pickFilm(forced: string | null): Film {
   if (forced === "nyc" || forced === "plane") return forced;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
-  if (reduce || saveData) return "plane";
+  const conn = (navigator as Navigator & { connection?: Connection }).connection;
+  const slow = !!conn && (/(^|-)2g$|^3g$/.test(conn.effectiveType ?? "") || (conn.downlink ?? 10) < 5);
+  if (reduce || conn?.saveData || slow) return "plane";
   return Math.random() < 0.5 ? "nyc" : "plane";
 }
 

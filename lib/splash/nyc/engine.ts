@@ -499,10 +499,12 @@ export function mountSplash(mount: HTMLElement, onDone: () => void) {
   const nextFrame = () => new Promise((r) => { raf = requestAnimationFrame(r); });
 
   async function boot() {
-    const cityP = loadCity(CITY_URL, ctrl.signal);
-    cityP.catch(() => {});                       // handled where it is awaited
+    // the plan alone gates the start, so it gets the whole connection; the
+    // city (twice its size) follows and has the pen's run to arrive
     const data = await loadCity(PLAN_URL, ctrl.signal);
     if (disposed) return;
+    const cityP = loadCity(CITY_URL, ctrl.signal);
+    cityP.catch(() => {});                       // handled where it is consumed
     try { await Promise.race([Promise.all([document.fonts.load('300 96px "DM Mono"'), document.fonts.load('400 64px "DM Mono"'), document.fonts.load('italic 400 64px "DM Mono"'), document.fonts.load("400 96px Anton")]), new Promise((r) => setTimeout(r, 1500))]); } catch (e) { /* lettering falls back */ }
     if (disposed) return;
     city = new City(data);
