@@ -22,6 +22,13 @@ export default async function FichesPage() {
       desc: "Forwards, futures, swaps, options, parité put-call, modèle binomial.",
       color: "emerald",
     },
+    {
+      href: "/fiches/equity",
+      label: "Equity",
+      readings: "Vault Concept Sheet · 18 pages",
+      desc: "8 pages de synthèse par thème (marchés, indices, efficience, valorisation...), chacune suivie d'une page de QCM d'entraînement (corrigé inclus).",
+      color: "amber",
+    },
   ] as const;
 
   return (
@@ -70,7 +77,7 @@ export default async function FichesPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
-            Corporate Issuers &amp; Equity (R19–R46)
+            Corporate Issuers (R19–R38)
           </div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
