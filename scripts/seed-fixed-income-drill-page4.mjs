@@ -1,5 +1,10 @@
 // Seed script — quiz de "drill" pour la page 4 de la fiche PDF Fixed
-// Income (Interest Rate Risk & Duration). 5 concepts x 3 variantes.
+// Income (Interest Rate Risk & Duration). 5 concepts x 3 variantes +
+// concepts 6-10 (2026-09-26) : calculs PVBP/money duration/approx
+// modified duration & convexity par bump, effective duration, key rate
+// duration, duration de portefeuille (2 méthodes), drivers de duration,
+// duration d'une perpétuité — en complément de la page 4 de la fiche,
+// remaniée le même jour pour couvrir ces mêmes formules.
 // Usage: node scripts/seed-fixed-income-drill-page4.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
@@ -148,6 +153,79 @@ const QUIZ_SETS = [
         ],
         1,
         "Un callable bond présente une convexité négative à faible yield : quand les taux baissent, la probabilité que l'émetteur exerce le call augmente, plafonnant le prix près du call price — le potentiel de hausse du callable bond est donc limité par rapport à un bond sans option, qui continue de s'apprécier sans ce plafond.",
+      ],
+      // Concept 6 — PVBP and money duration (numeric)
+      [
+        "A bond has a full price of 98.7500 and an annualized modified duration of 6.42. Its PVBP (price value of a basis point) is closest to:",
+        ["0.0063.", "0.0634.", "0.6340."],
+        1,
+        "PVBP = AnnModDur × Full price × 0,0001 = 6,42 × 98,75 × 0,0001 ≈ 0,0634 (pour 100 de nominal). Le distracteur A confond 0,0001 avec 0,00001 (facteur 10 manquant), le distracteur C utilise 0,01 au lieu de 0,0001.",
+      ],
+      [
+        "A position has a full price (market value) of 1,050,000 and an annualized modified duration of 8.10. The money duration of this position is closest to:",
+        ["85,050.", "850,500.", "8,505,000."],
+        2,
+        "Money duration = AnnModDur × full price de la position = 8,10 × 1 050 000 = 8 505 000. Elle mesure la variation de VALEUR (en unités monétaires, pas en %) pour une variation de yield de 1,00 (100 %) ; diviser par 10 000 donne l'équivalent pour 1bp (≈850 500 × 0,0001 ≈ 850,50, cohérent avec l'ordre de grandeur d'un PVBP à cette échelle de position).",
+      ],
+      // Concept 7 — Approximate modified duration and convexity (bump method)
+      [
+        "A bond trades at a full price of 100.00. If its YTM rises by 75bp, the full price falls to 95.80. If its YTM falls by 75bp, the full price rises to 104.45. The bond's approximate modified duration, ApproxModDur = [V(YTM−ΔY) − V(YTM+ΔY)] / (2×ΔY×V0), is closest to:",
+        ["5.77.", "8.65.", "11.53."],
+        0,
+        "ApproxModDur = (104,45−95,80) / (2×0,0075×100,00) = 8,65 / 1,50 ≈ 5,77. Le distracteur B oublie de diviser par (2×ΔY) (ne montre que l'écart de prix), le distracteur C oublie le facteur 2 au dénominateur (8,65/0,75=11,53).",
+      ],
+      [
+        "Using the same bond as above (V0 = 100.00; V(YTM−0.75%) = 104.45; V(YTM+0.75%) = 95.80), its approximate convexity, ApproxConvexity = [V(YTM−ΔY) + V(YTM+ΔY) − 2×V0] / (ΔY²×V0), is closest to:",
+        ["0.44.", "4.44.", "44.44."],
+        2,
+        "ApproxConvexity = (104,45+95,80−200,00) / (0,0075²×100,00) = 0,25 / 0,005625 ≈ 44,44. Les distracteurs A et B correspondent à une erreur d'échelle sur ΔY² (facteur 10 ou 100 en trop au dénominateur).",
+      ],
+      // Concept 8 — Effective duration and key rate duration
+      [
+        "For a callable bond, effective duration (rather than modified duration) is the appropriate measure of interest rate risk primarily because:",
+        [
+          "effective duration is always lower than modified duration for any bond.",
+          "the bond's future cash flows can change as interest rates change, so a valuation model (not a fixed cash flow schedule) must be used to estimate the price impact of a rate change.",
+          "modified duration cannot be calculated once a bond has a yield to maturity.",
+        ],
+        1,
+        "La modified duration suppose des cash flows FIXES et utilise le YTM propre du bond. Un callable bond peut voir ses cash flows changer si l'émetteur exerce le call quand les taux baissent — il faut un modèle de valorisation (ex : arbre binomial, OAS constant) qui recalcule le prix pour un choc de la courbe de référence : c'est l'effective duration. A est faux (la comparaison dépend du bond), C est faux (le YTM existe toujours pour un callable bond à un instant donné).",
+      ],
+      [
+        "An analyst wants to measure a bond portfolio's sensitivity to a steepening of the yield curve (long-term rates rising while short-term rates stay flat). The most appropriate tool is:",
+        ["the portfolio's modified duration.", "key rate durations at several points on the curve.", "the portfolio's money duration."],
+        1,
+        "La modified/money duration supposent un déplacement parallèle de la courbe (tous les taux bougent du même montant) et ne peuvent donc pas capturer un steepening. Les key rate durations mesurent la sensibilité du prix à un point précis de la courbe (ex : 10 ans), les autres maturités étant maintenues constantes — la seule mesure adaptée à un mouvement non parallèle.",
+      ],
+      // Concept 9 — Portfolio duration
+      [
+        "A portfolio consists of Bond A (market value 600,000; modified duration 4.0) and Bond B (market value 400,000; modified duration 9.0). Using the market-value-weighted average approach, the portfolio's modified duration is closest to:",
+        ["6.00.", "6.50.", "13.00."],
+        0,
+        "Duration de portefeuille (weighted average) = Σ(poids en valeur de marché × duration individuelle) = 0,60×4,0 + 0,40×9,0 = 2,4+3,6 = 6,00. Le distracteur B est une moyenne arithmétique non pondérée ((4+9)/2), le distracteur C additionne au lieu de pondérer.",
+      ],
+      [
+        "The main limitation of computing portfolio duration as the market-value-weighted average of the component bonds' individual durations is that it:",
+        [
+          "cannot be calculated for portfolios holding more than two bonds.",
+          "implicitly assumes that the yields of all bonds in the portfolio change by the same amount (a parallel shift).",
+          "always overstates the portfolio's true interest rate risk.",
+        ],
+        1,
+        "Cette méthode (la plus utilisée en pratique) suppose implicitement un mouvement parallèle des yields de tous les bonds du portefeuille — si les bonds diffèrent en maturité, crédit ou devise, leurs yields peuvent bouger différemment (non-parallel shift), biaisant l'estimation. A est faux (elle s'applique à n'importe quel nombre de bonds), C est faux (le biais peut aller dans les deux sens selon le mouvement réel de la courbe).",
+      ],
+      // Concept 10 — Duration drivers and the perpetuity limiting case
+      [
+        "Holding all other bond characteristics constant, which of the following changes would most likely INCREASE a bond's duration?",
+        ["An increase in the coupon rate.", "An increase in the yield to maturity.", "A decrease in the coupon rate."],
+        2,
+        "Un coupon plus faible concentre davantage la valeur du bond dans le remboursement du principal (un cash flow unique, lointain), ce qui augmente la duration — même logique que la comparaison zero-coupon vs coupon bond. À l'inverse, une hausse du coupon (A) ou du YTM (B) réduisent la duration.",
+      ],
+      [
+        "A perpetual bond (no maturity, fixed coupon paid forever) has a yield to maturity of 5%. Its Macaulay duration, MacDur = (1+y)/y, is closest to:",
+        ["5.00 years.", "20.00 years.", "21.00 years."],
+        2,
+        "Pour une perpétuité, MacDur = (1+y)/y = 1,05/0,05 = 21,00 ans — un cas limite utile pour vérifier un calcul de duration. Le distracteur B (1/y=20) oublie le « +1 » au numérateur, une erreur fréquente.",
       ],
     ],
   },
