@@ -2,12 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Download, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { FicheDrillSelector, type DrillSet } from "@/components/FicheDrillSelector";
+import type { QuizQuestion } from "@/lib/types";
+
+const TOTAL_PAGES = 6;
+const DRILL_TITLE_PREFIX = "Portfolio Management — Drill Fiche Page";
 
 // Même architecture que Fixed Income / Equity : le PDF "Vault Concept
 // Sheet" (6 pages de synthèse + 6 pages de QCM + 1 page de corrigé) est
-// stocké dans le bucket privé "fiches" et servi via une URL signée.
-// Pas de drill interactif pour l'instant (voir cfa-hub-vault-concept-sheet-pdf
-// dans la mémoire projet — scope volontairement réduit pour cette fiche).
+// stocké dans le bucket privé "fiches" et servi via une URL signée. Les
+// quiz interactifs par page viennent de la banque officielle (quiz_sets/
+// quiz_questions), affichés via FicheDrillSelector.
 export default async function PortfolioManagementFiche() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -18,6 +24,37 @@ export default async function PortfolioManagementFiche() {
     .createSignedUrl("portfolio-management.pdf", 3600);
 
   const pdfUrl = error ? null : data?.signedUrl ?? null;
+
+  const admin = createAdminClient();
+  const { data: drillSetsData } = await admin
+    .from("quiz_sets")
+    .select("id,title,owner_id")
+    .like("title", `${DRILL_TITLE_PREFIX}%`);
+
+  const drillSets: DrillSet[] = [];
+  for (const set of drillSetsData ?? []) {
+    const m = /Page (\d+)/.exec(set.title);
+    if (!m) continue;
+    const page = Number(m[1]);
+    const isOwner = set.owner_id === auth.user.id;
+
+    const { data: questionsData } = await admin
+      .from("quiz_questions")
+      .select("id,prompt,choices,correct_index,explanation,position")
+      .eq("set_id", set.id)
+      .order("position", { ascending: true });
+
+    const questions: QuizQuestion[] = (questionsData ?? []).map((q) => ({
+      ...q,
+      choices: Array.isArray(q.choices) ? q.choices : [],
+      correct_index: isOwner ? q.correct_index : undefined,
+      explanation: isOwner ? q.explanation : undefined,
+      set_id: set.id,
+    })) as QuizQuestion[];
+
+    drillSets.push({ page, setId: set.id, title: set.title, isOwner, questions });
+  }
+  drillSets.sort((a, b) => a.page - b.page);
 
   return (
     <div className="grid gap-4">
@@ -58,6 +95,8 @@ export default async function PortfolioManagementFiche() {
           />
         </div>
       )}
+
+      <FicheDrillSelector totalPages={TOTAL_PAGES} drillSets={drillSets} />
     </div>
   );
 }
