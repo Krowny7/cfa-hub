@@ -29,6 +29,20 @@ export default async function FichesPage() {
       desc: "8 pages de synthèse par thème (marchés, indices, efficience, valorisation...), chacune suivie d'une page de QCM d'entraînement (corrigé inclus).",
       color: "amber",
     },
+    {
+      href: "/fiches/financial-statement-analysis",
+      label: "Financial Statement Analysis",
+      readings: "Vault Concept Sheet · 24 pages",
+      desc: "11 pages de synthèse par lecture (bilan, flux de trésorerie, stocks, actifs long terme, impôts...), chacune suivie d'une page de QCM d'entraînement (corrigé inclus).",
+      color: "violet",
+    },
+    {
+      href: "/fiches/portfolio-management",
+      label: "Portfolio Management",
+      readings: "Vault Concept Sheet · 13 pages",
+      desc: "6 pages de synthèse par lecture (risque/rendement, CAPM, construction de portefeuille, biais comportementaux, gestion du risque), chacune suivie d'une page de QCM d'entraînement (corrigé inclus).",
+      color: "rose",
+    },
   ] as const;
 
   return (
@@ -81,7 +95,7 @@ export default async function FichesPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
-            Portfolio Management &amp; Ethics (R76–R96)
+            Ethical &amp; Professional Standards
           </div>
         </div>
       </div>

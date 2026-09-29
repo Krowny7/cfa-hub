@@ -1,0 +1,215 @@
+READING 20 — Portfolio Risk and Return: Part I
+Q1: In the Markowitz framework, risk is defined as the:
+A) variance of returns.
+B) probability of a loss.
+C) beta of an investment.
+ANSWER: A
+EXPLANATION: The Markowitz framework assumes that all investors view risk as the variability of returns, measured as the variance (or standard deviation) of returns. Beta measures systematic risk under the CAPM, not the Markowitz framework.
+
+Q2: According to the CAPM, a rational investor would be least likely to choose as his optimal portfolio:
+A) a 100% allocation to the risk-free asset.
+B) the global minimum variance portfolio.
+C) a 130% allocation to the market portfolio.
+ANSWER: B
+EXPLANATION: Rational, risk-averse investors optimally choose a portfolio along the capital market line (CML), ranging from 100% in the risk-free asset to a leveraged position in the market portfolio. The global minimum variance portfolio lies below the CML and is not efficient under CAPM assumptions.
+
+Q3: What is the variance of a two-stock portfolio if 15% is invested in stock A (variance of 0.0071) and 85% in stock B (variance of 0.0008) and the correlation coefficient between the stocks is –0.04?
+A) 0.0007.
+B) 0.0020.
+C) 0.0026.
+ANSWER: A
+EXPLANATION: σ²p = W₁²σ₁² + W₂²σ₂² + 2W₁W₂σ₁σ₂r₁,₂ = (0.15)²(0.0071) + (0.85)²(0.0008) + 2(0.15)(0.85)(0.0843)(0.0283)(–0.04) = 0.0007.
+
+Q4: Stock 1 has a standard deviation of 10. Stock 2 also has a standard deviation of 10. If the correlation coefficient between these stocks is –1, what is the covariance between these two stocks?
+A) 0.00.
+B) –100.00.
+C) 1.00.
+ANSWER: B
+EXPLANATION: Covariance = correlation coefficient × SD(Stock1) × SD(Stock2) = (–1.00)(10.00)(10.00) = –100.00.
+
+Q5: Betsy Minor is considering the diversification benefits of a two stock portfolio. The expected return of stock A is 14 percent with a standard deviation of 18 percent and the expected return of stock B is 18 percent with a standard deviation of 24 percent. Minor intends to invest 40 percent of her money in stock A, and 60 percent in stock B. The correlation coefficient between the two stocks is 0.6. What is the variance and standard deviation of the two stock portfolio?
+A) Variance = 0.02206; Standard Deviation = 14.85%.
+B) Variance = 0.03836; Standard Deviation = 19.59%.
+C) Variance = 0.04666; Standard Deviation = 21.60%.
+ANSWER: B
+EXPLANATION: σ²p = (0.40)²(0.18)² + (0.60)²(0.24)² + 2(0.4)(0.6)(0.18)(0.24)(0.6) = 0.03836; √0.03836 = 19.59%.
+
+READING 21 — Portfolio Risk and Return: Part II
+Q1: Which of the following terms refer to the same type of risk?
+A) Systematic risk and firm-specific risk.
+B) Total risk and the variance of returns.
+C) Undiversifiable risk and unsystematic risk.
+ANSWER: B
+EXPLANATION: Variance is a measure of total risk, so "total risk" and "the variance of returns" refer to the same concept. Systematic and firm-specific risk are different types of risk, as are undiversifiable and unsystematic risk.
+
+Q2: Which of the following statements regarding the Sharpe ratio is most accurate? The Sharpe ratio measures:
+A) excess return per unit of risk.
+B) peakedness of a return distribution.
+C) total return per unit of risk.
+ANSWER: A
+EXPLANATION: The Sharpe ratio measures excess return (portfolio return minus the risk-free rate) per unit of risk, defined as the standard deviation of returns. Peakedness of a distribution is measured by kurtosis.
+
+Q3: What is the expected rate of return on a stock that has a beta of 1.4 if the market risk premium is 9% and the risk-free rate is 4%?
+A) 13.0%.
+B) 16.6%.
+C) 11.0%.
+ANSWER: B
+EXPLANATION: Using the SML equation: 4% + 1.4(9%) = 16.6%.
+
+Q4: An equally weighted portfolio of a risky asset and a risk-free asset will exhibit:
+A) half the returns standard deviation of the risky asset.
+B) less than half the returns standard deviation of the risky asset.
+C) more than half the returns standard deviation of the risky asset.
+ANSWER: A
+EXPLANATION: A risk-free asset has a standard deviation of zero and zero correlation with any risky asset. As a result, the portfolio's standard deviation equals the weight of the risky asset multiplied by its standard deviation. For an equally weighted portfolio, that weight is 0.5, so the portfolio standard deviation is half that of the risky asset.
+
+Q5: All portfolios that lie on the capital market line:
+A) have some unsystematic risk unless only the risk-free asset is held.
+B) contain at least some positive allocation to the risk-free asset.
+C) contain the same mix of risky assets unless only the risk-free asset is held.
+ANSWER: C
+EXPLANATION: All portfolios on the CML include the same tangency (market) portfolio of risky assets, except at the intercept where all funds are in the risk-free asset. Portfolios on the CML are well-diversified (efficient) and have no unsystematic risk; "borrowing portfolios" have a negative allocation to the risk-free asset, so B is not always true.
+
+READING 85 — Portfolio Management: An Overview
+Q1: Which of the following pooled investment shares is least likely to trade at a price different from its NAV?
+A) Exchange-traded fund shares.
+B) Closed-end mutual fund shares.
+C) Open-end mutual fund shares.
+ANSWER: C
+EXPLANATION: Shares of open-end mutual funds trade at NAV. Closed-end fund prices can deviate significantly from NAV, and ETF prices may deviate slightly, though arbitrage keeps them close.
+
+Q2: The ratio of an equally weighted portfolio's standard deviation of return to the average standard deviation of the securities in the portfolio is known as the:
+A) diversification ratio.
+B) relative risk ratio.
+C) Sharpe ratio.
+ANSWER: A
+EXPLANATION: The diversification ratio is calculated by dividing a portfolio's standard deviation of returns by the average standard deviation of returns of the individual securities in the portfolio.
+
+Q3: The portfolio approach to investing is best described as evaluating each potential investment based on its:
+A) contribution to the investor's overall risk and return.
+B) potential to generate excess return for the investor.
+C) fundamentals such as the financial performance of the security issuer.
+ANSWER: A
+EXPLANATION: The portfolio approach evaluates individual investments based on their contribution to the overall risk and return of the investor's total portfolio, not on a standalone basis.
+
+Q4: Endowments and foundations typically have investment needs that can be characterized as:
+A) long time horizon, high risk tolerance, and low liquidity needs.
+B) long time horizon, low risk tolerance, and high liquidity needs.
+C) short time horizon, low risk tolerance, and low liquidity needs.
+ANSWER: A
+EXPLANATION: Endowments and foundations invest for the long term to fund an ongoing purpose or charitable cause, typically have low cash payout rates, and can therefore accept high risk tolerance and low liquidity needs.
+
+Q5: In a defined benefit pension plan:
+A) the employee is promised a periodic payment upon retirement.
+B) the employee is responsible for making investment decisions.
+C) the employer's pension expense is equal to its contributions to the plan.
+ANSWER: A
+EXPLANATION: In a defined benefit plan, a periodic payment (typically based on salary) is promised to the employee upon retirement, and the employer bears the investment risk and makes the investment decisions (through the plan), unlike in a defined contribution plan.
+
+READING 86 — Basics of Portfolio Planning and Construction
+Q1: A portfolio manager who believes equity securities are overvalued in the short term reduces the weight of equities in her portfolio to 35% from its longer-term target weight of 40%. This decision is best described as an example of:
+A) rebalancing.
+B) strategic asset allocation.
+C) tactical asset allocation.
+ANSWER: C
+EXPLANATION: Tactical asset allocation refers to deliberately deviating from a portfolio's target (strategic) asset allocation weights in the short term to exploit perceived mispricing in specific asset classes.
+
+Q2: If an investor's ability to bear risk is low and willingness to bear risk is high, an investment manager should most appropriately consider the investor's overall financial risk tolerance to be:
+A) low.
+B) moderate.
+C) high.
+ANSWER: A
+EXPLANATION: In general, an advisor should consider an investor's overall risk tolerance to be the lower of the investor's ability and willingness to bear risk.
+
+Q3: A firm that invests the majority of a portfolio to track a benchmark index, and uses active investment strategies for the remaining portion, is said to be using:
+A) a core-satellite approach.
+B) risk budgeting.
+C) strategic asset allocation.
+ANSWER: A
+EXPLANATION: With a core-satellite approach, a firm invests the majority of a portfolio passively (the "core") and uses active strategies for the remaining ("satellite") portion.
+
+Q4: Which of the following asset class specifications is most appropriate for asset allocation purposes?
+A) Emerging markets.
+B) Consumer discretionary.
+C) Domestic bonds.
+ANSWER: C
+EXPLANATION: An asset class should be specified by type of security (e.g., stocks, bonds, cash). "Emerging markets" and "consumer discretionary" are incomplete because they do not identify whether the underlying securities are equity or debt.
+
+Q5: A return objective is said to be relative if the objective is:
+A) based on a benchmark index or portfolio.
+B) stated in terms of probability.
+C) compared to a specific numerical outcome.
+ANSWER: A
+EXPLANATION: Relative return objectives are stated relative to a specified benchmark, such as a stock index or LIBOR. Absolute return objectives are stated as specific numerical outcomes (e.g., 5%).
+
+READING 87 — The Behavioral Biases of Individuals
+Q1: Rex Newman treats wages differently from bonuses when determining his savings and investment goals. As a result, he invests any available after-tax wages in low-risk investments while investing his bonuses in high-risk alternatives. Newman is most likely exhibiting:
+A) availability bias.
+B) mental accounting bias.
+C) framing bias.
+ANSWER: B
+EXPLANATION: Mental accounting bias involves viewing money from different sources (e.g., wages vs. bonuses) differently when making investment decisions, rather than treating money as fungible.
+
+Q2: Emotional biases are most likely to:
+A) be mitigated rather than accommodated.
+B) stem from feelings or intuition.
+C) be related to faulty reasoning.
+ANSWER: B
+EXPLANATION: Emotional biases stem from feelings or intuition, are not related to conscious thought, and are therefore difficult to overcome — they typically must be accommodated rather than mitigated. Cognitive errors, by contrast, are due to faulty reasoning and can be mitigated with information.
+
+Q3: Greg Brown receives new, reliable information regarding one of his stocks that conflicts with his earlier forecast of what the stock should be trading for. However, Brown does not revise his estimate of the stock's value. Brown is most likely exhibiting:
+A) conservatism bias.
+B) confirmation bias.
+C) hindsight bias.
+ANSWER: A
+EXPLANATION: Conservatism bias refers to failing to appropriately update one's view or forecast when new, valid information becomes available, causing investors to maintain outdated estimates.
+
+Q4: Sarah Kowalski bought a growth stock for $45 per share that subsequently fell by 35%, and she is reluctant to sell as she hopes the stock bounces back. Kowalski is most likely exhibiting:
+A) availability bias.
+B) self-control bias.
+C) loss-aversion bias.
+ANSWER: C
+EXPLANATION: Loss-aversion bias arises from feeling more pain from a loss than pleasure from an equivalent gain, leading investors to hold losing positions in hopes of breaking even rather than realizing the loss.
+
+Q5: Harvey Woodman invests in modern art. Occasionally he sells a piece from his collection, but the process is often difficult because he gets insulted when potential buyers offer what he believes to be too little. Which bias is Woodman most likely exhibiting?
+A) Mental accounting bias.
+B) Overconfidence bias.
+C) Endowment bias.
+ANSWER: C
+EXPLANATION: An individual with endowment bias considers an asset he owns to be special and worth more than its actual market value, simply because he owns it.
+
+READING 88 — Introduction to Risk Management
+Q1: A portfolio manager uses a computer model to estimate the effect on a portfolio's value from both a 3% increase in interest rates and a 5% depreciation in the euro relative to the yen. The manager is most accurately described as engaging in:
+A) scenario analysis.
+B) stress testing.
+C) risk shifting.
+ANSWER: A
+EXPLANATION: Scenario analysis models the effects of changes in multiple inputs simultaneously. Stress testing examines the effect of a change in a single input, and risk shifting refers to modifying the distribution of outcomes (e.g., via derivatives).
+
+Q2: Buying insurance is best described as a method for an organization to:
+A) prevent a risk.
+B) shift a risk.
+C) transfer a risk.
+ANSWER: C
+EXPLANATION: Buying insurance transfers a risk to the insurance company. Shifting a risk means changing the distribution of outcomes (typically via derivatives), while preventing a risk means taking steps such as strengthening security procedures.
+
+Q3: Value-at-Risk (VaR) and Conditional VaR are best described as measures of:
+A) liquidity risk.
+B) model risk.
+C) tail risk.
+ANSWER: C
+EXPLANATION: VaR and Conditional VaR measure tail risk — the probability or magnitude of extreme negative outcomes in the tail of a return distribution.
+
+Q4: Examples of financial risks include:
+A) credit risk, market risk, and liquidity risk.
+B) market risk, liquidity risk, and tax risk.
+C) solvency risk, credit risk, and market risk.
+ANSWER: A
+EXPLANATION: Credit risk, market risk, and liquidity risk are classified as financial risks. Solvency risk and tax risk are classified as non-financial risks.
+
+Q5: Risk governance is best described as:
+A) determining an organization's risk tolerance.
+B) allocating an organization's resources by considering their risk characteristics.
+C) senior management's oversight of the organization's risk management.
+ANSWER: C
+EXPLANATION: Risk governance is the general, overarching term for senior management's oversight of the organization's risk management function. Determining risk tolerance and risk budgeting (allocating resources by risk characteristics) are specific elements within that broader governance responsibility.

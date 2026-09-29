@@ -1,0 +1,395 @@
+READING 29 — Introduction to Financial Statement Analysis
+Q1: Which of the following is the best description of the financial statement analysis framework?
+A) Gather data, analyze and interpret the data, process the conclusions, assess the context, report the recommendations, update the analysis.
+B) State the objective and context, gather data, process the data, analyze and interpret the data, report the conclusions or recommendations, update the analysis.
+C) Gather data, analyze and interpret the data, determine the context, report the conclusions, update the analysis.
+ANSWER: B
+EXPLANATION: The financial statement analysis framework consists of six steps in this order: state the objective and context, gather data, process the data, analyze and interpret the data, report the conclusions or recommendations, and update the analysis.
+
+Q2: The standard auditor's report is most likely required to:
+A) provide an "unqualified" opinion if material uncertainties exist.
+B) provide reasonable assurance that management is reliable.
+C) provide reasonable assurance that the financial statements contain no material errors.
+ANSWER: C
+EXPLANATION: The standard auditor's report states that the audit was conducted using generally accepted auditing standards, which provide reasonable assurance that the financial statements are free of material errors; it does not vouch for management's reliability.
+
+Q3: For publicly traded firms in the United States, the Management Discussion and Analysis (MD&A) portion of the financial disclosure is least likely required to discuss:
+A) capital resources and liquidity.
+B) results of operations.
+C) unusual or infrequent items.
+ANSWER: C
+EXPLANATION: U.S. MD&A disclosure is required to cover results of operations, capital resources and liquidity, and a general business overview based on known trends; discussion of unusual or infrequent items may be included but is not required.
+
+Q4: A firm engages in a new type of financial transaction that has a material effect on its earnings. An analyst should most likely be suspicious of the new transaction if:
+A) management has not explained its business purpose.
+B) no accounting standard exists that applies to the transaction.
+C) the transaction is not governed by existing regulations.
+ANSWER: A
+EXPLANATION: New transactions may fall outside existing accounting standards or regulations for legitimate reasons; what should raise suspicion is management's failure to explain the transaction's business purpose, which could signal an attempt to manipulate the financial statements.
+
+Q5: Which of the following is least likely to be available on EDGAR (Electronic Data Gathering, Analysis, and Retrieval System)?
+A) Corporate press releases.
+B) Form 10Q.
+C) SEC filings.
+ANSWER: A
+EXPLANATION: EDGAR (www.sec.gov) contains SEC filings such as annual reports (Form 10-K) and quarterly reports (Form 10-Q); corporate press releases are written by management and are not SEC filings available on EDGAR.
+
+READING 31 — Analyzing Balance Sheets
+Q1: An analyst has gathered the following information about a company: Cash 100, Accounts Receivable 750, Marketable Securities 300, Inventory 850; Accounts Payable 300, Short-Term Debt 130. What is the quick ratio?
+A) 0.62.
+B) 1.53.
+C) 2.67.
+ANSWER: C
+EXPLANATION: Quick ratio = (Cash + Accounts Receivable + Marketable Securities) / (Accounts Payable + Short-Term Debt) = (100 + 750 + 300) / (300 + 130) = 1,150 / 430 = 2.67.
+
+Q2: Under U.S. GAAP, the balance sheet value of a debt security classified as held-to-maturity is its:
+A) historical cost.
+B) amortized cost.
+C) fair value.
+ANSWER: B
+EXPLANATION: Under U.S. GAAP, held-to-maturity debt securities are carried on the balance sheet at their amortized cost, not at fair value or unadjusted historical cost.
+
+Q3: Balance sheet goodwill is most accurately described as the:
+A) amount by which the purchase price of an acquired firm exceeds its identifiable net assets.
+B) intangible value a firm creates in excess of its identifiable net assets.
+C) value derived from the expected future performance of a firm.
+ANSWER: A
+EXPLANATION: Accounting (balance sheet) goodwill is the amount by which the purchase price of an acquired firm exceeds the fair value of its identifiable net assets; internally generated goodwill is not recognized, and value from expected future performance is instead called "economic goodwill."
+
+Q4: James Alexander, Inc., paid par of $220,000 for 5% coupon bonds in Charles Michael, Inc. By the end of the accounting period, the fair value of the bonds was $212,000. The firm plans to hold these bonds for a few years but sell them before maturity. What will be the most likely impact on net income at the end of the first year?
+A) Net income will be unaffected.
+B) Net income will decrease.
+C) Net income will increase.
+ANSWER: C
+EXPLANATION: Because the firm intends to hold the bonds for a while but sell before maturity, they are classified as available-for-sale; the $8,000 unrealized loss goes to other comprehensive income (not net income), while the interest income earned on the bonds increases net income.
+
+Q5: Which of the following is classified as an identifiable intangible asset?
+A) Goodwill.
+B) A security investment.
+C) A trademark.
+ANSWER: C
+EXPLANATION: Identifiable intangible assets are nonmonetary assets lacking physical substance that can be acquired separately, such as a trademark; goodwill cannot be acquired separately and is therefore unidentifiable, while securities are considered tangible assets.
+
+READING 32 — Analyzing Cash Flow Statements — Module 1
+Q1: Given the following information, what is the adjustment to net income when calculating cash flow from operations using the indirect method? Increase in accounts payable of $25. Sold one share of stock for $15. Paid dividends of $10 to shareholders. Depreciation expense of $100. Increase in inventory of $20.
+A) -$50.
+B) -$95.
+C) +$105.
+ANSWER: C
+EXPLANATION: The adjustment equals the increase in accounts payable (+25) plus depreciation expense added back (+100) minus the increase in inventory (-20) = +105; the stock sale and dividends paid are financing cash flows and do not adjust net income when computing CFO.
+
+Q2: To compute cash collections from customers when converting a statement of cash flows from the indirect to the direct method, an analyst begins with:
+A) cost of goods sold, subtracts any increase in accounts payable, adds any increase in inventory, and subtracts any inventory write-offs.
+B) sales, subtracts any increase in accounts receivable, and adds any increase in unearned revenue.
+C) net income and adds back non-cash expenses.
+ANSWER: B
+EXPLANATION: To compute cash collections from customers, an analyst starts with net sales from the income statement, subtracts (adds) any increase (decrease) in accounts receivable, and adds (subtracts) any increase (decrease) in unearned revenue.
+
+Q3: Copper, Inc., had $4 million in bonds outstanding that were convertible into common stock at a conversion rate of 100 shares per $1,000 bond. In 20X1, all of the outstanding bonds were converted into common stock. Copper's average share price for 20X1 was $15. Copper's statement of cash flows for the year ended December 31, 20X1, should most likely include:
+A) cash flows from financing of +$6 million from issuance of common stock and –$4 million from retirement of bonds and cash flows from investing of –$2 million for a loss on retirement of bonds.
+B) cash flows from financing of +$4 million from issuance of common stock and –$4 million from retirement of bonds.
+C) a footnote describing the conversion of the bonds into common stock.
+ANSWER: C
+EXPLANATION: The conversion of bonds into common stock is a non-cash transaction and involves no actual cash inflow or outflow; it should instead be disclosed in a footnote to the statement of cash flows.
+
+Q4: Which set of accounting standards allows a firm to classify interest received as a financing cash flow and interest paid as an investing cash flow on its cash flow statement?
+A) The IFRS only.
+B) U.S. GAAP only.
+C) Neither the IFRS nor U.S. GAAP.
+ANSWER: C
+EXPLANATION: IFRS allows a firm to classify interest received as either operating or investing cash flow, and interest paid as either operating or financing cash flow (the reverse of what the question describes); U.S. GAAP requires both interest received and interest paid to be classified as operating cash flows.
+
+Q5: When calculating cash flow from operations (CFO) using the indirect method which of the following is most accurate?
+A) When recognizing a gain on the sale of fixed assets, the amount is a deduction to operating cash flows.
+B) The indirect method requires an additional schedule to reconcile net income to cash flow.
+C) In using the indirect method, each item on the income statement is converted to its cash equivalent.
+ANSWER: A
+EXPLANATION: A gain on the sale of fixed assets is included in net income but the actual cash proceeds appear in the investing section, so the gain must be deducted from net income when computing CFO to avoid double-counting; converting each income statement item to its cash equivalent describes the direct method, not the indirect method.
+
+READING 33 — Analyzing Statements of Cash Flows II
+Q1: Joplin Corporation reports the following in its year-end financial statements: Net income of $43.7 million. Depreciation expense of $4.2 million. Increase in accounts receivable of $1.5 million. Decrease in accounts payable of $2.3 million. Sold equipment for $15 million. Purchased equipment for $35 million. Joplin's free cash flow to the firm (FCFF) is closest to:
+A) $39 million.
+B) $24 million.
+C) $28 million.
+ANSWER: B
+EXPLANATION: FCFF = net income + noncash charges + after-tax interest − fixed capital investment − working capital investment = $43.7M + $4.2M − ($35M − $15M) − ($1.5M + $2.3M) = $24.1 million (no interest expense was given, and both the AR increase and AP decrease are uses of cash).
+
+Q2: A common-size cash flow statement is least likely to provide payments to employees as a percentage of:
+A) revenues for the period.
+B) operating cash flow for the period.
+C) total cash outflows for the period.
+ANSWER: B
+EXPLANATION: There are two standard formats for a common-size cash flow statement: expressing each outflow as a percentage of total cash outflows, or as a percentage of total revenue for the period; operating cash flow mixes inflows and outflows and is not used as the denominator for individual payment items.
+
+Q3: How does decreasing accounts payable turnover affect a company's cash flow from financing activities and is this source of cash sustainable?
+A) Financing cash flow: Increase / Sustainable source: No
+B) Financing cash flow: No impact / Sustainable source: No
+C) Financing cash flow: No impact / Sustainable source: Yes
+ANSWER: B
+EXPLANATION: Decreasing accounts payable turnover (paying suppliers more slowly) saves cash and is an operating source of cash, not a financing source, so it has no impact on CFF; it is also not sustainable because suppliers will eventually refuse to extend credit if payments keep slowing.
+
+Q4: Which of the following best describes a ratio that measures a firm's ability to acquire long-term assets with cash flows from operations, and a performance ratio, respectively?
+A) Acquire assets with CFO: Investing and financing ratio / Performance ratio: Cash-to-income ratio
+B) Acquire assets with CFO: Reinvestment ratio / Performance ratio: Cash-to-income ratio
+C) Acquire assets with CFO: Reinvestment ratio / Performance ratio: Debt payment ratio
+ANSWER: B
+EXPLANATION: The reinvestment ratio measures a firm's ability to acquire long-term assets with CFO, while the cash-to-income ratio is a performance ratio measuring the ability to generate cash from operations; the investing and financing ratio is broader (covers debt repayment and dividends too), and the debt payment ratio is a coverage ratio, not a performance ratio.
+
+Q5: Selected information from the most recent cash flow statement of Thibault Company: Cash from operating activities €1,300; Cash paid for plant and equipment (€2,600). Thibault's reinvestment ratio for this period is closest to:
+A) 0.50.
+B) 0.75.
+C) 1.00.
+ANSWER: A
+EXPLANATION: The reinvestment ratio is CFO divided by cash paid for long-term assets: €1,300 / €2,600 = 0.50.
+
+READING 34 — Analysis of Inventories
+Q1: In a decreasing price environment, the first-in first-out (FIFO) inventory cost method results in:
+A) lower cost of goods sold compared to last-in first-out.
+B) higher inventory compared to last-in first-out.
+C) lower gross profit compared to last-in first-out.
+ANSWER: C
+EXPLANATION: If prices are decreasing, FIFO assumes the higher-cost earliest purchases are the first items sold. This results in higher COGS, lower inventory, and lower gross profit compared to LIFO.
+
+Q2: Under which financial reporting standards is a firm required to discuss the circumstances when reversing an inventory writedown?
+A) Neither IFRS nor U.S. GAAP.
+B) Both IFRS and U.S. GAAP.
+C) IFRS, but not U.S. GAAP.
+ANSWER: C
+EXPLANATION: Reversals of inventory writedowns are permitted under IFRS but not under U.S. GAAP. If an IFRS reporting firm reverses an inventory writedown, it is required to discuss the circumstances of the reversal.
+
+Q3: Information related to Bledsoe Corporation's inventory, as of December 31, 20x7: Estimated selling price $3,500,000; Estimated disposal costs $50,000; Estimated completion costs $300,000; Original FIFO cost $3,200,000; Replacement cost $3,300,000. Using the appropriate valuation method, what adjustment is necessary to accurately report Bledsoe's inventory at the end of 20x7, and will this adjustment affect Bledsoe's quick ratio?
+A) $100,000 write-up; No effect on quick ratio.
+B) $50,000 write-down; No effect on quick ratio.
+C) $50,000 write-down; Yes, affects quick ratio.
+ANSWER: B
+EXPLANATION: Net realizable value is $3,150,000 ($3,500,000 selling price – $300,000 completion costs – $50,000 disposal costs). Since original cost of $3,200,000 exceeds NRV of $3,150,000, a $50,000 write-down is necessary. An inventory write-down has no impact on the quick ratio since inventory is excluded from both the numerator and denominator of the quick ratio.
+
+Q4: The effect of an inventory writedown on a firm's return on assets (ROA) is most accurately described as:
+A) higher ROA in the current period and lower ROA in later periods.
+B) lower ROA in the current period and higher ROA in later periods.
+C) lower ROA in the current period and no effect on ROA in later periods.
+ANSWER: B
+EXPLANATION: Writing down inventory to NRV decreases both net income and total assets in the period of the writedown; since net income is most likely less than assets, ROA decreases in that period. In later periods, lower-valued inventory decreases COGS and increases net income, which combined with a lower value of total assets increases ROA.
+
+Q5: Tim Rogers is senior equity analyst with White Capital LLP. While analyzing the inventory disclosures of Drako Toys Inc., a toy manufacturer, Rogers concludes that Drako is expected to see above-average sales growth over the next three years. Which of the following disclosures would most likely support Rogers's conclusion?
+A) Finished goods inventory growing faster than sales in the last two years.
+B) Increase in raw-materials and work-in-progress inventory and corresponding decline in finished goods inventory over the last two years.
+C) Increase in finished goods inventory and corresponding decline in raw-materials and work-in-progress inventory over the last two years.
+ANSWER: B
+EXPLANATION: An increase in raw materials and/or work-in-process inventory is likely an indication of an expected increase in demand. Conversely, an increase in finished goods inventory while raw materials and work-in-process are decreasing may indicate decreasing demand.
+
+READING 35 — Analysis of Long-Term Assets
+Q1: Mammoth, Inc. reports under U.S. GAAP. Mammoth has begun a long-term project to develop inventory control software for external sale. On its financial statements, Mammoth should:
+A) capitalize all costs of this project.
+B) expense all costs of this project in the periods incurred.
+C) expense all costs of this project until technological feasibility has been established.
+ANSWER: C
+EXPLANATION: Under IFRS and U.S. GAAP, costs of developing software are expensed until technological feasibility is established, and capitalized after technological feasibility has been established.
+
+Q2: Which of the following items is least likely an example of an intangible asset with an indefinite life?
+A) Acquired patents.
+B) Goodwill.
+C) Trademarks that can be renewed at minimal cost.
+ANSWER: A
+EXPLANATION: Acquired patents are most likely purchased with the intent to use over a specific period of time and therefore have a finite life. Goodwill, by definition, has an indefinite life, and trademarks renewable at minimal cost are also treated as indefinite-life intangibles.
+
+Q3: Marcel Inc. is a large manufacturing company. Marcel has long-lived assets currently in use that are valued on the balance sheet at $600 million, including previously recognized impairment losses of $80 million. The original cost of the assets was $750 million. The fair value of the assets was determined in a professional appraisal to be $690 million. Assuming Marcel reports under U.S. GAAP, the new appraisal of the assets' value most likely results in:
+A) a $90 million gain in other comprehensive income.
+B) an $80 million gain on income statement and $10 million gain in other comprehensive income.
+C) no change to Marcel's financial statements.
+ANSWER: C
+EXPLANATION: Under U.S. GAAP, long-lived assets are reported at depreciated cost less any impairment losses. Increases in value are generally prohibited (except for assets held for sale). Since these assets are currently in use, Marcel may not revalue them upward.
+
+Q4: Which of the following is best estimated by the ratio of net PP&E to annual depreciation expense?
+A) Remaining useful life.
+B) Average age.
+C) Total useful life.
+ANSWER: A
+EXPLANATION: Remaining useful life = ending net PP&E / annual depreciation expense.
+
+Q5: When comparing the financial statement effects of expensing versus capitalizing an expenditure, capitalizing will most likely result in which of the following effects in the years after the expenditure is incurred?
+A) Lower net income and higher return on assets.
+B) Higher net income and lower return on assets.
+C) Lower net income and lower return on assets.
+ANSWER: C
+EXPLANATION: In the years following the expenditure, capitalizing results in depreciation being deducted against net income, giving a lower net income than expensing. Capitalizing also increases total assets, causing ROA (net income / assets) to be lower.
+
+READING 36 — Topics in Long-Term Liabilities and Equity
+Q1: ABC Company leases manufacturing equipment for five years with annual payments of $20,000. The company will return the equipment to the lessor at the end of the lease. The term of the lease is equal to the equipment's useful life. Under U.S. GAAP, the company will:
+A) report the lease as an operating lease.
+B) record a right-of-use asset on the balance sheet.
+C) recognize an amortization expense equal to the principal repayment each period.
+ANSWER: B
+EXPLANATION: The company will report a finance lease because the lease term equals the asset's useful life. With a finance lease, the company recognizes the present value of lease payments on the balance sheet as a right-of-use asset, and amortizes this asset straight-line over the lease term.
+
+Q2: An airline leases a new airplane from its manufacturer for 10 years. For financial reporting, the airline must record an asset and a liability on its balance sheet:
+A) only if the lease is a finance lease.
+B) only if the lease is an operating lease.
+C) regardless of whether the lease is a finance or operating lease.
+ANSWER: C
+EXPLANATION: For both finance and operating leases, both IFRS and U.S. GAAP require an asset and a liability to be recorded on the lessee's balance sheet, unless the lease is short-term or (under IFRS) for a low-value asset.
+
+Q3: An employer offers a defined benefit pension plan and a defined contribution pension plan. The employer's balance sheet is most likely to present an asset or liability related to:
+A) the defined benefit plan.
+B) the defined contribution plan.
+C) both of these pension plans.
+ANSWER: A
+EXPLANATION: Only a defined benefit plan has a funded status that appears on the balance sheet as an asset or liability. Employer payments into a defined contribution plan are recognized as expenses in the period incurred.
+
+Q4: Under which reporting standards are share-based compensation expensed to the income statement over the vesting period?
+A) IFRS, but not U.S. GAAP.
+B) U.S. GAAP, but not IFRS.
+C) Both IFRS and U.S. GAAP.
+ANSWER: C
+EXPLANATION: Both IFRS and U.S. GAAP require companies to estimate the fair value of share-based compensation at the grant date and expense it to the income statement over the vesting period.
+
+Q5: For a lessee, the portion of a lease payment that represents repayment of principal is a cash flow from:
+A) operations.
+B) financing.
+C) investing.
+ANSWER: B
+EXPLANATION: The principal portion of a lease payment is a financing outflow on the lessee's cash flow statement. The interest portion is an operating cash outflow under U.S. GAAP and may be treated as an operating or financing outflow under IFRS.
+
+READING 37 — Analysis of Income Taxes
+Q1: Which of the following statements about tax deferrals is NOT correct?
+A) A deferred tax liability is expected to result in future cash outflow.
+B) Income tax paid can include payments or refunds for other years.
+C) Taxes payable are determined by pretax income and the tax rate.
+ANSWER: C
+EXPLANATION: Taxes payable are determined by taxable income and the tax rate, not pretax income. Pretax income (used for financial reporting) determines income tax expense, while taxable income (used for tax reporting) determines taxes payable.
+
+Q2: Gator Sarl (Gator) purchased PP&E at the start of the period costing €21,000, with a three-year useful economic life and no residual value. Gator uses straight-line depreciation in its accounts, but the tax authorities use double-declining balance. At the end of Year 2, the carrying value of the asset is €7,000 and its tax base is €2,333. Assuming a statutory tax rate of 30%, which of the following is closest to the DTL reported in Gator's balance sheet at the end of Year 2?
+A) €700.
+B) €1,400.
+C) €2,100.
+ANSWER: B
+EXPLANATION: DTL = (carrying value – tax base) × statutory rate = (€7,000 – €2,333) × 0.30 = €1,400.
+
+Q3: When analyzing a company's financial leverage, deferred tax liabilities are best classified as:
+A) a liability or equity, depending on the company's particular situation.
+B) a liability.
+C) neither as a liability, nor as equity.
+ANSWER: A
+EXPLANATION: The recommended analyst treatment is to treat deferred tax liabilities as liabilities if they are expected to reverse, or as equity if they are not expected to reverse.
+
+Q4: Last year, Schoenberg AG earned net income of €150,000, an income tax expense of €47,000, and paid tax of €51,000. What was the effective tax rate?
+A) 23.9%.
+B) 25.9%.
+C) 31.3%.
+ANSWER: A
+EXPLANATION: Effective tax rate = income tax expense / pretax income = €47,000 / (€150,000 + €47,000) = 23.9%. Pretax income is found by adding the tax expense back to net income.
+
+Q5: A temporary difference between pretax income reported in a firm's financial statements and taxable income the firm reports to the tax authorities results in:
+A) an adjustment to the firm's effective tax rate.
+B) a gain or loss in comprehensive income.
+C) a deferred tax item.
+ANSWER: C
+EXPLANATION: A temporary difference creates a deferred tax liability if income tax expense exceeds taxes payable, or a deferred tax asset if it is lower. A permanent (not temporary) difference is what causes the effective tax rate to differ from the statutory rate.
+
+READING 38 — Financial Reporting Quality
+Q1: On a spectrum for assessing financial reporting quality, which of the following represents the highest quality?
+A) Reporting is compliant with GAAP and decision useful but earnings are not sustainable.
+B) Reporting is compliant with GAAP but reporting choices and estimates are biased.
+C) Reporting is not compliant with GAAP but the numbers presented reflect the company's actual activities.
+ANSWER: A
+EXPLANATION: A firm can have high financial reporting quality even if its earnings quality is low, such as a firm that recognizes one-time gains and identifies them clearly. Biased accounting choices and non-compliance with GAAP represent lower-quality financial reporting.
+
+Q2: Conditions that may cause firms to issue low-quality financial reports are best described as:
+A) opportunity, motivation, and rationalization.
+B) unstable organizational structure and deficient internal controls.
+C) inappropriate ethical standards and failing to correct known reportable conditions.
+ANSWER: A
+EXPLANATION: The three conditions that often lead to low-quality financial reporting are opportunity, motivation, and rationalization.
+
+Q3: Compared to a firm that appropriately expenses recurring maintenance costs, a firm that capitalizes these costs will report greater cash flow from:
+A) operating activities.
+B) financing activities.
+C) investing activities.
+ANSWER: A
+EXPLANATION: When a firm capitalizes costs, it classifies the cash outflow as CFI rather than CFO, resulting in higher reported CFO compared to expensing the same costs.
+
+Q4: A significant increase in days payables above historical levels is most likely associated with:
+A) an increase in net working capital.
+B) an unsustainable increase in reported earnings.
+C) low quality of the cash flow statement.
+ANSWER: C
+EXPLANATION: A large increase in days payables may indicate payables are being "stretched" (paid more slowly), which boosts operating cash flow unsustainably and calls the quality of the cash flow statement into question. It does not affect earnings and it decreases, not increases, net working capital.
+
+Q5: Which of the following actions is least likely to increase earnings for the current period?
+A) Decreasing the salvage value of depreciable assets.
+B) Recognizing revenue before fulfilling the terms of a sale.
+C) Selling more inventory than is purchased or produced.
+ANSWER: A
+EXPLANATION: Decreasing the salvage value results in higher depreciation expense and lower earnings in the current period, whereas the other two choices are aggressive practices that raise current-period earnings.
+
+READING 39 — Financial Analysis Techniques
+Q1: Paragon Company's operating profits are $100,000, interest expense is $25,000, and earnings before taxes are $75,000. What is Paragon's interest coverage ratio?
+A) 1 time.
+B) 3 times.
+C) 4 times.
+ANSWER: C
+EXPLANATION: Interest coverage ratio = operating profit (EBIT) / interest expense = $100,000 / $25,000 = 4.
+
+Q2: During 2007, Brownfield Incorporated purchased $140 million of inventory. For the year just ended, Brownfield reported cost of goods sold of $130 million. Inventory at year-end was $45 million. Calculate inventory turnover for the year.
+A) 2.89.
+B) 3.25.
+C) 3.71.
+ANSWER: B
+EXPLANATION: Beginning inventory = COGS + ending inventory − purchases = $130m + $45m − $140m = $35 million. Average inventory = ($35m + $45m)/2 = $40 million. Inventory turnover = $130m COGS / $40m average inventory = 3.25.
+
+Q3: Which of the following ratios is a component of the original (three-part) DuPont equation?
+A) Debt-to-equity ratio.
+B) Asset turnover.
+C) Gross profit margin.
+ANSWER: B
+EXPLANATION: The three-part DuPont approach is: net profit margin × asset turnover × leverage ratio (assets-to-equity).
+
+Q4: From the extended (5-part) DuPont equation, which of the following components describes the equation EBT / EBIT?
+A) Tax burden.
+B) Interest burden.
+C) Financial leverage.
+ANSWER: B
+EXPLANATION: EBT / EBIT is the interest burden, the second component of the extended DuPont equation, showing that higher leverage brings higher interest payments that can offset the benefits of leverage on ROE.
+
+Q5: Income statements for Royal, Inc. show Sales of $78 million (20X0) and $82 million (20X1); Cost of Goods Sold of $47 million (20X0) and $48 million (20X1); Earnings after Taxes of $7 million (20X0) and $6 million (20X1). With respect to Royal's gross profit margin and net profit margin trends:
+A) both gross profit margin and net profit margin increased in 20X1.
+B) gross profit margin increased in 20X1 but net profit margin decreased.
+C) gross profit margin decreased but net profit margin increased in 20X1.
+ANSWER: B
+EXPLANATION: Gross profit margin (gross profit/sales) rose from 39.7% in 20X0 to 41.5% in 20X1, while net profit margin (earnings after taxes/sales) fell from 9.0% in 20X0 to 7.3% in 20X1.
+
+READING 40 — Introduction to Financial Statement Modeling
+Q1: An analyst trying to mitigate representativeness bias would most likely:
+A) perform scenario analysis.
+B) consider both inside and outside views to generate forecasts.
+C) use flexible models with few independent variables.
+ANSWER: B
+EXPLANATION: Representativeness bias comes from classifying data based on past information and known classifications; it is mitigated by considering both an inside (situation-specific) view and an outside (base-rate) view. Scenario analysis addresses overconfidence bias, and flexible models with few variables address conservatism bias.
+
+Q2: An analyst who wants to create a sales-based pro forma model for a company is most likely to begin by:
+A) modeling the company's working capital items.
+B) estimating the company's revenue growth trend.
+C) forecasting the company's capital spending.
+ANSWER: B
+EXPLANATION: The first step in creating a sales-based pro forma model is to estimate revenue growth and future revenue, since most other line items are then modeled off of it.
+
+Q3: A company is most likely to have pricing power if it operates in an industry that exhibits high:
+A) bargaining power of customers.
+B) barriers to entry.
+C) intensity of industry rivalry.
+ANSWER: B
+EXPLANATION: High barriers to entry imply a low threat of new entrants, which tends to increase the pricing power of existing companies. High rivalry and high customer bargaining power tend to decrease pricing power.
+
+Q4: An analyst is developing a forecast for a firm and expects the units sold to be reduced by 5% in the next reporting period. Which of the following balance sheet current assets is this most likely to affect?
+A) Accounts receivable, inventory, and prepayments.
+B) Accounts receivable and prepayments.
+C) Accounts receivable and inventory.
+ANSWER: C
+EXPLANATION: Selling fewer units reduces accounts receivable (all else equal) and is likely to affect inventory levels. Prepayments represent amounts paid for future period expenses, not purchases, and are unlikely to be affected by a change in sales demand.
+
+Q5: Fresh Farm Foods (FFF) reported Revenue of $800,000, COGS of $570,000, and SG&A of $96,000 for the year, based on sales of 140,000 units (Operating profit of $134,000). An analyst forecasts FFF will be forced to raise its unit price by 8%, causing demand to fall by 3,000 units. In percentage terms, which of the following will most likely see the biggest decrease?
+A) Operating profit.
+B) Revenue.
+C) Gross profit.
+ANSWER: A
+EXPLANATION: Forecast revenue falls 8.00% to $736,000 and gross profit falls 22.52% to $178,214 (COGS scales with the new unit volume). Because SG&A is held fixed, operating profit absorbs the full impact and falls the most, by 38.65% to $82,214.
