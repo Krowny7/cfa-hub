@@ -9,6 +9,7 @@ import { saveAnswerResult } from "@/lib/session-stats";
 import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
 import type { QuizQuestion, Flashcard, AwardXpResult } from "@/lib/types";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { RichText } from "@/components/RichText";
 
 export type SetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -669,7 +670,7 @@ export function SessionClient({
           <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
             {flipped ? t("flashcards.back") : t("flashcards.front")}
           </div>
-          <p className="text-base leading-relaxed">{flipped ? currentF.back : currentF.front}</p>
+          <RichText text={flipped ? currentF.back : currentF.front} className="text-base" />
           {!flipped && <div className="mt-5 text-xs text-white/30">{t("session.showAnswer")}</div>}
         </button>
 

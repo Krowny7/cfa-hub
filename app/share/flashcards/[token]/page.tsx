@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import { RichText } from "@/components/RichText";
 
 type PageProps = { params: Promise<{ token: string }> };
 
@@ -32,12 +33,8 @@ export default async function ShareFlashcardsPage({ params }: PageProps) {
           {cards.map((c) => (
             <div key={c.id} className="card-soft p-3">
               <div className="text-xs text-muted">#{c.position}</div>
-              <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">
-                {c.front}
-              </div>
-              <div className="mt-2 whitespace-pre-wrap text-sm text-white/70 break-words [overflow-wrap:anywhere]">
-                {c.back}
-              </div>
+              <RichText text={c.front} className="mt-1 text-sm font-medium break-words [overflow-wrap:anywhere]" />
+              <RichText text={c.back} className="mt-2 text-sm text-white/70 break-words [overflow-wrap:anywhere]" />
             </div>
           ))}
           {cards.length === 0 && (

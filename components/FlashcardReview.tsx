@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, RotateCcw } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
+import { RichText } from "@/components/RichText";
 
 type Card = { id: string; front: string; back: string };
 
@@ -41,14 +42,13 @@ function CardFace({
       </div>
 
       <div className={["mt-5 flex-1 min-w-0", shouldCenter ? "flex items-center justify-center" : ""].join(" ")}>
-        <div
+        <RichText
+          text={text}
           className={[
-            "whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-lg leading-relaxed",
+            "break-words [overflow-wrap:anywhere] text-lg",
             shouldCenter ? "text-center max-w-[70ch]" : "text-left w-full",
           ].join(" ")}
-        >
-          {text}
-        </div>
+        />
       </div>
 
       {showBottomHint ? <div className="mt-5 text-xs opacity-60">{hint}</div> : null}
