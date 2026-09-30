@@ -1,72 +1,136 @@
+// Seed script — quiz de "drill" associé à la page 4 de la fiche PDF FSA
+// (Analyzing Statements of Cash Flows II). Structure Fixed Income : 5
+// concepts × 3 variantes (questions en anglais ; explications en
+// français). Concept 1 = question officielle du PDF imprimé (qcm_data/
+// fsa_raw.txt) ; variantes 2-3 testent le même concept différemment.
+// Usage: node scripts/seed-fsa-drill-page4.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Financial Statement Analysis (Système)";
+
 const QUIZ_SETS = [
   {
     title: "Financial Statement Analysis — Drill Fiche Page 4 (Analyzing Statements of Cash Flows II)",
     difficulty: 2,
     questions: [
+      // Concept 1 — Calcul du FCFF
       [
-        "Joplin Corporation présente les éléments suivants dans ses états financiers de fin d'exercice : Résultat net de 43,7 M$. Charge d'amortissement de 4,2 M$. Augmentation des créances clients de 1,5 M$. Diminution des dettes fournisseurs de 2,3 M$. Vente d'équipement pour 15 M$. Achat d'équipement pour 35 M$. Le free cash flow to the firm (FCFF) de Joplin est le plus proche de :",
-        ["39 millions $.", "24 millions $.", "28 millions $."],
+        "Joplin Corporation reports the following in its year-end financial statements: Net income of $43.7 million. Depreciation expense of $4.2 million. Increase in accounts receivable of $1.5 million. Decrease in accounts payable of $2.3 million. Sold equipment for $15 million. Purchased equipment for $35 million. Joplin's free cash flow to the firm (FCFF) is closest to:",
+        ["$39 million.", "$24 million.", "$28 million."],
         1,
-        "FCFF = résultat net + charges non monétaires + intérêts après impôt − investissement en capital fixe − investissement en BFR = 43,7 M$ + 4,2 M$ − (35 M$ − 15 M$) − (1,5 M$ + 2,3 M$) = 24,1 M$ (aucune charge d'intérêt n'est donnée, et l'augmentation des créances comme la diminution des dettes fournisseurs sont toutes deux des usages de trésorerie).",
+        "FCFF = résultat net + charges non monétaires − investissement en capital fixe − investissement en BFR = 43,7 + 4,2 − (35 − 15) − (1,5 + 2,3) = 24,1 M$. L'augmentation des créances et la diminution des dettes fournisseurs sont toutes deux des usages de trésorerie.",
       ],
       [
-        "Un tableau de flux de trésorerie en pourcentage (common-size) est le moins susceptible de présenter les paiements aux employés en pourcentage :",
-        ["des revenus de la période.", "du flux de trésorerie d'exploitation de la période.", "du total des flux de trésorerie sortants de la période."],
+        "Using the following data, calculate free cash flow to the firm (FCFF): Net income of $60 million. Depreciation expense of $8 million. Increase in accounts receivable of $2 million. Decrease in accounts payable of $1 million. Sold equipment for $10 million. Purchased equipment for $40 million.",
+        ["$28 million.", "$35 million.", "$42 million."],
         1,
-        "Il existe deux formats standards de tableau de flux de trésorerie en pourcentage : exprimer chaque sortie en pourcentage du total des sorties de trésorerie, ou en pourcentage du chiffre d'affaires total de la période. Le flux de trésorerie d'exploitation mélange entrées et sorties et n'est pas utilisé comme dénominateur pour des postes individuels de paiement.",
+        "FCFF = 60 + 8 − (40 − 10) − (2 + 1) = 68 − 30 − 3 = 35 M$.",
       ],
       [
-        "Comment une baisse de la rotation des dettes fournisseurs (accounts payable turnover) affecte-t-elle le flux de trésorerie de financement d'une entreprise, et cette source de trésorerie est-elle durable ?",
+        "Using the following data, calculate free cash flow to the firm (FCFF): Net income of $25 million. Depreciation expense of $3 million. Decrease in accounts receivable of $1 million. Increase in accounts payable of $2 million. Sold equipment for $5 million. Purchased equipment for $18 million.",
+        ["$12 million.", "$18 million.", "$24 million."],
+        1,
+        "FCFF = 25 + 3 − (18 − 5) − [(−1) − 2] = 28 − 13 − (−3) = 18 M$. Ici, la baisse des créances ET la hausse des dettes fournisseurs sont toutes deux des sources de trésorerie, donc l'investissement en BFR est négatif (il libère du cash au lieu d'en consommer).",
+      ],
+      // Concept 2 — Dénominateurs valides sur un tableau de flux en pourcentage
+      [
+        "A common-size cash flow statement is least likely to provide payments to employees as a percentage of:",
+        ["revenues for the period.", "operating cash flow for the period.", "total cash outflows for the period."],
+        1,
+        "Il existe deux formats reconnus de tableau de flux en pourcentage : chaque sortie en % du total des sorties, ou en % du chiffre d'affaires. Le flux d'exploitation mélange entrées et sorties et n'est pas utilisé comme dénominateur pour un poste de paiement individuel.",
+      ],
+      [
+        "On a common-size cash flow statement, cash paid for interest is least likely to be expressed as a percentage of:",
+        ["revenue for the period.", "total cash outflows for the period.", "net income for the period."],
+        2,
+        "Le résultat net n'est pas un dénominateur standard pour un tableau de flux en pourcentage — seuls le chiffre d'affaires et le total des flux sortants (pour les sorties) ou entrants (pour les entrées) sont utilisés.",
+      ],
+      [
+        "Which of the following is a valid basis for presenting a common-size cash flow statement?",
         [
-          "Flux de financement : Augmentation / Source durable : Non",
-          "Flux de financement : Aucun impact / Source durable : Non",
-          "Flux de financement : Aucun impact / Source durable : Oui",
+          "Each item expressed as a percentage of net income.",
+          "Each inflow expressed as a percentage of total inflows, and each outflow as a percentage of total outflows.",
+          "Each item expressed as a percentage of total assets.",
         ],
         1,
-        "Une baisse de la rotation des dettes fournisseurs (payer plus lentement les fournisseurs) économise de la trésorerie et constitue une source de trésorerie d'exploitation, pas de financement — elle n'a donc aucun impact sur le CFF. Ce n'est pas non plus durable, car les fournisseurs finiront par refuser d'étendre davantage leur crédit si les paiements continuent de ralentir.",
+        "C'est l'une des deux approches reconnues : chaque entrée en % du total des entrées, chaque sortie en % du total des sorties. Le résultat net et le total des actifs ne sont pas des bases reconnues pour ce type de présentation.",
       ],
+      // Concept 3 — Baisse de la rotation des dettes fournisseurs
       [
-        "Lequel décrit le mieux respectivement un ratio mesurant la capacité d'une entreprise à acquérir des actifs long terme avec ses flux de trésorerie d'exploitation, et un ratio de performance ?",
+        "How does decreasing accounts payable turnover affect a company's cash flow from financing activities and is this source of cash sustainable?",
         [
-          "Acquisition d'actifs avec CFO : ratio d'investissement et de financement / Ratio de performance : ratio cash-to-income",
-          "Acquisition d'actifs avec CFO : ratio de réinvestissement / Ratio de performance : ratio cash-to-income",
-          "Acquisition d'actifs avec CFO : ratio de réinvestissement / Ratio de performance : ratio de remboursement de dette",
+          "Financing cash flow: Increase / Sustainable source: No",
+          "Financing cash flow: No impact / Sustainable source: No",
+          "Financing cash flow: No impact / Sustainable source: Yes",
         ],
         1,
-        "Le ratio de réinvestissement mesure la capacité d'une entreprise à acquérir des actifs long terme avec son CFO, tandis que le ratio cash-to-income est un ratio de performance mesurant la capacité à générer de la trésorerie à partir de l'exploitation. Le ratio d'investissement et de financement est plus large (il couvre aussi le remboursement de dette et les dividendes), et le ratio de remboursement de dette est un ratio de couverture, pas un ratio de performance.",
+        "Payer plus lentement les fournisseurs économise de la trésorerie d'exploitation, pas de financement — aucun impact sur le CFF. Ce n'est pas durable, car les fournisseurs finiront par refuser d'étendre davantage leur crédit.",
       ],
       [
-        "Informations sélectionnées du dernier tableau de flux de trésorerie de la société Thibault : Trésorerie provenant des activités d'exploitation 1 300 € ; Trésorerie payée pour équipements de production (2 600 €). Le ratio de réinvestissement de Thibault pour cette période est le plus proche de :",
-        ["0,50.", "0,75.", "1,00."],
+        "A company significantly slows down its payments to suppliers (a decrease in accounts payable turnover) in order to boost reported operating cash flow. This strategy is best described as:",
+        [
+          "sustainable indefinitely, since suppliers have no recourse.",
+          "an operating source of cash that is unlikely to be sustainable over the long term.",
+          "a financing source of cash that improves the firm's solvency.",
+        ],
+        1,
+        "Ralentir les paiements fournisseurs est bien une source de trésorerie d'exploitation, mais non durable : les fournisseurs vont tôt ou tard réagir (crédit resserré, prix plus élevés, rupture de la relation commerciale).",
+      ],
+      [
+        "Which of the following would most likely be considered a red flag regarding the sustainability of a company's operating cash flow?",
+        [
+          "A stable accounts payable turnover ratio over several years.",
+          "A significant and sudden decrease in accounts payable turnover.",
+          "A significant increase in accounts payable turnover.",
+        ],
+        1,
+        "Une baisse soudaine et marquée de la rotation des dettes fournisseurs signale que l'entreprise « étire » ses paiements pour gonfler artificiellement son flux d'exploitation — un signal d'alerte classique sur la qualité et la durabilité du CFO.",
+      ],
+      // Concept 4 — Ratio de réinvestissement vs ratio de performance
+      [
+        "Which of the following best describes a ratio that measures a firm's ability to acquire long-term assets with cash flows from operations, and a performance ratio, respectively?",
+        [
+          "Acquire assets with CFO: Investing and financing ratio / Performance ratio: Cash-to-income ratio",
+          "Acquire assets with CFO: Reinvestment ratio / Performance ratio: Cash-to-income ratio",
+          "Acquire assets with CFO: Reinvestment ratio / Performance ratio: Debt payment ratio",
+        ],
+        1,
+        "Le ratio de réinvestissement mesure la capacité à acquérir des actifs long terme avec le CFO ; le ratio cash-to-income est un ratio de performance mesurant la capacité à générer du cash à partir du résultat opérationnel.",
+      ],
+      [
+        "Which of the following ratios would an analyst most likely use to assess a firm's ability to grow its productive capacity using cash generated from operations?",
+        ["Cash-to-income ratio.", "Reinvestment ratio.", "Debt payment ratio."],
+        1,
+        "Le ratio de réinvestissement (CFO / trésorerie payée pour les actifs long terme) est précisément conçu pour mesurer cette capacité de croissance financée par l'exploitation.",
+      ],
+      [
+        "The cash-to-income ratio is best described as a measure of a firm's:",
+        [
+          "ability to acquire long-term assets using operating cash flow.",
+          "ability to repay outstanding debt using operating cash flow.",
+          "ability to generate cash from its operations relative to operating income.",
+        ],
+        2,
+        "Le cash-to-income ratio (CFO / résultat opérationnel) est un ratio de performance : il évalue la capacité de l'entreprise à convertir son résultat opérationnel en trésorerie réelle, pas sa capacité d'investissement ou de remboursement de dette.",
+      ],
+      // Concept 5 — Calcul du ratio de réinvestissement
+      [
+        "Selected information from the most recent cash flow statement of Thibault Company: Cash from operating activities €1,300; Cash paid for plant and equipment (€2,600). Thibault's reinvestment ratio for this period is closest to:",
+        ["0.50.", "0.75.", "1.00."],
         0,
-        "Le ratio de réinvestissement est égal au CFO divisé par la trésorerie payée pour les actifs long terme : 1 300 € / 2 600 € = 0,50.",
+        "Ratio de réinvestissement = CFO / trésorerie payée pour les actifs long terme = 1 300 € / 2 600 € = 0,50.",
       ],
       [
-        "La société RR a eu un flux de trésorerie d'exploitation de 20 millions $. RR a acheté 5 millions $ d'équipements et en a vendu 3 millions $ au cours de la période. Quel est le free cash flow to equity (FCFE) de RR pour la période ?",
-        ["15 millions $.", "18 millions $.", "22 millions $."],
+        "A company reports cash from operating activities of $2,000 and cash paid for property, plant, and equipment of $2,500. The reinvestment ratio is closest to:",
+        ["0.60.", "0.80.", "1.25."],
         1,
-        "En l'absence de tout financement net par emprunt ou toute charge d'intérêt à retraiter, le FCFE se calcule simplement comme CFO moins les investissements nets en capital fixe : 20 M$ − (5 M$ achats − 3 M$ ventes) = 20 M$ − 2 M$ = 18 M$.",
+        "Ratio de réinvestissement = 2 000 $ / 2 500 $ = 0,80.",
       ],
       [
-        "Un tableau de flux de trésorerie en pourcentage (common-size) est le moins susceptible de présenter chaque entrée de trésorerie en pourcentage :",
-        ["du chiffre d'affaires.", "du total des entrées de trésorerie.", "du total des flux de trésorerie (entrées et sorties confondues)."],
-        2,
-        "Les deux approches standards du common-size cash flow statement sont : exprimer chaque entrée en pourcentage du total des entrées, ou exprimer chaque poste en pourcentage du chiffre d'affaires. Aucune des deux méthodes ne rapporte les entrées au 'total des flux de trésorerie' pris comme somme indifférenciée des entrées et sorties — ce dénominateur n'est pas utilisé en pratique.",
-      ],
-      [
-        "David Chance, CFA, analyse Grow Corporation et réunit les informations suivantes : Trésorerie nette générée par l'exploitation 3 500 $. Trésorerie nette utilisée pour les investissements en capital fixe 727 $. Intérêts payés en trésorerie 195 $. Résultat avant impôt 4 400 $. Charge d'impôt 1 540 $. Résultat net 2 860 $. Le free cash flow to the firm (FCFF) de Grow est le plus proche de :",
-        ["2 640 $.", "2 900 $.", "2 260 $."],
+        "A company reports cash from operating activities of $3,000 and cash paid for property, plant, and equipment of $5,000. The reinvestment ratio is closest to:",
+        ["0.50.", "0.60.", "1.67."],
         1,
-        "FCFF = CFO + intérêts après impôt − investissement en capital fixe = 3 500 $ + 195 $ × (1 − taux d'impôt effectif) − 727 $. Le taux d'impôt effectif est 1 540/4 400 = 35 %, donc les intérêts après impôt sont 195 $ × (1 − 0,35) ≈ 127 $. FCFF ≈ 3 500 + 127 − 727 = 2 900 $.",
-      ],
-      [
-        "Considérons les affirmations suivantes : Affirmation #1 — Une approche de présentation d'un tableau de flux de trésorerie en pourcentage (common-size) consiste à exprimer chaque entrée de trésorerie en pourcentage du total des entrées, et chaque sortie en pourcentage du total des sorties. Affirmation #2 — Exprimer chaque poste du tableau de flux de trésorerie en pourcentage du chiffre d'affaires est utile pour prévoir les flux de trésorerie futurs. Lesquelles de ces affirmations sur un tableau de flux de trésorerie en pourcentage sont CORRECTES ?",
-        ["Seule l'affirmation #1 est correcte.", "Seule l'affirmation #2 est correcte.", "Les deux affirmations sont correctes."],
-        2,
-        "Les deux formats décrits sont bien les deux approches reconnues du common-size cash flow statement : l'une exprime chaque flux en pourcentage du total des entrées/sorties (utile pour comparer la structure des flux), l'autre exprime chaque poste en pourcentage du chiffre d'affaires (utile pour la prévision, puisque le chiffre d'affaires futur est en général l'input de départ des modèles).",
+        "Ratio de réinvestissement = 3 000 $ / 5 000 $ = 0,60.",
       ],
     ],
   },

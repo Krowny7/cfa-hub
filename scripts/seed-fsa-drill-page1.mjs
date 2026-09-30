@@ -1,110 +1,159 @@
+// Seed script — quiz de "drill" associé à la page 1 de la fiche PDF FSA
+// (Introduction to Financial Statement Analysis). Même structure que les
+// fiches Fixed Income : 5 concepts × 3 variantes (questions en anglais,
+// terminologie de l'examen ; explications en français). Le concept 1 de
+// chaque groupe est la question officielle déjà utilisée dans le PDF
+// imprimé (source : banque officielle, cf. qcm_data/fsa_raw.txt) ; les
+// variantes 2 et 3 sont rédigées pour tester le même concept sous un
+// angle différent.
+// Usage: node scripts/seed-fsa-drill-page1.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Financial Statement Analysis (Système)";
+
 const QUIZ_SETS = [
   {
     title: "Financial Statement Analysis — Drill Fiche Page 1 (Introduction to Financial Statement Analysis)",
     difficulty: 1,
     questions: [
+      // Concept 1 — Le framework d'analyse en 6 étapes
       [
-        "Quelle est la meilleure description du framework d'analyse des états financiers ?",
+        "Which of the following is the best description of the financial statement analysis framework?",
         [
-          "Collecter les données, analyser et interpréter les données, traiter les conclusions, évaluer le contexte, rapporter les recommandations, mettre à jour l'analyse.",
-          "Énoncer l'objectif et le contexte, collecter les données, traiter les données, analyser et interpréter les données, rapporter les conclusions ou recommandations, mettre à jour l'analyse.",
-          "Collecter les données, analyser et interpréter les données, déterminer le contexte, rapporter les conclusions, mettre à jour l'analyse.",
+          "Gather data, analyze and interpret the data, process the conclusions, assess the context, report the recommendations, update the analysis.",
+          "State the objective and context, gather data, process the data, analyze and interpret the data, report the conclusions or recommendations, update the analysis.",
+          "Gather data, analyze and interpret the data, determine the context, report the conclusions, update the analysis.",
         ],
         1,
-        "Le framework compte 6 étapes dans cet ordre précis : (1) énoncer l'objectif et le contexte, (2) collecter les données, (3) traiter les données, (4) analyser et interpréter, (5) rapporter les conclusions/recommandations, (6) mettre à jour l'analyse. Les options A et C mélangent l'ordre (la détermination du contexte doit être la toute première étape, pas une étape intermédiaire) et omettent l'étape de traitement des données.",
+        "Le framework compte 6 étapes dans cet ordre précis : (1) énoncer l'objectif et le contexte, (2) collecter les données, (3) traiter les données, (4) analyser et interpréter, (5) rapporter les conclusions/recommandations, (6) mettre à jour l'analyse. Les options A et C mélangent l'ordre et omettent l'étape de traitement des données.",
       ],
       [
-        "Le rapport d'audit standard ('standard auditor's report') a le plus vraisemblablement pour rôle de :",
+        "In the financial statement analysis framework, which step immediately follows \"gather data\"?",
+        ["Analyze and interpret the data.", "Process the data.", "State the objective and context."],
+        1,
+        "L'ordre est : objectif et contexte → collecte des données → traitement des données → analyse et interprétation → conclusions → mise à jour. Après la collecte vient donc le traitement (calcul de ratios, ajustements), pas directement l'analyse ni le retour en arrière vers l'objectif.",
+      ],
+      [
+        "Which of the following is correctly the very first step of the financial statement analysis framework?",
+        ["Gather data.", "State the objective and context of the analysis.", "Process the data."],
+        1,
+        "La toute première étape consiste à définir l'objectif et le contexte de l'analyse (pourquoi fait-on cette analyse, pour qui, avec quelles contraintes) — c'est ce cadrage qui détermine ensuite quelles données collecter, pas l'inverse.",
+      ],
+      // Concept 2 — Ce que garantit le rapport d'audit standard
+      [
+        "The standard auditor's report is most likely required to:",
         [
-          "fournir une opinion 'sans réserve' même si des incertitudes matérielles existent.",
-          "garantir une assurance raisonnable que la direction est fiable.",
-          "garantir une assurance raisonnable que les états financiers ne contiennent pas d'erreurs matérielles.",
+          "provide an \"unqualified\" opinion if material uncertainties exist.",
+          "provide reasonable assurance that management is reliable.",
+          "provide reasonable assurance that the financial statements contain no material errors.",
         ],
         2,
-        "L'audit est mené selon les normes d'audit généralement acceptées, qui offrent une assurance raisonnable (jamais absolue) que les états financiers sont exempts d'erreurs matérielles. L'auditeur ne se prononce jamais sur la fiabilité de la direction (B) et une opinion sans réserve ('unqualified') suppose l'absence d'incertitude matérielle significative, ce qui exclut A.",
+        "L'audit est mené selon les normes d'audit généralement acceptées, qui offrent une assurance raisonnable (jamais absolue) que les états financiers sont exempts d'erreurs matérielles. L'auditeur ne se prononce jamais sur la fiabilité de la direction, et une opinion sans réserve suppose l'absence d'incertitude matérielle significative.",
       ],
       [
-        "Pour les sociétés cotées aux États-Unis, la section Management Discussion & Analysis (MD&A) de la communication financière est le moins susceptible d'être tenue d'aborder :",
+        "Which of the following best describes what a standard, unqualified auditor's report confirms?",
         [
-          "les ressources en capital et la liquidité.",
-          "les résultats des opérations.",
-          "les éléments inhabituels ou peu fréquents.",
-        ],
-        2,
-        "Le MD&A américain doit obligatoirement couvrir les résultats des opérations, les ressources en capital et la liquidité, ainsi qu'un aperçu général de l'activité fondé sur les tendances connues. La discussion des éléments inhabituels ou peu fréquents peut y figurer mais n'est pas une obligation réglementaire, contrairement aux deux autres points.",
-      ],
-      [
-        "Une entreprise s'engage dans un nouveau type de transaction financière ayant un effet matériel sur ses résultats. Un analyste devrait le plus vraisemblablement se méfier de cette nouvelle transaction si :",
-        [
-          "la direction n'en a pas expliqué la finalité économique (business purpose).",
-          "aucune norme comptable existante ne s'applique à la transaction.",
-          "la transaction n'est encadrée par aucune réglementation existante.",
-        ],
-        0,
-        "Une transaction nouvelle peut légitimement échapper aux normes comptables ou à la réglementation existantes simplement parce qu'elle est inédite — ce n'est pas en soi un signal d'alerte. Ce qui doit alerter l'analyste, c'est l'incapacité de la direction à en expliquer la finalité économique, ce qui peut signaler une tentative de manipulation des états financiers.",
-      ],
-      [
-        "Lequel des éléments suivants est le moins susceptible d'être disponible sur EDGAR (Electronic Data Gathering, Analysis, and Retrieval System) ?",
-        [
-          "Les communiqués de presse de l'entreprise.",
-          "Le formulaire 10-Q.",
-          "Les dépôts réglementaires auprès de la SEC.",
-        ],
-        0,
-        "EDGAR (www.sec.gov) héberge les dépôts officiels auprès de la SEC, comme les rapports annuels (10-K) et trimestriels (10-Q). Les communiqués de presse sont rédigés par la direction elle-même et ne constituent pas des dépôts réglementaires SEC ; ils n'apparaissent donc pas sur EDGAR.",
-      ],
-      [
-        "Laquelle des affirmations suivantes sur l'analyse des états financiers (financial statement analysis) et la communication financière (financial reporting) est la moins exacte ?",
-        [
-          "L'analyse des états financiers vise à évaluer la performance passée et actuelle d'une entreprise pour porter un jugement sur ses perspectives futures.",
-          "La communication financière (financial reporting) consiste à fournir de l'information à un large éventail d'utilisateurs pour la prise de décision.",
-          "L'analyse des états financiers se concentre sur la manière dont les entreprises présentent leur performance financière au travers des états financiers et des annexes.",
-        ],
-        2,
-        "L'option C décrit en réalité le rôle de la communication financière (financial reporting) — produire et présenter l'information — et non celui de l'analyse (financial statement analysis), qui consiste à utiliser cette information pour évaluer et décider. C'est donc l'affirmation la moins exacte à propos de l'analyse des états financiers, alors que A et B décrivent correctement respectivement l'analyse et la communication financière.",
-      ],
-      [
-        "Un auditeur indépendant est le moins susceptible de :",
-        [
-          "confirmer les actifs et les passifs de l'entreprise.",
-          "préparer les états financiers et en assumer la responsabilité.",
-          "fournir une opinion sur le caractère fidèle de la présentation des états financiers.",
+          "That the financial statements are completely free of any error, material or not.",
+          "That the financial statements are, in all material respects, fairly presented in accordance with the applicable accounting standards.",
+          "That management's strategic decisions and business plan are sound.",
         ],
         1,
-        "Préparer les états financiers et en assumer la responsabilité incombe à la direction de l'entreprise, pas à l'auditeur. L'auditeur, lui, confirme certains soldes (A) et exprime une opinion sur la fidélité de la présentation (C) — ce sont là ses tâches habituelles.",
+        "L'opinion sans réserve porte sur la présentation fidèle des états financiers dans leurs aspects significatifs (« in all material respects »), selon le référentiel comptable applicable — jamais sur l'absence totale d'erreur (même mineure) ni sur la qualité des décisions de gestion.",
       ],
       [
-        "Quelle donnée est la plus vraisemblablement une source d'information auditée pour un analyste ?",
+        "An auditor's report most likely provides:",
         [
-          "Les annexes (footnotes) aux états financiers annuels.",
-          "Le commentaire de la direction (MD&A).",
-          "Les états financiers intermédiaires déposés auprès de la SEC.",
-        ],
-        0,
-        "Les annexes aux états financiers annuels font partie du périmètre audité et sont donc vérifiées par l'auditeur indépendant. Le MD&A est une commentaire narratif de la direction, non audité, et les états financiers intermédiaires (trimestriels) sont généralement seulement 'reviewed', pas audités au même niveau que les comptes annuels.",
-      ],
-      [
-        "Le système de contrôle interne d'une entreprise est le plus fidèlement décrit comme :",
-        [
-          "relevant de la responsabilité exclusive du conseil d'administration.",
-          "affectant directement la qualité de la communication financière.",
-          "hors du champ du rapport d'audit.",
+          "absolute assurance that no fraud has occurred anywhere in the company.",
+          "reasonable assurance that the financial statements are free from material misstatement.",
+          "an opinion on the appropriateness of management's compensation.",
         ],
         1,
-        "Les contrôles internes concernent les processus mis en place pour garantir la fiabilité de l'information financière ; ils affectent donc directement la qualité de la communication financière. La responsabilité du contrôle interne incombe à la direction (avec supervision du conseil, pas seulement sa responsabilité exclusive), et l'auditeur doit en évaluer l'efficacité dans le cadre de sa mission — ce n'est donc pas hors du champ de l'audit.",
+        "L'assurance fournie par l'auditeur est toujours raisonnable, jamais absolue — un audit ne peut garantir l'absence totale de fraude (notamment en cas de collusion), et il ne porte jamais sur la rémunération des dirigeants, qui n'entre pas dans le champ de l'opinion d'audit.",
+      ],
+      // Concept 3 — Contenu obligatoire du MD&A (US)
+      [
+        "For publicly traded firms in the United States, the Management Discussion and Analysis (MD&A) portion of the financial disclosure is least likely required to discuss:",
+        ["capital resources and liquidity.", "results of operations.", "unusual or infrequent items."],
+        2,
+        "Le MD&A américain doit obligatoirement couvrir les résultats des opérations, les ressources en capital et la liquidité. La discussion des éléments inhabituels ou peu fréquents peut y figurer mais n'est pas une obligation réglementaire, contrairement aux deux autres points.",
       ],
       [
-        "L'étape de traitement des données (processing the data) du framework d'analyse est le moins susceptible d'inclure :",
+        "Which of the following is a required component of the MD&A section for a U.S. publicly traded company?",
         [
-          "l'acquisition des états financiers de l'entreprise étudiée.",
-          "le calcul de ratios ou de données en pourcentage (common-size).",
-          "la réalisation d'ajustements appropriés aux données financières.",
+          "A discussion of the company's results of operations.",
+          "A discussion of unusual or infrequent items, if any occurred during the period.",
+          "A complete, separately audited set of financial statements.",
         ],
         0,
-        "L'acquisition des états financiers relève de l'étape de collecte des données (gather data), une étape antérieure. L'étape de traitement (processing) porte elle sur la transformation des données déjà collectées : calcul de ratios, données en pourcentage, et ajustements appropriés.",
+        "Les résultats des opérations sont l'un des trois volets obligatoires du MD&A (avec les ressources en capital/liquidité et les tendances connues). Les éléments inhabituels ne sont pas systématiquement exigés, et le MD&A n'est lui-même pas audité, encore moins un jeu séparé d'états financiers.",
+      ],
+      [
+        "Under U.S. disclosure requirements, a firm's MD&A section is required to address all of the following EXCEPT:",
+        [
+          "the company's capital resources and liquidity.",
+          "known trends and uncertainties likely to affect future results.",
+          "a detailed listing of specific transactions with related parties.",
+        ],
+        2,
+        "Le détail des transactions avec parties liées relève des annexes aux états financiers (footnotes), pas spécifiquement du MD&A. Les ressources en capital/liquidité et les tendances/incertitudes connues sont, elles, des volets obligatoires du MD&A.",
+      ],
+      // Concept 4 — Signal de suspicion pour une nouvelle transaction
+      [
+        "A firm engages in a new type of financial transaction that has a material effect on its earnings. An analyst should most likely be suspicious of the new transaction if:",
+        [
+          "management has not explained its business purpose.",
+          "no accounting standard exists that applies to the transaction.",
+          "the transaction is not governed by existing regulations.",
+        ],
+        0,
+        "Une transaction nouvelle peut légitimement échapper aux normes comptables ou à la réglementation existantes simplement parce qu'elle est inédite. Ce qui doit alerter l'analyste, c'est l'incapacité de la direction à en expliquer la finalité économique.",
+      ],
+      [
+        "An analyst notes that a company has entered into several complex transactions with related entities. Which of the following would most likely increase the analyst's level of concern about these transactions?",
+        [
+          "The transactions were fully disclosed in the footnotes to the financial statements.",
+          "The transactions appear to have no clear business purpose other than improving reported earnings.",
+          "The transactions were reviewed and approved by the company's audit committee.",
+        ],
+        1,
+        "L'absence de finalité économique claire, au-delà de l'amélioration des résultats publiés, est précisément le signal d'alerte classique. La divulgation en annexe et l'approbation par le comité d'audit sont au contraire des signes positifs de gouvernance, pas des signaux d'alerte.",
+      ],
+      [
+        "Which of the following is the best reason for an analyst to be suspicious of a new type of transaction that materially affects a firm's reported earnings?",
+        [
+          "The transaction falls outside the scope of any existing accounting standard.",
+          "The transaction appears structured specifically to achieve a particular accounting or tax outcome, without a clear underlying economic rationale.",
+          "The transaction was disclosed in a footnote rather than directly on the face of the financial statements.",
+        ],
+        1,
+        "Une transaction conçue avant tout pour produire un effet comptable ou fiscal précis, sans rationalité économique sous-jacente, est le signal classique de manipulation potentielle — contrairement au simple fait de tomber hors du champ des normes existantes ou d'être divulguée en annexe, qui sont des situations normales et non suspectes en soi.",
+      ],
+      // Concept 5 — Ce qui est disponible sur EDGAR
+      [
+        "Which of the following is least likely to be available on EDGAR (Electronic Data Gathering, Analysis, and Retrieval System)?",
+        ["Corporate press releases.", "Form 10Q.", "SEC filings."],
+        0,
+        "EDGAR (www.sec.gov) héberge les dépôts officiels auprès de la SEC, comme les rapports annuels (10-K) et trimestriels (10-Q). Les communiqués de presse sont rédigés par la direction elle-même et ne constituent pas des dépôts réglementaires SEC.",
+      ],
+      [
+        "Which of the following is most likely to be found on EDGAR?",
+        [
+          "A company's internal budget forecasts and strategic plans.",
+          "A company's annual report filed on Form 10-K.",
+          "Third-party analyst commentary and earnings estimates.",
+        ],
+        1,
+        "Le formulaire 10-K est un dépôt réglementaire obligatoire auprès de la SEC et se trouve donc sur EDGAR. Les prévisions budgétaires internes et les commentaires d'analystes tiers ne sont pas des dépôts SEC et n'apparaissent pas sur EDGAR.",
+      ],
+      [
+        "An analyst wants to find a company's quarterly report filed with U.S. regulators. This filing, along with the company's annual report, would most likely be found on:",
+        [
+          "the company's own investor relations webpage only.",
+          "EDGAR.",
+          "a private financial data vendor's proprietary database only.",
+        ],
+        1,
+        "Les dépôts réglementaires obligatoires (10-K annuel, 10-Q trimestriel) sont centralisés sur EDGAR, la base de données publique de la SEC — c'est la source de référence, même si certaines entreprises republient aussi ces documents sur leur propre site.",
       ],
     ],
   },

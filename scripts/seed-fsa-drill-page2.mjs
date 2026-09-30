@@ -1,78 +1,141 @@
+// Seed script — quiz de "drill" associé à la page 2 de la fiche PDF FSA
+// (Analyzing Balance Sheets). Même structure que Fixed Income : 5 concepts
+// × 3 variantes (questions en anglais ; explications en français). Le
+// concept 1 de chaque groupe est la question officielle du PDF imprimé
+// (source : qcm_data/fsa_raw.txt) ; les variantes 2 et 3 testent le même
+// concept avec des chiffres/scénarios différents.
+// Usage: node scripts/seed-fsa-drill-page2.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Financial Statement Analysis (Système)";
+
 const QUIZ_SETS = [
   {
     title: "Financial Statement Analysis — Drill Fiche Page 2 (Analyzing Balance Sheets)",
     difficulty: 2,
     questions: [
+      // Concept 1 — Calcul du quick ratio
       [
-        "Un analyste a réuni les informations suivantes sur une entreprise : Trésorerie 100, Créances clients 750, Titres négociables 300, Stocks 850 ; Dettes fournisseurs 300, Dette court terme 130. Quel est le quick ratio ?",
-        ["0,62.", "1,53.", "2,67."],
+        "An analyst has gathered the following information about a company: Cash 100, Accounts Receivable 750, Marketable Securities 300, Inventory 850; Accounts Payable 300, Short-Term Debt 130. What is the quick ratio?",
+        ["0.62.", "1.53.", "2.67."],
         2,
-        "Quick ratio = (Trésorerie + Créances clients + Titres négociables) / (Dettes fournisseurs + Dette court terme) = (100 + 750 + 300) / (300 + 130) = 1 150 / 430 = 2,67. Les stocks sont exclus du numérateur car c'est justement ce qui distingue le quick ratio du current ratio.",
+        "Quick ratio = (Trésorerie + Créances clients + Titres négociables) / (Dettes fournisseurs + Dette court terme) = (100 + 750 + 300) / (300 + 130) = 1 150 / 430 = 2,67. Les stocks sont exclus du numérateur.",
       ],
       [
-        "Sous US GAAP, la valeur au bilan d'un titre de créance classé comme 'held-to-maturity' est :",
-        ["son coût historique.", "son coût amorti.", "sa juste valeur."],
+        "A company reports: Cash 200, Accounts Receivable 500, Marketable Securities 100, Inventory 600; Accounts Payable 250, Short-Term Debt 150. The quick ratio is closest to:",
+        ["1.50.", "2.00.", "3.00."],
         1,
-        "Sous US GAAP, les titres de créance détenus jusqu'à l'échéance (held-to-maturity) sont comptabilisés au bilan à leur coût amorti, ni à leur coût historique brut (non ajusté), ni à leur juste valeur — contrairement aux titres trading ou available-for-sale.",
+        "Quick ratio = (200 + 500 + 100) / (250 + 150) = 800 / 400 = 2,00. Le stock (600) n'entre pas dans le calcul, contrairement au current ratio.",
       ],
       [
-        "Le goodwill comptable au bilan est le plus fidèlement décrit comme :",
+        "A company reports: Cash 50, Accounts Receivable 300, Marketable Securities 150, Inventory 400; Accounts Payable 200, Short-Term Debt 100. The quick ratio is closest to:",
+        ["1.33.", "1.67.", "2.33."],
+        1,
+        "Quick ratio = (50 + 300 + 150) / (200 + 100) = 500 / 300 = 1,67.",
+      ],
+      // Concept 2 — Titres held-to-maturity : coût amorti
+      [
+        "Under U.S. GAAP, the balance sheet value of a debt security classified as held-to-maturity is its:",
+        ["historical cost.", "amortized cost.", "fair value."],
+        1,
+        "Sous US GAAP, les titres held-to-maturity sont comptabilisés au coût amorti, ni à leur coût historique brut, ni à leur juste valeur — contrairement aux titres trading ou available-for-sale.",
+      ],
+      [
+        "A company purchases a bond and classifies it as held-to-maturity under U.S. GAAP. Subsequent changes in the bond's fair value will most likely:",
         [
-          "le montant par lequel le prix d'acquisition d'une entreprise excède ses actifs nets identifiables.",
-          "la valeur intangible qu'une entreprise crée en excès de ses actifs nets identifiables.",
-          "la valeur dérivée de la performance future attendue d'une entreprise.",
+          "be recognized in net income.",
+          "be recognized in other comprehensive income.",
+          "not be recognized in the financial statements.",
+        ],
+        2,
+        "Un titre held-to-maturity n'est jamais réévalué à la juste valeur : il reste au coût amorti jusqu'à l'échéance, donc les variations de juste valeur ne sont comptabilisées nulle part (ni en résultat, ni en OCI).",
+      ],
+      [
+        "Which of the following statements about a held-to-maturity debt security is most accurate?",
+        [
+          "It is reported at fair value, with gains and losses recognized through profit or loss.",
+          "It is reported at fair value, with gains and losses recognized through other comprehensive income.",
+          "It is reported at amortized cost, with no fair value adjustment on the balance sheet.",
+        ],
+        2,
+        "Seule l'option C décrit correctement le traitement held-to-maturity : coût amorti, sans aucun ajustement de juste valeur au bilan. Les options A et B décrivent respectivement les titres trading et available-for-sale.",
+      ],
+      // Concept 3 — Calcul du goodwill comptable
+      [
+        "Balance sheet goodwill is most accurately described as the:",
+        [
+          "amount by which the purchase price of an acquired firm exceeds its identifiable net assets.",
+          "intangible value a firm creates in excess of its identifiable net assets.",
+          "value derived from the expected future performance of a firm.",
         ],
         0,
-        "Le goodwill comptable (au bilan) correspond au montant par lequel le prix d'acquisition d'une entreprise excède la juste valeur de ses actifs nets identifiables. Le goodwill généré en interne n'est jamais reconnu au bilan (B décrit un concept non comptabilisé), et la valeur issue de la performance future attendue est appelée 'goodwill économique', un concept distinct du goodwill comptable (C).",
+        "Le goodwill comptable correspond au montant par lequel le prix d'acquisition excède la juste valeur des actifs nets identifiables acquis. Le goodwill généré en interne n'est jamais comptabilisé, et la valeur de performance future s'appelle le goodwill économique, un concept distinct.",
       ],
       [
-        "James Alexander, Inc. a payé le pair de 220 000 $ pour des obligations à coupon de 5 % émises par Charles Michael, Inc. À la fin de la période comptable, la juste valeur des obligations était de 212 000 $. L'entreprise prévoit de conserver ces obligations quelques années mais de les vendre avant l'échéance. Quel sera l'impact le plus probable sur le résultat net à la fin de la première année ?",
-        ["Le résultat net ne sera pas affecté.", "Le résultat net diminuera.", "Le résultat net augmentera."],
-        2,
-        "Puisque l'entreprise prévoit de conserver les obligations un certain temps mais de les vendre avant l'échéance, elles sont classées 'available-for-sale' : la perte latente de 8 000 $ passe par les autres éléments du résultat global (OCI) et non par le résultat net, tandis que les revenus d'intérêts perçus sur les obligations augmentent bien le résultat net.",
+        "Halsey Corp. acquires Baines Inc. for $50 million. The fair value of Baines's identifiable net assets at the acquisition date is $38 million. The goodwill Halsey will recognize on its consolidated balance sheet is closest to:",
+        ["$12 million.", "$38 million.", "$50 million."],
+        0,
+        "Goodwill = prix d'achat − juste valeur des actifs nets identifiables = 50 M$ − 38 M$ = 12 M$.",
       ],
       [
-        "Lequel des éléments suivants est classé comme actif incorporel identifiable ?",
-        ["Le goodwill.", "Un placement en titres.", "Une marque déposée (trademark)."],
-        2,
-        "Les actifs incorporels identifiables sont des actifs non monétaires sans substance physique pouvant être acquis séparément, comme une marque déposée. Le goodwill ne peut jamais être acquis séparément — il est donc par définition non identifiable — tandis que les titres de placement sont considérés comme des actifs financiers, pas incorporels.",
-      ],
-      [
-        "Sous US GAAP, le traitement des titres de transaction ('trading securities') est identique au traitement IFRS des titres mesurés à :",
-        ["leur coût amorti.", "leur juste valeur par le compte de résultat (FVTPL).", "leur juste valeur par les autres éléments du résultat global (FVOCI)."],
+        "Rexon Inc. pays $120 million to acquire Talix Co., whose identifiable net assets have a fair value of $95 million at the acquisition date. The goodwill recognized on Rexon's consolidated balance sheet is closest to:",
+        ["$95 million.", "$25 million.", "$120 million."],
         1,
-        "Les titres de transaction (trading securities) sous US GAAP sont mesurés à la juste valeur, avec les variations passant par le résultat net — exactement comme les titres classés en juste valeur par le compte de résultat (fair value through profit and loss) sous IFRS. Le coût amorti concerne les titres held-to-maturity et la FVOCI concerne certains titres de dette AFS sous IFRS, pas les titres de transaction.",
+        "Goodwill = 120 M$ − 95 M$ = 25 M$.",
+      ],
+      // Concept 4 — Effet d'une obligation AFS sur le résultat net
+      [
+        "James Alexander, Inc., paid par of $220,000 for 5% coupon bonds in Charles Michael, Inc. By the end of the accounting period, the fair value of the bonds was $212,000. The firm plans to hold these bonds for a few years but sell them before maturity. What will be the most likely impact on net income at the end of the first year?",
+        ["Net income will be unaffected.", "Net income will decrease.", "Net income will increase."],
+        2,
+        "Ces obligations sont classées available-for-sale : la perte latente de 8 000 $ passe par les autres éléments du résultat global (OCI), pas par le résultat net, tandis que les revenus d'intérêts perçus augmentent bien le résultat net.",
       ],
       [
-        "Les revenus d'intérêts sont comptabilisés si l'actif sous-jacent est reconnu comme :",
+        "A firm purchases bonds at par for $150,000 and classifies them as available-for-sale. By year-end, the bonds' fair value has fallen to $145,000, but the firm continues to earn and record interest income on the bonds. What is the most likely impact on the firm's net income for the year?",
         [
-          "un actif de transaction (trading) uniquement.",
-          "held-to-maturity, trading, ou available-for-sale.",
-          "trading ou available-for-sale uniquement.",
+          "Net income decreases, reflecting the unrealized loss on the bonds.",
+          "Net income increases due to the interest income, while the unrealized loss bypasses net income.",
+          "Net income is unaffected by either the interest income or the fair value change.",
         ],
         1,
-        "Les revenus d'intérêts sont comptabilisés au compte de résultat quelle que soit la classification du titre de dette porteur d'intérêts — held-to-maturity, trading, ou available-for-sale. Ce qui diffère selon la classification, c'est le traitement des variations de valeur (résultat net, OCI, ou aucun ajustement), pas la comptabilisation des intérêts eux-mêmes.",
+        "Même logique : pour un titre AFS, les intérêts perçus passent par le résultat net, tandis que la variation de juste valeur (ici une perte latente de 5 000 $) est logée dans les autres éléments du résultat global, sans affecter le résultat net.",
       ],
       [
-        "Les passifs non courants sont généralement comptabilisés au bilan à :",
-        ["leur prix d'émission.", "leur coût amorti.", "leur juste valeur."],
+        "A company classifies a bond investment as available-for-sale. During the year, the bond's fair value rises above its purchase price, and the company also earns interest income on the bond. Which of the following is most accurate regarding the effects on net income and other comprehensive income (OCI)?",
+        [
+          "Both the interest income and the unrealized gain increase net income.",
+          "The interest income increases net income; the unrealized gain is recognized in OCI.",
+          "The interest income is recognized in OCI; the unrealized gain increases net income.",
+        ],
         1,
-        "La grande majorité des passifs non courants (dettes obligataires, emprunts) sont comptabilisés au coût amorti, méthode qui intègre l'amortissement de toute prime ou décote d'émission sur la durée de vie de l'instrument. Le prix d'émission n'est que la valeur initiale, et la juste valeur n'est utilisée que sur option pour certains passifs spécifiques (financial liabilities at fair value option), pas comme traitement par défaut.",
+        "Le traitement AFS est symétrique, que la variation de juste valeur soit une perte ou un gain latent : les intérêts vont toujours en résultat net, la variation de juste valeur va toujours en OCI (jamais l'inverse).",
+      ],
+      // Concept 5 — Actif incorporel identifiable
+      [
+        "Which of the following is classified as an identifiable intangible asset?",
+        ["Goodwill.", "A security investment.", "A trademark."],
+        2,
+        "Les actifs incorporels identifiables sont des actifs non monétaires sans substance physique pouvant être acquis séparément, comme une marque déposée. Le goodwill n'est jamais identifiable, et un placement en titres est un actif financier, pas incorporel.",
       ],
       [
-        "L'amortissement d'une obligation émise avec une prime (bond issued at a premium) se traduit le plus vraisemblablement par :",
-        ["une augmentation du résultat net.", "une diminution du résultat net.", "aucun impact sur le résultat net."],
-        0,
-        "Lorsqu'une obligation est émise avec une prime, la charge d'intérêt effective comptabilisée diminue chaque période à mesure que la prime s'amortit, ce qui réduit la charge d'intérêt totale par rapport au coupon payé et augmente donc le résultat net par rapport à une émission au pair.",
+        "Which of the following is most likely classified as an identifiable intangible asset?",
+        [
+          "Goodwill arising from a business combination.",
+          "A patent acquired from another firm.",
+          "A long-term equity investment in another company.",
+        ],
+        1,
+        "Un brevet acheté à une autre entreprise est un actif incorporel identifiable (séparable, protégé légalement). Le goodwill n'est par définition jamais identifiable, et un placement en titres de participation est un actif financier.",
       ],
       [
-        "Lequel des passifs financiers suivants est le plus vraisemblablement détenu à la juste valeur ?",
-        ["Les dérivés.", "Les obligations.", "Les emprunts bancaires."],
-        0,
-        "Les instruments dérivés sont systématiquement comptabilisés à la juste valeur, avec variations passant par le résultat net, en raison de leur nature spéculative ou de couverture. Les obligations et emprunts bancaires sont en général comptabilisés au coût amorti, sauf option de juste valeur exercée dans des cas spécifiques.",
+        "An analyst is reviewing a company's balance sheet and wants to identify its identifiable intangible assets. Which of the following would most likely qualify?",
+        [
+          "Internally generated goodwill.",
+          "A customer list acquired as part of a business acquisition.",
+          "Cash and cash equivalents.",
+        ],
+        1,
+        "Une liste de clients acquise lors d'une acquisition d'entreprise est un actif incorporel identifiable reconnaissable séparément. Le goodwill généré en interne n'est jamais comptabilisé, et la trésorerie n'est bien sûr pas un actif incorporel.",
       ],
     ],
   },

@@ -1,102 +1,148 @@
+// Seed script — quiz de "drill" associé à la page 3 de la fiche PDF FSA
+// (Analyzing Statements of Cash Flows I). Structure Fixed Income : 5
+// concepts × 3 variantes (questions en anglais ; explications en
+// français). Concept 1 = question officielle du PDF imprimé (qcm_data/
+// fsa_raw.txt) ; variantes 2-3 testent le même concept différemment.
+// Usage: node scripts/seed-fsa-drill-page3.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Financial Statement Analysis (Système)";
+
 const QUIZ_SETS = [
   {
     title: "Financial Statement Analysis — Drill Fiche Page 3 (Analyzing Statements of Cash Flows I)",
     difficulty: 2,
     questions: [
+      // Concept 1 — Ajustement du résultat net (méthode indirecte)
       [
-        "Étant donné les informations suivantes, quel est l'ajustement au résultat net pour calculer le flux de trésorerie d'exploitation par la méthode indirecte ? Augmentation des dettes fournisseurs de 25 $. Vente d'une action pour 15 $. Dividendes payés de 10 $ aux actionnaires. Charge d'amortissement de 100 $. Augmentation des stocks de 20 $.",
-        ["-50 $.", "-95 $.", "+105 $."],
+        "Given the following information, what is the adjustment to net income when calculating cash flow from operations using the indirect method? Increase in accounts payable of $25. Sold one share of stock for $15. Paid dividends of $10 to shareholders. Depreciation expense of $100. Increase in inventory of $20.",
+        ["-$50.", "-$95.", "+$105."],
         2,
-        "L'ajustement est égal à l'augmentation des dettes fournisseurs (+25) plus l'amortissement réintégré (+100) moins l'augmentation des stocks (-20) = +105. La vente d'action et les dividendes payés sont des flux de financement et n'ajustent pas le résultat net lors du calcul du CFO.",
+        "L'ajustement est égal à l'augmentation des dettes fournisseurs (+25) plus l'amortissement réintégré (+100) moins l'augmentation des stocks (-20) = +105. La vente d'action et les dividendes payés sont des flux de financement, sans effet sur cet ajustement.",
       ],
       [
-        "Pour calculer les encaissements clients lors de la conversion d'un tableau de flux de trésorerie de la méthode indirecte à la méthode directe, un analyste commence par :",
+        "Given the following information, what is the adjustment to net income when calculating cash flow from operations using the indirect method? Increase in accounts payable of $40. Sold common stock for $20. Paid cash dividends of $15. Depreciation expense of $80. Increase in inventory of $10.",
+        ["+$70.", "+$90.", "+$110."],
+        2,
+        "Ajustement = +40 (AP) + 80 (amortissement) − 10 (stock) = +110. L'émission d'actions et les dividendes payés sont des flux de financement, exclus de cet ajustement.",
+      ],
+      [
+        "Given the following information, what is the adjustment to net income when calculating cash flow from operations using the indirect method? Decrease in accounts payable of $15. Issued bonds for $50. Paid cash dividends of $20. Depreciation expense of $60. Decrease in inventory of $25.",
+        ["+$45.", "+$70.", "+$95."],
+        1,
+        "Ajustement = −15 (baisse des dettes fournisseurs, un usage de trésorerie) + 60 (amortissement) + 25 (baisse des stocks, une source de trésorerie) = +70. L'émission d'obligations et les dividendes payés sont des flux de financement.",
+      ],
+      // Concept 2 — Encaissements clients par la méthode directe
+      [
+        "To compute cash collections from customers when converting a statement of cash flows from the indirect to the direct method, an analyst begins with:",
         [
-          "le coût des ventes, en soustrayant toute augmentation des dettes fournisseurs, en ajoutant toute augmentation des stocks, et en soustrayant toute dépréciation de stock.",
-          "les ventes, en soustrayant toute augmentation des créances clients, et en ajoutant toute augmentation des produits constatés d'avance.",
-          "le résultat net et en réintégrant les charges non monétaires.",
+          "cost of goods sold, subtracts any increase in accounts payable, adds any increase in inventory, and subtracts any inventory write-offs.",
+          "sales, subtracts any increase in accounts receivable, and adds any increase in unearned revenue.",
+          "net income and adds back non-cash expenses.",
         ],
         1,
-        "Pour calculer les encaissements clients, l'analyste part des ventes nettes du compte de résultat, soustrait (ajoute) toute augmentation (diminution) des créances clients, et ajoute (soustrait) toute augmentation (diminution) des produits constatés d'avance (unearned revenue).",
+        "L'analyste part des ventes nettes, soustrait (ajoute) toute augmentation (diminution) des créances clients, et ajoute (soustrait) toute augmentation (diminution) des produits constatés d'avance.",
       ],
       [
-        "Copper, Inc. avait 4 millions $ d'obligations en circulation convertibles en actions ordinaires à un taux de conversion de 100 actions par obligation de 1 000 $. En 20X1, toutes les obligations en circulation ont été converties en actions ordinaires. Le prix moyen de l'action Copper en 20X1 était de 15 $. Le tableau des flux de trésorerie de Copper pour l'exercice clos le 31 décembre 20X1 devrait le plus vraisemblablement inclure :",
+        "An analyst wants to estimate cash collections from customers using the income statement and balance sheet. Which of the following adjustments to net sales is correct?",
         [
-          "des flux de financement de +6 millions $ liés à l'émission d'actions ordinaires et de -4 millions $ liés au remboursement des obligations, et des flux d'investissement de -2 millions $ pour une perte sur remboursement d'obligations.",
-          "des flux de financement de +4 millions $ liés à l'émission d'actions ordinaires et de -4 millions $ liés au remboursement des obligations.",
-          "une annexe décrivant la conversion des obligations en actions ordinaires.",
+          "Add an increase in accounts receivable.",
+          "Subtract a decrease in unearned revenue.",
+          "Add a decrease in accounts receivable.",
         ],
         2,
-        "La conversion d'obligations en actions ordinaires est une transaction non monétaire (non-cash) : elle n'implique aucune entrée ni sortie de trésorerie réelle. Elle doit donc être présentée en annexe du tableau des flux de trésorerie, et non intégrée dans les sections financement ou investissement.",
+        "Une diminution des créances clients signifie que plus de trésorerie a été encaissée que ce que reflètent les ventes de la période : elle s'ajoute aux ventes nettes. Une augmentation des créances se soustrait (pas s'ajoute), et une baisse des produits constatés d'avance se soustrait également (pas l'inverse).",
       ],
       [
-        "Quel référentiel comptable permet à une entreprise de classer les intérêts reçus en flux de financement et les intérêts payés en flux d'investissement dans son tableau des flux de trésorerie ?",
-        ["Les IFRS uniquement.", "Les US GAAP uniquement.", "Ni les IFRS ni les US GAAP."],
-        2,
-        "Les IFRS permettent de classer les intérêts reçus en flux d'exploitation ou d'investissement, et les intérêts payés en flux d'exploitation ou de financement (soit l'inverse de ce que décrit la question). Les US GAAP imposent que les intérêts reçus ET payés soient tous deux classés en flux d'exploitation. Aucun des deux référentiels ne permet la combinaison décrite dans l'énoncé.",
-      ],
-      [
-        "Lors du calcul du flux de trésorerie d'exploitation (CFO) par la méthode indirecte, laquelle des affirmations suivantes est la plus exacte ?",
-        [
-          "Lors de la constatation d'une plus-value sur cession d'immobilisations, le montant constitue une déduction des flux de trésorerie d'exploitation.",
-          "La méthode indirecte nécessite un tableau supplémentaire pour rapprocher le résultat net et le flux de trésorerie.",
-          "Avec la méthode indirecte, chaque poste du compte de résultat est converti en son équivalent trésorerie.",
-        ],
+        "A company's net sales were $500,000. Accounts receivable increased by $30,000 during the period, and unearned revenue decreased by $10,000. Cash collections from customers for the period are closest to:",
+        ["$460,000.", "$500,000.", "$540,000."],
         0,
-        "Une plus-value sur cession d'immobilisations est incluse dans le résultat net, mais le produit réel de la cession apparaît dans la section investissement ; la plus-value doit donc être déduite du résultat net lors du calcul du CFO pour éviter un double comptage. Convertir chaque poste du compte de résultat en équivalent trésorerie décrit la méthode directe, pas la méthode indirecte.",
+        "Encaissements = ventes nettes − augmentation des créances − diminution des produits constatés d'avance = 500 000 $ − 30 000 $ − 10 000 $ = 460 000 $.",
       ],
+      // Concept 3 — Conversion d'obligations en actions : annexe non monétaire
       [
-        "Pour calculer les encaissements clients, un analyste devrait le plus judicieusement :",
+        "Copper, Inc., had $4 million in bonds outstanding that were convertible into common stock at a conversion rate of 100 shares per $1,000 bond. In 20X1, all of the outstanding bonds were converted into common stock. Copper's average share price for 20X1 was $15. Copper's statement of cash flows for the year ended December 31, 20X1, should most likely include:",
         [
-          "ajouter la variation des créances clients aux ventes à crédit.",
-          "soustraire les créances clients des ventes brutes.",
-          "soustraire la variation des créances clients des ventes nettes.",
+          "cash flows from financing of +$6 million from issuance of common stock and –$4 million from retirement of bonds and cash flows from investing of –$2 million for a loss on retirement of bonds.",
+          "cash flows from financing of +$4 million from issuance of common stock and –$4 million from retirement of bonds.",
+          "a footnote describing the conversion of the bonds into common stock.",
         ],
         2,
-        "Les encaissements clients se calculent le plus justement en soustrayant la variation des créances clients (augmentation) ou en l'ajoutant (diminution) aux ventes nettes de la période, et non en manipulant les ventes brutes ou à crédit isolément.",
+        "La conversion d'obligations en actions ordinaires est une transaction non monétaire : elle n'implique aucune entrée ni sortie de trésorerie réelle, et doit donc être présentée en annexe, pas dans les sections financement ou investissement.",
       ],
       [
-        "Quelle est la différence entre la méthode directe et la méthode indirecte de calcul du flux de trésorerie d'exploitation ?",
+        "A company converts $10 million of convertible bonds into common stock during the year, with no cash changing hands. How should this transaction most likely be reported on the statement of cash flows?",
         [
-          "Les postes de bilan ne sont pas inclus dans le flux d'exploitation pour la méthode directe, alors qu'ils le sont pour la méthode indirecte.",
-          "La méthode directe part des ventes et suit la trésorerie telle qu'elle transite par le compte de résultat, tandis que la méthode indirecte part du résultat net et l'ajuste pour les charges non monétaires et autres éléments.",
-          "La méthode indirecte part du résultat brut et ajuste le flux d'exploitation, tandis que la méthode directe part de la marge brute et suit le compte de résultat pour calculer les flux d'exploitation.",
+          "As a $10 million financing inflow and a $10 million financing outflow.",
+          "As a $10 million investing outflow only.",
+          "In a footnote disclosure, since no cash flow is involved.",
+        ],
+        2,
+        "Sans mouvement de trésorerie réel, la conversion ne figure dans aucune des trois sections du tableau de flux — elle est simplement décrite en annexe, comme toute transaction non monétaire significative.",
+      ],
+      [
+        "Which of the following transactions would most likely be disclosed in a footnote to the statement of cash flows rather than reported within one of its three main sections?",
+        [
+          "Payment of a cash dividend to shareholders.",
+          "Acquisition of equipment by issuing common stock directly to the seller.",
+          "Repayment of short-term bank debt with cash.",
         ],
         1,
-        "La différence fondamentale porte sur le point de départ du calcul : la méthode directe part des ventes et retrace la trésorerie encaissée/décaissée poste par poste du compte de résultat, tandis que la méthode indirecte part du résultat net (après impôt) et l'ajuste pour les éléments non monétaires et les variations de BFR. Les deux méthodes aboutissent toujours au même flux d'exploitation final.",
+        "Acquérir un équipement en échange direct d'actions (sans trésorerie) est une transaction non monétaire, à mentionner en annexe. Le paiement de dividendes et le remboursement de dette en cash sont, eux, de vrais flux de trésorerie classés en financement.",
+      ],
+      // Concept 4 — Classification des intérêts (IFRS vs US GAAP)
+      [
+        "Which set of accounting standards allows a firm to classify interest received as a financing cash flow and interest paid as an investing cash flow on its cash flow statement?",
+        ["The IFRS only.", "U.S. GAAP only.", "Neither the IFRS nor U.S. GAAP."],
+        2,
+        "Les IFRS permettent de classer les intérêts reçus en exploitation ou investissement, et les intérêts payés en exploitation ou financement (l'inverse de ce que décrit la question). Les US GAAP imposent que les deux soient classés en exploitation. Aucun référentiel ne permet cette combinaison précise.",
       ],
       [
-        "Pour convertir un tableau de flux de trésorerie de la méthode indirecte à la méthode directe, l'analyste devrait :",
+        "Under U.S. GAAP, interest paid on debt is classified as a cash flow from:",
+        ["operations.", "investing.", "financing."],
+        0,
+        "Sous US GAAP, les intérêts payés (comme les intérêts reçus et les dividendes reçus) sont toujours classés en flux d'exploitation — seuls les dividendes payés sont classés en financement.",
+      ],
+      [
+        "Which of the following interest and dividend classifications is permitted under IFRS but not under U.S. GAAP?",
         [
-          "ajouter les diminutions des créances clients aux ventes nettes.",
-          "soustraire les augmentations de stocks du coût des ventes.",
-          "ajouter les augmentations des dettes fournisseurs au coût des ventes.",
+          "Classifying interest paid as a financing cash outflow.",
+          "Classifying interest received as an operating cash inflow.",
+          "Classifying dividends paid as a financing cash outflow.",
         ],
         0,
-        "Une diminution des créances clients représente un encaissement de trésorerie supplémentaire, donc s'ajoute aux ventes nettes pour obtenir les encaissements clients réels. Les augmentations de stock (un usage de trésorerie) doivent en réalité être ajoutées au coût des ventes, et les augmentations de dettes fournisseurs (une source de trésorerie) doivent être soustraites du coût des ventes — l'inverse de ce que proposent B et C.",
+        "Les IFRS offrent une flexibilité de classement (intérêts payés en exploitation OU financement) que n'ont pas les US GAAP, qui imposent toujours l'exploitation pour les intérêts payés. Les intérêts reçus en exploitation et les dividendes payés en financement sont, eux, conformes aux deux référentiels.",
+      ],
+      // Concept 5 — Plus/moins-value sur cession et méthode indirecte
+      [
+        "When calculating cash flow from operations (CFO) using the indirect method which of the following is most accurate?",
+        [
+          "When recognizing a gain on the sale of fixed assets, the amount is a deduction to operating cash flows.",
+          "The indirect method requires an additional schedule to reconcile net income to cash flow.",
+          "In using the indirect method, each item on the income statement is converted to its cash equivalent.",
+        ],
+        0,
+        "Une plus-value sur cession d'immobilisations est incluse dans le résultat net, mais le produit réel de la cession apparaît en investissement ; elle doit donc être déduite du résultat net pour éviter un double comptage.",
       ],
       [
-        "Laquelle des affirmations suivantes est CORRECTE concernant la prise en compte de l'amortissement dans la section exploitation du tableau des flux de trésorerie ?",
+        "A firm sells equipment for $80,000 and recognizes a $15,000 gain on the sale in net income. Using the indirect method to compute cash flow from operations, the analyst should:",
         [
-          "La méthode directe comme la méthode indirecte prennent en compte l'amortissement.",
-          "La méthode directe ne prend pas en compte l'amortissement, la méthode indirecte le prend en compte.",
-          "Ni la méthode directe ni la méthode indirecte ne prennent en compte l'amortissement.",
+          "add the $15,000 gain to net income.",
+          "subtract the $15,000 gain from net income.",
+          "make no adjustment, since the gain is already a cash flow.",
         ],
         1,
-        "La méthode indirecte doit réintégrer l'amortissement au résultat net puisque son point de départ (le résultat net) l'inclut déjà comme charge non monétaire. La méthode directe, elle, ne part jamais du résultat net et n'a donc jamais besoin de retraiter l'amortissement — elle ne considère que les flux de trésorerie réels.",
+        "La plus-value de 15 000 $ est déjà incluse dans le résultat net mais appartient économiquement à la section investissement (le produit total de 80 000 $ y figure) ; elle doit donc être soustraite du résultat net lors du calcul du CFO.",
       ],
       [
-        "Lors du calcul du flux de trésorerie d'exploitation par la méthode indirecte, une variation des dettes fournisseurs nécessite laquelle des opérations suivantes ?",
+        "Using the indirect method, a loss on the sale of equipment should be treated as a(n):",
         [
-          "Un ajustement positif (négatif) au résultat net lorsque les dettes fournisseurs augmentent (diminuent).",
-          "Un ajustement négatif au résultat net, que les dettes fournisseurs augmentent ou diminuent.",
-          "Un ajustement négatif (positif) au résultat net lorsque les dettes fournisseurs augmentent (diminuent).",
+          "addition to net income when computing CFO.",
+          "subtraction from net income when computing CFO.",
+          "adjustment to CFI only, with no effect on CFO.",
         ],
         0,
-        "Une augmentation des dettes fournisseurs signifie que l'entreprise a différé des paiements en trésorerie, ce qui constitue une source de cash : elle appelle donc un ajustement positif au résultat net. Inversement, une diminution des dettes fournisseurs signifie que davantage de trésorerie a été décaissée que ce que reflète le résultat net : elle appelle un ajustement négatif.",
+        "Symétriquement à la plus-value, une moins-value réduit le résultat net sans représenter une vraie sortie de trésorerie d'exploitation (le produit de cession, lui, va en investissement) ; elle doit donc être réintégrée (ajoutée) au résultat net pour calculer le CFO.",
       ],
     ],
   },

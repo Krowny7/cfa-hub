@@ -1,90 +1,144 @@
+// Seed script — quiz de "drill" associé à la page 7 de la fiche PDF FSA
+// (Topics in Long-Term Liabilities and Equity). Structure Fixed Income : 5
+// concepts × 3 variantes (questions en anglais ; explications en
+// français). Concept 1 = question officielle du PDF imprimé (qcm_data/
+// fsa_raw.txt) ; variantes 2-3 testent le même concept différemment.
+// Usage: node scripts/seed-fsa-drill-page7.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Financial Statement Analysis (Système)";
+
 const QUIZ_SETS = [
   {
     title: "Financial Statement Analysis — Drill Fiche Page 7 (Topics in Long-Term Liabilities and Equity)",
     difficulty: 2,
     questions: [
+      // Concept 1 — Classification finance lease vs operating lease
       [
-        "ABC Company loue un équipement de production pour cinq ans, avec des paiements annuels de 20 000 $. L'entreprise rendra l'équipement au bailleur à la fin du contrat. La durée du contrat de location est égale à la durée de vie utile de l'équipement. Sous US GAAP, l'entreprise va :",
+        "ABC Company leases manufacturing equipment for five years with annual payments of $20,000. The company will return the equipment to the lessor at the end of the lease. The term of the lease is equal to the equipment's useful life. Under U.S. GAAP, the company will:",
         [
-          "présenter le contrat comme une location simple (operating lease).",
-          "comptabiliser un droit d'utilisation (right-of-use asset) au bilan.",
-          "comptabiliser une charge d'amortissement égale au remboursement de principal de chaque période.",
+          "report the lease as an operating lease.",
+          "record a right-of-use asset on the balance sheet.",
+          "recognize an amortization expense equal to the principal repayment each period.",
         ],
         1,
-        "L'entreprise présentera une location financement (finance lease) car la durée du contrat équivaut à la durée de vie utile de l'actif. Avec une location financement, l'entreprise comptabilise la valeur actualisée des paiements de location au bilan sous forme de droit d'utilisation, amorti linéairement sur la durée du contrat.",
+        "La durée du contrat étant égale à la durée de vie utile de l'actif, il s'agit d'une location financement : le preneur comptabilise la valeur actualisée des paiements comme droit d'utilisation, amorti linéairement.",
       ],
       [
-        "Une compagnie aérienne loue un nouvel avion auprès de son fabricant pour 10 ans. Pour sa communication financière, la compagnie aérienne doit comptabiliser un actif et un passif à son bilan :",
+        "A company leases equipment for a term equal to the equipment's entire remaining useful life, with no expectation that the asset will be returned to the lessor in usable condition. Under U.S. GAAP, this lease should most likely be classified, from the lessee's perspective, as a(n):",
+        ["operating lease.", "finance lease.", "sales-type lease."],
+        1,
+        "Un contrat couvrant la quasi-totalité de la durée de vie utile de l'actif est un signal clé de location financement (le preneur assume substantiellement tous les risques et avantages liés à la propriété). Le « sales-type lease » est une classification utilisée côté bailleur, pas côté preneur.",
+      ],
+      [
+        "Which of the following characteristics would most likely cause a lessee to classify a lease as a finance lease rather than an operating lease?",
         [
-          "uniquement si le contrat est une location financement.",
-          "uniquement si le contrat est une location simple.",
-          "que le contrat soit une location financement ou une location simple.",
+          "The lease term is short relative to the asset's useful life.",
+          "Ownership of the asset transfers to the lessee at the end of the lease term.",
+          "The lessor retains substantially all the risks and rewards of ownership.",
+        ],
+        1,
+        "Le transfert de propriété en fin de contrat est l'un des critères classiques qui impose la classification en location financement. Un terme court et le maintien des risques/avantages chez le bailleur pointent au contraire vers une location simple.",
+      ],
+      // Concept 2 — Actif et passif au bilan, quel que soit le type de location
+      [
+        "An airline leases a new airplane from its manufacturer for 10 years. For financial reporting, the airline must record an asset and a liability on its balance sheet:",
+        [
+          "only if the lease is a finance lease.",
+          "only if the lease is an operating lease.",
+          "regardless of whether the lease is a finance or operating lease.",
         ],
         2,
-        "Pour les locations financement comme pour les locations simples, les IFRS et les US GAAP exigent qu'un actif et un passif soient comptabilisés au bilan du preneur, sauf exception pour les contrats de courte durée ou (sous IFRS) pour les actifs de faible valeur.",
+        "Pour les locations financement comme pour les locations simples, les IFRS et les US GAAP exigent un actif et un passif au bilan du preneur, sauf exception pour les contrats de courte durée ou les actifs de faible valeur (sous IFRS).",
       ],
       [
-        "Un employeur propose un régime de retraite à prestations définies et un régime à cotisations définies. Le bilan de l'employeur est le plus vraisemblablement susceptible de présenter un actif ou un passif lié :",
-        ["au régime à prestations définies.", "au régime à cotisations définies.", "aux deux régimes de retraite."],
+        "Under current lease accounting standards, a lessee with a 5-year lease (longer than the short-term exception) for a piece of equipment must recognize on its balance sheet:",
+        [
+          "an asset and a liability, only if the lease is classified as a finance lease.",
+          "an asset and a liability, regardless of whether the lease is classified as finance or operating.",
+          "a liability only, regardless of lease classification.",
+        ],
+        1,
+        "Depuis la réforme des normes de location, un actif ET un passif sont comptabilisés au bilan du preneur pour pratiquement tous les contrats de plus d'un an, que la location soit classée financement ou simple.",
+      ],
+      [
+        "Which of the following is most accurate regarding the balance sheet treatment of a lease under current IFRS and U.S. GAAP standards, assuming the lease is not short-term or low-value?",
+        [
+          "Only finance leases result in a lessee balance sheet asset and liability.",
+          "Only operating leases result in a lessee balance sheet asset and liability.",
+          "Both finance and operating leases result in a lessee balance sheet asset and liability.",
+        ],
+        2,
+        "C'est précisément la réforme majeure des normes de location : contrairement à l'ancien référentiel, les locations simples génèrent désormais, elles aussi, un actif et un passif au bilan du preneur, comme les locations financement.",
+      ],
+      // Concept 3 — Régime à prestations définies au bilan
+      [
+        "An employer offers a defined benefit pension plan and a defined contribution pension plan. The employer's balance sheet is most likely to present an asset or liability related to:",
+        ["the defined benefit plan.", "the defined contribution plan.", "both of these pension plans."],
         0,
-        "Seul un régime à prestations définies possède un statut de financement (funded status) qui apparaît au bilan sous forme d'actif ou de passif. Les versements de l'employeur dans un régime à cotisations définies sont comptabilisés en charges de la période où ils sont engagés, sans créer d'actif ou de passif au bilan.",
+        "Seul un régime à prestations définies a un statut de financement qui apparaît au bilan comme actif ou passif. Les versements à un régime à cotisations définies sont simplement passés en charges.",
       ],
       [
-        "Sous quels référentiels comptables la rémunération en actions (share-based compensation) est-elle passée en charges au compte de résultat sur la période d'acquisition des droits (vesting period) ?",
-        ["Les IFRS, mais pas les US GAAP.", "Les US GAAP, mais pas les IFRS.", "Les IFRS et les US GAAP."],
-        2,
-        "Les IFRS et les US GAAP exigent tous deux que les entreprises estiment la juste valeur de la rémunération en actions à la date d'attribution et la passent en charges au compte de résultat sur la période d'acquisition des droits.",
-      ],
-      [
-        "Pour un preneur (lessee), la portion d'un paiement de location qui représente le remboursement du principal constitue un flux de trésorerie :",
-        ["d'exploitation.", "de financement.", "d'investissement."],
+        "An employer sponsors both a defined benefit pension plan and a defined contribution pension plan for its employees. Under which plan would a net pension asset or liability most likely appear on the employer's balance sheet?",
+        ["The defined contribution plan only.", "The defined benefit plan only.", "Both plans equally."],
         1,
-        "La portion principal d'un paiement de location est un flux sortant de financement dans le tableau des flux de trésorerie du preneur. La portion intérêt est un flux sortant d'exploitation sous US GAAP, et peut être traitée comme exploitation ou financement sous IFRS.",
+        "Même principe : le régime à prestations définies génère un actif ou passif net de retraite au bilan (différence entre juste valeur des actifs du régime et obligation de prestations). Le régime à cotisations définies ne génère jamais un tel poste.",
       ],
       [
-        "Laquelle des affirmations suivantes est la moins susceptible d'être un objectif des annexes exigées par IAS 19 concernant les régimes à prestations définies ?",
+        "Which of the following statements about defined contribution pension plans is most accurate?",
         [
-          "Expliquer les caractéristiques et les risques du régime à prestations définies de l'entreprise.",
-          "Identifier les montants dans les états financiers liés aux régimes à prestations définies.",
-          "Décrire comment les régimes à prestations définies affectent les montants, le calendrier et les incertitudes liées au résultat net futur.",
+          "The employer bears the investment risk associated with the plan's assets.",
+          "A funded status is recorded as an asset or liability on the employer's balance sheet.",
+          "The employer's obligation is essentially satisfied once the required contribution is made.",
         ],
         2,
-        "Bien que les régimes à prestations définies aient un impact sur le résultat net futur, l'objectif fixé par IAS 19 est de décrire comment ces régimes affectent les montants, le calendrier et les incertitudes liées aux flux de trésorerie futurs (et non au résultat net). Les deux autres options sont bien des objectifs explicites d'IAS 19.",
+        "Dans un régime à cotisations définies, l'employeur n'a qu'une obligation de verser la cotisation convenue — une fois versée, son obligation est remplie. C'est l'employé, et non l'employeur, qui supporte le risque d'investissement, et aucun statut de financement n'apparaît au bilan de l'employeur.",
+      ],
+      // Concept 4 — Rémunération en actions amortie sur la période d'acquisition
+      [
+        "Under which reporting standards are share-based compensation expensed to the income statement over the vesting period?",
+        ["IFRS, but not U.S. GAAP.", "U.S. GAAP, but not IFRS.", "Both IFRS and U.S. GAAP."],
+        2,
+        "Les IFRS et les US GAAP exigent tous deux que la juste valeur de la rémunération en actions soit estimée à la date d'attribution et passée en charges sur la période d'acquisition des droits (vesting period).",
       ],
       [
-        "La différence entre la juste valeur des actifs d'un régime de retraite à prestations définies et son obligation de prestations estimée est comptabilisée :",
+        "A company grants stock options to its employees with a three-year vesting period. Under both IFRS and U.S. GAAP, the fair value of these options at the grant date is most likely:",
         [
-          "comme un ajustement actuariel dans les autres éléments du résultat global.",
-          "au bilan comme un actif ou un passif net de retraite.",
-          "au compte de résultat comme charge de retraite.",
+          "expensed entirely in the year of grant.",
+          "expensed evenly over the three-year vesting period.",
+          "never expensed, only disclosed in the footnotes.",
         ],
         1,
-        "Un actif net de retraite ou un passif net de retraite correspond à la différence entre la juste valeur des actifs du régime et l'obligation de prestations estimée. Un régime avec un actif net est dit surfinancé, et un régime avec un passif net est dit sous-financé.",
+        "La charge de rémunération en actions est étalée sur toute la période d'acquisition des droits (ici trois ans), pas comptabilisée d'un coup à l'octroi, ni seulement mentionnée en annexe.",
       ],
       [
-        "Pour une location simple (operating lease), l'actif physique loué apparaît au bilan :",
-        ["ni du bailleur ni du preneur.", "du bailleur.", "du preneur."],
+        "Under which of the following sets of standards must the fair value of employee stock options be estimated at the grant date and recognized as compensation expense over time?",
+        ["IFRS only.", "U.S. GAAP only.", "Both IFRS and U.S. GAAP."],
+        2,
+        "C'est une exigence commune aux deux référentiels comptables, pas une spécificité de l'un ou de l'autre.",
+      ],
+      // Concept 5 — Remboursement du principal : flux de financement
+      [
+        "For a lessee, the portion of a lease payment that represents repayment of principal is a cash flow from:",
+        ["operations.", "financing.", "investing."],
         1,
-        "Avec une location simple, l'actif loué reste sur le bilan du bailleur, qui continue à en comptabiliser l'amortissement. Le preneur, lui, est tenu de comptabiliser un actif et un passif égaux à la valeur actualisée des paiements de location promis, mais l'actif physique sous-jacent reste au bilan du bailleur.",
+        "La portion principal d'un paiement de location est un flux sortant de financement. La portion intérêt est un flux d'exploitation sous US GAAP (et peut être exploitation ou financement sous IFRS).",
       ],
       [
-        "Lorsque les risques liés à la propriété d'un actif ne sont pas substantiellement transférés au preneur, un contrat de location est le plus vraisemblablement présenté comme :",
-        ["une location financement.", "une location simple.", "une location d'investissement."],
-        1,
-        "Le preneur comme le bailleur présentent un contrat de location comme une location simple lorsque les risques liés à la propriété de l'actif ne sont pas substantiellement transférés au preneur — c'est le critère distinctif entre location simple et location financement.",
-      ],
-      [
-        "Pour un contrat de location long terme, le montant initialement comptabilisé par le preneur en tant que passif est :",
-        [
-          "la valeur actualisée des paiements de location.",
-          "le total des paiements de location.",
-          "la juste valeur de l'actif loué.",
-        ],
+        "For a lessee under a finance lease, the interest portion of a lease payment is most likely classified, under U.S. GAAP, as a cash flow from:",
+        ["operations.", "investing.", "financing."],
         0,
-        "Avec une location financement, le preneur comptabilise à la fois un actif et un passif au bilan, tous deux égaux à la valeur actualisée des paiements de location promis — et non le total non actualisé des paiements, ni nécessairement la juste valeur de l'actif sous-jacent.",
+        "Sous US GAAP, la portion intérêt d'un paiement de location financement est toujours classée en exploitation — seule la portion principal va en financement.",
+      ],
+      [
+        "A lessee makes a lease payment of $10,000, of which $7,000 represents repayment of principal and $3,000 represents interest. Under U.S. GAAP, how is this payment most likely classified on the lessee's statement of cash flows?",
+        [
+          "$10,000 as a financing outflow.",
+          "$7,000 as a financing outflow and $3,000 as an operating outflow.",
+          "$7,000 as an operating outflow and $3,000 as a financing outflow.",
+        ],
+        1,
+        "Le paiement doit être scindé : le remboursement de principal (7 000 $) est un flux de financement, et les intérêts (3 000 $) sont un flux d'exploitation sous US GAAP — jamais le contraire, et jamais le montant total dans une seule section.",
       ],
     ],
   },
