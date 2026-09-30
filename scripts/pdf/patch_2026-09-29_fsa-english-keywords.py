@@ -15,7 +15,9 @@
 # Usage:
 #   python patch_2026-09-29_fsa-english-keywords.py fsa_vault_sheet.pdf out.pdf
 import io
+import os
 import sys
+import tempfile
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -234,11 +236,10 @@ PAGES = {
 }
 
 
-TMPDIR = r"C:\Users\chaum\AppData\Local\Temp\claude\C--Users-chaum-Documents-M-moire-Code-memoire\9d67c42d-0ecf-4851-b2e5-d92aa5506894\scratchpad"
+TMPDIR = os.path.join(tempfile.gettempdir(), "fsa-pdf-patch")
 
 
 def main(base_path, out_path):
-    import os
     os.makedirs(TMPDIR, exist_ok=True)
     current = base_path
     for i, (page_idx, fn) in enumerate(sorted(PAGES.items())):
