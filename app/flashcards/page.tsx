@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { ContentListPage } from "@/components/ContentListPage";
-import { FolderBlocks } from "@/components/ContentFolderBlocks";
+import { FlashcardSubjectGrid } from "@/components/FlashcardSubjectGrid";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { normalizeScope, normalizeView, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
@@ -14,7 +14,7 @@ type FlashcardRow = ContentSetRow & {
   official_published?: boolean | null;
 };
 
-type SearchParams = { q?: string; scope?: string; view?: string };
+type SearchParams = { q?: string; scope?: string; view?: string; subject?: string };
 type PageProps = { searchParams?: Promise<SearchParams> };
 
 export default async function FlashcardsPage({ searchParams }: PageProps) {
@@ -32,7 +32,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
 
   const admin = createAdminClient();
 
-  const [setsRes, systemRes, systemFoldersRes] = await Promise.all([
+  const [setsRes, systemRes] = await Promise.all([
     (async () => {
       let query = supabase
         .from("flashcard_sets")
@@ -52,12 +52,10 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       if (q) query = query.ilike("title", `%${q}%`);
       return await query;
     })(),
-    admin.from("library_folders").select("name").eq("kind", "flashcards").ilike("name", "%(Système)%"),
   ]);
 
   const system = (systemRes.data ?? []) as unknown as FlashcardRow[];
   const systemIds = new Set(system.map((s) => s.id));
-  const systemFolderNames = (systemFoldersRes.data ?? []).map((f) => f.name as string);
 
   // "Communautaire" ne couvre que ce que les utilisateurs créent eux-mêmes —
   // le contenu Système a son propre onglet, plus de double affichage.
@@ -100,14 +98,14 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       systemSlot={
         <>
           <p className="text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>
-          <FolderBlocks
+          <FlashcardSubjectGrid
             locale={locale}
             items={system}
             rootLabel={noFolder}
             openLabel={openLabel}
             basePath="/flashcards"
             itemUnit="set"
-            extraFolderNames={systemFolderNames}
+            selectedFolder={sp.subject}
           />
         </>
       }
