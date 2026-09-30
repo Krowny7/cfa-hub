@@ -1,8 +1,8 @@
 // Seed script — quiz de "drill" associé à la page 5 de la fiche PDF FSA
-// (Analysis of Inventories). Structure Fixed Income : 5 concepts × 3
-// variantes (questions en anglais ; explications en français). Concept 1
-// = question officielle du PDF imprimé (qcm_data/fsa_raw.txt) ; variantes
-// 2-3 testent le même concept différemment.
+// (Analysis of Inventories). Structure : 5 concepts × (1 question
+// officielle + 1 variante "angle différent" + 1 variante "plus
+// difficile"). Voir memory regle-drill-variantes-cfa-hub. Questions en
+// anglais, explications en français.
 // Usage: node scripts/seed-fsa-drill-page5.mjs
 import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
 
@@ -13,7 +13,7 @@ const QUIZ_SETS = [
     title: "Financial Statement Analysis — Drill Fiche Page 5 (Analysis of Inventories)",
     difficulty: 2,
     questions: [
-      // Concept 1 — FIFO/LIFO et sens de variation des prix
+      // Concept 1 — FIFO/LIFO et sens de variation des prix (officielle)
       [
         "In a decreasing price environment, the first-in first-out (FIFO) inventory cost method results in:",
         [
@@ -24,54 +24,56 @@ const QUIZ_SETS = [
         2,
         "Si les prix baissent, le FIFO vend en premier les unités les plus anciennes et les plus coûteuses. Cela produit un coût des ventes plus élevé, un stock plus faible, et une marge brute plus faible comparé au LIFO.",
       ],
+      // Variante angle différent — le "pourquoi" mécanique, pas la direction de l'inégalité
       [
-        "In a period of rising prices, the first-in first-out (FIFO) inventory method, compared to last-in first-out (LIFO), most likely results in:",
+        "Which of the following best explains why, in a period of decreasing prices, the FIFO inventory method results in a lower gross profit than the LIFO method?",
         [
-          "lower cost of goods sold and higher gross profit.",
-          "higher cost of goods sold and lower gross profit.",
-          "identical cost of goods sold and gross profit.",
+          "FIFO expenses the most recently purchased, lower-cost units first.",
+          "FIFO expenses the earliest purchased, higher-cost units first, while LIFO expenses the most recent, lower-cost units.",
+          "FIFO and LIFO always produce an identical gross profit, regardless of the direction prices move.",
         ],
-        0,
-        "En prix croissants, le FIFO vend en premier les unités les plus anciennes et les moins chères, ce qui donne un coût des ventes plus faible et une marge brute plus élevée comparé au LIFO, qui vend les unités les plus récentes et les plus chères.",
+        1,
+        "En prix décroissants, les unités les plus ANCIENNES sont les plus CHÈRES. Le FIFO les vend en premier, ce qui gonfle le coût des ventes et réduit la marge brute ; le LIFO vend les unités récentes, moins chères, avec l'effet inverse. Comprendre ce mécanisme, pas seulement le sens de l'inégalité, est l'objectif ici.",
       ],
+      // Variante plus difficile — situer le coût moyen pondéré entre FIFO et LIFO
       [
-        "Compared to the FIFO method, the LIFO method in a period of falling prices will most likely result in:",
+        "A company reports cost of goods sold of $600,000 under FIFO and $550,000 under LIFO for a period of declining prices. If the company had instead used the weighted average cost method, its cost of goods sold most likely would have been:",
         [
-          "lower cost of goods sold and higher gross profit.",
-          "higher cost of goods sold and lower gross profit.",
-          "an identical gross profit.",
+          "equal to the FIFO figure of $600,000.",
+          "equal to the LIFO figure of $550,000.",
+          "between $550,000 and $600,000.",
         ],
-        0,
-        "En prix décroissants, le LIFO vend en premier les unités les plus récentes, donc les moins chères, ce qui donne un coût des ventes plus faible et une marge brute plus élevée comparé au FIFO (qui utilise les coûts anciens, plus élevés).",
+        2,
+        "Le coût moyen pondéré mélange les coûts de toutes les unités disponibles à la vente : son résultat se situe toujours ENTRE les valeurs obtenues sous FIFO et sous LIFO, jamais à l'une des deux extrémités — que les prix montent ou baissent.",
       ],
-      // Concept 2 — Reprise de dépréciation de stock (IFRS vs US GAAP)
+
+      // Concept 2 — Reprise de dépréciation de stock, IFRS vs US GAAP (officielle)
       [
         "Under which financial reporting standards is a firm required to discuss the circumstances when reversing an inventory writedown?",
         ["Neither IFRS nor U.S. GAAP.", "Both IFRS and U.S. GAAP.", "IFRS, but not U.S. GAAP."],
         2,
         "Les reprises de dépréciation de stock sont autorisées sous IFRS mais interdites sous US GAAP. Une entreprise IFRS qui reprend une dépréciation doit en mentionner les circonstances.",
       ],
-      [
-        "Which of the following is most accurate regarding the reversal of an inventory writedown?",
-        [
-          "Permitted under both IFRS and U.S. GAAP, with required disclosure of the circumstances.",
-          "Permitted under IFRS only, with required disclosure of the circumstances.",
-          "Not permitted under either IFRS or U.S. GAAP.",
-        ],
-        1,
-        "Seules les IFRS autorisent la reprise d'une dépréciation de stock (plafonnée au montant de la dépréciation d'origine), avec obligation d'en expliquer les circonstances. Les US GAAP l'interdisent purement et simplement.",
-      ],
+      // Variante angle différent — la règle elle-même (possible ou pas), pas l'obligation de divulgation
       [
         "A company reporting under U.S. GAAP writes down its inventory to net realizable value. In a later period, the inventory's value recovers. Under U.S. GAAP, the company:",
-        [
-          "may reverse the writedown, with disclosure of the circumstances.",
-          "may reverse the writedown, without any disclosure required.",
-          "may not reverse the writedown.",
-        ],
+        ["may reverse the writedown, with disclosure of the circumstances.", "may reverse the writedown, without any disclosure required.", "may not reverse the writedown."],
         2,
-        "Sous US GAAP, une dépréciation de stock ne peut jamais être reprise, même si la valeur du stock remonte par la suite — le nouveau coût déprécié devient la nouvelle base de coût.",
+        "Contrairement à la question officielle (qui porte sur l'obligation de DIVULGATION sous IFRS), cette variante teste si la reprise elle-même est seulement AUTORISÉE ou non : sous US GAAP, elle est purement et simplement interdite — la question de la divulgation ne se pose donc même pas.",
       ],
-      // Concept 3 — Dépréciation de stock à la NRV + effet sur le quick ratio
+      // Variante plus difficile — comparer l'impact chiffré sur deux entreprises (IFRS vs GAAP)
+      [
+        "Two otherwise identical companies, one reporting under IFRS and one under U.S. GAAP, each wrote down inventory by $500,000 in Year 1 due to a temporary market downturn. In Year 2, both companies' inventory values fully recover, and each reverses the writedown to the extent permitted by its standard. Which of the following best describes the difference in Year 2 gross profit between the two companies, all else equal?",
+        [
+          "The IFRS company's Year 2 gross profit will be $500,000 higher than the U.S. GAAP company's, due to the permitted reversal.",
+          "Both companies will report identical Year 2 gross profit, since the writedowns occurred in Year 1.",
+          "The U.S. GAAP company's Year 2 gross profit will be higher, since it cannot reverse the writedown.",
+        ],
+        0,
+        "Seule l'entreprise IFRS peut reprendre la dépréciation : son coût des ventes en Année 2 sera donc plus bas de 500 000 $ (l'inventaire revient à sa valeur d'origine), ce qui se traduit par une marge brute supérieure de 500 000 $ par rapport à l'entreprise US GAAP, qui reste bloquée à la valeur dépréciée.",
+      ],
+
+      // Concept 3 — Dépréciation à la NRV + effet sur le quick ratio (officielle)
       [
         "Information related to Bledsoe Corporation's inventory, as of December 31, 20x7: Estimated selling price $3,500,000; Estimated disposal costs $50,000; Estimated completion costs $300,000; Original FIFO cost $3,200,000; Replacement cost $3,300,000. Using the appropriate valuation method, what adjustment is necessary to accurately report Bledsoe's inventory at the end of 20x7, and will this adjustment affect Bledsoe's quick ratio?",
         [
@@ -82,27 +84,22 @@ const QUIZ_SETS = [
         1,
         "NRV = 3 500 000 $ − 300 000 $ − 50 000 $ = 3 150 000 $. Le coût d'origine (3 200 000 $) excédant la NRV, une dépréciation de 50 000 $ est nécessaire. Le stock étant exclu du quick ratio, cette dépréciation n'a aucun effet dessus.",
       ],
+      // Variante angle différent — la règle complète "lower of cost or market" (US GAAP) avec bornes, pas la NRV seule (IFRS)
       [
-        "A company's inventory has an estimated selling price of $5,000,000, estimated disposal costs of $100,000, estimated completion costs of $400,000, and an original cost of $4,600,000. Under the lower of cost or net realizable value method, what adjustment is necessary, and will it affect the company's quick ratio?",
-        [
-          "$100,000 write-down; no effect on quick ratio.",
-          "$150,000 write-down; affects the quick ratio.",
-          "$50,000 write-up; no effect on quick ratio.",
-        ],
-        0,
-        "NRV = 5 000 000 $ − 400 000 $ − 100 000 $ = 4 500 000 $. Le coût d'origine (4 600 000 $) excède la NRV : dépréciation de 100 000 $ nécessaire. Comme toujours, le stock étant exclu du numérateur et du dénominateur du quick ratio, la dépréciation ne l'affecte pas.",
+        "A company reporting under U.S. GAAP determines the following for a class of inventory: cost $500,000; replacement cost $420,000; net realizable value (NRV) $460,000; NRV less a normal profit margin $400,000. Under the lower of cost or market rule, the inventory should be reported at:",
+        ["$400,000.", "$420,000.", "$460,000."],
+        1,
+        "Sous la règle « lower of cost or market » (US GAAP), le « market » retenu est le coût de remplacement, plafonné à la NRV et plancher à NRV moins marge normale. Ici, 420 000 $ se situe déjà entre les deux bornes (400 000 $ et 460 000 $), donc market = 420 000 $. Le coût (500 000 $) excédant ce market, le stock est reporté à 420 000 $ — une règle plus riche que la simple comparaison coût/NRV utilisée sous IFRS.",
       ],
+      // Variante plus difficile — calculer l'IMPACT CHIFFRÉ sur le current ratio (pas le quick ratio, piège)
       [
-        "A company's inventory has an estimated selling price of $2,000,000, estimated disposal costs of $30,000, estimated completion costs of $120,000, and an original cost of $1,900,000. Under the lower of cost or net realizable value method, what adjustment is necessary, and will it affect the company's quick ratio?",
-        [
-          "$50,000 write-down; no effect on quick ratio.",
-          "$50,000 write-up; no effect on quick ratio.",
-          "$50,000 write-down; affects the quick ratio.",
-        ],
+        "A company's inventory has a cost of $2,000,000 and a net realizable value of $1,850,000, requiring a $150,000 writedown. Before the writedown, current assets were $5,000,000 (including the $2,000,000 of inventory) and current liabilities were $2,500,000. After the writedown, the company's current ratio is closest to:",
+        ["1.94.", "2.00.", "2.06."],
         0,
-        "NRV = 2 000 000 $ − 120 000 $ − 30 000 $ = 1 850 000 $. Le coût d'origine (1 900 000 $) excède la NRV : dépréciation de 50 000 $. Aucun effet sur le quick ratio, le stock n'entrant jamais dans son calcul.",
+        "Nouveaux actifs courants = 5 000 000 − 150 000 = 4 850 000 $. Current ratio = 4 850 000 $ / 2 500 000 $ = 1,94. Piège classique : contrairement au quick ratio (qui exclut le stock et n'est jamais affecté), le CURRENT ratio INCLUT le stock et diminue bien après une dépréciation.",
       ],
-      // Concept 4 — Effet d'une dépréciation de stock sur le ROA
+
+      // Concept 4 — Effet d'une dépréciation de stock sur le ROA (officielle)
       [
         "The effect of an inventory writedown on a firm's return on assets (ROA) is most accurately described as:",
         [
@@ -113,27 +110,26 @@ const QUIZ_SETS = [
         1,
         "La dépréciation réduit le résultat net et les actifs dans la période courante, ce qui diminue le ROA. Dans les périodes futures, le stock déprécié réduit le coût des ventes et augmente le résultat net, ce qui, combiné à des actifs plus faibles, augmente le ROA.",
       ],
+      // Variante angle différent — comparer PLUSIEURS ratios face au même événement (pas seulement le ROA)
       [
-        "A firm writes down its inventory to net realizable value in the current period. All else equal, this writedown will most likely:",
-        [
-          "increase ROA in the current period and decrease it in future periods.",
-          "decrease ROA in the current period and increase it in future periods.",
-          "have no effect on ROA in either the current or future periods.",
-        ],
+        "Following an inventory writedown in the current period, which of the following ratios would most likely INCREASE in the current period, holding all else equal?",
+        ["Return on assets (ROA).", "Total asset turnover (revenue / average total assets).", "Gross profit margin."],
         1,
-        "Même logique : la dépréciation pénalise le ROA dans l'immédiat (résultat net et actifs en baisse), puis l'améliore ensuite grâce à un coût des ventes futur plus faible.",
+        "La rotation des actifs augmente dans la période courante car les actifs totaux diminuent (dépréciation) alors que le chiffre d'affaires n'est pas affecté. Le ROA, lui, diminue dans l'immédiat car le résultat net baisse aussi. La marge brute diminue également, la dépréciation passant généralement par le coût des ventes.",
       ],
+      // Variante plus difficile — effet PERMANENT sur plusieurs années, pas seulement "période suivante"
       [
-        "Following an inventory writedown, a firm's return on assets (ROA) in the period immediately after the writedown, compared to what it would have been without the writedown, will most likely be:",
+        "A firm writes down inventory by $200,000 in Year 1 — a one-time event with no effect on future purchasing or pricing decisions. In Year 2, all of the written-down inventory is sold. Assuming no other changes, how would Year 2's ROA compare to what it would have been had the writedown never occurred?",
         [
-          "higher, because future cost of goods sold is lower.",
-          "lower, because future cost of goods sold is higher.",
-          "unaffected, since the writedown is a one-time, non-recurring event.",
+          "Higher, because Year 2 assets are permanently lower from the writedown while COGS on that inventory is also permanently lower, boosting Year 2 net income relative to a smaller asset base.",
+          "Lower, because the writedown permanently damaged the company's future earning power.",
+          "Unaffected, since the writedown was a one-time, non-recurring event fully resolved in Year 1.",
         ],
         0,
-        "Une fois le stock déprécié, son coût comptable plus faible réduit le coût des ventes futur, ce qui augmente le résultat net (et donc le ROA) des périodes suivantes par rapport à un scénario sans dépréciation.",
+        "L'effet de la dépréciation ne s'arrête pas à l'année suivante : le stock déprécié garde un coût comptable plus faible pour toujours (sauf nouvelle dépréciation), ce qui réduit durablement le coût des ventes futur et augmente le résultat net futur, combiné à une base d'actifs plus faible — un double effet positif sur le ROA qui perdure au-delà d'une seule période.",
       ],
-      // Concept 5 — Signaux de croissance de la demande dans les stocks
+
+      // Concept 5 — Signaux de croissance de la demande dans les stocks (officielle)
       [
         "Tim Rogers is senior equity analyst with White Capital LLP. While analyzing the inventory disclosures of Drako Toys Inc., a toy manufacturer, Rogers concludes that Drako is expected to see above-average sales growth over the next three years. Which of the following disclosures would most likely support Rogers's conclusion?",
         [
@@ -144,25 +140,23 @@ const QUIZ_SETS = [
         1,
         "Une hausse des matières premières et des en-cours indique probablement une demande future anticipée à la hausse. À l'inverse, une hausse des produits finis avec une baisse des matières premières/en-cours peut signaler une baisse de la demande.",
       ],
+      // Variante angle différent — le signal INVERSE (faiblesse de la demande), pas la croissance
       [
         "An analyst observes that a manufacturing company's finished goods inventory has grown faster than its sales over the past two years, while raw materials inventory has declined. This pattern would most likely suggest:",
-        [
-          "anticipated strong future demand growth.",
-          "potential weakening demand for the company's products.",
-          "an increase in the company's raw material costs.",
-        ],
+        ["anticipated strong future demand growth.", "potential weakening demand for the company's products.", "an increase in the company's raw material costs."],
         1,
-        "Des produits finis qui s'accumulent plus vite que les ventes, combinés à une baisse des matières premières (signe que la production ralentit), suggèrent que la demande faiblit — l'entreprise vend moins vite qu'elle ne produit.",
+        "Des produits finis qui s'accumulent plus vite que les ventes, combinés à une baisse des matières premières (signe que la production ralentit), suggèrent que la demande faiblit — l'entreprise vend moins vite qu'elle ne produit, le signal opposé de la question officielle.",
       ],
+      // Variante plus difficile — synthétiser le signal des stocks avec un signal contradictoire venu des créances
       [
-        "Which of the following inventory disclosure patterns would most likely support an analyst's expectation of above-average future sales growth for a manufacturing company?",
+        "A toy manufacturer reports the following year-over-year changes: raw materials inventory +15%, work-in-process inventory +18%, finished goods inventory −5%, and sales +3%. Separately, the company's days sales outstanding (DSO) has increased from 35 to 55 days over the same period. How should an analyst most appropriately reconcile these two sets of signals?",
         [
-          "A decline in raw materials and work-in-process inventory, accompanied by growth in finished goods inventory.",
-          "Growth in raw materials and work-in-process inventory, accompanied by a decline in finished goods inventory.",
-          "Proportional growth across all inventory categories, in line with sales growth.",
+          "Both signals point unambiguously to strong, healthy demand growth ahead.",
+          "The inventory pattern suggests anticipated demand growth, but the sharp rise in DSO raises a separate concern about the quality of that growth.",
+          "The two signals directly contradict each other, so the analyst should disregard the DSO increase entirely.",
         ],
         1,
-        "Une hausse des matières premières et en-cours, combinée à une baisse des produits finis (qui se vendent vite), est le signal classique d'une entreprise qui se prépare à une demande future plus forte.",
+        "Le signal des stocks (matières premières et en-cours en forte hausse, produits finis en baisse) suggère une préparation à une demande future plus forte. Mais la forte hausse du DSO (clients qui paient plus lentement) est un signal distinct et préoccupant, potentiellement révélateur de « channel stuffing » ou de clients en difficulté — les deux signaux doivent être combinés, pas opposés l'un à l'autre.",
       ],
     ],
   },
