@@ -16,7 +16,7 @@ export default async function CoursesPage() {
       href: "/courses/financial-statement-analysis",
       label: "Financial Statement Analysis",
       readings: "Deck complet · 12 Learning Modules",
-      desc: "Cours intégral par module, avec audio explicatif façon cours magistral (~28 min).",
+      desc: "Cours intégral par module, avec audio explicatif façon cours magistral (~1h10).",
       color: "violet",
     },
   ] as const;

@@ -11,17 +11,17 @@ import { CourseAudioPlayer, type Chapter } from "@/components/CourseAudioPlayer"
 // partir de la durée exacte de chaque module au moment de la génération).
 const CHAPTERS: Chapter[] = [
   { title: "Introduction to Financial Statement Analysis", start: 0 },
-  { title: "Analyzing Income Statements", start: 149.1 },
-  { title: "Analyzing Balance Sheets", start: 296.1 },
-  { title: "Analyzing Statements of Cash Flows I", start: 429.9 },
-  { title: "Analyzing Statements of Cash Flows II", start: 556.1 },
-  { title: "Analysis of Inventories", start: 675.4 },
-  { title: "Analysis of Long-Term Assets", start: 813 },
-  { title: "Topics in Long-Term Liabilities and Equity", start: 950.3 },
-  { title: "Analysis of Income Taxes", start: 1089.7 },
-  { title: "Financial Reporting Quality", start: 1218.3 },
-  { title: "Financial Analysis Techniques", start: 1355.7 },
-  { title: "Introduction to Financial Statement Modeling", start: 1532.4 },
+  { title: "Analyzing Income Statements", start: 422.3 },
+  { title: "Analyzing Balance Sheets", start: 835.9 },
+  { title: "Analyzing Statements of Cash Flows I", start: 1166.5 },
+  { title: "Analyzing Statements of Cash Flows II", start: 1452.7 },
+  { title: "Analysis of Inventories", start: 1746.2 },
+  { title: "Analysis of Long-Term Assets", start: 2050.2 },
+  { title: "Topics in Long-Term Liabilities and Equity", start: 2429.8 },
+  { title: "Analysis of Income Taxes", start: 2794 },
+  { title: "Financial Reporting Quality", start: 3100.5 },
+  { title: "Financial Analysis Techniques", start: 3354.5 },
+  { title: "Introduction to Financial Statement Modeling", start: 3825.1 },
 ];
 
 export default async function FSACoursePage() {
