@@ -30,6 +30,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={`dark ${fraunces.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-neutral-950 text-white antialiased">
+        {/* Mode discret (noir et blanc) : réappliqué avant le premier affichage
+            pour éviter un flash en couleur — voir components/DiscreetToggle.tsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('cfa_discreet')==='1')document.documentElement.dataset.discreet='1';}catch(e){}"
+          }}
+        />
         {/* Hides the first paint until we know whether the splash plays. */}
         <script
           dangerouslySetInnerHTML={{

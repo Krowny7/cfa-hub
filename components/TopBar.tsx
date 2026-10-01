@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n/core";
 import { SignOutButton } from "@/components/SignOutButton";
+import { DiscreetToggle } from "@/components/DiscreetToggle";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 
 function initialsFromEmail(email: string | null | undefined) {
@@ -27,6 +28,7 @@ export async function TopBar() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <DiscreetToggle />
           {user ? (
             <>
               <Link

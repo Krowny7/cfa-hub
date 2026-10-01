@@ -17,6 +17,12 @@
     height: 100%;
   }
 
+  /* Mode discret : toute l'interface (PDF de l'iframe compris) en noir et
+     blanc. Posé sur <html> par components/DiscreetToggle.tsx. */
+  html[data-discreet="1"] {
+    filter: grayscale(1);
+  }
+
   body {
     min-height: 100%;
     text-rendering: optimizeLegibility;
