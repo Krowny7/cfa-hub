@@ -25,26 +25,38 @@ export function FicheQuizRunner({
   mode,
   title,
   api,
+  initialRunId,
+  initialDone,
+  onProgress,
   onAnswered,
-  onExit,
+  onPause,
+  onClose,
   onReplay,
 }: {
   items: RunItem[];
   mode: AnswerMode;
   title: string;
   api: FicheApi;
+  // Reprise d'une série sauvegardée : même run_id (pour que le graphique la
+  // compte comme une seule série) et réponses déjà données.
+  initialRunId?: string;
+  initialDone?: ReviewItem[];
+  onProgress: (done: ReviewItem[], runId: string) => void;
   onAnswered: (row: AnswerRow) => void;
-  onExit: () => void;
+  // Quitter en gardant la série (reprenable) / la clore définitivement.
+  onPause: () => void;
+  onClose: () => void;
   onReplay: (items: RunItem[]) => void;
 }) {
-  const runId = useRef(crypto.randomUUID());
-  const [idx, setIdx] = useState(0);
+  const runId = useRef(initialRunId ?? crypto.randomUUID());
+  const startDone = initialDone ?? [];
+  const [idx, setIdx] = useState(Math.min(startDone.length, items.length - 1));
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<{ correctIndex: number | null; explanation: string | null; isCorrect: boolean; xp: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<ReviewItem[]>([]);
-  const [finished, setFinished] = useState(false);
+  const [done, setDone] = useState<ReviewItem[]>(startDone);
+  const [finished, setFinished] = useState(startDone.length >= items.length);
   const [copied, setCopied] = useState(false);
 
   const current = items[idx];
@@ -57,8 +69,8 @@ export function FicheQuizRunner({
     try {
       const r = await api.submitAnswer(current.q.set_id, current.q.id, selected);
       setResult(r);
-      setDone((prev) => [
-        ...prev,
+      const nextDone: ReviewItem[] = [
+        ...done,
         {
           prompt: current.q.prompt,
           choices: current.q.choices,
@@ -68,7 +80,9 @@ export function FicheQuizRunner({
           isCorrect: r.isCorrect,
           tag: `Page ${current.page}`,
         },
-      ]);
+      ];
+      setDone(nextDone);
+      onProgress(nextDone, runId.current);
       const row = {
         set_id: current.q.set_id,
         question_id: current.q.id,
@@ -139,7 +153,7 @@ export function FicheQuizRunner({
                 <RotateCcw size={14} /> Rejouer les {wrong.length} ratée{wrong.length > 1 ? "s" : ""}
               </button>
             )}
-            <button type="button" className="btn btn-primary text-xs" onClick={onExit}>
+            <button type="button" className="btn btn-primary text-xs" onClick={onClose}>
               Terminer
             </button>
           </div>
@@ -247,8 +261,8 @@ export function FicheQuizRunner({
       {error && <div className="mt-3 text-xs text-red-300">{error}</div>}
 
       <div className="mt-4 flex items-center justify-between gap-2">
-        <button type="button" className="text-xs text-white/40 hover:text-white/70" onClick={onExit}>
-          Quitter la série
+        <button type="button" className="text-xs text-white/40 hover:text-white/70" onClick={onPause}>
+          Mettre en pause
         </button>
         {!result ? (
           <button type="button" className="btn btn-primary" disabled={selected === null || busy} onClick={validate}>

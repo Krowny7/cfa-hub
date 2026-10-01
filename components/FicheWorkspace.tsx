@@ -10,6 +10,9 @@ import {
   ExternalLink,
   ListChecks,
   Lock,
+  Maximize2,
+  Minimize2,
+  Play,
   Shuffle,
   Target,
   Trash2,
@@ -18,6 +21,7 @@ import { FicheQuizRunner, type RunItem } from "@/components/FicheQuizRunner";
 import { FicheProgressChart } from "@/components/FicheProgressChart";
 import { createClient } from "@/lib/supabase/browser";
 import { createSupabaseFicheApi, type FicheApi } from "@/lib/ficheApi";
+import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
 import {
   buildErrorPoolExport,
   computePageProgress,
@@ -38,9 +42,18 @@ export type DrillSet = {
 };
 
 type Tab = "quiz" | "errors" | "mixed" | "progress";
-type ActiveRun = { key: number; items: RunItem[]; mode: AnswerMode; title: string };
+type ActiveRun = {
+  key: number;
+  items: RunItem[];
+  mode: AnswerMode;
+  title: string;
+  // Renseignés uniquement pour une série reprise.
+  runId?: string;
+  done?: ReviewItem[];
+};
 
 const MIXED_SIZE = 15;
+const LAYOUT_KEY = "cfa_fiche_layout";
 
 // Mise en page des fiches : le cours (PDF) à gauche, l'entraînement à droite
 // sur grand écran ; deux onglets "Cours / Entraînement" sur mobile. Toute
@@ -75,6 +88,9 @@ export function FicheWorkspace({
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState<"all" | number | null>(null);
+  const [savedRun, setSavedRun] = useState<RestoredRun | null>(null);
+  // Quiz en pleine largeur, PDF en dessous (au lieu de côte à côte).
+  const [wide, setWide] = useState(false);
 
   const setIds = useMemo(() => drillSets.map((d) => d.setId), [drillSets]);
   const byPage = useMemo(() => new Map(drillSets.map((d) => [d.page, d])), [drillSets]);
@@ -92,6 +108,21 @@ export function FicheWorkspace({
     };
   }, [api, setIds]);
 
+  useEffect(() => {
+    try {
+      setWide(localStorage.getItem(LAYOUT_KEY) === "wide");
+    } catch {}
+  }, []);
+
+  function toggleWide() {
+    setWide((w) => {
+      try {
+        localStorage.setItem(LAYOUT_KEY, w ? "split" : "wide");
+      } catch {}
+      return !w;
+    });
+  }
+
   const states = useMemo(() => computeQuestionStates(rows), [rows]);
   const progress = useMemo(() => computePageProgress(drillSets, states), [drillSets, states]);
   const progressByPage = useMemo(() => new Map(progress.map((p) => [p.page, p])), [progress]);
@@ -105,6 +136,13 @@ export function FicheWorkspace({
     () => allItems.filter((it) => states.get(it.q.id)?.inErrorPool),
     [allItems, states]
   );
+
+  // Une série par fiche, clé = titre de la fiche.
+  const storageKey = title;
+  useEffect(() => {
+    const saved = loadRun(storageKey);
+    setSavedRun(saved ? restoreRun(saved, allItems) : null);
+  }, [storageKey, allItems]);
 
   const totals = useMemo(
     () =>
@@ -131,6 +169,41 @@ export function FicheWorkspace({
     setNotice(null);
     setRun({ key: Date.now(), items, mode, title: runTitle });
     setMobileView("train");
+  }
+
+  // Appelé après chaque réponse : la série est sauvegardée telle quelle, ce
+  // qui permet de la reprendre après un changement d'onglet, un rechargement
+  // ou plusieurs jours plus tard.
+  function persistProgress(current: ActiveRun, done: ReviewItem[], runId: string) {
+    saveRun(storageKey, {
+      v: 1,
+      runId,
+      mode: current.mode,
+      title: current.title,
+      items: current.items.map((it) => ({ id: it.q.id, page: it.page })),
+      done,
+      savedAt: Date.now(),
+    });
+    setSavedRun({ runId, mode: current.mode, title: current.title, items: current.items, done });
+  }
+
+  function resumeRun() {
+    if (!savedRun) return;
+    setNotice(null);
+    setRun({
+      key: Date.now(),
+      items: savedRun.items,
+      mode: savedRun.mode,
+      title: savedRun.title,
+      runId: savedRun.runId,
+      done: savedRun.done,
+    });
+    setMobileView("train");
+  }
+
+  function discardSavedRun() {
+    clearRun(storageKey);
+    setSavedRun(null);
   }
 
   function selectPage(page: number) {
@@ -211,9 +284,13 @@ export function FicheWorkspace({
         ))}
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className={wide ? "grid gap-4" : "grid items-start gap-4 lg:grid-cols-2"}>
         {/* ── Cours (PDF) ── */}
-        <div className={`${mobileView === "course" ? "block" : "hidden"} lg:sticky lg:top-16 lg:block`}>
+        <div
+          className={`${mobileView === "course" ? "block" : "hidden"} lg:block ${
+            wide ? "lg:order-2" : "lg:sticky lg:top-16"
+          }`}
+        >
           {!pdfSrc ? (
             <div className="card p-6 text-center text-sm text-muted">
               Impossible de charger la fiche pour le moment. Réessaie dans un instant.
@@ -235,15 +312,24 @@ export function FicheWorkspace({
                   </a>
                 </div>
               </div>
-              <iframe key={pdfPage ?? 0} src={pdfSrc} title={`${title} — fiche`} className="h-[72vh] w-full lg:h-[calc(100vh-11rem)]" />
+              <iframe
+                key={pdfPage ?? 0}
+                src={pdfSrc}
+                title={`${title} — fiche`}
+                className={`w-full ${wide ? "h-[80vh]" : "h-[72vh] lg:h-[calc(100vh-11rem)]"}`}
+              />
             </div>
           )}
         </div>
 
         {/* ── Entraînement ── */}
-        <div className={`${mobileView === "train" ? "block" : "hidden"} min-w-0 lg:block`}>
+        <div
+          className={`${mobileView === "train" ? "block" : "hidden"} min-w-0 lg:block ${
+            wide ? "lg:order-1 lg:mx-auto lg:w-full lg:max-w-3xl" : ""
+          }`}
+        >
           <div className="card p-4">
-            <div className="mb-3 flex flex-wrap gap-1">
+            <div className="mb-3 flex flex-wrap items-center gap-1">
               {tabs.map((t) => (
                 <button
                   key={t.key}
@@ -265,6 +351,15 @@ export function FicheWorkspace({
                   )}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={toggleWide}
+                className="ml-auto hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-white/50 transition hover:bg-white/[0.05] hover:text-white/80 lg:inline-flex"
+                title={wide ? "Remettre le cours à côté du quiz" : "Quiz en pleine largeur, cours en dessous"}
+              >
+                {wide ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                {wide ? "Réduire" : "Agrandir"}
+              </button>
             </div>
 
             {!logAvailable && (
@@ -275,6 +370,28 @@ export function FicheWorkspace({
             )}
             {notice && <div className="mb-3 text-xs text-white/60">{notice}</div>}
 
+            {!run && savedRun && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2.5">
+                <div className="min-w-0 text-sm">
+                  <div className="truncate font-medium text-blue-100">{savedRun.title}</div>
+                  <div className="text-xs text-blue-200/70">
+                    {savedRun.done.length >= savedRun.items.length
+                      ? "Série terminée — bilan non consulté"
+                      : `Série en cours : ${savedRun.done.length}/${savedRun.items.length} questions répondues`}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <button type="button" className="btn btn-primary inline-flex items-center gap-1.5 text-xs" onClick={resumeRun}>
+                    <Play size={13} />
+                    {savedRun.done.length >= savedRun.items.length ? "Voir le bilan" : "Reprendre"}
+                  </button>
+                  <button type="button" className="text-xs text-white/40 hover:text-white/70" onClick={discardSavedRun}>
+                    Abandonner
+                  </button>
+                </div>
+              </div>
+            )}
+
             {run ? (
               <FicheQuizRunner
                 key={run.key}
@@ -282,9 +399,19 @@ export function FicheWorkspace({
                 mode={run.mode}
                 title={run.title}
                 api={api}
+                initialRunId={run.runId}
+                initialDone={run.done}
+                onProgress={(done, runId) => persistProgress(run, done, runId)}
                 onAnswered={(row) => setRows((prev) => [...prev, row])}
-                onExit={() => setRun(null)}
-                onReplay={(items) => startRun(pickRandom(items, items.length), "errors", "Rejouer mes ratées")}
+                onPause={() => setRun(null)}
+                onClose={() => {
+                  discardSavedRun();
+                  setRun(null);
+                }}
+                onReplay={(items) => {
+                  discardSavedRun();
+                  startRun(pickRandom(items, items.length), "errors", "Rejouer mes ratées");
+                }}
               />
             ) : tab === "quiz" ? (
               <div>
