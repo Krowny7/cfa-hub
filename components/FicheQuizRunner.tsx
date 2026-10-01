@@ -93,7 +93,9 @@ export function FicheQuizRunner({
       };
       // Le journal est secondaire : un échec d'écriture (migration pas encore
       // appliquée, réseau) ne doit jamais bloquer la correction.
-      api.logAnswer(row).catch((e) => console.error("logAnswer failed:", e));
+      api
+        .logAnswer({ ...row, correct_index: r.correctIndex, explanation: r.explanation })
+        .catch((e) => console.error("logAnswer failed:", e));
       onAnswered({ ...row, answered_at: new Date().toISOString() });
     } catch (e) {
       setError(friendlyError(e, "Impossible de valider cette réponse."));

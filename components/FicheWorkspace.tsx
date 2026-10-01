@@ -20,7 +20,7 @@ import {
 import { FicheQuizRunner, type RunItem } from "@/components/FicheQuizRunner";
 import { FicheProgressChart } from "@/components/FicheProgressChart";
 import { createClient } from "@/lib/supabase/browser";
-import { createSupabaseFicheApi, type FicheApi } from "@/lib/ficheApi";
+import { createSupabaseFicheApi, type FicheApi, type LogStorage } from "@/lib/ficheApi";
 import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
 import {
   buildErrorPoolExport,
@@ -83,7 +83,7 @@ export function FicheWorkspace({
   const [selectedPage, setSelectedPage] = useState<number | null>(drillSets[0]?.page ?? null);
   const [run, setRun] = useState<ActiveRun | null>(null);
   const [rows, setRows] = useState<AnswerRow[]>([]);
-  const [logAvailable, setLogAvailable] = useState(true);
+  const [storage, setStorage] = useState<LogStorage>("account");
   const [logLoading, setLogLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -100,7 +100,7 @@ export function FicheWorkspace({
     api.fetchLog(setIds).then((r) => {
       if (!alive) return;
       setRows(r.rows);
-      setLogAvailable(r.available);
+      setStorage(r.storage);
       setLogLoading(false);
     });
     return () => {
@@ -362,10 +362,11 @@ export function FicheWorkspace({
               </button>
             </div>
 
-            {!logAvailable && (
+            {storage === "device" && (
               <div className="mb-3 rounded-xl border border-yellow-400/25 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
-                Le suivi des erreurs n&apos;est pas encore activé sur cette base : les quiz fonctionnent, mais rien n&apos;est
-                enregistré pour l&apos;instant.
+                Tes erreurs et ta progression sont bien sauvegardées, mais seulement sur cet appareil : la sauvegarde sur ton
+                compte n&apos;est pas encore activée (migration SQL à appliquer). Dès qu&apos;elle le sera, tout ce qui est
+                enregistré ici sera envoyé automatiquement sur ton compte.
               </div>
             )}
             {notice && <div className="mb-3 text-xs text-white/60">{notice}</div>}
