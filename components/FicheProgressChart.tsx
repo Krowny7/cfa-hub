@@ -58,32 +58,34 @@ export function FicheProgressChart({ runs }: { runs: Run[] }) {
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" role="img" aria-label="Progression des scores par série">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full text-white" preserveAspectRatio="none" role="img" aria-label="Progression des scores par série">
         <defs>
           <linearGradient id="ficheProgressFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 25, 50, 75, 100].map((g) => (
           <g key={g}>
-            <line x1={PAD_X} x2={W - PAD_X} y1={yFor(g)} y2={yFor(g)} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-            <text x={2} y={yFor(g) + 3} fontSize={9} fill="rgba(255,255,255,0.28)">
+            <line x1={PAD_X} x2={W - PAD_X} y1={yFor(g)} y2={yFor(g)} stroke="currentColor" strokeOpacity={0.12} strokeWidth={1} />
+            <text x={2} y={yFor(g) + 3} fontSize={9} fill="currentColor" fillOpacity={0.5}>
               {g}
             </text>
           </g>
         ))}
-        <line x1={PAD_X} x2={W - PAD_X} y1={yFor(70)} y2={yFor(70)} stroke="#4ade80" strokeOpacity={0.35} strokeDasharray="5 4" strokeWidth={1.2} />
+        <line x1={PAD_X} x2={W - PAD_X} y1={yFor(70)} y2={yFor(70)} stroke="currentColor" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={1.2} />
         <path d={areaD} fill="url(#ficheProgressFill)" stroke="none" />
-        <path d={lineD} fill="none" stroke="#60a5fa" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+        <path d={lineD} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
         {runs.map((r, i) => (
           <circle
             key={r.runId}
             cx={pts[i].x}
             cy={pts[i].y}
             r={4.5}
-            fill={r.pct >= 70 ? "#4ade80" : r.pct >= 50 ? "#facc15" : "#f87171"}
-            stroke="#0a0a0a"
+            style={{
+              fill: r.pct >= 70 ? "var(--ink)" : r.pct >= 50 ? "var(--paper)" : "var(--pen)",
+              stroke: r.pct >= 50 && r.pct < 70 ? "var(--ink)" : "var(--paper)",
+            }}
             strokeWidth={2}
           >
             <title>
@@ -95,7 +97,7 @@ export function FicheProgressChart({ runs }: { runs: Run[] }) {
       <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] text-white/40">
         <span>{fmtDate(runs[0].date)}</span>
         <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-0 w-3 border-t border-dashed border-green-400/60" /> Seuil 70% · moyenne {avg}% sur {runs.length} séries
+          <span className="inline-block h-0 w-3 border-t border-dashed border-white/60" /> Seuil 70% · moyenne {avg}% sur {runs.length} séries
         </span>
         <span>{fmtDate(runs[runs.length - 1].date)}</span>
       </div>

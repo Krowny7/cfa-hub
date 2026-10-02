@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Check, ClipboardCheck, Copy, RotateCcw, X } from "lucide-react";
+import { InkBar } from "@/components/ink/InkBar";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { friendlyError } from "@/lib/errors";
 import type { FicheApi } from "@/lib/ficheApi";
@@ -134,10 +135,10 @@ export function FicheQuizRunner({
         <div className="card-soft p-4">
           <div className="text-xs text-white/50">{title}</div>
           <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tabular-nums">
+            <span className="font-display text-4xl tabular-nums">
               {score}/{done.length}
             </span>
-            <span className={`text-sm ${pct >= 70 ? "text-green-400" : pct >= 50 ? "text-yellow-300" : "text-red-400"}`}>
+            <span className={`font-display text-lg ${pct < 50 ? "text-red-500" : ""}`}>
               {pct}%
             </span>
           </div>
@@ -164,7 +165,7 @@ export function FicheQuizRunner({
 
         {wrong.length > 0 && (
           <div className="grid gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-white/50">À retenir</div>
+            <div className="kicker">À retenir</div>
             {wrong.map(({ d }, i) => (
               <details key={i} className="card-soft p-3 text-sm">
                 <summary className="cursor-pointer select-none">
@@ -202,12 +203,7 @@ export function FicheQuizRunner({
           Page {current.page} · Score : {score}
         </span>
       </div>
-      <div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
-        <div
-          className="h-full rounded-full bg-blue-400/70 transition-[width]"
-          style={{ width: `${((idx + (result ? 1 : 0)) / items.length) * 100}%` }}
-        />
-      </div>
+      <InkBar className="mb-3" value={((idx + (result ? 1 : 0)) / items.length) * 100} label="Avancement du quiz" />
 
       <QuestionPrompt text={current.q.prompt} className="text-base font-medium leading-relaxed" />
 
@@ -222,20 +218,20 @@ export function FicheQuizRunner({
               type="button"
               disabled={!!result}
               onClick={() => setSelected(i)}
-              className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${
+              className={`flex w-full items-start gap-3 rounded-[3px] border-[1.5px] px-4 py-3 text-left text-sm transition ${
                 isRight
-                  ? "border-green-400/40 bg-green-500/10"
+                  ? "border-white bg-white text-black"
                   : isWrongPick
-                    ? "border-red-400/40 bg-red-500/15"
+                    ? "border-red-500 bg-red-500/[0.07]"
                     : picked
-                      ? "border-blue-400/50 bg-blue-500/10"
-                      : "border-white/10 bg-neutral-900/40 hover:bg-white/5"
+                      ? "-translate-x-px -translate-y-px border-white shadow-[3px_3px_0_var(--ink)]"
+                      : "border-white/45 bg-black hover:border-white"
               }`}
             >
-              <span className="mt-px shrink-0 text-xs font-semibold text-white/40">{LETTERS[i]}</span>
-              <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere] opacity-90">{choice}</span>
-              {isRight && <Check size={15} className="mt-0.5 shrink-0 text-green-400" />}
-              {isWrongPick && <X size={15} className="mt-0.5 shrink-0 text-red-400" />}
+              <span className={`font-display mt-px shrink-0 text-sm ${isRight ? "text-black" : isWrongPick ? "text-red-500" : "text-white/55"}`}>{LETTERS[i]}</span>
+              <span className={`min-w-0 flex-1 break-words [overflow-wrap:anywhere] ${isWrongPick ? "line-through decoration-red-500 decoration-2" : ""}`}>{choice}</span>
+              {isRight && <Check size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-black" />}
+              {isWrongPick && <X size={16} strokeWidth={3} className="mt-0.5 shrink-0 text-red-500" />}
             </button>
           );
         })}
@@ -243,7 +239,7 @@ export function FicheQuizRunner({
 
       {result && (
         <div className="mt-4 card-soft p-4 text-sm">
-          <div className={`font-semibold ${result.isCorrect ? "text-green-400" : "text-red-400"}`}>
+          <div className={`font-display text-lg ${result.isCorrect ? "" : "text-red-500"}`}>
             {result.isCorrect ? "Correct" : "Incorrect"}
             {result.xp > 0 && <span className="ml-2 text-xs font-normal text-white/50">+{result.xp} XP</span>}
           </div>

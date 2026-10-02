@@ -579,6 +579,13 @@ html[data-theme="nuit"] {
   }
 }
 
+/* Titres de page harmonisés : même lettrage et même taille sur toutes les
+   pages, quelle que soit la classe de taille héritée de l'ancienne DA. */
+main h1.font-display {
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.08;
+}
+
 /* Mode discret : même mise en page, sans signature visuelle (lettrage épais,
    anneau, notes manuscrites, rouge) — pour réviser en public. Hors couche
    (@layer) exprès : ces règles doivent l'emporter sur les composants et sur

@@ -289,7 +289,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                   type="button"
                   onClick={() => toggleTopic(t.key)}
                   className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
-                    on ? "border-blue-400/50 bg-blue-500/10 text-white" : "border-white/10 text-white/70 hover:bg-white/[0.04]"
+                    on ? "border-white bg-white font-bold text-black" : "border-white/45 text-white/85 hover:border-white"
                   }`}
                 >
                   <span>{t.label}</span>
@@ -304,14 +304,14 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
             <button
               type="button"
               onClick={() => setFormat(180)}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition ${format === 180 ? "border-blue-400/50 bg-blue-500/10 text-white" : "border-white/10 text-white/60"}`}
+              className={`rounded-lg border px-3 py-1.5 text-xs transition ${format === 180 ? "border-white bg-white font-bold text-black" : "border-white/45 text-white/75"}`}
             >
               Complet (180Q)
             </button>
             <button
               type="button"
               onClick={() => setFormat(90)}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition ${format === 90 ? "border-blue-400/50 bg-blue-500/10 text-white" : "border-white/10 text-white/60"}`}
+              className={`rounded-lg border px-3 py-1.5 text-xs transition ${format === 90 ? "border-white bg-white font-bold text-black" : "border-white/45 text-white/75"}`}
             >
               Demi-session (90Q)
             </button>
@@ -395,10 +395,10 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                                     {q.choices.map((c, ci) => (
                                       <div key={ci} className={`rounded-lg border px-2 py-1.5 text-xs ${
                                         ci === q.correct_index
-                                          ? "border-green-500/40 bg-green-500/10 text-green-300"
+                                          ? "border-2 border-white bg-white/[0.08] font-bold text-white"
                                           : ci === q.selected_index && q.selected_index !== q.correct_index
-                                          ? "border-red-500/40 bg-red-500/10 text-red-300"
-                                          : "border-white/10 text-white/60"
+                                          ? "border-red-500 bg-red-500/[0.06] text-red-500"
+                                          : "border-white/45 text-white/75"
                                       }`}>
                                         <span className="inline-flex items-center gap-1.5">
                                           {ci === q.correct_index && <Check size={12} className="shrink-0" />}
@@ -530,10 +530,10 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                   {q.choices.map((c, ci) => (
                     <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
                       ci === q.correct_index
-                        ? "border-green-500/40 bg-green-500/10 text-green-300"
+                        ? "border-2 border-white bg-white/[0.08] font-bold text-white"
                         : ci === q.selected_index && q.selected_index !== q.correct_index
-                        ? "border-red-500/40 bg-red-500/10 text-red-300"
-                        : "border-white/10 text-white/60"
+                        ? "border-red-500 bg-red-500/[0.06] text-red-500"
+                        : "border-white/45 text-white/75"
                     }`}>
                       <span className="inline-flex items-center gap-1.5">
                         {ci === q.correct_index && <Check size={14} className="shrink-0" />}
@@ -608,7 +608,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
                   key={ci}
                   type="button"
                   className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
-                    picked ? "border-blue-400/60 bg-blue-500/15 text-white" : "border-white/10 hover:bg-white/5 text-white/80"
+                    picked ? "border-white text-white shadow-[3px_3px_0_var(--ink)]" : "border-white/45 text-white hover:border-white"
                   }`}
                   onClick={() => {
                     setAnswers((prev) => {

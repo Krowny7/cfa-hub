@@ -266,10 +266,10 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
                   {q.choices.map((c, ci) => (
                     <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
                       ci === q.correct_index
-                        ? "border-green-500/40 bg-green-500/10 text-green-300"
+                        ? "border-2 border-white bg-white/[0.08] font-bold text-white"
                         : ci === q.selected_index && q.selected_index !== q.correct_index
-                        ? "border-red-500/40 bg-red-500/10 text-red-300"
-                        : "border-white/10 text-white/60"
+                        ? "border-red-500 bg-red-500/[0.06] text-red-500"
+                        : "border-white/45 text-white/75"
                     }`}>
                       <span className="inline-flex items-center gap-1.5">
                         {ci === q.correct_index && <Check size={14} className="shrink-0" />}
@@ -341,8 +341,8 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
                   type="button"
                   className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
                     picked
-                      ? "border-blue-400/60 bg-blue-500/15 text-white"
-                      : "border-white/10 hover:bg-white/5 text-white/80"
+                      ? "border-white text-white shadow-[3px_3px_0_var(--ink)]"
+                      : "border-white/45 text-white hover:border-white"
                   }`}
                   onClick={() => {
                     setAnswers((prev) => {

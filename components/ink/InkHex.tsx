@@ -38,13 +38,13 @@ export function InkHex({
       <svg viewBox="0 0 240 276" className="absolute inset-0 h-full w-full overflow-visible" aria-hidden>
         <defs>
           <pattern id={`${uid}-dense`} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <circle cx="4.5" cy="4.5" r="2.6" fill="var(--ink)" />
+            <circle cx="4.5" cy="4.5" r="2.6" style={{ fill: "var(--ink)" }} />
           </pattern>
           <pattern id={`${uid}-light`} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <circle cx="4.5" cy="4.5" r="1.3" fill="var(--ink)" />
+            <circle cx="4.5" cy="4.5" r="1.3" style={{ fill: "var(--ink)" }} />
           </pattern>
           <pattern id={`${uid}-hatch`} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)">
-            <line x1="0" y1="0" x2="0" y2="10" stroke="var(--pen)" strokeWidth="1.6" />
+            <line x1="0" y1="0" x2="0" y2="10" style={{ stroke: "var(--pen)" }} strokeWidth="1.6" />
           </pattern>
           <mask id={`${uid}-ring`} maskUnits="userSpaceOnUse" x="-20" y="-20" width="280" height="316">
             <path
@@ -62,11 +62,11 @@ export function InkHex({
           </mask>
         </defs>
         {tone !== "none" && <path d={HEX_TONE} fill={tone} opacity={state === "front" ? 0.55 : 0.9} />}
-        <path d={HEX_INNER} fill="var(--paper)" />
+        <path d={HEX_INNER} style={{ fill: "var(--paper)" }} />
         <path
           d={HEX_OUTLINE}
           fill="none"
-          stroke="var(--ink)"
+          style={{ stroke: "var(--ink)" }}
           strokeWidth={selected ? 6 : state === "fog" ? 2 : 2.6}
           strokeOpacity={state === "fog" ? 0.35 : 0.8}
           strokeDasharray={state === "fog" ? "6 8" : undefined}
@@ -74,7 +74,7 @@ export function InkHex({
         />
         {state !== "fog" && value > 0 && (
           <g mask={`url(#${uid}-ring)`}>
-            <path d={HEX_RING} fill={ringColor} />
+            <path d={HEX_RING} style={{ fill: ringColor }} />
           </g>
         )}
       </svg>

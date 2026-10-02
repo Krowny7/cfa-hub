@@ -165,11 +165,11 @@ export function PracticeProgressChart({
         <div className="py-6 text-center text-xs text-white/40">Pas assez de sessions sur ce filtre pour tracer une courbe.</div>
       ) : (
         <>
-          <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" preserveAspectRatio="none">
+          <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full text-white" preserveAspectRatio="none">
             <defs>
               <linearGradient id="practiceProgressFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.28" />
-                <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+                <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
               </linearGradient>
             </defs>
 
@@ -178,32 +178,33 @@ export function PracticeProgressChart({
                 <line
                   x1={PAD_X} x2={W - PAD_X}
                   y1={yFor(g)} y2={yFor(g)}
-                  stroke="rgba(255,255,255,0.06)"
+                  stroke="currentColor"
+                  strokeOpacity={0.12}
                   strokeWidth={1}
                 />
-                <text x={2} y={yFor(g) + 3} fontSize={9} fill="rgba(255,255,255,0.28)">{g}</text>
+                <text x={2} y={yFor(g) + 3} fontSize={9} fill="currentColor" fillOpacity={0.5}>{g}</text>
               </g>
             ))}
 
             <line
               x1={PAD_X} x2={W - PAD_X}
               y1={yFor(70)} y2={yFor(70)}
-              stroke="#4ade80"
-              strokeOpacity={0.35}
+              stroke="currentColor"
+              strokeOpacity={0.45}
               strokeDasharray="5 4"
               strokeWidth={1.2}
             />
             <line
               x1={PAD_X} x2={W - PAD_X}
               y1={yFor(avg)} y2={yFor(avg)}
-              stroke="#60a5fa"
-              strokeOpacity={0.5}
+              stroke="currentColor"
+              strokeOpacity={0.3}
               strokeDasharray="2 3"
               strokeWidth={1.2}
             />
 
             <path d={areaD} fill="url(#practiceProgressFill)" stroke="none" />
-            <path d={lineD} fill="none" stroke="#60a5fa" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={lineD} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
             {points.map((p, i) => (
               <circle
@@ -211,8 +212,10 @@ export function PracticeProgressChart({
                 cx={linePts[i].x}
                 cy={linePts[i].y}
                 r={4.5}
-                fill={p.pct >= 70 ? "#4ade80" : p.pct >= 50 ? "#facc15" : "#f87171"}
-                stroke="#0a0a0a"
+                style={{
+                  fill: p.pct >= 70 ? "var(--ink)" : p.pct >= 50 ? "var(--paper)" : "var(--pen)",
+                  stroke: p.pct >= 50 && p.pct < 70 ? "var(--ink)" : "var(--paper)",
+                }}
                 strokeWidth={2}
               >
                 <title>{p.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} — {p.pct}%</title>
@@ -224,7 +227,7 @@ export function PracticeProgressChart({
             <span>{points[0].date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
             <span className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1">
-                <span className="inline-block h-0 w-3 border-t border-dashed border-green-400/60" /> Seuil 70%
+                <span className="inline-block h-0 w-3 border-t border-dashed border-white/60" /> Seuil 70%
               </span>
               <span className="inline-flex items-center gap-1">
                 <span className="inline-block h-0 w-3 border-t border-dashed border-blue-400/70" /> Moyenne {avg}%

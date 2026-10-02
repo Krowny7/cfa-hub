@@ -41,7 +41,7 @@ export default async function ShareQcmPage({ params }: PageProps) {
                   key={cidx}
                   className={`rounded-xl border px-3 py-2 text-sm ${
                     cidx === q.correct_index
-                      ? "border-green-500/40 bg-green-500/10 text-green-300"
+                      ? "border-2 border-white bg-white/[0.08] font-bold text-white"
                       : "border-white/10 text-white/70"
                   }`}
                 >

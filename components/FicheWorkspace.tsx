@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
   ClipboardCheck,
   Copy,
   Download,
@@ -91,6 +93,18 @@ export function FicheWorkspace({
   const [savedRun, setSavedRun] = useState<RestoredRun | null>(null);
   // Quiz en pleine largeur, PDF en dessous (au lieu de côte à côte).
   const [wide, setWide] = useState(false);
+  // PDF replié ou non. Suit le mode discret (replié dès qu'il s'active) ;
+  // le bouton de l'en-tête permet aussi de le replier à la main.
+  const [pdfOpen, setPdfOpen] = useState(true);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const sync = () => setPdfOpen(html.dataset.discreet !== "1");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(html, { attributes: true, attributeFilter: ["data-discreet"] });
+    return () => obs.disconnect();
+  }, []);
 
   const setIds = useMemo(() => drillSets.map((d) => d.setId), [drillSets]);
   const byPage = useMemo(() => new Map(drillSets.map((d) => [d.page, d])), [drillSets]);
@@ -269,14 +283,14 @@ export function FicheWorkspace({
   return (
     <div className="grid gap-3">
       {/* Bascule Cours / Entraînement — mobile uniquement */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 p-1 lg:hidden">
+      <div className="grid grid-cols-2 gap-1 rounded-[3px] border-2 border-white p-1 lg:hidden">
         {(["course", "train"] as const).map((v) => (
           <button
             key={v}
             type="button"
             onClick={() => setMobileView(v)}
             className={`rounded-lg px-3 py-1.5 text-sm transition ${
-              mobileView === v ? "bg-blue-500/15 text-blue-200" : "text-white/60"
+              mobileView === v ? "bg-white text-black font-bold" : "text-white/65 font-bold"
             }`}
           >
             {v === "course" ? "Cours" : "Entraînement"}
@@ -297,13 +311,22 @@ export function FicheWorkspace({
             </div>
           ) : (
             <div className="card overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] p-3">
+              <div className={"flex flex-wrap items-center justify-between gap-2 p-3 " + (pdfOpen ? "border-b-2 border-white" : "")}>
                 <div className="flex items-center gap-1.5 text-xs text-white/50">
                   <BookOpen size={13} />
                   {pdfLabel}
                   {pdfPage && <span className="text-white/35">· synthèse page {selectedPage}</span>}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPdfOpen((o) => !o)}
+                    aria-expanded={pdfOpen}
+                    className="btn btn-secondary inline-flex items-center gap-1.5 text-xs"
+                  >
+                    {pdfOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    {pdfOpen ? "Masquer le PDF" : "Afficher le PDF"}
+                  </button>
                   <a href={pdfUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="btn btn-secondary inline-flex items-center gap-1.5 text-xs">
                     <ExternalLink size={13} /> Ouvrir
                   </a>
@@ -312,12 +335,14 @@ export function FicheWorkspace({
                   </a>
                 </div>
               </div>
-              <iframe
-                key={pdfPage ?? 0}
-                src={pdfSrc}
-                title={`${title} — fiche`}
-                className={`w-full ${wide ? "h-[80vh]" : "h-[72vh] lg:h-[calc(100vh-11rem)]"}`}
-              />
+              {pdfOpen && (
+                <iframe
+                  key={pdfPage ?? 0}
+                  src={pdfSrc}
+                  title={`${title} — fiche`}
+                  className={`w-full ${wide ? "h-[80vh]" : "h-[72vh] lg:h-[calc(100vh-11rem)]"}`}
+                />
+              )}
             </div>
           )}
         </div>
@@ -341,13 +366,13 @@ export function FicheWorkspace({
                     setConfirmReset(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition ${
-                    tab === t.key && !run ? "bg-blue-500/15 text-blue-200" : "text-white/60 hover:bg-white/[0.05]"
+                    tab === t.key && !run ? "ink-swash font-bold" : "font-bold text-white/65 hover:text-white"
                   }`}
                 >
                   {t.icon}
                   {t.label}
                   {!!t.badge && (
-                    <span className="rounded-full bg-red-500/20 px-1.5 text-[10px] font-medium text-red-300">{t.badge}</span>
+                    <span className="rounded-full bg-red-500 px-1.5 text-[10px] font-black text-black">{t.badge}</span>
                   )}
                 </button>
               ))}
@@ -435,8 +460,8 @@ export function FicheWorkspace({
                           !has
                             ? "cursor-not-allowed border-white/[0.06] text-white/25"
                             : isActive
-                              ? "border-blue-400/50 bg-blue-500/10 text-white"
-                              : "border-white/10 text-white/70 hover:bg-white/[0.04]"
+                              ? "border-white bg-white text-black font-bold"
+                              : "border-white/40 text-white/80 hover:border-white"
                         }`}
                       >
                         {!has && <Lock size={11} />}
@@ -553,15 +578,15 @@ export function FicheWorkspace({
                   <>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="card-soft p-3">
-                        <div className="text-xl font-semibold tabular-nums text-green-300">{totals.mastered}</div>
+                        <div className="font-display text-2xl tabular-nums text-green-300">{totals.mastered}</div>
                         <div className="text-[11px] text-white/45">maîtrisées / {totals.total}</div>
                       </div>
                       <div className="card-soft p-3">
-                        <div className="text-xl font-semibold tabular-nums text-red-300">{totals.weak}</div>
+                        <div className="font-display text-2xl tabular-nums text-red-300">{totals.weak}</div>
                         <div className="text-[11px] text-white/45">à revoir</div>
                       </div>
                       <div className="card-soft p-3">
-                        <div className="text-xl font-semibold tabular-nums">
+                        <div className="font-display text-2xl tabular-nums">
                           {totals.attempts > 0 ? Math.round(((totals.attempts - totals.wrong) / totals.attempts) * 100) : 0}%
                         </div>
                         <div className="text-[11px] text-white/45">réussite globale</div>

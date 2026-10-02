@@ -77,28 +77,28 @@ export function TopicMapLegend() {
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
       <span className={item}>
         <svg width="14" height="14" aria-hidden>
-          <rect width="14" height="14" fill="none" stroke="var(--ink)" strokeWidth="1" />
-          {[2, 6, 10].flatMap((x) => [2, 6, 10].map((y) => <circle key={`${x}-${y}`} cx={x + 1} cy={y + 1} r="1.4" fill="var(--ink)" />))}
+          <rect width="14" height="14" fill="none" style={{ stroke: "var(--ink)" }} strokeWidth="1" />
+          {[2, 6, 10].flatMap((x) => [2, 6, 10].map((y) => <circle key={`${x}-${y}`} cx={x + 1} cy={y + 1} r="1.4" style={{ fill: "var(--ink)" }} />))}
         </svg>
         conquis · 80 %+
       </span>
       <span className={item}>
         <svg width="14" height="14" aria-hidden>
-          <rect width="14" height="14" fill="none" stroke="var(--ink)" strokeWidth="1" />
-          {[2, 6, 10].flatMap((x) => [2, 6, 10].map((y) => <circle key={`${x}-${y}`} cx={x + 1} cy={y + 1} r="0.7" fill="var(--ink)" />))}
+          <rect width="14" height="14" fill="none" style={{ stroke: "var(--ink)" }} strokeWidth="1" />
+          {[2, 6, 10].flatMap((x) => [2, 6, 10].map((y) => <circle key={`${x}-${y}`} cx={x + 1} cy={y + 1} r="0.7" style={{ fill: "var(--ink)" }} />))}
         </svg>
         tenu · 70–79 %
       </span>
       <span className={item}>
         <svg width="14" height="14" aria-hidden>
-          <rect width="14" height="14" fill="none" stroke="var(--ink)" strokeWidth="1" />
-          <path d="M-2 10 L6 -2 M2 16 L14 -2 M8 16 L16 4" stroke="var(--pen)" strokeWidth="1.2" />
+          <rect width="14" height="14" fill="none" style={{ stroke: "var(--ink)" }} strokeWidth="1" />
+          <path d="M-2 10 L6 -2 M2 16 L14 -2 M8 16 L16 4" style={{ stroke: "var(--pen)" }} strokeWidth="1.2" />
         </svg>
         front · sous 70 %
       </span>
       <span className={item}>
         <svg width="14" height="14" aria-hidden>
-          <rect width="14" height="14" fill="none" stroke="var(--ink)" strokeOpacity=".4" strokeDasharray="2 2" strokeWidth="1" />
+          <rect width="14" height="14" fill="none" style={{ stroke: "var(--ink)" }} strokeOpacity=".4" strokeDasharray="2 2" strokeWidth="1" />
         </svg>
         inexploré
       </span>

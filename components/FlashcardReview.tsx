@@ -5,6 +5,7 @@ import { CheckCircle2, RotateCcw } from "lucide-react";
 import { useI18n } from "@/components/I18nProvider";
 import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
 import { RichText } from "@/components/RichText";
+import { InkBar } from "@/components/ink/InkBar";
 
 type Card = { id: string; front: string; back: string };
 
@@ -30,15 +31,16 @@ function CardFace({
   return (
     <div
       className={[
-        "absolute inset-0 flex flex-col rounded-2xl border border-white/10 bg-neutral-900/40 p-6 transition-colors hover:bg-neutral-900/60",
+        "absolute inset-0 flex flex-col rounded-[3px] border-2 border-white p-6 shadow-[4px_4px_0_var(--ink)]",
+        isBack ? "bg-neutral-900" : "bg-black",
         "overflow-auto overflow-x-hidden",
         "[backface-visibility:hidden]",
         isBack ? "[transform:rotateY(180deg)]" : "",
       ].join(" ")}
     >
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-        <div className="text-xs font-semibold tracking-wide opacity-70">{label}</div>
-        <div className="text-xs opacity-60 break-words [overflow-wrap:anywhere]">{hint}</div>
+        <div className="kicker">{label}</div>
+        <div className="note text-white/55 break-words [overflow-wrap:anywhere]">{hint}</div>
       </div>
 
       <div className={["mt-5 flex-1 min-w-0", shouldCenter ? "flex items-center justify-center" : ""].join(" ")}>
@@ -51,7 +53,7 @@ function CardFace({
         />
       </div>
 
-      {showBottomHint ? <div className="mt-5 text-xs opacity-60">{hint}</div> : null}
+      {showBottomHint ? <div className="note mt-5 text-white/55">{hint}</div> : null}
     </div>
   );
 }
@@ -263,12 +265,7 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
       {unmasteredBanner}
 
       {/* Barre de progression — repère visuel rapide dans le set */}
-      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
-        <div
-          className="h-full rounded-full bg-emerald-400/70 transition-[width] duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <InkBar className="mt-3" value={pct} label="Avancement dans le set" />
 
       {current ? (
         <>
@@ -318,7 +315,7 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
 
   return (
     <>
-      <div className="rounded-2xl border p-4">{shell}</div>
+      <div className="card p-4">{shell}</div>
 
       {fullscreen && (
         // z-[100] : au-dessus de la bottom nav mobile (z-50) pour qu'elle ne
@@ -328,9 +325,9 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
           className="fixed inset-0 z-[100] bg-black/70 p-3 sm:p-4 backdrop-blur"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="mx-auto flex h-full w-full max-w-6xl flex-col rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl">
+          <div className="mx-auto flex h-full w-full max-w-6xl flex-col rounded-[3px] border-2 border-white bg-black">
             {/* Fullscreen header: stack on mobile */}
-            <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 border-b-2 border-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="text-sm font-semibold">{t("flashcards.review")}</div>
                 <div className="text-xs opacity-70 break-words [overflow-wrap:anywhere]">
@@ -340,7 +337,7 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
 
               <button
                 type="button"
-                className="w-full rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/5 sm:w-auto"
+                className="btn btn-secondary w-full sm:w-auto"
                 onClick={() => setFullscreen(false)}
               >
                 {t("common.close")}

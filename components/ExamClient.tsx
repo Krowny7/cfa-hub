@@ -419,7 +419,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
                 onClick={() => selectChoice(ci)}
                 className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
                   isSelected
-                    ? "border-blue-400/60 bg-blue-500/10 text-white"
+                    ? "border-white text-white shadow-[3px_3px_0_var(--ink)]"
                     : "border-white/[0.07] bg-white/[0.02] text-white/80 hover:bg-white/[0.05] hover:border-white/15"
                 }`}
               >
