@@ -31,7 +31,7 @@ export async function Sidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex w-56 shrink-0 flex-col sticky top-12 h-[calc(100vh-3rem)] border-r border-white/[0.07]">
+    <aside className="hidden md:flex w-56 shrink-0 flex-col sticky top-14 h-[calc(100vh-3.5rem)] border-r-2 border-white">
       <SidebarNav sections={sections} bottomItems={bottomItems} />
     </aside>
   );

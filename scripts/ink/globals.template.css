@@ -1,0 +1,370 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+/* ==========================================================================
+   DA « Encre » — papier, encre, pinceau sec.
+   Une seule couleur : l'encre. Le rouge « stylo de correction » (--pen) est
+   réservé aux erreurs. Les couleurs Tailwind historiques (white, blue, green,
+   red…) sont redirigées plus bas vers ces jetons : toute l'app suit la DA sans
+   réécrire chaque composant, et le thème « nuit » n'a qu'à échanger les jetons.
+
+   FICHIER GÉNÉRÉ par scripts/ink/generate.cjs à partir de
+   scripts/ink/globals.template.css : modifier le gabarit, puis relancer
+   « node scripts/ink/generate.cjs ».
+   ========================================================================== */
+
+:root {
+  --paper: #fbfbf8;
+  --paper-2: #f2f2ee;
+  --ink: #141414;
+  --pen: #c4321c;
+  --grain: @@GRAIN_DARK@@;
+  --underline: @@UNDER_DARK@@;
+  --swash: @@SWASH@@;
+  --bar: @@BAR@@;
+  color-scheme: light;
+}
+
+html[data-theme="nuit"] {
+  --paper: #121211;
+  --paper-2: #1b1b1a;
+  --ink: #ecebe6;
+  --pen: #ff7a5c;
+  --grain: @@GRAIN_LIGHT@@;
+  --underline: @@UNDER_LIGHT@@;
+  color-scheme: dark;
+}
+
+@theme {
+  --font-sans: var(--font-body), "Zen Kaku Gothic New", ui-sans-serif, system-ui, sans-serif;
+  --color-white: var(--ink);
+  --color-black: var(--paper);
+  /* Angles d'encre nets : les arrondis hérités (rounded-xl…) restent sobres */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 6px;
+@@THEME@@}
+
+@layer base {
+  html {
+    height: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    background-color: var(--paper);
+    background-image: var(--grain);
+    color: var(--ink);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* KaTeX (fiches de révision) — la marge par défaut de .katex-display est
+     gérée par le gap du conteneur (KFormula), pas par KaTeX lui-même */
+  .katex-formula .katex-display {
+    margin: 0;
+  }
+  .katex-formula .katex-display > .katex {
+    text-align: left;
+  }
+
+}
+
+@layer components {
+  /* ---------- Typographie ---------- */
+  .font-display {
+    font-family: var(--font-display), "Arial Black", sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    letter-spacing: -0.005em;
+  }
+
+  /* Libellé façon « case de narration » de manga */
+  .kicker {
+    font-family: var(--font-sans);
+    font-weight: 900;
+    @apply text-[11px] uppercase tracking-[0.14em] text-white/60;
+  }
+
+  /* Annotation manuscrite (marge, conseils, petites remarques) */
+  .note {
+    font-family: var(--font-hand), "Caveat", cursive;
+    font-weight: 600;
+    font-size: 1.2em;
+    line-height: 1.15;
+  }
+
+  .text-body {
+    @apply text-white/80;
+  }
+  .text-muted {
+    @apply text-white/65;
+  }
+  .text-faint {
+    @apply text-white/45;
+  }
+
+  /* ---------- Surfaces ---------- */
+  .card {
+    background-color: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+  }
+
+  .card-hover {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-hover:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .card-soft {
+    background-color: color-mix(in oklab, var(--ink) 3%, var(--paper));
+    border: 1px solid color-mix(in oklab, var(--ink) 22%, transparent);
+    border-radius: 3px;
+  }
+
+  /* Ancienne signature « coins de planche » : remplacée par une ombre
+     d'encre décalée, discrète, comme une case de manga posée sur la page. */
+  .plate {
+    position: relative;
+    box-shadow: 3px 3px 0 color-mix(in oklab, var(--ink) 85%, transparent);
+  }
+
+  /* Étiquette « case de narration » posée sur un panneau */
+  .panel-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-weight: 900;
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Boutons ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45;
+    font-weight: 700;
+    border-radius: 3px;
+  }
+
+  /* Principal : un coup de pinceau noir sous le texte */
+  .btn-primary {
+    position: relative;
+    isolation: isolate;
+    color: var(--paper);
+    background: transparent;
+  }
+  .btn-primary::before {
+    content: "";
+    position: absolute;
+    inset: -4px -8px;
+    z-index: -1;
+    background: var(--ink);
+    -webkit-mask: var(--swash) center / 100% 100% no-repeat;
+    mask: var(--swash) center / 100% 100% no-repeat;
+    transition: transform 0.2s ease;
+  }
+  .btn-primary:hover::before {
+    transform: scale(1.03, 1.1);
+  }
+
+  .btn-secondary {
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+  .btn-secondary:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .btn-ghost {
+    border: 2px solid transparent;
+  }
+  .btn-ghost:hover {
+    background: color-mix(in oklab, var(--ink) 7%, transparent);
+  }
+
+  .btn-danger {
+    border: 2px solid var(--pen);
+    color: var(--pen);
+    background: var(--paper);
+  }
+  .btn-danger:hover {
+    background: color-mix(in oklab, var(--pen) 8%, var(--paper));
+  }
+
+  /* Fond « coup de pinceau » (élément actif de la navigation, étiquettes) */
+  .ink-swash {
+    position: relative;
+    isolation: isolate;
+    color: var(--paper);
+  }
+  .ink-swash::before {
+    content: "";
+    position: absolute;
+    inset: -2px -4px;
+    z-index: -1;
+    background: var(--ink);
+    -webkit-mask: var(--swash) center / 100% 100% no-repeat;
+    mask: var(--swash) center / 100% 100% no-repeat;
+  }
+
+  /* Lien d'action manuscrit, souligné au pinceau */
+  .ghost-btn,
+  .ink-link {
+    font-family: var(--font-hand), "Caveat", cursive;
+    font-weight: 700;
+    font-size: 1.3em;
+    line-height: 1.1;
+    padding-bottom: 6px;
+    background: var(--underline) left bottom / 100% 7px no-repeat;
+    color: var(--ink);
+    transition: opacity 0.15s ease;
+  }
+  .ghost-btn:hover,
+  .ink-link:hover {
+    opacity: 0.7;
+  }
+
+  /* ---------- Champs ---------- */
+  .input,
+  .select {
+    @apply w-full px-3 py-2 text-sm outline-none transition;
+    border: 1.5px solid color-mix(in oklab, var(--ink) 55%, transparent);
+    border-radius: 3px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .input::placeholder {
+    color: color-mix(in oklab, var(--ink) 42%, transparent);
+  }
+  .input:focus,
+  .select:focus {
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  /* ---------- Badges & puces ---------- */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-[10.5px] uppercase tracking-[0.08em];
+    font-weight: 900;
+    border-radius: 2px;
+    border: 1.5px solid var(--ink);
+  }
+  .badge-private,
+  .badge-neutral {
+    color: var(--ink);
+    background: var(--paper);
+  }
+  .badge-shared,
+  .badge-group {
+    color: var(--ink);
+    background: color-mix(in oklab, var(--ink) 8%, var(--paper));
+  }
+  .badge-public {
+    color: var(--paper);
+    background: var(--ink);
+  }
+
+  .chip {
+    @apply inline-flex items-center px-3 py-1.5 text-sm transition;
+    font-weight: 700;
+    border-radius: 2px;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+  }
+  .chip:hover {
+    background: color-mix(in oklab, var(--ink) 7%, var(--paper));
+  }
+  .chip-active,
+  .chip-active:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* ---------- Progression au pinceau ---------- */
+  .ink-bar {
+    position: relative;
+    height: 12px;
+  }
+  .ink-bar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1.5px;
+    background: color-mix(in oklab, var(--ink) 25%, transparent);
+  }
+  .ink-bar > span {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: var(--ink);
+    -webkit-mask: var(--bar) 0 0 / 100% 100% no-repeat;
+    mask: var(--bar) 0 0 / 100% 100% no-repeat;
+    transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ink-bar.is-pen > span {
+    background: var(--pen);
+  }
+}
+
+/* Mode discret : même mise en page, sans signature visuelle (lettrage épais,
+   anneau, notes manuscrites, rouge) — pour réviser en public. Hors couche
+   (@layer) exprès : ces règles doivent l'emporter sur les composants et sur
+   les jetons de :root. */
+html[data-discreet="1"] {
+  --pen: var(--ink);
+}
+html[data-discreet="1"] .font-display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+html[data-discreet="1"] .rl-deco {
+  display: none !important;
+}
+html[data-discreet="1"] .note {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95em;
+}
+
+/* Couvre le tout premier affichage (couleur papier) le temps de savoir si
+   l'intro joue. Pseudo-élément sur <html>, jamais un nœud DOM : retirer un
+   nœud rendu côté serveur avant l'hydratation casse React (erreur #418). */
+html.rl-booting::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--paper);
+}

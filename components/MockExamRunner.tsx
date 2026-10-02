@@ -380,7 +380,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
               onClick={() => setIdx(i)}
               className={`h-5 w-5 rounded text-[9px] font-bold transition ${
                 i === idx
-                  ? "bg-blue-500 text-white"
+                  ? "bg-white text-black"
                   : answers[i] !== null
                   ? "bg-white/20 text-white/70"
                   : "bg-white/[0.06] text-white/30"

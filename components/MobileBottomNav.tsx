@@ -17,6 +17,7 @@ const items = [
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
+  if (href === "/dashboard" && pathname === "/") return true;
   if (pathname === href) return true;
   return pathname.startsWith(href + "/");
 }
@@ -27,7 +28,8 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t border-white/[0.08] bg-neutral-950/90 backdrop-blur"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t-2 border-white bg-black"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Mobile navigation"
     >
       <div className="grid h-full grid-cols-5">
@@ -39,11 +41,13 @@ export function MobileBottomNav() {
               href={href}
               aria-current={active ? "page" : undefined}
               className={
-                "flex flex-col items-center justify-center gap-1 text-[10px] transition-all " +
-                (active ? "text-white" : "text-muted hover:text-white/70")
+                "flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition-colors " +
+                (active ? "text-white" : "text-white/55 hover:text-white/80")
               }
             >
-              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+              <span className={"flex h-7 w-11 items-center justify-center " + (active ? "ink-swash" : "")}>
+                <Icon size={18} strokeWidth={active ? 2.4 : 1.9} />
+              </span>
               <span className="max-w-full truncate px-0.5">{t(labelKey)}</span>
             </Link>
           );

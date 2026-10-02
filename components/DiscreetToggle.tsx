@@ -5,10 +5,11 @@ import { Eye, EyeOff } from "lucide-react";
 
 const KEY = "cfa_discreet";
 
-// Mode discret : même interface, mais en noir et blanc (filtre CSS appliqué
-// sur <html>, donc le PDF de l'iframe aussi). Le choix est mémorisé ; un
-// petit script dans le layout le réapplique avant le premier affichage pour
-// qu'aucune couleur ne clignote au chargement.
+// Mode discret : même interface, sans signature visuelle — pas de lettrage
+// épais, pas d'anneau, pas de notes manuscrites, pas de rouge (règles
+// html[data-discreet="1"] dans globals.css). Sur les fiches, le PDF se replie
+// aussi. Le choix est mémorisé ; un script dans le layout le réapplique avant
+// le premier affichage.
 export function DiscreetToggle() {
   const [on, setOn] = useState(false);
 
@@ -41,11 +42,14 @@ export function DiscreetToggle() {
       type="button"
       onClick={toggle}
       aria-pressed={on}
-      title={on ? "Désactiver le mode discret" : "Mode discret (noir et blanc)"}
-      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs text-white/70 hover:bg-white/[0.06]"
+      title={on ? "Désactiver le mode discret" : "Mode discret : interface sobre"}
+      className={
+        "flex h-8 items-center gap-1.5 rounded-[3px] border-[1.5px] px-2.5 text-xs font-bold " +
+        (on ? "border-white bg-white text-black" : "border-white/70 hover:bg-white/[0.07]")
+      }
     >
       {on ? <EyeOff size={14} /> : <Eye size={14} />}
-      <span className="hidden md:inline">{on ? "Discret : activé" : "Mode discret"}</span>
+      <span className="hidden md:inline">Discret</span>
     </button>
   );
 }
