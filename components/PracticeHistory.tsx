@@ -17,10 +17,9 @@ function pct(correct: number, total: number) {
   return total > 0 ? Math.round((correct / total) * 100) : 0;
 }
 
+// Encre si c'est réussi, rouge correcteur sous 55 %.
 function pctColor(p: number) {
-  if (p >= 70) return "text-green-400";
-  if (p >= 55) return "text-yellow-400";
-  return "text-red-400";
+  return p < 55 ? "text-red-500" : "";
 }
 
 function relDate(iso: string): string {
@@ -87,39 +86,36 @@ export function PracticeHistory() {
   if (loading || sessions.length === 0) return null;
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2 text-xs font-medium uppercase tracking-wide text-faint">
-        <span>Historique de pratique</span>
-        <span className="normal-case tracking-normal">
-          {fromSupabase && <span className="mr-2 text-white/30">synchronisé</span>}
+    <div className="card p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="panel-label">Historique</span>
+        <span className="text-xs text-muted">
+          {fromSupabase && <span className="mr-2">synchronisé ·</span>}
           {sessions.length} session(s)
         </span>
       </div>
-      <div className="mt-2.5">
+      <div>
         {sessions.slice(0, 8).map((s) => {
           const p = pct(s.correct, s.total);
           return (
-            <div
-              key={s.id}
-              className="flex items-center justify-between gap-3 border-b border-white/[0.06] py-2.5 last:border-0"
-            >
+            <div key={s.id} className="flex items-center justify-between gap-3 border-b border-white/15 py-2.5 last:border-0">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm">{s.set_title}</div>
+                <div className="truncate text-sm font-bold">{s.set_title}</div>
                 <div className="text-xs text-muted">
                   {s.mode === "qcm" ? "QCM" : "Flashcards"} · {relDate(s.occurred_at)}
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className={`text-sm font-semibold tabular-nums ${pctColor(p)}`}>{p}%</div>
-                <div className="text-[10px] text-white/35">{s.correct}/{s.total}</div>
+                <div className={`font-display text-base tabular-nums ${pctColor(p)}`}>{p}%</div>
+                <div className="text-[10px] text-white/45">
+                  {s.correct}/{s.total}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-      {sessions.length > 8 && (
-        <div className="mt-2 text-xs text-white/35">+ {sessions.length - 8} session(s) supplémentaire(s)</div>
-      )}
+      {sessions.length > 8 && <div className="mt-2 text-xs text-white/45">+ {sessions.length - 8} session(s) supplémentaire(s)</div>}
     </div>
   );
 }
