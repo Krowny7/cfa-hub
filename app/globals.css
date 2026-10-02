@@ -359,10 +359,10 @@ html[data-theme="nuit"] {
     @apply text-white/80;
   }
   .text-muted {
-    @apply text-white/65;
+    @apply text-white/75;
   }
   .text-faint {
-    @apply text-white/45;
+    @apply text-white/[0.58];
   }
 
   /* ---------- Surfaces ---------- */
@@ -585,6 +585,29 @@ html[data-theme="nuit"] {
 main h1.font-display:not(.rl-hero) {
   font-size: clamp(28px, 3.2vw, 38px);
   line-height: 1.08;
+}
+
+/* Lisibilité sur papier : les textes secondaires hérités de l'ancienne DA
+   (opacités pensées pour un fond noir) sont un peu foncés. Sélecteurs
+   d'attribut plutôt que des classes échappées : pas d'antislash ici. */
+[class~="text-white/30"],
+[class~="text-white/35"] {
+  color: color-mix(in oklab, var(--ink) 52%, transparent);
+}
+[class~="text-white/40"] {
+  color: color-mix(in oklab, var(--ink) 58%, transparent);
+}
+[class~="text-white/45"] {
+  color: color-mix(in oklab, var(--ink) 62%, transparent);
+}
+[class~="text-white/50"] {
+  color: color-mix(in oklab, var(--ink) 66%, transparent);
+}
+[class~="text-white/55"] {
+  color: color-mix(in oklab, var(--ink) 70%, transparent);
+}
+[class~="text-white/60"] {
+  color: color-mix(in oklab, var(--ink) 74%, transparent);
 }
 
 /* Avatars en noir et blanc, comme tout le reste de la page */
