@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { InkHex, hexStateFromPct } from "@/components/ink/InkHex";
+import { InkHex } from "@/components/ink/InkHex";
+import { hexStateFromPct } from "@/components/ink/hexState";
 
 export type TopicMastery = { key: string; short: string; label: string; pct: number | null };
 

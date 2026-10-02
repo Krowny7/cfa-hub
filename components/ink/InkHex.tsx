@@ -2,15 +2,7 @@
 
 import { useId } from "react";
 import { HEX_INNER, HEX_OUTLINE, HEX_RING, HEX_RING_AXIS, HEX_TONE } from "@/components/ink/paths";
-
-export type HexState = "won" | "held" | "front" | "fog";
-
-export function hexStateFromPct(pct: number | null): HexState {
-  if (pct === null) return "fog";
-  if (pct >= 80) return "won";
-  if (pct >= 70) return "held";
-  return "front";
-}
+import type { HexState } from "@/components/ink/hexState";
 
 // Une case de la carte : trame selon l'état (points serrés = conquis, points
 // légers = tenu, hachures = front, pointillés = inexploré), anneau au pinceau
