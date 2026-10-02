@@ -580,10 +580,16 @@ html[data-theme="nuit"] {
 }
 
 /* Titres de page harmonisés : même lettrage et même taille sur toutes les
-   pages, quelle que soit la classe de taille héritée de l'ancienne DA. */
-main h1.font-display {
+   pages, quelle que soit la classe de taille héritée de l'ancienne DA.
+   .rl-hero : titre « vitrine » (connexion) qui garde sa propre taille. */
+main h1.font-display:not(.rl-hero) {
   font-size: clamp(28px, 3.2vw, 38px);
   line-height: 1.08;
+}
+
+/* Avatars en noir et blanc, comme tout le reste de la page */
+img[alt="avatar"] {
+  filter: grayscale(1) contrast(1.05);
 }
 
 /* Mode discret : même mise en page, sans signature visuelle (lettrage épais,

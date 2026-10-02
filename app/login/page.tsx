@@ -3,15 +3,12 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { InkRing } from "@/components/ink/InkRing";
 
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="currentColor"
-        opacity="0.2"
-        d="M24 44c11.05 0 20-8.95 20-20S35.05 4 24 4 4 12.95 4 24s8.95 20 20 20Z"
-      />
+      <path fill="#fff" d="M24 44c11.05 0 20-8.95 20-20S35.05 4 24 4 4 12.95 4 24s8.95 20 20 20Z" />
       <path
         fill="#FFC107"
         d="M43.611 20.083H42V20H24v8h11.303C33.651 32.657 29.2 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.06 0 5.842 1.154 7.962 3.038l5.657-5.657C34.915 6.053 29.69 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917Z"
@@ -48,7 +45,7 @@ export default function LoginPage() {
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo }
+        options: { redirectTo },
       });
 
       if (error) throw error;
@@ -58,68 +55,66 @@ export default function LoginPage() {
     }
   }
 
+  const features = [
+    { title: t("nav.library"), desc: t("login.libraryDesc") },
+    { title: t("login.entrainementTitle"), desc: t("login.entrainementDesc") },
+    { title: t("login.groupsTitle"), desc: t("login.groupsDesc") },
+  ];
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {/* LEFT: Value prop */}
-      <section className="card order-2 p-8 lg:order-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs">
-          <span className="h-2 w-2 rounded-full bg-blue-400/80" />
-          {t("login.studyHub")}
-        </div>
-
-        <h1 className="mt-5 font-display text-3xl font-medium leading-tight">
-          Ranked Lobby — <span className="opacity-80">{t("login.heroSuffix")}</span>
-        </h1>
-
-        <p className="mt-3 text-sm text-white/80">{t("login.heroDesc")}</p>
-
-        <div className="mt-7 grid gap-3 sm:grid-cols-3">
-          <div className="card-soft plate p-4">
-            <div className="kicker mb-1">{t("nav.library")}</div>
-            <div className="text-xs opacity-70">{t("login.libraryDesc")}</div>
-          </div>
-
-          <div className="card-soft plate p-4">
-            <div className="kicker mb-1">{t("login.entrainementTitle")}</div>
-            <div className="text-xs opacity-70">{t("login.entrainementDesc")}</div>
-          </div>
-
-          <div className="card-soft plate p-4">
-            <div className="kicker mb-1">{t("login.groupsTitle")}</div>
-            <div className="text-xs opacity-70">{t("login.groupsDesc")}</div>
+    <div className="grid gap-7 md:ml-[calc((100%-min(1120px,calc(100vw-4rem)))/2)] md:w-[min(1120px,calc(100vw-4rem))] lg:grid-cols-[1.35fr_1fr]">
+      {/* La planche « encre » : l'anneau, le nom, les annotations */}
+      <section className="card order-2 grid gap-7 p-7 md:p-9 lg:order-1">
+        <span className="panel-label w-fit">{t("login.studyHub")}</span>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+          <InkRing size={124} className="rl-deco shrink-0" title="Ranked Lobby" />
+          <div>
+            <h1 className="rl-hero font-display text-[46px] leading-[0.95] tracking-tight md:text-[50px]">
+              RANKED
+              <br />
+              LOBBY
+            </h1>
+            <p className="note mt-4 text-white/75">le savoir se conquiert.</p>
+            <p className="note mt-1 pl-5 text-white/60">→ {t("login.heroSuffix")}</p>
           </div>
         </div>
 
-        <div className="mt-6 text-xs text-white/60">{t("login.tipStartBy")}</div>
+        <p className="max-w-[60ch] text-[15px] leading-relaxed text-white/80">{t("login.heroDesc")}</p>
+
+        <div className="grid gap-4 border-t-2 border-white pt-5 sm:grid-cols-3">
+          {features.map((f) => (
+            <div key={f.title}>
+              <div className="kicker mb-1.5">{f.title}</div>
+              <div className="text-[13px] leading-relaxed text-white/70">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        <p className="note text-white/60">{t("login.tipStartBy")}</p>
       </section>
 
-      {/* RIGHT: Sign in */}
-      <section className="card order-1 p-8 lg:order-2">
-        <h2 className="font-display text-lg font-medium">{t("login.signinTitle")}</h2>
-        <p className="mt-2 text-sm text-white/80">{t("login.signinDesc")}</p>
+      {/* Connexion */}
+      <section className="card order-1 grid content-start gap-5 self-start p-7 md:p-9 lg:order-2">
+        <h2 className="font-display text-[30px] leading-none">{t("login.signinTitle")}</h2>
+        <p className="text-sm text-white/80">{t("login.signinDesc")}</p>
 
-        <button
-          type="button"
-          onClick={signInWithGoogle}
-          disabled={busy}
-          className="btn mt-5 w-full bg-white text-black hover:bg-white/90"
-        >
+        <button type="button" onClick={signInWithGoogle} disabled={busy} className="btn btn-primary w-full py-3.5 text-[15px]">
           <GoogleIcon />
           {busy ? t("login.redirecting") : t("login.googleButton")}
         </button>
 
-        {error ? <div className="mt-3 text-sm text-red-100">{error}</div> : null}
+        {error ? <div className="text-sm font-bold text-red-500">{error}</div> : null}
 
-        <div className="mt-6 card-soft p-4">
-          <div className="text-sm font-semibold">{t("login.firstStepsTitle")}</div>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-white/80">
+        <div className="card-soft p-4">
+          <div className="kicker mb-2">{t("login.firstStepsTitle")}</div>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-white/80">
             <li>{t("login.step1")}</li>
             <li>{t("login.step2")}</li>
             <li>{t("login.step3")}</li>
           </ol>
         </div>
 
-        <div className="mt-4 text-xs text-white/60">{t("login.legalNote")}</div>
+        <div className="text-xs text-white/60">{t("login.legalNote")}</div>
       </section>
     </div>
   );

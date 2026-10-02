@@ -143,21 +143,13 @@ export default async function PeoplePage({ searchParams }: PageProps) {
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Link
               href={`/people?view=all${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              className={`rounded-full border px-3 py-1 text-xs transition ${
-                view === "all"
-                  ? "border-white/15 bg-white/[0.10] text-white"
-                  : "border-transparent text-white/60 hover:border-white/10 hover:bg-white/[0.06]"
-              }`}
+              className={`chip text-xs ${view === "all" ? "chip-active" : ""}`}
             >
               {t(locale, "people.all")}
             </Link>
             <Link
               href={`/people?view=groups${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              className={`rounded-full border px-3 py-1 text-xs transition ${
-                view === "groups"
-                  ? "border-white/15 bg-white/[0.10] text-white"
-                  : "border-transparent text-white/60 hover:border-white/10 hover:bg-white/[0.06]"
-              }`}
+              className={`chip text-xs ${view === "groups" ? "chip-active" : ""}`}
             >
               {t(locale, "people.myGroups")}
             </Link>
@@ -193,7 +185,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                     key={p.id}
                     href={`/people/${p.id}`}
                     className={`card-soft flex items-center gap-3 p-3 transition hover:bg-white/[0.06] ${
-                      p.id === user.id ? "bg-white/[0.06]" : ""
+                      p.id === user.id ? "border-2 border-white" : ""
                     }`}
                   >
                     {p.avatar_url ? (
@@ -225,7 +217,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
 
         {/* Leaderboard */}
         <aside className="card p-5">
-          <div className="mb-1 text-sm font-semibold">{t(locale, "people.eloRanking")}</div>
+          <div className="panel-label mb-2 w-fit">{t(locale, "people.eloRanking")}</div>
           <div className="mb-4 text-xs text-white/55">{t(locale, "people.top20")}</div>
 
           <div className="grid gap-1.5">
@@ -237,11 +229,11 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                   key={row.user_id}
                   href={`/people/${row.user_id}`}
                   className={`card-soft flex items-center justify-between px-3 py-2.5 transition hover:bg-white/[0.06] ${
-                    row.user_id === user.id ? "bg-white/[0.06]" : ""
+                    row.user_id === user.id ? "border-2 border-white shadow-[3px_3px_0_var(--ink)]" : ""
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
-                    <div className="w-6 shrink-0 text-xs text-muted text-right">{idx + 1}</div>
+                    <div className="font-display w-7 shrink-0 text-right text-lg leading-none">{idx + 1}</div>
                     {row.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={row.avatar_url} alt="avatar" className="h-7 w-7 rounded-full object-cover shrink-0" />
@@ -257,7 +249,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
                       </div>
                     </div>
                   </div>
-                  <div className="shrink-0 text-sm font-semibold">{row.elo}</div>
+                  <div className="font-display shrink-0 text-base tabular-nums">{row.elo}</div>
                 </Link>
               ))
             )}

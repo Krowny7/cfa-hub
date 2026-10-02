@@ -77,7 +77,7 @@ function TopicFilter({
         <ChevronDown size={13} className={`text-white/40 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1.5 max-h-64 w-56 overflow-auto rounded-xl border border-white/10 bg-neutral-900 p-1 shadow-xl shadow-black/40">
+        <div className="absolute right-0 z-20 mt-1.5 max-h-64 w-56 overflow-auto rounded-[3px] border-2 border-white bg-black p-1 shadow-[3px_3px_0_var(--ink)]">
           {options.map((o) => (
             <button
               key={o.value}
