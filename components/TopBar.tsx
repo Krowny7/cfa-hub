@@ -25,7 +25,7 @@ export async function TopBar() {
     <header className="sticky top-0 z-50 h-14 border-b-2 border-white bg-black">
       <div className="flex h-full items-center justify-between gap-3 px-4">
         <Link href="/" className="whitespace-nowrap text-[14px] sm:text-[17px]" aria-label={t(locale, "appName")}>
-          <InkLockup size={28} />
+          <InkLockup size={28} landing />
         </Link>
 
         <div className="flex items-center gap-2">

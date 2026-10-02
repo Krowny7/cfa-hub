@@ -47,7 +47,7 @@ export function InkHex({
               strokeWidth={40}
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeDasharray={100}
+              strokeDasharray="100 130"
               strokeDashoffset={100 - value}
               style={{ transition: "stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1)" }}
             />
