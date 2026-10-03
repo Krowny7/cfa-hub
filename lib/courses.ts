@@ -79,6 +79,23 @@ export const COURSES: Course[] = [
       { title: "Mortgage-Backed Security (MBS) Instrument and Market Features", start: 4098.4 },
     ],
   },
+  {
+    slug: "equity",
+    title: "Equity Investments",
+    file: "equity",
+    pages: 82,
+    minutes: 65,
+    chapters: [
+      { title: "Market Organization and Structure", start: 0 },
+      { title: "Security Market Indexes", start: 782.7 },
+      { title: "Market Efficiency", start: 1296 },
+      { title: "Overview of Equity Securities", start: 1722.2 },
+      { title: "Company Analysis: Past and Present", start: 2155.6 },
+      { title: "Industry and Competitive Analysis", start: 2490 },
+      { title: "Company Analysis: Forecasting", start: 2910.7 },
+      { title: "Equity Valuation: Concepts and Basic Tools", start: 3210.6 },
+    ],
+  },
 ];
 
 export function getCourse(slug: string) {
