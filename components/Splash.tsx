@@ -10,7 +10,6 @@ import {
   LOGO_START,
   LOGO_TAIL,
   LOGO_TRACK,
-  UNDERLINE,
 } from "@/components/ink/paths";
 
 /*
@@ -20,7 +19,7 @@ import {
  * Version film (par défaut) : un petit film à l'encre calculé image par image
  * (public/intro/encre-*.mp4, paysage et portrait). Une goutte tombe au ralenti
  * et éclabousse le papier, le pinceau trace l'anneau, « RANKED LOBBY » est
- * peint d'un geste par ligne, le slogan s'écrit. La vidéo est demandée dès le
+ * peint d'un geste par ligne. La vidéo est demandée dès le
  * chargement de la page par le script de démarrage de app/layout.tsx
  * (window.__rlIntro), puis adoptée ici. À la fin, un calque de l'anneau
  * identique à celui du film (public/intro/ring-*.png, utilisé comme masque)
@@ -47,9 +46,7 @@ const T = {
   brushDur: 1.5,
   ranked: 2.45,
   lobby: 2.7,
-  tagline: 3.3,
-  underline: 4.2,
-  handoff: 4.75,
+  handoff: 3.7,
 };
 const FLIGHT_MS = 760;
 const FADE_MS = 520;
@@ -60,7 +57,7 @@ const FADE_MS = 520;
 type Film = { src: string; mask: string; ow: number; oh: number; box: [number, number, number]; content: [number, number, number, number] };
 const FILMS: Record<"land" | "port", Film> = {
   land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 500] },
-  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 434.0, 626.1], content: [540, 945, 760, 920] },
+  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 482.4, 626.1], content: [540, 958, 760, 820] },
 };
 const MASK_MARGIN = 24;
 const START_TIMEOUT_MS = 1700;
@@ -209,7 +206,6 @@ const SPIKES = (() => {
 })();
 
 const DISPLAY = "var(--font-display), 'Arial Black', sans-serif";
-const HAND = "var(--font-hand), 'Caveat', cursive";
 
 const CSS = `
 .rli{position:fixed;inset:0;z-index:400;cursor:pointer}
@@ -230,8 +226,6 @@ const CSS = `
 .rli-drop{animation:rliFly .55s var(--d) cubic-bezier(.2,.8,.3,1) both}
 .rli-breathe{transform-box:fill-box;transform-origin:center;animation:rliBreathe .6s ${(T.brush + T.brushDur - 0.05).toFixed(2)}s ease-in-out both}
 .rli-paint{stroke-dasharray:100 130;animation:rliDraw .52s var(--d) cubic-bezier(.6,0,.3,1) backwards}
-.rli-write{animation:rliWrite 1.05s ${T.tagline}s cubic-bezier(.4,0,.6,1) backwards}
-.rli-under{stroke-dasharray:100 130;animation:rliDraw .38s ${T.underline}s cubic-bezier(.5,0,.3,1) backwards}
 .rli-out .rli-fadeaway{opacity:0;transition:opacity .28s ease}
 .rli-out .rli-bg{opacity:0;transition:opacity ${FADE_MS}ms ease .18s}
 @keyframes rliDraw{from{stroke-dashoffset:100}}
@@ -241,7 +235,6 @@ const CSS = `
 @keyframes rliSpike{0%{opacity:0;transform:scale(.1)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.15)}}
 @keyframes rliFly{0%{opacity:0;transform:translate(0,0)}15%{opacity:1}100%{opacity:1;transform:translate(var(--dx),var(--dy))}}
 @keyframes rliBreathe{0%,100%{transform:scale(1)}45%{transform:scale(1.018)}}
-@keyframes rliWrite{from{width:0}}
 @media (prefers-reduced-motion:reduce){.rli *{animation:none!important}}
 .rli-v .rli-bg{background-image:none}
 .rli-v .rli-bg::after{display:none}
@@ -502,8 +495,6 @@ export function Splash() {
   const maskRing = `${uid}-ring`;
   const maskRanked = `${uid}-ranked`;
   const maskLobby = `${uid}-lobby`;
-  const maskUnder = `${uid}-under`;
-  const clipTag = `${uid}-tag`;
   const inkEdge = `${uid}-edge`;
 
   return (
@@ -577,8 +568,8 @@ export function Splash() {
             <Drops list={TAIL} />
           </svg>
 
-          {/* Le nom, peint d'un large coup de pinceau, puis le slogan manuscrit */}
-          <svg className="rli-words rli-fadeaway" viewBox="0 0 560 320" aria-hidden>
+          {/* Le nom, peint d'un large coup de pinceau */}
+          <svg className="rli-words rli-fadeaway" viewBox="0 26 560 210" aria-hidden>
             <defs>
               <mask id={maskRanked} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
                 <path
@@ -604,12 +595,6 @@ export function Splash() {
                   strokeLinecap="round"
                 />
               </mask>
-              <mask id={maskUnder} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
-                <path className="rli-under" d="M 4 304 L 380 302" pathLength={100} fill="none" stroke="#fff" strokeWidth={30} strokeLinecap="round" />
-              </mask>
-              <clipPath id={clipTag}>
-                <rect className="rli-write" x={0} y={240} width={560} height={64} />
-              </clipPath>
             </defs>
             <text x={0} y={112} mask={`url(#${maskRanked})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
               RANKED
@@ -617,14 +602,6 @@ export function Splash() {
             <text x={0} y={222} mask={`url(#${maskLobby})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
               LOBBY
             </text>
-            <text x={6} y={284} clipPath={`url(#${clipTag})`} fill="currentColor" style={{ fontFamily: HAND, fontWeight: 700, fontSize: 46 }}>
-              le savoir se conquiert.
-            </text>
-            <g mask={`url(#${maskUnder})`}>
-              <g transform="translate(0 296) scale(1.27 1.6)">
-                <path d={UNDERLINE} fill="currentColor" />
-              </g>
-            </g>
           </svg>
         </div>
       )}
@@ -638,7 +615,7 @@ export function Splash() {
       >
         Passer ›
       </button>
-      <span className="sr-only">Ranked Lobby — le savoir se conquiert.</span>
+      <span className="sr-only">Ranked Lobby</span>
     </div>
   );
 }
