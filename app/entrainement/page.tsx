@@ -1,66 +1,59 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getTopicMastery } from "@/lib/mastery";
+import { getMyRating, getOpenChallenges } from "@/lib/rating";
+import { SUBJECTS } from "@/components/reviser/catalog";
+import { loadNextMockExam } from "@/components/accueil/queries";
+import { EntrainementView, type EntrainementData } from "@/components/entrainement/EntrainementView";
 
-// Point d'entrée unique pour les quatre façons de s'entraîner — chacune
-// garde sa propre page et ses propres routes ([id], création de session,
-// etc.), seule la navigation change : plus besoin de connaître la
-// différence entre QCM / Mocks officiels / Entraînement ciblé / Examens
-// blancs pour trouver où cliquer.
+// Espace « S'entraîner » : point d'entrée unique vers les façons de
+// s'entraîner. Chacune garde sa page et ses routes (QCM, entraînement ciblé,
+// examens officiels, examens blancs, duels) ; seule la navigation change.
 export default async function EntrainementPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
+  const userId = auth.user.id;
 
-  const modules = [
-    {
-      href: "/qcm",
-      code: "QCM—01",
-      label: "QCM par thème",
-      desc: "Toutes les banques de questions, classées par sujet du programme.",
-    },
-    {
-      href: "/official-exams",
-      code: "MOCK—02",
-      label: "Mocks officiels",
-      desc: "Sessions réelles du CFA rejouées, question par question.",
-    },
-    {
-      href: "/practice",
-      code: "PRAC—03",
-      label: "Entraînement ciblé",
-      desc: "Pondéré selon le poids réel de l'examen, pour cibler les lacunes.",
-    },
-    {
-      href: "/mock-exams",
-      code: "EXAM—04",
-      label: "Examens blancs",
-      desc: "Sessions programmées, chronométrées, classement partagé.",
-    },
-  ] as const;
+  let admin: SupabaseClient | null = null;
+  try {
+    admin = createAdminClient();
+  } catch {
+    admin = null;
+  }
 
-  return (
-    <div className="grid gap-6">
-      <div className="pb-5 border-b border-white/[0.07]">
-        <div className="kicker mb-2">Entraînement</div>
-        <h1 className="font-display text-2xl font-medium tracking-tight mb-1">Entraînement</h1>
-        <p className="text-sm text-white/50">
-          QCM, mocks officiels, entraînement ciblé et examens blancs, au même endroit.
-        </p>
-      </div>
+  const [mastery, practice, mockExam, rating, open] = await Promise.all([
+    getTopicMastery(supabase, userId),
+    (async () => {
+      try {
+        const { data, count, error } = await supabase
+          .from("practice_session_results")
+          .select("score,total,completed_at", { count: "exact" })
+          .eq("user_id", userId)
+          .order("completed_at", { ascending: false })
+          .limit(1);
+        if (error) return { sessions: 0, last: null };
+        const row = (data?.[0] ?? null) as { score: number; total: number; completed_at: string } | null;
+        return { sessions: count ?? 0, last: row ? { score: row.score, total: row.total, at: row.completed_at } : null };
+      } catch {
+        return { sessions: 0, last: null };
+      }
+    })(),
+    loadNextMockExam(supabase, admin, userId),
+    getMyRating(supabase, userId),
+    getOpenChallenges(supabase, userId),
+  ]);
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {modules.map((m) => (
-          <Link key={m.href} href={m.href} className="card plate card-hover p-6 grid gap-2 group">
-            <div className="flex items-center justify-between">
-              <div className="kicker">{m.code}</div>
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400/70" />
-            </div>
-            <div className="font-display text-lg font-medium">{m.label}</div>
-            <p className="text-[13px] text-white/50 leading-relaxed">{m.desc}</p>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
+  const pct = new Map(mastery.map((t) => [t.key, t.pct]));
+  const d: EntrainementData = {
+    practice,
+    mockExam,
+    rating,
+    incomingDuels: open.filter((c) => c.incoming && c.status === "pending").length,
+    subjects: SUBJECTS.map((s) => ({ key: s.key, name: s.name, pct: pct.get(s.key) ?? null })),
+  };
+
+  return <EntrainementView d={d} />;
 }

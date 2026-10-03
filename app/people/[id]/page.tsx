@@ -1,33 +1,35 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ArrowLeft, Settings, Sparkles, Swords, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getLocale } from "@/lib/i18n/server";
-import { t } from "@/lib/i18n/core";
-import { LevelBar } from "@/components/LevelBar";
 import { XpBarChart, type XpDay } from "@/components/XpBarChart";
 import { PracticeTrophies } from "@/components/PracticeTrophies";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
+import { getLeaderboardRank } from "@/lib/rating";
+import { DEFAULT_ELO, PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
+import { CURRENT_DOMAIN } from "@/lib/domains";
+import { CardLabel, PageHero } from "@/components/ui/Titles";
+import { RankBadge } from "@/components/ui/RankBadge";
+import { InkRing } from "@/components/ink/InkRing";
+import { Avatar } from "@/components/classement/Avatar";
+import { masteryByUser, tryAdmin } from "@/components/classement/data";
+import { displayName, fmtInt, ordinal, shortId } from "@/components/classement/format";
 import type { Profile, Rating } from "@/lib/types";
 
 type PageProps = { params: Promise<{ id: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
 
-function shortId(id: string) {
-  return id ? id.split("-")[0] : "";
+function Pill({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex min-h-[32px] items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]">{children}</span>;
 }
 
-function initials(label: string) {
-  const base = (label || "U").replace(/[^a-zA-Z0-9]+/g, " ").trim();
-  const parts = base.split(" ").filter(Boolean);
-  return ((parts[0]?.[0] ?? "U") + (parts[1]?.[0] ?? "")).toUpperCase();
-}
-
+// Profil d'un joueur (espace Classement) : rang, niveau, trophées et
+// progression ; « Défier » pour lancer un duel contre lui.
 export default async function PersonProfilePage({ params }: PageProps) {
   const { id } = await params;
-  const locale = await getLocale();
   const supabase = await createClient();
 
   const { data: auth } = await supabase.auth.getUser();
@@ -41,9 +43,11 @@ export default async function PersonProfilePage({ params }: PageProps) {
 
   if (!profileData) notFound();
 
-  const [{ data: myGroups }, { data: theirGroups }] = await Promise.all([
+  const [{ data: myGroups }, { data: theirGroups }, leaderboardRank, masteries] = await Promise.all([
     supabase.from("group_memberships").select("group_id").eq("user_id", user.id),
     supabase.from("group_memberships").select("group_id").eq("user_id", id),
+    getLeaderboardRank(supabase, id),
+    masteryByUser(tryAdmin(), [id]),
   ]);
 
   const myIds = new Set((myGroups ?? []).map((g: { group_id: string }) => g.group_id).filter(Boolean));
@@ -54,26 +58,25 @@ export default async function PersonProfilePage({ params }: PageProps) {
 
   const profile = profileData as ProfileRow;
   const rating = ratingData as RatingRow | null;
-  const username = profile.username ?? null;
-  const avatarUrl = profile.avatar_url ?? null;
-  const display = username || shortId(id);
+  const display = displayName(profile.username, id);
   const xpTotal = Number(profile.xp_total ?? 0) || 0;
-  const lvlInfo = levelInfoFromXp(xpTotal);
-  const elo = rating?.elo ?? 1200;
+  const lvl = levelInfoFromXp(xpTotal);
+  const elo = rating?.elo ?? DEFAULT_ELO;
   const games = rating?.games_played ?? 0;
   const isMe = user.id === id;
+  const mastery = masteries.get(id) ?? null;
+  const rank = rankFor(elo, mastery, leaderboardRank);
+  const placement = games < PLACEMENT_GAMES;
 
   let xpDaily: XpDay[] | null = null;
   if (isMe) {
     try {
       const { data } = await supabase.rpc("get_xp_daily", { p_days: 90 });
       if (Array.isArray(data)) {
-        xpDaily = data
-          .slice(0, 90)
-          .map((d: { day: string; xp: number }) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
+        xpDaily = data.slice(0, 90).map((d: { day: string; xp: number }) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
       }
     } catch {
-      // RPC not available yet
+      // fonction pas encore créée
     }
   }
 
@@ -87,7 +90,7 @@ export default async function PersonProfilePage({ params }: PageProps) {
       }));
     }
   } catch {
-    // RPC not available yet
+    // fonction pas encore créée
   }
 
   type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
@@ -96,100 +99,105 @@ export default async function PersonProfilePage({ params }: PageProps) {
     const { data } = await supabase.rpc("get_user_practice_progress", { p_user_id: id });
     if (Array.isArray(data)) progressSessions = data as ProgressRow[];
   } catch {
-    // RPC not available yet
+    // fonction pas encore créée
   }
 
   return (
-    <div className="grid gap-4">
-      {/* Compact header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/people" className="text-xs text-white/50 hover:text-white/80">
-          ← {t(locale, "people.backToDirectory")}
-        </Link>
-        {isMe && (
-          <Link href="/settings" className="btn btn-secondary text-xs">
-            {t(locale, "nav.settings")}
-          </Link>
-        )}
+    <div className="rl-wide flex flex-col gap-8">
+      <Link href="/people" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-white">
+        <ArrowLeft size={14} aria-hidden /> Joueurs
+      </Link>
+
+      <div className="grid items-center gap-6 lg:grid-cols-12">
+        <div className="flex min-w-0 items-center gap-5 lg:col-span-8">
+          <div className="rl-pop hidden sm:block">
+            <Avatar src={profile.avatar_url} name={display} size={84} className="shadow-[var(--shadow-2)]" />
+          </div>
+          <PageHero kicker={isMe ? "Ton profil public" : `Joueur · ${shortId(id)}`} title={<span className="[overflow-wrap:anywhere]">{display}</span>} className="min-w-0 flex-1">
+            <Pill>
+              <Sparkles size={14} aria-hidden /> Niveau {lvl.level} · {fmtInt(xpTotal)} XP
+            </Pill>
+            {mutualCount > 0 && (
+              <Pill>
+                <Users size={14} aria-hidden /> {mutualCount} groupe{mutualCount > 1 ? "s" : ""} en commun
+              </Pill>
+            )}
+            {isMe ? (
+              <Link href="/moi#reglages" className="btn btn-secondary rl-press min-h-[34px] px-3 text-[13px]">
+                <Settings size={14} aria-hidden /> Mes réglages
+              </Link>
+            ) : (
+              <Link href={`/duel?adversaire=${encodeURIComponent(id)}`} className="btn btn-primary rl-press min-h-[34px] px-3.5 text-[13px]">
+                <Swords size={14} aria-hidden /> Défier {display}
+              </Link>
+            )}
+          </PageHero>
+        </div>
+
+        <section className="card-ink rl-in flex items-center gap-4 p-5 lg:col-span-4" style={{ animationDelay: ".1s" }} aria-label={`Rang de ${display}`}>
+          <InkRing size={170} className="pointer-events-none absolute -bottom-14 -right-10 text-[rgba(255,255,255,.06)]" />
+          <span className="relative shrink-0">
+            <RankBadge tier={rank.tierIndex} size={78} mastery={mastery} division={placement ? null : rank.division} onDark animate gray={placement} />
+          </span>
+          <span className="relative flex min-w-0 flex-col gap-1">
+            <span className="text-[12.5px] font-semibold text-[rgba(255,255,255,.6)]">Rang · {CURRENT_DOMAIN.name}</span>
+            <span className="text-[22px] font-extrabold leading-none tracking-[-0.02em]">
+              {placement ? `En placement ${games}/${PLACEMENT_GAMES}` : `${rank.tier.name}${rank.division ? " " + rank.division : ""}`}
+            </span>
+            <span className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-brand text-[26px] leading-tight">{elo}</span>
+              <span className="font-mono text-[12px] text-[rgba(255,255,255,.7)]">
+                ELO{leaderboardRank !== null ? ` · ${ordinal(leaderboardRank)}` : ""}
+                {mastery !== null ? ` · maîtrise ${mastery} %` : ""}
+              </span>
+            </span>
+            <span className="text-[12.5px] text-[rgba(255,255,255,.7)]">
+              {games} partie{games > 1 ? "s" : ""} classée{games > 1 ? "s" : ""}
+            </span>
+          </span>
+        </section>
       </div>
 
-      {/* Profile card */}
-      <div className="card p-5">
-        <div className="flex items-center gap-4">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="avatar" className="h-14 w-14 rounded-full object-cover shrink-0" />
-          ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-medium">
-              {initials(display)}
+      <div className="grid gap-[18px] lg:grid-cols-2">
+        <section className="card flex flex-col gap-4 p-[22px]">
+          <CardLabel icon={<Sparkles size={15} aria-hidden />} right={<span className="font-mono text-[12px] tabular-nums">{fmtInt(xpTotal)} XP</span>}>
+            Progression
+          </CardLabel>
+          <div>
+            <div className="mb-2 flex items-baseline justify-between">
+              <span className="text-[15px] font-bold">Niveau {lvl.level}</span>
+              <span className="font-mono text-[12px] tabular-nums text-muted">
+                {lvl.xpIntoLevel}/{lvl.xpForNextLevel} XP
+              </span>
             </div>
-          )}
-          <div className="min-w-0">
-            <h1 className="truncate font-display text-xl font-medium tracking-tight">
-              {display}
-              <span className="ml-2 text-sm font-normal text-muted">{shortId(id)}</span>
-            </h1>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <span className="badge badge-private">{t(locale, "common.levelN", { n: lvlInfo.level })}</span>
-              <span className="badge badge-shared">{xpTotal} XP</span>
-              <span className="badge badge-public">Elo {elo}</span>
-              <span className="badge badge-shared">{t(locale, "common.gamesN", { n: games })}</span>
-              {mutualCount > 0 && (
-                <span className="badge badge-private">{t(locale, "common.mutualGroupsN", { n: mutualCount })}</span>
-              )}
+            <div className="ink-bar" role="progressbar" aria-valuenow={Math.round(lvl.progressPct * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={`Niveau ${lvl.level}`}>
+              <span className="rl-grow" style={{ width: `${Math.round(lvl.progressPct * 100)}%` }} />
             </div>
+            <p className="mt-2 text-[12.5px] text-muted">encore {fmtInt(lvl.xpToNextLevel)} XP avant le niveau {lvl.level + 1}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Stats two-column */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold">{t(locale, "people.progress")}</h2>
-          <LevelBar xpTotal={xpTotal} />
-          <div className="mt-4 grid gap-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-white/60">{t(locale, "common.xpTotal")}</span>
-              <span className="font-medium">{xpTotal}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-white/60">{t(locale, "common.level")}</span>
-              <span className="font-medium">{lvlInfo.level}</span>
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-muted">{t(locale, "people.xpNote")}</p>
-        </div>
+          <p className="text-[12.5px] text-muted">L&apos;XP se gagne en révisant (fiches, QCM, flashcards) ; l&apos;ELO, en duel et aux examens blancs classés.</p>
+        </section>
 
         {isMe && xpDaily ? (
-          <XpBarChart data={xpDaily} title={t(locale, "people.xpDailyChart")} />
+          <XpBarChart data={xpDaily} title="XP gagnée par jour (90 jours)" />
         ) : (
-          <div className="card p-5">
-            <h2 className="mb-2 text-sm font-semibold">{t(locale, "people.stats")}</h2>
-            <p className="text-sm text-white/60">
-              {isMe ? t(locale, "people.chartMine") : t(locale, "people.chartHint")}
+          <section className="card flex flex-col gap-2 p-[22px]">
+            <CardLabel>Statistiques</CardLabel>
+            <p className="text-[13.5px] text-muted">
+              {isMe ? "Le graphique d'XP quotidienne apparaîtra dès que la fonction de suivi sera activée." : "Le détail de l'activité quotidienne n'est visible que sur ton propre profil."}
             </p>
-          </div>
+            {!isMe && (
+              <Link href={`/duel?adversaire=${encodeURIComponent(id)}`} className="ink-link mt-1 w-fit">
+                Mesure-toi à {display} en duel
+              </Link>
+            )}
+          </section>
         )}
       </div>
 
       <PracticeTrophies rows={trophyRows} />
 
       <PracticeProgressChart pastSessions={progressSessions} topicLabels={TOPIC_LABELS} />
-
-      {/* Actions */}
-      <div className="card p-5">
-        <h2 className="mb-3 text-sm font-semibold">{t(locale, "people.actions")}</h2>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/people" className="btn btn-secondary text-sm">
-            {t(locale, "people.browseProfiles")}
-          </Link>
-          {!isMe && (
-            <button type="button" className="btn btn-ghost text-sm" disabled>
-              {t(locale, "people.addFriendSoon")}
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

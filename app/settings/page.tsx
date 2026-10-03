@@ -1,14 +1,16 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { GroupSettings, type GroupRow } from "@/components/GroupSettings";
-import { ProfileSettings } from "@/components/ProfileSettings";
-import { ExamDateSettings } from "@/components/ExamDateSettings";
-import { getLocale } from "@/lib/i18n/server";
-import { t } from "@/lib/i18n/core";
+import type { GroupRow } from "@/components/GroupSettings";
+import { PageHero } from "@/components/ui/Titles";
+import { SettingsPanel } from "@/components/moi/SettingsPanel";
 import type { Profile } from "@/lib/types";
 
+export const metadata = { title: "Réglages · Ranked Lobby" };
+
+// Réglages (espace Moi) : profil, date d'examen, apparence, groupes,
+// déconnexion. Le même panneau est repris en bas de /moi.
 export default async function SettingsPage() {
-  const locale = await getLocale();
   const supabase = await createClient();
 
   const { data: auth } = await supabase.auth.getUser();
@@ -20,25 +22,16 @@ export default async function SettingsPage() {
     supabase.from("group_memberships").select("group_id, study_groups(id,name,invite_code)").eq("user_id", user.id),
   ]);
 
-  const activeGroupId =
-    (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
+  const activeGroupId = (profileData as Pick<Profile, "active_group_id"> | null)?.active_group_id ?? null;
 
   return (
-    <div className="grid gap-5">
-      <div>
-        <h1 className="font-display text-xl font-medium tracking-tight">{t(locale, "settings.title")}</h1>
-        <p className="mt-1 text-sm text-white/60">{t(locale, "settings.subtitle")}</p>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
-        <ProfileSettings />
-        <GroupSettings
-          activeGroupId={activeGroupId}
-          groups={(groupsData ?? []) as unknown as GroupRow[]}
-        />
-      </div>
-
-      <ExamDateSettings />
+    <div className="rl-wide flex flex-col gap-8">
+      <PageHero kicker="Moi" title="Réglages">
+        <Link href="/moi" className="chip rl-press">
+          ← Retour à mon espace
+        </Link>
+      </PageHero>
+      <SettingsPanel activeGroupId={activeGroupId} groups={(groupsData ?? []) as unknown as GroupRow[]} />
     </div>
   );
 }

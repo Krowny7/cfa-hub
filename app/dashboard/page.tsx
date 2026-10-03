@@ -1,143 +1,141 @@
 import { redirect } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { levelInfoFromXp, calcStreakAndToday, type XpDay } from "@/lib/leveling";
-import { TOPICS, topicLabel } from "@/lib/practiceTopics";
+import { getTopicAverages, getTopicMastery, programMastery } from "@/lib/mastery";
+import { getLeaderboard, getLeaderboardRank, getMyRating, getOpenChallenges, getRatingHistory } from "@/lib/rating";
 import { DashboardView } from "@/components/DashboardView";
-import { TOPIC_SHORT } from "@/components/TopicMap";
-import type { Profile, Rating } from "@/lib/types";
+import { PracticeHistory } from "@/components/PracticeHistory";
+import { SUBJECTS } from "@/components/reviser/catalog";
+import { getProgramAverage, loadActivity, loadErrors, loadNextMockExam, loadResume } from "@/components/accueil/queries";
+import { helloFor, longDay } from "@/components/accueil/format";
+import type { AccueilData, BoardRow } from "@/components/accueil/types";
 
-type ProfileRow = (Pick<Profile, "xp_total" | "username"> & { exam_date?: string | null }) | null;
-
-type PracticeAggregate = { total_sessions: number; total_correct: number; total_answered: number };
-
-// Un thème n'est retenu (carte, points faibles) que s'il vient de sessions
-// mono-thème (topics.length === 1) — une session à plusieurs thèmes ne dit
-// pas lequel a fait chuter le score, donc on ne devine pas — et seulement
-// avec un minimum de questions répondues, pour ne pas classer un thème sur
-// un seul essai malchanceux.
-const MIN_QUESTIONS_FOR_SIGNAL = 5;
-const WEAK_TOPICS_SHOWN = 4;
-
-function greetingFor(name: string | null) {
-  const hour = Number(new Intl.DateTimeFormat("fr-FR", { hour: "numeric", hour12: false, timeZone: "Europe/Paris" }).format(new Date()));
-  const hello = hour >= 18 || hour < 5 ? "Bonsoir" : "Bonjour";
-  return name ? `${hello}, ${name}.` : `${hello}.`;
-}
+// Objectif du jour : 40 questions, l'équivalent d'une petite heure au rythme
+// de l'examen (90 s par question).
+const DAILY_GOAL = 40;
+const BOARD_TOP = 3;
 
 export default async function Dashboard() {
   const supabase = await createClient();
-
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
   if (!user) redirect("/login");
 
-  const xpDailyCall = (async () => {
-    try {
-      return await supabase.rpc("get_xp_daily", { p_days: 30 });
-    } catch {
-      return { data: null };
-    }
-  })();
+  // Client admin : moyennes des joueurs, titres des quiz officiels, inscrits
+  // aux examens blancs. Absent (variables d'environnement) → on s'en passe.
+  let admin: SupabaseClient | null = null;
+  try {
+    admin = createAdminClient();
+  } catch {
+    admin = null;
+  }
 
-  const practiceAggCall = (async () => {
-    try {
-      const { data } = await supabase.from("practice_sessions").select("correct,total").eq("user_id", user.id);
-      if (!data) return null;
-      const total_sessions = data.length;
-      const total_correct = data.reduce((s, r) => s + (r.correct ?? 0), 0);
-      const total_answered = data.reduce((s, r) => s + (r.total ?? 0), 0);
-      return { total_sessions, total_correct, total_answered } as PracticeAggregate;
-    } catch {
-      return null;
-    }
-  })();
+  const now = new Date();
 
-  const topicResultsCall = (async () => {
-    try {
-      const { data } = await supabase
-        .from("practice_session_results")
-        .select("topics,score,total")
-        .eq("user_id", user.id)
-        .limit(200);
-      return data ?? [];
-    } catch {
-      return [];
-    }
-  })();
+  const [profileRes, xpDailyRes, practiceAgg, topics, topicAvg, programAvg, rating, history, open, board, myRank, activity, errors, resume, mockExam] =
+    await Promise.all([
+      supabase.from("profiles").select("xp_total,username,exam_date").eq("id", user.id).maybeSingle(),
+      (async () => {
+        try {
+          return await supabase.rpc("get_xp_daily", { p_days: 30 });
+        } catch {
+          return { data: null };
+        }
+      })(),
+      (async () => {
+        try {
+          const { data } = await supabase.from("practice_sessions").select("correct,total").eq("user_id", user.id);
+          if (!data) return null;
+          return {
+            correct: data.reduce((s, r) => s + (r.correct ?? 0), 0),
+            answered: data.reduce((s, r) => s + (r.total ?? 0), 0),
+          };
+        } catch {
+          return null;
+        }
+      })(),
+      getTopicMastery(supabase, user.id),
+      admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
+      getProgramAverage(admin),
+      getMyRating(supabase, user.id),
+      getRatingHistory(supabase, user.id, 1),
+      getOpenChallenges(supabase, user.id),
+      getLeaderboard(supabase, BOARD_TOP),
+      getLeaderboardRank(supabase, user.id),
+      loadActivity(supabase, user.id, now),
+      loadErrors(supabase, admin, user.id),
+      loadResume(supabase, admin, user.id),
+      loadNextMockExam(supabase, admin, user.id, now),
+    ]);
 
-  const [{ data: ratingRow }, { data: profileRow }, xpDailyResult, practiceAgg, topicResults] = await Promise.all([
-    supabase.from("ratings").select("elo,games_played").eq("user_id", user.id).maybeSingle(),
-    supabase.from("profiles").select("xp_total,username,exam_date").eq("id", user.id).maybeSingle(),
-    xpDailyCall,
-    practiceAggCall,
-    topicResultsCall,
-  ]);
-
-  const profile = profileRow as ProfileRow;
-  const rating = ratingRow as (Pick<Rating, "elo"> & { games_played?: number | null }) | null;
-  const elo = rating?.elo ?? 1200;
-  const gamesPlayed = Number(rating?.games_played ?? 0) || 0;
+  const profile = profileRes.data as { xp_total?: number | null; username?: string | null; exam_date?: string | null } | null;
   const xpTotal = Number(profile?.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
-  const username = profile?.username ?? null;
   const examDate = profile?.exam_date ?? null;
+  const examDaysLeft = examDate ? Math.ceil((new Date(examDate).getTime() - now.getTime()) / 86_400_000) : null;
 
-  const daysUntilExam = examDate ? Math.ceil((new Date(examDate).getTime() - Date.now()) / 86_400_000) : null;
-  const examLabel =
-    daysUntilExam === null ? null : daysUntilExam > 0 ? `J-${daysUntilExam}` : daysUntilExam === 0 ? "Jour J" : `+${Math.abs(daysUntilExam)} j`;
-  const examDateLabel = examDate
-    ? `le ${new Date(examDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`
-    : null;
-
-  const agg = practiceAgg;
-  const globalAccuracy = agg && agg.total_answered > 0 ? Math.round((agg.total_correct / agg.total_answered) * 100) : null;
-
-  const xpDays = Array.isArray(xpDailyResult.data) ? (xpDailyResult.data as XpDay[]) : [];
+  const xpDays = Array.isArray(xpDailyRes.data) ? (xpDailyRes.data as XpDay[]) : [];
   const { streak } = calcStreakAndToday(xpDays);
 
-  const topicAgg = new Map<string, { correct: number; total: number }>();
-  for (const r of topicResults as { topics: string[] | null; score: number | null; total: number | null }[]) {
-    const topics = r.topics ?? [];
-    if (topics.length !== 1) continue;
-    const key = topics[0];
-    const a = topicAgg.get(key) ?? { correct: 0, total: 0 };
-    a.correct += r.score ?? 0;
-    a.total += r.total ?? 0;
-    topicAgg.set(key, a);
+  // Matières dans l'ordre officiel du programme (celui du radar et des tuiles).
+  const byKey = new Map(topics.map((t) => [t.key, t]));
+  const topicStats = SUBJECTS.map((s) => ({
+    key: s.key,
+    name: s.name,
+    code: s.code,
+    pct: byKey.get(s.key)?.pct ?? null,
+    avg: topicAvg[s.key] ?? null,
+  }));
+  const mastery = programMastery(topics);
+
+  // Mini classement : le podium, puis toi si tu n'y es pas.
+  const rows: BoardRow[] = board.map((r) => ({ userId: r.userId, name: r.username ?? "Joueur", elo: r.elo, rank: r.rank, me: r.userId === user.id }));
+  if (rows.length && !rows.some((r) => r.me) && myRank !== null) {
+    rows.push({ userId: user.id, name: profile?.username ?? "Toi", elo: rating.elo, rank: myRank, me: true });
   }
-  const pctOf = (key: string) => {
-    const a = topicAgg.get(key);
-    return a && a.total >= MIN_QUESTIONS_FOR_SIGNAL ? Math.round((a.correct / a.total) * 100) : null;
+
+  // Un défi reçu passe avant un duel en cours (il attend une réponse).
+  const pendingIn = open.find((c) => c.incoming && c.status === "pending");
+  const active = open.find((c) => c.status === "active");
+  const duel = pendingIn ? { c: pendingIn, kind: "incoming" as const } : active ? { c: active, kind: "active" as const } : null;
+  const last = history.length ? history[history.length - 1] : null;
+
+  const d: AccueilData = {
+    name: profile?.username ?? null,
+    hello: helloFor(now),
+    dateLabel: longDay(now),
+    examDaysLeft,
+    examDateLabel: examDate ? `le ${new Date(examDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : null,
+    streak,
+    rating: {
+      elo: rating.elo,
+      gamesPlayed: rating.gamesPlayed,
+      leaderboardRank: myRank,
+      last: last ? { delta: last.delta, source: last.source } : null,
+    },
+    incomingDuel: duel ? { id: duel.c.id, from: duel.c.opponentName, kind: duel.kind } : null,
+    resume,
+    activity,
+    dailyGoal: DAILY_GOAL,
+    errors,
+    mockExam,
+    board: rows,
+    topics: topicStats,
+    mastery,
+    masteryAvg: programAvg,
+    level: {
+      level: lvl.level,
+      pct: Math.round(lvl.progressPct * 100),
+      into: lvl.xpIntoLevel,
+      forNext: lvl.xpForNextLevel,
+      toNext: lvl.xpToNextLevel,
+      xpTotal,
+    },
+    xpDays,
+    globalAccuracy: practiceAgg && practiceAgg.answered > 0 ? Math.round((practiceAgg.correct / practiceAgg.answered) * 100) : null,
   };
 
-  const topics = TOPICS.map((t) => ({ key: t.key, short: TOPIC_SHORT[t.key] ?? t.label, label: t.label, pct: pctOf(t.key) }));
-  const weakTopics = topics
-    .filter((t) => t.pct !== null)
-    .map((t) => ({ key: t.key, label: topicLabel(t.key), pct: t.pct as number }))
-    .sort((a, b) => a.pct - b.pct)
-    .slice(0, WEAK_TOPICS_SHOWN);
-
-  return (
-    <DashboardView
-      d={{
-        greeting: greetingFor(username),
-        kicker: daysUntilExam !== null && daysUntilExam > 0 ? `Tableau de bord · J-${daysUntilExam} avant l'examen` : "Tableau de bord",
-        streak,
-        elo,
-        gamesPlayed,
-        level: lvl.level,
-        levelPct: Math.round(lvl.progressPct * 100),
-        xpIntoLevel: lvl.xpIntoLevel,
-        xpForNextLevel: lvl.xpForNextLevel,
-        xpToNextLevel: lvl.xpToNextLevel,
-        xpTotal,
-        examLabel,
-        examDateLabel,
-        globalAccuracy,
-        topics,
-        weakTopics,
-        xpDays,
-      }}
-    />
-  );
+  return <DashboardView d={d} now={now.getTime()} historySlot={<PracticeHistory />} />;
 }

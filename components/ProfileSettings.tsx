@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { UserRound } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
+// Réglages du profil : photo (bucket « avatars ») et pseudo.
 export function ProfileSettings() {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
@@ -70,7 +72,6 @@ export function ProfileSettings() {
     }
   }
 
-
   async function uploadAvatar(file: File) {
     setMsg(null);
     setBusy(true);
@@ -104,26 +105,29 @@ export function ProfileSettings() {
   }
 
   return (
-    <div className="card p-5">
-      <h2 className="text-base font-semibold">{t("settings.profileTitle")}</h2>
+    <div className="card flex flex-col gap-5 p-[22px]">
+      <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+        <UserRound size={15} aria-hidden />
+        {t("settings.profileTitle")}
+      </h3>
 
-      {/* Avatar */}
-      <div className="mt-4 flex items-center gap-4">
+      {/* Photo */}
+      <div className="flex items-center gap-4">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="avatar" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+          <img src={avatarUrl} alt="Ta photo de profil" className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[var(--shadow-1)]" />
         ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs opacity-70">
-            —
+          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-dashed border-line-2 bg-surface-2 text-muted">
+            <UserRound size={22} aria-hidden />
           </div>
         )}
         <div className="min-w-0">
-          <div className="text-sm font-medium">{t("settings.avatarLabel")}</div>
-          <div className="mt-0.5 text-xs text-white/50">{t("settings.avatarHint")}</div>
-          <label className="btn btn-secondary mt-2 cursor-pointer text-xs">
+          <div className="text-[14px] font-semibold">{t("settings.avatarLabel")}</div>
+          <div className="mt-0.5 text-[12.5px] text-muted">{t("settings.avatarHint")}</div>
+          <label className={"btn btn-secondary mt-2 min-h-[36px] cursor-pointer text-[13px] " + (loading || busy ? "pointer-events-none opacity-45" : "")}>
             {t("settings.upload")}
             <input
-              className="hidden"
+              className="sr-only"
               type="file"
               accept="image/png,image/jpeg,image/webp"
               disabled={loading || busy}
@@ -137,33 +141,34 @@ export function ProfileSettings() {
         </div>
       </div>
 
-      {/* Separator */}
-      <div className="mt-4 border-t border-white/[0.07]" />
+      <div className="border-t border-line" />
 
-      {/* Username */}
-      <div className="mt-4">
-        <div className="text-sm font-medium">{t("settings.usernameLabel")}</div>
-        <div className="mt-0.5 text-xs text-white/50">{t("settings.usernameHint")}</div>
+      {/* Pseudo */}
+      <div>
+        <label htmlFor="rl-username" className="text-[14px] font-semibold">
+          {t("settings.usernameLabel")}
+        </label>
+        <div className="mt-0.5 text-[12.5px] text-muted">{t("settings.usernameHint")}</div>
         <div className="mt-3 flex gap-2">
           <input
+            id="rl-username"
             className="input flex-1"
             placeholder={t("settings.usernamePlaceholder")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading || busy}
           />
-          <button
-            className="btn btn-primary shrink-0"
-            onClick={saveUsername}
-            disabled={loading || busy}
-            type="button"
-          >
+          <button className="btn btn-primary shrink-0" onClick={saveUsername} disabled={loading || busy} type="button">
             {busy ? "…" : t("settings.update")}
           </button>
         </div>
       </div>
 
-      {msg && <div className="mt-3 text-sm">{msg}</div>}
+      {msg && (
+        <div role="status" className="text-[13px] font-medium">
+          {msg}
+        </div>
+      )}
     </div>
   );
 }

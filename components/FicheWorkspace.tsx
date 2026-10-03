@@ -126,6 +126,13 @@ export function FicheWorkspace({
     try {
       setWide(localStorage.getItem(LAYOUT_KEY) === "wide");
     } catch {}
+    // Lien direct vers un onglet (ex. « Revoir » depuis Moi → ?onglet=erreurs)
+    const onglet = new URLSearchParams(window.location.search).get("onglet");
+    const direct: Record<string, Tab> = { erreurs: "errors", quiz: "quiz", melange: "mixed", progression: "progress" };
+    if (onglet && direct[onglet]) {
+      setTab(direct[onglet]);
+      setMobileView("train");
+    }
   }, []);
 
   function toggleWide() {

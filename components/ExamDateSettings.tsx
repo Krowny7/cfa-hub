@@ -5,6 +5,7 @@ import { GraduationCap } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 
+// Date d'examen : alimente le compte à rebours J-xx de l'accueil et de Moi.
 export function ExamDateSettings() {
   const supabase = useMemo(() => createClient(), []);
   const [examDate, setExamDate] = useState("");
@@ -48,44 +49,49 @@ export function ExamDateSettings() {
     }
   }
 
-  return (
-    <div className="card p-5">
-      <div className="flex items-center gap-2">
-        <GraduationCap size={18} className="text-white/70" />
-        <div>
-          <div className="text-sm font-semibold">Date d'examen CFA</div>
-          <div className="text-xs text-white/50">Affiche un compteur J- sur le dashboard</div>
-        </div>
-      </div>
+  // Aperçu du compte à rebours pendant la saisie (dates en UTC, comme en base).
+  const days = examDate ? Math.ceil((new Date(examDate + "T00:00:00Z").getTime() - Date.now()) / 86_400_000) : null;
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+  return (
+    <div className="card flex flex-col gap-4 p-[22px]">
+      <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+        <GraduationCap size={15} aria-hidden />
+        Date d&apos;examen
+        {days !== null && !Number.isNaN(days) && (
+          <span className="ml-auto rounded-[8px] border border-line-2 px-2 py-[2px] font-mono text-[12px] text-white">
+            {days > 0 ? `J-${days}` : days === 0 ? "Jour J" : "passée"}
+          </span>
+        )}
+      </h3>
+      <p className="text-[13px] text-muted">Affiche le compte à rebours J-xx sur l&apos;accueil et dans ton espace.</p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="rl-exam-date" className="sr-only">
+          Date de ton examen CFA
+        </label>
         <input
+          id="rl-exam-date"
           className="input w-auto"
           type="date"
           value={examDate}
           onChange={(e) => setExamDate(e.target.value)}
           disabled={loading || busy}
         />
-        <button
-          className="btn btn-primary"
-          onClick={save}
-          disabled={loading || busy}
-          type="button"
-        >
+        <button className="btn btn-primary" onClick={save} disabled={loading || busy} type="button">
           {busy ? "…" : "Sauvegarder"}
         </button>
         {examDate && (
-          <button
-            className="btn btn-ghost text-xs"
-            onClick={() => setExamDate("")}
-            type="button"
-          >
+          <button className="btn btn-ghost text-[13px]" onClick={() => setExamDate("")} type="button">
             Effacer
           </button>
         )}
       </div>
 
-      {msg && <div className="mt-2 text-sm">{msg}</div>}
+      {msg && (
+        <div role="status" className="text-[13px] font-medium">
+          {msg}
+        </div>
+      )}
     </div>
   );
 }
