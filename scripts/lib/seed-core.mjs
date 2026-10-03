@@ -114,6 +114,67 @@ export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) 
   return total;
 }
 
+// Comme seedQuizSets, mais met le set à jour EN PLACE au lieu de le supprimer
+// puis le recréer : le journal de réponses (quiz_answer_log, en ON DELETE
+// CASCADE sur set_id et question_id) est ainsi conservé. Une question déjà en
+// base dont l'énoncé est identique garde son id (et donc son historique) ;
+// les nouvelles sont insérées ; celles qui ne figurent plus dans la liste sont
+// supprimées (avec leur historique).
+// sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
+export async function syncQuizSets({ ownerId, folderId, sets }) {
+  let total = 0;
+  for (const set of sets) {
+    const { data: found, error: findErr } = await supabase
+      .from("quiz_sets")
+      .select("id")
+      .eq("is_official", true)
+      .eq("title", set.title);
+    if (findErr) throw findErr;
+    if (!found?.length) {
+      total += await seedQuizSets({ ownerId, folderId, sets: [set] });
+      continue;
+    }
+    if (found.length > 1) throw new Error(`Plusieurs sets officiels "${set.title}" : à nettoyer à la main.`);
+    const setId = found[0].id;
+
+    const { data: existing, error: exErr } = await supabase.from("quiz_questions").select("id, prompt, position").eq("set_id", setId);
+    if (exErr) throw exErr;
+    // Décale les positions existantes pour éviter toute collision pendant la mise à jour
+    for (const q of existing) {
+      const { error } = await supabase.from("quiz_questions").update({ position: q.position + 1000 }).eq("id", q.id);
+      if (error) throw error;
+    }
+    const free = new Map();
+    for (const q of existing) if (!free.has(q.prompt)) free.set(q.prompt, q.id);
+
+    let kept = 0;
+    const inserts = [];
+    for (const [i, [prompt, choices, correct_index, explanation]] of set.questions.entries()) {
+      const id = free.get(prompt);
+      if (id) {
+        free.delete(prompt);
+        const { error } = await supabase.from("quiz_questions").update({ choices, correct_index, explanation, position: i + 1 }).eq("id", id);
+        if (error) throw error;
+        kept++;
+      } else {
+        inserts.push({ set_id: setId, prompt, choices, correct_index, explanation, position: i + 1 });
+      }
+    }
+    if (inserts.length) {
+      const { error } = await supabase.from("quiz_questions").insert(inserts);
+      if (error) throw error;
+    }
+    const stale = [...free.values()];
+    if (stale.length) {
+      const { error } = await supabase.from("quiz_questions").delete().in("id", stale);
+      if (error) throw error;
+    }
+    console.log(`  ✓ QCM "${set.title}" — ${set.questions.length} questions (${kept} conservées avec leur historique, ${inserts.length} ajoutées, ${stale.length} retirées)`);
+    total += set.questions.length;
+  }
+  return total;
+}
+
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedExerciseSets({ ownerId, folderId, sets, oldTitles = [] }) {
   const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
