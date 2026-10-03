@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Dela_Gothic_One, Geist, Geist_Mono } from "next/font/google";
+import { Caveat, Dela_Gothic_One, Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { TopBar } from "@/components/TopBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -11,6 +11,9 @@ import { InkDefs } from "@/components/ui/InkDefs";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 const dela = Dela_Gothic_One({ subsets: ["latin"], weight: "400", variable: "--font-brand", display: "swap" });
+// La main du correcteur (stylo rouge) : note entourée, appréciation de la
+// copie corrigée. Réservée aux moments ; repli sur Geist sinon.
+const plume = Caveat({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-plume", display: "swap" });
 
 export const metadata = {
   title: "Ranked Lobby",
@@ -19,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${geist.variable} ${geistMono.variable} ${dela.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={`${geist.variable} ${geistMono.variable} ${dela.variable} ${plume.variable}`} suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
         {/* Thème (papier / nuit) et mode discret : réappliqués avant le premier
             affichage pour éviter un flash — voir ThemeToggle et DiscreetToggle. */}

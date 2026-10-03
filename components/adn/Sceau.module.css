@@ -1,0 +1,58 @@
+/* Sceau : tampon d'encre (rouge par défaut, la main du correcteur qui valide).
+   Le grain d'impression est une texture rendue une fois par le navigateur
+   (masque CSS), jamais un filtre SVG par sceau. */
+
+.sceau {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  vertical-align: middle;
+  color: var(--pen);
+  line-height: 0;
+}
+.ink {
+  color: var(--ink);
+}
+
+.encre {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* gen:STAMP_GRAIN */ -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='1' seed='3' stitchTiles='stitch' result='a'/%3E%3CfeColorMatrix in='a' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -10 0 0 0 7.1' result='sp'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.022' numOctaves='2' seed='8' stitchTiles='stitch' result='b'/%3E%3CfeColorMatrix in='b' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2 0 0 0 2.2' result='bl'/%3E%3CfeComposite in='sp' in2='bl' operator='arithmetic' k1='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* gen:STAMP_GRAIN */ mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='1' seed='3' stitchTiles='stitch' result='a'/%3E%3CfeColorMatrix in='a' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -10 0 0 0 7.1' result='sp'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.022' numOctaves='2' seed='8' stitchTiles='stitch' result='b'/%3E%3CfeColorMatrix in='b' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2 0 0 0 2.2' result='bl'/%3E%3CfeComposite in='sp' in2='bl' operator='arithmetic' k1='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 180px 180px;
+  mask-size: 180px 180px;
+  -webkit-mask-position: var(--gx, 0) var(--gy, 0);
+  mask-position: var(--gx, 0) var(--gy, 0);
+}
+.encre svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* la tache qui s'étale sous le tampon, puis sèche */
+.tache {
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, currentColor 14%, transparent) 0%, color-mix(in oklab, currentColor 18%, transparent) 62%, transparent 78%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.txt {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+}
+.mono {
+  font-family: var(--font-mono), monospace;
+  font-weight: 600;
+}
+
+/* Mode discret : le sceau reste une information, sans la tache */
+:global(html[data-discreet="1"]) .tache {
+  display: none;
+}

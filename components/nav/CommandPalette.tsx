@@ -41,6 +41,7 @@ const ENTRIES: Entry[] = [
   { label: "S'entraîner", hint: "QCM, sessions, examens", href: "/entrainement", group: "Espaces", Icon: Target },
   { label: "Classement", hint: "Rang, ELO, duels", href: "/classement", group: "Espaces", Icon: Trophy },
   { label: "Moi", hint: "Profil, erreurs, réglages", href: "/moi", group: "Espaces", Icon: User },
+  { label: "Défi du jour", hint: "Les mêmes 30 questions pour tous, classement du jour", href: "/defi", group: "Actions", Icon: Target },
   { label: "Lancer un duel", hint: "30 questions, ELO en jeu", href: "/duel", group: "Actions", Icon: Swords },
   { label: "Examens blancs", hint: "Examens classés et inscriptions", href: "/mock-exams", group: "Actions", Icon: ListChecks },
   { label: "Session d'entraînement", hint: "Questions ciblées par matière", href: "/practice", group: "Actions", Icon: Target },

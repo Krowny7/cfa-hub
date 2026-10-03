@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n/core";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { InkLockup } from "@/components/ink/InkRing";
+import { AnneauDuJourLogo } from "@/components/adn/AnneauDuJourLogo";
+import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
+import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
 import { SpaceNav } from "@/components/nav/SpaceNav";
 import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
@@ -13,27 +15,34 @@ import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/server";
 
-// Barre du haut : logo (→ accueil), domaine · programme, les quatre espaces
-// en contrôle segmenté, puis la recherche et le badge de rang du joueur, qui
-// ouvre son menu (Moi, thème nuit, mode discret, réglages, déconnexion).
-// Translucide et collante, avec un léger flou. Un trait d'encre court sous
-// la barre pendant qu'une page se fait attendre (NavProgress).
+// Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
+// espaces en contrôle segmenté, puis la recherche et le badge de rang du
+// joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
+// déconnexion). Translucide et collante, avec un léger flou. Un trait d'encre
+// court sous la barre pendant qu'une page se fait attendre (NavProgress).
+//
+// Le logo suit la journée : l'anneau se trace au nombre de traits du jour
+// (une lecture légère, en parallèle du rang, avec repli sur le logo plein).
 export async function TopBar() {
   const locale = DEFAULT_LOCALE;
   const { user } = await getSessionUserWithProfile();
   let tier = rankFor(DEFAULT_ELO).tierIndex;
+  let traits: number | null = null;
   if (user) {
-    try {
-      const supabase = await createClient();
-      // Même calcul que /classement : la maîtrise peut verrouiller les paliers hauts.
-      const [{ data }, topics] = await Promise.all([
-        supabase.from("ratings").select("elo").eq("user_id", user.id).maybeSingle(),
-        getTopicMastery(supabase, user.id),
-      ]);
-      tier = rankFor((data as { elo?: number } | null)?.elo ?? DEFAULT_ELO, programMastery(topics)).tierIndex;
-    } catch {
-      // badge par défaut
-    }
+    const rank = (async () => {
+      try {
+        const supabase = await createClient();
+        // Même calcul que /classement : la maîtrise peut verrouiller les paliers hauts.
+        const [{ data }, topics] = await Promise.all([
+          supabase.from("ratings").select("elo").eq("user_id", user.id).maybeSingle(),
+          getTopicMastery(supabase, user.id),
+        ]);
+        tier = rankFor((data as { elo?: number } | null)?.elo ?? DEFAULT_ELO, programMastery(topics)).tierIndex;
+      } catch {
+        // badge par défaut
+      }
+    })();
+    [traits] = await Promise.all([traitsDuJour(user.id), rank]);
   }
 
   return (
@@ -46,8 +55,14 @@ export async function TopBar() {
       }}
     >
       <div className="mx-auto flex h-[64px] max-w-[1240px] items-center gap-3 px-4 md:gap-4 md:px-7">
-        <Link href="/dashboard" className="rl-press whitespace-nowrap text-[14px] sm:text-[15.5px]" aria-label={t(locale, "appName")}>
-          <InkLockup size={26} landing />
+        <Link href="/dashboard" className="group rl-press relative whitespace-nowrap text-[14px] sm:text-[15.5px]">
+          <span className="inline-flex items-center gap-2.5">
+            <span className="sr-only">{t(locale, "appName")}, accueil</span>
+            <AnneauDuJourLogo repondues={traits} objectif={OBJECTIF_DU_JOUR} size={26} landing />
+            <span aria-hidden className="font-brand leading-none">
+              RANKED LOBBY
+            </span>
+          </span>
         </Link>
         {user && (
           <div className="hidden lg:block">

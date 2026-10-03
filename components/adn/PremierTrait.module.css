@@ -1,0 +1,166 @@
+/* Le premier trait (moment 7) : le joueur trace lui-même l'anneau du logo,
+   sur les lignes de construction du film. Le tracé s'arrête seul à 74 %. */
+
+.root {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
+  text-align: center;
+}
+.titre {
+  margin: 0;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(24px, 6.4vw, 30px);
+  line-height: 1.12;
+  letter-spacing: -0.005em;
+}
+.stage {
+  --s: min(330px, 82vw, 44vh);
+  position: relative;
+  width: var(--s);
+  height: var(--s);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  outline: none;
+}
+.stage:active {
+  cursor: grabbing;
+}
+.stage:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+.stage > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.guide {
+  color: var(--ink);
+  opacity: 0.2;
+}
+.tete {
+  opacity: 0.14;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kbPulse 1.6s var(--ease-out) infinite;
+}
+@keyframes kbPulse {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+.trace .tete {
+  animation: none;
+  opacity: 0.12;
+}
+.cote {
+  position: absolute;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pen);
+  white-space: nowrap;
+  translate: -100% -50%;
+}
+.aide {
+  display: grid;
+  gap: 4px;
+}
+.aideT {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.aideS {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.texte {
+  max-width: 340px;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.sessions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+.sessions > button {
+  justify-content: center;
+  height: 42px;
+}
+.champ {
+  width: 100%;
+  text-align: left;
+}
+.champ .input {
+  width: 100%;
+}
+.champS {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.sceau {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+}
+.full {
+  width: 100%;
+}
+.lien {
+  font-size: 13px;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  padding: 4px 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.lien:hover {
+  color: var(--ink);
+}
+
+/* la variante « retour » : du texte, une action */
+.retour {
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+}
+.retourT {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+.retourS {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tete {
+    animation: none;
+  }
+}

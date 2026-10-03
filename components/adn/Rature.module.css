@@ -1,0 +1,97 @@
+/* L'erreur rayée : un trait de pinceau noir (la main du joueur) traverse la
+   ligne ; on raye, on n'efface pas. */
+
+.ligne {
+  position: relative;
+  display: block;
+}
+.ligne[data-rayee="1"] .contenu {
+  color: var(--ink-3);
+}
+.contenu {
+  position: relative;
+  transition: color 0.3s var(--ease-out);
+}
+/* une rayure par ligne, posée sur la ligne mesurée */
+.traitLigne {
+  position: absolute;
+  color: var(--ink);
+  pointer-events: none;
+  overflow: visible;
+  rotate: -0.7deg;
+}
+.trait {
+  position: absolute;
+  left: -0.4em;
+  right: -0.4em;
+  top: var(--kb-y, 0.64em);
+  height: 1.1em;
+  width: calc(100% + 0.8em);
+  max-width: 560px;
+  color: var(--ink);
+  pointer-events: none;
+  overflow: visible;
+  transform: translateY(-50%) rotate(-0.8deg);
+}
+
+/* compteur barré : 11 en grand, l'ancien 12 rayé à côté */
+.compteur {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  line-height: 1;
+}
+.neuf {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: var(--kb-fs, 48px);
+  line-height: 0.9;
+}
+.ancien {
+  position: relative;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: calc(var(--kb-fs, 48px) * 0.5);
+  color: var(--ink-3);
+}
+.ancien svg {
+  position: absolute;
+  left: -18%;
+  width: 136%;
+  top: 22%;
+  height: 0.62em;
+  color: var(--ink);
+  overflow: visible;
+}
+.libelle {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* le bandeau d'une demi-seconde, dans le quiz */
+.bandeau {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px 13px 16px;
+  border-radius: 16px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+  max-width: 520px;
+}
+.bandeau svg {
+  flex: none;
+  width: 44px;
+  height: 15px;
+  overflow: visible;
+}
+.titre {
+  font-weight: 650;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+}
+.sous {
+  font-size: 12.5px;
+  opacity: 0.72;
+  margin-top: 1px;
+}

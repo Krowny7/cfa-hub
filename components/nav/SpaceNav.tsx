@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Target, Trophy, User } from "lucide-react";
 import { SPACES, activeSpace } from "@/lib/nav";
-
-const ICONS = { reviser: BookOpen, entrainer: Target, classement: Trophy, moi: User } as const;
+import { ICONE_ESPACE, Icone } from "@/components/adn/icons";
 
 // Les quatre espaces, en contrôle segmenté : l'indicateur glisse (avec un
 // léger ressort) sous l'onglet actif. Il se place par transform (sa largeur
@@ -29,11 +27,10 @@ export function SpaceNav() {
           }}
         />
         {SPACES.map((s) => {
-          const Icon = ICONS[s.key];
           const on = s.key === active;
           return (
             <Link key={s.key} href={s.href} className="seg-item px-4 text-[13.5px]" aria-current={on ? "page" : undefined}>
-              <Icon size={15} strokeWidth={on ? 2.2 : 1.8} />
+              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} />
               {s.label}
             </Link>
           );

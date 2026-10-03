@@ -1,0 +1,394 @@
+/* Le verdict de duel : une affiche. Ton score en haut, le sien en bas, et
+   entre les deux une bande d'encre qui porte le mot en réserve (moment 2 de
+   la direction Geste). Victoire : encre chargée ; défaite : pinceau sec ;
+   nulle : un seul trait. */
+
+.verdict {
+  --kb-bleed: clamp(16px, 7cqi, 110px);
+  container-type: inline-size;
+  position: relative;
+  display: grid;
+  gap: 28px;
+  width: 100%;
+}
+.arme {
+  opacity: 0;
+  /* filet de sécurité : sans JavaScript, le verdict apparaît quand même */
+  animation: kbReveal 0s 2.4s forwards;
+}
+@keyframes kbReveal {
+  to {
+    opacity: 1;
+  }
+}
+
+.tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+.kicker {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.passer {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.passer:hover {
+  color: var(--ink);
+  background: var(--well);
+}
+.passer:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---------- l'affiche ---------- */
+.affiche {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+.joueur {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+}
+.eux {
+  justify-self: end;
+  justify-items: end;
+  text-align: right;
+}
+.scoreRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.eux .scoreRow {
+  justify-content: flex-end;
+}
+.score {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: clamp(64px, 10.4cqi, 124px);
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+}
+.perdant .score {
+  color: var(--ink-3);
+}
+.sur {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: clamp(18px, 2.6cqi, 28px);
+  color: var(--ink-3);
+  padding-bottom: 0.3em;
+}
+.qui {
+  font-size: clamp(16px, 2cqi, 20px);
+  font-weight: 680;
+  letter-spacing: -0.025em;
+}
+.eux .qui {
+  color: var(--ink-2);
+}
+.meta {
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-2);
+  margin: 0 8px;
+}
+
+/* les deux copies, question par question */
+.marques {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  overflow: visible;
+}
+.eux .marques {
+  justify-self: end;
+}
+.marques .ok {
+  fill: var(--ink);
+}
+.marques .ko {
+  stroke: var(--pen);
+}
+.marques .vide {
+  fill: var(--ink-3);
+}
+.marques g {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.decisiveRond {
+  stroke: var(--pen);
+}
+.excl {
+  font-family: var(--font-plume, var(--font-sans));
+  font-size-adjust: ex-height 0.46;
+  font-weight: 700;
+  fill: var(--pen);
+}
+
+/* la bande d'encre */
+.bande {
+  position: relative;
+  z-index: 2;
+  height: clamp(96px, 17cqi, 206px);
+  margin: 6px calc(-1 * var(--kb-bleed)) 6px;
+  rotate: -3deg;
+  color: var(--ink);
+}
+.bande > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sec > svg {
+  /* pinceau sec : des stries partout, mais un cœur encore chargé derrière le
+     mot (la défaite manque d'encre, pas de lisibilité), qui s'assèche vers la
+     queue du trait */
+  /* gen:DRY */ -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 160' preserveAspectRatio='none'%3E%3Cfilter id='d' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0035 .16' numOctaves='3' seed='11' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -13 0 0 0 8.3' result='m'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='1' seed='5' result='p'/%3E%3CfeColorMatrix in='p' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -12 0 0 0 9.4' result='pm'/%3E%3CfeComposite in='m' in2='pm' operator='arithmetic' k1='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"), linear-gradient(180deg, transparent 20%, #000 36%, #000 64%, transparent 80%), linear-gradient(90deg, #000 70%, transparent 94%);
+  /* gen:DRY */ mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 160' preserveAspectRatio='none'%3E%3Cfilter id='d' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0035 .16' numOctaves='3' seed='11' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -13 0 0 0 8.3' result='m'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='1' seed='5' result='p'/%3E%3CfeColorMatrix in='p' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -12 0 0 0 9.4' result='pm'/%3E%3CfeComposite in='m' in2='pm' operator='arithmetic' k1='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E"), linear-gradient(180deg, transparent 20%, #000 36%, #000 64%, transparent 80%), linear-gradient(90deg, #000 70%, transparent 94%);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-composite: source-over, source-in;
+  mask-composite: add, intersect;
+}
+.mot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-left: 4%;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: clamp(50px, 10.6cqi, 134px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  white-space: nowrap;
+}
+.mot > span {
+  display: block;
+  translate: 0 -0.05em;
+}
+.charge .mot > span {
+  /* gen:WET */ -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 160' preserveAspectRatio='none'%3E%3Cfilter id='w' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .11' numOctaves='3' seed='23' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -10 0 0 0 7.7'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+  /* gen:WET */ mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 160' preserveAspectRatio='none'%3E%3Cfilter id='w' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .11' numOctaves='3' seed='23' result='s'/%3E%3CfeColorMatrix in='s' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -10 0 0 0 7.7'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+.gouttes {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.gouttes circle {
+  fill: var(--ink);
+}
+/* nulle : le mot à l'encre, un seul trait dessous */
+.nulle {
+  rotate: 0deg;
+  color: var(--ink);
+}
+.nulle > svg {
+  top: auto;
+  bottom: 12%;
+  height: 16%;
+}
+.nulle .mot {
+  color: var(--ink);
+  padding-left: 0;
+}
+.nulle .mot > span {
+  translate: 0 -0.12em;
+}
+
+.phrase {
+  margin: 0;
+  max-width: 640px;
+  font-size: clamp(16px, 2.2cqi, 19px);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+}
+.phrase span {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+/* ---------- l'enjeu, les mentions, la suite ---------- */
+.suite {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+}
+.label {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.enjeu {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.anneau {
+  position: relative;
+  flex: none;
+  width: 116px;
+  height: 116px;
+}
+.anneau > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.anneau > span {
+  position: absolute !important;
+  left: 50%;
+  top: 50%;
+  translate: -50% -52%;
+}
+.eloRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.elo {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: clamp(40px, 6cqi, 60px);
+  line-height: 0.95;
+}
+.delta {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  height: 34px;
+  padding: 0 14px;
+  font-family: var(--font-mono), monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--paper);
+  isolation: isolate;
+}
+.delta svg {
+  position: absolute;
+  inset: -2px -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 4px);
+  z-index: -1;
+  color: var(--ink);
+}
+.sousElo {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.sousElo b {
+  color: var(--ink);
+  font-weight: 650;
+}
+.mentions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  align-items: center;
+  padding-top: 6px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.decisive {
+  position: relative;
+  padding: 16px 18px 16px 54px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+  max-width: 760px;
+}
+.decisive .excl2 {
+  position: absolute;
+  left: 16px;
+  top: 6px;
+  font-family: var(--font-plume, var(--font-sans));
+  font-size-adjust: ex-height 0.46;
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--pen);
+}
+.decisiveMeta {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.decisiveMeta b {
+  color: var(--ink);
+  font-weight: 650;
+}
+.enonce {
+  margin: 6px 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- ordinateur ---------- */
+@container (min-width: 760px) {
+  .affiche {
+    gap: 0;
+  }
+  /* l'affiche se resserre : la bande chevauche les deux copies */
+  .bande {
+    margin-top: -18px;
+    margin-bottom: -14px;
+  }
+  .marques {
+    max-width: 380px;
+  }
+  .suite {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 36px;
+  }
+}
+
+/* mode discret : pas de gouttes */
+:global(html[data-discreet="1"]) .gouttes {
+  display: none;
+}

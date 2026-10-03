@@ -1,0 +1,181 @@
+/* La copie corrigée : une copie rendue, marge rouge, note entourée et
+   appréciation à la main du correcteur. Noir = le joueur, rouge = le correcteur. */
+
+.root {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 660px;
+}
+
+.feuille {
+  position: relative;
+  padding: 20px 20px 16px 58px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1), 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+/* la marge rouge */
+.feuille::before {
+  content: "";
+  position: absolute;
+  left: 42px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: color-mix(in oklab, var(--pen) 55%, transparent);
+}
+
+.tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.kicker {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.titre {
+  margin-top: 3px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.meta {
+  margin-top: 3px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.plume {
+  /* la main du correcteur : l'écriture manuscrite --font-plume (Caveat,
+     chargée par app/layout.tsx), sinon Geist ; font-size-adjust égalise
+     les deux tailles */
+  font-family: var(--font-plume, var(--font-sans));
+  font-size-adjust: ex-height 0.46;
+  color: var(--pen);
+  font-weight: 700;
+}
+
+/* la note entourée */
+.note {
+  position: relative;
+  flex: none;
+  width: 128px;
+  height: 74px;
+  margin: -6px -4px 0 0;
+  display: grid;
+  place-items: center;
+}
+.note svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.noteTxt {
+  position: relative;
+  font-size: 40px;
+  line-height: 1;
+  transform: rotate(-4deg) translateY(1px);
+  white-space: nowrap;
+}
+.noteTxt small {
+  font-size: 0.6em;
+  margin-left: 1px;
+}
+
+.appreciation {
+  margin: 12px 0 10px;
+  font-size: 23px;
+  line-height: 1.12;
+}
+.appreciation > span {
+  display: block;
+}
+
+.questions {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.q {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.q:last-child {
+  border-bottom: 0;
+}
+.mark {
+  position: absolute;
+  left: -46px;
+  width: 22px;
+  height: 22px;
+  color: var(--pen);
+  overflow: visible;
+}
+.qn {
+  flex: none;
+  width: 28px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.ql {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.autres {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.anneau {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .feuille {
+    padding: 16px 14px 12px 46px;
+  }
+  .feuille::before {
+    left: 33px;
+  }
+  .mark {
+    left: -40px;
+    width: 20px;
+    height: 20px;
+  }
+  .note {
+    width: 108px;
+    height: 64px;
+  }
+  .noteTxt {
+    font-size: 34px;
+  }
+  .appreciation {
+    font-size: 21px;
+  }
+}

@@ -39,6 +39,13 @@
   --line: rgba(17, 17, 17, 0.08);
   --line-2: rgba(17, 17, 17, 0.14);
   --pen: #b4412f;
+  /* Épure, deux mains et trois matières : le crayon trace ce qui reste (piste
+     des barres et des anneaux, cotes, repères de construction), l'encre
+     couvre ce qui est acquis, le stylo rouge (--pen) corrige et valide.
+     Le crayon est une mine grise, plus claire que le texte secondaire : il ne
+     porte jamais de texte à lire seul. */
+  --pencil: #a9a9a2;
+  --pencil-2: #d3d3cd;
   /* lumière d'arête (haut d'une surface) : inutile sur blanc, visible en nuit */
   --edge: inset 0 1px 0 rgba(255, 255, 255, 0);
   /* ombres en couches : contact net + diffusion large et douce */
@@ -98,6 +105,9 @@ html[data-theme="nuit"] {
   --line: rgba(255, 255, 255, 0.075);
   --line-2: rgba(255, 255, 255, 0.14);
   --pen: #ff7a5c;
+  /* nuit « ardoise » : le crayon devient une craie grise */
+  --pencil: #5c5c63;
+  --pencil-2: #333338;
   --edge: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -16px rgba(0, 0, 0, 0.7);
   --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 18px -8px rgba(0, 0, 0, 0.5), 0 28px 56px -28px rgba(0, 0, 0, 0.85);
@@ -124,6 +134,7 @@ html[data-theme="nuit"] {
   --color-line: var(--line);
   --color-line-2: var(--line-2);
   --color-pen: var(--pen);
+  --color-pencil: var(--pencil);
   --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 10px;
@@ -1123,26 +1134,154 @@ html[data-theme="nuit"] {
     background: var(--line);
   }
 
-  /* ---------- Barres de progression ---------- */
+  /* ---------- Barres de progression (Épure) ----------
+     Même API qu'avant (.ink-bar > span, largeur en style) : le chemin entier
+     est un trait de crayon, l'acquis un coup de pinceau (tracé BAR de
+     components/ink/paths.ts, en masque) qui s'effile là où l'on s'est
+     arrêté. .is-pen : le trait passe au stylo rouge (sous le seuil). */
   .ink-bar {
     position: relative;
-    height: 6px;
-    border-radius: 999px;
-    background: var(--well);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--line) 50%, transparent);
+    height: 7px;
     overflow: hidden;
+  }
+  .ink-bar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% - 0.5px);
+    height: 1px;
+    /* mine de crayon : une ligne fine dont la pression varie un peu */
+    background: repeating-linear-gradient(
+      90deg,
+      var(--pencil) 0 11px,
+      color-mix(in oklab, var(--pencil) 55%, transparent) 11px 13px,
+      var(--pencil) 13px 29px,
+      color-mix(in oklab, var(--pencil) 75%, transparent) 29px 31px
+    );
   }
   .ink-bar > span {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    border-radius: 999px;
     background: var(--ink);
+    -webkit-mask: var(--bar) 0 0 / 100% 100% no-repeat;
+    mask: var(--bar) 0 0 / 100% 100% no-repeat;
     transition: width 0.8s var(--ease-out);
   }
   .ink-bar.is-pen > span {
     background: var(--pen);
+  }
+  /* dans une carte sombre (couleurs fixes) */
+  .card-ink .ink-bar::before {
+    background: rgba(255, 255, 255, 0.28);
+  }
+  .card-ink .ink-bar > span {
+    background: #ffffff;
+  }
+
+  /* ---------- Épure : crayon, cotes, repères ----------
+     Le crayon trace ce qui reste ; il ne se lit jamais seul (ses libellés
+     sont en --ink-2). Classes à adopter page par page, avec parcimonie. */
+  /* filet au crayon (titre de section, séparation calme) */
+  .pencil-line {
+    height: 1px;
+    border: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--pencil) 0 11px,
+      color-mix(in oklab, var(--pencil) 55%, transparent) 11px 13px,
+      var(--pencil) 13px 29px,
+      color-mix(in oklab, var(--pencil) 75%, transparent) 29px 31px
+    );
+    opacity: 0.75;
+  }
+  /* pointillé de construction (ce qui n'existe pas encore) */
+  .pencil-dash {
+    height: 1px;
+    border: 0;
+    background: repeating-linear-gradient(90deg, var(--pencil) 0 3px, transparent 3px 7px);
+  }
+
+  /* Cote d'architecte (components/adn/Cote.tsx) : une ligne de dimension
+     entre deux tirets obliques, le libellé posé dessus. Trois mains : crayon
+     (par défaut), encre, stylo rouge (le bout qui reste à conquérir). */
+  .cote {
+    --cote-line: var(--pencil);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .cote-ink {
+    --cote-line: color-mix(in oklab, var(--ink) 70%, transparent);
+    color: var(--ink);
+  }
+  .cote-pen {
+    --cote-line: color-mix(in oklab, var(--pen) 75%, transparent);
+    color: var(--pen);
+  }
+  .cote-span {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 18px;
+    align-items: center;
+    gap: 6px;
+  }
+  .cote-rule {
+    flex: 1 1 auto;
+    min-width: 6px;
+    height: 1px;
+    background: var(--cote-line);
+  }
+  .cote-tick {
+    flex: none;
+    width: 1px;
+    height: 11px;
+    background: var(--cote-line);
+    transform: rotate(38deg);
+  }
+  .cote-label {
+    flex: none;
+    font-weight: 600;
+  }
+  .cote-end {
+    flex: none;
+    color: var(--ink-2);
+  }
+
+  /* Repères de coupe autour du point focal d'un écran (un par écran) */
+  .crop {
+    position: relative;
+  }
+  .crop::before,
+  .crop::after {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    pointer-events: none;
+    border-radius: 0;
+    background:
+      linear-gradient(var(--pencil), var(--pencil)) 0 0 / 14px 1px no-repeat,
+      linear-gradient(var(--pencil), var(--pencil)) 0 0 / 1px 14px no-repeat,
+      linear-gradient(var(--pencil), var(--pencil)) 100% 100% / 14px 1px no-repeat,
+      linear-gradient(var(--pencil), var(--pencil)) 100% 100% / 1px 14px no-repeat;
+  }
+  .crop::after {
+    background:
+      linear-gradient(var(--pencil), var(--pencil)) 100% 0 / 14px 1px no-repeat,
+      linear-gradient(var(--pencil), var(--pencil)) 100% 0 / 1px 14px no-repeat,
+      linear-gradient(var(--pencil), var(--pencil)) 0 100% / 14px 1px no-repeat,
+      linear-gradient(var(--pencil), var(--pencil)) 0 100% / 1px 14px no-repeat;
   }
 
   /* (dans la couche « components » : une classe utilitaire peut ajuster
@@ -1557,7 +1696,8 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
   }
 }
 /* Barre qui pousse : par transform (plus de width animée). Dans une
-   .ink-bar, l'encre glisse depuis la gauche, bouts arrondis intacts. */
+   .ink-bar, le coup de pinceau se trace de gauche à droite (rognage), sa
+   forme ne glisse pas. */
 .rl-grow {
   transform-origin: 0 50%;
   animation: rlGrow var(--dur-4) var(--ease-out) backwards;
@@ -1572,7 +1712,10 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
 }
 @keyframes rlFill {
   from {
-    transform: translateX(-100%);
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 .rl-barup {
@@ -1631,6 +1774,24 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
 @keyframes rlUnderline {
   from {
     clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* L'anneau du jour et le logo vivant (components/adn/AnneauDuJour*) : le
+   masque se trace le long de l'axe du logo à l'apparition (.rl-halo), puis
+   chaque nouveau trait avance d'une touche, en moins de 0,6 s. */
+.rl-touch {
+  transition: stroke-dasharray 0.45s var(--ease-ink);
+}
+/* Un bâton ou une coche qui se trace, du haut vers le bas (le trait du jour) */
+.rl-stick {
+  animation: rlStick 0.5s 0.2s var(--ease-ink) backwards;
+}
+@keyframes rlStick {
+  from {
+    clip-path: inset(0 0 100% 0);
   }
   to {
     clip-path: inset(0 0 0 0);
@@ -1773,8 +1934,12 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
   .rl-count,
   .rl-rv,
   .rl-nudge,
-  .rl-swap {
+  .rl-swap,
+  .rl-stick {
     animation: none !important;
+  }
+  .rl-touch {
+    transition: none;
   }
   /* sans animation, le compteur affiche directement sa valeur finale */
   .rl-count {
@@ -1830,7 +1995,11 @@ html[data-rl-motion="off"] .rl-route *::after {
 
 /* Les surfaces passent devant les décors à l'encre posés en absolu
    (enso derrière un titre, filigrane d'anneau). */
-.card, .card-soft, .card-ink, .plate { position: relative; }
+/* Dans la couche components : les utilitaires (sticky, fixed…) posés sur
+   une carte gardent la main. Hors couche, cette règle les écrasait. */
+@layer components {
+  .card, .card-soft, .card-ink, .plate { position: relative; }
+}
 
 /* Pages V2 (accueil, espaces) : s'élargissent au-delà de la colonne de
    lecture, jusqu'à 1240 px, centrées sur la fenêtre. */

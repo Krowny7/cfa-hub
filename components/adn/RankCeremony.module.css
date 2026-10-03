@@ -1,0 +1,333 @@
+/* La montée de rang : l'encre devient métal. La goutte du film tombe sur le
+   papier, éclabousse, l'encre se rassemble en hexagone, le pinceau trace
+   l'anneau et le badge sort de la tache. Puis le nom, puis le prochain bout. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--ink);
+}
+.fond {
+  position: fixed;
+  inset: 0;
+  background: var(--paper);
+  background-image: var(--grain);
+}
+.fond::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 40%, transparent 55%, color-mix(in oklab, var(--ink) 6%, transparent));
+}
+.passer {
+  position: fixed;
+  z-index: 2;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.passer:hover {
+  color: var(--ink);
+  background: var(--well);
+}
+.scene {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(440px, calc(100vw - 32px));
+  padding: 56px 0 40px;
+  text-align: center;
+}
+
+/* la scène de la goutte : un carré, les lignes de construction autour */
+.stage {
+  --s: min(300px, 40vh, 72vw);
+  position: relative;
+  width: var(--s);
+  height: var(--s);
+}
+.stage > svg,
+.stage > .calque {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.construction {
+  inset: -18% !important;
+  width: 136% !important;
+  height: 136% !important;
+  color: var(--ink);
+  opacity: 0.22;
+}
+.goutte {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.ombre {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.tache,
+.flaque,
+.eclats {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.gloss {
+  fill: rgba(255, 255, 255, 0.55);
+}
+:global(html[data-theme="nuit"]) .gloss {
+  fill: rgba(255, 255, 255, 0);
+}
+.badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -52%;
+}
+.cote {
+  position: absolute;
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pen);
+  white-space: nowrap;
+  translate: -100% -50%;
+}
+
+.texte {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.sur {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.nom {
+  position: relative;
+  margin: 2px 0 0;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(42px, 9vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+.nomLong {
+  font-size: clamp(30px, 6.4vw, 44px);
+}
+.souligne {
+  display: block;
+  width: 62%;
+  height: 12px;
+  margin: 2px auto 0;
+  color: var(--ink);
+  overflow: visible;
+}
+.mono {
+  margin-top: 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.phrase {
+  margin: 4px 0 0;
+  max-width: 380px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.bout {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1), 0 0 0 1px var(--line);
+  text-align: left;
+}
+.boutK {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--pen);
+}
+.boutT {
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.boutS {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+.actions > * {
+  flex: 1;
+}
+
+/* ---------- variantes en ligne ---------- */
+.division {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  max-width: 560px;
+}
+.sceauDiv {
+  position: absolute;
+  right: -10px;
+  top: -18px;
+  z-index: 2;
+}
+.calme {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.calme b {
+  color: var(--ink);
+  font-weight: 650;
+}
+.verrou {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 620px;
+}
+.verrouAnneau {
+  position: relative;
+  flex: none;
+  width: 148px;
+  height: 148px;
+}
+.verrouAnneau > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.verrouAnneau > span[role="img"] {
+  position: absolute !important;
+  left: 50%;
+  top: 50%;
+  translate: -50% -52%;
+}
+.verrouT {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+}
+.verrouP {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.verrouP b {
+  color: var(--ink);
+}
+
+/* ---------- le panneau du rang (Geste, moment 3) ---------- */
+.panneau {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 4vw, 30px);
+  padding: clamp(22px, 4vw, 34px) clamp(22px, 5vw, 42px);
+  color: var(--paper);
+  isolation: isolate;
+}
+.panneau::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ink);
+  /* gen:PANEL */ -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 400' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M 10.0 12.6 L 24.0 13.5 L 38.1 12.9 L 52.1 9.2 L 66.1 7.2 L 80.1 8.6 L 94.2 8.3 L 108.2 8.8 L 122.2 9.0 L 136.3 12.1 L 150.3 9.3 L 164.3 12.3 L 178.3 11.5 L 192.4 9.7 L 206.4 10.4 L 220.4 10.0 L 234.5 11.4 L 248.5 11.4 L 262.5 9.2 L 276.5 9.9 L 290.6 8.1 L 304.6 13.2 L 318.6 9.3 L 332.7 12.2 L 346.7 13.9 L 360.7 12.8 L 374.7 8.5 L 388.8 8.8 L 402.8 8.8 L 416.8 11.6 L 430.9 10.2 L 444.9 11.1 L 458.9 15.0 L 472.9 9.0 L 487.0 11.9 L 501.0 11.6 L 515.0 12.4 L 529.1 14.2 L 543.1 8.9 L 557.1 8.9 L 571.1 10.4 L 585.2 7.1 L 599.2 10.9 L 613.2 7.9 L 627.3 6.8 L 641.3 9.4 L 655.3 10.5 L 669.3 11.2 L 683.4 9.2 L 697.4 6.4 L 711.4 9.2 L 725.5 4.5 L 739.5 9.9 L 753.5 6.9 L 767.5 6.3 L 781.6 7.9 L 795.6 5.0 L 809.6 6.2 L 823.7 10.2 L 837.7 7.3 L 851.7 4.9 L 865.7 4.8 L 879.8 4.3 L 893.8 5.2 L 907.8 5.3 L 921.9 9.1 L 935.9 10.4 L 949.9 7.6 L 963.9 9.2 L 978.0 5.7 L 994.9 8.0 L 990.0 19.4 L 988.8 30.7 L 990.2 42.1 L 991.1 53.4 L 988.8 64.8 L 986.8 76.1 L 989.6 87.5 L 985.9 98.8 L 988.8 110.2 L 994.2 121.5 L 989.1 132.9 L 996.1 144.2 L 990.1 155.6 L 991.9 166.9 L 996.6 178.3 L 994.7 189.6 L 987.2 201.0 L 986.8 212.4 L 991.3 223.7 L 986.6 235.1 L 985.8 246.4 L 988.2 257.8 L 989.4 269.1 L 990.5 280.5 L 987.0 291.8 L 981.8 303.2 L 985.3 314.5 L 980.9 325.9 L 987.1 337.2 L 983.7 348.6 L 981.9 359.9 L 985.1 371.3 L 987.9 382.6 L 986.0 391.1 L 972.0 393.3 L 958.0 390.4 L 944.0 390.3 L 930.0 390.8 L 916.0 389.6 L 902.0 388.5 L 888.0 390.3 L 874.0 395.0 L 860.0 393.0 L 846.0 393.4 L 832.0 389.6 L 818.0 392.9 L 804.0 389.4 L 790.0 389.0 L 776.0 391.2 L 762.0 390.9 L 748.0 388.8 L 734.0 388.8 L 720.0 389.0 L 706.0 391.3 L 692.0 394.2 L 678.0 396.0 L 664.0 390.0 L 650.0 396.0 L 636.0 392.4 L 622.0 395.0 L 608.0 390.2 L 594.0 394.4 L 580.0 393.4 L 566.0 392.3 L 552.0 389.6 L 538.0 393.6 L 524.0 392.3 L 510.0 395.2 L 496.0 393.4 L 482.0 389.7 L 468.0 389.7 L 454.0 390.2 L 440.0 389.2 L 426.0 388.0 L 412.0 394.5 L 398.0 389.2 L 384.0 392.4 L 370.0 389.8 L 356.0 388.9 L 342.0 390.9 L 328.0 386.4 L 314.0 390.6 L 300.0 388.3 L 286.0 386.6 L 272.0 385.3 L 258.0 384.7 L 244.0 387.2 L 230.0 389.6 L 216.0 388.5 L 202.0 390.0 L 188.0 388.3 L 174.0 384.4 L 160.0 384.9 L 146.0 384.6 L 132.0 384.0 L 118.0 387.0 L 104.0 386.7 L 90.0 387.1 L 76.0 387.2 L 62.0 388.7 L 48.0 387.1 L 34.0 385.2 L 20.0 387.3 L 7.3 388.0 L 7.6 376.9 L 8.6 365.9 L 4.1 354.8 L 6.8 343.8 L 3.4 332.7 L 1.7 321.6 L 2.3 310.6 L 3.0 299.5 L 6.4 288.5 L 9.5 277.4 L 9.9 266.4 L 5.1 255.3 L 8.3 244.2 L 12.2 233.2 L 13.8 222.1 L 14.5 211.1 L 10.8 200.0 L 10.4 188.9 L 12.7 177.9 L 9.4 166.8 L 5.8 155.8 L 12.5 144.7 L 4.7 133.6 L 11.3 122.6 L 4.0 111.5 L 8.1 100.5 L 9.6 89.4 L 2.9 78.4 L 4.1 67.3 L 4.0 56.2 L 6.8 45.2 L 9.4 34.1 L 12.1 23.1 Z'/%3E%3C/svg%3E");
+  /* gen:PANEL */ mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 400' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M 10.0 12.6 L 24.0 13.5 L 38.1 12.9 L 52.1 9.2 L 66.1 7.2 L 80.1 8.6 L 94.2 8.3 L 108.2 8.8 L 122.2 9.0 L 136.3 12.1 L 150.3 9.3 L 164.3 12.3 L 178.3 11.5 L 192.4 9.7 L 206.4 10.4 L 220.4 10.0 L 234.5 11.4 L 248.5 11.4 L 262.5 9.2 L 276.5 9.9 L 290.6 8.1 L 304.6 13.2 L 318.6 9.3 L 332.7 12.2 L 346.7 13.9 L 360.7 12.8 L 374.7 8.5 L 388.8 8.8 L 402.8 8.8 L 416.8 11.6 L 430.9 10.2 L 444.9 11.1 L 458.9 15.0 L 472.9 9.0 L 487.0 11.9 L 501.0 11.6 L 515.0 12.4 L 529.1 14.2 L 543.1 8.9 L 557.1 8.9 L 571.1 10.4 L 585.2 7.1 L 599.2 10.9 L 613.2 7.9 L 627.3 6.8 L 641.3 9.4 L 655.3 10.5 L 669.3 11.2 L 683.4 9.2 L 697.4 6.4 L 711.4 9.2 L 725.5 4.5 L 739.5 9.9 L 753.5 6.9 L 767.5 6.3 L 781.6 7.9 L 795.6 5.0 L 809.6 6.2 L 823.7 10.2 L 837.7 7.3 L 851.7 4.9 L 865.7 4.8 L 879.8 4.3 L 893.8 5.2 L 907.8 5.3 L 921.9 9.1 L 935.9 10.4 L 949.9 7.6 L 963.9 9.2 L 978.0 5.7 L 994.9 8.0 L 990.0 19.4 L 988.8 30.7 L 990.2 42.1 L 991.1 53.4 L 988.8 64.8 L 986.8 76.1 L 989.6 87.5 L 985.9 98.8 L 988.8 110.2 L 994.2 121.5 L 989.1 132.9 L 996.1 144.2 L 990.1 155.6 L 991.9 166.9 L 996.6 178.3 L 994.7 189.6 L 987.2 201.0 L 986.8 212.4 L 991.3 223.7 L 986.6 235.1 L 985.8 246.4 L 988.2 257.8 L 989.4 269.1 L 990.5 280.5 L 987.0 291.8 L 981.8 303.2 L 985.3 314.5 L 980.9 325.9 L 987.1 337.2 L 983.7 348.6 L 981.9 359.9 L 985.1 371.3 L 987.9 382.6 L 986.0 391.1 L 972.0 393.3 L 958.0 390.4 L 944.0 390.3 L 930.0 390.8 L 916.0 389.6 L 902.0 388.5 L 888.0 390.3 L 874.0 395.0 L 860.0 393.0 L 846.0 393.4 L 832.0 389.6 L 818.0 392.9 L 804.0 389.4 L 790.0 389.0 L 776.0 391.2 L 762.0 390.9 L 748.0 388.8 L 734.0 388.8 L 720.0 389.0 L 706.0 391.3 L 692.0 394.2 L 678.0 396.0 L 664.0 390.0 L 650.0 396.0 L 636.0 392.4 L 622.0 395.0 L 608.0 390.2 L 594.0 394.4 L 580.0 393.4 L 566.0 392.3 L 552.0 389.6 L 538.0 393.6 L 524.0 392.3 L 510.0 395.2 L 496.0 393.4 L 482.0 389.7 L 468.0 389.7 L 454.0 390.2 L 440.0 389.2 L 426.0 388.0 L 412.0 394.5 L 398.0 389.2 L 384.0 392.4 L 370.0 389.8 L 356.0 388.9 L 342.0 390.9 L 328.0 386.4 L 314.0 390.6 L 300.0 388.3 L 286.0 386.6 L 272.0 385.3 L 258.0 384.7 L 244.0 387.2 L 230.0 389.6 L 216.0 388.5 L 202.0 390.0 L 188.0 388.3 L 174.0 384.4 L 160.0 384.9 L 146.0 384.6 L 132.0 384.0 L 118.0 387.0 L 104.0 386.7 L 90.0 387.1 L 76.0 387.2 L 62.0 388.7 L 48.0 387.1 L 34.0 385.2 L 20.0 387.3 L 7.3 388.0 L 7.6 376.9 L 8.6 365.9 L 4.1 354.8 L 6.8 343.8 L 3.4 332.7 L 1.7 321.6 L 2.3 310.6 L 3.0 299.5 L 6.4 288.5 L 9.5 277.4 L 9.9 266.4 L 5.1 255.3 L 8.3 244.2 L 12.2 233.2 L 13.8 222.1 L 14.5 211.1 L 10.8 200.0 L 10.4 188.9 L 12.7 177.9 L 9.4 166.8 L 5.8 155.8 L 12.5 144.7 L 4.7 133.6 L 11.3 122.6 L 4.0 111.5 L 8.1 100.5 L 9.6 89.4 L 2.9 78.4 L 4.1 67.3 L 4.0 56.2 L 6.8 45.2 L 9.4 34.1 L 12.1 23.1 Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+.panneauK {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.66;
+}
+.panneauElo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 4px;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: clamp(42px, 8vw, 64px);
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+.panneauElo small {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.barre {
+  position: relative;
+  height: 10px;
+  margin-top: 14px;
+  max-width: 340px;
+}
+.barre > i {
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  -webkit-mask: var(--bar) 0 0 / 100% 100% no-repeat;
+  mask: var(--bar) 0 0 / 100% 100% no-repeat;
+}
+.barre > i:first-child {
+  opacity: 0.16;
+}
+.panneauS {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.78;
+}
+.panneauS b {
+  font-weight: 650;
+  opacity: 1;
+}
+
+@media (max-height: 700px) {
+  .stage {
+    --s: min(240px, 34vh, 72vw);
+  }
+  .scene {
+    gap: 12px;
+    padding-top: 44px;
+  }
+}

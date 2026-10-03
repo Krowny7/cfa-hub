@@ -39,6 +39,7 @@ const PLAY = [
   ".rl-grow",
   ".rl-barup",
   ".rl-halo",
+  ".rl-stick",
   ".rl-drawline",
   ".rl-underline",
   ".rl-ink-draw",

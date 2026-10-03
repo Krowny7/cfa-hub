@@ -46,8 +46,32 @@ export function PageHero({
 }
 
 /** Titre de section : petit anneau d'encre (qui se trace quand la section
- * arrive à l'écran), titre, sous-titre discret, action à droite. */
-export function SectionTitle({ title, sub, action, className = "" }: { title: React.ReactNode; sub?: React.ReactNode; action?: React.ReactNode; className?: string }) {
+ * arrive à l'écran), titre, sous-titre discret, action à droite.
+ * Épure (option) : `num="02"` remplace l'anneau par un numéro de feuille et
+ * tire un trait de crayon jusqu'à l'action, comme sur un plan. */
+export function SectionTitle({
+  title,
+  sub,
+  action,
+  num,
+  className = "",
+}: {
+  title: React.ReactNode;
+  sub?: React.ReactNode;
+  action?: React.ReactNode;
+  num?: string;
+  className?: string;
+}) {
+  if (num)
+    return (
+      <div className={"flex flex-wrap items-center gap-x-4 gap-y-1 " + className}>
+        <span className="font-mono text-[12px] tracking-[0.06em] text-[color:var(--ink-3)]">{num}</span>
+        <h2 className="t-h2">{title}</h2>
+        {sub && <span className="t-small">{sub}</span>}
+        <span aria-hidden className="pencil-line hidden min-w-8 flex-1 sm:block" />
+        {action && <div className="ml-auto shrink-0 sm:ml-0">{action}</div>}
+      </div>
+    );
   return (
     <div className={"flex flex-wrap items-baseline gap-x-3 gap-y-1 " + className}>
       <InkRing size={18} className="rl-deco rl-ink-draw relative top-[2px] shrink-0 self-center" />

@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Home, Target, Trophy, User } from "lucide-react";
 import { SPACES, activeSpace } from "@/lib/nav";
-
-const ICONS = { reviser: BookOpen, entrainer: Target, classement: Trophy, moi: User } as const;
+import { ICONE_ESPACE, Icone, type IconeNom } from "@/components/adn/icons";
 
 // Barre du bas (mobile) : flottante et translucide, l'accueil puis les quatre
 // espaces ; une pastille d'encre glisse sous l'onglet actif (même geste que
@@ -17,8 +15,8 @@ export function MobileBottomNav() {
   const space = activeSpace(pathname);
   const home = pathname === "/" || pathname === "/dashboard";
   const items = [
-    { key: "home", label: "Accueil", href: "/dashboard", Icon: Home, on: home },
-    ...SPACES.map((s) => ({ key: s.key, label: s.label, href: s.href, Icon: ICONS[s.key], on: s.key === space })),
+    { key: "home", label: "Accueil", href: "/dashboard", icone: "accueil" as IconeNom, on: home },
+    ...SPACES.map((s) => ({ key: s.key, label: s.label, href: s.href, icone: ICONE_ESPACE[s.key] as IconeNom, on: s.key === space })),
   ];
   const ix = items.findIndex((i) => i.on);
   const n = items.length;
@@ -46,7 +44,7 @@ export function MobileBottomNav() {
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.14), 0 4px 12px -4px rgba(0,0,0,.35)",
         }}
       />
-      {items.map(({ key, label, href, Icon, on }) => (
+      {items.map(({ key, label, href, icone, on }) => (
         <Link
           key={key}
           href={href}
@@ -56,7 +54,7 @@ export function MobileBottomNav() {
             (on ? "font-semibold text-black" : "font-medium text-muted")
           }
         >
-          <Icon size={19} strokeWidth={on ? 2.2 : 1.8} className={on ? "rl-nudge" : undefined} />
+          <Icone nom={icone} size={21} appui={on ? 1.12 : 0.95} className={on ? "rl-nudge" : undefined} />
           <span className="max-w-full truncate px-0.5">{label}</span>
         </Link>
       ))}
