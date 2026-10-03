@@ -5,8 +5,7 @@ export default function FixedIncomeFiche() {
     <FicheDrillPage
       config={{
         title: "Fixed Income",
-        description:
-          "8 pages de synthèse (une par grand thème), chacune suivie d'une page de QCM d'entraînement tirée de notre banque officielle. Corrigé complet en fin de document.",
+        description: "8 synthèses, une par grand thème, chacune suivie de son QCM corrigé.",
         pdfFile: "fixed-income.pdf",
         pdfDownloadName: "Fixed_Income_Vault_Concept_Sheet.pdf",
         pdfLabel: "Fixed Income — 18 pages",

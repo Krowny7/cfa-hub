@@ -4,11 +4,14 @@ import { SectionTitle } from "@/components/ui/Titles";
 import { ErrorsTile, GoalTile } from "@/components/accueil/HomeCards";
 import { ContextTile } from "@/components/accueil/CompeteCards";
 import { ProgressTabs } from "@/components/accueil/ProgressTabs";
+import { TopicRail } from "@/components/ui/TopicRail";
+import { reviserHref, subjectRail } from "@/components/reviser/rail";
 import type { AccueilData, TopicStat, WeekDay } from "@/components/accueil/types";
 
 // Les deux sections sous le point focal : « Aujourd'hui » (trois tuiles
-// calmes) et « Ta progression » (une carte, trois vues en onglets). Le
-// détail (radar complet, activité, niveau, erreurs) vit sur /moi.
+// calmes) et « Ta progression » (une carte, trois vues en onglets : les
+// matières en rangée horizontale, le radar, la semaine). Le détail (radar
+// complet, activité, niveau, erreurs) vit sur /moi.
 
 const DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -47,7 +50,7 @@ export function ProgressSection({ d, tab }: { d: AccueilData; tab?: string }) {
       <ProgressTabs
         initial={tab}
         tabs={[
-          { key: "matieres", label: "Matières", meta: masteryMeta, panel: <SubjectBars topics={d.topics} /> },
+          { key: "matieres", label: "Matières", meta: masteryMeta, panel: <SubjectRail topics={d.topics} /> },
           { key: "radar", label: "Radar", meta: <RadarLegend />, panel: <RadarPanel topics={d.topics} /> },
           { key: "semaine", label: "Semaine", meta: weekMeta, panel: <WeekBars days={d.activity.days} goal={d.dailyGoal} /> },
         ]}
@@ -56,29 +59,19 @@ export function ProgressSection({ d, tab }: { d: AccueilData; tab?: string }) {
   );
 }
 
-/** Les 10 matières en barres fines, sur deux colonnes (ordre officiel en colonnes). */
-function SubjectBars({ topics }: { topics: TopicStat[] }) {
+/** Les 10 matières en rangée horizontale : ta maîtrise, la moyenne des joueurs ; une carte ouvre la matière dans Réviser. */
+function SubjectRail({ topics }: { topics: TopicStat[] }) {
   return (
-    <ul className="grid gap-x-12 gap-y-1 md:grid-flow-col md:grid-rows-5">
-      {topics.map((t, i) => (
-        <li key={t.key} className="min-w-0">
-          <Link
-            href={`/practice?topic=${t.key}`}
-            className="rl-row -mx-2 grid grid-cols-[minmax(0,1fr)_minmax(72px,42%)_2.6em] items-center gap-3 rounded-[10px] px-2 py-1.5 sm:py-2"
-            aria-label={`${t.name} : ${t.pct === null ? "pas commencé" : `${t.pct} %`}. S'entraîner`}
-          >
-            <span className={"truncate text-[14px] " + (t.pct === null ? "text-muted" : "font-semibold")}>
-              <span className="sm:hidden">{t.short}</span>
-              <span className="hidden sm:inline">{t.name}</span>
-            </span>
-            <span className="ink-bar block h-1.5" aria-hidden>
-              {t.pct !== null && <span className="rl-grow" style={{ width: `${t.pct}%`, animationDelay: `${0.2 + i * 0.03}s` }} />}
-            </span>
-            <span className={"text-right font-mono text-[12px] tabular-nums " + (t.pct === null ? "text-muted" : "font-semibold")}>{t.pct === null ? "—" : `${t.pct}%`}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <TopicRail
+      label="Ta progression par matière"
+      actionLabel="Ouvrir la matière"
+      surface="quiet"
+      bleed="card"
+      items={subjectRail(topics, (key) => {
+        const avg = topics.find((t) => t.key === key)?.avg ?? null;
+        return { href: reviserHref(key), note: avg !== null ? `moyenne ${avg} %` : null, mark: avg };
+      })}
+    />
   );
 }
 

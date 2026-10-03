@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { Field } from "@/components/ContentDetailHeader";
 
+// Import / export au format Quizlet : « terme[TAB]définition », une carte par ligne.
 export function FlashcardImporterExporter({ setId }: { setId: string }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
@@ -12,26 +15,27 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
   const [tsv, setTsv] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function exportTsv() {
     setMsg(null);
-    const { data, error } = await supabase
-      .from("flashcards")
-      .select("front,back,position")
-      .eq("set_id", setId)
-      .order("position", { ascending: true });
+    const { data, error } = await supabase.from("flashcards").select("front,back,position").eq("set_id", setId).order("position", { ascending: true });
 
     if (error) {
       setMsg(`${error.message}`);
       return;
     }
 
-    const out = (data ?? [])
-      .map((c) => `${(c.front ?? "").replaceAll("\t", " ")}\t${(c.back ?? "").replaceAll("\t", " ")}`)
-      .join("\n");
+    const out = (data ?? []).map((c) => `${(c.front ?? "").replaceAll("\t", " ")}\t${(c.back ?? "").replaceAll("\t", " ")}`).join("\n");
 
-    await navigator.clipboard.writeText(out);
-    setMsg(t("common.saved"));
+    try {
+      await navigator.clipboard.writeText(out);
+      setCopied(true);
+      setMsg(`${data?.length ?? 0} cartes copiées (format Quizlet).`);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setMsg("Impossible de copier automatiquement.");
+    }
   }
 
   async function importTsv() {
@@ -43,11 +47,11 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
         .map((l) => l.trim())
         .filter(Boolean);
 
-      if (lines.length === 0) throw new Error("Empty");
+      if (lines.length === 0) throw new Error("Rien à importer.");
 
       const rows = lines.map((line, i) => {
         const parts = line.split("\t");
-        if (parts.length < 2) throw new Error(`Line ${i + 1} needs a TAB`);
+        if (parts.length < 2) throw new Error(`Ligne ${i + 1} : il manque une tabulation entre le terme et la définition.`);
         const front = parts[0].trim();
         const back = parts.slice(1).join("\t").trim();
         return { set_id: setId, front, back, position: i + 1 };
@@ -67,40 +71,36 @@ export function FlashcardImporterExporter({ setId }: { setId: string }) {
   }
 
   return (
-    <div className="w-full min-w-0 max-w-full rounded-2xl border p-4">
-      {/* Header: stack on mobile to avoid any horizontal overflow */}
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="font-semibold">{t("flashcards.importing")}</h3>
-
-        <button
-          className="box-border w-full rounded-xl border px-3 py-2 text-sm hover:bg-white/5 sm:w-auto sm:whitespace-nowrap"
-          type="button"
-          onClick={exportTsv}
-        >
-          {t("flashcards.export")}
+    <div className="grid w-full min-w-0 gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-semibold">{t("flashcards.importing")}</h3>
+          <p className="t-micro mt-1">Compatible Quizlet : terme, tabulation, définition.</p>
+        </div>
+        <button className="btn btn-secondary shrink-0" type="button" onClick={exportTsv}>
+          {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />} {copied ? "Copié" : "Exporter"}
         </button>
       </div>
 
-      <p className="mt-1 text-sm opacity-80 break-words [overflow-wrap:anywhere]">{t("flashcards.subtitle")}</p>
+      <Field label="Importer" hint="une carte par ligne" htmlFor="fc-import">
+        <textarea
+          id="fc-import"
+          className="input box-border h-40 w-full min-w-0 whitespace-pre font-mono text-[13px]"
+          value={tsv}
+          onChange={(e) => setTsv(e.target.value)}
+          placeholder={t("flashcards.importPlaceholder")}
+        />
+      </Field>
 
-      <textarea
-        className="box-border mt-3 h-40 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-        value={tsv}
-        onChange={(e) => setTsv(e.target.value)}
-        placeholder={t("flashcards.importPlaceholder")}
-      />
-
-      <div className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-        <button
-          className="box-border w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto"
-          type="button"
-          disabled={busy || !tsv.trim()}
-          onClick={importTsv}
-        >
+      <div className="flex flex-wrap items-center gap-3">
+        <button className="btn btn-primary" type="button" disabled={busy || !tsv.trim()} onClick={importTsv}>
           {busy ? t("common.saving") : t("flashcards.import")}
         </button>
-
-        {msg && <div className="text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
+        {msg && (
+          <span role="status" className="t-small break-words">
+            {msg}
+          </span>
+        )}
       </div>
     </div>
   );

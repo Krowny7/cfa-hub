@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileStack, ListChecks, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { OfficialExamsView, type OfficialExamGroup, type OfficialTopic } from "@/components/session/OfficialExamsView";
 
 // Remplace l'ancienne page /exercises : au lieu de sets d'exercices de
 // calcul génériques, on rejoue ici les vrais mock exams officiels de
@@ -18,11 +17,8 @@ const TITLE_RE = /^(.+?)\s—\s(.+?)\s—\s(.+)$/;
 const VARIANTS_SUFFIX = " — Variantes";
 
 type SetRow = { id: string; title: string };
-type Topic = { id: string; label: string; count: number; variant: { id: string; count: number } | null };
-type ExamGroup = {
-  exam: string;
-  sessions: Record<string, { topics: Topic[]; complete: { id: string; count: number } | null }>;
-};
+type Topic = OfficialTopic;
+type ExamGroup = OfficialExamGroup;
 
 export default async function OfficialExamsPage() {
   const supabase = await createClient();
@@ -95,69 +91,5 @@ export default async function OfficialExamsPage() {
 
   const examList = [...exams.values()].sort((a, b) => a.exam.localeCompare(b.exam));
 
-  return (
-    <div className="grid gap-5">
-      <div>
-        <h1 className="font-display text-xl font-medium tracking-tight">Mocks Officiels</h1>
-        <p className="mt-1 text-sm text-white/55">
-          Rejoue tes examens blancs officiels avec exactement les mêmes questions — en entier,
-          ou filtré sur un seul thème pour retravailler un point faible en particulier.
-        </p>
-      </div>
-
-      {examList.length === 0 && (
-        <div className="card p-8 text-center text-sm text-muted">
-          Aucun mock officiel importé pour le moment.
-        </div>
-      )}
-
-      {examList.map((group) => (
-        <div key={group.exam} className="card plate p-5">
-          <div className="mb-3 flex items-center gap-1.5 font-display text-sm font-medium">
-            <FileStack size={15} /> {group.exam}
-          </div>
-          <div className="grid gap-4">
-            {Object.entries(group.sessions)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([sessionLabel, { topics, complete }]) => (
-                <div key={sessionLabel} className="rounded-xl border border-white/10 p-4">
-                  <div className="mb-2.5 flex items-center gap-1.5 kicker">
-                    <ListChecks size={13} /> {sessionLabel}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {complete && (
-                      <Link
-                        href={`/qcm/${complete.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/40 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-200 transition hover:bg-blue-500/20"
-                      >
-                        Session complète ({complete.count}Q)
-                      </Link>
-                    )}
-                    {topics.map((t) => (
-                      <span key={t.id} className="inline-flex overflow-hidden rounded-lg border border-white/10">
-                        <Link
-                          href={`/qcm/${t.id}`}
-                          className="px-3 py-1.5 text-xs text-white/70 transition hover:bg-white/[0.04]"
-                        >
-                          {t.label} ({t.count}Q)
-                        </Link>
-                        {t.variant && (
-                          <Link
-                            href={`/qcm/${t.variant.id}`}
-                            title="Variantes des mêmes questions (énoncés/chiffres différents)"
-                            className="flex items-center gap-1 border-l border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-purple-200 transition hover:bg-purple-500/10"
-                          >
-                            <Sparkles size={11} /> {t.variant.count}Q
-                          </Link>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <OfficialExamsView exams={examList} />;
 }

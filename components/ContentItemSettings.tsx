@@ -1,19 +1,54 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Globe2, Lock, Settings2, Trash2, Users } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
+import { DisclosureRow, Field } from "@/components/ContentDetailHeader";
 import type { FolderKind } from "@/components/FolderPicker";
 
-type ShareMode = "private" | "public" | "groups";
+export type ShareMode = "private" | "public" | "groups";
 
 type Folder = { id: string; name: string; parent_id: string | null };
 
 type ShareRow = { group_id: string };
 type UpdateError = { message: string } | null;
 
+const SHARE_MODES: { key: ShareMode; label: string; Icon: typeof Lock }[] = [
+  { key: "private", label: "Privé", Icon: Lock },
+  { key: "groups", label: "Groupes", Icon: Users },
+  { key: "public", label: "Public", Icon: Globe2 },
+];
+
+/** Contrôle segmenté Privé | Groupes | Public (partagé par les formulaires de contenu). */
+export function ShareModeSeg({ value, onChange, disabled }: { value: ShareMode; onChange: (m: ShareMode) => void; disabled?: boolean }) {
+  const ix = SHARE_MODES.findIndex((m) => m.key === value);
+  return (
+    <div role="radiogroup" aria-label="Partage" className="seg w-full sm:w-auto sm:justify-self-start" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+      <span aria-hidden className="seg-thumb" style={{ left: `calc(4px + ${ix} * (100% - 8px) / 3)`, width: "calc((100% - 8px) / 3)" }} />
+      {SHARE_MODES.map(({ key, label, Icon }) => (
+        <button
+          key={key}
+          type="button"
+          role="radio"
+          aria-checked={value === key}
+          aria-selected={value === key}
+          disabled={disabled}
+          onClick={() => onChange(key)}
+          className="seg-item px-3 text-[13.5px] sm:px-4"
+        >
+          <Icon size={14} aria-hidden /> {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Réglages d'un contenu dont on est propriétaire : titre, dossier, partage,
+// suppression. Une ligne repliable « Réglages » à poser dans la carte
+// « Gérer » de la page (QCM, document).
 export function ContentItemSettings({
   title,
   subtitle,
@@ -28,9 +63,11 @@ export function ContentItemSettings({
   activeGroupId,
   initialSharedGroupIds = [],
   legacyGroupId = null,
+  itemTitle,
   onDeleted,
-  onUpdated
+  onUpdated,
 }: {
+  /** libellé de la ligne (« Réglages ») */
   title: string;
   subtitle: string;
   itemId: string;
@@ -44,6 +81,8 @@ export function ContentItemSettings({
   activeGroupId: string | null;
   initialSharedGroupIds?: string[];
   legacyGroupId?: string | null;
+  /** titre actuel du contenu (champ « Titre ») ; à défaut, `title` */
+  itemTitle?: string;
   onDeleted?: () => void;
   onUpdated?: () => void;
 }) {
@@ -56,8 +95,9 @@ export function ContentItemSettings({
   const rawSb = supabase as any;
 
   const defaultRedirect = table === "documents" ? "/library" : table === "flashcard_sets" ? "/flashcards" : "/qcm";
+  const startTitle = itemTitle ?? title;
 
-  const [draftTitle, setDraftTitle] = useState(title);
+  const [draftTitle, setDraftTitle] = useState(startTitle);
   const [shareMode, setShareMode] = useState<ShareMode>(
     visibility === "public" ? "public" : visibility === "group" || visibility === "groups" ? "groups" : "private"
   );
@@ -78,8 +118,8 @@ export function ContentItemSettings({
   const [errorText, setErrorText] = useState<string | null>(null);
 
   useEffect(() => {
-    setDraftTitle(title);
-  }, [title]);
+    setDraftTitle(startTitle);
+  }, [startTitle]);
 
   useEffect(() => {
     setSelectedFolderId(folderId);
@@ -105,10 +145,10 @@ export function ContentItemSettings({
     (async () => {
       setLoadingShares(true);
       try {
-        const { data, error } = await rawSb
-          .from(shareTable)
-          .select("group_id")
-          .eq(shareFk, itemId) as { data: ShareRow[] | null; error: UpdateError };
+        const { data, error } = (await rawSb.from(shareTable).select("group_id").eq(shareFk, itemId)) as {
+          data: ShareRow[] | null;
+          error: UpdateError;
+        };
         if (error) throw new Error(error.message);
         const ids = (data ?? []).map((r) => r.group_id).filter(Boolean) as string[];
         setGroupIds((prev) => Array.from(new Set([...prev, ...ids])));
@@ -163,16 +203,16 @@ export function ContentItemSettings({
 
       const normalizedVisibility = shareMode === "groups" ? "groups" : shareMode;
 
-      const { error: upErr } = await rawSb
+      const { error: upErr } = (await rawSb
         .from(table)
         .update({ title: draftTitle.trim(), visibility: normalizedVisibility, folder_id: selectedFolderId })
-        .eq("id", itemId) as { error: UpdateError };
+        .eq("id", itemId)) as { error: UpdateError };
       if (upErr) throw new Error(upErr.message);
 
       await rawSb.from(shareTable).delete().eq(shareFk, itemId);
       if (shareMode === "groups" && groupIds.length) {
         const rows = groupIds.map((gid) => ({ [shareFk]: itemId, group_id: gid }));
-        const { error } = await rawSb.from(shareTable).insert(rows) as { error: UpdateError };
+        const { error } = (await rawSb.from(shareTable).insert(rows)) as { error: UpdateError };
         if (error) throw new Error(error.message);
       }
 
@@ -191,7 +231,7 @@ export function ContentItemSettings({
     setSaving(true);
     try {
       await rawSb.from(shareTable).delete().eq(shareFk, itemId);
-      const { error } = await rawSb.from(table).delete().eq("id", itemId) as { error: UpdateError };
+      const { error } = (await rawSb.from(table).delete().eq("id", itemId)) as { error: UpdateError };
       if (error) throw new Error(error.message);
 
       setMsg(t("common.deleted"));
@@ -205,174 +245,93 @@ export function ContentItemSettings({
     }
   }
 
+  const fid = `set-${itemId}`;
+
   return (
-    <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.05]">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">{title}</div>
-          <div className="mt-0.5 text-xs text-white/60">{subtitle}</div>
-        </div>
+    <DisclosureRow icon={<Settings2 size={18} aria-hidden />} title={itemTitle ? title : t("common.settings")} sub={subtitle}>
+      <div className="grid gap-6">
+        <Field label={t("common.title")} htmlFor={`${fid}-title`}>
+          <input id={`${fid}-title`} className="input" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} placeholder={t("common.title")} />
+        </Field>
 
-        <div className="flex items-center gap-2 text-xs text-white/70">
-          <span className="hidden sm:inline">{t("common.edit")}</span>
-          <span className="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-white/[0.02]">
-            ▾
-          </span>
-        </div>
-      </summary>
-
-      <div className="mt-4 grid gap-5">
-        {/* Title */}
-        <div className="grid gap-2">
-          <div className="text-sm font-semibold">{t("common.title")}</div>
-          <input
-            className="input"
-            value={draftTitle}
-            onChange={(e) => setDraftTitle(e.target.value)}
-            placeholder={t("common.title")}
-          />
-        </div>
-
-        {/* Folder */}
-        <div className="grid gap-3">
-          <div className="text-sm font-semibold">{t("folders.folder")}</div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <select
-                className="select"
-                value={selectedFolderId ?? ""}
-                onChange={(e) => setSelectedFolderId(e.target.value ? e.target.value : null)}
-              >
-                <option value="">{rootLabel}</option>
-                {folders.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setSelectedFolderId(null)}
-              disabled={saving}
-            >
-              {t("common.reset")}
+        <Field label={t("folders.folder")} htmlFor={`${fid}-folder`}>
+          <select
+            id={`${fid}-folder`}
+            className="select"
+            value={selectedFolderId ?? ""}
+            onChange={(e) => setSelectedFolderId(e.target.value ? e.target.value : null)}
+          >
+            <option value="">{rootLabel}</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex gap-2">
+            <input
+              className="input min-w-0 flex-1"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder={t("folders.newPlaceholder")}
+              aria-label={t("folders.new")}
+            />
+            <button type="button" className="btn btn-secondary shrink-0" onClick={createFolder} disabled={creatingFolder || !newFolderName.trim()}>
+              {creatingFolder ? t("common.saving") : "Nouveau dossier"}
             </button>
           </div>
+        </Field>
 
-          <div className="card-soft p-4">
-            <div className="text-xs font-semibold opacity-80">{t("folders.new")}</div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              <input
-                className="input sm:col-span-2"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder={t("folders.newPlaceholder")}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={createFolder}
-                disabled={creatingFolder || !newFolderName.trim()}
-              >
-                {creatingFolder ? t("common.saving") : t("folders.create")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Sharing */}
-        <div className="grid gap-3">
-          <div className="text-sm font-semibold">{t("sharing.title")}</div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("private")}
-              disabled={saving}
-            >
-              {t("common.private")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("groups")}
-              disabled={saving}
-            >
-              {t("sharing.someGroups")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("public")}
-              disabled={saving}
-            >
-              {t("common.public")}
-            </button>
-          </div>
-
+        <Field label={t("sharing.title")}>
+          <ShareModeSeg value={shareMode} onChange={setShareMode} disabled={saving} />
           {shareMode === "groups" ? (
             <div className="grid gap-2">
-              {loadingShares ? <div className="text-xs text-white/70">{t("common.loading")}</div> : null}
+              {loadingShares ? <p className="t-micro">{t("common.loading")}</p> : null}
               <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
             </div>
           ) : null}
-        </div>
+        </Field>
 
         {errorText ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <p role="alert" className="rounded-[12px] border border-pen/30 bg-pen/5 px-4 py-3 text-[13.5px] text-pen">
             {errorText}
-          </div>
+          </p>
         ) : null}
 
-        {msg ? <div className="text-sm text-white/80">{msg}</div> : null}
-
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={saveAll}
-            disabled={saving || !draftTitle.trim() || (shareMode === "groups" && groupIds.length === 0)}
-          >
-            {saving ? t("common.saving") : t("common.save")}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={saveAll}
+              disabled={saving || !draftTitle.trim() || (shareMode === "groups" && groupIds.length === 0)}
+            >
+              {saving ? t("common.saving") : t("common.save")}
+            </button>
+            {msg ? (
+              <span role="status" className="t-small">
+                {msg}
+              </span>
+            ) : null}
+          </div>
 
           {showConfirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm opacity-80">{t("common.confirmDelete")}</span>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={deleteItem}
-                disabled={saving}
-              >
+              <span className="t-small">{t("common.confirmDelete")}</span>
+              <button type="button" className="btn btn-danger btn-sm" onClick={deleteItem} disabled={saving}>
                 {t("common.confirm")}
               </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowConfirmDelete(false)}
-                disabled={saving}
-              >
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowConfirmDelete(false)} disabled={saving}>
                 {t("common.cancel")}
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="btn btn-danger"
-              onClick={() => setShowConfirmDelete(true)}
-              disabled={saving}
-            >
-              {t("common.delete")}
+            <button type="button" className="btn btn-ghost text-pen" onClick={() => setShowConfirmDelete(true)} disabled={saving}>
+              <Trash2 size={15} aria-hidden /> {t("common.delete")}
             </button>
           )}
         </div>
       </div>
-    </details>
+    </DisclosureRow>
   );
 }

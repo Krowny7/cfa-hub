@@ -2,10 +2,26 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Star, GraduationCap, BookOpen, Check, X, Lightbulb, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Check, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import type { QuizQuestion } from "@/lib/types";
-import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { PageHead } from "@/components/session/ui";
+import {
+  ChoiceButton,
+  CopyForAi,
+  QuestionCard,
+  QuestionMap,
+  QuestionNav,
+  ResultHero,
+  ReviewSection,
+  RunnerBar,
+  Seg,
+  TopicBreakdown,
+} from "@/components/session/parts";
+import { PASS_THRESHOLD, fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+
+// Mode examen : des questions tirées des QCM choisis, mélangées et
+// chronométrées, sans correction avant la fin.
 
 export type ExamSetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -16,19 +32,21 @@ type ExamAnswer = {
   selected: number | null;
 };
 
+/** Données d'exemple pour app/preview-da (aucun appel réseau, chrono figé). */
+export type ExamDemo = {
+  phase: ExamPhase;
+  configIdx?: number;
+  questions?: QuizQuestion[];
+  selected?: (number | null)[];
+  idx?: number;
+  secondsLeft?: number;
+};
+
 const EXAM_CONFIGS = [
   { n: 30, label: "30 questions", minutes: 45 },
   { n: 60, label: "60 questions", minutes: 90 },
   { n: 90, label: "90 questions (format CFA)", minutes: 165 },
 ];
-
-function fmtTime(s: number) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  return `${m}:${String(sec).padStart(2, "0")}`;
-}
 
 function shuffleArr<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -39,7 +57,7 @@ function shuffleArr<T>(arr: T[]): T[] {
   return a;
 }
 
-export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
+export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamDemo }) {
   const supabase = useMemo(() => createClient(), []);
 
   const defaultSelected = useMemo(() => {
@@ -48,20 +66,23 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
   }, [sets]);
 
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>(defaultSelected);
-  const [configIdx, setConfigIdx] = useState(0);
-  const [phase, setPhase] = useState<ExamPhase>("setup");
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [answers, setAnswers] = useState<ExamAnswer[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [showReview, setShowReview] = useState(false);
+  const [configIdx, setConfigIdx] = useState(demo?.configIdx ?? 0);
+  const [phase, setPhase] = useState<ExamPhase>(demo?.phase ?? "setup");
+  const [questions, setQuestions] = useState<QuizQuestion[]>(demo?.questions ?? []);
+  const [answers, setAnswers] = useState<ExamAnswer[]>(() =>
+    (demo?.questions ?? []).map((q, i) => ({ question: q, selected: demo?.selected?.[i] ?? null })),
+  );
+  const [idx, setIdx] = useState(demo?.idx ?? 0);
+  const [selectedChoice, setSelectedChoice] = useState<number | null>(demo?.selected?.[demo?.idx ?? 0] ?? null);
+  const [secondsLeft, setSecondsLeft] = useState(demo?.secondsLeft ?? 0);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const config = EXAM_CONFIGS[configIdx]!;
 
   useEffect(() => {
-    if (phase !== "active") return;
+    if (phase !== "active" || demo) return;
     timerRef.current = setInterval(() => {
       setSecondsLeft(prev => {
         if (prev <= 1) {
@@ -73,6 +94,13 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [phase, demo]);
+
+  // Chaque changement d'écran repart du haut de la page.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [phase]);
 
   async function startExam() {
@@ -95,7 +123,7 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
     setIdx(0);
     setSelectedChoice(null);
     setSecondsLeft(config.minutes * 60);
-    setShowReview(false);
+    setConfirmEnd(false);
     setPhase("active");
   }
 
@@ -108,24 +136,31 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
     });
   }
 
+  function goTo(i: number) {
+    setIdx(i);
+    setSelectedChoice(answers[i]?.selected ?? null);
+  }
+
+  function finish() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setConfirmEnd(false);
+    setPhase("done");
+  }
+
   function goNext() {
     const isLast = idx >= questions.length - 1;
-    if (isLast) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setPhase("done");
-    } else {
-      const nextIdx = idx + 1;
-      setIdx(nextIdx);
-      setSelectedChoice(answers[nextIdx]?.selected ?? null);
-    }
+    if (isLast) askEnd();
+    else goTo(idx + 1);
   }
 
   function goPrev() {
-    if (idx > 0) {
-      const prevIdx = idx - 1;
-      setIdx(prevIdx);
-      setSelectedChoice(answers[prevIdx]?.selected ?? null);
-    }
+    if (idx > 0) goTo(idx - 1);
+  }
+
+  function askEnd() {
+    const open = answers.filter(a => a.selected === null).length;
+    if (open > 0) setConfirmEnd(true);
+    else finish();
   }
 
   function toggleSet(id: string) {
@@ -134,326 +169,240 @@ export function ExamClient({ sets }: { sets: ExamSetOption[] }) {
     );
   }
 
-  // ── SETUP ──────────────────────────────────────────────────────────────────
+  // ── PRÉPARER ───────────────────────────────────────────────────────────────
 
   if (phase === "setup") {
+    const allOn = sets.length > 0 && selectedSetIds.length === sets.length;
+    const officialIds = sets.filter(s => s.isOfficial).map(s => s.id);
     return (
-      <div>
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">Mode Examen</h1>
-          <p className="mt-1 text-sm text-muted">
-            Simulation d'examen CFA — pas de correction pendant l'examen.
-          </p>
-        </div>
+      <div className="rl-page">
+        <PageHead
+          back={{ href: "/entrainement", label: "S'entraîner" }}
+          title="Mode examen"
+          sub="Tes QCM mélangés et chronométrés, comme le jour J : la correction n'arrive qu'à la fin."
+        />
 
-        <div className="mt-7 text-xs font-medium uppercase tracking-wide text-faint">Sources de questions</div>
-        {sets.length === 0 ? (
-          <p className="mt-2.5 text-sm text-muted">
-            Aucun QCM disponible.{" "}
-            <Link href="/qcm" className="text-blue-400 hover:underline">
-              Créer un QCM →
-            </Link>
-          </p>
-        ) : (
-          <div className="mt-2.5 border-b border-white/[0.08] pb-1">
-            {sets.map(s => (
-              <label
-                key={s.id}
-                className="flex cursor-pointer items-center gap-3 border-b border-white/[0.06] py-2.5 last:border-0"
-              >
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded accent-blue-400"
-                  checked={selectedSetIds.includes(s.id)}
-                  onChange={() => toggleSet(s.id)}
-                />
-                <span className="flex-1 text-sm">{s.title}</span>
-                {s.isOfficial && (
-                  <span className="flex items-center gap-1 text-[10px] font-medium text-blue-300/80">
-                    <Star size={10} /> Système
+        <section className="card-hero rl-in grid grid-cols-1 gap-7 p-5 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Préparer l'examen">
+          <div className="grid gap-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="t-h2 m-0">Sources</h2>
+              {sets.length > 0 && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold text-muted">
+                  <span className="t-micro tabular-nums">
+                    {selectedSetIds.length}/{sets.length}
                   </span>
-                )}
-              </label>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-6 text-xs font-medium uppercase tracking-wide text-faint">Format</div>
-        <div className="mt-2.5 border-b border-white/[0.08] pb-1">
-          {EXAM_CONFIGS.map((c, i) => {
-            const h = Math.floor(c.minutes / 60);
-            const m = c.minutes % 60;
-            const dur = h > 0 ? `${h}h${m > 0 ? String(m).padStart(2, "0") : ""}` : `${c.minutes}min`;
-            const active = configIdx === i;
-            return (
-              <button
-                key={i}
-                type="button"
-                className="flex w-full items-center justify-between border-b border-white/[0.06] py-2.5 text-left last:border-0"
-                onClick={() => setConfigIdx(i)}
-              >
-                <div>
-                  <div className={`text-sm ${active ? "font-medium" : "text-muted"}`}>{c.label}</div>
-                  <div className="mt-0.5 text-xs text-faint">~{dur} · 1,5 min/question (standard CFA)</div>
+                  {officialIds.length > 0 && (
+                    <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(officialIds)}>
+                      Système seulement
+                    </button>
+                  )}
+                  <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(allOn ? [] : sets.map(s => s.id))}>
+                    {allOn ? "Aucune" : "Toutes"}
+                  </button>
                 </div>
-                {active && <CheckCircle2 size={16} className="shrink-0 text-blue-400" />}
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-primary mt-7 w-full py-4 text-base font-semibold"
-          disabled={selectedSetIds.length === 0}
-          onClick={startExam}
-        >
-          Démarrer l'examen
-        </button>
-      </div>
-    );
-  }
-
-  // ── LOADING ────────────────────────────────────────────────────────────────
-
-  if (phase === "loading") {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-sm text-white/55">Chargement des questions…</div>
-      </div>
-    );
-  }
-
-  // ── DONE ──────────────────────────────────────────────────────────────────
-
-  if (phase === "done") {
-    const answered = answers.filter(a => a.selected !== null).length;
-    const correct = answers.filter(a => a.selected === a.question.correct_index).length;
-    const total = questions.length;
-    const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
-    const isPassing = pct >= 70;
-
-    return (
-      <div className="grid gap-5">
-        <div className="card p-8 text-center">
-          {isPassing ? (
-            <GraduationCap size={40} className="mx-auto text-green-400" />
-          ) : (
-            <BookOpen size={40} className="mx-auto text-white/60" />
-          )}
-          <h2 className="mt-4 text-2xl font-semibold">Résultat</h2>
-
-          <div className="mx-auto mt-6 grid max-w-sm gap-3">
-            <div className="card-soft p-5">
-              <div
-                className={`text-5xl font-bold ${
-                  isPassing ? "text-green-400" : pct >= 55 ? "text-yellow-400" : "text-red-400"
-                }`}
-              >
-                {pct}%
-              </div>
-              <div className="mt-2 text-sm text-white/60">{correct} / {total} correctes</div>
+              )}
             </div>
-            <div className={`card-soft flex items-center justify-center gap-1.5 p-3 text-sm font-medium ${isPassing ? "text-green-400" : "text-red-400/80"}`}>
-              {isPassing && <Check size={14} />}
-              {isPassing ? "Au-dessus du seuil (~70%)" : "En dessous du seuil (~70%)"}
-            </div>
-            {answered < total && (
-              <div className="card-soft p-3 text-xs text-white/50">
-                {total - answered} question(s) sans réponse
-              </div>
+            {sets.length === 0 ? (
+              <p className="t-small m-0">
+                Aucun QCM disponible.{" "}
+                <Link href="/qcm" className="ink-link">
+                  Créer un QCM
+                </Link>
+              </p>
+            ) : (
+              <ul className="m-0 max-h-[340px] list-none divide-y divide-line overflow-auto rounded-[14px] p-0 shadow-[inset_0_0_0_1px_var(--line-2)]">
+                {sets.map(s => {
+                  const on = selectedSetIds.includes(s.id);
+                  return (
+                    <li key={s.id}>
+                      <label className="rl-row flex cursor-pointer items-center gap-3 px-4 py-3">
+                        <input type="checkbox" className="sr-only" checked={on} onChange={() => toggleSet(s.id)} />
+                        <span
+                          aria-hidden
+                          className={
+                            "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] transition-colors " +
+                            (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")
+                          }
+                        >
+                          {on && <Check size={13} strokeWidth={3} />}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium">{s.title}</span>
+                        {s.isOfficial && (
+                          <span className="chip chip-quiet chip-sm shrink-0">
+                            <Star size={11} aria-hidden /> Système
+                          </span>
+                        )}
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
 
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/exam" className="btn btn-secondary px-6 py-2.5">
-              Nouvel examen
-            </Link>
-            <button
-              type="button"
-              className="btn btn-ghost px-6 py-2.5"
-              onClick={() => setShowReview(r => !r)}
-            >
-              {showReview ? "Masquer la correction" : "Voir la correction"}
+          <div className="grid grid-cols-1 items-end gap-5 border-t border-line pt-6 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-8">
+            <div>
+              <p className="t-eyebrow m-0 mb-2">Format</p>
+              <Seg
+                label="Format"
+                value={String(configIdx)}
+                onChange={(v) => setConfigIdx(Number(v))}
+                options={EXAM_CONFIGS.map((c, i) => ({ key: String(i), label: `${c.n} Q` }))}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="m-0 flex items-baseline gap-2">
+                <span className="t-num text-[40px]">{config.n}</span>
+                <span className="text-[15px] font-semibold">questions</span>
+                <span className="t-small">· {fmtMinutes(config.minutes)}</span>
+              </p>
+              <p className="t-micro m-0 mt-1.5">{configIdx === 2 ? "Le format d'une session CFA. " : ""}Pas de correction avant la fin.</p>
+            </div>
+            <button type="button" className="btn btn-primary btn-lg rl-press w-full md:w-auto" disabled={selectedSetIds.length === 0} onClick={() => void startExam()}>
+              Démarrer l&apos;examen <ArrowRight size={17} aria-hidden />
             </button>
           </div>
-        </div>
-
-        {showReview && (
-          <div className="grid gap-3">
-            <h3 className="text-sm font-semibold text-white/70">
-              Correction — {total} questions
-            </h3>
-            {answers.map((a, i) => {
-              const isCorrect = a.selected === a.question.correct_index;
-              return (
-                <div
-                  key={a.question.id}
-                  className={`card p-4 border-l-2 ${
-                    isCorrect ? "border-l-green-400/70" : "border-l-red-400/70"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`shrink-0 font-semibold ${isCorrect ? "text-green-400" : "text-red-400"}`}>
-                      {isCorrect ? <Check size={16} /> : <X size={16} />}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium leading-snug">
-                        {i + 1}. {a.question.prompt}
-                      </div>
-                      <div className="mt-2 grid gap-1">
-                        {a.question.choices.map((choice, ci) => {
-                          const isSelected = a.selected === ci;
-                          const isCorrectChoice = ci === a.question.correct_index;
-                          return (
-                            <div
-                              key={ci}
-                              className={`rounded-xl px-3 py-1.5 text-xs ${
-                                isCorrectChoice
-                                  ? "bg-green-400/10 text-green-300 font-medium"
-                                  : isSelected
-                                  ? "bg-red-400/10 text-red-300"
-                                  : "text-muted"
-                              }`}
-                            >
-                              {String.fromCharCode(65 + ci)}. {choice}
-                              {isCorrectChoice && <Check size={12} className="ml-1 inline" />}
-                              {isSelected && !isCorrectChoice && " ← ta réponse"}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {a.question.explanation && (
-                        <div className="mt-2 flex items-start gap-1.5 rounded-xl bg-white/[0.04] px-3 py-2 text-xs text-white/55 leading-relaxed">
-                          <Lightbulb size={13} className="mt-0.5 shrink-0" />
-                          {a.question.explanation}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        </section>
       </div>
     );
   }
 
-  // ── ACTIVE ────────────────────────────────────────────────────────────────
+  // ── CHARGEMENT ─────────────────────────────────────────────────────────────
+
+  if (phase === "loading") {
+    return (
+      <div className="mx-auto grid w-full max-w-[820px] gap-5">
+        <div className="rl-skel h-[84px]" />
+        <div className="rl-skel h-[360px]" />
+        <p className="t-small m-0 text-center">Préparation des questions…</p>
+      </div>
+    );
+  }
+
+  // ── RÉSULTAT ──────────────────────────────────────────────────────────────
+
+  if (phase === "done") {
+    const titleOf = new Map(sets.map(s => [s.id, s.title]));
+    const review: ReviewQuestion[] = answers.map(a => ({
+      question_id: a.question.id,
+      prompt: a.question.prompt,
+      choices: a.question.choices,
+      correct_index: a.question.correct_index ?? -1,
+      explanation: a.question.explanation ?? null,
+      topic: titleOf.get(a.question.set_id) ?? null,
+      selected_index: a.selected,
+      is_correct: a.selected !== null && a.selected === a.question.correct_index,
+    }));
+    const answered = answers.filter(a => a.selected !== null).length;
+    const correct = review.filter(r => r.is_correct).length;
+    const total = questions.length;
+    const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const isPassing = pct >= PASS_THRESHOLD;
+    const many = new Set(review.map(r => r.topic ?? "")).size > 1;
+
+    return (
+      <div className="rl-page">
+        <ResultHero
+          eyebrow={`Mode examen · seuil indicatif ${PASS_THRESHOLD} %`}
+          verdict={isPassing ? "Au-dessus du seuil" : "Sous le seuil"}
+          pct={pct}
+          score={correct}
+          total={total}
+          meta={
+            <>
+              {correct} bonne{correct > 1 ? "s" : ""} réponse{correct > 1 ? "s" : ""} sur {total}
+              {answered < total ? ` · ${total - answered} sans réponse` : ""}
+            </>
+          }
+          actions={
+            <>
+              <button type="button" className="ink-link" onClick={() => setPhase("setup")}>
+                Nouvel examen
+              </button>
+              <Link href="/entrainement" className="text-[13.5px] font-semibold text-muted transition-colors hover:text-white">
+                Retour à S&apos;entraîner
+              </Link>
+            </>
+          }
+        >
+          {total > 0 && <CopyForAi review={review} score={correct} total={total} kind="exam" onError={setError} />}
+          {error && (
+            <p role="alert" className="m-0 text-sm text-pen">
+              {error}
+            </p>
+          )}
+        </ResultHero>
+
+        {many && <TopicBreakdown review={review} title="Par source" />}
+
+        <ReviewSection review={review} />
+      </div>
+    );
+  }
+
+  // ── EN COURS ────────────────────────────────────────────────────────────────
 
   const currentQ = questions[idx];
   if (!currentQ) return null;
 
   const isLast = idx >= questions.length - 1;
-  const timeIsLow = secondsLeft <= 300;
-  const timerPct = (secondsLeft / (config.minutes * 60)) * 100;
   const answeredCount = answers.filter(a => a.selected !== null).length;
+  const unanswered = questions.length - answeredCount;
 
   return (
-    <div className="grid gap-4">
-      {/* Timer header */}
-      <div className="card p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-xs text-muted">Question</div>
-            <div className="text-sm font-semibold">{idx + 1} / {questions.length}</div>
-          </div>
-          <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
-            {fmtTime(secondsLeft)}
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost text-xs"
-            onClick={() => {
-              if (timerRef.current) clearInterval(timerRef.current);
-              setPhase("done");
-            }}
-          >
+    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+      <RunnerBar
+        label="Mode examen"
+        index={idx}
+        total={questions.length}
+        answered={answeredCount}
+        secondsLeft={secondsLeft}
+        lowAt={300}
+        actions={
+          <button type="button" className="btn btn-secondary btn-sm" onClick={askEnd}>
             Terminer
           </button>
-        </div>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.08]">
-          <div
-            className={`h-full rounded-full transition-all ${timeIsLow ? "bg-red-500" : "bg-blue-500"}`}
-            style={{ width: `${timerPct}%` }}
-          />
-        </div>
-      </div>
+        }
+      />
 
-      {/* Progress dots — clickable */}
-      <div className="flex h-1.5 gap-0.5">
-        {questions.map((_, i) => {
-          const a = answers[i];
-          return (
-            <button
-              key={i}
-              type="button"
-              title={`Q${i + 1}`}
-              onClick={() => {
-                setIdx(i);
-                setSelectedChoice(answers[i]?.selected ?? null);
-              }}
-              className={`flex-1 rounded-sm transition ${
-                i === idx
-                  ? "bg-blue-400"
-                  : a?.selected !== null && a?.selected !== undefined
-                  ? "bg-white/35"
-                  : "bg-white/[0.06]"
-              }`}
-            />
-          );
-        })}
-      </div>
+      {confirmEnd && (
+        <div role="alert" className="card-quiet rl-in flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="m-0 text-[14px]">
+            Encore <b>{unanswered}</b> question{unanswered > 1 ? "s" : ""} sans réponse. Terminer quand même ?
+          </p>
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmEnd(false)}>
+              Continuer
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={finish}>
+              Terminer
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Question */}
-      <div className="card p-6">
-        <QuestionPrompt text={currentQ.prompt} className="mb-5 text-base font-medium leading-relaxed" />
-        <div className="grid gap-2">
-          {currentQ.choices.map((choice, ci) => {
-            const isSelected = selectedChoice === ci;
-            return (
-              <button
-                key={ci}
-                type="button"
-                onClick={() => selectChoice(ci)}
-                className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
-                  isSelected
-                    ? "border-white text-white shadow-[3px_3px_0_var(--ink)]"
-                    : "border-white/[0.07] bg-white/[0.02] text-white/80 hover:bg-white/[0.05] hover:border-white/15"
-                }`}
-              >
-                <span className="mr-2.5 font-semibold text-white/35">
-                  {String.fromCharCode(65 + ci)}.
-                </span>
-                {choice}
+      <QuestionCard
+        index={idx}
+        total={questions.length}
+        prompt={currentQ.prompt}
+        footer={
+          <QuestionNav
+            onPrev={goPrev}
+            prevDisabled={idx === 0}
+            next={
+              <button type="button" className="btn btn-primary rl-press" onClick={goNext}>
+                {isLast ? "Terminer" : "Suivante"} <ArrowRight size={16} aria-hidden />
               </button>
-            );
-          })}
-        </div>
-      </div>
+            }
+          />
+        }
+      >
+        {currentQ.choices.map((choice, ci) => (
+          <ChoiceButton key={ci} index={ci} text={choice} state={selectedChoice === ci ? "picked" : "idle"} onClick={() => selectChoice(ci)} />
+        ))}
+      </QuestionCard>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          className="btn btn-ghost text-sm"
-          onClick={goPrev}
-          disabled={idx === 0}
-        >
-          ← Préc.
-        </button>
-        <span className="text-xs text-muted">
-          {answeredCount} / {questions.length} répondues
-        </span>
-        <button
-          type="button"
-          className={`btn text-sm ${isLast ? "btn-primary" : "btn-secondary"}`}
-          onClick={goNext}
-        >
-          {isLast ? "Terminer →" : "Suivante →"}
-        </button>
-      </div>
+      <QuestionMap total={questions.length} current={idx} isAnswered={(i) => answers[i]?.selected !== null && answers[i]?.selected !== undefined} onJump={goTo} />
     </div>
   );
 }

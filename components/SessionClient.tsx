@@ -2,29 +2,56 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Repeat, Sparkles, CheckCircle2, PartyPopper, Flame, Pause } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, Flame, Layers, ListChecks, Repeat, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { useI18n } from "@/components/I18nProvider";
 import { saveAnswerResult } from "@/lib/session-stats";
 import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
 import type { QuizQuestion, Flashcard, AwardXpResult } from "@/lib/types";
-import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { RichText } from "@/components/RichText";
+import { PageHead } from "@/components/session/ui";
+import {
+  ChoiceButton,
+  CopyForAi,
+  Explanation,
+  PauseCard,
+  PauseToggle,
+  QuestionCard,
+  ResultHero,
+  ReviewSection,
+  RunnerBar,
+  Seg,
+} from "@/components/session/parts";
+import type { ReviewQuestion } from "@/components/session/review";
+
+// Session du jour : 15 minutes, QCM mélangés (corrigés à chaque question) ou
+// flashcards ordonnées par la répétition espacée.
 
 export type SetOption = { id: string; title: string; isOfficial: boolean };
 
 type Mode = "qcm" | "flashcards";
 type Phase = "setup" | "active" | "done";
 
+/** Données d'exemple pour app/preview-da (aucun appel réseau, chrono figé). */
+export type SessionDemo = {
+  phase: Phase;
+  mode: Mode;
+  questions?: QuizQuestion[];
+  cards?: Flashcard[];
+  selectedChoice?: number | null;
+  showCorr?: boolean;
+  lastXpGain?: number | null;
+  totalAnswered?: number;
+  totalCorrect?: number;
+  xpEarned?: number;
+  flipped?: boolean;
+  totalReviewed?: number;
+  totalAgain?: number;
+  secondsLeft?: number;
+  paused?: boolean;
+  log?: ReviewQuestion[];
+};
+
 const SESSION_SECONDS = 15 * 60;
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function fmtTime(s: number) {
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${String(sec).padStart(2, "0")}`;
-}
 
 // ── Mémoire du dernier choix (mode + set) ───────────────────────────────────
 // Évite de repartir de zéro (mode="qcm" + premier set) à chaque ouverture de
@@ -61,53 +88,57 @@ export function SessionClient({
   qcmSets,
   flashSets,
   streak = 0,
+  demo,
 }: {
   qcmSets: SetOption[];
   flashSets: SetOption[];
   streak?: number;
+  demo?: SessionDemo;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const { t } = useI18n();
 
-  const [phase, setPhase] = useState<Phase>("setup");
-  const [mode, setMode] = useState<Mode>("qcm");
-  const [selSetId, setSelSetId] = useState(() => qcmSets[0]?.id ?? "");
+  const [phase, setPhase] = useState<Phase>(demo?.phase ?? "setup");
+  const [mode, setMode] = useState<Mode>(demo?.mode ?? "qcm");
+  const [selSetId, setSelSetId] = useState(() => (demo?.mode === "flashcards" ? flashSets[0]?.id : qcmSets[0]?.id) ?? "");
 
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [cards, setCards] = useState<Flashcard[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(demo?.questions ?? []);
+  const [cards, setCards] = useState<Flashcard[]>(demo?.cards ?? []);
   const [loadingContent, setLoadingContent] = useState(false);
 
   // SRS state for current flash set
   const [srsState, setSrsState] = useState<Record<string, CardSRS>>({});
 
   // Active queues
-  const [qQueue, setQQueue] = useState<QuizQuestion[]>([]);
-  const [fQueue, setFQueue] = useState<Flashcard[]>([]);
+  const [qQueue, setQQueue] = useState<QuizQuestion[]>(demo?.questions ?? []);
+  const [fQueue, setFQueue] = useState<Flashcard[]>(demo?.cards ?? []);
   // Repeat pile: "reviewAgain" cards re-queued for this session
   const [fRepeat, setFRepeat] = useState<Flashcard[]>([]);
   const [idx, setIdx] = useState(0);
 
-  const [secondsLeft, setSecondsLeft] = useState(SESSION_SECONDS);
-  const [isPaused, setIsPaused] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(demo?.secondsLeft ?? SESSION_SECONDS);
+  const [isPaused, setIsPaused] = useState(demo?.paused ?? false);
 
   // QCM state
-  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
-  const [showCorr, setShowCorr] = useState(false);
-  const [totalAnswered, setTotalAnswered] = useState(0);
-  const [totalCorrect, setTotalCorrect] = useState(0);
-  const [xpEarned, setXpEarned] = useState(0);
-  const [lastXpGain, setLastXpGain] = useState<number | null>(null);
+  const [selectedChoice, setSelectedChoice] = useState<number | null>(demo?.selectedChoice ?? null);
+  const [showCorr, setShowCorr] = useState(demo?.showCorr ?? false);
+  const [totalAnswered, setTotalAnswered] = useState(demo?.totalAnswered ?? 0);
+  const [totalCorrect, setTotalCorrect] = useState(demo?.totalCorrect ?? 0);
+  const [xpEarned, setXpEarned] = useState(demo?.xpEarned ?? 0);
+  const [lastXpGain, setLastXpGain] = useState<number | null>(demo?.lastXpGain ?? null);
+  // Questions répondues pendant la session : correction et « Copier pour l'IA » à la fin
+  const [log, setLog] = useState<ReviewQuestion[]>(demo?.log ?? []);
 
   // Flashcard state
-  const [flipped, setFlipped] = useState(false);
-  const [totalReviewed, setTotalReviewed] = useState(0);
-  const [totalAgain, setTotalAgain] = useState(0);
+  const [flipped, setFlipped] = useState(demo?.flipped ?? false);
+  const [totalReviewed, setTotalReviewed] = useState(demo?.totalReviewed ?? 0);
+  const [totalAgain, setTotalAgain] = useState(demo?.totalAgain ?? 0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<number | null>(null);
 
   const activeSets = mode === "qcm" ? qcmSets : flashSets;
   const isOfficial = qcmSets.find((s) => s.id === selSetId)?.isOfficial ?? false;
+  const setTitle = activeSets.find((s) => s.id === selSetId)?.title ?? "";
 
   // Persist session stats to Supabase when session ends
   const savePracticeSession = useCallback(async () => {
@@ -137,15 +168,16 @@ export function SessionClient({
   }, [selSetId, mode, totalCorrect, totalAnswered, totalReviewed, totalAgain]);
 
   useEffect(() => {
-    if (phase === "done") {
+    if (phase === "done" && !demo) {
       void savePracticeSession();
     }
-  }, [phase, savePracticeSession]);
+  }, [phase, savePracticeSession, demo]);
 
   // Restaure le dernier mode utilisé au montage (une seule fois) — évite de
   // repartir sur "qcm" par défaut si l'utilisateur révise habituellement en
   // flashcards.
   useEffect(() => {
+    if (demo) return;
     const last = loadLastSession();
     if (last) setMode(last.mode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,21 +186,22 @@ export function SessionClient({
   // Sélectionne le dernier set utilisé pour ce mode s'il est toujours
   // disponible, sinon le premier de la liste.
   useEffect(() => {
+    if (demo) return;
     const list = mode === "qcm" ? qcmSets : flashSets;
     const last = loadLastSession();
     const remembered = last && last.mode === mode ? last.setId : null;
     const nextId = remembered && list.some((s) => s.id === remembered) ? remembered : (list[0]?.id ?? "");
     setSelSetId(nextId);
-  }, [mode, qcmSets, flashSets]);
+  }, [mode, qcmSets, flashSets, demo]);
 
   // Mémorise le choix courant pour la prochaine ouverture de /session.
   useEffect(() => {
-    if (phase === "setup" && selSetId) saveLastSession(mode, selSetId);
-  }, [mode, selSetId, phase]);
+    if (phase === "setup" && selSetId && !demo) saveLastSession(mode, selSetId);
+  }, [mode, selSetId, phase, demo]);
 
   // Fetch content + load SRS state
   useEffect(() => {
-    if (!selSetId || phase !== "setup") return;
+    if (!selSetId || phase !== "setup" || demo) return;
     setLoadingContent(true);
 
     const load = async () => {
@@ -197,11 +230,11 @@ export function SessionClient({
     };
 
     load().catch(() => setLoadingContent(false));
-  }, [selSetId, mode, phase, supabase]);
+  }, [selSetId, mode, phase, supabase, demo]);
 
   // Timer
   useEffect(() => {
-    if (phase !== "active" || isPaused) return;
+    if (phase !== "active" || isPaused || demo) return;
     timerRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
@@ -213,7 +246,14 @@ export function SessionClient({
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase, isPaused]);
+  }, [phase, isPaused, demo]);
+
+  // Chaque changement d'écran repart du haut de la page.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [phase]);
 
   function startSession() {
     const shuffledQ = shuffleArr(questions);
@@ -230,6 +270,7 @@ export function SessionClient({
     setTotalAnswered(0);
     setTotalCorrect(0);
     setXpEarned(0);
+    setLog([]);
     setFlipped(false);
     setTotalReviewed(0);
     setTotalAgain(0);
@@ -251,8 +292,20 @@ export function SessionClient({
     if (isCorrect) setTotalCorrect((c) => c + 1);
     setTotalAnswered((a) => a + 1);
     setShowCorr(true);
+    setLog((prev) => [
+      ...prev,
+      {
+        question_id: currentQ.id,
+        prompt: currentQ.prompt,
+        choices: currentQ.choices,
+        correct_index: currentQ.correct_index ?? -1,
+        explanation: currentQ.explanation ?? null,
+        topic: setTitle || null,
+        selected_index: selectedChoice,
+        is_correct: isCorrect,
+      },
+    ]);
 
-    const setTitle = activeSets.find(s => s.id === selSetId)?.title ?? "";
     saveAnswerResult(selSetId, setTitle, "qcm", isCorrect ? 1 : 0, 1);
 
     if (isOfficial) {
@@ -303,8 +356,7 @@ export function SessionClient({
       setFRepeat((prev) => [...prev, current]);
     }
 
-    const flashTitle = activeSets.find(s => s.id === selSetId)?.title ?? "";
-    saveAnswerResult(selSetId, flashTitle, "flashcards", gotIt ? 1 : 0, 1);
+    saveAnswerResult(selSetId, setTitle, "flashcards", gotIt ? 1 : 0, 1);
 
     const nextIdx = idx + 1;
     const totalAvailable = fQueue.length + fRepeat.length + (gotIt ? 0 : 1);
@@ -331,7 +383,7 @@ export function SessionClient({
     setFlipped(false);
   }
 
-  // ── SETUP PHASE ──────────────────────────────────────────────────────────
+  // ── PRÉPARER ─────────────────────────────────────────────────────────────
 
   if (phase === "setup") {
     const contentCount = mode === "qcm" ? questions.length : cards.length;
@@ -339,286 +391,269 @@ export function SessionClient({
     const srsCounts = mode === "flashcards" ? getSRSCounts(cards, srsState) : null;
 
     return (
-      <div>
-        <div>
-          <h1 className="font-display text-2xl font-medium tracking-tight">{t("session.title")}</h1>
-          <p className="mt-1 text-sm text-muted">{t("session.subtitle")}</p>
-        </div>
+      <div className="rl-page">
+        <PageHead
+          back={{ href: "/entrainement", label: "S'entraîner" }}
+          title="Session du jour"
+          sub="Quinze minutes, contenu mélangé. Les flashcards suivent ta répétition espacée."
+        />
 
-        {/* Mode picker */}
-        <div className="mt-7 text-xs font-medium uppercase tracking-wide text-faint">{t("session.modeTitle")}</div>
-        <div className="mt-2.5 flex gap-6 border-b border-white/[0.08] pb-4">
-          {(["qcm", "flashcards"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              className={`text-left transition ${mode === m ? "" : "opacity-45 hover:opacity-70"}`}
-              onClick={() => setMode(m)}
-            >
-              <div className="text-sm font-medium">
-                {t(m === "qcm" ? "session.modeQcm" : "session.modeFlash")}
-              </div>
-              <div className="mt-0.5 text-xs text-faint">
-                {t(m === "qcm" ? "session.modeQcmDesc" : "session.modeFlashDesc")}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Set picker */}
-        <div className="mt-6 text-xs font-medium uppercase tracking-wide text-faint">{t("session.setTitle")}</div>
-        {activeSets.length === 0 ? (
-          <p className="mt-2.5 text-sm text-muted">{t("session.noSets")}</p>
-        ) : (
-          <div className="mt-2.5 border-b border-white/[0.08] pb-4">
-            <select
-              className="select"
-              value={selSetId}
-              onChange={(e) => setSelSetId(e.target.value)}
-            >
-              {activeSets.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}{s.isOfficial ? " ★" : ""}
-                </option>
-              ))}
-            </select>
-
-            <div className="mt-2 text-xs text-muted">
-              {loadingContent
-                ? t("session.loading")
-                : contentCount > 0
-                ? t(mode === "qcm" ? "session.questionsCount" : "session.cardsCount", { n: contentCount })
-                : t("session.noSets")}
-            </div>
-
-            {/* SRS status badge for flashcards */}
-            {mode === "flashcards" && srsCounts && !loadingContent && contentCount > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {srsCounts.due > 0 && (
-                  <span className="flex items-center gap-1 rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-300">
-                    <Repeat size={12} /> {srsCounts.due} à réviser
-                  </span>
-                )}
-                {srsCounts.newCount > 0 && (
-                  <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-300">
-                    <Sparkles size={12} /> {srsCounts.newCount} nouvelles
-                  </span>
-                )}
-                {srsCounts.due === 0 && srsCounts.newCount === 0 && (
-                  <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-300">
-                    <CheckCircle2 size={12} /> Tout à jour
-                  </span>
-                )}
-              </div>
-            )}
+        <section className="card-hero rl-in grid grid-cols-1 gap-7 p-5 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Préparer la session">
+          <div className="grid gap-2.5">
+            <p className="t-eyebrow m-0">Format</p>
+            <Seg
+              label="Format"
+              value={mode}
+              onChange={setMode}
+              className="w-full sm:w-auto sm:min-w-[340px] sm:justify-self-start"
+              options={[
+                { key: "qcm", label: <><ListChecks size={15} aria-hidden /> QCM</> },
+                { key: "flashcards", label: <><Layers size={15} aria-hidden /> Flashcards</> },
+              ]}
+            />
+            <p className="t-micro m-0">{mode === "qcm" ? "Questions à choix multiples, corrigées à chaque réponse." : "Recto, verso : tu dis si tu savais, la carte revient au bon moment."}</p>
           </div>
-        )}
 
-        <button
-          type="button"
-          className="btn btn-primary mt-7 w-full py-4 text-base font-semibold"
-          disabled={!canStart}
-          onClick={startSession}
-        >
-          {t("session.start")}
-        </button>
-      </div>
-    );
-  }
-
-  // ── DONE PHASE ────────────────────────────────────────────────────────────
-
-  if (phase === "done") {
-    return (
-      <div className="grid gap-5">
-        <div className="card p-8 text-center">
-          <PartyPopper size={40} className="mx-auto text-blue-300" />
-          <h2 className="mt-4 font-display text-2xl font-medium tracking-tight">{t("session.summaryTitle")}</h2>
-
-          <div className="mx-auto mt-6 grid max-w-sm gap-3">
-            {mode === "qcm" ? (
-              <>
-                <div className="card-soft p-4">
-                  <div className="text-3xl font-bold">{totalAnswered}</div>
-                  <div className="mt-1 text-sm text-white/60">
-                    {t("session.summaryQcm", { n: totalAnswered })}
-                  </div>
-                </div>
-                {totalAnswered > 0 && (
-                  <div className="card-soft p-4">
-                    <div className="text-3xl font-bold">
-                      {Math.round((totalCorrect / totalAnswered) * 100)}%
-                    </div>
-                    <div className="mt-1 text-sm text-white/60">
-                      {t("session.summaryScore", { score: totalCorrect, total: totalAnswered })}
-                    </div>
-                  </div>
-                )}
-                {xpEarned > 0 && (
-                  <div className="card-soft p-4 ring-2 ring-yellow-400/40">
-                    <div className="text-3xl font-bold text-yellow-400">+{xpEarned}</div>
-                    <div className="mt-1 text-sm text-white/60">
-                      {t("session.summaryXp", { n: xpEarned })}
-                    </div>
-                  </div>
-                )}
-              </>
+          <div className="grid gap-2.5">
+            <label htmlFor="session-set" className="t-eyebrow">
+              {mode === "qcm" ? "Banque de questions" : "Paquet de cartes"}
+            </label>
+            {activeSets.length === 0 ? (
+              <p className="t-small m-0">
+                Aucun set disponible dans ce format.{" "}
+                <Link href={mode === "qcm" ? "/qcm" : "/flashcards"} className="ink-link">
+                  En créer un
+                </Link>
+              </p>
             ) : (
               <>
-                <div className="card-soft p-4">
-                  <div className="text-3xl font-bold text-green-400">{totalReviewed}</div>
-                  <div className="mt-1 text-sm text-white/60">
-                    {t("session.summaryFlash", { n: totalReviewed })}
-                  </div>
+                <select id="session-set" className="select" value={selSetId} onChange={(e) => setSelSetId(e.target.value)}>
+                  {activeSets.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.title}
+                      {s.isOfficial ? " ★" : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="t-micro">
+                    {loadingContent ? "Chargement…" : contentCount > 0 ? `${contentCount} ${mode === "qcm" ? "questions" : "cartes"}` : "Ce set est vide."}
+                  </span>
+                  {mode === "qcm" && isOfficial && <span className="chip chip-quiet chip-sm">Système · rapporte de l&apos;XP</span>}
+                  {srsCounts && !loadingContent && contentCount > 0 && (
+                    <>
+                      {srsCounts.due > 0 && (
+                        <span className="chip chip-quiet chip-sm">
+                          <Repeat size={12} aria-hidden /> {srsCounts.due} à réviser
+                        </span>
+                      )}
+                      {srsCounts.newCount > 0 && (
+                        <span className="chip chip-quiet chip-sm">
+                          <Sparkles size={12} aria-hidden /> {srsCounts.newCount} nouvelles
+                        </span>
+                      )}
+                      {srsCounts.due === 0 && srsCounts.newCount === 0 && (
+                        <span className="chip chip-quiet chip-sm">
+                          <CheckCircle2 size={12} aria-hidden /> Tout à jour
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
-                {totalAgain > 0 && (
-                  <div className="card-soft p-4">
-                    <div className="text-3xl font-bold text-orange-400">{totalAgain}</div>
-                    <div className="mt-1 text-sm text-white/60">cartes à revoir demain</div>
-                  </div>
-                )}
-                {totalReviewed > 0 && (
-                  <div className="card-soft p-4">
-                    <div className="text-3xl font-bold">
-                      {Math.round((totalReviewed / (totalReviewed + totalAgain)) * 100)}%
-                    </div>
-                    <div className="mt-1 text-sm text-white/60">maîtrisées cette session</div>
-                  </div>
-                )}
               </>
             )}
           </div>
 
-          <Link href="/dashboard" className="btn btn-secondary mt-8 px-8 py-3">
-            {t("session.backDashboard")}
-          </Link>
-        </div>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
+            <p className="t-small m-0 inline-flex items-center gap-1.5">
+              {streak > 0 ? (
+                <>
+                  <Flame size={15} aria-hidden /> Série de {streak} jour{streak > 1 ? "s" : ""} : garde-la vivante.
+                </>
+              ) : (
+                "Une session par jour suffit à lancer ta série."
+              )}
+            </p>
+            <button type="button" className="btn btn-primary btn-lg rl-press" disabled={!canStart} onClick={startSession}>
+              Démarrer · 15 min <ArrowRight size={17} aria-hidden />
+            </button>
+          </div>
+        </section>
       </div>
     );
   }
 
-  // ── ACTIVE PHASE ──────────────────────────────────────────────────────────
+  // ── RÉSUMÉ ────────────────────────────────────────────────────────────────
 
-  const timeIsLow = secondsLeft <= 60;
-  const timerBarPct = Math.round((secondsLeft / SESSION_SECONDS) * 100);
+  if (phase === "done") {
+    const qcmPct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : null;
+    const flashTotal = totalReviewed + totalAgain;
+    const flashPct = flashTotal > 0 ? Math.round((totalReviewed / flashTotal) * 100) : null;
+    const actions = (
+      <>
+        <button type="button" className="ink-link" onClick={() => setPhase("setup")}>
+          Relancer une session
+        </button>
+        <Link href="/dashboard" className="text-[13.5px] font-semibold text-muted transition-colors hover:text-white">
+          Retour à l&apos;accueil
+        </Link>
+      </>
+    );
 
-  const TimerBar = () => (
-    <div className="card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-white/50">
-            <span>{t("session.timer")}</span>
-            {streak > 0 && (
-              <span className="flex items-center gap-1 rounded-full bg-orange-400/15 px-2 py-0.5 font-medium text-orange-300">
-                <Flame size={12} /> {streak}
-              </span>
-            )}
-          </div>
-          <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
-            {fmtTime(secondsLeft)}
-          </div>
+    if (mode === "qcm") {
+      return (
+        <div className="rl-page">
+          <ResultHero
+            eyebrow={`Session du jour · ${setTitle || "QCM"}`}
+            verdict={totalAnswered > 0 ? "Session terminée" : "Aucune question répondue"}
+            pct={qcmPct}
+            score={totalCorrect}
+            total={totalAnswered}
+            meta={
+              totalAnswered > 0
+                ? `${totalAnswered} question${totalAnswered > 1 ? "s" : ""} · ${totalCorrect} juste${totalCorrect > 1 ? "s" : ""}`
+                : "Relance une session quand tu veux."
+            }
+            chips={
+              xpEarned > 0 ? (
+                <span className="chip chip-quiet chip-sm">
+                  <Sparkles size={13} aria-hidden /> +{xpEarned} XP
+                </span>
+              ) : undefined
+            }
+            actions={actions}
+          >
+            {log.length > 0 && <CopyForAi review={log} score={totalCorrect} total={totalAnswered} kind="daily" />}
+          </ResultHero>
+          <ReviewSection review={log} />
         </div>
-        <div className="flex gap-2">
-          <button type="button" className="btn btn-ghost text-xs" onClick={() => setIsPaused((p) => !p)}>
-            {isPaused ? t("session.resumeTimer") : t("session.pauseTimer")}
-          </button>
-          <button type="button" className="btn btn-ghost text-xs" onClick={endSession}>
-            {t("session.finish")}
-          </button>
-        </div>
-      </div>
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-        <div
-          className={`h-full transition-all ${timeIsLow ? "bg-red-400/80" : "bg-blue-400/80"}`}
-          style={{ width: `${timerBarPct}%` }}
+      );
+    }
+
+    return (
+      <div className="rl-page">
+        <ResultHero
+          eyebrow={`Session du jour · ${setTitle || "Flashcards"}`}
+          verdict={flashTotal > 0 ? "Session terminée" : "Aucune carte révisée"}
+          pct={flashPct}
+          score={totalReviewed}
+          total={flashTotal}
+          meta={
+            flashTotal > 0 ? (
+              <>
+                {totalReviewed} carte{totalReviewed > 1 ? "s" : ""} sue{totalReviewed > 1 ? "s" : ""}
+                {totalAgain > 0 ? ` · ${totalAgain} à revoir demain` : ""}
+              </>
+            ) : (
+              "Relance une session quand tu veux."
+            )
+          }
+          actions={actions}
         />
       </div>
-    </div>
+    );
+  }
+
+  // ── EN COURS ──────────────────────────────────────────────────────────────
+
+  const elapsedPct = Math.round(((SESSION_SECONDS - secondsLeft) / SESSION_SECONDS) * 100);
+  const bar = (label: string, status: React.ReactNode) => (
+    <RunnerBar
+      label={label}
+      index={0}
+      total={0}
+      answered={0}
+      secondsLeft={secondsLeft}
+      paused={isPaused}
+      barPct={elapsedPct}
+      status={status}
+      actions={
+        <>
+          {streak > 0 && (
+            <span className="t-micro hidden items-center gap-1 font-semibold sm:inline-flex" title={`Série de ${streak} jours`}>
+              <Flame size={13} aria-hidden /> {streak}
+            </span>
+          )}
+          <PauseToggle paused={isPaused} onToggle={() => setIsPaused((p) => !p)} />
+          <button type="button" className="btn btn-secondary btn-sm" onClick={endSession}>
+            Terminer
+          </button>
+        </>
+      }
+    />
   );
 
-  // QCM mode
+  // QCM
   if (mode === "qcm") {
     const currentQ = qQueue[idx % Math.max(qQueue.length, 1)];
     if (!currentQ) return null;
+    const right = selectedChoice === currentQ.correct_index;
 
     return (
-      <div className="grid gap-4">
-        <TimerBar />
-        <div className="card p-6">
-          {isPaused && (
-            <div className="mb-5 rounded-xl bg-white/[0.04] p-4 text-center text-sm text-white/60">
-              ⏸ {t("session.pauseTimer")}
-            </div>
-          )}
+      <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+        {bar(
+          "Session du jour · QCM",
+          totalAnswered > 0 ? `${totalCorrect}/${totalAnswered} justes · ${Math.round((totalCorrect / totalAnswered) * 100)} %` : setTitle,
+        )}
 
-          <div className="flex items-start justify-between gap-3">
-            <QuestionPrompt text={currentQ.prompt} className="text-base font-medium leading-relaxed" />
-            {isOfficial && (
-              <span className="badge badge-shared shrink-0">{t("session.officialBadge")}</span>
-            )}
-          </div>
-
-          <div className="mt-5 grid gap-2">
-            {currentQ.choices.map((choice, i) => {
-              let cls = "w-full rounded-xl border border-white/10 px-4 py-3 text-left text-sm transition ";
-              if (showCorr) {
-                if (i === currentQ.correct_index) cls += "ring-2 ring-green-400 bg-green-400/10 ";
-                else if (i === selectedChoice) cls += "ring-2 ring-red-400 bg-red-400/10 ";
-                else cls += "opacity-40 ";
-              } else if (i === selectedChoice) {
-                cls += "ring-2 ring-blue-400 bg-blue-400/10 ";
-              } else {
-                cls += "bg-white/[0.02] hover:bg-white/[0.05] ";
-              }
-              return (
-                <button key={i} type="button" className={cls} disabled={showCorr || isPaused} onClick={() => setSelectedChoice(i)}>
-                  {choice}
-                </button>
-              );
-            })}
-          </div>
-
-          {showCorr && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className={`text-sm font-semibold ${selectedChoice === currentQ.correct_index ? "text-green-400" : "text-red-400"}`}>
-                {selectedChoice === currentQ.correct_index ? t("session.correct") : t("session.wrong")}
-              </span>
-              {lastXpGain !== null && lastXpGain > 0 && (
-                <span className="rounded-full bg-yellow-400/15 px-2.5 py-0.5 text-xs font-semibold text-yellow-300">
-                  +{lastXpGain} XP
-                </span>
-              )}
-            </div>
-          )}
-
-          {showCorr && currentQ.explanation && (
-            <div className="mt-3 rounded-xl bg-white/[0.04] p-4 text-sm">
-              <span className="font-semibold text-blue-300">{t("session.explanation")} : </span>
-              {currentQ.explanation}
-            </div>
-          )}
-
-          <div className="mt-5">
-            {!showCorr ? (
-              <button type="button" className="btn btn-secondary w-full py-3" disabled={selectedChoice === null || isPaused} onClick={validateChoice}>
-                {t("session.validate")}
-              </button>
-            ) : (
-              <button type="button" className="btn btn-secondary w-full py-3" onClick={nextQCM}>
-                {t("session.next")} →
-              </button>
-            )}
-          </div>
-
-          <div className="mt-3 text-center text-xs text-muted">
-            {totalAnswered > 0 && `${totalCorrect}/${totalAnswered} · ${Math.round((totalCorrect / totalAnswered) * 100)}%`}
-          </div>
-        </div>
+        {isPaused ? (
+          <PauseCard onResume={() => setIsPaused(false)} />
+        ) : (
+          <QuestionCard
+            index={totalAnswered - (showCorr ? 1 : 0)}
+            prompt={currentQ.prompt}
+            badge={isOfficial ? <span className="chip chip-quiet chip-sm shrink-0">Système · XP</span> : undefined}
+            footer={
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+                {showCorr ? (
+                  <p className={"m-0 inline-flex items-center gap-2 text-[15px] font-semibold " + (right ? "" : "text-pen")} aria-live="polite">
+                    {right ? <Check size={17} aria-hidden /> : <X size={17} aria-hidden />}
+                    {right ? "Bonne réponse" : "Pas cette fois"}
+                    {lastXpGain !== null && lastXpGain > 0 && <span className="chip chip-quiet chip-sm ml-1 text-white">+{lastXpGain} XP</span>}
+                  </p>
+                ) : (
+                  <span className="t-micro">Choisis une réponse, puis valide.</span>
+                )}
+                {!showCorr ? (
+                  <button type="button" className="btn btn-primary rl-press" disabled={selectedChoice === null || isPaused} onClick={() => void validateChoice()}>
+                    Valider
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary rl-press" onClick={nextQCM}>
+                    Suivante <ArrowRight size={16} aria-hidden />
+                  </button>
+                )}
+              </div>
+            }
+          >
+            {currentQ.choices.map((choice, i) => (
+              <ChoiceButton
+                key={i}
+                index={i}
+                text={choice}
+                disabled={showCorr || isPaused}
+                state={
+                  showCorr
+                    ? i === currentQ.correct_index
+                      ? "correct"
+                      : i === selectedChoice
+                        ? "wrong"
+                        : "dim"
+                    : i === selectedChoice
+                      ? "picked"
+                      : "idle"
+                }
+                onClick={() => setSelectedChoice(i)}
+              />
+            ))}
+            {showCorr && currentQ.explanation && <Explanation text={currentQ.explanation} className="mt-2 rl-in" />}
+          </QuestionCard>
+        )}
       </div>
     );
   }
 
-  // Flashcard mode
+  // Flashcards
   const allFCards = [...fQueue, ...fRepeat];
   const currentF = allFCards[idx % Math.max(allFCards.length, 1)];
   if (!currentF) return null;
@@ -628,83 +663,53 @@ export function SessionClient({
   const isNew = !cardSRS;
 
   return (
-    <div className="grid gap-4">
-      <TimerBar />
-      <div className="card p-6">
-        {isPaused && (
-          <div className="mb-5 flex items-center justify-center gap-1.5 rounded-xl bg-white/[0.04] p-4 text-center text-sm text-white/60">
-            <Pause size={14} /> {t("session.pauseTimer")}
+    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+      {bar("Session du jour · flashcards", totalReviewed + totalAgain > 0 ? `${totalReviewed} sues · ${totalAgain} à revoir` : setTitle)}
+
+      {isPaused ? (
+        <PauseCard onResume={() => setIsPaused(false)} />
+      ) : (
+        <section className="card flex flex-col gap-5 p-5 md:p-8" aria-label="Carte">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip chip-quiet chip-sm">
+              {isNew ? <Sparkles size={12} aria-hidden /> : isDue ? <Repeat size={12} aria-hidden /> : <CheckCircle2 size={12} aria-hidden />}
+              {isNew ? "Nouvelle" : isDue ? "À réviser" : "Maîtrisée"}
+            </span>
+            {cardSRS && <span className="t-micro">intervalle {cardSRS.interval} j</span>}
           </div>
-        )}
 
-        {/* SRS badge */}
-        <div className="mb-3 flex items-center gap-2">
-          {isNew && (
-            <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-300">
-              <Sparkles size={10} /> Nouvelle
+          <button
+            type="button"
+            disabled={isPaused}
+            onClick={() => setFlipped((f) => !f)}
+            className={
+              "grid min-h-[240px] w-full place-items-center rounded-[18px] px-6 py-10 text-center transition-colors duration-300 md:min-h-[280px] " +
+              (flipped ? "bg-surface-2/70 shadow-[inset_0_0_0_1px_var(--line-2)]" : "bg-surface shadow-[inset_0_0_0_1px_var(--line-2)] hover:bg-surface-2/40")
+            }
+          >
+            <span key={flipped ? "verso" : "recto"} className="rl-in grid max-w-[560px] gap-4">
+              <span className="t-eyebrow">{flipped ? "Verso" : "Recto"}</span>
+              <RichText text={flipped ? currentF.back : currentF.front} className="text-[17px] font-medium leading-relaxed md:text-[19px]" />
+              {!flipped && <span className="t-micro">Touche la carte pour la retourner</span>}
             </span>
-          )}
-          {!isNew && isDue && (
-            <span className="flex items-center gap-1 rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-medium text-orange-300">
-              <Repeat size={10} /> À réviser
-            </span>
-          )}
-          {!isNew && !isDue && (
-            <span className="flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-medium text-green-300">
-              <CheckCircle2 size={10} /> Maîtrisée
-            </span>
-          )}
-          {cardSRS && (
-            <span className="text-[10px] text-white/30">intervalle {cardSRS.interval}j</span>
-          )}
-        </div>
+          </button>
 
-        <button
-          type="button"
-          className={`w-full rounded-2xl border border-white/10 p-8 text-center transition ${
-            flipped ? "bg-white/[0.07] ring-1 ring-white/20" : "bg-white/[0.02] hover:bg-white/[0.04]"
-          }`}
-          disabled={isPaused}
-          onClick={() => setFlipped((f) => !f)}
-        >
-          <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
-            {flipped ? t("flashcards.back") : t("flashcards.front")}
-          </div>
-          <RichText text={flipped ? currentF.back : currentF.front} className="text-base" />
-          {!flipped && <div className="mt-5 text-xs text-white/30">{t("session.showAnswer")}</div>}
-        </button>
-
-        <div className="mt-4">
           {flipped ? (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                className="btn border border-red-500/30 bg-red-500/10 py-3 text-red-300 hover:bg-red-500/15"
-                disabled={isPaused}
-                onClick={() => markFlashcard(false)}
-              >
-                {t("session.reviewAgain")}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button type="button" className="btn btn-secondary btn-lg" disabled={isPaused} onClick={() => markFlashcard(false)}>
+                <Repeat size={16} aria-hidden /> À revoir
               </button>
-              <button
-                type="button"
-                className="btn border border-green-500/30 bg-green-500/10 py-3 text-green-300 hover:bg-green-500/15"
-                disabled={isPaused}
-                onClick={() => markFlashcard(true)}
-              >
-                {t("session.gotIt")}
+              <button type="button" className="btn btn-primary btn-lg rl-press" disabled={isPaused} onClick={() => markFlashcard(true)}>
+                <Check size={16} aria-hidden /> Je savais
               </button>
             </div>
           ) : (
-            <button type="button" className="btn btn-secondary w-full py-3" disabled={isPaused} onClick={() => setFlipped(true)}>
-              {t("session.showAnswer")}
+            <button type="button" className="btn btn-primary btn-lg rl-press w-full" disabled={isPaused} onClick={() => setFlipped(true)}>
+              Voir la réponse
             </button>
           )}
-        </div>
-
-        <div className="mt-3 text-center text-xs text-muted">
-          {totalReviewed > 0 && `${totalReviewed} maîtrisées · ${totalAgain} à revoir`}
-        </div>
-      </div>
+        </section>
+      )}
     </div>
   );
 }

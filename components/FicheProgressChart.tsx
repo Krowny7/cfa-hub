@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import type { Run } from "@/lib/ficheLog";
 
 type Point = { x: number; y: number };
@@ -10,11 +11,13 @@ const MODE_LABEL: Record<Run["mode"], string> = {
   mixed: "Bilan aléatoire",
 };
 
+const THRESHOLD = 70;
+
 // Catmull-Rom → Bézier cubique (même technique que PracticeProgressChart :
 // pas de lib de charting dans ce repo).
 function smoothPath(pts: Point[]) {
   if (pts.length < 2) return "";
-  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  let d = `M ${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i - 1] ?? pts[i];
     const p1 = pts[i];
@@ -24,17 +27,22 @@ function smoothPath(pts: Point[]) {
     const c1y = p1.y + (p2.y - p0.y) / 6;
     const c2x = p2.x - (p3.x - p1.x) / 6;
     const c2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    d += ` C ${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
   }
   return d;
 }
 
 const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
+// Courbe des scores par série. Le tracé est un SVG étiré sur toute la largeur
+// (repère 0–100) ; les points, la grille et les libellés sont en HTML posés
+// en pourcentages, pour rester ronds et lisibles à toutes les largeurs.
 export function FicheProgressChart({ runs }: { runs: Run[] }) {
+  const gid = "fpc" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
+
   if (runs.length < 2) {
     return (
-      <div className="rounded-xl border border-white/[0.07] py-6 text-center text-xs text-white/40">
+      <div className="card-quiet px-5 py-8 text-center t-small">
         {runs.length === 0
           ? "Termine une série (au moins 5 questions) pour voir ta courbe de progression."
           : "Une seule série pour l'instant — il en faut au moins deux pour tracer une courbe."}
@@ -42,64 +50,76 @@ export function FicheProgressChart({ runs }: { runs: Run[] }) {
     );
   }
 
-  const W = 600;
-  const H = 190;
-  const PAD_X = 16;
-  const PAD_TOP = 14;
-  const PAD_BOTTOM = 26;
-  const xFor = (i: number) => PAD_X + (i / (runs.length - 1)) * (W - 2 * PAD_X);
-  const yFor = (pct: number) => PAD_TOP + (1 - pct / 100) * (H - PAD_TOP - PAD_BOTTOM);
-
+  const xFor = (i: number) => (i / (runs.length - 1)) * 100;
+  const yFor = (pct: number) => 100 - pct;
   const pts = runs.map((r, i) => ({ x: xFor(i), y: yFor(r.pct) }));
   const lineD = smoothPath(pts);
-  const baseline = H - PAD_BOTTOM;
-  const areaD = `${lineD} L ${pts[pts.length - 1].x.toFixed(1)},${baseline} L ${pts[0].x.toFixed(1)},${baseline} Z`;
+  const areaD = `${lineD} L 100,100 L 0,100 Z`;
   const avg = Math.round(runs.reduce((s, r) => s + r.pct, 0) / runs.length);
+  const last = runs[runs.length - 1];
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full text-white" preserveAspectRatio="none" role="img" aria-label="Progression des scores par série">
-        <defs>
-          <linearGradient id="ficheProgressFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-          </linearGradient>
-        </defs>
+      <div className="relative ml-7 mr-2 mt-2 h-[170px] md:h-[190px]" role="img" aria-label={`Progression des scores sur ${runs.length} séries, moyenne ${avg} %, dernière ${last.pct} %`}>
+        {/* grille */}
         {[0, 25, 50, 75, 100].map((g) => (
-          <g key={g}>
-            <line x1={PAD_X} x2={W - PAD_X} y1={yFor(g)} y2={yFor(g)} stroke="currentColor" strokeOpacity={0.12} strokeWidth={1} />
-            <text x={2} y={yFor(g) + 3} fontSize={9} fill="currentColor" fillOpacity={0.5}>
-              {g}
-            </text>
-          </g>
+          <div key={g} className="absolute inset-x-0 border-t border-line" style={{ top: `${yFor(g)}%` }} aria-hidden>
+            <span className="absolute -left-7 w-5 -translate-y-1/2 text-right font-mono text-[10.5px] text-muted tabular-nums">{g}</span>
+          </div>
         ))}
-        <line x1={PAD_X} x2={W - PAD_X} y1={yFor(70)} y2={yFor(70)} stroke="currentColor" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={1.2} />
-        <path d={areaD} fill="url(#ficheProgressFill)" stroke="none" />
-        <path d={lineD} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+        {/* seuil */}
+        <div
+          className="absolute inset-x-0 border-t border-dashed border-[color-mix(in_oklab,var(--ink)_45%,transparent)]"
+          style={{ top: `${yFor(THRESHOLD)}%` }}
+          aria-hidden
+        />
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible text-white" aria-hidden>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="currentColor" stopOpacity="0.13" />
+              <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={areaD} fill={`url(#${gid})`} stroke="none" />
+          <path
+            d={lineD}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.25}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
         {runs.map((r, i) => (
-          <circle
+          <span
             key={r.runId}
-            cx={pts[i].x}
-            cy={pts[i].y}
-            r={4.5}
+            className="absolute h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
             style={{
-              fill: r.pct >= 70 ? "var(--ink)" : r.pct >= 50 ? "var(--paper)" : "var(--pen)",
-              stroke: r.pct >= 50 && r.pct < 70 ? "var(--ink)" : "var(--paper)",
+              left: `${pts[i].x}%`,
+              top: `${pts[i].y}%`,
+              background: r.pct >= THRESHOLD ? "var(--ink)" : r.pct >= 50 ? "var(--surface)" : "var(--pen)",
+              borderColor: r.pct >= 50 && r.pct < THRESHOLD ? "var(--ink)" : "var(--surface)",
             }}
-            strokeWidth={2}
-          >
-            <title>
-              {fmtDate(r.date)} — {MODE_LABEL[r.mode]} — {r.correct}/{r.total} ({r.pct}%)
-            </title>
-          </circle>
+            title={`${fmtDate(r.date)} — ${MODE_LABEL[r.mode]} — ${r.correct}/${r.total} (${r.pct} %)`}
+          />
         ))}
-      </svg>
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] text-white/40">
-        <span>{fmtDate(runs[0].date)}</span>
-        <span className="inline-flex items-center gap-1">
-          <span className="inline-block h-0 w-3 border-t border-dashed border-white/60" /> Seuil 70% · moyenne {avg}% sur {runs.length} séries
+        {/* dernière valeur */}
+        <span
+          className="absolute -translate-y-1/2 translate-x-[calc(-100%-10px)] whitespace-nowrap rounded-[6px] bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-black tabular-nums"
+          style={{ left: `${pts[pts.length - 1].x}%`, top: `${pts[pts.length - 1].y}%` }}
+          aria-hidden
+        >
+          {last.pct} %
         </span>
-        <span>{fmtDate(runs[runs.length - 1].date)}</span>
+      </div>
+      <div className="ml-7 mr-2 mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[12px] text-muted">
+        <span>{fmtDate(runs[0].date)}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-0 w-3.5 border-t border-dashed border-[color-mix(in_oklab,var(--ink)_55%,transparent)]" aria-hidden />
+          Seuil {THRESHOLD} % · moyenne {avg} % sur {runs.length} séries
+        </span>
+        <span>{fmtDate(last.date)}</span>
       </div>
     </div>
   );

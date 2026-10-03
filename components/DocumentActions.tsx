@@ -1,17 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Link2, Trash2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { DisclosureRow, Field } from "@/components/ContentDetailHeader";
 
+// Modifier ou supprimer un document partagé (membre d'un groupe qui y a
+// accès) : titre, lien du PDF, lien d'aperçu. Une ligne repliable de la
+// carte « Gérer ce document ».
 export function DocumentActions({
   documentId,
   initialTitle,
   initialExternalUrl,
   initialPreviewUrl,
-  afterDeleteRedirect
+  afterDeleteRedirect,
 }: {
   documentId: string;
   initialTitle: string;
@@ -40,7 +45,7 @@ export function DocumentActions({
         .update({
           title: title.trim(),
           external_url: externalUrl.trim() ? externalUrl.trim() : null,
-          preview_url: previewUrl.trim() ? previewUrl.trim() : null
+          preview_url: previewUrl.trim() ? previewUrl.trim() : null,
         })
         .eq("id", documentId);
 
@@ -71,88 +76,49 @@ export function DocumentActions({
   }
 
   return (
-    <details className="group card-soft">
-      <summary className="cursor-pointer list-none select-none rounded-2xl px-4 py-3 text-sm font-semibold transition hover:bg-white/[0.06]">
-        <div className="flex items-center justify-between gap-3">
-          <span>{t("library.editTitle")}</span>
-          <span className="text-xs opacity-60 transition group-open:rotate-180">▼</span>
-        </div>
-      </summary>
+    <DisclosureRow icon={<Link2 size={18} aria-hidden />} title="Modifier le document" sub="Titre, lien du PDF et lien d'aperçu">
+      <div className="grid gap-6">
+        <Field label={t("common.title")} htmlFor="doc-title">
+          <input id="doc-title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </Field>
 
-      <div className="space-y-4 p-4">
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("common.title")}</div>
-          <input
-            className="input mt-2"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
+        <Field label={t("library.externalLinkLabel")} htmlFor="doc-url">
+          <input id="doc-url" className="input" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://…" />
+        </Field>
 
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("library.externalLinkLabel")}</div>
-          <input
-            className="input mt-2"
-            value={externalUrl}
-            onChange={(e) => setExternalUrl(e.target.value)}
-            placeholder="https://..."
-          />
-        </div>
+        <Field label="Lien d'aperçu" hint="affiché dans la page" htmlFor="doc-preview">
+          <input id="doc-preview" className="input" value={previewUrl} onChange={(e) => setPreviewUrl(e.target.value)} placeholder="https://…" />
+        </Field>
 
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("library.previewLinkLabel")}</div>
-          <input
-            className="input mt-2"
-            value={previewUrl}
-            onChange={(e) => setPreviewUrl(e.target.value)}
-            placeholder="https://..."
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={busy || !title.trim()}
-            onClick={save}
-          >
-            {busy ? t("common.saving") : t("common.save")}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+          <div className="flex items-center gap-3">
+            <button type="button" className="btn btn-primary" disabled={busy || !title.trim()} onClick={save}>
+              {busy ? t("common.saving") : t("common.save")}
+            </button>
+            {msg ? (
+              <span role="status" className="t-small">
+                {msg}
+              </span>
+            ) : null}
+          </div>
 
           {showConfirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm opacity-80">{t("library.confirmDeleteDocument")}</span>
-              <button
-                type="button"
-                className="btn btn-danger"
-                disabled={busy}
-                onClick={remove}
-              >
+              <span className="t-small">{t("library.confirmDeleteDocument")}</span>
+              <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={remove}>
                 {t("common.confirm")}
               </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                disabled={busy}
-                onClick={() => setShowConfirmDelete(false)}
-              >
+              <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setShowConfirmDelete(false)}>
                 {t("common.cancel")}
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="btn btn-danger"
-              disabled={busy}
-              onClick={() => setShowConfirmDelete(true)}
-            >
-              {t("common.delete")}
+            <button type="button" className="btn btn-ghost text-pen" disabled={busy} onClick={() => setShowConfirmDelete(true)}>
+              <Trash2 size={15} aria-hidden /> {t("common.delete")}
             </button>
           )}
-
-          {msg ? <span className="text-sm">{msg}</span> : null}
         </div>
       </div>
-    </details>
+    </DisclosureRow>
   );
 }

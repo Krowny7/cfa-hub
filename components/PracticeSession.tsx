@@ -1,26 +1,36 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Target, Trophy, XCircle, Check, X, Copy, ClipboardCheck, History, Sparkles, ChevronDown, ChevronUp, Pause, Play } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Sparkles, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
-import { TOPICS, TOPIC_LABELS, topicLabel, trophyTier } from "@/lib/practiceTopics";
-import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { TOPICS, TOPIC_LABELS, trophyTier } from "@/lib/practiceTopics";
+import { PageHead, SectionHead } from "@/components/session/ui";
+import {
+  ChoiceButton,
+  CopyForAi,
+  PauseCard,
+  PauseToggle,
+  QuestionCard,
+  QuestionMap,
+  QuestionNav,
+  ReadyCard,
+  ResultHero,
+  ReviewSection,
+  RunnerBar,
+  Seg,
+  TopicBreakdown,
+} from "@/components/session/parts";
+import { PASS_THRESHOLD, fmtMinutes, pctOf, subjectName, topicsSummary, type ReviewQuestion } from "@/components/session/review";
+
+// Entraînement ciblé : on choisit ses matières, on reçoit le nombre de
+// questions qu'elles pèsent dans un vrai examen, chronométré, corrigé à la fin
+// (correction entièrement serveur : submit_practice_session).
 
 type ActiveQuestion = { id: string; position: number; prompt: string; choices: string[] };
-
-type ReviewQuestion = {
-  question_id: string;
-  prompt: string;
-  choices: string[];
-  correct_index: number;
-  explanation: string | null;
-  topic: string | null;
-  selected_index: number | null;
-  is_correct: boolean;
-};
 
 type PastSession = {
   id: string;
@@ -33,72 +43,76 @@ type PastSession = {
   completed_at: string;
 };
 
-const LETTERS = ["A", "B", "C"];
-const PASS_THRESHOLD = 70;
+type Phase = "builder" | "ready" | "active" | "done";
+
+/** Données d'exemple pour app/preview-da (aucun appel réseau, chrono figé). */
+export type PracticeDemo = {
+  phase: Phase;
+  selected?: string[];
+  format?: 90 | 180;
+  questions?: ActiveQuestion[];
+  answers?: (number | null)[];
+  idx?: number;
+  secondsLeft?: number;
+  paused?: boolean;
+  review?: ReviewQuestion[];
+  score?: number;
+  total?: number;
+  xp?: number;
+  duration?: number;
+  historyReviews?: Record<string, ReviewQuestion[]>;
+  expandedHistoryId?: string;
+  tab?: "history" | "progress";
+};
+
 const MIN_PER_QUESTION_MINUTES = 135 / 90; // même ratio que l'examen officiel (135min/90Q)
+const WEAK_BELOW = 50;
 
-function buildAiExportText(review: ReviewQuestion[], score: number, total: number) {
-  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-  const header = `SESSION D'ENTRAÎNEMENT CFA — ${score}/${total} (${pct}%)\n` +
-    `Voici mes réponses à une session d'entraînement CFA Level I ciblée sur certains topics. Pour chaque question : mon énoncé, mes choix, ma réponse, la bonne réponse et l'explication officielle. ` +
-    `Peux-tu me faire un bilan de mes points faibles par thème, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
-  const body = review.map((q, i) => {
-    const choicesText = q.choices.map((c, ci) => `${LETTERS[ci]}) ${c}`).join("\n");
-    const myAnswer = q.selected_index === null ? "Non répondue" : `${LETTERS[q.selected_index]}) ${q.choices[q.selected_index]}`;
-    const correctAnswer = `${LETTERS[q.correct_index]}) ${q.choices[q.correct_index]}`;
-    return (
-      `Q${i + 1} [${q.topic ?? "?"}] — ${q.is_correct ? "CORRECT" : "INCORRECT"}\n` +
-      `${q.prompt}\n${choicesText}\n` +
-      `Ma réponse : ${myAnswer}\n` +
-      `Bonne réponse : ${correctAnswer}\n` +
-      (q.explanation ? `Explication : ${q.explanation}\n` : "")
-    );
-  }).join("\n");
-  return header + body;
-}
+const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function fmtTime(s: number) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  return `${m}:${String(sec).padStart(2, "0")}`;
-}
-
-
-export function PracticeSession({ pastSessions: initialPast }: { pastSessions: PastSession[] }) {
+export function PracticeSession({
+  pastSessions: initialPast,
+  mastery = {},
+  demo,
+}: {
+  pastSessions: PastSession[];
+  /** maîtrise par matière (clé → %, null si pas assez de réponses) */
+  mastery?: Record<string, number | null>;
+  demo?: PracticeDemo;
+}) {
   const supabase = useMemo(() => createClient(), []);
 
-  type Phase = "builder" | "ready" | "active" | "done";
-  const [phase, setPhase] = useState<Phase>("builder");
+  const [phase, setPhase] = useState<Phase>(demo?.phase ?? "builder");
   // Pré-sélectionne le thème passé en query param (ex: lien "S'entraîner sur
   // X" depuis le panneau Points faibles du dashboard) — sans forcer le choix,
   // l'utilisateur peut toujours l'enlever ou en ajouter d'autres.
   const searchParams = useSearchParams();
   const [selected, setSelected] = useState<Set<string>>(() => {
+    if (demo?.selected) return new Set(demo.selected);
     const fromUrl = searchParams.get("topic");
     return fromUrl && TOPICS.some((x) => x.key === fromUrl) ? new Set([fromUrl]) : new Set();
   });
-  const [format, setFormat] = useState<90 | 180>(90);
-  const [questions, setQuestions] = useState<ActiveQuestion[]>([]);
-  const [answers, setAnswers] = useState<(number | null)[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [review, setReview] = useState<ReviewQuestion[]>([]);
-  const [score, setScore] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [format, setFormat] = useState<90 | 180>(demo?.format ?? 90);
+  const [questions, setQuestions] = useState<ActiveQuestion[]>(demo?.questions ?? []);
+  const [answers, setAnswers] = useState<(number | null)[]>(demo?.answers ?? (demo?.questions ?? []).map(() => null));
+  const [idx, setIdx] = useState(demo?.idx ?? 0);
+  const [secondsLeft, setSecondsLeft] = useState(demo?.secondsLeft ?? 0);
+  const [review, setReview] = useState<ReviewQuestion[]>(demo?.review ?? []);
+  const [score, setScore] = useState(demo?.score ?? 0);
+  const [total, setTotal] = useState(demo?.total ?? 0);
   const [busy, setBusy] = useState(false);
-  const [showReview, setShowReview] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [xpAwarded, setXpAwarded] = useState(0);
+  const [xpAwarded, setXpAwarded] = useState(demo?.xp ?? 0);
+  const [lastDuration, setLastDuration] = useState<number | null>(demo?.duration ?? null);
   const [pastSessions, setPastSessions] = useState<PastSession[]>(initialPast);
-  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
-  const [historyReviews, setHistoryReviews] = useState<Record<string, ReviewQuestion[]>>({});
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(demo?.expandedHistoryId ?? null);
+  const [historyReviews, setHistoryReviews] = useState<Record<string, ReviewQuestion[]>>(demo?.historyReviews ?? {});
   const [historyErrors, setHistoryErrors] = useState<Record<string, string>>({});
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
-  const [copiedHistoryId, setCopiedHistoryId] = useState<string | null>(null);
-  const [paused, setPaused] = useState(false);
+  const [historyTab, setHistoryTab] = useState<"history" | "progress">(demo?.tab ?? "history");
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [paused, setPaused] = useState(demo?.paused ?? false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const submittingRef = useRef(false);
   // Le timeout auto-submit garde une closure figée sur `answers` tel qu'il
@@ -115,7 +129,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
   const elapsedRef = useRef(0);
 
   useEffect(() => {
-    if (phase !== "active") return;
+    if (phase !== "active" || demo) return;
     timerRef.current = setInterval(() => {
       if (pausedRef.current) return;
       elapsedRef.current += 1;
@@ -132,6 +146,13 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Chaque changement d'écran repart du haut de la page.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [phase]);
+
   function toggleTopic(key: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -144,6 +165,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     const w = TOPICS.find((t) => t.key === key)?.weight ?? 0;
     return sum + Math.round((w / 100) * format);
   }, 0);
+  const previewMinutes = Math.max(5, Math.round(previewCount * MIN_PER_QUESTION_MINUTES));
 
   async function generate() {
     if (selected.size === 0) return;
@@ -175,6 +197,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     setIdx(0);
     elapsedRef.current = 0;
     setPaused(false);
+    setConfirmEnd(false);
     setPhase("active");
   }
 
@@ -183,6 +206,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     submittingRef.current = true;
     setBusy(true);
     setError(null);
+    setConfirmEnd(false);
     if (timerRef.current) clearInterval(timerRef.current);
 
     const duration = elapsedRef.current;
@@ -201,6 +225,7 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
       setScore(data?.score ?? 0);
       setTotal(data?.total ?? 0);
       setXpAwarded(data?.xp_awarded ?? 0);
+      setLastDuration(duration);
       setPastSessions((prev) => [
         { id: data?.id ?? crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
         ...prev,
@@ -214,20 +239,8 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     }
   }
 
-  async function copyForAi() {
-    const text = buildAiExportText(review, score, total);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setError("Impossible de copier automatiquement.");
-    }
-  }
-
   function backToBuilder() {
     setPhase("builder");
-    setShowReview(false);
     setReview([]);
     setQuestions([]);
     setError(null);
@@ -259,395 +272,406 @@ export function PracticeSession({ pastSessions: initialPast }: { pastSessions: P
     }
   }
 
-  async function copyHistoryForAi(session: PastSession) {
-    const rev = historyReviews[session.id];
-    if (!rev) return;
-    const text = buildAiExportText(rev, session.score, session.total);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedHistoryId(session.id);
-      setTimeout(() => setCopiedHistoryId((v) => (v === session.id ? null : v)), 2000);
-    } catch {
-      setError("Impossible de copier automatiquement.");
-    }
-  }
-
-  // ── BUILDER ──
+  // ── COMPOSER LA SESSION ──
   if (phase === "builder") {
+    const measured = TOPICS.filter((t) => mastery[t.key] !== null && mastery[t.key] !== undefined);
+    const weak = measured.filter((t) => (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key);
+    const tier = trophyTier(selected.size);
+    const allOn = selected.size === TOPICS.length;
+    const history = showAllHistory ? pastSessions : pastSessions.slice(0, 6);
+    const canChart = pastSessions.length >= 2;
+
     return (
-      <div className="grid gap-4">
-        <div className="card p-5">
-          <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold">
-            <Target size={15} /> Choisir les topics
+      <div className="rl-page">
+        <PageHead
+          back={{ href: "/entrainement", label: "S'entraîner" }}
+          title="Entraînement ciblé"
+          sub="Choisis tes matières : le nombre de questions suit leur poids à l'examen. Corrigé à la fin."
+        />
+
+        <section className="card-hero rl-in grid grid-cols-1 gap-6 p-5 md:gap-7 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Composer la session">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+            <h2 className="t-h2 m-0">Tes matières</h2>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold text-muted">
+              <button type="button" className="transition-colors hover:text-white" onClick={() => setSelected(allOn ? new Set() : new Set(TOPICS.map((t) => t.key)))}>
+                {allOn ? "Tout retirer" : "Tout l'examen"}
+              </button>
+              {weak.length > 0 && (
+                <button type="button" className="transition-colors hover:text-white" onClick={() => setSelected(new Set(weak))}>
+                  Mes points faibles
+                </button>
+              )}
+              {selected.size > 0 && !allOn && (
+                <button type="button" className="transition-colors hover:text-white" onClick={() => setSelected(new Set())}>
+                  Effacer
+                </button>
+              )}
+            </div>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {TOPICS.map((t) => {
               const on = selected.has(t.key);
+              const m = mastery[t.key];
               return (
                 <button
                   key={t.key}
                   type="button"
+                  aria-pressed={on}
                   onClick={() => toggleTopic(t.key)}
-                  className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
-                    on ? "border-white bg-white font-bold text-black" : "border-white/45 text-white/85 hover:border-white"
-                  }`}
+                  className={
+                    "group flex items-center gap-3 rounded-[14px] border px-3.5 py-3 text-left transition-[border-color,background-color,box-shadow] duration-200 " +
+                    (on ? "border-white bg-surface shadow-[0_0_0_1px_var(--ink)]" : "border-line-2 bg-surface hover:border-white/45")
+                  }
                 >
-                  <span>{t.label}</span>
-                  <span className="shrink-0 text-xs text-white/40">{t.weight}%</span>
+                  <span
+                    aria-hidden
+                    className={
+                      "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] transition-colors " +
+                      (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)] group-hover:shadow-[inset_0_0_0_1.5px_var(--ink-3)]")
+                    }
+                  >
+                    {on && <Check size={13} strokeWidth={3} />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14.5px] font-semibold leading-tight">{subjectName(t.key)}</span>
+                    <span className="t-micro mt-1 block">
+                      {String(t.weight).replace(".", ",")} % de l&apos;examen
+                      {m !== null && m !== undefined && (
+                        <>
+                          {" · "}
+                          <span className={m < WEAK_BELOW ? "text-pen" : ""}>maîtrise {m} %</span>
+                        </>
+                      )}
+                    </span>
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-5 flex items-center gap-2">
-            <div className="text-xs text-white/50">Format :</div>
-            <button
-              type="button"
-              onClick={() => setFormat(180)}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition ${format === 180 ? "border-white bg-white font-bold text-black" : "border-white/45 text-white/75"}`}
-            >
-              Complet (180Q)
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormat(90)}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition ${format === 90 ? "border-white bg-white font-bold text-black" : "border-white/45 text-white/75"}`}
-            >
-              Demi-session (90Q)
+          <div className="rule" />
+
+          <div className="grid grid-cols-1 items-end gap-5 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-8">
+            <div>
+              <p className="t-eyebrow m-0 mb-2">Base de calcul</p>
+              <Seg
+                label="Format"
+                value={String(format) as "90" | "180"}
+                onChange={(v) => setFormat(Number(v) as 90 | 180)}
+                options={[
+                  { key: "90", label: "Demi-examen · 90" },
+                  { key: "180", label: "Complet · 180" },
+                ]}
+              />
+            </div>
+            <div className="min-w-0" aria-live="polite">
+              {selected.size > 0 ? (
+                <>
+                  <p className="m-0 flex items-baseline gap-2">
+                    <span className="t-num text-[40px]">{previewCount}</span>
+                    <span className="text-[15px] font-semibold">questions</span>
+                    <span className="t-small">· {fmtMinutes(previewMinutes)}</span>
+                  </p>
+                  <p className="t-micro m-0 mt-1.5 inline-flex items-center gap-1.5">
+                    <Trophy size={13} aria-hidden /> Trophée {tier.label} à 70 % ou plus
+                  </p>
+                </>
+              ) : (
+                <p className="t-small m-0">Choisis au moins une matière.</p>
+              )}
+            </div>
+            <button type="button" className="btn btn-primary btn-lg rl-press w-full md:w-auto" disabled={selected.size === 0 || busy} onClick={generate}>
+              {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={17} aria-hidden />}
             </button>
           </div>
-
-          {selected.size > 0 && (
-            <div className="mt-3 text-xs text-white/50">
-              ≈ {previewCount} questions ({[...selected].map((k) => topicLabel(k)).join(", ")})
-            </div>
+          {error && (
+            <p role="alert" className="m-0 -mt-2 text-sm text-pen">
+              {error}
+            </p>
           )}
-
-          {error && <div className="mt-3 text-sm text-red-300">{error}</div>}
-
-          <button
-            type="button"
-            className="btn btn-primary mt-4"
-            disabled={selected.size === 0 || busy}
-            onClick={generate}
-          >
-            {busy ? "…" : "Générer la session"}
-          </button>
-        </div>
-
-        <PracticeProgressChart pastSessions={pastSessions} topicLabels={TOPIC_LABELS} />
+        </section>
 
         {pastSessions.length > 0 && (
-          <div className="card p-5">
-            <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-white/50">
-              <History size={13} /> Historique
-            </div>
-            <div className="grid gap-1.5">
-              {pastSessions.map((s) => {
-                const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
-                const passed = pct >= PASS_THRESHOLD;
-                const tier = trophyTier(s.topics.length);
-                const expanded = expandedHistoryId === s.id;
-                const rev = historyReviews[s.id];
-                return (
-                  <div key={s.id} className="rounded-lg bg-white/[0.02]">
-                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <Trophy size={15} className={`shrink-0 ${passed ? tier.className : "text-white/15"}`} />
-                        <span className="text-white/60 truncate">
-                          {s.topics.map((k) => topicLabel(k)).join(", ")} · {s.format}Q · {new Date(s.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                        </span>
-                      </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <span className={`font-semibold tabular-nums ${pct >= 70 ? "text-green-400" : pct >= 50 ? "text-yellow-400" : "text-red-400"}`}>
-                          {pct}% ({s.score}/{s.total})
-                        </span>
+          <section className="rl-section" aria-label="Tes sessions">
+            <SectionHead
+              title="Tes sessions"
+              action={
+                canChart ? (
+                  <Seg
+                    label="Affichage"
+                    value={historyTab}
+                    onChange={setHistoryTab}
+                    options={[
+                      { key: "history", label: "Historique" },
+                      { key: "progress", label: "Progression" },
+                    ]}
+                  />
+                ) : undefined
+              }
+              meta={`${pastSessions.length} session${pastSessions.length > 1 ? "s" : ""}`}
+            />
+
+            {historyTab === "progress" && canChart ? (
+              <PracticeProgressChart pastSessions={pastSessions} topicLabels={TOPIC_LABELS} />
+            ) : (
+              <div className="card overflow-hidden">
+                <ul className="m-0 list-none divide-y divide-line p-0">
+                  {history.map((s) => {
+                    const pct = pctOf(s.score, s.total);
+                    const passed = pct >= PASS_THRESHOLD;
+                    const tierS = trophyTier(s.topics.length);
+                    const expanded = expandedHistoryId === s.id;
+                    const rev = historyReviews[s.id];
+                    return (
+                      <li key={s.id}>
                         <button
                           type="button"
-                          className="text-white/40 hover:text-white/70"
-                          onClick={() => toggleHistoryReview(s.id)}
+                          aria-expanded={expanded}
+                          onClick={() => void toggleHistoryReview(s.id)}
+                          className="rl-row flex w-full items-center gap-3.5 px-4 py-3.5 text-left md:px-5"
                         >
-                          {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                          <span
+                            className={"grid h-9 w-9 shrink-0 place-items-center rounded-[11px] " + (passed ? "bg-white text-black" : "bg-surface-2 text-muted")}
+                            title={passed ? `Trophée ${tierS.label}` : "Sous 70 %"}
+                          >
+                            <Trophy size={16} aria-hidden strokeWidth={passed ? 2.2 : 1.6} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[14.5px] font-semibold">{topicsSummary(s.topics, 2)}</span>
+                            <span className="t-micro mt-0.5 block">
+                              {dayLabel(s.completed_at)} · {s.total} questions
+                              {s.duration_seconds ? ` · ${fmtMinutes(Math.max(1, Math.round(s.duration_seconds / 60)))}` : ""}
+                              {passed ? ` · trophée ${tierS.label}` : ""}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-right">
+                            <span className={"block text-[15px] font-semibold tabular-nums " + (pct < 50 ? "text-pen" : "")}>{pct} %</span>
+                            <span className="t-micro block tabular-nums">
+                              {s.score}/{s.total}
+                            </span>
+                          </span>
+                          <ChevronDown size={16} aria-hidden className={"shrink-0 text-muted transition-transform " + (expanded ? "rotate-180" : "")} />
                         </button>
-                      </span>
-                    </div>
-
-                    {expanded && (
-                      <div className="border-t border-white/[0.06] p-3">
-                        {loadingHistoryId === s.id && <div className="text-xs text-white/40">Chargement…</div>}
-                        {historyErrors[s.id] && <div className="text-xs text-amber-300/80">{historyErrors[s.id]}</div>}
-                        {rev && (
-                          <>
-                            <button
-                              type="button"
-                              className="btn btn-secondary mb-2 inline-flex items-center gap-1.5 py-1 text-xs"
-                              onClick={() => copyHistoryForAi(s)}
-                            >
-                              {copiedHistoryId === s.id ? <ClipboardCheck size={13} className="text-green-400" /> : <Copy size={13} />}
-                              {copiedHistoryId === s.id ? "Copié !" : "Copier pour IA"}
-                            </button>
-                            <div className="grid gap-2">
-                              {rev.map((q, i) => (
-                                <div key={q.question_id} className={`rounded-lg border-l-2 bg-white/[0.02] p-3 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
-                                  <div className="text-[10px] text-muted mb-1">Q{i + 1} · {q.topic ?? "?"}</div>
-                                  <QuestionPrompt text={q.prompt} className="text-xs font-medium break-words" compact />
-                                  <div className="mt-2 grid gap-1">
-                                    {q.choices.map((c, ci) => (
-                                      <div key={ci} className={`rounded-lg border px-2 py-1.5 text-xs ${
-                                        ci === q.correct_index
-                                          ? "border-2 border-white bg-white/[0.08] font-bold text-white"
-                                          : ci === q.selected_index && q.selected_index !== q.correct_index
-                                          ? "border-red-500 bg-red-500/[0.06] text-red-500"
-                                          : "border-white/45 text-white/75"
-                                      }`}>
-                                        <span className="inline-flex items-center gap-1.5">
-                                          {ci === q.correct_index && <Check size={12} className="shrink-0" />}
-                                          {ci === q.selected_index && ci !== q.correct_index && <X size={12} className="shrink-0" />}
-                                          {c}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {q.explanation && (
-                                    <div className="mt-1.5 text-[11px] text-white/50 whitespace-pre-wrap break-words">{q.explanation}</div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </>
+                        {expanded && (
+                          <div className="border-t border-line bg-surface-2/30 px-4 py-4 md:px-5">
+                            {loadingHistoryId === s.id && <p className="t-small m-0">Chargement de la correction…</p>}
+                            {historyErrors[s.id] && <p className="t-small m-0">{historyErrors[s.id]}</p>}
+                            {rev && (
+                              <ReviewSection
+                                review={rev}
+                                compact
+                                action={<CopyForAi review={rev} score={s.score} total={s.total} kind="practice" size="sm" onError={setError} />}
+                              />
+                            )}
+                          </div>
                         )}
-                      </div>
-                    )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {pastSessions.length > history.length && (
+                  <div className="border-t border-line px-4 py-3 md:px-5">
+                    <button type="button" className="text-[13px] font-semibold text-muted transition-colors hover:text-white" onClick={() => setShowAllHistory(true)}>
+                      {pastSessions.length - history.length > 1 ? `Voir les ${pastSessions.length - history.length} autres` : "Voir la dernière"}
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                )}
+              </div>
+            )}
+          </section>
         )}
       </div>
     );
   }
 
-  // ── READY ──
+  const topicNames = topicsSummary([...selected], 3);
+  const topicShort = topicsSummary([...selected], 1);
+
+  // ── PRÊTE ──
   if (phase === "ready") {
     return (
-      <div className="card p-6 text-center">
-        <Target size={32} className="mx-auto text-white/70" />
-        <h2 className="mt-3 text-lg font-semibold">Session prête</h2>
-        <div className="mt-2 text-sm text-white/55">
-          {questions.length} questions · {Math.round(secondsLeft / 60)} minutes
-        </div>
-        <div className="mt-1 text-xs text-white/40">
-          {[...selected].map((k) => topicLabel(k)).join(", ")}
-        </div>
-        <div className="mt-4 flex justify-center gap-2">
-          <button type="button" className="btn btn-ghost" onClick={backToBuilder}>Annuler</button>
-          <button type="button" className="btn btn-primary px-6" onClick={start}>Commencer</button>
-        </div>
+      <div className="grid gap-6 py-2 md:py-8">
+        <ReadyCard
+          eyebrow="Entraînement ciblé · session prête"
+          title={`${questions.length} questions`}
+          meta={`${fmtMinutes(Math.round(secondsLeft / 60))} · ${topicNames}`}
+          rules={[
+            "Pas de correction pendant la session : tout arrive à la fin, avec les explications.",
+            "Tu peux revenir sur une question et changer ta réponse jusqu'à la fin.",
+            "Pause possible : le chrono s'arrête et la question se cache.",
+          ]}
+          onCancel={backToBuilder}
+          cancelLabel="Changer les matières"
+          onStart={start}
+        />
       </div>
     );
   }
 
-  // ── DONE ──
+  // ── RÉSULTAT ──
   if (phase === "done") {
     const pct = total > 0 ? Math.round((score / total) * 100) : null;
     const passed = pct !== null && pct >= PASS_THRESHOLD;
-
-    const byTopic = new Map<string, { correct: number; total: number }>();
-    for (const q of review) {
-      const key = q.topic ?? "Autre";
-      const entry = byTopic.get(key) ?? { correct: 0, total: 0 };
-      entry.total += 1;
-      if (q.is_correct) entry.correct += 1;
-      byTopic.set(key, entry);
-    }
-    const topicStats = [...byTopic.entries()]
-      .map(([topic, s]) => ({ topic, ...s, pct: Math.round((s.correct / s.total) * 100) }))
-      .sort((a, b) => a.pct - b.pct);
-
     const tier = trophyTier(selected.size);
+    const many = new Set(review.map((q) => q.topic ?? "")).size > 1;
 
     return (
-      <div className="grid gap-4">
-        <div className="card p-6 text-center">
-          {passed ? <Trophy size={36} className={`mx-auto ${tier.className}`} /> : <XCircle size={36} className="mx-auto text-red-400/80" />}
-          <div className="mt-2 text-xs uppercase tracking-wide text-white/40">
-            Session d&apos;entraînement{passed ? ` — trophée ${tier.label}` : ""}
-          </div>
-          {pct !== null && (
+      <div className="rl-page">
+        <ResultHero
+          eyebrow={`Entraînement ciblé · ${topicShort}`}
+          verdict={passed ? "Réussi" : "Pas encore : vise 70 %"}
+          pct={pct}
+          score={score}
+          total={total}
+          meta={
             <>
-              <div className="mt-1 text-3xl font-bold tabular-nums">{pct}%</div>
-              <div className="mt-1 text-sm text-white/50">{score} / {total} bonnes réponses</div>
+              {score} bonne{score > 1 ? "s" : ""} réponse{score > 1 ? "s" : ""} sur {total}
+              {lastDuration ? ` · ${fmtMinutes(Math.max(1, Math.round(lastDuration / 60)))}` : ""}
             </>
-          )}
-          {xpAwarded > 0 && (
-            <div className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-blue-300">
-              <Sparkles size={13} /> +{xpAwarded} XP
-            </div>
-          )}
-          {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
-          <div className="mx-auto mt-5 flex flex-wrap justify-center gap-2">
-            <button type="button" className="btn btn-secondary" onClick={() => setShowReview((v) => !v)}>
-              {showReview ? "Masquer la correction" : "Voir la correction"}
-            </button>
-            <button type="button" className="btn btn-secondary inline-flex items-center gap-1.5" onClick={copyForAi}>
-              {copied ? <ClipboardCheck size={15} className="text-green-400" /> : <Copy size={15} />}
-              {copied ? "Copié !" : "Copier pour IA"}
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={backToBuilder}>Nouvelle session</button>
-          </div>
-        </div>
-
-        {topicStats.length > 1 && (
-          <div className="card p-5">
-            <div className="mb-3 text-sm font-semibold">Répartition par thème</div>
-            <div className="grid gap-2">
-              {topicStats.map((t) => (
-                <div key={t.topic} className="flex items-center gap-3">
-                  <div className="w-40 shrink-0 truncate text-xs text-white/60">{t.topic}</div>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                    <div
-                      className={`h-full rounded-full ${t.pct >= 70 ? "bg-green-500" : t.pct >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
-                      style={{ width: `${t.pct}%` }}
-                    />
-                  </div>
-                  <div className={`w-24 shrink-0 text-right text-xs tabular-nums ${t.pct >= 70 ? "text-green-400" : t.pct >= 50 ? "text-yellow-400" : "text-red-400"}`}>
-                    {t.pct}% ({t.correct}/{t.total})
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {showReview && (
-          <div className="grid gap-3">
-            {review.map((q, i) => (
-              <div key={q.question_id} className={`card p-4 border-l-2 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
-                <div className="text-xs text-muted mb-1">Q{i + 1}</div>
-                <QuestionPrompt text={q.prompt} className="text-sm font-medium break-words" compact />
-                <div className="mt-3 grid gap-1.5">
-                  {q.choices.map((c, ci) => (
-                    <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
-                      ci === q.correct_index
-                        ? "border-2 border-white bg-white/[0.08] font-bold text-white"
-                        : ci === q.selected_index && q.selected_index !== q.correct_index
-                        ? "border-red-500 bg-red-500/[0.06] text-red-500"
-                        : "border-white/45 text-white/75"
-                    }`}>
-                      <span className="inline-flex items-center gap-1.5">
-                        {ci === q.correct_index && <Check size={14} className="shrink-0" />}
-                        {ci === q.selected_index && ci !== q.correct_index && <X size={14} className="shrink-0" />}
-                        {c}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {q.explanation && (
-                  <div className="mt-2 text-xs text-white/50 whitespace-pre-wrap break-words">{q.explanation}</div>
+          }
+          chips={
+            passed || xpAwarded > 0 ? (
+              <>
+                {passed && (
+                  <span className="chip chip-active chip-sm">
+                    <Trophy size={13} aria-hidden /> Trophée {tier.label}
+                  </span>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
+                {xpAwarded > 0 && (
+                  <span className="chip chip-quiet chip-sm">
+                    <Sparkles size={13} aria-hidden /> +{xpAwarded} XP
+                  </span>
+                )}
+              </>
+            ) : undefined
+          }
+          actions={
+            <>
+              <button type="button" className="ink-link" onClick={backToBuilder}>
+                Nouvelle session
+              </button>
+              <Link href="/entrainement" className="text-[13.5px] font-semibold text-muted transition-colors hover:text-white">
+                Retour à S&apos;entraîner
+              </Link>
+            </>
+          }
+        >
+          {total > 0 && <CopyForAi review={review} score={score} total={total} kind="practice" onError={setError} />}
+          {error && (
+            <p role="alert" className="m-0 text-sm text-pen">
+              {error}
+            </p>
+          )}
+        </ResultHero>
+
+        {many && <TopicBreakdown review={review} />}
+
+        <ReviewSection review={review} />
       </div>
     );
   }
 
-  // ── ACTIVE ──
+  // ── EN COURS ──
   const answered = answers.filter((a) => a !== null).length;
   const current = questions[idx];
-  const timeIsLow = secondsLeft <= 60;
+  const last = idx === questions.length - 1;
+  const unanswered = questions.length - answered;
+
+  function askEnd() {
+    if (unanswered > 0) setConfirmEnd(true);
+    else void submit();
+  }
 
   return (
-    <div className="grid gap-4">
-      <div className="card p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-xs text-muted">{paused ? "En pause" : "Temps restant"}</div>
-            <div className={`font-mono text-3xl font-bold tabular-nums ${paused ? "text-white/30" : timeIsLow ? "text-red-400" : ""}`}>
-              {fmtTime(secondsLeft)}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-muted">{answered}/{questions.length} répondues</div>
-            <div className="text-sm font-medium">Q{idx + 1}/{questions.length}</div>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              className="btn btn-secondary inline-flex items-center gap-1.5 text-sm"
-              onClick={() => setPaused((v) => !v)}
-            >
-              {paused ? <Play size={14} /> : <Pause size={14} />}
-              {paused ? "Reprendre" : "Pause"}
+    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+      <RunnerBar
+        label="Entraînement ciblé"
+        index={idx}
+        total={questions.length}
+        answered={answered}
+        secondsLeft={secondsLeft}
+        paused={paused}
+        actions={
+          <>
+            <PauseToggle paused={paused} onToggle={() => setPaused((v) => !v)} />
+            <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={askEnd}>
+              {busy ? "Envoi…" : "Terminer"}
             </button>
-            <button type="button" className="btn btn-secondary text-sm" disabled={busy} onClick={submit}>
-              {busy ? "…" : "Terminer"}
-            </button>
-          </div>
-        </div>
-        {paused && (
-          <div className="mt-2 text-xs text-amber-300/80">Le chronomètre est en pause — clique sur "Reprendre" pour continuer.</div>
-        )}
-        {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.07]">
-          <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${Math.round((answered / questions.length) * 100)}%` }} />
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {current && (
-        <div className="card p-5">
-          <div className="text-xs text-muted mb-2">Question {idx + 1}</div>
-          <QuestionPrompt text={current.prompt} className="text-base font-medium break-words [overflow-wrap:anywhere] leading-relaxed" />
-          <div className="mt-4 grid gap-2">
-            {current.choices.map((c, ci) => {
-              const picked = answers[idx] === ci;
-              return (
-                <button
-                  key={ci}
-                  type="button"
-                  className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
-                    picked ? "border-white text-white shadow-[3px_3px_0_var(--ink)]" : "border-white/45 text-white hover:border-white"
-                  }`}
-                  onClick={() => {
-                    setAnswers((prev) => {
-                      const next = [...prev];
-                      next[idx] = ci;
-                      return next;
-                    });
-                  }}
-                >
-                  {c}
-                </button>
-              );
-            })}
+      {confirmEnd && (
+        <div role="alert" className="card-quiet rl-in flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="m-0 text-[14px]">
+            Encore <b>{unanswered}</b> question{unanswered > 1 ? "s" : ""} sans réponse. Remettre ta copie quand même ?
+          </p>
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmEnd(false)}>
+              Continuer
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => void submit()}>
+              Remettre ma copie
+            </button>
           </div>
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <button type="button" className="btn btn-ghost" disabled={idx === 0} onClick={() => setIdx((i) => i - 1)}>
-          ← Précédente
-        </button>
-        <div className="flex flex-wrap justify-center gap-1">
-          {questions.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIdx(i)}
-              className={`h-5 w-5 rounded text-[9px] font-bold transition ${
-                i === idx ? "bg-white text-black" : answers[i] !== null ? "bg-white/20 text-white/70" : "bg-white/[0.06] text-white/30"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-        <button type="button" className="btn btn-ghost" disabled={idx === questions.length - 1} onClick={() => setIdx((i) => i + 1)}>
-          Suivante →
-        </button>
-      </div>
+      {error && (
+        <p role="alert" className="m-0 text-sm text-pen">
+          {error}
+        </p>
+      )}
+
+      {paused ? (
+        <PauseCard onResume={() => setPaused(false)} />
+      ) : (
+        current && (
+          <QuestionCard
+            index={idx}
+            total={questions.length}
+            prompt={current.prompt}
+            footer={
+              <QuestionNav
+                onPrev={() => setIdx((i) => i - 1)}
+                prevDisabled={idx === 0}
+                next={
+                  last ? (
+                    <button type="button" className="btn btn-primary rl-press" disabled={busy} onClick={askEnd}>
+                      Remettre ma copie <ArrowRight size={16} aria-hidden />
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-primary rl-press" onClick={() => setIdx((i) => i + 1)}>
+                      Suivante <ArrowRight size={16} aria-hidden />
+                    </button>
+                  )
+                }
+              />
+            }
+          >
+            {current.choices.map((c, ci) => (
+              <ChoiceButton
+                key={ci}
+                index={ci}
+                text={c}
+                state={answers[idx] === ci ? "picked" : "idle"}
+                onClick={() => {
+                  setAnswers((prev) => {
+                    const next = [...prev];
+                    next[idx] = ci;
+                    return next;
+                  });
+                }}
+              />
+            ))}
+          </QuestionCard>
+        )
+      )}
+
+      {!paused && (
+        <QuestionMap total={questions.length} current={idx} isAnswered={(i) => answers[i] !== null && answers[i] !== undefined} onJump={setIdx} />
+      )}
     </div>
   );
 }

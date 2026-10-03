@@ -1,80 +1,88 @@
 import Link from "next/link";
-import { Activity, BarChart3, TriangleAlert } from "lucide-react";
+import { Activity, BarChart3 } from "lucide-react";
 import { Radar, RadarLegend } from "@/components/ui/Radar";
 import { CardLabel } from "@/components/ui/Titles";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
-import { MasteryLine, TwoColumnRows } from "@/components/reviser/SubjectRows";
+import { TopicRail } from "@/components/ui/TopicRail";
+import { reviserHref, subjectRail } from "@/components/reviser/rail";
+import { subjectByKey } from "@/components/reviser/catalog";
 import { ViewSwitch } from "@/components/moi/ViewSwitch";
 import { SessionHistory } from "@/components/moi/SessionHistory";
 import { fmtInt } from "@/components/classement/format";
 import { CURRENT_PROGRAM } from "@/lib/domains";
 import type { MoiData } from "@/components/moi/types";
 
-const WEAK_BELOW = 50;
-
-/** Radar (toi contre la moyenne) et, en second, le détail matière par matière. */
+/** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
 function SubjectsCard({ d }: { d: MoiData }) {
   const axes = d.topics.map((t) => ({ label: t.short, me: t.pct, avg: t.avg }));
   const known = d.topics.filter((t) => t.pct !== null).sort((a, b) => (b.pct as number) - (a.pct as number));
   const top = known.slice(0, Math.min(3, Math.floor(known.length / 2) || known.length));
   const low = known.length >= 2 ? known.slice(-Math.min(3, Math.floor(known.length / 2))).reverse() : [];
 
+  const nameOf = (key: string) => subjectByKey(key)?.name ?? key;
+
+  // Radar à gauche, lecture à droite : forces, matières à travailler (liens vers Réviser).
   const radar = (
-    <div className="flex flex-col gap-4">
+    <div className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_280px] md:gap-10">
       <Radar axes={axes} size={320} title="Ta précision par matière, face à la moyenne des joueurs" />
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-line pt-4">
+      <div className="flex min-w-0 flex-col gap-5 border-t border-line pt-5 md:border-l md:border-t-0 md:py-2 md:pl-8 md:pt-2">
         {known.length === 0 ? (
-          <p className="t-small min-w-0 flex-[1_1_260px]">
+          <p className="t-small">
             Ton tracé apparaît dès 5 questions répondues dans une matière.{" "}
             <Link href="/entrainement" className="ink-link">
               S&apos;entraîner
             </Link>
           </p>
         ) : (
-          <div className="t-small flex min-w-0 flex-[1_1_300px] flex-col gap-1">
-            <span>
-              <b className="font-semibold text-white">Forces</b> · {top.map((t) => t.label).join(", ")}
-            </span>
+          <>
+            <div>
+              <p className="t-eyebrow">Forces</p>
+              <p className="t-small mt-1.5">{top.map((t) => nameOf(t.key)).join(" · ")}</p>
+            </div>
             {low.length > 0 && (
-              <span>
-                <b className="font-semibold text-white">À travailler</b> · {low.map((t) => t.label).join(", ")}
-              </span>
+              <div>
+                <p className="t-eyebrow">À travailler</p>
+                <p className="t-small mt-1.5">
+                  {low.map((t, i) => (
+                    <span key={t.key}>
+                      {i > 0 && " · "}
+                      <Link href={reviserHref(t.key)} className="font-semibold text-white underline-offset-2 hover:underline">
+                        {nameOf(t.key)}
+                      </Link>
+                    </span>
+                  ))}
+                </p>
+              </div>
             )}
-          </div>
+          </>
         )}
         <RadarLegend />
       </div>
     </div>
   );
 
-  const list = (
-    <TwoColumnRows
-      items={d.topics}
-      keyOf={(t) => t.key}
-      render={(t, i) => (
-        <div className="flex flex-col gap-2 py-3">
-          <span className="flex items-baseline justify-between gap-3">
-            <span className="flex min-w-0 items-center gap-1.5 text-[14px] font-semibold leading-snug">
-              <span className="truncate">{t.label}</span>
-              {t.pct !== null && t.pct < WEAK_BELOW && <TriangleAlert size={13} className="shrink-0 text-muted" aria-label="à renforcer" />}
-            </span>
-            <span className="t-micro shrink-0 font-mono font-semibold tabular-nums">{t.pct === null ? "—" : `${t.pct} %`}</span>
-          </span>
-          <MasteryLine pct={t.pct} label={t.label} delay={0.05 * i} />
-          <span className="t-micro">
-            {t.pct === null
-              ? t.answered > 0
-                ? `${t.answered} question${t.answered > 1 ? "s" : ""} : encore un peu pour mesurer`
-                : "pas commencé"
-              : `${t.answered} questions${t.avg !== null ? ` · moyenne ${t.avg} %` : ""}`}
-          </span>
-        </div>
-      )}
+  // Les 10 matières en rangée horizontale : ta précision, le volume de
+  // questions, la moyenne des joueurs ; une carte ouvre la matière dans Réviser.
+  const rail = (
+    <TopicRail
+      label="Tes stats par matière"
+      actionLabel="Ouvrir la matière"
+      surface="quiet"
+      bleed="-mx-6 px-6 scroll-px-6 md:-mx-7 md:px-7 md:scroll-px-7"
+      items={subjectRail(d.topics, (key) => {
+        const t = d.topics.find((x) => x.key === key);
+        if (!t) return { href: reviserHref(key) };
+        const parts = [
+          t.answered > 0 ? `${t.answered} question${t.answered > 1 ? "s" : ""}` : null,
+          t.avg !== null ? `moy. ${t.avg} %` : null,
+        ].filter(Boolean);
+        return { href: reviserHref(key), note: t.pct === null && t.answered === 0 ? null : parts.join(" · ") || null, mark: t.avg };
+      })}
     />
   );
 
   return (
-    <section className="card flex min-w-0 flex-col gap-5 p-6 md:p-7 lg:col-span-7" aria-label="Tes matières">
+    <section className="card flex min-w-0 flex-col gap-5 p-6 md:p-7" aria-label="Tes matières">
       <ViewSwitch
         label="Vue des matières"
         title={
@@ -83,8 +91,8 @@ function SubjectsCard({ d }: { d: MoiData }) {
           </CardLabel>
         }
         views={[
+          { key: "matieres", label: "Matières", node: rail },
           { key: "radar", label: "Radar", node: radar },
-          { key: "detail", label: "Détail", node: list },
         ]}
       />
     </section>
@@ -100,7 +108,7 @@ function ActivityCard({ d }: { d: MoiData }) {
     { label: "Précision", value: d.accuracy === null ? "—" : `${d.accuracy} %` },
   ];
   return (
-    <section className="card flex min-w-0 flex-col gap-5 p-6 md:p-7 lg:col-span-12" aria-label="Activité">
+    <section className="card flex min-w-0 flex-col gap-5 p-6 md:p-7" aria-label="Activité">
       <CardLabel icon={<Activity size={15} aria-hidden />} right={<span className="t-micro">5 semaines</span>}>
         Activité
       </CardLabel>
@@ -142,15 +150,13 @@ function ActivityCard({ d }: { d: MoiData }) {
   );
 }
 
-/** Onglet Stats : l'activité en bande, puis les matières et les dernières sessions. */
+/** Onglet Stats : trois bandes pleine largeur — l'activité, les matières (rangée horizontale ou radar), les dernières sessions. */
 export function StatsTab({ d }: { d: MoiData }) {
   return (
-    <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
+    <div className="grid gap-4 md:gap-[18px]">
       <ActivityCard d={d} />
       <SubjectsCard d={d} />
-      <div className="min-w-0 lg:col-span-5">
-        <SessionHistory sessions={d.sessions} />
-      </div>
+      <SessionHistory sessions={d.sessions} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { fmtAgo } from "@/components/classement/format";
+import { TwoColumnRows } from "@/components/reviser/SubjectRows";
 import type { SessionItem } from "@/components/moi/types";
 
 const SHOWN = 5;
@@ -67,7 +68,7 @@ function Row({ s }: { s: SessionItem }) {
   );
 }
 
-/** Dernières sessions terminées, en une colonne ; le reste replié. */
+/** Dernières sessions terminées, sur deux colonnes (une sur téléphone) ; le reste replié. */
 export function SessionHistory({ sessions }: { sessions: SessionItem[] }) {
   const [local, setLocal] = useState<SessionItem[] | null>(null);
 
@@ -97,13 +98,7 @@ export function SessionHistory({ sessions }: { sessions: SessionItem[] }) {
         </p>
       ) : (
         <>
-          <ul className="m-0 flex list-none flex-col divide-y divide-line p-0">
-            {first.map((s) => (
-              <li key={s.id}>
-                <Row s={s} />
-              </li>
-            ))}
-          </ul>
+          <TwoColumnRows items={first} keyOf={(s) => s.id} render={(s) => <Row s={s} />} />
           {rest.length > 0 && (
             <details className="group">
               <summary className="t-small inline-flex cursor-pointer list-none items-center gap-1.5 font-semibold [&::-webkit-details-marker]:hidden">
@@ -111,13 +106,7 @@ export function SessionHistory({ sessions }: { sessions: SessionItem[] }) {
                 <span className="group-open:hidden">Voir les {rest.length} précédentes</span>
                 <span className="hidden group-open:inline">Replier</span>
               </summary>
-              <ul className="m-0 mt-1 flex list-none flex-col divide-y divide-line p-0">
-                {rest.map((s) => (
-                  <li key={s.id}>
-                    <Row s={s} />
-                  </li>
-                ))}
-              </ul>
+              <TwoColumnRows className="mt-1" items={rest} keyOf={(s) => s.id} render={(s) => <Row s={s} />} />
             </details>
           )}
         </>

@@ -74,39 +74,38 @@ export function FolderPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
+  // Dossier d'un contenu : liste déroulante + création d'un dossier à la volée.
   return (
-    <div className="card-soft p-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="w-full sm:min-w-[220px] sm:w-auto">
-          <div className="text-sm font-medium">{t("folders.folder")}</div>
-          <select
-            className="select mt-2"
-            value={value ?? ""}
-            onChange={(e) => onChange(e.target.value ? e.target.value : null)}
-          >
-            <option value="">{t("folders.none")}</option>
-            {folders.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
+    <div className="grid gap-2">
+      <label htmlFor={`folder-${kind}`} className="text-[13.5px] font-semibold leading-tight">
+        {t("folders.folder")}
+      </label>
+      <select
+        id={`folder-${kind}`}
+        className="select"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value ? e.target.value : null)}
+      >
+        <option value="">{t("folders.none")}</option>
+        {folders.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.name}
+          </option>
+        ))}
+      </select>
 
-        <div className="flex w-full flex-1 flex-wrap items-end gap-2 sm:w-auto">
-          <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
-            <div className="text-xs opacity-70">{t("folders.new")}</div>
-            <input
-              className="input mt-2"
-              value={newName}
-              placeholder={t("folders.newPlaceholder")}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-          </div>
+      <div className="flex gap-2">
+          <input
+            className="input min-w-0 flex-1"
+            value={newName}
+            placeholder={t("folders.newPlaceholder")}
+            aria-label={t("folders.new")}
+            onChange={(e) => setNewName(e.target.value)}
+          />
 
           <button
             type="button"
-            className="btn btn-secondary w-full whitespace-nowrap sm:w-auto"
+            className="btn btn-secondary shrink-0 whitespace-nowrap"
             disabled={busy || !newName.trim()}
             onClick={async () => {
               setBusy(true);
@@ -141,15 +140,14 @@ export function FolderPicker({
               }
             }}
           >
-            {busy ? t("common.saving") : t("folders.create")}
+            {busy ? t("common.saving") : "Nouveau dossier"}
           </button>
-        </div>
       </div>
 
       {errorText ? (
-        <div className="mt-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <p role="alert" className="rounded-[12px] border border-pen/30 bg-pen/5 px-3.5 py-2.5 text-[13.5px] text-pen">
           {errorText}
-        </div>
+        </p>
       ) : null}
     </div>
   );

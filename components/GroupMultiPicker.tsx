@@ -84,14 +84,15 @@ export function GroupMultiPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
+  // Choix des groupes avec qui partager : une case par groupe, plus « tous ».
   return (
-    <div className="card-soft p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-medium">{t("sharing.groups")}</div>
-        <label className="flex items-center gap-2 text-xs opacity-80">
+    <div className="grid gap-3 rounded-[14px] border border-line p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[13.5px] font-semibold">{t("sharing.groups")}</span>
+        <label className="t-micro flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
-            className="accent-blue-400"
+            className="h-4 w-4 accent-white"
             checked={allSelected}
             disabled={loading || groups.length === 0}
             onChange={(e) => {
@@ -104,21 +105,24 @@ export function GroupMultiPicker({
       </div>
 
       {loading ? (
-        <div className="mt-2 text-xs opacity-70">{t("common.loading")}</div>
+        <p className="t-micro">{t("common.loading")}</p>
       ) : groups.length === 0 ? (
-        <div className="mt-2 text-xs opacity-70">{t("sharing.noGroups")}</div>
+        <p className="t-micro">Aucun groupe : crée ou rejoins-en un dans Moi → Réglages.</p>
       ) : (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           {groups.map((g) => {
             const checked = value.includes(g.id);
             return (
               <label
                 key={g.id}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm transition hover:bg-white/[0.05]"
+                className={
+                  "flex cursor-pointer items-center gap-2.5 rounded-[12px] border px-3 py-2.5 text-[14px] transition-colors " +
+                  (checked ? "border-white bg-surface font-semibold" : "border-line-2 hover:bg-surface-2")
+                }
               >
                 <input
                   type="checkbox"
-                  className="accent-blue-400"
+                  className="h-4 w-4 shrink-0 accent-white"
                   checked={checked}
                   onChange={(e) => {
                     if (e.target.checked) onChange([...new Set([...value, g.id])]);
@@ -132,7 +136,7 @@ export function GroupMultiPicker({
         </div>
       )}
 
-      <div className="mt-2 text-xs opacity-70">{t("sharing.groupsHint")}</div>
+      <p className="t-micro">Un contenu peut être partagé avec un ou plusieurs de tes groupes.</p>
     </div>
   );
 }

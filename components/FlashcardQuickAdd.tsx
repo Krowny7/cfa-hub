@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { Field } from "@/components/ContentDetailHeader";
 
+// Ajout rapide d'une carte (recto, verso) à la fin du set.
 export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; nextPosition: number }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
@@ -15,26 +18,33 @@ export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; next
   const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <div className="w-full min-w-0 max-w-full rounded-2xl border p-4">
-      <h3 className="font-semibold">{t("flashcards.quickAddTitle")}</h3>
+    <div className="grid w-full min-w-0 gap-4">
+      <h3 className="text-[14px] font-semibold">{t("flashcards.quickAddTitle")}</h3>
 
-      {/* Mobile-first: one column, everything full width (prevents iOS clipping / horizontal overflow). */}
-      <div className="mt-3 grid w-full min-w-0 gap-2">
-        <textarea
-          className="box-border h-24 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-          placeholder={t("flashcards.frontPlaceholder")}
-          value={front}
-          onChange={(e) => setFront(e.target.value)}
-        />
-        <textarea
-          className="box-border h-24 w-full min-w-0 max-w-full rounded-xl border bg-transparent p-3 text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
-          placeholder={t("flashcards.backPlaceholder")}
-          value={back}
-          onChange={(e) => setBack(e.target.value)}
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Recto" htmlFor="qa-front">
+          <textarea
+            id="qa-front"
+            className="input box-border h-28 w-full min-w-0 whitespace-pre-wrap break-words"
+            placeholder="Terme, question…"
+            value={front}
+            onChange={(e) => setFront(e.target.value)}
+          />
+        </Field>
+        <Field label="Verso" htmlFor="qa-back">
+          <textarea
+            id="qa-back"
+            className="input box-border h-28 w-full min-w-0 whitespace-pre-wrap break-words"
+            placeholder="Définition, réponse…"
+            value={back}
+            onChange={(e) => setBack(e.target.value)}
+          />
+        </Field>
+      </div>
 
+      <div className="flex flex-wrap items-center gap-3">
         <button
-          className="box-border w-full rounded-xl bg-white px-4 py-2 text-center text-sm font-medium text-black whitespace-normal disabled:opacity-50 sm:w-auto sm:justify-self-start"
+          className="btn btn-primary"
           disabled={busy || !front.trim() || !back.trim()}
           onClick={async () => {
             setBusy(true);
@@ -44,7 +54,7 @@ export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; next
                 set_id: setId,
                 front: front.trim(),
                 back: back.trim(),
-                position: nextPosition
+                position: nextPosition,
               });
               if (ins.error) throw ins.error;
               setFront("");
@@ -59,10 +69,13 @@ export function FlashcardQuickAdd({ setId, nextPosition }: { setId: string; next
           }}
           type="button"
         >
-          {busy ? t("common.saving") : t("flashcards.addCard")}
+          <Plus size={16} aria-hidden /> {busy ? t("common.saving") : t("flashcards.addCard")}
         </button>
-
-        {msg && <div className="text-sm break-words [overflow-wrap:anywhere]">{msg}</div>}
+        {msg && (
+          <span role="status" className="t-small break-words">
+            {msg}
+          </span>
+        )}
       </div>
     </div>
   );

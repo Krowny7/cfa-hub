@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ArrowRight, Check } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
@@ -67,30 +68,58 @@ export function MockExamRegistration({
     }
   }
 
+  const count =
+    registrantCount > 0
+      ? `${registrantCount} participant${registrantCount > 1 ? "s" : ""} inscrit${registrantCount > 1 ? "s" : ""}`
+      : "Sois le premier à t'inscrire";
+
+  // Pas encore inscrit : c'est le point focal de la page (une carte héros, une
+  // action en encre). Inscrit : une carte calme, la désinscription en retrait.
+  if (!registered) {
+    return (
+      <section className="card-hero rl-in flex flex-wrap items-center justify-between gap-x-6 gap-y-5 p-6 md:p-8" aria-label="Inscription">
+        <div className="min-w-0 max-w-[520px]">
+          <p className="t-eyebrow m-0">Inscription</p>
+          <h2 className="t-h2 m-0 mt-2">Réserve ta place</h2>
+          <p className="t-small m-0 mt-2">
+            {count}
+            {ranked && " · examen classé : à la clôture, ton ELO bouge selon ta place face aux autres."}
+          </p>
+          {msg && (
+            <p className="m-0 mt-2 text-sm" aria-live="polite">
+              {msg}
+            </p>
+          )}
+        </div>
+        <button type="button" className="btn btn-primary btn-lg rl-press" disabled={busy} onClick={toggle}>
+          {busy ? "…" : "S'inscrire"} {!busy && <ArrowRight size={17} aria-hidden />}
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <div className="card rl-in p-5 flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <div className="text-[17px] font-bold tracking-[-0.01em]">
-          {registered ? "Tu es inscrit(e)" : "Inscription"}
+    <section className="card rl-in flex flex-wrap items-center justify-between gap-4 p-5 md:px-6" aria-label="Inscription">
+      <div className="flex min-w-0 items-center gap-3.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-black">
+          <Check size={18} strokeWidth={2.6} aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="m-0 text-[16px] font-bold tracking-[-0.01em]">Tu es inscrit(e)</p>
+          <p className="t-small m-0 mt-0.5">
+            {count}
+            {ranked && " · examen classé (ELO)"}
+          </p>
+          {msg && (
+            <p className="m-0 mt-1.5 text-sm" aria-live="polite">
+              {msg}
+            </p>
+          )}
         </div>
-        <div className="mt-0.5 text-sm text-white/50">
-          {registrantCount > 0
-            ? `${registrantCount} participant${registrantCount > 1 ? "s" : ""} inscrit${registrantCount > 1 ? "s" : ""}`
-            : "Sois le premier à t'inscrire"}
-        </div>
-        {ranked && (
-          <div className="mt-1 text-[13px] text-muted">Examen classé : à la clôture, ton ELO bouge selon ta place face aux autres participants.</div>
-        )}
-        {msg && <div className="mt-2 text-sm">{msg}</div>}
       </div>
-      <button
-        type="button"
-        className={registered ? "btn btn-ghost" : "btn btn-primary px-6"}
-        disabled={busy}
-        onClick={toggle}
-      >
-        {busy ? "…" : registered ? "Se désinscrire" : "S'inscrire"}
+      <button type="button" className="btn btn-ghost btn-sm text-muted" disabled={busy} onClick={toggle}>
+        {busy ? "…" : "Se désinscrire"}
       </button>
-    </div>
+    </section>
   );
 }

@@ -1,7 +1,9 @@
-"use client";
-
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { FCard, Rule, Formula, KFormula, Sec, Reading, FTable } from "@/components/fiche";
+
+// Fiche de lecture Derivatives (Readings 66–75), en JSX. Composant serveur :
+// les formules KaTeX sont rendues côté serveur, aucun JavaScript à charger.
 
 const NAV = [
   { id: "resume", label: "Résumé" },
@@ -11,55 +13,65 @@ const NAV = [
   { id: "r75", label: "R75" },
 ];
 
+const CONTENTS: [string, string, string][] = [
+  ["#resume", "Essentiels", "Résumé : formules et définitions clés"],
+  ["#r66", "R66", "Instrument & Market Features"],
+  ["#r67", "R67", "Forward Commitments & Contingent Claims"],
+  ["#r68", "R68", "Benefits, Risks & Uses"],
+  ["#r69", "R69", "Arbitrage, Réplication & Cost of Carry"],
+  ["#r70", "R70", "Valorisation des Forwards"],
+  ["#r71", "R71", "Valorisation des Futures"],
+  ["#r72", "R72", "Valorisation des Swaps"],
+  ["#r73", "R73", "Valorisation des Options"],
+  ["#r74", "R74", "Parité Put-Call"],
+  ["#r75", "R75", "Modèle Binomial"],
+];
+
 export default function DerivativesFiche() {
   return (
     <>
-      {/* ── Sticky sub-nav ── */}
-      <div className="sticky top-12 z-40 -mx-4 md:-mx-8 px-4 md:px-8 bg-neutral-950/95 backdrop-blur border-b border-white/[0.07] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex items-center gap-0.5 h-11 min-w-max">
-          <Link href="/fiches" className="text-[11px] font-semibold uppercase tracking-wider text-white/25 hover:text-white/50 transition-colors shrink-0 mr-3">
-            ← Fiches
+      {/* ── Sous-navigation collante, pleine largeur, sous la barre du haut ── */}
+      <nav
+        aria-label="Lectures"
+        className="sticky top-16 z-30 ml-[calc(50%-50vw)] w-screen border-b border-line bg-[color-mix(in_oklab,var(--paper)_86%,transparent)] backdrop-blur-md"
+      >
+        <div className="mx-auto flex h-12 max-w-[59.5rem] items-center gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:px-7 [&::-webkit-scrollbar]:hidden">
+          <Link href="/fiches" className="mr-1.5 inline-flex shrink-0 items-center gap-1 text-[12.5px] font-semibold text-muted hover:text-white">
+            <ArrowLeft size={13} aria-hidden /> Fiches
           </Link>
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-white/25 shrink-0 mr-2">DRV ·</span>
+          <span className="mr-1 h-4 w-px shrink-0 bg-line-2" aria-hidden />
           {NAV.map(({ id, label }) => (
-            <a key={id} href={`#${id}`}
-              className="text-[12px] font-medium text-muted hover:text-white/80 whitespace-nowrap px-2 py-1 rounded-full hover:bg-white/5 transition-colors">
+            <a
+              key={id}
+              href={`#${id}`}
+              className="shrink-0 rounded-[8px] px-2.5 py-1.5 font-mono text-[12px] font-semibold text-muted transition-colors hover:bg-surface-2 hover:text-white"
+            >
               {label}
             </a>
           ))}
         </div>
-      </div>
+      </nav>
 
-      {/* ── Hero ── */}
-      <div className="mt-8 mb-10 pb-8 border-b border-white/[0.07]">
-        <div className="kicker text-emerald-300/70 mb-2">CFA Level I — Book 3</div>
-        <h1 className="font-display text-2xl font-medium tracking-tight mb-1">Derivatives</h1>
-        <p className="text-sm text-white/50 mb-4">Readings 66–75 · Marchés, instruments, valorisation, réplication, parité put-call, modèle binomial.</p>
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            ["#resume","Résumé — Essentiels"],
-            ["#r66","R66 — Instrument & Market Features"],
-            ["#r67","R67 — Forward Commitments & Contingent Claims"],
-            ["#r68","R68 — Benefits, Risks & Uses"],
-            ["#r69","R69 — Arbitrage, Réplication & Cost of Carry"],
-            ["#r70","R70 — Valorisation des Forwards"],
-            ["#r71","R71 — Valorisation des Futures"],
-            ["#r72","R72 — Valorisation des Swaps"],
-            ["#r73","R73 — Valorisation des Options"],
-            ["#r74","R74 — Parité Put-Call"],
-            ["#r75","R75 — Modèle Binomial"],
-          ].map(([href, label]) => (
-            <a key={href} href={href}
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.10] text-white/50 hover:text-emerald-300 hover:border-emerald-400/30 transition-colors">
-              {label}
+      {/* ── En-tête et sommaire ── */}
+      <header className="mb-14 mt-10">
+        <p className="t-eyebrow">CFA Niveau I · Book 3</p>
+        <h1 className="t-h1 mt-3">Derivatives</h1>
+        <p className="t-body mt-3 max-w-[600px] text-muted">
+          Readings 66–75 · Marchés, instruments, valorisation, réplication, parité put-call, modèle binomial.
+        </p>
+        <nav aria-label="Sommaire" className="card-quiet mt-8 grid gap-x-4 p-2 sm:grid-cols-2">
+          {CONTENTS.map(([href, code, label]) => (
+            <a key={href} href={href} className="rl-row flex items-baseline gap-3 rounded-[10px] px-3 py-2.5">
+              <span className="w-[74px] shrink-0 font-mono text-[11.5px] font-semibold text-muted">{code}</span>
+              <span className="text-[14px] font-medium leading-snug">{label}</span>
             </a>
           ))}
-        </div>
-      </div>
+        </nav>
+      </header>
 
       {/* ══════════ Résumé ══════════ */}
       <Reading id="resume" number="Essentiels" title="Fiche résumé — formules et définitions clés">
-        <p className="text-sm text-white/50 -mt-4 mb-6">Condensé par priorité d'examen — pas d'explication, juste l'essentiel à avoir en tête avant un exercice ou un QCM.</p>
+        <p className="t-small -mt-3 mb-7">Condensé par priorité d'examen — pas d'explication, juste l'essentiel à avoir en tête avant un exercice ou un QCM.</p>
 
         <Sec label="Pricing forwards & futures (cost of carry)">
           <FCard title="Prix forward (sans revenus/coûts)">

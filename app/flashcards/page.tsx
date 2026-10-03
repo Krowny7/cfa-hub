@@ -2,12 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
-import { ContentListPage } from "@/components/ContentListPage";
-import { FlashcardSubjectGrid } from "@/components/FlashcardSubjectGrid";
+import { ContentListPage, type ContentSetRow } from "@/components/ContentListPage";
+import { FlashcardSubjectGrid, flashcardGroups } from "@/components/FlashcardSubjectGrid";
 import { getLocale } from "@/lib/i18n/server";
-import { t } from "@/lib/i18n/core";
 import { normalizeScope, normalizeView, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
-import type { ContentSetRow } from "@/components/ContentListPage";
 
 type FlashcardRow = ContentSetRow & {
   is_official?: boolean | null;
@@ -57,29 +55,46 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
   const system = (systemRes.data ?? []) as unknown as FlashcardRow[];
   const systemIds = new Set(system.map((s) => s.id));
 
-  // "Communautaire" ne couvre que ce que les utilisateurs créent eux-mêmes —
+  // "Communauté" ne couvre que ce que les utilisateurs créent eux-mêmes —
   // le contenu Système a son propre onglet, plus de double affichage.
   const all = ((setsRes.data ?? []) as unknown as FlashcardRow[]).filter((s) => !systemIds.has(s.id));
   const priv = all.filter((s) => sectionForVisibility(s.visibility) === "private");
   const shared = all.filter((s) => sectionForVisibility(s.visibility) === "shared");
   const pub = all.filter((s) => sectionForVisibility(s.visibility) === "public");
 
-  const displayItems =
-    scope === "private" ? priv :
-    scope === "shared" ? shared :
-    scope === "public" ? pub :
-    all;
-
+  const displayItems = scope === "private" ? priv : scope === "shared" ? shared : scope === "public" ? pub : all;
   const cfaItems = displayItems.filter((s) => (s.subject ?? "cfa") !== "personal");
   const personalItems = displayItems.filter((s) => s.subject === "personal");
 
-  const noFolder = t(locale, "common.noFolder");
-  const openLabel = t(locale, "flashcards.open");
+  // Nombre de cartes par set Système (repli : sans chiffres).
+  const counts: Record<string, number> = {};
+  if (systemIds.size) {
+    try {
+      const { data, error } = await admin.from("flashcard_sets").select("id, flashcards(count)").in("id", [...systemIds]);
+      if (!error) {
+        for (const r of (data ?? []) as { id: string; flashcards: { count: number }[] | null }[]) {
+          const n = r.flashcards?.[0]?.count;
+          if (typeof n === "number") counts[r.id] = n;
+        }
+      }
+    } catch {
+      // pas de compte de cartes
+    }
+  }
+
+  // « Pour commencer » : le premier set de la première matière qui en a.
+  const groups = flashcardGroups(system, counts);
+  const firstGroup = groups.find((g) => g.rows.length > 0 && !g.key.startsWith("x-")) ?? groups.find((g) => g.rows.length > 0);
+  const first = firstGroup?.rows[0] ?? null;
+  const subjects: Record<string, string> = {};
+  for (const g of groups) if (!g.key.startsWith("x-")) for (const r of g.rows) subjects[r.id] = g.name;
 
   return (
     <ContentListPage
       locale={locale}
       basePath="/flashcards"
+      kicker="Réviser · CFA Niveau I"
+      title="Flashcards"
       titleKey="flashcards.title"
       i18nPrefix="flashcards"
       view={view}
@@ -93,22 +108,21 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       personalItems={personalItems}
       displayItems={displayItems}
       itemUnit="set"
+      unit={["carte", "cartes"]}
+      setUnit={["set", "sets"]}
       systemCount={system.length}
-      continueReviewingSlot={<ContinueReviewing />}
-      systemSlot={
-        <>
-          <p className="text-xs text-white/55">{t(locale, "flashcards.systemNote")}</p>
-          <FlashcardSubjectGrid
-            locale={locale}
-            items={system}
-            rootLabel={noFolder}
-            openLabel={openLabel}
-            basePath="/flashcards"
-            itemUnit="set"
-            selectedFolder={sp.subject}
-          />
-        </>
+      continueReviewingSlot={
+        <ContinueReviewing
+          kind="flashcards"
+          basePath="/flashcards"
+          fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null}
+          counts={counts}
+          subjects={subjects}
+          srs
+          unit={["carte", "cartes"]}
+        />
       }
+      systemSlot={<FlashcardSubjectGrid items={system} counts={counts} basePath="/flashcards" selectedFolder={sp.subject} />}
     />
   );
 }

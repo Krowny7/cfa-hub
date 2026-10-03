@@ -13,6 +13,7 @@ export const CFA_TOPICS = [
   { id: 10, code: "portfolio",   label: "Portefeuille" },
 ] as const;
 
+// Liste déroulante compacte (formulaires de QCM et de flashcards).
 export function TopicSelector({
   value,
   onChange,
@@ -24,12 +25,13 @@ export function TopicSelector({
 }) {
   return (
     <select
-      className="rounded-xl border border-white/10 bg-neutral-900/60 px-2 py-1.5 text-xs text-white/80 disabled:opacity-50"
+      className="select min-h-[34px] w-auto rounded-[10px] py-1 pl-3 text-[13px]"
+      aria-label="Matière CFA"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
       disabled={disabled}
     >
-      <option value="">Topic CFA…</option>
+      <option value="">Matière CFA…</option>
       {CFA_TOPICS.map((t) => (
         <option key={t.id} value={t.id}>
           {t.label}
@@ -39,13 +41,10 @@ export function TopicSelector({
   );
 }
 
+// Pastille discrète : une métadonnée, pas une action.
 export function TopicBadge({ topicId }: { topicId: number | null }) {
   if (!topicId) return null;
   const topic = CFA_TOPICS.find((t) => t.id === topicId);
   if (!topic) return null;
-  return (
-    <span className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
-      {topic.label}
-    </span>
-  );
+  return <span className="chip chip-quiet chip-sm min-h-[22px] px-2 text-[11.5px]">{topic.label}</span>;
 }

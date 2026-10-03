@@ -1,12 +1,19 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import { Medal } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { MockExamRunner } from "@/components/MockExamRunner";
 import { MockExamRegistration } from "@/components/MockExamRegistration";
 import { MockExamRetake } from "@/components/MockExamRetake";
 import { applyMockExamElo, getMockExamEloDeltas } from "@/lib/rating";
 import { duelsReady } from "@/lib/duels";
+import {
+  MockExamHeader,
+  MockExamLeaderboard,
+  MockExamNotice,
+  MockExamTopicTable,
+  type LeaderRow,
+  type TopicCell,
+} from "@/components/session/MockExamViews";
+import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -21,16 +28,6 @@ type ActiveQuestion = {
   choices: string[];
 };
 
-type ReviewQuestion = {
-  question_id: string;
-  prompt: string;
-  choices: string[];
-  correct_index: number;
-  explanation: string | null;
-  topic: string | null;
-  selected_index: number | null;
-  is_correct: boolean;
-};
 
 type ResultRow = {
   user_id: string;
@@ -189,97 +186,55 @@ export default async function MockExamDetailPage({ params }: PageProps) {
       : !examClosed
         ? {
             delta: null,
-            note: `Examen classé : ton ELO bougera à la clôture, le ${windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" })}.`,
+            note: `ton ELO bougera à la clôture, le ${windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" })}`,
           }
         : eloTooFew
-          ? { delta: null, note: "Moins de deux participants : l'ELO ne bouge pas pour cet examen." }
+          ? { delta: null, note: "moins de deux participants : l'ELO ne bouge pas" }
           : null;
 
   const daysUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 86_400_000);
-  const hoursUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 3_600_000);
+  const dayMonth = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
+
+  const leaderRows: LeaderRow[] = allResults.map((r) => {
+    const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+    return {
+      userId: r.user_id,
+      name: p?.username ?? "Anonyme",
+      avatarUrl: p?.avatar_url ?? null,
+      score: r.score,
+      total: r.total,
+      durationSeconds: r.duration_seconds,
+    };
+  });
+  const matrix = topicMatrix.map(({ topic, byUser }) => ({
+    topic: cleanTopic(topic),
+    byUser: Object.fromEntries(
+      Object.entries(byUser).map(([uid, row]) => [uid, row ? { pct: row.pct, correct: row.correct, total: row.total } : null]),
+    ) as Record<string, TopicCell>,
+  }));
 
   return (
-    <div className="grid gap-5">
-      {/* Header */}
-      <div>
-        <Link href="/mock-exams" className="text-[13px] font-semibold text-muted hover:text-white">
-          ← Examens blancs
-        </Link>
-        <h1 className="mt-2 font-display break-words">{exam.title}</h1>
-        {exam.description && (
-          <p className="mt-1 text-sm text-white/55">{exam.description}</p>
-        )}
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/50">
-          <span>
-            {scheduledAt.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-            {" à "}{scheduledAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-          </span>
-          <span>·</span>
-          <span>{exam.duration_minutes} min</span>
-          <span>·</span>
-          <span>{exam.question_count} questions</span>
-          {eloEnabled && (
-            <>
-              <span>·</span>
-              <span className="font-semibold text-white">Classé (ELO)</span>
-            </>
-          )}
-          {exam.status === "open" && !withinWindow && !windowClosed && (
-            <>
-              <span>·</span>
-              <span className="text-blue-300">
-                fenêtre dans {hoursUntil < 24 ? `${hoursUntil}h` : `${daysUntil}j`}
-              </span>
-            </>
-          )}
-          {exam.status === "open" && withinWindow && (
-            <>
-              <span>·</span>
-              <span className="text-green-300">
-                fenêtre ouverte jusqu'au {windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
+    <div className="rl-page">
+      <MockExamHeader exam={exam} eloEnabled={eloEnabled} now={now.getTime()} />
 
-      {/* Registration card — reste disponible tant que la fenêtre n'est pas terminée */}
-      {exam.status === "open" && !windowClosed && !alreadyDone && (
-        <MockExamRegistration
-          examId={exam.id}
-          isRegistered={isRegistered}
-          registrantCount={allResults.length}
-          ranked={eloEnabled}
-        />
-      )}
-
-      {/* Exam not yet published */}
+      {/* Examen pas encore publié */}
       {exam.status === "draft" && !isAdmin && (
-        <div className="card p-6 text-center text-sm text-muted">
-          Cet examen n'est pas encore ouvert aux inscriptions.
-        </div>
+        <MockExamNotice title="Pas encore ouvert">Cet examen n&apos;est pas encore ouvert aux inscriptions.</MockExamNotice>
       )}
 
-      {/* Registered, but the ±3-jours window n'a pas encore commencé */}
+      {/* Inscrit, mais la fenêtre de passage n'a pas encore commencé */}
       {isRegistered && !alreadyDone && !withinWindow && !windowClosed && (
-        <div className="card p-5 text-center">
-          <div className="text-3xl">⏳</div>
-          <div className="mt-2 font-semibold">Tu es inscrit(e)</div>
-          <div className="mt-1 text-sm text-white/50">
-            Tu pourras passer l'examen à partir du {windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-            {" "}(jusqu'au {windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}).
-          </div>
-        </div>
+        <MockExamNotice title="Bientôt ton tour" countdown={daysUntil > 0 ? `J-${daysUntil}` : null}>
+          Tu pourras passer l&apos;examen du {windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" })} au {dayMonth(windowEnd)}.
+        </MockExamNotice>
       )}
 
-      {/* Registered but never attempted, and the window is now over */}
+      {/* Inscrit sans avoir passé l'examen, et la fenêtre est terminée */}
       {isRegistered && !alreadyDone && windowClosed && (
-        <div className="card p-5 text-center text-sm text-muted">
-          La fenêtre pour passer cet examen (jusqu'au {windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}) est terminée.
-        </div>
+        <MockExamNotice title="Fenêtre terminée">La fenêtre pour passer cet examen s&apos;est fermée le {dayMonth(windowEnd)}.</MockExamNotice>
       )}
 
-      {/* Exam runner */}
+      {/* Passage de l'examen, puis résultat et correction */}
       {showRunner && (
         <MockExamRunner
           examId={exam.id}
@@ -291,56 +246,20 @@ export default async function MockExamDetailPage({ params }: PageProps) {
         />
       )}
 
-      {/* Leaderboard */}
-      {showLeaderboard && (
-        <div className="card p-5">
-          <div className="mb-4 text-sm font-semibold">Classement ({allResults.length} participant{allResults.length > 1 ? "s" : ""})</div>
-          <div className="grid gap-2">
-            {allResults.map((r, rank) => {
-              const pct = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0;
-              const isMe = r.user_id === auth.user!.id;
-              const durationMin = r.duration_seconds ? Math.round(r.duration_seconds / 60) : null;
-              return (
-                <div
-                  key={r.user_id}
-                  className={`flex items-center gap-4 rounded-xl px-4 py-3 ${isMe ? "border border-blue-400/30 bg-blue-500/10" : "bg-white/[0.02]"}`}
-                >
-                  <div className={`flex w-6 shrink-0 items-center justify-center text-sm font-bold ${rank === 0 ? "text-yellow-400" : rank === 1 ? "text-white/60" : rank === 2 ? "text-orange-400/80" : "text-white/30"}`}>
-                    {rank <= 2 ? <Medal size={16} /> : rank + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {(Array.isArray(r.profiles) ? r.profiles[0] : r.profiles)?.username ?? "Anonyme"}{isMe && " (moi)"}
-                    </div>
-                    {durationMin && (
-                      <div className="text-xs text-muted">{durationMin} min</div>
-                    )}
-                  </div>
-                  {eloDeltas[r.user_id] !== undefined && (
-                    <span
-                      className={`shrink-0 rounded-[8px] px-2 py-0.5 font-mono text-[12px] font-semibold tabular-nums ${
-                        eloDeltas[r.user_id] > 0 ? "bg-white text-black" : "bg-surface-2"
-                      }`}
-                      title="Variation d'ELO"
-                    >
-                      {eloDeltas[r.user_id] > 0 ? "+" : eloDeltas[r.user_id] < 0 ? "−" : ""}
-                      {Math.abs(eloDeltas[r.user_id])}
-                    </span>
-                  )}
-                  <div className="text-right shrink-0">
-                    <div className={`text-base font-bold tabular-nums ${pct >= 70 ? "text-green-400" : pct >= 60 ? "text-yellow-400" : "text-red-400"}`}>
-                      {pct}%
-                    </div>
-                    <div className="text-xs text-muted">{r.score}/{r.total}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Inscription — reste disponible tant que la fenêtre n'est pas terminée ;
+          une fois inscrit, elle passe sous la copie (le point focal) */}
+      {exam.status === "open" && !windowClosed && !alreadyDone && (
+        <MockExamRegistration
+          examId={exam.id}
+          isRegistered={isRegistered}
+          registrantCount={allResults.length}
+          ranked={eloEnabled}
+        />
       )}
 
-      {/* Repasser l'examen en entraînement (score seul conservé, pas les réponses) */}
+      {showLeaderboard && <MockExamLeaderboard rows={leaderRows} meId={auth.user.id} eloDeltas={eloDeltas} />}
+
+      {/* Rejouer l'examen en entraînement (score seul conservé, pas les réponses) */}
       {alreadyDone && (
         <MockExamRetake
           examId={exam.id}
@@ -351,45 +270,8 @@ export default async function MockExamDetailPage({ params }: PageProps) {
         />
       )}
 
-      {/* Comparaison par thème entre participants */}
-      {showTopicComparison && (
-        <div className="card p-5 overflow-x-auto">
-          <div className="mb-4 text-sm font-semibold">Répartition par thème — tous les participants</div>
-          <table className="w-full min-w-[480px] border-collapse text-sm">
-            <thead>
-              <tr>
-                <th className="border-b border-white/10 px-2 py-2 text-left font-medium text-white/50">Thème</th>
-                {topicUsers.map(([uid, name]) => (
-                  <th key={uid} className={`border-b border-white/10 px-2 py-2 text-right font-medium ${uid === auth.user!.id ? "text-blue-300" : "text-white/50"}`}>
-                    {name}{uid === auth.user!.id && " (moi)"}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {topicMatrix.map(({ topic, byUser }) => (
-                <tr key={topic}>
-                  <td className="border-b border-white/5 px-2 py-2 text-white/70">{topic}</td>
-                  {topicUsers.map(([uid]) => {
-                    const r = byUser[uid];
-                    return (
-                      <td key={uid} className="border-b border-white/5 px-2 py-2 text-right tabular-nums">
-                        {r ? (
-                          <span className={r.pct >= 70 ? "text-green-400" : r.pct >= 50 ? "text-yellow-400" : "text-red-400"}>
-                            {r.pct}% <span className="text-white/30">({r.correct}/{r.total})</span>
-                          </span>
-                        ) : (
-                          <span className="text-white/20">—</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Comparaison par matière entre participants */}
+      {showTopicComparison && <MockExamTopicTable users={topicUsers} matrix={matrix} meId={auth.user.id} />}
     </div>
   );
 }

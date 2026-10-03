@@ -1,22 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
+import { RichText } from "@/components/RichText";
 
 type Card = { id: string; front: string; back: string; position: number; topic_id?: number | null };
 
-export function FlashcardCardEditor({
-  setId,
-  initialCards,
-  isOwner,
-}: {
-  setId: string;
-  initialCards: Card[];
-  isOwner: boolean;
-}) {
+// Toutes les cartes d'un set, recto et verso côte à côte ; le propriétaire
+// peut modifier (recto, verso, matière) ou supprimer une carte.
+export function FlashcardCardEditor({ setId, initialCards, isOwner }: { setId: string; initialCards: Card[]; isOwner: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const [cards, setCards] = useState<Card[]>(initialCards);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,11 +23,7 @@ export function FlashcardCardEditor({
   const [msg, setMsg] = useState<string | null>(null);
 
   async function refresh() {
-    const { data } = await supabase
-      .from("flashcards")
-      .select("id,front,back,position")
-      .eq("set_id", setId)
-      .order("position", { ascending: true });
+    const { data } = await supabase.from("flashcards").select("id,front,back,position").eq("set_id", setId).order("position", { ascending: true });
     setCards((data ?? []) as Card[]);
   }
 
@@ -65,7 +56,7 @@ export function FlashcardCardEditor({
       if (error) throw new Error(error.message);
       await refresh();
       cancelEdit();
-      setMsg("Enregistré");
+      setMsg("Carte enregistrée.");
     } catch (e: unknown) {
       setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
@@ -77,21 +68,13 @@ export function FlashcardCardEditor({
     setBusy(true);
     setMsg(null);
     try {
-      const { error } = await supabase
-        .from("flashcards")
-        .delete()
-        .eq("id", id)
-        .eq("set_id", setId);
+      const { error } = await supabase.from("flashcards").delete().eq("id", id).eq("set_id", setId);
       if (error) throw new Error(error.message);
       const remaining = cards.filter((c) => c.id !== id);
-      await Promise.all(
-        remaining.map((c, i) =>
-          supabase.from("flashcards").update({ position: i + 1 }).eq("id", c.id)
-        )
-      );
+      await Promise.all(remaining.map((c, i) => supabase.from("flashcards").update({ position: i + 1 }).eq("id", c.id)));
       await refresh();
       setConfirmDeleteId(null);
-      setMsg("Enregistré");
+      setMsg("Carte supprimée.");
     } catch (e: unknown) {
       setMsg(`${friendlyError(e, "Erreur")}`);
     } finally {
@@ -100,120 +83,106 @@ export function FlashcardCardEditor({
   }
 
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Cartes ({cards.length})</h2>
-      </div>
-      {msg && <div className="mt-2 text-sm">{msg}</div>}
-      <div className="mt-3 grid gap-2">
-        {cards.map((c) => {
-          const isEditing = editingId === c.id;
-          const isConfirming = confirmDeleteId === c.id;
+    <div className="grid gap-3">
+      {msg && (
+        <p role="status" className="t-small">
+          {msg}
+        </p>
+      )}
+      {cards.length === 0 ? (
+        <p className="t-small">Aucune carte pour l&apos;instant.</p>
+      ) : (
+        <ol className="m-0 grid list-none gap-2 p-0">
+          {cards.map((c) => {
+            const isEditing = editingId === c.id;
+            const isConfirming = confirmDeleteId === c.id;
 
-          return (
-            <div key={c.id} className="card-soft p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="text-xs text-muted">#{c.position}</div>
-                {isOwner && !isEditing && (
-                  <div className="flex shrink-0 gap-1">
-                    <button
-                      type="button"
-                      className="rounded px-2 py-0.5 text-xs border border-white/10 hover:bg-white/5"
-                      onClick={() => startEdit(c)}
-                    >
-                      Éditer
-                    </button>
-                    {isConfirming ? (
-                      <>
-                        <button
-                          type="button"
-                          className="rounded px-2 py-0.5 text-xs border border-red-500/50 bg-red-500/20 text-red-100 hover:bg-red-500/30 disabled:opacity-50"
-                          disabled={busy}
-                          onClick={() => deleteCard(c.id)}
-                        >
-                          Confirmer
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded px-2 py-0.5 text-xs border border-white/10 hover:bg-white/5"
-                          onClick={() => setConfirmDeleteId(null)}
-                        >
-                          <X size={12} />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="rounded px-2 py-0.5 text-xs border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20"
-                        onClick={() => {
-                          setConfirmDeleteId(c.id);
-                          cancelEdit();
-                        }}
-                      >
-                        Suppr.
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+            return (
+              <li key={c.id} className={"rounded-[14px] border px-4 py-3.5 " + (isEditing ? "border-line-2 bg-surface" : "border-line")}>
+                <div className="flex items-start gap-3">
+                  <span className="t-micro w-7 shrink-0 pt-0.5 font-mono font-semibold tabular-nums">{c.position}</span>
 
-              {isEditing ? (
-                <div className="mt-2 grid gap-2">
-                  <textarea
-                    className="box-border w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm"
-                    rows={2}
-                    value={editFront}
-                    onChange={(e) => setEditFront(e.target.value)}
-                    placeholder="Recto"
-                  />
-                  <textarea
-                    className="box-border w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm text-white/70"
-                    rows={2}
-                    value={editBack}
-                    onChange={(e) => setEditBack(e.target.value)}
-                    placeholder="Verso"
-                  />
-                  <TopicSelector value={editTopic} onChange={setEditTopic} disabled={busy} />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="rounded-xl bg-white px-3 py-1.5 text-sm font-medium text-black disabled:opacity-50"
-                      disabled={busy}
-                      onClick={saveEdit}
-                    >
-                      {busy ? "…" : "Sauvegarder"}
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-xl border border-white/10 px-3 py-1.5 text-sm hover:bg-white/5"
-                      onClick={cancelEdit}
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="mt-1 whitespace-pre-wrap text-sm font-medium break-words [overflow-wrap:anywhere]">
-                    {c.front}
-                  </div>
-                  <div className="mt-2 whitespace-pre-wrap text-sm text-white/70 break-words [overflow-wrap:anywhere]">
-                    {c.back}
-                  </div>
-                  {c.topic_id && (
-                    <div className="mt-2">
-                      <TopicBadge topicId={c.topic_id} />
+                  {isEditing ? (
+                    <div className="grid min-w-0 flex-1 gap-3">
+                      <textarea
+                        className="input box-border w-full"
+                        rows={2}
+                        value={editFront}
+                        onChange={(e) => setEditFront(e.target.value)}
+                        placeholder="Recto"
+                        aria-label="Recto"
+                      />
+                      <textarea
+                        className="input box-border w-full"
+                        rows={3}
+                        value={editBack}
+                        onChange={(e) => setEditBack(e.target.value)}
+                        placeholder="Verso"
+                        aria-label="Verso"
+                      />
+                      <div>
+                        <TopicSelector value={editTopic} onChange={setEditTopic} disabled={busy} />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={saveEdit}>
+                          {busy ? "…" : "Enregistrer"}
+                        </button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={cancelEdit}>
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid min-w-0 flex-1 gap-1.5 sm:grid-cols-2 sm:gap-6">
+                      <RichText text={c.front} className="break-words text-[14px] font-semibold leading-snug [overflow-wrap:anywhere]" />
+                      <div className="min-w-0">
+                        <RichText text={c.back} className="text-body break-words text-[14px] leading-snug [overflow-wrap:anywhere]" />
+                        {c.topic_id ? (
+                          <div className="mt-2">
+                            <TopicBadge topicId={c.topic_id} />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   )}
-                </>
-              )}
-            </div>
-          );
-        })}
-        {cards.length === 0 && (
-          <div className="text-sm text-white/50">Aucune carte pour l'instant.</div>
-        )}
-      </div>
+
+                  {isOwner && !isEditing && (
+                    <div className="flex shrink-0 items-center gap-1">
+                      {isConfirming ? (
+                        <>
+                          <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => deleteCard(c.id)}>
+                            Supprimer
+                          </button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteId(null)}>
+                            Annuler
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" className="icon-btn h-8 w-8 rounded-[10px]" onClick={() => startEdit(c)} aria-label={`Modifier la carte ${c.position}`}>
+                            <Pencil size={14} aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-btn h-8 w-8 rounded-[10px] text-pen"
+                            onClick={() => {
+                              setConfirmDeleteId(c.id);
+                              cancelEdit();
+                            }}
+                            aria-label={`Supprimer la carte ${c.position}`}
+                          >
+                            <Trash2 size={14} aria-hidden />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 }

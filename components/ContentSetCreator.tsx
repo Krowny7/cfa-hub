@@ -7,8 +7,9 @@ import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
 import { FolderPicker } from "@/components/FolderPicker";
+import { ShareModeSeg, type ShareMode } from "@/components/ContentItemSettings";
+import { Field } from "@/components/ContentDetailHeader";
 
-type ShareMode = "private" | "public" | "groups";
 type Subject = "cfa" | "personal";
 
 // Formulaire de création d'un set (flashcards ou QCM) — les deux composants
@@ -39,84 +40,49 @@ export function ContentSetCreator({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  return (
-    <div className="card p-6">
-      <h2 className="text-base font-semibold">{t(`${i18nPrefix}.createTitle`)}</h2>
+  const subjectIx = subject === "cfa" ? 0 : 1;
 
-      <div className="mt-4 grid gap-3">
-        {/* Subject toggle */}
-        <div className="flex gap-1 rounded-xl border border-white/[0.08] p-1">
-          <button
-            type="button"
-            onClick={() => setSubject("cfa")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition ${
-              subject === "cfa"
-                ? "bg-blue-500/20 text-blue-300"
-                : "text-muted hover:text-white/70"
-            }`}
-          >
-            <LineChart size={15} /> {t("subject.cfa")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubject("personal")}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition ${
-              subject === "personal"
-                ? "bg-violet-500/20 text-violet-300"
-                : "text-muted hover:text-white/70"
-            }`}
-          >
-            <BookOpen size={15} /> {t("subject.personal")}
-          </button>
+  // Formulaire posé dans une carte par la page (pas de carte ici).
+  return (
+    <div className="grid gap-6">
+      <h2 className="t-h3 m-0">{t(`${i18nPrefix}.createTitle`)}</h2>
+
+      <div className="grid gap-6">
+        {/* Sujet : CFA ou révision personnelle */}
+        <div className="grid gap-2">
+          <div role="radiogroup" aria-label="Sujet" className="seg w-full sm:w-auto sm:justify-self-start" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+            <span aria-hidden className="seg-thumb" style={{ left: `calc(4px + ${subjectIx} * (100% - 8px) / 2)`, width: "calc((100% - 8px) / 2)" }} />
+            <button type="button" role="radio" aria-checked={subject === "cfa"} aria-selected={subject === "cfa"} onClick={() => setSubject("cfa")} className="seg-item px-4 text-[13.5px]">
+              <LineChart size={15} aria-hidden /> {t("subject.cfa")}
+            </button>
+            <button type="button" role="radio" aria-checked={subject === "personal"} aria-selected={subject === "personal"} onClick={() => setSubject("personal")} className="seg-item px-4 text-[13.5px]">
+              <BookOpen size={15} aria-hidden /> {t("subject.personal")}
+            </button>
+          </div>
+          {subject === "personal" && <p className="t-micro">{t("subject.personalHint")}</p>}
         </div>
 
-        {subject === "personal" && (
-          <p className="text-xs text-violet-300/70">{t("subject.personalHint")}</p>
-        )}
-
-        <input
-          className="input"
-          placeholder={t(`${i18nPrefix}.setTitlePlaceholder`)}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        <Field label={t("common.title")} htmlFor={`create-${i18nPrefix}-title`}>
+          <input
+            id={`create-${i18nPrefix}-title`}
+            className="input"
+            placeholder={t(`${i18nPrefix}.setTitlePlaceholder`)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </Field>
 
         <FolderPicker kind={folderKind} value={folderId} onChange={setFolderId} />
 
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("sharing.title")}</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("private")}
-            >
-              {t("common.private")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("groups")}
-            >
-              {t("sharing.someGroups")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("public")}
-            >
-              {t("common.public")}
-            </button>
-          </div>
+        <Field label={t("sharing.title")}>
+          <ShareModeSeg value={shareMode} onChange={setShareMode} />
           {shareMode === "groups" && (
-            <div className="mt-3">
-              <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
-            </div>
+            <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
           )}
-        </div>
+        </Field>
 
         <button
-          className="btn btn-primary"
+          className="btn btn-primary justify-self-start"
           disabled={busy || !title.trim() || (shareMode === "groups" && groupIds.length === 0)}
           onClick={async () => {
             setBusy(true);
@@ -167,7 +133,11 @@ export function ContentSetCreator({
           {busy ? t("common.saving") : t(`${i18nPrefix}.create`)}
         </button>
 
-        {msg && <div className="text-sm">{msg}</div>}
+        {msg && (
+          <p role="status" className="t-small">
+            {msg}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, ChevronRight, Crosshair, FileStack, ListChecks, Shuffle, Swords, TriangleAlert } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Crosshair, FileStack, ListChecks, Shuffle, Swords } from "lucide-react";
 import { InkProgressRing } from "@/components/ui/InkRings";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { FormatRow } from "@/components/reviser/ReviserView";
-import { MasteryLine, TwoColumnRows } from "@/components/reviser/SubjectRows";
+import { TopicRail } from "@/components/ui/TopicRail";
+import { subjectRail, weightLabel } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";
 import { agoLabel, countdown, durationLabel, hourLabel, longDay } from "@/components/accueil/format";
 import type { MockExamCard } from "@/components/accueil/types";
@@ -12,8 +13,9 @@ import { DUEL_MINUTES, DUEL_QUESTIONS } from "@/lib/duels";
 
 // Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
 // avant (la matière la plus faible, sinon reprendre l'entraînement ciblé) ;
-// à côté, les autres façons de s'entraîner seul ; puis, plus calmes, ce qui
-// fait bouger le rang (examen blanc, duel) et une session par matière.
+// à côté, les autres façons de s'entraîner seul ; puis une session par
+// matière, en rangée horizontale (choisir une matière lance sa session
+// ciblée) et, plus calme, ce qui fait bouger le rang (examen blanc, duel).
 // Sans requête : app/entrainement charge les données, l'aperçu en fournit.
 
 export type EntrainementData = {
@@ -24,7 +26,6 @@ export type EntrainementData = {
   subjects: { key: string; name: string; pct: number | null }[];
 };
 
-const WEAK_BELOW = 50;
 const pctOf = (score: number, total: number) => (total > 0 ? Math.round((score / total) * 100) : null);
 
 function topicsLabel(keys: string[] | undefined) {
@@ -196,6 +197,19 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
 
   return (
     <DomainSpace kicker="S'entraîner" title="Pratiquer, comme le jour J" lead={lead}>
+      <section className="rl-section" aria-labelledby="ent-matieres">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="ent-matieres" className="t-h2 m-0">
+            Une session par matière
+          </h2>
+          <span className="t-micro">ta maîtrise · le poids de chaque matière à l&apos;examen</span>
+        </div>
+        <TopicRail
+          label="Une session par matière"
+          actionLabel="Session ciblée"
+          items={subjectRail(d.subjects, (key) => ({ href: `/practice?topic=${key}`, note: weightLabel(key) }))}
+        />
+      </section>
       <section className="rl-section" aria-labelledby="ent-contre">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="ent-contre" className="t-h2 m-0">
@@ -209,37 +223,6 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
         </div>
       </section>
 
-      <section className="rl-section" aria-labelledby="ent-matieres">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 id="ent-matieres" className="t-h2 m-0">
-            Une session par matière
-          </h2>
-          <span className="t-micro">ta maîtrise · un clic pour une session ciblée</span>
-        </div>
-        <div className="card px-3 py-1.5 md:px-4">
-          <TwoColumnRows
-            items={d.subjects}
-            keyOf={(s) => s.key}
-            render={(s, i) => (
-              <Link href={`/practice?topic=${s.key}`} className="rl-row group -mx-1 flex items-center gap-4 rounded-[14px] px-3 py-3.5" aria-label={`Session ciblée : ${s.name}`}>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold leading-tight">
-                      <span className="truncate">{s.name}</span>
-                      {s.pct !== null && s.pct < WEAK_BELOW && <TriangleAlert size={13} className="shrink-0 text-muted" aria-label="point faible" />}
-                    </span>
-                    <span className="t-micro shrink-0 font-mono tabular-nums">{s.pct === null ? "—" : `${s.pct} %`}</span>
-                  </span>
-                  <span className="mt-2.5 block">
-                    <MasteryLine pct={s.pct} label={`Maîtrise ${s.name}`} delay={0.3 + i * 0.03} />
-                  </span>
-                </span>
-                <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            )}
-          />
-        </div>
-      </section>
     </DomainSpace>
   );
 }

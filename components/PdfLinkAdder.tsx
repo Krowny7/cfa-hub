@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { GroupMultiPicker } from "@/components/GroupMultiPicker";
 import { FolderPicker } from "@/components/FolderPicker";
-
-type ShareMode = "private" | "public" | "groups";
+import { ShareModeSeg, type ShareMode } from "@/components/ContentItemSettings";
+import { Field } from "@/components/ContentDetailHeader";
 
 function normalizeDrivePreview(url: string): string | null {
   try {
@@ -23,6 +23,8 @@ function normalizeDrivePreview(url: string): string | null {
   }
 }
 
+// Ajout d'un lien PDF (Drive, OneDrive…) à la bibliothèque : on ne stocke
+// pas le fichier, seulement son lien et, pour Drive, un lien d'aperçu.
 export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
@@ -38,61 +40,30 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
   const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <div className="card p-6">
-      <h2 className="text-base font-semibold">{t("library.addTitle")}</h2>
-      <p className="mt-2 text-sm text-white/80">{t("library.addSubtitle")}</p>
+    <div className="grid gap-6">
+      <div>
+        <h2 className="t-h3 m-0">Ajouter un lien PDF</h2>
+        <p className="t-small mt-1.5 max-w-[560px]">Le fichier reste dans ton Drive ou ton OneDrive : on n&apos;enregistre que son lien.</p>
+      </div>
 
-      <div className="mt-4 grid gap-3">
-        <input
-          className="input"
-          placeholder={t("library.titlePlaceholder")}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+      <Field label={t("common.title")} htmlFor="pdf-title">
+        <input id="pdf-title" className="input" placeholder={t("library.titlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} />
+      </Field>
 
-        <input
-          className="input"
-          placeholder={t("library.urlPlaceholder")}
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
+      <Field label="Lien" htmlFor="pdf-url">
+        <input id="pdf-url" className="input" placeholder={t("library.urlPlaceholder")} value={url} onChange={(e) => setUrl(e.target.value)} />
+      </Field>
 
-        <FolderPicker kind="documents" value={folderId} onChange={setFolderId} />
+      <FolderPicker kind="documents" value={folderId} onChange={setFolderId} />
 
-        <div className="card-soft p-4">
-          <div className="text-sm font-medium">{t("sharing.title")}</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={`chip ${shareMode === "private" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("private")}
-            >
-              {t("common.private")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "groups" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("groups")}
-            >
-              {t("sharing.someGroups")}
-            </button>
-            <button
-              type="button"
-              className={`chip ${shareMode === "public" ? "chip-active" : ""}`}
-              onClick={() => setShareMode("public")}
-            >
-              {t("common.public")}
-            </button>
-          </div>
-          {shareMode === "groups" && (
-            <div className="mt-3">
-              <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />
-            </div>
-          )}
-        </div>
+      <Field label={t("sharing.title")}>
+        <ShareModeSeg value={shareMode} onChange={setShareMode} />
+        {shareMode === "groups" && <GroupMultiPicker value={groupIds} onChange={setGroupIds} defaultSelectGroupId={activeGroupId} />}
+      </Field>
 
+      <div className="grid gap-2">
         <button
-          className="btn btn-primary"
+          className="btn btn-primary justify-self-start"
           disabled={busy || !title.trim() || !url.trim() || (shareMode === "groups" && groupIds.length === 0)}
           onClick={async () => {
             setMsg(null);
@@ -106,7 +77,7 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
               try {
                 parsed = new URL(url.trim());
               } catch {
-                throw new Error("Invalid URL.");
+                throw new Error("Lien invalide.");
               }
 
               const drivePreview = normalizeDrivePreview(parsed.toString());
@@ -122,13 +93,13 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
                   visibility,
                   group_id: null,
                   folder_id: folderId,
-                  owner_id: user.id
+                  owner_id: user.id,
                 })
                 .select("id")
                 .maybeSingle();
 
               if (insert.error) throw insert.error;
-              const docId = (insert.data as any)?.id;
+              const docId = (insert.data as { id: string } | null)?.id;
 
               if (shareMode === "groups" && docId) {
                 const rows = groupIds.map((gid) => ({ document_id: docId, group_id: gid }));
@@ -143,8 +114,8 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
               setFolderId(null);
               setMsg(t("library.added"));
               window.location.reload();
-            } catch (e: any) {
-              setMsg(`${e?.message ?? t("common.error")}`);
+            } catch (e: unknown) {
+              setMsg(`${(e as { message?: string })?.message ?? t("common.error")}`);
             } finally {
               setBusy(false);
             }
@@ -154,9 +125,13 @@ export function PdfLinkAdder({ activeGroupId }: { activeGroupId: string | null }
           {busy ? t("library.saving") : t("library.saveLink")}
         </button>
 
-        <div className="text-xs text-white/70">{t("library.advice")}</div>
+        <p className="t-micro max-w-[560px]">{t("library.advice")}</p>
 
-        {msg && <div className="text-sm">{msg}</div>}
+        {msg && (
+          <p role="status" className="t-small">
+            {msg}
+          </p>
+        )}
       </div>
     </div>
   );

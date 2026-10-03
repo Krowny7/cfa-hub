@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Copy, FileText, Headphones, Library } from "lucide-react";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { MasteryLine, TwoColumnRows } from "@/components/reviser/SubjectRows";
-import type { SubjectAvailability } from "@/components/reviser/catalog";
+import { SubjectExplorer } from "@/components/reviser/SubjectExplorer";
+import { SubjectPanel } from "@/components/reviser/SubjectPanel";
+import { subjectRail } from "@/components/reviser/rail";
+import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
 
 // Espace « Réviser ». Le point focal : les fiches (seule surface héros, seul
 // bouton plein) ; à côté, les autres formats en lignes calmes ; puis les 10
-// matières, une ligne chacune : maîtrise en trait fin et une icône par format
-// (à l'encre s'il existe, en filigrane s'il est à venir). Sans requête :
+// matières en rangée horizontale (maîtrise, formats disponibles) : choisir
+// une matière montre sa fiche, son cours et ses cartes. Sans requête :
 // app/reviser charge les données, l'aperçu en fournit d'exemple.
 
 const count = (n: number) => (n ? `${n} matière${n > 1 ? "s" : ""}` : "bientôt");
@@ -27,53 +29,19 @@ export function FormatRow({ href, icon, title, desc, meta }: { href: string; ico
   );
 }
 
-function FormatIcon({ href, icon, label, subject }: { href: string | null; icon: React.ReactNode; label: string; subject: string }) {
-  const base = "grid h-9 w-9 place-items-center rounded-[10px]";
-  if (!href) {
-    return (
-      <span role="img" aria-label={`${label} ${subject} : à venir`} title={`${label} : à venir`} className={base + " text-muted opacity-35"}>
-        {icon}
-      </span>
-    );
-  }
-  return (
-    <Link href={href} aria-label={`${label} ${subject}`} title={label} className={base + " rl-press hover:bg-surface-2"}>
-      {icon}
-    </Link>
-  );
+/**
+ * Matière ouverte au départ : celle demandée (?matiere=), sinon ta plus
+ * faible parmi celles qui ont déjà un contenu, sinon la première qui a une fiche.
+ */
+function initialSubject(subjects: SubjectAvailability[], requested?: string | null) {
+  if (requested && subjects.some((s) => s.key === requested)) return requested;
+  const withContent = subjects.filter((s) => s.fiche || s.course || s.flashcards);
+  const measured = withContent.filter((s) => s.pct !== null) as (SubjectAvailability & { pct: number })[];
+  if (measured.length) return measured.reduce((a, b) => (b.pct < a.pct ? b : a)).key;
+  return (withContent[0] ?? subjects[0])?.key ?? "";
 }
 
-/** Les 10 matières : une ligne chacune, sur deux colonnes. */
-export function SubjectList({ subjects }: { subjects: SubjectAvailability[] }) {
-  return (
-    <TwoColumnRows
-      items={subjects}
-      keyOf={(s) => s.key}
-      render={(s, i) => (
-        <div className="flex items-center gap-4 py-3.5">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="m-0 truncate text-[15px] font-semibold leading-tight">{s.name}</h3>
-              <span className="t-micro shrink-0 font-mono tabular-nums" title={s.pct === null ? "pas encore mesuré" : "ta maîtrise"}>
-                {s.pct === null ? "—" : `${s.pct} %`}
-              </span>
-            </div>
-            <div className="mt-2.5">
-              <MasteryLine pct={s.pct} label={`Maîtrise ${s.name}`} delay={0.3 + i * 0.03} />
-            </div>
-          </div>
-          <div className="-mr-1.5 flex shrink-0 items-center">
-            <FormatIcon href={s.fiche ? `/fiches/${s.fiche}` : null} icon={<FileText size={17} />} label="Fiche" subject={s.name} />
-            <FormatIcon href={s.course ? `/courses/${s.course}` : null} icon={<Headphones size={17} />} label="Cours" subject={s.name} />
-            <FormatIcon href={s.flashcards} icon={<Copy size={17} />} label="Flashcards" subject={s.name} />
-          </div>
-        </div>
-      )}
-    />
-  );
-}
-
-export function ReviserView({ subjects }: { subjects: SubjectAvailability[] }) {
+export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailability[]; matiere?: string | null }) {
   const fiches = subjects.filter((s) => s.fiche).length;
   const courses = subjects.filter((s) => s.course).length;
   const cards = subjects.filter((s) => s.flashcards).length;
@@ -111,22 +79,21 @@ export function ReviserView({ subjects }: { subjects: SubjectAvailability[] }) {
           <h2 id="reviser-matieres" className="t-h2 m-0">
             Les 10 matières
           </h2>
-          <span className="t-micro inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="inline-flex items-center gap-1">
-              <FileText size={13} aria-hidden /> fiche
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Headphones size={13} aria-hidden /> cours
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Copy size={13} aria-hidden /> cartes
-            </span>
-            <span className="text-faint">en filigrane : à venir</span>
-          </span>
+          <span className="t-micro">choisis une matière : sa fiche, son cours et ses cartes</span>
         </div>
-        <div className="card px-5 py-1.5 md:px-7">
-          <SubjectList subjects={subjects} />
-        </div>
+        <SubjectExplorer
+          initial={initialSubject(subjects, matiere)}
+          items={subjectRail(subjects, (key) => {
+            const s = subjects.find((x) => x.key === key);
+            return { formats: { fiche: !!s?.fiche, course: !!s?.course, cards: !!s?.flashcards } };
+          })}
+          panels={Object.fromEntries(
+            subjects.map((s) => {
+              const i = SUBJECTS.findIndex((x) => x.key === s.key);
+              return [s.key, <SubjectPanel key={s.key} s={s} index={i + 1} code={SUBJECTS[i]?.code ?? ""} />];
+            }),
+          )}
+        />
       </section>
     </DomainSpace>
   );

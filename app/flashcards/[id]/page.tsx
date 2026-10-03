@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Layers, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { FlashcardImporterExporter } from "@/components/FlashcardImporterExporter";
 import { FlashcardReview } from "@/components/FlashcardReview";
@@ -6,9 +8,9 @@ import { FlashcardQuickAdd } from "@/components/FlashcardQuickAdd";
 import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
 import { ShareButton } from "@/components/ShareButton";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
+import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
-import Link from "next/link";
 import type { Flashcard } from "@/lib/types";
 
 type SetRow = { id: string; title: string; visibility: string; owner_id: string; share_token: string | null };
@@ -29,9 +31,13 @@ export default async function FlashcardSetPage({ params }: PageProps) {
 
   if (setErr || !setData) {
     return (
-      <div className="card p-6">
-        <h1 className="font-display text-xl font-medium">{t(locale, "flashcards.notFound")}</h1>
-        <p className="mt-2 text-sm opacity-70">{t(locale, "flashcards.notFoundDesc")}</p>
+      <div className="mx-auto grid max-w-[560px] justify-items-start gap-3 pt-4 md:pt-10">
+        <p className="t-eyebrow">Flashcards</p>
+        <h1 className="t-h1 m-0">{t(locale, "flashcards.notFound")}</h1>
+        <p className="t-small">Il a peut-être été supprimé, ou il n&apos;est pas partagé avec toi.</p>
+        <Link href="/flashcards" className="btn btn-secondary mt-3">
+          Retour aux flashcards
+        </Link>
       </div>
     );
   }
@@ -40,51 +46,50 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   const cards = (cardsData ?? []) as Pick<Flashcard, "id" | "front" | "back" | "position">[];
   const isOwner = set.owner_id === auth.user.id;
 
+  const parts = splitTitle(set.title);
+  const subject = subjectOfTitle(set.title);
+  const eyebrow = [subject?.name, parts.lead].filter(Boolean).join(" · ") || null;
+
   return (
-    <div className="grid gap-4">
+    <div className="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
       <RecentFlashcardSetTracker id={id} title={set.title} />
 
-      {/* Header — compact, ne mange pas d'espace vertical sur mobile */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link href="/flashcards" className="text-xs text-white/50 hover:text-white/80">
-            ← {t(locale, "nav.flashcards")}
-          </Link>
-          <h1 className="mt-1 font-display text-xl font-medium tracking-tight break-words">{set.title}</h1>
-          <p className="mt-0.5 text-sm text-white/50">
-            {String(set.visibility).toUpperCase()} · {cards.length} {t(locale, "flashcards.cards")}
-          </p>
-        </div>
-        {set.share_token && (
-          <ShareButton token={set.share_token} base="flashcards" />
-        )}
-      </div>
+      <ContentDetailHeader
+        backHref="/flashcards"
+        backLabel={t(locale, "nav.flashcards")}
+        title={parts.main}
+        eyebrow={eyebrow}
+        meta={[plural(cards.length, "carte", "cartes"), visibilityLabel(set.visibility)]}
+        rightSlot={set.share_token ? <ShareButton token={set.share_token} base="flashcards" /> : null}
+      />
 
-      {/* La révision est l'usage quotidien -> premier contenu visible, sans scroll */}
+      {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}
       <FlashcardReview cards={cards} setId={id} />
 
-      {/* Outils de création/import — repliés, réservés au propriétaire du set */}
-      {isOwner && (
-        <details className="card p-4">
-          <summary className="cursor-pointer select-none text-sm font-semibold">
-            {t(locale, "flashcards.manageCards")}
-          </summary>
-          <div className="mt-3 grid gap-3">
-            <FlashcardQuickAdd setId={id} nextPosition={cards.length + 1} />
-            <FlashcardImporterExporter setId={id} />
-          </div>
-        </details>
-      )}
-
-      {/* Liste complète des cartes — repliée par défaut, consultable par tous */}
-      <details className="card p-4">
-        <summary className="cursor-pointer select-none text-sm font-semibold">
-          {t(locale, "flashcards.allCards")} ({cards.length})
-        </summary>
-        <div className="mt-3">
-          <FlashcardCardEditor setId={id} initialCards={cards} isOwner={isOwner} />
+      {/* Le set : toutes les cartes (pour tous), ajout et import (propriétaire), repliés */}
+      <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">
+        <h2 id="set-cartes" className="t-h3 m-0">
+          Le set
+        </h2>
+        <div className="card divide-y divide-line overflow-hidden">
+          <DisclosureRow
+            icon={<Layers size={18} aria-hidden />}
+            title={t(locale, "flashcards.allCards")}
+            sub={`${plural(cards.length, "carte", "cartes")}${isOwner ? " · modifier ou supprimer" : " · recto et verso"}`}
+          >
+            <FlashcardCardEditor setId={id} initialCards={cards} isOwner={isOwner} />
+          </DisclosureRow>
+          {isOwner && (
+            <DisclosureRow icon={<Plus size={18} aria-hidden />} title="Ajouter et importer" sub="Ajout rapide · import et export compatibles Quizlet">
+              <div className="grid gap-8">
+                <FlashcardQuickAdd setId={id} nextPosition={cards.length + 1} />
+                <div className="rule" />
+                <FlashcardImporterExporter setId={id} />
+              </div>
+            </DisclosureRow>
+          )}
         </div>
-      </details>
+      </section>
     </div>
   );
 }

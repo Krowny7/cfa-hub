@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 import katex from "katex";
+import { Info, Lightbulb, OctagonAlert, TriangleAlert } from "lucide-react";
+
+// Briques des fiches de lecture en JSX (ex. Derivatives) : sans état,
+// utilisables depuis un composant serveur (KaTeX est rendu côté serveur).
 
 export function FCard({
   title,
@@ -11,19 +15,25 @@ export function FCard({
   children: ReactNode;
 }) {
   return (
-    <div className="card p-4 mb-3">
-      {title && <div className="text-[13px] font-semibold mb-1">{title}</div>}
-      {en && <div className="text-[11px] text-muted italic mb-2">{en}</div>}
-      <div className="text-[13px] text-white/65 leading-[1.75]">{children}</div>
+    <div className="card mb-3 p-5">
+      {title && <h4 className="text-[15px] font-semibold leading-snug tracking-[-0.01em]">{title}</h4>}
+      {en && <p className="mt-0.5 text-[12px] italic text-muted">{en}</p>}
+      <div
+        className={`text-[14.5px] leading-[1.72] text-body [&_strong]:font-semibold [&_strong]:text-white ${title || en ? "mt-2.5" : ""}`}
+      >
+        {children}
+      </div>
     </div>
   );
 }
 
+// Quatre nuances de remarque. Noir et blanc : seule « red » (piège) prend le
+// rouge correcteur ; les autres se distinguent par leur icône.
 const ruleStyles = {
-  blue: "border-blue-400 bg-blue-400/10 text-blue-300",
-  green: "border-emerald-400 bg-emerald-400/10 text-emerald-300",
-  amber: "border-amber-400 bg-amber-400/10 text-amber-300",
-  red: "border-red-400 bg-red-400/10 text-red-300",
+  blue: { Icon: Info, pen: false },
+  green: { Icon: Lightbulb, pen: false },
+  amber: { Icon: TriangleAlert, pen: false },
+  red: { Icon: OctagonAlert, pen: true },
 } as const;
 
 export function Rule({
@@ -33,18 +43,24 @@ export function Rule({
   c?: keyof typeof ruleStyles;
   children: ReactNode;
 }) {
+  const { Icon, pen } = ruleStyles[c];
   return (
     <div
-      className={`border-l-2 pl-3.5 pr-2.5 py-2 rounded-r-md my-2 text-[13px] leading-[1.65] ${ruleStyles[c]}`}
+      className={`my-3 flex gap-3 rounded-l-[3px] rounded-r-[12px] px-4 py-3 text-[14px] leading-[1.62] text-white [&_strong]:font-semibold ${
+        pen
+          ? "bg-[color-mix(in_oklab,var(--pen)_9%,var(--paper))] shadow-[inset_2px_0_0_var(--pen)]"
+          : "bg-surface-2 shadow-[inset_2px_0_0_var(--ink-3)]"
+      }`}
     >
-      {children}
+      <Icon size={16} className={`mt-[3px] shrink-0 ${pen ? "text-pen" : "text-muted"}`} aria-hidden />
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
 
 export function Formula({ children }: { children: ReactNode }) {
   return (
-    <pre className="font-mono text-[12px] bg-black/60 border border-white/[0.13] rounded-md px-3.5 py-3 my-3 text-white/85 leading-[1.9] overflow-x-auto whitespace-pre">
+    <pre className="my-3 overflow-x-auto whitespace-pre rounded-[12px] border border-line bg-surface-2/60 px-4 py-3 font-mono text-[12.5px] leading-[1.85] text-white">
       {children}
     </pre>
   );
@@ -58,11 +74,11 @@ export function Formula({ children }: { children: ReactNode }) {
 export function KFormula({ lines }: { lines: string | string[] }) {
   const items = Array.isArray(lines) ? lines : [lines];
   return (
-    <div className="bg-black/60 border border-white/[0.13] rounded-md px-4 py-3.5 my-3 overflow-x-auto grid gap-2.5">
+    <div className="my-3 grid gap-2.5 overflow-x-auto rounded-[12px] border border-line bg-surface-2/60 px-4 py-3.5">
       {items.map((tex, i) => (
         <div
           key={i}
-          className="katex-formula text-white/90"
+          className="katex-formula text-white"
           dangerouslySetInnerHTML={{
             __html: katex.renderToString(tex, { throwOnError: false, displayMode: true }),
           }}
@@ -82,14 +98,12 @@ export function Sec({
   children: ReactNode;
 }) {
   return (
-    <div className="mb-7">
-      <div className="flex items-center gap-1.5 kicker mb-3.5">
+    <div className="mb-9">
+      <div className="mb-3.5 flex flex-wrap items-center gap-2">
         {los && (
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-400/25">
-            {los}
-          </span>
+          <span className="rounded-[7px] bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-muted">{los}</span>
         )}
-        {label}
+        <h3 className="t-eyebrow">{label}</h3>
       </div>
       {children}
     </div>
@@ -108,16 +122,14 @@ export function Reading({
   children: ReactNode;
 }) {
   return (
-    <section className="mb-20 scroll-mt-20" id={id}>
-      {/* Full-width header band — visible anchor when scrolling */}
-      <div className="-mx-4 md:-mx-8 px-4 md:px-8 py-5 mb-7 border-t-2 border-blue-500/40 bg-gradient-to-b from-blue-500/[0.06] to-transparent">
-        <div className="flex items-center gap-3">
-          <span className="shrink-0 font-mono text-[11px] font-bold tracking-widest text-blue-300 bg-blue-500/15 border border-blue-400/30 px-2.5 py-1 rounded-md uppercase">
-            {number}
-          </span>
-          <h2 className="font-display text-base font-medium tracking-tight text-white">{title}</h2>
-        </div>
-      </div>
+    // scroll-mt : barre du haut (64 px) + sous-navigation collante (48 px)
+    <section className="mb-16 scroll-mt-32" id={id}>
+      <header className="mb-8 border-t border-line pt-8">
+        <span className="inline-flex rounded-[8px] bg-white px-2 py-1 font-mono text-[11.5px] font-bold uppercase tracking-[0.06em] text-black">
+          {number}
+        </span>
+        <h2 className="t-h2 mt-3">{title}</h2>
+      </header>
       {children}
     </section>
   );
@@ -131,15 +143,12 @@ export function FTable({
   rows: (string | ReactNode)[][];
 }) {
   return (
-    <div className="card overflow-x-auto mb-3">
-      <table className="w-full min-w-max text-[13px] border-collapse">
+    <div className="card mb-3 overflow-x-auto">
+      <table className="w-full min-w-[34rem] border-collapse text-[13.5px]">
         <thead>
           <tr>
             {headers.map((h, i) => (
-              <th
-                key={i}
-                className="text-[11px] font-medium text-faint pb-2.5 pt-3 px-3.5 border-b border-white/[0.07] text-left uppercase tracking-[0.04em]"
-              >
+              <th key={i} className="t-eyebrow border-b border-line px-4 pb-2.5 pt-3.5 text-left">
                 {h}
               </th>
             ))}
@@ -151,7 +160,9 @@ export function FTable({
               {row.map((cell, ci) => (
                 <td
                   key={ci}
-                  className={`py-2.5 px-3.5 text-white/65 align-top ${ri < rows.length - 1 ? "border-b border-white/[0.05]" : ""} ${ci === 0 ? "font-medium text-white/85" : ""}`}
+                  className={`px-4 py-3 align-top leading-[1.55] ${ri < rows.length - 1 ? "border-b border-line" : ""} ${
+                    ci === 0 ? "font-semibold text-white" : "text-body"
+                  }`}
                 >
                   {cell}
                 </td>

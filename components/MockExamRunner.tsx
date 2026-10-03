@@ -1,10 +1,23 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
-import { ClipboardList, Trophy, XCircle, AlertTriangle, Check, X, Copy, ClipboardCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
-import { QuestionPrompt } from "@/components/QuestionPrompt";
+import {
+  ChoiceButton,
+  CopyForAi,
+  QuestionCard,
+  QuestionMap,
+  QuestionNav,
+  ReadyCard,
+  ResultHero,
+  ReviewSection,
+  RunnerBar,
+  TopicBreakdown,
+} from "@/components/session/parts";
+import { EloDelta } from "@/components/session/ui";
+import { PASS_THRESHOLD, fmtMinutes, type ReviewQuestion } from "@/components/session/review";
 
 // Reçu pendant l'examen — jamais correct_index/explanation (voir
 // migration_mock_exam_secure_submit.sql, correction entièrement serveur).
@@ -15,40 +28,9 @@ type ActiveQuestion = {
   choices: string[];
 };
 
-// Reçu uniquement après soumission (via submit_mock_exam ou
-// get_mock_exam_review) — c'est la SEULE source de correct_index côté client.
-type ReviewQuestion = {
-  question_id: string;
-  prompt: string;
-  choices: string[];
-  correct_index: number;
-  explanation: string | null;
-  topic: string | null;
-  selected_index: number | null;
-  is_correct: boolean;
-};
-
-const LETTERS = ["A", "B", "C"];
-
-function buildAiExportText(review: ReviewQuestion[], score: number, total: number) {
-  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-  const header = `EXAMEN BLANC CFA — ${score}/${total} (${pct}%)\n` +
-    `Voici mes réponses à un examen blanc CFA Level I. Pour chaque question : mon énoncé, mes choix, ma réponse, la bonne réponse et l'explication officielle. ` +
-    `Peux-tu me faire un bilan de mes points faibles par thème, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
-  const body = review.map((q, i) => {
-    const choicesText = q.choices.map((c, ci) => `${LETTERS[ci]}) ${c}`).join("\n");
-    const myAnswer = q.selected_index === null ? "Non répondue" : `${LETTERS[q.selected_index]}) ${q.choices[q.selected_index]}`;
-    const correctAnswer = `${LETTERS[q.correct_index]}) ${q.choices[q.correct_index]}`;
-    return (
-      `Q${i + 1} [${q.topic ?? "?"}] — ${q.is_correct ? "CORRECT" : "INCORRECT"}\n` +
-      `${q.prompt}\n${choicesText}\n` +
-      `Ma réponse : ${myAnswer}\n` +
-      `Bonne réponse : ${correctAnswer}\n` +
-      (q.explanation ? `Explication : ${q.explanation}\n` : "")
-    );
-  }).join("\n");
-  return header + body;
-}
+// La correction (ReviewQuestion) n'arrive qu'après soumission (via
+// submit_mock_exam ou get_mock_exam_review) — c'est la SEULE source de
+// correct_index côté client.
 
 type Props = {
   examId: string;
@@ -58,30 +40,21 @@ type Props = {
   alreadyDone: boolean;
   /** examen blanc classé : variation d'ELO une fois appliquée, sinon une note (ex. « à la clôture ») */
   elo?: { delta: number | null; note: string | null } | null;
+  /** aperçu (app/preview-da) : écran et réponses de départ, chrono figé */
+  demo?: { phase: "ready" | "active"; answers?: (number | null)[]; idx?: number; secondsLeft?: number };
 };
 
-const PASS_THRESHOLD = 70;
-
-function fmtTime(s: number) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  return `${m}:${String(sec).padStart(2, "0")}`;
-}
-
-export function MockExamRunner({ examId, durationMinutes, questions, review: initialReview, alreadyDone, elo = null }: Props) {
+export function MockExamRunner({ examId, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, demo }: Props) {
   const supabase = useMemo(() => createClient(), []);
 
   type Phase = "ready" | "active" | "done";
-  const [phase, setPhase] = useState<Phase>(alreadyDone ? "done" : "ready");
-  const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
-  const [idx, setIdx] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
+  const [phase, setPhase] = useState<Phase>(alreadyDone ? "done" : demo?.phase ?? "ready");
+  const [answers, setAnswers] = useState<(number | null)[]>(() => demo?.answers ?? questions.map(() => null));
+  const [idx, setIdx] = useState(demo?.idx ?? 0);
+  const [secondsLeft, setSecondsLeft] = useState(demo?.secondsLeft ?? durationMinutes * 60);
   const [review, setReview] = useState<ReviewQuestion[]>(initialReview);
   const [submitting, setSubmitting] = useState(false);
-  const [showReview, setShowReview] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(0);
@@ -93,7 +66,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
   useEffect(() => { answersRef.current = answers; }, [answers]);
 
   useEffect(() => {
-    if (phase !== "active") return;
+    if (phase !== "active" || demo) return;
     timerRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
@@ -108,6 +81,13 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Chaque changement d'écran repart du haut de la page.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [phase]);
+
   function start() {
     startedAtRef.current = Date.now();
     setPhase("active");
@@ -117,6 +97,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
     if (submitting) return;
     setSubmitting(true);
     setError(null);
+    setConfirmEnd(false);
     if (timerRef.current) clearInterval(timerRef.current);
 
     const duration = Math.round((Date.now() - startedAtRef.current) / 1000);
@@ -141,282 +122,162 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
   const answered = answers.filter((a) => a !== null).length;
   const current = questions[idx];
 
-  // ── READY ──
+  // ── AVANT DE COMMENCER ──
   if (phase === "ready") {
     return (
-      <div className="card p-6 text-center">
-        <ClipboardList size={36} className="mx-auto text-white/70" />
-        <h2 className="mt-3 font-display text-xl font-medium">Prêt à commencer ?</h2>
-        <div className="mt-2 text-sm text-white/55">
-          {questions.length} questions · {durationMinutes} minutes
-        </div>
-        <div className="mx-auto mt-4 flex max-w-sm items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          <AlertTriangle size={16} className="shrink-0" />
-          Pas de correction pendant l&apos;examen. Tu verras tes résultats à la fin.
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary mx-auto mt-6 px-8 py-3 text-base"
-          onClick={start}
-        >
-          Commencer l&apos;examen
-        </button>
-      </div>
+      <ReadyCard
+        eyebrow="Examen blanc · ta copie"
+        title="Prêt à commencer ?"
+        meta={`${questions.length} questions · ${fmtMinutes(durationMinutes)}`}
+        rules={[
+          "Pas de correction pendant l'examen : résultats et explications à la fin.",
+          "Pas de pause : à la fin du chrono, ta copie est remise automatiquement.",
+          "Garde la page ouverte : tes réponses partent quand tu remets ta copie.",
+        ]}
+        onStart={start}
+        startLabel="Commencer l'examen"
+        wide
+      />
     );
   }
 
-  // ── DONE ──
+  // ── RÉSULTAT ──
   if (phase === "done") {
     const total = review.length;
     const score = review.filter((r) => r.is_correct).length;
     const pct = total > 0 ? Math.round((score / total) * 100) : null;
     const passed = pct !== null && pct >= PASS_THRESHOLD;
 
-    // Répartition par topic, façon relevé de notes CFA (weakest first).
-    const byTopic = new Map<string, { correct: number; total: number }>();
-    for (const q of review) {
-      const key = q.topic ?? "Autre";
-      const entry = byTopic.get(key) ?? { correct: 0, total: 0 };
-      entry.total += 1;
-      if (q.is_correct) entry.correct += 1;
-      byTopic.set(key, entry);
-    }
-    const topicStats = [...byTopic.entries()]
-      .map(([topic, s]) => ({ topic, ...s, pct: Math.round((s.correct / s.total) * 100) }))
-      .sort((a, b) => a.pct - b.pct);
-
-    async function copyForAi() {
-      const text = buildAiExportText(review, score, total);
-      try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch {
-        setError("Impossible de copier automatiquement — sélectionne et copie manuellement depuis la correction ci-dessous.");
-      }
-    }
-
     return (
-      <div className="grid gap-4">
-        <div className="card p-6 text-center">
-          {passed ? (
-            <Trophy size={40} className="mx-auto text-yellow-400" />
-          ) : (
-            <XCircle size={40} className="mx-auto text-red-400/80" />
+      <div className="rl-page">
+        <ResultHero
+          eyebrow={`Examen blanc · seuil indicatif ${PASS_THRESHOLD} %`}
+          verdict={total > 0 ? (passed ? "Réussi" : "Pas encore") : "Résultats indisponibles"}
+          pct={pct}
+          score={score}
+          total={total}
+          meta={
+            total > 0 ? (
+              <>
+                {score} bonne{score > 1 ? "s" : ""} réponse{score > 1 ? "s" : ""} sur {total}
+                {elo?.note ? <> · {elo.note}</> : null}
+              </>
+            ) : (
+              elo?.note ?? undefined
+            )
+          }
+          chips={elo && elo.delta !== null ? <EloDelta delta={elo.delta} /> : undefined}
+          actions={
+            total > 0 ? (
+              <a href="#rejouer" className="ink-link">
+                Rejouer en entraînement
+              </a>
+            ) : undefined
+          }
+        >
+          {total > 0 && <CopyForAi review={review} score={score} total={total} kind="mock" onError={setError} />}
+          {error && (
+            <p role="alert" className="m-0 text-sm text-pen">
+              {error}
+            </p>
           )}
-          <h2 className={`mt-3 text-2xl font-semibold ${passed ? "text-green-400" : "text-red-400"}`}>
-            {total > 0 ? (passed ? "PASS" : "DID NOT PASS") : "Résultats indisponibles"}
-          </h2>
-          {pct !== null && (
-            <>
-              <div className="mt-1 text-3xl font-bold tabular-nums">{pct}%</div>
-              <div className="mt-1 text-sm text-white/50">{score} / {total} bonnes réponses</div>
-              <div className="mt-1 text-xs text-muted">Seuil de passage (indicatif) : {PASS_THRESHOLD}%</div>
-            </>
-          )}
-          {elo && (elo.delta !== null || elo.note) && (
-            <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-sm">
-              {elo.delta !== null && (
-                <span
-                  className={`rounded-[9px] px-2.5 py-1 font-mono text-[15px] font-semibold tabular-nums ${
-                    elo.delta >= 0 ? "bg-white text-black" : "bg-surface-2"
-                  }`}
-                >
-                  ELO {elo.delta > 0 ? "+" : elo.delta < 0 ? "−" : ""}
-                  {Math.abs(elo.delta)}
-                </span>
-              )}
-              {elo.note && <span className="text-muted">{elo.note}</span>}
-            </div>
-          )}
-          {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
-          {total > 0 && (
-            <div className="mx-auto mt-5 flex flex-wrap justify-center gap-2">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowReview((v) => !v)}
-              >
-                {showReview ? "Masquer la correction" : "Voir la correction"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary inline-flex items-center gap-1.5"
-                onClick={copyForAi}
-              >
-                {copied ? <ClipboardCheck size={15} className="text-green-400" /> : <Copy size={15} />}
-                {copied ? "Copié !" : "Copier pour IA"}
-              </button>
-            </div>
-          )}
-        </div>
+        </ResultHero>
 
-        {topicStats.length > 0 && (
-          <div className="card p-5">
-            <div className="mb-3 text-sm font-semibold">Répartition par thème</div>
-            <div className="grid gap-2">
-              {topicStats.map((t) => (
-                <div key={t.topic} className="flex items-center gap-3">
-                  <div className="w-40 shrink-0 truncate text-xs text-white/60">{t.topic}</div>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-                    <div
-                      className={`h-full rounded-full ${t.pct >= 70 ? "bg-green-500" : t.pct >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
-                      style={{ width: `${t.pct}%` }}
-                    />
-                  </div>
-                  <div className={`w-24 shrink-0 text-right text-xs tabular-nums ${t.pct >= 70 ? "text-green-400" : t.pct >= 50 ? "text-yellow-400" : "text-red-400"}`}>
-                    {t.pct}% ({t.correct}/{t.total})
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <TopicBreakdown review={review} />
 
-        {showReview && (
-          <div className="grid gap-3">
-            {review.map((q, i) => (
-              <div key={q.question_id} className={`card p-4 border-l-2 ${q.is_correct ? "border-l-green-500/50" : q.selected_index === null ? "border-l-white/10" : "border-l-red-500/50"}`}>
-                <div className="text-xs text-muted mb-1">Q{i + 1}</div>
-                <QuestionPrompt text={q.prompt} className="text-sm font-medium break-words" compact />
-                <div className="mt-3 grid gap-1.5">
-                  {q.choices.map((c, ci) => (
-                    <div key={ci} className={`rounded-xl border px-3 py-2 text-sm ${
-                      ci === q.correct_index
-                        ? "border-2 border-white bg-white/[0.08] font-bold text-white"
-                        : ci === q.selected_index && q.selected_index !== q.correct_index
-                        ? "border-red-500 bg-red-500/[0.06] text-red-500"
-                        : "border-white/45 text-white/75"
-                    }`}>
-                      <span className="inline-flex items-center gap-1.5">
-                        {ci === q.correct_index && <Check size={14} className="shrink-0" />}
-                        {ci === q.selected_index && ci !== q.correct_index && <X size={14} className="shrink-0" />}
-                        {c}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {q.explanation && (
-                  <div className="mt-2 text-xs text-white/50 whitespace-pre-wrap break-words">{q.explanation}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <ReviewSection review={review} defaultOpen={false} />
       </div>
     );
   }
 
-  // ── ACTIVE ──
-  const timeIsLow = secondsLeft <= 300;
+  // ── PENDANT L'EXAMEN ──
+  const last = idx === questions.length - 1;
+  const unanswered = questions.length - answered;
+  function askEnd() {
+    if (unanswered > 0) setConfirmEnd(true);
+    else void submit();
+  }
 
   return (
-    <div className="grid gap-4">
-      {/* Timer + progress */}
-      <div className="card p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-xs text-muted">Temps restant</div>
-            <div className={`font-mono text-3xl font-bold tabular-nums ${timeIsLow ? "text-red-400" : ""}`}>
-              {fmtTime(secondsLeft)}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-muted">{answered}/{questions.length} répondues</div>
-            <div className="text-sm font-medium">Q{idx + 1}/{questions.length}</div>
-          </div>
-          <button
-            type="button"
-            className="btn btn-secondary shrink-0 text-sm"
-            disabled={submitting}
-            onClick={submit}
-          >
-            {submitting ? "…" : "Remettre la copie"}
+    <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
+      <RunnerBar
+        label="Examen blanc"
+        index={idx}
+        total={questions.length}
+        answered={answered}
+        secondsLeft={secondsLeft}
+        lowAt={300}
+        actions={
+          <button type="button" className="btn btn-secondary btn-sm" disabled={submitting} onClick={askEnd}>
+            {submitting ? "Envoi…" : "Remettre"}
           </button>
-        </div>
-        {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
-        {/* Progress bar */}
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.07]">
-          <div
-            className="h-full rounded-full bg-blue-500 transition-all"
-            style={{ width: `${Math.round((answered / questions.length) * 100)}%` }}
-          />
-        </div>
-      </div>
+        }
+      />
 
-      {/* Question */}
-      {current && (
-        <div className="card p-5">
-          <div className="text-xs text-muted mb-2">Question {idx + 1}</div>
-          <QuestionPrompt text={current.prompt} className="text-base font-medium break-words [overflow-wrap:anywhere] leading-relaxed" />
-          <div className="mt-4 grid gap-2">
-            {current.choices.map((c, ci) => {
-              const picked = answers[idx] === ci;
-              return (
-                <button
-                  key={ci}
-                  type="button"
-                  className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
-                    picked
-                      ? "border-white text-white shadow-[3px_3px_0_var(--ink)]"
-                      : "border-white/45 text-white hover:border-white"
-                  }`}
-                  onClick={() => {
-                    setAnswers((prev) => {
-                      const next = [...prev];
-                      next[idx] = ci;
-                      return next;
-                    });
-                  }}
-                >
-                  {c}
-                </button>
-              );
-            })}
+      {confirmEnd && (
+        <div role="alert" className="card-quiet rl-in flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="m-0 text-[14px]">
+            Encore <b>{unanswered}</b> question{unanswered > 1 ? "s" : ""} sans réponse. Remettre ta copie quand même ?
+          </p>
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmEnd(false)}>
+              Continuer
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" disabled={submitting} onClick={() => void submit()}>
+              Remettre ma copie
+            </button>
           </div>
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={idx === 0}
-          onClick={() => setIdx((i) => i - 1)}
-        >
-          ← Précédente
-        </button>
+      {error && (
+        <p role="alert" className="m-0 text-sm text-pen">
+          {error}
+        </p>
+      )}
 
-        {/* Question dots (mini map) */}
-        <div className="flex flex-wrap justify-center gap-1">
-          {questions.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIdx(i)}
-              className={`h-5 w-5 rounded text-[9px] font-bold transition ${
-                i === idx
-                  ? "bg-white text-black"
-                  : answers[i] !== null
-                  ? "bg-white/20 text-white/70"
-                  : "bg-white/[0.06] text-white/30"
-              }`}
-            >
-              {i + 1}
-            </button>
+      {current && (
+        <QuestionCard
+          index={idx}
+          total={questions.length}
+          prompt={current.prompt}
+          footer={
+            <QuestionNav
+              onPrev={() => setIdx((i) => i - 1)}
+              prevDisabled={idx === 0}
+              next={
+                last ? (
+                  <button type="button" className="btn btn-primary rl-press" disabled={submitting} onClick={askEnd}>
+                    Remettre ma copie <ArrowRight size={16} aria-hidden />
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary rl-press" onClick={() => setIdx((i) => i + 1)}>
+                    Suivante <ArrowRight size={16} aria-hidden />
+                  </button>
+                )
+              }
+            />
+          }
+        >
+          {current.choices.map((c, ci) => (
+            <ChoiceButton
+              key={ci}
+              index={ci}
+              text={c}
+              state={answers[idx] === ci ? "picked" : "idle"}
+              onClick={() => {
+                setAnswers((prev) => {
+                  const next = [...prev];
+                  next[idx] = ci;
+                  return next;
+                });
+              }}
+            />
           ))}
-        </div>
+        </QuestionCard>
+      )}
 
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={idx === questions.length - 1}
-          onClick={() => setIdx((i) => i + 1)}
-        >
-          Suivante →
-        </button>
-      </div>
+      <QuestionMap total={questions.length} current={idx} isAnswered={(i) => answers[i] !== null && answers[i] !== undefined} onJump={setIdx} />
     </div>
   );
 }

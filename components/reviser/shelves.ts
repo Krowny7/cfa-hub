@@ -32,6 +32,11 @@ const FICHE_INFO: Record<string, { meta: string; desc: string }> = {
   },
 };
 
+/** Contenu d'une fiche (nombre de synthèses et de pages, thèmes). */
+export function ficheInfo(slug: string): { meta: string; desc: string } {
+  return FICHE_INFO[slug] ?? { meta: "Fiche de révision", desc: "Synthèse et quiz corrigé." };
+}
+
 export function ficheShelf(): { items: ShelfItem[]; upcoming: string[] } {
   const items: ShelfItem[] = [];
   const upcoming: string[] = [];

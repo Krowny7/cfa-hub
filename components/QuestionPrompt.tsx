@@ -42,8 +42,9 @@ function parsePrompt(text: string): Block[] {
 }
 
 /** Right-align anything that reads as a figure, so columns line up. */
+// (classes [0-9] plutôt que l'échappement court : voir le piège Tailwind)
 function isNumeric(cell: string) {
-  return /^[(–—−-]?\s*[$€£¥]?\s*[\d][\d\s.,]*\s*[%x×]?\s*\)?$/.test(cell.trim());
+  return /^[(–—−-]?\s*[$€£¥]?\s*[0-9][0-9\s.,]*\s*[%x×]?\s*\)?$/.test(cell.trim());
 }
 
 function Table({ rows, compact }: { rows: string[][]; compact?: boolean }) {
@@ -56,18 +57,19 @@ function Table({ rows, compact }: { rows: string[][]; compact?: boolean }) {
   const header = labelValue ? null : padded[0];
   const body = labelValue ? padded : padded.slice(1);
 
-  const cell = compact ? "px-2 py-1" : "px-3 py-1.5";
+  const cell = compact ? "px-2.5 py-1.5" : "px-3.5 py-2";
 
+  // Pièce jointe calme : un cadre fin, l'en-tête en gris, les chiffres alignés.
   return (
-    <div className="my-3 overflow-x-auto">
-      <table className="w-full min-w-[18rem] border-collapse text-left">
+    <div className="my-3.5 overflow-x-auto rounded-[12px] border border-line bg-surface">
+      <table className="w-full min-w-[18rem] border-collapse text-left text-[0.92em] font-normal leading-snug tracking-normal">
         {header && (
           <thead>
-            <tr className="border-b border-white/15">
+            <tr className="border-b border-line bg-surface-2/50">
               {header.map((h, i) => (
                 <th
                   key={i}
-                  className={`${cell} align-bottom font-medium text-white/60 ${
+                  className={`${cell} align-bottom text-[0.92em] font-semibold text-muted ${
                     i > 0 ? "text-right" : ""
                   }`}
                 >
@@ -79,13 +81,13 @@ function Table({ rows, compact }: { rows: string[][]; compact?: boolean }) {
         )}
         <tbody>
           {body.map((row, r) => (
-            <tr key={r} className="border-b border-white/[0.06] last:border-0">
+            <tr key={r} className="border-b border-line last:border-0">
               {row.map((c, i) => (
                 <td
                   key={i}
                   className={`${cell} ${
                     isNumeric(c) ? "text-right tabular-nums" : ""
-                  } ${i === 0 ? "text-white/85" : "text-white"}`}
+                  } ${i === 0 ? "text-muted" : "text-white"}`}
                 >
                   {c}
                 </td>
@@ -115,7 +117,7 @@ export function QuestionPrompt({
         block.kind === "table" ? (
           <Table key={i} rows={block.rows} compact={compact} />
         ) : (
-          <p key={i} className={i > 0 ? "mt-2" : ""}>
+          <p key={i} className={i > 0 ? (compact ? "mt-2" : "mt-3") : ""}>
             {block.lines.join(" ")}
           </p>
         )

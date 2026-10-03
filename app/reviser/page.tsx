@@ -6,8 +6,9 @@ import { ReviserView } from "@/components/reviser/ReviserView";
 import { loadSubjects } from "@/components/reviser/load";
 
 // Espace « Réviser » : fiches, cours complets, flashcards, bibliothèque, et
-// les 10 matières avec ce qui existe vraiment pour chacune.
-export default async function ReviserPage() {
+// les 10 matières avec ce qui existe vraiment pour chacune (?matiere=fsa
+// ouvre directement une matière).
+export default async function ReviserPage({ searchParams }: { searchParams?: Promise<{ matiere?: string }> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
@@ -19,6 +20,6 @@ export default async function ReviserPage() {
     admin = null;
   }
 
-  const subjects = await loadSubjects(supabase, admin, auth.user.id);
-  return <ReviserView subjects={subjects} />;
+  const [subjects, sp] = await Promise.all([loadSubjects(supabase, admin, auth.user.id), searchParams]);
+  return <ReviserView subjects={subjects} matiere={sp?.matiere ?? null} />;
 }

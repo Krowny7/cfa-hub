@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -38,7 +37,7 @@ export async function FicheDrillPage({ config }: { config: FicheConfig }) {
     .like("title", `${config.drillTitlePrefix}%`);
 
   const sets = (setsData ?? [])
-    .map((s) => ({ ...s, page: Number(/Page (\d+)/.exec(s.title)?.[1]) }))
+    .map((s) => ({ ...s, page: Number(/Page ([0-9]+)/.exec(s.title)?.[1]) }))
     .filter((s) => Number.isFinite(s.page));
 
   const { data: questionsData } = sets.length
@@ -66,22 +65,14 @@ export async function FicheDrillPage({ config }: { config: FicheConfig }) {
     }))
     .sort((a, b) => a.page - b.page);
 
-  // Le conteneur global fait 896px (max-w-4xl) : trop étroit pour cours + quiz
-  // côte à côte. Sur md+, cette page s'élargit (jusqu'à 1360px) en restant
-  // centrée, sans toucher au layout global. 19rem = sidebar (14rem) + marges
-  // latérales (2×2rem) + marge pour la barre de défilement.
+  // Page large (.rl-wide, alignée sur la barre du haut) : cours et quiz côte à
+  // côte sur grand écran. L'en-tête (retour, titre, état de la fiche) est
+  // rendu par FicheWorkspace, qui connaît la progression.
   return (
-    <div className="grid gap-4 md:ml-[calc((100%-min(1360px,calc(100vw-19rem)))/2)] md:w-[min(1360px,calc(100vw-19rem))]">
-      <div>
-        <Link href="/fiches" className="text-xs text-white/50 hover:text-white/80">
-          ← Fiches de révision
-        </Link>
-        <h1 className="mt-1 font-display text-xl font-medium tracking-tight">{config.title} — Vault Concept Sheet</h1>
-        <p className="mt-1 text-sm text-white/55">{config.description}</p>
-      </div>
-
+    <div className="rl-wide">
       <FicheWorkspace
         title={config.title}
+        description={config.description}
         pdfUrl={pdfUrl}
         pdfDownloadName={config.pdfDownloadName}
         pdfLabel={config.pdfLabel}

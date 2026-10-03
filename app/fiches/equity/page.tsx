@@ -5,8 +5,7 @@ export default function EquityFiche() {
     <FicheDrillPage
       config={{
         title: "Equity",
-        description:
-          "8 pages de synthèse (une par grand thème), chacune suivie d'une page de QCM d'entraînement tirée de notre banque officielle. Corrigé complet en fin de document.",
+        description: "8 synthèses, une par grand thème, chacune suivie de son QCM corrigé.",
         pdfFile: "equity.pdf",
         pdfDownloadName: "Equity_Vault_Concept_Sheet.pdf",
         pdfLabel: "Equity — 18 pages",

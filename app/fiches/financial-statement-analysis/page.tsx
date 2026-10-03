@@ -5,8 +5,7 @@ export default function FSAFiche() {
     <FicheDrillPage
       config={{
         title: "Financial Statement Analysis",
-        description:
-          "11 pages de synthèse (une par lecture), chacune suivie d'une page de QCM d'entraînement tirée de notre banque officielle. Corrigé complet en fin de document.",
+        description: "11 synthèses, une par lecture, chacune suivie de son QCM corrigé.",
         pdfFile: "financial-statement-analysis.pdf",
         pdfDownloadName: "Financial_Statement_Analysis_Vault_Concept_Sheet.pdf",
         pdfLabel: "Financial Statement Analysis — 24 pages",

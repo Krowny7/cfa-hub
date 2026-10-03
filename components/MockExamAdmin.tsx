@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Settings2 } from "lucide-react";
+import { Check, ChevronDown, Plus, Settings2, Trash2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { applyMockExamElo, getMockExamEloAppliedAt } from "@/lib/rating";
@@ -41,6 +41,7 @@ export function MockExamAdmin({
   const [eloApplied, setEloApplied] = useState<Record<string, string>>(initialApplied);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Create form
   const [showCreate, setShowCreate] = useState(false);
@@ -149,158 +150,136 @@ export function MockExamAdmin({
 
   const statusLabel = (s: string) =>
     s === "draft" ? "Brouillon" : s === "open" ? "Ouvert" : "Clôturé";
-  const statusColor = (s: string) =>
-    s === "draft" ? "text-muted" : s === "open" ? "text-green-400" : "text-faint";
 
+  const field = (label: string, input: React.ReactNode) => (
+    <label className="grid gap-1.5">
+      <span className="t-micro font-semibold">{label}</span>
+      {input}
+    </label>
+  );
+
+  // Outil d'administration : replié par défaut, posé en bas de la page.
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-300">
-          <Settings2 size={15} /> Admin — Gestion des examens
-        </div>
-        <button
-          type="button"
-          className="btn btn-secondary text-xs"
-          onClick={() => setShowCreate((v) => !v)}
-        >
-          {showCreate ? "Annuler" : "+ Créer un examen"}
-        </button>
-      </div>
+    <details className="card-quiet group" aria-label="Gestion des examens (admin)">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-6">
+        <span className="flex items-center gap-2.5">
+          <Settings2 size={16} aria-hidden className="text-muted" />
+          <span className="text-[15px] font-semibold">Gestion des examens</span>
+          <span className="chip chip-quiet chip-sm">admin</span>
+        </span>
+        <span className="t-micro inline-flex items-center gap-2">
+          {exams.length} examen{exams.length > 1 ? "s" : ""}
+          <ChevronDown size={15} aria-hidden className="transition-transform group-open:rotate-180" />
+        </span>
+      </summary>
 
-      {showCreate && (
-        <div className="mt-4 grid gap-3 rounded-xl border border-white/10 p-4">
-          <input
-            className="input"
-            placeholder="Titre (ex: Examen blanc juin 2026)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <textarea
-            className="input resize-none"
-            rows={2}
-            placeholder="Description (optionnel)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <div className="grid gap-3 sm:grid-cols-4">
-            <div>
-              <div className="mb-1 text-xs text-white/50">Date & heure</div>
-              <input
-                className="input w-full"
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-white/50">Durée (min)</div>
-              <input
-                className="input w-full"
-                type="number"
-                min={30}
-                max={360}
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-white/50">Nb de questions</div>
-              <input
-                className="input w-full"
-                type="number"
-                min={10}
-                max={120}
-                value={questionCount}
-                onChange={(e) => setQuestionCount(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-white/50">Fenêtre (±jours)</div>
-              <input
-                className="input w-full"
-                type="number"
-                min={0}
-                max={14}
-                value={windowDays}
-                onChange={(e) => setWindowDays(Number(e.target.value))}
-              />
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={busy === "create" || !title.trim() || !scheduledAt}
-            onClick={createExam}
-          >
-            {busy === "create" ? "…" : "Créer l'examen"}
+      <div className="grid grid-cols-1 gap-4 border-t border-line p-5 md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {msg ? (
+            <p className="m-0 text-sm" aria-live="polite">
+              {msg}
+            </p>
+          ) : (
+            <span />
+          )}
+          <button type="button" className={"btn btn-sm " + (showCreate ? "btn-ghost" : "btn-secondary")} onClick={() => setShowCreate((v) => !v)}>
+            {showCreate ? "Annuler" : (
+              <>
+                <Plus size={14} aria-hidden /> Créer un examen
+              </>
+            )}
           </button>
         </div>
-      )}
 
-      {msg && <div className="mt-3 text-sm">{msg}</div>}
-
-      <div className="mt-4 grid gap-2">
-        {exams.length === 0 && (
-          <div className="text-sm text-muted">Aucun examen créé.</div>
-        )}
-        {exams.map((e) => (
-          <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 px-4 py-3">
-            <div className="min-w-0">
-              <div className="text-sm font-medium">{e.title}</div>
-              <div className="text-xs text-muted">
-                {new Date(e.scheduled_at).toLocaleString("fr-FR")} · {e.duration_minutes}min · {e.question_count}Q
-                {" · "}<span className={statusColor(e.status)}>{statusLabel(e.status)}</span>
-              </div>
+        {showCreate && (
+          <div className="card grid grid-cols-1 gap-4 p-5">
+            {field(
+              "Titre",
+              <input className="input" placeholder="ex. Examen blanc juin 2026" value={title} onChange={(e) => setTitle(e.target.value)} />,
+            )}
+            {field(
+              "Description (optionnel)",
+              <textarea className="input resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />,
+            )}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+              {field("Date et heure", <input className="input w-full" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />)}
+              {field("Durée (min)", <input className="input w-full" type="number" min={30} max={360} value={duration} onChange={(e) => setDuration(Number(e.target.value))} />)}
+              {field("Questions", <input className="input w-full" type="number" min={10} max={120} value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} />)}
+              {field("Fenêtre (± jours)", <input className="input w-full" type="number" min={0} max={14} value={windowDays} onChange={(e) => setWindowDays(Number(e.target.value))} />)}
             </div>
-            <div className="flex shrink-0 gap-2">
-              {e.status === "draft" && (
-                <button
-                  type="button"
-                  className="rounded-xl bg-green-500/20 px-3 py-1.5 text-xs text-green-300 hover:bg-green-500/30 disabled:opacity-50"
-                  disabled={busy === e.id}
-                  onClick={() => publish(e.id)}
-                >
-                  {busy === e.id ? "…" : "Publier"}
-                </button>
-              )}
-              {e.status === "open" && (
-                <button
-                  type="button"
-                  className="rounded-xl bg-orange-500/20 px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-500/30 disabled:opacity-50"
-                  disabled={busy === e.id}
-                  onClick={() => close(e.id)}
-                >
-                  {busy === e.id ? "…" : "Clôturer"}
-                </button>
-              )}
-              {eloEnabled && isClosed(e) && e.status !== "draft" && (
-                eloApplied[e.id] ? (
-                  <span className="badge badge-neutral self-center" title={new Date(eloApplied[e.id]).toLocaleString("fr-FR")}>
-                    ELO appliqué
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-primary min-h-0 px-3 py-1.5 text-xs"
-                    disabled={busy === e.id + "-elo"}
-                    onClick={() => applyElo(e.id)}
-                  >
-                    {busy === e.id + "-elo" ? "…" : "Appliquer l'ELO"}
-                  </button>
-                )
-              )}
-              <button
-                type="button"
-                className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/20 disabled:opacity-50"
-                disabled={busy === e.id + "-del"}
-                onClick={() => deleteExam(e.id)}
-              >
-                Suppr.
+            <div className="flex justify-end">
+              <button type="button" className="btn btn-primary" disabled={busy === "create" || !title.trim() || !scheduledAt} onClick={createExam}>
+                {busy === "create" ? "…" : "Créer l'examen"}
               </button>
             </div>
           </div>
-        ))}
+        )}
+
+        {exams.length === 0 ? (
+          <p className="t-small m-0">Aucun examen créé.</p>
+        ) : (
+          <ul className="m-0 grid list-none gap-2 p-0">
+            {exams.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] bg-surface px-4 py-3 shadow-[inset_0_0_0_1px_var(--line)]">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[14.5px] font-semibold">{e.title}</span>
+                    <span className={"chip chip-sm " + (e.status === "open" ? "chip-active" : "chip-quiet")}>{statusLabel(e.status)}</span>
+                  </div>
+                  <div className="t-micro mt-1">
+                    {new Date(e.scheduled_at).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} · {e.duration_minutes} min · {e.question_count} questions
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {e.status === "draft" && (
+                    <button type="button" className="btn btn-secondary btn-sm" disabled={busy === e.id} onClick={() => publish(e.id)}>
+                      {busy === e.id ? "…" : "Publier"}
+                    </button>
+                  )}
+                  {e.status === "open" && (
+                    <button type="button" className="btn btn-secondary btn-sm" disabled={busy === e.id} onClick={() => close(e.id)}>
+                      {busy === e.id ? "…" : "Clôturer"}
+                    </button>
+                  )}
+                  {eloEnabled && isClosed(e) && e.status !== "draft" && (
+                    eloApplied[e.id] ? (
+                      <span className="chip chip-quiet chip-sm" title={new Date(eloApplied[e.id]).toLocaleString("fr-FR")}>
+                        <Check size={13} aria-hidden /> ELO appliqué
+                      </span>
+                    ) : (
+                      <button type="button" className="btn btn-primary btn-sm" disabled={busy === e.id + "-elo"} onClick={() => applyElo(e.id)}>
+                        {busy === e.id + "-elo" ? "…" : "Appliquer l'ELO"}
+                      </button>
+                    )
+                  )}
+                  {confirmDelete === e.id ? (
+                    <>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmDelete(null)}>
+                        Garder
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        disabled={busy === e.id + "-del"}
+                        onClick={() => {
+                          setConfirmDelete(null);
+                          void deleteExam(e.id);
+                        }}
+                      >
+                        Supprimer pour de bon
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="btn btn-ghost btn-sm text-muted" disabled={busy === e.id + "-del"} onClick={() => setConfirmDelete(e.id)} aria-label={`Supprimer ${e.title}`}>
+                      <Trash2 size={14} aria-hidden />
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </div>
+    </details>
   );
 }

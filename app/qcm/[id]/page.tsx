@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -5,7 +6,15 @@ import { QuizSetView } from "@/components/QuizSetView";
 import { ShareButton } from "@/components/ShareButton";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
-import { ContentDetailHeader } from "@/components/ContentDetailHeader";
+import {
+  ContentDetailHeader,
+  cleanFolderName,
+  plural,
+  splitTitle,
+  subjectOfFolder,
+  subjectOfTitle,
+  visibilityLabel,
+} from "@/components/ContentDetailHeader";
 import { ContentItemSettings } from "@/components/ContentItemSettings";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
 import type { QuizQuestion, Visibility } from "@/lib/types";
@@ -35,6 +44,18 @@ async function hasAnyShareRowForSet(supabase: SupabaseClient, setId: string): Pr
   return (data?.length ?? 0) > 0;
 }
 
+/** Questions de ce QCM déjà réussies par le joueur (repli : null). */
+async function countDone(supabase: SupabaseClient, userId: string, questionIds: string[]): Promise<number | null> {
+  if (!questionIds.length) return null;
+  try {
+    const { data, error } = await supabase.from("quiz_question_progress").select("question_id").eq("user_id", userId).in("question_id", questionIds);
+    if (error) return null;
+    return data?.length ?? 0;
+  } catch {
+    return null;
+  }
+}
+
 export default async function QuizSetPage({ params }: PageProps) {
   const { id } = await params;
   const locale = await getLocale();
@@ -55,9 +76,13 @@ export default async function QuizSetPage({ params }: PageProps) {
 
   if (!setData) {
     return (
-      <div className="grid gap-3">
-        <h1 className="font-display text-xl font-medium">{t(locale, "qcm.notFound")}</h1>
-        <p className="text-sm text-white/60">{t(locale, "qcm.notFoundDesc")}</p>
+      <div className="mx-auto grid max-w-[560px] justify-items-start gap-3 pt-4 md:pt-10">
+        <p className="t-eyebrow">QCM</p>
+        <h1 className="t-h1 m-0">{t(locale, "qcm.notFound")}</h1>
+        <p className="t-small">Il a peut-être été supprimé, ou il n&apos;est pas partagé avec toi.</p>
+        <Link href="/qcm" className="btn btn-secondary mt-3">
+          Retour aux QCM
+        </Link>
       </div>
     );
   }
@@ -110,42 +135,58 @@ export default async function QuizSetPage({ params }: PageProps) {
     explanation: canEditQuestions ? q.explanation : undefined,
   })) as QuizQuestion[];
 
+  const done = isOfficial ? await countDone(supabase, user.id, initialQuestions.map((q) => q.id)) : null;
+
+  const parts = splitTitle(set.title);
+  const subject = subjectOfFolder(folderName) ?? subjectOfTitle(set.title);
+  const eyebrow = [subject?.name, parts.lead].filter(Boolean).join(" · ") || null;
+  const meta = [
+    plural(initialQuestions.length, "question", "questions"),
+    isOfficial ? "Système" : visibilityLabel(set.visibility),
+    !isOfficial && !subject ? cleanFolderName(folderName) : null,
+  ];
+
   return (
-    <div className="grid gap-5">
+    <div className="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
       <RecentFlashcardSetTracker id={set.id} title={set.title} kind="qcm" />
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <ContentDetailHeader
-          backHref="/qcm"
-          backLabel={t(locale, "nav.qcm")}
-          title={set.title}
-          visibility={set.visibility}
-          folderName={folderName}
-        />
-        {set.share_token && (
-          <ShareButton token={set.share_token} base="qcm" />
-        )}
-      </div>
+      <ContentDetailHeader
+        backHref="/qcm"
+        backLabel={t(locale, "nav.qcm")}
+        title={parts.main}
+        eyebrow={eyebrow}
+        meta={meta}
+        rightSlot={set.share_token ? <ShareButton token={set.share_token} base="qcm" /> : null}
+      />
 
-      {isOwner && (
-        <ContentItemSettings
-          title={t(locale, "common.settings")}
-          subtitle={t(locale, "qcm.settingsSubtitle")}
-          itemId={set.id}
-          table="quiz_sets"
-          visibility={set.visibility}
-          folderId={set.folder_id ?? null}
-          folderKind="quizzes"
-          shareTable="quiz_set_shares"
-          shareFk="set_id"
-          rootLabel={locale === "fr" ? "Sans dossier" : "No folder"}
-          activeGroupId={activeGroupId}
-          initialSharedGroupIds={sharedGroupIds}
-          legacyGroupId={set.group_id ?? null}
-        />
-      )}
-
-      <QuizSetView setId={set.id} isOwner={canEditQuestions} initialQuestions={initialQuestions} />
+      <QuizSetView
+        setId={set.id}
+        isOwner={canEditQuestions}
+        initialQuestions={initialQuestions}
+        title={set.title}
+        official={isOfficial}
+        done={done}
+        settingsSlot={
+          isOwner ? (
+            <ContentItemSettings
+              title="Réglages"
+              itemTitle={set.title}
+              subtitle="Titre, dossier et partage"
+              itemId={set.id}
+              table="quiz_sets"
+              visibility={set.visibility}
+              folderId={set.folder_id ?? null}
+              folderKind="quizzes"
+              shareTable="quiz_set_shares"
+              shareFk="set_id"
+              rootLabel={t(locale, "common.noFolder")}
+              activeGroupId={activeGroupId}
+              initialSharedGroupIds={sharedGroupIds}
+              legacyGroupId={set.group_id ?? null}
+            />
+          ) : null
+        }
+      />
     </div>
   );
 }

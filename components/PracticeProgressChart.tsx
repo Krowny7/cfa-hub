@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LineChart, ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
+import { subjectByKey } from "@/components/reviser/catalog";
 
 type PastSession = {
   id: string;
@@ -14,8 +15,9 @@ type PastSession = {
 
 type Point = { x: number; y: number };
 
+// Nom affiché : celui du site (Réviser, S'entraîner), sinon le libellé fourni.
 function topicLabelFor(labels: Record<string, string>, key: string) {
-  return labels[key] ?? key;
+  return subjectByKey(key)?.name ?? labels[key] ?? key;
 }
 
 // Catmull-Rom → Bézier cubique : donne une courbe lissée qui passe par tous
@@ -68,27 +70,24 @@ function TopicFilter({
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-white/80 transition hover:bg-white/[0.07]"
-      >
-        {current}
-        <ChevronDown size={13} className={`text-white/40 transition-transform ${open ? "rotate-180" : ""}`} />
+      <button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="chip chip-sm max-w-[220px]">
+        <span className="truncate">{current}</span>
+        <ChevronDown size={13} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1.5 max-h-64 w-56 overflow-auto rounded-[3px] border-2 border-white bg-black p-1 shadow-[3px_3px_0_var(--ink)]">
+        <div role="listbox" className="menu absolute right-0 z-20 mt-1.5 max-h-72 w-60 overflow-auto">
           {options.map((o) => (
             <button
               key={o.value}
               type="button"
+              role="option"
+              aria-selected={o.value === value}
+              data-active={o.value === value}
               onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
-                o.value === value ? "bg-blue-500/15 text-blue-300" : "text-white/70 hover:bg-white/[0.06]"
-              }`}
+              className="menu-item justify-between text-[13.5px]"
             >
               <span className="truncate">{o.label}</span>
-              {o.value === value && <Check size={13} className="shrink-0" />}
+              {o.value === value && <Check size={14} className="shrink-0" aria-hidden />}
             </button>
           ))}
         </div>
@@ -129,11 +128,12 @@ export function PracticeProgressChart({
 
   const W = 600;
   const H = 200;
-  const PAD_X = 16;
-  const PAD_TOP = 16;
-  const PAD_BOTTOM = 28;
+  const PAD_X = 22;
+  const PAD_TOP = 14;
+  const PAD_BOTTOM = 18;
 
   const avg = points.length > 0 ? Math.round(points.reduce((s, p) => s + p.pct, 0) / points.length) : 0;
+  const lastPct = points.length > 0 ? points[points.length - 1].pct : null;
 
   const xFor = (i: number) => (points.length <= 1 ? W / 2 : PAD_X + (i / (points.length - 1)) * (W - 2 * PAD_X));
   const yFor = (pct: number) => PAD_TOP + (1 - pct / 100) * (H - PAD_TOP - PAD_BOTTOM);
@@ -146,94 +146,79 @@ export function PracticeProgressChart({
     : "";
 
   const filterOptions = [
-    { value: "all", label: "Tous les topics" },
+    { value: "all", label: "Toutes les matières" },
     ...availableTopics.map((k) => ({ value: k, label: topicLabelFor(topicLabels, k) })),
   ];
+  const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
   return (
-    <div className="card p-5">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-sm font-semibold">
-          <LineChart size={15} /> Progression
+    <div className="card p-5 md:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="t-h3 m-0">Progression</h3>
+          {points.length >= 2 && (
+            <p className="t-micro m-0 mt-1">
+              {points.length} sessions · moyenne {avg} %{lastPct !== null ? ` · dernière ${lastPct} %` : ""}
+            </p>
+          )}
         </div>
-        {availableTopics.length > 1 && (
-          <TopicFilter value={filter} onChange={setFilter} options={filterOptions} />
-        )}
+        {availableTopics.length > 1 && <TopicFilter value={filter} onChange={setFilter} options={filterOptions} />}
       </div>
 
       {points.length < 2 ? (
-        <div className="py-6 text-center text-xs text-white/40">Pas assez de sessions sur ce filtre pour tracer une courbe.</div>
+        <div className="t-small py-10 text-center">Pas assez de sessions sur ce filtre pour tracer une courbe.</div>
       ) : (
         <>
-          <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full text-white" preserveAspectRatio="none">
+          <svg viewBox={`0 0 ${W} ${H}`} className="mt-5 block h-auto w-full overflow-visible text-white" preserveAspectRatio="none" role="img" aria-label={`Réussite par session, moyenne ${avg} %`}>
             <defs>
               <linearGradient id="practiceProgressFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
+                <stop offset="0%" stopColor="currentColor" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
               </linearGradient>
             </defs>
 
-            {[0, 25, 50, 75, 100].map((g) => (
+            {[0, 50, 100].map((g) => (
               <g key={g}>
-                <line
-                  x1={PAD_X} x2={W - PAD_X}
-                  y1={yFor(g)} y2={yFor(g)}
-                  stroke="currentColor"
-                  strokeOpacity={0.12}
-                  strokeWidth={1}
-                />
-                <text x={2} y={yFor(g) + 3} fontSize={9} fill="currentColor" fillOpacity={0.5}>{g}</text>
+                <line x1={PAD_X} x2={W - PAD_X} y1={yFor(g)} y2={yFor(g)} stroke="currentColor" strokeOpacity={0.07} strokeWidth={1} vectorEffect="non-scaling-stroke" />
+                <text x={0} y={yFor(g) + 3} fontSize={9} fill="currentColor" fillOpacity={0.45}>{g}</text>
               </g>
             ))}
 
-            <line
-              x1={PAD_X} x2={W - PAD_X}
-              y1={yFor(70)} y2={yFor(70)}
-              stroke="currentColor"
-              strokeOpacity={0.45}
-              strokeDasharray="5 4"
-              strokeWidth={1.2}
-            />
-            <line
-              x1={PAD_X} x2={W - PAD_X}
-              y1={yFor(avg)} y2={yFor(avg)}
-              stroke="currentColor"
-              strokeOpacity={0.3}
-              strokeDasharray="2 3"
-              strokeWidth={1.2}
-            />
+            {/* seuil de réussite (70 %) et moyenne */}
+            <line x1={PAD_X} x2={W - PAD_X} y1={yFor(70)} y2={yFor(70)} stroke="currentColor" strokeOpacity={0.4} strokeDasharray="5 4" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+            <line x1={PAD_X} x2={W - PAD_X} y1={yFor(avg)} y2={yFor(avg)} stroke="currentColor" strokeOpacity={0.22} strokeDasharray="2 3" strokeWidth={1} vectorEffect="non-scaling-stroke" />
 
             <path d={areaD} fill="url(#practiceProgressFill)" stroke="none" />
-            <path d={lineD} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={lineD} pathLength={100} className="rl-drawline" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
 
             {points.map((p, i) => (
               <circle
                 key={p.id}
                 cx={linePts[i].x}
                 cy={linePts[i].y}
-                r={4.5}
+                r={4}
                 style={{
-                  fill: p.pct >= 70 ? "var(--ink)" : p.pct >= 50 ? "var(--paper)" : "var(--pen)",
-                  stroke: p.pct >= 50 && p.pct < 70 ? "var(--ink)" : "var(--paper)",
+                  fill: p.pct >= 70 ? "var(--ink)" : p.pct >= 50 ? "var(--surface)" : "var(--pen)",
+                  stroke: p.pct >= 50 && p.pct < 70 ? "var(--ink)" : "var(--surface)",
                 }}
                 strokeWidth={2}
               >
-                <title>{p.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} — {p.pct}%</title>
+                <title>{fmt(p.date)} — {p.pct}%</title>
               </circle>
             ))}
           </svg>
 
-          <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] text-white/40">
-            <span>{points[0].date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
-            <span className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1">
-                <span className="inline-block h-0 w-3 border-t border-dashed border-white/60" /> Seuil 70%
+          <div className="t-micro mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <span>{fmt(points[0].date)}</span>
+            <span className="flex items-center gap-4">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-0 w-4 border-t border-dashed border-white/60" aria-hidden /> seuil 70 %
               </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="inline-block h-0 w-3 border-t border-dashed border-blue-400/70" /> Moyenne {avg}%
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-0 w-4 border-t border-dotted border-white/40" aria-hidden /> moyenne {avg} %
               </span>
             </span>
-            <span>{points[points.length - 1].date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
+            <span>{fmt(points[points.length - 1].date)}</span>
           </div>
         </>
       )}

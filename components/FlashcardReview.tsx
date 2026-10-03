@@ -1,107 +1,80 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, RotateCcw } from "lucide-react";
-import { useI18n } from "@/components/I18nProvider";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Check, Maximize2, Minimize2, RotateCcw } from "lucide-react";
 import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
 import { RichText } from "@/components/RichText";
-import { InkBar } from "@/components/ink/InkBar";
+import { InkProgressRing } from "@/components/ui/InkRings";
 
 type Card = { id: string; front: string; back: string };
+
+/** Aperçu uniquement : ouvre la révision dans un état donné. */
+export type FlashcardDemo = {
+  index?: number;
+  flipped?: boolean;
+  done?: boolean;
+  marks?: Record<string, boolean>;
+  fullscreen?: boolean;
+};
 
 // Carte à retournement 3D : les deux faces sont TOUJOURS dans le DOM, empilées
 // en absolute, et c'est le conteneur qui pivote (rotateY) — backface-visibility
 // cache la face qui n'est pas tournée vers l'utilisateur. Un simple swap de
 // texte (l'ancienne implémentation) n'a pas d'étape intermédiaire animable.
-function CardFace({
-  text,
-  label,
-  hint,
-  isBack,
-  showBottomHint,
-}: {
-  text: string;
-  label: string;
-  hint: string;
-  isBack: boolean;
-  showBottomHint: boolean;
-}) {
-  const shouldCenter = text.length <= 420 && !text.includes("\n");
-
+function Face({ text, back, big }: { text: string; back: boolean; big: boolean }) {
+  const short = text.length <= 240 && !text.includes("\n") && !text.includes("$$") && !text.includes("![");
+  const size = back
+    ? big
+      ? "text-[19px] leading-relaxed sm:text-[23px]"
+      : "text-[16px] leading-relaxed sm:text-[17.5px]"
+    : big
+      ? "text-[24px] font-semibold leading-snug tracking-[-0.018em] sm:text-[34px]"
+      : "text-[20px] font-semibold leading-snug tracking-[-0.016em] sm:text-[25px]";
   return (
     <div
-      className={[
-        "absolute inset-0 flex flex-col rounded-[3px] border-2 border-white p-6 shadow-[4px_4px_0_var(--ink)]",
-        isBack ? "bg-neutral-900" : "bg-black",
-        "overflow-auto overflow-x-hidden",
-        "[backface-visibility:hidden]",
-        isBack ? "[transform:rotateY(180deg)]" : "",
-      ].join(" ")}
+      className={
+        "card-hero absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden p-6 [backface-visibility:hidden] sm:p-8 " +
+        (back ? "[transform:rotateY(180deg)]" : "")
+      }
+      aria-hidden={undefined}
     >
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-        <div className="kicker">{label}</div>
-        <div className="note text-white/55 break-words [overflow-wrap:anywhere]">{hint}</div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="t-eyebrow">{back ? "Verso" : "Recto"}</span>
+        {!back && <span className="t-micro hidden sm:inline">Clique pour retourner</span>}
       </div>
-
-      <div className={["mt-5 flex-1 min-w-0", shouldCenter ? "flex items-center justify-center" : ""].join(" ")}>
+      <div className={"flex min-w-0 flex-1 py-5 " + (short ? "items-center justify-center text-center" : "items-start")}>
         <RichText
           text={text}
-          className={[
-            "break-words [overflow-wrap:anywhere] text-lg",
-            shouldCenter ? "text-center max-w-[70ch]" : "text-left w-full",
-          ].join(" ")}
+          className={"w-full break-words [overflow-wrap:anywhere] " + size + (short ? (back ? " mx-auto max-w-[48ch]" : " mx-auto max-w-[34ch]") : "")}
         />
       </div>
-
-      {showBottomHint ? <div className="note mt-5 text-white/55">{hint}</div> : null}
     </div>
   );
 }
 
-function CardPanel({
-  current,
-  flipped,
-  onFlip,
-  labelFront,
-  labelBack,
-  labelHint,
-  className,
-  showBottomHint = true,
-}: {
-  current: Card;
-  flipped: boolean;
-  onFlip: () => void;
-  labelFront: string;
-  labelBack: string;
-  labelHint: string;
-  className?: string;
-  showBottomHint?: boolean;
-}) {
+function FlipCard({ card, flipped, onFlip, big, className = "" }: { card: Card; flipped: boolean; onFlip: () => void; big: boolean; className?: string }) {
   return (
     <button
       type="button"
       onClick={onFlip}
-      className={["relative w-full text-left [perspective:1400px]", className || ""].join(" ")}
+      aria-label={flipped ? "Revenir au recto" : "Retourner la carte"}
+      className={"relative block w-full rounded-[22px] text-left [perspective:1600px] " + className}
     >
       <div
-        className={[
-          "absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.4,0.2,0.2,1)] [transform-style:preserve-3d]",
-          flipped ? "[transform:rotateY(180deg)]" : "",
-        ].join(" ")}
+        className={
+          "absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.4,0.2,0.2,1)] [transform-style:preserve-3d] motion-reduce:transition-none " +
+          (flipped ? "[transform:rotateY(180deg)]" : "")
+        }
       >
-        <CardFace text={current.front} label={labelFront} hint={labelHint} isBack={false} showBottomHint={showBottomHint} />
-        <CardFace text={current.back} label={labelBack} hint={labelHint} isBack showBottomHint={showBottomHint} />
+        <Face text={card.front} back={false} big={big} />
+        <Face text={card.back} back big={big} />
       </div>
     </button>
   );
 }
 
-export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: string }) {
-  const { t } = useI18n();
-  const [i, setI] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-
+export function FlashcardReview({ cards, setId, demo }: { cards: Card[]; setId?: string; demo?: FlashcardDemo }) {
   // La passe de révision est un instantané figé au montage — jamais recalculé
   // pendant la passe. C'est le même principe que les vrais outils de
   // répétition espacée (Anki, SuperMemo…) : l'ordre de la file du jour est
@@ -112,7 +85,7 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
   // tableau → décalait l'index en plein milieu de la passe → symptôme
   // observé : cartes sautées et d'autres revues plusieurs fois.
   const [deck] = useState<Card[]>(() => {
-    if (!setId) return cards;
+    if (!setId || demo) return cards;
     try {
       return sortBySRS(cards, loadSRS(setId));
     } catch {
@@ -127,40 +100,55 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
   const [reviewMode, setReviewMode] = useState<"all" | "unmastered">("all");
   const [unmasteredSnapshot, setUnmasteredSnapshot] = useState<Card[]>([]);
 
+  const [i, setI] = useState(demo?.index ?? 0);
+  const [flipped, setFlipped] = useState(demo?.flipped ?? false);
+  const [done, setDone] = useState(demo?.done ?? false);
+  const [fullscreen, setFullscreen] = useState(demo?.fullscreen ?? false);
+
   // Marques de cette passe (pas persistées) : sert uniquement à compter/lister
   // les "non maîtrisées" pour proposer la repasse ciblée — ne remplace pas le
   // SRS, qui reste la seule source de vérité pour la planification long terme.
-  const [sessionMarks, setSessionMarks] = useState<Record<string, boolean>>({});
+  const [sessionMarks, setSessionMarks] = useState<Record<string, boolean>>(demo?.marks ?? {});
 
   const activeDeck = reviewMode === "all" ? deck : unmasteredSnapshot;
   const current = activeDeck[i] ?? null;
   const total = activeDeck.length;
+  const notMasteredCount = deck.filter((c) => sessionMarks[c.id] === false).length;
+  const passMastered = activeDeck.filter((c) => sessionMarks[c.id] === true).length;
+  const passToReview = activeDeck.filter((c) => sessionMarks[c.id] === false).length;
 
-  const notMasteredCount = useMemo(
-    () => deck.filter((c) => sessionMarks[c.id] === false).length,
-    [deck, sessionMarks]
-  );
+  // Le clavier ne pilote la carte que si elle est à l'écran (ou en plein écran).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
-  const progress = useMemo(() => (total ? `${Math.min(i + 1, total)}/${total}` : "0/0"), [i, total]);
-
-  const goPrev = () => {
+  function goPrev() {
     setI((v) => Math.max(0, v - 1));
     setFlipped(false);
-  };
-  const goNext = () => {
+  }
+  function goNext() {
     setI((v) => Math.min(total - 1, v + 1));
     setFlipped(false);
-  };
+  }
 
   function mark(gotIt: boolean) {
     if (!current) return;
     setSessionMarks((prev) => ({ ...prev, [current.id]: gotIt }));
-    if (setId) {
+    if (setId && !demo) {
       // Écrit pour LA PROCHAINE session — n'affecte jamais l'ordre de celle-ci.
       const next = applyReview(loadSRS(setId), current.id, gotIt);
       saveSRS(setId, next);
     }
-    goNext();
+    if (i >= total - 1) {
+      setDone(true);
+      setFlipped(false);
+    } else goNext();
   }
 
   function startUnmasteredReview() {
@@ -168,244 +156,205 @@ export function FlashcardReview({ cards, setId }: { cards: Card[]; setId?: strin
     setReviewMode("unmastered");
     setI(0);
     setFlipped(false);
+    setDone(false);
   }
 
   function backToAll() {
     setReviewMode("all");
     setI(0);
     setFlipped(false);
+    setDone(false);
   }
 
+  function restart() {
+    setSessionMarks({});
+    backToAll();
+  }
+
+  // Raccourcis : Espace/Entrée retourne, ← → naviguent, 1 = à revoir,
+  // 2 = maîtrisée, Échap ferme le plein écran.
   useEffect(() => {
-    if (!fullscreen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false);
+      if (!fullscreen && !inView) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Escape" && fullscreen) {
+        setFullscreen(false);
+        return;
+      }
+      if (done || !current) return;
       if (e.key === "ArrowLeft") goPrev();
-      if (e.key === "ArrowRight") goNext();
-      if (e.key === " " || e.key === "Enter") {
+      else if (e.key === "ArrowRight") goNext();
+      else if ((e.key === " " || e.key === "Enter") && tag !== "BUTTON" && tag !== "A") {
         e.preventDefault();
         setFlipped((v) => !v);
-      }
+      } else if (flipped && e.key === "1") mark(false);
+      else if (flipped && e.key === "2") mark(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullscreen, total]);
+  });
+
+  // Plein écran : la page derrière ne défile plus.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [fullscreen]);
 
   if (!cards.length) {
     return (
-      <div className="rounded-2xl border p-4">
-        <h3 className="font-semibold">{t("flashcards.review")}</h3>
-        <div className="mt-2 text-sm opacity-70">{t("flashcards.none")}</div>
+      <div className="card-quiet grid place-items-center gap-1.5 px-6 py-14 text-center">
+        <p className="t-h3 m-0">Aucune carte</p>
+        <p className="t-small">Ce set est encore vide.</p>
       </div>
     );
   }
 
-  const pct = total ? Math.round((Math.min(i + 1, total) / total) * 100) : 0;
+  const pct = total ? Math.round(((done ? total : Math.min(i + 1, total)) / total) * 100) : 0;
 
-  const masteryButtons = current && flipped && (
-    <div className="mt-4 grid grid-cols-2 gap-2">
-      <button
-        type="button"
-        className="btn btn-secondary justify-center gap-1.5"
-        onClick={() => mark(false)}
-      >
-        <RotateCcw size={15} /> {t("flashcards.notMastered")}
-      </button>
-      <button
-        type="button"
-        className="btn btn-primary justify-center gap-1.5"
-        onClick={() => mark(true)}
-      >
-        <CheckCircle2 size={15} /> {t("flashcards.mastered")}
-      </button>
-    </div>
-  );
-
-  const unmasteredBanner = reviewMode === "unmastered" && (
-    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-orange-400/25 bg-orange-500/10 px-3 py-2 text-xs text-orange-200">
-      <span>{t("flashcards.unmasteredMode")}</span>
-      <button type="button" className="underline hover:no-underline" onClick={backToAll}>
-        {t("flashcards.backToAll")}
-      </button>
-    </div>
-  );
-
-  const reviewUnmasteredButton = reviewMode === "all" && notMasteredCount > 0 && (
-    <button
-      type="button"
-      className="btn btn-secondary mt-3 w-full"
-      onClick={startUnmasteredReview}
-    >
-      {t("flashcards.reviewUnmastered")} ({notMasteredCount})
-    </button>
-  );
-
-  const shell = (
-    <>
-      {/* Header: stack on mobile to prevent overflow */}
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h3 className="font-semibold">{t("flashcards.review")}</h3>
-          <div className="mt-1 text-xs opacity-70 break-words [overflow-wrap:anywhere]">{t("flashcards.reviewHint")}</div>
+  const stage = (big: boolean) => (
+    <div className={"flex min-h-0 flex-col gap-4 sm:gap-5 " + (big ? "h-full" : "")}>
+      {/* Avancement */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        <span className="t-micro shrink-0 font-mono font-semibold tabular-nums text-white">
+          {done ? total : Math.min(i + 1, total)}
+          <span className="font-medium text-muted"> / {total}</span>
+        </span>
+        <div className="ink-bar flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Avancement dans le set">
+          <span style={{ width: `${pct}%` }} />
         </div>
-
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-sm opacity-70 tabular-nums">{progress}</span>
-          <button
-            type="button"
-            className="btn btn-secondary w-full sm:w-auto"
-            onClick={() => setFullscreen(true)}
-          >
-            {t("flashcards.fullscreen")}
+        {reviewMode === "all" && notMasteredCount > 0 && !done ? (
+          <button type="button" onClick={startUnmasteredReview} className="t-micro shrink-0 font-semibold underline-offset-4 hover:text-white hover:underline">
+            {notMasteredCount} à revoir
           </button>
-        </div>
+        ) : null}
+        <button
+          type="button"
+          className="icon-btn h-9 w-9 rounded-[11px]"
+          onClick={() => setFullscreen((v) => !v)}
+          aria-label={big ? "Quitter le plein écran" : "Plein écran"}
+          title={big ? "Quitter le plein écran (Échap)" : "Plein écran"}
+        >
+          {big ? <Minimize2 size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}
+        </button>
       </div>
 
-      {unmasteredBanner}
-
-      {/* Barre de progression — repère visuel rapide dans le set */}
-      <InkBar className="mt-3" value={pct} label="Avancement dans le set" />
-
-      {current ? (
-        <>
-          <div className="mt-4">
-            <CardPanel
-              current={current}
-              flipped={flipped}
-              onFlip={() => setFlipped((v) => !v)}
-              labelFront={t("flashcards.front")}
-              labelBack={t("flashcards.back")}
-              labelHint={t("flashcards.tapToFlip")}
-              className="min-h-[42vh] sm:min-h-[360px]"
-            />
-          </div>
-
-          {masteryButtons}
-
-          {/* Nav: stack buttons on mobile */}
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              className="btn btn-ghost w-full sm:w-auto"
-              disabled={i === 0}
-              onClick={goPrev}
-              type="button"
-            >
-              {t("flashcards.prev")}
-            </button>
-            <button
-              className="btn btn-ghost w-full sm:w-auto"
-              disabled={i >= total - 1}
-              onClick={goNext}
-              type="button"
-            >
-              {t("flashcards.next")}
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="mt-6 rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-center text-sm text-emerald-200">
-          {t("flashcards.allMastered")}
+      {reviewMode === "unmastered" && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-surface-2 px-4 py-2.5 text-[13px]">
+          <span className="font-semibold">Repasse · les cartes à revoir</span>
+          <button type="button" className="font-semibold text-muted underline-offset-4 hover:text-white hover:underline" onClick={backToAll}>
+            Revenir à toutes les cartes
+          </button>
         </div>
       )}
 
-      {reviewUnmasteredButton}
-    </>
+      {done ? (
+        <div className={"card-hero rl-in grid content-center justify-items-center gap-6 px-6 py-10 text-center sm:py-12 " + (big ? "flex-1" : "")}>
+          <InkProgressRing pct={total ? (100 * passMastered) / total : 0} size={148}>
+            <div>
+              <div className="t-num text-[36px]">
+                {passMastered}
+                <span className="text-[18px] text-muted">/{total}</span>
+              </div>
+              <div className="t-micro mt-1.5">maîtrisée{passMastered > 1 ? "s" : ""}</div>
+            </div>
+          </InkProgressRing>
+          <div>
+            <p className="t-eyebrow">Passe terminée</p>
+            <h2 className="t-h1 mt-2.5">{passToReview === 0 ? "Tout est acquis." : `${passToReview} carte${passToReview > 1 ? "s" : ""} à revoir.`}</h2>
+            <p className="t-small mx-auto mt-2.5 max-w-[400px]">
+              {passToReview === 0 ? "Elles reviendront plus tard, de plus en plus espacées." : "Elles reviendront en premier à ta prochaine révision."}
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {notMasteredCount > 0 && (
+              <button type="button" className="btn btn-primary btn-lg rl-press" onClick={startUnmasteredReview}>
+                Repasser les {notMasteredCount}
+              </button>
+            )}
+            <button type="button" className={"btn btn-lg " + (notMasteredCount > 0 ? "btn-secondary" : "btn-primary rl-press")} onClick={restart}>
+              <RotateCcw size={16} aria-hidden /> Recommencer
+            </button>
+          </div>
+          {!big && (
+            <Link href="/flashcards" className="ink-link">
+              Autres sets
+            </Link>
+          )}
+        </div>
+      ) : current ? (
+        <>
+          <FlipCard
+            card={current}
+            flipped={flipped}
+            onFlip={() => setFlipped((v) => !v)}
+            big={big}
+            className={big ? "min-h-[280px] flex-1" : "h-[clamp(300px,50vh,440px)]"}
+          />
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button type="button" className="icon-btn h-[50px] w-[50px] rounded-[14px] disabled:pointer-events-none disabled:opacity-35" disabled={i === 0} onClick={goPrev} aria-label="Carte précédente">
+              <ArrowLeft size={18} aria-hidden />
+            </button>
+            <div className="min-w-0 flex-1">
+              {flipped ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" className="btn btn-secondary btn-lg whitespace-nowrap px-3" onClick={() => mark(false)}>
+                    <RotateCcw size={16} aria-hidden className="hidden sm:block" /> À revoir
+                  </button>
+                  <button type="button" className="btn btn-primary btn-lg rl-press whitespace-nowrap px-3" onClick={() => mark(true)}>
+                    <Check size={16} aria-hidden className="hidden sm:block" /> Je maîtrise
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="btn btn-primary btn-lg rl-press w-full" onClick={() => setFlipped(true)}>
+                  Retourner
+                </button>
+              )}
+            </div>
+            <button type="button" className="icon-btn h-[50px] w-[50px] rounded-[14px] disabled:pointer-events-none disabled:opacity-35" disabled={i >= total - 1} onClick={goNext} aria-label="Carte suivante">
+              <ArrowRight size={18} aria-hidden />
+            </button>
+          </div>
+
+          <p className="t-micro hidden flex-wrap items-center justify-center gap-1.5 sm:flex">
+            <span className="kbd">Espace</span> retourner · <span className="kbd">←</span>
+            <span className="kbd">→</span> naviguer · <span className="kbd">1</span> à revoir · <span className="kbd">2</span> maîtrisée
+          </p>
+        </>
+      ) : (
+        <div className="card-quiet grid place-items-center px-6 py-14 text-center">
+          <p className="t-h3 m-0">Toutes les cartes de cette passe sont maîtrisées.</p>
+          <button type="button" className="btn btn-secondary mt-4" onClick={backToAll}>
+            Revenir à toutes les cartes
+          </button>
+        </div>
+      )}
+    </div>
   );
 
   return (
     <>
-      <div className="card p-4">{shell}</div>
+      <div ref={rootRef}>{stage(false)}</div>
 
       {fullscreen && (
-        // z-[100] : au-dessus de la bottom nav mobile (z-50) pour qu'elle ne
-        // recouvre plus les boutons Précédente/Suivante en bas de l'écran.
-        // paddingBottom réserve la zone home-indicator iOS (safe area).
+        // z-[100] : au-dessus de la barre du bas mobile (z-50) pour qu'elle ne
+        // recouvre pas les boutons. paddingBottom réserve la zone de l'indicateur
+        // d'accueil iOS (safe area).
         <div
-          className="fixed inset-0 z-[100] bg-black/70 p-3 sm:p-4 backdrop-blur"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Révision en plein écran"
+          className="fixed inset-0 z-[100] bg-black px-4 pt-4 sm:px-8 sm:pt-7"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="mx-auto flex h-full w-full max-w-6xl flex-col rounded-[3px] border-2 border-white bg-black">
-            {/* Fullscreen header: stack on mobile */}
-            <div className="flex flex-col gap-2 border-b-2 border-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold">{t("flashcards.review")}</div>
-                <div className="text-xs opacity-70 break-words [overflow-wrap:anywhere]">
-                  {progress} • {t("flashcards.reviewHint")}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-secondary w-full sm:w-auto"
-                onClick={() => setFullscreen(false)}
-              >
-                {t("common.close")}
-              </button>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-              <div className="flex h-full min-h-full flex-col">
-                {unmasteredBanner}
-
-                {current ? (
-                  <>
-                    <div className="flex-1">
-                      <div className="mx-auto h-full w-full max-w-5xl">
-                        <CardPanel
-                          current={current}
-                          flipped={flipped}
-                          onFlip={() => setFlipped((v) => !v)}
-                          labelFront={t("flashcards.front")}
-                          labelBack={t("flashcards.back")}
-                          labelHint={t("flashcards.tapToFlip")}
-                          showBottomHint={false}
-                          className={[
-                            "h-full",
-                            "min-h-[38vh] sm:min-h-[68vh]",
-                            "p-6 sm:p-10",
-                            "text-[17px] sm:text-[22px] leading-relaxed",
-                          ].join(" ")}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mx-auto mt-5 w-full max-w-5xl">
-                      {masteryButtons}
-
-                      {/* Fullscreen nav: stack on mobile */}
-                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <button
-                          className="btn btn-ghost w-full sm:w-auto"
-                          disabled={i === 0}
-                          onClick={goPrev}
-                          type="button"
-                        >
-                          {t("flashcards.prev")}
-                        </button>
-                        <button
-                          className="btn btn-ghost w-full sm:w-auto"
-                          disabled={i >= total - 1}
-                          onClick={goNext}
-                          type="button"
-                        >
-                          {t("flashcards.next")}
-                        </button>
-                      </div>
-
-                      {reviewUnmasteredButton}
-
-                      <div className="mt-3 text-center text-xs opacity-60">{t("flashcards.shortcuts")}</div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="m-auto max-w-md rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-center text-sm text-emerald-200">
-                    {t("flashcards.allMastered")}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col">{stage(true)}</div>
         </div>
       )}
     </>

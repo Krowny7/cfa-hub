@@ -1,6 +1,7 @@
-// Briques de liste calme, partagées par Réviser, S'entraîner et les index
-// /fiches et /courses : une ligne fine de maîtrise, et une liste en deux
-// colonnes (ordre du programme, de haut en bas) séparée par des filets.
+// Briques de liste calme : une ligne fine de maîtrise, et une liste en deux
+// colonnes (ordre du programme, de haut en bas) séparée par des filets,
+// utilisée par les index /fiches et /courses et les sessions de Moi. Les 10
+// matières, elles, passent par la rangée horizontale (components/ui/TopicRail).
 // Sans état ni hook : utilisable côté serveur.
 
 /** Ligne fine de maîtrise (0–100 ; null = pas encore mesurée : piste vide). */
