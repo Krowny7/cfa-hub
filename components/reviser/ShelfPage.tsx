@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText, Headphones } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText, Headphones } from "lucide-react";
+import { TwoColumnRows } from "@/components/reviser/SubjectRows";
 
-// Page d'index d'un format de révision (fiches, cours complets) : une carte
-// par matière disponible, les matières à venir en pointillés. Sans requête.
+// Page d'index d'un format de révision (fiches, cours complets), dans le
+// langage de Réviser : grand titre, une phrase, puis une liste calme (une
+// ligne par matière disponible) ; les matières à venir tiennent sur une ligne.
+// Sans requête.
 
 export type ShelfItem = { href: string; title: string; meta: string; desc: string };
 
@@ -26,45 +29,40 @@ export function ShelfPage({
   const Icon = ICONS[kind];
   return (
     <div className="rl-wide flex flex-col gap-8 md:gap-10">
-      <div className="flex flex-col gap-2.5">
-        <Link href="/reviser" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-white">
-          <ArrowLeft size={14} /> {kicker}
+      <header className="flex flex-col gap-3">
+        <Link href="/reviser" className="t-small inline-flex w-fit items-center gap-1.5 font-semibold hover:text-white">
+          <ArrowLeft size={14} aria-hidden /> {kicker}
         </Link>
-        <h1 className="rl-hero rl-in m-0 font-sans text-[clamp(36px,5.4vw,60px)] font-extrabold leading-none tracking-[-0.035em] [text-wrap:balance]">{title}</h1>
-        <p className="max-w-[620px] text-[15px] leading-[1.5] text-muted">{desc}</p>
-      </div>
+        <h1 className="t-hero rl-in m-0">{title}</h1>
+        <p className="t-body max-w-[560px] text-muted">{desc}</p>
+      </header>
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(300px,100%),1fr))] gap-[18px]">
-        {items.map((it, i) => (
-          <Link key={it.href} href={it.href} className="card rl-lift rl-in flex flex-col gap-3 p-6" style={{ animationDelay: `${i * 0.05}s` }}>
-            <span className="flex items-center justify-between gap-3">
-              <span className="grid h-[46px] w-[46px] place-items-center rounded-[13px] bg-surface-2">
-                <Icon size={20} />
-              </span>
-              <span className="text-right text-[12.5px] font-semibold text-muted">{it.meta}</span>
-            </span>
-            <span className="text-[22px] font-extrabold leading-tight tracking-[-0.025em]">{it.title}</span>
-            <span className="text-[14.5px] leading-[1.5] text-muted">{it.desc}</span>
-            <span className="mt-auto inline-flex items-center gap-1.5 text-[14px] font-[650]">
-              Ouvrir <ArrowRight size={15} />
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      {upcoming.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label="À venir">
-          <h2 className="m-0 text-[15px] font-bold text-muted">À venir</h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(220px,100%),1fr))] gap-3">
-            {upcoming.map((name) => (
-              <div key={name} className="flex items-center justify-between gap-2 rounded-[14px] border-[1.5px] border-dashed border-line-2 px-4 py-3">
-                <span className="text-[14px] font-semibold leading-tight text-muted">{name}</span>
-                <span className="text-[12px] text-muted">bientôt</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <section className="rl-section" aria-label={title}>
+        <div className="card px-3 py-2 md:px-4">
+          <TwoColumnRows
+            items={items}
+            keyOf={(it) => it.href}
+            render={(it, i) => (
+              <Link href={it.href} className="rl-row rl-in group -mx-1 flex items-center gap-4 rounded-[14px] px-3 py-4" style={{ animationDelay: `${i * 0.04}s` }}>
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-surface-2">
+                  <Icon size={18} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[16px] font-bold leading-tight tracking-[-0.01em]">{it.title}</span>
+                  <span className="t-small mt-1 line-clamp-2">{it.desc}</span>
+                  <span className="t-micro mt-1.5 block font-medium">{it.meta}</span>
+                </span>
+                <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            )}
+          />
+        </div>
+        {upcoming.length > 0 && (
+          <p className="t-micro">
+            <span className="font-semibold">À venir</span> · {upcoming.join(" · ")}
+          </p>
+        )}
+      </section>
     </div>
   );
 }

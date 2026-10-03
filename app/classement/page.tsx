@@ -2,18 +2,25 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard, getLeaderboardRank, getMyRating, getOpenChallenges, getRatingHistory, getRecentDuels } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
-import { ClassementView } from "@/components/classement/ClassementView";
-import { countPlayers, getNextRankedExam, lastDeltaByUser, masteryByUser, toBoardRows, tryAdmin } from "@/components/classement/data";
+import { CLASSEMENT_TABS, ClassementView } from "@/components/classement/ClassementView";
+import { countPlayers, getNextRankedExam, getPastRankedExams, lastDeltaByUser, masteryByUser, toBoardRows, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { ClassementData } from "@/components/classement/types";
+import type { TabKey } from "@/components/classement/ClassementTabs";
 
 export const metadata = { title: "Classement · Ranked Lobby" };
+
+type PageProps = { searchParams?: Promise<{ onglet?: string | string[] }> };
 
 // Espace « Classement » : charge le rang, l'historique d'ELO, le classement,
 // le prochain examen blanc classé et les duels, puis délègue l'affichage à
 // ClassementView. Chaque lecture dégrade proprement (tables des duels pas
-// encore créées, clé admin absente).
-export default async function ClassementPage() {
+// encore créées, clé admin absente). ?onglet=duels|examens ouvre l'onglet.
+export default async function ClassementPage({ searchParams }: PageProps) {
+  const sp = (await searchParams) ?? {};
+  const rawTab = Array.isArray(sp.onglet) ? sp.onglet[0] : sp.onglet;
+  const tab: TabKey = CLASSEMENT_TABS.includes(rawTab as TabKey) ? (rawTab as TabKey) : "classement";
+
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
@@ -21,7 +28,7 @@ export default async function ClassementPage() {
 
   const admin = tryAdmin();
 
-  const [rating, topics, history, leaderboard, myRank, totalPlayers, exam, openDuels, recentDuels, profileRes] = await Promise.all([
+  const [rating, topics, history, leaderboard, myRank, totalPlayers, exam, pastExams, openDuels, recentDuels, profileRes] = await Promise.all([
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
     getRatingHistory(supabase, user.id, 30),
@@ -29,6 +36,7 @@ export default async function ClassementPage() {
     getLeaderboardRank(supabase, user.id),
     countPlayers(supabase),
     getNextRankedExam(supabase, admin, user.id),
+    getPastRankedExams(supabase, user.id, 5),
     getOpenChallenges(supabase, user.id),
     getRecentDuels(supabase, user.id, 5),
     supabase.from("profiles").select("username,avatar_url").eq("id", user.id).maybeSingle(),
@@ -66,9 +74,10 @@ export default async function ClassementPage() {
           }
         : null,
     exam,
+    pastExams,
     openDuels,
     recentDuels,
   };
 
-  return <ClassementView data={data} />;
+  return <ClassementView data={data} tab={tab} />;
 }

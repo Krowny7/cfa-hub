@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ShelfPage } from "@/components/reviser/ShelfPage";
-import { courseShelf } from "@/components/reviser/shelves";
+import { COURSE_DESC, courseShelf } from "@/components/reviser/shelves";
 
 // Cours complets : un deck PDF + un audio narré par matière, décrits dans
 // lib/courses.ts (bucket privé "courses") ; celles qui n'y sont pas encore
@@ -12,14 +12,5 @@ export default async function CoursesPage() {
   if (!auth.user) redirect("/login");
 
   const { items, upcoming } = courseShelf();
-  return (
-    <ShelfPage
-      kind="cours"
-      kicker="Réviser"
-      title="Cours complets"
-      desc="Le cours intégral par matière, à lire ou à écouter : un vrai cours magistral d'environ une heure, découpé par module."
-      items={items}
-      upcoming={upcoming}
-    />
-  );
+  return <ShelfPage kind="cours" kicker="Réviser" title="Cours complets" desc={COURSE_DESC} items={items} upcoming={upcoming} />;
 }

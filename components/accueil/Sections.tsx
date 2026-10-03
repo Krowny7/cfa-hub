@@ -1,199 +1,149 @@
 import Link from "next/link";
-import { BarChart3, CalendarClock, Clock, Globe2, Sparkles, TriangleAlert } from "lucide-react";
-import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import { Radar, RadarLegend } from "@/components/ui/Radar";
-import { CardLabel, SectionTitle } from "@/components/ui/Titles";
-import { DomainStats } from "@/components/accueil/DomainStats";
-import { DOMAINS } from "@/lib/domains";
+import { SectionTitle } from "@/components/ui/Titles";
+import { ErrorsTile, GoalTile } from "@/components/accueil/HomeCards";
+import { ContextTile } from "@/components/accueil/CompeteCards";
+import { ProgressTabs } from "@/components/accueil/ProgressTabs";
 import type { AccueilData, TopicStat, WeekDay } from "@/components/accueil/types";
 
-// Sections du bas de l'accueil : stats (radars), progression (10 matières +
-// semaine), activité (niveau, XP, régularité — repris de l'ancien tableau de
-// bord). Sans état, sauf les onglets du radar par domaine.
+// Les deux sections sous le point focal : « Aujourd'hui » (trois tuiles
+// calmes) et « Ta progression » (une carte, trois vues en onglets). Le
+// détail (radar complet, activité, niveau, erreurs) vit sur /moi.
 
-const WEAK_BELOW = 50;
 const DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-export function StatsSection({ topics, mastery, masteryAvg }: { topics: TopicStat[]; mastery: number; masteryAvg: number | null }) {
-  const anyMeasured = topics.some((t) => t.pct !== null);
-  const axes = DOMAINS.map((d) =>
-    d.ready ? { label: d.name, me: anyMeasured ? mastery : null, avg: masteryAvg } : { label: d.name, me: null, avg: null, soon: true },
-  );
+export function TodaySection({ d }: { d: AccueilData }) {
   return (
-    <section className="rl-rv flex flex-col gap-4" aria-label="Tes stats">
-      <SectionTitle title="Tes stats" sub="toi face à la moyenne des joueurs" />
-      <div className="grid gap-[18px] lg:grid-cols-12">
-        <section className="card rl-lift flex min-w-0 flex-col gap-4 p-[22px] lg:col-span-5" aria-label="Tous les domaines">
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <CardLabel icon={<Globe2 size={15} />}>Tous les domaines</CardLabel>
-            <RadarLegend />
-          </div>
-          <div className="flex flex-1 items-center">
-            <Radar axes={axes} size={300} title="Ta maîtrise par domaine face à la moyenne des joueurs" />
-          </div>
-          <p className="text-[12.5px] text-muted">Aperçu : chaque domaine s&apos;allume quand il ouvre, avec son propre rang.</p>
-        </section>
-        <div className="min-w-0 lg:col-span-7">
-          <DomainStats topics={topics} />
+    <section className="rl-section" aria-labelledby="accueil-today">
+      <SectionTitle title={<span id="accueil-today">Aujourd&apos;hui</span>} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5">
+        <GoalTile answered={d.activity.today} goal={d.dailyGoal} />
+        <ErrorsTile errors={d.errors} />
+        <div className="col-span-2 min-w-0 lg:col-span-1">
+          <ContextTile duel={d.incomingDuel} exam={d.mockExam} />
         </div>
       </div>
     </section>
   );
 }
 
-function WeekChart({ days, goal }: { days: WeekDay[]; goal: number }) {
-  const total = days.reduce((s, d) => s + d.count, 0);
-  const correct = days.reduce((s, d) => s + d.correct, 0);
-  const acc = total > 0 ? Math.round((correct / total) * 100) : null;
-  const max = Math.max(goal, ...days.map((d) => d.count));
+export function ProgressSection({ d, tab }: { d: AccueilData; tab?: string }) {
+  const measured = d.topics.some((t) => t.pct !== null);
+  const masteryMeta = measured ? `maîtrise ${d.mastery} %${d.masteryAvg !== null ? ` · moyenne ${d.masteryAvg} %` : ""}` : "maîtrise pas encore mesurée";
+  const total = d.activity.days.reduce((s, x) => s + x.count, 0);
+  const correct = d.activity.days.reduce((s, x) => s + x.correct, 0);
+  const weekMeta = total > 0 ? `${total} ${total > 1 ? "questions" : "question"} · ${Math.round((correct / total) * 100)} % de réussite` : "cette semaine";
+
   return (
-    <section className="card rl-lift flex h-full flex-col gap-4 p-[22px]" aria-label="Ta semaine">
-      <CardLabel icon={<Clock size={15} />} right={<span className="font-mono text-[12px]">{total} questions{acc !== null ? ` · ${acc} %` : ""}</span>}>
-        Ta semaine
-      </CardLabel>
-      <ul className="grid h-[150px] grid-cols-7 items-end gap-2.5">
-        {days.map((d, i) => {
-          const h = d.count > 0 ? Math.max(8, Math.round((d.count / max) * 120)) : 4;
+    <section className="rl-section" aria-labelledby="accueil-progress">
+      <SectionTitle
+        title={<span id="accueil-progress">Ta progression</span>}
+        action={
+          <Link href="/moi?onglet=stats" className="t-small font-semibold hover:text-white">
+            Toutes tes stats →
+          </Link>
+        }
+      />
+      <ProgressTabs
+        initial={tab}
+        tabs={[
+          { key: "matieres", label: "Matières", meta: masteryMeta, panel: <SubjectBars topics={d.topics} /> },
+          { key: "radar", label: "Radar", meta: <RadarLegend />, panel: <RadarPanel topics={d.topics} /> },
+          { key: "semaine", label: "Semaine", meta: weekMeta, panel: <WeekBars days={d.activity.days} goal={d.dailyGoal} /> },
+        ]}
+      />
+    </section>
+  );
+}
+
+/** Les 10 matières en barres fines, sur deux colonnes (ordre officiel en colonnes). */
+function SubjectBars({ topics }: { topics: TopicStat[] }) {
+  return (
+    <ul className="grid gap-x-12 gap-y-1 md:grid-flow-col md:grid-rows-5">
+      {topics.map((t, i) => (
+        <li key={t.key} className="min-w-0">
+          <Link
+            href={`/practice?topic=${t.key}`}
+            className="rl-row -mx-2 grid grid-cols-[minmax(0,1fr)_minmax(72px,42%)_2.6em] items-center gap-3 rounded-[10px] px-2 py-1.5 sm:py-2"
+            aria-label={`${t.name} : ${t.pct === null ? "pas commencé" : `${t.pct} %`}. S'entraîner`}
+          >
+            <span className={"truncate text-[14px] " + (t.pct === null ? "text-muted" : "font-semibold")}>
+              <span className="sm:hidden">{t.short}</span>
+              <span className="hidden sm:inline">{t.name}</span>
+            </span>
+            <span className="ink-bar block h-1.5" aria-hidden>
+              {t.pct !== null && <span className="rl-grow" style={{ width: `${t.pct}%`, animationDelay: `${0.2 + i * 0.03}s` }} />}
+            </span>
+            <span className={"text-right font-mono text-[12px] tabular-nums " + (t.pct === null ? "text-muted" : "font-semibold")}>{t.pct === null ? "—" : `${t.pct}%`}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Radar des 10 matières, toi contre la moyenne des joueurs (domaine ouvert : Finance). */
+function RadarPanel({ topics }: { topics: TopicStat[] }) {
+  const measured = topics.filter((t) => t.pct !== null).sort((a, b) => (a.pct as number) - (b.pct as number));
+  const weak = measured.length >= 2 ? measured.slice(0, Math.min(3, Math.floor(measured.length / 2))) : [];
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-full max-w-[600px]">
+        <Radar axes={topics.map((t) => ({ label: t.code, me: t.pct, avg: t.avg }))} size={360} title="Tes 10 matières face à la moyenne des joueurs" />
+      </div>
+      {measured.length === 0 ? (
+        <p className="t-small text-center">
+          Ton tracé apparaît dès 5 questions dans une matière.{" "}
+          <Link href="/practice" className="font-semibold text-white underline underline-offset-2">
+            S&apos;entraîner
+          </Link>
+        </p>
+      ) : (
+        weak.length > 0 && (
+          <p className="t-small text-center">
+            À travailler :{" "}
+            {weak.map((t, i) => (
+              <span key={t.key}>
+                {i > 0 && " · "}
+                <Link href={`/practice?topic=${t.key}`} className="font-semibold text-white underline-offset-2 hover:underline">
+                  {t.name}
+                </Link>
+              </span>
+            ))}
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
+/** La semaine en cours, lundi → dimanche ; aujourd'hui en encre pleine. */
+function WeekBars({ days, goal }: { days: WeekDay[]; goal: number }) {
+  const max = Math.max(goal, ...days.map((x) => x.count));
+  const empty = days.every((x) => x.count === 0);
+  return (
+    <div className="flex flex-col gap-4">
+      <ul className="mx-auto grid h-[170px] w-full max-w-[640px] grid-cols-7 items-end gap-3 sm:gap-5">
+        {days.map((x, i) => {
+          const h = x.count > 0 ? Math.max(8, Math.round((x.count / max) * 140)) : 4;
           return (
             <li
-              key={d.key}
-              className="flex h-full flex-col items-center justify-end gap-1.5"
-              aria-label={`${DAY_NAMES[i]} : ${d.future ? "à venir" : `${d.count} question${d.count > 1 ? "s" : ""}`}`}
-              title={d.future ? undefined : `${d.count} question${d.count > 1 ? "s" : ""}`}
+              key={x.key}
+              className="flex h-full flex-col items-center justify-end gap-2"
+              aria-label={`${DAY_NAMES[i]} : ${x.future ? "à venir" : `${x.count} question${x.count > 1 ? "s" : ""}`}`}
+              title={x.future ? undefined : `${x.count} question${x.count > 1 ? "s" : ""}`}
             >
-              {d.future ? (
-                <span className="block h-1 w-full max-w-[34px] rounded-[9px] border border-dashed border-line-2" />
+              {x.future ? (
+                <span className="block h-1 w-full max-w-[40px] rounded-[9px] border border-dashed border-line-2" />
               ) : (
-                <span
-                  className={"rl-barup block w-full max-w-[34px] rounded-[9px] " + (d.isToday ? "bg-white" : "bg-surface-2")}
-                  style={{ height: h, animationDelay: `${0.3 + i * 0.05}s` }}
-                />
+                <span className={"rl-barup block w-full max-w-[40px] rounded-[9px] " + (x.isToday ? "bg-white" : "bg-surface-2")} style={{ height: h, animationDelay: `${0.2 + i * 0.04}s` }} />
               )}
-              <span className={"text-[12px] font-semibold " + (d.isToday ? "text-white" : "text-muted")}>{d.label}</span>
+              <span className={"text-[12px] font-semibold " + (x.isToday ? "text-white" : "text-muted")}>{x.label}</span>
             </li>
           );
         })}
       </ul>
-      {total === 0 && <p className="text-[12.5px] text-muted">Pas encore de question cette semaine.</p>}
-    </section>
-  );
-}
-
-export function ProgressSection({ topics, mastery, days, goal }: { topics: TopicStat[]; mastery: number; days: WeekDay[]; goal: number }) {
-  return (
-    <section className="rl-rv flex flex-col gap-4" aria-label="Ta progression">
-      <SectionTitle title="Ta progression" sub="Finance · CFA Niveau I" />
-      <div className="grid gap-[18px] lg:grid-cols-12">
-        <section className="card rl-lift flex min-w-0 flex-col gap-4 p-[22px] lg:col-span-8" aria-label="Tes 10 matières">
-          <CardLabel icon={<BarChart3 size={15} />} right={<span className="text-[13px]">maîtrise moyenne {mastery} %</span>}>
-            Finance · CFA Niveau I — tes 10 matières
-          </CardLabel>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(190px,100%),1fr))] gap-2.5">
-            {topics.map((t, i) =>
-              t.pct === null ? (
-                <Link
-                  key={t.key}
-                  href={`/practice?topic=${t.key}`}
-                  className="rl-lift flex flex-col gap-2.5 rounded-[14px] border-[1.5px] border-dashed border-line-2 p-3.5"
-                >
-                  <span className="text-[13.5px] font-[650] leading-tight">{t.name}</span>
-                  <span className="text-[12px] text-muted">pas commencé</span>
-                </Link>
-              ) : (
-                <Link key={t.key} href={`/practice?topic=${t.key}`} className="rl-lift flex flex-col gap-2.5 rounded-[14px] border border-line bg-surface p-3.5">
-                  <span className="flex items-start justify-between gap-2">
-                    <span className="text-[13.5px] font-[650] leading-tight">{t.name}</span>
-                    {t.pct < WEAK_BELOW && (
-                      <span title="point faible" aria-label="point faible">
-                        <TriangleAlert size={14} />
-                      </span>
-                    )}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="ink-bar block h-1.5 flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={t.pct} aria-label={t.name}>
-                      <span className="rl-grow" style={{ width: `${t.pct}%`, animationDelay: `${0.4 + i * 0.05}s` }} />
-                    </span>
-                    <span className="font-mono text-[12px] font-semibold tabular-nums">{t.pct}%</span>
-                  </span>
-                </Link>
-              ),
-            )}
-          </div>
-        </section>
-        <div className="min-w-0 lg:col-span-4">
-          <WeekChart days={days} goal={goal} />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function ActivitySection({ d, historySlot }: { d: AccueilData; historySlot?: React.ReactNode }) {
-  const xp30 = d.xpDays.reduce((s, x) => s + (Number(x.xp) || 0), 0);
-  const activeDays = d.xpDays.filter((x) => Number(x.xp) > 0).length;
-  return (
-    <section className="rl-rv flex flex-col gap-4" aria-label="Ton activité">
-      <SectionTitle title="Ton activité" sub="niveau, XP et régularité" />
-      <div className="grid gap-[18px] lg:grid-cols-12">
-        <section className="card rl-lift flex min-w-0 flex-col gap-4 p-[22px] lg:col-span-5" aria-label="Niveau">
-          <CardLabel icon={<Sparkles size={15} />} right={<span className="font-mono text-[12px]">{d.level.xpTotal} XP au total</span>}>
-            Niveau
-          </CardLabel>
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-brand text-[52px] leading-none">{d.level.level}</span>
-            <span className="text-[15px] text-muted">
-              {d.level.into}/{d.level.forNext} XP
-            </span>
-          </div>
-          <div className="ink-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={d.level.pct} aria-label="Progression du niveau">
-            <span className="rl-grow" style={{ width: `${d.level.pct}%`, animationDelay: ".4s" }} />
-          </div>
-          <p className="text-[13px] text-muted">
-            {d.level.toNext} XP avant le niveau {d.level.level + 1}.
-          </p>
-          <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-line pt-4">
-            <div>
-              <dt className="kicker">Précision</dt>
-              <dd className="font-brand mt-1 text-[26px] leading-none tabular-nums">{d.globalAccuracy !== null ? `${d.globalAccuracy}%` : "—"}</dd>
-              <dd className="mt-1 text-[12px] text-muted">sur toutes tes sessions</dd>
-            </div>
-            <div>
-              <dt className="kicker">Examen</dt>
-              <dd className="font-brand mt-1 text-[26px] leading-none">
-                {d.examDaysLeft === null ? "—" : d.examDaysLeft > 0 ? `J-${d.examDaysLeft}` : d.examDaysLeft === 0 ? "Jour J" : "Passé"}
-              </dd>
-              <dd className="mt-1 text-[12px] text-muted">
-                {d.examDateLabel ?? (
-                  <Link href="/settings" className="underline underline-offset-2">
-                    fixer la date
-                  </Link>
-                )}
-              </dd>
-            </div>
-          </dl>
-        </section>
-        <section className="card rl-lift flex min-w-0 flex-col gap-4 p-[22px] lg:col-span-7" aria-label="Activité sur 5 semaines">
-          <CardLabel icon={<CalendarClock size={15} />}>Activité · 5 semaines</CardLabel>
-          <div className="flex flex-wrap items-start gap-x-10 gap-y-4">
-            <ActivityHeatmap days={d.xpDays} />
-            <dl className="grid gap-3">
-              <div>
-                <dt className="kicker">Série</dt>
-                <dd className="font-brand mt-1 text-[26px] leading-none">{d.streak > 0 ? `${d.streak} j` : "—"}</dd>
-              </div>
-              <div>
-                <dt className="kicker">XP sur 30 jours</dt>
-                <dd className="font-brand mt-1 text-[26px] leading-none tabular-nums">{xp30}</dd>
-              </div>
-              <div>
-                <dt className="kicker">Jours actifs</dt>
-                <dd className="font-brand mt-1 text-[26px] leading-none tabular-nums">{activeDays}/30</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-      </div>
-      {historySlot}
-    </section>
+      {empty && <p className="t-small text-center">Pas encore de question cette semaine.</p>}
+    </div>
   );
 }

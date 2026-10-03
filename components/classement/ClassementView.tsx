@@ -2,50 +2,63 @@ import { PageHero } from "@/components/ui/Titles";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { RankHero } from "@/components/classement/RankHero";
-import { EloCard } from "@/components/classement/EloCard";
 import { TierTrack } from "@/components/classement/TierTrack";
 import { Leaderboard } from "@/components/classement/Leaderboard";
-import { NextExamCard } from "@/components/classement/NextExamCard";
-import { DuelsCard } from "@/components/classement/DuelsCard";
-import { DomainRanks, DomainTabs, HowItWorks } from "@/components/classement/Domains";
+import { DuelsPanel } from "@/components/classement/DuelsPanel";
+import { ExamsPanel, examTag } from "@/components/classement/ExamsPanel";
+import { ClassementTabs, type TabKey } from "@/components/classement/ClassementTabs";
+import { Disclosure } from "@/components/classement/Disclosure";
+import { DomainPills, HowItWorks } from "@/components/classement/Domains";
 import type { ClassementData } from "@/components/classement/types";
 
-// Espace « Classement » (V2) : rang et courbe d'ELO, piste des paliers,
-// classement général, prochain examen classé, duels, rangs par domaine.
-// Composant de présentation : toutes les données arrivent en props (page
-// serveur ou page d'aperçu).
-export function ClassementView({ data }: { data: ClassementData }) {
+export const CLASSEMENT_TABS: TabKey[] = ["classement", "duels", "examens"];
+
+// Espace « Classement » (V3, « moins dense ») : un héros (rang, ELO, courbe,
+// lancer un duel), puis trois onglets — Classement, Duels, Examens classés —
+// et, repliés en bas, les 8 rangs et les règles. Composant de présentation :
+// toutes les données arrivent en props (page serveur ou page d'aperçu).
+export function ClassementView({ data, tab = "classement" }: { data: ClassementData; tab?: TabKey }) {
   const { me } = data;
   const rank = rankFor(me.elo, me.mastery, me.leaderboardRank);
   const placement = me.gamesPlayed < PLACEMENT_GAMES;
+  const incoming = data.openDuels.filter((d) => d.incoming && d.status === "pending").length;
 
   return (
-    <div className="rl-wide flex flex-col gap-10">
-      <PageHero kicker="Classement" title={`Ton rang en ${CURRENT_DOMAIN.name}`}>
-        <DomainTabs />
-      </PageHero>
-
-      <div className="grid gap-[18px] lg:grid-cols-12">
-        <div className="rl-in min-w-0 lg:col-span-7">
-          <RankHero me={me} />
-        </div>
-        <div className="rl-in min-w-0 lg:col-span-5" style={{ animationDelay: ".1s" }}>
-          <EloCard history={data.history} elo={me.elo} tint={rank.tier.metal[1]} />
-        </div>
+    <div className="rl-wide rl-page">
+      <div className="flex flex-col gap-8 md:gap-10">
+        <PageHero kicker="Classement" title={`Ton rang en ${CURRENT_DOMAIN.name}`}>
+          <DomainPills me={me} />
+        </PageHero>
+        <RankHero me={me} history={data.history} />
       </div>
 
-      <TierTrack current={rank.tierIndex} mastery={me.mastery} placement={placement} />
+      <ClassementTabs
+        initial={tab}
+        tabs={[
+          { key: "classement", label: "Classement", panel: <Leaderboard board={data.board} meRow={data.meRow} totalPlayers={me.totalPlayers} /> },
+          {
+            key: "duels",
+            label: "Duels",
+            badge: incoming > 0 ? `${incoming} défi${incoming > 1 ? "s" : ""}` : null,
+            panel: <DuelsPanel open={data.openDuels} recent={data.recentDuels} />,
+          },
+          {
+            key: "examens",
+            label: "Examens classés",
+            short: "Examens",
+            badge: examTag(data.exam),
+            panel: <ExamsPanel exam={data.exam} past={data.pastExams} />,
+          },
+        ]}
+      />
 
-      <div className="grid gap-[18px] lg:grid-cols-12">
-        <div className="min-w-0 lg:col-span-7">
-          <Leaderboard board={data.board} meRow={data.meRow} totalPlayers={me.totalPlayers} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-[18px] lg:col-span-5">
-          <NextExamCard exam={data.exam} />
-          <DuelsCard open={data.openDuels} recent={data.recentDuels} />
-          <DomainRanks me={me} />
+      <div>
+        <Disclosure title="Les 8 rangs" hint={placement ? "ton rang s'affiche après le placement" : `tu es ${rank.tier.name}${rank.division ? " " + rank.division : ""}`}>
+          <TierTrack current={rank.tierIndex} mastery={me.mastery} placement={placement} />
+        </Disclosure>
+        <Disclosure title="Comment ça marche" hint="ELO, maîtrise, placement">
           <HowItWorks />
-        </div>
+        </Disclosure>
       </div>
     </div>
   );

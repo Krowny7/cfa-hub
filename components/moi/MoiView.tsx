@@ -1,33 +1,42 @@
 import Link from "next/link";
-import { SectionTitle } from "@/components/ui/Titles";
 import { MoiHeader } from "@/components/moi/MoiHeader";
-import { ProgressSection, StatsSection } from "@/components/moi/StatsSection";
-import { ErrorsSection } from "@/components/moi/ErrorsSection";
+import { MoiTabs } from "@/components/moi/MoiTabs";
+import { StatsTab } from "@/components/moi/StatsSection";
+import { ErrorsTab } from "@/components/moi/ErrorsSection";
+import type { MoiTab } from "@/components/moi/data";
 import type { MoiData } from "@/components/moi/types";
 
-// Espace « Moi » (V2) : profil et rang compact, stats (radar, activité),
-// toutes mes erreurs, progression par matière, réglages. Composant de
-// présentation : les données arrivent en props ; `settings` reçoit le
-// panneau de réglages (composants clients qui chargent eux-mêmes).
-export function MoiView({ d, settings }: { d: MoiData; settings: React.ReactNode }) {
+// Espace « Moi » (V3) : un en-tête compact, puis trois onglets, chacun une
+// seule vue : Stats (matières, activité, sessions), Erreurs (toutes les
+// questions de fiches à revoir), Réglages (profil, date d'examen, apparence,
+// groupes, déconnexion). Composant de présentation : les données arrivent en
+// props ; `settings` reçoit le panneau de réglages (composants clients qui
+// chargent eux-mêmes).
+export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; settings: React.ReactNode; tab?: MoiTab; now?: number }) {
   return (
-    <div className="rl-wide flex flex-col gap-12">
-      <MoiHeader d={d} />
-      <StatsSection d={d} />
-      <ErrorsSection errors={d.errors} />
-      <ProgressSection d={d} />
-      <section id="reglages" className="flex scroll-mt-24 flex-col gap-5" aria-label="Réglages">
-        <SectionTitle
-          title="Réglages"
-          sub="profil, date d'examen, apparence, groupes"
-          action={
+    <div className="rl-wide flex flex-col gap-8 md:gap-12">
+      <MoiHeader d={d} now={now} />
+      <MoiTabs
+        initial={tab}
+        counts={{ erreurs: d.errors.available ? d.errors.total : 0 }}
+        asides={{
+          erreurs: (
+            <Link href="/fiches" className="ink-link">
+              Toutes les fiches
+            </Link>
+          ),
+          reglages: (
             <Link href={`/people/${d.userId}`} className="ink-link">
               Mon profil public
             </Link>
-          }
-        />
-        {settings}
-      </section>
+          ),
+        }}
+        panels={{
+          stats: <StatsTab d={d} />,
+          erreurs: <ErrorsTab errors={d.errors} now={now} />,
+          reglages: settings,
+        }}
+      />
     </div>
   );
 }

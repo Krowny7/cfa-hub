@@ -31,6 +31,19 @@ export type NextExam = {
   windowEnd: string;
 };
 
+/** Examen blanc classé terminé (onglet « Examens classés »). */
+export type PastExam = {
+  id: string;
+  title: string;
+  scheduledAt: string;
+  questionCount: number;
+  /** mon score (null si je n'ai pas passé l'examen) */
+  score: number | null;
+  total: number | null;
+  /** variation d'ELO reçue à la clôture (null si pas appliquée) */
+  delta: number | null;
+};
+
 export type MyRank = {
   elo: number;
   gamesPlayed: number;
@@ -49,6 +62,8 @@ export type ClassementData = {
   /** ma ligne si je ne suis pas dans `board` */
   meRow: BoardRow | null;
   exam: NextExam | null;
+  /** examens classés terminés, du plus récent au plus ancien */
+  pastExams: PastExam[];
   openDuels: DuelSummary[];
   recentDuels: DuelSummary[];
 };

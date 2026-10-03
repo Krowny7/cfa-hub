@@ -16,7 +16,7 @@ export type ErrorsSummary = {
 
 export type ResumeItem = {
   kind: "fiche" | "qcm" | "flashcards" | "practice";
-  /** « Finance · CFA I · Equity · fiche page 3 » */
+  /** « Equity · fiche page 3 » (le domaine et le programme sont implicites) */
   context: string;
   title: string;
   done: number | null;
@@ -44,11 +44,11 @@ export type MockExamCard = {
   registrants: string[];
 };
 
-export type BoardRow = { userId: string; name: string; elo: number; rank: number; me: boolean };
-
 export type TopicStat = {
   key: string;
   name: string;
+  /** nom court (téléphone) */
+  short: string;
   code: string;
   /** ta maîtrise, null = pas assez de questions */
   pct: number | null;
@@ -78,15 +78,11 @@ export type AccueilData = {
   activity: ActivityWeek;
   dailyGoal: number;
   errors: ErrorsSummary;
+  /** prochain examen blanc classé (l'accueil ne le montre qu'à 7 jours ou moins) */
   mockExam: MockExamCard | null;
-  board: BoardRow[];
   topics: TopicStat[];
   /** maîtrise du programme (lib/mastery programMastery) */
   mastery: number;
   /** maîtrise moyenne des joueurs sur le programme */
   masteryAvg: number | null;
-  // Niveau, XP et activité (ancien tableau de bord, gardés plus bas)
-  level: { level: number; pct: number; into: number; forNext: number; toNext: number; xpTotal: number };
-  xpDays: { day: string; xp: number }[];
-  globalAccuracy: number | null;
 };

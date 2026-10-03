@@ -30,7 +30,8 @@ function dateLabel(iso: string) {
 }
 
 // Les états d'un duel hors partie : défi reçu, attente de l'adversaire,
-// duel refusé ou expiré.
+// duel refusé ou expiré. Une seule carte : les deux joueurs en tête, puis
+// le message et l'action.
 export function DuelStatusCard({ state, variant, myMastery = null, demo = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
@@ -91,8 +92,7 @@ export function DuelStatusCard({ state, variant, myMastery = null, demo = false 
     title = `${theirName} te défie`;
     body = (
       <>
-        {state.questionCount} questions type examen, les mêmes pour vous deux, {Math.round(state.timeLimitSeconds / 60)} min. Tu as 48 h
-        pour jouer une fois le défi accepté ; refuser ne coûte rien.
+        {state.questionCount} questions, les mêmes pour vous deux, {Math.round(state.timeLimitSeconds / 60)} min. Refuser ne coûte rien.
       </>
     );
   } else if (variant === "waiting") {
@@ -101,24 +101,23 @@ export function DuelStatusCard({ state, variant, myMastery = null, demo = false 
       title = "On cherche ton adversaire";
       body = (
         <>
-          Le prochain joueur qui lance un duel au hasard passera les mêmes questions. Résultat dès qu&apos;il aura fini. Si personne ne
-          se présente avant le {dateLabel(state.expiresAt)}, le duel expire sans effet sur ton ELO.
+          Le prochain joueur qui lance un duel au hasard passera les mêmes questions. Personne avant le {dateLabel(state.expiresAt)} ? Le duel
+          expire, sans effet sur ton ELO.
         </>
       );
     } else if (state.status === "pending") {
       title = `En attente de ${theirName}`;
       body = (
         <>
-          {theirName} n&apos;a pas encore accepté ton défi. Résultat dès qu&apos;il aura joué ; sans réponse avant le{" "}
-          {dateLabel(state.expiresAt)}, le défi expire sans effet sur l&apos;ELO.
+          Résultat dès qu&apos;il aura joué. Sans réponse avant le {dateLabel(state.expiresAt)}, le défi expire sans effet sur l&apos;ELO.
         </>
       );
     } else {
       title = `À ${theirName} de jouer`;
       body = (
         <>
-          {them.startedAt ? `${theirName} est en train de jouer (${them.answered}/${state.questionCount}).` : `${theirName} n'a pas encore commencé.`}{" "}
-          Résultat dès qu&apos;il aura rendu sa copie. S&apos;il ne joue pas avant le {dateLabel(state.expiresAt)}, tu gagnes par forfait.
+          {them.startedAt ? `En cours : ${them.answered}/${state.questionCount}.` : "Pas encore commencé."} S&apos;il ne joue pas avant le{" "}
+          {dateLabel(state.expiresAt)}, tu gagnes par forfait.
         </>
       );
     }
@@ -129,91 +128,91 @@ export function DuelStatusCard({ state, variant, myMastery = null, demo = false 
       state.status === "declined" ? (
         <>Le défi a été refusé ou annulé : rien ne bouge côté ELO.</>
       ) : (
-        <>Personne n&apos;a joué (ou le défi n&apos;a pas été accepté) dans les 48 h : rien ne bouge côté ELO.</>
+        <>Personne n&apos;a joué à temps : rien ne bouge côté ELO.</>
       );
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[860px] gap-6">
-      <section className="card rl-in p-5 md:p-[26px]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">
+    <div className="mx-auto grid w-full max-w-[760px]">
+      <section className="card-hero rl-in overflow-hidden">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-line px-5 py-4 md:gap-5 md:px-8 md:py-5">
           <DuelSide
             name="Toi"
             elo={state.me.elo}
             mastery={myMastery}
-            badgeSize={48}
-            extra={state.me.finishedAt ? "copie rendue" : state.me.startedAt ? `${state.me.answered}/${state.questionCount}` : "pas commencé"}
+            badgeSize={44}
+            extra={state.me.finishedAt ? "rendu" : state.me.startedAt ? `${state.me.answered}/${state.questionCount}` : undefined}
           />
-          <Swords size={22} className="text-muted" aria-label="contre" />
+          <Swords size={20} className="text-muted" aria-label="contre" />
           <DuelSide
             name={them?.username ?? "À trouver"}
             elo={them ? them.elo : null}
             align="right"
-            badgeSize={48}
-            extra={them ? (them.finishedAt ? "copie rendue" : them.startedAt ? "en jeu" : "pas commencé") : "—"}
+            badgeSize={44}
+            extra={them ? (them.finishedAt ? "rendu" : them.startedAt ? "en jeu" : undefined) : undefined}
           />
         </div>
-      </section>
 
-      <section className="card rl-in grid gap-5 p-6 md:p-8" style={{ animationDelay: ".08s" }}>
-        <div>
-          <p className="kicker m-0 flex items-center gap-1.5">
-            {variant === "waiting" && <Hourglass size={14} aria-hidden />}
-            {kicker}
-          </p>
-          <h1 className="m-0 mt-1 text-[28px] font-extrabold leading-tight tracking-[-0.02em] md:text-[36px]">{title}</h1>
-        </div>
-        <p className="m-0 max-w-[620px] text-[15px] leading-normal text-muted">{body}</p>
-
-        {variant === "invite" && stakes && (
-          <div className="grid grid-cols-3 gap-2.5">
-            <StakeTile label="Si tu gagnes" value={signed(stakes.win)} />
-            <StakeTile label="Match nul" value={signed(stakes.draw)} />
-            <StakeTile label="Si tu perds" value={signed(stakes.loss)} />
+        <div className="grid gap-5 p-6 md:p-8">
+          <div>
+            <p className="kicker m-0 flex items-center gap-1.5">
+              {variant === "waiting" && <Hourglass size={14} aria-hidden />}
+              {kicker}
+            </p>
+            <h1 className="t-h1 m-0 mt-1.5">{title}</h1>
           </div>
-        )}
+          <p className="t-body m-0 max-w-[560px] text-muted">{body}</p>
 
-        {error && (
-          <p role="alert" className="m-0 text-sm text-pen">
-            {error}
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-2.5">
-          {variant === "invite" && (
-            <>
-              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void decline()}>
-                Refuser
-              </button>
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void accept()}>
-                Accepter le défi <ArrowRight size={16} aria-hidden />
-              </button>
-            </>
+          {variant === "invite" && stakes && (
+            <div className="grid grid-cols-3 gap-2">
+              <StakeTile label="Si tu gagnes" value={signed(stakes.win)} />
+              <StakeTile label="Match nul" value={signed(stakes.draw)} />
+              <StakeTile label="Si tu perds" value={signed(stakes.loss)} />
+            </div>
           )}
-          {variant === "waiting" && (
-            <>
-              {state.status === "pending" && state.iAmChallenger && (
+
+          {error && (
+            <p role="alert" className="m-0 text-sm text-pen">
+              {error}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center justify-end gap-2.5">
+            {variant === "invite" && (
+              <>
                 <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void decline()}>
-                  {them ? "Annuler le défi" : "Annuler la recherche"}
+                  Refuser
                 </button>
-              )}
-              <Link href="/duel" className="btn btn-primary">
-                Retour aux duels <ArrowRight size={16} aria-hidden />
-              </Link>
-            </>
-          )}
-          {variant === "closed" && (
-            <>
-              {them && (
-                <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void rematch()}>
-                  Redéfier {theirName} <Swords size={15} aria-hidden />
+                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void accept()}>
+                  Accepter le défi <ArrowRight size={16} aria-hidden />
                 </button>
-              )}
-              <Link href="/duel" className="btn btn-primary">
-                Nouveau duel <ArrowRight size={16} aria-hidden />
-              </Link>
-            </>
-          )}
+              </>
+            )}
+            {variant === "waiting" && (
+              <>
+                {state.status === "pending" && state.iAmChallenger && (
+                  <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void decline()}>
+                    {them ? "Annuler le défi" : "Annuler la recherche"}
+                  </button>
+                )}
+                <Link href="/duel" className="btn btn-primary">
+                  Retour aux duels <ArrowRight size={16} aria-hidden />
+                </Link>
+              </>
+            )}
+            {variant === "closed" && (
+              <>
+                {them && (
+                  <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void rematch()}>
+                    Redéfier {theirName} <Swords size={15} aria-hidden />
+                  </button>
+                )}
+                <Link href="/duel" className="btn btn-primary">
+                  Nouveau duel <ArrowRight size={16} aria-hidden />
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </section>
     </div>

@@ -10,7 +10,8 @@ import { EntrainementView, type EntrainementData } from "@/components/entraineme
 
 // Espace « S'entraîner » : point d'entrée unique vers les façons de
 // s'entraîner. Chacune garde sa page et ses routes (QCM, entraînement ciblé,
-// examens officiels, examens blancs, duels) ; seule la navigation change.
+// examens officiels, examens blancs, duels) ; la page met en avant une
+// session (la matière la plus faible, sinon la dernière) et range le reste.
 export default async function EntrainementPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -30,13 +31,16 @@ export default async function EntrainementPage() {
       try {
         const { data, count, error } = await supabase
           .from("practice_session_results")
-          .select("score,total,completed_at", { count: "exact" })
+          .select("score,total,completed_at,topics", { count: "exact" })
           .eq("user_id", userId)
           .order("completed_at", { ascending: false })
           .limit(1);
         if (error) return { sessions: 0, last: null };
-        const row = (data?.[0] ?? null) as { score: number; total: number; completed_at: string } | null;
-        return { sessions: count ?? 0, last: row ? { score: row.score, total: row.total, at: row.completed_at } : null };
+        const row = (data?.[0] ?? null) as { score: number; total: number; completed_at: string; topics: string[] | null } | null;
+        return {
+          sessions: count ?? 0,
+          last: row ? { score: Number(row.score) || 0, total: Number(row.total) || 0, at: row.completed_at, topics: row.topics ?? [] } : null,
+        };
       } catch {
         return { sessions: 0, last: null };
       }

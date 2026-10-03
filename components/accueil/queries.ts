@@ -233,7 +233,7 @@ async function resumeFromFiche(supabase: Client, admin: Client | null, userId: s
     const total = typeof countRes.count === "number" && countRes.count > 0 ? countRes.count : null;
     const finished = total !== null && done >= total;
 
-    const where = ["Finance", "CFA I", subj?.short ?? "Fiche"];
+    const where = [subj?.short ?? "Fiche"];
     let heading = theme ?? title.replace(/ — Drill Fiche.*$/, "") ?? "Quiz de fiche";
     if (row.mode === "page" && page) where.push(`fiche page ${page}`);
     if (row.mode === "errors") heading = "Mes erreurs à revoir";
@@ -270,7 +270,7 @@ async function resumeFromSessions(supabase: Client, userId: string): Promise<Res
     const qcm = r.mode === "qcm";
     return {
       kind: qcm ? "qcm" : "flashcards",
-      context: `Finance · CFA I · ${qcm ? "QCM" : "flashcards"}`,
+      context: qcm ? "QCM" : "Flashcards",
       title: r.set_title,
       done: Number(r.correct) || 0,
       total: Number(r.total) || null,
@@ -300,7 +300,7 @@ async function resumeFromPractice(supabase: Client, userId: string): Promise<Res
     const single = topics.length === 1 ? subjectByKey(topics[0]) : null;
     return {
       kind: "practice",
-      context: "Finance · CFA I · entraînement ciblé",
+      context: "Entraînement ciblé",
       title: single ? single.name : `${topics.length} matières`,
       done: Number(r.score) || 0,
       total: Number(r.total) || null,

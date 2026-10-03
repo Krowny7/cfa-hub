@@ -9,7 +9,7 @@ import { MIN_QUESTIONS_FOR_SIGNAL, programMastery, type TopicMastery } from "@/l
 import { TOPICS } from "@/lib/practiceTopics";
 import type { LeaderboardRow } from "@/lib/rating";
 import { displayName } from "@/components/classement/format";
-import type { BoardRow, NextExam } from "@/components/classement/types";
+import type { BoardRow, NextExam, PastExam } from "@/components/classement/types";
 
 /** Client admin, ou null si la clé de service n'est pas configurée. */
 export function tryAdmin(): SupabaseClient | null {
@@ -182,5 +182,59 @@ export async function getNextRankedExam(supabase: SupabaseClient, admin: Supabas
     };
   } catch {
     return null;
+  }
+}
+
+/**
+ * Examens blancs classés terminés (les plus récents), avec mon score et la
+ * variation d'ELO reçue à la clôture. Résultats ou ELO absents → null.
+ */
+export async function getPastRankedExams(supabase: SupabaseClient, userId: string, limit = 5): Promise<PastExam[]> {
+  try {
+    const { data, error } = await supabase
+      .from("mock_exams")
+      .select("id,title,scheduled_at,question_count")
+      .eq("status", "closed")
+      .order("scheduled_at", { ascending: false })
+      .limit(limit);
+    if (error || !data || data.length === 0) return [];
+    const exams = data as Array<{ id: string; title: string; scheduled_at: string; question_count: number }>;
+    const ids = exams.map((e) => e.id);
+
+    const [results, events] = await Promise.all([
+      (async () => {
+        try {
+          const r = await supabase.from("mock_exam_results").select("exam_id,score,total").eq("user_id", userId).in("exam_id", ids);
+          return r.error || !r.data ? [] : (r.data as Array<{ exam_id: string; score: number | null; total: number | null }>);
+        } catch {
+          return [];
+        }
+      })(),
+      (async () => {
+        try {
+          const r = await supabase.from("rating_events").select("ref_id,delta").eq("user_id", userId).eq("source", "mock_exam").in("ref_id", ids);
+          return r.error || !r.data ? [] : (r.data as Array<{ ref_id: string; delta: number }>);
+        } catch {
+          return [];
+        }
+      })(),
+    ]);
+    const byExam = new Map(results.map((r) => [r.exam_id, r]));
+    const deltaByExam = new Map(events.map((e) => [e.ref_id, Number(e.delta) || 0]));
+
+    return exams.map((e) => {
+      const r = byExam.get(e.id);
+      return {
+        id: e.id,
+        title: e.title,
+        scheduledAt: e.scheduled_at,
+        questionCount: e.question_count,
+        score: r?.score ?? null,
+        total: r?.total ?? null,
+        delta: deltaByExam.has(e.id) ? (deltaByExam.get(e.id) as number) : null,
+      };
+    });
+  } catch {
+    return [];
   }
 }

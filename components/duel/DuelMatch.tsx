@@ -253,16 +253,10 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
       {/* En-tête : toi / chrono / adversaire */}
       <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-3.5 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <DuelSide name="Toi" elo={state.me.elo} mastery={myMastery} badgeSize={44} extra={<span className="md:hidden">{answeredCount}/{n}</span>} />
-            <span className="hidden font-mono text-[13px] tabular-nums text-muted md:inline">
-              {answeredCount}/{n}
-            </span>
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="font-mono text-[11px] text-muted md:text-[13px]">temps restant</span>
+          <DuelSide name="Toi" elo={state.me.elo} mastery={myMastery} badgeSize={40} extra={`${answeredCount}/${n}`} />
+          <div className="flex flex-col items-center">
             <span
-              className={"font-brand text-[26px] leading-none tabular-nums md:text-[40px] " + (low ? "text-pen" : "")}
+              className={"t-num text-[26px] md:text-[38px] " + (low ? "text-pen" : "")}
               role="timer"
               aria-live="off"
               aria-label={`Temps restant ${clock(remaining)}`}
@@ -270,16 +264,7 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
               {clock(remaining)}
             </span>
           </div>
-          <div className="flex min-w-0 flex-row-reverse items-center gap-3">
-            <DuelSide
-              name={theirName}
-              elo={them ? them.elo : null}
-              align="right"
-              badgeSize={44}
-              extra={<span className="md:hidden">{them ? `${theirAnswered}/${n}` : "—"}</span>}
-            />
-            <span className="hidden font-mono text-[13px] tabular-nums text-muted md:inline">{them ? `${theirAnswered}/${n}` : "—"}</span>
-          </div>
+          <DuelSide name={theirName} elo={them ? them.elo : null} align="right" badgeSize={40} extra={them ? `${theirAnswered}/${n}` : undefined} />
         </div>
         <div className="mt-3 grid grid-cols-2 gap-4 md:gap-10" aria-hidden>
           <Segments total={n} filled={answeredCount} />
@@ -288,45 +273,37 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
       </header>
 
       {phase === "intro" || phase === "loading" ? (
-        <section className="card rl-in mx-auto grid w-full max-w-[820px] gap-5 p-6 md:p-8">
+        <section className="card-hero rl-in mx-auto grid w-full max-w-[760px] gap-6 p-6 md:p-9">
           <div>
             <p className="kicker m-0">
-              {state.mode === "random" && !them ? "Duel au hasard" : `Duel contre ${theirName}`}
+              {state.mode === "random" && !them ? "Duel au hasard" : `Contre ${theirName}`}
               {" · expire dans "}
               {timeLeftLabel(state.expiresAt, state.serverNow)}
             </p>
-            <h2 className="m-0 mt-1 text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Prêt ?</h2>
+            <h2 className="t-h1 m-0 mt-1.5">Prêt ?</h2>
           </div>
-          <ul className="m-0 grid list-none gap-2 p-0 text-[15px] leading-normal text-muted">
+          <ul className="m-0 grid list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
             <li>
-              <b className="text-white">{n} questions</b> type examen CFA I, les mêmes et dans le même ordre pour vous deux.
+              <b className="text-white">{n} questions</b>, les mêmes et dans le même ordre pour vous deux.
             </li>
             <li>
-              <b className="text-white">{Math.round(state.timeLimitSeconds / 60)} min</b> : le chrono démarre quand tu commences et ne
-              s&apos;arrête plus, même si tu fermes la page.
+              <b className="text-white">{Math.round(state.timeLimitSeconds / 60)} min</b> : le chrono ne s&apos;arrête plus, même si tu fermes la page.
             </li>
             <li>
-              <b className="text-white">Réponses définitives</b> ; tu peux passer une question et y revenir. Les scores restent cachés
-              jusqu&apos;à la fin.
+              <b className="text-white">Réponses définitives</b> ; tu peux passer et revenir. Scores cachés jusqu&apos;à la fin.
             </li>
           </ul>
           {stakes ? (
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
               <StakeTile label="Si tu gagnes" value={signed(stakes.win)} />
               <StakeTile label="Match nul" value={signed(stakes.draw)} />
               <StakeTile label="Si tu perds" value={signed(stakes.loss)} />
             </div>
           ) : (
-            <p className="m-0 rounded-[12px] bg-surface-2 px-4 py-3 text-sm text-muted">
-              Ton adversaire n&apos;est pas encore trouvé : tu joues d&apos;abord, le prochain joueur qui cherche un duel au hasard
-              passera les mêmes questions. L&apos;enjeu dépendra de son ELO.
-            </p>
+            <p className="t-small m-0">Tu joues d&apos;abord : le prochain joueur qui cherche un duel au hasard passera les mêmes questions. L&apos;enjeu dépendra de son ELO.</p>
           )}
           {state.status === "pending" && them && (
-            <p className="m-0 text-sm text-muted">
-              {theirName} n&apos;a pas encore accepté : tu peux jouer ta manche dès maintenant. S&apos;il refuse ou laisse expirer, le
-              défi ne compte pas.
-            </p>
+            <p className="t-small m-0">{theirName} n&apos;a pas encore accepté : tu peux jouer dès maintenant. S&apos;il refuse, le défi ne compte pas.</p>
           )}
           {error && (
             <p role="alert" className="m-0 text-sm text-pen">
@@ -352,12 +329,9 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
         </section>
       ) : (
         <div className="mx-auto grid w-full max-w-[820px] gap-[22px]">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[14px] font-[650] text-muted">
-              Question {q.position + 1} sur {n} · {duelTopicLabel(q.topic)}
-            </span>
-            <span className="text-[13px] text-muted">les scores restent cachés jusqu&apos;à la fin</span>
-          </div>
+          <p className="kicker m-0">
+            Question {q.position + 1} sur {n} · {duelTopicLabel(q.topic)}
+          </p>
 
           <section className="card flex min-w-0 flex-col gap-6 p-5 md:p-7">
             <div key={q.position} className="rl-in">
@@ -415,9 +389,9 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
             </div>
           </section>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted">
-            <span>
-              {answeredCount}/{n} répondues{unanswered > 0 && answeredCount > 0 ? ` · ${unanswered} restantes` : ""}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-muted">
+            <span className="font-mono tabular-nums">
+              {answeredCount}/{n} répondues
             </span>
             <button type="button" onClick={() => void handIn()} className="font-semibold transition-colors hover:text-white">
               Rendre ma copie

@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { RatingEvent } from "@/lib/rating";
 import { fmtInt, fmtShortDate, signed } from "@/components/classement/format";
 
 // Courbe d'ELO (SVG maison) : trait d'encre qui se dessine au pinceau, aire
 // teintée du métal du palier, un repère par match (rond = duel, losange =
 // examen blanc classé). Survol : ligne verticale + infobulle (date, type,
-// variation, ELO après le match).
+// variation, ELO après le match). `onDark` : posée dans la carte sombre du
+// héros (couleurs fixes, repères pleins).
 
 const W = 460;
 const H = 150;
-const X0 = 10;
+const X0 = 36;
 const X1 = W - 10;
 const Y0 = 18;
 const Y1 = 128;
@@ -23,8 +24,12 @@ function niceStep(range: number) {
   return 1000;
 }
 
-export function EloChart({ events, tint }: { events: RatingEvent[]; tint: string }) {
+export function EloChart({ events, tint, onDark = false }: { events: RatingEvent[]; tint: string; onDark?: boolean }) {
   const [hover, setHover] = useState<number | null>(null);
+  const gradId = "rl-elo-" + useId().replace(/[^a-zA-Z0-9]/g, "");
+  const grid = onDark ? "rgba(255,255,255,.1)" : "var(--line-2)";
+  const tickFill = onDark ? "rgba(255,255,255,.42)" : "var(--ink-2)";
+  const hollow = onDark ? "currentColor" : "var(--surface)";
 
   // Le premier point est l'ELO d'avant le premier match affiché.
   const values = [events[0].eloBefore, ...events.map((e) => e.eloAfter)];
@@ -46,7 +51,7 @@ export function EloChart({ events, tint }: { events: RatingEvent[]; tint: string
   const ev = h !== null ? events[h - 1] : null;
 
   return (
-    <div className="relative text-white">
+    <div className={"relative " + (onDark ? "text-[#fff]" : "text-white")}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
@@ -57,33 +62,39 @@ export function EloChart({ events, tint }: { events: RatingEvent[]; tint: string
       >
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={0} x2={W} y1={y(t)} y2={y(t)} stroke="var(--line-2)" strokeDasharray="3 5" />
-            <text x={0} y={y(t) - 4} style={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ink-2)" }}>
+            <line x1={0} x2={W} y1={y(t)} y2={y(t)} stroke={grid} strokeDasharray="3 5" />
+            <text x={0} y={y(t) - 4} style={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: tickFill }}>
               {t}
             </text>
           </g>
         ))}
-        <path d={area} fill={tint} opacity={0.16} />
-        {h !== null && <line x1={pts[h][0]} x2={pts[h][0]} y1={Y0 - 8} y2={H} stroke="var(--ink-2)" strokeWidth={1} />}
+        <defs>
+          <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor={tint} stopOpacity={onDark ? 0.34 : 0.26} />
+            <stop offset="1" stopColor={tint} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${gradId})`} />
+        {h !== null && <line x1={pts[h][0]} x2={pts[h][0]} y1={Y0 - 8} y2={H} stroke={onDark ? "rgba(255,255,255,.35)" : "var(--ink-2)"} strokeWidth={1} />}
         <path d={line} pathLength={100} className="rl-drawline" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
         {pts.map(([px, py], i) => {
           const last = i === pts.length - 1;
           const active = i === h;
           const src = i > 0 ? events[i - 1].source : null;
-          const r = last || active ? 5 : 3.2;
+          const r = last || active ? 5 : onDark ? 2.6 : 3.2;
           if (src === "mock_exam") {
             const s = r * 1.25;
             return (
               <path
                 key={i}
                 d={`M ${px} ${py - s} L ${px + s} ${py} L ${px} ${py + s} L ${px - s} ${py} Z`}
-                fill={last || active ? "currentColor" : "var(--surface)"}
+                fill={last || active ? "currentColor" : hollow}
                 stroke="currentColor"
                 strokeWidth={2}
               />
             );
           }
-          return <circle key={i} cx={px} cy={py} r={r} fill={last || active ? "currentColor" : "var(--surface)"} stroke="currentColor" strokeWidth={2} />;
+          return <circle key={i} cx={px} cy={py} r={r} fill={last || active ? "currentColor" : hollow} stroke="currentColor" strokeWidth={onDark && !last && !active ? 0 : 2} />;
         })}
         {/* zones de survol, plus larges que les repères */}
         {pts.map(([px], i) =>

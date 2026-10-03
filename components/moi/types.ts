@@ -38,6 +38,19 @@ export type TopicStat = {
   avg: number | null;
 };
 
+/** Une session terminée (QCM, flashcards ou entraînement ciblé). */
+export type SessionItem = {
+  id: string;
+  kind: "qcm" | "flashcards" | "practice";
+  title: string;
+  correct: number;
+  total: number;
+  at: string;
+  /** « il y a 2 h », calculé côté serveur (évite un écart à l'hydratation) */
+  ago: string;
+  href: string | null;
+};
+
 export type MoiData = {
   userId: string;
   name: string;
@@ -51,8 +64,15 @@ export type MoiData = {
   levelPct: number;
   xpToNextLevel: number;
   xpWeek: number;
+  /** XP et jours actifs sur les 30 derniers jours */
+  xp30: number;
+  activeDays30: number;
+  /** précision sur les QCM et l'entraînement ciblé, null si aucune réponse */
+  accuracy: number | null;
   xpDays: { day: string; xp: number }[];
   me: MyRank;
   topics: TopicStat[];
   errors: FicheErrors;
+  /** dernières sessions, les plus récentes d'abord (vide : repli sur le navigateur) */
+  sessions: SessionItem[];
 };

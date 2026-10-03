@@ -1,10 +1,11 @@
-import { ChartNoAxesColumn, Clock, FileText, Swords } from "lucide-react";
+import { Swords } from "lucide-react";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { Enso } from "@/components/ui/InkRings";
+import { PageHero } from "@/components/ui/Titles";
 import { InkRing } from "@/components/ink/InkRing";
+import { Disclosure } from "@/components/classement/Disclosure";
 import { rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
-import { DUEL_MINUTES, DUEL_QUESTIONS } from "@/lib/duels";
+import { DUEL_MINUTES, DUEL_QUESTIONS, DUEL_WINDOW_HOURS } from "@/lib/duels";
 
 // Pièces partagées des pages duel. Sans état : utilisables depuis un
 // composant serveur comme depuis un composant client.
@@ -27,48 +28,30 @@ export function PlayerBadge({
   return <RankBadge tier={r.tierIndex} size={size} gray={gray} onDark={onDark} glow={false} />;
 }
 
-/** Petite pastille d'information (programme, format, durée). */
-export function Pill({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex h-[30px] items-center gap-1.5 rounded-[10px] border border-line bg-surface px-[11px] text-[13px] font-semibold">
-      {icon}
-      {children}
-    </span>
-  );
-}
-
-/** En-tête du lobby : « Duel », grand titre, pastilles du format. */
+/** En-tête du lobby : petite ligne (domaine), grand titre, format en une ligne. */
 export function DuelHeading({ title = "Qui affrontes-tu ?" }: { title?: string }) {
   return (
-    <header className="relative flex flex-wrap items-end justify-between gap-4">
-      <div aria-hidden className="pointer-events-none absolute -left-20 -top-28 hidden sm:block">
-        <Enso size={300} />
-      </div>
-      <div className="relative grid gap-2.5">
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-muted">
-          <Swords size={16} aria-hidden /> Duel
+    <PageHero
+      kicker={
+        <span className="inline-flex items-center gap-1.5">
+          <Swords size={14} aria-hidden /> Duel · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
         </span>
-        <h1 className="rl-in m-0 font-sans text-[clamp(36px,5.4vw,60px)] font-extrabold leading-none tracking-[-0.035em] [text-wrap:balance]">
-          {title}
-        </h1>
-      </div>
-      <div className="relative flex flex-wrap gap-2">
-        <Pill icon={<ChartNoAxesColumn size={14} aria-hidden />}>
-          {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
-        </Pill>
-        <Pill icon={<FileText size={14} aria-hidden />}>{DUEL_QUESTIONS} questions · format examen</Pill>
-        <Pill icon={<Clock size={14} aria-hidden />}>{DUEL_MINUTES} min</Pill>
-      </div>
-    </header>
+      }
+      title={title}
+    >
+      <p className="t-small">
+        {DUEL_QUESTIONS} questions type examen · {DUEL_MINUTES} min · à jouer sous {DUEL_WINDOW_HOURS} h
+      </p>
+    </PageHero>
   );
 }
 
 /** Case d'enjeu sur carte sombre : « Si tu gagnes » / « +12 à +18 ». */
 export function StakeBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-[12px] bg-[rgba(255,255,255,.07)] p-3">
-      <div className="text-[12px] text-[rgba(255,255,255,.6)]">{label}</div>
-      <div className="mt-1 font-mono text-[13px] font-semibold tabular-nums sm:text-[15px]">{value}</div>
+    <div className="min-w-0 rounded-[12px] bg-[rgba(255,255,255,.07)] px-3 py-2.5">
+      <div className="text-[12px] text-[rgba(255,255,255,.58)]">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px] font-semibold tabular-nums sm:text-[15px]">{value}</div>
     </div>
   );
 }
@@ -76,9 +59,9 @@ export function StakeBox({ label, value }: { label: string; value: string }) {
 /** Case d'enjeu sur fond clair. */
 export function StakeTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-[12px] bg-surface-2 p-3">
+    <div className="min-w-0 rounded-[12px] bg-surface-2 px-3 py-2.5">
       <div className="text-[12px] text-muted">{label}</div>
-      <div className="mt-1 font-mono text-[13px] font-semibold tabular-nums sm:text-[15px]">{value}</div>
+      <div className="mt-0.5 font-mono text-[13px] font-semibold tabular-nums sm:text-[15px]">{value}</div>
     </div>
   );
 }
@@ -112,9 +95,11 @@ export function DuelSide({
     <div className={"flex min-w-0 items-center gap-2.5 md:gap-3.5 " + (align === "right" ? "flex-row-reverse text-right" : "")}>
       <PlayerBadge elo={elo ?? 1200} mastery={mastery} size={badgeSize} gray={gray || elo === null} />
       <div className={"min-w-0 " + (hideNameOnMobile ? "hidden sm:block" : "")}>
-        <div className="truncate text-[15px] font-extrabold md:text-[18px]">{name}</div>
-        <div className="font-mono text-[12px] tabular-nums text-muted md:text-[12.5px]">{elo === null ? "ELO ?" : `${elo} ELO`}</div>
-        {extra && <div className="font-mono text-[12px] tabular-nums text-muted">{extra}</div>}
+        <div className="truncate text-[15px] font-bold md:text-[17px]">{name}</div>
+        <div className="truncate font-mono text-[12px] tabular-nums text-muted">
+          {elo === null ? "ELO ?" : `${elo} ELO`}
+          {extra ? <> · {extra}</> : null}
+        </div>
       </div>
       {big}
     </div>
@@ -126,29 +111,27 @@ export function InkWatermark({ size = 300, className = "-bottom-16 -right-10" }:
   return <InkRing size={size} className={"rl-deco pointer-events-none absolute text-[#fff] opacity-[0.08] " + className} />;
 }
 
-/** « Comment l'ELO bouge » : les règles en trois phrases. */
+/** « Comment l'ELO bouge » : les règles en trois phrases, repliées par défaut. */
 export function DuelHowItWorks() {
   return (
-    <section className="card rl-rv flex min-w-0 flex-col gap-4 p-[22px]">
-      <div className="flex items-center gap-2.5">
-        <InkRing size={22} />
-        <h2 className="m-0 text-[20px] font-bold leading-tight tracking-[-0.02em]">Comment l&apos;ELO bouge</h2>
-      </div>
-      <div className="grid gap-4 text-[14px] leading-[1.55] text-muted sm:grid-cols-2 lg:grid-cols-3">
-        <p className="m-0">
-          <b className="text-white">Même épreuve pour les deux.</b> {DUEL_QUESTIONS} questions tirées au hasard dans les vraies
-          questions d&apos;examen du programme, dans le même ordre. {DUEL_MINUTES} min chacun, à jouer quand tu veux sous 48 h.
-        </p>
-        <p className="m-0">
-          <b className="text-white">Meilleur score gagne.</b> Égalité de bonnes réponses : le plus rapide l&apos;emporte ; à la
-          seconde près, c&apos;est un nul. Pas joué à temps : forfait.
-        </p>
-        <p className="m-0">
-          <b className="text-white">Comme aux échecs.</b> Battre plus fort que soi rapporte plus ; perdre contre plus faible coûte
-          plus. Les examens blancs classés comptent aussi.
-        </p>
-      </div>
-    </section>
+    <div>
+      <Disclosure title="Comment l'ELO bouge" hint="même épreuve, meilleur score, comme aux échecs">
+        <div className="grid gap-5 text-[14px] leading-[1.55] text-muted sm:grid-cols-3">
+          <p className="m-0">
+            <b className="text-white">Même épreuve pour les deux.</b> {DUEL_QUESTIONS} vraies questions d&apos;examen, tirées au hasard, dans
+            le même ordre. {DUEL_MINUTES} min chacun, quand tu veux sous {DUEL_WINDOW_HOURS} h.
+          </p>
+          <p className="m-0">
+            <b className="text-white">Meilleur score gagne.</b> À égalité, le plus rapide l&apos;emporte ; à la seconde près, c&apos;est un nul.
+            Pas joué à temps : forfait.
+          </p>
+          <p className="m-0">
+            <b className="text-white">Comme aux échecs.</b> Battre plus fort que soi rapporte plus ; perdre contre plus faible coûte plus. Les
+            examens blancs classés comptent aussi.
+          </p>
+        </div>
+      </Disclosure>
+    </div>
   );
 }
 

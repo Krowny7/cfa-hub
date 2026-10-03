@@ -1,37 +1,34 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, FileText, Headphones, Layers, ListChecks, Target, TriangleAlert } from "lucide-react";
-import { InkRing } from "@/components/ink/InkRing";
+import { ArrowRight, FileText, Headphones, Layers, ListChecks, Target, TriangleAlert } from "lucide-react";
 import { InkProgressRing } from "@/components/ui/InkRings";
-import { CardLabel } from "@/components/ui/Titles";
+import { Tile } from "@/components/accueil/Tile";
 import { agoLabel, plural } from "@/components/accueil/format";
 import type { ErrorsSummary, ResumeItem } from "@/components/accueil/types";
 
-// Cartes « révision » de l'accueil : reprendre, objectif du jour, erreurs à
-// revoir (+ leurs tuiles compactes sur téléphone). Sans état.
+// Cartes « révision » de l'accueil : la prochaine action (le point focal de
+// la page) et les tuiles objectif du jour / à revoir. Sans état.
 
 const KIND_ICON = { fiche: FileText, qcm: ListChecks, flashcards: Layers, practice: Target } as const;
 
-/** Pastille claire (sous le titre d'accueil, chips de matières). */
-export const PILL = "inline-flex h-[30px] items-center gap-1.5 rounded-[10px] border border-line bg-surface px-[11px] text-[13px] font-semibold";
-
-export function ResumeCard({ resume, now }: { resume: ResumeItem | null; now?: number }) {
+/** La prochaine action : seule card-hero et seul bouton en encre de l'écran. */
+export function ResumeHero({ resume, now }: { resume: ResumeItem | null; now?: number }) {
   if (!resume) {
     return (
-      <section className="card rl-lift flex h-full flex-col gap-4 p-[22px]" aria-label="Reprendre">
-        <CardLabel icon={<BookOpen size={15} />}>Reprendre</CardLabel>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[22px] font-extrabold leading-tight tracking-[-.025em] sm:text-[26px]">Rien à reprendre pour l&apos;instant</span>
-          <span className="text-[14px] leading-[1.45] text-muted">
-            Ouvre une fiche et son quiz, ou lance un QCM : ta dernière série t&apos;attendra ici.
-          </span>
-        </div>
-        <div className="mt-auto flex flex-wrap gap-2.5">
-          <Link href="/reviser" className="btn btn-primary rl-press w-full sm:w-auto">
-            Choisir une fiche <ArrowRight size={16} />
-          </Link>
-          <Link href="/entrainement" className="btn btn-secondary rl-press w-full sm:w-auto">
-            S&apos;entraîner
-          </Link>
+      <section className="card-hero rl-in p-6 sm:p-8" style={{ animationDelay: ".08s" }} aria-label="Pour commencer">
+        <div className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:gap-10">
+          <div className="min-w-0">
+            <p className="t-micro font-semibold">Pour commencer</p>
+            <h2 className="t-h1 mt-2">Ouvre ta première fiche</h2>
+            <p className="t-small mt-2">Ta dernière série t&apos;attendra ici.</p>
+          </div>
+          <div className="flex flex-col items-stretch gap-3 md:items-end">
+            <Link href="/reviser" className="btn btn-primary btn-lg">
+              Choisir une fiche <ArrowRight size={17} />
+            </Link>
+            <Link href="/entrainement" className="t-small text-center font-semibold hover:text-white md:text-right">
+              ou lance un QCM
+            </Link>
+          </div>
         </div>
       </section>
     );
@@ -41,82 +38,37 @@ export function ResumeCard({ resume, now }: { resume: ResumeItem | null; now?: n
   const pct = resume.total ? Math.min(100, Math.round(((resume.done ?? 0) / resume.total) * 100)) : null;
 
   return (
-    <section className="card rl-lift flex h-full flex-col gap-4 p-[22px]" aria-label="Reprendre">
-      <CardLabel icon={<BookOpen size={15} />} right={<span className="text-[12px]">{agoLabel(resume.at, now)}</span>}>
-        Reprendre
-      </CardLabel>
-      <div className="flex flex-wrap items-center gap-[18px]">
-        <span className="relative hidden h-[92px] w-[92px] flex-none place-items-center overflow-hidden rounded-2xl bg-white text-black sm:grid">
-          <span aria-hidden className="absolute -inset-3.5 opacity-[.14]">
-            <InkRing size={120} />
+    <section className="card-hero rl-in p-6 sm:p-8" style={{ animationDelay: ".08s" }} aria-label="Reprendre">
+      <div className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:gap-10">
+        <div className="flex min-w-0 items-center gap-6">
+          <span aria-hidden className="hidden h-[72px] w-[72px] flex-none place-items-center rounded-[18px] bg-surface-2 md:grid">
+            <Icon size={28} strokeWidth={1.7} />
           </span>
-          <Icon size={30} strokeWidth={1.8} />
-        </span>
-        <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-1.5">
-          <span className="text-[13px] font-semibold text-muted">{resume.context}</span>
-          <span className="text-[22px] font-extrabold leading-[1.1] tracking-[-.025em] [overflow-wrap:anywhere] sm:text-[26px]">{resume.title}</span>
-          {pct !== null && (
-            <div className="mt-1 flex items-center gap-2.5">
-              <div className="ink-bar flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={resume.progressLabel}>
-                <span className="rl-grow" style={{ width: `${pct}%`, animationDelay: ".6s" }} />
-              </div>
-              <span className="font-mono text-[13px] font-semibold tabular-nums" title={resume.progressLabel}>
-                {resume.done}/{resume.total}
-              </span>
+          <div className="min-w-0 flex-1">
+            <p className="t-micro font-semibold">Reprendre · {agoLabel(resume.at, now)}</p>
+            <h2 className="t-h1 mt-1.5 [overflow-wrap:anywhere]">{resume.title}</h2>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="t-micro">{resume.context}</span>
+              {pct !== null && (
+                <span className="flex min-w-[180px] max-w-[320px] flex-1 items-center gap-2.5">
+                  <span className="ink-bar block h-1.5 flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={resume.progressLabel}>
+                    <span className="rl-grow" style={{ width: `${pct}%`, animationDelay: ".5s" }} />
+                  </span>
+                  <span className="font-mono text-[12px] font-semibold tabular-nums" title={resume.progressLabel}>
+                    {resume.done}/{resume.total}
+                  </span>
+                </span>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-      <div className="mt-auto flex flex-wrap gap-2.5">
-        <Link href={resume.href} className="btn btn-primary rl-press w-full sm:w-auto">
-          {resume.cta} <ArrowRight size={16} />
-        </Link>
-        {resume.audio && (
-          <Link href={resume.audio.href} className="btn btn-secondary rl-press hidden sm:inline-flex" title={resume.audio.title}>
-            {resume.audio.label} <Headphones size={16} />
+        <div className="flex flex-col items-stretch gap-3 md:items-end">
+          <Link href={resume.href} className="btn btn-primary btn-lg">
+            {resume.cta} <ArrowRight size={17} />
           </Link>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function goalText(answered: number, goal: number, streak: number) {
-  const left = Math.max(0, goal - answered);
-  if (left === 0) {
-    return {
-      head: "Objectif atteint",
-      sub: answered > goal ? `${answered} questions aujourd'hui : tu as dépassé l'objectif, bravo.` : "Journée bouclée, bravo. Tout le reste est du bonus.",
-    };
-  }
-  return {
-    head: `Encore ${left} ${plural(left, "question")}`,
-    sub:
-      streak > 0
-        ? `pour boucler la journée et garder ta série de ${streak} ${plural(streak, "jour")}.`
-        : "pour boucler la journée et lancer ta série.",
-  };
-}
-
-export function GoalCard({ answered, goal, streak }: { answered: number; goal: number; streak: number }) {
-  const { head, sub } = goalText(answered, goal, streak);
-  return (
-    <section className="card rl-lift hidden h-full flex-col gap-4 p-[22px] sm:flex" aria-label="Objectif du jour">
-      <CardLabel icon={<Target size={15} />}>Objectif du jour</CardLabel>
-      <div className="flex flex-1 flex-wrap items-center gap-[18px]">
-        <InkProgressRing pct={(answered / goal) * 100} size={150}>
-          <div>
-            <span className="font-brand text-[32px] leading-none">{answered}</span>
-            <span className="text-[15px] font-semibold text-muted">/{goal}</span>
-            <div className="mt-0.5 text-[12px] text-muted">questions</div>
-          </div>
-        </InkProgressRing>
-        <div className="flex flex-[1_1_140px] flex-col gap-2">
-          <span className="text-[16px] font-bold">{head}</span>
-          <span className="text-[14px] leading-[1.45] text-muted">{sub}</span>
-          {answered < goal && (
-            <Link href="/entrainement" className="ink-link mt-1 w-fit">
-              S&apos;entraîner →
+          {resume.audio && (
+            <Link href={resume.audio.href} title={resume.audio.title} className="t-small inline-flex items-center justify-center gap-1.5 font-semibold hover:text-white">
+              <Headphones size={15} aria-hidden /> {resume.audio.label}
             </Link>
           )}
         </div>
@@ -125,70 +77,53 @@ export function GoalCard({ answered, goal, streak }: { answered: number; goal: n
   );
 }
 
-function errorsHref(errors: ErrorsSummary) {
-  return errors.bySubject[0]?.href ?? "/fiches";
-}
-
-export function ErrorsCard({ errors }: { errors: ErrorsSummary }) {
+/** Objectif du jour : l'anneau d'encre et ce qu'il reste à faire. */
+export function GoalTile({ answered, goal }: { answered: number; goal: number }) {
+  const left = Math.max(0, goal - answered);
+  const pct = (answered / goal) * 100;
   return (
-    <section className="card rl-lift hidden h-full flex-col gap-4 p-[22px] sm:flex" aria-label="À revoir">
-      <CardLabel icon={<TriangleAlert size={15} />}>À revoir</CardLabel>
-      {errors.total > 0 ? (
-        <>
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-brand text-[52px] leading-none">{errors.total}</span>
-            <span className="text-[15px] text-muted">{plural(errors.total, "erreur")}</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {errors.bySubject.slice(0, 3).map((s) => (
-              <Link key={s.key} href={s.href} className={PILL + " rl-press"}>
-                {s.short} · {s.count}
-              </Link>
-            ))}
-          </div>
-          <div className="mt-auto">
-            <Link href={errorsHref(errors)} className="btn btn-secondary rl-press">
-              Revoir <ArrowRight size={16} />
-            </Link>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-brand text-[52px] leading-none">0</span>
-            <span className="text-[15px] text-muted">erreur</span>
-          </div>
-          <p className="text-[13.5px] leading-[1.45] text-muted">
-            Les questions que tu rates dans les quiz des fiches arrivent ici, jusqu&apos;à ce que tu les réussisses deux fois d&apos;affilée.
-          </p>
-          <div className="mt-auto">
-            <Link href="/fiches" className="btn btn-secondary rl-press">
-              Faire un quiz <ArrowRight size={16} />
-            </Link>
-          </div>
-        </>
-      )}
-    </section>
+    <Tile href="/entrainement" label="Objectif du jour" icon={<Target size={14} aria-hidden />} ariaLabel={`Objectif du jour : ${answered} sur ${goal} questions. S'entraîner`}>
+      <span className="flex items-center gap-3 sm:gap-5">
+        <span className="sm:hidden">
+          <InkProgressRing pct={pct} size={46} />
+        </span>
+        <span className="hidden sm:block">
+          <InkProgressRing pct={pct} size={64} />
+        </span>
+        <span className="min-w-0">
+          <span className="block whitespace-nowrap">
+            <span className="t-num text-[26px] sm:text-[34px]">{answered}</span>
+            <span className="text-[14px] font-semibold text-muted">/{goal}</span>
+          </span>
+          <span className="t-micro mt-1 block whitespace-nowrap">
+            {left === 0 ? (
+              "objectif atteint"
+            ) : (
+              <>
+                encore {left}
+                <span className="hidden sm:inline"> {plural(left, "question")}</span>
+              </>
+            )}
+          </span>
+        </span>
+      </span>
+    </Tile>
   );
 }
 
-/** Téléphone : objectif du jour et erreurs en deux tuiles côte à côte. */
-export function MobileTiles({ answered, goal, errors }: { answered: number; goal: number; errors: ErrorsSummary }) {
+/** Erreurs à revoir : le nombre, la répartition sur une ligne. */
+export function ErrorsTile({ errors }: { errors: ErrorsSummary }) {
+  const href = errors.total > 0 ? (errors.bySubject[0]?.href ?? "/fiches") : "/fiches";
+  const detail = errors.total > 0 ? errors.bySubject.slice(0, 3).map((s) => `${s.short} ${s.count}`).join(" · ") : "rien à revoir";
   return (
-    <div className="grid grid-cols-2 gap-3 sm:hidden">
-      <Link href="/entrainement" className="card rl-press flex items-center gap-3 p-4" aria-label={`Objectif du jour : ${answered} sur ${goal} questions`}>
-        <InkProgressRing pct={(answered / goal) * 100} size={48} />
-        <span className="min-w-0">
-          <span className="block text-[17px] font-extrabold tabular-nums">
-            {answered}/{goal}
-          </span>
-          <span className="block text-[12px] leading-tight text-muted">objectif du jour</span>
+    <Tile href={href} label="À revoir" icon={<TriangleAlert size={14} aria-hidden />} ariaLabel={`${errors.total} ${plural(errors.total, "erreur")} à revoir`}>
+      <span className="min-w-0">
+        <span className="flex items-baseline gap-2">
+          <span className="t-num text-[26px] sm:text-[34px]">{errors.total}</span>
+          <span className="text-[14px] font-semibold text-muted">{plural(errors.total, "erreur")}</span>
         </span>
-      </Link>
-      <Link href={errorsHref(errors)} className="card rl-press flex flex-col justify-center p-4" aria-label={`${errors.total} erreurs à revoir`}>
-        <span className="font-brand text-[24px] leading-none">{errors.total}</span>
-        <span className="mt-1 block text-[12px] leading-tight text-muted">{plural(errors.total, "erreur")} à revoir</span>
-      </Link>
-    </div>
+        <span className="t-micro mt-1 block truncate">{detail}</span>
+      </span>
+    </Tile>
   );
 }

@@ -6,8 +6,9 @@ import { calcStreakAndToday, levelInfoFromXp, type XpDay } from "@/lib/leveling"
 import type { GroupRow } from "@/components/GroupSettings";
 import { MoiView } from "@/components/moi/MoiView";
 import { SettingsPanel } from "@/components/moi/SettingsPanel";
-import { buildTopicStats, xpThisWeek } from "@/components/moi/data";
+import { buildTopicStats, parseMoiTab, xpLastDays, xpThisWeek } from "@/components/moi/data";
 import { getFicheErrors } from "@/components/moi/errors-data";
+import { getAccuracy, getSessionHistory } from "@/components/moi/history-data";
 import { countPlayers, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { MoiData } from "@/components/moi/types";
@@ -22,15 +23,17 @@ type ProfileRow = {
   active_group_id: string | null;
 } | null;
 
-// Espace « Moi » : profil, rang compact, stats, erreurs des fiches,
-// progression et réglages. Chaque lecture dégrade proprement.
-export default async function MoiPage() {
+// Espace « Moi » : en-tête (profil, rang compact) puis trois onglets liables
+// avec ?onglet=stats|erreurs|reglages. Chaque lecture dégrade proprement.
+export default async function MoiPage({ searchParams }: { searchParams?: Promise<{ onglet?: string }> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
   if (!user) redirect("/login");
 
+  const tab = parseMoiTab((await searchParams)?.onglet) ?? "stats";
   const admin = tryAdmin();
+  const now = Date.now();
 
   const profileCall = (async (): Promise<ProfileRow> => {
     const full = await supabase.from("profiles").select("username,avatar_url,xp_total,exam_date,active_group_id").eq("id", user.id).maybeSingle();
@@ -50,7 +53,7 @@ export default async function MoiPage() {
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, accuracy] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -60,11 +63,14 @@ export default async function MoiPage() {
     xpCall,
     getFicheErrors(supabase, admin ?? supabase, user.id),
     supabase.from("group_memberships").select("group_id, study_groups(id,name,invite_code)").eq("user_id", user.id),
+    getSessionHistory(supabase, user.id, now),
+    getAccuracy(supabase, user.id),
   ]);
 
   const xpTotal = Number(profile?.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
   const { streak } = calcStreakAndToday(xpDays);
+  const last30 = xpLastDays(xpDays, 30, new Date(now));
 
   const d: MoiData = {
     userId: user.id,
@@ -77,15 +83,21 @@ export default async function MoiPage() {
     levelPct: Math.round(lvl.progressPct * 100),
     xpToNextLevel: lvl.xpToNextLevel,
     xpWeek: xpThisWeek(xpDays),
+    xp30: last30.xp,
+    activeDays30: last30.active,
+    accuracy,
     xpDays,
     me: { elo: rating.elo, gamesPlayed: rating.gamesPlayed, mastery: programMastery(topics), leaderboardRank: myRank, totalPlayers },
     topics: buildTopicStats(topics, averages),
     errors,
+    sessions,
   };
 
   return (
     <MoiView
       d={d}
+      tab={tab}
+      now={now}
       settings={<SettingsPanel activeGroupId={profile?.active_group_id ?? null} groups={(groupsRes.data ?? []) as unknown as GroupRow[]} />}
     />
   );

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ChartNoAxesColumn, Swords, X } from "lucide-react";
+import { ArrowRight, Check, Swords, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { Enso } from "@/components/ui/InkRings";
-import { BrushUnderline, CardLabel } from "@/components/ui/Titles";
+import { BrushUnderline } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { DuelSide, InkWatermark } from "@/components/duel/parts";
@@ -87,38 +87,38 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] gap-[26px]">
+    <div className="mx-auto grid w-full max-w-[1040px] gap-6 md:gap-8">
       <div className="relative flex flex-col items-center gap-2.5 pt-4 text-center">
         <div aria-hidden className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2">
           <Enso size={300} opacity={0.09} />
         </div>
-        <span className="rl-in relative flex items-center gap-1.5 text-sm font-[650] text-muted">
-          <Swords size={15} aria-hidden /> Duel terminé · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
+        <span className="kicker relative flex items-center gap-1.5">
+          <Swords size={14} aria-hidden /> Duel · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
         </span>
-        <h1 className="rl-pop relative m-0 font-brand text-[clamp(56px,11vw,96px)] leading-none">{verdict}</h1>
+        <h1 className="rl-in relative m-0 font-brand text-[clamp(56px,11vw,96px)] leading-none">{verdict}</h1>
         <BrushUnderline width={300} height={18} className="relative text-white" />
       </div>
 
-      <section className="card rl-lift p-5 md:p-[26px]">
+      <section className="card-hero px-5 py-6 md:px-8 md:py-7">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">
           <DuelSide
             name="Toi"
             elo={eloBefore}
             mastery={mastery}
-            badgeSize={52}
+            badgeSize={48}
             hideNameOnMobile
-            extra={me.seconds !== null ? `en ${clock(me.seconds)}` : "forfait"}
-            big={<span className="ml-auto font-brand text-[40px] leading-none tabular-nums md:ml-2 md:text-[56px]">{myScore}</span>}
+            extra={me.seconds !== null ? clock(me.seconds) : "forfait"}
+            big={<span className="t-num ml-auto text-[44px] md:ml-3 md:text-[60px]">{myScore}</span>}
           />
           <span className="font-mono text-[13px] text-muted md:text-[14px]">sur {state.questionCount}</span>
           <DuelSide
             name={theirName}
             elo={theirBefore}
             align="right"
-            badgeSize={52}
+            badgeSize={48}
             hideNameOnMobile
-            extra={them?.seconds != null ? `en ${clock(them.seconds)}` : "forfait"}
-            big={<span className="mr-auto font-brand text-[40px] leading-none tabular-nums md:mr-2 md:text-[56px]">{theirScore}</span>}
+            extra={them?.seconds != null ? clock(them.seconds) : "forfait"}
+            big={<span className="t-num mr-auto text-[44px] md:mr-3 md:text-[60px]">{theirScore}</span>}
           />
         </div>
         <div className="mt-3 flex justify-between gap-3 text-[13px] font-bold sm:hidden">
@@ -127,13 +127,13 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
             {theirName} · {them?.seconds != null ? clock(them.seconds) : "forfait"}
           </span>
         </div>
-        {reason && <p className="m-0 mt-4 text-center text-[13px] text-muted">{reason}</p>}
+        {reason && <p className="t-micro m-0 mt-4 text-center">{reason}</p>}
       </section>
 
       <div className="grid gap-[18px] md:grid-cols-12">
-        <section className="card-ink rl-lift rl-in flex min-w-0 flex-col gap-4 p-6 md:col-span-5">
+        <section className="card-ink flex min-w-0 flex-col gap-4 p-6 md:col-span-5 md:p-7" style={{ "--tier-glow": rank.tier.metal[1] } as React.CSSProperties}>
           <InkWatermark size={240} className="-bottom-14 -right-10" />
-          <span className="relative text-[13px] font-semibold text-[rgba(255,255,255,.6)]">Ton ELO</span>
+          <span className="relative text-[12.5px] font-semibold text-[rgba(255,255,255,.58)]">Ton ELO</span>
           <div className="relative flex items-baseline gap-3.5">
             <span className="font-brand text-[56px] leading-none tabular-nums">
               <span className="rl-count" style={{ "--rl-to": Math.max(0, eloAfter) } as React.CSSProperties} aria-label={`${eloAfter} ELO`} />
@@ -148,7 +148,7 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
               {signed(delta)}
             </span>
           </div>
-          <div className="relative flex flex-wrap items-center gap-2.5 text-[13px] text-[rgba(255,255,255,.65)]">
+          <div className="relative flex flex-wrap items-center gap-2 text-[12.5px] text-[rgba(255,255,255,.62)]">
             <RankBadge tier={rank.tierIndex} size={26} onDark glow={false} gray={placement} />
             {placement ? (
               <span>
@@ -178,8 +178,8 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
           )}
         </section>
 
-        <section className="card rl-lift rl-in flex min-w-0 flex-col gap-4 p-[22px] md:col-span-7" style={{ animationDelay: ".08s" }}>
-          <CardLabel icon={<ChartNoAxesColumn size={15} aria-hidden />}>Par matière</CardLabel>
+        <section className="card-quiet flex min-w-0 flex-col gap-4 p-6 md:col-span-7 md:p-7">
+          <p className="t-eyebrow m-0">Par matière</p>
           {topics.length === 0 ? (
             <p className="m-0 text-sm text-muted">Le détail par matière n&apos;est pas disponible pour ce duel.</p>
           ) : (
@@ -187,7 +187,7 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
               {topics.map((t) => (
                 <div key={t.key} className="grid grid-cols-[minmax(0,120px)_minmax(0,1fr)_48px] items-center gap-3">
                   <span className="truncate text-[14px] font-[650]">{duelTopicLabel(t.key)}</span>
-                  <div className="h-[7px] overflow-hidden rounded-[7px] bg-surface-2">
+                  <div className="h-[7px] overflow-hidden rounded-[7px] bg-line">
                     <div className="rl-grow h-full rounded-[7px] bg-white" style={{ width: `${Math.round((t.correct / t.total) * 100)}%`, animationDelay: ".3s" }} />
                   </div>
                   <span className="text-right font-mono text-[12.5px] tabular-nums">
