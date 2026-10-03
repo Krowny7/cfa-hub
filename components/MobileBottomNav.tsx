@@ -2,57 +2,49 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Users, LayoutDashboard, Target, Settings } from "lucide-react";
-import { useI18n } from "@/components/I18nProvider";
+import { BookOpen, Home, Target, Trophy, User } from "lucide-react";
+import { SPACES, activeSpace } from "@/lib/nav";
 
-// Même 5 entrées que la Sidebar desktop — plus de menu "Plus" à gérer
-// depuis que Bibliothèque et Entraînement regroupent ce qui occupait
-// auparavant 8 emplacements distincts.
-const items = [
-  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { href: "/library", labelKey: "nav.library", icon: BookOpen },
-  { href: "/entrainement", labelKey: "nav.entrainement", icon: Target },
-  { href: "/people", labelKey: "nav.people", icon: Users },
-  { href: "/settings", labelKey: "nav.settings", icon: Settings },
-] as const;
+const ICONS = { reviser: BookOpen, entrainer: Target, classement: Trophy, moi: User } as const;
 
-function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard" && pathname === "/") return true;
-  if (pathname === href) return true;
-  return pathname.startsWith(href + "/");
-}
-
+// Barre du bas (mobile) : flottante et translucide, l'accueil puis les quatre
+// espaces ; l'onglet actif est une pastille d'encre.
 export function MobileBottomNav() {
   const pathname = usePathname() || "/";
-  const { t } = useI18n();
+  if (pathname.startsWith("/login") || pathname.startsWith("/share")) return null;
+  const space = activeSpace(pathname);
+  const home = pathname === "/" || pathname === "/dashboard";
+  const items = [
+    { key: "home", label: "Accueil", href: "/dashboard", Icon: Home, on: home },
+    ...SPACES.map((s) => ({ key: s.key, label: s.label, href: s.href, Icon: ICONS[s.key], on: s.key === space })),
+  ];
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t-2 border-white bg-black"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      aria-label="Mobile navigation"
+      aria-label="Espaces"
+      className="fixed inset-x-3 z-50 grid grid-cols-5 rounded-[20px] border border-line p-1.5 md:hidden"
+      style={{
+        bottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+        background: "color-mix(in oklab, var(--surface) 92%, transparent)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        boxShadow: "var(--shadow-2)",
+      }}
     >
-      <div className="grid h-full grid-cols-5">
-        {items.map(({ href, labelKey, icon: Icon }) => {
-          const active = isActivePath(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={
-                "flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition-colors " +
-                (active ? "text-white" : "text-white/55 hover:text-white/80")
-              }
-            >
-              <span className={"flex h-7 w-11 items-center justify-center " + (active ? "ink-swash" : "")}>
-                <Icon size={18} strokeWidth={active ? 2.4 : 1.9} />
-              </span>
-              <span className="max-w-full truncate px-0.5">{t(labelKey)}</span>
-            </Link>
-          );
-        })}
-      </div>
+      {items.map(({ key, label, href, Icon, on }) => (
+        <Link
+          key={key}
+          href={href}
+          aria-current={on ? "page" : undefined}
+          className={
+            "rl-press flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[14px] text-[10.5px] " +
+            (on ? "bg-white font-bold text-black" : "font-semibold text-muted")
+          }
+        >
+          <Icon size={19} strokeWidth={on ? 2.3 : 1.9} />
+          <span className="max-w-full truncate px-0.5">{label}</span>
+        </Link>
+      ))}
     </nav>
   );
 }

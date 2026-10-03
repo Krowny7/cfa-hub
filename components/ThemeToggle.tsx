@@ -32,10 +32,10 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-pressed={night}
       title={night ? "Revenir au papier" : "Mode nuit"}
-      className="flex h-8 items-center gap-1.5 rounded-[3px] border-[1.5px] border-white/70 px-2.5 text-xs font-bold hover:bg-white/[0.07]"
+      aria-label={night ? "Thème papier" : "Thème nuit"}
+      className="rl-press grid h-[38px] w-[38px] place-items-center rounded-[12px] border border-line-2 bg-surface hover:bg-surface-2"
     >
-      {night ? <Sun size={14} /> : <Moon size={14} />}
-      <span className="hidden md:inline">{night ? "Papier" : "Nuit"}</span>
+      {night ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }

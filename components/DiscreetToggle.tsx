@@ -43,13 +43,13 @@ export function DiscreetToggle() {
       onClick={toggle}
       aria-pressed={on}
       title={on ? "Désactiver le mode discret" : "Mode discret : interface sobre"}
+      aria-label="Mode discret"
       className={
-        "flex h-8 items-center gap-1.5 rounded-[3px] border-[1.5px] px-2.5 text-xs font-bold " +
-        (on ? "border-white bg-white text-black" : "border-white/70 hover:bg-white/[0.07]")
+        "rl-press grid h-[38px] w-[38px] place-items-center rounded-[12px] border " +
+        (on ? "border-white bg-white text-black" : "border-line-2 bg-surface hover:bg-surface-2")
       }
     >
-      {on ? <EyeOff size={14} /> : <Eye size={14} />}
-      <span className="hidden md:inline">Discret</span>
+      {on ? <EyeOff size={16} /> : <Eye size={16} />}
     </button>
   );
 }

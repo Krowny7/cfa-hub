@@ -39,7 +39,7 @@ export function InkLockup({ size = 30, className = "", landing = false }: { size
   return (
     <span className={"inline-flex items-center gap-2.5 " + className}>
       <InkRing size={size} className="rl-deco" landing={landing} />
-      <span className="font-display leading-none tracking-tight">RANKED LOBBY</span>
+      <span className="font-brand leading-none">RANKED LOBBY</span>
     </span>
   );
 }

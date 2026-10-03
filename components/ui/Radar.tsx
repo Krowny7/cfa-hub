@@ -1,0 +1,78 @@
+// Radar « stats de joueur » : toi (trait d'encre, au pinceau) contre la
+// moyenne des joueurs (pointillés). Valeurs 0–100 ; null = pas de donnée
+// (compté 0 sur le tracé, affiché « — »). Les axes `soon` (domaines pas encore
+// ouverts) sont en pointillés et marqués « bientôt ». Composant sans état ni
+// hook : utilisable côté serveur comme côté client.
+
+export type RadarAxis = { label: string; me: number | null; avg: number | null; soon?: boolean };
+
+const f = (n: number) => n.toFixed(1);
+
+export function Radar({ axes, size = 360, title = "Toi face à la moyenne des joueurs" }: { axes: RadarAxis[]; size?: number; title?: string }) {
+  const n = axes.length;
+  const c = size / 2;
+  const R = size * 0.34;
+  const P = (i: number, v: number) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    return [c + Math.cos(a) * R * (v / 100), c + Math.sin(a) * R * (v / 100)] as const;
+  };
+  const polyOf = (vals: number[]) => vals.map((v, i) => P(i, v)).map(([x, y], i) => `${i ? "L" : "M"} ${f(x)} ${f(y)}`).join(" ") + " Z";
+  const me = axes.map((a) => a.me ?? 0);
+  const avg = axes.map((a) => a.avg ?? 0);
+  const hasAvg = axes.some((a) => a.avg !== null);
+
+  return (
+    <svg viewBox={`-104 -16 ${size + 208} ${size + 34}`} width="100%" role="img" aria-label={title} style={{ display: "block", maxWidth: size + 208, margin: "0 auto", overflow: "visible", color: "var(--ink)" }}>
+      {[20, 40, 60, 80, 100].map((lv) => (
+        <path key={lv} d={polyOf(axes.map(() => lv))} fill="none" stroke="var(--line-2)" strokeWidth={1} />
+      ))}
+      {axes.map((a, i) => {
+        const [x, y] = P(i, 100);
+        return <line key={i} x1={c} y1={c} x2={f(x)} y2={f(y)} stroke="var(--line-2)" strokeWidth={1} strokeDasharray={a.soon ? "3 4" : undefined} />;
+      })}
+      {hasAvg && <path d={polyOf(avg)} fill="currentColor" fillOpacity={0.04} stroke="var(--ink-2)" strokeWidth={1.6} strokeDasharray="5 5" />}
+      <g className="rl-radar">
+        <path d={polyOf(me)} fill="currentColor" fillOpacity={0.1} />
+        <path d={polyOf(me)} filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinejoin="round" />
+        {me.map((v, i) => {
+          const [x, y] = P(i, v);
+          return <circle key={i} cx={f(x)} cy={f(y)} r={3.6} fill="currentColor" />;
+        })}
+      </g>
+      {axes.map((a, i) => {
+        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+        const x = c + Math.cos(ang) * (R + 26);
+        const y = c + Math.sin(ang) * (R + 22);
+        const anchor = Math.abs(Math.cos(ang)) < 0.2 ? "middle" : Math.cos(ang) > 0 ? "start" : "end";
+        return (
+          <g key={i}>
+            <text x={f(x)} y={f(y + 4)} textAnchor={anchor} style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 13, fill: a.soon ? "var(--ink-2)" : "var(--ink)" }}>
+              {a.label}
+              {a.soon ? " · bientôt" : ""}
+            </text>
+            <text x={f(x)} y={f(y + 19)} textAnchor={anchor} style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, fill: "var(--ink-2)" }}>
+              <tspan style={{ fill: "var(--ink)", fontWeight: 600 }}>{a.me === null ? "—" : a.me}</tspan>
+              {a.avg !== null ? ` · moy. ${a.avg}` : ""}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** Légende « toi / moyenne des joueurs » à poser au-dessus d'un radar. */
+export function RadarLegend() {
+  return (
+    <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 12.5, color: "var(--ink-2)" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <span style={{ width: 18, height: 3, borderRadius: 2, background: "var(--ink)" }} />
+        toi
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <span style={{ width: 18, height: 0, borderTop: "2px dashed var(--ink-2)" }} />
+        moyenne des joueurs
+      </span>
+    </div>
+  );
+}

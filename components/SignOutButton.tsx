@@ -10,13 +10,14 @@ export function SignOutButton() {
     <button
       type="button"
       title="Se déconnecter"
-      className="flex h-8 w-8 items-center justify-center rounded-xl text-white/35 transition hover:bg-white/[0.06] hover:text-white/70"
+      aria-label="Se déconnecter"
+      className="rl-press grid h-[38px] w-[38px] place-items-center rounded-[12px] text-muted hover:bg-surface-2 hover:text-white"
       onClick={async () => {
         await supabase.auth.signOut();
         window.location.href = "/login";
       }}
     >
-      <LogOut size={15} />
+      <LogOut size={16} />
     </button>
   );
 }

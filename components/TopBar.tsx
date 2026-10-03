@@ -4,54 +4,61 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { DiscreetToggle } from "@/components/DiscreetToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InkLockup } from "@/components/ink/InkRing";
+import { SpaceNav } from "@/components/nav/SpaceNav";
+import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
+import { RankBadge } from "@/components/ui/RankBadge";
+import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
+import { createClient } from "@/lib/supabase/server";
 
-function initialsFromEmail(email: string | null | undefined) {
-  if (!email) return "U";
-  const base = email.split("@")[0] || "U";
-  const parts = base.replace(/[^a-zA-Z0-9]+/g, " ").trim().split(" ").filter(Boolean);
-  const a = parts[0]?.[0] ?? "U";
-  const b = parts[1]?.[0] ?? "";
-  return (a + b).toUpperCase();
-}
-
+// Barre du haut V2 : logo (→ accueil), domaine · programme, les quatre
+// espaces en contrôle segmenté, puis thème, mode discret et le badge de rang
+// du joueur (→ Moi). Translucide et collante, avec un léger flou.
 export async function TopBar() {
   const locale = DEFAULT_LOCALE;
-  const { user, profile } = await getSessionUserWithProfile();
-  const username = profile?.username ?? null;
-  const avatarUrl = profile?.avatar_url ?? null;
+  const { user } = await getSessionUserWithProfile();
+  let tier = rankFor(DEFAULT_ELO).tierIndex;
+  if (user) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase.from("ratings").select("elo").eq("user_id", user.id).maybeSingle();
+      tier = rankFor((data as { elo?: number } | null)?.elo ?? DEFAULT_ELO).tierIndex;
+    } catch {
+      // badge par défaut
+    }
+  }
 
   return (
-    <header className="sticky top-0 z-50 h-14 border-b-2 border-white bg-black">
-      <div className="flex h-full items-center justify-between gap-3 px-4">
-        <Link href="/" className="whitespace-nowrap text-[14px] sm:text-[17px]" aria-label={t(locale, "appName")}>
-          <InkLockup size={28} landing />
+    <header
+      className="sticky top-0 z-50 border-b border-line"
+      style={{ background: "color-mix(in oklab, var(--paper) 82%, transparent)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
+    >
+      <div className="mx-auto flex h-[64px] max-w-[1240px] items-center gap-3 px-4 md:gap-4 md:px-7">
+        <Link href="/dashboard" className="whitespace-nowrap text-[14px] sm:text-[16px]" aria-label={t(locale, "appName")}>
+          <InkLockup size={26} landing />
         </Link>
-
+        {user && (
+          <div className="hidden lg:block">
+            <DomainSwitcher />
+          </div>
+        )}
+        <div className="flex flex-1 justify-center">{user && <SpaceNav />}</div>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <DiscreetToggle />
+          <div className="hidden sm:flex sm:items-center sm:gap-2">
+            <ThemeToggle />
+            <DiscreetToggle />
+          </div>
           {user ? (
             <>
-              <Link
-                href="/settings"
-                className="flex h-8 items-center gap-2 rounded-[3px] px-1.5 text-xs font-bold hover:bg-white/[0.07]"
-                title={t(locale, "nav.settings")}
-              >
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full border-2 border-white object-cover grayscale" />
-                ) : (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white font-display text-[11px]">
-                    {initialsFromEmail(user.email)}
-                  </span>
-                )}
-                <span className="hidden max-w-[140px] truncate md:inline">{username || user.email}</span>
+              <Link href="/moi" aria-label={t(locale, "nav.settings")} className="rl-press grid h-[38px] w-[42px] place-items-center rounded-[12px] border border-line-2 bg-surface">
+                <RankBadge tier={tier} size={26} glow={false} />
               </Link>
-              <SignOutButton />
+              <span className="hidden md:inline-flex">
+                <SignOutButton />
+              </span>
             </>
           ) : (
-            <Link className="btn btn-secondary h-8 whitespace-nowrap py-0 text-xs" href="/login">
+            <Link className="btn btn-primary min-h-[38px] whitespace-nowrap px-4 text-[13px]" href="/login">
               {t(locale, "auth.login")}
             </Link>
           )}

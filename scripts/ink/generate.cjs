@@ -37,6 +37,10 @@ function buildPaths() {
   out.LOGO_SPLAT = circlesToPath(splatter(p0.x - 5, p0.y - 4, 8, 20, 5));
   out.LOGO_START = f(p0.x) + " " + f(p0.y);
   out.LOGO_TAIL = f(tail.x) + " " + f(tail.y) + " " + Math.atan2(tail.ty, tail.tx).toFixed(3);
+  // Anneau complet au pinceau (même tracé que le logo) : halo de maîtrise autour
+  // des badges de rang, anneau d'objectif du jour, grand anneau de fond (« enso »).
+  out.RING_FULL = brush(lg, 0, 0.999, 22, 7, { inT: 0.025, outT: 0.03 });
+  out.RING_FULL_AXIS = centerline(lg, 0, 0.999, 160);
   // Repères au crayon de l'intro (cercle de construction + axes), même repère que le logo
   const rg = mulberry(5);
   out.INTRO_GUIDE =

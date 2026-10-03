@@ -1,31 +1,16 @@
 import "./globals.css";
-import { Caveat, Dela_Gothic_One, Zen_Kaku_Gothic_New } from "next/font/google";
+import { Dela_Gothic_One, Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { TopBar } from "@/components/TopBar";
-import { Sidebar } from "@/components/Sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Splash } from "@/components/Splash";
+import { InkDefs } from "@/components/ui/InkDefs";
 
-// DA « Encre » : lettrage épais (Dela Gothic One) pour les titres, Zen Kaku
-// Gothic New pour l'interface, Caveat pour les annotations manuscrites.
-const dela = Dela_Gothic_One({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-display",
-  display: "swap",
-});
-const zen = Zen_Kaku_Gothic_New({
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
-  variable: "--font-body",
-  display: "swap",
-});
-const caveat = Caveat({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-hand",
-  display: "swap",
-});
+// DA V2 : Geist pour l'interface et les titres, Geist Mono pour les chiffres
+// alignés, Dela Gothic One réservée au logo et aux grands chiffres (.font-brand).
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
+const dela = Dela_Gothic_One({ subsets: ["latin"], weight: "400", variable: "--font-brand", display: "swap" });
 
 export const metadata = {
   title: "Ranked Lobby",
@@ -34,7 +19,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${dela.variable} ${zen.variable} ${caveat.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={`${geist.variable} ${geistMono.variable} ${dela.variable}`} suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
         {/* Thème (papier / nuit) et mode discret : réappliqués avant le premier
             affichage pour éviter un flash — voir ThemeToggle et DiscreetToggle. */}
@@ -64,16 +49,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "v.src='/intro/encre-'+(innerWidth>=innerHeight?'land':'port')+'.mp4';v.load();window.__rlIntro=v;}catch(e){}})();",
           }}
         />
+        <InkDefs />
         <Providers>
           <TopBar />
 
-          <div className="flex min-h-[calc(100vh-3.5rem)]">
-            <Sidebar />
-
-            <main className="flex-1 min-w-0 px-4 py-7 pb-24 md:pb-10 md:px-8">
-              <div className="mx-auto max-w-4xl">{children}</div>
-            </main>
-          </div>
+          {/* Conteneur par défaut : colonne de lecture (max-w-4xl). Les pages
+              V2 (accueil, espaces) s'élargissent à 1240 px avec .rl-wide. */}
+          <main className="min-w-0 overflow-x-clip px-4 pb-28 pt-7 md:px-7 md:pb-14">
+            <div className="mx-auto max-w-4xl">{children}</div>
+          </main>
 
           <MobileBottomNav />
 
