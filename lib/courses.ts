@@ -144,6 +144,26 @@ export const COURSES: Course[] = [
       { title: "Ethics Application", start: 3326.4 },
     ],
   },
+  {
+    slug: "quantitative-methods",
+    title: "Quantitative Methods",
+    file: "quantitative-methods",
+    pages: 90,
+    minutes: 66,
+    chapters: [
+      { title: "Rates and Returns", start: 0 },
+      { title: "Time Value of Money in Finance", start: 493.2 },
+      { title: "Statistical Measures of Asset Returns", start: 986.8 },
+      { title: "Probability Trees and Conditional Expectations", start: 1475.8 },
+      { title: "Portfolio Mathematics", start: 1820.1 },
+      { title: "Simulation Methods", start: 2134.7 },
+      { title: "Estimation and Inference", start: 2344.7 },
+      { title: "Hypothesis Testing", start: 2633.9 },
+      { title: "Parametric and Non-Parametric Tests of Independence", start: 3033.6 },
+      { title: "Simple Linear Regression", start: 3317.8 },
+      { title: "Introduction to Big Data Techniques", start: 3728.3 },
+    ],
+  },
 ];
 
 export function getCourse(slug: string) {
