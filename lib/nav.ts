@@ -12,7 +12,7 @@ export type Space = {
 
 export const SPACES: Space[] = [
   { key: "reviser", label: "Réviser", href: "/reviser", match: ["/reviser", "/fiches", "/courses", "/flashcards", "/library"] },
-  { key: "entrainer", label: "S'entraîner", href: "/entrainement", match: ["/entrainement", "/qcm", "/practice", "/official-exams", "/session", "/exam", "/defi"] },
+  { key: "entrainer", label: "S'entraîner", href: "/entrainement", match: ["/entrainement", "/qcm", "/practice", "/official-exams", "/session", "/exam", "/defi", "/calculs"] },
   { key: "classement", label: "Classement", href: "/classement", match: ["/classement", "/duel", "/mock-exams", "/people"] },
   { key: "moi", label: "Moi", href: "/moi", match: ["/moi", "/settings", "/onboarding"] },
 ];
