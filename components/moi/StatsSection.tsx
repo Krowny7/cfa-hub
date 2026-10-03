@@ -8,8 +8,10 @@ import { reviserHref, subjectRail } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";
 import { ViewSwitch } from "@/components/moi/ViewSwitch";
 import { SessionHistory } from "@/components/moi/SessionHistory";
+import { AnswerStatsCard } from "@/components/moi/AnswerStatsCard";
 import { fmtInt } from "@/components/classement/format";
 import { CURRENT_PROGRAM } from "@/lib/domains";
+import { tallyOf } from "@/lib/answer-stats";
 import type { MoiData } from "@/components/moi/types";
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
@@ -61,8 +63,13 @@ function SubjectsCard({ d }: { d: MoiData }) {
     </div>
   );
 
-  // Les 10 matières en rangée horizontale : ta précision, le volume de
-  // questions, la moyenne des joueurs ; une carte ouvre la matière dans Réviser.
+  // Les 10 matières en rangée horizontale : ta maîtrise, le volume de
+  // questions (toutes sources, comme « Traits tracés » plus haut), la moyenne
+  // des joueurs ; une carte ouvre la matière dans Réviser.
+  const answered = (key: string) => {
+    const a = d.answers.subjects.find((x) => x.key === key);
+    return a ? tallyOf(a.by).n : d.topics.find((x) => x.key === key)?.answered ?? 0;
+  };
   const rail = (
     <TopicRail
       label="Tes stats par matière"
@@ -72,11 +79,9 @@ function SubjectsCard({ d }: { d: MoiData }) {
       items={subjectRail(d.topics, (key) => {
         const t = d.topics.find((x) => x.key === key);
         if (!t) return { href: reviserHref(key) };
-        const parts = [
-          t.answered > 0 ? `${t.answered} question${t.answered > 1 ? "s" : ""}` : null,
-          t.avg !== null ? `moy. ${t.avg} %` : null,
-        ].filter(Boolean);
-        return { href: reviserHref(key), note: t.pct === null && t.answered === 0 ? null : parts.join(" · ") || null, mark: t.avg };
+        const n = answered(key);
+        const parts = [n > 0 ? `${fmtInt(n)} question${n > 1 ? "s" : ""}` : null, t.avg !== null ? `moy. ${t.avg} %` : null].filter(Boolean);
+        return { href: reviserHref(key), note: t.pct === null && n === 0 ? null : parts.join(" · ") || null, mark: t.avg };
       })}
     />
   );
@@ -99,13 +104,12 @@ function SubjectsCard({ d }: { d: MoiData }) {
   );
 }
 
-/** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande). */
+/** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande). La précision vit dans « Traits tracés ». */
 function ActivityCard({ d }: { d: MoiData }) {
   const facts: { label: string; value: string }[] = [
-    { label: "Cette semaine", value: `${fmtInt(d.xpWeek)} XP` },
+    { label: "Semaine", value: `${fmtInt(d.xpWeek)} XP` },
     { label: "30 jours", value: `${fmtInt(d.xp30)} XP` },
     { label: "Jours actifs", value: `${d.activeDays30}/30` },
-    { label: "Précision", value: d.accuracy === null ? "—" : `${d.accuracy} %` },
   ];
   return (
     <section className="card flex min-w-0 flex-col gap-5 p-6 md:p-7" aria-label="Activité">
@@ -136,7 +140,7 @@ function ActivityCard({ d }: { d: MoiData }) {
               <span className="rl-grow" style={{ width: `${d.levelPct}%` }} />
             </div>
           </div>
-          <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
+          <dl className="m-0 grid grid-cols-3 gap-x-4 gap-y-4">
             {facts.map((f) => (
               <div key={f.label} className="min-w-0">
                 <dt className="t-eyebrow">{f.label}</dt>
@@ -150,10 +154,15 @@ function ActivityCard({ d }: { d: MoiData }) {
   );
 }
 
-/** Onglet Stats : trois bandes pleine largeur — l'activité, les matières (rangée horizontale ou radar), les dernières sessions. */
+/**
+ * Onglet Stats : quatre bandes pleine largeur — les questions répondues
+ * (total, filtre par source, détail matière → thème → passage), l'activité,
+ * les matières (rangée horizontale ou radar), les dernières sessions.
+ */
 export function StatsTab({ d }: { d: MoiData }) {
   return (
     <div className="grid gap-4 md:gap-[18px]">
+      <AnswerStatsCard stats={d.answers} />
       <ActivityCard d={d} />
       <SubjectsCard d={d} />
       <SessionHistory sessions={d.sessions} />

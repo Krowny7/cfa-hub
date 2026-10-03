@@ -1,5 +1,6 @@
 // Données reçues par les composants de l'espace Moi (props sérialisables).
 import type { MyRank } from "@/components/classement/types";
+import type { AnswerStats } from "@/lib/answer-stats";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -67,12 +68,12 @@ export type MoiData = {
   /** XP et jours actifs sur les 30 derniers jours */
   xp30: number;
   activeDays30: number;
-  /** précision sur les QCM et l'entraînement ciblé, null si aucune réponse */
-  accuracy: number | null;
   xpDays: { day: string; xp: number }[];
   me: MyRank;
   topics: TopicStat[];
   errors: FicheErrors;
   /** dernières sessions, les plus récentes d'abord (vide : repli sur le navigateur) */
   sessions: SessionItem[];
+  /** questions répondues, toutes sources, matière → thème → passage (lib/answer-stats) */
+  answers: AnswerStats;
 };

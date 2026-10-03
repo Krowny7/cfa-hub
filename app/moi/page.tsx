@@ -8,7 +8,8 @@ import { MoiView } from "@/components/moi/MoiView";
 import { SettingsPanel } from "@/components/moi/SettingsPanel";
 import { buildTopicStats, parseMoiTab, xpLastDays, xpThisWeek } from "@/components/moi/data";
 import { getFicheErrors } from "@/components/moi/errors-data";
-import { getAccuracy, getSessionHistory } from "@/components/moi/history-data";
+import { getSessionHistory } from "@/components/moi/history-data";
+import { getAnswerStats } from "@/lib/answer-stats";
 import { countPlayers, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { MoiData } from "@/components/moi/types";
@@ -53,7 +54,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, accuracy] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, answers] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -64,7 +65,9 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     getFicheErrors(supabase, admin ?? supabase, user.id),
     supabase.from("group_memberships").select("group_id, study_groups(id,name,invite_code)").eq("user_id", user.id),
     getSessionHistory(supabase, user.id, now),
-    getAccuracy(supabase, user.id),
+    // questions répondues, toutes sources : le client admin lit aussi les
+    // réponses de duels (sans policy), toujours filtrées sur ce joueur
+    getAnswerStats(admin ?? supabase, user.id, { privileged: !!admin, now }),
   ]);
 
   const xpTotal = Number(profile?.xp_total ?? 0) || 0;
@@ -85,12 +88,12 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     xpWeek: xpThisWeek(xpDays),
     xp30: last30.xp,
     activeDays30: last30.active,
-    accuracy,
     xpDays,
     me: { elo: rating.elo, gamesPlayed: rating.gamesPlayed, mastery: programMastery(topics), leaderboardRank: myRank, totalPlayers },
     topics: buildTopicStats(topics, averages),
     errors,
     sessions,
+    answers,
   };
 
   return (

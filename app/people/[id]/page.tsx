@@ -10,6 +10,8 @@ import { DEFAULT_ELO } from "@/lib/ranks";
 import { PlayerHeader } from "@/components/classement/PlayerHeader";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
+import { AnswerSummary } from "@/components/moi/AnswerSummary";
+import { getAnswerStats } from "@/lib/answer-stats";
 import type { Profile, Rating } from "@/lib/types";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -17,8 +19,8 @@ type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
 
 // Profil d'un joueur (espace Classement) : en-tête (niveau sur une ligne,
-// une seule action : Défier), rang en carte sombre, puis trophées et
-// progression.
+// une seule action : Défier), rang en carte sombre, le résumé des questions
+// répondues (« traits tracés »), puis trophées et progression.
 export default async function PersonProfilePage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
@@ -34,11 +36,15 @@ export default async function PersonProfilePage({ params }: PageProps) {
 
   if (!profileData) notFound();
 
-  const [{ data: myGroups }, { data: theirGroups }, leaderboardRank, masteries] = await Promise.all([
+  const admin = tryAdmin();
+  const [{ data: myGroups }, { data: theirGroups }, leaderboardRank, masteries, answers] = await Promise.all([
     supabase.from("group_memberships").select("group_id").eq("user_id", user.id),
     supabase.from("group_memberships").select("group_id").eq("user_id", id),
     getLeaderboardRank(supabase, id),
-    masteryByUser(tryAdmin(), [id]),
+    masteryByUser(admin, [id]),
+    // résumé seulement (matières et sources, sans passages) ; les réponses
+    // d'un autre joueur ne se lisent qu'avec le client admin
+    admin ? getAnswerStats(admin, id, { privileged: true, detail: false }) : user.id === id ? getAnswerStats(supabase, id, { detail: false }) : Promise.resolve(null),
   ]);
 
   const myIds = new Set((myGroups ?? []).map((g: { group_id: string }) => g.group_id).filter(Boolean));
@@ -110,6 +116,8 @@ export default async function PersonProfilePage({ params }: PageProps) {
           leaderboardRank,
         }}
       />
+
+      {answers?.available && <AnswerSummary stats={answers} name={display} isMe={isMe} />}
 
       {isMe && xpDaily && <XpBarChart data={xpDaily} title="XP gagnée par jour (90 jours)" />}
 
