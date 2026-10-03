@@ -130,6 +130,20 @@ export const COURSES: Course[] = [
       { title: "Introduction to Risk Management", start: 3243 },
     ],
   },
+  {
+    slug: "ethics",
+    title: "Ethical and Professional Standards",
+    file: "ethics",
+    pages: 63,
+    minutes: 65,
+    chapters: [
+      { title: "Ethics and Trust in the Investment Profession", start: 0 },
+      { title: "Code of Ethics and Standards of Professional Conduct", start: 537.7 },
+      { title: "Guidance for Standards I–VII", start: 995.3 },
+      { title: "Introduction to the Global Investment Performance Standards (GIPS)", start: 2905.6 },
+      { title: "Ethics Application", start: 3326.4 },
+    ],
+  },
 ];
 
 export function getCourse(slug: string) {
