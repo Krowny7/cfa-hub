@@ -12,6 +12,9 @@
    redirigées vers ces jetons : white = encre, black = papier. Le thème
    « nuit » n'échange que les jetons.
 
+   V3 « finitions » : ombres en couches, lumière d'arête, élévation par des
+   surfaces plus claires en nuit, une seule famille de courbes et de durées.
+
    FICHIER GÉNÉRÉ par scripts/ink/generate.cjs à partir de
    scripts/ink/globals.template.css : modifier le gabarit, puis relancer
    « node scripts/ink/generate.cjs ».
@@ -22,14 +25,42 @@
   --paper-2: #efefeb;
   --surface: #ffffff;
   --surface-2: #efefeb;
+  /* surfaces flottantes (menus, palette) et commandes (boutons clairs,
+     pastilles, indicateur des onglets) : blanches sur papier, plus claires
+     que la carte en nuit */
+  --surface-3: #ffffff;
+  --control: #ffffff;
+  /* creux : piste des onglets, des barres, champs en nuit */
+  --well: #efefeb;
+  --field: #ffffff;
   --ink: #111111;
   --ink-2: #5b5b60;
+  --ink-3: #8c8c92;
   --line: rgba(17, 17, 17, 0.08);
-  --line-2: rgba(17, 17, 17, 0.15);
+  --line-2: rgba(17, 17, 17, 0.14);
   --pen: #b4412f;
-  --shadow-1: 0 1px 2px rgba(17, 17, 17, 0.05), 0 8px 24px -10px rgba(17, 17, 17, 0.12);
-  --shadow-2: 0 2px 4px rgba(17, 17, 17, 0.06), 0 18px 40px -14px rgba(17, 17, 17, 0.22);
+  /* lumière d'arête (haut d'une surface) : inutile sur blanc, visible en nuit */
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0);
+  /* ombres en couches : contact net + diffusion large et douce */
+  --shadow-1: 0 1px 1px rgba(17, 17, 17, 0.03), 0 2px 5px -2px rgba(17, 17, 17, 0.06), 0 12px 28px -16px rgba(17, 17, 17, 0.14);
+  --shadow-2: 0 1px 2px rgba(17, 17, 17, 0.04), 0 6px 14px -6px rgba(17, 17, 17, 0.08), 0 28px 56px -28px rgba(17, 17, 17, 0.24);
+  --shadow-3: 0 2px 4px rgba(17, 17, 17, 0.04), 0 14px 28px -10px rgba(17, 17, 17, 0.12), 0 44px 88px -36px rgba(17, 17, 17, 0.32);
+  --shadow-btn: 0 1px 2px rgba(17, 17, 17, 0.18), 0 4px 10px -5px rgba(17, 17, 17, 0.3);
+  /* carte héros : dégradé vertical très léger, filet plus marqué en bas */
+  --hero-top: #ffffff;
+  --hero-bottom: #fbfbf9;
+  --hero-rim-top: rgba(17, 17, 17, 0.06);
+  --hero-rim-bottom: rgba(17, 17, 17, 0.12);
+  --hero-glow: rgba(255, 255, 255, 0);
+  /* courbes et durées : une seule famille pour tout le site */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.3, 1.25, 0.45, 1);
+  --ease-ink: cubic-bezier(0.45, 0, 0.2, 1);
+  --dur-1: 0.16s;
+  --dur-2: 0.32s;
+  --dur-3: 0.6s;
   --grain: @@GRAIN_DARK@@;
+  --grain-ink: @@GRAIN_LIGHT@@;
   --underline: @@UNDER_DARK@@;
   --swash: @@SWASH@@;
   --bar: @@BAR@@;
@@ -38,18 +69,33 @@
   color-scheme: light;
 }
 
+/* Nuit : l'élévation se lit par des surfaces de plus en plus claires
+   (papier < carte < héros < menus), plus une lumière d'arête en haut. */
 html[data-theme="nuit"] {
-  --paper: #0f0f10;
-  --paper-2: #1c1c1f;
-  --surface: #17171a;
+  --paper: #0e0e10;
+  --paper-2: #1b1b1e;
+  --surface: #161619;
   --surface-2: #222226;
+  --surface-3: #202024;
+  --control: #222226;
+  --well: #1c1c20;
+  --field: #111114;
   --ink: #f2f2ee;
-  --ink-2: #a2a2a8;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-2: rgba(255, 255, 255, 0.15);
+  --ink-2: #a4a4ab;
+  --ink-3: #6f6f77;
+  --line: rgba(255, 255, 255, 0.075);
+  --line-2: rgba(255, 255, 255, 0.14);
   --pen: #ff7a5c;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -10px rgba(0, 0, 0, 0.6);
-  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.45), 0 18px 40px -14px rgba(0, 0, 0, 0.75);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -16px rgba(0, 0, 0, 0.7);
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 18px -8px rgba(0, 0, 0, 0.5), 0 28px 56px -28px rgba(0, 0, 0, 0.85);
+  --shadow-3: 0 2px 4px rgba(0, 0, 0, 0.5), 0 18px 36px -12px rgba(0, 0, 0, 0.6), 0 48px 96px -36px rgba(0, 0, 0, 0.9);
+  --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 18px -8px rgba(0, 0, 0, 0.7);
+  --hero-top: #1e1e22;
+  --hero-bottom: #19191c;
+  --hero-rim-top: rgba(255, 255, 255, 0.13);
+  --hero-rim-bottom: rgba(255, 255, 255, 0.05);
+  --hero-glow: rgba(255, 255, 255, 0.035);
   --grain: @@GRAIN_LIGHT@@;
   --underline: @@UNDER_LIGHT@@;
   color-scheme: dark;
@@ -90,11 +136,21 @@ html[data-theme="nuit"] {
     -moz-osx-font-smoothing: grayscale;
   }
 
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
   ::selection {
     background: var(--ink);
     color: var(--paper);
   }
 
+  /* Focus clavier : anneau d'encre décollé, qui suit l'arrondi */
   :focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
@@ -136,7 +192,7 @@ html[data-theme="nuit"] {
     font-family: var(--font-sans);
     font-weight: 600;
     font-size: 13px;
-    letter-spacing: 0;
+    letter-spacing: -0.003em;
     color: var(--ink-2);
   }
 
@@ -159,46 +215,163 @@ html[data-theme="nuit"] {
     color: color-mix(in oklab, var(--ink-2) 80%, transparent);
   }
 
-  /* ---------- Surfaces ---------- */
+  /* ---------- Échelle typographique ----------
+     Une échelle de titres pour qu'un écran ait un seul point focal. Les pages
+     s'appuient sur ces classes ; leurs valeurs s'affinent ici. Dans la couche
+     « components » : une classe utilitaire (text-[..], text-white…) peut
+     toujours les ajuster ponctuellement. */
+  .t-hero {
+    font-size: clamp(38px, 5.2vw, 64px);
+    line-height: 0.98;
+    font-weight: 800;
+    letter-spacing: -0.042em;
+    text-wrap: balance;
+  }
+  .t-h1 {
+    font-size: clamp(28px, 3.2vw, 40px);
+    line-height: 1.04;
+    font-weight: 760;
+    letter-spacing: -0.034em;
+    text-wrap: balance;
+  }
+  .t-h2 {
+    font-size: clamp(20px, 2vw, 24px);
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.024em;
+  }
+  .t-h3 {
+    font-size: 17px;
+    line-height: 1.25;
+    font-weight: 650;
+    letter-spacing: -0.014em;
+  }
+  .t-body {
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: -0.004em;
+  }
+  .t-small {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+  .t-micro {
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 500;
+    letter-spacing: 0.004em;
+    color: var(--ink-2);
+  }
+  /* Grand chiffre (Dela Gothic) : un seul par carte */
+  .t-num {
+    font-family: var(--font-brand), var(--font-sans);
+    font-weight: 400;
+    font-synthesis: none;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+  }
+  /* Petite capitale d'étiquette (au-dessus d'un chiffre, d'un groupe de menu) */
+  .t-eyebrow {
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* ---------- Surfaces ----------
+     .card-hero (le point focal, un par écran) > .card (défaut) >
+     .card-quiet (secondaire, posée sur le papier) ; .card-ink : la carte
+     sombre, une par écran. */
   .card {
     background-color: var(--surface);
     border: 1px solid var(--line);
     border-radius: 18px;
-    box-shadow: var(--shadow-1);
+    box-shadow: var(--edge), var(--shadow-1);
+  }
+
+  /* Héros : filet en dégradé (plus net en bas, comme une arête qui reçoit la
+     lumière d'en haut), fond très légèrement voûté, ombre large. */
+  .card-hero {
+    position: relative;
+    border-radius: 22px;
+    border: 1px solid transparent;
+    background:
+      radial-gradient(120% 80% at 15% 0%, var(--hero-glow), transparent 60%) padding-box,
+      linear-gradient(180deg, var(--hero-top), var(--hero-bottom)) padding-box,
+      linear-gradient(180deg, var(--hero-rim-top), var(--hero-rim-bottom)) border-box;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), var(--shadow-2);
+  }
+
+  /* Secondaire : pas d'ombre, fond à peine teinté, filet intérieur presque
+     invisible pour garder un bord net sur le papier. */
+  .card-quiet {
+    position: relative;
+    border-radius: 18px;
+    background: color-mix(in oklab, var(--surface-2) 55%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--line) 60%, transparent);
+    transition: background-color var(--dur-2) var(--ease-out);
+  }
+  a.card-quiet:hover,
+  button.card-quiet:hover {
+    background: color-mix(in oklab, var(--surface-2) 85%, transparent);
   }
 
   .card-hover {
-    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
   }
   .card-hover:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-2);
+    transform: translateY(-2px);
+    box-shadow: var(--edge), var(--shadow-2);
   }
 
   .card-soft {
     background-color: var(--surface-2);
-    border: 1px solid var(--line);
+    border: 1px solid color-mix(in oklab, var(--line) 70%, transparent);
     border-radius: 14px;
   }
 
   /* Carte mise en avant */
   .plate {
     position: relative;
-    box-shadow: var(--shadow-2);
+    box-shadow: var(--edge), var(--shadow-2);
   }
 
-  /* Carte sombre (rang, duel) — reste sombre en thème clair, s'éclaircit un peu en nuit */
+  /* Carte sombre (rang, duel) — reste sombre en thème clair, s'éclaircit en
+     nuit (élévation). Grain d'encre très fin, voûte de lumière en haut et
+     lueur teintée par le palier : la page pose --tier-glow (couleur du métal,
+     ex. style={{ "--tier-glow": tier.color }}) sur la carte ou un parent. */
   .card-ink {
     position: relative;
     overflow: hidden;
-    background: #111111;
+    isolation: isolate;
     color: #ffffff;
     border-radius: 18px;
-    box-shadow: 0 2px 4px rgba(17, 17, 17, 0.2), 0 20px 40px -18px rgba(17, 17, 17, 0.6);
+    background-color: #111111;
+    background-image:
+      var(--grain-ink),
+      radial-gradient(70% 90% at 100% 0%, color-mix(in oklab, var(--tier-glow, #ffffff) 16%, transparent), transparent 70%),
+      linear-gradient(180deg, #1b1b1d 0%, #101011 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+      0 1px 2px rgba(17, 17, 17, 0.16),
+      0 12px 24px -12px rgba(17, 17, 17, 0.32),
+      0 32px 64px -32px rgba(17, 17, 17, 0.5);
   }
   html[data-theme="nuit"] .card-ink {
-    background: #232327;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #222226;
+    background-image:
+      var(--grain-ink),
+      radial-gradient(70% 90% at 100% 0%, color-mix(in oklab, var(--tier-glow, #ffffff) 14%, transparent), transparent 70%),
+      linear-gradient(180deg, #27272b 0%, #1e1e22 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.11),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 28px 56px -28px rgba(0, 0, 0, 0.9);
   }
 
   .panel-label {
@@ -214,25 +387,86 @@ html[data-theme="nuit"] {
     font-size: 12.5px;
   }
 
+  /* Filet de séparation (horizontal) */
+  .rule {
+    height: 1px;
+    border: 0;
+    background: var(--line);
+  }
+
   /* ---------- Boutons ---------- */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-[18px] text-sm disabled:pointer-events-none disabled:opacity-45;
     min-height: 42px;
-    font-weight: 650;
+    font-weight: 620;
+    letter-spacing: -0.006em;
     border-radius: 12px;
-    transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1), background-color 0.2s ease, box-shadow 0.2s ease, color 0.35s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform var(--dur-1) var(--ease-spring),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      color 0.35s ease;
   }
   .btn:active {
-    transform: scale(0.97);
+    transform: translateY(0.5px) scale(0.985);
+  }
+  .btn:focus-visible {
+    outline-offset: 3px;
+  }
+  .btn-sm {
+    min-height: 34px;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+  .btn-lg {
+    min-height: 50px;
+    padding-left: 22px;
+    padding-right: 22px;
+    font-size: 15px;
+    border-radius: 14px;
   }
 
+  /* Encre pleine : relief (lumière en haut, arête sombre en bas), s'enfonce
+     au clic. Un seul par écran. */
   .btn-primary {
-    background: var(--ink);
     color: var(--paper);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 6px 16px -6px rgba(17, 17, 17, 0.45);
+    background-color: var(--ink);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0) 55%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+      0 0 0 1px color-mix(in oklab, var(--ink) 92%, #000),
+      var(--shadow-btn);
   }
   .btn-primary:hover {
     transform: translateY(-1px);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.02) 60%);
+  }
+  .btn-primary:active {
+    transform: translateY(0.5px) scale(0.985);
+    background-image: none;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.32),
+      0 0 0 1px color-mix(in oklab, var(--ink) 92%, #000),
+      0 1px 1px rgba(17, 17, 17, 0.16);
+  }
+  html[data-theme="nuit"] .btn-primary {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 60%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      var(--shadow-btn);
+  }
+  html[data-theme="nuit"] .btn-primary:active {
+    background-image: none;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.22),
+      0 0 0 1px rgba(255, 255, 255, 0.12);
   }
 
   /* Clair : l'encre s'étale au survol (signature) */
@@ -241,8 +475,9 @@ html[data-theme="nuit"] {
     overflow: hidden;
     isolation: isolate;
     border: 1px solid var(--line-2);
-    background: var(--surface);
+    background: var(--control);
     color: var(--ink);
+    box-shadow: var(--edge), 0 1px 2px rgba(17, 17, 17, 0.05);
   }
   .btn-secondary::before {
     content: "";
@@ -254,19 +489,24 @@ html[data-theme="nuit"] {
     border-radius: 50%;
     background: var(--ink);
     transform: translate(-50%, -50%) scale(0);
-    transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform 0.55s var(--ease-out);
     z-index: -1;
     filter: url(#rl-ink);
   }
   .btn-secondary:hover {
     color: var(--paper);
+    border-color: var(--ink);
   }
   .btn-secondary:hover::before {
     transform: translate(-50%, -50%) scale(1);
   }
+  .btn-secondary:active {
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  }
 
   .btn-ghost {
     background: transparent;
+    color: var(--ink);
   }
   .btn-ghost:hover {
     background: var(--surface-2);
@@ -275,10 +515,70 @@ html[data-theme="nuit"] {
   .btn-danger {
     border: 1px solid color-mix(in oklab, var(--pen) 55%, transparent);
     color: var(--pen);
-    background: var(--surface);
+    background: var(--control);
   }
   .btn-danger:hover {
-    background: color-mix(in oklab, var(--pen) 8%, var(--surface));
+    background: color-mix(in oklab, var(--pen) 8%, var(--control));
+  }
+
+  /* Bouton clair posé dans une .card-ink (fond et texte fixes) */
+  .btn-on-ink {
+    color: #111111;
+    background-color: #ffffff;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(236, 236, 232, 1));
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+      0 1px 2px rgba(0, 0, 0, 0.35),
+      0 8px 18px -8px rgba(0, 0, 0, 0.6);
+  }
+  .btn-on-ink:hover {
+    transform: translateY(-1px);
+  }
+  .btn-on-ink:active {
+    transform: translateY(0.5px) scale(0.985);
+    background-image: none;
+    background-color: #ecece8;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  }
+  /* … et sa variante en filet clair */
+  .btn-on-ink-ghost {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  }
+  .btn-on-ink-ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Bouton-icône carré (barre du haut, actions de carte) */
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--line-2);
+    background: var(--control);
+    color: var(--ink);
+    box-shadow: var(--edge), 0 1px 2px rgba(17, 17, 17, 0.05);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform var(--dur-1) var(--ease-spring),
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .icon-btn:hover {
+    background: var(--surface-2);
+  }
+  .icon-btn:active {
+    transform: scale(0.95);
+  }
+  .icon-btn.is-on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
   }
 
   /* Fond « coup de pinceau » (touche d'encre ponctuelle) */
@@ -301,40 +601,116 @@ html[data-theme="nuit"] {
   .ghost-btn,
   .ink-link {
     font-family: var(--font-sans);
-    font-weight: 650;
+    font-weight: 620;
     font-size: 14px;
     line-height: 1.2;
     padding-bottom: 5px;
     background: var(--underline) left bottom / 100% 5px no-repeat;
     color: var(--ink);
-    transition: opacity 0.15s ease;
+    transition: opacity var(--dur-1) ease, background-size var(--dur-2) var(--ease-out);
   }
   .ghost-btn:hover,
   .ink-link:hover {
-    opacity: 0.7;
+    opacity: 0.72;
   }
 
   /* ---------- Champs ---------- */
   .input,
   .select {
-    @apply w-full px-3.5 text-sm outline-none transition;
+    @apply w-full px-3.5 text-sm outline-none;
     min-height: 42px;
     border: 1px solid var(--line-2);
     border-radius: 12px;
-    background: var(--surface);
+    background: var(--field);
     color: var(--ink);
+    box-shadow: inset 0 1px 2px rgba(17, 17, 17, 0.04);
+    transition: border-color var(--dur-1) ease, box-shadow var(--dur-1) ease, background-color var(--dur-1) ease;
   }
   textarea.input {
     padding-top: 10px;
     padding-bottom: 10px;
+    line-height: 1.5;
   }
   .input::placeholder {
-    color: color-mix(in oklab, var(--ink-2) 85%, transparent);
+    color: color-mix(in oklab, var(--ink-2) 80%, transparent);
+  }
+  .input:hover,
+  .select:hover {
+    border-color: color-mix(in oklab, var(--ink) 28%, transparent);
   }
   .input:focus,
   .select:focus {
     border-color: var(--ink);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink) 12%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--ink) 10%, transparent);
+  }
+  .input:focus-visible,
+  .select:focus-visible {
+    outline: none;
+  }
+  .input:disabled,
+  .select:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  /* liste déroulante : chevron dessiné (gris moyen, lisible dans les deux thèmes) */
+  select.select {
+    appearance: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c8c92' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 15px;
+  }
+
+  /* Interrupteur (réglages : thème, mode discret…) — sur un <button
+     role="switch" aria-checked> ou un <span> décoratif */
+  .switch {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 36px;
+    height: 22px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--ink) 16%, transparent);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+    transition: background-color var(--dur-2) var(--ease-out);
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
+    transition: transform var(--dur-2) var(--ease-spring);
+  }
+  .switch[aria-checked="true"],
+  .switch.is-on {
+    background: var(--ink);
+  }
+  .switch[aria-checked="true"]::after,
+  .switch.is-on::after {
+    transform: translateX(14px);
+    background: var(--paper);
+  }
+
+  /* Raccourci clavier */
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    border-bottom-color: var(--line-2);
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-2);
   }
 
   /* ---------- Badges & puces ---------- */
@@ -343,11 +719,12 @@ html[data-theme="nuit"] {
     font-weight: 650;
     border-radius: 7px;
     border: 1px solid var(--line-2);
+    font-variant-numeric: tabular-nums;
   }
   .badge-private,
   .badge-neutral {
     color: var(--ink);
-    background: var(--surface);
+    background: var(--control);
   }
   .badge-shared,
   .badge-group {
@@ -361,12 +738,15 @@ html[data-theme="nuit"] {
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 px-3 text-sm transition;
+    @apply inline-flex items-center gap-1.5 px-3 text-sm;
     min-height: 34px;
     font-weight: 600;
+    letter-spacing: -0.004em;
     border-radius: 10px;
     border: 1px solid var(--line-2);
-    background: var(--surface);
+    background: var(--control);
+    box-shadow: var(--edge), 0 1px 1px rgba(17, 17, 17, 0.03);
+    transition: background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease;
   }
   .chip:hover {
     background: var(--surface-2);
@@ -376,9 +756,30 @@ html[data-theme="nuit"] {
     background: var(--ink);
     border-color: var(--ink);
     color: var(--paper);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 2px rgba(17, 17, 17, 0.12);
+  }
+  /* Pastille discrète : métadonnée, pas une action (sans filet ni ombre) */
+  .chip-quiet {
+    border-color: transparent;
+    background: color-mix(in oklab, var(--surface-2) 80%, transparent);
+    box-shadow: none;
+    color: var(--ink-2);
+    font-weight: 550;
+  }
+  .chip-quiet:hover {
+    background: var(--surface-2);
+  }
+  .chip-sm {
+    min-height: 26px;
+    padding-left: 9px;
+    padding-right: 9px;
+    font-size: 12.5px;
+    border-radius: 8px;
+    gap: 5px;
   }
 
-  /* Contrôle segmenté (onglets) : l'indicateur blanc glisse sous l'onglet actif */
+  /* Contrôle segmenté (onglets) : l'indicateur glisse sous l'onglet actif,
+     dans une piste légèrement creusée */
   .seg {
     position: relative;
     display: inline-grid;
@@ -386,7 +787,8 @@ html[data-theme="nuit"] {
     grid-auto-columns: minmax(0, 1fr);
     padding: 4px;
     border-radius: 14px;
-    background: var(--surface-2);
+    background: var(--well);
+    box-shadow: inset 0 1px 2px rgba(17, 17, 17, 0.05), inset 0 0 0 1px color-mix(in oklab, var(--line) 70%, transparent);
   }
   .seg-item {
     position: relative;
@@ -397,10 +799,12 @@ html[data-theme="nuit"] {
     gap: 7px;
     padding: 8px 14px;
     border-radius: 10px;
-    font-weight: 500;
+    font-weight: 520;
     font-size: 14px;
+    letter-spacing: -0.006em;
     color: var(--ink-2);
     white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
     transition: color 0.2s ease;
   }
   .seg-item:hover,
@@ -410,24 +814,68 @@ html[data-theme="nuit"] {
   }
   .seg-item[aria-current="page"],
   .seg-item[aria-selected="true"] {
-    font-weight: 650;
+    font-weight: 640;
+  }
+  .seg-item:focus-visible {
+    outline-offset: -2px;
   }
   .seg-thumb {
     position: absolute;
     top: 4px;
     bottom: 4px;
     border-radius: 10px;
-    background: var(--surface);
-    box-shadow: 0 1px 2px rgba(17, 17, 17, 0.08), 0 4px 12px -4px rgba(17, 17, 17, 0.16);
-    transition: left 0.45s cubic-bezier(0.3, 1.3, 0.45, 1), width 0.45s cubic-bezier(0.3, 1.3, 0.45, 1);
+    background: var(--control);
+    box-shadow:
+      var(--edge),
+      0 0 0 1px color-mix(in oklab, var(--line) 80%, transparent),
+      0 1px 2px rgba(17, 17, 17, 0.07),
+      0 4px 10px -4px rgba(17, 17, 17, 0.14);
+    transition: left 0.42s var(--ease-spring), width 0.42s var(--ease-spring);
+  }
+  html[data-theme="nuit"] .seg-thumb {
+    background: #2c2c31;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ---------- Menus flottants (domaine, profil, palette) ---------- */
+  .menu {
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--surface-3);
+    box-shadow: var(--edge), var(--shadow-3);
+    padding: 6px;
+  }
+  .menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 560;
+    text-align: left;
+    color: var(--ink);
+    transition: background-color var(--dur-1) ease;
+  }
+  .menu-item:hover,
+  .menu-item[data-active="true"] {
+    background: var(--surface-2);
+  }
+  .menu-sep {
+    height: 1px;
+    margin: 6px 8px;
+    background: var(--line);
   }
 
   /* ---------- Barres de progression ---------- */
   .ink-bar {
     position: relative;
-    height: 8px;
-    border-radius: 8px;
-    background: var(--surface-2);
+    height: 6px;
+    border-radius: 999px;
+    background: var(--well);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--line) 50%, transparent);
     overflow: hidden;
   }
   .ink-bar > span {
@@ -435,25 +883,118 @@ html[data-theme="nuit"] {
     left: 0;
     top: 0;
     bottom: 0;
-    border-radius: 8px;
+    border-radius: 999px;
     background: var(--ink);
-    transition: width 0.8s cubic-bezier(0.25, 0.9, 0.2, 1);
+    transition: width 0.8s var(--ease-out);
   }
   .ink-bar.is-pen > span {
     background: var(--pen);
   }
+
+  /* (dans la couche « components » : une classe utilitaire peut ajuster
+     l'écart ou l'arrondi au cas par cas) */
+  /* Rythme vertical : .rl-page entre les grandes sections, .rl-section à
+     l'intérieur d'une section. */
+  .rl-page {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  @media (min-width: 768px) {
+    .rl-page {
+      gap: 64px;
+    }
+  }
+  .rl-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  @media (min-width: 768px) {
+    .rl-section {
+      gap: 20px;
+    }
+  }
+
+  /* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse. */
+  .rl-skel {
+    border-radius: 18px;
+    background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in oklab, var(--surface-2) 45%, var(--surface)) 50%, var(--surface-2) 100%);
+    background-size: 200% 100%;
+    animation: rlSkel 1.6s ease-in-out infinite;
+  }
+  @keyframes rlSkel {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rl-skel {
+      animation: none;
+    }
+  }
 }
 
-/* ---------- Mouvement (partagé par toutes les pages) ---------- */
+/* Barre du haut : fondue dans le papier tout en haut de page, elle prend
+   son filet et une ombre douce dès qu'on fait défiler (sans JavaScript). */
+@supports (animation-timeline: scroll()) {
+  .rl-topbar {
+    animation: rlTopbar linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0px 80px;
+  }
+}
+@keyframes rlTopbar {
+  from {
+    background-color: transparent;
+    border-bottom-color: transparent;
+    box-shadow: 0 0 0 transparent;
+  }
+  to {
+    background-color: color-mix(in oklab, var(--paper) 80%, transparent);
+    border-bottom-color: var(--line);
+    box-shadow: 0 10px 30px -22px rgba(17, 17, 17, 0.35);
+  }
+}
+
+/* ---------- Mouvement (partagé par toutes les pages) ----------
+   Une seule famille de courbes (--ease-*) et de durées. Une entrée par
+   écran : une carte qui entre porte ses enfants, qui n'entrent pas une
+   seconde fois (.rl-in imbriqué = immobile). Les amplitudes restent petites. */
 .rl-lift {
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
 }
 .rl-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-2);
+  transform: translateY(-2px);
+  box-shadow: var(--edge), var(--shadow-2);
+}
+/* les surfaces à ombre propre gardent leur relief au survol */
+.card-hero.rl-lift:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), var(--shadow-3);
+}
+.card-quiet.rl-lift:hover {
+  box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1);
+}
+.card-ink.rl-lift:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 2px 4px rgba(17, 17, 17, 0.16),
+    0 18px 32px -14px rgba(17, 17, 17, 0.38),
+    0 40px 80px -36px rgba(17, 17, 17, 0.55);
+}
+html[data-theme="nuit"] .card-ink.rl-lift:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 36px 72px -30px rgba(0, 0, 0, 0.95);
 }
 .rl-press {
-  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1);
+  transition: transform var(--dur-1) var(--ease-spring);
 }
 .rl-press:hover {
   transform: translateY(-1px);
@@ -468,25 +1009,29 @@ html[data-theme="nuit"] {
   background-color: var(--surface-2);
 }
 .rl-in {
-  animation: rlIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: rlIn var(--dur-3) var(--ease-out) backwards;
 }
 @keyframes rlIn {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.985);
+    transform: translateY(10px);
   }
 }
+.rl-in .rl-in,
+.rl-rv .rl-in {
+  animation: none;
+}
 .rl-pop {
-  animation: rlPop 0.8s cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
+  animation: rlPop 0.6s var(--ease-spring) backwards;
 }
 @keyframes rlPop {
   from {
     opacity: 0;
-    transform: scale(0.6) rotate(-6deg);
+    transform: scale(0.86);
   }
 }
 .rl-grow {
-  animation: rlGrow 1.2s cubic-bezier(0.25, 0.9, 0.2, 1) backwards;
+  animation: rlGrow 0.9s var(--ease-out) backwards;
 }
 @keyframes rlGrow {
   from {
@@ -495,7 +1040,7 @@ html[data-theme="nuit"] {
 }
 .rl-barup {
   transform-origin: bottom;
-  animation: rlBarUp 0.9s cubic-bezier(0.25, 0.9, 0.2, 1) backwards;
+  animation: rlBarUp 0.7s var(--ease-out) backwards;
 }
 @keyframes rlBarUp {
   from {
@@ -503,35 +1048,37 @@ html[data-theme="nuit"] {
   }
 }
 .rl-halo {
-  animation: rlHalo 1.6s cubic-bezier(0.45, 0, 0.2, 1) backwards;
+  animation: rlHalo 1.2s var(--ease-ink) backwards;
 }
 @keyframes rlHalo {
   from {
     stroke-dasharray: 0 140;
   }
 }
+/* l'enso de fond apparaît en fondu (il ne se dessine plus : un tracé de
+   moins qui bouge en même temps que le titre) */
 .rl-enso {
-  animation: rlEnso 2.2s cubic-bezier(0.45, 0, 0.2, 1) backwards;
+  animation: rlEnso 1.4s var(--ease-out) backwards;
 }
 @keyframes rlEnso {
   from {
-    stroke-dasharray: 0 140;
+    opacity: 0;
   }
 }
 .rl-radar {
   transform-box: fill-box;
   transform-origin: center;
-  animation: rlRadar 1.1s 0.2s cubic-bezier(0.3, 1.3, 0.45, 1) backwards;
+  animation: rlRadar 0.8s 0.15s var(--ease-out) backwards;
 }
 @keyframes rlRadar {
   from {
-    transform: scale(0.2);
+    transform: scale(0.92);
     opacity: 0;
   }
 }
 .rl-drawline {
   stroke-dasharray: 100;
-  animation: rlDrawLine 1.6s 0.3s cubic-bezier(0.45, 0, 0.2, 1) backwards;
+  animation: rlDrawLine 1.2s 0.2s var(--ease-ink) backwards;
 }
 @keyframes rlDrawLine {
   from {
@@ -539,7 +1086,7 @@ html[data-theme="nuit"] {
   }
 }
 .rl-underline {
-  animation: rlUnderline 0.9s 0.45s cubic-bezier(0.6, 0, 0.25, 1) backwards;
+  animation: rlUnderline 0.8s 0.35s cubic-bezier(0.6, 0, 0.25, 1) backwards;
 }
 @keyframes rlUnderline {
   from {
@@ -555,7 +1102,7 @@ html[data-theme="nuit"] {
   initial-value: 0;
 }
 .rl-count {
-  animation: rlCount 1.4s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: rlCount 1.1s 0.15s var(--ease-out) both;
   counter-reset: rln var(--rl-n);
 }
 .rl-count::after {
@@ -573,13 +1120,13 @@ html[data-theme="nuit"] {
   .rl-rv {
     animation: rlRv linear both;
     animation-timeline: view();
-    animation-range: entry 0% cover 25%;
+    animation-range: entry 0% entry 45%;
   }
 }
 @keyframes rlRv {
   from {
     opacity: 0;
-    transform: translateY(36px);
+    transform: translateY(18px);
   }
   to {
     opacity: 1;
@@ -600,132 +1147,35 @@ html[data-theme="nuit"] {
   .rl-rv {
     animation: none !important;
   }
+  /* sans animation, le compteur affiche directement sa valeur finale */
+  .rl-count {
+    --rl-n: var(--rl-to);
+  }
+  .rl-lift:hover,
+  .card-hover:hover,
+  .rl-press:hover,
+  .btn-primary:hover,
+  .btn-on-ink:hover {
+    transform: none;
+  }
 }
 
 /* Étiquettes du radar (components/ui/Radar.tsx) : le SVG se réduit avec
    la largeur, on grossit donc le texte sur téléphone pour le garder lisible. */
 .rl-radar-l {
-  font-size: 13px;
+  font-size: 12.5px;
+  letter-spacing: -0.005em;
 }
 .rl-radar-v {
-  font-size: 11.5px;
+  font-size: 11px;
 }
 @media (max-width: 640px) {
+  /* le SVG est réduit d'environ 40 % sur téléphone */
   .rl-radar-l {
-    font-size: 19px;
+    font-size: 21px;
   }
   .rl-radar-v {
-    font-size: 16px;
-  }
-}
-
-/* ---------- Hiérarchie (chantier « moins dense ») ----------
-   Une échelle de titres et trois niveaux de surface, pour qu'un écran ait un
-   seul point focal. Les pages s'appuient sur ces classes ; leurs valeurs
-   peuvent être affinées ici sans toucher aux pages. */
-.t-hero {
-  font-size: clamp(38px, 5.2vw, 64px);
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  text-wrap: balance;
-}
-.t-h1 {
-  font-size: clamp(28px, 3.2vw, 40px);
-  line-height: 1.05;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  text-wrap: balance;
-}
-.t-h2 {
-  font-size: clamp(20px, 2vw, 24px);
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-.t-h3 {
-  font-size: 17px;
-  line-height: 1.25;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-.t-body {
-  font-size: 15px;
-  line-height: 1.55;
-}
-.t-small {
-  font-size: 13.5px;
-  line-height: 1.45;
-  color: var(--ink-2);
-}
-.t-micro {
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--ink-2);
-}
-/* Grand chiffre (Dela Gothic) : un seul par carte */
-.t-num {
-  font-family: var(--font-brand), var(--font-sans);
-  line-height: 0.95;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Surfaces : .card-hero (le point focal, un par écran), .card (défaut),
-   .card-quiet (secondaire : pas d'ombre ni de bordure, fond à peine teinté). */
-.card-hero {
-  position: relative;
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: var(--shadow-2);
-}
-.card-quiet {
-  position: relative;
-  border-radius: 18px;
-  background: color-mix(in oklab, var(--surface-2) 55%, transparent);
-}
-
-/* Rythme vertical : .rl-page entre les grandes sections, .rl-section à
-   l'intérieur d'une section. */
-.rl-page {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-@media (min-width: 768px) {
-  .rl-page {
-    gap: 64px;
-  }
-}
-.rl-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-@media (min-width: 768px) {
-  .rl-section {
-    gap: 20px;
-  }
-}
-
-/* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse. */
-.rl-skel {
-  border-radius: 18px;
-  background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in oklab, var(--surface-2) 45%, var(--surface)) 50%, var(--surface-2) 100%);
-  background-size: 200% 100%;
-  animation: rlSkel 1.4s ease-in-out infinite;
-}
-@keyframes rlSkel {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: -100% 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rl-skel {
-    animation: none;
+    font-size: 17px;
   }
 }
 
@@ -778,13 +1228,17 @@ img[alt="avatar"] {
 html[data-discreet="1"] {
   --pen: var(--ink);
 }
-html[data-discreet="1"] .font-brand {
+html[data-discreet="1"] .font-brand,
+html[data-discreet="1"] .t-num {
   font-family: var(--font-sans);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 html[data-discreet="1"] .rl-deco {
   display: none !important;
+}
+html[data-discreet="1"] .card-ink {
+  background-image: linear-gradient(180deg, #1b1b1d 0%, #101011 100%);
 }
 
 /* Couvre le tout premier affichage (couleur papier) le temps de savoir si

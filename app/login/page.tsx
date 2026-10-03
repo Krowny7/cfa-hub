@@ -61,78 +61,87 @@ export default function LoginPage() {
   }
 
   const spaces = [
-    { Icon: BookOpen, title: "Réviser", desc: "Fiches, cours complets avec audio, flashcards." },
-    { Icon: Target, title: "S'entraîner", desc: "QCM officiels, sessions ciblées, examens blancs." },
-    { Icon: Trophy, title: "Classement", desc: "Duels de 30 questions et examens classés : ton ELO bouge." },
-    { Icon: User, title: "Moi", desc: "Tes stats, tes erreurs, ta progression matière par matière." },
+    { Icon: BookOpen, title: "Réviser", desc: "Fiches, cours audio, flashcards." },
+    { Icon: Target, title: "S'entraîner", desc: "QCM officiels et examens blancs." },
+    { Icon: Trophy, title: "Classement", desc: "Duels de 30 questions, ELO." },
+    { Icon: User, title: "Moi", desc: "Stats, erreurs, progression." },
   ];
 
+  // Vitrine : le titre, LA carte de connexion (seule action en encre), puis
+  // les huit rangs sur une carte sombre (le seul moment en couleur) et les
+  // quatre espaces posés sur le papier. Sur téléphone : titre → connexion → reste.
   return (
-    <div className="rl-wide grid items-start gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-12 lg:pt-6">
-      {/* Présentation : titre au pinceau, les rangs, les quatre espaces */}
-      <section className="order-2 grid gap-8 lg:order-1">
-        <PageHero kicker="Ranked Lobby" title={<>Révise, affronte,<br />monte en rang.</>}>
-          {DOMAINS.map((d) => (
-            <span key={d.key} className={"chip " + (d.ready ? "chip-active" : "")}>
-              {d.name}
-              <span className={d.ready ? "opacity-70" : "text-muted"}>· {d.ready ? d.programs.filter((p) => p.ready).map((p) => p.short).join(", ") : "bientôt"}</span>
-            </span>
-          ))}
-        </PageHero>
-
-        <div className="card p-5">
-          <div className="kicker mb-3">Huit rangs, de Bronze au Top 10</div>
-          <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
-            {TIERS.map((tier, i) => (
-              <div key={tier.key} className="rl-pop grid justify-items-center gap-1" style={{ animationDelay: `${0.15 + i * 0.07}s` }}>
-                <RankBadge tier={i} size={i >= 4 ? 50 : 42} glow={false} />
-                <span className="text-[11px] font-semibold text-muted">{tier.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {spaces.map(({ Icon, title, desc }, i) => (
-            <div key={title} className="card-soft rl-in flex gap-3 p-4" style={{ animationDelay: `${0.2 + i * 0.08}s` }}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white text-black">
-                <Icon size={17} strokeWidth={2.1} />
-              </span>
-              <div>
-                <div className="text-[15px] font-bold">{title}</div>
-                <div className="text-[13px] leading-relaxed text-muted">{desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+    <div className="rl-wide grid items-start gap-x-14 gap-y-10 pb-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:pt-8">
+      <PageHero kicker="Ranked Lobby" title={<>Révise, affronte,<br />monte en rang.</>} className="lg:col-start-1 lg:row-start-1">
+        {DOMAINS.map((d) => (
+          <span key={d.key} className={"chip chip-sm " + (d.ready ? "chip-active" : "chip-quiet")}>
+            {d.name}
+            <span className="opacity-70">· {d.ready ? d.programs.filter((p) => p.ready).map((p) => p.short).join(", ") : "bientôt"}</span>
+          </span>
+        ))}
+      </PageHero>
 
       {/* Connexion */}
-      <section className="card rl-in order-1 grid content-start gap-5 p-7 md:p-8 lg:sticky lg:top-24 lg:order-2">
-        <div className="flex items-center gap-3">
-          <InkRing size={40} title="Ranked Lobby" />
-          <h2 className="text-[28px] font-extrabold leading-none tracking-[-0.03em]">{t("login.signinTitle")}</h2>
+      <section className="card-hero rl-in grid content-start gap-6 p-7 md:p-9 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-6">
+        <div className="grid gap-3">
+          <InkRing size={36} title="Ranked Lobby" className="rl-deco" />
+          <h2 className="t-h1">{t("login.signinTitle")}</h2>
+          <p className="t-small">{t("login.signinDesc")}</p>
         </div>
-        <p className="text-[15px] text-muted">{t("login.signinDesc")}</p>
 
-        <button type="button" onClick={signInWithGoogle} disabled={busy} className="btn btn-primary rl-press w-full py-3.5 text-[15px]">
+        <button type="button" onClick={signInWithGoogle} disabled={busy} className="btn btn-primary btn-lg w-full">
           <GoogleIcon />
           {busy ? t("login.redirecting") : t("login.googleButton")}
         </button>
 
         {error ? <div className="text-sm font-semibold text-pen">{error}</div> : null}
 
-        <div className="rounded-[14px] bg-surface-2 p-4">
-          <div className="kicker mb-2">{t("login.firstStepsTitle")}</div>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
-            <li>Choisis ton pseudo et ta date d&apos;examen.</li>
-            <li>Commence par une fiche de révision et son quiz.</li>
-            <li>Joue tes 5 parties de placement pour obtenir ton rang.</li>
+        <div className="grid gap-3 border-t border-line pt-5">
+          <div className="t-eyebrow">{t("login.firstStepsTitle")}</div>
+          <ol className="grid gap-2.5">
+            {["Choisis ton pseudo et ta date d'examen.", "Commence par une fiche et son quiz.", "Joue tes 5 parties de placement : ton rang apparaît."].map((step, i) => (
+              <li key={i} className="flex items-baseline gap-3 text-[14px] leading-snug">
+                <span className="font-mono text-[12px] font-semibold text-muted">0{i + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
           </ol>
         </div>
 
-        <div className="text-xs text-muted">{t("login.legalNote")}</div>
+        <p className="t-micro">{t("login.legalNote")}</p>
       </section>
+
+      {/* Les rangs, puis les espaces */}
+      <div className="grid gap-10 lg:col-start-1 lg:row-start-2">
+        <section className="card-ink p-6 md:p-7" style={{ ["--tier-glow" as string]: TIERS[2].metal[1] }} aria-label="Les huit rangs">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em]">Huit rangs, de Bronze au Top 10</h2>
+            <span className="hidden text-[12px] text-[rgba(255,255,255,.55)] sm:inline">un par domaine</span>
+          </div>
+          <div className="mt-5 grid grid-cols-4 items-end gap-x-1 gap-y-5 sm:grid-cols-8">
+            {TIERS.map((tier, i) => (
+              <div key={tier.key} className="grid justify-items-center gap-2">
+                <RankBadge tier={i} size={i >= 4 ? 64 : 56} glow={false} onDark />
+                <span className="text-center text-[11px] font-medium leading-tight text-[rgba(255,255,255,.6)]">{tier.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <ul className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          {spaces.map(({ Icon, title, desc }) => (
+            <li key={title} className="flex items-center gap-3.5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-line bg-surface text-white shadow-[var(--shadow-1)]">
+                <Icon size={17} strokeWidth={1.9} />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[15px] font-semibold tracking-[-0.01em]">{title}</div>
+                <div className="t-small">{desc}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

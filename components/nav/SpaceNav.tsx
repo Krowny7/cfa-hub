@@ -7,8 +7,8 @@ import { SPACES, activeSpace } from "@/lib/nav";
 
 const ICONS = { reviser: BookOpen, entrainer: Target, classement: Trophy, moi: User } as const;
 
-// Les quatre espaces, en contrôle segmenté : l'indicateur blanc glisse
-// (avec un léger ressort) sous l'onglet actif.
+// Les quatre espaces, en contrôle segmenté : l'indicateur glisse (avec un
+// léger ressort) sous l'onglet actif.
 export function SpaceNav() {
   const pathname = usePathname() || "/";
   const active = activeSpace(pathname);
@@ -30,8 +30,8 @@ export function SpaceNav() {
           const Icon = ICONS[s.key];
           const on = s.key === active;
           return (
-            <Link key={s.key} href={s.href} className="seg-item" aria-current={on ? "page" : undefined}>
-              <Icon size={16} strokeWidth={on ? 2.2 : 1.8} />
+            <Link key={s.key} href={s.href} className="seg-item px-4 text-[13.5px]" aria-current={on ? "page" : undefined}>
+              <Icon size={15} strokeWidth={on ? 2.2 : 1.8} />
               {s.label}
             </Link>
           );

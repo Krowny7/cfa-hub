@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 const KEY = "cfa_discreet";
 
-// Mode discret : même interface, sans signature visuelle — pas de lettrage
-// épais, pas d'anneau, pas de notes manuscrites, pas de rouge (règles
-// html[data-discreet="1"] dans globals.css). Sur les fiches, le PDF se replie
-// aussi. Le choix est mémorisé ; un script dans le layout le réapplique avant
-// le premier affichage.
-export function DiscreetToggle() {
+/**
+ * Mode discret : même interface, sans signature visuelle — pas de lettrage
+ * épais, pas d'anneau, pas de notes manuscrites, pas de rouge (règles
+ * html[data-discreet="1"] dans globals.css). Sur les fiches, le PDF se replie
+ * aussi. Le choix est mémorisé ; un script dans le layout le réapplique avant
+ * le premier affichage. Partagé par le bouton ci-dessous et le menu du profil.
+ */
+export function useDiscreetMode() {
   const [on, setOn] = useState(false);
 
   useEffect(() => {
@@ -31,11 +33,17 @@ export function DiscreetToggle() {
       setOn(next);
     }
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    // Un autre bouton de la page a changé le mode
+    const obs = new MutationObserver(() => setOn(document.documentElement.dataset.discreet === "1"));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-discreet"] });
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      obs.disconnect();
+    };
   }, []);
 
-  function toggle() {
-    const next = !on;
+  const toggle = useCallback(() => {
+    const next = document.documentElement.dataset.discreet !== "1";
     if (next) document.documentElement.dataset.discreet = "1";
     else delete document.documentElement.dataset.discreet;
     try {
@@ -43,7 +51,13 @@ export function DiscreetToggle() {
       else localStorage.removeItem(KEY);
     } catch {}
     setOn(next);
-  }
+  }, []);
+
+  return [on, toggle] as const;
+}
+
+export function DiscreetToggle() {
+  const [on, toggle] = useDiscreetMode();
 
   return (
     <button
@@ -52,12 +66,9 @@ export function DiscreetToggle() {
       aria-pressed={on}
       title={on ? "Désactiver le mode discret" : "Mode discret : interface sobre"}
       aria-label="Mode discret"
-      className={
-        "rl-press grid h-[38px] w-[38px] place-items-center rounded-[12px] border " +
-        (on ? "border-white bg-white text-black" : "border-line-2 bg-surface hover:bg-surface-2")
-      }
+      className={"icon-btn" + (on ? " is-on" : "")}
     >
-      {on ? <EyeOff size={16} /> : <Eye size={16} />}
+      {on ? <EyeOff size={16} strokeWidth={1.9} /> : <Eye size={16} strokeWidth={1.9} />}
     </button>
   );
 }

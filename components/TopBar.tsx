@@ -1,21 +1,21 @@
 import Link from "next/link";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n/core";
-import { SignOutButton } from "@/components/SignOutButton";
-import { DiscreetToggle } from "@/components/DiscreetToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InkLockup } from "@/components/ink/InkRing";
 import { SpaceNav } from "@/components/nav/SpaceNav";
 import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
-import { RankBadge } from "@/components/ui/RankBadge";
+import { UserMenu } from "@/components/nav/UserMenu";
+import { LoginLink } from "@/components/nav/LoginLink";
 import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/server";
 
-// Barre du haut V2 : logo (→ accueil), domaine · programme, les quatre
-// espaces en contrôle segmenté, puis thème, mode discret et le badge de rang
-// du joueur (→ Moi). Translucide et collante, avec un léger flou.
+// Barre du haut : logo (→ accueil), domaine · programme, les quatre espaces
+// en contrôle segmenté, puis la recherche et le badge de rang du joueur, qui
+// ouvre son menu (Moi, thème nuit, mode discret, réglages, déconnexion).
+// Translucide et collante, avec un léger flou.
 export async function TopBar() {
   const locale = DEFAULT_LOCALE;
   const { user } = await getSessionUserWithProfile();
@@ -36,11 +36,15 @@ export async function TopBar() {
 
   return (
     <header
-      className="sticky top-0 z-50 border-b border-line"
-      style={{ background: "color-mix(in oklab, var(--paper) 82%, transparent)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
+      className="rl-topbar sticky top-0 z-50 border-b border-line"
+      style={{
+        background: "color-mix(in oklab, var(--paper) 80%, transparent)",
+        backdropFilter: "blur(16px) saturate(1.4)",
+        WebkitBackdropFilter: "blur(16px) saturate(1.4)",
+      }}
     >
       <div className="mx-auto flex h-[64px] max-w-[1240px] items-center gap-3 px-4 md:gap-4 md:px-7">
-        <Link href="/dashboard" className="whitespace-nowrap text-[14px] sm:text-[16px]" aria-label={t(locale, "appName")}>
+        <Link href="/dashboard" className="rl-press whitespace-nowrap text-[14px] sm:text-[15.5px]" aria-label={t(locale, "appName")}>
           <InkLockup size={26} landing />
         </Link>
         {user && (
@@ -50,24 +54,16 @@ export async function TopBar() {
         )}
         <div className="flex flex-1 justify-center">{user && <SpaceNav />}</div>
         <div className="flex items-center gap-2">
-          {user && <CommandPalette />}
-          <div className="hidden sm:flex sm:items-center sm:gap-2">
-            <ThemeToggle />
-            <DiscreetToggle />
-          </div>
           {user ? (
             <>
-              <Link href="/moi" aria-label="Moi : profil et rang" className="rl-press grid h-[38px] w-[42px] place-items-center rounded-[12px] border border-line-2 bg-surface">
-                <RankBadge tier={tier} size={26} glow={false} />
-              </Link>
-              <span className="hidden md:inline-flex">
-                <SignOutButton />
-              </span>
+              <CommandPalette />
+              <UserMenu tier={tier} />
             </>
           ) : (
-            <Link className="btn btn-primary min-h-[38px] whitespace-nowrap px-4 text-[13px]" href="/login">
-              {t(locale, "auth.login")}
-            </Link>
+            <>
+              <ThemeToggle />
+              <LoginLink label={t(locale, "auth.login")} />
+            </>
           )}
         </div>
       </div>

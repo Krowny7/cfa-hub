@@ -50,7 +50,7 @@ const ENTRIES: Entry[] = [
   { label: "Flashcards", hint: "Paquets par matière", href: "/flashcards", group: "Pages", Icon: Layers },
   { label: "Bibliothèque", hint: "Documents partagés", href: "/library", group: "Pages", Icon: Library },
   { label: "Joueurs", hint: "Chercher un joueur", href: "/people", group: "Pages", Icon: Users },
-  { label: "Réglages", hint: "Profil, date d'examen", href: "/settings", group: "Pages", Icon: Settings },
+  { label: "Réglages", hint: "Profil, date d'examen", href: "/moi?onglet=reglages", group: "Pages", Icon: Settings },
   ...FICHES.map(([slug, title]) => ({ label: title, hint: "Fiche de révision", href: `/fiches/${slug}`, group: "Fiches", Icon: FileText })),
   ...COURSES.map((c) => ({ label: c.title, hint: `Cours complet · ${c.minutes} min d'audio`, href: `/courses/${c.slug}`, group: "Cours", Icon: Headphones })),
 ];
@@ -132,20 +132,21 @@ export function CommandPalette() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Rechercher (raccourci Ctrl+K)"
-        className="rl-press flex h-[38px] items-center gap-2 rounded-[12px] border border-line-2 bg-surface px-2.5 text-muted"
+        className="icon-btn flex w-auto items-center gap-2 px-[10px] text-muted lg:pr-1.5"
       >
-        <Search size={16} strokeWidth={2} />
-        <kbd className="hidden rounded-[6px] border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] font-semibold lg:inline">{mac ? "⌘K" : "Ctrl K"}</kbd>
+        <Search size={16} strokeWidth={1.9} />
+        <span className="hidden text-[13px] font-medium xl:inline">Rechercher</span>
+        <kbd className="kbd hidden lg:inline-flex">{mac ? "⌘K" : "Ctrl K"}</kbd>
       </button>
 
       {open && (
         <div className="fixed inset-0 z-[80] grid items-start justify-items-center px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Recherche">
           <div
             className="absolute inset-0"
-            style={{ background: "color-mix(in oklab, var(--ink) 28%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+            style={{ background: "color-mix(in oklab, var(--paper) 55%, rgba(0,0,0,.28))", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
             onClick={() => setOpen(false)}
           />
-          <div className="rl-in relative w-full max-w-[620px] overflow-hidden rounded-[18px] border border-line bg-surface" style={{ boxShadow: "var(--shadow-2)", animationDuration: ".35s" }}>
+          <div className="menu rl-in relative w-full max-w-[620px] overflow-hidden rounded-[20px] p-0" style={{ animationDuration: ".3s" }}>
             <div className="flex items-center gap-3 border-b border-line px-4">
               <Search size={18} className="shrink-0 text-muted" />
               <input
@@ -157,7 +158,7 @@ export function CommandPalette() {
                 className="h-[56px] w-full bg-transparent text-[16px] outline-none placeholder:text-muted"
                 aria-label="Rechercher"
               />
-              <kbd className="hidden shrink-0 rounded-[6px] border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted sm:inline">Échap</kbd>
+              <kbd className="kbd hidden shrink-0 sm:inline-flex">Échap</kbd>
             </div>
             <div ref={list} className="max-h-[min(420px,60vh)] overflow-y-auto p-2">
               {results.length === 0 && <div className="px-3 py-8 text-center text-sm text-muted">Rien ne correspond à « {q} ».</div>}
@@ -167,20 +168,21 @@ export function CommandPalette() {
                 const on = i === ix;
                 return (
                   <div key={e.href}>
-                    {header && <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{header}</div>}
+                    {header && <div className="t-eyebrow px-3 pb-1.5 pt-3">{header}</div>}
                     <button
                       type="button"
                       data-ix={i}
                       onMouseMove={() => setIx(i)}
                       onClick={() => go(e)}
-                      className={"flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left " + (on ? "bg-surface-2" : "")}
+                      data-active={on}
+                      className="menu-item gap-3 px-3 py-2"
                     >
-                      <span className={"grid h-8 w-8 shrink-0 place-items-center rounded-[9px] " + (on ? "bg-white text-black" : "bg-surface-2")}>
+                      <span className={"grid h-8 w-8 shrink-0 place-items-center rounded-[9px] transition-colors " + (on ? "bg-white text-black" : "bg-surface-2 text-muted")}>
                         <e.Icon size={16} strokeWidth={2} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14.5px] font-semibold">{e.label}</span>
-                        <span className="block truncate text-[12.5px] text-muted">{e.hint}</span>
+                        <span className="block truncate text-[14.5px] font-semibold tracking-[-0.006em]">{e.label}</span>
+                        <span className="block truncate text-[12.5px] font-normal text-muted">{e.hint}</span>
                       </span>
                       {on && <ArrowRight size={16} className="shrink-0" />}
                     </button>
@@ -188,9 +190,9 @@ export function CommandPalette() {
                 );
               })}
             </div>
-            <div className="flex gap-4 border-t border-line px-4 py-2.5 text-[12px] text-muted">
-              <span>↑ ↓ pour naviguer</span>
-              <span>Entrée pour ouvrir</span>
+            <div className="hidden items-center gap-4 border-t border-line px-4 py-2.5 text-[12px] text-muted sm:flex">
+              <span className="flex items-center gap-1.5"><kbd className="kbd">↑</kbd><kbd className="kbd">↓</kbd> naviguer</span>
+              <span className="flex items-center gap-1.5"><kbd className="kbd">Entrée</kbd> ouvrir</span>
             </div>
           </div>
         </div>

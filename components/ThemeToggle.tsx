@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 const KEY = "rl_theme";
 
-// Papier (défaut) ou nuit : encre claire sur papier sombre. Le choix est
-// mémorisé ; un script dans le layout le réapplique avant le premier
-// affichage pour éviter un flash de papier blanc la nuit.
-export function ThemeToggle() {
+/**
+ * État du thème nuit et sa bascule, partagés par le bouton ci-dessous et par
+ * le menu du profil (components/nav/UserMenu.tsx).
+ */
+export function useNightTheme() {
   const [night, setNight] = useState(false);
 
   useEffect(() => {
@@ -22,10 +23,14 @@ export function ThemeToggle() {
       }
     } catch {}
     setNight(n);
+    // Un autre bouton (barre du haut, réglages) a changé le thème
+    const obs = new MutationObserver(() => setNight(document.documentElement.dataset.theme === "nuit"));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
   }, []);
 
-  function toggle() {
-    const next = !night;
+  const toggle = useCallback(() => {
+    const next = document.documentElement.dataset.theme !== "nuit";
     if (next) document.documentElement.dataset.theme = "nuit";
     else delete document.documentElement.dataset.theme;
     try {
@@ -33,7 +38,16 @@ export function ThemeToggle() {
       else localStorage.removeItem(KEY);
     } catch {}
     setNight(next);
-  }
+  }, []);
+
+  return [night, toggle] as const;
+}
+
+// Papier (défaut) ou nuit : encre claire sur papier sombre. Le choix est
+// mémorisé ; un script dans le layout le réapplique avant le premier
+// affichage pour éviter un flash de papier blanc la nuit.
+export function ThemeToggle() {
+  const [night, toggle] = useNightTheme();
 
   return (
     <button
@@ -42,9 +56,9 @@ export function ThemeToggle() {
       aria-pressed={night}
       title={night ? "Revenir au papier" : "Mode nuit"}
       aria-label={night ? "Thème papier" : "Thème nuit"}
-      className="rl-press grid h-[38px] w-[38px] place-items-center rounded-[12px] border border-line-2 bg-surface hover:bg-surface-2"
+      className="icon-btn"
     >
-      {night ? <Sun size={16} /> : <Moon size={16} />}
+      {night ? <Sun size={16} strokeWidth={1.9} /> : <Moon size={16} strokeWidth={1.9} />}
     </button>
   );
 }

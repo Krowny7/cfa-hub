@@ -23,20 +23,22 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
 
   return (
     <svg viewBox={`-104 -16 ${size + 208} ${size + 34}`} width="100%" role="img" aria-label={title} style={{ display: "block", maxWidth: size + 208, margin: "0 auto", overflow: "visible", color: "var(--ink)" }}>
-      {[20, 40, 60, 80, 100].map((lv) => (
-        <path key={lv} d={polyOf(axes.map(() => lv))} fill="none" stroke="var(--line-2)" strokeWidth={1} />
+      {/* grille légère : anneaux intérieurs au filet le plus fin, contour un cran plus net */}
+      <path d={polyOf(axes.map(() => 100))} fill="currentColor" fillOpacity={0.018} stroke="var(--line-2)" strokeWidth={1} />
+      {[25, 50, 75].map((lv) => (
+        <path key={lv} d={polyOf(axes.map(() => lv))} fill="none" stroke="var(--line)" strokeWidth={1} />
       ))}
       {axes.map((a, i) => {
         const [x, y] = P(i, 100);
-        return <line key={i} x1={c} y1={c} x2={f(x)} y2={f(y)} stroke="var(--line-2)" strokeWidth={1} strokeDasharray={a.soon ? "3 4" : undefined} />;
+        return <line key={i} x1={c} y1={c} x2={f(x)} y2={f(y)} stroke="var(--line)" strokeWidth={1} strokeDasharray={a.soon ? "2 4" : undefined} />;
       })}
-      {hasAvg && <path d={polyOf(avg)} fill="currentColor" fillOpacity={0.04} stroke="var(--ink-2)" strokeWidth={1.6} strokeDasharray="5 5" />}
+      {hasAvg && <path d={polyOf(avg)} fill="none" stroke="var(--ink-2)" strokeOpacity={0.8} strokeWidth={1.3} strokeDasharray="4 4" strokeLinejoin="round" />}
       <g className="rl-radar">
-        <path d={polyOf(me)} fill="currentColor" fillOpacity={0.1} />
-        <path d={polyOf(me)} filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinejoin="round" />
+        <path d={polyOf(me)} fill="currentColor" fillOpacity={0.085} />
+        <path d={polyOf(me)} filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round" />
         {me.map((v, i) => {
           const [x, y] = P(i, v);
-          return <circle key={i} cx={f(x)} cy={f(y)} r={3.6} fill="currentColor" />;
+          return <circle key={i} cx={f(x)} cy={f(y)} r={3.4} fill="currentColor" stroke="var(--surface)" strokeWidth={1.6} />;
         })}
       </g>
       {axes.map((a, i) => {
@@ -48,12 +50,12 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
           <g key={i}>
             {/* Tailles des étiquettes en CSS (.rl-radar-l / .rl-radar-v) : plus
                 grandes sur téléphone, où le radar entier est réduit. */}
-            <text x={f(x)} y={f(y + 4)} textAnchor={anchor} className="rl-radar-l" style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fill: a.soon ? "var(--ink-2)" : "var(--ink)" }}>
+            <text x={f(x)} y={f(y + 4)} textAnchor={anchor} className="rl-radar-l" style={{ fontFamily: "var(--font-sans)", fontWeight: 650, fill: a.soon ? "var(--ink-2)" : "var(--ink)" }}>
               {a.label}
               {a.soon ? " · bientôt" : ""}
-              <tspan x={f(x)} dy="1.3em" className="rl-radar-v" style={{ fontFamily: "var(--font-mono)", fontWeight: 400, fill: "var(--ink-2)" }}>
+              <tspan x={f(x)} dy="1.35em" className="rl-radar-v" style={{ fontFamily: "var(--font-mono)", fontWeight: 400, fill: "var(--ink-2)" }}>
                 <tspan style={{ fill: "var(--ink)", fontWeight: 600 }}>{a.me === null ? "—" : a.me}</tspan>
-                {a.avg !== null ? ` · moy. ${a.avg}` : ""}
+                {a.avg !== null ? <tspan fillOpacity={0.85}>{` · moy ${a.avg}`}</tspan> : ""}
               </tspan>
             </text>
           </g>
@@ -66,13 +68,13 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
 /** Légende « toi / moyenne des joueurs » à poser au-dessus d'un radar. */
 export function RadarLegend() {
   return (
-    <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 12.5, color: "var(--ink-2)" }}>
+    <div style={{ display: "flex", gap: 14, alignItems: "center", fontSize: 12, fontWeight: 500, color: "var(--ink-2)" }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <span style={{ width: 18, height: 3, borderRadius: 2, background: "var(--ink)" }} />
+        <span style={{ width: 16, height: 2.5, borderRadius: 2, background: "var(--ink)" }} />
         toi
       </span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <span style={{ width: 18, height: 0, borderTop: "2px dashed var(--ink-2)" }} />
+        <span style={{ width: 16, height: 0, borderTop: "1.5px dashed var(--ink-2)" }} />
         moyenne des joueurs
       </span>
     </div>
