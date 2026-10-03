@@ -96,6 +96,25 @@ export const COURSES: Course[] = [
       { title: "Equity Valuation: Concepts and Basic Tools", start: 3210.6 },
     ],
   },
+  {
+    slug: "derivatives",
+    title: "Derivatives",
+    file: "derivatives",
+    pages: 72,
+    minutes: 63,
+    chapters: [
+      { title: "Derivative Instrument and Derivative Market Features", start: 0 },
+      { title: "Forward Commitment and Contingent Claim Features and Instruments", start: 360.6 },
+      { title: "Derivative Benefits, Risks, and Issuer and Investor Uses", start: 840.2 },
+      { title: "Arbitrage, Replication, and the Cost of Carry in Pricing Derivatives", start: 1195.7 },
+      { title: "Pricing and Valuation of Forward Contracts and for an Underlying with Varying Maturities", start: 1624.1 },
+      { title: "Pricing and Valuation of Futures Contracts", start: 1996.3 },
+      { title: "Pricing and Valuation of Interest Rate and Other Swaps", start: 2295 },
+      { title: "Pricing and Valuation of Options", start: 2646.8 },
+      { title: "Option Replication Using Put–Call Parity", start: 3006.7 },
+      { title: "Valuing a Derivative Using a One-Period Binomial Model", start: 3401.2 },
+    ],
+  },
 ];
 
 export function getCourse(slug: string) {
