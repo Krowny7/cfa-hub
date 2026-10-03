@@ -8,7 +8,8 @@ import { SPACES, activeSpace } from "@/lib/nav";
 const ICONS = { reviser: BookOpen, entrainer: Target, classement: Trophy, moi: User } as const;
 
 // Les quatre espaces, en contrôle segmenté : l'indicateur glisse (avec un
-// léger ressort) sous l'onglet actif.
+// léger ressort) sous l'onglet actif. Il se place par transform (sa largeur
+// est celle d'un onglet : translateX(100 %) = un onglet plus loin).
 export function SpaceNav() {
   const pathname = usePathname() || "/";
   const active = activeSpace(pathname);
@@ -21,8 +22,9 @@ export function SpaceNav() {
           aria-hidden
           className="seg-thumb"
           style={{
-            left: `calc(4px + ${Math.max(ix, 0)} * (100% - 8px) / ${SPACES.length})`,
+            left: 4,
             width: `calc((100% - 8px) / ${SPACES.length})`,
+            transform: `translateX(${Math.max(ix, 0) * 100}%)`,
             opacity: ix >= 0 ? 1 : 0,
           }}
         />

@@ -20,6 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { COURSES } from "@/lib/courses";
+import { signalNavStart } from "@/components/ui/motion/NavProgress";
 
 // Palette de commandes (⌘K / Ctrl+K), à la Raycast : on tape quelques
 // lettres et on saute n'importe où — espaces, pages, fiches, cours.
@@ -106,6 +107,7 @@ export function CommandPalette() {
   const go = (e: Entry | undefined) => {
     if (!e) return;
     setOpen(false);
+    signalNavStart();
     router.push(e.href);
   };
 
@@ -142,11 +144,11 @@ export function CommandPalette() {
       {open && (
         <div className="fixed inset-0 z-[80] grid items-start justify-items-center px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Recherche">
           <div
-            className="absolute inset-0"
+            className="rl-fade absolute inset-0"
             style={{ background: "color-mix(in oklab, var(--paper) 55%, rgba(0,0,0,.28))", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
             onClick={() => setOpen(false)}
           />
-          <div className="menu rl-in relative w-full max-w-[620px] overflow-hidden rounded-[20px] p-0" style={{ animationDuration: ".3s" }}>
+          <div className="menu relative w-full max-w-[620px] overflow-hidden rounded-[20px] p-0">
             <div className="flex items-center gap-3 border-b border-line px-4">
               <Search size={18} className="shrink-0 text-muted" />
               <input

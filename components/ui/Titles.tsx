@@ -45,11 +45,12 @@ export function PageHero({
   );
 }
 
-/** Titre de section : petit anneau d'encre, titre, sous-titre discret, action à droite. */
+/** Titre de section : petit anneau d'encre (qui se trace quand la section
+ * arrive à l'écran), titre, sous-titre discret, action à droite. */
 export function SectionTitle({ title, sub, action, className = "" }: { title: React.ReactNode; sub?: React.ReactNode; action?: React.ReactNode; className?: string }) {
   return (
     <div className={"flex flex-wrap items-baseline gap-x-3 gap-y-1 " + className}>
-      <InkRing size={18} className="rl-deco relative top-[2px] shrink-0 self-center" />
+      <InkRing size={18} className="rl-deco rl-ink-draw relative top-[2px] shrink-0 self-center" />
       <h2 className="t-h2">{title}</h2>
       {sub && <span className="t-small">{sub}</span>}
       {action && <div className="ml-auto self-center">{action}</div>}

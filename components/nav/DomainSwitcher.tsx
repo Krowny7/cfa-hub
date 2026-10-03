@@ -48,7 +48,7 @@ export function DomainSwitcher({ compact = false }: { compact?: boolean }) {
         <ChevronDown size={14} strokeWidth={2.2} className={"text-muted transition-transform duration-300 " + (open ? "rotate-180" : "")} />
       </button>
       {open && (
-        <div role="menu" className="menu rl-in absolute left-0 top-[calc(100%+8px)] z-[60] w-[300px]" style={{ animationDuration: ".28s" }}>
+        <div role="menu" className="menu absolute left-0 top-[calc(100%+8px)] origin-top-left z-[60] w-[300px]">
           <div className="t-eyebrow px-2.5 pb-1.5 pt-2">Domaines</div>
           {DOMAINS.map((d) => {
             const DIcon = ICONS[d.icon];

@@ -50,7 +50,7 @@ export function UserMenu({ tier }: { tier: number }) {
       </button>
 
       {open && (
-        <div role="menu" className="menu rl-in absolute right-0 top-[calc(100%+8px)] z-[60] w-[272px]" style={{ animationDuration: ".28s" }}>
+        <div role="menu" className="menu absolute right-0 top-[calc(100%+8px)] origin-top-right z-[60] w-[272px]">
           <Link href="/moi" role="menuitem" className="menu-item gap-3 py-2.5" onClick={() => setOpen(false)}>
             <RankBadge tier={tier} size={34} glow={false} />
             <span className="min-w-0 flex-1">

@@ -70,6 +70,8 @@ export default function LoginPage() {
   // Vitrine : le titre, LA carte de connexion (seule action en encre), puis
   // les huit rangs sur une carte sombre (le seul moment en couleur) et les
   // quatre espaces posés sur le papier. Sur téléphone : titre → connexion → reste.
+  // Mouvement : l'anneau du logo se trace dans la carte, les rangs montent
+  // un à un de Bronze au Top 10, les espaces suivent en cascade.
   return (
     <div className="rl-wide grid items-start gap-x-14 gap-y-10 pb-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:pt-8">
       <PageHero kicker="Ranked Lobby" title={<>Révise, affronte,<br />monte en rang.</>} className="lg:col-start-1 lg:row-start-1">
@@ -84,7 +86,7 @@ export default function LoginPage() {
       {/* Connexion */}
       <section className="card-hero rl-in grid content-start gap-6 p-7 md:p-9 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-6">
         <div className="grid gap-3">
-          <InkRing size={36} title="Ranked Lobby" className="rl-deco" />
+          <InkRing size={36} title="Ranked Lobby" className="rl-deco rl-ink-draw" />
           <h2 className="t-h1">{t("login.signinTitle")}</h2>
           <p className="t-small">{t("login.signinDesc")}</p>
         </div>
@@ -118,7 +120,7 @@ export default function LoginPage() {
             <h2 className="text-[15px] font-semibold tracking-[-0.01em]">Huit rangs, de Bronze au Top 10</h2>
             <span className="hidden text-[12px] text-[rgba(255,255,255,.55)] sm:inline">un par domaine</span>
           </div>
-          <div className="mt-5 grid grid-cols-4 items-end gap-x-1 gap-y-5 sm:grid-cols-8">
+          <div className="rl-stagger mt-5 grid grid-cols-4 items-end gap-x-1 gap-y-5 sm:grid-cols-8" style={{ ["--rl-stagger-from" as string]: ".25s" }}>
             {TIERS.map((tier, i) => (
               <div key={tier.key} className="grid justify-items-center gap-2">
                 <RankBadge tier={i} size={i >= 4 ? 64 : 56} glow={false} onDark />
@@ -128,7 +130,7 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <ul className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+        <ul className="rl-stagger grid gap-x-8 gap-y-5 sm:grid-cols-2" style={{ ["--rl-stagger-from" as string]: ".5s" }}>
           {spaces.map(({ Icon, title, desc }) => (
             <li key={title} className="flex items-center gap-3.5">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-line bg-surface text-white shadow-[var(--shadow-1)]">

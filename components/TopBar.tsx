@@ -7,6 +7,7 @@ import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
 import { UserMenu } from "@/components/nav/UserMenu";
 import { LoginLink } from "@/components/nav/LoginLink";
+import { NavProgress } from "@/components/ui/motion/NavProgress";
 import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
@@ -15,7 +16,8 @@ import { createClient } from "@/lib/supabase/server";
 // Barre du haut : logo (→ accueil), domaine · programme, les quatre espaces
 // en contrôle segmenté, puis la recherche et le badge de rang du joueur, qui
 // ouvre son menu (Moi, thème nuit, mode discret, réglages, déconnexion).
-// Translucide et collante, avec un léger flou.
+// Translucide et collante, avec un léger flou. Un trait d'encre court sous
+// la barre pendant qu'une page se fait attendre (NavProgress).
 export async function TopBar() {
   const locale = DEFAULT_LOCALE;
   const { user } = await getSessionUserWithProfile();
@@ -67,6 +69,7 @@ export async function TopBar() {
           )}
         </div>
       </div>
+      <NavProgress />
     </header>
   );
 }

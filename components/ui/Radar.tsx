@@ -1,4 +1,5 @@
-// Radar « stats de joueur » : toi (trait d'encre, au pinceau) contre la
+// Radar « stats de joueur » : toi (trait d'encre, au pinceau, qui se trace
+// à l'apparition) contre la
 // moyenne des joueurs (pointillés). Valeurs 0–100 ; null = pas de donnée
 // (compté 0 sur le tracé, affiché « — »). Les axes `soon` (domaines pas encore
 // ouverts) sont en pointillés et marqués « bientôt ». Composant sans état ni
@@ -35,7 +36,7 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
       {hasAvg && <path d={polyOf(avg)} fill="none" stroke="var(--ink-2)" strokeOpacity={0.8} strokeWidth={1.3} strokeDasharray="4 4" strokeLinejoin="round" />}
       <g className="rl-radar">
         <path d={polyOf(me)} fill="currentColor" fillOpacity={0.085} />
-        <path d={polyOf(me)} filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round" />
+        <path d={polyOf(me)} pathLength={100} className="rl-drawline" filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round" />
         {me.map((v, i) => {
           const [x, y] = P(i, v);
           return <circle key={i} cx={f(x)} cy={f(y)} r={3.4} fill="currentColor" stroke="var(--surface)" strokeWidth={1.6} />;

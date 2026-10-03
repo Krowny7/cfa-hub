@@ -52,13 +52,25 @@
   --hero-rim-top: rgba(17, 17, 17, 0.06);
   --hero-rim-bottom: rgba(17, 17, 17, 0.12);
   --hero-glow: rgba(255, 255, 255, 0);
-  /* courbes et durées : une seule famille pour tout le site */
+  /* courbes et durées : une seule famille pour tout le site.
+     dur-1 : pression, couleur · dur-2 : survol, onglets, menus, fondus ·
+     dur-3 : entrées et apparitions · dur-4 : l'encre (tracés, barres,
+     compteurs). Le moteur components/ui/motion/engine.ts lit ces jetons. */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.3, 1.25, 0.45, 1);
   --ease-ink: cubic-bezier(0.45, 0, 0.2, 1);
   --dur-1: 0.16s;
   --dur-2: 0.32s;
   --dur-3: 0.6s;
+  --dur-4: 1s;
+  /* pas d'une cascade (enfants d'un .rl-stagger, cartes qui entrent ensemble) */
+  --stagger: 55ms;
+  /* Quatre gestes d'encre, et seulement eux :
+     tracer   — un trait qui se dessine (progression, anneaux, titres) ;
+     tamponner — un sceau qui se pose, léger rebond (réussites) ;
+     s'étaler — l'encre qui diffuse dans le papier (sélection, tampon) ;
+     sécher   — l'opacité qui arrive vite puis se stabilise (entrées).
+     Les transitions génériques (pages, onglets) restent courtes et sobres. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23n)'/%3E%3C/svg%3E");
   --grain-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23n)'/%3E%3C/svg%3E");
   --underline: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 14' preserveAspectRatio='none'%3E%3Cpath fill='%23141414' d='M 4.0 7.3 L 5.2 7.8 L 6.3 8.0 L 7.5 8.2 L 8.7 8.3 L 9.9 8.4 L 11.0 8.5 L 12.2 8.5 L 13.4 8.6 L 14.6 8.7 L 15.7 8.7 L 16.9 8.7 L 18.1 8.8 L 19.2 8.8 L 20.4 8.9 L 21.6 8.9 L 22.8 9.0 L 23.9 9.0 L 25.1 9.1 L 26.3 9.1 L 27.4 9.2 L 28.6 9.2 L 29.8 9.3 L 31.0 9.4 L 32.1 9.4 L 33.3 9.4 L 34.5 9.4 L 35.7 9.4 L 36.8 9.4 L 38.0 9.4 L 39.2 9.4 L 40.3 9.3 L 41.5 9.3 L 42.7 9.3 L 43.9 9.3 L 45.0 9.2 L 46.2 9.2 L 47.4 9.1 L 48.5 9.1 L 49.7 9.1 L 50.9 9.0 L 52.1 9.0 L 53.2 9.0 L 54.4 8.9 L 55.6 8.9 L 56.7 8.9 L 57.9 8.9 L 59.1 8.9 L 60.3 8.9 L 61.4 8.9 L 62.6 8.9 L 63.8 9.0 L 65.0 9.0 L 66.1 9.1 L 67.3 9.1 L 68.5 9.2 L 69.6 9.2 L 70.8 9.3 L 72.0 9.3 L 73.2 9.4 L 74.3 9.4 L 75.5 9.5 L 76.7 9.5 L 77.8 9.6 L 79.0 9.6 L 80.2 9.7 L 81.4 9.7 L 82.5 9.7 L 83.7 9.7 L 84.9 9.8 L 86.1 9.8 L 87.2 9.8 L 88.4 9.7 L 89.6 9.7 L 90.7 9.7 L 91.9 9.7 L 93.1 9.7 L 94.3 9.6 L 95.4 9.6 L 96.6 9.6 L 97.8 9.5 L 98.9 9.5 L 100.1 9.5 L 101.3 9.5 L 102.5 9.5 L 103.6 9.5 L 104.8 9.5 L 106.0 9.5 L 107.1 9.5 L 108.3 9.5 L 109.5 9.5 L 110.7 9.5 L 111.8 9.6 L 113.0 9.6 L 114.2 9.6 L 115.4 9.6 L 116.5 9.7 L 117.7 9.7 L 118.9 9.7 L 120.0 9.8 L 121.2 9.8 L 122.4 9.8 L 123.6 9.8 L 124.7 9.8 L 125.9 9.8 L 127.1 9.8 L 128.2 9.8 L 129.4 9.8 L 130.6 9.7 L 131.8 9.7 L 132.9 9.7 L 134.1 9.6 L 135.3 9.6 L 136.4 9.6 L 137.6 9.5 L 138.8 9.5 L 140.0 9.5 L 141.1 9.5 L 142.3 9.4 L 143.5 9.4 L 144.6 9.4 L 145.8 9.4 L 147.0 9.4 L 148.2 9.5 L 149.3 9.5 L 150.5 9.5 L 151.7 9.6 L 152.9 9.6 L 154.0 9.6 L 155.2 9.7 L 156.4 9.8 L 157.5 9.8 L 158.7 9.9 L 159.9 9.9 L 161.1 10.0 L 162.2 10.0 L 163.4 10.1 L 164.6 10.1 L 165.7 10.2 L 166.9 10.2 L 168.1 10.2 L 169.3 10.3 L 170.4 10.3 L 171.6 10.3 L 172.8 10.3 L 174.0 10.2 L 175.1 10.2 L 176.3 10.1 L 177.5 10.1 L 178.6 10.0 L 179.8 10.0 L 181.0 9.9 L 182.2 9.8 L 183.3 9.8 L 184.5 9.7 L 185.7 9.7 L 186.8 9.6 L 188.0 9.6 L 189.2 9.5 L 190.4 9.5 L 191.5 9.4 L 192.7 9.4 L 193.9 9.4 L 195.0 9.3 L 196.2 9.3 L 197.4 9.3 L 198.6 9.2 L 199.7 9.2 L 200.9 9.2 L 202.1 9.1 L 203.2 9.1 L 204.4 9.0 L 205.6 9.0 L 206.8 8.9 L 207.9 8.9 L 209.1 8.8 L 210.3 8.8 L 211.5 8.7 L 212.6 8.6 L 213.8 8.5 L 215.0 8.5 L 216.1 8.4 L 217.3 8.3 L 218.5 8.2 L 219.7 8.1 L 220.8 8.0 L 222.0 7.9 L 223.2 7.8 L 224.3 7.7 L 225.5 7.6 L 226.7 7.5 L 227.9 7.5 L 229.0 7.4 L 230.2 7.3 L 231.4 7.2 L 232.5 7.2 L 233.7 7.1 L 234.9 7.1 L 236.1 7.0 L 237.2 7.0 L 238.4 6.9 L 239.6 6.9 L 240.7 6.9 L 241.9 6.8 L 243.1 6.8 L 244.3 6.8 L 245.4 6.7 L 246.6 6.7 L 247.8 6.7 L 248.9 6.6 L 250.1 6.6 L 251.3 6.6 L 252.5 6.5 L 253.6 6.5 L 254.8 6.5 L 256.0 6.4 L 257.2 6.4 L 258.3 6.3 L 259.5 6.3 L 260.7 6.3 L 261.8 6.2 L 263.0 6.2 L 264.2 6.1 L 265.4 6.1 L 266.5 6.1 L 267.7 6.0 L 268.9 6.0 L 270.0 6.0 L 271.2 5.9 L 272.4 5.9 L 273.6 5.9 L 274.7 5.8 L 275.9 5.8 L 277.1 5.8 L 278.2 5.8 L 279.4 5.7 L 280.6 5.7 L 281.8 5.7 L 282.9 5.6 L 284.1 5.6 L 285.3 5.6 L 285.3 5.6 L 284.1 5.5 L 282.9 5.5 L 281.8 5.4 L 280.6 5.4 L 279.4 5.3 L 278.2 5.3 L 277.1 5.2 L 275.9 5.2 L 274.7 5.2 L 273.6 5.1 L 272.4 5.1 L 271.2 5.1 L 270.0 5.0 L 268.9 5.0 L 267.7 5.0 L 266.5 4.9 L 265.4 4.9 L 264.2 4.9 L 263.0 4.8 L 261.8 4.8 L 260.7 4.8 L 259.5 4.8 L 258.3 4.7 L 257.1 4.7 L 256.0 4.7 L 254.8 4.7 L 253.6 4.7 L 252.5 4.6 L 251.3 4.6 L 250.1 4.6 L 248.9 4.6 L 247.8 4.6 L 246.6 4.6 L 245.4 4.6 L 244.3 4.6 L 243.1 4.6 L 241.9 4.6 L 240.7 4.6 L 239.6 4.6 L 238.4 4.6 L 237.2 4.6 L 236.1 4.6 L 234.9 4.6 L 233.7 4.6 L 232.5 4.6 L 231.4 4.6 L 230.2 4.6 L 229.0 4.5 L 227.8 4.5 L 226.7 4.5 L 225.5 4.4 L 224.3 4.4 L 223.2 4.4 L 222.0 4.3 L 220.8 4.3 L 219.6 4.2 L 218.5 4.2 L 217.3 4.2 L 216.1 4.1 L 215.0 4.1 L 213.8 4.1 L 212.6 4.0 L 211.4 4.0 L 210.3 4.0 L 209.1 4.0 L 207.9 4.0 L 206.7 4.0 L 205.6 4.0 L 204.4 4.0 L 203.2 4.0 L 202.1 4.0 L 200.9 4.0 L 199.7 4.0 L 198.5 4.0 L 197.4 4.1 L 196.2 4.1 L 195.0 4.1 L 193.9 4.1 L 192.7 4.1 L 191.5 4.1 L 190.3 4.1 L 189.2 4.1 L 188.0 4.1 L 186.8 4.1 L 185.7 4.0 L 184.5 4.0 L 183.3 4.0 L 182.1 4.0 L 181.0 3.9 L 179.8 3.9 L 178.6 3.9 L 177.4 3.8 L 176.3 3.8 L 175.1 3.8 L 173.9 3.8 L 172.8 3.7 L 171.6 3.8 L 170.4 3.8 L 169.2 3.8 L 168.1 3.8 L 166.9 3.9 L 165.7 3.9 L 164.6 4.0 L 163.4 4.0 L 162.2 4.1 L 161.0 4.1 L 159.9 4.2 L 158.7 4.2 L 157.5 4.3 L 156.4 4.4 L 155.2 4.4 L 154.0 4.4 L 152.8 4.5 L 151.7 4.5 L 150.5 4.5 L 149.3 4.6 L 148.1 4.6 L 147.0 4.6 L 145.8 4.6 L 144.6 4.5 L 143.5 4.5 L 142.3 4.5 L 141.1 4.4 L 139.9 4.4 L 138.8 4.3 L 137.6 4.3 L 136.4 4.2 L 135.3 4.2 L 134.1 4.1 L 132.9 4.0 L 131.7 4.0 L 130.6 3.9 L 129.4 3.9 L 128.2 3.8 L 127.1 3.8 L 125.9 3.7 L 124.7 3.7 L 123.5 3.7 L 122.4 3.6 L 121.2 3.6 L 120.0 3.6 L 118.8 3.6 L 117.7 3.6 L 116.5 3.6 L 115.3 3.5 L 114.2 3.5 L 113.0 3.5 L 111.8 3.5 L 110.6 3.5 L 109.5 3.5 L 108.3 3.5 L 107.1 3.5 L 106.0 3.4 L 104.8 3.4 L 103.6 3.4 L 102.4 3.3 L 101.3 3.3 L 100.1 3.2 L 98.9 3.2 L 97.7 3.1 L 96.6 3.1 L 95.4 3.0 L 94.2 3.0 L 93.1 2.9 L 91.9 2.9 L 90.7 2.8 L 89.5 2.8 L 88.4 2.7 L 87.2 2.7 L 86.0 2.7 L 84.9 2.7 L 83.7 2.7 L 82.5 2.7 L 81.3 2.7 L 80.2 2.7 L 79.0 2.7 L 77.8 2.8 L 76.7 2.8 L 75.5 2.9 L 74.3 2.9 L 73.1 3.0 L 72.0 3.0 L 70.8 3.1 L 69.6 3.1 L 68.4 3.2 L 67.3 3.3 L 66.1 3.3 L 64.9 3.4 L 63.8 3.4 L 62.6 3.5 L 61.4 3.5 L 60.2 3.5 L 59.1 3.6 L 57.9 3.6 L 56.7 3.6 L 55.6 3.6 L 54.4 3.6 L 53.2 3.6 L 52.0 3.6 L 50.9 3.6 L 49.7 3.6 L 48.5 3.6 L 47.4 3.6 L 46.2 3.6 L 45.0 3.6 L 43.8 3.6 L 42.7 3.6 L 41.5 3.6 L 40.3 3.6 L 39.1 3.7 L 38.0 3.7 L 36.8 3.7 L 35.6 3.7 L 34.5 3.8 L 33.3 3.8 L 32.1 3.9 L 30.9 4.0 L 29.8 4.1 L 28.6 4.2 L 27.4 4.3 L 26.3 4.4 L 25.1 4.5 L 23.9 4.6 L 22.7 4.7 L 21.6 4.8 L 20.4 4.9 L 19.2 5.0 L 18.1 5.1 L 16.9 5.2 L 15.7 5.3 L 14.5 5.4 L 13.4 5.5 L 12.2 5.6 L 11.0 5.7 L 9.9 5.9 L 8.7 6.0 L 7.5 6.2 L 6.3 6.4 L 5.2 6.7 L 4.0 7.3 Z'/%3E%3C/svg%3E");
@@ -1158,24 +1170,223 @@ html[data-theme="nuit"] {
     }
   }
 
-  /* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse. */
+  /* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse
+     (un calque translaté, pas un fond qui se repeint). */
   .rl-skel {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
     border-radius: 18px;
-    background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in oklab, var(--surface-2) 45%, var(--surface)) 50%, var(--surface-2) 100%);
-    background-size: 200% 100%;
+    background: var(--surface-2);
+  }
+  .rl-skel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, color-mix(in oklab, var(--surface) 62%, transparent) 50%, transparent 100%);
+    transform: translateX(-100%);
     animation: rlSkel 1.6s ease-in-out infinite;
   }
   @keyframes rlSkel {
-    from {
-      background-position: 100% 0;
-    }
     to {
-      background-position: -100% 0;
+      transform: translateX(100%);
     }
   }
+  /* le squelette n'apparaît que si le chargement dure : pas de flash
+     pour une page qui arrive vite */
+  .rl-loading {
+    animation: rlFade var(--dur-2) 0.18s var(--ease-out) backwards;
+  }
   @media (prefers-reduced-motion: reduce) {
-    .rl-skel {
+    .rl-skel::after {
       animation: none;
+      opacity: 0;
+    }
+  }
+
+  /* ---------- Mouvement : interactions globales ----------
+     Posées sur les classes existantes, dans la couche « components » : une
+     classe utilitaire d'une page garde toujours le dernier mot. On n'anime
+     que transform et opacity. */
+
+  /* Surfaces cliquables (lien ou bouton) : la carte se soulève d'un cheveu
+     au survol et s'enfonce à la pression ; l'ombre plus profonde est un
+     calque dont seule l'opacité change. Les cartes qui ont déjà leur geste
+     (.rl-lift, .card-hover, .rl-press, .rl-row) le gardent. */
+  :is(a, button):is(.card, .card-hero, .card-quiet, .card-ink):not(.rl-lift, .card-hover, .rl-press, .rl-row) {
+    transition:
+      transform var(--dur-2) var(--ease-out),
+      background-color var(--dur-2) var(--ease-out);
+  }
+  :is(a, button):is(.card, .card-hero, .card-quiet, .card-ink):not(.rl-lift, .card-hover, .rl-press, .rl-row):hover {
+    transform: translateY(-2px);
+  }
+  :is(a, button):is(.card, .card-hero, .card-quiet, .card-ink):not(.rl-lift, .card-hover, .rl-press, .rl-row):active {
+    transform: translateY(0) scale(0.992);
+    transition-duration: var(--dur-1);
+  }
+  :is(a, button):is(.card, .card-hero):not(.rl-lift, .card-hover, .rl-press, .rl-row)::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--shadow-2);
+    opacity: 0;
+    transition: opacity var(--dur-2) var(--ease-out);
+  }
+  :is(a, button).card-hero:not(.rl-lift, .card-hover, .rl-press, .rl-row)::after {
+    box-shadow: var(--shadow-3);
+  }
+  :is(a, button):is(.card, .card-hero):not(.rl-lift, .card-hover, .rl-press, .rl-row):hover::after {
+    opacity: 1;
+  }
+
+  /* Flèches d'action : elles avancent d'un pas au survol de leur bouton,
+     lien ou carte (icônes lucide). */
+  :is(.btn, .ink-link, .chip, .menu-item, a.card, a.card-hero, a.card-quiet, a.card-ink, .rl-press) :is(.lucide-arrow-right, .lucide-chevron-right, .lucide-arrow-up-right, .lucide-move-right):not([class*="translate"]) {
+    transition: transform var(--dur-2) var(--ease-spring);
+  }
+  :is(.btn, .ink-link, .chip, .menu-item, a.card, a.card-hero, a.card-quiet, a.card-ink, .rl-press):hover :is(.lucide-arrow-right, .lucide-chevron-right, .lucide-move-right):not([class*="translate"]) {
+    transform: translateX(3px);
+  }
+  :is(.btn, .ink-link, .chip, .menu-item, a.card, a.card-hero, a.card-quiet, a.card-ink, .rl-press):hover .lucide-arrow-up-right:not([class*="translate"]) {
+    transform: translate(2px, -2px);
+  }
+
+  /* S'étaler : une pastille qui devient active se remplit d'encre depuis
+     son centre (calque transformé) ; au repos, rendu identique. */
+  .chip {
+    position: relative;
+    isolation: isolate;
+  }
+  .chip::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--ink);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      transform var(--dur-2) var(--ease-out),
+      opacity var(--dur-1) ease;
+    pointer-events: none;
+  }
+  .chip.chip-active::before {
+    opacity: 1;
+    transform: none;
+  }
+  .chip.chip-active,
+  .chip.chip-active:hover {
+    background-color: transparent;
+  }
+
+  /* Pastilles, onglets, interrupteurs : un petit enfoncement à la pression */
+  :is(a, button, label).chip {
+    transition:
+      transform var(--dur-1) var(--ease-spring),
+      background-color var(--dur-1) ease,
+      border-color var(--dur-1) ease,
+      color var(--dur-1) ease;
+  }
+  :is(a, button, label).chip:active {
+    transform: scale(0.96);
+  }
+  .seg-item {
+    transition:
+      color 0.2s ease,
+      transform var(--dur-1) var(--ease-spring);
+  }
+  .seg-item:active {
+    transform: scale(0.96);
+  }
+  /* l'indicateur glisse aussi quand il est placé par transform (barres de
+     navigation) ; les pages qui le placent par left / width gardent leur
+     transition */
+  .seg-thumb {
+    transition:
+      left 0.42s var(--ease-spring),
+      width 0.42s var(--ease-spring),
+      transform 0.42s var(--ease-spring),
+      opacity var(--dur-2) ease;
+  }
+  /* Menus flottants : ils tombent de 4 px et se déplient depuis le haut */
+  .menu {
+    transform-origin: 50% 0;
+    animation: rlMenu var(--dur-2) var(--ease-out) backwards;
+  }
+  @keyframes rlMenu {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.97);
+    }
+  }
+
+  /* Liens soulignés au pinceau : le trait se redessine au survol */
+  .ghost-btn:hover,
+  .ink-link:hover {
+    animation: rlInkLink 0.5s var(--ease-ink);
+  }
+  @keyframes rlInkLink {
+    from {
+      background-size: 0% 5px;
+    }
+  }
+
+  /* Barres de progression : l'encre se remplit de la gauche à l'apparition
+     (le moteur la fait attendre qu'elle soit à l'écran) */
+  .ink-bar > span {
+    animation: rlFill var(--dur-4) var(--ease-out) backwards;
+  }
+
+  /* Changement de page (app/template.tsx) : la nouvelle page « sèche »
+     sur le papier — l'opacité arrive vite puis se stabilise, 6 px de montée. Une page qui orchestre déjà son entrée (.rl-in,
+     .rl-pop) ne reçoit qu'un fondu court, pour ne pas doubler le geste ; une
+     page qui contient un élément fixe n'est jamais translatée (une
+     transformation sur un ancêtre déplacerait cet élément le temps de
+     l'animation). */
+  .rl-route > * {
+    animation: rlRoute var(--dur-3) var(--ease-out) backwards;
+  }
+  .rl-route > :where(:has(.rl-in, .rl-pop, .rl-stagger)),
+  .rl-route > :where(:has([class~="fixed"], [class*=":fixed"], [style*="position:fixed"], [style*="position: fixed"])) {
+    animation-name: rlFade;
+    animation-duration: var(--dur-2);
+  }
+  .rl-route > .rl-loading {
+    animation: rlFade var(--dur-2) 0.18s var(--ease-out) backwards;
+  }
+  @keyframes rlRoute {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    35% {
+      opacity: 0.82;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip::before {
+      transition: none;
+    }
+    .rl-route > *,
+    .rl-loading,
+    .menu,
+    .ink-bar > span,
+    .ghost-btn:hover,
+    .ink-link:hover {
+      animation: none;
+    }
+    :is(a, button):is(.card, .card-hero, .card-quiet, .card-ink):hover,
+    :is(a, button):is(.card, .card-hero, .card-quiet, .card-ink):active,
+    :is(a, button, label).chip:active,
+    .seg-item:active,
+    :hover :is(.lucide-arrow-right, .lucide-chevron-right, .lucide-arrow-up-right, .lucide-move-right) {
+      transform: none;
     }
   }
 }
@@ -1250,47 +1461,134 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
 .rl-row:hover {
   background-color: var(--surface-2);
 }
+/* Entrées. Le moteur (components/ui/motion/engine.ts, monté par
+   app/template.tsx) fait attendre celles qui naissent hors de l'écran : elles
+   jouent quand on les fait défiler jusqu'à elles. Sans le moteur, elles
+   jouent tout de suite ; l'état au repos est toujours l'état visible. */
 .rl-in {
   animation: rlIn var(--dur-3) var(--ease-out) backwards;
 }
+/* Sécher : l'encre arrive vite (82 % au tiers du temps) puis se stabilise
+   lentement, comme un trait qui passe du brillant au mat. */
 @keyframes rlIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
+  }
+  35% {
+    opacity: 0.82;
   }
 }
+/* fondu seul (voile, contenu qui ne doit pas bouger) */
+.rl-fade {
+  animation: rlFade var(--dur-3) var(--ease-out) backwards;
+}
+@keyframes rlFade {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.82;
+  }
+}
+/* Cascade : les enfants entrent l'un après l'autre (pas --stagger, plafonné
+   à 12). Un enfant .rl-in ne rejoue pas son entrée. */
+.rl-stagger > * {
+  animation: rlIn var(--dur-3) var(--ease-out) backwards;
+  animation-delay: calc(var(--rl-i, 0) * var(--stagger) + var(--rl-stagger-from, 0s));
+}
+.rl-stagger > :nth-child(2) { --rl-i: 1; }
+.rl-stagger > :nth-child(3) { --rl-i: 2; }
+.rl-stagger > :nth-child(4) { --rl-i: 3; }
+.rl-stagger > :nth-child(5) { --rl-i: 4; }
+.rl-stagger > :nth-child(6) { --rl-i: 5; }
+.rl-stagger > :nth-child(7) { --rl-i: 6; }
+.rl-stagger > :nth-child(8) { --rl-i: 7; }
+.rl-stagger > :nth-child(9) { --rl-i: 8; }
+.rl-stagger > :nth-child(10) { --rl-i: 9; }
+.rl-stagger > :nth-child(11) { --rl-i: 10; }
+.rl-stagger > :nth-child(n + 12) { --rl-i: 11; }
 .rl-in .rl-in,
-.rl-rv .rl-in {
+.rl-rv .rl-in,
+.rl-stagger > * .rl-in {
   animation: none;
 }
-.rl-pop {
-  animation: rlPop 0.6s var(--ease-spring) backwards;
+/* Tamponner : le sceau descend (un peu trop grand), s'écrase d'un cheveu
+   et se pose. .rl-pop (badges, gains) prend ce geste ; .rl-stamp est son
+   nom explicite pour une réussite. Avec InkStamp, une tache d'encre
+   s'étale dessous puis sèche (.rl-stamp-blot). */
+.rl-pop,
+.rl-stamp {
+  animation: rlPop var(--dur-3) var(--ease-out) backwards;
 }
 @keyframes rlPop {
-  from {
+  0% {
     opacity: 0;
-    transform: scale(0.86);
+    transform: scale(1.3);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(0.95);
+  }
+  72% {
+    transform: scale(1.015);
   }
 }
+.rl-stamp-blot {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  /* une flaque au bord net, plus chargée au bord (l'encre qui boit le
+     papier), au contour irrégulier (#rl-ink) */
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--ink) 16%, transparent) 0%, color-mix(in oklab, var(--ink) 20%, transparent) 64%, color-mix(in oklab, var(--ink) 12%, transparent) 76%, transparent 80%);
+  filter: url(#rl-ink);
+  opacity: 0;
+  pointer-events: none;
+  animation: rlBlot var(--dur-4) 0.24s var(--ease-out);
+}
+@keyframes rlBlot {
+  from {
+    opacity: 1;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+/* Barre qui pousse : par transform (plus de width animée). Dans une
+   .ink-bar, l'encre glisse depuis la gauche, bouts arrondis intacts. */
 .rl-grow {
-  animation: rlGrow 0.9s var(--ease-out) backwards;
+  transform-origin: 0 50%;
+  animation: rlGrow var(--dur-4) var(--ease-out) backwards;
 }
 @keyframes rlGrow {
   from {
-    width: 0;
+    transform: scaleX(0);
+  }
+}
+.ink-bar > .rl-grow {
+  animation-name: rlFill;
+}
+@keyframes rlFill {
+  from {
+    transform: translateX(-100%);
   }
 }
 .rl-barup {
   transform-origin: bottom;
-  animation: rlBarUp 0.7s var(--ease-out) backwards;
+  animation: rlBarUp var(--dur-3) var(--ease-out) backwards;
 }
 @keyframes rlBarUp {
   from {
     transform: scaleY(0);
   }
 }
+/* L'encre qui se dessine : halo et anneau d'objectif (masque tracé), lignes
+   (pointillé), trait sous un titre (rognage), anneau du logo (balayage
+   circulaire). Petits SVG : rien ne se remet en page. */
 .rl-halo {
-  animation: rlHalo 1.2s var(--ease-ink) backwards;
+  animation: rlHalo var(--dur-4) var(--ease-ink) backwards;
 }
 @keyframes rlHalo {
   from {
@@ -1300,7 +1598,7 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
 /* l'enso de fond apparaît en fondu (il ne se dessine plus : un tracé de
    moins qui bouge en même temps que le titre) */
 .rl-enso {
-  animation: rlEnso 1.4s var(--ease-out) backwards;
+  animation: rlEnso var(--dur-4) var(--ease-out) backwards;
 }
 @keyframes rlEnso {
   from {
@@ -1310,7 +1608,7 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
 .rl-radar {
   transform-box: fill-box;
   transform-origin: center;
-  animation: rlRadar 0.8s 0.15s var(--ease-out) backwards;
+  animation: rlRadar var(--dur-3) 0.15s var(--ease-out) backwards;
 }
 @keyframes rlRadar {
   from {
@@ -1320,7 +1618,7 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
 }
 .rl-drawline {
   stroke-dasharray: 100;
-  animation: rlDrawLine 1.2s 0.2s var(--ease-ink) backwards;
+  animation: rlDrawLine var(--dur-4) 0.2s var(--ease-ink) backwards;
 }
 @keyframes rlDrawLine {
   from {
@@ -1328,7 +1626,7 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
   }
 }
 .rl-underline {
-  animation: rlUnderline 0.8s 0.35s cubic-bezier(0.6, 0, 0.25, 1) backwards;
+  animation: rlUnderline var(--dur-3) 0.3s cubic-bezier(0.6, 0, 0.25, 1) backwards;
 }
 @keyframes rlUnderline {
   from {
@@ -1338,13 +1636,30 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
     clip-path: inset(0 0 0 0);
   }
 }
+/* Anneau du logo (InkRing) qui se trace dans le sens du pinceau : départ en
+   haut, sens horaire. Au repos le masque couvre tout le cercle. */
+@property --rl-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 360deg;
+}
+.rl-ink-draw {
+  -webkit-mask-image: conic-gradient(from -16deg, #000 var(--rl-sweep), transparent 0);
+  mask-image: conic-gradient(from -16deg, #000 var(--rl-sweep), transparent 0);
+  animation: rlSweep var(--dur-4) 0.1s var(--ease-ink) backwards;
+}
+@keyframes rlSweep {
+  from {
+    --rl-sweep: 0deg;
+  }
+}
 @property --rl-n {
   syntax: "<integer>";
   inherits: false;
   initial-value: 0;
 }
 .rl-count {
-  animation: rlCount 1.1s 0.15s var(--ease-out) both;
+  animation: rlCount var(--dur-4) 0.15s var(--ease-out) both;
   counter-reset: rln var(--rl-n);
 }
 .rl-count::after {
@@ -1375,9 +1690,78 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
     transform: none;
   }
 }
+/* Petit rebond d'une icône qui devient active (barre du bas) */
+.rl-nudge {
+  animation: rlNudge var(--dur-3) var(--ease-spring);
+}
+@keyframes rlNudge {
+  35% {
+    transform: scale(0.84);
+  }
+}
+/* Contenu qui change en place (components/ui/motion/Swap.tsx) : il entre
+   depuis le côté du changement (--rl-dx, --rl-dy posés par le composant) */
+.rl-swap {
+  animation: rlSwap var(--dur-2) var(--ease-out) backwards;
+}
+@keyframes rlSwap {
+  0% {
+    opacity: 0;
+    transform: translate(var(--rl-dx, 0px), var(--rl-dy, 6px));
+  }
+  35% {
+    opacity: 0.82;
+  }
+}
+
+/* Trait de chargement sous la barre du haut (components/ui/motion/
+   NavProgress.tsx) : l'encre avance vite puis ralentit tant que la page
+   suivante se fait attendre, file au bout et s'efface à l'arrivée. */
+.rl-navbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rl-navbar > i {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--ink) 0%, var(--ink) 88%, transparent 100%);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  opacity: 0;
+}
+.rl-navbar[data-state="load"] > i {
+  opacity: 1;
+  animation: rlNavLoad 12s cubic-bezier(0.08, 0.75, 0.12, 1) forwards;
+  transition: opacity var(--dur-1) ease;
+}
+.rl-navbar[data-state="done"] > i {
+  transform: scaleX(1);
+  opacity: 0;
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    opacity var(--dur-2) var(--dur-2) ease;
+}
+@keyframes rlNavLoad {
+  from {
+    transform: scaleX(0.05);
+  }
+  to {
+    transform: scaleX(0.92);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rl-in,
+  .rl-fade,
+  .rl-stagger > *,
   .rl-pop,
+  .rl-stamp,
+  .rl-stamp-blot,
   .rl-grow,
   .rl-barup,
   .rl-halo,
@@ -1385,8 +1769,11 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
   .rl-radar,
   .rl-drawline,
   .rl-underline,
+  .rl-ink-draw,
   .rl-count,
-  .rl-rv {
+  .rl-rv,
+  .rl-nudge,
+  .rl-swap {
     animation: none !important;
   }
   /* sans animation, le compteur affiche directement sa valeur finale */
@@ -1400,6 +1787,26 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
   .btn-on-ink:hover {
     transform: none;
   }
+  .seg-thumb {
+    transition: none !important;
+  }
+  /* le trait de chargement reste une information : posé, sans course */
+  .rl-navbar[data-state="load"] > i {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.35;
+  }
+}
+
+/* Captures et tests (?mouvement=off, navigateur sans tête : voir
+   app/template.tsx) : chaque geste est directement dans son état posé. */
+html[data-rl-motion="off"] .rl-route,
+html[data-rl-motion="off"] .rl-route *,
+html[data-rl-motion="off"] .rl-route *::before,
+html[data-rl-motion="off"] .rl-route *::after {
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
 }
 
 /* Étiquettes du radar (components/ui/Radar.tsx) : le SVG se réduit avec

@@ -9,7 +9,8 @@ const ICONS = { reviser: BookOpen, entrainer: Target, classement: Trophy, moi: U
 
 // Barre du bas (mobile) : flottante et translucide, l'accueil puis les quatre
 // espaces ; une pastille d'encre glisse sous l'onglet actif (même geste que
-// le contrôle segmenté de la barre du haut).
+// le contrôle segmenté de la barre du haut), placée par transform ; l'icône
+// qui devient active fait un petit rebond.
 export function MobileBottomNav() {
   const pathname = usePathname() || "/";
   if (pathname.startsWith("/login") || pathname.startsWith("/share")) return null;
@@ -36,13 +37,13 @@ export function MobileBottomNav() {
     >
       <span
         aria-hidden
-        className="absolute bottom-1.5 top-1.5 rounded-[16px] bg-white"
+        className="absolute bottom-1.5 top-1.5 rounded-[16px] bg-white transition-[transform,opacity] duration-[420ms] ease-[var(--ease-spring)] motion-reduce:transition-none"
         style={{
-          left: `calc(6px + ${Math.max(ix, 0)} * (100% - 12px) / ${n})`,
+          left: 6,
           width: `calc((100% - 12px) / ${n})`,
+          transform: `translateX(${Math.max(ix, 0) * 100}%)`,
           opacity: ix >= 0 ? 1 : 0,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.14), 0 4px 12px -4px rgba(0,0,0,.35)",
-          transition: "left .42s var(--ease-spring), opacity .2s ease",
         }}
       />
       {items.map(({ key, label, href, Icon, on }) => (
@@ -55,7 +56,7 @@ export function MobileBottomNav() {
             (on ? "font-semibold text-black" : "font-medium text-muted")
           }
         >
-          <Icon size={19} strokeWidth={on ? 2.2 : 1.8} />
+          <Icon size={19} strokeWidth={on ? 2.2 : 1.8} className={on ? "rl-nudge" : undefined} />
           <span className="max-w-full truncate px-0.5">{label}</span>
         </Link>
       ))}
