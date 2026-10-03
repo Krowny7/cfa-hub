@@ -46,15 +46,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "if(localStorage.getItem('cfa_discreet')==='1')d.dataset.discreet='1';}catch(e){}",
           }}
         />
-        {/* Cache le premier affichage le temps de savoir si l'intro joue. */}
+        {/* Cache le premier affichage le temps de savoir si l'intro joue, et
+            commence à télécharger le film de l'intro sans attendre React
+            (adopté ensuite par components/Splash.tsx via window.__rlIntro). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){var seen=false;" +
+              "(function(){var seen=false,q=location.search;" +
               "try{seen=sessionStorage.getItem('rl-splash-seen')==='1';}catch(e){}" +
-              "if(seen&&!/[?&]splash=/.test(location.search))return;" +
+              "if(seen&&!/[?&]splash=/.test(q))return;" +
+              "if(/[?&]splash=(off|0)(&|$)/.test(q))return;" +
               "var d=document.documentElement;d.classList.add('rl-booting');" +
-              "setTimeout(function(){d.classList.remove('rl-booting');},6000);})();",
+              "setTimeout(function(){d.classList.remove('rl-booting');},6000);" +
+              "try{if(/[?&]splash=svg/.test(q)||matchMedia('(prefers-reduced-motion: reduce)').matches)return;" +
+              "var v=document.createElement('video');v.muted=true;v.defaultMuted=true;v.playsInline=true;" +
+              "v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';" +
+              "v.src='/intro/encre-'+(innerWidth>=innerHeight?'land':'port')+'.mp4';v.load();window.__rlIntro=v;}catch(e){}})();",
           }}
         />
         <Providers>

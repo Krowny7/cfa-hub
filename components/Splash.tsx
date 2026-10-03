@@ -15,15 +15,25 @@ import {
 
 /*
  * Intro « L'encre » — joue une fois par session de navigation, par-dessus la
- * première page chargée :
- *   1. une goutte d'encre tombe et éclabousse le papier ;
- *   2. le pinceau trace l'anneau (gouttelettes projetées à chaque angle,
- *      fibres de pinceau sec à la fin) ;
- *   3. « RANKED LOBBY » se peint d'un large coup de pinceau, le slogan s'écrit ;
- *   4. l'anneau s'envole et se pose sur le logo de la barre du haut pendant que
- *      le papier s'efface et révèle le site.
- * Un clic, une touche ou « Passer » saute directement à l'étape 4.
- * `?splash=1` la rejoue, `?splash=off` la coupe.
+ * première page chargée.
+ *
+ * Version film (par défaut) : un petit film à l'encre calculé image par image
+ * (public/intro/encre-*.mp4, paysage et portrait). Une goutte tombe au ralenti
+ * et éclabousse le papier, le pinceau trace l'anneau, « RANKED LOBBY » est
+ * peint d'un geste par ligne, le slogan s'écrit. La vidéo est demandée dès le
+ * chargement de la page par le script de démarrage de app/layout.tsx
+ * (window.__rlIntro), puis adoptée ici. À la fin, un calque de l'anneau
+ * identique à celui du film (public/intro/ring-*.png, utilisé comme masque)
+ * prend le relais et s'envole vers le logo de la barre du haut pendant que le
+ * papier s'efface.
+ *
+ * Version dessinée (secours) : l'ancienne animation SVG + CSS. Elle joue si la
+ * vidéo ne démarre pas à temps (réseau lent, lecture automatique refusée), et
+ * sert aussi d'image fixe quand l'utilisateur préfère réduire les animations.
+ *
+ * Un clic, une touche ou « Passer » saute à l'envol de l'anneau.
+ * `?splash=1` la rejoue, `?splash=svg` force la version dessinée,
+ * `?splash=off` la coupe.
  */
 
 const SEEN_KEY = "rl-splash-seen";
@@ -43,6 +53,65 @@ const T = {
 };
 const FLIGHT_MS = 760;
 const FADE_MS = 520;
+
+// Films : boîte du masque de l'anneau en pixels vidéo (x, y, côté — le logo
+// 240 × 240 plus 24 unités de marge de chaque côté) et zone utile à garder
+// entièrement visible (centre x, centre y, largeur, hauteur).
+type Film = { src: string; mask: string; ow: number; oh: number; box: [number, number, number]; content: [number, number, number, number] };
+const FILMS: Record<"land" | "port", Film> = {
+  land: { src: "/intro/encre-land.mp4", mask: "/intro/ring-land.png", ow: 1920, oh: 1080, box: [238.9, 252.5, 575.1], content: [960, 540, 1300, 500] },
+  port: { src: "/intro/encre-port.mp4", mask: "/intro/ring-port.png", ow: 1080, oh: 1920, box: [227.0, 434.0, 626.1], content: [540, 945, 760, 920] },
+};
+const MASK_MARGIN = 24;
+const START_TIMEOUT_MS = 1700;
+const STALL_MS = 1200;
+
+declare global {
+  interface Window {
+    __rlIntro?: HTMLVideoElement;
+  }
+}
+
+function makeIntroVideo() {
+  const v = document.createElement("video");
+  v.muted = true;
+  v.defaultMuted = true;
+  v.playsInline = true;
+  v.setAttribute("playsinline", "");
+  v.setAttribute("muted", "");
+  v.preload = "auto";
+  v.src = FILMS[window.innerWidth >= window.innerHeight ? "land" : "port"].src;
+  return v;
+}
+
+function releaseVideo(v: HTMLVideoElement | null | undefined) {
+  if (!v) return;
+  try {
+    v.pause();
+    v.removeAttribute("src");
+    v.load();
+  } catch {
+    // déjà libérée
+  }
+  v.remove();
+}
+
+// Taille et position du film : il couvre l'écran tant que la zone utile reste
+// entière ; sinon il rétrécit, se centre sur elle et ses bords se fondent dans
+// le papier.
+function placeFilm(f: Film) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const [cx, cy, cw, ch] = f.content;
+  const s = Math.min(Math.max(W / f.ow, H / f.oh), (W - 32) / cw, (H - 32) / ch);
+  const dw = f.ow * s;
+  const dh = f.oh * s;
+  let left = W / 2 - cx * s;
+  let top = H / 2 - cy * s;
+  if (dw >= W) left = Math.min(0, Math.max(W - dw, left));
+  if (dh >= H) top = Math.min(0, Math.max(H - dh, top));
+  return { s, left, top, dw, dh, covers: dw >= W - 0.5 && dh >= H - 0.5 };
+}
 
 function dropCover() {
   document.documentElement.classList.remove("rl-booting");
@@ -174,6 +243,16 @@ const CSS = `
 @keyframes rliBreathe{0%,100%{transform:scale(1)}45%{transform:scale(1.018)}}
 @keyframes rliWrite{from{width:0}}
 @media (prefers-reduced-motion:reduce){.rli *{animation:none!important}}
+.rli-v .rli-bg{background-image:none}
+.rli-v .rli-bg::after{display:none}
+.rli-film{position:absolute;inset:0;overflow:hidden}
+.rli-film video{position:absolute;max-width:none;opacity:0;transition:opacity .25s ease}
+.rli-film video.is-on{opacity:1}
+.rli-film video.rli-feather{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);mask-composite:intersect}
+html[data-theme="nuit"] .rli-film{filter:invert(1) contrast(.896) brightness(1.056)}
+.rli-ring-film{position:absolute;left:0;top:0;opacity:0;background:var(--ink);-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat;will-change:transform}
+.rli-v.rli-out .rli-film{opacity:0;transition:opacity .22s ease}
+.rli-v.rli-out .rli-bg{opacity:0;transition:opacity .3s ease .04s}
 `;
 
 function Drops({ list }: { list: Drop[] }) {
@@ -200,8 +279,13 @@ function Drops({ list }: { list: Drop[] }) {
 
 export function Splash() {
   const [phase, setPhase] = useState<"off" | "on" | "out">("off");
+  const [mode, setMode] = useState<"film" | "svg">("film");
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const ringRef = useRef<SVGSVGElement | null>(null);
+  const filmBoxRef = useRef<HTMLDivElement | null>(null);
+  const filmRingRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const modeRef = useRef<"film" | "svg">("film");
   const timers = useRef<number[]>([]);
   const leaving = useRef(false);
 
@@ -216,54 +300,89 @@ export function Splash() {
     if (param === "off" || param === "0" || (!param && seen)) {
       markSeen();
       dropCover();
+      releaseVideo(window.__rlIntro);
+      window.__rlIntro = undefined;
       return;
     }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const m = reduce || param === "svg" ? "svg" : "film";
+    if (m === "svg") {
+      releaseVideo(window.__rlIntro);
+      window.__rlIntro = undefined;
+    }
+    modeRef.current = m;
+    setMode(m);
     setPhase("on");
   }, []);
 
-  // Étape 4 : l'anneau rejoint le logo de la barre du haut, le papier s'efface.
+  // L'anneau rejoint le logo de la barre du haut, le papier s'efface.
   const leave = useCallback(() => {
     if (leaving.current) return;
     leaving.current = true;
     markSeen();
-    const ring = ringRef.current;
-    if (ring) {
-      // Si on saute l'intro en cours de route, l'anneau finit de se dessiner d'un coup
-      ring.getAnimations({ subtree: true }).forEach((a) => {
-        try {
-          a.finish();
-        } catch {
-          // animation infinie : rien à terminer
+    const to = document.querySelector("[data-rl-logo]")?.getBoundingClientRect();
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (modeRef.current === "film") {
+      // Le calque de l'anneau, identique à celui du film, prend le relais de la vidéo
+      const el = filmRingRef.current;
+      const ended = !!videoRef.current?.ended;
+      if (el) {
+        el.animate([{ opacity: ended ? 1 : 0 }, { opacity: 1 }], { duration: ended ? 1 : 200, fill: "forwards" });
+        const from = el.getBoundingClientRect();
+        if (to && to.width > 0 && from.width > 0 && !reduce) {
+          const s = (to.width * (240 + 2 * MASK_MARGIN)) / 240 / from.width;
+          const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+          const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+          el.animate(
+            [{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
+            { duration: FLIGHT_MS, delay: ended ? 60 : 200, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" }
+          );
+        } else {
+          el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, delay: 200, fill: "forwards" });
         }
-      });
-      const target = document.querySelector("[data-rl-logo]");
-      const to = target?.getBoundingClientRect();
-      const from = ring.getBoundingClientRect();
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (to && to.width > 0 && from.width > 0 && !reduce) {
-        const s = to.width / from.width;
-        const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-        const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-        ring.animate(
-          [{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
-          { duration: FLIGHT_MS, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" }
-        );
-      } else {
-        ring.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" });
+      }
+    } else {
+      const ring = ringRef.current;
+      if (ring) {
+        // Si on saute l'intro en cours de route, l'anneau finit de se dessiner d'un coup
+        ring.getAnimations({ subtree: true }).forEach((a) => {
+          try {
+            a.finish();
+          } catch {
+            // animation infinie : rien à terminer
+          }
+        });
+        const from = ring.getBoundingClientRect();
+        if (to && to.width > 0 && from.width > 0 && !reduce) {
+          const s = to.width / from.width;
+          const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+          const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+          ring.animate(
+            [{ transform: "translate(0,0) scale(1)" }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }],
+            { duration: FLIGHT_MS, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" }
+          );
+        } else {
+          ring.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" });
+        }
       }
     }
     setPhase("out");
-    timers.current.push(window.setTimeout(() => setPhase("off"), Math.max(FLIGHT_MS, FADE_MS + 180) + 60));
+    timers.current.push(
+      window.setTimeout(() => {
+        setPhase("off");
+        releaseVideo(videoRef.current);
+        videoRef.current = null;
+      }, Math.max(FLIGHT_MS + 200, FADE_MS + 180) + 60)
+    );
   }, []);
 
+  // Pendant l'intro : la page ne défile pas, une touche saute l'intro
   useEffect(() => {
     if (phase !== "on") return;
     dropCover();
     const html = document.documentElement;
     const previous = html.style.overflow;
     html.style.overflow = "hidden";
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    timers.current.push(window.setTimeout(leave, reduce ? 1300 : T.handoff * 1000));
     const onKey = () => leave();
     window.addEventListener("keydown", onKey);
     return () => {
@@ -272,7 +391,111 @@ export function Splash() {
     };
   }, [phase, leave]);
 
-  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+  // Version dessinée : l'envol part à heure fixe
+  useEffect(() => {
+    if (phase !== "on" || mode !== "svg") return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const t = window.setTimeout(leave, reduce ? 1300 : T.handoff * 1000);
+    return () => window.clearTimeout(t);
+  }, [phase, mode, leave]);
+
+  // Version film : adopte la vidéo et la lance dès qu'elle peut aller au bout ;
+  // sinon, bascule sur la version dessinée.
+  useEffect(() => {
+    if (phase !== "on" || mode !== "film") return;
+    const box = filmBoxRef.current;
+    const ringEl = filmRingRef.current;
+    if (!box || !ringEl) return;
+    const video = window.__rlIntro ?? makeIntroVideo();
+    window.__rlIntro = undefined;
+    videoRef.current = video;
+    const film = FILMS[video.src.includes("port") ? "port" : "land"];
+    box.appendChild(video);
+    ringEl.style.setProperty("--m", `url(${film.mask})`);
+
+    const place = () => {
+      const g = placeFilm(film);
+      Object.assign(video.style, { left: `${g.left}px`, top: `${g.top}px`, width: `${g.dw}px`, height: `${g.dh}px` });
+      video.classList.toggle("rli-feather", !g.covers);
+      const [bx, by, bs] = film.box;
+      Object.assign(ringEl.style, { left: `${g.left + bx * g.s}px`, top: `${g.top + by * g.s}px`, width: `${bs * g.s}px`, height: `${bs * g.s}px` });
+    };
+    place();
+    window.addEventListener("resize", place);
+
+    let started = false;
+    let stall = 0;
+    let startTimer = 0;
+    const fallback = () => {
+      if (started) {
+        leave();
+        return;
+      }
+      releaseVideo(video);
+      videoRef.current = null;
+      modeRef.current = "svg";
+      setMode("svg");
+    };
+    const start = () => {
+      if (started) return;
+      started = true;
+      window.clearTimeout(startTimer);
+      video.play().catch(() => {
+        started = false;
+        fallback();
+      });
+    };
+    // secondes déjà téléchargées devant la tête de lecture
+    const ahead = () => {
+      for (let i = 0; i < video.buffered.length; i++) {
+        if (video.buffered.start(i) <= video.currentTime + 0.05) return video.buffered.end(i) - video.currentTime;
+      }
+      return 0;
+    };
+    const ready = () => video.readyState >= 4 || (video.readyState >= 3 && ahead() >= 2.5);
+    const onProgress = () => {
+      if (!started && ready()) start();
+    };
+    const onPlaying = () => {
+      video.classList.add("is-on");
+      window.clearTimeout(stall);
+    };
+    const onWaiting = () => {
+      window.clearTimeout(stall);
+      stall = window.setTimeout(leave, STALL_MS);
+    };
+    const events: [string, () => void][] = [
+      ["canplaythrough", onProgress],
+      ["progress", onProgress],
+      ["loadeddata", onProgress],
+      ["playing", onPlaying],
+      ["waiting", onWaiting],
+      ["ended", leave],
+      ["error", fallback],
+    ];
+    events.forEach(([e, f]) => video.addEventListener(e, f));
+    startTimer = window.setTimeout(() => {
+      if (started) return;
+      if (video.readyState >= 3) start();
+      else fallback();
+    }, START_TIMEOUT_MS);
+    if (video.error) fallback();
+    else if (ready()) start();
+    return () => {
+      window.removeEventListener("resize", place);
+      events.forEach(([e, f]) => video.removeEventListener(e, f));
+      window.clearTimeout(startTimer);
+      window.clearTimeout(stall);
+    };
+  }, [phase, mode, leave]);
+
+  useEffect(
+    () => () => {
+      timers.current.forEach((t) => window.clearTimeout(t));
+      releaseVideo(videoRef.current);
+    },
+    []
+  );
 
   if (phase === "off") return null;
 
@@ -284,120 +507,127 @@ export function Splash() {
   const inkEdge = `${uid}-edge`;
 
   return (
-    <div className={"rli" + (phase === "out" ? " rli-out" : "")} onClick={leave} role="presentation">
+    <div className={"rli" + (mode === "film" ? " rli-v" : "") + (phase === "out" ? " rli-out" : "")} onClick={leave} role="presentation">
       <style>{CSS}</style>
       <div className="rli-bg" />
-      <div className="rli-stage">
-        {/* L'anneau : goutte, impact, coup de pinceau */}
-        <svg ref={ringRef} className="rli-ring" viewBox="0 0 240 240" aria-hidden>
-          <defs>
-            <filter id={inkEdge} x="-60%" y="-60%" width="220%" height="220%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="4" result="n" />
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="5" />
-            </filter>
-            <mask id={maskRing} maskUnits="userSpaceOnUse" x="-40" y="-40" width="320" height="320">
+      {mode === "film" ? (
+        <>
+          <div ref={filmBoxRef} className="rli-film" />
+          <div ref={filmRingRef} className="rli-ring-film" aria-hidden />
+        </>
+      ) : (
+        <div className="rli-stage">
+          {/* L'anneau : goutte, impact, coup de pinceau */}
+          <svg ref={ringRef} className="rli-ring" viewBox="0 0 240 240" aria-hidden>
+            <defs>
+              <filter id={inkEdge} x="-60%" y="-60%" width="220%" height="220%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="4" result="n" />
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="5" />
+              </filter>
+              <mask id={maskRing} maskUnits="userSpaceOnUse" x="-40" y="-40" width="320" height="320">
+                <path
+                  className="rli-axis"
+                  d={LOGO_AXIS}
+                  pathLength={100}
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth={66}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </mask>
+            </defs>
+            <g className="rli-fadeaway">
+              <path className="rli-pen" d={INTRO_GUIDE} pathLength={100} fill="none" stroke="currentColor" strokeOpacity={0.24} strokeWidth={0.8} />
+            </g>
+            <g className="rli-breathe">
               <path
-                className="rli-axis"
-                d={LOGO_AXIS}
+                className="rli-track"
+                d={LOGO_TRACK}
                 pathLength={100}
                 fill="none"
-                stroke="#fff"
-                strokeWidth={66}
-                strokeLinecap="round"
+                stroke="currentColor"
+                strokeOpacity={0.15}
+                strokeWidth={9}
                 strokeLinejoin="round"
               />
-            </mask>
-          </defs>
-          <g className="rli-fadeaway">
-            <path className="rli-pen" d={INTRO_GUIDE} pathLength={100} fill="none" stroke="currentColor" strokeOpacity={0.24} strokeWidth={0.8} />
-          </g>
-          <g className="rli-breathe">
+              <g mask={`url(#${maskRing})`} fill="currentColor">
+                <path d={LOGO_BRUSH} />
+                <path d={LOGO_BRISTLES} />
+              </g>
+              <g className="rli-blot">
+                <circle cx={SX} cy={SY} r={14} fill="currentColor" filter={`url(#${inkEdge})`} />
+                <path d={LOGO_SPLAT} fill="currentColor" />
+              </g>
+            </g>
             <path
-              className="rli-track"
-              d={LOGO_TRACK}
-              pathLength={100}
-              fill="none"
-              stroke="currentColor"
-              strokeOpacity={0.15}
-              strokeWidth={9}
-              strokeLinejoin="round"
+              className="rli-fall"
+              d={`M ${SX} ${SY - 22} C ${SX + 4} ${SY - 12} ${SX + 7} ${SY - 5} ${SX + 7} ${SY - 1} A 7 7 0 1 1 ${SX - 7} ${SY - 1} C ${SX - 7} ${SY - 5} ${SX - 4} ${SY - 12} ${SX} ${SY - 22} Z`}
+              fill="currentColor"
             />
-            <g mask={`url(#${maskRing})`} fill="currentColor">
-              <path d={LOGO_BRUSH} />
-              <path d={LOGO_BRISTLES} />
+            <g className="rli-fadeaway" fill="currentColor">
+              {SPIKES.map((d, i) => (
+                <path key={i} className="rli-spike" d={d} />
+              ))}
             </g>
-            <g className="rli-blot">
-              <circle cx={SX} cy={SY} r={14} fill="currentColor" filter={`url(#${inkEdge})`} />
-              <path d={LOGO_SPLAT} fill="currentColor" />
+            <g className="rli-fadeaway">
+              <Drops list={CROWN} />
+              <Drops list={FLICKS} />
             </g>
-          </g>
-          <path
-            className="rli-fall"
-            d={`M ${SX} ${SY - 22} C ${SX + 4} ${SY - 12} ${SX + 7} ${SY - 5} ${SX + 7} ${SY - 1} A 7 7 0 1 1 ${SX - 7} ${SY - 1} C ${SX - 7} ${SY - 5} ${SX - 4} ${SY - 12} ${SX} ${SY - 22} Z`}
-            fill="currentColor"
-          />
-          <g className="rli-fadeaway" fill="currentColor">
-            {SPIKES.map((d, i) => (
-              <path key={i} className="rli-spike" d={d} />
-            ))}
-          </g>
-          <g className="rli-fadeaway">
-            <Drops list={CROWN} />
-            <Drops list={FLICKS} />
-          </g>
-          <Drops list={TAIL} />
-        </svg>
+            <Drops list={TAIL} />
+          </svg>
 
-        {/* Le nom, peint d'un large coup de pinceau, puis le slogan manuscrit */}
-        <svg className="rli-words rli-fadeaway" viewBox="0 0 560 320" aria-hidden>
-          <defs>
-            <mask id={maskRanked} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
-              <path
-                className="rli-paint"
-                style={{ ["--d" as string]: `${T.ranked}s` }}
-                d="M -30 72 C 120 58 300 86 620 66"
-                pathLength={100}
-                fill="none"
-                stroke="#fff"
-                strokeWidth={140}
-                strokeLinecap="round"
-              />
-            </mask>
-            <mask id={maskLobby} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
-              <path
-                className="rli-paint"
-                style={{ ["--d" as string]: `${T.lobby}s` }}
-                d="M -30 184 C 140 198 320 170 620 186"
-                pathLength={100}
-                fill="none"
-                stroke="#fff"
-                strokeWidth={150}
-                strokeLinecap="round"
-              />
-            </mask>
-            <mask id={maskUnder} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
-              <path className="rli-under" d="M 4 304 L 380 302" pathLength={100} fill="none" stroke="#fff" strokeWidth={30} strokeLinecap="round" />
-            </mask>
-            <clipPath id={clipTag}>
-              <rect className="rli-write" x={0} y={240} width={560} height={64} />
-            </clipPath>
-          </defs>
-          <text x={0} y={112} mask={`url(#${maskRanked})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
-            RANKED
-          </text>
-          <text x={0} y={222} mask={`url(#${maskLobby})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
-            LOBBY
-          </text>
-          <text x={6} y={284} clipPath={`url(#${clipTag})`} fill="currentColor" style={{ fontFamily: HAND, fontWeight: 700, fontSize: 46 }}>
-            le savoir se conquiert.
-          </text>
-          <g mask={`url(#${maskUnder})`}>
-            <g transform="translate(0 296) scale(1.27 1.6)">
-              <path d={UNDERLINE} fill="currentColor" />
+          {/* Le nom, peint d'un large coup de pinceau, puis le slogan manuscrit */}
+          <svg className="rli-words rli-fadeaway" viewBox="0 0 560 320" aria-hidden>
+            <defs>
+              <mask id={maskRanked} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
+                <path
+                  className="rli-paint"
+                  style={{ ["--d" as string]: `${T.ranked}s` }}
+                  d="M -30 72 C 120 58 300 86 620 66"
+                  pathLength={100}
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth={140}
+                  strokeLinecap="round"
+                />
+              </mask>
+              <mask id={maskLobby} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
+                <path
+                  className="rli-paint"
+                  style={{ ["--d" as string]: `${T.lobby}s` }}
+                  d="M -30 184 C 140 198 320 170 620 186"
+                  pathLength={100}
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth={150}
+                  strokeLinecap="round"
+                />
+              </mask>
+              <mask id={maskUnder} maskUnits="userSpaceOnUse" x="-60" y="-60" width="760" height="460">
+                <path className="rli-under" d="M 4 304 L 380 302" pathLength={100} fill="none" stroke="#fff" strokeWidth={30} strokeLinecap="round" />
+              </mask>
+              <clipPath id={clipTag}>
+                <rect className="rli-write" x={0} y={240} width={560} height={64} />
+              </clipPath>
+            </defs>
+            <text x={0} y={112} mask={`url(#${maskRanked})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
+              RANKED
+            </text>
+            <text x={0} y={222} mask={`url(#${maskLobby})`} fill="currentColor" style={{ fontFamily: DISPLAY, fontSize: 106, letterSpacing: "-0.01em" }}>
+              LOBBY
+            </text>
+            <text x={6} y={284} clipPath={`url(#${clipTag})`} fill="currentColor" style={{ fontFamily: HAND, fontWeight: 700, fontSize: 46 }}>
+              le savoir se conquiert.
+            </text>
+            <g mask={`url(#${maskUnder})`}>
+              <g transform="translate(0 296) scale(1.27 1.6)">
+                <path d={UNDERLINE} fill="currentColor" />
+              </g>
             </g>
-          </g>
-        </svg>
-      </div>
+          </svg>
+        </div>
+      )}
       <button
         type="button"
         className="rli-skip"
