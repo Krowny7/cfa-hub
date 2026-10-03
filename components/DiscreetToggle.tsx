@@ -14,7 +14,15 @@ export function DiscreetToggle() {
   const [on, setOn] = useState(false);
 
   useEffect(() => {
-    setOn(document.documentElement.dataset.discreet === "1");
+    let on0 = document.documentElement.dataset.discreet === "1";
+    try {
+      // Même filet de sécurité que ThemeToggle
+      if (!on0 && localStorage.getItem(KEY) === "1") {
+        document.documentElement.dataset.discreet = "1";
+        on0 = true;
+      }
+    } catch {}
+    setOn(on0);
     function onStorage(e: StorageEvent) {
       if (e.key !== KEY) return;
       const next = e.newValue === "1";

@@ -844,6 +844,23 @@ html[data-theme="nuit"] {
   }
 }
 
+/* Étiquettes du radar (components/ui/Radar.tsx) : le SVG se réduit avec
+   la largeur, on grossit donc le texte sur téléphone pour le garder lisible. */
+.rl-radar-l {
+  font-size: 13px;
+}
+.rl-radar-v {
+  font-size: 11.5px;
+}
+@media (max-width: 640px) {
+  .rl-radar-l {
+    font-size: 19px;
+  }
+  .rl-radar-v {
+    font-size: 16px;
+  }
+}
+
 /* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse. */
 .rl-skel {
   border-radius: 18px;

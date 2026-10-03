@@ -1,5 +1,5 @@
 import { InkRing } from "@/components/ink/InkRing";
-import { SWASH } from "@/components/ink/paths";
+import { INK } from "@/components/ui/InkDefs";
 import { Enso } from "@/components/ui/InkRings";
 
 // Titres partagés des pages V2. Sans état : utilisables depuis un composant
@@ -9,7 +9,7 @@ import { Enso } from "@/components/ui/InkRings";
 export function BrushUnderline({ width = 170, height = 16, className = "" }: { width?: number; height?: number; className?: string }) {
   return (
     <svg viewBox="0 0 400 64" width={width} height={height} preserveAspectRatio="none" aria-hidden className={"rl-underline block overflow-visible " + className}>
-      <path d={SWASH} fill="currentColor" />
+      <use href={INK.swash} fill="currentColor" />
     </svg>
   );
 }

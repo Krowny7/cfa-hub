@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { LOGO_SPLAT, LOGO_TRACK, RING_FULL, RING_FULL_AXIS } from "@/components/ink/paths";
+import { INK } from "@/components/ui/InkDefs";
 
 // Les anneaux à l'encre (même tracé que le logo) : la signature du site,
 // réservée à quelques endroits — grand anneau de fond (enso) derrière un titre,
@@ -31,15 +31,15 @@ export function Enso({
       height={size}
       aria-hidden
       className={"rl-deco pointer-events-none " + className}
-      style={{ display: "block", opacity, transform: `rotate(${rotate}deg)`, color: "var(--ink)" }}
+      style={{ opacity, transform: `rotate(${rotate}deg)`, color: "var(--ink)" }}
     >
       <mask id={`${id}m`} maskUnits="userSpaceOnUse" x="-20" y="-20" width="280" height="280">
-        <path d={RING_FULL_AXIS} pathLength={100} className="rl-enso" fill="none" stroke="#fff" strokeWidth={60} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${extent} 140`} />
+        <use href={INK.ringAxis} className="rl-enso" fill="none" stroke="#fff" strokeWidth={60} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${extent} 140`} />
       </mask>
       <g mask={`url(#${id}m)`}>
-        <path d={RING_FULL} filter="url(#rl-ink)" fill="currentColor" />
+        <use href={INK.ring} filter="url(#rl-ink)" fill="currentColor" />
       </g>
-      <path d={LOGO_SPLAT} fill="currentColor" />
+      <use href={INK.logoSplat} fill="currentColor" />
     </svg>
   );
 }
@@ -62,9 +62,8 @@ export function InkProgressRing({
     <div style={{ position: "relative", width: size, height: size, flex: "none" }}>
       <svg viewBox="-12 -12 264 264" width={size} height={size} aria-hidden style={{ display: "block", color: "var(--ink)" }}>
         <mask id={`${id}m`} maskUnits="userSpaceOnUse" x="-20" y="-20" width="280" height="280">
-          <path
-            d={RING_FULL_AXIS}
-            pathLength={100}
+          <use
+            href={INK.ringAxis}
             className="rl-halo"
             style={{ animationDelay: `${delay}s` }}
             fill="none"
@@ -75,9 +74,9 @@ export function InkProgressRing({
             strokeDasharray={`${p} 140`}
           />
         </mask>
-        <path d={LOGO_TRACK} fill="none" stroke="currentColor" strokeOpacity={0.1} strokeWidth={10} strokeLinejoin="round" />
+        <use href={INK.logoTrack} fill="none" stroke="currentColor" strokeOpacity={0.1} strokeWidth={10} strokeLinejoin="round" />
         <g mask={`url(#${id}m)`}>
-          <path d={RING_FULL} filter="url(#rl-ink)" fill="currentColor" />
+          <use href={INK.ring} filter="url(#rl-ink)" fill="currentColor" />
         </g>
       </svg>
       {children && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>{children}</div>}

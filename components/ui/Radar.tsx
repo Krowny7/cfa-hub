@@ -46,13 +46,15 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
         const anchor = Math.abs(Math.cos(ang)) < 0.2 ? "middle" : Math.cos(ang) > 0 ? "start" : "end";
         return (
           <g key={i}>
-            <text x={f(x)} y={f(y + 4)} textAnchor={anchor} style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 13, fill: a.soon ? "var(--ink-2)" : "var(--ink)" }}>
+            {/* Tailles des étiquettes en CSS (.rl-radar-l / .rl-radar-v) : plus
+                grandes sur téléphone, où le radar entier est réduit. */}
+            <text x={f(x)} y={f(y + 4)} textAnchor={anchor} className="rl-radar-l" style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fill: a.soon ? "var(--ink-2)" : "var(--ink)" }}>
               {a.label}
               {a.soon ? " · bientôt" : ""}
-            </text>
-            <text x={f(x)} y={f(y + 19)} textAnchor={anchor} style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, fill: "var(--ink-2)" }}>
-              <tspan style={{ fill: "var(--ink)", fontWeight: 600 }}>{a.me === null ? "—" : a.me}</tspan>
-              {a.avg !== null ? ` · moy. ${a.avg}` : ""}
+              <tspan x={f(x)} dy="1.3em" className="rl-radar-v" style={{ fontFamily: "var(--font-mono)", fontWeight: 400, fill: "var(--ink-2)" }}>
+                <tspan style={{ fill: "var(--ink)", fontWeight: 600 }}>{a.me === null ? "—" : a.me}</tspan>
+                {a.avg !== null ? ` · moy. ${a.avg}` : ""}
+              </tspan>
             </text>
           </g>
         );

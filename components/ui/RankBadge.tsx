@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { LOGO_TRACK, RING_FULL, RING_FULL_AXIS } from "@/components/ink/paths";
+import { INK } from "@/components/ui/InkDefs";
 import { TIERS } from "@/lib/ranks";
 
 // Badge de rang façon Overwatch : un cœur hexagonal (l'hexagone du logo) en
@@ -105,9 +105,8 @@ export function RankBadge({
         </radialGradient>
         {withHalo && (
           <mask id={`${uid}m`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="260" height="260">
-            <path
-              d={RING_FULL_AXIS}
-              pathLength={100}
+            <use
+              href={INK.ringAxis}
               className={animate ? "rl-halo" : undefined}
               fill="none"
               stroke="#fff"
@@ -121,9 +120,9 @@ export function RankBadge({
       </defs>
       {withHalo && (
         <g transform="translate(100 98) scale(.8) translate(-120 -120)">
-          <path d={LOGO_TRACK} fill="none" stroke={onDark ? "#fff" : "currentColor"} strokeOpacity={onDark ? 0.18 : 0.1} strokeWidth={9} strokeLinejoin="round" />
+          <use href={INK.logoTrack} fill="none" stroke={onDark ? "#fff" : "currentColor"} strokeOpacity={onDark ? 0.18 : 0.1} strokeWidth={9} strokeLinejoin="round" />
           <g mask={`url(#${uid}m)`}>
-            <path d={RING_FULL} filter="url(#rl-ink)" fill={onDark ? "#fff" : "currentColor"} />
+            <use href={INK.ring} filter="url(#rl-ink)" fill={onDark ? "#fff" : "currentColor"} />
           </g>
         </g>
       )}

@@ -1,4 +1,4 @@
-import { LOGO_BRISTLES, LOGO_BRUSH, LOGO_SPLAT, LOGO_TRACK } from "@/components/ink/paths";
+import { INK } from "@/components/ui/InkDefs";
 
 // Le logo : un anneau hexagonal tracé au pinceau sec, jamais fermé (74 %) —
 // il reste toujours un bout à conquérir. Prend la couleur du texte
@@ -26,10 +26,11 @@ export function InkRing({
       data-rl-logo={landing ? "" : undefined}
     >
       {title ? <title>{title}</title> : null}
-      <path d={LOGO_TRACK} fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={9} strokeLinejoin="round" />
-      <path d={LOGO_BRUSH} fill="currentColor" />
-      <path d={LOGO_BRISTLES} fill="currentColor" />
-      <path d={LOGO_SPLAT} fill="currentColor" />
+      {/* Tracés partagés, définis une fois dans components/ui/InkDefs.tsx */}
+      <use href={INK.logoTrack} fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth={9} strokeLinejoin="round" />
+      <use href={INK.logoBrush} fill="currentColor" />
+      <use href={INK.logoBristles} fill="currentColor" />
+      <use href={INK.logoSplat} fill="currentColor" />
     </svg>
   );
 }

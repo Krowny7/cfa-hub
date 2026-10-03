@@ -12,7 +12,16 @@ export function ThemeToggle() {
   const [night, setNight] = useState(false);
 
   useEffect(() => {
-    setNight(document.documentElement.dataset.theme === "nuit");
+    // Filet de sécurité : si React a dû reconstruire la page (erreur
+    // d'hydratation), l'attribut posé par le script du layout a disparu.
+    let n = document.documentElement.dataset.theme === "nuit";
+    try {
+      if (!n && localStorage.getItem(KEY) === "nuit") {
+        document.documentElement.dataset.theme = "nuit";
+        n = true;
+      }
+    } catch {}
+    setNight(n);
   }, []);
 
   function toggle() {

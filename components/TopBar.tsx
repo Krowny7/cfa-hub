@@ -9,6 +9,7 @@ import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
+import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,8 +23,12 @@ export async function TopBar() {
   if (user) {
     try {
       const supabase = await createClient();
-      const { data } = await supabase.from("ratings").select("elo").eq("user_id", user.id).maybeSingle();
-      tier = rankFor((data as { elo?: number } | null)?.elo ?? DEFAULT_ELO).tierIndex;
+      // Même calcul que /classement : la maîtrise peut verrouiller les paliers hauts.
+      const [{ data }, topics] = await Promise.all([
+        supabase.from("ratings").select("elo").eq("user_id", user.id).maybeSingle(),
+        getTopicMastery(supabase, user.id),
+      ]);
+      tier = rankFor((data as { elo?: number } | null)?.elo ?? DEFAULT_ELO, programMastery(topics)).tierIndex;
     } catch {
       // badge par défaut
     }
@@ -52,7 +57,7 @@ export async function TopBar() {
           </div>
           {user ? (
             <>
-              <Link href="/moi" aria-label={t(locale, "nav.settings")} className="rl-press grid h-[38px] w-[42px] place-items-center rounded-[12px] border border-line-2 bg-surface">
+              <Link href="/moi" aria-label="Moi : profil et rang" className="rl-press grid h-[38px] w-[42px] place-items-center rounded-[12px] border border-line-2 bg-surface">
                 <RankBadge tier={tier} size={26} glow={false} />
               </Link>
               <span className="hidden md:inline-flex">
