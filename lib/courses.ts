@@ -115,6 +115,21 @@ export const COURSES: Course[] = [
       { title: "Valuing a Derivative Using a One-Period Binomial Model", start: 3401.2 },
     ],
   },
+  {
+    slug: "portfolio-management",
+    title: "Portfolio Management",
+    file: "portfolio-management",
+    pages: 71,
+    minutes: 64,
+    chapters: [
+      { title: "Portfolio Risk and Return: Part I", start: 0 },
+      { title: "Portfolio Risk and Return: Part II", start: 863.6 },
+      { title: "Portfolio Management: An Overview", start: 1621.7 },
+      { title: "Basics of Portfolio Planning and Construction", start: 2159.3 },
+      { title: "The Behavioral Biases of Individuals", start: 2743.6 },
+      { title: "Introduction to Risk Management", start: 3243 },
+    ],
+  },
 ];
 
 export function getCourse(slug: string) {
