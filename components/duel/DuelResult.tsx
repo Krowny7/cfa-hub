@@ -3,16 +3,27 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Swords, X } from "lucide-react";
+import { ArrowRight, ListChecks, Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { Enso } from "@/components/ui/InkRings";
 import { BrushUnderline } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { DuelAiCopy } from "@/components/duel/DuelAiCopy";
 import { DuelSide, InkWatermark } from "@/components/duel/parts";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
-import { clock, createDuel, duelErrorMessage, duelTopicLabel, signed, type DuelReviewItem, type DuelState } from "@/lib/duels";
+import {
+  DUEL_REVIEW_DAYS,
+  clock,
+  createDuel,
+  decisiveQuestion,
+  duelErrorMessage,
+  duelTopicLabel,
+  reviewHasOpponent,
+  signed,
+  type DuelReviewItem,
+  type DuelState,
+} from "@/lib/duels";
 
 type Props = {
   state: DuelState;
@@ -23,14 +34,13 @@ type Props = {
   demo?: boolean;
 };
 
-const LETTERS = ["A", "B", "C", "D", "E"];
-
-// Résultat d'un duel (maquette V2-Duel-resultat) : verdict, scores, ELO
-// avant/après, détail par matière, correction et revanche.
+// Résultat d'un duel (maquette V2-Duel-resultat) : verdict (le ton change
+// entre victoire et défaite), scores et, dans la même carte, l'action
+// principale « Revoir le duel » + « Copier pour l'IA » ; puis ELO avant /
+// après, détail par matière et revanche.
 export function DuelResult({ state, review, mastery = null, leaderboardRank = null, demo = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
-  const [showErrors, setShowErrors] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +79,28 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
     return [...m.entries()].map(([key, v]) => ({ key, ...v })).sort((a, b) => b.total - a.total || a.key.localeCompare(b.key));
   }, [review]);
   const errors = review.filter((r) => !r.isCorrect);
+  const withThem = reviewHasOpponent(review) && !!them;
+  const decisive = withThem ? decisiveQuestion(review) : null;
+  const decisiveItem = decisive ? review.find((r) => r.position === decisive.position) ?? null : null;
+
+  // Le ton change avec le verdict : une ligne, le trait et l'anneau (plus
+  // ouvert après une défaite : il reste un bout à conquérir).
+  const margin = Math.abs(myScore - theirScore);
+  const q = (n: number) => `${n} question${n > 1 ? "s" : ""}`;
+  const forfeit = me.seconds === null || them?.seconds == null;
+  const tone = forfeit
+    ? won
+      ? "Gagné sans combattre. Ta copie mérite quand même une revue."
+      : "Le chrono a tranché. La prochaine fois, joue sous 48 h."
+    : won
+    ? margin > 0
+      ? `Tu bats ${theirName} de ${q(margin)}. Revois tes erreurs pour creuser l'écart.`
+      : `Même score que ${theirName}, mais plus rapide. Revois tes erreurs pour ne plus dépendre du chrono.`
+    : draw
+      ? `Rien ne vous sépare, ${theirName} et toi. La revanche tranchera.`
+      : margin > 0
+        ? `Ça s'est joué à ${q(margin)}. Revois-les, puis prends ta revanche.`
+        : `Même score, ${theirName} a été plus rapide. Revois tes erreurs, puis prends ta revanche.`;
 
   async function rematch() {
     if (!supabase || !them) {
@@ -90,13 +122,18 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
     <div className="mx-auto grid w-full max-w-[1040px] gap-6 md:gap-8">
       <div className="relative flex flex-col items-center gap-2.5 pt-4 text-center">
         <div aria-hidden className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2">
-          <Enso size={300} opacity={0.09} />
+          {won ? <Enso size={300} opacity={0.1} extent={92} /> : <Enso size={300} opacity={0.06} extent={58} rotate={150} />}
         </div>
         <span className="kicker relative flex items-center gap-1.5">
           <Swords size={14} aria-hidden /> Duel · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
         </span>
-        <h1 className="rl-in relative m-0 font-brand text-[clamp(56px,11vw,96px)] leading-none">{verdict}</h1>
-        <BrushUnderline width={300} height={18} className="relative text-white" />
+        <h1 className={"rl-in relative m-0 font-brand text-[clamp(56px,11vw,96px)] leading-none " + (won ? "" : "text-body")}>{verdict}</h1>
+        {won ? (
+          <BrushUnderline width={300} height={18} className="relative text-white" />
+        ) : (
+          <BrushUnderline width={190} height={10} className="relative text-muted opacity-60" />
+        )}
+        <p className="t-body relative m-0 mt-1 max-w-[520px] text-balance text-muted">{tone}</p>
       </div>
 
       <section className="card-hero px-5 py-6 md:px-8 md:py-7">
@@ -128,6 +165,32 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
           </span>
         </div>
         {reason && <p className="t-micro m-0 mt-4 text-center">{reason}</p>}
+
+        {/* L'action principale : revoir le duel, et le copier pour l'IA */}
+        <div className="mt-6 flex flex-col gap-4 border-t border-line pt-5 md:flex-row md:items-center md:justify-between md:gap-8">
+          <div className="min-w-0">
+            <h2 className="t-h3 m-0 flex items-center gap-2">
+              <ListChecks size={18} aria-hidden />
+              {review.length === 0
+                ? "Revue du duel"
+                : errors.length === 0
+                  ? "Sans faute : revois quand même le duel"
+                  : `Revois tes ${errors.length} erreur${errors.length > 1 ? "s" : ""}`}
+            </h2>
+            <p className="t-small m-0 mt-1.5 max-w-[480px]">
+              {decisiveItem && decisive
+                ? `Question décisive : Q${decisiveItem.position + 1} (${duelTopicLabel(decisiveItem.topic)}), ${decisive.forMe ? "là où tu es passé devant pour de bon" : `là où ${theirName} est passé devant pour de bon`}. `
+                : `Ta réponse${withThem ? `, celle de ${theirName}` : ""}, la bonne et l'explication. `}
+              Dans « À revoir » pendant {DUEL_REVIEW_DAYS} jours.
+            </p>
+          </div>
+          <div className="grid shrink-0 gap-2.5 sm:flex sm:flex-wrap">
+            {review.length > 0 && <DuelAiCopy review={review} ctx={{ myScore, theirScore, total: state.questionCount }} layout="single" />}
+            <Link href={`/duel/${state.id}?revue=1`} className="btn btn-primary">
+              Revoir le duel <ArrowRight size={16} aria-hidden />
+            </Link>
+          </div>
+        </div>
       </section>
 
       <div className="grid gap-[18px] md:grid-cols-12">
@@ -207,52 +270,15 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
       )}
 
       <div className="flex flex-wrap justify-center gap-2.5">
-        <button type="button" className="btn btn-secondary" disabled={errors.length === 0} onClick={() => setShowErrors((v) => !v)} aria-expanded={showErrors}>
-          {errors.length === 0 ? "Sans faute !" : showErrors ? "Masquer mes erreurs" : `Revoir mes ${errors.length} erreur${errors.length > 1 ? "s" : ""}`}
-        </button>
         {them && (
           <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void rematch()}>
             Revanche <Swords size={15} aria-hidden />
           </button>
         )}
-        <Link href="/duel" className="btn btn-primary">
+        <Link href="/duel" className="btn btn-secondary">
           Nouveau duel <ArrowRight size={16} aria-hidden />
         </Link>
       </div>
-
-      {showErrors && (
-        <div className="grid gap-3">
-          {errors.map((r) => (
-            <article key={r.position} className="card rl-in grid gap-3 p-5">
-              <div className="text-[12.5px] font-semibold text-muted">
-                Question {r.position + 1} · {duelTopicLabel(r.topic)} · {r.selectedIndex === null ? "sans réponse" : "ratée"}
-              </div>
-              <QuestionPrompt text={r.prompt} className="text-[15px] font-semibold leading-normal break-words" compact />
-              <div className="grid gap-1.5">
-                {r.choices.map((c, i) => {
-                  const good = i === r.correctIndex;
-                  const mine = i === r.selectedIndex;
-                  return (
-                    <div
-                      key={i}
-                      className={
-                        "flex items-start gap-2.5 rounded-[12px] border px-3 py-2 text-[14px] " +
-                        (good ? "border-white font-bold" : mine ? "border-pen text-pen" : "border-line text-muted")
-                      }
-                    >
-                      <span className="font-mono text-[12.5px]">{LETTERS[i] ?? i + 1}</span>
-                      <span className="min-w-0 flex-1 break-words">{c}</span>
-                      {good && <Check size={15} className="shrink-0" aria-label="bonne réponse" />}
-                      {mine && !good && <X size={15} className="shrink-0" aria-label="ta réponse" />}
-                    </div>
-                  );
-                })}
-              </div>
-              {r.explanation && <p className="m-0 whitespace-pre-wrap text-[13px] leading-normal text-muted">{r.explanation}</p>}
-            </article>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

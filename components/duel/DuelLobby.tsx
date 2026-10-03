@@ -5,19 +5,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search, Shuffle, Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { DuelHeading, DuelHowItWorks, InkWatermark, PlayerBadge, StakeBox } from "@/components/duel/parts";
+import { DuelHeading, DuelHowItWorks, InkWatermark, PlayerBadge, ReviewDuelRow, StakeBox } from "@/components/duel/parts";
 import type { DuelSummary } from "@/lib/rating";
 import {
+  DUEL_QUESTIONS,
+  DUEL_REVIEW_DAYS,
   activityLabel,
   createDuel,
   duelErrorMessage,
   randomStakes,
   respondDuel,
+  reviewLeftLabel,
   searchDuelPlayers,
   signed,
   stakesAgainst,
   timeLeftLabel,
   type DuelPlayerCard,
+  type DuelReviewEntry,
   type OpenDuel,
 } from "@/lib/duels";
 
@@ -28,6 +32,8 @@ type Props = {
   target: DuelPlayerCard | null;
   open: OpenDuel[];
   recent: DuelSummary[];
+  /** duels terminés ces 14 derniers jours (liste « À revoir ») */
+  reviewable?: DuelReviewEntry[];
   nowIso: string;
   /** aperçu : aucune requête, les boutons ne font rien */
   demo?: boolean;
@@ -39,7 +45,7 @@ const LISTED = 5;
 // sont le point focal ; les défis reçus s'affichent en bandeau au-dessus
 // seulement s'il y en a ; tes duels en cours et derniers duels viennent
 // ensuite, et les règles sont repliées en bas.
-export function DuelLobby({ me, suggestions, target, open, recent, nowIso, demo = false }: Props) {
+export function DuelLobby({ me, suggestions, target, open, recent, reviewable = [], nowIso, demo = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
   const [query, setQuery] = useState("");
@@ -69,6 +75,13 @@ export function DuelLobby({ me, suggestions, target, open, recent, nowIso, demo 
   }, [query, supabase, suggestions]);
 
   const stakes = randomStakes(me.elo, me.gamesPlayed);
+  // À revoir : terminés depuis moins de 14 jours ; les plus anciens restent
+  // listés à part (leur revue reste ouverte).
+  const toReview = (reviewable.length > 0 ? reviewable : recent.map(summaryToEntry)).filter(
+    (d) => !!d.finishedAt && reviewLeftLabel(d.finishedAt, nowIso) !== null,
+  );
+  const reviewIds = new Set(toReview.map((d) => d.id));
+  const older = recent.filter((d) => !reviewIds.has(d.id));
   const incoming = open.filter((d) => d.incoming && d.status === "pending");
   // Les défis reçus sont dans le bandeau : pas de doublon dans « En cours »
   const ongoing = open.filter((d) => !(d.incoming && d.status === "pending"));
@@ -280,7 +293,7 @@ export function DuelLobby({ me, suggestions, target, open, recent, nowIso, demo 
         <h2 id="rl-duel-mine" className="t-h2">
           Tes duels
         </h2>
-        {ongoing.length === 0 && recent.length === 0 ? (
+        {ongoing.length === 0 && recent.length === 0 && toReview.length === 0 ? (
           <p className="t-small">Pas encore de duel. Lance le premier : au hasard ou contre quelqu&apos;un.</p>
         ) : (
           <div className="grid items-start gap-10 md:grid-cols-2 md:gap-14">
@@ -299,13 +312,40 @@ export function DuelLobby({ me, suggestions, target, open, recent, nowIso, demo 
               )}
             </div>
 
-            <div className="flex min-w-0 flex-col gap-2">
-              <p className="t-eyebrow px-2">Derniers</p>
-              {recent.length === 0 ? (
-                <p className="t-small px-2">Pas encore de duel terminé.</p>
+            <div className="flex min-w-0 flex-col gap-2" aria-labelledby="rl-duel-review">
+              <p id="rl-duel-review" className="t-eyebrow flex items-baseline justify-between gap-3 px-2">
+                <span>
+                  À revoir{toReview.length > 0 && <span className="font-mono font-normal"> · {toReview.length}</span>}
+                </span>
+                <span className="font-normal normal-case tracking-normal">{DUEL_REVIEW_DAYS} jours après chaque duel</span>
+              </p>
+              {toReview.length === 0 ? (
+                <p className="t-small px-2">
+                  {recent.length === 0 ? "Pas encore de duel terminé." : `Aucun duel ces ${DUEL_REVIEW_DAYS} derniers jours.`} Chaque duel terminé
+                  arrive ici, avec ses questions corrigées et « Copier pour l&apos;IA ».
+                </p>
               ) : (
                 <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-                  {recent.map((d) => {
+                  {toReview.map((d) => (
+                    <ReviewDuelRow
+                      key={d.id}
+                      id={d.id}
+                      name={d.opponentName ?? "Un joueur"}
+                      won={d.won}
+                      myScore={d.myScore}
+                      theirScore={d.theirScore}
+                      errors={d.myScore !== null ? Math.max(0, d.total - d.myScore) : null}
+                      left={reviewLeftLabel(d.finishedAt, nowIso)}
+                    />
+                  ))}
+                </ul>
+              )}
+
+              {older.length > 0 && (
+                <>
+                  <p className="t-eyebrow mt-5 px-2">Plus anciens</p>
+                  <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+                  {older.map((d) => {
                     const label = d.won === true ? "Victoire" : d.won === false ? "Défaite" : "Nul";
                     return (
                       <li key={d.id}>
@@ -333,7 +373,8 @@ export function DuelLobby({ me, suggestions, target, open, recent, nowIso, demo 
                       </li>
                     );
                   })}
-                </ul>
+                  </ul>
+                </>
               )}
             </div>
           </div>
@@ -343,6 +384,21 @@ export function DuelLobby({ me, suggestions, target, open, recent, nowIso, demo 
       <DuelHowItWorks />
     </div>
   );
+}
+
+/** Repli si la liste « À revoir » n'a pas pu être lue : les derniers duels suffisent. */
+function summaryToEntry(d: DuelSummary): DuelReviewEntry {
+  return {
+    id: d.id,
+    opponentId: d.opponentId,
+    opponentName: d.opponentName,
+    myScore: d.myScore,
+    theirScore: d.theirScore,
+    total: DUEL_QUESTIONS,
+    myDelta: d.myDelta,
+    won: d.won,
+    finishedAt: d.finishedAt ?? "",
+  };
 }
 
 function OpenDuelRow({ d, me, nowIso }: { d: OpenDuel; me: { elo: number; gamesPlayed: number }; nowIso: string }) {

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyRating, getRecentDuels } from "@/lib/rating";
-import { duelsReady, getDuelSuggestions, getMyOpenDuels, getPlayerCard, refreshMyDuels } from "@/lib/duels";
+import { duelsReady, getDuelSuggestions, getMyOpenDuels, getPlayerCard, getReviewableDuels, refreshMyDuels } from "@/lib/duels";
 import { DuelLobby } from "@/components/duel/DuelLobby";
 import { DuelSoon } from "@/components/duel/DuelSoon";
 
@@ -12,7 +12,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 type PageProps = { searchParams: Promise<{ adversaire?: string | string[] }> };
 
 // Lobby des duels. /duel?adversaire=<userId> met ce joueur en tête de la
-// liste « Défier quelqu'un », avec l'enjeu.
+// liste « Défier quelqu'un », avec l'enjeu. « Tes duels » : en cours, et les
+// duels terminés ces 14 derniers jours, à revoir.
 export default async function DuelLobbyPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -34,17 +35,26 @@ export default async function DuelLobbyPage({ searchParams }: PageProps) {
   // Règle d'abord les duels arrivés à échéance (pas de tâche planifiée)
   await refreshMyDuels(supabase);
 
-  const [me, suggestions, open, recent, target] = await Promise.all([
+  const [me, suggestions, open, recent, reviewable, target] = await Promise.all([
     getMyRating(supabase, user.id),
     getDuelSuggestions(supabase, 6),
     getMyOpenDuels(supabase, user.id),
     getRecentDuels(supabase, user.id, 6),
+    getReviewableDuels(supabase, user.id),
     targetId ? getPlayerCard(supabase, targetId) : Promise.resolve(null),
   ]);
 
   return (
     <div className="rl-wide">
-      <DuelLobby me={me} suggestions={suggestions} target={target} open={open} recent={recent} nowIso={new Date().toISOString()} />
+      <DuelLobby
+        me={me}
+        suggestions={suggestions}
+        target={target}
+        open={open}
+        recent={recent}
+        reviewable={reviewable}
+        nowIso={new Date().toISOString()}
+      />
     </div>
   );
 }

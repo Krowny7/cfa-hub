@@ -11,6 +11,8 @@ import { DEFAULT_ELO, eloDelta, eloStakes, kFactor } from "@/lib/ranks";
 export const DUEL_QUESTIONS = 30;
 export const DUEL_MINUTES = 45;
 export const DUEL_WINDOW_HOURS = 48;
+/** Un duel terminé reste dans la liste « À revoir » pendant 14 jours (la revue, elle, reste ouverte). */
+export const DUEL_REVIEW_DAYS = 14;
 
 /** Noms courts des matières (clés de lib/practiceTopics.ts), comme sur les maquettes. */
 export const DUEL_TOPIC_LABELS: Record<string, string> = {
@@ -117,6 +119,29 @@ export type DuelReviewItem = {
   topic: string | null;
   selectedIndex: number | null;
   isCorrect: boolean;
+  /**
+   * Réponse de l'adversaire (migration_duel_review.sql, duel terminé
+   * seulement). Absent tant que la migration n'est pas appliquée, ou pour un
+   * duel clos sans adversaire : la revue s'affiche alors sans sa colonne.
+   */
+  theirAnswered?: boolean;
+  theirSelectedIndex?: number | null;
+  theirIsCorrect?: boolean;
+};
+
+/** Duel terminé, dans la liste « À revoir » du lobby. */
+export type DuelReviewEntry = {
+  id: string;
+  opponentId: string | null;
+  opponentName: string | null;
+  myScore: number | null;
+  theirScore: number | null;
+  /** nombre de questions du duel */
+  total: number;
+  myDelta: number | null;
+  /** null : match nul */
+  won: boolean | null;
+  finishedAt: string;
 };
 
 /** Duel en attente ou en cours, vu par le joueur (pour le lobby). */
@@ -350,25 +375,199 @@ export async function getMyOpenDuels(supabase: SupabaseClient, userId: string): 
   }
 }
 
-/** Correction du joueur, une fois le duel terminé ([] sinon). */
+/**
+ * Correction du joueur, une fois le duel terminé ([] sinon). Avec
+ * migration_duel_review.sql : aussi la réponse de l'adversaire, et la
+ * correction d'un duel refusé ou expiré que le joueur a joué.
+ */
 export async function getDuelReview(supabase: SupabaseClient, duelId: string): Promise<DuelReviewItem[]> {
   try {
     const { data, error } = await supabase.rpc("duel_review", { p_duel_id: duelId });
     if (error || !Array.isArray(data)) return [];
-    return (data as Raw[]).map((r) => ({
-      position: num(r.position),
-      questionId: String(r.question_id),
-      prompt: String(r.prompt ?? ""),
-      choices: Array.isArray(r.choices) ? (r.choices as unknown[]).map((c) => String(c)) : [],
-      correctIndex: num(r.correct_index, -1),
-      explanation: str(r.explanation),
-      topic: str(r.topic),
-      selectedIndex: numOrNull(r.selected_index),
-      isCorrect: Boolean(r.is_correct),
-    }));
+    return (data as Raw[]).map((r) => {
+      const item: DuelReviewItem = {
+        position: num(r.position),
+        questionId: String(r.question_id),
+        prompt: String(r.prompt ?? ""),
+        choices: Array.isArray(r.choices) ? (r.choices as unknown[]).map((c) => String(c)) : [],
+        correctIndex: num(r.correct_index, -1),
+        explanation: str(r.explanation),
+        topic: str(r.topic),
+        selectedIndex: numOrNull(r.selected_index),
+        isCorrect: Boolean(r.is_correct),
+      };
+      // Clé présente et renseignée seulement après la migration, duel terminé
+      if (r.their_answered !== undefined && r.their_answered !== null) {
+        item.theirAnswered = Boolean(r.their_answered);
+        item.theirSelectedIndex = numOrNull(r.their_selected_index);
+        item.theirIsCorrect = Boolean(r.their_is_correct);
+      }
+      return item;
+    });
   } catch {
     return [];
   }
+}
+
+/** La revue contient-elle les réponses de l'adversaire ? */
+export function reviewHasOpponent(review: DuelReviewItem[]) {
+  return review.length > 0 && review.some((r) => r.theirAnswered !== undefined);
+}
+
+/**
+ * Question décisive : les deux copies suivent les mêmes questions dans le
+ * même ordre ; on compte l'écart de bonnes réponses question après question.
+ * La décisive est celle où le vainqueur au score passe devant pour de bon
+ * (un seul des deux a juste, et l'écart ne revient plus à zéro ensuite).
+ * null : pas de réponses adverses, ou égalité au score (départagée au temps).
+ */
+export function decisiveQuestion(review: DuelReviewItem[]): { position: number; forMe: boolean } | null {
+  if (!review.some((r) => r.theirAnswered)) return null;
+  let diff = 0;
+  let take: number | null = null;
+  for (const r of [...review].sort((a, b) => a.position - b.position)) {
+    const before = Math.sign(diff);
+    diff += (r.isCorrect ? 1 : 0) - (r.theirIsCorrect ? 1 : 0);
+    const after = Math.sign(diff);
+    if (after !== 0 && after !== before) take = r.position;
+  }
+  if (diff === 0 || take === null) return null;
+  return { position: take, forMe: diff > 0 };
+}
+
+type ReviewRow = {
+  id: string;
+  challenger_id: string;
+  opponent_id: string | null;
+  challenger_score: number | null;
+  opponent_score: number | null;
+  challenger_delta: number | null;
+  opponent_delta: number | null;
+  winner_id: string | null;
+  finished_at: string | null;
+  question_ids: string[] | null;
+};
+
+/**
+ * Duels terminés ces `days` derniers jours (14 par défaut), du plus récent au
+ * plus ancien : la liste « À revoir ». Au-delà, la revue reste ouverte
+ * (rien n'est supprimé), le duel quitte seulement cette liste.
+ */
+export async function getReviewableDuels(
+  supabase: SupabaseClient,
+  userId: string,
+  { days = DUEL_REVIEW_DAYS, limit = 12 }: { days?: number; limit?: number } = {},
+): Promise<DuelReviewEntry[]> {
+  try {
+    const since = new Date(Date.now() - days * 86_400_000).toISOString();
+    const { data, error } = await supabase
+      .from("duels")
+      .select("id,challenger_id,opponent_id,challenger_score,opponent_score,challenger_delta,opponent_delta,winner_id,finished_at,question_ids")
+      .or(`challenger_id.eq.${userId},opponent_id.eq.${userId}`)
+      .eq("status", "finished")
+      .gte("finished_at", since)
+      .order("finished_at", { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+    const rows = data as ReviewRow[];
+    const others = Array.from(
+      new Set(rows.map((d) => (d.challenger_id === userId ? d.opponent_id : d.challenger_id)).filter((x): x is string => !!x)),
+    );
+    const names = new Map<string, string | null>();
+    if (others.length) {
+      const { data: profs } = await supabase.from("profiles").select("id,username").in("id", others);
+      (profs ?? []).forEach((p: { id: string; username: string | null }) => names.set(p.id, p.username));
+    }
+    return rows
+      .filter((d) => !!d.finished_at)
+      .map((d) => {
+        const mine = d.challenger_id === userId;
+        const other = mine ? d.opponent_id : d.challenger_id;
+        return {
+          id: d.id,
+          opponentId: other,
+          opponentName: other ? names.get(other) ?? null : null,
+          myScore: mine ? d.challenger_score : d.opponent_score,
+          theirScore: mine ? d.opponent_score : d.challenger_score,
+          total: d.question_ids?.length || DUEL_QUESTIONS,
+          myDelta: mine ? d.challenger_delta : d.opponent_delta,
+          won: d.winner_id ? d.winner_id === userId : null,
+          finishedAt: d.finished_at as string,
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Revue : fenêtre « à revoir » et export « Copier pour l'IA »
+
+/** Fin de la fenêtre « à revoir » d'un duel terminé. */
+export function reviewUntil(finishedAt: string, days = DUEL_REVIEW_DAYS) {
+  return new Date(new Date(finishedAt).getTime() + days * 86_400_000).toISOString();
+}
+
+/** « encore 13 j », « encore 5 h », « moins d'1 h » ; null une fois la fenêtre passée. */
+export function reviewLeftLabel(finishedAt: string, nowIso: string, days = DUEL_REVIEW_DAYS): string | null {
+  const ms = new Date(reviewUntil(finishedAt, days)).getTime() - new Date(nowIso).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+  const h = ms / 3_600_000;
+  if (h < 1) return "moins d'1 h";
+  if (h < 24) return `encore ${Math.round(h)} h`;
+  return `encore ${Math.max(1, Math.round(h / 24))} j`;
+}
+
+/** Part de la fenêtre « à revoir » restante, de 0 à 1 (barre de temps). */
+export function reviewLeftRatio(finishedAt: string, nowIso: string, days = DUEL_REVIEW_DAYS) {
+  const ms = new Date(reviewUntil(finishedAt, days)).getTime() - new Date(nowIso).getTime();
+  if (!Number.isFinite(ms)) return 0;
+  return Math.min(1, Math.max(0, ms / (days * 86_400_000)));
+}
+
+const AI_LETTERS = ["A", "B", "C", "D", "E"];
+
+export type DuelAiScope = "errors" | "all";
+
+/**
+ * Texte « Copier pour l'IA » d'un duel : même format que l'export des
+ * sessions (PracticeSession, buildAiExportText), avec le contexte du duel.
+ * Les questions gardent leur numéro dans le duel (Q7 reste Q7).
+ */
+export function buildDuelAiExport(
+  review: DuelReviewItem[],
+  ctx: { scope: DuelAiScope; myScore: number; theirScore: number | null; total: number },
+) {
+  const items = ctx.scope === "errors" ? review.filter((q) => !q.isCorrect) : review;
+  const pct = ctx.total > 0 ? Math.round((ctx.myScore / ctx.total) * 100) : 0;
+  const vs = ctx.theirScore === null ? "" : ` contre ${ctx.theirScore}/${ctx.total}`;
+  const context = `Duel CFA Niveau I, ${ctx.total} questions, score ${ctx.myScore}/${ctx.total}${vs}${ctx.theirScore === null ? " (duel non disputé)" : ""}.`;
+  const header =
+    ctx.scope === "errors"
+      ? `DUEL CFA — MES ERREURS (${items.length} question${items.length > 1 ? "s" : ""}) — ${ctx.myScore}/${ctx.total} (${pct}%)${vs}\n` +
+        `Contexte : ${context}\n` +
+        `Voici les questions que j'ai ratées lors d'un duel CFA Level I (questions type examen, les mêmes pour mon adversaire et moi). Pour chaque question : mon énoncé, mes choix, ma réponse, la bonne réponse et l'explication officielle. ` +
+        `Peux-tu me faire un bilan de mes points faibles par thème, et m'expliquer plus en détail chacune de ces erreurs ?\n\n`
+      : `DUEL CFA — ${ctx.myScore}/${ctx.total} (${pct}%)${vs}\n` +
+        `Contexte : ${context}\n` +
+        `Voici mes réponses à un duel CFA Level I (questions type examen, les mêmes pour mon adversaire et moi). Pour chaque question : mon énoncé, mes choix, ma réponse, la bonne réponse et l'explication officielle. ` +
+        `Peux-tu me faire un bilan de mes points faibles par thème, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
+  const body = items
+    .map((q) => {
+      const letter = (i: number) => AI_LETTERS[i] ?? String(i + 1);
+      const choicesText = q.choices.map((c, ci) => `${letter(ci)}) ${c}`).join("\n");
+      const myAnswer = q.selectedIndex === null ? "Non répondue" : `${letter(q.selectedIndex)}) ${q.choices[q.selectedIndex] ?? ""}`;
+      const correctAnswer = q.correctIndex >= 0 ? `${letter(q.correctIndex)}) ${q.choices[q.correctIndex] ?? ""}` : "Non disponible";
+      return (
+        `Q${q.position + 1} [${duelTopicLabel(q.topic)}] — ${q.isCorrect ? "CORRECT" : "INCORRECT"}\n` +
+        `${q.prompt}\n${choicesText}\n` +
+        `Ma réponse : ${myAnswer}\n` +
+        `Bonne réponse : ${correctAnswer}\n` +
+        (q.explanation ? `Explication : ${q.explanation}\n` : "")
+      );
+    })
+    .join("\n");
+  return header + body;
 }
 
 // ---------------------------------------------------------------------------

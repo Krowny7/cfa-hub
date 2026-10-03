@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { fmtAgo, fmtShortDate, signed } from "@/components/classement/format";
+import { ReviewDuelRow } from "@/components/duel/parts";
+import { DUEL_QUESTIONS, DUEL_REVIEW_DAYS, reviewLeftLabel } from "@/lib/duels";
 import type { DuelSummary } from "@/lib/rating";
 
 function nameOf(d: DuelSummary) {
@@ -58,9 +60,12 @@ function RecentRow({ d }: { d: DuelSummary }) {
   );
 }
 
-// Onglet « Duels » du classement : les défis en cours à gauche, les derniers
-// duels joués à droite. Le lancement d'un duel est dans le héros (et le lobby).
-export function DuelsPanel({ open, recent }: { open: DuelSummary[]; recent: DuelSummary[] }) {
+// Onglet « Duels » du classement : les défis en cours à gauche ; à droite,
+// les duels des 14 derniers jours « À revoir » (revue + « Copier pour l'IA »,
+// avec le temps restant), puis les plus anciens. Le lancement d'un duel est
+// dans le héros (et le lobby). `nowIso` : pour l'aperçu (sinon l'heure du
+// rendu serveur).
+export function DuelsPanel({ open, recent, nowIso }: { open: DuelSummary[]; recent: DuelSummary[]; nowIso?: string }) {
   if (open.length === 0 && recent.length === 0) {
     return (
       <div className="max-w-[560px]">
@@ -72,6 +77,10 @@ export function DuelsPanel({ open, recent }: { open: DuelSummary[]; recent: Duel
       </div>
     );
   }
+
+  const now = nowIso ?? new Date().toISOString();
+  const toReview = recent.filter((d) => d.status === "finished" && d.finishedAt && reviewLeftLabel(d.finishedAt, now) !== null);
+  const older = recent.filter((d) => !toReview.includes(d));
 
   return (
     <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-14">
@@ -90,16 +99,40 @@ export function DuelsPanel({ open, recent }: { open: DuelSummary[]; recent: Duel
         )}
       </section>
 
-      <section className="flex min-w-0 flex-col gap-2 lg:col-span-7" aria-label="Derniers duels">
-        <p className="t-eyebrow px-2">Derniers duels</p>
-        {recent.length ? (
+      <section className="flex min-w-0 flex-col gap-2 lg:col-span-7" aria-label="Duels à revoir">
+        <p className="t-eyebrow flex items-baseline justify-between gap-3 px-2">
+          <span>
+            À revoir{toReview.length > 0 && <span className="font-mono font-normal"> · {toReview.length}</span>}
+          </span>
+          <span className="font-normal normal-case tracking-normal">{DUEL_REVIEW_DAYS} jours après chaque duel</span>
+        </p>
+        {toReview.length ? (
           <ul className="flex flex-col gap-0.5">
-            {recent.slice(0, 5).map((d) => (
-              <RecentRow key={d.id} d={d} />
+            {toReview.slice(0, 5).map((d) => (
+              <ReviewDuelRow
+                key={d.id}
+                id={d.id}
+                name={nameOf(d)}
+                won={d.won}
+                myScore={d.myScore}
+                theirScore={d.theirScore}
+                errors={d.myScore !== null ? Math.max(0, DUEL_QUESTIONS - d.myScore) : null}
+                left={reviewLeftLabel(d.finishedAt as string, now)}
+              />
             ))}
           </ul>
         ) : (
-          <p className="t-small px-2">Pas encore de duel terminé.</p>
+          <p className="t-small px-2">Aucun duel ces {DUEL_REVIEW_DAYS} derniers jours.</p>
+        )}
+        {older.length > 0 && (
+          <>
+            <p className="t-eyebrow mt-5 px-2">Plus anciens</p>
+            <ul className="flex flex-col gap-0.5">
+              {older.slice(0, 5).map((d) => (
+                <RecentRow key={d.id} d={d} />
+              ))}
+            </ul>
+          </>
         )}
         <Link href="/duel" className="mt-2 inline-flex w-fit items-center gap-1.5 px-2 text-[13px] font-semibold text-muted hover:text-white">
           Tous tes duels <ArrowRight size={14} aria-hidden />

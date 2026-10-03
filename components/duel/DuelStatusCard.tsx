@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Hourglass, Swords } from "lucide-react";
+import { ArrowRight, Hourglass, ListChecks, Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { DuelSide, StakeTile } from "@/components/duel/parts";
 import {
@@ -22,6 +22,8 @@ type Props = {
   /** invite : on te défie ; waiting : ta copie est rendue ; closed : refusé ou expiré */
   variant: "invite" | "waiting" | "closed";
   myMastery?: number | null;
+  /** duel clos que tu as joué : ta correction est consultable (?revue=1) */
+  reviewable?: boolean;
   demo?: boolean;
 };
 
@@ -32,7 +34,7 @@ function dateLabel(iso: string) {
 // Les états d'un duel hors partie : défi reçu, attente de l'adversaire,
 // duel refusé ou expiré. Une seule carte : les deux joueurs en tête, puis
 // le message et l'action.
-export function DuelStatusCard({ state, variant, myMastery = null, demo = false }: Props) {
+export function DuelStatusCard({ state, variant, myMastery = null, reviewable = false, demo = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
   const [busy, setBusy] = useState(false);
@@ -124,12 +126,16 @@ export function DuelStatusCard({ state, variant, myMastery = null, demo = false 
   } else {
     kicker = state.status === "declined" ? "Défi refusé" : "Duel expiré";
     title = state.status === "declined" ? "Pas de duel cette fois" : "Le temps est écoulé";
-    body =
-      state.status === "declined" ? (
-        <>Le défi a été refusé ou annulé : rien ne bouge côté ELO.</>
-      ) : (
-        <>Personne n&apos;a joué à temps : rien ne bouge côté ELO.</>
-      );
+    body = (
+      <>
+        {state.status === "declined"
+          ? "Le défi a été refusé ou annulé : rien ne bouge côté ELO."
+          : state.me.startedAt
+            ? "Aucun adversaire n'a joué à temps : rien ne bouge côté ELO."
+            : "Personne n'a joué à temps : rien ne bouge côté ELO."}
+        {reviewable && " Tes réponses ne sont pas perdues : ta correction t'attend."}
+      </>
+    );
   }
 
   return (
@@ -206,6 +212,11 @@ export function DuelStatusCard({ state, variant, myMastery = null, demo = false 
                   <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void rematch()}>
                     Redéfier {theirName} <Swords size={15} aria-hidden />
                   </button>
+                )}
+                {reviewable && (
+                  <Link href={`/duel/${state.id}?revue=1`} className="btn btn-secondary">
+                    <ListChecks size={16} aria-hidden /> Revoir tes réponses
+                  </Link>
                 )}
                 <Link href="/duel" className="btn btn-primary">
                   Nouveau duel <ArrowRight size={16} aria-hidden />

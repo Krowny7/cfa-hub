@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Swords } from "lucide-react";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { PageHero } from "@/components/ui/Titles";
@@ -132,6 +133,73 @@ export function DuelHowItWorks() {
         </div>
       </Disclosure>
     </div>
+  );
+}
+
+/** V / D / = dans une petite case (encre pleine pour une victoire). */
+export function ResultMark({ won }: { won: boolean | null }) {
+  const label = won === true ? "Victoire" : won === false ? "Défaite" : "Match nul";
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={
+        "grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] text-[12px] font-extrabold " +
+        (won === true ? "bg-white text-black" : "border border-line-2 text-muted")
+      }
+    >
+      {won === true ? "V" : won === false ? "D" : "="}
+    </span>
+  );
+}
+
+/**
+ * Un duel de la liste « À revoir » : résultat, adversaire et score, puis
+ * erreurs et temps restant dans la fenêtre de 14 jours. Toute la ligne mène
+ * à la revue (/duel/<id>?revue=1).
+ */
+export function ReviewDuelRow({
+  id,
+  name,
+  won,
+  myScore,
+  theirScore,
+  errors,
+  left,
+}: {
+  id: string;
+  name: string;
+  won: boolean | null;
+  myScore: number | null;
+  theirScore: number | null;
+  /** nombre d'erreurs (null si inconnu) */
+  errors: number | null;
+  /** « encore 12 j » */
+  left: string | null;
+}) {
+  const errLabel = errors === null ? null : errors === 0 ? "sans faute" : `${errors} erreur${errors > 1 ? "s" : ""}`;
+  return (
+    <li>
+      <Link
+        href={`/duel/${id}?revue=1`}
+        className="rl-row grid grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2.5"
+        aria-label={`Revoir le duel contre ${name}${errLabel ? `, ${errLabel}` : ""}${left ? `, ${left}` : ""}`}
+      >
+        <ResultMark won={won} />
+        <span className="min-w-0">
+          <span className="flex min-w-0 items-baseline gap-2">
+            <span className="truncate text-[14.5px] font-semibold">{name}</span>
+            {myScore !== null && theirScore !== null && (
+              <span className="shrink-0 font-mono text-[12.5px] tabular-nums text-muted">
+                {myScore} – {theirScore}
+              </span>
+            )}
+          </span>
+          <span className="t-micro block truncate">{[errLabel, left].filter(Boolean).join(" · ")}</span>
+        </span>
+        <span className="btn btn-sm btn-secondary" aria-hidden>Revoir</span>
+      </Link>
+    </li>
   );
 }
 
