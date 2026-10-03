@@ -602,6 +602,27 @@ html[data-theme="nuit"] {
   }
 }
 
+/* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse. */
+.rl-skel {
+  border-radius: 18px;
+  background: linear-gradient(90deg, var(--surface-2) 0%, color-mix(in oklab, var(--surface-2) 45%, var(--surface)) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: rlSkel 1.4s ease-in-out infinite;
+}
+@keyframes rlSkel {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-skel {
+    animation: none;
+  }
+}
+
 /* Les surfaces passent devant les décors à l'encre posés en absolu
    (enso derrière un titre, filigrane d'anneau). */
 .card, .card-soft, .card-ink, .plate { position: relative; }

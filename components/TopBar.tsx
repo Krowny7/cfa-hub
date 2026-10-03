@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { InkLockup } from "@/components/ink/InkRing";
 import { SpaceNav } from "@/components/nav/SpaceNav";
 import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
+import { CommandPalette } from "@/components/nav/CommandPalette";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
@@ -44,6 +45,7 @@ export async function TopBar() {
         )}
         <div className="flex flex-1 justify-center">{user && <SpaceNav />}</div>
         <div className="flex items-center gap-2">
+          {user && <CommandPalette />}
           <div className="hidden sm:flex sm:items-center sm:gap-2">
             <ThemeToggle />
             <DiscreetToggle />

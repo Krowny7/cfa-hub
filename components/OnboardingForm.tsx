@@ -101,8 +101,8 @@ export function OnboardingForm({
   }
 
   return (
-    <div className="card mx-auto mt-8 max-w-md p-6">
-      <h1 className="font-display text-xl font-medium tracking-tight">{t("onboarding.title")}</h1>
+    <div className="card rl-in mx-auto mt-8 max-w-md p-7">
+      <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.03em]">{t("onboarding.title")}</h1>
       <p className="mt-1 text-sm text-white/60">{t("onboarding.subtitle")}</p>
 
       {/* Avatar */}

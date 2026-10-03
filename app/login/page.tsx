@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { BookOpen, Target, Trophy, User } from "lucide-react";
 import { InkRing } from "@/components/ink/InkRing";
+import { PageHero } from "@/components/ui/Titles";
+import { RankBadge } from "@/components/ui/RankBadge";
+import { TIERS } from "@/lib/ranks";
+import { DOMAINS } from "@/lib/domains";
 
 function GoogleIcon() {
   return (
@@ -55,66 +60,78 @@ export default function LoginPage() {
     }
   }
 
-  const features = [
-    { title: t("nav.library"), desc: t("login.libraryDesc") },
-    { title: t("login.entrainementTitle"), desc: t("login.entrainementDesc") },
-    { title: t("login.groupsTitle"), desc: t("login.groupsDesc") },
+  const spaces = [
+    { Icon: BookOpen, title: "Réviser", desc: "Fiches, cours complets avec audio, flashcards." },
+    { Icon: Target, title: "S'entraîner", desc: "QCM officiels, sessions ciblées, examens blancs." },
+    { Icon: Trophy, title: "Classement", desc: "Duels de 30 questions et examens classés : ton ELO bouge." },
+    { Icon: User, title: "Moi", desc: "Tes stats, tes erreurs, ta progression matière par matière." },
   ];
 
   return (
-    <div className="grid gap-7 md:ml-[calc((100%-min(1120px,calc(100vw-4rem)))/2)] md:w-[min(1120px,calc(100vw-4rem))] lg:grid-cols-[1.35fr_1fr]">
-      {/* La planche « encre » : l'anneau, le nom, les annotations */}
-      <section className="card order-2 grid gap-7 p-7 md:p-9 lg:order-1">
-        <span className="panel-label w-fit">{t("login.studyHub")}</span>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-          <InkRing size={124} className="rl-deco shrink-0" title="Ranked Lobby" />
-          <div>
-            <h1 className="rl-hero font-display text-[46px] leading-[0.95] tracking-tight md:text-[50px]">
-              RANKED
-              <br />
-              LOBBY
-            </h1>
-            <p className="note mt-4 text-white/75">le savoir se conquiert.</p>
-            <p className="note mt-1 pl-5 text-white/60">→ {t("login.heroSuffix")}</p>
+    <div className="rl-wide grid items-start gap-8 lg:grid-cols-[1.35fr_1fr] lg:gap-12 lg:pt-6">
+      {/* Présentation : titre au pinceau, les rangs, les quatre espaces */}
+      <section className="order-2 grid gap-8 lg:order-1">
+        <PageHero kicker="Ranked Lobby" title={<>Révise, affronte,<br />monte en rang.</>}>
+          {DOMAINS.map((d) => (
+            <span key={d.key} className={"chip " + (d.ready ? "chip-active" : "")}>
+              {d.name}
+              <span className={d.ready ? "opacity-70" : "text-muted"}>· {d.ready ? d.programs.filter((p) => p.ready).map((p) => p.short).join(", ") : "bientôt"}</span>
+            </span>
+          ))}
+        </PageHero>
+
+        <div className="card p-5">
+          <div className="kicker mb-3">Huit rangs, de Bronze au Top 10</div>
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+            {TIERS.map((tier, i) => (
+              <div key={tier.key} className="rl-pop grid justify-items-center gap-1" style={{ animationDelay: `${0.15 + i * 0.07}s` }}>
+                <RankBadge tier={i} size={i >= 4 ? 50 : 42} glow={false} />
+                <span className="text-[11px] font-semibold text-muted">{tier.name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <p className="max-w-[60ch] text-[15px] leading-relaxed text-white/80">{t("login.heroDesc")}</p>
-
-        <div className="grid gap-4 border-t-2 border-white pt-5 sm:grid-cols-3">
-          {features.map((f) => (
-            <div key={f.title}>
-              <div className="kicker mb-1.5">{f.title}</div>
-              <div className="text-[13px] leading-relaxed text-white/70">{f.desc}</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {spaces.map(({ Icon, title, desc }, i) => (
+            <div key={title} className="card-soft rl-in flex gap-3 p-4" style={{ animationDelay: `${0.2 + i * 0.08}s` }}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white text-black">
+                <Icon size={17} strokeWidth={2.1} />
+              </span>
+              <div>
+                <div className="text-[15px] font-bold">{title}</div>
+                <div className="text-[13px] leading-relaxed text-muted">{desc}</div>
+              </div>
             </div>
           ))}
         </div>
-
-        <p className="note text-white/60">{t("login.tipStartBy")}</p>
       </section>
 
       {/* Connexion */}
-      <section className="card order-1 grid content-start gap-5 self-start p-7 md:p-9 lg:order-2">
-        <h2 className="font-display text-[30px] leading-none">{t("login.signinTitle")}</h2>
-        <p className="text-sm text-white/80">{t("login.signinDesc")}</p>
+      <section className="card rl-in order-1 grid content-start gap-5 p-7 md:p-8 lg:sticky lg:top-24 lg:order-2">
+        <div className="flex items-center gap-3">
+          <InkRing size={40} title="Ranked Lobby" />
+          <h2 className="text-[28px] font-extrabold leading-none tracking-[-0.03em]">{t("login.signinTitle")}</h2>
+        </div>
+        <p className="text-[15px] text-muted">{t("login.signinDesc")}</p>
 
-        <button type="button" onClick={signInWithGoogle} disabled={busy} className="btn btn-primary w-full py-3.5 text-[15px]">
+        <button type="button" onClick={signInWithGoogle} disabled={busy} className="btn btn-primary rl-press w-full py-3.5 text-[15px]">
           <GoogleIcon />
           {busy ? t("login.redirecting") : t("login.googleButton")}
         </button>
 
-        {error ? <div className="text-sm font-bold text-red-500">{error}</div> : null}
+        {error ? <div className="text-sm font-semibold text-pen">{error}</div> : null}
 
-        <div className="card-soft p-4">
+        <div className="rounded-[14px] bg-surface-2 p-4">
           <div className="kicker mb-2">{t("login.firstStepsTitle")}</div>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-white/80">
-            <li>{t("login.step1")}</li>
-            <li>{t("login.step2")}</li>
-            <li>{t("login.step3")}</li>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
+            <li>Choisis ton pseudo et ta date d&apos;examen.</li>
+            <li>Commence par une fiche de révision et son quiz.</li>
+            <li>Joue tes 5 parties de placement pour obtenir ton rang.</li>
           </ol>
         </div>
 
-        <div className="text-xs text-white/60">{t("login.legalNote")}</div>
+        <div className="text-xs text-muted">{t("login.legalNote")}</div>
       </section>
     </div>
   );
