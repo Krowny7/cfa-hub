@@ -88,3 +88,10 @@ export function eloDelta(ratingA: number, ratingB: number, score: number, k = 32
 export function eloStakes(ratingA: number, ratingB: number, k = 32) {
   return { win: eloDelta(ratingA, ratingB, 1, k), loss: eloDelta(ratingA, ratingB, 0, k) };
 }
+
+/** Parties de placement par domaine : tant qu'elles ne sont pas jouées, le rang s'affiche « En placement n/5 ». */
+export const PLACEMENT_GAMES = 5;
+/** Facteur K : plus fort pendant le placement pour converger vite vers le bon niveau. */
+export function kFactor(gamesPlayed: number) {
+  return gamesPlayed < PLACEMENT_GAMES ? 48 : 32;
+}
