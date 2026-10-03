@@ -1,7 +1,19 @@
-// Seed script — quiz de "drill" pour la page 7 de la fiche PDF Fixed
-// Income (Securitization Fundamentals). 5 concepts x 3 variantes.
+// Seed script — quiz de "drill" associé à la page 7 de la fiche PDF Fixed
+// Income (Securitization Fundamentals). Contenu d'origine fourni par
+// l'utilisateur, remis au cadre à sa demande le 3 octobre 2026. Structure :
+// pour chacun des 5 concepts clés de la page, 1 question officielle (banque de
+// pratique CFA, Readings 50, 65 et 66, corrigé vérifié contre le PDF
+// "- Answers.pdf" correspondant) + 1 variante "angle différent" (même notion,
+// mais jamais un simple changement de chiffres menant au même raisonnement) +
+// 1 variante "plus difficile" (raisonnement à plusieurs étapes / pièges
+// combinés / notion connexe de la page). Voir memory
+// regle-drill-variantes-cfa-hub. Questions en anglais, explications en français.
+// Aucune question de l'ancien script n'était une question officielle de la
+// banque : les officielles ci-dessous sont nouvelles, recopiées telles quelles
+// de la banque (en évitant les QCM déjà imprimés dans la fiche). syncQuizSets
+// retrouve l'historique de réponses en comparant le texte exact de l'énoncé.
 // Usage: node scripts/seed-fixed-income-drill-page7.mjs
-import { getOwnerId, ensureFolder, seedQuizSets } from "./lib/seed-core.mjs";
+import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
 const FOLDER_NAME = "Fixed Income (Système)";
 
@@ -10,160 +22,150 @@ const QUIZ_SETS = [
     title: "Fixed Income — Drill Fiche Page 7 (Securitization Fundamentals)",
     difficulty: 2,
     questions: [
-      // Concept 1 — Securitization benefits to the financial system
+      // Concept 1 — Bénéfices de la titrisation pour l'investisseur et l'émetteur (officielle, Reading 65 Q3)
       [
-        "From the perspective of the broader financial system, securitization primarily provides a benefit by:",
+        "One of the primary benefits of securitization is that it:",
         [
-          "eliminating credit risk entirely from the financial system.",
-          "matching the risk/return preferences of different investors to specific tranches, while giving originators an additional funding source.",
-          "guaranteeing that all securitized assets are risk-free.",
+          "improves the collectability of the loans that are securitized.",
+          "improves the legal claims of the security holders to the loans that are securitized.",
+          "removes problem assets from the issuing firm's balance sheet.",
         ],
         1,
-        "La titrisation profite aux investisseurs en leur permettant de choisir des tranches correspondant à leur profil risque/rendement souhaité (senior vs junior), et profite aux émetteurs/originateurs en leur fournissant une source de financement alternative (monétiser des créances) au-delà des obligations ou actions classiques — elle redistribue le risque, elle ne l'élimine pas.",
+        "Un des principaux bénéfices de la titrisation est de réduire le coût de financement des actifs. Les prêts sont transférés à une SPE : les porteurs des titres ont alors une créance juridique claire et directe sur ces prêts, ce qu'ils n'auraient pas en achetant simplement les obligations de la banque (ils seraient exposés à tout son bilan, en concurrence avec ses autres créanciers). A est faux : la titrisation ne rend pas les prêts plus faciles à recouvrer — ce sont les mêmes emprunteurs, et un servicer continue de collecter les paiements. C est faux : des prêts douteux sont de mauvais candidats à la titrisation, car les investisseurs institutionnels exigent une qualité de crédit minimale ; même des prêts sains nécessitent souvent un rehaussement de crédit (interne ou externe).",
       ],
+      // Variante angle différent — le POURQUOI côté banque / système : comment la titrisation augmente la capacité de prêt
       [
-        "An insurance company wants exposure only to the safest, most senior portion of a pool of auto loans, with minimal risk of loss. Securitization most directly allows this investor to:",
+        "Securitization is often said to increase the amount that banks are able to lend. Which of the following best explains this effect?",
         [
-          "buy the entire loan pool directly from the originator.",
-          "purchase a senior tranche of asset-backed securities backed by the pool, which absorbs losses only after junior tranches are exhausted.",
-          "avoid any exposure to interest rate risk.",
-        ],
-        1,
-        "La titrisation découpe les cash flows/pertes du pool sous-jacent en tranches, permettant à un investisseur de choisir une tranche senior protégée par les tranches junior en dessous — cela permet de « tailorer » (ajuster) l'exposition au risque sans acheter le pool entier directement.",
-      ],
-      [
-        "For the originator of a pool of loans, securitization provides funding benefits primarily by:",
-        [
-          "requiring the originator to hold more capital against the loans.",
-          "converting a pool of relatively illiquid loans into cash, providing a funding source that may be cheaper or more accessible than issuing unsecured corporate debt.",
-          "eliminating the originator's need for any third-party servicer.",
-        ],
-        1,
-        "La titrisation permet à un originateur de monétiser (convertir en cash) un pool de prêts/créances qui resterait sinon illiquide à son bilan, fournissant une source de financement alternative — parfois moins chère — que l'émission d'obligations corporate non sécurisées classiques.",
-      ],
-      // Concept 2 — SPE independence
-      [
-        "The special purpose entity (SPE) used in a securitization must be legally independent of the seller/originator primarily so that:",
-        [
-          "the SPE can pay higher fees to the originator.",
-          "the securitized assets are protected from claims by the seller's own creditors if the seller becomes insolvent.",
-          "the SPE can issue equity to the originator's shareholders.",
-        ],
-        1,
-        "L'indépendance juridique de la SPE (bankruptcy remoteness) garantit que si le vendeur/originateur devient insolvable, ses créanciers ne peuvent pas revendiquer les actifs déjà vendus à la SPE — protégeant la créance des investisseurs de l'ABS sur ces actifs.",
-      ],
-      [
-        "If a securitization's SPE were not legally independent of its sponsor, the most likely consequence would be that:",
-        [
-          "the ABS would automatically receive a higher credit rating than the sponsor.",
-          "the securitized assets could be pulled back into the sponsor's bankruptcy estate, exposing ABS investors to the sponsor's own credit risk.",
-          "the servicer would no longer be needed.",
-        ],
-        1,
-        "Sans véritable indépendance juridique (bankruptcy remoteness), les actifs transférés à la SPE pourraient être considérés comme appartenant toujours au sponsor lors d'une procédure de faillite, exposant les investisseurs de l'ABS au risque de crédit du sponsor — annulant l'objectif principal de la titrisation.",
-      ],
-      [
-        "Which of the following is most essential to establishing that an SPE is legally independent (bankruptcy remote) from its sponsor?",
-        [
-          "The SPE shares the same board of directors and offices as the sponsor.",
-          "The transfer of assets from the sponsor to the SPE qualifies as a true sale, not merely a secured loan.",
-          "The SPE is fully guaranteed by the sponsor's own balance sheet.",
-        ],
-        1,
-        "Pour que le bankruptcy remoteness tienne, le transfert des actifs à la SPE doit être structuré et traité comme une véritable vente (« true sale ») — s'il était requalifié en prêt sécurisé, les actifs pourraient être réintégrés dans la masse de faillite du sponsor, annulant l'indépendance de la SPE.",
-      ],
-      // Concept 3 — Bankruptcy remoteness / ABS rating vs seller
-      [
-        "An asset-backed security can potentially receive a higher credit rating than the credit rating of the company that originated (sold) the underlying assets. This is most directly explained by:",
-        [
-          "rating agencies always rating ABS higher than corporate bonds.",
-          "bankruptcy remoteness, which isolates the securitized assets from the originator's own credit risk.",
-          "the servicer's guarantee of all payments.",
-        ],
-        1,
-        "Comme le bankruptcy remoteness isole juridiquement les actifs titrisés de l'originateur, la qualité de crédit de l'ABS dépend surtout de la performance du pool sous-jacent (et de sa structure/rehaussement de crédit) plutôt que de la solvabilité propre de l'originateur — ce qui permet à l'ABS d'être noté au-dessus de l'originateur lui-même.",
-      ],
-      [
-        "A retailer with a below-investment-grade corporate credit rating securitizes a pool of its high-quality credit card receivables. The resulting senior ABS tranche can most plausibly receive an investment-grade rating primarily because:",
-        [
-          "the retailer guarantees the ABS with its own corporate credit.",
-          "the securitized receivables and the SPE holding them are legally isolated from the retailer's own credit risk, so the ABS is rated on the pool's own credit quality (plus structural protections).",
-          "all ABS are required by regulation to be rated investment-grade.",
-        ],
-        1,
-        "Comme les créances ont été vendues à une SPE bankruptcy remote, le rating de l'ABS reflète la qualité de crédit des créances sous-jacentes et tout rehaussement de crédit structurel, pas le rating corporate (plus faible) de l'originateur — permettant à l'ABS d'obtenir un rating supérieur à celui du vendeur.",
-      ],
-      [
-        "If a securitization's SPE were determined by a court to NOT be bankruptcy remote from its originator, the ABS's credit rating would most likely:",
-        [
-          "remain unaffected, since ratings never depend on the originator.",
-          "converge toward (or be capped by) the originator's own credit rating, since the assets would no longer be isolated from the originator's risk.",
-          "automatically improve, since court involvement typically strengthens investor protections.",
-        ],
-        1,
-        "Si le bankruptcy remoteness échoue, les actifs ne sont plus isolés du risque de crédit de l'originateur, donc le rating de l'ABS devrait refléter (et être probablement plafonné par) la solvabilité de l'originateur — annulant l'avantage clé qui permettait à l'ABS d'être noté au-dessus du vendeur.",
-      ],
-      // Concept 4 — Credit tranching
-      [
-        "In a securitization with senior, mezzanine, and junior (equity) tranches, if the underlying asset pool experiences losses, which tranche absorbs losses first?",
-        [
-          "The senior tranche.",
-          "The mezzanine tranche.",
-          "The junior (equity) tranche.",
+          "Banks can transfer their deposits and other liabilities to the SPE, which frees up borrowing capacity on their balance sheets.",
+          "Securitization allows banks to postpone recognizing losses on their loans, which preserves the capital they need to keep lending.",
+          "Banks sell loans they would otherwise hold to maturity and receive cash, which they can use to originate new loans.",
         ],
         2,
-        "Le credit tranching alloue les pertes du bas vers le haut : la tranche junior (equity) absorbe les pertes en premier, suivie des tranches mezzanine, la tranche senior étant protégée tant que les pertes ne dépassent pas la taille cumulée des tranches en dessous d'elle.",
+        "La titrisation porte sur des ACTIFS : la banque vend à la SPE des prêts qu'elle aurait sinon gardés jusqu'à l'échéance, et reçoit du cash qu'elle peut reprêter. Elle transforme ainsi des actifs illiquides en liquidités, ce qui augmente sa capacité de prêt et la liquidité du marché du crédit. A est le piège classique : on ne titrise pas des passifs ; les dépôts restent au bilan de la banque. B est faux : la titrisation ne sert pas à reporter des pertes — les prêts cédés doivent être de bonne qualité et, une fois vendus (true sale), leur risque de crédit est porté par les investisseurs, pas « caché » par la banque.",
       ],
+      // Variante plus difficile — chiffrer l'avantage de financement pour l'émetteur, avec moyenne pondérée et donnée-piège
       [
-        "Relative to a senior tranche, a junior (subordinated) tranche of the same securitization will most likely offer investors:",
+        "A bank rated BBB can issue five-year senior unsecured bonds at a yield of 5.80%. It holds $1 billion of high-quality auto loans with an average interest rate of 7.00%. Instead of issuing unsecured bonds, it can sell the loans to an SPE, which would issue $900 million of AAA-rated senior ABS at 4.60% and $100 million of subordinated ABS at 8.00%. Ignoring fees, the average funding cost of the securitization and its comparison with unsecured funding are closest to:",
         [
-          "a lower yield, to compensate for its lower risk.",
-          "a higher yield, to compensate for absorbing losses first.",
-          "an identical yield, since credit tranching does not affect pricing.",
+          "4.94%, which is lower than the cost of unsecured funding.",
+          "6.30%, which is higher than the cost of unsecured funding.",
+          "7.00%, which is higher than the cost of unsecured funding.",
         ],
-        1,
-        "Comme les tranches junior absorbent les pertes en premier (risque de crédit plus élevé), les investisseurs exigent un yield plus élevé pour compenser ce risque supplémentaire par rapport à la tranche senior, plus protégée et moins rémunérée.",
+        0,
+        "Coût moyen pondéré de la titrisation = (900 / 1 000) × 4,60 % + (100 / 1 000) × 8,00 % = 4,14 % + 0,80 % = 4,94 %, soit 0,86 point de moins que les 5,80 % de la dette non garantie. Pourquoi c'est moins cher : les investisseurs des ABS ont une créance sur un pool de prêts de grande qualité isolé dans la SPE ; ils exigent un rendement qui reflète ce pool, pas la note BBB de la banque — et 90 % du financement est noté AAA. B fait la moyenne simple (4,60 + 8,00) / 2 = 6,30 % au lieu de pondérer par la taille des tranches : la tranche subordonnée, chère, ne représente que 10 % du financement. C est la donnée-piège : 7,00 % est le taux des prêts, c'est-à-dire le RENDEMENT de l'actif, pas un coût de financement (l'écart entre ce rendement et le coût des ABS forme l'excess spread de la structure).",
       ],
+
+      // Concept 2 — Parties prenantes : seller/originator, SPE, servicer, tiers (officielle, Reading 50 Q13)
       [
-        "The primary purpose of credit tranching in a securitization is to:",
-        [
-          "eliminate the total credit risk of the underlying asset pool.",
-          "redistribute the pool's total credit risk unevenly across different classes of securities, rather than reducing the total amount of risk.",
-          "guarantee that every tranche receives an identical credit rating.",
-        ],
+        "Securitized bonds are most likely to be issued by:",
+        ["banking institutions.", "special purpose entities.", "supranational entities."],
         1,
-        "Le tranching ne réduit pas le risque total du pool sous-jacent — il redistribue ce risque de façon inégale, en le concentrant dans les tranches junior (qui absorbent les pertes en premier) tout en protégeant les tranches senior, permettant à différents investisseurs de choisir la tranche correspondant à leur profil risque/rendement préféré.",
+        "Dans une titrisation, l'émetteur des titres n'est pas la banque elle-même mais une SPE (special purpose entity, aussi appelée SPV ou SPC), créée spécialement pour acheter les actifs au seller/originator et émettre les titres dont les intérêts et le principal sont payés par les flux de ces actifs. A est le piège : la banque est en général l'originator (elle crée les prêts et les vend à la SPE), et souvent le servicer, mais pas l'émetteur des titres titrisés. C : les supranationaux (Banque mondiale, etc.) émettent leurs propres obligations, garanties par leurs États membres, pas des titres adossés à un pool d'actifs.",
       ],
-      // Concept 5 — Covered bonds dual recourse
+      // Variante angle différent — appliquer les rôles à un cas réel où une même entité cumule deux rôles
       [
-        "Covered bond investors, compared to typical ABS investors, benefit from 'dual recourse,' meaning they have a claim on:",
+        "Northfield Bank originates $300 million of auto loans and sells them to Northfield Auto Trust, a legally separate entity that issues asset-backed securities to investors. Northfield Bank continues to collect the monthly payments from the borrowers and to pursue delinquent accounts, in exchange for a fee. In this transaction, Northfield Bank acts as the:",
         [
-          "only the segregated cover pool of assets, with no further recourse.",
-          "the segregated cover pool of assets first, and the issuer's other (unencumbered) assets second if the cover pool is insufficient.",
-          "only the issuer's general unsecured assets, with no dedicated collateral pool.",
+          "seller (originator) and servicer, while the trust is the SPE that issues the securities.",
+          "SPE and servicer, while the trust acts as the trustee.",
+          "seller and trustee, while the trust acts as the servicer.",
         ],
-        1,
-        "Le dual recourse signifie que les porteurs de covered bonds ont DEUX niveaux de protection : d'abord une créance sur le cover pool ringfencé, et — si celui-ci est insuffisant — un recours sur les actifs restants (non grevés) de l'émetteur en second lieu, contrairement aux investisseurs ABS typiques dont le recours se limite généralement au seul pool titrisé.",
+        0,
+        "Les rôles se lisent dans les faits. Northfield Bank CRÉE les prêts et les VEND → seller/originator ; elle continue de COLLECTER les paiements et de relancer les impayés contre une commission → servicer (un cumul très fréquent en pratique). Le trust, juridiquement distinct, ACHÈTE les prêts et ÉMET les ABS → c'est la SPE. B est faux : la banque ne peut pas être la SPE, puisque tout l'intérêt de la structure est que l'émetteur soit juridiquement séparé du vendeur (bankruptcy remoteness). C est faux : le trustee est un tiers indépendant chargé de protéger les intérêts des investisseurs (garde des actifs, contrôle des paiements) ; ce n'est pas le rôle de la banque cédante, et le trust ne collecte pas lui-même les paiements des emprunteurs.",
       ],
+      // Variante plus difficile — suivre le cash des emprunteurs jusqu'aux investisseurs (rôle du servicer et des tiers, piège annuel/mensuel)
       [
-        "Relative to a comparable asset-backed security (ABS), a covered bond backed by a similar-quality asset pool will most likely trade at a:",
-        [
-          "higher yield, reflecting its riskier structure.",
-          "lower yield, reflecting the additional protection of dual recourse and stricter cover pool requirements.",
-          "identical yield, since both instruments have the same underlying collateral quality.",
-        ],
+        "An SPE holds a $600 million pool of loans. In a given month, borrowers pay $4.5 million of interest and $6.0 million of principal. The servicer receives an annual fee of 0.40% of the pool balance, paid monthly, and trustee and other administrative fees total $50,000 per month. Assuming no defaults, the cash available for distribution to the ABS investors that month is closest to:",
+        ["$8.05 million.", "$10.25 million.", "$10.50 million."],
         1,
-        "Les covered bonds tendent à porter un risque plus faible (et donc un yield plus bas) qu'un ABS comparable, grâce à des protections structurelles comme le dual recourse, des critères d'éligibilité stricts pour le cover pool, un cover pool maintenu dynamiquement (renouvelé), et des régimes de remboursement définis en cas de défaut du sponsor — des protections absentes ou plus faibles dans un ABS classique.",
+        "Encaissements du mois = 4,5 + 6,0 = 10,5 M$. Commission de servicing mensuelle = 600 M$ × 0,40 % / 12 = 2,4 M$ / 12 = 0,20 M$. Frais du trustee et administratifs = 0,05 M$. Flux distribuables aux investisseurs = 10,5 − 0,20 − 0,05 = 10,25 M$. C'est la logique de la banque officielle : les investisseurs reçoivent MOINS que ce que paient les emprunteurs, car le servicer et les autres intervenants (trustee, etc.) sont rémunérés sur ces flux. A (8,05 M$) déduit la commission ANNUELLE de servicing (2,4 M$) sur un seul mois. C (10,50 M$) suppose que tout ce que paient les emprunteurs revient aux investisseurs, en oubliant les frais.",
       ],
+
+      // Concept 3 — Bankruptcy remoteness : pourquoi l'ABS peut être mieux noté que le vendeur (officielle, Reading 50 Q22)
       [
-        "Unlike in a 'true' securitization, in a covered bond structure the assets backing the bond (the cover pool):",
-        [
-          "are legally sold and removed from the issuing bank's balance sheet into an SPE.",
-          "remain on the issuing bank's balance sheet, merely ring-fenced (segregated) as dedicated collateral.",
-          "are always converted into equity of the issuing bank.",
-        ],
+        "Which of the following entities play a critical role in the ability to create a securitized bond with a higher credit rating than the corporation?",
+        ["Rating agencies.", "Special purpose entities.", "Investment banks."],
         1,
-        "Différence structurelle clé : dans une vraie titrisation, les actifs sont vendus hors bilan à une SPE ; dans un covered bond, les actifs restent AU bilan de l'émetteur, simplement mis de côté (« ringfencés ») comme cover pool dédié garantissant le bond, l'émetteur conservant la propriété et maintenant dynamiquement la qualité du pool.",
+        "La SPE achète les actifs à l'entreprise et les sépare juridiquement de celle-ci : c'est le bankruptcy remoteness. Si l'entreprise fait faillite, ses créanciers n'ont aucun droit sur les actifs détenus par la SPE. La note des titres dépend alors de la qualité du pool (et du rehaussement de crédit), pas de la solvabilité de l'entreprise : elle peut donc être supérieure à la note de l'entreprise. A : les agences de notation ne font que mesurer ce risque ; elles ne créent pas la séparation juridique qui le réduit. C : les banques d'investissement (underwriters) structurent et placent les titres, sans effet sur le risque de crédit qu'ils portent.",
+      ],
+      // Variante angle différent — ce contre quoi le bankruptcy remoteness protège… et ce contre quoi il ne protège pas
+      [
+        "The bankruptcy remoteness of the SPE in a securitization most directly protects the ABS investors against:",
+        [
+          "losses caused by defaults of the borrowers in the underlying loan pool.",
+          "the risk that borrowers repay their loans earlier than expected.",
+          "claims by the seller's creditors on the securitized assets if the seller becomes insolvent.",
+        ],
+        2,
+        "Le bankruptcy remoteness isole juridiquement les actifs de la SPE du risque de crédit du VENDEUR : si celui-ci fait faillite, ses créanciers ne peuvent pas saisir les actifs cédés, qui continuent de servir les ABS. Il ne protège ni contre A, le risque de crédit du pool lui-même (si les emprunteurs font défaut, les investisseurs subissent des pertes ; ce risque est traité par le rehaussement de crédit : subordination, surdimensionnement, excess spread), ni contre B, le risque de remboursement anticipé, lié aux taux d'intérêt et redistribué, le cas échéant, par le time tranching (CMO).",
+      ],
+      // Variante plus difficile — la faillite du vendeur pas à pas, combinée au credit tranching (données-pièges : notes, dette du vendeur)
+      [
+        "Carlton Stores, a retailer rated BB, sold $500 million of its credit card receivables to a bankruptcy-remote SPE, which issued $400 million of AAA-rated senior notes and $100 million of subordinated notes. Carlton also has $200 million of unsecured bonds outstanding. Carlton later files for bankruptcy, while the receivables continue to perform roughly as expected. Which statement is most accurate?",
+        [
+          "The noteholders continue to be paid from the receivables, which Carlton's creditors cannot claim; the senior notes remain exposed to the credit risk of the receivables, with the subordinated notes absorbing losses first.",
+          "The AAA rating of the senior notes will be cut to Carlton's BB rating, because an ABS cannot be rated above its originator once the originator has defaulted.",
+          "The SPE noteholders become unsecured creditors of Carlton and share its remaining assets pari passu with Carlton's bondholders.",
+        ],
+        0,
+        "Les créances ont été vendues à une SPE bankruptcy remote : la faillite de Carlton ne touche pas les actifs de la SPE, que ses créanciers (dont les porteurs des 200 M$ d'obligations) ne peuvent pas réclamer. Les porteurs des notes continuent d'être payés par les flux des créances. Mais le bankruptcy remoteness ne supprime pas le risque de crédit du pool : si les pertes sur les créances augmentent, les 100 M$ de notes subordonnées les absorbent en premier, puis la tranche senior. B est le piège : la note de l'ABS repose sur la qualité du pool et sur le rehaussement de crédit, pas sur la solvabilité du vendeur — c'est précisément pourquoi elle peut être AAA quand Carlton est BB, et la faillite de Carlton ne la ramène pas mécaniquement à BB. C décrit la situation SANS SPE : les investisseurs seraient alors de simples créanciers non garantis de Carlton, en concurrence avec ses obligataires.",
+      ],
+
+      // Concept 4 — Covered bonds : double recours, cover pool, redemption regimes (officielle, Reading 66 Q4)
+      [
+        "A covered bond that may postpone the originally scheduled maturity date by as much as a year to delay default is:",
+        ["a soft-bullet covered bond.", "a conditional pass-through covered bond.", "a hard-bullet covered bond."],
+        0,
+        "Les redemption regimes fixent ce qui se passe si l'émetteur (sponsor) ne paie pas à l'échéance ; ils font partie des raisons pour lesquelles un covered bond est moins risqué qu'un ABS. Soft-bullet : l'échéance initiale peut être repoussée (jusqu'à environ un an) avant que le défaut ne soit déclaré. C, hard-bullet : le covered bond est en défaut dès qu'un paiement prévu n'est pas effectué. B, conditional pass-through : si des paiements restent dus à l'échéance, l'obligation se transforme en titre pass-through, qui reverse les flux du cover pool au fil de leur encaissement.",
+      ],
+      // Variante angle différent — ce qui N'EXPLIQUE PAS le moindre risque d'un covered bond (et la différence avec une vraie titrisation)
+      [
+        "Covered bonds typically have lower credit risk and lower yields than otherwise comparable asset-backed securities. Which of the following is least likely a reason for this difference?",
+        [
+          "Mortgages in the cover pool that become non-performing or no longer meet the eligibility criteria must be replaced by the issuer.",
+          "If the cover pool proves insufficient, covered bondholders have a claim on the issuer's other assets.",
+          "The cover pool is sold to a bankruptcy-remote special purpose entity and removed from the issuer's balance sheet.",
+        ],
+        2,
+        "C décrit une VRAIE titrisation (ABS) : actifs vendus à une SPE et sortis du bilan. Dans un covered bond au contraire, le cover pool RESTE au bilan de l'émetteur, simplement ringfencé (réservé aux porteurs). Ce n'est donc pas une raison du moindre risque — c'est même la différence structurelle avec l'ABS. A et B sont de vraies raisons : A = cover pool dynamique + critères d'éligibilité (l'émetteur doit remplacer les prêts non performants ou non conformes, ce qui maintient la qualité du pool, alors que le pool d'un ABS est en général figé) ; B = double recours (cover pool d'abord, puis actifs non grevés de l'émetteur), absent d'un ABS, dont l'investisseur n'a de recours que sur le pool. S'y ajoutent les redemption regimes (soft-bullet, conditional pass-through), qui évitent une vente forcée du cover pool en cas de défaut.",
+      ],
+      // Variante plus difficile — défaut de l'émetteur : double recours chiffré + régime soft-bullet
+      [
+        "Bergbank issued €500 million of soft-bullet covered bonds backed by a cover pool of residential mortgages. When Bergbank defaults, the cover pool is worth €460 million. Which statement best describes the position of the covered bondholders?",
+        [
+          "Their recovery is limited to the €460 million cover pool, as it would be for ABS investors, but the soft-bullet regime converts the bonds into a pass-through security at maturity.",
+          "Because the cover pool remains on Bergbank's balance sheet, they rank pari passu with Bergbank's senior unsecured creditors for the full €500 million, and missing the scheduled maturity payment triggers an immediate default.",
+          "They have a first claim on the €460 million cover pool and a claim on Bergbank's other assets for the €40 million shortfall, and payment at the scheduled maturity can be postponed by up to about a year before a default is declared.",
+        ],
+        2,
+        "Double recours : 1) les porteurs ont un droit prioritaire sur le cover pool ringfencé (460 M€), qui leur est réservé ; 2) pour le manque de 500 − 460 = 40 M€, ils ont un recours sur les autres actifs (non grevés) de Bergbank, comme créanciers non garantis. Régime soft-bullet : si le paiement n'est pas fait à l'échéance prévue, celle-ci peut être repoussée (jusqu'à environ un an) avant que le défaut ne soit déclaré, ce qui laisse le temps d'encaisser les flux du cover pool ou de le vendre de façon ordonnée. A applique la logique d'un ABS (recours limité au pool) et confond soft-bullet et conditional pass-through (c'est ce dernier qui se transforme en pass-through). B oublie le ringfencing — le cover pool n'est pas partagé avec les créanciers non garantis — et décrit le régime hard-bullet (défaut immédiat).",
+      ],
+
+      // Concept 5 — Credit tranching : les tranches juniors absorbent les pertes en premier (officielle, Reading 66 Q10)
+      [
+        "Based on the table below illustrating an asset-backed security (ABS) structure, what is the value of the equity tranche (in $ millions)? Tranche A senior notes: face value $120, interest rate SOFR + 0.25%. Tranche B subordinated notes: face value $20, interest rate SOFR + 1.25%. Tranche C equity tranche: face value $10, interest rate variable. Total: $150.",
+        ["30.", "0.", "10."],
+        2,
+        "La tranche equity est la tranche la plus subordonnée (la moins senior) de la structure : sa valeur faciale est de 10 M$, et c'est aussi le montant des premières pertes qu'elle absorbe. Toutes les pertes jusqu'à 10 M$ sont absorbées par cette tranche ; au-delà, la tranche B (20 M$), puis seulement la tranche A senior. A (30) additionne les tranches B et C : c'est le coussin total qui protège la tranche A, pas la valeur de l'equity. B (0) confond l'absence de coupon fixe (taux « variable », c'est-à-dire résiduel) avec une absence de valeur.",
+      ],
+      // Variante angle différent — ce que le tranching NE fait PAS (redistribuer n'est pas réduire)
+      [
+        "Which of the following statements about credit tranching in a securitization is least accurate?",
+        [
+          "Credit tranching reduces the total credit risk of the underlying asset pool.",
+          "The subordinated tranches act as a form of credit enhancement for the senior tranche.",
+          "Junior tranches offer higher yields than senior tranches because they absorb losses first.",
+        ],
+        0,
+        "Le credit tranching ne réduit PAS le risque total : les prêts, les emprunteurs et donc les pertes attendues du pool restent les mêmes ; il RÉPARTIT ce risque de façon inégale entre les classes de titres, pour que chaque investisseur choisisse son exposition. B est exact : la subordination est une forme de rehaussement de crédit interne — les tranches juniors protègent la senior, qui peut ainsi être mieux notée que la qualité moyenne des prêts. C est exact : les tranches juniors encaissent les pertes en premier et exigent donc un rendement plus élevé.",
+      ],
+      // Variante plus difficile — cascade des pertes sur trois tranches, avec données-pièges (coupons)
+      [
+        "A $400 million pool of loans backs three classes of securities: a $320 million senior tranche, a $50 million mezzanine tranche, and a $30 million equity tranche. The senior tranche pays a coupon of 4% and the mezzanine tranche a coupon of 7%. If cumulative losses on the pool reach $45 million, the percentage of its principal lost by the mezzanine tranche is closest to:",
+        ["11.25%.", "30%.", "90%."],
+        1,
+        "Les pertes remontent du bas vers le haut. 1) La tranche equity (30 M$) absorbe les 30 premiers millions et disparaît. 2) Il reste 45 − 30 = 15 M$ de pertes pour la mezzanine : 15 / 50 = 30 % de son principal. 3) La tranche senior (320 M$) n'est pas touchée. Les coupons (4 % et 7 %) sont des données-pièges sans effet sur la répartition des pertes. A (11,25 %) répartit les pertes au prorata (45 / 400), ce qui nie le principe même de la subordination. C (90 %) impute toutes les pertes à la mezzanine (45 / 50) en oubliant la tranche equity, qui est en dessous d'elle.",
       ],
     ],
   },
@@ -173,8 +175,8 @@ async function main() {
   const ownerId = await getOwnerId();
   const folderId = await ensureFolder(ownerId, FOLDER_NAME, "quizzes");
   console.log("Drill QCM — Fiche Fixed Income Page 7...");
-  const total = await seedQuizSets({ ownerId, folderId, sets: QUIZ_SETS });
-  console.log(`\n✅ Terminé. ${total} questions ajoutées.`);
+  const total = await syncQuizSets({ ownerId, folderId, sets: QUIZ_SETS });
+  console.log(`\n✅ Terminé. ${total} questions synchronisées.`);
 }
 
 main().catch((e) => {
