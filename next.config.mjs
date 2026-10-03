@@ -4,8 +4,14 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Aperçus locaux en parallèle : chaque chantier compile dans son propre
+// dossier (RL_DIST_DIR=.next-xxx), sans vérification de types, car un autre
+// chantier peut être en cours d'écriture. Sans la variable : build normal.
+const previewDist = process.env.RL_DIST_DIR;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(previewDist ? { distDir: previewDist, typescript: { ignoreBuildErrors: true } } : {}),
   // Avoid failing production builds on local ESLint setup issues.
   // (You can still run ESLint separately via npm scripts.)
   eslint: {

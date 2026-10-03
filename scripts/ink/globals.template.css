@@ -619,6 +619,95 @@ html[data-theme="nuit"] {
   }
 }
 
+/* ---------- Hiérarchie (chantier « moins dense ») ----------
+   Une échelle de titres et trois niveaux de surface, pour qu'un écran ait un
+   seul point focal. Les pages s'appuient sur ces classes ; leurs valeurs
+   peuvent être affinées ici sans toucher aux pages. */
+.t-hero {
+  font-size: clamp(38px, 5.2vw, 64px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.t-h1 {
+  font-size: clamp(28px, 3.2vw, 40px);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.t-h2 {
+  font-size: clamp(20px, 2vw, 24px);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.t-h3 {
+  font-size: 17px;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.t-body {
+  font-size: 15px;
+  line-height: 1.55;
+}
+.t-small {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.t-micro {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+/* Grand chiffre (Dela Gothic) : un seul par carte */
+.t-num {
+  font-family: var(--font-brand), var(--font-sans);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Surfaces : .card-hero (le point focal, un par écran), .card (défaut),
+   .card-quiet (secondaire : pas d'ombre ni de bordure, fond à peine teinté). */
+.card-hero {
+  position: relative;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+.card-quiet {
+  position: relative;
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--surface-2) 55%, transparent);
+}
+
+/* Rythme vertical : .rl-page entre les grandes sections, .rl-section à
+   l'intérieur d'une section. */
+.rl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+@media (min-width: 768px) {
+  .rl-page {
+    gap: 64px;
+  }
+}
+.rl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .rl-section {
+    gap: 20px;
+  }
+}
+
 /* Squelette de chargement (app/loading.tsx) : un reflet lent qui glisse. */
 .rl-skel {
   border-radius: 18px;
