@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { MockExamRunner } from "@/components/MockExamRunner";
 import { MockExamRegistration } from "@/components/MockExamRegistration";
 import { MockExamRetake } from "@/components/MockExamRetake";
+import { applyMockExamElo, getMockExamEloDeltas } from "@/lib/rating";
+import { duelsReady } from "@/lib/duels";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -167,6 +169,32 @@ export default async function MockExamDetailPage({ params }: PageProps) {
     });
   const showTopicComparison = topicUsers.length > 1;
 
+  // Examen blanc classé : une fois l'examen clos (clôture manuelle ou fenêtre
+  // terminée), l'ELO de tous les participants est appliqué — paresseusement
+  // ici, à la première consultation ; idempotent côté serveur.
+  const examClosed = exam.status === "closed" || windowClosed;
+  const eloEnabled = exam.status !== "draft" && (await duelsReady(supabase));
+  let eloDeltas: Record<string, number> = {};
+  let eloTooFew = false;
+  if (eloEnabled && examClosed) {
+    const applied = await applyMockExamElo(supabase, exam.id);
+    eloDeltas = await getMockExamEloDeltas(supabase, exam.id);
+    eloTooFew = applied.reason === "too_few" || (applied.reason === "already" && Object.keys(eloDeltas).length === 0);
+  }
+  const myEloDelta = eloDeltas[auth.user.id] ?? null;
+  const eloInfo = !eloEnabled
+    ? null
+    : myEloDelta !== null
+      ? { delta: myEloDelta, note: null }
+      : !examClosed
+        ? {
+            delta: null,
+            note: `Examen classé : ton ELO bougera à la clôture, le ${windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" })}.`,
+          }
+        : eloTooFew
+          ? { delta: null, note: "Moins de deux participants : l'ELO ne bouge pas pour cet examen." }
+          : null;
+
   const daysUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 86_400_000);
   const hoursUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 3_600_000);
 
@@ -174,10 +202,10 @@ export default async function MockExamDetailPage({ params }: PageProps) {
     <div className="grid gap-5">
       {/* Header */}
       <div>
-        <Link href="/mock-exams" className="text-xs text-white/50 hover:text-white/80">
+        <Link href="/mock-exams" className="text-[13px] font-semibold text-muted hover:text-white">
           ← Examens blancs
         </Link>
-        <h1 className="mt-1 font-display text-xl font-medium tracking-tight break-words">{exam.title}</h1>
+        <h1 className="mt-2 font-display break-words">{exam.title}</h1>
         {exam.description && (
           <p className="mt-1 text-sm text-white/55">{exam.description}</p>
         )}
@@ -190,6 +218,12 @@ export default async function MockExamDetailPage({ params }: PageProps) {
           <span>{exam.duration_minutes} min</span>
           <span>·</span>
           <span>{exam.question_count} questions</span>
+          {eloEnabled && (
+            <>
+              <span>·</span>
+              <span className="font-semibold text-white">Classé (ELO)</span>
+            </>
+          )}
           {exam.status === "open" && !withinWindow && !windowClosed && (
             <>
               <span>·</span>
@@ -215,6 +249,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
           examId={exam.id}
           isRegistered={isRegistered}
           registrantCount={allResults.length}
+          ranked={eloEnabled}
         />
       )}
 
@@ -252,6 +287,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
           questions={activeQuestions}
           review={review}
           alreadyDone={alreadyDone}
+          elo={eloInfo}
         />
       )}
 
@@ -280,6 +316,17 @@ export default async function MockExamDetailPage({ params }: PageProps) {
                       <div className="text-xs text-muted">{durationMin} min</div>
                     )}
                   </div>
+                  {eloDeltas[r.user_id] !== undefined && (
+                    <span
+                      className={`shrink-0 rounded-[8px] px-2 py-0.5 font-mono text-[12px] font-semibold tabular-nums ${
+                        eloDeltas[r.user_id] > 0 ? "bg-white text-black" : "bg-surface-2"
+                      }`}
+                      title="Variation d'ELO"
+                    >
+                      {eloDeltas[r.user_id] > 0 ? "+" : eloDeltas[r.user_id] < 0 ? "−" : ""}
+                      {Math.abs(eloDeltas[r.user_id])}
+                    </span>
+                  )}
                   <div className="text-right shrink-0">
                     <div className={`text-base font-bold tabular-nums ${pct >= 70 ? "text-green-400" : pct >= 60 ? "text-yellow-400" : "text-red-400"}`}>
                       {pct}%

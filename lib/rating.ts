@@ -207,3 +207,60 @@ export async function getLeaderboardRank(supabase: SupabaseClient, userId: strin
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Examens blancs classés (voir migration_duels_elo.sql)
+
+export type MockExamEloResult = {
+  applied: boolean;
+  /** 'already' | 'not_closed' | 'too_few' | 'not_found' | 'unavailable' */
+  reason: string | null;
+  participants: number | null;
+};
+
+/**
+ * Applique l'ELO d'un examen blanc clos (idempotent : sans effet s'il l'a déjà
+ * été, ou si l'examen n'est pas encore clos). Ne lève jamais d'exception :
+ * migration absente → { applied: false, reason: "unavailable" }.
+ */
+export async function applyMockExamElo(supabase: SupabaseClient, examId: string): Promise<MockExamEloResult> {
+  try {
+    const { data, error } = await supabase.rpc("apply_mock_exam_elo", { p_exam_id: examId });
+    if (error || !data) return { applied: false, reason: "unavailable", participants: null };
+    const r = data as { applied?: boolean; reason?: string | null; participants?: number | null };
+    return { applied: Boolean(r.applied), reason: r.reason ?? null, participants: r.participants ?? null };
+  } catch {
+    return { applied: false, reason: "unavailable", participants: null };
+  }
+}
+
+/** Variation d'ELO de chaque participant d'un examen blanc ({} tant qu'elle n'est pas appliquée). */
+export async function getMockExamEloDeltas(supabase: SupabaseClient, examId: string): Promise<Record<string, number>> {
+  try {
+    const { data, error } = await supabase
+      .from("rating_events")
+      .select("user_id,delta")
+      .eq("source", "mock_exam")
+      .eq("ref_id", examId);
+    if (error || !data) return {};
+    const out: Record<string, number> = {};
+    for (const r of data as Array<{ user_id: string; delta: number }>) out[r.user_id] = Number(r.delta) || 0;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Date d'application de l'ELO d'un examen (null si pas encore, ou migration absente). */
+export async function getMockExamEloAppliedAt(supabase: SupabaseClient, examIds: string[]): Promise<Record<string, string>> {
+  if (!examIds.length) return {};
+  try {
+    const { data, error } = await supabase.from("mock_exams").select("id,elo_applied_at").in("id", examIds);
+    if (error || !data) return {};
+    const out: Record<string, string> = {};
+    for (const r of data as Array<{ id: string; elo_applied_at: string | null }>) if (r.elo_applied_at) out[r.id] = r.elo_applied_at;
+    return out;
+  } catch {
+    return {};
+  }
+}

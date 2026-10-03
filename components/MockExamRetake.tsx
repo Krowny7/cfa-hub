@@ -205,7 +205,7 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
           <RotateCcw size={15} /> Repasser cet examen (entraînement)
         </div>
         <div className="mb-4 text-xs text-white/50">
-          Ces essais ne comptent pas pour le classement et ne conservent que le score, pas les réponses.
+          Ces essais ne comptent ni pour le classement ni pour l&apos;ELO, et ne conservent que le score, pas les réponses.
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => startMode("full")}>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Settings2 } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
+import { applyMockExamElo, getMockExamEloAppliedAt } from "@/lib/rating";
 
 type Exam = {
   id: string;
@@ -13,11 +14,31 @@ type Exam = {
   duration_minutes: number;
   question_count: number;
   status: "draft" | "open" | "closed";
+  window_days?: number | null;
 };
 
-export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
+// Examen clos au sens de l'ELO : clôturé à la main, ou fenêtre de passage
+// terminée (même règle que apply_mock_exam_elo côté serveur).
+function isClosed(e: Exam) {
+  if (e.status === "closed") return true;
+  const end = new Date(e.scheduled_at).getTime() + (e.window_days ?? 3) * 86_400_000;
+  return Date.now() > end;
+}
+
+export function MockExamAdmin({
+  exams: initial,
+  eloAppliedAt: initialApplied = {},
+  eloEnabled = false,
+}: {
+  exams: Exam[];
+  /** examens dont l'ELO est déjà appliqué (id → date) */
+  eloAppliedAt?: Record<string, string>;
+  /** migration des duels / ELO appliquée */
+  eloEnabled?: boolean;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [exams, setExams] = useState<Exam[]>(initial);
+  const [eloApplied, setEloApplied] = useState<Record<string, string>>(initialApplied);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -33,9 +54,27 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
   async function refresh() {
     const { data } = await supabase
       .from("mock_exams")
-      .select("id,title,description,scheduled_at,duration_minutes,question_count,status")
+      .select("id,title,description,scheduled_at,duration_minutes,question_count,status,window_days")
       .order("scheduled_at", { ascending: false });
-    setExams((data ?? []) as Exam[]);
+    const list = (data ?? []) as Exam[];
+    setExams(list);
+    if (eloEnabled) setEloApplied(await getMockExamEloAppliedAt(supabase, list.map((e) => e.id)));
+  }
+
+  async function applyElo(id: string) {
+    setBusy(id + "-elo");
+    setMsg(null);
+    try {
+      const r = await applyMockExamElo(supabase, id);
+      if (r.applied) setMsg(`ELO appliqué à ${r.participants ?? 0} participants.`);
+      else if (r.reason === "already") setMsg("L'ELO de cet examen est déjà appliqué.");
+      else if (r.reason === "not_closed") setMsg("L'examen n'est pas encore clos : clôture-le d'abord.");
+      else if (r.reason === "too_few") setMsg("Moins de deux participants : rien à appliquer (examen marqué comme traité).");
+      else setMsg("ELO indisponible : la migration des duels n'est pas appliquée.");
+      await refresh();
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function createExam() {
@@ -233,6 +272,22 @@ export function MockExamAdmin({ exams: initial }: { exams: Exam[] }) {
                 >
                   {busy === e.id ? "…" : "Clôturer"}
                 </button>
+              )}
+              {eloEnabled && isClosed(e) && e.status !== "draft" && (
+                eloApplied[e.id] ? (
+                  <span className="badge badge-neutral self-center" title={new Date(eloApplied[e.id]).toLocaleString("fr-FR")}>
+                    ELO appliqué
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary min-h-0 px-3 py-1.5 text-xs"
+                    disabled={busy === e.id + "-elo"}
+                    onClick={() => applyElo(e.id)}
+                  >
+                    {busy === e.id + "-elo" ? "…" : "Appliquer l'ELO"}
+                  </button>
+                )
               )}
               <button
                 type="button"

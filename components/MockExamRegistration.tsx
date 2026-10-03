@@ -9,10 +9,13 @@ export function MockExamRegistration({
   examId,
   isRegistered: initial,
   registrantCount,
+  ranked = false,
 }: {
   examId: string;
   isRegistered: boolean;
   registrantCount: number;
+  /** examen blanc classé (l'ELO bouge à la clôture) */
+  ranked?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -65,9 +68,9 @@ export function MockExamRegistration({
   }
 
   return (
-    <div className="card p-5 flex flex-wrap items-center justify-between gap-4">
+    <div className="card rl-in p-5 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <div className="font-semibold">
+        <div className="text-[17px] font-bold tracking-[-0.01em]">
           {registered ? "Tu es inscrit(e)" : "Inscription"}
         </div>
         <div className="mt-0.5 text-sm text-white/50">
@@ -75,6 +78,9 @@ export function MockExamRegistration({
             ? `${registrantCount} participant${registrantCount > 1 ? "s" : ""} inscrit${registrantCount > 1 ? "s" : ""}`
             : "Sois le premier à t'inscrire"}
         </div>
+        {ranked && (
+          <div className="mt-1 text-[13px] text-muted">Examen classé : à la clôture, ton ELO bouge selon ta place face aux autres participants.</div>
+        )}
         {msg && <div className="mt-2 text-sm">{msg}</div>}
       </div>
       <button

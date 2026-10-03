@@ -56,6 +56,8 @@ type Props = {
   questions: ActiveQuestion[];
   review: ReviewQuestion[];
   alreadyDone: boolean;
+  /** examen blanc classé : variation d'ELO une fois appliquée, sinon une note (ex. « à la clôture ») */
+  elo?: { delta: number | null; note: string | null } | null;
 };
 
 const PASS_THRESHOLD = 70;
@@ -68,7 +70,7 @@ function fmtTime(s: number) {
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-export function MockExamRunner({ examId, durationMinutes, questions, review: initialReview, alreadyDone }: Props) {
+export function MockExamRunner({ examId, durationMinutes, questions, review: initialReview, alreadyDone, elo = null }: Props) {
   const supabase = useMemo(() => createClient(), []);
 
   type Phase = "ready" | "active" | "done";
@@ -211,6 +213,21 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
               <div className="mt-1 text-sm text-white/50">{score} / {total} bonnes réponses</div>
               <div className="mt-1 text-xs text-muted">Seuil de passage (indicatif) : {PASS_THRESHOLD}%</div>
             </>
+          )}
+          {elo && (elo.delta !== null || elo.note) && (
+            <div className="mx-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-2 text-sm">
+              {elo.delta !== null && (
+                <span
+                  className={`rounded-[9px] px-2.5 py-1 font-mono text-[15px] font-semibold tabular-nums ${
+                    elo.delta >= 0 ? "bg-white text-black" : "bg-surface-2"
+                  }`}
+                >
+                  ELO {elo.delta > 0 ? "+" : elo.delta < 0 ? "−" : ""}
+                  {Math.abs(elo.delta)}
+                </span>
+              )}
+              {elo.note && <span className="text-muted">{elo.note}</span>}
+            </div>
           )}
           {error && <div className="mt-2 text-sm text-red-300">{error}</div>}
           {total > 0 && (
