@@ -23,7 +23,7 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
       const t = TIERS[rang.tierIndex] ?? TIERS[0];
       grand = (
         <span className="flex items-center gap-3">
-          <RankBadge tier={rang.tierIndex} size={60} division={rang.division} anime className="w-11 @md:w-[60px]" />
+          <RankBadge tier={rang.tierIndex} size={60} division={rang.division} anime className="w-11 @2xl:w-[60px]" />
           <span>
             {t.name}
             {rang.division ? ` ${rang.division}` : ""}
@@ -73,7 +73,7 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
 export function Vitrine({ style, stats, rang }: { style: StyleProfil; stats: ProfilStats; rang: Rang }) {
   const keys = style.showcase.length ? style.showcase : (["rang", "questions", "serie"] as VitrineKey[]);
   return (
-    <section aria-label="Vitrine" className="@container" style={styleAccent(style.accent)}>
+    <section aria-label="Chiffres clés" className="@container" style={styleAccent(style.accent)}>
       <div className={"grid gap-3 @md:gap-4 " + (keys.length >= 3 ? "@md:grid-cols-3" : keys.length === 2 ? "@md:grid-cols-2" : "")}>
         {keys.map((k) => (
           <Piece key={k} k={k} st={stats} rang={rang} />

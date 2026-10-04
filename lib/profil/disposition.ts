@@ -11,7 +11,7 @@
 export type Largeur = "plein" | "demi";
 
 export const BLOCS = [
-  { k: "vitrine", nom: "Vitrine", demi: true },
+  { k: "vitrine", nom: "Chiffres clés", demi: true },
   { k: "radar", nom: "Radar des matières", demi: true },
   { k: "amis", nom: "Amis", demi: true },
   { k: "reponses", nom: "Questions répondues", demi: false },

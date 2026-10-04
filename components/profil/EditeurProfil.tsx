@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Eye, ImagePlus, Lock, Trash2 } from "lucide-react";
 import { EnteteJoueur, MarqueLinkedin, type EnteteData } from "@/components/profil/EnteteJoueur";
-import { Vitrine } from "@/components/profil/Vitrine";
+import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
+import { RadarComparable } from "@/components/profil/RadarComparable";
+import type { AmiLite } from "@/lib/profil/donnees";
+import type { CleBloc } from "@/lib/profil/disposition";
 import { EditeurDisposition } from "@/components/profil/EditeurDisposition";
 import { Banniere, CadreSceau } from "@/components/profil/Pieces";
 import { enregistrerProfil } from "@/app/moi/profil/actions";
@@ -39,8 +42,12 @@ import {
 // raisonnable, sinon réduite à 3 200 px sans perte visible ; puis cadrée
 // verticalement) ou un motif. La couleur : libre. Les
 // cadres du sceau se gagnent aux questions posées (le compte est affiché).
-// La disposition : l'ordre et la largeur des blocs de la page, et ses
-// images et GIF (EditeurDisposition). Le serveur revalide tout à
+// À gauche, l'aperçu est la page elle-même, éditable sur place : l'en-tête,
+// puis les vrais blocs (chiffres clés, radar, amis, réponses, trophées,
+// progression, images et GIF), qu'on range, élargit, masque ou ajoute
+// directement (EditeurDisposition). À droite, les réglages, qui restent à
+// portée pendant qu'on fait défiler l'aperçu ; une barre « Enregistrer »
+// apparaît dès qu'il y a une modification. Le serveur revalide tout à
 // l'enregistrement.
 
 const VISIBILITES: { key: Visibilite; label: string; aide: string }[] = [
@@ -88,6 +95,9 @@ export function EditeurProfil({
   visibilite: visibiliteInitiale,
   nom: nomInitial,
   disponible,
+  moyennes,
+  amis,
+  rendus: rendusServeur,
 }: {
   carte: EnteteData;
   stats: ProfilStats;
@@ -96,6 +106,11 @@ export function EditeurProfil({
   visibilite: Visibilite;
   nom: NomProfil;
   disponible: boolean;
+  /** moyenne des joueurs par matière (le radar) */
+  moyennes: Record<string, number | null>;
+  amis: { amis: AmiLite[]; total: number } | null;
+  /** les blocs rendus par le serveur (réponses, trophées, progression) */
+  rendus: Partial<Record<CleBloc, React.ReactNode>>;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -109,6 +124,10 @@ export function EditeurProfil({
   const [envoiMedia, setEnvoiMedia] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, start] = useTransition();
+  // modifié depuis le dernier enregistrement ?
+  const etat = JSON.stringify({ style, linkedin, visibilite, nom, nomVisibilite });
+  const [reference, setReference] = useState(etat);
+  const modifie = etat !== reference;
 
   const set = <K extends keyof StyleProfil>(k: K, v: StyleProfil[K]) => {
     setStyle((s) => ({ ...s, [k]: v }));
@@ -164,6 +183,7 @@ export function EditeurProfil({
         return;
       }
       setStyle(r.style);
+      setReference(JSON.stringify({ style: r.style, linkedin, visibilite, nom, nomVisibilite }));
       setMsg({ ok: true, texte: r.refus.length ? `Enregistré, sauf ${r.refus.join(", ")}.` : "Enregistré. Ton profil est à jour." });
       router.refresh();
     });
@@ -171,26 +191,42 @@ export function EditeurProfil({
   const rk = rankFor(carte.elo, carte.mastery, carte.place);
   const rang = { tierIndex: rk.tierIndex, division: rk.division, elo: carte.elo, mastery: carte.mastery };
   const hexCourant = style.accent === COULEUR_ENCRE ? "#111111" : style.accent;
+  const bloque = pending || !lienOk || envoiMedia || !!(envoi && envoi.endsWith("…"));
+
+  // les blocs de la page, avec les réglages en cours (couleur, chiffres clés)
+  const rendus: Partial<Record<CleBloc, React.ReactNode>> = {
+    vitrine: <Vitrine style={style} stats={stats} rang={rang} />,
+    radar: <RadarComparable matieres={stats.matieres} moyennes={moyennes} accent={style.accent} nom={carte.name} moi />,
+    amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi /> : null,
+    ...rendusServeur,
+  };
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
-      {/* l'aperçu, tel que les autres le verront */}
-      <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[88px] lg:col-span-7">
-        <p className="t-eyebrow m-0">Aperçu</p>
+      {/* l'aperçu : ta page, éditable sur place */}
+      <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <div>
+            <p className="t-eyebrow m-0">Ta page</p>
+            <p className="t-small m-0 mt-1">Range tes blocs ici même : glisse-les par leur nom (ou avec les flèches), mets-en deux côte à côte, masque ceux que tu ne veux pas.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href={`/people/${carte.id}?vue=inconnu`} className="btn btn-secondary btn-sm">
+              <Eye size={14} aria-hidden /> Voir comme les autres
+            </Link>
+            <Link href={`/people/${carte.id}`} className="btn btn-ghost btn-sm">
+              Mon profil
+            </Link>
+          </div>
+        </div>
         <EnteteJoueur d={apercu} apercu />
-        {style.disposition.some((x) => x.k === "vitrine") && <Vitrine style={style} stats={stats} rang={rang} />}
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/people/${carte.id}?vue=inconnu`} className="btn btn-secondary btn-sm">
-            <Eye size={14} aria-hidden /> Voir comme les autres
-          </Link>
-          <Link href={`/people/${carte.id}`} className="btn btn-ghost btn-sm">
-            Mon profil
-          </Link>
+        <div className="pt-6">
+          <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} rendus={rendus} supabase={supabase} onEnvoi={setEnvoiMedia} />
         </div>
       </div>
 
-      {/* les choix */}
-      <div className="card flex min-w-0 flex-col gap-6 p-5 sm:p-7 lg:col-span-5">
+      {/* les réglages : à portée pendant qu'on fait défiler l'aperçu */}
+      <div className="card flex min-w-0 flex-col gap-6 p-5 sm:p-7 lg:sticky lg:top-[88px] lg:col-span-5 lg:max-h-[calc(100dvh-104px)] lg:overflow-y-auto lg:pb-0">
         {!disponible && (
           <p className="t-small m-0 rounded-[12px] border border-dashed border-line-2 p-3">
             La personnalisation s&apos;enregistrera dès que la base sera prête. Tu peux déjà composer ton profil.
@@ -321,8 +357,8 @@ export function EditeurProfil({
           </div>
         </Section>
 
-        <Section titre="Vitrine" aide={`Jusqu'à ${VITRINE_MAX} pièces, dans l'ordre où tu les choisis.`}>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Vitrine">
+        <Section titre="Chiffres clés" aide={`Les cartes sous ton en-tête : jusqu'à ${VITRINE_MAX}, dans l'ordre où tu les choisis.`}>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Chiffres clés">
             {VITRINE.map((v) => {
               const i = style.showcase.indexOf(v.key);
               const on = i >= 0;
@@ -342,10 +378,6 @@ export function EditeurProfil({
               );
             })}
           </div>
-        </Section>
-
-        <Section titre="Disposition de ta page" aide="Range les blocs dans l'ordre que tu veux, sur toute la ligne ou à deux côte à côte (sur grand écran). Ajoute tes images et tes GIF.">
-          <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} supabase={supabase} onEnvoi={setEnvoiMedia} />
         </Section>
 
         <Section titre="Bio">
@@ -393,17 +425,30 @@ export function EditeurProfil({
           </div>
         </Section>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-          <button type="button" className="btn btn-primary btn-lg rl-press" onClick={enregistrer} disabled={pending || !lienOk || envoiMedia || !!(envoi && envoi.endsWith("…"))}>
+        {/* collé en bas de la carte sur grand écran */}
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5 lg:sticky lg:bottom-0 lg:-mx-7 lg:mt-auto lg:bg-[var(--surface)] lg:px-7 lg:pb-6">
+          <button type="button" className="btn btn-primary btn-lg rl-press" onClick={enregistrer} disabled={bloque}>
             {pending ? "…" : "Enregistrer"}
           </button>
-          {msg && (
+          {msg ? (
             <span role="status" className={"text-[13px] font-medium " + (msg.ok ? "" : "text-pen")}>
               {msg.texte}
             </span>
+          ) : (
+            modifie && <span className="t-small">Modifications pas encore enregistrées.</span>
           )}
         </div>
       </div>
+
+      {/* téléphone et tablette : une barre flottante dès qu'il y a une modification */}
+      {modifie && (
+        <div className="fixed inset-x-3 z-40 flex items-center justify-between gap-3 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] md:inset-x-auto md:right-6 md:w-[380px] lg:hidden bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6">
+          <span className="text-[13px] font-semibold">Modifications non enregistrées</span>
+          <button type="button" className="btn btn-primary btn-sm rl-press" onClick={enregistrer} disabled={bloque}>
+            {pending ? "…" : "Enregistrer"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

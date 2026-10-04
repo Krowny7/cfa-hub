@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Columns2, EyeOff, GalleryHorizontal, GripVertical, ImagePlay, ImagePlus, ListChecks, Plus, Radar, RectangleHorizontal, Trash2, TrendingUp, Trophy, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns2, EyeOff, GripVertical, ImagePlay, ImagePlus, Plus, RectangleHorizontal, Trash2 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { MediaProfil } from "@/components/profil/Blocs";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import {
   BLOCS,
@@ -19,14 +20,18 @@ import {
   type Bloc,
   type BlocFixe,
   type BlocMedia,
+  type CleBloc,
   type Disposition,
 } from "@/lib/profil/disposition";
 
-// La disposition de la page, dans l'éditeur du profil : le plan de la page
-// en deux colonnes (comme sur grand écran), un bloc par case. On range en
-// glissant la poignée (souris) ou avec les flèches (partout, au clavier et
-// au doigt) ; chaque bloc se met sur toute la ligne ou sur une demi-ligne ;
-// on masque un bloc (il reste proposé dessous) ou on retire un média.
+// La page du joueur, éditable sur place (l'aperçu de l'éditeur du profil) :
+// les vrais blocs, dans l'ordre et à la largeur choisis, chacun dans un
+// cadre pointillé avec sa barre d'outils posée sur le bord : son nom et sa
+// poignée (glisser-déposer à la souris), monter et descendre (partout, au
+// doigt et au clavier), toute la ligne ou demi-largeur, masquer (ou
+// retirer, pour une image). Le contenu des blocs est inerte (pas de lien
+// suivi par erreur). Dessous : « Ajouter à ta page », les blocs masqués et
+// l'envoi d'une image ou d'un GIF.
 // Les médias : une image (telle quelle si elle est raisonnable, sinon
 // réduite à 2 400 px sans perte visible) ou un GIF (tel quel, il garde son
 // animation ; 8 Mo au plus), envoyés dans le dossier du joueur.
@@ -71,8 +76,8 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
   const up = await supabase.storage.from(BUCKET_MEDIAS).upload(path, blob, { contentType, upsert: false });
   if (up.error) {
     const m = up.error.message || "";
-    if (/bucket not found/i.test(m)) throw new Refus("Les médias arrivent bientôt : la base n'est pas encore prête.");
-    if (/row-level security|policy/i.test(m)) throw new Refus("Trop de fichiers en attente : enregistre ton profil (les médias retirés seront supprimés), puis réessaie.");
+    if (/bucket not found/i.test(m)) throw new Refus("Les images arrivent bientôt : la base n'est pas encore prête.");
+    if (/row-level security|policy/i.test(m)) throw new Refus("Trop de fichiers en attente : enregistre ton profil (les images retirées seront supprimées), puis réessaie.");
     if (/size|too large|exceed/i.test(m)) throw new Refus(`Fichier trop lourd : ${Mo(MEDIA_MAX_OCTETS)} au plus.`);
     throw new Error(m);
   }
@@ -81,16 +86,34 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
 }
 
 const cle = (b: Bloc) => (estMedia(b) ? b.id : b.k);
-const ICONES = { vitrine: GalleryHorizontal, radar: Radar, amis: Users, reponses: ListChecks, trophees: Trophy, progression: TrendingUp };
+
+/** Un petit bouton rond de la barre d'outils. */
+function Outil({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="grid h-7 w-7 place-items-center rounded-full text-[var(--ink-2)] transition-colors hover:bg-[var(--well)] hover:text-white disabled:pointer-events-none disabled:opacity-35"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function EditeurDisposition({
   disposition,
   onChange,
+  rendus,
   supabase,
   onEnvoi,
 }: {
   disposition: Disposition;
   onChange: (d: Disposition) => void;
+  /** le contenu réel de chaque bloc (null : rien à montrer pour l'instant) */
+  rendus: Partial<Record<CleBloc, React.ReactNode>>;
   supabase: SupabaseClient;
   /** un envoi est en cours (l'enregistrement attend) */
   onEnvoi?: (enCours: boolean) => void;
@@ -98,7 +121,7 @@ export function EditeurDisposition({
   const fichier = useRef<HTMLInputElement | null>(null);
   const fichierGif = useRef<HTMLInputElement | null>(null);
   const [envoi, setEnvoi] = useState<{ enCours: boolean; texte: string } | null>(null);
-  const [prise, setPrise] = useState<string | null>(null); // poignée tenue : la case devient déplaçable
+  const [prise, setPrise] = useState<string | null>(null); // poignée tenue : le bloc devient déplaçable
   const [tire, setTire] = useState<number | null>(null);
   const [cible, setCible] = useState<number | null>(null);
 
@@ -115,11 +138,16 @@ export function EditeurDisposition({
   };
   const changer = (i: number, b: Bloc) => onChange(disposition.map((x, j) => (j === i ? b : x)));
   const retirer = (i: number) => onChange(disposition.filter((_, j) => j !== i));
+  const finGlisse = () => {
+    setTire(null);
+    setCible(null);
+    setPrise(null);
+  };
 
   async function ajouter(file: File | undefined) {
     if (!file) return;
     if (medias >= MEDIAS_MAX) {
-      setEnvoi({ enCours: false, texte: `${MEDIAS_MAX} médias au plus sur ta page.` });
+      setEnvoi({ enCours: false, texte: `${MEDIAS_MAX} images au plus sur ta page.` });
       return;
     }
     setEnvoi({ enCours: true, texte: file.type === "image/gif" ? "Envoi du GIF…" : "Envoi de l'image…" });
@@ -138,15 +166,28 @@ export function EditeurDisposition({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <ol className="m-0 grid list-none grid-cols-2 gap-2 p-0" aria-label="Blocs de ta page, dans l'ordre">
+    <div className="flex flex-col gap-10">
+      <div className="grid items-start gap-x-8 gap-y-16 pt-4 lg:grid-cols-2" role="list" aria-label="Les blocs de ta page, dans l'ordre">
         {disposition.map((b, i) => {
           const media = estMedia(b) ? b : null;
           const nom = media ? (estGif(media) ? "GIF" : "Image") : infoBloc((b as BlocFixe).k).nom;
-          const demiOk = peutDemi(b);
+          const contenu = media ? (
+            <MediaProfil b={{ ...media, legende: null }} />
+          ) : (
+            (rendus[(b as BlocFixe).k] ?? (
+              <div className="card-quiet grid min-h-[96px] place-items-center p-5 text-center">
+                <span className="t-small">
+                  <b className="font-semibold">{nom}</b> : rien à montrer pour l&apos;instant. Le bloc apparaîtra sur ta page dès qu&apos;il aura du contenu.
+                </span>
+              </div>
+            ))
+          );
+          const vise = cible === i && tire !== null && tire !== i;
           return (
-            <li
+            <div
               key={cle(b)}
+              role="listitem"
+              aria-label={`${nom}, ${b.w === "plein" ? "toute la ligne" : "demi-largeur"}`}
               draggable={prise === cle(b)}
               onDragStart={(e) => {
                 e.dataTransfer.effectAllowed = "move";
@@ -162,128 +203,96 @@ export function EditeurDisposition({
               onDrop={(e) => {
                 e.preventDefault();
                 if (tire !== null) deplacer(tire, i);
-                setTire(null);
-                setCible(null);
-                setPrise(null);
+                finGlisse();
               }}
-              onDragEnd={() => {
-                setTire(null);
-                setCible(null);
-                setPrise(null);
-              }}
+              onDragEnd={finGlisse}
               className={
-                "flex min-w-0 flex-col gap-2 rounded-[14px] border bg-[var(--surface)] p-2 transition-[opacity,box-shadow] " +
-                (b.w === "plein" ? "col-span-2 " : "") +
+                "@container relative min-w-0 rounded-[22px] outline-offset-[10px] transition-[outline-color,opacity] " +
+                (b.w === "plein" ? "lg:col-span-2 " : "") +
                 (tire === i ? "opacity-40 " : "") +
-                (cible === i && tire !== i ? "border-white shadow-[0_0_0_1px_var(--ink)]" : "border-line-2")
+                (vise ? "outline outline-2 outline-[var(--ink)]" : "outline-dashed outline-1 outline-[var(--line-2)] hover:outline-[var(--ink-3)]")
               }
             >
-              <div className="flex min-w-0 items-center gap-1">
+              {/* la barre d'outils, posée sur le bord haut du cadre */}
+              <div className="pointer-events-none absolute -top-[36px] left-1 right-1 z-[5] flex items-center justify-between gap-2">
                 <span
-                  className="grid h-7 w-6 shrink-0 cursor-grab touch-none place-items-center rounded-[8px] text-muted hover:text-white active:cursor-grabbing"
+                  className="pointer-events-auto inline-flex min-w-0 cursor-grab items-center gap-1 rounded-full border border-line-2 bg-[var(--surface)] py-1 pl-1.5 pr-3 text-[12px] font-semibold shadow-[var(--shadow-1)] active:cursor-grabbing"
                   onPointerDown={() => setPrise(cle(b))}
                   onPointerUp={() => setPrise(null)}
                   title="Glisser pour déplacer"
-                  aria-hidden
                 >
-                  <GripVertical size={15} />
+                  <GripVertical size={14} aria-hidden className="shrink-0 text-muted" />
+                  <span className="truncate">{nom}</span>
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{nom}</span>
+                <span className="pointer-events-auto inline-flex shrink-0 items-center rounded-full border border-line-2 bg-[var(--surface)] p-0.5 shadow-[var(--shadow-1)]">
+                  <Outil label={`Monter : ${nom}`} onClick={() => deplacer(i, i - 1)} disabled={i === 0}>
+                    <ArrowUp size={14} aria-hidden />
+                  </Outil>
+                  <Outil label={`Descendre : ${nom}`} onClick={() => deplacer(i, i + 1)} disabled={i === disposition.length - 1}>
+                    <ArrowDown size={14} aria-hidden />
+                  </Outil>
+                  {peutDemi(b) && (
+                    <Outil label={b.w === "plein" ? `Demi-largeur : ${nom}` : `Toute la ligne : ${nom}`} onClick={() => changer(i, { ...b, w: b.w === "plein" ? "demi" : "plein" })}>
+                      {b.w === "plein" ? <Columns2 size={14} aria-hidden /> : <RectangleHorizontal size={14} aria-hidden />}
+                    </Outil>
+                  )}
+                  <Outil label={media ? `Retirer : ${nom}` : `Masquer : ${nom}`} onClick={() => retirer(i)}>
+                    {media ? <Trash2 size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />}
+                  </Outil>
+                </span>
               </div>
 
-              {!media &&
-                (() => {
-                  const Ic = ICONES[(b as BlocFixe).k];
-                  return (
-                    <div aria-hidden className="grid h-[52px] place-items-center rounded-[9px] bg-[var(--well)] text-muted">
-                      <Ic size={20} strokeWidth={1.6} />
-                    </div>
-                  );
-                })()}
-
+              {/* le vrai bloc, inerte : on range, on ne clique pas dedans */}
+              <div inert className="select-none">
+                {contenu}
+              </div>
               {media && (
                 <>
-                  <div className="overflow-hidden rounded-[9px] bg-[var(--well)]">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- vignette du média envoyé */}
-                    <img src={media.url} alt="" className="block h-[72px] w-full object-cover" />
-                  </div>
                   <label className="sr-only" htmlFor={`leg-${media.id}`}>
                     Légende
                   </label>
                   <input
                     id={`leg-${media.id}`}
-                    className="input !h-8 !rounded-[9px] !px-2 !text-[12.5px]"
+                    className="input mt-2.5 !h-9 !text-[13px]"
                     maxLength={LEGENDE_MAX}
-                    placeholder="Légende (facultatif)"
+                    placeholder="Une légende (facultatif)"
                     value={media.legende ?? ""}
                     onChange={(e) => changer(i, { ...media, legende: e.target.value || null })}
                   />
                 </>
               )}
-
-              <div className="mt-auto flex flex-wrap items-center gap-1">
-                <button type="button" className="btn btn-ghost btn-sm !h-7 !w-7 !p-0" disabled={i === 0} onClick={() => deplacer(i, i - 1)} aria-label={`Monter : ${nom}`} title="Monter">
-                  <ArrowUp size={14} aria-hidden />
-                </button>
-                <button type="button" className="btn btn-ghost btn-sm !h-7 !w-7 !p-0" disabled={i === disposition.length - 1} onClick={() => deplacer(i, i + 1)} aria-label={`Descendre : ${nom}`} title="Descendre">
-                  <ArrowDown size={14} aria-hidden />
-                </button>
-                {demiOk && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm !h-7 !w-7 !p-0"
-                    onClick={() => changer(i, { ...b, w: b.w === "plein" ? "demi" : "plein" })}
-                    aria-label={b.w === "plein" ? `Demi-largeur : ${nom}` : `Toute la ligne : ${nom}`}
-                    title={b.w === "plein" ? "Demi-largeur" : "Toute la ligne"}
-                  >
-                    {b.w === "plein" ? <Columns2 size={14} aria-hidden /> : <RectangleHorizontal size={14} aria-hidden />}
-                  </button>
-                )}
-                <span className="flex-1" />
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm !h-7 !w-7 !p-0"
-                  onClick={() => retirer(i)}
-                  aria-label={media ? `Retirer : ${nom}` : `Masquer : ${nom}`}
-                  title={media ? "Retirer" : "Masquer"}
-                >
-                  {media ? <Trash2 size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />}
-                </button>
-              </div>
-            </li>
+            </div>
           );
         })}
-      </ol>
+      </div>
 
-      {masques.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="t-micro mr-1">Masqués :</span>
+      {/* ajouter : les blocs masqués, une image, un GIF */}
+      <div className="flex flex-col gap-3 rounded-[22px] border border-dashed border-line-2 p-4 sm:p-5">
+        <p className="t-eyebrow m-0">Ajouter à ta page</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input ref={fichier} type="file" accept="image/*" className="sr-only" id="rl-media" onChange={(e) => ajouter(e.target.files?.[0])} />
+          <input ref={fichierGif} type="file" accept="image/gif" className="sr-only" id="rl-gif" onChange={(e) => ajouter(e.target.files?.[0])} />
+          <label htmlFor="rl-media" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
+            <ImagePlus size={15} aria-hidden /> Une image
+          </label>
+          <label htmlFor="rl-gif" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
+            <ImagePlay size={15} aria-hidden /> Un GIF
+          </label>
           {masques.map((b) => (
-            <button key={b.k} type="button" className="inline-flex items-center gap-1 rounded-full border border-dashed border-line-2 px-2.5 py-1 text-[12.5px] font-semibold hover:border-white" onClick={() => onChange([...disposition, { k: b.k, w: "plein" }])}>
-              <Plus size={12} aria-hidden /> {b.nom}
+            <button key={b.k} type="button" className="btn btn-ghost btn-sm border border-dashed border-line-2" onClick={() => onChange([...disposition, { k: b.k, w: "plein" }])}>
+              <Plus size={14} aria-hidden /> {b.nom}
             </button>
           ))}
         </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <input ref={fichier} type="file" accept="image/*" className="sr-only" id="rl-media" onChange={(e) => ajouter(e.target.files?.[0])} />
-        <input ref={fichierGif} type="file" accept="image/gif" className="sr-only" id="rl-gif" onChange={(e) => ajouter(e.target.files?.[0])} />
-        <label htmlFor="rl-media" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
-          <ImagePlus size={15} aria-hidden /> Ajouter une image
-        </label>
-        <label htmlFor="rl-gif" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
-          <ImagePlay size={15} aria-hidden /> Ajouter un GIF
-        </label>
         {envoi && (
-          <span role="status" className={"text-[12.5px] font-medium " + (envoi.enCours ? "" : "text-pen")}>
+          <p role="status" className={"m-0 text-[12.5px] font-medium " + (envoi.enCours ? "" : "text-pen")}>
             {envoi.texte}
-          </span>
+          </p>
         )}
+        <p className="t-micro m-0">
+          {medias}/{MEDIAS_MAX} images. Les images trop grandes sont réduites à l&apos;envoi ; les GIF gardent leur animation et font {Mo(MEDIA_MAX_OCTETS)} au plus. Un bloc masqué revient ici.
+        </p>
       </div>
-      <p className="t-micro m-0">
-        {medias}/{MEDIAS_MAX} médias. Les images trop grandes sont réduites à l&apos;envoi ; les GIF gardent leur animation et font {Mo(MEDIA_MAX_OCTETS)} au plus.
-      </p>
     </div>
   );
 }
