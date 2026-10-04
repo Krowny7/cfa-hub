@@ -10,6 +10,7 @@ import { EditeurDisposition } from "@/components/profil/EditeurDisposition";
 import { Banniere, CadreSceau } from "@/components/profil/Pieces";
 import { enregistrerProfil } from "@/app/moi/profil/actions";
 import { createClient } from "@/lib/supabase/browser";
+import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import { rankFor } from "@/lib/ranks";
 import {
   BIO_MAX,
@@ -34,8 +35,9 @@ import {
 } from "@/lib/profil/catalogue";
 
 // L'éditeur du profil (/moi/profil) : l'aperçu en direct, puis les choix.
-// La bannière : une image du joueur (réduite dans le navigateur avant
-// l'envoi, puis cadrée verticalement) ou un motif. La couleur : libre. Les
+// La bannière : une image du joueur (envoyée telle quelle si elle est
+// raisonnable, sinon réduite à 3 200 px sans perte visible ; puis cadrée
+// verticalement) ou un motif. La couleur : libre. Les
 // cadres du sceau se gagnent aux questions posées (le compte est affiché).
 // La disposition : l'ordre et la largeur des blocs de la page, et ses
 // images et vidéos (EditeurDisposition). Le serveur revalide tout à
@@ -46,8 +48,9 @@ const VISIBILITES: { key: Visibilite; label: string; aide: string }[] = [
   { key: "friends", label: "Amis", aide: "Seuls tes amis le voient." },
   { key: "private", label: "Moi seul", aide: "Gardé pour toi." },
 ];
-const LARGEUR_MAX = 1800;
-const HAUTEUR_MAX = 1200;
+// une bannière couvre toute la largeur de l'écran, écrans denses compris
+const LARGEUR_MAX = 3200;
+const HAUTEUR_MAX = 2400;
 
 function Section({ titre, aide, children }: { titre: string; aide?: string; children: React.ReactNode }) {
   return (
@@ -75,24 +78,6 @@ function Seg<T extends string>({ items, value, onChange, label }: { items: { key
       ))}
     </div>
   );
-}
-
-/** Réduit une image dans le navigateur (1 800 × 1 200 au plus), en JPEG. */
-async function reduire(file: File): Promise<Blob> {
-  const bmp = await createImageBitmap(file);
-  const k = Math.min(1, LARGEUR_MAX / bmp.width, HAUTEUR_MAX / bmp.height);
-  const w = Math.max(1, Math.round(bmp.width * k));
-  const h = Math.max(1, Math.round(bmp.height * k));
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas");
-  ctx.drawImage(bmp, 0, 0, w, h);
-  bmp.close();
-  const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.86));
-  if (!blob) throw new Error("encodage");
-  return blob;
 }
 
 export function EditeurProfil({
@@ -142,23 +127,23 @@ export function EditeurProfil({
       setEnvoi("Choisis une image (JPEG, PNG, WebP…).");
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      setEnvoi("Image trop lourde (15 Mo au plus).");
+    if (file.size > 30 * 1024 * 1024) {
+      setEnvoi("Image trop lourde (30 Mo au plus).");
       return;
     }
     setEnvoi("Envoi de l'image…");
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) throw new Error("connexion");
-      const blob = await reduire(file);
-      const path = `${auth.user.id}/banniere-${Date.now()}.jpg`;
-      const up = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      const { blob, ext, contentType } = await preparerImage(file, { maxLargeur: LARGEUR_MAX, maxHauteur: HAUTEUR_MAX });
+      const path = `${auth.user.id}/banniere-${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType });
       if (up.error) throw up.error;
       const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
       setStyle((s) => ({ ...s, bannerUrl: url, bannerPos: 50 }));
       setEnvoi(null);
-    } catch {
-      setEnvoi("L'image n'a pas pu être envoyée. Réessaie, ou choisis-en une autre.");
+    } catch (e) {
+      setEnvoi(e instanceof ImageIllisible ? "Image illisible : choisis un JPEG, un PNG ou un WebP." : "L'image n'a pas pu être envoyée. Réessaie, ou choisis-en une autre.");
     } finally {
       if (fichier.current) fichier.current.value = "";
     }

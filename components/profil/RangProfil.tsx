@@ -36,14 +36,14 @@ export function RangProfil({
   return (
     <Link
       href="/classement"
-      className={"card-ink rl-lift rl-in group relative isolate flex flex-col gap-4 overflow-hidden p-5 sm:p-6 " + className}
+      className={"card-ink rl-lift rl-in group relative isolate flex flex-col gap-3.5 overflow-hidden p-5 " + className}
       style={{ animationDelay: ".08s" }}
       aria-label={`${surTitre} : ${placement ? `placement ${joues} sur ${PLACEMENT_GAMES}, rang provisoire ${nom}` : nom}. Voir le classement`}
     >
       {/* le halo du métal, derrière l'insigne */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -z-[1] h-[300px] w-[300px] rounded-full opacity-60 blur-[2px] max-sm:-left-[70px] max-sm:-top-[60px] sm:-left-[60px] sm:-top-[40px]"
+        className="pointer-events-none absolute -z-[1] h-[240px] w-[240px] rounded-full opacity-60 blur-[2px] max-sm:-left-[60px] max-sm:-top-[50px] sm:-left-[50px] sm:-top-[30px]"
         style={{ background: `radial-gradient(closest-side, color-mix(in oklab, ${metal[1]} 42%, transparent), transparent)` }}
       />
 
@@ -57,11 +57,11 @@ export function RangProfil({
       </span>
 
       <span className="flex items-center gap-4 sm:gap-6">
-        <span className="w-[104px] shrink-0 sm:w-[136px] lg:w-[164px]">
-          <RankBadge tier={rank.tierIndex} size={164} mastery={mastery ?? 0} division={placement ? null : rank.division} onDark anime className="w-full" />
+        <span className="w-[92px] shrink-0 sm:w-[112px] lg:w-[124px]">
+          <RankBadge tier={rank.tierIndex} size={124} mastery={mastery ?? 0} division={placement ? null : rank.division} onDark anime className="w-full" />
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-2">
-          <span className="text-[28px] font-extrabold leading-none tracking-[-0.03em] sm:text-[36px] lg:text-[40px]" style={{ color: metal[0] }}>
+          <span className="text-[26px] font-extrabold leading-none tracking-[-0.03em] sm:text-[30px]" style={{ color: metal[0] }}>
             {nom}
           </span>
           {placement ? (
@@ -91,7 +91,7 @@ export function RangProfil({
       </span>
 
       {/* ELO, place, maîtrise */}
-      <span className="grid grid-cols-3 border-t border-[rgba(255,255,255,.1)] pt-3.5">
+      <span className="grid grid-cols-3 border-t border-[rgba(255,255,255,.1)] pt-3">
         {[
           ["ELO", fmtInt(elo)],
           ["Place", place !== null ? ordinal(place) : "—"],
@@ -99,7 +99,7 @@ export function RangProfil({
         ].map(([l, v], i) => (
           <span key={l} className={"flex min-w-0 flex-col gap-0.5 " + (i ? "border-l border-[rgba(255,255,255,.1)] pl-3.5" : "")}>
             <span className="text-[11px] font-semibold uppercase tracking-[.08em] text-[rgba(255,255,255,.5)]">{l}</span>
-            <span className="truncate font-mono text-[17px] font-semibold tabular-nums">{v}</span>
+            <span className="truncate font-mono text-[15px] font-semibold tabular-nums">{v}</span>
           </span>
         ))}
       </span>

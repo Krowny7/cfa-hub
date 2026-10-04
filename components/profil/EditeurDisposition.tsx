@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Columns2, EyeOff, Film, GalleryHorizontal, GripVertical, ImagePlus, ListChecks, Plus, Radar, RectangleHorizontal, Trash2, TrendingUp, Trophy, Users } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import {
   BLOCS,
   BUCKET_MEDIAS,
@@ -27,8 +28,9 @@ import {
 // glissant la poignée (souris) ou avec les flèches (partout, au clavier et
 // au doigt) ; chaque bloc se met sur toute la ligne ou sur une demi-ligne ;
 // on masque un bloc (il reste proposé dessous) ou on retire un média.
-// Les médias : une image (réduite dans le navigateur, 1 600 px au plus) ou
-// une vidéo courte (30 s, 8 Mo), envoyées dans le dossier du joueur.
+// Les médias : une image (telle quelle si elle est raisonnable, sinon
+// réduite à 2 400 px sans perte visible) ou une vidéo courte (30 s, 8 Mo),
+// envoyées dans le dossier du joueur.
 
 const Mo = (n: number) => `${Math.round(n / (1024 * 1024))} Mo`;
 
@@ -55,28 +57,14 @@ function lireVideo(file: File): Promise<{ duree: number; ratio: number }> {
   });
 }
 
-/** Une image réduite (1 600 px au plus sur le grand côté), en JPEG, et sa proportion. */
-async function reduireImage(file: File): Promise<{ blob: Blob; ratio: number }> {
-  let bmp: ImageBitmap;
+/** Une image prête à l'envoi : telle quelle, ou réduite (2 400 px au plus). */
+async function reduireImage(file: File) {
   try {
-    bmp = await createImageBitmap(file);
-  } catch {
-    throw new Refus("Image illisible : choisis un JPEG, un PNG, un WebP ou un GIF.");
+    return await preparerImage(file, { maxLargeur: IMAGE_MAX_PX, maxHauteur: IMAGE_MAX_PX });
+  } catch (e) {
+    if (e instanceof ImageIllisible) throw new Refus("Image illisible : choisis un JPEG, un PNG, un WebP ou un GIF.");
+    throw e;
   }
-  const ratio = bmp.width / bmp.height;
-  const k = Math.min(1, IMAGE_MAX_PX / Math.max(bmp.width, bmp.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bmp.width * k));
-  canvas.height = Math.max(1, Math.round(bmp.height * k));
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas");
-  ctx.fillStyle = "#ffffff"; // un PNG transparent garde un fond blanc
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-  bmp.close();
-  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.86));
-  if (!blob) throw new Error("encodage");
-  return { blob, ratio };
 }
 
 /** Prépare et envoie un fichier ; renvoie le bloc média (en demi-largeur). */
@@ -108,10 +96,8 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
     contentType = "image/gif";
   } else if (file.type.startsWith("image/") || /[.]hei[cf]$/i.test(file.name)) {
     if (file.size > 30 * 1024 * 1024) throw new Refus("Image trop lourde (30 Mo au plus avant réduction).");
-    ({ blob, ratio } = await reduireImage(file));
+    ({ blob, ratio, ext, contentType } = await reduireImage(file));
     type = "image";
-    ext = "jpg";
-    contentType = "image/jpeg";
   } else {
     throw new Refus("Choisis une image ou une vidéo.");
   }

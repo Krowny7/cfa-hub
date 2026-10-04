@@ -44,7 +44,7 @@ export const MEDIA_MAX_OCTETS = 8 * 1024 * 1024;
 export const VIDEO_MAX_SECONDES = 30;
 export const LEGENDE_MAX = 80;
 /** côté le plus long d'une image, après réduction dans le navigateur */
-export const IMAGE_MAX_PX = 1600;
+export const IMAGE_MAX_PX = 2400;
 
 export const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
