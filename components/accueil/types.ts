@@ -1,6 +1,7 @@
 import type { RatingSource } from "@/lib/rating";
 import type { TodayDaily } from "@/lib/daily";
 import type { EtatJour } from "@/lib/voice";
+import type { EtatObjectif } from "@/lib/objectif";
 
 export type { TodayDaily } from "@/lib/daily";
 
@@ -114,6 +115,8 @@ export type AccueilData = {
   resume: ResumeItem | null;
   activity: ActivityWeek;
   dailyGoal: number;
+  /** l'objectif de questions d'ici l'examen (onglet « Objectif » de « Ta progression ») */
+  objectif: EtatObjectif;
   errors: ErrorsSummary;
   /** prochain examen blanc classé (l'accueil ne le montre qu'à 7 jours ou moins) */
   mockExam: MockExamCard | null;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
-import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
+import { useObjectifDuJour } from "@/components/adn/useObjectifDuJour";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
 import { SceauJour } from "@/components/adn/Sceau";
 import { nombre } from "@/lib/voice";
@@ -78,7 +78,8 @@ export function FinDePasse({
   className?: string;
 }) {
   const r = finPasse(sues, total, aRevoir);
-  const tenu = jour !== null && jour >= OBJECTIF_DU_JOUR;
+  const objectif = useObjectifDuJour();
+  const tenu = jour !== null && jour >= objectif;
   const items = marques ?? [...Array<boolean>(Math.max(0, sues)).fill(true), ...Array<boolean>(Math.max(0, aRevoir)).fill(false)];
   return (
     <section className={"card-hero rl-in relative grid content-center gap-6 px-6 py-8 sm:px-9 sm:py-10 " + className} aria-label="Fin de la passe">
@@ -116,11 +117,11 @@ export function FinDePasse({
         // place autour pour sa cote (« encore 14 », ou « demain » une fois tenu)
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-5">
           <div className="grid h-[92px] w-[112px] shrink-0 items-center justify-items-end">
-            <AnneauDuJour repondues={jour} objectif={OBJECTIF_DU_JOUR} size={68}>
+            <AnneauDuJour repondues={jour} objectif={objectif} size={68}>
               <span className="t-num text-[15px] tabular-nums">{nombre(jour)}</span>
             </AnneauDuJour>
           </div>
-          <p className="m-0 min-w-0 max-w-[340px] flex-1 basis-[180px] text-[13.5px] font-medium leading-snug">{FLASHCARDS.anneau(jour, OBJECTIF_DU_JOUR)}</p>
+          <p className="m-0 min-w-0 max-w-[340px] flex-1 basis-[180px] text-[13.5px] font-medium leading-snug">{FLASHCARDS.anneau(jour, objectif)}</p>
         </div>
       )}
 

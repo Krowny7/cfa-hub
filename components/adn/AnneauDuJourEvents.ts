@@ -26,3 +26,29 @@ export function caleAnneau(repondues: number): void {
   if (typeof window === "undefined" || repondues < 0) return;
   window.dispatchEvent(new CustomEvent(EVT_ANNEAU, { detail: { repondues } }));
 }
+
+// L'objectif du jour courant, côté navigateur : 40 par défaut, ou celui du
+// plan du joueur (objectif de questions d'ici l'examen, lib/objectif.ts),
+// publié par le logo de la barre du haut. Les écrans clients le lisent avec
+// useObjectifDuJour() (components/adn/useObjectifDuJour.ts).
+let objectifCourant = OBJECTIF_DU_JOUR;
+const abonnes = new Set<() => void>();
+
+/** Publie l'objectif du jour (appelé par le logo de la barre du haut). */
+export function definirObjectif(n: number): void {
+  const v = Math.round(n);
+  if (!(v > 0) || v === objectifCourant) return;
+  objectifCourant = v;
+  for (const f of abonnes) f();
+}
+
+export function lireObjectifCourant(): number {
+  return objectifCourant;
+}
+
+export function abonnerObjectif(f: () => void): () => void {
+  abonnes.add(f);
+  return () => {
+    abonnes.delete(f);
+  };
+}

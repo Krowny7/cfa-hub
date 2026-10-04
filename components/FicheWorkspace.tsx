@@ -28,7 +28,7 @@ import { Icone } from "@/components/adn/icons";
 import { Batons } from "@/components/adn/Batons";
 import { CompteurBarre, Rature } from "@/components/adn/Rature";
 import { AnneauDuJourLogo } from "@/components/adn/AnneauDuJourLogo";
-import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
+import { useObjectifDuJour } from "@/components/adn/useObjectifDuJour";
 import { createClient } from "@/lib/supabase/browser";
 import { createSupabaseFicheApi, type FicheApi, type LogStorage } from "@/lib/ficheApi";
 import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
@@ -134,6 +134,8 @@ export function FicheWorkspace({
   api?: FicheApi;
 }) {
   const api = useMemo(() => apiProp ?? createSupabaseFicheApi(createClient()), [apiProp]);
+  // l'objectif du jour du joueur (son plan d'ici l'examen, sinon 40)
+  const objectifJour = useObjectifDuJour();
 
   const [mobileView, setMobileView] = useState<"course" | "train">("train");
   const [tab, setTab] = useState<Tab>("quiz");
@@ -356,15 +358,15 @@ export function FicheWorkspace({
     const plus = ajoutes > 0 ? ligneAnneauSession(ajoutes, false) : null;
     if (traitsDuJour === null) return plus ? <p className="t-small m-0">{plus}</p> : null;
     const n = traitsDuJour + answeredHere;
-    const v = voixAnneau(n, OBJECTIF_DU_JOUR);
+    const v = voixAnneau(n, objectifJour);
     return (
       <>
         <span className="relative inline-grid">
-          <AnneauDuJourLogo repondues={n} objectif={OBJECTIF_DU_JOUR} size={34} vivant={false} />
+          <AnneauDuJourLogo repondues={n} objectif={objectifJour} size={34} vivant={false} />
         </span>
         <p className="t-small m-0">
           <b className="font-semibold text-white tabular-nums">{v.compte}</b> aujourd&apos;hui
-          {ajoutes > 0 ? ` · ${ligneAnneauSession(ajoutes, n >= OBJECTIF_DU_JOUR)}` : n >= OBJECTIF_DU_JOUR ? " · journée tenue" : ""}
+          {ajoutes > 0 ? ` · ${ligneAnneauSession(ajoutes, n >= objectifJour)}` : n >= objectifJour ? " · journée tenue" : ""}
           {v.reste ? (
             <>
               {" · "}

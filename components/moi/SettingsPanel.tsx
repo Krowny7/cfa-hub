@@ -1,25 +1,26 @@
 import Link from "next/link";
 import { ArrowRight, LogOut, Palette, Volume2 } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
-import { ExamDateSettings } from "@/components/ExamDateSettings";
+import { ObjectifExamenSettings } from "@/components/objectif/ObjectifExamenSettings";
+import type { ObjectifInitial } from "@/lib/objectif-calc";
 import { GroupSettings, type GroupRow } from "@/components/GroupSettings";
 import { AppearanceSwitches } from "@/components/moi/AppearanceSwitches";
 import { SoundSwitches } from "@/components/moi/SoundSwitches";
 import { SignOutButton } from "@/components/SignOutButton";
 import { REJOUER, SONS } from "@/lib/voice-z1";
 
-// Tous les réglages : profil, date d'examen, apparence (thème, mode
+// Tous les réglages : profil, examen (date et objectif de questions), apparence (thème, mode
 // discret), sons des moments (et le premier trait à rejouer), groupes,
 // déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
 // Les composants enfants chargent et enregistrent eux-mêmes.
-export function SettingsPanel({ activeGroupId, groups }: { activeGroupId: string | null; groups: GroupRow[] }) {
+export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroupId: string | null; groups: GroupRow[]; objectif: ObjectifInitial }) {
   return (
     <div className="flex flex-col gap-4 md:gap-[18px]">
       <div className="grid gap-4 md:gap-[18px] lg:grid-cols-2">
         <ProfileSettings />
         <div className="flex flex-col gap-4 md:gap-[18px]">
           <div id="date">
-            <ExamDateSettings />
+            <ObjectifExamenSettings initial={objectif} />
           </div>
           <div className="card flex flex-col p-[22px] pb-3">
             <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">

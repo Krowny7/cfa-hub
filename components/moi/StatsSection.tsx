@@ -9,6 +9,7 @@ import { subjectByKey } from "@/components/reviser/catalog";
 import { ViewSwitch } from "@/components/moi/ViewSwitch";
 import { SessionHistory } from "@/components/moi/SessionHistory";
 import { AnswerStatsCard } from "@/components/moi/AnswerStatsCard";
+import { TrajectoirePanel } from "@/components/objectif/TrajectoirePanel";
 import { fmtInt } from "@/components/classement/format";
 import { CURRENT_PROGRAM } from "@/lib/domains";
 import { tallyOf } from "@/lib/answer-stats";
@@ -169,6 +170,7 @@ function ActivityCard({ d }: { d: MoiData }) {
 export function StatsTab({ d }: { d: MoiData }) {
   return (
     <div className="grid gap-4 md:gap-[18px]">
+      <TrajectoirePanel e={d.objectif} />
       <AnswerStatsCard stats={d.answers} />
       <ActivityCard d={d} />
       <SubjectsCard d={d} />

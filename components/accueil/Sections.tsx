@@ -4,10 +4,12 @@ import { SectionTitle } from "@/components/ui/Titles";
 import { DefiTile } from "@/components/defi/DefiTile";
 import { DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
 import { RankCard } from "@/components/accueil/RankCard";
+import { TrajectoirePanel } from "@/components/objectif/TrajectoirePanel";
+import { OBJECTIF, parJour } from "@/lib/voice-objectif";
 import { ProgressTabs } from "@/components/accueil/ProgressTabs";
 import { TopicRail } from "@/components/ui/TopicRail";
 import { reviserHref, subjectRail } from "@/components/reviser/rail";
-import { maitrise, pct, precision, traits, VIDE } from "@/lib/voice";
+import { maitrise, nombre, pct, precision, traits, VIDE } from "@/lib/voice";
 import { TUILES } from "@/lib/voice-z1";
 import type { AccueilData, TopicStat, WeekDay } from "@/components/accueil/types";
 
@@ -78,6 +80,10 @@ export function ProgressSection({ d, tab }: { d: AccueilData; tab?: string }) {
   const total = d.activity.days.reduce((s, x) => s + x.count, 0);
   const correct = d.activity.days.reduce((s, x) => s + x.correct, 0);
   const weekMeta = total > 0 ? `${traits(total)} · ${precision(Math.round((correct / total) * 100))}` : "cette semaine";
+  // l'objectif d'ici l'examen : le rythme du jour quand le plan est actif
+  const o = d.objectif;
+  const objectifMeta =
+    o.etat === "trajectoire" && o.t.plan.statut === "actif" ? `${nombre(o.t.avant + o.t.jour)} / ${nombre(o.t.total)} · ${parJour(o.t.plan.quotidien)}` : o.etat === "trajectoire" ? `${nombre(o.t.avant + o.t.jour)} / ${nombre(o.t.total)}` : "à fixer";
 
   return (
     <section className="rl-section" aria-labelledby="accueil-progress">
@@ -97,6 +103,7 @@ export function ProgressSection({ d, tab }: { d: AccueilData; tab?: string }) {
           <ProgressTabs
             initial={tab}
             tabs={[
+              { key: "objectif", label: OBJECTIF.onglet, meta: objectifMeta, panel: <TrajectoirePanel e={d.objectif} variante="onglet" /> },
               { key: "matieres", label: "Matières", meta: masteryMeta, panel: <SubjectRail topics={d.topics} /> },
               { key: "radar", label: "Radar", meta: <RadarLegend />, panel: <RadarPanel topics={d.topics} /> },
               { key: "semaine", label: "Semaine", meta: weekMeta, panel: <WeekBars days={d.activity.days} goal={d.dailyGoal} /> },

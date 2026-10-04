@@ -9,7 +9,7 @@ import { getTodayDaily } from "@/lib/daily";
 import { getReviewableDuels } from "@/lib/duels";
 import { etatDuJour } from "@/lib/voice";
 import { JOURS_RETOUR } from "@/lib/voice-z1";
-import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourData";
+import { etatObjectif, objectifDe } from "@/lib/objectif";
 import { DashboardView } from "@/components/DashboardView";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import {
@@ -83,6 +83,8 @@ export default async function Dashboard() {
   // La journée : réponses du jour (avec une copie du défi encore ouverte),
   // série en jours d'encre (qui ne retombe pas à 0 avant le soir), heure.
   const activity = withLiveDaily(activityRaw, daily);
+  // l'objectif de questions d'ici l'examen : l'objectif du jour et la courbe
+  const objectif = await etatObjectif(user, activity.today);
   const dayKey = parisDay(now);
   const hour = parisHour(now);
   const xpDays = Array.isArray(xpDailyRes.data) ? (xpDailyRes.data as XpDay[]).map((x) => ({ day: String(x.day).slice(0, 10), xp: Number(x.xp) || 0 })) : [];
@@ -152,7 +154,8 @@ export default async function Dashboard() {
     incomingDuel: duel ? { id: duel.c.id, from: duel.c.opponentName, kind: duel.kind } : null,
     resume,
     activity,
-    dailyGoal: OBJECTIF_DU_JOUR,
+    dailyGoal: objectifDe(objectif),
+    objectif,
     errors,
     mockExam,
     topics: topicStats,

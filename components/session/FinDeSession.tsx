@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
-import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
+import { useObjectifDuJour } from "@/components/adn/useObjectifDuJour";
 import { CopieCorrigee, type LigneCopie, type MatiereCopie } from "@/components/adn/CopieCorrigee";
 import { SceauJour } from "@/components/adn/Sceau";
 import { RepriseRatures } from "@/components/session/RepriseRatures";
@@ -76,6 +76,7 @@ export function matieresDeCopie(review: ReviewQuestion[]): MatiereCopie[] {
  */
 export function LigneAnneau({ jour, texte, sceau = false, delai = 0.9 }: { jour: number | null; texte: string; sceau?: boolean; delai?: number }) {
   const [aujourdhui] = useState(() => new Date());
+  const objectif = useObjectifDuJour();
   return (
     <>
       {jour !== null && (
@@ -83,7 +84,7 @@ export function LigneAnneau({ jour, texte, sceau = false, delai = 0.9 }: { jour:
         // qui reste, du dessous jusqu'en haut à gauche ; la journée tenue est
         // cotée « demain » en haut à gauche
         <div className="grid h-[92px] w-[112px] shrink-0 items-center justify-items-end">
-          <AnneauDuJour repondues={jour} objectif={OBJECTIF_DU_JOUR} size={68}>
+          <AnneauDuJour repondues={jour} objectif={objectif} size={68}>
             {/* au petit format, le chiffre seul (l'objectif et le bonus se lisent dans la phrase) */}
             <span className="t-num text-[15px] tabular-nums">{nombre(jour)}</span>
           </AnneauDuJour>
@@ -97,7 +98,7 @@ export function LigneAnneau({ jour, texte, sceau = false, delai = 0.9 }: { jour:
 
 /** Sous la copie : l'anneau du jour avancé des traits de cette copie, et le bout qui reste. */
 function AnneauFin({ jour, ajoutes }: { jour: number | null; ajoutes: number }) {
-  const objectif = OBJECTIF_DU_JOUR;
+  const objectif = useObjectifDuJour();
   const avant = jour === null ? null : jour - ajoutes;
   // le sceau ne se pose que si cette copie a tenu la journée (une fois par jour)
   const vientDeTenir = jour !== null && avant !== null && avant < objectif && jour >= objectif;

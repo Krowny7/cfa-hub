@@ -1,6 +1,7 @@
 // Données reçues par les composants de l'espace Moi (props sérialisables).
 import type { MyRank } from "@/components/classement/types";
 import type { AnswerStats } from "@/lib/answer-stats";
+import type { EtatObjectif } from "@/lib/objectif";
 import type { EtatJour } from "@/lib/voice";
 
 export type FicheErrorItem = {
@@ -86,4 +87,6 @@ export type MoiData = {
   sessions: SessionItem[];
   /** questions répondues, toutes sources, matière → thème → passage (lib/answer-stats) */
   answers: AnswerStats;
+  /** l'objectif de questions d'ici l'examen (courbe, ou proposition d'en fixer un) */
+  objectif: EtatObjectif;
 };

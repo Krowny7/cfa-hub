@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AnneauDuJourLogo } from "@/components/adn/AnneauDuJourLogo";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
+import { objectifDuJour } from "@/lib/objectif";
 import { SpaceNav } from "@/components/nav/SpaceNav";
 import { DomainSwitcher } from "@/components/nav/DomainSwitcher";
 import { CommandPalette } from "@/components/nav/CommandPalette";
@@ -28,6 +29,7 @@ export async function TopBar() {
   const { user } = await getSessionUserWithProfile();
   let tier = rankFor(DEFAULT_ELO).tierIndex;
   let traits: number | null = null;
+  let objectif = OBJECTIF_DU_JOUR;
   if (user) {
     const rank = (async () => {
       try {
@@ -42,7 +44,10 @@ export async function TopBar() {
         // badge par défaut
       }
     })();
-    [traits] = await Promise.all([traitsDuJour(user.id), rank]);
+    // l'objectif du jour : celui du plan du joueur (lib/objectif.ts), sinon 40
+    let plan: Awaited<ReturnType<typeof objectifDuJour>>;
+    [traits, plan] = await Promise.all([traitsDuJour(user.id), objectifDuJour(user), rank]);
+    objectif = plan.objectif;
   }
 
   return (
@@ -58,7 +63,7 @@ export async function TopBar() {
         <Link href="/dashboard" className="group rl-press relative whitespace-nowrap text-[14px] sm:text-[15.5px]">
           <span className="inline-flex items-center gap-2.5">
             <span className="sr-only">{t(locale, "appName")}, accueil</span>
-            <AnneauDuJourLogo repondues={traits} objectif={OBJECTIF_DU_JOUR} size={26} landing />
+            <AnneauDuJourLogo repondues={traits} objectif={objectif} size={26} landing publie />
             <span aria-hidden className="font-brand leading-none">
               RANKED LOBBY
             </span>

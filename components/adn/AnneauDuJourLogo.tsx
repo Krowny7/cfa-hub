@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { INK } from "@/components/ui/InkDefs";
 import { anneau as voixAnneau } from "@/lib/voice";
 import { axis } from "@/components/adn/AnneauDuJourGeo";
-import { EVT_ANNEAU, EVT_TRAIT, OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
+import { EVT_ANNEAU, EVT_TRAIT, OBJECTIF_DU_JOUR, definirObjectif } from "@/components/adn/AnneauDuJourEvents";
 
 const DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });
 
@@ -23,6 +23,8 @@ const DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "
  * - `landing` : point d'atterrissage de l'intro (components/Splash.tsx)
  * - `vivant` : écoute les traits posés ailleurs (défaut true ; false pour
  *   une simple illustration)
+ * - `publie` : publie `objectif` pour les écrans clients (useObjectifDuJour) ;
+ *   seulement le logo de la barre du haut
  *
  * Il avance tout seul quand une page appelle poserTrait() ou caleAnneau()
  * (components/adn/AnneauDuJourEvents.ts). Au survol ou au focus du lien
@@ -34,12 +36,14 @@ export function AnneauDuJourLogo({
   size = 26,
   landing = false,
   vivant = true,
+  publie = false,
 }: {
   repondues: number | null;
   objectif?: number;
   size?: number;
   landing?: boolean;
   vivant?: boolean;
+  publie?: boolean;
 }) {
   const [n, setN] = useState<number | null>(repondues);
   // le sceau ne se tamponne que si la journée devient tenue sous nos yeux
@@ -50,6 +54,10 @@ export function AnneauDuJourLogo({
   useEffect(() => {
     setN(repondues);
   }, [repondues]);
+
+  useEffect(() => {
+    if (publie) definirObjectif(objectif);
+  }, [publie, objectif]);
 
   useEffect(() => {
     if (!vivant) return;

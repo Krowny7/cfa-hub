@@ -15,6 +15,7 @@ import { displayName } from "@/components/classement/format";
 import { loadActivity, parisDay, parisHour } from "@/components/accueil/queries";
 import { etatDuJour } from "@/lib/voice";
 import type { MoiData } from "@/components/moi/types";
+import { etatObjectif, reglageInitial } from "@/lib/objectif";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
 
@@ -75,6 +76,9 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     loadActivity(supabase, user.id, new Date(now)),
   ]);
 
+  // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
+  const objectif = await etatObjectif(user, activity.today);
+
   const xpTotal = Number(profile?.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
   const { streak, todayDone } = calcStreakAndToday(xpDays, { today: parisDay(new Date(now)), actifs: activity.activeDays });
@@ -101,6 +105,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     errors,
     sessions,
     answers,
+    objectif,
   };
 
   return (
@@ -108,7 +113,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
       d={d}
       tab={tab}
       now={now}
-      settings={<SettingsPanel activeGroupId={profile?.active_group_id ?? null} groups={(groupsRes.data ?? []) as unknown as GroupRow[]} />}
+      settings={<SettingsPanel activeGroupId={profile?.active_group_id ?? null} groups={(groupsRes.data ?? []) as unknown as GroupRow[]} objectif={reglageInitial(objectif)} />}
     />
   );
 }
