@@ -4,19 +4,19 @@ import { TIERS } from "@/lib/ranks";
 import { tierRange } from "@/components/classement/format";
 
 // Piste des 8 paliers (contenu du volet « Les 8 rangs ») : seuils d'ELO,
-// verrous de maîtrise (Diamant et au-delà), palier actuel marqué « toi »,
-// paliers à venir en filigrane.
+// verrous de maîtrise (Diamant et au-delà), palier actuel marqué « toi ».
+// Tous les insignes en couleur et animés (liquide, aura, arcs).
 export function TierTrack({ current, mastery, placement }: { current: number; mastery: number; placement: boolean }) {
   return (
     <ol aria-label="Les paliers" className="grid grid-cols-4 gap-x-2 gap-y-7 md:grid-cols-8">
       {TIERS.map((t, i) => {
         const here = i === current && !placement;
-        const ahead = placement || i > current;
         const locked = t.lock !== null && mastery < t.lock;
         return (
           <li key={t.key} className="flex flex-col items-center gap-1 text-center" aria-current={here ? "true" : undefined}>
-            <span className="flex h-[58px] items-end">
-              <RankBadge tier={i} size={here ? 56 : 46} glow={false} gray={ahead} />
+            {/* tous en couleur et animés : on voit ce qu'on vise */}
+            <span className="flex h-[66px] items-end">
+              <RankBadge tier={i} size={here ? 64 : 56} anime />
             </span>
             <span className={"mt-1 text-[13px] leading-tight " + (here ? "font-extrabold" : "font-semibold")}>{t.name}</span>
             {here ? (
