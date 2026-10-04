@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { CalendarClock, ChevronRight, Eye, Palette, Sparkles } from "lucide-react";
-import { RankBadge } from "@/components/ui/RankBadge";
+import { CalendarClock, Eye, Palette, Sparkles } from "lucide-react";
+import { CarteRang } from "@/components/classement/CarteRang";
 import { Avatar } from "@/components/classement/Avatar";
 import { SceauPerso } from "@/components/adn/SceauPerso";
 import { Icone } from "@/components/adn/icons";
-import { daysUntil, fmtInt, ordinal } from "@/components/classement/format";
+import { daysUntil } from "@/components/classement/format";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
-import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
-import { joursEncre, jourJ, placement as enPlacement } from "@/lib/voice";
+import { joursEncre, jourJ } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
 import type { MoiData } from "@/components/moi/types";
 
@@ -16,8 +15,6 @@ import type { MoiData } from "@/components/moi/types";
 // jours d'encre, niveau) et, à droite, le rang en une ligne (la seule carte
 // sombre de la page) qui mène au classement.
 export function MoiHeader({ d, now }: { d: MoiData; now?: number }) {
-  const rank = rankFor(d.me.elo, d.me.mastery, d.me.leaderboardRank);
-  const placement = d.me.gamesPlayed < PLACEMENT_GAMES;
   const j = d.examDate ? daysUntil(d.examDate, now) : null;
   const jj = jourJ(j);
   const examDateLabel = d.examDate ? new Date(d.examDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : null;
@@ -67,19 +64,7 @@ export function MoiHeader({ d, now }: { d: MoiData; now?: number }) {
         </div>
       </div>
 
-      <Link href="/classement" className="card-ink rl-lift rl-in group flex items-center gap-4 py-4 pl-4 pr-5 lg:col-span-4" style={{ animationDelay: ".08s", "--tier-glow": TIERS[rank.tierIndex].metal[1] } as React.CSSProperties} aria-label="Voir mon rang et le classement">
-        <RankBadge tier={rank.tierIndex} size={56} mastery={d.me.mastery} division={placement ? null : rank.division} onDark gray={placement} />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[12px] font-semibold text-[rgba(255,255,255,.6)]">Ton rang · {CURRENT_DOMAIN.name}</span>
-          <span className="truncate text-[19px] font-extrabold leading-tight tracking-[-0.02em]">
-            {placement ? enPlacement(d.me.gamesPlayed, PLACEMENT_GAMES).split(" · ")[0] : `${rank.tier.name}${rank.division ? " " + rank.division : ""}`}
-          </span>
-          <span className="truncate font-mono text-[12px] text-[rgba(255,255,255,.7)]">
-            {fmtInt(d.me.elo)} ELO{d.me.leaderboardRank !== null ? ` · ${ordinal(d.me.leaderboardRank)}` : ""} · maîtrise {d.me.mastery} %
-          </span>
-        </span>
-        <ChevronRight size={18} aria-hidden className="shrink-0 text-[rgba(255,255,255,.6)] transition-transform group-hover:translate-x-0.5" />
-      </Link>
+      <CarteRang elo={d.me.elo} mastery={d.me.mastery} place={d.me.leaderboardRank} gamesPlayed={d.me.gamesPlayed} className="lg:col-span-4" />
     </header>
   );
 }

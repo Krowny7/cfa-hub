@@ -1,17 +1,15 @@
 import { PageHero } from "@/components/ui/Titles";
-import { PanneauRang } from "@/components/adn/RankCeremonyPanneau";
+import { CarteRang } from "@/components/classement/CarteRang";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
-import { CURRENT_DOMAIN } from "@/lib/domains";
 import { type StyleProfil } from "@/lib/profil/catalogue";
 import { nombre } from "@/lib/voice";
-import { ligneRang, partiesClassees } from "@/lib/voice-z2a";
 
 // L'en-tête du profil, façon jeu vidéo mais sur toute la largeur de la page
 // (pas de carte) : la bannière du joueur (son image, ou un motif) d'un bord
 // à l'autre de l'écran, son sceau dans son cadre qui la chevauche, le
 // pseudo en grand et, dessous en italique, son prénom et nom s'il les
-// montre ; le niveau, la bio, les actions ; à droite, le panneau de son
-// rang. Sans état : la page de profil et l'aperçu de l'éditeur (`apercu` :
+// montre ; le niveau, la bio, les actions ; à droite, la carte de son rang
+// (la même que dans Moi). Sans état : la page de profil et l'aperçu de l'éditeur (`apercu` :
 // bannière contenue, plus basse) le rendent avec les mêmes données.
 
 export type EnteteData = {
@@ -53,6 +51,7 @@ export function EnteteJoueur({
   actions,
   haut,
   kicker,
+  rangDe,
   apercu = false,
 }: {
   d: EnteteData;
@@ -60,6 +59,8 @@ export function EnteteJoueur({
   /** posé sur la bannière, en haut à gauche (retour, bandeau d'aperçu) */
   haut?: React.ReactNode;
   kicker?: React.ReactNode;
+  /** sur-titre de la carte du rang : « Ton rang » (défaut), « Son rang » */
+  rangDe?: string;
   apercu?: boolean;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
@@ -113,13 +114,7 @@ export function EnteteJoueur({
           )}
         </div>
 
-        {!apercu && (
-          <PanneauRang elo={d.elo} maitrise={d.mastery} place={d.place} domaine={CURRENT_DOMAIN.name} joues={d.gamesPlayed} className="rl-in lg:col-span-5">
-            <p className="m-0 mt-1.5 font-mono text-[12px] tabular-nums opacity-70">
-              {[ligneRang({ place: d.place, joueurs: null, maitrise: d.mastery }), partiesClassees(d.gamesPlayed)].join(" · ")}
-            </p>
-          </PanneauRang>
-        )}
+        {!apercu && <CarteRang elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} className="lg:col-span-5" />}
       </div>
     </header>
   );

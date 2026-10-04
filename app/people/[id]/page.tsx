@@ -185,7 +185,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   return (
     <div className="rl-wide rl-page">
       <div className="flex flex-col gap-6 md:gap-8">
-        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} />
+        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={isMe ? "Ton rang" : "Son rang"} />
         {vue && (
           <div className="card-quiet flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4" role="status">
             <Eye size={17} aria-hidden className="shrink-0" />
