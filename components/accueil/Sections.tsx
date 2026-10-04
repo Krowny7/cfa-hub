@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Radar, RadarLegend } from "@/components/ui/Radar";
 import { SectionTitle } from "@/components/ui/Titles";
 import { DefiTile } from "@/components/defi/DefiTile";
+import { defiEnTete } from "@/components/defi/DefiHero";
+import { ResumeTile } from "@/components/accueil/HomeCards";
 import { DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
 import { RankCard } from "@/components/accueil/RankCard";
 import { TrajectoirePanel } from "@/components/objectif/TrajectoirePanel";
@@ -27,18 +29,21 @@ type Candidate = { key: string; score: number; node: React.ReactNode };
 
 /**
  * Les tuiles de la journée, de la plus pressante à la moins pressante :
- * défi reçu > copie du défi en cours > duel en cours > examen classé
- * imminent > défi du jour à faire > duel à revoir (avec des ratures) >
- * ratures à reprendre > examen classé dans la semaine > défi rendu > duel
- * revu sans rature > page propre > lancer un duel > défi « bientôt ».
+ * défi reçu > reprise (défi rendu) > duel en cours > examen classé
+ * imminent > reprise > duel à revoir (avec des ratures) > ratures à
+ * reprendre > examen classé dans la semaine > duel revu sans rature > page
+ * propre > lancer un duel > défi « bientôt ». Le défi du jour jouable ou
+ * joué tient la carte héros (DefiHero) : sa tuile laisse la place à la
+ * reprise (ResumeTile).
  */
 export function pickTiles(d: AccueilData): Candidate[] {
   const out: Candidate[] = [];
   if (d.incomingDuel) out.push({ key: "duel", score: d.incomingDuel.kind === "incoming" ? 100 : 90, node: <DuelTile duel={d.incomingDuel} /> });
-  if (d.daily) {
-    const s = d.daily.status;
-    const score = s === "playing" ? 95 : s === "todo" ? 80 : s === "done" ? 40 : 10;
-    out.push({ key: "defi", score, node: <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas className="h-full" /> });
+  if (defiEnTete(d.daily)) {
+    // le défi tient la carte héros : la reprise prend sa place ici
+    out.push({ key: "reprise", score: d.daily.status === "done" ? 92 : 70, node: <ResumeTile resume={d.resume} now={Date.parse(d.nowIso)} /> });
+  } else if (d.daily) {
+    out.push({ key: "defi", score: 10, node: <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas className="h-full" /> });
   }
   if (d.mockExam && d.mockExam.daysLeft <= EXAM_SOON_DAYS) out.push({ key: "exam", score: d.mockExam.daysLeft <= 1 ? 85 : 50, node: <ExamTile exam={d.mockExam} /> });
   if (d.reviewDuel) {

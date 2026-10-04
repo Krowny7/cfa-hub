@@ -1,6 +1,7 @@
 import { AnneauDuJourSync } from "@/components/adn/AnneauDuJourSync";
 import { JourAnneau, JourHero, ResumeHero } from "@/components/accueil/HomeCards";
 import { ProgressSection, TodaySection } from "@/components/accueil/Sections";
+import { DefiHero, defiEnTete } from "@/components/defi/DefiHero";
 import type { AccueilData } from "@/components/accueil/types";
 
 export type { AccueilData } from "@/components/accueil/types";
@@ -30,7 +31,12 @@ export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; t
           <JourAnneau d={d} />
         </div>
         <div className="min-w-0 lg:col-span-7 lg:row-start-3 lg:mt-9">
-          <ResumeHero resume={d.resume} returning={d.returning} evening={d.dayState === "sec" && d.streak > 0} now={now} />
+          {/* le défi du jour (jouable ou joué) ; sinon où reprendre */}
+          {defiEnTete(d.daily) ? (
+            <DefiHero daily={d.daily} nowIso={d.nowIso} />
+          ) : (
+            <ResumeHero resume={d.resume} returning={d.returning} evening={d.dayState === "sec" && d.streak > 0} now={now} />
+          )}
         </div>
       </section>
 

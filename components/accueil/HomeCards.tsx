@@ -154,3 +154,64 @@ export function ResumeHero({ resume, returning = false, evening = false, now }: 
     </section>
   );
 }
+
+/**
+ * « Ton dernier trait » en tuile de « Aujourd'hui », quand le défi du jour
+ * tient la carte héros : où reprendre, la barre de la série, l'action, et
+ * l'écoute du module à part (toute la tuile mène à la reprise). Sans
+ * reprise (nouveau joueur) : la première fiche.
+ */
+export function ResumeTile({ resume, now }: { resume: ResumeItem | null; now?: number }) {
+  const shell = "card-quiet rl-lift group relative flex h-full min-w-0 flex-col p-5";
+  const label = (text: string, aside?: string, icon: IconeNom = "fiche") => (
+    <span className="flex items-center gap-2 text-[12.5px] font-semibold text-muted">
+      <Icone nom={icon} size={15} />
+      <span className="truncate">{text}</span>
+      {aside && <span className="ml-auto shrink-0 font-medium">{aside}</span>}
+    </span>
+  );
+  if (!resume) {
+    const p = ACCUEIL.premierUsage;
+    return (
+      <Link href="/reviser" className={shell}>
+        {label(p.surTitre)}
+        <span className="t-h3 mt-3 block">{p.titre}</span>
+        <span className="t-micro mt-1 block">{p.texte}</span>
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-3 text-[13.5px] font-semibold">
+          {REPRISE.choisir} <ArrowRight size={14} aria-hidden className="transition-transform duration-300 group-hover:translate-x-0.5" />
+        </span>
+      </Link>
+    );
+  }
+  const pct = resume.total ? Math.min(100, Math.round(((resume.done ?? 0) / resume.total) * 100)) : null;
+  return (
+    <div className={shell}>
+      {label("Ton dernier trait", agoLabel(resume.at, now), KIND_ICON[resume.kind])}
+      <span className="t-h3 mt-3 block truncate">{resume.title}</span>
+      <span className="mt-1 flex min-w-0 items-center gap-2.5">
+        <span className="t-micro shrink-0">{resume.context}</span>
+        {pct !== null && (
+          <>
+            <span className="ink-bar block h-1 min-w-[40px] flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={resume.progressLabel}>
+              <span style={{ width: `${pct}%` }} />
+            </span>
+            <span className="shrink-0 font-mono text-[11.5px] font-semibold tabular-nums" title={resume.progressLabel}>
+              {resume.done}/{resume.total}
+            </span>
+          </>
+        )}
+      </span>
+      <span className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-3">
+        {/* toute la tuile mène à la reprise ; l'écoute passe au-dessus */}
+        <Link href={resume.href} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold after:absolute after:inset-0 after:rounded-[inherit] after:content-['']">
+          {resume.cta} <ArrowRight size={14} aria-hidden className="transition-transform duration-300 group-hover:translate-x-0.5" />
+        </Link>
+        {resume.audio && (
+          <Link href={resume.audio.href} title={resume.audio.title} className="relative z-[1] inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-muted hover:text-white">
+            <Icone nom="cours" size={14} /> {resume.audio.label}
+          </Link>
+        )}
+      </span>
+    </div>
+  );
+}
