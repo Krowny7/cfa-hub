@@ -4,7 +4,9 @@ import { INSIGNES, LIQUIDE_FRAG, LIQUIDE_VERT, formesDe, liquideFige, type Forme
 
 // L'animation des insignes de rang, pour tout le site : une seule boucle et
 // un seul contexte WebGL, quel que soit le nombre d'insignes à l'écran.
-// - le liquide marbré coule (~30 images/s), à partir de l'image figée ;
+// - le liquide marbré coule lentement (~15 images/s : le mouvement est lent,
+//   il reste fluide, et la carte graphique travaille deux fois moins), à
+//   partir de l'image figée ;
 // - l'aura électrique tremble (le bruit change de graine par à-coups) ;
 // - des arcs courent le long des arêtes, par rafales.
 // Seuls les insignes visibles bougent (IntersectionObserver). Mouvement
@@ -145,7 +147,7 @@ function boucle(t: number) {
   raf = 0;
   if (!entrees.size) return;
   if (!immobile() && !document.hidden) {
-    if (t - dernierLiquide > 33) {
+    if (t - dernierLiquide > 66) {
       dernierLiquide = t;
       if (moteur === undefined) moteur = creerMoteur();
       if (moteur)
@@ -187,7 +189,7 @@ export function animerInsigne(
   parts: { canvas: HTMLCanvasElement | null; bruit: SVGElement | null; eclairs: SVGGElement | null; arcs: boolean },
 ): () => void {
   if (typeof window === "undefined") return () => {};
-  const e: Entree = { palier, ...parts, visible: false, depart: performance.now(), v: 0.9 + Math.random() * 0.2, prochain: performance.now() + 600 + Math.random() * 1500, fin: 0, derniere: 0 };
+  const e: Entree = { palier, ...parts, visible: false, depart: performance.now(), v: 0.45 + Math.random() * 0.1, prochain: performance.now() + 600 + Math.random() * 1500, fin: 0, derniere: 0 };
   entrees.add(e);
   parElement.set(racine, e);
   if (typeof IntersectionObserver === "undefined") e.visible = true;
