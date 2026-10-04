@@ -240,7 +240,7 @@ export function MockExamRetake({ examId, title, durationMinutes, wrongCount, tot
                       <span className="t-small min-w-0 truncate">
                         <span className="font-semibold text-white">{a.mode === "full" ? REJOUER.essaiTout : REJOUER.essaiRatures}</span>
                         {" · "}
-                        {new Date(a.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                        {new Date(a.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" })}
                         {a.duration_seconds ? ` · ${fmtMinutes(Math.max(1, Math.round(a.duration_seconds / 60)))}` : ""}
                       </span>
                       <span className="shrink-0 text-right text-[14px] tabular-nums">

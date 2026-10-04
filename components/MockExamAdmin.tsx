@@ -227,7 +227,7 @@ export function MockExamAdmin({
                     <span className={"chip chip-sm " + (e.status === "open" ? "chip-active" : "chip-quiet")}>{statusLabel(e.status)}</span>
                   </div>
                   <div className="t-micro mt-1">
-                    {new Date(e.scheduled_at).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} · {e.duration_minutes} min · {e.question_count} questions
+                    {new Date(e.scheduled_at).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })} · {e.duration_minutes} min · {e.question_count} questions
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
@@ -243,7 +243,7 @@ export function MockExamAdmin({
                   )}
                   {eloEnabled && isClosed(e) && e.status !== "draft" && (
                     eloApplied[e.id] ? (
-                      <span className="chip chip-quiet chip-sm" title={new Date(eloApplied[e.id]).toLocaleString("fr-FR")}>
+                      <span className="chip chip-quiet chip-sm" title={new Date(eloApplied[e.id]).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}>
                         <Check size={13} aria-hidden /> ELO appliqué
                       </span>
                     ) : (

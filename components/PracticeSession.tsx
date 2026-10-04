@@ -72,7 +72,7 @@ export type PracticeDemo = {
 const MIN_PER_QUESTION_MINUTES = 135 / 90; // même ratio que l'examen officiel (135min/90Q)
 const WEAK_BELOW = 50;
 
-const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
 export function PracticeSession({
   pastSessions: initialPast,

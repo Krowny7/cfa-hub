@@ -41,7 +41,7 @@ export function DocumentList({ docs }: { docs: LibraryDoc[] }) {
                 {[
                   visibilityLabel(d.visibility),
                   cleanFolderName(d.library_folders?.name),
-                  new Date(d.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }),
+                  new Date(d.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Paris" }),
                 ]
                   .filter(Boolean)
                   .join(" · ")}

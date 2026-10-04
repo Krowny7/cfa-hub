@@ -18,7 +18,7 @@ function ago(ts: number, now: number) {
   if (h < 24) return `ouvert il y a ${h} h`;
   const d = Math.round(h / 24);
   if (d < 7) return `ouvert il y a ${d} j`;
-  return `ouvert le ${new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
+  return `ouvert le ${new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" })}`;
 }
 
 // Le point focal des pages QCM et Flashcards : « Reprendre » le dernier

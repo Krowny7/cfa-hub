@@ -149,7 +149,8 @@ export function PracticeProgressChart({
     { value: "all", label: "Toutes les matières" },
     ...availableTopics.map((k) => ({ value: k, label: topicLabelFor(topicLabels, k) })),
   ];
-  const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  // fuseau fixé : le serveur (UTC) et le navigateur doivent écrire la même date
+  const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
   return (
     <div className="card p-5 md:p-7">
@@ -203,7 +204,8 @@ export function PracticeProgressChart({
                 }}
                 strokeWidth={2}
               >
-                <title>{fmt(p.date)} — {p.pct}%</title>
+                {/* un seul texte : React 19 rend un title à plusieurs morceaux vide côté serveur (hydratation cassée) */}
+                <title>{`${fmt(p.date)} — ${p.pct} %`}</title>
               </circle>
             ))}
           </svg>

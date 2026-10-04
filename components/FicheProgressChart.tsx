@@ -31,7 +31,7 @@ function smoothPath(pts: Point[]) {
   return d;
 }
 
-const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
 // Courbe des scores par quiz (« série » est réservé aux jours d'encre). Le
 // tracé est un SVG étiré sur toute la largeur (repère 0–100) : la grille au
