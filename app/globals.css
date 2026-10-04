@@ -39,6 +39,10 @@
   --line: rgba(17, 17, 17, 0.08);
   --line-2: rgba(17, 17, 17, 0.14);
   --pen: #b4412f;
+  /* comparaison de deux joueurs : là où tu fais mieux, là où tu fais moins bien */
+  --gain: #1f9a55;
+  --perte: #d63c3c;
+  --zone-op: 0.28;
   /* Épure, deux mains et trois matières : le crayon trace ce qui reste (piste
      des barres et des anneaux, cotes, repères de construction), l'encre
      couvre ce qui est acquis, le stylo rouge (--pen) corrige et valide.
@@ -105,6 +109,9 @@ html[data-theme="nuit"] {
   --line: rgba(255, 255, 255, 0.075);
   --line-2: rgba(255, 255, 255, 0.14);
   --pen: #ff7a5c;
+  --gain: #46d18a;
+  --perte: #ff6464;
+  --zone-op: 0.4;
   /* nuit « ardoise » : le crayon devient une craie grise */
   --pencil: #5c5c63;
   --pencil-2: #333338;

@@ -14,7 +14,11 @@ import { useId } from "react";
 // marqués « bientôt ». `couleur` : la couleur du joueur (encre par défaut).
 // `comparaison` : une seconde forme par-dessus (celui qui regarde un autre
 // profil : « toi »), d'un trait plein à sa couleur, points vides ; sous
-// chaque matière, les deux valeurs. La moyenne s'efface pendant ce temps.
+// chaque matière, les deux valeurs et l'écart. La moyenne s'efface pendant
+// ce temps, et les lavis laissent place aux zones d'écart : en vert ce que
+// ta forme couvre en plus de la sienne (tu fais mieux), en rouge ce que la
+// sienne couvre en plus de la tienne, en gris léger ce que vous partagez.
+// Ces zones sont des masques SVG des deux formes : rien à calculer.
 // Sans état (useId seulement) : utilisable côté serveur comme côté client.
 
 export type RadarAxis = { label: string; me: number | null; avg: number | null; soon?: boolean };
@@ -54,6 +58,10 @@ export function Radar({
     ? comparaison.valeurs.map((v, i) => (v !== null && v !== undefined ? P(i, Math.max(2, v)) : null)).filter((p): p is readonly [number, number] => p !== null)
     : [];
   const avgPts = axes.map((a, i) => (a.avg !== null ? P(i, a.avg) : null)).filter((p): p is readonly [number, number] => p !== null);
+  // les zones d'écart : il faut deux vraies formes (3 points chacune)
+  const zones = !!comparaison && mePts.length >= 3 && autrePts.length >= 3;
+  const dSien = zones ? path(mePts) : "";
+  const dAutre = zones ? path(autrePts) : "";
 
   return (
     <svg
@@ -68,6 +76,22 @@ export function Radar({
           <stop offset="0" stopColor="currentColor" stopOpacity={0.04} />
           <stop offset="1" stopColor="currentColor" stopOpacity={0.26} />
         </radialGradient>
+        {zones && (
+          <>
+            {/* « hors de sa forme » et « hors de la tienne » */}
+            <mask id={`${uid}hs`} maskUnits="userSpaceOnUse" x={0} y={0} width={size} height={size}>
+              <rect width={size} height={size} fill="#fff" />
+              <path d={dSien} fill="#000" />
+            </mask>
+            <mask id={`${uid}ha`} maskUnits="userSpaceOnUse" x={0} y={0} width={size} height={size}>
+              <rect width={size} height={size} fill="#fff" />
+              <path d={dAutre} fill="#000" />
+            </mask>
+            <clipPath id={`${uid}ca`}>
+              <path d={dAutre} />
+            </clipPath>
+          </>
+        )}
       </defs>
 
       {/* le fond : cinq bandes, la plus extérieure un cran plus nette */}
@@ -90,10 +114,19 @@ export function Radar({
         <path d={path(avgPts, avgPts.length === n)} fill="none" stroke="var(--ink-2)" strokeOpacity={0.75} strokeWidth={1.3} strokeDasharray="3.5 4" strokeLinejoin="round" />
       )}
 
+      {/* les zones d'écart : vert = tu fais mieux, rouge = il fait mieux */}
+      {zones && (
+        <g className="rl-fade">
+          <path d={dSien} fill="var(--ink)" fillOpacity={0.06} clipPath={`url(#${uid}ca)`} />
+          <path d={dAutre} fill="var(--gain)" style={{ fillOpacity: "var(--zone-op)" }} mask={`url(#${uid}hs)`} />
+          <path d={dSien} fill="var(--perte)" style={{ fillOpacity: "var(--zone-op)" }} mask={`url(#${uid}ha)`} />
+        </g>
+      )}
+
       {/* la comparaison (celui qui regarde) : sous la forme du joueur, trait plein, points vides */}
       {comparaison && autrePts.length >= 2 && (
         <g style={{ color: comparaison.couleur }}>
-          {autrePts.length >= 3 && <path d={path(autrePts)} fill="currentColor" fillOpacity={0.1} />}
+          {autrePts.length >= 3 && !zones && <path d={path(autrePts)} fill="currentColor" fillOpacity={0.1} />}
           <path d={path(autrePts, autrePts.length >= 3)} pathLength={100} className="rl-drawline" fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" />
           {autrePts.map(([x, y], k) => (
             <circle key={k} cx={f(x)} cy={f(y)} r={3.2} fill="var(--surface)" stroke="currentColor" strokeWidth={1.8} />
@@ -103,7 +136,7 @@ export function Radar({
 
       {/* le joueur : le lavis, le trait au pinceau, les points */}
       <g className="rl-radar">
-        {mePts.length >= 3 && <path d={path(mePts)} fill={`url(#${uid}l)`} />}
+        {mePts.length >= 3 && !zones && <path d={path(mePts)} fill={`url(#${uid}l)`} />}
         {mePts.length >= 2 && (
           <path d={path(mePts, mePts.length >= 3)} pathLength={100} className="rl-drawline" filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round" strokeLinecap="round" />
         )}
@@ -138,7 +171,13 @@ export function Radar({
                   <tspan style={{ fill: ecart < 0 ? "var(--pen)" : "var(--ink-2)", fontWeight: 600 }}>{` ${ecart > 0 ? "+" : "−"}${Math.abs(ecart)}`}</tspan>
                 ) : null}
                 {comparaison ? (
-                  <tspan style={{ fill: comparaison.couleur, fontWeight: 600 }}>{` · ${comparaison.label} ${autre === null ? "—" : autre}`}</tspan>
+                  <>
+                    <tspan style={{ fill: comparaison.couleur, fontWeight: 600 }}>{` · ${comparaison.label} ${autre === null ? "—" : autre}`}</tspan>
+                    {/* ton écart : vert devant, rouge derrière */}
+                    {autre !== null && a.me !== null && Math.round(autre - a.me) !== 0 ? (
+                      <tspan style={{ fill: autre > a.me ? "var(--gain)" : "var(--perte)", fontWeight: 650 }}>{` ${autre > a.me ? "+" : "−"}${Math.abs(Math.round(autre - a.me))}`}</tspan>
+                    ) : null}
+                  </>
                 ) : a.avg !== null ? (
                   <tspan fillOpacity={0.85}>{` · moy ${a.avg}`}</tspan>
                 ) : (

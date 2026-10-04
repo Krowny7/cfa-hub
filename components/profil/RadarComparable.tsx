@@ -101,7 +101,7 @@ export function RadarComparable({
             const ref = actif ? l.toi : l.avg;
             const ecart = l.me !== null && ref !== null ? Math.round(l.me - ref) : null;
             return (
-              <li key={l.key} className="grid grid-cols-[92px_minmax(0,1fr)_88px] items-center gap-3">
+              <li key={l.key} className="grid grid-cols-[92px_minmax(0,1fr)_104px] items-center gap-3">
                 <span className={"truncate text-[13px] " + (l.me === null && (!actif || l.toi === null) ? "text-muted" : "font-semibold")}>{l.nom}</span>
                 <span className="flex flex-col gap-1">
                   <span className="relative block h-2 rounded-full bg-[color-mix(in_oklab,var(--ink)_7%,transparent)]">
@@ -120,7 +120,12 @@ export function RadarComparable({
                 <span className="text-right font-mono text-[12px] tabular-nums">
                   {l.me === null ? <span className="text-muted">—</span> : <b className="font-semibold">{l.me}</b>}
                   {actif ? (
-                    <span style={{ color: maCouleur }}>{` · ${l.toi === null ? "—" : l.toi}`}</span>
+                    <>
+                      <span style={{ color: maCouleur }}>{` · ${l.toi === null ? "—" : l.toi}`}</span>
+                      {l.toi !== null && l.me !== null && Math.round(l.toi - l.me) !== 0 && (
+                        <span className="font-semibold" style={{ color: l.toi > l.me ? "var(--gain)" : "var(--perte)" }}>{` ${l.toi > l.me ? "+" : "−"}${Math.abs(Math.round(l.toi - l.me))}`}</span>
+                      )}
+                    </>
                   ) : (
                     ecart !== null && ecart !== 0 && <span className={ecart < 0 ? "text-pen" : "text-muted"}>{` ${ecart > 0 ? "+" : "−"}${Math.abs(ecart)}`}</span>
                   )}
@@ -136,7 +141,15 @@ export function RadarComparable({
               if (!communes.length) return "Vous n'avez encore aucune matière mesurée en commun.";
               const devant = communes.filter((l) => (l.toi as number) > (l.me as number)).length;
               const derriere = communes.filter((l) => (l.toi as number) < (l.me as number)).length;
-              return `Sur ${communes.length} ${communes.length > 1 ? "matières mesurées" : "matière mesurée"} en commun : tu mènes dans ${devant}, ${nom} dans ${derriere}${communes.length - devant - derriere ? `, égalité dans ${communes.length - devant - derriere}` : ""}.`;
+              const pastille = (c: string) => <span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-[3px] align-[-1px]" style={{ background: `color-mix(in oklab, ${c} 45%, transparent)`, boxShadow: `inset 0 0 0 1.5px ${c}` }} />;
+              return (
+                <>
+                  Sur {communes.length} {communes.length > 1 ? "matières mesurées" : "matière mesurée"} en commun :{" "}
+                  <span className="font-semibold" style={{ color: "var(--gain)" }}>{pastille("var(--gain)")}tu mènes dans {devant}</span>,{" "}
+                  <span className="font-semibold" style={{ color: "var(--perte)" }}>{pastille("var(--perte)")}{nom} dans {derriere}</span>
+                  {communes.length - devant - derriere ? `, égalité dans ${communes.length - devant - derriere}` : ""}. Sur le radar, en vert ce que tu couvres en plus, en rouge ce que {nom} couvre en plus de toi.
+                </>
+              );
             })()}
           </p>
         )}
