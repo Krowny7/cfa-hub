@@ -1,5 +1,5 @@
 import { VideoProfil } from "@/components/profil/VideoProfil";
-import { estMedia, type BlocMedia, type CleBloc, type Disposition } from "@/lib/profil/disposition";
+import { estMedia, largeurMedia, type BlocMedia, type CleBloc, type Disposition } from "@/lib/profil/disposition";
 
 // Le corps du profil, sous l'en-tête : les blocs dans l'ordre choisi par le
 // joueur, chacun sur toute la ligne ou sur une demi-ligne (côte à côte sur
@@ -23,31 +23,25 @@ export function GrilleBlocs({ disposition, rendus }: { disposition: Disposition;
 }
 
 /**
- * Une image, un GIF ou la vidéo du joueur : à sa proportion (la place est
- * réservée avant le chargement), 640 px de haut au plus (680 pour une
- * vidéo, souvent verticale : VideoProfil).
+ * Une image, un GIF ou la vidéo du joueur, à la taille choisie (petite,
+ * moyenne, grande : largeurMedia), centrée dans son bloc ; le cadre épouse
+ * le média (pas de bandes vides autour), la place est réservée avant le
+ * chargement, et un GIF n'est jamais agrandi au-delà de sa taille réelle
+ * (il deviendrait flou).
  */
 export function MediaProfil({ b }: { b: BlocMedia }) {
   const w = 1200;
   const h = Math.round(w / b.ratio);
   const alt = b.legende ?? (b.type === "video" ? "Vidéo du joueur" : "Image du joueur");
+  const largeur = largeurMedia(b);
   return (
-    <figure className="m-0 flex flex-col gap-2.5">
-      <div className="card grid place-items-center overflow-hidden bg-[var(--well)]">
+    <figure className="m-0 mx-auto flex w-full flex-col gap-2.5" style={largeur ? { maxWidth: largeur } : undefined}>
+      <div className="card overflow-hidden">
         {b.type === "video" ? (
           <VideoProfil url={b.url} ratio={b.ratio} label={alt} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi
-          <img
-          src={b.url}
-          alt={alt}
-          width={w}
-          height={h}
-          loading="lazy"
-          decoding="async"
-          className="block h-auto max-h-[640px] w-full object-contain"
-          style={b.px ? { maxWidth: Math.max(320, Math.round(b.px * 1.5)) } : undefined}
-          />
+          <img src={b.url} alt={alt} width={w} height={h} loading="lazy" decoding="async" className="block h-auto w-full" />
         )}
       </div>
       {b.legende && <figcaption className="t-small px-1">{b.legende}</figcaption>}

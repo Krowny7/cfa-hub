@@ -144,3 +144,28 @@
 .filet {
   background: var(--acc, var(--ink));
 }
+
+/* ── Ambiance de la page ─────────────────────────────────────────────── */
+/* la bannière floutée : agrandie (le flou ronge les bords), adoucie */
+.ambianceImage {
+  position: absolute;
+  inset: -80px;
+  width: calc(100% + 160px);
+  height: calc(100% + 160px);
+  max-width: none;
+  object-fit: cover;
+  filter: blur(56px) saturate(1.2);
+  opacity: 0.32;
+  transform: translateZ(0);
+}
+:global(html[data-theme="nuit"]) .ambianceImage {
+  opacity: 0.26;
+}
+/* le voile : deux nappes de la couleur du joueur */
+.ambianceTeinte {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(55% 45% at 18% 8%, color-mix(in oklab, var(--acc, var(--ink)) 20%, transparent), transparent 72%),
+    radial-gradient(45% 40% at 86% 22%, color-mix(in oklab, var(--acc, var(--ink)) 13%, transparent), transparent 72%);
+}

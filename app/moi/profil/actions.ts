@@ -64,12 +64,13 @@ export async function enregistrerProfil(input: {
     bio: style.bio,
     updated_at: now,
   };
-  let s = await admin.from("profile_style").upsert({ ...ligne, layout: style.disposition }, { onConflict: "user_id" });
+  let s = await admin.from("profile_style").upsert({ ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH }, { onConflict: "user_id" });
   const dispositionOk = !s.error;
-  // la colonne layout arrive avec migration_profil_medias.sql : sans elle, le reste
-  if (s.error && /layout/.test(s.error.message)) {
+  // disposition, ambiance et hauteur de bannière arrivent avec
+  // migration_profil_medias.sql : sans elles, le reste
+  if (s.error && /layout|ambiance|banner_h|column|schema cache/i.test(s.error.message)) {
     s = await admin.from("profile_style").upsert(ligne, { onConflict: "user_id" });
-    if (!s.error) refus.push("la disposition (la base n'est pas encore prête)");
+    if (!s.error) refus.push("la disposition et l'ambiance (la base n'est pas encore prête)");
   }
   if (s.error) {
     return {

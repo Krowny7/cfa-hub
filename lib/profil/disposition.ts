@@ -36,9 +36,17 @@ export type BlocMedia = {
   w: Largeur;
   /** « klipy » : un GIF de la banque, servi par KLIPY (sinon : envoyé par le joueur) */
   source?: "klipy";
-  /** largeur réelle en pixels (GIF de la banque, souvent petits : pas trop agrandis) */
+  /** largeur réelle en pixels (GIF de la banque, souvent petits : jamais agrandis) */
   px?: number;
+  /** taille d'affichage : petite, moyenne, grande (défaut : moyenne pour un GIF ou une vidéo, grande pour une image) */
+  t?: TailleMedia;
 };
+export type TailleMedia = "s" | "m" | "l";
+export const TAILLES_MEDIA: { key: TailleMedia; nom: string; largeur: number | null; hauteur: number }[] = [
+  { key: "s", nom: "petite", largeur: 300, hauteur: 300 },
+  { key: "m", nom: "moyenne", largeur: 480, hauteur: 460 },
+  { key: "l", nom: "grande", largeur: null, hauteur: 640 },
+];
 export type Bloc = BlocFixe | BlocMedia;
 export type Disposition = Bloc[];
 
@@ -137,6 +145,7 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
         legende: nettoyerLegende(b.legende),
         w,
         ...(klipy ? { source: "klipy" as const, ...(px >= 16 && px <= 4000 ? { px } : {}) } : {}),
+        ...(b.t === "s" || b.t === "m" || b.t === "l" ? { t: b.t } : {}),
       });
       continue;
     }
@@ -156,6 +165,21 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
 export function dispositionDepuis(raw: unknown, radar: boolean): Disposition {
   if (Array.isArray(raw)) return validerDisposition(raw, "lecture").disposition;
   return radar ? DISPOSITION_DEFAUT : DISPOSITION_DEFAUT.filter((b) => b.k !== "radar");
+}
+
+/** La taille d'un média (celle choisie, sinon : moyenne pour un GIF ou une vidéo, grande pour une image). */
+export const tailleDe = (b: BlocMedia): TailleMedia => b.t ?? (b.type === "video" || b.source === "klipy" ? "m" : "l");
+
+/**
+ * La largeur maximale d'affichage d'un média : celle de sa taille, bornée
+ * pour que sa hauteur ne dépasse pas celle de la taille, et jamais au-delà
+ * de sa largeur réelle (un GIF agrandi devient flou). null : toute la place.
+ */
+export function largeurMedia(b: BlocMedia): number | null {
+  const t = TAILLES_MEDIA.find((x) => x.key === tailleDe(b))!;
+  const bornes = [t.hauteur * b.ratio, ...(t.largeur ? [t.largeur] : []), ...(b.px ? [b.px] : [])];
+  const l = Math.round(Math.min(...bornes));
+  return !t.largeur && !b.px && l >= 1400 ? null : l;
 }
 
 /** Un identifiant de média (minuscules et chiffres). */

@@ -10,14 +10,16 @@ import { RadarComparable } from "@/components/profil/RadarComparable";
 import type { AmiLite } from "@/lib/profil/donnees";
 import type { CleBloc } from "@/lib/profil/disposition";
 import { EditeurDisposition } from "@/components/profil/EditeurDisposition";
-import { Banniere, CadreSceau } from "@/components/profil/Pieces";
+import { AmbianceProfil, Banniere, CadreSceau, classesProfil as sp } from "@/components/profil/Pieces";
 import { enregistrerProfil } from "@/app/moi/profil/actions";
 import { createClient } from "@/lib/supabase/browser";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import { rankFor } from "@/lib/ranks";
 import {
+  AMBIANCES,
   BIO_MAX,
   CADRES,
+  HAUTEURS,
   COULEUR_ENCRE,
   MOTIFS,
   NOM_MAX,
@@ -206,7 +208,7 @@ export function EditeurProfil({
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
-      {/* l'aperçu : ta page, éditable sur place */}
+      {/* l'aperçu : ta page, éditable sur place, sur son ambiance */}
       <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
           <div>
@@ -222,8 +224,10 @@ export function EditeurProfil({
             </Link>
           </div>
         </div>
-        <EnteteJoueur d={apercu} apercu />
-        <div className="pt-6">
+        {/* la page elle-même, sur son ambiance */}
+        <div className="relative isolate flex flex-col gap-6">
+          <AmbianceProfil style={style} pleinePage={false} />
+          <EnteteJoueur d={apercu} apercu />
           <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} rendus={rendus} supabase={supabase} onEnvoi={setEnvoiMedia} banqueGifs={banqueGifs} />
         </div>
       </div>
@@ -252,6 +256,12 @@ export function EditeurProfil({
                 {envoi}
               </span>
             )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-[13px] font-semibold">Hauteur</span>
+            <div className="min-w-[220px] flex-1">
+              <Seg label="Hauteur de la bannière" value={style.bannerH} onChange={(v) => set("bannerH", v)} items={HAUTEURS.map((h) => ({ key: h.key, label: h.nom }))} />
+            </div>
           </div>
           {style.bannerUrl && (
             <label className="flex items-center gap-3 text-[13px] font-semibold">
@@ -282,7 +292,40 @@ export function EditeurProfil({
           </div>
         </Section>
 
-        <Section titre="Couleur" aide="La couleur de ton profil : la barre de niveau, ta vitrine, ton radar, les motifs.">
+        <Section titre="Ambiance" aide="Le fond de ta page, derrière tes blocs.">
+          <div role="radiogroup" aria-label="Ambiance de la page" className="grid grid-cols-3 gap-2">
+            {AMBIANCES.map((a) => {
+              const actif = style.ambiance === a.key;
+              const image = a.key === "banniere" ? style.bannerUrl : null;
+              return (
+                <button
+                  key={a.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={actif}
+                  title={a.aide}
+                  onClick={() => set("ambiance", a.key)}
+                  className={"flex min-w-0 flex-col gap-1.5 rounded-[14px] border p-1.5 text-left " + (actif ? "border-white shadow-[0_0_0_1px_var(--ink)]" : "border-line-2 hover:border-white")}
+                >
+                  <span className="relative isolate block h-[44px] overflow-hidden rounded-[9px] bg-[var(--paper)]" style={{ ["--acc" as string]: couleurCss(style.accent) }}>
+                    {a.key === "teinte" || (a.key === "banniere" && !image) ? <span className={sp.ambianceTeinte} /> : null}
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image} alt="" className={sp.ambianceImage} style={{ filter: "blur(10px) saturate(1.25)", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)" }} />
+                    ) : null}
+                  </span>
+                  <span className="flex items-center gap-1 px-0.5 text-[12px] font-semibold">
+                    <span className="truncate">{a.nom}</span>
+                    {actif && <Check size={12} aria-hidden className="shrink-0" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {style.ambiance === "banniere" && !style.bannerUrl && <p className="t-micro m-0">Sans image de bannière, c&apos;est le voile de ta couleur qui s&apos;affiche.</p>}
+        </Section>
+
+        <Section titre="Couleur" aide="La couleur de ton profil : la barre de niveau, tes chiffres clés, ton radar, les motifs, l'ambiance.">
           <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Couleur">
             {TEINTES.map((t) => {
               const actif = style.accent === t.key;

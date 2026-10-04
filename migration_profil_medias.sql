@@ -4,8 +4,9 @@
 --
 -- 1. profile_style.layout : l'ordre des blocs sous l'en-tête du profil,
 --    leur largeur (pleine ou demi), ceux qui sont masqués, et les médias
---    (images, GIF, vidéo). Écrite par le serveur seulement, après
---    validation (comme le reste de profile_style).
+--    (images, GIF, vidéo) ; l'ambiance de la page et la hauteur de la
+--    bannière. Écrites par le serveur seulement, après validation (comme
+--    le reste de profile_style).
 -- 2. Le bucket public « profil-medias » (images) : un dossier par joueur.
 --    La base borne le poids de chaque fichier (8 Mo), les types permis
 --    (JPEG, PNG, WebP, GIF) et le nombre de fichiers par joueur (12).
@@ -17,6 +18,9 @@
 
 -- ── 1. la disposition ─────────────────────────────────────────────────
 ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS layout jsonb;
+-- l'ambiance de la page (fond) et la hauteur de la bannière
+ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS ambiance text NOT NULL DEFAULT 'aucune' CHECK (ambiance IN ('aucune', 'teinte', 'banniere'));
+ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS banner_h text NOT NULL DEFAULT 'normale' CHECK (banner_h IN ('fine', 'normale', 'haute'));
 ALTER TABLE profile_style DROP CONSTRAINT IF EXISTS profile_style_layout_check;
 ALTER TABLE profile_style ADD CONSTRAINT profile_style_layout_check CHECK (
   layout IS NULL OR (jsonb_typeof(layout) = 'array' AND jsonb_array_length(layout) <= 20 AND pg_column_size(layout) <= 16000)

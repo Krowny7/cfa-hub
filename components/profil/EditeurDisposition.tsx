@@ -18,6 +18,8 @@ import {
   VIDEO_MAX_OCTETS,
   VIDEO_MAX_SECONDES,
   VIDEO_TYPES,
+  TAILLES_MEDIA,
+  tailleDe,
   estGif,
   estMedia,
   estVideo,
@@ -29,14 +31,15 @@ import {
   type BlocMedia,
   type CleBloc,
   type Disposition,
+  type TailleMedia,
 } from "@/lib/profil/disposition";
 
 // La page du joueur, éditable sur place (l'aperçu de l'éditeur du profil) :
 // les vrais blocs, dans l'ordre et à la largeur choisis, chacun dans un
 // cadre pointillé avec sa barre d'outils posée sur le bord : son nom et sa
 // poignée (glisser-déposer à la souris), monter et descendre (partout, au
-// doigt et au clavier), toute la ligne ou demi-largeur, masquer (ou
-// retirer, pour une image). Le contenu des blocs est inerte (pas de lien
+// doigt et au clavier), toute la ligne ou demi-largeur, la taille d'un
+// média (P, M, G), masquer (ou retirer, pour un média). Le contenu des blocs est inerte (pas de lien
 // suivi par erreur). Dessous : « Ajouter à ta page » : un GIF (la banque
 // KLIPY, BanqueGifs, si elle est branchée), une image, une vidéo, et les
 // blocs masqués.
@@ -120,6 +123,8 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
 }
 
 const cle = (b: Bloc) => (estMedia(b) ? b.id : b.k);
+const LETTRE: Record<TailleMedia, string> = { s: "P", m: "M", l: "G" };
+const SUIVANTE: Record<TailleMedia, TailleMedia> = { s: "m", m: "l", l: "s" };
 
 /** Un petit bouton rond de la barre d'outils. */
 function Outil({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
@@ -286,6 +291,14 @@ export function EditeurDisposition({
                   <Outil label={`Descendre : ${nom}`} onClick={() => deplacer(i, i + 1)} disabled={i === disposition.length - 1}>
                     <ArrowDown size={14} aria-hidden />
                   </Outil>
+                  {media && (
+                    <Outil
+                      label={`Taille ${TAILLES_MEDIA.find((t) => t.key === tailleDe(media))!.nom} (changer) : ${nom}`}
+                      onClick={() => changer(i, { ...media, t: SUIVANTE[tailleDe(media)] })}
+                    >
+                      <span className="font-mono text-[11.5px] font-bold leading-none">{LETTRE[tailleDe(media)]}</span>
+                    </Outil>
+                  )}
                   {peutDemi(b) && (
                     <Outil label={b.w === "plein" ? `Demi-largeur : ${nom}` : `Toute la ligne : ${nom}`} onClick={() => changer(i, { ...b, w: b.w === "plein" ? "demi" : "plein" })}>
                       {b.w === "plein" ? <Columns2 size={14} aria-hidden /> : <RectangleHorizontal size={14} aria-hidden />}

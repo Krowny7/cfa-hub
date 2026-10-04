@@ -7,7 +7,8 @@ import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 // sans le son, tant qu'elle est à l'écran (en pause sinon : ni batterie ni
 // données gaspillées) ; deux boutons posés dessus : le son, et pause /
 // lecture. Mouvement réduit : elle attend qu'on la lance. À sa proportion
-// (verticale le plus souvent), 680 px de haut au plus, centrée.
+// (verticale le plus souvent), sur la largeur que lui donne sa taille
+// (MediaProfil).
 
 export function VideoProfil({ url, ratio, label }: { url: string; ratio: number; label: string }) {
   const video = useRef<HTMLVideoElement | null>(null);
@@ -37,7 +38,7 @@ export function VideoProfil({ url, ratio, label }: { url: string; ratio: number;
   const h = Math.round(w / ratio);
   const bouton = "grid h-9 w-9 place-items-center rounded-full bg-[rgba(12,12,14,.55)] text-[#ffffff] backdrop-blur transition-transform hover:scale-105";
   return (
-    <div className="relative mx-auto w-fit max-w-full">
+    <div className="relative">
       <video
         ref={video}
         src={url}
@@ -50,7 +51,7 @@ export function VideoProfil({ url, ratio, label }: { url: string; ratio: number;
         preload="metadata"
         onPlay={() => setLecture(true)}
         onPause={() => setLecture(false)}
-        className="block h-auto max-h-[680px] w-auto max-w-full bg-black"
+        className="block h-auto w-full bg-black"
       />
       <div className="absolute bottom-3 right-3 flex gap-2">
         <button

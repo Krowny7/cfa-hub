@@ -70,7 +70,17 @@ export function EnteteJoueur({
     <header className="flex flex-col" style={styleAccent(d.style.accent)} aria-label={`Profil de ${d.name}`}>
       {/* la bannière, d'un bord à l'autre de l'écran (contenue dans l'aperçu) */}
       <div className={apercu ? "relative overflow-hidden rounded-[18px]" : "relative -mt-7 w-screen [margin-left:calc(50%_-_50vw)]"}>
-        <Banniere banner={d.style.banner} bannerUrl={d.style.bannerUrl} bannerPos={d.style.bannerPos} accent={d.style.accent} className={apercu ? "h-[130px]" : "h-[170px] sm:h-[250px]"} />
+        <Banniere
+          banner={d.style.banner}
+          bannerUrl={d.style.bannerUrl}
+          bannerPos={d.style.bannerPos}
+          accent={d.style.accent}
+          className={
+            apercu
+              ? { fine: "h-[96px]", normale: "h-[130px]", haute: "h-[176px]" }[d.style.bannerH]
+              : { fine: "h-[120px] sm:h-[170px]", normale: "h-[170px] sm:h-[250px]", haute: "h-[220px] sm:h-[340px]" }[d.style.bannerH]
+          }
+        />
         {haut && (
           <div className={apercu ? "absolute left-4 top-3 z-[3]" : "absolute inset-x-0 top-4 z-[3]"}>
             <div className={apercu ? "" : "mx-auto w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]"}>{haut}</div>

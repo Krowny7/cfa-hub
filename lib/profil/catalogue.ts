@@ -104,8 +104,9 @@ export const cadreDebloque = (c: Cadre, s: ProfilStats) => s.questions >= c.seui
 export const cadreProgres = (c: Cadre, s: ProfilStats) => (cadreDebloque(c, s) ? null : `${nombre(s.questions)}/${nombre(c.seuil)}`);
 
 // ── Vitrine ────────────────────────────────────────────────────────────
+// (le rang n'y figure plus : il est déjà en grand dans l'en-tête ; un
+// « rang » enregistré est remplacé par une autre pièce, voir vitrineDepuis)
 export const VITRINE = [
-  { key: "rang", nom: "Rang" },
   { key: "questions", nom: "Questions posées" },
   { key: "serie", nom: "Série" },
   { key: "duels", nom: "Duels" },
@@ -115,6 +116,33 @@ export const VITRINE = [
 ] as const;
 export type VitrineKey = (typeof VITRINE)[number]["key"];
 export const VITRINE_MAX = 3;
+
+/** Les pièces de vitrine d'une liste brute : connues, sans doublon, 3 au plus ; « rang » devient une autre pièce. */
+export function vitrineDepuis(liste: unknown): VitrineKey[] {
+  const connues = new Set<string>(VITRINE.map((v) => v.key));
+  const brute = Array.isArray(liste) ? liste.filter((k): k is string => typeof k === "string") : [];
+  const out: VitrineKey[] = [];
+  for (const k of brute) {
+    let cle = k;
+    if (k === "rang") cle = (["matiere", "duels", "defis", "calculs", "serie", "questions"] as const).find((x) => !brute.includes(x) && !out.includes(x)) ?? "";
+    if (connues.has(cle) && !out.includes(cle as VitrineKey)) out.push(cle as VitrineKey);
+  }
+  return out.slice(0, VITRINE_MAX);
+}
+
+// ── Ambiance de la page et hauteur de la bannière ──────────────────────
+export type Ambiance = "aucune" | "teinte" | "banniere";
+export const AMBIANCES: { key: Ambiance; nom: string; aide: string }[] = [
+  { key: "aucune", nom: "Sobre", aide: "Le papier du site, rien de plus." },
+  { key: "teinte", nom: "Teinte", aide: "Un voile de ta couleur en haut de la page." },
+  { key: "banniere", nom: "Bannière floutée", aide: "Ton image, floutée, en fond de page." },
+];
+export type HauteurBanniere = "fine" | "normale" | "haute";
+export const HAUTEURS: { key: HauteurBanniere; nom: string }[] = [
+  { key: "fine", nom: "Fine" },
+  { key: "normale", nom: "Normale" },
+  { key: "haute", nom: "Haute" },
+];
 
 // ── Le style d'un profil ───────────────────────────────────────────────
 export type StyleProfil = {
@@ -133,6 +161,9 @@ export type StyleProfil = {
   bio: string | null;
   /** l'ordre, la largeur et les médias des blocs sous l'en-tête */
   disposition: Disposition;
+  /** le fond de la page : sobre, teinté de sa couleur, ou sa bannière floutée */
+  ambiance: Ambiance;
+  bannerH: HauteurBanniere;
 };
 
 export const STYLE_DEFAUT: StyleProfil = {
@@ -141,10 +172,12 @@ export const STYLE_DEFAUT: StyleProfil = {
   bannerPos: 50,
   accent: COULEUR_ENCRE,
   frame: "aucun",
-  showcase: ["rang", "questions", "serie"],
+  showcase: ["questions", "serie", "matiere"],
   radar: true,
   bio: null,
   disposition: DISPOSITION_DEFAUT,
+  ambiance: "aucune",
+  bannerH: "normale",
 };
 export const BIO_MAX = 160;
 export const NOM_MAX = 60;
@@ -243,10 +276,12 @@ export function validerStyle(
       bannerPos: Math.max(0, Math.min(100, Math.round(Number(input.bannerPos ?? 50)) || 0)),
       accent: estCouleur(input.accent) ? input.accent.toLowerCase() : STYLE_DEFAUT.accent,
       frame,
-      showcase: [...new Set((input.showcase ?? []).filter((k) => keys.has(k)))].slice(0, VITRINE_MAX) as VitrineKey[],
+      showcase: vitrineDepuis(input.showcase),
       radar: disposition.some((b) => b.k === "radar"),
       bio: nettoyerBio(input.bio),
       disposition,
+      ambiance: AMBIANCES.some((a) => a.key === input.ambiance) ? (input.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,
+      bannerH: HAUTEURS.some((h) => h.key === input.bannerH) ? (input.bannerH as HauteurBanniere) : STYLE_DEFAUT.bannerH,
     },
     refus,
   };
@@ -262,9 +297,11 @@ export function styleDepuis(row: Record<string, unknown> | null | undefined): St
     bannerPos: Number.isFinite(Number(row.banner_pos)) ? Math.max(0, Math.min(100, Number(row.banner_pos))) : 50,
     accent: estCouleur(row.accent) ? (row.accent as string) : STYLE_DEFAUT.accent,
     frame: CADRES.some((c) => c.key === row.frame) ? (row.frame as string) : STYLE_DEFAUT.frame,
-    showcase: Array.isArray(row.showcase) ? (row.showcase.filter((k) => typeof k === "string" && keys.has(k)).slice(0, VITRINE_MAX) as VitrineKey[]) : STYLE_DEFAUT.showcase,
+    showcase: Array.isArray(row.showcase) ? vitrineDepuis(row.showcase) : STYLE_DEFAUT.showcase,
     radar: row.show_radar !== false,
     bio: typeof row.bio === "string" ? nettoyerBio(row.bio) : null,
     disposition: dispositionDepuis(row.layout, row.show_radar !== false),
+    ambiance: AMBIANCES.some((a) => a.key === row.ambiance) ? (row.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,
+    bannerH: HAUTEURS.some((h) => h.key === row.banner_h) ? (row.banner_h as HauteurBanniere) : STYLE_DEFAUT.bannerH,
   };
 }

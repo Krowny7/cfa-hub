@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { RankBadge } from "@/components/ui/RankBadge";
 import { SectionTitle } from "@/components/ui/Titles";
 import { Avatar } from "@/components/classement/Avatar";
 import { classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { SUBJECTS } from "@/components/reviser/catalog";
-import { TIERS } from "@/lib/ranks";
 import { VITRINE, type ProfilStats, type StyleProfil, type VitrineKey } from "@/lib/profil/catalogue";
 import type { AmiLite } from "@/lib/profil/donnees";
 import { nombre, pct } from "@/lib/voice";
@@ -19,20 +17,6 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
   let grand: React.ReactNode;
   let petit: string;
   switch (k) {
-    case "rang": {
-      const t = TIERS[rang.tierIndex] ?? TIERS[0];
-      grand = (
-        <span className="flex items-center gap-3">
-          <RankBadge tier={rang.tierIndex} size={60} division={rang.division} anime className="w-11 @2xl:w-[60px]" />
-          <span>
-            {t.name}
-            {rang.division ? ` ${rang.division}` : ""}
-          </span>
-        </span>
-      );
-      petit = `${nombre(rang.elo)} ELO${st.palierMax > rang.tierIndex ? ` · record ${TIERS[st.palierMax].name}` : ""}`;
-      break;
-    }
     case "questions":
       grand = nombre(st.questions);
       petit = "questions posées";
@@ -71,7 +55,7 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
 }
 
 export function Vitrine({ style, stats, rang }: { style: StyleProfil; stats: ProfilStats; rang: Rang }) {
-  const keys = style.showcase.length ? style.showcase : (["rang", "questions", "serie"] as VitrineKey[]);
+  const keys = style.showcase.length ? style.showcase : (["questions", "serie", "matiere"] as VitrineKey[]);
   return (
     <section aria-label="Chiffres clés" className="@container" style={styleAccent(style.accent)}>
       <div className={"grid gap-3 @md:gap-4 " + (keys.length >= 3 ? "@md:grid-cols-3" : keys.length === 2 ? "@md:grid-cols-2" : "")}>

@@ -19,6 +19,7 @@ import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur"
 import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
 import { RadarComparable } from "@/components/profil/RadarComparable";
 import { GrilleBlocs } from "@/components/profil/Blocs";
+import { AmbianceProfil } from "@/components/profil/Pieces";
 import { rankFor } from "@/lib/ranks";
 import { AmiBouton } from "@/components/profil/AmiBouton";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
@@ -185,7 +186,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   );
 
   return (
-    <div className="rl-wide rl-page">
+    <div className="rl-wide rl-page relative isolate">
+      <AmbianceProfil style={style} />
       <div className="flex flex-col gap-6 md:gap-8">
         <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={isMe ? "Ton rang" : "Son rang"} />
         {vue && (
