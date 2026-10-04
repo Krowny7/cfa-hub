@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ExamClient, type ExamSetOption } from "@/components/ExamClient";
+import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 
 type SetRow = {
   id: string;
@@ -14,11 +15,15 @@ export default async function ExamPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const { data } = await supabase
-    .from("quiz_sets")
-    .select("id,title,is_official,official_published")
-    .order("is_official", { ascending: false })
-    .order("created_at", { ascending: false });
+  const [{ data }, traitsJour] = await Promise.all([
+    supabase
+      .from("quiz_sets")
+      .select("id,title,is_official,official_published")
+      .order("is_official", { ascending: false })
+      .order("created_at", { ascending: false }),
+    // traits du jour (lecture de la barre du haut, en cache) : l'anneau sous la copie
+    traitsDuJour(auth.user.id),
+  ]);
 
   const sets: ExamSetOption[] = ((data ?? []) as SetRow[])
     .filter(s => s.id && s.title)
@@ -28,5 +33,5 @@ export default async function ExamPage() {
       isOfficial: Boolean(s.is_official && s.official_published),
     }));
 
-  return <ExamClient sets={sets} />;
+  return <ExamClient sets={sets} traitsJour={traitsJour} />;
 }

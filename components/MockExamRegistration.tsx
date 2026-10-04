@@ -5,6 +5,10 @@ import { ArrowRight, Check } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import { INSCRIPTION } from "@/lib/voice-z3b";
+
+// L'inscription à un examen blanc : le point focal tant qu'on n'est pas
+// inscrit, une carte calme ensuite (désinscription en retrait).
 
 export function MockExamRegistration({
   examId,
@@ -14,7 +18,8 @@ export function MockExamRegistration({
 }: {
   examId: string;
   isRegistered: boolean;
-  registrantCount: number;
+  /** inscrits à cet examen ; null : nombre inconnu (on ne l'affiche pas) */
+  registrantCount: number | null;
   /** examen blanc classé (l'ELO bouge à la clôture) */
   ranked?: boolean;
 }) {
@@ -39,7 +44,7 @@ export function MockExamRegistration({
           .eq("user_id", auth.user.id);
         if (error) throw new Error(error.message);
         setRegistered(false);
-        setMsg("Tu t'es désinscrit(e).");
+        setMsg(INSCRIPTION.desinscrit);
       } else {
         const { error } = await supabase
           .from("mock_exam_registrations")
@@ -51,14 +56,14 @@ export function MockExamRegistration({
           // d'afficher une erreur qui laisse le bouton dans un état faux.
           if (error.code === "23505") {
             setRegistered(true);
-            setMsg("Tu étais déjà inscrit(e).");
+            setMsg(INSCRIPTION.dejaInscrit);
             router.refresh();
             return;
           }
           throw new Error(error.message);
         }
         setRegistered(true);
-        setMsg("Inscription confirmée ! Tu recevras un rappel.");
+        setMsg(INSCRIPTION.confirmee);
       }
       router.refresh();
     } catch (e: unknown) {
@@ -68,10 +73,7 @@ export function MockExamRegistration({
     }
   }
 
-  const count =
-    registrantCount > 0
-      ? `${registrantCount} participant${registrantCount > 1 ? "s" : ""} inscrit${registrantCount > 1 ? "s" : ""}`
-      : "Sois le premier à t'inscrire";
+  const count = INSCRIPTION.inscrits(registrantCount);
 
   // Pas encore inscrit : c'est le point focal de la page (une carte héros, une
   // action en encre). Inscrit : une carte calme, la désinscription en retrait.
@@ -79,12 +81,11 @@ export function MockExamRegistration({
     return (
       <section className="card-hero rl-in flex flex-wrap items-center justify-between gap-x-6 gap-y-5 p-6 md:p-8" aria-label="Inscription">
         <div className="min-w-0 max-w-[520px]">
-          <p className="t-eyebrow m-0">Inscription</p>
-          <h2 className="t-h2 m-0 mt-2">Réserve ta place</h2>
-          <p className="t-small m-0 mt-2">
-            {count}
-            {ranked && " · examen classé : à la clôture, ton ELO bouge selon ta place face aux autres."}
-          </p>
+          <p className="t-eyebrow m-0">{INSCRIPTION.surTitre}</p>
+          <h2 className="t-h2 m-0 mt-2">{INSCRIPTION.titre}</h2>
+          {(count || ranked) && (
+            <p className="t-small m-0 mt-2">{[count, ranked ? INSCRIPTION.classe : null].filter(Boolean).join(" · ")}</p>
+          )}
           {msg && (
             <p className="m-0 mt-2 text-sm" aria-live="polite">
               {msg}
@@ -92,7 +93,7 @@ export function MockExamRegistration({
           )}
         </div>
         <button type="button" className="btn btn-primary btn-lg rl-press" disabled={busy} onClick={toggle}>
-          {busy ? "…" : "S'inscrire"} {!busy && <ArrowRight size={17} aria-hidden />}
+          {busy ? "…" : INSCRIPTION.sinscrire} {!busy && <ArrowRight size={17} aria-hidden />}
         </button>
       </section>
     );
@@ -105,11 +106,8 @@ export function MockExamRegistration({
           <Check size={18} strokeWidth={2.6} aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="m-0 text-[16px] font-bold tracking-[-0.01em]">Tu es inscrit(e)</p>
-          <p className="t-small m-0 mt-0.5">
-            {count}
-            {ranked && " · examen classé (ELO)"}
-          </p>
+          <p className="m-0 text-[16px] font-bold tracking-[-0.01em]">{INSCRIPTION.inscrit}</p>
+          {(count || ranked) && <p className="t-small m-0 mt-0.5">{[count, ranked ? INSCRIPTION.classeCourt : null].filter(Boolean).join(" · ")}</p>}
           {msg && (
             <p className="m-0 mt-1.5 text-sm" aria-live="polite">
               {msg}
@@ -118,7 +116,7 @@ export function MockExamRegistration({
         </div>
       </div>
       <button type="button" className="btn btn-ghost btn-sm text-muted" disabled={busy} onClick={toggle}>
-        {busy ? "…" : "Se désinscrire"}
+        {busy ? "…" : INSCRIPTION.desinscrire}
       </button>
     </section>
   );

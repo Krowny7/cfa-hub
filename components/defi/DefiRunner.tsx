@@ -6,9 +6,10 @@ import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Ticks, type TickMark } from "@/components/defi/parts";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { clock, duelTopicLabel } from "@/lib/duels";
+import { DEFI } from "@/lib/voice-z2c";
 import {
-  DAILY_VOICE,
   answerDaily,
   dailyErrorMessage,
   dayLabel,
@@ -144,6 +145,8 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
       const nextAnswers = { ...answers, [current]: selected };
       if (supabase) {
         const res = await answerDaily(supabase, day, current, selected);
+        // un trait de plus sur l'anneau du jour (logo vivant de la barre du haut)
+        if (res.ok) poserTrait(1);
         if (!res.ok || res.finished) {
           setAnswers(nextAnswers);
           finishingRef.current = true;
@@ -161,7 +164,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
       }
       setCurrent(next);
     } catch (e) {
-      setError(dailyErrorMessage(e, "Ta réponse n'est pas partie — réessaie."));
+      setError(dailyErrorMessage(e, DEFI.pasPartie));
     } finally {
       setSending(false);
     }
@@ -214,11 +217,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
 
   async function handIn() {
     const left = n - answeredCount;
-    const msg =
-      left > 0
-        ? `Rendre ta copie maintenant ? ${left > 1 ? `${left} questions sans réponse compteront fausses` : "1 question sans réponse comptera fausse"}. Tu n'auras pas d'autre copie aujourd'hui.`
-        : "Rendre ta copie maintenant ?";
-    if (!window.confirm(msg)) return;
+    if (!window.confirm(DEFI.confirmHandIn(left))) return;
     await finish();
   }
 
@@ -234,7 +233,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
       <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 md:gap-5">
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-bold md:text-[16px]">Les 30 du jour</div>
+            <div className="truncate text-[14px] font-bold md:text-[16px]">{DEFI.tuile.titre}</div>
             <div className="t-micro truncate first-letter:uppercase">{dayLabel(day, "short", today)}</div>
           </div>
           <span
@@ -250,13 +249,13 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
               {answeredCount}
               <span className="font-normal text-muted">/{n}</span>
             </div>
-            <div className="t-micro truncate">répondues</div>
+            <div className="t-micro truncate">{DEFI.repondues}</div>
           </div>
         </div>
         <Ticks
           className="mt-3"
           marks={marks}
-          label="Avancement de ta copie"
+          label={DEFI.avancement}
           onPick={phase === "play" ? goTo : undefined}
           canPick={(p) => answers[p] === undefined}
         />
@@ -264,7 +263,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
 
       {phase === "loading" ? (
         <section className="card rl-in mx-auto grid w-full max-w-[820px] gap-4 p-6 md:p-8" aria-busy>
-          <p className="kicker m-0">Préparation de ta copie…</p>
+          <p className="kicker m-0">{DEFI.preparation}</p>
           <div className="grid gap-2.5" aria-hidden>
             <span className="block h-5 w-4/5 rounded-[8px] bg-surface-2" />
             <span className="block h-5 w-3/5 rounded-[8px] bg-surface-2" />
@@ -275,30 +274,28 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
         </section>
       ) : phase === "error" ? (
         <section className="card-hero rl-in mx-auto grid w-full max-w-[760px] gap-4 p-6 md:p-8">
-          <p className="kicker m-0">Défi du jour</p>
-          <h2 className="t-h2 m-0">La copie ne s&apos;ouvre pas</h2>
+          <p className="kicker m-0">{DEFI.tuile.label}</p>
+          <h2 className="t-h2 m-0">{DEFI.neSouvrePas}</h2>
           <p role="alert" className="t-body m-0 text-muted">
             {fatal}
           </p>
           <div className="flex flex-wrap gap-2.5">
             <button type="button" className="btn btn-primary" onClick={() => void start()}>
-              Réessayer
+              {DEFI.reessayer}
             </button>
             <button type="button" className="btn btn-secondary" onClick={() => router.refresh()}>
-              Recharger le défi
+              {DEFI.recharger}
             </button>
           </div>
         </section>
       ) : phase === "done" || !q ? (
         <section className="card rl-in mx-auto grid w-full max-w-[820px] place-items-center gap-2 p-8 text-center">
-          <h2 className="t-h2 m-0">{DAILY_VOICE.handedIn}</h2>
-          <p className="t-small m-0">{DAILY_VOICE.counting}</p>
+          <h2 className="t-h2 m-0">{DEFI.handedIn}</h2>
+          <p className="t-small m-0">{DEFI.counting}</p>
         </section>
       ) : (
         <div className="mx-auto grid w-full max-w-[820px] gap-[22px]">
-          <p className="kicker m-0">
-            Question {q.position + 1} sur {n} · {duelTopicLabel(q.topic)}
-          </p>
+          <p className="kicker m-0">{DEFI.question(q.position + 1, n, duelTopicLabel(q.topic))}</p>
 
           <section className="card flex min-w-0 flex-col gap-6 p-5 md:p-7">
             <div key={q.position} className="rl-in">
@@ -347,19 +344,19 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
                 disabled={unanswered <= 1}
                 className="self-center py-1 text-[14px] font-semibold text-muted transition-colors hover:text-white disabled:opacity-40 sm:self-auto"
               >
-                Passer pour l&apos;instant
+                {DEFI.passer}
               </button>
               <button type="button" className="btn btn-primary w-full sm:w-auto" disabled={selected === null || sending} onClick={() => void validate()}>
-                {sending ? "Envoi…" : "Valider et continuer"}
+                {sending ? DEFI.envoi : DEFI.valider}
                 <ArrowRight size={16} aria-hidden />
               </button>
             </div>
           </section>
 
           <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-muted">
-            <span>Réponses définitives · correction dès ta copie rendue</span>
+            <span>{DEFI.definitif}</span>
             <button type="button" onClick={() => void handIn()} className="font-semibold transition-colors hover:text-white">
-              Rendre ma copie
+              {DEFI.rendre}
             </button>
           </div>
         </div>

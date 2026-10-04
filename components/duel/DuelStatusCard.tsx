@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Hourglass, ListChecks, Swords } from "lucide-react";
+import { ArrowRight, Hourglass, ListChecks } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
+import { NBSP } from "@/lib/voice";
+import { PARTIE } from "@/lib/voice-z2";
 import { createClient } from "@/lib/supabase/browser";
 import { DuelSide, StakeTile } from "@/components/duel/parts";
 import {
@@ -91,31 +94,31 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
   let body: React.ReactNode;
   if (variant === "invite") {
     kicker = `Défi reçu · expire dans ${timeLeftLabel(state.expiresAt, state.serverNow)}`;
-    title = `${theirName} te défie`;
+    title = PARTIE.teDefie(theirName);
     body = (
       <>
-        {state.questionCount} questions, les mêmes pour vous deux, {Math.round(state.timeLimitSeconds / 60)} min. Refuser ne coûte rien.
+        {state.questionCount} questions, les mêmes pour vous deux, {Math.round(state.timeLimitSeconds / 60)} min. {PARTIE.invite}
       </>
     );
   } else if (variant === "waiting") {
-    kicker = "Copie rendue";
+    kicker = PARTIE.copieRendueTitre.replace(/[.]$/, "");
     if (!them) {
-      title = "On cherche ton adversaire";
+      title = PARTIE.chercheTitre;
       body = (
         <>
-          Le prochain joueur qui lance un duel au hasard passera les mêmes questions. Personne avant le {dateLabel(state.expiresAt)} ? Le duel
+          Le prochain joueur qui lance un duel au hasard passera les mêmes questions. Personne avant le {dateLabel(state.expiresAt)}{NBSP}? Le duel
           expire, sans effet sur ton ELO.
         </>
       );
     } else if (state.status === "pending") {
-      title = `En attente de ${theirName}`;
+      title = PARTIE.attenteReponse(theirName);
       body = (
         <>
           Résultat dès qu&apos;il aura joué. Sans réponse avant le {dateLabel(state.expiresAt)}, le défi expire sans effet sur l&apos;ELO.
         </>
       );
     } else {
-      title = `À ${theirName} de jouer`;
+      title = PARTIE.attente(theirName);
       body = (
         <>
           {them.startedAt ? `En cours : ${them.answered}/${state.questionCount}.` : "Pas encore commencé."} S&apos;il ne joue pas avant le{" "}
@@ -124,16 +127,16 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
       );
     }
   } else {
-    kicker = state.status === "declined" ? "Défi refusé" : "Duel expiré";
-    title = state.status === "declined" ? "Pas de duel cette fois" : "Le temps est écoulé";
+    kicker = state.status === "declined" ? "Défi refusé" : PARTIE.expireTitre;
+    title = state.status === "declined" ? PARTIE.refuseTitre : "Le temps est écoulé";
     body = (
       <>
         {state.status === "declined"
-          ? "Le défi a été refusé ou annulé : rien ne bouge côté ELO."
+          ? PARTIE.refuse
           : state.me.startedAt
-            ? "Aucun adversaire n'a joué à temps : rien ne bouge côté ELO."
-            : "Personne n'a joué à temps : rien ne bouge côté ELO."}
-        {reviewable && " Tes réponses ne sont pas perdues : ta correction t'attend."}
+            ? PARTIE.personneAdv
+            : PARTIE.expire}
+        {reviewable && PARTIE.correctionAttend}
       </>
     );
   }
@@ -149,7 +152,9 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
             badgeSize={44}
             extra={state.me.finishedAt ? "rendu" : state.me.startedAt ? `${state.me.answered}/${state.questionCount}` : undefined}
           />
-          <Swords size={20} className="text-muted" aria-label="contre" />
+          <span className="text-muted" role="img" aria-label="contre">
+            <Icone nom="duel" size={22} />
+          </span>
           <DuelSide
             name={them?.username ?? "À trouver"}
             elo={them ? them.elo : null}
@@ -171,9 +176,9 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
 
           {variant === "invite" && stakes && (
             <div className="grid grid-cols-3 gap-2">
-              <StakeTile label="Si tu gagnes" value={signed(stakes.win)} />
-              <StakeTile label="Match nul" value={signed(stakes.draw)} />
-              <StakeTile label="Si tu perds" value={signed(stakes.loss)} />
+              <StakeTile label={PARTIE.enjeu.gagne} value={signed(stakes.win)} />
+              <StakeTile label={PARTIE.enjeu.nulle} value={signed(stakes.draw)} />
+              <StakeTile label={PARTIE.enjeu.perd} value={signed(stakes.loss)} />
             </div>
           )}
 
@@ -210,16 +215,16 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
               <>
                 {them && (
                   <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void rematch()}>
-                    Redéfier {theirName} <Swords size={15} aria-hidden />
+                    <Icone nom="duel" size={16} /> {PARTIE.revanche}
                   </button>
                 )}
                 {reviewable && (
                   <Link href={`/duel/${state.id}?revue=1`} className="btn btn-secondary">
-                    <ListChecks size={16} aria-hidden /> Revoir tes réponses
+                    <ListChecks size={16} aria-hidden /> {PARTIE.revoirReponses}
                   </Link>
                 )}
                 <Link href="/duel" className="btn btn-primary">
-                  Nouveau duel <ArrowRight size={16} aria-hidden />
+                  {PARTIE.nouveau} <ArrowRight size={16} aria-hidden />
                 </Link>
               </>
             )}

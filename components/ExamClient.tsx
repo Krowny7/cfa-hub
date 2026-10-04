@@ -12,16 +12,25 @@ import {
   QuestionCard,
   QuestionMap,
   QuestionNav,
-  ResultHero,
   ReviewSection,
   RunnerBar,
   Seg,
   TopicBreakdown,
 } from "@/components/session/parts";
-import { PASS_THRESHOLD, fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+import { cleanTopic, fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+import { FinDeSession } from "@/components/session/FinDeSession";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { surTitreSession } from "@/lib/voice";
+import { EPREUVE, EXAMEN } from "@/lib/voice-z3";
+import { MODE_EXAMEN, REMETTRE } from "@/lib/voice-z3b";
 
 // Mode examen : des questions tirées des QCM choisis, mélangées et
-// chronométrées, sans correction avant la fin.
+// chronométrées, sans correction avant la fin. La copie rendue devient une
+// copie corrigée (FinDeSession) et s'enregistre dans quiz_attempts, une ligne
+// par QCM source : score = justes, total = répondues, durée au prorata, et
+// les réponses données (answers). C'est le format que lit lib/answer-stats
+// (score par passage, rangé par set) : ces examens comptent dans les stats.
 
 export type ExamSetOption = { id: string; title: string; isOfficial: boolean };
 
@@ -57,8 +66,24 @@ function shuffleArr<T>(arr: T[]): T[] {
   return a;
 }
 
-export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamDemo }) {
+/** Les matières des QCM joués : « Fixed Income, Equity + 2 ». */
+function sourcesCourtes(titres: string[], max = 3) {
+  const t = [...new Set(titres.map((x) => cleanTopic(x).split(" — ")[0].trim()).filter(Boolean))];
+  return t.length <= max ? t.join(", ") : `${t.slice(0, max - 1).join(", ")} + ${t.length - max + 1}`;
+}
+
+export function ExamClient({
+  sets,
+  traitsJour = null,
+  demo,
+}: {
+  sets: ExamSetOption[];
+  /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
+  traitsJour?: number | null;
+  demo?: ExamDemo;
+}) {
   const supabase = useMemo(() => createClient(), []);
+  const jour = useTraitsDuJour(traitsJour);
 
   const defaultSelected = useMemo(() => {
     const official = sets.filter(s => s.isOfficial).map(s => s.id);
@@ -77,7 +102,14 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
   const [secondsLeft, setSecondsLeft] = useState(demo?.secondsLeft ?? 0);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAtRef = useRef<number>(0);
+  // une seule écriture par copie (fin du chrono ou bouton « Terminer »)
+  const savedRef = useRef(false);
+  const [dureeS, setDureeS] = useState<number | null>(null);
+  // traits posés par la copie rendue (posés avec elle, pour que l'anneau du jour et la copie restent d'accord)
+  const [ajoutes, setAjoutes] = useState(() => (demo?.phase === "done" ? (demo.selected ?? []).filter((x) => x !== null && x !== undefined).length : 0));
 
   const config = EXAM_CONFIGS[configIdx]!;
 
@@ -106,7 +138,8 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
   async function startExam() {
     if (selectedSetIds.length === 0) return;
     setPhase("loading");
-    const { data } = await supabase
+    setError(null);
+    const { data, error: qErr } = await supabase
       .from("quiz_questions")
       .select("id,set_id,prompt,choices,correct_index,explanation,position")
       .in("set_id", selectedSetIds);
@@ -117,6 +150,12 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
         choices: Array.isArray(q.choices) ? (q.choices as string[]) : [],
       })) as QuizQuestion[]
     ).slice(0, config.n);
+    if (qErr || qs.length === 0) {
+      // rien à jouer : retour au choix des sources, avec un mot
+      setError(MODE_EXAMEN.vide);
+      setPhase("setup");
+      return;
+    }
 
     setQuestions(qs);
     setAnswers(qs.map(q => ({ question: q, selected: null })));
@@ -124,8 +163,61 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
     setSelectedChoice(null);
     setSecondsLeft(config.minutes * 60);
     setConfirmEnd(false);
+    setSaveError(null);
+    setError(null);
+    savedRef.current = false;
+    setAjoutes(0);
+    startedAtRef.current = Date.now();
     setPhase("active");
   }
+
+  // La copie rendue : un trait par question répondue, et le résultat dans
+  // quiz_attempts, au format des QCM joués en entier (lu par lib/answer-stats) :
+  // une ligne par QCM source, score = justes, total = répondues (une question
+  // laissée sans réponse ne compte pas), plus les réponses données.
+  useEffect(() => {
+    if (phase !== "done" || demo || savedRef.current) return;
+    savedRef.current = true;
+    const duration = startedAtRef.current ? Math.round((Date.now() - startedAtRef.current) / 1000) : null;
+    setDureeS(duration);
+    const answeredAll = answers.filter((a) => a.selected !== null);
+    if (answeredAll.length === 0) return;
+    setAjoutes(answeredAll.length);
+    poserTrait(answeredAll.length);
+
+    const bySet = new Map<string, ExamAnswer[]>();
+    for (const a of answers) {
+      const list = bySet.get(a.question.set_id) ?? [];
+      list.push(a);
+      bySet.set(a.question.set_id, list);
+    }
+    void (async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        if (!auth.user) return;
+        const userId = auth.user.id;
+        const rows = [...bySet.entries()]
+          .map(([setId, list]) => {
+            const answered = list.filter((a) => a.selected !== null);
+            return {
+              user_id: userId,
+              set_id: setId,
+              score: answered.filter((a) => a.selected === a.question.correct_index).length,
+              total: answered.length,
+              // la durée de l'examen, au prorata des questions répondues
+              duration_seconds: duration !== null ? Math.round((duration * answered.length) / answeredAll.length) : null,
+              answers: list.map((a) => ({ question_id: a.question.id, selected_index: a.selected })),
+            };
+          })
+          .filter((r) => r.total > 0);
+        const { error: insErr } = await supabase.from("quiz_attempts").insert(rows);
+        if (insErr) throw insErr;
+      } catch (e) {
+        console.error("exam quiz_attempts insert failed:", e);
+        setSaveError(EXAMEN.nonEnregistree);
+      }
+    })();
+  }, [phase, demo, answers, supabase]);
 
   function selectChoice(choice: number) {
     setSelectedChoice(choice);
@@ -176,16 +268,12 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
     const officialIds = sets.filter(s => s.isOfficial).map(s => s.id);
     return (
       <div className="rl-page">
-        <PageHead
-          back={{ href: "/entrainement", label: "S'entraîner" }}
-          title="Mode examen"
-          sub="Tes QCM mélangés et chronométrés, comme le jour J : la correction n'arrive qu'à la fin."
-        />
+        <PageHead back={{ href: "/entrainement", label: "S'entraîner" }} title={MODE_EXAMEN.titre} sub={MODE_EXAMEN.sous} />
 
         <section className="card-hero rl-in grid grid-cols-1 gap-7 p-5 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Préparer l'examen">
           <div className="grid gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h2 className="t-h2 m-0">Sources</h2>
+              <h2 className="t-h2 m-0">{MODE_EXAMEN.sources}</h2>
               {sets.length > 0 && (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold text-muted">
                   <span className="t-micro tabular-nums">
@@ -193,20 +281,20 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
                   </span>
                   {officialIds.length > 0 && (
                     <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(officialIds)}>
-                      Système seulement
+                      {MODE_EXAMEN.systeme}
                     </button>
                   )}
                   <button type="button" className="transition-colors hover:text-white" onClick={() => setSelectedSetIds(allOn ? [] : sets.map(s => s.id))}>
-                    {allOn ? "Aucune" : "Toutes"}
+                    {allOn ? MODE_EXAMEN.aucune : MODE_EXAMEN.toutes}
                   </button>
                 </div>
               )}
             </div>
             {sets.length === 0 ? (
               <p className="t-small m-0">
-                Aucun QCM disponible.{" "}
+                {MODE_EXAMEN.aucunQcm}{" "}
                 <Link href="/qcm" className="ink-link">
-                  Créer un QCM
+                  {MODE_EXAMEN.creerQcm}
                 </Link>
               </p>
             ) : (
@@ -242,9 +330,9 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
 
           <div className="grid grid-cols-1 items-end gap-5 border-t border-line pt-6 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-8">
             <div>
-              <p className="t-eyebrow m-0 mb-2">Format</p>
+              <p className="t-eyebrow m-0 mb-2">{MODE_EXAMEN.format}</p>
               <Seg
-                label="Format"
+                label={MODE_EXAMEN.format}
                 value={String(configIdx)}
                 onChange={(v) => setConfigIdx(Number(v))}
                 options={EXAM_CONFIGS.map((c, i) => ({ key: String(i), label: `${c.n} Q` }))}
@@ -256,12 +344,17 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
                 <span className="text-[15px] font-semibold">questions</span>
                 <span className="t-small">· {fmtMinutes(config.minutes)}</span>
               </p>
-              <p className="t-micro m-0 mt-1.5">{configIdx === 2 ? "Le format d'une session CFA. " : ""}Pas de correction avant la fin.</p>
+              <p className="t-micro m-0 mt-1.5">{configIdx === 2 ? `${MODE_EXAMEN.formatCfa} ` : ""}{MODE_EXAMEN.pasDeCorrection}</p>
             </div>
             <button type="button" className="btn btn-primary btn-lg rl-press w-full md:w-auto" disabled={selectedSetIds.length === 0} onClick={() => void startExam()}>
-              Démarrer l&apos;examen <ArrowRight size={17} aria-hidden />
+              {MODE_EXAMEN.demarrer} <ArrowRight size={17} aria-hidden />
             </button>
           </div>
+          {error && (
+            <p role="alert" className="m-0 -mt-3 text-sm text-pen">
+              {error}
+            </p>
+          )}
         </section>
       </div>
     );
@@ -274,12 +367,12 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
       <div className="mx-auto grid w-full max-w-[820px] gap-5">
         <div className="rl-skel h-[84px]" />
         <div className="rl-skel h-[360px]" />
-        <p className="t-small m-0 text-center">Préparation des questions…</p>
+        <p className="t-small m-0 text-center">{MODE_EXAMEN.preparation}</p>
       </div>
     );
   }
 
-  // ── RÉSULTAT ──────────────────────────────────────────────────────────────
+  // ── RÉSULTAT : la copie corrigée ──
 
   if (phase === "done") {
     const titleOf = new Map(sets.map(s => [s.id, s.title]));
@@ -296,46 +389,44 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
     const answered = answers.filter(a => a.selected !== null).length;
     const correct = review.filter(r => r.is_correct).length;
     const total = questions.length;
-    const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
-    const isPassing = pct >= PASS_THRESHOLD;
     const many = new Set(review.map(r => r.topic ?? "")).size > 1;
+    const sources = [...new Set(answers.map(a => titleOf.get(a.question.set_id)).filter((x): x is string => !!x))];
+    const minutes = dureeS ? Math.max(1, Math.round(dureeS / 60)) : null;
+    const notes = [saveError, error].filter(Boolean);
 
     return (
       <div className="rl-page">
-        <ResultHero
-          eyebrow={`Mode examen · seuil indicatif ${PASS_THRESHOLD} %`}
-          verdict={isPassing ? "Au-dessus du seuil" : "Sous le seuil"}
-          pct={pct}
+        <FinDeSession
+          epreuve={surTitreSession(EPREUVE.exam, total, minutes)}
+          titre={sourcesCourtes(sources) || EPREUVE.exam}
+          meta={EXAMEN.sansReponse(total - answered) ?? undefined}
           score={correct}
           total={total}
-          meta={
-            <>
-              {correct} bonne{correct > 1 ? "s" : ""} réponse{correct > 1 ? "s" : ""} sur {total}
-              {answered < total ? ` · ${total - answered} sans réponse` : ""}
-            </>
+          review={review}
+          jour={jour}
+          ajoutes={ajoutes}
+          ia={total > 0 ? <CopyForAi review={review} score={correct} total={total} kind="exam" size="action" onError={setError} /> : null}
+          notes={
+            notes.length ? (
+              <p role="alert" className="m-0 text-sm text-pen">
+                {notes.join(" ")}
+              </p>
+            ) : null
           }
-          actions={
+          liens={
             <>
               <button type="button" className="ink-link" onClick={() => setPhase("setup")}>
-                Nouvel examen
+                {MODE_EXAMEN.nouvel}
               </button>
               <Link href="/entrainement" className="text-[13.5px] font-semibold text-muted transition-colors hover:text-white">
-                Retour à S&apos;entraîner
+                {MODE_EXAMEN.retour}
               </Link>
             </>
           }
         >
-          {total > 0 && <CopyForAi review={review} score={correct} total={total} kind="exam" onError={setError} />}
-          {error && (
-            <p role="alert" className="m-0 text-sm text-pen">
-              {error}
-            </p>
-          )}
-        </ResultHero>
-
-        {many && <TopicBreakdown review={review} title="Par source" />}
-
-        <ReviewSection review={review} />
+          {many && <TopicBreakdown review={review} title={MODE_EXAMEN.parSource} />}
+          <ReviewSection review={review} />
+        </FinDeSession>
       </div>
     );
   }
@@ -352,7 +443,7 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
   return (
     <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
       <RunnerBar
-        label="Mode examen"
+        label={EPREUVE.exam}
         index={idx}
         total={questions.length}
         answered={answeredCount}
@@ -360,22 +451,20 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
         lowAt={300}
         actions={
           <button type="button" className="btn btn-secondary btn-sm" onClick={askEnd}>
-            Terminer
+            {REMETTRE.court}
           </button>
         }
       />
 
       {confirmEnd && (
         <div role="alert" className="card-quiet rl-in flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="m-0 text-[14px]">
-            Encore <b>{unanswered}</b> question{unanswered > 1 ? "s" : ""} sans réponse. Terminer quand même ?
-          </p>
+          <p className="m-0 text-[14px]">{REMETTRE.confirmer(unanswered)}</p>
           <div className="flex gap-2">
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmEnd(false)}>
-              Continuer
+              {REMETTRE.continuer}
             </button>
             <button type="button" className="btn btn-secondary btn-sm" onClick={finish}>
-              Terminer
+              {REMETTRE.bouton}
             </button>
           </div>
         </div>
@@ -391,7 +480,7 @@ export function ExamClient({ sets, demo }: { sets: ExamSetOption[]; demo?: ExamD
             prevDisabled={idx === 0}
             next={
               <button type="button" className="btn btn-primary rl-press" onClick={goNext}>
-                {isLast ? "Terminer" : "Suivante"} <ArrowRight size={16} aria-hidden />
+                {isLast ? REMETTRE.bouton : "Suivante"} <ArrowRight size={16} aria-hidden />
               </button>
             }
           />

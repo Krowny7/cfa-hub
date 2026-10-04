@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Search, Shuffle, Swords } from "lucide-react";
+import { ArrowRight, Search, Shuffle } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
+import { VIDE } from "@/lib/voice";
+import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
 import { createClient } from "@/lib/supabase/browser";
 import { DuelHeading, DuelHowItWorks, InkWatermark, PlayerBadge, ReviewDuelRow, StakeBox } from "@/components/duel/parts";
 import type { DuelSummary } from "@/lib/rating";
@@ -150,7 +153,7 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                 <div key={d.id} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 sm:px-5">
                   <PlayerBadge elo={d.opponentElo ?? me.elo} size={38} />
                   <div className="min-w-0 flex-[1_1_200px]">
-                    <div className="truncate text-[15px] font-bold">{d.opponentName ?? "Un joueur"} te défie</div>
+                    <div className="truncate text-[15px] font-bold">{PARTIE.teDefie(d.opponentName ?? "Un joueur")}</div>
                     <div className="t-micro truncate">
                       {d.opponentElo ?? "—"} ELO · <span className="font-mono">{signed(s.win)} / {signed(s.loss)}</span> · expire dans{" "}
                       {timeLeftLabel(d.expiresAt, nowIso)}
@@ -177,16 +180,16 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
             <div className="relative flex items-center gap-2.5">
               <Shuffle size={22} aria-hidden />
               <h2 id="rl-duel-random" className="m-0 text-[26px] font-extrabold tracking-[-0.025em]">
-                Au hasard
+                {PARTIE.lobbyHasard}
               </h2>
             </div>
             <p className="relative m-0 max-w-[440px] text-[15px] leading-normal text-[rgba(255,255,255,.68)]">
-              Un joueur de ton niveau, les mêmes questions. Personne en vue{" "}? Tu joues tout de suite.
+              {PARTIE.lobbyHasardTexte}
             </p>
             <div className="relative grid grid-cols-3 gap-2">
-              <StakeBox label="Si tu gagnes" value={`${signed(stakes.win.lo)} à ${signed(stakes.win.hi)}`} />
-              <StakeBox label="Match nul" value={`${signed(stakes.draw.lo)} à ${signed(stakes.draw.hi)}`} />
-              <StakeBox label="Si tu perds" value={`${signed(stakes.loss.lo)} à ${signed(stakes.loss.hi)}`} />
+              <StakeBox label={PARTIE.enjeu.gagne} value={`${signed(stakes.win.lo)} à ${signed(stakes.win.hi)}`} />
+              <StakeBox label={PARTIE.enjeu.nulle} value={`${signed(stakes.draw.lo)} à ${signed(stakes.draw.hi)}`} />
+              <StakeBox label={PARTIE.enjeu.perd} value={`${signed(stakes.loss.lo)} à ${signed(stakes.loss.hi)}`} />
             </div>
             <div className="relative mt-auto flex flex-wrap items-center gap-x-4 gap-y-2">
               <button
@@ -195,12 +198,12 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                 disabled={busy === "random"}
                 className="btn btn-lg btn-on-ink"
               >
-                {busy === "random" ? "Recherche…" : waitingRandom ? "Reprendre mon duel" : "Lancer la recherche"}
+                {busy === "random" ? PARTIE.recherche : waitingRandom ? PARTIE.reprendre : PARTIE.trouver}
                 <ArrowRight size={16} aria-hidden />
               </button>
               {waitingRandom && (
                 <span className="text-[12.5px] text-[rgba(255,255,255,.58)]">
-                  {waitingRandom.myFinished ? "copie rendue · on cherche ton adversaire" : "en attente d'un adversaire"}
+                  {waitingRandom.myFinished ? PARTIE.chercheAdv : "en attente d'un adversaire"}
                 </span>
               )}
             </div>
@@ -209,9 +212,9 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
           {/* Défier quelqu'un */}
           <section id="defier" className="card flex min-w-0 scroll-mt-24 flex-col gap-4 p-6 md:p-8" aria-labelledby="rl-duel-challenge">
             <div className="flex items-center gap-2.5">
-              <Swords size={22} aria-hidden />
+              <Icone nom="duel" size={24} />
               <h2 id="rl-duel-challenge" className="m-0 text-[26px] font-extrabold tracking-[-0.025em]">
-                Défier quelqu&apos;un
+                {PARTIE.defierTitre}
               </h2>
             </div>
             <label className="flex h-[44px] items-center gap-2.5 rounded-[12px] border border-line-2 bg-black px-3.5 text-muted focus-within:border-white">
@@ -274,10 +277,10 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
             ) : (
               <p className="t-small m-0 py-4">
                 {searching
-                  ? "Recherche…"
+                  ? PARTIE.recherche
                   : results
-                    ? "Aucun joueur ne correspond. Essaie son pseudo exact ou son e-mail."
-                    : "Pas encore d'autre joueur à défier — invite un ami à s'inscrire."}
+                    ? PARTIE.aucunJoueur
+                    : VIDE.adversaires}
               </p>
             )}
             {!results && listed.length > 0 && (
@@ -291,10 +294,10 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
 
       <section className="flex flex-col gap-6" aria-labelledby="rl-duel-mine">
         <h2 id="rl-duel-mine" className="t-h2">
-          Tes duels
+          {PARTIE.tesDuels}
         </h2>
         {ongoing.length === 0 && recent.length === 0 && toReview.length === 0 ? (
-          <p className="t-small">Pas encore de duel. Lance le premier : au hasard ou contre quelqu&apos;un.</p>
+          <p className="t-small">{VIDE.duels}</p>
         ) : (
           <div className="grid items-start gap-10 md:grid-cols-2 md:gap-14">
             <div className="flex min-w-0 flex-col gap-2">
@@ -302,7 +305,7 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                 En cours{ongoing.length > 0 && <span className="font-mono font-normal"> · {ongoing.length}</span>}
               </p>
               {ongoing.length === 0 ? (
-                <p className="t-small px-2">Aucun duel en cours.</p>
+                <p className="t-small px-2">{CLASSEMENT.enCoursVide}</p>
               ) : (
                 <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
                   {ongoing.map((d) => (
@@ -317,12 +320,12 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                 <span>
                   À revoir{toReview.length > 0 && <span className="font-mono font-normal"> · {toReview.length}</span>}
                 </span>
-                <span className="font-normal normal-case tracking-normal">{DUEL_REVIEW_DAYS} jours après chaque duel</span>
+                <span className="font-normal normal-case tracking-normal">{CLASSEMENT.aRevoirSous(DUEL_REVIEW_DAYS)}</span>
               </p>
               {toReview.length === 0 ? (
                 <p className="t-small px-2">
-                  {recent.length === 0 ? "Pas encore de duel terminé." : `Aucun duel ces ${DUEL_REVIEW_DAYS} derniers jours.`} Chaque duel terminé
-                  arrive ici, avec ses questions corrigées et « Copier pour l&apos;IA ».
+                  {recent.length === 0 ? null : `${CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)} `}
+                  {PARTIE.aRevoirTexte}
                 </p>
               ) : (
                 <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
@@ -343,10 +346,10 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
 
               {older.length > 0 && (
                 <>
-                  <p className="t-eyebrow mt-5 px-2">Plus anciens</p>
+                  <p className="t-eyebrow mt-5 px-2">{PARTIE.plusAnciennes}</p>
                   <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
                   {older.map((d) => {
-                    const label = d.won === true ? "Victoire" : d.won === false ? "Défaite" : "Nul";
+                    const label = motIssue(d.won);
                     return (
                       <li key={d.id}>
                         <Link href={`/duel/${d.id}`} className="rl-row grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[12px] px-2 py-2.5">
@@ -407,12 +410,12 @@ function OpenDuelRow({ d, me, nowIso }: { d: OpenDuel; me: { elo: number; gamesP
   let sub: string;
   let action = d.myFinished ? "Voir" : "Jouer";
   if (d.status === "pending" && d.incoming) {
-    title = `${name} te défie`;
-    sub = `à accepter · expire dans ${timeLeftLabel(d.expiresAt, nowIso)}`;
+    title = PARTIE.teDefie(name);
+    sub = `à toi le trait · à accepter sous ${timeLeftLabel(d.expiresAt, nowIso)}`;
     action = "Voir";
   } else if (d.status === "pending" && !d.opponentId) {
     title = "Duel au hasard";
-    sub = d.myFinished ? "copie rendue · on cherche ton adversaire" : "en attente d'un adversaire · tu peux déjà jouer";
+    sub = d.myFinished ? PARTIE.chercheAdv : PARTIE.attendAdv;
   } else if (d.status === "pending") {
     title = `Défi envoyé à ${name}`;
     sub = d.myFinished ? "copie rendue · en attente de sa réponse" : "pas encore accepté · tu peux déjà jouer";
@@ -420,7 +423,7 @@ function OpenDuelRow({ d, me, nowIso }: { d: OpenDuel; me: { elo: number; gamesP
     title = `Contre ${name}`;
     sub = d.myFinished
       ? `copie rendue · ${d.theirFinished ? "résultat imminent" : d.theirStarted ? "il joue" : "pas encore joué"}`
-      : `à toi de jouer · expire dans ${timeLeftLabel(d.expiresAt, nowIso)}`;
+      : PARTIE.aToi(timeLeftLabel(d.expiresAt, nowIso));
   }
   const urgent = action === "Jouer" && d.status === "active";
   const s = d.opponentElo !== null ? stakesAgainst(me.elo, me.gamesPlayed, d.opponentElo) : null;

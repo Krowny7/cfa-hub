@@ -11,13 +11,17 @@ import {
   QuestionMap,
   QuestionNav,
   ReadyCard,
-  ResultHero,
   ReviewSection,
   RunnerBar,
   TopicBreakdown,
 } from "@/components/session/parts";
-import { EloDelta } from "@/components/session/ui";
-import { PASS_THRESHOLD, fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+import { fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+import { FinDeSession } from "@/components/session/FinDeSession";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { surTitreSession } from "@/lib/voice";
+import { ELO_COPIE, EPREUVE } from "@/lib/voice-z3";
+import { AVANT_EXAMEN, INDISPONIBLE, REJOUER, REMETTRE } from "@/lib/voice-z3b";
 
 // Reçu pendant l'examen — jamais correct_index/explanation (voir
 // migration_mock_exam_secure_submit.sql, correction entièrement serveur).
@@ -34,21 +38,31 @@ type ActiveQuestion = {
 
 type Props = {
   examId: string;
+  /** titre de l'examen (en-tête de la copie) */
+  title?: string;
   durationMinutes: number;
   questions: ActiveQuestion[];
   review: ReviewQuestion[];
   alreadyDone: boolean;
   /** examen blanc classé : variation d'ELO une fois appliquée, sinon une note (ex. « à la clôture ») */
   elo?: { delta: number | null; note: string | null } | null;
-  /** aperçu (app/preview-da) : écran et réponses de départ, chrono figé */
-  demo?: { phase: "ready" | "active"; answers?: (number | null)[]; idx?: number; secondsLeft?: number };
+  /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
+  traitsJour?: number | null;
+  /** aperçu (app/preview-da) : écran et réponses de départ, chrono figé ; "rendue" : la copie juste remise */
+  demo?: { phase: "ready" | "active" | "rendue"; answers?: (number | null)[]; idx?: number; secondsLeft?: number; duree?: number };
 };
 
-export function MockExamRunner({ examId, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, demo }: Props) {
+export function MockExamRunner({ examId, title, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, traitsJour = null, demo }: Props) {
   const supabase = useMemo(() => createClient(), []);
+  const jour = useTraitsDuJour(traitsJour);
+  // copie remise pendant cette visite : la copie se corrige sous tes yeux et
+  // l'anneau du jour avance ; à la revisite, elle est posée
+  const [rendue, setRendue] = useState<{ ajoutes: number; duree: number } | null>(
+    demo?.phase === "rendue" ? { ajoutes: initialReview.filter((r) => r.selected_index !== null).length, duree: demo.duree ?? 0 } : null,
+  );
 
   type Phase = "ready" | "active" | "done";
-  const [phase, setPhase] = useState<Phase>(alreadyDone ? "done" : demo?.phase ?? "ready");
+  const [phase, setPhase] = useState<Phase>(alreadyDone || demo?.phase === "rendue" ? "done" : demo?.phase ?? "ready");
   const [answers, setAnswers] = useState<(number | null)[]>(() => demo?.answers ?? questions.map(() => null));
   const [idx, setIdx] = useState(demo?.idx ?? 0);
   const [secondsLeft, setSecondsLeft] = useState(demo?.secondsLeft ?? durationMinutes * 60);
@@ -110,7 +124,12 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
         p_duration_seconds: duration,
       });
       if (rpcError) throw new Error(rpcError.message);
-      setReview((data?.review ?? []) as ReviewQuestion[]);
+      const rv = (data?.review ?? []) as ReviewQuestion[];
+      setReview(rv);
+      // la copie remise d'un bloc : autant de traits que de questions (comme l'anneau du jour)
+      const n = rv.length || questions.length;
+      setRendue({ ajoutes: n, duree: duration });
+      poserTrait(n);
       setPhase("done");
     } catch (e: unknown) {
       setError(friendlyError(e, "Erreur lors de la soumission"));
@@ -126,67 +145,64 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
   if (phase === "ready") {
     return (
       <ReadyCard
-        eyebrow="Examen blanc · ta copie"
-        title="Prêt à commencer ?"
+        eyebrow={AVANT_EXAMEN.surTitreMock}
+        title={AVANT_EXAMEN.titre}
         meta={`${questions.length} questions · ${fmtMinutes(durationMinutes)}`}
-        rules={[
-          "Pas de correction pendant l'examen : résultats et explications à la fin.",
-          "Pas de pause : à la fin du chrono, ta copie est remise automatiquement.",
-          "Garde la page ouverte : tes réponses partent quand tu remets ta copie.",
-        ]}
+        rules={[...AVANT_EXAMEN.reglesMock]}
         onStart={start}
-        startLabel="Commencer l'examen"
+        startLabel={AVANT_EXAMEN.commencer}
         wide
       />
     );
   }
 
-  // ── RÉSULTAT ──
+  // ── RÉSULTAT : la copie corrigée ──
   if (phase === "done") {
     const total = review.length;
     const score = review.filter((r) => r.is_correct).length;
-    const pct = total > 0 ? Math.round((score / total) * 100) : null;
-    const passed = pct !== null && pct >= PASS_THRESHOLD;
+    const minutes = rendue?.duree ? Math.max(1, Math.round(rendue.duree / 60)) : null;
+    const eloLigne = elo ? (elo.delta !== null ? ELO_COPIE.applique(elo.delta) : elo.note) : null;
+
+    if (total === 0) {
+      return (
+        <section className="card-quiet rl-in grid gap-2 px-6 py-8 text-center" aria-label="Résultat">
+          <p className="t-eyebrow m-0">{EPREUVE.mock}</p>
+          <p className="t-h3 m-0">{INDISPONIBLE}</p>
+          {eloLigne && <p className="t-small m-0">{eloLigne}</p>}
+        </section>
+      );
+    }
 
     return (
-      <div className="rl-page">
-        <ResultHero
-          eyebrow={`Examen blanc · seuil indicatif ${PASS_THRESHOLD} %`}
-          verdict={total > 0 ? (passed ? "Réussi" : "Pas encore") : "Résultats indisponibles"}
-          pct={pct}
+      <>
+        <FinDeSession
+          epreuve={surTitreSession(EPREUVE.mock, total, minutes)}
+          titre={title ?? EPREUVE.mock}
+          meta={eloLigne ?? undefined}
           score={score}
           total={total}
-          meta={
-            total > 0 ? (
-              <>
-                {score} bonne{score > 1 ? "s" : ""} réponse{score > 1 ? "s" : ""} sur {total}
-                {elo?.note ? <> · {elo.note}</> : null}
-              </>
-            ) : (
-              elo?.note ?? undefined
-            )
+          review={review}
+          jour={jour}
+          ajoutes={rendue?.ajoutes ?? 0}
+          anime={rendue !== null}
+          ia={<CopyForAi review={review} score={score} total={total} kind="mock" size="action" onError={setError} />}
+          notes={
+            error ? (
+              <p role="alert" className="m-0 text-sm text-pen">
+                {error}
+              </p>
+            ) : null
           }
-          chips={elo && elo.delta !== null ? <EloDelta delta={elo.delta} /> : undefined}
-          actions={
-            total > 0 ? (
-              <a href="#rejouer" className="ink-link">
-                Rejouer en entraînement
-              </a>
-            ) : undefined
+          liens={
+            <a href="#rejouer" className="ink-link">
+              {REJOUER.lien}
+            </a>
           }
         >
-          {total > 0 && <CopyForAi review={review} score={score} total={total} kind="mock" onError={setError} />}
-          {error && (
-            <p role="alert" className="m-0 text-sm text-pen">
-              {error}
-            </p>
-          )}
-        </ResultHero>
-
-        <TopicBreakdown review={review} />
-
-        <ReviewSection review={review} defaultOpen={false} />
-      </div>
+          <TopicBreakdown review={review} />
+          <ReviewSection review={review} defaultOpen={false} />
+        </FinDeSession>
+      </>
     );
   }
 
@@ -201,7 +217,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
   return (
     <div className="mx-auto grid w-full max-w-[820px] gap-5 md:gap-6">
       <RunnerBar
-        label="Examen blanc"
+        label={EPREUVE.mock}
         index={idx}
         total={questions.length}
         answered={answered}
@@ -209,22 +225,20 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
         lowAt={300}
         actions={
           <button type="button" className="btn btn-secondary btn-sm" disabled={submitting} onClick={askEnd}>
-            {submitting ? "Envoi…" : "Remettre"}
+            {submitting ? REMETTRE.envoi : REMETTRE.court}
           </button>
         }
       />
 
       {confirmEnd && (
         <div role="alert" className="card-quiet rl-in flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="m-0 text-[14px]">
-            Encore <b>{unanswered}</b> question{unanswered > 1 ? "s" : ""} sans réponse. Remettre ta copie quand même ?
-          </p>
+          <p className="m-0 text-[14px]">{REMETTRE.confirmer(unanswered)}</p>
           <div className="flex gap-2">
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmEnd(false)}>
-              Continuer
+              {REMETTRE.continuer}
             </button>
             <button type="button" className="btn btn-secondary btn-sm" disabled={submitting} onClick={() => void submit()}>
-              Remettre ma copie
+              {REMETTRE.bouton}
             </button>
           </div>
         </div>
@@ -248,7 +262,7 @@ export function MockExamRunner({ examId, durationMinutes, questions, review: ini
               next={
                 last ? (
                   <button type="button" className="btn btn-primary rl-press" disabled={submitting} onClick={askEnd}>
-                    Remettre ma copie <ArrowRight size={16} aria-hidden />
+                    {REMETTRE.bouton} <ArrowRight size={16} aria-hidden />
                   </button>
                 ) : (
                   <button type="button" className="btn btn-primary rl-press" onClick={() => setIdx((i) => i + 1)}>

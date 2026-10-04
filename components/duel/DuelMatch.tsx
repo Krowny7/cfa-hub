@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { PARTIE } from "@/lib/voice-z2";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { DuelSide, StakeTile } from "@/components/duel/parts";
 import {
@@ -168,6 +170,8 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
       const nextAnswers = { ...answers, [current]: selected };
       if (supabase) {
         const res = await answerDuel(supabase, state.id, current, selected);
+        // un trait de plus sur l'anneau du jour (logo vivant de la barre du haut)
+        if (res.ok) poserTrait(1);
         setTheirAnswered(res.opponentAnswered);
         if (!res.ok || res.finished) {
           setAnswers(nextAnswers);
@@ -239,7 +243,7 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
   }
 
   async function handIn() {
-    if (!window.confirm("Rendre ta copie maintenant ? Les questions sans réponse compteront fausses.")) return;
+    if (!window.confirm(PARTIE.rendreConfirm(n - answeredCount))) return;
     await finish();
   }
 
@@ -280,24 +284,21 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
               {" · expire dans "}
               {timeLeftLabel(state.expiresAt, state.serverNow)}
             </p>
-            <h2 className="t-h1 m-0 mt-1.5">Prêt ?</h2>
+            <h2 className="t-h1 m-0 mt-1.5">{PARTIE.avant}</h2>
           </div>
           <ul className="m-0 grid list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
-            <li>
-              <b className="text-white">{n} questions</b>, les mêmes et dans le même ordre pour vous deux.
-            </li>
-            <li>
-              <b className="text-white">{Math.round(state.timeLimitSeconds / 60)} min</b> : le chrono ne s&apos;arrête plus, même si tu fermes la page.
-            </li>
-            <li>
-              <b className="text-white">Réponses définitives</b> ; tu peux passer et revenir. Scores cachés jusqu&apos;à la fin.
-            </li>
+            {PARTIE.regles(n, Math.round(state.timeLimitSeconds / 60)).map(([b, rest]) => (
+              <li key={b}>
+                <b className="text-white">{b}</b>
+                {rest}
+              </li>
+            ))}
           </ul>
           {stakes ? (
             <div className="grid grid-cols-3 gap-2">
-              <StakeTile label="Si tu gagnes" value={signed(stakes.win)} />
-              <StakeTile label="Match nul" value={signed(stakes.draw)} />
-              <StakeTile label="Si tu perds" value={signed(stakes.loss)} />
+              <StakeTile label={PARTIE.enjeu.gagne} value={signed(stakes.win)} />
+              <StakeTile label={PARTIE.enjeu.nulle} value={signed(stakes.draw)} />
+              <StakeTile label={PARTIE.enjeu.perd} value={signed(stakes.loss)} />
             </div>
           ) : (
             <p className="t-small m-0">Tu joues d&apos;abord : le prochain joueur qui cherche un duel au hasard passera les mêmes questions. L&apos;enjeu dépendra de son ELO.</p>
@@ -324,8 +325,8 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
         </section>
       ) : phase === "done" || !q ? (
         <section className="card rl-in mx-auto grid w-full max-w-[820px] place-items-center gap-2 p-8 text-center">
-          <h2 className="m-0 text-[24px] font-extrabold tracking-[-0.02em]">Copie rendue</h2>
-          <p className="m-0 text-sm text-muted">Calcul du résultat…</p>
+          <h2 className="m-0 text-[24px] font-extrabold tracking-[-0.02em]">{PARTIE.copieRendueTitre}</h2>
+          <p className="m-0 text-sm text-muted">{PARTIE.compare}</p>
         </section>
       ) : (
         <div className="mx-auto grid w-full max-w-[820px] gap-[22px]">

@@ -8,6 +8,7 @@ import { DuelMatch } from "@/components/duel/DuelMatch";
 import { DuelResult } from "@/components/duel/DuelResult";
 import { DuelReview } from "@/components/duel/DuelReview";
 import { DuelStatusCard } from "@/components/duel/DuelStatusCard";
+import { countPlayers } from "@/components/classement/data";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -54,10 +55,12 @@ export default async function DuelPage({ params, searchParams }: PageProps) {
   // La correction d'un duel clos n'existe que si tu l'as joué (et après la migration)
   const needReview = finished || (closed && !!state.me.startedAt);
   const reviewOnly = wantsReview && finished;
-  const [review, topics, lbRank] = await Promise.all([
+  const showResult = finished && !wantsReview;
+  const [review, topics, lbRank, players] = await Promise.all([
     needReview ? getDuelReview(supabase, id) : Promise.resolve([] as DuelReviewItem[]),
     reviewOnly ? Promise.resolve(null) : getTopicMastery(supabase, user.id),
-    finished && !wantsReview ? getLeaderboardRank(supabase, user.id) : Promise.resolve(null),
+    showResult ? getLeaderboardRank(supabase, user.id) : Promise.resolve(null),
+    showResult ? countPlayers(supabase) : Promise.resolve(null),
   ]);
 
   if (wantsReview && (finished || review.length > 0)) {
@@ -73,7 +76,7 @@ export default async function DuelPage({ params, searchParams }: PageProps) {
   if (finished) {
     return (
       <div className="rl-wide">
-        <DuelResult state={state} review={review} mastery={mastery} leaderboardRank={lbRank} />
+        <DuelResult state={state} review={review} mastery={mastery} leaderboardRank={lbRank} players={players} />
       </div>
     );
   }

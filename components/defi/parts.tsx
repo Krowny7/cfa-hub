@@ -1,15 +1,17 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CalendarDays, X } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
 import { PageHero } from "@/components/ui/Titles";
+import { InkBarCoches } from "@/components/adn/InkBarCoches";
+import { InkRing } from "@/components/ink/InkRing";
+import { Avatar } from "@/components/classement/Avatar";
 import { clock } from "@/lib/duels";
 import {
   DAILY_QUESTIONS,
   DAILY_REVIEW_DAYS,
-  DAILY_VOICE,
   dayHref,
   dayLabel,
   daysBetween,
-  ordinal,
   reviewHref,
   reviewLeftLabel,
   timeLeftLabel,
@@ -17,6 +19,7 @@ import {
   type DailyBoardRow,
   type DailyHistoryEntry,
 } from "@/lib/daily";
+import { DEFI, joueurs, rangOrdinal, raturesOuPropre } from "@/lib/voice-z2c";
 
 // Pièces partagées des pages du défi du jour. Sans état : utilisables depuis
 // un composant serveur comme depuis un composant client.
@@ -30,12 +33,17 @@ export function DefiHeading({ day, today, isToday }: { day: string; today: strin
     <PageHero
       kicker={
         <span className="inline-flex items-center gap-1.5">
-          <CalendarDays size={14} aria-hidden /> Défi du jour · {dayLabel(day, "long", today)}
+          <Icone nom="examen" size={15} /> {DEFI.kicker(dayLabel(day, "long", today))}
         </span>
       }
-      title={isToday ? DAILY_VOICE.title : `Les 30 du ${dayLabel(day, "day", today)}.`}
+      title={isToday ? DEFI.title : DEFI.titleDay(dayLabel(day, "day", today))}
     />
   );
+}
+
+/** Filigrane de l'anneau dans une carte sombre (décor, à poser en absolu). */
+export function Filigrane({ size = 300, className = "-bottom-16 -right-10" }: { size?: number; className?: string }) {
+  return <InkRing size={size} className={"rl-deco pointer-events-none absolute text-[#fff] opacity-[0.08] " + className} />;
 }
 
 /** Lien de retour discret, au-dessus d'un titre. */
@@ -48,25 +56,21 @@ export function BackLink({ href, children }: { href: string; children: React.Rea
 }
 
 // ---------------------------------------------------------------------------
-// Coches (Épure) : une coche par question, sur un trait de crayon.
-//   ok : coche à l'encre ; ko : croix au stylo rouge ; none : sans réponse,
-//   au crayon ; done : répondue pendant la partie (justesse inconnue) ;
+// Coches (Épure, InkBarCoches du kit) : une coche par question. Un trait
+// d'encre par bonne réponse, la croix du correcteur (stylo rouge) par
+// rature, un trait de crayon pour ce qui reste.
+//   ok : juste ; ko : rature ; none : sans réponse (crayon) ; done : répondue
+//   pendant la partie (justesse inconnue : un trait d'encre, rien de plus) ;
 //   current : la question affichée ; todo : à faire, au crayon.
+// Chaque coche peut mener à sa question (lien ou bouton posé par-dessus).
+// `entoure` : une coche entourée au stylo rouge (la question décisive d'un
+// duel : la main du correcteur, règle 3).
 
 export type TickMark = "ok" | "ko" | "none" | "done" | "current" | "todo";
 
-function TickGlyph({ mark }: { mark: TickMark }) {
-  if (mark === "ko") return <X size={12} strokeWidth={2.8} className="mb-px shrink-0 text-pen" aria-hidden />;
-  if (mark === "ok" || mark === "done")
-    return <span aria-hidden className="block h-[18px] w-[3px] rounded-[3px_3px_2px_2px] bg-white sm:w-1" />;
-  if (mark === "current")
-    return <span aria-hidden className="block h-[18px] w-[3px] rounded-[3px_3px_2px_2px] bg-white/30 ring-1 ring-white sm:w-1" />;
-  return <span aria-hidden className="block h-[12px] w-px bg-[var(--ink-3)] opacity-70" />;
-}
-
 const MARK_TEXT: Record<TickMark, string> = {
   ok: "juste",
-  ko: "ratée",
+  ko: "rature",
   none: "sans réponse",
   done: "répondue",
   current: "en cours",
@@ -80,6 +84,9 @@ export function Ticks({
   hrefFor,
   onPick,
   canPick,
+  height = 30,
+  entoure = null,
+  entoureTexte = "question décisive",
   className = "",
 }: {
   marks: TickMark[];
@@ -92,50 +99,65 @@ export function Ticks({
   /** chaque coche choisissable ouvre la question (pendant la partie) */
   onPick?: (position: number) => void;
   canPick?: (position: number) => boolean;
+  /** hauteur des coches en px (la largeur suit) */
+  height?: number;
+  /** index de la coche à entourer au stylo rouge */
+  entoure?: number | null;
+  entoureTexte?: string;
   className?: string;
 }) {
+  const items = marks.map((m) => (m === "ok" || m === "done" ? true : m === "ko" ? false : null));
+  const cur = marks.indexOf("current");
+  const interactive = !!hrefFor || !!onPick;
+  const done = marks.filter((m) => m !== "todo" && m !== "current").length;
+  const ko = marks.filter((m) => m === "ko").length;
+  const summary = `${label} : ${done} sur ${marks.length}${ko ? ` · ${ko} rature${ko > 1 ? "s" : ""}` : ""}`;
   return (
     <div className={"min-w-0 " + className}>
-      <div className="relative">
-        <span aria-hidden className="absolute inset-x-0 bottom-[2px] border-b border-dashed border-line-2" />
-        <ol aria-label={label} className="relative m-0 flex list-none items-end gap-[2px] p-0 sm:gap-[3px]">
-          {marks.map((m, i) => {
-            const text = `Question ${i + 1} : ${MARK_TEXT[m]}`;
-            const cell = "flex h-6 min-w-0 flex-1 items-end justify-center pb-[2px]";
-            if (hrefFor)
+      <div className="relative inline-block max-w-full align-top">
+        <span aria-hidden={interactive || undefined} className="block">
+          <InkBarCoches items={items} height={height} courante={cur >= 0 ? cur : undefined} label={summary} />
+        </span>
+        {interactive && (
+          <ol aria-label={label} className="absolute inset-x-0 top-0 m-0 flex list-none p-0" style={{ height }}>
+            {marks.map((m, i) => {
+              const text = `Question ${i + 1} : ${MARK_TEXT[m]}${i === entoure ? `, ${entoureTexte}` : ""}`;
+              const cell = "block h-full w-full rounded-[4px] transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_7%,transparent)]";
               return (
                 <li key={i} className="min-w-0 flex-1">
-                  <Link href={hrefFor(i)} aria-label={text} title={text} className={cell + " rounded-[4px] transition-transform hover:-translate-y-0.5"}>
-                    <TickGlyph mark={m} />
-                  </Link>
+                  {hrefFor ? (
+                    <Link href={hrefFor(i)} aria-label={text} title={text} className={cell} />
+                  ) : onPick && (!canPick || canPick(i)) ? (
+                    <button type="button" onClick={() => onPick(i)} aria-label={`Aller à la question ${i + 1}`} title={text} className={cell} />
+                  ) : (
+                    <span className="sr-only">{text}</span>
+                  )}
                 </li>
               );
-            if (onPick && (!canPick || canPick(i)))
-              return (
-                <li key={i} className="min-w-0 flex-1">
-                  <button type="button" onClick={() => onPick(i)} aria-label={`Aller à la question ${i + 1}`} title={text} className={cell + " w-full rounded-[4px] transition-transform hover:-translate-y-0.5"}>
-                    <TickGlyph mark={m} />
-                  </button>
-                </li>
-              );
-            return (
-              <li key={i} className={cell} title={text}>
-                <span className="sr-only">{text}</span>
-                <TickGlyph mark={m} />
-              </li>
-            );
-          })}
-        </ol>
+            })}
+          </ol>
+        )}
+        {entoure !== null && entoure >= 0 && entoure < marks.length && (
+          <svg
+            aria-hidden
+            width={1}
+            height={1}
+            className="pointer-events-none absolute overflow-visible"
+            style={{ left: `${((entoure * 17 + 6) / (marks.length * 17 + 2)) * 100}%`, top: height / 2 }}
+          >
+            <ellipse cx={0} cy={0} rx={height * 0.34} ry={height * 0.6} fill="none" stroke="var(--pen)" strokeWidth={1.6} transform="rotate(-14)" />
+          </svg>
+        )}
+        {numbered && (
+          <div aria-hidden className="mt-1 flex font-mono text-[10px] leading-none text-muted tabular-nums">
+            {marks.map((_, i) => (
+              <span key={i} className="min-w-0 flex-1 text-center">
+                {i === 0 || (i + 1) % 5 === 0 ? i + 1 : ""}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
-      {numbered && (
-        <div aria-hidden className="mt-1 flex gap-[2px] font-mono text-[10.5px] leading-none text-muted tabular-nums sm:gap-[3px]">
-          {marks.map((_, i) => (
-            <span key={i} className="min-w-0 flex-1 text-center">
-              {i === 0 || (i + 1) % 5 === 0 ? i + 1 : ""}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -146,26 +168,6 @@ export function reviewMarks(review: { isCorrect: boolean; selectedIndex: number 
 }
 
 // ---------------------------------------------------------------------------
-// Cote (façon plan d'architecte) : |—— 3 pts ——| 1re place
-
-export function Cote({ value, to, className = "" }: { value: React.ReactNode; to?: React.ReactNode; className?: string }) {
-  return (
-    <span className={"inline-flex min-w-0 items-center gap-2 font-mono text-[12px] text-muted " + className}>
-      <span aria-hidden className="flex w-[clamp(48px,14vw,96px)] shrink items-center">
-        <span className="h-2.5 w-px bg-[var(--ink-3)]" />
-        <span className="h-px flex-1 bg-[var(--ink-3)] opacity-60" />
-      </span>
-      <b className="shrink-0 font-semibold text-white">{value}</b>
-      <span aria-hidden className="flex w-[clamp(48px,14vw,96px)] shrink items-center">
-        <span className="h-px flex-1 bg-[var(--ink-3)] opacity-60" />
-        <span className="h-2.5 w-px bg-[var(--ink-3)]" />
-      </span>
-      {to && <span className="shrink-0">{to}</span>}
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Classement du jour
 
 function BoardRow({ row, total }: { row: DailyBoardRow; total: number }) {
@@ -173,15 +175,16 @@ function BoardRow({ row, total }: { row: DailyBoardRow; total: number }) {
   return (
     <li
       className={
-        "grid grid-cols-[30px_minmax(0,1fr)_auto_52px] items-center gap-x-3 rounded-[10px] px-2.5 py-2 " +
+        "grid grid-cols-[22px_24px_minmax(0,1fr)_auto_48px] items-center gap-x-2.5 rounded-[10px] px-2 py-2 sm:gap-x-3 sm:px-2.5 " +
         (row.isMe ? "bg-surface-2 shadow-[inset_0_0_0_1px_var(--line)]" : "")
       }
-      aria-label={`${ordinal(row.rank)} : ${row.isMe ? "toi" : row.username ?? "Joueur"}, ${row.score} sur ${row.total || total}, en ${clock(row.seconds)}`}
+      aria-label={`${rangOrdinal(row.rank)} : ${row.isMe ? DEFI.toi : row.username ?? "Joueur"}, ${row.score} sur ${row.total || total}, en ${clock(row.seconds)}`}
     >
       <span className={"font-mono text-[13px] tabular-nums " + (podium ? "font-bold text-white" : "text-muted")}>{row.rank}</span>
+      <Avatar src={row.avatarUrl} name={row.username ?? "Joueur"} size={24} />
       <span className="flex min-w-0 items-baseline gap-2">
         <span className="truncate text-[14.5px] font-semibold">{row.username ?? "Joueur"}</span>
-        {row.isMe && <span className="t-micro shrink-0 font-semibold">toi</span>}
+        {row.isMe && <span className="t-micro shrink-0 font-semibold">{DEFI.toi}</span>}
       </span>
       <span className="font-mono text-[13.5px] font-semibold tabular-nums">
         {row.score}
@@ -219,21 +222,17 @@ export function DefiBoard({
   const players = board?.players ?? 0;
   const left = isToday ? timeLeftLabel(closesAt, nowIso) : null;
   const foot = isToday
-    ? [board?.playing ? `${board.playing} copie${board.playing > 1 ? "s" : ""} en cours` : null, left ? `se fige à minuit · ${left}` : null]
-        .filter(Boolean)
-        .join(" · ")
-    : DAILY_VOICE.boardFrozen;
+    ? [board?.playing ? DEFI.enCours(board.playing) : null, left ? DEFI.seFigeDans(left) : null].filter(Boolean).join(" · ")
+    : DEFI.boardFrozen;
 
   return (
-    <section className={"card min-w-0 p-5 md:p-6 " + className} aria-label="Classement du jour">
+    <section className={"card min-w-0 p-5 md:p-6 " + className} aria-label={DEFI.classement}>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="t-h3 m-0">Classement du jour</h2>
-        <span className="t-micro shrink-0">
-          {players} joueur{players > 1 ? "s" : ""}
-        </span>
+        <h2 className="t-h3 m-0">{DEFI.classement}</h2>
+        <span className="t-micro shrink-0">{joueurs(players)}</span>
       </div>
       {rows.length === 0 ? (
-        <p className="t-small m-0 mt-4 max-w-[360px]">{isToday ? DAILY_VOICE.boardEmpty : "Personne n'a rendu de copie ce jour-là."}</p>
+        <p className="t-small m-0 mt-4 max-w-[360px]">{isToday ? DEFI.boardEmpty : DEFI.boardEmptyPast}</p>
       ) : (
         <ol className="m-0 mt-4 grid list-none gap-0.5 p-0">
           {shown.map((r) => (
@@ -250,9 +249,7 @@ export function DefiBoard({
         </ol>
       )}
       {rows.length > shown.length && (
-        <p className="t-micro m-0 mt-2 px-2.5">
-          + {rows.length - shown.length} autre{rows.length - shown.length > 1 ? "s" : ""}
-        </p>
+        <p className="t-micro m-0 mt-2 px-2.5">{DEFI.autres(rows.length - shown.length)}</p>
       )}
       {foot && <p className="t-micro m-0 mt-4 border-t border-line pt-3">{foot}</p>}
     </section>
@@ -269,18 +266,17 @@ function HistoryRow({ e, today, nowIso }: { e: DailyHistoryEntry; today: string;
   const total = e.total ?? e.questionCount;
   const errors = played && e.score !== null ? total - e.score : null;
   const left = played && e.finishedAt ? reviewLeftLabel(e.finishedAt, nowIso) : null;
-  const joueurs = `${e.players} joueur${e.players > 1 ? "s" : ""}`;
   // Ligne courte (mobile), complétée sur ordinateur
   const [main, extra] = played
     ? [
-        [e.rank !== null && e.players > 1 ? `${ordinal(e.rank)} sur ${e.players}` : null, errors === 0 ? "page propre" : errors !== null ? `${errors} erreur${errors > 1 ? "s" : ""}` : null]
+        [e.rank !== null && e.players > 1 ? `${rangOrdinal(e.rank)} sur ${e.players}` : null, errors !== null ? raturesOuPropre(errors) : null]
           .filter(Boolean)
           .join(" · "),
-        left ? `revue ${left}` : null,
+        left ? DEFI.revue(left) : null,
       ]
     : open
-      ? ["copie en cours", null]
-      : [`pas joué · ${joueurs}`, e.topScore !== null ? `meilleur ${e.topScore}/${e.questionCount}` : null];
+      ? [DEFI.copieEnCours, null]
+      : [DEFI.pasDeCopie(e.players), e.topScore !== null ? DEFI.meilleur(e.topScore, e.questionCount) : null];
 
   return (
     <li className="flex items-center gap-3 py-1">
@@ -305,11 +301,11 @@ function HistoryRow({ e, today, nowIso }: { e: DailyHistoryEntry; today: string;
       </Link>
       {played ? (
         <Link href={reviewHref(e.day)} className="btn btn-sm btn-secondary shrink-0" aria-label={`Revoir ta copie du ${dayLabel(e.day, "day", today)}`}>
-          Revoir
+          {DEFI.revoirCourt}
         </Link>
       ) : open ? (
         <Link href={dayHref(e.day)} className="btn btn-sm btn-primary shrink-0">
-          Reprendre
+          {DEFI.reprendreCourt}
         </Link>
       ) : (
         <span className="w-[72px] shrink-0" aria-hidden />
@@ -336,17 +332,13 @@ export function DefiHistory({
   const toReview = past.filter((e) => e.finishedAt && daysBetween(e.day, today) <= DAILY_REVIEW_DAYS).length;
 
   return (
-    <section className="rl-section" aria-label="Jours passés">
+    <section className="rl-section" aria-label={DEFI.joursPasses}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="t-h2 m-0">Jours passés</h2>
-        <span className="t-micro">
-          {toReview > 0
-            ? `${toReview} copie${toReview > 1 ? "s" : ""} à revoir · ${DAILY_REVIEW_DAYS} jours`
-            : `chaque copie se revoit ici ${DAILY_REVIEW_DAYS} jours`}
-        </span>
+        <h2 className="t-h2 m-0">{DEFI.joursPasses}</h2>
+        <span className="t-micro">{toReview > 0 ? DEFI.aRevoir(toReview, DAILY_REVIEW_DAYS) : DEFI.seRevoit(DAILY_REVIEW_DAYS)}</span>
       </div>
       {past.length === 0 ? (
-        <p className="t-small m-0">{DAILY_VOICE.historyEmpty}</p>
+        <p className="t-small m-0">{DEFI.historyEmpty}</p>
       ) : (
         <div>
           <ul className="m-0 grid list-none divide-y divide-line p-0">
@@ -357,7 +349,7 @@ export function DefiHistory({
           {more.length > 0 && (
             <details className="group mt-2">
               <summary className="t-small flex w-fit cursor-pointer list-none items-center gap-1.5 px-2 py-1.5 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
-                Voir plus · {more.length} jour{more.length > 1 ? "s" : ""}
+                {DEFI.voirPlus(more.length)}
                 <ArrowRight size={13} className="transition-transform group-open:rotate-90" aria-hidden />
               </summary>
               <ul className="m-0 mt-1 grid list-none divide-y divide-line p-0">

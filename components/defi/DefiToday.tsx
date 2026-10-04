@@ -4,9 +4,9 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { DefiRunner } from "@/components/defi/DefiRunner";
 import { DefiResult } from "@/components/defi/DefiResult";
-import { DefiBoard, DefiHeading, DefiHistory } from "@/components/defi/parts";
+import { DefiBoard, DefiHeading, DefiHistory, Ticks } from "@/components/defi/parts";
+import { DEFI } from "@/lib/voice-z2c";
 import {
-  DAILY_VOICE,
   dailyPhase,
   timeLeftLabel,
   type DailyBoard,
@@ -79,59 +79,48 @@ export function DefiToday({
               <div>
                 <p className="kicker m-0">
                   {info.players > 0
-                    ? `${info.players} copie${info.players > 1 ? "s" : ""} rendue${info.players > 1 ? "s" : ""}${info.topScore !== null ? ` · meilleur ${info.topScore}/${info.questionCount}` : ""}`
-                    : `${info.questionCount} questions · ${Math.round(info.timeLimitSeconds / 60)} min`}
+                    ? DEFI.rendues(info.players, info.topScore, info.questionCount)
+                    : DEFI.format(info.questionCount, Math.round(info.timeLimitSeconds / 60))}
                 </p>
-                <h2 className="t-h1 m-0 mt-1.5">{DAILY_VOICE.start}</h2>
+                <h2 className="t-h1 m-0 mt-1.5">{DEFI.start}</h2>
               </div>
+              {/* les 30 traits à poser, au crayon : ils passeront à l'encre un à un */}
+              <Ticks marks={Array.from({ length: info.questionCount }, () => "todo" as const)} label={DEFI.aTracer(info.questionCount)} />
               <ul className="m-0 grid list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
-                <li>
-                  <b className="text-white">{info.questionCount} questions</b>,
-                  les mêmes et dans le même ordre pour tout le monde.
-                </li>
-                <li>
-                  <b className="text-white">
-                    {Math.round(info.timeLimitSeconds / 60)} min, une seule
-                    copie
-                  </b>{" "}
-                  : le chrono ne s&apos;arrête plus, même si tu fermes la page.
-                </li>
-                <li>
-                  <b className="text-white">Réponses définitives</b> ; tu peux
-                  passer et revenir. La correction s&apos;ouvre dès ta copie
-                  rendue.
-                </li>
+                {DEFI.rules(info.questionCount, Math.round(info.timeLimitSeconds / 60)).map(([b, rest]) => (
+                  <li key={b}>
+                    <b className="text-white">{b}</b>
+                    {rest}
+                  </li>
+                ))}
               </ul>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="t-micro">
-                  {left
-                    ? `Ouvert jusqu'à minuit · ${left}`
-                    : "Ouvert jusqu'à minuit"}
-                </span>
+                <span className="t-micro">{DEFI.ouvert(left)}</span>
                 <button
                   type="button"
                   className="btn btn-primary btn-lg w-full sm:w-auto"
                   onClick={() => setRun(true)}
                 >
-                  Commencer <ArrowRight size={16} aria-hidden />
+                  {DEFI.commencer} <ArrowRight size={16} aria-hidden />
                 </button>
               </div>
             </section>
           ) : (
             <section className="card-hero grid min-w-0 gap-3 p-6 md:p-8">
-              <p className="kicker m-0">Défi du jour</p>
-              <h2 className="t-h2 m-0">Pas de défi pour l&apos;instant</h2>
-              <p className="t-body m-0 max-w-[480px] text-muted">
-                {DAILY_VOICE.unavailable}
-              </p>
+              <p className="kicker m-0">{DEFI.tuile.label}</p>
+              <h2 className="t-h2 m-0">{DEFI.aucunTitre}</h2>
+              <p className="t-body m-0 max-w-[480px] text-muted">{DEFI.unavailable}</p>
             </section>
           )}
         </div>
 
-        {/* L'accroche se pose sur une enveloppe : .card impose position: relative */}
-        <div className="min-w-0 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <DefiBoard board={board} isToday={info.isToday} closesAt={info.closesAt} nowIso={nowIso} />
-        </div>
+        {/* L'accroche se pose sur une enveloppe : .card impose position: relative.
+            Pas de défi tiré aujourd'hui : pas de classement à montrer. */}
+        {info.exists && (
+          <div className="min-w-0 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            <DefiBoard board={board} isToday={info.isToday} closesAt={info.closesAt} nowIso={nowIso} />
+          </div>
+        )}
 
         <div className="min-w-0 lg:col-start-1 lg:row-start-2">
           <DefiHistory entries={history} today={info.today} nowIso={nowIso} />

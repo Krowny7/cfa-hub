@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Swords } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { Avatar } from "@/components/classement/Avatar";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
@@ -16,7 +16,7 @@ export type PlayerLite = {
   isMe: boolean;
 };
 
-// Ligne de l'annuaire des joueurs : avatar, pseudo, niveau, badge de rang et
+// Ligne de l'annuaire des joueurs : sceau (ou photo), pseudo, niveau, badge de rang et
 // ELO. « Défier » apparaît au survol (toujours visible sur téléphone), comme
 // dans le classement.
 export function PlayerRow({ p }: { p: PlayerLite }) {
@@ -49,7 +49,7 @@ export function PlayerRow({ p }: { p: PlayerLite }) {
           title={`Défier ${p.name}`}
           className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px] text-muted transition hover:bg-surface-2 hover:text-white focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
-          <Swords size={15} aria-hidden />
+          <Icone nom="duel" size={17} />
         </Link>
       )}
     </li>

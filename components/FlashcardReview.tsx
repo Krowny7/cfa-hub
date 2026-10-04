@@ -5,7 +5,9 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Maximize2, Minimize2, RotateCcw } from "lucide-react";
 import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
 import { RichText } from "@/components/RichText";
-import { InkProgressRing } from "@/components/ui/InkRings";
+import { FinDePasse } from "@/components/session/FinDePasse";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { FLASHCARDS } from "@/lib/voice-z3c";
 
 type Card = { id: string; front: string; back: string };
 
@@ -74,7 +76,19 @@ function FlipCard({ card, flipped, onFlip, big, className = "" }: { card: Card; 
   );
 }
 
-export function FlashcardReview({ cards, setId, demo }: { cards: Card[]; setId?: string; demo?: FlashcardDemo }) {
+export function FlashcardReview({
+  cards,
+  setId,
+  traitsJour = null,
+  demo,
+}: {
+  cards: Card[];
+  setId?: string;
+  /** traits du jour lus par le serveur : le sceau du jour en fin de passe si la journée est tenue */
+  traitsJour?: number | null;
+  demo?: FlashcardDemo;
+}) {
+  const jour = useTraitsDuJour(traitsJour);
   // La passe de révision est un instantané figé au montage — jamais recalculé
   // pendant la passe. C'est le même principe que les vrais outils de
   // répétition espacée (Anki, SuperMemo…) : l'ordre de la file du jour est
@@ -210,8 +224,8 @@ export function FlashcardReview({ cards, setId, demo }: { cards: Card[]; setId?:
   if (!cards.length) {
     return (
       <div className="card-quiet grid place-items-center gap-1.5 px-6 py-14 text-center">
-        <p className="t-h3 m-0">Aucune carte</p>
-        <p className="t-small">Ce set est encore vide.</p>
+        <p className="t-h3 m-0">{FLASHCARDS.vide}</p>
+        <p className="t-small">{FLASHCARDS.videLigne}</p>
       </div>
     );
   }
@@ -231,7 +245,7 @@ export function FlashcardReview({ cards, setId, demo }: { cards: Card[]; setId?:
         </div>
         {reviewMode === "all" && notMasteredCount > 0 && !done ? (
           <button type="button" onClick={startUnmasteredReview} className="t-micro shrink-0 font-semibold underline-offset-4 hover:text-white hover:underline">
-            {notMasteredCount} à revoir
+            {FLASHCARDS.aRevoir(notMasteredCount)}
           </button>
         ) : null}
         <button
@@ -247,47 +261,41 @@ export function FlashcardReview({ cards, setId, demo }: { cards: Card[]; setId?:
 
       {reviewMode === "unmastered" && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-surface-2 px-4 py-2.5 text-[13px]">
-          <span className="font-semibold">Repasse · les cartes à revoir</span>
+          <span className="font-semibold">{FLASHCARDS.repasse(unmasteredSnapshot.length)}</span>
           <button type="button" className="font-semibold text-muted underline-offset-4 hover:text-white hover:underline" onClick={backToAll}>
-            Revenir à toutes les cartes
+            {FLASHCARDS.toutes}
           </button>
         </div>
       )}
 
       {done ? (
-        <div className={"card-hero rl-in grid content-center justify-items-center gap-6 px-6 py-10 text-center sm:py-12 " + (big ? "flex-1" : "")}>
-          <InkProgressRing pct={total ? (100 * passMastered) / total : 0} size={148}>
-            <div>
-              <div className="t-num text-[36px]">
-                {passMastered}
-                <span className="text-[18px] text-muted">/{total}</span>
-              </div>
-              <div className="t-micro mt-1.5">maîtrisée{passMastered > 1 ? "s" : ""}</div>
-            </div>
-          </InkProgressRing>
-          <div>
-            <p className="t-eyebrow">Passe terminée</p>
-            <h2 className="t-h1 mt-2.5">{passToReview === 0 ? "Tout est acquis." : `${passToReview} carte${passToReview > 1 ? "s" : ""} à revoir.`}</h2>
-            <p className="t-small mx-auto mt-2.5 max-w-[400px]">
-              {passToReview === 0 ? "Elles reviendront plus tard, de plus en plus espacées." : "Elles reviendront en premier à ta prochaine révision."}
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            {notMasteredCount > 0 && (
-              <button type="button" className="btn btn-primary btn-lg rl-press" onClick={startUnmasteredReview}>
-                Repasser les {notMasteredCount}
+        <FinDePasse
+          sues={passMastered}
+          total={total}
+          aRevoir={passToReview}
+          marques={activeDeck.map((c) => sessionMarks[c.id] ?? null)}
+          jour={jour}
+          unite={FLASHCARDS.maitrisees(passMastered)}
+          className={big ? "flex-1" : ""}
+          actions={
+            <>
+              {notMasteredCount > 0 && (
+                <button type="button" className="btn btn-primary btn-lg rl-press" onClick={startUnmasteredReview}>
+                  {FLASHCARDS.reprendre(notMasteredCount)}
+                </button>
+              )}
+              <button type="button" className={"btn btn-lg " + (notMasteredCount > 0 ? "btn-secondary" : "btn-primary rl-press")} onClick={restart}>
+                <RotateCcw size={16} aria-hidden /> {FLASHCARDS.recommencer}
               </button>
-            )}
-            <button type="button" className={"btn btn-lg " + (notMasteredCount > 0 ? "btn-secondary" : "btn-primary rl-press")} onClick={restart}>
-              <RotateCcw size={16} aria-hidden /> Recommencer
-            </button>
-          </div>
+            </>
+          }
+        >
           {!big && (
             <Link href="/flashcards" className="ink-link">
-              Autres sets
+              {FLASHCARDS.autres}
             </Link>
           )}
-        </div>
+        </FinDePasse>
       ) : current ? (
         <>
           <FlipCard
@@ -330,9 +338,9 @@ export function FlashcardReview({ cards, setId, demo }: { cards: Card[]; setId?:
         </>
       ) : (
         <div className="card-quiet grid place-items-center px-6 py-14 text-center">
-          <p className="t-h3 m-0">Toutes les cartes de cette passe sont maîtrisées.</p>
+          <p className="t-h3 m-0">{FLASHCARDS.repasseFinie}</p>
           <button type="button" className="btn btn-secondary mt-4" onClick={backToAll}>
-            Revenir à toutes les cartes
+            {FLASHCARDS.toutes}
           </button>
         </div>
       )}

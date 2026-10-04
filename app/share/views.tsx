@@ -3,6 +3,7 @@ import { ArrowRight, Check, Eye } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { InkRing } from "@/components/ink/InkRing";
 import { plural, splitTitle, subjectOfTitle } from "@/components/ContentDetailHeader";
+import { PARTAGE } from "@/lib/voice-z3c";
 
 // Pages de partage public (lecture seule) d'un QCM ou d'un set de
 // flashcards : présentation seule, les pages /share/** chargent les données
@@ -38,7 +39,7 @@ export function ShareFooter({ line }: { line: string }) {
         </div>
       </div>
       <Link href="/" className="btn btn-primary rl-press w-full shrink-0 sm:w-auto">
-        Ouvrir Ranked Lobby <ArrowRight size={16} aria-hidden />
+        {PARTAGE.action} <ArrowRight size={16} aria-hidden />
       </Link>
     </aside>
   );
@@ -51,7 +52,7 @@ export function SharedQuizView({ title, questions }: { title: string; questions:
 
       {questions.length === 0 ? (
         <div className="card-quiet grid place-items-center px-6 py-14 text-center">
-          <p className="t-small">Aucune question.</p>
+          <p className="t-small">{PARTAGE.videQcm}</p>
         </div>
       ) : (
         <ol className="card m-0 list-none divide-y divide-line overflow-hidden p-0">
@@ -90,7 +91,7 @@ export function SharedQuizView({ title, questions }: { title: string; questions:
         </ol>
       )}
 
-      <ShareFooter line="Révise ce genre de QCM, corrigé question par question." />
+      <ShareFooter line={PARTAGE.qcm} />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracke
 import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
+import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import type { Flashcard } from "@/lib/types";
 
 type SetRow = { id: string; title: string; visibility: string; owner_id: string; share_token: string | null };
@@ -24,9 +25,11 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const [{ data: setData, error: setErr }, { data: cardsData }] = await Promise.all([
+  const [{ data: setData, error: setErr }, { data: cardsData }, traitsJour] = await Promise.all([
     supabase.from("flashcard_sets").select("id,title,visibility,owner_id,share_token").eq("id", id).maybeSingle(),
     supabase.from("flashcards").select("id,front,back,position,topic_id").eq("set_id", id).order("position", { ascending: true }),
+    // traits du jour (lecture de la barre du haut, en cache) : le sceau du jour en fin de passe
+    traitsDuJour(auth.user.id),
   ]);
 
   if (setErr || !setData) {
@@ -64,7 +67,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       />
 
       {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}
-      <FlashcardReview cards={cards} setId={id} />
+      <FlashcardReview cards={cards} setId={id} traitsJour={traitsJour} />
 
       {/* Le set : toutes les cartes (pour tous), ajout et import (propriétaire), repliés */}
       <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">

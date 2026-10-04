@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Sparkles } from "lucide-react";
+import { COPIER_DEFI as COPIER, DEFI } from "@/lib/voice-z2c";
 import { buildDailyAiExport, type DailyAiScope, type DailyReviewItem } from "@/lib/daily";
 
 type Ctx = { day: string; score: number; total: number; rank: number | null; players: number };
@@ -79,10 +80,10 @@ export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
   }
 
   const onInk = layout === "block";
-  const errLabel = `Copier mes ${errors} erreur${errors > 1 ? "s" : ""}`;
+  const errLabel = COPIER.ratures(errors);
   const done = (
     <>
-      <Check size={16} strokeWidth={2.6} aria-hidden /> Copié !
+      <Check size={16} strokeWidth={2.6} aria-hidden /> {COPIER.fait}
     </>
   );
 
@@ -95,7 +96,7 @@ export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
           done
         ) : (
           <>
-            <Sparkles size={16} aria-hidden /> Copier pour l&apos;IA
+            <Sparkles size={16} aria-hidden /> {COPIER.label}
           </>
         )}
       </button>
@@ -122,7 +123,7 @@ export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
           ) : (
             <>
               {errors > 0 ? null : <Copy size={16} aria-hidden />}
-              {errors > 0 ? "Toute la copie" : "Copier toute la copie"}
+              {errors > 0 ? DEFI.iaTout : DEFI.iaToutSeul}
               <span className={"font-mono text-[12.5px] " + (onInk ? "text-[rgba(255,255,255,.6)]" : "text-muted")}>{review.length}</span>
             </>
           )}
@@ -131,17 +132,17 @@ export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
     );
   }
 
-  const hint = copied ? "Copié. Colle-le dans ChatGPT, Claude ou ton IA : elle te fait le bilan." : null;
+  const hint = copied ? COPIER.colle : null;
 
   return (
     <div className={onInk ? "relative grid gap-5" : "grid gap-2.5"}>
       {onInk && (
         <div className="grid gap-1.5">
           <p className="m-0 flex items-center gap-2 text-[19px] font-extrabold tracking-[-0.02em]">
-            <Sparkles size={19} aria-hidden /> Copier pour l&apos;IA
+            <Sparkles size={19} aria-hidden /> {COPIER.label}
           </p>
           <p className="m-0 max-w-[520px] text-[14.5px] leading-normal text-[rgba(255,255,255,.68)]">
-            Colle ta copie dans ChatGPT ou Claude : bilan par thème et explication de chaque erreur, avec le contexte du jour.
+            {DEFI.iaTexte}
           </p>
         </div>
       )}
@@ -152,14 +153,14 @@ export function DefiAiCopy({ review, ctx, layout = "buttons" }: Props) {
       {manual && (
         <div className="grid gap-2">
           <p className={"m-0 text-[13px] " + (onInk ? "text-[#fff]" : "")}>
-            Ton navigateur bloque la copie automatique : sélectionne le texte ci-dessous et copie-le.
+            {COPIER.manuel}
           </p>
           <textarea
             ref={area}
             readOnly
             value={manual}
             rows={6}
-            aria-label="Texte à copier pour l'IA"
+            aria-label={COPIER.champ}
             onFocus={(e) => e.currentTarget.select()}
             className={
               onInk

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, Sparkles, Trophy } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
@@ -18,13 +18,17 @@ import {
   QuestionMap,
   QuestionNav,
   ReadyCard,
-  ResultHero,
   ReviewSection,
   RunnerBar,
   Seg,
   TopicBreakdown,
 } from "@/components/session/parts";
 import { PASS_THRESHOLD, fmtMinutes, pctOf, subjectName, topicsSummary, type ReviewQuestion } from "@/components/session/review";
+import { FinDeSession } from "@/components/session/FinDeSession";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { surTitreSession } from "@/lib/voice";
+import { EPREUVE } from "@/lib/voice-z3";
 
 // Entraînement ciblé : on choisit ses matières, on reçoit le nombre de
 // questions qu'elles pèsent dans un vrai examen, chronométré, corrigé à la fin
@@ -73,14 +77,18 @@ const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { da
 export function PracticeSession({
   pastSessions: initialPast,
   mastery = {},
+  traitsJour = null,
   demo,
 }: {
   pastSessions: PastSession[];
   /** maîtrise par matière (clé → %, null si pas assez de réponses) */
   mastery?: Record<string, number | null>;
+  /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
+  traitsJour?: number | null;
   demo?: PracticeDemo;
 }) {
   const supabase = useMemo(() => createClient(), []);
+  const traits = useTraitsDuJour(traitsJour);
 
   const [phase, setPhase] = useState<Phase>(demo?.phase ?? "builder");
   // Pré-sélectionne le thème passé en query param (ex: lien "S'entraîner sur
@@ -104,6 +112,8 @@ export function PracticeSession({
   const [error, setError] = useState<string | null>(null);
   const [xpAwarded, setXpAwarded] = useState(demo?.xp ?? 0);
   const [lastDuration, setLastDuration] = useState<number | null>(demo?.duration ?? null);
+  // traits posés par la copie rendue (l'anneau du jour sous la copie)
+  const [ajoutes, setAjoutes] = useState(demo?.phase === "done" ? demo?.total ?? 0 : 0);
   const [pastSessions, setPastSessions] = useState<PastSession[]>(initialPast);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(demo?.expandedHistoryId ?? null);
   const [historyReviews, setHistoryReviews] = useState<Record<string, ReviewQuestion[]>>(demo?.historyReviews ?? {});
@@ -226,6 +236,10 @@ export function PracticeSession({
       setTotal(data?.total ?? 0);
       setXpAwarded(data?.xp_awarded ?? 0);
       setLastDuration(duration);
+      // la copie rendue d'un bloc : autant de traits que de questions (comme l'anneau du jour)
+      const n = Number(data?.total ?? 0) || 0;
+      setAjoutes(n);
+      poserTrait(n);
       setPastSessions((prev) => [
         { id: data?.id ?? crypto.randomUUID(), topics: topicsArr, format, question_count: data?.total ?? 0, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
         ...prev,
@@ -509,44 +523,28 @@ export function PracticeSession({
     );
   }
 
-  // ── RÉSULTAT ──
+  // ── RÉSULTAT : la copie corrigée ──
   if (phase === "done") {
     const pct = total > 0 ? Math.round((score / total) * 100) : null;
     const passed = pct !== null && pct >= PASS_THRESHOLD;
     const tier = trophyTier(selected.size);
     const many = new Set(review.map((q) => q.topic ?? "")).size > 1;
+    const minutes = lastDuration ? Math.max(1, Math.round(lastDuration / 60)) : null;
+    const meta = [passed ? `trophée ${tier.label}` : null, xpAwarded > 0 ? `+${xpAwarded} XP` : null].filter(Boolean).join(" · ");
 
     return (
       <div className="rl-page">
-        <ResultHero
-          eyebrow={`Entraînement ciblé · ${topicShort}`}
-          verdict={passed ? "Réussi" : "Pas encore : vise 70 %"}
-          pct={pct}
+        <FinDeSession
+          epreuve={surTitreSession(EPREUVE.practice, total, minutes)}
+          titre={topicsSummary([...selected], 2) || EPREUVE.practice}
+          meta={meta || undefined}
           score={score}
           total={total}
-          meta={
-            <>
-              {score} bonne{score > 1 ? "s" : ""} réponse{score > 1 ? "s" : ""} sur {total}
-              {lastDuration ? ` · ${fmtMinutes(Math.max(1, Math.round(lastDuration / 60)))}` : ""}
-            </>
-          }
-          chips={
-            passed || xpAwarded > 0 ? (
-              <>
-                {passed && (
-                  <span className="chip chip-active chip-sm">
-                    <Trophy size={13} aria-hidden /> Trophée {tier.label}
-                  </span>
-                )}
-                {xpAwarded > 0 && (
-                  <span className="chip chip-quiet chip-sm">
-                    <Sparkles size={13} aria-hidden /> +{xpAwarded} XP
-                  </span>
-                )}
-              </>
-            ) : undefined
-          }
-          actions={
+          review={review}
+          jour={traits}
+          ajoutes={ajoutes}
+          ia={total > 0 ? <CopyForAi review={review} score={score} total={total} kind="practice" size="action" onError={setError} /> : null}
+          liens={
             <>
               <button type="button" className="ink-link" onClick={backToBuilder}>
                 Nouvelle session
@@ -556,18 +554,17 @@ export function PracticeSession({
               </Link>
             </>
           }
+          notes={
+            error ? (
+              <p role="alert" className="m-0 text-sm text-pen">
+                {error}
+              </p>
+            ) : null
+          }
         >
-          {total > 0 && <CopyForAi review={review} score={score} total={total} kind="practice" onError={setError} />}
-          {error && (
-            <p role="alert" className="m-0 text-sm text-pen">
-              {error}
-            </p>
-          )}
-        </ResultHero>
-
-        {many && <TopicBreakdown review={review} />}
-
-        <ReviewSection review={review} />
+          {many && <TopicBreakdown review={review} />}
+          <ReviewSection review={review} />
+        </FinDeSession>
       </div>
     );
   }

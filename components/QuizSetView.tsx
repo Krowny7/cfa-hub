@@ -3,14 +3,20 @@
 import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowRight, Check, Copy, ListChecks, RotateCcw, X } from "lucide-react";
+import { ArrowRight, Check, ListChecks, RotateCcw, X } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
-import { InkProgressRing } from "@/components/ui/InkRings";
-import { DisclosureRow, plural } from "@/components/ContentDetailHeader";
+import { DisclosureRow, plural, splitTitle } from "@/components/ContentDetailHeader";
 import type { QuizQuestion, AwardXpResult } from "@/lib/types";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { FinDeSession } from "@/components/session/FinDeSession";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { CopierPourIA, ReviewSection } from "@/components/session/parts";
+import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { surTitreSession } from "@/lib/voice";
+import { IA_QCM_RATURES, QCM } from "@/lib/voice-z3c";
 
 // Chargé uniquement pour le propriétaire (voir isOwner plus bas) : les
 // formulaires de création/édition/import et leurs dépendances (TopicSelector)
@@ -36,27 +42,24 @@ export type QuizDemo = {
   xp?: number;
 };
 
-function verdict(pct: number) {
-  if (pct >= 100) return "Sans faute.";
-  if (pct >= 80) return "Solide.";
-  if (pct >= 60) return "En bonne voie.";
-  if (pct >= 40) return "À consolider.";
-  return "On reprend les bases.";
-}
-
-/** Même format que l'export des sessions (PracticeSession), que l'utilisateur connaît. */
-function buildAiExportText(title: string, questions: QuizQuestion[], results: QuizResult[]) {
+/**
+ * Même format que l'export des sessions (PracticeSession), que l'utilisateur
+ * connaît. `onlyErrors` ne garde que les ratures (numéros d'origine, une
+ * phrase pour le dire), comme la variante « mes ratures » des sessions.
+ */
+function buildAiExportText(title: string, questions: QuizQuestion[], results: QuizResult[], onlyErrors = false) {
   const score = results.filter((r) => r.correct).length;
   const total = results.length;
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const header =
     `QCM CFA — ${title} — ${score}/${total} (${pct}%)\n` +
     `Voici mes réponses à un QCM CFA Level I. Pour chaque question : l'énoncé, les choix, ma réponse, la bonne réponse et l'explication. ` +
+    (onlyErrors ? IA_QCM_RATURES : "") +
     `Peux-tu me faire un bilan de mes points faibles, et m'expliquer plus en détail les questions où je me suis trompé ?\n\n`;
   const body = results
     .map((r, i) => {
       const q = questions.find((x) => x.id === r.questionId);
-      if (!q) return "";
+      if (!q || (onlyErrors && r.correct)) return "";
       const choicesText = q.choices.map((c, ci) => `${LETTERS[ci]}) ${c}`).join("\n");
       const mine = `${LETTERS[r.picked]}) ${q.choices[r.picked]}`;
       const ci = r.reveal?.correctIndex;
@@ -146,6 +149,7 @@ export function QuizSetView({
   official = false,
   done = null,
   settingsSlot,
+  traitsJour = null,
   demo,
 }: {
   setId: string;
@@ -159,10 +163,13 @@ export function QuizSetView({
   done?: number | null;
   /** réglages du QCM (propriétaire), rangés avec la gestion des questions */
   settingsSlot?: React.ReactNode;
+  /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
+  traitsJour?: number | null;
   demo?: QuizDemo;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { t } = useI18n();
+  const jour = useTraitsDuJour(traitsJour);
 
   const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions);
   const [stage, setStage] = useState<"intro" | "run" | "done">(demo?.stage ?? "intro");
@@ -172,8 +179,12 @@ export function QuizSetView({
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  // XP gagnée et durée du passage (en-tête de la copie)
+  const [xpRun, setXpRun] = useState(demo?.stage === "done" ? demo?.xp ?? 0 : 0);
+  const [dureeS, setDureeS] = useState<number | null>(null);
+  // traits posés par ce passage (réponses corrigées par le serveur) : l'anneau sous la copie
+  const [traces, setTraces] = useState(demo?.stage === "done" ? demo?.results?.length ?? 0 : 0);
 
   // La bonne réponse n'est connue qu'APRÈS soumission (voir
   // migration_fix_answer_leak.sql) — révélée par award_quiz_question_xp,
@@ -204,7 +215,10 @@ export function QuizSetView({
     setSelected(null);
     setResults([]);
     setFeedback(null);
-    setCopied(false);
+    setCopyError(null);
+    setXpRun(0);
+    setDureeS(null);
+    setTraces(0);
     setStartedAt(Date.now());
   }
 
@@ -259,8 +273,12 @@ export function QuizSetView({
       const correctIndex = row?.correct_index;
       const reveal = typeof correctIndex === "number" ? { correctIndex, explanation: row?.explanation ?? null } : null;
       setResults((prev) => [...prev.filter((r) => r.questionId !== questionId), { questionId, picked: selectedIndex, correct: isCorrect, reveal }]);
+      // une réponse corrigée = un trait (le logo vivant avance)
+      if (!demo) poserTrait(1);
+      setTraces((v) => v + 1);
+      if (xp > 0) setXpRun((v) => v + xp);
       if (isCorrect && xp > 0) setFeedback({ tone: "xp", text: `+${xp} XP` });
-      else if (isCorrect && official) setFeedback({ tone: "info", text: "Déjà réussie : pas d'XP cette fois." });
+      else if (isCorrect && official) setFeedback({ tone: "info", text: QCM.dejaReussie });
     } catch (e: unknown) {
       // Réseau coupé : on note la réponse sans correction pour pouvoir avancer.
       setResults((prev) => [...prev.filter((r) => r.questionId !== questionId), { questionId, picked: selectedIndex, correct: false, reveal: null }]);
@@ -273,6 +291,7 @@ export function QuizSetView({
   function goNext() {
     if (isLast) {
       setStage("done");
+      setDureeS(startedAt ? Math.round((Date.now() - startedAt) / 1000) : null);
       void submitAttempt(score);
       return;
     }
@@ -285,17 +304,6 @@ export function QuizSetView({
     if (!current || busy) return;
     if (answered) goNext();
     else if (selected !== null) void submitAnswer(current.id, selected);
-  }
-
-  async function copyForAi() {
-    setCopyError(null);
-    try {
-      await navigator.clipboard.writeText(buildAiExportText(title, questions, results));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopyError("Impossible de copier automatiquement.");
-    }
   }
 
   // Clavier : 1–6 ou A–F pour choisir, Entrée pour valider puis avancer.
@@ -337,21 +345,22 @@ export function QuizSetView({
     <section className="card-hero rl-in p-6 sm:p-8 md:p-9" aria-label="Commencer le QCM">
       {n === 0 ? (
         <div className="grid gap-2">
-          <p className="t-eyebrow">QCM vide</p>
-          <p className="t-h2 m-0">Aucune question pour l&apos;instant.</p>
-          {isOwner && <p className="t-small">Ajoute-en dans « Questions », juste en dessous.</p>}
+          <p className="t-eyebrow">{QCM.vide}</p>
+          <p className="t-h2 m-0">{QCM.videLigne}</p>
+          {isOwner && <p className="t-small">{QCM.videProprietaire}</p>}
         </div>
       ) : (
         <>
           <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="t-eyebrow">Prêt ?</p>
+              <p className="t-eyebrow">{QCM.avant}</p>
               <p className="mt-3 flex items-baseline gap-3">
                 <span className="t-num text-[56px] md:text-[68px]">{n}</span>
                 <span className="t-h3 text-muted">question{n > 1 ? "s" : ""}</span>
               </p>
               <p className="t-small mt-3 max-w-[440px]">
-                Corrigées une à une, sans chrono.{official ? " Chaque première bonne réponse rapporte de l'XP." : ""}
+                {QCM.consigne}
+                {official ? ` ${QCM.consigneXp}` : ""}
               </p>
               {done ? (
                 <div className="mt-4 flex max-w-[320px] items-center gap-3">
@@ -387,9 +396,7 @@ export function QuizSetView({
         <div className="ink-bar flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={n} aria-valuenow={index + (answered ? 1 : 0)} aria-label="Avancement">
           <span style={{ width: `${((index + (answered ? 1 : 0)) / Math.max(1, n)) * 100}%` }} />
         </div>
-        <span className="t-micro shrink-0 tabular-nums">
-          {score} juste{score > 1 ? "s" : ""}
-        </span>
+        <span className="t-micro shrink-0 tabular-nums">{QCM.justes(score)}</span>
         <button type="button" className="icon-btn h-8 w-8 rounded-[10px]" onClick={start} aria-label="Recommencer le QCM" title="Recommencer">
           <RotateCcw size={14} aria-hidden />
         </button>
@@ -414,10 +421,10 @@ export function QuizSetView({
 
         {answered && revealed && (
           <div className="rl-in mt-7 border-t border-line pt-6">
-            <p className={"t-eyebrow " + (answer?.correct ? "" : "text-pen")}>{answer?.correct ? "Bonne réponse" : "Pas cette fois"}</p>
+            <p className={"t-eyebrow " + (answer?.correct ? "" : "text-pen")}>{answer?.correct ? QCM.juste : QCM.rature}</p>
             {!answer?.correct && (
               <p className="mt-2.5 text-[15px] font-semibold leading-snug">
-                La bonne réponse : {LETTERS[revealed.correctIndex]}) {current.choices[revealed.correctIndex]}
+                {QCM.laBonne} : {LETTERS[revealed.correctIndex]}) {current.choices[revealed.correctIndex]}
               </p>
             )}
             {revealed.explanation && (
@@ -443,96 +450,69 @@ export function QuizSetView({
           disabled={busy || (!answered && selected === null)}
           onClick={primary}
         >
-          {busy ? "Correction…" : !answered ? "Valider" : isLast ? "Voir le bilan" : "Question suivante"}
+          {busy ? "Correction…" : !answered ? "Valider" : isLast ? QCM.voirCopie : "Question suivante"}
           {!busy && answered && <ArrowRight size={17} aria-hidden />}
         </button>
       </div>
     </section>
   );
 
-  const pct = results.length ? Math.round((100 * score) / results.length) : 0;
-  const mistakes = results.filter((r) => !r.correct);
+  // La copie, dans l'ordre des questions ; la bonne réponse vient de la
+  // correction serveur (reveal), inconnue si le réseau a coupé (-1).
+  const review: ReviewQuestion[] = questions.flatMap((q) => {
+    const r = results.find((x) => x.questionId === q.id);
+    if (!r) return [];
+    return [
+      {
+        question_id: q.id,
+        prompt: q.prompt,
+        choices: q.choices,
+        correct_index: r.reveal?.correctIndex ?? -1,
+        explanation: r.reveal?.explanation ?? null,
+        topic: null,
+        selected_index: r.picked,
+        is_correct: r.correct,
+      },
+    ];
+  });
+  const minutes = dureeS ? Math.max(1, Math.round(dureeS / 60)) : null;
 
   const summary = (
-    <>
-      <section className="card-hero rl-in p-6 sm:p-8 md:p-10" aria-label="Bilan du QCM">
-        <div className="flex flex-col items-center gap-8 text-center sm:flex-row sm:gap-10 sm:text-left">
-          <InkProgressRing pct={pct} size={156}>
-            <div>
-              <div className="t-num text-[38px]">
-                {score}
-                <span className="text-[20px] text-muted">/{results.length}</span>
-              </div>
-              <div className="t-micro mt-1.5 font-mono tabular-nums">{pct} %</div>
-            </div>
-          </InkProgressRing>
-          <div className="min-w-0 flex-1">
-            <p className="t-eyebrow">Bilan</p>
-            <h2 className="t-h1 mt-2.5">{verdict(pct)}</h2>
-            <p className="t-small mt-2.5">
-              {mistakes.length === 0 ? "Aucune erreur sur ce QCM." : `${plural(mistakes.length, "erreur", "erreurs")} à revoir, juste en dessous.`}
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-2 sm:justify-start">
-              <button type="button" className="btn btn-primary rl-press" onClick={start}>
-                <RotateCcw size={16} aria-hidden /> Recommencer
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={copyForAi} disabled={results.length === 0}>
-                {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                {copied ? "Copié" : "Copier pour l'IA"}
-              </button>
-              <Link href="/qcm" className="btn btn-ghost">
-                Autres QCM
-              </Link>
-            </div>
-            {copyError && <p className="t-micro mt-2 text-pen">{copyError}</p>}
-          </div>
-        </div>
-      </section>
-
-      {mistakes.length > 0 && (
-        <section className="rl-section" aria-labelledby="qcm-erreurs">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 id="qcm-erreurs" className="t-h2 m-0">
-              Tes erreurs
-            </h2>
-            <span className="t-micro font-mono tabular-nums">{mistakes.length}</span>
-          </div>
-          <ol className="card m-0 list-none divide-y divide-line overflow-hidden p-0">
-            {mistakes.map((r) => {
-              const q = questions.find((x) => x.id === r.questionId);
-              if (!q) return null;
-              const pos = questions.indexOf(q) + 1;
-              const ci = r.reveal?.correctIndex;
-              return (
-                <li key={r.questionId} className="flex flex-col gap-3.5 px-5 py-6 md:px-7">
-                  <p className="t-micro font-mono font-semibold">Question {pos}</p>
-                  <QuestionPrompt text={q.prompt} compact className="text-[15px] font-semibold leading-relaxed" />
-                  <div className="grid gap-2 text-[14px] leading-snug">
-                    <p className="flex gap-2.5">
-                      <X size={16} aria-hidden className="mt-0.5 shrink-0 text-pen" />
-                      <span>
-                        <span className="text-muted">Ta réponse · </span>
-                        {LETTERS[r.picked]}) {q.choices[r.picked]}
-                      </span>
-                    </p>
-                    {typeof ci === "number" && (
-                      <p className="flex gap-2.5 font-semibold">
-                        <Check size={16} aria-hidden className="mt-0.5 shrink-0" />
-                        <span>
-                          <span className="font-normal text-muted">Bonne réponse · </span>
-                          {LETTERS[ci]}) {q.choices[ci]}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                  {r.reveal?.explanation && <p className="t-small whitespace-pre-wrap break-words">{r.reveal.explanation}</p>}
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      )}
-    </>
+    <div className="rl-page">
+      <FinDeSession
+        epreuve={surTitreSession(QCM.epreuve, results.length, minutes)}
+        titre={splitTitle(cleanTopic(title)).main}
+        meta={xpRun > 0 ? `+${xpRun} XP` : undefined}
+        score={score}
+        total={results.length}
+        review={review}
+        jour={jour}
+        ajoutes={traces}
+        ia={
+          results.length > 0 ? (
+            <CopierPourIA
+              texte={(seulementRatures) => buildAiExportText(title, questions, results, seulementRatures)}
+              ratures={results.length - score}
+              total={results.length}
+              onError={() => setCopyError(QCM.copieImpossible)}
+            />
+          ) : null
+        }
+        notes={copyError ? <p className="t-micro m-0 text-pen">{copyError}</p> : null}
+        liens={
+          <>
+            <button type="button" className="ink-link" onClick={start}>
+              {QCM.recommencer}
+            </button>
+            <Link href="/qcm" className="text-[13.5px] font-semibold text-muted transition-colors hover:text-white">
+              {QCM.autres}
+            </Link>
+          </>
+        }
+      >
+        <ReviewSection review={review} />
+      </FinDeSession>
+    </div>
   );
 
   return (

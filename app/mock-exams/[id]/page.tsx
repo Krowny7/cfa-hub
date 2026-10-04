@@ -1,19 +1,25 @@
+import { Suspense } from "react";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { MockExamRunner } from "@/components/MockExamRunner";
 import { MockExamRegistration } from "@/components/MockExamRegistration";
 import { MockExamRetake } from "@/components/MockExamRetake";
 import { applyMockExamElo, getMockExamEloDeltas } from "@/lib/rating";
 import { duelsReady } from "@/lib/duels";
+import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
+import { CeremonieExamen } from "@/components/classement/CeremonieExamen";
 import {
   MockExamHeader,
   MockExamLeaderboard,
   MockExamNotice,
   MockExamTopicTable,
+  dayMonth,
   type LeaderRow,
   type TopicCell,
 } from "@/components/session/MockExamViews";
 import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
+import { DETAIL, ELO_EXAMEN } from "@/lib/voice-z3b";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -83,6 +89,21 @@ export default async function MockExamDetailPage({ params }: PageProps) {
   ]);
 
   if (!examRes.data) notFound();
+
+  // Le nombre d'inscrits (la RLS ne montre que sa propre inscription) : un
+  // simple comptage avec le client admin, filtré sur cet examen ; null si
+  // indisponible (on n'affiche alors pas de nombre).
+  const registrantCount = await (async () => {
+    try {
+      const { count, error } = await createAdminClient()
+        .from("mock_exam_registrations")
+        .select("user_id", { count: "exact", head: true })
+        .eq("exam_id", id);
+      return error ? null : (count ?? 0);
+    } catch {
+      return null;
+    }
+  })();
 
   const exam = examRes.data as {
     id: string; title: string; description: string | null;
@@ -179,21 +200,26 @@ export default async function MockExamDetailPage({ params }: PageProps) {
     eloTooFew = applied.reason === "too_few" || (applied.reason === "already" && Object.keys(eloDeltas).length === 0);
   }
   const myEloDelta = eloDeltas[auth.user.id] ?? null;
+
+  // La cérémonie de rang au premier affichage du résultat classé, si le rang
+  // a bougé avec cet examen : CeremonieExamen (Z2a) lit le mouvement d'ELO de
+  // l'examen et joue le moment une seule fois. Seulement une fois l'ELO
+  // appliqué, et quand la copie est rendue.
+  const ceremonie = alreadyDone && eloEnabled && examClosed && myEloDelta !== null;
+
+  // traits du jour (lecture de la barre du haut, en cache) : l'anneau sous la copie
+  const traitsJour = showRunner || alreadyDone ? await traitsDuJour(auth.user.id) : null;
   const eloInfo = !eloEnabled
     ? null
     : myEloDelta !== null
       ? { delta: myEloDelta, note: null }
       : !examClosed
-        ? {
-            delta: null,
-            note: `ton ELO bougera à la clôture, le ${windowEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" })}`,
-          }
+        ? { delta: null, note: ELO_EXAMEN.aLaCloture(dayMonth(windowEnd)) }
         : eloTooFew
-          ? { delta: null, note: "moins de deux participants : l'ELO ne bouge pas" }
+          ? { delta: null, note: ELO_EXAMEN.tropPeu }
           : null;
 
   const daysUntil = Math.ceil((windowStart.getTime() - now.getTime()) / 86_400_000);
-  const dayMonth = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
 
   const leaderRows: LeaderRow[] = allResults.map((r) => {
     const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
@@ -219,30 +245,41 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
       {/* Examen pas encore publié */}
       {exam.status === "draft" && !isAdmin && (
-        <MockExamNotice title="Pas encore ouvert">Cet examen n&apos;est pas encore ouvert aux inscriptions.</MockExamNotice>
+        <MockExamNotice title={DETAIL.pasOuvertTitre}>{DETAIL.pasOuvertTexte}</MockExamNotice>
       )}
 
       {/* Inscrit, mais la fenêtre de passage n'a pas encore commencé */}
       {isRegistered && !alreadyDone && !withinWindow && !windowClosed && (
-        <MockExamNotice title="Bientôt ton tour" countdown={daysUntil > 0 ? `J-${daysUntil}` : null}>
-          Tu pourras passer l&apos;examen du {windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" })} au {dayMonth(windowEnd)}.
+        <MockExamNotice title={DETAIL.bientotTitre} countdown={daysUntil > 0 ? `J-${daysUntil}` : null}>
+          {DETAIL.bientotTexte(windowStart.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }), dayMonth(windowEnd))}
         </MockExamNotice>
       )}
 
       {/* Inscrit sans avoir passé l'examen, et la fenêtre est terminée */}
       {isRegistered && !alreadyDone && windowClosed && (
-        <MockExamNotice title="Fenêtre terminée">La fenêtre pour passer cet examen s&apos;est fermée le {dayMonth(windowEnd)}.</MockExamNotice>
+        <MockExamNotice title={DETAIL.finiTitre}>{DETAIL.finiTexte(dayMonth(windowEnd))}</MockExamNotice>
+      )}
+
+      {/* Le rang a bougé avec cet examen : la cérémonie (plein écran pour un
+          palier, en ligne pour une division), une seule fois, au-dessus de la
+          copie (posée à la revisite : un seul moment fort) */}
+      {ceremonie && (
+        <Suspense fallback={null}>
+          <CeremonieExamen examId={exam.id} userId={auth.user.id} className="mx-auto w-full max-w-[660px]" />
+        </Suspense>
       )}
 
       {/* Passage de l'examen, puis résultat et correction */}
       {showRunner && (
         <MockExamRunner
           examId={exam.id}
+          title={exam.title}
           durationMinutes={exam.duration_minutes}
           questions={activeQuestions}
           review={review}
           alreadyDone={alreadyDone}
           elo={eloInfo}
+          traitsJour={traitsJour}
         />
       )}
 
@@ -252,7 +289,7 @@ export default async function MockExamDetailPage({ params }: PageProps) {
         <MockExamRegistration
           examId={exam.id}
           isRegistered={isRegistered}
-          registrantCount={allResults.length}
+          registrantCount={registrantCount}
           ranked={eloEnabled}
         />
       )}
@@ -263,10 +300,12 @@ export default async function MockExamDetailPage({ params }: PageProps) {
       {alreadyDone && (
         <MockExamRetake
           examId={exam.id}
+          title={exam.title}
           durationMinutes={exam.duration_minutes}
           wrongCount={review.filter((r) => !r.is_correct).length}
           totalCount={review.length}
           pastAttempts={pastAttempts}
+          traitsJour={traitsJour}
         />
       )}
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { duelTopicLabel } from "@/lib/duels";
+import { DEFI, verdictCopie } from "@/lib/voice-z2c";
 
 // Défi du jour (« Les 30 du jour ») : types partagés et appels aux RPC de
 // migration_daily_challenge.sql. Module neutre (pas de "use client") :
@@ -474,31 +475,14 @@ export function dailyErrorMessage(e: unknown, fallback = "Quelque chose a coinc�
 }
 
 // ---------------------------------------------------------------------------
-// Voix « Le Trait » du défi (à harmoniser avec lib/voice.ts en phase 2)
+// Voix « Le Trait » du défi : dans lib/voice-z2c.ts (DEFI). Les anciens
+// noms restent exportés pour ne rien casser.
 
-export const DAILY_VOICE = {
-  title: "Les 30 du jour.",
-  start: "À toi le trait.",
-  handedIn: "Copie rendue.",
-  counting: "On compte les traits…",
-  boardEmpty: "Personne n'a encore rendu sa copie. Le premier trait est à toi.",
-  boardFrozen: "Classement définitif.",
-  missed: "Tu n'as pas joué ce jour-là.",
-  closed: "Ce défi est clos : celui d'aujourd'hui t'attend.",
-  historyEmpty: "Ton historique commence aujourd'hui.",
-  soonTitle: "Le défi du jour arrive bientôt.",
-  soonText: "Chaque jour, les mêmes 30 questions pour tout le monde, une seule copie, et le classement du jour.",
-  unavailable: "Le défi du jour n'est pas disponible pour le moment. Réessaie dans un instant.",
-} as const;
+export const DAILY_VOICE = DEFI;
 
-/** Verdict d'une copie selon la précision (seuils des fins de session : 70 %). */
+/** Verdict d'une copie selon la précision (seuils des fins de session : 70 %), via lib/voice. */
 export function dailyVerdict(score: number, total: number): string {
-  const pct = total > 0 ? (score / total) * 100 : 0;
-  if (total > 0 && score >= total) return "Page propre.";
-  if (pct >= 85) return "Trait sûr.";
-  if (pct >= 70) return "Trait tenu.";
-  if (pct >= 50) return "Le trait tremble.";
-  return "Premier jet.";
+  return verdictCopie(score, total);
 }
 
 /** « 1er », « 2e », « 12e ». */

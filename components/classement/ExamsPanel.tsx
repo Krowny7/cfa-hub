@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { daysUntil, fmtDay, fmtDuration, fmtHour, fmtShortDate, signed } from "@/components/classement/format";
 import type { NextExam, PastExam } from "@/components/classement/types";
+import { CLASSEMENT } from "@/lib/voice-z2a";
 
 /** « J-7 », « ouvert » ou rien : repère court pour l'onglet et la carte. */
 export function examTag(exam: NextExam | null): string | null {
@@ -16,8 +17,8 @@ function NextExamBlock({ exam }: { exam: NextExam | null }) {
     return (
       <div className="card-quiet flex flex-col gap-2 p-6 md:p-7">
         <p className="t-eyebrow">Prochain examen classé</p>
-        <p className="t-h3">Aucun de prévu pour l&apos;instant</p>
-        <p className="t-small">Il s&apos;affichera ici dès qu&apos;il sera planifié. Il fait bouger ton ELO comme un duel.</p>
+        <p className="t-h3">{CLASSEMENT.examenVide}</p>
+        <p className="t-small">{CLASSEMENT.examenVideTexte}</p>
       </div>
     );
   }
@@ -94,10 +95,10 @@ export function ExamsPanel({ exam, past }: { exam: NextExam | null; past: PastEx
             ))}
           </ul>
         ) : (
-          <p className="t-small px-2">Pas encore d&apos;examen classé terminé.</p>
+          <p className="t-small px-2">{CLASSEMENT.examensPassesVide}</p>
         )}
         <Link href="/mock-exams" className="mt-2 inline-flex w-fit items-center gap-1.5 px-2 text-[13px] font-semibold text-muted hover:text-white">
-          Tous les examens blancs <ArrowRight size={14} aria-hidden />
+          {CLASSEMENT.tousExamens} <ArrowRight size={14} aria-hidden />
         </Link>
       </section>
     </div>

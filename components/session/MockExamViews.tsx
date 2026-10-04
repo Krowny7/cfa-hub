@@ -1,11 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Check, ChevronRight, Hourglass } from "lucide-react";
+import { ArrowRight, Check, ChevronRight } from "lucide-react";
 import { PageHead, SectionHead, EloDelta } from "@/components/session/ui";
 import { fmtMinutes, pctOf } from "@/components/session/review";
+import { Avatar } from "@/components/classement/Avatar";
+import { Icone } from "@/components/adn/icons";
+import { Cote } from "@/components/adn/Cote";
+import { CLASSEMENT_EXAMEN, DETAIL, LISTE } from "@/lib/voice-z3b";
 
-// Vues sans état des examens blancs (liste, en-tête, classement, comparaison
-// par matière). Aucune requête : app/mock-exams charge les données, l'aperçu
-// (app/preview-da/l2) en fournit d'exemple.
+// Vues sans état des examens blancs (liste, en-tête, avis, classement,
+// comparaison par matière), en voix « Le Trait » : icône maison de l'examen,
+// sceau d'initiales des joueurs sans photo, cote du jour J. Aucune requête :
+// app/mock-exams charge les données, l'aperçu (app/preview-da/z3b) en fournit
+// d'exemple. Sans « use client » : utilisable côté serveur.
 
 export type MockExam = {
   id: string;
@@ -35,7 +41,7 @@ const LongDate = (d: Date) => {
   const s = longDate(d);
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
-const dayMonth = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: TZ });
+export const dayMonth = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: TZ });
 const hour = (d: Date) => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
 
 // ── Liste ──────────────────────────────────────────────────────────────────
@@ -53,13 +59,13 @@ function ExamRow({ e, registered, eloApplied, now, past }: { e: MockExam; regist
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <span className="truncate text-[15px] font-semibold">{e.title}</span>
-            {!past && w.open && e.status === "open" && <span className="chip chip-active chip-sm">Ouvert</span>}
+            {!past && w.open && e.status === "open" && <span className="chip chip-active chip-sm">{LISTE.ouvert}</span>}
             {registered && (
               <span className="chip chip-quiet chip-sm">
-                <Check size={12} aria-hidden /> {past ? "Participé" : "Inscrit"}
+                <Check size={12} aria-hidden /> {past ? LISTE.participe : LISTE.inscrit}
               </span>
             )}
-            {eloApplied && <span className="chip chip-quiet chip-sm">ELO appliqué</span>}
+            {eloApplied && <span className="chip chip-quiet chip-sm">{LISTE.eloApplique}</span>}
           </span>
           <span className="t-micro mt-1 block">
             {past ? dayMonth(date) + " " + date.getFullYear() : `${longDate(date)} · ${hour(date)} · ${fmtMinutes(e.duration_minutes)}`} · {e.question_count} questions
@@ -76,12 +82,13 @@ function NextExam({ e, registered, now }: { e: MockExam; registered: boolean; no
   const date = new Date(e.scheduled_at);
   const w = examWindow(e, now);
   const live = e.status === "open" && w.open;
+  // le bout qui reste avant l'ouverture, nommé (règle 2) : « J-12 »
   const big = live || w.over ? null : w.daysToStart > 0 ? `J-${w.daysToStart}` : null;
   return (
-    <section className="card-hero rl-in grid grid-cols-1 gap-6 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-10 md:p-9" style={{ animationDelay: ".06s" }} aria-label="Prochain examen">
+    <section className="card-hero rl-in grid grid-cols-1 gap-6 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-10 md:p-9" style={{ animationDelay: ".06s" }} aria-label={LISTE.prochain}>
       <div className="min-w-0">
         <p className="t-eyebrow m-0 inline-flex items-center gap-1.5">
-          <CalendarClock size={13} aria-hidden /> {live ? `Ouvert jusqu'au ${dayMonth(w.end)}` : w.over ? "Fenêtre terminée" : e.status === "draft" ? "En préparation" : "Prochain examen"}
+          <Icone nom="examen" size={15} /> {live ? LISTE.ouvertJusquau(dayMonth(w.end)) : w.over ? LISTE.fenetreFinie : e.status === "draft" ? LISTE.enPreparation : LISTE.prochain}
         </p>
         <h2 className="t-h1 m-0 mt-2.5 [overflow-wrap:anywhere]">{e.title}</h2>
         <p className="t-small m-0 mt-2.5">
@@ -90,19 +97,19 @@ function NextExam({ e, registered, now }: { e: MockExam; registered: boolean; no
         {e.description && <p className="t-small m-0 mt-1.5 max-w-[540px]">{e.description}</p>}
         <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
           <Link href={`/mock-exams/${e.id}`} className="btn btn-primary btn-lg rl-press">
-            {w.over ? "Voir les résultats" : live && registered ? "Passer l'examen" : registered ? "Voir l'examen" : "S'inscrire"} <ArrowRight size={17} aria-hidden />
+            {w.over ? LISTE.resultats : live && registered ? LISTE.passer : registered ? LISTE.voir : LISTE.sinscrire} <ArrowRight size={17} aria-hidden />
           </Link>
           {registered && (
             <span className="t-micro inline-flex items-center gap-1.5 font-semibold">
-              <Check size={13} aria-hidden /> Tu es inscrit(e)
+              <Check size={13} aria-hidden /> {LISTE.tuEsInscrit}
             </span>
           )}
         </div>
       </div>
       {big && (
-        <div className="flex flex-col items-start md:items-end">
+        <div className="flex flex-col items-start gap-2 md:items-end">
           <span className="t-num text-[44px] md:text-[72px]">{big}</span>
-          <span className="t-micro mt-1">ouverture le {dayMonth(w.start)}</span>
+          <Cote forme="marque" label={LISTE.ouverture(dayMonth(w.start))} />
         </div>
       )}
     </section>
@@ -133,29 +140,21 @@ export function MockExamListView({
 
   return (
     <div className="rl-page">
-      <PageHead
-        back={{ href: "/classement", label: "Classement" }}
-        title="Examens blancs"
-        sub={
-          eloEnabled
-            ? "Chronométrés, au format de l'examen. À la clôture, ton ELO bouge selon ta place face aux autres."
-            : "Chronométrés, au format de l'examen, avec un classement entre participants."
-        }
-      />
+      <PageHead back={{ href: "/classement", label: "Classement" }} title={LISTE.titre} sub={eloEnabled ? LISTE.sousClasse : LISTE.sous} />
 
       {next ? (
         <NextExam e={next} registered={regs.has(next.id)} now={now} />
       ) : (
         <section className="card-quiet rl-in grid place-items-center gap-2 px-6 py-12 text-center">
-          <CalendarClock size={22} aria-hidden className="text-muted" />
-          <p className="t-h3 m-0">Aucun examen blanc programmé</p>
-          <p className="t-small m-0">Le prochain apparaîtra ici, avec ses inscriptions.</p>
+          <Icone nom="examen" size={26} className="text-muted" />
+          <p className="t-h3 m-0">{LISTE.videTitre}</p>
+          <p className="t-small m-0">{LISTE.videTexte}</p>
         </section>
       )}
 
       {later.length > 0 && (
         <section className="rl-section">
-          <SectionHead title="Ensuite" meta={`${later.length} examen${later.length > 1 ? "s" : ""}`} />
+          <SectionHead title={LISTE.ensuite} meta={LISTE.nExamens(later.length)} />
           <ul className="card m-0 list-none divide-y divide-line overflow-hidden p-0">
             {later.map((e) => (
               <ExamRow key={e.id} e={e} registered={regs.has(e.id)} eloApplied={false} now={now} />
@@ -166,7 +165,7 @@ export function MockExamListView({
 
       {past.length > 0 && (
         <section className="rl-section">
-          <SectionHead title="Passés" meta="résultats, classement et correction" />
+          <SectionHead title={LISTE.passes} meta={LISTE.passesMeta} />
           <ul className="card-quiet m-0 list-none divide-y divide-line overflow-hidden p-0">
             {past.map((e) => (
               <ExamRow key={e.id} e={e} registered={regs.has(e.id)} eloApplied={Boolean(eloApplied[e.id])} now={now} past />
@@ -195,19 +194,20 @@ export function MockExamHeader({
   const w = examWindow(exam, now);
   const state =
     exam.status === "draft"
-      ? "En préparation"
+      ? LISTE.enPreparation
       : exam.status === "closed" || w.over
-        ? "Terminé"
+        ? DETAIL.termine
         : w.open
-          ? `Ouvert jusqu'au ${dayMonth(w.end)}`
-          : `Ouverture dans ${w.hoursToStart < 24 ? `${w.hoursToStart} h` : `${w.daysToStart} j`}`;
+          ? LISTE.ouvertJusquau(dayMonth(w.end))
+          : DETAIL.ouvertureDans(w.hoursToStart, w.daysToStart);
   return (
     <PageHead
-      back={{ href: "/mock-exams", label: "Examens blancs" }}
+      back={{ href: "/mock-exams", label: DETAIL.retour }}
       eyebrow={
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Icone nom="examen" size={15} />
           {state}
-          {eloEnabled && <span className="opacity-70">· classé (ELO)</span>}
+          {eloEnabled && <span className="opacity-70">· {DETAIL.classe}</span>}
         </span>
       }
       title={exam.title}
@@ -232,7 +232,7 @@ export function MockExamNotice({ title, children, countdown }: { title: string; 
     <section className="card-quiet rl-in flex flex-wrap items-center justify-between gap-5 px-5 py-5 md:px-7 md:py-6">
       <div className="flex min-w-0 items-start gap-3.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface">
-          <Hourglass size={17} aria-hidden />
+          <Icone nom="examen" size={19} />
         </span>
         <div className="min-w-0">
           <p className="t-h3 m-0">{title}</p>
@@ -256,8 +256,8 @@ export type LeaderRow = {
 export function MockExamLeaderboard({ rows, meId, eloDeltas }: { rows: LeaderRow[]; meId: string; eloDeltas: Record<string, number> }) {
   if (rows.length === 0) return null;
   return (
-    <section className="rl-section" aria-label="Classement">
-      <SectionHead title="Classement" meta={`${rows.length} participant${rows.length > 1 ? "s" : ""}`} />
+    <section className="rl-section" aria-label={CLASSEMENT_EXAMEN.titre}>
+      <SectionHead title={CLASSEMENT_EXAMEN.titre} meta={CLASSEMENT_EXAMEN.participants(rows.length)} />
       <ol className="card m-0 list-none divide-y divide-line overflow-hidden p-0">
         {rows.map((r, rank) => {
           const pct = pctOf(r.score, r.total);
@@ -274,16 +274,12 @@ export function MockExamLeaderboard({ rows, meId, eloDeltas }: { rows: LeaderRow
               >
                 {rank + 1}
               </span>
-              {r.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={r.avatarUrl} alt="avatar" className="h-9 w-9 shrink-0 rounded-full object-cover" />
-              ) : (
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-2 text-[13px] font-semibold">{r.name.slice(0, 1).toUpperCase()}</span>
-              )}
+              {/* sa photo, sinon son sceau d'initiales */}
+              <Avatar src={r.avatarUrl} name={r.name} size={36} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
                   <span className="truncate text-[14.5px] font-semibold">{r.name}</span>
-                  {isMe && <span className="chip chip-quiet chip-sm min-h-[20px] px-1.5 text-[11px]">toi</span>}
+                  {isMe && <span className="chip chip-quiet chip-sm min-h-[20px] px-1.5 text-[11px]">{CLASSEMENT_EXAMEN.toi}</span>}
                 </span>
                 {mins && <span className="t-micro block">{fmtMinutes(mins)}</span>}
               </span>
@@ -316,13 +312,13 @@ export function MockExamTopicTable({
 }) {
   if (users.length < 2) return null;
   return (
-    <section className="rl-section" aria-label="Par matière, tous les participants">
-      <SectionHead title="Par matière, tous les participants" meta="de la plus difficile à la plus réussie" />
+    <section className="rl-section" aria-label={CLASSEMENT_EXAMEN.parMatiere}>
+      <SectionHead title={CLASSEMENT_EXAMEN.parMatiere} meta={CLASSEMENT_EXAMEN.parMatiereMeta} />
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-[14px]">
           <thead>
             <tr className="border-b border-line">
-              <th className="t-micro px-4 py-3 text-left font-semibold md:px-5">Matière</th>
+              <th className="t-micro px-4 py-3 text-left font-semibold md:px-5">{CLASSEMENT_EXAMEN.matiere}</th>
               {users.map(([uid, name]) => (
                 <th key={uid} className={"px-3 py-3 text-right text-[12.5px] font-semibold " + (uid === meId ? "text-white" : "text-muted")}>
                   {uid === meId ? "Toi" : name}

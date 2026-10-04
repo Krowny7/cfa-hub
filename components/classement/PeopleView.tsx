@@ -6,6 +6,8 @@ import { PlayerRow, type PlayerLite } from "@/components/classement/PlayerRow";
 import { LinkSeg } from "@/components/classement/Seg";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { rankFor } from "@/lib/ranks";
+import { VIDE } from "@/lib/voice";
+import { CLASSEMENT, JOUEURS } from "@/lib/voice-z2a";
 
 export type TopRow = { userId: string; name: string; elo: number; rank: number; mastery: number | null; isMe: boolean };
 
@@ -31,30 +33,30 @@ export function PeopleView({
 
   return (
     <div className="rl-wide flex flex-col gap-10 md:gap-12">
-      <PageHero kicker="Classement" title="Joueurs" className="w-fit max-w-full" />
+      <PageHero kicker={JOUEURS.kicker} title={JOUEURS.titre} className="w-fit max-w-full" />
 
       <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-14">
         <section className="flex min-w-0 flex-col gap-5 lg:col-span-8" aria-label="Annuaire des joueurs">
           <div className="flex flex-wrap items-center gap-3">
             <LinkSeg
-              label="Quels joueurs"
+              label={JOUEURS.filtre}
               active={view}
               items={[
-                { key: "all", label: "Tous", href: qs("all") },
-                { key: "groups", label: "Mes groupes", href: qs("groups") },
+                { key: "all", label: JOUEURS.tous, href: qs("all") },
+                { key: "groups", label: JOUEURS.groupes, href: qs("groups") },
               ]}
             />
             <form className="flex min-w-0 flex-[1_1_260px] gap-2" action="/people" method="get" role="search">
               <input type="hidden" name="view" value={view} />
               <label htmlFor="rl-people-q" className="sr-only">
-                Chercher un joueur
+                {JOUEURS.chercher}
               </label>
               <div className="relative min-w-0 flex-1">
                 <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
-                <input id="rl-people-q" name="q" defaultValue={q} placeholder="Chercher un pseudo…" className="input pl-9" />
+                <input id="rl-people-q" name="q" defaultValue={q} placeholder={JOUEURS.placeholder} className="input pl-9" />
               </div>
               <button type="submit" className="btn btn-secondary shrink-0">
-                Chercher
+                {JOUEURS.bouton}
               </button>
             </form>
           </div>
@@ -63,13 +65,13 @@ export function PeopleView({
             <div className="px-2.5 py-4">
               {view === "groups" && !hasGroups ? (
                 <>
-                  <p className="t-h3">Tu n&apos;es dans aucun groupe</p>
+                  <p className="t-h3">{JOUEURS.sansGroupe}</p>
                   <Link href="/moi?onglet=reglages#reglages" className="ink-link mt-3 inline-block">
-                    Créer ou rejoindre un groupe
+                    {JOUEURS.sansGroupeLien}
                   </Link>
                 </>
               ) : (
-                <p className="t-h3">{q ? `Aucun joueur ne correspond à « ${q} »` : "Aucun joueur pour l'instant"}</p>
+                <p className="t-h3">{q ? JOUEURS.aucun(q) : VIDE.adversaires}</p>
               )}
             </div>
           ) : (
@@ -79,13 +81,13 @@ export function PeopleView({
               ))}
             </ul>
           )}
-          {view === "all" && rows.length > 0 && <p className="t-micro mt-1 px-2.5">Les 200 premiers pseudos, par ordre alphabétique.</p>}
+          {view === "all" && rows.length > 0 && <p className="t-micro mt-1 px-2.5">{JOUEURS.limite}</p>}
         </section>
 
         <aside className="card-quiet flex min-w-0 flex-col gap-3 p-5 lg:col-span-4" aria-label={`Top 10 ${CURRENT_DOMAIN.name}`}>
-          <p className="t-eyebrow px-1">Top 10 · {CURRENT_DOMAIN.name}</p>
+          <p className="t-eyebrow px-1">{JOUEURS.top(CURRENT_DOMAIN.name)}</p>
           {top.length === 0 ? (
-            <p className="t-small px-1">Le classement se remplit au premier match.</p>
+            <p className="t-small px-1">{CLASSEMENT.vide}</p>
           ) : (
             <ol className="flex flex-col">
               {top.map((r) => {
@@ -104,7 +106,7 @@ export function PeopleView({
             </ol>
           )}
           <Link href="/classement" className="mt-1 inline-flex w-fit items-center gap-1.5 px-1 text-[13px] font-semibold text-muted hover:text-white">
-            Classement complet <ArrowRight size={14} aria-hidden />
+            {JOUEURS.complet} <ArrowRight size={14} aria-hidden />
           </Link>
         </aside>
       </div>

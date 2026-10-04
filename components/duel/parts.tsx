@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Swords } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { PageHero } from "@/components/ui/Titles";
 import { InkRing } from "@/components/ink/InkRing";
@@ -7,6 +7,8 @@ import { Disclosure } from "@/components/classement/Disclosure";
 import { rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { DUEL_MINUTES, DUEL_QUESTIONS, DUEL_WINDOW_HOURS } from "@/lib/duels";
+import { NBSP } from "@/lib/voice";
+import { motIssue, raturesPartie } from "@/lib/voice-z2";
 
 // Pièces partagées des pages duel. Sans état : utilisables depuis un
 // composant serveur comme depuis un composant client.
@@ -30,12 +32,12 @@ export function PlayerBadge({
 }
 
 /** En-tête du lobby : petite ligne (domaine), grand titre, format en une ligne. */
-export function DuelHeading({ title = "Qui affrontes-tu ?" }: { title?: string }) {
+export function DuelHeading({ title = `Qui affrontes-tu${NBSP}?` }: { title?: string }) {
   return (
     <PageHero
       kicker={
         <span className="inline-flex items-center gap-1.5">
-          <Swords size={14} aria-hidden /> Duel · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
+          <Icone nom="duel" size={15} /> Duel · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
         </span>
       }
       title={title}
@@ -123,8 +125,8 @@ export function DuelHowItWorks() {
             le même ordre. {DUEL_MINUTES} min chacun, quand tu veux sous {DUEL_WINDOW_HOURS} h.
           </p>
           <p className="m-0">
-            <b className="text-white">Meilleur score gagne.</b> À égalité, le plus rapide l&apos;emporte ; à la seconde près, c&apos;est un nul.
-            Pas joué à temps : forfait.
+            <b className="text-white">Meilleur score gagne.</b> À égalité, le plus rapide l&apos;emporte ; à la seconde près, c&apos;est une nulle.
+            Pas de copie à temps : forfait.
           </p>
           <p className="m-0">
             <b className="text-white">Comme aux échecs.</b> Battre plus fort que soi rapporte plus ; perdre contre plus faible coûte plus. Les
@@ -138,7 +140,7 @@ export function DuelHowItWorks() {
 
 /** V / D / = dans une petite case (encre pleine pour une victoire). */
 export function ResultMark({ won }: { won: boolean | null }) {
-  const label = won === true ? "Victoire" : won === false ? "Défaite" : "Match nul";
+  const label = motIssue(won);
   return (
     <span
       aria-label={label}
@@ -172,18 +174,18 @@ export function ReviewDuelRow({
   won: boolean | null;
   myScore: number | null;
   theirScore: number | null;
-  /** nombre d'erreurs (null si inconnu) */
+  /** nombre de ratures (null si inconnu) */
   errors: number | null;
   /** « encore 12 j » */
   left: string | null;
 }) {
-  const errLabel = errors === null ? null : errors === 0 ? "sans faute" : `${errors} erreur${errors > 1 ? "s" : ""}`;
+  const errLabel = raturesPartie(errors);
   return (
     <li>
       <Link
         href={`/duel/${id}?revue=1`}
         className="rl-row grid grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2.5"
-        aria-label={`Revoir le duel contre ${name}${errLabel ? `, ${errLabel}` : ""}${left ? `, ${left}` : ""}`}
+        aria-label={`Revoir la partie contre ${name}${errLabel ? `, ${errLabel}` : ""}${left ? `, ${left}` : ""}`}
       >
         <ResultMark won={won} />
         <span className="min-w-0">

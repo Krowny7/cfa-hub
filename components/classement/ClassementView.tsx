@@ -10,11 +10,13 @@ import { ClassementTabs, type TabKey } from "@/components/classement/ClassementT
 import { Disclosure } from "@/components/classement/Disclosure";
 import { DomainPills, HowItWorks } from "@/components/classement/Domains";
 import type { ClassementData } from "@/components/classement/types";
+import { CLASSEMENT } from "@/lib/voice-z2a";
 
 export const CLASSEMENT_TABS: TabKey[] = ["classement", "duels", "examens"];
 
-// Espace « Classement » (V3, « moins dense ») : un héros (rang, ELO, courbe,
-// lancer un duel), puis trois onglets — Classement, Duels, Examens classés —
+// Espace « Classement » (V3, « moins dense », voix « Le Trait ») : un héros
+// (panneau du rang, courbe d'ELO au pinceau, lancer un duel), puis trois
+// onglets — Classement, Duels, Examens classés —
 // et, repliés en bas, les 8 rangs et les règles. Composant de présentation :
 // toutes les données arrivent en props (page serveur ou page d'aperçu).
 export function ClassementView({ data, tab = "classement" }: { data: ClassementData; tab?: TabKey }) {
@@ -26,7 +28,7 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
   return (
     <div className="rl-wide rl-page">
       <div className="flex flex-col gap-8 md:gap-10">
-        <PageHero kicker="Classement" title={`Ton rang en ${CURRENT_DOMAIN.name}`}>
+        <PageHero kicker="Classement" title={CLASSEMENT.titre(CURRENT_DOMAIN.name)}>
           <DomainPills me={me} />
         </PageHero>
         <RankHero me={me} history={data.history} />
@@ -53,10 +55,10 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
       />
 
       <div>
-        <Disclosure title="Les 8 rangs" hint={placement ? "ton rang s'affiche après le placement" : `tu es ${rank.tier.name}${rank.division ? " " + rank.division : ""}`}>
+        <Disclosure title={CLASSEMENT.rangs} hint={placement ? CLASSEMENT.rangsPlacement : `${CLASSEMENT.rangsSous} Tu es ${rank.tier.name}${rank.division ? " " + rank.division : ""}.`}>
           <TierTrack current={rank.tierIndex} mastery={me.mastery} placement={placement} />
         </Disclosure>
-        <Disclosure title="Comment ça marche" hint="ELO, maîtrise, placement">
+        <Disclosure title={CLASSEMENT.regles} hint={CLASSEMENT.reglesSous}>
           <HowItWorks />
         </Disclosure>
       </div>

@@ -251,6 +251,45 @@ export async function getMockExamEloDeltas(supabase: SupabaseClient, examId: str
   }
 }
 
+/**
+ * Le mouvement d'ELO d'un joueur pour un match précis (duel ou examen blanc
+ * classé) : avant, après, et s'il s'agit de son dernier mouvement. Sert à la
+ * cérémonie de rang au premier affichage d'un résultat (CeremonieRang,
+ * CeremonieExamen). null si rien n'a été appliqué, ou migration absente.
+ */
+export async function getRatingEventFor(
+  supabase: SupabaseClient,
+  userId: string,
+  source: RatingSource,
+  refId: string,
+): Promise<{ eloBefore: number; eloAfter: number; delta: number; createdAt: string; latest: boolean } | null> {
+  try {
+    const [{ data, error }, { data: last }] = await Promise.all([
+      supabase
+        .from("rating_events")
+        .select("id,elo_before,elo_after,delta,created_at")
+        .eq("user_id", userId)
+        .eq("source", source)
+        .eq("ref_id", refId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase.from("rating_events").select("id").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (error || !data) return null;
+    const r = data as { id: string; elo_before: number; elo_after: number; delta: number; created_at: string };
+    return {
+      eloBefore: Number(r.elo_before),
+      eloAfter: Number(r.elo_after),
+      delta: Number(r.delta),
+      createdAt: String(r.created_at),
+      latest: (last as { id?: string } | null)?.id === r.id,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Date d'application de l'ELO d'un examen (null si pas encore, ou migration absente). */
 export async function getMockExamEloAppliedAt(supabase: SupabaseClient, examIds: string[]): Promise<Record<string, string>> {
   if (!examIds.length) return {};

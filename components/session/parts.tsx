@@ -14,6 +14,8 @@ import {
   type AiExportKind,
   type ReviewQuestion,
 } from "@/components/session/review";
+import { IA, ratures as nRatures } from "@/lib/voice";
+import { COPIE_IA, CORRECTION, PAR_MATIERE } from "@/lib/voice-z3";
 
 // Écrans partagés des sessions et des examens, dans le langage V3 : un seul
 // point focal, des écrans de question et de correction calmes et nets.
@@ -390,6 +392,70 @@ export function PauseCard({ onResume }: { onResume: () => void }) {
 
 // ── Après l'épreuve ────────────────────────────────────────────────────────
 
+/**
+ * « Copier pour l'IA » en action de fin de session (slot `actions` de la
+ * copie corrigée) : un bouton en deux parts, « Copier pour l'IA · toute la
+ * copie | mes N ratures », pour qu'on ne le confonde pas avec « Reprendre
+ * mes N ratures » juste à côté. Le texte vient de `texte`, le format
+ * d'export de chaque écran, inchangé.
+ * `variantes={false}` : un seul bouton (écran dont l'export n'a qu'une forme).
+ */
+export function CopierPourIA({
+  texte,
+  ratures,
+  total,
+  variantes = true,
+  onError,
+}: {
+  texte: (seulementRatures: boolean) => string;
+  ratures: number;
+  total: number;
+  variantes?: boolean;
+  onError?: (msg: string) => void;
+}) {
+  const [copied, setCopied] = useState<"all" | "errors" | null>(null);
+
+  async function copy(which: "all" | "errors") {
+    try {
+      await navigator.clipboard.writeText(texte(which === "errors"));
+      setCopied(which);
+      setTimeout(() => setCopied((v) => (v === which ? null : v)), 2500);
+    } catch {
+      onError?.("Impossible de copier automatiquement. Sélectionne la correction et copie-la à la main.");
+    }
+  }
+
+  const deux = variantes && ratures > 0 && ratures < total;
+  return (
+    <div role="group" aria-label={IA.label} className="flex w-full items-stretch sm:w-auto">
+      <button
+        type="button"
+        className={"btn btn-secondary btn-lg rl-press min-w-0 flex-1 whitespace-nowrap hover:z-10 focus-visible:z-10 sm:flex-none " + (deux ? "rounded-r-none" : "")}
+        aria-label={deux ? `${IA.label} : ${COPIE_IA.tout}` : undefined}
+        onClick={() => void copy("all")}
+      >
+        {copied === "all" ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+        {copied === "all" ? "Copié" : IA.label}
+        {copied !== "all" && deux && <span className="hidden text-[12.5px] font-medium opacity-60 sm:inline">· {COPIE_IA.tout}</span>}
+      </button>
+      {deux && (
+        <button
+          type="button"
+          className="btn btn-secondary btn-lg -ml-px shrink-0 whitespace-nowrap rounded-l-none px-4 text-[13.5px] font-medium hover:z-10 focus-visible:z-10"
+          aria-label={`${IA.label} : ${COPIE_IA.seulement(ratures)}`}
+          onClick={() => void copy("errors")}
+        >
+          {copied === "errors" ? <Check size={15} aria-hidden /> : null}
+          {copied === "errors" ? "Copié" : COPIE_IA.seulement(ratures)}
+        </button>
+      )}
+      <span className="sr-only" aria-live="polite">
+        {copied ? IA.copie : ""}
+      </span>
+    </div>
+  );
+}
+
 /** « Copier pour l'IA » : tout, ou seulement les erreurs (même format). */
 export function CopyForAi({
   review,
@@ -403,11 +469,23 @@ export function CopyForAi({
   score: number;
   total: number;
   kind: AiExportKind;
-  size?: "lg" | "sm";
+  /** action : le bouton de la copie corrigée (fin de session) */
+  size?: "lg" | "sm" | "action";
   onError?: (msg: string) => void;
 }) {
   const [copied, setCopied] = useState<"all" | "errors" | null>(null);
   const errors = review.filter((q) => !q.is_correct).length;
+
+  if (size === "action") {
+    return (
+      <CopierPourIA
+        texte={(onlyErrors) => buildAiExportText(review, score, total, kind, { onlyErrors })}
+        ratures={errors}
+        total={review.length}
+        onError={onError}
+      />
+    );
+  }
 
   async function copy(which: "all" | "errors") {
     const text = buildAiExportText(review, score, total, kind, { onlyErrors: which === "errors" });
@@ -430,7 +508,7 @@ export function CopyForAi({
         {errors > 0 && errors < review.length && (
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => void copy("errors")}>
             {copied === "errors" ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-            {copied === "errors" ? "Copié" : `Mes ${errors} erreur${errors > 1 ? "s" : ""}`}
+            {copied === "errors" ? "Copié" : COPIE_IA.mesRatures(errors)}
           </button>
         )}
       </div>
@@ -444,10 +522,10 @@ export function CopyForAi({
           <Sparkles size={18} aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="t-h3 m-0">Comprends tes erreurs avec une IA</p>
+          <p className="t-h3 m-0">Comprends tes ratures avec une IA</p>
           <p className="t-small m-0 mt-1" aria-live="polite">
             {copied
-              ? "Copié. Colle-le dans ChatGPT, Claude… : il t'explique chaque erreur."
+              ? "Copié. Colle-le dans ChatGPT, Claude… : il t'explique chaque rature."
               : "Énoncés, tes réponses, les bonnes et les explications, prêts à coller."}
           </p>
         </div>
@@ -455,12 +533,12 @@ export function CopyForAi({
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn btn-primary rl-press" onClick={() => void copy("all")}>
           {copied === "all" ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-          {copied === "all" ? "Copié !" : "Copier pour l'IA"}
+          {copied === "all" ? "Copié" : IA.label}
         </button>
         {errors > 0 && errors < review.length && (
           <button type="button" className="btn btn-ghost" onClick={() => void copy("errors")}>
             {copied === "errors" ? <Check size={16} aria-hidden /> : null}
-            {copied === "errors" ? "Copié !" : `Seulement mes ${errors} erreur${errors > 1 ? "s" : ""}`}
+            {copied === "errors" ? "Copié" : `Seulement mes ${nRatures(errors)}`}
           </button>
         )}
       </div>
@@ -546,7 +624,7 @@ export function TopicBreakdown({ review, title = "Par matière" }: { review: Rev
   const two = stats.length > 4;
   return (
     <section className="rl-section" aria-label={title}>
-      <SectionHead title={title} meta="de la plus faible à la plus forte" />
+      <SectionHead title={title} meta={PAR_MATIERE.meta(stats[0])} />
       <div className={"card grid grid-cols-1 gap-x-10 px-5 py-2 md:px-7 md:py-3 " + (two ? "md:grid-cols-2" : "")}>
         {stats.map((t, i) => (
           <div
@@ -599,7 +677,7 @@ export function ReviewItem({ q, n, compact = false }: { q: ReviewQuestion; n: nu
           }
         >
           {status === "ok" ? <Check size={13} aria-hidden /> : status === "ko" ? <X size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
-          {status === "ok" ? "Juste" : status === "ko" ? "Faux" : "Sans réponse"}
+          {status === "ok" ? CORRECTION.juste : status === "ko" ? CORRECTION.rature : CORRECTION.sansReponse}
         </span>
       </div>
       <QuestionPrompt
@@ -653,7 +731,7 @@ export function ReviewItem({ q, n, compact = false }: { q: ReviewQuestion; n: nu
 /** La correction : filtre « Mes erreurs / Tout », puis les questions. */
 export function ReviewSection({
   review,
-  title = "Correction",
+  title = CORRECTION.titre,
   defaultOpen = true,
   compact = false,
   action,
@@ -684,8 +762,8 @@ export function ReviewSection({
                 value={filter}
                 onChange={setFilter}
                 options={[
-                  { key: "errors", label: <>Mes erreurs <span className="text-[12.5px] tabular-nums opacity-60">{errors}</span></> },
-                  { key: "all", label: <>Tout <span className="text-[12.5px] tabular-nums opacity-60">{review.length}</span></> },
+                  { key: "errors", label: <>{CORRECTION.mesRatures} <span className="text-[12.5px] tabular-nums opacity-60">{errors}</span></> },
+                  { key: "all", label: <>{CORRECTION.tout} <span className="text-[12.5px] tabular-nums opacity-60">{review.length}</span></> },
                 ]}
               />
             ) : undefined
@@ -700,8 +778,8 @@ export function ReviewSection({
             onChange={setFilter}
             className="text-[13px]"
             options={[
-              { key: "errors", label: `Mes erreurs · ${errors}` },
-              { key: "all", label: `Tout · ${review.length}` },
+              { key: "errors", label: `${CORRECTION.mesRatures} · ${errors}` },
+              { key: "all", label: `${CORRECTION.tout} · ${review.length}` },
             ]}
           />
           {action}
@@ -710,15 +788,15 @@ export function ReviewSection({
       {!open ? (
         <div className="card-quiet flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <p className="t-small m-0">
-            {errors > 0 ? `${errors} erreur${errors > 1 ? "s" : ""} sur ${review.length} questions, avec les explications.` : `Aucune erreur sur ${review.length} questions.`}
+            {CORRECTION.repliee(errors, review.length)}
           </p>
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => setOpen(true)}>
-            Voir la correction <ChevronDown size={14} aria-hidden />
+            {CORRECTION.voir} <ChevronDown size={14} aria-hidden />
           </button>
         </div>
       ) : items.length === 0 ? (
         <div className="card-quiet px-5 py-6 text-center">
-          <p className="t-small m-0">Aucune erreur : rien à revoir ici. Bien joué.</p>
+          <p className="t-small m-0">{CORRECTION.pagePropre}</p>
         </div>
       ) : (
         <div className={"grid grid-cols-1 " + (compact ? "gap-2.5" : "gap-3 md:gap-4")}>

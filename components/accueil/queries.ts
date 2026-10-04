@@ -69,7 +69,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     finished_at: string | null;
   };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes] = await Promise.all([
     safeRows<{ answered_at: string; is_correct: boolean }>(() =>
       supabase.from("quiz_answer_log").select("answered_at,is_correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
@@ -101,6 +101,10 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     safeRows<{ finished_at: string; score: number | null; total: number | null }>(() =>
       supabase.from("daily_attempts").select("finished_at,score,total").eq("user_id", userId).gte("finished_at", since).limit(20),
     ),
+    // QCM joués en entier (/qcm) et copies du mode examen (/exam).
+    safeRows<{ created_at: string; score: number; total: number }>(() =>
+      supabase.from("quiz_attempts").select("created_at,score,total").eq("user_id", userId).gte("created_at", since).limit(500),
+    ),
   ]);
 
   const all: DatedCount[] = [
@@ -117,6 +121,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
       };
     }),
     ...daily.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
+    ...quizzes.map((r) => ({ at: r.created_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
   ];
 
   const byDay = new Map<string, { n: number; correct: number }>();

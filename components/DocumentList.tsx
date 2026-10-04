@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Copy, ExternalLink, FileText, Headphones } from "lucide-react";
+import { ArrowRight, ChevronRight, ExternalLink, FileText } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
 import { cleanFolderName, plural, visibilityLabel } from "@/components/ContentDetailHeader";
 
 // La Bibliothèque : l'entrée vers les trois fonds de révision (fiches,
@@ -105,7 +106,7 @@ export function LibraryView({
           >
             <span className="flex items-center justify-between gap-3">
               <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-surface-2">
-                <FileText size={21} aria-hidden />
+                <Icone nom="fiche" size={24} />
               </span>
               <span className="t-micro font-semibold">{fiches ? plural(fiches, "matière", "matières") : "bientôt"}</span>
             </span>
@@ -122,7 +123,7 @@ export function LibraryView({
           <FundCard
             href="/flashcards"
             index="Fonds 02"
-            icon={<Copy size={19} aria-hidden />}
+            icon={<Icone nom="flashcards" size={22} />}
             title="Flashcards"
             desc="Répétition espacée : termes, formules, pièges."
             meta={flashcardSets ? plural(flashcardSets, "set", "sets") : null}
@@ -130,7 +131,7 @@ export function LibraryView({
           <FundCard
             href="/courses"
             index="Fonds 03"
-            icon={<Headphones size={19} aria-hidden />}
+            icon={<Icone nom="cours" size={22} />}
             title="Cours complets"
             desc="Le cours intégral par matière, à lire ou à écouter."
             meta={courses ? plural(courses, "matière", "matières") : null}

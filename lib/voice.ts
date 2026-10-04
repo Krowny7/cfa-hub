@@ -389,8 +389,9 @@ export function verdictDuel({
         ? `${nombre(moi)} partout. Tu as été plus rapide${ecart ? ` de ${duree(ecart)}` : ""}.`
         : `${nombre(moi)} contre ${nombre(lui)}. Ton trait était plus sûr.`;
   } else if (issue === "defaite") {
-    phrase =
-      moi === lui
+    phrase = forfait
+      ? "Défaite par forfait : ta copie n'a pas été rendue à temps."
+      : moi === lui
         ? `${nombre(moi)} partout. ${adversaire} a été plus rapide${ecart ? ` de ${duree(ecart)}` : ""}.`
         : `${nombre(moi)} contre ${nombre(lui)}. ${adversaire} a eu le trait plus sûr.`;
   } else {

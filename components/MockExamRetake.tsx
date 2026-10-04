@@ -11,13 +11,17 @@ import {
   QuestionMap,
   QuestionNav,
   ReadyCard,
-  ResultHero,
   ReviewSection,
   RunnerBar,
   TopicBreakdown,
 } from "@/components/session/parts";
 import { SectionHead } from "@/components/session/ui";
-import { PASS_THRESHOLD, fmtMinutes, pctOf, type ReviewQuestion } from "@/components/session/review";
+import { fmtMinutes, pctOf, type ReviewQuestion } from "@/components/session/review";
+import { FinDeSession } from "@/components/session/FinDeSession";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { surTitreSession } from "@/lib/voice";
+import { AVANT_EXAMEN, REJOUER, REMETTRE } from "@/lib/voice-z3b";
 
 // Rejouer un examen blanc déjà passé, en entraînement : en entier ou
 // seulement ses erreurs. Ne compte ni pour le classement ni pour l'ELO ; seul
@@ -36,26 +40,34 @@ type PastAttempt = {
 
 type Props = {
   examId: string;
+  /** titre de l'examen (en-tête de la copie) */
+  title?: string;
   durationMinutes: number;
   wrongCount: number;
   totalCount: number;
   pastAttempts: PastAttempt[];
+  /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
+  traitsJour?: number | null;
+  /** aperçu (app/preview-da) : un essai rendu */
+  demo?: { mode: "full" | "wrong_only"; review: ReviewQuestion[]; duree?: number };
 };
 
-export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount, pastAttempts: initialPast }: Props) {
+export function MockExamRetake({ examId, title, durationMinutes, wrongCount, totalCount, pastAttempts: initialPast, traitsJour = null, demo }: Props) {
   const supabase = useMemo(() => createClient(), []);
+  const jour = useTraitsDuJour(traitsJour);
 
   type Phase = "menu" | "ready" | "active" | "done";
-  const [phase, setPhase] = useState<Phase>("menu");
-  const [mode, setMode] = useState<"full" | "wrong_only">("full");
+  const [phase, setPhase] = useState<Phase>(demo ? "done" : "menu");
+  const [mode, setMode] = useState<"full" | "wrong_only">(demo?.mode ?? "full");
   const [loadingMode, setLoadingMode] = useState<"full" | "wrong_only" | null>(null);
   const [questions, setQuestions] = useState<RetakeQuestion[]>([]);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [idx, setIdx] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(0);
-  const [review, setReview] = useState<ReviewQuestion[]>([]);
-  const [score, setScore] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [review, setReview] = useState<ReviewQuestion[]>(demo?.review ?? []);
+  const [score, setScore] = useState(demo ? demo.review.filter((r) => r.is_correct).length : 0);
+  const [total, setTotal] = useState(demo?.review.length ?? 0);
+  const [duree, setDuree] = useState<number | null>(demo?.duree ?? null);
   const [busy, setBusy] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +119,7 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
       if (rpcError) throw new Error(rpcError.message);
       const qs = (data ?? []) as RetakeQuestion[];
       if (qs.length === 0) {
-        setError("Aucune question disponible pour ce mode.");
+        setError(REJOUER.aucune);
         return;
       }
       setQuestions(qs);
@@ -153,6 +165,9 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
       setReview((data?.review ?? []) as ReviewQuestion[]);
       setScore(data?.score ?? 0);
       setTotal(data?.total ?? 0);
+      setDuree(duration);
+      // l'essai remis d'un bloc : autant de traits que de questions (comme l'anneau du jour)
+      poserTrait(Number(data?.total ?? 0) || 0);
       setPastAttempts((prev) => [
         { id: crypto.randomUUID(), mode, score: data?.score ?? 0, total: data?.total ?? 0, duration_seconds: duration, completed_at: new Date().toISOString() },
         ...prev,
@@ -173,7 +188,7 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
     setError(null);
   }
 
-  const modeLabel = mode === "full" ? "Essai complet" : "Essai · mes erreurs";
+  const modeLabel = REJOUER.enCours(mode);
 
   // ── CHOIX DE L'ESSAI ──
   if (phase === "menu") {
@@ -195,15 +210,15 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
 
     return (
       <section ref={rootRef} id="rejouer" className="rl-section scroll-mt-24" aria-label="Rejouer cet examen">
-        <SectionHead title="Rejouer cet examen" meta="entraînement · hors classement et ELO" />
+        <SectionHead title={REJOUER.titre} meta={REJOUER.meta} />
         <div className="card-quiet grid grid-cols-1 gap-5 p-5 md:p-6">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {option("full", <RotateCcw size={16} aria-hidden />, "Tout l'examen", `${totalCount} questions · ${fmtMinutes(durationMinutes)}`, totalCount === 0)}
+            {option("full", <RotateCcw size={16} aria-hidden />, REJOUER.tout, `${totalCount} questions · ${fmtMinutes(durationMinutes)}`, totalCount === 0)}
             {option(
               "wrong_only",
               <ListRestart size={16} aria-hidden />,
-              "Seulement mes erreurs",
-              wrongCount === 0 ? "aucune erreur à rejouer" : `${wrongCount} question${wrongCount > 1 ? "s" : ""} · ${fmtMinutes(Math.max(5, Math.round(durationMinutes * (wrongCount / Math.max(totalCount, 1)))))}`,
+              REJOUER.mesRatures,
+              wrongCount === 0 ? REJOUER.pagePropre : `${wrongCount} question${wrongCount > 1 ? "s" : ""} · ${fmtMinutes(Math.max(5, Math.round(durationMinutes * (wrongCount / Math.max(totalCount, 1)))))}`,
               wrongCount === 0,
             )}
           </div>
@@ -212,18 +227,18 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
               {error}
             </p>
           )}
-          <p className="t-micro m-0">Seul le score de ces essais est gardé, pas les réponses.</p>
+          <p className="t-micro m-0">{REJOUER.scoreSeul}</p>
 
           {pastAttempts.length > 0 && (
             <div className="border-t border-line pt-4">
-              <p className="t-eyebrow m-0 mb-1.5">Tes essais</p>
+              <p className="t-eyebrow m-0 mb-1.5">{REJOUER.tesEssais}</p>
               <ul className="m-0 list-none divide-y divide-line p-0">
                 {pastAttempts.map((a) => {
                   const pct = pctOf(a.score, a.total);
                   return (
                     <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
                       <span className="t-small min-w-0 truncate">
-                        <span className="font-semibold text-white">{a.mode === "full" ? "Tout l'examen" : "Mes erreurs"}</span>
+                        <span className="font-semibold text-white">{a.mode === "full" ? REJOUER.essaiTout : REJOUER.essaiRatures}</span>
                         {" · "}
                         {new Date(a.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                         {a.duration_seconds ? ` · ${fmtMinutes(Math.max(1, Math.round(a.duration_seconds / 60)))}` : ""}
@@ -250,13 +265,10 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
     return (
       <section ref={rootRef} id="rejouer" className="scroll-mt-24 py-2" aria-label="Rejouer cet examen">
         <ReadyCard
-          eyebrow="Rejouer cet examen · entraînement"
-          title={mode === "full" ? "Tout l'examen" : "Tes erreurs"}
+          eyebrow={AVANT_EXAMEN.surTitreRetake}
+          title={mode === "full" ? REJOUER.tout : REJOUER.tesRatures}
           meta={`${questions.length} questions · ${fmtMinutes(Math.round(secondsLeft / 60))}`}
-          rules={[
-            "Ne compte ni pour le classement ni pour l'ELO.",
-            "Correction complète à la fin ; seul le score est gardé ensuite.",
-          ]}
+          rules={[...AVANT_EXAMEN.reglesRetake]}
           onCancel={backToMenu}
           cancelLabel="Retour"
           onStart={start}
@@ -265,37 +277,38 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
     );
   }
 
-  // ── RÉSULTAT ──
+  // ── RÉSULTAT : la copie corrigée ──
   if (phase === "done") {
-    const pct = total > 0 ? Math.round((score / total) * 100) : null;
-    const passed = pct !== null && pct >= PASS_THRESHOLD;
+    const minutes = duree ? Math.max(1, Math.round(duree / 60)) : null;
 
     return (
       <section ref={rootRef} id="rejouer" className="rl-page scroll-mt-24" aria-label="Résultat de l'essai">
-        <ResultHero
-          eyebrow={`${modeLabel} · entraînement`}
-          verdict={passed ? "Réussi" : "Pas encore : vise 70 %"}
-          pct={pct}
+        <FinDeSession
+          epreuve={surTitreSession(REJOUER.surTitre(mode), total, minutes)}
+          titre={title ?? REJOUER.titre}
+          meta={REJOUER.horsClassement}
           score={score}
           total={total}
-          meta={`${score} bonne${score > 1 ? "s" : ""} réponse${score > 1 ? "s" : ""} sur ${total}`}
-          actions={
+          review={review}
+          jour={jour}
+          ajoutes={total}
+          ia={total > 0 ? <CopyForAi review={review} score={score} total={total} kind="retake" size="action" onError={setError} /> : null}
+          notes={
+            error ? (
+              <p role="alert" className="m-0 text-sm text-pen">
+                {error}
+              </p>
+            ) : null
+          }
+          liens={
             <button type="button" className="ink-link" onClick={backToMenu}>
-              Retour aux essais
+              {REJOUER.retour}
             </button>
           }
         >
-          {total > 0 && <CopyForAi review={review} score={score} total={total} kind="retake" onError={setError} />}
-          {error && (
-            <p role="alert" className="m-0 text-sm text-pen">
-              {error}
-            </p>
-          )}
-        </ResultHero>
-
-        <TopicBreakdown review={review} />
-
-        <ReviewSection review={review} />
+          <TopicBreakdown review={review} />
+          <ReviewSection review={review} />
+        </FinDeSession>
       </section>
     );
   }
@@ -320,22 +333,20 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
         secondsLeft={secondsLeft}
         actions={
           <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={askEnd}>
-            {busy ? "Envoi…" : "Terminer"}
+            {busy ? REMETTRE.envoi : REMETTRE.court}
           </button>
         }
       />
 
       {confirmEnd && (
         <div role="alert" className="card-quiet rl-in flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="m-0 text-[14px]">
-            Encore <b>{unanswered}</b> question{unanswered > 1 ? "s" : ""} sans réponse. Terminer quand même ?
-          </p>
+          <p className="m-0 text-[14px]">{REMETTRE.confirmer(unanswered)}</p>
           <div className="flex gap-2">
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmEnd(false)}>
-              Continuer
+              {REMETTRE.continuer}
             </button>
             <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => void submit()}>
-              Terminer
+              {REMETTRE.bouton}
             </button>
           </div>
         </div>
@@ -359,7 +370,7 @@ export function MockExamRetake({ examId, durationMinutes, wrongCount, totalCount
               next={
                 last ? (
                   <button type="button" className="btn btn-primary rl-press" disabled={busy} onClick={askEnd}>
-                    Terminer <ArrowRight size={16} aria-hidden />
+                    {REMETTRE.bouton} <ArrowRight size={16} aria-hidden />
                   </button>
                 ) : (
                   <button type="button" className="btn btn-primary rl-press" onClick={() => setIdx((i) => i + 1)}>

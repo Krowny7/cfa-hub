@@ -1,7 +1,9 @@
-import { initials } from "@/components/classement/format";
+import { SceauPerso } from "@/components/adn/SceauPerso";
 
-// Avatar rond : photo de profil, sinon initiales sur fond papier. Sans état :
-// utilisable côté serveur comme côté client.
+// Identité d'un joueur : sa photo de profil, sinon son sceau d'initiales
+// (règle 4 : l'encre est le travail, le métal la récompense ; ailleurs que
+// dans le rang, l'identité est un sceau d'encre). Sans état : utilisable
+// côté serveur comme côté client.
 export function Avatar({ src, name, size = 36, className = "" }: { src: string | null | undefined; name: string; size?: number; className?: string }) {
   if (src) {
     return (
@@ -10,12 +12,8 @@ export function Avatar({ src, name, size = 36, className = "" }: { src: string |
     );
   }
   return (
-    <span
-      aria-hidden
-      className={"grid shrink-0 place-items-center rounded-full border border-line bg-surface-2 font-bold text-muted " + className}
-      style={{ width: size, height: size, fontSize: Math.max(10, Math.round(size * 0.32)) }}
-    >
-      {initials(name)}
+    <span aria-hidden className={"inline-flex shrink-0 " + className} style={{ width: size, height: size }}>
+      <SceauPerso nom={name} taille={size} />
     </span>
   );
 }

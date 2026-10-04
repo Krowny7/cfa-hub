@@ -3,6 +3,7 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { DOMAINS } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import type { MyRank } from "@/components/classement/types";
+import { VERROU } from "@/lib/voice";
 
 const ICONS = { BarChart3, ScrollText, Globe2, Landmark } as const;
 
@@ -52,7 +53,7 @@ export function HowItWorks() {
         <b className="text-white">L&apos;ELO fixe ton palier.</b> Il bouge à chaque duel et examen blanc classé, selon ton résultat et l&apos;écart de niveau.
       </p>
       <p>
-        <b className="text-white">La maîtrise ouvre le haut.</b> Ta précision moyenne sur les 10 matières dessine le halo du badge et verrouille{" "}
+        <b className="text-white">{VERROU}</b> Ta précision moyenne sur les 10 matières dessine le halo du badge et verrouille{" "}
         {locks.map((t, i) => (
           <span key={t.key}>
             {t.name} ({t.lock} %){i < locks.length - 2 ? ", " : i === locks.length - 2 ? " et " : "."}
@@ -60,7 +61,7 @@ export function HowItWorks() {
         ))}
       </p>
       <p>
-        <b className="text-white">{PLACEMENT_GAMES} parties de placement.</b> Ton ELO y bouge plus vite ; ton rang s&apos;affiche ensuite.
+        <b className="text-white">{PLACEMENT_GAMES} parties pour trouver ta place.</b> Ton ELO y bouge plus vite ; ton rang s&apos;affiche ensuite.
       </p>
     </div>
   );

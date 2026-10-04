@@ -19,7 +19,7 @@ type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
 
 // Profil d'un joueur (espace Classement) : en-tête (niveau sur une ligne,
-// une seule action : Défier), rang en carte sombre, le résumé des questions
+// une seule action : Défier), panneau du rang (Geste), le résumé des questions
 // répondues (« traits tracés »), puis trophées et progression.
 export default async function PersonProfilePage({ params }: PageProps) {
   const { id } = await params;

@@ -5,6 +5,8 @@ import { fmtAgo, fmtShortDate, signed } from "@/components/classement/format";
 import { ReviewDuelRow } from "@/components/duel/parts";
 import { DUEL_QUESTIONS, DUEL_REVIEW_DAYS, reviewLeftLabel } from "@/lib/duels";
 import type { DuelSummary } from "@/lib/rating";
+import { DUEL } from "@/lib/voice";
+import { CLASSEMENT, motIssue, teDefie } from "@/lib/voice-z2a";
 
 function nameOf(d: DuelSummary) {
   return d.opponentName?.trim() || (d.opponentId ? "Un joueur" : "Adversaire à trouver");
@@ -16,10 +18,10 @@ function OpenRow({ d }: { d: DuelSummary }) {
     d.status === "active"
       ? [`Contre ${name}`, "Reprendre", true]
       : d.incoming
-        ? [`${name} te défie`, "Relever", true]
+        ? [teDefie(name), "Relever", true]
         : d.opponentId
           ? [`En attente de ${name}`, "Voir", false]
-          : ["Recherche d'un adversaire", "Voir", false];
+          : [DUEL.trouver, "Voir", false];
   return (
     <li className="rl-row flex items-center gap-3 rounded-[12px] px-2 py-2.5">
       <Avatar src={d.opponentAvatar} name={name} size={32} />
@@ -37,7 +39,7 @@ function OpenRow({ d }: { d: DuelSummary }) {
 function RecentRow({ d }: { d: DuelSummary }) {
   const name = nameOf(d);
   const res = d.won === true ? "V" : d.won === false ? "D" : "=";
-  const label = d.won === true ? "Victoire" : d.won === false ? "Défaite" : "Égalité";
+  const label = motIssue(d.won);
   return (
     <li>
       <Link href={`/duel/${d.id}`} className="rl-row grid grid-cols-[26px_minmax(0,1fr)_auto_44px] items-center gap-3 rounded-[12px] px-2 py-2.5">
@@ -69,10 +71,10 @@ export function DuelsPanel({ open, recent, nowIso }: { open: DuelSummary[]; rece
   if (open.length === 0 && recent.length === 0) {
     return (
       <div className="max-w-[560px]">
-        <p className="t-h3">Pas encore de duel</p>
-        <p className="t-small mt-1">30 questions type examen, les mêmes pour les deux. Le meilleur score gagne, puis le plus rapide.</p>
+        <p className="t-h3">{CLASSEMENT.duelsVide}</p>
+        <p className="t-small mt-1">{CLASSEMENT.duelsVideTexte}</p>
         <Link href="/duel" className="ink-link mt-4 inline-block">
-          Lancer le premier
+          {CLASSEMENT.duelsLancer}
         </Link>
       </div>
     );
@@ -95,7 +97,7 @@ export function DuelsPanel({ open, recent, nowIso }: { open: DuelSummary[]; rece
             ))}
           </ul>
         ) : (
-          <p className="t-small px-2">Aucun duel en cours.</p>
+          <p className="t-small px-2">{CLASSEMENT.enCoursVide}</p>
         )}
       </section>
 
@@ -104,7 +106,7 @@ export function DuelsPanel({ open, recent, nowIso }: { open: DuelSummary[]; rece
           <span>
             À revoir{toReview.length > 0 && <span className="font-mono font-normal"> · {toReview.length}</span>}
           </span>
-          <span className="font-normal normal-case tracking-normal">{DUEL_REVIEW_DAYS} jours après chaque duel</span>
+          <span className="font-normal normal-case tracking-normal">{CLASSEMENT.aRevoirSous(DUEL_REVIEW_DAYS)}</span>
         </p>
         {toReview.length ? (
           <ul className="flex flex-col gap-0.5">
@@ -122,7 +124,7 @@ export function DuelsPanel({ open, recent, nowIso }: { open: DuelSummary[]; rece
             ))}
           </ul>
         ) : (
-          <p className="t-small px-2">Aucun duel ces {DUEL_REVIEW_DAYS} derniers jours.</p>
+          <p className="t-small px-2">{CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)}</p>
         )}
         {older.length > 0 && (
           <>
@@ -135,7 +137,7 @@ export function DuelsPanel({ open, recent, nowIso }: { open: DuelSummary[]; rece
           </>
         )}
         <Link href="/duel" className="mt-2 inline-flex w-fit items-center gap-1.5 px-2 text-[13px] font-semibold text-muted hover:text-white">
-          Tous tes duels <ArrowRight size={14} aria-hidden />
+          {CLASSEMENT.tousDuels} <ArrowRight size={14} aria-hidden />
         </Link>
       </section>
     </div>

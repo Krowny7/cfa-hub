@@ -208,8 +208,8 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
         <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
         {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
         {d.daily && (
-          <div className="rl-in flex min-w-0 lg:col-span-4 [&>*]:flex-1 lg:[&>a]:flex lg:[&>a]:flex-col lg:[&>a>:last-child]:mt-auto" style={{ animationDelay: ".06s" }}>
-            <DefiTile daily={d.daily} nowIso={d.nowIso} />
+          <div className="rl-in flex min-w-0 lg:col-span-4 [&>*]:flex-1" style={{ animationDelay: ".06s" }}>
+            <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
           </div>
         )}
       </div>

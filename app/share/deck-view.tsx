@@ -1,6 +1,7 @@
 import { RichText } from "@/components/RichText";
 import { plural } from "@/components/ContentDetailHeader";
 import { ShareFooter, ShareHeader } from "@/app/share/views";
+import { PARTAGE } from "@/lib/voice-z3c";
 
 // Set de flashcards partagé (lecture seule) : recto et verso côte à côte.
 // À part de views.tsx pour que la page du QCM partagé ne charge pas KaTeX.
@@ -14,7 +15,7 @@ export function SharedDeckView({ title, cards }: { title: string; cards: SharedC
 
       {cards.length === 0 ? (
         <div className="card-quiet grid place-items-center px-6 py-14 text-center">
-          <p className="t-small">Aucune carte.</p>
+          <p className="t-small">{PARTAGE.videCartes}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -38,7 +39,7 @@ export function SharedDeckView({ title, cards }: { title: string; cards: SharedC
         </div>
       )}
 
-      <ShareFooter line="Révise ces cartes en répétition espacée." />
+      <ShareFooter line={PARTAGE.cartes} />
     </div>
   );
 }

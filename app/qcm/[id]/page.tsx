@@ -17,6 +17,7 @@ import {
 } from "@/components/ContentDetailHeader";
 import { ContentItemSettings } from "@/components/ContentItemSettings";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
+import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import type { QuizQuestion, Visibility } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -135,7 +136,12 @@ export default async function QuizSetPage({ params }: PageProps) {
     explanation: canEditQuestions ? q.explanation : undefined,
   })) as QuizQuestion[];
 
-  const done = isOfficial ? await countDone(supabase, user.id, initialQuestions.map((q) => q.id)) : null;
+  // questions déjà réussies (QCM Système) et traits du jour (lecture de la
+  // barre du haut, en cache) : l'anneau sous la copie
+  const [done, traitsJour] = await Promise.all([
+    isOfficial ? countDone(supabase, user.id, initialQuestions.map((q) => q.id)) : Promise.resolve(null),
+    traitsDuJour(user.id),
+  ]);
 
   const parts = splitTitle(set.title);
   const subject = subjectOfFolder(folderName) ?? subjectOfTitle(set.title);
@@ -166,6 +172,7 @@ export default async function QuizSetPage({ params }: PageProps) {
         title={set.title}
         official={isOfficial}
         done={done}
+        traitsJour={traitsJour}
         settingsSlot={
           isOwner ? (
             <ContentItemSettings

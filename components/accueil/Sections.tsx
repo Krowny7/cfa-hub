@@ -36,7 +36,7 @@ export function pickTiles(d: AccueilData): Candidate[] {
   if (d.daily) {
     const s = d.daily.status;
     const score = s === "playing" ? 95 : s === "todo" ? 80 : s === "done" ? 40 : 10;
-    out.push({ key: "defi", score, node: <DefiTile daily={d.daily} nowIso={d.nowIso} className="h-full" /> });
+    out.push({ key: "defi", score, node: <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas className="h-full" /> });
   }
   if (d.mockExam && d.mockExam.daysLeft <= EXAM_SOON_DAYS) out.push({ key: "exam", score: d.mockExam.daysLeft <= 1 ? 85 : 50, node: <ExamTile exam={d.mockExam} /> });
   if (d.reviewDuel) {

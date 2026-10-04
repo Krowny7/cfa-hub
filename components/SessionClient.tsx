@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, CheckCircle2, Flame, Layers, ListChecks, Repeat, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, Layers, ListChecks, Repeat, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { saveAnswerResult } from "@/lib/session-stats";
 import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
@@ -16,12 +16,19 @@ import {
   PauseCard,
   PauseToggle,
   QuestionCard,
-  ResultHero,
   ReviewSection,
   RunnerBar,
   Seg,
 } from "@/components/session/parts";
-import type { ReviewQuestion } from "@/components/session/review";
+import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
+import { FinDeSession } from "@/components/session/FinDeSession";
+import { FinDePasse } from "@/components/session/FinDePasse";
+import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { Icone } from "@/components/adn/icons";
+import { Batons } from "@/components/adn/Batons";
+import { joursEncre, surTitreSession, type EtatJour } from "@/lib/voice";
+import { COPIE_BLANCHE, EPREUVE, REPONSE, serieSession } from "@/lib/voice-z3";
 
 // Session du jour : 15 minutes, QCM mélangés (corrigés à chaque question) ou
 // flashcards ordonnées par la répétition espacée.
@@ -49,6 +56,8 @@ export type SessionDemo = {
   secondsLeft?: number;
   paused?: boolean;
   log?: ReviewQuestion[];
+  /** durée de la session (s), pour le sur-titre de la copie */
+  duree?: number;
 };
 
 const SESSION_SECONDS = 15 * 60;
@@ -88,14 +97,22 @@ export function SessionClient({
   qcmSets,
   flashSets,
   streak = 0,
+  etatJour = "attente",
+  traitsJour = null,
   demo,
 }: {
   qcmSets: SetOption[];
   flashSets: SetOption[];
+  /** jours d'encre (même calcul que l'accueil) */
   streak?: number;
+  /** le trait du jour : fait, en attente, ou encre sèche (le soir, rien encore) */
+  etatJour?: EtatJour;
+  /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
+  traitsJour?: number | null;
   demo?: SessionDemo;
 }) {
   const supabase = useMemo(() => createClient(), []);
+  const traits = useTraitsDuJour(traitsJour);
 
   const [phase, setPhase] = useState<Phase>(demo?.phase ?? "setup");
   const [mode, setMode] = useState<Mode>(demo?.mode ?? "qcm");
@@ -135,6 +152,12 @@ export function SessionClient({
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<number | null>(null);
+  // durée réelle de la session, figée à la fin (sur-titre de la copie)
+  const [dureeS, setDureeS] = useState<number | null>(demo?.duree ?? null);
+  // un trait tracé ici aujourd'hui : la ligne de série le dit au retour à « Préparer »
+  const [traceIci, setTraceIci] = useState(false);
+  const jourIci: EtatJour = traceIci ? "fait" : etatJour;
+  const serieIci = traceIci && etatJour !== "fait" ? streak + 1 : streak;
 
   const activeSets = mode === "qcm" ? qcmSets : flashSets;
   const isOfficial = qcmSets.find((s) => s.id === selSetId)?.isOfficial ?? false;
@@ -239,7 +262,7 @@ export function SessionClient({
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          setPhase("done");
+          finir();
           return 0;
         }
         return prev - 1;
@@ -278,9 +301,15 @@ export function SessionClient({
     setPhase("active");
   }
 
+  // La fin : la durée réelle est figée dans le même rendu que la copie.
+  function finir() {
+    setDureeS(sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : null);
+    setPhase("done");
+  }
+
   function endSession() {
     if (timerRef.current) clearInterval(timerRef.current);
-    setPhase("done");
+    finir();
   }
 
   async function validateChoice() {
@@ -307,6 +336,9 @@ export function SessionClient({
     ]);
 
     saveAnswerResult(selSetId, setTitle, "qcm", isCorrect ? 1 : 0, 1);
+    // une réponse corrigée = un trait (le logo vivant avance)
+    if (!demo) poserTrait(1);
+    setTraceIci(true);
 
     if (isOfficial) {
       try {
@@ -465,16 +497,11 @@ export function SessionClient({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
-            <p className="t-small m-0 inline-flex items-center gap-1.5">
-              {streak > 0 ? (
-                <>
-                  <Flame size={15} aria-hidden /> Série de {streak} jour{streak > 1 ? "s" : ""} : garde-la vivante.
-                </>
-              ) : (
-                "Une session par jour suffit à lancer ta série."
-              )}
+            <p className="t-small m-0 inline-flex items-center gap-2.5">
+              {(serieIci > 0 || jourIci === "fait") && <Batons jours={serieIci} jour={jourIci} height={18} max={2} />}
+              {serieSession(serieIci, jourIci)}
             </p>
-            <button type="button" className="btn btn-primary btn-lg rl-press" disabled={!canStart} onClick={startSession}>
+            <button type="button" className="btn btn-primary btn-lg rl-press w-full sm:w-auto" disabled={!canStart} onClick={startSession}>
               Démarrer · 15 min <ArrowRight size={17} aria-hidden />
             </button>
           </div>
@@ -483,13 +510,12 @@ export function SessionClient({
     );
   }
 
-  // ── RÉSUMÉ ────────────────────────────────────────────────────────────────
+  // ── RÉSUMÉ : la copie corrigée (QCM), la fin de passe (flashcards) ──
 
   if (phase === "done") {
-    const qcmPct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : null;
     const flashTotal = totalReviewed + totalAgain;
-    const flashPct = flashTotal > 0 ? Math.round((totalReviewed / flashTotal) * 100) : null;
-    const actions = (
+    const minutes = dureeS ? Math.max(1, Math.round(dureeS / 60)) : null;
+    const liens = (
       <>
         <button type="button" className="ink-link" onClick={() => setPhase("setup")}>
           Relancer une session
@@ -500,56 +526,51 @@ export function SessionClient({
       </>
     );
 
+    // rien de répondu : pas de copie, une page blanche et la relance
+    if (mode === "qcm" ? totalAnswered === 0 : flashTotal === 0) {
+      return (
+        <section className="card-quiet rl-in mx-auto grid w-full max-w-[660px] gap-4 px-6 py-10 text-center" aria-label="Session terminée">
+          <p className="t-eyebrow m-0">{EPREUVE.daily}</p>
+          <h2 className="t-h1 m-0">{COPIE_BLANCHE.titre}</h2>
+          <p className="t-small m-0">{COPIE_BLANCHE.ligne}</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">{liens}</div>
+        </section>
+      );
+    }
+
     if (mode === "qcm") {
       return (
         <div className="rl-page">
-          <ResultHero
-            eyebrow={`Session du jour · ${setTitle || "QCM"}`}
-            verdict={totalAnswered > 0 ? "Session terminée" : "Aucune question répondue"}
-            pct={qcmPct}
+          <FinDeSession
+            epreuve={surTitreSession(EPREUVE.daily, totalAnswered, minutes)}
+            titre={setTitle ? cleanTopic(setTitle) : EPREUVE.qcm}
+            meta={xpEarned > 0 ? `+${xpEarned} XP` : undefined}
             score={totalCorrect}
             total={totalAnswered}
-            meta={
-              totalAnswered > 0
-                ? `${totalAnswered} question${totalAnswered > 1 ? "s" : ""} · ${totalCorrect} juste${totalCorrect > 1 ? "s" : ""}`
-                : "Relance une session quand tu veux."
-            }
-            chips={
-              xpEarned > 0 ? (
-                <span className="chip chip-quiet chip-sm">
-                  <Sparkles size={13} aria-hidden /> +{xpEarned} XP
-                </span>
-              ) : undefined
-            }
-            actions={actions}
+            review={log}
+            jour={traits}
+            ajoutes={totalAnswered}
+            ia={log.length > 0 ? <CopyForAi review={log} score={totalCorrect} total={totalAnswered} kind="daily" size="action" /> : null}
+            liens={liens}
           >
-            {log.length > 0 && <CopyForAi review={log} score={totalCorrect} total={totalAnswered} kind="daily" />}
-          </ResultHero>
-          <ReviewSection review={log} />
+            <ReviewSection review={log} />
+          </FinDeSession>
         </div>
       );
     }
 
     return (
       <div className="rl-page">
-        <ResultHero
-          eyebrow={`Session du jour · ${setTitle || "Flashcards"}`}
-          verdict={flashTotal > 0 ? "Session terminée" : "Aucune carte révisée"}
-          pct={flashPct}
-          score={totalReviewed}
+        <FinDePasse
+          surTitre={`${EPREUVE.daily} · ${setTitle ? cleanTopic(setTitle) : "Flashcards"}`}
+          sues={totalReviewed}
           total={flashTotal}
-          meta={
-            flashTotal > 0 ? (
-              <>
-                {totalReviewed} carte{totalReviewed > 1 ? "s" : ""} sue{totalReviewed > 1 ? "s" : ""}
-                {totalAgain > 0 ? ` · ${totalAgain} à revoir demain` : ""}
-              </>
-            ) : (
-              "Relance une session quand tu veux."
-            )
-          }
-          actions={actions}
-        />
+          aRevoir={totalAgain}
+          jour={traits}
+          className="mx-auto w-full max-w-[660px]"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">{liens}</div>
+        </FinDePasse>
       </div>
     );
   }
@@ -569,9 +590,9 @@ export function SessionClient({
       status={status}
       actions={
         <>
-          {streak > 0 && (
-            <span className="t-micro hidden items-center gap-1 font-semibold sm:inline-flex" title={`Série de ${streak} jours`}>
-              <Flame size={13} aria-hidden /> {streak}
+          {serieIci > 0 && (
+            <span className="t-micro hidden items-center gap-1 font-semibold sm:inline-flex" title={joursEncre(serieIci)}>
+              <Icone nom="serie" size={14} /> {serieIci}
             </span>
           )}
           <PauseToggle paused={isPaused} onToggle={() => setIsPaused((p) => !p)} />
@@ -608,7 +629,7 @@ export function SessionClient({
                 {showCorr ? (
                   <p className={"m-0 inline-flex items-center gap-2 text-[15px] font-semibold " + (right ? "" : "text-pen")} aria-live="polite">
                     {right ? <Check size={17} aria-hidden /> : <X size={17} aria-hidden />}
-                    {right ? "Bonne réponse" : "Pas cette fois"}
+                    {right ? REPONSE.juste : REPONSE.rature}
                     {lastXpGain !== null && lastXpGain > 0 && <span className="chip chip-quiet chip-sm ml-1 text-white">+{lastXpGain} XP</span>}
                   </p>
                 ) : (

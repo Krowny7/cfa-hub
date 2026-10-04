@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Flag, Minus, Swords, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Minus, X } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { segThumbStyle } from "@/components/classement/Seg";
 import { DuelAiCopy } from "@/components/duel/DuelAiCopy";
 import { InkWatermark } from "@/components/duel/parts";
+import { CopieCoches, type MarqueDuel } from "@/components/duel/CopieCoches";
+import { Icone } from "@/components/adn/icons";
+import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
 import { clock, decisiveQuestion, duelTopicLabel, reviewHasOpponent, type DuelReviewItem, type DuelState } from "@/lib/duels";
 
 type Filter = "errors" | "all";
@@ -32,12 +35,14 @@ function dayLabel(iso: string | null) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
 }
 
-type Mark = "ok" | "ko" | "none";
+type Mark = MarqueDuel;
 const markOf = (answered: boolean, correct: boolean): Mark => (correct ? "ok" : answered ? "ko" : "none");
 
-// Revue d'un duel terminé (/duel/<id>?revue=1) : le bilan des deux copies en
-// une bande, « Copier pour l'IA » en carte sombre, puis les questions avec
-// ta réponse, la bonne, l'explication et la réponse de l'adversaire.
+// « Revoir la partie » (/duel/<id>?revue=1) : les deux copies en coches
+// (un trait d'encre par bonne réponse, la croix du correcteur par rature, la
+// question décisive entourée au stylo rouge), « Copier pour l'IA » en carte
+// sombre, puis les questions avec ta réponse, la bonne, l'explication et la
+// réponse de l'adversaire. Voix « Le Trait » : ratures, nulle, page propre.
 export function DuelReview({ state, review, initialFilter }: Props) {
   const me = state.me;
   const them = state.them;
@@ -56,7 +61,7 @@ export function DuelReview({ state, review, initialFilter }: Props) {
 
   const won = finished && state.winnerId === me.id;
   const draw = finished && state.winnerId === null;
-  const verdict = !finished ? (state.status === "declined" ? "Défi annulé" : "Duel expiré") : won ? "Victoire" : draw ? "Match nul" : "Défaite";
+  const verdict = !finished ? (state.status === "declined" ? PARTIE.annule : PARTIE.expireTitre) : motIssue(won ? true : draw ? null : false);
   // Duel clos sans résultat : la date où tu l'as joué (pas celle de l'expiration)
   const day = dayLabel(finished ? state.finishedAt ?? me.finishedAt : me.finishedAt ?? state.finishedAt);
 
@@ -66,6 +71,7 @@ export function DuelReview({ state, review, initialFilter }: Props) {
   const themOnly = theyPlayed ? review.filter((r) => !r.isCorrect && r.theirIsCorrect).length : 0;
   const decisive = theyPlayed ? decisiveQuestion(review) : null;
   const decisiveItem = decisive ? review.find((r) => r.position === decisive.position) ?? null : null;
+  const decisiveIx = decisive ? review.findIndex((r) => r.position === decisive.position) : -1;
 
   function jump(position: number) {
     const target = review.find((r) => r.position === position);
@@ -85,11 +91,9 @@ export function DuelReview({ state, review, initialFilter }: Props) {
           <ArrowLeft size={15} aria-hidden /> Retour au duel
         </Link>
         <section className="card-hero grid gap-3 p-6 md:p-8">
-          <p className="kicker m-0">Revue du duel</p>
-          <h1 className="t-h1 m-0">Correction indisponible</h1>
-          <p className="t-body m-0 max-w-[540px] text-muted">
-            La correction s&apos;ouvre quand le duel est terminé pour vous deux. Si c&apos;est déjà le cas, recharge la page dans un instant.
-          </p>
+          <p className="kicker m-0">{PARTIE.revoir}</p>
+          <h1 className="t-h1 m-0">{PARTIE.revueVide}</h1>
+          <p className="t-body m-0 max-w-[540px] text-muted">{PARTIE.revueVideTexte}</p>
         </section>
       </div>
     );
@@ -104,7 +108,8 @@ export function DuelReview({ state, review, initialFilter }: Props) {
         </Link>
         <div className="grid gap-2">
           <p className="kicker m-0 flex items-center gap-1.5">
-            <Swords size={14} aria-hidden /> Revue du duel{day ? ` · ${day}` : ""}
+            <Icone nom="duel" size={14} /> {PARTIE.revoir}
+            {day ? ` · ${day}` : ""}
           </p>
           <h1 className="t-h1 m-0">{them ? `Contre ${theirName}` : "Duel au hasard"}</h1>
           <p className="t-small m-0 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -136,38 +141,40 @@ export function DuelReview({ state, review, initialFilter }: Props) {
 
       {/* Les deux copies, question par question */}
       <section className="card-quiet grid gap-4 p-5 md:p-6" aria-label="Les deux copies, question par question">
-        <ScoreStrip
+        <CopieStrip
           label="Toi"
           score={myScore}
           total={total}
-          marks={review.map((r) => ({ position: r.position, mark: markOf(r.selectedIndex !== null, r.isCorrect) }))}
-          onJump={jump}
-          decisive={decisive?.position ?? null}
+          marks={review.map((r) => markOf(r.selectedIndex !== null, r.isCorrect))}
+          onPick={(i) => jump(review[i].position)}
+          entoure={decisiveIx}
+          numbered={!theyPlayed}
         />
         {hasOpp &&
           (theyPlayed ? (
-            <ScoreStrip
+            <CopieStrip
               label={theirName}
               score={theirScore ?? review.filter((r) => r.theirIsCorrect).length}
               total={total}
-              marks={review.map((r) => ({ position: r.position, mark: markOf(!!r.theirAnswered, !!r.theirIsCorrect) }))}
-              onJump={jump}
-          decisive={decisive?.position ?? null}
+              marks={review.map((r) => markOf(!!r.theirAnswered, !!r.theirIsCorrect))}
+              onPick={(i) => jump(review[i].position)}
+              entoure={decisiveIx}
+              numbered
             />
           ) : (
-            <p className="t-small m-0">{theirName} n&apos;a pas joué : victoire par forfait.</p>
+            <p className="t-small m-0">{PARTIE.forfaitEux(theirName)}</p>
           ))}
         {theyPlayed && (
           <div className="grid gap-3 border-t border-line pt-3.5">
             <p className="t-micro m-0 flex flex-wrap gap-x-4 gap-y-1">
               <span>
-                Ratées par vous deux <b className="font-mono font-semibold text-white">{both}</b>
+                {PARTIE.communes} <b className="font-mono font-semibold text-white">{both}</b>
               </span>
               <span>
-                Juste pour toi seul <b className="font-mono font-semibold text-white">{meOnly}</b>
+                {PARTIE.justeToi} <b className="font-mono font-semibold text-white">{meOnly}</b>
               </span>
               <span>
-                Juste pour {theirTag} seul <b className="font-mono font-semibold text-white">{themOnly}</b>
+                {PARTIE.justeLui(theirTag)} <b className="font-mono font-semibold text-white">{themOnly}</b>
               </span>
             </p>
             {decisive && decisiveItem && (
@@ -176,14 +183,10 @@ export function DuelReview({ state, review, initialFilter }: Props) {
                 onClick={() => jump(decisive.position)}
                 className="group flex w-fit max-w-full items-center gap-2.5 text-left text-[13.5px] leading-snug"
               >
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-[7px] bg-white px-2 py-0.5 text-[12px] font-bold text-black">
-                  <Flag size={12} aria-hidden /> Décisive
-                </span>
+                <DecisiveMark />
                 <span className="min-w-0">
                   <b className="font-mono font-semibold">Q{decisive.position + 1}</b> · {duelTopicLabel(decisiveItem.topic)} :{" "}
-                  <span className="text-muted">
-                    {decisive.forMe ? "là où tu es passé devant pour de bon" : `là où ${theirName} est passé devant pour de bon`}
-                  </span>
+                  <span className="text-muted">{PARTIE.decisive(decisive.forMe, theirName)}</span>
                 </span>
                 <ArrowRight size={14} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden />
               </button>
@@ -205,8 +208,8 @@ export function DuelReview({ state, review, initialFilter }: Props) {
             <span aria-hidden className="seg-thumb" style={segThumbStyle(filter === "errors" ? 0 : 1, 2)} />
             {(
               [
-                ["errors", "Mes erreurs", errors.length],
-                ["all", "Tout", review.length],
+                ["errors", PARTIE.mesRatures, errors.length],
+                ["all", PARTIE.tout, review.length],
               ] as const
             ).map(([key, label, n]) => (
               <button
@@ -230,8 +233,8 @@ export function DuelReview({ state, review, initialFilter }: Props) {
 
         {items.length === 0 ? (
           <div className="card-quiet grid gap-1 p-6 text-center">
-            <p className="t-h3 m-0">Sans faute</p>
-            <p className="t-small m-0">Aucune erreur dans ce duel. Tu peux tout relire dans « Tout ».</p>
+            <p className="t-h3 m-0">{PARTIE.pagePropre}</p>
+            <p className="t-small m-0">{PARTIE.pagePropreTexte}</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -246,29 +249,31 @@ export function DuelReview({ state, review, initialFilter }: Props) {
       <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-start sm:justify-between">
         <DuelAiCopy review={review} ctx={{ myScore, theirScore, total }} layout="buttons" />
         <Link href="/duel" className="inline-flex w-fit items-center gap-1.5 pt-2.5 text-[13.5px] font-semibold text-muted hover:text-white">
-          Tous tes duels <ArrowRight size={14} aria-hidden />
+          {CLASSEMENT.tousDuels} <ArrowRight size={14} aria-hidden />
         </Link>
       </div>
     </div>
   );
 }
 
-/** Une ligne de la bande : nom, une case par question, score. */
-function ScoreStrip({
+/** Une copie : nom, une coche par question (chacune mène à sa correction), score. */
+function CopieStrip({
   label,
   score,
   total,
   marks,
-  onJump,
-  decisive = null,
+  onPick,
+  entoure = -1,
+  numbered = false,
 }: {
   label: string;
   score: number;
   total: number;
-  marks: { position: number; mark: Mark }[];
-  onJump: (position: number) => void;
-  /** position de la question décisive (cerclée) */
-  decisive?: number | null;
+  marks: Mark[];
+  onPick: (index: number) => void;
+  /** index de la question décisive (entourée au stylo rouge), -1 sinon */
+  entoure?: number;
+  numbered?: boolean;
 }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 sm:grid-cols-[120px_minmax(0,1fr)_64px]">
@@ -277,23 +282,33 @@ function ScoreStrip({
         <b className="font-semibold">{score}</b>
         <span className="text-muted">/{total}</span>
       </span>
-      <div className="col-span-2 flex gap-[2px] sm:order-2 sm:col-span-1 sm:gap-[3px]">
-        {marks.map(({ position, mark }) => (
-          <button
-            key={position}
-            type="button"
-            onClick={() => onJump(position)}
-            title={`Question ${position + 1}${position === decisive ? " · décisive" : ""}`}
-            aria-label={`${label}, question ${position + 1} : ${mark === "ok" ? "juste" : mark === "ko" ? "ratée" : "sans réponse"}${position === decisive ? ", question décisive" : ""}`}
-            className={
-              "h-3.5 min-w-0 flex-1 rounded-[3px] transition-transform hover:scale-y-125 " +
-              (mark === "ok" ? "bg-white" : mark === "ko" ? "bg-pen/80" : "bg-surface-2 shadow-[inset_0_0_0_1px_var(--line-2)]") +
-              (position === decisive ? " outline outline-2 outline-offset-2 outline-white" : "")
-            }
-          />
-        ))}
-      </div>
+      <CopieCoches
+        className="col-span-2 sm:order-2 sm:col-span-1"
+        marks={marks}
+        label={`${label}, question par question`}
+        onPick={onPick}
+        entoure={entoure >= 0 ? entoure : null}
+        numbered={numbered}
+        height={26}
+      />
     </div>
+  );
+}
+
+/** « Décisive » : la question entourée au stylo rouge, comme dans les coches (la main du correcteur). */
+function DecisiveMark({ small = false }: { small?: boolean }) {
+  return (
+    <span
+      className={
+        "inline-flex shrink-0 items-center gap-1.5 rounded-[7px] font-sans font-bold text-pen shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--pen)_40%,transparent)] " +
+        (small ? "px-1.5 py-px text-[11.5px]" : "px-2 py-0.5 text-[12px]")
+      }
+    >
+      <svg aria-hidden width={small ? 11 : 13} height={small ? 11 : 13} viewBox="-8 -8 16 16" className="overflow-visible">
+        <ellipse cx={0} cy={0} rx={5.2} ry={6.6} fill="none" stroke="currentColor" strokeWidth={1.6} transform="rotate(-14)" />
+      </svg>
+      {PARTIE.decisiveMot}
+    </span>
   );
 }
 
@@ -339,11 +354,7 @@ function ReviewCard({
             Q{q.position + 1}
             <span className="font-sans"> · {duelTopicLabel(q.topic)}</span>
           </span>
-          {decisive && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-[7px] bg-white px-1.5 py-px font-sans text-[11.5px] font-bold text-black">
-              <Flag size={11} aria-hidden /> Décisive
-            </span>
-          )}
+          {decisive && <DecisiveMark small />}
         </p>
         <div className="flex shrink-0 items-center gap-1.5">
           <span
@@ -353,12 +364,12 @@ function ReviewCard({
             }
           >
             {mine === "ok" ? <Check size={13} aria-hidden /> : mine === "ko" ? <X size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
-            {mine === "ok" ? "Juste" : mine === "ko" ? "Faux" : "Sans réponse"}
+            {PARTIE.etiquette(mine)}
           </span>
           {showTheirs && (
             <span className="inline-flex items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-medium text-muted shadow-[inset_0_0_0_1px_var(--line)]">
               {theirTag} :{" "}
-              {theirs === "ok" ? "juste" : theirs === "ko" ? "faux" : "sans réponse"}
+              {PARTIE.marque(theirs)}
             </span>
           )}
         </div>
