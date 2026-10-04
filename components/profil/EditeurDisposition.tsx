@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Columns2, EyeOff, Film, GalleryHorizontal, GripVertical, ImagePlus, ListChecks, Plus, Radar, RectangleHorizontal, Trash2, TrendingUp, Trophy, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns2, EyeOff, GalleryHorizontal, GripVertical, ImagePlay, ImagePlus, ListChecks, Plus, Radar, RectangleHorizontal, Trash2, TrendingUp, Trophy, Users } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import {
@@ -11,8 +11,7 @@ import {
   LEGENDE_MAX,
   MEDIAS_MAX,
   MEDIA_MAX_OCTETS,
-  VIDEO_MAX_SECONDES,
-  VIDEO_TYPES,
+  estGif,
   estMedia,
   infoBloc,
   nouvelId,
@@ -29,33 +28,12 @@ import {
 // au doigt) ; chaque bloc se met sur toute la ligne ou sur une demi-ligne ;
 // on masque un bloc (il reste proposé dessous) ou on retire un média.
 // Les médias : une image (telle quelle si elle est raisonnable, sinon
-// réduite à 2 400 px sans perte visible) ou une vidéo courte (30 s, 8 Mo),
-// envoyées dans le dossier du joueur.
+// réduite à 2 400 px sans perte visible) ou un GIF (tel quel, il garde son
+// animation ; 8 Mo au plus), envoyés dans le dossier du joueur.
 
 const Mo = (n: number) => `${Math.round(n / (1024 * 1024))} Mo`;
 
 class Refus extends Error {}
-
-/** Proportion et durée d'une vidéo, lues dans le navigateur. */
-function lireVideo(file: File): Promise<{ duree: number; ratio: number }> {
-  return new Promise((res, rej) => {
-    const url = URL.createObjectURL(file);
-    const v = document.createElement("video");
-    v.preload = "metadata";
-    v.muted = true;
-    const fin = () => URL.revokeObjectURL(url);
-    v.onloadedmetadata = () => {
-      const r = { duree: v.duration, ratio: v.videoWidth && v.videoHeight ? v.videoWidth / v.videoHeight : 16 / 9 };
-      fin();
-      res(r);
-    };
-    v.onerror = () => {
-      fin();
-      rej(new Refus("Cette vidéo ne se lit pas dans ton navigateur : choisis un MP4."));
-    };
-    v.src = url;
-  });
-}
 
 /** Une image prête à l'envoi : telle quelle, ou réduite (2 400 px au plus). */
 async function reduireImage(file: File) {
@@ -72,18 +50,8 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Refus("Connecte-toi pour ajouter un média.");
   const id = nouvelId();
-  let blob: Blob, ratio: number, ext: string, type: "image" | "video", contentType: string;
-  if (file.type.startsWith("video/")) {
-    if (!VIDEO_TYPES.includes(file.type)) throw new Refus("Vidéo MP4, WebM ou MOV seulement.");
-    if (file.size > MEDIA_MAX_OCTETS) throw new Refus(`Vidéo trop lourde : ${Mo(MEDIA_MAX_OCTETS)} au plus.`);
-    const m = await lireVideo(file);
-    if (Number.isFinite(m.duree) && m.duree > VIDEO_MAX_SECONDES + 0.5) throw new Refus(`Vidéo trop longue : ${VIDEO_MAX_SECONDES} secondes au plus.`);
-    blob = file;
-    ratio = m.ratio;
-    type = "video";
-    ext = file.type === "video/webm" ? "webm" : file.type === "video/quicktime" ? "mov" : "mp4";
-    contentType = file.type;
-  } else if (file.type === "image/gif") {
+  let blob: Blob, ratio: number, ext: string, contentType: string;
+  if (file.type === "image/gif") {
     // un GIF garde son animation : envoyé tel quel
     if (file.size > MEDIA_MAX_OCTETS) throw new Refus(`GIF trop lourd : ${Mo(MEDIA_MAX_OCTETS)} au plus.`);
     const bmp = await createImageBitmap(file).catch(() => null);
@@ -91,15 +59,13 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
     ratio = bmp.width / bmp.height;
     bmp.close();
     blob = file;
-    type = "image";
     ext = "gif";
     contentType = "image/gif";
   } else if (file.type.startsWith("image/") || /[.]hei[cf]$/i.test(file.name)) {
     if (file.size > 30 * 1024 * 1024) throw new Refus("Image trop lourde (30 Mo au plus avant réduction).");
     ({ blob, ratio, ext, contentType } = await reduireImage(file));
-    type = "image";
   } else {
-    throw new Refus("Choisis une image ou une vidéo.");
+    throw new Refus("Choisis une image ou un GIF.");
   }
   const path = `${auth.user.id}/${id}.${ext}`;
   const up = await supabase.storage.from(BUCKET_MEDIAS).upload(path, blob, { contentType, upsert: false });
@@ -111,7 +77,7 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
     throw new Error(m);
   }
   const url = supabase.storage.from(BUCKET_MEDIAS).getPublicUrl(path).data.publicUrl;
-  return { k: "media", id, type, url, ratio, legende: null, w: "demi" };
+  return { k: "media", id, type: "image", url, ratio, legende: null, w: "demi" };
 }
 
 const cle = (b: Bloc) => (estMedia(b) ? b.id : b.k);
@@ -130,12 +96,14 @@ export function EditeurDisposition({
   onEnvoi?: (enCours: boolean) => void;
 }) {
   const fichier = useRef<HTMLInputElement | null>(null);
+  const fichierGif = useRef<HTMLInputElement | null>(null);
   const [envoi, setEnvoi] = useState<{ enCours: boolean; texte: string } | null>(null);
   const [prise, setPrise] = useState<string | null>(null); // poignée tenue : la case devient déplaçable
   const [tire, setTire] = useState<number | null>(null);
   const [cible, setCible] = useState<number | null>(null);
 
   const medias = disposition.filter(estMedia).length;
+  const plein = medias >= MEDIAS_MAX || !!envoi?.enCours;
   const masques = BLOCS.filter((b) => !disposition.some((x) => x.k === b.k));
 
   const deplacer = (de: number, vers: number) => {
@@ -154,7 +122,7 @@ export function EditeurDisposition({
       setEnvoi({ enCours: false, texte: `${MEDIAS_MAX} médias au plus sur ta page.` });
       return;
     }
-    setEnvoi({ enCours: true, texte: file.type.startsWith("video/") ? "Envoi de la vidéo…" : "Envoi de l'image…" });
+    setEnvoi({ enCours: true, texte: file.type === "image/gif" ? "Envoi du GIF…" : "Envoi de l'image…" });
     onEnvoi?.(true);
     try {
       const b = await envoyerMedia(supabase, file);
@@ -165,6 +133,7 @@ export function EditeurDisposition({
     } finally {
       onEnvoi?.(false);
       if (fichier.current) fichier.current.value = "";
+      if (fichierGif.current) fichierGif.current.value = "";
     }
   }
 
@@ -173,7 +142,7 @@ export function EditeurDisposition({
       <ol className="m-0 grid list-none grid-cols-2 gap-2 p-0" aria-label="Blocs de ta page, dans l'ordre">
         {disposition.map((b, i) => {
           const media = estMedia(b) ? b : null;
-          const nom = media ? (media.type === "image" ? "Image" : "Vidéo") : infoBloc((b as BlocFixe).k).nom;
+          const nom = media ? (estGif(media) ? "GIF" : "Image") : infoBloc((b as BlocFixe).k).nom;
           const demiOk = peutDemi(b);
           return (
             <li
@@ -235,12 +204,8 @@ export function EditeurDisposition({
               {media && (
                 <>
                   <div className="overflow-hidden rounded-[9px] bg-[var(--well)]">
-                    {media.type === "image" ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- vignette du média envoyé
-                      <img src={media.url} alt="" className="block h-[72px] w-full object-cover" />
-                    ) : (
-                      <video src={media.url} muted playsInline preload="metadata" className="block h-[72px] w-full bg-black object-cover" />
-                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element -- vignette du média envoyé */}
+                    <img src={media.url} alt="" className="block h-[72px] w-full object-cover" />
                   </div>
                   <label className="sr-only" htmlFor={`leg-${media.id}`}>
                     Légende
@@ -302,11 +267,13 @@ export function EditeurDisposition({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <input ref={fichier} type="file" accept="image/*,video/mp4,video/webm,video/quicktime" className="sr-only" id="rl-media" onChange={(e) => ajouter(e.target.files?.[0])} />
-        <label htmlFor="rl-media" aria-disabled={medias >= MEDIAS_MAX || envoi?.enCours} className={"btn btn-secondary btn-sm cursor-pointer " + (medias >= MEDIAS_MAX || envoi?.enCours ? "pointer-events-none opacity-50" : "")}>
+        <input ref={fichier} type="file" accept="image/*" className="sr-only" id="rl-media" onChange={(e) => ajouter(e.target.files?.[0])} />
+        <input ref={fichierGif} type="file" accept="image/gif" className="sr-only" id="rl-gif" onChange={(e) => ajouter(e.target.files?.[0])} />
+        <label htmlFor="rl-media" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
           <ImagePlus size={15} aria-hidden /> Ajouter une image
-          <span aria-hidden className="text-muted">ou</span>
-          <Film size={15} aria-hidden /> une vidéo
+        </label>
+        <label htmlFor="rl-gif" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
+          <ImagePlay size={15} aria-hidden /> Ajouter un GIF
         </label>
         {envoi && (
           <span role="status" className={"text-[12.5px] font-medium " + (envoi.enCours ? "" : "text-pen")}>
@@ -315,7 +282,7 @@ export function EditeurDisposition({
         )}
       </div>
       <p className="t-micro m-0">
-        {medias}/{MEDIAS_MAX} médias. Les images sont réduites à l&apos;envoi ; les vidéos (MP4, WebM ou MOV) font {VIDEO_MAX_SECONDES} secondes et {Mo(MEDIA_MAX_OCTETS)} au plus, et tournent en boucle sans le son.
+        {medias}/{MEDIAS_MAX} médias. Les images trop grandes sont réduites à l&apos;envoi ; les GIF gardent leur animation et font {Mo(MEDIA_MAX_OCTETS)} au plus.
       </p>
     </div>
   );

@@ -40,7 +40,7 @@ import {
 // verticalement) ou un motif. La couleur : libre. Les
 // cadres du sceau se gagnent aux questions posées (le compte est affiché).
 // La disposition : l'ordre et la largeur des blocs de la page, et ses
-// images et vidéos (EditeurDisposition). Le serveur revalide tout à
+// images et GIF (EditeurDisposition). Le serveur revalide tout à
 // l'enregistrement.
 
 const VISIBILITES: { key: Visibilite; label: string; aide: string }[] = [
@@ -344,7 +344,7 @@ export function EditeurProfil({
           </div>
         </Section>
 
-        <Section titre="Disposition de ta page" aide="Range les blocs dans l'ordre que tu veux, sur toute la ligne ou à deux côte à côte (sur grand écran). Ajoute tes images et tes vidéos.">
+        <Section titre="Disposition de ta page" aide="Range les blocs dans l'ordre que tu veux, sur toute la ligne ou à deux côte à côte (sur grand écran). Ajoute tes images et tes GIF.">
           <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} supabase={supabase} onEnvoi={setEnvoiMedia} />
         </Section>
 

@@ -22,23 +22,18 @@ export function GrilleBlocs({ disposition, rendus }: { disposition: Disposition;
 }
 
 /**
- * Une image ou une vidéo du joueur : à sa proportion (la place est réservée
- * avant le chargement), 640 px de haut au plus. La vidéo tourne en boucle,
- * sans le son (les commandes permettent de le mettre).
+ * Une image (ou un GIF) du joueur : à sa proportion (la place est réservée
+ * avant le chargement), 640 px de haut au plus.
  */
 export function MediaProfil({ b }: { b: BlocMedia }) {
   const w = 1200;
   const h = Math.round(w / b.ratio);
-  const alt = b.legende ?? (b.type === "image" ? "Image du joueur" : "Vidéo du joueur");
+  const alt = b.legende ?? "Image du joueur";
   return (
     <figure className="m-0 flex flex-col gap-2.5">
       <div className="card grid place-items-center overflow-hidden bg-[var(--well)]">
-        {b.type === "image" ? (
-          // eslint-disable-next-line @next/next/no-img-element -- image du joueur, déjà réduite à l'envoi
-          <img src={b.url} alt={alt} width={w} height={h} loading="lazy" decoding="async" className="block h-auto max-h-[640px] w-full object-contain" />
-        ) : (
-          <video src={b.url} aria-label={alt} width={w} height={h} autoPlay muted loop playsInline controls preload="metadata" className="block h-auto max-h-[640px] w-full bg-black object-contain" />
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi */}
+        <img src={b.url} alt={alt} width={w} height={h} loading="lazy" decoding="async" className="block h-auto max-h-[640px] w-full object-contain" />
       </div>
       {b.legende && <figcaption className="t-small px-1">{b.legende}</figcaption>}
     </figure>

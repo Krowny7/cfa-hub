@@ -1,6 +1,6 @@
 // La disposition d'un profil : l'ordre des blocs sous l'en-tête, leur
 // largeur (toute la ligne, ou une demi-ligne côte à côte), ceux qu'on
-// masque, et les médias du joueur (images, vidéos courtes).
+// masque, et les médias du joueur (images et GIF).
 // Les médias sont envoyés par le navigateur dans le bucket public
 // `profil-medias`, dans le dossier du joueur ; la base borne le poids de
 // chaque fichier, les types permis et le nombre de fichiers par joueur
@@ -24,7 +24,7 @@ export type BlocFixe = { k: CleBloc; w: Largeur };
 export type BlocMedia = {
   k: "media";
   id: string;
-  type: "image" | "video";
+  type: "image";
   url: string;
   /** largeur / hauteur, pour réserver la place avant le chargement */
   ratio: number;
@@ -41,17 +41,15 @@ export const BUCKET_MEDIAS = "profil-medias";
 export const MEDIAS_MAX = 6;
 /** poids d'un fichier envoyé (la base refuse au-delà) */
 export const MEDIA_MAX_OCTETS = 8 * 1024 * 1024;
-export const VIDEO_MAX_SECONDES = 30;
 export const LEGENDE_MAX = 80;
 /** côté le plus long d'une image, après réduction dans le navigateur */
 export const IMAGE_MAX_PX = 2400;
 
-export const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const EXT_IMAGE = /[.](jpe?g|png|webp|gif)$/i;
-const EXT_VIDEO = /[.](mp4|webm|mov)$/i;
 
 export const estMedia = (b: Bloc): b is BlocMedia => b.k === "media";
+export const estGif = (b: BlocMedia) => /[.]gif$/i.test(b.url);
 export const infoBloc = (k: CleBloc) => BLOCS.find((b) => b.k === k)!;
 /** Un bloc peut-il se mettre en demi-largeur ? (les médias : toujours) */
 export const peutDemi = (b: Bloc) => estMedia(b) || infoBloc(b.k).demi;
@@ -90,11 +88,11 @@ export function validerDisposition(raw: unknown, prefixe: string | null | "lectu
     const w: Largeur = b.w === "demi" ? "demi" : "plein";
     if (b.k === "media") {
       const id = typeof b.id === "string" && /^[a-z0-9]{6,24}$/.test(b.id) ? b.id : null;
-      const type = b.type === "video" ? "video" : b.type === "image" ? "image" : null;
+      const type = b.type === "image" ? "image" : null;
       const url = typeof b.url === "string" ? b.url.trim() : "";
       const dossierOk = prefixe === "lecture" ? /^https:[/][/][^/]+[/]storage[/]v1[/]object[/]public[/]profil-medias[/]/.test(url) : !!prefixe && url.startsWith(prefixe);
       const ok =
-        id && type && dossierOk && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && (type === "image" ? EXT_IMAGE : EXT_VIDEO).test(url) && !vus.has("m:" + id);
+        id && type && dossierOk && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && EXT_IMAGE.test(url) && !vus.has("m:" + id);
       if (!ok || medias >= MEDIAS_MAX) {
         mediaRefuse = true;
         continue;

@@ -34,7 +34,7 @@ type RatingRow = Pick<Rating, "elo" | "games_played">;
 // leur visibilité, niveau, bio, LinkedIn selon sa visibilité, son rang en
 // grand), puis les blocs dans l'ordre et à la largeur choisis par le joueur
 // (vitrine, radar des matières, amis, questions répondues, trophées,
-// progression, ses images et vidéos ; GrilleBlocs). Sur son propre profil : personnaliser, et « voir
+// progression, ses images et GIF ; GrilleBlocs). Sur son propre profil : personnaliser, et « voir
 // comme les autres » (?vue=inconnu ou ?vue=ami) qui rend la page telle
 // qu'un autre joueur la voit, LinkedIn compris.
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
