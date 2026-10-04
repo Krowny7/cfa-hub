@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { Radar, RadarLegend } from "@/components/ui/Radar";
 import { SectionTitle } from "@/components/ui/Titles";
 import { Avatar } from "@/components/classement/Avatar";
 import { classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { TIERS } from "@/lib/ranks";
-import { VITRINE, couleurCss, type ProfilStats, type StyleProfil, type VitrineKey } from "@/lib/profil/catalogue";
+import { VITRINE, type ProfilStats, type StyleProfil, type VitrineKey } from "@/lib/profil/catalogue";
 import type { AmiLite } from "@/lib/profil/donnees";
 import { nombre, pct } from "@/lib/voice";
 
-// Le bas du profil : la vitrine (trois pièces choisies par le joueur), son
-// radar des matières (s'il le montre) et ses amis. Sans état.
+// Le bas du profil : la vitrine (trois pièces choisies par le joueur) et ses
+// amis (le radar : RadarComparable). Sans état.
 
 type Rang = { tierIndex: number; division: string | null; elo: number; mastery: number | null };
 
@@ -78,56 +77,6 @@ export function Vitrine({ style, stats, rang }: { style: StyleProfil; stats: Pro
         {keys.map((k) => (
           <Piece key={k} k={k} st={stats} rang={rang} />
         ))}
-      </div>
-    </section>
-  );
-}
-
-/**
- * Le radar des 10 matières du joueur, à sa couleur, face à la moyenne des
- * joueurs ; à côté, les matières rangées de la plus sûre à la moins sûre,
- * en barres (sa précision, un repère au crayon pour la moyenne, l'écart).
- */
-export function RadarProfil({ stats, moyennes, accent, nom, moi }: { stats: ProfilStats; moyennes: Record<string, number | null>; accent: string; nom: string; moi: boolean }) {
-  const couleur = couleurCss(accent);
-  const byKey = new Map(stats.matieres.map((m) => [m.key, m]));
-  const axes = SUBJECTS.map((x) => ({ label: x.code, me: byKey.get(x.key)?.pct ?? null, avg: moyennes[x.key] ?? null }));
-  const lignes = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, me: byKey.get(x.key)?.pct ?? null, avg: moyennes[x.key] ?? null })).sort(
-    (a, b) => (b.me ?? -1) - (a.me ?? -1),
-  );
-  const mesurees = axes.filter((a) => a.me !== null).length;
-  return (
-    <section className="rl-section" aria-labelledby="profil-radar" style={styleAccent(accent)}>
-      <SectionTitle title={<span id="profil-radar">{moi ? "Mes matières" : "Ses matières"}</span>} action={<RadarLegend couleur={couleur} />} />
-      <div className="card grid items-center gap-8 p-4 sm:p-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
-        <div className="mx-auto w-full max-w-[560px]">
-          <Radar axes={axes} size={340} couleur={couleur} title={`Les 10 matières de ${nom} face à la moyenne des joueurs`} />
-        </div>
-        <ol className="m-0 flex list-none flex-col gap-2.5 p-0" aria-label="Matières, de la plus sûre à la moins sûre">
-          {lignes.map((l) => {
-            const ecart = l.me !== null && l.avg !== null ? Math.round(l.me - l.avg) : null;
-            return (
-              <li key={l.key} className="grid grid-cols-[92px_minmax(0,1fr)_74px] items-center gap-3">
-                <span className={"truncate text-[13px] " + (l.me === null ? "text-muted" : "font-semibold")}>{l.nom}</span>
-                <span className="relative block h-2 rounded-full bg-[color-mix(in_oklab,var(--ink)_7%,transparent)]">
-                  {l.me !== null && <span className={`absolute inset-y-0 left-0 rounded-full ${s.filet}`} style={{ width: `${Math.max(2, l.me)}%` }} />}
-                  {l.avg !== null && <span aria-hidden className="absolute -top-1 bottom-[-4px] w-[2px] rounded-full bg-[var(--ink-2)] opacity-70" style={{ left: `calc(${l.avg}% - 1px)` }} title={`moyenne ${l.avg}`} />}
-                </span>
-                <span className="text-right font-mono text-[12px] tabular-nums">
-                  {l.me === null ? (
-                    <span className="text-muted">—</span>
-                  ) : (
-                    <>
-                      <b className="font-semibold">{l.me}</b>
-                      {ecart !== null && ecart !== 0 && <span className={ecart < 0 ? "text-pen" : "text-muted"}>{` ${ecart > 0 ? "+" : "−"}${Math.abs(ecart)}`}</span>}
-                    </>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-        {mesurees === 0 && <p className="t-small m-0 text-center lg:col-span-2">Aucune matière mesurée pour l&apos;instant : le radar se dessine avec les sessions d&apos;entraînement.</p>}
       </div>
     </section>
   );

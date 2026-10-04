@@ -16,7 +16,8 @@ import { AnswerSummary } from "@/components/moi/AnswerSummary";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { Icone } from "@/components/adn/icons";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
-import { ListeAmis, RadarProfil, Vitrine } from "@/components/profil/Vitrine";
+import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
+import { RadarComparable } from "@/components/profil/RadarComparable";
 import { rankFor } from "@/lib/ranks";
 import { AmiBouton } from "@/components/profil/AmiBouton";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
@@ -55,7 +56,9 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const commeMoi = isMe && !vue;
 
   const admin = tryAdmin();
-  const [leaderboardRank, masteries, answers, { style }, stats, relation, lienBrut, amis, nomBrut, moyennes] = await Promise.all([
+  // celui qui regarde le profil d'un autre : ses matières et sa couleur, pour « Me comparer »
+  const autreJoueur = !isMe;
+  const [leaderboardRank, masteries, answers, { style }, stats, relation, lienBrut, amis, nomBrut, moyennes, mesStats, monStyle] = await Promise.all([
     getLeaderboardRank(supabase, id),
     masteryByUser(admin, [id]),
     // résumé seulement (matières et sources, sans passages) ; les réponses
@@ -70,6 +73,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     // prénom et nom : la base ne les rend que s'ils sont visibles pour moi
     lireNom(supabase, id),
     admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
+    autreJoueur ? statsProfil(user.id, supabase) : Promise.resolve(null),
+    autreJoueur ? lireStyle(supabase, user.id) : Promise.resolve(null),
   ]);
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
@@ -201,7 +206,17 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
         <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />
       </div>
 
-      {style.radar && <RadarProfil stats={stats} moyennes={moyennes} accent={style.accent} nom={display} moi={commeMoi} />}
+      {style.radar && (
+        <RadarComparable
+          matieres={stats.matieres}
+          moyennes={moyennes}
+          accent={style.accent}
+          nom={display}
+          moi={isMe}
+          miennes={mesStats ? mesStats.matieres : null}
+          monAccent={monStyle ? monStyle.style.accent : null}
+        />
+      )}
 
       {amis && <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} />}
 

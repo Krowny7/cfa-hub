@@ -12,9 +12,14 @@ import { useId } from "react";
 //   l'écart à la moyenne (en rouge quand tu es en dessous).
 // Les axes `soon` (domaines pas encore ouverts) sont en pointillés et
 // marqués « bientôt ». `couleur` : la couleur du joueur (encre par défaut).
+// `comparaison` : une seconde forme par-dessus (celui qui regarde un autre
+// profil : « toi »), d'un trait plein à sa couleur, points vides ; sous
+// chaque matière, les deux valeurs. La moyenne s'efface pendant ce temps.
 // Sans état (useId seulement) : utilisable côté serveur comme côté client.
 
 export type RadarAxis = { label: string; me: number | null; avg: number | null; soon?: boolean };
+/** Une seconde forme à superposer : une valeur par axe (null : pas mesurée). */
+export type RadarComparaison = { valeurs: (number | null)[]; couleur: string; label: string };
 
 const f = (n: number) => n.toFixed(1);
 
@@ -23,11 +28,13 @@ export function Radar({
   size = 360,
   title = "Toi face à la moyenne des joueurs",
   couleur = "var(--ink)",
+  comparaison = null,
 }: {
   axes: RadarAxis[];
   size?: number;
   title?: string;
   couleur?: string;
+  comparaison?: RadarComparaison | null;
 }) {
   const uid = "rad" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const n = axes.length;
@@ -42,7 +49,10 @@ export function Radar({
 
   const mesures = axes.map((a, i) => ({ i, v: a.me })).filter((m): m is { i: number; v: number } => m.v !== null);
   const mePts = mesures.map((m) => P(m.i, Math.max(2, m.v)));
-  const hasAvg = axes.some((a) => a.avg !== null);
+  const hasAvg = !comparaison && axes.some((a) => a.avg !== null);
+  const autrePts = comparaison
+    ? comparaison.valeurs.map((v, i) => (v !== null && v !== undefined ? P(i, Math.max(2, v)) : null)).filter((p): p is readonly [number, number] => p !== null)
+    : [];
   const avgPts = axes.map((a, i) => (a.avg !== null ? P(i, a.avg) : null)).filter((p): p is readonly [number, number] => p !== null);
 
   return (
@@ -80,7 +90,18 @@ export function Radar({
         <path d={path(avgPts, avgPts.length === n)} fill="none" stroke="var(--ink-2)" strokeOpacity={0.75} strokeWidth={1.3} strokeDasharray="3.5 4" strokeLinejoin="round" />
       )}
 
-      {/* toi : le lavis, le trait au pinceau, les points */}
+      {/* la comparaison (celui qui regarde) : sous la forme du joueur, trait plein, points vides */}
+      {comparaison && autrePts.length >= 2 && (
+        <g style={{ color: comparaison.couleur }}>
+          {autrePts.length >= 3 && <path d={path(autrePts)} fill="currentColor" fillOpacity={0.1} />}
+          <path d={path(autrePts, autrePts.length >= 3)} pathLength={100} className="rl-drawline" fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" />
+          {autrePts.map(([x, y], k) => (
+            <circle key={k} cx={f(x)} cy={f(y)} r={3.2} fill="var(--surface)" stroke="currentColor" strokeWidth={1.8} />
+          ))}
+        </g>
+      )}
+
+      {/* le joueur : le lavis, le trait au pinceau, les points */}
       <g className="rl-radar">
         {mePts.length >= 3 && <path d={path(mePts)} fill={`url(#${uid}l)`} />}
         {mePts.length >= 2 && (
@@ -102,7 +123,8 @@ export function Radar({
         const x = c + Math.cos(ang) * (R + 26);
         const y = c + Math.sin(ang) * (R + 22);
         const anchor = Math.abs(Math.cos(ang)) < 0.2 ? "middle" : Math.cos(ang) > 0 ? "start" : "end";
-        const ecart = a.me !== null && a.avg !== null ? Math.round(a.me - a.avg) : null;
+        const ecart = !comparaison && a.me !== null && a.avg !== null ? Math.round(a.me - a.avg) : null;
+        const autre = comparaison ? (comparaison.valeurs[i] ?? null) : null;
         return (
           <g key={i}>
             {/* Tailles des étiquettes en CSS (.rl-radar-l / .rl-radar-v) : plus
@@ -115,7 +137,13 @@ export function Radar({
                 {ecart !== null && ecart !== 0 ? (
                   <tspan style={{ fill: ecart < 0 ? "var(--pen)" : "var(--ink-2)", fontWeight: 600 }}>{` ${ecart > 0 ? "+" : "−"}${Math.abs(ecart)}`}</tspan>
                 ) : null}
-                {a.avg !== null ? <tspan fillOpacity={0.85}>{` · moy ${a.avg}`}</tspan> : ""}
+                {comparaison ? (
+                  <tspan style={{ fill: comparaison.couleur, fontWeight: 600 }}>{` · ${comparaison.label} ${autre === null ? "—" : autre}`}</tspan>
+                ) : a.avg !== null ? (
+                  <tspan fillOpacity={0.85}>{` · moy ${a.avg}`}</tspan>
+                ) : (
+                  ""
+                )}
               </tspan>
             </text>
           </g>
