@@ -1,13 +1,12 @@
 "use client";
 
-import { useId } from "react";
 import type { Run } from "@/lib/ficheLog";
 
 type Point = { x: number; y: number };
 
 const MODE_LABEL: Record<Run["mode"], string> = {
   page: "Quiz de page",
-  errors: "Mes erreurs",
+  errors: "Reprise des ratures",
   mixed: "Bilan aléatoire",
 };
 
@@ -34,18 +33,19 @@ function smoothPath(pts: Point[]) {
 
 const fmtDate = (d: Date) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-// Courbe des scores par série. Le tracé est un SVG étiré sur toute la largeur
-// (repère 0–100) ; les points, la grille et les libellés sont en HTML posés
-// en pourcentages, pour rester ronds et lisibles à toutes les largeurs.
+// Courbe des scores par quiz (« série » est réservé aux jours d'encre). Le
+// tracé est un SVG étiré sur toute la largeur (repère 0–100) : la grille au
+// crayon, la courbe à l'encre, sans dégradé dessous (Épure). Les points, la
+// grille et les libellés sont en HTML posés en pourcentages, pour rester
+// ronds et lisibles à toutes les largeurs.
 export function FicheProgressChart({ runs }: { runs: Run[] }) {
-  const gid = "fpc" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
 
   if (runs.length < 2) {
     return (
       <div className="card-quiet px-5 py-8 text-center t-small">
         {runs.length === 0
-          ? "Termine une série (au moins 5 questions) pour voir ta courbe de progression."
-          : "Une seule série pour l'instant — il en faut au moins deux pour tracer une courbe."}
+          ? "Termine un quiz (au moins 5 questions) : ta courbe se trace dès le deuxième."
+          : "Un seul quiz pour l'instant : il en faut deux pour tracer ta courbe."}
       </div>
     );
   }
@@ -54,13 +54,12 @@ export function FicheProgressChart({ runs }: { runs: Run[] }) {
   const yFor = (pct: number) => 100 - pct;
   const pts = runs.map((r, i) => ({ x: xFor(i), y: yFor(r.pct) }));
   const lineD = smoothPath(pts);
-  const areaD = `${lineD} L 100,100 L 0,100 Z`;
   const avg = Math.round(runs.reduce((s, r) => s + r.pct, 0) / runs.length);
   const last = runs[runs.length - 1];
 
   return (
     <div>
-      <div className="relative ml-7 mr-2 mt-2 h-[170px] md:h-[190px]" role="img" aria-label={`Progression des scores sur ${runs.length} séries, moyenne ${avg} %, dernière ${last.pct} %`}>
+      <div className="relative ml-7 mr-2 mt-2 h-[170px] md:h-[190px]" role="img" aria-label={`Progression des scores sur ${runs.length} quiz, moyenne ${avg} %, dernier ${last.pct} %`}>
         {/* grille */}
         {[0, 25, 50, 75, 100].map((g) => (
           <div key={g} className="absolute inset-x-0 border-t border-line" style={{ top: `${yFor(g)}%` }} aria-hidden>
@@ -74,13 +73,6 @@ export function FicheProgressChart({ runs }: { runs: Run[] }) {
           aria-hidden
         />
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible text-white" aria-hidden>
-          <defs>
-            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="currentColor" stopOpacity="0.13" />
-              <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d={areaD} fill={`url(#${gid})`} stroke="none" />
           <path
             d={lineD}
             fill="none"
@@ -117,7 +109,7 @@ export function FicheProgressChart({ runs }: { runs: Run[] }) {
         <span>{fmtDate(runs[0].date)}</span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-0 w-3.5 border-t border-dashed border-[color-mix(in_oklab,var(--ink)_55%,transparent)]" aria-hidden />
-          Seuil {THRESHOLD} % · moyenne {avg} % sur {runs.length} séries
+          Seuil {THRESHOLD} % · moyenne {avg} % sur {runs.length} quiz
         </span>
         <span>{fmtDate(last.date)}</span>
       </div>

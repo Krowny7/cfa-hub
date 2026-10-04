@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Copy, FileText, Headphones, Library } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { SubjectExplorer } from "@/components/reviser/SubjectExplorer";
 import { SubjectPanel } from "@/components/reviser/SubjectPanel";
 import { subjectRail } from "@/components/reviser/rail";
 import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
+import { ESPACES } from "@/lib/voice-z4";
 
 // Espace « Réviser ». Le point focal : les fiches (seule surface héros, seul
 // bouton plein) ; à côté, les autres formats en lignes calmes ; puis les 10
@@ -51,13 +53,13 @@ export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailabili
       <Link href="/fiches" className="card-hero rl-lift rl-in group flex min-h-[260px] flex-col gap-4 p-7 md:p-8 lg:col-span-7" aria-label="Ouvrir les fiches de révision">
         <span className="flex items-center justify-between gap-3">
           <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-surface-2">
-            <FileText size={21} />
+            <Icone nom="fiche" size={24} />
           </span>
           <span className="t-micro font-semibold">{count(fiches)}</span>
         </span>
         <span className="mt-auto flex flex-col gap-2">
           <span className="t-h1">Fiches de révision</span>
-          <span className="t-body max-w-[460px] text-muted">Une page de synthèse par thème, puis son quiz corrigé.</span>
+          <span className="t-body max-w-[460px] text-muted">{ESPACES.fichesTexte}</span>
         </span>
         <span className="btn btn-primary rl-press mt-2 w-fit">
           Ouvrir les fiches <ArrowRight size={16} aria-hidden />
@@ -65,15 +67,15 @@ export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailabili
       </Link>
 
       <nav aria-label="Autres formats" className="card rl-in flex flex-col justify-center divide-y divide-line overflow-hidden py-1 lg:col-span-5" style={{ animationDelay: ".08s" }}>
-        <FormatRow href="/courses" icon={<Headphones size={18} />} title="Cours complets" desc="Le deck intégral et son audio, environ une heure." meta={count(courses)} />
-        <FormatRow href="/flashcards" icon={<Copy size={18} />} title="Flashcards" desc="Répétition espacée : termes, formules, pièges." meta={count(cards)} />
-        <FormatRow href="/library" icon={<Library size={18} />} title="Bibliothèque" desc="Tous les fonds de révision au même endroit." />
+        <FormatRow href="/courses" icon={<Icone nom="cours" size={20} />} title="Cours complets" desc="Le deck intégral et son audio, environ une heure." meta={count(courses)} />
+        <FormatRow href="/flashcards" icon={<Icone nom="flashcards" size={20} />} title="Flashcards" desc="Répétition espacée : termes, formules, pièges." meta={count(cards)} />
+        <FormatRow href="/library" icon={<Icone nom="reviser" size={20} />} title="Bibliothèque" desc="Tous les fonds de révision au même endroit." />
       </nav>
     </div>
   );
 
   return (
-    <DomainSpace kicker="Réviser" title="Apprendre, à ton rythme" lead={lead}>
+    <DomainSpace kicker="Réviser" icon={<Icone nom="reviser" size={18} />} title={ESPACES.reviserTitre} lead={lead}>
       <section className="rl-section" aria-labelledby="reviser-matieres">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="reviser-matieres" className="t-h2 m-0">

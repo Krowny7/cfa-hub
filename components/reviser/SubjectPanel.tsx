@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, ChevronRight, Copy, FileText, Headphones } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
+import { pct } from "@/lib/voice";
+import { ESPACES } from "@/lib/voice-z4";
 import { COURSES } from "@/lib/courses";
 import { ficheInfo } from "@/components/reviser/shelves";
 import { SubjectGlyph } from "@/components/ui/SubjectGlyph";
@@ -72,7 +75,13 @@ export function SubjectPanel({ s, index, code }: { s: SubjectAvailability; index
             </p>
             <h3 className="t-h2 m-0 mt-1.5 [overflow-wrap:anywhere]">{s.name}</h3>
             <p className="t-small mt-1.5">
-              {s.pct === null ? "Maîtrise pas encore mesurée" : <><b className="font-semibold text-white">{s.pct} %</b> de maîtrise</>}
+              {s.pct === null ? (
+                ESPACES.maitriseAVenir
+              ) : (
+                <>
+                  <b className="font-semibold text-white">{pct(s.pct)}</b> de maîtrise · il reste {pct(100 - s.pct)}
+                </>
+              )}
               {weight && <> · {weight}</>}
             </p>
           </div>
@@ -85,21 +94,21 @@ export function SubjectPanel({ s, index, code }: { s: SubjectAvailability; index
       <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         <FormatTile
           href={s.fiche ? `/fiches/${s.fiche}` : null}
-          icon={<FileText size={18} />}
+          icon={<Icone nom="fiche" size={20} />}
           title="Fiche de révision"
           meta={fiche?.meta ?? ""}
           desc={fiche?.desc}
         />
         <FormatTile
           href={course ? `/courses/${course.slug}` : null}
-          icon={<Headphones size={18} />}
+          icon={<Icone nom="cours" size={20} />}
           title="Cours complet"
           meta={course ? `${course.chapters.length} modules · ${course.minutes} min d'audio` : ""}
           desc={firstModules}
         />
         <FormatTile
           href={s.flashcards}
-          icon={<Copy size={18} />}
+          icon={<Icone nom="flashcards" size={20} />}
           title="Flashcards"
           meta={s.flashcardSets ? `${s.flashcardSets} paquet${s.flashcardSets > 1 ? "s" : ""}` : ""}
           desc="Répétition espacée : termes, formules, pièges."

@@ -45,14 +45,19 @@ async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknow
 /**
  * Questions répondues aujourd'hui et sur la semaine, toutes sources
  * confondues : quiz des fiches (une ligne par réponse), sessions QCM,
- * sessions d'entraînement ciblé, examens blancs et leurs reprises.
+ * sessions d'entraînement ciblé, examens blancs et leurs reprises, duels
+ * réglés et copies rendues du défi du jour (daily_attempts, si la migration
+ * est appliquée ; sinon la lecture échoue et ne compte rien).
+ * Lit aussi les 8 derniers jours (série) : `activeDays`.
  */
 export async function loadActivity(supabase: Client, userId: string, now = new Date()): Promise<ActivityWeek> {
   const today = parisDay(now);
   const dow = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7;
   const monday = shiftDay(today, -dow);
-  // Un jour de marge : le lundi à Paris commence la veille au soir en UTC.
-  const since = new Date(shiftDay(monday, -1) + "T00:00:00Z").toISOString();
+  // Depuis le lundi, ou 8 jours en arrière (la série) si c'est plus tôt ; un
+  // jour de marge : le lundi à Paris commence la veille au soir en UTC.
+  const from = shiftDay(today, -8) < monday ? shiftDay(today, -8) : monday;
+  const since = new Date(shiftDay(from, -1) + "T00:00:00Z").toISOString();
 
   type DuelRow = {
     challenger_id: string;
@@ -64,7 +69,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     finished_at: string | null;
   };
 
-  const [fiche, qcm, practice, mock, retakes, duels] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily] = await Promise.all([
     safeRows<{ answered_at: string; is_correct: boolean }>(() =>
       supabase.from("quiz_answer_log").select("answered_at,is_correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
@@ -91,6 +96,11 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
         .gte("finished_at", since)
         .limit(100),
     ),
+    // Défi du jour : copies rendues (score rempli à la clôture seulement ;
+    // une copie en cours est ajoutée par withLiveDaily, sans sa justesse).
+    safeRows<{ finished_at: string; score: number | null; total: number | null }>(() =>
+      supabase.from("daily_attempts").select("finished_at,score,total").eq("user_id", userId).gte("finished_at", since).limit(20),
+    ),
   ]);
 
   const all: DatedCount[] = [
@@ -106,6 +116,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
         correct: Number(mine ? r.challenger_score : r.opponent_score) || 0,
       };
     }),
+    ...daily.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
   ];
 
   const byDay = new Map<string, { n: number; correct: number }>();
@@ -123,7 +134,50 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     const a = byDay.get(key);
     return { key, label, count: a?.n ?? 0, correct: a?.correct ?? 0, isToday: key === today, future: key > today };
   });
-  return { today: byDay.get(today)?.n ?? 0, days };
+  const activeDays = Array.from(byDay.entries())
+    .filter(([, a]) => a.n > 0)
+    .map(([k]) => k)
+    .sort();
+  return { today: byDay.get(today)?.n ?? 0, days, activeDays };
+}
+
+/**
+ * Recale la journée sur le défi du jour (getTodayDaily, qui compte les
+ * réponses données ; la justesse reste cachée jusqu'à la copie rendue) :
+ * - copie encore ouverte : ses réponses s'ajoutent (sinon l'anneau
+ *   reculerait d'autant en revenant sur l'accueil au milieu du défi) ;
+ * - copie rendue aujourd'hui : daily_attempts ne garde que le nombre de
+ *   questions du défi ; on retire celles laissées sans réponse.
+ */
+export function withLiveDaily(activity: ActivityWeek, daily: { status: string; answered: number; total?: number | null; day?: string } | null): ActivityWeek {
+  const todayKey0 = activity.days.find((x) => x.isToday)?.key;
+  if (daily && daily.status === "done" && daily.total && daily.answered < daily.total && (!daily.day || daily.day === todayKey0)) {
+    const off = Math.min(activity.today, daily.total - daily.answered);
+    if (off <= 0) return activity;
+    return { ...activity, today: activity.today - off, days: activity.days.map((x) => (x.isToday ? { ...x, count: Math.max(0, x.count - off) } : x)) };
+  }
+  const n = daily && daily.status === "playing" ? Math.max(0, daily.answered) : 0;
+  if (n === 0) return activity;
+  const days = activity.days.map((x) => (x.isToday ? { ...x, count: x.count + n } : x));
+  const todayKey = activity.days.find((x) => x.isToday)?.key;
+  const activeDays = todayKey && !(activity.activeDays ?? []).includes(todayKey) ? [...(activity.activeDays ?? []), todayKey] : activity.activeDays;
+  return { today: activity.today + n, days, activeDays };
+}
+
+/** Dernier jour (Paris) avec au moins une question répondue, toutes lectures confondues ; null si aucun. */
+export function lastActiveDay(candidates: (string | null | undefined)[]): string | null {
+  const keys = candidates.filter((x): x is string => !!x && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x)).sort();
+  return keys.length ? keys[keys.length - 1] : null;
+}
+
+/** Jours calendaires entre deux clés « AAAA-MM-JJ » (b − a). */
+export function daysBetweenKeys(a: string, b: string): number {
+  return Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86_400_000);
+}
+
+/** Heure de Paris (0–23). */
+export function parisHour(d: Date): number {
+  return Number(new Intl.DateTimeFormat("fr-FR", { hour: "numeric", hour12: false, timeZone: TZ }).format(d)) % 24;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,7 +219,7 @@ export async function loadErrors(supabase: Client, admin: Client | null, userId:
     if (set) perSet.set(set, (perSet.get(set) ?? 0) + 1);
   }
   const total = Array.from(perSet.values()).reduce((a, b) => a + b, 0);
-  if (total === 0) return { available: true, total: 0, bySubject: [] };
+  if (total === 0) return { available: true, total: 0, answered: states.size, bySubject: [] };
 
   const titles = new Map<string, string>();
   try {
@@ -183,7 +237,7 @@ export async function loadErrors(supabase: Client, admin: Client | null, userId:
     cur.count += n;
     perSubject.set(key, cur);
   }
-  return { available: true, total, bySubject: Array.from(perSubject.values()).sort((a, b) => b.count - a.count) };
+  return { available: true, total, answered: states.size, bySubject: Array.from(perSubject.values()).sort((a, b) => b.count - a.count) };
 }
 
 // ---------------------------------------------------------------------------

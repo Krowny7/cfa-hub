@@ -36,13 +36,15 @@ export async function middleware(request: NextRequest) {
   const exempt = ONBOARDING_EXEMPT.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (user && !exempt) {
+    // Seul le pseudo est exigé : la photo est facultative, le sceau
+    // d'initiales en tient lieu (premier trait, app/onboarding).
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username,avatar_url")
+      .select("username")
       .eq("id", user.id)
       .maybeSingle();
 
-    const incomplete = !profile?.username || !profile?.avatar_url;
+    const incomplete = !profile?.username;
     if (incomplete) {
       const onboardingUrl = new URL("/onboarding", request.url);
       onboardingUrl.searchParams.set("next", pathname + request.nextUrl.search);

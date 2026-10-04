@@ -1,16 +1,36 @@
 import type { RatingSource } from "@/lib/rating";
+import type { TodayDaily } from "@/lib/daily";
+import type { EtatJour } from "@/lib/voice";
+
+export type { TodayDaily } from "@/lib/daily";
+
+/** Un duel terminé, à revoir (lib/duels getReviewableDuels). */
+export type ReviewDuel = {
+  id: string;
+  opponentName: string | null;
+  myScore: number | null;
+  theirScore: number | null;
+  total: number;
+  myDelta: number | null;
+  /** true : gagné · false : perdu · null : nulle */
+  won: boolean | null;
+  finishedAt: string;
+};
 
 // Données de l'accueil, chargées par app/dashboard/page.tsx et passées telles
 // quelles aux composants de présentation (aussi rendus par l'aperçu
 // app/preview-da/accueil avec des données d'exemple).
 
 export type WeekDay = { key: string; label: string; count: number; correct: number; isToday: boolean; future: boolean };
-export type ActivityWeek = { today: number; days: WeekDay[] };
+/** `activeDays` : jours (Paris) avec au moins une réponse, sur les 8 derniers jours au moins (série). */
+export type ActivityWeek = { today: number; days: WeekDay[]; activeDays?: string[] };
 
 export type ErrorsSummary = {
   /** false si le journal des réponses n'est pas lisible (migration absente) */
   available: boolean;
   total: number;
+  /** questions de fiches déjà tentées (0 : jamais joué, « page propre » n'a pas de sens) */
+  answered?: number;
   bySubject: { key: string; short: string; count: number; href: string }[];
 };
 
@@ -59,13 +79,30 @@ export type TopicStat = {
 export type AccueilData = {
   /** pseudo (null si pas encore choisi) */
   name: string | null;
-  /** « Bonjour » ou « Bonsoir » */
+  /** « Bonjour » ou « Bonsoir » (repli : le titre suit l'anneau du jour, voir titreAccueil) */
   hello: string;
   /** « Samedi 3 octobre » */
   dateLabel: string;
+  /** jour de Paris, « AAAA-MM-JJ » (sceau du jour) */
+  dayKey: string;
+  /** heure de Paris, 0–23 (l'encre qui sèche le soir) */
+  hour: number;
   examDaysLeft: number | null;
   examDateLabel: string | null;
+  /** jours d'encre : aujourd'hui compris s'il est fait, sinon jusqu'à hier (calcStreakAndToday) */
   streak: number;
+  /** le bâton du jour : fait, en attente, ou sec le soir (etatDuJour) */
+  dayState: EtatJour;
+  /** déjà venu au moins une fois (une série perdue se dit « l'encre a séché ») */
+  seenBefore: boolean;
+  /** variante « retour » : JOURS_RETOUR jours ou plus sans activité */
+  returning: boolean;
+  /** défi du jour (lib/daily getTodayDaily) ; null : non chargé */
+  daily: TodayDaily | null;
+  /** le dernier duel terminé, encore frais (à revoir) */
+  reviewDuel: ReviewDuel | null;
+  /** instant du rendu (ISO), pour les échéances des tuiles */
+  nowIso: string;
   rating: {
     elo: number;
     gamesPlayed: number;

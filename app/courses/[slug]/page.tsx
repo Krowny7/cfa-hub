@@ -6,13 +6,17 @@ import { CourseView } from "./CourseView";
 // Page d'un cours complet : même architecture que les fiches (bucket privé,
 // URL signée), dans le bucket "courses". La configuration de chaque matière
 // (fichiers, chapitres de l'audio) est dans lib/courses.ts ; la mise en page
-// est dans CourseView.
+// est dans CourseView. Lien direct : ?module=N démarre le module N.
 export default async function CoursePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ module?: string | string[] }>;
 }) {
-  const { slug } = await params;
+  const [{ slug }, sp] = await Promise.all([params, searchParams ?? Promise.resolve(undefined)]);
+  const moduleParam = Number(Array.isArray(sp?.module) ? sp?.module[0] : sp?.module);
+  const startModule = Number.isInteger(moduleParam) && moduleParam > 0 ? moduleParam : null;
   const course = getCourse(slug);
   if (!course) notFound();
 
@@ -33,5 +37,5 @@ export default async function CoursePage({
   const audioUrl = audioRes.error ? null : (audioRes.data?.signedUrl ?? null);
   const downloadName = `${course.title.replace(/[^A-Za-z0-9]+/g, "_")}_Cours_Complet.pdf`;
 
-  return <CourseView course={course} pdfUrl={pdfUrl} audioUrl={audioUrl} downloadName={downloadName} />;
+  return <CourseView course={course} pdfUrl={pdfUrl} audioUrl={audioUrl} downloadName={downloadName} startModule={startModule} />;
 }

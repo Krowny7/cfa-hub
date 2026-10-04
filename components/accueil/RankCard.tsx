@@ -3,6 +3,8 @@ import { ArrowDown, ArrowUp, Lock } from "lucide-react";
 import { InkRing } from "@/components/ink/InkRing";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
+import { SOMMET, placement as placementLine, pointsAvant } from "@/lib/voice";
+import { maitriseRequise, verrouCourt } from "@/lib/voice-z1";
 import type { AccueilData } from "@/components/accueil/types";
 
 const SOURCE_LABEL = { duel: "au dernier duel", mock_exam: "au dernier examen blanc", placement: "en placement" } as const;
@@ -68,18 +70,18 @@ export function RankCard({ rating, mastery }: { rating: AccueilData["rating"]; m
           </span>
           <span className="mt-2 flex items-center gap-1.5 truncate text-[12px] text-[rgba(255,255,255,.6)]">
             {placement ? (
-              <>{rating.gamesPlayed}/{PLACEMENT_GAMES} parties de placement jouées</>
+              <>{placementLine(rating.gamesPlayed, PLACEMENT_GAMES)}</>
             ) : blocker ? (
               <>
-                <Lock size={12} className="flex-none" /> Maîtrise {blocker.lock} % requise pour {blocker.name}
+                <Lock size={12} className="flex-none" /> {verrouCourt(blocker.name, blocker.lock ?? 0)}
               </>
             ) : r.next && r.pointsToNext !== null ? (
               <>
-                {r.pointsToNext} {r.pointsToNext > 1 ? "points" : "point"} avant {r.next.name}
-                {r.next.lock !== null && mastery < r.next.lock ? ` · maîtrise ${r.next.lock} % requise` : ""}
+                {pointsAvant(r.pointsToNext, r.next.name)}
+                {r.next.lock !== null && mastery < r.next.lock ? ` · ${maitriseRequise(r.next.lock)}` : ""}
               </>
             ) : (
-              <>Tu es au sommet du classement.</>
+              <>{SOMMET}</>
             )}
           </span>
         </span>

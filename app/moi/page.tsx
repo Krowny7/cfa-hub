@@ -12,6 +12,8 @@ import { getSessionHistory } from "@/components/moi/history-data";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { countPlayers, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
+import { loadActivity, parisDay, parisHour } from "@/components/accueil/queries";
+import { etatDuJour } from "@/lib/voice";
 import type { MoiData } from "@/components/moi/types";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
@@ -54,7 +56,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, answers] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, answers, activity] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -62,17 +64,21 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     getLeaderboardRank(supabase, user.id),
     countPlayers(supabase),
     xpCall,
-    getFicheErrors(supabase, admin ?? supabase, user.id),
+    getFicheErrors(supabase, admin ?? supabase, user.id, now),
     supabase.from("group_memberships").select("group_id, study_groups(id,name,invite_code)").eq("user_id", user.id),
     getSessionHistory(supabase, user.id, now),
     // questions répondues, toutes sources : le client admin lit aussi les
     // réponses de duels (sans policy), toujours filtrées sur ce joueur
     getAnswerStats(admin ?? supabase, user.id, { privileged: !!admin, now }),
+    // questions répondues par jour : la série compte aussi les jours sans XP
+    // (même calcul que l'accueil)
+    loadActivity(supabase, user.id, new Date(now)),
   ]);
 
   const xpTotal = Number(profile?.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
-  const { streak } = calcStreakAndToday(xpDays);
+  const { streak, todayDone } = calcStreakAndToday(xpDays, { today: parisDay(new Date(now)), actifs: activity.activeDays });
+  const dayState = todayDone || activity.today > 0 ? "fait" : etatDuJour(0, parisHour(new Date(now)));
   const last30 = xpLastDays(xpDays, 30, new Date(now));
 
   const d: MoiData = {
@@ -81,6 +87,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     avatarUrl: profile?.avatar_url ?? null,
     examDate: profile?.exam_date ?? null,
     streak,
+    dayState,
     xpTotal,
     level: lvl.level,
     levelPct: Math.round(lvl.progressPct * 100),

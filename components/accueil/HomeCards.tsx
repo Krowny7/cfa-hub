@@ -1,129 +1,156 @@
 import Link from "next/link";
-import { ArrowRight, FileText, Headphones, Layers, ListChecks, Target, TriangleAlert } from "lucide-react";
-import { InkProgressRing } from "@/components/ui/InkRings";
-import { Tile } from "@/components/accueil/Tile";
-import { agoLabel, plural } from "@/components/accueil/format";
-import type { ErrorsSummary, ResumeItem } from "@/components/accueil/types";
+import { ArrowRight } from "lucide-react";
+import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
+import { Batons } from "@/components/adn/Batons";
+import { Icone, type IconeNom } from "@/components/adn/icons";
+import { SceauTenu } from "@/components/accueil/SceauTenu";
+import { ACCUEIL, ENCRE, joursEncre, jourJ, retour, titreAccueil } from "@/lib/voice";
+import { ligneSerie, REPRISE } from "@/lib/voice-z1";
+import { agoLabel } from "@/components/accueil/format";
+import type { AccueilData, ResumeItem } from "@/components/accueil/types";
 
-// Cartes « révision » de l'accueil : la prochaine action (le point focal de
-// la page) et les tuiles objectif du jour / à revoir. Sans état.
+// Le point focal de l'accueil (moments 1 et 2) : le titre qui dit l'anneau du
+// jour (« Encore 14 traits, Théo. »), la ligne de contexte (« J-212 · 6 jours
+// d'encre ») et les bâtons de la série ; à côté, l'anneau du jour en grand
+// (le logo qui se dessine avec toi, le sceau « TENU » posé à l'objectif) ;
+// juste dessous, la prochaine action (seule card-hero et seul bouton en
+// encre de l'écran). Sans état.
 
-const KIND_ICON = { fiche: FileText, qcm: ListChecks, flashcards: Layers, practice: Target } as const;
+const KIND_ICON: Record<ResumeItem["kind"], IconeNom> = { fiche: "fiche", qcm: "entrainer", flashcards: "flashcards", practice: "entrainer" };
 
-/** La prochaine action : seule card-hero et seul bouton en encre de l'écran. */
-export function ResumeHero({ resume, now }: { resume: ResumeItem | null; now?: number }) {
-  if (!resume) {
+/** Titre, contexte et bâtons. */
+export function JourHero({ d }: { d: AccueilData }) {
+  const titre = titreAccueil({ nom: d.name, repondues: d.activity.today, objectif: d.dailyGoal, heure: d.hour, serie: d.streak });
+  const jj = jourJ(d.examDaysLeft);
+  const sec = d.dayState === "sec";
+  return (
+    <div className="min-w-0">
+      <p className="t-eyebrow">{d.dateLabel}</p>
+      <h1 className="rl-hero t-hero rl-in mt-3 font-sans [overflow-wrap:anywhere]">{titre}</h1>
+      {/* ligne de contexte (ligneContexte) : le jour J, puis les jours d'encre */}
+      <p className="t-small mt-4 font-medium">
+        {jj ? (
+          <span title={d.examDateLabel ?? undefined} className="font-semibold text-white">
+            {jj}
+          </span>
+        ) : (
+          <Link href="/moi?onglet=reglages#date" className="font-semibold text-white underline decoration-line-2 underline-offset-4 hover:decoration-current">
+            Fixe ton jour J
+          </Link>
+        )}
+        {d.streak > 0 && <> · {joursEncre(d.streak)}</>}
+      </p>
+      {/* les bâtons : le bâton du jour tracé, en attente au crayon, ou sec le
+          soir ; au retour après une absence, la série cassée ne s'affiche pas */}
+      {!d.returning && (
+        <div className="mt-3.5 flex items-center gap-3.5">
+          <span className="shrink-0">
+            <Batons jours={d.streak} jour={d.dayState} height={30} max={4} />
+          </span>
+          <span className={"t-micro min-w-0 " + (sec ? "font-semibold text-white" : "")}>{ligneSerie(d.streak, d.dayState, d.seenBefore)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** L'anneau du jour en grand (Geste) ; le sceau « TENU » se pose dans l'ouverture à l'objectif. */
+export function JourAnneau({ d }: { d: AccueilData }) {
+  const tenu = d.activity.today >= d.dailyGoal;
+  return (
+    <div className="mx-auto w-full max-w-[264px] sm:max-w-[380px] lg:max-w-[500px]">
+      <AnneauDuJour repondues={d.activity.today} objectif={d.dailyGoal} taille="geste" sceau={tenu ? <SceauTenu day={d.dayKey} /> : undefined} />
+    </div>
+  );
+}
+
+/** « Market Efficiency, page 3 » : où reprendre, pour la variante « retour ». */
+function ouReprendre(r: ResumeItem) {
+  const page = /page ([0-9]+)/.exec(r.context)?.[1];
+  return page ? `${r.title}, page ${page}` : r.title;
+}
+
+/** La prochaine action : reprendre, premier usage, ou la variante « retour ». */
+export function ResumeHero({ resume, returning = false, evening = false, now }: { resume: ResumeItem | null; returning?: boolean; evening?: boolean; now?: number }) {
+  if (returning) {
+    // la variante « retour » (3 jours sans venir, voix `retour()`) : du texte
+    // simple et une action ; pas de « tu nous as manqué », la série cassée
+    // n'est pas montrée. Même phrase que PremierTraitRetour (kit), posée en
+    // titre de la carte héros.
+    const [titre, ...suite] = retour(resume ? ouReprendre(resume) : null).split(". ");
     return (
-      <section className="card-hero rl-in p-6 sm:p-8" style={{ animationDelay: ".08s" }} aria-label="Pour commencer">
-        <div className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:gap-10">
-          <div className="min-w-0">
-            <p className="t-micro font-semibold">Pour commencer</p>
-            <h2 className="t-h1 mt-2">Ouvre ta première fiche</h2>
-            <p className="t-small mt-2">Ta dernière série t&apos;attendra ici.</p>
-          </div>
-          <div className="flex flex-col items-stretch gap-3 md:items-end">
-            <Link href="/reviser" className="btn btn-primary btn-lg">
-              Choisir une fiche <ArrowRight size={17} />
-            </Link>
-            <Link href="/entrainement" className="t-small text-center font-semibold hover:text-white md:text-right">
-              ou lance un QCM
-            </Link>
-          </div>
+      <section className="card-hero rl-in p-6 sm:p-7" style={{ animationDelay: ".08s" }} aria-label="Reprendre">
+        {resume && <p className="t-micro font-semibold">{ACCUEIL.repriseSurTitre(agoLabel(resume.at, now))}</p>}
+        <h2 className="t-h1 mt-2">{titre}.</h2>
+        <p className="t-small mt-2 max-w-[460px]">
+          {suite.join(". ")}
+          {resume ? " Cinq questions pour te remettre en main." : ""}
+        </p>
+        <div className="mt-6">
+          <Link href={resume?.href ?? "/practice"} className="btn btn-primary btn-lg">
+            {REPRISE.action} <ArrowRight size={17} aria-hidden />
+          </Link>
         </div>
       </section>
     );
   }
 
-  const Icon = KIND_ICON[resume.kind];
+  if (!resume) {
+    const p = ACCUEIL.premierUsage;
+    return (
+      <section className="card-hero rl-in p-6 sm:p-7" style={{ animationDelay: ".08s" }} aria-label={p.surTitre}>
+        <p className="t-micro font-semibold">{p.surTitre}</p>
+        <h2 className="t-h1 mt-2">{p.titre}</h2>
+        <p className="t-small mt-2">{p.texte}</p>
+        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <Link href="/reviser" className="btn btn-primary btn-lg">
+            {REPRISE.choisir} <ArrowRight size={17} aria-hidden />
+          </Link>
+          <Link href="/entrainement" className="t-small font-semibold hover:text-white">
+            {REPRISE.ouQcm}
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   const pct = resume.total ? Math.min(100, Math.round(((resume.done ?? 0) / resume.total) * 100)) : null;
 
   return (
-    <section className="card-hero rl-in p-6 sm:p-8" style={{ animationDelay: ".08s" }} aria-label="Reprendre">
-      <div className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:gap-10">
-        <div className="flex min-w-0 items-center gap-6">
-          <span aria-hidden className="hidden h-[72px] w-[72px] flex-none place-items-center rounded-[18px] bg-surface-2 md:grid">
-            <Icon size={28} strokeWidth={1.7} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="t-micro font-semibold">Reprendre · {agoLabel(resume.at, now)}</p>
-            <h2 className="t-h1 mt-1.5 [overflow-wrap:anywhere]">{resume.title}</h2>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="t-micro">{resume.context}</span>
-              {pct !== null && (
-                <span className="flex min-w-[180px] max-w-[320px] flex-1 items-center gap-2.5">
-                  <span className="ink-bar block h-1.5 flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={resume.progressLabel}>
-                    <span className="rl-grow" style={{ width: `${pct}%`, animationDelay: ".5s" }} />
-                  </span>
-                  <span className="font-mono text-[12px] font-semibold tabular-nums" title={resume.progressLabel}>
-                    {resume.done}/{resume.total}
-                  </span>
+    <section className="card-hero rl-in p-6 sm:p-7" style={{ animationDelay: ".08s" }} aria-label="Reprendre">
+      <div className="flex min-w-0 items-start gap-5">
+        <span aria-hidden className="hidden h-[56px] w-[56px] flex-none place-items-center rounded-[16px] bg-surface-2 sm:grid">
+          <Icone nom={KIND_ICON[resume.kind]} size={26} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="t-micro font-semibold">{ACCUEIL.repriseSurTitre(agoLabel(resume.at, now))}</p>
+          <h2 className="t-h1 mt-1.5 [overflow-wrap:anywhere]">{resume.title}</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="t-micro">{resume.context}</span>
+            {pct !== null && (
+              <span className="flex min-w-[160px] max-w-[300px] flex-1 items-center gap-2.5">
+                <span className="ink-bar block h-1.5 flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={resume.progressLabel}>
+                  <span className="rl-grow" style={{ width: `${pct}%`, animationDelay: ".5s" }} />
                 </span>
-              )}
-            </div>
+                <span className="font-mono text-[12px] font-semibold tabular-nums" title={resume.progressLabel}>
+                  {resume.done}/{resume.total}
+                </span>
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex flex-col items-stretch gap-3 md:items-end">
-          <Link href={resume.href} className="btn btn-primary btn-lg">
-            {resume.cta} <ArrowRight size={17} />
+      </div>
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 sm:pl-[76px]">
+        <Link href={resume.href} className="btn btn-primary btn-lg">
+          {/* le soir, rien encore : une seule petite action pour garder l'encre */}
+          {evening ? ENCRE.uneQuestion : resume.cta} <ArrowRight size={17} aria-hidden />
+        </Link>
+        {resume.audio && (
+          <Link href={resume.audio.href} title={resume.audio.title} className="t-small inline-flex items-center gap-2 font-semibold hover:text-white">
+            <Icone nom="cours" size={17} /> {resume.audio.label}
           </Link>
-          {resume.audio && (
-            <Link href={resume.audio.href} title={resume.audio.title} className="t-small inline-flex items-center justify-center gap-1.5 font-semibold hover:text-white">
-              <Headphones size={15} aria-hidden /> {resume.audio.label}
-            </Link>
-          )}
-        </div>
+        )}
       </div>
     </section>
-  );
-}
-
-/** Objectif du jour : l'anneau d'encre et ce qu'il reste à faire. */
-export function GoalTile({ answered, goal }: { answered: number; goal: number }) {
-  const left = Math.max(0, goal - answered);
-  const pct = (answered / goal) * 100;
-  return (
-    <Tile href="/entrainement" label="Objectif du jour" icon={<Target size={14} aria-hidden />} ariaLabel={`Objectif du jour : ${answered} sur ${goal} questions. S'entraîner`}>
-      <span className="flex items-center gap-3 sm:gap-5">
-        <span className="sm:hidden">
-          <InkProgressRing pct={pct} size={46} />
-        </span>
-        <span className="hidden sm:block">
-          <InkProgressRing pct={pct} size={64} />
-        </span>
-        <span className="min-w-0">
-          <span className="block whitespace-nowrap">
-            <span className="t-num text-[26px] sm:text-[34px]">{answered}</span>
-            <span className="text-[14px] font-semibold text-muted">/{goal}</span>
-          </span>
-          <span className="t-micro mt-1 block whitespace-nowrap">
-            {left === 0 ? (
-              "objectif atteint"
-            ) : (
-              <>
-                encore {left}
-                <span className="hidden sm:inline"> {plural(left, "question")}</span>
-              </>
-            )}
-          </span>
-        </span>
-      </span>
-    </Tile>
-  );
-}
-
-/** Erreurs à revoir : le nombre, la répartition sur une ligne. */
-export function ErrorsTile({ errors }: { errors: ErrorsSummary }) {
-  const href = errors.total > 0 ? (errors.bySubject[0]?.href ?? "/fiches") : "/fiches";
-  const detail = errors.total > 0 ? errors.bySubject.slice(0, 3).map((s) => `${s.short} ${s.count}`).join(" · ") : "rien à revoir";
-  return (
-    <Tile href={href} label="À revoir" icon={<TriangleAlert size={14} aria-hidden />} ariaLabel={`${errors.total} ${plural(errors.total, "erreur")} à revoir`}>
-      <span className="min-w-0">
-        <span className="flex items-baseline gap-2">
-          <span className="t-num text-[26px] sm:text-[34px]">{errors.total}</span>
-          <span className="text-[14px] font-semibold text-muted">{plural(errors.total, "erreur")}</span>
-        </span>
-        <span className="t-micro mt-1 block truncate">{detail}</span>
-      </span>
-    </Tile>
   );
 }

@@ -1,8 +1,10 @@
 import { FicheDrillPage } from "@/components/FicheDrillPage";
 
-export default function PortfolioManagementFiche() {
+// ?page=N ouvre la page N, ?onglet=erreurs|melange|progression un onglet.
+export default function PortfolioManagementFiche({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <FicheDrillPage
+      searchParams={searchParams}
       config={{
         title: "Portfolio Management",
         description: "6 synthèses, une par lecture, chacune suivie de son QCM corrigé.",

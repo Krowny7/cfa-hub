@@ -20,21 +20,27 @@ import {
   Play,
   RotateCcw,
   Shuffle,
-  Target,
   Trash2,
 } from "lucide-react";
-import { CopyButton, FicheQuizRunner, type RunItem } from "@/components/FicheQuizRunner";
+import { CopyButton, FicheQuizRunner, type CarnetFiche, type RunItem } from "@/components/FicheQuizRunner";
 import { FicheProgressChart } from "@/components/FicheProgressChart";
+import { Icone } from "@/components/adn/icons";
+import { Batons } from "@/components/adn/Batons";
+import { CompteurBarre, Rature } from "@/components/adn/Rature";
+import { AnneauDuJourLogo } from "@/components/adn/AnneauDuJourLogo";
+import { OBJECTIF_DU_JOUR } from "@/components/adn/AnneauDuJourEvents";
 import { createClient } from "@/lib/supabase/browser";
 import { createSupabaseFicheApi, type FicheApi, type LogStorage } from "@/lib/ficheApi";
 import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
+import { anneau as voixAnneau, ligneAnneauSession, RATURE, VIDE } from "@/lib/voice";
+import { CARNET, FICHE, QUIZ, aReprendre, dateCourte, jourParis, lundiParis, memeJour, rateeFois, reprendreRatures } from "@/lib/voice-z4";
 import {
   buildErrorPoolExport,
   computePageProgress,
   computeQuestionStates,
+  computeRatureEvents,
   computeRuns,
   pickRandom,
-  STREAK_TO_CLEAR,
   type AnswerMode,
   type AnswerRow,
   type DrillQuestion,
@@ -73,10 +79,31 @@ function pageTheme(setTitle: string | undefined): string | null {
   return m ? m[1].trim() : null;
 }
 
+/** Énoncé court pour une ligne du carnet (une rature se trace sur des lignes entières). */
+function enonceCourt(prompt: string, max = 100): string {
+  const t = prompt.split("\n")[0].replace(/\t/g, " ").trim();
+  return t.length > max ? t.slice(0, max - 1).trimEnd() + "…" : t;
+}
+
+/** Remplace des paramètres de l'adresse, sans recharger (null = retirer). */
+function setUrlParams(params: Record<string, string | null>) {
+  try {
+    const url = new URL(window.location.href);
+    for (const [k, v] of Object.entries(params)) {
+      if (v === null) url.searchParams.delete(k);
+      else url.searchParams.set(k, v);
+    }
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  } catch {
+    // l'affichage change quand même
+  }
+}
+
 // Mise en page des fiches : le cours (PDF) à gauche, l'entraînement à droite
 // sur grand écran ; deux onglets "Cours / Entraînement" sur mobile. Toute
 // réponse est journalisée (quiz_answer_log) : c'est ce qui alimente la
-// progression par page, la liste d'erreurs à revoir et le graphique.
+// progression par page, le carnet d'erreurs (et ses ratures) et le graphique.
+// Liens directs : ?page=N ouvre la page N, ?onglet=erreurs|melange|progression.
 export function FicheWorkspace({
   title,
   description,
@@ -87,6 +114,8 @@ export function FicheWorkspace({
   pdfLabel,
   totalPages,
   drillSets,
+  initialPage = null,
+  traitsDuJour = null,
   api: apiProp,
 }: {
   title: string;
@@ -98,13 +127,24 @@ export function FicheWorkspace({
   pdfLabel: string;
   totalPages: number;
   drillSets: DrillSet[];
+  /** page ouverte au départ (lien /fiches/<slug>?page=N) */
+  initialPage?: number | null;
+  /** questions répondues aujourd'hui, toutes sources, lues par le serveur (null : inconnu) */
+  traitsDuJour?: number | null;
   api?: FicheApi;
 }) {
   const api = useMemo(() => apiProp ?? createSupabaseFicheApi(createClient()), [apiProp]);
 
   const [mobileView, setMobileView] = useState<"course" | "train">("train");
   const [tab, setTab] = useState<Tab>("quiz");
-  const [selectedPage, setSelectedPage] = useState<number | null>(drillSets[0]?.page ?? null);
+  const [selectedPage, setSelectedPage] = useState<number | null>(() =>
+    initialPage !== null && drillSets.some((d) => d.page === initialPage) ? initialPage : drillSets[0]?.page ?? null,
+  );
+  // réponses données sur cette page (pour l'anneau du jour sous la copie)
+  const [answeredHere, setAnsweredHere] = useState(0);
+  // historique des ratures déjà montré (le geste ne joue qu'une fois)
+  const ratureVues = useRef<Set<string> | null>(null);
+  const [showAllRayees, setShowAllRayees] = useState(false);
   const [run, setRun] = useState<ActiveRun | null>(null);
   const [rows, setRows] = useState<AnswerRow[]>([]);
   const [storage, setStorage] = useState<LogStorage>("account");
@@ -148,12 +188,18 @@ export function FicheWorkspace({
     try {
       setWide(localStorage.getItem(LAYOUT_KEY) === "wide");
     } catch {}
-    // Lien direct vers un onglet (ex. « Revoir » depuis Moi → ?onglet=erreurs)
-    const onglet = new URLSearchParams(window.location.search).get("onglet");
+    // Liens directs : un onglet (ex. « Revoir » depuis Moi → ?onglet=erreurs)
+    // et une page (?page=N, ex. « Reprendre » depuis l'accueil). Le serveur
+    // a déjà ouvert la page quand il la connaît (initialPage).
+    const params = new URLSearchParams(window.location.search);
+    const onglet = params.get("onglet");
     if (onglet && PARAM_TAB[onglet]) {
       setTab(PARAM_TAB[onglet]);
       setMobileView("train");
     }
+    const page = Number(params.get("page"));
+    if (Number.isInteger(page) && drillSets.some((d) => d.page === page)) setSelectedPage(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toggleWide() {
@@ -168,14 +214,7 @@ export function FicheWorkspace({
   // L'adresse suit l'onglet (sans recharger) : un rechargement y revient.
   function changeTab(t: Tab) {
     setTab(t);
-    try {
-      const url = new URL(window.location.href);
-      if (t === "quiz") url.searchParams.delete("onglet");
-      else url.searchParams.set("onglet", TAB_PARAM[t]);
-      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
-    } catch {
-      // l'onglet change quand même
-    }
+    setUrlParams({ onglet: t === "quiz" ? null : TAB_PARAM[t] });
   }
 
   const states = useMemo(() => computeQuestionStates(rows), [rows]);
@@ -191,6 +230,40 @@ export function FicheWorkspace({
     () => allItems.filter((it) => states.get(it.q.id)?.inErrorPool),
     [allItems, states]
   );
+
+  // Les ratures (moment 6) : une question rayée quitte le carnet mais reste
+  // visible. Celles d'aujourd'hui restent dans la liste, rayées ; les plus
+  // anciennes forment l'historique.
+  const ratures = useMemo(() => {
+    const now = new Date();
+    const events = computeRatureEvents(rows);
+    const lundi = lundiParis(now);
+    const rayees = allItems
+      .filter((it) => {
+        const s = states.get(it.q.id);
+        return !!s && s.clears > 0 && !s.inErrorPool && !!s.clearedAt;
+      })
+      .map((it) => ({ it, at: states.get(it.q.id)!.clearedAt! }));
+    const duJour = new Set(rayees.filter((r) => memeJour(r.at, now)).map((r) => r.it.q.id));
+    return {
+      total: events.length,
+      semaine: events.filter((e) => jourParis(e.at) >= lundi).length,
+      duJour,
+      anciennes: rayees.filter((r) => !duJour.has(r.it.q.id)).sort((a, b) => (a.at < b.at ? 1 : -1)),
+    };
+  }, [rows, states, allItems]);
+  // la liste du carnet : en tête, ce qui a été rayé aujourd'hui (la plus récente
+  // d'abord : on la voit se rayer en revenant d'un quiz), puis ce qui reste à reprendre
+  const carnetItems: RunItem[] = useMemo(() => {
+    const at = (it: RunItem) => states.get(it.q.id)?.clearedAt ?? "";
+    const rayees = allItems.filter((it) => ratures.duJour.has(it.q.id)).sort((a, b) => (at(a) < at(b) ? 1 : -1));
+    return [...rayees, ...allItems.filter((it) => states.get(it.q.id)?.inErrorPool)];
+  }, [allItems, states, ratures]);
+  // au premier chargement du journal, les ratures du jour sont déjà « vues » : posées sans geste
+  useEffect(() => {
+    if (!logLoading && ratureVues.current === null) ratureVues.current = new Set(ratures.duJour);
+  }, [logLoading, ratures]);
+  const carnet: CarnetFiche = useMemo(() => ({ states, reste: poolItems.length }), [states, poolItems]);
 
   // Une série par fiche, clé = titre de la fiche.
   const storageKey = title;
@@ -264,7 +337,8 @@ export function FicheWorkspace({
   function selectPage(page: number) {
     setSelectedPage(page);
     setRun(null);
-    changeTab("quiz");
+    setTab("quiz");
+    setUrlParams({ onglet: null, page: String(page) });
   }
 
   function startMixed() {
@@ -272,7 +346,34 @@ export function FicheWorkspace({
   }
 
   function startErrors() {
-    startRun(pickRandom(poolItems, poolItems.length), "errors", "Mes erreurs à revoir");
+    startRun(pickRandom(poolItems, poolItems.length), "errors", QUIZ.titreReprise(poolItems.length));
+  }
+
+  const themeOf = (page: number) => pageTheme(byPage.get(page)?.title);
+
+  // Sous la copie corrigée : l'avancée de l'anneau du jour (le logo, en petit).
+  function anneauFin(ajoutes: number): React.ReactNode {
+    const plus = ajoutes > 0 ? ligneAnneauSession(ajoutes, false) : null;
+    if (traitsDuJour === null) return plus ? <p className="t-small m-0">{plus}</p> : null;
+    const n = traitsDuJour + answeredHere;
+    const v = voixAnneau(n, OBJECTIF_DU_JOUR);
+    return (
+      <>
+        <span className="relative inline-grid">
+          <AnneauDuJourLogo repondues={n} objectif={OBJECTIF_DU_JOUR} size={34} vivant={false} />
+        </span>
+        <p className="t-small m-0">
+          <b className="font-semibold text-white tabular-nums">{v.compte}</b> aujourd&apos;hui
+          {ajoutes > 0 ? ` · ${ligneAnneauSession(ajoutes, n >= OBJECTIF_DU_JOUR)}` : n >= OBJECTIF_DU_JOUR ? " · journée tenue" : ""}
+          {v.reste ? (
+            <>
+              {" · "}
+              <span className="font-semibold text-pen">{v.reste}</span>
+            </>
+          ) : null}
+        </p>
+      </>
+    );
   }
 
   async function copyPoolForAi() {
@@ -313,7 +414,7 @@ export function FicheWorkspace({
 
   const tabs: SegItem<Tab>[] = [
     { key: "quiz", label: "Quiz", icon: <ListChecks size={15} /> },
-    { key: "errors", label: "Mes erreurs", short: "Erreurs", icon: <Target size={15} />, badge: poolItems.length },
+    { key: "errors", label: "Mes erreurs", short: "Erreurs", icon: <Icone nom="erreurs" size={16} />, badge: poolItems.length },
     { key: "mixed", label: "Bilan", icon: <Shuffle size={15} /> },
     { key: "progress", label: "Progression", short: "Progrès", icon: <BarChart3 size={15} /> },
   ];
@@ -342,7 +443,7 @@ export function FicheWorkspace({
               <div className="flex items-baseline justify-between gap-3 text-[12.5px] text-muted">
                 <span>
                   <span className="font-mono text-[13px] font-semibold text-white tabular-nums">{totals.mastered}</span>
-                  <span className="font-mono tabular-nums">/{totals.total}</span> maîtrisées
+                  <span className="font-mono tabular-nums">/{totals.total}</span> {FICHE.maitrisees(totals.mastered)}
                 </span>
                 {totals.weak > 0 ? (
                   <button
@@ -354,10 +455,10 @@ export function FicheWorkspace({
                     }}
                     className="font-semibold text-pen underline-offset-4 hover:underline"
                   >
-                    {totals.weak} à revoir
+                    {aReprendre(totals.weak)}
                   </button>
                 ) : (
-                  <span>{rows.length === 0 ? "pas encore commencée" : "rien à revoir"}</span>
+                  <span>{rows.length === 0 ? "pas encore commencée" : VIDE.ratures.toLowerCase().replace(/[.]$/, "")}</span>
                 )}
               </div>
               <StackBar className="mt-2.5" mastered={totals.mastered} weak={totals.weak} total={totals.total} />
@@ -374,8 +475,8 @@ export function FicheWorkspace({
         value={mobileView}
         onChange={setMobileView}
         items={[
-          { key: "course", label: "Cours", icon: <BookOpen size={15} /> },
-          { key: "train", label: "Entraînement", icon: <ListChecks size={15} /> },
+          { key: "course", label: "Cours", icon: <Icone nom="cours" size={16} /> },
+          { key: "train", label: "Entraînement", icon: <Icone nom="entrainer" size={16} /> },
         ]}
       />
 
@@ -495,12 +596,12 @@ export function FicheWorkspace({
           {!run && savedRun && (
             <div className="card flex flex-wrap items-center gap-x-4 gap-y-3 py-3.5 pl-5 pr-3.5">
               <div className="min-w-0 flex-1">
-                <p className="t-eyebrow">{savedRun.done.length >= savedRun.items.length ? "Série terminée" : "Série en cours"}</p>
+                <p className="t-eyebrow">{savedRun.done.length >= savedRun.items.length ? QUIZ.termine : QUIZ.enCours}</p>
                 <p className="mt-1 truncate text-[15px] font-semibold tracking-[-0.01em]">{savedRun.title}</p>
                 <p className="t-micro mt-0.5">
                   {savedRun.done.length >= savedRun.items.length
-                    ? "Bilan non consulté"
-                    : `${savedRun.done.length}/${savedRun.items.length} questions répondues`}
+                    ? QUIZ.aRelire
+                    : QUIZ.avance(savedRun.done.length, savedRun.items.length)}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
@@ -509,7 +610,7 @@ export function FicheWorkspace({
                 </button>
                 <button type="button" className="btn btn-primary" onClick={resumeRun}>
                   <Play size={14} aria-hidden />
-                  {savedRun.done.length >= savedRun.items.length ? "Voir le bilan" : "Reprendre"}
+                  {savedRun.done.length >= savedRun.items.length ? QUIZ.voirCopie : QUIZ.reprendre}
                 </button>
               </div>
             </div>
@@ -521,11 +622,18 @@ export function FicheWorkspace({
               items={run.items}
               mode={run.mode}
               title={run.title}
+              fiche={title}
               api={api}
               initialRunId={run.runId}
               initialDone={run.done}
+              carnet={carnet}
+              themeOf={themeOf}
+              anneau={anneauFin}
               onProgress={(done, runId) => persistProgress(run, done, runId)}
-              onAnswered={(row) => setRows((prev) => [...prev, row])}
+              onAnswered={(row) => {
+                setRows((prev) => [...prev, row]);
+                setAnsweredHere((n) => n + 1);
+              }}
               onPause={() => setRun(null)}
               onClose={() => {
                 discardSavedRun();
@@ -533,7 +641,7 @@ export function FicheWorkspace({
               }}
               onReplay={(items) => {
                 discardSavedRun();
-                startRun(pickRandom(items, items.length), "errors", "Rejouer mes ratées");
+                startRun(pickRandom(items, items.length), "errors", QUIZ.titreReprise(items.length));
               }}
             />
           ) : tab === "quiz" ? (
@@ -561,15 +669,15 @@ export function FicheWorkspace({
                   <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted">
                     <li className="inline-flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-white" aria-hidden />
-                      {activeProgress.mastered} maîtrisée{activeProgress.mastered > 1 ? "s" : ""}
+                      {activeProgress.mastered} {FICHE.maitrisees(activeProgress.mastered)}
                     </li>
                     <li className="inline-flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-pen" aria-hidden />
-                      {activeProgress.weak} à revoir
+                      {aReprendre(activeProgress.weak)}
                     </li>
                     <li className="inline-flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full ring-1 ring-inset ring-line-2" aria-hidden />
-                      {activeProgress.unseen} jamais vue{activeProgress.unseen > 1 ? "s" : ""}
+                      {activeProgress.unseen} {FICHE.jamaisVues(activeProgress.unseen)}
                     </li>
                   </ul>
                   <div className="mt-6 flex flex-wrap gap-2">
@@ -628,7 +736,7 @@ export function FicheWorkspace({
                             {!set ? (
                               <Lock size={12} aria-label="Bientôt" />
                             ) : p && p.weak > 0 ? (
-                              <span className="inline-flex items-center gap-1 text-pen" aria-label={`${p.weak} à revoir`}>
+                              <span className="inline-flex items-center gap-1 text-pen" aria-label={aReprendre(p.weak)}>
                                 <span className="h-1.5 w-1.5 rounded-full bg-pen" aria-hidden />
                                 {p.weak}
                               </span>
@@ -654,64 +762,116 @@ export function FicheWorkspace({
           ) : tab === "errors" ? (
             logLoading ? (
               <div className="rl-skel h-[260px]" />
-            ) : poolItems.length === 0 ? (
-              <div className="card-quiet flex flex-col items-center px-6 py-14 text-center">
-                <Target size={22} className="text-muted" aria-hidden />
-                <p className="t-h3 mt-4">{rows.length === 0 ? "Rien à revoir pour l'instant" : "Aucune erreur à revoir"}</p>
-                <p className="t-small mt-1.5 max-w-[360px]">
-                  {rows.length === 0
-                    ? "Aucune réponse enregistrée pour l'instant. Fais un quiz : les questions ratées apparaîtront ici."
-                    : "Bravo. Elles reviennent ici dès que tu en rates une."}
-                </p>
-              </div>
             ) : (
               <div className="flex flex-col gap-5">
-                <div className="card-hero p-6 md:p-7">
-                  <div className="flex items-end gap-3">
-                    <span className="t-num text-[56px] md:text-[64px]">{poolItems.length}</span>
-                    <span className="pb-1.5 text-[16px] font-semibold tracking-[-0.01em]">
-                      question{poolItems.length > 1 ? "s" : ""} à revoir
-                    </span>
+                {poolItems.length === 0 && ratures.duJour.size === 0 ? (
+                  // carnet vide : page propre
+                  <div className="card-quiet flex flex-col items-center px-6 py-14 text-center">
+                    <Icone nom="erreurs" size={26} className="text-muted" />
+                    <p className="t-h3 mt-4">{VIDE.ratures}</p>
+                    <p className="t-small mt-1.5 max-w-[360px]">{rows.length === 0 ? CARNET.videNeuf : CARNET.videPropre}</p>
+                    {ratures.total > 0 && <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 justify-center" />}
                   </div>
-                  <p className="t-micro mt-3">
-                    Une question disparaît de la liste après {STREAK_TO_CLEAR} réussites consécutives.
-                  </p>
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    <button type="button" className="btn btn-primary btn-lg" onClick={startErrors}>
-                      <RotateCcw size={16} aria-hidden />
-                      Rejouer mes {poolItems.length} erreur{poolItems.length > 1 ? "s" : ""}
-                    </button>
-                    <CopyButton copied={copied} onClick={copyPoolForAi} className="btn-lg">
-                      Copier pour l&apos;IA
-                    </CopyButton>
+                ) : (
+                  <div className="card-hero p-6 md:p-7">
+                    {/* le compteur du carnet : rayé et réécrit quand des ratures sont reprises aujourd'hui */}
+                    <CompteurBarre
+                      avant={poolItems.length + ratures.duJour.size}
+                      apres={poolItems.length}
+                      libelle={CARNET.libelle}
+                      taille={60}
+                      anime={!!ratureVues.current && [...ratures.duJour].some((id) => !ratureVues.current?.has(id))}
+                    />
+                    <p className="t-micro mt-3">{poolItems.length > 0 ? QUIZ.regle : VIDE.ratures}</p>
+                    {poolItems.length > 0 && (
+                      <div className="mt-6 flex flex-wrap gap-2">
+                        <button type="button" className="btn btn-primary btn-lg" onClick={startErrors}>
+                          <RotateCcw size={16} aria-hidden />
+                          {reprendreRatures(poolItems.length)}
+                        </button>
+                        <CopyButton copied={copied} onClick={copyPoolForAi} className="btn-lg">
+                          Copier pour l&apos;IA
+                        </CopyButton>
+                      </div>
+                    )}
+                    {ratures.total > 0 && (
+                      <HistoireRatures semaine={ratures.semaine} total={ratures.total} className="mt-6 border-t border-line pt-5" />
+                    )}
                   </div>
-                </div>
+                )}
 
-                <div className="card p-1.5">
-                  {poolItems.map((it) => {
-                    const s = states.get(it.q.id);
-                    return (
-                      <button
-                        key={it.q.id}
-                        type="button"
-                        onClick={() => selectPage(it.page)}
-                        className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-3 text-left"
-                        title="Afficher la synthèse de cette page"
-                      >
-                        <span className="mt-px shrink-0 rounded-[7px] bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">
-                          P{it.page}
-                        </span>
-                        <span className="line-clamp-2 min-w-0 flex-1 text-[13.5px] leading-snug text-body">{it.q.prompt}</span>
-                        <span
-                          className="mt-px shrink-0 font-mono text-[12px] font-semibold text-pen tabular-nums"
-                          aria-label={`ratée ${s?.wrong ?? 0} fois`}
+                {carnetItems.length > 0 && (
+                  <div className="card p-1.5">
+                    {carnetItems.map((it) => {
+                      const s = states.get(it.q.id);
+                      const rayee = ratures.duJour.has(it.q.id);
+                      return (
+                        <button
+                          key={it.q.id}
+                          type="button"
+                          onClick={() => selectPage(it.page)}
+                          className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-3 text-left"
+                          title="Afficher la synthèse de cette page"
                         >
-                          ×{s?.wrong ?? 0}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                          <span className="mt-px shrink-0 rounded-[7px] bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">
+                            P{it.page}
+                          </span>
+                          {rayee ? (
+                            <LigneRayee
+                              id={it.q.id}
+                              vues={ratureVues}
+                              className="min-w-0 flex-1 text-[13.5px] leading-snug text-body"
+                            >
+                              {enonceCourt(it.q.prompt)}
+                            </LigneRayee>
+                          ) : (
+                            <span className="line-clamp-2 min-w-0 flex-1 text-[13.5px] leading-snug text-body">{it.q.prompt}</span>
+                          )}
+                          {rayee ? (
+                            <span className="mt-px shrink-0 font-mono text-[11.5px] font-semibold text-muted">rayée</span>
+                          ) : (
+                            <span className="mt-px shrink-0 font-mono text-[12px] font-semibold text-pen tabular-nums" aria-label={rateeFois(s?.wrong ?? 0)}>
+                              ×{s?.wrong ?? 0}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* l'historique : on raye, on n'efface pas */}
+                {ratures.anciennes.length > 0 && (
+                  <section aria-labelledby="fiche-rayees" className="flex flex-col gap-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <h3 id="fiche-rayees" className="t-eyebrow m-0">
+                        {CARNET.rayees} · {ratures.anciennes.length}
+                      </h3>
+                      {ratures.anciennes.length > 6 && (
+                        <button type="button" className="ink-link text-[12.5px] font-semibold" onClick={() => setShowAllRayees((v) => !v)}>
+                          {showAllRayees ? "Replier" : `Voir les ${ratures.anciennes.length}`}
+                        </button>
+                      )}
+                    </div>
+                    <div className="card-quiet p-1.5">
+                      {(showAllRayees ? ratures.anciennes : ratures.anciennes.slice(0, 6)).map(({ it, at }) => (
+                        <button
+                          key={it.q.id}
+                          type="button"
+                          onClick={() => selectPage(it.page)}
+                          className="rl-row flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left"
+                          title="Afficher la synthèse de cette page"
+                        >
+                          <span className="mt-px shrink-0 rounded-[7px] px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">P{it.page}</span>
+                          <Rature rayee son={false} trait={it.q.id.length % 2 ? "b" : "a"} className="min-w-0 flex-1 text-[13px] leading-snug">
+                            {enonceCourt(it.q.prompt, 90)}
+                          </Rature>
+                          <span className="mt-px hidden shrink-0 font-mono text-[11px] text-muted sm:inline">{CARNET.rayeeLe(dateCourte(at) ?? "")}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             )
           ) : tab === "mixed" ? (
@@ -739,8 +899,8 @@ export function FicheWorkspace({
             <div className="card p-5 md:p-7">
               <dl className="grid grid-cols-3 gap-3">
                 <Stat label="Maîtrisées" value={String(totals.mastered)} sub={`/${totals.total}`} />
-                <Stat label="À revoir" value={String(totals.weak)} pen={totals.weak > 0} />
-                <Stat label="Réussite" value={`${successPct} %`} />
+                <Stat label="À reprendre" value={String(totals.weak)} pen={totals.weak > 0} />
+                <Stat label="Précision" value={`${successPct} %`} />
               </dl>
 
               <hr className="rule my-6" />
@@ -838,7 +998,57 @@ export function FicheWorkspace({
   );
 }
 
-/** Barre empilée : maîtrisées (encre) puis à revoir (rouge correcteur) sur le total. */
+/** L'historique des ratures : la semaine en bâtons, puis le compte depuis le début. */
+function HistoireRatures({ semaine, total, className = "" }: { semaine: number; total: number; className?: string }) {
+  return (
+    <div className={"flex flex-wrap items-center gap-x-4 gap-y-2 " + className}>
+      {semaine > 0 && <Batons jours={semaine} height={20} max={4} animer={false} />}
+      <p className="t-micro m-0">
+        {semaine > 0 && (
+          <>
+            <b className="font-semibold text-white">{RATURE.semaine(semaine)}</b>
+            {" · "}
+          </>
+        )}
+        {RATURE.depuisToujours(total)}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Une ligne du carnet rayée aujourd'hui. Si elle n'a pas encore été vue
+ * rayée sur cette page (on revient d'un quiz), le trait se trace sous nos
+ * yeux ; sinon elle est posée rayée.
+ */
+function LigneRayee({
+  id,
+  vues,
+  className,
+  children,
+}: {
+  id: string;
+  vues: React.RefObject<Set<string> | null>;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const [rayee, setRayee] = useState(() => vues.current === null || vues.current.has(id));
+  useEffect(() => {
+    if (rayee) return;
+    const t = window.setTimeout(() => {
+      setRayee(true);
+      vues.current?.add(id);
+    }, 380);
+    return () => window.clearTimeout(t);
+  }, [rayee, id, vues]);
+  return (
+    <Rature rayee={rayee} className={className}>
+      {children}
+    </Rature>
+  );
+}
+
+/** Barre empilée : maîtrisées (encre) puis à reprendre (rouge correcteur) sur le total. */
 function StackBar({
   mastered,
   weak,
@@ -857,7 +1067,7 @@ function StackBar({
     <div
       className={`flex overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--ink)_9%,transparent)] ${thin ? "h-1" : "h-1.5"} ${className}`}
       role="img"
-      aria-label={`${mastered} maîtrisées et ${weak} à revoir sur ${total}`}
+      aria-label={`${mastered} maîtrisées et ${weak} à reprendre sur ${total}`}
     >
       <span className="h-full bg-white transition-[width] duration-700" style={{ width: `${(mastered / t) * 100}%` }} />
       {/* en mode discret, le rouge devient de l'encre : on l'éclaircit pour garder la distinction */}

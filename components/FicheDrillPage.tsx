@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FicheWorkspace, type DrillSet } from "@/components/FicheWorkspace";
+import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 
 export type FicheConfig = {
   title: string;
@@ -22,19 +23,32 @@ export type FicheConfig = {
 // (quiz_sets / quiz_questions). La bonne réponse et l'explication ne sont
 // JAMAIS envoyées au navigateur : elles ne sont révélées qu'après tentative,
 // par award_quiz_question_xp (voir migration_fix_answer_leak.sql).
-export async function FicheDrillPage({ config }: { config: FicheConfig }) {
+//
+// Liens directs : `?page=N` ouvre la page N (le serveur la sélectionne dès le
+// premier rendu), `?onglet=erreurs|melange|progression` un onglet.
+export async function FicheDrillPage({
+  config,
+  searchParams,
+}: {
+  config: FicheConfig;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const { data: signed, error } = await supabase.storage.from("fiches").createSignedUrl(config.pdfFile, 3600);
-  const pdfUrl = error ? null : signed?.signedUrl ?? null;
-
   const admin = createAdminClient();
-  const { data: setsData } = await admin
-    .from("quiz_sets")
-    .select("id,title")
-    .like("title", `${config.drillTitlePrefix}%`);
+  // Les traits du jour (anneau du jour sous la copie corrigée) : même lecture
+  // que le logo de la barre du haut, déjà faite pour cette requête (cache).
+  const [{ data: signed, error }, { data: setsData }, traits, sp] = await Promise.all([
+    supabase.storage.from("fiches").createSignedUrl(config.pdfFile, 3600),
+    admin.from("quiz_sets").select("id,title").like("title", `${config.drillTitlePrefix}%`),
+    traitsDuJour(auth.user.id),
+    searchParams ?? Promise.resolve(undefined),
+  ]);
+  const pdfUrl = error ? null : signed?.signedUrl ?? null;
+  const pageParam = Number(Array.isArray(sp?.page) ? sp?.page[0] : sp?.page);
+  const initialPage = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : null;
 
   const sets = (setsData ?? [])
     .map((s) => ({ ...s, page: Number(/Page ([0-9]+)/.exec(s.title)?.[1]) }))
@@ -78,6 +92,8 @@ export async function FicheDrillPage({ config }: { config: FicheConfig }) {
         pdfLabel={config.pdfLabel}
         totalPages={config.totalPages}
         drillSets={drillSets}
+        initialPage={initialPage}
+        traitsDuJour={traits}
       />
     </div>
   );

@@ -1,59 +1,41 @@
-import Link from "next/link";
-import { PageHero } from "@/components/ui/Titles";
-import { RankCard } from "@/components/accueil/RankCard";
-import { ResumeHero } from "@/components/accueil/HomeCards";
+import { AnneauDuJourSync } from "@/components/adn/AnneauDuJourSync";
+import { JourAnneau, JourHero, ResumeHero } from "@/components/accueil/HomeCards";
 import { ProgressSection, TodaySection } from "@/components/accueil/Sections";
-import { plural } from "@/components/accueil/format";
 import type { AccueilData } from "@/components/accueil/types";
 
 export type { AccueilData } from "@/components/accueil/types";
 
 // Accueil : présentation pure (aucune requête), rendue par app/dashboard et
 // prévisualisée avec des données d'exemple (app/preview-da/accueil).
-// Trois niveaux de lecture : le point focal (titre, rang, prochaine action),
-// puis « Aujourd'hui » (trois tuiles), puis « Ta progression » (une carte à
-// onglets). Le reste vit sur /classement et /moi.
+// Trois niveaux de lecture :
+// 1. le point focal, l'anneau du jour en grand (moment 1) : le titre le dit
+//    (« Encore 14 traits, Théo. »), les bâtons comptent la série (moment 2),
+//    et la prochaine action est juste à côté ;
+// 2. « Aujourd'hui » : trois tuiles calmes au plus, choisies par priorité ;
+// 3. « Ta progression » : le rang, puis une carte à onglets.
+// Le reste vit sur /classement et /moi.
 export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; tab?: string }) {
-  const title = d.name ? `${d.hello} ${d.name}` : d.hello;
-
   return (
     <div className="rl-wide rl-page">
-      <div className="flex flex-col gap-6 md:gap-8">
-        <div className="grid items-center gap-6 lg:grid-cols-12 lg:gap-10">
-          <div className="min-w-0 lg:col-span-7">
-            <PageHero kicker={d.dateLabel} title={title}>
-              <ContextLine d={d} />
-            </PageHero>
-          </div>
-          <div className="min-w-0 lg:col-span-5">
-            <RankCard rating={d.rating} mastery={d.mastery} />
-          </div>
+      {/* le logo vivant de la barre du haut se recale sur la journée lue ici */}
+      <AnneauDuJourSync repondues={d.activity.today} />
+
+      {/* téléphone : titre, anneau, action ; ordinateur : titre et action à
+          gauche, centrés ensemble sur la hauteur de l'anneau, à droite */}
+      <section aria-label="Ta journée" className="grid gap-x-12 gap-y-7 lg:grid-cols-12 lg:grid-rows-[1fr_auto_auto_1fr] lg:gap-y-0">
+        <div className="min-w-0 lg:col-span-7 lg:row-start-2">
+          <JourHero d={d} />
         </div>
-        <ResumeHero resume={d.resume} now={now} />
-      </div>
+        <div className="min-w-0 self-center lg:col-span-5 lg:col-start-8 lg:row-span-4 lg:row-start-1">
+          <JourAnneau d={d} />
+        </div>
+        <div className="min-w-0 lg:col-span-7 lg:row-start-3 lg:mt-9">
+          <ResumeHero resume={d.resume} returning={d.returning} evening={d.dayState === "sec" && d.streak > 0} now={now} />
+        </div>
+      </section>
 
       <TodaySection d={d} />
       <ProgressSection d={d} tab={tab} />
     </div>
-  );
-}
-
-/** Une ligne de contexte sous le titre : « J-212 · série de 6 jours ». */
-function ContextLine({ d }: { d: AccueilData }) {
-  const exam =
-    d.examDaysLeft !== null && d.examDaysLeft > 0 ? (
-      <span title={d.examDateLabel ?? undefined}>J-{d.examDaysLeft}</span>
-    ) : d.examDaysLeft === 0 ? (
-      <span>Examen aujourd&apos;hui</span>
-    ) : (
-      <Link href="/moi?onglet=reglages" className="font-semibold text-white underline-offset-2 hover:underline">
-        Fixe ta date d&apos;examen
-      </Link>
-    );
-  const streak = d.streak > 0 ? `série de ${d.streak} ${plural(d.streak, "jour")}` : "ta série commence aujourd'hui";
-  return (
-    <p className="t-small">
-      {exam} · {streak}
-    </p>
   );
 }

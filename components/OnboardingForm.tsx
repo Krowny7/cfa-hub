@@ -1,158 +1,164 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, UserRound } from "lucide-react";
-import { friendlyError } from "@/lib/errors";
+import { ArrowRight, Check, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { useI18n } from "@/components/I18nProvider";
-import { InkRing } from "@/components/ink/InkRing";
+import { PremierTrait } from "@/components/adn/PremierTrait";
+import { INSCRIPTION } from "@/lib/voice-z1";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
-/** Pastille d'étape : numéro, puis coche d'encre une fois faite. */
-function StepMark({ n, done }: { n: number; done: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={
-        "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold transition-colors " +
-        (done ? "bg-white text-black" : "bg-surface-2 text-muted")
-      }
-    >
-      {done ? <Check size={13} strokeWidth={2.8} /> : n}
-    </span>
-  );
-}
+type Etape = "trait" | "date" | "sceau" | "fin";
 
-// Première connexion : une photo et un pseudo avant d'entrer (le middleware
-// y renvoie tant que le profil est incomplet).
+// Première connexion : le premier trait (moment 7), branché sur le profil.
+// Le joueur trace l'anneau, choisit son jour J (enregistré dans
+// profiles.exam_date), puis son nom de joueur (profiles.username), qui
+// devient son sceau d'initiales. La photo est facultative : le sceau en tient
+// lieu (le middleware n'exige plus que le pseudo). Un pseudo refusé (déjà
+// pris, caractères invalides) ramène à l'étape du nom, avec la raison.
+// `replay` : rejoué depuis Moi › Réglages (le nom est déjà là).
+// `apercu` : pour app/preview-da seulement, rien n'est écrit (un pseudo
+// « pris » simule le refus).
 export function OnboardingForm({
   initialUsername,
   initialAvatarUrl,
+  initialExamDate = null,
   next,
+  replay = false,
+  apercu = false,
 }: {
   initialUsername: string | null;
   initialAvatarUrl: string | null;
+  initialExamDate?: string | null;
   next: string;
+  replay?: boolean;
+  apercu?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-  const { t } = useI18n();
 
-  const [username, setUsername] = useState(initialUsername ?? "");
+  const [username, setUsername] = useState<string | null>(initialUsername);
+  const [saved, setSaved] = useState(Boolean(initialUsername));
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
-  const [usernameSaved, setUsernameSaved] = useState(Boolean(initialUsername));
-
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // un pseudo refusé : on remonte le premier trait à l'étape du nom
+  const [essai, setEssai] = useState(0);
+  const [etape, setEtape] = useState<Etape | undefined>(undefined);
+  const enCours = useRef<Promise<boolean> | null>(null);
 
-  const ready = usernameSaved && Boolean(avatarUrl);
+  async function userId() {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw new Error("not authenticated");
+    return data.user.id;
+  }
 
-  async function saveUsername() {
+  function refuser(nom: string, raison: string) {
+    setMsg(raison);
+    setSaved(false);
+    setUsername(nom);
+    setEtape("sceau");
+    setEssai((k) => k + 1);
+  }
+
+  function saveUsername(nom: string) {
     setMsg(null);
-    setBusy(true);
-    try {
-      const trimmed = username.trim();
-      if (!USERNAME_RE.test(trimmed)) {
-        throw new Error(t("settings.usernameHint"));
+    if (!USERNAME_RE.test(nom)) {
+      // laisse le sceau se poser une fraction de seconde, puis revient au nom
+      window.setTimeout(() => refuser(nom, INSCRIPTION.pseudoRegle), 250);
+      return;
+    }
+    setUsername(nom);
+    const p = (async () => {
+      try {
+        if (apercu) {
+          await new Promise((r) => window.setTimeout(r, 300));
+          if (nom.toLowerCase() === "pris") {
+            refuser(nom, INSCRIPTION.pseudoPris);
+            return false;
+          }
+          setSaved(true);
+          return true;
+        }
+        const id = await userId();
+        const { error } = await supabase.from("profiles").update({ username: nom }).eq("id", id);
+        if (error) {
+          const raw = `${error.code ?? ""} ${error.message ?? ""}`.toLowerCase();
+          refuser(nom, raw.includes("23505") || raw.includes("duplicate") ? INSCRIPTION.pseudoPris : INSCRIPTION.pseudoErreur);
+          return false;
+        }
+        setSaved(true);
+        return true;
+      } catch {
+        refuser(nom, INSCRIPTION.pseudoErreur);
+        return false;
       }
+    })();
+    enCours.current = p;
+  }
 
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth.user;
-      if (!user) throw new Error("Not logged in");
-
-      const { error } = await supabase.from("profiles").update({ username: trimmed }).eq("id", user.id);
-      if (error) throw error;
-
-      setUsername(trimmed);
-      setUsernameSaved(true);
-    } catch (e: unknown) {
-      setMsg(friendlyError(e, t("common.error")));
-    } finally {
-      setBusy(false);
+  async function saveExamDate(iso: string) {
+    if (apercu) return;
+    try {
+      const id = await userId();
+      const { error } = await supabase.from("profiles").update({ exam_date: iso }).eq("id", id);
+      if (error) setMsg(INSCRIPTION.dateErreur);
+    } catch {
+      setMsg(INSCRIPTION.dateErreur);
     }
   }
 
   async function uploadAvatar(file: File) {
     setMsg(null);
+    if (apercu) {
+      setAvatarUrl(URL.createObjectURL(file));
+      return;
+    }
     setBusy(true);
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth.user;
-      if (!user) throw new Error("Not logged in");
-
+      const id = await userId();
       const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-
-      const up = await supabase.storage.from("avatars").upload(path, file, {
-        upsert: true,
-        contentType: file.type,
-      });
+      const path = `${id}/${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
       if (up.error) throw up.error;
-
-      const pub = supabase.storage.from("avatars").getPublicUrl(path);
-      const publicUrl = pub.data.publicUrl;
-
-      const { error } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+      const publicUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      const { error } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", id);
       if (error) throw error;
-
       setAvatarUrl(publicUrl);
-    } catch (e: unknown) {
-      setMsg(friendlyError(e, t("common.error")));
+    } catch {
+      setMsg(INSCRIPTION.photoErreur);
     } finally {
       setBusy(false);
     }
   }
 
-  function handleContinue() {
-    if (!ready) {
-      setMsg(
-        !avatarUrl && !usernameSaved
-          ? t("onboarding.missingBoth")
-          : !avatarUrl
-            ? t("onboarding.missingAvatar")
-            : t("onboarding.missingUsername")
-      );
+  async function entrer() {
+    setBusy(true);
+    const ok = enCours.current ? await enCours.current : saved;
+    if ((!ok && !replay) || apercu) {
+      setBusy(false);
       return;
     }
     router.push(next);
   }
 
-  const steps = (avatarUrl ? 1 : 0) + (usernameSaved ? 1 : 0);
-
-  return (
-    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-8 pt-2 md:pt-12">
-      <header className="flex flex-col items-start gap-5">
-        <InkRing size={44} className="rl-pop" />
-        <div>
-          <p className="t-eyebrow">Bienvenue</p>
-          <h1 className="t-h1 rl-in mt-2.5">{t("onboarding.title")}</h1>
-          <p className="t-small mt-2.5 max-w-[400px]">Une photo et un pseudo : c&apos;est ce qui te rend reconnaissable dans tes groupes et en duel.</p>
-        </div>
-      </header>
-
-      <div className="card-hero flex flex-col gap-6 p-6 sm:p-7">
-        {/* Étape 1 : la photo */}
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="Ta photo de profil" className="h-16 w-16 rounded-full object-cover shadow-[var(--shadow-1)]" />
-            ) : (
-              <div className="grid h-16 w-16 place-items-center rounded-full border border-dashed border-line-2 bg-surface-2 text-muted">
-                <UserRound size={22} aria-hidden />
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-[14px] font-semibold">
-              <StepMark n={1} done={Boolean(avatarUrl)} /> {t("settings.avatarLabel")}
-            </p>
-            <p className="t-micro mt-1 pl-8">PNG, JPG ou WebP.</p>
-          </div>
-          <label className={"btn btn-secondary btn-sm shrink-0 cursor-pointer " + (busy ? "pointer-events-none opacity-45" : "")}>
-            {avatarUrl ? "Changer" : "Choisir"}
+  const fin = (
+    <div className="grid w-full justify-items-center gap-4">
+      <button type="button" className="btn btn-primary btn-lg rl-press w-full" onClick={entrer} disabled={busy || (!saved && !replay)}>
+        {replay ? INSCRIPTION.retourReglages : INSCRIPTION.entrer} <ArrowRight size={17} aria-hidden />
+      </button>
+      {!replay && (
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          {avatarUrl ? (
+            <span className="t-micro inline-flex items-center gap-1.5">
+              <Check size={13} aria-hidden /> {INSCRIPTION.photoOk}
+            </span>
+          ) : (
+            <span className="t-micro">{INSCRIPTION.photo}</span>
+          )}
+          <label className={"t-micro inline-flex cursor-pointer items-center gap-1.5 font-semibold text-white underline decoration-line-2 underline-offset-4 hover:decoration-current " + (busy ? "pointer-events-none opacity-45" : "")}>
+            <ImagePlus size={13} aria-hidden /> {avatarUrl ? INSCRIPTION.photoChanger : INSCRIPTION.photoAction}
             <input
               className="sr-only"
               type="file"
@@ -160,66 +166,32 @@ export function OnboardingForm({
               disabled={busy}
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) uploadAvatar(f);
+                if (f) void uploadAvatar(f);
                 e.currentTarget.value = "";
               }}
             />
           </label>
         </div>
+      )}
+    </div>
+  );
 
-        <div className="rule" />
-
-        {/* Étape 2 : le pseudo */}
-        <div className="grid gap-3">
-          <label htmlFor="onb-username" className="flex items-center gap-2 text-[14px] font-semibold">
-            <StepMark n={2} done={usernameSaved} /> {t("settings.usernameLabel")}
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="onb-username"
-              className="input min-w-0 flex-1"
-              placeholder={t("settings.usernamePlaceholder")}
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setUsernameSaved(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !usernameSaved) void saveUsername();
-              }}
-              disabled={busy}
-              autoComplete="nickname"
-            />
-            <button className="btn btn-secondary shrink-0" onClick={saveUsername} disabled={busy || usernameSaved || !username.trim()} type="button">
-              {usernameSaved ? (
-                <>
-                  <Check size={15} aria-hidden /> Validé
-                </>
-              ) : busy ? (
-                "…"
-              ) : (
-                "Valider"
-              )}
-            </button>
-          </div>
-          <p className="t-micro">3 à 24 caractères : lettres, chiffres ou _.</p>
-        </div>
-
-        {msg && (
-          <p role="status" className="text-[13.5px] text-pen">
-            {msg}
-          </p>
-        )}
-
-        <div className="flex flex-col gap-3 border-t border-line pt-6">
-          <button className="btn btn-primary btn-lg rl-press w-full" onClick={handleContinue} disabled={busy} type="button">
-            {t("onboarding.continue")} <ArrowRight size={17} aria-hidden />
-          </button>
-          <p className="t-micro text-center">
-            <span className="font-mono tabular-nums">{steps}/2</span> étapes faites
-          </p>
-        </div>
-      </div>
+  return (
+    <div className="mx-auto flex w-full max-w-[520px] flex-col items-center gap-2 pt-2 md:pt-8">
+      <PremierTrait
+        key={essai}
+        etape={etape}
+        nom={username}
+        examDate={initialExamDate}
+        onNom={replay ? undefined : saveUsername}
+        onExamDate={(iso) => void saveExamDate(iso)}
+        fin={fin}
+      />
+      {msg && (
+        <p role="status" className="max-w-[440px] text-center text-[13.5px] font-medium text-pen">
+          {msg}
+        </p>
+      )}
     </div>
   );
 }

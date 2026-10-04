@@ -1,8 +1,10 @@
 import { FicheDrillPage } from "@/components/FicheDrillPage";
 
-export default function FSAFiche() {
+// ?page=N ouvre la page N, ?onglet=erreurs|melange|progression un onglet.
+export default function FSAFiche({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <FicheDrillPage
+      searchParams={searchParams}
       config={{
         title: "Financial Statement Analysis",
         description: "11 synthèses, une par lecture, chacune suivie de son QCM corrigé.",

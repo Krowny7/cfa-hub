@@ -11,11 +11,14 @@ export function CourseView({
   pdfUrl,
   audioUrl,
   downloadName,
+  startModule = null,
 }: {
   course: Course;
   pdfUrl: string | null;
   audioUrl: string | null;
   downloadName: string;
+  /** ?module=N : le module à démarrer (1 = le premier) */
+  startModule?: number | null;
 }) {
   return (
     <div className="rl-wide flex flex-col gap-6 md:gap-8">
@@ -39,6 +42,7 @@ export function CourseView({
               storageKey={course.slug}
               title={course.title}
               duration={course.minutes * 60}
+              startModule={startModule}
             />
           </aside>
         )}

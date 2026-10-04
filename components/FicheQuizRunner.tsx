@@ -2,24 +2,39 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, CircleCheck, CircleX, ClipboardCheck, Copy, Pause, RotateCcw, X } from "lucide-react";
-import { InkBar } from "@/components/ink/InkBar";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
+import { CopieCorrigee, appreciationCopie, type LigneCopie, type MatiereCopie } from "@/components/adn/CopieCorrigee";
+import { RatureBandeau } from "@/components/adn/Rature";
+import { InkBarCoches } from "@/components/adn/InkBarCoches";
+import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { friendlyError } from "@/lib/errors";
 import type { FicheApi } from "@/lib/ficheApi";
+import { questions as nQuestions, ratures as nRatures, RATURE, verdictSession } from "@/lib/voice";
+import { QUIZ, dateCourte, memeJour, reprendreRatures } from "@/lib/voice-z4";
 import {
   buildRunExport,
+  effetSurCarnet,
   type AnswerMode,
   type AnswerRow,
   type DrillQuestion,
+  type QuestionState,
   type ReviewItem,
 } from "@/lib/ficheLog";
 
 export type RunItem = { q: DrillQuestion; page: number };
 
+/** Le carnet d'erreurs de la fiche, tel qu'il est avant la réponse en cours. */
+export type CarnetFiche = { states: Map<string, QuestionState>; reste: number };
+
 const LETTERS = ["A", "B", "C", "D", "E"];
 
 // Fond très léger teinté de rouge correcteur (mauvaise réponse choisie).
 const PEN_WASH = "bg-[color-mix(in_oklab,var(--pen)_7%,var(--surface))]";
+
+// Mode discret : la main du correcteur (écriture manuscrite) redevient du Geist.
+// En !important : le style du module CSS de la copie est hors couche, il
+// l'emporterait sinon sur un utilitaire Tailwind (@layer utilities).
+const DISCRET_SANS_PLUME = "[html[data-discreet='1']_&_[class*='plume']]:[font-family:var(--font-sans)]!";
 
 /** Bouton « Copier pour l'IA » (partagé avec FicheWorkspace). */
 export function CopyButton({
@@ -38,7 +53,7 @@ export function CopyButton({
   return (
     <button type="button" className={`btn btn-secondary ${className}`} onClick={onClick} disabled={disabled}>
       {copied ? <ClipboardCheck size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
-      <span aria-live="polite">{copied ? "Copié !" : children}</span>
+      <span aria-live="polite">{copied ? QUIZ.copie : children}</span>
     </button>
   );
 }
@@ -51,17 +66,27 @@ function prefersReducedMotion() {
   }
 }
 
-// Une série de questions (quiz d'une page, erreurs à revoir, bilan mixte).
-// Chaque question est corrigée côté serveur avec SON propre set_id, ce qui
-// permet de mélanger des questions de pages différentes dans la même série.
+/** Première ligne d'un énoncé, pour la marge de la copie. */
+const ligneCopie = (prompt: string) => prompt.split("\n")[0].replace(/\t/g, " ").trim();
+
+// Un quiz de fiche (page, ratures à reprendre, bilan mixte). Chaque question
+// est corrigée côté serveur avec SON propre set_id, ce qui permet de mélanger
+// des questions de pages différentes dans le même quiz.
 // Au clavier : A–E (ou 1–5) pour choisir, Entrée pour valider puis continuer.
+// Chaque réponse pose un trait sur l'anneau du jour (logo vivant) ; une
+// question du carnet enfin juste deux fois d'affilée est rayée (bandeau) ;
+// la fin du quiz est une copie corrigée.
 export function FicheQuizRunner({
   items,
   mode,
   title,
+  fiche,
   api,
   initialRunId,
   initialDone,
+  carnet,
+  themeOf,
+  anneau,
   onProgress,
   onAnswered,
   onPause,
@@ -71,14 +96,22 @@ export function FicheQuizRunner({
   items: RunItem[];
   mode: AnswerMode;
   title: string;
+  /** nom de la fiche (« Equity »), pour le sur-titre de la copie */
+  fiche?: string;
   api: FicheApi;
-  // Reprise d'une série sauvegardée : même run_id (pour que le graphique la
-  // compte comme une seule série) et réponses déjà données.
+  // Reprise d'un quiz sauvegardé : même run_id (pour que le graphique le
+  // compte comme un seul quiz) et réponses déjà données.
   initialRunId?: string;
   initialDone?: ReviewItem[];
+  /** carnet d'erreurs de la fiche (pour rayer une question enfin juste) */
+  carnet?: CarnetFiche;
+  /** thème d'une page (« Market Efficiency »), pour l'appréciation de la copie */
+  themeOf?: (page: number) => string | null;
+  /** l'avancée de l'anneau du jour sous la copie ; `ajoutes` = réponses données ici */
+  anneau?: (ajoutes: number) => React.ReactNode;
   onProgress: (done: ReviewItem[], runId: string) => void;
   onAnswered: (row: AnswerRow) => void;
-  // Quitter en gardant la série (reprenable) / la clore définitivement.
+  // Quitter en gardant le quiz (reprenable) / le clore définitivement.
   onPause: () => void;
   onClose: () => void;
   onReplay: (items: RunItem[]) => void;
@@ -94,6 +127,11 @@ export function FicheQuizRunner({
   const [finished, setFinished] = useState(startDone.length >= items.length);
   const [copied, setCopied] = useState(false);
   const [copiedQ, setCopiedQ] = useState(false);
+  // effet de la dernière réponse sur le carnet d'erreurs : rayée (elle le
+  // quitte), reprise (premier pas), entrée (première rature)
+  const [carnetEffet, setCarnetEffet] = useState<{ kind: "rayee" | "reprise" | "entree"; reste: number; rateeLe: string | null } | null>(null);
+  // centre horizontal du quiz, pour poser le bandeau de la rature au-dessus de lui
+  const [bandeauX, setBandeauX] = useState<number | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -107,7 +145,26 @@ export function FicheQuizRunner({
     setError(null);
     try {
       const r = await api.submitAnswer(current.q.set_id, current.q.id, selected);
+      // le carnet tel qu'il était AVANT cette réponse (onAnswered le met à jour)
+      const avant = carnet?.states.get(current.q.id);
+      const effet = effetSurCarnet(avant, r.isCorrect) ?? (carnet && !r.isCorrect && !avant?.inErrorPool ? "entree" : null);
+      if (effet === "rayee") {
+        // grand écran : au-dessus de la colonne du quiz ; téléphone : centré
+        const box = window.innerWidth >= 1024 ? rootRef.current?.getBoundingClientRect() : null;
+        setBandeauX(box ? box.left + box.width / 2 : null);
+      }
+      setCarnetEffet(
+        effet
+          ? {
+              kind: effet,
+              reste: Math.max(0, (carnet?.reste ?? 1) - 1),
+              rateeLe: avant?.lastWrongAt && !memeJour(avant.lastWrongAt, new Date()) ? dateCourte(avant.lastWrongAt) : null,
+            }
+          : null,
+      );
       setResult(r);
+      // un trait de plus sur l'anneau du jour (le logo de la barre du haut avance)
+      poserTrait(1);
       const nextDone: ReviewItem[] = [
         ...done,
         {
@@ -149,6 +206,7 @@ export function FicheQuizRunner({
       setSelected(null);
       setResult(null);
       setCopiedQ(false);
+      setCarnetEffet(null);
     } else {
       setFinished(true);
     }
@@ -164,7 +222,7 @@ export function FicheQuizRunner({
     }
   }
 
-  // La question qu'on vient de corriger, seule (même format que la série).
+  // La question qu'on vient de corriger, seule (même format que le quiz).
   async function copyQuestionForAi() {
     const last = done[done.length - 1];
     if (!last) return;
@@ -189,7 +247,7 @@ export function FicheQuizRunner({
     }
   }, [result]);
 
-  // Question suivante (ou bilan) : on remonte au début de la carte si elle est sortie de la vue.
+  // Question suivante (ou copie) : on remonte au début de la carte si elle est sortie de la vue.
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -197,7 +255,7 @@ export function FicheQuizRunner({
     if (top < 72) window.scrollBy({ top: top - 88, behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [idx, finished]);
 
-  // Raccourcis clavier (actifs seulement quand la série est visible).
+  // Raccourcis clavier (actifs seulement quand le quiz est visible).
   useEffect(() => {
     if (finished) return;
     function onKey(e: KeyboardEvent) {
@@ -233,43 +291,60 @@ export function FicheQuizRunner({
     const wrong = done
       .map((d, i) => ({ d, item: items[i] }))
       .filter(({ d }) => d.isCorrect === false);
-    const pct = done.length > 0 ? Math.round((score / done.length) * 100) : 0;
+    const total = done.length;
+    const marge: LigneCopie[] = done.map((d, i) => ({ label: ligneCopie(d.prompt), ok: d.isCorrect === true, n: i + 1 }));
+    // l'appréciation par thème (une page = un thème) ; un seul thème : le verdict, puis les ratures
+    const parPage = new Map<number, MatiereCopie>();
+    done.forEach((d, i) => {
+      const page = items[i]?.page ?? Number(/([0-9]+)/.exec(d.tag ?? "")?.[1]);
+      if (!Number.isFinite(page)) return;
+      const m = parPage.get(page) ?? { label: themeOf?.(page) ?? `Page ${page}`, ok: 0, total: 0 };
+      m.total += 1;
+      if (d.isCorrect) m.ok += 1;
+      parPage.set(page, m);
+    });
+    const matieres = [...parPage.values()];
+    const appreciation = appreciationCopie(score, total, matieres);
+    if (appreciation.length < 2 && wrong.length > 0) appreciation.push(`${nRatures(wrong.length)} à reprendre.`);
+    const ajoutes = Math.max(0, done.length - startDone.length);
+
     return (
-      <div ref={rootRef} className="rl-in flex flex-col gap-6">
-        <div className="card-hero p-6 md:p-8">
-          <p className="t-eyebrow">Série terminée</p>
-          <p className="mt-1.5 truncate text-[15px] font-semibold tracking-[-0.01em]">{title}</p>
-          <div className="mt-5 flex flex-wrap items-end gap-x-4 gap-y-1">
-            <span className="t-num text-[64px] md:text-[80px]" aria-label={`${score} sur ${done.length}`}>
-              {score}
-              <span className="text-muted">/{done.length}</span>
-            </span>
-            <span className={`pb-2 text-[22px] font-bold tracking-[-0.02em] tabular-nums ${pct < 50 ? "text-pen" : ""}`}>{pct} %</span>
-          </div>
-          <p className="t-small mt-3">
-            {wrong.length === 0
-              ? "Sans faute."
-              : `${wrong.length} erreur${wrong.length > 1 ? "s" : ""}, à retrouver dans « Mes erreurs » jusqu'à ce que tu les réussisses.`}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <button type="button" className="btn btn-primary btn-lg" onClick={onClose}>
-              Terminer
-            </button>
-            <CopyButton copied={copied} onClick={copyForAi} className="btn-lg">
-              Copier pour l&apos;IA
-            </CopyButton>
-            {wrong.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-lg"
-                onClick={() => onReplay(wrong.map(({ item }) => item))}
-              >
-                <RotateCcw size={15} aria-hidden /> Rejouer les {wrong.length} ratée{wrong.length > 1 ? "s" : ""}
-              </button>
-            )}
-          </div>
-          {error && <p className="t-small mt-3 text-pen">{error}</p>}
+      <div ref={rootRef} className="flex flex-col gap-8">
+        <div className={DISCRET_SANS_PLUME}>
+          <CopieCorrigee
+            surTitre={[fiche, QUIZ.surTitre[mode]].filter(Boolean).join(" · ")}
+            titre={title}
+            meta={nQuestions(total)}
+            score={score}
+            total={total}
+            questions={marge}
+            appreciation={appreciation}
+            anneau={anneau?.(ajoutes)}
+            actions={
+              <>
+                {wrong.length > 0 ? (
+                  <button type="button" className="btn btn-primary" onClick={() => onReplay(wrong.map(({ item }) => item))}>
+                    <RotateCcw size={15} aria-hidden /> {reprendreRatures(wrong.length)}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={onClose}>
+                    Terminer
+                  </button>
+                )}
+                <CopyButton copied={copied} onClick={copyForAi}>
+                  Copier pour l&apos;IA
+                </CopyButton>
+                {wrong.length > 0 && (
+                  <button type="button" className="btn btn-ghost text-muted" onClick={onClose}>
+                    Terminer
+                  </button>
+                )}
+              </>
+            }
+          />
+          <span className="sr-only">{verdictSession(score, total).ligne}</span>
         </div>
+        {error && <p className="t-small -mt-4 text-pen">{error}</p>}
 
         {wrong.length > 0 && (
           <section className="flex flex-col gap-3" aria-label="À retenir">
@@ -309,10 +384,23 @@ export function FicheQuizRunner({
 
   const n = current.q.choices.length;
   const isLast = idx >= items.length - 1;
+  const coches = items.map((_, i) => (i < done.length ? (done[i].isCorrect === null ? null : !!done[i].isCorrect) : null));
 
   return (
     <div ref={rootRef} className="card-hero p-5 sm:p-6 md:p-7">
-      {/* En-tête : page, série, avancement */}
+      {/* Une question du carnet enfin juste (deux fois d'affilée) : elle est
+          rayée (moment 6). Le bandeau flotte sous la barre du haut, au-dessus
+          de la colonne du quiz : il ne couvre jamais le bouton « Suivante »,
+          ne bloque rien (pointer-events: none) et se retire seul. */}
+      {result && carnetEffet?.kind === "rayee" && (
+        <div
+          className="pointer-events-none fixed left-1/2 top-[76px] z-[60] w-max max-w-[calc(100vw-32px)] -translate-x-1/2"
+          style={bandeauX !== null ? { left: bandeauX } : undefined}
+        >
+          <RatureBandeau key={idx} reste={carnetEffet.reste} rateeLe={carnetEffet.rateeLe} />
+        </div>
+      )}
+      {/* En-tête : page, quiz, avancement */}
       <div className="flex items-center gap-2.5">
         {mode !== "page" && (
           <span className="shrink-0 rounded-[7px] bg-surface-2 px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-muted">
@@ -324,8 +412,11 @@ export function FicheQuizRunner({
           <span className="font-semibold text-white">{idx + 1}</span>/{items.length}
         </span>
       </div>
+      {/* les coches : un trait d'encre par réponse juste, la croix du correcteur par rature, le crayon pour la suite */}
       <div className="mt-3 flex items-center gap-3">
-        <InkBar className="flex-1" value={((idx + (result ? 1 : 0)) / items.length) * 100} label="Avancement du quiz" />
+        <div className="min-w-0 flex-1">
+          <InkBarCoches items={coches} courante={result ? undefined : idx} height={22} label={`Avancement du quiz : ${done.length} sur ${items.length}`} />
+        </div>
         <span className="shrink-0 text-[12px] font-medium text-muted tabular-nums">
           Score : <span className="font-semibold text-white">{score}</span>
         </span>
@@ -402,15 +493,20 @@ export function FicheQuizRunner({
               ) : (
                 <CircleX size={22} className="shrink-0 text-pen" aria-hidden />
               )}
-              <span className={`t-h3 ${result.isCorrect ? "" : "text-pen"}`}>{result.isCorrect ? "Correct" : "Incorrect"}</span>
+              <span className={`t-h3 ${result.isCorrect ? "" : "text-pen"}`}>{result.isCorrect ? QUIZ.juste : QUIZ.rature}</span>
               {result.xp > 0 && (
                 <span className="rounded-full bg-surface px-2 py-0.5 font-mono text-[11.5px] font-semibold text-muted">+{result.xp} XP</span>
               )}
               <button type="button" className="btn btn-ghost btn-sm -mr-2 ml-auto text-muted" onClick={copyQuestionForAi}>
                 {copiedQ ? <ClipboardCheck size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-                {copiedQ ? "Copié !" : "Copier pour l'IA"}
+                {copiedQ ? QUIZ.copie : "Copier pour l'IA"}
               </button>
             </div>
+            {carnetEffet && (
+              <p className="t-micro mt-2" aria-hidden={carnetEffet.kind === "rayee" || undefined}>
+                {carnetEffet.kind === "rayee" ? RATURE.rayee(carnetEffet.reste) : carnetEffet.kind === "reprise" ? QUIZ.reprise : QUIZ.entree}
+              </p>
+            )}
             {!result.isCorrect && result.correctIndex !== null && (
               <div className="mt-4">
                 <p className="t-eyebrow">Bonne réponse</p>
@@ -459,7 +555,7 @@ export function FicheQuizRunner({
           </button>
         ) : (
           <button type="button" className="btn btn-primary btn-lg ml-auto lg:ml-0" onClick={next}>
-            {isLast ? "Voir le bilan" : "Suivante"}
+            {isLast ? QUIZ.voirCopie : "Suivante"}
             <ArrowRight size={16} aria-hidden />
           </button>
         )}
@@ -468,7 +564,7 @@ export function FicheQuizRunner({
   );
 }
 
-/** Ligne de correction du bilan : ta réponse (rouge correcteur) ou la bonne (encre). */
+/** Ligne de correction : ta réponse (rouge correcteur) ou la bonne (encre). */
 function AnswerLine({ kind, index, choices }: { kind: "right" | "wrong"; index: number | null; choices: string[] }) {
   const right = kind === "right";
   return (

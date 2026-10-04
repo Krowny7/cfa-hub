@@ -60,6 +60,11 @@
   color: var(--pen);
   font-weight: 700;
 }
+/* mode discret : pas d'écriture manuscrite, la main du correcteur passe en Geist */
+:global(html[data-discreet="1"]) .plume {
+  font-family: var(--font-sans);
+  font-size-adjust: none;
+}
 
 /* la note entourée */
 .note {

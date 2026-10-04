@@ -41,6 +41,12 @@ export type QuestionState = {
   lastSelectedWrong: number | null;
   // Raté au moins une fois ET pas encore réussi STREAK_TO_CLEAR fois d'affilée.
   inErrorPool: boolean;
+  /** date de la dernière erreur (null si jamais ratée) */
+  lastWrongAt: string | null;
+  /** nombre de fois où la question a quitté le carnet (« rayée ») */
+  clears: number;
+  /** date de la dernière rayure (null si jamais rayée) */
+  clearedAt: string | null;
 };
 
 export function computeQuestionStates(rows: AnswerRow[]): Map<string, QuestionState> {
@@ -51,7 +57,8 @@ export function computeQuestionStates(rows: AnswerRow[]): Map<string, QuestionSt
   for (const r of sorted) {
     const s =
       states.get(r.question_id) ??
-      { attempts: 0, wrong: 0, trailingCorrect: 0, lastSelectedWrong: null, inErrorPool: false };
+      { attempts: 0, wrong: 0, trailingCorrect: 0, lastSelectedWrong: null, inErrorPool: false, lastWrongAt: null, clears: 0, clearedAt: null };
+    const wasInPool = s.inErrorPool;
     s.attempts += 1;
     if (r.is_correct) {
       s.trailingCorrect += 1;
@@ -59,11 +66,56 @@ export function computeQuestionStates(rows: AnswerRow[]): Map<string, QuestionSt
       s.wrong += 1;
       s.trailingCorrect = 0;
       s.lastSelectedWrong = r.selected_index;
+      s.lastWrongAt = r.answered_at;
     }
     s.inErrorPool = s.wrong > 0 && s.trailingCorrect < STREAK_TO_CLEAR;
+    if (wasInPool && !s.inErrorPool) {
+      s.clears += 1;
+      s.clearedAt = r.answered_at;
+    }
     states.set(r.question_id, s);
   }
   return states;
+}
+
+// ---------------------------------------------------------------------------
+// Ratures (moment 6, « l'erreur rayée ») : une question du carnet d'erreurs
+// est « rayée » quand elle le quitte, c'est-à-dire à la réussite qui complète
+// STREAK_TO_CLEAR bonnes réponses d'affilée. On raye, on n'efface pas : les
+// rayures restent consultables et se comptent.
+
+/** Effet d'une réponse juste sur le carnet : rayée (elle le quitte), reprise (premier pas), ou rien. */
+export function effetSurCarnet(state: QuestionState | undefined, isCorrect: boolean): "rayee" | "reprise" | null {
+  if (!isCorrect || !state || !state.inErrorPool) return null;
+  return state.trailingCorrect + 1 >= STREAK_TO_CLEAR ? "rayee" : "reprise";
+}
+
+export type RatureEvent = { question_id: string; at: string };
+
+/** Chaque rayure du journal (une question peut être rayée plusieurs fois), de la plus ancienne à la plus récente. */
+export function computeRatureEvents(rows: AnswerRow[]): RatureEvent[] {
+  const sorted = [...rows].sort((a, b) => new Date(a.answered_at).getTime() - new Date(b.answered_at).getTime());
+  const st = new Map<string, { wrong: number; streak: number; pool: boolean }>();
+  const out: RatureEvent[] = [];
+  for (const r of sorted) {
+    const s = st.get(r.question_id) ?? { wrong: 0, streak: 0, pool: false };
+    if (r.is_correct) s.streak += 1;
+    else {
+      s.wrong += 1;
+      s.streak = 0;
+    }
+    const pool = s.wrong > 0 && s.streak < STREAK_TO_CLEAR;
+    if (s.pool && !pool) out.push({ question_id: r.question_id, at: r.answered_at });
+    s.pool = pool;
+    st.set(r.question_id, s);
+  }
+  return out;
+}
+
+/** Les rayures depuis un instant donné (ISO ou Date). */
+export function ratureEventsSince(events: RatureEvent[], since: Date | string): number {
+  const t = new Date(since).getTime();
+  return events.filter((e) => new Date(e.at).getTime() >= t).length;
 }
 
 export type PageProgress = {

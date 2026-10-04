@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FastForward, Pause, Play, Rewind, SkipBack, SkipForward } from "lucide-react";
+import { COURS } from "@/lib/voice-z4";
 
 export type Chapter = { title: string; start: number };
 
@@ -23,6 +24,11 @@ const fmtRate = (r: number) => `${String(r).replace(".", ",")}×`;
  * module, chapitres cliquables, vitesse de lecture, et reprise là où on
  * s'était arrêté (si `storageKey` est fourni). Les contrôles de l'écran
  * verrouillé (téléphone) suivent le module en cours.
+ *
+ * `startModule` (1 à N, lien /courses/<slug>?module=N) : le lecteur se place
+ * au début de ce module et lance la lecture ; si le navigateur la refuse
+ * (pas encore de geste sur la page), le module attend, prêt, qu'on appuie
+ * sur lecture.
  */
 export function CourseAudioPlayer({
   src,
@@ -30,6 +36,7 @@ export function CourseAudioPlayer({
   storageKey,
   title,
   duration: durationHint,
+  startModule = null,
 }: {
   src: string;
   chapters: Chapter[];
@@ -39,6 +46,8 @@ export function CourseAudioPlayer({
   title?: string;
   /** durée connue d'avance (secondes), en attendant les métadonnées */
   duration?: number;
+  /** module à démarrer (1 = le premier) ; null : reprise habituelle */
+  startModule?: number | null;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
@@ -49,8 +58,11 @@ export function CourseAudioPlayer({
   const [duration, setDuration] = useState(durationHint ?? 0);
   const [rate, setRate] = useState(1);
   const [resumedAt, setResumedAt] = useState<number | null>(null);
+  // ?module=N : le module demandé, prêt (la lecture attend un geste si le navigateur la refuse)
+  const [modulePret, setModulePret] = useState<number | null>(null);
 
   const posKey = storageKey ? POS_PREFIX + storageKey : null;
+  const startAt = startModule && startModule >= 1 && startModule <= chapters.length ? chapters[startModule - 1].start : null;
 
   function savePosition(t: number, total: number) {
     if (!posKey) return;
@@ -73,12 +85,29 @@ export function CourseAudioPlayer({
         setRate(r);
       }
       const saved = posKey ? Number(localStorage.getItem(posKey)) : 0;
-      if (saved > 5) {
+      if (startAt === null && saved > 5) {
         pendingSeek.current = saved;
         setCurrent(saved);
         setResumedAt(saved);
       }
     } catch {}
+
+    // Lien vers un module : on s'y place et on lance la lecture. Le paramètre
+    // quitte l'adresse : un rechargement reprend là où l'écoute s'est arrêtée.
+    if (startAt !== null) {
+      pendingSeek.current = startAt;
+      setCurrent(startAt);
+      audio.play().then(
+        () => setModulePret(null),
+        () => setModulePret(startModule),
+      );
+      setModulePret(startModule);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("module");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+      } catch {}
+    }
 
     const applyPending = () => {
       const p = pendingSeek.current;
@@ -97,7 +126,10 @@ export function CourseAudioPlayer({
       if (audio.duration && Number.isFinite(audio.duration)) setDuration(audio.duration);
       applyPending();
     };
-    const onPlay = () => setPlaying(true);
+    const onPlay = () => {
+      setPlaying(true);
+      setModulePret(null);
+    };
     const onPause = () => {
       setPlaying(false);
       savePosition(audio.currentTime, audio.duration || 0);
@@ -311,8 +343,14 @@ export function CourseAudioPlayer({
           </div>
           <span className="w-[58px] shrink-0" aria-hidden />
         </div>
-        {resumedAt !== null && !playing && Math.abs(current - resumedAt) < 1 && (
-          <p className="t-micro mt-3 text-center">Reprise là où tu t&apos;étais arrêté, à {formatTime(resumedAt)}.</p>
+        {modulePret !== null && !playing ? (
+          <p className="t-micro mt-3 text-center" role="status">
+            {COURS.modulePret(modulePret)}
+          </p>
+        ) : (
+          resumedAt !== null &&
+          !playing &&
+          Math.abs(current - resumedAt) < 1 && <p className="t-micro mt-3 text-center">{COURS.reprise(formatTime(resumedAt))}</p>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 // Données reçues par les composants de l'espace Moi (props sérialisables).
 import type { MyRank } from "@/components/classement/types";
 import type { AnswerStats } from "@/lib/answer-stats";
+import type { EtatJour } from "@/lib/voice";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -9,9 +10,11 @@ export type FicheErrorItem = {
   fiche: string;
   href: string;
   page: number | null;
-  /** nombre de fois ratée */
+  /** nombre de fois manquée */
   wrong: number;
   lastWrongAt: string;
+  /** rayée : date de la dernière rayure (sortie du carnet) ; absent pour une rature à reprendre */
+  clearedAt?: string | null;
 };
 
 export type FicheErrorGroup = { fiche: string; href: string; count: number; pages: number[] };
@@ -26,6 +29,10 @@ export type FicheErrors = {
   groups: FicheErrorGroup[];
   /** les plus récentes d'abord (liste tronquée) */
   items: FicheErrorItem[];
+  /** les dernières questions rayées (sorties du carnet), la plus récente d'abord : on raye, on n'efface pas */
+  rayees: FicheErrorItem[];
+  /** rayures (une question peut être rayée plusieurs fois) : ces 7 derniers jours, et depuis le début */
+  reprises: { semaine: number; total: number };
 };
 
 export type TopicStat = {
@@ -58,7 +65,10 @@ export type MoiData = {
   avatarUrl: string | null;
   /** date d'examen (AAAA-MM-JJ), null si pas fixée */
   examDate: string | null;
+  /** jours d'encre (aujourd'hui compris s'il est fait, sinon jusqu'à hier) */
   streak: number;
+  /** le bâton du jour : fait, en attente, ou sec le soir (etatDuJour) */
+  dayState: EtatJour;
   xpTotal: number;
   level: number;
   /** progression dans le niveau, 0–100 */

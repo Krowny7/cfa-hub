@@ -1,5 +1,5 @@
-// Questions répondues, toutes sources confondues : duels, examens blancs,
-// examens officiels, QCM, sessions ciblées et fiches. Recoupe les tables où
+// Questions répondues, toutes sources confondues : duels, défi du jour,
+// examens blancs, examens officiels, QCM, sessions ciblées et fiches. Recoupe les tables où
 // chaque parcours enregistre ses réponses, puis range tout par matière (les
 // 10 du CFA Niveau I), par thème (reading, page de fiche, session de mock) et
 // par passage (un duel, une session, un quiz de page…).
@@ -14,12 +14,18 @@
 // - Duels : duel_answers (une ligne par réponse), seulement pour les duels
 //   clos (terminés, ou refusés / expirés après avoir joué, ou échus) : les
 //   scores restent cachés jusqu'à la fin du duel.
+// - Défi du jour : daily_answers (une ligne par réponse ; client admin, pas
+//   de policy) et daily_challenges (chrono, ordre des questions), seulement
+//   pour les copies rendues ou échues : rien n'est jugé avant la fin d'une
+//   copie. Sans la clé admin, les copies rendues comptent au score
+//   (daily_attempts), rangées dans « Plusieurs matières ». Tables absentes
+//   (migration du défi pas encore appliquée) : la source reste vide.
 // - Examens blancs : mock_exam_results.answers (réponse par question, jugée
 //   avec la clé côté serveur) ; mock_exam_attempts (reprises) ne gardent que
 //   le score, rangé dans « Plusieurs matières ».
 // - Examens : les mocks officiels (dossier « Mocks Officiels (Système) »)
-//   joués en entier dans /qcm (quiz_attempts, score par passage). /exam
-//   n'enregistre rien en base.
+//   joués en entier dans /qcm (quiz_attempts, score par passage), et /exam
+//   quand il y écrit son résultat.
 // - QCM : les autres QCM joués en entier (quiz_attempts) et les sessions
 //   chronométrées en mode QCM (practice_sessions).
 // - Sessions ciblées : practice_session_results, au détail par question
@@ -37,26 +43,30 @@ import { fmtShortDate } from "@/components/classement/format";
 // Types et libellés (partagés avec les composants)
 // ---------------------------------------------------------------------------
 
-export const ANSWER_SOURCES = ["duel", "mock", "exam", "qcm", "practice", "fiche"] as const;
+export const ANSWER_SOURCES = ["duel", "daily", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
 export type AnswerSource = (typeof ANSWER_SOURCES)[number];
 export type SourceFilter = AnswerSource | "all";
 
 export const SOURCE_LABELS: Record<AnswerSource, string> = {
   duel: "Duels",
+  daily: "Défi du jour",
   mock: "Examens blancs",
   exam: "Examens officiels",
   qcm: "QCM",
   practice: "Sessions ciblées",
+  calc: "Calculs",
   fiche: "Fiches",
 };
 
 /** Où aller jouer chaque source (états vides). */
 export const SOURCE_HREFS: Record<AnswerSource, string> = {
   duel: "/duel",
+  daily: "/defi",
   mock: "/mock-exams",
   exam: "/official-exams",
   qcm: "/qcm",
   practice: "/practice",
+  calc: "/calculs",
   fiche: "/fiches",
 };
 
@@ -284,6 +294,10 @@ type DuelRow = {
   created_at: string;
 };
 type DuelAnswerRow = { duel_id: string; question_id: string; selected_index: number | null; is_correct: boolean | null };
+type DailyAttemptRow = { challenge_id: string; day: string; started_at: string; finished_at: string | null; score: number | null; total: number | null };
+type CalcRow = { topic: string; type_key: string; level: string; correct: boolean; answered_at: string };
+type DailyAnswerRow = { challenge_id: string; position: number; question_id: string | null; selected_index: number | null; is_correct: boolean | null };
+type DailyChallengeRow = { id: string; question_ids: string[] | null; time_limit_seconds: number | null };
 type MockResultRow = { exam_id: string; answers: unknown; score: number | null; total: number | null; completed_at: string | null };
 type MockAttemptRow = { id: string; exam_id: string; score: number | null; total: number | null; completed_at: string | null };
 type QuizAttemptRow = { id: string; set_id: string; score: number | null; total: number | null; created_at: string | null };
@@ -311,6 +325,17 @@ function parseGiven(v: unknown): Given[] | null {
 }
 
 const num = (v: unknown) => Math.max(0, Number(v) || 0);
+
+/** Chrono du défi du jour (45 min) et marge réseau de la dernière réponse, comme le serveur. */
+const DAILY_LIMIT_S = 2700;
+const DAILY_GRACE_MS = 20_000;
+
+/** Une copie du défi est close : rendue, ou son chrono est échu (le serveur la rendra d'office). */
+function dailyClosed(a: DailyAttemptRow, limitS: number | null | undefined, now: number) {
+  if (a.finished_at) return true;
+  const start = new Date(a.started_at).getTime();
+  return Number.isFinite(start) && start + (limitS || DAILY_LIMIT_S) * 1000 + DAILY_GRACE_MS < now;
+}
 
 /** Un duel est clos pour ce joueur : plus personne n'y répond, les scores peuvent se lire. */
 function duelClosed(d: DuelRow, userId: string, now: number) {
@@ -348,7 +373,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const now = opts.now ?? Date.now();
   const missing = new Set<AnswerSource>();
 
-  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log] = await Promise.all([
+  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows] = await Promise.all([
     readOnce<DuelRow>(
       reader
         .from("duels")
@@ -365,6 +390,13 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     readOnce<SetSessionRow>(reader.from("practice_sessions").select("id,set_id,set_title,correct,total,occurred_at").eq("user_id", userId).eq("mode", "qcm").limit(10000)),
     readOnce<PracticeRow>(reader.from("practice_session_results").select("id,topics,score,total,answers,completed_at").eq("user_id", userId).limit(5000)),
     readAll<LogRow>((a, b) => reader.from("quiz_answer_log").select("set_id,is_correct,run_id,mode,answered_at").eq("user_id", userId).order("answered_at").range(a, b)),
+    // défi du jour : les copies (lisibles par le joueur), puis les réponses (admin seulement)
+    readOnce<DailyAttemptRow>(reader.from("daily_attempts").select("challenge_id,day,started_at,finished_at,score,total").eq("user_id", userId).limit(2000)),
+    opts.privileged
+      ? readAll<DailyAnswerRow>((a, b) => reader.from("daily_answers").select("challenge_id,position,question_id,selected_index,is_correct").eq("user_id", userId).order("answered_at").range(a, b))
+      : Promise.resolve(null),
+    // exercices de calcul (migration_calc.sql ; table absente : source vide)
+    readAll<CalcRow>((a, b) => reader.from("calc_attempts").select("topic,type_key,level,correct,answered_at").eq("user_id", userId).order("answered_at").range(a, b)),
   ]);
 
   if (duels === null || duelAnswers === null) missing.add("duel");
@@ -373,17 +405,36 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   if (quizAttempts === null && setSessions === null) missing.add("qcm");
   if (practice === null) missing.add("practice");
   if (log === null) missing.add("fiche");
+  if (calcRows === null) missing.add("calc");
 
-  // --- Questions à juger ou à ranger (duels, examens blancs, sessions ciblées)
+  // --- Questions à juger ou à ranger (duels, défi du jour, examens blancs, sessions ciblées)
   const closed = new Map<string, DuelRow>();
   for (const d of duels ?? []) if (duelClosed(d, userId, now)) closed.set(d.id, d);
   const duelRows = (duelAnswers ?? []).filter((a) => closed.has(a.duel_id));
+
+  // Défi du jour : le chrono et l'ordre des questions de chaque défi joué
+  // (client admin), pour ne compter que les copies closes. Une copie encore
+  // ouverte ne compte jamais : sa justesse reste cachée jusqu'au bout.
+  const dailyIds = [...new Set((dailyAttempts ?? []).map((a) => a.challenge_id))];
+  const challenges =
+    opts.privileged && dailyIds.length ? await readIds<DailyChallengeRow>(dailyIds, (c) => reader.from("daily_challenges").select("id,question_ids,time_limit_seconds").in("id", c)) : null;
+  const challengeOf = new Map((challenges ?? []).map((c) => [c.id, c]));
+  const dailyDone = new Map<string, DailyAttemptRow>();
+  for (const a of dailyAttempts ?? []) if (dailyClosed(a, challengeOf.get(a.challenge_id)?.time_limit_seconds, now)) dailyDone.set(a.challenge_id, a);
+  // détail par question : avec les réponses ET les défis lisibles ; sinon, au score
+  const dailyDetail = dailyAnswers !== null && challenges !== null;
+  const dailyRows = dailyDetail
+    ? (dailyAnswers ?? [])
+        .filter((a) => dailyDone.has(a.challenge_id))
+        .map((a) => ({ ...a, question_id: a.question_id ?? challengeOf.get(a.challenge_id)?.question_ids?.[a.position] ?? null }))
+    : [];
 
   // Réponses gardées par question (examens blancs, sessions ciblées) : à
   // juger avec la clé, lisible seulement côté admin. Sans elle, ces passages
   // comptent au score, comme les anciens résultats sans détail.
   const qids = new Set<string>();
   for (const a of duelRows) qids.add(a.question_id);
+  for (const a of dailyRows) if (a.question_id) qids.add(a.question_id);
   const keyed = [...(mockResults ?? []), ...(practice ?? [])].flatMap((r) => parseGiven(r.answers) ?? []);
   if (opts.privileged) for (const g of keyed) qids.add(g.question_id);
 
@@ -444,6 +495,30 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     perSet("duel", `d:${id}`, rows);
   }
 
+  // Défi du jour : un passage par copie close, détaillé par question avec la
+  // clé admin, sinon au score de la copie rendue
+  const byDaily = new Map<string, { qid: string; answered: boolean; ok: boolean }[]>();
+  for (const a of dailyRows) {
+    if (!a.question_id) continue;
+    const list = byDaily.get(a.challenge_id) ?? [];
+    list.push({ qid: a.question_id, answered: a.selected_index !== null, ok: !!a.is_correct });
+    byDaily.set(a.challenge_id, list);
+  }
+  for (const [id, a] of dailyDone) {
+    const pid = `dj:${id}`;
+    passages.set(pid, { source: "daily", label: "Défi du jour", at: a.finished_at ?? a.started_at, href: `/defi/${String(a.day).slice(0, 10)}` });
+    const rows = byDaily.get(id);
+    if (rows) perSet("daily", pid, rows, a.score);
+    else if (!dailyDetail && a.finished_at && num(a.total) > 0)
+      contribs.push({
+        source: "daily",
+        passage: pid,
+        target: { kind: "bucket", subject: "mixed", themeKey: "daily", label: "Défi du jour", tag: null, order: 650 },
+        n: num(a.total),
+        ok: Math.min(num(a.score), num(a.total)),
+      });
+  }
+
   // Examens blancs (premier essai, détaillé ; sinon au score) et reprises (au score)
   for (const { r, given } of mockGiven) {
     const id = `m:${r.exam_id}`;
@@ -494,6 +569,34 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     } else {
       contribs.push({ source: "practice", passage: id, target: { kind: "bucket", subject: "mixed", themeKey: "practice-mixed", label: "Sessions ciblées multi-matières", tag: null, order: 700 }, n: num(r.total), ok: num(r.score) });
     }
+  }
+
+  // Calculs : un passage = un type de calcul joué un jour donné ; le thème
+  // est le type (nom lisible tiré de sa clé : le catalogue, qui contient les
+  // réponses, reste côté serveur et n'est pas importé ici).
+  const PARIS_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });
+  const parisDayKey = (iso: string) => {
+    const t = Date.parse(iso);
+    return Number.isFinite(t) ? PARIS_DAY.format(t) : "?";
+  };
+  const calcName = (key: string) => {
+    const t = key.replace(/-/g, " ");
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+  const calcPassages = new Map<string, { topic: string; key: string; at: string; n: number; ok: number }>();
+  for (const r of calcRows ?? []) {
+    const day = parisDayKey(r.answered_at);
+    const pid = `c:${r.topic}:${r.type_key}:${day}`;
+    const p = calcPassages.get(pid) ?? { topic: r.topic, key: r.type_key, at: r.answered_at, n: 0, ok: 0 };
+    p.n += 1;
+    p.ok += r.correct ? 1 : 0;
+    if (r.answered_at > p.at) p.at = r.answered_at;
+    calcPassages.set(pid, p);
+  }
+  for (const [pid, p] of calcPassages) {
+    const subject = SUBJECT_NAMES[p.topic] ? p.topic : "other";
+    passages.set(pid, { source: "calc", label: `Calculs · ${calcName(p.key)}`, at: p.at, href: `/calculs` });
+    contribs.push({ source: "calc", passage: pid, target: { kind: "bucket", subject, themeKey: `calc:${p.key}`, label: `Calcul · ${calcName(p.key)}`, tag: null, order: 1800 }, n: p.n, ok: p.ok });
   }
 
   // Fiches : un passage = un run_id
@@ -613,7 +716,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     if (s && tallyOf(s.by).n > 0) out.push({ key, name, code: "", pseudo: true, by: s.by, themes: toThemes(key, s) });
   }
 
-  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log].some((x) => x !== null);
+  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts].some((x) => x !== null);
   return { available: readable, missing: [...missing], by: total, subjects: out };
 }
 

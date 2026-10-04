@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, FileText, Headphones } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
+import { Icone } from "@/components/adn/icons";
 import { TwoColumnRows } from "@/components/reviser/SubjectRows";
 
 // Page d'index d'un format de révision (fiches, cours complets), dans le
@@ -9,7 +10,6 @@ import { TwoColumnRows } from "@/components/reviser/SubjectRows";
 
 export type ShelfItem = { href: string; title: string; meta: string; desc: string };
 
-const ICONS = { fiche: FileText, cours: Headphones } as const;
 
 export function ShelfPage({
   kind,
@@ -19,14 +19,13 @@ export function ShelfPage({
   items,
   upcoming,
 }: {
-  kind: keyof typeof ICONS;
+  kind: "fiche" | "cours";
   kicker: string;
   title: string;
   desc: string;
   items: ShelfItem[];
   upcoming: string[];
 }) {
-  const Icon = ICONS[kind];
   return (
     <div className="rl-wide flex flex-col gap-8 md:gap-10">
       <header className="flex flex-col gap-3">
@@ -45,7 +44,7 @@ export function ShelfPage({
             render={(it, i) => (
               <Link href={it.href} className="rl-row rl-in group -mx-1 flex items-center gap-4 rounded-[14px] px-3 py-4" style={{ animationDelay: `${i * 0.04}s` }}>
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-surface-2">
-                  <Icon size={18} />
+                  <Icone nom={kind} size={20} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[16px] font-bold leading-tight tracking-[-0.01em]">{it.title}</span>

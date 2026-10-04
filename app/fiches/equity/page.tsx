@@ -1,8 +1,10 @@
 import { FicheDrillPage } from "@/components/FicheDrillPage";
 
-export default function EquityFiche() {
+// ?page=N ouvre la page N, ?onglet=erreurs|melange|progression un onglet.
+export default function EquityFiche({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <FicheDrillPage
+      searchParams={searchParams}
       config={{
         title: "Equity",
         description: "8 synthèses, une par grand thème, chacune suivie de son QCM corrigé.",

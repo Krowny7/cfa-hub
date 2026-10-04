@@ -5,6 +5,7 @@ import { UserRound } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
+import { SceauPerso } from "@/components/adn/SceauPerso";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -117,15 +118,14 @@ export function ProfileSettings() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt="Ta photo de profil" className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[var(--shadow-1)]" />
         ) : (
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-dashed border-line-2 bg-surface-2 text-muted">
-            <UserRound size={22} aria-hidden />
-          </div>
+          // Sans photo, ton sceau d'initiales en tient lieu (la photo est facultative).
+          <SceauPerso nom={username || null} taille={64} className="shrink-0" title="Ton sceau" />
         )}
         <div className="min-w-0">
           <div className="text-[14px] font-semibold">{t("settings.avatarLabel")}</div>
           <div className="mt-0.5 text-[12.5px] text-muted">{t("settings.avatarHint")}</div>
           <label className={"btn btn-secondary mt-2 min-h-[36px] cursor-pointer text-[13px] " + (loading || busy ? "pointer-events-none opacity-45" : "")}>
-            {t("settings.upload")}
+            {avatarUrl ? "Changer de photo" : "Ajouter une photo (facultatif)"}
             <input
               className="sr-only"
               type="file"

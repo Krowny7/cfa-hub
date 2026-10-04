@@ -12,6 +12,9 @@ import { AnswerStatsCard } from "@/components/moi/AnswerStatsCard";
 import { fmtInt } from "@/components/classement/format";
 import { CURRENT_PROGRAM } from "@/lib/domains";
 import { tallyOf } from "@/lib/answer-stats";
+import { Batons } from "@/components/adn/Batons";
+import { LEXIQUE, VIDE, serie } from "@/lib/voice";
+import { MOI } from "@/lib/voice-z1";
 import type { MoiData } from "@/components/moi/types";
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
@@ -30,7 +33,7 @@ function SubjectsCard({ d }: { d: MoiData }) {
       <div className="flex min-w-0 flex-col gap-5 border-t border-line pt-5 md:border-l md:border-t-0 md:py-2 md:pl-8 md:pt-2">
         {known.length === 0 ? (
           <p className="t-small">
-            Ton tracé apparaît dès 5 questions répondues dans une matière.{" "}
+            {VIDE.radar}{" "}
             <Link href="/entrainement" className="ink-link">
               S&apos;entraîner
             </Link>
@@ -118,12 +121,16 @@ function ActivityCard({ d }: { d: MoiData }) {
       </CardLabel>
 
       <div className="grid items-center gap-x-10 gap-y-6 md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(180px,1fr)_auto_minmax(0,1.6fr)]">
+        {/* la série en jours d'encre : le chiffre, et les bâtons au pinceau (le bâton du jour fait, en attente, ou sec le soir) */}
         <div className="min-w-0">
           <div className="flex items-baseline gap-2">
             <span className="t-num rl-count text-[56px]" style={{ "--rl-to": Math.max(0, d.streak) } as React.CSSProperties} aria-label={`${d.streak}`} />
-            <span className="t-small font-semibold">jour{d.streak > 1 ? "s" : ""} d&apos;affilée</span>
+            <span className="t-small font-semibold">{d.streak > 1 ? LEXIQUE.joursEncre : LEXIQUE.jourEncre}</span>
           </div>
-          <p className="t-micro mt-2 max-w-[220px]">{d.streak > 0 ? "Une question par jour suffit à garder la série." : "Réponds à une question aujourd'hui pour lancer ta série."}</p>
+          <div className="mt-3">
+            <Batons jours={d.streak} jour={d.dayState} height={28} max={4} />
+          </div>
+          <p className={"t-micro mt-2 max-w-[240px] " + (d.dayState === "sec" ? "font-semibold text-white" : "")}>{d.dayState === "fait" || d.streak === 0 ? MOI.serieAide(d.streak) : serie(d.streak, d.dayState).ligne}</p>
         </div>
 
         <ActivityHeatmap days={d.xpDays} />

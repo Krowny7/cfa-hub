@@ -1,8 +1,10 @@
 import { FicheDrillPage } from "@/components/FicheDrillPage";
 
-export default function FixedIncomeFiche() {
+// ?page=N ouvre la page N, ?onglet=erreurs|melange|progression un onglet.
+export default function FixedIncomeFiche({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   return (
     <FicheDrillPage
+      searchParams={searchParams}
       config={{
         title: "Fixed Income",
         description: "8 synthèses, une par grand thème, chacune suivie de son QCM corrigé.",

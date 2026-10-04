@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
-import { BookOpen, Target, Trophy, User } from "lucide-react";
 import { InkRing } from "@/components/ink/InkRing";
+import { Icone, type IconeNom } from "@/components/adn/icons";
 import { PageHero } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { TIERS } from "@/lib/ranks";
 import { DOMAINS } from "@/lib/domains";
+import { CONNEXION } from "@/lib/voice";
+import { CONNEXION_Z1 } from "@/lib/voice-z1";
 
 function GoogleIcon() {
   return (
@@ -60,21 +62,25 @@ export default function LoginPage() {
     }
   }
 
-  const spaces = [
-    { Icon: BookOpen, title: "Réviser", desc: "Fiches, cours audio, flashcards." },
-    { Icon: Target, title: "S'entraîner", desc: "QCM officiels et examens blancs." },
-    { Icon: Trophy, title: "Classement", desc: "Duels de 30 questions, ELO." },
-    { Icon: User, title: "Moi", desc: "Stats, erreurs, progression." },
+  const spaces: { icone: IconeNom; title: string; desc: string }[] = [
+    { icone: "reviser", title: "Réviser", desc: CONNEXION_Z1.reviser },
+    { icone: "entrainer", title: "S'entraîner", desc: CONNEXION_Z1.entrainer },
+    { icone: "classement", title: "Classement", desc: CONNEXION_Z1.classement },
+    { icone: "moi", title: "Moi", desc: CONNEXION.moi },
   ];
 
-  // Vitrine : le titre, LA carte de connexion (seule action en encre), puis
+  // Vitrine, en voix « Le Trait » : la devise, LA carte de connexion (seule
+  // action en encre), puis
   // les huit rangs sur une carte sombre (le seul moment en couleur) et les
   // quatre espaces posés sur le papier. Sur téléphone : titre → connexion → reste.
   // Mouvement : l'anneau du logo se trace dans la carte, les rangs montent
   // un à un de Bronze au Top 10, les espaces suivent en cascade.
   return (
     <div className="rl-wide grid items-start gap-x-14 gap-y-10 pb-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:pt-8">
-      <PageHero kicker="Ranked Lobby" title={<>Révise, affronte,<br />monte en rang.</>} className="lg:col-start-1 lg:row-start-1">
+      <PageHero kicker="Ranked Lobby" title={CONNEXION.titre} className="lg:col-start-1 lg:row-start-1">
+        <p className="t-body mb-2 basis-full">
+          <span className="block max-w-[440px]">{CONNEXION.sousTitre}</span>
+        </p>
         {DOMAINS.map((d) => (
           <span key={d.key} className={"chip chip-sm " + (d.ready ? "chip-active" : "chip-quiet")}>
             {d.name}
@@ -87,8 +93,8 @@ export default function LoginPage() {
       <section className="card-hero rl-in grid content-start gap-6 p-7 md:p-9 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-6">
         <div className="grid gap-3">
           <InkRing size={36} title="Ranked Lobby" className="rl-deco rl-ink-draw" />
-          <h2 className="t-h1">{t("login.signinTitle")}</h2>
-          <p className="t-small">{t("login.signinDesc")}</p>
+          <h2 className="t-h1">{CONNEXION.carteTitre}</h2>
+          <p className="t-small">{CONNEXION.carteTexte}</p>
         </div>
 
         <button type="button" onClick={signInWithGoogle} disabled={busy} className="btn btn-primary btn-lg w-full">
@@ -99,9 +105,9 @@ export default function LoginPage() {
         {error ? <div className="text-sm font-semibold text-pen">{error}</div> : null}
 
         <div className="grid gap-3 border-t border-line pt-5">
-          <div className="t-eyebrow">{t("login.firstStepsTitle")}</div>
+          <div className="t-eyebrow">{CONNEXION.etapesTitre}</div>
           <ol className="grid gap-2.5">
-            {["Choisis ton pseudo et ta date d'examen.", "Commence par une fiche et son quiz.", "Joue tes 5 parties de placement : ton rang apparaît."].map((step, i) => (
+            {CONNEXION.etapes.map((step, i) => (
               <li key={i} className="flex items-baseline gap-3 text-[14px] leading-snug">
                 <span className="font-mono text-[12px] font-semibold text-muted">0{i + 1}</span>
                 <span>{step}</span>
@@ -117,8 +123,8 @@ export default function LoginPage() {
       <div className="grid gap-10 lg:col-start-1 lg:row-start-2">
         <section className="card-ink p-6 md:p-7" style={{ ["--tier-glow" as string]: TIERS[2].metal[1] }} aria-label="Les huit rangs">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[15px] font-semibold tracking-[-0.01em]">Huit rangs, de Bronze au Top 10</h2>
-            <span className="hidden text-[12px] text-[rgba(255,255,255,.55)] sm:inline">un par domaine</span>
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{CONNEXION.rangs}</h2>
+            <span className="hidden text-[12px] text-[rgba(255,255,255,.55)] sm:inline">{CONNEXION.rangsSous}</span>
           </div>
           <div className="rl-stagger mt-5 grid grid-cols-4 items-end gap-x-1 gap-y-5 sm:grid-cols-8" style={{ ["--rl-stagger-from" as string]: ".25s" }}>
             {TIERS.map((tier, i) => (
@@ -131,10 +137,10 @@ export default function LoginPage() {
         </section>
 
         <ul className="rl-stagger grid gap-x-8 gap-y-5 sm:grid-cols-2" style={{ ["--rl-stagger-from" as string]: ".5s" }}>
-          {spaces.map(({ Icon, title, desc }) => (
+          {spaces.map(({ icone, title, desc }) => (
             <li key={title} className="flex items-center gap-3.5">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] border border-line bg-surface text-white shadow-[var(--shadow-1)]">
-                <Icon size={17} strokeWidth={1.9} />
+                <Icone nom={icone} size={20} />
               </span>
               <div className="min-w-0">
                 <div className="text-[15px] font-semibold tracking-[-0.01em]">{title}</div>

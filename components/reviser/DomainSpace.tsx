@@ -8,17 +8,21 @@ import { DomainTabs } from "@/components/reviser/DomainTabs";
 const ICONS = { BarChart3, ScrollText, Globe2, Landmark } as const;
 
 // Squelette d'un espace (Réviser, S'entraîner) : une ligne de contexte
-// (espace · programme), le grand titre et les onglets de domaines. `lead`
+// (icône maison de l'espace, espace · programme), le grand titre et les
+// onglets de domaines. `lead`
 // suit le titre de près (le point focal) ; `children` vient ensuite, au
 // rythme des grandes sections (.rl-page). Les domaines pas encore ouverts
 // affichent un état « bientôt », sans rien inventer.
 export function DomainSpace({
   kicker,
+  icon,
   title,
   lead,
   children,
 }: {
   kicker: string;
+  /** icône de l'espace, devant la ligne de contexte (components/adn/icons) */
+  icon?: React.ReactNode;
   title: string;
   lead: React.ReactNode;
   children?: React.ReactNode;
@@ -34,9 +38,12 @@ export function DomainSpace({
       <div className="flex flex-col gap-7 md:gap-10">
         <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
           <div className="flex min-w-0 flex-col gap-3">
-            <p className="t-small font-semibold">
-              {kicker} · {program ? program.name : domain.name}
-              {later.length > 0 && <span className="text-faint font-medium"> · {later.map((p) => p.name.replace(/^CFA /, "")).join(", ")} bientôt</span>}
+            <p className="t-small flex items-center gap-2 font-semibold">
+              {icon}
+              <span>
+                {kicker} · {program ? program.name : domain.name}
+                {later.length > 0 && <span className="text-faint font-medium"> · {later.map((p) => p.name.replace(/^CFA /, "")).join(", ")} bientôt</span>}
+              </span>
             </p>
             <h1 className="t-hero rl-in m-0">{title}</h1>
           </div>

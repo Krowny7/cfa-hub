@@ -49,21 +49,49 @@ export function levelInfoFromXp(xpTotal: number): LevelInfo {
   }
 }
 
-// Partagé entre le dashboard et la Session (badge streak visible pendant
-// l'effort, pas seulement avant/après) — une seule source de vérité pour
-// le calcul du streak à partir des events XP quotidiens.
+// Partagé entre l'accueil, Moi et la Session (série visible pendant
+// l'effort, pas seulement avant/après) : une seule source de vérité pour
+// la série (les « jours d'encre ») à partir des événements XP quotidiens.
 export type XpDay = { day: string; xp: number };
 
-export function calcStreakAndToday(days: XpDay[]): { streak: number; xpToday: number } {
-  const today = new Date().toISOString().slice(0, 10);
+export type StreakInfo = {
+  /** jours d'encre d'affilée : aujourd'hui compris s'il est fait, sinon jusqu'à hier */
+  streak: number;
+  xpToday: number;
+  /** un trait a déjà été posé aujourd'hui */
+  todayDone: boolean;
+};
+
+/**
+ * La série en jours d'encre.
+ *
+ * Tant que rien n'est fait aujourd'hui, la série ne retombe pas à 0 : elle
+ * compte jusqu'à hier, et le bâton du jour attend (« encre sèche » le soir,
+ * voir etatDuJour / HEURE_ENCRE_SECHE dans lib/voice). Elle ne casse que si
+ * hier aussi est resté vide.
+ *
+ * @param days   XP par jour (get_xp_daily, jours UTC)
+ * @param opts.today  clé « AAAA-MM-JJ » du jour (défaut : aujourd'hui en UTC,
+ *                    comme get_xp_daily ; l'accueil passe le jour de Paris)
+ * @param opts.actifs jours actifs d'une autre source (questions répondues),
+ *                    qui comptent même sans XP (une réponse fausse, une
+ *                    question déjà réussie, un duel ne rapportent pas d'XP)
+ */
+export function calcStreakAndToday(days: XpDay[], opts: { today?: string; actifs?: Iterable<string> } = {}): StreakInfo {
+  const today = opts.today ?? new Date().toISOString().slice(0, 10);
   const map = new Map(days.map((d) => [d.day, d.xp]));
+  const actifs = new Set(opts.actifs ?? []);
+  const active = (day: string) => (map.get(day) ?? 0) > 0 || actifs.has(day);
   const xpToday = map.get(today) ?? 0;
+  const todayDone = active(today);
 
   let streak = 0;
   const cur = new Date(today + "T00:00:00Z");
+  // rien encore aujourd'hui : la série court jusqu'à hier
+  if (!todayDone) cur.setUTCDate(cur.getUTCDate() - 1);
   for (;;) {
     const dayStr = cur.toISOString().slice(0, 10);
-    if ((map.get(dayStr) ?? 0) > 0) {
+    if (active(dayStr)) {
       streak++;
       cur.setUTCDate(cur.getUTCDate() - 1);
     } else {
@@ -71,5 +99,5 @@ export function calcStreakAndToday(days: XpDay[]): { streak: number; xpToday: nu
     }
   }
 
-  return { streak, xpToday };
+  return { streak, xpToday, todayDone };
 }

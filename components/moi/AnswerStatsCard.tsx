@@ -23,19 +23,23 @@ const LABEL = (s: SourceFilter) => (s === "all" ? "Tout" : SOURCE_LABELS[s]);
 const IN_SOURCE: Record<SourceFilter, string> = {
   all: "",
   duel: "en duel",
+  daily: "au défi du jour",
   mock: "en examen blanc",
   exam: "en examen officiel",
   qcm: "en QCM",
   practice: "en session ciblée",
+  calc: "en calcul",
   fiche: "dans les fiches",
 };
 const ACTION: Record<SourceFilter, string> = {
   all: "S'entraîner",
   duel: "Lancer un duel",
-  mock: "Voir les examens blancs",
+  daily: "Les 30 du jour",
+  mock:"Voir les examens blancs",
   exam: "Voir les examens officiels",
   qcm: "Ouvrir les QCM",
   practice: "Lancer une session ciblée",
+  calc: "Ouvrir les calculs",
   fiche: "Ouvrir les fiches",
 };
 const PSEUDO_NOTE: Record<string, string> = {
@@ -258,7 +262,7 @@ export function AnswerStatsCard({ stats, initial = "all", open }: { stats: Answe
 
   return (
     <section className="card flex min-w-0 flex-col gap-6 p-6 md:p-7" aria-labelledby="moi-traits">
-      <CardLabel icon={<PenLine size={15} aria-hidden />} right={<span className="t-micro hidden sm:inline">duels, examens, QCM, sessions, fiches</span>}>
+      <CardLabel icon={<PenLine size={15} aria-hidden />} right={<span className="t-micro hidden sm:inline">duels, défi, examens, QCM, sessions, fiches</span>}>
         <span id="moi-traits">{TITLE}</span>
       </CardLabel>
 
@@ -309,7 +313,7 @@ export function AnswerStatsCard({ stats, initial = "all", open }: { stats: Answe
               // papier blanc : la structure viendra avec le premier trait
               <div className="flex h-full flex-col items-start justify-center gap-4 py-2 lg:py-6">
                 <hr aria-hidden className="pencil-dash w-full max-w-[320px]" />
-                <p className="t-small max-w-[440px]">Papier blanc pour l&apos;instant. Chaque question compte ici, d&apos;où qu&apos;elle vienne : duels, examens, QCM, sessions ciblées, fiches.</p>
+                <p className="t-small max-w-[440px]">Papier blanc pour l&apos;instant. Chaque question compte ici, d&apos;où qu&apos;elle vienne : duels, défi du jour, examens, QCM, sessions ciblées, fiches.</p>
                 <Link href="/entrainement" className="ink-link">
                   {ACTION.all}
                 </Link>
