@@ -112,6 +112,8 @@ export type AccueilData = {
   };
   /** défi reçu en attente (« incoming ») ou duel en cours (« active »), le plus récent */
   incomingDuel: { id: string; from: string | null; kind: "incoming" | "active" } | null;
+  /** demandes d'ami reçues (null : amis pas encore disponibles, ou aucune) */
+  demandesAmi?: { n: number; premier: { id: string; name: string; avatarUrl: string | null } } | null;
   resume: ResumeItem | null;
   activity: ActivityWeek;
   dailyGoal: number;

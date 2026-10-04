@@ -154,3 +154,13 @@ export function LaunchDuelTile() {
     </Tile>
   );
 }
+
+/** Une demande d'ami reçue (ou plusieurs) : y répondre dans « Mes amis ». */
+export function DemandeAmiTile({ demande }: { demande: NonNullable<AccueilData["demandesAmi"]> }) {
+  const { n, premier } = demande;
+  return (
+    <Tile href="/people?view=amis" label={n > 1 ? `${n} demandes d'ami` : "Demande d'ami"} icon={<Icone nom="moi" size={15} />} ariaLabel={`${premier.name} veut être ton ami. Répondre`} cta="Répondre">
+      <Ligne visual={<Visage nom={premier.name} />} title={`${premier.name} veut être ton ami`} meta={n > 1 ? `et ${n - 1} ${n - 1 > 1 ? "autres" : "autre"}` : "accepte, ou laisse passer"} />
+    </Tile>
+  );
+}

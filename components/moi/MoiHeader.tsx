@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, ChevronRight, Sparkles } from "lucide-react";
+import { CalendarClock, ChevronRight, Eye, Palette, Sparkles } from "lucide-react";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { Avatar } from "@/components/classement/Avatar";
 import { SceauPerso } from "@/components/adn/SceauPerso";
@@ -54,6 +54,15 @@ export function MoiHeader({ d, now }: { d: MoiData; now?: number }) {
               <Sparkles size={14} aria-hidden />
               Niveau {d.level}
             </span>
+          </p>
+          {/* la carte de joueur : la personnaliser, la voir comme les autres */}
+          <p className="mt-3 flex flex-wrap items-center gap-2">
+            <Link href="/moi/profil" className="btn btn-secondary btn-sm rl-press">
+              <Palette size={14} aria-hidden /> Personnaliser mon profil
+            </Link>
+            <Link href={`/people/${d.userId}?vue=inconnu`} className="btn btn-ghost btn-sm">
+              <Eye size={14} aria-hidden /> Voir comme les autres
+            </Link>
           </p>
         </div>
       </div>

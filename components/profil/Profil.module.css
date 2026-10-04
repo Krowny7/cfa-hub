@@ -1,0 +1,134 @@
+/* Le profil de joueur : bannières, cadres du sceau, titre à la plume.
+   --acc : la couleur choisie par le joueur (encre, vermillon, métal…). */
+
+/* ── Bannières ─────────────────────────────────────────────────────── */
+.banniere {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--surface-2);
+  color: var(--acc, var(--ink));
+}
+.banniere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 1;
+}
+.lavis {
+  background:
+    radial-gradient(85% 150% at 10% 0%, color-mix(in oklab, var(--acc) 34%, transparent), transparent 62%),
+    radial-gradient(60% 120% at 92% 100%, color-mix(in oklab, var(--acc) 20%, transparent), transparent 62%),
+    radial-gradient(40% 70% at 55% 35%, color-mix(in oklab, var(--acc) 9%, transparent), transparent 70%),
+    var(--surface-2);
+}
+.hachures {
+  background:
+    linear-gradient(90deg, var(--surface-2) 0%, transparent 45%),
+    repeating-linear-gradient(135deg, color-mix(in oklab, var(--acc) 26%, transparent) 0 1.3px, transparent 1.3px 9px),
+    var(--surface-2);
+}
+.registre {
+  background:
+    linear-gradient(90deg, transparent 58px, color-mix(in oklab, var(--pen) 60%, transparent) 58px 59.5px, transparent 59.5px 63px, color-mix(in oklab, var(--pen) 60%, transparent) 63px 64.5px, transparent 64.5px),
+    repeating-linear-gradient(180deg, transparent 0 25px, color-mix(in oklab, var(--acc) 22%, transparent) 25px 26px),
+    var(--surface-2);
+}
+.trame {
+  background:
+    radial-gradient(70% 140% at 100% 50%, var(--surface-2), transparent 70%),
+    radial-gradient(circle, color-mix(in oklab, var(--acc) 42%, transparent) 1.1px, transparent 1.7px) 0 0 / 13px 13px,
+    var(--surface-2);
+}
+.enso {
+  background: radial-gradient(55% 130% at 82% 50%, color-mix(in oklab, var(--acc) 12%, transparent), transparent 72%), var(--surface-2);
+}
+.enso .ensoSvg {
+  position: absolute;
+  right: 5%;
+  top: 50%;
+  width: min(40%, 250px);
+  height: auto;
+  transform: translateY(-50%) rotate(-14deg);
+  opacity: 0.9;
+}
+.nuit {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0.8px, transparent 1.4px) 0 0 / 37px 41px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.35) 0.7px, transparent 1.2px) 13px 19px / 53px 47px,
+    radial-gradient(110% 150% at 88% 0%, color-mix(in oklab, var(--acc) 38%, transparent), transparent 60%),
+    linear-gradient(160deg, #191921, #07070a);
+}
+.feuilleOr {
+  background:
+    radial-gradient(60% 120% at 20% 0%, rgba(255, 250, 220, 0.55), transparent 60%),
+    linear-gradient(112deg, #7c4f0e 0%, #d6a239 16%, #fff1b0 30%, #d9a43a 46%, #93630f 60%, #f1cf6a 78%, #a8771e 100%);
+}
+.diamant {
+  background:
+    linear-gradient(118deg, transparent 0 38%, rgba(255, 255, 255, 0.45) 38% 39%, transparent 39% 100%),
+    linear-gradient(62deg, transparent 0 58%, rgba(255, 255, 255, 0.35) 58% 59%, transparent 59% 100%),
+    conic-gradient(from 200deg at 72% 38%, #f4f8ff, #afc0f5, #5a5cc0, #c9d6ff, #8f9cf0, #eef2ff, #7f86e0, #f4f8ff);
+}
+
+/* ── Cadre du sceau ────────────────────────────────────────────────── */
+.cadre {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 30%;
+  padding: var(--pad, 6px);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-2, 0 6px 20px rgba(0, 0, 0, 0.12));
+}
+.cadre > * {
+  border-radius: 26%;
+}
+.pinceau {
+  background:
+    radial-gradient(circle at 50% 50%, transparent calc(50% - 1px), var(--ink) calc(50%)),
+    var(--ink);
+}
+.pinceau > * {
+  box-shadow: 0 0 0 3px var(--surface);
+  /* les initiales sont en réserve : sur un cadre d'encre, le papier dessous */
+  background: var(--surface);
+}
+.metal {
+  background: conic-gradient(from 210deg, var(--m0), var(--m1) 22%, var(--m2) 48%, var(--m1) 72%, var(--m0));
+}
+.metal > * {
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.sommet {
+  box-shadow: 0 0 0 1px var(--line), 0 0 22px 2px color-mix(in oklab, var(--m1) 55%, transparent);
+}
+.photo {
+  display: block;
+  object-fit: cover;
+  border-radius: 26%;
+}
+
+/* ── Titre à la plume ──────────────────────────────────────────────── */
+.titre {
+  font-family: var(--font-plume, var(--font-sans));
+  font-weight: 700;
+  line-height: 1;
+  /* la couleur choisie, poussée vers l'encre : lisible en clair comme en nuit */
+  color: color-mix(in oklab, var(--acc, var(--pen)) 72%, var(--ink));
+}
+:global(html[data-discreet="1"]) .titre {
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+/* un chiffre ou un trait à la couleur du joueur (vitrine) */
+.accent {
+  color: color-mix(in oklab, var(--acc, var(--ink)) 78%, var(--ink));
+}
+.filet {
+  background: var(--acc, var(--ink));
+}

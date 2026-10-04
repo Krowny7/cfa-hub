@@ -8,6 +8,7 @@ import { PeopleView, type TopRow } from "@/components/classement/PeopleView";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { Profile, Rating } from "@/lib/types";
+import { amisDe, demandesDe } from "@/lib/profil/donnees";
 
 export const metadata = { title: "Joueurs · Ranked Lobby" };
 
@@ -18,13 +19,14 @@ type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "user_id" | "elo" | "games_played">;
 
 // Annuaire des joueurs (espace Classement) : recherche par pseudo, filtre
-// « mes groupes », badge de rang, accès au profil et bouton « Défier ». Le
+// « mes groupes » ou « mes amis » (avec les demandes reçues et envoyées),
+// badge de rang, accès au profil et bouton « Défier ». Le
 // Top 10 renvoie vers le classement complet (/classement). Affichage :
 // components/classement/PeopleView.
 export default async function PeoplePage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
-  const view: "all" | "groups" = sp.view === "groups" ? "groups" : "all";
+  const view: "all" | "groups" | "amis" = sp.view === "groups" ? "groups" : sp.view === "amis" ? "amis" : "all";
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -35,8 +37,19 @@ export default async function PeoplePage({ searchParams }: PageProps) {
   const myGroupIds = [...new Set((myGroupsRaw ?? []).map((r: { group_id: string }) => r.group_id).filter(Boolean))];
 
   let people: ProfileRow[] = [];
+  // les demandes d'ami (reçues, envoyées) ; null tant que la migration manque
+  const demandes = await demandesDe(supabase, user.id);
 
-  if (view === "groups") {
+  if (view === "amis") {
+    const mes = await amisDe(user.id, supabase, 500);
+    const ids = (mes?.amis ?? []).map((a) => a.id);
+    if (ids.length > 0) {
+      let qb = supabase.from("profiles").select("id,username,avatar_url,xp_total").in("id", ids).order("username", { ascending: true });
+      if (q) qb = qb.ilike("username", `%${q}%`);
+      const { data } = await qb;
+      people = (data ?? []) as ProfileRow[];
+    }
+  } else if (view === "groups") {
     if (myGroupIds.length > 0) {
       const { data: membersRaw } = await supabase.from("group_memberships").select("user_id").in("group_id", myGroupIds);
       const memberIds = [...new Set((membersRaw ?? []).map((m: { user_id: string }) => m.user_id).filter(Boolean))];
@@ -94,5 +107,5 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     isMe: r.userId === user.id,
   }));
 
-  return <PeopleView rows={rows} top={topRows} view={view} q={q} hasGroups={myGroupIds.length > 0} />;
+  return <PeopleView rows={rows} top={topRows} view={view} q={q} hasGroups={myGroupIds.length > 0} demandes={demandes} />;
 }

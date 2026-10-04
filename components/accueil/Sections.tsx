@@ -4,7 +4,7 @@ import { SectionTitle } from "@/components/ui/Titles";
 import { DefiTile } from "@/components/defi/DefiTile";
 import { defiEnTete } from "@/components/defi/DefiHero";
 import { ResumeTile } from "@/components/accueil/HomeCards";
-import { DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
+import { DemandeAmiTile, DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
 import { RankCard } from "@/components/accueil/RankCard";
 import { TrajectoirePanel } from "@/components/objectif/TrajectoirePanel";
 import { OBJECTIF, parJour } from "@/lib/voice-objectif";
@@ -39,6 +39,7 @@ type Candidate = { key: string; score: number; node: React.ReactNode };
 export function pickTiles(d: AccueilData): Candidate[] {
   const out: Candidate[] = [];
   if (d.incomingDuel) out.push({ key: "duel", score: d.incomingDuel.kind === "incoming" ? 100 : 90, node: <DuelTile duel={d.incomingDuel} /> });
+  if (d.demandesAmi) out.push({ key: "ami", score: 75, node: <DemandeAmiTile demande={d.demandesAmi} /> });
   if (defiEnTete(d.daily)) {
     // le défi tient la carte héros : la reprise prend sa place ici
     out.push({ key: "reprise", score: d.daily.status === "done" ? 92 : 70, node: <ResumeTile resume={d.resume} now={Date.parse(d.nowIso)} /> });
