@@ -106,6 +106,7 @@ export default async function PersonnaliserPage() {
         disponible={disponible}
         moyennes={moyennes}
         amis={amis}
+        banqueGifs={!!process.env.KLIPY_API_KEY}
         rendus={{
           reponses: answers?.available ? <AnswerSummary stats={answers} name={carte.name} isMe /> : null,
           trophees: <PracticeTrophies rows={trophees} />,

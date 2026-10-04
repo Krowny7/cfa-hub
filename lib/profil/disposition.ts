@@ -1,12 +1,15 @@
 // La disposition d'un profil : l'ordre des blocs sous l'en-tête, leur
 // largeur (toute la ligne, ou une demi-ligne côte à côte), ceux qu'on
-// masque, et les médias du joueur (images et GIF).
+// masque, et les médias du joueur (images et GIF envoyés, ou GIF choisis
+// dans la banque KLIPY, affichés depuis son serveur).
 // Les médias sont envoyés par le navigateur dans le bucket public
 // `profil-medias`, dans le dossier du joueur ; la base borne le poids de
 // chaque fichier, les types permis et le nombre de fichiers par joueur
 // (migration_profil_medias.sql). Le serveur revalide tout à l'écriture et
 // supprime les fichiers qui ne servent plus.
 // Module neutre (client et serveur).
+
+import { URL_KLIPY } from "@/lib/profil/gifs";
 
 export type Largeur = "plein" | "demi";
 
@@ -30,6 +33,10 @@ export type BlocMedia = {
   ratio: number;
   legende: string | null;
   w: Largeur;
+  /** « klipy » : un GIF de la banque, servi par KLIPY (sinon : envoyé par le joueur) */
+  source?: "klipy";
+  /** largeur réelle en pixels (GIF de la banque, souvent petits : pas trop agrandis) */
+  px?: number;
 };
 export type Bloc = BlocFixe | BlocMedia;
 export type Disposition = Bloc[];
@@ -49,7 +56,7 @@ export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"
 const EXT_IMAGE = /[.](jpe?g|png|webp|gif)$/i;
 
 export const estMedia = (b: Bloc): b is BlocMedia => b.k === "media";
-export const estGif = (b: BlocMedia) => /[.]gif$/i.test(b.url);
+export const estGif = (b: BlocMedia) => b.source === "klipy" || /[.]gif$/i.test(b.url);
 export const infoBloc = (k: CleBloc) => BLOCS.find((b) => b.k === k)!;
 /** Un bloc peut-il se mettre en demi-largeur ? (les médias : toujours) */
 export const peutDemi = (b: Bloc) => estMedia(b) || infoBloc(b.k).demi;
@@ -73,8 +80,9 @@ const bornerRatio = (r: unknown) => {
 /**
  * Valide une disposition : blocs connus (une fois chacun), largeur permise,
  * médias venus du dossier du joueur (`prefixe` : l'adresse publique de ce
- * dossier ; null : aucun média accepté ; « lecture » : relu de la base,
- * déjà vérifié à l'écriture, seul le bucket est contrôlé), six au plus.
+ * dossier ; null : aucun envoi accepté ; « lecture » : relu de la base,
+ * déjà vérifié à l'écriture, seul le bucket est contrôlé) ou GIF de la
+ * banque KLIPY (adresse en klipy.com), six au plus.
  */
 export function validerDisposition(raw: unknown, prefixe: string | null | "lecture"): { disposition: Disposition; refus: string[] } {
   const refus: string[] = [];
@@ -90,7 +98,8 @@ export function validerDisposition(raw: unknown, prefixe: string | null | "lectu
       const id = typeof b.id === "string" && /^[a-z0-9]{6,24}$/.test(b.id) ? b.id : null;
       const type = b.type === "image" ? "image" : null;
       const url = typeof b.url === "string" ? b.url.trim() : "";
-      const dossierOk = prefixe === "lecture" ? /^https:[/][/][^/]+[/]storage[/]v1[/]object[/]public[/]profil-medias[/]/.test(url) : !!prefixe && url.startsWith(prefixe);
+      const klipy = URL_KLIPY.test(url);
+      const dossierOk = klipy || (prefixe === "lecture" ? /^https:[/][/][^/]+[/]storage[/]v1[/]object[/]public[/]profil-medias[/]/.test(url) : !!prefixe && url.startsWith(prefixe));
       const ok =
         id && type && dossierOk && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && EXT_IMAGE.test(url) && !vus.has("m:" + id);
       if (!ok || medias >= MEDIAS_MAX) {
@@ -99,7 +108,17 @@ export function validerDisposition(raw: unknown, prefixe: string | null | "lectu
       }
       vus.add("m:" + id);
       medias++;
-      out.push({ k: "media", id, type, url, ratio: bornerRatio(b.ratio), legende: nettoyerLegende(b.legende), w });
+      const px = Math.round(Number(b.px));
+      out.push({
+        k: "media",
+        id,
+        type,
+        url,
+        ratio: bornerRatio(b.ratio),
+        legende: nettoyerLegende(b.legende),
+        w,
+        ...(klipy ? { source: "klipy" as const, ...(px >= 16 && px <= 4000 ? { px } : {}) } : {}),
+      });
       continue;
     }
     const info = BLOCS.find((i) => i.k === b.k);

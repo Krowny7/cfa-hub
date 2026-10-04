@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Columns2, EyeOff, GripVertical, ImagePlay, ImagePlus, Plus, RectangleHorizontal, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns2, EyeOff, GripVertical, ImagePlay, ImagePlus, Plus, RectangleHorizontal, Search, Trash2 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MediaProfil } from "@/components/profil/Blocs";
+import { BanqueGifs } from "@/components/profil/BanqueGifs";
+import type { GifBanque } from "@/lib/profil/gifs";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import {
   BLOCS,
@@ -30,8 +32,9 @@ import {
 // poignée (glisser-déposer à la souris), monter et descendre (partout, au
 // doigt et au clavier), toute la ligne ou demi-largeur, masquer (ou
 // retirer, pour une image). Le contenu des blocs est inerte (pas de lien
-// suivi par erreur). Dessous : « Ajouter à ta page », les blocs masqués et
-// l'envoi d'une image ou d'un GIF.
+// suivi par erreur). Dessous : « Ajouter à ta page », les blocs masqués,
+// la banque de GIF (BanqueGifs, si elle est branchée) et l'envoi d'une
+// image ou d'un GIF depuis son appareil.
 // Les médias : une image (telle quelle si elle est raisonnable, sinon
 // réduite à 2 400 px sans perte visible) ou un GIF (tel quel, il garde son
 // animation ; 8 Mo au plus), envoyés dans le dossier du joueur.
@@ -109,12 +112,15 @@ export function EditeurDisposition({
   rendus,
   supabase,
   onEnvoi,
+  banqueGifs = false,
 }: {
   disposition: Disposition;
   onChange: (d: Disposition) => void;
   /** le contenu réel de chaque bloc (null : rien à montrer pour l'instant) */
   rendus: Partial<Record<CleBloc, React.ReactNode>>;
   supabase: SupabaseClient;
+  /** la banque de GIF est branchée (clé KLIPY présente sur le serveur) */
+  banqueGifs?: boolean;
   /** un envoi est en cours (l'enregistrement attend) */
   onEnvoi?: (enCours: boolean) => void;
 }) {
@@ -124,6 +130,7 @@ export function EditeurDisposition({
   const [prise, setPrise] = useState<string | null>(null); // poignée tenue : le bloc devient déplaçable
   const [tire, setTire] = useState<number | null>(null);
   const [cible, setCible] = useState<number | null>(null);
+  const [banque, setBanque] = useState(false);
 
   const medias = disposition.filter(estMedia).length;
   const plein = medias >= MEDIAS_MAX || !!envoi?.enCours;
@@ -142,6 +149,17 @@ export function EditeurDisposition({
     setTire(null);
     setCible(null);
     setPrise(null);
+  };
+
+  // un GIF de la banque : affiché depuis KLIPY, rien à envoyer
+  const choisirGif = (g: GifBanque) => {
+    setBanque(false);
+    if (medias >= MEDIAS_MAX) {
+      setEnvoi({ enCours: false, texte: `${MEDIAS_MAX} images au plus sur ta page.` });
+      return;
+    }
+    setEnvoi(null);
+    onChange([...disposition, { k: "media", id: nouvelId(), type: "image", url: g.plein.url, ratio: g.plein.w / g.plein.h, legende: null, w: "demi", source: "klipy", px: g.plein.w }]);
   };
 
   async function ajouter(file: File | undefined) {
@@ -272,11 +290,16 @@ export function EditeurDisposition({
         <div className="flex flex-wrap items-center gap-2">
           <input ref={fichier} type="file" accept="image/*" className="sr-only" id="rl-media" onChange={(e) => ajouter(e.target.files?.[0])} />
           <input ref={fichierGif} type="file" accept="image/gif" className="sr-only" id="rl-gif" onChange={(e) => ajouter(e.target.files?.[0])} />
+          {banqueGifs && (
+            <button type="button" className="btn btn-primary btn-sm" disabled={plein} onClick={() => setBanque(true)}>
+              <Search size={15} aria-hidden /> Chercher un GIF
+            </button>
+          )}
           <label htmlFor="rl-media" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
             <ImagePlus size={15} aria-hidden /> Une image
           </label>
           <label htmlFor="rl-gif" aria-disabled={plein} className={"btn btn-secondary btn-sm cursor-pointer " + (plein ? "pointer-events-none opacity-50" : "")}>
-            <ImagePlay size={15} aria-hidden /> Un GIF
+            <ImagePlay size={15} aria-hidden /> {banqueGifs ? "Un GIF de ton appareil" : "Un GIF"}
           </label>
           {masques.map((b) => (
             <button key={b.k} type="button" className="btn btn-ghost btn-sm border border-dashed border-line-2" onClick={() => onChange([...disposition, { k: b.k, w: "plein" }])}>
@@ -293,6 +316,7 @@ export function EditeurDisposition({
           {medias}/{MEDIAS_MAX} images. Les images trop grandes sont réduites à l&apos;envoi ; les GIF gardent leur animation et font {Mo(MEDIA_MAX_OCTETS)} au plus. Un bloc masqué revient ici.
         </p>
       </div>
+      {banqueGifs && <BanqueGifs ouvert={banque} onFermer={() => setBanque(false)} onChoisir={choisirGif} />}
     </div>
   );
 }

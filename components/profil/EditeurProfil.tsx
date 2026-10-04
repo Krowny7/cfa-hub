@@ -98,6 +98,7 @@ export function EditeurProfil({
   moyennes,
   amis,
   rendus: rendusServeur,
+  banqueGifs = false,
 }: {
   carte: EnteteData;
   stats: ProfilStats;
@@ -111,6 +112,8 @@ export function EditeurProfil({
   amis: { amis: AmiLite[]; total: number } | null;
   /** les blocs rendus par le serveur (réponses, trophées, progression) */
   rendus: Partial<Record<CleBloc, React.ReactNode>>;
+  /** la banque de GIF est branchée */
+  banqueGifs?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -221,7 +224,7 @@ export function EditeurProfil({
         </div>
         <EnteteJoueur d={apercu} apercu />
         <div className="pt-6">
-          <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} rendus={rendus} supabase={supabase} onEnvoi={setEnvoiMedia} />
+          <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} rendus={rendus} supabase={supabase} onEnvoi={setEnvoiMedia} banqueGifs={banqueGifs} />
         </div>
       </div>
 

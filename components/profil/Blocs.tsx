@@ -33,7 +33,16 @@ export function MediaProfil({ b }: { b: BlocMedia }) {
     <figure className="m-0 flex flex-col gap-2.5">
       <div className="card grid place-items-center overflow-hidden bg-[var(--well)]">
         {/* eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi */}
-        <img src={b.url} alt={alt} width={w} height={h} loading="lazy" decoding="async" className="block h-auto max-h-[640px] w-full object-contain" />
+        <img
+          src={b.url}
+          alt={alt}
+          width={w}
+          height={h}
+          loading="lazy"
+          decoding="async"
+          className="block h-auto max-h-[640px] w-full object-contain"
+          style={b.px ? { maxWidth: Math.max(320, Math.round(b.px * 1.5)) } : undefined}
+        />
       </div>
       {b.legende && <figcaption className="t-small px-1">{b.legende}</figcaption>}
     </figure>
