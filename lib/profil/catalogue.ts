@@ -7,7 +7,7 @@
 
 import { TIERS } from "@/lib/ranks";
 import { nombre } from "@/lib/voice";
-import { DISPOSITION_DEFAUT, dispositionDepuis, validerDisposition, type Disposition } from "@/lib/profil/disposition";
+import { DISPOSITION_DEFAUT, dispositionDepuis, validerDisposition, type Disposition, type Prefixes } from "@/lib/profil/disposition";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -212,14 +212,15 @@ export function nettoyerNom(raw: string | null | undefined): string | null {
 /**
  * Ne garde que des valeurs connues et des cadres gagnés (le reste revient au
  * défaut). `prefixeImage` : l'adresse publique du dossier du joueur dans le
- * stockage ; une image ailleurs est refusée. `prefixeMedias` : de même pour
- * les médias de la disposition (bucket profil-medias).
+ * stockage ; une image ailleurs est refusée. `prefixesMedias` : de même pour
+ * les images et la vidéo de la disposition (buckets profil-medias et
+ * profil-videos).
  */
 export function validerStyle(
   input: Partial<StyleProfil>,
   s: ProfilStats,
   prefixeImage: string | null,
-  prefixeMedias: string | null = null,
+  prefixesMedias: Prefixes | null = null,
 ): { style: StyleProfil; refus: string[] } {
   const refus: string[] = [];
   const c = CADRES.find((x) => x.key === input.frame);
@@ -232,7 +233,7 @@ export function validerStyle(
   const bannerUrl = url && prefixeImage && url.startsWith(prefixeImage) && /^[A-Za-z0-9:/._%-]+$/.test(url) && url.length <= 500 ? url : null;
   if (url && !bannerUrl) refus.push("l'image de bannière");
   const keys = new Set<string>(VITRINE.map((v) => v.key));
-  const disp = Array.isArray(input.disposition) ? validerDisposition(input.disposition, prefixeMedias) : null;
+  const disp = Array.isArray(input.disposition) ? validerDisposition(input.disposition, prefixesMedias) : null;
   if (disp) refus.push(...disp.refus);
   const disposition = disp ? disp.disposition : dispositionDepuis(null, input.radar !== false);
   return {

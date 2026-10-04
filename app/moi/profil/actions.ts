@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { statsProfil } from "@/lib/profil/donnees";
 import { nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
-import { BUCKET_MEDIAS, estMedia } from "@/lib/profil/disposition";
+import { BUCKET_MEDIAS, BUCKET_VIDEOS, estMedia } from "@/lib/profil/disposition";
 
 // Enregistrer son profil : le style (revalidé : cadres gagnés seulement,
 // image de bannière et médias venus de son dossier ; la disposition des
@@ -47,8 +47,9 @@ export async function enregistrerProfil(input: {
   // l'image de bannière doit venir du dossier du joueur dans le stockage
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
   const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;
-  const prefixeMedias = base ? `${base}/storage/v1/object/public/${BUCKET_MEDIAS}/${user.id}/` : null;
-  const { style, refus } = validerStyle(input.style ?? {}, stats, prefixe, prefixeMedias);
+  const dossier = (bucket: string) => `${base}/storage/v1/object/public/${bucket}/${user.id}/`;
+  const prefixesMedias = base ? { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) } : null;
+  const { style, refus } = validerStyle(input.style ?? {}, stats, prefixe, prefixesMedias);
 
   const now = new Date().toISOString();
   const ligne = {
@@ -86,15 +87,17 @@ export async function enregistrerProfil(input: {
     : await admin.from("profile_names").delete().eq("user_id", user.id);
   if (n.error) return { ok: false, erreur: "Ton style est enregistré, mais pas ton prénom et nom. Réessaie dans un instant." };
 
-  // ménage : les fichiers de son dossier que la page n'utilise plus
+  // ménage : les fichiers de ses dossiers (images, vidéos) que la page n'utilise plus
   if (dispositionOk) {
-    try {
-      const gardes = new Set(style.disposition.filter(estMedia).map((b) => b.url.split("/").pop()));
-      const { data: objets } = await admin.storage.from(BUCKET_MEDIAS).list(user.id, { limit: 100 });
-      const inutiles = (objets ?? []).filter((o) => o.name && !gardes.has(o.name)).map((o) => `${user.id}/${o.name}`);
-      if (inutiles.length) await admin.storage.from(BUCKET_MEDIAS).remove(inutiles);
-    } catch {
-      // bucket pas encore créé : rien à ranger
+    const gardes = new Set(style.disposition.filter(estMedia).map((b) => b.url.split("/").pop()));
+    for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
+      try {
+        const { data: objets } = await admin.storage.from(bucket).list(user.id, { limit: 100 });
+        const inutiles = (objets ?? []).filter((o) => o.name && !gardes.has(o.name)).map((o) => `${user.id}/${o.name}`);
+        if (inutiles.length) await admin.storage.from(bucket).remove(inutiles);
+      } catch {
+        // bucket pas encore créé : rien à ranger
+      }
     }
   }
 
