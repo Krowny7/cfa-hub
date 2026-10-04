@@ -153,12 +153,35 @@ export const LIEN_DEFAUT: LienProfil = { linkedin: null, visibilite: "friends" }
 export type NomProfil = { nom: string | null; visibilite: "public" | "friends" };
 export const NOM_DEFAUT: NomProfil = { nom: null, visibilite: "friends" };
 
-/** Une adresse LinkedIn de profil, normalisée (https://www.linkedin.com/in/…), ou null si invalide. */
+/**
+ * Une adresse LinkedIn de profil, normalisée (https://www.linkedin.com/in/…),
+ * ou null si invalide. Les accents sont permis (LinkedIn les accepte dans
+ * l'adresse d'un profil) : ils sont encodés (« théo » → « th%C3%A9o »).
+ */
 export function normaliserLinkedin(raw: string | null | undefined): string | null {
   const s = (raw ?? "").trim();
   if (!s) return null;
-  const m = /^(?:https?:[/][/])?(?:([a-z]{2,3}|www)[.])?linkedin[.]com[/]in[/]([A-Za-z0-9_%-]{2,100})[/]?(?:[?#].*)?$/i.exec(s);
-  return m ? `https://www.linkedin.com/in/${m[2]}/` : null;
+  const m = /^(?:https?:[/][/])?(?:([a-z]{2,3}|www)[.])?linkedin[.]com[/]in[/]([^/?#\s]{2,200})[/]?(?:[?#].*)?$/i.exec(s);
+  if (!m) return null;
+  let slug = m[2];
+  try {
+    slug = decodeURIComponent(slug);
+  } catch {
+    return null;
+  }
+  if (!/^[\p{L}\p{M}\p{N}_-]{2,100}$/u.test(slug)) return null;
+  const enc = encodeURIComponent(slug);
+  return enc.length <= 100 ? `https://www.linkedin.com/in/${enc}/` : null;
+}
+
+/** L'adresse LinkedIn lisible (accents décodés), pour le champ de saisie. */
+export function linkedinLisible(url: string | null | undefined): string {
+  if (!url) return "";
+  try {
+    return decodeURIComponent(url);
+  } catch {
+    return url;
+  }
 }
 
 /** Nettoie une bio : espaces resserrés, deux retours à la ligne au plus, 160 caractères. */

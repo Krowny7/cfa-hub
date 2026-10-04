@@ -22,6 +22,7 @@ import {
   cadreDebloque,
   cadreProgres,
   couleurCss,
+  linkedinLisible,
   nettoyerNom,
   normaliserLinkedin,
   type NomProfil,
@@ -112,7 +113,7 @@ export function EditeurProfil({
   const supabase = useMemo(() => createClient(), []);
   const fichier = useRef<HTMLInputElement | null>(null);
   const [style, setStyle] = useState<StyleProfil>(initial);
-  const [linkedin, setLinkedin] = useState(linkedinInitial ?? "");
+  const [linkedin, setLinkedin] = useState(linkedinLisible(linkedinInitial));
   const [visibilite, setVisibilite] = useState<Visibilite>(visibiliteInitiale);
   const [nom, setNom] = useState(nomInitial.nom ?? "");
   const [nomVisibilite, setNomVisibilite] = useState<"public" | "friends">(nomInitial.visibilite);
