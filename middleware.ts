@@ -7,6 +7,18 @@ import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 // expect, so those are left to their own auth checks instead).
 const ONBOARDING_EXEMPT = ["/onboarding", "/login", "/auth", "/api"];
 
+// Pages réservées aux joueurs connectés (chacune redirige aussi vers /login
+// côté serveur). La redirection se fait ici, avant tout HTML : faite par la
+// page, elle arrive pendant le streaming (app/loading.tsx) et devient un
+// rechargement côté navigateur, qui relançait l'intro une seconde fois.
+// « /fiches » seule : les fiches elles-mêmes restent lisibles sans compte.
+const PRIVATE = [
+  "/calculs", "/classement", "/courses", "/dashboard", "/defi", "/duel", "/entrainement", "/exam",
+  "/flashcards", "/library", "/mock-exams", "/moi", "/official-exams", "/onboarding", "/people",
+  "/practice", "/qcm", "/reviser", "/scratch", "/session",
+];
+const isPrivate = (pathname: string) => pathname === "/fiches" || PRIVATE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers }
@@ -48,15 +60,27 @@ export async function middleware(request: NextRequest) {
     if (incomplete) {
       const onboardingUrl = new URL("/onboarding", request.url);
       onboardingUrl.searchParams.set("next", pathname + request.nextUrl.search);
-      return NextResponse.redirect(onboardingUrl);
+      return redirectTo(onboardingUrl);
     }
   }
 
+  // L'entrée du site : l'accueil ou la connexion, sans passer par une page
+  if (pathname === "/") return redirectTo(new URL(user ? "/dashboard" : "/login", request.url));
+  if (!user && isPrivate(pathname)) return redirectTo(new URL("/login", request.url));
+
   return response;
+
+  /** Redirection qui garde les cookies de session rafraîchis plus haut. */
+  function redirectTo(to: URL) {
+    const r = NextResponse.redirect(to);
+    response.cookies.getAll().forEach((c) => r.cookies.set(c));
+    return r;
+  }
 }
 
 export const config = {
-  // splash/: the intro film's data files — static, public, and fetched
-  // before anything else, so no auth round-trip and never a redirect
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|splash/|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"]
+  // intro/ : le film de l'intro et ses masques — statiques, publics, lus
+  // par morceaux dès le chargement : ni aller-retour d'authentification à
+  // chaque morceau (la vidéo calait), ni redirection
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|intro/|splash/|.*\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|woff2?)$).*)"]
 };
