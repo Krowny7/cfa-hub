@@ -27,7 +27,8 @@ export function PracticeTrophies({ rows }: { rows: Row[] }) {
   const total = [...byTier.values()].reduce((a, b) => a + b, 0);
 
   return (
-    <div className="card p-5 md:p-7">
+    // @container : la grille des trophées suit la largeur du bloc (case du profil, page…)
+    <div className="card @container p-5 md:p-7">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="t-h3 m-0">Trophées</h2>
         <span className="t-micro">entraînement ciblé réussi à 70 % ou plus</span>
@@ -37,7 +38,7 @@ export function PracticeTrophies({ rows }: { rows: Row[] }) {
           Aucun trophée pour l&apos;instant : réussis une session d&apos;entraînement ciblé à 70 % pour gagner le premier.
         </p>
       ) : (
-        <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="mt-5 grid grid-cols-2 gap-2.5 @lg:grid-cols-4">
           {TROPHY_TIER_ORDER.map((tier) => {
             const count = byTier.get(tier.key) ?? 0;
             const inverted = tier.key === "diamond" && count > 0;

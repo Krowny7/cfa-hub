@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { statsProfil } from "@/lib/profil/donnees";
 import { nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
-import { BUCKET_MEDIAS, BUCKET_VIDEOS, estMedia } from "@/lib/profil/disposition";
+import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
 
 // Enregistrer son profil : le style (revalidé : cadres gagnés seulement,
 // image de bannière et médias venus de son dossier ; la disposition des
@@ -90,7 +90,7 @@ export async function enregistrerProfil(input: {
 
   // ménage : les fichiers de ses dossiers (images, vidéos) que la page n'utilise plus
   if (dispositionOk) {
-    const gardes = new Set(style.disposition.filter(estMedia).map((b) => b.url.split("/").pop()));
+    const gardes = new Set(blocsDe(style.disposition).filter(estMedia).map((b) => b.url.split("/").pop()));
     for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
       try {
         const { data: objets } = await admin.storage.from(bucket).list(user.id, { limit: 100 });

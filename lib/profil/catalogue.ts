@@ -7,7 +7,7 @@
 
 import { TIERS } from "@/lib/ranks";
 import { nombre } from "@/lib/voice";
-import { DISPOSITION_DEFAUT, dispositionDepuis, validerDisposition, type Disposition, type Prefixes } from "@/lib/profil/disposition";
+import { DISPOSITION_DEFAUT, blocsDe, dispositionDepuis, validerDisposition, type Disposition, type Prefixes } from "@/lib/profil/disposition";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -277,7 +277,7 @@ export function validerStyle(
       accent: estCouleur(input.accent) ? input.accent.toLowerCase() : STYLE_DEFAUT.accent,
       frame,
       showcase: vitrineDepuis(input.showcase),
-      radar: disposition.some((b) => b.k === "radar"),
+      radar: blocsDe(disposition).some((b) => b.k === "radar"),
       bio: nettoyerBio(input.bio),
       disposition,
       ambiance: AMBIANCES.some((a) => a.key === input.ambiance) ? (input.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,

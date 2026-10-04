@@ -1,21 +1,34 @@
 import { VideoProfil } from "@/components/profil/VideoProfil";
-import { estMedia, largeurMedia, type BlocMedia, type CleBloc, type Disposition } from "@/lib/profil/disposition";
+import { GRILLE, placeDe } from "@/components/profil/Rangees";
+import { estMedia, largeurMedia, type Bloc, type BlocMedia, type CleBloc, type Disposition } from "@/lib/profil/disposition";
 
-// Le corps du profil, sous l'en-tête : les blocs dans l'ordre choisi par le
-// joueur, chacun sur toute la ligne ou sur une demi-ligne (côte à côte sur
-// grand écran, l'un sous l'autre sur téléphone). Chaque case est un
-// conteneur (@container) : les blocs adaptent leur mise en page à leur
-// largeur, pas à celle de l'écran. Un bloc sans contenu (pas d'amis, pas
-// encore de réponses…) est simplement sauté. Sans état.
+// Le corps du profil, sous l'en-tête : les rangées choisies par le joueur,
+// chacune selon son modèle (pleine largeur, deux moitiés, deux tiers et un
+// tiers, un grand et deux empilés…), une case par bloc. Sur téléphone, les
+// cases passent l'une sous l'autre, dans l'ordre. Chaque case est un
+// conteneur (@container) : les blocs suivent sa largeur, pas celle de
+// l'écran. Une case vide ou un bloc sans contenu garde sa place sur grand
+// écran (rien ne bouge) et disparaît sur téléphone ; une rangée sans rien à
+// montrer est sautée. Sans état.
 
 export function GrilleBlocs({ disposition, rendus }: { disposition: Disposition; rendus: Partial<Record<CleBloc, React.ReactNode>> }) {
-  const blocs = disposition.filter((b) => estMedia(b) || !!rendus[b.k]);
-  if (!blocs.length) return null;
+  const contenu = (b: Bloc | null) => (!b ? null : estMedia(b) ? <MediaProfil b={b} /> : (rendus[b.k] ?? null));
+  const rangees = disposition.map((r) => ({ r, contenus: r.c.map(contenu) })).filter((x) => x.contenus.some(Boolean));
+  if (!rangees.length) return null;
   return (
-    <div className="grid items-start gap-x-8 gap-y-10 md:gap-y-16 lg:grid-cols-2">
-      {blocs.map((b) => (
-        <div key={estMedia(b) ? b.id : b.k} className={"@container min-w-0 " + (b.w === "plein" ? "lg:col-span-2" : "")}>
-          {estMedia(b) ? <MediaProfil b={b} /> : rendus[b.k]}
+    <div className="flex flex-col gap-y-10 md:gap-y-16">
+      {rangees.map(({ r, contenus }, k) => (
+        <div key={k} className={`grid items-start gap-x-8 gap-y-10 lg:gap-y-8 ${GRILLE[r.m]}`}>
+          {contenus.map((n, i) => {
+            const b = r.c[i];
+            return n ? (
+              <div key={b ? (estMedia(b) ? b.id : b.k) : `v${i}`} className={`@container min-w-0 ${placeDe(r.m, i)}`}>
+                {n}
+              </div>
+            ) : (
+              <div key={`v${i}`} aria-hidden className={`hidden lg:block ${placeDe(r.m, i)}`} />
+            );
+          })}
         </div>
       ))}
     </div>

@@ -175,8 +175,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
 
   // le bandeau d'aperçu dit ce qui est visible ou masqué pour cet autre joueur
   const visibles = [
-    lienBrut?.linkedin ? (lien ? "ton LinkedIn est visible" : "ton LinkedIn est masqué") : null,
-    nomBrut?.nom ? (nomComplet ? "ton prénom et ton nom sont visibles" : "ton prénom et ton nom sont masqués") : null,
+    lienBrut?.linkedin ? (lien ? "LinkedIn visible" : "LinkedIn masqué") : null,
+    nomBrut?.nom ? (nomComplet ? "nom visible" : "nom masqué") : null,
   ].filter(Boolean) as string[];
 
   const retour = (
@@ -189,25 +189,31 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     <div className="rl-wide rl-page relative isolate">
       <AmbianceProfil style={style} />
       <div className="flex flex-col gap-6 md:gap-8">
-        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={isMe ? "Ton rang" : "Son rang"} />
-        {vue && (
-          <div className="card-quiet flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4" role="status">
-            <Eye size={17} aria-hidden className="shrink-0" />
-            <p className="m-0 min-w-0 flex-[1_1_260px] text-[14px]">
-              <b className="font-semibold">Aperçu.</b> Ton profil tel que le voit {vue === "ami" ? "un de tes amis" : "un joueur qui n'est pas ton ami"}
-              {visibles.length ? ` : ${visibles.join(", ")}.` : "."}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href={`/people/${id}?vue=${vue === "ami" ? "inconnu" : "ami"}`} className="btn btn-secondary btn-sm">
-                Voir comme {vue === "ami" ? "un inconnu" : "un ami"}
-              </Link>
-              <Link href={`/people/${id}`} className="btn btn-ghost btn-sm">
-                Revenir
-              </Link>
-            </div>
-          </div>
-        )}
+        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={commeMoi ? "Ton rang" : "Son rang"} />
       </div>
+
+      {/* l'aperçu « comme les autres » : une barre flottante en bas de l'écran,
+          pour que la page se voie telle quelle, sans bandeau au milieu */}
+      {vue && (
+        <div
+          role="status"
+          className="fixed inset-x-3 z-40 mx-auto flex max-w-[640px] flex-wrap items-center gap-x-3 gap-y-2 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6"
+        >
+          <Eye size={16} aria-hidden className="shrink-0" />
+          <p className="m-0 min-w-0 flex-[1_1_200px] text-[13px] leading-snug">
+            <b className="font-semibold">Aperçu</b> · vu par {vue === "ami" ? "un ami" : "un joueur qui n'est pas ton ami"}
+            {visibles.length ? <span className="text-muted">{` · ${visibles.join(", ")}`}</span> : null}
+          </p>
+          <div className="flex items-center gap-1.5">
+            <Link href={`/people/${id}?vue=${vue === "ami" ? "inconnu" : "ami"}`} className="btn btn-secondary btn-sm">
+              Comme {vue === "ami" ? "un inconnu" : "un ami"}
+            </Link>
+            <Link href={`/people/${id}`} className="btn btn-primary btn-sm">
+              Revenir
+            </Link>
+          </div>
+        </div>
+      )}
 
       <GrilleBlocs
         disposition={style.disposition}
@@ -219,7 +225,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
               moyennes={moyennes}
               accent={style.accent}
               nom={display}
-              moi={isMe}
+              moi={commeMoi}
               miennes={mesStats ? mesStats.matieres : null}
               monAccent={monStyle ? monStyle.style.accent : null}
             />

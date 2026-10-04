@@ -30,10 +30,12 @@ export function AnswerSummary({ stats, name, isMe = false }: { stats: AnswerStat
   const max = Math.max(1, ...top.map((x) => x.t.n));
 
   return (
-    <section className="card grid min-w-0 gap-7 p-6 md:grid-cols-[minmax(0,230px)_minmax(0,1fr)] md:gap-10 md:p-7" aria-label={`Questions répondues par ${name}`}>
+    // la mise en page suit la largeur du bloc, pas celle de l'écran (une case du profil peut être étroite)
+    <div className="@container min-w-0">
+    <section className="card grid min-w-0 gap-7 p-6 @3xl:grid-cols-[minmax(0,230px)_minmax(0,1fr)] @3xl:gap-10 @lg:p-7" aria-label={`Questions répondues par ${name}`}>
       <div className="flex min-w-0 flex-col">
         <CardLabel icon={<PenLine size={15} aria-hidden />}>{TITLE}</CardLabel>
-        <p className="t-num m-0 mt-5 text-[52px] md:text-[60px]">{fmtInt(all.n)}</p>
+        <p className="t-num m-0 mt-5 text-[52px] @lg:text-[60px]">{fmtInt(all.n)}</p>
         <p className="t-small mt-3">
           {all.n === 0 ? (
             isMe ? "Pas encore de trait : ta première réponse comptera ici." : "Pas encore de question répondue."
@@ -53,7 +55,7 @@ export function AnswerSummary({ stats, name, isMe = false }: { stats: AnswerStat
       </div>
 
       {all.n > 0 && (
-        <div className="grid min-w-0 gap-7 border-t border-line pt-6 sm:grid-cols-2 sm:gap-10 md:border-l md:border-t-0 md:pl-10 md:pt-0">
+        <div className="grid min-w-0 gap-7 border-t border-line pt-6 @xl:grid-cols-2 @xl:gap-10 @3xl:border-l @3xl:border-t-0 @3xl:pl-10 @3xl:pt-0">
           <div className="min-w-0">
             <p className="t-eyebrow">Par source</p>
             <dl className="m-0 mt-1 flex flex-col">
@@ -92,5 +94,6 @@ export function AnswerSummary({ stats, name, isMe = false }: { stats: AnswerStat
         </div>
       )}
     </section>
+    </div>
   );
 }
