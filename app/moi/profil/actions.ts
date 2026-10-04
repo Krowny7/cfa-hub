@@ -5,9 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { statsProfil } from "@/lib/profil/donnees";
 import { nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { BUCKET_MEDIAS, estMedia } from "@/lib/profil/disposition";
 
 // Enregistrer son profil : le style (revalidé : cadres gagnés seulement,
-// image de bannière venue de son dossier), le LinkedIn (adresse
+// image de bannière et médias venus de son dossier ; la disposition des
+// blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
@@ -45,24 +47,29 @@ export async function enregistrerProfil(input: {
   // l'image de bannière doit venir du dossier du joueur dans le stockage
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
   const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;
-  const { style, refus } = validerStyle(input.style ?? {}, stats, prefixe);
+  const prefixeMedias = base ? `${base}/storage/v1/object/public/${BUCKET_MEDIAS}/${user.id}/` : null;
+  const { style, refus } = validerStyle(input.style ?? {}, stats, prefixe, prefixeMedias);
 
   const now = new Date().toISOString();
-  const s = await admin.from("profile_style").upsert(
-    {
-      user_id: user.id,
-      banner: style.banner,
-      banner_url: style.bannerUrl,
-      banner_pos: style.bannerPos,
-      accent: style.accent,
-      frame: style.frame,
-      showcase: style.showcase,
-      show_radar: style.radar,
-      bio: style.bio,
-      updated_at: now,
-    },
-    { onConflict: "user_id" },
-  );
+  const ligne = {
+    user_id: user.id,
+    banner: style.banner,
+    banner_url: style.bannerUrl,
+    banner_pos: style.bannerPos,
+    accent: style.accent,
+    frame: style.frame,
+    showcase: style.showcase,
+    show_radar: style.radar,
+    bio: style.bio,
+    updated_at: now,
+  };
+  let s = await admin.from("profile_style").upsert({ ...ligne, layout: style.disposition }, { onConflict: "user_id" });
+  const dispositionOk = !s.error;
+  // la colonne layout arrive avec migration_profil_medias.sql : sans elle, le reste
+  if (s.error && /layout/.test(s.error.message)) {
+    s = await admin.from("profile_style").upsert(ligne, { onConflict: "user_id" });
+    if (!s.error) refus.push("la disposition (la base n'est pas encore prête)");
+  }
   if (s.error) {
     return {
       ok: false,
@@ -78,6 +85,18 @@ export async function enregistrerProfil(input: {
     ? await admin.from("profile_names").upsert({ user_id: user.id, full_name: nom, visibility: input.nomVisibilite === "public" ? "public" : "friends", updated_at: now }, { onConflict: "user_id" })
     : await admin.from("profile_names").delete().eq("user_id", user.id);
   if (n.error) return { ok: false, erreur: "Ton style est enregistré, mais pas ton prénom et nom. Réessaie dans un instant." };
+
+  // ménage : les fichiers de son dossier que la page n'utilise plus
+  if (dispositionOk) {
+    try {
+      const gardes = new Set(style.disposition.filter(estMedia).map((b) => b.url.split("/").pop()));
+      const { data: objets } = await admin.storage.from(BUCKET_MEDIAS).list(user.id, { limit: 100 });
+      const inutiles = (objets ?? []).filter((o) => o.name && !gardes.has(o.name)).map((o) => `${user.id}/${o.name}`);
+      if (inutiles.length) await admin.storage.from(BUCKET_MEDIAS).remove(inutiles);
+    } catch {
+      // bucket pas encore créé : rien à ranger
+    }
+  }
 
   revalidatePath(`/people/${user.id}`);
   revalidatePath("/moi/profil");

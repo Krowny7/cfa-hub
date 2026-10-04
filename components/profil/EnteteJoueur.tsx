@@ -1,5 +1,5 @@
 import { PageHero } from "@/components/ui/Titles";
-import { CarteRang } from "@/components/classement/CarteRang";
+import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { type StyleProfil } from "@/lib/profil/catalogue";
 import { nombre } from "@/lib/voice";
@@ -8,8 +8,9 @@ import { nombre } from "@/lib/voice";
 // (pas de carte) : la bannière du joueur (son image, ou un motif) d'un bord
 // à l'autre de l'écran, son sceau dans son cadre qui la chevauche, le
 // pseudo en grand et, dessous en italique, son prénom et nom s'il les
-// montre ; le niveau, la bio, les actions ; à droite, la carte de son rang
-// (la même que dans Moi). Sans état : la page de profil et l'aperçu de l'éditeur (`apercu` :
+// montre ; le niveau, la bio, les actions ; à droite, son rang en grand
+// (RangProfil : l'insigne animé, qui chevauche lui aussi la bannière sur
+// grand écran). Sans état : la page de profil et l'aperçu de l'éditeur (`apercu` :
 // bannière contenue, plus basse) le rendent avec les mêmes données.
 
 export type EnteteData = {
@@ -77,7 +78,7 @@ export function EnteteJoueur({
         )}
       </div>
 
-      <div className={"grid items-end gap-x-12 gap-y-7 " + (apercu ? "" : "lg:grid-cols-12")}>
+      <div className={"grid items-end gap-x-10 gap-y-7 " + (apercu ? "" : "lg:grid-cols-12")}>
         <div className={"flex min-w-0 flex-col gap-5 " + (apercu ? "" : "lg:col-span-7")}>
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             <div className={"relative z-[2] " + (apercu ? "-mt-[46px] pl-4" : "-mt-[56px] sm:-mt-[84px]")}>
@@ -114,7 +115,9 @@ export function EnteteJoueur({
           )}
         </div>
 
-        {!apercu && <CarteRang elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} className="lg:col-span-5" />}
+        {!apercu && (
+          <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} className="z-[2] lg:col-span-5 lg:self-start lg:-mt-[84px]" />
+        )}
       </div>
     </header>
   );

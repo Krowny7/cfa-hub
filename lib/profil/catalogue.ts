@@ -7,6 +7,7 @@
 
 import { TIERS } from "@/lib/ranks";
 import { nombre } from "@/lib/voice";
+import { DISPOSITION_DEFAUT, dispositionDepuis, validerDisposition, type Disposition } from "@/lib/profil/disposition";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -127,9 +128,11 @@ export type StyleProfil = {
   accent: string;
   frame: string;
   showcase: VitrineKey[];
-  /** le radar des matières sur le profil */
+  /** le radar des matières sur le profil (suit la disposition) */
   radar: boolean;
   bio: string | null;
+  /** l'ordre, la largeur et les médias des blocs sous l'en-tête */
+  disposition: Disposition;
 };
 
 export const STYLE_DEFAUT: StyleProfil = {
@@ -141,6 +144,7 @@ export const STYLE_DEFAUT: StyleProfil = {
   showcase: ["rang", "questions", "serie"],
   radar: true,
   bio: null,
+  disposition: DISPOSITION_DEFAUT,
 };
 export const BIO_MAX = 160;
 export const NOM_MAX = 60;
@@ -208,9 +212,15 @@ export function nettoyerNom(raw: string | null | undefined): string | null {
 /**
  * Ne garde que des valeurs connues et des cadres gagnés (le reste revient au
  * défaut). `prefixeImage` : l'adresse publique du dossier du joueur dans le
- * stockage ; une image ailleurs est refusée.
+ * stockage ; une image ailleurs est refusée. `prefixeMedias` : de même pour
+ * les médias de la disposition (bucket profil-medias).
  */
-export function validerStyle(input: Partial<StyleProfil>, s: ProfilStats, prefixeImage: string | null): { style: StyleProfil; refus: string[] } {
+export function validerStyle(
+  input: Partial<StyleProfil>,
+  s: ProfilStats,
+  prefixeImage: string | null,
+  prefixeMedias: string | null = null,
+): { style: StyleProfil; refus: string[] } {
   const refus: string[] = [];
   const c = CADRES.find((x) => x.key === input.frame);
   let frame = STYLE_DEFAUT.frame;
@@ -222,6 +232,9 @@ export function validerStyle(input: Partial<StyleProfil>, s: ProfilStats, prefix
   const bannerUrl = url && prefixeImage && url.startsWith(prefixeImage) && /^[A-Za-z0-9:/._%-]+$/.test(url) && url.length <= 500 ? url : null;
   if (url && !bannerUrl) refus.push("l'image de bannière");
   const keys = new Set<string>(VITRINE.map((v) => v.key));
+  const disp = Array.isArray(input.disposition) ? validerDisposition(input.disposition, prefixeMedias) : null;
+  if (disp) refus.push(...disp.refus);
+  const disposition = disp ? disp.disposition : dispositionDepuis(null, input.radar !== false);
   return {
     style: {
       banner: MOTIFS.some((m) => m.key === input.banner) ? (input.banner as string) : STYLE_DEFAUT.banner,
@@ -230,8 +243,9 @@ export function validerStyle(input: Partial<StyleProfil>, s: ProfilStats, prefix
       accent: estCouleur(input.accent) ? input.accent.toLowerCase() : STYLE_DEFAUT.accent,
       frame,
       showcase: [...new Set((input.showcase ?? []).filter((k) => keys.has(k)))].slice(0, VITRINE_MAX) as VitrineKey[],
-      radar: input.radar !== false,
+      radar: disposition.some((b) => b.k === "radar"),
       bio: nettoyerBio(input.bio),
+      disposition,
     },
     refus,
   };
@@ -250,5 +264,6 @@ export function styleDepuis(row: Record<string, unknown> | null | undefined): St
     showcase: Array.isArray(row.showcase) ? (row.showcase.filter((k) => typeof k === "string" && keys.has(k)).slice(0, VITRINE_MAX) as VitrineKey[]) : STYLE_DEFAUT.showcase,
     radar: row.show_radar !== false,
     bio: typeof row.bio === "string" ? nettoyerBio(row.bio) : null,
+    disposition: dispositionDepuis(row.layout, row.show_radar !== false),
   };
 }

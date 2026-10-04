@@ -18,6 +18,7 @@ import { Icone } from "@/components/adn/icons";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
 import { RadarComparable } from "@/components/profil/RadarComparable";
+import { GrilleBlocs } from "@/components/profil/Blocs";
 import { rankFor } from "@/lib/ranks";
 import { AmiBouton } from "@/components/profil/AmiBouton";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
@@ -30,9 +31,10 @@ type RatingRow = Pick<Rating, "elo" | "games_played">;
 
 // Profil d'un joueur, façon jeu vidéo : l'en-tête sur toute la largeur
 // (bannière du joueur, sceau dans son cadre, pseudo, prénom et nom selon
-// leur visibilité, niveau, bio, LinkedIn selon sa visibilité, panneau du
-// rang), la vitrine, le radar des matières (s'il le montre), les amis, puis
-// le détail (questions répondues, trophées, progression). Sur son propre profil : personnaliser, et « voir
+// leur visibilité, niveau, bio, LinkedIn selon sa visibilité, son rang en
+// grand), puis les blocs dans l'ordre et à la largeur choisis par le joueur
+// (vitrine, radar des matières, amis, questions répondues, trophées,
+// progression, ses images et vidéos ; GrilleBlocs). Sur son propre profil : personnaliser, et « voir
 // comme les autres » (?vue=inconnu ou ?vue=ami) qui rend la page telle
 // qu'un autre joueur la voit, LinkedIn compris.
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
@@ -203,30 +205,32 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
             </div>
           </div>
         )}
-        <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />
       </div>
 
-      {style.radar && (
-        <RadarComparable
-          matieres={stats.matieres}
-          moyennes={moyennes}
-          accent={style.accent}
-          nom={display}
-          moi={isMe}
-          miennes={mesStats ? mesStats.matieres : null}
-          monAccent={monStyle ? monStyle.style.accent : null}
-        />
-      )}
+      <GrilleBlocs
+        disposition={style.disposition}
+        rendus={{
+          vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
+          radar: (
+            <RadarComparable
+              matieres={stats.matieres}
+              moyennes={moyennes}
+              accent={style.accent}
+              nom={display}
+              moi={isMe}
+              miennes={mesStats ? mesStats.matieres : null}
+              monAccent={monStyle ? monStyle.style.accent : null}
+            />
+          ),
+          amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} /> : null,
+          reponses: answers?.available ? <AnswerSummary stats={answers} name={display} isMe={commeMoi} /> : null,
+          trophees: <PracticeTrophies rows={trophyRows} />,
+          progression: <PracticeProgressChart pastSessions={progressSessions} topicLabels={TOPIC_LABELS} />,
+        }}
+      />
 
-      {amis && <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} />}
-
-      {answers?.available && <AnswerSummary stats={answers} name={display} isMe={commeMoi} />}
-
+      {/* l'XP par jour : pour soi seulement, hors disposition */}
       {commeMoi && xpDaily && <XpBarChart data={xpDaily} title="XP gagnée par jour (90 jours)" />}
-
-      <PracticeTrophies rows={trophyRows} />
-
-      <PracticeProgressChart pastSessions={progressSessions} topicLabels={TOPIC_LABELS} />
     </div>
   );
 }

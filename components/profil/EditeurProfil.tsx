@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Eye, ImagePlus, Lock, Trash2 } from "lucide-react";
 import { EnteteJoueur, MarqueLinkedin, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { Vitrine } from "@/components/profil/Vitrine";
+import { EditeurDisposition } from "@/components/profil/EditeurDisposition";
 import { Banniere, CadreSceau } from "@/components/profil/Pieces";
 import { enregistrerProfil } from "@/app/moi/profil/actions";
 import { createClient } from "@/lib/supabase/browser";
@@ -36,7 +37,9 @@ import {
 // La bannière : une image du joueur (réduite dans le navigateur avant
 // l'envoi, puis cadrée verticalement) ou un motif. La couleur : libre. Les
 // cadres du sceau se gagnent aux questions posées (le compte est affiché).
-// Le serveur revalide tout à l'enregistrement.
+// La disposition : l'ordre et la largeur des blocs de la page, et ses
+// images et vidéos (EditeurDisposition). Le serveur revalide tout à
+// l'enregistrement.
 
 const VISIBILITES: { key: Visibilite; label: string; aide: string }[] = [
   { key: "public", label: "Public", aide: "Tous les joueurs le voient." },
@@ -118,6 +121,7 @@ export function EditeurProfil({
   const [nom, setNom] = useState(nomInitial.nom ?? "");
   const [nomVisibilite, setNomVisibilite] = useState<"public" | "friends">(nomInitial.visibilite);
   const [envoi, setEnvoi] = useState<string | null>(null);
+  const [envoiMedia, setEnvoiMedia] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, start] = useTransition();
 
@@ -189,7 +193,7 @@ export function EditeurProfil({
       <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[88px] lg:col-span-7">
         <p className="t-eyebrow m-0">Aperçu</p>
         <EnteteJoueur d={apercu} apercu />
-        <Vitrine style={style} stats={stats} rang={rang} />
+        {style.disposition.some((x) => x.k === "vitrine") && <Vitrine style={style} stats={stats} rang={rang} />}
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/people/${carte.id}?vue=inconnu`} className="btn btn-secondary btn-sm">
             <Eye size={14} aria-hidden /> Voir comme les autres
@@ -355,16 +359,8 @@ export function EditeurProfil({
           </div>
         </Section>
 
-        <Section titre="Radar" aide="Tes 10 matières face à la moyenne des joueurs, sur ton profil.">
-          <Seg
-            label="Radar sur le profil"
-            value={style.radar ? "oui" : "non"}
-            onChange={(v) => set("radar", v === "oui")}
-            items={[
-              { key: "oui", label: "Afficher" },
-              { key: "non", label: "Masquer" },
-            ]}
-          />
+        <Section titre="Disposition de ta page" aide="Range les blocs dans l'ordre que tu veux, sur toute la ligne ou à deux côte à côte (sur grand écran). Ajoute tes images et tes vidéos.">
+          <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} supabase={supabase} onEnvoi={setEnvoiMedia} />
         </Section>
 
         <Section titre="Bio">
@@ -413,7 +409,7 @@ export function EditeurProfil({
         </Section>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-          <button type="button" className="btn btn-primary btn-lg rl-press" onClick={enregistrer} disabled={pending || !lienOk || !!(envoi && envoi.endsWith("…"))}>
+          <button type="button" className="btn btn-primary btn-lg rl-press" onClick={enregistrer} disabled={pending || !lienOk || envoiMedia || !!(envoi && envoi.endsWith("…"))}>
             {pending ? "…" : "Enregistrer"}
           </button>
           {msg && (

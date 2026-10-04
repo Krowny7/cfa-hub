@@ -102,7 +102,10 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
 /** Le style d'un joueur ; `disponible` : false tant que la migration manque. */
 export async function lireStyle(sb: SupabaseClient, userId: string): Promise<{ style: StyleProfil; disponible: boolean }> {
   try {
-    const { data, error } = await sb.from("profile_style").select("banner,banner_url,banner_pos,accent,frame,showcase,show_radar,bio").eq("user_id", userId).maybeSingle();
+    const COLS = "banner,banner_url,banner_pos,accent,frame,showcase,show_radar,bio";
+    let { data, error } = await sb.from("profile_style").select(COLS + ",layout").eq("user_id", userId).maybeSingle();
+    // la disposition arrive avec migration_profil_medias.sql : sans elle, le reste
+    if (error && /layout/.test(error.message)) ({ data, error } = await sb.from("profile_style").select(COLS).eq("user_id", userId).maybeSingle());
     if (error) return { style: STYLE_DEFAUT, disponible: false };
     return { style: styleDepuis(data as Record<string, unknown> | null), disponible: true };
   } catch {

@@ -84,9 +84,9 @@ export function RadarComparable({
   );
 
   return (
-    <section className="rl-section" aria-labelledby="profil-radar" style={styleAccent(accent)}>
+    <section className="rl-section @container" aria-labelledby="profil-radar" style={styleAccent(accent)}>
       <SectionTitle title={<span id="profil-radar">{moi ? "Mes matières" : "Ses matières"}</span>} action={legende} />
-      <div className="card grid items-center gap-8 p-4 sm:p-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
+      <div className="card grid items-center gap-8 p-4 @lg:p-8 @4xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] @4xl:gap-12">
         <div className="mx-auto w-full max-w-[560px]">
           <Radar
             axes={axes}
@@ -135,7 +135,7 @@ export function RadarComparable({
           })}
         </ol>
         {actif && (
-          <p className="t-small m-0 lg:col-span-2">
+          <p className="t-small m-0 @4xl:col-span-2">
             {(() => {
               const communes = lignes.filter((l) => l.me !== null && l.toi !== null);
               if (!communes.length) return "Vous n'avez encore aucune matière mesurée en commun.";
@@ -153,7 +153,7 @@ export function RadarComparable({
             })()}
           </p>
         )}
-        {mesurees === 0 && <p className="t-small m-0 text-center lg:col-span-2">Aucune matière mesurée pour l&apos;instant : le radar se dessine avec les sessions d&apos;entraînement.</p>}
+        {mesurees === 0 && <p className="t-small m-0 text-center @4xl:col-span-2">Aucune matière mesurée pour l&apos;instant : le radar se dessine avec les sessions d&apos;entraînement.</p>}
       </div>
     </section>
   );

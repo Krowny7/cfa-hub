@@ -23,7 +23,7 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
       const t = TIERS[rang.tierIndex] ?? TIERS[0];
       grand = (
         <span className="flex items-center gap-3">
-          <RankBadge tier={rang.tierIndex} size={60} division={rang.division} anime />
+          <RankBadge tier={rang.tierIndex} size={60} division={rang.division} anime className="w-11 @md:w-[60px]" />
           <span>
             {t.name}
             {rang.division ? ` ${rang.division}` : ""}
@@ -61,10 +61,11 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
       petit = "calculs justes";
   }
   return (
-    <div className="card-quiet flex min-w-0 flex-col gap-2 p-5">
-      <span className="t-eyebrow">{nom}</span>
-      <span className={`t-num text-[28px] leading-none sm:text-[32px] ${s.accent}`}>{grand}</span>
-      <span className="t-micro">{petit}</span>
+    // étroite (téléphone) : en ligne, la valeur à droite ; large : en colonne
+    <div className="card-quiet grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 @md:flex @md:flex-col @md:items-stretch @md:gap-2 @md:p-5">
+      <span className="t-eyebrow col-start-1 row-start-1">{nom}</span>
+      <span className={`t-num col-start-2 row-span-2 row-start-1 justify-self-end text-right text-[24px] leading-none @md:text-left @md:text-[28px] @2xl:text-[32px] ${s.accent}`}>{grand}</span>
+      <span className="t-micro col-start-1 row-start-2">{petit}</span>
     </div>
   );
 }
@@ -72,8 +73,8 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
 export function Vitrine({ style, stats, rang }: { style: StyleProfil; stats: ProfilStats; rang: Rang }) {
   const keys = style.showcase.length ? style.showcase : (["rang", "questions", "serie"] as VitrineKey[]);
   return (
-    <section aria-label="Vitrine" style={styleAccent(style.accent)}>
-      <div className={"grid gap-3 sm:gap-4 " + (keys.length >= 3 ? "sm:grid-cols-3" : keys.length === 2 ? "sm:grid-cols-2" : "")}>
+    <section aria-label="Vitrine" className="@container" style={styleAccent(style.accent)}>
+      <div className={"grid gap-3 @md:gap-4 " + (keys.length >= 3 ? "@md:grid-cols-3" : keys.length === 2 ? "@md:grid-cols-2" : "")}>
         {keys.map((k) => (
           <Piece key={k} k={k} st={stats} rang={rang} />
         ))}
@@ -85,7 +86,7 @@ export function Vitrine({ style, stats, rang }: { style: StyleProfil; stats: Pro
 /** Les amis du joueur : sceaux et noms, vers leurs profils. */
 export function ListeAmis({ amis, total, moi }: { amis: AmiLite[]; total: number; moi: boolean }) {
   return (
-    <section className="rl-section" aria-labelledby="profil-amis">
+    <section className="rl-section @container" aria-labelledby="profil-amis">
       <SectionTitle
         title={<span id="profil-amis">Amis</span>}
         action={
@@ -101,7 +102,7 @@ export function ListeAmis({ amis, total, moi }: { amis: AmiLite[]; total: number
       {amis.length === 0 ? (
         <p className="t-small m-0">{moi ? "Pas encore d'amis : ajoute les joueurs que tu croises en duel ou au classement." : "Pas encore d'amis."}</p>
       ) : (
-        <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-3 lg:grid-cols-6">
+        <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 @md:grid-cols-3 @4xl:grid-cols-6">
           {amis.map((a) => (
             <li key={a.id} className="min-w-0">
               <Link href={`/people/${a.id}`} className="card-quiet rl-lift flex min-w-0 items-center gap-2.5 p-2.5">
