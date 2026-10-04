@@ -43,6 +43,7 @@ export function RankBadge({
   animate = false,
   gray = false,
   fige = false,
+  anime = false,
   className,
   title,
 }: {
@@ -63,6 +64,8 @@ export function RankBadge({
   gray?: boolean;
   /** dessin vectoriel immobile, sans aura (rendu des images pré-calculées) */
   fige?: boolean;
+  /** animé même sous 56 px (liquide, aura, arcs) : la vitrine du profil */
+  anime?: boolean;
   className?: string;
   title?: string;
 }) {
@@ -73,9 +76,9 @@ export function RankBadge({
   const withHalo = mastery !== null && mastery !== undefined;
   const m = withHalo ? Math.max(0, Math.min(100, mastery as number)) : 0;
   const label = title ?? `${t.name}${division ? " " + division : ""}${withHalo ? `, maîtrise ${m} %` : ""}`;
-  const petit = size <= PETIT_MAX && !withHalo && !fige;
-  const vivant = size >= VIVANT_MIN && !gray && !fige;
-  const aura = !!d.elec && !gray && !fige && size >= AURA_MIN;
+  const petit = size <= PETIT_MAX && !withHalo && !fige && !anime;
+  const vivant = (size >= VIVANT_MIN || anime) && !gray && !fige;
+  const aura = !!d.elec && !gray && !fige && (size >= AURA_MIN || anime);
   const calme = gray || fige;
 
   const racine = useRef<HTMLSpanElement | null>(null);

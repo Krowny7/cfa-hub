@@ -23,7 +23,7 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
       const t = TIERS[rang.tierIndex] ?? TIERS[0];
       grand = (
         <span className="flex items-center gap-3">
-          <RankBadge tier={rang.tierIndex} size={46} mastery={rang.mastery} division={rang.division} glow={false} />
+          <RankBadge tier={rang.tierIndex} size={60} division={rang.division} anime />
           <span>
             {t.name}
             {rang.division ? ` ${rang.division}` : ""}
