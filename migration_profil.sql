@@ -1,8 +1,8 @@
 -- Profil de joueur : personnalisation, LinkedIn, amis.
 -- À coller dans le SQL Editor de Supabase. Idempotente (rejouable).
 --
--- 1. profile_style : la personnalisation visible de tous (bannière, couleur,
---    cadre du sceau, titre, vitrine, bio). Lecture : tous les joueurs
+-- 1. profile_style : la personnalisation visible de tous (bannière : motif
+--    ou image et son cadrage, couleur, cadre du sceau, vitrine, radar, bio). Lecture : tous les joueurs
 --    connectés. Écriture : le serveur seulement (client service role), après
 --    avoir vérifié que les pièces choisies sont bien débloquées.
 -- 2. friendships : demandes d'ami et amitiés. Chacun voit les siennes.
@@ -11,6 +11,8 @@
 --    deux peut retirer (annuler, refuser, ne plus être amis).
 -- 3. profile_links : le LinkedIn et sa visibilité (public, amis, moi seul),
 --    filtrée par la base elle-même (RLS). Écriture : le serveur seulement.
+-- 4. profile_names : prénom et nom sous le pseudo, pour tous ou les amis
+--    (même filtrage par la base). Écriture : le serveur seulement.
 
 -- ── 1. profile_style ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS profile_style (
@@ -18,11 +20,15 @@ CREATE TABLE IF NOT EXISTS profile_style (
   banner      text        NOT NULL DEFAULT 'papier',
   accent      text        NOT NULL DEFAULT 'encre',
   frame       text        NOT NULL DEFAULT 'aucun',
-  title       text,
   showcase    text[]      NOT NULL DEFAULT '{}',
   bio         text        CHECK (bio IS NULL OR char_length(bio) <= 160),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
+-- bannière : une image envoyée par le joueur (bucket avatars, dans son
+-- dossier), cadrée verticalement (0 = haut, 100 = bas) ; radar affiché ou non
+ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS banner_url text;
+ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS banner_pos smallint NOT NULL DEFAULT 50 CHECK (banner_pos BETWEEN 0 AND 100);
+ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS show_radar boolean NOT NULL DEFAULT true;
 ALTER TABLE profile_style ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "profile_style_select" ON profile_style;
 CREATE POLICY "profile_style_select" ON profile_style FOR SELECT TO authenticated USING (true);
@@ -134,4 +140,21 @@ CREATE POLICY "profile_links_select" ON profile_links FOR SELECT TO authenticate
   user_id = auth.uid()
   OR linkedin_visibility = 'public'
   OR (linkedin_visibility = 'friends' AND rl_are_friends(auth.uid(), user_id))
+);
+
+-- ── 4. profile_names ───────────────────────────────────────────────────
+-- Prénom et nom affichés sous le pseudo (en italique), pour tous ou pour
+-- les amis seulement : filtré par la base elle-même. Écriture : le serveur.
+CREATE TABLE IF NOT EXISTS profile_names (
+  user_id     uuid        PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  full_name   text        NOT NULL CHECK (char_length(full_name) BETWEEN 1 AND 60),
+  visibility  text        NOT NULL DEFAULT 'friends' CHECK (visibility IN ('public', 'friends')),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE profile_names ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "profile_names_select" ON profile_names;
+CREATE POLICY "profile_names_select" ON profile_names FOR SELECT TO authenticated USING (
+  user_id = auth.uid()
+  OR visibility = 'public'
+  OR (visibility = 'friends' AND rl_are_friends(auth.uid(), user_id))
 );

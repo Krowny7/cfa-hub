@@ -1,15 +1,35 @@
-// Radar « stats de joueur » : toi (trait d'encre, au pinceau, qui se trace
-// à l'apparition) contre la
-// moyenne des joueurs (pointillés). Valeurs 0–100 ; null = pas de donnée
-// (compté 0 sur le tracé, affiché « — »). Les axes `soon` (domaines pas encore
-// ouverts) sont en pointillés et marqués « bientôt ». Composant sans état ni
-// hook : utilisable côté serveur comme côté client.
+import { useId } from "react";
+
+// Radar « stats de joueur » : toi contre la moyenne des joueurs. Valeurs
+// 0–100 ; null = pas encore mesuré.
+// - La forme ne passe que par les matières mesurées : une matière sans
+//   donnée ne tire plus la forme jusqu'au centre (elle est marquée « — » et
+//   d'un petit rond vide sur son axe).
+// - Fond en bandes (20 % chacune), graduations 25/50/75 sur l'axe du haut.
+// - Toi : un lavis à ta couleur (plus dense vers le bord), un trait d'encre
+//   au pinceau qui se trace à l'apparition, des points.
+// - La moyenne : pointillés au crayon. Sous chaque matière, ta valeur et
+//   l'écart à la moyenne (en rouge quand tu es en dessous).
+// Les axes `soon` (domaines pas encore ouverts) sont en pointillés et
+// marqués « bientôt ». `couleur` : la couleur du joueur (encre par défaut).
+// Sans état (useId seulement) : utilisable côté serveur comme côté client.
 
 export type RadarAxis = { label: string; me: number | null; avg: number | null; soon?: boolean };
 
 const f = (n: number) => n.toFixed(1);
 
-export function Radar({ axes, size = 360, title = "Toi face à la moyenne des joueurs" }: { axes: RadarAxis[]; size?: number; title?: string }) {
+export function Radar({
+  axes,
+  size = 360,
+  title = "Toi face à la moyenne des joueurs",
+  couleur = "var(--ink)",
+}: {
+  axes: RadarAxis[];
+  size?: number;
+  title?: string;
+  couleur?: string;
+}) {
+  const uid = "rad" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const n = axes.length;
   const c = size / 2;
   const R = size * 0.34;
@@ -17,36 +37,72 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
     const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
     return [c + Math.cos(a) * R * (v / 100), c + Math.sin(a) * R * (v / 100)] as const;
   };
-  const polyOf = (vals: number[]) => vals.map((v, i) => P(i, v)).map(([x, y], i) => `${i ? "L" : "M"} ${f(x)} ${f(y)}`).join(" ") + " Z";
-  const me = axes.map((a) => a.me ?? 0);
-  const avg = axes.map((a) => a.avg ?? 0);
+  const ring = (lv: number) => axes.map((_, i) => P(i, lv)).map(([x, y], i) => `${i ? "L" : "M"} ${f(x)} ${f(y)}`).join(" ") + " Z";
+  const path = (pts: (readonly [number, number])[], close = true) => pts.map(([x, y], i) => `${i ? "L" : "M"} ${f(x)} ${f(y)}`).join(" ") + (close ? " Z" : "");
+
+  const mesures = axes.map((a, i) => ({ i, v: a.me })).filter((m): m is { i: number; v: number } => m.v !== null);
+  const mePts = mesures.map((m) => P(m.i, Math.max(2, m.v)));
   const hasAvg = axes.some((a) => a.avg !== null);
+  const avgPts = axes.map((a, i) => (a.avg !== null ? P(i, a.avg) : null)).filter((p): p is readonly [number, number] => p !== null);
 
   return (
-    <svg viewBox={`-104 -16 ${size + 208} ${size + 34}`} width="100%" role="img" aria-label={title} style={{ display: "block", maxWidth: size + 208, margin: "0 auto", overflow: "visible", color: "var(--ink)" }}>
-      {/* grille légère : anneaux intérieurs au filet le plus fin, contour un cran plus net */}
-      <path d={polyOf(axes.map(() => 100))} fill="currentColor" fillOpacity={0.018} stroke="var(--line-2)" strokeWidth={1} />
-      {[25, 50, 75].map((lv) => (
-        <path key={lv} d={polyOf(axes.map(() => lv))} fill="none" stroke="var(--line)" strokeWidth={1} />
+    <svg
+      viewBox={`-108 -18 ${size + 216} ${size + 40}`}
+      width="100%"
+      role="img"
+      aria-label={title}
+      style={{ display: "block", maxWidth: size + 216, margin: "0 auto", overflow: "visible", color: couleur }}
+    >
+      <defs>
+        <radialGradient id={`${uid}l`} cx={c} cy={c} r={R} gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="currentColor" stopOpacity={0.04} />
+          <stop offset="1" stopColor="currentColor" stopOpacity={0.26} />
+        </radialGradient>
+      </defs>
+
+      {/* le fond : cinq bandes, la plus extérieure un cran plus nette */}
+      {[100, 80, 60, 40, 20].map((lv, k) => (
+        <path key={lv} d={ring(lv)} fill="var(--ink)" fillOpacity={k % 2 === 0 ? 0.028 : 0.012} stroke={lv === 100 ? "var(--line-2)" : "var(--line)"} strokeWidth={1} />
       ))}
       {axes.map((a, i) => {
         const [x, y] = P(i, 100);
         return <line key={i} x1={c} y1={c} x2={f(x)} y2={f(y)} stroke="var(--line)" strokeWidth={1} strokeDasharray={a.soon ? "2 4" : undefined} />;
       })}
-      {hasAvg && <path d={polyOf(avg)} fill="none" stroke="var(--ink-2)" strokeOpacity={0.8} strokeWidth={1.3} strokeDasharray="4 4" strokeLinejoin="round" />}
+      {/* graduations sur l'axe du haut */}
+      {[25, 50, 75].map((lv) => (
+        <text key={lv} x={f(c + 5)} y={f(c - R * (lv / 100) + 3.5)} style={{ fontFamily: "var(--font-mono)", fontSize: 8.5, fill: "var(--ink-3)" }}>
+          {lv}
+        </text>
+      ))}
+
+      {/* la moyenne des joueurs, au crayon */}
+      {hasAvg && avgPts.length >= 2 && (
+        <path d={path(avgPts, avgPts.length === n)} fill="none" stroke="var(--ink-2)" strokeOpacity={0.75} strokeWidth={1.3} strokeDasharray="3.5 4" strokeLinejoin="round" />
+      )}
+
+      {/* toi : le lavis, le trait au pinceau, les points */}
       <g className="rl-radar">
-        <path d={polyOf(me)} fill="currentColor" fillOpacity={0.085} />
-        <path d={polyOf(me)} pathLength={100} className="rl-drawline" filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round" />
-        {me.map((v, i) => {
-          const [x, y] = P(i, v);
-          return <circle key={i} cx={f(x)} cy={f(y)} r={3.4} fill="currentColor" stroke="var(--surface)" strokeWidth={1.6} />;
+        {mePts.length >= 3 && <path d={path(mePts)} fill={`url(#${uid}l)`} />}
+        {mePts.length >= 2 && (
+          <path d={path(mePts, mePts.length >= 3)} pathLength={100} className="rl-drawline" filter="url(#rl-ink)" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round" strokeLinecap="round" />
+        )}
+        {mePts.map(([x, y], k) => (
+          <circle key={k} cx={f(x)} cy={f(y)} r={3.6} fill="currentColor" stroke="var(--surface)" strokeWidth={1.6} />
+        ))}
+        {/* pas encore mesuré : un rond vide près du centre */}
+        {axes.map((a, i) => {
+          if (a.me !== null || a.soon) return null;
+          const [x, y] = P(i, 12);
+          return <circle key={`v${i}`} cx={f(x)} cy={f(y)} r={2.6} fill="var(--surface)" stroke="var(--ink-3)" strokeWidth={1.1} />;
         })}
       </g>
+
       {axes.map((a, i) => {
         const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
         const x = c + Math.cos(ang) * (R + 26);
         const y = c + Math.sin(ang) * (R + 22);
         const anchor = Math.abs(Math.cos(ang)) < 0.2 ? "middle" : Math.cos(ang) > 0 ? "start" : "end";
+        const ecart = a.me !== null && a.avg !== null ? Math.round(a.me - a.avg) : null;
         return (
           <g key={i}>
             {/* Tailles des étiquettes en CSS (.rl-radar-l / .rl-radar-v) : plus
@@ -56,6 +112,9 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
               {a.soon ? " · bientôt" : ""}
               <tspan x={f(x)} dy="1.35em" className="rl-radar-v" style={{ fontFamily: "var(--font-mono)", fontWeight: 400, fill: "var(--ink-2)" }}>
                 <tspan style={{ fill: "var(--ink)", fontWeight: 600 }}>{a.me === null ? "—" : a.me}</tspan>
+                {ecart !== null && ecart !== 0 ? (
+                  <tspan style={{ fill: ecart < 0 ? "var(--pen)" : "var(--ink-2)", fontWeight: 600 }}>{` ${ecart > 0 ? "+" : "−"}${Math.abs(ecart)}`}</tspan>
+                ) : null}
                 {a.avg !== null ? <tspan fillOpacity={0.85}>{` · moy ${a.avg}`}</tspan> : ""}
               </tspan>
             </text>
@@ -67,11 +126,11 @@ export function Radar({ axes, size = 360, title = "Toi face à la moyenne des jo
 }
 
 /** Légende « toi / moyenne des joueurs » à poser au-dessus d'un radar. */
-export function RadarLegend() {
+export function RadarLegend({ couleur = "var(--ink)" }: { couleur?: string }) {
   return (
     <div style={{ display: "flex", gap: 14, alignItems: "center", fontSize: 12, fontWeight: 500, color: "var(--ink-2)" }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <span style={{ width: 16, height: 2.5, borderRadius: 2, background: "var(--ink)" }} />
+        <span style={{ width: 16, height: 2.5, borderRadius: 2, background: couleur }} />
         toi
       </span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>

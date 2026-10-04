@@ -8,16 +8,18 @@ import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { getLeaderboardRank } from "@/lib/rating";
-import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
+import { DEFAULT_ELO } from "@/lib/ranks";
+import { getTopicAverages } from "@/lib/mastery";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import { AnswerSummary } from "@/components/moi/AnswerSummary";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { Icone } from "@/components/adn/icons";
-import { CarteJoueur, type CarteData } from "@/components/profil/CarteJoueur";
-import { CollectionTitres, ListeAmis, Vitrine } from "@/components/profil/Vitrine";
+import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
+import { ListeAmis, RadarProfil, Vitrine } from "@/components/profil/Vitrine";
+import { rankFor } from "@/lib/ranks";
 import { AmiBouton } from "@/components/profil/AmiBouton";
-import { amisDe, lireLien, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
+import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
 import { JOUEURS } from "@/lib/voice-z2a";
 import type { Profile, Rating } from "@/lib/types";
 
@@ -25,10 +27,11 @@ type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
 
-// Profil d'un joueur, façon jeu vidéo : la carte de joueur (bannière, sceau
-// dans son cadre, titre, rang, niveau, bio, LinkedIn selon sa visibilité),
-// la vitrine, les titres, les amis, puis le détail (questions répondues,
-// trophées, progression). Sur son propre profil : personnaliser, et « voir
+// Profil d'un joueur, façon jeu vidéo : l'en-tête sur toute la largeur
+// (bannière du joueur, sceau dans son cadre, pseudo, prénom et nom selon
+// leur visibilité, niveau, bio, LinkedIn selon sa visibilité, panneau du
+// rang), la vitrine, le radar des matières (s'il le montre), les amis, puis
+// le détail (questions répondues, trophées, progression). Sur son propre profil : personnaliser, et « voir
 // comme les autres » (?vue=inconnu ou ?vue=ami) qui rend la page telle
 // qu'un autre joueur la voit, LinkedIn compris.
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
@@ -52,7 +55,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const commeMoi = isMe && !vue;
 
   const admin = tryAdmin();
-  const [leaderboardRank, masteries, answers, { style }, stats, relation, lienBrut, amis] = await Promise.all([
+  const [leaderboardRank, masteries, answers, { style }, stats, relation, lienBrut, amis, nomBrut, moyennes] = await Promise.all([
     getLeaderboardRank(supabase, id),
     masteryByUser(admin, [id]),
     // résumé seulement (matières et sources, sans passages) ; les réponses
@@ -64,11 +67,15 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     // la base ne rend le LinkedIn que s'il est visible pour moi
     lireLien(supabase, id),
     amisDe(id, supabase, 12),
+    // prénom et nom : la base ne les rend que s'ils sont visibles pour moi
+    lireNom(supabase, id),
+    admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
   ]);
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
   const visible = (v: string) => (!vue ? true : v === "public" || (vue === "ami" && v === "friends"));
   const lien = lienBrut?.linkedin && visible(lienBrut.visibilite) ? lienBrut.linkedin : null;
+  const nomComplet = nomBrut?.nom && visible(nomBrut.visibilite) ? nomBrut.nom : null;
 
   const profile = profileData as ProfileRow;
   const rating = ratingData as RatingRow | null;
@@ -106,17 +113,16 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     // fonction pas encore créée
   }
 
-  const carte: CarteData = {
+  const entete: EnteteData = {
     id,
     name: display,
+    nomComplet,
     avatarUrl: profile.avatar_url ?? null,
     style,
     niveau: lvl.level,
     levelPct: Math.round(lvl.progressPct * 100),
     xpTotal,
     elo,
-    tierIndex: rank.tierIndex,
-    division: rank.division,
     mastery,
     place: leaderboardRank,
     gamesPlayed: rating?.games_played ?? 0,
@@ -159,36 +165,43 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     );
   }
 
+  // le bandeau d'aperçu dit ce qui est visible ou masqué pour cet autre joueur
+  const visibles = [
+    lienBrut?.linkedin ? (lien ? "ton LinkedIn est visible" : "ton LinkedIn est masqué") : null,
+    nomBrut?.nom ? (nomComplet ? "ton prénom et ton nom sont visibles" : "ton prénom et ton nom sont masqués") : null,
+  ].filter(Boolean) as string[];
+
+  const retour = (
+    <Link href="/people" className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] px-3 py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white">
+      <ArrowLeft size={14} aria-hidden /> {JOUEURS.retour}
+    </Link>
+  );
+
   return (
     <div className="rl-wide rl-page">
-      {vue ? (
-        <div className="card-quiet flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4" role="status">
-          <Eye size={17} aria-hidden className="shrink-0" />
-          <p className="m-0 min-w-0 flex-[1_1_260px] text-[14px]">
-            <b className="font-semibold">Aperçu.</b> Ton profil tel que le voit {vue === "ami" ? "un de tes amis" : "un joueur qui n'est pas ton ami"}
-            {lienBrut?.linkedin ? (lien ? " : ton LinkedIn est visible." : " : ton LinkedIn est masqué.") : "."}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/people/${id}?vue=${vue === "ami" ? "inconnu" : "ami"}`} className="btn btn-secondary btn-sm">
-              Voir comme {vue === "ami" ? "un inconnu" : "un ami"}
-            </Link>
-            <Link href={`/people/${id}`} className="btn btn-ghost btn-sm">
-              Revenir
-            </Link>
+      <div className="flex flex-col gap-6 md:gap-8">
+        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} />
+        {vue && (
+          <div className="card-quiet flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4" role="status">
+            <Eye size={17} aria-hidden className="shrink-0" />
+            <p className="m-0 min-w-0 flex-[1_1_260px] text-[14px]">
+              <b className="font-semibold">Aperçu.</b> Ton profil tel que le voit {vue === "ami" ? "un de tes amis" : "un joueur qui n'est pas ton ami"}
+              {visibles.length ? ` : ${visibles.join(", ")}.` : "."}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href={`/people/${id}?vue=${vue === "ami" ? "inconnu" : "ami"}`} className="btn btn-secondary btn-sm">
+                Voir comme {vue === "ami" ? "un inconnu" : "un ami"}
+              </Link>
+              <Link href={`/people/${id}`} className="btn btn-ghost btn-sm">
+                Revenir
+              </Link>
+            </div>
           </div>
-        </div>
-      ) : (
-        <Link href="/people" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-white">
-          <ArrowLeft size={14} aria-hidden /> {JOUEURS.retour}
-        </Link>
-      )}
-
-      <div className="flex flex-col gap-4 md:gap-5">
-        <CarteJoueur d={carte} actions={actions} />
+        )}
         <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />
       </div>
 
-      <CollectionTitres stats={stats} equipe={style.title} accent={style.accent} moi={commeMoi} />
+      {style.radar && <RadarProfil stats={stats} moyennes={moyennes} accent={style.accent} nom={display} moi={commeMoi} />}
 
       {amis && <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} />}
 

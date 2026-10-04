@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { statsProfil } from "@/lib/profil/donnees";
-import { normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 
-// Enregistrer son profil : le style (revalidé : seules les pièces débloquées
-// passent) et le LinkedIn (adresse linkedin.com/in normalisée, visibilité).
+// Enregistrer son profil : le style (revalidé : cadres gagnés seulement,
+// image de bannière venue de son dossier), le LinkedIn (adresse
+// linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
 
@@ -17,7 +18,13 @@ export type EnregistrerResultat =
 
 const VISIBILITES: Visibilite[] = ["public", "friends", "private"];
 
-export async function enregistrerProfil(input: { style: Partial<StyleProfil>; linkedin: string; visibilite: Visibilite }): Promise<EnregistrerResultat> {
+export async function enregistrerProfil(input: {
+  style: Partial<StyleProfil>;
+  linkedin: string;
+  visibilite: Visibilite;
+  nom: string;
+  nomVisibilite: "public" | "friends";
+}): Promise<EnregistrerResultat> {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
@@ -35,10 +42,27 @@ export async function enregistrerProfil(input: { style: Partial<StyleProfil>; li
   const visibilite = VISIBILITES.includes(input.visibilite) ? input.visibilite : "friends";
 
   const stats = await statsProfil(user.id, supabase);
-  const { style, refus } = validerStyle(input.style ?? {}, stats);
+  // l'image de bannière doit venir du dossier du joueur dans le stockage
+  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
+  const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;
+  const { style, refus } = validerStyle(input.style ?? {}, stats, prefixe);
 
   const now = new Date().toISOString();
-  const s = await admin.from("profile_style").upsert({ user_id: user.id, ...style, updated_at: now }, { onConflict: "user_id" });
+  const s = await admin.from("profile_style").upsert(
+    {
+      user_id: user.id,
+      banner: style.banner,
+      banner_url: style.bannerUrl,
+      banner_pos: style.bannerPos,
+      accent: style.accent,
+      frame: style.frame,
+      showcase: style.showcase,
+      show_radar: style.radar,
+      bio: style.bio,
+      updated_at: now,
+    },
+    { onConflict: "user_id" },
+  );
   if (s.error) {
     return {
       ok: false,
@@ -47,6 +71,13 @@ export async function enregistrerProfil(input: { style: Partial<StyleProfil>; li
   }
   const l = await admin.from("profile_links").upsert({ user_id: user.id, linkedin_url: linkedin, linkedin_visibility: visibilite, updated_at: now }, { onConflict: "user_id" });
   if (l.error) return { ok: false, erreur: "Ton style est enregistré, mais pas ton LinkedIn. Réessaie dans un instant." };
+
+  // prénom et nom : enregistrés s'ils sont remplis, effacés sinon
+  const nom = nettoyerNom(input.nom);
+  const n = nom
+    ? await admin.from("profile_names").upsert({ user_id: user.id, full_name: nom, visibility: input.nomVisibilite === "public" ? "public" : "friends", updated_at: now }, { onConflict: "user_id" })
+    : await admin.from("profile_names").delete().eq("user_id", user.id);
+  if (n.error) return { ok: false, erreur: "Ton style est enregistré, mais pas ton prénom et nom. Réessaie dans un instant." };
 
   revalidatePath(`/people/${user.id}`);
   revalidatePath("/moi/profil");

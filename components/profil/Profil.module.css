@@ -1,4 +1,4 @@
-/* Le profil de joueur : bannières, cadres du sceau, titre à la plume.
+/* Le profil de joueur : bannières (image ou motif), cadres du sceau, nom en italique.
    --acc : la couleur choisie par le joueur (encre, vermillon, métal…). */
 
 /* ── Bannières ─────────────────────────────────────────────────────── */
@@ -17,6 +17,23 @@
   opacity: 0.55;
   pointer-events: none;
   z-index: 1;
+}
+/* une image envoyée par le joueur, cadrée (object-position) ; un léger
+   fondu en bas pour que la page reprenne sous la bannière */
+.image {
+  background: var(--surface-2);
+}
+.image::after {
+  background-image: linear-gradient(180deg, transparent 55%, color-mix(in oklab, var(--paper) 55%, transparent));
+  opacity: 1;
+}
+.photoBanniere {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
 }
 .lavis {
   background:
@@ -112,17 +129,12 @@
   border-radius: 26%;
 }
 
-/* ── Titre à la plume ──────────────────────────────────────────────── */
-.titre {
-  font-family: var(--font-plume, var(--font-sans));
-  font-weight: 700;
-  line-height: 1;
-  /* la couleur choisie, poussée vers l'encre : lisible en clair comme en nuit */
-  color: color-mix(in oklab, var(--acc, var(--pen)) 72%, var(--ink));
-}
-:global(html[data-discreet="1"]) .titre {
-  font-family: var(--font-sans);
-  font-weight: 600;
+/* ── Prénom et nom, en italique sous le pseudo ─────────────────────── */
+.nomComplet {
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-2);
 }
 
 /* un chiffre ou un trait à la couleur du joueur (vitrine) */

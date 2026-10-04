@@ -8,7 +8,7 @@ import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, TOP_TIER, rankFor } from "@/lib/ranks";
 import { getLeaderboardRank } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
-import { LIEN_DEFAUT, STATS_VIDES, STYLE_DEFAUT, styleDepuis, type LienProfil, type ProfilStats, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { LIEN_DEFAUT, STATS_VIDES, STYLE_DEFAUT, styleDepuis, type LienProfil, type NomProfil, type ProfilStats, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 
 // Le profil de joueur, côté serveur : ses exploits (de quoi débloquer les
 // pièces), son style, son LinkedIn (filtré par la base selon la visibilité),
@@ -102,7 +102,7 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
 /** Le style d'un joueur ; `disponible` : false tant que la migration manque. */
 export async function lireStyle(sb: SupabaseClient, userId: string): Promise<{ style: StyleProfil; disponible: boolean }> {
   try {
-    const { data, error } = await sb.from("profile_style").select("banner,accent,frame,title,showcase,bio").eq("user_id", userId).maybeSingle();
+    const { data, error } = await sb.from("profile_style").select("banner,banner_url,banner_pos,accent,frame,showcase,show_radar,bio").eq("user_id", userId).maybeSingle();
     if (error) return { style: STYLE_DEFAUT, disponible: false };
     return { style: styleDepuis(data as Record<string, unknown> | null), disponible: true };
   } catch {
@@ -120,6 +120,18 @@ export async function lireLien(sb: SupabaseClient, userId: string): Promise<Lien
     if (error || !data) return null;
     const r = data as { linkedin_url: string | null; linkedin_visibility: Visibilite };
     return { linkedin: r.linkedin_url, visibilite: r.linkedin_visibility ?? LIEN_DEFAUT.visibilite };
+  } catch {
+    return null;
+  }
+}
+
+/** Le prénom et nom d'un joueur tel que `sb` a le droit de le voir (filtré par la base) ; null sinon. */
+export async function lireNom(sb: SupabaseClient, userId: string): Promise<NomProfil | null> {
+  try {
+    const { data, error } = await sb.from("profile_names").select("full_name,visibility").eq("user_id", userId).maybeSingle();
+    if (error || !data) return null;
+    const r = data as { full_name: string; visibility: "public" | "friends" };
+    return { nom: r.full_name, visibilite: r.visibility === "public" ? "public" : "friends" };
   } catch {
     return null;
   }

@@ -1,40 +1,49 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Eye, Lock } from "lucide-react";
-import { CarteJoueur, MarqueLinkedin, type CarteData } from "@/components/profil/CarteJoueur";
+import { Check, Eye, ImagePlus, Lock, Trash2 } from "lucide-react";
+import { EnteteJoueur, MarqueLinkedin, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { Vitrine } from "@/components/profil/Vitrine";
-import { Banniere, CadreSceau, TitrePlume } from "@/components/profil/Pieces";
+import { Banniere, CadreSceau } from "@/components/profil/Pieces";
 import { enregistrerProfil } from "@/app/moi/profil/actions";
+import { createClient } from "@/lib/supabase/browser";
+import { rankFor } from "@/lib/ranks";
 import {
-  BANNIERES,
   BIO_MAX,
   CADRES,
-  COULEURS,
-  TITRES,
+  COULEUR_ENCRE,
+  MOTIFS,
+  NOM_MAX,
+  TEINTES,
   VITRINE,
   VITRINE_MAX,
+  cadreDebloque,
+  cadreProgres,
+  couleurCss,
+  nettoyerNom,
   normaliserLinkedin,
-  progresTexte,
-  type Piece,
+  type NomProfil,
   type ProfilStats,
   type StyleProfil,
   type Visibilite,
   type VitrineKey,
 } from "@/lib/profil/catalogue";
 
-// L'éditeur du profil (/moi/profil) : l'aperçu de la carte de joueur en
-// direct, puis les choix. Les pièces pas encore gagnées restent visibles,
-// au crayon, avec ce qu'il faut faire (et le compte : « 632/1 000 ») ; le
-// serveur revalide tout à l'enregistrement.
+// L'éditeur du profil (/moi/profil) : l'aperçu en direct, puis les choix.
+// La bannière : une image du joueur (réduite dans le navigateur avant
+// l'envoi, puis cadrée verticalement) ou un motif. La couleur : libre. Les
+// cadres du sceau se gagnent aux questions posées (le compte est affiché).
+// Le serveur revalide tout à l'enregistrement.
 
 const VISIBILITES: { key: Visibilite; label: string; aide: string }[] = [
   { key: "public", label: "Public", aide: "Tous les joueurs le voient." },
   { key: "friends", label: "Amis", aide: "Seuls tes amis le voient." },
   { key: "private", label: "Moi seul", aide: "Gardé pour toi." },
 ];
+const LARGEUR_MAX = 1800;
+const HAUTEUR_MAX = 1200;
 
 function Section({ titre, aide, children }: { titre: string; aide?: string; children: React.ReactNode }) {
   return (
@@ -48,33 +57,38 @@ function Section({ titre, aide, children }: { titre: string; aide?: string; chil
   );
 }
 
-/** Une case de choix : l'aperçu, le nom, et le cadenas avec la condition si la pièce n'est pas gagnée. */
-function Case({ piece, stats, actif, onPick, children, large = false }: { piece: Piece; stats: ProfilStats; actif: boolean; onPick: () => void; children: React.ReactNode; large?: boolean }) {
-  const ok = piece.debloque(stats);
-  const prog = progresTexte(piece, stats);
+/** Un contrôle segmenté à indicateur glissant (radio). */
+function Seg<T extends string>({ items, value, onChange, label }: { items: { key: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+  const n = items.length;
+  const ix = Math.max(0, items.findIndex((i) => i.key === value));
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={actif}
-      disabled={!ok}
-      onClick={onPick}
-      title={ok ? piece.nom : `${piece.nom} · ${piece.condition}`}
-      className={
-        "group relative flex min-w-0 flex-col items-stretch gap-1.5 rounded-[14px] border p-1.5 text-left transition " +
-        (large ? "" : "items-center ") +
-        (actif ? "border-white shadow-[0_0_0_1px_var(--ink)]" : ok ? "border-line-2 hover:border-white" : "cursor-not-allowed border-dashed border-line-2 opacity-60")
-      }
-    >
-      {children}
-      <span className={"flex min-w-0 items-center gap-1 px-0.5 text-[12px] font-semibold " + (large ? "" : "justify-center")}>
-        {!ok && <Lock size={11} aria-hidden className="shrink-0" />}
-        <span className="truncate">{piece.nom}</span>
-        {actif && <Check size={12} aria-hidden className="shrink-0" />}
-      </span>
-      {!ok && <span className={"px-0.5 text-[10.5px] leading-tight text-muted " + (large ? "" : "text-center")}>{prog ?? piece.condition}</span>}
-    </button>
+    <div role="radiogroup" aria-label={label} className="seg" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+      <span aria-hidden className="seg-thumb" style={{ left: `calc(4px + ${ix} * (100% - 8px) / ${n})`, width: `calc((100% - 8px) / ${n})` }} />
+      {items.map((i) => (
+        <button key={i.key} type="button" role="radio" aria-checked={value === i.key} className="seg-item" onClick={() => onChange(i.key)}>
+          {i.label}
+        </button>
+      ))}
+    </div>
   );
+}
+
+/** Réduit une image dans le navigateur (1 800 × 1 200 au plus), en JPEG. */
+async function reduire(file: File): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, LARGEUR_MAX / bmp.width, HAUTEUR_MAX / bmp.height);
+  const w = Math.max(1, Math.round(bmp.width * k));
+  const h = Math.max(1, Math.round(bmp.height * k));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas");
+  ctx.drawImage(bmp, 0, 0, w, h);
+  bmp.close();
+  const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.86));
+  if (!blob) throw new Error("encodage");
+  return blob;
 }
 
 export function EditeurProfil({
@@ -83,19 +97,26 @@ export function EditeurProfil({
   initial,
   linkedin: linkedinInitial,
   visibilite: visibiliteInitiale,
+  nom: nomInitial,
   disponible,
 }: {
-  carte: CarteData;
+  carte: EnteteData;
   stats: ProfilStats;
   initial: StyleProfil;
   linkedin: string | null;
   visibilite: Visibilite;
+  nom: NomProfil;
   disponible: boolean;
 }) {
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const fichier = useRef<HTMLInputElement | null>(null);
   const [style, setStyle] = useState<StyleProfil>(initial);
   const [linkedin, setLinkedin] = useState(linkedinInitial ?? "");
   const [visibilite, setVisibilite] = useState<Visibilite>(visibiliteInitiale);
+  const [nom, setNom] = useState(nomInitial.nom ?? "");
+  const [nomVisibilite, setNomVisibilite] = useState<"public" | "friends">(nomInitial.visibilite);
+  const [envoi, setEnvoi] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, start] = useTransition();
 
@@ -104,10 +125,39 @@ export function EditeurProfil({
     setMsg(null);
   };
   const lienOk = !linkedin.trim() || !!normaliserLinkedin(linkedin);
-  const apercu: CarteData = useMemo(
-    () => ({ ...carte, style, linkedin: lienOk && linkedin.trim() ? normaliserLinkedin(linkedin) : null }),
-    [carte, style, linkedin, lienOk],
+  const apercu: EnteteData = useMemo(
+    () => ({ ...carte, style, nomComplet: nettoyerNom(nom), linkedin: lienOk && linkedin.trim() ? normaliserLinkedin(linkedin) : null }),
+    [carte, style, nom, linkedin, lienOk],
   );
+
+  async function choisirImage(file: File | undefined) {
+    if (!file) return;
+    setMsg(null);
+    if (!file.type.startsWith("image/")) {
+      setEnvoi("Choisis une image (JPEG, PNG, WebP…).");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setEnvoi("Image trop lourde (15 Mo au plus).");
+      return;
+    }
+    setEnvoi("Envoi de l'image…");
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("connexion");
+      const blob = await reduire(file);
+      const path = `${auth.user.id}/banniere-${Date.now()}.jpg`;
+      const up = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      if (up.error) throw up.error;
+      const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      setStyle((s) => ({ ...s, bannerUrl: url, bannerPos: 50 }));
+      setEnvoi(null);
+    } catch {
+      setEnvoi("L'image n'a pas pu être envoyée. Réessaie, ou choisis-en une autre.");
+    } finally {
+      if (fichier.current) fichier.current.value = "";
+    }
+  }
 
   const basculerVitrine = (k: VitrineKey) => {
     const on = style.showcase.includes(k);
@@ -118,24 +168,26 @@ export function EditeurProfil({
   const enregistrer = () =>
     start(async () => {
       setMsg(null);
-      const r = await enregistrerProfil({ style, linkedin, visibilite });
+      const r = await enregistrerProfil({ style, linkedin, visibilite, nom, nomVisibilite });
       if (!r.ok) {
         setMsg({ ok: false, texte: r.erreur });
         return;
       }
       setStyle(r.style);
-      setMsg({ ok: true, texte: r.refus.length ? `Enregistré, sauf ${r.refus.join(", ")} (pas encore gagné).` : "Enregistré. Ta carte est à jour." });
+      setMsg({ ok: true, texte: r.refus.length ? `Enregistré, sauf ${r.refus.join(", ")}.` : "Enregistré. Ton profil est à jour." });
       router.refresh();
     });
 
-  const rang = { tierIndex: carte.tierIndex, division: carte.division, elo: carte.elo, mastery: carte.mastery };
+  const rk = rankFor(carte.elo, carte.mastery, carte.place);
+  const rang = { tierIndex: rk.tierIndex, division: rk.division, elo: carte.elo, mastery: carte.mastery };
+  const hexCourant = style.accent === COULEUR_ENCRE ? "#111111" : style.accent;
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
       {/* l'aperçu, tel que les autres le verront */}
       <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[88px] lg:col-span-7">
         <p className="t-eyebrow m-0">Aperçu</p>
-        <CarteJoueur d={apercu} />
+        <EnteteJoueur d={apercu} apercu />
         <Vitrine style={style} stats={stats} rang={rang} />
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/people/${carte.id}?vue=inconnu`} className="btn btn-secondary btn-sm">
@@ -151,77 +203,131 @@ export function EditeurProfil({
       <div className="card flex min-w-0 flex-col gap-6 p-5 sm:p-7 lg:col-span-5">
         {!disponible && (
           <p className="t-small m-0 rounded-[12px] border border-dashed border-line-2 p-3">
-            La personnalisation s&apos;enregistrera dès que la base sera prête. Tu peux déjà composer ta carte.
+            La personnalisation s&apos;enregistrera dès que la base sera prête. Tu peux déjà composer ton profil.
           </p>
         )}
 
-        <Section titre="Bannière" aide="Les plus rares se gagnent : questions posées, série, rang atteint.">
-          <div role="radiogroup" aria-label="Bannière" className="grid grid-cols-3 gap-2">
-            {BANNIERES.map((b) => (
-              <Case key={b.key} piece={b} stats={stats} actif={style.banner === b.key} onPick={() => set("banner", b.key)} large>
-                <Banniere banner={b.key} accent={style.accent} className="h-[46px] w-full rounded-[9px]" />
-              </Case>
-            ))}
+        <Section titre="Bannière" aide="Ton image, sur toute la largeur de ton profil. Ou un motif.">
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={fichier} type="file" accept="image/*" className="sr-only" id="rl-banniere" onChange={(e) => choisirImage(e.target.files?.[0])} />
+            <label htmlFor="rl-banniere" className="btn btn-secondary btn-sm cursor-pointer">
+              <ImagePlus size={15} aria-hidden /> {style.bannerUrl ? "Changer d'image" : "Choisir une image"}
+            </label>
+            {style.bannerUrl && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => set("bannerUrl", null)}>
+                <Trash2 size={14} aria-hidden /> Retirer l&apos;image
+              </button>
+            )}
+            {envoi && (
+              <span role="status" className="text-[12.5px] font-medium">
+                {envoi}
+              </span>
+            )}
+          </div>
+          {style.bannerUrl && (
+            <label className="flex items-center gap-3 text-[13px] font-semibold">
+              Cadrage
+              <input type="range" min={0} max={100} value={style.bannerPos} onChange={(e) => set("bannerPos", Number(e.target.value))} className="min-w-0 flex-1" style={{ accentColor: "var(--ink)" }} aria-label="Cadrage vertical de l'image" />
+            </label>
+          )}
+          <div role="radiogroup" aria-label="Motif" className={"grid grid-cols-3 gap-2 " + (style.bannerUrl ? "opacity-60" : "")}>
+            {MOTIFS.map((m) => {
+              const actif = !style.bannerUrl && style.banner === m.key;
+              return (
+                <button
+                  key={m.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={actif}
+                  onClick={() => setStyle((s) => ({ ...s, banner: m.key, bannerUrl: null }))}
+                  className={"flex min-w-0 flex-col gap-1.5 rounded-[14px] border p-1.5 text-left " + (actif ? "border-white shadow-[0_0_0_1px_var(--ink)]" : "border-line-2 hover:border-white")}
+                >
+                  <Banniere banner={m.key} accent={style.accent} className="h-[44px] w-full rounded-[9px]" />
+                  <span className="flex items-center gap-1 px-0.5 text-[12px] font-semibold">
+                    <span className="truncate">{m.nom}</span>
+                    {actif && <Check size={12} aria-hidden className="shrink-0" />}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </Section>
 
-        <Section titre="Couleur" aide="Elle teinte la bannière, ton titre et ta vitrine. Les métaux suivent ton meilleur rang.">
-          <div role="radiogroup" aria-label="Couleur" className="grid grid-cols-5 gap-2">
-            {COULEURS.map((c) => (
-              <Case key={c.key} piece={c} stats={stats} actif={style.accent === c.key} onPick={() => set("accent", c.key)}>
-                <span className="mx-auto mt-1 block h-7 w-7 rounded-full border border-line-2" style={{ background: c.valeur }} aria-hidden />
-              </Case>
-            ))}
-          </div>
-        </Section>
-
-        <Section titre="Cadre du sceau" aide="Un cadre de métal par rang atteint.">
-          <div role="radiogroup" aria-label="Cadre du sceau" className="grid grid-cols-5 gap-2">
-            {CADRES.map((c) => (
-              <Case key={c.key} piece={c} stats={stats} actif={style.frame === c.key} onPick={() => set("frame", c.key)}>
-                <span className="mx-auto mt-1 inline-flex">
-                  <CadreSceau frame={c.key} name={carte.name} avatarUrl={carte.avatarUrl} size={34} />
-                </span>
-              </Case>
-            ))}
-          </div>
-        </Section>
-
-        <Section titre="Titre" aide="Sous ton pseudo, à la plume. Chaque exploit en débloque un.">
-          <div role="radiogroup" aria-label="Titre" className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={style.title === null}
-              onClick={() => set("title", null)}
-              className={"rounded-full border px-3 py-1.5 text-[13px] " + (style.title === null ? "border-white font-semibold" : "border-line-2 text-muted hover:border-white")}
-            >
-              Sans titre
-            </button>
-            {TITRES.map((t) => {
-              const ok = t.debloque(stats);
-              const prog = progresTexte(t, stats);
-              const actif = style.title === t.key;
+        <Section titre="Couleur" aide="La couleur de ton profil : la barre de niveau, ta vitrine, ton radar, les motifs.">
+          <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Couleur">
+            {TEINTES.map((t) => {
+              const actif = style.accent === t.key;
               return (
                 <button
                   key={t.key}
                   type="button"
                   role="radio"
                   aria-checked={actif}
-                  disabled={!ok}
-                  onClick={() => set("title", t.key)}
-                  title={ok ? t.nom : `${t.nom} · ${t.condition}`}
-                  className={
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] " +
-                    (actif ? "border-white" : ok ? "border-line-2 hover:border-white" : "cursor-not-allowed border-dashed border-line-2 text-muted")
-                  }
+                  title={t.nom}
+                  onClick={() => set("accent", t.key)}
+                  className={"grid h-9 w-9 place-items-center rounded-full border " + (actif ? "border-white shadow-[0_0_0_1px_var(--ink)]" : "border-line-2")}
                 >
-                  {!ok && <Lock size={11} aria-hidden />}
-                  {ok ? <TitrePlume accent={style.accent} className="text-[17px]">{t.nom}</TitrePlume> : t.nom}
-                  {!ok && prog && <span className="font-mono text-[10.5px] tabular-nums">{prog}</span>}
+                  <span className="block h-6 w-6 rounded-full" style={{ background: couleurCss(t.key) }} />
+                  <span className="sr-only">{t.nom}</span>
                 </button>
               );
             })}
+            <label className="inline-flex items-center gap-2 rounded-full border border-line-2 py-1 pl-1 pr-3 text-[12.5px] font-semibold" title="Une autre couleur">
+              <input type="color" value={hexCourant} onChange={(e) => set("accent", e.target.value.toLowerCase())} className="h-7 w-7 cursor-pointer rounded-full border-0 bg-transparent p-0" aria-label="Choisir une autre couleur" />
+              Autre
+            </label>
+          </div>
+        </Section>
+
+        <Section titre="Cadre du sceau" aide="Il se gagne aux questions posées, toutes sources confondues.">
+          <div role="radiogroup" aria-label="Cadre du sceau" className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {CADRES.map((c) => {
+              const ok = cadreDebloque(c, stats);
+              const actif = style.frame === c.key;
+              const prog = cadreProgres(c, stats);
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={actif}
+                  disabled={!ok}
+                  onClick={() => set("frame", c.key)}
+                  title={ok ? c.nom : `${c.nom} · ${c.seuil} questions`}
+                  className={
+                    "flex min-w-0 flex-col items-center gap-1.5 rounded-[14px] border p-1.5 " +
+                    (actif ? "border-white shadow-[0_0_0_1px_var(--ink)]" : ok ? "border-line-2 hover:border-white" : "cursor-not-allowed border-dashed border-line-2 opacity-60")
+                  }
+                >
+                  <span className="mt-1 inline-flex">
+                    <CadreSceau frame={c.key} name={carte.name} avatarUrl={carte.avatarUrl} size={34} />
+                  </span>
+                  <span className="flex min-w-0 items-center gap-1 text-[12px] font-semibold">
+                    {!ok && <Lock size={11} aria-hidden className="shrink-0" />}
+                    <span className="truncate">{c.nom}</span>
+                  </span>
+                  {prog && <span className="font-mono text-[10.5px] tabular-nums text-muted">{prog}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </Section>
+
+        <Section titre="Prénom et nom" aide="En italique sous ton pseudo. Facultatif.">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="rl-nom" className="sr-only">
+              Prénom et nom
+            </label>
+            <input id="rl-nom" className="input" maxLength={NOM_MAX} autoComplete="name" placeholder="Théo Chaumont" value={nom} onChange={(e) => setNom(e.target.value)} />
+            <Seg
+              label="Qui voit ton prénom et ton nom"
+              value={nomVisibilite}
+              onChange={setNomVisibilite}
+              items={[
+                { key: "public", label: "Tout le monde" },
+                { key: "friends", label: "Mes amis" },
+              ]}
+            />
           </div>
         </Section>
 
@@ -248,6 +354,18 @@ export function EditeurProfil({
           </div>
         </Section>
 
+        <Section titre="Radar" aide="Tes 10 matières face à la moyenne des joueurs, sur ton profil.">
+          <Seg
+            label="Radar sur le profil"
+            value={style.radar ? "oui" : "non"}
+            onChange={(v) => set("radar", v === "oui")}
+            items={[
+              { key: "oui", label: "Afficher" },
+              { key: "non", label: "Masquer" },
+            ]}
+          />
+        </Section>
+
         <Section titre="Bio">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="rl-bio" className="sr-only">
@@ -267,7 +385,7 @@ export function EditeurProfil({
           </div>
         </Section>
 
-        <Section titre="LinkedIn" aide="Un bouton LinkedIn sur ta carte, pour qui tu veux.">
+        <Section titre="LinkedIn" aide="Un bouton LinkedIn sur ton profil, pour qui tu veux.">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <MarqueLinkedin size={22} />
@@ -288,20 +406,13 @@ export function EditeurProfil({
               />
             </div>
             {!lienOk && <p className="t-small m-0 font-semibold text-pen">Colle le lien de ton profil : linkedin.com/in/…</p>}
-            <div role="radiogroup" aria-label="Qui voit ton LinkedIn" className="seg" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-              <span aria-hidden className="seg-thumb" style={{ left: `calc(4px + ${VISIBILITES.findIndex((v) => v.key === visibilite)} * (100% - 8px) / 3)`, width: "calc((100% - 8px) / 3)" }} />
-              {VISIBILITES.map((v) => (
-                <button key={v.key} type="button" role="radio" aria-checked={visibilite === v.key} className="seg-item" onClick={() => setVisibilite(v.key)}>
-                  {v.label}
-                </button>
-              ))}
-            </div>
+            <Seg label="Qui voit ton LinkedIn" value={visibilite} onChange={setVisibilite} items={VISIBILITES} />
             <p className="t-micro m-0">{VISIBILITES.find((v) => v.key === visibilite)?.aide}</p>
           </div>
         </Section>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-          <button type="button" className="btn btn-primary btn-lg rl-press" onClick={enregistrer} disabled={pending || !lienOk}>
+          <button type="button" className="btn btn-primary btn-lg rl-press" onClick={enregistrer} disabled={pending || !lienOk || !!(envoi && envoi.endsWith("…"))}>
             {pending ? "…" : "Enregistrer"}
           </button>
           {msg && (
