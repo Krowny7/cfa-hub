@@ -20,7 +20,7 @@ import type { MoiData } from "@/components/moi/types";
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
 function SubjectsCard({ d }: { d: MoiData }) {
-  const axes = d.topics.map((t) => ({ label: t.short, me: t.pct, avg: t.avg }));
+  const axes = d.topics.map((t) => ({ label: t.short, nom: t.label, me: t.pct, avg: t.avg }));
   const known = d.topics.filter((t) => t.pct !== null).sort((a, b) => (b.pct as number) - (a.pct as number));
   const top = known.slice(0, Math.min(3, Math.floor(known.length / 2) || known.length));
   const low = known.length >= 2 ? known.slice(-Math.min(3, Math.floor(known.length / 2))).reverse() : [];

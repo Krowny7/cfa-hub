@@ -21,7 +21,34 @@ import { useId } from "react";
 // Ces zones sont des masques SVG des deux formes : rien à calculer.
 // Sans état (useId seulement) : utilisable côté serveur comme côté client.
 
-export type RadarAxis = { label: string; me: number | null; avg: number | null; soon?: boolean };
+export type RadarAxis = {
+  label: string;
+  me: number | null;
+  avg: number | null;
+  soon?: boolean;
+  /** nom complet (infobulle) ; le code court sinon */
+  nom?: string;
+  /** qui est « me » dans l'infobulle : « toi » (défaut) ou le pseudo du joueur regardé */
+  qui?: string;
+};
+
+const ecartEnClair = (d: number) => (d === 0 ? "pile dans la moyenne" : `${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "au-dessus de" : "sous"} la moyenne`);
+
+/** L'infobulle d'un axe : tout en clair, en une seule chaîne (SVG <title>). */
+function titreAxe(a: RadarAxis, autre: number | null, comparaison: RadarComparaison | null) {
+  const nom = a.nom ?? a.label;
+  const qui = a.qui ?? "toi";
+  if (a.soon) return `${nom} : bientôt`;
+  const me = a.me === null ? "pas encore mesurée" : `${a.me} % de bonnes réponses`;
+  if (comparaison) {
+    const toi = autre === null ? "pas encore mesurée" : `${autre} %`;
+    const d = autre !== null && a.me !== null ? Math.round(autre - a.me) : null;
+    return `${nom} — ${qui} : ${me} · ${comparaison.label} : ${toi}${d ? ` (${comparaison.label} ${d > 0 ? "devant" : "derrière"} de ${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""})` : ""}`;
+  }
+  const moy = a.avg === null ? "" : ` · moyenne des joueurs : ${a.avg} %`;
+  const d = a.me !== null && a.avg !== null ? ` (${ecartEnClair(Math.round(a.me - a.avg))})` : "";
+  return `${nom} — ${qui} : ${me}${moy}${d}`;
+}
 /** Une seconde forme à superposer : une valeur par axe (null : pas mesurée). */
 export type RadarComparaison = { valeurs: (number | null)[]; couleur: string; label: string };
 
@@ -159,7 +186,8 @@ export function Radar({
         const ecart = !comparaison && a.me !== null && a.avg !== null ? Math.round(a.me - a.avg) : null;
         const autre = comparaison ? (comparaison.valeurs[i] ?? null) : null;
         return (
-          <g key={i}>
+          <g key={i} style={{ cursor: "help" }}>
+            <title>{titreAxe(a, autre, comparaison)}</title>
             {/* Tailles des étiquettes en CSS (.rl-radar-l / .rl-radar-v) : plus
                 grandes sur téléphone, où le radar entier est réduit. */}
             <text x={f(x)} y={f(y + 4)} textAnchor={anchor} className="rl-radar-l" style={{ fontFamily: "var(--font-sans)", fontWeight: 650, fill: a.soon ? "var(--ink-2)" : "var(--ink)" }}>

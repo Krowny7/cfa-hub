@@ -144,7 +144,7 @@ function RadarPanel({ topics }: { topics: TopicStat[] }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="w-full max-w-[560px]">
-        <Radar axes={topics.map((t) => ({ label: t.code, me: t.pct, avg: t.avg }))} size={340} title="Tes 10 matières face à la moyenne des joueurs" />
+        <Radar axes={topics.map((t) => ({ label: t.code, nom: t.name, me: t.pct, avg: t.avg }))} size={340} title="Tes 10 matières face à la moyenne des joueurs" />
       </div>
       {measured.length === 0 ? (
         <p className="t-small text-center">

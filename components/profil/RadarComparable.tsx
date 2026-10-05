@@ -16,6 +16,27 @@ import { couleurCss } from "@/lib/profil/catalogue";
 
 export type MatierePct = { key: string; pct: number | null };
 
+/** Le détail d'une ligne, en clair : la matière, puis chaque chiffre dit ce qu'il est. */
+function infobulle(l: { complet: string; me: number | null; avg: number | null; toi: number | null }, actif: boolean, qui: string) {
+  const pct = (v: number | null) => (v === null ? "pas encore mesurée" : `${v} % de bonnes réponses`);
+  if (actif) {
+    const d = l.toi !== null && l.me !== null ? Math.round(l.toi - l.me) : null;
+    return [
+      l.complet,
+      `${qui} : ${pct(l.me)}`,
+      `toi : ${pct(l.toi)}`,
+      d === null ? "écart : pas encore comparable" : d === 0 ? "à égalité" : `tu es ${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "devant" : "derrière"}`,
+    ];
+  }
+  const d = l.me !== null && l.avg !== null ? Math.round(l.me - l.avg) : null;
+  return [
+    l.complet,
+    `${qui === "toi" ? "ta précision" : `précision de ${qui}`} : ${pct(l.me)} (la barre)`,
+    l.avg === null ? "moyenne des joueurs : pas encore connue" : `moyenne des joueurs : ${l.avg} % (le trait)`,
+    d === null ? "" : d === 0 ? "pile dans la moyenne" : `${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "au-dessus de" : "sous"} la moyenne (le chiffre ${d > 0 ? "+" : "−"}${Math.abs(d)})`,
+  ].filter(Boolean);
+}
+
 export function RadarComparable({
   matieres,
   moyennes,
@@ -45,8 +66,9 @@ export function RadarComparable({
   const peutComparer = !moi && !!miennes && miennes.some((m) => m.pct !== null);
   const actif = comparer && peutComparer;
 
-  const axes = SUBJECTS.map((x) => ({ label: x.code, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null }));
-  const lignes = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null, toi: mien.get(x.key) ?? null })).sort(
+  const qui = moi ? "toi" : nom;
+  const axes = SUBJECTS.map((x) => ({ label: x.code, nom: x.name, qui, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null }));
+  const lignes = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, complet: x.name, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null, toi: mien.get(x.key) ?? null })).sort(
     (a, b) => (b.me ?? -1) - (a.me ?? -1),
   );
   const mesurees = axes.filter((a) => a.me !== null).length;
@@ -97,11 +119,34 @@ export function RadarComparable({
           />
         </div>
         <ol className="m-0 flex list-none flex-col gap-2.5 p-0" aria-label="Matières, de la plus sûre à la moins sûre">
+          {/* ce que disent les colonnes ; le détail de chaque ligne au survol (ou au toucher) */}
+          <li aria-hidden className="t-micro -mb-1 grid grid-cols-[92px_minmax(0,1fr)_104px] items-end gap-3">
+            <span />
+            <span>{actif ? `${nom} : barre épaisse · toi : fine` : "bonnes réponses · trait : moyenne"}</span>
+            <span className="text-right">{actif ? "écart" : "% · écart"}</span>
+          </li>
           {lignes.map((l) => {
             const ref = actif ? l.toi : l.avg;
             const ecart = l.me !== null && ref !== null ? Math.round(l.me - ref) : null;
+            const bulle = infobulle(l, actif, qui);
             return (
-              <li key={l.key} className="grid grid-cols-[92px_minmax(0,1fr)_104px] items-center gap-3">
+              <li
+                key={l.key}
+                tabIndex={0}
+                aria-label={bulle.join(". ")}
+                className="group/l relative -mx-2 grid cursor-help grid-cols-[92px_minmax(0,1fr)_104px] items-center gap-3 rounded-[8px] px-2 py-0.5 outline-none transition-colors hover:bg-surface-2 focus:bg-surface-2"
+              >
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full left-[100px] z-20 mb-1.5 w-max max-w-[min(280px,calc(100%-100px))] translate-y-1 rounded-[10px] border border-line-2 bg-surface px-3 py-2 text-[12px] leading-snug opacity-0 shadow-[var(--shadow-2)] transition-[opacity,transform] duration-150 group-hover/l:translate-y-0 group-hover/l:opacity-100 group-focus/l:translate-y-0 group-focus/l:opacity-100"
+                >
+                  <span className="block font-semibold text-white">{bulle[0]}</span>
+                  {bulle.slice(1).map((t) => (
+                    <span key={t} className="block text-muted">
+                      {t}
+                    </span>
+                  ))}
+                </span>
                 <span className={"truncate text-[13px] " + (l.me === null && (!actif || l.toi === null) ? "text-muted" : "font-semibold")}>{l.nom}</span>
                 <span className="flex flex-col gap-1">
                   <span className="relative block h-2 rounded-full bg-[color-mix(in_oklab,var(--ink)_7%,transparent)]">
