@@ -1,5 +1,5 @@
 {
-  "_": "Mots outils pour reconnaître la langue d'un texte (lib/langue-contenu.ts, scripts/lib/langue.mjs). Chaque mot est entouré d'espaces.",
-  "fr": [" le ", " la ", " les ", " des ", " est ", " une ", " du ", " au ", " aux ", " que ", " qui ", " pour ", " dans ", " sur ", " par ", " avec ", " sont ", " cette ", " ce ", " plus ", " entre ", " leur ", " d'", " l'", " qu'", " car ", " donc ", " ou ", " et ", " pas ", " ne ", " se "],
-  "en": [" the ", " of ", " is ", " which ", " most ", " likely ", " and ", " a ", " an ", " to ", " in ", " for ", " that ", " are ", " with ", " will ", " should ", " be ", " by ", " its ", " under ", " least ", " because ", " not "]
+  "_": "Mots outils pour reconnaître la langue d'un texte (lib/langue-contenu.ts, scripts/lib/langue.mjs). Chaque mot est entouré d'espaces. Exclus car ambigus : « par » (par value, at par) et « a » (article anglais, verbe français, variable A).",
+  "fr": [" le ", " la ", " les ", " des ", " est ", " une ", " du ", " au ", " aux ", " que ", " qui ", " pour ", " dans ", " sur ", " avec ", " sont ", " cette ", " ce ", " plus ", " entre ", " leur ", " d'", " l'", " qu'", " car ", " donc ", " ou ", " et ", " pas ", " ne ", " se "],
+  "en": [" the ", " of ", " is ", " which ", " most ", " likely ", " and ", " an ", " to ", " in ", " for ", " that ", " are ", " with ", " will ", " should ", " be ", " by ", " its ", " under ", " least ", " because ", " not "]
 }
