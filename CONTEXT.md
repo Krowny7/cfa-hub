@@ -169,6 +169,26 @@ middleware.ts           # Refresh session auth sur chaque requête
 
 ## Règles métier importantes
 
+### Langue des questions (règle universelle)
+
+Toutes les questions du site — fiches, banque officielle, défi du jour,
+duels, sessions par matière, examens blancs — suivent la même règle :
+**énoncé et choix en anglais** (comme à l'examen), **explication en
+français**. Elle est appliquée à l'entrée :
+
+- éditeur de séries (`components/QuizSetManage.tsx`) : ajout, modification
+  et import JSON refusés si la règle est nettement enfreinte ;
+- scripts d'import (`scripts/lib/seed-core.mjs`) : le lot entier est refusé
+  avant toute écriture ;
+- détection commune : `lib/langue-contenu.ts` / `scripts/lib/langue.mjs`
+  (mots outils dans `lib/langue-contenu.json`) ;
+- contrôle de la base : `node scripts/verifier-langues.mjs` liste les
+  questions officielles qui l'enfreignent.
+
+Les explications d'origine (anglaises) des anciens scripts `seed-*` ont été
+traduites en base le 2026-10-05 : relancer un ancien script sans traduire
+ses explications serait refusé, ce qui protège les traductions.
+
 ### Permissions d'édition
 - `private` → owner uniquement
 - `public` → owner uniquement (tout le monde peut lire)

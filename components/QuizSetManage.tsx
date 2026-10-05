@@ -8,6 +8,7 @@ import { useI18n } from "@/components/I18nProvider";
 import { TopicSelector, TopicBadge } from "@/components/TopicSelector";
 import { Field } from "@/components/ContentDetailHeader";
 import type { QuizQuestion } from "@/lib/types";
+import { REGLE_LANGUE, ecartsDeLangue } from "@/lib/langue-contenu";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -16,6 +17,12 @@ function parseChoices(text: string): string[] {
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+/** Règle du site (lib/langue-contenu) : énoncé et choix en anglais, explication en français. */
+function exigerLangue(q: { prompt: string; choices: string[]; explanation: string | null }, numero?: number) {
+  const ecarts = ecartsDeLangue(q);
+  if (ecarts.length) throw new Error(`${numero ? `Question ${numero} : ` : ""}${ecarts.join(", ")}. ${REGLE_LANGUE}`);
 }
 
 function clampCorrectIndex(value: number, choices: string[]): number {
@@ -55,7 +62,7 @@ function QuestionForm({
   const lines = parseChoices(draft.choices);
   return (
     <div className="grid gap-5">
-      <Field label="Énoncé" htmlFor={`${idPrefix}-prompt`}>
+      <Field label="Énoncé" hint="en anglais" htmlFor={`${idPrefix}-prompt`}>
         <textarea
           id={`${idPrefix}-prompt`}
           className="input box-border w-full min-w-0"
@@ -65,7 +72,7 @@ function QuestionForm({
           placeholder={t("qcm.promptPlaceholder")}
         />
       </Field>
-      <Field label="Choix" hint="un par ligne, de 2 à 6" htmlFor={`${idPrefix}-choices`}>
+      <Field label="Choix" hint="en anglais, un par ligne, de 2 à 6" htmlFor={`${idPrefix}-choices`}>
         <textarea
           id={`${idPrefix}-choices`}
           className="input box-border w-full min-w-0"
@@ -97,7 +104,7 @@ function QuestionForm({
           </div>
         </Field>
       </div>
-      <Field label="Explication" hint="facultative" htmlFor={`${idPrefix}-expl`}>
+      <Field label="Explication" hint="en français, facultative" htmlFor={`${idPrefix}-expl`}>
         <textarea
           id={`${idPrefix}-expl`}
           className="input box-border w-full min-w-0"
@@ -205,6 +212,7 @@ export function QuizSetManage({
       if (!draft.prompt.trim()) throw new Error("Écris l'énoncé de la question.");
       const lines = parseChoices(draft.choices);
       if (lines.length < 2 || lines.length > 6) throw new Error(t("qcm.choicesError"));
+      exigerLangue({ prompt: draft.prompt, choices: lines, explanation: draft.explanation });
 
       const { error } = await supabase.from("quiz_questions").insert({
         set_id: setId,
@@ -257,6 +265,7 @@ export function QuizSetManage({
       if (!edit.prompt.trim()) throw new Error("Écris l'énoncé de la question.");
       const lines = parseChoices(edit.choices);
       if (lines.length < 2 || lines.length > 6) throw new Error(t("qcm.choicesError"));
+      exigerLangue({ prompt: edit.prompt, choices: lines, explanation: edit.explanation });
 
       const { error } = await supabase
         .from("quiz_questions")
@@ -340,9 +349,6 @@ export function QuizSetManage({
       const arr = Array.isArray(obj?.questions) ? obj.questions : [];
       if (arr.length === 0) throw new Error(t("qcm.noQuestions"));
 
-      const { error: delError } = await supabase.from("quiz_questions").delete().eq("set_id", setId);
-      if (delError) throw new Error(delError.message);
-
       const rows = arr.map((q: unknown, k: number) => {
         const question = q as Record<string, unknown>;
         return {
@@ -354,6 +360,12 @@ export function QuizSetManage({
           position: k,
         };
       });
+
+      // la règle de langue, vérifiée avant de remplacer quoi que ce soit
+      rows.forEach((r, k) => exigerLangue(r, k + 1));
+
+      const { error: delError } = await supabase.from("quiz_questions").delete().eq("set_id", setId);
+      if (delError) throw new Error(delError.message);
 
       const { error: insError } = await supabase.from("quiz_questions").insert(rows);
       if (insError) throw new Error(insError.message);
