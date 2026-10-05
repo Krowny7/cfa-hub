@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/browser";
 // les marques sont gardées sur l'appareil ; au premier chargement où la
 // table répond, elles rejoignent le compte.
 
-export type SourceMarque = "fiche" | "session" | "defi" | "duel" | "qcm" | "examen";
+export type SourceMarque = "fiche" | "session" | "defi" | "eclair" | "duel" | "qcm" | "examen";
 
 type Etat = { ids: ReadonlySet<string>; pret: boolean; connecte: boolean; local: boolean };
 type MarqueLocale = { question_id: string; source: SourceMarque | null; created_at: string };

@@ -38,6 +38,8 @@ export type EntrainementData = {
   daily: TodayDaily | null;
   /** les 5 du jour, le défi éclair */
   cinq?: TodayDaily | null;
+  /** séries éclair rendues aujourd'hui ; null : table absente */
+  eclair?: number | null;
   /** instant de rendu (ISO), pour les échéances du défi */
   nowIso: string;
 };
@@ -213,7 +215,7 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
         {d.daily && (
           <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>
             <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
-            {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} />}
+            {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} series={d.eclair} />}
           </div>
         )}
       </div>

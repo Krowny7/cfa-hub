@@ -197,6 +197,45 @@ export const DEFI_CINQ = {
   },
 } as const;
 
+/** Séries éclair : des séries de 5 à volonté, tirées pour soi (lib/eclair). */
+export const ECLAIR = {
+  nom: "Séries éclair",
+  title: "Séries éclair.",
+  kicker: "S'entraîner · à volonté",
+  /** sous le titre, et sur la carte des 5 du jour */
+  promesse: "5 questions de cours, sans calcul, rien que pour toi. Autant que tu veux.",
+  lien: "Séries éclair · à volonté",
+  lienCourt: "Encore 5 ? Une série éclair",
+  /** « 3 aujourd'hui » ; rien avant la première */
+  aujourdhui: (n: number) => (n > 0 ? `${nombre(n)} aujourd'hui` : null),
+  serieN: (n: number) => `${n === 1 ? "1re" : `${n}e`} série aujourd'hui`,
+  /** au-dessus du bilan : « Série éclair · 3e du jour » */
+  serieDuJour: (n: number) => `Série éclair · ${n === 1 ? "1re" : `${n}e`} du jour`,
+  question: (i: number, n: number, matiere: string) => `Question ${i} sur ${n} · ${matiere}`,
+  justesEnCours: "justes",
+  valider: "Valider",
+  envoi: "Correction…",
+  suivante: "Question suivante",
+  bilan: "Voir le bilan",
+  juste: "Juste.",
+  rate: (lettre: string) => `Raté : la bonne réponse est ${lettre}.`,
+  explication: "Explication",
+  voirExplication: "Voir l'explication",
+  regle: "Correction à chaque question · ta série t'attend si tu pars",
+  arreter: "Arrêter là",
+  preparation: "Une série se prépare…",
+  rendue: "Série rendue",
+  encore: "Encore 5",
+  retour: "S'entraîner",
+  xp: (n: number) => (n > 0 ? `+${nombre(n)} XP` : "XP déjà acquis sur ces questions"),
+  cinqAFaire: "Les 5 du jour ne sont pas encore joués",
+  cinqAFaireSous: "Les mêmes 5 questions pour tout le monde, avec un classement.",
+  soonTitle: "Les séries éclair arrivent bientôt.",
+  soonText: "5 questions de cours, sans calcul, à enchaîner autant que tu veux.",
+  erreurTitre: "La série ne s'ouvre pas.",
+  reessayer: "Réessayer",
+} as const;
+
 /** La voix d'un défi : les 30 du jour, ou les 5 du jour (même forme que DEFI). */
 export function voixDefi(format: "trente" | "cinq"): typeof DEFI {
   return format === "cinq" ? ({ ...DEFI, ...DEFI_CINQ } as unknown as typeof DEFI) : DEFI;

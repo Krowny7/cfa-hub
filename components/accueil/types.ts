@@ -102,6 +102,8 @@ export type AccueilData = {
   daily: TodayDaily | null;
   /** les 5 du jour, le défi éclair (getTodayDaily « cinq ») ; null : non chargé */
   cinq?: TodayDaily | null;
+  /** séries éclair rendues aujourd'hui (lib/eclair) ; null : table absente */
+  eclair?: number | null;
   /** le dernier duel terminé, encore frais (à revoir) */
   reviewDuel: ReviewDuel | null;
   /** instant du rendu (ISO), pour les échéances des tuiles */

@@ -46,8 +46,9 @@ async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknow
  * Questions répondues aujourd'hui et sur la semaine, toutes sources
  * confondues : quiz des fiches (une ligne par réponse), sessions QCM,
  * sessions d'entraînement ciblé, examens blancs et leurs reprises, duels
- * réglés et copies rendues du défi du jour (daily_attempts, si la migration
- * est appliquée ; sinon la lecture échoue et ne compte rien).
+ * réglés, copies rendues du défi du jour (daily_attempts) et séries éclair
+ * (eclair_series), si leurs migrations sont appliquées ; sinon la lecture
+ * échoue et ne compte rien.
  * Lit aussi les 8 derniers jours (série) : `activeDays`.
  */
 export async function loadActivity(supabase: Client, userId: string, now = new Date()): Promise<ActivityWeek> {
@@ -69,7 +70,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     finished_at: string | null;
   };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair] = await Promise.all([
     safeRows<{ answered_at: string; is_correct: boolean }>(() =>
       supabase.from("quiz_answer_log").select("answered_at,is_correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
@@ -105,6 +106,10 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     safeRows<{ created_at: string; score: number; total: number }>(() =>
       supabase.from("quiz_attempts").select("created_at,score,total").eq("user_id", userId).gte("created_at", since).limit(500),
     ),
+    // Séries éclair rendues (table absente avant la migration : rien).
+    safeRows<{ finished_at: string; score: number | null; total: number | null }>(() =>
+      supabase.from("eclair_series").select("finished_at,score,total").eq("user_id", userId).gte("finished_at", since).limit(500),
+    ),
   ]);
 
   const all: DatedCount[] = [
@@ -122,6 +127,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     }),
     ...daily.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
     ...quizzes.map((r) => ({ at: r.created_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
+    ...eclair.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
   ];
 
   const byDay = new Map<string, { n: number; correct: number }>();

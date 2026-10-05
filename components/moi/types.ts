@@ -51,7 +51,7 @@ export type TopicStat = {
 /** Une session terminée (QCM, flashcards ou entraînement ciblé). */
 export type SessionItem = {
   id: string;
-  kind: "qcm" | "flashcards" | "practice";
+  kind: "qcm" | "flashcards" | "practice" | "eclair";
   title: string;
   correct: number;
   total: number;

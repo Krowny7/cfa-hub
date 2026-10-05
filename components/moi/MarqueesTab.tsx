@@ -21,6 +21,7 @@ const ORIGINE: Record<SourceMarque, string> = {
   fiche: "fiche",
   session: "session",
   defi: "défi du jour",
+  eclair: "série éclair",
   duel: "duel",
   qcm: "QCM",
   examen: "examen blanc",

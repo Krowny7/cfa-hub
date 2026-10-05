@@ -1,5 +1,5 @@
 // Lectures serveur de l'onglet Stats de Moi : dernières sessions terminées
-// (QCM, flashcards, entraînement ciblé) et précision globale. Chaque lecture
+// (QCM, flashcards, entraînement ciblé, séries éclair) et précision globale. Chaque lecture
 // dégrade proprement : table absente ou erreur → liste vide / null.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { subjectByKey } from "@/components/reviser/catalog";
@@ -10,6 +10,7 @@ const LIMIT = 20;
 
 type SetSession = { id: string; set_id: string; set_title: string | null; mode: string | null; correct: number | null; total: number | null; occurred_at: string };
 type PracticeRow = { id: string; topics: string[] | null; score: number | null; total: number | null; completed_at: string };
+type EclairRow = { id: string; score: number | null; total: number | null; finished_at: string };
 
 function topicsTitle(keys: string[]) {
   if (keys.length === 0) return "Toutes matières";
@@ -19,7 +20,7 @@ function topicsTitle(keys: string[]) {
 
 export async function getSessionHistory(supabase: SupabaseClient, userId: string, now = Date.now()): Promise<SessionItem[]> {
   const out: SessionItem[] = [];
-  const [sets, practice] = await Promise.all([
+  const [sets, practice, eclair] = await Promise.all([
     (async () => {
       try {
         const { data, error } = await supabase
@@ -42,6 +43,21 @@ export async function getSessionHistory(supabase: SupabaseClient, userId: string
           .order("completed_at", { ascending: false })
           .limit(LIMIT);
         return error ? [] : ((data ?? []) as PracticeRow[]);
+      } catch {
+        return [];
+      }
+    })(),
+    // séries éclair rendues (table absente avant la migration : liste vide)
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("eclair_series")
+          .select("id,score,total,finished_at")
+          .eq("user_id", userId)
+          .not("finished_at", "is", null)
+          .order("finished_at", { ascending: false })
+          .limit(LIMIT);
+        return error ? [] : ((data ?? []) as EclairRow[]);
       } catch {
         return [];
       }
@@ -72,6 +88,18 @@ export async function getSessionHistory(supabase: SupabaseClient, userId: string
       at: r.completed_at,
       ago: fmtAgo(r.completed_at, now),
       href: topics.length === 1 ? `/practice?topic=${topics[0]}` : "/practice",
+    });
+  }
+  for (const r of eclair) {
+    out.push({
+      id: `e-${r.id}`,
+      kind: "eclair",
+      title: "5 questions de cours",
+      correct: Number(r.score) || 0,
+      total: Number(r.total) || 0,
+      at: r.finished_at,
+      ago: fmtAgo(r.finished_at, now),
+      href: "/eclair",
     });
   }
   return out.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, LIMIT);

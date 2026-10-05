@@ -44,13 +44,14 @@ import type { Seance } from "@/lib/forme";
 // Types et libellés (partagés avec les composants)
 // ---------------------------------------------------------------------------
 
-export const ANSWER_SOURCES = ["duel", "daily", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
+export const ANSWER_SOURCES = ["duel", "daily", "eclair", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
 export type AnswerSource = (typeof ANSWER_SOURCES)[number];
 export type SourceFilter = AnswerSource | "all";
 
 export const SOURCE_LABELS: Record<AnswerSource, string> = {
   duel: "Duels",
   daily: "Défi du jour",
+  eclair: "Séries éclair",
   mock: "Examens blancs",
   exam: "Examens officiels",
   qcm: "QCM",
@@ -63,6 +64,7 @@ export const SOURCE_LABELS: Record<AnswerSource, string> = {
 export const SOURCE_HREFS: Record<AnswerSource, string> = {
   duel: "/duel",
   daily: "/defi",
+  eclair: "/eclair",
   mock: "/mock-exams",
   exam: "/official-exams",
   qcm: "/qcm",
@@ -309,6 +311,7 @@ type MockAttemptRow = { id: string; exam_id: string; score: number | null; total
 type QuizAttemptRow = { id: string; set_id: string; score: number | null; total: number | null; created_at: string | null };
 type SetSessionRow = { id: string; set_id: string | null; set_title: string | null; correct: number | null; total: number | null; occurred_at: string | null };
 type PracticeRow = { id: string; topics: string[] | null; score: number | null; total: number | null; answers: unknown; completed_at: string | null };
+type EclairRow = { id: string; question_ids: string[] | null; answers: (number | null)[] | null; score: number | null; total: number | null; finished_at: string | null };
 type LogRow = { set_id: string; is_correct: boolean; run_id: string; mode: string | null; answered_at: string };
 type QuestionRow = { id: string; set_id: string; correct_index: number | null };
 type SetRow = { id: string; title: string | null; folder_id: string | null };
@@ -379,7 +382,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const now = opts.now ?? Date.now();
   const missing = new Set<AnswerSource>();
 
-  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows] = await Promise.all([
+  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows, eclairRows] = await Promise.all([
     readOnce<DuelRow>(
       reader
         .from("duels")
@@ -403,6 +406,8 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
       : Promise.resolve(null),
     // exercices de calcul (migration_calc.sql ; table absente : source vide)
     readAll<CalcRow>((a, b) => reader.from("calc_attempts").select("topic,type_key,level,correct,answered_at").eq("user_id", userId).order("answered_at").range(a, b)),
+    // séries éclair rendues (migration_series_eclair.sql ; table absente : source vide)
+    readOnce<EclairRow>(reader.from("eclair_series").select("id,question_ids,answers,score,total,finished_at").eq("user_id", userId).not("finished_at", "is", null).limit(5000)),
   ]);
 
   if (duels === null || duelAnswers === null) missing.add("duel");
@@ -412,6 +417,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   if (practice === null) missing.add("practice");
   if (log === null) missing.add("fiche");
   if (calcRows === null) missing.add("calc");
+  if (eclairRows === null) missing.add("eclair");
 
   // --- Questions à juger ou à ranger (duels, défi du jour, examens blancs, sessions ciblées)
   const closed = new Map<string, DuelRow>();
@@ -441,6 +447,12 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const qids = new Set<string>();
   for (const a of duelRows) qids.add(a.question_id);
   for (const a of dailyRows) if (a.question_id) qids.add(a.question_id);
+  // séries éclair : la position i de question_ids répond à answers[i]
+  const eclairGiven = (eclairRows ?? []).map((r) => ({
+    r,
+    given: (r.question_ids ?? []).map((qid, i) => ({ question_id: qid, selected_index: r.answers?.[i] ?? null })).filter((g) => g.selected_index !== null),
+  }));
+  if (opts.privileged) for (const { given } of eclairGiven) for (const g of given) qids.add(g.question_id);
   const keyed = [...(mockResults ?? []), ...(practice ?? [])].flatMap((r) => parseGiven(r.answers) ?? []);
   if (opts.privileged) for (const g of keyed) qids.add(g.question_id);
 
@@ -526,6 +538,29 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
         n: num(a.total),
         ok: Math.min(num(a.score), num(a.total)),
       });
+  }
+
+  // Séries éclair : un passage par série rendue, détaillé par question avec
+  // la clé admin, sinon au score
+  for (const { r, given } of eclairGiven) {
+    const pid = `e:${r.id}`;
+    passages.set(pid, { source: "eclair", label: "Série éclair", at: r.finished_at ?? "", href: "/eclair" });
+    if (judged) {
+      perSet(
+        "eclair",
+        pid,
+        given.map((g) => ({ qid: g.question_id, answered: true, ok: qmap.get(g.question_id)?.correct_index === g.selected_index })),
+        r.score,
+      );
+    } else if (num(r.total) > 0) {
+      contribs.push({
+        source: "eclair",
+        passage: pid,
+        target: { kind: "bucket", subject: "mixed", themeKey: "eclair", label: "Séries éclair", tag: null, order: 660 },
+        n: num(r.total),
+        ok: Math.min(num(r.score), num(r.total)),
+      });
+    }
   }
 
   // Examens blancs (premier essai, détaillé ; sinon au score) et reprises (au score)
@@ -755,7 +790,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     if (s && tallyOf(s.by).n > 0) out.push({ key, name, code: "", pseudo: true, by: s.by, themes: toThemes(key, s), seances: enSeances(s.seances, SEANCES_MAX) });
   }
 
-  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts].some((x) => x !== null);
+  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, eclairRows].some((x) => x !== null);
   return { available: readable, missing: [...missing], by: total, subjects: out, seances: enSeances(toutes, SEANCES_MAX * 2) };
 }
 

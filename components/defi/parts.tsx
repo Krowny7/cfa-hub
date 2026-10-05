@@ -20,7 +20,8 @@ import {
   type DailyHistoryEntry,
   type FormatDefi,
 } from "@/lib/daily";
-import { DEFI, DEFI_CINQ, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
+import { ECLAIR_HREF } from "@/lib/eclair";
+import { DEFI, DEFI_CINQ, ECLAIR, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
 
 // Pièces partagées des pages du défi du jour. Sans état : utilisables depuis
 // un composant serveur comme depuis un composant client.
@@ -48,6 +49,29 @@ export function DefiHeading({ day, today, isToday, format = "trente" }: { day: s
  * « pressé ? les 5 du jour, 2 min » ; depuis les 5, « l'épreuve complète ».
  */
 export function AutreDefi({ format }: { format: FormatDefi }) {
+  const cinq = format === "trente";
+  // depuis les 5 du jour : d'abord les séries à volonté, puis l'épreuve
+  if (!cinq) {
+    return (
+      <div className="grid gap-2.5">
+        <Link href={ECLAIR_HREF} className="rl-row group flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">
+            <Zap size={17} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold">{ECLAIR.lienCourt}</span>
+            <span className="t-micro block">{ECLAIR.promesse}</span>
+          </span>
+          <ArrowRight size={15} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+        </Link>
+        <AutreDefiLien format={format} />
+      </div>
+    );
+  }
+  return <AutreDefiLien format={format} />;
+}
+
+function AutreDefiLien({ format }: { format: FormatDefi }) {
   const cinq = format === "trente";
   return (
     <Link href={cinq ? "/defi/cinq" : "/defi"} className="rl-row group flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">

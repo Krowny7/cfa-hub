@@ -8,7 +8,7 @@ import { TwoColumnRows } from "@/components/reviser/SubjectRows";
 import type { SessionItem } from "@/components/moi/types";
 
 const SHOWN = 5;
-const KIND = { qcm: "QCM", flashcards: "Flashcards", practice: "Entraînement ciblé" } as const;
+const KIND = { qcm: "QCM", flashcards: "Flashcards", practice: "Entraînement ciblé", eclair: "Série éclair" } as const;
 
 // Ancien historique gardé dans le navigateur (avant la synchronisation).
 type LocalStat = { setId: string; title: string; mode: string; correct: number; total: number; lastStudied: number };

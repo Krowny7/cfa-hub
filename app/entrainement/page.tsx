@@ -8,6 +8,7 @@ import { getTodayDaily } from "@/lib/daily";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { loadNextMockExam } from "@/components/accueil/queries";
 import { EntrainementView, type EntrainementData } from "@/components/entrainement/EntrainementView";
+import { getEclairStats } from "@/lib/eclair";
 
 // Espace « S'entraîner » : point d'entrée unique vers les façons de
 // s'entraîner. Chacune garde sa page et ses routes (QCM, entraînement ciblé,
@@ -27,7 +28,7 @@ export default async function EntrainementPage() {
     admin = null;
   }
 
-  const [mastery, practice, mockExam, rating, open, daily, cinq] = await Promise.all([
+  const [mastery, practice, mockExam, rating, open, daily, cinq, eclair] = await Promise.all([
     getTopicMastery(supabase, userId),
     (async () => {
       try {
@@ -53,6 +54,7 @@ export default async function EntrainementPage() {
     // un seul appel, jamais d'exception ; « bientôt » tant que la migration manque
     getTodayDaily(supabase, userId).catch(() => null),
     getTodayDaily(supabase, userId, "cinq").catch(() => null),
+    getEclairStats(supabase, userId),
   ]);
 
   const pct = new Map(mastery.map((t) => [t.key, t.pct]));
@@ -64,6 +66,7 @@ export default async function EntrainementPage() {
     subjects: SUBJECTS.map((s) => ({ key: s.key, name: s.name, pct: pct.get(s.key) ?? null })),
     daily,
     cinq,
+    eclair: eclair?.today ?? null,
     nowIso: new Date().toISOString(),
   };
 

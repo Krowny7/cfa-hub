@@ -52,7 +52,7 @@ async function load(supabase: SupabaseClient, userId: string, now: Date): Promis
 
   type DuelRow = { challenger_id: string; question_ids: string[] | null; challenger_finished_at: string | null; opponent_finished_at: string | null; finished_at: string | null };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily, calc, quizzes] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, calc, quizzes, eclair] = await Promise.all([
     (async () => {
       try {
         const { count, error } = await supabase
@@ -99,10 +99,12 @@ async function load(supabase: SupabaseClient, userId: string, now: Date): Promis
     // QCM joués en entier (/qcm) et copies du mode examen (/exam) : une ligne
     // par passage, avec le nombre de questions.
     rows<{ total: number }>(() => supabase.from("quiz_attempts").select("total").eq("user_id", userId).gte("created_at", since).limit(200)),
+    // Séries éclair rendues aujourd'hui (table absente avant la migration : liste vide).
+    rows<{ total: number }>(() => supabase.from("eclair_series").select("total").eq("user_id", userId).gte("finished_at", since).limit(500)),
   ]);
 
   // Les sessions de flashcards ne sont pas des questions : seules les sessions QCM comptent.
-  let n = fiche + sum(qcm.filter((r) => r.mode === "qcm")) + sum(practice) + sum(mock) + sum(retakes) + sum(daily) + calc + sum(quizzes);
+  let n = fiche + sum(qcm.filter((r) => r.mode === "qcm")) + sum(practice) + sum(mock) + sum(retakes) + sum(daily) + calc + sum(quizzes) + sum(eclair);
   for (const d of duels) {
     const at = (d.challenger_id === userId ? d.challenger_finished_at : d.opponent_finished_at) ?? d.finished_at;
     if (at && parisDay(Date.parse(at)) === today) n += d.question_ids?.length ?? 0;
