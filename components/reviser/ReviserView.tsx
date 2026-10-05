@@ -50,7 +50,7 @@ export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailabili
 
   const lead = (
     <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
-      <Link href="/fiches" className="card-hero rl-lift rl-in group flex min-h-[260px] flex-col gap-4 p-7 md:p-8 lg:col-span-7" aria-label="Ouvrir les fiches de révision">
+      <Link href="/fiches" className="card-hero rl-lift rl-in group flex min-h-[260px] flex-col gap-4 p-7 md:p-8 lg:col-span-7" aria-label="Ouvrir les fiches de révision" data-leonard="fiches">
         <span className="flex items-center justify-between gap-3">
           <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-surface-2">
             <Icone nom="fiche" size={24} />
@@ -66,7 +66,7 @@ export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailabili
         </span>
       </Link>
 
-      <nav aria-label="Autres formats" className="card rl-in flex flex-col justify-center divide-y divide-line overflow-hidden py-1 lg:col-span-5" style={{ animationDelay: ".08s" }}>
+      <nav aria-label="Autres formats" data-leonard="formats" className="card rl-in flex flex-col justify-center divide-y divide-line overflow-hidden py-1 lg:col-span-5" style={{ animationDelay: ".08s" }}>
         <FormatRow href="/courses" icon={<Icone nom="cours" size={20} />} title="Cours complets" desc="Le deck intégral et son audio, environ une heure." meta={count(courses)} />
         <FormatRow href="/flashcards" icon={<Icone nom="flashcards" size={20} />} title="Flashcards" desc="Répétition espacée : termes, formules, pièges." meta={count(cards)} />
         <FormatRow href="/library" icon={<Icone nom="reviser" size={20} />} title="Bibliothèque" desc="Tous les fonds de révision au même endroit." />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { signalerLeonard } from "@/lib/leonard/signal";
 
 // Les réglages de Léonard, sur cet appareil : ses apparitions (oui / non)
 // et ses animations (animé, ou image fixe). Le mode discret le fait taire
@@ -45,13 +46,14 @@ export function useReglagesLeonard() {
     ...r,
     basculerActif: () => ecrire(CLE_ACTIF, !r.actif),
     basculerAnime: () => ecrire(CLE_ANIME, !r.anime),
-    /** rejoue le tutoriel de Léonard (à la prochaine visite de l'accueil) */
+    /** relance la visite guidée, tout de suite (elle repart de l'accueil) */
     revoirTuto: () => {
       try {
         localStorage.removeItem(CLE_TUTO);
       } catch {
         // stockage indisponible
       }
+      signalerLeonard({ evt: "tuto" });
     },
   };
 }

@@ -31,7 +31,9 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
         <PageHero kicker="Classement" title={CLASSEMENT.titre(CURRENT_DOMAIN.name)}>
           <DomainPills me={me} />
         </PageHero>
-        <RankHero me={me} history={data.history} />
+        <div data-leonard="rang">
+          <RankHero me={me} history={data.history} />
+        </div>
       </div>
 
       <ClassementTabs

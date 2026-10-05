@@ -270,11 +270,22 @@ export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
   ],
 };
 
-export const TUTO: Replique[] = [
-  { texte: "Moi c’est Léonard. Oui, celui de la Joconde. Je vais te guider… et te chambrer un peu.", pose: "base" },
-  { texte: "Réviser : cours, fiches et flashcards. Comme mes carnets, mais lisibles sans miroir.", pose: "fier" },
-  { texte: "S’entraîner : sessions, examens blancs et défi du jour. Le défi, c’est tous les jours, comme le café.", pose: "base" },
-  { texte: "Classement : duels, ELO et rangs, de Bronze à Grand Maître. Ici, on se mesure. Et on se chambre.", pose: "moqueur" },
-  { texte: "Moi : ton profil et ton objectif. Vise haut, je te jugerai en conséquence.", pose: "moqueur" },
-  { texte: "Voilà, t’as fait le tour. Je repasse de temps en temps… surtout quand tu te trompes.", pose: "fier" },
+/**
+ * La visite guidée : chaque étape se joue sur une page (Léonard y emmène le
+ * joueur) et peut éclairer un élément de cette page (`cible` = la valeur de
+ * son attribut data-leonard).
+ */
+export type EtapeTuto = Replique & { page: string; cible?: string };
+
+export const TUTO: EtapeTuto[] = [
+  { page: "/dashboard", texte: "Moi c’est Léonard. Oui, celui de la Joconde. Suis-moi, je te fais visiter : une minute, promis.", pose: "base" },
+  { page: "/dashboard", cible: "anneau", texte: "Ton anneau du jour. Chaque question répondue, un trait. Tu le fermes avant minuit, t’es un génie.", pose: "fier" },
+  { page: "/dashboard", cible: "defi", texte: "Le défi du jour : les mêmes questions pour tout le monde, résultats publics. Pas de pression. Si, un peu.", pose: "moqueur" },
+  { page: "/reviser", cible: "fiches", texte: "Réviser. Les fiches, c’est comme mes carnets : en mieux rangées, et lisibles sans miroir.", pose: "fier" },
+  { page: "/reviser", cible: "formats", texte: "Cours complets avec l’audio, flashcards, bibliothèque. T’as plus aucune excuse.", pose: "base" },
+  { page: "/entrainement", cible: "session", texte: "S’entraîner. Une session sur tes points faibles, et le défi du jour. Ça, c’est le quotidien.", pose: "fier" },
+  { page: "/entrainement", cible: "contre", texte: "Examens blancs classés et duels : là, ça compte pour ton rang. Viens pas pleurer après.", pose: "moqueur" },
+  { page: "/classement", cible: "rang", texte: "Ton rang, de Bronze à Grand Maître. En dessous, le classement et tes duels. Ici, on se mesure. Et on se chambre.", pose: "etonne" },
+  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Tu le feras pas, hein ?", pose: "decu" },
+  { page: "/dashboard", cible: "defi", texte: "Fin de la visite. Ton premier trait t’attend. Je repasse de temps en temps… surtout quand tu te trompes.", pose: "fier" },
 ];

@@ -27,21 +27,24 @@ export function AppearanceSwitches() {
     <div className="mt-1 divide-y divide-line">
       <SwitchRow title="Thème nuit" sub="Encre claire sur papier sombre, sur cet appareil." on={night} onToggle={toggleNight} />
       <SwitchRow title="Mode discret" sub="Sans encre ni rouge : pour réviser au bureau. Léonard se tait." on={discreet} onToggle={toggleDiscreet} />
-      <SwitchRow title="Léonard" sub="La mascotte passe te chambrer (ou te féliciter) de temps en temps." on={leo.actif} onToggle={leo.basculerActif} />
-      {leo.actif && (
-        <SwitchRow title="Léonard animé" sub="Désactivé : une image fixe, sans mouvement." on={leo.anime} onToggle={leo.basculerAnime} />
-      )}
-      {leo.actif && (
-        <div className="flex items-center justify-between gap-4 py-3">
-          <span className="min-w-0 flex-1">
-            <span className="block text-[14px] font-semibold">Tutoriel de Léonard</span>
-            <span className="t-micro mt-0.5 block">Il le rejoue à ta prochaine visite de l&apos;accueil.</span>
-          </span>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={leo.revoirTuto}>
-            Revoir
-          </button>
-        </div>
-      )}
+      {/* la visite guidée de Léonard s'arrête ici : « c'est ici qu'on me coupe » */}
+      <div data-leonard="reglages" className="divide-y divide-line">
+        <SwitchRow title="Léonard" sub="La mascotte passe te chambrer (ou te féliciter) de temps en temps." on={leo.actif} onToggle={leo.basculerActif} />
+        {leo.actif && (
+          <SwitchRow title="Léonard animé" sub="Désactivé : une image fixe, sans mouvement." on={leo.anime} onToggle={leo.basculerAnime} />
+        )}
+        {leo.actif && (
+          <div className="flex items-center justify-between gap-4 py-3">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold">Visite guidée</span>
+              <span className="t-micro mt-0.5 block">Léonard te refait le tour du site, page par page.</span>
+            </span>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={leo.revoirTuto}>
+              Revoir
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

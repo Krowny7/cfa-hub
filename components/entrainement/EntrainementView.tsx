@@ -204,7 +204,7 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
 
   const lead = (
     <div className="flex flex-col gap-4 md:gap-[18px]">
-      <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
+      <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
         <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
         {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
         {d.daily && (
@@ -238,7 +238,7 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
           items={subjectRail(d.subjects, (key) => ({ href: `/practice?topic=${key}`, note: weightLabel(key) }))}
         />
       </section>
-      <section className="rl-section" aria-labelledby="ent-contre">
+      <section className="rl-section" aria-labelledby="ent-contre" data-leonard="contre">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="ent-contre" className="t-h2 m-0">
             Contre les autres

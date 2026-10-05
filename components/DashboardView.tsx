@@ -27,10 +27,10 @@ export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; t
         <div className="min-w-0 lg:col-span-7 lg:row-start-2">
           <JourHero d={d} />
         </div>
-        <div className="min-w-0 self-center lg:col-span-5 lg:col-start-8 lg:row-span-4 lg:row-start-1">
+        <div className="min-w-0 self-center lg:col-span-5 lg:col-start-8 lg:row-span-4 lg:row-start-1" data-leonard="anneau">
           <JourAnneau d={d} />
         </div>
-        <div className="min-w-0 lg:col-span-7 lg:row-start-3 lg:mt-9">
+        <div className="min-w-0 lg:col-span-7 lg:row-start-3 lg:mt-9" data-leonard="defi">
           {/* le défi du jour (jouable ou joué) ; sinon où reprendre */}
           {defiEnTete(d.daily) ? (
             <DefiHero daily={d.daily} nowIso={d.nowIso} />

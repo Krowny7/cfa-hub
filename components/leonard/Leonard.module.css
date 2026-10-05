@@ -1,28 +1,62 @@
-/* Léonard : la scène (coin bas droit, au-dessus de la barre d'onglets sur
-   téléphone), son entrée par le bord, et la bulle en carte du site (fond
-   surface, filet, rayon 18, ombre douce, sur-titre « Léonard »). */
+/* Léonard : la scène (posé sur le bord bas de l'écran ; sur téléphone, à
+   moitié derrière la barre d'onglets), son entrée par le bord, la bulle en
+   carte du site (fond surface, filet, rayon 18, ombre douce, sur-titre
+   « Léonard ») et, pendant la visite guidée, le voile et le projecteur. */
 
 .scene {
+  --leo-h: 210px;
+  --leo-w: 190px;
   position: fixed;
   z-index: 45;
-  right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: 0;
   display: flex;
   align-items: flex-end;
-  gap: 4px;
+  gap: 6px;
   pointer-events: none;
 }
+/* de l'autre côté (l'élément montré était sous lui) : en miroir, la bulle à sa droite */
+.gauche {
+  right: auto;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  flex-direction: row-reverse;
+}
+.gauche .perso canvas,
+.gauche .perso img {
+  transform: scaleX(-1);
+}
+/* pendant la visite : au-dessus du voile */
+.tuto {
+  z-index: 72;
+}
 @media (max-width: 767px) {
-  /* au-dessus de la barre d'onglets, la bulle au-dessus de Léonard */
-  .scene {
+  /* la bulle au-dessus de Léonard ; lui, le bas du corps caché par la barre d'onglets (z 50) */
+  .scene,
+  .gauche {
+    left: auto;
     right: 8px;
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
   }
+  .gauche .perso canvas,
+  .gauche .perso img {
+    transform: none;
+  }
+  /* pendant la visite la barre est sous le voile : il se pose au-dessus, le bord coupé fondu */
+  .tuto {
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  }
+  .tuto .perso {
+    -webkit-mask-image: linear-gradient(to top, transparent, #000 22%);
+    mask-image: linear-gradient(to top, transparent, #000 22%);
+  }
 }
-:global(html[data-discreet="1"]) .scene {
+:global(html[data-discreet="1"]) .scene,
+:global(html[data-discreet="1"]) .voile,
+:global(html[data-discreet="1"]) .anneau,
+:global(html[data-discreet="1"]) .capte {
   display: none;
 }
 
@@ -31,6 +65,9 @@
   pointer-events: auto;
   cursor: pointer;
   flex: none;
+}
+.tuto .perso {
+  cursor: default;
 }
 .perso canvas,
 .perso img {
@@ -48,10 +85,18 @@
 .sort {
   animation: sort 360ms cubic-bezier(0.5, 0, 0.9, 0.4) both;
 }
-.calme.entre {
+.gauche .entre {
+  animation-name: entreGauche;
+}
+.gauche .sort {
+  animation-name: sortGauche;
+}
+.calme.entre,
+.gauche .calme.entre {
   animation: fondu 260ms ease-out both;
 }
-.calme.sort {
+.calme.sort,
+.gauche .calme.sort {
   animation: fondu 200ms ease-in reverse both;
 }
 @keyframes entre {
@@ -67,20 +112,33 @@
     transform: translateX(120%) rotate(5deg);
   }
 }
+@keyframes entreGauche {
+  from {
+    transform: translateX(-115%) rotate(-6deg);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes sortGauche {
+  to {
+    transform: translateX(-120%) rotate(-5deg);
+  }
+}
 @keyframes fondu {
   from {
     opacity: 0;
   }
 }
 
-/* la bulle : une carte du site */
+/* la bulle : une carte du site, à hauteur de sa tête */
 .bulle {
   position: relative;
   pointer-events: auto;
-  align-self: center;
-  margin-bottom: 18%;
+  align-self: flex-end;
+  margin-bottom: calc(var(--leo-h) * 0.56);
   width: max-content;
-  max-width: min(340px, calc(100vw - 230px));
+  max-width: min(340px, calc(100vw - var(--leo-w) - 40px));
   padding: 12px 16px 14px;
   border-radius: 18px;
   background: var(--surface);
@@ -89,13 +147,20 @@
   color: var(--ink);
   animation: bulle 320ms 180ms ease-out both;
 }
+.tuto .bulle {
+  max-width: min(400px, calc(100vw - var(--leo-w) - 40px));
+  padding: 14px 18px 16px;
+}
 .calme .bulle,
 .bulle.calme {
   animation: fondu 200ms ease-out both;
 }
+.bulle.sort {
+  animation: fondu 200ms ease-in reverse both;
+}
 @media (max-width: 767px) {
-  .bulle {
-    align-self: flex-end;
+  .bulle,
+  .tuto .bulle {
     margin-bottom: 0;
     margin-right: 18px;
     max-width: calc(100vw - 32px);
@@ -104,10 +169,10 @@
 @keyframes bulle {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(6px) scale(0.97);
   }
 }
-/* la pointe, vers Léonard (à droite ; vers le bas sur téléphone) */
+/* la pointe, vers Léonard (à droite ; à gauche en miroir ; vers le bas sur téléphone) */
 .bulle::after {
   content: "";
   position: absolute;
@@ -121,15 +186,24 @@
   transform: rotate(45deg);
   border-top-right-radius: 3px;
 }
+.gauche .bulle::after {
+  right: auto;
+  left: -7px;
+  border: 0;
+  border-left: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0 0 0 3px;
+}
 @media (max-width: 767px) {
-  .bulle::after {
+  .bulle::after,
+  .gauche .bulle::after {
+    left: auto;
     right: 34px;
     bottom: -7px;
-    border-top: 0;
+    border: 0;
+    border-right: 1px solid var(--line-2);
     border-bottom: 1px solid var(--line-2);
-    transform: rotate(45deg);
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 3px;
+    border-radius: 0 0 3px 0;
   }
 }
 
@@ -153,6 +227,12 @@
   text-transform: uppercase;
   color: var(--ink-2);
 }
+.etape {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
 .fermer {
   margin-left: auto;
   display: grid;
@@ -172,17 +252,73 @@
   line-height: 1.4;
   text-wrap: pretty;
 }
+.tuto .texte {
+  font-size: 16px;
+}
 .actions {
   display: flex;
   justify-content: flex-end;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 12px;
+}
+
+/* la visite : le voile, découpé autour de l'élément montré (clip-path, posé
+   par l'hôte à chaque image du glissement), et le trait de plume rouge qui
+   l'entoure */
+.voile {
+  --leo-voile: rgba(28, 24, 18, 0.5);
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--leo-voile);
+  pointer-events: none;
+  animation: fondu 320ms ease-out both;
+}
+:global(html[data-theme="nuit"]) .voile {
+  --leo-voile: rgba(0, 0, 0, 0.62);
+}
+.anneau {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  width: 0;
+  height: 0;
+  border-radius: 22px;
+  border: 2px solid var(--pen);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.anneau[data-vide="0"] {
+  opacity: 1;
+  animation: pouls 1.8s ease-in-out infinite;
+}
+.voile.sort,
+.anneau.sort {
+  animation: fondu 280ms ease-in reverse both;
+}
+@keyframes pouls {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in oklab, var(--pen) 20%, transparent);
+  }
+}
+
+.capte {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+.espace {
+  height: 60vh;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .entre,
   .sort,
-  .bulle {
+  .bulle,
+  .voile,
+  .anneau {
     animation-duration: 1ms;
   }
 }
