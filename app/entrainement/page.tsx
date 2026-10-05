@@ -28,7 +28,7 @@ export default async function EntrainementPage() {
     admin = null;
   }
 
-  const [mastery, practice, mockExam, rating, open, daily, cinq, eclair] = await Promise.all([
+  const [mastery, practice, mockExam, rating, open, daily, eclair] = await Promise.all([
     getTopicMastery(supabase, userId),
     (async () => {
       try {
@@ -53,7 +53,6 @@ export default async function EntrainementPage() {
     getOpenChallenges(supabase, userId),
     // un seul appel, jamais d'exception ; « bientôt » tant que la migration manque
     getTodayDaily(supabase, userId).catch(() => null),
-    getTodayDaily(supabase, userId, "cinq").catch(() => null),
     getEclairStats(supabase, userId),
   ]);
 
@@ -65,7 +64,7 @@ export default async function EntrainementPage() {
     incomingDuels: open.filter((c) => c.incoming && c.status === "pending").length,
     subjects: SUBJECTS.map((s) => ({ key: s.key, name: s.name, pct: pct.get(s.key) ?? null })),
     daily,
-    cinq,
+    // séries éclair rendues aujourd'hui (null tant que migration_series_eclair.sql manque)
     eclair: eclair?.today ?? null,
     nowIso: new Date().toISOString(),
   };

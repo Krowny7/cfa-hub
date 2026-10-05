@@ -204,8 +204,14 @@ export const ECLAIR = {
   kicker: "S'entraîner · à volonté",
   /** sous le titre, et sur la carte des 5 du jour */
   promesse: "5 questions de cours, sans calcul, rien que pour toi. Autant que tu veux.",
-  lien: "Séries éclair · à volonté",
   lienCourt: "Encore 5 ? Une série éclair",
+  /** la carte de S'entraîner */
+  carte: {
+    label: "À volonté",
+    ligne: "5 questions de cours, sans calcul.",
+    jouer: "Jouer",
+    encore: "Encore 5",
+  },
   /** « 3 aujourd'hui » ; rien avant la première */
   aujourdhui: (n: number) => (n > 0 ? `${nombre(n)} aujourd'hui` : null),
   serieN: (n: number) => `${n === 1 ? "1re" : `${n}e`} série aujourd'hui`,

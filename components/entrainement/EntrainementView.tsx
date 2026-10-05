@@ -17,7 +17,7 @@ import { DUEL_MINUTES, DUEL_QUESTIONS } from "@/lib/duels";
 import type { TodayDaily } from "@/lib/daily";
 import { ACCUEIL, DUEL } from "@/lib/voice";
 import { ESPACES } from "@/lib/voice-z4";
-import { CinqCarte, cinqVisible } from "@/components/defi/CinqCarte";
+import { EclairCarte } from "@/components/eclair/EclairCarte";
 
 // Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
 // avant (la matière la plus faible, sinon reprendre l'entraînement ciblé) ;
@@ -36,8 +36,6 @@ export type EntrainementData = {
   subjects: { key: string; name: string; pct: number | null }[];
   /** défi du jour (getTodayDaily) ; null : on n'affiche pas la tuile */
   daily: TodayDaily | null;
-  /** les 5 du jour, le défi éclair */
-  cinq?: TodayDaily | null;
   /** séries éclair rendues aujourd'hui ; null : table absente */
   eclair?: number | null;
   /** instant de rendu (ISO), pour les échéances du défi */
@@ -215,7 +213,7 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
         {d.daily && (
           <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>
             <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
-            {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} series={d.eclair} />}
+            {typeof d.eclair === "number" && <EclairCarte today={d.eclair} />}
           </div>
         )}
       </div>

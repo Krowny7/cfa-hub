@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, Zap } from "lucide-react";
 import { rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
-import { ECLAIR_HREF } from "@/lib/eclair";
-import { DEFI_CINQ, ECLAIR, joueurs } from "@/lib/voice-z2c";
+import { DEFI_CINQ, joueurs } from "@/lib/voice-z2c";
 
-// Les 5 du jour en carte légère (accueil, S'entraîner), sous les 30 du jour :
+// Les 5 du jour en carte légère (accueil), sous les 30 du jour :
 // tout dit « vite » — l'éclair, « 2 min » en pastille, une seule ligne,
 // une action secondaire. À côté, la grande carte des 30 dit « épreuve ».
-// En pied, les séries éclair : des séries de 5 à volonté, tirées pour soi.
 // Cachée tant que le défi n'est pas jouable (migration absente, liste vide).
 // Sans état.
 
@@ -15,18 +13,7 @@ export function cinqVisible(daily: TodayDaily | null | undefined): daily is Toda
   return !!daily && (daily.status === "todo" || daily.status === "playing" || daily.status === "done");
 }
 
-export function CinqCarte({
-  daily,
-  nowIso,
-  series,
-  className = "",
-}: {
-  daily: TodayDaily;
-  nowIso: string;
-  /** séries éclair rendues aujourd'hui (null : inconnu, rien d'affiché) */
-  series?: number | null;
-  className?: string;
-}) {
+export function CinqCarte({ daily, nowIso, className = "" }: { daily: TodayDaily; nowIso: string; className?: string }) {
   const T = DEFI_CINQ.tuile;
   let etat: string;
   let ligne: React.ReactNode;
@@ -61,12 +48,8 @@ export function CinqCarte({
     cta = "Jouer";
   }
 
-  // séries éclair ouvertes (table lue) : le pied s'affiche, avec le compte du jour
-  const eclair = typeof series === "number";
-  const aujourdhui = eclair ? ECLAIR.aujourdhui(series) : null;
-
   return (
-    <section className={"card rl-in min-w-0 overflow-hidden " + className} aria-label={T.titre}>
+    <section className={"card rl-in min-w-0 " + className} aria-label={T.titre}>
       <div className="flex min-w-0 items-center gap-4 p-4 sm:p-5">
         <span aria-hidden className="hidden h-11 w-11 shrink-0 place-items-center rounded-[13px] bg-surface-2 min-[420px]:grid">
           <Zap size={20} />
@@ -86,14 +69,6 @@ export function CinqCarte({
           {cta} <ArrowRight size={15} aria-hidden />
         </Link>
       </div>
-      {/* à volonté : des séries de 5 tirées pour soi, dans la même liste */}
-      {eclair && (
-        <Link href={ECLAIR_HREF} className="rl-row group flex items-center gap-2 border-t border-line px-4 py-2.5 sm:px-5">
-          <span className="text-[13.5px] font-semibold">{ECLAIR.lien}</span>
-          {aujourdhui && <span className="t-micro">· {aujourdhui}</span>}
-          <ArrowRight size={14} aria-hidden className="ml-auto shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-        </Link>
-      )}
     </section>
   );
 }

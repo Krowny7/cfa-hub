@@ -39,7 +39,7 @@ export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; t
             <ResumeHero resume={d.resume} returning={d.returning} evening={d.dayState === "sec" && d.streak > 0} now={now} />
           )}
           {/* les 5 du jour : le défi éclair, en carte légère sous l'épreuve */}
-          {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} series={d.eclair} className="mt-4" />}
+          {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} className="mt-4" />}
         </div>
       </section>
 

@@ -27,7 +27,6 @@ import {
 } from "@/components/accueil/queries";
 import { helloFor, longDay } from "@/components/accueil/format";
 import type { AccueilData } from "@/components/accueil/types";
-import { getEclairStats } from "@/lib/eclair";
 
 // Un duel terminé reste « à revoir » sur l'accueil pendant 3 jours (la liste
 // complète, 14 jours, vit sur /duel et dans le Classement).
@@ -50,7 +49,7 @@ export default async function Dashboard() {
 
   const now = new Date();
 
-  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq, eclair] =
+  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq] =
     await Promise.all([
       supabase.from("profiles").select("username,exam_date").eq("id", user.id).maybeSingle(),
       // XP par jour : sert seulement à la série (le détail est sur /moi).
@@ -78,8 +77,6 @@ export default async function Dashboard() {
       getReviewableDuels(supabase, user.id, { days: DUEL_FRESH_DAYS, limit: 1 }),
       // les 5 du jour, le défi éclair (« bientôt » tant que migration_cinq_du_jour.sql manque)
       getTodayDaily(supabase, user.id, "cinq"),
-      // séries éclair rendues aujourd'hui (null tant que migration_series_eclair.sql manque)
-      getEclairStats(supabase, user.id),
     ]);
 
   const profile = profileRes.data as { username?: string | null; exam_date?: string | null } | null;
@@ -139,7 +136,6 @@ export default async function Dashboard() {
     returning,
     daily,
     cinq,
-    eclair: eclair?.today ?? null,
     reviewDuel: fresh
       ? {
           id: fresh.id,
