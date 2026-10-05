@@ -14,7 +14,7 @@ const ONBOARDING_EXEMPT = ["/onboarding", "/login", "/auth", "/api"];
 // rechargement côté navigateur, qui relançait l'intro une seconde fois.
 // « /fiches » seule : les fiches elles-mêmes restent lisibles sans compte.
 const PRIVATE = [
-  "/calculs", "/classement", "/courses", "/dashboard", "/defi", "/duel", "/entrainement", "/exam",
+  "/calculs", "/classement", "/courses", "/dashboard", "/defi", "/duel", "/eclair", "/entrainement", "/exam",
   "/flashcards", "/mock-exams", "/moi", "/official-exams", "/onboarding", "/people",
   "/practice", "/qcm", "/reviser", "/scratch", "/session",
 ];
