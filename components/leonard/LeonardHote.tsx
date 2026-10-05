@@ -47,6 +47,7 @@ const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "progression", "rang-mon
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];
+const pageMuette = (chemin: string) => PAGES_MUETTES.some((p) => chemin.startsWith(p));
 const CLE_DERNIER = "rl_leonard_dernier";
 const CLE_JOUR = "rl_leonard_jour";
 const CLE_VISITE = "rl_leonard_visite";
@@ -192,7 +193,7 @@ export function LeonardHote() {
   // ── décider d'apparaître ────────────────────────────────────────────
   const montrer = useCallback((sig: SignalLeonard) => {
     if (visible.current || muet()) return;
-    if (PAGES_MUETTES.some((p) => window.location.pathname.startsWith(p))) return;
+    if (pageMuette(window.location.pathname)) return;
     const prio = PRIORITAIRES.has(sig.evt);
     const jour = lire<{ j: string; n: number }>(CLE_JOUR, { j: "", n: 0 });
     const n = jour.j === jourLocal() ? jour.n : 0;
@@ -304,6 +305,13 @@ export function LeonardHote() {
     fermer();
   }, [fermer]);
 
+  // emmené sur une page où il se tait (redirigé vers le premier trait d'une
+  // nouvelle version, session expirée…) : il s'efface, sans marquer la
+  // visite comme faite (elle reprendra après le premier trait, ou « Revoir »)
+  useEffect(() => {
+    if (visible.current && pageMuette(pathname)) fermer();
+  }, [pathname, fermer]);
+
   // un réglage coupé pendant qu'il parle : il s'en va
   useEffect(() => {
     const maj = () => {
@@ -369,16 +377,26 @@ export function LeonardHote() {
       const voulu = adresse(etape.page);
       const chemin = voulu.split("?")[0];
       if (window.location.pathname + window.location.search !== voulu) routeur.push(voulu);
-      // la page (le temps qu'elle arrive), puis l'élément (sinon, l'étape se joue sans projecteur)
+      // la page (15 s au plus), puis l'élément (5 s de plus, sinon l'étape se joue sans projecteur)
       let el: Element | null = null;
-      for (let k = 0; k < 80 && !fini; k++) {
-        if (window.location.pathname === chemin) {
+      let arrivee = -1;
+      for (let k = 0; k < 200 && !fini; k++) {
+        const ici = window.location.pathname;
+        if (pageMuette(ici)) break;
+        if (ici === chemin) {
+          if (arrivee < 0) arrivee = k;
           el = etape.cible ? premierVisible(etape.cible) : null;
-          if (!etape.cible || el || k > 60) break;
-        }
+          if (!etape.cible || el || k - arrivee > 50) break;
+        } else if (k >= 150) break;
         await attendre(100);
       }
       if (fini) return;
+      // redirigé ailleurs, ou page qui n'arrive pas : il ne parle pas d'une
+      // autre page que la sienne ; il s'efface (la visite n'est pas marquée faite)
+      if (window.location.pathname !== chemin) {
+        fermer();
+        return;
+      }
       const doux = !calmeVoulu();
       if (el) {
         // l'élément en haut de l'écran, sous la barre : Léonard et sa bulle occupent le bas
