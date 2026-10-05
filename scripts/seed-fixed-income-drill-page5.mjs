@@ -1,13 +1,16 @@
 // Seed script — quiz de "drill" associé à la page 5 de la fiche PDF Fixed
 // Income (Credit Risk Measures & Sovereign Credit). Le contenu d'origine de
 // ce drill avait été fourni par l'utilisateur ; il a été remis au cadre
-// FSA / Equity à sa demande le 3 octobre 2026. Structure : 6 concepts ×
+// FSA / Equity à sa demande le 3 octobre 2026. Structure : 5 concepts ×
 // (1 question officielle + 1 variante "angle différent" + 1 variante "plus
 // difficile"). Voir memory regle-drill-variantes-cfa-hub. Questions en
 // anglais, explications en français. Questions officielles recopiées à
 // l'identique (historique de réponses conservé par syncQuizSets), corrigés
 // vérifiés contre les PDF "- Answers.pdf" (Readings 59, 61, 62, 63 et 64 de
 // la banque practice exams).
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concept d'origine 3 retiré de la fiche, ses
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-fixed-income-drill-page5.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -70,33 +73,7 @@ const QUIZ_SETS = [
         "Étape 1 : EL de P = 1,5 % × (1 − 40 %) = 0,90 % = 90 bp, spread over EL = 210 − 90 = 120 bp. Étape 2 : EL de Q = 2,5 % × 60 % = 1,50 % = 150 bp, spread over EL = 190 − 150 = 40 bp. Étape 3 : P rémunère bien mieux le risque, alors que les deux bonds ont la même note. C'est une limite classique des credit ratings : ils sont stables, réagissent avec retard au marché, peuvent contenir des erreurs et anticipent mal les événements imprévus (acquisition financée par dette, litige, catastrophe). La réponse A arrive au bon choix pour une mauvaise raison : un même rating n'implique pas la même perte attendue, et l'écart réel de rémunération est de 80 bp, pas de 20 bp. La réponse B fait exactement l'erreur que la fiche signale : se fier à une note qui n'intègre pas encore l'événement.",
       ],
 
-      // Concept 3 — Key rate duration (officielle, Reading 61)
-      [
-        "Sensitivity of a bond's price to a change in yield at a specific maturity is least appropriately estimated by using:",
-        ["effective duration.", "key rate duration.", "partial duration."],
-        0,
-        "L'effective duration mesure la sensibilité du prix à un déplacement parallèle de toute la courbe de référence : elle ne peut pas isoler un seul point de la courbe, c'est donc la mesure la MOINS appropriée ici. La key rate duration — aussi appelée partial duration, les réponses B et C désignent donc le même outil — mesure précisément la sensibilité du prix à la variation du taux d'une seule maturité (par exemple le 5 ans), les autres taux restant fixes.",
-      ],
-      // Variante angle différent — appliquer les key rate durations à un choc sur un seul point de la courbe
-      [
-        "A bond portfolio has key rate durations of 0.4 at the 2-year maturity, 1.6 at the 5-year maturity, and 3.0 at the 10-year maturity, and no exposure elsewhere on the curve. If the 10-year benchmark yield rises by 20 bp while all other yields are unchanged, the portfolio's value will change by approximately:",
-        ["−1.00%.", "−0.60%.", "+0.60%."],
-        1,
-        "Seul le point 10 ans bouge : ΔV/V ≈ −KRD(10 ans) × Δy = −3,0 × 0,0020 = −0,60 %. La réponse −1,00 % utilise la somme des key rate durations (0,4 + 1,6 + 3,0 = 5,0, qui est l'effective duration du portefeuille) comme si toute la courbe montait de 20 bp : c'est le scénario de déplacement parallèle, pas celui décrit. La réponse +0,60 % se trompe de signe : une hausse de taux fait baisser la valeur.",
-      ],
-      // Variante plus difficile — même effective duration, profils de key rate différents, pentification de la courbe
-      [
-        "Portfolios A and B both have an effective duration of 6.0. Their key rate durations at the 2-, 5-, 10-, and 30-year maturities are 0.5, 4.5, 0.8, and 0.2 for Portfolio A, and 2.0, 0.5, 1.0, and 2.5 for Portfolio B. The yield curve then steepens: the 2-year yield falls by 20 bp, the 5-year yield is unchanged, the 10-year yield rises by 10 bp, and the 30-year yield rises by 30 bp. Which statement is most accurate?",
-        [
-          "Both portfolios lose about 0.30%, since the average yield change is +5 bp and both have an effective duration of 6.0.",
-          "Portfolio A loses about 0.04% and Portfolio B about 0.45%; the same effective duration hides very different exposures along the curve.",
-          "Portfolio B gains about 0.40%, because its large 2-year key rate duration benefits from the fall in short-term yields.",
-        ],
-        1,
-        "On additionne l'effet de chaque point : ΔV/V ≈ −Σ KRD × Δy. Portefeuille A (bullet) : −[0,5 × (−0,20 %) + 4,5 × 0 + 0,8 × 0,10 % + 0,2 × 0,30 %] = −[−0,10 + 0 + 0,08 + 0,06] = −0,04 %. Portefeuille B (barbell) : −[2,0 × (−0,20 %) + 0,5 × 0 + 1,0 × 0,10 % + 2,5 × 0,30 %] = −[−0,40 + 0,10 + 0,75] = −0,45 %. Même effective duration (somme des KRD = 6,0 dans les deux cas), mais B est exposé au 30 ans, là où les taux montent le plus. C'est tout l'intérêt de la key rate duration : utile quand les cash flows se répartissent sur des maturités différentes, inutile si deux portefeuilles ont exactement le même profil. La réponse A applique une duration unique à un choc « moyen » de +5 bp (6,0 × 0,05 % = 0,30 %) : elle suppose un déplacement parallèle. La réponse C ne compte que le gain sur le 2 ans (+0,40 %) et oublie les pertes sur le 10 ans et le 30 ans (−0,85 %).",
-      ],
-
-      // Concept 4 — Duration analytique vs empirique (officielle, Reading 61)
+      // Concept 3 — Duration analytique vs empirique (officielle, Reading 61)
       [
         "For a portfolio consisting solely of short-term U.S. government bonds:",
         [
@@ -130,7 +107,7 @@ const QUIZ_SETS = [
         "Étape 1 : le rendement du portefeuille a baissé de 50 − 30 = 20 bp, d'où un gain ≈ 6,0 × 0,20 % = 1,2 % (cohérent avec l'énoncé). Étape 2 : l'empirical duration mesure la sensibilité au taux de RÉFÉRENCE : 1,2 % / 0,50 % = 2,4. Étape 3 : couvrir le risque de taux avec une duration de 6,0 reviendrait à vendre environ 2,5 fois trop de sensibilité (6,0 contre 2,4) : sur-couverture. La réponse A divise par la variation du spread au lieu de celle du taux de référence. La réponse C divise par la variation du rendement propre du portefeuille : elle retrouve l'analytical duration (6,0), qui ignore justement l'effet compensateur du spread.",
       ],
 
-      // Concept 5 — Putable vs callable : convexité, plancher et plafond (officielle, Reading 59)
+      // Concept 4 — Putable vs callable : convexité, plancher et plafond (officielle, Reading 59)
       [
         "In comparing the price volatility of putable bonds to that of option-free bonds, a putable bond will have:",
         ["less price volatility at higher yields.", "less price volatility at low yields.", "more price volatility at higher yields."],
@@ -160,7 +137,7 @@ const QUIZ_SETS = [
         "Convexité effective = (V− + V+ − 2V0) / (ΔY² × V0) = (101,55 + 100,70 − 2 × 101,20) / (0,0025² × 101,20) = −0,15 / 0,0006325 ≈ −237. Lecture directe : le bond gagne 0,35 quand les taux baissent mais perd 0,50 quand ils montent, il gagne moins qu'il ne perd : convexité négative, la signature d'un callable à taux bas dont le prix plafonne près du call price. La réponse B se trompe de signe : une convexité positive impliquerait un gain supérieur à la perte. La réponse C a le bon chiffre mais la mauvaise option : un put ajoute de la convexité positive (plancher), il ne crée jamais de convexité négative.",
       ],
 
-      // Concept 6 — Crédit souverain : monnaie propre, reserve vs non-reserve currency (officielle, Reading 63)
+      // Concept 5 — Crédit souverain : monnaie propre, reserve vs non-reserve currency (officielle, Reading 63)
       [
         "Compared to corporate bonds with the same credit ratings, municipal general obligation (GO) bonds typically have less credit risk because:",
         [

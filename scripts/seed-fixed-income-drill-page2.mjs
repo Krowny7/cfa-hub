@@ -1,8 +1,8 @@
 // Seed script — quiz de "drill" associé à la page 2 de la fiche PDF Fixed
 // Income (Issuance, Trading & Funding Markets). Le contenu d'origine de ce
 // drill avait été fourni par l'utilisateur ; il a été remis au cadre FSA /
-// Equity à sa demande le 3 octobre 2026. Structure : pour chacun des 8
-// concepts clés de la page (un par encadré ou presque), 1 question officielle
+// Equity à sa demande le 3 octobre 2026. Structure : pour chacun des 5
+// concepts clés de la page, 1 question officielle
 // (banque de pratique CFA, Fixed Income Readings 50, 51, 52, 53 et 63,
 // corrigé vérifié contre le PDF "- Answers.pdf" correspondant) + 1 variante
 // "angle différent" (même notion, mais jamais un simple changement de
@@ -12,6 +12,9 @@
 // français. Les QCM déjà imprimés sur la fiche ne sont pas repris.
 // Les questions officielles sont recopiées à l'identique : syncQuizSets
 // retrouve l'historique de réponses en comparant le texte exact de l'énoncé.
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 1, 5, 8 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-fixed-income-drill-page2.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -22,37 +25,7 @@ const QUIZ_SETS = [
     title: "Fixed Income — Drill Fiche Page 2 (Issuance, Trading & Funding Markets)",
     difficulty: 2,
     questions: [
-      // Concept 1 — Qui achète quoi : assureurs, fonds monétaires, hedge funds (officielle, Reading 51)
-      [
-        "The CFO of Premlow Insurance Co. wants to ensure that her investment portfolio aligns with the company's claims history and obligations as they come due. She will most likely invest in which types of fixed-income securities?",
-        ["Short-term, high-yield securities.", "Long-term, investment-grade securities.", "Intermediate-term, risk-free securities."],
-        1,
-        "Un assureur doit payer des sinistres et des prestations qui s'étalent sur de longues années : il cherche des titres longs, adossés à ses engagements, et de qualité investment grade, qui offrent un revenu stable. C'est pourquoi les assureurs sont de gros acheteurs d'obligations d'entreprises senior unsecured à long terme (encadré « Qui achète quoi ? » de la fiche). A ne colle pas à des engagements longs, et le high yield ajoute un risque de crédit élevé, peu compatible avec un portefeuille qui doit honorer ses engagements. C : une maturité intermédiaire ne s'aligne pas sur des engagements longs, et se limiter à des titres sans risque de défaut sacrifierait le rendement sans nécessité.",
-      ],
-      // Variante angle différent — un autre investisseur de la catégorie, sous l'angle du « pourquoi » : fonds monétaires et commercial paper
-      [
-        "Money market funds are among the largest buyers of commercial paper. This is most likely because commercial paper:",
-        [
-          "offers higher yields than long-term corporate bonds of the same issuer.",
-          "has a short maturity and is typically issued only by highly rated companies, matching the funds' need for liquidity and capital preservation.",
-          "is always secured by a pool of receivables, which eliminates default risk.",
-        ],
-        1,
-        "Un fonds monétaire doit rester très liquide et préserver le capital de ses porteurs : il achète des titres courts et de très bonne qualité. Le commercial paper colle à ce profil : échéance courte (moins d'un an, souvent quelques semaines) et émetteurs de premier rang (seules les entreprises les mieux notées peuvent en émettre). A est faux : avec une courbe des taux normale, le papier court rapporte en général moins que les obligations longues du même émetteur. C confond le commercial paper classique, non garanti (unsecured), avec l'ABCP, et même l'ABCP n'élimine pas le risque de défaut.",
-      ],
-      // Variante plus difficile — distressed debt : calcul du rendement attendu + pourquoi ce n'est pas un titre d'assureur
-      [
-        "A hedge fund buys the senior unsecured bonds of a company that has just filed for bankruptcy protection at 32% of par, expecting to recover 40% of par when the restructuring is completed in one year. No coupons will be paid in the meantime. The hedge fund's expected one-year return, and the most likely reason a life insurance company would not buy these bonds, are:",
-        [
-          "8%; the insurer may only buy securities that were investment grade at issuance.",
-          "25%; the insurer only buys short-term securities that mature before its claims come due.",
-          "25%; the insurer needs predictable cash flows to match its long-dated claims, while the payoff on these bonds depends on an uncertain restructuring.",
-        ],
-        2,
-        "Rendement attendu = (40 − 32) / 32 = 25 % sur un an. La distressed debt (émetteur en faillite ou sur le point de l'être) est très mal notée, très risquée et à rendement potentiel élevé : c'est le terrain des hedge funds, qui parient sur l'issue de la restructuration. Un assureur vie, lui, adosse des engagements longs et prévisibles à des flux stables : un paiement qui dépend d'une négociation de faillite ne lui convient pas. A exprime le gain en points de pair (40 − 32 = 8) sans le rapporter au prix payé, et invente une règle (un titre bien noté à l'émission peut d'ailleurs devenir distressed). B se trompe sur l'assureur : il achète au contraire des titres LONGS pour couvrir des engagements longs.",
-      ],
-
-      // Concept 2 — Émission sur le marché primaire : private placement, debut issuer, underwritten, reopening (officielle, Reading 51)
+      // Concept 1 — Émission sur le marché primaire : private placement, debut issuer, underwritten, reopening (officielle, Reading 51)
       [
         "Ridgeland Company wishes to issue its first bond, which will only be available to high-net-worth investors. The underwriter used by Ridgeland has guaranteed the bond issue price. Which of the following best describes this bond issuance?",
         ["A public offering, underwritten offering.", "A shelf registration, best-efforts offering.", "A private placement, debut issuer."],
@@ -82,7 +55,7 @@ const QUIZ_SETS = [
         "Les titres ajoutés lors d'un reopening ont exactement les caractéristiques de ceux en circulation : coupon de 5 % et même échéance. Ils se vendent donc au prix de marché de la ligne existante : N = 4, I/Y = 4, PMT = 5, FV = 100 → PV ≈ 103,63. Coupon de 5 % > rendement de marché de 4 % (CR > MDR) → prime. A traite l'opération comme une nouvelle émission au pair, avec un coupon égal au rendement du marché : ce serait une ligne différente, non fongible. C inverse coupon et rendement (un coupon de 4 % actualisé à 5 % donne 96,45), ce qui conduit à tort à une décote.",
       ],
 
-      // Concept 3 — Commercial paper, ABCP et lignes de crédit (officielle, Reading 50)
+      // Concept 2 — Commercial paper, ABCP et lignes de crédit (officielle, Reading 50)
       [
         "To reduce the cost of long-term borrowing, a corporation with a below average credit rating could:",
         ["decrease credit enhancement.", "issue commercial paper.", "issue securitized bonds."],
@@ -112,7 +85,7 @@ const QUIZ_SETS = [
         "Coût de la ligne confirmée non tirée : 0,25 % × 100 000 000 = 250 000 $ par an. Ce coût achète un engagement formel : la banque doit prêter quand l'entreprise le demande, précisément le jour où le marché du commercial paper se ferme (risque de rollover). La banque immobilise du capital pour cet engagement, d'où la commission (commitment fee). B est faux : une ligne non confirmée (uncommitted) n'engage pas la banque, qui peut refuser de prêter au pire moment. C inverse la logique : si la banque immobilise moins de capital, c'est justement parce qu'elle ne s'engage à rien.",
       ],
 
-      // Concept 4 — Repo : repo rate, repo margin et qualité du collatéral (officielle, Reading 52)
+      // Concept 3 — Repo : repo rate, repo margin et qualité du collatéral (officielle, Reading 52)
       [
         "Which of the following statements regarding repurchase agreements is most accurate?",
         [
@@ -142,33 +115,7 @@ const QUIZ_SETS = [
         "Étape 1 — Montant prêté : le haircut de 2 % s'applique à la valeur du collatéral → 10 200 000 × (1 − 0,02) = 9 996 000 $. Étape 2 — Repurchase price = 9 996 000 × [1 + 0,048 × 30/360] = 9 996 000 × 1,004 = 10 035 984 $. Étape 3 — Un collatéral moins bien noté augmente le risque du prêteur : repo rate ET repo margin plus élevés. A applique le taux à la valeur de marché du collatéral en oubliant le haircut (10 200 000 × 1,004 = 10 240 800 $). B a le bon montant mais inverse l'effet de la qualité du collatéral.",
       ],
 
-      // Concept 5 — Émetteurs high yield : flexibilité de refinancement et plafond du call (officielle, Reading 52)
-      [
-        "Redding Company (Redding) has struggled financially over the last several years but is hoping to turn things around under new leadership. Redding's credit rating is below investment grade, and it is looking to issue new debt to provide some much-needed capital. Redding's best course of option is to:",
-        ["take out leveraged loans with prepayment options.", "issue low-yield bonds with a 20-year maturity.", "issue putable debt."],
-        0,
-        "Un émetteur noté sous investment grade doit payer un rendement élevé tant que sa situation ne s'est pas redressée. Son intérêt est de garder la possibilité de se refinancer plus tard à moindre coût : dette callable ou prêts à effet de levier (leveraged loans) remboursables par anticipation, sur des maturités plutôt courtes. A va dans ce sens. B est impossible : un émetteur high yield ne peut pas emprunter à « low yield », et une maturité de 20 ans figerait un coût élevé. C donne l'option au porteur : une dette putable coûte plus cher à l'émetteur et peut l'obliger à rembourser au pire moment.",
-      ],
-      // Variante angle différent — le « pourquoi » côté investisseur : le gain plafonné par le prix de call
-      [
-        "An investor holds a callable high-yield bond, and the issuer's credit quality then improves substantially. Which of the following best explains why the investor's price gain is likely to be limited?",
-        [
-          "High-yield bonds are typically putable at par, which caps their price.",
-          "The issuer's upgrade triggers an increase in the coupon rate, which pulls the bond's price back toward par.",
-          "The issuer can call the bond and refinance at a lower spread, so investors are unwilling to pay much more than the call price.",
-        ],
-        2,
-        "Quand le crédit de l'émetteur s'améliore, son spread baisse et il a intérêt à rembourser l'obligation (call) pour se refinancer moins cher. Les investisseurs le savent : ils ne paieront pas beaucoup plus que le prix de call, qui plafonne le gain (fiche : gain plafonné sur le call price, pas sur le prix d'achat). A est faux : un put protège le porteur à la baisse, il ne plafonne pas la hausse, et ce n'est pas une caractéristique typique du high yield. B est faux : le coupon d'une obligation à taux fixe ne dépend pas de la note, et un coupon plus élevé ferait de toute façon monter le prix, pas baisser.",
-      ],
-      // Variante plus difficile — chiffrer le gain maximal, avec une donnée-piège (le prix d'une obligation non callable)
-      [
-        "An investor buys a high-yield bond at 96. The bond is currently callable at 102. After the issuer is upgraded, an otherwise identical noncallable bond would trade at 108. Ignoring coupon income, the investor's maximum price gain is closest to:",
-        ["6.25%.", "12.50%.", "6.00%."],
-        0,
-        "Le call plafonne le prix autour de 102 : si le prix montait au-delà, l'émetteur rembourserait à 102 et se refinancerait moins cher. Gain maximal = (102 − 96) / 96 = 6,25 %. B (12,50 % = (108 − 96)/96) ignore le call : c'est le gain d'une obligation non callable, la donnée-piège de l'énoncé. C (6,00 %) exprime le gain de 6 points en % du pair au lieu du prix payé. Le plafond dépend du prix de call, pas du prix d'achat : un investisseur ayant payé plus cher aurait un gain possible encore plus faible.",
-      ],
-
-      // Concept 6 — Émission souveraine : calendrier régulier et adjudications (officielle, Reading 53)
+      // Concept 4 — Émission souveraine : calendrier régulier et adjudications (officielle, Reading 53)
       [
         "The cutoff yield associated with a government bond issuance is best described as the yield of the successful competitive bid with the:",
         ["lowest price.", "highest price.", "median price."],
@@ -198,7 +145,7 @@ const QUIZ_SETS = [
         "Étape 1 — Les offres non compétitives sont servies en premier : il reste 10 − 2 = 8 milliards pour les compétitifs. Étape 2 — On sert du rendement le plus bas au plus élevé : 2,10 % (3, cumul 3), 2,12 % (2, cumul 5), 2,15 % (4 demandés mais seulement 3 restants → servis à 3/4 = 75 %). Cutoff yield = 2,15 % ; les offres à 2,18 % ne sont pas servies. Dans une adjudication à prix unique, tous les gagnants, non compétitifs compris, reçoivent ce rendement de 2,15 %. A oublie de servir d'abord les non compétitifs : avec 10 milliards pour les compétitifs, 3 + 2 + 4 = 9, puis 1 milliard sur 3 à 2,18 %. B sert les offres en commençant par les rendements les plus ÉLEVÉS (2,18 % puis 2,15 %, cumul 7, puis 1 milliard sur 2 à 2,12 %) : l'erreur classique.",
       ],
 
-      // Concept 7 — GO bond vs revenue bond (officielle, Reading 63)
+      // Concept 5 — GO bond vs revenue bond (officielle, Reading 63)
       [
         "City council of a U.S. municipality has authorized the issuance of $100 million bonds to finance the construction of a toll road. This bond would most likely be characterized as a(n):",
         ["general obligation (GO) bond.", "revenue bond.", "agency bond."],
@@ -226,40 +173,6 @@ const QUIZ_SETS = [
         ],
         2,
         "Revenus nets réels = 18 × (1 − 0,40) = 10,8 M$ ; couverture = 10,8 / 15 = 0,72x : le projet ne couvre plus son service de la dette. Un revenue bond n'étant remboursé que par les revenus du projet, ce sont ses porteurs qui supportent le manque à gagner (risque de défaut accru, spread qui s'élargit). Le GO bond reste adossé aux impôts locaux, inchangés. A se trompe de calcul (retirer 40 % du service de la dette, 18 − 6 = 12 → 0,80x, au lieu de réduire les revenus de 40 %) et de principe : seuls les GO bonds sont financés par les contribuables. B suppose que la ville doit renflouer le projet avec ses impôts : un revenue bond n'a aucun recours sur le budget général.",
-      ],
-
-      // Concept 8 — Agency (quasi-government) bonds vs sovereign bonds (officielle, Reading 53)
-      [
-        "Relative to the yields on nonsovereign bonds, sovereign bond yields may be lower because of the:",
-        [
-          "requirement to distribute them in an auction format.",
-          "greater risk associated with their issuers.",
-          "regulatory requirements, forcing some financial institutions to hold government debt.",
-        ],
-        2,
-        "Certaines institutions financières (banques, assureurs) sont obligées par la réglementation de détenir des emprunts d'État : cette demande captive fait baisser leur rendement par rapport aux obligations non souveraines, comme les agency bonds (fiche : yield de l'agence supérieur au souverain). A : l'adjudication n'est qu'un mode de distribution, pas une cause de l'écart de rendement. B est faux : un risque plus élevé ferait MONTER le rendement ; en réalité, les émetteurs souverains sont en général moins risqués que les émetteurs non souverains.",
-      ],
-      // Variante angle différent — ce qui N'EST PAS vrai sur les agency bonds
-      [
-        "Which of the following statements about quasi-government (agency) bonds is least accurate?",
-        [
-          "They are repaid primarily from the national government's tax revenues.",
-          "They are issued by entities created or sponsored by a national government to carry out a specific mission.",
-          "They typically offer higher yields and lower liquidity than sovereign bonds of the same maturity.",
-        ],
-        0,
-        "Une agence quasi-gouvernementale (par exemple une agence de financement du logement ou des infrastructures) rembourse ses obligations avec les flux générés par les activités qu'elle finance (prêts, projets), pas avec les impôts de l'État : A est l'affirmation fausse. B et C sont exactes et reprennent la fiche : entité créée ou soutenue par l'État pour une mission spéciale ; rendement supérieur au souverain et liquidité moindre (encours plus petits, garantie de l'État souvent seulement implicite).",
-      ],
-      // Variante plus difficile — décomposer deux spreads d'agences (garantie explicite vs remboursement sur ses propres flux)
-      [
-        "For the same currency and maturity, an analyst observes the following yields: sovereign bond, 3.10%; Agency Bond A (explicitly guaranteed by the sovereign), 3.22%; Agency Bond B (no guarantee, repaid from the agency's lending activities), 3.55%. Which statement is most accurate?",
-        [
-          "Both spreads over the sovereign reflect only credit risk, because both agency bonds are ultimately repaid from tax revenues.",
-          "Bond A's 12 bp spread mainly reflects lower liquidity and weaker regulatory demand than for the sovereign, since its credit risk is essentially sovereign; Bond B's additional 33 bp mainly reflects credit risk, because it is repaid from the agency's own cash flows.",
-          "Bond B should yield less than Bond A, because it is backed by the cash flows of the agency's lending activities rather than by a promise from the government.",
-        ],
-        1,
-        "Étape 1 — Spreads : A − souverain = 3,22 − 3,10 = 12 pb ; B − A = 3,55 − 3,22 = 33 pb (45 pb au total pour B). Étape 2 — Interprétation : la garantie explicite donne à A un risque de crédit quasi souverain ; ses 12 pb rémunèrent surtout la moindre liquidité et l'absence de la demande réglementaire captive dont profitent les emprunts d'État (la question officielle). B ne compte que sur les flux de ses activités pour rembourser : les 33 pb supplémentaires rémunèrent ce risque de crédit. A est faux : les agency bonds ne sont pas remboursés par l'impôt. C inverse la hiérarchie : un remboursement sur les seuls flux de l'agence est plus risqué qu'une garantie explicite de l'État, donc mérite un rendement plus élevé.",
       ],
     ],
   },

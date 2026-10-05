@@ -1,6 +1,6 @@
 // Seed script — quiz de "drill" associé à la page 4 de la fiche PDF Portfolio
 // Management (Basics of Portfolio Planning and Construction). Structure : pour
-// chacun des 8 concepts clés de la page (page dense : un concept par encadré),
+// chacun des 5 concepts clés de la page (page dense : un concept par encadré),
 // 1 question officielle (banque de pratique CFA, Reading 86, corrigé vérifié
 // contre le PDF "- Answers.pdf" correspondant) + 1 variante "angle différent"
 // (même notion, mais jamais un simple changement de chiffres menant au même
@@ -10,6 +10,9 @@
 // Remis au cadre FSA / Equity le 3 octobre 2026 : l'ancienne version avait ses
 // énoncés en français, aucun n'a donc pu être repris à l'identique.
 // syncQuizSets met le set à jour en place et garde l'historique des énoncés inchangés.
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 1, 3, 6 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-pm-drill-page4.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -20,37 +23,7 @@ const QUIZ_SETS = [
     title: "Portfolio Management — Drill Fiche Page 4 (Basics of Portfolio Planning and Construction)",
     difficulty: 2,
     questions: [
-      // Concept 1 — Pourquoi un IPS écrit (officielle)
-      [
-        "Which of the following is NOT a rationale for the importance of the policy statement in investing? It:",
-        [
-          "forces investors to understand their needs and constraints.",
-          "helps investors understand the risks and costs of investing.",
-          "identifies specific stocks the investor may wish to purchase.",
-        ],
-        2,
-        "L'IPS fixe un cadre large (objectifs, contraintes, stratégie, benchmark) ; il n'entre jamais dans le détail des titres à acheter, qui relève de l'étape d'exécution. A et B sont de vraies raisons d'être de l'IPS : le rédiger oblige l'investisseur à expliciter ses besoins et ses contraintes, et à comprendre les risques et les coûts de l'investissement, ce qui rend la relation client/gérant plus claire.",
-      ],
-      // Variante angle différent — la VRAIE raison d'être de l'IPS (ni garantie, ni bouclier juridique)
-      [
-        "The main reason for having a written investment policy statement is most likely to:",
-        [
-          "guarantee that the client's return objective will be achieved.",
-          "provide the manager with a legal defense if the client later complains about performance.",
-          "communicate a plan for achieving the client's investment objectives, agreed on jointly by the client and the manager.",
-        ],
-        2,
-        "L'IPS est avant tout un outil de COMMUNICATION : un plan écrit, construit ensemble par le client et le gérant, qui dit comment atteindre les objectifs compte tenu des contraintes. A est faux : un IPS ne garantit aucun résultat, les marchés restent incertains. B est faux : ce n'est pas sa raison d'être ; un IPS peut documenter ce qui a été convenu, mais il est rédigé pour guider la gestion, pas pour protéger le gérant.",
-      ],
-      // Variante plus difficile — trier quatre affirmations d'un gérant (collaboration, révision, garantie, contenu minimal)
-      [
-        "A manager makes four statements to a new client about the investment policy statement: (1) 'I will draft the IPS myself using our firm's standard model, so you do not need to be involved.' (2) 'We will review the IPS and update it when your circumstances change.' (3) 'Once the IPS is signed, the 7% annual return target it contains is guaranteed.' (4) 'At a minimum, the IPS will describe your circumstances and constraints, an investment strategy based on them, and a benchmark for evaluating performance.' Which statements are consistent with the proper role of an IPS?",
-        ["(2) and (4) only.", "(1), (2), and (4) only.", "(2), (3), and (4) only."],
-        0,
-        "(1) Faux : l'IPS est toujours un effort COLLABORATIF entre le client et le gérant, jamais un modèle imposé par le gérant seul. (2) Vrai : l'IPS doit être revu et mis à jour quand la situation du client change. (3) Faux : un IPS n'est pas une garantie de résultat ; d'ailleurs un objectif de rendement chiffré ne fait même pas partie de son contenu minimal. (4) Vrai : au minimum, un IPS décrit la situation et les contraintes du client, une stratégie cohérente avec celles-ci et un benchmark pour évaluer la performance. B retient (1), C retient (3) : chacun garde une des deux idées fausses.",
-      ],
-
-      // Concept 2 — Les composantes de l'IPS (officielle)
+      // Concept 1 — Les composantes de l'IPS (officielle)
       [
         "Brian Nebrik, CFA, meets with a new investment management client. They compose a statement that defines each of their responsibilities concerning this account and choose a benchmark index with which to evaluate the account's performance. Which of these items should be included in the client's Investment Policy Statement (IPS)?",
         ["Both of these items.", "Only one of these items.", "Neither of these items."],
@@ -76,41 +49,7 @@ const QUIZ_SETS = [
         "Les annexes contiennent la SAA (le policy portfolio) et la politique de rebalancing. Elles peuvent devoir être modifiées plus souvent que le reste (par exemple quand les anticipations de marché changent) : les mettre en annexe évite de réécrire le corps de l'IPS à chaque fois. A est faux : le statement of duties and responsibilities fait partie du corps de l'IPS, et l'allocation stratégique doit bien être approuvée par le client. B est faux : les devoirs et les contraintes sont au cœur du document, pas relégués en annexe, et la confidentialité n'a rien à voir avec ce choix.",
       ],
 
-      // Concept 3 — Objectifs de risque et de rendement, absolus ou relatifs (officielle)
-      [
-        "Which of the following statements about the importance of risk and return in the investment objective is least accurate?",
-        [
-          "The return objective may be stated in dollar amounts even if the risk objective is stated in percentages.",
-          "Expressing investment goals in terms of risk is more appropriate than expressing goals in terms of return.",
-          "The investor’s risk tolerance is likely to determine what level of return will be feasible.",
-        ],
-        1,
-        "B est l'affirmation fausse : les objectifs doivent être exprimés À LA FOIS en termes de risque et de rendement ; aucun des deux n'est « plus approprié » que l'autre, car ils sont indissociables. A est exacte : risque et rendement se formulent chacun de façon indépendante (montant, pourcentage, absolu, relatif). C est exacte : la tolérance au risque détermine quel niveau de rendement espéré est atteignable.",
-      ],
-      // Variante angle différent — classer un objectif réel : rendement relatif, risque absolu
-      [
-        "An IPS states: 'The portfolio should outperform the MSCI World Index by 2% per year, with no more than a 5% probability of losing more than 10% of its value in any year.' The return objective and the risk objective in this statement are, respectively:",
-        [
-          "relative and absolute.",
-          "absolute and relative.",
-          "both relative, because risk and return objectives must be stated on the same basis.",
-        ],
-        0,
-        "Rendement : « battre le MSCI World de 2 % » se mesure par rapport à un indice → objectif RELATIF. Risque : « au plus 5 % de probabilité de perdre plus de 10 % » se mesure sans référence à un benchmark → objectif ABSOLU. B inverse les deux. C est le piège de la fiche : risque et rendement sont chacun absolu OU relatif, indépendamment l'un de l'autre.",
-      ],
-      // Variante plus difficile — classer quatre énoncés d'un IPS, avec le piège « rendement minimum = contrainte »
-      [
-        "A foundation's IPS contains four statements: (1) 'Earn at least 6% per year.' (2) 'Keep tracking error versus a 60/40 global benchmark below 250 basis points.' (3) 'Outperform the 60/40 benchmark by 1% per year.' (4) 'Limit to 5% the probability of a portfolio loss greater than 15% in any year.' Which statement is most accurate?",
-        [
-          "(2) and (4) are both absolute risk objectives, because both are expressed as numerical limits.",
-          "(1) is a return constraint of the IPS, while (3) is a relative return objective.",
-          "(1) is an absolute return objective, (2) is a relative risk objective, and (4) is an absolute risk objective.",
-        ],
-        2,
-        "(1) Un rendement chiffré sans référence = objectif de rendement ABSOLU. (2) La tracking error mesure le risque par rapport au benchmark = objectif de risque RELATIF. (3) Battre le benchmark = objectif de rendement relatif. (4) Une probabilité de perte = objectif de risque absolu. A est faux : être chiffré ne rend pas un objectif absolu ; ce qui compte, c'est la présence ou non d'une référence (la tracking error est par nature relative). B est le piège de la fiche : un rendement minimum (« au moins 6 % ») est un OBJECTIF, jamais une contrainte ; les 5 contraintes sont l'horizon, la fiscalité, la liquidité, le légal et les circonstances particulières.",
-      ],
-
-      // Concept 4 — Willingness vs ability to take risk (officielle)
+      // Concept 2 — Willingness vs ability to take risk (officielle)
       [
         "Based on a questionnaire about investment risk, an advisor concludes that an investor's risk tolerance is high, but based on an analysis of the client's income needs and time horizon, he concludes the investor's risk tolerance is low. The most appropriate action for the advisor is to:",
         ["emphasize stocks over bonds.", "emphasize bonds over stocks.", "educate the client about investment risk and re-administer the questionnaire."],
@@ -140,7 +79,7 @@ const QUIZ_SETS = [
         "Ability : ÉLEVÉE (revenu stable, patrimoine important, horizon de 30 ans). Willingness : FAIBLE (vente panique en 2020, pertes mal vécues). La règle d'or s'applique dans les deux sens : on retient la plus basse, donc une tolérance faible. Le conseiller peut expliquer l'arbitrage risque/rendement, mais son rôle n'est pas de changer la willingness du client. A applique la règle à moitié : l'ability ne prime que lorsqu'elle est la plus basse des deux. C est la donnée-piège : un rendement souhaité ne détermine pas la tolérance au risque, c'est l'inverse ; si 10 % est incompatible avec une tolérance faible, c'est l'objectif de rendement qu'il faut revoir.",
       ],
 
-      // Concept 5 — Les 5 contraintes : horizon, fiscalité, liquidité, légal, circonstances particulières (officielle)
+      // Concept 3 — Les 5 contraintes : horizon, fiscalité, liquidité, légal, circonstances particulières (officielle)
       [
         "Davis Samuel, CFA, is meeting with one of his portfolio management clients, Joseph Pope, to discuss Pope's investment constraints. Samuel has established that:\n\n• Pope plans to retire from his job as a bond salesman in 17 years, after which this portfolio will be his primary source of income.\n\n• Pope has sufficient cash available that he will not need this portfolio to generate cash outflows until he retires.\n\n• Pope, as a registered securities representative, is required to have Samuel send a copy of his account statements to the compliance officer at Pope's employer.\n\n• Pope opposes certain policies of the government of Lower Pannonia and does not wish to own any securities of companies that do business with its regime.\n\nTo complete his assessment of Pope's investment constraints, Samuel still needs to inquire about Pope's:",
         ["tax concerns.", "unique circumstances.", "liquidity needs."],
@@ -170,41 +109,7 @@ const QUIZ_SETS = [
         "(1) Une distribution minimale imposée PAR LA LOI se classe d'abord en legal and regulatory (contrainte qui s'impose à l'investisseur par la loi). (2) Une dépense importante à 18 mois = liquidité. (3) Une exclusion choisie par le conseil, liée à la mission = unique circumstances. (4) L'exonération d'impôt est une information fiscale : elle se mentionne dans la contrainte tax (elle change par exemple l'intérêt des obligations exonérées). B commet deux erreurs : il réduit (1) à la liquidité en oubliant son origine légale, et croit qu'un investisseur exonéré n'a rien à indiquer en fiscalité. C confond une décision interne du conseil (3) avec une obligation légale.",
       ],
 
-      // Concept 6 — Spécification des classes d'actifs : corrélations (officielle)
-      [
-        "When preparing a strategic asset allocation, how should asset classes be defined with respect to the correlations of returns among the securities in each asset class?",
-        [
-          "Low correlation within asset classes and high correlation between asset classes.",
-          "High correlation within asset classes and low correlation between asset classes.",
-          "Low correlation within asset classes and low correlation between asset classes.",
-        ],
-        1,
-        "Une classe d'actifs regroupe des titres aux caractéristiques et aux performances semblables : les corrélations sont donc ÉLEVÉES à l'intérieur d'une classe. Le bénéfice de diversification de l'allocation stratégique vient des corrélations FAIBLES entre les classes. A inverse les deux. C est faux sur la corrélation interne : une corrélation basse à l'intérieur d'une classe signale des actifs hétérogènes, donc une classe mal définie.",
-      ],
-      // Variante angle différent — interpréter un signal anormal : corrélation quasi nulle à l'intérieur d'une classe
-      [
-        "An analyst finds that the average correlation of returns among the assets in a proposed 'alternatives' asset class is close to zero. This finding most likely indicates that the asset class:",
-        [
-          "is well specified, because the low internal correlation provides diversification within the class.",
-          "should be excluded from the strategic asset allocation, because it cannot diversify the other asset classes.",
-          "is probably poorly specified, because it groups assets with dissimilar risk and return characteristics that may need to be defined as separate classes.",
-        ],
-        2,
-        "Les titres d'une même classe devraient évoluer ensemble (corrélation interne élevée). Une corrélation interne proche de zéro est un signal ANORMAL : la « classe » mélange des actifs très différents (immobilier, matières premières, hedge funds…) qu'il faudrait sans doute découper. A est le piège de la fiche : une corrélation interne basse n'est pas une « bonne diversification interne », c'est une classe mal définie. B est faux : la corrélation à l'intérieur de la classe ne dit rien de sa corrélation avec les AUTRES classes, qui est ce qui compte pour la diversifier.",
-      ],
-      // Variante plus difficile — lire des données de corrélation pour juger trois classes à la fois
-      [
-        "A consultant reports the following for three proposed asset classes that together cover a client's investable universe: the average pairwise correlation of returns is 0.85 within Class X and 0.15 within Class Y; the correlation between Class X and Class Z is 0.95, and the correlation between Class Y and Class Z is 0.30. Which conclusion is most appropriate?",
-        [
-          "Class Y is the best specified, because its low internal correlation diversifies risk within the class.",
-          "Class X is internally coherent, but X and Z are so highly correlated that they probably should not be treated as separate classes; Class Y likely groups dissimilar assets and should be redefined.",
-          "Classes X and Z are well specified, because their high correlation with each other confirms that each contains similar assets.",
-        ],
-        1,
-        "On applique les deux critères. À l'intérieur : X (0,85) est cohérente ; Y (0,15) est anormalement basse, elle mélange probablement des actifs hétérogènes et doit être redéfinie. Entre classes : X et Z (0,95) évoluent presque ensemble, les distinguer n'apporte pas de diversification, il faudrait sans doute les fusionner ; Y et Z (0,30) sont bien distinctes. A est le piège de la corrélation interne basse prise pour un atout. C confond les deux critères : une corrélation élevée ENTRE classes est un défaut, pas la preuve que chaque classe est homogène.",
-      ],
-
-      // Concept 7 — SAA, allocation tactique, rebalancing (officielle)
+      // Concept 4 — SAA, allocation tactique, rebalancing (officielle)
       [
         "An investment manager is most likely to be engaging in tactical asset allocation if she:",
         [
@@ -238,7 +143,7 @@ const QUIZ_SETS = [
         "On mesure tout par rapport à la SAA (50 %). De 54 % à 50 % : on annule la dérive due au marché, c'est du rebalancing. De 50 % à 47 % : on passe SOUS la cible à cause d'une opinion de court terme, c'est une sous-pondération tactique de 3 points, dans la limite de ±5 points. B est faux : le rebalancing s'arrête à la cible ; aller au-delà n'est plus « revenir » à la SAA. C est faux deux fois : une partie de l'ordre est du rebalancing, et une décision tactique ne modifie jamais la SAA, qui reste à 50 %.",
       ],
 
-      // Concept 8 — Intégration ESG (officielle)
+      // Concept 5 — Intégration ESG (officielle)
       [
         "Which of the following statements is most accurate about integrating ESG considerations into portfolio planning and construction?",
         [

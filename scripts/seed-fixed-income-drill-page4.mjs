@@ -3,7 +3,7 @@
 // venait de l'utilisateur, qui avait enrichi la page (bump, duration de
 // portefeuille, effective et key rate duration, facteurs de la duration) ;
 // il a été remis au cadre FSA / Equity à sa demande le 3 octobre 2026.
-// Page dense : 8 concepts. Structure : pour chacun, 1 question officielle
+// 5 concepts. Structure : pour chacun, 1 question officielle
 // (banque de pratique CFA, Readings 58, 59, 60 et 61, corrigé vérifié contre
 // les PDF "- Answers.pdf" correspondants) + 1 variante "angle différent"
 // (même notion, mais jamais un simple changement de chiffres menant au même
@@ -13,6 +13,9 @@
 // PDF (page 8) ne sont pas repris.
 // Les questions officielles sont recopiées à l'identique : syncQuizSets
 // retrouve l'historique de réponses en comparant le texte exact de l'énoncé.
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 1, 4, 7 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-fixed-income-drill-page4.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -23,29 +26,7 @@ const QUIZ_SETS = [
     title: "Fixed Income — Drill Fiche Page 4 (Interest Rate Risk & Duration)",
     difficulty: 2,
     questions: [
-      // Concept 1 — Carrying value et horizon yield (officielle, Reading 58)
-      [
-        "Sarah Metz buys a 10-year bond at a price below par. Three years later, she sells the bond. Her capital gain or loss is measured by comparing the price she received for the bond to its:",
-        ["carrying value.", "original price less amortized discount.", "original purchase price."],
-        0,
-        "La plus-value ou moins-value se mesure par rapport à la carrying value : le prix d'achat AUGMENTÉ de la décote amortie (bond acheté sous le pair), c'est-à-dire le prix sur la trajectoire à rendement constant. La part de hausse due à l'amortissement de la décote est un revenu d'intérêt, pas une plus-value. B se trompe de signe : pour un bond acheté en décote, on AJOUTE l'amortissement (on ne le retranche que pour un bond acheté en prime). C compte à tort l'amortissement de la décote comme une plus-value.",
-      ],
-      // Variante angle différent — appliquer la règle sur un cas chiffré : séparer intérêt (amortissement) et plus-value
-      [
-        "An investor buys a 3-year, 4% annual-pay bond at 97.277 per 100 of par, a yield to maturity of 5%. One year later, just after receiving the first coupon, she sells the bond for 98.80. Her capital gain on the sale is closest to:",
-        ["−1.20.", "+1.52.", "+0.66."],
-        2,
-        "Carrying value après 1 an = prix sur la trajectoire au YTM d'achat (5 %) d'un bond qui n'a plus que 2 ans : 4/1,05 + 104/1,05² = 3,8095 + 94,3311 = 98,14. Plus-value = 98,80 − 98,14 = +0,66. La hausse de 97,28 à 98,14 (0,86) est l'amortissement de la décote : du revenu d'intérêt, pas une plus-value. B mesure contre le prix d'achat (98,80 − 97,28 = 1,52) et mélange donc intérêt et plus-value. A mesure contre le pair (98,80 − 100) : le bond ne rejoint le pair qu'à l'échéance.",
-      ],
-      // Variante plus difficile — horizon yield chiffré : réinvestissement + prix de revente, lien avec le duration gap
-      [
-        "An investor buys a 5-year, 6% annual-pay bond at par. Immediately after purchase, its yield to maturity rises to 7% and stays there. She reinvests coupons at 7% and sells the bond after 2 years, just after the second coupon. Her annualized horizon yield is closest to:",
-        ["4.78%.", "4.58%.", "6.00%."],
-        0,
-        "Coupons + réinvestissement : 6 × 1,07 + 6 = 12,42. Prix de revente (bond 3 ans à 6 % valorisé à 7 %) : 6/1,07 + 6/1,07² + 106/1,07³ = 5,6075 + 5,2406 + 86,5276 = 97,38. Valeur totale à l'horizon = 109,80 → horizon yield = (109,80/100)^(1/2) − 1 = 4,78 %. B oublie les intérêts sur coupons (12 au lieu de 12,42 → 4,58 %). C suppose que l'horizon yield égale le YTM d'achat : ce n'est vrai que si les coupons sont réinvestis au YTM initial ET si la revente se fait sans gain ni perte par rapport à la carrying value. Cohérence : la Macaulay duration (≈ 4,47 ans) dépasse l'horizon de 2 ans, gap positif : le risque de prix domine, donc une hausse de taux fait baisser le rendement réalisé.",
-      ],
-
-      // Concept 2 — Duration gap = Macaulay duration − horizon (officielle, Reading 58)
+      // Concept 1 — Duration gap = Macaulay duration − horizon (officielle, Reading 58)
       [
         "An investor is concerned about rising interest rates and associated price risks. If her investment horizon is 5.25 years, the Macaulay duration on her bond investment is likely closest to:",
         ["5.25 years.", "4.75 years.", "5.75 years."],
@@ -71,7 +52,7 @@ const QUIZ_SETS = [
         "Valeurs actuelles des flux à 10 % : 9,0909 ; 8,2645 ; 82,6446 (total 100). Macaulay duration = (1 × 9,0909 + 2 × 8,2645 + 3 × 82,6446)/100 = 2,74 ans. Gap = 2,74 − 2 = +0,74 > 0 → le risque de prix domine : elle est exposée à une hausse des taux, qui ferait baisser le prix de revente dans 2 ans. A calcule le gap avec la modified duration (2,74/1,10 = 2,49) : le duration gap se mesure toujours avec la Macaulay duration, seule à s'exprimer en années comparables à l'horizon. B a le bon gap mais se trompe d'exposition : un gap positif signifie risque de prix, pas de réinvestissement.",
       ],
 
-      // Concept 3 — Les 4 yield durations : Macaulay, modified, money duration, PVBP (officielle, Reading 59)
+      // Concept 2 — Les 4 yield durations : Macaulay, modified, money duration, PVBP (officielle, Reading 59)
       [
         "A $100,000 par value bond has a full price of $99,300, a Macaulay duration of 6.5, and an annual modified duration of 6.1. The bond's money duration per $100 par value is closest to:",
         ["$606.", "$645.", "$6.06."],
@@ -93,33 +74,7 @@ const QUIZ_SETS = [
         "PVBP par 100 = |V(−1 pb) − V(+1 pb)|/2 = (101,4737 − 101,3264)/2 = 0,07365. AnnModDur = 0,07365/(101,40 × 0,0001) = 7,263. Valeur de marché de la position = 2 000 000 × 101,40 % = 2 028 000. Money duration = 7,263 × 2 028 000 = 14,73 millions (contrôle : PVBP de la position = 0,07365 × 20 000 = 1 473, et 1 473 × 10 000 = 14,73 millions). B applique la duration au nominal (2 000 000) au lieu du full price de la position. C oublie de diviser l'écart de prix par 2 : il mesure l'effet d'un écart de 2 pb.",
       ],
 
-      // Concept 4 — Ce qui fait varier la duration : maturité, coupon, YTM (officielle, Reading 59)
-      [
-        "An analyst has stated that, holding all else constant, an increase in the maturity of a coupon bond will typically increase its interest rate risk, and that a decrease in the coupon rate of a coupon bond will typically decrease its interest rate risk. The analyst is correct with respect to:",
-        ["neither of these effects.", "only one of these effects.", "both of these effects."],
-        1,
-        "Maturité ↑ → duration ↑ (en général) : l'analyste a raison sur ce point (exception : certaines obligations longues en forte décote). Coupon ↓ → duration ↑ : une plus grande part de la valeur repose sur le remboursement final, lointain et très sensible aux taux ; l'analyste a donc tort sur ce point (cas extrême : le zéro-coupon, duration maximale à maturité donnée). Une seule affirmation est juste, ce qui écarte A et C.",
-      ],
-      // Variante angle différent — cas limites : zéro-coupon, perpétuité, FRN
-      [
-        "Which of the following securities most likely has the highest Macaulay duration?",
-        [
-          "A 20-year zero-coupon bond yielding 6%.",
-          "A perpetual bond with annual coupons, yielding 6%.",
-          "A 30-year floating-rate note with semiannual coupon resets, whose next reset is in 4 months.",
-        ],
-        0,
-        "Zéro-coupon : un seul flux, Macaulay duration = maturité = 20 ans. Perpétuité : MacDur = (1 + y)/y = 1,06/0,06 = 17,67 ans seulement, car les flux très lointains pèsent peu une fois actualisés ; une maturité infinie ne donne PAS une duration infinie (piège de B). FRN : MacDur ≈ temps jusqu'au prochain reset, soit environ 0,33 an ; sa maturité de 30 ans ne compte pas, puisque le coupon s'ajuste aux taux du marché à chaque reset.",
-      ],
-      // Variante plus difficile — perpétuité : formule + effet d'une baisse du YTM + passage Macaulay → modified
-      [
-        "A perpetual bond pays a fixed annual coupon. Its yield to maturity falls from 5% to 4%. After the decline, its modified duration is closest to:",
-        ["20.0.", "26.0.", "25.0."],
-        2,
-        "Perpétuité : MacDur = (1 + y)/y. À 4 % : 1,04/0,04 = 26 ans. ModDur = MacDur/(1 + y) = 26/1,04 = 25 (soit 1/y). Avant la baisse : MacDur = 1,05/0,05 = 21 et ModDur = 20. A garde la valeur initiale, comme si la duration ne dépendait pas du YTM : or YTM ↓ → duration ↑. B donne la Macaulay duration, sans la convertir en modified duration.",
-      ],
-
-      // Concept 5 — Duration et convexité approchées par bump (officielle, Reading 59)
+      // Concept 3 — Duration et convexité approchées par bump (officielle, Reading 59)
       [
         "A bond with a yield to maturity of 8.0% is priced at 96.00. If its yield increases to 8.3% its price will decrease to 94.06. If its yield decreases to 7.7% its price will increase to 98.47. The modified duration of the bond is closest to:",
         ["4.34.", "7.66.", "2.75."],
@@ -141,7 +96,7 @@ const QUIZ_SETS = [
         "ApproxModDur = (104,10 − 96,10)/(2 × 0,005 × 100) = 8,00. ApproxConvexity = (104,10 + 96,10 − 200)/(0,005² × 100) = 0,20/0,0025 = 80. %ΔP = −8 × 0,015 + ½ × 80 × 0,015² = −12,00 % + 0,90 % = −11,10 %. B ne retient que l'effet duration (premier ordre). C oublie le ½ devant le terme de convexité (+1,80 % au lieu de +0,90 %).",
       ],
 
-      // Concept 6 — Ajustement de convexité et return impact (officielle, Reading 61)
+      // Concept 4 — Ajustement de convexité et return impact (officielle, Reading 61)
       [
         "A 9-year corporate bond with a 3.25% coupon is priced at 103.96. This bond's duration and convexity are 7.8 and 69.8. If the bond's yield increases by 100 basis points, the impact on the bondholder's return is closest to:",
         ["+8.15%.", "−7.45%.", "−7.80%."],
@@ -167,33 +122,7 @@ const QUIZ_SETS = [
         "1) ModDur = 6,324/(1 + 0,04/2) = 6,20. 2) MoneyDur = 6,20 × 5 000 000 = 31 000 000 ; MoneyCon = 55 × 5 000 000 = 275 000 000. 3) ΔPV = −MoneyDur × ΔYTM + ½ × MoneyCon × ΔYTM² = −31 000 000 × (−0,008) + ½ × 275 000 000 × 0,000064 = 248 000 + 8 800 = 256 800. Nouvelle valeur = 5 256 800. A retranche le terme de convexité (248 000 − 8 800) : il est toujours positif. C utilise directement la Macaulay duration (6,324 × 5 000 000 × 0,008 = 252 960, + 8 800).",
       ],
 
-      // Concept 7 — Duration de portefeuille : moyenne pondérée vs cash-flow yield (officielle, Reading 60)
-      [
-        "Which of the following is least likely an advantage of estimating the duration of a bond portfolio as a weighted average of the durations of the bonds in the portfolio?",
-        [
-          "It is easier to calculate than the alternative.",
-          "It is theoretically more sound than the alternative.",
-          "It can be used when the portfolio contains bonds with embedded options.",
-        ],
-        1,
-        "La méthode de la moyenne pondérée (par la valeur de marché) est la plus utilisée car elle est simple (A) et s'applique aux bonds à options intégrées, dont on peut moyenner les effective durations (C). En revanche, c'est la méthode du cash-flow yield (reconstruire les flux agrégés du portefeuille et en tirer un yield et une duration) qui est théoriquement plus rigoureuse : B n'est donc PAS un avantage de la moyenne pondérée. Sa limite : elle suppose un déplacement parallèle de tous les yields du portefeuille.",
-      ],
-      // Variante angle différent — appliquer la méthode : pondérer par la valeur de marché, pas par le nominal
-      [
-        "A portfolio holds two bonds: Bond X, par value 4,000,000, priced at 80.00 per 100, modified duration 9.0; and Bond Y, par value 2,000,000, priced at 110.00 per 100, modified duration 3.0. Using the weighted-average method, the portfolio's modified duration is closest to:",
-        ["6.56.", "7.00.", "6.00."],
-        0,
-        "Les poids sont des VALEURS DE MARCHÉ : X = 4 000 000 × 80 % = 3 200 000 ; Y = 2 000 000 × 110 % = 2 200 000 ; total = 5 400 000. Duration = (3,2/5,4) × 9,0 + (2,2/5,4) × 3,0 = 5,333 + 1,222 = 6,56. B pondère par le nominal (4/6 × 9 + 2/6 × 3 = 7,00) : cela surpondère X, qui cote sous le pair. C fait une moyenne simple (9 + 3)/2, sans pondération.",
-      ],
-      // Variante plus difficile — portefeuille barbell : choc parallèle vs pentification (limite de la moyenne pondérée)
-      [
-        "A portfolio holds a 2-year bond (market value 6,000,000; modified duration 1.9) and a 20-year bond (market value 4,000,000; modified duration 14.5). Using portfolio duration, the estimated change in portfolio value for a 50 bp parallel rise in yields is X. If instead only the 20-year yield rises by 50 bp while the 2-year yield is unchanged, the approximate change in value is Y. X and Y are closest to:",
-        ["X = −347,000 / Y = −347,000", "X = −290,000 / Y = −347,000", "X = −347,000 / Y = −290,000"],
-        2,
-        "Duration du portefeuille = 0,6 × 1,9 + 0,4 × 14,5 = 1,14 + 5,80 = 6,94. Choc parallèle : X = −6,94 × 0,005 × 10 000 000 = −347 000. Pentification (seul le 20 ans monte) : il faut raisonner position par position, Y = −14,5 × 0,005 × 4 000 000 = −290 000 (le 2 ans ne bouge pas). A applique la duration de portefeuille à un choc non parallèle : c'est précisément la limite de la moyenne pondérée, qui suppose que tous les yields bougent du même montant. B inverse les deux résultats.",
-      ],
-
-      // Concept 8 — Effective duration et key rate duration (officielle, Reading 61)
+      // Concept 5 — Effective duration et key rate duration (officielle, Reading 61)
       [
         "Effective duration is more appropriate than modified duration as a measure of a bond's price sensitivity to yield changes when:",
         ["the bond contains embedded options.", "the bond has a low coupon rate and a long maturity.", "yield curve changes are not parallel."],

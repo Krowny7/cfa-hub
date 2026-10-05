@@ -1,6 +1,6 @@
 // Seed script — quiz de "drill" associé à la page 8 de la fiche PDF Fixed
 // Income (ABS Types · MBS & CMO). Contenu d'origine fourni par l'utilisateur,
-// remis au cadre à sa demande le 3 octobre 2026. Page dense : 7 concepts clés,
+// remis au cadre à sa demande le 3 octobre 2026. 5 concepts clés,
 // chacun décliné en 1 question officielle (banque de pratique CFA, Readings 66
 // et 67, corrigé vérifié contre le PDF "- Answers.pdf" correspondant) + 1
 // variante "angle différent" (même notion, mais jamais un simple changement de
@@ -12,6 +12,9 @@
 // banque : les officielles ci-dessous sont nouvelles, recopiées telles quelles
 // de la banque (en évitant les QCM déjà imprimés dans la fiche). syncQuizSets
 // retrouve l'historique de réponses en comparant le texte exact de l'énoncé.
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 3, 7 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-fixed-income-drill-page8.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -74,33 +77,7 @@ const QUIZ_SETS = [
         "Revenus du collatéral = 500 × (4,00 % + 3,50 %) = 37,5 M$. Coût des tranches de dette = 450 × (4,00 % + 1,80 %) = 26,1 M$. Commission du manager = 0,50 % × 500 = 2,5 M$. Résiduel pour l'equity = 37,5 − 26,1 − 2,5 = 8,9 M$, soit 8,9 / 50 = 17,8 % par an. Ce rendement élevé rémunère le fait que l'equity est la tranche la plus risquée : elle absorbe les pertes en premier, avec un fort effet de levier. Avec 10 M$ de pertes, le résiduel devient 8,9 − 10 = −1,1 M$, soit environ −2,2 %. B oublie la commission du manager ((37,5 − 26,1) / 50 = 22,8 %) et suppose à tort un partage des pertes au prorata. C divise le résiduel par la taille totale du collatéral (8,9 / 500 = 1,78 %) au lieu de la mise de l'equity, et inverse la subordination : ce sont les tranches de dette qui sont protégées par l'equity, pas l'inverse.",
       ],
 
-      // Concept 3 — Credit enhancement : overcollateralization, subordination, excess spread (officielle, Reading 66 Q7)
-      [
-        "A company originating an asset-backed security (ABS) has built up significant reserves within the ABS structure in order to absorb credit losses in collateral. This credit enhancement type is best described as:",
-        ["excess spread.", "credit tranching.", "overcollateralization."],
-        0,
-        "L'excess spread est la différence entre les intérêts perçus sur le collatéral et ce qui est dû aux porteurs des ABS (coupons) plus les frais ; ce surplus est mis de côté dans la structure (compte de réserve) pour absorber les pertes futures. C'est l'un des trois rehaussements de crédit internes classiques. C : le surdimensionnement (overcollateralization) signifie que la valeur du collatéral dépasse la valeur faciale des titres émis — ce n'est pas une accumulation de réserves à partir des revenus. B : le credit tranching (subordination) répartit les pertes entre classes de titres selon leur rang de priorité.",
-      ],
-      // Variante angle différent — repérer les trois mécanismes dans une structure chiffrée
-      [
-        "An SPE holds $520 million of auto loans with an average interest rate of 7.0%. It issues $400 million of senior notes with a 4.5% coupon and $100 million of subordinated notes with a 6.0% coupon. Ignoring fees, which forms of internal credit enhancement does this structure include?",
-        [
-          "Overcollateralization and excess spread only.",
-          "Subordination and overcollateralization only.",
-          "Subordination, overcollateralization, and excess spread.",
-        ],
-        2,
-        "Il faut repérer les trois mécanismes dans les chiffres. Subordination : les 100 M$ de notes subordonnées absorbent les pertes avant les 400 M$ de notes senior. Surdimensionnement : collatéral 520 M$ > titres émis 400 + 100 = 500 M$ → 20 M$ d'overcollateralization. Excess spread : intérêts perçus 520 × 7,0 % = 36,4 M$ ; coupons dus 400 × 4,5 % + 100 × 6,0 % = 18 + 6 = 24 M$ → excess spread de 12,4 M$ par an (avant frais). Les trois sont présents. A oublie que la tranche subordonnée est elle-même un rehaussement de crédit pour la tranche senior (subordination = credit tranching). B oublie l'excess spread, qui ne se lit pas dans les montants mais dans l'écart entre les taux.",
-      ],
-      // Variante plus difficile — ordre d'absorption des pertes : excess spread, puis surdimensionnement, puis mezzanine (piège des frais)
-      [
-        "An ABS structure holds $300 million of loans yielding 8.0%. It has issued $240 million of senior notes at 5.0% and $45 million of mezzanine notes at 7.0%; the remaining $15 million of collateral is overcollateralization. Servicing fees are 0.5% of the collateral per year. In Year 1, credit losses on the loans total $35 million. If losses are absorbed first by the year's excess spread, then by the overcollateralization, and then by the mezzanine notes, the principal loss on the mezzanine notes is closest to:",
-        ["$11.15 million.", "$12.65 million.", "$20.00 million."],
-        1,
-        "1) Excess spread de l'année : intérêts 300 × 8,0 % = 24,0 M$ ; coupons 240 × 5,0 % + 45 × 7,0 % = 12,0 + 3,15 = 15,15 M$ ; frais 0,5 % × 300 = 1,5 M$ → excess spread = 24,0 − 15,15 − 1,5 = 7,35 M$. 2) Pertes restantes après l'excess spread : 35 − 7,35 = 27,65 M$. 3) Le surdimensionnement de 15 M$ (300 − 240 − 45) en absorbe 15 → il reste 12,65 M$, absorbés par la mezzanine ; la tranche senior n'est pas touchée. A (11,15 M$) oublie de déduire les frais de servicing de l'excess spread (24,0 − 15,15 = 8,85 ; 35 − 8,85 − 15 = 11,15). C (20 M$) oublie complètement l'excess spread (35 − 15 = 20).",
-      ],
-
-      // Concept 4 — Pass-through : agency vs non-agency RMBS, taux pass-through, principal reversé (officielle, Reading 67 Q6)
+      // Concept 3 — Pass-through : agency vs non-agency RMBS, taux pass-through, principal reversé (officielle, Reading 67 Q6)
       [
         "An agency RMBS pool with a prepayment speed of 50 PSA will have a weighted average life that is:",
         ["equal to its weighted average maturity.", "greater than its weighted average maturity.", "less than its weighted average maturity."],
@@ -126,7 +103,7 @@ const QUIZ_SETS = [
         "Taux pass-through = taux hypothécaire − frais = 6,00 % − 0,50 % = 5,50 %. Intérêts versés aux investisseurs = 200 M$ × 5,50 % / 12 = 0,9167 M$. Principal versé = principal prévu + remboursements anticipés = 0,25 + 1,50 = 1,75 M$ (dans un pass-through, tout le principal est reversé). Total ≈ 0,9167 + 1,75 = 2,67 M$. C (2,75 M$) calcule les intérêts au taux hypothécaire de 6,00 % (1,0 M$) en oubliant que les frais de servicing et de garantie sont prélevés avant d'arriver aux investisseurs. A (1,17 M$) oublie les remboursements anticipés, qui sont pourtant intégralement reversés.",
       ],
 
-      // Concept 5 — Extension vs contraction risk (officielle, Reading 67 Q9)
+      // Concept 4 — Extension vs contraction risk (officielle, Reading 67 Q9)
       [
         "A sequential-pay CMO has two tranches. Principal is paid to Tranche S until it is paid off, after which principal is paid to Tranche R. Compared to Tranche R, Tranche S has:",
         [
@@ -156,7 +133,7 @@ const QUIZ_SETS = [
         "Risque d'extension = principal remboursé plus LENTEMENT que prévu. (1) Les taux baissent, les propriétaires refinancent massivement → remboursements plus rapides → risque de CONTRACTION, pas d'extension. (2) L'emprunteur ne peut ni payer ni refinancer le balloon à l'échéance → le principal est remboursé plus tard que prévu (prolongation, restructuration du prêt) : le balloon risk est une forme de risque d'extension. (3) Les taux montent, les propriétaires ne déménagent plus et ne refinancent plus → remboursements plus lents → extension. Réponse : 2 et 3. A (1 seulement) ne retient que la contraction. B (1 et 3) associe deux situations qui vont en sens opposés et oublie le balloon.",
       ],
 
-      // Concept 6 — CMO : tranche PAC (« tranquille ») vs tranche support (« éponge ») (officielle, Reading 67 Q4)
+      // Concept 5 — CMO : tranche PAC (« tranquille ») vs tranche support (« éponge ») (officielle, Reading 67 Q4)
       [
         "Which of the following statements concerning the support tranche in a planned amortization class (PAC) CMO backed by agency RMBS is least accurate?",
         [
@@ -188,32 +165,6 @@ const QUIZ_SETS = [
         ],
         0,
         "La tranche support est le « coussin » qui absorbe les variations de remboursements. Une fois qu'elle est entièrement remboursée (après une longue période de remboursements très rapides, au-delà de la bande), plus rien ne protège la PAC : elle reçoit désormais tout le principal, comme un pass-through ou une tranche séquentielle — on parle de « busted PAC » — et devient exposée à la contraction ET à l'extension. C'est le principe de la fiche : le tranching ne réduit pas le risque total du pool, il le répartit ; quand la tranche qui portait ce risque disparaît, il retombe sur la PAC. B est faux : la bande 100–300 PSA ne protège que tant qu'il reste de la tranche support ; ce n'est pas une garantie fixe. C confond risque de remboursement anticipé et risque de crédit : dans un CMO adossé à des RMBS d'agence, la support ne sert pas à absorber des pertes de défaut.",
-      ],
-
-      // Concept 7 — Qualité de crédit des prêts hypothécaires : recours, LTV, DTI, DSCR (officielle, Reading 67 Q5)
-      [
-        "Strategic default by a mortgage borrower is most likely if the loan is:",
-        ["non-amortizing.", "non-conforming.", "non-recourse."],
-        2,
-        "Sur un prêt sans recours (non-recourse), le prêteur ne peut saisir que le bien financé, pas les autres actifs de l'emprunteur. Si la valeur du bien tombe nettement sous le principal restant dû (LTV > 100 %), l'emprunteur a intérêt à faire un « défaut stratégique » : il cède le bien plutôt que de continuer à payer, même s'il en a les moyens. A : un prêt non amortissable (interest-only) ne réduit pas le principal, ce qui aggrave la situation si les prix baissent, mais ce n'est pas lui qui crée l'incitation — avec recours, le prêteur pourrait poursuivre l'emprunteur sur ses autres actifs. B : un prêt non conforme ne respecte pas les critères des agences (montant, LTV, DTI…) ; il est plus risqué, mais cela ne concerne pas l'incitation au défaut stratégique.",
-      ],
-      // Variante angle différent — inverser le calcul : prêt maximal compatible avec les limites de LTV et de DTI
-      [
-        "A lender limits residential mortgages to a maximum loan-to-value (LTV) ratio of 80% and a maximum debt-to-income (DTI) ratio of 36%, where DTI is the monthly mortgage payment divided by gross monthly income. A borrower with a gross monthly income of $9,000 wants to buy a $500,000 house. At current rates, the monthly payment is $9.00 per $1,000 borrowed. The maximum loan the lender will grant is closest to:",
-        ["$288,000.", "$360,000.", "$400,000."],
-        1,
-        "Il faut respecter les DEUX limites et retenir la plus contraignante. Limite LTV : prêt ≤ 80 % × 500 000 = 400 000 $. Limite DTI : mensualité ≤ 36 % × 9 000 = 3 240 $ → prêt ≤ 3 240 / 9,00 × 1 000 = 360 000 $. Le prêt maximal est donc 360 000 $ (contrainte DTI), soit un LTV effectif de 72 %. Rappel : LTV = montant du prêt / valeur du bien ; DTI = mensualités de dette / revenu brut ; plus ils sont BAS, meilleure est la qualité de crédit. C (400 000 $) n'applique que la limite LTV : la mensualité serait alors de 3 600 $, soit un DTI de 40 % > 36 %. A (288 000 $) applique les deux ratios l'un sur l'autre (80 % × 360 000) au lieu de retenir la plus basse des deux limites.",
-      ],
-      // Variante plus difficile — refinancer un balloon de CMBS : tests DSCR et LTV combinés, puis nature du risque
-      [
-        "A CMBS loan has a $20 million balloon payment due at maturity, which the borrower plans to refinance. At that date, the property's net operating income (NOI) is $1.8 million and its appraised value is $25 million. New lenders require a debt service coverage ratio (DSCR) of at least 1.25 and a loan-to-value (LTV) ratio of no more than 75%, and annual debt service on a new loan would equal 9% of the loan amount. Which statement is most accurate?",
-        [
-          "The borrower can refinance up to $18.75 million; the $1.25 million shortfall creates balloon risk, which is a form of contraction risk.",
-          "The borrower can refinance only up to $16.0 million; the $4.0 million shortfall creates balloon risk, which is a form of extension risk.",
-          "The borrower can refinance the full $20 million, because the property's NOI of $1.8 million exactly covers the $1.8 million of annual debt service on a new $20 million loan.",
-        ],
-        1,
-        "Le nouveau prêt doit passer les deux tests. LTV : prêt ≤ 75 % × 25 M$ = 18,75 M$. DSCR (NOI / service de la dette, plus il est élevé, mieux c'est) : service de la dette ≤ 1,8 / 1,25 = 1,44 M$ → prêt ≤ 1,44 / 9 % = 16,0 M$. Le plafond est le plus bas des deux : 16,0 M$, d'où un manque de 20 − 16 = 4,0 M$ pour rembourser le balloon. L'emprunteur ne peut pas refinancer à temps : c'est le balloon risk, une forme de risque d'EXTENSION (le principal est remboursé plus tard que prévu, souvent via une prolongation du prêt). A n'applique que le test LTV et se trompe de risque (la contraction, c'est un remboursement plus rapide que prévu). C prend un DSCR de 1,0 pour acceptable : sur 20 M$, le service de la dette serait 1,8 M$ = NOI, soit un DSCR de 1,0 < 1,25, avec en plus un LTV de 80 % > 75 %.",
       ],
     ],
   },

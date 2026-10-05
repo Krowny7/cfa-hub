@@ -1,12 +1,15 @@
 // Seed script — quiz de "drill" associé à la page 6 de la fiche PDF Fixed
 // Income (Corporate Credit Analysis). Le contenu d'origine de ce drill avait
 // été fourni par l'utilisateur ; il a été remis au cadre FSA / Equity à sa
-// demande le 3 octobre 2026. Structure : 7 concepts × (1 question officielle
+// demande le 3 octobre 2026. Structure : 5 concepts × (1 question officielle
 // + 1 variante "angle différent" + 1 variante "plus difficile"). Voir memory
 // regle-drill-variantes-cfa-hub. Questions en anglais, explications en
 // français. Questions officielles recopiées à l'identique (historique de
 // réponses conservé par syncQuizSets), corrigés vérifiés contre les PDF
 // "- Answers.pdf" (Readings 62 et 64 de la banque practice exams).
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 4, 7 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-fixed-income-drill-page6.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -103,33 +106,7 @@ const QUIZ_SETS = [
         "On paie chaque rang intégralement avant de passer au suivant. First lien : 250, il reste 480 − 250 = 230. Junior secured (second lien) : 150, il reste 80. Senior unsecured : 80 pour 200 de créances, soit 40 %. Senior subordinated : 0 %. 27 % (= 80 / 300) met à tort la senior subordinated au même rang que la senior unsecured à cause du mot « senior ». 100 % fait passer la senior unsecured avant la junior secured (230 couvriraient alors ses 200) : or toute dette sécurisée, même « junior », passe avant la dette non sécurisée.",
       ],
 
-      // Concept 4 — Recouvrement, faillite et cross-default (officielle, Reading 64)
-      [
-        "A portfolio manager notes to a colleague that recovery rates are the highest for debt with the highest priority of claims. She further notes that during bankruptcy proceedings, courts strictly observe the priority of claims to ensure fairness across different classes of creditors. The manager is correct with respect to:",
-        ["priority of claims only.", "bankruptcy proceedings only.", "both priority of claims and bankruptcy proceedings."],
-        0,
-        "Première affirmation, vraie : plus le rang est élevé, plus le taux de recouvrement est élevé (et plus le risque de crédit est faible). Seconde affirmation, fausse : en pratique, les tribunaux s'écartent souvent de la priorité stricte et accordent des paiements aux créanciers de rang inférieur (voire aux actionnaires) pour accélérer une procédure longue et incertaine. Seule la partie sur la priorité des créances est correcte, d'où A ; B et C valident à tort l'idée d'une priorité strictement respectée.",
-      ],
-      // Variante angle différent — le cross-default : ce qu'il déclenche et ce qu'il ne change pas
-      [
-        "An issuer misses a coupon payment on one of its bond issues. Its other bond issues contain cross-default clauses. Which statement is most accurate?",
-        [
-          "The other issues become pari passu with the bond on which the payment was missed.",
-          "The bond on which the payment was missed drops to the lowest priority of claims.",
-          "The other issues are also considered to be in default, but their relative priority of claims is unchanged.",
-        ],
-        2,
-        "Une clause de cross-default prévoit qu'un défaut sur une obligation de l'émetteur vaut défaut sur l'émission qui contient la clause : tous les instruments concernés tombent en défaut en même temps. En revanche, elle ne touche pas à l'ordre de priorité : la dette sécurisée reste payée avant la senior unsecured, elle-même avant la subordonnée. Les réponses A et B inventent une modification des rangs, que ni le défaut ni la clause ne provoquent.",
-      ],
-      // Variante plus difficile — priorité absolue vs plan négocié (écart à la priorité), cross-default en contexte
-      [
-        "A company files for bankruptcy; cross-default clauses put all its bonds in default at the same time. The reorganized firm is valued at $560 million. Claims are: secured debt of $300 million, senior unsecured debt of $400 million, and subordinated debt of $100 million. To speed up approval of the plan, subordinated holders receive $16 million and shareholders $8 million, even though senior unsecured creditors are not paid in full. The recovery rates of the senior unsecured creditors under strict absolute priority and under this plan are closest to:",
-        ["65% and 59%.", "65% and 65%.", "70% and 67%."],
-        0,
-        "Priorité absolue : la dette sécurisée reçoit 300 (100 %), il reste 560 − 300 = 260 pour la senior unsecured, soit 260 / 400 = 65 % ; subordonnés et actionnaires : 0. Plan négocié : les 16 + 8 = 24 M$ accordés aux rangs inférieurs sortent de la classe qui n'est pas payée en entier, la senior unsecured : (260 − 24) / 400 = 236 / 400 = 59 %. La réponse « 65 % et 65 % » suppose que les tribunaux respectent strictement la priorité, ce qui est justement faux en pratique (voir la question officielle). La réponse « 70 % et 67 % » partage la valeur au prorata de toutes les dettes (560 / 800, puis 536 / 800), comme si le cross-default mettait toutes les dettes au même rang : il les fait tomber en défaut ensemble, sans changer leur priorité.",
-      ],
-
-      // Concept 5 — Holding / subsidiary : subordination structurelle (officielle, Reading 64)
+      // Concept 4 — Holding / subsidiary : subordination structurelle (officielle, Reading 64)
       [
         "Miko Corp. (Miko) is an electronics manufacturer which frequently issues senior unsecured bonds. Miko's largest subsidiary, BluTech Inc. (BluTech), also issues senior unsecured bonds. BluTech's debt covenants prohibit transferring cash to the parent before BluTech's debt obligations are satisfied. Based on this scenario:",
         [
@@ -159,7 +136,7 @@ const QUIZ_SETS = [
         "L'argent « descend » d'abord vers TOUS les créanciers d'OpCo, obligataires et fournisseurs : 650 − 500 − 50 = 100 M$. Seul ce reliquat remonte à HoldCo, en tant qu'actionnaire d'OpCo : recouvrement des obligataires de HoldCo = 100 / 300 ≈ 33 %. 50 % (= 150 / 300) oublie les dettes fournisseurs d'OpCo, qui sont aussi des créanciers de la filiale. 76 % (= 650 / 850) met toutes les créances au même rang, ce qui nie la subordination structurelle. Le coupon de 7 % est une donnée-piège : il ne change rien au partage en cas de défaut.",
       ],
 
-      // Concept 6 — Issuer credit rating et notching (officielle, Reading 64)
+      // Concept 5 — Issuer credit rating et notching (officielle, Reading 64)
       [
         "Derek Steele is a corporate credit analyst at a credit rating agency. He currently rates the 2043 maturity senior secured bonds of BBD Enterprises at A+. BBD has now requested a corporate family rating as well. The most likely rating that Steele would recommend in a rating committee for the corporate family rating is:",
         ["lower than A+.", "higher than A+.", "A+."],
@@ -187,36 +164,6 @@ const QUIZ_SETS = [
         ],
         0,
         "Trois étapes. Ancre : la note de l'émetteur correspond à sa dette senior unsecured. Sens : une dette subordonnée passe après la senior unsecured, elle est notchée vers le BAS. Largeur : environ un cran en investment grade, deux crans en speculative grade, car le recouvrement compte davantage quand le défaut est plus probable. X (A3/A−) perd un cran : Baa1/BBB+. Y (B1/B+) perd deux crans : B2/B puis B3/B−. La réponse B applique les largeurs à l'envers (deux crans pour X, un pour Y). La réponse C n'applique aucun notching, comme si seule la POD comptait.",
-      ],
-
-      // Concept 7 — Capacity : structure du secteur et Porter's five forces (officielle, Reading 62)
-      [
-        "Which component of traditional credit analysis includes evaluation of industry structure, industry fundamentals, and company fundamentals?",
-        ["Capacity.", "Covenants.", "Collateral."],
-        0,
-        "La capacity (capacité de l'emprunteur à rembourser) s'analyse de façon top-down, comme en analyse actions : structure du secteur (par exemple les cinq forces de Porter), fondamentaux du secteur, puis fondamentaux de l'entreprise. La réponse C (collateral) porte sur la valeur et la qualité des actifs de l'émetteur. La réponse B (covenants) porte sur les clauses du contrat d'émission.",
-      ],
-      // Variante angle différent — appliquer les cinq forces : quelle structure de secteur protège le mieux les créanciers
-      [
-        "From a bondholder's perspective, which industry characteristic is most favorable to an issuer's capacity to repay?",
-        [
-          "Customers face low switching costs and can choose among many close substitutes.",
-          "Many competitors with high fixed costs operate in a slow-growing market.",
-          "High barriers to entry and a fragmented base of suppliers of a commoditized input.",
-        ],
-        2,
-        "Une force concurrentielle forte comprime les marges ; une force faible les protège. Des barrières à l'entrée élevées (menace d'entrants faible) et des fournisseurs nombreux d'un intrant banalisé (pouvoir des fournisseurs faible) protègent les marges, donc des cash flows plus stables pour servir la dette. La réponse A combine un fort pouvoir des clients (coûts de changement faibles) et une forte menace de substituts : marges sous pression. La réponse B décrit une rivalité intense : des coûts fixes élevés dans un marché à faible croissance poussent à la guerre des prix.",
-      ],
-      // Variante plus difficile — marge actuelle élevée vs marge protégée : à levier égal, quel crédit est le plus solide ?
-      [
-        "Companies A and B both have debt/EBITDA of 3.0x. Company A earns a 30% EBITDA margin in an industry with low barriers to entry, where several new competitors have announced plans to enter, attracted by those margins. Company B earns an 18% EBITDA margin as a regulated network operator facing few substitutes, with customers bound by long-term contracts. Based on Porter's five forces, which statement is most accurate?",
-        [
-          "Company A is the stronger credit, because its higher margin gives it more cash flow to service the same leverage.",
-          "Company B is the stronger credit, because weak competitive forces make its margins and cash flows more stable and predictable over the life of its debt.",
-          "Both companies are equally strong credits, because credit analysis relies mainly on leverage ratios, which are identical.",
-        ],
-        1,
-        "Le créancier se soucie de la capacité de remboursement sur toute la durée de la dette, pas seulement aujourd'hui. Chez A, la menace d'entrants est forte (barrières faibles, concurrents annoncés) : la marge de 30 % attire la concurrence et a de bonnes chances d'être comprimée, ce qui fera remonter le levier. Chez B, barrières élevées, peu de substituts et clients sous contrats longs : les forces sont faibles, les marges protégées, les cash flows prévisibles. À levier égal, B est le meilleur crédit. La réponse A confond rentabilité actuelle et solidité future. La réponse C oublie que la capacity s'analyse d'abord par la structure du secteur : un même ratio n'a pas la même solidité selon la stabilité de l'EBITDA qui le compose.",
       ],
     ],
   },

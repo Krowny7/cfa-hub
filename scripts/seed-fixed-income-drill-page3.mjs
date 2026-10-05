@@ -1,7 +1,7 @@
 // Seed script — quiz de "drill" associé à la page 3 de la fiche PDF Fixed
 // Income (Yields, Spreads & Term Structure). Le contenu d'origine de ce drill
 // venait de l'utilisateur ; il a été remis au cadre FSA / Equity à sa demande
-// le 3 octobre 2026. Structure : pour chacun des 6 concepts clés de la page,
+// le 3 octobre 2026. Structure : pour chacun des 5 concepts clés de la page,
 // 1 question officielle (banque de pratique CFA, Readings 55, 56 et 57,
 // corrigé vérifié contre les PDF "- Answers.pdf" correspondants) + 1 variante
 // "angle différent" (même notion, mais jamais un simple changement de
@@ -11,6 +11,9 @@
 // français. Les QCM imprimés dans le PDF (page 6) ne sont pas repris.
 // Les questions officielles sont recopiées à l'identique : syncQuizSets
 // retrouve l'historique de réponses en comparant le texte exact de l'énoncé.
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concept d'origine 6 retiré de la fiche, ses
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-fixed-income-drill-page3.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -149,36 +152,6 @@ const QUIZ_SETS = [
         ["4.34%.", "4.68%.", "5.21%."],
         1,
         "2y5y = taux qui démarre dans 2 ans et dure 5 ans, donc finit en 2 + 5 = 7 ans : il faut z2 et z7 (le taux spot 5 ans est une donnée-piège). 2y5y = [(1,042)⁷/(1,03)²]^(1/5) − 1 = (1,33375/1,06090)^(1/5) − 1 = (1,25719)^(0,2) − 1 = 4,68 % (l'approximation (7 × 4,20 − 2 × 3,00)/5 = 4,68 % le confirme). A utilise z5 comme si la période finissait en année 5 : c'est le 2y3y (4,34 %). C calcule le 5y2y, [(1,042)⁷/(1,038)⁵]^(1/2) − 1 = 5,21 % : A et B ont été inversés.",
-      ],
-
-      // Concept 6 — Par curve vs spot curve : le YTM d'un bond à coupon est un mélange des taux spot (officielle, Reading 57)
-      [
-        "A 10-year spot rate is least likely the:",
-        [
-          "appropriate discount rate on the year 10 cash flow for a 20-year bond.",
-          "yield-to-maturity on a 10-year coupon bond.",
-          "yield-to-maturity on a 10-year zero-coupon bond.",
-        ],
-        1,
-        "Un taux spot 10 ans est le taux d'un flux UNIQUE reçu dans 10 ans : c'est le YTM d'un zéro-coupon 10 ans (C) et le bon taux d'actualisation du flux de l'année 10 de n'importe quel bond plus long, par exemple un 20 ans (A). Le YTM d'un bond à coupon 10 ans, lui, est une moyenne (complexe) des taux spot applicables à chacun de ses flux, de l'année 1 à l'année 10 : il ne coïncide pas avec le taux spot 10 ans, sauf si la courbe est plate.",
-      ],
-      // Variante angle différent — appliquer la définition : calculer le par rate à partir des taux spot
-      [
-        "Government spot rates are 2.0% (1 year), 3.0% (2 years), and 4.0% (3 years). The 3-year par rate is closest to:",
-        ["3.00%.", "4.00%.", "3.95%."],
-        2,
-        "Le par rate est le coupon c qui fait valoir exactement 100 au bond : c × (DF1 + DF2 + DF3) + DF3 = 1, avec DF1 = 1/1,02 = 0,98039, DF2 = 1/1,03² = 0,94260, DF3 = 1/1,04³ = 0,88900. Somme = 2,81198 → c = (1 − 0,88900)/2,81198 = 3,95 %. Sur une courbe montante, par rate < taux spot de même maturité : les coupons des premières années sont actualisés à des taux spot plus bas, ce qui tire la moyenne vers le bas. B prend le taux spot 3 ans, qui n'est le par rate que sur une courbe plate. A fait la moyenne simple des taux spot, sans pondération par les flux.",
-      ],
-      // Variante plus difficile — courbe inversée : par rate vs spot, puis prix d'un bond dont le coupon égale le taux spot
-      [
-        "Government spot rates are 5.0% (1 year), 4.5% (2 years), and 4.0% (3 years). Which statement about 3-year government bonds is most accurate?",
-        [
-          "The 3-year par rate is about 4.03%, above the 3-year spot rate, so a 3-year 4% annual-pay bond trades slightly below par (about 99.93).",
-          "The 3-year par rate is about 3.97%, below the 3-year spot rate, so a 3-year 4% annual-pay bond trades slightly above par.",
-          "The 3-year par rate equals the 3-year spot rate of 4.0%, so a 3-year 4% annual-pay bond trades exactly at par.",
-        ],
-        0,
-        "DF1 = 1/1,05 = 0,95238 ; DF2 = 1/1,045² = 0,91573 ; DF3 = 1/1,04³ = 0,88900 ; somme = 2,75711. Par rate = (1 − 0,88900)/2,75711 = 4,03 %. Sur une courbe inversée, les taux spot courts ÉLEVÉS tirent la moyenne vers le haut : par rate > spot. Un bond 3 ans à 4 % paie donc un coupon inférieur au par rate et cote sous le pair : 4 × 2,75711 + 100 × 0,88900 = 99,93. B applique à tort la règle de la courbe montante (par < spot). C n'est vrai que sur une courbe plate.",
       ],
     ],
   },

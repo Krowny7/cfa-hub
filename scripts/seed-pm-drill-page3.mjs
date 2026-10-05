@@ -1,6 +1,6 @@
 // Seed script — quiz de "drill" associé à la page 3 de la fiche PDF Portfolio
 // Management (Portfolio Management: An Overview). Structure : pour chacun des
-// 7 concepts clés de la page, 1 question officielle (banque de pratique CFA,
+// 5 concepts clés de la page, 1 question officielle (banque de pratique CFA,
 // Reading 85, corrigé vérifié contre le PDF "- Answers.pdf" correspondant) +
 // 1 variante "angle différent" (même notion, mais jamais un simple changement
 // de chiffres menant au même raisonnement) + 1 variante "plus difficile"
@@ -9,6 +9,9 @@
 // Remis au cadre FSA / Equity le 3 octobre 2026 : l'ancienne version avait ses
 // énoncés en français, aucun n'a donc pu être repris à l'identique.
 // syncQuizSets met le set à jour en place et garde l'historique des énoncés inchangés.
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 5, 7 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-pm-drill-page3.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -135,37 +138,7 @@ const QUIZ_SETS = [
         "R promet une prestation (1,5 % du salaire final par année de service) : c'est un régime DB, l'employeur porte le risque d'investissement ET le risque de longévité (une rente plus longue à payer si les retraités vivent plus longtemps). S fixe la cotisation (6 %) : c'est un régime DC, son obligation s'éteint une fois les cotisations versées. B confond les deux : ce qui définit le régime, c'est ce qui est garanti (la prestation en DB, la cotisation en DC), pas le fait que l'employeur cotise. C est le piège : proposer un menu de fonds ne transfère pas le risque à l'employeur, c'est l'employé qui choisit ses placements et en supporte le résultat.",
       ],
 
-      // Concept 5 — L'industrie de la gestion d'actifs : actif vs passif (officielle)
-      [
-        "Which of the following statements about active and passive asset management is most accurate?",
-        [
-          "Active management has been gaining market share over time versus passive management.",
-          "Passive management’s share of industry revenues is smaller than its share of assets under management.",
-          "Active management may use fundamental analysis, technical analysis, or a “smart beta” approach to outperform a chosen benchmark.",
-        ],
-        1,
-        "La gestion passive facture des frais bien plus bas que la gestion active : sa part des revenus du secteur est donc plus petite que sa part des actifs gérés. A est faux : c'est la gestion PASSIVE qui gagne des parts de marché au fil du temps (l'active reste majoritaire, environ 4/5 du marché selon la fiche, mais elle recule). C est faux à cause du « smart beta » : c'est une stratégie PASSIVE, qui suit un indice construit sur un facteur de risque spécifique ; analyse fondamentale et technique relèvent bien, elles, de la gestion active.",
-      ],
-      // Variante angle différent — ce qui N'EST PAS vrai sur la structure du secteur (buy-side, specialist, multi-boutique)
-      [
-        "Which of the following statements about the asset management industry is least accurate?",
-        [
-          "A specialist asset manager offers a broad range of asset classes and investment styles to its clients.",
-          "Asset managers are buy-side firms, while the broker-dealers that sell trading and research services to them are sell-side firms.",
-          "A multi-boutique firm is a holding company that owns several specialist asset managers.",
-        ],
-        0,
-        "A est l'affirmation fausse : offrir une large gamme de classes d'actifs et de styles, c'est la définition d'un gérant FULL-SERVICE. Un specialist se concentre au contraire sur une stratégie ou une classe d'actifs particulière. B est exacte : les gérants d'actifs sont le buy-side (ils achètent des titres et des services pour leurs clients), les brokers-dealers le sell-side (ils leur vendent exécution et recherche). C est exacte : une multi-boutique est une holding qui regroupe plusieurs specialists, chacun gardant sa spécialité.",
-      ],
-      // Variante plus difficile — calculer la part de revenus de la gestion passive (pièges : part d'actifs, rapport de frais)
-      [
-        "In an asset management market, passive strategies account for 40% of assets under management and charge an average fee of 0.10% of assets per year, while active strategies account for the remaining 60% and charge an average fee of 0.70%. Passive management's share of the industry's total fee revenue is closest to:",
-        ["40.0%.", "8.7%.", "12.5%."],
-        1,
-        "Pour 100 d'actifs : revenus passifs = 40 × 0,10 % = 0,04 ; revenus actifs = 60 × 0,70 % = 0,42 ; total = 0,46. Part du passif = 0,04 / 0,46 = 8,7 %. C'est la mécanique de la question officielle : des frais plus bas rendent la part des revenus (8,7 %) bien inférieure à la part des actifs (40 %). A (40 %) confond part des actifs et part des revenus. C (12,5 %) ne compare que les taux de frais, 0,10 / (0,10 + 0,70), en oubliant de pondérer par les actifs gérés.",
-      ],
-
-      // Concept 6 — Fonds ouverts, fermés et ETF : prix et NAV (officielle)
+      // Concept 5 — Fonds ouverts, fermés et ETF : prix et NAV (officielle)
       [
         "Open-end mutual funds differ from closed-end funds in that:",
         [
@@ -193,36 +166,6 @@ const QUIZ_SETS = [
         ["The open-end mutual fund.", "The closed-end fund.", "The exchange-traded fund."],
         2,
         "On teste chaque véhicule sur les trois critères. Fonds ouvert : (2) oui, on traite à la NAV, mais (1) non, le prix n'est fixé qu'une fois par jour, à la clôture, et (3) non, il distribue les plus-values réalisées quand il vend des titres pour honorer les rachats. Fonds fermé : (1) oui, il cote en continu, mais (2) non, il peut traiter avec une prime ou une décote importante. ETF : (1) cotation continue, (2) l'arbitrage maintient le prix près de la NAV, (3) les rachats en nature limitent les distributions de plus-values (fiche : « pas de distrib. »). Seul l'ETF remplit les trois.",
-      ],
-
-      // Concept 7 — SMA, hedge funds, private equity (buyout), venture capital (officielle)
-      [
-        "A pooled investment fund buys all the shares of a publicly traded company. The fund reorganizes the company and replaces its management team. Three years later, the fund exits the investment through an initial public offering of the company's shares. This pooled investment fund is best described as a(n):",
-        ["event-driven fund.", "private equity fund.", "venture capital fund."],
-        1,
-        "Racheter une société cotée en entier (la retirer de la cote), la réorganiser, changer l'équipe dirigeante puis sortir au bout de 3 à 5 ans (ici par une IPO) : c'est un fonds de private equity de type buyout. A est faux : un fonds event-driven est un hedge fund qui prend des positions autour d'événements (fusions, acquisitions), sans prendre le contrôle de l'entreprise. C est faux : le venture capital finance des start-ups, pas le rachat d'une société cotée établie.",
-      ],
-      // Variante angle différent — ce qui N'EST PAS vrai sur les SMA (piège du minimum d'investissement)
-      [
-        "Which of the following statements about separately managed accounts (SMAs) is least accurate?",
-        [
-          "In an SMA, the investor directly owns the individual securities in the account.",
-          "An SMA can be tailored to the investor's specific tax situation and investment restrictions.",
-          "An SMA typically requires a lower minimum investment than a mutual fund.",
-        ],
-        2,
-        "C est l'affirmation fausse, et c'est l'erreur fréquente signalée par la fiche : un SMA exige un minimum d'investissement PLUS ÉLEVÉ qu'un fonds mutuel, puisqu'il est géré pour un seul investisseur. A est exacte : contrairement à un véhicule collectif, le portefeuille appartient directement à l'investisseur. B est exacte : c'est justement l'avantage d'un compte individuel, qui peut intégrer la fiscalité et les restrictions propres au client.",
-      ],
-      // Variante plus difficile — reconnaître un fonds de VC malgré une donnée-piège qui évoque un hedge fund
-      [
-        "A pooled investment fund takes minority equity stakes in a large number of early-stage companies, uses little or no borrowing, and expects most of its investments to fail while a few succeed spectacularly. The fund is open only to qualified investors, with a minimum investment of $500,000. This fund is best described as a:",
-        [
-          "venture capital fund, which, compared with a buyout fund, holds more and smaller positions and uses much less leverage.",
-          "buyout fund, because it takes equity stakes in private companies and is restricted to qualified investors.",
-          "hedge fund, because it is lightly regulated, restricted to qualified investors, and has a high minimum investment.",
-        ],
-        0,
-        "Les caractéristiques décisives : beaucoup de petites participations dans de jeunes entreprises, peu ou pas de dette, la majorité des investissements échouent et quelques succès font la performance. C'est le profil du venture capital. Un fonds de buyout (B) fait l'inverse : peu de participations, des sociétés établies rachetées en entier avec beaucoup de dette. La réserve aux investisseurs qualifiés et le minimum de 500 000 $ sont la donnée-piège : ils rappellent les hedge funds (C), mais ils sont communs à la plupart des véhicules alternatifs et ne permettent pas de les distinguer.",
       ],
     ],
   },

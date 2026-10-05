@@ -3,6 +3,7 @@
 // script par topic. Format question partout : [prompt, choices[3],
 // correct_index, explanation].
 import { createClient } from "@supabase/supabase-js";
+import { exigerLangues } from "./langue.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -69,6 +70,7 @@ export async function ensureFolder(ownerId, folderName, kind) {
 
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) {
+  exigerLangues(sets); // énoncé et choix en anglais, explication en français (scripts/lib/langue.mjs)
   const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
   // is_official (pas owner_id) : le contenu Système remplacé peut avoir été
   // créé par un autre compte admin — voir la note sur ensureFolder.
@@ -114,14 +116,33 @@ export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) 
   return total;
 }
 
+// La série de réserve d'un set : « Réserve — <titre> », officielle mais non
+// publiée (ni fiche, ni banque, ni QCM : la fiche lit ses sets par début de
+// titre). Créée au premier besoin.
+async function serieReserve({ ownerId, folderId, title, difficulty }) {
+  const reserve = `Réserve — ${title}`;
+  const { data: found, error } = await supabase.from("quiz_sets").select("id").eq("is_official", true).eq("title", reserve);
+  if (error) throw error;
+  if (found?.length) return found[0].id;
+  const { data: created, error: insErr } = await supabase
+    .from("quiz_sets")
+    .insert({ title: reserve, visibility: "private", subject: "cfa", owner_id: ownerId, folder_id: folderId, is_official: true, official_published: false, cfa_level: 1, difficulty: difficulty ?? 2 })
+    .select("id")
+    .single();
+  if (insErr) throw insErr;
+  return created.id;
+}
+
 // Comme seedQuizSets, mais met le set à jour EN PLACE au lieu de le supprimer
 // puis le recréer : le journal de réponses (quiz_answer_log, en ON DELETE
 // CASCADE sur set_id et question_id) est ainsi conservé. Une question déjà en
 // base dont l'énoncé est identique garde son id (et donc son historique) ;
-// les nouvelles sont insérées ; celles qui ne figurent plus dans la liste sont
-// supprimées (avec leur historique).
+// les nouvelles sont insérées ; celles qui ne figurent plus dans la liste (et
+// les doublons d'énoncé) sont rangées dans sa série de réserve, non publiée,
+// avec leur historique : rien n'est effacé.
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function syncQuizSets({ ownerId, folderId, sets }) {
+  exigerLangues(sets); // énoncé et choix en anglais, explication en français (scripts/lib/langue.mjs)
   let total = 0;
   for (const set of sets) {
     const { data: found, error: findErr } = await supabase
@@ -146,6 +167,7 @@ export async function syncQuizSets({ ownerId, folderId, sets }) {
     }
     const free = new Map();
     for (const q of existing) if (!free.has(q.prompt)) free.set(q.prompt, q.id);
+    const matched = new Set();
 
     let kept = 0;
     const inserts = [];
@@ -153,6 +175,7 @@ export async function syncQuizSets({ ownerId, folderId, sets }) {
       const id = free.get(prompt);
       if (id) {
         free.delete(prompt);
+        matched.add(id);
         const { error } = await supabase.from("quiz_questions").update({ choices, correct_index, explanation, position: i + 1 }).eq("id", id);
         if (error) throw error;
         kept++;
@@ -164,12 +187,19 @@ export async function syncQuizSets({ ownerId, folderId, sets }) {
       const { error } = await supabase.from("quiz_questions").insert(inserts);
       if (error) throw error;
     }
-    const stale = [...free.values()];
+    // retirées du set (doublons d'énoncé compris) : pas effacées, rangées dans
+    // une série de réserve non publiée, avec leur historique de réponses
+    const stale = existing.map((q) => q.id).filter((id) => !matched.has(id));
     if (stale.length) {
-      const { error } = await supabase.from("quiz_questions").delete().in("id", stale);
-      if (error) throw error;
+      const reserveId = await serieReserve({ ownerId, folderId, title: set.title, difficulty: set.difficulty });
+      const { data: last } = await supabase.from("quiz_questions").select("position").eq("set_id", reserveId).order("position", { ascending: false }).limit(1);
+      let pos = (last?.[0]?.position ?? 0) + 1;
+      for (const id of stale) {
+        const { error } = await supabase.from("quiz_questions").update({ set_id: reserveId, position: pos++ }).eq("id", id);
+        if (error) throw error;
+      }
     }
-    console.log(`  ✓ QCM "${set.title}" — ${set.questions.length} questions (${kept} conservées avec leur historique, ${inserts.length} ajoutées, ${stale.length} retirées)`);
+    console.log(`  ✓ QCM "${set.title}" — ${set.questions.length} questions (${kept} conservées avec leur historique, ${inserts.length} ajoutées, ${stale.length} rangées dans la réserve)`);
     total += set.questions.length;
   }
   return total;
@@ -177,6 +207,7 @@ export async function syncQuizSets({ ownerId, folderId, sets }) {
 
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedExerciseSets({ ownerId, folderId, sets, oldTitles = [] }) {
+  exigerLangues(sets); // énoncé et choix en anglais, explication en français (scripts/lib/langue.mjs)
   const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
   // is_official (pas owner_id) — voir la note sur seedQuizSets.
   const { data: toDelete } = await supabase.from("exercise_sets").select("id").eq("is_official", true).in("title", titlesToDelete);
@@ -264,7 +295,11 @@ export async function seedFlashcardSets({ ownerId, folderId, sets, oldTitles = [
 }
 
 export function loadJson(scratchpadFile) {
-  const base = "C:\\Users\\chaum\\AppData\\Local\\Temp\\claude\\C--Users-chaum-Documents-M-moire-Code-memoire\\93b73519-41cb-401d-844c-42e8f5c2d955\\scratchpad";
+  // dossier des JSON source, passé par l'environnement (jamais de chemin local
+  // codé en dur dans le dépôt : un antislash suivi d'un chiffre hexadécimal
+  // casse le CSS Tailwind du site)
+  const base = process.env.RL_SEED_DATA;
+  if (!base) throw new Error("RL_SEED_DATA : indique le dossier des fichiers JSON source (ex. RL_SEED_DATA=... node scripts/seed-xxx.mjs)");
   return JSON.parse(readFileSync(join(base, scratchpadFile), "utf8"));
 }
 

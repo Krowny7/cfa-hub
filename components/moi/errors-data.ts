@@ -107,13 +107,19 @@ export async function getFicheErrors(supabase: SupabaseClient, reader: SupabaseC
   const setIds = [...new Set(ids.map((id) => setOfQuestion.get(id)).filter((x): x is string => !!x))];
   const titles = new Map<string, string>();
   const prompts = new Map<string, string>();
+  // questions sorties de leur page (rangées dans une réserve quand une fiche
+  // est raccourcie) : plus rien à reprendre sur la fiche, on ne les compte plus
+  const retirees = new Set<string>();
   try {
     const [{ data: sets }, { data: questions }] = await Promise.all([
       reader.from("quiz_sets").select("id,title").in("id", setIds),
-      reader.from("quiz_questions").select("id,prompt").in("id", ids.slice(0, 1000)),
+      reader.from("quiz_questions").select("id,prompt,set_id").in("id", ids.slice(0, 1000)),
     ]);
     (sets ?? []).forEach((s: { id: string; title: string }) => titles.set(s.id, s.title));
-    (questions ?? []).forEach((q: { id: string; prompt: string }) => prompts.set(q.id, q.prompt));
+    (questions ?? []).forEach((q: { id: string; prompt: string; set_id: string }) => {
+      prompts.set(q.id, q.prompt);
+      if (q.set_id !== setOfQuestion.get(q.id)) retirees.add(q.id);
+    });
   } catch {
     // titres indisponibles : on garde les compteurs
   }
@@ -133,8 +139,11 @@ export async function getFicheErrors(supabase: SupabaseClient, reader: SupabaseC
     };
   };
 
-  const items = pool.map((p) => itemOf(p.id, p.wrong)).sort((a, b) => (a.lastWrongAt < b.lastWrongAt ? 1 : -1));
-  const rayees = rayeesIds.map((id) => ({ ...itemOf(id, states.get(id)?.wrong ?? 1), clearedAt: clearedAt.get(id) ?? null }));
+  const items = pool
+    .filter((p) => !retirees.has(p.id))
+    .map((p) => itemOf(p.id, p.wrong))
+    .sort((a, b) => (a.lastWrongAt < b.lastWrongAt ? 1 : -1));
+  const rayees = rayeesIds.filter((id) => !retirees.has(id)).map((id) => ({ ...itemOf(id, states.get(id)?.wrong ?? 1), clearedAt: clearedAt.get(id) ?? null }));
 
   const byFiche = new Map<string, FicheErrorGroup>();
   for (const it of items) {

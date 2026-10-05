@@ -1,6 +1,6 @@
 // Seed script — quiz de "drill" associé à la page 5 de la fiche PDF Portfolio
 // Management (The Behavioral Biases of Individuals). Structure : pour chacun
-// des 6 concepts clés de la page, 1 question officielle (banque de pratique
+// des 5 concepts clés de la page, 1 question officielle (banque de pratique
 // CFA, Reading 87 « The Behavioral Biases of Individuals », bonne réponse
 // vérifiée dans le corrigé « - Answers.pdf ») + 1 variante "angle différent"
 // (même notion, jamais un simple changement de chiffres ou de formulation)
@@ -11,6 +11,9 @@
 // français) est remplacée. Les QCM imprimés dans le PDF ne sont pas repris.
 // syncQuizSets met le set à jour en place et garde l'historique de réponses
 // de tout énoncé inchangé (comparaison sur le texte exact).
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concept d'origine 5 retiré de la fiche, ses
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-pm-drill-page5.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -141,37 +144,7 @@ const QUIZ_SETS = [
         "Client 1 s'attribue les gains et impute les pertes à la malchance : c'est le self-attribution bias, qui nourrit l'overconfidence (d'où les transactions trop fréquentes). Client 2 ne touche jamais à l'allocation par défaut de son plan malgré des changements de situation : status quo bias (confort de l'existant, force de l'option par défaut). Client 3 n'agit pas de peur de se reprocher une erreur d'action et suit ses amis : regret aversion, dont le herding est une forme. Les trois sont des biais émotionnels. A se trompe sur le client 1 — croire influencer un résultat (illusion of control) n'est pas la même chose que s'attribuer le mérite des gains et rejeter la faute des pertes — et sur le client 3, qui n'a aucune perte à éviter de réaliser : elle redoute le regret d'avoir agi. C confond status quo et conservatism : le conservatism consiste à ne pas réviser une prévision ou une opinion face à une information nouvelle ; ici, il n'y a pas de prévision, seulement l'inertie d'une allocation par défaut.",
       ],
 
-      // Concept 5 — Conséquences sur le portefeuille : sous-diversification et home bias (officielle, Reading 87 Q5)
-      [
-        "Evidence that investors hold portfolios that are less diversified than traditional finance would suggest may be best explained by:",
-        ["fear of regret.", "anchoring.", "overconfidence."],
-        2,
-        "L'overconfidence (surestimer ses capacités de raisonnement ou de prévision) conduit à sous-estimer le risque, à trop trader et à sous-diversifier : l'investisseur qui croit savoir quels titres vont surperformer ne voit pas l'utilité de diversifier. A (fear of regret) explique plutôt que des investisseurs sceptiques restent investis dans un marché surévalué, de peur de rater la hausse. B (anchoring) pousse à croire que les plus hauts récents sont des prix rationnels même quand les cours commencent à baisser. À noter (fiche) : l'illusion of control et le confirmation bias contribuent aussi à la sous-diversification, mais ils ne figurent pas parmi les choix.",
-      ],
-      // Variante angle différent — un autre écart à la finance traditionnelle (home bias), sous l'angle de ce qui N'EN EST PAS une explication
-      [
-        "Investors tend to hold a much larger share of domestic stocks than a global market-capitalization-weighted portfolio would suggest. Which of the following is least likely to be offered as an explanation for this home bias?",
-        [
-          "A belief that they have better access to information about domestic companies.",
-          "An emotional preference for investing in companies “closer to home.”",
-          "Compensation for additional risk borne by domestic stocks, as captured by a multifactor model.",
-        ],
-        2,
-        "Le home bias (surpondérer les entreprises de son pays, ou de sa région) s'explique par un avantage informationnel PERÇU (A : l'investisseur pense mieux connaître les entreprises proches) ou par un confort psychologique, l'envie d'investir « près de chez soi » (B). C n'est pas une explication du home bias : la rémunération d'un risque supplémentaire capté par un modèle multifactoriel est l'explication rationnelle (Fama-French) de la surperformance des value stocks. Le home bias, lui, réduit la diversification sans contrepartie de rendement : il n'est pas présenté comme la rémunération d'un risque.",
-      ],
-      // Variante plus difficile — un cas qui combine sous-diversification, home bias régional et une donnée-piège (le rendement passé)
-      [
-        "Paul works for a regional bank and holds 50% of his portfolio in its shares; most of the rest is invested in other companies headquartered in his region. He says that his own work at the bank helps determine how its shares perform, he reads only the bank's upbeat internal reports, and he likes owning companies he “sees every day.” His portfolio has returned 12% a year over the past three years. Which statement is most accurate?",
-        [
-          "His concentration in the bank reflects illusion of control and confirmation bias, and his regional tilt reflects home bias; his strong recent returns do not make the portfolio adequately diversified.",
-          "His concentration in the bank is best explained by representativeness, and his regional tilt by mental accounting, because he keeps his employer's shares separate from the rest of his holdings.",
-          "His concentration reflects illusion of control, but his regional tilt is not home bias, because home bias concerns only the choice between domestic and foreign markets.",
-        ],
-        0,
-        "Trois éléments à relier. (1) La concentration sur l'action de la banque : Paul croit que son propre travail détermine la performance du titre (illusion of control) et ne lit que les rapports internes favorables (confirmation bias) — exactement le couple que la fiche associe à la sous-diversification. (2) La surpondération des entreprises de sa région : c'est du home bias, qui couvre aussi la préférence pour sa propre RÉGION au sein d'un pays, motivée ici par un confort psychologique (« des entreprises que je vois tous les jours »). (3) Les 12 % annuels sur trois ans sont une donnée-piège : un bon rendement passé ne rend pas diversifié un portefeuille concentré. B tombe dans le piège de la fiche : la sous-diversification relève de l'illusion of control et du confirmation bias, pas de la representativeness ; et rien n'indique du mental accounting (il ne traite pas son argent différemment selon sa provenance). C se trompe sur la définition du home bias, qui s'applique aussi à la préférence régionale à l'intérieur d'un même pays.",
-      ],
-
-      // Concept 6 — Implications de marché : bulles, momentum, value vs growth (officielle, Reading 87 Q16)
+      // Concept 5 — Implications de marché : bulles, momentum, value vs growth (officielle, Reading 87 Q16)
       [
         'With respect to asset "bubbles":',
         [

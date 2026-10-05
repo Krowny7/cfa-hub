@@ -1,5 +1,5 @@
 // Seed script — quiz de "drill" associé à la page 6 de la fiche PDF Portfolio
-// Management (Introduction to Risk Management). Page dense : 7 concepts clés,
+// Management (Introduction to Risk Management). 5 concepts clés,
 // chacun en 3 questions — 1 question officielle (banque de pratique CFA,
 // Reading 88 « Introduction to Risk Management », bonne réponse vérifiée dans
 // le corrigé « - Answers.pdf ») + 1 variante "angle différent" (même notion,
@@ -13,6 +13,9 @@
 // officielle de la banque sur la modification des expositions.
 // syncQuizSets met le set à jour en place et garde l'historique de réponses
 // de tout énoncé inchangé (comparaison sur le texte exact).
+// Ramené à 5 concepts (15 questions) le 5 octobre 2026, à la demande de
+// l'utilisateur : concepts d'origine 2, 5 retirés de la fiche, leurs
+// questions rangées dans « Réserve — <titre> » (syncQuizSets, rien d'effacé).
 // Usage: node scripts/seed-pm-drill-page6.mjs
 import { getOwnerId, ensureFolder, syncQuizSets } from "./lib/seed-core.mjs";
 
@@ -53,41 +56,7 @@ const QUIZ_SETS = [
         "(1) est faux : le risk management contrôle les RISQUES pris, pas le rendement, qui n'est sous le contrôle de personne sur une période donnée — on ne peut pas rendre les risk managers responsables d'un rendement cible. (2) est la bonne définition : identifier la tolérance, puis décider quels risques prendre, réduire ou éviter pour atteindre le bundle optimal. (3) est le piège classique : le risk management ne vise pas à minimiser le risque total (« ni minimiser ni éliminer »). Seule (2) est correcte : A ajoute (1), B ajoute (3).",
       ],
 
-      // Concept 2 — Framework, infrastructure et risk governance (officielle, Reading 88 Q7)
-      [
-        "Features of a risk management framework least likely include:",
-        [
-          "monitoring the organization's risk exposures.",
-          "disciplining managers who exceed their risk budgets.",
-          "establishing risk governance policies and processes.",
-        ],
-        1,
-        "Prendre des mesures correctives contre des individus (sanctionner les gérants qui dépassent leur budget de risque) ne fait pas partie, en tant que tel, d'un cadre de risk management. Le cadre couvre sept activités : établir la gouvernance des risques, politiques et processus (C), déterminer la tolérance au risque, identifier et mesurer les risques, les gérer ou les atténuer, surveiller les expositions (A), communiquer à travers l'organisation et mener une analyse stratégique des risques.",
-      ],
-      // Variante angle différent — la gouvernance des risques, sous l'angle de ce qui N'EST PAS vrai
-      [
-        "Which of the following statements about risk governance is least accurate?",
-        [
-          "It is the responsibility of senior management, which sets the organization's overall risk tolerance.",
-          "It should take an enterprise-wide view of risk rather than a business-unit-by-business-unit view.",
-          "It works best bottom-up, with each business unit setting its own risk tolerance and choosing its own mitigation methods.",
-        ],
-        2,
-        "La gouvernance des risques est un processus DESCENDANT (top-down) : la direction générale fixe, pour l'entreprise entière, la tolérance au risque et les pertes maximales acceptables, et supervise la fonction de risk management. C est donc l'affirmation fausse : une gouvernance construite unité par unité, où chaque entité fixe sa propre tolérance, ferait perdre la vision d'ensemble (et les interactions entre risques) ; de plus, la gouvernance fixe la tolérance et les limites, pas les méthodes d'atténuation de chaque filiale. A et B sont exactes : responsabilité de la direction générale, qui fixe la tolérance, et vision à l'échelle de toute l'entreprise (enterprise view).",
-      ],
-      // Variante plus difficile — répartir trois tâches entre gouvernance et infrastructure (piège : l'évitement est une décision de la direction)
-      [
-        "A company assigns three risk-related tasks: (1) setting the maximum loss the company is willing to accept over a year; (2) running the staff and systems that measure and monitor the company's risk exposures every day; (3) deciding that the company will not expand into a country with high political risk. Which of the following is most accurate?",
-        [
-          "Tasks 1 and 3 belong to risk governance (senior management); task 2 belongs to the risk infrastructure.",
-          "Task 1 belongs to risk governance; tasks 2 and 3 belong to the risk infrastructure, because avoiding a risk is an operational decision.",
-          "All three tasks belong to the risk infrastructure, because risk governance only oversees the risk function and does not set limits.",
-        ],
-        0,
-        "(1) Fixer la perte maximale acceptable, c'est fixer la tolérance au risque : rôle de la gouvernance (direction générale). (3) Renoncer à s'implanter dans un pays à fort risque politique est une décision d'évitement (avoidance), prise en principe par la direction générale dans le cadre de la tolérance au risque : elle relève aussi de la gouvernance. (2) Les personnes et les systèmes qui identifient, mesurent et surveillent les expositions au quotidien constituent l'infrastructure de risque — qui, elle, ne fixe pas la tolérance. B classe à tort l'évitement parmi les tâches opérationnelles. C retire à la gouvernance ce qui en est le cœur : la détermination de la tolérance et des limites.",
-      ],
-
-      // Concept 3 — Tolérance au risque et risk budgeting (officielle, Reading 88 Q4)
+      // Concept 2 — Tolérance au risque et risk budgeting (officielle, Reading 88 Q4)
       [
         "Which of the following statements about an organization's risk tolerance is most accurate?",
         [
@@ -121,7 +90,7 @@ const QUIZ_SETS = [
         "Le bêta d'un portefeuille est la moyenne pondérée des bêtas : β = w × 1,20 + (1 − w) × 0,20 = 0,20 + w. Le budget impose 0,20 + w ≤ 0,80, donc w ≤ 60 % d'actions (le rendement espéré des actions étant plus élevé, on sature le budget). Rendement espéré = 0,60 × 9 % + 0,40 × 4 % = 5,4 % + 1,6 % = 7,0 %. C (67 %) divise le budget par le bêta des actions (0,80 / 1,20 = 66,7 %) en oubliant que les obligations consomment aussi du budget : le bêta réel serait 0,20 + 0,667 = 0,867, au-delà de la limite. A (80 %) confond le niveau du budget de bêta avec le poids des actions : bêta = 0,20 + 0,80 = 1,00. Le rendement espéré n'est pas fixé par le budget : c'est la conséquence du meilleur usage du risque autorisé.",
       ],
 
-      // Concept 4 — Risques financiers vs non financiers (officielle, Reading 88 Q1)
+      // Concept 3 — Risques financiers vs non financiers (officielle, Reading 88 Q1)
       [
         "Which of the following risks is most accurately classified as a non-financial risk?",
         ["Liquidity risk.", "Model risk.", "Credit risk."],
@@ -143,41 +112,7 @@ const QUIZ_SETS = [
         "Risques financiers (nés de l'exposition aux marchés financiers) : (1) défaut d'un client → risque de crédit ; (2) vente forcée sous la juste valeur sur un marché asséché → risque de liquidité ; (3) mouvement de change → risque de marché. Soit trois. Les trois autres sont non financiers : (4) nouvelle réglementation → risque réglementaire ; (5) erreur humaine dans un système → risque opérationnel ; (6) modèle de valorisation défaillant → risque de modèle. B (quatre) compte à tort le risque de modèle comme financier parce qu'il porte sur des dérivés : c'est la source du risque (un modèle interne faux) qui compte, pas l'actif concerné. C (cinq) ajoute en plus le risque réglementaire parce qu'il touche les exigences de capital.",
       ],
 
-      // Concept 5 — Risques non financiers en détail, risques des individus et interactions (officielle, Reading 88 Q8)
-      [
-        "Operational risk is most accurately described as the risk that:",
-        [
-          "human error or faulty processes will cause losses.",
-          "the organization will run out of operating cash.",
-          "extreme events are more likely than managers have assumed.",
-        ],
-        0,
-        "Le risque opérationnel naît d'erreurs humaines ou de processus défaillants au sein de l'organisation (ainsi que d'une sécurité insuffisante ou d'interruptions d'activité ; le cyber-risque en fait partie). B décrit le risque de solvabilité (l'organisation n'a plus assez de cash pour continuer à fonctionner). C décrit le tail risk (les événements extrêmes sont plus probables que ne le supposent les gestionnaires, souvent parce qu'on a supposé à tort une distribution normale).",
-      ],
-      // Variante angle différent — un autre exemple de la catégorie : les risques propres aux individus (mortalité vs longévité)
-      [
-        "A 65-year-old retiree is worried that she will outlive her savings. Which risk is she facing, and which tool most directly addresses it?",
-        [
-          "Mortality risk, addressed with life insurance.",
-          "Longevity risk, addressed with a lifetime annuity.",
-          "Solvency risk, addressed with a reserve fund.",
-        ],
-        1,
-        "Craindre de survivre à son épargne, c'est le risque de longévité (longevity risk) : vivre plus longtemps que prévu et épuiser ses actifs. L'outil adapté est la rente viagère (lifetime annuity), qui verse un revenu jusqu'au décès. A décrit le risque inverse : le risque de mortalité est celui de décéder avant d'avoir pourvu aux besoins de sa famille, couvert par l'assurance-vie — qui ne protège en rien contre le fait de vivre longtemps. C : le risque de solvabilité concerne une organisation qui ne peut plus fonctionner faute de liquidités, et un fonds de réserve relève de l'acceptation (self-insurance) : il ne garantit pas un revenu à vie.",
-      ],
-      // Variante plus difficile — une crise où plusieurs risques s'enchaînent (modèle, tail, crédit, liquidité) + piège shifting vs transfer
-      [
-        "A hedge fund's risk model assumes that returns are normally distributed. The fund hedges its equity exposure by buying put options from a single dealer. In a crisis, equity prices fall far more than the model implied, the dealer fails to pay what it owes on the puts, and the fund must sell assets at depressed prices to raise cash. Which statement is most accurate?",
-        [
-          "The crisis illustrates market risk only; the other losses are consequences of the market decline and need not be considered separately in risk management.",
-          "Because the puts transferred the equity risk to the dealer, the fund had no remaining exposure to the decline; its losses stem only from operational risk.",
-          "Model risk and tail risk materialized together, the hedge converted part of the market risk into credit risk, and the forced sales added liquidity risk, which shows that risks interact and should not be managed in isolation.",
-        ],
-        2,
-        "Plusieurs risques ont interagi. Le modèle supposait des rendements normaux alors que la baisse a été bien plus forte : risque de modèle et tail risk se sont matérialisés ensemble (la fiche les lie : hypothèse fautive de normalité). La couverture par puts a transformé une partie du risque de marché en risque de crédit (de contrepartie) : le dealer n'a pas payé. Les ventes forcées à prix déprimés ont ajouté un risque de liquidité, qui peut à son tour menacer la solvabilité. Morale : les risques ne sont pas indépendants et doivent être gérés ensemble, surtout en période de stress. A ignore précisément ces interactions. B commet deux erreurs : acheter des puts, c'est du risk SHIFTING (on modifie la distribution des résultats), pas un transfert comme l'assurance ; et cette couverture crée justement un risque de contrepartie, donc le fonds restait exposé.",
-      ],
-
-      // Concept 6 — Mesurer l'exposition : sensibilités, VaR / CVaR, stress test vs scenario analysis (officielle, Reading 88 Q11)
+      // Concept 4 — Mesurer l'exposition : sensibilités, VaR / CVaR, stress test vs scenario analysis (officielle, Reading 88 Q11)
       [
         "Measures of interest rate sensitivity least likely include:",
         ["beta.", "duration.", "rho."],
@@ -203,7 +138,7 @@ const QUIZ_SETS = [
         "(1) est correct : la VaR est une perte MINIMALE associée à une probabilité — une perte d'au moins 2 M$ est attendue environ 1 % des jours ; ce n'est pas une perte maximale. (2) est faux : la CVaR est la moyenne pondérée des pertes AU-DELÀ de la VaR, c'est-à-dire de pertes d'au moins 2 M$ ; elle est donc forcément supérieure ou égale à 2 M$, jamais inférieure. (3) est faux : faire varier simultanément plusieurs facteurs (taux ET prix du pétrole), c'est une scenario analysis ; un stress test examine l'effet d'un changement extrême d'une seule variable. Seule (1) est correcte : A ajoute (2), C ajoute (3).",
       ],
 
-      // Concept 7 — Modifier l'exposition : avoidance, prevention, acceptance, transfer, shifting (officielle, Reading 88 Q6 — seule officielle disponible, aussi imprimée dans le PDF)
+      // Concept 5 — Modifier l'exposition : avoidance, prevention, acceptance, transfer, shifting (officielle, Reading 88 Q6 — seule officielle disponible, aussi imprimée dans le PDF)
       [
         "Buying insurance is best described as a method for an organization to:",
         ["prevent a risk.", "shift a risk.", "transfer a risk."],
