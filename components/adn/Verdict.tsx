@@ -47,6 +47,7 @@
 //                           la cérémonie de rang peut suivre
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { signalerLeonard } from "@/lib/leonard/signal";
 import { RING_FULL_AXIS } from "@/components/ink/paths";
 import { INK } from "@/components/ui/InkDefs";
 import { RankBadge } from "@/components/ui/RankBadge";
@@ -202,9 +203,16 @@ export function Verdict({
     if (mode !== "auto") return;
     if (cle && dejaVu(cle)) setJoue(false);
     else {
-      if (cle) marquerVu(cle);
+      if (cle) {
+        marquerVu(cle);
+        // Léonard commente le duel, après la séquence du verdict
+        const ecart = (eux?.score ?? 0) - moi.score;
+        const evt = issue === "victoire" ? "duel-gagne" : issue === "nulle" ? "duel-nul" : ecart >= 3 ? "duel-ecrase" : "duel-perdu";
+        signalerLeonard({ evt, vars: { score: `${moi.score}-${eux?.score ?? 0}` }, delai: 5200 }, "duel:" + cle);
+      }
       setJoue(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, cle]);
 
   const R = useRef<Record<string, HTMLElement | SVGElement | null>>({});

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { analyserSession, empreinte, signalerLeonard } from "@/lib/leonard/signal";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
 import { useObjectifDuJour } from "@/components/adn/useObjectifDuJour";
 import { CopieCorrigee, type LigneCopie, type MatiereCopie } from "@/components/adn/CopieCorrigee";
@@ -138,6 +139,13 @@ export function FinDeSession({
   anime?: boolean;
   children?: React.ReactNode;
 }) {
+  // Léonard réagit à la session (une fois par session : clé = questions + score)
+  useEffect(() => {
+    const sig = analyserSession(review.map((r) => r.is_correct), score, total);
+    if (sig) signalerLeonard({ ...sig, delai: 2600 }, "fs:" + empreinte(score, total, ...review.map((r) => r.question_id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [reprise, setReprise] = useState(false);
   // de retour de la reprise : la copie est déjà posée, on la retrouve en haut
   const [revenu, setRevenu] = useState(false);

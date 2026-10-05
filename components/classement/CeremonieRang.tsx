@@ -27,6 +27,7 @@
 // components/classement/rang-moment.ts : une page serveur peut l'appeler.
 
 import { useEffect, useState } from "react";
+import { signalerLeonard } from "@/lib/leonard/signal";
 import { RankCeremony, type VarianteRang } from "@/components/adn/RankCeremony";
 import { SceauDivision } from "@/components/adn/Sceau";
 import { momentDeRang } from "@/components/classement/rang-moment";
@@ -130,7 +131,11 @@ export function CeremonieRang({
         domaine={domaine}
         cle={cle}
         force={force}
-        onFermer={() => setOuvert(false)}
+        onFermer={() => {
+          setOuvert(false);
+          // Léonard, impressionné, une fois la cérémonie refermée
+          if (variante === "montee") signalerLeonard({ evt: "rang-monte", delai: 700 }, "rang:" + cle);
+        }}
       />
     ) : null;
   }

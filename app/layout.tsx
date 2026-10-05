@@ -5,6 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Splash } from "@/components/Splash";
 import { InkDefs } from "@/components/ui/InkDefs";
+import { LeonardHote } from "@/components/leonard/LeonardHote";
 
 // DA V2 : Geist pour l'interface et les titres, Geist Mono pour les chiffres
 // alignés, Dela Gothic One réservée au logo et aux grands chiffres (.font-brand).
@@ -63,6 +64,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
 
           <MobileBottomNav />
+
+          {/* Léonard, la mascotte : apparaît sur signal des écrans (components/leonard) */}
+          <LeonardHote />
 
           <Splash />
         </Providers>

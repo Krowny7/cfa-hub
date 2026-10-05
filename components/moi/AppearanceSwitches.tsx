@@ -2,6 +2,7 @@
 
 import { useNightTheme } from "@/components/ThemeToggle";
 import { useDiscreetMode } from "@/components/DiscreetToggle";
+import { useReglagesLeonard } from "@/lib/leonard/reglages";
 
 function SwitchRow({ title, sub, on, onToggle }: { title: string; sub: string; on: boolean; onToggle: () => void }) {
   return (
@@ -16,14 +17,31 @@ function SwitchRow({ title, sub, on, onToggle }: { title: string; sub: string; o
 }
 
 // Thème nuit et mode discret en interrupteurs (mêmes réglages que les
-// boutons de la barre du haut, mémorisés sur cet appareil).
+// boutons de la barre du haut, mémorisés sur cet appareil), puis Léonard :
+// ses apparitions et ses animations (il se tait de lui-même en mode discret).
 export function AppearanceSwitches() {
   const [night, toggleNight] = useNightTheme();
   const [discreet, toggleDiscreet] = useDiscreetMode();
+  const leo = useReglagesLeonard();
   return (
     <div className="mt-1 divide-y divide-line">
       <SwitchRow title="Thème nuit" sub="Encre claire sur papier sombre, sur cet appareil." on={night} onToggle={toggleNight} />
-      <SwitchRow title="Mode discret" sub="Sans encre ni rouge : pour réviser au bureau." on={discreet} onToggle={toggleDiscreet} />
+      <SwitchRow title="Mode discret" sub="Sans encre ni rouge : pour réviser au bureau. Léonard se tait." on={discreet} onToggle={toggleDiscreet} />
+      <SwitchRow title="Léonard" sub="La mascotte passe te chambrer (ou te féliciter) de temps en temps." on={leo.actif} onToggle={leo.basculerActif} />
+      {leo.actif && (
+        <SwitchRow title="Léonard animé" sub="Désactivé : une image fixe, sans mouvement." on={leo.anime} onToggle={leo.basculerAnime} />
+      )}
+      {leo.actif && (
+        <div className="flex items-center justify-between gap-4 py-3">
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold">Tutoriel de Léonard</span>
+            <span className="t-micro mt-0.5 block">Il le rejoue à ta prochaine visite de l&apos;accueil.</span>
+          </span>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={leo.revoirTuto}>
+            Revoir
+          </button>
+        </div>
+      )}
     </div>
   );
 }

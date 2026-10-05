@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Cote } from "@/components/adn/Cote";
+import { SignalLeonard } from "@/components/leonard/SignalLeonard";
 import { DefiAiCopy } from "@/components/defi/DefiAiCopy";
 import { SceauDefi } from "@/components/defi/SceauDefi";
 import { Ticks, reviewMarks } from "@/components/defi/parts";
@@ -63,6 +64,10 @@ export function DefiResult({ info, review, board }: Props) {
   const handedAt = me.finishedAt ? timeFmt.format(new Date(me.finishedAt)) : null;
 
   return (
+    <>
+      {info.isToday && (
+        <SignalLeonard evt={pct >= 70 ? "defi-reussi" : "defi-rate"} vars={{ score: `${score}/${total}`, pct: `${pct} %` }} cle={"defi:" + info.day} delai={1800} />
+      )}
     <section className="card-hero grid min-w-0 gap-6 p-6 md:p-8" aria-label="Ta copie">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -115,5 +120,6 @@ export function DefiResult({ info, review, board }: Props) {
         <SceauDefi day={info.day} taille={88} angle={-6} className="-mb-14 -mt-2 ml-auto mr-1 sm:absolute sm:bottom-5 sm:right-6 sm:m-0 md:bottom-6 md:right-8" />
       </div>
     </section>
+    </>
   );
 }
