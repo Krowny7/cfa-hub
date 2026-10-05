@@ -15,7 +15,7 @@ const ONBOARDING_EXEMPT = ["/onboarding", "/login", "/auth", "/api"];
 // « /fiches » seule : les fiches elles-mêmes restent lisibles sans compte.
 const PRIVATE = [
   "/calculs", "/classement", "/courses", "/dashboard", "/defi", "/duel", "/entrainement", "/exam",
-  "/flashcards", "/library", "/mock-exams", "/moi", "/official-exams", "/onboarding", "/people",
+  "/flashcards", "/mock-exams", "/moi", "/official-exams", "/onboarding", "/people",
   "/practice", "/qcm", "/reviser", "/scratch", "/session",
 ];
 const isPrivate = (pathname: string) => pathname === "/fiches" || PRIVATE.some((p) => pathname === p || pathname.startsWith(`${p}/`));

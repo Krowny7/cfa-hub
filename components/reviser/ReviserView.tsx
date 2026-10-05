@@ -8,15 +8,16 @@ import { subjectRail } from "@/components/reviser/rail";
 import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
 import { ESPACES } from "@/lib/voice-z4";
 
-// Espace « Réviser ». Le point focal : les fiches (seule surface héros, seul
-// bouton plein) ; à côté, les autres formats en lignes calmes ; puis les 10
-// matières en rangée horizontale (maîtrise, formats disponibles) : choisir
-// une matière montre sa fiche, son cours et ses cartes. Sans requête :
-// app/reviser charge les données, l'aperçu en fournit d'exemple.
+// Espace « Réviser ». Le point focal : les trois fonds de révision, les
+// fiches (seule surface héros, seul bouton plein) et, à côté, les flashcards
+// et les cours complets en cartes ; puis les 10 matières en rangée
+// horizontale (maîtrise, formats disponibles) : choisir une matière montre
+// sa fiche, son cours et ses cartes. Sans requête : app/reviser charge les
+// données, l'aperçu en fournit d'exemple.
 
 const count = (n: number) => (n ? `${n} matière${n > 1 ? "s" : ""}` : "bientôt");
 
-/** Ligne d'un format secondaire (cours, flashcards, bibliothèque). */
+/** Ligne d'un format secondaire (aussi pour S'entraîner). */
 export function FormatRow({ href, icon, title, desc, meta }: { href: string; icon: React.ReactNode; title: string; desc: string; meta?: string | null }) {
   return (
     <Link href={href} className="rl-row group flex items-center gap-4 px-5 py-[18px] md:px-6">
@@ -43,14 +44,44 @@ function initialSubject(subjects: SubjectAvailability[], requested?: string | nu
   return (withContent[0] ?? subjects[0])?.key ?? "";
 }
 
-export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailability[]; matiere?: string | null }) {
+/** Un fonds secondaire (flashcards, cours complets), en carte à côté des fiches. */
+function FundCard({ href, index, icon, title, desc, meta }: { href: string; index: string; icon: React.ReactNode; title: string; desc: string; meta?: string | null }) {
+  return (
+    <Link href={href} className="card rl-lift group flex items-center gap-5 p-6 md:p-7">
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-surface-2">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="t-eyebrow block">{index}</span>
+        <span className="t-h3 mt-1.5 block">{title}</span>
+        <span className="t-small mt-1 block">{desc}</span>
+        {meta && <span className="t-micro mt-2 block font-semibold">{meta}</span>}
+      </span>
+      <ChevronRight size={18} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  );
+}
+
+export function ReviserView({
+  subjects,
+  matiere,
+  flashcardSets = null,
+}: {
+  subjects: SubjectAvailability[];
+  matiere?: string | null;
+  /** sets de flashcards officiels publiés (null : inconnu, on compte les matières) */
+  flashcardSets?: number | null;
+}) {
   const fiches = subjects.filter((s) => s.fiche).length;
   const courses = subjects.filter((s) => s.course).length;
   const cards = subjects.filter((s) => s.flashcards).length;
 
   const lead = (
     <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
-      <Link href="/fiches" className="card-hero rl-lift rl-in group flex min-h-[260px] flex-col gap-4 p-7 md:p-8 lg:col-span-7" aria-label="Ouvrir les fiches de révision" data-leonard="fiches">
+      <Link
+        href="/fiches"
+        className="card-hero rl-lift rl-in group flex min-h-[280px] flex-col gap-4 p-7 md:p-9 lg:col-span-7"
+        aria-label="Ouvrir les fiches de révision"
+        data-leonard="fiches"
+      >
         <span className="flex items-center justify-between gap-3">
           <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-surface-2">
             <Icone nom="fiche" size={24} />
@@ -58,6 +89,7 @@ export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailabili
           <span className="t-micro font-semibold">{count(fiches)}</span>
         </span>
         <span className="mt-auto flex flex-col gap-2">
+          <span className="t-eyebrow">Fonds 01</span>
           <span className="t-h1">Fiches de révision</span>
           <span className="t-body max-w-[460px] text-muted">{ESPACES.fichesTexte}</span>
         </span>
@@ -66,11 +98,24 @@ export function ReviserView({ subjects, matiere }: { subjects: SubjectAvailabili
         </span>
       </Link>
 
-      <nav aria-label="Autres formats" data-leonard="formats" className="card rl-in flex flex-col justify-center divide-y divide-line overflow-hidden py-1 lg:col-span-5" style={{ animationDelay: ".08s" }}>
-        <FormatRow href="/courses" icon={<Icone nom="cours" size={20} />} title="Cours complets" desc="Le deck intégral et son audio, environ une heure." meta={count(courses)} />
-        <FormatRow href="/flashcards" icon={<Icone nom="flashcards" size={20} />} title="Flashcards" desc="Répétition espacée : termes, formules, pièges." meta={count(cards)} />
-        <FormatRow href="/library" icon={<Icone nom="reviser" size={20} />} title="Bibliothèque" desc="Tous les fonds de révision au même endroit." />
-      </nav>
+      <div className="rl-in grid auto-rows-fr gap-4 md:gap-[18px] lg:col-span-5" style={{ animationDelay: ".08s" }} data-leonard="formats">
+        <FundCard
+          href="/flashcards"
+          index="Fonds 02"
+          icon={<Icone nom="flashcards" size={22} />}
+          title="Flashcards"
+          desc="Répétition espacée : termes, formules, pièges."
+          meta={flashcardSets ? `${flashcardSets} set${flashcardSets > 1 ? "s" : ""}` : cards ? count(cards) : null}
+        />
+        <FundCard
+          href="/courses"
+          index="Fonds 03"
+          icon={<Icone nom="cours" size={22} />}
+          title="Cours complets"
+          desc="Le cours intégral par matière, à lire ou à écouter."
+          meta={courses ? count(courses) : null}
+        />
+      </div>
     </div>
   );
 

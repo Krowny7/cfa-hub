@@ -101,7 +101,7 @@ export const FICHE = {
 export const ESPACES = {
   /** titre de Réviser (au lieu de « Apprendre, à ton rythme », slogan de MOOC) */
   reviserTitre: "Révise trait par trait.",
-  fichesTexte: "Une page de synthèse par thème, puis son quiz corrigé.",
+  fichesTexte: "Une synthèse par thème, les formules clés, puis son quiz corrigé.",
   /** S'entraîner : la session conseillée */
   plusFragile: "Ta matière la plus fragile : une session ciblée, pondérée comme l'examen.",
   enchaine: "Enchaîne avec une nouvelle session, pondérée comme l'examen.",

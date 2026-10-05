@@ -22,6 +22,14 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   // the splash films' data files carry their version in the name
   // (plan.v9.bin…), so a browser may keep them for good
+  // La Bibliothèque n'existe plus : ses trois fonds sont en tête de Réviser.
+  // Les liens PDF des joueurs restent en base (table documents), sans page.
+  async redirects() {
+    return [
+      { source: "/library", destination: "/reviser", permanent: false },
+      { source: "/library/:path*", destination: "/reviser", permanent: false }
+    ];
+  },
   async headers() {
     return [
       {

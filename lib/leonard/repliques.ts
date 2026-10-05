@@ -282,7 +282,7 @@ export const TUTO: EtapeTuto[] = [
   { page: "/dashboard", cible: "anneau", texte: "Ton anneau du jour. Chaque question répondue, un trait. Tu le fermes avant minuit, t’es un génie.", pose: "fier" },
   { page: "/dashboard", cible: "defi", texte: "Le défi du jour : les mêmes questions pour tout le monde, résultats publics. Pas de pression. Si, un peu.", pose: "moqueur" },
   { page: "/reviser", cible: "fiches", texte: "Réviser. Les fiches, c’est comme mes carnets : en mieux rangées, et lisibles sans miroir.", pose: "fier" },
-  { page: "/reviser", cible: "formats", texte: "Cours complets avec l’audio, flashcards, bibliothèque. T’as plus aucune excuse.", pose: "base" },
+  { page: "/reviser", cible: "formats", texte: "Les flashcards et les cours complets, à lire ou à écouter. T’as plus aucune excuse.", pose: "base" },
   { page: "/entrainement", cible: "session", texte: "S’entraîner. Une session sur tes points faibles, et le défi du jour. Ça, c’est le quotidien.", pose: "fier" },
   { page: "/entrainement", cible: "contre", texte: "Examens blancs classés et duels : là, ça compte pour ton rang. Viens pas pleurer après.", pose: "moqueur" },
   { page: "/classement", cible: "rang", texte: "Ton rang, de Bronze à Grand Maître. En dessous, le classement et tes duels. Ici, on se mesure. Et on se chambre.", pose: "etonne" },

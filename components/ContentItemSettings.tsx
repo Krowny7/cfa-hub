@@ -94,7 +94,7 @@ export function ContentItemSettings({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawSb = supabase as any;
 
-  const defaultRedirect = table === "documents" ? "/library" : table === "flashcard_sets" ? "/flashcards" : "/qcm";
+  const defaultRedirect = table === "documents" ? "/reviser" : table === "flashcard_sets" ? "/flashcards" : "/qcm";
   const startTitle = itemTitle ?? title;
 
   const [draftTitle, setDraftTitle] = useState(startTitle);
