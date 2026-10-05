@@ -8,6 +8,7 @@ import { MoiView } from "@/components/moi/MoiView";
 import { SettingsPanel } from "@/components/moi/SettingsPanel";
 import { buildTopicStats, parseMoiTab, xpLastDays, xpThisWeek } from "@/components/moi/data";
 import { getFicheErrors } from "@/components/moi/errors-data";
+import { getMarquees } from "@/components/moi/marquees-data";
 import { getSessionHistory } from "@/components/moi/history-data";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { countPlayers, tryAdmin } from "@/components/classement/data";
@@ -57,7 +58,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, answers, activity] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, errors, groupsRes, sessions, answers, activity, marquees] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -74,6 +75,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     // questions répondues par jour : la série compte aussi les jours sans XP
     // (même calcul que l'accueil)
     loadActivity(supabase, user.id, new Date(now)),
+    // les questions marquées (Moi › Marquées)
+    getMarquees(supabase),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -103,6 +106,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     me: { elo: rating.elo, gamesPlayed: rating.gamesPlayed, mastery: programMastery(topics), leaderboardRank: myRank, totalPlayers },
     topics: buildTopicStats(topics, averages),
     errors,
+    marquees,
     sessions,
     answers,
     objectif,

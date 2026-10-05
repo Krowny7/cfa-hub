@@ -9,6 +9,7 @@ import { BackLink, Filigrane, Ticks, reviewMarks } from "@/components/defi/parts
 import { clock, duelTopicLabel } from "@/lib/duels";
 import { DAILY_HREF, dayHref, dayLabel, rankLine, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { DEFI, verdictCopie } from "@/lib/voice-z2c";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 
 type Filter = "errors" | "all";
 
@@ -210,6 +211,7 @@ function ReviewCard({ q, total, showRate }: { q: DailyReviewItem; total: number;
           <span className="font-sans"> · {duelTopicLabel(q.topic)}</span>
         </p>
         <div className="flex shrink-0 items-center gap-1.5">
+          <MarqueQuestion questionId={q.questionId} source="defi" />
           <span
             className={
               "inline-flex items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-semibold " +

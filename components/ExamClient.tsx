@@ -425,7 +425,7 @@ export function ExamClient({
           }
         >
           {many && <TopicBreakdown review={review} title={MODE_EXAMEN.parSource} />}
-          <ReviewSection review={review} />
+          <ReviewSection review={review} source="qcm" />
         </FinDeSession>
       </div>
     );

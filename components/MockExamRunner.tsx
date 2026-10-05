@@ -200,7 +200,7 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
           }
         >
           <TopicBreakdown review={review} />
-          <ReviewSection review={review} defaultOpen={false} />
+          <ReviewSection review={review} defaultOpen={false} source="examen" />
         </FinDeSession>
       </>
     );

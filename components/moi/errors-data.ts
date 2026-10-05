@@ -16,7 +16,7 @@ const RAYEES_SHOWN = 6;
 const WEEK_MS = 7 * 86_400_000;
 
 // Fiches PDF (titre des sets de drill : « <Fiche> — Drill Fiche Page N (…) »).
-const FICHES: Record<string, string> = {
+export const FICHES: Record<string, string> = {
   "Fixed Income": "/fiches/fixed-income",
   Equity: "/fiches/equity",
   "Financial Statement Analysis": "/fiches/financial-statement-analysis",

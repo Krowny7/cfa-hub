@@ -29,6 +29,7 @@ import { Icone } from "@/components/adn/icons";
 import { Batons } from "@/components/adn/Batons";
 import { joursEncre, surTitreSession, type EtatJour } from "@/lib/voice";
 import { COPIE_BLANCHE, EPREUVE, REPONSE, serieSession } from "@/lib/voice-z3";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 
 // Session du jour : 15 minutes, QCM mélangés (corrigés à chaque question) ou
 // flashcards ordonnées par la répétition espacée.
@@ -668,6 +669,11 @@ export function SessionClient({
               />
             ))}
             {showCorr && currentQ.explanation && <Explanation text={currentQ.explanation} className="mt-2 rl-in" />}
+            {showCorr && (
+              <div className="rl-in -mb-1 mt-1 flex justify-end">
+                <MarqueQuestion questionId={currentQ.id} source="qcm" variante="lien" />
+              </div>
+            )}
           </QuestionCard>
         )}
       </div>

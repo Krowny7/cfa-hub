@@ -5,6 +5,7 @@ import { StatsTab } from "@/components/moi/StatsSection";
 import { ErrorsTab } from "@/components/moi/ErrorsSection";
 import type { MoiTab } from "@/components/moi/data";
 import type { MoiData } from "@/components/moi/types";
+import { MarqueesTab } from "@/components/moi/MarqueesTab";
 
 // Espace « Moi » (V3) : un en-tête compact, puis trois onglets, chacun une
 // seule vue : Stats (matières, activité, sessions), Erreurs (toutes les
@@ -18,7 +19,7 @@ export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; setti
       <MoiHeader d={d} now={now} />
       <MoiTabs
         initial={tab}
-        counts={{ erreurs: d.errors.available ? d.errors.total : 0 }}
+        counts={{ erreurs: d.errors.available ? d.errors.total : 0, marquees: d.marquees.items.length }}
         asides={{
           erreurs: (
             <Link href="/fiches" className="ink-link">
@@ -34,6 +35,7 @@ export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; setti
         panels={{
           stats: <StatsTab d={d} />,
           erreurs: <ErrorsTab errors={d.errors} now={now} />,
+          marquees: <MarqueesTab marquees={d.marquees} />,
           reglages: settings,
         }}
       />

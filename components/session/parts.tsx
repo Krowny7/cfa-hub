@@ -16,6 +16,8 @@ import {
 } from "@/components/session/review";
 import { IA, ratures as nRatures } from "@/lib/voice";
 import { COPIE_IA, CORRECTION, PAR_MATIERE } from "@/lib/voice-z3";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
+import type { SourceMarque } from "@/lib/marques";
 
 // Écrans partagés des sessions et des examens, dans le langage V3 : un seul
 // point focal, des écrans de question et de correction calmes et nets.
@@ -661,7 +663,7 @@ export function Explanation({ text, compact = false, className = "" }: { text: s
 }
 
 /** Une question corrigée : l'énoncé, les réponses annotées, l'explication. */
-export function ReviewItem({ q, n, compact = false }: { q: ReviewQuestion; n: number; compact?: boolean }) {
+export function ReviewItem({ q, n, compact = false, source = "session" }: { q: ReviewQuestion; n: number; compact?: boolean; source?: SourceMarque }) {
   const status = q.is_correct ? "ok" : q.selected_index === null ? "skip" : "ko";
   return (
     <article className={(compact ? "card-quiet p-4" : "card p-5 md:p-7") + " min-w-0"}>
@@ -670,14 +672,17 @@ export function ReviewItem({ q, n, compact = false }: { q: ReviewQuestion; n: nu
           <span className="font-semibold text-white tabular-nums">Q{n}</span>
           {q.topic ? <> · {cleanTopic(q.topic)}</> : null}
         </p>
-        <span
-          className={
-            "inline-flex shrink-0 items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-semibold " +
-            (status === "ok" ? "bg-surface-2 text-white" : status === "ko" ? "bg-pen/10 text-pen" : "bg-surface-2 text-muted")
-          }
-        >
-          {status === "ok" ? <Check size={13} aria-hidden /> : status === "ko" ? <X size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
-          {status === "ok" ? CORRECTION.juste : status === "ko" ? CORRECTION.rature : CORRECTION.sansReponse}
+        <span className="flex shrink-0 items-center gap-1.5">
+          <MarqueQuestion questionId={q.question_id} source={source} />
+          <span
+            className={
+              "inline-flex shrink-0 items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-semibold " +
+              (status === "ok" ? "bg-surface-2 text-white" : status === "ko" ? "bg-pen/10 text-pen" : "bg-surface-2 text-muted")
+            }
+          >
+            {status === "ok" ? <Check size={13} aria-hidden /> : status === "ko" ? <X size={13} aria-hidden /> : <Minus size={13} aria-hidden />}
+            {status === "ok" ? CORRECTION.juste : status === "ko" ? CORRECTION.rature : CORRECTION.sansReponse}
+          </span>
         </span>
       </div>
       <QuestionPrompt
@@ -735,6 +740,7 @@ export function ReviewSection({
   defaultOpen = true,
   compact = false,
   action,
+  source = "session",
 }: {
   review: ReviewQuestion[];
   title?: string;
@@ -742,6 +748,8 @@ export function ReviewSection({
   defaultOpen?: boolean;
   compact?: boolean;
   action?: React.ReactNode;
+  /** origine des questions marquées depuis cette correction */
+  source?: SourceMarque;
 }) {
   const errors = review.filter((q) => !q.is_correct).length;
   const [filter, setFilter] = useState<"errors" | "all">(errors > 0 ? "errors" : "all");
@@ -801,7 +809,7 @@ export function ReviewSection({
       ) : (
         <div className={"grid grid-cols-1 " + (compact ? "gap-2.5" : "gap-3 md:gap-4")}>
           {items.map(({ q, n }) => (
-            <ReviewItem key={q.question_id + "-" + n} q={q} n={n} compact={compact} />
+            <ReviewItem key={q.question_id + "-" + n} q={q} n={n} compact={compact} source={source} />
           ))}
         </div>
       )}

@@ -307,7 +307,7 @@ export function MockExamRetake({ examId, title, durationMinutes, wrongCount, tot
           }
         >
           <TopicBreakdown review={review} />
-          <ReviewSection review={review} />
+          <ReviewSection review={review} source="examen" />
         </FinDeSession>
       </section>
     );

@@ -3,6 +3,7 @@ import type { MyRank } from "@/components/classement/types";
 import type { AnswerStats } from "@/lib/answer-stats";
 import type { EtatObjectif } from "@/lib/objectif";
 import type { EtatJour } from "@/lib/voice";
+import type { Marquees } from "@/components/moi/marquees-data";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -89,4 +90,6 @@ export type MoiData = {
   answers: AnswerStats;
   /** l'objectif de questions d'ici l'examen (courbe, ou proposition d'en fixer un) */
   objectif: EtatObjectif;
+  /** les questions marquées (Moi › Marquées) */
+  marquees: Marquees;
 };

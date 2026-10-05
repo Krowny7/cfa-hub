@@ -17,6 +17,7 @@ import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
 import { IA_QCM_RATURES, QCM } from "@/lib/voice-z3c";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 
 // Chargé uniquement pour le propriétaire (voir isOwner plus bas) : les
 // formulaires de création/édition/import et leurs dépendances (TopicSelector)
@@ -421,7 +422,10 @@ export function QuizSetView({
 
         {answered && revealed && (
           <div className="rl-in mt-7 border-t border-line pt-6">
-            <p className={"t-eyebrow " + (answer?.correct ? "" : "text-pen")}>{answer?.correct ? QCM.juste : QCM.rature}</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className={"t-eyebrow m-0 " + (answer?.correct ? "" : "text-pen")}>{answer?.correct ? QCM.juste : QCM.rature}</p>
+              <MarqueQuestion questionId={current.id} source="qcm" />
+            </div>
             {!answer?.correct && (
               <p className="mt-2.5 text-[15px] font-semibold leading-snug">
                 {QCM.laBonne} : {LETTERS[revealed.correctIndex]}) {current.choices[revealed.correctIndex]}

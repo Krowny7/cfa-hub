@@ -2,16 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BarChart3, Settings2, Target } from "lucide-react";
+import { BarChart3, Bookmark, Settings2, Target } from "lucide-react";
 import { MOI_TABS, parseMoiTab, type MoiTab } from "@/components/moi/data";
 
 const META: Record<MoiTab, { label: string; Icon: typeof BarChart3 }> = {
   stats: { label: "Stats", Icon: BarChart3 },
   erreurs: { label: "Erreurs", Icon: Target },
+  marquees: { label: "Marquées", Icon: Bookmark },
   reglages: { label: "Réglages", Icon: Settings2 },
 };
 
-// Onglets de l'espace Moi en contrôle segmenté : Stats | Erreurs | Réglages.
+// Onglets de l'espace Moi en contrôle segmenté : Stats | Erreurs | Marquées | Réglages.
 // Liables avec ?onglet=… (l'URL suit l'onglet choisi, sans recharger) et
 // avec les anciens liens #reglages. Les trois vues sont rendues par le
 // serveur et seulement masquées : un formulaire en cours garde sa saisie.

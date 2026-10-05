@@ -11,6 +11,7 @@ import { CopieCoches, type MarqueDuel } from "@/components/duel/CopieCoches";
 import { Icone } from "@/components/adn/icons";
 import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
 import { clock, decisiveQuestion, duelTopicLabel, reviewHasOpponent, type DuelReviewItem, type DuelState } from "@/lib/duels";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 
 type Filter = "errors" | "all";
 
@@ -357,6 +358,7 @@ function ReviewCard({
           {decisive && <DecisiveMark small />}
         </p>
         <div className="flex shrink-0 items-center gap-1.5">
+          <MarqueQuestion questionId={q.questionId} source="duel" />
           <span
             className={
               "inline-flex items-center gap-1 rounded-[8px] px-2 py-0.5 text-[12px] font-semibold " +

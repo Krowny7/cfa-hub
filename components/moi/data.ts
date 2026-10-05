@@ -36,7 +36,7 @@ export function xpLastDays(days: { day: string; xp: number }[], n = 30, now = ne
 }
 
 /** Onglets de l'espace Moi, liables avec ?onglet=… (et les anciens #reglages). */
-export const MOI_TABS = ["stats", "erreurs", "reglages"] as const;
+export const MOI_TABS = ["stats", "erreurs", "marquees", "reglages"] as const;
 export type MoiTab = (typeof MOI_TABS)[number];
 
 export function parseMoiTab(v: string | null | undefined): MoiTab | null {

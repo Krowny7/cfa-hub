@@ -20,6 +20,7 @@ import {
   type QuestionState,
   type ReviewItem,
 } from "@/lib/ficheLog";
+import { MarqueQuestion } from "@/components/MarqueQuestion";
 
 export type RunItem = { q: DrillQuestion; page: number };
 
@@ -497,10 +498,13 @@ export function FicheQuizRunner({
               {result.xp > 0 && (
                 <span className="rounded-full bg-surface px-2 py-0.5 font-mono text-[11.5px] font-semibold text-muted">+{result.xp} XP</span>
               )}
-              <button type="button" className="btn btn-ghost btn-sm -mr-2 ml-auto text-muted" onClick={copyQuestionForAi}>
-                {copiedQ ? <ClipboardCheck size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-                {copiedQ ? QUIZ.copie : "Copier pour l'IA"}
-              </button>
+              <span className="-mr-2 ml-auto flex items-center">
+                {current && <MarqueQuestion questionId={current.q.id} source="fiche" variante="lien" />}
+                <button type="button" className="btn btn-ghost btn-sm text-muted" onClick={copyQuestionForAi}>
+                  {copiedQ ? <ClipboardCheck size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+                  {copiedQ ? QUIZ.copie : "Copier pour l'IA"}
+                </button>
+              </span>
             </div>
             {carnetEffet && (
               <p className="t-micro mt-2" aria-hidden={carnetEffet.kind === "rayee" || undefined}>
