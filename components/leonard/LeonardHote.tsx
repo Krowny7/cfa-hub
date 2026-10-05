@@ -7,14 +7,16 @@ import { EVENEMENT_LEONARD, type EvenementLeonard, type SignalLeonard } from "@/
 import { CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/lib/leonard/reglages";
 import type { LeonardRig } from "@/lib/leonard/rig";
 import { REPLIQUES, TUTO, type EtapeTuto, type Replique } from "@/lib/leonard/repliques";
+import { CLE_VISITE_COMPTE, VERSION_PRESENTATION, visiteVue } from "@/lib/presentation";
 import s from "./Leonard.module.css";
 
 // Léonard sur toutes les pages : il écoute les signaux des écrans
 // (lib/leonard/signal) et décide s'il apparaît.
 // - Jamais : en mode discret, si le joueur l'a coupé (page Moi), sur les
 //   pages d'entrée (connexion, inscription), ni s'il est déjà à l'écran.
-// - La visite guidée, une fois, à la première visite de l'accueil (après
-//   l'intro) : il emmène le joueur de page en page, l'écran s'assombrit et
+// - La visite guidée, une fois par compte (lib/presentation ; retenue aussi
+//   sur l'appareil), à la première visite de l'accueil après l'intro et le
+//   premier trait : il emmène le joueur de page en page, l'écran s'assombrit et
 //   un projecteur éclaire ce dont il parle (attribut data-leonard). Si
 //   l'élément est sous lui, il sort et revient de l'autre côté.
 // - Ensuite, des apparitions furtives : au plus une toutes les 4 minutes et
@@ -126,6 +128,23 @@ function premierVisible(cible: string) {
   }
   return null;
 }
+/** La visite déjà faite sur ce compte (sur un autre appareil) ? */
+async function visiteFaiteSurLeCompte() {
+  try {
+    const { createClient } = await import("@/lib/supabase/browser");
+    const { data } = await createClient().auth.getUser();
+    return visiteVue(data.user?.user_metadata);
+  } catch {
+    return false;
+  }
+}
+/** La retenir sur le compte (sans effet hors connexion). */
+function retenirVisite() {
+  void import("@/lib/supabase/browser")
+    .then(({ createClient }) => createClient().auth.updateUser({ data: { [CLE_VISITE_COMPTE]: VERSION_PRESENTATION } }))
+    .catch(() => {});
+}
+
 /** Après l'intro (une fois par session de navigation), puis `delai`. */
 function apresIntro(f: () => void, delai: number) {
   let t = 0;
@@ -226,8 +245,25 @@ export function LeonardHote() {
     const derniere = lire<number>(CLE_VISITE, 0);
     ecrire(CLE_VISITE, Date.now());
     if (!tutoFait) {
+      let annule = false;
+      let arret = () => {};
       prechauffer();
-      return apresIntro(() => montrer({ evt: "tuto" }), 1600);
+      void visiteFaiteSurLeCompte().then((faite) => {
+        if (annule) return;
+        if (faite) {
+          try {
+            localStorage.setItem(CLE_TUTO, "1");
+          } catch {
+            // stockage indisponible
+          }
+          return;
+        }
+        arret = apresIntro(() => montrer({ evt: "tuto" }), 1600);
+      });
+      return () => {
+        annule = true;
+        arret();
+      };
     }
     let t: number;
     if (derniere && Date.now() - derniere > 3 * 86_400_000) t = window.setTimeout(() => montrer({ evt: "retour" }), 2200);
@@ -264,6 +300,7 @@ export function LeonardHote() {
     } catch {
       // stockage indisponible
     }
+    retenirVisite();
     fermer();
   }, [fermer]);
 

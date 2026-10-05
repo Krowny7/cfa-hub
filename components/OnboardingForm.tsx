@@ -6,6 +6,8 @@ import { ArrowRight, Check, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { PremierTrait } from "@/components/adn/PremierTrait";
 import { INSCRIPTION } from "@/lib/voice-z1";
+import { CLE_PRESENTATION, VERSION_PRESENTATION } from "@/lib/presentation";
+import { CLE_TUTO } from "@/lib/leonard/reglages";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -18,6 +20,10 @@ type Etape = "trait" | "date" | "sceau" | "fin";
 // lieu (le middleware n'exige plus que le pseudo). Un pseudo refusé (déjà
 // pris, caractères invalides) ramène à l'étape du nom, avec la raison.
 // `replay` : rejoué depuis Moi › Réglages (le nom est déjà là).
+// `presentation` : un compte déjà configuré découvre une nouvelle version
+// (lib/presentation) ; comme `replay` (nom et photo intouchés, la date
+// réécrite seulement si le joueur en choisit une autre), puis l'accueil et
+// la visite de Léonard.
 // `apercu` : pour app/preview-da seulement, rien n'est écrit (un pseudo
 // « pris » simule le refus).
 export function OnboardingForm({
@@ -26,6 +32,7 @@ export function OnboardingForm({
   initialExamDate = null,
   next,
   replay = false,
+  presentation = false,
   apercu = false,
 }: {
   initialUsername: string | null;
@@ -33,6 +40,7 @@ export function OnboardingForm({
   initialExamDate?: string | null;
   next: string;
   replay?: boolean;
+  presentation?: boolean;
   apercu?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -133,6 +141,30 @@ export function OnboardingForm({
     }
   }
 
+  // La présentation de cette version est vue : le middleware n'y renvoie
+  // plus (le compte, et un cookie de secours si son écriture échoue). Après
+  // un premier trait (nouveau joueur, ou nouvelle version), la visite de
+  // Léonard suit à l'accueil ; pas quand il est rejoué depuis les réglages.
+  async function marquerVue() {
+    try {
+      document.cookie = `${CLE_PRESENTATION}=${VERSION_PRESENTATION}; path=/; max-age=31536000; samesite=lax`;
+    } catch {
+      // cookies bloqués : le compte suffit
+    }
+    try {
+      await supabase.auth.updateUser({ data: { [CLE_PRESENTATION]: VERSION_PRESENTATION } });
+    } catch {
+      // réseau : le cookie évite le renvoi sur cet appareil
+    }
+    if (!replay || presentation) {
+      try {
+        localStorage.removeItem(CLE_TUTO);
+      } catch {
+        // stockage indisponible : la visite se rejoue depuis Moi › Réglages
+      }
+    }
+  }
+
   async function entrer() {
     setBusy(true);
     const ok = enCours.current ? await enCours.current : saved;
@@ -140,13 +172,14 @@ export function OnboardingForm({
       setBusy(false);
       return;
     }
+    await marquerVue();
     router.push(next);
   }
 
   const fin = (
     <div className="grid w-full justify-items-center gap-4">
       <button type="button" className="btn btn-primary btn-lg rl-press w-full" onClick={entrer} disabled={busy || (!saved && !replay)}>
-        {replay ? INSCRIPTION.retourReglages : INSCRIPTION.entrer} <ArrowRight size={17} aria-hidden />
+        {replay && !presentation ? INSCRIPTION.retourReglages : INSCRIPTION.entrer} <ArrowRight size={17} aria-hidden />
       </button>
       {!replay && (
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
@@ -178,6 +211,12 @@ export function OnboardingForm({
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-col items-center gap-2 pt-2 md:pt-8">
+      {presentation && (
+        <div className="card mb-2 w-full px-5 py-4 text-center">
+          <div className="t-eyebrow">{INSCRIPTION.presentationTitre}</div>
+          <p className="t-small m-0 mt-1.5 text-muted">{INSCRIPTION.presentationTexte}</p>
+        </div>
+      )}
       <PremierTrait
         key={essai}
         etape={etape}

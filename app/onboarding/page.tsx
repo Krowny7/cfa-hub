@@ -1,13 +1,19 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/OnboardingForm";
+import { CLE_PRESENTATION, presentationVue } from "@/lib/presentation";
 
 export const metadata = { title: "Ton premier trait · Ranked Lobby" };
 
 type ProfileRow = { username: string | null; avatar_url: string | null; exam_date?: string | null } | null;
 
 // Première connexion : le premier trait (pseudo, jour J, sceau ; photo
-// facultative). Le middleware y renvoie tant qu'il manque le pseudo.
+// facultative). Le middleware y renvoie tant qu'il manque le pseudo, et une
+// fois les comptes déjà configurés qui n'ont pas vu la présentation de cette
+// version (lib/presentation) : pour eux tout est déjà rempli, rien n'est
+// effacé ni réécrit (le pseudo ne se change pas ici, la date seulement si
+// le joueur en choisit une autre), puis Léonard leur fait la visite.
 // ?rejouer=1 : rejoué depuis Moi › Réglages, même si le profil est complet.
 export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ next?: string; rejouer?: string }> }) {
   const { next, rejouer } = await searchParams;
@@ -27,8 +33,9 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   else profile = (await supabase.from("profiles").select("username,avatar_url").eq("id", user.id).maybeSingle()).data as ProfileRow;
 
   // Déjà un pseudo : rien à imposer (retour manuel ici, ou lien « next »
-  // périmé), sauf pour rejouer le premier trait.
-  if (profile?.username && !replay) redirect(target);
+  // périmé), sauf pour rejouer le premier trait ou découvrir la présentation.
+  const presentation = Boolean(profile?.username) && !replay && !presentationVue(user.user_metadata, (await cookies()).get(CLE_PRESENTATION)?.value);
+  if (profile?.username && !replay && !presentation) redirect(target);
 
   return (
     <OnboardingForm
@@ -36,7 +43,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
       initialAvatarUrl={profile?.avatar_url ?? null}
       initialExamDate={profile?.exam_date ?? null}
       next={target}
-      replay={replay && Boolean(profile?.username)}
+      replay={(replay || presentation) && Boolean(profile?.username)}
+      presentation={presentation}
     />
   );
 }

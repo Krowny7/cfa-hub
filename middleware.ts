@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
+import { CLE_PRESENTATION, presentationVue } from "@/lib/presentation";
 
 // Paths that must stay reachable even with an incomplete profile — the
 // onboarding page itself (or we'd redirect-loop), auth/login flows, and API
@@ -57,7 +58,10 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     const incomplete = !profile?.username;
-    if (incomplete) {
+    // Un compte déjà configuré qui n'a pas vu la présentation de cette
+    // version y repasse une fois, ses réponses déjà remplies (lib/presentation).
+    const aPresenter = !incomplete && !presentationVue(user.user_metadata, request.cookies.get(CLE_PRESENTATION)?.value);
+    if (incomplete || aPresenter) {
       const onboardingUrl = new URL("/onboarding", request.url);
       onboardingUrl.searchParams.set("next", pathname + request.nextUrl.search);
       return redirectTo(onboardingUrl);

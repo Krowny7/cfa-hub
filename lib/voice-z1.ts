@@ -129,6 +129,10 @@ export const INSCRIPTION = {
   photoErreur: "La photo n'a pas pu être envoyée. Ton sceau suffit : tu pourras réessayer dans Moi › Réglages.",
   entrer: "Entrer dans le lobby",
   retourReglages: "Revenir à mes réglages",
+  // comptes déjà configurés, repassés par la présentation d'une nouvelle version
+  presentationTitre: "Nouvelle version du lobby",
+  presentationTexte:
+    "On te la présente en une minute, puis Léonard te fait visiter. Rien ne bouge : ton nom, ton jour J, ta progression et tes duels sont conservés.",
 } as const;
 
 // ---------------------------------------------------------------------------
