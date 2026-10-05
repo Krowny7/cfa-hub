@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Hourglass, Zap } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { PageHero } from "@/components/ui/Titles";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
@@ -18,8 +18,9 @@ import {
   type DailyBoard,
   type DailyBoardRow,
   type DailyHistoryEntry,
+  type FormatDefi,
 } from "@/lib/daily";
-import { DEFI, joueurs, rangOrdinal, raturesOuPropre } from "@/lib/voice-z2c";
+import { DEFI, DEFI_CINQ, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
 
 // Pièces partagées des pages du défi du jour. Sans état : utilisables depuis
 // un composant serveur comme depuis un composant client.
@@ -28,16 +29,35 @@ import { DEFI, joueurs, rangOrdinal, raturesOuPropre } from "@/lib/voice-z2c";
  * En-tête : « Défi du jour · samedi 3 octobre », grand titre « Les 30 du
  * jour. » (ou « Les 30 du 2 octobre. » pour un jour passé).
  */
-export function DefiHeading({ day, today, isToday }: { day: string; today: string; isToday: boolean }) {
+export function DefiHeading({ day, today, isToday, format = "trente" }: { day: string; today: string; isToday: boolean; format?: FormatDefi }) {
+  const V = voixDefi(format);
   return (
     <PageHero
       kicker={
         <span className="inline-flex items-center gap-1.5">
-          <Icone nom="examen" size={15} /> {DEFI.kicker(dayLabel(day, "long", today))}
+          {format === "cinq" ? <Zap size={15} aria-hidden /> : <Icone nom="examen" size={15} />} {V.kicker(dayLabel(day, "long", today))}
         </span>
       }
-      title={isToday ? DEFI.title : DEFI.titleDay(dayLabel(day, "day", today))}
+      title={isToday ? V.title : V.titleDay(dayLabel(day, "day", today))}
     />
+  );
+}
+
+/**
+ * La passerelle vers l'autre défi du jour, en une ligne : depuis les 30,
+ * « pressé ? les 5 du jour, 2 min » ; depuis les 5, « l'épreuve complète ».
+ */
+export function AutreDefi({ format }: { format: FormatDefi }) {
+  const cinq = format === "trente";
+  return (
+    <Link href={cinq ? "/defi/cinq" : "/defi"} className="rl-row group flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">{cinq ? <Zap size={17} aria-hidden /> : <Hourglass size={17} aria-hidden />}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-semibold">{cinq ? "Pressé ? " + DEFI_CINQ.tuile.titre : "L'épreuve complète : " + DEFI.tuile.titre}</span>
+        <span className="t-micro block">{cinq ? "5 questions de cours, sans calcul · 2 min" : "30 questions, calculs compris · 45 min, chrono"}</span>
+      </span>
+      <ArrowRight size={15} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+    </Link>
   );
 }
 
@@ -260,7 +280,7 @@ export function DefiBoard({
 // Jours passés : les plus récents, puis « Voir plus » (la revue reste ouverte
 // au-delà des 14 jours ; la fenêtre « à revoir » est rappelée sur chaque ligne)
 
-function HistoryRow({ e, today, nowIso }: { e: DailyHistoryEntry; today: string; nowIso: string }) {
+function HistoryRow({ e, today, nowIso, format }: { e: DailyHistoryEntry; today: string; nowIso: string; format: FormatDefi }) {
   const played = !!e.finishedAt;
   const open = !!e.startedAt && !e.finishedAt;
   const total = e.total ?? e.questionCount;
@@ -281,7 +301,7 @@ function HistoryRow({ e, today, nowIso }: { e: DailyHistoryEntry; today: string;
   return (
     <li className="flex items-center gap-3 py-1">
       <Link
-        href={dayHref(e.day)}
+        href={dayHref(e.day, format)}
         className="rl-row grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 rounded-[12px] px-2 py-2.5"
         aria-label={`${dayLabel(e.day, "long", today)} : ${played ? `${e.score} sur ${total}, ` : ""}${main}`}
       >
@@ -300,11 +320,11 @@ function HistoryRow({ e, today, nowIso }: { e: DailyHistoryEntry; today: string;
         )}
       </Link>
       {played ? (
-        <Link href={reviewHref(e.day)} className="btn btn-sm btn-secondary shrink-0" aria-label={`Revoir ta copie du ${dayLabel(e.day, "day", today)}`}>
+        <Link href={reviewHref(e.day, undefined, format)} className="btn btn-sm btn-secondary shrink-0" aria-label={`Revoir ta copie du ${dayLabel(e.day, "day", today)}`}>
           {DEFI.revoirCourt}
         </Link>
       ) : open ? (
-        <Link href={dayHref(e.day)} className="btn btn-sm btn-primary shrink-0">
+        <Link href={dayHref(e.day, format)} className="btn btn-sm btn-primary shrink-0">
           {DEFI.reprendreCourt}
         </Link>
       ) : (
@@ -319,10 +339,12 @@ export function DefiHistory({
   today,
   nowIso,
   visible = 6,
+  format = "trente",
 }: {
   entries: DailyHistoryEntry[];
   today: string;
   nowIso: string;
+  format?: FormatDefi;
   /** jours affichés avant « Voir plus » */
   visible?: number;
 }) {
@@ -343,7 +365,7 @@ export function DefiHistory({
         <div>
           <ul className="m-0 grid list-none divide-y divide-line p-0">
             {shown.map((e) => (
-              <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} />
+              <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} format={format} />
             ))}
           </ul>
           {more.length > 0 && (
@@ -354,7 +376,7 @@ export function DefiHistory({
               </summary>
               <ul className="m-0 mt-1 grid list-none divide-y divide-line p-0">
                 {more.map((e) => (
-                  <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} />
+                  <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} format={format} />
                 ))}
               </ul>
             </details>

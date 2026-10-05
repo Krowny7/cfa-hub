@@ -8,7 +8,7 @@ import { Ticks, reviewMarks } from "@/components/defi/parts";
 import { clock } from "@/lib/duels";
 import { reviewHref, type DailyBoard, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { ratures } from "@/lib/voice";
-import { DEFI, rangOrdinal, verdictCopie } from "@/lib/voice-z2c";
+import { rangOrdinal, verdictCopie, voixDefi } from "@/lib/voice-z2c";
 
 type Props = {
   /** le défi, avec ma copie rendue (info.me.finishedAt) */
@@ -28,6 +28,8 @@ const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-d
 // tampon à la première visite, déjà posé ensuite. Rendu côté serveur
 // comme côté client (seul le sceau est un îlot client).
 export function DefiResult({ info, review, board }: Props) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(info.format);
   const me = info.me;
   if (!me) return null;
   const total = me.total ?? info.questionCount;
@@ -81,7 +83,7 @@ export function DefiResult({ info, review, board }: Props) {
         </p>
       </div>
 
-      {review.length > 0 && <Ticks marks={reviewMarks(review)} label={DEFI.coches} numbered hrefFor={(p) => reviewHref(info.day, p)} />}
+      {review.length > 0 && <Ticks marks={reviewMarks(review)} label={DEFI.coches} numbered hrefFor={(p) => reviewHref(info.day, p, info.format)} />}
 
       <dl className="m-0 grid grid-cols-3 gap-3 border-t border-line pt-4">
         <div className="min-w-0">
@@ -108,7 +110,7 @@ export function DefiResult({ info, review, board }: Props) {
 
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-4 sm:pr-28">
         <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-          <Link href={reviewHref(info.day)} className="btn btn-primary">
+          <Link href={reviewHref(info.day, undefined, info.format)} className="btn btn-primary">
             {DEFI.revoir}
             {errors > 0 && <span className="text-[13px] font-medium opacity-70">· {ratures(errors)}</span>}
             <ArrowRight size={16} aria-hidden />

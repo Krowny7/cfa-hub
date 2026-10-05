@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { DefiResult } from "@/components/defi/DefiResult";
 import { BackLink, DefiBoard, DefiHeading } from "@/components/defi/parts";
-import { DAILY_HREF, dailyPhase, type DailyBoard, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
-import { DEFI } from "@/lib/voice-z2c";
+import { FORMATS, dailyPhase, type DailyBoard, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
+import { voixDefi } from "@/lib/voice-z2c";
 
 type Props = {
   info: DailyInfo;
@@ -16,19 +16,21 @@ type Props = {
 // /defi/<jour> : un jour passé (ou aujourd'hui, une fois ma copie rendue) :
 // ma copie et sa revue, et le classement figé.
 export function DefiDay({ info, board, review, nowIso }: Props) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(info.format);
   const phase = dailyPhase(info);
   return (
     <div className="rl-page">
       <div className="grid gap-5">
-        <BackLink href={DAILY_HREF}>{info.isToday ? DEFI.tuile.label : DEFI.aujourdhui}</BackLink>
-        <DefiHeading day={info.day} today={info.today} isToday={info.isToday} />
+        <BackLink href={FORMATS[info.format].href}>{info.isToday ? DEFI.tuile.label : DEFI.aujourdhui}</BackLink>
+        <DefiHeading day={info.day} today={info.today} isToday={info.isToday} format={info.format} />
       </div>
 
       {!info.exists ? (
         <section className="card-quiet grid max-w-[640px] gap-3 p-6 md:p-8">
           <h2 className="t-h2 m-0">{DEFI.jourSansTitre}</h2>
           <p className="t-body m-0 text-muted">{DEFI.jourSansTexte}</p>
-          <Link href={DAILY_HREF} className="btn btn-primary w-fit">
+          <Link href={FORMATS[info.format].href} className="btn btn-primary w-fit">
             {DEFI.aujourdhui} <ArrowRight size={16} aria-hidden />
           </Link>
         </section>
@@ -40,7 +42,7 @@ export function DefiDay({ info, board, review, nowIso }: Props) {
             <section className="card-quiet grid min-w-0 gap-3 p-6 md:p-8">
               <h2 className="t-h2 m-0">{DEFI.missed}</h2>
               <p className="t-body m-0 text-muted">{DEFI.missedText}</p>
-              <Link href={DAILY_HREF} className="btn btn-primary w-fit">
+              <Link href={FORMATS[info.format].href} className="btn btn-primary w-fit">
                 {DEFI.aujourdhui} <ArrowRight size={16} aria-hidden />
               </Link>
             </section>

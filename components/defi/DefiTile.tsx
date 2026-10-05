@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Icone, type IconeNom } from "@/components/adn/icons";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
-import { DAILY_HREF, rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
-import { DEFI, joueurs } from "@/lib/voice-z2c";
+import { rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
+import { joueurs, voixDefi } from "@/lib/voice-z2c";
 
 // Tuile « Défi du jour » prête à poser (accueil, S'entraîner), sur la même
 // grille que les tuiles de l'accueil (components/accueil/Tile) : étiquette
@@ -34,13 +34,15 @@ export function DefiTile({
   icone?: IconeNom;
   className?: string;
 }) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(daily.format);
   const T = DEFI.tuile;
   const players = joueurs(daily.players);
   let status: string;
   let main: React.ReactNode;
   let sub: string | null;
   let cta: string | null;
-  let href = DAILY_HREF;
+  let href = daily.href;
 
   switch (daily.status) {
     case "done": {
@@ -54,7 +56,7 @@ export function DefiTile({
       );
       sub = [rankLine(daily.rank, daily.players), timeLeftLabel(daily.closesAt, nowIso) ? T.seFige : null].filter(Boolean).join(" · ");
       cta = DEFI.revoir;
-      href = reviewHref(daily.day);
+      href = reviewHref(daily.day, undefined, daily.format);
       break;
     }
     case "playing":

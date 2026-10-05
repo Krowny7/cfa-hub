@@ -7,8 +7,8 @@ import { segThumbStyle } from "@/components/classement/Seg";
 import { DefiAiCopy } from "@/components/defi/DefiAiCopy";
 import { BackLink, Filigrane, Ticks, reviewMarks } from "@/components/defi/parts";
 import { clock, duelTopicLabel } from "@/lib/duels";
-import { DAILY_HREF, dayHref, dayLabel, rankLine, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
-import { DEFI, verdictCopie } from "@/lib/voice-z2c";
+import { FORMATS, dayHref, dayLabel, rankLine, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
+import { DEFI, verdictCopie, voixDefi } from "@/lib/voice-z2c";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
 
 type Filter = "errors" | "all";
@@ -31,6 +31,8 @@ const MIN_PLAYERS_FOR_RATE = 3;
 // puis chaque question avec ma réponse, la bonne, l'explication et la part
 // des joueurs qui l'ont trouvée.
 export function DefiReview({ info, review, initialFilter }: Props) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(info.format);
   const me = info.me;
   const total = me?.total ?? (review.length || info.questionCount);
   const score = me?.score ?? review.filter((r) => r.isCorrect).length;
@@ -42,7 +44,7 @@ export function DefiReview({ info, review, initialFilter }: Props) {
   const hardest = showRates
     ? [...review].filter((r) => r.successRate !== null).sort((a, b) => (a.successRate ?? 0) - (b.successRate ?? 0) || a.position - b.position)[0] ?? null
     : null;
-  const backHref = info.isToday ? DAILY_HREF : dayHref(info.day);
+  const backHref = info.isToday ? FORMATS[info.format].href : dayHref(info.day, info.format);
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const place = rankLine(me?.rank ?? null, players);
 
@@ -179,7 +181,7 @@ export function DefiReview({ info, review, initialFilter }: Props) {
       {/* Pied : copier à nouveau, sans remonter */}
       <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-start sm:justify-between">
         <DefiAiCopy review={review} ctx={{ day: info.day, score, total, rank: me?.rank ?? null, players }} layout="buttons" />
-        <a href={DAILY_HREF} className="inline-flex w-fit items-center gap-1.5 pt-2.5 text-[13.5px] font-semibold text-muted hover:text-white">
+        <a href={FORMATS[info.format].href} className="inline-flex w-fit items-center gap-1.5 pt-2.5 text-[13.5px] font-semibold text-muted hover:text-white">
           {DEFI.aujourdhui} <ArrowRight size={14} aria-hidden />
         </a>
       </div>

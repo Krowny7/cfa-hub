@@ -8,13 +8,14 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Ticks, type TickMark } from "@/components/defi/parts";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { clock, duelTopicLabel } from "@/lib/duels";
-import { DEFI } from "@/lib/voice-z2c";
+import { voixDefi } from "@/lib/voice-z2c";
 import {
   answerDaily,
   dailyErrorMessage,
   dayLabel,
   finishDaily,
   startDaily,
+  type FormatDefi,
   type DailyQuestion,
 } from "@/lib/daily";
 
@@ -32,6 +33,8 @@ type Props = {
     answered: Record<number, number>;
     secondsLeft: number;
   };
+  /** les 30 du jour (défaut) ou les 5 du jour */
+  format?: FormatDefi;
 };
 
 type Phase = "loading" | "play" | "done" | "error";
@@ -40,7 +43,9 @@ type Phase = "loading" | "play" | "done" | "error";
 // d'avancement (à l'encre ce qui est répondu, au crayon ce qui reste). La
 // correction reste côté serveur jusqu'à la copie rendue. Démarre (ou
 // reprend) la copie dès son affichage.
-export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }: Props) {
+export function DefiRunner({ day, today, questionCount, timeLimitSeconds, format = "trente", demo }: Props) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(format);
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
 
@@ -85,7 +90,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
     setPhase("done");
     if (!supabase) return;
     try {
-      await finishDaily(supabase, day);
+      await finishDaily(supabase, day, format);
     } catch {
       // le serveur rend la copie de toute façon à la fin du chrono
     }
@@ -97,7 +102,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
     setPhase("loading");
     setFatal(null);
     try {
-      const r = await startDaily(supabase, day);
+      const r = await startDaily(supabase, day, format);
       if (r.finished) {
         router.refresh();
         return;
@@ -144,7 +149,7 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
     try {
       const nextAnswers = { ...answers, [current]: selected };
       if (supabase) {
-        const res = await answerDaily(supabase, day, current, selected);
+        const res = await answerDaily(supabase, day, current, selected, format);
         // un trait de plus sur l'anneau du jour (logo vivant de la barre du haut)
         if (res.ok) poserTrait(1);
         if (!res.ok || res.finished) {
@@ -222,7 +227,8 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, demo }
   }
 
   const unanswered = n - answeredCount;
-  const low = phase === "play" && remaining <= 300;
+  // l'encre rouge : les 5 dernières minutes des 30, la dernière minute des 5
+  const low = phase === "play" && remaining <= Math.min(300, Math.round(timeLimitSeconds / 5));
   const marks: TickMark[] = Array.from({ length: n }, (_, i) =>
     answers[i] !== undefined ? "done" : i === current && phase === "play" ? "current" : "todo",
   );

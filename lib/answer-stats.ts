@@ -303,7 +303,7 @@ type DuelAnswerRow = { duel_id: string; question_id: string; selected_index: num
 type DailyAttemptRow = { challenge_id: string; day: string; started_at: string; finished_at: string | null; score: number | null; total: number | null };
 type CalcRow = { topic: string; type_key: string; level: string; correct: boolean; answered_at: string };
 type DailyAnswerRow = { challenge_id: string; position: number; question_id: string | null; selected_index: number | null; is_correct: boolean | null };
-type DailyChallengeRow = { id: string; question_ids: string[] | null; time_limit_seconds: number | null };
+type DailyChallengeRow = { id: string; question_ids: string[] | null; time_limit_seconds: number | null; program?: string | null };
 type MockResultRow = { exam_id: string; answers: unknown; score: number | null; total: number | null; completed_at: string | null };
 type MockAttemptRow = { id: string; exam_id: string; score: number | null; total: number | null; completed_at: string | null };
 type QuizAttemptRow = { id: string; set_id: string; score: number | null; total: number | null; created_at: string | null };
@@ -423,7 +423,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   // ouverte ne compte jamais : sa justesse reste cachée jusqu'au bout.
   const dailyIds = [...new Set((dailyAttempts ?? []).map((a) => a.challenge_id))];
   const challenges =
-    opts.privileged && dailyIds.length ? await readIds<DailyChallengeRow>(dailyIds, (c) => reader.from("daily_challenges").select("id,question_ids,time_limit_seconds").in("id", c)) : null;
+    opts.privileged && dailyIds.length ? await readIds<DailyChallengeRow>(dailyIds, (c) => reader.from("daily_challenges").select("id,question_ids,time_limit_seconds,program").in("id", c)) : null;
   const challengeOf = new Map((challenges ?? []).map((c) => [c.id, c]));
   const dailyDone = new Map<string, DailyAttemptRow>();
   for (const a of dailyAttempts ?? []) if (dailyClosed(a, challengeOf.get(a.challenge_id)?.time_limit_seconds, now)) dailyDone.set(a.challenge_id, a);
@@ -512,7 +512,10 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   }
   for (const [id, a] of dailyDone) {
     const pid = `dj:${id}`;
-    passages.set(pid, { source: "daily", label: "Défi du jour", at: a.finished_at ?? a.started_at, href: `/defi/${String(a.day).slice(0, 10)}` });
+    // les 5 du jour (défi éclair) : leur programme, à défaut leurs 5 questions
+    const prog = challengeOf.get(id)?.program;
+    const cinq = prog ? prog === "cfa-l1-cinq" : num(a.total) === 5;
+    passages.set(pid, { source: "daily", label: cinq ? "Les 5 du jour" : "Défi du jour", at: a.finished_at ?? a.started_at, href: `/defi${cinq ? "/cinq" : ""}/${String(a.day).slice(0, 10)}` });
     const rows = byDaily.get(id);
     if (rows) perSet("daily", pid, rows, a.score);
     else if (!dailyDetail && a.finished_at && num(a.total) > 0)

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { DefiHeading, Filigrane } from "@/components/defi/parts";
 import { parisDay } from "@/lib/daily";
-import { DEFI } from "@/lib/voice-z2c";
+import { voixDefi } from "@/lib/voice-z2c";
 
 // Tant que migration_daily_challenge.sql n'est pas appliquée (ou si le
 // serveur ne répond pas) : un état propre au lieu d'une erreur.
-export function DefiSoon({ variant = "soon" }: { variant?: "soon" | "error" }) {
+export function DefiSoon({ variant = "soon", format = "trente" }: { variant?: "soon" | "error"; format?: "trente" | "cinq" }) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(format);
   const today = parisDay();
   return (
     <div className="rl-page">

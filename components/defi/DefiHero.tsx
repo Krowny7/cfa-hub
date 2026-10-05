@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
-import { DAILY_HREF, rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
-import { DEFI, joueurs } from "@/lib/voice-z2c";
+import { rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
+import { joueurs, voixDefi } from "@/lib/voice-z2c";
 
 // Le défi du jour en carte héros de l'accueil, juste sous le titre (à la
 // place de « Ton dernier trait », qui passe en tuile dans « Aujourd'hui ») :
@@ -18,11 +18,13 @@ export function defiEnTete(daily: TodayDaily | null | undefined): daily is Today
 }
 
 export function DefiHero({ daily, nowIso }: { daily: TodayDaily; nowIso: string }) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(daily.format);
   const T = DEFI.tuile;
   let etat: string;
   let ligne: React.ReactNode;
   let cta: string;
-  let href = DAILY_HREF;
+  let href = daily.href;
   let second: React.ReactNode = null;
 
   if (daily.status === "done") {
@@ -38,9 +40,9 @@ export function DefiHero({ daily, nowIso }: { daily: TodayDaily; nowIso: string 
       </span>
     );
     cta = DEFI.revoir;
-    href = reviewHref(daily.day);
+    href = reviewHref(daily.day, undefined, daily.format);
     second = (
-      <Link href={DAILY_HREF} className="t-small font-semibold hover:text-white">
+      <Link href={daily.href} className="t-small font-semibold hover:text-white">
         {DEFI.classement} →
       </Link>
     );
@@ -74,9 +76,15 @@ export function DefiHero({ daily, nowIso }: { daily: TodayDaily; nowIso: string 
           <Icone nom="examen" size={26} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="t-micro font-semibold">
-            {T.label} · {etat}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="t-micro font-semibold">
+              {T.label} · {etat}
+            </p>
+            {/* l'épreuve : 45 min (les 5 du jour, eux, en prennent 2) */}
+            {daily.format === "trente" && (
+              <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[11.5px] font-semibold">≈ 45 min<span className="hidden sm:inline"> · chrono</span></span>
+            )}
+          </div>
           <h2 className="t-h1 mt-1.5">{daily.status === "playing" ? T.enCours : T.titre}</h2>
           <div className="mt-3">{ligne}</div>
         </div>

@@ -170,6 +170,38 @@ export const DEFI = {
   },
 } as const;
 
+/**
+ * Les 5 du jour, le défi éclair : seulement ce qui diffère des 30 du jour.
+ * Le contraste tient en deux mots : éclair (5 questions de cours, sans
+ * calcul, 2 min) contre épreuve (30 questions, 45 min, calculs compris).
+ */
+export const DEFI_CINQ = {
+  title: "Les 5 du jour.",
+  titleDay: (jour: string) => `Les 5 du ${jour}.`,
+  kicker: (jour: string) => `Défi éclair · ${jour}`,
+  soonTitle: "Les 5 du jour arrivent bientôt.",
+  soonText: "Chaque jour, 5 questions de cours, sans calcul : deux minutes, dans le bus ou en attendant le café.",
+  aujourdhui: "Les 5 d'aujourd'hui",
+  revueKicker: (jour: string) => `Revue · les 5 du jour · ${jour}`,
+  format: (questions: number, _minutes?: number) => `${questions} questions de cours · 2 min environ`,
+  rules: (questions: number, minutes: number): [string, string][] => [
+    [`${questions} questions de cours`, ", sans calcul : la même série pour tout le monde."],
+    ["Deux minutes suffisent", ` (${minutes} min au plus), une seule copie.`],
+    ["Réponses définitives", " ; la correction s'ouvre dès ta copie rendue."],
+  ],
+  tuile: {
+    ...DEFI.tuile,
+    label: "Défi éclair",
+    titre: "Les 5 du jour",
+    bientot: "5 questions de cours, sans calcul.",
+  },
+} as const;
+
+/** La voix d'un défi : les 30 du jour, ou les 5 du jour (même forme que DEFI). */
+export function voixDefi(format: "trente" | "cinq"): typeof DEFI {
+  return format === "cinq" ? ({ ...DEFI, ...DEFI_CINQ } as unknown as typeof DEFI) : DEFI;
+}
+
 /** « Copier pour l'IA » du défi : le nom reste (règle de la voix), la voix l'entoure. */
 export const COPIER_DEFI = {
   label: IA.label,

@@ -3,6 +3,7 @@ import { JourAnneau, JourHero, ResumeHero } from "@/components/accueil/HomeCards
 import { ProgressSection, TodaySection } from "@/components/accueil/Sections";
 import { DefiHero, defiEnTete } from "@/components/defi/DefiHero";
 import type { AccueilData } from "@/components/accueil/types";
+import { CinqCarte, cinqVisible } from "@/components/defi/CinqCarte";
 
 export type { AccueilData } from "@/components/accueil/types";
 
@@ -37,6 +38,8 @@ export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; t
           ) : (
             <ResumeHero resume={d.resume} returning={d.returning} evening={d.dayState === "sec" && d.streak > 0} now={now} />
           )}
+          {/* les 5 du jour : le défi éclair, en carte légère sous l'épreuve */}
+          {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} className="mt-4" />}
         </div>
       </section>
 

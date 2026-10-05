@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { DefiRunner } from "@/components/defi/DefiRunner";
 import { DefiResult } from "@/components/defi/DefiResult";
-import { DefiBoard, DefiHeading, DefiHistory, Ticks } from "@/components/defi/parts";
-import { DEFI } from "@/lib/voice-z2c";
+import { AutreDefi, DefiBoard, DefiHeading, DefiHistory, Ticks } from "@/components/defi/parts";
+import { voixDefi } from "@/lib/voice-z2c";
 import {
   dailyPhase,
   timeLeftLabel,
@@ -44,6 +44,8 @@ export function DefiToday({
   nowIso,
   demo,
 }: Props) {
+  // la voix de ce défi : les 30 du jour ou les 5 du jour
+  const DEFI = voixDefi(info.format);
   const phase = dailyPhase(info);
   const [run, setRun] = useState(phase === "playing");
 
@@ -54,6 +56,7 @@ export function DefiToday({
         today={info.today}
         questionCount={info.questionCount}
         timeLimitSeconds={info.timeLimitSeconds}
+        format={info.format}
         demo={demo}
       />
     );
@@ -63,7 +66,7 @@ export function DefiToday({
 
   return (
     <div className="rl-page">
-      <DefiHeading day={info.day} today={info.today} isToday={info.isToday} />
+      <DefiHeading day={info.day} today={info.today} isToday={info.isToday} format={info.format} />
 
       {/* Ordinateur : la copie puis les jours passés à gauche, le classement
           accroché à droite. Mobile : copie, classement, jours passés. */}
@@ -114,6 +117,11 @@ export function DefiToday({
           )}
         </div>
 
+        {/* l'autre défi du jour : l'épreuve ou l'éclair */}
+        <div className="min-w-0 lg:col-start-1 lg:row-start-3">
+          <AutreDefi format={info.format} />
+        </div>
+
         {/* L'accroche se pose sur une enveloppe : .card impose position: relative.
             Pas de défi tiré aujourd'hui : pas de classement à montrer. */}
         {info.exists && (
@@ -123,7 +131,7 @@ export function DefiToday({
         )}
 
         <div className="min-w-0 lg:col-start-1 lg:row-start-2">
-          <DefiHistory entries={history} today={info.today} nowIso={nowIso} />
+          <DefiHistory entries={history} today={info.today} nowIso={nowIso} format={info.format} />
         </div>
       </div>
     </div>

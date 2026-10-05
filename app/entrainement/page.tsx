@@ -27,7 +27,7 @@ export default async function EntrainementPage() {
     admin = null;
   }
 
-  const [mastery, practice, mockExam, rating, open, daily] = await Promise.all([
+  const [mastery, practice, mockExam, rating, open, daily, cinq] = await Promise.all([
     getTopicMastery(supabase, userId),
     (async () => {
       try {
@@ -52,6 +52,7 @@ export default async function EntrainementPage() {
     getOpenChallenges(supabase, userId),
     // un seul appel, jamais d'exception ; « bientôt » tant que la migration manque
     getTodayDaily(supabase, userId).catch(() => null),
+    getTodayDaily(supabase, userId, "cinq").catch(() => null),
   ]);
 
   const pct = new Map(mastery.map((t) => [t.key, t.pct]));
@@ -62,6 +63,7 @@ export default async function EntrainementPage() {
     incomingDuels: open.filter((c) => c.incoming && c.status === "pending").length,
     subjects: SUBJECTS.map((s) => ({ key: s.key, name: s.name, pct: pct.get(s.key) ?? null })),
     daily,
+    cinq,
     nowIso: new Date().toISOString(),
   };
 

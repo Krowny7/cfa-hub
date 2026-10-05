@@ -49,7 +49,7 @@ export default async function Dashboard() {
 
   const now = new Date();
 
-  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable] =
+  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq] =
     await Promise.all([
       supabase.from("profiles").select("username,exam_date").eq("id", user.id).maybeSingle(),
       // XP par jour : sert seulement à la série (le détail est sur /moi).
@@ -75,6 +75,8 @@ export default async function Dashboard() {
       // Défi du jour : « bientôt » tant que la migration n'est pas appliquée.
       getTodayDaily(supabase, user.id),
       getReviewableDuels(supabase, user.id, { days: DUEL_FRESH_DAYS, limit: 1 }),
+      // les 5 du jour, le défi éclair (« bientôt » tant que migration_cinq_du_jour.sql manque)
+      getTodayDaily(supabase, user.id, "cinq"),
     ]);
 
   const profile = profileRes.data as { username?: string | null; exam_date?: string | null } | null;
@@ -83,7 +85,7 @@ export default async function Dashboard() {
 
   // La journée : réponses du jour (avec une copie du défi encore ouverte),
   // série en jours d'encre (qui ne retombe pas à 0 avant le soir), heure.
-  const activity = withLiveDaily(activityRaw, daily);
+  const activity = withLiveDaily(withLiveDaily(activityRaw, daily), cinq);
   // l'objectif de questions d'ici l'examen : l'objectif du jour et la courbe
   const [objectif, demandes] = await Promise.all([etatObjectif(user, activity.today), demandesDe(supabase, user.id)]);
   const dayKey = parisDay(now);
@@ -133,6 +135,7 @@ export default async function Dashboard() {
     seenBefore: last !== null,
     returning,
     daily,
+    cinq,
     reviewDuel: fresh
       ? {
           id: fresh.id,

@@ -17,6 +17,7 @@ import { DUEL_MINUTES, DUEL_QUESTIONS } from "@/lib/duels";
 import type { TodayDaily } from "@/lib/daily";
 import { ACCUEIL, DUEL } from "@/lib/voice";
 import { ESPACES } from "@/lib/voice-z4";
+import { CinqCarte, cinqVisible } from "@/components/defi/CinqCarte";
 
 // Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
 // avant (la matière la plus faible, sinon reprendre l'entraînement ciblé) ;
@@ -35,6 +36,8 @@ export type EntrainementData = {
   subjects: { key: string; name: string; pct: number | null }[];
   /** défi du jour (getTodayDaily) ; null : on n'affiche pas la tuile */
   daily: TodayDaily | null;
+  /** les 5 du jour, le défi éclair */
+  cinq?: TodayDaily | null;
   /** instant de rendu (ISO), pour les échéances du défi */
   nowIso: string;
 };
@@ -208,8 +211,9 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
         <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
         {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
         {d.daily && (
-          <div className="rl-in flex min-w-0 lg:col-span-4 [&>*]:flex-1" style={{ animationDelay: ".06s" }}>
+          <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>
             <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
+            {cinqVisible(d.cinq) && <CinqCarte daily={d.cinq} nowIso={d.nowIso} />}
           </div>
         )}
       </div>

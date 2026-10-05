@@ -21,6 +21,19 @@ export const DAILY_MINUTES = 45;
 export const DAILY_REVIEW_DAYS = 14;
 export const DAILY_HREF = "/defi";
 
+/**
+ * Deux défis du jour, même moteur (migration_cinq_du_jour.sql) : les 30 du
+ * jour (l'épreuve, 45 min, calculs compris) et les 5 du jour (le défi éclair,
+ * 5 questions de cours sans calcul, 2 min environ). Le format choisit les
+ * RPC (daily_* / cinq_*), l'adresse et les nombres par défaut.
+ */
+export type FormatDefi = "trente" | "cinq";
+export const FORMATS: Record<FormatDefi, { questions: number; minutes: number; href: string; rpc: "daily" | "cinq"; duree: string }> = {
+  trente: { questions: DAILY_QUESTIONS, minutes: DAILY_MINUTES, href: DAILY_HREF, rpc: "daily", duree: "45 min" },
+  cinq: { questions: 5, minutes: 5, href: "/defi/cinq", rpc: "cinq", duree: "2 min" },
+};
+const rpcDe = (format: FormatDefi, nom: string) => `${FORMATS[format].rpc}_${nom}`;
+
 // ---------------------------------------------------------------------------
 // Jours (calendrier de Paris, clés « AAAA-MM-JJ »)
 
@@ -68,9 +81,9 @@ export function dayLabel(key: string, style: "long" | "short" | "day" = "long", 
 }
 
 /** Page d'un jour, et sa revue (avec l'ancre d'une question). */
-export const dayHref = (key: string) => `${DAILY_HREF}/${key}`;
-export const reviewHref = (key: string, position?: number) =>
-  `${DAILY_HREF}/${key}?revue=1${position === undefined ? "" : `#q-${position + 1}`}`;
+export const dayHref = (key: string, format: FormatDefi = "trente") => `${FORMATS[format].href}/${key}`;
+export const reviewHref = (key: string, position?: number, format: FormatDefi = "trente") =>
+  `${FORMATS[format].href}/${key}?revue=1${position === undefined ? "" : `#q-${position + 1}`}`;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -89,6 +102,7 @@ export type DailyMe = {
 };
 
 export type DailyInfo = {
+  format: FormatDefi;
   day: string;
   today: string;
   isToday: boolean;
@@ -204,6 +218,7 @@ export type DailyHistoryEntry = {
 
 /** Résumé léger du défi du jour, pour les tuiles (accueil, S'entraîner). */
 export type TodayDaily = {
+  format: FormatDefi;
   status: "soon" | "unavailable" | "todo" | "playing" | "done";
   day: string;
   href: string;
@@ -245,16 +260,17 @@ function toMe(r: Raw | null | undefined): DailyMe | null {
   };
 }
 
-function toInfo(r: Raw): DailyInfo {
+function toInfo(r: Raw, format: FormatDefi): DailyInfo {
   const reason = str(r.reason);
   return {
+    format,
     day: dayKey(r.day),
     today: dayKey(r.today),
     isToday: Boolean(r.is_today),
     exists: Boolean(r.exists),
     reason: reason === "future" || reason === "no_bank" || reason === "none" ? reason : null,
-    questionCount: num(r.question_count, DAILY_QUESTIONS),
-    timeLimitSeconds: num(r.time_limit_seconds, DAILY_MINUTES * 60),
+    questionCount: num(r.question_count, FORMATS[format].questions),
+    timeLimitSeconds: num(r.time_limit_seconds, FORMATS[format].minutes * 60),
     serverNow: String(r.server_now ?? new Date().toISOString()),
     closesAt: str(r.closes_at),
     players: num(r.players),
@@ -304,21 +320,21 @@ function rpcError(error: { message?: string } | null): Error {
 // Lectures (ne lèvent jamais d'exception)
 
 /** Le défi d'un jour (aujourd'hui par défaut ; créé à la première ouverture du jour). */
-export async function getDaily(supabase: SupabaseClient, day: string | null = null): Promise<DailyLoad> {
+export async function getDaily(supabase: SupabaseClient, day: string | null = null, format: FormatDefi = "trente"): Promise<DailyLoad> {
   try {
-    const { data, error } = await supabase.rpc("daily_get", { p_day: day });
+    const { data, error } = await supabase.rpc(rpcDe(format, "get"), { p_day: day });
     if (error) return isMissing(error) ? { kind: "soon" } : { kind: "error" };
     if (!data || typeof data !== "object") return { kind: "error" };
-    return { kind: "ok", info: toInfo(data as Raw) };
+    return { kind: "ok", info: toInfo(data as Raw, format) };
   } catch {
     return { kind: "error" };
   }
 }
 
 /** Classement d'un jour (null si indisponible). */
-export async function getDailyBoard(supabase: SupabaseClient, day: string, limit = 100): Promise<DailyBoard | null> {
+export async function getDailyBoard(supabase: SupabaseClient, day: string, limit = 100, format: FormatDefi = "trente"): Promise<DailyBoard | null> {
   try {
-    const { data, error } = await supabase.rpc("daily_leaderboard", { p_day: day, p_limit: limit });
+    const { data, error } = await supabase.rpc(rpcDe(format, "leaderboard"), { p_day: day, p_limit: limit });
     if (error || !data) return null;
     const r = data as Raw;
     return {
@@ -335,9 +351,9 @@ export async function getDailyBoard(supabase: SupabaseClient, day: string, limit
 }
 
 /** Correction de ma copie, une fois rendue ([] sinon). */
-export async function getDailyReview(supabase: SupabaseClient, day: string): Promise<DailyReviewItem[]> {
+export async function getDailyReview(supabase: SupabaseClient, day: string, format: FormatDefi = "trente"): Promise<DailyReviewItem[]> {
   try {
-    const { data, error } = await supabase.rpc("daily_review", { p_day: day });
+    const { data, error } = await supabase.rpc(rpcDe(format, "review"), { p_day: day });
     if (error || !Array.isArray(data)) return [];
     return (data as Raw[]).map((r) => ({
       position: num(r.position),
@@ -359,13 +375,13 @@ export async function getDailyReview(supabase: SupabaseClient, day: string): Pro
 }
 
 /** Les derniers défis (aujourd'hui compris), du plus récent au plus ancien. */
-export async function getDailyHistory(supabase: SupabaseClient, limit = 30): Promise<DailyHistoryEntry[]> {
+export async function getDailyHistory(supabase: SupabaseClient, limit = 30, format: FormatDefi = "trente"): Promise<DailyHistoryEntry[]> {
   try {
-    const { data, error } = await supabase.rpc("daily_history", { p_limit: limit });
+    const { data, error } = await supabase.rpc(rpcDe(format, "history"), { p_limit: limit });
     if (error || !Array.isArray(data)) return [];
     return (data as Raw[]).map((r) => ({
       day: dayKey(r.day),
-      questionCount: num(r.question_count, DAILY_QUESTIONS),
+      questionCount: num(r.question_count, FORMATS[format].questions),
       players: num(r.players),
       topScore: numOrNull(r.top_score),
       startedAt: str(r.started_at),
@@ -385,16 +401,17 @@ export async function getDailyHistory(supabase: SupabaseClient, limit = 30): Pro
  * `userId` n'est pas transmis (la RPC lit la session) : il sert seulement à
  * ne rien demander pour un visiteur déconnecté.
  */
-export async function getTodayDaily(supabase: SupabaseClient, userId: string | null): Promise<TodayDaily> {
+export async function getTodayDaily(supabase: SupabaseClient, userId: string | null, format: FormatDefi = "trente"): Promise<TodayDaily> {
   const day = parisDay();
   const empty: TodayDaily = {
+    format,
     status: "unavailable",
     day,
-    href: DAILY_HREF,
+    href: FORMATS[format].href,
     players: 0,
     playing: 0,
     topScore: null,
-    questionCount: DAILY_QUESTIONS,
+    questionCount: FORMATS[format].questions,
     answered: 0,
     score: null,
     total: null,
@@ -404,15 +421,16 @@ export async function getTodayDaily(supabase: SupabaseClient, userId: string | n
     closesAt: null,
   };
   if (!userId) return empty;
-  const load = await getDaily(supabase, null);
+  const load = await getDaily(supabase, null, format);
   if (load.kind === "soon") return { ...empty, status: "soon" };
   if (load.kind === "error") return empty;
   const info = load.info;
   const phase = dailyPhase(info);
   return {
+    format,
     status: phase === "missed" ? "unavailable" : phase,
     day: info.day || day,
-    href: DAILY_HREF,
+    href: FORMATS[format].href,
     players: info.players,
     playing: info.playing,
     topScore: info.topScore,
@@ -430,8 +448,8 @@ export async function getTodayDaily(supabase: SupabaseClient, userId: string | n
 // ---------------------------------------------------------------------------
 // Actions (lèvent une Error au message lisible en cas d'échec)
 
-export async function startDaily(supabase: SupabaseClient, day: string): Promise<DailyStart> {
-  const { data, error } = await supabase.rpc("daily_start", { p_day: day });
+export async function startDaily(supabase: SupabaseClient, day: string, format: FormatDefi = "trente"): Promise<DailyStart> {
+  const { data, error } = await supabase.rpc(rpcDe(format, "start"), { p_day: day });
   if (error || !data) throw rpcError(error);
   const r = data as Raw;
   if (r.finished) return { finished: true, day: dayKey(r.day ?? day) };
@@ -440,7 +458,7 @@ export async function startDaily(supabase: SupabaseClient, day: string): Promise
     day: dayKey(r.day ?? day),
     startedAt: String(r.started_at),
     serverNow: String(r.server_now),
-    timeLimitSeconds: num(r.time_limit_seconds, DAILY_MINUTES * 60),
+    timeLimitSeconds: num(r.time_limit_seconds, FORMATS[format].minutes * 60),
     deadline: String(r.deadline),
     questions: Array.isArray(r.questions) ? (r.questions as Raw[]).map(toQuestion) : [],
     answers: Array.isArray(r.answers)
@@ -449,15 +467,15 @@ export async function startDaily(supabase: SupabaseClient, day: string): Promise
   };
 }
 
-export async function answerDaily(supabase: SupabaseClient, day: string, position: number, selected: number): Promise<DailyAnswerResult> {
-  const { data, error } = await supabase.rpc("daily_answer", { p_day: day, p_position: position, p_selected: selected });
+export async function answerDaily(supabase: SupabaseClient, day: string, position: number, selected: number, format: FormatDefi = "trente"): Promise<DailyAnswerResult> {
+  const { data, error } = await supabase.rpc(rpcDe(format, "answer"), { p_day: day, p_position: position, p_selected: selected });
   if (error || !data) throw rpcError(error);
   const r = data as Raw;
   return { ok: Boolean(r.ok), answered: num(r.answered), finished: Boolean(r.finished) };
 }
 
-export async function finishDaily(supabase: SupabaseClient, day: string): Promise<DailyMe | null> {
-  const { data, error } = await supabase.rpc("daily_finish", { p_day: day });
+export async function finishDaily(supabase: SupabaseClient, day: string, format: FormatDefi = "trente"): Promise<DailyMe | null> {
+  const { data, error } = await supabase.rpc(rpcDe(format, "finish"), { p_day: day });
   if (error || !data) throw rpcError(error);
   return toMe((data as Raw).me as Raw | null);
 }
@@ -536,7 +554,7 @@ export function buildDailyAiExport(
   const items = ctx.scope === "errors" ? review.filter((q) => !q.isCorrect) : review;
   const pct = ctx.total > 0 ? Math.round((ctx.score / ctx.total) * 100) : 0;
   const place = ctx.rank !== null && ctx.players > 1 ? `, ${ordinal(ctx.rank)} sur ${ctx.players} joueurs` : "";
-  const context = `Défi du jour CFA Niveau I du ${dayLabel(ctx.day, "long", ctx.day)}, ${ctx.total} questions type examen (les mêmes pour tous les joueurs), score ${ctx.score}/${ctx.total}${place}.`;
+  const context = `Défi du jour CFA Niveau I du ${dayLabel(ctx.day, "long", ctx.day)}, ${ctx.total} questions ${ctx.total <= 5 ? "de cours, sans calcul" : "type examen"} (les mêmes pour tous les joueurs), score ${ctx.score}/${ctx.total}${place}.`;
   const header =
     ctx.scope === "errors"
       ? `DÉFI DU JOUR CFA — MES ERREURS (${items.length} question${items.length > 1 ? "s" : ""}) — ${ctx.score}/${ctx.total} (${pct}%)\n` +

@@ -100,6 +100,8 @@ export type AccueilData = {
   returning: boolean;
   /** défi du jour (lib/daily getTodayDaily) ; null : non chargé */
   daily: TodayDaily | null;
+  /** les 5 du jour, le défi éclair (getTodayDaily « cinq ») ; null : non chargé */
+  cinq?: TodayDaily | null;
   /** le dernier duel terminé, encore frais (à revoir) */
   reviewDuel: ReviewDuel | null;
   /** instant du rendu (ISO), pour les échéances des tuiles */
