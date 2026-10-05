@@ -38,6 +38,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SUBJECTS, parseDrillTitle, subjectByDrillTitle } from "@/components/reviser/catalog";
 import { fmtShortDate } from "@/components/classement/format";
+import type { Seance } from "@/lib/forme";
 
 // ---------------------------------------------------------------------------
 // Types et libellés (partagés avec les composants)
@@ -110,6 +111,8 @@ export type AnswerSubject = {
   pseudo: boolean;
   by: BySource;
   themes: AnswerTheme[];
+  /** ses séances (part de chaque passage dans la matière), les plus récentes d'abord : la « forme » (lib/forme) */
+  seances?: Seance[];
 };
 
 export type AnswerStats = {
@@ -121,6 +124,8 @@ export type AnswerStats = {
   by: BySource;
   /** les 10 matières dans l'ordre officiel (même vides), puis les regroupements non vides */
   subjects: AnswerSubject[];
+  /** toutes les séances, les plus récentes d'abord (le récent global) */
+  seances?: Seance[];
 };
 
 export const EMPTY_ANSWER_STATS: AnswerStats = { available: false, missing: [], by: {}, subjects: [] };
@@ -153,9 +158,9 @@ export function addTally(by: BySource, source: AnswerSource, n: number, ok: numb
   by[source] = t;
 }
 
-/** Version allégée pour un profil public : matières et sources, sans thèmes ni passages. */
+/** Version allégée pour un profil public : matières et sources, sans thèmes, passages ni séances. */
 export function summarizeAnswerStats(s: AnswerStats): AnswerStats {
-  return { ...s, subjects: s.subjects.map((x) => ({ ...x, themes: [] })) };
+  return { ...s, seances: undefined, subjects: s.subjects.map((x) => ({ ...x, themes: [], seances: undefined })) };
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +234,7 @@ const PAGE = 1000;
 const MAX_ROWS = 50_000;
 const IN_CHUNK = 120; // identifiants par requête « in » (URL courte)
 const PASSAGES_PER_THEME = 40;
+const SEANCES_MAX = 150; // séances gardées par matière pour la forme (récent, bougie)
 
 type Res<T> = { data: T[] | null; error: unknown };
 
@@ -650,9 +656,16 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
 
   // --- Arbre matière → thème → passage
   type ThemeAcc = { label: string; tag: string | null; order: number; by: BySource; passages: Map<string, { n: number; ok: number }> };
-  type SubjectAcc = { by: BySource; themes: Map<string, ThemeAcc> };
+  type SubjectAcc = { by: BySource; themes: Map<string, ThemeAcc>; seances: Map<string, { n: number; ok: number }> };
   const subjects = new Map<string, SubjectAcc>();
   const total: BySource = {};
+  const toutes = new Map<string, { n: number; ok: number }>();
+  const cumuler = (m: Map<string, { n: number; ok: number }>, pid: string, n: number, ok: number) => {
+    const v = m.get(pid) ?? { n: 0, ok: 0 };
+    v.n += n;
+    v.ok += ok;
+    m.set(pid, v);
+  };
 
   for (const c of contribs) {
     if (c.n <= 0) continue;
@@ -676,8 +689,10 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     }
 
     addTally(total, source, c.n, c.ok);
-    const s = subjects.get(place.subject) ?? { by: {}, themes: new Map() };
+    const s = subjects.get(place.subject) ?? { by: {}, themes: new Map(), seances: new Map() };
     addTally(s.by, source, c.n, c.ok);
+    cumuler(s.seances, c.passage, c.n, c.ok);
+    cumuler(toutes, c.passage, c.n, c.ok);
     const th = s.themes.get(place.themeKey) ?? { label: place.label, tag: place.tag, order: place.order, by: {}, passages: new Map() };
     addTally(th.by, source, c.n, c.ok);
     const pa = th.passages.get(c.passage) ?? { n: 0, ok: 0 };
@@ -707,17 +722,38 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
       });
   };
 
-  const out: AnswerSubject[] = SUBJECTS.map((s) => ({ key: s.key, name: s.name, code: s.code, pseudo: false, by: subjects.get(s.key)?.by ?? {}, themes: toThemes(s.key, subjects.get(s.key)) }));
+  // séances datées, les plus récentes d'abord (bornées : la forme ne regarde que le passé proche et la dispersion)
+  const enSeances = (m: Map<string, { n: number; ok: number }> | undefined, max: number): Seance[] | undefined =>
+    !m || !detail
+      ? undefined
+      : [...m.entries()]
+          .map(([pid, v]) => {
+            const info = passages.get(pid);
+            return { n: v.n, ok: v.ok, at: info?.at ?? "", source: info?.source ?? "qcm" };
+          })
+          .filter((x) => x.at)
+          .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+          .slice(0, max);
+
+  const out: AnswerSubject[] = SUBJECTS.map((s) => ({
+    key: s.key,
+    name: s.name,
+    code: s.code,
+    pseudo: false,
+    by: subjects.get(s.key)?.by ?? {},
+    themes: toThemes(s.key, subjects.get(s.key)),
+    seances: enSeances(subjects.get(s.key)?.seances, SEANCES_MAX),
+  }));
   for (const [key, name] of [
     ["mixed", "Plusieurs matières"],
     ["other", "Hors programme"],
   ] as const) {
     const s = subjects.get(key);
-    if (s && tallyOf(s.by).n > 0) out.push({ key, name, code: "", pseudo: true, by: s.by, themes: toThemes(key, s) });
+    if (s && tallyOf(s.by).n > 0) out.push({ key, name, code: "", pseudo: true, by: s.by, themes: toThemes(key, s), seances: enSeances(s.seances, SEANCES_MAX) });
   }
 
   const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts].some((x) => x !== null);
-  return { available: readable, missing: [...missing], by: total, subjects: out };
+  return { available: readable, missing: [...missing], by: total, subjects: out, seances: enSeances(toutes, SEANCES_MAX * 2) };
 }
 
 /** Libellé court des matières d'une session (« FSA, Quant +2 »). */

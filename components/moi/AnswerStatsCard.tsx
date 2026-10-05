@@ -2,17 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, PenLine } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChevronRight, PenLine } from "lucide-react";
 import { CardLabel } from "@/components/ui/Titles";
 import { fmtInt } from "@/components/classement/format";
 import { LEXIQUE } from "@/lib/voice";
 import { ANSWER_SOURCES, SOURCE_HREFS, SOURCE_LABELS, tallyOf, type AnswerPassage, type AnswerStats, type AnswerSubject, type AnswerTheme, type SourceFilter, type TallyView } from "@/lib/answer-stats";
+import { RECENT_MIN, formeDe, tendance, type Forme } from "@/lib/forme";
 
 // Moi › Stats : le total des questions répondues (« traits tracés »), un
 // filtre par source (duels, examens blancs, examens, QCM, sessions ciblées,
 // fiches) et le détail dépliable matière → thème → passage, avec pour chaque
-// niveau : répondues, justes, précision. Les données arrivent toutes prêtes
-// (lib/answer-stats.ts, côté serveur) ; seul le filtre vit ici.
+// niveau : répondues, précision (moyenne de toujours) et récent (tes
+// dernières réponses, flèche si l'écart est net). Sous chaque matière, une
+// bougie horizontale : la dispersion de tes séances (25e–75e percentile de
+// bonnes réponses, trait fin du 10e au 90e) et un repère sur ton récent
+// (lib/forme). Les données arrivent toutes prêtes (lib/answer-stats.ts, côté
+// serveur) ; le filtre et la forme se calculent ici.
 //
 // Props : `stats` (AnswerStats), `initial` (filtre de départ, « all » par
 // défaut), `open` (matière et thème dépliés au départ, ex. depuis un lien).
@@ -53,26 +58,89 @@ const TITLE = LEXIQUE.traitsTraces.charAt(0).toUpperCase() + LEXIQUE.traitsTrace
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const pctLabel = (t: TallyView) => (t.pct === null ? "—" : `${t.pct} %`);
 
-// Colonnes partagées : libellé | répondues | justes | précision (une seule
+// Colonnes partagées : libellé | répondues | précision | récent (une seule
 // colonne de chiffres sur téléphone, le reste passe sous le libellé).
-const GRID = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_78px_64px_72px]";
+const GRID = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_78px_72px_78px]";
 
-function Cells({ t, strong = true }: { t: TallyView; strong?: boolean }) {
+/** Le récent, avec une flèche quand il s'écarte nettement de la moyenne. */
+function Recent({ f, t, strong = true }: { f: Forme; t: TallyView; strong?: boolean }) {
+  const d = tendance(f.recent, t.pct);
+  const Icon = d > 0 ? ArrowUpRight : ArrowDownRight;
+  const titre =
+    f.recent === null
+      ? "Pas encore assez de réponses (il en faut une dizaine)"
+      : `${f.recent} % sur tes ${f.recentN} dernières réponses${d ? ` (${d > 0 ? "+" : ""}${d} points sur ta moyenne)` : ""}`;
+  return (
+    <span
+      className={"inline-flex items-center justify-end gap-0.5 font-mono tabular-nums " + (strong ? "text-[14px] font-semibold " : "text-[13px] font-medium ") + (d < 0 ? "text-pen" : "")}
+      title={titre}
+    >
+      {f.recent === null ? <span className="text-muted">—</span> : `${f.recent} %`}
+      {f.recent !== null && d !== 0 && <Icon size={13} strokeWidth={2.4} aria-hidden />}
+    </span>
+  );
+}
+
+function Cells({ t, f, strong = true }: { t: TallyView; f: Forme; strong?: boolean }) {
   return (
     <>
       <span className={"hidden text-right font-mono tabular-nums sm:block " + (strong ? "text-[14px] font-semibold" : "text-[13px] font-medium")}>{fmtInt(t.n)}</span>
-      <span className="hidden text-right font-mono text-[13px] tabular-nums text-muted sm:block">{fmtInt(t.ok)}</span>
-      <span className={"text-right font-mono tabular-nums " + (strong ? "text-[14px] font-semibold" : "text-[13px] font-medium")}>{pctLabel(t)}</span>
+      <span
+        className={"text-right font-mono tabular-nums " + (strong ? "text-[14px] font-semibold" : "text-[13px] font-medium")}
+        title={`${fmtInt(t.ok)} juste${t.ok > 1 ? "s" : ""} sur ${fmtInt(t.n)}`}
+      >
+        {pctLabel(t)}
+      </span>
+      <span className="hidden text-right sm:block">
+        <Recent f={f} t={t} strong={strong} />
+      </span>
     </>
   );
 }
 
-/** Sous-ligne mobile : « 67 répondues · 41 justes ». */
-function MobileCounts({ t }: { t: TallyView }) {
+/** Sous-ligne mobile : « 67 répondues · 41 justes · récent 64 % ». */
+function MobileCounts({ t, f }: { t: TallyView; f?: Forme }) {
   return (
     <span className="t-micro mt-0.5 block tabular-nums sm:hidden">
       {fmtInt(t.n)} répondue{t.n > 1 ? "s" : ""} · {fmtInt(t.ok)} juste{t.ok > 1 ? "s" : ""}
+      {f && f.recent !== null && (
+        <>
+          {" "}
+          · <span className="whitespace-nowrap">récent {f.recent} %</span>
+        </>
+      )}
     </span>
+  );
+}
+
+// La bougie : 0 à 100 % de bonnes réponses ; trait fin du 10e au 90e
+// percentile de tes séances, corps du 25e au 75e, repère sur ton récent
+// (rouge s'il est nettement sous ta moyenne). Sans assez de séances : le
+// repère seul.
+const BW = 160;
+function Bougie({ f, t, className = "" }: { f: Forme; t: TallyView; className?: string }) {
+  const x = (v: number) => Math.max(1, Math.min(BW - 1, (v / 100) * BW));
+  const b = f.bougie;
+  const d = tendance(f.recent, t.pct);
+  const titre = [
+    b ? `La moitié centrale de tes ${b.seances} séances : entre ${b.p25} % et ${b.p75} % (de ${b.p10} à ${b.p90} % pour 8 sur 10).` : "Encore trop peu de séances pour une bougie.",
+    f.recent !== null ? `Récent : ${f.recent} % sur tes ${f.recentN} dernières réponses.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <svg width={BW} height={14} viewBox={`0 0 ${BW} 14`} className={"overflow-visible " + className} role="img" aria-label={titre}>
+      <title>{titre}</title>
+      <line x1={0} x2={BW} y1={7} y2={7} stroke="var(--line-2)" strokeWidth={1} />
+      <line x1={BW / 2} x2={BW / 2} y1={4} y2={10} stroke="var(--line-2)" strokeWidth={1} />
+      {b && (
+        <>
+          <line x1={x(b.p10)} x2={x(b.p90)} y1={7} y2={7} stroke="var(--ink-3)" strokeWidth={1.5} strokeLinecap="round" />
+          <rect x={x(b.p25)} y={3} width={Math.max(3, x(b.p75) - x(b.p25))} height={8} rx={2} fill="color-mix(in oklab, var(--ink) 18%, transparent)" stroke="var(--ink-2)" strokeWidth={1} />
+        </>
+      )}
+      {f.recent !== null && <line x1={x(f.recent)} x2={x(f.recent)} y1={0.5} y2={13.5} stroke={d < 0 ? "var(--pen)" : "var(--ink)"} strokeWidth={2.4} strokeLinecap="round" />}
+    </svg>
   );
 }
 
@@ -89,13 +157,13 @@ function PassageRow({ p }: { p: AnswerPassage }) {
         {p.date && <span className="t-micro shrink-0 whitespace-nowrap">{p.date}</span>}
       </span>
       <span className={"hidden sm:block " + num}>{p.n}</span>
-      <span className={"hidden sm:block " + num}>{p.ok}</span>
-      <span className={num}>
+      <span className={num} title={`${p.ok} juste${p.ok > 1 ? "s" : ""} sur ${p.n}`}>
         <span className="sm:hidden">
           {p.ok}/{p.n}
         </span>
         <span className="hidden sm:inline">{pct === null ? "—" : `${pct} %`}</span>
       </span>
+      <span aria-hidden className="hidden sm:block" />
     </>
   );
   const cls = "-mx-2 rounded-[10px] px-2 py-[7px] " + GRID;
@@ -114,6 +182,7 @@ function ThemeRow({ th, src, open }: { th: AnswerTheme; src: SourceFilter; open?
   const [all, setAll] = useState(false);
   const t = tallyOf(th.by, src);
   const passages = th.passages.filter((p) => src === "all" || p.source === src);
+  const f = formeDe(passages);
   const shown = all ? passages : passages.slice(0, SHOWN);
   return (
     <li>
@@ -126,10 +195,10 @@ function ThemeRow({ th, src, open }: { th: AnswerTheme; src: SourceFilter; open?
                 {th.label}
                 {th.tag && <span className="ml-2 whitespace-nowrap font-mono text-[11px] font-medium text-muted">{th.tag}</span>}
               </span>
-              <MobileCounts t={t} />
+              <MobileCounts t={t} f={f} />
             </span>
           </span>
-          <Cells t={t} strong={false} />
+          <Cells t={t} f={f} strong={false} />
         </summary>
         <div className="rl-in pb-2 pl-6">
           {shown.length === 0 ? (
@@ -159,8 +228,9 @@ function ThemeRow({ th, src, open }: { th: AnswerTheme; src: SourceFilter; open?
   );
 }
 
-function SubjectRow({ s, src, index, max, open }: { s: AnswerSubject; src: SourceFilter; index: number | null; max: number; open?: { subject?: string; theme?: string } }) {
+function SubjectRow({ s, src, index, open }: { s: AnswerSubject; src: SourceFilter; index: number | null; open?: { subject?: string; theme?: string } }) {
   const t = tallyOf(s.by, src);
+  const f = formeDe(s.seances, src);
   const themes = s.themes.filter((th) => tallyOf(th.by, src).n > 0);
   const head = (expandable: boolean) => (
     <>
@@ -174,23 +244,19 @@ function SubjectRow({ s, src, index, max, open }: { s: AnswerSubject; src: Sourc
         <span className="min-w-0">
           <span className={"block truncate text-[14.5px] font-semibold tracking-[-0.006em] " + (t.n === 0 ? "text-muted" : "")}>{s.name}</span>
           {s.pseudo && PSEUDO_NOTE[s.key] && <span className="t-micro block truncate">{PSEUDO_NOTE[s.key]}</span>}
-          {t.n > 0 && <MobileCounts t={t} />}
-          {/* le pinceau trace le volume (ce qui grandit) ; la précision reste en chiffres */}
-          {t.n > 0 && !s.pseudo && (
-            <span aria-hidden className="ink-bar mt-1.5 hidden w-40 sm:block">
-              <span style={{ width: `${Math.max(3, Math.round((t.n / max) * 100))}%` }} />
-            </span>
-          )}
+          {t.n > 0 && <MobileCounts t={t} f={f} />}
+          {/* la bougie : la dispersion de tes séances et ton récent (le volume reste en chiffres) */}
+          {t.n > 0 && !s.pseudo && <Bougie f={f} t={t} className="mt-1.5 hidden sm:block" />}
         </span>
       </span>
       {t.n === 0 ? (
         <>
           <span className="hidden text-right font-mono text-[13px] text-muted sm:block">—</span>
-          <span className="hidden text-right font-mono text-[13px] text-muted sm:block">—</span>
           <span className="text-right font-mono text-[13px] text-muted">—</span>
+          <span className="hidden text-right font-mono text-[13px] text-muted sm:block">—</span>
         </>
       ) : (
-        <Cells t={t} />
+        <Cells t={t} f={f} />
       )}
     </>
   );
@@ -216,12 +282,33 @@ function SubjectRow({ s, src, index, max, open }: { s: AnswerSubject; src: Sourc
   );
 }
 
+/** La légende, repliée : pour qui veut comprendre la bougie. */
+function LireBougies() {
+  const exemple: Forme = { recent: 72, recentN: 20, bougie: { p10: 38, p25: 50, p75: 66, p90: 80, seances: 8 } };
+  return (
+    <details className="group/l mt-4 hidden sm:block">
+      <summary className="t-micro inline-flex cursor-pointer list-none items-center gap-1 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
+        <ChevronRight size={13} aria-hidden className="transition-transform group-open/l:rotate-90" />
+        Lire les bougies
+      </summary>
+      <div className="rl-in mt-3 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[12px] bg-surface-2/60 p-4">
+        <Bougie f={exemple} t={{ n: 100, ok: 58, pct: 58 }} />
+        <p className="t-micro m-0 max-w-[460px] leading-relaxed">
+          De 0 à 100 % de bonnes réponses, séance par séance (un duel, une session, un quiz…). Le corps : la moitié centrale de tes séances (25e à 75e percentile) ;
+          le trait fin : 8 séances sur 10. Le repère : ton récent, sur tes {RECENT_MIN} dernières réponses environ, en rouge s&apos;il passe nettement sous ta moyenne.
+        </p>
+      </div>
+    </details>
+  );
+}
+
 export function AnswerStatsCard({ stats, initial = "all", open }: { stats: AnswerStats; initial?: SourceFilter; open?: { subject?: string; theme?: string } }) {
   const [src, setSrc] = useState<SourceFilter>(initial);
   const total = tallyOf(stats.by, "all");
   const cur = tallyOf(stats.by, src);
   const subjects = stats.subjects.filter((s) => !s.pseudo || tallyOf(s.by, src).n > 0);
-  const max = Math.max(1, ...subjects.filter((s) => !s.pseudo).map((s) => tallyOf(s.by, src).n));
+  const forme = formeDe(stats.seances, src);
+  const ecart = tendance(forme.recent, cur.pct);
   const counts = Object.fromEntries(OPTIONS.map((o) => [o, tallyOf(stats.by, o).n])) as Record<SourceFilter, number>;
   const missing = stats.missing.map((m) => SOURCE_LABELS[m].toLowerCase());
 
@@ -294,6 +381,16 @@ export function AnswerStatsCard({ stats, initial = "all", open }: { stats: Answe
                     <br />
                     <span className="font-mono tabular-nums">{fmtInt(cur.ok)}</span> juste{cur.ok > 1 ? "s" : ""} · précision{" "}
                     <span className="font-semibold text-white">{pctLabel(cur)}</span>
+                    {forme.recent !== null && (
+                      <>
+                        <br />
+                        récemment{" "}
+                        <span className={"inline-flex items-center gap-0.5 font-semibold " + (ecart < 0 ? "text-pen" : "text-white")} title={`sur tes ${forme.recentN} dernières réponses`}>
+                          {forme.recent} %{ecart > 0 ? <ArrowUpRight size={14} strokeWidth={2.4} aria-hidden /> : ecart < 0 ? <ArrowDownRight size={14} strokeWidth={2.4} aria-hidden /> : null}
+                        </span>{" "}
+                        <span className="t-micro">· {forme.recentN} dernières</span>
+                      </>
+                    )}
                   </>
                 )}
               </p>
@@ -332,14 +429,15 @@ export function AnswerStatsCard({ stats, initial = "all", open }: { stats: Answe
                 <div className={"hidden border-b border-line pb-2.5 sm:grid " + GRID}>
                   <span className="t-eyebrow pl-[50px]">Matière</span>
                   <span className="t-eyebrow text-right">Répondues</span>
-                  <span className="t-eyebrow text-right">Justes</span>
-                  <span className="t-eyebrow text-right">Précision</span>
+                  <span className="t-eyebrow text-right" title="moyenne de toutes tes réponses">Précision</span>
+                  <span className="t-eyebrow text-right" title={`tes ${RECENT_MIN} dernières réponses environ`}>Récent</span>
                 </div>
                 <ul className="divide-y divide-line">
                   {subjects.map((s, i) => (
-                    <SubjectRow key={s.key} s={s} src={src} index={s.pseudo ? null : i + 1} max={max} open={open} />
+                    <SubjectRow key={s.key} s={s} src={src} index={s.pseudo ? null : i + 1} open={open} />
                   ))}
                 </ul>
+                <LireBougies />
               </>
             )}
             {missing.length > 0 && <p className="t-micro mt-4">Pas encore comptés ici : {missing.join(", ")}.</p>}

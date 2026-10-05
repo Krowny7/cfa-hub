@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { TrajectoireChart } from "@/components/objectif/TrajectoireChart";
+import { RythmeJours } from "@/components/objectif/RythmeJours";
 import { joursEntre, RYTHME_LIMITE } from "@/lib/objectif-calc";
 import type { EtatObjectif } from "@/lib/objectif";
 import { OBJECTIF, jourLong } from "@/lib/voice-objectif";
@@ -88,6 +89,9 @@ export function TrajectoirePanel({ e, variante = "carte" }: { e: EtatObjectif; v
         {p.statut === "atteint" && <p className="t-small m-0 font-semibold text-white">{OBJECTIF.atteint(fait, t.total)}</p>}
         {p.statut === "passe" && <p className="t-small m-0">{OBJECTIF.passe}</p>}
       </div>
+
+      {/* Moi : le rythme jour par jour, replié (l'accueil reste épuré) */}
+      {carte && p.statut !== "passe" && <RythmeJours serie={t.serie.map(({ day, n }) => ({ day, n }))} objectif={p.statut === "actif" ? p.quotidien : null} />}
 
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-line pt-4">
         {p.statut !== "passe" ? (
