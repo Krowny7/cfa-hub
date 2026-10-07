@@ -15,6 +15,7 @@ import { rankFor, DEFAULT_ELO } from "@/lib/ranks";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/server";
+import { PresenceHeartbeat } from "@/components/presence/PresenceHeartbeat";
 
 // Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
 // espaces en contrôle segmenté, puis la recherche et le badge de rang du
@@ -80,6 +81,7 @@ export async function TopBar() {
             <>
               <CommandPalette />
               <UserMenu tier={tier} />
+              <PresenceHeartbeat />
             </>
           ) : (
             <>

@@ -74,7 +74,7 @@ export function PeopleView({
               {demandes.recues.map((a) => (
                 <div key={a.id} className="card-quiet flex flex-wrap items-center gap-3 px-3 py-2.5">
                   <Link href={`/people/${a.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                    <Avatar src={a.avatarUrl} name={a.name} size={34} />
+                    <Avatar src={a.avatarUrl} name={a.name} size={34} userId={a.id} />
                     <span className="truncate text-[14.5px] font-semibold">{a.name}</span>
                     <span className="t-micro shrink-0">veut être ton ami</span>
                   </Link>
@@ -85,7 +85,7 @@ export function PeopleView({
               {demandes.envoyees.map((a) => (
                 <div key={a.id} className="flex flex-wrap items-center gap-3 px-2.5 py-1.5">
                   <Link href={`/people/${a.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                    <Avatar src={a.avatarUrl} name={a.name} size={28} />
+                    <Avatar src={a.avatarUrl} name={a.name} size={28} userId={a.id} />
                     <span className="truncate text-[14px] font-medium">{a.name}</span>
                   </Link>
                   <AmiBouton autre={a.id} relation="envoyee" compact />
@@ -112,7 +112,7 @@ export function PeopleView({
           ) : (
             <ul className="-mt-1 flex flex-col gap-0.5">
               {rows.map((p) => (
-                <PlayerRow key={p.id} p={p} />
+                <PlayerRow key={p.id} p={p} presence={view === "amis"} />
               ))}
             </ul>
           )}

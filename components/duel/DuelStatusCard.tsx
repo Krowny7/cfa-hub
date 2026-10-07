@@ -19,6 +19,7 @@ import {
   timeLeftLabel,
   type DuelState,
 } from "@/lib/duels";
+import { PresenceText } from "@/components/presence/Presence";
 
 type Props = {
   state: DuelState;
@@ -171,6 +172,7 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
               {kicker}
             </p>
             <h1 className="t-h1 m-0 mt-1.5">{title}</h1>
+            {variant === "waiting" && them && <PresenceText userId={them.id} className="mt-1.5 text-[14px] font-semibold text-muted" />}
           </div>
           <p className="t-body m-0 max-w-[560px] text-muted">{body}</p>
 

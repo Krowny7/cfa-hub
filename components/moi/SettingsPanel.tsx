@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, LogOut, Palette, Volume2 } from "lucide-react";
+import { ArrowRight, EyeOff, LogOut, Palette, Volume2 } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { ObjectifExamenSettings } from "@/components/objectif/ObjectifExamenSettings";
 import type { ObjectifInitial } from "@/lib/objectif-calc";
@@ -8,10 +8,11 @@ import { AppearanceSwitches } from "@/components/moi/AppearanceSwitches";
 import { SoundSwitches } from "@/components/moi/SoundSwitches";
 import { SignOutButton } from "@/components/SignOutButton";
 import { REJOUER, SONS } from "@/lib/voice-z1";
+import { PresenceSettings } from "@/components/presence/PresenceSettings";
 
 // Tous les réglages : profil, examen (date et objectif de questions), apparence (thème, mode
-// discret), sons des moments (et le premier trait à rejouer), groupes,
-// déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
+// discret), sons des moments (et le premier trait à rejouer), confidentialité
+// (présence en ligne), groupes, déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
 // Les composants enfants chargent et enregistrent eux-mêmes.
 export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroupId: string | null; groups: GroupRow[]; objectif: ObjectifInitial }) {
   return (
@@ -42,6 +43,14 @@ export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroup
                 {REJOUER.action} <ArrowRight size={14} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
               </span>
             </Link>
+          </div>
+          <div id="confidentialite" className="card flex flex-col p-[22px] pb-3">
+            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+              <EyeOff size={15} aria-hidden /> Confidentialité
+            </h3>
+            <div className="mt-1">
+              <PresenceSettings />
+            </div>
           </div>
         </div>
       </div>

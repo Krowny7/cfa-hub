@@ -68,7 +68,7 @@ export function Vitrine({ style, stats, rang }: { style: StyleProfil; stats: Pro
 }
 
 /** Les amis du joueur : sceaux et noms, vers leurs profils. */
-export function ListeAmis({ amis, total, moi }: { amis: AmiLite[]; total: number; moi: boolean }) {
+export function ListeAmis({ amis, total, moi, viewerId = null }: { amis: AmiLite[]; total: number; moi: boolean; /** celui qui regarde (pas de point de présence sur lui-même) */ viewerId?: string | null }) {
   return (
     <section className="rl-section @container" aria-labelledby="profil-amis">
       <SectionTitle
@@ -90,7 +90,7 @@ export function ListeAmis({ amis, total, moi }: { amis: AmiLite[]; total: number
           {amis.map((a) => (
             <li key={a.id} className="min-w-0">
               <Link href={`/people/${a.id}`} className="card-quiet rl-lift flex min-w-0 items-center gap-2.5 p-2.5">
-                <Avatar src={a.avatarUrl} name={a.name} size={32} />
+                <Avatar src={a.avatarUrl} name={a.name} size={32} userId={a.id === viewerId ? null : a.id} />
                 <span className="truncate text-[13.5px] font-semibold">{a.name}</span>
               </Link>
             </li>

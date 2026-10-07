@@ -27,6 +27,7 @@ import {
   type DuelReviewEntry,
   type OpenDuel,
 } from "@/lib/duels";
+import { PresenceText } from "@/components/presence/Presence";
 
 type Props = {
   me: { elo: number; gamesPlayed: number };
@@ -155,7 +156,8 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                   <div className="min-w-0 flex-[1_1_200px]">
                     <div className="truncate text-[15px] font-bold">{PARTIE.teDefie(d.opponentName ?? "Un joueur")}</div>
                     <div className="t-micro truncate">
-                      {d.opponentElo ?? "—"} ELO · <span className="font-mono">{signed(s.win)} / {signed(s.loss)}</span> · expire dans{" "}
+                      {d.opponentElo ?? "—"} ELO
+                      {d.opponentId && <PresenceText userId={d.opponentId} court avant=" · " />} · <span className="font-mono">{signed(s.win)} / {signed(s.loss)}</span> · expire dans{" "}
                       {timeLeftLabel(d.expiresAt, nowIso)}
                     </div>
                   </div>
@@ -245,7 +247,8 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                       <div className="min-w-0">
                         <div className="truncate text-[14.5px] font-semibold">{p.username ?? "Joueur"}</div>
                         <div className="t-micro truncate">
-                          {p.elo} ELO<span className="hidden sm:inline"> · {activity}</span>
+                          {p.elo} ELO
+                          <PresenceText userId={p.userId} court repli={<span className="hidden sm:inline">{activity}</span>} avant=" · " />
                           <span className="font-mono sm:hidden">
                             {" "}
                             · {signed(s.win)} / {signed(s.loss)}
@@ -434,6 +437,7 @@ function OpenDuelRow({ d, me, nowIso }: { d: OpenDuel; me: { elo: number; gamesP
         <div className="truncate text-[14.5px] font-semibold">{title}</div>
         <div className="t-micro truncate">
           {sub}
+          {d.opponentId && <PresenceText userId={d.opponentId} court avant=" · " />}
           {s && (
             <span className="hidden font-mono sm:inline">
               {" "}

@@ -24,7 +24,7 @@ function OpenRow({ d }: { d: DuelSummary }) {
           : [DUEL.trouver, "Voir", false];
   return (
     <li className="rl-row flex items-center gap-3 rounded-[12px] px-2 py-2.5">
-      <Avatar src={d.opponentAvatar} name={name} size={32} />
+      <Avatar src={d.opponentAvatar} name={name} size={32} userId={d.opponentId ?? null} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[14.5px] font-semibold">{text}</span>
         <span className="t-micro block">{fmtAgo(d.createdAt)}</span>

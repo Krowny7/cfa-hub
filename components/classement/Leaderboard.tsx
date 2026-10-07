@@ -42,7 +42,7 @@ function Place({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
         )}
       </span>
       <span className={"mt-4 transition-transform duration-300 group-hover:-translate-y-0.5 " + (first ? "" : "mt-3")}>
-        <Avatar src={r.avatarUrl} name={r.name} size={first ? 56 : 44} />
+        <Avatar src={r.avatarUrl} name={r.name} size={first ? 56 : 44} userId={r.isMe ? null : r.userId} />
       </span>
       <span className={"mt-2.5 w-full truncate px-1 text-[14px] sm:text-[15px] " + (first || r.isMe ? "font-bold" : "font-semibold")}>{r.isMe ? "Toi" : r.name}</span>
       <span className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-[12.5px] tabular-nums text-muted">
@@ -62,7 +62,7 @@ function Row({ r }: { r: BoardRow }) {
       aria-current={r.isMe ? "true" : undefined}
     >
       <span className="font-mono text-[12.5px] tabular-nums text-muted">{r.rank}</span>
-      <Avatar src={r.avatarUrl} name={r.name} size={28} />
+      <Avatar src={r.avatarUrl} name={r.name} size={28} userId={r.isMe ? null : r.userId} />
       <span className="flex min-w-0 items-center gap-2">
         <Link href={`/people/${r.userId}`} className={"truncate text-[14.5px] hover:underline " + (r.isMe ? "font-bold" : "font-medium")}>
           {r.isMe ? "Toi" : r.name}

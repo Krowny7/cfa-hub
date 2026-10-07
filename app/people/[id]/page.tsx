@@ -189,7 +189,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     <div className="rl-wide rl-page relative isolate">
       <AmbianceProfil style={style} />
       <div className="flex flex-col gap-6 md:gap-8">
-        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={commeMoi ? "Ton rang" : "Son rang"} />
+        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={commeMoi ? "Ton rang" : "Son rang"} presence={!commeMoi} />
       </div>
 
       {/* l'aperçu « comme les autres » : une barre flottante en bas de l'écran,
@@ -230,7 +230,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
               monAccent={monStyle ? monStyle.style.accent : null}
             />
           ),
-          amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} /> : null,
+          amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} viewerId={user.id} /> : null,
           reponses: answers?.available ? <AnswerSummary stats={answers} name={display} isMe={commeMoi} /> : null,
           trophees: <PracticeTrophies rows={trophyRows} />,
           progression: <PracticeProgressChart pastSessions={progressSessions} topicLabels={TOPIC_LABELS} />,

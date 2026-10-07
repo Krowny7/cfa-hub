@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_ELO, eloDelta, eloStakes, kFactor } from "@/lib/ranks";
+import { libellePresence } from "@/lib/presence";
 
 // Duels : types partagés et appels aux RPC de migration_duels_elo.sql.
 // Module neutre (pas de "use client") : utilisable avec le client Supabase
@@ -683,13 +684,11 @@ export function clock(totalSeconds: number) {
 /** « en ligne », « il y a 2 h », « il y a 3 j », « pas encore actif ». */
 export function activityLabel(lastActiveAt: string | null, nowIso: string) {
   if (!lastActiveAt) return "pas encore actif";
-  const diff = (new Date(nowIso).getTime() - new Date(lastActiveAt).getTime()) / 60000;
-  if (!Number.isFinite(diff)) return "pas encore actif";
-  if (diff < 15) return "en ligne";
-  if (diff < 60) return `il y a ${Math.round(diff)} min`;
-  if (diff < 60 * 24) return `il y a ${Math.round(diff / 60)} h`;
-  if (diff < 60 * 24 * 30) return `il y a ${Math.round(diff / 1440)} j`;
-  return "il y a longtemps";
+  const now = new Date(nowIso).getTime();
+  const secondes = (now - new Date(lastActiveAt).getTime()) / 1000;
+  if (!Number.isFinite(secondes)) return "pas encore actif";
+  // mêmes mots que la présence (lib/presence) : « en ligne », « il y a 3 h », « hier »…
+  return libellePresence({ visible: true, secondsAgo: Math.max(0, secondes), at: now }, { court: true, now }) ?? "pas encore actif";
 }
 
 /** « 31 h », « 45 min » restantes avant une échéance. */

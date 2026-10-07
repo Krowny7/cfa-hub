@@ -82,6 +82,21 @@ export default async function PeoplePage({ searchParams }: PageProps) {
   const ratingByUser = new Map<string, RatingRow>();
   (ratingsRaw ?? []).forEach((r: RatingRow) => ratingByUser.set(r.user_id, r));
 
+  // Mes amis : en ligne d'abord, puis du plus récemment vu au plus ancien
+  // (get_presence ; masqués et sans signal ensuite, par pseudo)
+  if (view === "amis" && people.length > 1) {
+    try {
+      const { data, error } = await supabase.rpc("get_presence", { p_ids: people.map((p) => p.id).slice(0, 300) });
+      if (!error) {
+        const age = new Map(((data ?? []) as { user_id: string; seconds_ago: number | null }[]).map((r) => [r.user_id, r.seconds_ago]));
+        const rang = (id: string) => age.get(id) ?? Number.POSITIVE_INFINITY;
+        people = [...people].sort((a, b) => rang(a.id) - rang(b.id));
+      }
+    } catch {
+      // présence indisponible : ordre alphabétique
+    }
+  }
+
   const rows: PlayerLite[] = people.map((p) => {
     const r = ratingByUser.get(p.id);
     const xp = Number(p.xp_total ?? 0) || 0;

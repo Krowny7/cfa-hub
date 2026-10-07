@@ -3,6 +3,7 @@ import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { type StyleProfil } from "@/lib/profil/catalogue";
 import { nombre } from "@/lib/voice";
+import { PresenceText } from "@/components/presence/Presence";
 
 // L'en-tête du profil, façon jeu vidéo mais sur toute la largeur de la page
 // (pas de carte) : la bannière du joueur (son image, ou un motif) d'un bord
@@ -54,6 +55,7 @@ export function EnteteJoueur({
   kicker,
   rangDe,
   apercu = false,
+  presence = false,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
@@ -63,6 +65,8 @@ export function EnteteJoueur({
   /** sur-titre de la carte du rang : « Ton rang » (défaut), « Son rang » */
   rangDe?: string;
   apercu?: boolean;
+  /** « En ligne » / « Vu il y a 3 h » sous le nom (le profil d'un autre joueur) */
+  presence?: boolean;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
 
@@ -101,6 +105,11 @@ export function EnteteJoueur({
                 <PageHero kicker={kicker} title={<span className="[overflow-wrap:anywhere]">{d.name}</span>} enso={false} className="w-fit max-w-full" />
               )}
               {d.nomComplet && <p className={`${s.nomComplet} m-0 mt-1 text-[18px] sm:text-[20px]`}>{d.nomComplet}</p>}
+              {presence && !apercu && (
+                <div className="mt-2 min-h-[21px] text-[14px] font-semibold text-muted">
+                  <PresenceText userId={d.id} />
+                </div>
+              )}
             </div>
           </div>
 

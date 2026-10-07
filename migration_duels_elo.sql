@@ -199,6 +199,8 @@ LANGUAGE sql IMMUTABLE
 AS $$ SELECT CASE WHEN coalesce(p_games, 0) < 5 THEN 48 ELSE 32 END; $$;
 
 -- Dernière activité connue d'un joueur (XP, entraînement, examen, duel).
+-- Redéfinie (présence, joueurs masqués) par migration_presence.sql : recoller
+-- celle-ci après tout nouveau collage de ce fichier.
 CREATE OR REPLACE FUNCTION _player_last_active(p_user uuid)
 RETURNS timestamptz
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
