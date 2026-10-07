@@ -54,7 +54,7 @@ export function PresenceDot({ userId, avatar = 36 }: { userId: string; avatar?: 
 /**
  * « En ligne » (avec son point) ou « Vu il y a 3 h ». Joueur masqué : rien.
  * Joueur sans signal (pas revenu depuis l'arrivée de la présence, ou
- * présence indisponible) : `repli`, s'il est donné.
+ * présence indisponible) : `repli`, s'il est donné (« Hors ligne »).
  */
 export function PresenceText({
   userId,

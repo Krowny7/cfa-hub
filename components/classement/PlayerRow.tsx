@@ -34,7 +34,7 @@ export function PlayerRow({ p, presence = false }: { p: PlayerLite; /** « en li
           </span>
           <span className="t-micro block truncate">
             Niveau {p.level} · {placement ? `placement ${p.gamesPlayed}/${PLACEMENT_GAMES}` : `${p.gamesPlayed} parties`}
-            {presence && !p.isMe && <PresenceText userId={p.id} minuscule point={false} avant=" · " />}
+            {presence && !p.isMe && <PresenceText userId={p.id} minuscule point={false} repli="hors ligne" avant=" · " />}
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2.5">

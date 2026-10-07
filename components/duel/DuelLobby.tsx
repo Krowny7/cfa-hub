@@ -157,7 +157,7 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                     <div className="truncate text-[15px] font-bold">{PARTIE.teDefie(d.opponentName ?? "Un joueur")}</div>
                     <div className="t-micro truncate">
                       {d.opponentElo ?? "—"} ELO
-                      {d.opponentId && <PresenceText userId={d.opponentId} court avant=" · " />} · <span className="font-mono">{signed(s.win)} / {signed(s.loss)}</span> · expire dans{" "}
+                      {d.opponentId && <PresenceText userId={d.opponentId} court repli="hors ligne" avant=" · " />} · <span className="font-mono">{signed(s.win)} / {signed(s.loss)}</span> · expire dans{" "}
                       {timeLeftLabel(d.expiresAt, nowIso)}
                     </div>
                   </div>
@@ -437,7 +437,7 @@ function OpenDuelRow({ d, me, nowIso }: { d: OpenDuel; me: { elo: number; gamesP
         <div className="truncate text-[14.5px] font-semibold">{title}</div>
         <div className="t-micro truncate">
           {sub}
-          {d.opponentId && <PresenceText userId={d.opponentId} court avant=" · " />}
+          {d.opponentId && <PresenceText userId={d.opponentId} court repli="hors ligne" avant=" · " />}
           {s && (
             <span className="hidden font-mono sm:inline">
               {" "}

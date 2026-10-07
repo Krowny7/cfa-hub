@@ -107,7 +107,7 @@ export function EnteteJoueur({
               {d.nomComplet && <p className={`${s.nomComplet} m-0 mt-1 text-[18px] sm:text-[20px]`}>{d.nomComplet}</p>}
               {presence && !apercu && (
                 <div className="mt-2 min-h-[21px] text-[14px] font-semibold text-muted">
-                  <PresenceText userId={d.id} />
+                  <PresenceText userId={d.id} repli="Hors ligne" />
                 </div>
               )}
             </div>

@@ -172,7 +172,7 @@ export function DuelStatusCard({ state, variant, myMastery = null, reviewable = 
               {kicker}
             </p>
             <h1 className="t-h1 m-0 mt-1.5">{title}</h1>
-            {variant === "waiting" && them && <PresenceText userId={them.id} className="mt-1.5 text-[14px] font-semibold text-muted" />}
+            {variant === "waiting" && them && <PresenceText userId={them.id} repli={<span className="mt-1.5 inline-block text-[14px] font-semibold text-muted">Hors ligne</span>} className="mt-1.5 text-[14px] font-semibold text-muted" />}
           </div>
           <p className="t-body m-0 max-w-[560px] text-muted">{body}</p>
 
