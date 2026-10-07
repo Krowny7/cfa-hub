@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, RotateCcw, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, PenLine, RotateCcw, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { CardLabel } from "@/components/ui/Titles";
 import { Icone } from "@/components/adn/icons";
@@ -12,6 +12,7 @@ import { Explanation } from "@/components/session/parts";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { fmtAgo } from "@/components/classement/format";
 import { lireRatures, PAGE_RATURES, type RatureItem, type RaturesPage } from "@/components/moi/ratures-data";
+import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 import { nombre } from "@/lib/voice";
 import type { SourceMarque } from "@/lib/marques";
@@ -21,7 +22,8 @@ import type { SourceMarque } from "@/lib/marques";
 // duels, sessions ciblées, examens), reste ici jusqu'à ce que le joueur le
 // retire ; une nouvelle erreur ramène la rature. À gauche le compte et les
 // sources (filtres) ; à droite la liste, chaque rature s'ouvre sur la
-// question, sa réponse, la bonne et l'explication. Pages de 20.
+// question, sa réponse, la bonne et l'explication. Pages de 20. « Mettre au
+// propre » les fait repasser au hasard (MiseAuPropre) : juste, rayée.
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -51,7 +53,7 @@ type Compte = { total: number; retirees: number; semaine: number; sources: Recor
 /** La liste affichée et la vue à laquelle elle appartient (les actions suivent la liste, pas le filtre en cours de chargement). */
 type Liste = { vue: Vue; filtre: number; items: RatureItem[] };
 
-export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: number }) {
+export function RaturesTab({ initial, now, demoPropre }: { initial: RaturesPage; now?: number; /** aperçus locaux : la mise au propre sans réseau */ demoPropre?: DemoPropre }) {
   const [vue, setVue] = useState<Vue>({ source: null, retirees: false });
   const [liste, setListe] = useState<Liste>({ vue: { source: null, retirees: false }, filtre: initial.filtre, items: initial.items });
   const [compte, setCompte] = useState<Compte>({ total: initial.total, retirees: initial.retirees, semaine: initial.retireesSemaine, sources: initial.sources });
@@ -60,6 +62,8 @@ export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: numbe
   const [ouverte, setOuverte] = useState<string | null>(null);
   // sorties de la liste pendant cette visite (retirées, ou remises dans « Retirées ») : la carte reste, grisée, avec « Annuler »
   const [bascules, setBascules] = useState<Record<string, boolean>>({});
+  // la mise au propre en cours (à la place de la liste)
+  const [propre, setPropre] = useState(false);
   const jeton = useRef(0);
 
   const sb = useMemo(() => createClient(), []);
@@ -85,7 +89,8 @@ export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: numbe
   }
 
   function choisir(v: Vue) {
-    if (v.source === vue.source && v.retirees === vue.retirees) return;
+    if (v.source === vue.source && v.retirees === vue.retirees && !propre) return;
+    setPropre(false);
     setVue(v);
     setOuverte(null);
     void charger(v, 0);
@@ -118,7 +123,18 @@ export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: numbe
     }
   }
 
+  // une rature rayée pendant la mise au propre : les compteurs suivent
+  function rayee(srcs: string[]) {
+    setCompte((c) => {
+      const sources = { ...c.sources };
+      for (const k of srcs) sources[k] = Math.max(0, (sources[k] ?? 0) - 1);
+      return { total: Math.max(0, c.total - 1), retirees: c.retirees + 1, semaine: c.semaine + 1, sources };
+    });
+  }
+
   const sources = SOURCES_RATURE.filter(([k]) => (compte.sources[k] ?? 0) > 0);
+  // ratures à repasser dans le tri en cours
+  const aRepasser = liste.vue.retirees ? 0 : liste.vue.source ? (compte.sources[liste.vue.source] ?? 0) : compte.total;
   // ratures de la vue encore à charger
   const reste = liste.filtre - liste.items.length;
   const vide = compte.total === 0 && compte.retirees === 0 && !liste.vue.retirees;
@@ -162,6 +178,14 @@ export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: numbe
             {[compte.semaine > 0 ? CARNET.retireesSemaine(compte.semaine) : null, compte.retirees > 0 ? CARNET.retireesTotal(compte.retirees) : null].filter(Boolean).join(" · ")}
           </p>
         )}
+        {aRepasser > 0 && (
+          <div className="grid gap-1.5">
+            <button type="button" className="btn btn-primary w-fit" onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
+              <PenLine size={16} aria-hidden /> {CARNET.propre} · {nombre(aRepasser)}
+            </button>
+            <p className="t-micro m-0">{CARNET.propreSous}</p>
+          </div>
+        )}
         <p className="t-micro m-0">{CARNET.regle}</p>
 
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer les ratures">
@@ -181,14 +205,25 @@ export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: numbe
         </div>
       </div>
 
-      {/* la liste */}
+      {/* la liste, ou la mise au propre */}
       <div className="flex min-w-0 flex-col gap-2 border-t border-line p-4 md:p-6 lg:col-span-8 lg:border-t-0" aria-busy={charge}>
-        {erreur && (
+        {propre && (
+          <MiseAuPropre
+            source={liste.vue.source}
+            onRayee={rayee}
+            demo={demoPropre}
+            onFermer={() => {
+              setPropre(false);
+              void charger(liste.vue, 0);
+            }}
+          />
+        )}
+        {!propre && erreur && (
           <p role="alert" className="t-small m-0 px-2 text-pen">
             {CARNET.erreur}
           </p>
         )}
-        {liste.items.length === 0 && !charge ? (
+        {propre ? null : liste.items.length === 0 && !charge ? (
           <p className="t-small m-0 px-2 py-6">{liste.vue.retirees ? CARNET.videRetirees : CARNET.videFiltre}</p>
         ) : (
           <ul className={"m-0 flex list-none flex-col divide-y divide-line p-0 transition-opacity " + (charge ? "pointer-events-none opacity-60" : "")}>
@@ -207,7 +242,7 @@ export function RaturesTab({ initial, now }: { initial: RaturesPage; now?: numbe
             ))}
           </ul>
         )}
-        {reste > 0 && (
+        {!propre && reste > 0 && (
           <button type="button" className="btn btn-secondary mt-2 self-center" disabled={charge} onClick={() => void charger(liste.vue, liste.items.length - sorties)}>
             {charge ? CARNET.chargement : CARNET.plus(Math.min(PAGE_RATURES, reste))}
           </button>

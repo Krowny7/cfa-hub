@@ -128,6 +128,23 @@ export const CARNET = {
   videFiltre: "Aucune rature de ce côté-là.",
   videRetirees: "Aucune rature retirée pour l'instant.",
   erreur: "Le carnet ne répond pas pour l'instant. Réessaie dans un moment.",
+  /** « Mettre au propre » : repasser ses ratures au hasard */
+  propre: "Mettre au propre",
+  propreSous: "Tes ratures dans le désordre : une bonne réponse la raye du carnet, une erreur la garde.",
+  propreTitre: "Mise au propre",
+  propreFiltre: (filtre: string | null) => (filtre ? `Mise au propre · ${filtre}` : "Mise au propre"),
+  propreRayee: "Rayée du carnet.",
+  propreReste: "Elle reste au carnet.",
+  propreValider: "Valider",
+  propreSuivante: "Rature suivante",
+  propreArreter: "Arrêter là",
+  propreBilan: (rayees: number, restees: number) =>
+    [rayees > 0 ? `${pluriel(rayees, "rayée", "rayées")}` : null, restees > 0 ? `${pluriel(restees, "restée", "restées")}` : null].filter(Boolean).join(" · ") || "c'est parti",
+  propreRestantes: (n: number) => `${pluriel(n, "rature", "ratures")} à reprendre`,
+  propreFini: "Carnet au propre : plus aucune rature ici.",
+  propreFiniVue: "Tu as repassé toutes les ratures de ce tri. Relance pour un nouveau tour.",
+  propreRetour: "Revenir au carnet",
+  propreEncore: "Un nouveau tour",
 } as const;
 
 /** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */
