@@ -33,6 +33,8 @@ export type ErrorsSummary = {
   /** questions de fiches déjà tentées (0 : jamais joué, « page propre » n'a pas de sens) */
   answered?: number;
   bySubject: { key: string; short: string; count: number; href: string }[];
+  /** le carnet de ratures, toutes sources (migration_ratures.sql) : bySubject y est par source */
+  carnet?: boolean;
 };
 
 export type ResumeItem = {

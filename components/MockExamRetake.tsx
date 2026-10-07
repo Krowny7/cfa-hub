@@ -162,6 +162,8 @@ export function MockExamRetake({ examId, title, durationMinutes, wrongCount, tot
         p_duration_seconds: duration,
       });
       if (rpcError) throw new Error(rpcError.message);
+      // le carnet de ratures : erreurs et blancs de la reprise (correction refaite côté serveur ; sans la migration : rien)
+      void supabase.rpc("noter_reponses", { p_items: payload, p_source: "blanc" }).then(() => undefined);
       setReview((data?.review ?? []) as ReviewQuestion[]);
       setScore(data?.score ?? 0);
       setTotal(data?.total ?? 0);

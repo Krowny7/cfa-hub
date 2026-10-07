@@ -5,6 +5,7 @@ import { MIN_QUESTIONS_FOR_SIGNAL } from "@/lib/mastery";
 import { TOPICS } from "@/lib/practiceTopics";
 import { parseDrillTitle, subjectByDrillTitle, subjectByKey } from "@/components/reviser/catalog";
 import type { ActivityWeek, ErrorsSummary, MockExamCard, ResumeItem } from "@/components/accueil/types";
+import { SOURCES_RATURE } from "@/lib/voice-z1";
 
 // Lectures serveur de l'accueil. Chaque fonction dégrade proprement : table
 // absente, droit refusé ou réseau coupé → valeur vide, jamais d'exception
@@ -203,6 +204,20 @@ const LOG_MAX_PAGES = 10;
  * regroupée par matière.
  */
 export async function loadErrors(supabase: Client, admin: Client | null, userId: string): Promise<ErrorsSummary> {
+  // le carnet de ratures (toutes sources), s'il existe : ses comptes, par source
+  try {
+    const { data, error } = await supabase.rpc("get_ratures", { p_source: null, p_retirees: false, p_limit: 1, p_offset: 0 });
+    if (!error && data) {
+      const r = data as { total: number; retirees: number; sources: Record<string, number> | null };
+      const total = Number(r.total) || 0;
+      const bySubject = SOURCES_RATURE.filter(([k]) => (r.sources?.[k] ?? 0) > 0)
+        .map(([key, short]) => ({ key, short, count: Number(r.sources?.[key]) || 0, href: "/moi?onglet=erreurs" }))
+        .sort((a, b) => b.count - a.count);
+      return { available: true, carnet: true, total, answered: total + (Number(r.retirees) || 0), bySubject };
+    }
+  } catch {
+    // carnet indisponible : le journal des fiches, comme avant
+  }
   const rows: AnswerRow[] = [];
   try {
     for (let page = 0; page < LOG_MAX_PAGES; page++) {

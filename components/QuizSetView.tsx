@@ -269,6 +269,10 @@ export function QuizSetView({
         row = (Array.isArray(data) ? data[0] : data) as AwardXpResult | null;
       }
 
+      // le carnet de ratures (correction refaite côté serveur ; sans la migration : rien)
+      // (.then lance la requête : sans lui, le builder de Supabase ne part jamais)
+      if (!demo) void supabase.rpc("noter_reponse", { p_question_id: questionId, p_selected_index: selectedIndex, p_source: "qcm" }).then(() => undefined);
+
       const xp = Number(row?.xp_awarded ?? 0) || 0;
       const isCorrect = Boolean(row?.is_correct);
       const correctIndex = row?.correct_index;

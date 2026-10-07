@@ -100,6 +100,50 @@ export const MOI = {
 /** « 3 ratures reprises cette semaine », sous le compteur barré. */
 export const reprisesSemaine = (n: number) => `${pluriel(n, "rature reprise", "ratures reprises")} cette semaine`;
 
+/** Le carnet de ratures (toutes sources, migration_ratures.sql). */
+export const CARNET = {
+  titre: "Ratures",
+  aRevoir: "à revoir",
+  regle: "Chaque question que tu manques (ou laisses sans réponse) arrive ici, d'où qu'elle vienne, et y reste. Retire une rature quand la notion est acquise : elle reviendra si tu la manques encore. Les exercices de calcul gardent leur propre suivi.",
+  toutes: "Toutes",
+  retirees: "Retirées",
+  retireesSemaine: (n: number) => `${pluriel(n, "rature retirée", "ratures retirées")} cette semaine`,
+  retireesTotal: (n: number) => `${pluriel(n, "retirée", "retirées")} en tout`,
+  ratee: (fois: number) => (fois > 1 ? `ratée ${fois} fois` : "ratée une fois"),
+  sansReponse: "laissée sans réponse",
+  blancTexte: "Tu l'avais laissée sans réponse : elle comptait fausse.",
+  reussieDepuis: (fois: number) => (fois > 1 ? `réussie ${fois} fois depuis` : "réussie depuis"),
+  taReponse: "ta réponse",
+  bonneReponse: "bonne réponse",
+  retirer: "Retirer",
+  retiree: "Retirée du carnet",
+  remise: "Remise au carnet",
+  annuler: "Annuler",
+  remettre: "Remettre au carnet",
+  revoirFiche: (page: number | null) => (page !== null ? `Revoir la page ${page} de la fiche` : "Revoir la fiche"),
+  plus: (n: number) => `Voir ${n} de plus`,
+  chargement: "Chargement…",
+  vide: "Aucune rature : page propre.",
+  videTexte: "Les questions que tu manques (fiches, défis du jour, séries éclair, duels, sessions, examens) s'inscriront ici, au stylo rouge, et y resteront.",
+  videFiltre: "Aucune rature de ce côté-là.",
+  videRetirees: "Aucune rature retirée pour l'instant.",
+  erreur: "Le carnet ne répond pas pour l'instant. Réessaie dans un moment.",
+} as const;
+
+/** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */
+export const SOURCES_RATURE: [string, string][] = [
+  ["defi", "Les 30 du jour"],
+  ["cinq", "Les 5 du jour"],
+  ["eclair", "Séries éclair"],
+  ["duel", "Duels"],
+  ["fiche", "Fiches"],
+  ["qcm", "QCM"],
+  ["session", "Sessions"],
+  ["ciblee", "Sessions ciblées"],
+  ["blanc", "Examens blancs"],
+  ["examen", "Examens"],
+];
+
 export const SONS = {
   titre: "Sons",
   grands: "Sons des grands moments",

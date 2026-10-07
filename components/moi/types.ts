@@ -4,6 +4,7 @@ import type { AnswerStats } from "@/lib/answer-stats";
 import type { EtatObjectif } from "@/lib/objectif";
 import type { EtatJour } from "@/lib/voice";
 import type { Marquees } from "@/components/moi/marquees-data";
+import type { Ratures } from "@/components/moi/ratures-data";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -84,6 +85,8 @@ export type MoiData = {
   me: MyRank;
   topics: TopicStat[];
   errors: FicheErrors;
+  /** le carnet de ratures, toutes sources (available : false tant que la migration manque : l'onglet garde `errors`) */
+  ratures: Ratures;
   /** dernières sessions, les plus récentes d'abord (vide : repli sur le navigateur) */
   sessions: SessionItem[];
   /** questions répondues, toutes sources, matière → thème → passage (lib/answer-stats) */

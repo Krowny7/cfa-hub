@@ -337,6 +337,9 @@ export function SessionClient({
     ]);
 
     saveAnswerResult(selSetId, setTitle, "qcm", isCorrect ? 1 : 0, 1);
+    // le carnet de ratures (correction refaite côté serveur ; sans la migration : rien)
+    // (.then lance la requête : sans lui, le builder de Supabase ne part jamais)
+    if (!demo) void supabase.rpc("noter_reponse", { p_question_id: currentQ.id, p_selected_index: selectedChoice, p_source: "session" }).then(() => undefined);
     // une réponse corrigée = un trait (le logo vivant avance)
     if (!demo) poserTrait(1);
     setTraceIci(true);

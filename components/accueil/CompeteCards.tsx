@@ -77,20 +77,21 @@ export function ReviewDuelTile({ duel, nowIso }: { duel: ReviewDuel; nowIso: str
 /** Les ratures des fiches : le nombre à reprendre, ou « Page propre. » */
 export function RaturesTile({ errors }: { errors: ErrorsSummary }) {
   const t = tuileRatures(errors.total);
-  const href = errors.total > 0 ? (errors.bySubject[0]?.href ?? "/fiches") : "/fiches";
-  const detail = errors.total > 0 ? errors.bySubject.slice(0, 3).map((s) => `${s.short} ${s.count}`).join(" · ") : "chaque rature a été reprise";
+  const href = errors.carnet ? "/moi?onglet=erreurs" : errors.total > 0 ? (errors.bySubject[0]?.href ?? "/fiches") : "/fiches";
+  const detail =
+    errors.total > 0 ? errors.bySubject.slice(0, 3).map((s) => `${s.short} ${s.count}`).join(" · ") : errors.carnet ? "carnet vide : tout a été retiré" : "chaque rature a été reprise";
   return (
     <Tile
       href={href}
       label={t.label}
       icon={<Icone nom="erreurs" size={15} className="text-pen" />}
       ariaLabel={`${t.label} : ${t.valeur}`}
-      cta={errors.total > 0 ? TUILES.reprendre : "Ouvrir une fiche"}
+      cta={errors.total > 0 ? TUILES.reprendre : errors.carnet ? "Voir le carnet" : "Ouvrir une fiche"}
     >
       {errors.total > 0 ? (
         <span className="flex items-baseline gap-2">
           <span className="t-num text-[30px] leading-none">{nombre(errors.total)}</span>
-          <span className="text-[14px] font-semibold text-muted">à reprendre</span>
+          <span className="text-[14px] font-semibold text-muted">{errors.carnet ? "à revoir" : "à reprendre"}</span>
         </span>
       ) : (
         <span className="t-h3 block">{t.valeur}</span>

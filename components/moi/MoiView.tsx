@@ -6,10 +6,11 @@ import { ErrorsTab } from "@/components/moi/ErrorsSection";
 import type { MoiTab } from "@/components/moi/data";
 import type { MoiData } from "@/components/moi/types";
 import { MarqueesTab } from "@/components/moi/MarqueesTab";
+import { RaturesTab } from "@/components/moi/RaturesTab";
 
 // Espace « Moi » (V3) : un en-tête compact, puis trois onglets, chacun une
-// seule vue : Stats (matières, activité, sessions), Erreurs (toutes les
-// questions de fiches à revoir), Réglages (profil, date d'examen, apparence,
+// seule vue : Stats (matières, activité, sessions), Erreurs (le carnet de
+// ratures : tout ce qui a été manqué, d'où que ça vienne), Réglages (profil, date d'examen, apparence,
 // groupes, déconnexion). Composant de présentation : les données arrivent en
 // props ; `settings` reçoit le panneau de réglages (composants clients qui
 // chargent eux-mêmes).
@@ -19,7 +20,7 @@ export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; setti
       <MoiHeader d={d} now={now} />
       <MoiTabs
         initial={tab}
-        counts={{ erreurs: d.errors.available ? d.errors.total : 0, marquees: d.marquees.items.length }}
+        counts={{ erreurs: d.ratures.available ? d.ratures.total : d.errors.available ? d.errors.total : 0, marquees: d.marquees.items.length }}
         asides={{
           erreurs: (
             <Link href="/fiches" className="ink-link">
@@ -34,7 +35,7 @@ export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; setti
         }}
         panels={{
           stats: <StatsTab d={d} />,
-          erreurs: <ErrorsTab errors={d.errors} now={now} />,
+          erreurs: d.ratures.available ? <RaturesTab initial={d.ratures} now={now} /> : <ErrorsTab errors={d.errors} now={now} />,
           marquees: <MarqueesTab marquees={d.marquees} />,
           reglages: settings,
         }}

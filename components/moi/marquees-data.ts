@@ -39,10 +39,10 @@ type Ligne = {
   explanation: string | null;
 };
 
-const SOURCES = new Set<SourceMarque>(["fiche", "session", "defi", "duel", "qcm", "examen"]);
+const SOURCES = new Set<SourceMarque>(["fiche", "session", "defi", "eclair", "duel", "qcm", "examen"]);
 
 /** D'où vient la question : la fiche et sa page, sinon la matière (dossier « … (Système) »), sinon la série. */
-function rubriqueDe(setTitle: string | null, folder: string | null) {
+export function rubriqueDe(setTitle: string | null, folder: string | null) {
   const titre = setTitle ?? "";
   const retiree = titre.startsWith("Réserve — ");
   const brut = retiree ? titre.slice("Réserve — ".length) : titre;
