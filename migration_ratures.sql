@@ -560,9 +560,11 @@ BEGIN
 END;
 $$;
 
--- 6. L'historique : toutes les réponses déjà enregistrées, rejouées une fois
---    (les ratures existantes ne sont pas touchées). Les champs des copies
---    JSON sont lus prudemment : une copie mal formée est ignorée.
+-- 6. L'historique : toutes les réponses déjà enregistrées. Une rature déjà
+--    au carnet est complétée (blancs, reprises), jamais réduite : ses retraits
+--    sont gardés, et recoller cette migration ne compte rien deux fois. Les
+--    champs des copies JSON sont lus prudemment : une copie mal formée est
+--    ignorée.
 DROP TABLE IF EXISTS pg_temp._ratures_ev;
 CREATE TEMP TABLE _ratures_ev AS
 WITH copies AS (
@@ -645,7 +647,11 @@ SELECT e.user_id, e.question_id, e.src, e.ok, e.sel, e.at, e.vis
 FROM _ratures_ev e
 JOIN auth.users u ON u.id = e.user_id
 WHERE e.vis > now() AND e.a_visible AND e.ok IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM ratures r WHERE r.user_id = e.user_id AND r.question_id = e.question_id);
+  -- pas deux fois la même réponse en attente (migration recollée)…
+  AND NOT EXISTS (SELECT 1 FROM ratures_attente w WHERE w.user_id = e.user_id AND w.question_id = e.question_id AND w.source = e.src AND w.at = e.at)
+  -- … ni une réponse déjà comptée au carnet
+  AND NOT EXISTS (SELECT 1 FROM ratures r WHERE r.user_id = e.user_id AND r.question_id = e.question_id
+                    AND (r.last_missed_at >= e.at OR r.last_correct_at >= e.at));
 
 WITH ev2 AS (
   SELECT e.*, max(at) FILTER (WHERE NOT ok) OVER (PARTITION BY user_id, question_id) AS derniere
@@ -677,9 +683,28 @@ JOIN auth.users u ON u.id = m.user_id
 JOIN quiz_questions q ON q.id = m.question_id
 LEFT JOIN quiz_sets qs ON qs.id = q.set_id
 LEFT JOIN library_folders lf ON lf.id = qs.folder_id
-ON CONFLICT (user_id, question_id) DO NOTHING;
+ON CONFLICT (user_id, question_id) DO UPDATE SET
+  misses          = greatest(ratures.misses, EXCLUDED.misses),
+  first_missed_at = least(ratures.first_missed_at, EXCLUDED.first_missed_at),
+  last_missed_at  = greatest(ratures.last_missed_at, EXCLUDED.last_missed_at),
+  last_selected   = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.last_selected ELSE ratures.last_selected END,
+  last_source     = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.last_source ELSE ratures.last_source END,
+  sources         = (SELECT array_agg(DISTINCT s ORDER BY s) FROM unnest(ratures.sources || EXCLUDED.sources) AS s),
+  correct_since   = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.correct_since
+                         WHEN EXCLUDED.last_missed_at < ratures.last_missed_at THEN ratures.correct_since
+                         ELSE greatest(ratures.correct_since, EXCLUDED.correct_since) END,
+  last_correct_at = greatest(ratures.last_correct_at, EXCLUDED.last_correct_at),
+  visible_from    = least(ratures.visible_from, EXCLUDED.visible_from),
+  removed_at      = CASE WHEN ratures.removed_at IS NOT NULL AND EXCLUDED.last_missed_at > ratures.removed_at THEN NULL ELSE ratures.removed_at END,
+  prompt          = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.prompt ELSE ratures.prompt END,
+  choices         = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.choices ELSE ratures.choices END,
+  correct_index   = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.correct_index ELSE ratures.correct_index END,
+  explanation     = CASE WHEN EXCLUDED.last_missed_at > ratures.last_missed_at THEN EXCLUDED.explanation ELSE ratures.explanation END;
 
 DROP TABLE IF EXISTS pg_temp._ratures_ev;
+
+-- l'ancienne version de _rature_copie (première version de cette migration)
+DROP FUNCTION IF EXISTS _rature_copie(uuid, jsonb, text, timestamptz);
 
 -- 7. Droits
 REVOKE ALL ON FUNCTION _rature_note(uuid, uuid, text, boolean, int, timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
