@@ -97,6 +97,8 @@ export type AnswerTheme = {
   label: string;
   /** repère court : « R54–R56 » (readings), « p. 3 » (page de fiche), null sinon */
   tag: string | null;
+  /** nature du thème : QCM de la banque, page de fiche, mock officiel, type de calcul, autre (absent : autre) */
+  kind?: ThemeKind;
   by: BySource;
   /** les plus récents d'abord (liste bornée, voir `more`) */
   passages: AnswerPassage[];
@@ -182,7 +184,9 @@ function subjectByName(name: string): string | null {
   return FOLDER_SUBJECT.get(`${n} (Système)`) ?? SUBJECTS.find((s) => s.name.toLowerCase() === n.toLowerCase())?.key ?? null;
 }
 
-type Placement = { subject: string; themeKey: string; label: string; tag: string | null; order: number };
+export type ThemeKind = "qcm" | "fiche" | "mock" | "calc" | "autre";
+
+type Placement = { subject: string; themeKey: string; label: string; tag: string | null; order: number; kind: ThemeKind };
 
 /** Reading de tête d'un repère « R91.1–R91.2 » (ordre des thèmes). */
 function readingOrder(tag: string) {
@@ -205,23 +209,23 @@ export function placeSet(setId: string, title: string | null, folder: string | n
     const variants = rest[rest.length - 1] === "Variantes";
     const subject = rest[0] && !rest[0].startsWith("Complet") ? subjectByName(rest[0]) : null;
     const label = `${exam}${variants ? " · variantes" : ""}${subject ? "" : " · complet"}`;
-    return { subject: subject ?? "mixed", themeKey: `set:${setId}`, label, tag: null, order: 500 + (variants ? 1 : 0) };
+    return { subject: subject ?? "mixed", themeKey: `set:${setId}`, label, tag: null, order: 500 + (variants ? 1 : 0), kind: "mock" };
   }
 
   const qcm = /^(.*) — QCM \(([^)]+)\)$/.exec(t);
   if (qcm) {
-    return { subject: (folder && FOLDER_SUBJECT.get(folder)) || subjectByName(t.split(" — ")[0]) || "other", themeKey: `set:${setId}`, label: qcm[1], tag: qcm[2], order: readingOrder(qcm[2]) };
+    return { subject: (folder && FOLDER_SUBJECT.get(folder)) || subjectByName(t.split(" — ")[0]) || "other", themeKey: `set:${setId}`, label: qcm[1], tag: qcm[2], order: readingOrder(qcm[2]), kind: "qcm" };
   }
 
   const drill = subjectByDrillTitle(t);
   if (drill || / — Drill Fiche Page [0-9]/.test(t)) {
     const { page, theme } = parseDrillTitle(t);
     const subject = drill?.key ?? (folder && FOLDER_SUBJECT.get(folder)) ?? "other";
-    return { subject, themeKey: `set:${setId}`, label: theme ?? (page !== null ? `Page ${page}` : t), tag: page !== null ? `p. ${page}` : null, order: 1000 + (page ?? 99) };
+    return { subject, themeKey: `set:${setId}`, label: theme ?? (page !== null ? `Page ${page}` : t), tag: page !== null ? `p. ${page}` : null, order: 1000 + (page ?? 99), kind: "fiche" };
   }
 
   const subject = (folder && FOLDER_SUBJECT.get(folder)) || subjectByName(t.split(" — ")[0]) || "other";
-  return { subject, themeKey: `set:${setId}`, label: t || "Questions", tag: null, order: 2000 };
+  return { subject, themeKey: `set:${setId}`, label: t || "Questions", tag: null, order: 2000, kind: "autre" };
 }
 
 const SUBJECT_NAMES: Record<string, string> = Object.fromEntries(SUBJECTS.map((s) => [s.key, s.name]));
@@ -693,7 +697,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   }
 
   // --- Arbre matière → thème → passage
-  type ThemeAcc = { label: string; tag: string | null; order: number; by: BySource; passages: Map<string, { n: number; ok: number }> };
+  type ThemeAcc = { label: string; tag: string | null; order: number; kind: ThemeKind; by: BySource; passages: Map<string, { n: number; ok: number }> };
   type SubjectAcc = { by: BySource; themes: Map<string, ThemeAcc>; seances: Map<string, { n: number; ok: number }> };
   const subjects = new Map<string, SubjectAcc>();
   const total: BySource = {};
@@ -714,9 +718,9 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
       place = placeSet(c.target.setId, info?.title ?? c.target.title ?? null, info?.folder ?? null);
       // un mock officiel joué en entier dans /qcm compte comme examen
       if (source === "qcm" && info?.folder === MOCKS_FOLDER) source = "exam";
-      if (!info && !c.target.title) place = { subject: "other", themeKey: "deleted-set", label: "QCM supprimés depuis", tag: null, order: 3000 };
+      if (!info && !c.target.title) place = { subject: "other", themeKey: "deleted-set", label: "QCM supprimés depuis", tag: null, order: 3000, kind: "autre" };
     } else {
-      place = { subject: c.target.subject, themeKey: c.target.themeKey, label: c.target.label, tag: c.target.tag, order: c.target.order };
+      place = { subject: c.target.subject, themeKey: c.target.themeKey, label: c.target.label, tag: c.target.tag, order: c.target.order, kind: c.target.themeKey.startsWith("calc:") ? "calc" : "autre" };
     }
     if (c.target.kind === "bucket" && c.target.themeKey.startsWith("exam:")) place.label = examTitle.get(c.target.themeKey.slice(5)) ?? place.label;
 
@@ -731,7 +735,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     addTally(s.by, source, c.n, c.ok);
     cumuler(s.seances, c.passage, c.n, c.ok);
     cumuler(toutes, c.passage, c.n, c.ok);
-    const th = s.themes.get(place.themeKey) ?? { label: place.label, tag: place.tag, order: place.order, by: {}, passages: new Map() };
+    const th = s.themes.get(place.themeKey) ?? { label: place.label, tag: place.tag, order: place.order, kind: place.kind, by: {}, passages: new Map() };
     addTally(th.by, source, c.n, c.ok);
     const pa = th.passages.get(c.passage) ?? { n: 0, ok: 0 };
     pa.n += c.n;
@@ -756,7 +760,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
             return { id: pid, source: info?.source ?? "qcm", label: info?.label ?? "Passage", at, date: at ? fmtShortDate(at) : "", href, n: v.n, ok: v.ok };
           })
           .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
-        return { key, label: th.label, tag: th.tag, by: th.by, passages: list.slice(0, PASSAGES_PER_THEME), more: Math.max(0, list.length - PASSAGES_PER_THEME) };
+        return { key, label: th.label, tag: th.tag, kind: th.kind, by: th.by, passages: list.slice(0, PASSAGES_PER_THEME), more: Math.max(0, list.length - PASSAGES_PER_THEME) };
       });
   };
 
