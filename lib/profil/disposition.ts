@@ -72,13 +72,14 @@ export type Disposition = Rangee[];
 
 export const RANGEES_MAX = 12;
 
+// La page d'un joueur qui n'a rien composé : chiffres clés, radar, amis, et
+// une case vide à côté des amis, que son propriétaire voit « ajoute une
+// image ». Les trophées vivent dans les Sceaux : la clé reste lisible dans
+// les dispositions enregistrées, mais n'est plus dans celle-ci.
 export const DISPOSITION_DEFAUT: Disposition = [
   { m: "plein", c: [{ k: "vitrine" }] },
   { m: "plein", c: [{ k: "radar" }] },
-  { m: "plein", c: [{ k: "amis" }] },
-  { m: "plein", c: [{ k: "reponses" }] },
-  { m: "plein", c: [{ k: "trophees" }] },
-  { m: "plein", c: [{ k: "progression" }] },
+  { m: "grand-petit", c: [{ k: "amis" }, null] },
 ];
 
 export const BUCKET_MEDIAS = "profil-medias";

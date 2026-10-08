@@ -1,9 +1,15 @@
+import Link from "next/link";
 import { PageHero } from "@/components/ui/Titles";
+import { RankBadge } from "@/components/ui/RankBadge";
 import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { type StyleProfil } from "@/lib/profil/catalogue";
 import { nombre } from "@/lib/voice";
 import { PresenceText } from "@/components/presence/Presence";
+import { BioRepliable } from "@/components/profil/BioRepliable";
+import { ordinal } from "@/components/classement/format";
+import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
+import { ENTETE } from "@/lib/voice-profil";
 
 // L'en-tête du profil, façon jeu vidéo mais sur toute la largeur de la page
 // (pas de carte) : la bannière du joueur (son image, ou un motif) d'un bord
@@ -13,6 +19,12 @@ import { PresenceText } from "@/components/presence/Presence";
 // (RangProfil : l'insigne animé, qui chevauche lui aussi la bannière sur
 // grand écran). Sans état : la page de profil et l'aperçu de l'éditeur (`apercu` :
 // bannière contenue, plus basse) le rendent avec les mêmes données.
+// Sur téléphone, c'est une carte de joueur qui tient dans le premier écran :
+// le sceau réduit, le rang (insigne de 52 px) dans la ligne du nom à la
+// place de la grande carte, une ligne niveau · ELO · place, le pic, la bio
+// sur deux lignes, les actions (44 px), puis les 3 sceaux posés (`poses`).
+// Sur ordinateur, la grande carte du rang à droite, avec le pic et, sur le
+// profil d'un autre, le bilan du face-à-face en pied (`piedRang`).
 
 export type EnteteData = {
   id: string;
@@ -33,6 +45,8 @@ export type EnteteData = {
   linkedin: string | null;
   /** nombre d'amis (null : amis pas encore disponibles) */
   amis: number | null;
+  /** meilleur palier atteint (index dans TIERS), affiché s'il dépasse l'actuel */
+  pic?: number | null;
 };
 
 /** La petite marque LinkedIn (aux couleurs de LinkedIn, comme un lien sortant). */
@@ -56,6 +70,8 @@ export function EnteteJoueur({
   rangDe,
   apercu = false,
   presence = false,
+  poses = null,
+  piedRang = null,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
@@ -67,8 +83,18 @@ export function EnteteJoueur({
   apercu?: boolean;
   /** « En ligne » / « Vu il y a 3 h » sous le nom (le profil d'un autre joueur) */
   presence?: boolean;
+  /** les 3 sceaux posés (SceauxPoses) */
+  poses?: React.ReactNode;
+  /** le pied de la carte du rang, sur ordinateur (bilan du face-à-face) */
+  piedRang?: React.ReactNode;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
+  // sur téléphone : le rang dans la ligne du nom, la ligne niveau · ELO · place, le pic
+  const rang = rankFor(d.elo, d.mastery, d.place);
+  const placement = d.gamesPlayed < PLACEMENT_GAMES;
+  const nomRang = placement ? `Placement ${Math.min(d.gamesPlayed, PLACEMENT_GAMES)}/${PLACEMENT_GAMES}` : `${rang.tier.name}${rang.division ? " " + rang.division : ""}`;
+  const picNom = d.pic !== undefined && d.pic !== null && d.pic > rang.tierIndex ? TIERS[d.pic].name : null;
+  const eloPlace = ENTETE.eloPlace(d.elo, d.place !== null ? ordinal(d.place) : null);
 
   return (
     <header className="flex flex-col" style={styleAccent(d.style.accent)} aria-label={`Profil de ${d.name}`}>
@@ -82,48 +108,67 @@ export function EnteteJoueur({
           className={
             apercu
               ? { fine: "h-[96px]", normale: "h-[130px]", haute: "h-[176px]" }[d.style.bannerH]
-              : { fine: "h-[120px] sm:h-[170px]", normale: "h-[170px] sm:h-[250px]", haute: "h-[220px] sm:h-[340px]" }[d.style.bannerH]
+              : { fine: "h-[104px] sm:h-[170px]", normale: "h-[136px] sm:h-[250px]", haute: "h-[176px] sm:h-[340px]" }[d.style.bannerH]
           }
         />
         {haut && (
-          <div className={apercu ? "absolute left-4 top-3 z-[3]" : "absolute inset-x-0 top-4 z-[3]"}>
+          <div className={apercu ? "absolute left-4 top-3 z-[3]" : "absolute inset-x-0 top-3 z-[3] sm:top-4"}>
             <div className={apercu ? "" : "mx-auto w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]"}>{haut}</div>
           </div>
         )}
       </div>
 
       <div className={"grid items-end gap-x-10 gap-y-7 " + (apercu ? "" : "lg:grid-cols-12")}>
-        <div className={"flex min-w-0 flex-col gap-5 " + (apercu ? "" : "lg:col-span-7")}>
-          <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-            <div className={"relative z-[2] " + (apercu ? "-mt-[46px] pl-4" : "-mt-[56px] sm:-mt-[84px]")}>
+        <div className={"flex min-w-0 flex-col " + (apercu ? "gap-5" : "gap-3.5 lg:col-span-7 lg:gap-5")}>
+          <div className={apercu ? "flex flex-wrap items-end gap-x-6 gap-y-3" : "flex items-start gap-x-4 gap-y-3 lg:flex-wrap lg:items-end lg:gap-x-6"}>
+            {/* le sceau : 88 px sur téléphone (128 réduit), 128 sur ordinateur */}
+            <div className={"relative z-[2] shrink-0 " + (apercu ? "-mt-[46px] pl-4" : "-mt-[64px] max-lg:[zoom:0.6875] lg:-mt-[84px]")}>
               <CadreSceau frame={d.style.frame} name={d.name} avatarUrl={d.avatarUrl} size={apercu ? 88 : 128} />
             </div>
-            <div className="min-w-0 flex-[1_1_240px] pt-2">
+            <div className={"min-w-0 " + (apercu ? "flex-[1_1_240px] pt-2" : "flex-1 pt-2 lg:flex-[1_1_240px]")}>
               {apercu ? (
                 <h2 className="t-h1 m-0 [overflow-wrap:anywhere]">{d.name}</h2>
               ) : (
-                <PageHero kicker={kicker} title={<span className="[overflow-wrap:anywhere]">{d.name}</span>} enso={false} className="w-fit max-w-full" />
+                <>
+                  <h1 className={`m-0 font-extrabold leading-[1.1] tracking-[-0.03em] [overflow-wrap:anywhere] lg:hidden ${d.name.length > 12 ? "text-[20px]" : d.name.length > 9 ? "text-[22px]" : "text-[26px]"}`}>{d.name}</h1>
+                  <PageHero kicker={kicker} title={<span className="[overflow-wrap:anywhere]">{d.name}</span>} enso={false} className="w-fit max-w-full max-lg:hidden" />
+                </>
               )}
-              {d.nomComplet && <p className={`${s.nomComplet} m-0 mt-1 text-[18px] sm:text-[20px]`}>{d.nomComplet}</p>}
+              {d.nomComplet && <p className={`${s.nomComplet} m-0 mt-1 ${apercu ? "text-[18px] sm:text-[20px]" : "text-[15px] lg:text-[20px]"}`}>{d.nomComplet}</p>}
               {presence && !apercu && (
-                <div className="mt-2 min-h-[21px] text-[14px] font-semibold text-muted">
+                <div className="mt-1 min-h-[21px] text-[13px] font-semibold text-muted lg:mt-2 lg:text-[14px]">
                   <PresenceText userId={d.id} repli="Hors ligne" />
                 </div>
               )}
             </div>
+            {/* téléphone : le rang dans la ligne du nom (la grande carte est sur ordinateur) */}
+            {!apercu && (
+              <Link href="/classement" className="flex w-[76px] shrink-0 flex-col items-center gap-1 pt-1.5 lg:hidden" aria-label={`${rangDe ?? "Ton rang"} : ${nomRang}. Voir le classement`}>
+                <RankBadge tier={rang.tierIndex} size={52} mastery={d.mastery ?? 0} division={placement ? null : rang.division} anime className="w-[52px]" />
+                <span className="text-center text-[12px] font-bold leading-tight text-white">{nomRang}</span>
+              </Link>
+            )}
           </div>
 
-          {/* le niveau : la pastille, la barre à la couleur du joueur, l'XP */}
+          {/* le niveau : la pastille, la barre à la couleur du joueur ; l'XP (ordinateur) ou l'ELO et la place (téléphone) */}
           <div className="flex max-w-[480px] items-center gap-3">
             <span className="t-num shrink-0 rounded-[10px] border border-line-2 px-2 py-1 text-[15px] leading-none">Niv. {d.niveau}</span>
-            <span className="ink-bar block h-1.5 min-w-[80px] flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={d.levelPct} aria-label={`Niveau ${d.niveau} : ${d.levelPct} %`}>
+            <span className="ink-bar block h-1.5 min-w-[60px] flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={d.levelPct} aria-label={`Niveau ${d.niveau} : ${d.levelPct} %`}>
               <span className={s.filet} style={{ width: `${d.levelPct}%` }} />
             </span>
-            <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted">{meta}</span>
+            {apercu ? (
+              <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted">{meta}</span>
+            ) : (
+              <>
+                <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted lg:hidden">{eloPlace}</span>
+                <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted max-lg:hidden">{meta}</span>
+              </>
+            )}
           </div>
-          {d.style.bio && <p className="t-small m-0 max-w-[560px] whitespace-pre-line text-white">{d.style.bio}</p>}
+          {picNom && !apercu && <p className="m-0 -mt-1.5 text-[13px] font-semibold text-muted lg:hidden">{ENTETE.pic(picNom)}</p>}
+          {d.style.bio && (apercu ? <p className="t-small m-0 max-w-[560px] whitespace-pre-line text-white">{d.style.bio}</p> : <BioRepliable texte={d.style.bio} />)}
           {(actions || d.linkedin) && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className={"flex flex-wrap items-center gap-2 " + (apercu ? "" : "[&_.btn]:min-h-[44px] max-sm:[&_.btn]:px-3")}>
               {actions}
               {d.linkedin && (
                 <a href={d.linkedin} target="_blank" rel="noopener noreferrer me" className="btn btn-secondary rl-press">
@@ -132,10 +177,13 @@ export function EnteteJoueur({
               )}
             </div>
           )}
+          {poses && !apercu && <div className="pt-1 lg:pt-2">{poses}</div>}
         </div>
 
         {!apercu && (
-          <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} className="z-[2] lg:col-span-5 lg:self-start lg:-mt-[84px]" />
+          <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:block lg:self-start">
+            <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} pied={piedRang} />
+          </div>
         )}
       </div>
     </header>

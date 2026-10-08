@@ -12,7 +12,8 @@ import { couleurCss } from "@/lib/profil/catalogue";
 // barres. Sur le profil d'un autre joueur, « Me comparer » pose ta forme par
 // dessus la sienne (à ta couleur, ou en contraste si vous avez la même) :
 // le radar et les barres montrent alors vos deux valeurs et l'écart, et la
-// moyenne s'efface le temps de la comparaison.
+// moyenne s'efface le temps de la comparaison. `comparaison` : posée d'office
+// (l'onglet Face-à-face).
 
 export type MatierePct = { key: string; pct: number | null };
 
@@ -45,6 +46,7 @@ export function RadarComparable({
   moi,
   miennes = null,
   monAccent = null,
+  comparaison = false,
 }: {
   matieres: MatierePct[];
   moyennes: Record<string, number | null>;
@@ -54,8 +56,10 @@ export function RadarComparable({
   /** les matières de celui qui regarde (profil d'un autre joueur), sinon null */
   miennes?: MatierePct[] | null;
   monAccent?: string | null;
+  /** la comparaison ouverte d'office */
+  comparaison?: boolean;
 }) {
-  const [comparer, setComparer] = useState(false);
+  const [comparer, setComparer] = useState(comparaison);
   const couleur = couleurCss(accent);
   // ma couleur, sauf si c'est la même que la sienne : un contraste alors
   let maCouleur = couleurCss(monAccent);

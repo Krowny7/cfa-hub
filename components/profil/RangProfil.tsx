@@ -4,12 +4,15 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { fmtInt, ordinal } from "@/components/classement/format";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
+import { ENTETE } from "@/lib/voice-profil";
 
 // Le rang en grand, à droite de l'en-tête du profil : la même carte sombre
 // que dans Moi, mais l'insigne y prend la place d'un trophée (grand, animé,
 // sur un halo à la couleur de son métal). À côté : le palier, la marche
 // vers le palier suivant (ou les parties de placement, le rang étant alors
-// provisoire), puis ELO, place et maîtrise. Mène au classement. Sans état.
+// provisoire), puis ELO, place et maîtrise. Mène au classement. Sous le
+// palier, son pic s'il est plus haut ; en pied (`pied`), le bilan du
+// face-à-face sur le profil d'un autre joueur. Sans état.
 
 export function RangProfil({
   elo,
@@ -17,6 +20,8 @@ export function RangProfil({
   place,
   gamesPlayed,
   surTitre = "Ton rang",
+  pic = null,
+  pied = null,
   className = "",
 }: {
   elo: number;
@@ -25,6 +30,10 @@ export function RangProfil({
   gamesPlayed: number;
   /** « Ton rang », « Son rang » (suivi du domaine) */
   surTitre?: string;
+  /** meilleur palier atteint (index dans TIERS) ; affiché s'il dépasse l'actuel */
+  pic?: number | null;
+  /** pied de carte (le bilan du face-à-face) */
+  pied?: React.ReactNode;
   className?: string;
 }) {
   const rank = rankFor(elo, mastery, place);
@@ -33,13 +42,11 @@ export function RangProfil({
   const placement = gamesPlayed < PLACEMENT_GAMES;
   const nom = `${rank.tier.name}${rank.division ? " " + rank.division : ""}`;
 
+  const picNom = pic !== null && pic > rank.tierIndex ? TIERS[pic].name : null;
+
   return (
-    <Link
-      href="/classement"
-      className={"card-ink rl-lift rl-in group relative isolate flex flex-col gap-3.5 overflow-hidden p-5 " + className}
-      style={{ animationDelay: ".08s" }}
-      aria-label={`${surTitre} : ${placement ? `placement ${joues} sur ${PLACEMENT_GAMES}, rang provisoire ${nom}` : nom}. Voir le classement`}
-    >
+    // toute la carte mène au classement (lien étiré), sauf son pied
+    <div className={"card-ink rl-lift rl-in group relative isolate flex flex-col gap-3.5 overflow-hidden p-5 " + className} style={{ animationDelay: ".08s" }}>
       {/* le halo du métal, derrière l'insigne */}
       <span
         aria-hidden
@@ -51,9 +58,15 @@ export function RangProfil({
         <span>
           {surTitre} · {CURRENT_DOMAIN.name}
         </span>
-        <span className="inline-flex items-center gap-0.5 transition-transform group-hover:translate-x-0.5">
-          Classement <ChevronRight size={15} aria-hidden />
-        </span>
+        <Link
+          href="/classement"
+          className="after:absolute after:inset-0"
+          aria-label={`${surTitre} : ${placement ? `placement ${joues} sur ${PLACEMENT_GAMES}, rang provisoire ${nom}` : nom}${picNom ? `, ${ENTETE.pic(picNom)}` : ""}. Voir le classement`}
+        >
+          <span className="inline-flex items-center gap-0.5 transition-transform group-hover:translate-x-0.5">
+            Classement <ChevronRight size={15} aria-hidden />
+          </span>
+        </Link>
       </span>
 
       <span className="flex items-center gap-4 sm:gap-6">
@@ -64,6 +77,7 @@ export function RangProfil({
           <span className="text-[26px] font-extrabold leading-none tracking-[-0.03em] sm:text-[30px]" style={{ color: metal[0] }}>
             {nom}
           </span>
+          {picNom && <span className="-mt-0.5 text-[12.5px] font-semibold text-[rgba(255,255,255,.62)]">{ENTETE.pic(picNom)}</span>}
           {placement ? (
             <span className="flex flex-col gap-1.5">
               <span className="text-[13px] font-semibold text-[rgba(255,255,255,.85)]">
@@ -103,6 +117,7 @@ export function RangProfil({
           </span>
         ))}
       </span>
-    </Link>
+      {pied && <div className="relative z-[1] border-t border-[rgba(255,255,255,.1)] pt-3">{pied}</div>}
+    </div>
   );
 }
