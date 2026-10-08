@@ -4,6 +4,7 @@
 // correct_index, explanation].
 import { createClient } from "@supabase/supabase-js";
 import { exigerLangues } from "./langue.mjs";
+import { etiqueter } from "../notions/etiquettes.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -68,6 +69,15 @@ export async function ensureFolder(ownerId, folderName, kind) {
   return folder.id;
 }
 
+// Notion et concept des questions d'un seed (colonnes de migration_notions.sql),
+// d'après scripts/notions/rattachement.json : un re-seed les remet d'office.
+async function poserNotions(setIds) {
+  const r = await etiqueter(supabase, { setIds });
+  if (r.absentes) return console.log("  (notions : migration_notions.sql pas encore collée, rien posé)");
+  if (r.ecrites) console.log(`  notions posées sur ${r.ecrites} questions`);
+  if (r.sansDonnee) console.log(`  ${r.sansDonnee} questions sans notion connue : relancer scripts/notions/rattacher.mjs puis synchroniser.mjs`);
+}
+
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) {
   exigerLangues(sets); // énoncé et choix en anglais, explication en français (scripts/lib/langue.mjs)
@@ -81,6 +91,7 @@ export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) 
   }
 
   let total = 0;
+  const setIds = [];
   for (const set of sets) {
     const { data: newSet, error: setErr } = await supabase
       .from("quiz_sets")
@@ -112,7 +123,9 @@ export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) 
 
     console.log(`  ✓ QCM "${set.title}" — ${rows.length} questions (set ${newSet.id})`);
     total += rows.length;
+    setIds.push(newSet.id);
   }
+  await poserNotions(setIds);
   return total;
 }
 
@@ -201,6 +214,7 @@ export async function syncQuizSets({ ownerId, folderId, sets }) {
     }
     console.log(`  ✓ QCM "${set.title}" — ${set.questions.length} questions (${kept} conservées avec leur historique, ${inserts.length} ajoutées, ${stale.length} rangées dans la réserve)`);
     total += set.questions.length;
+    await poserNotions([setId]);
   }
   return total;
 }
