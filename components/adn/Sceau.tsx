@@ -13,7 +13,9 @@
 //   texte        le mot (Dela Gothic)            sur / sous   petites lignes (Geist Mono)
 //   forme        "hex" (jour, division) | "long" (mentions)
 //   plein        hexagone plein (défaut) ; long : contour double (défaut false)
-//   ton          "pen" (rouge, défaut) | "ink" (noir)
+//   ton          "pen" (rouge, défaut) | "ink" (noir) | "gaufre" (relief à sec
+//                dans le papier, sans encre : pas encore gagné) | "dorure"
+//                (dorure à chaud, reflet lent, figé en mouvement réduit)
 //   taille       largeur en px (hex 84, long 176), ou "remplir" (slot `sceau` de
 //                l'AnneauDuJour)                         angle   inclinaison en degrés
 //   pose         true : le coup de tampon joue au montage ; "vue" : à l'arrivée
@@ -22,9 +24,12 @@
 //                défaut), "ceremonie", ou false
 // Un seul sceau par écran, et seulement pour un vrai accomplissement.
 // Mouvement réduit : posé d'emblée, sans tache.
+// L'hexagone vient des tracés partagés (InkDefs, <use>) : la collection du
+// profil en pose 16 par page sans les recopier.
 
 import { useId, useRef } from "react";
-import { SEAL_HEX, SEAL_HEX_IN, SEAL_LONG, SEAL_LONG_IN } from "./paths-moments";
+import { INK } from "@/components/ui/InkDefs";
+import { SEAL_LONG, SEAL_LONG_IN } from "./paths-moments";
 import { jouerSon, type SonMoment } from "./sound";
 import { EASE_OUT, STAMP_KF, mouvementReduit, useIso } from "./sound-timeline";
 import s from "./Sceau.module.css";
@@ -35,7 +40,7 @@ export type SceauProps = {
   sous?: string;
   forme?: "hex" | "long";
   plein?: boolean;
-  ton?: "pen" | "ink";
+  ton?: "pen" | "ink" | "gaufre" | "dorure";
   /** largeur en px, ou "remplir" : la largeur de son conteneur (slot de l'anneau du jour) */
   taille?: number | "remplir";
   angle?: number;
@@ -173,14 +178,38 @@ export function Sceau({
   }
 
   const vb = long ? "0 0 240 100" : "0 0 120 120";
-  const outer = long ? SEAL_LONG : SEAL_HEX;
-  const inner = long ? SEAL_LONG_IN : SEAL_HEX_IN;
+  // le contour et le filet : partagés (InkDefs) pour l'hexagone, en ligne pour l'allongé
+  type Trait = { fill?: string; stroke?: string; strokeWidth?: number; strokeLinejoin?: "round"; mask?: string };
+  const outer = (p: Trait) => (long ? <path d={SEAL_LONG} {...p} /> : <use href={INK.sealHex} {...p} />);
+  const inner = (p: Trait) => (long ? <path d={SEAL_LONG_IN} {...p} /> : <use href={INK.sealHexIn} {...p} />);
+  // dorure : un dégradé d'or, et un reflet qui passe lentement (CSS : figé en mouvement réduit)
+  const dore = ton === "dorure";
+  const encre = dore ? `url(#${uid}o)` : "currentColor";
+  const or = dore ? (
+    <>
+      <linearGradient id={`${uid}o`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#F7E19A" />
+        <stop offset=".48" stopColor="#D7A640" />
+        <stop offset="1" stopColor="#8C5E16" />
+      </linearGradient>
+      <linearGradient id={`${uid}r`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#fff" stopOpacity={0} />
+        <stop offset=".5" stopColor="#fff" stopOpacity={0.7} />
+        <stop offset="1" stopColor="#fff" stopOpacity={0} />
+      </linearGradient>
+      <clipPath id={`${uid}c`}>{outer({})}</clipPath>
+    </>
+  ) : null;
+  const reflet = dore ? (
+    <polygon className={s.reflet} points={`26,-10 52,-10 26,${long ? 110 : 130} 0,${long ? 110 : 130}`} fill={`url(#${uid}r)`} clipPath={`url(#${uid}c)`} style={{ ["--fin" as string]: long ? "260px" : "150px" }} />
+  ) : null;
+  const tonClasse = ton === "ink" ? s.ink : ton === "gaufre" ? s.gaufre : dore ? s.dorure : "";
   return (
     <span
       ref={box}
       role="img"
       aria-label={label}
-      className={`${s.sceau} ${ton === "ink" ? s.ink : ""} ${className}`}
+      className={`${s.sceau} ${tonClasse} ${className}`}
       style={{ ...(remplir ? { width: "100%", height: "auto", aspectRatio: long ? "240 / 100" : "1 / 1" } : { width: w, height: h }), rotate: `${rot}deg`, ["--gx" as string]: `${-(seed % 90)}px`, ["--gy" as string]: `${-((seed * 7) % 90)}px` }}
     >
       <span ref={tache} aria-hidden className={`${s.tache} rl-deco`} />
@@ -193,16 +222,21 @@ export function Sceau({
                 <mask id={mask} maskUnits="userSpaceOnUse" x={-10} y={-10} width={long ? 260 : 140} height={long ? 120 : 140}>
                   <rect x={-10} y={-10} width={long ? 260 : 140} height={long ? 120 : 140} fill="#fff" />
                   <g fill="#000">{body}</g>
-                  <path d={inner} fill="none" stroke="#000" strokeWidth={long ? 2.4 : 2.6} strokeLinejoin="round" />
+                  {inner({ fill: "none", stroke: "#000", strokeWidth: long ? 2.4 : 2.6, strokeLinejoin: "round" })}
                 </mask>
+                {or}
               </defs>
-              <path d={outer} fill="currentColor" mask={`url(#${mask})`} />
+              <g mask={`url(#${mask})`}>
+                {outer({ fill: encre })}
+                {reflet}
+              </g>
             </>
           ) : (
             <>
-              <path d={outer} fill="none" stroke="currentColor" strokeWidth={long ? 6 : 6.5} strokeLinejoin="round" />
-              <path d={inner} fill="none" stroke="currentColor" strokeWidth={long ? 1.8 : 2} strokeLinejoin="round" />
-              <g fill="currentColor">{body}</g>
+              {or && <defs>{or}</defs>}
+              {outer({ fill: "none", stroke: encre, strokeWidth: long ? 6 : 6.5, strokeLinejoin: "round" })}
+              {inner({ fill: "none", stroke: encre, strokeWidth: long ? 1.8 : 2, strokeLinejoin: "round" })}
+              <g fill={encre}>{body}</g>
             </>
           )}
         </svg>

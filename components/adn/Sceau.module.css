@@ -56,3 +56,59 @@
 :global(html[data-discreet="1"]) .tache {
   display: none;
 }
+
+/* Gaufré : pas encore gagné. Un relief à sec dans le papier, sans encre ni
+   grain : le papier à peine plus sombre, un liseré de lumière en haut à
+   gauche, une ombre en bas à droite (les mots en réserve se creusent). */
+.sceau {
+  --gaufre: color-mix(in oklab, var(--paper) 93%, var(--ink));
+  --gaufre-clair: rgba(255, 255, 255, 0.95);
+  --gaufre-ombre: rgba(17, 17, 17, 0.2);
+}
+:global(html[data-theme="nuit"]) .sceau {
+  --gaufre: color-mix(in oklab, var(--paper) 91%, #ffffff);
+  --gaufre-clair: rgba(255, 255, 255, 0.1);
+  --gaufre-ombre: rgba(0, 0, 0, 0.8);
+}
+.gaufre {
+  color: var(--gaufre);
+}
+.gaufre .encre,
+.dorure .encre {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.gaufre .encre {
+  filter: drop-shadow(-0.6px -0.8px 0 var(--gaufre-clair)) drop-shadow(0.7px 1px 0.5px var(--gaufre-ombre));
+}
+.gaufre .tache {
+  display: none;
+}
+
+/* Dorure : la dorure à chaud du troisième palier. Le dégradé d'or est dans
+   le tracé ; le reflet passe lentement, puis se repose. */
+.dorure {
+  color: #c4932f;
+}
+.reflet {
+  transform: translateX(-56px);
+  animation: reflet 7s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+@keyframes reflet {
+  0%,
+  64% {
+    transform: translateX(-56px);
+  }
+  100% {
+    transform: translateX(var(--fin, 150px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reflet {
+    display: none;
+  }
+}
+:global(html[data-rl-motion="off"]) .reflet,
+:global(html[data-discreet="1"]) .reflet {
+  display: none;
+}

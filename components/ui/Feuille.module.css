@@ -1,0 +1,49 @@
+/* La Feuille : du bas sur téléphone, panneau latéral à droite sur ordinateur. */
+
+.feuille {
+  margin: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: 85dvh;
+  border-radius: 22px 22px 0 0;
+  border-bottom: 0;
+}
+.feuille[open] {
+  animation: monte 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes monte {
+  from {
+    transform: translateY(36px);
+    opacity: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .feuille {
+    margin: 0 0 0 auto;
+    width: 420px;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 22px 0 0 22px;
+    border-bottom: 1px solid var(--line-2);
+    border-right: 0;
+  }
+  .feuille[open] {
+    animation-name: glisse;
+  }
+  @keyframes glisse {
+    from {
+      transform: translateX(48px);
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feuille[open] {
+    animation: none;
+  }
+}
+:global(html[data-rl-motion="off"]) .feuille[open] {
+  animation: none;
+}
