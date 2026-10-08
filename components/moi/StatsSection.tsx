@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Activity, BarChart3 } from "lucide-react";
+import { Activity, BarChart3, ChevronRight } from "lucide-react";
 import { Radar, RadarLegend } from "@/components/ui/Radar";
 import { CardLabel } from "@/components/ui/Titles";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
+import { XpBarChart } from "@/components/XpBarChart";
 import { TopicRail } from "@/components/ui/TopicRail";
 import { reviserHref, subjectRail } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";
@@ -108,7 +109,7 @@ function SubjectsCard({ d }: { d: MoiData }) {
   );
 }
 
-/** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande). La précision vit dans « Traits tracés ». */
+/** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande), puis l'XP par jour sur 90 jours, repliée. La précision vit dans « Traits tracés ». */
 function ActivityCard({ d }: { d: MoiData }) {
   const facts: { label: string; value: string }[] = [
     { label: "Semaine", value: `${fmtInt(d.xpWeek)} XP` },
@@ -158,6 +159,19 @@ function ActivityCard({ d }: { d: MoiData }) {
           </dl>
         </div>
       </div>
+
+      {d.xpDays.length > 0 && (
+        <details className="group/x border-t border-line pt-4">
+          <summary className="t-micro inline-flex cursor-pointer list-none items-center gap-1 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
+            <ChevronRight size={13} aria-hidden className="transition-transform group-open/x:rotate-90" />
+            {MOI.xpParJour}
+          </summary>
+          <div className="rl-in mt-3">
+            {/* du plus ancien au plus récent, de gauche à droite */}
+            <XpBarChart data={[...d.xpDays].sort((a, b) => a.day.localeCompare(b.day)).slice(-90)} title={MOI.xpParJour} />
+          </div>
+        </details>
+      )}
     </section>
   );
 }

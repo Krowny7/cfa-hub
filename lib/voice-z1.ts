@@ -95,6 +95,8 @@ export const MOI = {
   autres: (n: number) => `Et ${pluriel(n, "autre", "autres")} : ouvre une fiche, onglet « Mes erreurs », pour tout reprendre.`,
   /** carte Activité, sous les bâtons */
   serieAide: (jours: number) => (jours > 0 ? "Une question par jour suffit à garder l'encre fraîche." : "Une question aujourd'hui, et le premier bâton est tracé."),
+  /** carte Activité, le détail replié (il vivait sur le profil public) */
+  xpParJour: "XP par jour · 90 jours",
 } as const;
 
 /** « 3 ratures reprises cette semaine », sous le compteur barré. */
