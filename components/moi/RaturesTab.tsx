@@ -22,8 +22,10 @@ import type { SourceMarque } from "@/lib/marques";
 // duels, sessions ciblées, examens), reste ici jusqu'à ce que le joueur le
 // retire ; une nouvelle erreur ramène la rature. À gauche le compte et les
 // sources (filtres) ; à droite la liste, chaque rature s'ouvre sur la
-// question, sa réponse, la bonne et l'explication. Pages de 20. « Mettre au
-// propre » les fait repasser au hasard (MiseAuPropre) : juste, rayée.
+// question, sa réponse, la bonne et l'explication. Pages de 20. Deux temps :
+// les ratures en cours, et les anciennes (rayées), toujours consultables.
+// « Mettre au propre » repasse les ratures en cours au hasard (juste :
+// rayée) ; « Rejouer les anciennes » les révise (faux : elles reviennent).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -105,8 +107,9 @@ export function RaturesTab({ initial, now, demoPropre }: { initial: RaturesPage;
     const recente = deja || (it.removedAt !== null && Date.now() - new Date(it.removedAt).getTime() < SEMAINE_MS);
     const delta = (signe: 1 | -1) => (c: Compte): Compte => {
       const s = signe * (retirer ? -1 : 1);
+      // les puces comptent le temps affiché : la rature le quitte
       const sources = { ...c.sources };
-      for (const k of it.sources.length ? it.sources : [it.lastSource]) sources[k] = Math.max(0, (sources[k] ?? 0) + s);
+      for (const k of it.sources.length ? it.sources : [it.lastSource]) sources[k] = Math.max(0, (sources[k] ?? 0) - signe);
       return {
         total: c.total + s,
         retirees: c.retirees - s,
@@ -123,18 +126,22 @@ export function RaturesTab({ initial, now, demoPropre }: { initial: RaturesPage;
     }
   }
 
-  // une rature rayée pendant la mise au propre : les compteurs suivent
-  function rayee(srcs: string[]) {
+  // une rature repassée qui change de temps (rayée, ou revenue en cours) : les compteurs suivent
+  function apresReponse(statut: string, srcs: string[]) {
+    if (statut !== "rayee" && statut !== "revenue") return;
     setCompte((c) => {
       const sources = { ...c.sources };
       for (const k of srcs) sources[k] = Math.max(0, (sources[k] ?? 0) - 1);
-      return { total: Math.max(0, c.total - 1), retirees: c.retirees + 1, semaine: c.semaine + 1, sources };
+      return statut === "rayee"
+        ? { total: Math.max(0, c.total - 1), retirees: c.retirees + 1, semaine: c.semaine + 1, sources }
+        : { total: c.total + 1, retirees: Math.max(0, c.retirees - 1), semaine: c.semaine, sources };
     });
   }
 
   const sources = SOURCES_RATURE.filter(([k]) => (compte.sources[k] ?? 0) > 0);
-  // ratures à repasser dans le tri en cours
-  const aRepasser = liste.vue.retirees ? 0 : liste.vue.source ? (compte.sources[liste.vue.source] ?? 0) : compte.total;
+  // ratures à repasser dans le tri affiché (en cours ou anciennes)
+  const anciennes = liste.vue.retirees;
+  const aRepasser = liste.vue.source ? (compte.sources[liste.vue.source] ?? 0) : anciennes ? compte.retirees : compte.total;
   // ratures de la vue encore à charger
   const reste = liste.filtre - liste.items.length;
   const vide = compte.total === 0 && compte.retirees === 0 && !liste.vue.retirees;
@@ -178,31 +185,45 @@ export function RaturesTab({ initial, now, demoPropre }: { initial: RaturesPage;
             {[compte.semaine > 0 ? CARNET.retireesSemaine(compte.semaine) : null, compte.retirees > 0 ? CARNET.retireesTotal(compte.retirees) : null].filter(Boolean).join(" · ")}
           </p>
         )}
+        {/* les deux temps du carnet : en cours, anciennes (rayées) */}
+        <div className="grid grid-cols-2 gap-1 rounded-[12px] bg-surface-2 p-1" role="tablist" aria-label="Ratures en cours ou anciennes">
+          {[false, true].map((anc) => (
+            <button
+              key={String(anc)}
+              type="button"
+              role="tab"
+              aria-selected={vue.retirees === anc}
+              className={"rounded-[9px] px-3 py-2 text-[13.5px] font-semibold transition-colors " + (vue.retirees === anc ? "bg-surface text-white shadow-[var(--shadow-1)]" : "text-muted hover:text-white")}
+              onClick={() => choisir({ source: null, retirees: anc })}
+            >
+              {anc ? CARNET.anciennes : CARNET.enCours} · {nombre(anc ? compte.retirees : compte.total)}
+            </button>
+          ))}
+        </div>
         {aRepasser > 0 && (
           <div className="grid gap-1.5">
-            <button type="button" className="btn btn-primary w-fit" onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
-              <PenLine size={16} aria-hidden /> {CARNET.propre} · {nombre(aRepasser)}
+            <button type="button" className={"btn w-fit " + (anciennes ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
+              {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre} · {nombre(aRepasser)}
             </button>
-            <p className="t-micro m-0">{CARNET.propreSous}</p>
+            <p className="t-micro m-0">{anciennes ? CARNET.rejouerSous : CARNET.propreSous}</p>
           </div>
         )}
-        <p className="t-micro m-0">{CARNET.regle}</p>
-
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer les ratures">
-          <button type="button" className={"chip " + (!vue.retirees && vue.source === null ? "chip-active" : "")} aria-pressed={!vue.retirees && vue.source === null} onClick={() => choisir({ source: null, retirees: false })}>
-            {CARNET.toutes} · {nombre(compte.total)}
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par source">
+          <button type="button" className={"chip " + (vue.source === null ? "chip-active" : "")} aria-pressed={vue.source === null} onClick={() => choisir({ source: null, retirees: vue.retirees })}>
+            {CARNET.toutes} · {nombre(vue.retirees ? compte.retirees : compte.total)}
           </button>
           {sources.map(([k, nom]) => (
-            <button key={k} type="button" className={"chip " + (!vue.retirees && vue.source === k ? "chip-active" : "")} aria-pressed={!vue.retirees && vue.source === k} onClick={() => choisir({ source: k, retirees: false })}>
+            <button key={k} type="button" className={"chip " + (vue.source === k ? "chip-active" : "")} aria-pressed={vue.source === k} onClick={() => choisir({ source: k, retirees: vue.retirees })}>
               {nom} · {nombre(compte.sources[k] ?? 0)}
             </button>
           ))}
-          {(compte.retirees > 0 || vue.retirees) && (
-            <button type="button" className={"chip " + (vue.retirees ? "chip-active" : "")} aria-pressed={vue.retirees} onClick={() => choisir({ source: null, retirees: true })}>
-              {CARNET.retirees} · {nombre(compte.retirees)}
-            </button>
-          )}
         </div>
+        <details className="group">
+          <summary className="t-micro inline-flex cursor-pointer list-none items-center gap-1 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
+            <ArrowRight size={12} aria-hidden className="transition-transform group-open:rotate-90" /> Comment marche le carnet ?
+          </summary>
+          <p className="t-micro m-0 mt-1.5">{CARNET.regle}</p>
+        </details>
       </div>
 
       {/* la liste, ou la mise au propre */}
@@ -210,7 +231,8 @@ export function RaturesTab({ initial, now, demoPropre }: { initial: RaturesPage;
         {propre && (
           <MiseAuPropre
             source={liste.vue.source}
-            onRayee={rayee}
+            anciennes={anciennes}
+            onStatut={apresReponse}
             demo={demoPropre}
             onFermer={() => {
               setPropre(false);

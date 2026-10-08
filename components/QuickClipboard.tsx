@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Send, Copy, ClipboardCheck, Trash2, Clock, Paperclip, Download, X } from "lucide-react";
+import { Send, Copy, ClipboardCheck, Trash2, Clock, Paperclip, Download, X, Hourglass } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 
@@ -15,12 +15,26 @@ type Note = {
   expires_at: string;
 };
 
-const TTL_SECONDS = 5 * 60;
+// Durées de conservation : 5 minutes par défaut (passer du code d'un
+// appareil à l'autre), 24 heures sur demande (garder un fichier pour la journée).
+const DUREES = [
+  { cle: "court", label: "5 min", ms: 5 * 60_000 },
+  { cle: "jour", label: "24 h", ms: 24 * 3600_000 },
+] as const;
+type Duree = (typeof DUREES)[number]["cle"];
+const JOUR_MS = 24 * 3600_000;
 const POLL_MS = 3000;
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 Mo
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 Mo par fichier
+const MAX_FILES = 10;
 
 function secondsLeft(expiresAt: string) {
   return Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 1000));
+}
+
+/** « 4:12 » sous l'heure, « 23 h 05 » au-delà */
+function fmtLeft(s: number) {
+  if (s >= 3600) return `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 function fmtSize(bytes: number) {
@@ -29,15 +43,27 @@ function fmtSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
+/** Nom de fichier accepté par le stockage (sans accents ni caractères spéciaux). */
+function nomStockage(name: string) {
+  const propre = name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Za-z0-9._-]+/g, "_")
+    .replace(/_+/g, "_");
+  return propre.slice(-120) || "fichier";
+}
+
 export function QuickClipboard() {
   const supabase = useMemo(() => createClient(), []);
   const [text, setText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [duree, setDuree] = useState<Duree>("court");
   const [notes, setNotes] = useState<Note[]>([]);
   const [sending, setSending] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [survol, setSurvol] = useState(false);
   const [, forceTick] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,49 +95,54 @@ export function QuickClipboard() {
     return () => { clearInterval(poll); clearInterval(tick); };
   }, [refresh]);
 
-  function pickFile(f: File | null) {
+  function addFiles(list: FileList | File[] | null) {
     setError(null);
-    if (f && f.size > MAX_FILE_BYTES) {
-      setError(`Fichier trop volumineux (max ${fmtSize(MAX_FILE_BYTES)}).`);
-      return;
-    }
-    setFile(f);
+    const nouveaux = Array.from(list ?? []);
+    const tropGros = nouveaux.filter((f) => f.size > MAX_FILE_BYTES);
+    if (tropGros.length > 0) setError(`Trop volumineux (max ${fmtSize(MAX_FILE_BYTES)} par fichier) : ${tropGros.map((f) => f.name).join(", ")}`);
+    setFiles((prev) => {
+      const tous = [...prev, ...nouveaux.filter((f) => f.size <= MAX_FILE_BYTES)];
+      if (tous.length > MAX_FILES) setError(`${MAX_FILES} fichiers au plus par envoi.`);
+      return tous.slice(0, MAX_FILES);
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function send() {
-    if ((!text.trim() && !file) || sending) return;
+    if ((!text.trim() && files.length === 0) || sending) return;
     setSending(true);
     setError(null);
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) throw new Error("Non connecté");
+      const expiresAt = new Date(Date.now() + (DUREES.find((d) => d.cle === duree)?.ms ?? DUREES[0].ms)).toISOString();
 
-      let filePath: string | null = null;
-      let fileName: string | null = null;
-      let fileSize: number | null = null;
-
-      if (file) {
-        const path = `${auth.user.id}/${Date.now()}-${file.name}`;
-        const up = await supabase.storage.from("quick-files").upload(path, file, {
-          contentType: file.type || "application/octet-stream",
+      // un dépôt par fichier ; le texte va avec le premier (ou seul, sans fichier)
+      const lots: { content: string | null; file: File | null }[] = files.length
+        ? files.map((f, i) => ({ content: i === 0 ? text.trim() || null : null, file: f }))
+        : [{ content: text.trim(), file: null }];
+      const stamp = Date.now();
+      for (const [i, lot] of lots.entries()) {
+        let filePath: string | null = null;
+        if (lot.file) {
+          filePath = `${auth.user.id}/${stamp}-${i}-${nomStockage(lot.file.name)}`;
+          const up = await supabase.storage.from("quick-files").upload(filePath, lot.file, {
+            contentType: lot.file.type || "application/octet-stream",
+          });
+          if (up.error) throw up.error;
+        }
+        const { error: insErr } = await supabase.from("quick_notes").insert({
+          user_id: auth.user.id,
+          content: lot.content,
+          file_path: filePath,
+          file_name: lot.file?.name ?? null,
+          file_size: lot.file?.size ?? null,
+          expires_at: expiresAt,
         });
-        if (up.error) throw up.error;
-        filePath = path;
-        fileName = file.name;
-        fileSize = file.size;
+        if (insErr) throw new Error(insErr.message);
       }
-
-      const { error: insErr } = await supabase.from("quick_notes").insert({
-        user_id: auth.user.id,
-        content: text.trim() || null,
-        file_path: filePath,
-        file_name: fileName,
-        file_size: fileSize,
-      });
-      if (insErr) throw new Error(insErr.message);
       setText("");
-      setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setFiles([]);
       await refresh();
     } catch (e: unknown) {
       setError(friendlyError(e, "Erreur lors de l'envoi"));
@@ -138,7 +169,7 @@ export function QuickClipboard() {
     try {
       const { data, error: signErr } = await supabase.storage
         .from("quick-files")
-        .createSignedUrl(note.file_path, 60);
+        .createSignedUrl(note.file_path, 60, { download: note.file_name });
       if (signErr) throw signErr;
       if (data?.signedUrl) {
         const a = document.createElement("a");
@@ -153,6 +184,17 @@ export function QuickClipboard() {
     }
   }
 
+  /** Un dépôt de 5 minutes passe à 24 heures (comptées depuis son envoi). */
+  async function garderJour(note: Note) {
+    const expiresAt = new Date(new Date(note.created_at).getTime() + JOUR_MS).toISOString();
+    setNotes((prev) => prev.map((n) => (n.id === note.id ? { ...n, expires_at: expiresAt } : n)));
+    const { error: upErr } = await supabase.from("quick_notes").update({ expires_at: expiresAt }).eq("id", note.id);
+    if (upErr) {
+      setError(friendlyError(upErr, "Impossible de prolonger"));
+      await refresh();
+    }
+  }
+
   async function remove(note: Note) {
     setNotes((prev) => prev.filter((n) => n.id !== note.id));
     if (note.file_path) await supabase.storage.from("quick-files").remove([note.file_path]);
@@ -161,11 +203,25 @@ export function QuickClipboard() {
 
   return (
     <div className="grid gap-4">
-      <div className="card p-5">
+      <div
+        className={"card p-5 transition-shadow " + (survol ? "ring-2 ring-white/40" : "")}
+        onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          setSurvol(true);
+        }}
+        onDragLeave={() => setSurvol(false)}
+        onDrop={(e) => {
+          if (!e.dataTransfer.files.length) return;
+          e.preventDefault();
+          setSurvol(false);
+          addFiles(e.dataTransfer.files);
+        }}
+      >
         <div className="mb-1 text-sm font-semibold">Presse-papier rapide</div>
         <div className="mb-3 text-xs text-white/50">
-          Colle du texte/code ou joins un fichier (zip, etc.) pour le récupérer sur un autre appareil
-          connecté au même compte — supprimé automatiquement après {TTL_SECONDS / 60} minutes.
+          Colle du texte/code ou dépose des fichiers (glisser-déposer accepté) pour les récupérer sur un autre appareil connecté au même compte.
+          Supprimés automatiquement au bout de 5 minutes, ou de 24 heures si tu le choisis.
         </div>
         <textarea
           className="input min-h-[140px] w-full resize-y font-mono text-sm"
@@ -177,32 +233,45 @@ export function QuickClipboard() {
           }}
         />
 
-        {file && (
-          <div className="mt-2 flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs">
-            <span className="truncate text-white/70">{file.name} · {fmtSize(file.size)}</span>
-            <button type="button" className="text-white/40 hover:text-white/70" onClick={() => pickFile(null)}>
-              <X size={14} />
-            </button>
-          </div>
+        {files.length > 0 && (
+          <ul className="mt-2 grid gap-1.5">
+            {files.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs">
+                <span className="truncate text-white/70">{f.name} · {fmtSize(f.size)}</span>
+                <button type="button" className="text-white/40 hover:text-white/70" aria-label={`Retirer ${f.name}`} onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}>
+                  <X size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <label className="btn btn-secondary inline-flex cursor-pointer items-center gap-1.5 text-xs">
-              <Paperclip size={14} /> Joindre un fichier
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
-              />
+              <Paperclip size={14} /> Joindre des fichiers
+              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
             </label>
+            <div className="inline-flex items-center gap-1 rounded-[10px] bg-surface-2 p-1 text-xs" role="radiogroup" aria-label="Durée de conservation">
+              {DUREES.map((d) => (
+                <button
+                  key={d.cle}
+                  type="button"
+                  role="radio"
+                  aria-checked={duree === d.cle}
+                  className={"rounded-[7px] px-2.5 py-1 font-semibold transition-colors " + (duree === d.cle ? "bg-surface text-white shadow-[var(--shadow-1)]" : "text-muted hover:text-white")}
+                  onClick={() => setDuree(d.cle)}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
             <div className="hidden text-xs text-white/30 sm:block">Ctrl/Cmd + Entrée pour envoyer</div>
           </div>
           <button
             type="button"
             className="btn btn-primary inline-flex items-center gap-1.5"
-            disabled={(!text.trim() && !file) || sending}
+            disabled={(!text.trim() && files.length === 0) || sending}
             onClick={send}
           >
             <Send size={15} /> {sending ? "…" : "Envoyer"}
@@ -215,15 +284,19 @@ export function QuickClipboard() {
         <div className="grid gap-2">
           {notes.map((n) => {
             const left = secondsLeft(n.expires_at);
-            const mm = Math.floor(left / 60);
-            const ss = left % 60;
+            const courte = new Date(n.expires_at).getTime() - new Date(n.created_at).getTime() < JOUR_MS - 60_000;
             return (
               <div key={n.id} className="card p-4">
-                <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-xs text-white/40">
-                    <Clock size={12} /> expire dans {mm}:{String(ss).padStart(2, "0")}
+                    <Clock size={12} /> expire dans {fmtLeft(left)}
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    {courte && (
+                      <button type="button" className="btn btn-secondary inline-flex items-center gap-1.5 py-1 text-xs" onClick={() => garderJour(n)}>
+                        <Hourglass size={13} /> Garder 24 h
+                      </button>
+                    )}
                     {n.content && (
                       <button
                         type="button"
@@ -247,6 +320,7 @@ export function QuickClipboard() {
                     <button
                       type="button"
                       className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
+                      aria-label="Supprimer"
                       onClick={() => remove(n)}
                     >
                       <Trash2 size={13} />

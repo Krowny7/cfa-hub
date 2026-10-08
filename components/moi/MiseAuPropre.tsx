@@ -9,10 +9,12 @@ import { Rature } from "@/components/adn/Rature";
 import { rubriqueDe } from "@/components/moi/marquees-data";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 
-// « Mettre au propre » (Moi › Erreurs) : les ratures repassées une à une,
-// au hasard (rature_suivante), dans le tri choisi. Une bonne réponse raye la
-// rature du carnet, une erreur la garde (rature_repondre) ; la correction ne
-// vient qu'après la réponse. On s'arrête quand on veut, on revient plus tard.
+// « Mettre au propre » (Moi › Erreurs) : les ratures en cours repassées une
+// à une, au hasard (rature_suivante), dans le tri choisi. Juste : rayée (elle
+// rejoint les anciennes) ; faux : elle reste (rature_repondre). Même chose
+// pour « Rejouer les anciennes », une révision : juste, elle reste rayée ;
+// faux, elle revient en cours. La correction ne vient qu'après la réponse.
+// On s'arrête quand on veut, on revient plus tard.
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -30,6 +32,8 @@ type Resultat = {
   bonne: number;
   explication: string | null;
   choisi: number;
+  /** rayee, reste (en cours) ; ancienne, revenue (anciennes) */
+  statut: string;
 };
 
 type QuestionTiree = { question_id: string; prompt: string; choices: string[]; sources: string[]; set_title: string | null; folder_name: string | null };
@@ -39,14 +43,17 @@ export type DemoPropre = { questions: (QuestionTiree & { bonne: number; explicat
 
 export function MiseAuPropre({
   source,
-  onRayee,
+  anciennes = false,
+  onStatut,
   onFermer,
   demo,
 }: {
   /** le tri du carnet (null : toutes les ratures) */
   source: string | null;
-  /** une rature rayée : ses sources, pour les compteurs du carnet */
-  onRayee: (sources: string[]) => void;
+  /** rejouer les anciennes (rayées) plutôt que mettre au propre celles en cours */
+  anciennes?: boolean;
+  /** ce qui est arrivé à la rature (rayee, reste, ancienne, revenue) et ses sources, pour les compteurs du carnet */
+  onStatut: (statut: string, sources: string[]) => void;
   onFermer: () => void;
   demo?: DemoPropre;
 }) {
@@ -73,6 +80,7 @@ export function MiseAuPropre({
       : await sb.rpc("rature_suivante", {
           p_source: source,
           p_exclure: vues.current,
+          p_anciennes: anciennes,
         });
     setEnvoi(false);
     if (error) return setErreur(true);
@@ -92,7 +100,7 @@ export function MiseAuPropre({
       rubrique: rubriqueDe(r.question.set_title, r.question.folder_name).rubrique,
     });
     haut.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [demo, sb, source]);
+  }, [anciennes, demo, sb, source]);
 
   useEffect(() => {
     void tirer();
@@ -104,7 +112,16 @@ export function MiseAuPropre({
     setErreur(false);
     const exemple = demo?.questions.find((q) => q.question_id === tiree.questionId);
     const { data, error } = exemple
-      ? { data: { is_correct: choix === exemple.bonne, correct_index: exemple.bonne, explanation: exemple.explication, selected_index: choix }, error: null }
+      ? {
+          data: {
+            is_correct: choix === exemple.bonne,
+            correct_index: exemple.bonne,
+            explanation: exemple.explication,
+            selected_index: choix,
+            statut: choix === exemple.bonne ? (anciennes ? "ancienne" : "rayee") : anciennes ? "revenue" : "reste",
+          },
+          error: null,
+        }
       : await sb.rpc("rature_repondre", {
           p_question_id: tiree.questionId,
           p_choice: choix,
@@ -116,6 +133,7 @@ export function MiseAuPropre({
       correct_index: number;
       explanation: string | null;
       selected_index: number;
+      statut: string;
     };
     vues.current = [...vues.current, tiree.questionId];
     setResultat({
@@ -123,11 +141,12 @@ export function MiseAuPropre({
       bonne: r.correct_index,
       explication: r.explanation,
       choisi: r.selected_index,
+      statut: r.statut,
     });
     setReste((n) => (n === null ? n : Math.max(0, n - 1)));
     setBilan((b) => (r.is_correct ? { ...b, rayees: b.rayees + 1 } : { ...b, restees: b.restees + 1 }));
-    if (r.is_correct) onRayee(tiree.sources);
-  }, [choix, demo, envoi, onRayee, resultat, sb, tiree]);
+    onStatut(r.statut, tiree.sources);
+  }, [anciennes, choix, demo, envoi, onStatut, resultat, sb, tiree]);
 
   // Clavier : A/B/C ou 1/2/3 pour choisir, Entrée pour valider puis passer à la suivante
   const actions = useRef({ valider, tirer });
@@ -158,10 +177,10 @@ export function MiseAuPropre({
   return (
     <div ref={haut} className="grid scroll-mt-28 gap-4 px-2 py-1" aria-live="polite">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="kicker m-0">{CARNET.propreFiltre(nomFiltre)}</p>
+        <p className="kicker m-0">{anciennes ? CARNET.rejouerFiltre(nomFiltre) : CARNET.propreFiltre(nomFiltre)}</p>
         <p className="t-micro m-0 font-mono">
-          {CARNET.propreBilan(bilan.rayees, bilan.restees)}
-          {reste !== null && !fini ? ` · ${CARNET.propreRestantes(reste)}` : ""}
+          {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees)}
+          {reste !== null && !fini ? ` · ${anciennes ? CARNET.rejouerRestantes(reste) : CARNET.propreRestantes(reste)}` : ""}
         </p>
       </div>
 
@@ -173,7 +192,7 @@ export function MiseAuPropre({
 
       {fini ? (
         <div className="grid gap-3 py-4">
-          <p className="t-h3 m-0">{fini === "vide" ? CARNET.propreFini : CARNET.propreFiniVue}</p>
+          <p className="t-h3 m-0">{fini === "vide" ? (anciennes ? CARNET.rejouerFini : CARNET.propreFini) : CARNET.propreFiniVue}</p>
           <div className="flex flex-wrap gap-2">
             {fini === "tour" && (
               <button
@@ -271,7 +290,8 @@ export function MiseAuPropre({
 
           {resultat && (
             <p className={"m-0 text-[15px] font-bold " + (resultat.juste ? "" : "text-pen")} role="status">
-              {resultat.juste ? CARNET.propreRayee : CARNET.propreReste}
+              {{ rayee: CARNET.propreRayee, reste: CARNET.propreReste, ancienne: CARNET.rejouerAcquise, revenue: CARNET.rejouerRevenue }[resultat.statut] ??
+                (resultat.juste ? CARNET.propreRayee : CARNET.propreReste)}
             </p>
           )}
           {resultat?.explication && <Explanation text={resultat.explication} />}
