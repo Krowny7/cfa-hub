@@ -127,17 +127,17 @@ export const MATIERES = [
       "Flux et types d'obligations",
       "Émission et négociation",
       "Dette des entreprises",
-      "Dette des États",
+      "Dette publique",
       "Prix et rendement",
-      "Spreads à taux fixe",
-      "Taux variable",
+      "Rendements et spreads (taux fixe)",
+      "Taux variables et monétaire",
       "Courbe des taux",
       "Risque de taux",
       "Duration",
       "Convexité",
       "Duration effective et empirique",
       "Risque de crédit",
-      "Crédit souverain",
+      "Crédit des émetteurs publics",
       "Crédit des entreprises",
       "Titrisation",
       "ABS",
@@ -149,9 +149,12 @@ export const MATIERES = [
     cours: "derivatives",
     banque: [68, 69, 70, 71, 72, 73, 74, 75, 76, 77],
     schweser: [66, 67, 68, 69, 70, 71, 72, 73, 74, 75],
+    // fiche d'un seul tenant (app/fiches/derivatives) : une ancre #r<n> par
+    // reading, en numérotation Schweser
+    ficheParReading: "derivatives",
     courts: [
       "Marchés dérivés",
-      "Engagements fermes et conditionnels",
+      "Engagements fermes et droits conditionnels",
       "Usages des dérivés",
       "Arbitrage et coût de portage",
       "Forwards",
@@ -207,6 +210,43 @@ export const SOUS_PARTIES = {
   "91.9": "Standard VII",
 };
 
+// R91.1 (« Guidance for Standards I(A) and I(B) », 104 questions contre 19 à
+// 54 pour les autres) sert de fourre-tout : beaucoup de ses questions portent
+// sur d'autres standards. Pour lui seul, le concept se lit dans l'explication
+// de la banque : l'étiquette « LOS 91: I(A) », sinon le premier standard cité,
+// par son numéro (« Standard III(B) ») ou par son nom (« the Standard on fair
+// dealing ») ; il est ramené à sa sous-partie, et à défaut il n'y a pas de
+// concept. Les autres sous-parties ne citent que leurs propres standards.
+export const SOUS_PARTIE_FOURRE_TOUT = "91.1";
+
+// Noms des standards tels que les explications de la banque les citent
+// (« Standard on … », « Standard concerning … », « Standard of … »).
+export const NOMS_DES_STANDARDS = {
+  "knowledge of the law": "I(A)",
+  "independence and objectivity": "I(B)",
+  misrepresentation: "I(C)",
+  misconduct: "I(D)",
+  "material nonpublic information": "II(A)",
+  "market manipulation": "II(B)",
+  "loyalty, prudence, and care": "III(A)",
+  "fair dealing": "III(B)",
+  suitability: "III(C)",
+  "performance presentation": "III(D)",
+  "preservation of confidentiality": "III(E)",
+  loyalty: "IV(A)",
+  "additional compensation": "IV(B)",
+  "responsibilities of supervisors": "IV(C)",
+  "supervisory responsibilities": "IV(C)",
+  "diligence and reasonable basis": "V(A)",
+  "communication with clients": "V(B)",
+  "record retention": "V(C)",
+  "disclosure of conflicts": "VI(A)",
+  "priority of transactions": "VI(B)",
+  "referral fees": "VI(C)",
+  "conduct as participants": "VII(A)",
+  "reference to cfa institute": "VII(B)",
+};
+
 // Les titres de séries qui suivent la numérotation Schweser (anciens lots,
 // remplacés en base mais encore cités par d'anciens historiques). Tout autre
 // titre « (Rn) » suit la numérotation de la banque.
@@ -232,6 +272,21 @@ export const ARBITRAGES = {
   // « As of December 31: Company A - price $25, 20,000 shares outstanding… » (QCM R41–R42) :
   // pondération d'un indice par le prix ou la capitalisation → Security Market Indexes
   "28f163dbb74b331e": { reading: "42" },
+};
+
+// Pages de fiche mises en tête des liens d'une notion, avant celles que
+// donnent les drills (une page compte quand la question officielle d'un de
+// ses concepts est rangée dans le reading de la notion) : la page qui traite
+// la notion sans qu'aucune officielle n'y soit rangée, ou celle qui la traite
+// le mieux quand la banque range ailleurs ses officielles.
+export const FICHES_EN_TETE = {
+  // page 1 « Bond Features & Valuation Basics »
+  "fixed_income:1": { fiche: "fixed-income", pages: [1] },
+  // page 1 « Bond Features » avant la page 7 : la banque range en R50 deux
+  // officielles de la titrisation (SPE, bankruptcy remoteness)
+  "fixed_income:2": { fiche: "fixed-income", pages: [1] },
+  // page 4 « Interest Rate Risk & Duration » : convexité par bump, ajustement de convexité
+  "fixed_income:12": { fiche: "fixed-income", pages: [4] },
 };
 
 // Dossiers « (Système) » → matière (les QCM de la banque et les drills)

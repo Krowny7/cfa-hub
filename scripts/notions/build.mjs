@@ -3,7 +3,9 @@
 //   - scripts/notions/referentiel.mjs : numéros de reading et libellés courts (écrits à la main) ;
 //   - lib/courses.ts : le titre officiel de chaque LM (un chapitre par LM) ;
 //   - lib/calc : les types de calcul, rattachés par leur `source` (« LM 8 · … ») ;
-//   - les scripts de drill : les pages de fiche où chaque notion est travaillée ;
+//   - les scripts de drill : les pages de fiche où chaque notion est travaillée,
+//     précédées des pages choisies à la main (FICHES_EN_TETE) ; la fiche
+//     Derivatives, d'un seul tenant, donne une ancre par reading ;
 //   - les textes de la banque (extraire_banque.py) : contrôle des titres et
 //     reading de chaque question officielle des drills.
 // Le script s'arrête sur toute incohérence (un reading sur deux LM, un titre
@@ -14,7 +16,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { analyserDrills, chapitresDesCours, chargerTextes, drillsDuDepot, mots, notionsBrutes } from "./commun.mjs";
-import { MATIERES, SOUS_PARTIES, TITRES_SCHWESER } from "./referentiel.mjs";
+import { FICHES_EN_TETE, MATIERES, SOUS_PARTIES, TITRES_SCHWESER } from "./referentiel.mjs";
 
 const [dossierTextes] = process.argv.slice(2);
 if (!dossierTextes) {
@@ -100,6 +102,20 @@ for (const p of pages.filter((x) => x.version === "actuelle")) {
   }
 }
 
+for (const [id, { fiche, pages: liste }] of Object.entries(FICHES_EN_TETE)) {
+  if (!brutes.some((n) => n.id === id)) erreurs.push(`FICHES_EN_TETE : notion « ${id} » inconnue`);
+  if (!pages.some((p) => p.fiche === fiche && p.version === "actuelle" && liste.includes(p.page))) erreurs.push(`FICHES_EN_TETE : ${id} → page absente des drills de « ${fiche} »`);
+}
+// fiche d'un seul tenant : l'ancre #r<n> (numérotation Schweser) doit exister dans la page
+const ancres = new Map();
+for (const m of MATIERES.filter((x) => x.ficheParReading)) {
+  const src = lire("app", "fiches", m.ficheParReading, "page.tsx");
+  for (const r of m.schweser) {
+    if (!src.includes(`id="r${r}"`)) erreurs.push(`${m.cle} : ancre #r${r} absente de app/fiches/${m.ficheParReading}/page.tsx`);
+  }
+  ancres.set(m.cle, m.ficheParReading);
+}
+
 if (erreurs.length) {
   console.error(erreurs.map((e) => "  " + e).join("\n"));
   process.exit(1);
@@ -121,10 +137,14 @@ function enTs(v, retrait) {
 const notions = brutes.map((n) => {
   const m = MATIERES.find((x) => x.cle === n.matiere);
   const titre = chapitres.get(m.cours)[n.lm - 1];
-  const pagesDeFiche = [...(fiches.get(n.id) ?? new Map())]
+  const enTete = FICHES_EN_TETE[n.id];
+  const calculees = [...(fiches.get(n.id) ?? new Map())]
     .map(([k, nb]) => ({ fiche: k.split("|")[0], page: Number(k.split("|")[1]), nb }))
-    .sort((a, b) => b.nb - a.nb || a.page - b.page)
+    .sort((a, b) => b.nb - a.nb || a.page - b.page);
+  const pagesDeFiche = [...(enTete?.pages ?? []).map((page) => ({ fiche: enTete.fiche, page })), ...calculees]
+    .filter((x, i, tout) => tout.findIndex((y) => y.fiche === x.fiche && y.page === x.page) === i)
     .map(({ fiche, page }) => ({ href: `/fiches/${fiche}?page=${page}`, page }));
+  if (ancres.has(n.matiere)) pagesDeFiche.push({ href: `/fiches/${ancres.get(n.matiere)}#r${n.schweser}`, page: null });
   const sousParties = n.matiere === "ethics" ? Object.entries(SOUS_PARTIES).filter(([r]) => r.startsWith(`${n.banque}.`)) : [];
   return {
     id: n.id,
@@ -175,8 +195,8 @@ export type Notion = {
   cours: string;
   /** types de calcul rattachés */
   calculs: { cle: string; nom: string; href: string }[];
-  /** pages de fiche où la notion est travaillée, la plus fournie d'abord */
-  fiches: { href: string; page: number }[];
+  /** pages de fiche où la notion est travaillée, la plus pertinente d'abord (page null : ancre d'une fiche d'un seul tenant) */
+  fiches: { href: string; page: number | null }[];
   /** titres des paquets de flashcards qui la couvrent */
   flashcards: string[];
 };

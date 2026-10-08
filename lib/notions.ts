@@ -32,8 +32,8 @@ export type Notion = {
   cours: string;
   /** types de calcul rattachés */
   calculs: { cle: string; nom: string; href: string }[];
-  /** pages de fiche où la notion est travaillée, la plus fournie d'abord */
-  fiches: { href: string; page: number }[];
+  /** pages de fiche où la notion est travaillée, la plus pertinente d'abord (page null : ancre d'une fiche d'un seul tenant) */
+  fiches: { href: string; page: number | null }[];
   /** titres des paquets de flashcards qui la couvrent */
   flashcards: string[];
 };
@@ -777,7 +777,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 49, schweser: 47 },
     cours: "/courses/fixed-income?module=1",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/fixed-income?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -790,8 +790,8 @@ export const NOTIONS: Notion[] = [
     cours: "/courses/fixed-income?module=2",
     calculs: [],
     fiches: [
-      { href: "/fiches/fixed-income?page=7", page: 7 },
       { href: "/fiches/fixed-income?page=1", page: 1 },
+      { href: "/fiches/fixed-income?page=7", page: 7 },
       { href: "/fiches/fixed-income?page=2", page: 2 },
     ],
     flashcards: [],
@@ -825,7 +825,7 @@ export const NOTIONS: Notion[] = [
     matiere: "fixed_income",
     lm: 5,
     titre: "Fixed-Income Markets for Government Issuers",
-    court: "Dette des États",
+    court: "Dette publique",
     readings: { banque: 53, schweser: 51 },
     cours: "/courses/fixed-income?module=5",
     calculs: [],
@@ -849,7 +849,7 @@ export const NOTIONS: Notion[] = [
     matiere: "fixed_income",
     lm: 7,
     titre: "Yield and Yield Spread Measures for Fixed-Rate Bonds",
-    court: "Spreads à taux fixe",
+    court: "Rendements et spreads (taux fixe)",
     readings: { banque: 55, schweser: 53 },
     cours: "/courses/fixed-income?module=7",
     calculs: [],
@@ -864,7 +864,7 @@ export const NOTIONS: Notion[] = [
     matiere: "fixed_income",
     lm: 8,
     titre: "Yield and Yield Spread Measures for Floating-Rate Instruments",
-    court: "Taux variable",
+    court: "Taux variables et monétaire",
     readings: { banque: 56, schweser: 54 },
     cours: "/courses/fixed-income?module=8",
     calculs: [],
@@ -919,7 +919,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 60, schweser: 58 },
     cours: "/courses/fixed-income?module=12",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/fixed-income?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -954,7 +954,7 @@ export const NOTIONS: Notion[] = [
     matiere: "fixed_income",
     lm: 15,
     titre: "Credit Analysis for Government Issuers",
-    court: "Crédit souverain",
+    court: "Crédit des émetteurs publics",
     readings: { banque: 63, schweser: 61 },
     cours: "/courses/fixed-income?module=15",
     calculs: [],
@@ -1027,7 +1027,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 68, schweser: 66 },
     cours: "/courses/derivatives?module=1",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r66", page: null }],
     flashcards: [],
   },
   {
@@ -1035,11 +1035,11 @@ export const NOTIONS: Notion[] = [
     matiere: "derivatives",
     lm: 2,
     titre: "Forward Commitment and Contingent Claim Features and Instruments",
-    court: "Engagements fermes et conditionnels",
+    court: "Engagements fermes et droits conditionnels",
     readings: { banque: 69, schweser: 67 },
     cours: "/courses/derivatives?module=2",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r67", page: null }],
     flashcards: [],
   },
   {
@@ -1051,7 +1051,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 70, schweser: 68 },
     cours: "/courses/derivatives?module=3",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r68", page: null }],
     flashcards: [],
   },
   {
@@ -1063,7 +1063,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 71, schweser: 69 },
     cours: "/courses/derivatives?module=4",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r69", page: null }],
     flashcards: [],
   },
   {
@@ -1075,7 +1075,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 72, schweser: 70 },
     cours: "/courses/derivatives?module=5",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r70", page: null }],
     flashcards: [],
   },
   {
@@ -1087,7 +1087,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 73, schweser: 71 },
     cours: "/courses/derivatives?module=6",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r71", page: null }],
     flashcards: [],
   },
   {
@@ -1099,7 +1099,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 74, schweser: 72 },
     cours: "/courses/derivatives?module=7",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r72", page: null }],
     flashcards: [],
   },
   {
@@ -1111,7 +1111,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 75, schweser: 73 },
     cours: "/courses/derivatives?module=8",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r73", page: null }],
     flashcards: [],
   },
   {
@@ -1123,7 +1123,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 76, schweser: 74 },
     cours: "/courses/derivatives?module=9",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r74", page: null }],
     flashcards: [],
   },
   {
@@ -1135,7 +1135,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 77, schweser: 75 },
     cours: "/courses/derivatives?module=10",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/derivatives#r75", page: null }],
     flashcards: [],
   },
   {

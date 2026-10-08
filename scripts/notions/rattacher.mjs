@@ -17,7 +17,11 @@
 //      de leurs voisines quand elles sont entourées du même (les seeds rangent
 //      les questions reading par reading).
 //   3. Examens blancs : seulement les énoncés retrouvés tels quels dans la
-//      banque ; les autres restent au niveau de la matière.
+//      banque ; les autres restent au niveau de la matière (inscrits dans le
+//      fichier avec [null, null] : sans notion, et c'est voulu).
+// Concept des questions d'Ethics « Guidance for Standards » : leur sous-partie
+// de la banque, sauf R91.1, fourre-tout, où il se lit dans l'explication de
+// la banque (voir conceptDeQuestion dans commun.mjs).
 // Dans le doute, pas de notion : la question reste comptée dans sa matière.
 //
 // Usage (depuis la racine du dépôt), dans l'ordre :
@@ -27,7 +31,7 @@
 //   node scripts/notions/synchroniser.mjs [--ecrire | --sql <fichier>]
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-import { analyserDrills, chargerTextes, conceptDeReading, drillsDuDepot, empreinte, lireTitreDrill, notionDeReading, numerotationDuTitre, readingDe, readingsDuTitre, scores } from "./commun.mjs";
+import { analyserDrills, chargerTextes, conceptDeQuestion, conceptDeReading, drillsDuDepot, empreinte, lireTitreDrill, notionDeReading, numerotationDuTitre, readingDe, readingsDuTitre, scores } from "./commun.mjs";
 import { ARBITRAGES, DOSSIERS, MATIERES } from "./referentiel.mjs";
 
 const [dossierTextes, fichierRapport] = process.argv.slice(2);
@@ -37,6 +41,10 @@ if (!dossierTextes || !fichierRapport) {
 }
 const SORTIE = "scripts/notions/rattachement.json";
 const MOCKS = "Mocks Officiels (Système)";
+// Règle des examens blancs non retrouvés : laissés exprès au niveau de la
+// matière, ils figurent dans le fichier avec [null, null], pour que les seeds
+// et synchroniser.mjs ne les comptent pas parmi les questions inconnues.
+const EXAMEN_BLANC = "examen blanc";
 // libellés des matières dans les titres des examens blancs (lib/practiceTopics.ts)
 const MATIERE_DU_MOCK = {
   "Éthique et Standards Professionnels": "ethics",
@@ -130,7 +138,7 @@ for (const s of sets) {
         continue;
       }
       const lu = matiere ? readingDe(q.prompt, textes, readingsDeMatiere(matiere)) : { reading: null };
-      if (lu.reading) poser(q, notionDeReading(lu.reading).id, d?.concept ?? conceptDeReading(lu.reading), "énoncé retrouvé dans la banque");
+      if (lu.reading) poser(q, notionDeReading(lu.reading).id, d?.concept ?? conceptDeQuestion(q.prompt, lu.reading, textes), "énoncé retrouvé dans la banque");
       else {
         poser(q, null, d?.concept ?? null, d ? "drill sans notion" : "énoncé introuvable");
         ambigus.push({ set: s.title, position: q.position, prompt: q.prompt, raison: d ? "concept sans notion" : "énoncé absent des scripts de drill et de la banque" });
@@ -143,8 +151,8 @@ for (const s of sets) {
     const candidats = matiere ? readingsDeMatiere(matiere) : null;
     for (const q of qs) {
       const lu = readingDe(q.prompt, textes, candidats);
-      if (lu.reading) poser(q, notionDeReading(lu.reading).id, conceptDeReading(lu.reading), "examen blanc : énoncé retrouvé dans la banque");
-      else poser(q, null, null, "examen blanc");
+      if (lu.reading) poser(q, notionDeReading(lu.reading).id, conceptDeQuestion(q.prompt, lu.reading, textes), "examen blanc : énoncé retrouvé dans la banque");
+      else poser(q, null, null, EXAMEN_BLANC);
     }
   } else if (plage.length) {
     genre = "QCM de la banque";
@@ -191,7 +199,7 @@ for (const s of sets) {
       }
       qs.forEach((q, i) => {
         const n = lus[i] ? notionDeReading(lus[i]) : null;
-        const concept = parEnonceDrill.get(q.prompt)?.concept ?? (lus[i] ? conceptDeReading(lus[i]) : null);
+        const concept = parEnonceDrill.get(q.prompt)?.concept ?? (lus[i] ? conceptDeQuestion(q.prompt, lus[i], textes) : null);
         poser(q, n?.id, concept, regles[i] ?? "non rattachée");
       });
     }
@@ -208,7 +216,7 @@ const parEmpreinte = new Map();
 const conflits = [];
 for (const q of questions) {
   const r = resultat.get(q.id);
-  if (!r || (!r.notion && !r.concept)) continue;
+  if (!r || (!r.notion && !r.concept && r.regle !== EXAMEN_BLANC)) continue;
   const e = empreinte(q.prompt);
   const deja = parEmpreinte.get(e);
   if (!deja) {
@@ -216,7 +224,7 @@ for (const q of questions) {
     continue;
   }
   if (deja.prompt !== q.prompt) throw new Error(`collision d'empreinte ${e}`);
-  if (deja.notion !== r.notion || (r.concept && deja.concept && deja.concept !== r.concept)) {
+  if ((r.notion && deja.notion && deja.notion !== r.notion) || (r.concept && deja.concept && deja.concept !== r.concept)) {
     conflits.push({ prompt: q.prompt, a: `${deja.notion} / ${deja.concept}`, b: `${r.notion} / ${r.concept}` });
   }
   // un doublon complète l'autre (la copie d'une officielle dans un QCM prend le concept du drill)
@@ -259,7 +267,8 @@ L.push(`- Questions en base : ${total}`);
 L.push(`- Rattachées à une notion : ${rattachees} (${Math.round((rattachees / total) * 100)} %)`);
 L.push(`- Sans notion : ${total - rattachees}`);
 L.push(`- Avec un concept : ${avecConcept}`);
-L.push(`- Énoncés distincts dans ${SORTIE} : ${parEmpreinte.size}`);
+const voulus = [...parEmpreinte.values()].filter((v) => !v.notion && !v.concept).length;
+L.push(`- Énoncés distincts dans ${SORTIE} : ${parEmpreinte.size}, dont ${voulus} laissés exprès sans notion (examens blancs)`);
 L.push(`- Notions sans aucune question : ${vides.length}${vides.length ? " — " + vides.map((n) => `${n.id} ${n.court}`).join(", ") : ""}`);
 L.push("", "## Par règle", "");
 for (const [r, n] of [...parRegle].sort((a, b) => b[1] - a[1])) L.push(`- ${r} : ${n}`);

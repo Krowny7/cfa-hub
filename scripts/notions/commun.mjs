@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { DRILLS, MATIERES, SOUS_PARTIES, TITRES_SCHWESER } from "./referentiel.mjs";
+import { DRILLS, MATIERES, NOMS_DES_STANDARDS, SOUS_PARTIES, SOUS_PARTIE_FOURRE_TOUT, TITRES_SCHWESER } from "./referentiel.mjs";
 
 /** Empreinte d'un énoncé : les 16 premiers caractères de md5, comme left(md5(prompt), 16) en SQL. */
 export function empreinte(prompt) {
@@ -36,7 +36,25 @@ function bardeaux(liste) {
   return out;
 }
 
-/** Textes de la banque (R59.txt, R91.3.txt… produits par extraire_banque.py) : reading → { titre, bardeaux, plat }. */
+/**
+ * Questions corrigées d'un texte de la banque (le PDF « - Answers ») :
+ * [{ bardeaux de l'énoncé et des choix, explication sur une ligne }].
+ */
+function questionsCorrigees(brut) {
+  return brut
+    .replace(/\r\n?/g, "\n")
+    .split(/^Question #\d+ of \d+ Question ID: \d+\s*$/m)
+    .slice(1)
+    .map((b) => b.split(/\nExplanation\s*\n/))
+    .filter((x) => x.length === 2)
+    .map(([q, e]) => ({ bardeaux: bardeaux(mots(q)), explication: e.replace(/\s+/g, " ").trim() }));
+}
+
+/**
+ * Textes de la banque (R59.txt, R91.3.txt… produits par extraire_banque.py) :
+ * reading → { titre, bardeaux, plat }, plus les questions corrigées (corrigees)
+ * de la sous-partie fourre-tout d'Ethics.
+ */
 export function chargerTextes(dossier) {
   const textes = new Map();
   for (const f of readdirSync(dossier)) {
@@ -45,7 +63,12 @@ export function chargerTextes(dossier) {
     const brut = readFileSync(join(dossier, f), "utf8");
     const titre = (/^# (.*)$/m.exec(brut)?.[1] ?? "").trim();
     const liste = mots(brut);
-    textes.set(m[1], { titre, bardeaux: bardeaux(liste), plat: " " + liste.join(" ") + " " });
+    textes.set(m[1], {
+      titre,
+      bardeaux: bardeaux(liste),
+      plat: " " + liste.join(" ") + " ",
+      ...(m[1] === SOUS_PARTIE_FOURRE_TOUT ? { corrigees: questionsCorrigees(brut) } : {}),
+    });
   }
   if (!textes.size) throw new Error(`aucun fichier R<n>.txt dans ${dossier} : lance d'abord extraire_banque.py`);
   return textes;
@@ -115,6 +138,58 @@ export function notionDeReading(reading, numerotation = "banque") {
 /** Le concept porté par le reading lui-même (sous-parties de Guidance for Standards). */
 export function conceptDeReading(reading) {
   return SOUS_PARTIES[String(reading)] ?? null;
+}
+
+/** La sous-partie d'un standard (« III(B) » → « Standards III(A) et III(B) », « II(A) » → « Standard II »). */
+export function sousPartieDuStandard(code) {
+  const chiffre = code.replace(/\(.*$/, "");
+  for (const libelle of Object.values(SOUS_PARTIES)) {
+    const cites = libelle.match(/[IVX]+(?:\([A-E]\))?/g) ?? [];
+    if (cites.includes(code) || cites.includes(chiffre)) return libelle;
+  }
+  return null;
+}
+
+/** Le standard dont traite une explication de la banque : son étiquette « LOS 91: I(A) », sinon le premier cité. */
+export function standardDeLExplication(explication) {
+  const etiquette = /LOS 91: ([IVX]+\([A-E]\))/.exec(explication);
+  if (etiquette) return etiquette[1];
+  const texte = explication.replace(/non-\s*public/gi, "nonpublic");
+  const parNumero = /\bStandards?(?: of Professional Conduct)? ([IVX]+) ?(\([A-E]\))/.exec(texte);
+  const noms = Object.keys(NOMS_DES_STANDARDS).sort((a, b) => b.length - a.length);
+  let parNom = null;
+  for (const m of texte.matchAll(/\bStandards? (?:on|concerning|of|regarding) (?:the )?/gi)) {
+    const suite = texte.slice(m.index + m[0].length).toLowerCase();
+    const nom = noms.find((n) => suite.startsWith(n));
+    if (nom) {
+      parNom = { index: m.index, code: NOMS_DES_STANDARDS[nom] };
+      break;
+    }
+  }
+  if (parNumero && (!parNom || parNumero.index < parNom.index)) return parNumero[1] + parNumero[2];
+  return parNom?.code ?? null;
+}
+
+/**
+ * Le concept d'une question rangée dans un reading : la sous-partie du reading,
+ * sauf pour la sous-partie fourre-tout d'Ethics, où il se lit dans
+ * l'explication de la question de la banque (null si elle n'est pas retrouvée
+ * ou ne cite aucun standard).
+ */
+export function conceptDeQuestion(prompt, reading, textes) {
+  if (String(reading) !== SOUS_PARTIE_FOURRE_TOUT) return conceptDeReading(reading);
+  const corrigees = textes.get(SOUS_PARTIE_FOURRE_TOUT)?.corrigees ?? [];
+  const b = bardeaux(mots(prompt));
+  let meilleure = null;
+  let score = 0;
+  for (const c of corrigees) {
+    let n = 0;
+    for (const x of b) if (c.bardeaux.has(x)) n++;
+    if (n > score) [meilleure, score] = [c, n];
+  }
+  if (!meilleure || !b.size || score / b.size < SEUIL) return null;
+  const code = standardDeLExplication(meilleure.explication);
+  return code ? sousPartieDuStandard(code) : null;
 }
 
 /** Les readings d'un titre « … (R59–R61) », « … (R45, R47) », « … (R91.3–R91.5) ». */
