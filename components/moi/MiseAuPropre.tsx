@@ -14,10 +14,16 @@ import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 // rejoint les anciennes) ; faux : elle reste (rature_repondre). Même chose
 // pour « Rejouer les anciennes », une révision : juste, elle reste rayée ;
 // faux, elle revient en cours. La correction ne vient qu'après la réponse.
-// On s'arrête quand on veut, on revient plus tard.
+// On s'arrête quand on veut, on revient plus tard. Avec `theme` (« Tes points
+// faibles »), seules les ratures des sets du thème (p_sets,
+// migration_points_faibles.sql) ; les autres appels n'envoient pas p_sets.
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
+
+/** La fonction appelée n'existe pas (encore) en base : migration pas collée. */
+const fonctionAbsente = (e: { code?: string; message?: string }) =>
+  ["PGRST202", "PGRST205", "42883", "42P01", "42703"].includes(e.code ?? "") || /could not find the function/i.test(e.message ?? "");
 
 type Tiree = {
   questionId: string;
@@ -43,6 +49,7 @@ export type DemoPropre = { questions: (QuestionTiree & { bonne: number; explicat
 
 export function MiseAuPropre({
   source,
+  theme,
   anciennes = false,
   onStatut,
   onFermer,
@@ -50,6 +57,8 @@ export function MiseAuPropre({
 }: {
   /** le tri du carnet (null : toutes les ratures) */
   source: string | null;
+  /** un thème (« Tes points faibles ») : ses sets et son nom */
+  theme?: { sets: string[]; libelle: string };
   /** rejouer les anciennes (rayées) plutôt que mettre au propre celles en cours */
   anciennes?: boolean;
   /** ce qui est arrivé à la rature (rayee, reste, ancienne, revenue) et ses sources, pour les compteurs du carnet */
@@ -65,6 +74,10 @@ export function MiseAuPropre({
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(false);
+  // la reprise par thème demande migration_points_faibles.sql
+  const [indisponible, setIndisponible] = useState(false);
+  // les sets du thème, en clé stable (le tirage ne se relance pas à chaque rendu du parent)
+  const cleSets = theme ? theme.sets.join(",") : null;
   const [bilan, setBilan] = useState({ rayees: 0, restees: 0 });
   const vues = useRef<string[]>([]);
   const haut = useRef<HTMLDivElement>(null);
@@ -81,9 +94,11 @@ export function MiseAuPropre({
           p_source: source,
           p_exclure: vues.current,
           p_anciennes: anciennes,
+          // le filtre de thème seulement quand il y en a un : les appels du carnet restent à 3 arguments
+          ...(cleSets === null ? {} : { p_sets: cleSets ? cleSets.split(",") : [] }),
         });
     setEnvoi(false);
-    if (error) return setErreur(true);
+    if (error) return cleSets !== null && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
     const r = data as { carnet: number; reste: number; question: null | QuestionTiree };
     setReste(Number(r.reste) || 0);
     if (!r.question) {
@@ -100,7 +115,7 @@ export function MiseAuPropre({
       rubrique: rubriqueDe(r.question.set_title, r.question.folder_name).rubrique,
     });
     haut.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [anciennes, demo, sb, source]);
+  }, [anciennes, cleSets, demo, sb, source]);
 
   useEffect(() => {
     void tirer();
@@ -172,7 +187,7 @@ export function MiseAuPropre({
     return () => window.removeEventListener("keydown", onKey);
   }, [resultat, tiree]);
 
-  const nomFiltre = source ? (NOMS.get(source) ?? source) : null;
+  const nomFiltre = theme ? theme.libelle : source ? (NOMS.get(source) ?? source) : null;
 
   return (
     <div ref={haut} className="grid scroll-mt-28 gap-4 px-2 py-1" aria-live="polite">
@@ -190,7 +205,14 @@ export function MiseAuPropre({
         </p>
       )}
 
-      {fini ? (
+      {indisponible ? (
+        <div className="grid gap-3 py-4">
+          <p className="t-small m-0">{CARNET.propreThemeIndisponible}</p>
+          <button type="button" className="btn btn-secondary w-fit" onClick={onFermer}>
+            {CARNET.propreThemeRetour}
+          </button>
+        </div>
+      ) : fini ? (
         <div className="grid gap-3 py-4">
           <p className="t-h3 m-0">{fini === "vide" ? (anciennes ? CARNET.rejouerFini : CARNET.propreFini) : CARNET.propreFiniVue}</p>
           <div className="flex flex-wrap gap-2">
@@ -207,7 +229,7 @@ export function MiseAuPropre({
               </button>
             )}
             <button type="button" className="btn btn-secondary" onClick={onFermer}>
-              {CARNET.propreRetour}
+              {theme ? CARNET.propreThemeRetour : CARNET.propreRetour}
             </button>
           </div>
         </div>

@@ -17,6 +17,15 @@ import { Batons } from "@/components/adn/Batons";
 import { LEXIQUE, VIDE, serie } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
 import type { MoiData } from "@/components/moi/types";
+import { PointsFaiblesCarte, type RepliMatiere } from "@/components/moi/PointsFaibles";
+
+/** La matière la plus fragile (maîtrise mesurée), pour le repli de « Tes points faibles ». */
+function matiereFragile(d: MoiData): RepliMatiere {
+  const mesurees = d.topics.filter((t) => t.pct !== null);
+  if (!mesurees.length) return null;
+  const t = mesurees.reduce((a, b) => ((b.pct as number) < (a.pct as number) ? b : a));
+  return { nom: subjectByKey(t.key)?.name ?? t.label, href: `/practice?topic=${t.key}` };
+}
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
 function SubjectsCard({ d }: { d: MoiData }) {
@@ -163,13 +172,14 @@ function ActivityCard({ d }: { d: MoiData }) {
 }
 
 /**
- * Onglet Stats : quatre bandes pleine largeur — les questions répondues
+ * Onglet Stats : « Tes points faibles » en tête, puis quatre bandes pleine largeur — les questions répondues
  * (total, filtre par source, détail matière → thème → passage), l'activité,
  * les matières (rangée horizontale ou radar), les dernières sessions.
  */
 export function StatsTab({ d }: { d: MoiData }) {
   return (
     <div className="grid gap-4 md:gap-[18px]">
+      {d.pointsFaibles && <PointsFaiblesCarte d={d.pointsFaibles} repli={matiereFragile(d)} />}
       <TrajectoirePanel e={d.objectif} />
       <AnswerStatsCard stats={d.answers} />
       <ActivityCard d={d} />

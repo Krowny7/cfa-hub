@@ -156,6 +156,9 @@ export const CARNET = {
   propreFiniVue: "Tu as repassé toutes les ratures de ce tri. Relance pour un nouveau tour.",
   propreRetour: "Revenir au carnet",
   propreEncore: "Un nouveau tour",
+  /** « Mettre au propre ce thème » (Tes points faibles, migration_points_faibles.sql) */
+  propreThemeRetour: "Revenir à mes points faibles",
+  propreThemeIndisponible: "La reprise par thème n'est pas encore ouverte. Tes ratures t'attendent dans Moi › Erreurs.",
 } as const;
 
 /** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */

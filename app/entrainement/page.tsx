@@ -9,12 +9,16 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import { loadNextMockExam } from "@/components/accueil/queries";
 import { EntrainementView, type EntrainementData } from "@/components/entrainement/EntrainementView";
 import { getEclairStats } from "@/lib/eclair";
+import { getAnswerStats } from "@/lib/answer-stats";
+import { construirePointsFaibles, lireRaturesParTheme } from "@/components/moi/points-faibles-data";
 
 // Espace « S'entraîner » : point d'entrée unique vers les façons de
 // s'entraîner. Chacune garde sa page et ses routes (QCM, entraînement ciblé,
 // calculs, examens officiels, examens blancs, duels, défi du jour) ; la page
 // met en avant une session (la matière la plus faible, sinon la dernière),
-// pose le défi du jour à côté et range le reste.
+// pose le défi du jour à côté et range le reste. Avec un point faible net
+// (réponses de toutes sources et ratures par thème), c'est lui qui est mis
+// en avant.
 export default async function EntrainementPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -28,7 +32,8 @@ export default async function EntrainementPage() {
     admin = null;
   }
 
-  const [mastery, practice, mockExam, rating, open, daily, eclair] = await Promise.all([
+  const now = Date.now();
+  const [mastery, practice, mockExam, rating, open, daily, eclair, answers, raturesTheme] = await Promise.all([
     getTopicMastery(supabase, userId),
     (async () => {
       try {
@@ -54,6 +59,9 @@ export default async function EntrainementPage() {
     // un seul appel, jamais d'exception ; « bientôt » tant que la migration manque
     getTodayDaily(supabase, userId).catch(() => null),
     getEclairStats(supabase, userId),
+    // « Tes points faibles » : les réponses (client admin, toujours filtrées sur ce joueur) et les ratures par thème
+    getAnswerStats(admin ?? supabase, userId, { privileged: !!admin, now }),
+    lireRaturesParTheme(supabase),
   ]);
 
   const pct = new Map(mastery.map((t) => [t.key, t.pct]));
@@ -66,7 +74,8 @@ export default async function EntrainementPage() {
     daily,
     // séries éclair rendues aujourd'hui (null tant que migration_series_eclair.sql manque)
     eclair: eclair?.today ?? null,
-    nowIso: new Date().toISOString(),
+    nowIso: new Date(now).toISOString(),
+    pointsFaibles: construirePointsFaibles(answers, raturesTheme, now),
   };
 
   return <EntrainementView d={d} />;
