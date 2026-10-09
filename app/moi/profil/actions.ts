@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { statsProfil } from "@/lib/profil/donnees";
-import { nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { lireStyle, statsProfil } from "@/lib/profil/donnees";
+import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { acquisDe, nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
 
-// Enregistrer son profil : le style (revalidé : cadres gagnés seulement,
-// image de bannière et médias venus de son dossier ; la disposition des
-// blocs), le LinkedIn (adresse
+// Enregistrer son profil : le style (revalidé : cadres et bannières gagnés,
+// ou déjà portés, seulement ; image de bannière et médias venus de son
+// dossier ; la disposition des blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
@@ -43,13 +44,15 @@ export async function enregistrerProfil(input: {
   if (input.linkedin.trim() && !linkedin) return { ok: false, erreur: "Adresse LinkedIn non reconnue : colle le lien de ton profil (linkedin.com/in/…)." };
   const visibilite = VISIBILITES.includes(input.visibilite) ? input.visibilite : "friends";
 
+  // ce qui ouvre les pièces gagnées : questions, pic, sceaux ; et ce qu'il porte déjà (on ne reprend rien)
   const stats = await statsProfil(user.id, supabase);
+  const [{ etats }, { style: porte }] = await Promise.all([sceauxDuJoueur(user.id, stats, supabase), lireStyle(admin, user.id)]);
   // l'image de bannière doit venir du dossier du joueur dans le stockage
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
   const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;
   const dossier = (bucket: string) => `${base}/storage/v1/object/public/${bucket}/${user.id}/`;
   const prefixesMedias = base ? { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) } : null;
-  const { style, refus } = validerStyle(input.style ?? {}, stats, prefixe, prefixesMedias);
+  const { style, refus } = validerStyle(input.style ?? {}, acquisDe(stats, etats), prefixe, prefixesMedias, porte);
 
   const now = new Date().toISOString();
   const ligne = {
@@ -103,6 +106,5 @@ export async function enregistrerProfil(input: {
   }
 
   revalidatePath(`/people/${user.id}`);
-  revalidatePath("/moi/profil");
   return { ok: true, style, refus };
 }

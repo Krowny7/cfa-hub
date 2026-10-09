@@ -28,21 +28,22 @@ import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
 import { Revanche } from "@/components/profil/Revanche";
 import { Journal } from "@/components/profil/Journal";
 import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
-import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
+import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
+import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
 import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { journalDe } from "@/lib/profil/journal";
-import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
+import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
 import { aPortee, posesDe, sceauxGagnes } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
-import type { Visibilite } from "@/lib/profil/catalogue";
+import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
-import { ENTETE, FACE, JOURNAL } from "@/lib/voice-profil";
+import { ENTETE, FACE, JOURNAL, provenances } from "@/lib/voice-profil";
 import type { Profile, Rating } from "@/lib/types";
 
-type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string; personnaliser?: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
 type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
@@ -79,6 +80,8 @@ async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[
 // avec la base), et « voir comme les autres » (?vue=inconnu ou ?vue=ami) qui
 // rend la page telle qu'un autre joueur la voit. Le Journal suit le réglage
 // de son propriétaire (tous, amis, moi seul) : fermé, il n'est pas lu.
+// ?personnaliser=1, sur son propre profil : la page se personnalise sur
+// place (ModePersonnaliser).
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = (await searchParams) ?? {};
@@ -95,6 +98,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   if (!profileData) notFound();
 
   const isMe = user.id === id;
+  if (isMe && sp.personnaliser === "1" && !sp.vue) return <ModePersonnaliser id={id} supabase={supabase} profil={profileData as ProfileRow} rating={ratingData as RatingRow | null} />;
   // « voir comme les autres » : seulement sur son propre profil
   const vue = isMe && (sp.vue === "inconnu" || sp.vue === "ami") ? sp.vue : null;
   const commeMoi = isMe && !vue;
@@ -133,6 +137,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   // les sceaux : gardés en base (et recalculés au plus toutes les 10 min), sinon dérivés
   const sceauxLus = statsLues.then((stats) => sceauxDuJoueur(id, stats, supabase));
   const relationLue = relationAvec(supabase, user.id, id);
+  // la date du pic, pour dire d'où vient un cadre liquide ou l'aura
+  const datesPicLues = styleLu.then(({ style: st }) => (cadreDe(st.frame).condition?.k === "pic" ? datesDuPic(supabase, id) : []));
   // le Journal, s'il m'est ouvert (sur le mien vu comme les autres : comme eux)
   const journalOuvert = (v: Visibilite, rel: Relation | null) =>
     isMe ? !vue || v === "public" || (vue === "ami" && v === "friends") : v === "public" || (v === "friends" && rel === "amis");
@@ -162,6 +168,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     journalLu,
     sceauxLus,
   ]);
+
+  const datesPic = await datesPicLues;
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
   const visible = (v: string) => (!vue ? true : v === "public" || (vue === "ami" && v === "friends"));
@@ -199,6 +207,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     linkedin: lien,
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
+    provenance: provenances(style, acquisDe(stats, etats, datesPic)),
   };
 
   const lienFace = `${hrefOnglet(id, "face-a-face")}#profil-onglets`;
@@ -215,7 +224,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   if (commeMoi) {
     actions = (
       <>
-        <Link href="/moi/profil" className="btn btn-primary rl-press">
+        <Link href={hrefPersonnaliser(id)} className="btn btn-primary rl-press">
           <Palette size={15} aria-hidden /> Personnaliser
         </Link>
         <Link href={hrefOnglet(id, onglet, "inconnu")} className="btn btn-secondary rl-press">
@@ -329,7 +338,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     panneau = (
       <GrilleBlocs
         disposition={parDefaut && !commeMoi ? sansCaseVide(style.disposition) : style.disposition}
-        caseVide={parDefaut && commeMoi ? <CaseImage href="/moi/profil" /> : null}
+        caseVide={parDefaut && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : null}
         rendus={{
           vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
           radar: (

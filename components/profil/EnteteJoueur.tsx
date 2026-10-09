@@ -3,7 +3,8 @@ import { PageHero } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
-import { type StyleProfil } from "@/lib/profil/catalogue";
+import { Provenance } from "@/components/profil/Provenance";
+import { cadreDe, motifDe, type StyleProfil } from "@/lib/profil/catalogue";
 import { nombre } from "@/lib/voice";
 import { PresenceText } from "@/components/presence/Presence";
 import { BioRepliable } from "@/components/profil/BioRepliable";
@@ -25,6 +26,11 @@ import { ENTETE } from "@/lib/voice-profil";
 // sur deux lignes, les actions (44 px), puis les 3 sceaux posés (`poses`).
 // Sur ordinateur, la grande carte du rang à droite, avec le pic et, sur le
 // profil d'un autre, le bilan du face-à-face en pied (`piedRang`).
+// Les pièces gagnées qui bougent (cadre, bannière) disent d'où elles
+// viennent au survol ou au toucher (`d.provenance`). Sur téléphone, au plus
+// deux éléments animés : l'insigne et le cadre ; si le cadre bouge, la
+// bannière et les reflets des sceaux posés se figent. Personnaliser pose
+// ses crayons sur la bannière et le sceau (`crayons`).
 
 export type EnteteData = {
   id: string;
@@ -47,6 +53,8 @@ export type EnteteData = {
   amis: number | null;
   /** meilleur palier atteint (index dans TIERS), affiché s'il dépasse l'actuel */
   pic?: number | null;
+  /** d'où viennent le cadre et la bannière s'ils bougent (« Liquide Diamant, gagné le 12 oct. ») */
+  provenance?: { cadre: string | null; banniere: string | null };
 };
 
 /** La petite marque LinkedIn (aux couleurs de LinkedIn, comme un lien sortant). */
@@ -72,6 +80,7 @@ export function EnteteJoueur({
   presence = false,
   poses = null,
   piedRang = null,
+  crayons = null,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
@@ -87,6 +96,8 @@ export function EnteteJoueur({
   poses?: React.ReactNode;
   /** le pied de la carte du rang, sur ordinateur (bilan du face-à-face) */
   piedRang?: React.ReactNode;
+  /** Personnaliser : les crayons posés sur la bannière et sur le sceau */
+  crayons?: { banniere: React.ReactNode; sceau: React.ReactNode } | null;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
   // sur téléphone : le rang dans la ligne du nom, la ligne niveau · ELO · place, le pic
@@ -97,6 +108,11 @@ export function EnteteJoueur({
   const joues = Math.min(d.gamesPlayed, PLACEMENT_GAMES);
   const picNom = d.pic !== undefined && d.pic !== null && d.pic > rang.tierIndex ? TIERS[d.pic].name : null;
   const eloPlace = ENTETE.eloPlace(d.elo, d.place !== null ? ordinal(d.place) : null);
+  // ce qui bouge : sur téléphone, le cadre passe avant la bannière, qui passe avant les reflets des sceaux
+  const cadreAnime = !!cadreDe(d.style.frame).anime;
+  const motif = d.style.bannerUrl ? null : motifDe(d.style.banner);
+  const banniereAnimee = !!motif?.anime;
+  const sceau = <CadreSceau frame={d.style.frame} name={d.name} avatarUrl={d.avatarUrl} size={apercu ? 88 : 128} />;
 
   return (
     <header className="flex flex-col" style={styleAccent(d.style.accent)} aria-label={`Profil de ${d.name}`}>
@@ -107,6 +123,7 @@ export function EnteteJoueur({
           bannerUrl={d.style.bannerUrl}
           bannerPos={d.style.bannerPos}
           accent={d.style.accent}
+          calme={cadreAnime}
           className={
             apercu
               ? { fine: "h-[96px]", normale: "h-[130px]", haute: "h-[176px]" }[d.style.bannerH]
@@ -118,6 +135,23 @@ export function EnteteJoueur({
             <div className={apercu ? "" : "mx-auto w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]"}>{haut}</div>
           </div>
         )}
+        {!apercu && (crayons || (banniereAnimee && motif && d.provenance?.banniere)) && (
+          <div className="pointer-events-none absolute inset-0 z-[3]">
+            <div className="relative mx-auto h-full w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]">
+              {/* en haut à droite (le bas est à la carte du rang sur ordinateur) : la bannière gagnée, son nom et d'où elle vient ; le crayon */}
+              <div className="pointer-events-auto absolute right-0 top-1 flex items-center gap-2 sm:top-2">
+                {banniereAnimee && motif && d.provenance?.banniere && (
+                  <Provenance texte={d.provenance.banniere} aligne="droite">
+                    <span className="inline-flex min-h-[44px] items-center">
+                      <span className="rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] px-3 py-1 text-[12px] font-semibold text-white backdrop-blur">{motif.nom}</span>
+                    </span>
+                  </Provenance>
+                )}
+                {crayons?.banniere}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={"grid items-end gap-x-10 gap-y-7 " + (apercu ? "" : "lg:grid-cols-12")}>
@@ -125,7 +159,14 @@ export function EnteteJoueur({
           <div className={apercu ? "flex flex-wrap items-end gap-x-6 gap-y-3" : "flex items-start gap-x-4 gap-y-3 lg:flex-wrap lg:items-end lg:gap-x-6"}>
             {/* le sceau : 88 px sur téléphone (128 réduit), 128 sur ordinateur */}
             <div className={"relative z-[2] shrink-0 " + (apercu ? "-mt-[46px] pl-4" : "-mt-[64px] max-lg:[zoom:0.6875] lg:-mt-[84px]")}>
-              <CadreSceau frame={d.style.frame} name={d.name} avatarUrl={d.avatarUrl} size={apercu ? 88 : 128} />
+              {cadreAnime && d.provenance?.cadre && !apercu ? (
+                <Provenance texte={d.provenance.cadre} classeBulle="max-lg:[zoom:1.4545]">
+                  {sceau}
+                </Provenance>
+              ) : (
+                sceau
+              )}
+              {crayons && <span className="absolute -bottom-2 -right-2 z-[3] max-lg:[zoom:1.4545]">{crayons.sceau}</span>}
             </div>
             <div className={"min-w-0 " + (apercu ? "flex-[1_1_240px] pt-2" : "flex-1 pt-2 lg:flex-[1_1_240px]")}>
               {apercu ? (
@@ -180,7 +221,7 @@ export function EnteteJoueur({
               )}
             </div>
           )}
-          {poses && !apercu && <div className="pt-1 lg:pt-2">{poses}</div>}
+          {poses && !apercu && <div className={"pt-1 lg:pt-2" + (cadreAnime || banniereAnimee ? " rl-calme-tel" : "")}>{poses}</div>}
         </div>
 
         {!apercu && (

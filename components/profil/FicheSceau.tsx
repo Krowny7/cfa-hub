@@ -4,14 +4,16 @@ import { Sceau, type SceauProps } from "@/components/adn/Sceau";
 import { Feuille } from "@/components/ui/Feuille";
 import { useChoixSceaux } from "@/components/profil/ChoixSceaux";
 import { dateObtenu, defSceau, rareteDe, seuilAffiche, type EtatSceau } from "@/lib/profil/sceaux";
+import { CADRE_DORURES, piecesDuSceau } from "@/lib/profil/catalogue";
 import { FAMILLES_NOMS, PALIERS, SCEAUX_TXT, atteste, condition, dateCourte, inscription, nomSceau, progres, titreSceau } from "@/lib/voice-profil";
 
 // Un sceau de la collection, et sa fiche. Le ton suit le palier : gaufré
 // (pas encore gagné), encre, vermillon, dorure. La fiche (feuille du bas
 // sur téléphone, panneau latéral sur ordinateur) : le grand sceau, ce qu'il
 // atteste, sa date d'obtention et sa rareté (avec la base), ses trois
-// paliers et l'avancée vers le suivant ; sur son propre profil, « Poser sur
-// mon profil » (ChoixSceaux).
+// paliers et l'avancée vers le suivant ; ce qu'il débloque (les pièces
+// gagnées de Personnaliser) ; sur son propre profil, « Poser sur mon
+// profil » (ChoixSceaux).
 
 const TONS = ["gaufre", "ink", "pen", "dorure"] as const;
 /** la pastille de chaque palier, dans la fiche et la collection */
@@ -74,12 +76,34 @@ export function FicheSceau({ e, onFermer }: { e: EtatSceau | null; onFermer: () 
             </ol>
           </div>
 
+          <Debloque cle={e.def.cle} />
+
           {e.def.unite === "maitrise" && <p className="t-micro m-0">{`${SCEAUX_TXT.mesure} ${e.enBase ? SCEAUX_TXT.garde : SCEAUX_TXT.provisoire}`}</p>}
 
           {e.palier > 0 && <Poser cle={e.def.cle} />}
         </div>
       )}
     </Feuille>
+  );
+}
+
+/** Les pièces que ce sceau ouvre : une bannière ou un cadre à un palier, et sa dorure qui compte pour le cadre « Dorure ». */
+function Debloque({ cle }: { cle: string }) {
+  const lignes = [
+    ...piecesDuSceau(cle).map((p) => SCEAUX_TXT.debloquePiece(p.type, p.nom, p.palier)),
+    ...(CADRE_DORURES ? [SCEAUX_TXT.debloqueDorures(CADRE_DORURES.nom, CADRE_DORURES.n)] : []),
+  ];
+  return (
+    <div>
+      <p className="t-eyebrow m-0 mb-1.5">{SCEAUX_TXT.debloque}</p>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {lignes.map((l) => (
+          <li key={l} className="t-small">
+            {l}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

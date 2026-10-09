@@ -11,6 +11,10 @@
 .feuille[open] {
   animation: monte 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* la page reste visible au-dessus (Personnaliser) */
+.apercu {
+  max-height: 70dvh;
+}
 @keyframes monte {
   from {
     transform: translateY(36px);

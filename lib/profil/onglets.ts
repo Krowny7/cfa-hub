@@ -22,3 +22,6 @@ export function hrefOnglet(id: string, onglet: OngletProfil, vue: string | null 
   const s = q.toString();
   return `/people/${id}${s ? `?${s}` : ""}`;
 }
+
+/** Personnaliser son profil, sur la page même (son propre profil seulement). */
+export const hrefPersonnaliser = (id: string) => `/people/${id}?personnaliser=1`;

@@ -5,7 +5,9 @@
 
 import { NBSP, nombre, pct, pluriel, signe } from "@/lib/voice";
 import { subjectByKey } from "@/components/reviser/catalog";
-import { MAITRISE_MIN_QUESTIONS, type DefSceau, type EtatSceau, type Famille, type Unite } from "@/lib/profil/sceaux";
+import { MAITRISE_MIN_QUESTIONS, defSceau, type DatePalier, type DefSceau, type EtatSceau, type Famille, type Unite } from "@/lib/profil/sceaux";
+import { cadreDe, dateGagnee, dorures, motifDe, type Acquis, type Condition, type StyleProfil } from "@/lib/profil/catalogue";
+import { TIERS } from "@/lib/ranks";
 
 // ---------------------------------------------------------------------------
 // L'en-tête
@@ -214,7 +216,109 @@ export const SCEAUX_TXT = {
   remplacer: "Les 3 places sont prises. Poser à la place de :",
   poserAide: "3 sceaux au plus, dans l'en-tête de ton profil. Sans choix, les plus rares.",
   poserErreur: "Impossible pour l'instant. Réessaie dans un instant.",
+  // le lien entre un sceau et les pièces qu'il ouvre
+  debloque: "Débloque",
+  debloquePiece: (type: "cadre" | "banniere", nom: string, palier: number) => `${type === "cadre" ? "le cadre" : "la bannière"} « ${nom} » au palier ${PALIERS[palier]}`,
+  debloqueDorures: (nom: string, n: number) => `à la dorure, il compte pour le cadre « ${nom} » (${pluriel(n, "sceau doré", "sceaux dorés")})`,
 } as const;
+
+// ---------------------------------------------------------------------------
+// Personnaliser, sur la page même, et les pièces gagnées
+
+export const PERSO = {
+  titre: "Personnaliser",
+  /** la règle, en une ligne */
+  regle: "Ce qui est fixe est libre ; ce qui bouge ou qui brille se gagne.",
+  zones: {
+    banniere: "Bannière",
+    sceau: "Cadre du sceau",
+    poses: "Sceaux posés",
+    encre: "Encre",
+    identite: "Nom et bio",
+    page: "Ta page",
+  },
+  modifier: (zone: string) => `Modifier : ${zone}`,
+  monProfil: "Mon profil",
+  gagnes: "Gagnés",
+  aGagner: "À gagner",
+  /** la pièce bouge : la marque sur sa vignette */
+  bouge: "bouge",
+  terminer: "Terminé",
+  annuler: "Annuler",
+  enregistrer: "Enregistrer",
+  nonEnregistre: "Modifications non enregistrées",
+  enregistre: "Enregistré. Ton profil est à jour.",
+  enregistreSauf: (refus: string[]) => `Enregistré, sauf ${refus.join(", ")}.`,
+  /** la base n'a pas encore les colonnes du style */
+  basePasPrete: "La personnalisation s'enregistrera dès que la base sera prête. Tu peux déjà composer ton profil.",
+  pageAide: "Range tes blocs ici même : appui long sur le nom d'un bloc puis glisse-le, ou les flèches. Masque ceux que tu ne veux pas.",
+  pageCrayon: "Chiffres clés et ambiance",
+  posesNb: (n: number) => `${n}/3 posés`,
+  posesSansBase: "Tes 3 sceaux les plus rares sont posés d'office. Le choix arrive avec la mise à jour de la base.",
+  /** dans la liste de ce qui n'a pas été enregistré */
+  posesRefus: "les sceaux posés",
+  gagneLe: (date: string, avant: boolean) => (avant ? `gagné avant le ${date}` : `gagné le ${date}`),
+  /** la bulle de provenance, au survol ou au toucher */
+  provenance: "D'où vient cette pièce",
+  deplacer: (nom: string) => `Déplacer : ${nom}`,
+  deplacerAide: "Appui long, puis glisse sur une autre place",
+  deplacerRangee: "Déplacer la rangée",
+} as const;
+
+/** Ce qu'il faut pour gagner une pièce : « 1 000 questions posées », « atteins Diamant une fois », « 3 sceaux à la dorure ». */
+export function conditionPiece(c: Condition): string {
+  switch (c.k) {
+    case "questions":
+      return pluriel(c.n, "question posée", "questions posées");
+    case "pic":
+      return `atteins ${TIERS[c.palier].name} une fois`;
+    case "dorures":
+      return `${pluriel(c.n, "sceau", "sceaux")} à la dorure`;
+    case "sceau": {
+      const d = defSceau(c.cle);
+      return `sceau ${d ? nomSceau(d) : c.cle} · ${PALIERS[c.palier]}`;
+    }
+  }
+}
+
+/** La condition remplie, quand la date manque : « pic Diamant atteint », « sceau Assiduité · vermillon ». */
+function conditionRemplie(c: Condition): string {
+  return c.k === "pic" ? `${ENTETE.pic(TIERS[c.palier].name)} atteint` : conditionPiece(c);
+}
+
+/** L'avancée vers une pièce : « 632/1 000 », « 1/3 », « 18/30 j », « pic Or » ; null si rien à mesurer. */
+export function avanceePiece(c: Condition, a: Acquis): string | null {
+  switch (c.k) {
+    case "questions":
+      return `${nombre(a.questions)}/${nombre(c.n)}`;
+    case "pic":
+      return ENTETE.pic(TIERS[Math.max(0, Math.min(TIERS.length - 1, a.pic))].name);
+    case "dorures":
+      return `${nombre(dorures(a))}/${nombre(c.n)}`;
+    case "sceau": {
+      const e = a.sceaux.find((x) => x.def.cle === c.cle);
+      if (!e || e.inconnu) return null;
+      const seuil = e.def.seuils[c.palier - 1];
+      return `${nombre(e.valeur)}/${nombre(seuil)}${e.def.unite === "jours" ? `${NBSP}j` : ""}`;
+    }
+  }
+}
+
+/** D'où vient une pièce gagnée : « Liquide Diamant, gagné le 12 oct. » ; sans date, ce qui l'a ouverte. */
+function provenancePiece(nom: string, c: Condition | null, d: DatePalier | null): string {
+  if (d) return `${nom}, ${PERSO.gagneLe(dateCourte(d.iso), d.avant)}`;
+  return c ? `${nom} · ${conditionRemplie(c)}` : nom;
+}
+
+/** D'où viennent le cadre et la bannière portés, s'ils bougent (l'en-tête du profil, au survol ou au toucher). */
+export function provenances(style: Pick<StyleProfil, "frame" | "banner" | "bannerUrl">, a: Acquis): { cadre: string | null; banniere: string | null } {
+  const c = cadreDe(style.frame);
+  const m = style.bannerUrl ? null : motifDe(style.banner);
+  return {
+    cadre: c.anime ? provenancePiece(c.nom, c.condition, dateGagnee(c.condition, a)) : null,
+    banniere: m?.anime ? provenancePiece(m.nom, m.condition ?? null, dateGagnee(m.condition ?? null, a)) : null,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // La cérémonie d'obtention (fin de session, de duel, de défi)

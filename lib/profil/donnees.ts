@@ -5,7 +5,7 @@ import { chargerTraitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { joursAvant, jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
 import { levelInfoFromXp } from "@/lib/leveling";
-import { DEFAULT_ELO, TOP_TIER, rankFor } from "@/lib/ranks";
+import { DEFAULT_ELO, TIERS, TOP_TIER, rankFor } from "@/lib/ranks";
 import { getLeaderboardRank } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { LIEN_DEFAUT, STATS_VIDES, STYLE_DEFAUT, styleDepuis, type LienProfil, type NomProfil, type ProfilStats, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
@@ -99,6 +99,31 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
     return STATS_VIDES;
   }
 });
+
+/**
+ * Le jour du premier passage à chaque palier (index dans TIERS), d'après
+ * rating_events (lisible par tous) : la provenance des cadres liquides et de
+ * l'aura (« gagné le 12 oct. »). Seulement à partir de Platine, le premier
+ * cadre liquide ; le Top 10, qui tient à la place, reste sans date.
+ */
+export async function datesDuPic(sb: SupabaseClient, userId: string): Promise<(string | null)[]> {
+  const dates: (string | null)[] = TIERS.map(() => null);
+  try {
+    const { data, error } = await sb
+      .from("rating_events")
+      .select("elo_after,created_at")
+      .eq("user_id", userId)
+      .gte("elo_after", TIERS[3].min)
+      .order("created_at", { ascending: true })
+      .limit(2000);
+    if (error || !data) return dates;
+    for (const r of data as { elo_after: number; created_at: string }[])
+      for (let i = 3; i < TOP_TIER; i++) if (!dates[i] && Number(r.elo_after) >= TIERS[i].min) dates[i] = r.created_at;
+  } catch {
+    // table illisible : pas de date
+  }
+  return dates;
+}
 
 export type StyleLu = {
   style: StyleProfil;

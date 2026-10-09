@@ -9,12 +9,17 @@ import s from "./Feuille.module.css";
 // de la feuille la referme). Sur téléphone, une feuille qui monte du bas
 // (85 % de la hauteur au plus) ; sur ordinateur (1024 px et plus), un
 // panneau latéral de 420 px, à droite. Le contenu défile à l'intérieur.
+// `pied` : une barre collée en bas de la feuille (Enregistrer). `apercu` :
+// la page reste visible dessous (Personnaliser : elle change en direct) ;
+// voile léger, et 70 % de la hauteur au plus sur téléphone.
 
 export function Feuille({
   ouvert,
   onFermer,
   titre,
   fermer = "Fermer",
+  pied = null,
+  apercu = false,
   children,
 }: {
   ouvert: boolean;
@@ -23,6 +28,8 @@ export function Feuille({
   titre: string;
   /** libellé du bouton de fermeture */
   fermer?: string;
+  pied?: React.ReactNode;
+  apercu?: boolean;
   children: React.ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement | null>(null);
@@ -42,7 +49,7 @@ export function Feuille({
         if (e.target === dialog.current) onFermer(); // toucher hors de la feuille
       }}
       aria-label={titre}
-      className={`${s.feuille} overflow-hidden border border-line-2 bg-[var(--surface)] p-0 text-white shadow-[var(--shadow-3)] backdrop:bg-[rgba(12,12,14,.5)] backdrop:backdrop-blur-[2px]`}
+      className={`${s.feuille} ${apercu ? `${s.apercu} backdrop:bg-[rgba(12,12,14,.12)]` : "backdrop:bg-[rgba(12,12,14,.5)] backdrop:backdrop-blur-[2px]"} overflow-hidden border border-line-2 bg-[var(--surface)] p-0 text-white shadow-[var(--shadow-3)]`}
     >
       <div className="flex max-h-[inherit] flex-col lg:h-full">
         <span aria-hidden className="mx-auto mt-2.5 block h-1 w-10 shrink-0 rounded-full bg-[var(--line-2)] lg:hidden" />
@@ -52,7 +59,8 @@ export function Feuille({
             <X size={18} aria-hidden />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom,0px))]">{children}</div>
+        <div className={"min-h-0 flex-1 overflow-y-auto px-5 " + (pied ? "pb-5" : "pb-[calc(24px+env(safe-area-inset-bottom,0px))]")}>{children}</div>
+        {pied && <div className="shrink-0 border-t border-line px-5 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-3">{pied}</div>}
       </div>
     </dialog>
   );
