@@ -14,7 +14,9 @@ import { rankFor } from "@/lib/ranks";
 // Sans migration : friendships (mes amitiés), rating_events (lisible par
 // tous) et duels (je lis les miens). La maîtrise des amis (client admin, s'il
 // existe) garde les verrous de palier. Des jours (Paris), jamais d'heures.
-// Module serveur.
+// On ne lit que les matchs de la fenêtre (les plus récents d'abord), plus,
+// pour chaque ami qui a joué, son meilleur ELO d'avant : la référence du
+// « jamais atteint avant ». Module serveur.
 
 export const JOURS_NOUVEAU = 7;
 /** au plus, sur l'accueil */
@@ -30,11 +32,15 @@ export type Nouveaute =
 type Evenement = { id: string; user_id: string; elo_before: number; elo_after: number; created_at: string };
 type LigneDuel = { id: string; challenger_id: string; opponent_id: string | null; winner_id: string | null; challenger_score: number | null; opponent_score: number | null; finished_at: string };
 
-/** Les nouveaux paliers de ce joueur (jamais atteints avant) depuis `debut`. */
-function paliers(evts: Evenement[], mastery: number | null, debut: string): { jour: string; palier: number; id: string }[] {
+/**
+ * Les nouveaux paliers de ce joueur (jamais atteints avant) depuis `debut`.
+ * `evts` : ses matchs de la fenêtre ; `avant` : son meilleur ELO d'avant
+ * (null s'il n'a joué qu'à partir de la fenêtre).
+ */
+function paliers(evts: Evenement[], avant: number | null, mastery: number | null, debut: string): { jour: string; palier: number; id: string }[] {
   if (!evts.length) return [];
   const out: { jour: string; palier: number; id: string }[] = [];
-  let meilleur = rankFor(evts[0].elo_before, mastery).tierIndex;
+  let meilleur = rankFor(Math.max(evts[0].elo_before, avant ?? evts[0].elo_before), mastery).tierIndex;
   for (const e of evts) {
     const t = rankFor(e.elo_after, mastery).tierIndex;
     if (t <= meilleur) continue;
@@ -47,15 +53,16 @@ function paliers(evts: Evenement[], mastery: number | null, debut: string): { jo
 
 /**
  * L'ami m'a-t-il dépassé depuis `debut` ? On rejoue nos deux historiques
- * dans l'ordre : le dernier de SES matchs qui le fait passer devant moi,
- * s'il est encore devant aujourd'hui. Ses ELO et le mien de départ : l'ELO
- * d'avant le premier match de chacun.
+ * de la fenêtre dans l'ordre : le dernier de SES matchs qui le fait passer
+ * devant moi, s'il est encore devant aujourd'hui. Son ELO de départ : l'ELO
+ * d'avant son premier match de la fenêtre ; le mien : pareil, ou `monElo`
+ * (mon ELO actuel) si je n'ai pas joué dans la fenêtre.
  */
-function depassement(lui: Evenement[], moi: Evenement[], debut: string): { jour: string; ecart: number; id: string } | null {
+function depassement(lui: Evenement[], moi: Evenement[], monElo: number | null, debut: string): { jour: string; ecart: number; id: string } | null {
   if (!lui.length) return null;
   const tous = [...lui.map((e) => ({ e, lui: true })), ...moi.map((e) => ({ e, lui: false }))].sort((a, b) => (a.e.created_at < b.e.created_at ? -1 : a.e.created_at > b.e.created_at ? 1 : 0));
   let eloLui = lui[0].elo_before;
-  let eloMoi = moi.length ? moi[0].elo_before : null;
+  let eloMoi = moi.length ? moi[0].elo_before : monElo;
   let passe: { jour: string; id: string } | null = null;
   for (const { e, lui: sien } of tous) {
     const devantAvant = eloMoi !== null && eloLui > eloMoi;
@@ -86,8 +93,8 @@ export async function nouveautesAmis(sb: SupabaseClient, admin: SupabaseClient |
     // la veille du premier jour, à midi : une marge large, le filtre par jour de Paris fait le reste
     const debutIso = new Date(Date.parse(decaleJour(debut, -1) + "T12:00:00Z")).toISOString();
 
-    const [evtsLus, duelsLus, profils, maitrises] = await Promise.all([
-      sb.from("rating_events").select("id,user_id,elo_before,elo_after,created_at").in("user_id", [...amis, moi]).order("created_at", { ascending: true }).limit(5000),
+    const [evtsLus, duelsLus, profils, maitrises, monRating] = await Promise.all([
+      sb.from("rating_events").select("id,user_id,elo_before,elo_after,created_at").in("user_id", [...amis, moi]).gte("created_at", debutIso).order("created_at", { ascending: false }).limit(1000),
       sb
         .from("duels")
         .select("id,challenger_id,opponent_id,winner_id,challenger_score,opponent_score,finished_at")
@@ -99,22 +106,43 @@ export async function nouveautesAmis(sb: SupabaseClient, admin: SupabaseClient |
         .limit(20),
       sb.from("profiles").select("id,username,avatar_url").in("id", amis),
       masteryByUser(admin, amis),
+      sb.from("ratings").select("elo").eq("user_id", moi).maybeSingle(),
     ]);
 
     const joueurs = new Map<string, Joueur>(
       ((profils.data ?? []) as { id: string; username: string | null; avatar_url: string | null }[]).map((p) => [p.id, { id: p.id, nom: displayName(p.username, p.id), avatarUrl: p.avatar_url }]),
     );
     const parJoueur = new Map<string, Evenement[]>();
-    for (const e of (evtsLus.data ?? []) as Evenement[]) parJoueur.set(e.user_id, [...(parJoueur.get(e.user_id) ?? []), e]);
+    for (const e of ((evtsLus.data ?? []) as Evenement[]).reverse()) {
+      const liste = parJoueur.get(e.user_id);
+      if (liste) liste.push(e);
+      else parJoueur.set(e.user_id, [e]);
+    }
     const miens = parJoueur.get(moi) ?? [];
+    const monElo = (monRating.data as { elo: number } | null)?.elo ?? null;
+
+    // le meilleur ELO d'avant la fenêtre, pour les amis qui y ont joué : le
+    // plus haut des ELO d'avant et d'après leurs matchs d'avant (l'ELO de
+    // départ compris)
+    const actifs = amis.filter((id) => parJoueur.has(id) && joueurs.has(id));
+    const plusHaut = (id: string, col: "elo_before" | "elo_after") =>
+      sb.from("rating_events").select(col).eq("user_id", id).lt("created_at", debutIso).order(col, { ascending: false }).limit(1).maybeSingle();
+    const avants = await Promise.all(
+      actifs.map(async (id) => {
+        const [b, a] = await Promise.all([plusHaut(id, "elo_before"), plusHaut(id, "elo_after")]);
+        const vals = [(b.data as { elo_before: number } | null)?.elo_before, (a.data as { elo_after: number } | null)?.elo_after].filter((v): v is number => typeof v === "number");
+        return [id, vals.length ? Math.max(...vals) : null] as const;
+      }),
+    );
+    const meilleurAvant = new Map(avants);
 
     const out: Nouveaute[] = [];
-    for (const id of amis) {
+    for (const id of actifs) {
       const joueur = joueurs.get(id);
-      if (!joueur) continue;
-      const siens = parJoueur.get(id) ?? [];
-      for (const p of paliers(siens, maitrises.get(id) ?? null, debut)) out.push({ type: "palier", cle: `palier-${p.id}`, jour: p.jour, joueur, palier: p.palier });
-      const d = depassement(siens, miens, debut);
+      const siens = parJoueur.get(id);
+      if (!joueur || !siens) continue;
+      for (const p of paliers(siens, meilleurAvant.get(id) ?? null, maitrises.get(id) ?? null, debut)) out.push({ type: "palier", cle: `palier-${p.id}`, jour: p.jour, joueur, palier: p.palier });
+      const d = depassement(siens, miens, monElo, debut);
       if (d) out.push({ type: "depasse", cle: `depasse-${d.id}`, jour: d.jour, joueur, ecart: d.ecart });
     }
     for (const d of (duelsLus.data ?? []) as LigneDuel[]) {
