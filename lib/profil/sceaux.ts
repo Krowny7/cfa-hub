@@ -1,5 +1,5 @@
 // Les Sceaux du profil (étape 1) : 16 sceaux à trois paliers (encre,
-// vermillon, dorure), soit 48 marches, tous calculés depuis ProfilStats
+// vermillon, dorure), soit 48 paliers, tous calculés depuis ProfilStats
 // (statsProfil, lib/profil/donnees.ts), sans table ni migration. Ils ne
 // sont pas encore gardés en base : une maîtrise qui baisse retire le
 // palier d'une matière, et la date d'obtention n'est pas connue.
@@ -27,7 +27,7 @@ export type DefSceau = {
   seuils: readonly [number, number, number];
   /**
    * À palier égal, l'ordre des sceaux posés d'office : à défaut de rareté
-   * mesurée (étape 3), la difficulté estimée de la marche (plus haut : plus rare).
+   * mesurée (étape 3), la difficulté estimée du palier (plus haut : plus rare).
    */
   difficulte: number;
   /** la matière (clé de lib/practiceTopics.ts) d'un sceau de maîtrise */
@@ -47,8 +47,6 @@ export const SCEAUX: DefSceau[] = [
   ...SUBJECTS.map((m): DefSceau => ({ cle: `matiere:${m.key}`, famille: "matieres", unite: "maitrise", seuils: [60, 75, 90], difficulte: 1, matiere: m.key })),
 ];
 
-/** toutes les marches (16 sceaux × 3 paliers) */
-export const MARCHES = SCEAUX.length * 3;
 
 export type EtatSceau = {
   def: DefSceau;
@@ -107,10 +105,10 @@ export function sceauxDe(s: ProfilStats): EtatSceau[] {
   return SCEAUX.map((d) => etatSceau(d, s));
 }
 
-/** Marches gagnées (19 sur 48). */
-export const marchesGagnees = (etats: EtatSceau[]) => etats.reduce((n, e) => n + e.palier, 0);
+/** Sceaux gagnés, quel que soit leur palier (7 sur 16). */
+export const sceauxGagnes = (etats: EtatSceau[]) => etats.filter((e) => e.palier > 0).length;
 
-/** Les 3 marches les plus proches (sur son propre profil) : les mieux avancées, hors dorures. */
+/** Les 3 paliers les plus proches (sur son propre profil) : les mieux avancées, hors dorures. */
 export function aPortee(s: ProfilStats, n = 3): EtatSceau[] {
   return sceauxDe(s)
     .filter((e) => e.prochain !== null && e.avance < 1)

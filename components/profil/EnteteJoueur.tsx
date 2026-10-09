@@ -92,7 +92,9 @@ export function EnteteJoueur({
   // sur téléphone : le rang dans la ligne du nom, la ligne niveau · ELO · place, le pic
   const rang = rankFor(d.elo, d.mastery, d.place);
   const placement = d.gamesPlayed < PLACEMENT_GAMES;
-  const nomRang = placement ? `Placement ${Math.min(d.gamesPlayed, PLACEMENT_GAMES)}/${PLACEMENT_GAMES}` : `${rang.tier.name}${rang.division ? " " + rang.division : ""}`;
+  // le palier toujours (comme la carte d'ordinateur et le Journal) ; en placement, l'avancée dessous
+  const nomRang = `${rang.tier.name}${rang.division ? " " + rang.division : ""}`;
+  const joues = Math.min(d.gamesPlayed, PLACEMENT_GAMES);
   const picNom = d.pic !== undefined && d.pic !== null && d.pic > rang.tierIndex ? TIERS[d.pic].name : null;
   const eloPlace = ENTETE.eloPlace(d.elo, d.place !== null ? ordinal(d.place) : null);
 
@@ -143,9 +145,10 @@ export function EnteteJoueur({
             </div>
             {/* téléphone : le rang dans la ligne du nom (la grande carte est sur ordinateur) */}
             {!apercu && (
-              <Link href="/classement" className="flex w-[76px] shrink-0 flex-col items-center gap-1 pt-1.5 lg:hidden" aria-label={`${rangDe ?? "Ton rang"} : ${nomRang}. Voir le classement`}>
+              <Link href="/classement" className="flex w-[76px] shrink-0 flex-col items-center gap-1 pt-1.5 lg:hidden" aria-label={`${rangDe ?? "Ton rang"} : ${placement ? `placement ${joues} sur ${PLACEMENT_GAMES}, rang provisoire ${nomRang}` : nomRang}. Voir le classement`}>
                 <RankBadge tier={rang.tierIndex} size={52} mastery={d.mastery ?? 0} division={placement ? null : rang.division} anime className="w-[52px]" />
                 <span className="text-center text-[12px] font-bold leading-tight text-white">{nomRang}</span>
+                {placement && <span className="-mt-0.5 font-mono text-[11px] font-semibold tabular-nums text-muted">{`${joues}/${PLACEMENT_GAMES}`}</span>}
               </Link>
             )}
           </div>

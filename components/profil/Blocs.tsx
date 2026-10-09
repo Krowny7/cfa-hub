@@ -13,7 +13,7 @@ import { estMedia, largeurMedia, type Bloc, type BlocMedia, type CleBloc, type D
 // l'écran. Une case vide ou un bloc sans contenu garde sa place sur grand
 // écran (rien ne bouge) et disparaît sur téléphone ; une rangée sans rien à
 // montrer est sautée. `caseVide` : ce qu'on pose dans une case vide (sur
-// son propre profil : « ajoute une image »). Sans état.
+// son propre profil, sur la page par défaut : « ajoute une image »). Sans état.
 
 export function GrilleBlocs({
   disposition,

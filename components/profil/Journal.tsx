@@ -20,20 +20,27 @@ const VISIBLES = 6;
 
 const ICONE: Record<EvenementJournal["type"], IconeNom> = { victoire: "duel", palier: "classement", serie: "serie" };
 
-function Entree({ e }: { e: EvenementJournal }) {
+function Entree({ e, moiId }: { e: EvenementJournal; moiId: string | null }) {
   let titre: React.ReactNode;
   let detail: React.ReactNode = null;
   let chiffre: React.ReactNode = null;
   if (e.type === "victoire") {
-    titre = e.adversaire ? (
+    // l'adversaire, c'est celui qui regarde : « contre toi », sans lien vers son propre profil
+    titre = !e.adversaire ? (
+      JOURNAL.victoireSans
+    ) : e.adversaire.id === moiId ? (
+      JOURNAL.victoireContreToi
+    ) : (
       <>
         {JOURNAL.victoireContre}{" "}
-        <Link href={`/people/${e.adversaire.id}`} className="underline-offset-2 hover:underline">
+        {/* souligné sur téléphone (pas de survol), et 44 px à toucher sans changer la ligne */}
+        <Link
+          href={`/people/${e.adversaire.id}`}
+          className="relative underline underline-offset-2 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] lg:no-underline lg:hover:underline"
+        >
           {e.adversaire.nom}
         </Link>
       </>
-    ) : (
-      JOURNAL.victoireSans
     );
     detail = e.score ? <span className="font-mono tabular-nums">{JOURNAL.score(e.score[0], e.score[1])}</span> : null;
     chiffre =
@@ -72,7 +79,18 @@ function Entree({ e }: { e: EvenementJournal }) {
   );
 }
 
-export function Journal({ journal, mastery, moi }: { journal: DonneesJournal; mastery: number | null; moi: boolean }) {
+export function Journal({
+  journal,
+  mastery,
+  moi,
+  moiId,
+}: {
+  journal: DonneesJournal;
+  mastery: number | null;
+  moi: boolean;
+  /** celui qui regarde : son nom dans le fil devient « toi » */
+  moiId: string | null;
+}) {
   const { courbe, evenements } = journal;
   const pic = courbe.pic !== null ? rankFor(courbe.pic, mastery) : null;
   const premiers = evenements.slice(0, VISIBLES);
@@ -119,7 +137,7 @@ export function Journal({ journal, mastery, moi }: { journal: DonneesJournal; ma
           <>
             <ul className="m-0 list-none p-0">
               {premiers.map((e) => (
-                <Entree key={e.cle} e={e} />
+                <Entree key={e.cle} e={e} moiId={moiId} />
               ))}
             </ul>
             {suite.length > 0 && (
@@ -127,7 +145,7 @@ export function Journal({ journal, mastery, moi }: { journal: DonneesJournal; ma
                 <summary className="t-small cursor-pointer list-none py-2 font-semibold text-white group-open:hidden">{JOURNAL.autres(suite.length)}</summary>
                 <ul className="m-0 list-none border-t border-line p-0">
                   {suite.map((e) => (
-                    <Entree key={e.cle} e={e} />
+                    <Entree key={e.cle} e={e} moiId={moiId} />
                   ))}
                 </ul>
               </details>

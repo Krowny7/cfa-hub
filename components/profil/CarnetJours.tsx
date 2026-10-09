@@ -62,9 +62,14 @@ export function CarnetJours({ jours, aujourdhui, serie, record }: { jours: Map<s
           <span className="max-md:hidden">{jourCourt(debut, debut.slice(0, 4) !== aujourdhui.slice(0, 4))}</span>
           {" – "}
           {jourCourt(aujourdhui)}
-          {" · "}
-          <span className="md:hidden">{JOURNAL.actifs(actifsTel, SEMAINES_TELEPHONE)}</span>
-          <span className="max-md:hidden">{JOURNAL.actifs(actifs, SEMAINES)}</span>
+          {/* sans aucun jour d'encre, l'en-tête le dit déjà */}
+          {actifs > 0 && (
+            <>
+              {" · "}
+              <span className="md:hidden">{JOURNAL.actifs(actifsTel, SEMAINES_TELEPHONE)}</span>
+              <span className="max-md:hidden">{JOURNAL.actifs(actifs, SEMAINES)}</span>
+            </>
+          )}
         </span>
         <span className="inline-flex items-center gap-1.5" title={JOURNAL.legende(OBJECTIF_DU_JOUR)}>
           {JOURNAL.moins}

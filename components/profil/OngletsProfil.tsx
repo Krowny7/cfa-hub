@@ -53,13 +53,23 @@ export function OngletsProfil({
                 href={o.href}
                 scroll={false}
                 aria-current={o.cle === actif ? "page" : undefined}
-                onClick={() => setChoisi(o.cle)}
-                className="seg-item min-h-[40px] whitespace-nowrap px-2 max-sm:gap-1 max-sm:px-1 max-sm:text-[13.5px] sm:px-5"
+                onClick={(e) => {
+                  // Ctrl, Cmd, Maj ou clic du milieu : la page ouvre ailleurs, l'indicateur reste
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  setChoisi(o.cle);
+                }}
+                className="seg-item min-h-[44px] whitespace-nowrap px-2 max-sm:gap-1 max-sm:px-1 max-sm:text-[13.5px] sm:px-5"
               >
                 <span className="max-sm:hidden" style={{ opacity: on ? 1 : 0.8 }}>
                   {ICONES[o.cle]}
                 </span>
-                {LIBELLES[o.cle]}
+                {/* la largeur du libellé en gras est réservée : la barre ne bouge pas quand l'onglet actif change */}
+                <span className="inline-grid justify-items-center">
+                  <span className="col-start-1 row-start-1">{LIBELLES[o.cle]}</span>
+                  <span aria-hidden className="invisible col-start-1 row-start-1 font-[640]">
+                    {LIBELLES[o.cle]}
+                  </span>
+                </span>
                 {/* sur téléphone, le bilan du Face-à-face est déjà dans l'en-tête (« Toi 0–1 › ») : quatre onglets tiennent sans lui */}
                 {o.compte ? (
                   <span className={"font-mono text-[12px] font-semibold text-muted tabular-nums" + (o.cle === "face-a-face" ? " max-sm:hidden" : "")}>

@@ -27,7 +27,7 @@ export function BioRepliable({ texte }: { texte: string }) {
         {texte}
       </p>
       {(deborde || ouverte) && (
-        <button type="button" onClick={() => setOuverte((v) => !v)} aria-expanded={ouverte} className="min-h-[32px] text-[13px] font-semibold text-muted hover:text-white lg:hidden">
+        <button type="button" onClick={() => setOuverte((v) => !v)} aria-expanded={ouverte} className="min-h-[44px] text-[13px] font-semibold text-muted hover:text-white lg:hidden">
           {ouverte ? ENTETE.moins : ENTETE.plus}
         </button>
       )}

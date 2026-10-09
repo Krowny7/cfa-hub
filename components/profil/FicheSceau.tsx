@@ -3,7 +3,7 @@
 import { Sceau } from "@/components/adn/Sceau";
 import { Feuille } from "@/components/ui/Feuille";
 import { seuilAffiche, type EtatSceau } from "@/lib/profil/sceaux";
-import { FAMILLES_NOMS, PALIERS, SCEAUX_TXT, condition, inscription, nomSceau, progres, titreSceau } from "@/lib/voice-profil";
+import { FAMILLES_NOMS, PALIERS, SCEAUX_TXT, atteste, condition, inscription, nomSceau, progres, titreSceau } from "@/lib/voice-profil";
 
 // Un sceau de la collection, et sa fiche. Le ton suit le palier : gaufré
 // (pas encore gagné), encre, vermillon, dorure. La fiche (feuille du bas
@@ -36,7 +36,8 @@ export function FicheSceau({ e, onFermer }: { e: EtatSceau | null; onFermer: () 
           </div>
           <div>
             <p className="t-h2 m-0">{e.palier ? titreSceau(e) : nomSceau(e.def)}</p>
-            <p className="t-small m-0 mt-1">{e.palier ? condition(e.def, seuilAffiche(e)) : `${SCEAUX_TXT.aGagner} · ${condition(e.def, e.def.seuils[0])}`}</p>
+            {/* pas encore gagné : ce qu'il atteste ; ses seuils sont dans les paliers, juste en dessous */}
+            <p className="t-small m-0 mt-1">{e.palier ? condition(e.def, seuilAffiche(e)) : `${SCEAUX_TXT.aGagner} · ${atteste(e.def)}`}</p>
           </div>
 
           <div>

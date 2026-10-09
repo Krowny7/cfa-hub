@@ -76,9 +76,23 @@ const SOUS: Record<Unite, (n: number) => string> = {
   maitrise: () => "MAÎTRISE",
 };
 
+// Le nom gravé dans la pointe de l'hexagone : 9 lettres au plus, sinon il
+// devient illisible. Les noms plus longs ont leur forme courte ; une matière
+// au nom long, son code (« FI », « DER »).
+const GRAVURES: Record<string, string> = { "copie-pleine": "COPIE", "defi-tenu": "DÉFI", calculateur: "CALCUL", "examen-blanc": "EXAMEN" };
+const GRAVURE_MAX = 9;
+function gravure(d: DefSceau): string {
+  if (d.matiere) {
+    const m = subjectByKey(d.matiere);
+    const court = m?.short ?? d.matiere;
+    return (court.length <= GRAVURE_MAX ? court : (m?.code ?? court)).toUpperCase();
+  }
+  return GRAVURES[d.cle] ?? nomSceau(d).toUpperCase();
+}
+
 /** Ce qui est gravé sur le sceau : le nom en haut, le chiffre au centre, l'unité en bas. */
 export function inscription(d: DefSceau, seuil: number): { sur: string; texte: string; sous: string } {
-  return { sur: nomSceau(d).toUpperCase(), texte: d.unite === "maitrise" ? pct(seuil) : nombre(seuil), sous: SOUS[d.unite](seuil) };
+  return { sur: gravure(d), texte: d.unite === "maitrise" ? pct(seuil) : nombre(seuil), sous: SOUS[d.unite](seuil) };
 }
 
 /** La condition d'un palier, en clair : « 25 victoires en duel ». */
@@ -101,6 +115,26 @@ export function condition(d: DefSceau, seuil: number): string {
   }
 }
 
+/** Ce que le sceau atteste, sans seuil (la fiche d'un sceau pas encore gagné : les seuils sont dans ses paliers). */
+export function atteste(d: DefSceau): string {
+  switch (d.unite) {
+    case "jours":
+      return "la série record de jours";
+    case "questions":
+      return "les questions posées";
+    case "defis":
+      return "les défis du jour rendus";
+    case "victoires":
+      return "les victoires en duel";
+    case "calculs":
+      return "les calculs justes";
+    case "examens":
+      return "les examens blancs rendus";
+    case "maitrise":
+      return `la maîtrise en ${nomSceau(d)}`;
+  }
+}
+
 /** L'avancée vers le palier suivant : « 21/25 », « 84/90 % », « 28/40 questions » ; null en dorure. */
 export function progres(e: EtatSceau): string | null {
   if (e.prochain === null) return null;
@@ -116,8 +150,8 @@ export const titreSceau = (e: EtatSceau) => `${nomSceau(e.def)} · ${PALIERS[Mat
 export const SCEAUX_TXT = {
   titre: "Sceaux",
   aPortee: "À portée",
-  aPorteeAide: "Les 3 marches les plus proches. Toi seul les vois.",
-  totalLong: (n: number, max: number) => `${pluriel(n, "marche gagnée", "marches gagnées")} sur ${nombre(max)}`,
+  aPorteeAide: "Les 3 paliers les plus proches. Toi seul les vois.",
+  totalLong: (n: number, max: number) => `${pluriel(n, "sceau gagné", "sceaux gagnés")} sur ${nombre(max)}`,
   aGagner: "à gagner",
   tous: "Tous",
   vide: "Pas encore de sceau.",
@@ -162,12 +196,15 @@ export const FACE = {
   premier: "Premier duel ?",
   premierTexte: (nom: string) => `Toi et ${nom} ne vous êtes jamais affrontés.`,
   revoir: "Revoir",
-  teDevance: (nom: string) => `${nom} te devance`,
-  tuDevances: (nom: string) => `Tu devances ${nom}`,
-  /** « FSA +14 » */
-  ecart: (matiere: string, points: number) => `${matiere} ${signe(points)}`,
+  /** « Theo te devance : » (deux-points jamais seuls en début de ligne) */
+  teDevance: (nom: string) => `${nom} te devance${NBSP}:`,
+  tuDevances: (nom: string) => `Tu devances ${nom}${NBSP}:`,
+  /** « FSA +14 », d'un seul tenant : l'écart ne part jamais seul à la ligne */
+  ecart: (matiere: string, points: number) => `${matiere.replace(/ /g, NBSP)}${NBSP}${signe(points)}`,
   nullePart: "nulle part",
   rienEnCommun: "Aucune matière mesurée en commun pour l'instant.",
+  /** le repli sous le radar superposé : les barres matière par matière */
+  detail: "Le détail par matière",
   voir: "Face-à-face",
 } as const;
 
@@ -215,6 +252,8 @@ export const JOURNAL = {
   /** « 4 entrées · 90 jours » */
   filCompte: (n: number) => `${pluriel(n, "entrée", "entrées")} · 90 jours`,
   victoireContre: "Victoire contre",
+  /** l'adversaire lit le Journal du vainqueur */
+  victoireContreToi: "Victoire contre toi",
   victoireSans: "Victoire en duel",
   /** « 23–19 » */
   score: (a: number, b: number) => `${nombre(a)}–${nombre(b)}`,

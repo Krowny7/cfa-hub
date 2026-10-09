@@ -12,7 +12,8 @@ import { FACE, dateCourte } from "@/lib/voice-profil";
 // L'onglet Face-à-face (profil d'un autre joueur) : le bilan de vos duels
 // (« Toi 3 – 2 Theo »), les 5 derniers en bâtons, le dernier, la revanche
 // (ou le défi) avec l'enjeu d'ELO, puis vos matières superposées sur le
-// radar, ouvert d'office, et où chacun devance l'autre. Jamais affrontés :
+// radar, ouvert d'office (le détail matière par matière dans un repli), et
+// où chacun devance l'autre. Jamais affrontés :
 // « Premier duel ? ». Sans état (la revanche est un bouton client).
 
 /**
@@ -92,16 +93,17 @@ export function FaceAFace({
           </h2>
           {dernier ? (
             <>
-              <p className="m-0 flex items-baseline justify-center gap-3 text-center" aria-label={FACE.bilanDit(bilan.victoires, bilan.defaites, nom, bilan.nuls)}>
-                <span aria-hidden className="min-w-0 flex-1 truncate text-right text-[15px] font-semibold">
+              {/* téléphone : les deux noms au-dessus du score, en entier ; plus large : de part et d'autre */}
+              <p className="m-0 grid grid-cols-2 items-baseline gap-x-3 gap-y-1.5 text-center sm:flex sm:justify-center" aria-label={FACE.bilanDit(bilan.victoires, bilan.defaites, nom, bilan.nuls)}>
+                <span aria-hidden className="min-w-0 break-words text-right text-[15px] font-semibold sm:flex-1 sm:truncate">
                   {FACE.toi}
                 </span>
-                <span aria-hidden className="t-num shrink-0 text-[44px] leading-none">
+                <span aria-hidden className="t-num col-span-2 row-start-2 text-[44px] leading-none sm:shrink-0">
                   {nombre(bilan.victoires)}
                   <span className="px-2 text-muted">–</span>
                   {nombre(bilan.defaites)}
                 </span>
-                <span aria-hidden className="min-w-0 flex-1 truncate text-left text-[15px] font-semibold">
+                <span aria-hidden className="min-w-0 break-words text-left text-[15px] font-semibold sm:flex-1 sm:truncate">
                   {nom}
                 </span>
               </p>
@@ -124,7 +126,7 @@ export function FaceAFace({
                     {signe(dernier.monDelta)}
                   </span>
                 )}
-                <Link href={`/duel/${dernier.id}?revue=1`} className="font-semibold underline-offset-2 hover:underline">
+                <Link href={`/duel/${dernier.id}?revue=1`} className="inline-flex min-h-[44px] items-center font-semibold underline underline-offset-2 lg:min-h-0 lg:no-underline lg:hover:underline">
                   {FACE.revoir}
                 </Link>
               </p>
@@ -152,13 +154,13 @@ export function FaceAFace({
             ) : (
               <>
                 <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-semibold">{FACE.teDevance(nom)} :</dt>
+                  <dt className="font-semibold">{FACE.teDevance(nom)}</dt>
                   <dd className="m-0 font-mono text-[13px] tabular-nums" style={{ color: "var(--perte)" }}>
                     {ligneEcarts(ecarts.ilDevance)}
                   </dd>
                 </div>
                 <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-semibold">{FACE.tuDevances(nom)} :</dt>
+                  <dt className="font-semibold">{FACE.tuDevances(nom)}</dt>
                   <dd className="m-0 font-mono text-[13px] tabular-nums" style={{ color: "var(--gain)" }}>
                     {ligneEcarts(ecarts.tuDevances)}
                   </dd>
@@ -169,9 +171,12 @@ export function FaceAFace({
         )}
       </div>
 
-      <div className="min-w-0 lg:col-span-7">
-        <RadarComparable matieres={matieres} moyennes={moyennes} accent={accent} nom={nom} moi={false} miennes={miennes} monAccent={monAccent} comparaison />
-      </div>
+      {/* sans aucune matière mesurée chez lui, le radar n'aurait rien à superposer : la carte des écarts le dit */}
+      {matieres.some((m) => m.pct !== null) && (
+        <div className="min-w-0 lg:col-span-7">
+          <RadarComparable matieres={matieres} moyennes={moyennes} accent={accent} nom={nom} moi={false} miennes={miennes} monAccent={monAccent} comparaison />
+        </div>
+      )}
     </div>
   );
 }

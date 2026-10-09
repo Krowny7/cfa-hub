@@ -18,6 +18,18 @@ import { Batons } from "@/components/adn/Batons";
 import { LEXIQUE, VIDE, serie } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
 import type { MoiData } from "@/components/moi/types";
+import { parisDay } from "@/lib/daily";
+import { decaleJour } from "@/lib/objectif-calc";
+
+/** L'XP des 90 derniers jours (jour de Paris), un jour par entrée : la base ne rend que les jours avec de l'XP. */
+function xp90Jours(xpDays: MoiData["xpDays"]): { day: string; xp: number }[] {
+  const parJour = new Map(xpDays.map((x) => [x.day, x.xp]));
+  const debut = decaleJour(parisDay(), -89);
+  return Array.from({ length: 90 }, (_, i) => {
+    const day = decaleJour(debut, i);
+    return { day, xp: parJour.get(day) ?? 0 };
+  });
+}
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
 function SubjectsCard({ d }: { d: MoiData }) {
@@ -167,8 +179,8 @@ function ActivityCard({ d }: { d: MoiData }) {
             {MOI.xpParJour}
           </summary>
           <div className="rl-in mt-3">
-            {/* du plus ancien au plus récent, de gauche à droite */}
-            <XpBarChart data={[...d.xpDays].sort((a, b) => a.day.localeCompare(b.day)).slice(-90)} title={MOI.xpParJour} />
+            {/* les 90 jours, du plus ancien au plus récent, les jours sans XP compris (le titre est celui du repli) */}
+            <XpBarChart data={xp90Jours(d.xpDays)} title={null} />
           </div>
         </details>
       )}

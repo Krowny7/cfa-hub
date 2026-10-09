@@ -28,11 +28,11 @@ import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
 import { Revanche } from "@/components/profil/Revanche";
 import { Journal } from "@/components/profil/Journal";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
-import { blocsDe } from "@/lib/profil/disposition";
+import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { journalDe } from "@/lib/profil/journal";
 import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
-import { MARCHES, aPortee, marchesGagnees, posesDe, sceauxDe } from "@/lib/profil/sceaux";
+import { SCEAUX, aPortee, posesDe, sceauxDe, sceauxGagnes } from "@/lib/profil/sceaux";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
@@ -166,7 +166,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
 
   // les sceaux : la collection, les 3 posés d'office, le total
   const etats = sceauxDe(stats);
-  const gagnees = marchesGagnees(etats);
+  const gagnes = sceauxGagnes(etats);
 
   const entete: EnteteData = {
     id,
@@ -275,7 +275,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const onglets = ongletsDe(autreJoueur).map((cle) => ({
     cle,
     href: hrefOnglet(id, cle, vue),
-    ...(cle === "sceaux" ? { compte: nombre(gagnees), compteLarge: `/${nombre(MARCHES)}` } : {}),
+    ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(SCEAUX.length)}` } : {}),
     ...(cle === "face-a-face" && face && face.duels.length ? { compte: `${nombre(face.victoires)}–${nombre(face.defaites)}` } : {}),
   }));
 
@@ -283,7 +283,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   if (onglet === "sceaux") {
     panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} />;
   } else if (onglet === "journal" && journal) {
-    panneau = <Journal journal={journal} mastery={mastery} moi={commeMoi} />;
+    panneau = <Journal journal={journal} mastery={mastery} moi={commeMoi} moiId={user.id} />;
   } else if (onglet === "face-a-face") {
     const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
     panneau = (
@@ -300,10 +300,12 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       />
     );
   } else {
+    // la page jamais composée : sa case vide invite le propriétaire à poser une image, et s'efface pour les autres
+    const parDefaut = estDispositionDefaut(style.disposition);
     panneau = (
       <GrilleBlocs
-        disposition={style.disposition}
-        caseVide={commeMoi ? <CaseImage href="/moi/profil" /> : null}
+        disposition={parDefaut && !commeMoi ? sansCaseVide(style.disposition) : style.disposition}
+        caseVide={parDefaut && commeMoi ? <CaseImage href="/moi/profil" /> : null}
         rendus={{
           vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
           radar: (

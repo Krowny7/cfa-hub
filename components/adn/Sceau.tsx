@@ -55,6 +55,22 @@ export type SceauProps = {
 const largeurDela = (t: string) => Array.from(t).reduce((w, c) => w + (c === " " ? 0.32 : c === "·" ? 0.4 : /[IJ1]/.test(c) ? 0.5 : /[MWÆŒ]/.test(c) ? 1.02 : /[a-zà-ÿ]/.test(c) ? 0.66 : 0.82), 0);
 const largeurMono = (t: string, ls: number) => t.length * (0.6 + ls);
 
+// L'hexagone (repère 120 × 120) se resserre en haut et en bas : pointes vers
+// y = 15 et y = 105, flancs droits de y ≈ 38 à y ≈ 81. Demi-largeur libre à
+// la hauteur y, à l'intérieur du filet (son trait et une marge déduits).
+const demiLibre = (y: number) => Math.min(40, (y - 15) * 1.65, (105 - y) * 1.65) - 4.5;
+/**
+ * Le corps d'une petite ligne (Geist Mono, espacement 0,8) : le plus grand,
+ * 15 au plus, qui tient entre les flancs à son point le plus serré — le haut
+ * des capitales (accents compris) pour la ligne du dessus, leur pied pour
+ * celle du dessous.
+ */
+function corpsPetit(t: string, base: number, dessus: boolean): number {
+  let fs = 15;
+  while (fs > 5 && t.length * (0.6 * fs + 0.8) > 2 * demiLibre(dessus ? base - 0.85 * fs : base)) fs -= 0.25;
+  return fs;
+}
+
 export function Sceau({
   texte,
   sur,
@@ -141,11 +157,12 @@ export function Sceau({
     const avail = 60;
     const fs = Math.min(sur ? 34 : 24, avail / Math.max(1, largeurDela(texte)));
     const yMain = sur ? (sous ? 71 : 78) : sous ? 62 : 69;
-    const fsSmall = (t: string) => Math.min(15, 66 / Math.max(1, largeurMono(t, 0.06)));
+    const ySur = sous ? 43 : 46;
+    const ySous = sur ? 86 : 83;
     body = (
       <>
         {sur ? (
-          <text x={60} y={sous ? 42 : 46} textAnchor="middle" className={s.mono} fontSize={fsSmall(sur)} letterSpacing={0.8}>
+          <text x={60} y={ySur} textAnchor="middle" className={s.mono} fontSize={corpsPetit(sur, ySur, true)} letterSpacing={0.8}>
             {sur}
           </text>
         ) : null}
@@ -153,7 +170,7 @@ export function Sceau({
           {texte}
         </text>
         {sous ? (
-          <text x={60} y={sur ? 90 : 83} textAnchor="middle" className={s.mono} fontSize={fsSmall(sous)} letterSpacing={0.8}>
+          <text x={60} y={ySous} textAnchor="middle" className={s.mono} fontSize={corpsPetit(sous, ySous, false)} letterSpacing={0.8}>
             {sous}
           </text>
         ) : null}
