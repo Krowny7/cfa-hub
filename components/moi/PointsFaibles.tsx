@@ -9,14 +9,16 @@ import { INK } from "@/components/ui/InkDefs";
 import { Icone } from "@/components/adn/icons";
 import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { JAUGE_MAX, MIN_RATURES, MIN_REPONSES, semainesDepuis, type PointFaible, type PointsFaiblesData } from "@/lib/points-faibles";
-import { POINTS_FAIBLES as V, detailsPointFaible } from "@/lib/voice-points-faibles";
+import { POINTS_FAIBLES as V, conceptCoince, detailsPointFaible } from "@/lib/voice-points-faibles";
 
 // « Tes points faibles » : en tête de Moi › Stats (la carte) et dans la
 // carte héros de S'entraîner. Épuré : trois lignes au plus, chacune une
-// phrase et une jauge (un trait de la longueur du score, jamais le chiffre) ;
-// au toucher, la ligne s'ouvre sur ce que la phrase ne dit pas, les liens
-// (page de fiche, QCM, type de calcul) et « Mettre au propre » limité au
-// thème. Les données arrivent toutes prêtes (components/moi/points-faibles-data.ts,
+// notion (un Learning Module ; en repli, un thème), une phrase et une jauge
+// (un trait de la longueur du score, jamais le chiffre) ; au toucher, la
+// ligne s'ouvre sur ce qui coince (les concepts les plus chargés), ce que la
+// phrase ne dit pas, les liens (page de fiche, chapitre audio, QCM, type de
+// calcul) et « Mettre au propre » limité à la notion. Les données arrivent
+// toutes prêtes (components/moi/points-faibles-data.ts,
 // côté serveur) ; seul « Dernier passage il y a N semaines » se calcule ici,
 // après le montage.
 
@@ -36,7 +38,7 @@ function useMaintenant() {
 }
 
 /**
- * « Mettre au propre » d'un thème, ouvert à la place de la liste ; la page se
+ * « Mettre au propre » d'une notion, ouvert à la place de la liste ; la page se
  * relit à la sortie dès qu'une réponse a été validée : juste, la rature se
  * raye ; fausse, elle redevient vive (score et ordre changent aussi).
  */
@@ -78,7 +80,8 @@ function Jauge({ p, className = "" }: { p: PointFaible; className?: string }) {
 }
 
 const repereDe = (p: PointFaible) => [p.matiereNom, p.repere].filter(Boolean).join(" · ");
-const peutPropre = (p: PointFaible, propre: boolean) => propre && p.mesures.aRepasser > 0 && p.sets.length > 0;
+const peutPropre = (p: PointFaible, propre: boolean) => propre && p.mesures.aRepasser > 0 && (p.lm !== null || p.sets.length > 0);
+const repriseDe = (p: PointFaible) => ({ notion: p.lm, sets: p.sets, libelle: p.libelle });
 
 function LignePointFaible({
   p,
@@ -128,6 +131,16 @@ function LignePointFaible({
 
       {ouverte && (
         <div id={id} className="rl-in grid gap-3 pb-4 pl-9 pr-2 pt-0.5 md:pl-11">
+          {p.concepts.length > 0 && (
+            <div className="grid gap-1">
+              <p className="t-eyebrow m-0">{V.coince}</p>
+              <ul className="t-small m-0 grid list-none gap-1 p-0">
+                {p.concepts.map((c) => (
+                  <li key={c.concept}>{conceptCoince(c)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {details.length > 0 && (
             <ul className="t-small m-0 grid list-none gap-1 p-0">
               {details.map((l) => (
@@ -199,7 +212,7 @@ export function PointsFaiblesCarte({ d, repli, demo }: { d: PointsFaiblesData; r
       {propre.theme ? (
         <MiseAuPropre
           source={null}
-          theme={{ sets: propre.theme.sets, libelle: propre.theme.libelle }}
+          theme={repriseDe(propre.theme)}
           onStatut={propre.onStatut}
           onFermer={propre.fermer}
           demo={demo}
@@ -212,7 +225,7 @@ export function PointsFaiblesCarte({ d, repli, demo }: { d: PointsFaiblesData; r
       ) : (
         <div className="grid gap-1.5 px-2 py-1">
           <p className="m-0 text-[15px] font-semibold">{d.etat === "rien" ? V.rien : V.peu}</p>
-          <p className="t-small m-0">{d.etat === "peu" ? V.peuTexte(MIN_REPONSES, MIN_RATURES) : d.propre ? V.rienTexte : V.rienTexteSansRatures}</p>
+          <p className="t-small m-0">{d.etat === "peu" ? V.peuTexte(d.unite, MIN_REPONSES, MIN_RATURES) : d.propre ? V.rienTexte(d.unite) : V.rienTexteSansRatures(d.unite)}</p>
           {d.rayeesSemaine > 0 && <p className="t-small m-0">{V.rattrape(d.rayeesSemaine)}</p>}
           {d.etat === "peu" && repli && (
             <p className="t-small m-0 mt-1">
@@ -269,6 +282,9 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
   const p = trois[rang];
   if (!p) return null;
   const lien = p.liens[0] ?? { href: `/practice?topic=${p.matiere}`, libelle: V.repliAction };
+  const reprise = peutPropre(p, d.propre);
+  // les autres liens (page de fiche, chapitre audio…), après l'action
+  const autres = reprise ? p.liens : p.liens.slice(1);
   const avecListe = !propre.theme && trois.length > 1;
 
   return (
@@ -279,7 +295,7 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
       {propre.theme ? (
         <MiseAuPropre
           source={null}
-          theme={{ sets: propre.theme.sets, libelle: propre.theme.libelle }}
+          theme={repriseDe(propre.theme)}
           onStatut={propre.onStatut}
           onFermer={propre.fermer}
         />
@@ -293,10 +309,11 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
             </div>
             <div className="grid gap-1.5">
               <p className="t-body m-0 max-w-[480px] text-muted">{p.phrase}</p>
-              {p.mesures.rayees7j > 0 && <p className="t-micro m-0">{V.rattrapeTheme(p.mesures.rayees7j)}</p>}
+              {p.concepts[0] && <p className="t-small m-0 max-w-[480px]">{V.coinceUn(p.concepts[0].concept)}</p>}
+              {p.mesures.rayees7j > 0 && <p className="t-micro m-0">{V.rattrapeNotion(d.unite, p.mesures.rayees7j)}</p>}
             </div>
-            <div className="mt-auto pt-1">
-              {peutPropre(p, d.propre) ? (
+            <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
+              {reprise ? (
                 <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" onClick={() => propre.ouvrir(p)}>
                   <PenLine size={16} aria-hidden /> {V.propre(p.mesures.aRepasser)}
                 </button>
@@ -305,6 +322,11 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
                   {lien.libelle} <ArrowRight size={16} aria-hidden />
                 </Link>
               )}
+              {autres.map((l) => (
+                <Link key={l.href} href={l.href} className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER}>
+                  {l.libelle} <ArrowRight size={13} aria-hidden />
+                </Link>
+              ))}
             </div>
           </div>
 

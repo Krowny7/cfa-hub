@@ -1,8 +1,10 @@
 // Tests de « Tes points faibles » : lib/points-faibles.ts (score, seuils,
-// égalités, phrases, joueur sans données), le tiroir d'une ligne
-// (lib/voice-points-faibles.ts) et la construction des thèmes
+// égalités, phrases, joueur sans données, concepts qui coincent), le tiroir
+// d'une ligne (lib/voice-points-faibles.ts), la construction des thèmes
 // (components/moi/points-faibles-data.ts : sets supprimés, QCM et pages
-// recréés, rayées de la semaine). Sans dépendance de plus : jiti (déjà
+// recréés, rayées de la semaine), celle des notions (agrégation par
+// Learning Module, calculs rattachés, concepts, liens) et le repli sur les
+// thèmes (points_faibles absente, colonnes vides). Sans dépendance de plus : jiti (déjà
 // installé avec Tailwind) charge le TypeScript et l'alias « @/ ».
 // Usage : node scripts/test-points-faibles.mjs
 import { createJiti } from "jiti";
@@ -14,6 +16,7 @@ const jiti = createJiti(import.meta.url, { alias: { "@/": racine + "/" } });
 const pf = await jiti.import(join(racine, "lib/points-faibles.ts"));
 const voix = await jiti.import(join(racine, "lib/voice-points-faibles.ts"));
 const donnees = await jiti.import(join(racine, "components/moi/points-faibles-data.ts"));
+const { NOTIONS } = await jiti.import(join(racine, "lib/notions.ts"));
 
 let ko = 0;
 let n = 0;
@@ -36,7 +39,9 @@ const notion = (m, extra = {}) => ({
   repere: null,
   calcul: !!extra.calcul,
   liens: [],
+  lm: null,
   sets: [],
+  concepts: [],
   sources: [],
   mesures: { n: 0, ok: 0, enCours: 0, vives: 0, anciennes: 0, rayees7j: 0, aRepasser: 0, derniere: null, ...m },
 });
@@ -180,7 +185,9 @@ const lignes = [
 ];
 // la banque : le QCM R59–R61 (déjà joué) et le Credit Risk recréé ; plus de R47–R48
 const banque = new Map([["qcm:fixed_income:R59–R61", ["nouveau"]], ["qcm:fixed_income:R62–R63", ["credit-neuf"]]]);
-const construit = donnees.construirePointsFaibles(stats, { disponible: true, lignes }, banque, NOW);
+const parTheme = (ratures) => ({ notions: null, themes: ratures });
+const construit = donnees.construirePointsFaibles(stats, parTheme({ disponible: true, lignes }), { themes: banque, notions: new Map() }, NOW);
+check("repli : l'unité est le thème", construit.unite === "theme" && construit.liste.every((p) => p.lm === null && p.concepts.length === 0));
 const cles = construit.liste.map((p) => p.cle);
 check("thème sans QCM ni page dans la banque : écarté, malgré 4 ratures", !cles.includes("qcm:fixed_income:R47–R48"), cles.join());
 const credit = construit.liste.find((p) => p.cle === "qcm:fixed_income:R62–R63");
@@ -193,11 +200,158 @@ check("QCM recréé : un seul thème, réponses des deux sets", !!dur2 && dur2.m
 check("QCM recréé : seul le set existant sert de lien et de reprise", !!dur2 && JSON.stringify(dur2.sets) === JSON.stringify(["nouveau"]) && dur2.liens.length === 1 && dur2.liens[0].href === "/qcm/nouveau" && dur2.mesures.aRepasser === 5, JSON.stringify(dur2 && { sets: dur2.sets, liens: dur2.liens }));
 check("rayées cette semaine : tout le carnet (thème retiré et mock compris), 7", construit.rayeesSemaine === 7, String(construit.rayeesSemaine));
 check("rayées du thème : les siennes seulement", dur2?.mesures.rayees7j === 2);
-const sansRatures = donnees.construirePointsFaibles(stats, donnees.SANS_RATURES_PAR_THEME, banque, NOW);
+const sansRatures = donnees.construirePointsFaibles(stats, parTheme(donnees.SANS_RATURES_PAR_THEME), { themes: banque, notions: new Map() }, NOW);
 check("ratures par thème indisponibles : 0 rayée, pas de reprise", sansRatures.rayeesSemaine === 0 && sansRatures.propre === false);
 check("ratures par thème indisponibles : aucune phrase ne parle de rature", sansRatures.liste.length > 0 && sansRatures.liste.every((p) => !/ratur/.test(p.phrase)), sansRatures.liste.map((p) => p.phrase).join(" | "));
-const sansBanque = donnees.construirePointsFaibles(stats, { disponible: true, lignes }, new Map(), NOW);
+const sansBanque = donnees.construirePointsFaibles(stats, parTheme({ disponible: true, lignes }), { themes: new Map(), notions: new Map() }, NOW);
 check("banque illisible : le QCM jamais rejoué disparaît, les autres restent", !sansBanque.liste.some((p) => p.cle === "qcm:fixed_income:R62–R63") && sansBanque.liste.some((p) => p.cle === "qcm:fixed_income:R59–R61"));
+
+console.log("\n# Ce qui coince : les concepts");
+const cc = pf.conceptsQuiCoincent([
+  { concept: "Convexité", ratures: 0, erreurs: 1 },
+  { concept: "Duration modifiée", ratures: 1, erreurs: 0 },
+  { concept: "Duration gap", ratures: 3, erreurs: 2 },
+  { concept: "KRD", ratures: 0, erreurs: 4 },
+  { concept: "PVBP", ratures: 1, erreurs: 3 },
+]);
+check("une rature ou 2 erreurs récentes au moins ; ratures, puis erreurs ; 3 au plus", cc.map((c) => c.concept).join() === "Duration gap,PVBP,Duration modifiée", cc.map((c) => c.concept).join());
+check("aucun concept : rien", pf.conceptsQuiCoincent([]).length === 0);
+check("concept avec ratures : « · N ratures en cours »", plat(voix.conceptCoince({ concept: "Duration gap", ratures: 3, erreurs: 2 })) === "Duration gap · 3 ratures en cours");
+check("concept sans rature : « · N erreurs récentes »", plat(voix.conceptCoince({ concept: "KRD", ratures: 0, erreurs: 1 })) === "KRD · 1 erreur récente");
+
+console.log("\n# Les notions (Learning Modules)");
+const DUR = NOTIONS.find((x) => x.id === "fixed_income:11");
+const CONV = NOTIONS.find((x) => x.id === "fixed_income:12");
+const AVEC_CALC = NOTIONS.find((x) => x.matiere === "equity" && x.calculs.length > 0);
+const typeCalc = AVEC_CALC.calculs[0].cle;
+const reponses = (k, okSur, debut) => Array.from({ length: k }, (_, i) => ({ at: iso(debut + i), ok: i < okSur }));
+const ligneNotion = (notion, extra = {}) => ({ notion, recentes: [], sources: {}, enCours: 0, vives: 0, anciennes: 0, rayees7j: 0, derniere: null, concepts: [], ...extra });
+const baseNotions = {
+  remplie: true,
+  rayeesSemaine: 11,
+  lignes: [
+    // duration : 20 réponses récentes (8 justes), des ratures, des concepts
+    ligneNotion("fixed_income:11", {
+      recentes: reponses(20, 8, 1),
+      sources: { fiche: 31, duel: 12 },
+      enCours: 12,
+      vives: 8,
+      anciennes: 4,
+      rayees7j: 3,
+      derniere: iso(1),
+      concepts: [
+        { concept: "Duration gap", ratures: 4, erreurs: 6 },
+        { concept: "Duration modifiée", ratures: 0, erreurs: 1 },
+      ],
+    }),
+    // convexité : 2 réponses seulement (pas éligible)
+    ligneNotion("fixed_income:12", { recentes: reponses(2, 0, 2), sources: { fiche: 2 }, derniere: iso(2) }),
+    // une notion inconnue du référentiel : ignorée
+    ligneNotion("fixed_income:99", { recentes: reponses(10, 0, 1), enCours: 5, vives: 5 }),
+  ],
+};
+// les calculs : un type de calcul d'Equity rattaché à sa notion, plus un type inconnu
+const passageCalc = (id, jours, k, ok) => ({ id, source: "calc", label: "Calculs", at: iso(jours), date: "", href: null, n: k, ok });
+const statsNotions = {
+  available: true,
+  missing: [],
+  by: {},
+  subjects: [
+    {
+      key: "equity",
+      name: "Equity Investments",
+      code: "EQ",
+      pseudo: false,
+      by: {},
+      themes: [
+        { key: `calc:${typeCalc}`, label: "Calcul", tag: null, kind: "calc", by: { calc: [10, 3] }, passages: [passageCalc("c1", 3, 6, 2), passageCalc("c2", 5, 4, 1)], more: 0 },
+        { key: "calc:type-inconnu", label: "Calcul", tag: null, kind: "calc", by: { calc: [9, 0] }, passages: [passageCalc("c3", 3, 9, 0)], more: 0 },
+      ],
+    },
+    {
+      key: "fixed_income",
+      name: "Fixed Income",
+      code: "FI",
+      pseudo: false,
+      by: {},
+      // un thème QCM de l'étape 1 : ignoré dans le décompte par notion (ses réponses sont déjà comptées question par question)
+      themes: [theme("set:nouveau", "Duration, Convexity & Empirical Measures", "R59–R61", "qcm", [passage("s9", 1, 30, 0)])],
+    },
+  ],
+};
+const banqueN = { themes: new Map(), notions: new Map([["fixed_income:11", ["qcm-r59"]]]) };
+const parNotion = donnees.construirePointsFaibles(statsNotions, { notions: baseNotions, themes: donnees.SANS_RATURES_PAR_THEME }, banqueN, NOW);
+check("unité : la notion ; reprise ouverte ; rayées de tout le carnet lues dans points_faibles", parNotion.unite === "notion" && parNotion.propre === true && parNotion.rayeesSemaine === 11);
+const dN = parNotion.liste.find((p) => p.cle === "fixed_income:11");
+check("duration : un seul point faible, libellé court, repère « LM 11 »", !!dN && dN.libelle === DUR.court && plat(dN.repere) === "LM 11" && dN.matiereNom === "Fixed Income", JSON.stringify(dN && { l: dN.libelle, r: dN.repere }));
+check("duration : 20 réponses récentes, 8 justes ; ratures du carnet", dN.mesures.n === 20 && dN.mesures.ok === 8 && dN.mesures.enCours === 12 && dN.mesures.vives === 8 && dN.mesures.anciennes === 4 && dN.mesures.rayees7j === 3);
+check("duration : même score que l'exemple du cahier des charges (63 sur 25 réponses → ici 20)", dN.score === pf.scoreDe({ n: 20, ok: 8, enCours: 12, vives: 8 }));
+check("duration : « Mettre au propre » par la notion (toutes ses ratures en cours)", dN.lm === "fixed_income:11" && dN.sets.length === 0 && dN.mesures.aRepasser === 12);
+check("duration : ce qui coince, filtré (Duration modifiée n'a qu'une erreur)", dN.concepts.map((c) => c.concept).join() === "Duration gap", JSON.stringify(dN.concepts));
+const naturesD = dN.liens.map((l) => l.nature).join();
+check("duration : liens page de fiche, chapitre audio, QCM (pas de calcul rattaché)", naturesD === "fiche,cours,qcm", naturesD);
+check("duration : page 4 de la fiche, chapitre audio au module 11, QCM de la banque", dN.liens[0].href === DUR.fiches[0].href && dN.liens[1].href === "/courses/fixed-income?module=11" && dN.liens[2].href === "/qcm/qcm-r59", JSON.stringify(dN.liens));
+check("duration : réponses par source, les plus nombreuses d'abord", JSON.stringify(dN.sources) === JSON.stringify([{ libelle: "Fiches", n: 31 }, { libelle: "Duels", n: 12 }]), JSON.stringify(dN.sources));
+check("convexité : 2 réponses, pas éligible", !parNotion.liste.some((p) => p.cle === "fixed_income:12") && !!CONV);
+check("notion inconnue du référentiel : ignorée", !parNotion.liste.some((p) => p.cle === "fixed_income:99"));
+check("thème QCM de l'étape 1 : rien n'en vient en plus", dN.mesures.n === 20);
+const cN = parNotion.liste.find((p) => p.cle === AVEC_CALC.id);
+check("calcul rattaché à sa notion (lib/notions.ts) : un point faible de la notion", !!cN && cN.mesures.n === 10 && cN.mesures.ok === 3 && cN.calcul === true, JSON.stringify(cN && cN.mesures));
+check("notion jouée seulement en calcul : la phrase parle de calculs", !!cN && plat(cN.phrase) === "Sur tes 10 derniers calculs : 3 justes.", cN?.phrase);
+check("notion jouée seulement en calcul : le calcul en premier lien", !!cN && cN.liens[0].nature === "calcul" && cN.liens[0].href === AVEC_CALC.calculs[0].href && cN.liens.some((l) => l.nature === "cours"));
+check("type de calcul sans notion : ignoré", parNotion.liste.every((p) => p.mesures.n !== 9));
+
+// la même notion jouée en QCM et en calcul : les 20 réponses les plus récentes, toutes confondues
+const mixte = donnees.construirePointsFaibles(
+  statsNotions,
+  { notions: { remplie: true, rayeesSemaine: 0, lignes: [ligneNotion(AVEC_CALC.id, { recentes: reponses(12, 2, 4), sources: { fiche: 12 }, derniere: iso(4) })] }, themes: donnees.SANS_RATURES_PAR_THEME },
+  banqueN,
+  NOW,
+).liste.find((p) => p.cle === AVEC_CALC.id);
+// calculs à 3 et 5 jours (6 puis 4 réponses, 3 justes), QCM de 4 à 15 jours (justes à 4 et 5) : 6 + 2 + 4 + 8 = 20 réponses, 3 + 2 justes
+check("QCM et calculs mêlés : séances les plus récentes jusqu'à 20 réponses", !!mixte && mixte.mesures.n === 20 && mixte.mesures.ok === 5 && mixte.calcul === false, JSON.stringify(mixte?.mesures));
+check("QCM et calculs mêlés : sources des deux, le lien de calcul en dernier", !!mixte && mixte.sources.map((x) => x.libelle).join() === "Fiches,Calculs" && mixte.liens.at(-1).nature === "calcul");
+
+console.log("\n# Les mots de l'unité");
+check("rien : « Aucune notion ne ressort »", voix.POINTS_FAIBLES.rienTexte("notion").startsWith("Aucune notion ne ressort") && voix.POINTS_FAIBLES.rienTexte("theme").startsWith("Aucun thème ne ressort"));
+check("peu : « sur une même notion »", plat(voix.POINTS_FAIBLES.peuTexte("notion", 8, 3)) === "Il faut 8 réponses sur une même notion, ou 3 ratures en cours.");
+check("rattrapé : « sur cette notion »", plat(voix.POINTS_FAIBLES.rattrapeNotion("notion", 2)) === "Rattrapé cette semaine : 2 ratures rayées sur cette notion.");
+
+console.log("\n# Le repli : points_faibles absente ou colonnes vides");
+const faux = (reponses) => {
+  const appels = [];
+  return {
+    appels,
+    rpc: async (nom) => {
+      appels.push(nom);
+      return reponses[nom] ?? { data: null, error: { code: "PGRST202", message: "Could not find the function" } };
+    },
+  };
+};
+const rpcTheme = { data: [{ set_id: "s", set_title: "T", folder_name: "F", en_cours: 2, vives: 1, anciennes: 0, rayees_7j: 0, derniere: null }], error: null };
+const absente = faux({ ratures_par_theme: rpcTheme });
+const bAbsente = await donnees.lireBasePointsFaibles(absente);
+check("points_faibles absente (PGRST202) : les ratures par thème, sans erreur", bAbsente.notions === null && bAbsente.themes.disponible && bAbsente.themes.lignes.length === 1 && absente.appels.join() === "points_faibles,ratures_par_theme");
+const vides = faux({ points_faibles: { data: { remplie: false, rayees_semaine: 0, notions: [] }, error: null }, ratures_par_theme: rpcTheme });
+const bVides = await donnees.lireBasePointsFaibles(vides);
+check("colonnes vides (remplie faux) : les ratures par thème", bVides.notions === null && bVides.themes.disponible && vides.appels.length === 2);
+const rien = faux({});
+const bRien = await donnees.lireBasePointsFaibles(rien);
+check("aucune des deux fonctions : thèmes indisponibles, sans erreur", bRien.notions === null && !bRien.themes.disponible);
+const plein = faux({
+  points_faibles: {
+    data: { remplie: true, rayees_semaine: 4, notions: [{ notion: "fixed_income:11", recentes: [[iso(1), true], [iso(2), false]], sources: { fiche: 2, inconnue: 5 }, en_cours: "3", vives: 1, anciennes: 0, rayees_7j: 0, derniere: iso(1), concepts: [{ concept: "Duration gap", ratures: 1, erreurs: 0 }] }] },
+    error: null,
+  },
+});
+const bPlein = await donnees.lireBasePointsFaibles(plein);
+const l0 = bPlein.notions?.lignes[0];
+check("colonnes remplies : la notion seule, ratures par thème pas lues", !!bPlein.notions && plein.appels.join() === "points_faibles" && !bPlein.themes.disponible);
+check("lecture : réponses, sources connues, nombres", !!l0 && l0.recentes.length === 2 && l0.recentes[0].ok === true && JSON.stringify(l0.sources) === JSON.stringify({ fiche: 2 }) && l0.enCours === 3 && bPlein.notions.rayeesSemaine === 4);
+const jette = { rpc: async () => { throw new Error("réseau"); } };
+check("exception réseau : repli sans erreur", (await donnees.lireNotionsJoueur(jette)) === null);
+const repli = donnees.construirePointsFaibles(stats, bAbsente, { themes: banque, notions: new Map() }, NOW);
+check("repli : la construction reste celle des thèmes", repli.unite === "theme");
 
 console.log(ko ? `\n${ko} KO sur ${n}` : `\nTOUT OK (${n})`);
 process.exit(ko ? 1 : 0);

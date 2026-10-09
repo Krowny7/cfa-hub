@@ -2,11 +2,13 @@
 // le classement. Module pur (ni serveur ni client), testé par
 // scripts/test-points-faibles.mjs.
 //
-// L'unité est la « notion ». À l'étape 1, c'est un thème (un QCM de 2 à 5
-// readings, une page de fiche, un type de calcul) ; à l'étape 2, ce sera un
-// Learning Module. Une notion n'est qu'une clé, un libellé, des liens et des
-// mesures : changer d'unité, c'est changer ce qui construit les notions
-// (components/moi/points-faibles-data.ts), pas ce module.
+// L'unité est la « notion » : un Learning Module (lib/notions.ts) dès que
+// les questions portent leur notion (migration_notions.sql collée et
+// remplie), sinon un thème (un QCM de 2 à 5 readings, une page de fiche, un
+// type de calcul ; étape 1). Une notion n'est qu'une clé, un libellé, des
+// liens, des concepts et des mesures : changer d'unité, c'est changer ce
+// qui construit les notions (components/moi/points-faibles-data.ts), pas ce
+// module.
 //
 // Le score (0 à 100, jamais écrit en chiffre ; la jauge en a la longueur)
 // croise deux faits :
@@ -39,10 +41,19 @@ export const MAX_LISTE = 10;
 export const JAUGE_MAX = 4;
 /** au-delà, « Dernier passage il y a N semaines » s'ajoute */
 export const SEMAINES_OUBLI = 6;
+/** « Ce qui coince » : au plus 3 concepts, chacun avec au moins 1 rature en cours ou 2 erreurs récentes */
+export const MAX_CONCEPTS = 3;
+export const MIN_ERREURS_CONCEPT = 2;
 
 const JOUR_MS = 86_400_000;
 
-export type Lien = { nature: "fiche" | "qcm" | "calcul"; href: string; libelle: string };
+export type Lien = { nature: "fiche" | "cours" | "qcm" | "calcul"; href: string; libelle: string };
+
+/** L'unité des points faibles : le Learning Module (étape 2) ou, en repli, le thème (étape 1). */
+export type Unite = "notion" | "theme";
+
+/** Un concept d'une notion (« Duration gap ») : ses ratures en cours et ses réponses fausses récentes. */
+export type ConceptCoince = { concept: string; ratures: number; erreurs: number };
 
 export type Mesures = {
   /** réponses récentes et justes parmi elles (voir recentDe) */
@@ -61,18 +72,22 @@ export type Mesures = {
 };
 
 export type Notion = {
-  /** clé stable : « qcm:fixed_income:R59–R61 », « fiche:equity:4 », « calc:equity:margin-purchase » (étape 2 : « fixed_income:11 ») */
+  /** clé stable : « fixed_income:11 » (Learning Module) ; à l'étape 1, « qcm:fixed_income:R59–R61 », « fiche:equity:4 », « calc:equity:margin-purchase » */
   cle: string;
   libelle: string;
   /** clé de matière (components/reviser/catalog.ts) et son nom */
   matiere: string;
   matiereNom: string;
-  /** repère court : « R59–R61 », « p. 4 », null */
+  /** repère court : « LM 11 » ; à l'étape 1, « R59–R61 », « p. 4 », null */
   repere: string | null;
   calcul: boolean;
   liens: Lien[];
-  /** les sets de questions de la notion (« Mettre au propre » filtré) ; vide : pas de reprise ciblée */
+  /** le Learning Module (« fixed_income:11 ») : « Mettre au propre » filtré par notion ; null à l'étape 1 */
+  lm: string | null;
+  /** étape 1 : les sets de questions du thème (« Mettre au propre » filtré) ; vide : pas de reprise par sets */
   sets: string[];
+  /** ce qui coince (conceptsQuiCoincent) ; vide à l'étape 1 */
+  concepts: ConceptCoince[];
   /** réponses par source, les plus nombreuses d'abord (détail) */
   sources: { libelle: string; n: number }[];
   mesures: Mesures;
@@ -96,12 +111,12 @@ export type EtatPointsFaibles = {
 };
 
 /**
- * Ce que reçoivent les cartes : le classement, propre (migration_points_faibles.sql
- * collée : ratures par thème lues, « Mettre au propre ce thème » ouvert), et les ratures
- * rayées ces 7 derniers jours dans tout le carnet (le même compte que Moi ›
- * Erreurs).
+ * Ce que reçoivent les cartes : le classement, l'unité (notion ou, en repli,
+ * thème), propre (ratures lues par notion ou par thème, « Mettre au propre »
+ * ciblé ouvert), et les ratures rayées ces 7 derniers jours dans tout le
+ * carnet (le même compte que Moi › Erreurs).
  */
-export type PointsFaiblesData = EtatPointsFaibles & { propre: boolean; rayeesSemaine: number };
+export type PointsFaiblesData = EtatPointsFaibles & { propre: boolean; rayeesSemaine: number; unite: Unite };
 
 export type SeanceDatee = { n: number; ok: number; at: string };
 
@@ -119,6 +134,14 @@ export function recentDe(seances: SeanceDatee[], now: number): { n: number; ok: 
     ok += Math.min(s.ok, s.n);
   }
   return { n, ok };
+}
+
+/** Ce qui coince dans une notion : les concepts avec au moins une rature en cours ou MIN_ERREURS_CONCEPT erreurs récentes, les plus chargés d'abord (ratures, puis erreurs), MAX_CONCEPTS au plus. */
+export function conceptsQuiCoincent(concepts: ConceptCoince[]): ConceptCoince[] {
+  return concepts
+    .filter((c) => c.concept && (c.ratures >= 1 || c.erreurs >= MIN_ERREURS_CONCEPT))
+    .sort((a, b) => b.ratures - a.ratures || b.erreurs - a.erreurs || a.concept.localeCompare(b.concept, "fr"))
+    .slice(0, MAX_CONCEPTS);
 }
 
 /** Assez de données pour juger : MIN_REPONSES réponses récentes, ou MIN_RATURES ratures en cours. */
@@ -194,4 +217,4 @@ export function pointsFaibles(notions: Notion[], raturesConnues = true): EtatPoi
   return { etat: liste.length ? "faibles" : eligibles.length ? "rien" : "peu", liste, eligibles: eligibles.length };
 }
 
-export const AUCUN_POINT_FAIBLE: PointsFaiblesData = { etat: "peu", liste: [], eligibles: 0, rayeesSemaine: 0, propre: false };
+export const AUCUN_POINT_FAIBLE: PointsFaiblesData = { etat: "peu", liste: [], eligibles: 0, rayeesSemaine: 0, propre: false, unite: "theme" };
