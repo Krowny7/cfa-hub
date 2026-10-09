@@ -2,6 +2,7 @@ import type { RatingSource } from "@/lib/rating";
 import type { TodayDaily } from "@/lib/daily";
 import type { EtatJour } from "@/lib/voice";
 import type { EtatObjectif } from "@/lib/objectif";
+import type { Nouveaute } from "@/lib/profil/nouveau";
 
 export type { TodayDaily } from "@/lib/daily";
 
@@ -118,6 +119,8 @@ export type AccueilData = {
   incomingDuel: { id: string; from: string | null; kind: "incoming" | "active" } | null;
   /** demandes d'ami reçues (null : amis pas encore disponibles, ou aucune) */
   demandesAmi?: { n: number; premier: { id: string; name: string; avatarUrl: string | null } } | null;
+  /** « Du nouveau » : les nouvelles des amis sur 7 jours (null ou vide : la section ne s'affiche pas) */
+  duNouveau?: Nouveaute[] | null;
   resume: ResumeItem | null;
   activity: ActivityWeek;
   dailyGoal: number;

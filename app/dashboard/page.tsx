@@ -11,6 +11,7 @@ import { etatDuJour } from "@/lib/voice";
 import { JOURS_RETOUR } from "@/lib/voice-z1";
 import { etatObjectif, objectifDe } from "@/lib/objectif";
 import { demandesDe } from "@/lib/profil/donnees";
+import { nouveautesAmis } from "@/lib/profil/nouveau";
 import { DashboardView } from "@/components/DashboardView";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import {
@@ -87,7 +88,7 @@ export default async function Dashboard() {
   // série en jours d'encre (qui ne retombe pas à 0 avant le soir), heure.
   const activity = withLiveDaily(withLiveDaily(activityRaw, daily), cinq);
   // l'objectif de questions d'ici l'examen : l'objectif du jour et la courbe
-  const [objectif, demandes] = await Promise.all([etatObjectif(user, activity.today), demandesDe(supabase, user.id)]);
+  const [objectif, demandes, duNouveau] = await Promise.all([etatObjectif(user, activity.today), demandesDe(supabase, user.id), nouveautesAmis(supabase, admin, user.id)]);
   const dayKey = parisDay(now);
   const hour = parisHour(now);
   const xpDays = Array.isArray(xpDailyRes.data) ? (xpDailyRes.data as XpDay[]).map((x) => ({ day: String(x.day).slice(0, 10), xp: Number(x.xp) || 0 })) : [];
@@ -157,6 +158,7 @@ export default async function Dashboard() {
     },
     incomingDuel: duel ? { id: duel.c.id, from: duel.c.opponentName, kind: duel.kind } : null,
     demandesAmi: demandes && demandes.recues.length ? { n: demandes.recues.length, premier: demandes.recues[0] } : null,
+    duNouveau,
     resume,
     activity,
     dailyGoal: objectifDe(objectif),

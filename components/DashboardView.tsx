@@ -4,17 +4,19 @@ import { ProgressSection, TodaySection } from "@/components/accueil/Sections";
 import { DefiHero, defiEnTete } from "@/components/defi/DefiHero";
 import type { AccueilData } from "@/components/accueil/types";
 import { CinqCarte, cinqVisible } from "@/components/defi/CinqCarte";
+import { DuNouveau } from "@/components/accueil/DuNouveau";
 
 export type { AccueilData } from "@/components/accueil/types";
 
 // Accueil : présentation pure (aucune requête), rendue par app/dashboard et
 // prévisualisée avec des données d'exemple (app/preview-da/accueil).
-// Trois niveaux de lecture :
+// Quatre niveaux de lecture :
 // 1. le point focal, l'anneau du jour en grand (moment 1) : le titre le dit
 //    (« Encore 14 traits, Théo. »), les bâtons comptent la série (moment 2),
 //    et la prochaine action est juste à côté ;
 // 2. « Aujourd'hui » : trois tuiles calmes au plus, choisies par priorité ;
-// 3. « Ta progression » : le rang, puis une carte à onglets.
+// 3. « Du nouveau » : les nouvelles des amis, s'il y en a ;
+// 4. « Ta progression » : le rang, puis une carte à onglets.
 // Le reste vit sur /classement et /moi.
 export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; tab?: string }) {
   return (
@@ -44,6 +46,7 @@ export function DashboardView({ d, now, tab }: { d: AccueilData; now?: number; t
       </section>
 
       <TodaySection d={d} />
+      {d.duNouveau && <DuNouveau nouvelles={d.duNouveau} />}
       <ProgressSection d={d} tab={tab} />
     </div>
   );
