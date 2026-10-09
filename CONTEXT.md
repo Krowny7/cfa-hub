@@ -189,6 +189,23 @@ Les explications d'origine (anglaises) des anciens scripts `seed-*` ont été
 traduites en base le 2026-10-05 : relancer un ancien script sans traduire
 ses explications serait refusé, ce qui protège les traductions.
 
+### Notions des questions
+
+Chaque question officielle porte sa notion (un Learning Module, référentiel
+`lib/notions.ts`) et parfois son concept : colonnes `quiz_questions.notion`
+et `.concept` (`migration_notions.sql`). Elles viennent de
+`scripts/notions/rattachement.json`, par l'empreinte de l'énoncé, et seule la
+clé service les écrit :
+
+- les seeds (`scripts/lib/seed-core.mjs`) les reposent après chaque import ;
+- l'éditeur de séries (`components/QuizSetManage.tsx`) ne les écrit pas :
+  un import JSON dans une série officielle (effacer puis réinsérer) les
+  laisse vides, un énoncé modifié garde l'ancienne notion. Après toute
+  retouche d'une série officielle dans l'éditeur, relancer
+  `node scripts/notions/synchroniser.mjs --ecrire` (et, pour une question
+  nouvelle, `rattacher.mjs` d'abord : ordre complet en tête de
+  `scripts/notions/rattacher.mjs`).
+
 ### Permissions d'édition
 - `private` → owner uniquement
 - `public` → owner uniquement (tout le monde peut lire)

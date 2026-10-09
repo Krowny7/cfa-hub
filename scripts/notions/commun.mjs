@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { DRILLS, MATIERES, NOMS_DES_STANDARDS, SOUS_PARTIES, SOUS_PARTIE_FOURRE_TOUT, TITRES_SCHWESER } from "./referentiel.mjs";
+import { DRILLS, MATIERES, NOMS_DES_STANDARDS, SOUS_PARTIES, SOUS_PARTIE_FOURRE_TOUT, TITRES_SCHWESER, VARIANTES_AILLEURS } from "./referentiel.mjs";
 
 /** Empreinte d'un énoncé : les 16 premiers caractères de md5, comme left(md5(prompt), 16) en SQL. */
 export function empreinte(prompt) {
@@ -314,7 +314,9 @@ const pareil = (a, b) => mots(a.replace(/&/g, " and ")).join(" ") === mots(b.rep
  * Notion de chaque concept de chaque drill (version actuelle et historique).
  * Le reading d'un concept est celui de sa question officielle, retrouvée dans
  * la banque ; à défaut, celui cité dans le commentaire ; à défaut, le LM dont
- * le titre est le thème de la page. Les deux variantes suivent l'officielle.
+ * le titre est le thème de la page. Les deux variantes suivent l'officielle,
+ * sauf quand VARIANTES_AILLEURS (referentiel.mjs) les range dans un autre LM :
+ * notion (l'officielle) et variantes (ses deux variantes).
  */
 export function analyserDrills(depot, textes, drills) {
   const chapitres = chapitresDesCours(depot);
@@ -354,8 +356,15 @@ export function analyserDrills(depot, textes, drills) {
         methode = "thème de la page";
       }
       if (!notion) methode = "aucune";
-      if (d.version === "actuelle" && methode !== "banque") notes.push(`${d.fichier} concept ${c.k} « ${c.libelle} » : notion ${notion?.id ?? "aucune"} (${methode})`);
-      return { k: c.k, libelle: c.libelle, notion: notion?.id ?? null, methode };
+      const ailleurs = VARIANTES_AILLEURS.find((v) => v.drill === d.fichier && v.concept === c.libelle);
+      if (d.version === "actuelle") {
+        if (methode !== "banque") notes.push(`${d.fichier} concept ${c.k} « ${c.libelle} » : notion ${notion?.id ?? "aucune"} (${methode})`);
+        if (ailleurs) notes.push(`${d.fichier} concept ${c.k} « ${c.libelle} » : officielle en ${notion?.id ?? "aucune"}, variantes en ${ailleurs.notion} (VARIANTES_AILLEURS)`);
+        else if (notion && lmDuTheme && notion.lm !== lmDuTheme) {
+          notes.push(`${d.fichier} concept ${c.k} « ${c.libelle} » : officielle en ${notion.id}, hors du LM ${lmDuTheme} qui donne son titre à la page (variantes à vérifier)`);
+        }
+      }
+      return { k: c.k, libelle: c.libelle, notion: notion?.id ?? null, variantes: ailleurs?.notion ?? notion?.id ?? null, methode };
     });
     pages.push({ ...d, matiere: def.matiere, fiche: def.fiche, page: t.page, concepts });
   }

@@ -3,20 +3,22 @@
 //   - scripts/notions/referentiel.mjs : numéros de reading et libellés courts (écrits à la main) ;
 //   - lib/courses.ts : le titre officiel de chaque LM (un chapitre par LM) ;
 //   - lib/calc : les types de calcul, rattachés par leur `source` (« LM 8 · … ») ;
-//   - les scripts de drill : les pages de fiche où chaque notion est travaillée,
+//   - les scripts de drill : les pages de fiche où chaque notion est travaillée
+//     (par l'officielle d'un concept ou par ses variantes, VARIANTES_AILLEURS),
 //     précédées des pages choisies à la main (FICHES_EN_TETE) ; la fiche
 //     Derivatives, d'un seul tenant, donne une ancre par reading ;
 //   - les textes de la banque (extraire_banque.py) : contrôle des titres et
 //     reading de chaque question officielle des drills.
 // Le script s'arrête sur toute incohérence (un reading sur deux LM, un titre
-// de la banque qui ne suit pas le chapitre du cours, un calcul sans LM).
+// de la banque qui ne suit pas le chapitre du cours, un calcul sans LM, un
+// arbitrage de referentiel.mjs qui ne vise rien).
 //
 // Usage (depuis la racine du dépôt) :
 //   node scripts/notions/build.mjs <dossier des textes de la banque>
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { analyserDrills, chapitresDesCours, chargerTextes, drillsDuDepot, mots, notionsBrutes } from "./commun.mjs";
-import { FICHES_EN_TETE, MATIERES, SOUS_PARTIES, TITRES_SCHWESER } from "./referentiel.mjs";
+import { ARBITRAGES, FICHES_EN_TETE, MATIERES, SOUS_PARTIES, TITRES_SCHWESER, VARIANTES_AILLEURS } from "./referentiel.mjs";
 
 const [dossierTextes] = process.argv.slice(2);
 if (!dossierTextes) {
@@ -95,11 +97,25 @@ const { pages, notes } = analyserDrills(depot, textes, drillsDuDepot(depot));
 const fiches = new Map(); // notion → Map(href → nombre de concepts)
 for (const p of pages.filter((x) => x.version === "actuelle")) {
   for (const c of p.concepts) {
-    if (!c.notion) continue;
-    if (!fiches.has(c.notion)) fiches.set(c.notion, new Map());
-    const cle = `${p.fiche}|${p.page}`;
-    fiches.get(c.notion).set(cle, (fiches.get(c.notion).get(cle) ?? 0) + 1);
+    for (const notion of new Set([c.notion, c.variantes])) {
+      if (!notion) continue;
+      if (!fiches.has(notion)) fiches.set(notion, new Map());
+      const cle = `${p.fiche}|${p.page}`;
+      fiches.get(notion).set(cle, (fiches.get(notion).get(cle) ?? 0) + 1);
+    }
   }
+}
+
+for (const v of VARIANTES_AILLEURS) {
+  const page = pages.find((p) => p.fichier === v.drill && p.version === "actuelle");
+  const c = page?.concepts.find((x) => x.libelle === v.concept);
+  const cible = brutes.find((n) => n.id === v.notion);
+  if (!c) erreurs.push(`VARIANTES_AILLEURS : concept « ${v.concept} » absent de la version actuelle de ${v.drill}`);
+  else if (!cible || cible.matiere !== page.matiere) erreurs.push(`VARIANTES_AILLEURS : notion « ${v.notion} » inconnue ou hors de la matière de ${v.drill}`);
+  else if (c.notion === v.notion) erreurs.push(`VARIANTES_AILLEURS : ${v.drill} « ${v.concept} » a déjà son officielle en ${v.notion}`);
+}
+for (const [e, { reading }] of Object.entries(ARBITRAGES)) {
+  if (!textes.has(reading)) erreurs.push(`ARBITRAGES : ${e} → reading ${reading} absent de la banque`);
 }
 
 for (const [id, { fiche, pages: liste }] of Object.entries(FICHES_EN_TETE)) {

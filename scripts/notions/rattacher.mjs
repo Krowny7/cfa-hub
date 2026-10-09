@@ -10,12 +10,15 @@
 //   1. Drill (et sa réserve) : l'énoncé est retrouvé dans un script de drill ;
 //      la notion est celle du reading de la question officielle du concept
 //      (retrouvée dans la banque, sinon citée en commentaire, sinon le LM qui
-//      donne son titre à la page) ; le concept est le commentaire du script.
+//      donne son titre à la page) ; ses deux variantes la suivent, sauf
+//      quand VARIANTES_AILLEURS (referentiel.mjs) les range dans un autre LM ;
+//      le concept est le commentaire du script.
 //   2. QCM de la banque « … (R59–R61) » : un seul reading, toutes ses
 //      questions ; sinon chaque énoncé est cherché dans les textes des
-//      readings du titre, et les questions non retrouvées prennent le reading
-//      de leurs voisines quand elles sont entourées du même (les seeds rangent
-//      les questions reading par reading).
+//      readings du titre ; une question non retrouvée prend le reading que
+//      lui donne ARBITRAGES (referentiel.mjs), sinon celui de ses voisines
+//      quand elles sont entourées du même (les seeds rangent les questions
+//      reading par reading).
 //   3. Examens blancs : seulement les énoncés retrouvés tels quels dans la
 //      banque ; les autres restent au niveau de la matière (inscrits dans le
 //      fichier avec [null, null] : sans notion, et c'est voulu).
@@ -88,7 +91,7 @@ for (const p of [...pages.filter((x) => x.version === "actuelle"), ...pages.filt
   for (const q of p.questions) {
     if (parEnonceDrill.has(q.prompt)) continue;
     const c = p.concepts[q.concept];
-    parEnonceDrill.set(q.prompt, { notion: c.notion, concept: c.libelle, origine: p.version === "actuelle" ? "drill" : "drill (historique)" });
+    parEnonceDrill.set(q.prompt, { notion: q.officielle ? c.notion : c.variantes, concept: c.libelle, origine: p.version === "actuelle" ? "drill" : "drill (historique)" });
   }
 }
 
@@ -167,6 +170,14 @@ for (const s of sets) {
       const connus = lus.map((r, i) => ({ r, i })).filter((x) => x.r);
       const monotone = connus.every((x, j) => j === 0 || plage.indexOf(x.r) >= plage.indexOf(connus[j - 1].r));
       const regles = lus.map((r) => (r ? "énoncé retrouvé dans la banque" : null));
+      // les arbitrages passent avant le voisinage (et n'en servent pas : connus est déjà fixé)
+      qs.forEach((q, i) => {
+        const arbitrage = lus[i] ? null : ARBITRAGES[empreinte(q.prompt)];
+        if (arbitrage) {
+          lus[i] = arbitrage.reading;
+          regles[i] = "tranché à la main (referentiel.mjs)";
+        }
+      });
       if (monotone) {
         for (let i = 0; i < lus.length; i++) {
           if (lus[i]) continue;
@@ -188,9 +199,6 @@ for (const s of sets) {
             if (sc[0].score > 0 && (sc[0].score - sc[1].score >= 0.1 || sc[1].score === 0)) {
               lus[i] = sc[0].reading;
               regles[i] = "frontière de deux readings, texte le plus proche";
-            } else if (ARBITRAGES[empreinte(qs[i].prompt)]) {
-              lus[i] = ARBITRAGES[empreinte(qs[i].prompt)].reading;
-              regles[i] = "tranché à la main (referentiel.mjs)";
             } else ambigus.push({ set: s.title, position: qs[i].position, prompt: qs[i].prompt, raison: `entre le reading ${avant} et le reading ${apres}` });
           } else ambigus.push({ set: s.title, position: qs[i].position, prompt: qs[i].prompt, raison: "aucun voisin rattaché" });
         }

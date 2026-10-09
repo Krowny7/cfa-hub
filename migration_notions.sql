@@ -9,6 +9,10 @@
 -- RLS) ; un joueur ne peut pas les écrire, même sur ses propres séries :
 -- seuls la clé service (scripts/notions/synchroniser.mjs, les seeds) et le
 -- SQL Editor les posent.
+-- L'éditeur de séries écrit avec le rôle authenticated : un import JSON dans
+-- une série officielle (effacer puis réinsérer) laisse notion et concept
+-- vides, un énoncé modifié garde l'ancienne notion. Après une telle retouche,
+-- relancer « node scripts/notions/synchroniser.mjs --ecrire » (CONTEXT.md).
 -- Le remplissage vient ensuite : le fichier généré par
 -- « node scripts/notions/synchroniser.mjs --sql <fichier> » (à coller après
 -- celle-ci) ou « node scripts/notions/synchroniser.mjs --ecrire ».

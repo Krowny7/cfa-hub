@@ -68,8 +68,8 @@ export const MATIERES = [
       "Formes d'entreprise",
       "Parties prenantes",
       "Gouvernance",
-      "Fonds de roulement",
-      "Choix d'investissement",
+      "Fonds de roulement et liquidité",
+      "Investissements et allocation du capital",
       "Structure du capital",
       "Modèles d'affaires",
     ],
@@ -87,7 +87,7 @@ export const MATIERES = [
       "Tableau des flux II",
       "Stocks",
       "Actifs long terme",
-      "Passifs long terme",
+      "Passifs long terme et capitaux propres",
       "Impôts sur le résultat",
       "Qualité de l'information",
       "Ratios financiers",
@@ -110,7 +110,7 @@ export const MATIERES = [
       "Organisation des marchés",
       "Indices boursiers",
       "Efficience des marchés",
-      "Types d'actions",
+      "Titres de capital",
       "Analyse d'entreprise",
       "Analyse sectorielle",
       "Prévisions d'entreprise",
@@ -130,7 +130,7 @@ export const MATIERES = [
       "Dette publique",
       "Prix et rendement",
       "Rendements et spreads (taux fixe)",
-      "Taux variables et monétaire",
+      "Taux variables et marché monétaire",
       "Courbe des taux",
       "Risque de taux",
       "Duration",
@@ -155,7 +155,7 @@ export const MATIERES = [
     courts: [
       "Marchés dérivés",
       "Engagements fermes et droits conditionnels",
-      "Usages des dérivés",
+      "Avantages, risques et usages des dérivés",
       "Arbitrage et coût de portage",
       "Forwards",
       "Futures",
@@ -265,18 +265,49 @@ export const TITRES_SCHWESER = [
   "Securitization, ABS & MBS (R63–R65)",
 ];
 
-// Questions qu'aucune règle ne range (à la frontière de deux readings d'un
-// QCM, texte du PDF illisible), tranchées à la lecture de l'énoncé :
-// empreinte de l'énoncé (scripts/notions/commun.mjs) → reading de la banque.
+// Questions d'un QCM de plusieurs readings absentes de la banque, tranchées à
+// la lecture de l'énoncé avant toute règle de voisinage : empreinte de
+// l'énoncé (scripts/notions/commun.mjs) → reading de la banque (une
+// sous-partie d'Ethics donne aussi le concept).
 export const ARBITRAGES = {
   // « As of December 31: Company A - price $25, 20,000 shares outstanding… » (QCM R41–R42) :
   // pondération d'un indice par le prix ou la capitalisation → Security Market Indexes
   "28f163dbb74b331e": { reading: "42" },
+  // « Steve Waters… According to Standard II(B), Market Manipulation… » (QCM R92–R93, dernière
+  // question) : application directe d'un standard, pas un cas → Guidance for Standards, Standard II
+  b8f3147c2333c361: { reading: "91.3" },
 };
+
+// Concepts de drill dont la question officielle est rangée par la banque dans
+// un autre LM que celui que travaillent ses deux variantes (écrites à la
+// main) : script et libellé du concept (celui du commentaire « // Concept k — »,
+// sans sa parenthèse) → notion des variantes. L'officielle garde le reading
+// de la banque, comme sa copie dans les QCM de la banque. Le libellé, et non
+// le numéro du concept, survit aux versions du drill (les réserves en
+// viennent) ; build.mjs vérifie que chaque entrée vise un concept du drill actuel.
+export const VARIANTES_AILLEURS = [
+  // officielle R55 (spread d'une convertible) ; variantes : conversion price, conversion value
+  {
+    drill: "seed-fixed-income-drill-page1.mjs",
+    concept: "Convertible bonds : option du porteur, conversion ratio et conversion value",
+    notion: "fixed_income:2",
+  },
+  // officielle R50 (titrisation) ; variantes : ABCP d'un conduit, ligne de crédit confirmée
+  { drill: "seed-fixed-income-drill-page2.mjs", concept: "Commercial paper, ABCP et lignes de crédit", notion: "fixed_income:4" },
+  // officielle R64 (dette sécurisée high yield) ; variantes : EL = POD × LGD, recovery rate
+  { drill: "seed-fixed-income-drill-page5.mjs", concept: "Expected loss = POD × LGD, rôle du collatéral", notion: "fixed_income:14" },
+  // officielles R50 (SPE émettrice, bankruptcy remoteness) ; variantes : rôles et flux d'une titrisation
+  { drill: "seed-fixed-income-drill-page7.mjs", concept: "Parties prenantes : seller/originator, SPE, servicer, tiers", notion: "fixed_income:17" },
+  {
+    drill: "seed-fixed-income-drill-page7.mjs",
+    concept: "Bankruptcy remoteness : pourquoi l'ABS peut être mieux noté que le vendeur",
+    notion: "fixed_income:17",
+  },
+];
 
 // Pages de fiche mises en tête des liens d'une notion, avant celles que
 // donnent les drills (une page compte quand la question officielle d'un de
-// ses concepts est rangée dans le reading de la notion) : la page qui traite
+// ses concepts, ou ses variantes, sont rangées dans la notion) : la page qui traite
 // la notion sans qu'aucune officielle n'y soit rangée, ou celle qui la traite
 // le mieux quand la banque range ailleurs ses officielles.
 export const FICHES_EN_TETE = {
@@ -287,6 +318,9 @@ export const FICHES_EN_TETE = {
   "fixed_income:2": { fiche: "fixed-income", pages: [1] },
   // page 4 « Interest Rate Risk & Duration » : convexité par bump, ajustement de convexité
   "fixed_income:12": { fiche: "fixed-income", pages: [4] },
+  // page 5 « Credit Risk Measures & Sovereign Credit » avant la page 2 (un
+  // concept chacune : crédit souverain, GO bond vs revenue bond)
+  "fixed_income:15": { fiche: "fixed-income", pages: [5] },
 };
 
 // Dossiers « (Système) » → matière (les QCM de la banque et les drills)
