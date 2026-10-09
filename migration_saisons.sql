@@ -33,7 +33,8 @@
 --   • elo_final : son ELO à la fin de la saison ;
 --   • place_finale : sa place au classement à la fin de la saison (comme
 --     getLeaderboardRank : 1 + le nombre de joueurs classés plus haut), sur
---     les joueurs qui avaient joué au moins un match classé avant la fin ;
+--     les joueurs qui avaient joué au moins un match classé avant la fin
+--     (leur nombre est gardé dans saisons.classes : « 8e sur 40 ») ;
 --   • palier_pic / division_pic et palier_final / division_finale : le
 --     palier (index de TIERS, lib/ranks.ts : 0 Bronze … 7 Top 10) et la
 --     division (III, II, I ; NULL pour Top 10), par la règle de rankFor :
@@ -58,9 +59,11 @@ CREATE TABLE IF NOT EXISTS saisons (
   nom           text        NOT NULL,
   debut         timestamptz NOT NULL,
   fin           timestamptz NOT NULL,
-  -- la clôture : quand, et combien de joueurs gravés
+  -- la clôture : quand, combien de joueurs gravés (au moins un match dans
+  -- la saison) et combien de joueurs classés à la fin (le N de « 8e sur N »)
   clos_le       timestamptz,
   participants  int,
+  classes       int,
   CHECK (fin > debut)
 );
 ALTER TABLE saisons ENABLE ROW LEVEL SECURITY;
@@ -159,29 +162,48 @@ AS $$
   ) t;
 $$;
 
--- L'ELO de chaque joueur classé juste avant p_t (son dernier match avant
--- p_t). Deux matchs réglés dans la même transaction ont la même date : le
--- dernier est celui qu'aucun autre du groupe ne prolonge (comme enChaine
--- dans lib/profil/journal.ts).
-CREATE OR REPLACE FUNCTION _saison_elos_avant(p_t timestamptz)
+-- L'ELO de chaque joueur classé (ou du seul p_user) juste avant p_t (son
+-- dernier match avant p_t). Deux matchs réglés dans la même transaction ont
+-- la même date : le dernier est celui qu'aucun autre du groupe ne prolonge
+-- (comme enChaine dans lib/profil/journal.ts).
+DROP FUNCTION IF EXISTS _saison_elos_avant(timestamptz);
+CREATE OR REPLACE FUNCTION _saison_elos_avant(p_t timestamptz, p_user uuid DEFAULT NULL)
 RETURNS TABLE (user_id uuid, elo int)
 LANGUAGE sql STABLE SET search_path = public
 AS $$
   SELECT DISTINCT ON (e.user_id) e.user_id, e.elo_after
   FROM rating_events e
   WHERE e.created_at < p_t
+    AND (p_user IS NULL OR e.user_id = p_user)
   ORDER BY e.user_id, e.created_at DESC,
     (NOT EXISTS (SELECT 1 FROM rating_events f
                  WHERE f.user_id = e.user_id AND f.created_at = e.created_at AND f.id <> e.id AND f.elo_before = e.elo_after)) DESC,
     e.id;
 $$;
 
--- Les lignes d'une saison entre p_debut et p_fin, pour tous ses joueurs
--- (p_user NULL) ou pour un seul. Sert à la clôture (p_fin : la fin de la
--- saison) et à la saison en cours (p_fin : maintenant). La place au moment
--- du pic ne se calcule que pour un pic d'au moins 1 850 (Grand Maître) :
--- elle ne sert qu'à Top 10.
-CREATE OR REPLACE FUNCTION _saison_lignes(p_debut timestamptz, p_fin timestamptz, p_user uuid DEFAULT NULL)
+-- La place d'un joueur au moment de son pic de saison (1 + les joueurs
+-- classés plus haut à ce moment-là : à l'entrée dans la saison si le pic est
+-- l'ELO d'entrée, sinon juste après le premier match qui l'atteint). Elle ne
+-- sert qu'à Top 10 : NULL pour un pic sous 1 850 (Grand Maître), sans rien lire.
+CREATE OR REPLACE FUNCTION _saison_place_pic(p_user uuid, p_debut timestamptz, p_fin timestamptz, p_entree int, p_meilleur int, p_pic int)
+RETURNS int
+LANGUAGE sql STABLE SET search_path = public
+AS $$
+  SELECT CASE WHEN p_pic >= 1850 THEN (
+    SELECT 1 + count(*) FROM _saison_elos_avant(
+      CASE WHEN p_entree IS NOT NULL AND p_entree >= p_meilleur THEN p_debut
+           ELSE (SELECT min(e.created_at) FROM rating_events e
+                  WHERE e.user_id = p_user AND e.created_at >= p_debut AND e.created_at < p_fin AND e.elo_after = p_pic)
+                + interval '1 microsecond'
+      END) x
+    WHERE x.user_id <> p_user AND x.elo > p_pic
+  )::int END;
+$$;
+
+-- Les lignes d'une saison entre p_debut et p_fin, pour tous ses joueurs :
+-- la clôture.
+DROP FUNCTION IF EXISTS _saison_lignes(timestamptz, timestamptz, uuid);
+CREATE OR REPLACE FUNCTION _saison_lignes(p_debut timestamptz, p_fin timestamptz)
 RETURNS TABLE (
   user_id uuid, palier_pic smallint, division_pic text, palier_final smallint, division_finale text,
   elo_pic int, elo_final int, place_finale int, maitrise int, matchs int
@@ -194,7 +216,6 @@ AS $$
     SELECT e.user_id, max(e.elo_after) AS meilleur, count(*)::int AS n
     FROM rating_events e
     WHERE e.created_at >= p_debut AND e.created_at < p_fin
-      AND (p_user IS NULL OR e.user_id = p_user)
     GROUP BY e.user_id
   ),
   j AS (
@@ -207,22 +228,41 @@ AS $$
     LEFT JOIN entrees a ON a.user_id = s.user_id
   ),
   k AS (
-    SELECT j.*,
-      CASE WHEN j.pic >= 1850 THEN (
-        SELECT 1 + count(*) FROM _saison_elos_avant(
-          CASE WHEN j.entree IS NOT NULL AND j.entree >= j.meilleur THEN p_debut
-               ELSE (SELECT min(e.created_at) FROM rating_events e
-                      WHERE e.user_id = j.user_id AND e.created_at >= p_debut AND e.created_at < p_fin AND e.elo_after = j.pic)
-                    + interval '1 microsecond'
-          END) x
-        WHERE x.user_id <> j.user_id AND x.elo > j.pic
-      )::int END AS place_pic
+    SELECT j.*, _saison_place_pic(j.user_id, p_debut, p_fin, j.entree, j.meilleur, j.pic) AS place_pic
     FROM j
   )
   SELECT k.user_id, p.palier, p.division, f.palier, f.division, k.pic, k.final, k.place, k.m, k.n
   FROM k
   CROSS JOIN LATERAL _saison_palier(k.pic, k.m, k.place_pic) p
   CROSS JOIN LATERAL _saison_palier(k.final, k.m, k.place) f;
+$$;
+
+-- Le pic de saison d'un seul joueur, de p_debut à maintenant (la saison en
+-- cours, à chaque lecture d'un profil) : ne lit que ses propres matchs, pas
+-- le classement de tout le site (sauf pour la place d'un pic de Grand
+-- Maître). Aucune ligne s'il n'a pas joué depuis p_debut.
+CREATE OR REPLACE FUNCTION _saison_pic_joueur(p_debut timestamptz, p_user uuid)
+RETURNS TABLE (palier_pic smallint, division_pic text, elo_pic int, matchs int)
+LANGUAGE sql STABLE SET search_path = public
+AS $$
+  WITH s AS (
+    SELECT max(e.elo_after) AS meilleur, count(*)::int AS n
+    FROM rating_events e
+    WHERE e.user_id = p_user AND e.created_at >= p_debut AND e.created_at < now()
+  ),
+  j AS (
+    SELECT s.n, s.meilleur, a.elo AS entree, greatest(s.meilleur, coalesce(a.elo, s.meilleur)) AS pic
+    FROM s
+    LEFT JOIN _saison_elos_avant(p_debut, p_user) a ON true
+    WHERE s.n > 0
+  )
+  SELECT p.palier, p.division, j.pic, j.n
+  FROM j
+  CROSS JOIN LATERAL _saison_palier(
+    j.pic,
+    least(100, greatest(0, _saison_maitrise(p_user))),
+    _saison_place_pic(p_user, p_debut, now(), j.entree, j.meilleur, j.pic)
+  ) p;
 $$;
 
 -- ── 4. la clôture ─────────────────────────────────────────────────────
@@ -235,8 +275,9 @@ RETURNS int
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
-  s    saisons%ROWTYPE;
-  v_n  int;
+  s          saisons%ROWTYPE;
+  v_n        int;
+  v_classes  int;
 BEGIN
   SELECT * INTO s FROM saisons WHERE cle = p_cle FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'unknown season'; END IF;
@@ -249,7 +290,8 @@ BEGIN
   ON CONFLICT (saison, user_id) DO NOTHING;
 
   SELECT count(*)::int INTO v_n FROM saison_resultats WHERE saison = p_cle;
-  UPDATE saisons SET clos_le = now(), participants = v_n WHERE cle = p_cle;
+  SELECT count(*)::int INTO v_classes FROM _saison_elos_avant(s.fin);
+  UPDATE saisons SET clos_le = now(), participants = v_n, classes = v_classes WHERE cle = p_cle;
   RETURN v_n;
 END;
 $$;
@@ -320,7 +362,7 @@ BEGIN
   SELECT * INTO s FROM saisons WHERE debut <= now() AND fin > now() ORDER BY numero DESC LIMIT 1;
   IF FOUND THEN
     IF p_user IS NOT NULL THEN
-      SELECT * INTO l FROM _saison_lignes(s.debut, now(), p_user);
+      SELECT * INTO l FROM _saison_pic_joueur(s.debut, p_user);
       IF FOUND THEN
         v_moi := jsonb_build_object('palier_pic', l.palier_pic, 'division_pic', l.division_pic, 'elo_pic', l.elo_pic, 'matchs', l.matchs);
       END IF;
@@ -340,7 +382,7 @@ BEGIN
       'dernier_jour', to_char((x.fin AT TIME ZONE 'Europe/Paris') - interval '1 day', 'YYYY-MM-DD'),
       'palier_pic', r.palier_pic, 'division_pic', r.division_pic, 'elo_pic', r.elo_pic,
       'palier_final', r.palier_final, 'division_finale', r.division_finale, 'elo_final', r.elo_final,
-      'place_finale', r.place_finale, 'matchs', r.matchs, 'joueurs', x.participants
+      'place_finale', r.place_finale, 'matchs', r.matchs, 'joueurs', x.classes
     ) ORDER BY x.numero DESC), '[]'::jsonb)
   INTO v_palm
   FROM saison_resultats r JOIN saisons x ON x.cle = r.saison
@@ -359,8 +401,10 @@ ON CONFLICT DO NOTHING;
 REVOKE ALL ON FUNCTION _saison_bornes(int) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _saison_palier(int, int, int) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _saison_maitrise(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION _saison_elos_avant(timestamptz) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION _saison_lignes(timestamptz, timestamptz, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _saison_elos_avant(timestamptz, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _saison_place_pic(uuid, timestamptz, timestamptz, int, int, int) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _saison_lignes(timestamptz, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _saison_pic_joueur(timestamptz, uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _saison_clore(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _saisons_a_jour() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION rl_clore_saison(text) FROM PUBLIC, anon;
