@@ -4,14 +4,17 @@
 --   la dernière erreur), anciennes (rayées), rayées ces 7 derniers jours, et
 --   la dernière activité. Le set courant de la question, sinon le titre
 --   gardé dans la rature (question retirée de la banque). Lecture seule.
--- - rature_suivante : un filtre facultatif de plus, p_sets (les sets d'un
---   thème), pour « Mettre au propre ce thème ». Les appels sans p_sets
---   restent valides.
+-- - rature_suivante_theme(p_sets, p_exclure) : « Mettre au propre » limité
+--   aux ratures en cours d'un thème (ses sets). Fonction à part :
+--   rature_suivante (le carnet, migration_ratures_reprise.sql) ne change
+--   pas, et recoller la reprise ne crée aucune ambiguïté.
+-- - _ratures_rejouer : une réponse en attente n'est notée qu'une fois, même
+--   quand deux lectures du carnet la rejouent en même temps (Moi lit le
+--   carnet et les ratures par thème en parallèle). migration_ratures.sql
+--   porte la même version : la recoller ne défait rien.
 -- Aucune table, aucune colonne.
 -- À coller une fois dans le SQL Editor de Supabase, APRÈS
--- migration_ratures_reprise.sql. Idempotent. Si migration_ratures_reprise.sql
--- est recollée plus tard, recolle celle-ci ensuite (elle retire l'ancienne
--- version à 3 arguments de rature_suivante).
+-- migration_ratures_reprise.sql. Idempotent.
 
 DO $$
 BEGIN
@@ -62,18 +65,14 @@ BEGIN
 END;
 $$;
 
--- 2. La prochaine rature à repasser, avec le filtre de thème en plus
---    (signature remplacée : l'ancienne, à 3 arguments, est retirée pour qu'un
---    appel sans p_sets ne soit jamais ambigu)
-DROP FUNCTION IF EXISTS rature_suivante(text, uuid[]);
-DROP FUNCTION IF EXISTS rature_suivante(text, uuid[], boolean);
-CREATE OR REPLACE FUNCTION rature_suivante(p_source text DEFAULT NULL, p_exclure uuid[] DEFAULT '{}', p_anciennes boolean DEFAULT false, p_sets uuid[] DEFAULT NULL)
+-- 2. La prochaine rature en cours d'un thème, au hasard, hors celles déjà
+--    vues pendant ce tour (même réponse que rature_suivante)
+CREATE OR REPLACE FUNCTION rature_suivante_theme(p_sets uuid[], p_exclure uuid[] DEFAULT '{}')
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_uid uuid := auth.uid();
-  v_anc boolean := coalesce(p_anciennes, false);
   v_res json;
 BEGIN
   IF v_uid IS NULL THEN
@@ -83,9 +82,9 @@ BEGIN
 
   WITH carnet AS (
     SELECT r.* FROM ratures r
-    WHERE r.user_id = v_uid AND r.visible_from <= now() AND (r.removed_at IS NOT NULL) = v_anc
-      AND (p_source IS NULL OR p_source = ANY (r.sources))
-      AND (p_sets IS NULL OR EXISTS (SELECT 1 FROM quiz_questions q WHERE q.id = r.question_id AND q.set_id = ANY (p_sets)))
+    JOIN quiz_questions q ON q.id = r.question_id
+    WHERE r.user_id = v_uid AND r.visible_from <= now() AND r.removed_at IS NULL
+      AND q.set_id = ANY (coalesce(p_sets, '{}'::uuid[]))
   ),
   candidates AS (
     SELECT * FROM carnet WHERE NOT (question_id = ANY (coalesce(p_exclure, '{}'::uuid[])))
@@ -94,7 +93,7 @@ BEGIN
     SELECT * FROM candidates ORDER BY random() LIMIT 1
   )
   SELECT json_build_object(
-    -- ratures du tri (en cours ou anciennes, source, thème), et celles pas encore vues
+    -- ratures en cours du thème, et celles pas encore vues
     'carnet', (SELECT count(*) FROM carnet),
     'reste', (SELECT count(*) FROM candidates),
     'question', (
@@ -119,8 +118,30 @@ BEGIN
 END;
 $$;
 
--- 3. Droits
+-- 3. Rejouer les réponses en attente (migration_ratures.sql) : la ligne n'est
+--    notée que si cette transaction l'a bien retirée. Deux lectures en
+--    parallèle lisent la même ligne ; la seconde attend le verrou, ne
+--    supprime plus rien et passe, au lieu de la noter une deuxième fois.
+CREATE OR REPLACE FUNCTION _ratures_rejouer(p_user uuid)
+RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  e ratures_attente;
+BEGIN
+  FOR e IN SELECT * FROM ratures_attente WHERE user_id = p_user AND visible_from <= now() ORDER BY at, id LOOP
+    DELETE FROM ratures_attente WHERE id = e.id;
+    IF NOT FOUND THEN
+      CONTINUE;
+    END IF;
+    PERFORM _rature_note(e.user_id, e.question_id, e.source, e.correct, e.selected, e.at, e.visible_from);
+  END LOOP;
+END;
+$$;
+
+-- 4. Droits
 REVOKE ALL ON FUNCTION ratures_par_theme() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION rature_suivante(text, uuid[], boolean, uuid[]) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION rature_suivante_theme(uuid[], uuid[]) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION _ratures_rejouer(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION ratures_par_theme() TO authenticated;
-GRANT EXECUTE ON FUNCTION rature_suivante(text, uuid[], boolean, uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION rature_suivante_theme(uuid[], uuid[]) TO authenticated;

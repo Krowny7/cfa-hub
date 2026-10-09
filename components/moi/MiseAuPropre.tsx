@@ -15,8 +15,8 @@ import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 // pour « Rejouer les anciennes », une révision : juste, elle reste rayée ;
 // faux, elle revient en cours. La correction ne vient qu'après la réponse.
 // On s'arrête quand on veut, on revient plus tard. Avec `theme` (« Tes points
-// faibles »), seules les ratures des sets du thème (p_sets,
-// migration_points_faibles.sql) ; les autres appels n'envoient pas p_sets.
+// faibles »), seules les ratures en cours des sets du thème
+// (rature_suivante_theme, migration_points_faibles.sql).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -90,13 +90,13 @@ export function MiseAuPropre({
     const restantes = demo?.questions.filter((q) => !vues.current.includes(q.question_id));
     const { data, error } = demo
       ? { data: { carnet: demo.questions.length, reste: restantes?.length ?? 0, question: restantes?.[0] ?? null }, error: null }
-      : await sb.rpc("rature_suivante", {
-          p_source: source,
-          p_exclure: vues.current,
-          p_anciennes: anciennes,
-          // le filtre de thème seulement quand il y en a un : les appels du carnet restent à 3 arguments
-          ...(cleSets === null ? {} : { p_sets: cleSets ? cleSets.split(",") : [] }),
-        });
+      : cleSets !== null
+        ? await sb.rpc("rature_suivante_theme", { p_sets: cleSets ? cleSets.split(",") : [], p_exclure: vues.current })
+        : await sb.rpc("rature_suivante", {
+            p_source: source,
+            p_exclure: vues.current,
+            p_anciennes: anciennes,
+          });
     setEnvoi(false);
     if (error) return cleSets !== null && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
     const r = data as { carnet: number; reste: number; question: null | QuestionTiree };
@@ -190,13 +190,17 @@ export function MiseAuPropre({
   const nomFiltre = theme ? theme.libelle : source ? (NOMS.get(source) ?? source) : null;
 
   return (
-    <div ref={haut} className="grid scroll-mt-28 gap-4 px-2 py-1" aria-live="polite">
+    // un thème s'ouvre dans une carte pleine largeur : la question garde une ligne lisible (720 px au plus)
+    <div ref={haut} className={"grid scroll-mt-28 gap-4 px-2 py-1 " + (theme ? "w-full max-w-[720px]" : "")} aria-live="polite">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="kicker m-0">{anciennes ? CARNET.rejouerFiltre(nomFiltre) : CARNET.propreFiltre(nomFiltre)}</p>
-        <p className="t-micro m-0 font-mono">
-          {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees)}
-          {reste !== null && !fini ? ` · ${anciennes ? CARNET.rejouerRestantes(reste) : CARNET.propreRestantes(reste)}` : ""}
-        </p>
+        {/* reprise par thème pas encore ouverte : pas de bilan */}
+        {!indisponible && (
+          <p className="t-micro m-0 font-mono">
+            {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees)}
+            {reste !== null && !fini ? ` · ${anciennes ? CARNET.rejouerRestantes(reste) : CARNET.propreRestantes(reste)}` : ""}
+          </p>
+        )}
       </div>
 
       {erreur && (
