@@ -2,6 +2,7 @@ import type { RatingSource } from "@/lib/rating";
 import type { TodayDaily } from "@/lib/daily";
 import type { EtatJour } from "@/lib/voice";
 import type { EtatObjectif } from "@/lib/objectif";
+import type { TuilePointFaible } from "@/lib/points-faibles";
 
 export type { TodayDaily } from "@/lib/daily";
 
@@ -124,6 +125,8 @@ export type AccueilData = {
   /** l'objectif de questions d'ici l'examen (onglet « Objectif » de « Ta progression ») */
   objectif: EtatObjectif;
   errors: ErrorsSummary;
+  /** le point faible n° 1 quand il est net (components/accueil/point-faible.ts) ; null ou absent : pas de tuile */
+  pointFaible?: TuilePointFaible | null;
   /** prochain examen blanc classé (l'accueil ne le montre qu'à 7 jours ou moins) */
   mockExam: MockExamCard | null;
   topics: TopicStat[];

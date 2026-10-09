@@ -22,7 +22,7 @@
 // banque) : rien à y refaire.
 // Côté serveur seulement : importe le catalogue des calculs (avec réponses).
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ANSWER_SOURCES, SOURCE_LABELS, placeSet, type AnswerSource, type AnswerStats, type ThemeKind } from "@/lib/answer-stats";
+import { ANSWER_SOURCES, EMPTY_ANSWER_STATS, SOURCE_LABELS, placeSet, type AnswerSource, type AnswerStats, type ThemeKind } from "@/lib/answer-stats";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { calcSubject, calcType } from "@/lib/calc";
 import type { CalcTopic } from "@/lib/calc/types";
@@ -415,4 +415,13 @@ function construireParNotion(stats: AnswerStats, base: NotionsJoueur, banque: Ba
 /** Les points faibles d'un joueur : par notion (étape 2) quand base.notions est là, sinon par thème (étape 1). */
 export function construirePointsFaibles(stats: AnswerStats, base: BasePointsFaibles, banque: BanqueQcm, now: number): PointsFaiblesData {
   return base.notions ? construireParNotion(stats, base.notions, banque, now) : construireParTheme(stats, base.themes, banque, now);
+}
+
+/**
+ * La lecture légère (tuile de l'accueil) : les notions de points_faibles
+ * seules, sans les calculs ni la banque de QCM (getAnswerStats n'est pas
+ * chargé). Une notion jouée seulement en calcul n'y paraît pas.
+ */
+export function pointsFaiblesLegers(base: NotionsJoueur, now: number): PointsFaiblesData {
+  return construireParNotion(EMPTY_ANSWER_STATS, base, banqueVide(), now);
 }

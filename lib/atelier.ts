@@ -265,6 +265,26 @@ export type BilanNotion = {
 };
 
 export type Conseil = "demain" | "apres-demain" | "semaine";
+/** jours entre deux Ateliers, selon le conseil */
+export const JOURS_CONSEIL: Record<Conseil, number> = { demain: 1, "apres-demain": 2, semaine: 7 };
+
+/** Le prochain Atelier conseillé d'après le premier passage : demain sous 60 %, après-demain sous 80 %, sinon dans une semaine. */
+export function conseilDe(score: number, total: number): Conseil {
+  const taux = total > 0 ? score / total : 0;
+  return taux < 0.6 ? "demain" : taux < 0.8 ? "apres-demain" : "semaine";
+}
+
+/**
+ * Un Atelier est-il conseillé aujourd'hui ? Oui sans Atelier clos, sinon à
+ * partir du jour conseillé par le dernier (jours « AAAA-MM-JJ » de Paris :
+ * celui de sa clôture, et aujourd'hui).
+ */
+export function atelierConseille(dernier: { jour: string; score: number; total: number } | null, aujourdhui: string): boolean {
+  if (!dernier) return true;
+  const d = new Date(dernier.jour + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + JOURS_CONSEIL[conseilDe(dernier.score, dernier.total)]);
+  return aujourdhui >= d.toISOString().slice(0, 10);
+}
 
 export type BilanAtelier = {
   notions: BilanNotion[];
@@ -314,7 +334,6 @@ export function bilan(etat: Pick<EtatAtelier, "notions" | "items" | "reponses">,
   const reponduesQcm = notions.filter((x) => x.pendant.n > 0);
   const aRevoir = reponduesQcm.length ? [...reponduesQcm].sort((a, b) => a.pendant.ok / a.pendant.n - b.pendant.ok / b.pendant.n || etat.notions.indexOf(a.notion) - etat.notions.indexOf(b.notion))[0].notion : null;
   const total = prem.length;
-  const taux = total > 0 ? score / total : 0;
   const retests = etat.reponses.filter((r) => r.retest);
   return {
     notions,
@@ -322,6 +341,6 @@ export function bilan(etat: Pick<EtatAtelier, "notions" | "items" | "reponses">,
     total,
     retest: { n: retests.length, ok: retests.filter((r) => r.ok).length },
     aRevoir,
-    prochain: taux < 0.6 ? "demain" : taux < 0.8 ? "apres-demain" : "semaine",
+    prochain: conseilDe(score, total),
   };
 }

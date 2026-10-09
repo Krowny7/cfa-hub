@@ -32,6 +32,11 @@ export const TUILES = {
   duel: "Duel",
   lancer: "Lancer un duel",
   meta: "même épreuve, 30 questions",
+  /** « Tes points faibles » : le n° 1, et l'Atelier quand il est conseillé ou en cours */
+  pointFaible: "Ton point faible",
+  atelierConseille: "Atelier conseillé",
+  atelierEnCours: "Atelier en cours",
+  voirPointsFaibles: "Voir mes points faibles",
 } as const;
 
 /** Tuile « duel à revoir » : « Défaite contre Hugo P. » + « 19 contre 22 · −9 ELO ». */

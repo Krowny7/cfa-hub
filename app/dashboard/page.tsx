@@ -25,6 +25,7 @@ import {
   parisHour,
   withLiveDaily,
 } from "@/components/accueil/queries";
+import { loadPointFaible } from "@/components/accueil/point-faible";
 import { helloFor, longDay } from "@/components/accueil/format";
 import type { AccueilData } from "@/components/accueil/types";
 
@@ -49,7 +50,7 @@ export default async function Dashboard() {
 
   const now = new Date();
 
-  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq] =
+  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq, pointFaible] =
     await Promise.all([
       supabase.from("profiles").select("username,exam_date").eq("id", user.id).maybeSingle(),
       // XP par jour : sert seulement à la série (le détail est sur /moi).
@@ -77,6 +78,8 @@ export default async function Dashboard() {
       getReviewableDuels(supabase, user.id, { days: DUEL_FRESH_DAYS, limit: 1 }),
       // les 5 du jour, le défi éclair (« bientôt » tant que migration_cinq_du_jour.sql manque)
       getTodayDaily(supabase, user.id, "cinq"),
+      // le point faible n° 1 quand il est net (points_faibles seule, sans getAnswerStats)
+      loadPointFaible(supabase, user.id, now),
     ]);
 
   const profile = profileRes.data as { username?: string | null; exam_date?: string | null } | null;
@@ -162,6 +165,7 @@ export default async function Dashboard() {
     dailyGoal: objectifDe(objectif),
     objectif,
     errors,
+    pointFaible,
     mockExam,
     topics: topicStats,
     mastery,

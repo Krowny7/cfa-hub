@@ -37,6 +37,8 @@ export const POIDS = { manque: 0.55, charge: 0.45 } as const;
 export const MIN_REPONSES = 8;
 export const MIN_RATURES = 3;
 export const SEUIL_AFFICHAGE = 25;
+/** l'accueil ne nomme un point faible qu'au-delà de ce score (il prend alors la place de la tuile des ratures) */
+export const SEUIL_ACCUEIL = 50;
 export const MAX_LISTE = 10;
 export const JAUGE_MAX = 4;
 /** au-delà, « Dernier passage il y a N semaines » s'ajoute */
@@ -123,6 +125,13 @@ export type PointsFaiblesData = EtatPointsFaibles & {
   /** l'Atelier (migration_atelier.sql, par notion seulement) : absent tant qu'il n'est pas ouvert ; enCours : un Atelier à reprendre */
   atelier?: { enCours: { faites: number } | null };
 };
+
+/**
+ * La tuile de l'accueil : le point faible n° 1 et l'action. atelier : un
+ * Atelier est conseillé aujourd'hui ; reprendre : un Atelier est en cours ;
+ * voir : la carte de Moi › Stats (Atelier fermé, ou pas encore conseillé).
+ */
+export type TuilePointFaible = { libelle: string; repere: string; phrase: string; action: "atelier" | "reprendre" | "voir" };
 
 export type SeanceDatee = { n: number; ok: number; at: string };
 

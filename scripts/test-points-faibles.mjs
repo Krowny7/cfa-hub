@@ -4,7 +4,8 @@
 // (components/moi/points-faibles-data.ts : sets supprimés, QCM et pages
 // recréés, rayées de la semaine), celle des notions (agrégation par
 // Learning Module, calculs rattachés, concepts, liens) et le repli sur les
-// thèmes (points_faibles absente, colonnes vides). Sans dépendance de plus : jiti (déjà
+// thèmes (points_faibles absente, colonnes vides), puis la tuile de l'accueil
+// (lecture légère, seuil, Atelier conseillé). Sans dépendance de plus : jiti (déjà
 // installé avec Tailwind) charge le TypeScript et l'alias « @/ ».
 // Usage : node scripts/test-points-faibles.mjs
 import { createJiti } from "jiti";
@@ -352,6 +353,43 @@ const jette = { rpc: async () => { throw new Error("réseau"); } };
 check("exception réseau : repli sans erreur", (await donnees.lireNotionsJoueur(jette)) === null);
 const repli = donnees.construirePointsFaibles(stats, bAbsente, { themes: banque, notions: new Map() }, NOW);
 check("repli : la construction reste celle des thèmes", repli.unite === "theme");
+
+console.log("\n# La tuile de l'accueil : points_faibles seule, et l'Atelier conseillé");
+const leger = donnees.pointsFaiblesLegers(baseNotions, NOW);
+check("lecture légère : la duration en tête, mêmes mesures sans les stats", leger.liste[0]?.cle === "fixed_income:11" && leger.liste[0].mesures.n === 20 && leger.liste[0].score === dN.score);
+check("lecture légère : la notion jouée seulement en calcul n'y paraît pas", !leger.liste.some((p) => p.cle === AVEC_CALC.id));
+const tuile = await jiti.import(join(racine, "components/accueil/point-faible.ts"));
+/** Un faux client : rpc points_faibles, et les deux lectures de la table ateliers (en cours : .is ; dernier clos : .not). */
+const client = ({ pfData = { remplie: true, rayees_semaine: 0, notions: [] }, enCours = [], dernier = [], tableAbsente = false } = {}) => {
+  const absente = { data: null, error: { code: "42P01", message: 'relation "ateliers" does not exist' } };
+  const requete = (appels) =>
+    new Proxy(
+      {},
+      {
+        get: (_, k) =>
+          k === "then"
+            ? (res) => res(tableAbsente ? absente : { data: appels.includes("not") ? dernier : enCours, error: null })
+            : (...args) => requete([...appels, String(k), ...args.map(String)]),
+      },
+    );
+  return { rpc: async () => ({ data: pfData, error: null }), from: () => requete([]) };
+};
+const brutDe = (l) => ({ notion: l.notion, recentes: l.recentes.map((r) => [r.at, r.ok]), sources: l.sources, en_cours: l.enCours, vives: l.vives, anciennes: l.anciennes, rayees_7j: l.rayees7j, derniere: l.derniere, concepts: l.concepts });
+const pfPlein = { remplie: true, rayees_semaine: 0, notions: baseNotions.lignes.map(brutDe) };
+const maintenant = new Date(NOW);
+const t1 = await tuile.loadPointFaible(client({ pfData: pfPlein }), "u", maintenant);
+check("tuile : la duration, son repère, sa phrase ; aucun Atelier clos : Atelier conseillé", t1?.libelle === DUR.court && plat(t1.repere) === "Fixed Income · LM 11" && t1.phrase === dN.phrase && t1.action === "atelier", JSON.stringify(t1));
+check("tuile : colonnes vides (remplie faux) : rien", (await tuile.loadPointFaible(client({ pfData: { remplie: false, rayees_semaine: 0, notions: [] } }), "u", maintenant)) === null);
+const faible = { remplie: true, rayees_semaine: 0, notions: [brutDe(ligneNotion("fixed_income:11", { recentes: reponses(10, 4, 1), enCours: 2, vives: 2 }))] };
+const scoreFaible = pf.scoreDe({ n: 10, ok: 4, enCours: 2, vives: 2 });
+check("tuile : point faible pas assez net (score ≤ 50) : rien", scoreFaible <= pf.SEUIL_ACCUEIL && scoreFaible >= pf.SEUIL_AFFICHAGE && (await tuile.loadPointFaible(client({ pfData: faible }), "u", maintenant)) === null, String(scoreFaible));
+check("tuile : table ateliers absente : la carte de Moi", (await tuile.loadPointFaible(client({ pfData: pfPlein, tableAbsente: true }), "u", maintenant))?.action === "voir");
+check("tuile : un Atelier en cours : le reprendre", (await tuile.loadPointFaible(client({ pfData: pfPlein, enCours: [{ reponses: [1, 2], vu_at: new Date(Date.now() - 3600_000).toISOString() }] }), "u", maintenant))?.action === "reprendre");
+const clos = (jours, score) => [{ finished_at: iso(jours), score, total: 20 }];
+check("tuile : Atelier clos hier à 18/20 (une semaine conseillée) : la carte de Moi", (await tuile.loadPointFaible(client({ pfData: pfPlein, dernier: clos(1, 18) }), "u", maintenant))?.action === "voir");
+check("tuile : Atelier clos il y a 8 jours à 18/20 : Atelier conseillé", (await tuile.loadPointFaible(client({ pfData: pfPlein, dernier: clos(8, 18) }), "u", maintenant))?.action === "atelier");
+check("tuile : Atelier clos hier à 9/20 (demain conseillé) : Atelier conseillé", (await tuile.loadPointFaible(client({ pfData: pfPlein, dernier: clos(1, 9) }), "u", maintenant))?.action === "atelier");
+check("tuile : exception réseau : rien, sans erreur", (await tuile.loadPointFaible({ rpc: async () => { throw new Error("réseau"); }, from: () => { throw new Error("réseau"); } }, "u", maintenant)) === null);
 
 console.log(ko ? `\n${ko} KO sur ${n}` : `\nTOUT OK (${n})`);
 process.exit(ko ? 1 : 0);

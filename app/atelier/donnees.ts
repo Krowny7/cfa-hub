@@ -3,6 +3,7 @@ import { calcQuestion, calcSubject, calcType, levelPool } from "@/lib/calc/index
 import { correctionSteps, pickRound, publicQuestion, recentPrecision, suggestedLevel, type HistoryMap } from "@/lib/calc/engine";
 import { CALC_LEVELS, type CalcLevel, type CalcTopic } from "@/lib/calc/types";
 import { getCourse } from "@/lib/courses";
+import { parisDay } from "@/lib/daily";
 import { NOTIONS, notionParId } from "@/lib/notions";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { loadCalcHistory, loadCalcProgress } from "@/app/calculs/data";
@@ -117,6 +118,17 @@ export async function lireEtatAtelier(sb: SupabaseClient, userId: string): Promi
     const row = (data?.[0] ?? null) as { reponses: unknown; vu_at: string } | null;
     const frais = row && Date.parse(row.vu_at) > Date.now() - 24 * 3600_000;
     return { enCours: frais ? { faites: Array.isArray(row.reponses) ? row.reponses.length : 0 } : null };
+  } catch {
+    return null;
+  }
+}
+
+/** Le dernier Atelier clos (tuile de l'accueil : le prochain conseillé) : son jour de Paris et son premier passage. Toute erreur : null. */
+export async function lireDernierAtelier(sb: SupabaseClient, userId: string): Promise<{ jour: string; score: number; total: number } | null> {
+  try {
+    const { data, error } = await sb.from("ateliers").select("finished_at,score,total").eq("user_id", userId).not("finished_at", "is", null).order("finished_at", { ascending: false }).limit(1);
+    const row = (error ? null : (data?.[0] ?? null)) as { finished_at: string; score: number | null; total: number | null } | null;
+    return row ? { jour: parisDay(new Date(row.finished_at)), score: num(row.score), total: num(row.total) } : null;
   } catch {
     return null;
   }

@@ -1,8 +1,9 @@
 // Tests de l'Atelier : lib/atelier.ts (poids, plan, blocs absents remplacés
 // par des questions neuves, alternance des notions selon leur poids, carte
 // Rappel après deux fautes, question plus facile puis plus dure, notion
-// tenue, chrono qui commande, plafond, re-test, bilan avant / pendant) et
-// une séance entière jouée au hasard (toujours une fin, jamais de question
+// tenue, chrono qui commande, plafond, re-test, bilan avant / pendant),
+// le prochain Atelier conseillé, et une séance entière jouée au hasard
+// (toujours une fin, jamais de question
 // introuvable). Sans dépendance de plus : jiti (déjà installé avec
 // Tailwind) charge le TypeScript et l'alias « @/ ».
 // Usage : node scripts/test-atelier.mjs
@@ -270,6 +271,13 @@ check("toujours une fin", toujoursFin);
 check("jamais une question hors du pool", jamaisIntrouvable);
 check("jamais deux fois le même rappel d'affilée", rappelsOk);
 check("au plus 24 réponses (20 au premier passage, calculs compris, et 4 re-tests)", pire <= 24, String(pire));
+
+console.log("\n# Le prochain Atelier conseillé");
+check("conseil : demain sous 60 %, après-demain sous 80 %, sinon une semaine", A.conseilDe(11, 20) === "demain" && A.conseilDe(12, 20) === "apres-demain" && A.conseilDe(15, 20) === "apres-demain" && A.conseilDe(16, 20) === "semaine" && A.conseilDe(0, 0) === "demain");
+check("conseillé : sans Atelier clos, oui", A.atelierConseille(null, "2026-10-09"));
+check("conseillé : demain conseillé, le jour même non, le lendemain oui", !A.atelierConseille({ jour: "2026-10-08", score: 5, total: 20 }, "2026-10-08") && A.atelierConseille({ jour: "2026-10-08", score: 5, total: 20 }, "2026-10-09"));
+check("conseillé : après-demain, pas le lendemain", !A.atelierConseille({ jour: "2026-10-08", score: 14, total: 20 }, "2026-10-09") && A.atelierConseille({ jour: "2026-10-08", score: 14, total: 20 }, "2026-10-10"));
+check("conseillé : une semaine, passage de mois compris", !A.atelierConseille({ jour: "2026-10-28", score: 18, total: 20 }, "2026-11-03") && A.atelierConseille({ jour: "2026-10-28", score: 18, total: 20 }, "2026-11-04"));
 
 console.log(ko ? `\n${ko} KO sur ${n}` : `\nTOUT OK (${n})`);
 process.exit(ko ? 1 : 0);
