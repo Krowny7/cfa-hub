@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { analyserSession, empreinte, signalerLeonard } from "@/lib/leonard/signal";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { analyserSession, empreinte, signalerLeonard, type SignalLeonard } from "@/lib/leonard/signal";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
 import { useObjectifDuJour } from "@/components/adn/useObjectifDuJour";
 import { CopieCorrigee, type LigneCopie, type MatiereCopie } from "@/components/adn/CopieCorrigee";
 import { SceauJour } from "@/components/adn/Sceau";
 import { RepriseRatures } from "@/components/session/RepriseRatures";
+import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
 import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
 import { nombre, ratures } from "@/lib/voice";
 import { ligneAnneauFin } from "@/lib/voice-z3";
 
 // La fin d'une session (moment 5) : la copie corrigée, l'avancée de l'anneau
-// du jour, puis « Reprendre mes N ratures » et « Copier pour l'IA ». La
+// du jour, puis « Reprendre mes N ratures » et « Copier pour l'IA » ; dessous,
+// la cérémonie d'un sceau gagné (CeremonieSceaux), s'il y en a un. La
 // correction détaillée (children) suit juste en dessous ; pendant la reprise
 // des ratures, elle s'efface (elle donnerait les réponses).
 //
@@ -36,7 +38,7 @@ import { ligneAnneauFin } from "@/lib/voice-z3";
 //                          l'écran), tous deux dans components/session/parts
 //   liens                  liens secondaires (nouvelle session, retour…)
 //   notes                  une ligne sous les actions (erreur d'enregistrement…)
-//   anime                  false : copie posée (revisite)
+//   anime                  false : copie posée (revisite), sans cérémonie de sceau
 //   children               la correction détaillée, sous la copie
 
 /** Une ligne de marge : la première ligne de l'énoncé, en texte simple. */
@@ -139,10 +141,22 @@ export function FinDeSession({
   anime?: boolean;
   children?: React.ReactNode;
 }) {
-  // Léonard réagit à la session (une fois par session : clé = questions + score)
+  // Léonard réagit à la session (une fois par session : clé = questions + score),
+  // sauf si un sceau vient d'être gagné : la cérémonie l'appelle à sa place.
+  // Sans réponse de la cérémonie au bout de 4 s, il réagit à la session.
+  const leonard = useRef<{ sig: SignalLeonard | null; parti: boolean; debut: number }>({ sig: null, parti: false, debut: 0 });
+  const reagir = useCallback(() => {
+    const l = leonard.current;
+    if (l.parti) return;
+    l.parti = true;
+    if (l.sig) signalerLeonard({ ...l.sig, delai: Math.max(600, 2600 - (Date.now() - l.debut)) }, "fs:" + empreinte(score, total, ...review.map((r) => r.question_id)));
+  }, [score, total, review]);
   useEffect(() => {
-    const sig = analyserSession(review.map((r) => r.is_correct), score, total);
-    if (sig) signalerLeonard({ ...sig, delai: 2600 }, "fs:" + empreinte(score, total, ...review.map((r) => r.question_id)));
+    leonard.current.sig = analyserSession(review.map((r) => r.is_correct), score, total);
+    leonard.current.debut = Date.now();
+    if (!anime) return reagir();
+    const t = window.setTimeout(reagir, 4000);
+    return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -198,6 +212,15 @@ export function FinDeSession({
         }
       />
       </div>
+      {anime && (
+        <CeremonieSceaux
+          className="mt-8"
+          onResultat={(n) => {
+            if (n > 0) leonard.current.parti = true;
+            else reagir();
+          }}
+        />
+      )}
       {children}
     </>
   );

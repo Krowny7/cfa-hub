@@ -19,8 +19,10 @@ export const ENTETE = {
   eloPlace: (elo: number, place: string | null) => `${nombre(elo)}${NBSP}ELO${place ? ` · ${place}` : ""}`,
   plus: "plus",
   moins: "moins",
-  posesAide: "Ses 3 plus hauts sceaux, posés d'office",
-  posesAideMoi: "Tes 3 plus hauts sceaux, posés d'office",
+  posesAide: "Ses 3 sceaux les plus rares, posés d'office",
+  posesAideMoi: "Tes 3 sceaux les plus rares, posés d'office",
+  posesChoisis: "Les sceaux qu'il a posés",
+  posesChoisisMoi: "Les sceaux que tu as posés",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,8 @@ export const FAMILLES_NOMS: Record<Famille, string> = {
   duels: "Duels",
   calculs: "Calculs",
   examens: "Examens",
+  mentions: "Mentions",
+  ratures: "Ratures",
   matieres: "Matières",
 };
 
@@ -61,6 +65,12 @@ const NOMS: Record<string, string> = {
   duelliste: "Duelliste",
   calculateur: "Calculateur",
   "examen-blanc": "Examen blanc",
+  "coup-d-eclat": "Coup d'éclat",
+  remontada: "Remontada",
+  "sans-faute": "Sans faute",
+  eclair: "Éclair",
+  "sang-froid": "Sang-froid",
+  "mise-au-propre": "Mise au propre",
 };
 
 /** « Duelliste », « FSA » */
@@ -74,12 +84,22 @@ const SOUS: Record<Unite, (n: number) => string> = {
   calculs: (n) => (n > 1 ? "JUSTES" : "JUSTE"),
   examens: (n) => (n > 1 ? "EXAMENS" : "EXAMEN"),
   maitrise: () => "MAÎTRISE",
+  mentions: (n) => (n > 1 ? "DUELS" : "DUEL"),
+  ecart: (n) => (n >= 3 ? "BATTU" : n > 1 ? "PALIERS" : "PALIER"),
+  rayees: (n) => (n > 1 ? "RAYÉES" : "RAYÉE"),
 };
 
 // Le nom gravé dans la pointe de l'hexagone : 9 lettres au plus, sinon il
 // devient illisible. Les noms plus longs ont leur forme courte ; une matière
 // au nom long, son code (« FI », « DER »).
-const GRAVURES: Record<string, string> = { "copie-pleine": "COPIE", "defi-tenu": "DÉFI", calculateur: "CALCUL", "examen-blanc": "EXAMEN" };
+const GRAVURES: Record<string, string> = {
+  "copie-pleine": "COPIE",
+  "defi-tenu": "DÉFI",
+  calculateur: "CALCUL",
+  "examen-blanc": "EXAMEN",
+  "coup-d-eclat": "COUP",
+  "mise-au-propre": "PROPRE",
+};
 const GRAVURE_MAX = 9;
 function gravure(d: DefSceau): string {
   if (d.matiere) {
@@ -92,7 +112,9 @@ function gravure(d: DefSceau): string {
 
 /** Ce qui est gravé sur le sceau : le nom en haut, le chiffre au centre, l'unité en bas. */
 export function inscription(d: DefSceau, seuil: number): { sur: string; texte: string; sous: string } {
-  return { sur: gravure(d), texte: d.unite === "maitrise" ? pct(seuil) : nombre(seuil), sous: SOUS[d.unite](seuil) };
+  // Coup d'éclat : l'écart battu (« +2 »), ou le Top 10 au dernier palier
+  const texte = d.unite === "maitrise" ? pct(seuil) : d.unite === "ecart" ? (seuil >= 3 ? "T10" : `+${seuil}`) : nombre(seuil);
+  return { sur: gravure(d), texte, sous: SOUS[d.unite](seuil) };
 }
 
 /** La condition d'un palier, en clair : « 25 victoires en duel ». */
@@ -112,6 +134,12 @@ export function condition(d: DefSceau, seuil: number): string {
       return pluriel(seuil, "examen blanc rendu", "examens blancs rendus");
     case "maitrise":
       return `maîtrise de ${pct(seuil)} en ${nomSceau(d)}`;
+    case "mentions":
+      return `${pluriel(seuil, "duel", "duels")} avec la mention ${nomSceau(d)}`;
+    case "ecart":
+      return seuil >= 3 ? "battre en duel un joueur du Top 10" : seuil > 1 ? "battre en duel un joueur de deux paliers au-dessus" : "battre en duel un joueur d'un palier au-dessus";
+    case "rayees":
+      return pluriel(seuil, "rature mise au propre", "ratures mises au propre");
   }
 }
 
@@ -132,12 +160,18 @@ export function atteste(d: DefSceau): string {
       return "les examens blancs rendus";
     case "maitrise":
       return `la maîtrise en ${nomSceau(d)}`;
+    case "mentions":
+      return `la mention ${nomSceau(d)} en duel`;
+    case "ecart":
+      return "les victoires en duel contre plus haut classé";
+    case "rayees":
+      return "les ratures mises au propre (reprises justes)";
   }
 }
 
-/** L'avancée vers le palier suivant : « 21/25 », « 84/90 % », « 28/40 questions » ; null en dorure. */
+/** L'avancée vers le palier suivant : « 21/25 », « 84/90 % », « 28/40 questions » ; null en dorure, pour Coup d'éclat (il se gagne d'un coup) ou sans mesure. */
 export function progres(e: EtatSceau): string | null {
-  if (e.prochain === null) return null;
+  if (e.prochain === null || e.def.unite === "ecart" || e.inconnu) return null;
   if (e.def.unite === "maitrise" && (e.questions ?? 0) < MAITRISE_MIN_QUESTIONS) return `${nombre(e.questions ?? 0)}/${MAITRISE_MIN_QUESTIONS} questions`;
   if (e.def.unite === "maitrise") return `${e.valeur}/${e.prochain}${NBSP}%`;
   if (e.def.unite === "jours") return `${nombre(e.valeur)}/${nombre(e.prochain)}${NBSP}j`;
@@ -164,6 +198,32 @@ export const SCEAUX_TXT = {
   fermer: "Fermer",
   /** les 40 questions qu'il faut pour mesurer une matière */
   mesure: `Une matière se mesure à partir de ${MAITRISE_MIN_QUESTIONS} questions.`,
+  /** avec la base : un palier gagné se garde */
+  garde: "Un palier gagné se garde, même si la maîtrise baisse ensuite.",
+  /** « obtenu le 3 oct. », ou « avant le 9 oct. » pour ce qui a été repris après coup */
+  obtenu: (date: string, avant: boolean) => (avant ? `obtenu avant le ${date}` : `obtenu le ${date}`),
+  /** la date dans la liste des paliers */
+  le: (date: string, avant: boolean) => (avant ? `avant le ${date}` : date),
+  /** « 12 % des joueurs » (joueurs actifs sur 90 jours) */
+  rarete: (part: number) => (part > 0 && part < 0.01 ? `moins de ${pct(1)} des joueurs` : `${pct(part * 100)} des joueurs`),
+  rareteAide: "Part des joueurs actifs sur 90 jours qui ont ce palier.",
+  // poser sur son profil
+  poser: "Poser sur mon profil",
+  retirer: "Retirer de mon profil",
+  pose: "Posé sur ton profil",
+  remplacer: "Les 3 places sont prises. Poser à la place de :",
+  poserAide: "3 sceaux au plus, dans l'en-tête de ton profil. Sans choix, les plus rares.",
+  poserErreur: "Impossible pour l'instant. Réessaie dans un instant.",
+} as const;
+
+// ---------------------------------------------------------------------------
+// La cérémonie d'obtention (fin de session, de duel, de défi)
+
+export const CEREMONIE = {
+  titre: "Sceau gagné",
+  /** « Duelliste · vermillon » ; « et 2 autres » */
+  autres: (n: number) => `et ${pluriel(n, "autre", "autres")}`,
+  voir: "Voir ma collection",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -264,6 +324,30 @@ export const JOURNAL = {
   autres: (n: number) => `Voir ${pluriel(n, "autre entrée", "autres entrées")}`,
   filVide: "Rien de notable sur 90 jours.",
   filVideMoi: "Une victoire en duel, un nouveau palier ou 7 jours de suite s'inscrivent ici.",
+  /** un sceau gagné : « Sceau Duelliste · vermillon » */
+  sceau: (titre: string) => `Sceau ${titre}`,
+  // la visibilité du Journal (réglée dans Moi › Réglages)
+  ferme: "Journal fermé",
+  fermeAmis: (nom: string) => `${nom} montre son Journal à ses amis seulement.`,
+  fermePrive: (nom: string) => `${nom} garde son Journal pour lui.`,
+  /** sur son profil, vu comme les autres : ce qu'ils voient */
+  fermeApercu: "Les autres joueurs voient ce message à la place de ton Journal.",
   /** la date d'une entrée, dans le navigateur : « aujourd'hui », « hier », « il y a 3 j » ; null au-delà d'une semaine */
   ilYa: (jours: number): string | null => (jours <= 0 ? "aujourd'hui" : jours === 1 ? "hier" : jours < 7 ? `il y a ${nombre(jours)}${NBSP}j` : null),
+} as const;
+
+// ---------------------------------------------------------------------------
+// Le réglage du Journal (Moi › Réglages › Confidentialité)
+
+export const REGLAGE_JOURNAL = {
+  titre: "Qui voit mon Journal",
+  choix: [
+    { key: "public", label: "Tous", aide: "Tous les joueurs voient ta courbe d'ELO, ton carnet de jours et ton fil." },
+    { key: "friends", label: "Amis", aide: "Seuls tes amis voient ton Journal." },
+    { key: "private", label: "Moi seul", aide: "Ton Journal est gardé pour toi." },
+  ],
+  bientot: "Bientôt disponible.",
+  erreur: "Réglage impossible à lire pour l'instant.",
+  reessayer: "Réessayer",
+  echec: "Pas enregistré. Réessaie dans un instant.",
 } as const;

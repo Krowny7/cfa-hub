@@ -1,5 +1,5 @@
 // Léonard, la mascotte : les signaux que lui envoient les écrans du site
-// (fin de session, verdict de duel, défi du jour, montée de rang…). Un
+// (fin de session, verdict de duel, défi du jour, montée de rang, sceau gagné…). Un
 // signal ne fait que proposer : c'est l'hôte (components/leonard) qui décide
 // s'il apparaît (réglages, mode discret, fréquence, hasard). Un signal avec
 // une `cle` n'est émis qu'une fois sur cet appareil (on ne réagit pas deux
@@ -22,6 +22,7 @@ export type EvenementLeonard =
   | "defi-reussi"
   | "defi-rate"
   | "rang-monte"
+  | "sceau-gagne"
   | "retour"
   | "tard"
   | "furtif";

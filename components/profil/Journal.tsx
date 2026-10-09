@@ -1,16 +1,18 @@
 import Link from "next/link";
+import { Stamp } from "lucide-react";
 import { Icone, type IconeNom } from "@/components/adn/icons";
 import { CourbeElo } from "@/components/profil/CourbeEloDifferee";
 import { CarnetJours } from "@/components/profil/CarnetJours";
 import { JourRelatif } from "@/components/profil/JourRelatif";
 import { TIERS, rankFor } from "@/lib/ranks";
 import type { EvenementJournal, Journal as DonneesJournal } from "@/lib/profil/journal";
+import { defSceau } from "@/lib/profil/sceaux";
 import { signe } from "@/lib/voice";
-import { JOURNAL } from "@/lib/voice-profil";
+import { JOURNAL, PALIERS, condition, nomSceau } from "@/lib/voice-profil";
 
 // L'onglet Journal du profil : la courbe d'ELO sur 90 jours (avec le pic et
 // les paliers en fond), le carnet de jours et le fil des événements notables
-// (victoires en duel, nouveaux paliers, séries). Téléphone : courbe, carnet,
+// (victoires en duel, nouveaux paliers, sceaux gagnés, séries). Téléphone : courbe, carnet,
 // fil, l'un sous l'autre ; ordinateur : le fil à gauche (7 colonnes), la
 // courbe et le carnet à droite (5). Le fil montre ses 6 dernières entrées,
 // le reste à la demande. Les dates relatives ne se calculent que dans le
@@ -18,7 +20,7 @@ import { JOURNAL } from "@/lib/voice-profil";
 
 const VISIBLES = 6;
 
-const ICONE: Record<EvenementJournal["type"], IconeNom> = { victoire: "duel", palier: "classement", serie: "serie" };
+const ICONE: Record<Exclude<EvenementJournal["type"], "sceau">, IconeNom> = { victoire: "duel", palier: "classement", serie: "serie" };
 
 function Entree({ e, moiId }: { e: EvenementJournal; moiId: string | null }) {
   let titre: React.ReactNode;
@@ -52,6 +54,10 @@ function Entree({ e, moiId }: { e: EvenementJournal; moiId: string | null }) {
   } else if (e.type === "palier") {
     titre = JOURNAL.palier(TIERS[e.palier]?.name ?? "");
     detail = JOURNAL.palierTexte;
+  } else if (e.type === "sceau") {
+    const d = defSceau(e.sceau);
+    titre = JOURNAL.sceau(d ? `${nomSceau(d)} · ${PALIERS[e.palier]}` : e.sceau);
+    detail = d ? condition(d, d.seuils[e.palier - 1]) : null;
   } else {
     titre = JOURNAL.serieNotable(e.jours);
     detail = JOURNAL.serieTexte(e.jours);
@@ -59,7 +65,7 @@ function Entree({ e, moiId }: { e: EvenementJournal; moiId: string | null }) {
   return (
     <li className="flex items-start gap-3 border-b border-line py-3 last:border-b-0">
       <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line-2" aria-hidden>
-        <Icone nom={ICONE[e.type]} size={16} />
+        {e.type === "sceau" ? <Stamp size={15} /> : <Icone nom={ICONE[e.type]} size={16} />}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="m-0 flex items-baseline justify-between gap-3">

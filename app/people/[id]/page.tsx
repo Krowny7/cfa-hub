@@ -27,16 +27,19 @@ import { Collection } from "@/components/profil/Collection";
 import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
 import { Revanche } from "@/components/profil/Revanche";
 import { Journal } from "@/components/profil/Journal";
-import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
+import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
+import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
 import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { journalDe } from "@/lib/profil/journal";
 import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
-import { SCEAUX, aPortee, posesDe, sceauxDe, sceauxGagnes } from "@/lib/profil/sceaux";
+import { aPortee, posesDe, sceauxGagnes } from "@/lib/profil/sceaux";
+import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import type { Visibilite } from "@/lib/profil/catalogue";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
-import { ENTETE, FACE } from "@/lib/voice-profil";
+import { ENTETE, FACE, JOURNAL } from "@/lib/voice-profil";
 import type { Profile, Rating } from "@/lib/types";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string }> };
@@ -72,8 +75,10 @@ async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[
 // collection), Journal (courbe d'ELO, carnet de jours, fil) et, sur le
 // profil d'un autre, Face-à-face. L'onglet est dans l'URL (?onglet=sceaux)
 // et chaque onglet ne lit que ses données. Sur son
-// propre profil : personnaliser, et « voir comme les autres » (?vue=inconnu
-// ou ?vue=ami) qui rend la page telle qu'un autre joueur la voit.
+// propre profil : personnaliser, choisir ses sceaux posés (dans leur fiche,
+// avec la base), et « voir comme les autres » (?vue=inconnu ou ?vue=ami) qui
+// rend la page telle qu'un autre joueur la voit. Le Journal suit le réglage
+// de son propriétaire (tous, amis, moi seul) : fermé, il n'est pas lu.
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = (await searchParams) ?? {};
@@ -125,20 +130,27 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
   const statsLues = statsProfil(id, supabase);
   const maitrisesLues = masteryByUser(admin, [id]);
-  // le Journal : la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
+  // les sceaux : gardés en base (et recalculés au plus toutes les 10 min), sinon dérivés
+  const sceauxLus = statsLues.then((stats) => sceauxDuJoueur(id, stats, supabase));
+  const relationLue = relationAvec(supabase, user.id, id);
+  // le Journal, s'il m'est ouvert (sur le mien vu comme les autres : comme eux)
+  const journalOuvert = (v: Visibilite, rel: Relation | null) =>
+    isMe ? !vue || v === "public" || (vue === "ami" && v === "friends") : v === "public" || (v === "friends" && rel === "amis");
+  // la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
   const journalLu = (async () => {
     if (onglet !== "journal") return null;
-    const [stats, masteries] = await Promise.all([statsLues, maitrisesLues]);
-    return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null });
+    const [stats, masteries, lu, rel, sceaux] = await Promise.all([statsLues, maitrisesLues, styleLu, relationLue, sceauxLus]);
+    if (!journalOuvert(lu.journal, rel)) return null;
+    return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null, gardes: sceaux.gardes });
   })();
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o, journal] = await Promise.all([
+  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     styleLu,
     statsLues,
-    relationAvec(supabase, user.id, id),
+    relationLue,
     // la base ne rend le LinkedIn que s'il est visible pour moi
     lireLien(supabase, id),
     amisDe(id, supabase, 12),
@@ -148,6 +160,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     autreJoueur ? faceAFace(supabase, user.id, id) : Promise.resolve(null),
     lecturesOnglet,
     journalLu,
+    sceauxLus,
   ]);
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
@@ -164,9 +177,11 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const mastery = masteries.get(id) ?? null;
   const rank = rankFor(elo, mastery, leaderboardRank);
 
-  // les sceaux : la collection, les 3 posés d'office, le total
-  const etats = sceauxDe(stats);
+  // les sceaux : la collection, les 3 posés (choisis, sinon les plus rares), le total
+  const etats = sceaux.etats;
   const gagnes = sceauxGagnes(etats);
+  const poses = posesDe(etats, sceaux.base ? pins : null);
+  const choisis = sceaux.base && pins.some((c) => etats.some((e) => e.def.cle === c && e.palier > 0));
 
   const entete: EnteteData = {
     id,
@@ -275,15 +290,24 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const onglets = ongletsDe(autreJoueur).map((cle) => ({
     cle,
     href: hrefOnglet(id, cle, vue),
-    ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(SCEAUX.length)}` } : {}),
+    ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(etats.length)}` } : {}),
     ...(cle === "face-a-face" && face && face.duels.length ? { compte: `${nombre(face.victoires)}–${nombre(face.defaites)}` } : {}),
   }));
 
   let panneau: React.ReactNode;
   if (onglet === "sceaux") {
-    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} />;
-  } else if (onglet === "journal" && journal) {
-    panneau = <Journal journal={journal} mastery={mastery} moi={commeMoi} moiId={user.id} />;
+    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(etats) : []} proprietaire={commeMoi} />;
+  } else if (onglet === "journal") {
+    panneau = journal ? (
+      <Journal journal={journal} mastery={mastery} moi={commeMoi} moiId={user.id} />
+    ) : (
+      // fermé par son propriétaire : rien n'a été lu
+      <div className="card flex max-w-[640px] flex-col gap-1 p-5 sm:p-6">
+        <p className="m-0 text-[15px] font-semibold">{JOURNAL.ferme}</p>
+        <p className="t-small m-0">{visibiliteJournal === "private" ? JOURNAL.fermePrive(display) : JOURNAL.fermeAmis(display)}</p>
+        {vue && <p className="t-micro m-0 mt-1">{JOURNAL.fermeApercu}</p>}
+      </div>
+    );
   } else if (onglet === "face-a-face") {
     const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
     panneau = (
@@ -331,23 +355,26 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   return (
     <div className="rl-wide rl-page relative isolate">
       <AmbianceProfil style={style} />
-      <div className="flex flex-col gap-6 md:gap-8">
-        <EnteteJoueur
-          d={entete}
-          actions={actions}
-          haut={vue ? undefined : retour}
-          kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre}
-          rangDe={commeMoi ? "Ton rang" : "Son rang"}
-          presence={!commeMoi}
-          poses={<SceauxPoses poses={posesDe(etats)} label={commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
-          piedRang={piedRang}
-        />
-        {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
-        <div className="flex flex-col gap-6 md:gap-10">
-          <OngletsProfil actif={onglet} onglets={onglets} />
-          {panneau}
+      {/* sur son profil, avec la base : les fiches proposent de poser le sceau */}
+      <ChoixSceaux actif={commeMoi && sceaux.base} poses={poses.map((e) => e.def.cle)}>
+        <div className="flex flex-col gap-6 md:gap-8">
+          <EnteteJoueur
+            d={entete}
+            actions={actions}
+            haut={vue ? undefined : retour}
+            kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre}
+            rangDe={commeMoi ? "Ton rang" : "Son rang"}
+            presence={!commeMoi}
+            poses={<SceauxPoses poses={poses} label={choisis ? (commeMoi ? ENTETE.posesChoisisMoi : ENTETE.posesChoisis) : commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
+            piedRang={piedRang}
+          />
+          {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
+          <div className="flex flex-col gap-6 md:gap-10">
+            <OngletsProfil actif={onglet} onglets={onglets} />
+            {panneau}
+          </div>
         </div>
-      </div>
+      </ChoixSceaux>
 
       {/* l'aperçu « comme les autres » : une barre flottante en bas de l'écran,
           pour que la page se voie telle quelle, sans bandeau au milieu */}

@@ -100,16 +100,30 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
   }
 });
 
+export type StyleLu = {
+  style: StyleProfil;
+  disponible: boolean;
+  /** les sceaux posés choisis (aucun : posés d'office ; colonne de migration_profil_sceaux.sql) */
+  pins: string[];
+  /** qui voit le Journal (public sans la migration) */
+  journal: Visibilite;
+};
+
 /** Le style d'un joueur ; `disponible` : false tant que la migration manque. */
-export async function lireStyle(sb: SupabaseClient, userId: string): Promise<{ style: StyleProfil; disponible: boolean }> {
+export async function lireStyle(sb: SupabaseClient, userId: string): Promise<StyleLu> {
+  const defaut: StyleLu = { style: STYLE_DEFAUT, disponible: false, pins: [], journal: "public" };
   try {
     // toutes les colonnes présentes : la disposition, l'ambiance… arrivent avec
-    // migration_profil_medias.sql ; sans elles, styleDepuis met les défauts
+    // migration_profil_medias.sql ; les sceaux posés et la visibilité du
+    // Journal avec migration_profil_sceaux.sql ; sans elles, les défauts
     const { data, error } = await sb.from("profile_style").select("*").eq("user_id", userId).maybeSingle();
-    if (error) return { style: STYLE_DEFAUT, disponible: false };
-    return { style: styleDepuis(data as Record<string, unknown> | null), disponible: true };
+    if (error) return defaut;
+    const r = data as Record<string, unknown> | null;
+    const pins = r && Array.isArray(r.pins) ? (r.pins as unknown[]).filter((x): x is string => typeof x === "string").slice(0, 3) : [];
+    const j = r?.journal_visibility;
+    return { style: styleDepuis(r), disponible: true, pins, journal: j === "friends" || j === "private" ? j : "public" };
   } catch {
-    return { style: STYLE_DEFAUT, disponible: false };
+    return defaut;
   }
 }
 

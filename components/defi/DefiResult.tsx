@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Cote } from "@/components/adn/Cote";
 import { SignalLeonard } from "@/components/leonard/SignalLeonard";
+import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
 import { DefiAiCopy } from "@/components/defi/DefiAiCopy";
 import { SceauDefi } from "@/components/defi/SceauDefi";
 import { Ticks, reviewMarks } from "@/components/defi/parts";
@@ -25,8 +26,10 @@ const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-d
 // temps, l'écart à la tête coté comme sur un plan (au stylo rouge : le bout
 // qui reste), puis « Revoir ma copie » et « Copier pour l'IA ». Le sceau du
 // jour se pose sur la copie (la main du correcteur qui valide) : coup de
-// tampon à la première visite, déjà posé ensuite. Rendu côté serveur
-// comme côté client (seul le sceau est un îlot client).
+// tampon à la première visite, déjà posé ensuite. Le défi du jour : sous la
+// copie, la cérémonie d'un sceau gagné (Défi tenu…), s'il y en a un. Rendu
+// côté serveur comme côté client (le sceau et la cérémonie sont des îlots
+// client).
 export function DefiResult({ info, review, board }: Props) {
   // la voix de ce défi : les 30 du jour ou les 5 du jour
   const DEFI = voixDefi(info.format);
@@ -122,6 +125,7 @@ export function DefiResult({ info, review, board }: Props) {
         <SceauDefi day={info.day} taille={88} angle={-6} className="-mb-14 -mt-2 ml-auto mr-1 sm:absolute sm:bottom-5 sm:right-6 sm:m-0 md:bottom-6 md:right-8" />
       </div>
     </section>
+      {info.isToday && <CeremonieSceaux className="mt-16 !max-w-none sm:mt-8" />}
     </>
   );
 }

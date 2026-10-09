@@ -5,8 +5,8 @@ import { FicheSceau, SceauDe, ditSceau } from "@/components/profil/FicheSceau";
 import type { EtatSceau } from "@/lib/profil/sceaux";
 
 // Les 3 sceaux posés dans l'en-tête, légèrement inclinés comme posés à la
-// main (96 px sur téléphone, 120 px sur ordinateur). Choisis d'office à
-// cette étape : les paliers les plus hauts (posesDe). Toucher : la fiche.
+// main (96 px sur téléphone, 120 px sur ordinateur) : ceux que le joueur a
+// posés, sinon les plus rares (posesDe). Toucher : la fiche.
 
 const ANGLES = [-6, 3, -2];
 
