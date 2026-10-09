@@ -10,8 +10,10 @@
 --    cible (on peut le changer ou le retirer). Cibles : 'profil',
 --    'duel:<uuid>' (une victoire de ce joueur), 'rang:<uuid>' (une montée
 --    d'ELO de ce joueur, rating_events), 'sceau:<clé>'. Écriture par
---    rl_tamponner seulement, avec un plafond de 30 tampons posés par jour
---    (jour de Paris). Lecture : les comptes par cible pour tous les joueurs
+--    rl_tamponner seulement, avec un plafond de 30 nouveaux tampons par jour
+--    (jour de Paris, compteur profil_tampons_jour : changer de tampon n'y
+--    compte pas, retirer ne rend pas de place). Lecture : les comptes par
+--    cible pour tous les joueurs
 --    connectés (rl_tampons), jamais qui a tamponné ; chacun sait seulement
 --    lequel il a posé lui-même.
 -- 2. profil_visites : qui a vu quel profil, quel jour (un jour, jamais une
@@ -23,7 +25,7 @@
 --    « Depuis ta dernière visite » (rl_mon_retour). Une visite dure tant
 --    qu'on revient dans les 30 minutes : recharger la page ne remet pas le
 --    résumé à zéro.
--- Aucune lecture ni écriture directe des trois tables (RLS sans politique).
+-- Aucune lecture ni écriture directe des quatre tables (RLS sans politique).
 
 -- ── 1. les tampons ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS profil_tampons (
@@ -36,20 +38,29 @@ CREATE TABLE IF NOT EXISTS profil_tampons (
   CHECK (de <> pour)
 );
 CREATE INDEX IF NOT EXISTS profil_tampons_pour ON profil_tampons (pour, cible);
-CREATE INDEX IF NOT EXISTS profil_tampons_de_jour ON profil_tampons (de, cree_le);
 ALTER TABLE profil_tampons ENABLE ROW LEVEL SECURITY;
 
+-- Le compteur des nouveaux tampons de chaque joueur, par jour de Paris (le
+-- jour en cours seulement : les jours passés partent à la pose suivante).
+CREATE TABLE IF NOT EXISTS profil_tampons_jour (
+  de    uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  jour  date NOT NULL,
+  n     int  NOT NULL DEFAULT 0 CHECK (n >= 0),
+  PRIMARY KEY (de, jour)
+);
+ALTER TABLE profil_tampons_jour ENABLE ROW LEVEL SECURITY;
+
 -- Poser, changer ou retirer (p_tampon NULL) son tampon sur une cible d'un
--- autre joueur. Renvoie le tampon posé (NULL : retiré). Le plafond ne
--- compte que les nouveaux tampons du jour : changer ou retirer reste permis.
+-- autre joueur. Renvoie le tampon posé (NULL : retiré). Le plafond compte
+-- les nouveaux tampons du jour : changer ou retirer reste permis, mais
+-- retirer ne rend pas de place.
 CREATE OR REPLACE FUNCTION rl_tamponner(p_pour uuid, p_cible text, p_tampon text)
 RETURNS text
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_moi   uuid := auth.uid();
-  -- minuit, heure de Paris
-  v_jour  timestamptz := date_trunc('day', now() AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris';
+  v_jour  date := (now() AT TIME ZONE 'Europe/Paris')::date;
   v_ref   uuid;
   v_n     int;
 BEGIN
@@ -81,15 +92,21 @@ BEGIN
     END IF;
   END IF;
 
-  -- déjà posé : on change de tampon, qui compte comme posé maintenant
-  -- (« Depuis ta dernière visite » le voit) ; le même : rien ne bouge
+  -- le compteur du jour sert aussi de verrou : deux appels du même joueur
+  -- passent l'un après l'autre
+  INSERT INTO profil_tampons_jour (de, jour) VALUES (v_moi, v_jour) ON CONFLICT (de, jour) DO NOTHING;
+  SELECT n INTO v_n FROM profil_tampons_jour WHERE de = v_moi AND jour = v_jour FOR UPDATE;
+
+  -- déjà posé : on change de tampon (hors plafond), qui compte comme posé
+  -- maintenant (« Depuis ta dernière visite » le voit) ; le même : rien ne bouge
   UPDATE profil_tampons SET tampon = p_tampon, cree_le = now()
    WHERE de = v_moi AND pour = p_pour AND cible = p_cible AND tampon <> p_tampon;
   IF FOUND OR EXISTS (SELECT 1 FROM profil_tampons WHERE de = v_moi AND pour = p_pour AND cible = p_cible) THEN RETURN p_tampon; END IF;
-  IF FOUND THEN RETURN p_tampon; END IF;
 
-  SELECT count(*) INTO v_n FROM profil_tampons WHERE de = v_moi AND cree_le >= v_jour;
+  -- un nouveau tampon : 30 par jour au plus
   IF v_n >= 30 THEN RAISE EXCEPTION 'daily stamp limit'; END IF;
+  UPDATE profil_tampons_jour SET n = n + 1 WHERE de = v_moi AND jour = v_jour;
+  DELETE FROM profil_tampons_jour WHERE de = v_moi AND jour < v_jour;
 
   INSERT INTO profil_tampons (de, pour, cible, tampon) VALUES (v_moi, p_pour, p_cible, p_tampon)
   ON CONFLICT (de, pour, cible) DO UPDATE SET tampon = excluded.tampon;
@@ -179,8 +196,10 @@ ALTER TABLE profil_retours ENABLE ROW LEVEL SECURITY;
 -- visiteurs (joueurs distincts depuis le jour de la visite précédente : un
 -- nombre, jamais des noms), tampons {bravo, respect, revanche} reçus
 -- depuis, elo (somme des variations depuis) et elo_avant (l'ELO au début,
--- NULL sans match), victoires (duels gagnés depuis). Le compte de la
--- semaine vient de rl_mes_visites(7).
+-- NULL sans match), place_avant (ma place au classement à ce moment-là,
+-- seulement pour un ELO d'au moins 1 850 : elle ne sert qu'à voir une
+-- entrée dans le Top 10 ; NULL sinon), victoires (duels gagnés depuis). Le
+-- compte de la semaine vient de rl_mes_visites(7).
 CREATE OR REPLACE FUNCTION rl_mon_retour()
 RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -189,6 +208,8 @@ DECLARE
   v_moi    uuid := auth.uid();
   v_ligne  profil_retours%ROWTYPE;
   v_depuis timestamptz;
+  v_avant  int;
+  v_place  int;
 BEGIN
   IF v_moi IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
   IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = v_moi) THEN RETURN NULL; END IF;
@@ -206,6 +227,21 @@ BEGIN
     v_depuis := v_ligne.precedente;
   END IF;
 
+  IF v_depuis IS NOT NULL THEN
+    SELECT elo_before INTO v_avant FROM rating_events WHERE user_id = v_moi AND created_at > v_depuis
+    ORDER BY created_at, elo_before LIMIT 1;
+    -- la place d'alors : 1 + les joueurs dont l'ELO d'alors (leur dernier
+    -- match d'avant) était plus haut ; Grand Maître au moins, sinon rien à lire
+    IF v_avant >= 1850 THEN
+      SELECT 1 + count(*) INTO v_place FROM (
+        SELECT DISTINCT ON (e.user_id) e.elo_after
+        FROM rating_events e
+        WHERE e.created_at <= v_depuis AND e.user_id <> v_moi
+        ORDER BY e.user_id, e.created_at DESC, e.id DESC
+      ) x WHERE x.elo_after > v_avant;
+    END IF;
+  END IF;
+
   RETURN jsonb_build_object(
     'depuis', v_depuis,
     'visiteurs', CASE WHEN v_depuis IS NULL THEN 0 ELSE (
@@ -219,10 +255,8 @@ BEGIN
       FROM profil_tampons WHERE pour = v_moi AND v_depuis IS NOT NULL AND cree_le > v_depuis
     ),
     'elo', (SELECT coalesce(sum(delta), 0) FROM rating_events WHERE user_id = v_moi AND v_depuis IS NOT NULL AND created_at > v_depuis),
-    'elo_avant', (
-      SELECT elo_before FROM rating_events WHERE user_id = v_moi AND v_depuis IS NOT NULL AND created_at > v_depuis
-      ORDER BY created_at, elo_before LIMIT 1
-    ),
+    'elo_avant', v_avant,
+    'place_avant', v_place,
     'victoires', (
       SELECT count(*) FROM duels WHERE winner_id = v_moi AND status = 'finished' AND v_depuis IS NOT NULL AND finished_at > v_depuis
     )
