@@ -18,9 +18,12 @@ import type { TodayDaily } from "@/lib/daily";
 import { ACCUEIL, DUEL } from "@/lib/voice";
 import { ESPACES } from "@/lib/voice-z4";
 import { EclairCarte } from "@/components/eclair/EclairCarte";
+import { PointsFaiblesHeros } from "@/components/moi/PointsFaibles";
+import type { PointsFaiblesData } from "@/lib/points-faibles";
 
 // Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
-// avant (la matière la plus faible, sinon reprendre l'entraînement ciblé) ;
+// avant (ton point faible n° 1 quand il y en a un, sinon la matière la plus
+// faible, sinon reprendre l'entraînement ciblé) ;
 // à côté, le défi du jour (le rituel quotidien, sans bouton plein : le point
 // focal reste la session) puis les autres façons de s'entraîner seul, dont
 // les calculs ; ensuite une session par matière, en rangée horizontale
@@ -40,6 +43,8 @@ export type EntrainementData = {
   eclair?: number | null;
   /** instant de rendu (ISO), pour les échéances du défi */
   nowIso: string;
+  /** « Tes points faibles » : le n° 1 prend la carte héros ; absent ou sans point faible, la matière la plus faible comme avant */
+  pointsFaibles?: PointsFaiblesData;
 };
 
 const pctOf = (score: number, total: number) => (total > 0 ? Math.round((score / total) * 100) : null);
@@ -208,7 +213,12 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
   const lead = (
     <div className="flex flex-col gap-4 md:gap-[18px]">
       <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
-        <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
+        {d.pointsFaibles?.etat === "faibles" ? (
+          // le héros n'en montre que trois : on n'envoie pas les autres au navigateur
+          <PointsFaiblesHeros d={{ ...d.pointsFaibles, liste: d.pointsFaibles.liste.slice(0, 3) }} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
+        ) : (
+          <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
+        )}
         {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
         {d.daily && (
           <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>

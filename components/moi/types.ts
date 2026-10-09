@@ -5,6 +5,7 @@ import type { EtatObjectif } from "@/lib/objectif";
 import type { EtatJour } from "@/lib/voice";
 import type { Marquees } from "@/components/moi/marquees-data";
 import type { Ratures } from "@/components/moi/ratures-data";
+import type { PointsFaiblesData } from "@/lib/points-faibles";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -95,4 +96,6 @@ export type MoiData = {
   objectif: EtatObjectif;
   /** les questions marquées (Moi › Marquées) */
   marquees: Marquees;
+  /** « Tes points faibles » (en tête de Stats ; absent : pas de carte) */
+  pointsFaibles?: PointsFaiblesData;
 };

@@ -14,10 +14,16 @@ import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 // rejoint les anciennes) ; faux : elle reste (rature_repondre). Même chose
 // pour « Rejouer les anciennes », une révision : juste, elle reste rayée ;
 // faux, elle revient en cours. La correction ne vient qu'après la réponse.
-// On s'arrête quand on veut, on revient plus tard.
+// On s'arrête quand on veut, on revient plus tard. Avec `theme` (« Tes points
+// faibles »), seules les ratures en cours des sets du thème
+// (rature_suivante_theme, migration_points_faibles.sql).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
+
+/** La fonction appelée n'existe pas (encore) en base : migration pas collée. */
+const fonctionAbsente = (e: { code?: string; message?: string }) =>
+  ["PGRST202", "PGRST205", "42883", "42P01", "42703"].includes(e.code ?? "") || /could not find the function/i.test(e.message ?? "");
 
 type Tiree = {
   questionId: string;
@@ -43,6 +49,7 @@ export type DemoPropre = { questions: (QuestionTiree & { bonne: number; explicat
 
 export function MiseAuPropre({
   source,
+  theme,
   anciennes = false,
   onStatut,
   onFermer,
@@ -50,6 +57,8 @@ export function MiseAuPropre({
 }: {
   /** le tri du carnet (null : toutes les ratures) */
   source: string | null;
+  /** un thème (« Tes points faibles ») : ses sets et son nom */
+  theme?: { sets: string[]; libelle: string };
   /** rejouer les anciennes (rayées) plutôt que mettre au propre celles en cours */
   anciennes?: boolean;
   /** ce qui est arrivé à la rature (rayee, reste, ancienne, revenue) et ses sources, pour les compteurs du carnet */
@@ -65,6 +74,10 @@ export function MiseAuPropre({
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState(false);
+  // la reprise par thème demande migration_points_faibles.sql
+  const [indisponible, setIndisponible] = useState(false);
+  // les sets du thème, en clé stable (le tirage ne se relance pas à chaque rendu du parent)
+  const cleSets = theme ? theme.sets.join(",") : null;
   const [bilan, setBilan] = useState({ rayees: 0, restees: 0 });
   const vues = useRef<string[]>([]);
   const haut = useRef<HTMLDivElement>(null);
@@ -77,13 +90,15 @@ export function MiseAuPropre({
     const restantes = demo?.questions.filter((q) => !vues.current.includes(q.question_id));
     const { data, error } = demo
       ? { data: { carnet: demo.questions.length, reste: restantes?.length ?? 0, question: restantes?.[0] ?? null }, error: null }
-      : await sb.rpc("rature_suivante", {
-          p_source: source,
-          p_exclure: vues.current,
-          p_anciennes: anciennes,
-        });
+      : cleSets !== null
+        ? await sb.rpc("rature_suivante_theme", { p_sets: cleSets ? cleSets.split(",") : [], p_exclure: vues.current })
+        : await sb.rpc("rature_suivante", {
+            p_source: source,
+            p_exclure: vues.current,
+            p_anciennes: anciennes,
+          });
     setEnvoi(false);
-    if (error) return setErreur(true);
+    if (error) return cleSets !== null && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
     const r = data as { carnet: number; reste: number; question: null | QuestionTiree };
     setReste(Number(r.reste) || 0);
     if (!r.question) {
@@ -100,7 +115,7 @@ export function MiseAuPropre({
       rubrique: rubriqueDe(r.question.set_title, r.question.folder_name).rubrique,
     });
     haut.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [anciennes, demo, sb, source]);
+  }, [anciennes, cleSets, demo, sb, source]);
 
   useEffect(() => {
     void tirer();
@@ -172,16 +187,20 @@ export function MiseAuPropre({
     return () => window.removeEventListener("keydown", onKey);
   }, [resultat, tiree]);
 
-  const nomFiltre = source ? (NOMS.get(source) ?? source) : null;
+  const nomFiltre = theme ? theme.libelle : source ? (NOMS.get(source) ?? source) : null;
 
   return (
-    <div ref={haut} className="grid scroll-mt-28 gap-4 px-2 py-1" aria-live="polite">
+    // un thème s'ouvre dans une carte pleine largeur : la question garde une ligne lisible (720 px au plus)
+    <div ref={haut} className={"grid scroll-mt-28 gap-4 px-2 py-1 " + (theme ? "w-full max-w-[720px]" : "")} aria-live="polite">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="kicker m-0">{anciennes ? CARNET.rejouerFiltre(nomFiltre) : CARNET.propreFiltre(nomFiltre)}</p>
-        <p className="t-micro m-0 font-mono">
-          {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees)}
-          {reste !== null && !fini ? ` · ${anciennes ? CARNET.rejouerRestantes(reste) : CARNET.propreRestantes(reste)}` : ""}
-        </p>
+        {/* reprise par thème pas encore ouverte : pas de bilan */}
+        {!indisponible && (
+          <p className="t-micro m-0 font-mono">
+            {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees)}
+            {reste !== null && !fini ? ` · ${anciennes ? CARNET.rejouerRestantes(reste) : CARNET.propreRestantes(reste)}` : ""}
+          </p>
+        )}
       </div>
 
       {erreur && (
@@ -190,7 +209,14 @@ export function MiseAuPropre({
         </p>
       )}
 
-      {fini ? (
+      {indisponible ? (
+        <div className="grid gap-3 py-4">
+          <p className="t-small m-0">{CARNET.propreThemeIndisponible}</p>
+          <button type="button" className="btn btn-secondary w-fit" onClick={onFermer}>
+            {CARNET.propreThemeRetour}
+          </button>
+        </div>
+      ) : fini ? (
         <div className="grid gap-3 py-4">
           <p className="t-h3 m-0">{fini === "vide" ? (anciennes ? CARNET.rejouerFini : CARNET.propreFini) : CARNET.propreFiniVue}</p>
           <div className="flex flex-wrap gap-2">
@@ -207,7 +233,7 @@ export function MiseAuPropre({
               </button>
             )}
             <button type="button" className="btn btn-secondary" onClick={onFermer}>
-              {CARNET.propreRetour}
+              {theme ? CARNET.propreThemeRetour : CARNET.propreRetour}
             </button>
           </div>
         </div>

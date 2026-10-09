@@ -9,6 +9,7 @@ import { SettingsPanel } from "@/components/moi/SettingsPanel";
 import { buildTopicStats, parseMoiTab, xpLastDays, xpThisWeek } from "@/components/moi/data";
 import { NO_ERRORS, getFicheErrors } from "@/components/moi/errors-data";
 import { getRatures } from "@/components/moi/ratures-data";
+import { construirePointsFaibles, lireBanqueQcm, lireRaturesParTheme } from "@/components/moi/points-faibles-data";
 import { getMarquees } from "@/components/moi/marquees-data";
 import { getSessionHistory } from "@/components/moi/history-data";
 import { getAnswerStats } from "@/lib/answer-stats";
@@ -59,7 +60,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, raturesTheme, banqueQcm] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -82,6 +83,10 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     loadActivity(supabase, user.id, new Date(now)),
     // les questions marquées (Moi › Marquées)
     getMarquees(supabase),
+    // les ratures par thème (« Tes points faibles » ; vide tant que migration_points_faibles.sql manque)
+    lireRaturesParTheme(supabase),
+    // les QCM de la banque (un QCM recréé retrouve son thème)
+    lireBanqueQcm(admin ?? supabase),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -116,6 +121,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     sessions,
     answers,
     objectif,
+    pointsFaibles: construirePointsFaibles(answers, raturesTheme, banqueQcm, now),
   };
 
   return (

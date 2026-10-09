@@ -135,7 +135,10 @@ BEGIN
 END;
 $$;
 
--- Rejouer les réponses en attente dont l'embargo est levé
+-- Rejouer les réponses en attente dont l'embargo est levé. La ligne n'est
+-- notée que si cette transaction l'a bien retirée : deux lectures du carnet
+-- en parallèle ne la notent pas deux fois (même version dans
+-- migration_points_faibles.sql).
 CREATE OR REPLACE FUNCTION _ratures_rejouer(p_user uuid)
 RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -145,6 +148,9 @@ DECLARE
 BEGIN
   FOR e IN SELECT * FROM ratures_attente WHERE user_id = p_user AND visible_from <= now() ORDER BY at, id LOOP
     DELETE FROM ratures_attente WHERE id = e.id;
+    IF NOT FOUND THEN
+      CONTINUE;
+    END IF;
     PERFORM _rature_note(e.user_id, e.question_id, e.source, e.correct, e.selected, e.at, e.visible_from);
   END LOOP;
 END;
