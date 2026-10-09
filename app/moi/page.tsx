@@ -9,7 +9,7 @@ import { SettingsPanel } from "@/components/moi/SettingsPanel";
 import { buildTopicStats, parseMoiTab, xpLastDays, xpThisWeek } from "@/components/moi/data";
 import { NO_ERRORS, getFicheErrors } from "@/components/moi/errors-data";
 import { getRatures } from "@/components/moi/ratures-data";
-import { construirePointsFaibles, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
+import { construirePointsFaibles, libellesNotions, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
 import { avecAtelier, lireEtatAtelier } from "@/app/atelier/donnees";
 import { getMarquees } from "@/components/moi/marquees-data";
 import { getSessionHistory } from "@/components/moi/history-data";
@@ -69,9 +69,9 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     getLeaderboardRank(supabase, user.id),
     countPlayers(supabase),
     xpCall,
-    // le carnet de ratures (toutes sources) ; sans la migration, l'ancien carnet des fiches
+    // le carnet de ratures (toutes sources, et par notion) ; sans la migration, l'ancien carnet des fiches
     (async () => {
-      const ratures = await getRatures(supabase);
+      const ratures = await getRatures(supabase, libellesNotions);
       return { ratures, errors: ratures.available ? NO_ERRORS : await getFicheErrors(supabase, admin ?? supabase, user.id, now) };
     })(),
     supabase.from("group_memberships").select("group_id, study_groups(id,name,invite_code)").eq("user_id", user.id),

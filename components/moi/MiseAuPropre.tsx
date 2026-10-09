@@ -59,7 +59,7 @@ export function MiseAuPropre({
   /** le tri du carnet (null : toutes les ratures) */
   source: string | null;
   /** un point faible (« Tes points faibles ») : sa notion (Learning Module) ou, en repli, ses sets, et son nom */
-  theme?: { notion: string | null; sets: string[]; libelle: string };
+  theme?: { notion: string | null; sets: string[]; libelle: string; /** le bouton de sortie (« Revenir au carnet ») ; par défaut, le retour aux points faibles */ retour?: string };
   /** rejouer les anciennes (rayées) plutôt que mettre au propre celles en cours */
   anciennes?: boolean;
   /** ce qui est arrivé à la rature (rayee, reste, ancienne, revenue) et ses sources, pour les compteurs du carnet */
@@ -217,7 +217,7 @@ export function MiseAuPropre({
         <div className="grid gap-3 py-4">
           <p className="t-small m-0">{CARNET.propreThemeIndisponible}</p>
           <button type="button" className="btn btn-secondary w-fit" onClick={onFermer}>
-            {CARNET.propreThemeRetour}
+            {theme?.retour ?? CARNET.propreThemeRetour}
           </button>
         </div>
       ) : fini ? (
@@ -237,7 +237,7 @@ export function MiseAuPropre({
               </button>
             )}
             <button type="button" className="btn btn-secondary" onClick={onFermer}>
-              {theme ? CARNET.propreThemeRetour : CARNET.propreRetour}
+              {theme ? (theme.retour ?? CARNET.propreThemeRetour) : CARNET.propreRetour}
             </button>
           </div>
         </div>

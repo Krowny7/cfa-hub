@@ -29,6 +29,7 @@ import type { CalcTopic } from "@/lib/calc/types";
 import { NOTIONS, notionParId, notionsDuTitre, type Notion as NotionLM } from "@/lib/notions";
 import { conceptsQuiCoincent, pointsFaibles, recentDe, type ConceptCoince, type Lien, type Notion, type PointsFaiblesData, type SeanceDatee } from "@/lib/points-faibles";
 import { POINTS_FAIBLES } from "@/lib/voice-points-faibles";
+import type { LibelleNotion } from "@/components/moi/ratures-data";
 
 /** Une ligne de ratures_par_theme. */
 export type RaturesTheme = {
@@ -415,6 +416,18 @@ function construireParNotion(stats: AnswerStats, base: NotionsJoueur, banque: Ba
 /** Les points faibles d'un joueur : par notion (étape 2) quand base.notions est là, sinon par thème (étape 1). */
 export function construirePointsFaibles(stats: AnswerStats, base: BasePointsFaibles, banque: BanqueQcm, now: number): PointsFaiblesData {
   return base.notions ? construireParNotion(stats, base.notions, banque, now) : construireParTheme(stats, base.themes, banque, now);
+}
+
+const RANG = new Map(NOTIONS.map((n, i) => [n.id, i]));
+
+/** Les noms des notions du carnet (Moi › Erreurs, par notion) : libellé court, « Fixed Income · LM 11 », rang dans le programme. Inconnue ou « » : absente (le carnet la nomme lui-même). */
+export function libellesNotions(ids: string[]): Record<string, LibelleNotion> {
+  const out: Record<string, LibelleNotion> = {};
+  for (const id of ids) {
+    const n = notionParId(id);
+    if (n) out[id] = { libelle: n.court, repere: `${MATIERES.get(n.matiere)?.name ?? n.matiere} · ${POINTS_FAIBLES.repereLm(n.lm)}`, rang: RANG.get(n.id) ?? 0 };
+  }
+  return out;
 }
 
 /**

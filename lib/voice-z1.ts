@@ -166,6 +166,18 @@ export const CARNET = {
   /** « Mettre au propre ce thème » (Tes points faibles, migration_points_faibles.sql) */
   propreThemeRetour: "Revenir à mes points faibles",
   propreThemeIndisponible: "La reprise par thème n'est pas encore ouverte. Tes ratures t'attendent dans Moi › Erreurs.",
+  /** le carnet rangé par source ou par notion (migration_carnet_notions.sql) */
+  ranger: "Ranger le carnet",
+  parSource: "Par source",
+  parNotion: "Par notion",
+  notions: (n: number) => `${pluriel(n, "notion", "notions")}, les plus chargées d'abord`,
+  voirNotions: (n: number) => `Voir les ${nombre(n)} autres`,
+  voirMoins: "Voir moins",
+  toutesNotions: "Toutes les notions",
+  sansNotion: "Sans notion",
+  sansNotionRepere: "questions retirées de la banque ou pas encore rangées",
+  notionInconnue: "Autre notion",
+  ratures: (n: number) => pluriel(n, "rature", "ratures"),
 } as const;
 
 /** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */
