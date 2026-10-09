@@ -1,0 +1,95 @@
+/* Les tampons du profil : le mot gravé dans un double filet, comme un
+   tampon de caoutchouc. Pas posé : au crayon. Le tien : à l'encre du
+   correcteur (vermillon), avec son coup de tampon. */
+
+.tampon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 6px;
+  border-radius: 12px;
+  color: var(--ink-3);
+  transition:
+    color var(--dur-1) var(--ease-out),
+    background-color var(--dur-1) var(--ease-out);
+}
+button.tampon {
+  cursor: pointer;
+}
+button.tampon:hover {
+  color: var(--ink-2);
+  background: var(--surface-2);
+}
+.tampon:disabled {
+  cursor: default;
+}
+
+.mot {
+  display: inline-block;
+  padding: 2px 5px 1px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  outline: 1px solid currentColor;
+  outline-offset: 1.5px;
+  font-family: var(--font-brand), var(--font-sans);
+  font-size: 10.5px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(var(--angle, -2.5deg));
+}
+
+.n {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+/* reçu (des autres) : à l'encre */
+.recu {
+  color: var(--ink-2);
+}
+/* le tien */
+.mien {
+  color: var(--pen);
+}
+.mien .n {
+  color: var(--pen);
+}
+.pose .mot {
+  animation: coup var(--dur-2) var(--ease-spring);
+}
+@keyframes coup {
+  from {
+    transform: rotate(-9deg) scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* sur une entrée du Journal : plus petits */
+.petit {
+  min-height: 32px;
+  gap: 5px;
+  padding: 0 6px;
+}
+.petit .mot {
+  padding: 2px 4px 1px;
+  font-size: 9.5px;
+  outline-offset: 1px;
+}
+.petit .n {
+  font-size: 11.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pose .mot {
+    animation: none;
+  }
+}
+:global(html[data-rl-motion="off"]) .pose .mot {
+  animation: none;
+}

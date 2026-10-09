@@ -174,20 +174,19 @@ CREATE TABLE IF NOT EXISTS profil_retours (
 );
 ALTER TABLE profil_retours ENABLE ROW LEVEL SECURITY;
 
--- Je regarde mon profil : ce qui s'est passé depuis ma visite précédente,
--- et le compte des visiteurs de la semaine. Note le passage. Rend un objet :
--- depuis (NULL à la première visite), semaine (joueurs distincts sur 7
--- jours), visiteurs (joueurs distincts depuis le jour de la visite
--- précédente), tampons {bravo, respect, revanche} reçus depuis, elo (somme
--- des variations depuis) et elo_avant (l'ELO au début, NULL sans match),
--- victoires (duels gagnés depuis).
+-- Je regarde mon profil : ce qui s'est passé depuis ma visite précédente.
+-- Note le passage. Rend un objet : depuis (NULL à la première visite),
+-- visiteurs (joueurs distincts depuis le jour de la visite précédente : un
+-- nombre, jamais des noms), tampons {bravo, respect, revanche} reçus
+-- depuis, elo (somme des variations depuis) et elo_avant (l'ELO au début,
+-- NULL sans match), victoires (duels gagnés depuis). Le compte de la
+-- semaine vient de rl_mes_visites(7).
 CREATE OR REPLACE FUNCTION rl_mon_retour()
 RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_moi    uuid := auth.uid();
-  v_jour   date := (now() AT TIME ZONE 'Europe/Paris')::date;
   v_ligne  profil_retours%ROWTYPE;
   v_depuis timestamptz;
 BEGIN
@@ -209,7 +208,6 @@ BEGIN
 
   RETURN jsonb_build_object(
     'depuis', v_depuis,
-    'semaine', (SELECT count(DISTINCT de) FROM profil_visites WHERE pour = v_moi AND jour > v_jour - 7),
     'visiteurs', CASE WHEN v_depuis IS NULL THEN 0 ELSE (
       SELECT count(DISTINCT de) FROM profil_visites WHERE pour = v_moi AND jour >= (v_depuis AT TIME ZONE 'Europe/Paris')::date
     ) END,

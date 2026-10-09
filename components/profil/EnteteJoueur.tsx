@@ -72,6 +72,7 @@ export function EnteteJoueur({
   presence = false,
   poses = null,
   piedRang = null,
+  tampons = null,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
@@ -87,6 +88,8 @@ export function EnteteJoueur({
   poses?: React.ReactNode;
   /** le pied de la carte du rang, sur ordinateur (bilan du face-à-face) */
   piedRang?: React.ReactNode;
+  /** les tampons du profil (TamponsCible), sous les actions */
+  tampons?: React.ReactNode;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
   // sur téléphone : le rang dans la ligne du nom, la ligne niveau · ELO · place, le pic
@@ -180,6 +183,7 @@ export function EnteteJoueur({
               )}
             </div>
           )}
+          {tampons && !apercu && <div className="-mt-1.5">{tampons}</div>}
           {poses && !apercu && <div className="pt-1 lg:pt-2">{poses}</div>}
         </div>
 
