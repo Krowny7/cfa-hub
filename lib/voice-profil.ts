@@ -30,6 +30,7 @@ export const ONGLETS = {
   nav: "Sections du profil",
   profil: "Profil",
   sceaux: "Sceaux",
+  journal: "Journal",
   faceAFace: "Face-à-face",
 } as const;
 
@@ -168,4 +169,62 @@ export const FACE = {
   nullePart: "nulle part",
   rienEnCommun: "Aucune matière mesurée en commun pour l'instant.",
   voir: "Face-à-face",
+} as const;
+
+// ---------------------------------------------------------------------------
+// Le Journal : la courbe d'ELO, le carnet de jours, le fil. Des jours, jamais
+// d'heures.
+
+/** « 3 oct. » (ou « 13 oct. 2025 » avec l'année) pour une clé de jour (AAAA-MM-JJ) : même rendu partout. */
+export function jourCourt(jour: string, annee = false): string {
+  const d = new Date(jour + "T12:00:00Z");
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", ...(annee ? { year: "numeric" } : {}), timeZone: "UTC" }).format(d);
+}
+
+export const JOURNAL = {
+  titre: "Journal",
+  // la courbe
+  courbe: "ELO · 90 jours",
+  /** « pic Or III · 1 263 » : le meilleur ELO atteint */
+  pic: (rang: string, elo: number) => `pic ${rang} · ${nombre(elo)}`,
+  /** lu à voix haute */
+  courbeDit: (depart: number, fin: number, matchs: number) =>
+    `ELO sur 90 jours : de ${nombre(depart)} à ${nombre(fin)}, ${pluriel(matchs, "match classé", "matchs classés")}`,
+  source: { duel: "Duel", mock_exam: "Examen blanc classé", placement: "Placement" } as Record<string, string>,
+  /** l'infobulle : « +18 → 1 263 » */
+  variation: (delta: number, apres: number) => `${signe(delta)} → ${nombre(apres)}`,
+  calme: "Aucun match classé sur 90 jours.",
+  courbeVide: "Pas encore de match classé.",
+  courbeVideTexte: "L'ELO bouge avec les duels et les examens blancs classés.",
+  // le carnet
+  carnet: "Carnet de jours",
+  /** « série 12 jours · record 34 jours » */
+  serie: (n: number) => `série ${pluriel(n, "jour", "jours")}`,
+  record: (n: number) => `record ${pluriel(n, "jour", "jours")}`,
+  /** « 41 jours d'encre sur 52 semaines » */
+  actifs: (n: number, semaines: number) => `${pluriel(n, "jour d'encre", "jours d'encre")} sur ${nombre(semaines)} semaines`,
+  /** l'infobulle d'une case : « 3 oct. · 42 traits » */
+  case: (jour: string, n: number) => `${jourCourt(jour)} · ${pluriel(n, "trait", "traits")}`,
+  legende: (objectif: number) => `Une case par jour. Encre pleine : ${pluriel(objectif, "trait", "traits")} ou plus.`,
+  moins: "moins",
+  plus: "plus",
+  carnetVide: "Pas encore de jour d'encre.",
+  // le fil
+  fil: "Fil",
+  /** « 4 entrées · 90 jours » */
+  filCompte: (n: number) => `${pluriel(n, "entrée", "entrées")} · 90 jours`,
+  victoireContre: "Victoire contre",
+  victoireSans: "Victoire en duel",
+  /** « 23–19 » */
+  score: (a: number, b: number) => `${nombre(a)}–${nombre(b)}`,
+  palier: (palier: string) => `Monte en ${palier}`,
+  palierTexte: "Nouveau palier, jamais atteint avant.",
+  serieNotable: (n: number) => `${nombre(n)} jours d'encre de suite`,
+  serieTexte: (n: number) => (n >= 100 ? "Cent jours sans trou." : n >= 30 ? "Un mois d'encre." : "Une semaine d'encre."),
+  autres: (n: number) => `Voir ${pluriel(n, "autre entrée", "autres entrées")}`,
+  filVide: "Rien de notable sur 90 jours.",
+  filVideMoi: "Une victoire en duel, un nouveau palier ou 7 jours de suite s'inscrivent ici.",
+  /** la date d'une entrée, dans le navigateur : « aujourd'hui », « hier », « il y a 3 j » ; null au-delà d'une semaine */
+  ilYa: (jours: number): string | null => (jours <= 0 ? "aujourd'hui" : jours === 1 ? "hier" : jours < 7 ? `il y a ${nombre(jours)}${NBSP}j` : null),
 } as const;

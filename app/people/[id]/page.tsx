@@ -26,9 +26,11 @@ import { SceauxPoses } from "@/components/profil/SceauxPoses";
 import { Collection } from "@/components/profil/Collection";
 import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
 import { Revanche } from "@/components/profil/Revanche";
+import { Journal } from "@/components/profil/Journal";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
 import { blocsDe } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
+import { journalDe } from "@/lib/profil/journal";
 import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
 import { MARCHES, aPortee, marchesGagnees, posesDe, sceauxDe } from "@/lib/profil/sceaux";
 import { stakesAgainst } from "@/lib/duels";
@@ -67,8 +69,9 @@ async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[
 // visibilité, rang et pic, niveau, bio, LinkedIn selon sa visibilité, ses 3
 // sceaux posés), puis des onglets collants : Profil (les blocs dans l'ordre
 // et à la largeur choisis par le joueur, GrilleBlocs), Sceaux (la
-// collection) et, sur le profil d'un autre, Face-à-face. L'onglet est dans
-// l'URL (?onglet=sceaux) et chaque onglet ne lit que ses données. Sur son
+// collection), Journal (courbe d'ELO, carnet de jours, fil) et, sur le
+// profil d'un autre, Face-à-face. L'onglet est dans l'URL (?onglet=sceaux)
+// et chaque onglet ne lit que ses données. Sur son
 // propre profil : personnaliser, et « voir comme les autres » (?vue=inconnu
 // ou ?vue=ami) qui rend la page telle qu'un autre joueur la voit.
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
@@ -119,14 +122,22 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     ]);
     return { moyennes, mesStats, monStyle, answers, trophyRows, progressSessions, monRating };
   })();
+  // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
+  const statsLues = statsProfil(id, supabase);
+  const maitrisesLues = masteryByUser(admin, [id]);
+  // le Journal : la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
+  const journalLu = (async () => {
+    if (onglet !== "journal") return null;
+    const [stats, masteries] = await Promise.all([statsLues, maitrisesLues]);
+    return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null });
+  })();
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o] = await Promise.all([
+  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o, journal] = await Promise.all([
     getLeaderboardRank(supabase, id),
-    masteryByUser(admin, [id]),
+    maitrisesLues,
     styleLu,
-    // les exploits : le pic, les sceaux
-    statsProfil(id, supabase),
+    statsLues,
     relationAvec(supabase, user.id, id),
     // la base ne rend le LinkedIn que s'il est visible pour moi
     lireLien(supabase, id),
@@ -136,6 +147,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     // nos duels, lus avec mon client (je ne lis que les miens)
     autreJoueur ? faceAFace(supabase, user.id, id) : Promise.resolve(null),
     lecturesOnglet,
+    journalLu,
   ]);
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
@@ -270,6 +282,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   let panneau: React.ReactNode;
   if (onglet === "sceaux") {
     panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} />;
+  } else if (onglet === "journal" && journal) {
+    panneau = <Journal journal={journal} mastery={mastery} moi={commeMoi} />;
   } else if (onglet === "face-a-face") {
     const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
     panneau = (

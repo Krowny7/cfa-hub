@@ -1,9 +1,8 @@
-// Les onglets du profil, dans l'ordre : Profil · Sceaux · Face-à-face (le
-// Journal viendra se placer entre Sceaux et Face-à-face). L'onglet est dans
-// l'URL (?onglet=sceaux) ; Face-à-face n'existe que sur le profil d'un
-// autre joueur. Module neutre.
+// Les onglets du profil, dans l'ordre : Profil · Sceaux · Journal ·
+// Face-à-face. L'onglet est dans l'URL (?onglet=sceaux) ; Face-à-face
+// n'existe que sur le profil d'un autre joueur. Module neutre.
 
-export const ONGLETS_PROFIL = ["profil", "sceaux", "face-a-face"] as const;
+export const ONGLETS_PROFIL = ["profil", "sceaux", "journal", "face-a-face"] as const;
 export type OngletProfil = (typeof ONGLETS_PROFIL)[number];
 
 /** Les onglets d'un profil : sans Face-à-face sur le sien (ou son aperçu). */
