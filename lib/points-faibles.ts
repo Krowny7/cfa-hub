@@ -8,7 +8,8 @@
 // mesures : changer d'unité, c'est changer ce qui construit les notions
 // (components/moi/points-faibles-data.ts), pas ce module.
 //
-// Le score (0 à 100, jamais affiché) croise deux faits :
+// Le score (0 à 100, jamais écrit en chiffre ; la jauge en a la longueur)
+// croise deux faits :
 //   lisse  = (ok + 3,25) / (n + 5)           réussite récente, lissée vers 65 %
 //   manque = max(0, 0,85 − lisse) / 0,85     nul dès 85 %
 //   charge = 1 − exp(−(vives + 0,5·enVoie) / 6)
@@ -78,9 +79,9 @@ export type Notion = {
 };
 
 export type PointFaible = Notion & {
-  /** 0 à 100, pour trier : jamais affiché */
+  /** 0 à 100 : l'ordre et la longueur de la jauge, jamais écrit en chiffre */
   score: number;
-  /** la jauge, 1 à JAUGE_MAX */
+  /** l'intensité, 1 à JAUGE_MAX (libellé de la jauge pour les lecteurs d'écran) */
   niveau: number;
   phrase: string;
 };
@@ -92,12 +93,15 @@ export type EtatPointsFaibles = {
   liste: PointFaible[];
   /** notions éligibles (assez de données) */
   eligibles: number;
-  /** ratures rayées ces 7 derniers jours, toutes notions */
-  rayeesSemaine: number;
 };
 
-/** Ce que reçoivent les cartes : le classement, et si « Mettre au propre ce thème » est ouvert (migration_points_faibles.sql collée). */
-export type PointsFaiblesData = EtatPointsFaibles & { propre: boolean };
+/**
+ * Ce que reçoivent les cartes : le classement, propre (migration_points_faibles.sql
+ * collée : ratures par thème lues, « Mettre au propre ce thème » ouvert), et les ratures
+ * rayées ces 7 derniers jours dans tout le carnet (le même compte que Moi ›
+ * Erreurs).
+ */
+export type PointsFaiblesData = EtatPointsFaibles & { propre: boolean; rayeesSemaine: number };
 
 export type SeanceDatee = { n: number; ok: number; at: string };
 
@@ -134,7 +138,7 @@ export function scoreDe(m: Pick<Mesures, "n" | "ok" | "enCours" | "vives">): num
   return Math.round(100 * (POIDS.manque * manque + POIDS.charge * charge));
 }
 
-/** La jauge : 1 (moins de 30), 2 (moins de 50), 3 (moins de 75), 4. */
+/** L'intensité en mots pour les lecteurs d'écran (le trait, lui, a la longueur du score) : 1 (moins de 30), 2 (moins de 50), 3 (moins de 75), 4. */
 export function niveauDe(score: number): number {
   return score < 30 ? 1 : score < 50 ? 2 : score < 75 ? 3 : 4;
 }
@@ -162,28 +166,32 @@ export function comparer(a: PointFaible, b: PointFaible): number {
   );
 }
 
-/** Une notion jugée : son score, sa jauge et sa phrase. */
-export function jugerNotion(x: Notion): PointFaible {
+/**
+ * Une notion jugée : son score, sa jauge et sa phrase. raturesConnues :
+ * false tant que les ratures par thème ne se lisent pas
+ * (migration_points_faibles.sql absente) ; la phrase ne parle alors que de la
+ * réussite récente, jamais de « pas de rature ».
+ */
+export function jugerNotion(x: Notion, raturesConnues = true): PointFaible {
   const m = x.mesures;
   const score = scoreDe(m);
   return {
     ...x,
     score,
     niveau: niveauDe(score),
-    phrase: phrasePointFaible({ n: m.n, ok: m.ok, enCours: m.enCours, vives: m.vives, calcul: x.calcul, recentSuffisant: m.n >= MIN_REPONSES }),
+    phrase: phrasePointFaible({ n: m.n, ok: m.ok, enCours: m.enCours, vives: m.vives, calcul: x.calcul, recentSuffisant: m.n >= MIN_REPONSES, raturesConnues }),
   };
 }
 
-/** Les points faibles d'un joueur, à partir de ses notions. */
-export function pointsFaibles(notions: Notion[]): EtatPointsFaibles {
+/** Les points faibles d'un joueur, à partir de ses notions (raturesConnues : voir jugerNotion). */
+export function pointsFaibles(notions: Notion[], raturesConnues = true): EtatPointsFaibles {
   const eligibles = notions.filter((x) => eligible(x.mesures));
   const liste = eligibles
-    .map(jugerNotion)
+    .map((x) => jugerNotion(x, raturesConnues))
     .filter((p) => p.score >= SEUIL_AFFICHAGE)
     .sort(comparer)
     .slice(0, MAX_LISTE);
-  const rayeesSemaine = notions.reduce((s, x) => s + Math.max(0, x.mesures.rayees7j), 0);
-  return { etat: liste.length ? "faibles" : eligibles.length ? "rien" : "peu", liste, eligibles: eligibles.length, rayeesSemaine };
+  return { etat: liste.length ? "faibles" : eligibles.length ? "rien" : "peu", liste, eligibles: eligibles.length };
 }
 
 export const AUCUN_POINT_FAIBLE: PointsFaiblesData = { etat: "peu", liste: [], eligibles: 0, rayeesSemaine: 0, propre: false };

@@ -1,6 +1,9 @@
-// Tests de lib/points-faibles.ts (score, seuils, égalités, phrases, joueur
-// sans données). Sans dépendance de plus : jiti (déjà installé avec
-// Tailwind) charge le TypeScript et l'alias « @/ ».
+// Tests de « Tes points faibles » : lib/points-faibles.ts (score, seuils,
+// égalités, phrases, joueur sans données), le tiroir d'une ligne
+// (lib/voice-points-faibles.ts) et la construction des thèmes
+// (components/moi/points-faibles-data.ts : sets supprimés, QCM et pages
+// recréés, rayées de la semaine). Sans dépendance de plus : jiti (déjà
+// installé avec Tailwind) charge le TypeScript et l'alias « @/ ».
 // Usage : node scripts/test-points-faibles.mjs
 import { createJiti } from "jiti";
 import { fileURLToPath } from "node:url";
@@ -9,6 +12,8 @@ import { dirname, join } from "node:path";
 const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
 const jiti = createJiti(import.meta.url, { alias: { "@/": racine + "/" } });
 const pf = await jiti.import(join(racine, "lib/points-faibles.ts"));
+const voix = await jiti.import(join(racine, "lib/voice-points-faibles.ts"));
+const donnees = await jiti.import(join(racine, "components/moi/points-faibles-data.ts"));
 
 let ko = 0;
 let n = 0;
@@ -74,9 +79,8 @@ check("au plus 10 points faibles", pf.pointsFaibles(quinze).liste.length === pf.
 
 console.log("\n# Le joueur sans données, puis peu de données");
 const vide = pf.pointsFaibles([]);
-check("aucune notion : état « peu », liste vide, rien rayé", vide.etat === "peu" && vide.liste.length === 0 && vide.eligibles === 0 && vide.rayeesSemaine === 0);
+check("aucune notion : état « peu », liste vide", vide.etat === "peu" && vide.liste.length === 0 && vide.eligibles === 0);
 check("réponses éparpillées (7 par thème) : état « peu »", pf.pointsFaibles([notion({ n: 7, ok: 1 }), notion({ n: 7, ok: 2, enCours: 2, vives: 2 })]).etat === "peu");
-check("les rayées de la semaine se comptent même sans point faible", pf.pointsFaibles([notion({ n: 3, ok: 3, rayees7j: 4 }), notion({ rayees7j: 2 })]).rayeesSemaine === 6);
 check("AUCUN_POINT_FAIBLE : état « peu »", pf.AUCUN_POINT_FAIBLE.etat === "peu" && pf.AUCUN_POINT_FAIBLE.liste.length === 0);
 
 console.log("\n# Les égalités");
@@ -102,6 +106,11 @@ check("calcul sans rature", plat(fcfe.phrase) === "Sur tes 10 derniers calculs :
 check("QCM sans rature", plat(pf.jugerNotion(notion({ n: 10, ok: 1 })).phrase) === "Pas de rature en cours, mais 1 juste sur 10.");
 check("toutes vives", plat(pf.jugerNotion(notion({ n: 0, enCours: 3, vives: 3 })).phrase) === "3 ratures en cours, jamais reprises.");
 check("toutes déjà reprises", plat(pf.jugerNotion(notion({ n: 0, enCours: 3, vives: 0 })).phrase) === "3 ratures en cours, chacune déjà reprise une fois.");
+// ratures par thème illisibles (migration_points_faibles.sql absente) : enCours vaut 0 faute de mieux
+const sansR = pf.pointsFaibles([notion({ n: 10, ok: 3 }, { cle: "q" }), notion({ n: 10, ok: 3 }, { cle: "c", calcul: true })], false).liste;
+check("ratures inconnues : la réussite seule, aucune mention de rature", plat(sansR.find((p) => p.cle === "q").phrase) === "3 justes sur tes 10 dernières réponses." && sansR.every((p) => !/ratur/.test(p.phrase)), sansR.map((p) => p.phrase).join(" | "));
+check("ratures inconnues : le calcul garde sa phrase", plat(sansR.find((p) => p.cle === "c").phrase) === "Sur tes 10 derniers calculs : 3 justes.");
+check("ratures inconnues, 1 juste : au singulier", plat(pf.jugerNotion(notion({ n: 9, ok: 1 }), false).phrase) === "1 juste sur tes 9 dernières réponses.");
 
 console.log("\n# La réussite récente (20 réponses, 90 jours)");
 const seances = [
@@ -120,6 +129,75 @@ console.log("\n# Dernier passage");
 check("43 jours : 6 semaines", pf.semainesDepuis(iso(43), NOW) === 6);
 check("41 jours : rien", pf.semainesDepuis(iso(41), NOW) === null);
 check("date absente ou illisible : rien", pf.semainesDepuis(null, NOW) === null && pf.semainesDepuis("x", NOW) === null);
+
+console.log("\n# Le tiroir : seulement ce que la phrase ne dit pas");
+const tiroir = (m, sources = []) => voix.detailsPointFaible({ n: 0, ok: 0, enCours: 0, vives: 0, anciennes: 0, rayees7j: 0, ...m, recentSuffisant: (m.n ?? 0) >= pf.MIN_REPONSES, sources }).map(plat);
+const tDur = tiroir({ n: 25, ok: 10, enCours: 12, vives: 8, anciennes: 4, rayees7j: 3 }, [{ libelle: "Fiches", n: 31 }, { libelle: "Duels", n: 12 }]);
+check("phrase avec la réussite : ni réussite ni total redits ; vives, anciennes (dont les rayées de la semaine), sources", JSON.stringify(tDur) === JSON.stringify(["Ratures : 8 jamais reprises, 4 anciennes, dont 3 rayées cette semaine", "Répondu en : Fiches 31 · Duels 12"]), JSON.stringify(tDur));
+const tSov = tiroir({ n: 4, ok: 3, enCours: 5, vives: 3 }, [{ libelle: "Fiches", n: 4 }]);
+check("phrase sur les ratures seules : la réussite récente ; une seule source : pas de ligne", JSON.stringify(tSov) === JSON.stringify(["Réussite récente : 75 %, 3 justes sur 4"]), JSON.stringify(tSov));
+const tCalc = tiroir({ n: 10, ok: 3 }, [{ libelle: "Calculs", n: 10 }]);
+check("calcul : rien à ajouter (ni réussite, ni ratures, ni source unique)", tCalc.length === 0, JSON.stringify(tCalc));
+check("sans réponse récente : dit tel quel", tiroir({ n: 0, enCours: 3, vives: 3 })[0] === "Aucune réponse ces 90 derniers jours");
+check("dernier passage : sans point final, comme les autres entrées", !voix.POINTS_FAIBLES.dernierPassage(7).endsWith("."));
+
+console.log("\n# La construction des thèmes (sets supprimés, QCM et pages recréés, rayées de la semaine)");
+const passage = (id, jours, n, ok) => ({ id, source: "qcm", label: "QCM", at: iso(jours), date: "", href: null, n, ok });
+const theme = (key, label, tag, kind, passages, extra = {}) => ({ key, label, tag, kind, by: { qcm: [passages.reduce((s, p) => s + p.n, 0), passages.reduce((s, p) => s + p.ok, 0)] }, passages, more: 0, ...extra });
+const stats = {
+  available: true,
+  missing: [],
+  by: {},
+  subjects: [
+    {
+      key: "fixed_income",
+      name: "Fixed Income",
+      code: "FI",
+      pseudo: false,
+      by: {},
+      themes: [
+        // ancienne numérotation, set supprimé depuis : réponses seules
+        theme("set:vieux", "Yield Curve Strategies", "R47–R48", "qcm", [passage("s1", 3, 12, 3)], { retired: true }),
+        // un QCM recréé : l'ancien set (supprimé) et le nouveau, même repère
+        theme("set:ancien", "Duration, Convexity & Empirical Measures", "R59–R61", "qcm", [passage("s2", 4, 10, 4)], { retired: true }),
+        theme("set:nouveau", "Duration, Convexity & Empirical Measures", "R59–R61", "qcm", [passage("s3", 2, 10, 4)]),
+        // un QCM recréé que le joueur n'a pas encore rejoué : seul l'ancien set dans ses réponses
+        theme("set:credit-ancien", "Credit Risk", "R62–R63", "qcm", [passage("s5", 3, 10, 2)], { retired: true }),
+        // une page de fiche recréée (seedQuizSets) : l'ancien set seulement
+        theme("set:page-ancienne", "Interest Rate Risk & Duration", "p. 4", "fiche", [passage("s4", 5, 12, 3)], { retired: true }),
+      ],
+    },
+  ],
+};
+const lignes = [
+  // ratures d'une question retirée de la vieille numérotation (titre gardé) : 4 en cours
+  { setId: null, setTitle: "Yield Curve Strategies — QCM (R47–R48)", folderName: "Fixed Income (Système)", enCours: 4, vives: 4, anciennes: 0, rayees7j: 1, derniere: iso(3) },
+  { setId: "nouveau", setTitle: "Duration, Convexity & Empirical Measures — QCM (R59–R61)", folderName: "Fixed Income (Système)", enCours: 5, vives: 3, anciennes: 2, rayees7j: 2, derniere: iso(2) },
+  // les ratures de l'ancienne page 4 (questions effacées : titre gardé)
+  { setId: null, setTitle: "Fixed Income — Drill Fiche Page 4 (Interest Rate Risk & Duration)", folderName: "Fixed Income (Système)", enCours: 6, vives: 6, anciennes: 0, rayees7j: 0, derniere: iso(5) },
+  // un mock officiel : hors notion, mais ses rayées comptent dans le total
+  { setId: "mock", setTitle: "Mock A — Session 1", folderName: "CFA Mocks (Système)", enCours: 2, vives: 2, anciennes: 1, rayees7j: 4, derniere: iso(1) },
+];
+// la banque : le QCM R59–R61 (déjà joué) et le Credit Risk recréé ; plus de R47–R48
+const banque = new Map([["qcm:fixed_income:R59–R61", ["nouveau"]], ["qcm:fixed_income:R62–R63", ["credit-neuf"]]]);
+const construit = donnees.construirePointsFaibles(stats, { disponible: true, lignes }, banque, NOW);
+const cles = construit.liste.map((p) => p.cle);
+check("thème sans QCM ni page dans la banque : écarté, malgré 4 ratures", !cles.includes("qcm:fixed_income:R47–R48"), cles.join());
+const credit = construit.liste.find((p) => p.cle === "qcm:fixed_income:R62–R63");
+check("QCM recréé pas encore rejoué : gardé, mène au QCM courant de la banque", !!credit && JSON.stringify(credit.sets) === JSON.stringify(["credit-neuf"]) && credit.liens[0]?.href === "/qcm/credit-neuf", JSON.stringify(credit && { sets: credit.sets, liens: credit.liens }));
+const page4 = construit.liste.find((p) => p.cle === "fiche:fixed_income:4");
+check("page de fiche recréée : gardée (réponses et ratures), mène à sa page", !!page4 && page4.mesures.n === 12 && page4.mesures.enCours === 6 && page4.liens.length === 1 && /^\/fiches\/[a-z-]+\?page=4$/.test(page4.liens[0].href), JSON.stringify(page4 && { m: page4.mesures, liens: page4.liens }));
+check("page recréée : pas de « Mettre au propre » (ses ratures ne sont plus dans un set)", !!page4 && page4.sets.length === 0 && page4.mesures.aRepasser === 0);
+const dur2 = construit.liste.find((p) => p.cle === "qcm:fixed_income:R59–R61");
+check("QCM recréé : un seul thème, réponses des deux sets", !!dur2 && dur2.mesures.n === 20 && dur2.mesures.ok === 8, JSON.stringify(dur2?.mesures));
+check("QCM recréé : seul le set existant sert de lien et de reprise", !!dur2 && JSON.stringify(dur2.sets) === JSON.stringify(["nouveau"]) && dur2.liens.length === 1 && dur2.liens[0].href === "/qcm/nouveau" && dur2.mesures.aRepasser === 5, JSON.stringify(dur2 && { sets: dur2.sets, liens: dur2.liens }));
+check("rayées cette semaine : tout le carnet (thème retiré et mock compris), 7", construit.rayeesSemaine === 7, String(construit.rayeesSemaine));
+check("rayées du thème : les siennes seulement", dur2?.mesures.rayees7j === 2);
+const sansRatures = donnees.construirePointsFaibles(stats, donnees.SANS_RATURES_PAR_THEME, banque, NOW);
+check("ratures par thème indisponibles : 0 rayée, pas de reprise", sansRatures.rayeesSemaine === 0 && sansRatures.propre === false);
+check("ratures par thème indisponibles : aucune phrase ne parle de rature", sansRatures.liste.length > 0 && sansRatures.liste.every((p) => !/ratur/.test(p.phrase)), sansRatures.liste.map((p) => p.phrase).join(" | "));
+const sansBanque = donnees.construirePointsFaibles(stats, { disponible: true, lignes }, new Map(), NOW);
+check("banque illisible : le QCM jamais rejoué disparaît, les autres restent", !sansBanque.liste.some((p) => p.cle === "qcm:fixed_income:R62–R63") && sansBanque.liste.some((p) => p.cle === "qcm:fixed_income:R59–R61"));
 
 console.log(ko ? `\n${ko} KO sur ${n}` : `\nTOUT OK (${n})`);
 process.exit(ko ? 1 : 0);

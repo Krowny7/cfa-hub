@@ -6,9 +6,14 @@
 // - ses ratures comptées par thème (ratures_par_theme,
 //   migration_points_faibles.sql). Fonction absente : la réussite récente
 //   seule, sans « Mettre au propre ce thème ».
+// - les QCM de la banque, par matière et repère R (lireBanqueQcm).
 // Une page de fiche et sa réserve (« Réserve — … Page N ») font un seul
-// thème ; un QCM recréé garde son thème (même repère R). Les mocks officiels
-// et les regroupements sans détail restent au niveau de la matière.
+// thème ; un QCM recréé garde son thème (même repère R) et mène au QCM
+// courant, même si le joueur n'a répondu qu'à l'ancien ; une page de fiche
+// recréée mène toujours à sa page. Les mocks officiels et les regroupements
+// sans détail restent au niveau de la matière, comme les thèmes qui ne
+// mènent plus nulle part (anciennes numérotations, sans QCM ni page dans la
+// banque) : rien à y refaire.
 // À l'étape 2, seule la fonction `cleDe` et le libellé changent : la notion
 // devient le Learning Module.
 // Côté serveur seulement : importe le catalogue des calculs (avec réponses).
@@ -38,6 +43,30 @@ export type RaturesParTheme = { disponible: boolean; lignes: RaturesTheme[] };
 export const SANS_RATURES_PAR_THEME: RaturesParTheme = { disponible: false, lignes: [] };
 
 type Brut = { set_id: string | null; set_title: string | null; folder_name: string | null; en_cours: number; vives: number; anciennes: number; rayees_7j: number; derniere: string | null };
+
+/** Les QCM de la banque par notion (« qcm:fixed_income:R59–R61 » → ses sets) : un QCM recréé sous un autre id se retrouve par son repère. */
+export type BanqueQcm = Map<string, string[]>;
+
+type SetBanque = { id: string; title: string | null; library_folders: { name: string | null } | { name: string | null }[] | null };
+
+/** Les QCM des dossiers « (Système) ». Toute erreur : une banque vide (les thèmes gardent alors les sets du joueur). */
+export async function lireBanqueQcm(reader: SupabaseClient): Promise<BanqueQcm> {
+  const banque: BanqueQcm = new Map();
+  try {
+    const { data, error } = await reader.from("quiz_sets").select("id,title,library_folders(name)").like("title", "% — QCM (%");
+    if (error || !Array.isArray(data)) return banque;
+    for (const s of data as unknown as SetBanque[]) {
+      const dossier = (Array.isArray(s.library_folders) ? s.library_folders[0]?.name : s.library_folders?.name) ?? null;
+      if (!dossier?.endsWith(" (Système)")) continue;
+      const place = placeSet(s.id, s.title, dossier);
+      const cle = place.kind === "qcm" ? cleDe(place.subject, place.kind, place.tag, s.id, null) : null;
+      if (cle) banque.set(cle, [...(banque.get(cle) ?? []), s.id]);
+    }
+  } catch {
+    banque.clear();
+  }
+  return banque;
+}
 
 /** Les ratures du joueur connecté, par thème. Toute erreur (fonction absente comprise) : indisponible, sans bruit. */
 export async function lireRaturesParTheme(supabase: SupabaseClient): Promise<RaturesParTheme> {
@@ -114,7 +143,7 @@ function liensDe(a: Acc): Lien[] {
 }
 
 /** Les notions d'un joueur (étape 1 : ses thèmes) et leur classement. */
-export function construirePointsFaibles(stats: AnswerStats, ratures: RaturesParTheme, now: number): PointsFaiblesData {
+export function construirePointsFaibles(stats: AnswerStats, ratures: RaturesParTheme, banque: BanqueQcm, now: number): PointsFaiblesData {
   const acc = new Map<string, Acc>();
   const ouvrir = (cle: string, init: Omit<Acc, "cle" | "sets" | "seances" | "sources" | "enCours" | "vives" | "anciennes" | "rayees7j" | "aRepasser" | "derniere">) => {
     let a = acc.get(cle);
@@ -136,7 +165,8 @@ export function construirePointsFaibles(stats: AnswerStats, ratures: RaturesParT
       const cle = cleDe(s.key, kind, th.tag, setId, calcKey);
       if (!cle) continue;
       const a = ouvrir(cle, { libelle: th.label, matiere: s.key, repere: th.tag, kind, calcKey });
-      if (setId) a.sets.add(setId);
+      // un set supprimé depuis garde ses réponses, pas son lien
+      if (setId && !th.retired) a.sets.add(setId);
       for (const p of th.passages) {
         // un même passage peut toucher deux sets d'une notion (page et réserve) : on additionne
         const v = a.seances.get(p.id) ?? { n: 0, ok: 0, at: p.at };
@@ -166,23 +196,31 @@ export function construirePointsFaibles(stats: AnswerStats, ratures: RaturesParT
     a.derniere = plusTard(a.derniere, r.derniere);
   }
 
-  const notions: Notion[] = [...acc.values()].map((a) => {
+  // 3. un QCM recréé (nouvel id) : le set courant de même matière et même repère
+  for (const a of acc.values()) for (const id of banque.get(a.cle) ?? []) a.sets.add(id);
+
+  // un thème qui ne mène plus nulle part (ni QCM, ni page de fiche, ni calcul) reste au niveau de la matière
+  const notions: Notion[] = [...acc.values()].flatMap((a) => {
+    const liens = liensDe(a);
+    if (!liens.length) return [];
     const recent = recentDe([...a.seances.values()], now);
     const calcul = a.kind === "calc";
     const nomCalcul = calcul && a.calcKey ? calcType(a.matiere as CalcTopic, a.calcKey)?.name : null;
-    return {
+    return [{
       cle: a.cle,
       libelle: nomCalcul ? POINTS_FAIBLES.calcul(nomCalcul) : a.libelle,
       matiere: a.matiere,
       matiereNom: MATIERES.get(a.matiere)?.name ?? a.matiere,
       repere: a.repere,
       calcul,
-      liens: liensDe(a),
+      liens,
       sets: [...a.sets].sort(),
       sources: [...a.sources.entries()].filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]).map(([src, n]) => ({ libelle: SOURCE_LABELS[src], n })),
       mesures: { n: recent.n, ok: recent.ok, enCours: a.enCours, vives: a.vives, anciennes: a.anciennes, rayees7j: a.rayees7j, aRepasser: a.aRepasser, derniere: a.derniere },
-    };
+    }];
   });
 
-  return { ...pointsFaibles(notions), propre: ratures.disponible };
+  // rayées cette semaine : tout le carnet (mocks et thèmes retirés compris), le même compte que Moi › Erreurs
+  const rayeesSemaine = ratures.lignes.reduce((s, r) => s + r.rayees7j, 0);
+  return { ...pointsFaibles(notions, ratures.disponible), propre: ratures.disponible, rayeesSemaine };
 }

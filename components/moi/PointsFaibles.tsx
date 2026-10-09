@@ -5,23 +5,28 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronDown, PenLine } from "lucide-react";
 import { CardLabel } from "@/components/ui/Titles";
+import { INK } from "@/components/ui/InkDefs";
 import { Icone } from "@/components/adn/icons";
 import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { JAUGE_MAX, MIN_RATURES, MIN_REPONSES, semainesDepuis, type PointFaible, type PointsFaiblesData } from "@/lib/points-faibles";
-import { POINTS_FAIBLES as V } from "@/lib/voice-points-faibles";
+import { POINTS_FAIBLES as V, detailsPointFaible } from "@/lib/voice-points-faibles";
 
 // « Tes points faibles » : en tête de Moi › Stats (la carte) et dans la
 // carte héros de S'entraîner. Épuré : trois lignes au plus, chacune une
-// phrase et une jauge (jamais le score) ; au toucher, la ligne s'ouvre sur
-// les chiffres, les liens (page de fiche, QCM, type de calcul) et « Mettre au
-// propre » limité au thème. Les données arrivent toutes prêtes
-// (components/moi/points-faibles-data.ts, côté serveur) ; seul « Dernier
-// passage il y a N semaines » se calcule ici, après le montage.
+// phrase et une jauge (un trait de la longueur du score, jamais le chiffre) ;
+// au toucher, la ligne s'ouvre sur ce que la phrase ne dit pas, les liens
+// (page de fiche, QCM, type de calcul) et « Mettre au propre » limité au
+// thème. Les données arrivent toutes prêtes (components/moi/points-faibles-data.ts,
+// côté serveur) ; seul « Dernier passage il y a N semaines » se calcule ici,
+// après le montage.
 
 /** La matière la plus fragile, quand il n'y a pas assez de données (comme aujourd'hui). */
 export type RepliMatiere = { nom: string; href: string } | null;
 
 const LIGNES = 3;
+
+/** Une petite commande agrandie au toucher (44 px de haut) sans changer son dessin. */
+const TOUCHER = "relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
 
 /** L'instant, une fois dans le navigateur (rien côté serveur : pas d'écart à l'hydratation). */
 function useMaintenant() {
@@ -30,7 +35,11 @@ function useMaintenant() {
   return now;
 }
 
-/** « Mettre au propre » d'un thème, ouvert à la place de la liste ; la page se relit à la sortie si une rature a bougé. */
+/**
+ * « Mettre au propre » d'un thème, ouvert à la place de la liste ; la page se
+ * relit à la sortie dès qu'une réponse a été validée : juste, la rature se
+ * raye ; fausse, elle redevient vive (score et ordre changent aussi).
+ */
 function usePropre() {
   const [theme, setTheme] = useState<PointFaible | null>(null);
   const bouge = useRef(false);
@@ -38,8 +47,8 @@ function usePropre() {
   return {
     theme,
     ouvrir: setTheme,
-    onStatut: (statut: string) => {
-      if (statut === "rayee" || statut === "revenue") bouge.current = true;
+    onStatut: () => {
+      bouge.current = true;
     },
     fermer: () => {
       setTheme(null);
@@ -51,12 +60,19 @@ function usePropre() {
   };
 }
 
-function Jauge({ niveau, className = "" }: { niveau: number; className?: string }) {
+/** La jauge : un trait de pinceau de la longueur du score, sur le tracé complet en filigrane (comme la maîtrise des matières). */
+function Jauge({ p, className = "" }: { p: PointFaible; className?: string }) {
+  const pct = Math.max(4, Math.min(100, p.score));
   return (
-    <span role="img" aria-label={V.jauge(niveau, JAUGE_MAX)} className={"shrink-0 gap-[3px] " + className}>
-      {Array.from({ length: JAUGE_MAX }, (_, i) => (
-        <span key={i} className={"block h-[5px] w-[11px] rounded-full " + (i < niveau ? "bg-white" : "bg-line-2")} />
-      ))}
+    <span role="img" aria-label={V.jauge(p.niveau, JAUGE_MAX)} className={"relative block h-[8px] shrink-0 text-white " + className}>
+      <svg viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden className="absolute inset-0 h-full w-full opacity-25">
+        <use href={INK.swash} fill="currentColor" />
+      </svg>
+      <span className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${pct}%` }}>
+        <svg viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden className="absolute inset-y-0 left-0 h-full max-w-none" style={{ width: `${10000 / pct}%` }}>
+          <use href={INK.swash} fill="currentColor" />
+        </svg>
+      </span>
     </span>
   );
 }
@@ -84,12 +100,14 @@ function LignePointFaible({
   const id = useId();
   const m = p.mesures;
   const semaines = now === null ? null : semainesDepuis(m.derniere, now);
+  const details = detailsPointFaible({ ...m, recentSuffisant: m.n >= MIN_REPONSES, sources: p.sources });
+  if (semaines !== null) details.push(V.dernierPassage(semaines));
   return (
     <li className="py-0.5">
-      {/* téléphone : rang, nom (repère et jauge dessous), phrase en dessous ; ordinateur : une ligne, la phrase au milieu, la jauge à droite */}
+      {/* rang, nom (jauge et repère dessous), phrase : en dessous sur téléphone, à droite sur ordinateur */}
       <button
         type="button"
-        className="rl-row grid w-full grid-cols-[16px_minmax(0,1fr)_16px] items-start gap-x-3 gap-y-1.5 rounded-[12px] px-2 py-3 text-left md:grid-cols-[16px_minmax(0,1fr)_minmax(0,1.1fr)_auto_16px] md:items-center md:gap-x-5"
+        className="rl-row grid w-full grid-cols-[16px_minmax(0,1fr)_16px] items-start gap-x-3 gap-y-1.5 rounded-[12px] px-2 py-3 text-left md:grid-cols-[16px_minmax(0,1fr)_minmax(0,1.1fr)_16px] md:items-center md:gap-x-5"
         aria-expanded={ouverte}
         aria-controls={id}
         onClick={onOuvrir}
@@ -99,35 +117,32 @@ function LignePointFaible({
         </span>
         <span className="min-w-0">
           <span className="block text-[15px] font-semibold leading-snug [overflow-wrap:anywhere]">{p.libelle}</span>
-          <span className="t-micro mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            {repereDe(p)}
-            <Jauge niveau={p.niveau} className="flex md:hidden" />
+          <span className="t-micro mt-1 flex items-center gap-2.5">
+            <Jauge p={p} className="w-12 md:h-[10px] md:w-44" />
+            <span className="min-w-0">{repereDe(p)}</span>
           </span>
         </span>
         <span className="t-small col-start-2 row-start-2 md:col-start-3 md:row-start-1">{p.phrase}</span>
-        <Jauge niveau={p.niveau} className="hidden md:flex" />
-        <ChevronDown size={16} aria-hidden className={"col-start-3 row-start-1 mt-0.5 text-muted transition-transform md:col-start-5 md:mt-0 " + (ouverte ? "rotate-180" : "")} />
+        <ChevronDown size={16} aria-hidden className={"col-start-3 row-start-1 mt-0.5 text-muted transition-transform md:col-start-4 md:mt-0 " + (ouverte ? "rotate-180" : "")} />
       </button>
 
       {ouverte && (
         <div id={id} className="rl-in grid gap-3 pb-4 pl-9 pr-2 pt-0.5 md:pl-11">
-          <ul className="t-small m-0 grid list-none gap-1 p-0">
-            <li>{V.recente(m.ok, m.n)}</li>
-            <li>
-              {V.ratures(m.enCours, m.vives, m.anciennes)}
-              {m.rayees7j > 0 && ` · ${V.rayeesSemaine(m.rayees7j)}`}
-            </li>
-            {p.sources.length > 0 && <li>{V.sources(p.sources)}</li>}
-            {semaines !== null && <li>{V.dernierPassage(semaines)}</li>}
-          </ul>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {details.length > 0 && (
+            <ul className="t-small m-0 grid list-none gap-1 p-0">
+              {details.map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             {peutPropre(p, propre) && (
-              <button type="button" className="btn btn-primary btn-sm" onClick={onPropre}>
+              <button type="button" className="btn btn-primary btn-sm max-md:min-h-[44px]" onClick={onPropre}>
                 <PenLine size={14} aria-hidden /> {V.propre(m.aRepasser)}
               </button>
             )}
             {p.liens.map((l) => (
-              <Link key={l.href} href={l.href} className="ink-link inline-flex items-center gap-1 text-[13px] font-semibold">
+              <Link key={l.href} href={l.href} className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER}>
                 {l.libelle} <ArrowRight size={13} aria-hidden />
               </Link>
             ))}
@@ -164,10 +179,22 @@ export function PointsFaiblesCarte({ d, repli, demo }: { d: PointsFaiblesData; r
   const [tous, setTous] = useState(false);
   const propre = usePropre();
   const liste = tous ? d.liste : d.liste.slice(0, LIGNES);
+  const voirTous = !propre.theme && d.etat === "faibles" && d.liste.length > LIGNES;
 
   return (
     <section id="points-faibles" className="card flex min-w-0 scroll-mt-28 flex-col gap-3 p-6 md:p-7" aria-label={V.titre}>
-      <CardLabel icon={<Icone nom="erreurs" size={15} className="text-pen" />}>{V.titre}</CardLabel>
+      <CardLabel
+        icon={<Icone nom="erreurs" size={15} className="text-pen" />}
+        right={
+          voirTous ? (
+            <button type="button" className={"text-[13px] font-semibold text-muted transition-colors hover:text-white " + TOUCHER} aria-expanded={tous} onClick={() => setTous((t) => !t)}>
+              {tous ? V.voirMoins : V.voirTous(d.liste.length)}
+            </button>
+          ) : undefined
+        }
+      >
+        {V.titre}
+      </CardLabel>
 
       {propre.theme ? (
         <MiseAuPropre
@@ -180,26 +207,17 @@ export function PointsFaiblesCarte({ d, repli, demo }: { d: PointsFaiblesData; r
       ) : d.etat === "faibles" ? (
         <>
           <Liste liste={liste} propre={d.propre} onPropre={propre.ouvrir} />
-          {(d.rayeesSemaine > 0 || d.liste.length > LIGNES) && (
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 px-2">
-              {d.rayeesSemaine > 0 && <p className="t-small m-0">{V.rattrape(d.rayeesSemaine)}</p>}
-              {d.liste.length > LIGNES && (
-                <button type="button" className="ml-auto text-[13px] font-semibold text-muted transition-colors hover:text-white" aria-expanded={tous} onClick={() => setTous((t) => !t)}>
-                  {tous ? V.voirMoins : V.voirTous(d.liste.length)}
-                </button>
-              )}
-            </div>
-          )}
+          {d.rayeesSemaine > 0 && <p className="t-small m-0 px-2">{V.rattrape(d.rayeesSemaine)}</p>}
         </>
       ) : (
         <div className="grid gap-1.5 px-2 py-1">
           <p className="m-0 text-[15px] font-semibold">{d.etat === "rien" ? V.rien : V.peu}</p>
-          <p className="t-small m-0">{d.etat === "rien" ? V.rienTexte : V.peuTexte(MIN_REPONSES, MIN_RATURES)}</p>
+          <p className="t-small m-0">{d.etat === "peu" ? V.peuTexte(MIN_REPONSES, MIN_RATURES) : d.propre ? V.rienTexte : V.rienTexteSansRatures}</p>
           {d.rayeesSemaine > 0 && <p className="t-small m-0">{V.rattrape(d.rayeesSemaine)}</p>}
           {d.etat === "peu" && repli && (
             <p className="t-small m-0 mt-1">
               {V.repli(repli.nom)}{" "}
-              <Link href={repli.href} className="ink-link">
+              <Link href={repli.href} className={"ink-link " + TOUCHER}>
                 {V.repliAction}
               </Link>
             </p>
@@ -210,16 +228,54 @@ export function PointsFaiblesCarte({ d, repli, demo }: { d: PointsFaiblesData; r
   );
 }
 
-/** S'entraîner, carte héros : le point faible n° 1, son action, et « Mes 3 points faibles » replié. À n'afficher qu'avec au moins un point faible. */
+/** Les trois points faibles en bref (rang, nom, jauge) : toucher une ligne la met en avant dans le héros. */
+function Choix({ liste, choisi, onChoisir }: { liste: PointFaible[]; choisi: number; onChoisir: (i: number) => void }) {
+  return (
+    <ol className="m-0 flex list-none flex-col divide-y divide-line p-0">
+      {liste.map((p, i) => (
+        <li key={p.cle}>
+          <button
+            type="button"
+            aria-pressed={i === choisi}
+            onClick={() => onChoisir(i)}
+            className={
+              "rl-row grid min-h-[44px] w-full grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-[12px] px-2 py-2.5 text-left transition-colors " +
+              (i === choisi ? "bg-surface-2 text-white" : "text-muted hover:text-white")
+            }
+          >
+            {/* le choisi : fond de ligne et rang à l'encre rouge */}
+            <span aria-hidden className={"font-mono text-[13px] font-semibold tabular-nums " + (i === choisi ? "text-pen" : "")}>
+              {i + 1}
+            </span>
+            <span className="min-w-0 text-[14px] font-semibold leading-snug [overflow-wrap:anywhere]">{p.libelle}</span>
+            <Jauge p={p} className="w-12" />
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** S'entraîner, carte héros : un point faible (le n° 1 d'abord) et son action ; « Mes 3 points faibles » pour en mettre un autre en avant. À n'afficher qu'avec au moins un point faible. */
 export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData; className?: string }) {
   const propre = usePropre();
-  const p = d.liste[0];
+  const [choisi, setChoisi] = useState(0);
+  // téléphone : la liste repliée sous l'action ; ordinateur : toujours ouverte, à côté
+  const [listeOuverte, setListeOuverte] = useState(false);
+  const idListe = useId();
+  const trois = d.liste.slice(0, LIGNES);
+  // la liste peut raccourcir à la relecture (après « Mettre au propre ») : retour au n° 1
+  const rang = choisi < trois.length ? choisi : 0;
+  const p = trois[rang];
   if (!p) return null;
   const lien = p.liens[0] ?? { href: `/practice?topic=${p.matiere}`, libelle: V.repliAction };
-  const trois = d.liste.slice(0, LIGNES);
+  const avecListe = !propre.theme && trois.length > 1;
 
   return (
-    <section className={"card-hero rl-in flex min-h-[260px] min-w-0 flex-col gap-4 p-6 md:p-8 " + className} aria-label={V.kicker}>
+    <section
+      className={"card-hero rl-in grid min-h-[260px] min-w-0 gap-x-8 gap-y-4 p-6 md:p-8 " + (avecListe ? "md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] " : "") + className}
+      aria-label={V.kicker}
+    >
       {propre.theme ? (
         <MiseAuPropre
           source={null}
@@ -229,35 +285,47 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
         />
       ) : (
         <>
-          <div className="flex min-w-0 flex-col gap-2">
-            <p className="t-eyebrow">{V.kicker}</p>
-            <h2 className="t-h1 m-0 [overflow-wrap:anywhere]">{p.libelle}</h2>
-            <p className="t-micro m-0">{repereDe(p)}</p>
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-2">
+              <p className="t-eyebrow">{rang > 0 ? V.kickerRang(rang + 1) : V.kicker}</p>
+              <h2 className="t-h1 m-0 [overflow-wrap:anywhere]">{p.libelle}</h2>
+              <p className="t-micro m-0">{repereDe(p)}</p>
+            </div>
+            <div className="grid gap-1.5">
+              <p className="t-body m-0 max-w-[480px] text-muted">{p.phrase}</p>
+              {p.mesures.rayees7j > 0 && <p className="t-micro m-0">{V.rattrapeTheme(p.mesures.rayees7j)}</p>}
+            </div>
+            <div className="mt-auto pt-1">
+              {peutPropre(p, d.propre) ? (
+                <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" onClick={() => propre.ouvrir(p)}>
+                  <PenLine size={16} aria-hidden /> {V.propre(p.mesures.aRepasser)}
+                </button>
+              ) : (
+                <Link href={lien.href} className="btn btn-primary rl-press w-fit max-md:min-h-[44px]">
+                  {lien.libelle} <ArrowRight size={16} aria-hidden />
+                </Link>
+              )}
+            </div>
           </div>
-          <div className="grid gap-1.5">
-            <p className="t-body m-0 max-w-[480px] text-muted">{p.phrase}</p>
-            {d.rayeesSemaine > 0 && <p className="t-micro m-0">{V.rattrape(d.rayeesSemaine)}</p>}
-          </div>
-          <div className="mt-auto flex flex-col gap-4 pt-1">
-            {peutPropre(p, d.propre) ? (
-              <button type="button" className="btn btn-primary rl-press w-fit" onClick={() => propre.ouvrir(p)}>
-                <PenLine size={16} aria-hidden /> {V.propre(p.mesures.aRepasser)}
-              </button>
-            ) : (
-              <Link href={lien.href} className="btn btn-primary rl-press w-fit">
-                {lien.libelle} <ArrowRight size={16} aria-hidden />
-              </Link>
-            )}
-            <details className="group">
-              <summary className="t-small inline-flex cursor-pointer list-none items-center gap-1.5 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
+
+          {avecListe && (
+            <div className="flex min-w-0 flex-col gap-1 md:gap-2">
+              <p className="t-eyebrow hidden px-2 md:block">{V.liste(trois.length)}</p>
+              <button
+                type="button"
+                className="t-small inline-flex min-h-[44px] w-fit items-center gap-1.5 font-semibold hover:text-white md:hidden"
+                aria-expanded={listeOuverte}
+                aria-controls={idListe}
+                onClick={() => setListeOuverte((o) => !o)}
+              >
                 {V.liste(trois.length)}
-                <ChevronDown size={14} aria-hidden className="transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="-mx-2 mt-2">
-                <Liste liste={trois} propre={d.propre} onPropre={propre.ouvrir} />
+                <ChevronDown size={14} aria-hidden className={"transition-transform " + (listeOuverte ? "rotate-180" : "")} />
+              </button>
+              <div id={idListe} className={"-mx-2 md:mx-0 " + (listeOuverte ? "" : "max-md:hidden")}>
+                <Choix liste={trois} choisi={rang} onChoisir={setChoisi} />
               </div>
-            </details>
-          </div>
+            </div>
+          )}
         </>
       )}
     </section>

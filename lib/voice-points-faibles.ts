@@ -12,12 +12,16 @@ export const POINTS_FAIBLES = {
   titre: "Tes points faibles",
   /** carte héros de S'entraîner */
   kicker: "Ton point faible",
+  /** le même surtitre, quand un autre point faible de la liste est mis en avant */
+  kickerRang: (rang: number) => `Point faible n° ${nombre(rang)}`,
   liste: (n: number) => (n > 1 ? `Mes ${nombre(n)} points faibles` : "Mon point faible"),
   voirTous: (n: number) => `Voir les ${nombre(n)}`,
   voirMoins: "Voir moins",
   /** assez de données, rien au-dessus du seuil */
   rien: "Rien ne coince vraiment. Continue comme ça.",
   rienTexte: "Aucun thème ne ressort : peu de ratures en cours, et ta réussite récente tient.",
+  /** la même chose, tant que les ratures par thème ne se lisent pas */
+  rienTexteSansRatures: "Aucun thème ne ressort : ta réussite récente tient.",
   /** pas assez de données */
   peu: "Pas encore assez de réponses pour nommer un point faible.",
   peuTexte: (reponses: number, ratures: number) => `Il faut ${nombre(reponses)} réponses sur un même thème, ou ${nombre(ratures)} ratures en cours.`,
@@ -25,23 +29,11 @@ export const POINTS_FAIBLES = {
   repliAction: "Lancer une session",
   /** la jauge (jamais le score) */
   jauge: (niveau: number, max: number) => `Intensité ${nombre(niveau)} sur ${nombre(max)}`,
-  /** la ligne ouverte */
-  recente: (ok: number, n: number) => (n > 0 ? `Réussite récente : ${pct((ok / n) * 100)}, ${justes(ok, n)}` : "Aucune réponse ces 90 derniers jours"),
-  ratures: (enCours: number, vives: number, anciennes: number) =>
-    [
-      enCours > 0
-        ? `Ratures : ${nombre(enCours)} en cours${vives >= enCours ? `, ${jamaisReprises(vives)}` : vives > 0 ? `, dont ${nombre(vives)} ${jamaisReprises(vives)}` : ""}`
-        : "Aucune rature en cours",
-      anciennes > 0 ? pluriel(anciennes, "ancienne", "anciennes") : null,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-  rayeesSemaine: (n: number) => `${pluriel(n, "rayée", "rayées")} cette semaine`,
-  sources: (liste: { libelle: string; n: number }[]) => `Répondu en : ${liste.map((s) => `${s.libelle} ${nombre(s.n)}`).join(" · ")}`,
-  /** « Dernier passage il y a 7 semaines. » (calculé dans le navigateur) */
-  dernierPassage: (semaines: number) => `Dernier passage il y a ${nombre(semaines)} semaines.`,
-  /** la ligne de progrès, en encre calme */
-  rattrape: (n: number) => `Rattrapé cette semaine : ${pluriel(n, "rature rayée", "ratures rayées")}.`,
+  /** « Dernier passage il y a 7 semaines » (calculé dans le navigateur ; entrée du tiroir, sans point comme les autres) */
+  dernierPassage: (semaines: number) => `Dernier passage il y a ${nombre(semaines)} semaines`,
+  /** la ligne de progrès, en encre calme : tout le carnet (Moi), ou le thème (héros de S'entraîner) */
+  rattrape: (n: number) => `Rattrapé cette semaine : ${pluriel(n, "rature rayée", "ratures rayées")} dans tout le carnet.`,
+  rattrapeTheme: (n: number) => `Rattrapé cette semaine : ${pluriel(n, "rature rayée", "ratures rayées")} sur ce thème.`,
   /** actions */
   propre: (n: number) => `Mettre au propre · ${nombre(n)}`,
   lienFiche: (page: number) => `Page ${nombre(page)} de la fiche`,
@@ -56,8 +48,20 @@ export const POINTS_FAIBLES = {
  * « 12 ratures en cours, 40 % de réussite sur tes 25 dernières réponses. »
  * « 5 ratures en cours, dont 3 jamais reprises. »
  * « Pas de rature en cours, mais 3 justes sur 10. »
+ * Ratures inconnues (migration_points_faibles.sql absente) : la réussite
+ * seule, « 3 justes sur tes 10 dernières réponses. »
  */
-export function phrasePointFaible(f: { n: number; ok: number; enCours: number; vives: number; calcul: boolean; recentSuffisant: boolean }): string {
+export function phrasePointFaible(f: {
+  n: number;
+  ok: number;
+  enCours: number;
+  vives: number;
+  calcul: boolean;
+  recentSuffisant: boolean;
+  raturesConnues: boolean;
+}): string {
+  if (f.calcul && (f.enCours === 0 || !f.raturesConnues)) return `Sur tes ${nombre(f.n)} derniers calculs : ${nombre(f.ok)} ${f.ok > 1 ? "justes" : "juste"}.`;
+  if (!f.raturesConnues) return `${nombre(f.ok)} ${f.ok > 1 ? "justes" : "juste"} sur tes ${nombre(f.n)} dernières réponses.`;
   if (f.enCours > 0) {
     const tete = pluriel(f.enCours, "rature en cours", "ratures en cours");
     if (f.recentSuffisant && f.n > 0) return `${tete}, ${pct((f.ok / f.n) * 100)} de réussite sur tes ${nombre(f.n)} dernières réponses.`;
@@ -65,6 +69,36 @@ export function phrasePointFaible(f: { n: number; ok: number; enCours: number; v
     if (f.vives > 0) return `${tete}, dont ${nombre(f.vives)} ${jamaisReprises(f.vives)}.`;
     return `${tete}, ${f.enCours > 1 ? "chacune déjà reprise une fois" : "déjà reprise une fois"}.`;
   }
-  if (f.calcul) return `Sur tes ${nombre(f.n)} derniers calculs : ${nombre(f.ok)} ${f.ok > 1 ? "justes" : "juste"}.`;
   return `Pas de rature en cours, mais ${justes(f.ok, f.n)}.`;
+}
+
+/**
+ * Le tiroir d'une ligne ouverte : seulement ce que la phrase ne dit pas. La
+ * réussite récente quand la phrase parle des ratures seules ; les ratures
+ * jamais reprises quand la phrase cite la réussite ; les anciennes et les
+ * rayées de la semaine (comprises dans les anciennes) ; les sources quand il
+ * y en a plusieurs.
+ * « Ratures : 8 jamais reprises, 4 anciennes, dont 3 rayées cette semaine »
+ */
+export function detailsPointFaible(f: {
+  n: number;
+  ok: number;
+  enCours: number;
+  vives: number;
+  anciennes: number;
+  rayees7j: number;
+  recentSuffisant: boolean;
+  sources: { libelle: string; n: number }[];
+}): string[] {
+  const phraseCiteReussite = f.enCours === 0 || (f.recentSuffisant && f.n > 0);
+  const lignes: string[] = [];
+  if (!phraseCiteReussite) lignes.push(f.n > 0 ? `Réussite récente : ${pct((f.ok / f.n) * 100)}, ${justes(f.ok, f.n)}` : "Aucune réponse ces 90 derniers jours");
+  const ratures = [
+    f.enCours > 0 && phraseCiteReussite && f.vives > 0 ? `${nombre(f.vives)} ${jamaisReprises(f.vives)}` : null,
+    // les rayées de la semaine sont des anciennes : « dont », pas une addition
+    f.anciennes > 0 ? pluriel(f.anciennes, "ancienne", "anciennes") + (f.rayees7j > 0 ? `, dont ${pluriel(f.rayees7j, "rayée", "rayées")} cette semaine` : "") : null,
+  ].filter((x): x is string => x !== null);
+  if (ratures.length) lignes.push(`Ratures : ${ratures.join(", ")}`);
+  if (f.sources.length > 1) lignes.push(`Répondu en : ${f.sources.map((s) => `${s.libelle} ${nombre(s.n)}`).join(" · ")}`);
+  return lignes;
 }

@@ -99,6 +99,8 @@ export type AnswerTheme = {
   tag: string | null;
   /** nature du thème : QCM de la banque, page de fiche, mock officiel, type de calcul, autre (absent : autre) */
   kind?: ThemeKind;
+  /** set supprimé de la banque depuis (recréé sous un autre id, ou retiré) : le thème garde son titre, son lien ne mène plus nulle part */
+  retired?: boolean;
   by: BySource;
   /** les plus récents d'abord (liste bornée, voir `more`) */
   passages: AnswerPassage[];
@@ -697,7 +699,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   }
 
   // --- Arbre matière → thème → passage
-  type ThemeAcc = { label: string; tag: string | null; order: number; kind: ThemeKind; by: BySource; passages: Map<string, { n: number; ok: number }> };
+  type ThemeAcc = { label: string; tag: string | null; order: number; kind: ThemeKind; retired: boolean; by: BySource; passages: Map<string, { n: number; ok: number }> };
   type SubjectAcc = { by: BySource; themes: Map<string, ThemeAcc>; seances: Map<string, { n: number; ok: number }> };
   const subjects = new Map<string, SubjectAcc>();
   const total: BySource = {};
@@ -735,7 +737,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     addTally(s.by, source, c.n, c.ok);
     cumuler(s.seances, c.passage, c.n, c.ok);
     cumuler(toutes, c.passage, c.n, c.ok);
-    const th = s.themes.get(place.themeKey) ?? { label: place.label, tag: place.tag, order: place.order, kind: place.kind, by: {}, passages: new Map() };
+    const th = s.themes.get(place.themeKey) ?? { label: place.label, tag: place.tag, order: place.order, kind: place.kind, retired: c.target.kind === "set" && !setInfo.has(c.target.setId), by: {}, passages: new Map() };
     addTally(th.by, source, c.n, c.ok);
     const pa = th.passages.get(c.passage) ?? { n: 0, ok: 0 };
     pa.n += c.n;
@@ -760,7 +762,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
             return { id: pid, source: info?.source ?? "qcm", label: info?.label ?? "Passage", at, date: at ? fmtShortDate(at) : "", href, n: v.n, ok: v.ok };
           })
           .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
-        return { key, label: th.label, tag: th.tag, kind: th.kind, by: th.by, passages: list.slice(0, PASSAGES_PER_THEME), more: Math.max(0, list.length - PASSAGES_PER_THEME) };
+        return { key, label: th.label, tag: th.tag, kind: th.kind, ...(th.retired ? { retired: true } : {}), by: th.by, passages: list.slice(0, PASSAGES_PER_THEME), more: Math.max(0, list.length - PASSAGES_PER_THEME) };
       });
   };
 
