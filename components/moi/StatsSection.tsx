@@ -19,6 +19,7 @@ import { LEXIQUE, VIDE, serie } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
 import type { MoiData } from "@/components/moi/types";
 import { PointsFaiblesCarte, type RepliMatiere } from "@/components/moi/PointsFaibles";
+import { AteliersHistorique } from "@/components/atelier/AteliersHistorique";
 import { parisDay } from "@/lib/daily";
 import { decaleJour } from "@/lib/objectif-calc";
 
@@ -197,15 +198,29 @@ function ActivityCard({ d }: { d: MoiData }) {
   );
 }
 
+/** « Tes points faibles » et, dès qu'un Atelier est clos, l'historique des Ateliers : à droite sur grand écran, dessous sur téléphone. */
+function PointsFaiblesEtAteliers({ d }: { d: MoiData }) {
+  const carte = d.pointsFaibles ? <PointsFaiblesCarte d={d.pointsFaibles} repli={matiereFragile(d)} /> : null;
+  if (!d.ateliers?.ateliers.length) return carte;
+  return (
+    <div className="grid gap-4 md:gap-[18px] xl:grid-cols-12">
+      {carte && <div className="min-w-0 xl:col-span-8">{carte}</div>}
+      <div className={"min-w-0 " + (carte ? "xl:col-span-4" : "xl:col-span-12")}>
+        <AteliersHistorique h={d.ateliers} />
+      </div>
+    </div>
+  );
+}
+
 /**
- * Onglet Stats : « Tes points faibles » en tête, puis quatre bandes pleine largeur — les questions répondues
+ * Onglet Stats : « Tes points faibles » (et l'historique des Ateliers) en tête, puis quatre bandes pleine largeur — les questions répondues
  * (total, filtre par source, détail matière → thème → passage), l'activité,
  * les matières (rangée horizontale ou radar), les dernières sessions.
  */
 export function StatsTab({ d }: { d: MoiData }) {
   return (
     <div className="grid gap-4 md:gap-[18px]">
-      {d.pointsFaibles && <PointsFaiblesCarte d={d.pointsFaibles} repli={matiereFragile(d)} />}
+      <PointsFaiblesEtAteliers d={d} />
       <TrajectoirePanel e={d.objectif} />
       <AnswerStatsCard stats={d.answers} />
       <ActivityCard d={d} />

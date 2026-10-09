@@ -11,17 +11,23 @@ import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { bilan as calculerBilan, type BilanAtelier, type Reponse } from "@/lib/atelier";
 import type { ClotureAtelier, ItemSeance, RappelNotion, SeanceAtelier } from "@/lib/atelier-seance";
 import { ATELIER as V } from "@/lib/voice-atelier";
+import { analyserAtelier } from "@/lib/leonard/signal";
 
 // Le bilan de l'Atelier : la copie corrigée (FinDeSession : la note, la
 // marge, l'anneau du jour, « Reprendre mes N ratures »), puis, par notion,
 // avant → pendant, ratures avant → après (l'ancien chiffre rayé à l'encre),
 // le calcul, et le prochain pas (le chapitre audio de la notion la plus
 // basse) avec le prochain Atelier conseillé. À l'arrêt (bilan partiel), la
-// même lecture par notion, et « Reprendre » sous 24 heures.
+// même lecture par notion, et « Reprendre » sous 24 heures. Léonard commente
+// le bilan (une seule réaction par Atelier, à la place de celle d'une
+// session ; ses réglages et sa fréquence décident s'il apparaît).
 
 const TOUCHER = "relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
 
-function libelleDe(rappels: Record<string, RappelNotion>, notion: string) {
+/** Le nom de chaque notion (les cartes Rappel, ou l'historique dans Moi). */
+type Noms = Record<string, Pick<RappelNotion, "libelle">>;
+
+function libelleDe(rappels: Noms, notion: string) {
   return rappels[notion]?.libelle ?? notion;
 }
 
@@ -55,8 +61,8 @@ function revue(items: ItemSeance[], reponses: Reponse[], rappels: Record<string,
   return { review, lignes };
 }
 
-/** Par notion : avant → pendant, ratures, calcul. */
-function ParNotion({ b, rappels }: { b: BilanAtelier; rappels: Record<string, RappelNotion> }) {
+/** Par notion : avant → pendant, ratures, calcul (le bilan, l'arrêt, et l'historique des Ateliers dans Moi). */
+export function ParNotion({ b, rappels }: { b: BilanAtelier; rappels: Noms }) {
   return (
     <ul className="m-0 grid list-none gap-0 divide-y divide-line p-0">
       {b.notions.map((n) => (
@@ -139,6 +145,15 @@ export function AtelierBilan({
   });
   const minutes = Math.max(1, Math.round((cloture?.secondes ?? seance.secondes) / 60));
   const xp = cloture?.xp ?? 0;
+  const leonard = {
+    signal: analyserAtelier({
+      score: b.score,
+      total: b.total,
+      aRevoir: b.aRevoir ? libelleDe(rappels, b.aRevoir) : null,
+      notions: b.notions.map((n) => ({ libelle: libelleDe(rappels, n.notion), avant: n.avant, pendant: n.pendant, rayees: n.ratures.rayees, tenue: n.tenue })),
+    }),
+    cle: "atelier:" + seance.id,
+  };
   return (
     <div className="mx-auto grid w-full max-w-[820px] gap-5">
       <FinDeSession
@@ -151,6 +166,7 @@ export function AtelierBilan({
         matieres={matieres.filter((m) => m.total > 0)}
         jour={jour}
         ajoutes={ajoutes}
+        leonard={leonard}
         liens={
           <>
             <button type="button" className={"ink-link text-[14px] font-semibold " + TOUCHER} onClick={onAutre}>

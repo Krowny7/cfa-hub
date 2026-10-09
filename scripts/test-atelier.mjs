@@ -2,8 +2,8 @@
 // par des questions neuves, alternance des notions selon leur poids, carte
 // Rappel après deux fautes, question plus facile puis plus dure, notion
 // tenue, chrono qui commande, plafond, re-test, bilan avant / pendant),
-// le prochain Atelier conseillé, et une séance entière jouée au hasard
-// (toujours une fin, jamais de question
+// le prochain Atelier conseillé, ce que Léonard dit du bilan, et une
+// séance entière jouée au hasard (toujours une fin, jamais de question
 // introuvable). Sans dépendance de plus : jiti (déjà installé avec
 // Tailwind) charge le TypeScript et l'alias « @/ ».
 // Usage : node scripts/test-atelier.mjs
@@ -14,6 +14,8 @@ import { dirname, join } from "node:path";
 const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
 const jiti = createJiti(import.meta.url, { alias: { "@/": racine + "/" } });
 const A = await jiti.import(join(racine, "lib/atelier.ts"));
+const L = await jiti.import(join(racine, "lib/leonard/signal.ts"));
+const R = await jiti.import(join(racine, "lib/leonard/repliques.ts"));
 
 let ko = 0;
 let n = 0;
@@ -278,6 +280,24 @@ check("conseillé : sans Atelier clos, oui", A.atelierConseille(null, "2026-10-0
 check("conseillé : demain conseillé, le jour même non, le lendemain oui", !A.atelierConseille({ jour: "2026-10-08", score: 5, total: 20 }, "2026-10-08") && A.atelierConseille({ jour: "2026-10-08", score: 5, total: 20 }, "2026-10-09"));
 check("conseillé : après-demain, pas le lendemain", !A.atelierConseille({ jour: "2026-10-08", score: 14, total: 20 }, "2026-10-09") && A.atelierConseille({ jour: "2026-10-08", score: 14, total: 20 }, "2026-10-10"));
 check("conseillé : une semaine, passage de mois compris", !A.atelierConseille({ jour: "2026-10-28", score: 18, total: 20 }, "2026-11-03") && A.atelierConseille({ jour: "2026-10-28", score: 18, total: 20 }, "2026-11-04"));
+
+console.log("\n# Léonard et le bilan de l'Atelier");
+const notionL = (libelle, avant, pendant, rayees = 0, tenue = false) => ({ libelle, avant: { n: avant[0], ok: avant[1] }, pendant: { n: pendant[0], ok: pendant[1] }, rayees, tenue });
+check("Léonard : moins de 3 réponses, rien", L.analyserAtelier({ score: 2, total: 2, aRevoir: null, notions: [notionL("Duration", [10, 4], [2, 2])] }) === null);
+const prog = L.analyserAtelier({ score: 14, total: 20, aRevoir: "FCFE", notions: [notionL("Duration", [20, 8], [10, 8], 5), notionL("FCFE", [6, 3], [5, 2])] });
+check("Léonard : +40 points sur une notion, le progrès sur elle", prog?.evt === "atelier-progres" && prog.vars.notion === "Duration", JSON.stringify(prog));
+const tenueL = L.analyserAtelier({ score: 9, total: 12, aRevoir: null, notions: [notionL("Duration", [2, 1], [6, 5], 0, true)] });
+check("Léonard : notion tenue sans avant mesurable, le progrès", tenueL?.evt === "atelier-progres" && tenueL.vars.notion === "Duration");
+const ray = L.analyserAtelier({ score: 11, total: 20, aRevoir: "Duration", notions: [notionL("Duration", [20, 10], [10, 6], 2), notionL("FCFE", [10, 5], [10, 5], 2)] });
+check("Léonard : 4 ratures rayées sans progrès net, les ratures", ray?.evt === "atelier-rayees" && ray.vars.n === 4, JSON.stringify(ray));
+const dur = L.analyserAtelier({ score: 6, total: 20, aRevoir: "FCFE", notions: [notionL("Duration", [20, 8], [10, 4], 1), notionL("FCFE", [10, 5], [10, 2])] });
+check("Léonard : moins de la moitié juste, la notion à revoir", dur?.evt === "atelier-dur" && dur.vars.notion === "FCFE" && dur.vars.score === "6/20");
+const fini = L.analyserAtelier({ score: 12, total: 20, aRevoir: "FCFE", notions: [notionL("Duration", [20, 11], [10, 6], 1), notionL("FCFE", [10, 6], [10, 6])] });
+check("Léonard : sinon, l'Atelier fini", fini?.evt === "atelier-fini" && fini.vars.score === "12/20");
+const EVTS_ATELIER = { "atelier-progres": ["notion", "score"], "atelier-rayees": ["n", "score"], "atelier-dur": ["notion", "score"], "atelier-fini": ["score"] };
+check("Léonard : au moins 4 répliques par réaction", Object.keys(EVTS_ATELIER).every((e) => R.REPLIQUES[e]?.length >= 4));
+check("Léonard : seulement les marqueurs fournis", Object.entries(EVTS_ATELIER).every(([e, ok]) => R.REPLIQUES[e].every((r) => [...r.texte.matchAll(/[{](\w+)[}]/g)].every((m) => ok.includes(m[1])))));
+check("Léonard : la voix (ni point d'exclamation, ni « raté », ni « échec »)", Object.keys(EVTS_ATELIER).every((e) => R.REPLIQUES[e].every((r) => !/!|raté|échec/i.test(r.texte))));
 
 console.log(ko ? `\n${ko} KO sur ${n}` : `\nTOUT OK (${n})`);
 process.exit(ko ? 1 : 0);

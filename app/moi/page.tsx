@@ -10,7 +10,7 @@ import { buildTopicStats, parseMoiTab, xpLastDays, xpThisWeek } from "@/componen
 import { NO_ERRORS, getFicheErrors } from "@/components/moi/errors-data";
 import { getRatures } from "@/components/moi/ratures-data";
 import { construirePointsFaibles, libellesNotions, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
-import { avecAtelier, lireEtatAtelier } from "@/app/atelier/donnees";
+import { avecAtelier, lireEtatAtelier, lireHistoriqueAteliers } from "@/app/atelier/donnees";
 import { getMarquees } from "@/components/moi/marquees-data";
 import { getSessionHistory } from "@/components/moi/history-data";
 import { getAnswerStats } from "@/lib/answer-stats";
@@ -61,7 +61,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -90,6 +90,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     lireBanqueQcm(admin ?? supabase),
     // l'Atelier : ouvert (migration_atelier.sql) et, s'il y en a un, celui en cours
     lireEtatAtelier(supabase, user.id),
+    // les Ateliers clos (historique, Stats)
+    lireHistoriqueAteliers(supabase, user.id),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -125,6 +127,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     answers,
     objectif,
     pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier),
+    ateliers,
   };
 
   return (

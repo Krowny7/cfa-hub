@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { analyserSession, empreinte, signalerLeonard } from "@/lib/leonard/signal";
+import { analyserSession, empreinte, signalerLeonard, type SignalLeonard } from "@/lib/leonard/signal";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
 import { useObjectifDuJour } from "@/components/adn/useObjectifDuJour";
 import { CopieCorrigee, type LigneCopie, type MatiereCopie } from "@/components/adn/CopieCorrigee";
@@ -121,6 +121,7 @@ export function FinDeSession({
   liens,
   notes,
   anime = true,
+  leonard,
   children,
 }: {
   epreuve: string;
@@ -137,10 +138,16 @@ export function FinDeSession({
   liens?: React.ReactNode;
   notes?: React.ReactNode;
   anime?: boolean;
+  /** la réaction de Léonard propre à l'écran (l'Atelier), à la place de celle d'une session ; une seule par `cle` */
+  leonard?: { signal: SignalLeonard | null; cle: string };
   children?: React.ReactNode;
 }) {
   // Léonard réagit à la session (une fois par session : clé = questions + score)
   useEffect(() => {
+    if (leonard) {
+      if (leonard.signal) signalerLeonard({ ...leonard.signal, delai: 2600 }, leonard.cle);
+      return;
+    }
     const sig = analyserSession(review.map((r) => r.is_correct), score, total);
     if (sig) signalerLeonard({ ...sig, delai: 2600 }, "fs:" + empreinte(score, total, ...review.map((r) => r.question_id)));
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -296,7 +296,7 @@ export function RaturesTab({
                 type="button"
                 role="tab"
                 aria-selected={groupe === g}
-                className={"min-h-[36px] rounded-[9px] px-3 py-1.5 text-[13px] font-semibold transition-colors " + (groupe === g ? "bg-surface-2 text-white" : "text-muted hover:text-white")}
+                className={"min-h-[44px] rounded-[9px] px-3 py-1.5 text-[13px] font-semibold transition-colors " + (groupe === g ? "bg-surface-2 text-white" : "text-muted hover:text-white")}
                 onClick={() => ranger(g)}
               >
                 {g ? CARNET.parNotion : CARNET.parSource}

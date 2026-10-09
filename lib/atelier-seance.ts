@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CalcQuestionPublic } from "@/lib/calc/engine";
-import type { ApresNotion, AvantNotion, ItemPool, Niveau, Reponse } from "@/lib/atelier";
+import type { ApresNotion, AvantNotion, BilanAtelier, ItemPool, Niveau, Reponse } from "@/lib/atelier";
 
 // L'Atelier tel que le voit l'écran : la séance (le pool, sans bonne réponse
 // tant qu'une question n'a pas reçu de réponse ; les calculs avec leur
@@ -73,6 +73,12 @@ export type RappelNotion = {
   /** « S'entraîner sur ce calcul » */
   calculHref: string | null;
 };
+
+/** Un Atelier clos, pour l'historique de Moi : sa date (« 6 oct. », jour de Paris), sa durée, son XP et son bilan. */
+export type AtelierPasse = { id: string; date: string; minutes: number; xp: number; bilan: BilanAtelier };
+
+/** L'historique des Ateliers (les plus récents d'abord) et le nom de leurs notions. */
+export type HistoriqueAteliers = { ateliers: AtelierPasse[]; noms: Record<string, { libelle: string }> };
 
 /** Une notion proposée à l'ouverture (un point faible). */
 export type NotionProposee = { notion: string; libelle: string; repere: string; enCours: number; calcul: boolean };

@@ -7,8 +7,8 @@ import { parisDay } from "@/lib/daily";
 import { NOTIONS, notionParId } from "@/lib/notions";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { loadCalcHistory, loadCalcProgress } from "@/app/calculs/data";
-import type { AvantNotion, Niveau, Reponse } from "@/lib/atelier";
-import { fonctionAbsente, type ItemSeance, type RappelNotion, type SeanceAtelier } from "@/lib/atelier-seance";
+import { bilan, type ApresNotion, type AvantNotion, type ItemPool, type Niveau, type Reponse } from "@/lib/atelier";
+import { fonctionAbsente, type HistoriqueAteliers, type ItemSeance, type RappelNotion, type SeanceAtelier } from "@/lib/atelier-seance";
 import { horloge } from "@/lib/voice-atelier";
 import { POINTS_FAIBLES } from "@/lib/voice-points-faibles";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
@@ -71,16 +71,22 @@ function item(x: Brut): ItemSeance | null {
   };
 }
 
-/** La séance d'après la réponse d'atelier_courant / atelier_lancer (null : pas d'Atelier). */
-export function lireSeance(raw: unknown): SeanceAtelier | null {
-  const r = (raw ?? {}) as Brut;
-  if (!r.id) return null;
-  const avantBrut = (r.avant && typeof r.avant === "object" ? r.avant : {}) as Record<string, Brut>;
+/** La photographie « avant » de chaque notion (colonne avant de la table ateliers). */
+function avantDe(raw: unknown): Record<string, AvantNotion> {
+  const avantBrut = (raw && typeof raw === "object" ? raw : {}) as Record<string, Brut>;
   const avant: Record<string, AvantNotion> = {};
   for (const [k, v] of Object.entries(avantBrut)) {
     const c = v?.calc as Brut | undefined;
     avant[k] = { n: num(v?.n), ok: num(v?.ok), enCours: num(v?.en_cours), vives: num(v?.vives), calc: c ? { n: num(c.n), ok: num(c.ok) } : null };
   }
+  return avant;
+}
+
+/** La séance d'après la réponse d'atelier_courant / atelier_lancer (null : pas d'Atelier). */
+export function lireSeance(raw: unknown): SeanceAtelier | null {
+  const r = (raw ?? {}) as Brut;
+  if (!r.id) return null;
+  const avant = avantDe(r.avant);
   return {
     id: String(r.id),
     notions: Array.isArray(r.notions) ? (r.notions as unknown[]).map(String) : [],
@@ -129,6 +135,50 @@ export async function lireDernierAtelier(sb: SupabaseClient, userId: string): Pr
     const { data, error } = await sb.from("ateliers").select("finished_at,score,total").eq("user_id", userId).not("finished_at", "is", null).order("finished_at", { ascending: false }).limit(1);
     const row = (error ? null : (data?.[0] ?? null)) as { finished_at: string; score: number | null; total: number | null } | null;
     return row ? { jour: parisDay(new Date(row.finished_at)), score: num(row.score), total: num(row.total) } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Les Ateliers montrés dans l'historique de Moi. */
+const HISTORIQUE = 8;
+const DATE_COURTE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
+
+type LigneAtelier = { id: string; notions: string[] | null; pool: Brut[] | null; reponses: Brut[] | null; avant: unknown; apres: Record<string, Brut> | null; finished_at: string; secondes: number | null; xp: number | null };
+
+/**
+ * L'historique des Ateliers clos (Moi › Stats), les plus récents d'abord, et
+ * le bilan de chacun recalculé comme à sa clôture (lib/atelier bilan : le
+ * pool, les réponses, l'avant et les ratures comptées à la clôture). Table
+ * absente ou erreur : null (pas d'historique).
+ */
+export async function lireHistoriqueAteliers(sb: SupabaseClient, userId: string): Promise<HistoriqueAteliers | null> {
+  try {
+    const { data, error } = await sb
+      .from("ateliers")
+      .select("id,notions,pool,reponses,avant,apres,finished_at,secondes,xp")
+      .eq("user_id", userId)
+      .not("finished_at", "is", null)
+      .order("finished_at", { ascending: false })
+      .limit(HISTORIQUE);
+    if (error || !Array.isArray(data)) return null;
+    const noms: Record<string, { libelle: string }> = {};
+    const ateliers = (data as LigneAtelier[]).map((a) => {
+      const notions = (a.notions ?? []).map(String);
+      for (const id of notions) noms[id] = { libelle: notionParId(id)?.court ?? id };
+      const items: ItemPool[] = (a.pool ?? []).flatMap((e) => (e.k === "rature" || e.k === "neuve" || e.k === "calc" ? [{ i: num(e.i), k: e.k, notion: String(e.n ?? ""), niveau: niveau(e.v) }] : []));
+      const reponses: Reponse[] = (a.reponses ?? []).map((r) => ({ i: num(r.i), ok: r.ok === true, retest: r.r === true }));
+      const apres: Record<string, ApresNotion> = {};
+      for (const [k, v] of Object.entries(a.apres ?? {})) apres[k] = { enCours: num(v?.en_cours), vives: num(v?.vives) };
+      return {
+        id: a.id,
+        date: DATE_COURTE.format(new Date(a.finished_at)),
+        minutes: Math.max(1, Math.round(num(a.secondes) / 60)),
+        xp: num(a.xp),
+        bilan: bilan({ notions, items, reponses }, avantDe(a.avant), a.apres ? apres : null),
+      };
+    });
+    return { ateliers, noms };
   } catch {
     return null;
   }

@@ -21,6 +21,10 @@ export type EvenementLeonard =
   | "duel-nul"
   | "defi-reussi"
   | "defi-rate"
+  | "atelier-progres"
+  | "atelier-rayees"
+  | "atelier-dur"
+  | "atelier-fini"
   | "rang-monte"
   | "retour"
   | "tard"
@@ -28,7 +32,7 @@ export type EvenementLeonard =
 
 export type SignalLeonard = {
   evt: EvenementLeonard;
-  /** valeurs des marqueurs {score}, {pct}, {n} des répliques */
+  /** valeurs des marqueurs {score}, {pct}, {n}, {notion} des répliques */
   vars?: Record<string, string | number>;
   /** attendre avant d'apparaître (laisser un écran de résultat se poser) */
   delai?: number;
@@ -110,4 +114,37 @@ export function analyserSession(reponses: boolean[], score: number, total: numbe
   else if (pct < 70) evt = "session-moyenne";
   else evt = "session-reussie";
   return { evt, vars: { score: `${score}/${total}`, pct: `${pct} %`, n: evt === "erreurs-serie" ? maxErreurs : maxBonnes } };
+}
+
+/** Ce que Léonard lit d'un bilan d'Atelier (lib/atelier BilanAtelier, réduit à ce qu'il commente). */
+export type BilanPourLeonard = {
+  score: number;
+  total: number;
+  notions: { libelle: string; avant: { n: number; ok: number }; pendant: { n: number; ok: number }; rayees: number; tenue: boolean }[];
+  /** la notion la plus basse pendant l'Atelier (null sans question) */
+  aRevoir: string | null;
+};
+
+/** Points de réussite gagnés sur une notion, entre l'avant et le pendant, pour parler de progrès. */
+const PROGRES_POINTS = 20;
+
+/**
+ * Ce que Léonard pourrait dire d'un Atelier clos (une seule réaction : elle
+ * remplace celle de FinDeSession) : une notion tenue ou nettement au-dessus
+ * de son avant (progrès), sinon des ratures rayées (3 au moins), sinon un
+ * Atelier difficile (moins de la moitié juste), sinon un Atelier fini.
+ */
+export function analyserAtelier(b: BilanPourLeonard): SignalLeonard | null {
+  if (b.total < 3) return null;
+  const taux = (x: { n: number; ok: number }) => (x.n > 0 ? (x.ok / x.n) * 100 : null);
+  const progres = b.notions
+    .map((x) => ({ x, gain: x.pendant.n >= 3 && x.avant.n >= 3 ? (taux(x.pendant) as number) - (taux(x.avant) as number) : x.tenue ? PROGRES_POINTS : -Infinity }))
+    .filter((p) => p.x.tenue || p.gain >= PROGRES_POINTS)
+    .sort((a, c) => c.gain - a.gain)[0];
+  const rayees = b.notions.reduce((s, x) => s + x.rayees, 0);
+  const vars = { score: `${b.score}/${b.total}`, n: rayees };
+  if (progres) return { evt: "atelier-progres", vars: { ...vars, notion: progres.x.libelle } };
+  if (rayees >= 3) return { evt: "atelier-rayees", vars };
+  if (b.score / b.total < 0.5) return { evt: "atelier-dur", vars: { ...vars, notion: b.aRevoir ?? b.notions[0]?.libelle ?? "" } };
+  return { evt: "atelier-fini", vars };
 }

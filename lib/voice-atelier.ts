@@ -146,4 +146,21 @@ export const ATELIER = {
   prochainAtelier: (c: Conseil) => CONSEIL[c],
   revenir: "Revenir à mes points faibles",
   autre: "Un autre Atelier",
+
+  /** l'historique des Ateliers (Moi › Stats) */
+  historique: "Tes Ateliers",
+  historiqueCompte: (n: number) => pluriel(n, "séance", "séances"),
+  dernier: "Dernier Atelier",
+  /** « 6 oct. · 28 min · 14/20 » */
+  seance: (date: string, minutes: number, score: number, total: number) => `${date} · ${nombre(minutes)} min · ${nombre(score)}/${nombre(total)}`,
+  /** « 40 % → 75 % » ; joué seulement en calcul : « calcul 3/10 → 4/5 » ; sinon « pas de question » */
+  notionCourte: (avant: { ok: number; n: number }, pendant: { ok: number; n: number }, calcul: { avant: { ok: number; n: number } | null; pendant: { ok: number; n: number } } | null) =>
+    pendant.n > 0
+      ? `${taux(avant.ok, avant.n)} → ${taux(pendant.ok, pendant.n)}`
+      : calcul
+        ? `calcul ${calcul.avant ? `${nombre(calcul.avant.ok)}/${nombre(calcul.avant.n)} → ` : ""}${nombre(calcul.pendant.ok)}/${nombre(calcul.pendant.n)}`
+        : "pas de question",
+  rayeesXp: (rayees: number, xp: number) => [rayees > 0 ? pluriel(rayees, "rature rayée", "ratures rayées") : null, xp > 0 ? `${nombre(xp)} XP` : null].filter(Boolean).join(" · "),
+  detail: "Le détail",
+  precedents: (n: number) => (n > 1 ? `Les ${nombre(n)} précédents` : "Le précédent"),
 } as const;

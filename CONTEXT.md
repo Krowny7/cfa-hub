@@ -225,6 +225,16 @@ dans les stats (source `atelier`), le carnet, l'anneau du jour et
 `_reponses_joueur`. Tant que la table manque, ou par thème, aucun point
 d'entrée ne s'affiche et `/atelier` dit « bientôt ».
 
+Autour : la tuile « Ton point faible » de l'accueil
+(`components/accueil/point-faible.ts`, `points_faibles()` seule, jamais
+`getAnswerStats`) prend la place de celle des ratures quand le n° 1 est net ;
+le carnet de Moi › Erreurs se range aussi par notion
+(`migration_carnet_notions.sql`, `ratures_par_notion`, repli par source) ;
+Moi › Stats montre l'historique des Ateliers clos (« Tes Ateliers », lecture
+de la table `ateliers`, bilan recalculé par `bilan` de `lib/atelier`) ;
+Léonard commente le bilan (`analyserAtelier`, une réaction par Atelier à la
+place de celle de `FinDeSession`).
+
 ### Permissions d'édition
 - `private` → owner uniquement
 - `public` → owner uniquement (tout le monde peut lire)
