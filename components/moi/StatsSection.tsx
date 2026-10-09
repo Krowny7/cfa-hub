@@ -19,6 +19,8 @@ import { LEXIQUE, VIDE, serie } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
 import type { MoiData } from "@/components/moi/types";
 import { PointsFaiblesCarte, type RepliMatiere } from "@/components/moi/PointsFaibles";
+import { parisDay } from "@/lib/daily";
+import { decaleJour } from "@/lib/objectif-calc";
 
 /** La matière la plus fragile (maîtrise mesurée), pour le repli de « Tes points faibles ». */
 function matiereFragile(d: MoiData): RepliMatiere {
@@ -27,9 +29,6 @@ function matiereFragile(d: MoiData): RepliMatiere {
   const t = mesurees.reduce((a, b) => ((b.pct as number) < (a.pct as number) ? b : a));
   return { nom: subjectByKey(t.key)?.name ?? t.label, href: `/practice?topic=${t.key}` };
 }
-
-import { parisDay } from "@/lib/daily";
-import { decaleJour } from "@/lib/objectif-calc";
 
 /** L'XP des 90 derniers jours (jour de Paris), un jour par entrée : la base ne rend que les jours avec de l'XP. */
 function xp90Jours(xpDays: MoiData["xpDays"]): { day: string; xp: number }[] {
