@@ -39,17 +39,11 @@ export const TAMPONS = {
 export const RETOUR = {
   titre: "Depuis ta dernière visite",
   tampons: (n: number) => pluriel(n, "tampon reçu", "tampons reçus"),
-  /** le détail : « 2 Bravo · 1 Respect » */
-  detailTampons: (parMot: [string, number][]) =>
-    parMot
-      .filter(([, n]) => n > 0)
-      .map(([mot, n]) => `${nombre(n)} ${mot}`)
-      .join(" · "),
   visiteurs: (n: number) => `vu par ${pluriel(n, "joueur", "joueurs")}`,
   elo: (delta: number) => `${signe(delta)}${NBSP}ELO`,
   victoires: (n: number) => pluriel(n, "victoire en duel", "victoires en duel"),
   palier: (palier: string) => `monte en ${palier}`,
-  /** la ligne de la semaine, même sans rien de neuf */
+  /** la ligne de la semaine, quand rien n'est neuf depuis la visite d'avant */
   semaine: (n: number) => `Vu par ${pluriel(n, "joueur", "joueurs")} cette semaine.`,
   anonyme: "Seulement combien, jamais qui.",
 } as const;
@@ -63,7 +57,7 @@ export const NOUVEAU = {
   palier: (palier: string) => `monte en ${palier}`,
   /** « t'a battu 23–19 » */
   victoire: (score: [number, number] | null) => (score ? `t'a battu ${nombre(score[0])}–${nombre(score[1])}` : "t'a battu en duel"),
-  depasse: (ecart: number) => `t'a dépassé · ${pluriel(ecart, "point", "points")} devant`,
+  depasse: (ecart: number) => `t'a dépassé de ${pluriel(ecart, "point", "points")}`,
   /** lu à voix haute, sur le lien : « Voir le profil de Léa » */
   voir: (nom: string) => `Voir le profil de ${nom}`,
 } as const;

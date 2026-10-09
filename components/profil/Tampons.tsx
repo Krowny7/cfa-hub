@@ -85,44 +85,63 @@ export function TamponsCible({
     </>
   );
 
+  const tampons = visibles.map((t) =>
+    choix ? (
+      <button
+        key={t}
+        type="button"
+        className={classe(t)}
+        aria-pressed={c.mien === t}
+        aria-label={c.mien === t ? TAMPONS.retirer(MOTS[t], c[t]) : TAMPONS.poser(MOTS[t], c[t])}
+        onClick={() => void toucher(t)}
+      >
+        {corps(t)}
+      </button>
+    ) : (
+      <span key={t} className={classe(t)} aria-label={TAMPONS.compte(MOTS[t], c[t])} role="img">
+        {corps(t)}
+      </span>
+    ),
+  );
+  // une entrée du Journal : « Tamponner » ouvre les trois choix ; ouverts, le ✕ passe devant eux, dans la même rangée (jamais seul à la ligne)
+  const bascule = petit && peut && (
+    <button
+      type="button"
+      className={
+        "relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full text-muted transition hover:bg-surface-2 hover:text-white after:absolute after:-inset-y-1.5 after:inset-x-0 after:content-[''] " +
+        (ouvert ? "w-8 justify-center" : "px-2")
+      }
+      aria-expanded={ouvert}
+      aria-label={ouvert ? TAMPONS.fermer : TAMPONS.ouvrir}
+      onClick={() => setOuvert((o) => !o)}
+    >
+      {ouvert ? (
+        <X size={14} aria-hidden />
+      ) : (
+        <>
+          <Stamp size={15} aria-hidden /> <span className="t-micro">{TAMPONS.tamponner}</span>
+        </>
+      )}
+    </button>
+  );
+
   return (
     <div className={petit ? "flex flex-wrap items-center gap-x-1 gap-y-0.5" : "flex flex-col gap-1"}>
-      <div className={"flex flex-wrap items-center " + (petit ? "gap-1" : "gap-x-1 gap-y-0")}>
-        {/* téléphone : le libellé sur sa ligne, les trois tampons sur la suivante */}
-        {!petit && <span className="t-micro mr-1 max-sm:basis-full">{peut ? TAMPONS.tamponner : TAMPONS.recus}</span>}
-        <div role="group" aria-label={peut ? TAMPONS.tamponner : TAMPONS.recus} title={peut ? TAMPONS.aide : undefined} className={"flex flex-wrap items-center " + (petit ? "gap-0.5" : "-ml-1.5 gap-0.5 sm:ml-0")}>
-          {visibles.map((t) =>
-            choix ? (
-              <button
-                key={t}
-                type="button"
-                className={classe(t)}
-                aria-pressed={c.mien === t}
-                aria-label={c.mien === t ? TAMPONS.retirer(MOTS[t], c[t]) : TAMPONS.poser(MOTS[t], c[t])}
-                onClick={() => void toucher(t)}
-              >
-                {corps(t)}
-              </button>
-            ) : (
-              <span key={t} className={classe(t)} aria-label={TAMPONS.compte(MOTS[t], c[t])} role="img">
-                {corps(t)}
-              </span>
-            ),
-          )}
+      {petit ? (
+        <div role="group" aria-label={peut ? TAMPONS.tamponner : TAMPONS.recus} title={peut ? TAMPONS.aide : undefined} className="flex flex-wrap items-center gap-1">
+          {ouvert && bascule}
+          {tampons}
+          {!ouvert && bascule}
         </div>
-        {petit && peut && (
-          <button
-            type="button"
-            className="relative grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-surface-2 hover:text-white after:absolute after:-inset-1.5 after:content-['']"
-            aria-expanded={ouvert}
-            aria-label={ouvert ? TAMPONS.fermer : TAMPONS.ouvrir}
-            title={ouvert ? TAMPONS.fermer : TAMPONS.ouvrir}
-            onClick={() => setOuvert((o) => !o)}
-          >
-            {ouvert ? <X size={14} aria-hidden /> : <Stamp size={15} aria-hidden />}
-          </button>
-        )}
-      </div>
+      ) : (
+        <>
+          {/* le libellé sur sa ligne, à l'écart des actions de l'en-tête ; les tampons dessous */}
+          <span className="t-micro">{peut ? TAMPONS.tamponner : TAMPONS.recus}</span>
+          <div role="group" aria-label={peut ? TAMPONS.tamponner : TAMPONS.recus} title={peut ? TAMPONS.aide : undefined} className="-ml-1.5 flex flex-wrap items-center gap-1">
+            {tampons}
+          </div>
+        </>
+      )}
       {erreur && (
         <p role="alert" className="t-small m-0 basis-full text-pen">
           {erreur}

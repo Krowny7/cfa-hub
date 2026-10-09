@@ -74,6 +74,7 @@ export function EnteteJoueur({
   piedRang = null,
   saison = null,
   tampons = null,
+  sousRang = null,
 }: {
   d: EnteteData;
   actions?: React.ReactNode;
@@ -93,6 +94,8 @@ export function EnteteJoueur({
   saison?: React.ReactNode;
   /** les tampons du profil (TamponsCible), sous les actions */
   tampons?: React.ReactNode;
+  /** sous la carte du rang, sur ordinateur (« Depuis ta dernière visite ») */
+  sousRang?: React.ReactNode;
 }) {
   const meta = [d.amis ? `${nombre(d.amis)} ${d.amis > 1 ? "amis" : "ami"}` : null, `${nombre(d.xpTotal)} XP`].filter(Boolean).join(" · ");
   // sur téléphone : le rang dans la ligne du nom, la ligne niveau · ELO · place, le pic
@@ -186,13 +189,14 @@ export function EnteteJoueur({
               )}
             </div>
           )}
-          {tampons && !apercu && <div className="-mt-1.5">{tampons}</div>}
+          {tampons && !apercu && <div className="pt-1">{tampons}</div>}
           {poses && !apercu && <div className="pt-1 lg:pt-2">{poses}</div>}
         </div>
 
         {!apercu && (
-          <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:block lg:self-start">
+          <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:flex lg:flex-col lg:gap-4 lg:self-start">
             <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
+            {sousRang}
           </div>
         )}
       </div>

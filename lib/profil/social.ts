@@ -36,6 +36,8 @@ export type Retour = {
   /** variation d'ELO depuis, et l'ELO au début (null : aucun match) */
   elo: number;
   eloAvant: number | null;
+  /** la place au classement au début (null sous 1 850 : elle ne sert qu'au Top 10) */
+  placeAvant: number | null;
   victoires: number;
 };
 
@@ -45,6 +47,7 @@ type RetourBrut = {
   tampons: Partial<Record<Tampon, number>> | null;
   elo: number;
   elo_avant: number | null;
+  place_avant?: number | null;
   victoires: number;
 };
 
@@ -66,6 +69,7 @@ export async function monRetour(sb: SupabaseClient): Promise<Retour | null> {
       tampons: { bravo: Number(r.tampons?.bravo) || 0, respect: Number(r.tampons?.respect) || 0, revanche: Number(r.tampons?.revanche) || 0 },
       elo: Number(r.elo) || 0,
       eloAvant: r.elo_avant === null || r.elo_avant === undefined ? null : Number(r.elo_avant),
+      placeAvant: r.place_avant === null || r.place_avant === undefined ? null : Number(r.place_avant),
       victoires: Number(r.victoires) || 0,
     };
   } catch {

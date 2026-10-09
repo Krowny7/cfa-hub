@@ -1,6 +1,7 @@
 /* Les tampons du profil : le mot gravé dans un double filet, comme un
-   tampon de caoutchouc. Pas posé : au crayon. Le tien : à l'encre du
-   correcteur (vermillon), avec son coup de tampon. */
+   tampon de caoutchouc. Pas posé : le filet au crayon, le mot lisible
+   (--ink-2). Le tien : à l'encre du correcteur (vermillon), avec son coup
+   de tampon. */
 
 .tampon {
   display: inline-flex;
@@ -9,7 +10,8 @@
   min-height: 44px;
   padding: 0 6px;
   border-radius: 12px;
-  color: var(--ink-3);
+  color: var(--ink-2);
+  --filet: var(--ink-3);
   transition:
     color var(--dur-1) var(--ease-out),
     background-color var(--dur-1) var(--ease-out);
@@ -18,8 +20,14 @@ button.tampon {
   cursor: pointer;
 }
 button.tampon:hover {
-  color: var(--ink-2);
   background: var(--surface-2);
+}
+button.tampon:not(.mien):hover {
+  --filet: var(--ink-2);
+}
+/* les comptes seuls (son propre profil) : rien à toucher, pas de cible de 44 px */
+span.tampon {
+  min-height: 32px;
 }
 .tampon:disabled {
   cursor: default;
@@ -28,9 +36,9 @@ button.tampon:hover {
 .mot {
   display: inline-block;
   padding: 2px 5px 1px;
-  border: 1.5px solid currentColor;
+  border: 1.5px solid var(--filet);
   border-radius: 3px;
-  outline: 1px solid currentColor;
+  outline: 1px solid var(--filet);
   outline-offset: 1.5px;
   font-family: var(--font-brand), var(--font-sans);
   font-size: 10.5px;
@@ -51,11 +59,12 @@ button.tampon:hover {
 
 /* reçu (des autres) : à l'encre */
 .recu {
-  color: var(--ink-2);
+  --filet: var(--ink-2);
 }
 /* le tien */
 .mien {
   color: var(--pen);
+  --filet: var(--pen);
 }
 .mien .n {
   color: var(--pen);
@@ -70,11 +79,18 @@ button.tampon:hover {
   }
 }
 
-/* sur une entrée du Journal : plus petits */
+/* sur une entrée du Journal : plus petits, la cible tactile prolongée à
+   44 px en hauteur (comme le bouton qui les ouvre) */
 .petit {
+  position: relative;
   min-height: 32px;
   gap: 5px;
   padding: 0 6px;
+}
+button.petit::after {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
 }
 .petit .mot {
   padding: 2px 4px 1px;

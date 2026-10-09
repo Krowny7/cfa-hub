@@ -303,6 +303,9 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const peutTamponner = autreJoueur;
   const tamponsProfil = parCible ? <TamponsCible pour={id} cible={CIBLE_PROFIL} comptes={parCible[CIBLE_PROFIL]} peut={peutTamponner} /> : null;
 
+  // « Depuis ta dernière visite » (mon profil seulement ; null sans la migration)
+  const retourVu = (className?: string) => (depuisVisite ? <DepuisVisite retour={depuisVisite} elo={elo} mastery={mastery} place={leaderboardRank} className={className} /> : null);
+
   let panneau: React.ReactNode;
   if (onglet === "sceaux") {
     // les sceaux de saison : ceux gravés et, sur mon profil, la saison en cours (gaufrée)
@@ -389,11 +392,13 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           piedRang={piedRang}
           saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
           tampons={tamponsProfil}
+          sousRang={retourVu()}
         />
-        {depuisVisite && <DepuisVisite retour={depuisVisite} elo={elo} mastery={mastery} />}
         {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
         <div className="flex flex-col gap-6 md:gap-10">
           <OngletsProfil actif={onglet} onglets={onglets} />
+          {/* téléphone : « Depuis ta dernière visite » sous les onglets (sur ordinateur, sous la carte du rang) */}
+          {retourVu("lg:hidden")}
           {panneau}
         </div>
       </div>
