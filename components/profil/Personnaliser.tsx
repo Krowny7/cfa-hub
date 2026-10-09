@@ -275,11 +275,15 @@ export function Personnaliser({
         </section>
       </div>
 
-      {/* la barre de Personnaliser, collée en bas (au-dessus de la barre du téléphone) */}
+      {/* la barre de Personnaliser, collée en bas (au-dessus de la barre du téléphone) ;
+          effacée tant qu'une feuille est ouverte : la feuille a la sienne */}
       <div
         role="region"
         aria-label={PERSO.titre}
-        className="fixed inset-x-3 z-40 mx-auto flex max-w-[720px] items-center gap-2 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6"
+        className={
+          "fixed inset-x-3 z-40 mx-auto flex max-w-[720px] items-center gap-2 rounded-[18px] border border-line-2 bg-[var(--surface)] py-2 pl-4 pr-2 shadow-[var(--shadow-3)] bottom-[calc(90px+env(safe-area-inset-bottom,0px))] md:bottom-6" +
+          (zone ? " invisible" : "")
+        }
       >
         <div className="min-w-0 flex-1">
           {statut ?? <p className="m-0 text-[13px] font-semibold">{PERSO.titre}</p>}
