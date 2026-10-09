@@ -32,6 +32,10 @@
 //   quand les réponses sont gardées, sinon au score (matière unique, ou
 //   « Plusieurs matières »).
 // - Fiches : quiz_answer_log (une ligne par réponse, rangée par passage).
+// - Ateliers : ateliers.reponses (migration_atelier.sql), corrigées par le
+//   serveur : les ratures et les questions neuves du premier passage (le
+//   re-test suit une correction toute fraîche ; les calculs sont déjà dans
+//   calc_attempts).
 // Une question passée sans réponse (chrono écoulé) ne compte pas comme
 // répondue. Aucune réponse n'est comptée deux fois : chaque parcours écrit
 // dans une seule de ces tables.
@@ -44,7 +48,7 @@ import type { Seance } from "@/lib/forme";
 // Types et libellés (partagés avec les composants)
 // ---------------------------------------------------------------------------
 
-export const ANSWER_SOURCES = ["duel", "daily", "eclair", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
+export const ANSWER_SOURCES = ["duel", "daily", "eclair", "atelier", "mock", "exam", "qcm", "practice", "calc", "fiche"] as const;
 export type AnswerSource = (typeof ANSWER_SOURCES)[number];
 export type SourceFilter = AnswerSource | "all";
 
@@ -52,6 +56,7 @@ export const SOURCE_LABELS: Record<AnswerSource, string> = {
   duel: "Duels",
   daily: "Défi du jour",
   eclair: "Séries éclair",
+  atelier: "Ateliers",
   mock: "Examens blancs",
   exam: "Examens officiels",
   qcm: "QCM",
@@ -65,6 +70,7 @@ export const SOURCE_HREFS: Record<AnswerSource, string> = {
   duel: "/duel",
   daily: "/defi",
   eclair: "/eclair",
+  atelier: "/atelier",
   mock: "/mock-exams",
   exam: "/official-exams",
   qcm: "/qcm",
@@ -318,6 +324,7 @@ type QuizAttemptRow = { id: string; set_id: string; score: number | null; total:
 type SetSessionRow = { id: string; set_id: string | null; set_title: string | null; correct: number | null; total: number | null; occurred_at: string | null };
 type PracticeRow = { id: string; topics: string[] | null; score: number | null; total: number | null; answers: unknown; completed_at: string | null };
 type EclairRow = { id: string; question_ids: string[] | null; answers: (number | null)[] | null; score: number | null; total: number | null; finished_at: string | null };
+type AtelierRow = { id: string; reponses: { k?: string; q?: string; ok?: boolean; r?: boolean; at?: string }[] | null; started_at: string; finished_at: string | null };
 type LogRow = { set_id: string; is_correct: boolean; run_id: string; mode: string | null; answered_at: string };
 type QuestionRow = { id: string; set_id: string; correct_index: number | null };
 type SetRow = { id: string; title: string | null; folder_id: string | null };
@@ -388,7 +395,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   const now = opts.now ?? Date.now();
   const missing = new Set<AnswerSource>();
 
-  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows, eclairRows] = await Promise.all([
+  const [duels, duelAnswers, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, dailyAnswers, calcRows, eclairRows, atelierRows] = await Promise.all([
     readOnce<DuelRow>(
       reader
         .from("duels")
@@ -414,6 +421,8 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     readAll<CalcRow>((a, b) => reader.from("calc_attempts").select("topic,type_key,level,correct,answered_at").eq("user_id", userId).order("answered_at").range(a, b)),
     // séries éclair rendues (migration_series_eclair.sql ; table absente : source vide)
     readOnce<EclairRow>(reader.from("eclair_series").select("id,question_ids,answers,score,total,finished_at").eq("user_id", userId).not("finished_at", "is", null).limit(5000)),
+    // Ateliers (migration_atelier.sql ; table absente : source vide)
+    readOnce<AtelierRow>(reader.from("ateliers").select("id,reponses,started_at,finished_at").eq("user_id", userId).limit(2000)),
   ]);
 
   if (duels === null || duelAnswers === null) missing.add("duel");
@@ -424,6 +433,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
   if (log === null) missing.add("fiche");
   if (calcRows === null) missing.add("calc");
   if (eclairRows === null) missing.add("eclair");
+  if (atelierRows === null) missing.add("atelier");
 
   // --- Questions à juger ou à ranger (duels, défi du jour, examens blancs, sessions ciblées)
   const closed = new Map<string, DuelRow>();
@@ -459,6 +469,12 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     given: (r.question_ids ?? []).map((qid, i) => ({ question_id: qid, selected_index: r.answers?.[i] ?? null })).filter((g) => g.selected_index !== null),
   }));
   if (opts.privileged) for (const { given } of eclairGiven) for (const g of given) qids.add(g.question_id);
+  // Ateliers : réponses déjà corrigées par le serveur (premier passage, questions seulement)
+  const atelierGiven = (atelierRows ?? []).map((r) => ({
+    r,
+    given: (Array.isArray(r.reponses) ? r.reponses : []).filter((x) => (x.k === "rature" || x.k === "neuve") && !x.r && typeof x.q === "string" && UUID.test(x.q)),
+  }));
+  for (const { given } of atelierGiven) for (const g of given) qids.add(g.q as string);
   const keyed = [...(mockResults ?? []), ...(practice ?? [])].flatMap((r) => parseGiven(r.answers) ?? []);
   if (opts.privileged) for (const g of keyed) qids.add(g.question_id);
 
@@ -567,6 +583,15 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
         ok: Math.min(num(r.score), num(r.total)),
       });
     }
+  }
+
+  // Ateliers : un passage par Atelier, rangé par set (justesse gardée par le serveur)
+  for (const { r, given } of atelierGiven) {
+    if (!given.length) continue;
+    const pid = `at:${r.id}`;
+    const derniere = given.reduce((m, g) => (g.at && g.at > m ? g.at : m), r.started_at);
+    passages.set(pid, { source: "atelier", label: "Atelier", at: r.finished_at ?? derniere, href: "/atelier" });
+    perSet("atelier", pid, given.map((g) => ({ qid: g.q as string, answered: true, ok: g.ok === true })));
   }
 
   // Examens blancs (premier essai, détaillé ; sinon au score) et reprises (au score)
@@ -796,7 +821,7 @@ export async function getAnswerStats(reader: SupabaseClient, userId: string, opt
     if (s && tallyOf(s.by).n > 0) out.push({ key, name, code: "", pseudo: true, by: s.by, themes: toThemes(key, s), seances: enSeances(s.seances, SEANCES_MAX) });
   }
 
-  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, eclairRows].some((x) => x !== null);
+  const readable = [duels, mockResults, mockAttempts, quizAttempts, setSessions, practice, log, dailyAttempts, eclairRows, atelierRows].some((x) => x !== null);
   return { available: readable, missing: [...missing], by: total, subjects: out, seances: enSeances(toutes, SEANCES_MAX * 2) };
 }
 

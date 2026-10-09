@@ -212,6 +212,19 @@ que `points_faibles()` répond et que les colonnes sont remplies
 l'étape 1 (`ratures_par_theme`). Une question sans notion reste comptée
 dans sa matière.
 
+L'Atelier (`/atelier`, `migration_atelier.sql`) : 30 minutes sur 1 à 3
+notions faibles (poids 60/25/15), en cinq blocs (rappel, ratures, questions
+neuves, calcul, re-test). Le serveur prépare le pool et corrige ; l'ordre
+des questions, l'adaptation et le chrono sont dans `lib/atelier.ts` (pur,
+`node scripts/test-atelier.mjs`). Les calculs sont tirés et corrigés par les
+actions serveur (`app/atelier/actions.ts`) et notés avec la clé service
+(`atelier_ajouter_calc`, `atelier_noter_calc`, fermées aux joueurs). XP des
+séries éclair sur les questions neuves et les calculs (première bonne
+réponse), rien sur les ratures rejouées ni au re-test. Ses réponses comptent
+dans les stats (source `atelier`), le carnet, l'anneau du jour et
+`_reponses_joueur`. Tant que la table manque, ou par thème, aucun point
+d'entrée ne s'affiche et `/atelier` dit « bientôt ».
+
 ### Permissions d'édition
 - `private` → owner uniquement
 - `public` → owner uniquement (tout le monde peut lire)

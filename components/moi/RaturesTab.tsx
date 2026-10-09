@@ -43,6 +43,7 @@ const MARQUE: Record<string, SourceMarque> = {
   ciblee: "session",
   blanc: "examen",
   examen: "examen",
+  atelier: "atelier",
 };
 
 function clip(text: string, n = 170) {

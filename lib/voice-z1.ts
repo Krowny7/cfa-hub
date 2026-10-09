@@ -175,6 +175,7 @@ export const SOURCES_RATURE: [string, string][] = [
   ["ciblee", "Sessions ciblées"],
   ["blanc", "Examens blancs"],
   ["examen", "Examens"],
+  ["atelier", "Ateliers"],
 ];
 
 export const SONS = {

@@ -116,7 +116,13 @@ export type EtatPointsFaibles = {
  * ciblé ouvert), et les ratures rayées ces 7 derniers jours dans tout le
  * carnet (le même compte que Moi › Erreurs).
  */
-export type PointsFaiblesData = EtatPointsFaibles & { propre: boolean; rayeesSemaine: number; unite: Unite };
+export type PointsFaiblesData = EtatPointsFaibles & {
+  propre: boolean;
+  rayeesSemaine: number;
+  unite: Unite;
+  /** l'Atelier (migration_atelier.sql, par notion seulement) : absent tant qu'il n'est pas ouvert ; enCours : un Atelier à reprendre */
+  atelier?: { enCours: { faites: number } | null };
+};
 
 export type SeanceDatee = { n: number; ok: number; at: string };
 

@@ -25,6 +25,7 @@ const ORIGINE: Record<SourceMarque, string> = {
   duel: "duel",
   qcm: "QCM",
   examen: "examen blanc",
+  atelier: "Atelier",
 };
 const jour = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 

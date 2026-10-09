@@ -48,7 +48,8 @@ async function safeRows<T>(run: () => PromiseLike<{ data: unknown; error: unknow
  * confondues : quiz des fiches (une ligne par réponse), sessions QCM,
  * sessions d'entraînement ciblé, examens blancs et leurs reprises, duels
  * réglés, copies rendues du défi du jour (daily_attempts) et séries éclair
- * (eclair_series), si leurs migrations sont appliquées ; sinon la lecture
+ * (eclair_series), et les questions des Ateliers (ateliers ; les calculs
+ * sont dans calc_attempts), si leurs migrations sont appliquées ; sinon la lecture
  * échoue et ne compte rien.
  * Lit aussi les 8 derniers jours (série) : `activeDays`.
  */
@@ -71,7 +72,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     finished_at: string | null;
   };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, eclair, ateliers] = await Promise.all([
     safeRows<{ answered_at: string; is_correct: boolean }>(() =>
       supabase.from("quiz_answer_log").select("answered_at,is_correct").eq("user_id", userId).gte("answered_at", since).limit(5000),
     ),
@@ -111,6 +112,10 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     safeRows<{ finished_at: string; score: number | null; total: number | null }>(() =>
       supabase.from("eclair_series").select("finished_at,score,total").eq("user_id", userId).gte("finished_at", since).limit(500),
     ),
+    // Ateliers : une ligne par Atelier, ses réponses dedans (table absente avant la migration : rien).
+    safeRows<{ reponses: { k?: string; ok?: boolean; at?: string }[] | null }>(() =>
+      supabase.from("ateliers").select("reponses").eq("user_id", userId).gte("vu_at", since).limit(100),
+    ),
   ]);
 
   const all: DatedCount[] = [
@@ -129,6 +134,7 @@ export async function loadActivity(supabase: Client, userId: string, now = new D
     ...daily.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
     ...quizzes.map((r) => ({ at: r.created_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
     ...eclair.map((r) => ({ at: r.finished_at, n: Number(r.total) || 0, correct: Number(r.score) || 0 })),
+    ...ateliers.flatMap((r) => (Array.isArray(r.reponses) ? r.reponses : []).filter((x) => x.k !== "calc" && x.at).map((x) => ({ at: x.at as string, n: 1, correct: x.ok ? 1 : 0 }))),
   ];
 
   const byDay = new Map<string, { n: number; correct: number }>();

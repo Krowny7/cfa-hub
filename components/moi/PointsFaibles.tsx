@@ -3,13 +3,14 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronDown, PenLine } from "lucide-react";
+import { ArrowRight, ChevronDown, Hammer, PenLine } from "lucide-react";
 import { CardLabel } from "@/components/ui/Titles";
 import { INK } from "@/components/ui/InkDefs";
 import { Icone } from "@/components/adn/icons";
 import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { JAUGE_MAX, MIN_RATURES, MIN_REPONSES, semainesDepuis, type PointFaible, type PointsFaiblesData } from "@/lib/points-faibles";
 import { POINTS_FAIBLES as V, conceptCoince, detailsPointFaible } from "@/lib/voice-points-faibles";
+import { ATELIER } from "@/lib/voice-atelier";
 
 // « Tes points faibles » : en tête de Moi › Stats (la carte) et dans la
 // carte héros de S'entraîner. Épuré : trois lignes au plus, chacune une
@@ -17,7 +18,9 @@ import { POINTS_FAIBLES as V, conceptCoince, detailsPointFaible } from "@/lib/vo
 // (un trait de la longueur du score, jamais le chiffre) ; au toucher, la
 // ligne s'ouvre sur ce qui coince (les concepts les plus chargés), ce que la
 // phrase ne dit pas, les liens (page de fiche, chapitre audio, QCM, type de
-// calcul) et « Mettre au propre » limité à la notion. Les données arrivent
+// calcul), « Mettre au propre » limité à la notion et, dès que l'Atelier est
+// ouvert, « Atelier sur cette seule notion » ; la carte mène à l'Atelier
+// (30 minutes sur les trois premiers). Les données arrivent
 // toutes prêtes (components/moi/points-faibles-data.ts,
 // côté serveur) ; seul « Dernier passage il y a N semaines » se calcule ici,
 // après le montage.
@@ -82,6 +85,17 @@ function Jauge({ p, className = "" }: { p: PointFaible; className?: string }) {
 const repereDe = (p: PointFaible) => [p.matiereNom, p.repere].filter(Boolean).join(" · ");
 const peutPropre = (p: PointFaible, propre: boolean) => propre && p.mesures.aRepasser > 0 && (p.lm !== null || p.sets.length > 0);
 const repriseDe = (p: PointFaible) => ({ notion: p.lm, sets: p.sets, libelle: p.libelle });
+const ATELIER_HREF = "/atelier";
+
+/** « Atelier · 30 min », ou « Reprendre l'Atelier » quand un Atelier est en cours. */
+function LienAtelier({ d, className }: { d: PointsFaiblesData; className: string }) {
+  if (!d.atelier) return null;
+  return (
+    <Link href={ATELIER_HREF} className={className}>
+      <Hammer size={16} aria-hidden /> {d.atelier.enCours ? ATELIER.reprendre : ATELIER.action}
+    </Link>
+  );
+}
 
 function LignePointFaible({
   p,
@@ -90,6 +104,7 @@ function LignePointFaible({
   onOuvrir,
   propre,
   onPropre,
+  atelier,
   now,
 }: {
   p: PointFaible;
@@ -98,6 +113,8 @@ function LignePointFaible({
   onOuvrir: () => void;
   propre: boolean;
   onPropre: () => void;
+  /** l'Atelier est ouvert : « Atelier sur cette seule notion » */
+  atelier: boolean;
   now: number | null;
 }) {
   const id = useId();
@@ -154,6 +171,11 @@ function LignePointFaible({
                 <PenLine size={14} aria-hidden /> {V.propre(m.aRepasser)}
               </button>
             )}
+            {atelier && p.lm && (
+              <Link href={`${ATELIER_HREF}?notion=${encodeURIComponent(p.lm)}`} className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER}>
+                {ATELIER.actionSeule} <ArrowRight size={13} aria-hidden />
+              </Link>
+            )}
             {p.liens.map((l) => (
               <Link key={l.href} href={l.href} className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER}>
                 {l.libelle} <ArrowRight size={13} aria-hidden />
@@ -166,7 +188,7 @@ function LignePointFaible({
   );
 }
 
-function Liste({ liste, propre, onPropre }: { liste: PointFaible[]; propre: boolean; onPropre: (p: PointFaible) => void }) {
+function Liste({ liste, propre, onPropre, atelier }: { liste: PointFaible[]; propre: boolean; onPropre: (p: PointFaible) => void; atelier: boolean }) {
   const [ouverte, setOuverte] = useState<string | null>(null);
   const now = useMaintenant();
   return (
@@ -180,6 +202,7 @@ function Liste({ liste, propre, onPropre }: { liste: PointFaible[]; propre: bool
           onOuvrir={() => setOuverte((o) => (o === p.cle ? null : p.cle))}
           propre={propre}
           onPropre={() => onPropre(p)}
+          atelier={atelier}
           now={now}
         />
       ))}
@@ -219,7 +242,13 @@ export function PointsFaiblesCarte({ d, repli, demo }: { d: PointsFaiblesData; r
         />
       ) : d.etat === "faibles" ? (
         <>
-          <Liste liste={liste} propre={d.propre} onPropre={propre.ouvrir} />
+          <Liste liste={liste} propre={d.propre} onPropre={propre.ouvrir} atelier={!!d.atelier} />
+          {d.atelier && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-2 pt-1">
+              <LienAtelier d={d} className="btn btn-primary btn-sm rl-press max-md:min-h-[44px]" />
+              {d.atelier.enCours && <span className="t-micro">{ATELIER.enCoursLigne(d.atelier.enCours.faites)}</span>}
+            </div>
+          )}
           {d.rayeesSemaine > 0 && <p className="t-small m-0 px-2">{V.rattrape(d.rayeesSemaine)}</p>}
         </>
       ) : (
@@ -284,7 +313,7 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
   const lien = p.liens[0] ?? { href: `/practice?topic=${p.matiere}`, libelle: V.repliAction };
   const reprise = peutPropre(p, d.propre);
   // les autres liens (page de fiche, chapitre audio…), après l'action
-  const autres = reprise ? p.liens : p.liens.slice(1);
+  const autres = reprise || d.atelier ? p.liens : p.liens.slice(1);
   const avecListe = !propre.theme && trois.length > 1;
 
   return (
@@ -313,7 +342,16 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
               {p.mesures.rayees7j > 0 && <p className="t-micro m-0">{V.rattrapeNotion(d.unite, p.mesures.rayees7j)}</p>}
             </div>
             <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
-              {reprise ? (
+              {d.atelier ? (
+                <>
+                  <LienAtelier d={d} className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" />
+                  {reprise && (
+                    <button type="button" className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER} onClick={() => propre.ouvrir(p)}>
+                      <PenLine size={13} aria-hidden /> {V.propre(p.mesures.aRepasser)}
+                    </button>
+                  )}
+                </>
+              ) : reprise ? (
                 <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" onClick={() => propre.ouvrir(p)}>
                   <PenLine size={16} aria-hidden /> {V.propre(p.mesures.aRepasser)}
                 </button>

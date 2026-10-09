@@ -462,7 +462,7 @@ BEGIN
   -- déjà répondu : la même correction, rien ne bouge
   IF v_deja IS NOT NULL THEN
     RETURN json_build_object('i', p_i, 'retest', v_ret, 'is_correct', (v_deja->>'ok')::boolean, 'selected_index', (v_deja->>'c')::int,
-                             'correct_index', v_bon, 'explanation', v_expl, 'statut', v_deja->>'s', 'xp', 0);
+                             'correct_index', v_bon, 'explanation', v_expl, 'statut', v_deja->>'s', 'xp', 0, 'deja', true);
   END IF;
   -- clos, ou laissé plus de 24 heures : il se clôt, la réponse n'est pas prise
   IF v_a.finished_at IS NOT NULL OR v_a.vu_at < now() - interval '24 hours' THEN
@@ -603,7 +603,7 @@ BEGIN
   SELECT r INTO v_deja FROM jsonb_array_elements(v_a.reponses) AS r
   WHERE (r->>'i')::int = p_i AND coalesce((r->>'r')::boolean, false) = v_ret LIMIT 1;
   IF v_deja IS NOT NULL THEN
-    RETURN json_build_object('i', p_i, 'retest', v_ret, 'is_correct', (v_deja->>'ok')::boolean, 'xp', 0);
+    RETURN json_build_object('i', p_i, 'retest', v_ret, 'is_correct', (v_deja->>'ok')::boolean, 'valeur', (v_deja->>'x')::double precision, 'xp', 0, 'deja', true);
   END IF;
   IF v_a.finished_at IS NOT NULL OR v_a.vu_at < now() - interval '24 hours' THEN
     PERFORM _atelier_clore(v_a.id, NULL);
