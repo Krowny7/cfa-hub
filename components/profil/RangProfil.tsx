@@ -11,8 +11,9 @@ import { ENTETE } from "@/lib/voice-profil";
 // sur un halo à la couleur de son métal). À côté : le palier, la marche
 // vers le palier suivant (ou les parties de placement, le rang étant alors
 // provisoire), puis ELO, place et maîtrise. Mène au classement. Sous le
-// palier, son pic s'il est plus haut ; en pied (`pied`), le bilan du
-// face-à-face sur le profil d'un autre joueur. Sans état.
+// palier, son pic s'il est plus haut ; sous les chiffres, la saison en
+// cours (`saison`) ; en pied (`pied`), le bilan du face-à-face sur le
+// profil d'un autre joueur. Sans état.
 
 export function RangProfil({
   elo,
@@ -21,6 +22,7 @@ export function RangProfil({
   gamesPlayed,
   surTitre = "Ton rang",
   pic = null,
+  saison = null,
   pied = null,
   className = "",
 }: {
@@ -32,6 +34,8 @@ export function RangProfil({
   surTitre?: string;
   /** meilleur palier atteint (index dans TIERS) ; affiché s'il dépasse l'actuel */
   pic?: number | null;
+  /** la saison en cours et son compte à rebours (SaisonRang) */
+  saison?: React.ReactNode;
   /** pied de carte (le bilan du face-à-face) */
   pied?: React.ReactNode;
   className?: string;
@@ -117,6 +121,7 @@ export function RangProfil({
           </span>
         ))}
       </span>
+      {saison && <div className="border-t border-[rgba(255,255,255,.1)] pt-3">{saison}</div>}
       {pied && <div className="relative z-[1] border-t border-[rgba(255,255,255,.1)] pt-3">{pied}</div>}
     </div>
   );

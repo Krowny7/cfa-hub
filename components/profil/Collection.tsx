@@ -11,12 +11,23 @@ import { FAMILLES_NOMS, PALIERS, SCEAUX_TXT, nomSceau, progres } from "@/lib/voi
 // verrouillés en gaufré ; sur le profil d'un autre, ses sceaux gagnés et
 // son total. Rangés par famille (chacune comptée sur tous ses sceaux, même
 // chez un autre) ; un filtre par famille. Toucher un sceau
-// ouvre sa fiche (FicheSceau).
+// ouvre sa fiche (FicheSceau). `enPlus` : des familles rendues ailleurs
+// (les saisons, FamilleSaisons), avec leur filtre, après les autres.
 
 const pente = (i: number) => ((i * 37) % 9) - 4;
 
-export function Collection({ etats, portee, proprietaire }: { etats: EtatSceau[]; portee: EtatSceau[]; proprietaire: boolean }) {
-  const [filtre, setFiltre] = useState<Famille | "tous">("tous");
+export function Collection({
+  etats,
+  portee,
+  proprietaire,
+  enPlus = [],
+}: {
+  etats: EtatSceau[];
+  portee: EtatSceau[];
+  proprietaire: boolean;
+  enPlus?: { cle: string; nom: string; contenu: React.ReactNode }[];
+}) {
+  const [filtre, setFiltre] = useState<string>("tous");
   const [fiche, setFiche] = useState<EtatSceau | null>(null);
   const visibles = proprietaire ? etats : etats.filter((e) => e.palier > 0);
   const familles = FAMILLES.filter((f) => visibles.some((e) => e.def.famille === f));
@@ -96,9 +107,9 @@ export function Collection({ etats, portee, proprietaire }: { etats: EtatSceau[]
         </div>
       )}
 
-      {familles.length > 1 && (
+      {familles.length + enPlus.length > 1 && (
         <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0" role="group" aria-label={SCEAUX_TXT.titre}>
-          {(["tous", ...familles] as const).map((f) => (
+          {["tous", ...familles, ...enPlus.map((x) => x.cle)].map((f) => (
             // 44 px à toucher, la pastille de 36 px dedans
             <button key={f} type="button" aria-pressed={filtre === f} onClick={() => setFiltre(f)} className="group/f flex min-h-[44px] shrink-0 items-center">
               <span
@@ -107,7 +118,7 @@ export function Collection({ etats, portee, proprietaire }: { etats: EtatSceau[]
                   (filtre === f ? "border-white bg-[var(--control)]" : "border-line-2 text-muted group-hover/f:border-white group-hover/f:text-white")
                 }
               >
-                {f === "tous" ? SCEAUX_TXT.tous : FAMILLES_NOMS[f]}
+                {f === "tous" ? SCEAUX_TXT.tous : (FAMILLES_NOMS[f as Famille] ?? enPlus.find((x) => x.cle === f)?.nom)}
               </span>
             </button>
           ))}
@@ -115,13 +126,18 @@ export function Collection({ etats, portee, proprietaire }: { etats: EtatSceau[]
       )}
 
       {visibles.length === 0 ? (
-        <p className="t-small m-0">{proprietaire ? SCEAUX_TXT.videMoi : SCEAUX_TXT.vide}</p>
+        !enPlus.length && <p className="t-small m-0">{proprietaire ? SCEAUX_TXT.videMoi : SCEAUX_TXT.vide}</p>
       ) : (
         <>
           {petites.length > 0 && <div className="flex flex-col gap-8 md:gap-10 lg:grid lg:grid-cols-6 lg:items-start lg:gap-x-6">{petites.map(rendreFamille)}</div>}
           {grandes.map(rendreFamille)}
         </>
       )}
+      {enPlus
+        .filter((x) => filtre === "tous" || filtre === x.cle)
+        .map((x) => (
+          <div key={x.cle}>{x.contenu}</div>
+        ))}
 
       <FicheSceau e={fiche} onFermer={() => setFiche(null)} />
     </section>

@@ -10,9 +10,10 @@ import { JOURNAL } from "@/lib/voice-profil";
 
 // L'onglet Journal du profil : la courbe d'ELO sur 90 jours (avec le pic et
 // les paliers en fond), le carnet de jours et le fil des événements notables
-// (victoires en duel, nouveaux paliers, séries). Téléphone : courbe, carnet,
-// fil, l'un sous l'autre ; ordinateur : le fil à gauche (7 colonnes), la
-// courbe et le carnet à droite (5). Le fil montre ses 6 dernières entrées,
+// (victoires en duel, nouveaux paliers, séries), puis les saisons
+// (`saisons`). Téléphone : courbe, carnet, fil, saisons, l'un sous l'autre ;
+// ordinateur : le fil à gauche (7 colonnes), la courbe, le carnet et les
+// saisons à droite (5). Le fil montre ses 6 dernières entrées,
 // le reste à la demande. Les dates relatives ne se calculent que dans le
 // navigateur (JourRelatif). Sans état : rendu au serveur.
 
@@ -86,6 +87,7 @@ export function Journal({
   moi,
   moiId,
   piedEntree,
+  saisons,
 }: {
   journal: DonneesJournal;
   mastery: number | null;
@@ -94,6 +96,8 @@ export function Journal({
   moiId: string | null;
   /** sous une entrée du fil : ses tampons */
   piedEntree?: (e: EvenementJournal) => React.ReactNode;
+  /** la carte des saisons (SaisonsJournal) : après le fil (téléphone), sous le carnet (ordinateur) */
+  saisons?: React.ReactNode;
 }) {
   const { courbe, evenements } = journal;
   const pic = courbe.pic !== null ? rankFor(courbe.pic, mastery) : null;
@@ -101,7 +105,7 @@ export function Journal({
   const suite = evenements.slice(VISIBLES);
 
   return (
-    <section className="grid items-start gap-6 lg:grid-cols-12 lg:gap-8" aria-labelledby="profil-journal">
+    <section className={"grid items-start gap-6 lg:grid-cols-12 lg:gap-8 " + (saisons ? "lg:grid-rows-[auto_1fr]" : "")} aria-labelledby="profil-journal">
       <h2 id="profil-journal" className="sr-only">
         {JOURNAL.titre}
       </h2>
@@ -132,7 +136,7 @@ export function Journal({
         </div>
       </div>
 
-      <div className="card flex min-w-0 flex-col gap-1 p-5 sm:p-6 lg:order-1 lg:col-span-7">
+      <div className={"card flex min-w-0 flex-col gap-1 p-5 sm:p-6 lg:order-1 lg:col-span-7 " + (saisons ? "lg:row-span-2" : "")}>
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="t-eyebrow m-0">{JOURNAL.fil}</h3>
           {evenements.length > 0 && <span className="t-micro">{JOURNAL.filCompte(evenements.length)}</span>}
@@ -159,6 +163,7 @@ export function Journal({
           <p className="t-small m-0 py-3">{moi ? JOURNAL.filVideMoi : JOURNAL.filVide}</p>
         )}
       </div>
+      {saisons && <div className="min-w-0 lg:order-3 lg:col-span-5 lg:col-start-8 lg:-mt-4">{saisons}</div>}
     </section>
   );
 }

@@ -72,6 +72,7 @@ export function EnteteJoueur({
   presence = false,
   poses = null,
   piedRang = null,
+  saison = null,
   tampons = null,
 }: {
   d: EnteteData;
@@ -88,6 +89,8 @@ export function EnteteJoueur({
   poses?: React.ReactNode;
   /** le pied de la carte du rang, sur ordinateur (bilan du face-à-face) */
   piedRang?: React.ReactNode;
+  /** la saison en cours, dans la carte du rang (ordinateur) */
+  saison?: React.ReactNode;
   /** les tampons du profil (TamponsCible), sous les actions */
   tampons?: React.ReactNode;
 }) {
@@ -189,7 +192,7 @@ export function EnteteJoueur({
 
         {!apercu && (
           <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:block lg:self-start">
-            <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} pied={piedRang} />
+            <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
           </div>
         )}
       </div>

@@ -31,11 +31,13 @@ import { TamponsCible } from "@/components/profil/Tampons";
 import { DepuisVisite } from "@/components/profil/DepuisVisite";
 import { Visite } from "@/components/profil/Visite";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
+import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/Saisons";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
 import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { journalDe, type EvenementJournal } from "@/lib/profil/journal";
 import { lireTampons, monRetour } from "@/lib/profil/social";
+import { lireSaisons } from "@/lib/profil/saisons";
 import { CIBLE_PROFIL, cibleEntree } from "@/lib/profil/tampons";
 import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
 import { SCEAUX, aPortee, posesDe, sceauxDe, sceauxGagnes } from "@/lib/profil/sceaux";
@@ -43,6 +45,7 @@ import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
 import { ENTETE, FACE } from "@/lib/voice-profil";
+import { SAISONS } from "@/lib/voice-saisons";
 import type { Profile, Rating } from "@/lib/types";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string }> };
@@ -145,7 +148,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   })();
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, parCible, depuisVisite] = await Promise.all([
+  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, parCible, depuisVisite, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     styleLu,
@@ -163,6 +166,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     tamponsLus,
     // « Depuis ta dernière visite » : sur mon profil, hors aperçu (la base note le passage)
     commeMoi ? monRetour(supabase) : Promise.resolve(null),
+    // la saison en cours et son palmarès (null sans la migration) ; la lecture clôt les saisons échues
+    lireSaisons(supabase, id),
   ]);
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
@@ -300,7 +305,10 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
 
   let panneau: React.ReactNode;
   if (onglet === "sceaux") {
-    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} />;
+    // les sceaux de saison : ceux gravés et, sur mon profil, la saison en cours (gaufrée)
+    const courante = commeMoi ? (saisons?.courante ?? null) : null;
+    const famille = saisons && (saisons.palmares.length || courante) ? [{ cle: "saisons", nom: SAISONS.titre, contenu: <FamilleSaisons palmares={saisons.palmares} courante={courante} /> }] : [];
+    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} enPlus={famille} />;
   } else if (onglet === "journal" && journal) {
     const piedEntree = parCible
       ? (e: EvenementJournal) => {
@@ -308,7 +316,16 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           return cible ? <TamponsCible key={cible} pour={id} cible={cible} comptes={parCible[cible]} peut={peutTamponner} variante="entree" /> : null;
         }
       : undefined;
-    panneau = <Journal journal={journal} mastery={mastery} moi={commeMoi} moiId={user.id} piedEntree={piedEntree} />;
+    panneau = (
+      <Journal
+        journal={journal}
+        mastery={mastery}
+        moi={commeMoi}
+        moiId={user.id}
+        piedEntree={piedEntree}
+        saisons={saisons && (saisons.courante || saisons.palmares.length) ? <SaisonsJournal saisons={saisons} /> : null}
+      />
+    );
   } else if (onglet === "face-a-face") {
     const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
     panneau = (
@@ -370,6 +387,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           presence={!commeMoi}
           poses={<SceauxPoses poses={posesDe(etats)} label={commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
           piedRang={piedRang}
+          saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
           tampons={tamponsProfil}
         />
         {depuisVisite && <DepuisVisite retour={depuisVisite} elo={elo} mastery={mastery} />}
