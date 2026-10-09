@@ -212,11 +212,12 @@ export const FACE = {
 // Le Journal : la courbe d'ELO, le carnet de jours, le fil. Des jours, jamais
 // d'heures.
 
-/** « 3 oct. » (ou « 13 oct. 2025 » avec l'année) pour une clé de jour (AAAA-MM-JJ) : même rendu partout. */
+/** « 3 oct. » (ou « 13 oct. 2025 » avec l'année, « 1er déc. » le premier du mois) pour une clé de jour (AAAA-MM-JJ) : même rendu partout. */
 export function jourCourt(jour: string, annee = false): string {
   const d = new Date(jour + "T12:00:00Z");
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", ...(annee ? { year: "numeric" } : {}), timeZone: "UTC" }).format(d);
+  const texte = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", ...(annee ? { year: "numeric" } : {}), timeZone: "UTC" }).format(d);
+  return d.getUTCDate() === 1 ? texte.replace(/^1(?=\s)/, "1er") : texte;
 }
 
 export const JOURNAL = {

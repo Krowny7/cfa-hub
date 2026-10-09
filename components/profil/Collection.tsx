@@ -12,7 +12,8 @@ import { FAMILLES_NOMS, PALIERS, SCEAUX_TXT, nomSceau, progres } from "@/lib/voi
 // son total. Rangés par famille (chacune comptée sur tous ses sceaux, même
 // chez un autre) ; un filtre par famille. Toucher un sceau
 // ouvre sa fiche (FicheSceau). `enPlus` : des familles rendues ailleurs
-// (les saisons, FamilleSaisons), avec leur filtre, après les autres.
+// (les saisons, FamilleSaisons), avec leur filtre, entre les petites
+// familles et les matières : les plus rares ne finissent pas en bas de page.
 
 const pente = (i: number) => ((i * 37) % 9) - 4;
 
@@ -125,19 +126,14 @@ export function Collection({
         </div>
       )}
 
-      {visibles.length === 0 ? (
-        !enPlus.length && <p className="t-small m-0">{proprietaire ? SCEAUX_TXT.videMoi : SCEAUX_TXT.vide}</p>
-      ) : (
-        <>
-          {petites.length > 0 && <div className="flex flex-col gap-8 md:gap-10 lg:grid lg:grid-cols-6 lg:items-start lg:gap-x-6">{petites.map(rendreFamille)}</div>}
-          {grandes.map(rendreFamille)}
-        </>
-      )}
+      {visibles.length === 0 && !enPlus.length && <p className="t-small m-0">{proprietaire ? SCEAUX_TXT.videMoi : SCEAUX_TXT.vide}</p>}
+      {petites.length > 0 && <div className="flex flex-col gap-8 md:gap-10 lg:grid lg:grid-cols-6 lg:items-start lg:gap-x-6">{petites.map(rendreFamille)}</div>}
       {enPlus
         .filter((x) => filtre === "tous" || filtre === x.cle)
         .map((x) => (
           <div key={x.cle}>{x.contenu}</div>
         ))}
+      {grandes.map(rendreFamille)}
 
       <FicheSceau e={fiche} onFermer={() => setFiche(null)} />
     </section>

@@ -14,6 +14,7 @@ export function Feuille({
   ouvert,
   onFermer,
   titre,
+  nom,
   fermer = "Fermer",
   children,
 }: {
@@ -21,6 +22,8 @@ export function Feuille({
   onFermer: () => void;
   /** le titre de la feuille (en tête, et nom du dialogue) */
   titre: string;
+  /** le nom du dialogue, s'il dit plus que le titre (« Carte de Léa ») */
+  nom?: string;
   /** libellé du bouton de fermeture */
   fermer?: string;
   children: React.ReactNode;
@@ -41,7 +44,7 @@ export function Feuille({
       onClick={(e) => {
         if (e.target === dialog.current) onFermer(); // toucher hors de la feuille
       }}
-      aria-label={titre}
+      aria-label={nom ?? titre}
       className={`${s.feuille} overflow-hidden border border-line-2 bg-[var(--surface)] p-0 text-white shadow-[var(--shadow-3)] backdrop:bg-[rgba(12,12,14,.5)] backdrop:backdrop-blur-[2px]`}
     >
       <div className="flex max-h-[inherit] flex-col lg:h-full">

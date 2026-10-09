@@ -5,6 +5,7 @@ import { Sceau, SceauDivision } from "@/components/adn/Sceau";
 import { Feuille } from "@/components/ui/Feuille";
 import { decaleJour } from "@/lib/objectif-calc";
 import type { ResultatSaison, SaisonCourante, Saisons } from "@/lib/profil/saisons";
+import { nombre } from "@/lib/voice";
 import { SAISONS, inscriptionSaison } from "@/lib/voice-saisons";
 
 // Les saisons du profil (étape 6) : le sceau de saison (hexagone
@@ -141,7 +142,9 @@ export function SaisonsJournal({ saisons }: { saisons: Saisons }) {
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[14.5px] font-semibold">{SAISONS.saison(r.numero, r.nom)}</span>
-                    <span className="font-mono text-[12.5px] font-semibold tabular-nums">{SAISONS.pic(r.pic, r.eloPic)}</span>
+                    <span className="text-[13px] font-semibold">
+                      {SAISONS.picCourt(r.pic)} · <span className="font-mono tabular-nums">{nombre(r.eloPic)}</span>
+                    </span>
                     <span className="t-small">{SAISONS.fin(r.final, r.place, r.joueurs)}</span>
                   </span>
                 </button>
@@ -168,7 +171,7 @@ export function FamilleSaisons({ palmares, courante }: { palmares: ResultatSaiso
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <h3 className="t-eyebrow m-0">
-        {SAISONS.titre} <span className="font-mono tabular-nums">· {palmares.length}</span>
+        {SAISONS.titre} {palmares.length > 0 && <span className="font-mono tabular-nums">· {nombre(palmares.length)}</span>}
       </h3>
       <ul className="m-0 grid list-none grid-cols-3 gap-x-3 gap-y-5 p-0 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10">
         {entrees.map((e, i) => {

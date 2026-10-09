@@ -149,7 +149,7 @@ export function CarteJoueurHote({ charger = carteJoueur }: { /** la lecture (l'a
   }, [charger]);
 
   return (
-    <Feuille ouvert={!!demande} onFermer={() => setDemande(null)} titre={carte && carte !== "erreur" ? CARTE.ouvrir(carte.nom) : demande ? CARTE.ouvrir(demande.nom) : CARTE.titre} fermer={CARTE.fermer}>
+    <Feuille ouvert={!!demande} onFermer={() => setDemande(null)} titre={CARTE.titre} nom={demande ? CARTE.ouvrir(carte && carte !== "erreur" ? carte.nom : demande.nom) : undefined} fermer={CARTE.fermer}>
       {demande &&
         (carte && carte !== "erreur" ? (
           <Contenu c={carte} />

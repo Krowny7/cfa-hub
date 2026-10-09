@@ -37,8 +37,6 @@ export const SAISONS = {
   /** le palmarès */
   palmares: "Palmarès",
   palmaresVide: (grave: string) => `Le premier sceau de saison se grave le ${jourCourt(grave)}.`,
-  /** « pic Or I · 1 290 » */
-  pic: (p: PalierSaison, elo: number) => `pic ${nomPalier(p)} · ${nombre(elo)}`,
   /** « fin Argent I · 5e sur 6 » */
   fin: (p: PalierSaison, place: number, joueurs: number | null) => `fin ${nomPalier(p)} · ${ordinal(place)}${joueurs ? ` sur ${nombre(joueurs)}` : ""}`,
   /** le sceau, lu à voix haute */
