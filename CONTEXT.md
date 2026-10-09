@@ -206,6 +206,12 @@ clé service les écrit :
   nouvelle, `rattacher.mjs` d'abord : ordre complet en tête de
   `scripts/notions/rattacher.mjs`).
 
+« Tes points faibles » (Moi › Stats, S'entraîner) se range par notion dès
+que `points_faibles()` répond et que les colonnes sont remplies
+(`components/moi/points-faibles-data.ts`) ; sinon il garde les thèmes de
+l'étape 1 (`ratures_par_theme`). Une question sans notion reste comptée
+dans sa matière.
+
 ### Permissions d'édition
 - `private` → owner uniquement
 - `public` → owner uniquement (tout le monde peut lire)
