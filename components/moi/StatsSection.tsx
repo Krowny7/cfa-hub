@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Activity, BarChart3 } from "lucide-react";
+import { Activity, BarChart3, ChevronRight } from "lucide-react";
 import { Radar, RadarLegend } from "@/components/ui/Radar";
 import { CardLabel } from "@/components/ui/Titles";
 import { ActivityHeatmap } from "@/components/ActivityHeatmap";
+import { XpBarChart } from "@/components/XpBarChart";
 import { TopicRail } from "@/components/ui/TopicRail";
 import { reviserHref, subjectRail } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";
@@ -25,6 +26,19 @@ function matiereFragile(d: MoiData): RepliMatiere {
   if (!mesurees.length) return null;
   const t = mesurees.reduce((a, b) => ((b.pct as number) < (a.pct as number) ? b : a));
   return { nom: subjectByKey(t.key)?.name ?? t.label, href: `/practice?topic=${t.key}` };
+}
+
+import { parisDay } from "@/lib/daily";
+import { decaleJour } from "@/lib/objectif-calc";
+
+/** L'XP des 90 derniers jours (jour de Paris), un jour par entrée : la base ne rend que les jours avec de l'XP. */
+function xp90Jours(xpDays: MoiData["xpDays"]): { day: string; xp: number }[] {
+  const parJour = new Map(xpDays.map((x) => [x.day, x.xp]));
+  const debut = decaleJour(parisDay(), -89);
+  return Array.from({ length: 90 }, (_, i) => {
+    const day = decaleJour(debut, i);
+    return { day, xp: parJour.get(day) ?? 0 };
+  });
 }
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
@@ -117,7 +131,7 @@ function SubjectsCard({ d }: { d: MoiData }) {
   );
 }
 
-/** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande). La précision vit dans « Traits tracés ». */
+/** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande), puis l'XP par jour sur 90 jours, repliée. La précision vit dans « Traits tracés ». */
 function ActivityCard({ d }: { d: MoiData }) {
   const facts: { label: string; value: string }[] = [
     { label: "Semaine", value: `${fmtInt(d.xpWeek)} XP` },
@@ -167,6 +181,19 @@ function ActivityCard({ d }: { d: MoiData }) {
           </dl>
         </div>
       </div>
+
+      {d.xpDays.length > 0 && (
+        <details className="group/x border-t border-line pt-4">
+          <summary className="t-micro inline-flex cursor-pointer list-none items-center gap-1 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
+            <ChevronRight size={13} aria-hidden className="transition-transform group-open/x:rotate-90" />
+            {MOI.xpParJour}
+          </summary>
+          <div className="rl-in mt-3">
+            {/* les 90 jours, du plus ancien au plus récent, les jours sans XP compris (le titre est celui du repli) */}
+            <XpBarChart data={xp90Jours(d.xpDays)} title={null} />
+          </div>
+        </details>
+      )}
     </section>
   );
 }

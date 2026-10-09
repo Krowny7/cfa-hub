@@ -17,6 +17,8 @@ export type ProfilStats = {
   meilleureSerie: number;
   /** série en cours (jusqu'à hier si rien aujourd'hui) */
   serie: number;
+  /** questions posées aujourd'hui (Paris) : le dernier jour du carnet du Journal */
+  duJour?: number;
   duelsGagnes: number;
   duelsJoues: number;
   defisRendus: number;

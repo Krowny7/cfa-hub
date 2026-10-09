@@ -83,6 +83,7 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
       questions: jours.reduce((s, j) => s + j.n, 0) + (jour ?? 0),
       meilleureSerie: meilleure,
       serie: enCours,
+      duJour: jour ?? 0,
       duelsGagnes,
       duelsJoues,
       defisRendus,

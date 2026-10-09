@@ -78,9 +78,9 @@ export function ListeAmis({ amis, total, moi, viewerId = null }: { amis: AmiLite
             <Link href="/people?view=amis" className="t-small font-semibold hover:text-white">
               Gérer mes amis →
             </Link>
-          ) : (
+          ) : total > 0 ? (
             <span className="t-micro font-mono tabular-nums">{nombre(total)}</span>
-          )
+          ) : null
         }
       />
       {amis.length === 0 ? (

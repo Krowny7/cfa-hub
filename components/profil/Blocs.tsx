@@ -1,4 +1,7 @@
+import Link from "next/link";
+import { ImagePlus } from "lucide-react";
 import { VideoProfil } from "@/components/profil/VideoProfil";
+import { CASE_VIDE } from "@/lib/voice-profil";
 import { GRILLE, placeDe } from "@/components/profil/Rangees";
 import { estMedia, largeurMedia, type Bloc, type BlocMedia, type CleBloc, type Disposition } from "@/lib/profil/disposition";
 
@@ -9,9 +12,18 @@ import { estMedia, largeurMedia, type Bloc, type BlocMedia, type CleBloc, type D
 // conteneur (@container) : les blocs suivent sa largeur, pas celle de
 // l'écran. Une case vide ou un bloc sans contenu garde sa place sur grand
 // écran (rien ne bouge) et disparaît sur téléphone ; une rangée sans rien à
-// montrer est sautée. Sans état.
+// montrer est sautée. `caseVide` : ce qu'on pose dans une case vide (sur
+// son propre profil, sur la page par défaut : « ajoute une image »). Sans état.
 
-export function GrilleBlocs({ disposition, rendus }: { disposition: Disposition; rendus: Partial<Record<CleBloc, React.ReactNode>> }) {
+export function GrilleBlocs({
+  disposition,
+  rendus,
+  caseVide = null,
+}: {
+  disposition: Disposition;
+  rendus: Partial<Record<CleBloc, React.ReactNode>>;
+  caseVide?: React.ReactNode;
+}) {
   const contenu = (b: Bloc | null) => (!b ? null : estMedia(b) ? <MediaProfil b={b} /> : (rendus[b.k] ?? null));
   const rangees = disposition.map((r) => ({ r, contenus: r.c.map(contenu) })).filter((x) => x.contenus.some(Boolean));
   if (!rangees.length) return null;
@@ -25,6 +37,10 @@ export function GrilleBlocs({ disposition, rendus }: { disposition: Disposition;
               <div key={b ? (estMedia(b) ? b.id : b.k) : `v${i}`} className={`@container min-w-0 ${placeDe(r.m, i)}`}>
                 {n}
               </div>
+            ) : !b && caseVide ? (
+              <div key={`v${i}`} className={`@container min-w-0 ${placeDe(r.m, i)}`}>
+                {caseVide}
+              </div>
             ) : (
               <div key={`v${i}`} aria-hidden className={`hidden lg:block ${placeDe(r.m, i)}`} />
             );
@@ -32,6 +48,17 @@ export function GrilleBlocs({ disposition, rendus }: { disposition: Disposition;
         </div>
       ))}
     </div>
+  );
+}
+
+/** La case vide de son propre profil : un pointillé qui mène à l'éditeur. */
+export function CaseImage({ href }: { href: string }) {
+  return (
+    <Link href={href} className="flex min-h-[180px] flex-col items-center justify-center gap-2 rounded-[18px] border border-dashed border-line-2 p-6 text-center text-muted transition-colors hover:border-white hover:text-white">
+      <ImagePlus size={22} aria-hidden />
+      <span className="text-[14px] font-semibold">{CASE_VIDE.titre}</span>
+      <span className="t-micro max-w-[240px]">{CASE_VIDE.texte}</span>
+    </Link>
   );
 }
 

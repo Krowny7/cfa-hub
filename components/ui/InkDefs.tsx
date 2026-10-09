@@ -1,5 +1,6 @@
 import { LOGO_BRISTLES, LOGO_BRUSH, LOGO_SPLAT, LOGO_TRACK, RING_FULL, RING_FULL_AXIS, SWASH } from "@/components/ink/paths";
 import { CROSS, TALLY, TALLY_BAR } from "@/components/ink/strokes";
+import { SEAL_HEX, SEAL_HEX_IN } from "@/components/adn/paths-moments";
 
 // Définitions SVG partagées, posées une seule fois dans le layout :
 // - le filtre « bord d'encre » (#rl-ink), légère irrégularité de pinceau sur
@@ -22,6 +23,9 @@ export const INK = {
   tallyBar: ["#rl-tally-bar-0", "#rl-tally-bar-1"],
   /** croix du correcteur (0 0 14 14) */
   cross: "#rl-cross",
+  /** sceau hexagonal, contour et filet intérieur (0 0 120 120) : la collection du profil en pose 16 */
+  sealHex: "#rl-seal-hex",
+  sealHexIn: "#rl-seal-hex-in",
   /** filtres : pinceau sec (traînées verticales), mine de crayon (grain) */
   dry: "url(#rl-dry)",
   pencil: "url(#rl-pencil)",
@@ -54,6 +58,8 @@ export function InkDefs() {
           <path key={i} id={`rl-tally-bar-${i}`} d={d} />
         ))}
         <path id="rl-cross" d={CROSS} />
+        <path id="rl-seal-hex" d={SEAL_HEX} />
+        <path id="rl-seal-hex-in" d={SEAL_HEX_IN} />
         <path id="rl-logo-track" d={LOGO_TRACK} />
         <path id="rl-logo-brush" d={LOGO_BRUSH} />
         <path id="rl-logo-bristles" d={LOGO_BRISTLES} />

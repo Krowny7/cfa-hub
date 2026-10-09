@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Eye, Palette, UserCheck, UserPlus } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { ArrowLeft, ChevronRight, Eye, Palette, UserCheck, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { XpBarChart, type XpDay } from "@/components/XpBarChart";
 import { PracticeTrophies } from "@/components/PracticeTrophies";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
-import { getLeaderboardRank } from "@/lib/rating";
-import { DEFAULT_ELO } from "@/lib/ranks";
+import { getLeaderboardRank, getMyRating } from "@/lib/rating";
+import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { getTopicAverages } from "@/lib/mastery";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
@@ -18,29 +18,65 @@ import { Icone } from "@/components/adn/icons";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
 import { RadarComparable } from "@/components/profil/RadarComparable";
-import { GrilleBlocs } from "@/components/profil/Blocs";
+import { CaseImage, GrilleBlocs } from "@/components/profil/Blocs";
 import { AmbianceProfil } from "@/components/profil/Pieces";
-import { rankFor } from "@/lib/ranks";
 import { AmiBouton } from "@/components/profil/AmiBouton";
+import { OngletsProfil } from "@/components/profil/OngletsProfil";
+import { SceauxPoses } from "@/components/profil/SceauxPoses";
+import { Collection } from "@/components/profil/Collection";
+import { BatonsDuels, FaceAFace } from "@/components/profil/FaceAFace";
+import { Revanche } from "@/components/profil/Revanche";
+import { Journal } from "@/components/profil/Journal";
 import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
+import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
+import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
+import { journalDe } from "@/lib/profil/journal";
+import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
+import { SCEAUX, aPortee, posesDe, sceauxDe, sceauxGagnes } from "@/lib/profil/sceaux";
+import { stakesAgainst } from "@/lib/duels";
+import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
+import { ENTETE, FACE } from "@/lib/voice-profil";
 import type { Profile, Rating } from "@/lib/types";
 
-type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
+type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
+
+const SANS_DUEL: Bilan = { duels: [], victoires: 0, defaites: 0, nuls: 0, ouvert: null };
+
+async function trophees(sb: SupabaseClient, id: string) {
+  try {
+    const { data } = await sb.rpc("get_user_practice_trophies", { p_user_id: id });
+    return Array.isArray(data) ? data.map((r: { topic_count: number; trophy_count: number }) => ({ topic_count: Number(r.topic_count ?? 0) || 0, trophy_count: Number(r.trophy_count ?? 0) || 0 })) : [];
+  } catch {
+    return []; // fonction pas encore créée
+  }
+}
+
+async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[]> {
+  try {
+    const { data } = await sb.rpc("get_user_practice_progress", { p_user_id: id });
+    return Array.isArray(data) ? (data as ProgressRow[]) : [];
+  } catch {
+    return []; // fonction pas encore créée
+  }
+}
 
 // Profil d'un joueur, façon jeu vidéo : l'en-tête sur toute la largeur
-// (bannière du joueur, sceau dans son cadre, pseudo, prénom et nom selon
-// leur visibilité, niveau, bio, LinkedIn selon sa visibilité, son rang en
-// grand), puis les blocs dans l'ordre et à la largeur choisis par le joueur
-// (vitrine, radar des matières, amis, questions répondues, trophées,
-// progression, ses images et GIF ; GrilleBlocs). Sur son propre profil : personnaliser, et « voir
-// comme les autres » (?vue=inconnu ou ?vue=ami) qui rend la page telle
-// qu'un autre joueur la voit, LinkedIn compris.
+// (bannière, sceau dans son cadre, pseudo, prénom et nom selon leur
+// visibilité, rang et pic, niveau, bio, LinkedIn selon sa visibilité, ses 3
+// sceaux posés), puis des onglets collants : Profil (les blocs dans l'ordre
+// et à la largeur choisis par le joueur, GrilleBlocs), Sceaux (la
+// collection), Journal (courbe d'ELO, carnet de jours, fil) et, sur le
+// profil d'un autre, Face-à-face. L'onglet est dans l'URL (?onglet=sceaux)
+// et chaque onglet ne lit que ses données. Sur son
+// propre profil : personnaliser, et « voir comme les autres » (?vue=inconnu
+// ou ?vue=ami) qui rend la page telle qu'un autre joueur la voit.
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const vueParam = (await searchParams)?.vue;
+  const sp = (await searchParams) ?? {};
   const supabase = await createClient();
 
   const { data: auth } = await supabase.auth.getUser();
@@ -55,29 +91,63 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
 
   const isMe = user.id === id;
   // « voir comme les autres » : seulement sur son propre profil
-  const vue = isMe && (vueParam === "inconnu" || vueParam === "ami") ? vueParam : null;
+  const vue = isMe && (sp.vue === "inconnu" || sp.vue === "ami") ? sp.vue : null;
   const commeMoi = isMe && !vue;
-
-  const admin = tryAdmin();
-  // celui qui regarde le profil d'un autre : ses matières et sa couleur, pour « Me comparer »
+  // celui qui regarde le profil d'un autre : le face-à-face, ses matières et sa couleur pour comparer
   const autreJoueur = !isMe;
-  const [leaderboardRank, masteries, answers, { style }, stats, relation, lienBrut, amis, nomBrut, moyennes, mesStats, monStyle] = await Promise.all([
+  const onglet = ongletDepuis(sp.onglet, autreJoueur);
+  const admin = tryAdmin();
+
+  // l'onglet ouvert : ses lectures seulement (celles de Profil suivent les blocs de la page)
+  const styleLu = lireStyle(supabase, id);
+  const lecturesOnglet = (async () => {
+    const blocs = new Set(onglet === "profil" ? blocsDe((await styleLu).style.disposition).map((b) => b.k) : []);
+    const radar = blocs.has("radar") || onglet === "face-a-face";
+    const [moyennes, mesStats, monStyle, answers, trophyRows, progressSessions, monRating] = await Promise.all([
+      radar && admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
+      radar && autreJoueur ? statsProfil(user.id, supabase) : Promise.resolve(null),
+      radar && autreJoueur ? lireStyle(supabase, user.id) : Promise.resolve(null),
+      // résumé seulement (matières et sources, sans passages) ; les réponses
+      // d'un autre joueur ne se lisent qu'avec le client admin
+      !blocs.has("reponses")
+        ? Promise.resolve(null)
+        : admin
+          ? getAnswerStats(admin, id, { privileged: true, detail: false })
+          : isMe
+            ? getAnswerStats(supabase, id, { detail: false })
+            : Promise.resolve(null),
+      blocs.has("trophees") ? trophees(supabase, id) : Promise.resolve([]),
+      blocs.has("progression") ? progression(supabase, id) : Promise.resolve([] as ProgressRow[]),
+      onglet === "face-a-face" ? getMyRating(supabase, user.id) : Promise.resolve(null),
+    ]);
+    return { moyennes, mesStats, monStyle, answers, trophyRows, progressSessions, monRating };
+  })();
+  // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
+  const statsLues = statsProfil(id, supabase);
+  const maitrisesLues = masteryByUser(admin, [id]);
+  // le Journal : la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
+  const journalLu = (async () => {
+    if (onglet !== "journal") return null;
+    const [stats, masteries] = await Promise.all([statsLues, maitrisesLues]);
+    return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null });
+  })();
+
+  // l'en-tête, commun aux onglets
+  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o, journal] = await Promise.all([
     getLeaderboardRank(supabase, id),
-    masteryByUser(admin, [id]),
-    // résumé seulement (matières et sources, sans passages) ; les réponses
-    // d'un autre joueur ne se lisent qu'avec le client admin
-    admin ? getAnswerStats(admin, id, { privileged: true, detail: false }) : isMe ? getAnswerStats(supabase, id, { detail: false }) : Promise.resolve(null),
-    lireStyle(supabase, id),
-    statsProfil(id, supabase),
+    maitrisesLues,
+    styleLu,
+    statsLues,
     relationAvec(supabase, user.id, id),
     // la base ne rend le LinkedIn que s'il est visible pour moi
     lireLien(supabase, id),
     amisDe(id, supabase, 12),
     // prénom et nom : la base ne les rend que s'ils sont visibles pour moi
     lireNom(supabase, id),
-    admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
-    autreJoueur ? statsProfil(user.id, supabase) : Promise.resolve(null),
-    autreJoueur ? lireStyle(supabase, user.id) : Promise.resolve(null),
+    // nos duels, lus avec mon client (je ne lis que les miens)
+    autreJoueur ? faceAFace(supabase, user.id, id) : Promise.resolve(null),
+    lecturesOnglet,
+    journalLu,
   ]);
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
@@ -94,32 +164,9 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const mastery = masteries.get(id) ?? null;
   const rank = rankFor(elo, mastery, leaderboardRank);
 
-  let xpDaily: XpDay[] | null = null;
-  if (commeMoi) {
-    try {
-      const { data } = await supabase.rpc("get_xp_daily", { p_days: 90 });
-      if (Array.isArray(data)) xpDaily = data.slice(0, 90).map((d: { day: string; xp: number }) => ({ day: String(d.day), xp: Number(d.xp ?? 0) || 0 }));
-    } catch {
-      // fonction pas encore créée
-    }
-  }
-
-  let trophyRows: { topic_count: number; trophy_count: number }[] = [];
-  try {
-    const { data } = await supabase.rpc("get_user_practice_trophies", { p_user_id: id });
-    if (Array.isArray(data)) trophyRows = data.map((r: { topic_count: number; trophy_count: number }) => ({ topic_count: Number(r.topic_count ?? 0) || 0, trophy_count: Number(r.trophy_count ?? 0) || 0 }));
-  } catch {
-    // fonction pas encore créée
-  }
-
-  type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
-  let progressSessions: ProgressRow[] = [];
-  try {
-    const { data } = await supabase.rpc("get_user_practice_progress", { p_user_id: id });
-    if (Array.isArray(data)) progressSessions = data as ProgressRow[];
-  } catch {
-    // fonction pas encore créée
-  }
+  // les sceaux : la collection, les 3 posés d'office, le total
+  const etats = sceauxDe(stats);
+  const gagnes = sceauxGagnes(etats);
 
   const entete: EnteteData = {
     id,
@@ -136,7 +183,17 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     gamesPlayed: rating?.games_played ?? 0,
     linkedin: lien,
     amis: amis ? amis.total : null,
+    pic: stats.palierMax,
   };
+
+  const lienFace = `${hrefOnglet(id, "face-a-face")}#profil-onglets`;
+  const dernier = face?.duels[0] ?? null;
+  const defierLibelle = (
+    <>
+      <span className="sm:hidden">{ENTETE.defier}</span>
+      <span className="max-sm:hidden">{JOUEURS.defier(display)}</span>
+    </>
+  );
 
   // les actions : les miennes, celles d'un autre joueur, ou leur aperçu (inertes)
   let actions: React.ReactNode;
@@ -146,7 +203,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
         <Link href="/moi/profil" className="btn btn-primary rl-press">
           <Palette size={15} aria-hidden /> Personnaliser
         </Link>
-        <Link href={`/people/${id}?vue=inconnu`} className="btn btn-secondary rl-press">
+        <Link href={hrefOnglet(id, onglet, "inconnu")} className="btn btn-secondary rl-press">
           <Eye size={15} aria-hidden /> Voir comme les autres
         </Link>
       </>
@@ -155,7 +212,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     actions = (
       <>
         <span className="btn btn-primary pointer-events-none" aria-disabled>
-          <Icone nom="duel" size={17} /> {JOUEURS.defier(display)}
+          <Icone nom="duel" size={17} /> {defierLibelle}
         </span>
         <span className="btn btn-secondary pointer-events-none" aria-disabled>
           {vue === "ami" ? <UserCheck size={15} aria-hidden /> : <UserPlus size={15} aria-hidden />} {vue === "ami" ? "Amis" : "Ajouter en ami"}
@@ -165,13 +222,43 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   } else {
     actions = (
       <>
-        <Link href={`/duel?adversaire=${encodeURIComponent(id)}`} className="btn btn-primary rl-press">
-          <Icone nom="duel" size={17} /> {JOUEURS.defier(display)}
-        </Link>
+        {/* Revanche si mon dernier duel contre lui est perdu, sinon Défier */}
+        {dernier && dernier.gagne === false && !face?.ouvert ? (
+          <Revanche adversaire={id} duel={dernier.id} />
+        ) : (
+          <Link href={`/duel?adversaire=${encodeURIComponent(id)}`} className="btn btn-primary rl-press">
+            <Icone nom="duel" size={17} /> {defierLibelle}
+          </Link>
+        )}
         <AmiBouton autre={id} relation={relation} />
+        {/* téléphone : le bilan ouvre le Face-à-face (sur ordinateur, il est au pied de la carte du rang) */}
+        {face && face.duels.length > 0 && (
+          <Link href={lienFace} className="btn btn-secondary rl-press lg:hidden" aria-label={FACE.bilanDit(face.victoires, face.defaites, display, face.nuls)}>
+            {FACE.court(face.victoires, face.defaites)} <ChevronRight size={15} aria-hidden />
+          </Link>
+        )}
       </>
     );
   }
+
+  // sur ordinateur, au pied de la carte du rang : le bilan du face-à-face
+  const piedRang = face ? (
+    <Link href={lienFace} className="flex min-h-[32px] items-center justify-between gap-3 text-[13px] font-semibold text-[rgba(255,255,255,.85)] hover:text-[#fff]">
+      {face.duels.length ? (
+        <>
+          <span className="truncate">
+            {FACE.toi} {nombre(face.victoires)} – {nombre(face.defaites)} {display}
+          </span>
+          <BatonsDuels duels={face.duels.slice(0, 5)} height={20} className="shrink-0 text-[#fff]" />
+        </>
+      ) : (
+        <span>{FACE.premier}</span>
+      )}
+      <span className="inline-flex shrink-0 items-center gap-0.5">
+        {FACE.voir} <ChevronRight size={15} aria-hidden />
+      </span>
+    </Link>
+  ) : null;
 
   // le bandeau d'aperçu dit ce qui est visible ou masqué pour cet autre joueur
   const visibles = [
@@ -185,11 +272,81 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     </Link>
   );
 
+  const onglets = ongletsDe(autreJoueur).map((cle) => ({
+    cle,
+    href: hrefOnglet(id, cle, vue),
+    ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(SCEAUX.length)}` } : {}),
+    ...(cle === "face-a-face" && face && face.duels.length ? { compte: `${nombre(face.victoires)}–${nombre(face.defaites)}` } : {}),
+  }));
+
+  let panneau: React.ReactNode;
+  if (onglet === "sceaux") {
+    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} />;
+  } else if (onglet === "journal" && journal) {
+    panneau = <Journal journal={journal} mastery={mastery} moi={commeMoi} moiId={user.id} />;
+  } else if (onglet === "face-a-face") {
+    const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
+    panneau = (
+      <FaceAFace
+        autreId={id}
+        nom={display}
+        bilan={face ?? SANS_DUEL}
+        enjeu={enjeu ? { gain: enjeu.win, perte: enjeu.loss } : null}
+        matieres={stats.matieres}
+        miennes={o.mesStats ? o.mesStats.matieres : null}
+        moyennes={o.moyennes}
+        accent={style.accent}
+        monAccent={o.monStyle ? o.monStyle.style.accent : null}
+      />
+    );
+  } else {
+    // la page jamais composée : sa case vide invite le propriétaire à poser une image, et s'efface pour les autres
+    const parDefaut = estDispositionDefaut(style.disposition);
+    panneau = (
+      <GrilleBlocs
+        disposition={parDefaut && !commeMoi ? sansCaseVide(style.disposition) : style.disposition}
+        caseVide={parDefaut && commeMoi ? <CaseImage href="/moi/profil" /> : null}
+        rendus={{
+          vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
+          radar: (
+            <RadarComparable
+              matieres={stats.matieres}
+              moyennes={o.moyennes}
+              accent={style.accent}
+              nom={display}
+              moi={commeMoi}
+              miennes={o.mesStats ? o.mesStats.matieres : null}
+              monAccent={o.monStyle ? o.monStyle.style.accent : null}
+            />
+          ),
+          amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} viewerId={user.id} /> : null,
+          reponses: o.answers?.available ? <AnswerSummary stats={o.answers} name={display} isMe={commeMoi} /> : null,
+          trophees: <PracticeTrophies rows={o.trophyRows} />,
+          progression: <PracticeProgressChart pastSessions={o.progressSessions} topicLabels={TOPIC_LABELS} />,
+        }}
+      />
+    );
+  }
+
   return (
     <div className="rl-wide rl-page relative isolate">
       <AmbianceProfil style={style} />
       <div className="flex flex-col gap-6 md:gap-8">
-        <EnteteJoueur d={entete} actions={actions} haut={vue ? undefined : retour} kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre} rangDe={commeMoi ? "Ton rang" : "Son rang"} presence={!commeMoi} />
+        <EnteteJoueur
+          d={entete}
+          actions={actions}
+          haut={vue ? undefined : retour}
+          kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre}
+          rangDe={commeMoi ? "Ton rang" : "Son rang"}
+          presence={!commeMoi}
+          poses={<SceauxPoses poses={posesDe(etats)} label={commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
+          piedRang={piedRang}
+        />
+        {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
+        <div className="flex flex-col gap-6 md:gap-10">
+          <OngletsProfil actif={onglet} onglets={onglets} />
+          {panneau}
+        </div>
       </div>
 
       {/* l'aperçu « comme les autres » : une barre flottante en bas de l'écran,
@@ -205,40 +362,15 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
             {visibles.length ? <span className="text-muted">{` · ${visibles.join(", ")}`}</span> : null}
           </p>
           <div className="flex items-center gap-1.5">
-            <Link href={`/people/${id}?vue=${vue === "ami" ? "inconnu" : "ami"}`} className="btn btn-secondary btn-sm">
+            <Link href={hrefOnglet(id, onglet, vue === "ami" ? "inconnu" : "ami")} className="btn btn-secondary btn-sm">
               Comme {vue === "ami" ? "un inconnu" : "un ami"}
             </Link>
-            <Link href={`/people/${id}`} className="btn btn-primary btn-sm">
+            <Link href={hrefOnglet(id, onglet)} className="btn btn-primary btn-sm">
               Revenir
             </Link>
           </div>
         </div>
       )}
-
-      <GrilleBlocs
-        disposition={style.disposition}
-        rendus={{
-          vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
-          radar: (
-            <RadarComparable
-              matieres={stats.matieres}
-              moyennes={moyennes}
-              accent={style.accent}
-              nom={display}
-              moi={commeMoi}
-              miennes={mesStats ? mesStats.matieres : null}
-              monAccent={monStyle ? monStyle.style.accent : null}
-            />
-          ),
-          amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} viewerId={user.id} /> : null,
-          reponses: answers?.available ? <AnswerSummary stats={answers} name={display} isMe={commeMoi} /> : null,
-          trophees: <PracticeTrophies rows={trophyRows} />,
-          progression: <PracticeProgressChart pastSessions={progressSessions} topicLabels={TOPIC_LABELS} />,
-        }}
-      />
-
-      {/* l'XP par jour : pour soi seulement, hors disposition */}
-      {commeMoi && xpDaily && <XpBarChart data={xpDaily} title="XP gagnée par jour (90 jours)" />}
     </div>
   );
 }

@@ -1,0 +1,56 @@
+/* Le carnet de jours : une case par jour, une colonne par semaine (lundi en
+   haut). 52 semaines sur ordinateur ; sur téléphone, les 18 dernières (les
+   34 premières colonnes, soit 238 cases, sont masquées). */
+
+.carnet {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, auto);
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 3px;
+}
+@media (min-width: 768px) {
+  .carnet {
+    gap: 2px;
+  }
+}
+@media (max-width: 767.98px) {
+  .carnet > :nth-child(-n + 238) {
+    display: none;
+  }
+}
+
+/* data-n : 0 rien (case au trait), 1 moins de 20 traits, 2 moins de 40, 3 l'objectif du jour ou plus ; data-f : à venir */
+.carnet > i,
+.legende > i {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 20%, transparent);
+}
+.carnet > [data-n="1"],
+.legende > [data-n="1"] {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--ink) 30%, transparent);
+}
+.carnet > [data-n="2"],
+.legende > [data-n="2"] {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--ink) 62%, transparent);
+}
+.carnet > [data-n="3"],
+.legende > [data-n="3"] {
+  box-shadow: none;
+  background: var(--ink);
+}
+.carnet > [data-f] {
+  box-shadow: none;
+}
+
+.legende {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 10px;
+  gap: 3px;
+  align-items: center;
+}

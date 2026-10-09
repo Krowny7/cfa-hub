@@ -72,13 +72,14 @@ export type Disposition = Rangee[];
 
 export const RANGEES_MAX = 12;
 
+// La page d'un joueur qui n'a rien composé : chiffres clés, radar, amis, et
+// une case vide à côté des amis, que son propriétaire voit « ajoute une
+// image ». Les trophées vivent dans les Sceaux : la clé reste lisible dans
+// les dispositions enregistrées, mais n'est plus dans celle-ci.
 export const DISPOSITION_DEFAUT: Disposition = [
   { m: "plein", c: [{ k: "vitrine" }] },
   { m: "plein", c: [{ k: "radar" }] },
-  { m: "plein", c: [{ k: "amis" }] },
-  { m: "plein", c: [{ k: "reponses" }] },
-  { m: "plein", c: [{ k: "trophees" }] },
-  { m: "plein", c: [{ k: "progression" }] },
+  { m: "grand-petit", c: [{ k: "amis" }, null] },
 ];
 
 export const BUCKET_MEDIAS = "profil-medias";
@@ -231,8 +232,23 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
  */
 export function dispositionDepuis(raw: unknown, radar: boolean): Disposition {
   if (Array.isArray(raw)) return validerDisposition(raw, "lecture").disposition;
-  return radar ? DISPOSITION_DEFAUT : DISPOSITION_DEFAUT.filter((r) => r.c[0]?.k !== "radar");
+  return radar ? DISPOSITION_DEFAUT : DEFAUT_SANS_RADAR;
 }
+const DEFAUT_SANS_RADAR = DISPOSITION_DEFAUT.filter((r) => r.c[0]?.k !== "radar");
+
+/** La page n'a jamais été composée : c'est la disposition par défaut (avec ou sans radar). */
+export const estDispositionDefaut = (d: Disposition) => d === DISPOSITION_DEFAUT || d === DEFAUT_SANS_RADAR;
+
+/**
+ * La disposition par défaut vue par un autre joueur : la case vide (« ajoute
+ * une image », pour le propriétaire seulement) s'efface, et le bloc resté
+ * seul dans sa rangée prend toute la largeur.
+ */
+export const sansCaseVide = (d: Disposition): Disposition =>
+  d.map((r) => {
+    const blocs = r.c.filter((b): b is Bloc => !!b);
+    return blocs.length === 1 && r.c.length > 1 ? { m: "plein", c: blocs } : r;
+  });
 
 /** La taille d'un média (celle choisie, sinon : moyenne pour un GIF ou une vidéo, grande pour une image). */
 export const tailleDe = (b: BlocMedia): TailleMedia => b.t ?? (b.type === "video" || b.source === "klipy" ? "m" : "l");
