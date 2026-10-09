@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SectionTitle } from "@/components/ui/Titles";
 import { Avatar } from "@/components/classement/Avatar";
+import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { VITRINE, type ProfilStats, type StyleProfil, type VitrineKey } from "@/lib/profil/catalogue";
@@ -89,10 +90,10 @@ export function ListeAmis({ amis, total, moi, viewerId = null }: { amis: AmiLite
         <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 @md:grid-cols-3 @4xl:grid-cols-6">
           {amis.map((a) => (
             <li key={a.id} className="min-w-0">
-              <Link href={`/people/${a.id}`} className="card-quiet rl-lift flex min-w-0 items-center gap-2.5 p-2.5">
+              <LienJoueur id={a.id} nom={a.name} className="card-quiet rl-lift flex min-w-0 items-center gap-2.5 p-2.5">
                 <Avatar src={a.avatarUrl} name={a.name} size={32} userId={a.id === viewerId ? null : a.id} />
                 <span className="truncate text-[13.5px] font-semibold">{a.name}</span>
-              </Link>
+              </LienJoueur>
             </li>
           ))}
         </ul>

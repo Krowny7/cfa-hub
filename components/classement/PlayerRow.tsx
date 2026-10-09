@@ -4,6 +4,7 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { Avatar } from "@/components/classement/Avatar";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { PresenceText } from "@/components/presence/Presence";
+import { LienJoueur } from "@/components/profil/CarteJoueur";
 
 export type PlayerLite = {
   id: string;
@@ -18,14 +19,14 @@ export type PlayerLite = {
 };
 
 // Ligne de l'annuaire des joueurs : sceau (ou photo), pseudo, niveau, badge de rang et
-// ELO. « Défier » apparaît au survol (toujours visible sur téléphone), comme
+// ELO ; au toucher, sa carte joueur (CarteJoueur). « Défier » apparaît au survol (toujours visible sur téléphone), comme
 // dans le classement.
 export function PlayerRow({ p, presence = false }: { p: PlayerLite; /** « en ligne » / « il y a 3 h » sous le pseudo (liste d'amis) */ presence?: boolean }) {
   const rk = rankFor(p.elo, p.mastery);
   const placement = p.gamesPlayed < PLACEMENT_GAMES;
   return (
     <li className={"rl-row group flex items-center gap-1 rounded-[14px] pr-1.5 " + (p.isMe ? "border border-line bg-surface shadow-[var(--shadow-1)]" : "")}>
-      <Link href={`/people/${p.id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-[14px] px-2.5 py-2">
+      <LienJoueur id={p.id} nom={p.name} className="flex min-w-0 flex-1 items-center gap-3 rounded-[14px] px-2.5 py-2">
         <Avatar src={p.avatarUrl} name={p.name} size={36} userId={p.isMe ? null : p.id} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[14.5px] font-semibold">
@@ -41,7 +42,7 @@ export function PlayerRow({ p, presence = false }: { p: PlayerLite; /** « en li
           <RankBadge tier={rk.tierIndex} size={26} glow={false} gray={placement} />
           <span className="hidden w-[40px] text-right font-mono text-[14px] font-semibold tabular-nums sm:block">{p.elo}</span>
         </span>
-      </Link>
+      </LienJoueur>
       {p.isMe ? (
         <span className="w-[34px] shrink-0" aria-hidden />
       ) : (

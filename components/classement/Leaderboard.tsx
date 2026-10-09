@@ -4,6 +4,7 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { INK } from "@/components/ui/InkDefs";
 import { Icone } from "@/components/adn/icons";
 import { Avatar } from "@/components/classement/Avatar";
+import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { CLASSEMENT, RIVALITE, joueursDomaine } from "@/lib/voice-z2a";
@@ -28,8 +29,9 @@ function Place({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
   const rk = badgeOf(r);
   const placement = r.gamesPlayed < PLACEMENT_GAMES;
   return (
-    <Link
-      href={`/people/${r.userId}`}
+    <LienJoueur
+      id={r.userId}
+      nom={r.name}
       className={"group flex min-w-0 flex-col items-center text-center " + (first ? "pb-7 sm:pb-9" : "")}
       aria-label={`${place}${first ? "er" : "e"} : ${r.isMe ? "toi" : r.name}, ${r.elo} ELO`}
     >
@@ -49,7 +51,7 @@ function Place({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
         <RankBadge tier={rk.tierIndex} size={18} glow={false} gray={placement} />
         {r.elo}
       </span>
-    </Link>
+    </LienJoueur>
   );
 }
 
@@ -58,15 +60,16 @@ function Row({ r }: { r: BoardRow }) {
   const placement = r.gamesPlayed < PLACEMENT_GAMES;
   return (
     <li
-      className={"rl-row group grid items-center gap-2.5 rounded-[12px] px-2 py-2 sm:gap-3 sm:px-3 " + ROW_GRID + (r.isMe ? " border border-line bg-surface shadow-[var(--shadow-1)]" : "")}
+      className={"rl-row group relative grid items-center gap-2.5 rounded-[12px] px-2 py-2 sm:gap-3 sm:px-3 " + ROW_GRID + (r.isMe ? " border border-line bg-surface shadow-[var(--shadow-1)]" : "")}
       aria-current={r.isMe ? "true" : undefined}
     >
       <span className="font-mono text-[12.5px] tabular-nums text-muted">{r.rank}</span>
       <Avatar src={r.avatarUrl} name={r.name} size={28} userId={r.isMe ? null : r.userId} />
       <span className="flex min-w-0 items-center gap-2">
-        <Link href={`/people/${r.userId}`} className={"truncate text-[14.5px] hover:underline " + (r.isMe ? "font-bold" : "font-medium")}>
+        {/* toute la ligne ouvre la carte du joueur (le bouton Défier passe au-dessus) */}
+        <LienJoueur id={r.userId} nom={r.name} className={"truncate text-[14.5px] after:absolute after:inset-0 after:rounded-[12px] after:content-[''] hover:underline " + (r.isMe ? "font-bold" : "font-medium")}>
           {r.isMe ? "Toi" : r.name}
-        </Link>
+        </LienJoueur>
         {placement && <span className="hidden shrink-0 text-[11.5px] text-muted sm:inline">placement {r.gamesPlayed}/{PLACEMENT_GAMES}</span>}
       </span>
       <span className="inline-flex items-center justify-end gap-2">
@@ -87,7 +90,7 @@ function Row({ r }: { r: BoardRow }) {
           href={`/duel?adversaire=${encodeURIComponent(r.userId)}`}
           aria-label={`Défier ${r.name}`}
           title={`Défier ${r.name}`}
-          className="grid h-[34px] w-[34px] place-items-center rounded-[10px] text-muted transition hover:bg-surface-2 hover:text-white focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+          className="relative z-[1] grid h-[34px] w-[34px] place-items-center rounded-[10px] text-muted transition hover:bg-surface-2 hover:text-white focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
           <Icone nom="duel" size={17} />
         </Link>

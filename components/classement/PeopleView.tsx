@@ -10,6 +10,7 @@ import { VIDE } from "@/lib/voice";
 import { CLASSEMENT, JOUEURS } from "@/lib/voice-z2a";
 import { Avatar } from "@/components/classement/Avatar";
 import { AmiBouton } from "@/components/profil/AmiBouton";
+import { LienJoueur } from "@/components/profil/CarteJoueur";
 import type { AmiLite } from "@/lib/profil/donnees";
 
 export type TopRow = { userId: string; name: string; elo: number; rank: number; mastery: number | null; isMe: boolean };
@@ -129,12 +130,12 @@ export function PeopleView({
                 const rk = rankFor(r.elo, r.mastery, r.rank);
                 return (
                   <li key={r.userId}>
-                    <Link href={`/people/${r.userId}`} className={"rl-row flex items-center gap-3 rounded-[10px] px-1.5 py-1.5 " + (r.isMe ? "bg-surface" : "")}>
+                    <LienJoueur id={r.userId} nom={r.name} className={"rl-row flex items-center gap-3 rounded-[10px] px-1.5 py-1.5 " + (r.isMe ? "bg-surface" : "")}>
                       <span className="w-5 font-mono text-[12px] tabular-nums text-muted">{r.rank}</span>
                       <RankBadge tier={rk.tierIndex} size={22} glow={false} />
                       <span className={"min-w-0 flex-1 truncate text-[14px] " + (r.isMe ? "font-bold" : "font-medium")}>{r.isMe ? "Toi" : r.name}</span>
                       <span className="font-mono text-[13px] font-semibold tabular-nums">{r.elo}</span>
-                    </Link>
+                    </LienJoueur>
                   </li>
                 );
               })}

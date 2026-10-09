@@ -4,6 +4,7 @@ import { getMyRating, getRecentDuels } from "@/lib/rating";
 import { duelsReady, getDuelSuggestions, getMyOpenDuels, getPlayerCard, getReviewableDuels, refreshMyDuels } from "@/lib/duels";
 import { DuelLobby } from "@/components/duel/DuelLobby";
 import { DuelSoon } from "@/components/duel/DuelSoon";
+import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 
 export const metadata = { title: "Duel · Ranked Lobby" };
 
@@ -55,6 +56,7 @@ export default async function DuelLobbyPage({ searchParams }: PageProps) {
         reviewable={reviewable}
         nowIso={new Date().toISOString()}
       />
+      <CarteJoueurHote />
     </div>
   );
 }

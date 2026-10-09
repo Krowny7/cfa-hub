@@ -7,6 +7,7 @@ import { countPlayers, getNextRankedExam, getPastRankedExams, lastDeltaByUser, m
 import { displayName } from "@/components/classement/format";
 import type { ClassementData } from "@/components/classement/types";
 import type { TabKey } from "@/components/classement/ClassementTabs";
+import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 
 export const metadata = { title: "Classement · Ranked Lobby" };
 
@@ -79,5 +80,10 @@ export default async function ClassementPage({ searchParams }: PageProps) {
     recentDuels,
   };
 
-  return <ClassementView data={data} tab={tab} />;
+  return (
+    <>
+      <ClassementView data={data} tab={tab} />
+      <CarteJoueurHote />
+    </>
+  );
 }

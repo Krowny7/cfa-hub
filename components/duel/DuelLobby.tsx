@@ -28,6 +28,7 @@ import {
   type OpenDuel,
 } from "@/lib/duels";
 import { PresenceText } from "@/components/presence/Presence";
+import { LienJoueur } from "@/components/profil/CarteJoueur";
 
 type Props = {
   me: { elo: number; gamesPlayed: number };
@@ -241,11 +242,18 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                   return (
                     <li
                       key={p.userId}
-                      className={"rl-row grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2 sm:grid-cols-[36px_minmax(0,1fr)_auto_auto] " + (isTarget ? "bg-surface-2" : "")}
+                      className={"rl-row relative grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2 sm:grid-cols-[36px_minmax(0,1fr)_auto_auto] " + (isTarget ? "bg-surface-2" : "")}
                     >
                       <PlayerBadge elo={p.elo} size={36} />
                       <div className="min-w-0">
-                        <div className="truncate text-[14.5px] font-semibold">{p.username ?? "Joueur"}</div>
+                        {/* toute la ligne ouvre la carte du joueur (Défier et Voir passent au-dessus) */}
+                        <LienJoueur
+                          id={p.userId}
+                          nom={p.username ?? "Joueur"}
+                          className="block truncate text-[14.5px] font-semibold after:absolute after:inset-0 after:rounded-[12px] after:content-['']"
+                        >
+                          {p.username ?? "Joueur"}
+                        </LienJoueur>
                         <div className="t-micro truncate">
                           {p.elo} ELO
                           <PresenceText userId={p.userId} court repli={<span className="hidden sm:inline">{activity}</span>} avant=" · " />
@@ -259,13 +267,13 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                         {signed(s.win)} / {signed(s.loss)}
                       </span>
                       {existing ? (
-                        <Link href={`/duel/${existing}`} className="btn btn-sm btn-secondary">
+                        <Link href={`/duel/${existing}`} className="btn btn-sm btn-secondary relative z-[1]">
                           Voir
                         </Link>
                       ) : (
                         <button
                           type="button"
-                          className={"btn btn-sm " + (isTarget && incoming.length === 0 ? "btn-primary" : "btn-secondary")}
+                          className={"btn btn-sm relative z-[1] " + (isTarget && incoming.length === 0 ? "btn-primary" : "btn-secondary")}
                           disabled={busy === p.userId}
                           onClick={() => challenge(p.userId)}
                           aria-label={`Défier ${p.username ?? "ce joueur"}`}

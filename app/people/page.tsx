@@ -9,6 +9,7 @@ import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { Profile, Rating } from "@/lib/types";
 import { amisDe, demandesDe } from "@/lib/profil/donnees";
+import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 
 export const metadata = { title: "Joueurs · Ranked Lobby" };
 
@@ -122,5 +123,10 @@ export default async function PeoplePage({ searchParams }: PageProps) {
     isMe: r.userId === user.id,
   }));
 
-  return <PeopleView rows={rows} top={topRows} view={view} q={q} hasGroups={myGroupIds.length > 0} demandes={demandes} />;
+  return (
+    <>
+      <PeopleView rows={rows} top={topRows} view={view} q={q} hasGroups={myGroupIds.length > 0} demandes={demandes} />
+      <CarteJoueurHote />
+    </>
+  );
 }
