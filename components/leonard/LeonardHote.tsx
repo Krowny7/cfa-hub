@@ -15,12 +15,17 @@ import s from "./Leonard.module.css";
 // - Jamais : en mode discret, si le joueur l'a coupé (page Moi), sur les
 //   pages d'entrée (connexion, inscription), ni s'il est déjà à l'écran.
 // - La visite guidée, une fois par compte (lib/presentation ; retenue aussi
-//   sur l'appareil), à la première visite de l'accueil après l'intro et le
-//   premier trait : il emmène le joueur de page en page, l'écran s'assombrit et
-//   un projecteur éclaire ce dont il parle (attribut data-leonard). Si
-//   l'élément est sous lui, il sort et revient de l'autre côté.
+//   sur l'appareil), après l'intro et le premier trait, à l'arrivée sur une
+//   page calme (accueil, S'entraîner, Réviser, classement, Moi, un profil ;
+//   jamais pendant un exercice) : il emmène le joueur de page en page, l'écran
+//   s'assombrit et un projecteur éclaire ce dont il parle (attribut
+//   data-leonard). Si l'élément est sous lui, il sort et revient de l'autre côté.
 // - Les nouveautés d'une version (NOUVEAUTES, lib/presentation) : la même
-//   mécanique, une fois par compte, pour qui a déjà fait la visite d'accueil.
+//   mécanique, une fois par compte, après la visite d'accueil (un compte tout
+//   neuf en est dispensé dès son premier trait, components/OnboardingForm).
+// - Une visite n'est retenue « vue » que finie ou passée (« Passer ») ; la
+//   croix ou Échap la remettent à la session suivante. Interrompue (page
+//   rechargée, navigation ratée), elle reprend à son étape (sessionStorage).
 // - Ensuite, des apparitions furtives : au plus une toutes les 4 minutes et
 //   10 par jour (sauf visite, progression, montée de rang, sceau gagné, sans-faute),
 //   avec un peu de hasard pour les réactions ordinaires.
@@ -54,12 +59,26 @@ const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];
 const pageMuette = (chemin: string) => PAGES_MUETTES.some((p) => chemin.startsWith(p));
+// les pages où une visite peut commencer (ou reprendre) : jamais pendant un exercice
+const PAGES_CALMES = ["/dashboard", "/entrainement", "/reviser", "/classement", "/moi", "/people/"];
+const pageCalme = (chemin: string) => {
+  if (PAGES_CALMES.some((p) => chemin === p || (p.endsWith("/") ? chemin.startsWith(p) : chemin.startsWith(p + "/")))) return true;
+  try {
+    // banc d'essai : les aperçus valent pages calmes
+    return chemin.startsWith("/preview-da") && sessionStorage.getItem(CLE_ESSAI) === "1";
+  } catch {
+    return false;
+  }
+};
 const CLE_DERNIER = "rl_leonard_dernier";
 const CLE_JOUR = "rl_leonard_jour";
 const CLE_VISITE = "rl_leonard_visite";
 const CLE_FURTIF = "rl_leonard_furtif";
 const CLE_RECENTS = "rl_leonard_recents";
 const CLE_INTRO = "rl-splash-seen"; // posée par components/Splash quand l'intro s'efface
+// sessionStorage : la visite remise à plus tard (croix, Échap) et celle en cours (reprise)
+const CLE_PLUS_TARD = "rl_leonard_plus_tard";
+const CLE_EN_COURS = "rl_leonard_en_cours";
 // Banc d'essai local (sessionStorage) : la visite passe par les aperçus /preview-da.
 const CLE_ESSAI = "rl_leonard_essai";
 const CLE_ESSAI_ID = "rl_leonard_essai_id"; // le profil montré sur le banc d'essai
@@ -147,15 +166,20 @@ function premierVisible(cible: string) {
   }
   return null;
 }
-/** Ce que ce compte a déjà vu (sur un autre appareil peut-être), et son id. */
-async function etatDuCompte(): Promise<{ visite: boolean; nouveautes: boolean; id: string | null }> {
+/**
+ * Ce que ce compte a déjà vu (sur un autre appareil peut-être), et son id ;
+ * null si on ne sait pas (réseau, session) : rien ne se lance sur une
+ * supposition, on réessaie à la page suivante.
+ */
+async function etatDuCompte(): Promise<{ visite: boolean; nouveautes: boolean; id: string } | null> {
   try {
     const { createClient } = await import("@/lib/supabase/browser");
-    const { data } = await createClient().auth.getUser();
-    const meta = data.user?.user_metadata;
-    return { visite: visiteVue(meta), nouveautes: nouveautesVues(meta), id: data.user?.id ?? null };
+    const { data, error } = await createClient().auth.getUser();
+    if (error || !data.user) return null;
+    const meta = data.user.user_metadata;
+    return { visite: visiteVue(meta), nouveautes: nouveautesVues(meta), id: data.user.id };
   } catch {
-    return { visite: false, nouveautes: false, id: null };
+    return null;
   }
 }
 /** L'id du joueur connecté (les étapes sur son profil), ou celui du banc d'essai. */
@@ -166,21 +190,46 @@ async function monId() {
   } catch {
     // stockage bloqué
   }
-  return (await etatDuCompte()).id;
+  return (await etatDuCompte())?.id ?? null;
 }
 /**
  * Retenir une visite faite (ou passée) sur le compte, sans effet hors
- * connexion. Celle d'accueil vaut aussi pour les nouveautés de cette version.
+ * connexion. Chacune son marqueur : celle d'accueil ne montre pas les
+ * nouveautés, elle ne les marque donc pas.
  */
 function retenirVisite(v: Visite) {
-  const data =
-    v === "tuto" ? { [CLE_VISITE_COMPTE]: VERSION_PRESENTATION, [CLE_NOUVEAUTES_COMPTE]: VERSION_NOUVEAUTES } : { [CLE_NOUVEAUTES_COMPTE]: VERSION_NOUVEAUTES };
+  const data = v === "tuto" ? { [CLE_VISITE_COMPTE]: VERSION_PRESENTATION } : { [CLE_NOUVEAUTES_COMPTE]: VERSION_NOUVEAUTES };
   void import("@/lib/supabase/browser")
     .then(({ createClient }) => createClient().auth.updateUser({ data }))
     .catch(() => {});
 }
 /** Les nouveautés de cette version déjà vues sur cet appareil ? */
 const nouveautesVuesIci = () => lire<number>(CLE_NOUVEAUTES, 0) >= VERSION_NOUVEAUTES;
+/** La visite en cours dans cet onglet (pour la reprendre à son étape), ou null. */
+function enCours(): { v: Visite; i: number } | null {
+  try {
+    const e = JSON.parse(sessionStorage.getItem(CLE_EN_COURS) ?? "null") as { v?: unknown; i?: unknown } | null;
+    if (e && (e.v === "tuto" || e.v === "nouveautes") && typeof e.i === "number") return { v: e.v, i: e.i };
+  } catch {
+    // stockage bloqué ou illisible
+  }
+  return null;
+}
+function retenirEnCours(e: { v: Visite; i: number } | null) {
+  try {
+    if (e) sessionStorage.setItem(CLE_EN_COURS, JSON.stringify(e));
+    else sessionStorage.removeItem(CLE_EN_COURS);
+  } catch {
+    // stockage bloqué : pas de reprise
+  }
+}
+const remiseAPlusTard = () => {
+  try {
+    return sessionStorage.getItem(CLE_PLUS_TARD) === "1";
+  } catch {
+    return false;
+  }
+};
 
 /** Après l'intro (une fois par session de navigation), puis `delai`. */
 function apresIntro(f: () => void, delai: number) {
@@ -217,6 +266,7 @@ export function LeonardHote() {
   const [fixe, setFixe] = useState(false); // repli image si le moteur échoue
   const [arrive, setArrive] = useState(true); // visite : la page est là, l'élément éclairé
   const [cote, setCote] = useState<Cote>("droite");
+  const [lent, setLent] = useState(false); // visite : la page tarde, il le dit
   const boite = useRef<HTMLDivElement | null>(null);
   const voile = useRef<HTMLDivElement | null>(null);
   const anneau = useRef<HTMLDivElement | null>(null);
@@ -227,9 +277,13 @@ export function LeonardHote() {
   const cible = useRef<Element | null>(null);
   const coteRef = useRef<Cote>("droite");
   const visiteRef = useRef<Visite | null>(null);
+  const montrees = useRef(0); // visite : les étapes réellement jouées
+  // une visite décidée qui attend son moment (compte, intro) : elle survit
+  // aux changements de page calmes, s'annule en entrant dans un exercice
+  const attente = useRef<{ arret: () => void } | null>(null);
 
   // ── décider d'apparaître ────────────────────────────────────────────
-  const montrer = useCallback((sig: SignalLeonard) => {
+  const montrer = useCallback((sig: SignalLeonard, depart = 0) => {
     if (visible.current || muet()) return;
     if (pageMuette(window.location.pathname)) return;
     const prio = PRIORITAIRES.has(sig.evt);
@@ -257,7 +311,8 @@ export function LeonardHote() {
         return;
       }
       setCalme(calmeVoulu());
-      setI(0);
+      montrees.current = 0;
+      setI(Math.max(0, Math.min(depart, repliques.length - 1)));
       setSortie(false);
       visiteRef.current = visite;
       setArrive(!visite);
@@ -275,10 +330,22 @@ export function LeonardHote() {
     return () => window.removeEventListener(EVENEMENT_LEONARD, ecoute);
   }, [montrer]);
 
-  // l'accueil : la visite (une fois), sinon les nouveautés (une fois par
-  // version), le retour après une absence, ou un passage furtif par jour
+  const annulerAttente = () => {
+    attente.current?.arret();
+    attente.current = null;
+  };
+  useEffect(() => () => annulerAttente(), []);
+
+  // une page calme : la visite d'accueil (une fois), sinon les nouveautés (une
+  // fois par version), ou la reprise de celle interrompue ; à l'accueil, sinon,
+  // le retour après une absence ou un passage furtif par jour
   useEffect(() => {
-    if (pathname !== "/dashboard" || muet() || visible.current) return;
+    if (!pageCalme(pathname)) {
+      annulerAttente();
+      return;
+    }
+    if (muet() || visible.current || attente.current) return;
+    const plusTard = remiseAPlusTard();
     let tutoFait = true;
     let nouvFaites = true;
     try {
@@ -287,36 +354,60 @@ export function LeonardHote() {
     } catch {
       // stockage indisponible : pas de visite
     }
-    const derniere = lire<number>(CLE_VISITE, 0);
-    ecrire(CLE_VISITE, Date.now());
-    if (!tutoFait || !nouvFaites) {
-      let annule = false;
-      let arret = () => {};
-      prechauffer();
-      void etatDuCompte().then((compte) => {
-        if (annule) return;
-        if (!tutoFait) {
-          if (!compte.visite) {
-            arret = apresIntro(() => montrer({ evt: "tuto" }), 1600);
+    const reprise = plusTard ? null : enCours();
+    if (reprise || ((!tutoFait || !nouvFaites) && !plusTard)) {
+      const jeton = { annule: false, arret: () => {} };
+      const lancer = (v: Visite, depart: number) => {
+        const essai = () => {
+          if (jeton.annule) return;
+          // une apparition ordinaire à l'écran : la visite passe juste après
+          if (visible.current) {
+            const t = window.setTimeout(essai, 1500);
+            jeton.arret = () => window.clearTimeout(t);
             return;
           }
-          try {
-            localStorage.setItem(CLE_TUTO, "1");
-          } catch {
-            // stockage indisponible
-          }
-        }
-        if (compte.nouveautes) {
-          ecrire(CLE_NOUVEAUTES, VERSION_NOUVEAUTES);
-          return;
-        }
-        arret = apresIntro(() => montrer({ evt: "nouveautes" }), 1600);
-      });
-      return () => {
-        annule = true;
-        arret();
+          attente.current = null;
+          if (pageCalme(window.location.pathname)) montrer({ evt: v }, depart);
+        };
+        jeton.arret = apresIntro(essai, 1600);
       };
+      attente.current = {
+        arret: () => {
+          jeton.annule = true;
+          jeton.arret();
+        },
+      };
+      prechauffer();
+      if (reprise) lancer(reprise.v, reprise.i);
+      else
+        void etatDuCompte().then((compte) => {
+          if (jeton.annule) return;
+          // compte illisible (réseau, session) : rien sur une supposition, on réessaie plus tard
+          if (!compte) {
+            attente.current = null;
+            return;
+          }
+          if (!tutoFait) {
+            if (!compte.visite) return lancer("tuto", 0);
+            try {
+              localStorage.setItem(CLE_TUTO, "1");
+            } catch {
+              // stockage indisponible
+            }
+          }
+          if (compte.nouveautes) {
+            ecrire(CLE_NOUVEAUTES, VERSION_NOUVEAUTES);
+            attente.current = null;
+            return;
+          }
+          lancer("nouveautes", 0);
+        });
+      // pas de nettoyage ici : l'attente survit au passage d'une page calme à l'autre
+      return;
     }
+    if (pathname !== "/dashboard") return;
+    const derniere = lire<number>(CLE_VISITE, 0);
+    ecrire(CLE_VISITE, Date.now());
     let t: number;
     if (derniere && Date.now() - derniere > 3 * 86_400_000) t = window.setTimeout(() => montrer({ evt: "retour" }), 2200);
     else if (lire<string>(CLE_FURTIF, "") !== jourLocal() && Math.random() < 0.35) {
@@ -327,7 +418,7 @@ export function LeonardHote() {
       t = window.setTimeout(() => void import("@/lib/leonard/rig").catch(() => {}), 4000);
     }
     return () => window.clearTimeout(t);
-  }, [pathname, montrer]);
+  }, [pathname, montrer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fermer = useCallback(() => {
     if (!visible.current) return;
@@ -346,8 +437,8 @@ export function LeonardHote() {
     );
   }, []);
 
-  // la fin (ou « Passer ») d'une visite : retenue sur l'appareil et le compte ;
-  // celle d'accueil vaut aussi pour les nouveautés de cette version
+  // la fin (ou « Passer ») d'une visite : retenue sur l'appareil et le compte,
+  // chacune son marqueur
   const finirTuto = useCallback(() => {
     const v = visiteRef.current ?? "tuto";
     try {
@@ -355,8 +446,21 @@ export function LeonardHote() {
     } catch {
       // stockage indisponible
     }
-    ecrire(CLE_NOUVEAUTES, VERSION_NOUVEAUTES);
+    if (v === "nouveautes") ecrire(CLE_NOUVEAUTES, VERSION_NOUVEAUTES);
     retenirVisite(v);
+    retenirEnCours(null);
+    fermer();
+  }, [fermer]);
+
+  // la croix ou Échap : la visite s'efface sans être retenue, elle revient à la
+  // prochaine session (un toucher de travers ne la fait pas perdre pour toujours)
+  const plusTard = useCallback(() => {
+    try {
+      sessionStorage.setItem(CLE_PLUS_TARD, "1");
+    } catch {
+      // stockage bloqué : elle reviendra à la page calme suivante
+    }
+    retenirEnCours(null);
     fermer();
   }, [fermer]);
 
@@ -427,11 +531,19 @@ export function LeonardHote() {
     const minuteurs: number[] = [];
     const attendre = (ms: number) => new Promise<void>((ok) => minuteurs.push(window.setTimeout(ok, ms)));
     setArrive(false);
+    setLent(false);
+    minuteurs.push(window.setTimeout(() => setLent(true), 1200));
     cible.current = null;
-    // une étape sans rien à montrer (facultative, ou sans adresse) : la suivante
+    if (scene.visite) retenirEnCours({ v: scene.visite, i });
+    // une étape sans rien à montrer (facultative, sans adresse, page qui
+    // n'arrive pas) : la suivante ; la visite n'est retenue que si elle a joué
     const sauter = () => {
       if (i + 1 < scene.repliques.length) setI(i + 1);
-      else finirTuto();
+      else if (montrees.current >= 3) finirTuto();
+      else {
+        retenirEnCours(null);
+        fermer();
+      }
     };
     (async () => {
       const voulu = adresse(etape.page, etape.page.startsWith("/profil") ? await monId() : null);
@@ -444,34 +556,42 @@ export function LeonardHote() {
         return [...new URLSearchParams(requete ?? "")].every(([k, v]) => ici.get(k) === v);
       };
       if (window.location.pathname + window.location.search !== voulu) routeur.push(voulu);
-      // la page (15 s au plus), puis l'élément (5 s de plus, sinon l'étape se joue sans projecteur)
+      // la page (15 s au plus, un second essai à 6 s), puis, son squelette de
+      // chargement parti, l'élément (7 s de plus, 3 si facultatif ; sinon
+      // l'étape se joue sans projecteur, ou est sautée si facultative)
       let el: Element | null = null;
       let arrivee = -1;
-      for (let k = 0; k < 200 && !fini; k++) {
+      for (let k = 0; k < 400 && !fini; k++) {
         const ici = window.location.pathname;
         if (pageMuette(ici)) break;
         if (ici === chemin && parametresOk()) {
-          if (arrivee < 0) arrivee = k;
-          // l'élément, sinon son repli (déjà là : l'élément voulu ne viendra pas)
-          el = etape.cible ? (premierVisible(etape.cible) ?? (etape.repli ? premierVisible(etape.repli) : null)) : null;
-          if (!etape.cible || el || k - arrivee > (etape.facultatif ? 25 : 50)) break;
-        } else if (k >= 150) break;
+          if (!document.querySelector('.rl-loading[aria-busy="true"]')) {
+            if (arrivee < 0) arrivee = k;
+            // l'élément, sinon son repli (déjà là : l'élément voulu ne viendra pas)
+            el = etape.cible ? (premierVisible(etape.cible) ?? (etape.repli ? premierVisible(etape.repli) : null)) : null;
+            if (!etape.cible || el || k - arrivee > (etape.facultatif ? 30 : 70)) break;
+          } else if (k >= 300) break;
+        } else if (k === 60) routeur.push(voulu);
+        else if (k >= 150) break;
         await attendre(100);
       }
       if (fini) return;
-      // redirigé ailleurs, ou page qui n'arrive pas : il ne parle pas d'une
-      // autre page que la sienne ; il s'efface (la visite n'est pas marquée faite)
-      if (window.location.pathname !== chemin) {
+      // emmené sur une page où il se tait (premier trait, session expirée) :
+      // il s'efface sans retenir la visite, elle reprendra à cette étape
+      if (pageMuette(window.location.pathname)) {
         fermer();
         return;
       }
+      // page qui n'arrive pas : il ne parle pas d'une autre page que la sienne
+      if (window.location.pathname !== chemin) return sauter();
       if (etape.facultatif && !el) return sauter();
       const doux = !calmeVoulu();
       if (el) {
         // l'élément en haut de l'écran, sous la barre : Léonard et sa bulle occupent le bas
         const r = el.getBoundingClientRect();
         const haut = telephone() ? 76 : 96;
-        const libre = window.innerHeight - (telephone() ? 420 : 370);
+        // sur téléphone, la bulle commence vers 490 px du bas
+        const libre = window.innerHeight - (telephone() ? 500 : 370);
         if (r.top < haut || r.bottom > libre) {
           window.scrollTo({ top: Math.max(0, window.scrollY + r.top - haut), behavior: doux ? "smooth" : "auto" });
           await attendre(doux ? 560 : 60);
@@ -487,6 +607,8 @@ export function LeonardHote() {
         });
         if (fini) return;
       }
+      montrees.current++;
+      setLent(false);
       setArrive(true);
     })();
     return () => {
@@ -578,15 +700,15 @@ export function LeonardHote() {
     r.parler(replique.texte, Math.max(900, Math.min(2600, replique.texte.length * 32)));
   }, [replique, taille, enPlace]);
 
-  // la visite au clavier : Échap pour passer
+  // la visite au clavier : Échap pour la remettre à plus tard
   useEffect(() => {
     if (!scene?.tuto) return;
     const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") finirTuto();
+      if (e.key === "Escape") plusTard();
     };
     window.addEventListener("keydown", touche);
     return () => window.removeEventListener("keydown", touche);
-  }, [scene, finirTuto]);
+  }, [scene, plusTard]);
 
   const suivant = () => {
     if (!scene) return;
@@ -631,7 +753,7 @@ export function LeonardHote() {
                   {i + 1}/{scene.repliques.length}
                 </span>
               )}
-              <button type="button" className={s.fermer} onClick={scene.tuto ? finirTuto : fermer} aria-label="Fermer">
+              <button type="button" className={s.fermer} onClick={scene.tuto ? plusTard : fermer} aria-label={scene.tuto ? "Plus tard" : "Fermer"}>
                 <X size={14} aria-hidden />
               </button>
             </div>
@@ -653,6 +775,22 @@ export function LeonardHote() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+        {/* la page tarde (réseau mobile) : il le dit, et on peut toujours s'en aller */}
+        {scene.tuto && pret && !enPlace && lent && !sortie && (
+          <div className={`${s.bulle} ${calme ? s.calme : ""}`} role="status">
+            <div className={s.tete}>
+              <span className={s.point} aria-hidden />
+              <span className={s.nom}>Léonard</span>
+              <span className={s.etape}>
+                {i + 1}/{scene.repliques.length}
+              </span>
+              <button type="button" className={s.fermer} onClick={plusTard} aria-label="Plus tard">
+                <X size={14} aria-hidden />
+              </button>
+            </div>
+            <p className={s.texte}>Je t’emmène… la page arrive.</p>
           </div>
         )}
         <div

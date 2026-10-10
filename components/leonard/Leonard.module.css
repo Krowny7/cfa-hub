@@ -234,6 +234,7 @@
   font-variant-numeric: tabular-nums;
 }
 .fermer {
+  position: relative;
   margin-left: auto;
   display: grid;
   place-items: center;
@@ -241,6 +242,12 @@
   height: 22px;
   border-radius: 999px;
   color: var(--ink-3);
+}
+/* une cible de 44 px pour le doigt, sans grossir la croix */
+.fermer::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
 }
 .fermer:hover {
   color: var(--ink);
@@ -258,7 +265,7 @@
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 16px;
   margin-top: 12px;
 }
 
