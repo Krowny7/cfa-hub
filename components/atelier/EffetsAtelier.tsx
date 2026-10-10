@@ -5,26 +5,24 @@ import s from "./IllustrationAtelier.module.css";
 
 // Les effets de l'établi, posés sur l'image fixe une fois celle-ci chargée
 // dans le navigateur (le serveur ne rend rien ici : pas d'erreur
-// d'hydratation). Repère : les pixels de l'image (1024 × 572).
-// v3 : le mouvement est PEINT. Des variantes du tableau où un seul détail
-// change (flammes, vapeur, souffle du chat, nuages, Florence qui s'allume)
-// ont été découpées en calques adoucis, réunis dans un atlas
-// (public/atelier/etats-1024|512.webp, fabriqué hors du dépôt) ; ils passent
-// de l'un à l'autre en fondus d'opacité (Web Animations). Restent dessinés :
-// un halo léger qui respire avec les flammes, la poussière dans le cône de la
-// lanterne (canevas 2D) et, toutes les 8 à 10 s, une ligne du codex rayée en
-// rouge, la correction écrite au-dessus. Tout s'arrête hors écran, onglet
-// caché, mouvement réduit, mode discret, ou en capture (data-rl-motion).
+// d'hydratation). Repère : les pixels de l'image (viewBox 0 0 1024 572).
+// Flammes et halos, vapeur de la tasse, chat qui respire (un recadrage de
+// l'image réellement chargée, masqué sur son dos), poussière dans le cône de la lanterne (canevas
+// 2D, calculée d'après l'horloge), nuages qui dérivent derrière les fers de la
+// fenêtre (ciel nettoyé et masque : ciel.webp, nuages-a/b.webp), lueur du
+// couchant qui monte, fenêtres de Florence qui s'allument, et toutes les 8 à
+// 10 s une ligne du codex rayée en rouge, la correction écrite au-dessus.
+// Tout s'arrête hors écran, onglet caché, mouvement réduit, mode discret, ou
+// en capture (data-rl-motion).
 
 /** Tirage pseudo-aléatoire à graine fixe : mêmes valeurs à chaque chargement. */
-const graine = (g: number) => () => (g = (g * 16807) % 2147483647) / 2147483647;
-const alea = graine(7);
+const alea = ((g: number) => () => (g = (g * 16807) % 2147483647) / 2147483647)(7);
 
 // la correction : des boucles de plume, mots séparés d'une espace, de hauteur
 // irrégulière (±30 %, tirage à part pour ne pas déplacer la poussière)
 let TRACE = "M0 0";
 {
-  const main = graine(11);
+  const main = ((g: number) => () => (g = (g * 16807) % 2147483647) / 2147483647)(11);
   let x = 0;
   for (const n of [5, 3, 6, 4, 3]) {
     for (let i = 0; i < n; i++) {
@@ -72,41 +70,12 @@ const GRAINS = Array.from({ length: 26 }, () => ({
   t: alea() * 6,
 }));
 
-// Les états peints : [x, y, largeur, hauteur] dans l'atlas, puis [x, y] dans
-// l'image. L'atlas existe en deux tailles : 1024 (repère de l'image) et 512.
-const ATLAS = [640, 302] as const;
-const ETATS: Record<string, readonly [number, number, number, number, number, number]> = {
-  "ciel": [0, 0, 204, 128, 224, 22],
-  "ville": [208, 0, 200, 128, 224, 138],
-  "vapeur-1": [412, 0, 74, 114, 496, 240],
-  "vapeur-2": [490, 0, 90, 114, 496, 240],
-  "vapeur-3": [0, 132, 72, 112, 496, 240],
-  "chat-1": [76, 132, 108, 90, 412, 308],
-  "chat-2": [188, 132, 108, 90, 412, 308],
-  "chat-3": [300, 132, 108, 90, 412, 308],
-  "flamme-lanterne-1": [412, 132, 50, 76, 214, 328],
-  "flamme-lanterne-2": [466, 132, 50, 76, 214, 328],
-  "flamme-lanterne-3": [520, 132, 50, 76, 214, 328],
-  "flamme-lampe-2": [574, 132, 36, 54, 750, 212],
-  "flamme-lampe-3": [0, 248, 36, 54, 750, 212],
-  "flamme-etageres-1": [40, 248, 50, 50, 572, 174],
-  "flamme-etageres-2": [94, 248, 50, 50, 572, 174],
-  "flamme-etageres-3": [148, 248, 50, 50, 572, 174],
-  "flamme-bougie-1": [202, 248, 26, 42, 930, 258],
-  "flamme-bougie-2": [232, 248, 26, 42, 930, 258],
-  "flamme-bougie-3": [262, 248, 26, 42, 930, 258],
-};
+// fenêtres de Florence : Palazzo Vecchio, sa tour, maisons voisines
+const FENETRES = [[284, 246.5], [303.5, 246.5], [287.5, 226], [252, 245.5], [330, 234]];
 
-// les quatre groupes de flammes : graine de l'enchaînement, formes peintes
-// admises et leur opacité maximale. La lampe n'a plus sa forme 1 (traînée pâle
-// sans cœur : elle semblait s'éteindre) ; sa forme 2 et celle de la bougie
-// (molles) ne passent qu'à 60 %.
-const FLAMMES: { g: string; graine: number; formes: number[]; max?: Record<number, number> }[] = [
-  { g: "lanterne", graine: 3, formes: [1, 2, 3] },
-  { g: "etageres", graine: 5, formes: [1, 2, 3] },
-  { g: "lampe", graine: 13, formes: [2, 3], max: { 2: 0.6 } },
-  { g: "bougie", graine: 29, formes: [1, 2, 3], max: { 2: 0.6 } },
-];
+/** Une flamme en goutte, mèche en (x, y). */
+const flamme = (x: number, y: number, w: number, h: number) =>
+  `M${x} ${y}C${x + w / 2} ${y} ${x + w / 2} ${y - h * 0.45} ${x} ${y - h}C${x - w / 2} ${y - h * 0.45} ${x - w / 2} ${y} ${x} ${y}Z`;
 
 /** Position d'un calque en % de la scène, d'après un rectangle de l'image. */
 const boite = (x0: number, y0: number, x1: number, y1: number) => ({
@@ -115,86 +84,7 @@ const boite = (x0: number, y0: number, x1: number, y1: number) => ({
   width: ((x1 - x0) / 10.24).toFixed(3) + "%",
   height: (((y1 - y0) / 572) * 100).toFixed(3) + "%",
 });
-
-/** Un état peint : sa place dans la scène, son morceau de l'atlas. */
-const calque = (n: string, url: string) => {
-  const [ax, ay, w, h, x, y] = ETATS[n];
-  const [AW, AH] = ATLAS;
-  return {
-    ...boite(x, y, x + w, y + h),
-    backgroundImage: `url("${url}")`,
-    backgroundSize: `${((AW / w) * 100).toFixed(3)}% ${((AH / h) * 100).toFixed(3)}%`,
-    backgroundPosition: `${((ax / (AW - w)) * 100).toFixed(3)}% ${((ay / (AH - h)) * 100).toFixed(3)}%`,
-  };
-};
-
-/**
- * Vacillement d'un groupe de flammes : la base et ses trois formes peintes
- * s'enchaînent dans un ordre pseudo-aléatoire (graine fixe), tenues brèves,
- * fondus de 0,25 à 0,6 s ; la boucle revient à la base. Rend les images-clés
- * d'opacité des trois formes et celles du halo (la forme 3, haute, éclaire plus).
- */
-function vacillement(g: number, formes: number[], max: Record<number, number> = {}) {
-  const r = graine(g);
-  r();
-  const ev: { t: number; f: number; de: number; a: number }[] = [];
-  let t = 0, cur = 0;
-  for (let i = 0; i < 24 || cur !== 0; i++) {
-    t += 0.08 + r() * r() * 1.1;
-    const une = () => formes[Math.floor(r() * formes.length)];
-    let a = r() < 0.2 ? 0 : une();
-    if (i >= 24) a = 0;
-    if (a === cur) a = cur === 0 ? une() : 0;
-    const f = 0.25 + r() * 0.35;
-    ev.push({ t, f, de: cur, a });
-    t += f;
-    cur = a;
-  }
-  const T = t + 0.15 + r() * 0.3;
-  const cles = (val: (etat: number) => number) => {
-    const k: Keyframe[] = [{ offset: 0, opacity: val(0) }];
-    for (const e of ev) {
-      k.push({ offset: e.t / T, opacity: val(e.de), easing: "ease-in-out" });
-      k.push({ offset: (e.t + e.f) / T, opacity: val(e.a) });
-    }
-    k.push({ offset: 1, opacity: val(0) });
-    return k;
-  };
-  // halo : presque rien sur la base (au repos, même lumière que l'image fixe)
-  const LUM = [0.15, 0.3, 0.4, 0.7];
-  return {
-    T,
-    formes: formes.map((j) => [j, cles((e) => (e === j ? (max[j] ?? 1) : 0))] as const),
-    halo: cles((e) => LUM[e] * (max[e] ?? 1)),
-  };
-}
-
-/**
- * Une bouffée de vapeur : monte d'un mouvement continu (de +8 % à −14 % de sa
- * hauteur, linéaire) pendant toute sa présence ; entre par le bas, s'efface
- * longuement en haut. Les bouffées se chevauchent : elles se relaient en montant.
- */
-const bouffee = (T: number, entre: number, plein: number, quitte: number, fin: number): Keyframe[] => {
-  const y = (t: number) => `translateY(${(8 - (22 * (t - entre)) / (fin - entre)).toFixed(2)}%)`;
-  return [
-    { offset: 0, opacity: 0, transform: y(entre) },
-    { offset: entre / T, opacity: 0, transform: y(entre) },
-    { offset: plein / T, opacity: 1, transform: y(plein) },
-    { offset: quitte / T, opacity: 1, transform: y(quitte) },
-    { offset: fin / T, opacity: 0, transform: y(fin) },
-    { offset: 1, opacity: 0, transform: y(fin) },
-  ];
-};
-
-/** Un fondu lent aller-retour (ciel, ville), avec des paliers aux deux bouts. */
-const lent = (a: number, b: number, c: number, d: number): Keyframe[] => [
-  { offset: 0, opacity: 0 },
-  { offset: a, opacity: 0, easing: "ease-in-out" },
-  { offset: b, opacity: 1 },
-  { offset: c, opacity: 1, easing: "ease-in-out" },
-  { offset: d, opacity: 0 },
-  { offset: 1, opacity: 0 },
-];
+const img = (f: string) => `url("/atelier/${f}")`;
 
 export function EffetsAtelier() {
   const id = "atelier" + useId().replace(/[^\w-]/g, "");
@@ -202,17 +92,14 @@ export function EffetsAtelier() {
   const racine = useRef<HTMLDivElement>(null);
   const canevas = useRef<HTMLCanvasElement>(null);
   const codex = useRef<SVGGElement>(null);
-  const anims = useRef<Animation[]>([]);
-  const marche = useRef(false);
-  // l'image de base est chargée : les effets peuvent se poser dessus
-  const [pret, setPret] = useState(false);
-  // l'atlas des états peints, chargé seulement quand l'animation démarre
-  const [atlas, setAtlas] = useState<string | null>(null);
+  // l'adresse de l'image de base une fois chargée (srcset) : les effets
+  // peuvent se poser dessus, et le chat en reprend un recadrage
+  const [fond, setFond] = useState<string | null>(null);
 
   useEffect(() => {
     const im = racine.current?.parentElement?.querySelector("img");
     if (!im) return;
-    const ok = () => setPret(true);
+    const ok = () => setFond(im.currentSrc || im.src);
     if (im.complete && im.naturalWidth) ok();
     else im.addEventListener("load", ok, { once: true });
     return () => im.removeEventListener("load", ok);
@@ -221,10 +108,10 @@ export function EffetsAtelier() {
   useEffect(() => {
     const el = racine.current, cv = canevas.current, cx = codex.current;
     const g = cv?.getContext("2d");
-    if (!pret || !el || !cv || !cx || !g) return;
+    if (!fond || !el || !cv || !cx || !g) return;
     const html = document.documentElement;
     const rm = matchMedia("(prefers-reduced-motion: reduce)");
-    let vu = false, raf = 0, dernier = 0, horloge = 0, prochain = 1.5, demande = false;
+    let vu = false, raf = 0, dernier = 0, horloge = 0, prochain = 1.5;
     const actif = () =>
       vu && !document.hidden && !rm.matches && html.dataset.discreet !== "1" && html.dataset.rlMotion !== "off";
 
@@ -284,23 +171,9 @@ export function EffetsAtelier() {
     };
     const maj = () => {
       const a = actif();
-      marche.current = a;
       if (a) delete el.dataset.arret;
       else el.dataset.arret = "1";
-      for (const x of anims.current) {
-        if (a) x.play();
-        else x.pause();
-      }
       if (a && !raf) raf = requestAnimationFrame(tic);
-      // l'atlas des états peints : à la première mise en route, à la taille utile
-      if (a && !demande) {
-        demande = true;
-        const url = el.clientWidth * (devicePixelRatio || 1) > 560 ? "/atelier/etats-1024.webp" : "/atelier/etats-512.webp";
-        const im = new Image();
-        im.decoding = "async";
-        im.onload = () => setAtlas(url);
-        im.src = url;
-      }
     };
     const io = new IntersectionObserver((es) => {
       vu = es[es.length - 1].isIntersecting;
@@ -320,99 +193,89 @@ export function EffetsAtelier() {
       document.removeEventListener("visibilitychange", maj);
       rm.removeEventListener?.("change", maj);
     };
-  }, [pret]);
-
-  // les fondus des états peints (Web Animations), en pause tant que l'animation est arrêtée
-  useEffect(() => {
-    const el = racine.current;
-    if (!atlas || !el) return;
-    const liste: Animation[] = [];
-    const joue = (n: string, k: Keyframe[], T: number, avance = 0) => {
-      const e = el.querySelector(`[data-n="${n}"]`);
-      if (!e) return;
-      const a = e.animate(k, { duration: T * 1000, iterations: Infinity, delay: -avance * 1000 });
-      a.pause();
-      liste.push(a);
-    };
-    // flammes : chaque groupe a son enchaînement, sa durée, son départ
-    // à l'arrivée de l'atlas, états et halos entrent en fondu (pas de saut sur l'image fixe)
-    for (const n of ["etats", "lumiere"]) {
-      const e = el.querySelector(`[data-n="${n}"]`);
-      if (!e) continue;
-      const a = e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 3000, easing: "ease-in-out", fill: "forwards" });
-      a.pause();
-      liste.push(a);
-    }
-    FLAMMES.forEach(({ g, graine: gr, formes, max }, i) => {
-      const v = vacillement(gr, formes, max);
-      v.formes.forEach(([j, k]) => joue(`flamme-${g}-${j}`, k, v.T, i * 1.7));
-      joue(`halo-${g}`, v.halo, v.T, i * 1.7);
-    });
-    // vapeur : naissante, deux volutes à gauche, deux à droite, puis rien que la tasse
-    const TV = 10.4;
-    joue("vapeur-3", bouffee(TV, 0.2, 1.4, 2.6, 5), TV);
-    joue("vapeur-1", bouffee(TV, 2.8, 4, 5.2, 7.6), TV);
-    joue("vapeur-2", bouffee(TV, 5.4, 6.6, 7.6, 10.2), TV);
-    // chat : trois degrés du même souffle, posés l'un sur l'autre (pas de double contour)
-    const TC = 4.8;
-    const souffle = (a: number, b: number, c: number, d: number, max = 1): Keyframe[] => [
-      { offset: 0, opacity: 0 },
-      { offset: a, opacity: 0, easing: "ease-in-out" },
-      { offset: b, opacity: max },
-      { offset: c, opacity: max, easing: "ease-in-out" },
-      { offset: d, opacity: 0 },
-      { offset: 1, opacity: 0 },
-    ];
-    // inspire, expire, puis un long repos sur la base nette (≈ 35 % du cycle)
-    joue("chat-1", souffle(0.06, 0.3, 0.55, 0.7), TC);
-    joue("chat-2", souffle(0.14, 0.36, 0.5, 0.64), TC);
-    joue("chat-3", souffle(0.22, 0.4, 0.46, 0.6, 0.92), TC);
-    // ciel et ville : lents, désaccordés
-    // départ sur le palier « image fixe », puis changements lents ; fondu du ciel
-    // court (≈ 9 s) et longs paliers : les nuages doublés se voient moins longtemps
-    joue("ciel", lent(0.2, 0.32, 0.68, 0.8), 72, 5);
-    joue("ville", lent(0.1, 0.4, 0.58, 0.9), 96, 5);
-    anims.current = liste;
-    if (marche.current) liste.forEach((a) => a.play());
-    return () => {
-      anims.current = [];
-      liste.forEach((a) => a.cancel());
-    };
-  }, [atlas]);
+  }, [fond]);
 
   return (
     <div ref={racine} className={s.effets} data-arret="1">
-      {pret && (
+      {fond && (
         <>
-          {atlas && (
-            <div data-n="etats" className={s.etats}>
-              {Object.keys(ETATS).map((n) => (
-                <div key={n} data-n={n} className={s.etat} style={calque(n, atlas)} />
-              ))}
-            </div>
-          )}
-          <svg data-n="lumiere" className={s.lumiere} viewBox="0 0 1024 572" preserveAspectRatio="none">
+          {/* le ciel de l'arc : nettoyé de ses nuages, troué aux fers et aux tours */}
+          <div
+            className={s.ciel}
+            style={{ ...boite(224, 34, 420, 150), maskImage: img("ciel.webp"), WebkitMaskImage: img("ciel.webp") }}
+          >
+            <div style={{ backgroundImage: img("ciel.webp") }} />
+            <div className={s.nuageA} style={{ backgroundImage: img("nuages-a.webp") }} />
+            <div className={s.nuageB} style={{ backgroundImage: img("nuages-b.webp") }} />
+            <div className={s.couchant} />
+          </div>
+          {/* même source et même échantillonnage que l'image de base : net au repos */}
+          <div className={s.chat} style={{ ...boite(424, 316, 528, 384), backgroundImage: `url("${fond}")` }} />
+          <svg className={s.lumiere} viewBox="0 0 1024 572" preserveAspectRatio="none">
             <defs>
               <radialGradient id={id + "h"}>
-                <stop offset="0" stopColor="#ffb24f" stopOpacity=".3" />
-                <stop offset=".3" stopColor="#ff9a3c" stopOpacity=".14" />
-                <stop offset=".65" stopColor="#ff8a30" stopOpacity=".04" />
+                <stop offset="0" stopColor="#ffb24f" stopOpacity=".5" />
+                <stop offset=".3" stopColor="#ff9a3c" stopOpacity=".24" />
+                <stop offset=".65" stopColor="#ff8a30" stopOpacity=".07" />
                 <stop offset="1" stopColor="#ff8a30" stopOpacity="0" />
               </radialGradient>
               {/* halo de la lanterne : centre creux, il éclaire le bureau sans brûler le verre */}
               <radialGradient id={id + "l"}>
-                <stop offset="0" stopColor="#ffb24f" stopOpacity=".03" />
-                <stop offset=".3" stopColor="#ffa448" stopOpacity=".07" />
-                <stop offset=".45" stopColor="#ff9a3c" stopOpacity=".16" />
-                <stop offset=".7" stopColor="#ff8a30" stopOpacity=".05" />
+                <stop offset="0" stopColor="#ffb24f" stopOpacity=".05" />
+                <stop offset=".3" stopColor="#ffa448" stopOpacity=".1" />
+                <stop offset=".45" stopColor="#ff9a3c" stopOpacity=".24" />
+                <stop offset=".7" stopColor="#ff8a30" stopOpacity=".07" />
                 <stop offset="1" stopColor="#ff8a30" stopOpacity="0" />
               </radialGradient>
+              <radialGradient id={id + "c"}>
+                <stop offset="0" stopColor="#ffe2a8" stopOpacity=".2" />
+                <stop offset=".5" stopColor="#ffc56a" stopOpacity=".2" />
+                <stop offset="1" stopColor="#ffb04a" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id={id + "f"} cx=".5" cy=".75" r=".6">
+                <stop offset="0" stopColor="#ffe2a8" />
+                <stop offset=".45" stopColor="#ffc46a" stopOpacity=".8" />
+                <stop offset="1" stopColor="#ff9b3a" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id={id + "w"}>
+                <stop offset="0" stopColor="#ffc666" stopOpacity=".9" />
+                <stop offset=".35" stopColor="#ffa24a" stopOpacity=".32" />
+                <stop offset="1" stopColor="#ff9f45" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id={id + "k"}>
+                <stop offset="0" stopColor="#ff7a48" stopOpacity=".55" />
+                <stop offset=".5" stopColor="#ff7a48" stopOpacity=".24" />
+                <stop offset="1" stopColor="#ff7a48" stopOpacity="0" />
+              </radialGradient>
+              <filter id={id + "v"} x="-1" y="-1" width="3" height="3">
+                <feGaussianBlur stdDeviation="1.3" />
+              </filter>
             </defs>
-            {/* un halo très léger par groupe de flammes, qui suit leur vacillement */}
-            <ellipse data-n="halo-lanterne" className={s.halo} cx="238" cy="395" rx="170" ry="105" fill={u("l")} />
-            <circle data-n="halo-lampe" className={s.halo} cx="768" cy="236" r="95" fill={u("h")} />
-            <circle data-n="halo-etageres" className={s.halo} cx="597" cy="198" r="48" fill={u("h")} />
-            <circle data-n="halo-bougie" className={s.halo} cx="941" cy="278" r="55" fill={u("h")} />
+            {/* le couchant qui rosit l'horizon, au rythme de la lueur du ciel ; l'ellipse
+                tient entre les montants de l'arc (229-415) et s'y éteint : aucun bord net */}
+            <ellipse className={s.lueur} cx="322" cy="168" rx="93" ry="24" fill={u("k")} />
+            <ellipse className={`${s.halo} ${s.haloA}`} cx="238" cy="395" rx="170" ry="105" fill={u("l")} />
+            <circle className={`${s.halo} ${s.haloB}`} cx="768" cy="236" r="95" fill={u("h")} />
+            <circle className={`${s.halo} ${s.haloC}`} cx="597" cy="198" r="48" fill={u("h")} />
+            <circle className={`${s.halo} ${s.haloC}`} cx="941" cy="278" r="55" fill={u("h")} />
+            <circle className={s.coeur} cx="235" cy="374" r="30" fill={u("c")} />
+            <path className={s.flamme} fill={u("f")} d={flamme(234, 388, 9, 22)} />
+            <path className={`${s.flamme} ${s.flB}`} fill={u("f")} d={flamme(589, 203, 5, 16)} />
+            <path className={`${s.flamme} ${s.flC}`} fill={u("f")} d={flamme(604, 207, 5, 13)} />
+            <path className={`${s.flamme} ${s.flD}`} fill={u("f")} d={flamme(768, 246, 10, 22)} />
+            <path className={`${s.flamme} ${s.flB}`} fill={u("f")} d={flamme(941, 286, 6, 19)} />
+            {FENETRES.map(([x, y], i) => (
+              <g key={i} className={s.fenetre} style={{ animationDelay: `${-i * 7.3 - 2}s` }}>
+                <circle cx={x} cy={y} r="10" fill={u("w")} />
+                <rect x={x - 1.6} y={y - 2.1} width="3.2" height="4.2" fill="#ffd47e" />
+              </g>
+            ))}
+            <g filter={u("v")} fill="none" stroke="#fff6ea" strokeWidth="2.6" strokeLinecap="round">
+              <path className={s.vapeur} d="M527 341c-3-5 3-8 0-13s3-8 0-12" />
+              <path className={`${s.vapeur} ${s.vapB}`} d="M531 340c3-5-3-8 0-13s-2-9 1-12" />
+              <path className={`${s.vapeur} ${s.vapC}`} d="M523 342c-2-5 3-9 1-14" />
+              <path className={`${s.vapeur} ${s.vapD}`} d="M529 341c2-4-2-8 1-12s-1-7 1-10" />
+            </g>
           </svg>
           <canvas ref={canevas} />
           <svg viewBox="0 0 1024 572" preserveAspectRatio="none">
