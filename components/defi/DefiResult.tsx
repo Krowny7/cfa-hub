@@ -8,10 +8,9 @@ import { SceauDefi } from "@/components/defi/SceauDefi";
 import { Ticks, reviewMarks } from "@/components/defi/parts";
 import { clock } from "@/lib/duels";
 import { reviewHref, type DailyBoard, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
-import { ratures } from "@/lib/voice";
+import { ratures, scorePct } from "@/lib/voice";
 import { rangOrdinal, verdictCopie, voixDefi } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
-import { scorePct } from "@/lib/voice";
 
 type Props = {
   /** le défi, avec ma copie rendue (info.me.finishedAt) */
@@ -53,7 +52,7 @@ export function DefiResult({ info, review, board }: Props) {
   } else if (rank === 1) {
     cote = <p className="t-small m-0">{DEFI.ahead(info.isToday)}</p>;
   } else if (leader && leader.score > score) {
-    cote = <Cote ton="stylo" de={scorePct(score, total)} label={DEFI.ecartPoints(leader.score - score)} a={`${leader.score} · ${DEFI.premiere}`} className="max-w-[460px]" />;
+    cote = <Cote ton="stylo" de={`${score}/${total}`} label={DEFI.ecartPoints(leader.score - score)} a={`${leader.score} · ${DEFI.premiere}`} className="max-w-[460px]" />;
   } else if (leader && me.seconds !== null) {
     cote = (
       <Cote

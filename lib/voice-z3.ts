@@ -5,8 +5,7 @@
 // lib/voice.ts : toujours le chiffre, jamais « raté » ni « Bravo », pas de
 // point d'exclamation, et le bout qui reste toujours nommé.
 
-import { joursEncre, nombre, pluriel, questions, ratures, serie, signe, traits, SIGNATURE, type EtatJour } from "@/lib/voice";
-import { scorePct } from "@/lib/voice";
+import { joursEncre, nombre, pluriel, questions, ratures, serie, signe, traits, SIGNATURE, type EtatJour, scorePct } from "@/lib/voice";
 
 /** Le nom de chaque épreuve, en sur-titre de la copie. */
 export const EPREUVE = {

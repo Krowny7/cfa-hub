@@ -29,7 +29,7 @@ import {
 } from "@/lib/duels";
 import { PresenceText } from "@/components/presence/Presence";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
-import { scorePct } from "@/lib/voice";
+import { PctDuel } from "@/components/adn/PctScore";
 
 type Props = {
   me: { elo: number; gamesPlayed: number };
@@ -373,8 +373,9 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                               {d.finishedAt ? new Date(d.finishedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" }) : ""}
                             </span>
                           </span>
-                          <span className="font-mono text-[13px] tabular-nums text-muted" title={`Toi ${scorePct(d.myScore ?? 0, d.total)} · lui ${scorePct(d.theirScore ?? 0, d.total)}`}>
+                          <span className="text-right font-mono text-[13px] tabular-nums text-muted">
                             {d.myScore ?? 0} – {d.theirScore ?? 0}
+                            <PctDuel a={d.myScore} b={d.theirScore} total={DUEL_QUESTIONS} className="block text-[11px] leading-tight" />
                           </span>
                           <span
                             className={

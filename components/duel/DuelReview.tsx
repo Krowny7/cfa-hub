@@ -122,7 +122,6 @@ export function DuelReview({ state, review, initialFilter }: Props) {
                 {theirScore !== null ? ` – ${theirScore}` : ""}
               </b>{" "}
               sur {total}
-              <PctScore justes={myScore} total={total} />
             </span>
             {finished && me.seconds !== null && (
               <>

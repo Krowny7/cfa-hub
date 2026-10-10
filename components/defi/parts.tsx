@@ -23,7 +23,6 @@ import {
 import { ECLAIR_HREF } from "@/lib/eclair";
 import { DEFI, DEFI_CINQ, ECLAIR, joueurs, rangOrdinal, raturesOuPropre, voixDefi } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
-import { scorePct } from "@/lib/voice";
 
 // Pièces partagées des pages du défi du jour. Sans état : utilisables depuis
 // un composant serveur comme depuis un composant client.
@@ -232,10 +231,11 @@ function BoardRow({ row, total }: { row: DailyBoardRow; total: number }) {
         <span className="truncate text-[14.5px] font-semibold">{row.username ?? "Joueur"}</span>
         {row.isMe && <span className="t-micro shrink-0 font-semibold">{DEFI.toi}</span>}
       </span>
-      <span className="font-mono text-[13.5px] font-semibold tabular-nums" title={scorePct(row.score, row.total || total)}>
+      <span className="text-right font-mono text-[13.5px] font-semibold tabular-nums">
         {row.score}
         <span className="font-normal text-muted">/{row.total || total}</span>
         <PctScore justes={row.score} total={row.total || total} className="hidden sm:inline" />
+        <PctScore justes={row.score} total={row.total || total} sep={false} className="block text-[11px] leading-tight sm:hidden" />
       </span>
       <span className="text-right font-mono text-[12.5px] tabular-nums text-muted">{clock(row.seconds)}</span>
     </li>
@@ -340,10 +340,11 @@ function HistoryRow({ e, today, nowIso, format }: { e: DailyHistoryEntry; today:
           </span>
         </span>
         {played && (
-          <span className="font-mono text-[14px] font-semibold tabular-nums" title={scorePct(e.score ?? 0, total)}>
+          <span className="text-right font-mono text-[14px] font-semibold tabular-nums">
             {e.score}
             <span className="font-normal text-muted">/{total}</span>
             <PctScore justes={e.score} total={total} className="hidden sm:inline" />
+            <PctScore justes={e.score} total={total} sep={false} className="block text-[11px] leading-tight sm:hidden" />
           </span>
         )}
       </Link>

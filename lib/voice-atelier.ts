@@ -4,10 +4,8 @@
 // Calcul, Re-test (trait d'union insécable : jamais coupé en fin de ligne).
 // Module neutre (ni « use client » ni serveur).
 
-import { nombre, pct, pluriel } from "@/lib/voice";
+import { nombre, pct, pctScore, pluriel, scorePct } from "@/lib/voice";
 import type { Bloc, Conseil, Niveau } from "@/lib/atelier";
-import { scorePct } from "@/lib/voice";
-import { pctScore } from "@/lib/voice";
 
 export const BLOC_NOM: Record<Bloc, string> = {
   rappel: "Rappel",
@@ -147,7 +145,7 @@ export const ATELIER = {
   partiel: "Bilan partiel",
 
   /** bilan */
-  epreuve: (minutes: number, score: number, total: number) => `Atelier · ${nombre(minutes)} min · ${scorePct(score, total)}`,
+  epreuve: (minutes: number, score: number, total: number) => `Atelier · ${nombre(minutes)} min · ${nombre(score)}/${nombre(total)}`,
   parNotion: "Par notion",
   avantPendant: (avant: { ok: number; n: number }, pendant: { ok: number; n: number }) => `avant ${taux(avant.ok, avant.n)} → pendant ${taux(pendant.ok, pendant.n)}`,
   avantPendantDetail: (avant: { ok: number; n: number }, pendant: { ok: number; n: number }) =>

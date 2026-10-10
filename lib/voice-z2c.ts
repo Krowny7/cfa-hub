@@ -9,8 +9,7 @@
 // réexporte sous ce nom pour ne rien casser), plus les phrases des écrans du
 // défi (copie, classement, jours passés, revue, tuile).
 
-import { IA, LEXIQUE, NBSP, SIGNATURE, nombre, pct, pluriel, precision, ratures, traits, verdictSession } from "@/lib/voice";
-import { scorePct } from "@/lib/voice";
+import { IA, LEXIQUE, NBSP, SIGNATURE, nombre, pct, pluriel, precision, ratures, scorePct, traits, verdictSession } from "@/lib/voice";
 
 /** « 6 ratures », « page propre » (une copie rendue) */
 export function raturesOuPropre(n: number) {
