@@ -337,19 +337,21 @@ export const CEREMONIE = {
 // Le Face-à-face
 
 /** « 3 oct. » (jour de Paris : même rendu au serveur et dans le navigateur) */
-export function dateCourte(iso: string): string {
+export function dateCourte(iso: string, annee = false): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" }).format(d);
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", ...(annee ? { year: "numeric" } : {}), timeZone: "Europe/Paris" }).format(d);
 }
 
 export const FACE = {
   titre: "Face-à-face",
   toi: "Toi",
-  /** « Toi 3–2 » (le bouton de l'en-tête) */
-  court: (moi: number, lui: number) => `Toi ${nombre(moi)}–${nombre(lui)}`,
-  /** lu à voix haute : « Toi 3, Theo 2 » */
-  bilanDit: (moi: number, lui: number, nom: string, nuls: number) => `Face-à-face : toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "nul", "nuls")}` : ""}`,
+  /** « Duels 3–2 » (le bouton de l'en-tête : les duels seulement, le reste est dans l'onglet) */
+  court: (moi: number, lui: number) => `Duels ${nombre(moi)}–${nombre(lui)}`,
+  /** « Duels : toi 3 – 2 Theo » (au pied de la carte du rang, sur ordinateur) */
+  pied: (moi: number, lui: number, nom: string) => `Duels${NBSP}: toi ${nombre(moi)} – ${nombre(lui)} ${nom}`,
+  /** lu à voix haute : « Duels : toi 3, Theo 2 » */
+  bilanDit: (moi: number, lui: number, nom: string, nuls: number) => `Duels : toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "nul", "nuls")}` : ""}`,
   nuls: (n: number) => pluriel(n, "nul", "nuls"),
   derniers: (n: number) => (n > 1 ? `${nombre(n)} derniers duels` : "Dernier duel"),
   dernier: "Dernier",
@@ -388,6 +390,8 @@ export const COMMUNES = {
   /** « 12–9 » sous le nom de l'épreuve */
   score: (moi: number, lui: number) => `${nombre(moi)}–${nombre(lui)}`,
   egalites: (n: number) => pluriel(n, "égalité", "égalités"),
+  /** sous le bilan d'une épreuve : de quel côté est chacun */
+  camps: (nom: string) => `Toi – ${nom}`,
   jamais: "—",
   recentes: "Les dernières",
   voirTout: (n: number) => `Voir tout (${nombre(n)})`,

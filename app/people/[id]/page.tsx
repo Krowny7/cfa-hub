@@ -302,7 +302,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       {face.duels.length ? (
         <>
           <span className="truncate">
-            {FACE.toi} {nombre(face.victoires)} – {nombre(face.defaites)} {display}
+            {FACE.pied(face.victoires, face.defaites, display)}
           </span>
           <BatonsDuels duels={face.duels.slice(0, 5)} height={20} className="shrink-0 text-[#fff]" />
         </>
@@ -331,7 +331,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     cle,
     href: hrefOnglet(id, cle, vue),
     ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(etats.length)}` } : {}),
-    ...(cle === "face-a-face" && face && face.duels.length ? { compte: `${nombre(face.victoires)}–${nombre(face.defaites)}` } : {}),
   }));
 
   // tamponner : sur le profil d'un autre ; sur le mien (et dans l'aperçu), les comptes seulement

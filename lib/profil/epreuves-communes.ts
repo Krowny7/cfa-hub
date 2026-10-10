@@ -9,7 +9,7 @@ import type { FaceAFace } from "@/lib/profil/face-a-face";
 // examens. Une copie du jour ne compte qu'une fois close des deux côtés
 // (finished_at et score posés) : l'embargo d'une copie ouverte tient. Les
 // duels viennent du bilan déjà lu (lib/profil/face-a-face.ts). Deux lectures
-// en parallèle, sans boucle. Module serveur ; l'onglet Face-à-face seulement.
+// en parallèle, sans boucle ; si l'une échoue, null (pas de bilan partiel). Module serveur ; l'onglet Face-à-face seulement.
 
 export type TypeEpreuve = "defi" | "cinq" | "examen" | "duel";
 export const TYPES_EPREUVE: TypeEpreuve[] = ["defi", "cinq", "examen", "duel"];
@@ -63,7 +63,7 @@ function paires<T>(lignes: T[], cle: (l: T) => string, joueur: (l: T) => string,
 }
 
 export const epreuvesCommunes = cache(
-  async (admin: SupabaseClient | null, moi: string, autre: string, duels: FaceAFace | null): Promise<EpreuvesCommunes> => {
+  async (admin: SupabaseClient | null, moi: string, autre: string, duels: FaceAFace | null): Promise<EpreuvesCommunes | null> => {
     const epreuves: EpreuveCommune[] = [];
     if (admin && moi !== autre) {
       const [jours, examens] = await Promise.all([
@@ -76,8 +76,8 @@ export const epreuvesCommunes = cache(
           .order("day", { ascending: false })
           .limit(3000)
           .then(
-            (r) => (r.error ? [] : ((r.data ?? []) as unknown as CopieDuJour[])),
-            () => [] as CopieDuJour[],
+            (r) => (r.error ? null : ((r.data ?? []) as unknown as CopieDuJour[])),
+            () => null,
           ),
         admin
           .from("mock_exam_results")
@@ -85,10 +85,12 @@ export const epreuvesCommunes = cache(
           .in("user_id", [moi, autre])
           .limit(1000)
           .then(
-            (r) => (r.error ? [] : ((r.data ?? []) as unknown as CopieExamen[])),
-            () => [] as CopieExamen[],
+            (r) => (r.error ? null : ((r.data ?? []) as unknown as CopieExamen[])),
+            () => null,
           ),
       ]);
+      // une lecture en échec : pas de bilan partiel présenté comme complet, la carte s'efface
+      if (!jours || !examens) return null;
       for (const [m, a] of paires(jours, (l) => l.challenge_id, (l) => l.user_id, moi, autre)) {
         const programme = un(m.daily_challenges)?.program ?? "";
         const cinq = programme.endsWith("-cinq");

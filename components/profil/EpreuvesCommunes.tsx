@@ -12,9 +12,14 @@ const RECENTES = 5;
 
 const couleur = (e: EpreuveCommune) => (e.issue === "victoire" ? "var(--gain)" : e.issue === "defaite" ? "var(--perte)" : undefined);
 
-function Ligne({ e, nom }: { e: EpreuveCommune; nom: string }) {
+/** l'année (fuseau de Paris, comme les dates rendues) */
+const anneeDe = (e: EpreuveCommune) => (e.jour ? e.date.slice(0, 4) : dateCourte(e.date, true).slice(-4));
+
+function Ligne({ e, nom, annee }: { e: EpreuveCommune; nom: string; annee: string }) {
   const type = COMMUNES.type[e.type];
-  const date = e.jour ? jourCourt(e.date) : dateCourte(e.date);
+  // l'année seulement quand elle n'est pas celle de la plus récente
+  const autreAnnee = anneeDe(e) !== annee;
+  const date = e.jour ? jourCourt(e.date, autreAnnee) : dateCourte(e.date, autreAnnee);
   const mienne = COMMUNES.copie(e.monScore, e.total);
   const sienne = COMMUNES.copie(e.sonScore, e.total);
   const issue = COMMUNES.issue[e.issue];
@@ -51,6 +56,7 @@ export function EpreuvesCommunes({ donnees, nom, className = "" }: { donnees: Do
   const { epreuves, parType, general } = donnees;
   const recentes = epreuves.slice(0, RECENTES);
   const reste = epreuves.slice(RECENTES);
+  const annee = epreuves[0] ? anneeDe(epreuves[0]) : "";
   return (
     <section className={"card flex flex-col gap-4 p-5 sm:p-6 " + className} aria-labelledby="face-communes">
       <div className="flex flex-col gap-1">
@@ -81,7 +87,8 @@ export function EpreuvesCommunes({ donnees, nom, className = "" }: { donnees: Do
                       <span className="t-num text-[22px] leading-tight" aria-label={COMMUNES.general(n, b.victoires, b.defaites, nom, b.nuls)}>
                         {COMMUNES.score(b.victoires, b.defaites)}
                       </span>
-                      <span className="t-micro">{b.nuls ? COMMUNES.egalites(b.nuls) : `${COMMUNES.toi} – ${nom}`}</span>
+                      <span className="t-micro truncate">{COMMUNES.camps(nom)}</span>
+                      {b.nuls > 0 && <span className="t-micro">{COMMUNES.egalites(b.nuls)}</span>}
                     </>
                   ) : (
                     <span className="t-num text-[22px] leading-tight text-muted">{COMMUNES.jamais}</span>
@@ -92,11 +99,11 @@ export function EpreuvesCommunes({ donnees, nom, className = "" }: { donnees: Do
           </ul>
 
           {recentes.length > 0 && (
-            <div className="flex flex-col gap-1">
+            <div className="flex max-w-3xl flex-col gap-1">
               <h3 className="t-eyebrow m-0">{COMMUNES.recentes}</h3>
               <ol className="m-0 list-none p-0">
                 {recentes.map((e) => (
-                  <Ligne key={e.cle} e={e} nom={nom} />
+                  <Ligne key={e.cle} e={e} nom={nom} annee={annee} />
                 ))}
               </ol>
               {reste.length > 0 && (
@@ -106,7 +113,7 @@ export function EpreuvesCommunes({ donnees, nom, className = "" }: { donnees: Do
                   </summary>
                   <ol className="m-0 list-none border-t border-line p-0">
                     {reste.map((e) => (
-                      <Ligne key={e.cle} e={e} nom={nom} />
+                      <Ligne key={e.cle} e={e} nom={nom} annee={annee} />
                     ))}
                   </ol>
                 </details>
