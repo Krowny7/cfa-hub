@@ -37,6 +37,7 @@ import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
 import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
 import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
+import { epreuvesCommunes } from "@/lib/profil/epreuves-communes";
 import { journalDe, type EvenementJournal } from "@/lib/profil/journal";
 import { lireTampons, monRetour } from "@/lib/profil/social";
 import { lireSaisons } from "@/lib/profil/saisons";
@@ -165,6 +166,15 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     return lireTampons(supabase, id, [CIBLE_PROFIL, ...entrees]);
   })();
 
+  // les épreuves faites par nous deux, sur l'onglet Face-à-face seulement : client admin, les scores et rien
+  // d'autre ; nos duels viennent de la même lecture que l'en-tête (faceAFace est mis en cache par requête)
+  const communesLues =
+    autreJoueur && onglet === "face-a-face"
+      ? faceAFace(supabase, user.id, id)
+          .then((f) => epreuvesCommunes(admin, user.id, id, f))
+          .catch(() => null)
+      : Promise.resolve(null);
+
   // l'en-tête, commun aux onglets
   const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, depuisVisite, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
@@ -292,7 +302,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       {face.duels.length ? (
         <>
           <span className="truncate">
-            {FACE.toi} {nombre(face.victoires)} – {nombre(face.defaites)} {display}
+            {FACE.pied(face.victoires, face.defaites, display)}
           </span>
           <BatonsDuels duels={face.duels.slice(0, 5)} height={20} className="shrink-0 text-[#fff]" />
         </>
@@ -321,7 +331,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     cle,
     href: hrefOnglet(id, cle, vue),
     ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(etats.length)}` } : {}),
-    ...(cle === "face-a-face" && face && face.duels.length ? { compte: `${nombre(face.victoires)}–${nombre(face.defaites)}` } : {}),
   }));
 
   // tamponner : sur le profil d'un autre ; sur le mien (et dans l'aperçu), les comptes seulement
@@ -363,6 +372,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     );
   } else if (onglet === "face-a-face") {
     const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
+    const communes = await communesLues;
     panneau = (
       <FaceAFace
         autreId={id}
@@ -374,6 +384,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
         moyennes={o.moyennes}
         accent={style.accent}
         monAccent={o.monStyle ? o.monStyle.style.accent : null}
+        communes={communes}
       />
     );
   } else {

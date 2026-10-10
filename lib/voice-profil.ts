@@ -337,19 +337,21 @@ export const CEREMONIE = {
 // Le Face-à-face
 
 /** « 3 oct. » (jour de Paris : même rendu au serveur et dans le navigateur) */
-export function dateCourte(iso: string): string {
+export function dateCourte(iso: string, annee = false): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" }).format(d);
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", ...(annee ? { year: "numeric" } : {}), timeZone: "Europe/Paris" }).format(d);
 }
 
 export const FACE = {
   titre: "Face-à-face",
   toi: "Toi",
-  /** « Toi 3–2 » (le bouton de l'en-tête) */
-  court: (moi: number, lui: number) => `Toi ${nombre(moi)}–${nombre(lui)}`,
-  /** lu à voix haute : « Toi 3, Theo 2 » */
-  bilanDit: (moi: number, lui: number, nom: string, nuls: number) => `Face-à-face : toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "nul", "nuls")}` : ""}`,
+  /** « Duels 3–2 » (le bouton de l'en-tête : les duels seulement, le reste est dans l'onglet) */
+  court: (moi: number, lui: number) => `Duels ${nombre(moi)}–${nombre(lui)}`,
+  /** « Duels : toi 3 – 2 Theo » (au pied de la carte du rang, sur ordinateur) */
+  pied: (moi: number, lui: number, nom: string) => `Duels${NBSP}: toi ${nombre(moi)} – ${nombre(lui)} ${nom}`,
+  /** lu à voix haute : « Duels : toi 3, Theo 2 » */
+  bilanDit: (moi: number, lui: number, nom: string, nuls: number) => `Duels : toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "nul", "nuls")}` : ""}`,
   nuls: (n: number) => pluriel(n, "nul", "nuls"),
   derniers: (n: number) => (n > 1 ? `${nombre(n)} derniers duels` : "Dernier duel"),
   dernier: "Dernier",
@@ -373,6 +375,32 @@ export const FACE = {
   /** le repli sous le radar superposé : les barres matière par matière */
   detail: "Le détail par matière",
   voir: "Face-à-face",
+} as const;
+
+/** Les épreuves communes du Face-à-face : le défi, les 5 du jour, les examens blancs, les duels. */
+export const COMMUNES = {
+  titre: "Épreuves communes",
+  toi: "Toi",
+  type: { defi: "Défi du jour", cinq: "5 du jour", examen: "Examen blanc", duel: "Duel" } as const,
+  /** « Sur 23 épreuves communes : toi 14, Theo 7, 2 égalités » */
+  general: (total: number, moi: number, lui: number, nom: string, nuls: number) =>
+    `Sur ${pluriel(total, "épreuve commune", "épreuves communes")}${NBSP}: toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "égalité", "égalités")}` : ""}`,
+  aucune: (nom: string) => `Aucune épreuve commune avec ${nom} pour l'instant.`,
+  aucuneTexte: "Le défi du jour, les 5 du jour, un examen blanc classé ou un duel : dès que vous rendez tous deux la même copie, elle compte ici.",
+  /** « 12–9 » sous le nom de l'épreuve */
+  score: (moi: number, lui: number) => `${nombre(moi)}–${nombre(lui)}`,
+  egalites: (n: number) => pluriel(n, "égalité", "égalités"),
+  /** sous le bilan d'une épreuve : de quel côté est chacun */
+  camps: (nom: string) => `Toi – ${nom}`,
+  jamais: "—",
+  recentes: "Les dernières",
+  voirTout: (n: number) => `Voir tout (${nombre(n)})`,
+  /** « 18/30 · 60 % » */
+  copie: (score: number, total: number) => `${nombre(score)}/${nombre(total)}${total > 0 ? ` · ${pct((score / total) * 100)}` : ""}`,
+  issue: { victoire: "gagné", defaite: "perdu", nul: "égalité" } as const,
+  /** lu à voix haute : « Défi du jour, 3 oct. : toi 18/30, Theo 15/30, gagné » */
+  ligneDit: (type: string, date: string, moi: string, lui: string, nom: string, issue: string) => `${type}, ${date} : toi ${moi}, ${nom} ${lui}, ${issue}`,
+  aide: "Seules comptent les épreuves rendues par vous deux, aux mêmes questions. À score égal : égalité.",
 } as const;
 
 // ---------------------------------------------------------------------------
