@@ -8,6 +8,7 @@
 
 export type EvenementLeonard =
   | "tuto"
+  | "nouveautes"
   | "erreurs-serie"
   | "session-ratee"
   | "session-moyenne"

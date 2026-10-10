@@ -91,7 +91,7 @@ const ATELIER_HREF = "/atelier";
 function LienAtelier({ d, className }: { d: PointsFaiblesData; className: string }) {
   if (!d.atelier) return null;
   return (
-    <Link href={ATELIER_HREF} className={className}>
+    <Link href={ATELIER_HREF} className={className} data-leonard="atelier">
       <Hammer size={16} aria-hidden /> {d.atelier.enCours ? ATELIER.reprendre : ATELIER.action}
     </Link>
   );
@@ -319,6 +319,7 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
 
   return (
     <section
+      data-leonard="points-faibles"
       className={"card-hero rl-in grid min-h-[260px] min-w-0 gap-x-8 gap-y-4 p-6 md:p-8 " + (avecListe ? "md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] " : "") + className}
       aria-label={V.kicker}
     >

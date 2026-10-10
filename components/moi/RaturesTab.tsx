@@ -289,7 +289,7 @@ export function RaturesTab({
         )}
         {/* ranger par source (les filtres) ou par notion (la liste à droite) */}
         {notions && (
-          <div className="grid grid-cols-2 gap-1 rounded-[12px] border border-line p-1" role="tablist" aria-label={CARNET.ranger}>
+          <div data-leonard="carnet-notions" className="grid grid-cols-2 gap-1 rounded-[12px] border border-line p-1" role="tablist" aria-label={CARNET.ranger}>
             {[false, true].map((g) => (
               <button
                 key={String(g)}

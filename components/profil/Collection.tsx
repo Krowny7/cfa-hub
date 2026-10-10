@@ -79,7 +79,7 @@ export function Collection({
   const grandes = montrees.filter((f) => f === "matieres");
 
   return (
-    <section className="flex flex-col gap-8 md:gap-10" aria-labelledby="profil-sceaux">
+    <section data-leonard="collection" className="flex flex-col gap-8 md:gap-10" aria-labelledby="profil-sceaux">
       <SectionTitle title={<span id="profil-sceaux">{SCEAUX_TXT.titre}</span>} sub={SCEAUX_TXT.totalLong(gagnes, etats.length)} />
 
       {proprietaire && portee.length > 0 && (

@@ -245,7 +245,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   if (commeMoi) {
     actions = (
       <>
-        <Link href={hrefPersonnaliser(id)} className="btn btn-primary rl-press">
+        <Link href={hrefPersonnaliser(id)} className="btn btn-primary rl-press" data-leonard="personnaliser">
           <Palette size={15} aria-hidden /> Personnaliser
         </Link>
         <Link href={hrefOnglet(id, onglet, "inconnu")} className="btn btn-secondary rl-press">

@@ -12,9 +12,13 @@ export type Replique = { texte: string; pose: Pose };
 export type Evenement =
   | "tuto" | "erreurs-serie" | "session-ratee" | "session-moyenne" | "session-reussie" | "session-parfaite"
   | "serie-bonnes" | "progression" | "duel-gagne" | "duel-perdu" | "duel-ecrase" | "duel-nul"
-  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "sceau-gagne" | "retour" | "tard" | "furtif";
+  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "sceau-gagne" | "retour" | "tard" | "furtif"
+  | "nouveautes";
 
-export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
+/** Les deux visites guidées (TUTO, NOUVEAUTES) : des étapes, pas des répliques au hasard. */
+export type Visite = "tuto" | "nouveautes";
+
+export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   "erreurs-serie": [
     { texte: "Et 1, et 2 et 3-0, on dirait l’OM.", pose: "moqueur" },
     { texte: "Trois d’affilée. Tu fais exprès pour me voir, avoue.", pose: "moqueur" },
@@ -321,9 +325,11 @@ export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
 /**
  * La visite guidée : chaque étape se joue sur une page (Léonard y emmène le
  * joueur) et peut éclairer un élément de cette page (`cible` = la valeur de
- * son attribut data-leonard).
+ * son attribut data-leonard). Sans cet élément sur la page, il éclaire son
+ * `repli` s'il y en a un ; une étape `facultatif` est sautée (rien à montrer
+ * à ce joueur-là). La page « /profil » est le profil du joueur (/people/<son id>).
  */
-export type EtapeTuto = Replique & { page: string; cible?: string };
+export type EtapeTuto = Replique & { page: string; cible?: string; repli?: string; facultatif?: boolean };
 
 export const TUTO: EtapeTuto[] = [
   { page: "/dashboard", texte: "Moi c’est Léonard. Oui, celui de la Joconde. Suis-moi, je te fais visiter : une minute, promis.", pose: "base" },
@@ -336,4 +342,25 @@ export const TUTO: EtapeTuto[] = [
   { page: "/classement", cible: "rang", texte: "Ton rang, de Bronze à Grand Maître. En dessous, le classement et tes duels. Ici, on se mesure. Et on se chambre.", pose: "etonne" },
   { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Tu le feras pas, hein ?", pose: "decu" },
   { page: "/dashboard", cible: "defi", texte: "Fin de la visite. Ton premier trait t’attend. Je repasse de temps en temps… surtout quand tu te trompes.", pose: "fier" },
+];
+
+/**
+ * Les nouveautés d'une version (lib/presentation, VERSION_NOUVEAUTES) : une
+ * visite courte, une fois par compte, pour ceux qui ont déjà fait la visite
+ * d'accueil. Version 1 (octobre 2026) : points faibles et l'Atelier, carnet
+ * par notion, profil (sceaux, Journal, saisons, Personnaliser), carte joueur
+ * et tampons, « Du nouveau ».
+ */
+export const NOUVEAUTES: EtapeTuto[] = [
+  { page: "/dashboard", texte: "Re. Pendant que tu dormais, j’ai fait des travaux. Je te montre les nouveautés : deux minutes, chrono.", pose: "fier" },
+  { page: "/entrainement", cible: "points-faibles", repli: "session", texte: "Tes points faibles, notion par notion. Je sais exactement où tu coinces. Désolé, pas désolé.", pose: "moqueur" },
+  { page: "/entrainement", cible: "atelier", facultatif: true, texte: "L’Atelier : 30 minutes sur tes trois notions les plus faibles. Rappel, tes ratures, du neuf, un calcul, et un bilan. Tu ressors réparé.", pose: "fier" },
+  { page: "/moi?onglet=erreurs", cible: "carnet-notions", facultatif: true, texte: "Ton carnet de ratures se range aussi par notion. Pratique pour voir où ça saigne.", pose: "etonne" },
+  { page: "/profil", cible: "sceaux-poses", texte: "Ton profil a pris du galon. Ici, tes trois plus beaux sceaux. Ou les trois que tu choisis : t’es chez toi.", pose: "fier" },
+  { page: "/profil?onglet=sceaux", cible: "collection", texte: "La collection : encre, vermillon, dorure. Ceux en relief, tu les as pas encore. Au boulot.", pose: "moqueur" },
+  { page: "/profil?onglet=journal", cible: "journal", texte: "Le Journal : ta courbe d’ELO, tes jours joués, tes exploits. Et chaque saison, ton pic est gravé pour toujours. Comme ma Joconde.", pose: "base" },
+  { page: "/profil?onglet=journal", cible: "personnaliser", texte: "Personnaliser, direct sur la page. Ce qui est fixe est libre. Ce qui bouge ou qui brille, ça se gagne.", pose: "fier" },
+  { page: "/classement", cible: "joueurs", texte: "Touche un joueur : sa carte s’ouvre. Défie-le, va voir son profil, laisse-lui un tampon. Bravo, Respect… ou Revanche ?", pose: "moqueur" },
+  { page: "/dashboard", cible: "du-nouveau", facultatif: true, texte: "Et ici, les nouvelles de tes amis : qui est monté, qui t’a battu. Pour la rancune, c’est pratique.", pose: "moqueur" },
+  { page: "/dashboard", cible: "anneau", texte: "C’est tout. Va faire un Atelier, je te regarde. Enfin, de loin.", pose: "fier" },
 ];

@@ -11,6 +11,8 @@ import { signalerLeonard } from "@/lib/leonard/signal";
 const CLE_ACTIF = "rl_leonard";
 const CLE_ANIME = "rl_leonard_anime";
 export const CLE_TUTO = "rl_leonard_tuto";
+/** la version des nouveautés vue sur cet appareil (lib/presentation, VERSION_NOUVEAUTES) */
+export const CLE_NOUVEAUTES = "rl_leonard_nouveautes";
 export const EVENEMENT_REGLAGES = "rl:leonard-reglages";
 
 export type ReglagesLeonard = { actif: boolean; anime: boolean };
@@ -55,5 +57,7 @@ export function useReglagesLeonard() {
       }
       signalerLeonard({ evt: "tuto" });
     },
+    /** relance la visite des nouveautés, tout de suite */
+    revoirNouveautes: () => signalerLeonard({ evt: "nouveautes" }),
   };
 }

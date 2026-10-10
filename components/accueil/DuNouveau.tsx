@@ -21,7 +21,7 @@ function ce(n: Nouveaute): string {
 export function DuNouveau({ nouvelles }: { nouvelles: Nouveaute[] }) {
   if (!nouvelles.length) return null;
   return (
-    <section className="rl-section" aria-labelledby="accueil-nouveau">
+    <section data-leonard="du-nouveau" className="rl-section" aria-labelledby="accueil-nouveau">
       <SectionTitle title={<span id="accueil-nouveau">{NOUVEAU.titre}</span>} sub={NOUVEAU.aide} />
       <ul className="m-0 grid list-none gap-x-10 p-0 lg:grid-cols-2">
         {nouvelles.map((n) => (

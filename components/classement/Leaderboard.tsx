@@ -159,7 +159,7 @@ export function Leaderboard({ board, meRow, totalPlayers }: { board: BoardRow[];
 
   if (board.length === 0) {
     return (
-      <div id="joueurs" className="max-w-[560px] scroll-mt-24">
+      <div id="joueurs" data-leonard="joueurs" className="max-w-[560px] scroll-mt-24">
         <p className="t-h3">{CLASSEMENT.vide}</p>
         <p className="t-small mt-1">{CLASSEMENT.videTexte}</p>
         <Link href="/people" className="ink-link mt-4 inline-flex items-center gap-1.5">
@@ -170,7 +170,7 @@ export function Leaderboard({ board, meRow, totalPlayers }: { board: BoardRow[];
   }
 
   return (
-    <div id="joueurs" className={"grid scroll-mt-24 items-start gap-10 lg:grid-cols-12 lg:gap-14 " + (podium ? "" : "max-w-[760px]")}>
+    <div id="joueurs" data-leonard="joueurs" className={"grid scroll-mt-24 items-start gap-10 lg:grid-cols-12 lg:gap-14 " + (podium ? "" : "max-w-[760px]")}>
       {podium && (
         <div className="lg:col-span-5 lg:pt-2">
           <div className="relative grid grid-cols-3 items-end gap-2.5 pb-1 sm:gap-4" aria-label={CLASSEMENT.podium}>

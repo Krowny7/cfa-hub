@@ -28,3 +28,16 @@ export function presentationVue(meta: Meta, cookie?: string | null) {
 export function visiteVue(meta: Meta) {
   return version(meta?.[CLE_VISITE_COMPTE]) >= VERSION_PRESENTATION;
 }
+
+// Les nouveautés : une visite plus courte de Léonard (lib/leonard/repliques,
+// NOUVEAUTES), une fois par compte et par version, pour qui a déjà fait la
+// visite d'accueil ; sans repasser par le premier trait. Une nouvelle
+// version de NOUVEAUTES : monter VERSION_NOUVEAUTES.
+//   rl_nouveautes    les nouveautés vues (ou passées) dans cette version
+export const VERSION_NOUVEAUTES = 1;
+export const CLE_NOUVEAUTES_COMPTE = "rl_nouveautes";
+
+/** Les nouveautés de cette version sont-elles déjà vues sur ce compte ? */
+export function nouveautesVues(meta: Meta) {
+  return version(meta?.[CLE_NOUVEAUTES_COMPTE]) >= VERSION_NOUVEAUTES;
+}

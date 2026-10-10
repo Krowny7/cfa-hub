@@ -111,7 +111,7 @@ export function Journal({
   const suite = evenements.slice(VISIBLES);
 
   return (
-    <section className={"grid items-start gap-6 lg:grid-cols-12 lg:gap-8 " + (saisons ? "lg:grid-rows-[auto_1fr]" : "")} aria-labelledby="profil-journal">
+    <section data-leonard="journal" className={"grid items-start gap-6 lg:grid-cols-12 lg:gap-8 " + (saisons ? "lg:grid-rows-[auto_1fr]" : "")} aria-labelledby="profil-journal">
       <h2 id="profil-journal" className="sr-only">
         {JOURNAL.titre}
       </h2>

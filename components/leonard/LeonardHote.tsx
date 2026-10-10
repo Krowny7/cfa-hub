@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { EVENEMENT_LEONARD, type EvenementLeonard, type SignalLeonard } from "@/lib/leonard/signal";
-import { CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/lib/leonard/reglages";
+import { CLE_NOUVEAUTES, CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/lib/leonard/reglages";
 import type { LeonardRig } from "@/lib/leonard/rig";
-import { REPLIQUES, TUTO, type EtapeTuto, type Replique } from "@/lib/leonard/repliques";
-import { CLE_VISITE_COMPTE, VERSION_PRESENTATION, visiteVue } from "@/lib/presentation";
+import { NOUVEAUTES, REPLIQUES, TUTO, type EtapeTuto, type Replique, type Visite } from "@/lib/leonard/repliques";
+import { CLE_NOUVEAUTES_COMPTE, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
 import s from "./Leonard.module.css";
 
 // Léonard sur toutes les pages : il écoute les signaux des écrans
@@ -19,6 +19,8 @@ import s from "./Leonard.module.css";
 //   premier trait : il emmène le joueur de page en page, l'écran s'assombrit et
 //   un projecteur éclaire ce dont il parle (attribut data-leonard). Si
 //   l'élément est sous lui, il sort et revient de l'autre côté.
+// - Les nouveautés d'une version (NOUVEAUTES, lib/presentation) : la même
+//   mécanique, une fois par compte, pour qui a déjà fait la visite d'accueil.
 // - Ensuite, des apparitions furtives : au plus une toutes les 4 minutes et
 //   10 par jour (sauf visite, progression, montée de rang, sceau gagné, sans-faute),
 //   avec un peu de hasard pour les réactions ordinaires.
@@ -47,7 +49,7 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "atelier-fini": 0.5,
   tard: 0.6,
 };
-const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "progression", "rang-monte", "sceau-gagne", "session-parfaite", "retour"]);
+const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "sceau-gagne", "session-parfaite", "retour"]);
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];
@@ -60,6 +62,7 @@ const CLE_RECENTS = "rl_leonard_recents";
 const CLE_INTRO = "rl-splash-seen"; // posée par components/Splash quand l'intro s'efface
 // Banc d'essai local (sessionStorage) : la visite passe par les aperçus /preview-da.
 const CLE_ESSAI = "rl_leonard_essai";
+const CLE_ESSAI_ID = "rl_leonard_essai_id"; // le profil montré sur le banc d'essai
 
 const jourLocal = () => new Date().toLocaleDateString("fr-CA");
 function lire<T>(cle: string, defaut: T): T {
@@ -79,7 +82,7 @@ function ecrire(cle: string, v: unknown) {
 }
 
 /** Une réplique de l'événement, en évitant les 40 dernières dites. */
-function choisir(evt: Exclude<EvenementLeonard, "tuto">, vars?: Record<string, string | number>): Replique | null {
+function choisir(evt: Exclude<EvenementLeonard, Visite>, vars?: Record<string, string | number>): Replique | null {
   const liste = REPLIQUES[evt];
   if (!liste?.length) return null;
   const recents = lire<string[]>(CLE_RECENTS, []);
@@ -115,14 +118,25 @@ const prechauffer = () =>
 /** Au-delà, il entre en image fixe plutôt que de se faire attendre (réseau lent). */
 const ATTENTE_MAX = 2500;
 
-/** L'adresse réelle d'une étape (aperçus locaux sur le banc d'essai). */
-function adresse(page: string) {
+/**
+ * L'adresse réelle d'une étape : « /profil » est le profil du joueur
+ * (`moi`, son id ; sans id, l'étape n'a pas d'adresse). Sur le banc d'essai,
+ * les aperçus locaux.
+ */
+function adresse(page: string, moi: string | null): string | null {
+  let essai = false;
   try {
-    if (sessionStorage.getItem(CLE_ESSAI) !== "1") return page;
+    essai = sessionStorage.getItem(CLE_ESSAI) === "1";
   } catch {
-    return page;
+    // stockage bloqué : le vrai site
   }
   const [chemin, requete] = page.split("?");
+  if (chemin === "/profil") {
+    if (!moi) return null;
+    if (essai) return `/preview-da/profil-reel?id=${moi}` + (requete ? "&" + requete : "");
+    return `/people/${moi}` + (requete ? "?" + requete : "");
+  }
+  if (!essai) return page;
   return (chemin === "/dashboard" ? "/preview-da/accueil" : "/preview-da" + chemin) + (requete ? "?" + requete : "");
 }
 /** Le premier élément affiché qui porte ce repère. */
@@ -133,22 +147,40 @@ function premierVisible(cible: string) {
   }
   return null;
 }
-/** La visite déjà faite sur ce compte (sur un autre appareil) ? */
-async function visiteFaiteSurLeCompte() {
+/** Ce que ce compte a déjà vu (sur un autre appareil peut-être), et son id. */
+async function etatDuCompte(): Promise<{ visite: boolean; nouveautes: boolean; id: string | null }> {
   try {
     const { createClient } = await import("@/lib/supabase/browser");
     const { data } = await createClient().auth.getUser();
-    return visiteVue(data.user?.user_metadata);
+    const meta = data.user?.user_metadata;
+    return { visite: visiteVue(meta), nouveautes: nouveautesVues(meta), id: data.user?.id ?? null };
   } catch {
-    return false;
+    return { visite: false, nouveautes: false, id: null };
   }
 }
-/** La retenir sur le compte (sans effet hors connexion). */
-function retenirVisite() {
+/** L'id du joueur connecté (les étapes sur son profil), ou celui du banc d'essai. */
+async function monId() {
+  try {
+    const essai = sessionStorage.getItem(CLE_ESSAI) === "1" ? sessionStorage.getItem(CLE_ESSAI_ID) : null;
+    if (essai) return essai;
+  } catch {
+    // stockage bloqué
+  }
+  return (await etatDuCompte()).id;
+}
+/**
+ * Retenir une visite faite (ou passée) sur le compte, sans effet hors
+ * connexion. Celle d'accueil vaut aussi pour les nouveautés de cette version.
+ */
+function retenirVisite(v: Visite) {
+  const data =
+    v === "tuto" ? { [CLE_VISITE_COMPTE]: VERSION_PRESENTATION, [CLE_NOUVEAUTES_COMPTE]: VERSION_NOUVEAUTES } : { [CLE_NOUVEAUTES_COMPTE]: VERSION_NOUVEAUTES };
   void import("@/lib/supabase/browser")
-    .then(({ createClient }) => createClient().auth.updateUser({ data: { [CLE_VISITE_COMPTE]: VERSION_PRESENTATION } }))
+    .then(({ createClient }) => createClient().auth.updateUser({ data }))
     .catch(() => {});
 }
+/** Les nouveautés de cette version déjà vues sur cet appareil ? */
+const nouveautesVuesIci = () => lire<number>(CLE_NOUVEAUTES, 0) >= VERSION_NOUVEAUTES;
 
 /** Après l'intro (une fois par session de navigation), puis `delai`. */
 function apresIntro(f: () => void, delai: number) {
@@ -168,7 +200,8 @@ function apresIntro(f: () => void, delai: number) {
   return () => window.clearTimeout(t);
 }
 
-type Scene = { repliques: Replique[]; tuto: boolean };
+/** `tuto` : une visite guidée (celle d'accueil ou les nouveautés : `visite`), qui attend le joueur à chaque étape. */
+type Scene = { repliques: Replique[]; tuto: boolean; visite: Visite | null };
 type Cote = "droite" | "gauche";
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -193,6 +226,7 @@ export function LeonardHote() {
   const minuteur = useRef<number | null>(null);
   const cible = useRef<Element | null>(null);
   const coteRef = useRef<Cote>("droite");
+  const visiteRef = useRef<Visite | null>(null);
 
   // ── décider d'apparaître ────────────────────────────────────────────
   const montrer = useCallback((sig: SignalLeonard) => {
@@ -205,8 +239,10 @@ export function LeonardHote() {
       if (Date.now() - lire<number>(CLE_DERNIER, 0) < ECART_MIN || n >= MAX_JOUR) return;
       if (Math.random() > (PROBA[sig.evt] ?? 1)) return;
     }
+    const visite: Visite | null = sig.evt === "tuto" || sig.evt === "nouveautes" ? sig.evt : null;
     let repliques: Replique[];
     if (sig.evt === "tuto") repliques = TUTO;
+    else if (sig.evt === "nouveautes") repliques = NOUVEAUTES;
     else {
       const r = choisir(sig.evt, sig.vars);
       if (!r) return;
@@ -223,8 +259,9 @@ export function LeonardHote() {
       setCalme(calmeVoulu());
       setI(0);
       setSortie(false);
-      setArrive(sig.evt !== "tuto");
-      setScene({ repliques, tuto: sig.evt === "tuto" });
+      visiteRef.current = visite;
+      setArrive(!visite);
+      setScene({ repliques, tuto: !!visite, visite });
     };
     prechauffer();
     if (sig.delai) window.setTimeout(lancer, sig.delai);
@@ -238,32 +275,42 @@ export function LeonardHote() {
     return () => window.removeEventListener(EVENEMENT_LEONARD, ecoute);
   }, [montrer]);
 
-  // l'accueil : la visite (une fois), le retour après une absence, ou un passage furtif par jour
+  // l'accueil : la visite (une fois), sinon les nouveautés (une fois par
+  // version), le retour après une absence, ou un passage furtif par jour
   useEffect(() => {
     if (pathname !== "/dashboard" || muet() || visible.current) return;
     let tutoFait = true;
+    let nouvFaites = true;
     try {
       tutoFait = localStorage.getItem(CLE_TUTO) === "1";
+      nouvFaites = nouveautesVuesIci();
     } catch {
       // stockage indisponible : pas de visite
     }
     const derniere = lire<number>(CLE_VISITE, 0);
     ecrire(CLE_VISITE, Date.now());
-    if (!tutoFait) {
+    if (!tutoFait || !nouvFaites) {
       let annule = false;
       let arret = () => {};
       prechauffer();
-      void visiteFaiteSurLeCompte().then((faite) => {
+      void etatDuCompte().then((compte) => {
         if (annule) return;
-        if (faite) {
+        if (!tutoFait) {
+          if (!compte.visite) {
+            arret = apresIntro(() => montrer({ evt: "tuto" }), 1600);
+            return;
+          }
           try {
             localStorage.setItem(CLE_TUTO, "1");
           } catch {
             // stockage indisponible
           }
+        }
+        if (compte.nouveautes) {
+          ecrire(CLE_NOUVEAUTES, VERSION_NOUVEAUTES);
           return;
         }
-        arret = apresIntro(() => montrer({ evt: "tuto" }), 1600);
+        arret = apresIntro(() => montrer({ evt: "nouveautes" }), 1600);
       });
       return () => {
         annule = true;
@@ -299,13 +346,17 @@ export function LeonardHote() {
     );
   }, []);
 
+  // la fin (ou « Passer ») d'une visite : retenue sur l'appareil et le compte ;
+  // celle d'accueil vaut aussi pour les nouveautés de cette version
   const finirTuto = useCallback(() => {
+    const v = visiteRef.current ?? "tuto";
     try {
-      localStorage.setItem(CLE_TUTO, "1");
+      if (v === "tuto") localStorage.setItem(CLE_TUTO, "1");
     } catch {
       // stockage indisponible
     }
-    retenirVisite();
+    ecrire(CLE_NOUVEAUTES, VERSION_NOUVEAUTES);
+    retenirVisite(v);
     fermer();
   }, [fermer]);
 
@@ -377,9 +428,21 @@ export function LeonardHote() {
     const attendre = (ms: number) => new Promise<void>((ok) => minuteurs.push(window.setTimeout(ok, ms)));
     setArrive(false);
     cible.current = null;
+    // une étape sans rien à montrer (facultative, ou sans adresse) : la suivante
+    const sauter = () => {
+      if (i + 1 < scene.repliques.length) setI(i + 1);
+      else finirTuto();
+    };
     (async () => {
-      const voulu = adresse(etape.page);
-      const chemin = voulu.split("?")[0];
+      const voulu = adresse(etape.page, etape.page.startsWith("/profil") ? await monId() : null);
+      if (fini) return;
+      if (!voulu) return sauter();
+      const [chemin, requete] = voulu.split("?");
+      // même page, autre onglet (?onglet=…) : arrivé quand l'adresse porte ses paramètres
+      const parametresOk = () => {
+        const ici = new URLSearchParams(window.location.search);
+        return [...new URLSearchParams(requete ?? "")].every(([k, v]) => ici.get(k) === v);
+      };
       if (window.location.pathname + window.location.search !== voulu) routeur.push(voulu);
       // la page (15 s au plus), puis l'élément (5 s de plus, sinon l'étape se joue sans projecteur)
       let el: Element | null = null;
@@ -387,10 +450,11 @@ export function LeonardHote() {
       for (let k = 0; k < 200 && !fini; k++) {
         const ici = window.location.pathname;
         if (pageMuette(ici)) break;
-        if (ici === chemin) {
+        if (ici === chemin && parametresOk()) {
           if (arrivee < 0) arrivee = k;
-          el = etape.cible ? premierVisible(etape.cible) : null;
-          if (!etape.cible || el || k - arrivee > 50) break;
+          // l'élément, sinon son repli (déjà là : l'élément voulu ne viendra pas)
+          el = etape.cible ? (premierVisible(etape.cible) ?? (etape.repli ? premierVisible(etape.repli) : null)) : null;
+          if (!etape.cible || el || k - arrivee > (etape.facultatif ? 25 : 50)) break;
         } else if (k >= 150) break;
         await attendre(100);
       }
@@ -401,6 +465,7 @@ export function LeonardHote() {
         fermer();
         return;
       }
+      if (etape.facultatif && !el) return sauter();
       const doux = !calmeVoulu();
       if (el) {
         // l'élément en haut de l'écran, sous la barre : Léonard et sa bulle occupent le bas
@@ -553,7 +618,7 @@ export function LeonardHote() {
         aria-live="polite"
         role={scene.tuto ? "dialog" : undefined}
         aria-modal={scene.tuto ? true : undefined}
-        aria-label={scene.tuto ? "Visite guidée avec Léonard" : undefined}
+        aria-label={scene.visite === "nouveautes" ? "Les nouveautés, avec Léonard" : scene.tuto ? "Visite guidée avec Léonard" : undefined}
         style={{ ["--leo-h" as string]: `${h}px`, ["--leo-w" as string]: `${w}px`, ...(pret ? null : { opacity: 0 }) }}
       >
         {enPlace && (
