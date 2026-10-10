@@ -74,37 +74,39 @@ const GRAINS = Array.from({ length: 26 }, () => ({
 
 // Les états peints : [x, y, largeur, hauteur] dans l'atlas, puis [x, y] dans
 // l'image. L'atlas existe en deux tailles : 1024 (repère de l'image) et 512.
-const ATLAS = [640, 338] as const;
+const ATLAS = [640, 302] as const;
 const ETATS: Record<string, readonly [number, number, number, number, number, number]> = {
-  "ciel": [182, 0, 204, 128, 224, 22],
-  "ville": [390, 0, 200, 128, 224, 138],
-  "chat-1": [304, 158, 102, 84, 416, 308],
-  "chat-2": [82, 158, 106, 90, 414, 308],
-  "chat-3": [192, 158, 108, 90, 412, 308],
-  "vapeur-3": [0, 158, 78, 122, 490, 230],
-  "vapeur-1": [102, 0, 76, 146, 494, 208],
-  "vapeur-2": [0, 0, 98, 154, 490, 200],
-  "flamme-lanterne-1": [410, 158, 50, 76, 214, 328],
-  "flamme-lanterne-2": [464, 158, 50, 76, 214, 328],
-  "flamme-lanterne-3": [518, 158, 50, 76, 214, 328],
-  "flamme-etageres-1": [80, 284, 50, 50, 572, 174],
-  "flamme-etageres-2": [134, 284, 50, 50, 572, 174],
-  "flamme-etageres-3": [188, 284, 50, 50, 572, 174],
-  "flamme-lampe-1": [572, 158, 36, 54, 750, 212],
-  "flamme-lampe-2": [0, 284, 36, 54, 750, 212],
-  "flamme-lampe-3": [40, 284, 36, 54, 750, 212],
-  "flamme-bougie-1": [242, 284, 26, 42, 930, 258],
-  "flamme-bougie-2": [272, 284, 26, 42, 930, 258],
-  "flamme-bougie-3": [302, 284, 26, 42, 930, 258],
+  "ciel": [0, 0, 204, 128, 224, 22],
+  "ville": [208, 0, 200, 128, 224, 138],
+  "vapeur-1": [412, 0, 74, 114, 496, 240],
+  "vapeur-2": [490, 0, 90, 114, 496, 240],
+  "vapeur-3": [0, 132, 72, 112, 496, 240],
+  "chat-1": [76, 132, 108, 90, 412, 308],
+  "chat-2": [188, 132, 108, 90, 412, 308],
+  "chat-3": [300, 132, 108, 90, 412, 308],
+  "flamme-lanterne-1": [412, 132, 50, 76, 214, 328],
+  "flamme-lanterne-2": [466, 132, 50, 76, 214, 328],
+  "flamme-lanterne-3": [520, 132, 50, 76, 214, 328],
+  "flamme-lampe-2": [574, 132, 36, 54, 750, 212],
+  "flamme-lampe-3": [0, 248, 36, 54, 750, 212],
+  "flamme-etageres-1": [40, 248, 50, 50, 572, 174],
+  "flamme-etageres-2": [94, 248, 50, 50, 572, 174],
+  "flamme-etageres-3": [148, 248, 50, 50, 572, 174],
+  "flamme-bougie-1": [202, 248, 26, 42, 930, 258],
+  "flamme-bougie-2": [232, 248, 26, 42, 930, 258],
+  "flamme-bougie-3": [262, 248, 26, 42, 930, 258],
 };
 
-// les quatre groupes de flammes : graine de l'enchaînement, et leur halo
-const FLAMMES = [
-  { g: "lanterne", graine: 3 },
-  { g: "etageres", graine: 5 },
-  { g: "lampe", graine: 13 },
-  { g: "bougie", graine: 29 },
-] as const;
+// les quatre groupes de flammes : graine de l'enchaînement, formes peintes
+// admises et leur opacité maximale. La lampe n'a plus sa forme 1 (traînée pâle
+// sans cœur : elle semblait s'éteindre) ; sa forme 2 et celle de la bougie
+// (molles) ne passent qu'à 60 %.
+const FLAMMES: { g: string; graine: number; formes: number[]; max?: Record<number, number> }[] = [
+  { g: "lanterne", graine: 3, formes: [1, 2, 3] },
+  { g: "etageres", graine: 5, formes: [1, 2, 3] },
+  { g: "lampe", graine: 13, formes: [2, 3], max: { 2: 0.6 } },
+  { g: "bougie", graine: 29, formes: [1, 2, 3], max: { 2: 0.6 } },
+];
 
 /** Position d'un calque en % de la scène, d'après un rectangle de l'image. */
 const boite = (x0: number, y0: number, x1: number, y1: number) => ({
@@ -132,16 +134,17 @@ const calque = (n: string, url: string) => {
  * fondus de 0,25 à 0,6 s ; la boucle revient à la base. Rend les images-clés
  * d'opacité des trois formes et celles du halo (la forme 3, haute, éclaire plus).
  */
-function vacillement(g: number) {
+function vacillement(g: number, formes: number[], max: Record<number, number> = {}) {
   const r = graine(g);
   r();
   const ev: { t: number; f: number; de: number; a: number }[] = [];
   let t = 0, cur = 0;
   for (let i = 0; i < 24 || cur !== 0; i++) {
     t += 0.08 + r() * r() * 1.1;
-    let a = r() < 0.2 ? 0 : 1 + Math.floor(r() * 3);
+    const une = () => formes[Math.floor(r() * formes.length)];
+    let a = r() < 0.2 ? 0 : une();
     if (i >= 24) a = 0;
-    if (a === cur) a = cur === 0 ? 1 + Math.floor(r() * 3) : 0;
+    if (a === cur) a = cur === 0 ? une() : 0;
     const f = 0.25 + r() * 0.35;
     ev.push({ t, f, de: cur, a });
     t += f;
@@ -157,19 +160,31 @@ function vacillement(g: number) {
     k.push({ offset: 1, opacity: val(0) });
     return k;
   };
-  const LUM = [0.6, 0.48, 0.54, 1];
-  return { T, formes: [1, 2, 3].map((j) => cles((e) => (e === j ? 1 : 0))), halo: cles((e) => LUM[e]) };
+  // halo : presque rien sur la base (au repos, même lumière que l'image fixe)
+  const LUM = [0.15, 0.3, 0.4, 0.7];
+  return {
+    T,
+    formes: formes.map((j) => [j, cles((e) => (e === j ? (max[j] ?? 1) : 0))] as const),
+    halo: cles((e) => LUM[e] * (max[e] ?? 1)),
+  };
 }
 
-/** Une bouffée de vapeur : entre par le bas, tient en montant un peu, s'en va plus haut. */
-const bouffee = (T: number, entre: number, plein: number, quitte: number, fin: number): Keyframe[] => [
-  { offset: 0, opacity: 0, transform: "translateY(4%)" },
-  { offset: entre / T, opacity: 0, transform: "translateY(4%)", easing: "ease-out" },
-  { offset: plein / T, opacity: 1, transform: "translateY(0%)" },
-  { offset: quitte / T, opacity: 1, transform: "translateY(-1%)", easing: "ease-in" },
-  { offset: fin / T, opacity: 0, transform: "translateY(-5%)" },
-  { offset: 1, opacity: 0, transform: "translateY(-5%)" },
-];
+/**
+ * Une bouffée de vapeur : monte d'un mouvement continu (de +8 % à −14 % de sa
+ * hauteur, linéaire) pendant toute sa présence ; entre par le bas, s'efface
+ * longuement en haut. Les bouffées se chevauchent : elles se relaient en montant.
+ */
+const bouffee = (T: number, entre: number, plein: number, quitte: number, fin: number): Keyframe[] => {
+  const y = (t: number) => `translateY(${(8 - (22 * (t - entre)) / (fin - entre)).toFixed(2)}%)`;
+  return [
+    { offset: 0, opacity: 0, transform: y(entre) },
+    { offset: entre / T, opacity: 0, transform: y(entre) },
+    { offset: plein / T, opacity: 1, transform: y(plein) },
+    { offset: quitte / T, opacity: 1, transform: y(quitte) },
+    { offset: fin / T, opacity: 0, transform: y(fin) },
+    { offset: 1, opacity: 0, transform: y(fin) },
+  ];
+};
 
 /** Un fondu lent aller-retour (ciel, ville), avec des paliers aux deux bouts. */
 const lent = (a: number, b: number, c: number, d: number): Keyframe[] => [
@@ -320,16 +335,24 @@ export function EffetsAtelier() {
       liste.push(a);
     };
     // flammes : chaque groupe a son enchaînement, sa durée, son départ
-    FLAMMES.forEach(({ g, graine: gr }, i) => {
-      const v = vacillement(gr);
-      v.formes.forEach((k, j) => joue(`flamme-${g}-${j + 1}`, k, v.T, i * 1.7));
+    // à l'arrivée de l'atlas, états et halos entrent en fondu (pas de saut sur l'image fixe)
+    for (const n of ["etats", "lumiere"]) {
+      const e = el.querySelector(`[data-n="${n}"]`);
+      if (!e) continue;
+      const a = e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 3000, easing: "ease-in-out", fill: "forwards" });
+      a.pause();
+      liste.push(a);
+    }
+    FLAMMES.forEach(({ g, graine: gr, formes, max }, i) => {
+      const v = vacillement(gr, formes, max);
+      v.formes.forEach(([j, k]) => joue(`flamme-${g}-${j}`, k, v.T, i * 1.7));
       joue(`halo-${g}`, v.halo, v.T, i * 1.7);
     });
     // vapeur : naissante, deux volutes à gauche, deux à droite, puis rien que la tasse
     const TV = 10.4;
-    joue("vapeur-3", bouffee(TV, 0.2, 1.8, 2.8, 4.4), TV);
-    joue("vapeur-1", bouffee(TV, 2.8, 4.4, 5.6, 7.2), TV);
-    joue("vapeur-2", bouffee(TV, 5.6, 7.2, 8.2, 10), TV);
+    joue("vapeur-3", bouffee(TV, 0.2, 1.4, 2.6, 5), TV);
+    joue("vapeur-1", bouffee(TV, 2.8, 4, 5.2, 7.6), TV);
+    joue("vapeur-2", bouffee(TV, 5.4, 6.6, 7.6, 10.2), TV);
     // chat : trois degrés du même souffle, posés l'un sur l'autre (pas de double contour)
     const TC = 4.8;
     const souffle = (a: number, b: number, c: number, d: number, max = 1): Keyframe[] => [
@@ -340,12 +363,15 @@ export function EffetsAtelier() {
       { offset: d, opacity: 0 },
       { offset: 1, opacity: 0 },
     ];
-    joue("chat-1", souffle(0.04, 0.24, 0.84, 0.98), TC, 0.6);
-    joue("chat-2", souffle(0.18, 0.38, 0.72, 0.87), TC, 0.6);
-    joue("chat-3", souffle(0.32, 0.5, 0.6, 0.76, 0.92), TC, 0.6);
+    // inspire, expire, puis un long repos sur la base nette (≈ 35 % du cycle)
+    joue("chat-1", souffle(0.06, 0.3, 0.55, 0.7), TC);
+    joue("chat-2", souffle(0.14, 0.36, 0.5, 0.64), TC);
+    joue("chat-3", souffle(0.22, 0.4, 0.46, 0.6, 0.92), TC);
     // ciel et ville : lents, désaccordés
-    joue("ciel", lent(0.08, 0.42, 0.56, 0.92), 72, 20);
-    joue("ville", lent(0.1, 0.4, 0.58, 0.9), 96, 64);
+    // départ sur le palier « image fixe », puis changements lents ; fondu du ciel
+    // court (≈ 9 s) et longs paliers : les nuages doublés se voient moins longtemps
+    joue("ciel", lent(0.2, 0.32, 0.68, 0.8), 72, 5);
+    joue("ville", lent(0.1, 0.4, 0.58, 0.9), 96, 5);
     anims.current = liste;
     if (marche.current) liste.forEach((a) => a.play());
     return () => {
@@ -358,9 +384,14 @@ export function EffetsAtelier() {
     <div ref={racine} className={s.effets} data-arret="1">
       {pret && (
         <>
-          {atlas &&
-            Object.keys(ETATS).map((n) => <div key={n} data-n={n} className={s.etat} style={calque(n, atlas)} />)}
-          <svg className={s.lumiere} viewBox="0 0 1024 572" preserveAspectRatio="none">
+          {atlas && (
+            <div data-n="etats" className={s.etats}>
+              {Object.keys(ETATS).map((n) => (
+                <div key={n} data-n={n} className={s.etat} style={calque(n, atlas)} />
+              ))}
+            </div>
+          )}
+          <svg data-n="lumiere" className={s.lumiere} viewBox="0 0 1024 572" preserveAspectRatio="none">
             <defs>
               <radialGradient id={id + "h"}>
                 <stop offset="0" stopColor="#ffb24f" stopOpacity=".3" />

@@ -65,7 +65,12 @@
 /* les états peints (atlas etats-1024|512.webp) : invisibles au repos, leurs
    fondus d'opacité (et la petite montée de la vapeur) viennent des Web
    Animations d'EffetsAtelier */
+.etats {
+  inset: 0;
+  opacity: 0;
+}
 .etat {
+  position: absolute;
   opacity: 0;
   background-repeat: no-repeat;
 }
@@ -75,7 +80,7 @@
   mix-blend-mode: screen;
 }
 .halo {
-  opacity: 0.6;
+  opacity: 0;
 }
 .codex * {
   transform-box: fill-box;
