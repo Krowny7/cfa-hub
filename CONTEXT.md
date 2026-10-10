@@ -220,9 +220,13 @@ des questions, l'adaptation et le chrono sont dans `lib/atelier.ts` (pur,
 actions serveur (`app/atelier/actions.ts`) et notés avec la clé service
 (`atelier_ajouter_calc`, `atelier_noter_calc`, fermées aux joueurs). XP des
 séries éclair sur les questions neuves et les calculs (première bonne
-réponse), rien sur les ratures rejouées ni au re-test. Ses réponses comptent
-dans les stats (source `atelier`), le carnet, l'anneau du jour et
-`_reponses_joueur`. Tant que la table manque, ou par thème, aucun point
+réponse), rien sur les ratures rejouées ni au re-test. Le pool et l'XP
+raisonnent par énoncé (l'« officielle » d'un drill copie une question de la
+banque) : un énoncé du carnet n'est jamais « neuf », une copie déjà jouée
+passe pour vue. Ses réponses comptent dans les stats (source `atelier`), le
+carnet, l'anneau du jour et `_reponses_joueur` (par `_reponses_atelier`,
+qu'un nouveau collage de `migration_notions.sql` ne touche pas) ; le re-test
+d'un calcul n'entre pas dans `calc_attempts`. Tant que la table manque, ou par thème, aucun point
 d'entrée ne s'affiche et `/atelier` dit « bientôt ».
 
 Autour : la tuile « Ton point faible » de l'accueil

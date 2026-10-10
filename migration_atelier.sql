@@ -24,18 +24,18 @@
 --   clôture rend le même bilan. Un Atelier se reprend dans les 24 heures qui
 --   suivent la dernière réponse, sinon il se clôt tout seul.
 -- - atelier_courant : l'Atelier en cours (reprise), sinon rien.
--- - _reponses_joueur (migration_notions.sql) compte désormais les réponses
---   de l'Atelier (premier passage seulement) : « Tes points faibles » bouge
---   dès la sortie. Recoller migration_notions.sql après celle-ci retire
---   l'Atelier de ce compte : recoller alors celle-ci.
+-- - _reponses_atelier remplit la part Atelier de _reponses_joueur
+--   (migration_notions.sql) : premier passage seulement. « Tes points
+--   faibles » bouge dès la sortie. Recoller migration_notions.sql ensuite ne
+--   la retire pas.
 -- Pas d'ELO, pas de classement.
 -- À coller une fois dans le SQL Editor de Supabase, APRÈS
 -- migration_notions.sql. Idempotent.
 
 DO $$
 BEGIN
-  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NULL THEN
-    RAISE EXCEPTION 'Colle d''abord migration_notions.sql';
+  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NULL OR to_regprocedure('public._reponses_atelier(uuid)') IS NULL THEN
+    RAISE EXCEPTION 'Colle d''abord migration_notions.sql (sa dernière version)';
   END IF;
 END $$;
 
@@ -308,12 +308,22 @@ BEGIN
     ORDER BY (rat.rn - 0.5) / w.poids, rat.notion, rat.rn
     LIMIT 16
   ),
+  -- tout se compte par énoncé : la copie d'un drill (l'« officielle »)
+  -- reprend une question de la banque, sous un autre id
   vues AS (
-    SELECT question_id, max(at) AS vue_le FROM _reponses_joueur(v_uid) GROUP BY question_id
+    SELECT md5(qq.prompt) AS h, max(r.at) AS vue_le
+    FROM _reponses_joueur(v_uid) r JOIN quiz_questions qq ON qq.id = r.question_id
+    GROUP BY 1
+  ),
+  carnet AS (
+    SELECT md5(r.prompt) AS h FROM ratures r WHERE r.user_id = v_uid
+    UNION
+    SELECT md5(qq.prompt) FROM ratures r JOIN quiz_questions qq ON qq.id = r.question_id WHERE r.user_id = v_uid
   ),
   -- questions neuves : de la banque officielle, une seule par énoncé (la
   -- copie d'un drill porte son niveau), jamais vues d'abord, sinon les moins
-  -- récentes ; ni au carnet, ni aux défis du jour, ni mock officiel, ni réserve
+  -- récentes ; aucun énoncé du carnet, ni défis du jour, ni mock officiel,
+  -- ni réserve
   neuves AS (
     SELECT DISTINCT ON (qq.notion, md5(qq.prompt))
            qq.id AS q, qq.notion, v.vue_le,
@@ -321,14 +331,14 @@ BEGIN
     FROM quiz_questions qq
     JOIN quiz_sets qs ON qs.id = qq.set_id AND qs.is_official = true AND qs.official_published = true
     LEFT JOIN library_folders lf ON lf.id = qs.folder_id
-    LEFT JOIN vues v ON v.question_id = qq.id
+    LEFT JOIN vues v ON v.h = md5(qq.prompt)
     WHERE qq.notion = ANY (v_notions)
       AND coalesce(array_length(qq.choices, 1), 0) BETWEEN 2 AND 5
       AND qq.correct_index >= 0 AND qq.correct_index < coalesce(array_length(qq.choices, 1), 0)
       AND NOT (qq.id = ANY (v_exclude))
       AND lf.name IS DISTINCT FROM 'Mocks Officiels (Système)'
       AND qs.title NOT LIKE 'Réserve — %'
-      AND NOT EXISTS (SELECT 1 FROM ratures r WHERE r.user_id = v_uid AND r.question_id = qq.id)
+      AND NOT EXISTS (SELECT 1 FROM carnet c WHERE c.h = md5(qq.prompt))
     ORDER BY qq.notion, md5(qq.prompt), (v.vue_le IS NOT NULL), v.vue_le, (qs.title LIKE '% — Drill Fiche Page %') DESC, qq.id
   ),
   neuves_rang AS (
@@ -490,12 +500,16 @@ BEGIN
     v_statut := v_rr->>'statut';
   ELSE
     -- question neuve : manquée, elle entre au carnet ; juste, XP de la
-    -- première bonne réponse (comme les séries éclair)
+    -- première bonne réponse (comme les séries éclair), une fois par énoncé
+    -- (la copie d'une question déjà réussie ne rapporte rien)
     PERFORM _rature_note(v_uid, v_qid, 'atelier', v_ok, p_choix, now(), now());
     v_statut := CASE WHEN v_ok THEN 'juste' ELSE 'nouvelle' END;
     IF v_ok AND v_k = 'neuve' AND v_q.id IS NOT NULL THEN
       INSERT INTO quiz_question_progress (user_id, question_id) VALUES (v_uid, v_qid) ON CONFLICT DO NOTHING;
-      IF FOUND THEN
+      IF FOUND AND NOT EXISTS (
+        SELECT 1 FROM quiz_question_progress p JOIN quiz_questions q2 ON q2.id = p.question_id
+        WHERE p.user_id = v_uid AND p.question_id <> v_qid AND q2.prompt = v_q.prompt
+      ) THEN
         SELECT qs.difficulty, lf.name INTO v_diff, v_topic
         FROM quiz_sets qs LEFT JOIN library_folders lf ON lf.id = qs.folder_id WHERE qs.id = v_q.set_id;
         v_xp := CASE coalesce(v_diff, 1) WHEN 2 THEN 15 WHEN 3 THEN 20 ELSE 10 END;
@@ -657,70 +671,14 @@ BEGIN
 END;
 $$;
 
--- 9. Les réponses d'un joueur (migration_notions.sql), réponses de l'Atelier
---    comprises : premier passage des ratures et des questions neuves (le
---    re-test suit une correction toute fraîche ; les calculs sont déjà dans
---    calc_attempts). Le reste est inchangé.
-CREATE OR REPLACE FUNCTION _reponses_joueur(p_uid uuid)
+-- 9. Les réponses de l'Atelier, pour _reponses_joueur (migration_notions.sql) :
+--    premier passage des ratures et des questions neuves (le re-test suit
+--    une correction toute fraîche ; les calculs sont dans calc_attempts).
+CREATE OR REPLACE FUNCTION _reponses_atelier(p_uid uuid)
 RETURNS TABLE (question_id uuid, source text, ok boolean, at timestamptz)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
-  WITH copies AS (
-    SELECT x AS e, 'practice'::text AS src, r.completed_at AS at
-    FROM practice_session_results r CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.answers) = 'array' THEN r.answers ELSE '[]'::jsonb END) AS x
-    WHERE r.user_id = p_uid
-    UNION ALL
-    SELECT x, 'mock', r.completed_at
-    FROM mock_exam_results r CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.answers) = 'array' THEN r.answers ELSE '[]'::jsonb END) AS x
-    WHERE r.user_id = p_uid
-    UNION ALL
-    SELECT x, 'qcm', r.created_at
-    FROM quiz_attempts r CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.answers) = 'array' THEN r.answers ELSE '[]'::jsonb END) AS x
-    WHERE r.user_id = p_uid
-  ),
-  copies_lues AS (
-    SELECT src, at,
-           CASE WHEN jsonb_typeof(e) = 'object' AND e->>'question_id' ~* '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$' THEN (e->>'question_id')::uuid END AS qid,
-           CASE WHEN jsonb_typeof(e) = 'object' AND e->>'selected_index' ~ '^[0-9]{1,3}$' THEN (e->>'selected_index')::int END AS sel
-    FROM copies
-  ),
-  defis AS (
-    SELECT t.challenge_id,
-           coalesce(t.finished_at, t.started_at + make_interval(secs => coalesce(c.time_limit_seconds, 2700) + 20)) AS cloture
-    FROM daily_attempts t JOIN daily_challenges c ON c.id = t.challenge_id
-    WHERE t.user_id = p_uid
-  ),
-  duels_joues AS (
-    SELECT d.id,
-           CASE WHEN d.status IN ('finished', 'declined', 'expired') THEN coalesce(d.finished_at, now())
-                ELSE greatest(d.expires_at, coalesce(j.started_at, now()) + make_interval(secs => coalesce(d.time_limit_seconds, 2700) + 20)) END AS cloture
-    FROM duels d
-    CROSS JOIN LATERAL (VALUES (d.challenger_id, d.challenger_started_at), (d.opponent_id, d.opponent_started_at)) AS j(user_id, started_at)
-    WHERE j.user_id = p_uid
-  )
-  SELECT l.question_id, 'fiche'::text, l.is_correct, least(l.answered_at, now())
-  FROM quiz_answer_log l
-  WHERE l.user_id = p_uid
-  UNION ALL
-  SELECT a.question_id, 'daily', a.is_correct, a.answered_at
-  FROM daily_answers a JOIN defis d ON d.challenge_id = a.challenge_id
-  WHERE a.user_id = p_uid AND a.selected_index IS NOT NULL AND a.question_id IS NOT NULL AND a.is_correct IS NOT NULL AND d.cloture <= now()
-  UNION ALL
-  SELECT a.question_id, 'duel', a.is_correct, a.answered_at
-  FROM duel_answers a JOIN duels_joues j ON j.id = a.duel_id
-  WHERE a.user_id = p_uid AND a.selected_index IS NOT NULL AND a.is_correct IS NOT NULL AND j.cloture <= now()
-  UNION ALL
-  SELECT t.qid, 'eclair', e.answers[t.pos] = qq.correct_index, coalesce(e.finished_at, e.started_at)
-  FROM eclair_series e
-  CROSS JOIN LATERAL unnest(e.question_ids) WITH ORDINALITY AS t(qid, pos)
-  JOIN quiz_questions qq ON qq.id = t.qid
-  WHERE e.user_id = p_uid AND e.answers[t.pos] IS NOT NULL
-  UNION ALL
-  SELECT c.qid, c.src, c.sel = qq.correct_index, c.at
-  FROM copies_lues c JOIN quiz_questions qq ON qq.id = c.qid
-  WHERE c.qid IS NOT NULL AND c.sel IS NOT NULL AND c.at IS NOT NULL AND c.sel < coalesce(array_length(qq.choices, 1), 0)
-  UNION ALL
-  SELECT (x->>'q')::uuid, 'atelier', (x->>'ok')::boolean, (x->>'at')::timestamptz
+  SELECT (x->>'q')::uuid, 'atelier'::text, (x->>'ok')::boolean, (x->>'at')::timestamptz
   FROM ateliers a CROSS JOIN LATERAL jsonb_array_elements(a.reponses) AS x
   WHERE a.user_id = p_uid AND x->>'k' IN ('rature', 'neuve') AND NOT coalesce((x->>'r')::boolean, false);
 $$;
@@ -730,7 +688,7 @@ REVOKE ALL ON FUNCTION _atelier_json(ateliers) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _atelier_clore(uuid, int) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _atelier_clore_anciens(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _atelier_secondes(ateliers, int) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION _reponses_joueur(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _reponses_atelier(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION atelier_lancer(text[]) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION atelier_courant() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION atelier_repondre(uuid, int, int, boolean, int) FROM PUBLIC, anon;
