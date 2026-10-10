@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { statsProfil } from "@/lib/profil/donnees";
-import { marquerVus, sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { marquerVus, recalculerSceaux, sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import type { Visibilite } from "@/lib/profil/catalogue";
 
 // Les gestes du joueur sur ses Sceaux (migration_profil_sceaux.sql), tous
@@ -40,7 +40,7 @@ export async function poserSceaux(cles: string[]): Promise<ResultatSceaux> {
   if (!admin) return { ok: false, raison: "indisponible" };
   const liste = [...new Set((Array.isArray(cles) ? cles : []).filter((c) => typeof c === "string"))];
   if (liste.length > 3) return { ok: false, raison: "refus" };
-  const { etats, base } = await sceauxDuJoueur(user.id, await statsProfil(user.id, supabase), supabase);
+  const { etats, base } = await sceauxDuJoueur(user.id, await statsProfil(user.id, supabase));
   if (!base) return { ok: false, raison: "indisponible" };
   if (!liste.every((c) => etats.some((e) => e.def.cle === c && e.palier > 0))) return { ok: false, raison: "refus" };
   const { error } = await admin.from("profile_style").upsert({ user_id: user.id, pins: liste, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
@@ -66,13 +66,14 @@ export type SceauAFeter = { cle: string; palier: 1 | 2 | 3 };
 
 /**
  * Fin de session : recalcule mes sceaux tout de suite (sans attendre les
- * 10 min) et rend ceux que la cérémonie n'a pas encore fêtés, les plus hauts
- * paliers d'abord. Rien sans la base, ni hors connexion.
+ * 10 min ; au plus toutes les 30 s) et rend ceux que la cérémonie n'a pas
+ * encore fêtés, les plus hauts paliers d'abord. Rien sans la base, ni hors
+ * connexion.
  */
 export async function sceauxAFeter(): Promise<{ id: string; sceaux: SceauAFeter[] } | null> {
   const { supabase, user } = await joueur();
   if (!user) return null;
-  const { gardes } = await sceauxDuJoueur(user.id, await statsProfil(user.id, supabase), supabase, { forcer: true });
+  const gardes = await recalculerSceaux(user.id, () => statsProfil(user.id, supabase));
   if (!gardes) return null;
   const sceaux = gardes
     .filter((g) => !g.vu)

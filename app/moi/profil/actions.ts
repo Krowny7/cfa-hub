@@ -46,7 +46,7 @@ export async function enregistrerProfil(input: {
 
   // ce qui ouvre les pièces gagnées : questions, pic, sceaux ; et ce qu'il porte déjà (on ne reprend rien)
   const stats = await statsProfil(user.id, supabase);
-  const [{ etats }, { style: porte }] = await Promise.all([sceauxDuJoueur(user.id, stats, supabase), lireStyle(admin, user.id)]);
+  const [{ etats }, { style: porte }] = await Promise.all([sceauxDuJoueur(user.id, stats), lireStyle(admin, user.id)]);
   // l'image de bannière doit venir du dossier du joueur dans le stockage
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
   const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;

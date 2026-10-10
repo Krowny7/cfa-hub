@@ -147,7 +147,8 @@ export function FinDeSession({
   // Léonard réagit à la session (une fois par session : clé = questions + score),
   // ou au signal propre à l'écran (prop leonard, l'Atelier), sauf si un sceau
   // vient d'être gagné : la cérémonie l'appelle à sa place. Sans réponse de la
-  // cérémonie au bout de 4 s, il réagit à la session.
+  // cérémonie au bout de 4 s, il réagit à la session, et une réponse plus
+  // tardive ne le rappelle pas (une seule apparition).
   const reaction = useRef<{ sig: SignalLeonard | null; cle: string; parti: boolean; debut: number }>({ sig: null, cle: "", parti: false, debut: 0 });
   const reagir = useCallback(() => {
     const l = reaction.current;
@@ -227,8 +228,12 @@ export function FinDeSession({
         <CeremonieSceaux
           className="mt-8"
           onResultat={(n) => {
-            if (n > 0) reaction.current.parti = true;
-            else reagir();
+            if (n > 0 && !reaction.current.parti) {
+              reaction.current.parti = true;
+              return true;
+            }
+            reagir();
+            return false;
           }}
         />
       )}

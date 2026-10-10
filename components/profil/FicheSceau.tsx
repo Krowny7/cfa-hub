@@ -74,6 +74,8 @@ export function FicheSceau({ e, onFermer }: { e: EtatSceau | null; onFermer: () 
                 );
               })}
             </ol>
+            {/* la dorure de chaque sceau compte pour le cadre « Dorure » : une ligne discrète, tant qu'il n'est pas doré */}
+            {CADRE_DORURES && e.palier < 3 && <p className="t-micro m-0 mt-2.5">{SCEAUX_TXT.debloqueDorures(CADRE_DORURES.nom, CADRE_DORURES.n)}</p>}
           </div>
 
           <Debloque cle={e.def.cle} />
@@ -87,12 +89,10 @@ export function FicheSceau({ e, onFermer }: { e: EtatSceau | null; onFermer: () 
   );
 }
 
-/** Les pièces que ce sceau ouvre : une bannière ou un cadre à un palier, et sa dorure qui compte pour le cadre « Dorure ». */
+/** Les pièces que ce sceau ouvre à un palier (une bannière, un cadre) ; rien s'il n'en ouvre aucune. */
 function Debloque({ cle }: { cle: string }) {
-  const lignes = [
-    ...piecesDuSceau(cle).map((p) => SCEAUX_TXT.debloquePiece(p.type, p.nom, p.palier)),
-    ...(CADRE_DORURES ? [SCEAUX_TXT.debloqueDorures(CADRE_DORURES.nom, CADRE_DORURES.n)] : []),
-  ];
+  const lignes = piecesDuSceau(cle).map((p) => SCEAUX_TXT.debloquePiece(p.type, p.nom, p.palier));
+  if (!lignes.length) return null;
   return (
     <div>
       <p className="t-eyebrow m-0 mb-1.5">{SCEAUX_TXT.debloque}</p>
@@ -137,12 +137,12 @@ function Poser({ cle }: { cle: string }) {
       {pose ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="m-0 text-[14px] font-semibold">{SCEAUX_TXT.pose}</p>
-          <button type="button" className="btn btn-secondary" disabled={choix.enCours} onClick={() => choix.retirer(cle)}>
+          <button type="button" className="btn btn-secondary min-h-[44px]" disabled={choix.enCours} onClick={() => choix.retirer(cle)}>
             {SCEAUX_TXT.retirer}
           </button>
         </div>
       ) : choix.poses.length < 3 ? (
-        <button type="button" className="btn btn-primary w-full" disabled={choix.enCours} onClick={() => choix.poser(cle)}>
+        <button type="button" className="btn btn-primary min-h-[44px] w-full" disabled={choix.enCours} onClick={() => choix.poser(cle)}>
           {SCEAUX_TXT.poser}
         </button>
       ) : (
@@ -152,7 +152,7 @@ function Poser({ cle }: { cle: string }) {
             {choix.poses.map((ancien) => {
               const d = defSceau(ancien);
               return (
-                <button key={ancien} type="button" className="btn btn-secondary" disabled={choix.enCours} onClick={() => choix.remplacer(ancien, cle)}>
+                <button key={ancien} type="button" className="btn btn-secondary min-h-[44px]" disabled={choix.enCours} onClick={() => choix.remplacer(ancien, cle)}>
                   {d ? nomSceau(d) : ancien}
                 </button>
               );

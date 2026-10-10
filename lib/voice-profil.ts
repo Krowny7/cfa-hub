@@ -218,8 +218,9 @@ export const SCEAUX_TXT = {
   poserErreur: "Impossible pour l'instant. Réessaie dans un instant.",
   // le lien entre un sceau et les pièces qu'il ouvre
   debloque: "Débloque",
-  debloquePiece: (type: "cadre" | "banniere", nom: string, palier: number) => `${type === "cadre" ? "le cadre" : "la bannière"} « ${nom} » au palier ${PALIERS[palier]}`,
-  debloqueDorures: (nom: string, n: number) => `à la dorure, il compte pour le cadre « ${nom} » (${pluriel(n, "sceau doré", "sceaux dorés")})`,
+  debloquePiece: (type: "cadre" | "banniere", nom: string, palier: number) => `${type === "cadre" ? "Cadre" : "Bannière"} « ${nom} » au palier ${PALIERS[palier]}`,
+  /** sous les paliers, tant que le sceau n'est pas doré */
+  debloqueDorures: (nom: string, n: number) => `À la dorure : compte pour le cadre « ${nom} » (${pluriel(n, "sceau doré", "sceaux dorés")})`,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -240,6 +241,8 @@ export const PERSO = {
   modifier: (zone: string) => `Modifier : ${zone}`,
   monProfil: "Mon profil",
   gagnes: "Gagnés",
+  /** les bannières */
+  gagnees: "Gagnées",
   aGagner: "À gagner",
   /** la pièce bouge : la marque sur sa vignette */
   bouge: "bouge",
@@ -442,17 +445,21 @@ export const JOURNAL = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Qui voit quoi : un seul jeu de mots partout (Journal, LinkedIn, prénom et nom)
+
+export const VISIBILITE = { public: "Tous", friends: "Amis", private: "Moi seul" } as const;
+
 // Le réglage du Journal (Moi › Réglages › Confidentialité)
 
 export const REGLAGE_JOURNAL = {
   titre: "Qui voit mon Journal",
   choix: [
-    { key: "public", label: "Tous", aide: "Tous les joueurs voient ta courbe d'ELO, ton carnet de jours et ton fil." },
-    { key: "friends", label: "Amis", aide: "Seuls tes amis voient ton Journal." },
-    { key: "private", label: "Moi seul", aide: "Ton Journal est gardé pour toi." },
+    { key: "public", label: VISIBILITE.public, aide: "Tous les joueurs voient ta courbe d'ELO, ton carnet de jours et ton fil." },
+    { key: "friends", label: VISIBILITE.friends, aide: "Seuls tes amis voient ton Journal." },
+    { key: "private", label: VISIBILITE.private, aide: "Ton Journal est gardé pour toi." },
   ],
   bientot: "Bientôt disponible.",
-  erreur: "Réglage impossible à lire pour l'instant.",
-  reessayer: "Réessayer",
+  /** comme la présence, juste au-dessus : toute la ligne relance la lecture */
+  erreur: "Réglage impossible à lire pour l'instant : touche pour réessayer.",
   echec: "Pas enregistré. Réessaie dans un instant.",
 } as const;

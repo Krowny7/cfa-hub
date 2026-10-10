@@ -58,7 +58,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     getAnswerStats(supabase, id, { detail: false }).catch(() => null),
     trophees(supabase, id),
     progression(supabase, id),
-    statsLues.then((s) => sceauxDuJoueur(id, s, supabase)),
+    statsLues.then((s) => sceauxDuJoueur(id, s)),
     datesDuPic(supabase, id),
   ]);
 

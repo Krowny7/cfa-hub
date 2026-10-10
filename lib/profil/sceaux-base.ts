@@ -2,23 +2,29 @@ import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TIERS, TOP_TIER, rankFor } from "@/lib/ranks";
+import { jourParis } from "@/lib/objectif";
 import type { ProfilStats } from "@/lib/profil/catalogue";
 import type { MentionDuel } from "@/components/adn/Sceau";
-import { paliersMesures, sceauxDe, type EtatSceau, type MesuresBase, type Palier, type Rarete, type SceauGarde } from "@/lib/profil/sceaux";
+import { paliersMesures, sceauxDe, type DatePalier, type EtatSceau, type MesuresBase, type Palier, type Rarete, type SceauGarde } from "@/lib/profil/sceaux";
 
 // Les Sceaux gardés en base (migration_profil_sceaux.sql), côté serveur :
 // - les mesures des 6 sceaux de la base (mentions de duel, Coup d'éclat,
-//   Mise au propre), lues avec le client admin ;
+//   Mise au propre), lues avec le client admin, en cache jusqu'au calcul
+//   suivant (10 min au plus) ;
 // - l'attribution : les paliers du jour (seuils de lib/profil/sceaux.ts)
 //   envoyés à rl_sceaux_attribuer, qui ne fait que monter. À la lecture d'un
-//   profil, au plus toutes les 10 min (sceaux_calculs) ; en fin de session,
-//   toujours (sceauxAFeter) ;
+//   profil, au plus toutes les 10 min (sceaux_calculs) ; en fin de session
+//   (sceauxAFeter), sur des mesures fraîches, au plus toutes les 30 s ;
 // - la rareté, en cache 1 h.
-// Sans la migration (table ou fonction absente) : null partout, et le profil
-// garde les sceaux dérivés de l'étape 1, sans erreur. Module serveur.
+// Les dates ne quittent ce module qu'au jour de Paris : jamais l'heure.
+// Sans la migration (table ou fonction absente), ou sans client admin : null
+// partout, et le profil garde les sceaux dérivés de l'étape 1, sans erreur.
+// Module serveur.
 
 /** Le recalcul à la lecture d'un profil : au plus toutes les 10 min. */
 const CALCUL_MS = 10 * 60_000;
+/** Le recalcul de fin de session : au plus toutes les 30 s (l'action peut être appelée en boucle). */
+const FETE_MS = 30_000;
 /** Coup d'éclat : les candidats « Top 10 » vérifiés au plus (les plus hauts ELO d'abord). */
 const CANDIDATS_TOP = 5;
 
@@ -36,13 +42,17 @@ export function baseAbsente(e: { code?: string; message?: string } | null | unde
 }
 
 type LigneSceau = { cle: string; palier: number; dates: string[] | null; retro: boolean; vu: boolean };
-const garde = (r: LigneSceau): SceauGarde => ({
-  cle: r.cle,
-  palier: Math.max(1, Math.min(3, Number(r.palier) || 1)) as Palier,
-  dates: (r.dates ?? []).map((d) => new Date(d).toISOString()),
-  retro: !!r.retro,
-  vu: !!r.vu,
-});
+/** Une ligne de la table : les dates ramenées au jour de Paris (« avant le » se lit avant, à l'instant près). */
+function garde(r: LigneSceau): SceauGarde {
+  const instants = (r.dates ?? []).map((d) => new Date(d).getTime());
+  return {
+    cle: r.cle,
+    palier: Math.max(1, Math.min(3, Number(r.palier) || 1)) as Palier,
+    dates: instants.map((t): DatePalier => ({ iso: jourParis(t), avant: !!r.retro && t === instants[0] })),
+    retro: !!r.retro,
+    vu: !!r.vu,
+  };
+}
 
 /** Les sceaux gardés d'un joueur ; null si la base n'est pas prête (ou au moindre souci). */
 async function lireGardes(sb: SupabaseClient, id: string): Promise<SceauGarde[] | null> {
@@ -94,28 +104,48 @@ async function coupDeclat(sb: SupabaseClient, id: string): Promise<number> {
     if (lui >= TIERS[TOP_TIER].min) candidats.push({ moi, lui, autre, le: d.finished_at });
   }
   candidats.sort((a, b) => b.lui - a.lui);
-  for (const c of candidats.slice(0, CANDIDATS_TOP)) {
-    const { data: place, error: e } = await sb.rpc("rl_place_au", { p_elo: c.lui, p_moment: c.le, p_exclus: [id, c.autre] });
-    if (e) break;
-    // les deux joueurs sont exclus du compte : le vainqueur passe devant s'il était plus haut
-    const rang = Number(place) + (c.moi > c.lui ? 1 : 0);
-    if (rankFor(c.lui, null, rang).tierIndex === TOP_TIER) return 3;
-  }
-  return Math.max(0, meilleur);
+  const top10 = await Promise.all(
+    candidats.slice(0, CANDIDATS_TOP).map(async (c) => {
+      const { data: place, error: e } = await sb.rpc("rl_place_au", { p_elo: c.lui, p_moment: c.le, p_exclus: [id, c.autre] });
+      if (e) return false;
+      // les deux joueurs sont exclus du compte : le vainqueur passe devant s'il était plus haut
+      const rang = Number(place) + (c.moi > c.lui ? 1 : 0);
+      return rankFor(c.lui, null, rang).tierIndex === TOP_TIER;
+    }),
+  );
+  return top10.some(Boolean) ? 3 : Math.max(0, meilleur);
 }
 
-/** Les mesures des 6 sceaux de la base ; null si duel_mentions manque. */
-async function mesuresBase(sb: SupabaseClient, id: string): Promise<MesuresBase | null> {
+/** Les mesures des 6 sceaux de la base ; une erreur (duel_mentions absente) est levée. */
+async function mesurer(sb: SupabaseClient, id: string): Promise<MesuresBase> {
+  const [mentions, rayees, coup] = await Promise.all([
+    sb.from("duel_mentions").select("mention").eq("user_id", id).limit(5000),
+    // rayées par une bonne réponse en reprise (ratures.rayee_le) : un retrait à la main ne compte pas
+    sb.from("ratures").select("question_id", { count: "exact", head: true }).eq("user_id", id).not("rayee_le", "is", null),
+    coupDeclat(sb, id).catch(() => 0),
+  ]);
+  if (mentions.error) throw new Error(mentions.error.message);
+  const compte: Partial<Record<MentionDuel, number>> = {};
+  for (const r of (mentions.data ?? []) as { mention: MentionDuel }[]) compte[r.mention] = (compte[r.mention] ?? 0) + 1;
+  return { mentions: compte, coupDeclat: coup, rayees: rayees.error ? 0 : (rayees.count ?? 0) };
+}
+
+/**
+ * Les mesures, en cache par joueur jusqu'à son calcul suivant (`calcul`, la
+ * date du dernier : un recalcul de fin de session change la clé), 10 min au
+ * plus ; un échec n'est pas mis en cache. null : indisponibles.
+ */
+async function mesuresBase(id: string, calcul: number | null): Promise<MesuresBase | null> {
   try {
-    const [mentions, rayees, coup] = await Promise.all([
-      sb.from("duel_mentions").select("mention").eq("user_id", id).limit(5000),
-      sb.from("ratures").select("question_id", { count: "exact", head: true }).eq("user_id", id).not("removed_at", "is", null).gt("correct_since", 0),
-      coupDeclat(sb, id).catch(() => 0),
-    ]);
-    if (mentions.error) return null;
-    const compte: Partial<Record<MentionDuel, number>> = {};
-    for (const r of (mentions.data ?? []) as { mention: MentionDuel }[]) compte[r.mention] = (compte[r.mention] ?? 0) + 1;
-    return { mentions: compte, coupDeclat: coup, rayees: rayees.error ? 0 : (rayees.count ?? 0) };
+    return await unstable_cache(
+      async () => {
+        const sb = admin();
+        if (!sb) throw new Error("admin indisponible");
+        return mesurer(sb, id);
+      },
+      ["rl-sceaux-mesures", id, String(calcul ?? 0)],
+      { revalidate: CALCUL_MS / 1000 },
+    )();
   } catch {
     return null;
   }
@@ -170,18 +200,40 @@ export type SceauxJoueur = {
 
 /**
  * Les sceaux d'un joueur. Avec la base : les paliers gardés, recalculés et
- * attribués si le dernier calcul a plus de 10 min (ou toujours avec
- * `forcer`), leurs dates et leur rareté. Sans elle : les sceaux dérivés de
- * l'étape 1. `sb` ne sert que sans client admin (lecture seule).
+ * attribués si le dernier calcul a plus de 10 min, leurs dates (au jour) et
+ * leur rareté. Sans elle : les sceaux dérivés de l'étape 1. `avancee` :
+ * l'avancée des 6 sceaux de la base est montrée (son propre profil) ; sinon
+ * leurs mesures ne se lisent que si l'attribution est due.
  */
-export async function sceauxDuJoueur(id: string, stats: ProfilStats, sb: SupabaseClient, { forcer = false }: { forcer?: boolean } = {}): Promise<SceauxJoueur> {
+export async function sceauxDuJoueur(id: string, stats: ProfilStats, { avancee = true }: { avancee?: boolean } = {}): Promise<SceauxJoueur> {
   const a = admin();
-  const [gardes, calcul] = await Promise.all([lireGardes(a ?? sb, id), a ? dernierCalcul(a, id) : Promise.resolve(null)]);
+  if (!a) return { etats: sceauxDe(stats), base: false, gardes: null };
+  const [gardes, calcul] = await Promise.all([lireGardes(a, id), dernierCalcul(a, id)]);
   if (gardes === null) return { etats: sceauxDe(stats), base: false, gardes: null };
-  const [mesures, r] = await Promise.all([a ? mesuresBase(a, id) : Promise.resolve(null), rarete()]);
+  const due = calcul === null || Date.now() - calcul > CALCUL_MS;
+  const [mesures, r] = await Promise.all([avancee || due ? mesuresBase(id, calcul) : Promise.resolve(null), rarete()]);
   let g = gardes;
-  if (a && mesures && (forcer || calcul === null || Date.now() - calcul > CALCUL_MS)) g = (await attribuer(a, id, paliersMesures(stats, mesures))) ?? gardes;
+  if (mesures && due) g = (await attribuer(a, id, paliersMesures(stats, mesures))) ?? gardes;
   return { etats: sceauxDe(stats, { mesures, gardes: g, rarete: r }), base: true, gardes: g };
+}
+
+/**
+ * Fin de session : recalcule tout de suite, sur des mesures fraîches (au
+ * plus toutes les 30 s), et rend les sceaux gardés ; null sans la base.
+ * `stats` n'est lu que si le recalcul a lieu.
+ */
+export async function recalculerSceaux(id: string, stats: () => Promise<ProfilStats>): Promise<SceauGarde[] | null> {
+  const a = admin();
+  if (!a) return null;
+  const [gardes, calcul] = await Promise.all([lireGardes(a, id), dernierCalcul(a, id)]);
+  if (gardes === null || (calcul !== null && Date.now() - calcul < FETE_MS)) return gardes;
+  let mesures: MesuresBase;
+  try {
+    mesures = await mesurer(a, id);
+  } catch {
+    return gardes;
+  }
+  return (await attribuer(a, id, paliersMesures(await stats(), mesures))) ?? gardes;
 }
 
 /** Marque des sceaux comme fêtés (la cérémonie a été jouée). */
