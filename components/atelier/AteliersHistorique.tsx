@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronRight, Hammer } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { LogoAtelier } from "@/components/atelier/LogoAtelier";
 import { CardLabel } from "@/components/ui/Titles";
 import { ParNotion } from "@/components/atelier/AtelierBilan";
 import type { AtelierPasse, HistoriqueAteliers } from "@/lib/atelier-seance";
@@ -52,7 +53,7 @@ export function AteliersHistorique({ h }: { h: HistoriqueAteliers }) {
   const bilanCourt = V.rayeesXp(rayeesDe(dernier), dernier.xp);
   return (
     <section className="card-quiet flex h-full min-w-0 flex-col gap-3 p-6 md:p-7" aria-labelledby="moi-ateliers">
-      <CardLabel icon={<Hammer size={15} aria-hidden />} right={<span className="t-micro">{V.historiqueCompte(h.ateliers.length)}</span>}>
+      <CardLabel icon={<LogoAtelier className="size-[17px]" />} right={<span className="t-micro">{V.historiqueCompte(h.ateliers.length)}</span>}>
         <span id="moi-ateliers">{V.historique}</span>
       </CardLabel>
 

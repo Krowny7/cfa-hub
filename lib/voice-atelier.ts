@@ -52,6 +52,8 @@ export const ATELIER = {
   /** la carte de S'entraîner (components/atelier/CarteAtelier.tsx) */
   lancer: "Lancer l'Atelier",
   carteTitre: (n: number) => (n > 1 ? `Tes ${nombre(n)} points faibles, en une séance` : "Ton point faible, en une séance"),
+  /** sous le nom en grand */
+  carteSousTitre: (n: number) => `${n > 1 ? `Tes ${nombre(n)} points faibles, en une séance` : "Ton point faible, en une séance"} · 30 min`,
   /** les blocs réellement prévus, comme deroule, puis le bilan */
   carteDeroule: (ratures: boolean, calcul: boolean) =>
     `${["Rappel", ratures ? "tes ratures" : null, "questions neuves", calcul ? "calcul" : null, "re‑test"].filter(Boolean).join(", ")}, puis le bilan avant/après.`,

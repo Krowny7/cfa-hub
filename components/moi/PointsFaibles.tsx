@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronDown, Hammer, PenLine } from "lucide-react";
+import { ArrowRight, ChevronDown, PenLine } from "lucide-react";
+import { LogoAtelier } from "@/components/atelier/LogoAtelier";
 import { CardLabel } from "@/components/ui/Titles";
 import { INK } from "@/components/ui/InkDefs";
 import { Icone } from "@/components/adn/icons";
@@ -92,7 +93,7 @@ function LienAtelier({ d, className }: { d: PointsFaiblesData; className: string
   if (!d.atelier) return null;
   return (
     <Link href={ATELIER_HREF} className={className} data-leonard="atelier">
-      <Hammer size={16} aria-hidden /> {d.atelier.enCours ? ATELIER.reprendre : ATELIER.action}
+      <LogoAtelier className="size-[18px]" /> {d.atelier.enCours ? ATELIER.reprendre : ATELIER.action}
     </Link>
   );
 }

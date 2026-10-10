@@ -19,6 +19,7 @@ import { ESPACES } from "@/lib/voice-z4";
 import { EclairCarte } from "@/components/eclair/EclairCarte";
 import { PointsFaiblesHeros } from "@/components/moi/PointsFaibles";
 import { CarteAtelier } from "@/components/atelier/CarteAtelier";
+import type { VarianteLogo } from "@/components/atelier/LogoAtelier";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
 
 // Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
@@ -43,6 +44,8 @@ export type EntrainementData = {
   daily: TodayDaily | null;
   /** séries éclair rendues aujourd'hui ; null : table absente */
   eclair?: number | null;
+  /** aperçu seulement : la marque de l'Atelier à essayer (défaut : le sceau) */
+  logoAtelier?: VarianteLogo;
   /** instant de rendu (ISO), pour les échéances du défi */
   nowIso: string;
   /** « Tes points faibles » : le n° 1 prend la carte héros ; absent ou sans point faible, la matière la plus faible comme avant */
@@ -244,7 +247,7 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
         <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
           {/* l'Atelier d'abord dans le DOM (téléphone, lecteur d'écran, clavier : son bouton dans le premier écran) ; à droite sur ordinateur.
               Entre 1024 et 1279, la colonne voisine est plus haute (Défi et Éclair empilés) : la carte garde sa hauteur, le bouton suit le texte */}
-          <CarteAtelier d={pf} className="lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:self-start xl:self-stretch" />
+          <CarteAtelier d={pf} logo={d.logoAtelier} className="lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:self-start xl:self-stretch" />
           <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1">
             {/* le héros n'en montre que trois : on n'envoie pas les autres au navigateur */}
             <PointsFaiblesHeros d={{ ...pf, liste: pf.liste.slice(0, 3) }} sansAtelier className="lg:flex-1" />

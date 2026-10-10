@@ -39,6 +39,8 @@
   --line: rgba(17, 17, 17, 0.08);
   --line-2: rgba(17, 17, 17, 0.14);
   --pen: #b4412f;
+  /* le sceau de l'Atelier en brun (bois et cuir de son illustration) */
+  --atelier-brun: #6b3a1c;
   /* comparaison de deux joueurs : là où tu fais mieux, là où tu fais moins bien */
   --gain: #1f9a55;
   --perte: #d63c3c;
@@ -109,6 +111,7 @@ html[data-theme="nuit"] {
   --line: rgba(255, 255, 255, 0.075);
   --line-2: rgba(255, 255, 255, 0.14);
   --pen: #ff7a5c;
+  --atelier-brun: #c48553;
   --gain: #46d18a;
   --perte: #ff6464;
   --zone-op: 0.4;

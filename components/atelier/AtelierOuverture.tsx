@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import type { NotionProposee } from "@/lib/atelier-seance";
 import { ATELIER as V } from "@/lib/voice-atelier";
+import { LogoAtelier } from "@/components/atelier/LogoAtelier";
 
 // L'écran d'ouverture de l'Atelier (dix secondes) : « Aujourd'hui : Duration
 // (12 ratures en cours), Crédit souverain, FCFE », dans l'ordre de leur
@@ -50,7 +51,10 @@ export function AtelierOuverture({
   return (
     <section className="card-hero rl-in mx-auto grid w-full max-w-[760px] gap-6 p-6 md:p-8" aria-label={V.nom}>
       <div className="grid gap-1.5">
-        <p className="t-eyebrow m-0">{V.kicker}</p>
+        <p className="font-brand m-0 flex items-center gap-2 text-[22px] leading-none">
+          <LogoAtelier className="size-[24px]" />
+          {V.nom}
+        </p>
         <h1 className="t-h1 m-0">{V.aujourdhui}</h1>
       </div>
 
