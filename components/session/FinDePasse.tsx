@@ -7,6 +7,7 @@ import { InkBarCoches } from "@/components/adn/InkBarCoches";
 import { SceauJour } from "@/components/adn/Sceau";
 import { nombre } from "@/lib/voice";
 import { FLASHCARDS, finPasse } from "@/lib/voice-z3c";
+import PctScore from "@/components/adn/PctScore";
 
 // La fin d'une passe de flashcards (QCM et sessions : la copie corrigée,
 // FinDeSession). Les cartes ne sont pas des traits (elles ne font pas avancer
@@ -101,6 +102,7 @@ export function FinDePasse({
             <span className="t-num text-[40px] leading-none">{nombre(sues)}</span>
             <span className="font-mono text-[15px] text-muted">/{nombre(total)}</span>
             <span className="t-micro ml-1">{unite ?? (sues > 1 ? "sues" : "sue")}</span>
+            <PctScore justes={sues} total={total} className="text-[13px]" />
           </p>
           {items.length > 0 && items.length <= MAX_COCHES ? (
             <InkBarCoches items={items} height={26} className="mb-1" label={`${nombre(sues)} sur ${nombre(total)} · ${nombre(aRevoir)} à reprendre`} />

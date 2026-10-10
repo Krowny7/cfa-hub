@@ -3,6 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { daysUntil, fmtDay, fmtDuration, fmtHour, fmtShortDate, signed } from "@/components/classement/format";
 import type { NextExam, PastExam } from "@/components/classement/types";
 import { CLASSEMENT } from "@/lib/voice-z2a";
+import { scorePct } from "@/lib/voice";
 
 /** « J-7 », « ouvert » ou rien : repère court pour l'onglet et la carte. */
 export function examTag(exam: NextExam | null): string | null {
@@ -86,7 +87,7 @@ export function ExamsPanel({ exam, past }: { exam: NextExam | null; past: PastEx
                     <span className="block truncate text-[14.5px] font-semibold">{e.title}</span>
                     <span className="t-micro block">{fmtShortDate(e.scheduledAt)}{e.score === null ? " · pas passé" : ""}</span>
                   </span>
-                  <span className="font-mono text-[13px] tabular-nums text-muted">{e.score !== null ? `${e.score}/${e.total ?? e.questionCount}` : ""}</span>
+                  <span className="font-mono text-[13px] tabular-nums text-muted">{e.score !== null ? scorePct(e.score, e.total ?? e.questionCount) : ""}</span>
                   <span className={"text-right font-mono text-[13px] font-semibold tabular-nums " + (e.delta !== null && e.delta < 0 ? "text-muted" : "")}>
                     {e.delta !== null ? signed(e.delta) : "—"}
                   </span>

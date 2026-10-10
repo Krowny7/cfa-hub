@@ -13,6 +13,7 @@ import { BlocRappel, CarteRappel } from "@/components/atelier/AtelierRappel";
 import { DUREE_S, avancement, compteNotion, planifier, prochaineEtape, type EtatAtelier, type Etape, type RappelVu, type Reponse } from "@/lib/atelier";
 import { itemsPool, type ApiAtelier, type ItemCalc, type ItemQcm, type ItemSeance, type RappelNotion, type SeanceAtelier } from "@/lib/atelier-seance";
 import { ATELIER as V, BLOC_NOM, NIVEAU_CALCUL, NIVEAU_QUESTION } from "@/lib/voice-atelier";
+import PctScore from "@/components/adn/PctScore";
 
 // Le déroulé d'un Atelier : la carte Rappel, puis les questions une à une,
 // corrigées tout de suite (la bonne réponse vient du serveur), le chrono qui
@@ -335,6 +336,7 @@ export function AtelierSeance({
                   <span className="min-w-0 flex-1 truncate">{libelle(n)}</span>
                   <span className="font-mono text-[12px] tabular-nums text-muted">
                     {c.ok}/{c.n}
+                    <PctScore justes={c.ok} total={c.n} />
                   </span>
                 </li>
               );

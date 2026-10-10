@@ -57,6 +57,7 @@ import { SceauMention, type MentionDuel } from "./Sceau";
 import { EASE_INK, EASE_OUT, STAMP_KF, usePartition, type Partition } from "./sound-timeline";
 import type { SonMoment } from "./sound";
 import s from "./Verdict.module.css";
+import { pctScore } from "@/lib/voice";
 
 export type JoueurVerdict = { nom: string; score: number; temps?: number | null; elo?: number | null };
 export type MarqueCopie = boolean | null;
@@ -389,7 +390,7 @@ export function Verdict({
           </div>
           <div className={s.qui}>
             {moi.nom}
-            <span className={s.meta}>{[moi.elo != null ? `${elo(moi.elo)} ELO` : null, moi.temps != null ? clock(moi.temps) : forfait && issue !== "victoire" ? "forfait" : null].filter(Boolean).join(" · ")}</span>
+            <span className={s.meta}>{[pctScore(moi.score, n), moi.elo != null ? `${elo(moi.elo)} ELO` : null, moi.temps != null ? clock(moi.temps) : forfait && issue !== "victoire" ? "forfait" : null].filter(Boolean).join(" · ")}</span>
           </div>
           {copies?.moi?.length ? <Marques row="moi" marques={copies.moi} decisive={dec} refs={{ rond: ref("rond"), excl: ref("excl") }} /> : null}
         </div>
@@ -406,7 +407,7 @@ export function Verdict({
               <span className={s.sur}>/{n}</span>
             </div>
             <div className={s.qui}>
-              <span className={s.meta}>{[eux.elo != null ? `${elo(eux.elo)} ELO` : null, eux.temps != null ? clock(eux.temps) : forfait ? "forfait" : null].filter(Boolean).join(" · ")}</span>
+              <span className={s.meta}>{[pctScore(eux.score, n), eux.elo != null ? `${elo(eux.elo)} ELO` : null, eux.temps != null ? clock(eux.temps) : forfait ? "forfait" : null].filter(Boolean).join(" · ")}</span>
               {eux.nom}
             </div>
           </div>

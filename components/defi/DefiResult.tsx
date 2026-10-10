@@ -10,6 +10,8 @@ import { clock } from "@/lib/duels";
 import { reviewHref, type DailyBoard, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { ratures } from "@/lib/voice";
 import { rangOrdinal, verdictCopie, voixDefi } from "@/lib/voice-z2c";
+import PctScore from "@/components/adn/PctScore";
+import { scorePct } from "@/lib/voice";
 
 type Props = {
   /** le défi, avec ma copie rendue (info.me.finishedAt) */
@@ -51,7 +53,7 @@ export function DefiResult({ info, review, board }: Props) {
   } else if (rank === 1) {
     cote = <p className="t-small m-0">{DEFI.ahead(info.isToday)}</p>;
   } else if (leader && leader.score > score) {
-    cote = <Cote ton="stylo" de={`${score}/${total}`} label={DEFI.ecartPoints(leader.score - score)} a={`${leader.score} · ${DEFI.premiere}`} className="max-w-[460px]" />;
+    cote = <Cote ton="stylo" de={scorePct(score, total)} label={DEFI.ecartPoints(leader.score - score)} a={`${leader.score} · ${DEFI.premiere}`} className="max-w-[460px]" />;
   } else if (leader && me.seconds !== null) {
     cote = (
       <Cote
@@ -83,6 +85,7 @@ export function DefiResult({ info, review, board }: Props) {
         <p className="m-0 shrink-0 text-right leading-none" aria-label={`${score} sur ${total}`}>
           <span className="t-num text-[52px] sm:text-[60px] md:text-[76px]">{score}</span>
           <span className="font-mono text-[15px] text-muted">/{total}</span>
+          <PctScore justes={score} total={total} sep={false} className="mt-1.5 block text-[13px]" />
         </p>
       </div>
 
@@ -105,6 +108,7 @@ export function DefiResult({ info, review, board }: Props) {
           <dd className="m-0 mt-0.5 font-mono text-[17px] font-semibold tabular-nums">
             {topScore}
             <span className="text-[13px] font-normal text-muted">/{total}</span>
+            <PctScore justes={topScore} total={total} sep={false} className="block text-[12px]" />
           </dd>
         </div>
       </dl>

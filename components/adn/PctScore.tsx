@@ -1,0 +1,9 @@
+import { pctScore } from "@/lib/voice";
+
+/** Le pourcentage qui suit un score déjà affiché (« 24/30 » → « · 80 % »). Rien si le total est nul. */
+export default function PctScore({ justes, total, className = "", sep = true }: { justes: number | null | undefined; total: number | null | undefined; className?: string; sep?: boolean }) {
+  if (justes == null || total == null) return null;
+  const p = pctScore(justes, total);
+  if (!p) return null;
+  return <span className={"whitespace-nowrap font-mono font-normal tabular-nums text-muted " + className}>{sep ? ` · ${p}` : p}</span>;
+}
