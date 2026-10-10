@@ -35,7 +35,7 @@ export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; setti
         }}
         panels={{
           stats: <StatsTab d={d} />,
-          erreurs: d.ratures.available ? <RaturesTab initial={d.ratures} now={now} /> : <ErrorsTab errors={d.errors} now={now} />,
+          erreurs: d.ratures.available ? <RaturesTab initial={d.ratures} notions={d.ratures.parNotion} now={now} /> : <ErrorsTab errors={d.errors} now={now} />,
           marquees: <MarqueesTab marquees={d.marquees} />,
           reglages: settings,
         }}

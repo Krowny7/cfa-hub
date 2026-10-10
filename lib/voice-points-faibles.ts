@@ -4,6 +4,13 @@
 // Module neutre (ni « use client » ni serveur).
 
 import { nombre, pct, pluriel } from "@/lib/voice";
+import type { ConceptCoince, Unite } from "@/lib/points-faibles";
+
+/** L'unité nommée dans les phrases : la notion (Learning Module), ou en repli le thème. */
+const UNITE: Record<Unite, { aucun: string; unMeme: string; ce: string }> = {
+  notion: { aucun: "Aucune notion", unMeme: "une même notion", ce: "cette notion" },
+  theme: { aucun: "Aucun thème", unMeme: "un même thème", ce: "ce thème" },
+};
 
 const jamaisReprises = (n: number) => (n > 1 ? "jamais reprises" : "jamais reprise");
 const justes = (ok: number, n: number) => `${nombre(ok)} ${ok > 1 ? "justes" : "juste"} sur ${nombre(n)}`;
@@ -19,24 +26,33 @@ export const POINTS_FAIBLES = {
   voirMoins: "Voir moins",
   /** assez de données, rien au-dessus du seuil */
   rien: "Rien ne coince vraiment. Continue comme ça.",
-  rienTexte: "Aucun thème ne ressort : peu de ratures en cours, et ta réussite récente tient.",
+  rienTexte: (u: Unite) => `${UNITE[u].aucun} ne ressort : peu de ratures en cours, et ta réussite récente tient.`,
   /** la même chose, tant que les ratures par thème ne se lisent pas */
-  rienTexteSansRatures: "Aucun thème ne ressort : ta réussite récente tient.",
+  rienTexteSansRatures: (u: Unite) => `${UNITE[u].aucun} ne ressort : ta réussite récente tient.`,
   /** pas assez de données */
   peu: "Pas encore assez de réponses pour nommer un point faible.",
-  peuTexte: (reponses: number, ratures: number) => `Il faut ${nombre(reponses)} réponses sur un même thème, ou ${nombre(ratures)} ratures en cours.`,
+  peuTexte: (u: Unite, reponses: number, ratures: number) => `Il faut ${nombre(reponses)} réponses sur ${UNITE[u].unMeme}, ou ${nombre(ratures)} ratures en cours.`,
   repli: (matiere: string) => `En attendant, ta matière la plus fragile : ${matiere}.`,
   repliAction: "Lancer une session",
   /** la jauge (jamais le score) */
   jauge: (niveau: number, max: number) => `Intensité ${nombre(niveau)} sur ${nombre(max)}`,
   /** « Dernier passage il y a 7 semaines » (calculé dans le navigateur ; entrée du tiroir, sans point comme les autres) */
   dernierPassage: (semaines: number) => `Dernier passage il y a ${nombre(semaines)} semaines`,
-  /** la ligne de progrès, en encre calme : tout le carnet (Moi), ou le thème (héros de S'entraîner) */
+  /** la ligne de progrès, en encre calme : tout le carnet (Moi), ou la notion (héros de S'entraîner) */
   rattrape: (n: number) => `Rattrapé cette semaine : ${pluriel(n, "rature rayée", "ratures rayées")} dans tout le carnet.`,
-  rattrapeTheme: (n: number) => `Rattrapé cette semaine : ${pluriel(n, "rature rayée", "ratures rayées")} sur ce thème.`,
+  rattrapeNotion: (u: Unite, n: number) => `Rattrapé cette semaine : ${pluriel(n, "rature rayée", "ratures rayées")} sur ${UNITE[u].ce}.`,
+  /** le repère d'une notion, après la matière : « Fixed Income · LM 11 » */
+  repereLm: (lm: number) => `LM ${nombre(lm)}`,
+  /** les concepts les plus chargés d'une notion (tiroir ; héros : le premier) */
+  coince: "Ce qui coince",
+  coinceUn: (concept: string) => `Ce qui coince : ${concept}`,
   /** actions */
   propre: (n: number) => `Mettre au propre · ${nombre(n)}`,
   lienFiche: (page: number) => `Page ${nombre(page)} de la fiche`,
+  /** une fiche d'un seul tenant (ancre, sans page) */
+  lienFicheEntiere: "La fiche",
+  /** le chapitre du cours audio, au bon module */
+  lienCours: "Chapitre audio",
   lienQcm: "Refaire le QCM",
   lienCalcul: "S'entraîner sur ce calcul",
   calcul: (nom: string) => `Calcul · ${nom}`,
@@ -101,4 +117,9 @@ export function detailsPointFaible(f: {
   if (ratures.length) lignes.push(`Ratures : ${ratures.join(", ")}`);
   if (f.sources.length > 1) lignes.push(`Répondu en : ${f.sources.map((s) => `${s.libelle} ${nombre(s.n)}`).join(" · ")}`);
   return lignes;
+}
+
+/** Un concept qui coince et ce qui le charge : « Duration gap · 3 ratures en cours », sinon « … · 2 erreurs récentes ». */
+export function conceptCoince(c: ConceptCoince): string {
+  return `${c.concept} · ${c.ratures > 0 ? pluriel(c.ratures, "rature en cours", "ratures en cours") : pluriel(c.erreurs, "erreur récente", "erreurs récentes")}`;
 }

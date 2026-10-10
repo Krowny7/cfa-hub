@@ -48,7 +48,7 @@ const repondues = (answers: unknown, total: unknown) =>
 /** Questions posées par jour (Paris), toutes sources, avant `avantIso`. */
 export async function lireJours(sb: SupabaseClient, userId: string, avantIso: string): Promise<[string, number][]> {
   type DuelRow = { challenger_id: string; question_ids: string[] | null; challenger_finished_at: string | null; opponent_finished_at: string | null; finished_at: string | null };
-  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, calc, eclair] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, quizzes, calc, eclair, ateliers] = await Promise.all([
     toutes<{ answered_at: string }>((a, b) => sb.from("quiz_answer_log").select("answered_at").eq("user_id", userId).lt("answered_at", avantIso).order("answered_at").range(a, b)),
     toutes<{ occurred_at: string; total: number; mode: string }>((a, b) =>
       sb.from("practice_sessions").select("occurred_at,total,mode").eq("user_id", userId).lt("occurred_at", avantIso).order("occurred_at").range(a, b),
@@ -82,6 +82,10 @@ export async function lireJours(sb: SupabaseClient, userId: string, avantIso: st
     toutes<{ finished_at: string | null; total: number | null }>((a, b) =>
       sb.from("eclair_series").select("finished_at,total").eq("user_id", userId).not("finished_at", "is", null).lt("finished_at", avantIso).order("finished_at").range(a, b),
     ),
+    // Ateliers : leurs réponses aux questions, une par une (les calculs sont dans calc_attempts)
+    toutes<{ reponses: { k?: string; at?: string }[] | null }>((a, b) =>
+      sb.from("ateliers").select("reponses").eq("user_id", userId).lt("started_at", avantIso).order("started_at").range(a, b),
+    ),
   ]);
 
   const parJour = new Map<string, number>();
@@ -103,6 +107,7 @@ export async function lireJours(sb: SupabaseClient, userId: string, avantIso: st
   for (const r of quizzes) add(r.created_at, Number(r.total) || 0);
   for (const r of calc) add(r.answered_at, 1);
   for (const r of eclair) add(r.finished_at, Number(r.total) || 0);
+  for (const r of ateliers) for (const x of Array.isArray(r.reponses) ? r.reponses : []) if (x.k !== "calc" && x.at && Date.parse(x.at) < Date.parse(avantIso)) add(x.at, 1);
   return [...parJour.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1));
 }
 

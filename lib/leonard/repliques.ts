@@ -2,7 +2,9 @@
 // Module sans dépendance. Marqueurs à remplacer par l'appelant :
 //   {score} → « 7/10 »   (session-ratee, session-moyenne, session-reussie, session-parfaite)
 //   {pct}   → « 70 % »   (mêmes événements)
-//   {n}     → « 8 »      (serie-bonnes : nombre de bonnes réponses d'affilée)
+//   {n}     → « 8 »      (serie-bonnes : nombre de bonnes réponses d'affilée ;
+//                         atelier-rayees : ratures rayées pendant l'Atelier)
+//   {notion} → « Duration » (atelier-progres, atelier-dur : la notion dont il parle)
 // Les autres événements n'utilisent aucun marqueur.
 
 export type Pose = "base" | "fier" | "moqueur" | "decu" | "etonne";
@@ -10,7 +12,7 @@ export type Replique = { texte: string; pose: Pose };
 export type Evenement =
   | "tuto" | "erreurs-serie" | "session-ratee" | "session-moyenne" | "session-reussie" | "session-parfaite"
   | "serie-bonnes" | "progression" | "duel-gagne" | "duel-perdu" | "duel-ecrase" | "duel-nul"
-  | "defi-reussi" | "defi-rate" | "rang-monte" | "retour" | "tard" | "furtif";
+  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "retour" | "tard" | "furtif";
 
 export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
   "erreurs-serie": [
@@ -203,6 +205,43 @@ export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
     { texte: "Le défi était coriace. Toi aussi, d’habitude.", pose: "moqueur" },
     { texte: "Raté. Le défi dormira mieux que toi ce soir.", pose: "decu" },
     { texte: "Défi raté. Ta série vient de faire un krach éclair.", pose: "decu" },
+  ],
+
+  // le bilan de l'Atelier (la séance de 30 minutes sur ses points faibles)
+  "atelier-progres": [
+    { texte: "{notion}, c’est rentré. L’atelier a tourné à plein régime.", pose: "fier" },
+    { texte: "{notion} : de l’esquisse au tableau. Je signe en bas à droite.", pose: "fier" },
+    { texte: "Tu as repris {notion} au fusain. Le trait est net, maintenant.", pose: "fier" },
+    { texte: "{notion} ? Rendement excédentaire. Ton apprenti est devenu maître.", pose: "etonne" },
+    { texte: "Ah ouais, {notion}. Je le range avec mes carnets réussis.", pose: "etonne" },
+    { texte: "{notion} tient debout. Mieux que mon cheval de bronze, jamais fondu.", pose: "fier" },
+  ],
+
+  "atelier-rayees": [
+    { texte: "{n} ratures rayées. Le carnet respire.", pose: "fier" },
+    { texte: "{n} de moins au carnet. J’ai un coup de gomme jaloux.", pose: "moqueur" },
+    { texte: "{n} ratures rayées. Moi, je laisse les miennes : ça fait authentique.", pose: "moqueur" },
+    { texte: "Rachat de dette : {n} ratures remboursées. Ton bilan s’allège.", pose: "fier" },
+    { texte: "{n} ratures au propre. On repeint un mur entier, là.", pose: "fier" },
+    { texte: "Moins {n} au carnet. La page commence à ressembler à une page.", pose: "base" },
+  ],
+
+  "atelier-dur": [
+    { texte: "{notion}, ça résiste. La Joconde, j’ai mis seize ans. Toi, on a le temps.", pose: "base" },
+    { texte: "{score}. {notion} te tient tête. Relis le chapitre, puis on y retourne.", pose: "base" },
+    { texte: "{notion} : le marbre est dur. On taille quand même.", pose: "base" },
+    { texte: "Un atelier, c’est fait pour salir ses mains. Là, elles sont bien sales.", pose: "moqueur" },
+    { texte: "{notion}, c’est un drawdown. Pas une faillite.", pose: "decu" },
+    { texte: "Même mes premiers croquis étaient bancals. Demain, {notion} encore.", pose: "base" },
+  ],
+
+  "atelier-fini": [
+    { texte: "{score}. Atelier rangé, pinceaux lavés.", pose: "base" },
+    { texte: "Une séance de plus dans les jambes. C’est comme ça qu’on bâtit une cathédrale.", pose: "fier" },
+    { texte: "{score}. Pas de chef-d’œuvre, mais du travail propre.", pose: "base" },
+    { texte: "Trente minutes d’atelier. Plus efficace que trois heures de scroll.", pose: "moqueur" },
+    { texte: "{score}. Je note le progrès dans mes carnets. À l’endroit, cette fois.", pose: "moqueur" },
+    { texte: "Séance close. Ta courbe d’apprentissage vient de prendre un pli.", pose: "base" },
   ],
 
   "rang-monte": [

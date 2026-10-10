@@ -4,6 +4,8 @@ import { SceauPerso } from "@/components/adn/SceauPerso";
 import { DUEL_QUESTIONS, reviewLeftLabel } from "@/lib/duels";
 import { DUEL, nombre, tuileRatures } from "@/lib/voice";
 import { TUILES, duelARevoir } from "@/lib/voice-z1";
+import { ATELIER } from "@/lib/voice-atelier";
+import type { TuilePointFaible } from "@/lib/points-faibles";
 import { Tile } from "@/components/accueil/Tile";
 import { countdown, durationLabel, hourLabel, longDay, plural } from "@/components/accueil/format";
 import type { AccueilData, ErrorsSummary, MockExamCard, ReviewDuel } from "@/components/accueil/types";
@@ -97,6 +99,30 @@ export function RaturesTile({ errors }: { errors: ErrorsSummary }) {
         <span className="t-h3 block">{t.valeur}</span>
       )}
       <span className="t-micro mt-1 block truncate">{detail}</span>
+    </Tile>
+  );
+}
+
+const ACTION_POINT_FAIBLE: Record<TuilePointFaible["action"], { href: string; cta: string; aside: string | null }> = {
+  atelier: { href: "/atelier", cta: ATELIER.action, aside: TUILES.atelierConseille },
+  reprendre: { href: "/atelier", cta: ATELIER.reprendre, aside: TUILES.atelierEnCours },
+  voir: { href: "/moi?onglet=stats#points-faibles", cta: TUILES.voirPointsFaibles, aside: null },
+};
+
+/** Le point faible n° 1 (une notion), sa phrase, et l'Atelier quand il est conseillé. */
+export function PointFaibleTile({ p }: { p: TuilePointFaible }) {
+  const a = ACTION_POINT_FAIBLE[p.action];
+  return (
+    <Tile
+      href={a.href}
+      label={TUILES.pointFaible}
+      icon={<Icone nom="erreurs" size={15} className="text-pen" />}
+      aside={a.aside}
+      ariaLabel={`${TUILES.pointFaible} : ${p.libelle}. ${a.cta}`}
+      cta={a.cta}
+    >
+      <Ligne title={p.libelle} meta={p.repere} />
+      <span className="t-micro mt-1.5 line-clamp-2">{p.phrase}</span>
     </Tile>
   );
 }
