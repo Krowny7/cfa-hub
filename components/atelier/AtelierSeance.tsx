@@ -219,8 +219,18 @@ export function AtelierSeance({
           <InkProgressRing pct={Math.min(100, (secondes / DUREE_S) * 100)} size={34} delay={0} />
           <span className="font-mono text-[14px] font-semibold tabular-nums">{V.chrono(secondes)}</span>
         </span>
-        <span className="t-micro min-w-0 flex-1 truncate font-semibold">{blocs.length ? V.etape(Math.max(1, courant + 1), blocs.length, blocCourant) : V.nom}</span>
-        <button type="button" className="btn btn-ghost btn-sm !h-11 gap-1.5 px-2.5 lg:hidden" onClick={() => setRappelOuvert(true)} aria-label={V.rappel}>
+        {/* téléphone : le nom court du bloc (« 3/5 · Neuves »), pour qu'il tienne en entier */}
+        <span className="t-micro min-w-0 flex-1 truncate font-semibold">
+          {blocs.length ? (
+            <>
+              <span className="sm:hidden">{V.etape(Math.max(1, courant + 1), blocs.length, blocCourant, true)}</span>
+              <span className="hidden sm:inline">{V.etape(Math.max(1, courant + 1), blocs.length, blocCourant)}</span>
+            </>
+          ) : (
+            V.nom
+          )}
+        </span>
+        <button type="button" className="btn btn-ghost btn-sm !h-11 !w-11 !p-0 lg:hidden" onClick={() => setRappelOuvert(true)} aria-label={V.rappel}>
           <BookOpen size={16} aria-hidden />
         </button>
         <button
@@ -246,8 +256,9 @@ export function AtelierSeance({
         {item && etape?.type === "question" && (
           <section key={`${item.i}-${retest ? "r" : "p"}`} className="card rl-in flex min-w-0 flex-col gap-5 p-5 md:p-7" aria-label={BLOC_NOM[etape.bloc]}>
             <div className="flex min-h-[26px] items-center justify-between gap-3">
-              <p className="kicker m-0 min-w-0 truncate">
-                {libelle(item.notion)} · {retest ? V.surRetest : item.k === "rature" ? V.surRature(item.misses) : item.k === "neuve" ? `${V.surNeuve} · ${NIVEAU_QUESTION[item.niveau]}` : `${BLOC_NOM.calcul} · ${(item as ItemCalc).nomType} · ${NIVEAU_CALCUL[item.niveau]}`}
+              {/* le calcul : son type et son niveau (le bloc « Calcul » est déjà dans l'en-tête) ; deux lignes au plus */}
+              <p className="kicker m-0 line-clamp-2 min-w-0">
+                {libelle(item.notion)} · {retest ? V.surRetest : item.k === "rature" ? V.surRature(item.misses) : item.k === "neuve" ? `${V.surNeuve} · ${NIVEAU_QUESTION[item.niveau]}` : `${(item as ItemCalc).nomType} · ${NIVEAU_CALCUL[item.niveau]}`}
               </p>
               {corrige && item.k !== "calc" && <MarqueQuestion questionId={item.ref} source="atelier" />}
             </div>
@@ -289,7 +300,7 @@ export function AtelierSeance({
 
         <button
           type="button"
-          className="w-fit px-1 py-2 text-[13px] font-semibold text-muted transition-colors hover:text-white"
+          className="min-h-[44px] w-fit px-1 py-2 text-[13px] font-semibold text-muted transition-colors hover:text-white"
           onClick={() => onPause({ seance, reponses, secondes, ajoutes: ajoutes.current, vuAt: vuAt.current })}
         >
           {V.arreter}
@@ -330,7 +341,8 @@ export function AtelierSeance({
             })}
           </ul>
         </div>
-        {rappelsListe.length > 0 && (
+        {/* pendant l'étape Rappel, les cartes sont déjà au centre */}
+        {rappelsListe.length > 0 && etape?.type !== "rappel" && (
           <div className="grid gap-2">
             <p className="t-eyebrow m-0">{V.rappel}</p>
             {rappelsListe.map((r) => (

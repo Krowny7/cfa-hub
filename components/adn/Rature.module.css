@@ -61,6 +61,22 @@
   color: var(--ink);
   overflow: visible;
 }
+/* un chiffre rayé dans une ligne de texte (même corps) */
+.chiffre {
+  position: relative;
+  display: inline-block;
+  color: var(--ink-2);
+}
+.chiffre svg {
+  position: absolute;
+  left: -30%;
+  width: 160%;
+  top: 30%;
+  height: 0.6em;
+  color: var(--ink);
+  overflow: visible;
+  pointer-events: none;
+}
 .libelle {
   font-size: 13px;
   color: var(--ink-2);

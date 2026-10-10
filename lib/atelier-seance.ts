@@ -80,10 +80,12 @@ export type AtelierPasse = { id: string; date: string; minutes: number; xp: numb
 /** L'historique des Ateliers (les plus récents d'abord) et le nom de leurs notions. */
 export type HistoriqueAteliers = { ateliers: AtelierPasse[]; noms: Record<string, { libelle: string }> };
 
-/** Une notion proposée à l'ouverture (un point faible). */
-export type NotionProposee = { notion: string; libelle: string; repere: string; enCours: number; calcul: boolean };
+/** Une notion proposée à l'ouverture (un point faible). calcul : jouée seulement en calcul ; aCalcul : un bloc Calcul est possible (type de calcul rattaché, clé service présente). */
+export type NotionProposee = { notion: string; libelle: string; repere: string; enCours: number; calcul: boolean; aCalcul: boolean };
 
-export const itemsPool = (s: Pick<SeanceAtelier, "items">): ItemPool[] => s.items.filter((x) => x.k !== "calc" || x.q !== null).map((x) => ({ i: x.i, k: x.k, notion: x.notion, niveau: x.niveau }));
+/** Les éléments jouables : un calcul qui existe encore, une question avec son énoncé et au moins deux choix (une question neuve retirée de la banque pendant un Atelier en cours n'en a plus). */
+export const itemsPool = (s: Pick<SeanceAtelier, "items">): ItemPool[] =>
+  s.items.filter((x) => (x.k === "calc" ? x.q !== null : x.prompt.trim() !== "" && x.choices.length >= 2)).map((x) => ({ i: x.i, k: x.k, notion: x.notion, niveau: x.niveau }));
 
 /** La fonction appelée n'existe pas (encore) en base : migration pas collée. */
 export const fonctionAbsente = (e: { code?: string; message?: string } | null | undefined) =>

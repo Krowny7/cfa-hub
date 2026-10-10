@@ -28,8 +28,9 @@
 --   limité aux ratures en cours d'une notion. Fonction à part, comme
 --   rature_suivante_theme : rien de ce qui est déjà collé ne change.
 -- - _reponses_joueur(p_uid) : les réponses d'un joueur, toutes sources, dont
---   la justesse est déjà visible (la même union que migration_ratures.sql §6).
---   Interne.
+--   la justesse est déjà visible (la même union que migration_ratures.sql §6),
+--   plus celles de l'Atelier (_reponses_atelier, vide ici, remplie par
+--   migration_atelier.sql). Internes.
 -- À coller une fois dans le SQL Editor de Supabase, APRÈS
 -- migration_ratures_reprise.sql et migration_points_faibles.sql. Idempotent.
 
@@ -84,12 +85,25 @@ CREATE TRIGGER quiz_questions_notion_gardee
   BEFORE INSERT OR UPDATE ON quiz_questions
   FOR EACH ROW EXECUTE FUNCTION _quiz_questions_notion_gardee();
 
+-- Les réponses de l'Atelier : rien ici. migration_atelier.sql la remplace
+-- (premier passage de ses questions) ; recoller celle-ci ensuite ne la
+-- touche pas : elle n'est créée que si elle manque.
+DO $do$
+BEGIN
+  IF to_regprocedure('public._reponses_atelier(uuid)') IS NULL THEN
+    CREATE FUNCTION _reponses_atelier(p_uid uuid)
+    RETURNS TABLE (question_id uuid, source text, ok boolean, at timestamptz)
+    LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+    AS $f$ SELECT NULL::uuid, NULL::text, NULL::boolean, NULL::timestamptz WHERE false $f$;
+  END IF;
+END $do$;
+
 -- Les réponses données par un joueur (les blancs ne comptent pas), avec leur
 -- source au sens de lib/answer-stats.ts : fiches, défis du jour et 5 du
 -- jour (copie rendue ou chrono écoulé), duels clos, séries éclair (corrigées
--- question par question), sessions ciblées, examens blancs, QCM en entier.
--- Une réponse dont la justesse est encore cachée (défi en cours, duel
--- ouvert) n'en fait pas partie.
+-- question par question), sessions ciblées, examens blancs, QCM en entier,
+-- et l'Atelier (_reponses_atelier). Une réponse dont la justesse est encore
+-- cachée (défi en cours, duel ouvert) n'en fait pas partie.
 CREATE OR REPLACE FUNCTION _reponses_joueur(p_uid uuid)
 RETURNS TABLE (question_id uuid, source text, ok boolean, at timestamptz)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
@@ -147,7 +161,9 @@ AS $$
   UNION ALL
   SELECT c.qid, c.src, c.sel = qq.correct_index, c.at
   FROM copies_lues c JOIN quiz_questions qq ON qq.id = c.qid
-  WHERE c.qid IS NOT NULL AND c.sel IS NOT NULL AND c.at IS NOT NULL AND c.sel < coalesce(array_length(qq.choices, 1), 0);
+  WHERE c.qid IS NOT NULL AND c.sel IS NOT NULL AND c.at IS NOT NULL AND c.sel < coalesce(array_length(qq.choices, 1), 0)
+  UNION ALL
+  SELECT * FROM _reponses_atelier(p_uid);
 $$;
 
 -- Les points faibles du joueur connecté, par notion (lib/notions.ts fait le
@@ -304,6 +320,7 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION _reponses_atelier(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _reponses_joueur(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION points_faibles(int) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION rature_suivante_notion(text, uuid[]) FROM PUBLIC, anon;

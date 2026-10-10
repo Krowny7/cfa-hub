@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Headphones } from "lucide-react";
-import { CompteurBarre } from "@/components/adn/Rature";
+import { ChiffreRaye } from "@/components/adn/Rature";
 import { FinDeSession, texteMarge } from "@/components/session/FinDeSession";
 import type { LigneCopie, MatiereCopie } from "@/components/adn/CopieCorrigee";
 import type { ReviewQuestion } from "@/components/session/review";
@@ -17,7 +17,8 @@ import { analyserAtelier } from "@/lib/leonard/signal";
 // marge, l'anneau du jour, « Reprendre mes N ratures »), puis, par notion,
 // avant → pendant, ratures avant → après (l'ancien chiffre rayé à l'encre),
 // le calcul, et le prochain pas (le chapitre audio de la notion la plus
-// basse) avec le prochain Atelier conseillé. À l'arrêt (bilan partiel), la
+// basse) avec le prochain Atelier conseillé ; les liens de sortie viennent
+// en dernier, sur la même largeur que la copie. À l'arrêt (bilan partiel), la
 // même lecture par notion, et « Reprendre » sous 24 heures. Léonard commente
 // le bilan (une seule réaction par Atelier, à la place de celle d'une
 // session ; ses réglages et sa fréquence décident s'il apparaît).
@@ -61,8 +62,8 @@ function revue(items: ItemSeance[], reponses: Reponse[], rappels: Record<string,
   return { review, lignes };
 }
 
-/** Par notion : avant → pendant, ratures, calcul (le bilan, l'arrêt, et l'historique des Ateliers dans Moi). */
-export function ParNotion({ b, rappels }: { b: BilanAtelier; rappels: Noms }) {
+/** Par notion : avant → pendant, ratures, calcul (le bilan, l'arrêt, et l'historique des Ateliers dans Moi). anime : false, le chiffre rayé est posé sans geste (l'historique). */
+export function ParNotion({ b, rappels, anime = true }: { b: BilanAtelier; rappels: Noms; anime?: boolean }) {
   return (
     <ul className="m-0 grid list-none gap-0 divide-y divide-line p-0">
       {b.notions.map((n) => (
@@ -71,23 +72,26 @@ export function ParNotion({ b, rappels }: { b: BilanAtelier; rappels: Noms }) {
             {libelleDe(rappels, n.notion)}
             {n.tenue && <span className="t-micro font-semibold">{V.tenue}</span>}
           </p>
-          <p className="t-small m-0 font-mono" title={V.avantPendantDetail(n.avant, n.pendant)}>
-            {n.pendant.n > 0 ? V.avantPendant(n.avant, n.pendant) : V.sansQuestion}
-          </p>
+          {/* jouée seulement en calcul : la ligne du calcul suffit */}
+          {(n.pendant.n > 0 || !n.calcul) && (
+            <p className="t-small m-0 font-mono" title={V.avantPendantDetail(n.avant, n.pendant)}>
+              {n.pendant.n > 0 ? V.avantPendant(n.avant, n.pendant) : V.sansQuestion}
+            </p>
+          )}
           {(n.ratures.avant > 0 || n.ratures.apres > 0) && (
-            <div className="t-small flex flex-wrap items-baseline gap-x-1.5 font-mono">
-              {n.ratures.rayees > 0 ? (
+            <p className="t-small m-0 font-mono">
+              {/* une rature rayée et le compte a bougé : l'ancien chiffre rayé, au corps de la ligne */}
+              {n.ratures.rayees > 0 && n.ratures.avant !== n.ratures.apres ? (
                 <>
-                  <span>{V.raturesMot}</span>
-                  <CompteurBarre avant={n.ratures.avant} apres={n.ratures.apres} taille={20} />
+                  {V.raturesMot} <ChiffreRaye valeur={V.raturesAvant(n.ratures.avant)} anime={anime} /> {V.raturesApres(n.ratures.apres)}
                 </>
               ) : (
-                <span>{V.ratures(n.ratures.avant, n.ratures.apres)}</span>
+                V.ratures(n.ratures.avant, n.ratures.apres)
               )}
               {(n.ratures.rayees > 0 || n.ratures.nouvelles > 0) && (
-                <span className="text-muted">({[n.ratures.rayees > 0 ? V.rayees(n.ratures.rayees) : null, n.ratures.nouvelles > 0 ? V.nouvelles(n.ratures.nouvelles) : null].filter(Boolean).join(", ")})</span>
+                <span className="text-muted"> ({[n.ratures.rayees > 0 ? V.rayees(n.ratures.rayees) : null, n.ratures.nouvelles > 0 ? V.nouvelles(n.ratures.nouvelles) : null].filter(Boolean).join(", ")})</span>
               )}
-            </div>
+            </p>
           )}
           {n.calcul && <p className="t-small m-0 font-mono">{V.calcul(n.calcul.avant, n.calcul.pendant, n.calcul.niveau)}</p>}
         </li>
@@ -155,7 +159,7 @@ export function AtelierBilan({
     cle: "atelier:" + seance.id,
   };
   return (
-    <div className="mx-auto grid w-full max-w-[820px] gap-5">
+    <div className="mx-auto grid w-full max-w-[660px] gap-5">
       <FinDeSession
         epreuve={V.epreuve(minutes, b.score, b.total)}
         titre={seance.notions.map((n) => libelleDe(rappels, n)).join(", ")}
@@ -167,16 +171,6 @@ export function AtelierBilan({
         jour={jour}
         ajoutes={ajoutes}
         leonard={leonard}
-        liens={
-          <>
-            <button type="button" className={"ink-link text-[14px] font-semibold " + TOUCHER} onClick={onAutre}>
-              {V.autre}
-            </button>
-            <Link href="/entrainement" className={"ink-link text-[14px] font-semibold " + TOUCHER}>
-              {V.revenir}
-            </Link>
-          </>
-        }
       />
       <section className="card grid gap-4 p-5 md:p-7" aria-label={V.parNotion}>
         <p className="t-eyebrow m-0">{V.parNotion}</p>
@@ -187,6 +181,14 @@ export function AtelierBilan({
         </div>
         <ProchainPas b={b} rappels={rappels} />
       </section>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-1">
+        <button type="button" className={"ink-link text-[14px] font-semibold " + TOUCHER} onClick={onAutre}>
+          {V.autre}
+        </button>
+        <Link href="/entrainement" className={"ink-link text-[14px] font-semibold " + TOUCHER}>
+          {V.revenir}
+        </Link>
+      </div>
     </div>
   );
 }

@@ -12,8 +12,10 @@ import { lireSeance, poolCalcul } from "./donnees";
 // questions vient de la base ; celui des calculs, du code, ajouté avec la
 // clé service), et répondre à un calcul (corrigé ici, inscrit au journal des
 // calculs avec la session du joueur, puis noté dans l'Atelier avec la clé
-// service : le navigateur ne peut pas forger un calcul juste). Les réponses
-// aux questions passent directement par atelier_repondre.
+// service : le navigateur ne peut pas forger un calcul juste). Le re-test
+// n'entre pas au journal des calculs (il suit la solution détaillée) : il
+// reste dans l'Atelier, comme celui des questions. Les réponses aux
+// questions passent directement par atelier_repondre.
 
 function admin() {
   try {
@@ -80,8 +82,8 @@ export async function repondreCalcAtelier(input: { id: string; i: number; raw: s
   if (noter.error) return { ferme: false, status: "erreur", message: "La réponse n'est pas partie. Réessaie." };
   const n = (noter.data ?? {}) as { ferme?: boolean; deja?: boolean; is_correct?: boolean; valeur?: number | null; xp?: number };
   if (n.ferme) return { ferme: true };
-  // une réponse déjà donnée reste la réponse ; une nouvelle entre aussi au journal des calculs
-  if (!n.deja) {
+  // une réponse déjà donnée reste la réponse ; une nouvelle, au premier passage, entre aussi au journal des calculs
+  if (!n.deja && input.retest !== true) {
     try {
       await sb.from("calc_attempts").insert({ topic: it.m, type_key: it.t, question_id: q.id, level: q.level, value: r.value, correct: juste });
     } catch {

@@ -2,7 +2,8 @@
 // par des questions neuves, alternance des notions selon leur poids, carte
 // Rappel après deux fautes, question plus facile puis plus dure, notion
 // tenue, chrono qui commande, plafond, re-test, bilan avant / pendant),
-// le prochain Atelier conseillé, ce que Léonard dit du bilan, et une
+// le prochain Atelier conseillé, ce que Léonard dit du bilan, le pool
+// jouable (question retirée de la banque, calcul disparu), et une
 // séance entière jouée au hasard (toujours une fin, jamais de question
 // introuvable). Sans dépendance de plus : jiti (déjà installé avec
 // Tailwind) charge le TypeScript et l'alias « @/ ».
@@ -16,6 +17,7 @@ const jiti = createJiti(import.meta.url, { alias: { "@/": racine + "/" } });
 const A = await jiti.import(join(racine, "lib/atelier.ts"));
 const L = await jiti.import(join(racine, "lib/leonard/signal.ts"));
 const R = await jiti.import(join(racine, "lib/leonard/repliques.ts"));
+const S = await jiti.import(join(racine, "lib/atelier-seance.ts"));
 
 let ko = 0;
 let n = 0;
@@ -298,6 +300,15 @@ const EVTS_ATELIER = { "atelier-progres": ["notion", "score"], "atelier-rayees":
 check("Léonard : au moins 4 répliques par réaction", Object.keys(EVTS_ATELIER).every((e) => R.REPLIQUES[e]?.length >= 4));
 check("Léonard : seulement les marqueurs fournis", Object.entries(EVTS_ATELIER).every(([e, ok]) => R.REPLIQUES[e].every((r) => [...r.texte.matchAll(/[{](\w+)[}]/g)].every((m) => ok.includes(m[1])))));
 check("Léonard : la voix (ni point d'exclamation, ni « raté », ni « échec »)", Object.keys(EVTS_ATELIER).every((e) => R.REPLIQUES[e].every((r) => !/!|raté|échec/i.test(r.texte))));
+
+console.log("\n# Le pool jouable");
+// une question neuve retirée de la banque pendant un Atelier en cours revient sans énoncé ni choix : jamais tirée
+const qcm = (i, prompt, choices) => ({ i, k: "neuve", notion: N1, niveau: 1, ref: "q" + i, prompt, choices, misses: null, premier: null, retest: null });
+const calcDisparu = { i: 3, k: "calc", notion: N1, niveau: 2, ref: "x", type: "t", matiere: "fixed_income", nomType: "t", q: null, premier: null, retest: null };
+const jouables = S.itemsPool({ items: [qcm(0, "Duration?", ["A", "B", "C"]), qcm(1, "", []), qcm(2, "Only one?", ["A"]), calcDisparu] });
+check("pool jouable : ni question vide, ni question à un seul choix, ni calcul disparu", jouables.map((x) => x.i).join() === "0", JSON.stringify(jouables));
+const sansVide = etat(S.itemsPool({ items: [qcm(0, "", []), qcm(1, "Convexity?", ["A", "B"])] }), { notions: [N1], poids: [100] });
+check("… la question tirée est celle qui reste", A.choisir(sansVide, "neuves") === 1);
 
 console.log(ko ? `\n${ko} KO sur ${n}` : `\nTOUT OK (${n})`);
 process.exit(ko ? 1 : 0);

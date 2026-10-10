@@ -39,7 +39,7 @@ function Repli({ className, resume, children }: { className: string; resume: Rea
 function Detail({ a, h }: { a: AtelierPasse; h: HistoriqueAteliers }) {
   return (
     <div className="grid gap-2 pt-2">
-      <ParNotion b={a.bilan} rappels={h.noms} />
+      <ParNotion b={a.bilan} rappels={h.noms} anime={false} />
       {a.bilan.retest.n > 0 && <p className="t-micro m-0">{V.retest(a.bilan.retest.ok, a.bilan.retest.n)}</p>}
     </div>
   );

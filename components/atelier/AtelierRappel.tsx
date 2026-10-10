@@ -11,8 +11,8 @@ import { ATELIER as V } from "@/lib/voice-atelier";
 // Les cartes Rappel de l'Atelier : ce qui coince, formules et pièges du type
 // de calcul, trois flashcards (le verso au toucher), puis la page de fiche,
 // ouverte dans un tiroir (la Feuille) sans quitter l'Atelier, et le chapitre
-// audio, à la bonne minute. Une carte par notion à l'ouverture ; une seule
-// après deux erreurs de suite.
+// audio, à la bonne minute. Une carte par notion à l'ouverture, l'une sous
+// l'autre ; une seule après deux erreurs de suite.
 
 /** Une petite commande agrandie au toucher (44 px de haut) sans changer son dessin. */
 const TOUCHER = "relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
@@ -45,7 +45,7 @@ function Flashcard({ recto, verso }: { recto: string; verso: string }) {
       {ouverte ? (
         <RichText text={verso} className="rl-in mt-2 border-t border-line pt-2 text-[13.5px] leading-[1.55] text-body break-words [overflow-wrap:anywhere]" />
       ) : (
-        <button type="button" className={"t-micro mt-1.5 inline-flex items-center gap-1 font-semibold hover:text-white " + TOUCHER} aria-expanded={false} onClick={() => setOuverte(true)}>
+        <button type="button" className="t-micro -mb-2 inline-flex min-h-[44px] items-center gap-1 font-semibold hover:text-white" aria-expanded={false} onClick={() => setOuverte(true)}>
           {V.verso} <ChevronDown size={12} aria-hidden />
         </button>
       )}
@@ -143,7 +143,7 @@ export function BlocRappel({
         <h2 className="t-h2 m-0">{raison === "ouverture" ? V.rappelOuverture : V.rappelFautes(libelle)}</h2>
         {raison === "fautes" && <p className="t-small m-0">{V.rappelFautesSuite}</p>}
       </div>
-      <div className={"grid items-start gap-3 " + (rappels.length > 1 ? "lg:grid-cols-2" : "")}>
+      <div className="grid gap-3">
         {rappels.map((r) => (
           <CarteRappel key={r.notion} r={r} />
         ))}

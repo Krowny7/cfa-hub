@@ -312,8 +312,9 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
   if (!p) return null;
   const lien = p.liens[0] ?? { href: `/practice?topic=${p.matiere}`, libelle: V.repliAction };
   const reprise = peutPropre(p, d.propre);
-  // les autres liens (page de fiche, chapitre audio…), après l'action
-  const autres = reprise || d.atelier ? p.liens : p.liens.slice(1);
+  // l'action reste le seul point focal : un lien au plus à côté (« Mettre au propre » avec l'Atelier,
+  // sinon le premier lien de la notion qui n'est pas déjà l'action) ; les autres sont dans le tiroir de Moi › Stats
+  const second = d.atelier ? (reprise ? null : p.liens[0]) : reprise ? p.liens[0] : p.liens[1];
   const avecListe = !propre.theme && trois.length > 1;
 
   return (
@@ -360,11 +361,11 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
                   {lien.libelle} <ArrowRight size={16} aria-hidden />
                 </Link>
               )}
-              {autres.map((l) => (
-                <Link key={l.href} href={l.href} className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER}>
-                  {l.libelle} <ArrowRight size={13} aria-hidden />
+              {second && (
+                <Link href={second.href} className={"ink-link inline-flex items-center gap-1 text-[13px] font-semibold " + TOUCHER}>
+                  {second.libelle} <ArrowRight size={13} aria-hidden />
                 </Link>
-              ))}
+              )}
             </div>
           </div>
 
