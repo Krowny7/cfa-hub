@@ -1,0 +1,162 @@
+/* La cérémonie du sans-faute : les coches s'écrivent, le sceau se pose, le
+   score à 100 % et une ligne d'encre. L'état naturel de chaque élément est son
+   état final : sans animation (mouvement réduit, captures), tout est posé. */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  cursor: pointer;
+  animation: voile 0.28s var(--ease-out, ease-out) both;
+  animation-delay: var(--d, 0s);
+}
+.sortie {
+  animation: sortie 0.32s ease-in forwards;
+}
+
+.scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 560px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.epreuve {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  animation: monte 0.4s var(--ease-out, ease-out) both;
+  animation-delay: var(--d, 0s);
+}
+
+.coches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  justify-content: center;
+  max-width: var(--rangee, none);
+}
+.coche {
+  display: block;
+  color: var(--pen);
+}
+.coche path {
+  stroke-dasharray: 26;
+  stroke-dashoffset: 0;
+  animation: ecrit 0.2s cubic-bezier(0.45, 0, 0.2, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+.sceau {
+  margin-top: 4px;
+}
+.sceau > * {
+  animation: tampon 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+.score {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: clamp(40px, 11vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  animation: monte 0.45s var(--ease-out, ease-out) both;
+  animation-delay: var(--d, 0s);
+}
+.score small {
+  font-size: 0.5em;
+  color: var(--pen);
+  margin-left: 0.35em;
+}
+
+.ligne {
+  width: min(260px, 70vw);
+  height: 10px;
+  color: var(--ink);
+  margin-top: -8px;
+}
+.ligne path {
+  stroke-dasharray: 280;
+  stroke-dashoffset: 0;
+  animation: trace 0.55s cubic-bezier(0.45, 0, 0.2, 1) both;
+  animation-delay: var(--d, 0s);
+}
+
+.mot {
+  font-size: 15px;
+  color: var(--ink-2);
+  animation: monte 0.4s var(--ease-out, ease-out) both;
+  animation-delay: var(--d, 0s);
+}
+
+.indice {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  animation: monte 0.4s ease-out both;
+  animation-delay: var(--d, 0s);
+}
+
+/* aperçus : l'image à l'instant --t (les gestes arrêtés) */
+.fige,
+.fige * {
+  animation-play-state: paused !important;
+}
+.fige,
+.fige .epreuve,
+.fige .coche path,
+.fige .sceau > *,
+.fige .score,
+.fige .ligne path,
+.fige .mot,
+.fige .indice {
+  animation-delay: calc(var(--d, 0s) - var(--t, 0s)) !important;
+}
+
+@keyframes voile {
+  from { opacity: 0; }
+}
+@keyframes sortie {
+  to { opacity: 0; }
+}
+@keyframes monte {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes ecrit {
+  from { stroke-dashoffset: 26; }
+}
+@keyframes trace {
+  from { stroke-dashoffset: 280; }
+}
+@keyframes tampon {
+  0% { opacity: 0; scale: 1.38; }
+  45% { opacity: 1; scale: 0.93; }
+  72% { scale: 1.012; }
+  100% { opacity: 1; scale: 1; }
+}
+
+/* mouvement réduit, captures : l'image fixe */
+@media (prefers-reduced-motion: reduce) {
+  .voile,
+  .voile * {
+    animation: none !important;
+  }
+}
+/* (sauf l'aperçu figé, qui montre un instant précis) */
+:global(html[data-rl-motion="off"]) .voile:not(.fige),
+:global(html[data-rl-motion="off"]) .voile:not(.fige) * {
+  animation: none !important;
+}

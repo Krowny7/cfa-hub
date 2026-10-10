@@ -53,6 +53,8 @@ import { INK } from "@/components/ui/InkDefs";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { rankFor, TIERS } from "@/lib/ranks";
 import { pointsAvant, signe, SOMMET, verdictDuel, type IssueDuel } from "@/lib/voice";
+import { CeremonieSansFaute } from "./CeremonieSansFaute";
+import { marquerCeremonie } from "@/lib/ceremonie-en-cours";
 import { SceauMention, type MentionDuel } from "./Sceau";
 import { EASE_INK, EASE_OUT, STAMP_KF, usePartition, type Partition } from "./sound-timeline";
 import type { SonMoment } from "./sound";
@@ -210,6 +212,9 @@ export function Verdict({
         const ecart = (eux?.score ?? 0) - moi.score;
         const evt = issue === "victoire" ? "duel-gagne" : issue === "nulle" ? "duel-nul" : ecart >= 3 ? "duel-ecrase" : "duel-perdu";
         signalerLeonard({ evt, vars: { score: `${moi.score}-${eux?.score ?? 0}` }, delai: 5200 }, "duel:" + cle);
+        // duel parfait : la cérémonie du sans-faute suivra la séquence ;
+        // l'écran est retenu dès maintenant, Léonard passera après
+        if (n > 0 && moi.score === n) marquerCeremonie(12_000);
       }
       setJoue(true);
     }
@@ -464,6 +469,8 @@ export function Verdict({
           ) : null}
         </div>
       ) : null}
+      {/* duel à 100 % : la cérémonie du sans-faute, une fois la séquence finie */}
+      {joue === true && fini && cle && figerA == null && <CeremonieSansFaute score={moi.score} total={n} epreuve="Duel" cle={"duel:" + cle} />}
     </section>
   );
 }

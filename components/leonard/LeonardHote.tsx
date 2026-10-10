@@ -8,6 +8,7 @@ import { CLE_NOUVEAUTES, CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/li
 import type { LeonardRig } from "@/lib/leonard/rig";
 import { NOUVEAUTES, REPLIQUES, TUTO, type EtapeTuto, type Replique, type Visite } from "@/lib/leonard/repliques";
 import { CLE_NOUVEAUTES_COMPTE, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
+import { ceremonieRecente, resteCeremonie } from "@/lib/ceremonie-en-cours";
 import s from "./Leonard.module.css";
 
 // Léonard sur toutes les pages : il écoute les signaux des écrans
@@ -54,6 +55,8 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "atelier-fini": 0.5,
   tard: 0.6,
 };
+// ce que la cérémonie du sans-faute fête déjà : Léonard ne le redit pas
+const FETES_PAR_CEREMONIE = new Set<EvenementLeonard>(["session-parfaite", "defi-reussi", "duel-gagne"]);
 const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "sceau-gagne", "session-parfaite", "retour"]);
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
@@ -318,9 +321,17 @@ export function LeonardHote() {
       setArrive(!visite);
       setScene({ repliques, tuto: !!visite, visite });
     };
+    // une cérémonie plein écran (sans-faute) en cours : il attend qu'elle s'efface
+    const quand = () => {
+      const reste = resteCeremonie();
+      if (reste > 0) window.setTimeout(quand, reste + 400);
+      // le sans-faute vient d'être fêté : il ne le redit pas
+      else if (FETES_PAR_CEREMONIE.has(sig.evt) && ceremonieRecente()) visible.current = false;
+      else lancer();
+    };
     prechauffer();
-    if (sig.delai) window.setTimeout(lancer, sig.delai);
-    else lancer();
+    if (sig.delai) window.setTimeout(quand, sig.delai);
+    else quand();
   }, []);
 
   // les signaux des écrans

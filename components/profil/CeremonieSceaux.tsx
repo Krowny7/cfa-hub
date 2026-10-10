@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SceauDe } from "@/components/profil/FicheSceau";
+import { resteCeremonie } from "@/lib/ceremonie-en-cours";
 import { signalerLeonard } from "@/lib/leonard/signal";
 import { sceauxAFeter, sceauxFetes, type SceauAFeter } from "@/lib/profil/actions-sceaux";
 import { hrefOnglet } from "@/lib/profil/onglets";
@@ -58,12 +59,25 @@ export function CeremonieSceaux({
       const etats = (r?.sceaux ?? []).map(etatGagne).filter((e): e is EtatSceau => !!e);
       const leonard = onResultat?.(etats.length) ?? false;
       if (!r || !etats.length) return;
-      setFete({ id: r.id, etats, leonard });
-      if (!demo) sceauxFetes(etats.map((e) => e.def.cle)).catch(() => undefined);
+      const id = r.id;
+      // la cérémonie du sans-faute occupe l'écran : le sceau se pose après
+      const poser = () => {
+        if (fini) return;
+        const reste = demo ? 0 : resteCeremonie();
+        if (reste > 0) {
+          t2 = window.setTimeout(poser, reste + 400);
+          return;
+        }
+        setFete({ id, etats, leonard });
+        if (!demo) sceauxFetes(etats.map((e) => e.def.cle)).catch(() => undefined);
+      };
+      poser();
     }, demo ? 0 : ATTENTE_MS);
+    let t2 = 0;
     return () => {
       fini = true;
       window.clearTimeout(t);
+      window.clearTimeout(t2);
     };
     // une fois, au montage (onResultat ne lit que des références de l'écran)
     // eslint-disable-next-line react-hooks/exhaustive-deps
