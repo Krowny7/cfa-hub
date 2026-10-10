@@ -8,6 +8,7 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { Ticks, type TickMark } from "@/components/defi/parts";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
+import { CeremonieSansFaute } from "@/components/adn/CeremonieSansFaute";
 import { clock, duelTopicLabel } from "@/lib/duels";
 import { answerEclair, finishEclair, startEclair, type EclairFinish, type EclairQuestion } from "@/lib/eclair";
 import { ECLAIR, verdictCopie } from "@/lib/voice-z2c";
@@ -191,7 +192,12 @@ export function EclairRunner({ todayDone, cinqAFaire, demo }: { todayDone: numbe
   }
 
   if (phase === "done" && result) {
-    return <Bilan result={result} done={done} cinqAFaire={cinqAFaire} onEncore={() => void start()} />;
+    return (
+      <>
+        <Bilan result={result} done={done} cinqAFaire={cinqAFaire} onEncore={() => void start()} />
+        <CeremonieSansFaute score={result.score} total={result.total || result.marks.length} epreuve="Série éclair" cle={`eclair:${serieId ?? done}`} />
+      </>
+    );
   }
 
   return (

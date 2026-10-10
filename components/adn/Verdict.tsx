@@ -53,6 +53,7 @@ import { INK } from "@/components/ui/InkDefs";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { rankFor, TIERS } from "@/lib/ranks";
 import { pointsAvant, signe, SOMMET, verdictDuel, type IssueDuel } from "@/lib/voice";
+import { CeremonieSansFaute } from "./CeremonieSansFaute";
 import { SceauMention, type MentionDuel } from "./Sceau";
 import { EASE_INK, EASE_OUT, STAMP_KF, usePartition, type Partition } from "./sound-timeline";
 import type { SonMoment } from "./sound";
@@ -463,6 +464,8 @@ export function Verdict({
           ) : null}
         </div>
       ) : null}
+      {/* duel à 100 % : la cérémonie du sans-faute, une fois la séquence finie */}
+      {joue === true && fini && cle && figerA == null && <CeremonieSansFaute score={moi.score} total={n} epreuve="Duel" cle={"duel:" + cle} />}
     </section>
   );
 }

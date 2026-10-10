@@ -1,5 +1,6 @@
 "use client";
 
+import { CeremonieSansFaute } from "@/components/adn/CeremonieSansFaute";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { analyserSession, empreinte, signalerLeonard, type SignalLeonard } from "@/lib/leonard/signal";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
@@ -224,6 +225,9 @@ export function FinDeSession({
         }
       />
       </div>
+      {anime && (
+        <CeremonieSansFaute score={score} total={total} epreuve={epreuve} cle={"fs:" + empreinte(epreuve, score, total, ...review.map((r) => r.question_id))} />
+      )}
       {anime && (
         <CeremonieSceaux
           className="mt-8"

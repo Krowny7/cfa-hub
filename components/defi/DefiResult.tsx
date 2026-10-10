@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { CeremonieSansFaute } from "@/components/adn/CeremonieSansFaute";
 import { Cote } from "@/components/adn/Cote";
 import { SignalLeonard } from "@/components/leonard/SignalLeonard";
 import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
@@ -72,6 +73,9 @@ export function DefiResult({ info, review, board }: Props) {
     <>
       {info.isToday && (
         <SignalLeonard evt={pct >= 70 ? "defi-reussi" : "defi-rate"} vars={{ score: `${score}/${total}`, pct: `${pct} %` }} cle={"defi:" + info.day} delai={1800} />
+      )}
+      {info.isToday && (
+        <CeremonieSansFaute score={score} total={total} epreuve={info.format === "cinq" ? "Les 5 du jour" : "Défi du jour"} cle={`defi:${info.format}:${info.day}`} rendueA={me.finishedAt} />
       )}
     <section className="card-hero grid min-w-0 gap-6 p-6 md:p-8" aria-label="Ta copie">
       <div className="flex items-start justify-between gap-4">
