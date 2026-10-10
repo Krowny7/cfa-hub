@@ -100,8 +100,10 @@
     transform: translateX(-6.2%);
   }
 }
+/* teinte chaude et saturée (pas de voile blanc), nulle sur les 10 % du bas
+   pour ne pas dessiner le bord du calque */
 .ciel > .couchant {
-  background: linear-gradient(to top, rgba(255, 146, 96, 0.55) 4%, rgba(255, 150, 104, 0.85) 22%, rgba(255, 176, 128, 0.35) 55%, rgba(255, 190, 140, 0) 85%);
+  background: linear-gradient(to top, rgba(255, 118, 66, 0) 0%, rgba(255, 118, 66, 0) 9%, rgba(255, 118, 66, 0.72) 20%, rgba(255, 128, 76, 0.42) 42%, rgba(255, 140, 90, 0) 78%);
   mix-blend-mode: screen;
   opacity: 0.06;
   transform: translateY(30%);
@@ -114,7 +116,7 @@
     transform: translateY(30%);
   }
   to {
-    opacity: 0.55;
+    opacity: 0.26;
     transform: none;
   }
 }
@@ -128,12 +130,14 @@
     opacity: 0.1;
   }
   to {
-    opacity: 0.8;
+    opacity: 0.45;
   }
 }
 
 /* le chat qui respire : l'image recadrée sur lui (424-528 × 316-384), masquée
-   sur le dos et le flanc (la tête reste celle de l'image de base) */
+   sur le dos et le flanc (la tête reste celle de l'image de base). Le calque
+   n'apparaît que pendant le souffle : au repos, c'est l'image de base au pixel
+   près ; les fondus se font quand l'écart d'échelle est sous le pixel. */
 .chat {
   background: 46.087% 62.698% / 984.615% 841.176% no-repeat;
   -webkit-mask: radial-gradient(ellipse 36% 36% at 52% 37%, #000 40%, transparent 100%);
@@ -143,14 +147,26 @@
 }
 @keyframes respire {
   0%,
-  100% {
+  8% {
     transform: none;
+    opacity: 0;
+  }
+  16% {
+    opacity: 1;
   }
   44% {
     transform: scale(1.012, 1.06);
   }
   58% {
     transform: scale(1.012, 1.058);
+  }
+  86% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    transform: none;
+    opacity: 0;
   }
 }
 
@@ -224,25 +240,25 @@
 @keyframes scintille {
   0%,
   100% {
-    opacity: 0.7;
-  }
-  13% {
-    opacity: 0.45;
-  }
-  27% {
-    opacity: 0.9;
-  }
-  41% {
     opacity: 0.6;
   }
-  58% {
-    opacity: 1;
+  13% {
+    opacity: 0.42;
   }
-  74% {
+  27% {
+    opacity: 0.7;
+  }
+  41% {
     opacity: 0.5;
   }
+  58% {
+    opacity: 0.75;
+  }
+  74% {
+    opacity: 0.4;
+  }
   88% {
-    opacity: 0.8;
+    opacity: 0.64;
   }
 }
 /* flammes : la touche peinte reste visible dessous (pas de goutte blanche) */
@@ -345,12 +361,20 @@
 .raye path {
   fill: #9a2c1e;
 }
+/* encre sépia foncée, plume en deux passes (la seconde plus fine et plus légère) */
 .ecrit {
   fill: none;
-  stroke: #3a2312;
-  stroke-width: 0.8;
+  stroke: #5b3a22;
+  stroke-width: 0.65;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+.ecrit > path {
+  opacity: 0.82;
+}
+.ecrit > .ecrit2 {
+  opacity: 0.45;
+  stroke-width: 0.5;
 }
 /* l'épaisseur suit la taille affichée : ≈ 1,4 à 1,8 px à l'écran */
 .moyen,
@@ -365,7 +389,10 @@
     display: inline;
   }
   .ecrit {
-    stroke-width: 1.1;
+    stroke-width: 0.95;
+  }
+  .ecrit > .ecrit2 {
+    stroke-width: 0.7;
   }
 }
 @container (max-width: 240px) {
@@ -376,7 +403,10 @@
     display: inline;
   }
   .ecrit {
-    stroke-width: 1.8;
+    stroke-width: 1.6;
+  }
+  .ecrit > .ecrit2 {
+    stroke-width: 1.1;
   }
 }
 .raye,

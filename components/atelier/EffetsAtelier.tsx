@@ -18,15 +18,17 @@ import s from "./IllustrationAtelier.module.css";
 /** Tirage pseudo-aléatoire à graine fixe : mêmes valeurs à chaque chargement. */
 const alea = ((g: number) => () => (g = (g * 16807) % 2147483647) / 2147483647)(7);
 
-// la correction : des boucles de plume, mots séparés d'une espace
+// la correction : des boucles de plume, mots séparés d'une espace, de hauteur
+// irrégulière (±30 %, tirage à part pour ne pas déplacer la poussière)
 let TRACE = "M0 0";
 {
+  const main = ((g: number) => () => (g = (g * 16807) % 2147483647) / 2147483647)(11);
   let x = 0;
   for (const n of [5, 3, 6, 4, 3]) {
     for (let i = 0; i < n; i++) {
       const t = alea();
-      const h = t < 0.22 ? 4.3 : t < 0.3 ? -2.6 : 2.1 + alea() * 0.5;
-      const w = 1.5 + alea() * 0.7;
+      const h = (t < 0.22 ? 4.3 : t < 0.3 ? -2.6 : 2.1 + alea() * 0.5) * (0.7 + main() * 0.6);
+      const w = 1.8 + alea() * 0.8;
       TRACE += `c${(w * 0.15).toFixed(2)} ${(-h).toFixed(2)} ${(w * 0.75).toFixed(2)} ${(-h).toFixed(2)} ${w.toFixed(2)} 0`;
       x += w;
     }
@@ -119,22 +121,30 @@ export function EffetsAtelier() {
         cv.width = Math.round(w * dp);
         cv.height = Math.round(h * dp);
       }
-      const k = (w / 1024) * dp, mini = (0.6 * dp) / k;
+      // vignette (téléphone) : un grain sur deux, sans halo, plus fins
+      const vignette = w < 160;
+      const k = (w / 1024) * dp, mini = ((vignette ? 0.45 : 0.6) * dp) / k;
       g.setTransform(1, 0, 0, 1, 0, 0);
       g.clearRect(0, 0, cv.width, cv.height);
       g.setTransform(k, 0, 0, k, 0, 0);
-      for (const m of GRAINS) {
+      for (let i = 0; i < GRAINS.length; i += vignette ? 2 : 1) {
+        const m = GRAINS[i];
         const y = 428 - ((t * m.v + m.p) % 146), x = m.x + m.a * Math.sin(t * m.f + m.t);
         const dx = x - 236, dy = y - 368, e = Math.min(1, (428 - y) / 20, (y - 282) / 20);
-        const al = Math.exp(-(dx * dx + dy * dy) / 10500) * e * (0.85 + 0.45 * Math.sin(t * 1.3 + m.t));
+        // pas de poussière dans le verre de la lanterne (237, 370) : elle flotte autour
+        const v = ((x - 237) / 40) ** 2 + ((y - 370) / 44) ** 2;
+        const al =
+          Math.exp(-(dx * dx + dy * dy) / 10500) * e * Math.min(1, Math.max(0, (v - 0.85) / 0.6)) * (0.85 + 0.45 * Math.sin(t * 1.3 + m.t));
         if (al <= 0) continue;
         const r = Math.max(m.r, mini);
-        // un léger halo, puis le grain
-        g.globalAlpha = Math.min(al, 1) * 0.28;
-        g.fillStyle = "#ffd58a";
-        g.beginPath();
-        g.arc(x, y, r * 2.6, 0, 7);
-        g.fill();
+        // un léger halo (sauf en vignette), puis le grain
+        if (!vignette) {
+          g.globalAlpha = Math.min(al, 1) * 0.28;
+          g.fillStyle = "#ffd58a";
+          g.beginPath();
+          g.arc(x, y, r * 2.6, 0, 7);
+          g.fill();
+        }
         g.globalAlpha = Math.min(al * 1.1, 1);
         g.fillStyle = "#fff0c8";
         g.beginPath();
@@ -209,8 +219,16 @@ export function EffetsAtelier() {
                 <stop offset=".65" stopColor="#ff8a30" stopOpacity=".07" />
                 <stop offset="1" stopColor="#ff8a30" stopOpacity="0" />
               </radialGradient>
+              {/* halo de la lanterne : centre creux, il éclaire le bureau sans brûler le verre */}
+              <radialGradient id={id + "l"}>
+                <stop offset="0" stopColor="#ffb24f" stopOpacity=".05" />
+                <stop offset=".3" stopColor="#ffa448" stopOpacity=".1" />
+                <stop offset=".45" stopColor="#ff9a3c" stopOpacity=".24" />
+                <stop offset=".7" stopColor="#ff8a30" stopOpacity=".07" />
+                <stop offset="1" stopColor="#ff8a30" stopOpacity="0" />
+              </radialGradient>
               <radialGradient id={id + "c"}>
-                <stop offset="0" stopColor="#ffe2a8" stopOpacity=".3" />
+                <stop offset="0" stopColor="#ffe2a8" stopOpacity=".2" />
                 <stop offset=".5" stopColor="#ffc56a" stopOpacity=".2" />
                 <stop offset="1" stopColor="#ffb04a" stopOpacity="0" />
               </radialGradient>
@@ -225,21 +243,18 @@ export function EffetsAtelier() {
                 <stop offset="1" stopColor="#ff9f45" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id + "k"}>
-                <stop offset="0" stopColor="#ff9c6e" stopOpacity=".55" />
-                <stop offset=".55" stopColor="#ff8f6a" stopOpacity=".22" />
-                <stop offset="1" stopColor="#ff8f6a" stopOpacity="0" />
+                <stop offset="0" stopColor="#ff7a48" stopOpacity=".55" />
+                <stop offset=".5" stopColor="#ff7a48" stopOpacity=".24" />
+                <stop offset="1" stopColor="#ff7a48" stopOpacity="0" />
               </radialGradient>
-              {/* l'intérieur de l'arc, entre ses montants */}
-              <clipPath id={id + "a"}>
-                <rect x="229" y="110" width="186" height="90" />
-              </clipPath>
               <filter id={id + "v"} x="-1" y="-1" width="3" height="3">
                 <feGaussianBlur stdDeviation="1.3" />
               </filter>
             </defs>
-            {/* le couchant qui rosit l'horizon, au rythme de la lueur du ciel */}
-            <ellipse className={s.lueur} clipPath={u("a")} cx="322" cy="170" rx="120" ry="38" fill={u("k")} />
-            <ellipse className={`${s.halo} ${s.haloA}`} cx="238" cy="395" rx="170" ry="105" fill={u("h")} />
+            {/* le couchant qui rosit l'horizon, au rythme de la lueur du ciel ; l'ellipse
+                tient entre les montants de l'arc (229-415) et s'y éteint : aucun bord net */}
+            <ellipse className={s.lueur} cx="322" cy="168" rx="93" ry="24" fill={u("k")} />
+            <ellipse className={`${s.halo} ${s.haloA}`} cx="238" cy="395" rx="170" ry="105" fill={u("l")} />
             <circle className={`${s.halo} ${s.haloB}`} cx="768" cy="236" r="95" fill={u("h")} />
             <circle className={`${s.halo} ${s.haloC}`} cx="597" cy="198" r="48" fill={u("h")} />
             <circle className={`${s.halo} ${s.haloC}`} cx="941" cy="278" r="55" fill={u("h")} />
@@ -277,7 +292,11 @@ export function EffetsAtelier() {
                   <path key={c} className={c} d={d} />
                 ))}
               </g>
-              <path className={s.ecrit} clipPath={u("e")} transform="translate(0 -6)" d={TRACE} />
+              {/* deux passes de plume, la seconde décalée et plus légère : pleins et déliés */}
+              <g className={s.ecrit} clipPath={u("e")}>
+                <path transform="translate(0 -6)" d={TRACE} />
+                <path className={s.ecrit2} transform="translate(.3 -6.25)" d={TRACE} />
+              </g>
             </g>
           </svg>
         </>
