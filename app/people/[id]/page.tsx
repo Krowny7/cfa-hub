@@ -34,7 +34,7 @@ import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/dispos
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { journalDe } from "@/lib/profil/journal";
 import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
-import { aPortee, posesDe, sceauxGagnes } from "@/lib/profil/sceaux";
+import { aPortee, posesDe, sceauxGagnes, vusParUnAutre } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
 import { stakesAgainst } from "@/lib/duels";
@@ -134,8 +134,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
   const statsLues = statsProfil(id, supabase);
   const maitrisesLues = masteryByUser(admin, [id]);
-  // les sceaux : gardés en base (et recalculés au plus toutes les 10 min), sinon dérivés
-  const sceauxLus = statsLues.then((stats) => sceauxDuJoueur(id, stats, supabase));
+  // les sceaux : gardés en base (et recalculés au plus toutes les 10 min), sinon dérivés ; l'avancée sur le mien seulement
+  const sceauxLus = statsLues.then((stats) => sceauxDuJoueur(id, stats, { avancee: commeMoi }));
   const relationLue = relationAvec(supabase, user.id, id);
   // la date du pic, pour dire d'où vient un cadre liquide ou l'aura
   const datesPicLues = styleLu.then(({ style: st }) => (cadreDe(st.frame).condition?.k === "pic" ? datesDuPic(supabase, id) : []));
@@ -185,8 +185,9 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const mastery = masteries.get(id) ?? null;
   const rank = rankFor(elo, mastery, leaderboardRank);
 
-  // les sceaux : la collection, les 3 posés (choisis, sinon les plus rares), le total
-  const etats = sceaux.etats;
+  // les sceaux : la collection, les 3 posés (choisis, sinon les plus rares), le total ; un autre
+  // ne reçoit ni les mesures ni l'avancée (nombre de mentions, ratures rayées…)
+  const etats = commeMoi ? sceaux.etats : vusParUnAutre(sceaux.etats);
   const gagnes = sceauxGagnes(etats);
   const poses = posesDe(etats, sceaux.base ? pins : null);
   const choisis = sceaux.base && pins.some((c) => etats.some((e) => e.def.cle === c && e.palier > 0));

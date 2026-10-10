@@ -32,6 +32,12 @@ export type ProfilStats = {
   /** palier actuel et meilleur palier atteint (index dans TIERS) */
   palier: number;
   palierMax: number;
+  /**
+   * le palier le plus haut que l'ELO ait atteint depuis toujours, sans le
+   * verrou de maîtrise (inconnue à l'époque ; le Top 10 : tant qu'on y est).
+   * Il ouvre les cadres liquides et l'aura, et ne se perd pas.
+   */
+  picAtteint: number;
   top10: boolean;
   /** maîtrise par matière (précision, questions) */
   matieres: { key: string; pct: number | null; answered: number }[];
@@ -49,6 +55,7 @@ export const STATS_VIDES: ProfilStats = {
   niveau: 1,
   palier: 0,
   palierMax: 0,
+  picAtteint: 0,
   top10: false,
   matieres: [],
 };
@@ -67,7 +74,7 @@ export type Condition =
 /** Ce que le joueur a fait : de quoi ouvrir les pièces gagnées. */
 export type Acquis = {
   questions: number;
-  /** meilleur palier atteint (index dans TIERS) */
+  /** meilleur palier atteint par l'ELO, sans verrou de maîtrise (index dans TIERS ; ProfilStats.picAtteint) */
   pic: number;
   /** ses sceaux (paliers, et dates avec la base) */
   sceaux: EtatSceau[];
@@ -75,7 +82,7 @@ export type Acquis = {
   datesPic: (string | null)[];
 };
 
-export const acquisDe = (s: ProfilStats, sceaux: EtatSceau[] = [], datesPic: (string | null)[] = []): Acquis => ({ questions: s.questions, pic: s.palierMax, sceaux, datesPic });
+export const acquisDe = (s: ProfilStats, sceaux: EtatSceau[] = [], datesPic: (string | null)[] = []): Acquis => ({ questions: s.questions, pic: s.picAtteint, sceaux, datesPic });
 
 /** Le palier d'un sceau (0 : pas gagné). */
 const palierSceau = (a: Acquis, cle: string): number => a.sceaux.find((e) => e.def.cle === cle)?.palier ?? 0;

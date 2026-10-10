@@ -88,9 +88,9 @@ export type MesuresBase = {
 export type SceauGarde = {
   cle: string;
   palier: Palier;
-  /** ISO, une par palier */
-  dates: string[];
-  /** attribué au premier calcul : les dates égales à la première sont des « avant le » */
+  /** une par palier, au jour de Paris (jamais l'heure) */
+  dates: DatePalier[];
+  /** attribué au premier calcul (ses premières dates sont des « avant le ») */
   retro: boolean;
   /** cérémonie déjà jouée */
   vu: boolean;
@@ -110,7 +110,7 @@ export type BaseSceaux = {
   rarete: Rarete | null;
 };
 
-/** La date d'obtention d'un palier ; `avant` : rétroactive (« obtenu avant le … »). */
+/** La date d'obtention d'un palier ; `iso` : le jour (AAAA-MM-JJ) ; `avant` : rétroactive (« obtenu avant le … »). */
 export type DatePalier = { iso: string; avant: boolean };
 
 export type EtatSceau = {
@@ -124,7 +124,7 @@ export type EtatSceau = {
   prochain: number | null;
   /** avancée vers le palier suivant, de 0 à 1 (1 : dorure) */
   avance: number;
-  /** la mesure n'est pas connue (sceau de la base sans ses mesures) : pas d'avancée à montrer */
+  /** la mesure n'est pas connue (sceau de la base sans ses mesures, ou vu par un autre joueur) : pas d'avancée à montrer */
   inconnu?: boolean;
   /** la base est prête : un palier gagné se garde (et peut se poser sur le profil) */
   enBase?: true;
@@ -169,7 +169,8 @@ function palierMesure(def: DefSceau, valeur: number, questions: number | null): 
 /** La part des joueurs actifs qui ont chaque palier d'un sceau. */
 function raretesDe(cle: string, r: Rarete): (number | null)[] {
   const n = r.paliers[cle] ?? [0, 0, 0];
-  return n.map((x) => (r.actifs >= RARETE_MIN_ACTIFS ? Math.min(1, x / r.actifs) : null));
+  // 0 : le joueur montré ne compte pas parmi les actifs calculés ; on ne dit pas « 0 % » d'un sceau qu'il a
+  return n.map((x) => (r.actifs >= RARETE_MIN_ACTIFS && x > 0 ? Math.min(1, x / r.actifs) : null));
 }
 
 /**
@@ -202,7 +203,7 @@ export function etatSceau(def: DefSceau, s: ProfilStats, base: BaseSceaux | null
     avance: Math.min(1, avance),
     ...(inconnu ? { inconnu } : {}),
     ...(base ? { enBase: true as const } : {}),
-    ...(garde ? { dates: garde.dates.map((iso): DatePalier => ({ iso, avant: garde.retro && iso === garde.dates[0] })) } : {}),
+    ...(garde ? { dates: garde.dates } : {}),
     ...(base?.rarete ? { raretes: raretesDe(def.cle, base.rarete) } : {}),
   };
 }
@@ -211,6 +212,25 @@ export function etatSceau(def: DefSceau, s: ProfilStats, base: BaseSceaux | null
 export function sceauxDe(s: ProfilStats, base: BaseSceaux | null = null): EtatSceau[] {
   return catalogueSceaux(!!base).map((d) => etatSceau(d, s, base));
 }
+
+/**
+ * Les sceaux tels qu'un autre joueur les reçoit : le palier, ses jours et
+ * sa rareté, sans la mesure ni l'avancée (le nombre de Remontada, de
+ * ratures rayées, la maîtrise exacte restent au serveur).
+ */
+export const vusParUnAutre = (etats: EtatSceau[]): EtatSceau[] =>
+  etats.map(({ def, palier, prochain, enBase, dates, raretes }) => ({
+    def,
+    palier,
+    valeur: 0,
+    questions: null,
+    prochain,
+    avance: prochain === null ? 1 : 0,
+    inconnu: true,
+    ...(enBase ? { enBase } : {}),
+    ...(dates ? { dates } : {}),
+    ...(raretes ? { raretes } : {}),
+  }));
 
 /** Les paliers du jour, à attribuer en base : { duelliste: 2, … } (paliers gagnés seulement). */
 export function paliersMesures(s: ProfilStats, m: MesuresBase): Record<string, number> {

@@ -185,10 +185,8 @@ function seriesNotables(actifs: string[], debut: string): EvenementJournal[] {
 function sceauxGagnes(gardes: SceauGarde[], debut: string): EvenementJournal[] {
   const out = new Map<string, EvenementJournal>();
   for (const g of gardes) {
-    g.dates.forEach((iso, i) => {
-      if (g.retro && iso === g.dates[0]) return;
-      const jour = jourParis(new Date(iso));
-      if (jour < debut) return;
+    g.dates.forEach(({ iso: jour, avant }, i) => {
+      if (avant || jour < debut) return;
       out.set(`${g.cle}|${jour}`, { type: "sceau", cle: `sceau-${g.cle}-${i + 1}`, jour, sceau: g.cle, palier: i + 1 });
     });
   }

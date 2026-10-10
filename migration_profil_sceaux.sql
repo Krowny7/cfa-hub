@@ -8,12 +8,17 @@
 --    maîtrise d'une matière baisse. Les seuils restent dans le site
 --    (lib/profil/sceaux.ts) : le serveur recalcule et appelle
 --    rl_sceaux_attribuer à la lecture d'un profil (au plus toutes les
---    10 min) et en fin de session. Le premier calcul d'un joueur est
---    rétroactif (retro : « obtenu avant le … ») et ne déclenche pas de
---    cérémonie (vu) ; les suivants, si. Lecture : tous les connectés.
---    Écriture : le serveur seulement (client service role).
+--    10 min) et en fin de session. Le premier calcul d'un joueur inscrit
+--    avant cette migration est rétroactif (retro : « obtenu avant le … »)
+--    et ne déclenche pas de cérémonie (vu) ; les suivants, si, comme tous
+--    ceux d'un joueur inscrit après. Les dates sont gardées à l'instant
+--    près, mais le site ne les montre qu'au jour de Paris. Lecture : chacun
+--    les siens (le site lit ceux des autres avec le client service role).
+--    Écriture : le serveur seulement.
 -- 2. sceaux_calculs : la date du dernier calcul de chaque joueur (le cache
---    de 10 min, et le repère du premier calcul). Le serveur seulement.
+--    de 10 min, et le repère du premier calcul) ; sceaux_depart : la
+--    première application de cette migration (ce qui la précède est
+--    rétroactif). Le serveur seulement.
 -- 3. duel_mentions : les mentions du verdict de duel (Remontada, Sans faute,
 --    Éclair, Sang-froid ; deux au plus par joueur et par duel, dans l'ordre
 --    du verdict, components/adn/Verdict.tsx), calculées au règlement par un
@@ -25,11 +30,16 @@
 -- 4. profile_style.pins (les 3 sceaux posés dans l'en-tête, choisis par le
 --    joueur ; vide : les plus rares) et profile_style.journal_visibility
 --    (qui voit le Journal : public, amis, moi seul). Écrits par le serveur.
--- 5. rl_sceaux_rarete() : pour chaque palier, combien de joueurs actifs sur
---    90 jours l'ont, et combien de joueurs actifs. rl_place_au() : la place
+-- 5. ratures.rayee_le : le moment où une rature a été rayée par une bonne
+--    réponse en reprise (le sceau Mise au propre), posé par un déclencheur ;
+--    un retrait à la main ne le pose pas. Les ratures déjà rayées sont
+--    reprises. Sans migration_ratures.sql, cette partie est sautée.
+-- 6. rl_sceaux_rarete() : pour chaque palier, combien de joueurs actifs sur
+--    90 jours (et déjà calculés) l'ont, et combien ils sont. rl_place_au() : la place
 --    au classement qu'aurait eue un ELO à une date (le sceau Coup d'éclat,
 --    « battre un Top 10 »). Le serveur seulement.
--- Aucune donnée existante n'est modifiée ni supprimée. N'utilise pas
+-- Aucune donnée existante n'est modifiée ni supprimée (seule la nouvelle
+-- colonne ratures.rayee_le est remplie). N'utilise pas
 -- _player_last_active (redéfinie par migration_presence.sql).
 
 DO $$
@@ -61,7 +71,8 @@ CREATE INDEX IF NOT EXISTS sceaux_cle_palier ON sceaux (cle, palier);
 CREATE INDEX IF NOT EXISTS sceaux_a_feter ON sceaux (user_id) WHERE NOT vu;
 ALTER TABLE sceaux ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "sceaux_select" ON sceaux;
-CREATE POLICY "sceaux_select" ON sceaux FOR SELECT TO authenticated USING (true);
+-- chacun les siens : les dates à l'instant près restent au serveur
+CREATE POLICY "sceaux_select" ON sceaux FOR SELECT TO authenticated USING (user_id = auth.uid());
 -- aucune politique d'écriture : le serveur seulement
 
 -- ── 2. sceaux_calculs ─────────────────────────────────────────────────
@@ -71,6 +82,15 @@ CREATE TABLE IF NOT EXISTS sceaux_calculs (
 );
 ALTER TABLE sceaux_calculs ENABLE ROW LEVEL SECURITY;
 -- aucune politique : le serveur seulement
+
+-- la première application de cette migration (une ligne, jamais déplacée)
+CREATE TABLE IF NOT EXISTS sceaux_depart (
+  une boolean     PRIMARY KEY DEFAULT true CHECK (une),
+  le  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE sceaux_depart ENABLE ROW LEVEL SECURITY;
+-- aucune politique : le serveur seulement
+INSERT INTO sceaux_depart (une) VALUES (true) ON CONFLICT DO NOTHING;
 
 -- ── 3. duel_mentions ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS duel_mentions (
@@ -194,11 +214,44 @@ ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS pins text[] NOT NULL DEFAULT 
 ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS journal_visibility text NOT NULL DEFAULT 'public'
   CHECK (journal_visibility IN ('public', 'friends', 'private'));
 
--- ── 5. attribution, rareté, place ─────────────────────────────────────
+-- ── 5. ratures.rayee_le (Mise au propre) ─────────────────────────────
+-- rature_repondre (migration_ratures_reprise.sql) raye sur une bonne réponse
+-- en posant removed_at et last_correct_at au même instant ; retirer_rature
+-- (à la main) ne touche que removed_at. Le déclencheur ne redéfinit rien :
+-- il reconnaît le premier geste et le note. Une rature qui revient l'efface.
+CREATE OR REPLACE FUNCTION _rature_rayee_le()
+RETURNS trigger
+LANGUAGE plpgsql SET search_path = public
+AS $$
+BEGIN
+  IF NEW.removed_at IS NULL THEN
+    NEW.rayee_le := NULL;
+  ELSIF OLD.removed_at IS NULL AND NEW.last_correct_at IS NOT NULL AND NEW.last_correct_at = NEW.removed_at THEN
+    NEW.rayee_le := NEW.removed_at;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION _rature_rayee_le() FROM PUBLIC, anon, authenticated;
+
+DO $$
+BEGIN
+  IF to_regclass('public.ratures') IS NULL THEN
+    RETURN;
+  END IF;
+  EXECUTE 'ALTER TABLE ratures ADD COLUMN IF NOT EXISTS rayee_le timestamptz';
+  EXECUTE 'DROP TRIGGER IF EXISTS ratures_rayee_le ON ratures';
+  EXECUTE 'CREATE TRIGGER ratures_rayee_le BEFORE UPDATE ON ratures FOR EACH ROW EXECUTE FUNCTION _rature_rayee_le()';
+  -- les ratures déjà rayées : retirées, et répondues juste depuis (rejouable)
+  EXECUTE 'UPDATE ratures SET rayee_le = removed_at WHERE rayee_le IS NULL AND removed_at IS NOT NULL AND last_correct_at >= removed_at';
+  EXECUTE 'CREATE INDEX IF NOT EXISTS ratures_rayees ON ratures (user_id) WHERE rayee_le IS NOT NULL';
+END $$;
+
+-- ── 6. attribution, rareté, place ─────────────────────────────────────
 -- Attribuer les paliers calculés par le site ({ "duelliste": 2, … }) : un
 -- palier ne fait que monter, chaque nouveau palier reçoit la date du jour.
--- Premier calcul du joueur : tout est rétroactif et déjà vu. Renvoie tous
--- ses sceaux.
+-- Premier calcul d'un joueur inscrit avant la migration : tout est
+-- rétroactif et déjà vu. Renvoie tous ses sceaux.
 CREATE OR REPLACE FUNCTION rl_sceaux_attribuer(p_user uuid, p_paliers jsonb)
 RETURNS SETOF sceaux
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -218,7 +271,9 @@ BEGIN
   END IF;
   -- deux calculs simultanés du même joueur passent l'un après l'autre
   PERFORM pg_advisory_xact_lock(hashtext('rl_sceaux:' || p_user::text));
-  v_premier := NOT EXISTS (SELECT 1 FROM sceaux_calculs WHERE user_id = p_user);
+  -- rétroactif : seulement le premier calcul d'un joueur inscrit avant la migration
+  v_premier := NOT EXISTS (SELECT 1 FROM sceaux_calculs WHERE user_id = p_user)
+    AND EXISTS (SELECT 1 FROM profiles p, sceaux_depart d WHERE p.id = p_user AND p.created_at < d.le);
   INSERT INTO sceaux_calculs (user_id, calcule_le) VALUES (p_user, v_now)
   ON CONFLICT (user_id) DO UPDATE SET calcule_le = EXCLUDED.calcule_le;
 
@@ -259,16 +314,20 @@ REVOKE ALL ON FUNCTION rl_sceaux_vus(uuid, text[]) FROM PUBLIC, anon, authentica
 GRANT EXECUTE ON FUNCTION rl_sceaux_vus(uuid, text[]) TO service_role;
 
 -- La rareté : les joueurs actifs sur 90 jours (réponses, sessions, examens
--- blancs, duels), et pour chaque palier combien d'entre eux l'ont atteint.
+-- blancs, duels) dont les sceaux ont déjà été calculés, et pour chaque
+-- palier combien d'entre eux l'ont atteint. Un actif jamais calculé ne
+-- compte nulle part : il ferait baisser toutes les parts.
 CREATE OR REPLACE FUNCTION rl_sceaux_rarete()
 RETURNS json
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
-  WITH actifs AS (
+  WITH recents AS (
     SELECT user_id FROM xp_events WHERE occurred_at > now() - interval '90 days'
     UNION SELECT user_id FROM practice_session_results WHERE completed_at > now() - interval '90 days'
     UNION SELECT user_id FROM mock_exam_results WHERE completed_at > now() - interval '90 days'
     UNION SELECT user_id FROM duel_answers WHERE answered_at > now() - interval '90 days'
+  ), actifs AS (
+    SELECT r.user_id FROM recents r JOIN sceaux_calculs c ON c.user_id = r.user_id
   ), paliers AS (
     SELECT s.cle, p.palier, count(*)::int AS n
     FROM sceaux s
@@ -277,7 +336,7 @@ AS $$
     GROUP BY s.cle, p.palier
   )
   SELECT json_build_object(
-    'actifs', (SELECT count(*)::int FROM actifs WHERE user_id IS NOT NULL),
+    'actifs', (SELECT count(*)::int FROM actifs),
     'paliers', coalesce((SELECT json_agg(json_build_object('cle', cle, 'palier', palier, 'n', n)) FROM paliers), '[]'::json)
   );
 $$;

@@ -92,6 +92,7 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
       niveau: levelInfoFromXp(Number((profil.data as { xp_total?: number } | null)?.xp_total ?? 0) || 0).level,
       palier: actuel,
       palierMax: meilleur,
+      picAtteint: Math.max(meilleur, rankFor(Math.max(elo, top), null, place).tierIndex),
       top10: actuel === TOP_TIER,
       matieres: topics.map((t) => ({ key: t.key, pct: t.pct, answered: t.answered })),
     };
@@ -117,8 +118,9 @@ export async function datesDuPic(sb: SupabaseClient, userId: string): Promise<(s
       .order("created_at", { ascending: true })
       .limit(2000);
     if (error || !data) return dates;
+    // le jour de Paris seulement (jamais l'heure)
     for (const r of data as { elo_after: number; created_at: string }[])
-      for (let i = 3; i < TOP_TIER; i++) if (!dates[i] && Number(r.elo_after) >= TIERS[i].min) dates[i] = r.created_at;
+      for (let i = 3; i < TOP_TIER; i++) if (!dates[i] && Number(r.elo_after) >= TIERS[i].min) dates[i] = jourParis(new Date(r.created_at));
   } catch {
     // table illisible : pas de date
   }
