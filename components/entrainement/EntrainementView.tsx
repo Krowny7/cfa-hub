@@ -6,7 +6,6 @@ import { DefiTile } from "@/components/defi/DefiTile";
 import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { FormatRow } from "@/components/reviser/ReviserView";
-import { TwoColumnRows } from "@/components/reviser/SubjectRows";
 import { TopicRail } from "@/components/ui/TopicRail";
 import { subjectRail, weightLabel } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";
@@ -19,14 +18,17 @@ import { ACCUEIL, DUEL } from "@/lib/voice";
 import { ESPACES } from "@/lib/voice-z4";
 import { EclairCarte } from "@/components/eclair/EclairCarte";
 import { PointsFaiblesHeros } from "@/components/moi/PointsFaibles";
+import { CarteAtelier } from "@/components/atelier/CarteAtelier";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
 
 // Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
 // avant (ton point faible n° 1 quand il y en a un, sinon la matière la plus
 // faible, sinon reprendre l'entraînement ciblé) ;
 // à côté, le défi du jour (le rituel quotidien, sans bouton plein : le point
-// focal reste la session) puis les autres façons de s'entraîner seul, dont
-// les calculs ; ensuite une session par matière, en rangée horizontale
+// focal reste la session). Quand l'Atelier est ouvert, il prend la colonne de
+// droite (sa carte d'abord sur téléphone) et le défi descend sous le point
+// faible, à côté des séries éclair. Dessous, la bande d'encre des calculs,
+// puis les autres façons de s'entraîner seul ; ensuite une session par matière, en rangée horizontale
 // (choisir une matière lance sa session ciblée) et, plus calme, ce qui fait
 // bouger le rang (examen blanc, duel).
 // Sans requête : app/entrainement charge les données, l'aperçu en fournit.
@@ -200,39 +202,86 @@ function DuelTile({ rating, incoming }: { rating: EntrainementData["rating"]; in
   );
 }
 
+/** Les calculs, en bande d'encre pleine largeur (noire en clair, craie en nuit : .bande-encre). */
+function BandeCalculs() {
+  return (
+    <section
+      aria-label={ESPACES.calculsTitre}
+      className="bande-encre rl-in flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-7 sm:py-6"
+      style={{ animationDelay: ".1s" }}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <span aria-hidden className="bande-encre-icone grid h-12 w-12 shrink-0 place-items-center rounded-[14px]">
+          <Glyphe nom="calculs" size={22} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="m-0 text-[19px] font-bold leading-tight tracking-[-0.015em] md:text-[21px]">{ESPACES.calculsTitre}</h2>
+          <p className="m-0 mt-1 text-[13.5px] leading-snug opacity-75 md:text-[14.5px]">{ESPACES.calculsBande}</p>
+        </div>
+      </div>
+      <Link href="/calculs" className="btn btn-lg btn-sur-encre rl-press w-full shrink-0 sm:w-auto">
+        {ESPACES.calculsAction} <ArrowRight size={17} aria-hidden />
+      </Link>
+    </section>
+  );
+}
+
 export function EntrainementView({ d, now }: { d: EntrainementData; now?: number }) {
   const practiceMeta = d.practice.sessions > 0 ? `${d.practice.sessions} session${d.practice.sessions > 1 ? "s" : ""}` : null;
 
   const formats = [
     { href: "/practice", icon: <Icone nom="entrainer" size={20} />, title: "Entraînement ciblé", desc: "Tes matières, au poids réel de l'examen.", meta: practiceMeta },
     { href: "/qcm", icon: <Glyphe nom="qcm" size={20} />, title: "QCM par thème", desc: "Toutes les banques, classées par matière." },
-    { href: "/calculs", icon: <Glyphe nom="calculs" size={20} />, title: "Calculs", desc: ESPACES.calculsTexte },
     { href: "/official-exams", icon: <Icone nom="examen" size={20} />, title: "Examens officiels", desc: "Les sessions officielles, rejouées question par question." },
   ];
+  // l'Atelier ouvert (migration en place, assez de points faibles) : sa carte prend la colonne de droite
+  const pf = d.pointsFaibles?.etat === "faibles" && d.pointsFaibles.atelier ? d.pointsFaibles : null;
+  const eclair = typeof d.eclair === "number" ? d.eclair : null;
 
   const lead = (
     <div className="flex flex-col gap-4 md:gap-[18px]">
-      <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
-        {d.pointsFaibles?.etat === "faibles" ? (
-          // le héros n'en montre que trois : on n'envoie pas les autres au navigateur
-          <PointsFaiblesHeros d={{ ...d.pointsFaibles, liste: d.pointsFaibles.liste.slice(0, 3) }} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
-        ) : (
-          <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
-        )}
-        {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
-        {d.daily && (
-          <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>
-            <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
-            {typeof d.eclair === "number" && <EclairCarte today={d.eclair} />}
+      {pf ? (
+        <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
+          <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8">
+            {/* le héros n'en montre que trois : on n'envoie pas les autres au navigateur */}
+            <PointsFaiblesHeros d={{ ...pf, liste: pf.liste.slice(0, 3) }} sansAtelier className="lg:flex-1" />
+            {/* côte à côte dès qu'il y a la place (en dessous de 1280, la colonne est trop étroite pour les deux) */}
+            {(d.daily || eclair !== null) && (
+              <div className={"rl-in grid gap-4 md:gap-[18px] " + (d.daily && eclair !== null ? "xl:grid-cols-2" : "")} style={{ animationDelay: ".06s" }}>
+                {d.daily && <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />}
+                {eclair !== null && <EclairCarte today={eclair} />}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <nav aria-label="S'entraîner seul" className="card rl-in overflow-hidden px-1 py-1" style={{ animationDelay: ".1s" }}>
-        <TwoColumnRows
-          items={formats}
-          keyOf={(f) => f.href}
-          render={(f) => <FormatRow href={f.href} icon={f.icon} title={f.title} desc={f.desc} meta={f.meta} />}
-        />
+          {/* téléphone : l'Atelier d'abord, son bouton dans le premier écran */}
+          <CarteAtelier d={pf} className="max-lg:order-first lg:col-span-4" />
+        </div>
+      ) : (
+        <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
+          {d.pointsFaibles?.etat === "faibles" ? (
+            // le héros n'en montre que trois : on n'envoie pas les autres au navigateur
+            <PointsFaiblesHeros d={{ ...d.pointsFaibles, liste: d.pointsFaibles.liste.slice(0, 3) }} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
+          ) : (
+            <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
+          )}
+          {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
+          {d.daily && (
+            <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>
+              <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
+              {typeof d.eclair === "number" && <EclairCarte today={d.eclair} />}
+            </div>
+          )}
+        </div>
+      )}
+      <BandeCalculs />
+      <nav aria-label="S'entraîner seul" className="card rl-in overflow-hidden px-1 py-1" style={{ animationDelay: ".14s" }}>
+        <ul className="m-0 grid list-none grid-cols-1 divide-y divide-line p-0 xl:grid-cols-3 xl:divide-x xl:divide-y-0">
+          {formats.map((f) => (
+            <li key={f.href} className="min-w-0">
+              <FormatRow href={f.href} icon={f.icon} title={f.title} desc={f.desc} meta={f.meta} entier />
+            </li>
+          ))}
+        </ul>
       </nav>
     </div>
   );

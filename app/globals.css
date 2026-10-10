@@ -823,6 +823,41 @@ html[data-theme="nuit"] {
     background: rgba(255, 255, 255, 0.12);
   }
 
+  /* Bande d'encre (S'entraîner › Calculs) : l'encre pleine du thème, donc
+     noire en clair et craie en nuit — le contraste le plus fort de la page
+     dans les deux thèmes (.card-ink, elle, se fond dans la nuit). Son bouton
+     est le papier posé sur l'encre. */
+  .bande-encre {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 18px;
+    color: var(--paper);
+    background-color: var(--ink);
+    background-image: linear-gradient(180deg, color-mix(in oklab, var(--paper) 7%, transparent), transparent 70%);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--paper) 14%, transparent),
+      var(--shadow-2);
+  }
+  .bande-encre :focus-visible {
+    outline-color: var(--paper);
+  }
+  .bande-encre-icone {
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--paper) 24%, transparent);
+    background: color-mix(in oklab, var(--paper) 8%, transparent);
+  }
+  .btn-sur-encre {
+    color: var(--ink);
+    background-color: var(--paper);
+    box-shadow:
+      inset 0 -1px 0 color-mix(in oklab, var(--ink) 14%, transparent),
+      0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .btn-sur-encre:hover {
+    transform: translateY(-1px);
+    background-color: color-mix(in oklab, var(--paper) 90%, var(--ink));
+  }
+
   /* Bouton-icône carré (barre du haut, actions de carte) */
   .icon-btn {
     display: inline-grid;
@@ -1956,7 +1991,8 @@ html[data-theme="nuit"] .card-ink.rl-lift:hover {
   .card-hover:hover,
   .rl-press:hover,
   .btn-primary:hover,
-  .btn-on-ink:hover {
+  .btn-on-ink:hover,
+  .btn-sur-encre:hover {
     transform: none;
   }
   .seg-thumb {

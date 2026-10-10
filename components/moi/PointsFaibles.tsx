@@ -298,8 +298,11 @@ function Choix({ liste, choisi, onChoisir }: { liste: PointFaible[]; choisi: num
   );
 }
 
-/** S'entraîner, carte héros : un point faible (le n° 1 d'abord) et son action ; « Mes 3 points faibles » pour en mettre un autre en avant. À n'afficher qu'avec au moins un point faible. */
-export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData; className?: string }) {
+/**
+ * S'entraîner, carte héros : un point faible (le n° 1 d'abord) et son action ; « Mes 3 points faibles » pour en mettre un autre en avant. À n'afficher qu'avec au moins un point faible.
+ * sansAtelier : l'Atelier a sa propre carte à côté (components/atelier/CarteAtelier.tsx) ; « Mettre au propre » redevient l'action pleine.
+ */
+export function PointsFaiblesHeros({ d, className = "", sansAtelier = false }: { d: PointsFaiblesData; className?: string; sansAtelier?: boolean }) {
   const propre = usePropre();
   const [choisi, setChoisi] = useState(0);
   // téléphone : la liste repliée sous l'action ; ordinateur : toujours ouverte, à côté
@@ -312,9 +315,10 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
   if (!p) return null;
   const lien = p.liens[0] ?? { href: `/practice?topic=${p.matiere}`, libelle: V.repliAction };
   const reprise = peutPropre(p, d.propre);
+  const atelier = sansAtelier ? undefined : d.atelier;
   // l'action reste le seul point focal : un lien au plus à côté (« Mettre au propre » avec l'Atelier,
   // sinon le premier lien de la notion qui n'est pas déjà l'action) ; les autres sont dans le tiroir de Moi › Stats
-  const second = d.atelier ? (reprise ? null : p.liens[0]) : reprise ? p.liens[0] : p.liens[1];
+  const second = atelier ? (reprise ? null : p.liens[0]) : reprise ? p.liens[0] : p.liens[1];
   const avecListe = !propre.theme && trois.length > 1;
 
   return (
@@ -344,7 +348,7 @@ export function PointsFaiblesHeros({ d, className = "" }: { d: PointsFaiblesData
               {p.mesures.rayees7j > 0 && <p className="t-micro m-0">{V.rattrapeNotion(d.unite, p.mesures.rayees7j)}</p>}
             </div>
             <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
-              {d.atelier ? (
+              {atelier ? (
                 <>
                   <LienAtelier d={d} className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" />
                   {reprise && (

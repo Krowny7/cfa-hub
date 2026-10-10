@@ -111,6 +111,10 @@ export const ESPACES = {
   premiereTexte: "Choisis tes matières : le nombre de questions suit le poids réel de l'examen.",
   /** l'entrée « Calculs » (/calculs) */
   calculsTexte: "Le calcul pur : l'énoncé, les données, ton résultat.",
+  /** la bande d'encre de S'entraîner, vers /calculs */
+  calculsTitre: "Calculs",
+  calculsBande: "Le calcul pur : l'énoncé, les données, ton résultat. Rien d'autre.",
+  calculsAction: "Ouvrir les calculs",
   duelTexte: (q: number, min: number) => `Même épreuve, ${q} questions, ${min} min. Le meilleur score gagne.`,
   /** « 1 défi · à toi le trait » */
   defisEnAttente: (n: number) => `${pluriel(n, "défi", "défis")} · à toi le trait`,
