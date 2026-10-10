@@ -4,7 +4,7 @@ import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { joursAvant, jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
 import { displayName } from "@/components/classement/format";
-import { SCEAUX } from "@/lib/profil/sceaux";
+import { SCEAUX, type SceauGarde } from "@/lib/profil/sceaux";
 import type { ProfilStats } from "@/lib/profil/catalogue";
 
 // Le Journal d'un joueur (onglet du profil, étape 2, sans migration) :
@@ -13,7 +13,8 @@ import type { ProfilStats } from "@/lib/profil/catalogue";
 //   cache, aucune lecture de plus) et les questions du jour ;
 // - un fil d'événements dérivé : victoires en duel (client admin, le
 //   résultat seulement), nouveaux paliers (rating_events), séries de 7, 30
-//   et 100 jours (le carnet).
+//   et 100 jours (le carnet), et, avec la base (migration_profil_sceaux.sql),
+//   les sceaux gagnés à leur date (pas ceux repris après coup).
 // Vie privée : tout est ramené au jour de Paris (AAAA-MM-JJ). Aucune heure ne
 // quitte ce module. Module serveur.
 
@@ -49,7 +50,8 @@ export type Courbe = {
 export type EvenementJournal =
   | { type: "victoire"; cle: string; jour: string; adversaire: { id: string; nom: string } | null; score: [number, number] | null; delta: number | null }
   | { type: "palier"; cle: string; jour: string; palier: number }
-  | { type: "serie"; cle: string; jour: string; jours: number };
+  | { type: "serie"; cle: string; jour: string; jours: number }
+  | { type: "sceau"; cle: string; jour: string; sceau: string; palier: number };
 
 export type Journal = {
   aujourdhui: string;
@@ -179,13 +181,28 @@ function seriesNotables(actifs: string[], debut: string): EvenementJournal[] {
   return out;
 }
 
-const ORDRE: Record<EvenementJournal["type"], number> = { palier: 0, victoire: 1, serie: 2 };
+/** Les sceaux gagnés dans la fenêtre : le plus haut palier de chaque jour ; jamais une date rétroactive. */
+function sceauxGagnes(gardes: SceauGarde[], debut: string): EvenementJournal[] {
+  const out = new Map<string, EvenementJournal>();
+  for (const g of gardes) {
+    g.dates.forEach((iso, i) => {
+      if (g.retro && iso === g.dates[0]) return;
+      const jour = jourParis(new Date(iso));
+      if (jour < debut) return;
+      out.set(`${g.cle}|${jour}`, { type: "sceau", cle: `sceau-${g.cle}-${i + 1}`, jour, sceau: g.cle, palier: i + 1 });
+    });
+  }
+  return [...out.values()].sort((a, b) => (a.jour < b.jour ? 1 : a.jour > b.jour ? -1 : 0));
+}
+
+const ORDRE: Record<EvenementJournal["type"], number> = { palier: 0, sceau: 1, victoire: 2, serie: 3 };
 
 /**
  * Le Journal du joueur `id`. `sb` : le client de celui qui regarde (la
  * courbe) ; `admin` : le client admin s'il existe (les victoires : un
  * joueur ne lit que ses propres duels), sinon `sb`. `stats` : celles de
- * l'en-tête (statsProfil), `mastery` : la maîtrise du rang affiché.
+ * l'en-tête (statsProfil), `mastery` : la maîtrise du rang affiché ;
+ * `gardes` : ses sceaux gardés en base (null sans la migration).
  */
 export async function journalDe({
   id,
@@ -193,12 +210,14 @@ export async function journalDe({
   admin,
   stats,
   mastery,
+  gardes = null,
 }: {
   id: string;
   sb: SupabaseClient;
   admin: SupabaseClient | null;
   stats: ProfilStats;
   mastery: number | null;
+  gardes?: SceauGarde[] | null;
 }): Promise<Journal> {
   const aujourdhui = jourParis();
   const debut = decaleJour(aujourdhui, -(JOURS_JOURNAL - 1));
@@ -234,8 +253,9 @@ export async function journalDe({
       .filter((e) => e.jour >= debut),
     ...paliers(historique, debut, mastery),
     ...seriesNotables(actifs, debut),
+    ...sceauxGagnes(gardes ?? [], debut),
   ];
-  // du plus récent au plus ancien ; le même jour : les paliers, les victoires, la série (chacun déjà du plus récent au plus ancien)
+  // du plus récent au plus ancien ; le même jour : les paliers, les sceaux, les victoires, la série (chacun déjà du plus récent au plus ancien)
   const index = new Map(evenements.map((e, i) => [e.cle, i]));
   evenements.sort((x, y) => (x.jour === y.jour ? ORDRE[x.type] - ORDRE[y.type] || (index.get(x.cle) ?? 0) - (index.get(y.cle) ?? 0) : x.jour < y.jour ? 1 : -1));
 

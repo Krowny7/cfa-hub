@@ -9,10 +9,11 @@ import { SoundSwitches } from "@/components/moi/SoundSwitches";
 import { SignOutButton } from "@/components/SignOutButton";
 import { REJOUER, SONS } from "@/lib/voice-z1";
 import { PresenceSettings } from "@/components/presence/PresenceSettings";
+import { ReglageJournal } from "@/components/profil/ReglageJournal";
 
 // Tous les réglages : profil, examen (date et objectif de questions), apparence (thème, mode
 // discret), sons des moments (et le premier trait à rejouer), confidentialité
-// (présence en ligne), groupes, déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
+// (présence en ligne, qui voit mon Journal), groupes, déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
 // Les composants enfants chargent et enregistrent eux-mêmes.
 export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroupId: string | null; groups: GroupRow[]; objectif: ObjectifInitial }) {
   return (
@@ -50,6 +51,7 @@ export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroup
             </h3>
             <div className="mt-1">
               <PresenceSettings />
+              <ReglageJournal />
             </div>
           </div>
         </div>

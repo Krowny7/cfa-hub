@@ -29,6 +29,8 @@ export const INK = {
   /** filtres : pinceau sec (traînées verticales), mine de crayon (grain) */
   dry: "url(#rl-dry)",
   pencil: "url(#rl-pencil)",
+  /** tache d'encre bue par le papier : bord irrégulier, adouci (la bannière « Encre vivante ») */
+  tache: "url(#rl-tache)",
 } as const;
 
 export function InkDefs() {
@@ -50,6 +52,12 @@ export function InkDefs() {
           <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves={1} seed={4} result="n" />
           <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 1.85" result="m" />
           <feComposite in="SourceGraphic" in2="m" operator="in" />
+        </filter>
+        {/* Tache : le cercle se déchire au bord, puis l'encre boit dans le papier */}
+        <filter id="rl-tache" x="-40%" y="-40%" width="180%" height="180%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves={3} seed={7} result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale={22} xChannelSelector="R" yChannelSelector="G" result="d" />
+          <feGaussianBlur in="d" stdDeviation={1.4} />
         </filter>
         {TALLY.map((d, i) => (
           <path key={i} id={`rl-tally-${i}`} d={d} />

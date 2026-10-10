@@ -32,23 +32,27 @@ import { DepuisVisite } from "@/components/profil/DepuisVisite";
 import { Visite } from "@/components/profil/Visite";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/Saisons";
-import { amisDe, lireLien, lireNom, lireStyle, relationAvec, statsProfil } from "@/lib/profil/donnees";
+import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
+import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
+import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
 import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { journalDe, type EvenementJournal } from "@/lib/profil/journal";
 import { lireTampons, monRetour } from "@/lib/profil/social";
 import { lireSaisons } from "@/lib/profil/saisons";
 import { CIBLE_PROFIL, cibleEntree } from "@/lib/profil/tampons";
-import { hrefOnglet, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
-import { SCEAUX, aPortee, posesDe, sceauxDe, sceauxGagnes } from "@/lib/profil/sceaux";
+import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
+import { aPortee, posesDe, sceauxGagnes } from "@/lib/profil/sceaux";
+import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
-import { ENTETE, FACE } from "@/lib/voice-profil";
+import { ENTETE, FACE, JOURNAL, provenances } from "@/lib/voice-profil";
 import { SAISONS } from "@/lib/voice-saisons";
 import type { Profile, Rating } from "@/lib/types";
 
-type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string; personnaliser?: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
 type RatingRow = Pick<Rating, "elo" | "games_played">;
 type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
@@ -81,8 +85,12 @@ async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[
 // collection), Journal (courbe d'ELO, carnet de jours, fil) et, sur le
 // profil d'un autre, Face-à-face. L'onglet est dans l'URL (?onglet=sceaux)
 // et chaque onglet ne lit que ses données. Sur son
-// propre profil : personnaliser, et « voir comme les autres » (?vue=inconnu
-// ou ?vue=ami) qui rend la page telle qu'un autre joueur la voit.
+// propre profil : personnaliser, choisir ses sceaux posés (dans leur fiche,
+// avec la base), et « voir comme les autres » (?vue=inconnu ou ?vue=ami) qui
+// rend la page telle qu'un autre joueur la voit. Le Journal suit le réglage
+// de son propriétaire (tous, amis, moi seul) : fermé, il n'est pas lu.
+// ?personnaliser=1, sur son propre profil : la page se personnalise sur
+// place (ModePersonnaliser).
 export default async function PersonProfilePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const sp = (await searchParams) ?? {};
@@ -99,6 +107,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   if (!profileData) notFound();
 
   const isMe = user.id === id;
+  if (isMe && sp.personnaliser === "1" && !sp.vue) return <ModePersonnaliser id={id} supabase={supabase} profil={profileData as ProfileRow} rating={ratingData as RatingRow | null} />;
   // « voir comme les autres » : seulement sur son propre profil
   const vue = isMe && (sp.vue === "inconnu" || sp.vue === "ami") ? sp.vue : null;
   const commeMoi = isMe && !vue;
@@ -134,11 +143,20 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
   const statsLues = statsProfil(id, supabase);
   const maitrisesLues = masteryByUser(admin, [id]);
-  // le Journal : la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
+  // les sceaux : gardés en base (et recalculés au plus toutes les 10 min), sinon dérivés
+  const sceauxLus = statsLues.then((stats) => sceauxDuJoueur(id, stats, supabase));
+  const relationLue = relationAvec(supabase, user.id, id);
+  // la date du pic, pour dire d'où vient un cadre liquide ou l'aura
+  const datesPicLues = styleLu.then(({ style: st }) => (cadreDe(st.frame).condition?.k === "pic" ? datesDuPic(supabase, id) : []));
+  // le Journal, s'il m'est ouvert (sur le mien vu comme les autres : comme eux)
+  const journalOuvert = (v: Visibilite, rel: Relation | null) =>
+    isMe ? !vue || v === "public" || (vue === "ami" && v === "friends") : v === "public" || (v === "friends" && rel === "amis");
+  // la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
   const journalLu = (async () => {
     if (onglet !== "journal") return null;
-    const [stats, masteries] = await Promise.all([statsLues, maitrisesLues]);
-    return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null });
+    const [stats, masteries, lu, rel, sceaux] = await Promise.all([statsLues, maitrisesLues, styleLu, relationLue, sceauxLus]);
+    if (!journalOuvert(lu.journal, rel)) return null;
+    return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null, gardes: sceaux.gardes });
   })();
   // les tampons du profil et, sur le Journal, ceux de ses entrées (null sans la migration)
   const tamponsLus = (async () => {
@@ -148,12 +166,12 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   })();
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, parCible, depuisVisite, saisons] = await Promise.all([
+  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, depuisVisite, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     styleLu,
     statsLues,
-    relationAvec(supabase, user.id, id),
+    relationLue,
     // la base ne rend le LinkedIn que s'il est visible pour moi
     lireLien(supabase, id),
     amisDe(id, supabase, 12),
@@ -163,12 +181,15 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     autreJoueur ? faceAFace(supabase, user.id, id) : Promise.resolve(null),
     lecturesOnglet,
     journalLu,
+    sceauxLus,
     tamponsLus,
     // « Depuis ta dernière visite » : sur mon profil, hors aperçu (la base note le passage)
     commeMoi ? monRetour(supabase) : Promise.resolve(null),
     // la saison en cours et son palmarès (null sans la migration) ; la lecture clôt les saisons échues
     lireSaisons(supabase, id),
   ]);
+
+  const datesPic = await datesPicLues;
 
   // ce que voit l'autre : le lien public pour un inconnu, public ou « amis » pour un ami
   const visible = (v: string) => (!vue ? true : v === "public" || (vue === "ami" && v === "friends"));
@@ -184,9 +205,11 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const mastery = masteries.get(id) ?? null;
   const rank = rankFor(elo, mastery, leaderboardRank);
 
-  // les sceaux : la collection, les 3 posés d'office, le total
-  const etats = sceauxDe(stats);
+  // les sceaux : la collection, les 3 posés (choisis, sinon les plus rares), le total
+  const etats = sceaux.etats;
   const gagnes = sceauxGagnes(etats);
+  const poses = posesDe(etats, sceaux.base ? pins : null);
+  const choisis = sceaux.base && pins.some((c) => etats.some((e) => e.def.cle === c && e.palier > 0));
 
   const entete: EnteteData = {
     id,
@@ -204,6 +227,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     linkedin: lien,
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
+    provenance: provenances(style, acquisDe(stats, etats, datesPic)),
   };
 
   const lienFace = `${hrefOnglet(id, "face-a-face")}#profil-onglets`;
@@ -220,7 +244,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   if (commeMoi) {
     actions = (
       <>
-        <Link href="/moi/profil" className="btn btn-primary rl-press">
+        <Link href={hrefPersonnaliser(id)} className="btn btn-primary rl-press">
           <Palette size={15} aria-hidden /> Personnaliser
         </Link>
         <Link href={hrefOnglet(id, onglet, "inconnu")} className="btn btn-secondary rl-press">
@@ -295,7 +319,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const onglets = ongletsDe(autreJoueur).map((cle) => ({
     cle,
     href: hrefOnglet(id, cle, vue),
-    ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(SCEAUX.length)}` } : {}),
+    ...(cle === "sceaux" ? { compte: nombre(gagnes), compteLarge: `/${nombre(etats.length)}` } : {}),
     ...(cle === "face-a-face" && face && face.duels.length ? { compte: `${nombre(face.victoires)}–${nombre(face.defaites)}` } : {}),
   }));
 
@@ -311,15 +335,15 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     // les sceaux de saison : ceux gravés et, sur mon profil, la saison en cours (gaufrée)
     const courante = commeMoi ? (saisons?.courante ?? null) : null;
     const famille = saisons && (saisons.palmares.length || courante) ? [{ cle: "saisons", nom: SAISONS.titre, contenu: <FamilleSaisons palmares={saisons.palmares} courante={courante} /> }] : [];
-    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(stats) : []} proprietaire={commeMoi} enPlus={famille} />;
-  } else if (onglet === "journal" && journal) {
+    panneau = <Collection etats={etats} portee={commeMoi ? aPortee(etats) : []} proprietaire={commeMoi} enPlus={famille} />;
+  } else if (onglet === "journal") {
     const piedEntree = parCible
       ? (e: EvenementJournal) => {
           const cible = cibleEntree(e);
           return cible ? <TamponsCible key={cible} pour={id} cible={cible} comptes={parCible[cible]} peut={peutTamponner} variante="entree" /> : null;
         }
       : undefined;
-    panneau = (
+    panneau = journal ? (
       <Journal
         journal={journal}
         mastery={mastery}
@@ -328,6 +352,13 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
         piedEntree={piedEntree}
         saisons={saisons && (saisons.courante || saisons.palmares.length) ? <SaisonsJournal saisons={saisons} /> : null}
       />
+    ) : (
+      // fermé par son propriétaire : rien n'a été lu
+      <div className="card flex max-w-[640px] flex-col gap-1 p-5 sm:p-6">
+        <p className="m-0 text-[15px] font-semibold">{JOURNAL.ferme}</p>
+        <p className="t-small m-0">{visibiliteJournal === "private" ? JOURNAL.fermePrive(display) : JOURNAL.fermeAmis(display)}</p>
+        {vue && <p className="t-micro m-0 mt-1">{JOURNAL.fermeApercu}</p>}
+      </div>
     );
   } else if (onglet === "face-a-face") {
     const enjeu = o.monRating ? stakesAgainst(o.monRating.elo, o.monRating.gamesPlayed, elo) : null;
@@ -350,7 +381,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     panneau = (
       <GrilleBlocs
         disposition={parDefaut && !commeMoi ? sansCaseVide(style.disposition) : style.disposition}
-        caseVide={parDefaut && commeMoi ? <CaseImage href="/moi/profil" /> : null}
+        caseVide={parDefaut && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : null}
         rendus={{
           vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
           radar: (
@@ -380,28 +411,31 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       {autreJoueur && <Visite pour={id} />}
       {/* la carte d'un ami de sa liste, au toucher */}
       <CarteJoueurHote />
-      <div className="flex flex-col gap-6 md:gap-8">
-        <EnteteJoueur
-          d={entete}
-          actions={actions}
-          haut={vue ? undefined : retour}
-          kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre}
-          rangDe={commeMoi ? "Ton rang" : "Son rang"}
-          presence={!commeMoi}
-          poses={<SceauxPoses poses={posesDe(etats)} label={commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
-          piedRang={piedRang}
-          saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
-          tampons={tamponsProfil}
-          sousRang={retourVu()}
-        />
-        {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
-        <div className="flex flex-col gap-6 md:gap-10">
-          <OngletsProfil actif={onglet} onglets={onglets} />
-          {/* téléphone : « Depuis ta dernière visite » sous les onglets (sur ordinateur, sous la carte du rang) */}
-          {retourVu("lg:hidden")}
-          {panneau}
+      {/* sur son profil, avec la base : les fiches proposent de poser le sceau */}
+      <ChoixSceaux actif={commeMoi && sceaux.base} poses={poses.map((e) => e.def.cle)}>
+        <div className="flex flex-col gap-6 md:gap-8">
+          <EnteteJoueur
+            d={entete}
+            actions={actions}
+            haut={vue ? undefined : retour}
+            kicker={commeMoi ? JOUEURS.kickerMoi : JOUEURS.kickerAutre}
+            rangDe={commeMoi ? "Ton rang" : "Son rang"}
+            presence={!commeMoi}
+            poses={<SceauxPoses poses={poses} label={choisis ? (commeMoi ? ENTETE.posesChoisisMoi : ENTETE.posesChoisis) : commeMoi ? ENTETE.posesAideMoi : ENTETE.posesAide} />}
+            piedRang={piedRang}
+            saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
+            tampons={tamponsProfil}
+            sousRang={retourVu()}
+          />
+          {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
+          <div className="flex flex-col gap-6 md:gap-10">
+            <OngletsProfil actif={onglet} onglets={onglets} />
+            {/* téléphone : « Depuis ta dernière visite » sous les onglets (sur ordinateur, sous la carte du rang) */}
+            {retourVu("lg:hidden")}
+            {panneau}
+          </div>
         </div>
-      </div>
+      </ChoixSceaux>
 
       {/* l'aperçu « comme les autres » : une barre flottante en bas de l'écran,
           pour que la page se voie telle quelle, sans bandeau au milieu */}

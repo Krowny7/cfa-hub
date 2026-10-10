@@ -20,7 +20,7 @@ import s from "./Leonard.module.css";
 //   un projecteur éclaire ce dont il parle (attribut data-leonard). Si
 //   l'élément est sous lui, il sort et revient de l'autre côté.
 // - Ensuite, des apparitions furtives : au plus une toutes les 4 minutes et
-//   10 par jour (sauf visite, progression, montée de rang, sans-faute),
+//   10 par jour (sauf visite, progression, montée de rang, sceau gagné, sans-faute),
 //   avec un peu de hasard pour les réactions ordinaires.
 // - Il surgit du bord bas de l'écran, la bulle (une carte du site) s'écrit,
 //   il parle, puis repart seul ; un clic le congédie. Sans son.
@@ -47,7 +47,7 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "atelier-fini": 0.5,
   tard: 0.6,
 };
-const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "progression", "rang-monte", "session-parfaite", "retour"]);
+const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "progression", "rang-monte", "sceau-gagne", "session-parfaite", "retour"]);
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];

@@ -112,3 +112,10 @@
 :global(html[data-discreet="1"]) .reflet {
   display: none;
 }
+/* sur téléphone, au plus deux éléments animés par écran (l'en-tête du
+   profil : l'insigne et le cadre) ; .rl-calme-tel fige les reflets dessous */
+@media (max-width: 1023px) {
+  :global(.rl-calme-tel) .reflet {
+    display: none;
+  }
+}

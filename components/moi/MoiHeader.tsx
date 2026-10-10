@@ -8,6 +8,7 @@ import { daysUntil } from "@/components/classement/format";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { joursEncre, jourJ } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
+import { hrefPersonnaliser } from "@/lib/profil/onglets";
 import type { MoiData } from "@/components/moi/types";
 
 // En-tête compact de l'espace Moi : la photo, ou à défaut le sceau
@@ -54,7 +55,7 @@ export function MoiHeader({ d, now }: { d: MoiData; now?: number }) {
           </p>
           {/* la carte de joueur : la personnaliser, la voir comme les autres */}
           <p className="mt-3 flex flex-wrap items-center gap-2">
-            <Link href="/moi/profil" className="btn btn-secondary btn-sm rl-press">
+            <Link href={hrefPersonnaliser(d.userId)} className="btn btn-secondary btn-sm rl-press">
               <Palette size={14} aria-hidden /> Personnaliser mon profil
             </Link>
             <Link href={`/people/${d.userId}?vue=inconnu`} className="btn btn-ghost btn-sm">

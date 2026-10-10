@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Clapperboard, EyeOff, GripVertical, ImagePlay, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { PERSO } from "@/lib/voice-profil";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MediaProfil } from "@/components/profil/Blocs";
 import { BanqueGifs } from "@/components/profil/BanqueGifs";
@@ -50,6 +51,11 @@ import {
 // précédente / suivante, taille P/M/G d'un média, masquer ou retirer). Une
 // case vide propose ce qu'on peut y mettre. Dessous : « Ajouter à ta
 // page » (nouvelle rangée, GIF, image, vidéo, blocs masqués).
+// Déplacer marche au doigt comme à la souris (événements pointeur, pas le
+// glisser HTML5, muet sur téléphone) : appui long sur le nom d'un bloc (ou
+// la poignée d'une rangée), puis glisser sur une autre place ; à la souris,
+// il suffit de tirer. Sur téléphone, où les cases passent l'une sous
+// l'autre, les flèches deviennent ↑ ↓ et les outils font 44 px.
 // Les envois : une image (telle quelle si elle est raisonnable, sinon
 // réduite à 2 400 px sans perte visible) ; une vidéo, un edit court type
 // TikTok enregistré sur son téléphone (une par page, une minute et 30 Mo au
@@ -132,6 +138,12 @@ async function envoyerMedia(supabase: SupabaseClient, file: File): Promise<BlocM
 
 type Pos = { r: number; c: number };
 const memePos = (a: Pos | null, b: Pos) => !!a && a.r === b.r && a.c === b.c;
+/** ce qu'on déplace, et où on le pose : une case, ou une rangée entière */
+type Glisse = { type: "case"; p: Pos } | { type: "rangee"; r: number };
+/** l'appui long qui soulève un bloc au doigt */
+const APPUI_LONG_MS = 380;
+/** près du bord de l'écran, la page défile pendant qu'on tire */
+const BORD_PX = 90;
 const LETTRE: Record<TailleMedia, string> = { s: "P", m: "M", l: "G" };
 const SUIVANTE: Record<TailleMedia, TailleMedia> = { s: "m", m: "l", l: "s" };
 
@@ -144,7 +156,7 @@ function Outil({ label, onClick, disabled, children }: { label: string; onClick:
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="grid h-7 w-7 place-items-center rounded-full text-[var(--ink-2)] transition-colors hover:bg-[var(--well)] hover:text-white disabled:pointer-events-none disabled:opacity-35"
+      className="grid h-11 w-11 place-items-center rounded-full text-[var(--ink-2)] transition-colors hover:bg-[var(--well)] hover:text-white disabled:pointer-events-none disabled:opacity-35 lg:h-7 lg:w-7"
     >
       {children}
     </button>
@@ -205,9 +217,9 @@ export function EditeurDisposition({
   const fichier = useRef<HTMLInputElement | null>(null);
   const fichierVideo = useRef<HTMLInputElement | null>(null);
   const [envoi, setEnvoi] = useState<{ enCours: boolean; texte: string } | null>(null);
-  const [prise, setPrise] = useState<string | null>(null); // poignée tenue : la case devient déplaçable
-  const [tire, setTire] = useState<Pos | null>(null);
-  const [cible, setCible] = useState<Pos | null>(null);
+  const [tire, setTire] = useState<Glisse | null>(null);
+  const [cible, setCible] = useState<Glisse | null>(null);
+  const [fantome, setFantome] = useState<{ x: number; y: number; nom: string } | null>(null);
   const [menu, setMenu] = useState<Pos | null>(null); // le menu d'une case vide
   const [destination, setDestination] = useState<Pos | null>(null); // où ira le prochain média
   const [modeles, setModeles] = useState<number | "nouvelle" | null>(null);
@@ -249,11 +261,122 @@ export function EditeurDisposition({
       if (ou && d[ou.r] && !d[ou.r].c[ou.c]) d[ou.r].c[ou.c] = b;
       else d.push({ m: "plein", c: [b] });
     });
-  const finGlisse = () => {
-    setTire(null);
-    setCible(null);
-    setPrise(null);
+  const deposer = (g: Glisse, c: Glisse) => {
+    if (g.type === "case" && c.type === "case" && !memePos(g.p, c.p)) echanger(g.p, c.p);
+    if (g.type === "rangee" && c.type === "rangee" && g.r !== c.r)
+      maj((d) => {
+        const [x] = d.splice(g.r, 1);
+        d.splice(c.r, 0, x);
+      });
   };
+
+  // le déplacement au pointeur : l'appui (long au doigt), le fantôme qui suit, la place visée sous le doigt
+  const appui = useRef<{ g: Glisse; nom: string; x: number; y: number; souris: boolean; leve: boolean; minuteur: number } | null>(null);
+  const cibleRef = useRef<Glisse | null>(null);
+  const deposerRef = useRef(deposer);
+  const leverRef = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    deposerRef.current = deposer;
+  });
+  useEffect(() => {
+    let vitesse = 0;
+    let boucle = 0;
+    const viser = (x: number, y: number) => {
+      const a = appui.current;
+      if (!a) return;
+      const el = document.elementFromPoint(x, y);
+      let c: Glisse | null = null;
+      if (a.g.type === "case") {
+        const k = el?.closest<HTMLElement>("[data-case]")?.dataset.case;
+        if (k) {
+          const [r, ci] = k.split(":").map(Number);
+          c = { type: "case", p: { r, c: ci } };
+        }
+      } else {
+        const k = el?.closest<HTMLElement>("[data-rangee]")?.dataset.rangee;
+        if (k !== undefined) c = { type: "rangee", r: Number(k) };
+      }
+      cibleRef.current = c;
+      setCible(c);
+    };
+    const defiler = () => {
+      boucle = 0;
+      const a = appui.current;
+      if (!vitesse || !a?.leve) return;
+      window.scrollBy(0, vitesse);
+      viser(a.x, a.y);
+      boucle = requestAnimationFrame(defiler);
+    };
+    const finir = () => {
+      const a = appui.current;
+      if (a) window.clearTimeout(a.minuteur);
+      appui.current = null;
+      cibleRef.current = null;
+      vitesse = 0;
+      if (boucle) cancelAnimationFrame(boucle);
+      boucle = 0;
+      setTire(null);
+      setCible(null);
+      setFantome(null);
+    };
+    const lever = () => {
+      const a = appui.current;
+      if (!a || a.leve) return;
+      a.leve = true;
+      setTire(a.g);
+      setFantome({ x: a.x, y: a.y, nom: a.nom });
+      if (!a.souris) navigator.vibrate?.(12);
+    };
+    const bouge = (e: PointerEvent) => {
+      const a = appui.current;
+      if (!a) return;
+      if (!a.leve) {
+        const d = Math.hypot(e.clientX - a.x, e.clientY - a.y);
+        // au doigt, bouger avant l'appui long, c'est faire défiler la page
+        if (!a.souris) {
+          if (d > 10) finir();
+          return;
+        }
+        if (d < 4) return;
+        lever();
+      }
+      a.x = e.clientX;
+      a.y = e.clientY;
+      setFantome({ x: a.x, y: a.y, nom: a.nom });
+      viser(a.x, a.y);
+      vitesse = a.y < BORD_PX ? -12 : a.y > window.innerHeight - BORD_PX - 60 ? 12 : 0;
+      if (vitesse && !boucle) boucle = requestAnimationFrame(defiler);
+    };
+    const lache = () => {
+      const a = appui.current;
+      if (a?.leve && cibleRef.current) deposerRef.current(a.g, cibleRef.current);
+      finir();
+    };
+    // le doigt qui tient un bloc ne fait pas défiler la page
+    const tient = (e: TouchEvent) => {
+      if (appui.current?.leve) e.preventDefault();
+    };
+    leverRef.current = lever;
+    window.addEventListener("pointermove", bouge);
+    window.addEventListener("pointerup", lache);
+    window.addEventListener("pointercancel", finir);
+    document.addEventListener("touchmove", tient, { passive: false });
+    return () => {
+      finir();
+      window.removeEventListener("pointermove", bouge);
+      window.removeEventListener("pointerup", lache);
+      window.removeEventListener("pointercancel", finir);
+      document.removeEventListener("touchmove", tient);
+    };
+  }, []);
+  /** L'appui sur une poignée : à la souris, on tire tout de suite ; au doigt, après l'appui long. */
+  const saisir = (g: Glisse, nom: string) => (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const souris = e.pointerType === "mouse";
+    appui.current = { g, nom, x: e.clientX, y: e.clientY, souris, leve: false, minuteur: souris ? 0 : window.setTimeout(() => leverRef.current(), APPUI_LONG_MS) };
+  };
+  const tireCase = tire?.type === "case" ? tire.p : null;
+  const viseCase = cible?.type === "case" ? cible.p : null;
 
   // un GIF de la banque : affiché depuis KLIPY, rien à envoyer
   const choisirGif = (g: GifBanque) => {
@@ -297,21 +420,6 @@ export function EditeurDisposition({
     }
   }
 
-  // le glisser-déposer : une case (pleine ou vide) reçoit la case tirée
-  const cibleDeGlisse = (p: Pos) => ({
-    onDragOver: (e: React.DragEvent) => {
-      if (!tire) return;
-      e.preventDefault();
-      setCible(p);
-    },
-    onDragLeave: () => setCible((x) => (memePos(x, p) ? null : x)),
-    onDrop: (e: React.DragEvent) => {
-      e.preventDefault();
-      if (tire && !memePos(tire, p)) echanger(tire, p);
-      finGlisse();
-    },
-  });
-
   /** Une case pleine : le vrai bloc, et sa barre d'outils en haut. */
   const caseBloc = (b: Bloc, p: Pos) => {
     const media = estMedia(b) ? b : null;
@@ -334,36 +442,33 @@ export function EditeurDisposition({
       <div
         role="listitem"
         aria-label={nom}
-        draggable={prise === cle}
-        onDragStart={(e) => {
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", cle);
-          setTire(p);
-        }}
-        onDragEnd={finGlisse}
-        {...cibleDeGlisse(p)}
+        data-case={cle}
         className={
           "@container relative min-w-0 rounded-[18px] transition-[outline-color,opacity] " +
-          (memePos(tire, p) ? "opacity-40 " : "") +
-          (memePos(cible, p) && !memePos(tire, p) ? "outline outline-2 outline-offset-4 outline-[var(--ink)]" : "")
+          (memePos(tireCase, p) ? "opacity-40 " : "") +
+          (memePos(viseCase, p) && !memePos(tireCase, p) ? "outline outline-2 outline-offset-4 outline-[var(--ink)]" : "")
         }
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[5] flex items-center justify-between gap-2">
           <span
-            className="pointer-events-auto inline-flex min-w-0 cursor-grab items-center gap-1 rounded-full border border-line-2 bg-[var(--surface)] py-1 pl-1.5 pr-3 text-[12px] font-semibold shadow-[var(--shadow-1)] active:cursor-grabbing"
-            onPointerDown={() => setPrise(cle)}
-            onPointerUp={() => setPrise(null)}
-            title="Glisser sur une autre case pour échanger"
+            className="pointer-events-auto inline-flex min-h-[44px] min-w-0 cursor-grab select-none items-center gap-1 rounded-full border border-line-2 bg-[var(--surface)] py-1 pl-1.5 pr-3 text-[12px] font-semibold shadow-[var(--shadow-1)] [-webkit-touch-callout:none] active:cursor-grabbing lg:min-h-0"
+            onPointerDown={saisir({ type: "case", p }, nom)}
+            onContextMenu={(e) => e.preventDefault()}
+            title={PERSO.deplacerAide}
+            aria-label={PERSO.deplacer(nom)}
           >
             <GripVertical size={14} aria-hidden className="shrink-0 text-muted" />
             <span className="truncate">{nom}</span>
           </span>
           <span className="pointer-events-auto inline-flex shrink-0 items-center rounded-full border border-line-2 bg-[var(--surface)] p-0.5 shadow-[var(--shadow-1)]">
+            {/* sur téléphone les cases sont l'une sous l'autre : ↑ ↓ ; sur ordinateur, côte à côte : ← → */}
             <Outil label={`Case précédente : ${nom}`} onClick={() => avant && echanger(p, avant)} disabled={!avant}>
-              <ArrowLeft size={14} aria-hidden />
+              <ArrowUp size={14} aria-hidden className="lg:hidden" />
+              <ArrowLeft size={14} aria-hidden className="max-lg:hidden" />
             </Outil>
             <Outil label={`Case suivante : ${nom}`} onClick={() => apres && echanger(p, apres)} disabled={!apres}>
-              <ArrowRight size={14} aria-hidden />
+              <ArrowDown size={14} aria-hidden className="lg:hidden" />
+              <ArrowRight size={14} aria-hidden className="max-lg:hidden" />
             </Outil>
             {media && (
               <Outil
@@ -379,7 +484,7 @@ export function EditeurDisposition({
           </span>
         </div>
         {/* le vrai bloc, inerte : on range, on ne clique pas dedans */}
-        <div inert className="select-none pt-11">
+        <div inert className="select-none pt-[52px] lg:pt-11">
           {contenu}
         </div>
         {media && (
@@ -408,10 +513,10 @@ export function EditeurDisposition({
       <div
         role="listitem"
         aria-label="Case vide"
-        {...cibleDeGlisse(p)}
+        data-case={`${p.r}:${p.c}`}
         className={
           "grid min-h-[160px] place-items-center rounded-[18px] border-2 border-dashed p-3 transition-colors " +
-          (memePos(cible, p) ? "border-white bg-[var(--well)]" : "border-line-2")
+          (memePos(viseCase, p) ? "border-white bg-[var(--well)]" : "border-line-2")
         }
       >
         {ouvert ? (
@@ -476,7 +581,15 @@ export function EditeurDisposition({
         {disposition.map((r, ri) => {
           const modele = MODELES.find((m) => m.key === r.m)!;
           return (
-            <div key={ri} role="none" className="relative rounded-[24px] border border-dashed border-line-2 p-3 sm:p-4">
+            <div
+              key={ri}
+              role="none"
+              data-rangee={ri}
+              className={
+                "relative rounded-[24px] border border-dashed p-3 transition-[opacity,border-color] sm:p-4 " +
+                (tire?.type === "rangee" && tire.r === ri ? "border-line-2 opacity-40" : cible?.type === "rangee" && cible.r === ri && tire?.type === "rangee" ? "border-white bg-[var(--well)]" : "border-line-2")
+              }
+            >
               {/* la rangée : son modèle, et la déplacer ou la supprimer */}
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="relative">
@@ -503,6 +616,18 @@ export function EditeurDisposition({
                   )}
                 </div>
                 <span className="inline-flex items-center rounded-full border border-line-2 bg-[var(--surface)] p-0.5 shadow-[var(--shadow-1)]">
+                  {disposition.length > 1 && (
+                    <span
+                      role="img"
+                      aria-label={PERSO.deplacerRangee}
+                      title={PERSO.deplacerAide}
+                      onPointerDown={saisir({ type: "rangee", r: ri }, `${PERSO.deplacerRangee} · ${modele.nom}`)}
+                      onContextMenu={(e) => e.preventDefault()}
+                      className="grid h-11 w-11 cursor-grab select-none place-items-center rounded-full text-[var(--ink-2)] [-webkit-touch-callout:none] hover:bg-[var(--well)] hover:text-white active:cursor-grabbing lg:h-7 lg:w-7"
+                    >
+                      <GripVertical size={14} aria-hidden />
+                    </span>
+                  )}
                   <Outil label="Monter la rangée" onClick={() => maj((d) => void ([d[ri - 1], d[ri]] = [d[ri], d[ri - 1]]))} disabled={ri === 0}>
                     <ArrowUp size={14} aria-hidden />
                   </Outil>
@@ -590,10 +715,20 @@ export function EditeurDisposition({
           </p>
         )}
         <p className="t-micro m-0">
-          {medias}/{MEDIAS_MAX} médias. Chaque rangée a son modèle (bouton en haut à gauche de la rangée) ; un bloc se déplace avec ← → ou en le glissant par son nom sur une autre case. Une vidéo par page :
+          {medias}/{MEDIAS_MAX} médias. Chaque rangée a son modèle (bouton en haut à gauche de la rangée) ; un bloc se déplace avec les flèches, ou par un appui long sur son nom puis en le glissant sur une autre case. Une vidéo par page :
           un edit enregistré sur ton téléphone (TikTok…), {VIDEO_MAX_SECONDES} secondes et {Mo(VIDEO_MAX_OCTETS)} au plus.
         </p>
       </div>
+      {/* le bloc tenu suit le doigt (ou la souris) */}
+      {fantome && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-[150%] rounded-full border border-white bg-[var(--surface)] px-3.5 py-2 text-[13px] font-semibold shadow-[var(--shadow-3)]"
+          style={{ left: fantome.x, top: fantome.y }}
+        >
+          {fantome.nom}
+        </div>
+      )}
       {banqueGifs && (
         <BanqueGifs
           ouvert={banque}

@@ -8,6 +8,7 @@ import { Cote } from "@/components/adn/Cote";
 import { createClient } from "@/lib/supabase/browser";
 import { Verdict, type DecisiveVerdict, type MarqueCopie } from "@/components/adn/Verdict";
 import { CeremonieRang } from "@/components/classement/CeremonieRang";
+import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
 import { DuelAiCopy } from "@/components/duel/DuelAiCopy";
 import { PLACEMENT_GAMES } from "@/lib/ranks";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
@@ -55,7 +56,8 @@ function enonceCourt(prompt: string) {
 // (dépouillement des deux copies, le mot au pinceau, l'ELO, les mentions, la
 // question décisive), figé ensuite. Ses actions : « Revoir la partie »,
 // « Copier pour l'IA », « Revanche ». Puis, si le palier ou la division a
-// bougé, la cérémonie de rang ; et, plus bas, le détail par matière.
+// bougé, la cérémonie de rang ; un sceau gagné (Duelliste, une mention,
+// Coup d'éclat), la sienne ; et, plus bas, le détail par matière.
 export function DuelResult({ state, review, mastery = null, leaderboardRank = null, players = null, demo = false, verdictMode = "auto", forceCeremonie = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
@@ -226,6 +228,9 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
         compact
         className="max-w-[620px]"
       />
+
+      {/* un résultat récent, une fois le verdict joué : le sceau gagné s'il y en a un */}
+      {!demo && recent && fini && <CeremonieSceaux className="!mx-0" />}
 
       <section className="grid gap-x-14 gap-y-10 border-t border-line pt-8 md:grid-cols-12" aria-label="Le détail de la partie">
         <div className="flex min-w-0 flex-col gap-4 md:col-span-7">

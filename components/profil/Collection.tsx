@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SectionTitle } from "@/components/ui/Titles";
 import { COULEUR_PALIER, FicheSceau, SceauDe, ditSceau } from "@/components/profil/FicheSceau";
-import { FAMILLES, SCEAUX, sceauxGagnes, type EtatSceau, type Famille } from "@/lib/profil/sceaux";
+import { FAMILLES, sceauxGagnes, type EtatSceau, type Famille } from "@/lib/profil/sceaux";
 import { FAMILLES_NOMS, PALIERS, SCEAUX_TXT, nomSceau, progres } from "@/lib/voice-profil";
 
 // L'onglet Sceaux : la collection. Sur son propre profil, « À portée » (les
@@ -80,7 +80,7 @@ export function Collection({
 
   return (
     <section className="flex flex-col gap-8 md:gap-10" aria-labelledby="profil-sceaux">
-      <SectionTitle title={<span id="profil-sceaux">{SCEAUX_TXT.titre}</span>} sub={SCEAUX_TXT.totalLong(gagnes, SCEAUX.length)} />
+      <SectionTitle title={<span id="profil-sceaux">{SCEAUX_TXT.titre}</span>} sub={SCEAUX_TXT.totalLong(gagnes, etats.length)} />
 
       {proprietaire && portee.length > 0 && (
         <div className="flex flex-col gap-3">

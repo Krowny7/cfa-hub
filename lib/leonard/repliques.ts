@@ -12,7 +12,7 @@ export type Replique = { texte: string; pose: Pose };
 export type Evenement =
   | "tuto" | "erreurs-serie" | "session-ratee" | "session-moyenne" | "session-reussie" | "session-parfaite"
   | "serie-bonnes" | "progression" | "duel-gagne" | "duel-perdu" | "duel-ecrase" | "duel-nul"
-  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "retour" | "tard" | "furtif";
+  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "sceau-gagne" | "retour" | "tard" | "furtif";
 
 export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
   "erreurs-serie": [
@@ -257,6 +257,15 @@ export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
     { texte: "Bull run officiel sur ton profil.", pose: "fier" },
     { texte: "Grand Maître un jour ? Franchement, je commence à y croire.", pose: "etonne" },
     { texte: "Ah ouais ? Nouveau rang ? Solide. Très solide.", pose: "etonne" },
+  ],
+
+  "sceau-gagne": [
+    { texte: "Un sceau de plus. Je le rangerais dans mes carnets, mais ils sont pleins.", pose: "fier" },
+    { texte: "Achievement unlocked. Le petit bruit, tu l’as entendu dans ta tête.", pose: "etonne" },
+    { texte: "Trophée PlayStation débloqué. Version papier, mais quand même.", pose: "fier" },
+    { texte: "Les Médicis scellaient leurs lettres comme ça. T’es en bonne compagnie.", pose: "fier" },
+    { texte: "Un sceau, ça ne s’efface pas. Contrairement à mes esquisses.", pose: "base" },
+    { texte: "Pose-le sur ton profil. Qu’ils voient tous.", pose: "moqueur" },
   ],
 
   "retour": [
