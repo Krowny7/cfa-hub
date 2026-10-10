@@ -9,7 +9,7 @@
 // réexporte sous ce nom pour ne rien casser), plus les phrases des écrans du
 // défi (copie, classement, jours passés, revue, tuile).
 
-import { IA, LEXIQUE, NBSP, SIGNATURE, nombre, pct, pluriel, precision, ratures, traits, verdictSession } from "@/lib/voice";
+import { IA, LEXIQUE, NBSP, SIGNATURE, nombre, pct, pluriel, precision, ratures, scorePct, traits, verdictSession } from "@/lib/voice";
 
 /** « 6 ratures », « page propre » (une copie rendue) */
 export function raturesOuPropre(n: number) {
@@ -58,7 +58,7 @@ export const DEFI = {
   aujourdhui: "Le défi d'aujourd'hui",
   /** à faire : sur-titre et ouverture */
   rendues: (n: number, meilleur: number | null, total: number) =>
-    `${pluriel(n, "copie rendue", "copies rendues")}${meilleur !== null ? ` · meilleur ${meilleur}/${total}` : ""}`,
+    `${pluriel(n, "copie rendue", "copies rendues")}${meilleur !== null ? ` · meilleur ${scorePct(meilleur, total)}` : ""}`,
   format: (questions: number, minutes: number) => `${questions} questions · ${minutes} min`,
   /** les coches au crayon, avant de commencer : « 30 traits à tracer » */
   aTracer: (n: number) => `${traits(n)} à tracer`,
@@ -120,7 +120,7 @@ export const DEFI = {
   seRevoit: (jours: number) => `chaque copie se revoit ici ${jours} jours`,
   pasDeCopie: (n: number) => `pas de copie · ${joueurs(n)}`,
   copieEnCours: "copie en cours",
-  meilleur: (score: number, total: number) => `meilleur ${score}/${total}`,
+  meilleur: (score: number, total: number) => `meilleur ${scorePct(score, total)}`,
   revue: (reste: string) => `revue ${reste}`,
   revoirCourt: "Revoir",
   reprendreCourt: "Reprendre",

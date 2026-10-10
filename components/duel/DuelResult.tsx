@@ -25,6 +25,7 @@ import {
   type DuelReviewItem,
   type DuelState,
 } from "@/lib/duels";
+import PctScore from "@/components/adn/PctScore";
 
 type Props = {
   state: DuelState;
@@ -249,6 +250,7 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
                     </span>
                     <span className="text-right font-mono text-[12.5px] tabular-nums">
                       {t.correct}/{t.total}
+                      <PctScore justes={t.correct} total={t.total} sep={false} className="block text-[11px]" />
                     </span>
                   </li>
                 );

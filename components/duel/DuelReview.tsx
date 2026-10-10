@@ -12,6 +12,7 @@ import { Icone } from "@/components/adn/icons";
 import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
 import { clock, decisiveQuestion, duelTopicLabel, reviewHasOpponent, type DuelReviewItem, type DuelState } from "@/lib/duels";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
+import PctScore from "@/components/adn/PctScore";
 
 type Filter = "errors" | "all";
 
@@ -282,6 +283,7 @@ function CopieStrip({
       <span className="text-right font-mono text-[13px] tabular-nums sm:order-3">
         <b className="font-semibold">{score}</b>
         <span className="text-muted">/{total}</span>
+        <PctScore justes={score} total={total} sep={false} className="block text-[11px]" />
       </span>
       <CopieCoches
         className="col-span-2 sm:order-2 sm:col-span-1"

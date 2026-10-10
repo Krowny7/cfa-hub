@@ -8,6 +8,7 @@ import { rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { DUEL_MINUTES, DUEL_QUESTIONS, DUEL_WINDOW_HOURS } from "@/lib/duels";
 import { NBSP } from "@/lib/voice";
+import { PctDuel } from "@/components/adn/PctScore";
 import { motIssue, raturesPartie } from "@/lib/voice-z2";
 
 // Pièces partagées des pages duel. Sans état : utilisables depuis un
@@ -168,6 +169,7 @@ export function ReviewDuelRow({
   theirScore,
   errors,
   left,
+  total = DUEL_QUESTIONS,
 }: {
   id: string;
   name: string;
@@ -178,6 +180,8 @@ export function ReviewDuelRow({
   errors: number | null;
   /** « encore 12 j » */
   left: string | null;
+  /** nombre de questions de la partie (pour le pourcentage) */
+  total?: number;
 }) {
   const errLabel = raturesPartie(errors);
   return (
@@ -194,10 +198,18 @@ export function ReviewDuelRow({
             {myScore !== null && theirScore !== null && (
               <span className="shrink-0 font-mono text-[12.5px] tabular-nums text-muted">
                 {myScore} – {theirScore}
+                <span className="hidden sm:inline">
+                  {" · "}
+                  <PctDuel a={myScore} b={theirScore} total={total} />
+                </span>
               </span>
             )}
           </span>
-          <span className="t-micro block truncate">{[errLabel, left].filter(Boolean).join(" · ")}</span>
+          <span className="t-micro block truncate">
+            <PctDuel a={myScore} b={theirScore} total={total} className="sm:hidden" />
+            {myScore !== null && theirScore !== null && (errLabel || left) ? <span className="sm:hidden"> · </span> : null}
+            {[errLabel, left].filter(Boolean).join(" · ")}
+          </span>
         </span>
         <span className="btn btn-sm btn-secondary" aria-hidden>Revoir</span>
       </Link>

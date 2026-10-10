@@ -81,6 +81,20 @@ export function pct(n: number): string {
   return `${Math.round(n)}${NBSP}%`;
 }
 
+/** Part d'un score, arrondie à l'entier : « 80 % » ; null si le total est nul. 0 % et 100 % ne tombent qu'aux bornes exactes. */
+export function pctScore(justes: number, total: number): string | null {
+  if (!(total > 0)) return null;
+  const j = Math.max(0, Math.min(total, justes));
+  const p = j === 0 ? 0 : j === total ? 100 : Math.min(99, Math.max(1, Math.round((j / total) * 100)));
+  return `${p}${NBSP}%`;
+}
+
+/** Score avec sa part : « 24/30 · 80 % » (« 0/0 » si total nul). */
+export function scorePct(justes: number, total: number): string {
+  const p = pctScore(justes, total);
+  return `${nombre(justes)}/${nombre(total)}${p ? ` · ${p}` : ""}`;
+}
+
 /** « +18 », « −9 », « 0 » (vrai signe moins) */
 export function signe(n: number): string {
   const r = Math.round(n);
@@ -291,7 +305,7 @@ export function verdictSession(justes: number, total: number): VerdictSession {
   const p = t > 0 ? (j / t) * 100 : 0;
   const niveau: VerdictSession["niveau"] = t > 0 && err === 0 ? "propre" : p >= 85 ? "sur" : p >= SEUIL ? "tenu" : p >= 50 ? "tremble" : "jet";
   const titre = { propre: "Page propre.", sur: "Trait sûr.", tenu: "Trait tenu.", tremble: "Le trait tremble.", jet: "Premier jet." }[niveau];
-  const base = `${nombre(j)} sur ${nombre(t)}`;
+  const base = `${nombre(j)} sur ${nombre(t)}${t > 0 ? `, soit ${pctScore(j, t)}` : ""}`;
   const ligne =
     niveau === "propre"
       ? `${base}.`
@@ -317,7 +331,7 @@ export function ligneAnneauSession(ajoutes: number, journeeTenue: boolean): stri
 
 /** « Par matière · le plus fragile : Derivatives, 2/6 » */
 export function plusFragile(matiere: string, justes: number, total: number): string {
-  return `Par matière · le plus fragile : ${matiere}, ${justes}/${total}`;
+  return `Par matière · le plus fragile : ${matiere}, ${scorePct(justes, total)}`;
 }
 
 export const IA = {

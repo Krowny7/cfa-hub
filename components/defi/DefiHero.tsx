@@ -4,6 +4,7 @@ import { Icone } from "@/components/adn/icons";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
 import { rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
 import { joueurs, voixDefi } from "@/lib/voice-z2c";
+import PctScore from "@/components/adn/PctScore";
 
 // Le défi du jour en carte héros de l'accueil, juste sous le titre (à la
 // place de « Ton dernier trait », qui passe en tuile dans « Aujourd'hui ») :
@@ -35,6 +36,7 @@ export function DefiHero({ daily, nowIso }: { daily: TodayDaily; nowIso: string 
         <span className="flex items-baseline gap-1" aria-label={`${daily.score} sur ${total}`}>
           <span className="t-num text-[28px] leading-none">{daily.score}</span>
           <span className="font-mono text-[14px] text-muted">/{total}</span>
+          <PctScore justes={daily.score} total={total} className="text-[14px]" />
         </span>
         <span className="t-micro">{[rankLine(daily.rank, daily.players), timeLeftLabel(daily.closesAt, nowIso) ? T.seFige : null].filter(Boolean).join(" · ")}</span>
       </span>

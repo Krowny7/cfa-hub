@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Zap } from "lucide-react";
 import { rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
 import { DEFI_CINQ, joueurs } from "@/lib/voice-z2c";
+import PctScore from "@/components/adn/PctScore";
 
 // Les 5 du jour en carte légère (accueil), sous les 30 du jour :
 // tout dit « vite » — l'éclair, « 2 min » en pastille, une seule ligne,
@@ -28,6 +29,7 @@ export function CinqCarte({ daily, nowIso, className = "" }: { daily: TodayDaily
         <b className="font-mono font-semibold text-white">
           {daily.score}/{total}
         </b>
+        <PctScore justes={daily.score} total={total} />
         {rankLine(daily.rank, daily.players) ? ` · ${rankLine(daily.rank, daily.players)}` : ""}
       </>
     );

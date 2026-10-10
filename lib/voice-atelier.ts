@@ -4,7 +4,7 @@
 // Calcul, Re-test (trait d'union insécable : jamais coupé en fin de ligne).
 // Module neutre (ni « use client » ni serveur).
 
-import { nombre, pct, pluriel } from "@/lib/voice";
+import { nombre, pct, pctScore, pluriel, scorePct } from "@/lib/voice";
 import type { Bloc, Conseil, Niveau } from "@/lib/atelier";
 
 export const BLOC_NOM: Record<Bloc, string> = {
@@ -161,7 +161,7 @@ export const ATELIER = {
     `calcul ${avant ? `${nombre(avant.ok)}/${nombre(avant.n)} → ` : ""}${nombre(pendant.ok)}/${nombre(pendant.n)} ${NIVEAU_CALCUL[niveau]}`,
   tenue: "tenue",
   sansQuestion: "pas de question pendant cet Atelier",
-  retest: (ok: number, n: number) => `Re‑test : ${nombre(ok)} sur ${nombre(n)}.`,
+  retest: (ok: number, n: number) => `Re‑test : ${nombre(ok)} sur ${nombre(n)}${pctScore(ok, n) ? ` · ${pctScore(ok, n)}` : ""}.`,
   xpGagne: (n: number) => `${nombre(n)} XP gagnés (questions neuves et calculs).`,
   prochainPas: (titre: string) => `Prochain pas : écoute « ${titre} »`,
   prochainAtelier: (c: Conseil) => CONSEIL[c],
@@ -173,7 +173,7 @@ export const ATELIER = {
   historiqueCompte: (n: number) => pluriel(n, "séance", "séances"),
   dernier: "Dernier Atelier",
   /** « 6 oct. · 28 min · 14/20 » */
-  seance: (date: string, minutes: number, score: number, total: number) => `${date} · ${nombre(minutes)} min · ${nombre(score)}/${nombre(total)}`,
+  seance: (date: string, minutes: number, score: number, total: number) => `${date} · ${nombre(minutes)} min · ${scorePct(score, total)}`,
   /** « 40 % → 75 % » ; joué seulement en calcul : « calcul 3/10 → 4/5 » ; sinon « pas de question » */
   notionCourte: (avant: { ok: number; n: number }, pendant: { ok: number; n: number }, calcul: { avant: { ok: number; n: number } | null; pendant: { ok: number; n: number } } | null) =>
     pendant.n > 0

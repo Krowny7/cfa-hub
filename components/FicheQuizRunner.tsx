@@ -21,6 +21,7 @@ import {
   type ReviewItem,
 } from "@/lib/ficheLog";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
+import PctScore from "@/components/adn/PctScore";
 
 export type RunItem = { q: DrillQuestion; page: number };
 
@@ -420,6 +421,8 @@ export function FicheQuizRunner({
         </div>
         <span className="shrink-0 text-[12px] font-medium text-muted tabular-nums">
           Score : <span className="font-semibold text-white">{score}</span>
+          {done.length > 0 ? <>/{done.length}</> : null}
+          <PctScore justes={score} total={done.length} />
         </span>
       </div>
 

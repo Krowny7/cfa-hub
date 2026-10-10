@@ -11,6 +11,7 @@ import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { clock, duelTopicLabel } from "@/lib/duels";
 import { answerEclair, finishEclair, startEclair, type EclairFinish, type EclairQuestion } from "@/lib/eclair";
 import { ECLAIR, verdictCopie } from "@/lib/voice-z2c";
+import PctScore from "@/components/adn/PctScore";
 
 // Une série éclair : 5 questions de cours, une à la fois, corrigée tout de
 // suite (on apprend en route), puis le bilan et « Encore 5 ». La série vit
@@ -368,6 +369,7 @@ function Bilan({ result, done, cinqAFaire, onEncore }: { result: EclairFinish & 
           <p className="m-0 shrink-0 text-right leading-none" aria-label={`${result.score} sur ${total}`}>
             <span className="t-num text-[52px] sm:text-[60px] md:text-[76px]">{result.score}</span>
             <span className="font-mono text-[15px] text-muted">/{total}</span>
+            <PctScore justes={result.score} total={total} sep={false} className="mt-1.5 block text-[13px]" />
           </p>
         </div>
         <Ticks marks={result.marks} label="Ta série" />

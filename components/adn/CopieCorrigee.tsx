@@ -34,6 +34,7 @@ import { PEN_CHECK, PEN_CROSS, PEN_LOOP } from "./paths-moments";
 import type { SonMoment } from "./sound";
 import { EASE_INK, usePartition } from "./sound-timeline";
 import s from "./CopieCorrigee.module.css";
+import { pctScore } from "@/lib/voice";
 
 export type LigneCopie = { label: string; ok: boolean; n?: number | string };
 export type MatiereCopie = { label: string; ok: number; total: number };
@@ -115,7 +116,13 @@ export function CopieCorrigee({
           <div style={{ minWidth: 0 }}>
             {surTitre ? <div className={s.kicker}>{surTitre}</div> : null}
             <div className={s.titre}>{titre}</div>
-            {meta ? <div className={s.meta}>{meta}</div> : null}
+            {meta || pctScore(score, total) ? (
+              <div className={s.meta}>
+                {meta}
+                {meta && pctScore(score, total) ? " · " : null}
+                {pctScore(score, total)}
+              </div>
+            ) : null}
           </div>
           <div className={s.note}>
             <svg viewBox="0 0 140 80" aria-hidden>

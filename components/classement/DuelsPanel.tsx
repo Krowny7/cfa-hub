@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { fmtAgo, fmtShortDate, signed } from "@/components/classement/format";
 import { ReviewDuelRow } from "@/components/duel/parts";
+import { PctDuel } from "@/components/adn/PctScore";
 import { DUEL_QUESTIONS, DUEL_REVIEW_DAYS, reviewLeftLabel } from "@/lib/duels";
 import type { DuelSummary } from "@/lib/rating";
 import { DUEL } from "@/lib/voice";
@@ -53,7 +54,10 @@ function RecentRow({ d }: { d: DuelSummary }) {
           <span className="block truncate text-[14.5px] font-semibold">{name}</span>
           {d.finishedAt && <span className="t-micro block">{fmtShortDate(d.finishedAt)}</span>}
         </span>
-        <span className="font-mono text-[13px] tabular-nums text-muted">{d.myScore !== null && d.theirScore !== null ? `${d.myScore} – ${d.theirScore}` : ""}</span>
+        <span className="text-right font-mono text-[13px] tabular-nums text-muted">
+          {d.myScore !== null && d.theirScore !== null ? `${d.myScore} – ${d.theirScore}` : ""}
+          <PctDuel a={d.myScore} b={d.theirScore} total={DUEL_QUESTIONS} className="block text-[11px] leading-tight" />
+        </span>
         <span className={"text-right font-mono text-[13px] font-semibold tabular-nums " + (d.myDelta !== null && d.myDelta < 0 ? "text-muted" : "")}>
           {d.myDelta !== null ? signed(d.myDelta) : "—"}
         </span>

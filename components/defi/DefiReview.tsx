@@ -10,6 +10,7 @@ import { clock, duelTopicLabel } from "@/lib/duels";
 import { FORMATS, dayHref, dayLabel, rankLine, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
 import { DEFI, verdictCopie, voixDefi } from "@/lib/voice-z2c";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
+import PctScore from "@/components/adn/PctScore";
 
 type Filter = "errors" | "all";
 
@@ -98,6 +99,7 @@ export function DefiReview({ info, review, initialFilter }: Props) {
             </span>
             <span>
               <b className="font-mono font-semibold tabular-nums text-white">{score}</b> sur {total}
+              <PctScore justes={score} total={total} />
             </span>
             {place && (
               <>
@@ -122,6 +124,7 @@ export function DefiReview({ info, review, initialFilter }: Props) {
           <span className="font-mono text-[13px] tabular-nums">
             <b className="font-semibold">{score}</b>
             <span className="text-muted">/{total}</span>
+            <PctScore justes={score} total={total} />
           </span>
         </div>
         <Ticks marks={reviewMarks(review)} label={DEFI.coches} numbered onPick={jump} />

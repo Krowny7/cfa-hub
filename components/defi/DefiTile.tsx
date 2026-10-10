@@ -4,6 +4,7 @@ import { Icone, type IconeNom } from "@/components/adn/icons";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
 import { rankLine, reviewHref, timeLeftLabel, type TodayDaily } from "@/lib/daily";
 import { joueurs, voixDefi } from "@/lib/voice-z2c";
+import PctScore from "@/components/adn/PctScore";
 
 // Tuile « Défi du jour » prête à poser (accueil, S'entraîner), sur la même
 // grille que les tuiles de l'accueil (components/accueil/Tile) : étiquette
@@ -52,6 +53,7 @@ export function DefiTile({
         <span className="flex items-baseline gap-1" aria-label={`${daily.score} sur ${total}`}>
           <span className="t-num text-[30px] leading-none">{daily.score}</span>
           <span className="font-mono text-[14px] text-muted">/{total}</span>
+          <PctScore justes={daily.score} total={total} className="text-[14px]" />
         </span>
       );
       sub = [rankLine(daily.rank, daily.players), timeLeftLabel(daily.closesAt, nowIso) ? T.seFige : null].filter(Boolean).join(" · ");

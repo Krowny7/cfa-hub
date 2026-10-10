@@ -5,7 +5,7 @@
 // lib/voice.ts : toujours le chiffre, jamais « raté » ni « Bravo », pas de
 // point d'exclamation, et le bout qui reste toujours nommé.
 
-import { joursEncre, nombre, pluriel, questions, ratures, serie, signe, traits, SIGNATURE, type EtatJour } from "@/lib/voice";
+import { joursEncre, nombre, pluriel, questions, ratures, serie, signe, traits, SIGNATURE, type EtatJour, scorePct } from "@/lib/voice";
 
 /** Le nom de chaque épreuve, en sur-titre de la copie. */
 export const EPREUVE = {
@@ -51,7 +51,7 @@ export const PAR_MATIERE = {
   meta: (plusFaible: { topic: string; correct: number; total: number }) =>
     plusFaible.correct >= plusFaible.total
       ? "page propre partout"
-      : `le plus fragile : ${plusFaible.topic}, ${nombre(plusFaible.correct)}/${nombre(plusFaible.total)}`,
+      : `le plus fragile : ${plusFaible.topic}, ${scorePct(plusFaible.correct, plusFaible.total)}`,
 } as const;
 
 /** Retour immédiat d'une question corrigée sur-le-champ (QCM, session du jour). */
