@@ -347,16 +347,18 @@ export const TUTO: EtapeTuto[] = [
 /**
  * Les nouveautés d'une version (lib/presentation, VERSION_NOUVEAUTES) : une
  * visite courte, une fois par compte, pour ceux qui ont déjà fait la visite
- * d'accueil. Version 1 (octobre 2026) : points faibles et l'Atelier, carnet
- * par notion, profil (sceaux, Journal, saisons, Personnaliser), carte joueur
- * et tampons, « Du nouveau ».
+ * d'accueil. Version 2 (octobre 2026, relancée pour tous) : points faibles et
+ * la carte de l'Atelier (son nom, sa plume, l'établi qui s'anime), carnet par
+ * notion, profil (sceaux, Journal, saisons, Personnaliser), carte joueur et
+ * tampons, « Du nouveau ». Une étape dont l'élément peut manquer (pas de
+ * données) est facultative ou a un repli.
  */
 export const NOUVEAUTES: EtapeTuto[] = [
   { page: "/dashboard", texte: "Re. Pendant que tu dormais, j’ai fait des travaux. Je te montre les nouveautés : deux minutes, chrono.", pose: "fier" },
-  { page: "/entrainement", cible: "points-faibles", repli: "session", texte: "Tes points faibles, notion par notion. Je sais exactement où tu coinces. Désolé, pas désolé.", pose: "moqueur" },
-  { page: "/entrainement", cible: "atelier", facultatif: true, texte: "L’Atelier : 30 minutes sur tes trois notions les plus faibles. Rappel, tes ratures, du neuf, un calcul, et un bilan. Tu ressors réparé.", pose: "fier" },
+  { page: "/entrainement", cible: "points-faibles", repli: "session", texte: "Ton point faible, notion par notion. Je sais exactement où tu coinces. Désolé, pas désolé.", pose: "moqueur" },
+  { page: "/entrainement", cible: "atelier", facultatif: true, texte: "Et voici l’Atelier. Son nom en grand, sa plume dans un sceau, et l’établi qui s’anime : c’est mon coin. 30 minutes sur tes trois notions les plus faibles : rappel, ratures, du neuf, un calcul, un bilan. Tu ressors réparé.", pose: "fier" },
   { page: "/moi?onglet=erreurs", cible: "carnet-notions", facultatif: true, texte: "Ton carnet de ratures se range aussi par notion. Pratique pour voir où ça saigne.", pose: "etonne" },
-  { page: "/profil", cible: "sceaux-poses", texte: "Ton profil a pris du galon. Ici, tes trois plus beaux sceaux. Ou les trois que tu choisis : t’es chez toi.", pose: "fier" },
+  { page: "/profil", cible: "sceaux-poses", facultatif: true, texte: "Ton profil a pris du galon. Ici, tes trois plus beaux sceaux. Ou les trois que tu choisis : t’es chez toi.", pose: "fier" },
   { page: "/profil?onglet=sceaux", cible: "collection", texte: "La collection : encre, vermillon, dorure. Ceux en relief, tu les as pas encore. Au boulot.", pose: "moqueur" },
   { page: "/profil?onglet=journal", cible: "journal", texte: "Le Journal : ta courbe d’ELO, tes jours joués, tes exploits. Et chaque saison, ton pic est gravé pour toujours. Comme ma Joconde.", pose: "base" },
   { page: "/profil?onglet=journal", cible: "personnaliser", texte: "Personnaliser, direct sur la page. Ce qui est fixe est libre. Ce qui bouge ou qui brille, ça se gagne.", pose: "fier" },

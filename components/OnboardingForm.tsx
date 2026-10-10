@@ -6,8 +6,8 @@ import { ArrowRight, Check, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { PremierTrait } from "@/components/adn/PremierTrait";
 import { INSCRIPTION } from "@/lib/voice-z1";
-import { CLE_PRESENTATION, VERSION_PRESENTATION } from "@/lib/presentation";
-import { CLE_TUTO } from "@/lib/leonard/reglages";
+import { CLE_NOUVEAUTES_COMPTE, CLE_PRESENTATION, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION } from "@/lib/presentation";
+import { CLE_NOUVEAUTES, CLE_TUTO } from "@/lib/leonard/reglages";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -152,7 +152,21 @@ export function OnboardingForm({
       // cookies bloqués : le compte suffit
     }
     try {
-      await supabase.auth.updateUser({ data: { [CLE_PRESENTATION]: VERSION_PRESENTATION } });
+      // un compte tout neuf (aucun marqueur) : la visite d'accueil lui montre
+      // déjà tout, il est dispensé des nouveautés de cette version
+      const { data: u } = await supabase.auth.getUser();
+      const meta = u.user?.user_metadata ?? {};
+      const neuf = !!u.user && !meta[CLE_PRESENTATION] && !meta[CLE_VISITE_COMPTE] && !meta[CLE_NOUVEAUTES_COMPTE];
+      await supabase.auth.updateUser({
+        data: neuf ? { [CLE_PRESENTATION]: VERSION_PRESENTATION, [CLE_NOUVEAUTES_COMPTE]: VERSION_NOUVEAUTES } : { [CLE_PRESENTATION]: VERSION_PRESENTATION },
+      });
+      if (neuf) {
+        try {
+          localStorage.setItem(CLE_NOUVEAUTES, JSON.stringify(VERSION_NOUVEAUTES));
+        } catch {
+          // stockage indisponible : le compte suffit
+        }
+      }
     } catch {
       // réseau : le cookie évite le renvoi sur cet appareil
     }

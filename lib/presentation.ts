@@ -32,9 +32,11 @@ export function visiteVue(meta: Meta) {
 // Les nouveautés : une visite plus courte de Léonard (lib/leonard/repliques,
 // NOUVEAUTES), une fois par compte et par version, pour qui a déjà fait la
 // visite d'accueil ; sans repasser par le premier trait. Une nouvelle
-// version de NOUVEAUTES : monter VERSION_NOUVEAUTES.
+// version de NOUVEAUTES : monter VERSION_NOUVEAUTES. Un compte tout neuf en
+// est dispensé dès son premier trait (components/OnboardingForm).
 //   rl_nouveautes    les nouveautés vues (ou passées) dans cette version
-export const VERSION_NOUVEAUTES = 1;
+// Version 2 : relancée pour tous (la v1 n'avait pas joué chez tout le monde).
+export const VERSION_NOUVEAUTES = 2;
 export const CLE_NOUVEAUTES_COMPTE = "rl_nouveautes";
 
 /** Les nouveautés de cette version sont-elles déjà vues sur ce compte ? */
