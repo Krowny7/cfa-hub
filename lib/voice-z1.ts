@@ -32,6 +32,11 @@ export const TUILES = {
   duel: "Duel",
   lancer: "Lancer un duel",
   meta: "même épreuve, 30 questions",
+  /** « Tes points faibles » : le n° 1, et l'Atelier quand il est conseillé ou en cours */
+  pointFaible: "Ton point faible",
+  atelierConseille: "Atelier conseillé",
+  atelierEnCours: "Atelier en cours",
+  voirPointsFaibles: "Voir mes points faibles",
 } as const;
 
 /** Tuile « duel à revoir » : « Défaite contre Hugo P. » + « 19 contre 22 · −9 ELO ». */
@@ -161,6 +166,18 @@ export const CARNET = {
   /** « Mettre au propre ce thème » (Tes points faibles, migration_points_faibles.sql) */
   propreThemeRetour: "Revenir à mes points faibles",
   propreThemeIndisponible: "La reprise par thème n'est pas encore ouverte. Tes ratures t'attendent dans Moi › Erreurs.",
+  /** le carnet rangé par source ou par notion (migration_carnet_notions.sql) */
+  ranger: "Ranger le carnet",
+  parSource: "Par source",
+  parNotion: "Par notion",
+  notions: (n: number) => `${pluriel(n, "notion", "notions")}, les plus chargées d'abord`,
+  voirNotions: (n: number) => `Voir les ${nombre(n)} autres`,
+  voirMoins: "Voir moins",
+  toutesNotions: "Toutes les notions",
+  sansNotion: "Sans notion",
+  sansNotionRepere: "questions retirées de la banque ou pas encore rangées",
+  notionInconnue: "Autre notion",
+  ratures: (n: number) => pluriel(n, "rature", "ratures"),
 } as const;
 
 /** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */
@@ -175,6 +192,7 @@ export const SOURCES_RATURE: [string, string][] = [
   ["ciblee", "Sessions ciblées"],
   ["blanc", "Examens blancs"],
   ["examen", "Examens"],
+  ["atelier", "Ateliers"],
 ];
 
 export const SONS = {

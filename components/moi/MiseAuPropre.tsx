@@ -15,8 +15,9 @@ import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 // pour « Rejouer les anciennes », une révision : juste, elle reste rayée ;
 // faux, elle revient en cours. La correction ne vient qu'après la réponse.
 // On s'arrête quand on veut, on revient plus tard. Avec `theme` (« Tes points
-// faibles »), seules les ratures en cours des sets du thème
-// (rature_suivante_theme, migration_points_faibles.sql).
+// faibles »), seules les ratures en cours de la notion
+// (rature_suivante_notion, migration_notions.sql) ou, en repli, des sets du
+// thème (rature_suivante_theme, migration_points_faibles.sql).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -57,8 +58,8 @@ export function MiseAuPropre({
 }: {
   /** le tri du carnet (null : toutes les ratures) */
   source: string | null;
-  /** un thème (« Tes points faibles ») : ses sets et son nom */
-  theme?: { sets: string[]; libelle: string };
+  /** un point faible (« Tes points faibles ») : sa notion (Learning Module) ou, en repli, ses sets, et son nom */
+  theme?: { notion: string | null; sets: string[]; libelle: string; /** le bouton de sortie (« Revenir au carnet ») ; par défaut, le retour aux points faibles */ retour?: string };
   /** rejouer les anciennes (rayées) plutôt que mettre au propre celles en cours */
   anciennes?: boolean;
   /** ce qui est arrivé à la rature (rayee, reste, ancienne, revenue) et ses sources, pour les compteurs du carnet */
@@ -76,8 +77,9 @@ export function MiseAuPropre({
   const [erreur, setErreur] = useState(false);
   // la reprise par thème demande migration_points_faibles.sql
   const [indisponible, setIndisponible] = useState(false);
-  // les sets du thème, en clé stable (le tirage ne se relance pas à chaque rendu du parent)
-  const cleSets = theme ? theme.sets.join(",") : null;
+  // la notion, sinon les sets du thème, en clé stable (le tirage ne se relance pas à chaque rendu du parent)
+  const notion = theme?.notion ?? null;
+  const cleSets = theme && !notion ? theme.sets.join(",") : null;
   const [bilan, setBilan] = useState({ rayees: 0, restees: 0 });
   const vues = useRef<string[]>([]);
   const haut = useRef<HTMLDivElement>(null);
@@ -90,15 +92,17 @@ export function MiseAuPropre({
     const restantes = demo?.questions.filter((q) => !vues.current.includes(q.question_id));
     const { data, error } = demo
       ? { data: { carnet: demo.questions.length, reste: restantes?.length ?? 0, question: restantes?.[0] ?? null }, error: null }
-      : cleSets !== null
-        ? await sb.rpc("rature_suivante_theme", { p_sets: cleSets ? cleSets.split(",") : [], p_exclure: vues.current })
-        : await sb.rpc("rature_suivante", {
-            p_source: source,
-            p_exclure: vues.current,
-            p_anciennes: anciennes,
-          });
+      : notion !== null
+        ? await sb.rpc("rature_suivante_notion", { p_notion: notion, p_exclure: vues.current })
+        : cleSets !== null
+          ? await sb.rpc("rature_suivante_theme", { p_sets: cleSets ? cleSets.split(",") : [], p_exclure: vues.current })
+          : await sb.rpc("rature_suivante", {
+              p_source: source,
+              p_exclure: vues.current,
+              p_anciennes: anciennes,
+            });
     setEnvoi(false);
-    if (error) return cleSets !== null && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
+    if (error) return (notion !== null || cleSets !== null) && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
     const r = data as { carnet: number; reste: number; question: null | QuestionTiree };
     setReste(Number(r.reste) || 0);
     if (!r.question) {
@@ -115,7 +119,7 @@ export function MiseAuPropre({
       rubrique: rubriqueDe(r.question.set_title, r.question.folder_name).rubrique,
     });
     haut.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [anciennes, cleSets, demo, sb, source]);
+  }, [anciennes, cleSets, demo, notion, sb, source]);
 
   useEffect(() => {
     void tirer();
@@ -213,7 +217,7 @@ export function MiseAuPropre({
         <div className="grid gap-3 py-4">
           <p className="t-small m-0">{CARNET.propreThemeIndisponible}</p>
           <button type="button" className="btn btn-secondary w-fit" onClick={onFermer}>
-            {CARNET.propreThemeRetour}
+            {theme?.retour ?? CARNET.propreThemeRetour}
           </button>
         </div>
       ) : fini ? (
@@ -233,7 +237,7 @@ export function MiseAuPropre({
               </button>
             )}
             <button type="button" className="btn btn-secondary" onClick={onFermer}>
-              {theme ? CARNET.propreThemeRetour : CARNET.propreRetour}
+              {theme ? (theme.retour ?? CARNET.propreThemeRetour) : CARNET.propreRetour}
             </button>
           </div>
         </div>

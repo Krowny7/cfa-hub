@@ -10,7 +10,8 @@ import { loadNextMockExam } from "@/components/accueil/queries";
 import { EntrainementView, type EntrainementData } from "@/components/entrainement/EntrainementView";
 import { getEclairStats } from "@/lib/eclair";
 import { getAnswerStats } from "@/lib/answer-stats";
-import { construirePointsFaibles, lireBanqueQcm, lireRaturesParTheme } from "@/components/moi/points-faibles-data";
+import { construirePointsFaibles, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
+import { avecAtelier, lireEtatAtelier } from "@/app/atelier/donnees";
 
 // Espace « S'entraîner » : point d'entrée unique vers les façons de
 // s'entraîner. Chacune garde sa page et ses routes (QCM, entraînement ciblé,
@@ -33,7 +34,7 @@ export default async function EntrainementPage() {
   }
 
   const now = Date.now();
-  const [mastery, practice, mockExam, rating, open, daily, eclair, answers, raturesTheme, banqueQcm] = await Promise.all([
+  const [mastery, practice, mockExam, rating, open, daily, eclair, answers, basePointsFaibles, banqueQcm, atelier] = await Promise.all([
     getTopicMastery(supabase, userId),
     (async () => {
       try {
@@ -59,10 +60,12 @@ export default async function EntrainementPage() {
     // un seul appel, jamais d'exception ; « bientôt » tant que la migration manque
     getTodayDaily(supabase, userId).catch(() => null),
     getEclairStats(supabase, userId),
-    // « Tes points faibles » : les réponses (client admin, toujours filtrées sur ce joueur), les ratures par thème et les QCM de la banque
+    // « Tes points faibles » : les réponses (client admin, toujours filtrées sur ce joueur), les notions (sinon les ratures par thème) et les QCM de la banque
     getAnswerStats(admin ?? supabase, userId, { privileged: !!admin, now }),
-    lireRaturesParTheme(supabase),
+    lireBasePointsFaibles(supabase),
     lireBanqueQcm(admin ?? supabase),
+    // l'Atelier : ouvert (migration_atelier.sql) et, s'il y en a un, celui en cours
+    lireEtatAtelier(supabase, userId),
   ]);
 
   const pct = new Map(mastery.map((t) => [t.key, t.pct]));
@@ -76,7 +79,7 @@ export default async function EntrainementPage() {
     // séries éclair rendues aujourd'hui (null tant que migration_series_eclair.sql manque)
     eclair: eclair?.today ?? null,
     nowIso: new Date(now).toISOString(),
-    pointsFaibles: construirePointsFaibles(answers, raturesTheme, banqueQcm, now),
+    pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier),
   };
 
   return <EntrainementView d={d} />;

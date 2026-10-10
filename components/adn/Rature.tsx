@@ -9,6 +9,8 @@
 //      posée sans geste. trait "a" | "b" : deux gestes, alternés d'une ligne à l'autre
 //   <CompteurBarre avant={12} apres={11} libelle="à reprendre" />
 //      11 en grand, l'ancien 12 rayé à côté ; taille = corps du grand chiffre
+//   <ChiffreRaye valeur="12" />
+//      dans une ligne de texte : l'ancien chiffre, rayé au corps de la ligne
 //   <RatureBandeau reste={11} rateeLe="28 sept." />
 //      le bandeau du quiz : « Rayée de ton carnet · plus que 11 » ; il se
 //      retire seul après `duree` ms (défaut 2600 ; 0 = reste), sans jamais
@@ -211,6 +213,21 @@ export function CompteurBarre({
           {libelle}
         </span>
       ) : null}
+    </span>
+  );
+}
+
+export function ChiffreRaye({ valeur, anime = true }: { valeur: string; anime?: boolean }) {
+  const axis = useRef<SVGPathElement | null>(null);
+  useIso(() => {
+    if (!anime || mouvementReduit()) return;
+    const a = tracer(axis.current, 0.05, 0.3);
+    return () => a?.cancel();
+  }, [anime]);
+  return (
+    <span className={s.chiffre}>
+      {valeur}
+      <TraitMasque d={RATURE_NUM} vb="0 0 100 30" axe="M2 16 L98 16" axisRef={axis} />
     </span>
   );
 }

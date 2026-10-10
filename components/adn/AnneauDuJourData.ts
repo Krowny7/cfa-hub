@@ -52,7 +52,7 @@ async function load(supabase: SupabaseClient, userId: string, now: Date): Promis
 
   type DuelRow = { challenger_id: string; question_ids: string[] | null; challenger_finished_at: string | null; opponent_finished_at: string | null; finished_at: string | null };
 
-  const [fiche, qcm, practice, mock, retakes, duels, daily, calc, quizzes, eclair] = await Promise.all([
+  const [fiche, qcm, practice, mock, retakes, duels, daily, calc, quizzes, eclair, ateliers] = await Promise.all([
     (async () => {
       try {
         const { count, error } = await supabase
@@ -101,10 +101,14 @@ async function load(supabase: SupabaseClient, userId: string, now: Date): Promis
     rows<{ total: number }>(() => supabase.from("quiz_attempts").select("total").eq("user_id", userId).gte("created_at", since).limit(200)),
     // Séries éclair rendues aujourd'hui (table absente avant la migration : liste vide).
     rows<{ total: number }>(() => supabase.from("eclair_series").select("total").eq("user_id", userId).gte("finished_at", since).limit(500)),
+    // Ateliers touchés aujourd'hui : leurs réponses aux questions et le re-test des calculs
+    // (le premier passage d'un calcul est dans calc_attempts)
+    rows<{ reponses: { k?: string; r?: boolean; at?: string }[] | null }>(() => supabase.from("ateliers").select("reponses").eq("user_id", userId).gte("vu_at", since).limit(20)),
   ]);
 
   // Les sessions de flashcards ne sont pas des questions : seules les sessions QCM comptent.
   let n = fiche + sum(qcm.filter((r) => r.mode === "qcm")) + sum(practice) + sum(mock) + sum(retakes) + sum(daily) + calc + sum(quizzes) + sum(eclair);
+  for (const a of ateliers) for (const x of Array.isArray(a.reponses) ? a.reponses : []) if ((x.k !== "calc" || x.r === true) && x.at && Date.parse(x.at) >= Date.parse(since)) n += 1;
   for (const d of duels) {
     const at = (d.challenger_id === userId ? d.challenger_finished_at : d.opponent_finished_at) ?? d.finished_at;
     if (at && parisDay(Date.parse(at)) === today) n += d.question_ids?.length ?? 0;

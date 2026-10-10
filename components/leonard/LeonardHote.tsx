@@ -41,6 +41,10 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "duel-nul": 0.5,
   "defi-reussi": 0.55,
   "defi-rate": 0.55,
+  "atelier-progres": 0.9,
+  "atelier-rayees": 0.75,
+  "atelier-dur": 0.6,
+  "atelier-fini": 0.5,
   tard: 0.6,
 };
 const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "progression", "rang-monte", "session-parfaite", "retour"]);
@@ -82,7 +86,7 @@ function choisir(evt: Exclude<EvenementLeonard, "tuto">, vars?: Record<string, s
   const neuves = liste.filter((r) => !recents.includes(r.texte));
   const r = (neuves.length ? neuves : liste)[Math.floor(Math.random() * (neuves.length || liste.length))];
   ecrire(CLE_RECENTS, [r.texte, ...recents].slice(0, 40));
-  const texte = r.texte.replace(/[{](score|pct|n)[}]/g, (_, k: string) => String(vars?.[k] ?? ""));
+  const texte = r.texte.replace(/[{](score|pct|n|notion)[}]/g, (_, k: string) => String(vars?.[k] ?? ""));
   return { ...r, texte };
 }
 

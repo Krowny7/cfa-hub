@@ -206,6 +206,39 @@ clé service les écrit :
   nouvelle, `rattacher.mjs` d'abord : ordre complet en tête de
   `scripts/notions/rattacher.mjs`).
 
+« Tes points faibles » (Moi › Stats, S'entraîner) se range par notion dès
+que `points_faibles()` répond et que les colonnes sont remplies
+(`components/moi/points-faibles-data.ts`) ; sinon il garde les thèmes de
+l'étape 1 (`ratures_par_theme`). Une question sans notion reste comptée
+dans sa matière.
+
+L'Atelier (`/atelier`, `migration_atelier.sql`) : 30 minutes sur 1 à 3
+notions faibles (poids 60/25/15), en cinq blocs (rappel, ratures, questions
+neuves, calcul, re-test). Le serveur prépare le pool et corrige ; l'ordre
+des questions, l'adaptation et le chrono sont dans `lib/atelier.ts` (pur,
+`node scripts/test-atelier.mjs`). Les calculs sont tirés et corrigés par les
+actions serveur (`app/atelier/actions.ts`) et notés avec la clé service
+(`atelier_ajouter_calc`, `atelier_noter_calc`, fermées aux joueurs). XP des
+séries éclair sur les questions neuves et les calculs (première bonne
+réponse), rien sur les ratures rejouées ni au re-test. Le pool et l'XP
+raisonnent par énoncé (l'« officielle » d'un drill copie une question de la
+banque) : un énoncé du carnet n'est jamais « neuf », une copie déjà jouée
+passe pour vue. Ses réponses comptent dans les stats (source `atelier`), le
+carnet, l'anneau du jour et `_reponses_joueur` (par `_reponses_atelier`,
+qu'un nouveau collage de `migration_notions.sql` ne touche pas) ; le re-test
+d'un calcul n'entre pas dans `calc_attempts`. Tant que la table manque, ou par thème, aucun point
+d'entrée ne s'affiche et `/atelier` dit « bientôt ».
+
+Autour : la tuile « Ton point faible » de l'accueil
+(`components/accueil/point-faible.ts`, `points_faibles()` seule, jamais
+`getAnswerStats`) prend la place de celle des ratures quand le n° 1 est net ;
+le carnet de Moi › Erreurs se range aussi par notion
+(`migration_carnet_notions.sql`, `ratures_par_notion`, repli par source) ;
+Moi › Stats montre l'historique des Ateliers clos (« Tes Ateliers », lecture
+de la table `ateliers`, bilan recalculé par `bilan` de `lib/atelier`) ;
+Léonard commente le bilan (`analyserAtelier`, une réaction par Atelier à la
+place de celle de `FinDeSession`).
+
 ### Permissions d'édition
 - `private` → owner uniquement
 - `public` → owner uniquement (tout le monde peut lire)

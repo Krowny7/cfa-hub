@@ -4,7 +4,7 @@ import { SectionTitle } from "@/components/ui/Titles";
 import { DefiTile } from "@/components/defi/DefiTile";
 import { defiEnTete } from "@/components/defi/DefiHero";
 import { ResumeTile } from "@/components/accueil/HomeCards";
-import { DemandeAmiTile, DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
+import { DemandeAmiTile, DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, PointFaibleTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
 import { RankCard } from "@/components/accueil/RankCard";
 import { TrajectoirePanel } from "@/components/objectif/TrajectoirePanel";
 import { OBJECTIF, parJour } from "@/lib/voice-objectif";
@@ -30,8 +30,8 @@ type Candidate = { key: string; score: number; node: React.ReactNode };
 /**
  * Les tuiles de la journée, de la plus pressante à la moins pressante :
  * défi reçu > reprise (défi rendu) > duel en cours > examen classé
- * imminent > reprise > duel à revoir (avec des ratures) > ratures à
- * reprendre > examen classé dans la semaine > duel revu sans rature > page
+ * imminent > reprise > duel à revoir (avec des ratures) > point faible net
+ * (à la place des ratures) ou ratures à reprendre > examen classé dans la semaine > duel revu sans rature > page
  * propre > lancer un duel > défi « bientôt ». Le défi du jour jouable ou
  * joué tient la carte héros (DefiHero) : sa tuile laisse la place à la
  * reprise (ResumeTile).
@@ -51,8 +51,10 @@ export function pickTiles(d: AccueilData): Candidate[] {
     const r = d.reviewDuel.myScore !== null ? d.reviewDuel.total - d.reviewDuel.myScore : 0;
     out.push({ key: "revue", score: r > 0 ? 60 : 35, node: <ReviewDuelTile duel={d.reviewDuel} nowIso={d.nowIso} /> });
   }
+  // un point faible net prend la place des ratures (il mène à l'Atelier ou à leur reprise par notion)
+  if (d.pointFaible) out.push({ key: "point-faible", score: 55, node: <PointFaibleTile p={d.pointFaible} /> });
   // « Page propre. » seulement pour qui a déjà joué des quiz de fiches
-  if (d.errors.available && (d.errors.total > 0 || (d.errors.answered ?? 1) > 0))
+  else if (d.errors.available && (d.errors.total > 0 || (d.errors.answered ?? 1) > 0))
     out.push({ key: "ratures", score: d.errors.total > 0 ? 55 : 20, node: <RaturesTile errors={d.errors} /> });
   if (!d.incomingDuel) out.push({ key: "lancer", score: 15, node: <LaunchDuelTile /> });
   return out.sort((a, b) => b.score - a.score).slice(0, MAX_TILES);

@@ -6,6 +6,7 @@ import type { EtatJour } from "@/lib/voice";
 import type { Marquees } from "@/components/moi/marquees-data";
 import type { Ratures } from "@/components/moi/ratures-data";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
+import type { HistoriqueAteliers } from "@/lib/atelier-seance";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -98,4 +99,6 @@ export type MoiData = {
   marquees: Marquees;
   /** « Tes points faibles » (en tête de Stats ; absent : pas de carte) */
   pointsFaibles?: PointsFaiblesData;
+  /** l'historique des Ateliers clos (absent ou vide : pas de carte) */
+  ateliers?: HistoriqueAteliers | null;
 };
