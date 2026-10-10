@@ -1,0 +1,334 @@
+/* L'établi de Léonard, la nuit (carte de l'Atelier). Une « scène » au
+   rapport de l'image (1024 × 572) couvre le cadre, centrée sur un point
+   focal (--fx, --fy) ; tous les effets sont posés dans le repère de l'image
+   (viewBox 0 0 1024 572, ou des % de la scène) et suivent donc le recadrage.
+   Seuls transform et opacity s'animent. */
+
+.cadre {
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+  background: #3a2414;
+}
+.scene {
+  position: absolute;
+  --w: max(100cqw, calc(100cqh * 1.7902));
+  --h: calc(var(--w) / 1.7902);
+  width: var(--w);
+  height: var(--h);
+  left: clamp(calc(100cqw - var(--w)), calc(50cqw - var(--fx, 0.5) * var(--w)), 0px);
+  top: clamp(calc(100cqh - var(--h)), calc(50cqh - var(--fy, 0.5) * var(--h)), 0px);
+}
+/* vignette en portrait (téléphone) : le cadrage glisse vers la lanterne et le chat */
+@container (orientation: portrait) {
+  .scene {
+    --fx: 0.37;
+  }
+}
+.scene > img,
+.effets,
+.effets > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* image fixe : mouvement réduit demandé, mode discret du site, ou
+   captures et tests (data-rl-motion="off", voir app/template.tsx) */
+@media (prefers-reduced-motion: reduce) {
+  .effets {
+    display: none;
+  }
+}
+:global(html[data-discreet="1"]) .effets,
+:global(html[data-rl-motion="off"]) .effets {
+  display: none;
+}
+/* hors écran ou onglet caché : tout se fige */
+.effets[data-arret] * {
+  animation-play-state: paused !important;
+}
+
+/* le chat qui respire : une copie de l'image, masquée autour de lui */
+.chat {
+  background: 0 0 / 100% 100% no-repeat;
+  -webkit-mask: radial-gradient(ellipse 4.9% 6.2% at 45.6% 61%, #000 52%, transparent 100%);
+  mask: radial-gradient(ellipse 4.9% 6.2% at 45.6% 61%, #000 52%, transparent 100%);
+  transform-origin: 45.6% 65.6%;
+  animation: respire 4.8s ease-in-out infinite;
+}
+@keyframes respire {
+  0%,
+  100% {
+    transform: none;
+  }
+  46% {
+    transform: scale(1.005, 1.02);
+  }
+}
+
+.lumiere {
+  mix-blend-mode: screen;
+}
+.lumiere *,
+.codex * {
+  transform-box: fill-box;
+}
+.halo {
+  animation: souffle 6.3s ease-in-out infinite;
+}
+.haloB {
+  animation-duration: 7.1s;
+  animation-delay: -2s;
+}
+.haloC {
+  animation-duration: 5.3s;
+  animation-delay: -1s;
+}
+@keyframes souffle {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  22% {
+    opacity: 0.78;
+  }
+  40% {
+    opacity: 0.6;
+  }
+  63% {
+    opacity: 0.95;
+  }
+  82% {
+    opacity: 0.66;
+  }
+}
+.coeur {
+  animation: scintille 2.9s ease-in-out infinite;
+}
+@keyframes scintille {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  13% {
+    opacity: 0.62;
+  }
+  27% {
+    opacity: 0.85;
+  }
+  41% {
+    opacity: 0.7;
+  }
+  58% {
+    opacity: 0.9;
+  }
+  74% {
+    opacity: 0.66;
+  }
+  88% {
+    opacity: 0.8;
+  }
+}
+.flamme {
+  transform-origin: 50% 100%;
+  animation: vacille 2.3s ease-in-out infinite;
+}
+.flB {
+  animation-duration: 1.9s;
+  animation-delay: -0.7s;
+}
+.flC {
+  animation-duration: 2.7s;
+  animation-delay: -1.3s;
+}
+.flD {
+  animation-duration: 2.1s;
+  animation-delay: -0.4s;
+}
+@keyframes vacille {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: scale(0.96, 1.06) skewX(-3deg);
+  }
+  32% {
+    transform: scale(1.02, 0.95) skewX(2deg);
+  }
+  50% {
+    transform: scale(0.98, 1.09) skewX(-1deg);
+  }
+  68% {
+    transform: scale(1.03, 0.97) skewX(3deg);
+  }
+  84% {
+    transform: scale(0.97, 1.04) skewX(-2deg);
+  }
+}
+/* le ciel : une bande de lumière traverse la fenêtre, découpée par l'arc */
+.reflet {
+  animation: reflet 30s linear infinite;
+}
+@keyframes reflet {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(440px);
+  }
+}
+.fenetre {
+  opacity: 0;
+  animation: allume 44s linear infinite;
+}
+@keyframes allume {
+  0%,
+  6% {
+    opacity: 0;
+  }
+  9%,
+  82% {
+    opacity: 1;
+  }
+  86%,
+  100% {
+    opacity: 0;
+  }
+}
+.vapeur {
+  transform-origin: 50% 100%;
+  opacity: 0;
+  animation: vapeur 6s ease-in-out infinite;
+}
+.vapB {
+  animation-delay: -2s;
+}
+.vapC {
+  animation-delay: -4s;
+}
+@keyframes vapeur {
+  0% {
+    opacity: 0;
+    transform: translate(0, 4px) scale(0.8, 0.9);
+  }
+  35% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(2px, -16px) scale(1.25, 1.1);
+  }
+}
+
+/* le codex : une ligne rayée en rouge, grattée, puis réécrite au propre.
+   Les traits se révèlent de gauche à droite (rideau en scaleX dans un
+   clipPath) plutôt que par stroke-dashoffset. */
+.codex path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.raye {
+  stroke: #b4412f;
+  stroke-width: 1.35;
+}
+.ecrit {
+  stroke: #6a4529;
+  stroke-width: 0.62;
+}
+@container (max-width: 520px) {
+  .raye {
+    stroke-width: 2.3;
+  }
+  .ecrit {
+    stroke-width: 1;
+  }
+}
+@container (max-width: 240px) {
+  .raye {
+    stroke-width: 3.4;
+  }
+  .ecrit {
+    stroke-width: 1.5;
+  }
+}
+.gratte {
+  opacity: 0;
+}
+.rideau {
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+.go .rideauRaye {
+  animation: rideauRaye 9s forwards;
+}
+.go .raye {
+  animation: raye 9s forwards;
+}
+.go .gratte {
+  animation: gratte 9s forwards;
+}
+.go .rideauEcrit {
+  animation: rideauEcrit 9s forwards;
+}
+.go .ecrit {
+  animation: ecrit 9s forwards;
+}
+@keyframes rideauRaye {
+  0% {
+    transform: scaleX(0);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.3, 1);
+  }
+  8%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes raye {
+  0%,
+  25% {
+    opacity: 1;
+  }
+  32%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gratte {
+  0%,
+  22% {
+    opacity: 0;
+  }
+  31%,
+  78% {
+    opacity: 0.94;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes rideauEcrit {
+  0%,
+  31% {
+    transform: scaleX(0);
+  }
+  54%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes ecrit {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

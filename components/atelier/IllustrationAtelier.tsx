@@ -1,25 +1,33 @@
+import { EffetsAtelier } from "@/components/atelier/EffetsAtelier";
+import s from "./IllustrationAtelier.module.css";
+
 /**
- * L'illustration de la carte de l'Atelier (S'entraîner). En attendant
- * l'établi de Léonard (une image fixe, qu'on animera ensuite), Léonard
- * détouré posé sur un fond calme. Pur décor : alt vide, aria-hidden. Le
- * cadre (taille, arrondi, place dans la grille) vient de className ; l'image
- * se cale en bas, au centre. À remplacer sans toucher à CarteAtelier.
+ * L'illustration de la carte de l'Atelier (S'entraîner) : l'établi de
+ * Léonard, la nuit. Le serveur rend l'image fixe ; les effets (EffetsAtelier)
+ * naissent après montage, dans le navigateur. Pur décor : alt vide,
+ * aria-hidden. Le cadre (taille, arrondi, place dans la grille) vient de
+ * className ; l'image le couvre, centrée (carte 16:10), ou décalée vers la
+ * lanterne et le chat en vignette portrait (4:5).
  */
 export function IllustrationAtelier({ className = "" }: { className?: string }) {
   return (
-    <div aria-hidden className={"relative overflow-hidden bg-[var(--paper-2)] " + className}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/leonard/base.webp"
-        alt=""
-        width={598}
-        height={660}
-        loading="eager"
-        decoding="async"
-        fetchPriority="high"
-        draggable={false}
-        className="absolute bottom-0 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 select-none"
-      />
+    <div aria-hidden className={s.cadre + " " + className}>
+      <div className={s.scene}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/atelier/etabli-1024.webp"
+          srcSet="/atelier/etabli-640.webp 640w, /atelier/etabli-1024.webp 1024w"
+          sizes="(min-width: 1024px) 34vw, 200px"
+          alt=""
+          width={1024}
+          height={572}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+          draggable={false}
+        />
+        <EffetsAtelier />
+      </div>
     </div>
   );
 }
