@@ -1,7 +1,8 @@
 // Voix « Le Trait » de l'Atelier (la séance de 30 minutes sur ses points
 // faibles) : un mot par chose, toujours le chiffre, pas d'emphase. Les blocs
 // gardent leur nom du début à la fin : Rappel, Tes ratures, Questions neuves,
-// Calcul, Re-test. Module neutre (ni « use client » ni serveur).
+// Calcul, Re-test (trait d'union insécable : jamais coupé en fin de ligne).
+// Module neutre (ni « use client » ni serveur).
 
 import { nombre, pct, pluriel } from "@/lib/voice";
 import type { Bloc, Conseil, Niveau } from "@/lib/atelier";
@@ -11,7 +12,16 @@ export const BLOC_NOM: Record<Bloc, string> = {
   ratures: "Tes ratures",
   neuves: "Questions neuves",
   calcul: "Calcul",
-  retest: "Re-test",
+  retest: "Re‑test",
+};
+
+/** Le nom court d'un bloc, dans l'en-tête de la séance sur téléphone */
+export const BLOC_COURT: Record<Bloc, string> = {
+  rappel: "Rappel",
+  ratures: "Ratures",
+  neuves: "Neuves",
+  calcul: "Calcul",
+  retest: "Re‑test",
 };
 
 /** Le niveau d'une question neuve (la position dans les drills) */
@@ -42,7 +52,7 @@ export const ATELIER = {
   enCoursLigne: (faites: number) => `Un Atelier est en cours : ${pluriel(faites, "réponse donnée", "réponses données")}.`,
   /** avant la migration, ou tant que les notions ne sont pas en place */
   bientotTitre: "L'Atelier arrive bientôt",
-  bientotTexte: "La séance de 30 minutes sur tes points faibles ouvre dès que les questions sont rangées par notion. En attendant, tes ratures t'attendent dans Moi › Erreurs.",
+  bientotTexte: "La séance de 30 minutes sur tes points faibles ouvre très bientôt. En attendant, tes ratures t'attendent dans Moi › Erreurs.",
   bientotAction: "Voir mes points faibles",
   peuTitre: "Pas encore assez de matière",
   peuTexte: "Il faut au moins un point faible pour lancer un Atelier : quelques réponses de plus sur une même notion, ou des ratures en cours.",
@@ -53,11 +63,12 @@ export const ATELIER = {
   aujourdhui: "Aujourd'hui",
   /** la ligne d'une notion : « 12 ratures en cours », « calcul », « questions neuves » */
   detailNotion: (enCours: number, calcul: boolean) => (enCours > 0 ? pluriel(enCours, "rature en cours", "ratures en cours") : calcul ? "calcul" : "questions neuves"),
-  poids: (p: number) => pct(p),
   remplacer: "Remplacer",
   remplacerPar: (libelle: string) => `Remplacer par ${libelle}`,
   ajouterAutres: "Ajouter mes autres points faibles",
-  deroule: "Rappel, tes ratures, questions neuves, calcul, re-test. Tu t'arrêtes quand tu veux et tu reprends dans les 24 heures.",
+  /** les blocs réellement prévus : sans ratures en cours ni calcul, ils ne sont pas annoncés */
+  deroule: (ratures: boolean, calcul: boolean) =>
+    `${["Rappel", ratures ? "tes ratures" : null, "questions neuves", calcul ? "calcul" : null, "re‑test"].filter(Boolean).join(", ")}. Tu t'arrêtes quand tu veux et tu reprends dans les 24 heures.`,
   commencer: "Commencer",
   preparation: "L'Atelier se prépare…",
   vide: "Pas assez de questions sur ces notions pour un Atelier. Remplace-en une.",
@@ -67,7 +78,7 @@ export const ATELIER = {
   clore: "Le clore et voir le bilan",
 
   /** pendant la séance */
-  etape: (k: number, total: number, bloc: Bloc) => `${nombre(k)}/${nombre(total)} · ${BLOC_NOM[bloc]}`,
+  etape: (k: number, total: number, bloc: Bloc, court = false) => `${nombre(k)}/${nombre(total)} · ${(court ? BLOC_COURT : BLOC_NOM)[bloc]}`,
   chrono: (secondes: number) => `${horloge(secondes)} / 30`,
   chronoLabel: (secondes: number) => `Temps de la séance : ${horloge(secondes)} sur 30 minutes`,
   plan: "Le plan",
@@ -132,15 +143,17 @@ export const ATELIER = {
   avantPendantDetail: (avant: { ok: number; n: number }, pendant: { ok: number; n: number }) =>
     `Avant : ${nombre(avant.ok)} sur ${nombre(avant.n)}. Pendant l'Atelier : ${nombre(pendant.ok)} sur ${nombre(pendant.n)}.`,
   ratures: (avant: number, apres: number) => `ratures ${nombre(avant)} → ${nombre(apres)}`,
-  /** la même ligne, l'ancien chiffre rayé à l'encre : « ratures 7 », 12 rayé à côté */
+  /** la même ligne, l'ancien chiffre rayé à l'encre : « ratures », 12 rayé, « → 7 » */
   raturesMot: "ratures",
+  raturesAvant: (avant: number) => nombre(avant),
+  raturesApres: (apres: number) => `→ ${nombre(apres)}`,
   rayees: (n: number) => `${pluriel(n, "rayée", "rayées")}`,
   nouvelles: (n: number) => `${pluriel(n, "nouvelle", "nouvelles")}`,
   calcul: (avant: { ok: number; n: number } | null, pendant: { ok: number; n: number }, niveau: Niveau) =>
     `calcul ${avant ? `${nombre(avant.ok)}/${nombre(avant.n)} → ` : ""}${nombre(pendant.ok)}/${nombre(pendant.n)} ${NIVEAU_CALCUL[niveau]}`,
   tenue: "tenue",
   sansQuestion: "pas de question pendant cet Atelier",
-  retest: (ok: number, n: number) => `Re-test : ${nombre(ok)} sur ${nombre(n)}.`,
+  retest: (ok: number, n: number) => `Re‑test : ${nombre(ok)} sur ${nombre(n)}.`,
   xpGagne: (n: number) => `${nombre(n)} XP gagnés (questions neuves et calculs).`,
   prochainPas: (titre: string) => `Prochain pas : écoute « ${titre} »`,
   prochainAtelier: (c: Conseil) => CONSEIL[c],

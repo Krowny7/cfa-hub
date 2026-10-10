@@ -69,12 +69,14 @@ export default async function AtelierPage({ searchParams }: { searchParams?: Pro
   }
 
   const matiere = new Map(SUBJECTS.map((s) => [s.key, s.name]));
+  // un bloc Calcul : la notion a un type de calcul, et la clé service note les réponses (actions.ts)
+  const aCalcul = (id: string) => !!admin && (notionParId(id)?.calculs.length ?? 0) > 0;
   const proposees: NotionProposee[] = pf.liste
     .filter((p) => p.lm)
-    .map((p) => ({ notion: p.lm as string, libelle: p.libelle, repere: [p.matiereNom, p.repere].filter(Boolean).join(" · "), enCours: p.mesures.enCours, calcul: p.calcul }));
+    .map((p) => ({ notion: p.lm as string, libelle: p.libelle, repere: [p.matiereNom, p.repere].filter(Boolean).join(" · "), enCours: p.mesures.enCours, calcul: p.calcul, aCalcul: aCalcul(p.lm as string) }));
   // une seule notion demandée, même hors de la liste
   if (demandee && !proposees.some((p) => p.notion === demandee.id)) {
-    proposees.unshift({ notion: demandee.id, libelle: demandee.court, repere: `${matiere.get(demandee.matiere) ?? demandee.matiere} · ${POINTS_FAIBLES.repereLm(demandee.lm)}`, enCours: 0, calcul: demandee.calculs.length > 0 });
+    proposees.unshift({ notion: demandee.id, libelle: demandee.court, repere: `${matiere.get(demandee.matiere) ?? demandee.matiere} · ${POINTS_FAIBLES.repereLm(demandee.lm)}`, enCours: 0, calcul: demandee.calculs.length > 0, aCalcul: aCalcul(demandee.id) });
   }
   const initiales = demandee ? [demandee.id] : proposees.slice(0, 3).map((p) => p.notion);
   const concepts = Object.fromEntries(pf.liste.filter((p) => p.lm).map((p) => [p.lm as string, p.concepts.map((c) => c.concept)]));

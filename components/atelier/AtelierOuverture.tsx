@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { ArrowRight, RefreshCw } from "lucide-react";
-import { poidsDe } from "@/lib/atelier";
 import type { NotionProposee } from "@/lib/atelier-seance";
 import { ATELIER as V } from "@/lib/voice-atelier";
 
 // L'écran d'ouverture de l'Atelier (dix secondes) : « Aujourd'hui : Duration
-// (12 ratures en cours), Crédit souverain, FCFE », chaque notion avec son
-// poids ; un toucher la remplace par la suivante de la liste des points
-// faibles. Depuis une ligne de « Tes points faibles » : une seule notion,
-// et « Ajouter mes autres points faibles ».
+// (12 ratures en cours), Crédit souverain, FCFE », dans l'ordre de leur
+// poids (le poids lui-même ne s'affiche pas : un « 60 % » se lirait comme
+// une réussite) ; un toucher remplace une notion par la suivante de la
+// liste des points faibles. Depuis une ligne de « Tes points faibles » : une
+// seule notion, et « Ajouter mes autres points faibles ». Le déroulé
+// annonce les blocs prévus (sans ratures en cours ni calcul, pas de bloc).
 
 const TOUCHER = "relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
 
@@ -31,7 +32,9 @@ export function AtelierOuverture({
 }) {
   const [choix, setChoix] = useState<string[]>(initiales);
   const parId = new Map(proposees.map((p) => [p.notion, p]));
-  const poids = poidsDe(choix.length);
+  const choisies = choix.map((id) => parId.get(id));
+  const avecRatures = choisies.some((p) => (p?.enCours ?? 0) > 0);
+  const avecCalcul = choisies.some((p) => p?.aCalcul === true);
 
   /** La suivante de la liste qui n'est pas déjà choisie (en boucle). */
   const remplacante = (actuelle: string) => {
@@ -52,12 +55,11 @@ export function AtelierOuverture({
       </div>
 
       <ol className="m-0 grid list-none divide-y divide-line p-0">
-        {choix.map((id, k) => {
+        {choix.map((id) => {
           const p = parId.get(id);
           const r = remplacante(id);
           return (
             <li key={id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-              <span className="w-11 shrink-0 font-mono text-[13px] font-semibold tabular-nums text-muted">{V.poids(poids[k] ?? 0)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[16px] font-semibold leading-snug [overflow-wrap:anywhere]">{p?.libelle ?? id}</span>
                 <span className="t-micro mt-0.5 block">{[p?.repere, p ? V.detailNotion(p.enCours, p.calcul) : null].filter(Boolean).join(" · ")}</span>
@@ -65,7 +67,7 @@ export function AtelierOuverture({
               {r && (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm !h-11 shrink-0 gap-1.5 px-2.5"
+                  className="btn btn-ghost btn-sm !h-11 min-w-11 shrink-0 justify-center gap-1.5 px-2.5"
                   aria-label={V.remplacerPar(r.libelle)}
                   title={V.remplacerPar(r.libelle)}
                   onClick={() => setChoix((c) => c.map((x) => (x === id ? r.notion : x)))}
@@ -84,7 +86,7 @@ export function AtelierOuverture({
         </button>
       )}
 
-      <p className="t-small m-0 max-w-[560px]">{V.deroule}</p>
+      <p className="t-small m-0 max-w-[560px]">{V.deroule(avecRatures, avecCalcul)}</p>
 
       {message && (
         <p role="alert" className="t-small m-0 text-pen">
