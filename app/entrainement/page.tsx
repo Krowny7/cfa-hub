@@ -79,7 +79,7 @@ export default async function EntrainementPage() {
     // séries éclair rendues aujourd'hui (null tant que migration_series_eclair.sql manque)
     eclair: eclair?.today ?? null,
     nowIso: new Date(now).toISOString(),
-    pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier),
+    pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier, !!admin),
   };
 
   return <EntrainementView d={d} />;

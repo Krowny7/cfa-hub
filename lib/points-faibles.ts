@@ -122,8 +122,8 @@ export type PointsFaiblesData = EtatPointsFaibles & {
   propre: boolean;
   rayeesSemaine: number;
   unite: Unite;
-  /** l'Atelier (migration_atelier.sql, par notion seulement) : absent tant qu'il n'est pas ouvert ; enCours : un Atelier à reprendre */
-  atelier?: { enCours: { faites: number } | null };
+  /** l'Atelier (migration_atelier.sql, par notion seulement) : absent tant qu'il n'est pas ouvert ; enCours : un Atelier à reprendre ; calcul : la sélection de départ aura un bloc Calcul (avecAtelier) */
+  atelier?: { enCours: { faites: number } | null; calcul: boolean };
 };
 
 /**

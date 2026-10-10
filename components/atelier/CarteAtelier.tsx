@@ -16,7 +16,6 @@ export function CarteAtelier({ d, className = "" }: { d: PointsFaiblesData; clas
   const trois = d.liste.slice(0, 3);
   const enCours = d.atelier.enCours;
   const ratures = trois.some((p) => p.mesures.enCours > 0);
-  const calcul = trois.some((p) => p.calcul);
   return (
     <section
       data-leonard="atelier"
@@ -33,7 +32,7 @@ export function CarteAtelier({ d, className = "" }: { d: PointsFaiblesData; clas
         <h2 className="t-h2 m-0 [overflow-wrap:anywhere]">{ATELIER.carteTitre(trois.length)}</h2>
       </div>
       <p className="t-small col-start-1 row-start-2 m-0 lg:row-start-3 lg:px-6">
-        {enCours ? ATELIER.enCoursLigne(enCours.faites) : ATELIER.carteDeroule(ratures, calcul)}
+        {enCours ? ATELIER.enCoursLigne(enCours.faites) : ATELIER.carteDeroule(ratures, d.atelier.calcul)}
       </p>
       <div className="col-span-2 row-start-3 pt-1 lg:col-span-1 lg:row-start-4 lg:self-end lg:px-6">
         <Link href="/atelier" className="btn btn-primary btn-lg rl-press w-full">

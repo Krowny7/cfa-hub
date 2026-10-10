@@ -126,7 +126,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     sessions,
     answers,
     objectif,
-    pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier),
+    pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier, !!admin),
     ateliers,
   };
 

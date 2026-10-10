@@ -98,6 +98,9 @@ export const FICHE = {
 // ---------------------------------------------------------------------------
 // Réviser, S'entraîner
 
+/** l'entrée « Calculs » (/calculs) */
+const CALCULS_TEXTE = "Le calcul pur : l'énoncé, les données, ton résultat.";
+
 export const ESPACES = {
   /** titre de Réviser (au lieu de « Apprendre, à ton rythme », slogan de MOOC) */
   reviserTitre: "Révise trait par trait.",
@@ -109,11 +112,10 @@ export const ESPACES = {
   premiereGoutte: "Première goutte",
   premiereSession: "Ta première session",
   premiereTexte: "Choisis tes matières : le nombre de questions suit le poids réel de l'examen.",
-  /** l'entrée « Calculs » (/calculs) */
-  calculsTexte: "Le calcul pur : l'énoncé, les données, ton résultat.",
+  calculsTexte: CALCULS_TEXTE,
   /** la bande d'encre de S'entraîner, vers /calculs */
   calculsTitre: "Calculs",
-  calculsBande: "Le calcul pur : l'énoncé, les données, ton résultat. Rien d'autre.",
+  calculsBande: `${CALCULS_TEXTE} Rien d'autre.`,
   calculsAction: "Ouvrir les calculs",
   duelTexte: (q: number, min: number) => `Même épreuve, ${q} questions, ${min} min. Le meilleur score gagne.`,
   /** « 1 défi · à toi le trait » */

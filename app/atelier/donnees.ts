@@ -184,9 +184,16 @@ export async function lireHistoriqueAteliers(sb: SupabaseClient, userId: string)
   }
 }
 
-/** Les points faibles et l'accès à l'Atelier : seulement par notion (un Atelier mélange des Learning Modules). */
-export function avecAtelier(d: PointsFaiblesData, etat: { enCours: { faites: number } | null } | null): PointsFaiblesData {
-  return etat && d.unite === "notion" ? { ...d, atelier: etat } : d;
+/**
+ * Les points faibles et l'accès à l'Atelier : seulement par notion (un
+ * Atelier mélange des Learning Modules). calcul : la sélection de départ de
+ * l'Atelier (les 3 premières notions) aura un bloc Calcul, avec la même règle
+ * que app/atelier/page.tsx (un type de calcul rattaché, et la clé service).
+ */
+export function avecAtelier(d: PointsFaiblesData, etat: { enCours: { faites: number } | null } | null, cleService: boolean): PointsFaiblesData {
+  if (!etat || d.unite !== "notion") return d;
+  const calcul = cleService && d.liste.filter((p) => p.lm).slice(0, 3).some((p) => (notionParId(p.lm as string)?.calculs.length ?? 0) > 0);
+  return { ...d, atelier: { ...etat, calcul } };
 }
 
 /**

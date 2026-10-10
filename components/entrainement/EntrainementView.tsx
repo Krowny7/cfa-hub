@@ -202,12 +202,12 @@ function DuelTile({ rating, incoming }: { rating: EntrainementData["rating"]; in
   );
 }
 
-/** Les calculs, en bande d'encre pleine largeur (noire en clair, craie en nuit : .bande-encre). */
+/** Les calculs, en bande d'encre pleine largeur : la carte sombre (.card-ink, noire en clair, ardoise en nuit) et son bouton clair, comme la maquette A. */
 function BandeCalculs() {
   return (
     <section
       aria-label={ESPACES.calculsTitre}
-      className="bande-encre rl-in flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-7 sm:py-6"
+      className="card-ink rl-in flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-7 sm:py-6"
       style={{ animationDelay: ".1s" }}
     >
       <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -219,7 +219,7 @@ function BandeCalculs() {
           <p className="m-0 mt-1 text-[13.5px] leading-snug opacity-75 md:text-[14.5px]">{ESPACES.calculsBande}</p>
         </div>
       </div>
-      <Link href="/calculs" className="btn btn-lg btn-sur-encre rl-press w-full shrink-0 sm:w-auto">
+      <Link href="/calculs" className="btn btn-lg btn-on-ink rl-press w-full shrink-0 sm:w-auto">
         {ESPACES.calculsAction} <ArrowRight size={17} aria-hidden />
       </Link>
     </section>
@@ -242,7 +242,10 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
     <div className="flex flex-col gap-4 md:gap-[18px]">
       {pf ? (
         <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
-          <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8">
+          {/* l'Atelier d'abord dans le DOM (téléphone, lecteur d'écran, clavier : son bouton dans le premier écran) ; à droite sur ordinateur.
+              Entre 1024 et 1279, la colonne voisine est plus haute (Défi et Éclair empilés) : la carte garde sa hauteur, le bouton suit le texte */}
+          <CarteAtelier d={pf} className="lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:self-start xl:self-stretch" />
+          <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1">
             {/* le héros n'en montre que trois : on n'envoie pas les autres au navigateur */}
             <PointsFaiblesHeros d={{ ...pf, liste: pf.liste.slice(0, 3) }} sansAtelier className="lg:flex-1" />
             {/* côte à côte dès qu'il y a la place (en dessous de 1280, la colonne est trop étroite pour les deux) */}
@@ -253,8 +256,6 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
               </div>
             )}
           </div>
-          {/* téléphone : l'Atelier d'abord, son bouton dans le premier écran */}
-          <CarteAtelier d={pf} className="max-lg:order-first lg:col-span-4" />
         </div>
       ) : (
         <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
