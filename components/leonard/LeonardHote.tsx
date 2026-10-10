@@ -50,6 +50,8 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "atelier-fini": 0.5,
   tard: 0.6,
 };
+// ce que la cérémonie du sans-faute fête déjà : Léonard ne le redit pas
+const FETES_PAR_CEREMONIE = new Set<EvenementLeonard>(["session-parfaite", "defi-reussi", "duel-gagne"]);
 const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "sceau-gagne", "session-parfaite", "retour"]);
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
@@ -269,7 +271,7 @@ export function LeonardHote() {
       const reste = resteCeremonie();
       if (reste > 0) window.setTimeout(quand, reste + 400);
       // le sans-faute vient d'être fêté : il ne le redit pas
-      else if (sig.evt === "session-parfaite" && ceremonieRecente()) visible.current = false;
+      else if (FETES_PAR_CEREMONIE.has(sig.evt) && ceremonieRecente()) visible.current = false;
       else lancer();
     };
     prechauffer();

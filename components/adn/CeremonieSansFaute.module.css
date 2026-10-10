@@ -41,9 +41,11 @@
 }
 
 .coches {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px 6px;
   justify-content: center;
+  max-width: var(--rangee, none);
 }
 .coche {
   display: block;
@@ -153,7 +155,8 @@
     animation: none !important;
   }
 }
-:global(html[data-rl-motion="off"]) .voile,
-:global(html[data-rl-motion="off"]) .voile * {
+/* (sauf l'aperçu figé, qui montre un instant précis) */
+:global(html[data-rl-motion="off"]) .voile:not(.fige),
+:global(html[data-rl-motion="off"]) .voile:not(.fige) * {
   animation: none !important;
 }

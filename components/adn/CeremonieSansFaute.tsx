@@ -111,13 +111,20 @@ export function CeremonieSansFaute({
     setEtat("joue");
     if (figer !== undefined) return;
     marquerCeremonie(DUREE);
+    // les sons partent de minuteurs annulés au démontage : quitter l'écran
+    // tout de suite (ou le double montage du mode strict) ne les laisse pas filer
+    const minuteurs: number[] = [];
     if (!reduit()) {
-      jouerSon("stylo", { moment: "ceremonie", variante: "tic", duree: D_COCHES, dans: T_COCHES, volume: 0.6 });
-      jouerSon("tampon", { moment: "ceremonie", dans: T_SCEAU + 0.18 });
-      window.setTimeout(() => vibrer(14), (T_SCEAU + 0.18) * 1000);
+      minuteurs.push(
+        window.setTimeout(() => jouerSon("stylo", { moment: "ceremonie", variante: "tic", duree: D_COCHES, volume: 0.6 }), T_COCHES * 1000),
+        window.setTimeout(() => {
+          jouerSon("tampon", { moment: "ceremonie" });
+          vibrer(14);
+        }, (T_SCEAU + 0.18) * 1000),
+      );
     }
-    const t = window.setTimeout(fermer, DUREE);
-    return () => window.clearTimeout(t);
+    minuteurs.push(window.setTimeout(fermer, DUREE));
+    return () => minuteurs.forEach((m) => window.clearTimeout(m));
     // une seule fois par clé
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parfait, cle]);
@@ -151,7 +158,7 @@ export function CeremonieSansFaute({
         <p className={s.epreuve} style={d(0.1)}>
           {epreuve}
         </p>
-        <div className={s.coches} style={{ gridTemplateColumns: `repeat(${colonnes}, ${tailleCoche}px)` }} aria-hidden="true">
+        <div className={s.coches} style={{ "--rangee": `${colonnes * tailleCoche + (colonnes - 1) * 6}px` } as React.CSSProperties} aria-hidden="true">
           {Array.from({ length: n }, (_, i) => (
             <svg key={i} className={s.coche} width={tailleCoche} height={tailleCoche} viewBox="0 0 24 24" fill="none">
               <path d="M4.5 12.5 L9.6 18 L20 5.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={d(T_COCHES + i * pas)} />

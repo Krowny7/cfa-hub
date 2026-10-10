@@ -173,6 +173,9 @@ export function FinDeSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // le jour local de la copie (clé du sans-faute : refaite parfaite un autre jour, elle se fête encore) ;
+  // la clé ne sert qu'au client, après le montage
+  const [jourCopie] = useState(() => new Date().toLocaleDateString("sv"));
   const [reprise, setReprise] = useState(false);
   // de retour de la reprise : la copie est déjà posée, on la retrouve en haut
   const [revenu, setRevenu] = useState(false);
@@ -226,7 +229,7 @@ export function FinDeSession({
       />
       </div>
       {anime && (
-        <CeremonieSansFaute score={score} total={total} epreuve={epreuve} cle={"fs:" + empreinte(epreuve, score, total, ...review.map((r) => r.question_id))} />
+        <CeremonieSansFaute score={score} total={total} epreuve={epreuve} cle={"fs:" + jourCopie + ":" + empreinte(epreuve, score, total, ...review.map((r) => r.question_id))} />
       )}
       {anime && (
         <CeremonieSceaux
