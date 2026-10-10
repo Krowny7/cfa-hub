@@ -130,25 +130,18 @@ export function EnteteJoueur({
               : { fine: "h-[104px] sm:h-[170px]", normale: "h-[136px] sm:h-[250px]", haute: "h-[176px] sm:h-[340px]" }[d.style.bannerH]
           }
         />
+        {/* la bannière gagnée qui bouge : toute sa surface dit d'où elle vient, au survol ou au toucher */}
+        {!apercu && banniereAnimee && motif && d.provenance?.banniere && <Provenance texte={d.provenance.banniere} plein className="z-[2]" />}
         {haut && (
           <div className={apercu ? "absolute left-4 top-3 z-[3]" : "absolute inset-x-0 top-3 z-[3] sm:top-4"}>
             <div className={apercu ? "" : "mx-auto w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]"}>{haut}</div>
           </div>
         )}
-        {!apercu && (crayons || (banniereAnimee && motif && d.provenance?.banniere)) && (
+        {!apercu && crayons && (
           <div className="pointer-events-none absolute inset-0 z-[3]">
             <div className="relative mx-auto h-full w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]">
-              {/* en haut à droite (le bas est à la carte du rang sur ordinateur) : la bannière gagnée, son nom et d'où elle vient ; le crayon */}
-              <div className="pointer-events-auto absolute right-0 top-1 flex items-center gap-2 sm:top-2">
-                {banniereAnimee && motif && d.provenance?.banniere && (
-                  <Provenance texte={d.provenance.banniere} aligne="droite">
-                    <span className="inline-flex min-h-[44px] items-center">
-                      <span className="rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] px-3 py-1 text-[12px] font-semibold text-white backdrop-blur">{motif.nom}</span>
-                    </span>
-                  </Provenance>
-                )}
-                {crayons?.banniere}
-              </div>
+              {/* en haut à droite (le bas est à la carte du rang sur ordinateur) : le crayon */}
+              <div className="pointer-events-auto absolute right-0 top-1 flex items-center gap-2 sm:top-2">{crayons.banniere}</div>
             </div>
           </div>
         )}

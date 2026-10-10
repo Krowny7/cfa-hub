@@ -80,22 +80,16 @@ export function ReglageJournal() {
           </button>
         ))}
       </div>
-      <span className="t-micro" role={echec ? "alert" : undefined}>
-        {etat === "indisponible" ? (
-          REGLAGE_JOURNAL.bientot
-        ) : etat === "erreur" ? (
-          <>
-            {REGLAGE_JOURNAL.erreur}{" "}
-            <button type="button" className="ink-link font-semibold" onClick={() => void charger()}>
-              {REGLAGE_JOURNAL.reessayer}
-            </button>
-          </>
-        ) : echec ? (
-          REGLAGE_JOURNAL.echec
-        ) : (
-          items[ix].aide
-        )}
-      </span>
+      {etat === "erreur" ? (
+        // toute la ligne relance la lecture (44 px à toucher), comme la présence
+        <button type="button" className="t-micro -my-2.5 min-h-[44px] w-full text-left" onClick={() => void charger()}>
+          {REGLAGE_JOURNAL.erreur}
+        </button>
+      ) : (
+        <span className="t-micro" role={echec ? "alert" : undefined}>
+          {etat === "indisponible" ? REGLAGE_JOURNAL.bientot : echec ? REGLAGE_JOURNAL.echec : items[ix].aide}
+        </span>
+      )}
     </div>
   );
 }

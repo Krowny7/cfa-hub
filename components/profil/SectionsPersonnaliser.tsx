@@ -29,7 +29,7 @@ import {
   type Visibilite,
   type VitrineKey,
 } from "@/lib/profil/catalogue";
-import { PERSO, SCEAUX_TXT, avanceePiece, conditionPiece, dateCourte, nomSceau } from "@/lib/voice-profil";
+import { PERSO, SCEAUX_TXT, VISIBILITE, avanceePiece, conditionPiece, dateCourte, nomSceau } from "@/lib/voice-profil";
 
 // Les réglages du profil, une section par chose, déplacés de l'ancien
 // éditeur (/moi/profil) sans les réécrire : ils remplissent les feuilles de
@@ -43,9 +43,9 @@ import { PERSO, SCEAUX_TXT, avanceePiece, conditionPiece, dateCourte, nomSceau }
 // l'enregistrement.
 
 const VISIBILITES: { key: Visibilite; label: string; aide: string }[] = [
-  { key: "public", label: "Public", aide: "Tous les joueurs le voient." },
-  { key: "friends", label: "Amis", aide: "Seuls tes amis le voient." },
-  { key: "private", label: "Moi seul", aide: "Gardé pour toi." },
+  { key: "public", label: VISIBILITE.public, aide: "Tous les joueurs le voient." },
+  { key: "friends", label: VISIBILITE.friends, aide: "Seuls tes amis le voient." },
+  { key: "private", label: VISIBILITE.private, aide: "Gardé pour toi." },
 ];
 // une bannière couvre toute la largeur de l'écran, écrans denses compris
 const LARGEUR_MAX = 3200;
@@ -164,16 +164,20 @@ export function SectionBanniere({ b, gains, onEnvoi }: { b: Brouillon; gains: Ga
         }
       >
         <Banniere banner={m.key} accent={style.accent} fige className={"h-[44px] w-full rounded-[9px] " + (ok ? "" : "opacity-50 grayscale")} />
-        <span className="flex items-center gap-1 px-0.5 text-[12px] font-semibold">
-          {!ok && <Lock size={11} aria-hidden className="shrink-0" />}
-          <span className="truncate">{m.nom}</span>
-          {actif && <Check size={12} aria-hidden className="shrink-0" />}
+        <span className="flex items-start gap-1 px-0.5 text-[12px] font-semibold leading-tight">
+          {!ok && <Lock size={11} aria-hidden className="mt-px shrink-0" />}
+          <span className="line-clamp-2 min-w-0">{m.nom}</span>
+          {actif && <Check size={12} aria-hidden className="mt-px shrink-0" />}
         </span>
+        {m.anime && ok && <span className="w-fit rounded-full border border-line-2 px-1.5 text-[10.5px] font-semibold text-muted">{PERSO.bouge}</span>}
         {m.condition && <LegendePiece condition={m.condition} gagnee={ok} anime gains={gains} />}
       </button>
     );
   };
 
+  // les bannières qui se gagnent : celles du joueur, puis les autres
+  const gagneesM = MOTIFS.filter((m) => m.condition && gagnee(m));
+  const aGagnerM = MOTIFS.filter((m) => m.condition && !gagnee(m));
   return (
     <Section titre="Bannière" aide="Ton image, sur toute la largeur de ton profil. Ou un motif.">
       <div className="flex flex-wrap items-center gap-2">
@@ -201,15 +205,23 @@ export function SectionBanniere({ b, gains, onEnvoi }: { b: Brouillon; gains: Ga
       {style.bannerUrl && (
         <label className="flex items-center gap-3 text-[13px] font-semibold">
           Cadrage
-          <input type="range" min={0} max={100} value={style.bannerPos} onChange={(e) => set("bannerPos", Number(e.target.value))} className="min-w-0 flex-1" style={{ accentColor: "var(--ink)" }} aria-label="Cadrage vertical de l'image" />
+          <input type="range" min={0} max={100} value={style.bannerPos} onChange={(e) => set("bannerPos", Number(e.target.value))} className="h-11 min-w-0 flex-1" style={{ accentColor: "var(--ink)" }} aria-label="Cadrage vertical de l'image" />
         </label>
       )}
       <div role="radiogroup" aria-label="Motif" className={"flex flex-col gap-4 " + (style.bannerUrl ? "opacity-60" : "")}>
         <div className="grid grid-cols-3 gap-2">{MOTIFS.filter((m) => !m.condition).map(vignette)}</div>
-        <div className="flex flex-col gap-2">
-          <p className="t-eyebrow m-0">{`${PERSO.gagnes} · ${PERSO.aGagner}`}</p>
-          <div className="grid grid-cols-2 gap-2">{MOTIFS.filter((m) => m.condition).map(vignette)}</div>
-        </div>
+        {gagneesM.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="t-eyebrow m-0">{PERSO.gagnees}</p>
+            <div className="grid grid-cols-2 gap-2">{gagneesM.map(vignette)}</div>
+          </div>
+        )}
+        {aGagnerM.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="t-eyebrow m-0">{PERSO.aGagner}</p>
+            <div className="grid grid-cols-2 gap-2">{aGagnerM.map(vignette)}</div>
+          </div>
+        )}
       </div>
     </Section>
   );
@@ -240,9 +252,9 @@ export function SectionAmbiance({ b }: { b: Brouillon }) {
                   <img src={image} alt="" className={sp.ambianceImage} style={{ filter: "blur(10px) saturate(1.25)", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)" }} />
                 ) : null}
               </span>
-              <span className="flex items-center gap-1 px-0.5 text-[12px] font-semibold">
-                <span className="truncate">{a.nom}</span>
-                {actif && <Check size={12} aria-hidden className="shrink-0" />}
+              <span className="flex items-start gap-1 px-0.5 text-[12px] font-semibold leading-tight">
+                <span className="line-clamp-2 min-w-0">{a.nom}</span>
+                {actif && <Check size={12} aria-hidden className="mt-px shrink-0" />}
               </span>
             </button>
           );
@@ -319,9 +331,9 @@ export function SectionCadre({ b, gains, nom, avatarUrl }: { b: Brouillon; gains
         <span className={"inline-flex h-[72px] items-center " + (ok ? "" : "opacity-55 grayscale")}>
           <CadreSceau frame={c.key} name={nom} avatarUrl={avatarUrl} size={56} fige />
         </span>
-        <span className="flex min-w-0 max-w-full items-center gap-1 text-[12px] font-semibold">
-          {!ok && <Lock size={11} aria-hidden className="shrink-0" />}
-          <span className="truncate">{c.nom}</span>
+        <span className="flex min-w-0 max-w-full items-start justify-center gap-1 text-center text-[12px] font-semibold leading-tight">
+          {!ok && <Lock size={11} aria-hidden className="mt-px shrink-0" />}
+          <span className="line-clamp-2 min-w-0">{c.nom}</span>
         </span>
         {c.anime && ok && <span className="rounded-full border border-line-2 px-1.5 text-[10.5px] font-semibold text-muted">{PERSO.bouge}</span>}
         <LegendePiece condition={c.condition} gagnee={ok} anime={!!c.anime} gains={gains} />
@@ -334,14 +346,14 @@ export function SectionCadre({ b, gains, nom, avatarUrl }: { b: Brouillon; gains
       <div role="radiogroup" aria-label="Cadre du sceau" className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <p className="t-eyebrow m-0">{PERSO.gagnes}</p>
-          <div ref={carrousel} className="-mx-5 flex snap-x items-start gap-2 overflow-x-auto px-5 pb-1">
+          <div ref={carrousel} className="-mx-5 flex snap-x scroll-px-5 items-start gap-2 overflow-x-auto px-5 pb-1">
             {CADRES.filter(gagne).map(vignette)}
           </div>
         </div>
         {aGagner.length > 0 && (
           <div className="flex flex-col gap-2">
             <p className="t-eyebrow m-0">{PERSO.aGagner}</p>
-            <div className="-mx-5 flex snap-x items-start gap-2 overflow-x-auto px-5 pb-1">{aGagner.map(vignette)}</div>
+            <div className="-mx-5 flex snap-x scroll-px-5 items-start gap-2 overflow-x-auto px-5 pb-1">{aGagner.map(vignette)}</div>
           </div>
         )}
       </div>
@@ -398,8 +410,8 @@ export function SectionNom({ nom, setNom, visibilite, setVisibilite }: { nom: st
           value={visibilite}
           onChange={setVisibilite}
           items={[
-            { key: "public", label: "Tout le monde" },
-            { key: "friends", label: "Mes amis" },
+            { key: "public", label: VISIBILITE.public },
+            { key: "friends", label: VISIBILITE.friends },
           ]}
         />
       </div>

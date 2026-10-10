@@ -27,12 +27,12 @@ const MOTIF_CLASSE: Record<string, string> = {
   "encre-vivante": s.encreVivante,
   "or-vivant": s.orVivant,
 };
-/** les taches de l'Encre vivante : où elles naissent, leur angle, leur décalage dans la boucle */
+/** les taches de l'Encre vivante : où elles naissent, leur taille, leur densité, leur angle, leur décalage dans la boucle */
 const TACHES = [
-  { l: "8%", t: "-28%", r: "0deg", d: "0s" },
-  { l: "38%", t: "18%", r: "70deg", d: "-2.5s" },
-  { l: "66%", t: "-36%", r: "150deg", d: "-5s" },
-  { l: "88%", t: "22%", r: "220deg", d: "-7.5s" },
+  { l: "8%", t: "-30%", w: "27%", o: 0.9, r: "0deg", d: "0s" },
+  { l: "38%", t: "22%", w: "18%", o: 0.7, r: "70deg", d: "-2.5s" },
+  { l: "66%", t: "-40%", w: "31%", o: 0.8, r: "150deg", d: "-5s" },
+  { l: "89%", t: "26%", w: "21%", o: 0.62, r: "220deg", d: "-7.5s" },
 ];
 
 /** `--acc` : la couleur choisie (bannière, vitrine, radar, filets). */
@@ -71,11 +71,16 @@ export function Banniere({
         </svg>
       ) : banner === "encre-vivante" ? (
         TACHES.map((t) => (
-          <span key={t.l} className={s.tache} style={{ left: t.l, top: t.t, ["--r" as string]: t.r, animationDelay: t.d }}>
+          <span key={t.l} className={s.tache} style={{ left: t.l, top: t.t, ["--w" as string]: t.w, ["--o" as string]: t.o, ["--r" as string]: t.r, animationDelay: t.d }}>
+            {/* un cœur dense aux bords déchirés, un halo qui a bu dans le papier (filtres de InkDefs) */}
             <svg viewBox="0 0 100 100">
+              <g filter={INK.tacheHalo} fill="currentColor">
+                <circle cx="50" cy="50" r="40" opacity=".22" />
+                <circle cx="51" cy="49" r="29" opacity=".32" />
+              </g>
               <g filter={INK.tache} fill="currentColor">
-                <circle cx="50" cy="50" r="34" opacity=".45" />
-                <circle cx="47" cy="52" r="17" />
+                <circle cx="47" cy="52" r="16" opacity=".92" />
+                <circle cx="58" cy="44" r="6" opacity=".7" />
               </g>
             </svg>
           </span>

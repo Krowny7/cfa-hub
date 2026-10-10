@@ -222,7 +222,7 @@ export const REPLIQUES: Record<Exclude<Evenement, "tuto">, Replique[]> = {
 
   "sceau-gagne": [
     { texte: "Un sceau de plus. Je le rangerais dans mes carnets, mais ils sont pleins.", pose: "fier" },
-    { texte: "Achievement unlocked. Le petit bruit, tu l’as entendu dans ta tête.", pose: "etonne" },
+    { texte: "Succès débloqué. Le petit bruit, tu l’as entendu dans ta tête.", pose: "etonne" },
     { texte: "Trophée PlayStation débloqué. Version papier, mais quand même.", pose: "fier" },
     { texte: "Les Médicis scellaient leurs lettres comme ça. T’es en bonne compagnie.", pose: "fier" },
     { texte: "Un sceau, ça ne s’efface pas. Contrairement à mes esquisses.", pose: "base" },

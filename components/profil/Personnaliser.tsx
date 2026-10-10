@@ -221,13 +221,13 @@ export function Personnaliser({
     <span className="text-[13px] font-semibold">{PERSO.nonEnregistre}</span>
   ) : null;
   const boutonEnregistrer = (
-    <button type="button" className="btn btn-primary rl-press" onClick={enregistrer} disabled={bloque || !modifie}>
+    <button type="button" className="btn btn-primary rl-press max-sm:min-h-[44px]" onClick={enregistrer} disabled={bloque || !modifie}>
       {pending ? "…" : PERSO.enregistrer}
     </button>
   );
 
   const retour = (
-    <Link href={`/people/${carte.id}`} className="inline-flex min-h-[36px] w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] px-3 py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white">
+    <Link href={`/people/${carte.id}`} className="inline-flex min-h-[44px] w-fit items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--paper)_82%,transparent)] px-3 py-1.5 text-[13px] font-semibold text-muted backdrop-blur hover:text-white">
       <ArrowLeft size={14} aria-hidden /> {PERSO.monProfil}
     </Link>
   );
@@ -290,11 +290,11 @@ export function Personnaliser({
           <p className="t-micro m-0 truncate max-sm:hidden">{PERSO.regle}</p>
         </div>
         {modifie ? (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={annuler} disabled={pending}>
+          <button type="button" className="btn btn-ghost btn-sm max-sm:min-h-[44px]" onClick={annuler} disabled={pending}>
             {PERSO.annuler}
           </button>
         ) : (
-          <Link href={`/people/${carte.id}`} className="btn btn-secondary btn-sm">
+          <Link href={`/people/${carte.id}`} className="btn btn-secondary btn-sm max-sm:min-h-[44px]">
             {PERSO.terminer}
           </Link>
         )}
