@@ -3,14 +3,17 @@ import { Icone } from "@/components/adn/icons";
 import { INK } from "@/components/ui/InkDefs";
 import { RadarComparable, type MatierePct } from "@/components/profil/RadarComparable";
 import { Revanche } from "@/components/profil/Revanche";
+import { EpreuvesCommunes } from "@/components/profil/EpreuvesCommunes";
 import { subjectByKey } from "@/components/reviser/catalog";
+import type { EpreuvesCommunes as Communes } from "@/lib/profil/epreuves-communes";
 import { ecartsMatieres, type DuelCommun, type Ecart, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { nombre, signe } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
 import { FACE, dateCourte } from "@/lib/voice-profil";
 
 // L'onglet Face-à-face (profil d'un autre joueur) : le bilan de vos duels
-// (« Toi 3 – 2 Theo »), les 5 derniers en bâtons, le dernier, la revanche
+// en tête, les épreuves communes (défi, 5 du jour, examens blancs, duels),
+// puis le bilan de vos duels (« Toi 3 – 2 Theo »), les 5 derniers en bâtons, le dernier, la revanche
 // (ou le défi) avec l'enjeu d'ELO, puis vos matières superposées sur le
 // radar, ouvert d'office (le détail matière par matière dans un repli), et
 // où chacun devance l'autre. Jamais affrontés :
@@ -55,6 +58,7 @@ export function FaceAFace({
   moyennes,
   accent,
   monAccent,
+  communes = null,
 }: {
   autreId: string;
   nom: string;
@@ -66,6 +70,8 @@ export function FaceAFace({
   moyennes: Record<string, number | null>;
   accent: string;
   monAccent: string | null;
+  /** toutes les épreuves faites par vous deux (défi, 5 du jour, examens, duels) ; null : non lues */
+  communes?: Communes | null;
 }) {
   const dernier = bilan.duels[0] ?? null;
   const ecarts = miennes ? ecartsMatieres(matieres, miennes) : null;
@@ -86,6 +92,7 @@ export function FaceAFace({
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-12 lg:gap-8">
+      {communes && <EpreuvesCommunes donnees={communes} nom={nom} className="min-w-0 lg:col-span-12" />}
       <div className="flex min-w-0 flex-col gap-4 lg:col-span-5">
         <section className="card flex flex-col gap-5 p-5 sm:p-6" aria-labelledby="face-bilan">
           <h2 id="face-bilan" className="t-eyebrow m-0">

@@ -375,6 +375,30 @@ export const FACE = {
   voir: "Face-à-face",
 } as const;
 
+/** Les épreuves communes du Face-à-face : le défi, les 5 du jour, les examens blancs, les duels. */
+export const COMMUNES = {
+  titre: "Épreuves communes",
+  toi: "Toi",
+  type: { defi: "Défi du jour", cinq: "5 du jour", examen: "Examen blanc", duel: "Duel" } as const,
+  /** « Sur 23 épreuves communes : toi 14, Theo 7, 2 égalités » */
+  general: (total: number, moi: number, lui: number, nom: string, nuls: number) =>
+    `Sur ${pluriel(total, "épreuve commune", "épreuves communes")}${NBSP}: toi ${nombre(moi)}, ${nom} ${nombre(lui)}${nuls ? `, ${pluriel(nuls, "égalité", "égalités")}` : ""}`,
+  aucune: (nom: string) => `Aucune épreuve commune avec ${nom} pour l'instant.`,
+  aucuneTexte: "Le défi du jour, les 5 du jour, un examen blanc classé ou un duel : dès que vous rendez tous deux la même copie, elle compte ici.",
+  /** « 12–9 » sous le nom de l'épreuve */
+  score: (moi: number, lui: number) => `${nombre(moi)}–${nombre(lui)}`,
+  egalites: (n: number) => pluriel(n, "égalité", "égalités"),
+  jamais: "—",
+  recentes: "Les dernières",
+  voirTout: (n: number) => `Voir tout (${nombre(n)})`,
+  /** « 18/30 · 60 % » */
+  copie: (score: number, total: number) => `${nombre(score)}/${nombre(total)}${total > 0 ? ` · ${pct((score / total) * 100)}` : ""}`,
+  issue: { victoire: "gagné", defaite: "perdu", nul: "égalité" } as const,
+  /** lu à voix haute : « Défi du jour, 3 oct. : toi 18/30, Theo 15/30, gagné » */
+  ligneDit: (type: string, date: string, moi: string, lui: string, nom: string, issue: string) => `${type}, ${date} : toi ${moi}, ${nom} ${lui}, ${issue}`,
+  aide: "Seules comptent les épreuves rendues par vous deux, aux mêmes questions. À score égal : égalité.",
+} as const;
+
 // ---------------------------------------------------------------------------
 // Le Journal : la courbe d'ELO, le carnet de jours, le fil. Des jours, jamais
 // d'heures.
