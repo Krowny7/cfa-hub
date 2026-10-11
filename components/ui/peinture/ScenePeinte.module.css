@@ -1,0 +1,72 @@
+/* Une peinture animée (ScenePeinte.tsx). La « scène » a le rapport de
+   l'image (--r) et la couvre en cadre : largeur = max(cadre, hauteur du cadre
+   × rapport), placée comme object-position (--px, --py, fractions 0 à 1).
+   Tous les effets sont des calques en % de la scène. Seuls transform et
+   opacity s'animent. */
+
+.cadre {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  container-type: size;
+  background: #2a1a0e;
+}
+.scene {
+  position: absolute;
+  --w: max(100cqw, calc(100cqh * var(--r)));
+  --h: calc(var(--w) / var(--r));
+  width: var(--w);
+  height: var(--h);
+  left: calc((100cqw - var(--w)) * var(--px));
+  top: calc((100cqh - var(--h)) * var(--py));
+}
+.fond {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+.effets {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.effets > div {
+  position: absolute;
+}
+
+/* un calque qui recopie un morceau de l'image (même pixels que le fond) :
+   la nuit, comme l'image (Illustration.module.css), un peu assombri */
+.copie {
+  position: absolute;
+  background-repeat: no-repeat;
+}
+.plein {
+  inset: 0;
+}
+:global([data-theme="nuit"]) .fond,
+:global([data-theme="nuit"]) .copie {
+  filter: brightness(0.82);
+}
+
+/* image seule : mouvement réduit demandé, mode discret du site, captures et
+   tests (data-rl-motion="off", voir app/template.tsx) */
+@media (prefers-reduced-motion: reduce) {
+  .effets {
+    display: none;
+  }
+}
+:global(html[data-discreet="1"]) .effets,
+:global(html[data-rl-motion="off"]) .effets {
+  display: none;
+}
+/* hors écran ou onglet caché : tout se fige */
+.scene[data-arret] * {
+  animation-play-state: paused !important;
+}

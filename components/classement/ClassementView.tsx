@@ -5,7 +5,7 @@ import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { BandeEncre } from "@/components/ui/BandeEncre";
 import { CarteLieu } from "@/components/ui/CarteLieu";
-import { Illustration } from "@/components/ui/Illustration";
+import { PeintureAnimee } from "@/components/ui/PeintureAnimee";
 import { BandeauPeint, Medaillon, Sceau, TuileCalme } from "@/components/ui/Tuiles";
 import { Leaderboard } from "@/components/classement/Leaderboard";
 import { TierTrack } from "@/components/classement/TierTrack";
@@ -137,8 +137,8 @@ function GrandeSalle({ data }: { data: ClassementData }) {
     <CarteLieu
       className="lg:col-span-4 lg:col-start-9 lg:row-start-1"
       label={CL.salle}
-      visuel={<Illustration nom="classement-grande-salle" position="50% 60%" />}
-      vignette={<Illustration nom="classement-grande-salle" position="50% 60%" decorative />}
+      visuel={<PeintureAnimee nom="classement-grande-salle" position="50% 60%" />}
+      vignette={<PeintureAnimee nom="classement-grande-salle" position="50% 60%" decorative />}
       marque={
         <Sceau>
           <Icone nom="examen" size={20} />
@@ -282,7 +282,7 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
       </div>
 
       <section className="rl-section" aria-labelledby="cl-tableau">
-        <BandeauPeint nom="classement-lice" position="50% 42%" />
+        <BandeauPeint nom="classement-lice" position="50% 38%" />
         <h2 id="cl-tableau" className="t-h2 m-0">
           {CL.general}
         </h2>

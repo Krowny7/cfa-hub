@@ -1,4 +1,5 @@
 import { Illustration } from "@/components/ui/Illustration";
+import { PeintureAnimee } from "@/components/ui/PeintureAnimee";
 import type { IllustrationNom } from "@/lib/illustrations";
 
 // Petites briques de mise en page partagées par les pages refaites : la
@@ -74,11 +75,11 @@ export function Sceau({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Bandeau peint étroit, pleine largeur du parent (64 px sur téléphone, 88 px dès 768 px). */
+/** Bandeau peint étroit, pleine largeur du parent (64 px sur téléphone, 88 px dès 768 px) ; animé si la peinture a des effets (PeintureAnimee). */
 export function BandeauPeint({ nom, position = "50% 50%", className = "" }: { nom: IllustrationNom; position?: string; className?: string }) {
   return (
     <div className={"h-16 w-full overflow-hidden rounded-[14px] md:h-[88px] md:rounded-[18px] " + className}>
-      <Illustration nom={nom} position={position} decorative />
+      <PeintureAnimee nom={nom} position={position} decorative />
     </div>
   );
 }

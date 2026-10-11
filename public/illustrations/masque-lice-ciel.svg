@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1584 330" preserveAspectRatio="none">
+  <defs>
+    <filter id="f" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="28"/></filter>
+    <mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="1584" height="330">
+      <rect width="1584" height="330" fill="#000"/>
+      <rect x="100" y="-80" width="1384" height="320" fill="#fff" filter="url(#f)"/>
+      <ellipse cx="1165" cy="200" rx="215" ry="290" fill="#000" filter="url(#f)"/>
+    </mask>
+  </defs>
+  <rect width="1584" height="330" fill="#000" mask="url(#m)"/>
+</svg>

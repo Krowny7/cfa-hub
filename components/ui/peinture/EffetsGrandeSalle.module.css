@@ -1,0 +1,179 @@
+/* Les effets de la Grande Salle. Calques en % de la scène (voir
+   EffetsGrandeSalle.tsx). Les lueurs s'ajoutent à la peinture (screen) ;
+   seuls transform et opacity s'animent. */
+
+/* ---- le halo des flammes sur les colonnes ---- */
+.halo {
+  mix-blend-mode: screen;
+  background: radial-gradient(closest-side, rgba(255, 150, 62, 0.4) 0%, rgba(255, 138, 52, 0.2) 40%, rgba(255, 128, 44, 0.07) 72%, rgba(255, 128, 44, 0) 100%);
+  animation: respire 5.4s ease-in-out infinite;
+}
+.haloD {
+  animation-duration: 6.6s;
+  animation-delay: -2.3s;
+}
+@keyframes respire {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.96);
+  }
+  21% {
+    opacity: 0.95;
+    transform: scale(1.03);
+  }
+  38% {
+    opacity: 0.66;
+    transform: scale(0.99);
+  }
+  62% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  81% {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+}
+
+/* ---- la flamme peinte, recopiée : elle vacille sur place ----
+   fondue sur la peinture par un masque ovale (ni bords ni vasque) */
+.flamme {
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 56%, #000 45%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 56%, #000 45%, transparent 100%);
+  transform-origin: 50% 90%;
+  animation: vacille 2.3s ease-in-out infinite;
+}
+.flD {
+  animation-duration: 2.7s;
+  animation-delay: -0.9s;
+}
+@keyframes vacille {
+  0%,
+  100% {
+    transform: none;
+    opacity: 0.9;
+  }
+  14% {
+    transform: scale(0.92, 1.13) skewX(-6deg) rotate(1.2deg);
+    opacity: 1;
+  }
+  31% {
+    transform: scale(1.07, 0.9) skewX(4deg);
+    opacity: 0.72;
+  }
+  47% {
+    transform: scale(0.95, 1.17) skewX(-3deg) rotate(-1.6deg);
+    opacity: 1;
+  }
+  66% {
+    transform: scale(1.08, 0.93) skewX(6deg) rotate(1deg);
+    opacity: 0.78;
+  }
+  83% {
+    transform: scale(0.96, 1.09) skewX(-4deg);
+    opacity: 0.95;
+  }
+}
+/* la lueur vive qui double la flamme, à contretemps */
+.langue {
+  mix-blend-mode: screen;
+  background: radial-gradient(ellipse 50% 52% at 50% 62%, rgba(255, 214, 128, 0.55) 0%, rgba(255, 176, 76, 0.3) 50%, rgba(255, 150, 60, 0) 100%);
+  transform-origin: 50% 92%;
+  animation: lueurFlamme 1.9s ease-in-out infinite;
+}
+.lgD {
+  animation-duration: 2.2s;
+  animation-delay: -0.5s;
+}
+@keyframes lueurFlamme {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.94, 0.92);
+  }
+  18% {
+    opacity: 0.85;
+    transform: scale(1.04, 1.16);
+  }
+  37% {
+    opacity: 0.55;
+    transform: scale(0.98, 0.98);
+  }
+  58% {
+    opacity: 0.95;
+    transform: scale(1.02, 1.2);
+  }
+  79% {
+    opacity: 0.5;
+    transform: scale(0.96, 0.95);
+  }
+}
+
+/* ---- la lumière de la porte : un même souffle, lent, irrégulier ---- */
+.palpite {
+  mix-blend-mode: screen;
+  animation: palpite 5.2s ease-in-out infinite;
+}
+.fente {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  background: linear-gradient(to right, rgba(255, 190, 90, 0) 0%, rgba(255, 196, 96, 0.34) 30%, rgba(255, 226, 150, 0.8) 50%, rgba(255, 196, 96, 0.34) 70%, rgba(255, 190, 90, 0) 100%);
+  transform-origin: 50% 50%;
+  animation-name: palpiteFente;
+}
+.seuil {
+  background: radial-gradient(ellipse 50% 50% at 50% 55%, rgba(255, 214, 120, 0.8) 0%, rgba(255, 178, 70, 0.34) 48%, rgba(255, 160, 60, 0) 100%);
+}
+.sol {
+  background: radial-gradient(ellipse 50% 52% at 50% 6%, rgba(255, 206, 108, 0.62) 0%, rgba(255, 170, 64, 0.28) 46%, rgba(255, 150, 56, 0) 100%);
+  animation-delay: -0.35s;
+}
+@keyframes palpite {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  17% {
+    opacity: 0.88;
+  }
+  34% {
+    opacity: 0.6;
+  }
+  52% {
+    opacity: 1;
+  }
+  71% {
+    opacity: 0.5;
+  }
+  86% {
+    opacity: 0.8;
+  }
+}
+@keyframes palpiteFente {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scaleX(0.82);
+  }
+  17% {
+    opacity: 0.9;
+    transform: scaleX(1.2);
+  }
+  34% {
+    opacity: 0.6;
+    transform: scaleX(0.95);
+  }
+  52% {
+    opacity: 1;
+    transform: scaleX(1.34);
+  }
+  71% {
+    opacity: 0.5;
+    transform: scaleX(0.88);
+  }
+  86% {
+    opacity: 0.8;
+    transform: scaleX(1.1);
+  }
+}
