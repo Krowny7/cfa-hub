@@ -585,13 +585,14 @@ html[data-theme="nuit"] {
   .card-quiet {
     position: relative;
     border-radius: 18px;
-    background: color-mix(in oklab, var(--surface-2) 55%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--line) 60%, transparent);
+    /* entre le papier et la carte blanche : discrète, mais jamais confondue avec le fond */
+    background: color-mix(in oklab, var(--surface) 62%, var(--paper));
+    box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgba(17, 17, 17, 0.04);
     transition: background-color var(--dur-2) var(--ease-out);
   }
   a.card-quiet:hover,
   button.card-quiet:hover {
-    background: color-mix(in oklab, var(--surface-2) 85%, transparent);
+    background: var(--surface);
   }
 
   .card-hover {
