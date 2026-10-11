@@ -18,8 +18,6 @@ export default async function CalculsPage() {
   const subjects = calcSubjectCards().map(({ topic, slug, name, short, open, types, questions }) => ({ topic, slug, name, short, open, types, questions }));
 
   return (
-    <div className="rl-wide">
-      <CalcHub subjects={subjects} progress={progress} db={progress !== null} owner={auth.user.id} />
-    </div>
+    <CalcHub subjects={subjects} progress={progress} db={progress !== null} owner={auth.user.id} />
   );
 }

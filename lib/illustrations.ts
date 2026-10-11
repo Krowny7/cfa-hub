@@ -206,6 +206,62 @@ export const ILLUSTRATIONS = {
     emplacement: "/defi/cinq : bandeau en tête de la carte de départ des 5 du jour, 4:1 (1600×400 px conseillés).",
     prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Un sablier de bois et de verre posé sur le rebord d'une fenêtre d'atelier, le sable à moitié écoulé, la ville de Florence floue au loin, une cloche de campanile dans la brume dorée. Lumière dorée de fin de journée. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun. Aucun personnage, aucun texte. Format panoramique très allongé 4:1, 1600×400, le sablier un peu à gauche du centre.",
   },
+  "calculs-abaque": {
+    src: "/illustrations/calculs-abaque.webp",
+    alt: "La table de calcul d'une école d'abaque florentine",
+    credit: "Jacopo de' Barbari (attribué), Portrait de Luca Pacioli avec un élève, 1495, Capodimonte, domaine public, https://commons.wikimedia.org/wiki/File:Jacopo_de%27_Barbari_(attributed_to)_Portrait_of_Luca_Pacioli_(1445_1517)_with_a_student_(Guidobaldo_da_Montefeltro)_(2).jpg recadré sur la table. Domaine public.",
+    emplacement: "/calculs : carte « lieu » L'Abaque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone ; /calculs/[matiere] la reprend en médaillon de bande.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la table de travail d'une école d'abaque florentine vers 1500, dans l'univers de Léonard de Vinci. Un abaque à jetons de laiton, des tablettes de cire, un compas, des feuillets couverts de colonnes de chiffres, et à côté un mécanisme de calcul en bois à roues dentées inspiré du Codex Madrid. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, reflets de laiton, touches de vert sauge). Vue en légère plongée, sujet au centre, haut de l'image plus calme. Sans personnage, sans texte ni chiffres lisibles, sans cadre. Format paysage 16:10, 1600×1000.",
+  },
+  "calculs-poulies": {
+    src: "/illustrations/calculs-poulies.webp",
+    alt: "Trois poulies reliées par une corde, dessinées par Léonard",
+    credit: "20Pulley-Da Vinci.JPG, Léonard de Vinci, domaine public, https://commons.wikimedia.org/wiki/File:20Pulley-Da_Vinci.JPG. Domaine public.",
+    emplacement: "/calculs : vignette 3:2 « Comment se tient un niveau » (132×88 px sur ordinateur, 108×72 px sur téléphone), 1200×800 px conseillés.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : trois poulies en bois de tailles croissantes, reliées par une corde de chanvre, suspendues à une poutre de l'atelier de Léonard de Vinci à Florence. Lumière dorée de fin de journée, palette chaude (ocre, brun noisette, ivoire, ombres terre d'ombre). Composition simple et lisible en petit format, sujet centré, fond sombre et chaud. Sans personnage, sans texte, sans cadre. Format 3:2, 1200×800.",
+  },
+  "calculs-volant": {
+    src: "/illustrations/calculs-volant.webp",
+    alt: "Un volant d'inertie dessiné par Léonard",
+    credit: "Vinci, Leonardo Da - Volano (meccanica).jpg. Domaine public.",
+    emplacement: "/calculs et /calculs/[matiere] : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : un grand volant d'inertie en bois et fer forgé, tiré des machines de Léonard de Vinci, posé sur l'établi de son atelier à Florence vers 1500. Lumière dorée de fin de journée venant de la gauche, palette chaude (ocre, terre de Sienne brûlée, brun noisette, ivoire, touches de vert sauge). Cadrage carré, sujet parfaitement centré avec une marge régulière pour un recadrage en cercle, fond sombre et chaud peu détaillé. Sans personnage, sans texte, sans cadre ni bordure. Format 1:1, 1024×1024.",
+  },
+  "practice-studiolo": {
+    src: "/illustrations/practice-studiolo.webp",
+    alt: "Saint Jérôme dans son cabinet : un studiolo peint",
+    credit: "Antonello da Messina, Saint Jérôme dans son cabinet, v. 1475, National Gallery, domaine public, https://commons.wikimedia.org/wiki/File:Antonello_da_Messina_-_St_Jerome_in_his_study_-_National_Gallery_London.jpg.",
+    emplacement: "/practice : carte « lieu » Le Studiolo, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : le studiolo d'un savant florentin vers 1500, dans l'univers de Léonard de Vinci. Un pupitre incliné porte une copie vierge et une plume dans son encrier, un sablier en verre et bois tourné est posé à côté, des traités reliés sont empilés, un mécanisme à engrenages trône sur une étagère. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, touches de vert sauge). Vue de trois quarts, le pupitre et le sablier au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
+  },
+  "practice-corrige": {
+    src: "/illustrations/practice-corrige.webp",
+    alt: "Une page de la Summa de arithmetica de Luca Pacioli",
+    credit: "Pacioli - Summa de arithmetica geometria, 1523, Luca Pacioli, domaine public (Commons : Pacioli_-_Summa_de_arithmetica_geometria,_1523_-_1363187.jpeg).",
+    emplacement: "/practice : vignette portrait « Corrigé à la fin » (96×124 px sur ordinateur, 80×104 px sur téléphone), 1024×1280 px conseillés.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : une page de traité ouverte sur un pupitre de l'atelier de Léonard de Vinci, annotée à l'encre rouge et brune, avec une plume posée en travers. Lumière dorée et rasante de fin de journée, palette ivoire, ocre, brun, rouge sanguine discret. Cadrage serré vertical, page au centre. Sans personnage, sans texte ni chiffres lisibles (l'écriture est seulement suggérée), sans cadre. Format portrait 4:5, 1024×1280.",
+  },
+  "qcm-bibliotheque": {
+    src: "/illustrations/qcm-bibliotheque.webp",
+    alt: "Un cabinet de lecture : la Vision de saint Augustin",
+    credit: "Vittore Carpaccio, Vision de saint Augustin, 1502, domaine public, https://commons.wikimedia.org/wiki/File:Vittore_carpaccio,_visione_di_sant%27agostino_01.jpg.",
+    emplacement: "/qcm : carte « lieu » La Bibliothèque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la bibliothèque d'un palais florentin vers 1500, dans l'univers de Léonard de Vinci. De hauts rayonnages de bois classés par matière, des codex reliés de cuir, une échelle de bibliothèque, une table de lecture où sont ouverts un codex et des feuillets de questions. Une haute fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, cuir fauve, brun, ivoire, touches de vert sauge). Vue de trois quarts, la table de lecture au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
+  },
+  "qcm-machines": {
+    src: "/illustrations/qcm-machines.webp",
+    alt: "Une maquette en bois d'une machine de Léonard",
+    credit: "Leonardo machines.JPG, maquettes d'après Léonard de Vinci, domaine public déclaré par le photographe, https://commons.wikimedia.org/wiki/File:Leonardo_machines.JPG.",
+    emplacement: "/qcm : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : une maquette en bois d'une machine de Léonard de Vinci (roues dentées, manivelle, vis sans fin) posée sur l'établi de son atelier florentin. Lumière dorée de fin de journée, palette ocre, brun noisette, ivoire. Sujet centré dans un cadrage carré pour un recadrage en cercle, fond sombre et chaud. Sans personnage, sans texte, sans cadre. Format 1:1, 1024×1024.",
+  },
+  "exams-sceau": {
+    src: "/illustrations/exams-sceau.webp",
+    alt: "Une page de la Summa de arithmetica, en médaillon",
+    credit: "Pacioli - Summa de arithmetica geometria, 1523, domaine public (recadrage carré provisoire, à remplacer par un objet).",
+    emplacement: "/official-exams et /practice : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré.",
+    prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : un sceau de cire rouge brun posé sur une copie d'examen pliée, avec un ruban, sur une table de bois de l'atelier de Léonard de Vinci à Florence. Lumière dorée de fin de journée, palette ivoire, ocre, rouge sanguine, brun. Sujet centré dans un cadrage carré pour un recadrage en cercle. Sans personnage, sans texte lisible, sans cadre. Format 1:1, 1024×1024.",
+  },
 } as const satisfies Record<string, Illustration>;
 
 export type IllustrationNom = keyof typeof ILLUSTRATIONS;

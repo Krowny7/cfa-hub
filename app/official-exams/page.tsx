@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { OfficialExamsView, type OfficialExamGroup, type OfficialTopic } from "@/components/session/OfficialExamsView";
+import { OfficialExamsView, type OfficialExamGroup, type OfficialTopic, type ProchainMock } from "@/components/session/OfficialExamsView";
 
 // Remplace l'ancienne page /exercises : au lieu de sets d'exercices de
 // calcul génériques, on rejoue ici les vrais mock exams officiels de
@@ -91,5 +91,19 @@ export default async function OfficialExamsPage() {
 
   const examList = [...exams.values()].sort((a, b) => a.exam.localeCompare(b.exam));
 
-  return <OfficialExamsView exams={examList} />;
+  // le prochain examen blanc (la bande d'encre) : le plus proche des examens pas encore clos ; sans lui, la bande renvoie à la liste
+  let prochainMock: ProchainMock | null = null;
+  try {
+    const { data: m } = await supabase
+      .from("mock_exams")
+      .select("id,scheduled_at,question_count,duration_minutes,window_days")
+      .neq("status", "closed")
+      .order("scheduled_at", { ascending: true })
+      .limit(1);
+    prochainMock = ((m ?? [])[0] as ProchainMock | undefined) ?? null;
+  } catch {
+    prochainMock = null;
+  }
+
+  return <OfficialExamsView exams={examList} prochainMock={prochainMock} now={Date.now()} />;
 }

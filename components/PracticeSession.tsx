@@ -3,12 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, Trophy } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Hourglass, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPICS, TOPIC_LABELS, trophyTier } from "@/lib/practiceTopics";
-import { PageHead, SectionHead } from "@/components/session/ui";
+import { SectionHead } from "@/components/session/ui";
+import { Icone } from "@/components/adn/icons";
+import { CarteLieu } from "@/components/ui/CarteLieu";
+import { Illustration } from "@/components/ui/Illustration";
+import { Sceau } from "@/components/ui/Tuiles";
+import { Bande, EnTete, Mini, Page, Rangee, Tuile, Vignette } from "@/components/outils/Gabarit";
+import { STUDIOLO } from "@/lib/voice-outils";
 import {
   ChoiceButton,
   CopyForAi,
@@ -98,7 +104,9 @@ export function PracticeSession({
   const [selected, setSelected] = useState<Set<string>>(() => {
     if (demo?.selected) return new Set(demo.selected);
     const fromUrl = searchParams.get("topic");
-    return fromUrl && TOPICS.some((x) => x.key === fromUrl) ? new Set([fromUrl]) : new Set();
+    if (fromUrl && TOPICS.some((x) => x.key === fromUrl)) return new Set([fromUrl]);
+    // sans thème demandé, la session conseillée : les matières mesurées sous 50 %
+    return new Set(TOPICS.filter((t) => typeof mastery[t.key] === "number" && (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key));
   });
   const [format, setFormat] = useState<90 | 180>(demo?.format ?? 90);
   const [questions, setQuestions] = useState<ActiveQuestion[]>(demo?.questions ?? []);
@@ -177,14 +185,14 @@ export function PracticeSession({
   }, 0);
   const previewMinutes = Math.max(5, Math.round(previewCount * MIN_PER_QUESTION_MINUTES));
 
-  async function generate() {
-    if (selected.size === 0) return;
+  async function generate(topics: Set<string> = selected, fmt: 90 | 180 = format) {
+    if (topics.size === 0) return;
     setBusy(true);
     setError(null);
     try {
       const { data, error: rpcError } = await supabase.rpc("generate_practice_session", {
-        p_topics: [...selected],
-        p_format: format,
+        p_topics: [...topics],
+        p_format: fmt,
       });
       if (rpcError) throw new Error(rpcError.message);
       const qs = (data ?? []) as ActiveQuestion[];
@@ -291,125 +299,144 @@ export function PracticeSession({
     const measured = TOPICS.filter((t) => mastery[t.key] !== null && mastery[t.key] !== undefined);
     const weak = measured.filter((t) => (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key);
     const tier = trophyTier(selected.size);
-    const allOn = selected.size === TOPICS.length;
     const history = showAllHistory ? pastSessions : pastSessions.slice(0, 6);
     const canChart = pastSessions.length >= 2;
+    const last5 = pastSessions.slice(0, 5);
+    const avg5 = last5.length ? Math.round(last5.reduce((n, s) => n + pctOf(s.score, s.total), 0) / last5.length) : 0;
+    const trophees = pastSessions.filter((s) => pctOf(s.score, s.total) >= PASS_THRESHOLD).length;
+    const entiers = pastSessions.filter((s) => s.topics.length >= TOPICS.length);
+    const meilleurEntier = entiers.length ? Math.max(...entiers.map((s) => pctOf(s.score, s.total))) : null;
+    // les matières faibles d'abord (ordre fixe : une case cochée ne fait pas sauter la liste)
+    const rangees = [...TOPICS].sort((a, b) => Number(weak.includes(b.key)) - Number(weak.includes(a.key)));
+    // l'examen entier = le format demi-examen sur les dix matières (90 questions, 2 h 15)
+    const nbEntier = 90;
+    const tenterEntier = () => {
+      const tout = new Set(TOPICS.map((t) => t.key));
+      setSelected(tout);
+      setFormat(90);
+      void generate(tout, 90);
+    };
 
     return (
-      <div className="rl-page">
-        <PageHead
-          back={{ href: "/entrainement", label: "S'entraîner" }}
-          title="Entraînement ciblé"
-          sub="Choisis tes matières : le nombre de questions suit leur poids à l'examen. Corrigé à la fin."
-        />
-
-        <section className="card-hero rl-in grid grid-cols-1 gap-6 p-5 md:gap-7 md:p-8" style={{ animationDelay: ".06s" }} aria-label="Composer la session">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-            <h2 className="t-h2 m-0">Tes matières</h2>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-semibold text-muted">
-              <button type="button" className="transition-colors hover:text-white" onClick={() => setSelected(allOn ? new Set() : new Set(TOPICS.map((t) => t.key)))}>
-                {allOn ? "Tout retirer" : "Tout l'examen"}
-              </button>
-              {weak.length > 0 && (
-                <button type="button" className="transition-colors hover:text-white" onClick={() => setSelected(new Set(weak))}>
-                  Mes points faibles
-                </button>
-              )}
-              {selected.size > 0 && !allOn && (
-                <button type="button" className="transition-colors hover:text-white" onClick={() => setSelected(new Set())}>
-                  Effacer
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {TOPICS.map((t) => {
-              const on = selected.has(t.key);
-              const m = mastery[t.key];
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggleTopic(t.key)}
-                  className={
-                    "group flex items-center gap-3 rounded-[14px] border px-3.5 py-3 text-left transition-[border-color,background-color,box-shadow] duration-200 " +
-                    (on ? "border-white bg-surface shadow-[0_0_0_1px_var(--ink)]" : "border-line-2 bg-surface hover:border-white/45")
-                  }
-                >
-                  <span
-                    aria-hidden
-                    className={
-                      "grid h-5 w-5 shrink-0 place-items-center rounded-[6px] transition-colors " +
-                      (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)] group-hover:shadow-[inset_0_0_0_1.5px_var(--ink-3)]")
-                    }
-                  >
-                    {on && <Check size={13} strokeWidth={3} />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-semibold leading-tight">{subjectName(t.key)}</span>
-                    <span className="t-micro mt-1 block">
-                      {String(t.weight).replace(".", ",")} % de l&apos;examen
-                      {m !== null && m !== undefined && (
-                        <>
-                          {" · "}
-                          <span className={m < WEAK_BELOW ? "text-pen" : ""}>maîtrise {m} %</span>
-                        </>
-                      )}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="rule" />
-
-          <div className="grid grid-cols-1 items-end gap-5 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-8">
-            <div>
-              <p className="t-eyebrow m-0 mb-2">Base de calcul</p>
-              <Seg
-                label="Format"
-                value={String(format) as "90" | "180"}
-                onChange={(v) => setFormat(Number(v) as 90 | 180)}
-                options={[
-                  { key: "90", label: "Demi-examen · 90" },
-                  { key: "180", label: "Complet · 180" },
-                ]}
-              />
-            </div>
-            <div className="min-w-0" aria-live="polite">
-              {selected.size > 0 ? (
+      <Page
+        entete={<EnTete icone={<Icone nom="entrainer" size={16} />} titre="Entraînement ciblé" ligne={STUDIOLO.ligne} />}
+        lead={
+          <div className="flex flex-col gap-4 md:gap-[18px]">
+            <Rangee
+              tuiles={
                 <>
-                  <p className="m-0 flex items-baseline gap-2">
-                    <span className="t-num text-[40px]">{previewCount}</span>
-                    <span className="text-[15px] font-semibold">questions</span>
-                    <span className="t-small">· {fmtMinutes(previewMinutes)}</span>
-                  </p>
-                  <p className="t-micro m-0 mt-1.5 inline-flex items-center gap-1.5">
-                    <Trophy size={13} aria-hidden /> Trophée {tier.label} à 70 % ou plus
-                  </p>
+                  {pastSessions.length > 0 && (
+                    <Tuile
+                      icone={<Trophy size={20} aria-hidden />}
+                      titre={STUDIOLO.sessionsTitre}
+                      ligne={STUDIOLO.sessionsLigne(pastSessions.length, trophees, avg5, last5.length)}
+                      action={{ href: "#historique", label: STUDIOLO.sessionsAction }}
+                    />
+                  )}
+                  <Vignette portrait nom="practice-corrige" titre={STUDIOLO.corrigeTitre} ligne={STUDIOLO.corrigeLigne} />
                 </>
-              ) : (
-                <p className="t-small m-0">Choisis au moins une matière.</p>
-              )}
-            </div>
-            <button type="button" className="btn btn-primary btn-lg rl-press w-full md:w-auto" disabled={selected.size === 0 || busy} onClick={generate}>
-              {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={17} aria-hidden />}
-            </button>
+              }
+              cote={
+                <CarteLieu
+                  label={STUDIOLO.nom}
+                  ratio="16 / 10"
+                  visuel={<Illustration nom="practice-studiolo" position="50% 60%" />}
+                  vignette={<Illustration nom="practice-studiolo" position="50% 60%" decorative />}
+                  marque={
+                    <Sceau>
+                      <Hourglass size={19} aria-hidden />
+                    </Sceau>
+                  }
+                  nom={STUDIOLO.nom}
+                  tailleNom="text-[28px] lg:text-[36px] xl:text-[40px]"
+                  sousTitre={STUDIOLO.sous(fmtMinutes(Math.round(nbEntier * MIN_PER_QUESTION_MINUTES)))}
+                  etat={STUDIOLO.etat(nbEntier, TOPICS.length, meilleurEntier)}
+                  secondaire
+                  action={{ href: "/practice", label: STUDIOLO.action(nbEntier), onClick: tenterEntier, disabled: busy }}
+                />
+              }
+              heros={
+                <section className="card-hero rl-in grid min-w-0 gap-x-8 gap-y-5 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:p-8" aria-label={STUDIOLO.composer}>
+                  <div className="flex min-w-0 flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <p className="t-eyebrow">{STUDIOLO.composer}</p>
+                      <h2 className="t-h1 m-0 flex items-baseline gap-3" aria-live="polite">
+                        <span>{previewCount}</span>
+                        <span className="text-[0.5em] font-semibold">{previewCount > 1 ? "questions" : "question"}</span>
+                      </h2>
+                      <p className="t-micro m-0 inline-flex items-center gap-1.5">
+                        {selected.size > 0 ? (
+                          <>
+                            <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {tier.label.toLowerCase()} à 70 % ou plus
+                          </>
+                        ) : (
+                          STUDIOLO.choisir
+                        )}
+                      </p>
+                    </div>
+                    <p className="t-body m-0 max-w-[420px] text-muted">{STUDIOLO.phrase(weak.length)}</p>
+                    <Seg
+                      label="Format"
+                      value={String(format) as "90" | "180"}
+                      onChange={(v) => setFormat(Number(v) as 90 | 180)}
+                      options={[
+                        { key: "90", label: "Demi-examen · 90" },
+                        { key: "180", label: "Complet · 180" },
+                      ]}
+                    />
+                    <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+                      <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" disabled={selected.size === 0 || busy} onClick={() => void generate()}>
+                        {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={16} aria-hidden />}
+                      </button>
+                      {selected.size > 0 && selected.size < TOPICS.length && (
+                        <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setSelected(new Set())}>
+                          Effacer
+                        </button>
+                      )}
+                    </div>
+                    {error && (
+                      <p role="alert" className="m-0 text-sm text-pen">
+                        {error}
+                      </p>
+                    )}
+                  </div>
+                  <ul className="m-0 grid list-none content-start gap-0.5 p-0" aria-label="Tes matières">
+                    {rangees.map((t) => {
+                      const on = selected.has(t.key);
+                      const m = mastery[t.key];
+                      return (
+                        <li key={t.key}>
+                          <button
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => toggleTopic(t.key)}
+                            className={"rl-row flex min-h-[40px] w-full items-center gap-3 rounded-[10px] px-2.5 py-1.5 text-left " + (on ? "bg-surface" : "")}
+                          >
+                            <span aria-hidden className={"grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[5px] " + (on ? "bg-white text-black" : "shadow-[inset_0_0_0_1.5px_var(--line-2)]")}>
+                              {on && <Check size={12} strokeWidth={3} />}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[14px] font-semibold">{subjectName(t.key)}</span>
+                              <span className="t-micro block">{String(t.weight).replace(".", ",")} % de l&apos;examen</span>
+                            </span>
+                            <span className="t-micro shrink-0 tabular-nums">{m !== null && m !== undefined ? `${m} %` : "—"}</span>
+                            {m !== null && m !== undefined ? <Mini pct={m} rouge={m < WEAK_BELOW} /> : <span className="w-14 shrink-0" />}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              }
+            />
+            <Bande icone={<Icone nom="examen" size={22} />} titre={STUDIOLO.suiteTitre} ligne={STUDIOLO.suiteLigne} action={{ href: "/official-exams", label: STUDIOLO.suiteAction }} medaillon="exams-sceau" />
           </div>
-          {error && (
-            <p role="alert" className="m-0 -mt-2 text-sm text-pen">
-              {error}
-            </p>
-          )}
-        </section>
-
+        }
+      >
         {pastSessions.length > 0 && (
-          <section className="rl-section" aria-label="Tes sessions">
+          <section className="rl-section" id="historique" aria-label={STUDIOLO.copies}>
             <SectionHead
-              title="Tes sessions"
+              title={STUDIOLO.copies}
               action={
                 canChart ? (
                   <Seg
@@ -495,7 +522,7 @@ export function PracticeSession({
             )}
           </section>
         )}
-      </div>
+      </Page>
     );
   }
 

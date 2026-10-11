@@ -6,6 +6,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { ContinueReviewing } from "@/components/ContinueReviewing";
 import { ContentListPage, type ContentSetRow } from "@/components/ContentListPage";
 import { SubjectBrowser } from "@/components/ContentFolderBlocks";
+import { QcmAccueil } from "@/components/qcm/QcmAccueil";
 import { groupBySubject, subjectFromParam, type ItemMeta } from "@/components/ContentDetailHeader";
 import { normalizeScope, normalizeView, sectionForVisibility, type ScopeFilter } from "@/lib/content/visibility";
 
@@ -146,6 +147,11 @@ export default async function QcmPage({ searchParams }: PageProps) {
   }
 
   const initialKey = subjectFromParam(sp.subject)?.key ?? (sp.subject && groups.some((g) => g.key === sp.subject) ? sp.subject : null) ?? next?.g.key ?? null;
+
+  // Vue Système (par défaut) : « La Bibliothèque » ; la communauté garde la liste par dossiers.
+  if (view === "system") {
+    return <QcmAccueil groups={groups} next={next} recentes={started} last={last} communityCount={all.length} initialKey={initialKey} now={Date.now()} />;
+  }
 
   return (
     <ContentListPage
