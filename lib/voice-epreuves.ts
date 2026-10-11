@@ -137,13 +137,13 @@ export const SALLE = {
   debutMicro: "Aucune copie rendue pour l'instant",
   debutTexte: "90 questions au format de l'examen, chronométrées. Ton score, ta place et tes matières faibles s'afficheront ici dès la première copie.",
   // la carte lieu
-  etatOuvre: (jours: number, jour: string) => `Ouvre dans ${pluriel(jours, "jour", "jours")}, le ${jour}.`,
+  etatOuvre: (jours: number, jour: string) => (jours <= 0 ? `Ouvre aujourd'hui, le ${jour}.` : jours === 1 ? `Ouvre demain, le ${jour}.` : `Ouvre dans ${pluriel(jours, "jour", "jours")}, le ${jour}.`),
   etatOuvert: (jour: string) => `Ouvert jusqu'au ${jour}.`,
   etatFini: "La fenêtre est terminée.",
   etatPrepa: "En préparation.",
   inscrit: "Tu es inscrit.",
   // la tuile suivante
-  ensuite: (jours: number) => `Ensuite · dans ${pluriel(jours, "jour", "jours")}`,
+  ensuite: (jours: number) => (jours <= 0 ? "Ensuite · aujourd'hui" : jours === 1 ? "Ensuite · demain" : `Ensuite · dans ${pluriel(jours, "jour", "jours")}`),
   inscrire: "Je m'inscris",
   // la bande
   bandeTitre: "D'ici là, les 30 du jour",
