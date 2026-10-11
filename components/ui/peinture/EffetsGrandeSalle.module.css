@@ -6,33 +6,33 @@
 .halo {
   mix-blend-mode: screen;
   background: radial-gradient(closest-side, rgba(255, 150, 62, 0.4) 0%, rgba(255, 138, 52, 0.2) 40%, rgba(255, 128, 44, 0.07) 72%, rgba(255, 128, 44, 0) 100%);
-  animation: respire 5.4s ease-in-out infinite;
+  animation: respire 7.6s ease-in-out infinite;
 }
 .haloD {
-  animation-duration: 6.6s;
+  animation-duration: 9.2s;
   animation-delay: -2.3s;
 }
 @keyframes respire {
   0%,
   100% {
-    opacity: 0.5;
-    transform: scale(0.96);
+    opacity: 0.61;
+    transform: scale(0.982);
   }
   21% {
-    opacity: 0.95;
-    transform: scale(1.03);
+    opacity: 0.81;
+    transform: scale(1.014);
   }
   38% {
-    opacity: 0.66;
-    transform: scale(0.99);
+    opacity: 0.68;
+    transform: scale(0.996);
   }
   62% {
-    opacity: 1;
-    transform: scale(1.05);
+    opacity: 0.83;
+    transform: scale(1.022);
   }
   81% {
-    opacity: 0.6;
-    transform: scale(0.98);
+    opacity: 0.65;
+    transform: scale(0.991);
   }
 }
 
@@ -42,37 +42,37 @@
   -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 56%, #000 45%, transparent 100%);
   mask-image: radial-gradient(ellipse 50% 50% at 50% 56%, #000 45%, transparent 100%);
   transform-origin: 50% 90%;
-  animation: vacille 2.3s ease-in-out infinite;
+  animation: vacille 3.2s ease-in-out infinite;
 }
 .flD {
-  animation-duration: 2.7s;
+  animation-duration: 3.8s;
   animation-delay: -0.9s;
 }
 @keyframes vacille {
   0%,
   100% {
     transform: none;
-    opacity: 0.9;
+    opacity: 0.79;
   }
   14% {
-    transform: scale(0.92, 1.13) skewX(-6deg) rotate(1.2deg);
-    opacity: 1;
+    transform: scale(0.964, 1.058) skewX(-2.70deg) rotate(0.54deg);
+    opacity: 0.83;
   }
   31% {
-    transform: scale(1.07, 0.9) skewX(4deg);
-    opacity: 0.72;
+    transform: scale(1.032, 0.955) skewX(1.80deg);
+    opacity: 0.71;
   }
   47% {
-    transform: scale(0.95, 1.17) skewX(-3deg) rotate(-1.6deg);
-    opacity: 1;
+    transform: scale(0.978, 1.077) skewX(-1.35deg) rotate(-0.72deg);
+    opacity: 0.83;
   }
   66% {
-    transform: scale(1.08, 0.93) skewX(6deg) rotate(1deg);
-    opacity: 0.78;
+    transform: scale(1.036, 0.969) skewX(2.70deg) rotate(0.45deg);
+    opacity: 0.74;
   }
   83% {
-    transform: scale(0.96, 1.09) skewX(-4deg);
-    opacity: 0.95;
+    transform: scale(0.982, 1.040) skewX(-1.80deg);
+    opacity: 0.81;
   }
 }
 /* la lueur vive qui double la flamme, à contretemps */
@@ -80,40 +80,40 @@
   mix-blend-mode: screen;
   background: radial-gradient(ellipse 50% 52% at 50% 62%, rgba(255, 214, 128, 0.55) 0%, rgba(255, 176, 76, 0.3) 50%, rgba(255, 150, 60, 0) 100%);
   transform-origin: 50% 92%;
-  animation: lueurFlamme 1.9s ease-in-out infinite;
+  animation: lueurFlamme 2.7s ease-in-out infinite;
 }
 .lgD {
-  animation-duration: 2.2s;
+  animation-duration: 3.1s;
   animation-delay: -0.5s;
 }
 @keyframes lueurFlamme {
   0%,
   100% {
-    opacity: 0.45;
-    transform: scale(0.94, 0.92);
+    opacity: 0.59;
+    transform: scale(0.973, 0.964);
   }
   18% {
-    opacity: 0.85;
-    transform: scale(1.04, 1.16);
+    opacity: 0.77;
+    transform: scale(1.018, 1.072);
   }
   37% {
-    opacity: 0.55;
-    transform: scale(0.98, 0.98);
+    opacity: 0.63;
+    transform: scale(0.991, 0.991);
   }
   58% {
-    opacity: 0.95;
-    transform: scale(1.02, 1.2);
+    opacity: 0.81;
+    transform: scale(1.009, 1.090);
   }
   79% {
-    opacity: 0.5;
-    transform: scale(0.96, 0.95);
+    opacity: 0.61;
+    transform: scale(0.982, 0.978);
   }
 }
 
 /* ---- la lumière de la porte : un même souffle, lent, irrégulier ---- */
 .palpite {
   mix-blend-mode: screen;
-  animation: palpite 5.2s ease-in-out infinite;
+  animation: palpite 7.3s ease-in-out infinite;
 }
 .fente {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%);
@@ -132,48 +132,48 @@
 @keyframes palpite {
   0%,
   100% {
-    opacity: 0.42;
+    opacity: 0.57;
   }
   17% {
-    opacity: 0.88;
+    opacity: 0.78;
   }
   34% {
-    opacity: 0.6;
+    opacity: 0.65;
   }
   52% {
-    opacity: 1;
+    opacity: 0.83;
   }
   71% {
-    opacity: 0.5;
+    opacity: 0.61;
   }
   86% {
-    opacity: 0.8;
+    opacity: 0.74;
   }
 }
 @keyframes palpiteFente {
   0%,
   100% {
-    opacity: 0.4;
-    transform: scaleX(0.82);
+    opacity: 0.56;
+    transform: scaleX(0.919);
   }
   17% {
-    opacity: 0.9;
-    transform: scaleX(1.2);
+    opacity: 0.79;
+    transform: scaleX(1.090);
   }
   34% {
-    opacity: 0.6;
-    transform: scaleX(0.95);
+    opacity: 0.65;
+    transform: scaleX(0.978);
   }
   52% {
-    opacity: 1;
-    transform: scaleX(1.34);
+    opacity: 0.83;
+    transform: scaleX(1.153);
   }
   71% {
-    opacity: 0.5;
-    transform: scaleX(0.88);
+    opacity: 0.61;
+    transform: scaleX(0.946);
   }
   86% {
-    opacity: 0.8;
-    transform: scaleX(1.1);
+    opacity: 0.74;
+    transform: scaleX(1.045);
   }
 }

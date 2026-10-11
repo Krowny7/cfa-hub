@@ -7,14 +7,14 @@
   mask: url("/illustrations/masque-lice-ciel.svg") 0 0 / 100% 100% no-repeat;
 }
 .nuages {
-  animation: derive 64s ease-in-out infinite alternate;
+  animation: derive 89.6s ease-in-out infinite alternate;
 }
 @keyframes derive {
   from {
-    transform: translate3d(-2.4%, 0.5%, 0);
+    transform: translate3d(-1.08%, 0.23%, 0);
   }
   to {
-    transform: translate3d(2.6%, -0.5%, 0);
+    transform: translate3d(1.17%, -0.23%, 0);
   }
 }
 
@@ -27,30 +27,30 @@
 }
 .lueur {
   background: radial-gradient(ellipse 52% 70% at 50% 86%, rgba(255, 190, 72, 0.7) 0%, rgba(255, 164, 54, 0.3) 48%, rgba(255, 150, 50, 0) 100%);
-  animation: pulse 7.4s ease-in-out infinite;
+  animation: pulse 10.4s ease-in-out infinite;
 }
 .lueurB {
   background: radial-gradient(ellipse 50% 70% at 50% 88%, rgba(255, 224, 140, 0.6) 0%, rgba(255, 190, 80, 0.22) 55%, rgba(255, 180, 70, 0) 100%);
-  animation: pulse 5.1s ease-in-out infinite;
+  animation: pulse 7.1s ease-in-out infinite;
   animation-delay: -2.2s;
 }
 @keyframes pulse {
   0%,
   100% {
-    opacity: 0.25;
-    transform: scale(0.97, 0.94);
+    opacity: 0.50;
+    transform: scale(0.986, 0.973);
   }
   30% {
-    opacity: 0.85;
-    transform: scale(1.03, 1.06);
+    opacity: 0.77;
+    transform: scale(1.014, 1.027);
   }
   52% {
-    opacity: 0.6;
-    transform: scale(1, 1);
+    opacity: 0.65;
+    transform: scale(1.000, 1.000);
   }
   76% {
-    opacity: 1;
-    transform: scale(1.04, 1.08);
+    opacity: 0.83;
+    transform: scale(1.018, 1.036);
   }
 }
 
@@ -64,7 +64,7 @@
   mask-composite: intersect;
 }
 .bande {
-  animation: onde 3.9s ease-in-out infinite;
+  animation: onde 5.5s ease-in-out infinite;
   animation-delay: calc(var(--i) * -0.17s);
 }
 @keyframes onde {
@@ -73,16 +73,16 @@
     transform: translateY(0);
   }
   18% {
-    transform: translateY(calc(var(--k) * -2.3%));
+    transform: translateY(calc(var(--k) * -1.03%));
   }
   41% {
-    transform: translateY(calc(var(--k) * 1.5%));
+    transform: translateY(calc(var(--k) * 0.68%));
   }
   59% {
-    transform: translateY(calc(var(--k) * -1.7%));
+    transform: translateY(calc(var(--k) * -0.77%));
   }
   79% {
-    transform: translateY(calc(var(--k) * 2.5%));
+    transform: translateY(calc(var(--k) * 1.12%));
   }
 }
 
@@ -125,24 +125,24 @@
 }
 @keyframes eclair {
   0% {
-    opacity: 0;
+    opacity: 0.00;
   }
   4% {
-    opacity: 0.95;
+    opacity: 0.52;
   }
   11% {
-    opacity: 0.25;
+    opacity: 0.14;
   }
   19% {
-    opacity: 1;
+    opacity: 0.55;
   }
   30% {
-    opacity: 0.4;
+    opacity: 0.22;
   }
   38% {
-    opacity: 0.7;
+    opacity: 0.39;
   }
   100% {
-    opacity: 0;
+    opacity: 0.00;
   }
 }

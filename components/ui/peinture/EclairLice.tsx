@@ -45,7 +45,7 @@ export function EclairLice() {
     let minuteur: number | undefined;
     let dernier = -1;
     const attendre = (premier: boolean) => {
-      minuteur = window.setTimeout(tirer, premier ? 3500 + Math.random() * 3500 : 10000 + Math.random() * 10000);
+      minuteur = window.setTimeout(tirer, premier ? 3500 + Math.random() * 3500 : 25000 + Math.random() * 20000);
     };
     const tirer = () => {
       let v: number;
