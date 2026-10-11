@@ -1,0 +1,39 @@
+/* Accueil « Le rendez-vous » : les quelques réglages d'écran qui ne se disent
+   pas en classes utilitaires. Téléphone sous 768 px, ordinateur au-dessus. */
+
+/* téléphone : les 30 du jour passent après le héros quand un quiz est en cours */
+.lieuApres {
+  order: 2;
+}
+@media (min-width: 1024px) {
+  .lieuApres {
+    order: 0;
+  }
+}
+
+/* la barre des traits du jour ne se voit que sur téléphone */
+.tel {
+  display: inline-flex;
+}
+@media (min-width: 768px) {
+  .tel {
+    display: none;
+  }
+}
+
+/* le grand anneau et les lignes secondaires ne se voient que sur ordinateur */
+.deskBloc {
+  display: none;
+}
+@media (min-width: 768px) {
+  .deskBloc {
+    display: block;
+  }
+}
+
+/* le bouton plein du héros : une vraie cible sur téléphone */
+@media (max-width: 767px) {
+  .bouton {
+    min-height: 44px;
+  }
+}

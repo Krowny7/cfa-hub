@@ -5,7 +5,6 @@ import { DefiTile } from "@/components/defi/DefiTile";
 import { defiEnTete } from "@/components/defi/DefiHero";
 import { ResumeTile } from "@/components/accueil/HomeCards";
 import { DemandeAmiTile, DuelTile, EXAM_SOON_DAYS, ExamTile, LaunchDuelTile, PointFaibleTile, RaturesTile, ReviewDuelTile } from "@/components/accueil/CompeteCards";
-import { RankCard } from "@/components/accueil/RankCard";
 import { TrajectoirePanel } from "@/components/objectif/TrajectoirePanel";
 import { OBJECTIF, parJour } from "@/lib/voice-objectif";
 import { ProgressTabs } from "@/components/accueil/ProgressTabs";
@@ -15,10 +14,11 @@ import { maitrise, nombre, pct, precision, traits, VIDE } from "@/lib/voice";
 import { TUILES } from "@/lib/voice-z1";
 import type { AccueilData, TopicStat, WeekDay } from "@/components/accueil/types";
 
-// Les deux sections sous le point focal : « Aujourd'hui » (trois tuiles
-// calmes au plus, choisies par priorité) et « Ta progression » (le rang,
-// puis une carte à trois vues en onglets : les matières en rangée
-// horizontale, le radar, la semaine). Le détail vit sur /moi.
+// « Ta progression » : une carte à onglets sur toute la largeur (l'objectif,
+// les matières en rangée horizontale, le radar, la semaine) ; le rang vit
+// dans la bande d'encre de l'accueil (Rendezvous.tsx). Le détail vit sur /moi.
+// TodaySection et pickTiles (l'ancien « Aujourd'hui » en tuiles) ne sont plus
+// montés par l'accueil.
 
 const DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -103,22 +103,15 @@ export function ProgressSection({ d, tab }: { d: AccueilData; tab?: string }) {
           </Link>
         }
       />
-      <div className="grid gap-4 md:gap-5 lg:grid-cols-12">
-        <div className="min-w-0 lg:col-span-4">
-          <RankCard rating={d.rating} mastery={d.mastery} />
-        </div>
-        <div className="min-w-0 lg:col-span-8">
-          <ProgressTabs
-            initial={tab}
-            tabs={[
-              { key: "objectif", label: OBJECTIF.onglet, meta: objectifMeta, panel: <TrajectoirePanel e={d.objectif} variante="onglet" /> },
-              { key: "matieres", label: "Matières", meta: masteryMeta, panel: <SubjectRail topics={d.topics} /> },
-              { key: "radar", label: "Radar", meta: <RadarLegend />, panel: <RadarPanel topics={d.topics} /> },
-              { key: "semaine", label: "Semaine", meta: weekMeta, panel: <WeekBars days={d.activity.days} goal={d.dailyGoal} /> },
-            ]}
-          />
-        </div>
-      </div>
+      <ProgressTabs
+        initial={tab}
+        tabs={[
+          { key: "objectif", label: OBJECTIF.onglet, meta: objectifMeta, panel: <TrajectoirePanel e={d.objectif} variante="onglet" /> },
+          { key: "matieres", label: "Matières", meta: masteryMeta, panel: <SubjectRail topics={d.topics} /> },
+          { key: "radar", label: "Radar", meta: <RadarLegend />, panel: <RadarPanel topics={d.topics} /> },
+          { key: "semaine", label: "Semaine", meta: weekMeta, panel: <WeekBars days={d.activity.days} goal={d.dailyGoal} /> },
+        ]}
+      />
     </section>
   );
 }

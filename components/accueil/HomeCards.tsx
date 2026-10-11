@@ -65,7 +65,7 @@ export function JourAnneau({ d }: { d: AccueilData }) {
 }
 
 /** « Market Efficiency, page 3 » : où reprendre, pour la variante « retour ». */
-function ouReprendre(r: ResumeItem) {
+export function ouReprendre(r: ResumeItem) {
   const page = /page ([0-9]+)/.exec(r.context)?.[1];
   return page ? `${r.title}, page ${page}` : r.title;
 }

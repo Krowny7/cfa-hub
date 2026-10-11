@@ -1,0 +1,11 @@
+/* Une illustration peinte (lib/illustrations.ts) : elle couvre son cadre ; la
+   nuit, elle est un peu assombrie pour ne pas éclairer toute la page. */
+.img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+:global([data-theme="nuit"]) .img {
+  filter: brightness(0.82);
+}
