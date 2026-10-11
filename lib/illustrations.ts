@@ -50,21 +50,19 @@ export const ILLUSTRATIONS = {
   },
   "classement-grande-salle": {
     src: "/illustrations/classement-grande-salle.webp",
-    alt: "La Grande Salle : un cabinet d'étude, la veille de l'examen",
-    credit: "Vittore Carpaccio, La Vision de saint Augustin (vers 1502), cabinet d'étude. Domaine public (commons.wikimedia.org, Vittore_carpaccio,_visione_di_sant'agostino_01).",
+    alt: "La Grande Salle : les portes de bronze fermées, la lumière filtre entre les battants, deux braseros",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-10-11), d'après le prompt ci-dessous.",
     emplacement: "Classement : carte « lieu » La Grande Salle (examen classé), image 16:10 en tête de carte sur ordinateur (environ 365 px de large) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
     prompt:
-      STYLE +
-      "Sujet : la Salle des Cinq-Cents du Palazzo Vecchio à Florence, vide, la veille d'un examen : de longues tables de bois alignées avec encriers, plumes et feuilles posées, un sablier au premier plan sur la table la plus proche, plafond à caissons dorés, grandes fenêtres à droite par où entre le soleil couchant en longs rayons poussiéreux. Sans personnage. Lumière dorée et rasante de fin de journée, palette chaude : ocre jaune, terre de Sienne brûlée, brun Van Dyck, vieil or, quelques accents vermillon et bleu-gris dans les ombres. Aucun texte, aucune lettre, aucun logo, aucun cadre, pas de vignettage noir. Format paysage 16:10 (1600×1000 px), sujet centré, qui reste lisible recadré en vignette verticale 4:5 au centre.",
+      "Peinture à l'huile au couteau, empâtements épais, touches de matière bien visibles. Palette inspirée de La Bataille de San Romano de Paolo Uccello : terre d'ombre brûlée, brun Van Dyck, ocre pâle, blanc d'os, accents vermillon, noirs profonds, bronze patiné. Pas de bleu, pas de couleurs saturées modernes. Scène simple, dans le style du Panthéon de Rome : vue de face, sous le portique, les immenses portes antiques à deux battants en bronze patiné, à caissons et gros clous, fermées, encadrées d'un chambranle de marbre clair et de colossales colonnes corinthiennes en granit sombre. Entre les battants et sous la porte filtre une lumière dorée intense. Deux braseros de bronze sur pied, aux flammes hautes, encadrent la porte. Sol de dalles de marbre usées où se reflète la lumière. Pas d'oculus, aucun faisceau venant du haut. Aucun personnage, aucun texte, aucun cadre. Format 16:10, porte au centre, lisible recadrée en 4:5.",
   },
   "classement-lice": {
     src: "/illustrations/classement-lice.webp",
-    alt: "La lice d'un tournoi florentin : oriflammes et lances",
-    credit: "Paolo Uccello, La Bataille de San Romano (panneau des Offices, vers 1438), recadrée sur les lances et les étendards. Domaine public (commons.wikimedia.org, Battle_of_San_Romano,_by_Paolo_Uccello_(Uffizi_Gallery,_Florence)).",
+    alt: "L'étendard vermillon couronné de laurier, planté sur une colline sous un ciel d'orage",
+    credit: "Image peinte pour Ranked Lobby (Gemini, 2026-10-11), d'après le prompt ci-dessous.",
     emplacement: "Classement : bandeau étroit pleine largeur au-dessus du classement général (88 px de haut sur ordinateur, 64 px sur téléphone).",
     prompt:
-      STYLE +
-      "Sujet : la lice d'un tournoi florentin sur la place Santa Croce, vue de loin et de côté ; la barrière de bois de la joute court sur toute la largeur, avec oriflammes et pennons rouge et or, tribunes de bois et lances appuyées contre la barrière. Pas de cavalier, aucune figure au premier plan ; composition horizontale régulière, sans point focal unique, pour un bandeau décoratif. Haut et bas de l'image calmes (ciel, pavés), sans détail important. Lumière dorée de fin de journée, palette chaude : ocre, terre de Sienne brûlée, brun Van Dyck, vieil or, accents vermillon. Aucun texte, aucun logo, aucun cadre, pas de vignettage. Format panoramique 21:9 (2520×1080 px), avec toute l'information utile dans une bande horizontale au tiers central de la hauteur (l'image sera recadrée en frise très étroite, environ 12:1 sur ordinateur et 6:1 sur téléphone).",
+      "Peinture à l'huile au couteau, empâtements épais, touches de matière bien visibles. Palette inspirée de La Bataille de San Romano de Paolo Uccello : terre d'ombre brûlée, brun Van Dyck, ocre pâle, blanc d'os, accents vermillon, noirs profonds. Pas de bleu vif. Paysage simple : une longue crête de colline sombre traverse toute la largeur ; légèrement à droite du centre, une seule lance plantée porte un grand étendard vermillon qui claque au vent, une couronne de laurier dorée au sommet de la lance. Ciel d'orage lourd, nuages ocre et brun sombre, lueur dorée à l'horizon. Aucun personnage, aucun texte, aucun cadre. Format panoramique 21:9, étendard et crête dans le tiers central de la hauteur.",
   },
   "classement-duels": {
     src: "/illustrations/classement-duels.webp",
