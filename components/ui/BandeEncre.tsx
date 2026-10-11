@@ -14,6 +14,7 @@ export function BandeEncre({
   action,
   vignette,
   dataLeonard,
+  lueur,
 }: {
   icone: React.ReactNode;
   titre: React.ReactNode;
@@ -21,9 +22,11 @@ export function BandeEncre({
   action: { href: string; label: string };
   vignette?: React.ReactNode;
   dataLeonard?: string;
+  /** couleur de la lueur du palier (--tier-glow) */
+  lueur?: string;
 }) {
   return (
-    <section data-leonard={dataLeonard} className="card-ink rl-in flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-7 sm:py-6" style={{ animationDelay: ".1s" }}>
+    <section data-leonard={dataLeonard} className="card-ink rl-in flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-7 sm:py-6" style={{ animationDelay: ".1s", ...(lueur ? { "--tier-glow": lueur } : {}) } as React.CSSProperties}>
       <div className="flex min-w-0 flex-1 items-center gap-4">
         {vignette ? (
           <span aria-hidden className="block h-14 w-[76px] shrink-0 overflow-hidden rounded-[12px] sm:h-[68px] sm:w-[104px]">

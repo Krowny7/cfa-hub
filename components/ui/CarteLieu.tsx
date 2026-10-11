@@ -21,6 +21,8 @@ import { ArrowRight } from "lucide-react";
 //   dataLeonard  repère de la visite de Léonard
 //   liens      liens secondaires sous le bouton (facultatif)
 //   tailleNom  classes de taille du nom, si le nom est long (facultatif)
+//   secondaire le bouton est discret (btn-secondary) quand un autre bouton plein tient la page
+//   sansVignette téléphone : pas de vignette, la carte tient sur une colonne (l'image est ailleurs)
 export function CarteLieu({
   visuel,
   vignette,
@@ -35,11 +37,13 @@ export function CarteLieu({
   dataLeonard,
   liens,
   tailleNom = "text-[28px] lg:text-[44px]",
+  secondaire = false,
+  sansVignette = false,
 }: {
   visuel: React.ReactNode;
   vignette: React.ReactNode;
   marque?: React.ReactNode;
-  nom: string;
+  nom: React.ReactNode;
   sousTitre: React.ReactNode;
   etat: React.ReactNode;
   action: { href: string; label: string; icon?: React.ReactNode };
@@ -49,18 +53,21 @@ export function CarteLieu({
   dataLeonard?: string;
   liens?: { href: string; label: string }[];
   tailleNom?: string;
+  secondaire?: boolean;
+  sansVignette?: boolean;
 }) {
   return (
     <section
       data-leonard={dataLeonard}
       aria-label={label}
       className={
-        "card rl-in grid min-w-0 grid-cols-[minmax(0,1fr)_88px] items-start gap-x-4 gap-y-3 overflow-hidden p-5 " +
+        "card rl-in grid min-w-0 items-start gap-x-4 gap-y-3 overflow-hidden p-5 " +
+        (sansVignette ? "grid-cols-1 " : "grid-cols-[minmax(0,1fr)_88px] ") +
         "lg:grid-cols-1 lg:grid-rows-[auto_auto_auto_1fr] lg:gap-y-3.5 lg:p-0 lg:pb-6 " +
         className
       }
     >
-      <div className="col-start-2 row-span-2 row-start-1 h-[110px] w-[88px] overflow-hidden rounded-[14px] lg:hidden">{vignette}</div>
+      {!sansVignette && <div className="col-start-2 row-span-2 row-start-1 h-[110px] w-[88px] overflow-hidden rounded-[14px] lg:hidden">{vignette}</div>}
       <div className="hidden lg:col-start-1 lg:row-span-1 lg:block lg:border-b lg:border-line" style={{ aspectRatio: ratio }}>
         {visuel}
       </div>
@@ -72,8 +79,8 @@ export function CarteLieu({
         <p className="m-0 text-[14px] font-semibold leading-snug lg:text-[15px]">{sousTitre}</p>
       </div>
       <div className="t-small col-start-1 row-start-2 m-0 lg:row-start-3 lg:px-6">{etat}</div>
-      <div className="col-span-2 row-start-3 pt-1 lg:col-span-1 lg:row-start-4 lg:self-end lg:px-6">
-        <Link href={action.href} className="btn btn-primary btn-lg rl-press w-full">
+      <div className={(sansVignette ? "col-span-1" : "col-span-2") + " row-start-3 pt-1 lg:col-span-1 lg:row-start-4 lg:self-end lg:px-6"}>
+        <Link href={action.href} className={"btn btn-lg rl-press w-full " + (secondaire ? "btn-secondary" : "btn-primary")}>
           {action.icon} {action.label} <ArrowRight size={17} aria-hidden />
         </Link>
         {liens && liens.length > 0 && (

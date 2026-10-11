@@ -1,45 +1,47 @@
 import Link from "next/link";
-import { MoiHeader } from "@/components/moi/MoiHeader";
-import { MoiTabs } from "@/components/moi/MoiTabs";
-import { StatsTab } from "@/components/moi/StatsSection";
-import { ErrorsTab } from "@/components/moi/ErrorsSection";
+import { FilMoi } from "@/components/moi/Briques";
+import { Cabinet } from "@/components/moi/Cabinet";
+import { OngletParAncre } from "@/components/moi/Clients";
+import { Registre } from "@/components/moi/Registre";
 import type { MoiTab } from "@/components/moi/data";
 import type { MoiData } from "@/components/moi/types";
-import { MarqueesTab } from "@/components/moi/MarqueesTab";
-import { RaturesTab } from "@/components/moi/RaturesTab";
+import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
+import { CAB, REG } from "@/lib/voice-moi";
 
-// Espace « Moi » (V3) : un en-tête compact, puis trois onglets, chacun une
-// seule vue : Stats (matières, activité, sessions), Erreurs (le carnet de
-// ratures : tout ce qui a été manqué, d'où que ça vienne), Réglages (profil, date d'examen, apparence,
-// groupes, déconnexion). Composant de présentation : les données arrivent en
-// props ; `settings` reçoit le panneau de réglages (composants clients qui
-// chargent eux-mêmes).
+// Espace « Moi » (refonte, variante B « Le Cabinet ») : la page d'accueil de
+// l'espace est ton cabinet (?onglet=stats, par défaut) ; le carnet de ratures
+// (?onglet=erreurs) et les marquées (?onglet=marquees) ont chacun une page de
+// liste (« Le registre ») ; les réglages (?onglet=reglages) la leur. Les
+// anciens liens restent valables. Composant de présentation : les données
+// arrivent en props ; `settings` reçoit le panneau de réglages (composants
+// clients qui chargent eux-mêmes).
 export function MoiView({ d, settings, tab = "stats", now }: { d: MoiData; settings: React.ReactNode; tab?: MoiTab; now?: number }) {
   return (
-    <div className="rl-wide flex flex-col gap-8 md:gap-12">
-      <MoiHeader d={d} now={now} />
-      <MoiTabs
-        initial={tab}
-        counts={{ erreurs: d.ratures.available ? d.ratures.total : d.errors.available ? d.errors.total : 0, marquees: d.marquees.items.length }}
-        asides={{
-          erreurs: (
-            <Link href="/fiches" className="ink-link">
-              Toutes les fiches
-            </Link>
-          ),
-          reglages: (
-            <Link href={`/people/${d.userId}`} className="ink-link">
-              Mon profil public
-            </Link>
-          ),
-        }}
-        panels={{
-          stats: <StatsTab d={d} />,
-          erreurs: d.ratures.available ? <RaturesTab initial={d.ratures} notions={d.ratures.parNotion} now={now} /> : <ErrorsTab errors={d.errors} now={now} />,
-          marquees: <MarqueesTab marquees={d.marquees} />,
-          reglages: settings,
-        }}
-      />
-    </div>
+    <>
+      <OngletParAncre />
+      {tab === "stats" ? (
+        <Cabinet d={d} now={now} />
+      ) : tab === "erreurs" ? (
+        <Registre d={d} liste="ratures" now={now} />
+      ) : tab === "marquees" ? (
+        <Registre d={d} liste="marquees" now={now} />
+      ) : (
+        <div className="rl-wide flex flex-col gap-6 md:gap-8">
+          <div className="flex flex-col gap-3">
+            <FilMoi label={REG.fil} />
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+              <div>
+                <p className="t-eyebrow m-0">{CAB.surtitre(CURRENT_DOMAIN.name, CURRENT_PROGRAM.name)}</p>
+                <h1 className="t-h1 m-0 mt-1">{REG.reglagesTitre}</h1>
+              </div>
+              <Link href={`/people/${d.userId}`} className="ink-link">
+                {REG.profilPublic}
+              </Link>
+            </div>
+          </div>
+          {settings}
+        </div>
+      )}
+    </>
   );
 }

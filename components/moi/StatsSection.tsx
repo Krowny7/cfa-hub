@@ -42,7 +42,8 @@ function xp90Jours(xpDays: MoiData["xpDays"]): { day: string; xp: number }[] {
 }
 
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
-function SubjectsCard({ d }: { d: MoiData }) {
+/** Les deux vues des matières : la rangée de cartes (dans une carte ou à nu) et le radar (toi contre la moyenne). */
+export function vuesMatieres(d: MoiData, dansCarte = true) {
   const axes = d.topics.map((t) => ({ label: t.short, nom: t.label, me: t.pct, avg: t.avg }));
   const known = d.topics.filter((t) => t.pct !== null).sort((a, b) => (b.pct as number) - (a.pct as number));
   const top = known.slice(0, Math.min(3, Math.floor(known.length / 2) || known.length));
@@ -101,8 +102,7 @@ function SubjectsCard({ d }: { d: MoiData }) {
     <TopicRail
       label="Tes stats par matière"
       actionLabel="Ouvrir la matière"
-      surface="quiet"
-      bleed="-mx-6 px-6 scroll-px-6 md:-mx-7 md:px-7 md:scroll-px-7"
+      {...(dansCarte ? { surface: "quiet" as const, bleed: "-mx-6 px-6 scroll-px-6 md:-mx-7 md:px-7 md:scroll-px-7" } : {})}
       items={subjectRail(d.topics, (key) => {
         const t = d.topics.find((x) => x.key === key);
         if (!t) return { href: reviserHref(key) };
@@ -113,6 +113,11 @@ function SubjectsCard({ d }: { d: MoiData }) {
     />
   );
 
+  return { rail, radar };
+}
+
+function SubjectsCard({ d }: { d: MoiData }) {
+  const { rail, radar } = vuesMatieres(d);
   return (
     <section className="card flex min-w-0 flex-col gap-5 p-6 md:p-7" aria-label="Tes matières">
       <ViewSwitch
@@ -132,7 +137,7 @@ function SubjectsCard({ d }: { d: MoiData }) {
 }
 
 /** Série, carte des 5 semaines, niveau et quelques repères chiffrés (une bande), puis l'XP par jour sur 90 jours, repliée. La précision vit dans « Traits tracés ». */
-function ActivityCard({ d }: { d: MoiData }) {
+export function ActivityCard({ d }: { d: MoiData }) {
   const facts: { label: string; value: string }[] = [
     { label: "Semaine", value: `${fmtInt(d.xpWeek)} XP` },
     { label: "30 jours", value: `${fmtInt(d.xp30)} XP` },
@@ -199,7 +204,7 @@ function ActivityCard({ d }: { d: MoiData }) {
 }
 
 /** « Tes points faibles » et, dès qu'un Atelier est clos, l'historique des Ateliers : à droite sur grand écran, dessous sur téléphone. */
-function PointsFaiblesEtAteliers({ d }: { d: MoiData }) {
+export function PointsFaiblesEtAteliers({ d }: { d: MoiData }) {
   const carte = d.pointsFaibles ? <PointsFaiblesCarte d={d.pointsFaibles} repli={matiereFragile(d)} /> : null;
   if (!d.ateliers?.ateliers.length) return carte;
   return (

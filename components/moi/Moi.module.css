@@ -1,0 +1,74 @@
+/* Mesures de l'espace Moi refait (cabinet et pages de liste) : en CSS simple,
+   les classes arbitraires nouvelles n'étant pas toujours générées en dev. */
+
+/* la légende en pastille posée sur une image */
+.legende {
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border: 1px solid var(--color-line);
+}
+
+/* téléphone : le cabinet en bandeau étroit en haut de page */
+.bandeauTel {
+  height: 110px;
+}
+@media (min-width: 1024px) {
+  .bandeauTel {
+    display: none;
+  }
+}
+
+/* le bandeau étroit en tête de « Tes matières » : la gravure passée en sépia, assombrie la nuit */
+.bandeau {
+  height: 96px;
+}
+@media (min-width: 768px) {
+  .bandeau {
+    height: 150px;
+  }
+}
+.gravure {
+  filter: sepia(0.55) saturate(0.85) contrast(0.92);
+}
+:global([data-theme="nuit"]) .gravure {
+  filter: sepia(0.7) brightness(0.67) contrast(0.9);
+}
+
+/* la carte illustrée des pages de liste : vignette à droite sur téléphone, image en tête sur ordinateur */
+.aside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  column-gap: 16px;
+  padding: 20px;
+}
+.asideImg {
+  grid-column: 2;
+  grid-row: 1;
+  height: 112px;
+  width: 96px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+  overflow: hidden;
+}
+.asideTxt {
+  grid-column: 1;
+  grid-row: 1;
+}
+@media (min-width: 1024px) {
+  .aside {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 0 24px;
+  }
+  .asideImg {
+    grid-column: 1;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .asideTxt {
+    grid-row: 2;
+    padding: 16px 24px 0;
+  }
+}

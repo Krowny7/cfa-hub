@@ -129,6 +129,34 @@ export const ILLUSTRATIONS = {
       STYLE +
       "Sujet : un meuble à casiers en bois sombre aux portes à claire-voie, des petites cases pleines de cartes de papier vergé jauni ; un tiroir entrouvert, quelques cartes en éventail sur la tablette, une ficelle et un sceau de cire. Lumière dorée de fin de journée venant de la gauche. Palette chaude : ocre, Sienne, brun, or. Aucun personnage, aucun texte lisible. Format 16:9, sujet au centre, recadrable en 4:3.",
   },
+  "moi-cabinet": {
+    src: "/illustrations/moi-cabinet.webp",
+    alt: "Un studiolo de la Renaissance, livres et fioles sur les étagères, lumière de fin de journée",
+    credit: "Antonello da Messina, Saint Jérôme dans son cabinet de travail (vers 1475), recadré sur le studiolo. Domaine public (commons.wikimedia.org, Antonello_da_Messina_-_St_Jerome_in_his_Study_-_WGA0759).",
+    emplacement: "/moi : carte « lieu » Ton cabinet, image 16:10 en tête de carte sur ordinateur (4 colonnes) ; sur téléphone, la même image en bandeau étroit (environ 16:5, 110 px de haut) en haut de page.",
+    prompt: "Peinture à l'huile au couteau, empâtements épais et visibles, palette chaude (ocre, terre de Sienne brûlée, brun Van Dyck, touches de vermillon et de vert-de-gris), lumière dorée de fin de journée, ombres profondes et chaudes, univers de l'atelier de Léonard de Vinci à Florence vers 1500 (même série que l'illustration de l'Atelier jointe en référence). Sujet : le studiolo personnel de Léonard, un petit cabinet de travail lambrissé de bois sombre ; étagères chargées de livres reliés de cuir, de fioles, d'un sablier, d'un compas et d'instruments de mesure en laiton ; une écritoire avec un carnet ouvert, une plume dans l'encrier et une bougie éteinte ; une fenêtre à meneaux à gauche laisse entrer la lumière rasante du soir et laisse voir les collines toscanes. Cadrage horizontal 16:10, point d'intérêt (l'écritoire éclairée) au centre ; l'image doit rester lisible recadrée en bande 16:5 autour de l'écritoire. Aucun personnage, aucun texte lisible, aucune signature, aucun logo, pas de cadre peint.",
+  },
+  "moi-cabinet-curiosites": {
+    src: "/illustrations/moi-cabinet-curiosites.webp",
+    alt: "Un cabinet de curiosités : étagères, coquillages, oiseaux naturalisés",
+    credit: "Anonyme pour Ferrante Imperato, gravure du musée « Dell’Historia Naturale » (1599), recadrée en bande. Domaine public (commons.wikimedia.org, RitrattoMuseoFerranteImperato). Affichée en sépia, assombrie la nuit, en attendant la peinture.",
+    emplacement: "/moi : bandeau étroit pleine largeur en tête de la section « Tes matières » (150 px de haut sur ordinateur, 96 px sur téléphone, environ 8:1), légende en pastille en bas à gauche.",
+    prompt: "Peinture à l'huile au couteau, empâtements épais et visibles, palette chaude et plutôt sombre (terre de Sienne, brun Van Dyck, ocre, rares touches de vermillon et de vert-de-gris), lumière dorée de fin de journée, univers de l'atelier de Léonard de Vinci à Florence vers 1500 (même série que l'illustration de l'Atelier jointe en référence). Sujet : un cabinet de curiosités vu en panorama, un long mur d'étagères en bois : coquillages, minéraux, un oiseau naturalisé, une maquette en bois de machine volante, un globe, des herbiers, des bocaux, une rangée de livres, répartis en dix petits compartiments réguliers. Composition très horizontale 4:1 sans point focal unique, peu de détails fins, valeurs sombres dans l'ensemble, coin inférieur gauche plus sombre et uni pour poser une légende ; doit rester lisible recadrée en bande 8:1. Aucun personnage, aucun texte lisible, aucune signature, aucun logo, pas de cadre peint.",
+  },
+  "moi-carnet": {
+    src: "/illustrations/moi-carnet.webp",
+    alt: "Une page de carnet de Léonard, notes et croquis",
+    credit: "Léonard de Vinci, Études d’embryons (1510-1513), recadré sur les notes, photo Luc Viatour. Domaine public (commons.wikimedia.org, Da_Vinci_Studies_of_Embryos_Luc_Viatour).",
+    emplacement: "/moi?onglet=erreurs : carte « Mis au propre » du carnet de ratures, image en tête 16:9 sur ordinateur, vignette 96×112 px sur téléphone.",
+    prompt: "Peinture à l'huile au couteau, empâtements épais et visibles, palette chaude (ocre jaune, terre de Sienne brûlée, brun Van Dyck, touches de vermillon), lumière dorée de fin de journée, univers de l'atelier de Léonard de Vinci à Florence vers 1500 (même série que l'illustration de l'Atelier jointe en référence). Sujet : une double page de carnet de Léonard ouverte sur une table de noyer ; sur la page de gauche, des lignes d'écriture en miroir barrées une à une d'un trait d'encre ; sur celle de droite, les mêmes notes recopiées proprement ; une plume d'oie et un petit couteau à gratter posés à côté. Cadrage horizontal 16:9, avec le centre en 4:5 lisible seul pour la version téléphone. Aucun personnage, aucun texte lisible, aucune signature, aucun logo, pas de cadre peint.",
+  },
+  "moi-marquees": {
+    src: "/illustrations/moi-marquees.webp",
+    alt: "Léonard, autoportrait à la sanguine",
+    credit: "Léonard de Vinci, autoportrait présumé à la sanguine. Domaine public (commons.wikimedia.org, Leonardo_da_Vinci_-_presumed_self-portrait_-_WGA12798).",
+    emplacement: "/moi?onglet=marquees : carte « Comment ça marche », image en tête 16:9 sur ordinateur, vignette 96×112 px sur téléphone. Provisoire : l’autoportrait n’a pas de lien avec le sujet, la peinture du livre à signets le corrigera.",
+    prompt: "Peinture à l'huile au couteau, empâtements épais et visibles, palette chaude (ocre, terre de Sienne, brun Van Dyck, vermillon), lumière dorée de fin de journée, univers de l'atelier de Léonard de Vinci à Florence vers 1500 (même série que l'illustration de l'Atelier jointe en référence). Sujet : un gros livre relié de cuir posé fermé sur un pupitre, hérissé d'une dizaine de signets de soie rouge et de bandes de papier qui dépassent des pages, à côté d'un petit tas de feuillets pliés. Cadrage horizontal 16:9, avec le centre en 4:5 lisible seul. Aucun personnage, aucun texte lisible, aucune signature, aucun logo, pas de cadre peint.",
+  },
 } as const satisfies Record<string, Illustration>;
 
 export type IllustrationNom = keyof typeof ILLUSTRATIONS;

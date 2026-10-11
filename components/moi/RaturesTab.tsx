@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronRight, PenLine, RotateCcw, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
@@ -70,6 +70,7 @@ export function RaturesTab({
   now,
   demoPropre,
   demoNotions,
+  sansResume = false,
 }: {
   initial: RaturesPage;
   /** le carnet par notion ; null ou absent : par source seulement */
@@ -79,6 +80,8 @@ export function RaturesTab({
   demoPropre?: DemoPropre;
   /** aperçus locaux : les ratures de chaque notion, sans réseau */
   demoNotions?: Record<string, RatureItem[]>;
+  /** page de liste refaite (Registre) : le compteur, la règle et « Mettre au propre » passent au héros de la page ; il ne reste que les filtres et la liste */
+  sansResume?: boolean;
 }) {
   const [vue, setVue] = useState<Vue>(VUE0);
   const [liste, setListe] = useState<Liste>({ vue: VUE0, filtre: initial.filtre, items: initial.items });
@@ -225,6 +228,23 @@ export function RaturesTab({
   const reste = liste.filtre - liste.items.length;
   const vide = compte.total === 0 && compte.retirees === 0 && !liste.vue.retirees;
 
+  // les boutons du héros de la page (Registre) pilotent la liste : « rl:carnet » avec « propre » (la mise au propre) ou « anciennes » (les retirées)
+  const surEvenement = useRef<(action: string) => void>(() => {});
+  surEvenement.current = (action) => {
+    if (action === "propre") {
+      if (aRepasser > 0) setPropre(true);
+    } else if (action === "anciennes") {
+      setPropre(false);
+      if (listeNotions) void versNotions(true);
+      else choisir({ source: null, retirees: true, notion: groupe ? vue.notion : null });
+    }
+  };
+  useEffect(() => {
+    const f = (e: Event) => surEvenement.current(String((e as CustomEvent).detail));
+    window.addEventListener("rl:carnet", f);
+    return () => window.removeEventListener("rl:carnet", f);
+  }, []);
+
   if (vide && liste.items.length === 0) {
     return (
       <div className="card-quiet flex flex-wrap items-center gap-5 p-6 md:p-7">
@@ -240,11 +260,11 @@ export function RaturesTab({
   }
 
   return (
-    <section className="card grid min-w-0 overflow-hidden lg:grid-cols-12" aria-label="Mes ratures">
+    <section className={"card min-w-0 overflow-hidden " + (sansResume ? "flex flex-col" : "grid lg:grid-cols-12")} aria-label="Mes ratures">
       {/* le compte, la règle, les sources */}
-      <div className="flex min-w-0 flex-col gap-4 p-6 md:p-7 lg:col-span-4 lg:border-r lg:border-line">
-        <CardLabel icon={<Icone nom="erreurs" size={15} className="text-pen" />}>{CARNET.titre}</CardLabel>
-        <div>
+      <div className={"flex min-w-0 flex-col gap-4 " + (sansResume ? "px-5 pb-1 pt-4 md:px-6" : "p-6 md:p-7 lg:col-span-4 lg:border-r lg:border-line")}>
+        {!sansResume && <CardLabel icon={<Icone nom="erreurs" size={15} className="text-pen" />}>{CARNET.titre}</CardLabel>}
+        {!sansResume && <div>
           <span className="sr-only">
             {nombre(compte.total)} {CARNET.aRevoir}
           </span>
@@ -258,8 +278,8 @@ export function RaturesTab({
               </p>
             )}
           </div>
-        </div>
-        {(compte.semaine > 0 || compte.retirees > 0) && (
+        </div>}
+        {!sansResume && (compte.semaine > 0 || compte.retirees > 0) && (
           <p className="t-small m-0 font-medium">
             {[compte.semaine > 0 ? CARNET.retireesSemaine(compte.semaine) : null, compte.retirees > 0 ? CARNET.retireesTotal(compte.retirees) : null].filter(Boolean).join(" · ")}
           </p>
@@ -279,7 +299,7 @@ export function RaturesTab({
             </button>
           ))}
         </div>
-        {aRepasser > 0 && (
+        {!sansResume && aRepasser > 0 && (
           <div className="grid gap-1.5">
             <button type="button" className={"btn w-fit " + (anciennes ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
               {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre} · {nombre(aRepasser)}
@@ -316,16 +336,16 @@ export function RaturesTab({
             ))}
           </div>
         )}
-        <details className="group">
+        {!sansResume && <details className="group">
           <summary className="t-micro inline-flex cursor-pointer list-none items-center gap-1 font-semibold hover:text-white [&::-webkit-details-marker]:hidden">
             <ArrowRight size={12} aria-hidden className="transition-transform group-open:rotate-90" /> Comment marche le carnet ?
           </summary>
           <p className="t-micro m-0 mt-1.5">{CARNET.regle}</p>
-        </details>
+        </details>}
       </div>
 
       {/* la liste, ou la mise au propre */}
-      <div className="flex min-w-0 flex-col gap-2 border-t border-line p-4 md:p-6 lg:col-span-8 lg:border-t-0" aria-busy={charge}>
+      <div className={"flex min-w-0 flex-col gap-2 border-t border-line p-4 md:p-6 " + (sansResume ? "" : "lg:col-span-8 lg:border-t-0")} aria-busy={charge}>
         {propre && (
           <MiseAuPropre
             source={listeNotions ? null : liste.vue.source}
