@@ -152,7 +152,7 @@ export function ReviserView({
           className="lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch"
           dataLeonard="formats"
           label={RV.biblio}
-          ratio="1 / 1"
+          ratio="4 / 3"
           visuel={<Illustration nom="reviser-bibliotheque" position="50% 45%" />}
           vignette={<Illustration nom="reviser-bibliotheque" position="50% 45%" decorative />}
           marque={

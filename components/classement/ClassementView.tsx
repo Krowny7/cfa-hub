@@ -134,7 +134,7 @@ function GrandeSalle({ data }: { data: ClassementData }) {
   }
   return (
     <CarteLieu
-      className="lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:self-start"
+      className="lg:col-span-4 lg:col-start-9 lg:row-start-1"
       label={CL.salle}
       visuel={<Illustration nom="classement-grande-salle" position="50% 60%" />}
       vignette={<Illustration nom="classement-grande-salle" position="50% 60%" decorative />}
@@ -221,7 +221,7 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
             <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8">
               <section
                 data-leonard="rang"
-                className={"card-hero rl-in grid min-h-[260px] min-w-0 gap-x-8 gap-y-5 p-6 md:p-8 lg:flex-1 " + (montrerAutour ? "md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]" : "")}
+                className={"card-hero rl-in grid min-h-[260px] min-w-0 gap-x-8 gap-y-5 p-6 md:p-8 " + (montrerAutour ? "md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]" : "")}
                 aria-label="Ton rang"
               >
                 <div className="flex min-w-0 flex-col gap-4">
@@ -264,7 +264,7 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
                   </div>
                 )}
               </section>
-              <div className="rl-in grid gap-4 md:gap-[18px] xl:grid-cols-2" style={{ animationDelay: ".06s" }}>
+              <div className="rl-in grid gap-4 md:gap-[18px] lg:grow xl:grid-cols-2" style={{ animationDelay: ".06s" }}>
                 <TuileEnCours open={openDuels} />
                 <TuileRevoir recent={recentDuels} />
               </div>
