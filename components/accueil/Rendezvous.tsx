@@ -198,8 +198,10 @@ function ListeClassee({ titre, items }: { titre: string; items: ItemListe[] }) {
           <li key={it.libelle} className={"min-w-0" + (it.cacheTel ? " max-md:hidden" : "")}>
             <Link href={it.href} className="rl-row group flex min-w-0 items-center gap-3 px-1 py-3">
               <span className={"w-4 shrink-0 font-mono text-[13px] font-semibold " + (i === 0 ? "text-white" : "text-muted")}>{i + 1}</span>
-              <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{it.libelle}</span>
-              <span className="t-micro shrink-0">{it.aside}</span>
+              <span className="line-clamp-2 min-w-0 flex-1 text-[15px] font-semibold leading-snug [overflow-wrap:anywhere]">{it.libelle}</span>
+              <span className="t-micro max-w-[45%] shrink-0 truncate" title={typeof it.aside === "string" ? it.aside : undefined}>
+                {it.aside}
+              </span>
             </Link>
           </li>
         ))}
