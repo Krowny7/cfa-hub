@@ -15,6 +15,24 @@ export const RDV = {
     repondues: "Répondues",
     tonScore: "Ta copie",
     tonRang: "Ton rang",
+    chrono: "Chrono",
+    /** « Se fige dans 3 h » : timeLeftLabel dit « encore 3 h », on dit « dans 3 h » */
+    dans: "dans",
+  },
+  cinq: {
+    nom: "Les 5 du jour",
+    sousTitre: "5 questions de cours, sans calcul, deux minutes",
+    duree: "≈ 2 min",
+    jouer: "Jouer les 5 du jour",
+    revoir: "Revoir mes 5",
+  },
+  traits: {
+    nom: "Tes traits du jour",
+    gagner: "Tracer des traits",
+  },
+  reprise: {
+    titre: "Reprendre",
+    classement: "Classement du jour",
   },
   duel: {
     lancer: "Lance un duel",
