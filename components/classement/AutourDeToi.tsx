@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { INK } from "@/components/ui/InkDefs";
+import { EclairLiaison } from "@/components/ui/ArcElectrique";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import type { BoardRow } from "@/components/classement/types";
 
@@ -22,9 +23,31 @@ export function Jauge({ pct, label, className = "w-12" }: { pct: number; label: 
 
 const LIGNE = "rl-row grid min-h-[44px] w-full grid-cols-[22px_minmax(0,1fr)_auto_40px] items-center gap-x-3 rounded-[12px] px-2 py-2.5 ";
 
-/** Petite liste classée (le joueur devant, toi, celui qui te suit) : place, nom, jauge d'ELO, ELO. */
-export function AutourDeToi({ rows, titre, bornes }: { rows: BoardRow[]; titre: string; /** ELO le plus bas et le plus haut du classement, pour les jauges */ bornes: [number, number] }) {
+/** Écart d'ELO (en points) sous lequel un éclair relie ta ligne à celle du rival juste devant. */
+export const PORTEE_RIVAL = 30;
+
+/**
+ * Petite liste classée (le joueur devant, toi, celui qui te suit) : place, nom, jauge d'ELO, ELO.
+ * Quand le rival juste devant est à 30 points d'ELO ou moins, un petit éclair relie vos deux
+ * lignes, de la couleur de l'aura de ton palier ; au-delà, rien.
+ */
+export function AutourDeToi({
+  rows,
+  titre,
+  bornes,
+  palier,
+}: {
+  rows: BoardRow[];
+  titre: string;
+  /** ELO le plus bas et le plus haut du classement, pour les jauges */
+  bornes: [number, number];
+  /** ton palier (index dans TIERS) : donne sa couleur à l'éclair ; sans lui, pas d'éclair */
+  palier?: number;
+}) {
   const [lo, hi] = [bornes[0] - 60, Math.max(bornes[1], bornes[0] + 1)];
+  const moi = rows.findIndex((r) => r.isMe);
+  const ecart = moi > 0 ? rows[moi - 1].elo - rows[moi].elo : null;
+  const eclair = palier !== undefined && ecart !== null && ecart >= 0 && ecart <= PORTEE_RIVAL;
   return (
     <div className="flex min-w-0 flex-col gap-1 md:gap-2">
       <p className="t-eyebrow px-2">{titre}</p>
@@ -40,7 +63,7 @@ export function AutourDeToi({ rows, titre, bornes }: { rows: BoardRow[]; titre: 
             </>
           );
           return (
-            <li key={r.userId}>
+            <li key={r.userId} className={r.isMe && eclair ? "relative" : undefined}>
               {r.isMe ? (
                 <Link href="#joueurs" className={LIGNE + "bg-surface-2 text-white"}>
                   {contenu}
@@ -50,6 +73,7 @@ export function AutourDeToi({ rows, titre, bornes }: { rows: BoardRow[]; titre: 
                   {contenu}
                 </LienJoueur>
               )}
+              {r.isMe && eclair && palier !== undefined && <EclairLiaison palier={palier} className="left-[3px] top-[-15px]" />}
             </li>
           );
         })}

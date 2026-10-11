@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { Illustration } from "@/components/ui/Illustration";
 import type { IllustrationNom } from "@/lib/illustrations";
 
@@ -31,6 +32,7 @@ export function HeroEpreuve({
   actions,
   droite,
   dataLeonard,
+  arc,
 }: {
   label: string;
   id?: string;
@@ -42,6 +44,8 @@ export function HeroEpreuve({
   actions?: React.ReactNode;
   droite?: React.ReactNode;
   dataLeonard?: string;
+  /** palier du joueur : un fin arc électrique court sur le contour (à réserver à un enjeu : un défi qui attend) */
+  arc?: number;
 }) {
   return (
     <section
@@ -61,6 +65,7 @@ export function HeroEpreuve({
         {actions && <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">{actions}</div>}
       </div>
       {droite && <div className="min-w-0">{droite}</div>}
+      {arc !== undefined && <ArcElectrique palier={arc} />}
     </section>
   );
 }

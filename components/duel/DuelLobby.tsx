@@ -14,6 +14,7 @@ import { BandeEncre, RangeeLiens } from "@/components/ui/BandeEncre";
 import { CarteLieu } from "@/components/ui/CarteLieu";
 import { Illustration } from "@/components/ui/Illustration";
 import { Medaillon, Sceau, TuileCalme } from "@/components/ui/Tuiles";
+import { rankFor } from "@/lib/ranks";
 import { LICE } from "@/lib/voice-epreuves";
 import type { DuelSummary } from "@/lib/rating";
 import {
@@ -226,6 +227,7 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                   <HeroEpreuve
                     id="duel-recu"
                     label="Le duel qui t'attend"
+                    arc={rankFor(me.elo).tierIndex}
                     eyebrow={LICE.recu(timeLeftLabel(premier.expiresAt, nowIso))}
                     titre={LICE.teDefie(premier.opponentName ?? "Un joueur")}
                     micro={

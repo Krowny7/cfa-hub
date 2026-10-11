@@ -1,0 +1,104 @@
+/* L'arc électrique de la compétition : un fin trait de la couleur de l'aura du
+   palier, qui court sur le contour d'une carte (.contour) ou relie deux
+   lignes d'une liste (.eclair). Léger : du SVG, aucun canvas ni WebGL.
+   Clair : trait un peu assombri et cœur sombre, pour rester lisible sur le
+   papier. Nuit : la couleur de l'aura et un cœur blanc, comme l'insigne.
+   Mouvement réduit, ?mouvement=off : l'arc est posé, entier, sans course.
+   Mode discret : coupé. */
+
+.arc {
+  --trait: color-mix(in oklab, var(--arc-c) 78%, #000);
+  --noyau: color-mix(in oklab, var(--arc-c) 38%, #0c0a08);
+  --dec: 0;
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+:global(html[data-theme="nuit"]) .arc {
+  --trait: var(--arc-c);
+  --noyau: #fff;
+}
+.arc svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* le contour : tout autour de la carte, de bord à bord */
+.contour {
+  inset: -1px;
+  animation: souffle 3.4s ease-in-out infinite;
+}
+.eclair {
+  animation: scintille 2.6s steps(1, end) infinite;
+}
+.arc[data-hors="1"] {
+  animation-play-state: paused;
+}
+
+/* le fil continu, à peine visible, que suit le tronçon lumineux */
+.fil {
+  fill: none;
+  stroke: var(--trait);
+  stroke-width: 1;
+  stroke-opacity: 0.22;
+}
+.trait {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 11 39;
+  stroke-dashoffset: var(--dec);
+}
+.lueur {
+  stroke: var(--trait);
+  stroke-width: 5;
+  stroke-opacity: 0.4;
+}
+.coeur {
+  stroke: var(--trait);
+  stroke-width: 1.7;
+}
+.blanc {
+  stroke: var(--noyau);
+  stroke-width: 0.8;
+}
+
+/* l'éclair entre deux lignes : un zigzag court */
+.zig {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes souffle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.62; }
+}
+@keyframes scintille {
+  0% { opacity: 1; }
+  38% { opacity: 0.4; }
+  46% { opacity: 1; }
+  71% { opacity: 0.55; }
+  79% { opacity: 1; }
+}
+
+:global(html[data-rl-motion="off"]) .arc {
+  animation: none;
+}
+:global(html[data-rl-motion="off"]) .trait {
+  stroke-dasharray: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arc {
+    animation: none;
+  }
+  .trait {
+    stroke-dasharray: none;
+  }
+}
+
+:global(html[data-discreet="1"]) .arc {
+  display: none;
+}

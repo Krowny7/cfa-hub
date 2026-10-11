@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Search, TrendingUp } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
+import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { BandeEncre } from "@/components/ui/BandeEncre";
 import { CarteLieu } from "@/components/ui/CarteLieu";
@@ -167,6 +168,10 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
   const { moi, devant, derriere } = voisins(board, meRow);
   const defi = openDuels.find((d) => d.incoming && d.status === "pending") ?? null;
   const aJoue = me.gamesPlayed > 0;
+  // de l'enjeu : un défi reçu qui attend, ou le palier suivant à 30 points d'ELO ou moins
+  // (pas en placement, ni quand la maîtrise bloque le palier) : l'arc électrique court sur la carte
+  const palierProche = !enPlacement && !rank.lockedBy && rank.next !== null && rank.pointsToNext !== null && rank.pointsToNext <= 30;
+  const enjeu = defi !== null || palierProche;
 
   // la phrase sous le rang : le palier à gagner, le verrou de maîtrise ou le sommet
   const diagnostic = enPlacement
@@ -255,7 +260,7 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
                 </div>
                 {montrerAutour && (
                   <div className="flex min-w-0 flex-col gap-3">
-                    <AutourDeToi rows={autour} titre={CL.autour} bornes={bornes} />
+                    <AutourDeToi rows={autour} titre={CL.autour} bornes={bornes} palier={rank.tierIndex} />
                     {events.length > 0 && (
                       <p className="t-micro m-0 mt-auto flex items-center gap-1.5 px-2" title="Courbe complète dans « Ta courbe », plus bas">
                         <TrendingUp size={13} aria-hidden /> {CL.bilan(signed(total), events.length)}
@@ -263,6 +268,7 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
                     )}
                   </div>
                 )}
+                {enjeu && <ArcElectrique palier={rank.tierIndex} />}
               </section>
               <div className="rl-in grid gap-4 md:gap-[18px] lg:grow xl:grid-cols-2" style={{ animationDelay: ".06s" }}>
                 <TuileEnCours open={openDuels} />
