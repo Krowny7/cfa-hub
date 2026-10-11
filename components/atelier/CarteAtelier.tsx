@@ -1,3 +1,4 @@
+import { tailleBrand } from "@/lib/largeur-brand";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { IllustrationAtelier } from "@/components/atelier/IllustrationAtelier";
@@ -29,8 +30,9 @@ export function CarteAtelier({ d, logo = "plume", className = "" }: { d: PointsF
       }
     >
       <IllustrationAtelier className="col-start-2 row-span-2 row-start-1 h-[110px] w-[88px] rounded-[14px] lg:col-start-1 lg:row-span-1 lg:aspect-[16/10] lg:h-auto lg:w-full lg:rounded-none lg:border-b lg:border-line" />
-      <div className="col-start-1 row-start-1 flex min-w-0 flex-col gap-1.5 lg:row-start-2 lg:px-6 lg:pt-2.5">
-        <h2 className="font-brand m-0 flex items-center gap-2 text-[28px] leading-none lg:gap-3 lg:text-[44px]">
+      {/* le nom est à 28 / 44 px au plus ; il rétrécit si la colonne est trop étroite (unités cqi) au lieu de déborder */}
+      <div className="@container col-start-1 row-start-1 flex min-w-0 flex-col gap-1.5 text-[28px] lg:row-start-2 lg:px-6 lg:pt-2.5 lg:text-[44px]">
+        <h2 className="font-brand m-0 flex min-w-0 items-center gap-2 leading-none [--m:34px] lg:gap-3 lg:[--m:56px]" style={{ fontSize: tailleBrand(ATELIER.nom) }}>
           <LogoAtelier variante={logo} className="size-[26px] lg:size-[44px]" />
           {ATELIER.nom}
         </h2>

@@ -1,3 +1,4 @@
+import { largeurBrand } from "@/lib/largeur-brand";
 import Link from "next/link";
 import { ArrowRight, Bookmark, Eye, Palette, PenLine, Settings2 } from "lucide-react";
 import { SceauPerso } from "@/components/adn/SceauPerso";
@@ -142,6 +143,7 @@ function CarteCabinet({ d, lu, className }: { d: MoiData; lu: Lu; className?: st
       vignette={null}
       marque={<Visage d={d} taille={36} />}
       nom={<span className="min-w-0 truncate">{d.name}</span>}
+      largeurNom={largeurBrand(d.name)}
       tailleNom="text-[26px] lg:text-[40px]"
       sousTitre={CAB.cabinet}
       etat={reperes}

@@ -1,3 +1,4 @@
+import { tailleBrand } from "@/lib/largeur-brand";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -20,7 +21,8 @@ import { ArrowRight } from "lucide-react";
 //   ratio      rapport de l'image sur ordinateur (« 16 / 10 »)
 //   dataLeonard  repère de la visite de Léonard
 //   liens      liens secondaires sous le bouton (facultatif)
-//   tailleNom  classes de taille du nom, si le nom est long (facultatif)
+//   tailleNom  classes de taille MAXIMALE du nom (facultatif) : il rétrécit tout seul si la colonne est trop étroite
+//   largeurNom largeur du nom en em (lib/largeur-brand) quand `nom` n'est pas une simple chaîne (facultatif)
 //   secondaire le bouton est discret (btn-secondary) quand un autre bouton plein tient la page
 //   sansVignette téléphone : pas de vignette, la carte tient sur une colonne (l'image est ailleurs)
 export function CarteLieu({
@@ -37,6 +39,7 @@ export function CarteLieu({
   dataLeonard,
   liens,
   tailleNom = "text-[28px] lg:text-[44px]",
+  largeurNom,
   secondaire = false,
   sansVignette = false,
 }: {
@@ -52,7 +55,10 @@ export function CarteLieu({
   ratio?: string;
   dataLeonard?: string;
   liens?: { href: string; label: string }[];
+  /** classes de taille MAXIMALE du nom (text-[26px] lg:text-[40px]) : la taille réelle suit la place, voir plus bas */
   tailleNom?: string;
+  /** largeur du nom en em (lib/largeur-brand) quand `nom` n'est pas une simple chaîne (sinon : mesurée telle quelle) */
+  largeurNom?: number;
   secondaire?: boolean;
   sansVignette?: boolean;
 }) {
@@ -71,10 +77,15 @@ export function CarteLieu({
       <div className="hidden lg:col-start-1 lg:row-span-1 lg:block lg:border-b lg:border-line" style={{ aspectRatio: ratio }}>
         {visuel}
       </div>
-      <div className="col-start-1 row-start-1 flex min-w-0 flex-col gap-1.5 lg:row-start-2 lg:px-6 lg:pt-2.5">
-        <h2 className={"font-brand m-0 flex items-center gap-2 leading-none lg:gap-3 " + tailleNom}>
+      {/* le nom est mis à la taille de `tailleNom` (portée par ce bloc) au plus ; il rétrécit si la colonne est
+          trop étroite pour ses lettres (unités cqi, comme le rang du Classement) au lieu de déborder de la carte */}
+      <div className={"@container col-start-1 row-start-1 flex min-w-0 flex-col gap-1.5 lg:row-start-2 lg:px-6 lg:pt-2.5 " + tailleNom}>
+        <h2
+          className={"font-brand m-0 flex min-w-0 items-center gap-2 leading-none lg:gap-3 " + (marque ? "[--m:34px] lg:[--m:52px]" : "[--m:0px]")}
+          style={{ fontSize: tailleBrand(typeof nom === "string" ? nom : (largeurNom ?? 4.5)) }}
+        >
           {marque}
-          {nom}
+          {typeof nom === "string" ? <span className="min-w-0">{nom}</span> : nom}
         </h2>
         <p className="m-0 text-[14px] font-semibold leading-snug lg:text-[15px]">{sousTitre}</p>
       </div>
