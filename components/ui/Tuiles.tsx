@@ -10,6 +10,7 @@ import type { IllustrationNom } from "@/lib/illustrations";
 export function TuileCalme({
   icone,
   titre,
+  surTitre,
   droite,
   fort,
   ligne,
@@ -20,6 +21,8 @@ export function TuileCalme({
 }: {
   icone: React.ReactNode;
   titre: string;
+  /** petite ligne au-dessus du titre (« Revue ouverte 14 jours ») */
+  surTitre?: string;
   /** petit repère à droite du titre (« 1 en attente », « 14 j ») */
   droite?: React.ReactNode;
   /** la ligne forte (« Karim H. n'a pas encore joué »), éventuellement précédée d'un médaillon */
@@ -36,7 +39,10 @@ export function TuileCalme({
         <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-surface">
           {icone}
         </span>
-        <h3 className="m-0 flex-1 text-[16px] font-bold tracking-[-0.01em]">{titre}</h3>
+        <div className="min-w-0 flex-1">
+          {surTitre && <p className="t-micro m-0 truncate">{surTitre}</p>}
+          <h3 className="m-0 text-[16px] font-bold tracking-[-0.01em]">{titre}</h3>
+        </div>
         {droite}
       </div>
       {fort && <p className="m-0 text-[18px] font-bold leading-snug tracking-[-0.01em]">{fort}</p>}

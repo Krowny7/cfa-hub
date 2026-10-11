@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getTodayDaily } from "@/lib/daily";
+import { getTodayDaily, timeLeftLabel } from "@/lib/daily";
 import { getEclairStats } from "@/lib/eclair";
 import { ECLAIR } from "@/lib/voice-z2c";
 import { BackLink } from "@/components/defi/parts";
@@ -21,12 +21,19 @@ export default async function EclairPage() {
   const [stats, cinq] = await Promise.all([getEclairStats(supabase, user.id), getTodayDaily(supabase, user.id, "cinq").catch(() => null)]);
 
   return (
-    <div className="rl-wide grid gap-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <div className="rl-wide grid gap-5 [&:has([data-depart])_.eclair-entete]:hidden">
+      <div className="eclair-entete flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <BackLink href="/entrainement">{ECLAIR.retour}</BackLink>
         <p className="t-micro m-0">{ECLAIR.promesse}</p>
       </div>
-      <EclairRunner todayDone={stats?.today ?? 0} cinqAFaire={cinq?.status === "todo" || cinq?.status === "playing"} />
+      <EclairRunner
+        todayDone={stats?.today ?? 0}
+        cinqAFaire={cinq?.status === "todo" || cinq?.status === "playing"}
+        depart={{
+          recentPct: stats?.recentPct ?? null,
+          cinq: cinq && (cinq.status === "todo" || cinq.status === "playing" || cinq.status === "done") ? { statut: cinq.status, reste: cinq.status === "done" ? null : timeLeftLabel(cinq.closesAt, new Date().toISOString()) } : null,
+        }}
+      />
     </div>
   );
 }

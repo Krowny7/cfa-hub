@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getEclairStats } from "@/lib/eclair";
 import {
   FORMATS,
+  getTodayDaily,
   dailyPhase,
   dayLabel,
   getDaily,
@@ -51,9 +53,15 @@ export async function pageDuJour(format: FormatDefi) {
           phase === "done" ? getDailyReview(supabase, info.day, format) : Promise.resolve([] as DailyReviewItem[]),
         ]);
 
+  // les épreuves voisines (tuiles du Pupitre, lien du départ) : lues sans bloquer la page
+  const [cinq, eclair] =
+    phase === "playing"
+      ? [null, null]
+      : await Promise.all([format === "trente" ? getTodayDaily(supabase, user.id, "cinq").catch(() => null) : Promise.resolve(null), getEclairStats(supabase, user.id).catch(() => null)]);
+
   return (
     <div className="rl-wide">
-      <DefiToday key={info.day} info={info} board={board} history={history} review={review} nowIso={new Date().toISOString()} />
+      <DefiToday key={info.day} info={info} board={board} history={history} review={review} nowIso={new Date().toISOString()} cinq={cinq} eclairToday={eclair?.today ?? null} />
     </div>
   );
 }

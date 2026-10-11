@@ -15,7 +15,7 @@ import { ArrowRight } from "lucide-react";
 //   nom        le nom du lieu, en grand
 //   sousTitre  une phrase sous le nom
 //   etat       l'état du moment (quelques lignes courtes)
-//   action     le bouton : lien, libellé, icône
+//   action     le bouton : lien, libellé, icône (avec onClick : un vrai bouton, qui agit sur place)
 //   label      nom accessible de la carte
 //   ratio      rapport de l'image sur ordinateur (« 16 / 10 »)
 //   dataLeonard  repère de la visite de Léonard
@@ -46,7 +46,7 @@ export function CarteLieu({
   nom: React.ReactNode;
   sousTitre: React.ReactNode;
   etat: React.ReactNode;
-  action: { href: string; label: string; icon?: React.ReactNode };
+  action: { href: string; label: string; icon?: React.ReactNode; onClick?: () => void; disabled?: boolean };
   label: string;
   className?: string;
   ratio?: string;
@@ -80,9 +80,15 @@ export function CarteLieu({
       </div>
       <div className="t-small col-start-1 row-start-2 m-0 lg:row-start-3 lg:px-6">{etat}</div>
       <div className={(sansVignette ? "col-span-1" : "col-span-2") + " row-start-3 pt-1 lg:col-span-1 lg:row-start-4 lg:self-end lg:px-6"}>
-        <Link href={action.href} className={"btn btn-lg rl-press w-full " + (secondaire ? "btn-secondary" : "btn-primary")}>
-          {action.icon} {action.label} <ArrowRight size={17} aria-hidden />
-        </Link>
+        {action.onClick ? (
+          <button type="button" onClick={action.onClick} disabled={action.disabled} className={"btn btn-lg rl-press w-full " + (secondaire ? "btn-secondary" : "btn-primary")}>
+            {action.icon} {action.label} <ArrowRight size={17} aria-hidden />
+          </button>
+        ) : (
+          <Link href={action.href} className={"btn btn-lg rl-press w-full " + (secondaire ? "btn-secondary" : "btn-primary")}>
+            {action.icon} {action.label} <ArrowRight size={17} aria-hidden />
+          </Link>
+        )}
         {liens && liens.length > 0 && (
           <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2">
             {liens.map((l) => (

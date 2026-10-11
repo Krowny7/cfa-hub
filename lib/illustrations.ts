@@ -157,6 +157,55 @@ export const ILLUSTRATIONS = {
     emplacement: "/moi?onglet=marquees : carte « Comment ça marche », image en tête 16:9 sur ordinateur, vignette 96×112 px sur téléphone. Provisoire : l’autoportrait n’a pas de lien avec le sujet, la peinture du livre à signets le corrigera.",
     prompt: "Peinture à l'huile au couteau, empâtements épais et visibles, palette chaude (ocre, terre de Sienne, brun Van Dyck, vermillon), lumière dorée de fin de journée, univers de l'atelier de Léonard de Vinci à Florence vers 1500 (même série que l'illustration de l'Atelier jointe en référence). Sujet : un gros livre relié de cuir posé fermé sur un pupitre, hérissé d'une dizaine de signets de soie rouge et de bandes de papier qui dépassent des pages, à côté d'un petit tas de feuillets pliés. Cadrage horizontal 16:9, avec le centre en 4:5 lisible seul. Aucun personnage, aucun texte lisible, aucune signature, aucun logo, pas de cadre peint.",
   },
+  "defi-pupitre": {
+    src: "/illustrations/defi-pupitre.webp",
+    alt: "Le pupitre d'écriture, un sablier, une copie vierge",
+    credit: "Antonello da Messina, Saint Jérôme dans son cabinet de travail (vers 1475), National Gallery, recadré à droite sur les rayonnages. Domaine public (commons.wikimedia.org, Antonello_da_Messina_-_St_Jerome_in_his_study_-_National_Gallery_London). Provisoire : un bout du personnage reste visible.",
+    emplacement: "/defi : carte « lieu » Le Pupitre, image 16:10 en tête de carte sur ordinateur (environ 400×250 px) ; sur téléphone, la même image en vignette portrait 88×110 px (cadrage object-position 85% 40%).",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de l'atelier de Léonard de Vinci à Florence vers 1500. Un pupitre d'écriture en noyer dans un cabinet de travail florentin : une copie vierge sur le plan incliné, une plume d'oie dans un encrier, un sablier en bois et verre dont le sable commence à couler, une chandelle éteinte, des rayonnages de livres reliés de cuir derrière. Lumière dorée de fin de journée par une fenêtre à meneaux à gauche, poussière dans le rayon. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun, touches de bleu-gris dans l'ombre. Aucun personnage, aucun texte lisible. Cadrage horizontal 16:10, le pupitre et le sablier au centre, pour qu'un recadrage vertical en vignette (4:5) garde le sablier et la copie. 1600×1000.",
+  },
+  "defi-eclair": {
+    src: "/illustrations/defi-eclair.webp",
+    alt: "Une vallée au loin, avant l'orage",
+    credit: "Léonard de Vinci, L'Annonciation (vers 1472-1476), Offices, paysage du fond recadré. Domaine public (commons.wikimedia.org, Annunciation_(Leonardo)_(cropped)).",
+    emplacement: "/defi : vignette 72×56 px dans la tuile « Séries éclair » (4:3, 800×600 px conseillés).",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais, univers de Léonard de Vinci à Florence vers 1500. Un éclair unique et net qui frappe au-dessus des collines de la vallée de l'Arno, vu depuis l'embrasure d'une fenêtre d'atelier ; ciel d'orage brun-violet, dernière lueur dorée de fin de journée à l'horizon. Palette chaude, avec un éclair blanc doré très lisible. Aucun personnage, aucun texte. Sujet simple et contrasté, lisible en très petit ; format 4:3, 800×600.",
+  },
+  "duel-echecs": {
+    src: "/illustrations/duel-echecs.webp",
+    alt: "Deux joueurs d'échecs face à face",
+    credit: "Liberale da Verona, Les Joueurs d'échecs (vers 1475), Metropolitan Museum of Art, recadré sur l'échiquier. CC0 (commons.wikimedia.org, The_Chess_Players_MET_DT226950).",
+    emplacement: "Médaillon rond de 40 à 52 px (ligne « te défie » sur téléphone, bande d'encre du défi) et vignette 72×56 px dans la tuile « Défier quelqu'un » du lobby des duels (source carrée 512×512 px conseillée).",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais, univers de Léonard de Vinci à Florence vers 1500. Deux rois d'échecs en bois tourné, un clair et un sombre, face à face sur un échiquier en marqueterie de noyer et d'érable, très gros plan, lumière dorée de fin de journée venant de côté. Palette chaude : ocre, brun, ambre, ivoire. Aucun personnage, aucun texte. Sujet centré, lisible dans un petit cercle sur fond noir ; format carré 1:1, 512×512.",
+  },
+  "duel-lice": {
+    src: "/illustrations/duel-lice.webp",
+    alt: "La lice de joute",
+    credit: "Paolo Uccello, La Bataille de San Romano, Offices de Florence. Domaine public (commons.wikimedia.org, Battle_of_San_Romano,_by_Paolo_Uccello_(Uffizi_Gallery,_Florence)).",
+    emplacement: "/duel : carte « lieu » La Lice, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Une lice de joute vide sur la piazza Santa Croce, au crépuscule : la barrière de bois peinte qui sépare les deux couloirs, deux lances de tournoi croisées appuyées contre elle, deux heaumes posés sur un tréteau, des bannières ocre et bleu nuit qui flottent, la façade de pierre en arrière-plan. Lumière dorée de fin de journée, longues ombres. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun, touches de bleu-gris. Aucun personnage, aucun texte. Cadrage horizontal 16:10, les lances croisées au centre, pour qu'un recadrage vertical 4:5 les garde. 1600×1000.",
+  },
+  "mock-grande-salle": {
+    src: "/illustrations/mock-grande-salle.webp",
+    alt: "Une grande salle d'examen : des étudiants penchés sur leurs copies",
+    credit: "Laurentius de Voltolina, Henri d'Allemagne donnant un cours à des étudiants de Bologne. Domaine public (commons.wikimedia.org, Henry_of_Germany_delivering_a_lecture_to_university_students_in_Bologna_by_Laurentius_de_Voltolina).",
+    emplacement: "/mock-exams : carte « lieu » La Grande Salle, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Une grande salle de lecture florentine, vide avant l'épreuve : longues tables de noyer et pupitres alignés en perspective, une copie et une plume à chaque place, une grande horloge à poids au mur du fond, un plafond à caissons, de hautes fenêtres par lesquelles entre une lumière dorée de fin de journée. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun, touches de bleu-gris. Aucun personnage, aucun texte. Cadrage horizontal 16:10, point de fuite au centre, pour qu'un recadrage vertical 4:5 garde l'horloge et l'allée centrale. 1600×1000.",
+  },
+  "eclair-depart": {
+    src: "/illustrations/eclair-depart.webp",
+    alt: "La vallée de l'Arno avant l'orage",
+    credit: "Léonard de Vinci, L'Annonciation (vers 1472-1476), Offices, paysage du fond recadré (resserré au centre). Domaine public (commons.wikimedia.org, Annunciation_(Leonardo)_(cropped)).",
+    emplacement: "/eclair : bandeau en tête de la carte de départ, 4:1 (environ 600×150 px sur ordinateur, 340×96 px sur téléphone), 1600×400 px conseillés.",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Panorama de la vallée de l'Arno vue depuis la fenêtre de l'atelier, au moment où un orage éclate : un éclair net et lumineux fend un ciel brun-violet, la dernière lumière dorée de fin de journée éclaire encore les collines et les toits de Florence au loin. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun, avec l'éclair blanc doré. Aucun personnage, aucun texte. Format panoramique très allongé 4:1, 1600×400, l'éclair un peu à droite du centre.",
+  },
+  "cinq-depart": {
+    src: "/illustrations/cinq-depart.webp",
+    alt: "Un sablier sur l'étagère d'un cabinet de travail",
+    credit: "Albrecht Dürer, Saint Jérôme dans son cabinet (1514), recadré sur le sablier de l'étagère. Domaine public.",
+    emplacement: "/defi/cinq : bandeau en tête de la carte de départ des 5 du jour, 4:1 (1600×400 px conseillés).",
+    prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Un sablier de bois et de verre posé sur le rebord d'une fenêtre d'atelier, le sable à moitié écoulé, la ville de Florence floue au loin, une cloche de campanile dans la brume dorée. Lumière dorée de fin de journée. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun. Aucun personnage, aucun texte. Format panoramique très allongé 4:1, 1600×400, le sablier un peu à gauche du centre.",
+  },
 } as const satisfies Record<string, Illustration>;
 
 export type IllustrationNom = keyof typeof ILLUSTRATIONS;

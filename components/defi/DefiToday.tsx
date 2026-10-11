@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { DefiRunner } from "@/components/defi/DefiRunner";
 import { DefiResult } from "@/components/defi/DefiResult";
+import { DepartCinq, PupitreView } from "@/components/defi/PupitreView";
 import { AutreDefi, DefiBoard, DefiHeading, DefiHistory, Ticks } from "@/components/defi/parts";
 import { voixDefi } from "@/lib/voice-z2c";
 import {
@@ -14,6 +15,7 @@ import {
   type DailyInfo,
   type DailyQuestion,
   type DailyReviewItem,
+  type TodayDaily,
 } from "@/lib/daily";
 
 type Props = {
@@ -23,6 +25,10 @@ type Props = {
   /** ma correction, si ma copie est rendue */
   review: DailyReviewItem[];
   nowIso: string;
+  /** les 5 du jour (tuile voisine du Pupitre) ; absent : lien neutre */
+  cinq?: TodayDaily | null;
+  /** mes séries éclair rendues aujourd'hui ; absent : non affiché */
+  eclairToday?: number | null;
   /** aperçu : la copie en cours avec des questions d'exemple, aucune requête */
   demo?: {
     questions: DailyQuestion[];
@@ -42,6 +48,8 @@ export function DefiToday({
   history,
   review,
   nowIso,
+  cinq = null,
+  eclairToday = null,
   demo,
 }: Props) {
   // la voix de ce défi : les 30 du jour ou les 5 du jour
@@ -60,6 +68,14 @@ export function DefiToday({
         demo={demo}
       />
     );
+  }
+
+  // les 30 du jour, à faire ou rendus : « Le Pupitre » ; les 5 du jour, à faire : le départ minimal
+  if (info.format === "trente" && (phase === "todo" || phase === "done")) {
+    return <PupitreView info={info} board={board} history={history} review={review} nowIso={nowIso} cinq={cinq} eclairToday={eclairToday} onStart={() => setRun(true)} />;
+  }
+  if (info.format === "cinq" && phase === "todo") {
+    return <DepartCinq info={info} board={board} history={history} nowIso={nowIso} eclairToday={eclairToday} onStart={() => setRun(true)} />;
   }
 
   const left = timeLeftLabel(info.closesAt, nowIso);

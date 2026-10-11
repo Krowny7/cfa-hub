@@ -13,6 +13,9 @@ import { clock, duelTopicLabel } from "@/lib/duels";
 import { answerEclair, finishEclair, startEclair, type EclairFinish, type EclairQuestion } from "@/lib/eclair";
 import { ECLAIR, verdictCopie } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
+import { DepartCarte, LigneEpreuve } from "@/components/epreuves/Briques";
+import { BackLink } from "@/components/defi/parts";
+import { DEPART } from "@/lib/voice-epreuves";
 
 // Une série éclair : 5 questions de cours, une à la fois, corrigée tout de
 // suite (on apprend en route), puis le bilan et « Encore 5 ». La série vit
@@ -22,13 +25,20 @@ import PctScore from "@/components/adn/PctScore";
 const LETTERS = ["A", "B", "C", "D", "E"];
 const letter = (i: number) => LETTERS[i] ?? String(i + 1);
 
-type Phase = "loading" | "play" | "finishing" | "done" | "soon" | "error";
+type Phase = "depart" | "loading" | "play" | "finishing" | "done" | "soon" | "error";
 
-export type EclairDemo = { questions: EclairQuestion[]; current?: number; result?: EclairFinish & { marks: TickMark[] } };
+export type EclairDemo = { questions: EclairQuestion[]; current?: number; result?: EclairFinish & { marks: TickMark[] }; /** aperçu de l'écran de départ */ depart?: boolean };
 
-export function EclairRunner({ todayDone, cinqAFaire, demo }: { todayDone: number; cinqAFaire: boolean; demo?: EclairDemo }) {
+export type EclairDepart = {
+  /** mes séries : précision des 20 dernières (%), null sans série ou sans migration */
+  recentPct: number | null;
+  /** l'état des 5 du jour, null si le défi n'est pas jouable */
+  cinq: { statut: "todo" | "playing" | "done"; reste: string | null } | null;
+};
+
+export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDone: number; cinqAFaire: boolean; depart?: EclairDepart; demo?: EclairDemo }) {
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
-  const [phase, setPhase] = useState<Phase>(demo ? (demo.result ? "done" : "play") : "loading");
+  const [phase, setPhase] = useState<Phase>(demo && !demo.depart ? (demo.result ? "done" : "play") : "depart");
   const [serieId, setSerieId] = useState<string | null>(demo ? "demo" : null);
   const [questions, setQuestions] = useState<EclairQuestion[]>(demo?.questions ?? []);
   const [current, setCurrent] = useState(demo?.current ?? 0);
@@ -97,10 +107,7 @@ export function EclairRunner({ todayDone, cinqAFaire, demo }: { todayDone: numbe
     setPhase("play");
   }, [finish, supabase]);
 
-  useEffect(() => {
-    if (!demo) void start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // la série ne démarre plus à l'affichage : l'écran de départ la lance (« Lancer la série »)
 
   const validate = useCallback(async () => {
     if (!q || selected === null || answered || sending || phase !== "play" || !serieId) return;
@@ -163,6 +170,38 @@ export function EclairRunner({ todayDone, cinqAFaire, demo }: { todayDone: numbe
   }, [answered, phase, q]);
 
   // ---------------------------------------------------------------------------
+
+  if (phase === "depart") {
+    const D = DEPART.eclair;
+    const cinq = depart?.cinq ?? null;
+    return (
+      <div data-depart className="mx-auto grid w-full max-w-[680px] gap-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <BackLink href="/entrainement">{ECLAIR.retour}</BackLink>
+          <p className="t-micro m-0">{D.aSaVolonte}</p>
+        </div>
+        <DepartCarte
+          bandeau="eclair-depart"
+          position="center 55%"
+          icone={<Zap size={14} aria-hidden />}
+          kicker={D.kicker(done + 1)}
+          titre={D.titre}
+          traits={<Ticks marks={Array.from({ length: 5 }, () => "todo" as TickMark)} label="5 traits à poser" height={30} />}
+          promesses={D.promesses}
+          cta={{ label: D.lancer, onClick: () => void start() }}
+          resume={D.resume(done, depart?.recentPct ?? null) || null}
+        />
+        {cinq && (
+          <LigneEpreuve
+            href="/defi/cinq"
+            icone={<Zap size={17} aria-hidden />}
+            titre={DEPART.lienCinq(cinq.statut === "done" ? "rendu" : cinq.statut === "playing" ? "en cours" : "pas encore rendu")}
+            sous={DEPART.lienCinqSous(cinq.reste)}
+          />
+        )}
+      </div>
+    );
+  }
 
   if (phase === "soon") {
     return (

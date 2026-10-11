@@ -4,8 +4,16 @@ import { PageHead, SectionHead, EloDelta } from "@/components/session/ui";
 import { fmtMinutes, pctOf } from "@/components/session/review";
 import { Avatar } from "@/components/classement/Avatar";
 import { Icone } from "@/components/adn/icons";
-import { Cote } from "@/components/adn/Cote";
 import { CLASSEMENT_EXAMEN, DETAIL, LISTE } from "@/lib/voice-z3b";
+import { SALLE } from "@/lib/voice-epreuves";
+import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
+import { PageHero } from "@/components/ui/Titles";
+import { HeroEpreuve, ListePodium, RangeeLieu } from "@/components/epreuves/Briques";
+import { BandeEncre, RangeeLiens } from "@/components/ui/BandeEncre";
+import { CarteLieu } from "@/components/ui/CarteLieu";
+import { Illustration } from "@/components/ui/Illustration";
+import { Sceau, TuileCalme } from "@/components/ui/Tuiles";
+import type { Parcours } from "@/lib/mock-parcours";
 
 // Vues sans état des examens blancs (liste, en-tête, avis, classement,
 // comparaison par matière), en voix « Le Trait » : icône maison de l'examen,
@@ -77,42 +85,64 @@ function ExamRow({ e, registered, eloApplied, now, past }: { e: MockExam; regist
   );
 }
 
-/** Le prochain examen : la seule carte héros de la liste. */
-function NextExam({ e, registered, now }: { e: MockExam; registered: boolean; now: number }) {
+/** La carte « lieu » La Grande Salle : le prochain examen, son état et son bouton. */
+function GrandeSalle({ e, registered, now }: { e: MockExam; registered: boolean; now: number }) {
   const date = new Date(e.scheduled_at);
   const w = examWindow(e, now);
   const live = e.status === "open" && w.open;
-  // le bout qui reste avant l'ouverture, nommé (règle 2) : « J-12 »
-  const big = live || w.over ? null : w.daysToStart > 0 ? `J-${w.daysToStart}` : null;
+  const etat = live ? SALLE.etatOuvert(dayMonth(w.end)) : w.over ? SALLE.etatFini : e.status === "draft" ? SALLE.etatPrepa : w.daysToStart > 0 ? SALLE.etatOuvre(w.daysToStart, dayMonth(w.start)) : SALLE.etatOuvert(dayMonth(w.end));
+  const image = <Illustration nom="mock-grande-salle" position="center 40%" />;
   return (
-    <section className="card-hero rl-in grid grid-cols-1 gap-6 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-10 md:p-9" style={{ animationDelay: ".06s" }} aria-label={LISTE.prochain}>
-      <div className="min-w-0">
-        <p className="t-eyebrow m-0 inline-flex items-center gap-1.5">
-          <Icone nom="examen" size={15} /> {live ? LISTE.ouvertJusquau(dayMonth(w.end)) : w.over ? LISTE.fenetreFinie : e.status === "draft" ? LISTE.enPreparation : LISTE.prochain}
-        </p>
-        <h2 className="t-h1 m-0 mt-2.5 [overflow-wrap:anywhere]">{e.title}</h2>
-        <p className="t-small m-0 mt-2.5">
-          {LongDate(date)} · {hour(date)} · {e.question_count} questions · {fmtMinutes(e.duration_minutes)}
-        </p>
-        {e.description && <p className="t-small m-0 mt-1.5 max-w-[540px]">{e.description}</p>}
-        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
-          <Link href={`/mock-exams/${e.id}`} className="btn btn-primary btn-lg rl-press">
-            {w.over ? LISTE.resultats : live && registered ? LISTE.passer : registered ? LISTE.voir : LISTE.sinscrire} <ArrowRight size={17} aria-hidden />
-          </Link>
+    <CarteLieu
+      visuel={image}
+      vignette={image}
+      marque={
+        <Sceau>
+          <Icone nom="examen" size={18} />
+        </Sceau>
+      }
+      nom={SALLE.nom}
+      tailleNom="text-[26px] lg:text-[34px]"
+      sousTitre={`${e.title} · ${e.question_count} questions · ${fmtMinutes(e.duration_minutes)}`}
+      etat={
+        <>
+          {etat}
           {registered && (
-            <span className="t-micro inline-flex items-center gap-1.5 font-semibold">
-              <Check size={13} aria-hidden /> {LISTE.tuEsInscrit}
-            </span>
+            <>
+              {" "}
+              <b className="font-semibold text-white">{SALLE.inscrit}</b>
+            </>
           )}
-        </div>
-      </div>
-      {big && (
-        <div className="flex flex-col items-start gap-2 md:items-end">
-          <span className="t-num text-[44px] md:text-[72px]">{big}</span>
-          <Cote forme="marque" label={LISTE.ouverture(dayMonth(w.start))} />
-        </div>
-      )}
-    </section>
+        </>
+      }
+      action={{ href: `/mock-exams/${e.id}`, label: w.over ? LISTE.resultats : live && registered ? LISTE.passer : registered ? LISTE.voir : LISTE.sinscrire }}
+      label={SALLE.nom}
+    />
+  );
+}
+
+/** Le héros : où tu en es d'un examen blanc à l'autre (ou, sans copie rendue, ce qui t'attend). */
+function Progression({ parcours }: { parcours: Parcours | null }) {
+  if (!parcours) {
+    return <HeroEpreuve label={SALLE.progression} eyebrow={SALLE.progression} titre={SALLE.debutTitre} micro={SALLE.debutMicro} texte={SALLE.debutTexte} />;
+  }
+  const { last, prev, faibles } = parcours;
+  const ecart = prev && prev.total === last.total ? SALLE.ecart(last.score - prev.score, prev.mois) : prev ? null : SALLE.premier;
+  return (
+    <HeroEpreuve
+      label={SALLE.progression}
+      eyebrow={SALLE.progression}
+      titre={SALLE.titreScore(last.score, last.total, last.mois)}
+      micro={SALLE.micro(last.pct, last.rang, last.joueurs, last.elo)}
+      texte={ecart ?? undefined}
+      texte2={faibles[0] ? SALLE.aTravailler(faibles[0].topic) : undefined}
+      actions={
+        <Link href={`/mock-exams/${last.id}`} className="ink-link">
+          {SALLE.revoirCopie}
+        </Link>
+      }
+      droite={faibles.length > 0 ? <ListePodium titre={SALLE.faibles} items={faibles.map((f) => ({ nom: f.topic, note: `${f.pct} %`, pct: f.pct }))} /> : undefined}
+    />
   );
 }
 
@@ -123,6 +153,7 @@ export function MockExamListView({
   eloEnabled,
   admin,
   now,
+  parcours = null,
 }: {
   exams: MockExam[];
   registeredIds: string[];
@@ -131,26 +162,77 @@ export function MockExamListView({
   /** panneau d'administration (rendu en bas de page) */
   admin?: React.ReactNode;
   now: number;
+  /** ta progression d'un examen blanc à l'autre (null : pas encore de copie rendue) */
+  parcours?: Parcours | null;
 }) {
   const regs = new Set(registeredIds);
   // à venir : par date croissante, le plus proche en premier
   const upcoming = exams.filter((e) => e.status !== "closed").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
   const past = exams.filter((e) => e.status === "closed");
-  const [next, ...later] = upcoming;
+  const [next, suivant, ...later] = upcoming;
+
+  const bande = (
+    <>
+      <BandeEncre icone={<Icone nom="examen" size={22} />} titre={SALLE.bandeTitre} ligne={SALLE.bandeLigne} action={{ href: "/defi", label: SALLE.bandeAction }} />
+      <RangeeLiens
+        label={SALLE.liensLabel}
+        liens={[
+          { href: "/official-exams", icon: <Icone nom="examen" size={20} />, title: SALLE.officiels, desc: SALLE.officielsDesc },
+          { href: "/exam", icon: <Icone nom="examen" size={20} />, title: SALLE.examen, desc: SALLE.examenDesc },
+          { href: "/classement", icon: <Icone nom="classement" size={20} />, title: SALLE.classement, desc: SALLE.classementDesc },
+        ]}
+      />
+    </>
+  );
 
   return (
     <div className="rl-page">
-      <PageHead back={{ href: "/classement", label: "Classement" }} title={LISTE.titre} sub={eloEnabled ? LISTE.sousClasse : LISTE.sous} />
+      <div className="flex flex-col gap-7 md:gap-10">
+        <PageHero
+          kicker={
+            <span className="inline-flex items-center gap-1.5">
+              <Icone nom="examen" size={15} /> {SALLE.kicker} · {CURRENT_DOMAIN.name} · {CURRENT_PROGRAM.name}
+            </span>
+          }
+          title={SALLE.titre}
+        />
 
-      {next ? (
-        <NextExam e={next} registered={regs.has(next.id)} now={now} />
-      ) : (
-        <section className="card-quiet rl-in grid place-items-center gap-2 px-6 py-12 text-center">
-          <Icone nom="examen" size={26} className="text-muted" />
-          <p className="t-h3 m-0">{LISTE.videTitre}</p>
-          <p className="t-small m-0">{LISTE.videTexte}</p>
-        </section>
-      )}
+        {next ? (
+          <div className="flex flex-col gap-4 md:gap-[18px]">
+            <RangeeLieu
+              droite={<GrandeSalle e={next} registered={regs.has(next.id)} now={now} />}
+              gauche={
+                <>
+                  <Progression parcours={parcours} />
+                  {suivant && (
+                    <TuileCalme
+                      icone={<Icone nom="examen" size={18} />}
+                      surTitre={SALLE.ensuite(Math.max(0, Math.ceil((new Date(suivant.scheduled_at).getTime() - now) / DAY)))}
+                      titre={suivant.title}
+                      ligne={`${LongDate(new Date(suivant.scheduled_at))} · ${suivant.question_count} questions · ${fmtMinutes(suivant.duration_minutes)}. ${regs.has(suivant.id) ? SALLE.inscrit : suivant.status === "open" ? "Inscription ouverte." : SALLE.etatPrepa}`}
+                      actions={
+                        <Link href={`/mock-exams/${suivant.id}`} className="btn btn-secondary rl-press min-h-[38px] px-3.5 text-[13.5px]">
+                          {regs.has(suivant.id) ? LISTE.voir : SALLE.inscrire} <ArrowRight size={15} aria-hidden />
+                        </Link>
+                      }
+                    />
+                  )}
+                </>
+              }
+            />
+            {bande}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 md:gap-[18px]">
+            <section className="card-quiet rl-in grid place-items-center gap-2 px-6 py-12 text-center">
+              <Icone nom="examen" size={26} className="text-muted" />
+              <p className="t-h3 m-0">{LISTE.videTitre}</p>
+              <p className="t-small m-0">{LISTE.videTexte}</p>
+            </section>
+            {bande}
+          </div>
+        )}
+      </div>
 
       {later.length > 0 && (
         <section className="rl-section">

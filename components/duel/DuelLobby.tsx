@@ -3,14 +3,21 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Search, Shuffle } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { VIDE } from "@/lib/voice";
 import { CLASSEMENT, PARTIE, motIssue } from "@/lib/voice-z2";
 import { createClient } from "@/lib/supabase/browser";
-import { DuelHeading, DuelHowItWorks, InkWatermark, PlayerBadge, ReviewDuelRow, StakeBox } from "@/components/duel/parts";
+import { DuelHeading, DuelHowItWorks, PlayerBadge, ReviewDuelRow } from "@/components/duel/parts";
+import { HeroEpreuve, ListePodium, RangeeLieu } from "@/components/epreuves/Briques";
+import { BandeEncre, RangeeLiens } from "@/components/ui/BandeEncre";
+import { CarteLieu } from "@/components/ui/CarteLieu";
+import { Illustration } from "@/components/ui/Illustration";
+import { Medaillon, Sceau, TuileCalme } from "@/components/ui/Tuiles";
+import { LICE } from "@/lib/voice-epreuves";
 import type { DuelSummary } from "@/lib/rating";
 import {
+  DUEL_MINUTES,
   DUEL_QUESTIONS,
   DUEL_REVIEW_DAYS,
   activityLabel,
@@ -41,17 +48,19 @@ type Props = {
   /** duels terminés ces 14 derniers jours (liste « À revoir ») */
   reviewable?: DuelReviewEntry[];
   nowIso: string;
+  /** copies rendues aux 30 du jour aujourd'hui (ligne de la bande vers le défi), null si inconnu */
+  defiJoueurs?: number | null;
   /** aperçu : aucune requête, les boutons ne font rien */
   demo?: boolean;
 };
 
-const LISTED = 5;
+const LISTED = 4;
 
 // Lobby des duels : les deux façons de jouer (au hasard, défier quelqu'un)
 // sont le point focal ; les défis reçus s'affichent en bandeau au-dessus
 // seulement s'il y en a ; tes duels en cours et derniers duels viennent
 // ensuite, et les règles sont repliées en bas.
-export function DuelLobby({ me, suggestions, target, open, recent, reviewable = [], nowIso, demo = false }: Props) {
+export function DuelLobby({ me, suggestions, target, open, recent, reviewable = [], nowIso, defiJoueurs = null, demo = false }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => (demo ? null : createClient()), [demo]);
   const [query, setQuery] = useState("");
@@ -137,9 +146,35 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
       }
     });
 
+  // La Lice : le défi reçu (ou à défaut le duel à jouer) fait le héros ; la
+  // carte « lieu » lance le duel au hasard ; les autres duels vont à droite.
+  const premier = incoming[0] ?? null;
+  const aJouer = premier ? null : (ongoing.find((d) => d.status === "active" && !d.myFinished) ?? null);
+  const autres = [...incoming.slice(1), ...ongoing.filter((d) => d !== aJouer)];
+  const enjeuHasard = LICE.enjeuHasard(`${signed(stakes.win.lo)} à ${signed(stakes.win.hi)}`, `${signed(stakes.loss.hi)} à ${signed(stakes.loss.lo)}`);
+  const imageLice = <Illustration nom="duel-lice" position="48% 55%" />;
+  const net = recent.length > 0 ? recent.reduce((s, d) => s + (d.myDelta ?? 0), 0) : null;
+  const autresListe =
+    autres.length > 0 ? (
+      <ListePodium
+        titre={LICE.autres}
+        items={autres.slice(0, 4).map((d) => ({
+          nom: d.opponentId ? (d.opponentName ?? "Un joueur") : "Au hasard",
+          note: sousDuel(d, nowIso),
+          href: `/duel/${d.id}`,
+        }))}
+      />
+    ) : (
+      <div className="flex min-w-0 flex-col gap-2">
+        <p className="t-eyebrow m-0">{LICE.autres}</p>
+        <p className="t-small m-0">{LICE.autresVide}</p>
+      </div>
+    );
+  const stakesPremier = premier ? stakesAgainst(me.elo, me.gamesPlayed, premier.opponentElo ?? me.elo) : null;
+
   return (
     <div className="rl-page">
-      <div className="flex flex-col gap-8 md:gap-10">
+      <div className="flex flex-col gap-7 md:gap-10">
         <DuelHeading />
 
         {error && (
@@ -148,218 +183,276 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
           </p>
         )}
 
-        {incoming.length > 0 && (
-          <div className="grid gap-2.5" aria-label="Défis reçus">
-            {incoming.map((d) => {
-              const s = stakesAgainst(me.elo, me.gamesPlayed, d.opponentElo ?? me.elo);
-              return (
-                <div key={d.id} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 sm:px-5">
-                  <PlayerBadge elo={d.opponentElo ?? me.elo} size={38} />
-                  <div className="min-w-0 flex-[1_1_200px]">
-                    <div className="truncate text-[15px] font-bold">{PARTIE.teDefie(d.opponentName ?? "Un joueur")}</div>
-                    <div className="t-micro truncate">
-                      {d.opponentElo ?? "—"} ELO
-                      {d.opponentId && <PresenceText userId={d.opponentId} court repli="hors ligne" avant=" · " />} · <span className="font-mono">{signed(s.win)} / {signed(s.loss)}</span> · expire dans{" "}
-                      {timeLeftLabel(d.expiresAt, nowIso)}
-                    </div>
-                  </div>
-                  <div className="ml-auto flex gap-2">
-                    <button type="button" className="btn btn-ghost" disabled={busy === d.id} onClick={() => respond(d.id, false)}>
-                      Refuser
-                    </button>
-                    <button type="button" className="btn btn-primary" disabled={busy === d.id} onClick={() => respond(d.id, true)}>
-                      Accepter <ArrowRight size={16} aria-hidden />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* téléphone : l'action urgente passe avant la Lice, en une ligne */}
+        {premier && stakesPremier && (
+          <Link href="#duel-recu" className="card-quiet rl-in flex min-w-0 items-center gap-3 px-4 py-3 lg:hidden">
+            <Medaillon nom="duel-echecs" taille={40} position="50% 45%" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-semibold">{LICE.teDefie(premier.opponentName ?? "Un joueur")}</span>
+              <span className="t-micro block truncate">
+                expire dans {timeLeftLabel(premier.expiresAt, nowIso)} · <span className="font-mono">{signed(stakesPremier.win)} / {signed(stakesPremier.loss)}</span>
+              </span>
+            </span>
+            <span className="ink-link shrink-0 text-[14px]">{LICE.repondre}</span>
+          </Link>
         )}
 
-        <div className="grid gap-[18px] md:grid-cols-2">
-          {/* Au hasard */}
-          <section className="card-ink rl-in flex min-h-[340px] min-w-0 flex-col gap-5 p-6 md:p-8" aria-labelledby="rl-duel-random">
-            <InkWatermark />
-            <div className="relative flex items-center gap-2.5">
-              <Shuffle size={22} aria-hidden />
-              <h2 id="rl-duel-random" className="m-0 text-[26px] font-extrabold tracking-[-0.025em]">
-                {PARTIE.lobbyHasard}
-              </h2>
-            </div>
-            <p className="relative m-0 max-w-[440px] text-[15px] leading-normal text-[rgba(255,255,255,.68)]">
-              {PARTIE.lobbyHasardTexte}
-            </p>
-            <div className="relative grid grid-cols-3 gap-2">
-              <StakeBox label={PARTIE.enjeu.gagne} value={`${signed(stakes.win.lo)} à ${signed(stakes.win.hi)}`} />
-              <StakeBox label={PARTIE.enjeu.nulle} value={`${signed(stakes.draw.lo)} à ${signed(stakes.draw.hi)}`} />
-              <StakeBox label={PARTIE.enjeu.perd} value={`${signed(stakes.loss.lo)} à ${signed(stakes.loss.hi)}`} />
-            </div>
-            <div className="relative mt-auto flex flex-wrap items-center gap-x-4 gap-y-2">
-              <button
-                type="button"
-                onClick={launchRandom}
-                disabled={busy === "random"}
-                className="btn btn-lg btn-on-ink"
-              >
-                {busy === "random" ? PARTIE.recherche : waitingRandom ? PARTIE.reprendre : PARTIE.trouver}
-                <ArrowRight size={16} aria-hidden />
-              </button>
-              {waitingRandom && (
-                <span className="text-[12.5px] text-[rgba(255,255,255,.58)]">
-                  {waitingRandom.myFinished ? PARTIE.chercheAdv : "en attente d'un adversaire"}
-                </span>
-              )}
-            </div>
-          </section>
-
-          {/* Défier quelqu'un */}
-          <section id="defier" className="card flex min-w-0 scroll-mt-24 flex-col gap-4 p-6 md:p-8" aria-labelledby="rl-duel-challenge">
-            <div className="flex items-center gap-2.5">
-              <Icone nom="duel" size={24} />
-              <h2 id="rl-duel-challenge" className="m-0 text-[26px] font-extrabold tracking-[-0.025em]">
-                {PARTIE.defierTitre}
-              </h2>
-            </div>
-            <label className="flex h-[44px] items-center gap-2.5 rounded-[12px] border border-line-2 bg-black px-3.5 text-muted focus-within:border-white">
-              <Search size={16} aria-hidden />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Pseudo ou e-mail d'un joueur"
-                aria-label="Chercher un joueur"
-                className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none"
+        <div className="flex flex-col gap-4 md:gap-[18px]">
+          <RangeeLieu
+            droite={
+              <CarteLieu
+                visuel={imageLice}
+                vignette={imageLice}
+                marque={
+                  <Sceau>
+                    <Icone nom="duel" size={18} />
+                  </Sceau>
+                }
+                nom={LICE.nom}
+                sousTitre={LICE.sousTitre}
+                etat={
+                  <>
+                    {LICE.etat(DUEL_QUESTIONS, DUEL_MINUTES, enjeuHasard)}
+                    {waitingRandom && <> {waitingRandom.myFinished ? PARTIE.chercheAdv : "En attente d'un adversaire."}</>}
+                  </>
+                }
+                action={{ href: "#", label: busy === "random" ? PARTIE.recherche : waitingRandom ? PARTIE.reprendre : PARTIE.trouver, onClick: launchRandom, disabled: busy === "random" }}
+                label={LICE.nom}
               />
-            </label>
-
-            {listed.length > 0 ? (
-              <ul className="-mx-2 m-0 flex list-none flex-col gap-0.5 p-0">
-                {listed.map((p) => {
-                  const s = stakesAgainst(me.elo, me.gamesPlayed, p.elo);
-                  const isTarget = !!target && target.userId === p.userId;
-                  const existing = openByOpponent.get(p.userId);
-                  const activity = isTarget && !p.lastActiveAt ? "défi prêt" : activityLabel(p.lastActiveAt, nowIso);
-                  return (
-                    <li
-                      key={p.userId}
-                      className={"rl-row relative grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2 sm:grid-cols-[36px_minmax(0,1fr)_auto_auto] " + (isTarget ? "bg-surface-2" : "")}
-                    >
-                      <PlayerBadge elo={p.elo} size={36} />
-                      <div className="min-w-0">
-                        {/* toute la ligne ouvre la carte du joueur (Défier et Voir passent au-dessus) */}
-                        <LienJoueur
-                          id={p.userId}
-                          nom={p.username ?? "Joueur"}
-                          className="block truncate text-[14.5px] font-semibold after:absolute after:inset-0 after:rounded-[12px] after:content-['']"
-                        >
-                          {p.username ?? "Joueur"}
-                        </LienJoueur>
-                        <div className="t-micro truncate">
-                          {p.elo} ELO
-                          <PresenceText userId={p.userId} court repli={<span className="hidden sm:inline">{activity}</span>} avant=" · " />
-                          <span className="font-mono sm:hidden">
-                            {" "}
-                            · {signed(s.win)} / {signed(s.loss)}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="hidden font-mono text-[12px] tabular-nums text-muted sm:inline" title="Enjeu : si tu gagnes / si tu perds">
-                        {signed(s.win)} / {signed(s.loss)}
-                      </span>
-                      {existing ? (
-                        <Link href={`/duel/${existing}`} className="btn btn-sm btn-secondary relative z-[1]">
-                          Voir
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          className={"btn btn-sm relative z-[1] " + (isTarget && incoming.length === 0 ? "btn-primary" : "btn-secondary")}
-                          disabled={busy === p.userId}
-                          onClick={() => challenge(p.userId)}
-                          aria-label={`Défier ${p.username ?? "ce joueur"}`}
-                        >
-                          {busy === p.userId ? "…" : "Défier"}
+            }
+            gauche={
+              <>
+                {premier && stakesPremier ? (
+                  <HeroEpreuve
+                    id="duel-recu"
+                    label="Le duel qui t'attend"
+                    eyebrow={LICE.recu(timeLeftLabel(premier.expiresAt, nowIso))}
+                    titre={LICE.teDefie(premier.opponentName ?? "Un joueur")}
+                    micro={
+                      <>
+                        {LICE.recuMicro(premier.opponentElo, premier.theirFinished)}
+                        {premier.opponentId && <PresenceText userId={premier.opponentId} court repli="hors ligne" avant=" · " />}
+                      </>
+                    }
+                    texte={LICE.recuEnjeu(signed(stakesPremier.win), signed(stakesPremier.loss), timeLeftLabel(premier.expiresAt, nowIso))}
+                    actions={
+                      <>
+                        <button type="button" className="btn btn-secondary btn-lg rl-press w-full sm:w-auto" disabled={busy === premier.id} onClick={() => respond(premier.id, true)}>
+                          {LICE.accepter} <ArrowRight size={17} aria-hidden />
                         </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="t-small m-0 py-4">
-                {searching
-                  ? PARTIE.recherche
-                  : results
-                    ? PARTIE.aucunJoueur
-                    : VIDE.adversaires}
-              </p>
-            )}
-            {!results && listed.length > 0 && (
-              <Link href="/people" className="mt-auto inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-muted hover:text-white">
-                Tous les joueurs <ArrowRight size={14} aria-hidden />
-              </Link>
-            )}
-          </section>
+                        <button type="button" className="ink-link" disabled={busy === premier.id} onClick={() => respond(premier.id, false)}>
+                          {LICE.refuser}
+                        </button>
+                      </>
+                    }
+                    droite={autresListe}
+                  />
+                ) : aJouer ? (
+                  <HeroEpreuve
+                    id="duel-recu"
+                    label="Le duel qui t'attend"
+                    eyebrow={LICE.aToi(timeLeftLabel(aJouer.expiresAt, nowIso))}
+                    titre={LICE.contre(aJouer.opponentName ?? "un joueur")}
+                    micro={
+                      <>
+                        {aJouer.opponentElo !== null ? `${aJouer.opponentElo} ELO` : null}
+                        {aJouer.opponentId && <PresenceText userId={aJouer.opponentId} court repli="hors ligne" avant={aJouer.opponentElo !== null ? " · " : ""} />}
+                      </>
+                    }
+                    texte={aJouer.theirFinished ? LICE.aToiTexte : PARTIE.aToi(timeLeftLabel(aJouer.expiresAt, nowIso))}
+                    actions={
+                      <Link href={`/duel/${aJouer.id}`} className="btn btn-primary btn-lg rl-press w-full sm:w-auto">
+                        {LICE.jouer} <ArrowRight size={17} aria-hidden />
+                      </Link>
+                    }
+                    droite={autresListe}
+                  />
+                ) : (
+                  <HeroEpreuve
+                    id="duel-recu"
+                    label={LICE.rang}
+                    eyebrow={LICE.rang}
+                    titre={`${me.elo} ELO`}
+                    micro={LICE.rangMicro(me.gamesPlayed)}
+                    texte={LICE.rangTexte(net, recent.length)}
+                    actions={
+                      <Link href="/classement" className="ink-link">
+                        {LICE.classement}
+                      </Link>
+                    }
+                    droite={
+                      recent.length > 0 ? (
+                        <ListePodium
+                          titre={LICE.derniers}
+                          items={recent.slice(0, 3).map((d) => ({
+                            nom: `${motIssue(d.won)} contre ${d.opponentName ?? "un joueur"}`,
+                            note: `${d.myScore ?? 0}–${d.theirScore ?? 0} · ${signed(d.myDelta ?? 0)}`,
+                            href: `/duel/${d.id}`,
+                          }))}
+                        />
+                      ) : undefined
+                    }
+                  />
+                )}
+
+                <div className="grid gap-4 md:gap-[18px] xl:grid-cols-2">
+                  {/* Défier quelqu'un : la recherche et les suggestions, en tuile */}
+                  <section id="defier" className="card-quiet rl-in flex min-w-0 scroll-mt-24 flex-col gap-3 p-5 md:p-6" aria-labelledby="rl-duel-challenge">
+                    <div className="flex items-center gap-3">
+                      <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-surface">
+                        <Search size={18} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="t-micro m-0 truncate">{LICE.defierSur}</p>
+                        <h3 id="rl-duel-challenge" className="m-0 text-[16px] font-bold tracking-[-0.01em]">
+                          {LICE.defier}
+                        </h3>
+                      </div>
+                      <span aria-hidden className="block h-[56px] w-[72px] shrink-0 overflow-hidden rounded-[14px] border border-line bg-surface-2">
+                        <Illustration nom="duel-echecs" position="center 35%" decorative />
+                      </span>
+                    </div>
+                    <label className="flex h-[42px] items-center gap-2.5 rounded-[12px] border border-line-2 bg-black px-3.5 text-muted focus-within:border-white">
+                      <Search size={16} aria-hidden />
+                      <input
+                        type="search"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Pseudo ou e-mail d'un joueur"
+                        aria-label="Chercher un joueur"
+                        className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none"
+                      />
+                    </label>
+                    {listed.length > 0 ? (
+                      <ul className="-mx-2 m-0 flex list-none flex-col gap-0.5 p-0">
+                        {listed.map((p) => {
+                          const s = stakesAgainst(me.elo, me.gamesPlayed, p.elo);
+                          const isTarget = !!target && target.userId === p.userId;
+                          const existing = openByOpponent.get(p.userId);
+                          const activity = isTarget && !p.lastActiveAt ? "défi prêt" : activityLabel(p.lastActiveAt, nowIso);
+                          return (
+                            <li
+                              key={p.userId}
+                              className={"rl-row relative grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2 sm:grid-cols-[36px_minmax(0,1fr)_auto_auto] " + (isTarget ? "bg-surface-2" : "")}
+                            >
+                              <PlayerBadge elo={p.elo} size={36} />
+                              <div className="min-w-0">
+                                {/* toute la ligne ouvre la carte du joueur (Défier et Voir passent au-dessus) */}
+                                <LienJoueur
+                                  id={p.userId}
+                                  nom={p.username ?? "Joueur"}
+                                  className="block truncate text-[14.5px] font-semibold after:absolute after:inset-0 after:rounded-[12px] after:content-['']"
+                                >
+                                  {p.username ?? "Joueur"}
+                                </LienJoueur>
+                                <div className="t-micro truncate">
+                                  {p.elo} ELO
+                                  <PresenceText userId={p.userId} court repli={<span className="hidden sm:inline">{activity}</span>} avant=" · " />
+                                  <span className="font-mono sm:hidden">
+                                    {" "}
+                                    · {signed(s.win)} / {signed(s.loss)}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="hidden font-mono text-[12px] tabular-nums text-muted sm:inline" title="Enjeu : si tu gagnes / si tu perds">
+                                {signed(s.win)} / {signed(s.loss)}
+                              </span>
+                              {existing ? (
+                                <Link href={`/duel/${existing}`} className="btn btn-sm btn-secondary relative z-[1]">
+                                  Voir
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={"btn btn-sm relative z-[1] " + (isTarget && !premier ? "btn-primary" : "btn-secondary")}
+                                  disabled={busy === p.userId}
+                                  onClick={() => challenge(p.userId)}
+                                  aria-label={`Défier ${p.username ?? "ce joueur"}`}
+                                >
+                                  {busy === p.userId ? "…" : "Défier"}
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="t-small m-0 py-2">{searching ? PARTIE.recherche : results ? PARTIE.aucunJoueur : VIDE.adversaires}</p>
+                    )}
+                    {!results && (
+                      <Link href="/people" className="ink-link mt-auto inline-flex w-fit items-center gap-1.5">
+                        <Search size={14} aria-hidden /> {LICE.chercher}
+                      </Link>
+                    )}
+                  </section>
+
+                  <TuileCalme
+                    icone={<Icone nom="duel" size={18} />}
+                    surTitre={LICE.aRevoirSur(DUEL_REVIEW_DAYS)}
+                    titre={LICE.aRevoir}
+                    ligne={LICE.aRevoirLigne(toReview.length)}
+                    actions={
+                      toReview.length > 0 ? (
+                        <Link href="#duel-revoir" className="ink-link">
+                          {LICE.revoirContre(toReview[0].opponentName ?? "un joueur")}
+                        </Link>
+                      ) : null
+                    }
+                  />
+                </div>
+              </>
+            }
+          />
+
+          <BandeEncre icone={<Icone nom="examen" size={22} />} titre={LICE.defiTitre} ligne={LICE.defiLigne(defiJoueurs)} action={{ href: "/defi", label: LICE.defiAction }} />
+          <RangeeLiens
+            label={LICE.liensLabel}
+            liens={[
+              { href: "/people", icon: <Icone nom="moi" size={20} />, title: LICE.joueurs, desc: LICE.joueursDesc },
+              { href: "/classement", icon: <Icone nom="classement" size={20} />, title: "Classement", desc: LICE.classementDesc },
+              { href: "#duel-revoir", icon: <Icone nom="duel" size={20} />, title: LICE.revoirDuels, desc: LICE.revoirDesc(DUEL_REVIEW_DAYS), meta: toReview.length > 0 ? String(toReview.length) : null },
+            ]}
+          />
         </div>
       </div>
 
-      <section className="flex flex-col gap-6" aria-labelledby="rl-duel-mine">
+      <section className="flex flex-col gap-6" aria-labelledby="rl-duel-mine" id="duel-revoir">
         <h2 id="rl-duel-mine" className="t-h2">
           {PARTIE.tesDuels}
         </h2>
-        {ongoing.length === 0 && recent.length === 0 && toReview.length === 0 ? (
-          <p className="t-small">{VIDE.duels}</p>
+        {toReview.length === 0 && older.length === 0 ? (
+          <p className="t-small">{recent.length === 0 ? VIDE.duels : `${CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)} ${PARTIE.aRevoirTexte}`}</p>
         ) : (
-          <div className="grid items-start gap-10 md:grid-cols-2 md:gap-14">
-            <div className="flex min-w-0 flex-col gap-2">
-              <p className="t-eyebrow px-2">
-                En cours{ongoing.length > 0 && <span className="font-mono font-normal"> · {ongoing.length}</span>}
-              </p>
-              {ongoing.length === 0 ? (
-                <p className="t-small px-2">{CLASSEMENT.enCoursVide}</p>
-              ) : (
-                <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-                  {ongoing.map((d) => (
-                    <OpenDuelRow key={d.id} d={d} me={me} nowIso={nowIso} />
-                  ))}
-                </ul>
-              )}
-            </div>
+          <div className="flex min-w-0 flex-col gap-2 md:max-w-[640px]" aria-labelledby="rl-duel-review">
+            <p id="rl-duel-review" className="t-eyebrow flex items-baseline justify-between gap-3 px-2">
+              <span>
+                À revoir{toReview.length > 0 && <span className="font-mono font-normal"> · {toReview.length}</span>}
+              </span>
+              <span className="font-normal normal-case tracking-normal">{CLASSEMENT.aRevoirSous(DUEL_REVIEW_DAYS)}</span>
+            </p>
+            {toReview.length === 0 ? (
+              <p className="t-small px-2">{`${CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)} ${PARTIE.aRevoirTexte}`}</p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+                {toReview.map((d) => (
+                  <ReviewDuelRow
+                    key={d.id}
+                    id={d.id}
+                    name={d.opponentName ?? "Un joueur"}
+                    won={d.won}
+                    myScore={d.myScore}
+                    theirScore={d.theirScore}
+                    errors={d.myScore !== null ? Math.max(0, d.total - d.myScore) : null}
+                    left={reviewLeftLabel(d.finishedAt, nowIso)}
+                  />
+                ))}
+              </ul>
+            )}
 
-            <div className="flex min-w-0 flex-col gap-2" aria-labelledby="rl-duel-review">
-              <p id="rl-duel-review" className="t-eyebrow flex items-baseline justify-between gap-3 px-2">
-                <span>
-                  À revoir{toReview.length > 0 && <span className="font-mono font-normal"> · {toReview.length}</span>}
-                </span>
-                <span className="font-normal normal-case tracking-normal">{CLASSEMENT.aRevoirSous(DUEL_REVIEW_DAYS)}</span>
-              </p>
-              {toReview.length === 0 ? (
-                <p className="t-small px-2">
-                  {recent.length === 0 ? null : `${CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)} `}
-                  {PARTIE.aRevoirTexte}
-                </p>
-              ) : (
+            {older.length > 0 && (
+              <>
+                <p className="t-eyebrow mt-5 px-2">{PARTIE.plusAnciennes}</p>
                 <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-                  {toReview.map((d) => (
-                    <ReviewDuelRow
-                      key={d.id}
-                      id={d.id}
-                      name={d.opponentName ?? "Un joueur"}
-                      won={d.won}
-                      myScore={d.myScore}
-                      theirScore={d.theirScore}
-                      errors={d.myScore !== null ? Math.max(0, d.total - d.myScore) : null}
-                      left={reviewLeftLabel(d.finishedAt, nowIso)}
-                    />
-                  ))}
-                </ul>
-              )}
-
-              {older.length > 0 && (
-                <>
-                  <p className="t-eyebrow mt-5 px-2">{PARTIE.plusAnciennes}</p>
-                  <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
                   {older.map((d) => {
                     const label = motIssue(d.won);
                     return (
@@ -389,10 +482,9 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
                       </li>
                     );
                   })}
-                  </ul>
-                </>
-              )}
-            </div>
+                </ul>
+              </>
+            )}
           </div>
         )}
       </section>
@@ -417,48 +509,12 @@ function summaryToEntry(d: DuelSummary): DuelReviewEntry {
   };
 }
 
-function OpenDuelRow({ d, me, nowIso }: { d: OpenDuel; me: { elo: number; gamesPlayed: number }; nowIso: string }) {
-  const name = d.opponentName ?? "un joueur";
-  let title: string;
-  let sub: string;
-  let action = d.myFinished ? "Voir" : "Jouer";
-  if (d.status === "pending" && d.incoming) {
-    title = PARTIE.teDefie(name);
-    sub = `à toi le trait · à accepter sous ${timeLeftLabel(d.expiresAt, nowIso)}`;
-    action = "Voir";
-  } else if (d.status === "pending" && !d.opponentId) {
-    title = "Duel au hasard";
-    sub = d.myFinished ? PARTIE.chercheAdv : PARTIE.attendAdv;
-  } else if (d.status === "pending") {
-    title = `Défi envoyé à ${name}`;
-    sub = d.myFinished ? "copie rendue · en attente de sa réponse" : "pas encore accepté · tu peux déjà jouer";
-  } else {
-    title = `Contre ${name}`;
-    sub = d.myFinished
-      ? `copie rendue · ${d.theirFinished ? "résultat imminent" : d.theirStarted ? "il joue" : "pas encore joué"}`
-      : PARTIE.aToi(timeLeftLabel(d.expiresAt, nowIso));
-  }
-  const urgent = action === "Jouer" && d.status === "active";
-  const s = d.opponentElo !== null ? stakesAgainst(me.elo, me.gamesPlayed, d.opponentElo) : null;
-  return (
-    <li className="rl-row grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-[12px] px-2 py-2">
-      <PlayerBadge elo={d.opponentElo ?? me.elo} size={36} gray={!d.opponentId} />
-      <div className="min-w-0">
-        <div className="truncate text-[14.5px] font-semibold">{title}</div>
-        <div className="t-micro truncate">
-          {sub}
-          {d.opponentId && <PresenceText userId={d.opponentId} court repli="hors ligne" avant=" · " />}
-          {s && (
-            <span className="hidden font-mono sm:inline">
-              {" "}
-              · {signed(s.win)} / {signed(s.loss)}
-            </span>
-          )}
-        </div>
-      </div>
-      <Link href={`/duel/${d.id}`} className={"btn btn-sm " + (urgent ? "btn-primary" : "btn-secondary")}>
-        {action}
-      </Link>
-    </li>
-  );
+/** Le point d'un duel en cours, en quelques mots (liste « Tes autres duels en cours »). */
+function sousDuel(d: OpenDuel, nowIso: string): string {
+  const reste = timeLeftLabel(d.expiresAt, nowIso);
+  if (d.status === "pending" && d.incoming) return reste ? `à accepter · ${reste}` : "à accepter";
+  if (d.status === "pending" && !d.opponentId) return d.myFinished ? "on cherche" : "en attente";
+  if (d.status === "pending") return d.myFinished ? "copie rendue" : "pas encore accepté";
+  if (d.myFinished) return d.theirFinished ? "résultat imminent" : d.theirStarted ? "il joue" : "pas encore joué";
+  return reste ? `à toi · ${reste}` : "à toi";
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyRating, getRecentDuels } from "@/lib/rating";
+import { getTodayDaily } from "@/lib/daily";
 import { duelsReady, getDuelSuggestions, getMyOpenDuels, getPlayerCard, getReviewableDuels, refreshMyDuels } from "@/lib/duels";
 import { DuelLobby } from "@/components/duel/DuelLobby";
 import { DuelSoon } from "@/components/duel/DuelSoon";
@@ -36,13 +37,14 @@ export default async function DuelLobbyPage({ searchParams }: PageProps) {
   // Règle d'abord les duels arrivés à échéance (pas de tâche planifiée)
   await refreshMyDuels(supabase);
 
-  const [me, suggestions, open, recent, reviewable, target] = await Promise.all([
+  const [me, suggestions, open, recent, reviewable, target, defi] = await Promise.all([
     getMyRating(supabase, user.id),
     getDuelSuggestions(supabase, 6),
     getMyOpenDuels(supabase, user.id),
     getRecentDuels(supabase, user.id, 6),
     getReviewableDuels(supabase, user.id),
     targetId ? getPlayerCard(supabase, targetId) : Promise.resolve(null),
+    getTodayDaily(supabase, user.id, "trente").catch(() => null),
   ]);
 
   return (
@@ -55,6 +57,7 @@ export default async function DuelLobbyPage({ searchParams }: PageProps) {
         recent={recent}
         reviewable={reviewable}
         nowIso={new Date().toISOString()}
+        defiJoueurs={defi && defi.status !== "soon" && defi.status !== "unavailable" ? defi.players : null}
       />
       <CarteJoueurHote />
     </div>

@@ -4,6 +4,7 @@ import { MockExamAdmin } from "@/components/MockExamAdmin";
 import { MockExamListView, type MockExam } from "@/components/session/MockExamViews";
 import { duelsReady } from "@/lib/duels";
 import { getMockExamEloAppliedAt } from "@/lib/rating";
+import { getParcours } from "@/lib/mock-parcours";
 
 type RegRow = { exam_id: string };
 
@@ -28,7 +29,10 @@ export default async function MockExamsPage() {
   const exams = (examsRes.data ?? []) as MockExam[];
   const registeredIds = (regsRes.data ?? []).map((r: RegRow) => r.exam_id);
   const isAdmin = adminRes.data === true;
-  const eloApplied = eloEnabled ? await getMockExamEloAppliedAt(supabase, exams.map((e) => e.id)) : {};
+  const [eloApplied, parcours] = await Promise.all([
+    eloEnabled ? getMockExamEloAppliedAt(supabase, exams.map((e) => e.id)) : Promise.resolve({} as Record<string, string>),
+    getParcours(supabase, auth.user.id, exams, eloEnabled),
+  ]);
 
   return (
     <MockExamListView
@@ -37,6 +41,7 @@ export default async function MockExamsPage() {
       eloApplied={eloApplied}
       eloEnabled={eloEnabled}
       now={Date.now()}
+      parcours={parcours}
       admin={isAdmin ? <MockExamAdmin exams={exams} eloAppliedAt={eloApplied} eloEnabled={eloEnabled} /> : undefined}
     />
   );
