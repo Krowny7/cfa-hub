@@ -10,7 +10,9 @@ import { ATELIER } from "@/lib/voice-atelier";
 // faible ») : l'illustration, ce que dure la séance, ce qu'elle contient, un
 // seul bouton. Le nom en grand, avec sa marque (LogoAtelier) : l'Atelier est
 // un lieu à part. Ordinateur : carte haute, l'illustration à fond perdu en tête
-// (16:10) et le bouton en bas, à la hauteur de la colonne voisine.
+// (16:10) et le bouton en bas ; la carte s'étire à la hauteur de la colonne
+// voisine, et c'est l'illustration qui absorbe l'écart (elle grandit, 520 px
+// de haut au plus), pas le texte.
 // Téléphone : compacte, une vignette 4:5 à droite du titre, le bouton
 // pleine largeur, dans le premier écran. Sans état : rendue côté serveur.
 
@@ -25,11 +27,11 @@ export function CarteAtelier({ d, logo = "plume", className = "" }: { d: PointsF
       aria-label={ATELIER.nom}
       className={
         "card rl-in grid min-w-0 grid-cols-[minmax(0,1fr)_88px] items-start gap-x-4 gap-y-3 overflow-hidden p-5 " +
-        "lg:grid-cols-1 lg:grid-rows-[auto_auto_auto_1fr] lg:gap-y-3.5 lg:p-0 lg:pb-6 " +
+        "lg:flex lg:grow lg:flex-col lg:items-stretch lg:gap-y-3.5 lg:p-0 lg:pb-6 " +
         className
       }
     >
-      <IllustrationAtelier className="col-start-2 row-span-2 row-start-1 h-[110px] w-[88px] rounded-[14px] lg:col-start-1 lg:row-span-1 lg:aspect-[16/10] lg:h-auto lg:w-full lg:rounded-none lg:border-b lg:border-line" />
+      <IllustrationAtelier className="col-start-2 row-span-2 row-start-1 h-[110px] w-[88px] rounded-[14px] lg:aspect-[16/10] lg:h-auto lg:max-h-[520px] lg:w-full lg:shrink-0 lg:grow lg:rounded-none lg:border-b lg:border-line" />
       {/* le nom est à 28 / 44 px au plus ; il rétrécit si la colonne est trop étroite (unités cqi) au lieu de déborder */}
       <div className="@container col-start-1 row-start-1 flex min-w-0 flex-col gap-1.5 text-[28px] lg:row-start-2 lg:px-6 lg:pt-2.5 lg:text-[44px]">
         <h2 className="font-brand m-0 flex min-w-0 items-center gap-2 leading-none [--m:34px] lg:gap-3 lg:[--m:56px]" style={{ fontSize: tailleBrand(ATELIER.nom) }}>
@@ -41,7 +43,7 @@ export function CarteAtelier({ d, logo = "plume", className = "" }: { d: PointsF
       <p className="t-small col-start-1 row-start-2 m-0 lg:row-start-3 lg:px-6">
         {enCours ? ATELIER.enCoursLigne(enCours.faites) : ATELIER.carteDeroule(ratures, d.atelier.calcul)}
       </p>
-      <div className="col-span-2 row-start-3 pt-1 lg:col-span-1 lg:row-start-4 lg:self-end lg:px-6">
+      <div className="col-span-2 row-start-3 pt-1 lg:col-span-1 lg:mt-auto lg:px-6">
         <Link href="/atelier" className="btn btn-primary btn-lg rl-press w-full">
           <LogoAtelier variante={logo} className="size-[19px]" /> {enCours ? ATELIER.reprendre : ATELIER.lancer} <ArrowRight size={17} aria-hidden />
         </Link>

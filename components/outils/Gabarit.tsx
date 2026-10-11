@@ -343,10 +343,10 @@ export function Rangee({ heros, cote, tuiles, cotePremier = false }: { heros: Re
   return (
     <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
       {cotePremier && coteBloc}
-      <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1">
+      <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1 lg:[&>:last-child]:grow">
         {heros}
         {tuiles && (
-          <div className="rl-in grid gap-4 md:grid-cols-2 md:gap-[18px]" style={{ animationDelay: ".06s" }}>
+          <div className="rl-in grid gap-4 md:grid-cols-2 md:gap-[18px] lg:grow" style={{ animationDelay: ".06s" }}>
             {tuiles}
           </div>
         )}

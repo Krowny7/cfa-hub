@@ -6,8 +6,12 @@ import { ArrowRight } from "lucide-react";
 // CarteAtelier.tsx, dont elle est la version générique) : un endroit du site
 // avec son image, son nom, une phrase, l'état du moment et un seul gros
 // bouton. Ordinateur : carte haute, l'image à fond perdu en tête (16:10 par
-// défaut), le bouton en bas. Téléphone : compacte, une vignette portrait à
-// droite du titre, le bouton pleine largeur. Sans état.
+// défaut), le bouton en bas. La carte s'étire sur la hauteur de sa rangée
+// (la colonne voisine peut être plus haute) : c'est l'IMAGE qui absorbe la
+// différence (elle grandit, de son rapport jusqu'à 520 px de haut), le texte
+// reste compact et le bouton reste en bas. Téléphone : compacte, une vignette
+// portrait à droite du titre, le bouton pleine largeur, hauteur naturelle.
+// Sans état.
 //
 // Props
 //   visuel     l'image de la carte haute (ordinateur), souvent <Illustration />
@@ -69,13 +73,15 @@ export function CarteLieu({
       className={
         "card rl-in grid min-w-0 items-start gap-x-4 gap-y-3 overflow-hidden p-5 " +
         (sansVignette ? "grid-cols-1 " : "grid-cols-[minmax(0,1fr)_88px] ") +
-        "lg:grid-cols-1 lg:grid-rows-[auto_auto_auto_1fr] lg:gap-y-3.5 lg:p-0 lg:pb-6 " +
+        // ordinateur : une colonne flex qui s'étire avec sa rangée (l'image prend le surplus)
+        "lg:flex lg:grow lg:flex-col lg:items-stretch lg:gap-y-3.5 lg:p-0 lg:pb-6 " +
         className
       }
     >
       {!sansVignette && <div className="col-start-2 row-span-2 row-start-1 h-[110px] w-[88px] overflow-hidden rounded-[14px] lg:hidden">{vignette}</div>}
-      <div className="hidden lg:col-start-1 lg:row-span-1 lg:block lg:border-b lg:border-line" style={{ aspectRatio: ratio }}>
-        {visuel}
+      {/* l'image : son rapport donne la hauteur de départ, le surplus de la rangée la fait grandir (520 px au plus) */}
+      <div className="hidden lg:relative lg:block lg:max-h-[520px] lg:shrink-0 lg:grow lg:border-b lg:border-line" style={{ aspectRatio: ratio }}>
+        <div className="absolute inset-0">{visuel}</div>
       </div>
       {/* le nom est mis à la taille de `tailleNom` (portée par ce bloc) au plus ; il rétrécit si la colonne est
           trop étroite pour ses lettres (unités cqi, comme le rang du Classement) au lieu de déborder de la carte */}
@@ -90,7 +96,7 @@ export function CarteLieu({
         <p className="m-0 text-[14px] font-semibold leading-snug lg:text-[15px]">{sousTitre}</p>
       </div>
       <div className="t-small col-start-1 row-start-2 m-0 lg:row-start-3 lg:px-6">{etat}</div>
-      <div className={(sansVignette ? "col-span-1" : "col-span-2") + " row-start-3 pt-1 lg:col-span-1 lg:row-start-4 lg:self-end lg:px-6"}>
+      <div className={(sansVignette ? "col-span-1" : "col-span-2") + " row-start-3 pt-1 lg:col-span-1 lg:mt-auto lg:px-6"}>
         {action.onClick ? (
           <button type="button" onClick={action.onClick} disabled={action.disabled} className={"btn btn-lg rl-press w-full " + (secondaire ? "btn-secondary" : "btn-primary")}>
             {action.icon} {action.label} <ArrowRight size={17} aria-hidden />

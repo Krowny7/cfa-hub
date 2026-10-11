@@ -12,8 +12,9 @@ import type { IllustrationNom } from "@/lib/illustrations";
 export function RangeeLieu({ droite, gauche }: { droite: React.ReactNode; gauche: React.ReactNode }) {
   return (
     <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
-      <div className="flex min-w-0 flex-col lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:self-start">{droite}</div>
-      <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1">{gauche}</div>
+      <div className="flex min-w-0 flex-col lg:col-span-4 lg:col-start-9 lg:row-start-1">{droite}</div>
+      {/* la colonne de gauche : son dernier bloc (les tuiles, ou le héros seul) prend le surplus de hauteur */}
+      <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1 lg:[&>:last-child]:grow">{gauche}</div>
     </div>
   );
 }
