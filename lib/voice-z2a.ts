@@ -50,6 +50,9 @@ export const PODIUM = {
   toi: "Toi",
   place: (n: number) => (n === 1 ? "1er" : `${n}e`),
   placement: (jouees: number, sur: number) => `placement ${jouees}/${sur}`,
+  libre: "À prendre",
+  libreLigne: "Joue un duel pour entrer",
+  libreAria: (n: number) => `${n === 1 ? "1re" : `${n}e`} place à prendre : lancer un duel`,
 } as const;
 
 /** « 4e sur 42 · maîtrise 54 % » (la ligne sous le panneau du rang) */

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { useHorsEcran } from "@/components/ui/useHorsEcran";
@@ -180,16 +181,44 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
   );
 }
 
-/** Les trois premiers du classement, en bannières (le n° 1 au centre, plus grand). `rows` : les trois premiers, dans l'ordre 1, 2, 3. */
-export function PodiumBannieres({ rows, label }: { rows: [BoardRow, BoardRow, BoardRow]; label: string }) {
+// Une place que personne n'a encore prise (le joueur n'a pas joué) : la même
+// bannière, en grisé, qui mène aux duels.
+function BanniereLibre({ place }: { place: 1 | 2 | 3 }) {
+  const style = { "--liq": "url(/encres/san-romano.webp)", "--teinte": "var(--muted, #8a8a84)", "--n": 0 } as CSSProperties;
+  return (
+    <Link href="/duel" className={s.banniere + (place === 1 ? " " + s.premier : "")} style={style} data-holo="" aria-label={PODIUM.libreAria(place)}>
+      <span aria-hidden className={s.cadre} />
+      <span aria-hidden className={s.forme}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className={s.fond} src="/illustrations/classement-lice.webp" alt="" loading="lazy" decoding="async" draggable={false} style={{ filter: "grayscale(0.85) brightness(0.55)" }} />
+        <span className={s.ombre} />
+      </span>
+      <span aria-hidden className={s.place + " font-brand"}>
+        {place}
+      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className={s.insigne + " " + s.gris} src="/ranks/v2/petit-0-128.png" width={128} height={128} alt="" draggable={false} style={{ opacity: 0.45 }} />
+      <span className={s.bas}>
+        <span className={s.pseudo + " font-brand"}>{PODIUM.libre}</span>
+        <span className={s.rang}>
+          <span>{PODIUM.libreLigne}</span>
+        </span>
+      </span>
+      <span aria-hidden className={s.reflet} />
+    </Link>
+  );
+}
+
+/** Les trois premiers du classement, en bannières (le n° 1 au centre, plus grand). `rows` : les trois premiers, dans l'ordre 1, 2, 3 ; null = place encore à prendre. */
+export function PodiumBannieres({ rows, label }: { rows: [BoardRow | null, BoardRow | null, BoardRow | null]; label: string }) {
   const racine = useRef<HTMLDivElement | null>(null);
   useHorsEcran(racine);
   useInclinaison(racine);
   return (
     <div ref={racine} className={s.podium} role="group" aria-label={label}>
-      <Banniere r={rows[0]} place={1} />
-      <Banniere r={rows[1]} place={2} />
-      <Banniere r={rows[2]} place={3} />
+      {rows[0] ? <Banniere r={rows[0]!} place={1} /> : <BanniereLibre place={1} />}
+      {rows[1] ? <Banniere r={rows[1]!} place={2} /> : <BanniereLibre place={2} />}
+      {rows[2] ? <Banniere r={rows[2]!} place={3} /> : <BanniereLibre place={3} />}
     </div>
   );
 }

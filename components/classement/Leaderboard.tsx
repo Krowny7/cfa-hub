@@ -108,14 +108,17 @@ function Rivalite({ board, meRow }: { board: BoardRow[]; meRow: BoardRow | null 
 }
 
 // Classement général du domaine : le podium en trois bannières de champions
-// (dès que les trois premiers ont joué : PodiumBannieres, le n° 1 au centre),
+// (dès qu'un joueur a joué : PodiumBannieres, le n° 1 au centre, places vides « à prendre »),
 // puis la liste, la ligne « Toi » surlignée. Chaque joueur a son
 // sceau (ou sa photo). La rivalité tient en une ligne au-dessus de la liste.
 // Le bouton « Défier » d'une ligne apparaît au survol (toujours visible sur
 // téléphone). Au-delà des 10 premiers, la suite se déplie.
 export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { board: BoardRow[]; meRow: BoardRow | null; totalPlayers: number | null; /** sans l'en-tête (nombre de joueurs, lien « Chercher ») ni la rivalité : le héros de la page les dit déjà */ sobre?: boolean }) {
-  const podium = board.length >= 3 && board.slice(0, 3).every((r) => r.gamesPlayed > 0);
-  const list = podium ? board.slice(3) : board;
+  // les trois premières places ; tenue par un joueur qui n'a pas encore joué, une place reste « à prendre »
+  const podiumRows = [0, 1, 2].map((i) => (board[i] && board[i].gamesPlayed > 0 ? board[i] : null)) as [BoardRow | null, BoardRow | null, BoardRow | null];
+  const surPodium = podiumRows.filter((r): r is BoardRow => r !== null);
+  const podium = surPodium.length > 0;
+  const list = podium ? board.filter((r) => !surPodium.includes(r)) : board;
   const shown = list.filter((r) => r.rank <= VISIBLE || r.isMe);
   const hidden = list.filter((r) => r.rank > VISIBLE && !r.isMe);
   const nobodyPlayed = board.length > 0 && board.every((r) => r.gamesPlayed === 0);
@@ -137,7 +140,7 @@ export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { boa
     <div id="joueurs" data-leonard="joueurs" className={"grid scroll-mt-24 items-start gap-10 lg:grid-cols-12 lg:gap-14 " + (podium ? "" : "max-w-[760px]")}>
       {podium && (
         <div className="lg:col-span-6 lg:pt-2 xl:col-span-7">
-          <PodiumBannieres rows={[board[0], board[1], board[2]]} label={CLASSEMENT.podium} />
+          <PodiumBannieres rows={podiumRows} label={CLASSEMENT.podium} />
         </div>
       )}
 
