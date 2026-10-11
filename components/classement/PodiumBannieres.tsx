@@ -160,7 +160,8 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
         </span>
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={s.insigne + (placement ? " " + s.gris : "")} src={`/ranks/v2/petit-${tier}-128.png`} width={128} height={128} alt="" draggable={false} />
+      {/* sur le podium, l'insigne reste en couleur même en placement (palier de l'ELO actuel) */}
+      <img className={s.insigne} src={`/ranks/v2/petit-${tier}-128.png`} width={128} height={128} alt="" draggable={false} />
       <span className={s.bas}>
         <span className={s.pseudo + " font-brand"}>{r.isMe ? PODIUM.toi : r.name}</span>
         <span className={s.rang}>
@@ -190,14 +191,14 @@ function BanniereLibre({ place }: { place: 1 | 2 | 3 }) {
       <span aria-hidden className={s.cadre} />
       <span aria-hidden className={s.forme}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className={s.fond} src="/illustrations/classement-lice.webp" alt="" loading="lazy" decoding="async" draggable={false} style={{ filter: "grayscale(0.85) brightness(0.55)" }} />
+        <img className={s.fond} src="/illustrations/classement-lice.webp" alt="" loading="lazy" decoding="async" draggable={false} style={{ filter: "brightness(0.72)" }} />
         <span className={s.ombre} />
       </span>
       <span aria-hidden className={s.place + " font-brand"}>
         {place}
       </span>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={s.insigne + " " + s.gris} src="/ranks/v2/petit-0-128.png" width={128} height={128} alt="" draggable={false} style={{ opacity: 0.45 }} />
+      <img className={s.insigne} src="/ranks/v2/petit-0-128.png" width={128} height={128} alt="" draggable={false} style={{ opacity: 0.6 }} />
       <span className={s.bas}>
         <span className={s.pseudo + " font-brand"}>{PODIUM.libre}</span>
         <span className={s.rang}>
