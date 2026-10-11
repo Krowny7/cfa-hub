@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SPACES, activeSpace } from "@/lib/nav";
+import { paletteDeChemin, styleDePalette } from "@/lib/palettes";
 import { ICONE_ESPACE, Icone, type IconeNom } from "@/components/adn/icons";
 
 // Barre du bas (mobile) : flottante et translucide, l'accueil puis les quatre
 // espaces ; une pastille d'encre glisse sous l'onglet actif (même geste que
 // le contrôle segmenté de la barre du haut), placée par transform ; l'icône
-// qui devient active fait un petit rebond.
-export function MobileBottomNav() {
-  const pathname = usePathname() || "/";
+// qui devient active fait un petit rebond. La pastille se remplit de l'encre
+// vivante de la palette de la page (lib/palettes.ts, styles .rl-encre dans
+// globals.css), l'accueil compris. `chemin` : pour les aperçus, force la route.
+export function MobileBottomNav({ chemin }: { chemin?: string } = {}) {
+  const courant = usePathname();
+  const pathname = chemin ?? courant ?? "/";
   if (pathname.startsWith("/login") || pathname.startsWith("/share")) return null;
   const space = activeSpace(pathname);
   const home = pathname === "/" || pathname === "/dashboard";
@@ -20,6 +24,7 @@ export function MobileBottomNav() {
   ];
   const ix = items.findIndex((i) => i.on);
   const n = items.length;
+  const palette = ix >= 0 ? paletteDeChemin(pathname) : null;
 
   return (
     <nav
@@ -35,8 +40,10 @@ export function MobileBottomNav() {
     >
       <span
         aria-hidden
-        className="absolute bottom-1.5 top-1.5 rounded-[16px] bg-white transition-[transform,opacity] duration-[420ms] ease-[var(--ease-spring)] motion-reduce:transition-none"
+        className="rl-encre absolute bottom-1.5 top-1.5 rounded-[16px] bg-white transition-[transform,opacity] duration-[420ms] ease-[var(--ease-spring)] motion-reduce:transition-none"
+        data-palette={palette?.key}
         style={{
+          ...styleDePalette(palette),
           left: 6,
           width: `calc((100% - 12px) / ${n})`,
           transform: `translateX(${Math.max(ix, 0) * 100}%)`,
@@ -51,7 +58,8 @@ export function MobileBottomNav() {
           aria-current={on ? "page" : undefined}
           className={
             "relative z-[1] flex min-h-[52px] flex-col items-center justify-center gap-[3px] rounded-[16px] text-[10.5px] tracking-[-0.005em] transition-colors duration-300 active:scale-95 " +
-            (on ? "font-semibold text-black" : "font-medium text-muted")
+            (on ? "font-semibold text-black" : "font-medium text-muted") +
+            (on && palette ? " rl-encre-on" : "")
           }
         >
           <Icone nom={icone} size={21} appui={on ? 1.12 : 0.95} className={on ? "rl-nudge" : undefined} />

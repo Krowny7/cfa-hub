@@ -2087,3 +2087,53 @@ html.rl-booting::before {
   z-index: 300;
   background: var(--paper);
 }
+
+/* Onglet actif des barres de navigation : il se remplit de l'encre vivante de
+   la palette de la page (lib/palettes.ts ; textures dans public/encres). La
+   texture se répète sans couture et dérive d'exactement une tuile en boucle
+   (transform seul : rien à repeindre), sous un voile sombre qui garde le texte
+   blanc lisible. L'élément porte data-palette et les variables --pal-* (voir
+   styleDePalette). Coupé en mode discret ; figé avec prefers-reduced-motion et
+   data-rl-motion="off". Décor : pointer-events none. */
+html:not([data-discreet="1"]) .rl-encre[data-palette] {
+  --encre-pas: 160px;
+  overflow: hidden;
+  isolation: isolate;
+}
+html:not([data-discreet="1"]) .rl-encre[data-palette]::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--encre-pas) * -1 - 2px);
+  z-index: -2;
+  pointer-events: none;
+  background: var(--pal-encre) 0 0 / var(--encre-pas) var(--encre-pas) repeat;
+  will-change: transform;
+  animation: rl-encre-derive 18s linear infinite;
+}
+html:not([data-discreet="1"]) .rl-encre[data-palette]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(12, 9, 7, var(--pal-voile-haut, 0.36)), rgba(12, 9, 7, var(--pal-voile-bas, 0.64)));
+}
+html:not([data-discreet="1"]) .rl-encre-on {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  /* le texte ne blanchit qu'à l'arrivée de la pastille, pas pendant qu'elle glisse */
+  transition: color 0.18s ease 0.16s, transform var(--dur-1) var(--ease-spring);
+}
+@keyframes rl-encre-derive {
+  to {
+    transform: translate3d(var(--encre-pas), calc(var(--encre-pas) * -1), 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-encre[data-palette]::before {
+    animation: none !important;
+  }
+}
+html[data-rl-motion="off"] .rl-encre[data-palette]::before {
+  animation: none !important;
+}
