@@ -29,6 +29,12 @@ export const TIERS: Tier[] = [
 ];
 
 export const TOP_TIER = TIERS.length - 1;
+
+/** La couleur d'accent d'un palier sur fond sombre (place, nom du rang, liseré) : son métal, éclairci pour rester lisible. Valeur CSS. */
+export const teinteDeRang = (tier: number) => {
+  const m = TIERS[Math.max(0, Math.min(TOP_TIER, tier))].metal;
+  return `color-mix(in oklab, ${m[0]} 45%, ${m[1]})`;
+};
 export const DEFAULT_ELO = 1200;
 const DIVISIONS = ["III", "II", "I"] as const;
 

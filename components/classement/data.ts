@@ -83,6 +83,25 @@ export async function lastDeltaByUser(admin: SupabaseClient | null, userIds: str
   return out;
 }
 
+/**
+ * L'image de bannière du profil de chaque joueur demandé (table profile_style,
+ * lisible par tous les joueurs connectés). Sert au podium, où la bannière du
+ * joueur est le fond de sa carte. Joueur sans image, table absente : pas
+ * d'entrée (le podium prend alors son image par défaut).
+ */
+export async function bannieresDe(sb: SupabaseClient, userIds: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (userIds.length === 0) return out;
+  try {
+    const { data, error } = await sb.from("profile_style").select("user_id,banner_url").in("user_id", userIds);
+    if (error || !data) return out;
+    for (const r of data as Array<{ user_id: string; banner_url: string | null }>) if (r.banner_url) out.set(r.user_id, r.banner_url);
+  } catch {
+    // migration du profil pas encore appliquée
+  }
+  return out;
+}
+
 /** Nombre de joueurs classés (lignes de `ratings`). */
 export async function countPlayers(supabase: SupabaseClient): Promise<number | null> {
   try {

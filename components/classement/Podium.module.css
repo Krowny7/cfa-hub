@@ -1,0 +1,307 @@
+/* Le podium du Classement : trois bannières de champions (façon Apex). Haute
+   carte à bas en pointe, fond = la bannière du profil du joueur, cadre d'encre
+   vivante à la couleur de son rang (texture liquide du palier), carte
+   holographique qui s'incline (souris, doigt) avec un reflet, arc électrique
+   autour de l'insigne du n° 1. Tout se dimensionne avec la largeur de la
+   carte (unités cqw) : les trois tiennent côte à côte du téléphone à
+   l'ordinateur.
+   Léger : textures et CSS, un seul arc SVG ; l'encre dérive par transform
+   (rien à repeindre) ; tout se met en pause hors écran (data-hors, posé par
+   useHorsEcran) ; figé avec prefers-reduced-motion et data-rl-motion="off" ;
+   coupé en mode discret. Le décor ne capte jamais un clic. */
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2%;
+  width: 100%;
+  perspective: 1000px;
+}
+
+.banniere {
+  --pas: 180px;
+  /* l'épaisseur du cadre : 1,9 % de la largeur, trois pixels au moins */
+  --bord: max(3px, 1.9cqw);
+  /* l'insigne : 40 % de la largeur, 50 pixels au moins */
+  --ins: max(50px, 40cqw);
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 40%;
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  order: 1;
+  flex: 0 1 30%;
+  min-width: 0;
+  max-width: 210px;
+  aspect-ratio: 9 / 15;
+  color: #f4f2ea;
+  text-decoration: none;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.12s;
+  /* le doigt qui défile verticalement fait défiler la page ; en travers, il incline la carte */
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.35));
+}
+.premier {
+  order: 2;
+  flex-basis: 36%;
+  max-width: 250px;
+}
+.banniere:nth-child(3) {
+  order: 3;
+}
+.banniere:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+
+/* le cadre : le liquide du rang, qui dérive, vu par la bordure de la carte */
+.cadre {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0d0d0f;
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 50% 100%, 0 88%);
+  pointer-events: none;
+}
+.cadre::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--pas) * -1 - 2px);
+  background: var(--liq) 0 0 / var(--pas) var(--pas) repeat;
+  will-change: transform;
+  animation: derive 20s linear infinite;
+}
+@keyframes derive {
+  to {
+    transform: translate3d(var(--pas), calc(var(--pas) * -1), 0);
+  }
+}
+
+/* la carte elle-même, rentrée de l'épaisseur du cadre (la pointe aussi) */
+.forme {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0d0d0f;
+  clip-path: polygon(
+    var(--bord) var(--bord),
+    calc(100% - var(--bord)) var(--bord),
+    calc(100% - var(--bord)) calc(88% - var(--bord) * 0.68),
+    50% calc(100% - var(--bord) * 1.08),
+    var(--bord) calc(88% - var(--bord) * 0.68)
+  );
+  pointer-events: none;
+}
+.fond {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  /* un léger parallaxe : l'image suit l'inclinaison */
+  transform: translate(calc((50% - var(--mx)) * 0.06), calc((40% - var(--my)) * 0.06)) scale(1.08);
+}
+.ombre {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0.4) 0%, rgba(10, 10, 12, 0.18) 26%, rgba(10, 10, 12, 0.3) 42%, rgba(10, 10, 12, 0.93) 75%);
+}
+
+.place {
+  position: absolute;
+  top: 4.5cqw;
+  left: 6.5cqw;
+  font-size: max(24px, 21cqw);
+  line-height: 1;
+  color: var(--teinte);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.insigne {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: var(--ins);
+  height: var(--ins);
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+  user-select: none;
+  pointer-events: none;
+}
+.gris {
+  filter: grayscale(1) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+}
+
+/* l'arc électrique du n° 1 : un anneau autour de l'insigne (ArcElectrique, à la couleur de l'aura du rang) */
+.arcWrap {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: calc(var(--ins) * 1.5);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+/* sur la carte sombre, toujours le trait clair de la nuit */
+.arcWrap > span {
+  --trait: var(--arc-c);
+  --noyau: #fff;
+}
+
+.bas {
+  position: absolute;
+  left: 7cqw;
+  right: 7cqw;
+  bottom: 13%;
+  display: grid;
+  gap: 1.6cqw;
+  text-align: center;
+  pointer-events: none;
+}
+.pseudo {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: max(13px, 10.5cqw);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+.rang {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 0.7em;
+  font-family: var(--font-mono);
+  font-size: max(9.5px, 5.2cqw);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: var(--teinte);
+}
+.rang b {
+  font-weight: 600;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 4px;
+}
+.stats > span {
+  display: grid;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-sans);
+  font-size: max(11px, 6.2cqw);
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.stats small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: max(8px, 4.3cqw);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(244, 242, 234, 0.65);
+}
+
+/* le reflet holographique : un point de lumière qui suit le doigt, des bandes irisées */
+.reflet {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    var(--bord) var(--bord),
+    calc(100% - var(--bord)) var(--bord),
+    calc(100% - var(--bord)) calc(88% - var(--bord) * 0.68),
+    50% calc(100% - var(--bord) * 1.08),
+    var(--bord) calc(88% - var(--bord) * 0.68)
+  );
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  opacity: 0.5;
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.5), transparent 40%),
+    repeating-linear-gradient(115deg, transparent 0px, rgba(255, 214, 120, 0.22) 14px, rgba(160, 220, 255, 0.18) 28px, rgba(255, 140, 200, 0.14) 42px, transparent 56px);
+  background-size: 100% 100%, 300% 300%;
+  background-position: 0 0, var(--mx) var(--my);
+}
+
+/* carte étroite (colonne serrée sur tablette) : les mots des chiffres ne tiendraient plus, on les retire */
+@container (max-width: 159px) {
+  .stats {
+    display: none;
+  }
+}
+
+/* téléphone : les trois côte à côte, plus petits, sans les chiffres */
+@media (max-width: 640px) {
+  .podium {
+    gap: 8px;
+  }
+  .banniere {
+    flex-basis: 30%;
+  }
+  .premier {
+    flex-basis: 36%;
+  }
+  .stats {
+    display: none;
+  }
+  .pseudo {
+    -webkit-line-clamp: 1;
+  }
+  .bas {
+    bottom: 14%;
+  }
+}
+
+/* hors écran : l'encre attend */
+.podium[data-hors="1"] .cadre::before {
+  animation-play-state: paused;
+}
+
+/* mouvement réduit, ?mouvement=off : tout est posé */
+:global(html[data-rl-motion="off"]) .cadre::before {
+  animation: none;
+}
+:global(html[data-rl-motion="off"]) .banniere {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cadre::before {
+    animation: none;
+  }
+  .banniere {
+    transition: none;
+  }
+}
+
+/* mode discret : plus d'encre qui bouge, plus de reflet (ni d'arc : ArcElectrique le coupe) */
+:global(html[data-discreet="1"]) .cadre::before {
+  animation: none;
+}
+:global(html[data-discreet="1"]) .reflet {
+  display: none;
+}
+:global(html[data-discreet="1"]) .banniere {
+  transition: none;
+}

@@ -42,6 +42,16 @@ export const CLASSEMENT = {
   tousExamens: "Tous les examens blancs",
 } as const;
 
+/** Le podium en bannières de champions : les trois chiffres de chaque carte (components/classement/PodiumBannieres.tsx). */
+export const PODIUM = {
+  parties: "parties",
+  maitrise: "maîtrise",
+  dernier: "dernier",
+  toi: "Toi",
+  place: (n: number) => (n === 1 ? "1er" : `${n}e`),
+  placement: (jouees: number, sur: number) => `placement ${jouees}/${sur}`,
+} as const;
+
 /** « 4e sur 42 · maîtrise 54 % » (la ligne sous le panneau du rang) */
 export function ligneRang({ place, joueurs, maitrise: m }: { place: number | null; joueurs: number | null; maitrise: number | null }): string {
   const parts: string[] = [];

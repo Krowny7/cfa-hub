@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ChevronDown, Search } from "lucide-react";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { INK } from "@/components/ui/InkDefs";
 import { Icone } from "@/components/adn/icons";
 import { Avatar } from "@/components/classement/Avatar";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
+import { PodiumBannieres } from "@/components/classement/PodiumBannieres";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { CLASSEMENT, RIVALITE, joueursDomaine } from "@/lib/voice-z2a";
@@ -17,42 +17,6 @@ const ROW_GRID = "grid-cols-[22px_30px_minmax(0,1fr)_auto_34px] sm:grid-cols-[26
 
 function badgeOf(r: BoardRow) {
   return rankFor(r.elo, r.mastery, r.rank);
-}
-
-/**
- * Une place du podium, posée sur le papier (sans socle) : la place en grand
- * chiffre, le sceau du joueur (ou sa photo), son nom, son ELO et son rang.
- * La première place est soulignée d'un coup de pinceau.
- */
-function Place({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
-  const first = place === 1;
-  const rk = badgeOf(r);
-  const placement = r.gamesPlayed < PLACEMENT_GAMES;
-  return (
-    <LienJoueur
-      id={r.userId}
-      nom={r.name}
-      className={"group flex min-w-0 flex-col items-center text-center " + (first ? "pb-7 sm:pb-9" : "")}
-      aria-label={`${place}${first ? "er" : "e"} : ${r.isMe ? "toi" : r.name}, ${r.elo} ELO`}
-    >
-      <span className={"relative font-brand leading-none tabular-nums " + (first ? "text-[54px] sm:text-[64px]" : "text-[34px] text-muted sm:text-[40px]")}>
-        {place}
-        {first && (
-          <svg aria-hidden viewBox="0 0 400 64" preserveAspectRatio="none" className="absolute -bottom-2 left-1/2 h-[9px] w-[74px] -translate-x-1/2">
-            <use href={INK.swash} fill="currentColor" />
-          </svg>
-        )}
-      </span>
-      <span className={"mt-4 transition-transform duration-300 group-hover:-translate-y-0.5 " + (first ? "" : "mt-3")}>
-        <Avatar src={r.avatarUrl} name={r.name} size={first ? 56 : 44} userId={r.isMe ? null : r.userId} />
-      </span>
-      <span className={"mt-2.5 w-full truncate px-1 text-[14px] sm:text-[15px] " + (first || r.isMe ? "font-bold" : "font-semibold")}>{r.isMe ? "Toi" : r.name}</span>
-      <span className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-[12.5px] tabular-nums text-muted">
-        <RankBadge tier={rk.tierIndex} size={18} glow={false} gray={placement} />
-        {r.elo}
-      </span>
-    </LienJoueur>
-  );
 }
 
 function Row({ r }: { r: BoardRow }) {
@@ -143,9 +107,9 @@ function Rivalite({ board, meRow }: { board: BoardRow[]; meRow: BoardRow | null 
   );
 }
 
-// Classement général du domaine : le podium posé sur le papier (dès que les
-// trois premiers ont joué : trois places, sans socle, sur une ligne de
-// crayon), puis la liste, la ligne « Toi » surlignée. Chaque joueur a son
+// Classement général du domaine : le podium en trois bannières de champions
+// (dès que les trois premiers ont joué : PodiumBannieres, le n° 1 au centre),
+// puis la liste, la ligne « Toi » surlignée. Chaque joueur a son
 // sceau (ou sa photo). La rivalité tient en une ligne au-dessus de la liste.
 // Le bouton « Défier » d'une ligne apparaît au survol (toujours visible sur
 // téléphone). Au-delà des 10 premiers, la suite se déplie.
@@ -172,17 +136,12 @@ export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { boa
   return (
     <div id="joueurs" data-leonard="joueurs" className={"grid scroll-mt-24 items-start gap-10 lg:grid-cols-12 lg:gap-14 " + (podium ? "" : "max-w-[760px]")}>
       {podium && (
-        <div className="lg:col-span-5 lg:pt-2">
-          <div className="relative grid grid-cols-3 items-end gap-2.5 pb-1 sm:gap-4" aria-label={CLASSEMENT.podium}>
-            <Place r={board[1]} place={2} />
-            <Place r={board[0]} place={1} />
-            <Place r={board[2]} place={3} />
-            <span aria-hidden className="pencil-line absolute inset-x-0 bottom-0" />
-          </div>
+        <div className="lg:col-span-6 lg:pt-2 xl:col-span-7">
+          <PodiumBannieres rows={[board[0], board[1], board[2]]} label={CLASSEMENT.podium} />
         </div>
       )}
 
-      <div className={"flex min-w-0 flex-col gap-3 " + (podium ? "lg:col-span-7" : "lg:col-span-12")}>
+      <div className={"flex min-w-0 flex-col gap-3 " + (podium ? "lg:col-span-6 xl:col-span-5" : "lg:col-span-12")}>
         {!sobre && (
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2 sm:px-3">
             <span className="t-micro">{joueursDomaine(count, CURRENT_DOMAIN.name)}</span>

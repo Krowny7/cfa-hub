@@ -14,6 +14,8 @@ export type BoardRow = {
   /** variation d'ELO au dernier match, null si aucun */
   lastDelta: number | null;
   isMe: boolean;
+  /** image de bannière du profil (chargée pour les trois premiers seulement : le podium) */
+  bannerUrl?: string | null;
 };
 
 export type NextExam = {
