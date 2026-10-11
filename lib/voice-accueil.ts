@@ -62,3 +62,20 @@ export const RDV = {
     inscris: "inscris-toi",
   },
 } as const;
+
+/** Le vainqueur du jour : la meilleure copie des 30 d'hier, sous Les 30 du jour (components/accueil/VainqueurDuJour.tsx). */
+export const VAINQUEUR = {
+  sur: "Vainqueur des 30 d'hier",
+  toi: "Toi",
+  /** « devant 13 joueurs » : le gagnant n'est pas compté ; seul, il le dit */
+  devant: (joueurs: number) => (joueurs <= 1 ? "seul en lice" : `devant ${joueurs - 1} ${joueurs - 1 === 1 ? "joueur" : "joueurs"}`),
+  /** « 31 min 42 s » (sous l'heure), « 1 h 02 » sinon */
+  duree: (secondes: number) => {
+    const s = Math.max(0, Math.floor(secondes));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h} h ${String(m).padStart(2, "0")}` : `${m} min ${String(s % 60).padStart(2, "0")} s`;
+  },
+  classement: (jour: string) => `Classement du ${jour}`,
+  aria: (nom: string, score: string, jour: string) => `Vainqueur des 30 d'hier : ${nom}, ${score}. Voir le classement du ${jour}`,
+} as const;

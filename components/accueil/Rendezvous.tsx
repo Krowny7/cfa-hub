@@ -6,6 +6,7 @@ import { Icone } from "@/components/adn/icons";
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
 import PctScore from "@/components/adn/PctScore";
 import { SceauTenu } from "@/components/accueil/SceauTenu";
+import { VainqueurDuJour } from "@/components/accueil/VainqueurDuJour";
 import { DefiTile } from "@/components/defi/DefiTile";
 import { cinqVisible } from "@/components/defi/CinqCarte";
 import { defiEnTete } from "@/components/defi/DefiHero";
@@ -645,6 +646,7 @@ export function Rendezvous({ d }: { d: AccueilData }) {
           </div>
         )}
       </div>
+      {d.vainqueur && <VainqueurDuJour v={d.vainqueur} />}
       <TuilesCalmes d={d} trenteCalme={colonne ? null : trenteCalme} />
       <BandeRang d={d} />
       <LiensDuJour d={d} />

@@ -4,6 +4,7 @@ import type { EtatJour } from "@/lib/voice";
 import type { EtatObjectif } from "@/lib/objectif";
 import type { Nouveaute } from "@/lib/profil/nouveau";
 import type { TuilePointFaible } from "@/lib/points-faibles";
+import type { VainqueurDuJour } from "@/lib/vainqueur-du-jour";
 
 export type { TodayDaily } from "@/lib/daily";
 
@@ -106,6 +107,8 @@ export type AccueilData = {
   daily: TodayDaily | null;
   /** les 5 du jour, le défi éclair (getTodayDaily « cinq ») ; null : non chargé */
   cinq?: TodayDaily | null;
+  /** la meilleure copie des 30 d'hier (lib/vainqueur-du-jour) ; absent ou null : pas de bannière */
+  vainqueur?: VainqueurDuJour | null;
   /** le dernier duel terminé, encore frais (à revoir) */
   reviewDuel: ReviewDuel | null;
   /** instant du rendu (ISO), pour les échéances des tuiles */

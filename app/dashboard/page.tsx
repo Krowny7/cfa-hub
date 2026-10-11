@@ -6,6 +6,7 @@ import { calcStreakAndToday, type XpDay } from "@/lib/leveling";
 import { getTopicAverages, getTopicMastery, programMastery } from "@/lib/mastery";
 import { getLeaderboardRank, getMyRating, getOpenChallenges, getRatingHistory } from "@/lib/rating";
 import { getTodayDaily } from "@/lib/daily";
+import { lireVainqueurDuJour } from "@/lib/vainqueur-du-jour";
 import { getReviewableDuels } from "@/lib/duels";
 import { etatDuJour } from "@/lib/voice";
 import { JOURS_RETOUR } from "@/lib/voice-z1";
@@ -51,7 +52,7 @@ export default async function Dashboard() {
 
   const now = new Date();
 
-  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq, pointFaible] =
+  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq, pointFaible, vainqueur] =
     await Promise.all([
       supabase.from("profiles").select("username,exam_date").eq("id", user.id).maybeSingle(),
       // XP par jour : sert seulement à la série (le détail est sur /moi).
@@ -81,6 +82,8 @@ export default async function Dashboard() {
       getTodayDaily(supabase, user.id, "cinq"),
       // le point faible n° 1 quand il est net (points_faibles seule, sans getAnswerStats)
       loadPointFaible(supabase, user.id, now),
+      // le vainqueur d'hier aux 30 du jour (null s'il n'y en a pas : pas de bannière)
+      lireVainqueurDuJour(supabase, admin, user.id, parisDay(now)),
     ]);
 
   const profile = profileRes.data as { username?: string | null; exam_date?: string | null } | null;
@@ -140,6 +143,7 @@ export default async function Dashboard() {
     returning,
     daily,
     cinq,
+    vainqueur,
     reviewDuel: fresh
       ? {
           id: fresh.id,
