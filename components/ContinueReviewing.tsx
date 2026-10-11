@@ -10,7 +10,7 @@ import { plural, splitTitle, subjectOfTitle } from "@/components/ContentDetailHe
 type RecentEntry = { id: string; title: string; ts: number };
 export type ResumeSuggestion = { id: string; title: string; subject?: string | null };
 
-function ago(ts: number, now: number) {
+export function ago(ts: number, now: number) {
   const m = Math.max(0, Math.round((now - ts) / 60000));
   if (m < 2) return "ouvert à l'instant";
   if (m < 60) return `ouvert il y a ${m} min`;

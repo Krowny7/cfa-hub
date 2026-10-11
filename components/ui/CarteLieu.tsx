@@ -19,6 +19,8 @@ import { ArrowRight } from "lucide-react";
 //   label      nom accessible de la carte
 //   ratio      rapport de l'image sur ordinateur (« 16 / 10 »)
 //   dataLeonard  repère de la visite de Léonard
+//   liens      liens secondaires sous le bouton (facultatif)
+//   tailleNom  classes de taille du nom, si le nom est long (facultatif)
 export function CarteLieu({
   visuel,
   vignette,
@@ -31,6 +33,8 @@ export function CarteLieu({
   className = "",
   ratio = "16 / 10",
   dataLeonard,
+  liens,
+  tailleNom = "text-[28px] lg:text-[44px]",
 }: {
   visuel: React.ReactNode;
   vignette: React.ReactNode;
@@ -43,6 +47,8 @@ export function CarteLieu({
   className?: string;
   ratio?: string;
   dataLeonard?: string;
+  liens?: { href: string; label: string }[];
+  tailleNom?: string;
 }) {
   return (
     <section
@@ -59,7 +65,7 @@ export function CarteLieu({
         {visuel}
       </div>
       <div className="col-start-1 row-start-1 flex min-w-0 flex-col gap-1.5 lg:row-start-2 lg:px-6 lg:pt-2.5">
-        <h2 className="font-brand m-0 flex items-center gap-2 text-[28px] leading-none lg:gap-3 lg:text-[44px]">
+        <h2 className={"font-brand m-0 flex items-center gap-2 leading-none lg:gap-3 " + tailleNom}>
           {marque}
           {nom}
         </h2>
@@ -70,6 +76,15 @@ export function CarteLieu({
         <Link href={action.href} className="btn btn-primary btn-lg rl-press w-full">
           {action.icon} {action.label} <ArrowRight size={17} aria-hidden />
         </Link>
+        {liens && liens.length > 0 && (
+          <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2">
+            {liens.map((l) => (
+              <Link key={l.href} href={l.href} className="ink-link inline-flex items-center gap-1 text-[14px] font-semibold">
+                {l.label} <ArrowRight size={14} aria-hidden />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

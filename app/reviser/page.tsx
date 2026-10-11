@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ReviserView } from "@/components/reviser/ReviserView";
 import { loadSubjects } from "@/components/reviser/load";
+import { loadErrors } from "@/components/accueil/queries";
 
 // Espace « Réviser » : fiches, flashcards, cours complets, et
 // les 10 matières avec ce qui existe vraiment pour chacune (?matiere=fsa
@@ -20,7 +21,7 @@ export default async function ReviserPage({ searchParams }: { searchParams?: Pro
     admin = null;
   }
 
-  const [subjects, sp, flashcardSets] = await Promise.all([
+  const [subjects, sp, flashcardSets, ratures] = await Promise.all([
     loadSubjects(supabase, admin, auth.user.id),
     searchParams,
     // sets de flashcards officiels publiés (la carte « Flashcards »)
@@ -37,6 +38,15 @@ export default async function ReviserPage({ searchParams }: { searchParams?: Pro
         return null;
       }
     })(),
+    // le carnet de ratures (la tuile « Tes questions manquées ») ; null si indisponible
+    (async () => {
+      try {
+        const e = await loadErrors(supabase, admin, auth.user.id);
+        return e.available ? e.total : null;
+      } catch {
+        return null;
+      }
+    })(),
   ]);
-  return <ReviserView subjects={subjects} matiere={sp?.matiere ?? null} flashcardSets={flashcardSets} />;
+  return <ReviserView subjects={subjects} matiere={sp?.matiere ?? null} flashcardSets={flashcardSets} ratures={ratures} />;
 }

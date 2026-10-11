@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTopicMastery } from "@/lib/mastery";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SUBJECTS, subjectByFlashcardFolder, type SubjectAvailability } from "@/components/reviser/catalog";
 
 // Disponibilité réelle des formats par matière, pour Réviser (et la grille
@@ -53,4 +54,23 @@ export async function loadSubjects(supabase: SupabaseClient, admin: SupabaseClie
       flashcardSets: c?.sets ?? 0,
     };
   });
+}
+
+/**
+ * Les 10 matières pour les listes /fiches, /courses (maîtrise de chaque
+ * matière) : sans client admin ou si la maîtrise n'est pas lisible, on
+ * affiche quand même les matières, sans pourcentage.
+ */
+export async function loadSubjectsSafe(supabase: SupabaseClient, userId: string): Promise<SubjectAvailability[]> {
+  let admin: SupabaseClient | null = null;
+  try {
+    admin = createAdminClient();
+  } catch {
+    admin = null;
+  }
+  try {
+    return await loadSubjects(supabase, admin, userId);
+  } catch {
+    return SUBJECTS.map((s) => ({ key: s.key, name: s.name, pct: null, fiche: s.fiche, course: s.course, flashcards: null, flashcardSets: 0 }));
+  }
 }

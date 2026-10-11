@@ -84,6 +84,51 @@ export const ILLUSTRATIONS = {
       STYLE +
       "Sujet : la place de la Seigneurie à Florence au soir, en vue large : le Palazzo Vecchio à gauche, la Loggia dei Lanzi à droite, la fontaine de Neptune au centre, une foule lointaine de silhouettes minuscules et indistinctes qui se croisent (le lieu où l'on rencontre tout le monde), sans aucun visage. Haut et bas de l'image calmes. Lumière dorée et rasante de fin de journée, longues ombres, palette chaude : ocre, terre de Sienne brûlée, brun Van Dyck, vieil or, ciel orangé et bleu-gris. Aucun texte, aucun logo, aucun cadre, pas de vignettage. Format panoramique 21:9 (2520×1080 px), avec toute l'information utile dans une bande horizontale au tiers central de la hauteur (l'image sera recadrée en environ 11:1 sur ordinateur et 4:1 sur téléphone).",
   },
+  "reviser-bibliotheque": {
+    src: "/illustrations/reviser-bibliotheque.webp",
+    alt: "La bibliothèque-cabinet d'étude : un studiolo de marqueterie",
+    credit: "Studiolo du palais ducal de Gubbio (Giuliano da Maiano, atelier), Metropolitan Museum of Art, CC0 (commons.wikimedia.org, Studiolo_from_the_Ducal_Palace_in_Gubbio_MET_DT213911).",
+    emplacement: "Réviser : carte « lieu » La Bibliothèque, image carrée en tête de carte sur ordinateur (environ 365 px de large) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
+    prompt:
+      STYLE +
+      "Sujet : la bibliothèque-cabinet d'étude de l'atelier de Léonard vers 1500. Hautes étagères de bois sombre chargées de livres reliés de cuir et de rouleaux, un lutrin avec un grand livre ouvert, une table couverte de carnets, un compas et un globe, une fenêtre en plein cintre à gauche d'où entre une lumière dorée et rasante de fin de journée, poussière qui flotte dans le rayon. Palette chaude : ocre, terre de Sienne brûlée, brun, or, quelques bleus froids dans les ombres. Aucun personnage, aucun texte lisible, pas de cadre. Format carré 1:1, sujet principal centré, avec assez d'air en haut et en bas pour un recadrage en portrait 4:5.",
+  },
+  "reviser-casier-medaillon": {
+    src: "/illustrations/reviser-casier-medaillon.webp",
+    alt: "Un casier de cartes en marqueterie",
+    credit: "Recadrage des casiers à claire-voie du studiolo de Gubbio, Metropolitan Museum of Art, CC0 (commons.wikimedia.org, Studiolo_from_the_Ducal_Palace_in_Gubbio_MET_DT213911).",
+    emplacement: "Réviser : médaillon rond de 60 px dans la tuile Flashcards (livrer en 512×512 px).",
+    prompt:
+      STYLE +
+      "Sujet : gros plan d'un petit casier de bois sombre aux portes à claire-voie, rempli de cartes de papier vergé jauni, quelques cartes sorties en éventail, une ficelle. Lumière dorée de fin de journée venant de la gauche, contraste franc entre le bois sombre et le papier clair. Palette chaude : ocre, Sienne, brun, or. Aucun personnage, aucun texte lisible. Format carré 1:1, sujet centré et lisible en tout petit dans un cercle.",
+  },
+  "reviser-carnets": {
+    src: "/illustrations/reviser-carnets.webp",
+    alt: "Une double page des carnets de Léonard",
+    credit: "Léonard de Vinci, Codex Arundel 263 ff. 174v-175r, British Library. Domaine public (commons.wikimedia.org, Codex_Arundel_263_ff.174v-175r).",
+    emplacement: "/fiches : carte horizontale du lieu « Les carnets » sous l'en-tête, image 16:9 de 300×169 px sur ordinateur, 112×84 px sur téléphone.",
+    prompt:
+      STYLE +
+      "Sujet : sur une table de bois patinée, plusieurs carnets de Léonard ouverts : pages couvertes de croquis sépia (engrenages, études de mains, schémas), écriture en miroir illisible, un fusain, une règle et un compas posés dessus. Lumière dorée de fin de journée rasant le papier depuis la gauche. Palette chaude : ocre, Sienne, brun, or. Aucun personnage, aucun texte lisible. Format 16:9, sujet au centre pour permettre un recadrage en 4:3.",
+  },
+  "reviser-pupitre": {
+    src: "/illustrations/reviser-pupitre.webp",
+    alt: "Un cabinet d'étude, ses étagères et son pupitre",
+    credit: "Antonello da Messina, Saint Jérôme dans son étude (vers 1475), recadré sans le personnage. Domaine public (commons.wikimedia.org, Antonello_da_Messina_-_St_Jerome_in_his_study).",
+    emplacement: "/courses : carte horizontale du lieu « Le pupitre » sous l'en-tête, image 16:9 de 300×169 px sur ordinateur, 112×84 px sur téléphone.",
+    prompt:
+      STYLE +
+      "Sujet : un lutrin de bois sculpté près d'une fenêtre en plein cintre, un grand livre ouvert dessus, une bougie, des étagères de livres derrière, quelques feuillets sur un tabouret. Lumière dorée de fin de journée qui traverse la pièce en diagonale, poussière dans le rayon. Palette chaude : ocre, Sienne, brun, or, ombres bleutées. Aucun personnage, aucun texte lisible. Format 16:9, lutrin légèrement à droite du centre, recadrable en 4:3.",
+  },
+  "reviser-casier": {
+    src: "/illustrations/reviser-casier.webp",
+    alt: "Un meuble à casiers en marqueterie",
+    credit: "Recadrage des casiers à claire-voie du studiolo de Gubbio, Metropolitan Museum of Art, CC0 (commons.wikimedia.org, Studiolo_from_the_Ducal_Palace_in_Gubbio_MET_DT213911).",
+    emplacement: "/flashcards : carte horizontale du lieu « Le casier » sous l'en-tête, image 16:9 de 300×169 px sur ordinateur, 112×84 px sur téléphone.",
+    prompt:
+      STYLE +
+      "Sujet : un meuble à casiers en bois sombre aux portes à claire-voie, des petites cases pleines de cartes de papier vergé jauni ; un tiroir entrouvert, quelques cartes en éventail sur la tablette, une ficelle et un sceau de cire. Lumière dorée de fin de journée venant de la gauche. Palette chaude : ocre, Sienne, brun, or. Aucun personnage, aucun texte lisible. Format 16:9, sujet au centre, recadrable en 4:3.",
+  },
 } as const satisfies Record<string, Illustration>;
 
 export type IllustrationNom = keyof typeof ILLUSTRATIONS;

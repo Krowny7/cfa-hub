@@ -53,3 +53,32 @@ export function FlashcardSubjectGrid({
     />
   );
 }
+
+/**
+ * Les paquets d'une seule matière (la demandée par ?subject=, sinon la
+ * première qui en a), pour la liste /flashcards : l'index du programme
+ * choisit la matière, cette section montre ses paquets. Renvoie le nom de la
+ * matière avec la liste, ou null si aucun paquet n'existe.
+ */
+export function flashcardPaquets(items: Item[], counts: Record<string, number>, selectedFolder?: string): { name: string; groups: BrowserGroup[] } | null {
+  const groups = flashcardGroups(items, counts);
+  const key = subjectFromParam(selectedFolder)?.key ?? (selectedFolder && groups.some((g) => g.key === selectedFolder) ? selectedFolder : null);
+  const g = (key ? groups.find((x) => x.key === key && x.rows.length > 0) : null) ?? groups.find((x) => x.rows.length > 0);
+  return g ? { name: g.name, groups: [g] } : null;
+}
+
+export function FlashcardPaquets({ groups, basePath }: { groups: BrowserGroup[]; basePath: string }) {
+  return (
+    <SubjectBrowser
+      groups={groups}
+      basePath={basePath}
+      unit={["carte", "cartes"]}
+      setUnit={["set", "sets"]}
+      setLabel="Sets"
+      srs
+      progressLabel="vues"
+      emptyLabel="Les cartes de cette matière sont en préparation."
+      note="Ta répétition espacée est enregistrée sur cet appareil : les cartes à revoir passent en premier."
+    />
+  );
+}
