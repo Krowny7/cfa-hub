@@ -98,7 +98,7 @@ function CarteMarquee({ it, retiree }: { it: QuestionMarquee; retiree: boolean }
         <MarqueQuestion questionId={it.questionId} source={it.source ?? "fiche"} />
       </div>
       <QuestionPrompt text={it.prompt} className="mt-3 text-[15.5px] font-semibold leading-[1.6] tracking-[-0.006em] break-words [overflow-wrap:anywhere] md:text-[16px]" />
-      <ul className="m-0 mt-4 grid list-none gap-2 p-0">
+      <ul className="m-0 mt-4 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0">
         {it.choices.map((c, ci) => {
           const bonne = it.correctIndex === ci;
           return (

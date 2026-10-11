@@ -239,7 +239,7 @@ export function DuelResult({ state, review, mastery = null, leaderboardRank = nu
           {topics.length === 0 ? (
             <p className="m-0 text-sm text-muted">Le détail par matière n&apos;est pas disponible pour cette partie.</p>
           ) : (
-            <ul className="m-0 grid list-none gap-3 p-0">
+            <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-3 p-0">
               {topics.map((t) => {
                 const p = Math.round((t.correct / t.total) * 100);
                 return (

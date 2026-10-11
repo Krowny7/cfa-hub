@@ -242,7 +242,7 @@ function ReviewCard({ q, total, showRate }: { q: DailyReviewItem; total: number;
         className="mt-3 text-[15.5px] font-semibold leading-[1.6] tracking-[-0.006em] break-words [overflow-wrap:anywhere] md:text-[16px]"
       />
 
-      <ul className="m-0 mt-4 grid list-none gap-2 p-0">
+      <ul className="m-0 mt-4 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0">
         {q.choices.map((c, ci) => {
           const correct = ci === q.correctIndex;
           const picked = ci === q.selectedIndex;

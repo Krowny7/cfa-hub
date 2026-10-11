@@ -66,7 +66,7 @@ export function CarteRappel({ r, compacte = false }: { r: RappelNotion; compacte
       {r.concepts.length > 0 && (
         <div className="grid gap-1">
           <p className="t-eyebrow m-0">{V.coince}</p>
-          <ul className="t-small m-0 grid list-none gap-1 p-0">
+          <ul className="t-small m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1 p-0">
             {r.concepts.map((c) => (
               <li key={c}>{c}</li>
             ))}
@@ -78,7 +78,7 @@ export function CarteRappel({ r, compacte = false }: { r: RappelNotion; compacte
           <p className="t-eyebrow m-0">
             {V.formules} · {r.calcul.nom}
           </p>
-          <ul className="m-0 grid list-none gap-1 p-0">
+          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1 p-0">
             {r.calcul.formules.map((f) => (
               <li key={f} className="rounded-[10px] bg-surface-2/60 px-3 py-2 font-mono text-[13px] leading-snug break-words [overflow-wrap:anywhere]">
                 {f}
@@ -88,7 +88,7 @@ export function CarteRappel({ r, compacte = false }: { r: RappelNotion; compacte
           {r.calcul.pieges.length > 0 && (
             <>
               <p className="t-eyebrow m-0 mt-1">{V.pieges}</p>
-              <ul className="t-small m-0 grid list-disc gap-1 pl-4">
+              <ul className="t-small m-0 grid grid-cols-[minmax(0,1fr)] list-disc gap-1 pl-4">
                 {r.calcul.pieges.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
@@ -100,7 +100,7 @@ export function CarteRappel({ r, compacte = false }: { r: RappelNotion; compacte
       {r.flashcards.length > 0 && (
         <div className="grid gap-1.5">
           <p className="t-eyebrow m-0">{V.flashcards}</p>
-          <ul className="m-0 grid list-none gap-2 p-0">
+          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0">
             {r.flashcards.map((f, k) => (
               <Flashcard key={k} recto={f.recto} verso={f.verso} />
             ))}

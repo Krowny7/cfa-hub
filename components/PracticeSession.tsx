@@ -400,7 +400,7 @@ export function PracticeSession({
                       </p>
                     )}
                   </div>
-                  <ul className="m-0 grid list-none content-start gap-0.5 p-0" aria-label="Tes matières">
+                  <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none content-start gap-0.5 p-0" aria-label="Tes matières">
                     {rangees.map((t) => {
                       const on = selected.has(t.key);
                       const m = mastery[t.key];

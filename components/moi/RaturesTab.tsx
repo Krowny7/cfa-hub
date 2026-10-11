@@ -505,7 +505,7 @@ function LigneRature({
       {ouverte && (
         <div id={id} className="rl-in grid gap-4 px-2 pb-4 pt-1">
           <QuestionPrompt text={it.prompt} className="text-[15.5px] font-semibold leading-[1.6] tracking-[-0.006em] break-words [overflow-wrap:anywhere] md:text-[16px]" />
-          <ul className="m-0 grid list-none gap-2 p-0">
+          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0">
             {it.choices.map((c, ci) => {
               const bonne = it.correctIndex === ci;
               const moi = it.lastSelected === ci && !bonne;

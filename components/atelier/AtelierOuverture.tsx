@@ -58,7 +58,7 @@ export function AtelierOuverture({
         <h1 className="t-h1 m-0">{V.aujourdhui}</h1>
       </div>
 
-      <ol className="m-0 grid list-none divide-y divide-line p-0">
+      <ol className="m-0 grid grid-cols-[minmax(0,1fr)] list-none divide-y divide-line p-0">
         {choix.map((id) => {
           const p = parId.get(id);
           const r = remplacante(id);

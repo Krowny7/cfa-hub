@@ -286,7 +286,7 @@ export function DuelMatch({ state, myMastery = null, demo }: Props) {
             </p>
             <h2 className="t-h1 m-0 mt-1.5">{PARTIE.avant}</h2>
           </div>
-          <ul className="m-0 grid list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
+          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
             {PARTIE.regles(n, Math.round(state.timeLimitSeconds / 60)).map(([b, rest]) => (
               <li key={b}>
                 <b className="text-white">{b}</b>

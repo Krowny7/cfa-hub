@@ -312,7 +312,7 @@ export function AtelierSeance({
       <aside className="card hidden gap-5 p-5 lg:sticky lg:top-[150px] lg:grid" aria-label={V.plan}>
         <div className="grid gap-2">
           <p className="t-eyebrow m-0">{V.plan}</p>
-          <ol className="m-0 grid list-none gap-1.5 p-0">
+          <ol className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1.5 p-0">
             {blocs.map((b) => (
               <li key={b.bloc} className={"flex items-center gap-2 text-[13.5px] " + (b.etat === "encours" ? "font-semibold text-white" : "text-muted")}>
                 {b.etat === "fait" ? <Check size={14} aria-hidden /> : b.etat === "encours" ? <Circle size={10} fill="currentColor" aria-hidden className="mx-0.5" /> : <Circle size={10} aria-hidden className={"mx-0.5 " + (b.etat === "saute" ? "opacity-40" : "")} />}
@@ -328,7 +328,7 @@ export function AtelierSeance({
         </div>
         <div className="grid gap-2">
           <p className="t-eyebrow m-0">{V.notions}</p>
-          <ul className="m-0 grid list-none gap-1.5 p-0">
+          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1.5 p-0">
             {seance.notions.map((n) => {
               const c = compteNotion(e, n);
               return (

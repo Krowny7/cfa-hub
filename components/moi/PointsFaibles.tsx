@@ -152,7 +152,7 @@ function LignePointFaible({
           {p.concepts.length > 0 && (
             <div className="grid gap-1">
               <p className="t-eyebrow m-0">{V.coince}</p>
-              <ul className="t-small m-0 grid list-none gap-1 p-0">
+              <ul className="t-small m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1 p-0">
                 {p.concepts.map((c) => (
                   <li key={c.concept}>{conceptCoince(c)}</li>
                 ))}
@@ -160,7 +160,7 @@ function LignePointFaible({
             </div>
           )}
           {details.length > 0 && (
-            <ul className="t-small m-0 grid list-none gap-1 p-0">
+            <ul className="t-small m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1 p-0">
               {details.map((l) => (
                 <li key={l}>{l}</li>
               ))}

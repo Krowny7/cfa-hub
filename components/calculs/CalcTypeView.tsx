@@ -321,7 +321,7 @@ function Formulas({ meta }: { meta: CalcTypeMeta }) {
   return (
     <>
       <p className="t-eyebrow">{CALC.rappel}</p>
-      <ul className="mt-4 grid gap-3">
+      <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-3">
         {meta.formulas.map((f, i) => (
           <li key={i} className="flex gap-3 text-[15px] leading-[1.55] text-body">
             <span aria-hidden className="mt-[11px] h-px w-3 shrink-0 bg-[color:var(--pencil)]" />
@@ -332,7 +332,7 @@ function Formulas({ meta }: { meta: CalcTypeMeta }) {
       {meta.traps.length > 0 && (
         <>
           <p className="t-eyebrow mt-7 text-pen">{CALC.pieges}</p>
-          <ul className="mt-3 grid gap-2.5">
+          <ul className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2.5">
             {meta.traps.map((t, i) => (
               <li key={i} className="flex gap-3 text-[14px] leading-[1.55] text-muted">
                 <span aria-hidden className="mt-[10px] h-px w-3 shrink-0 bg-pen opacity-70" />

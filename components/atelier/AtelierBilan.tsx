@@ -65,7 +65,7 @@ function revue(items: ItemSeance[], reponses: Reponse[], rappels: Record<string,
 /** Par notion : avant → pendant, ratures, calcul (le bilan, l'arrêt, et l'historique des Ateliers dans Moi). anime : false, le chiffre rayé est posé sans geste (l'historique). */
 export function ParNotion({ b, rappels, anime = true }: { b: BilanAtelier; rappels: Noms; anime?: boolean }) {
   return (
-    <ul className="m-0 grid list-none gap-0 divide-y divide-line p-0">
+    <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-0 divide-y divide-line p-0">
       {b.notions.map((n) => (
         <li key={n.notion} className="grid gap-1 py-3 first:pt-0 last:pb-0">
           <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-[15px] font-semibold">

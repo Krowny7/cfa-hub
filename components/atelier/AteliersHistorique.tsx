@@ -62,7 +62,7 @@ export function AteliersHistorique({ h }: { h: HistoriqueAteliers }) {
           <p className="t-eyebrow m-0">{V.dernier}</p>
           <p className="m-0 mt-1 font-mono text-[14px] font-semibold tabular-nums">{V.seance(dernier.date, dernier.minutes, dernier.bilan.score, dernier.bilan.total)}</p>
         </div>
-        <ul className="m-0 grid list-none gap-1 p-0">
+        <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1 p-0">
           {dernier.bilan.notions.map((n) => (
             <li key={n.notion} className="flex min-w-0 items-baseline justify-between gap-3 text-[14px]">
               <span className="min-w-0 font-semibold [overflow-wrap:anywhere]">{nomDe(h, n.notion)}</span>

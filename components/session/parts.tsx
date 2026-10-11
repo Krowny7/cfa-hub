@@ -347,7 +347,7 @@ export function ReadyCard({
         <h2 className="t-h1 m-0 mt-2">{title}</h2>
         {meta && <p className="t-small m-0 mt-2">{meta}</p>}
       </div>
-      <ul className="m-0 grid list-none gap-2.5 p-0">
+      <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-2.5 p-0">
         {rules.map((r, i) => (
           <li key={i} className="flex items-start gap-3 text-[15px] leading-normal text-muted">
             <span className="mt-[9px] h-[5px] w-[5px] shrink-0 rounded-full bg-white" aria-hidden />
@@ -693,7 +693,7 @@ export function ReviewItem({ q, n, compact = false, source = "session" }: { q: R
           (compact ? "text-[14px]" : "text-[15.5px] md:text-[16px]")
         }
       />
-      <ul className="m-0 mt-4 grid list-none gap-2 p-0">
+      <ul className="m-0 mt-4 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0">
         {q.choices.map((c, ci) => {
           const correct = ci === q.correct_index;
           const mine = ci === q.selected_index;

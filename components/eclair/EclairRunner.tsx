@@ -356,7 +356,7 @@ function Corrigee({ q }: { q: EclairQuestion }) {
   const ok = q.selectedIndex === q.correctIndex;
   return (
     <div className="grid gap-4">
-      <ul className="m-0 grid list-none gap-2 p-0" aria-label="Correction">
+      <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0" aria-label="Correction">
         {q.choices.map((c, ci) => {
           const correct = ci === q.correctIndex;
           const picked = ci === q.selectedIndex;

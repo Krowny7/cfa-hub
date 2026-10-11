@@ -281,7 +281,7 @@ export function DefiBoard({
       {rows.length === 0 ? (
         <p className="t-small m-0 mt-4 max-w-[360px]">{isToday ? DEFI.boardEmpty : DEFI.boardEmptyPast}</p>
       ) : (
-        <ol className="m-0 mt-4 grid list-none gap-0.5 p-0">
+        <ol className="m-0 mt-4 grid grid-cols-[minmax(0,1fr)] list-none gap-0.5 p-0">
           {shown.map((r) => (
             <BoardRow key={r.userId} row={r} total={total} />
           ))}
@@ -392,7 +392,7 @@ export function DefiHistory({
         <p className="t-small m-0">{DEFI.historyEmpty}</p>
       ) : (
         <div>
-          <ul className="m-0 grid list-none divide-y divide-line p-0">
+          <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none divide-y divide-line p-0">
             {shown.map((e) => (
               <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} format={format} />
             ))}
@@ -403,7 +403,7 @@ export function DefiHistory({
                 {DEFI.voirPlus(more.length)}
                 <ArrowRight size={13} className="transition-transform group-open:rotate-90" aria-hidden />
               </summary>
-              <ul className="m-0 mt-1 grid list-none divide-y divide-line p-0">
+              <ul className="m-0 mt-1 grid grid-cols-[minmax(0,1fr)] list-none divide-y divide-line p-0">
                 {more.map((e) => (
                   <HistoryRow key={e.day} e={e} today={today} nowIso={nowIso} format={format} />
                 ))}

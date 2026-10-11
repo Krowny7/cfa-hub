@@ -267,7 +267,7 @@ export function MiseAuPropre({
           )}
 
           {resultat ? (
-            <ul className="m-0 grid list-none gap-2 p-0" aria-label="Correction">
+            <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-2 p-0" aria-label="Correction">
               {tiree.choices.map((c, ci) => {
                 const bonne = ci === resultat.bonne;
                 const moi = ci === resultat.choisi && !bonne;

@@ -96,7 +96,7 @@ export function AtelierCalcul({
           {corrige.solution.length > 0 && (
             <div className="grid gap-2">
               <p className="t-eyebrow m-0">{CALC.correction}</p>
-              <ol className="m-0 grid gap-2 p-0">
+              <ol className="m-0 grid grid-cols-[minmax(0,1fr)] gap-2 p-0">
                 {corrige.solution.map((s, k) => (
                   <li key={k} className="flex gap-3">
                     <span className="w-5 shrink-0 pt-[3px] text-right font-mono text-[12px] text-[color:var(--ink-3)] tabular-nums">{k + 1}</span>

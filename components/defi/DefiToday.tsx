@@ -105,7 +105,7 @@ export function DefiToday({
               </div>
               {/* les 30 traits à poser, au crayon : ils passeront à l'encre un à un */}
               <Ticks marks={Array.from({ length: info.questionCount }, () => "todo" as const)} label={DEFI.aTracer(info.questionCount)} />
-              <ul className="m-0 grid list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
+              <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
                 {DEFI.rules(info.questionCount, Math.round(info.timeLimitSeconds / 60)).map(([b, rest]) => (
                   <li key={b}>
                     <b className="text-white">{b}</b>
