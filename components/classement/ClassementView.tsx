@@ -225,11 +225,16 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
                 aria-label="Ton rang"
               >
                 <div className="flex min-w-0 flex-col gap-4">
-                  <div className="flex min-w-0 flex-col gap-2">
+                  <div className="@container flex min-w-0 flex-col gap-2">
                     <p className="t-eyebrow">{CL.tonRang(dom)}</p>
-                    <h2 className="font-brand m-0 flex items-center gap-3 text-[52px] leading-[0.95] md:text-[68px]">
+                    {/* la taille suit la place de la colonne (unités cqi) et la longueur du nom :
+                        « Placement » ou « Platine II » tiennent sur une ligne sans déborder sur « Autour de toi » */}
+                    <h2
+                      className="font-brand m-0 flex min-w-0 items-center gap-3 leading-[0.95]"
+                      style={{ fontSize: `clamp(26px, calc((100cqi - 100px) / ${(0.76 * Math.max(rangNom.length, 4)).toFixed(2)}), 68px)` }}
+                    >
                       <RankBadge tier={rank.tierIndex} division={enPlacement ? null : rank.division} mastery={me.mastery} size={84} gray={enPlacement} />
-                      {rangNom}
+                      <span className="min-w-0">{rangNom}</span>
                     </h2>
                     <p className="t-micro m-0">
                       {fmtInt(me.elo)} ELO · {ligneRang({ place: me.leaderboardRank, joueurs: me.totalPlayers, maitrise: me.mastery })}
