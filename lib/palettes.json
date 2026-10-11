@@ -1,0 +1,65 @@
+{
+  "palettes": [
+    {
+      "key": "san-romano",
+      "nom": "San Romano",
+      "inspiration": "La Bataille de San Romano, Uccello",
+      "voile": [0.36, 0.64],
+      "couleurs": [
+        { "nom": "noir", "hex": "#14100d" },
+        { "nom": "brun Van Dyck", "hex": "#4a3020" },
+        { "nom": "terre d'ombre brûlée", "hex": "#7d4527" },
+        { "nom": "vermillon", "hex": "#d4472a" },
+        { "nom": "ocre pâle", "hex": "#d9b97a" },
+        { "nom": "blanc d'os", "hex": "#efe6d2" }
+      ]
+    },
+    {
+      "key": "atelier",
+      "nom": "L'Atelier",
+      "inspiration": "l'atelier à la bougie",
+      "voile": [0.31, 0.58],
+      "couleurs": [
+        { "nom": "brun chaud", "hex": "#3b2314" },
+        { "nom": "bleu crépuscule", "hex": "#2f4272" },
+        { "nom": "ambre", "hex": "#d58a1f" },
+        { "nom": "flamme de bougie", "hex": "#ffc95e" }
+      ]
+    },
+    {
+      "key": "studiolo",
+      "nom": "Le studiolo",
+      "inspiration": "la marqueterie du studiolo de Gubbio",
+      "voile": [0.36, 0.64],
+      "couleurs": [
+        { "nom": "noyer", "hex": "#4a3120" },
+        { "nom": "vert-de-gris", "hex": "#5d8c7e" },
+        { "nom": "miel", "hex": "#d6a13f" },
+        { "nom": "ivoire", "hex": "#f1e9d4" }
+      ]
+    },
+    {
+      "key": "sanguine",
+      "nom": "La sanguine",
+      "inspiration": "les dessins de Léonard",
+      "voile": [0.36, 0.64],
+      "couleurs": [
+        { "nom": "sépia", "hex": "#4b3424" },
+        { "nom": "sanguine", "hex": "#a9472e" },
+        { "nom": "papier crème", "hex": "#f1e5cb" }
+      ]
+    },
+    {
+      "key": "florence",
+      "nom": "Florence à l'aube",
+      "inspiration": "Florence à l'aube",
+      "voile": [0.38, 0.66],
+      "couleurs": [
+        { "nom": "terre cuite", "hex": "#a94d31" },
+        { "nom": "ocre rosé", "hex": "#d8a186" },
+        { "nom": "bleu pâle", "hex": "#a8c0d6" },
+        { "nom": "ivoire", "hex": "#f3ebdb" }
+      ]
+    }
+  ]
+}
