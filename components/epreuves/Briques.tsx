@@ -65,32 +65,37 @@ export function HeroEpreuve({
 }
 
 /** Mini-barre d'encre (0 à 100). */
-export function MiniBarre({ pct, label }: { pct: number; label?: string }) {
+export function MiniBarre({ pct, label, className = "" }: { pct: number; label?: string; className?: string }) {
   return (
-    <span aria-label={label} className="relative inline-block h-[6px] w-[56px] shrink-0 overflow-hidden rounded-full bg-surface-2">
+    <span aria-label={label} className={"relative inline-block h-[6px] w-[56px] shrink-0 overflow-hidden rounded-full bg-surface-2 " + className}>
       <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.max(4, Math.min(100, pct))}%`, background: "currentColor" }} />
     </span>
   );
 }
 
-/** Courte liste classée (1, 2, 3) à l'intérieur d'un héros : nom, note, mini-barre. */
+/**
+ * Courte liste classée (1, 2, 3) à l'intérieur d'un héros : nom, note, mini-barre.
+ * La colonne suit la place (conteneur) : le nom passe à la ligne au lieu de
+ * pousser la note hors de la carte ; la mini-barre s'efface quand la colonne
+ * est trop étroite (moins de 19 rem) et revient dès qu'elle a la place.
+ */
 export function ListePodium({ titre, items }: { titre: string; items: { nom: React.ReactNode; note?: React.ReactNode; pct?: number; moi?: boolean; href?: string }[] }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div className="@container flex min-w-0 flex-col gap-2">
       <p className="t-eyebrow m-0">{titre}</p>
-      <ol className="m-0 grid list-none gap-0.5 p-0">
+      <ol className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-0.5 p-0">
         {items.map((it, i) => {
           const corps = (
             <>
               <span className="w-4 shrink-0 font-mono text-[13px] font-semibold text-muted">{i + 1}</span>
-              <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{it.nom}</span>
+              <span className="min-w-0 flex-1 text-[15px] font-semibold leading-snug [overflow-wrap:anywhere]">{it.nom}</span>
               {it.note && <span className="shrink-0 font-mono text-[12.5px] tabular-nums text-muted">{it.note}</span>}
-              {typeof it.pct === "number" && <MiniBarre pct={it.pct} />}
+              {typeof it.pct === "number" && <MiniBarre pct={it.pct} className="hidden @[19rem]:inline-block" />}
             </>
           );
           const cls = "flex min-w-0 items-center gap-3 rounded-[12px] px-2.5 py-2.5 " + (it.moi ? "bg-surface-2" : i < items.length - 1 ? "border-b border-line" : "");
           return (
-            <li key={i}>
+            <li key={i} className="min-w-0">
               {it.href ? (
                 <Link href={it.href} className={cls + " rl-row"}>
                   {corps}
@@ -154,7 +159,7 @@ export function DepartCarte({
         <h1 className="t-h1 m-0">{titre}</h1>
       </div>
       {traits}
-      <ul className="m-0 grid list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
+      <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-1.5 p-0 text-[15px] leading-normal text-muted">
         {promesses.map(([b, rest]) => (
           <li key={b}>
             <b className="text-white">{b}</b>
