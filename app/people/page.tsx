@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { levelInfoFromXp } from "@/lib/leveling";
-import { getLeaderboard } from "@/lib/rating";
+import { getLeaderboard, getMyRating } from "@/lib/rating";
 import { DEFAULT_ELO } from "@/lib/ranks";
 import type { PlayerLite } from "@/components/classement/PlayerRow";
 import { PeopleView, type TopRow } from "@/components/classement/PeopleView";
-import { masteryByUser, tryAdmin } from "@/components/classement/data";
+import { countPlayers, masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { Profile, Rating } from "@/lib/types";
 import { amisDe, demandesDe } from "@/lib/profil/donnees";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const metadata = { title: "Joueurs · Ranked Lobby" };
 
@@ -24,6 +25,28 @@ type RatingRow = Pick<Rating, "user_id" | "elo" | "games_played">;
 // badge de rang, accès au profil et bouton « Défier ». Le
 // Top 10 renvoie vers le classement complet (/classement). Affichage :
 // components/classement/PeopleView.
+// Les joueurs dont l'ELO est le plus proche du tien (hors toi, au moins une
+// partie jouée) : les deux plus proches de chaque côté, les trois meilleurs
+// gardés. Vide si une lecture échoue.
+async function joueursAMesure(supabase: SupabaseClient, userId: string, elo: number): Promise<PlayerLite[]> {
+  try {
+    const base = () => supabase.from("ratings").select("user_id,elo,games_played").neq("user_id", userId).gt("games_played", 0);
+    const [haut, bas] = await Promise.all([base().gte("elo", elo).order("elo", { ascending: true }).limit(3), base().lt("elo", elo).order("elo", { ascending: false }).limit(3)]);
+    const voisins = [...((haut.data ?? []) as RatingRow[]), ...((bas.data ?? []) as RatingRow[])].sort((a, b) => Math.abs(a.elo - elo) - Math.abs(b.elo - elo)).slice(0, 3);
+    if (voisins.length === 0) return [];
+    const { data } = await supabase.from("profiles").select("id,username,avatar_url,xp_total").in("id", voisins.map((v) => v.user_id));
+    const profils = new Map(((data ?? []) as ProfileRow[]).map((p) => [p.id, p]));
+    return voisins.flatMap((v) => {
+      const p = profils.get(v.user_id);
+      if (!p) return [];
+      const xp = Number(p.xp_total ?? 0) || 0;
+      return [{ id: p.id, name: displayName(p.username, p.id), avatarUrl: p.avatar_url ?? null, elo: v.elo, gamesPlayed: v.games_played, level: levelInfoFromXp(xp).level, xpTotal: xp, mastery: null, isMe: false }];
+    });
+  } catch {
+    return [];
+  }
+}
+
 export default async function PeoplePage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
@@ -74,10 +97,13 @@ export default async function PeoplePage({ searchParams }: PageProps) {
 
   const ids = people.map((p) => p.id);
   const admin = tryAdmin();
-  const [{ data: ratingsRaw }, top] = await Promise.all([
+  const [{ data: ratingsRaw }, top, total, mine] = await Promise.all([
     ids.length > 0 ? supabase.from("ratings").select("user_id,elo,games_played").in("user_id", ids) : Promise.resolve({ data: [] as RatingRow[] }),
     getLeaderboard(supabase, 10),
+    countPlayers(supabase),
+    getMyRating(supabase, user.id),
   ]);
+  const aTaMesure = !q && mine.gamesPlayed > 0 ? await joueursAMesure(supabase, user.id, mine.elo) : [];
   const mastery = await masteryByUser(admin, [...new Set([...ids, ...top.map((r) => r.userId)])]);
 
   const ratingByUser = new Map<string, RatingRow>();
@@ -125,7 +151,7 @@ export default async function PeoplePage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PeopleView rows={rows} top={topRows} view={view} q={q} hasGroups={myGroupIds.length > 0} demandes={demandes} />
+      <PeopleView rows={rows} top={topRows} view={view} q={q} hasGroups={myGroupIds.length > 0} demandes={demandes} total={total} aTaMesure={aTaMesure} />
       <CarteJoueurHote />
     </>
   );

@@ -48,6 +48,42 @@ export const ILLUSTRATIONS = {
       STYLE +
       "Sujet : une balance de bronze à deux plateaux, dans l'esprit des carnets de Léonard, posée sur une table de bois sombre ; un plateau légèrement plus bas que l'autre. Lumière chaude de fin de journée venant de la gauche, fond brun chaud, uni et sombre. Aucun personnage, aucun texte, aucune lettre. Format carré 1:1, objet centré occupant environ 70 % de l'image, silhouette très lisible, car l'image sera affichée dans un médaillon rond de 52 pixels ; rien d'important dans les coins.",
   },
+  "classement-grande-salle": {
+    src: "/illustrations/classement-grande-salle.webp",
+    alt: "La Grande Salle : un cabinet d'étude, la veille de l'examen",
+    credit: "Vittore Carpaccio, La Vision de saint Augustin (vers 1502), cabinet d'étude. Domaine public (commons.wikimedia.org, Vittore_carpaccio,_visione_di_sant'agostino_01).",
+    emplacement: "Classement : carte « lieu » La Grande Salle (examen classé), image 16:10 en tête de carte sur ordinateur (environ 365 px de large) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
+    prompt:
+      STYLE +
+      "Sujet : la Salle des Cinq-Cents du Palazzo Vecchio à Florence, vide, la veille d'un examen : de longues tables de bois alignées avec encriers, plumes et feuilles posées, un sablier au premier plan sur la table la plus proche, plafond à caissons dorés, grandes fenêtres à droite par où entre le soleil couchant en longs rayons poussiéreux. Sans personnage. Lumière dorée et rasante de fin de journée, palette chaude : ocre jaune, terre de Sienne brûlée, brun Van Dyck, vieil or, quelques accents vermillon et bleu-gris dans les ombres. Aucun texte, aucune lettre, aucun logo, aucun cadre, pas de vignettage noir. Format paysage 16:10 (1600×1000 px), sujet centré, qui reste lisible recadré en vignette verticale 4:5 au centre.",
+  },
+  "classement-lice": {
+    src: "/illustrations/classement-lice.webp",
+    alt: "La lice d'un tournoi florentin : oriflammes et lances",
+    credit: "Paolo Uccello, La Bataille de San Romano (panneau des Offices, vers 1438), recadrée sur les lances et les étendards. Domaine public (commons.wikimedia.org, Battle_of_San_Romano,_by_Paolo_Uccello_(Uffizi_Gallery,_Florence)).",
+    emplacement: "Classement : bandeau étroit pleine largeur au-dessus du classement général (88 px de haut sur ordinateur, 64 px sur téléphone).",
+    prompt:
+      STYLE +
+      "Sujet : la lice d'un tournoi florentin sur la place Santa Croce, vue de loin et de côté ; la barrière de bois de la joute court sur toute la largeur, avec oriflammes et pennons rouge et or, tribunes de bois et lances appuyées contre la barrière. Pas de cavalier, aucune figure au premier plan ; composition horizontale régulière, sans point focal unique, pour un bandeau décoratif. Haut et bas de l'image calmes (ciel, pavés), sans détail important. Lumière dorée de fin de journée, palette chaude : ocre, terre de Sienne brûlée, brun Van Dyck, vieil or, accents vermillon. Aucun texte, aucun logo, aucun cadre, pas de vignettage. Format panoramique 21:9 (2520×1080 px), avec toute l'information utile dans une bande horizontale au tiers central de la hauteur (l'image sera recadrée en frise très étroite, environ 12:1 sur ordinateur et 6:1 sur téléphone).",
+  },
+  "classement-duels": {
+    src: "/illustrations/classement-duels.webp",
+    alt: "Un cavalier de San Romano",
+    credit: "Paolo Uccello, La Bataille de San Romano (panneau de Londres, détail). Domaine public (commons.wikimedia.org, San_Romano_Battle_(Paolo_Uccello,_London)_02).",
+    emplacement: "Classement : médaillon rond de 52 px dans la tuile « Duels en cours » (livrer en 512×512 px).",
+    prompt:
+      STYLE +
+      "Sujet : un heaume de joute de la Renaissance posé de trois quarts sur une table de bois, panache rouge, deux lances croisées derrière ; gros plan, silhouette très lisible même à 50 px. Sans personnage. Lumière dorée de fin de journée venant de la gauche, palette chaude : ocre, terre de Sienne brûlée, brun Van Dyck, vieil or, accent vermillon. Aucun texte, aucun logo, aucun cadre. Format carré 1:1 (1024×1024 px), sujet centré qui tient dans un cercle inscrit, fond simple et sombre-chaud.",
+  },
+  "joueurs-seigneurie": {
+    src: "/illustrations/joueurs-seigneurie.webp",
+    alt: "La place de la Seigneurie à Florence, où l'on croise tout le monde",
+    credit: "Giuseppe Zocchi, La place de la Seigneurie à Florence (détail recadré). Domaine public (commons.wikimedia.org, Giuseppe_Zocchi_-_The_Piazza_della_Signoria_in_Florence_-_WGA25992_(cropped)).",
+    emplacement: "Joueurs : bandeau en tête du héros de l'annuaire, pleine largeur de la carte (112 px de haut sur ordinateur, 84 px sur téléphone).",
+    prompt:
+      STYLE +
+      "Sujet : la place de la Seigneurie à Florence au soir, en vue large : le Palazzo Vecchio à gauche, la Loggia dei Lanzi à droite, la fontaine de Neptune au centre, une foule lointaine de silhouettes minuscules et indistinctes qui se croisent (le lieu où l'on rencontre tout le monde), sans aucun visage. Haut et bas de l'image calmes. Lumière dorée et rasante de fin de journée, longues ombres, palette chaude : ocre, terre de Sienne brûlée, brun Van Dyck, vieil or, ciel orangé et bleu-gris. Aucun texte, aucun logo, aucun cadre, pas de vignettage. Format panoramique 21:9 (2520×1080 px), avec toute l'information utile dans une bande horizontale au tiers central de la hauteur (l'image sera recadrée en environ 11:1 sur ordinateur et 4:1 sur téléphone).",
+  },
 } as const satisfies Record<string, Illustration>;
 
 export type IllustrationNom = keyof typeof ILLUSTRATIONS;

@@ -149,7 +149,7 @@ function Rivalite({ board, meRow }: { board: BoardRow[]; meRow: BoardRow | null 
 // sceau (ou sa photo). La rivalité tient en une ligne au-dessus de la liste.
 // Le bouton « Défier » d'une ligne apparaît au survol (toujours visible sur
 // téléphone). Au-delà des 10 premiers, la suite se déplie.
-export function Leaderboard({ board, meRow, totalPlayers }: { board: BoardRow[]; meRow: BoardRow | null; totalPlayers: number | null }) {
+export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { board: BoardRow[]; meRow: BoardRow | null; totalPlayers: number | null; /** sans l'en-tête (nombre de joueurs, lien « Chercher ») ni la rivalité : le héros de la page les dit déjà */ sobre?: boolean }) {
   const podium = board.length >= 3 && board.slice(0, 3).every((r) => r.gamesPlayed > 0);
   const list = podium ? board.slice(3) : board;
   const shown = list.filter((r) => r.rank <= VISIBLE || r.isMe);
@@ -183,14 +183,16 @@ export function Leaderboard({ board, meRow, totalPlayers }: { board: BoardRow[];
       )}
 
       <div className={"flex min-w-0 flex-col gap-3 " + (podium ? "lg:col-span-7" : "lg:col-span-12")}>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2 sm:px-3">
-          <span className="t-micro">{joueursDomaine(count, CURRENT_DOMAIN.name)}</span>
-          <Link href="/people" className="ink-link inline-flex items-center gap-1.5 text-[13px]">
-            <Search size={13} aria-hidden /> {CLASSEMENT.chercher}
-          </Link>
-        </div>
+        {!sobre && (
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2 sm:px-3">
+            <span className="t-micro">{joueursDomaine(count, CURRENT_DOMAIN.name)}</span>
+            <Link href="/people" className="ink-link inline-flex items-center gap-1.5 text-[13px]">
+              <Search size={13} aria-hidden /> {CLASSEMENT.chercher}
+            </Link>
+          </div>
+        )}
 
-        {nobodyPlayed ? <p className="t-small px-2 sm:px-3">{CLASSEMENT.personne}</p> : <Rivalite board={board} meRow={meRow} />}
+        {nobodyPlayed ? <p className="t-small px-2 sm:px-3">{CLASSEMENT.personne}</p> : !sobre && <Rivalite board={board} meRow={meRow} />}
 
         <ol className="flex flex-col gap-0.5" aria-label={`Classement général ${CURRENT_DOMAIN.name}`}>
           {shown.map((r) => (
