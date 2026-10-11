@@ -2137,3 +2137,10 @@ html:not([data-discreet="1"]) .rl-encre-on {
 html[data-rl-motion="off"] .rl-encre[data-palette]::before {
   animation: none !important;
 }
+
+/* La goutte d'encre du résultat (components/adn/GoutteVerdict) : pendant
+   qu'elle joue, le parent (classe rl-goutte-cache) cache son contenu, sauf la
+   goutte elle-même, pour que le résultat ne se lise pas avant d'être couvert. */
+.rl-goutte-cache > :not([data-goutte-encre]) {
+  visibility: hidden;
+}

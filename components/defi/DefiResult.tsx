@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { CeremonieSansFaute } from "@/components/adn/CeremonieSansFaute";
+import { GoutteVerdict } from "@/components/adn/GoutteVerdict";
 import { Cote } from "@/components/adn/Cote";
 import { SignalLeonard } from "@/components/leonard/SignalLeonard";
 import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
@@ -9,7 +10,7 @@ import { SceauDefi } from "@/components/defi/SceauDefi";
 import { Ticks, reviewMarks } from "@/components/defi/parts";
 import { clock } from "@/lib/duels";
 import { reviewHref, type DailyBoard, type DailyInfo, type DailyReviewItem } from "@/lib/daily";
-import { ratures, scorePct } from "@/lib/voice";
+import { pctScore, ratures, scorePct } from "@/lib/voice";
 import { rangOrdinal, verdictCopie, voixDefi } from "@/lib/voice-z2c";
 import PctScore from "@/components/adn/PctScore";
 
@@ -28,7 +29,9 @@ const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-d
 // temps, l'écart à la tête coté comme sur un plan (au stylo rouge : le bout
 // qui reste), puis « Revoir ma copie » et « Copier pour l'IA ». Le sceau du
 // jour se pose sur la copie (la main du correcteur qui valide) : coup de
-// tampon à la première visite, déjà posé ensuite. Le défi du jour : sous la
+// tampon à la première visite, déjà posé ensuite. À la première visite aussi,
+// la goutte d'encre tombe sur la copie (GoutteVerdict) : le score apparaît
+// dans la tache, puis l'encre s'efface sur la copie. Le défi du jour : sous la
 // copie, la cérémonie d'un sceau gagné (Défi tenu…), s'il y en a un. Rendu
 // côté serveur comme côté client (le sceau et la cérémonie sont des îlots
 // client).
@@ -79,6 +82,16 @@ export function DefiResult({ info, review, board }: Props) {
         <CeremonieSansFaute score={score} total={total} epreuve={info.format === "cinq" ? "Les 5 du jour" : "Défi du jour"} cle={`defi:${info.format}:${info.day}`} rendueA={me.finishedAt} />
       )}
     <section className="card-hero grid min-w-0 gap-6 p-6 md:p-8" aria-label="Ta copie">
+      {info.isToday && (
+        <GoutteVerdict
+          cle={`defi:${info.format}:${info.day}`}
+          rendueA={me.finishedAt}
+          mot={verdictCopie(score, total)}
+          score={`${score}/${total}`}
+          detail={pctScore(score, total) ?? undefined}
+          fond="linear-gradient(180deg, var(--hero-top), var(--hero-bottom))"
+        />
+      )}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="kicker m-0">{DEFI.copie(handedAt)}</p>

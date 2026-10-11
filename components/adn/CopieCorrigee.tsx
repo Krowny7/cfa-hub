@@ -26,6 +26,8 @@
 //                           Derivatives : encore. ») ; `appreciation` la remplace
 //   anneau, actions         emplacements libres sous la copie
 //   anime                   false : copie posée (revisite) ; son : "micro" (défaut)
+//   goutte, cache           la goutte d'encre du résultat (GoutteVerdict) posée sur la feuille ;
+//                           cache : la feuille cache son contenu tant que la goutte joue
 // Le titre de l'appréciation vient de lib/voice (verdictSession).
 
 import { useRef } from "react";
@@ -67,6 +69,8 @@ export function CopieCorrigee({
   anime = true,
   son = "micro",
   figerA = null,
+  goutte,
+  cache = false,
   className = "",
 }: {
   surTitre?: string;
@@ -84,6 +88,8 @@ export function CopieCorrigee({
   son?: SonMoment | false;
   /** aperçus : arrêt sur image à t secondes */
   figerA?: number | null;
+  goutte?: React.ReactNode;
+  cache?: boolean;
   className?: string;
 }) {
   const loop = useRef<SVGPathElement | null>(null);
@@ -111,7 +117,8 @@ export function CopieCorrigee({
 
   return (
     <div className={`${s.root} ${className}`}>
-      <article className={s.feuille} aria-label={`Copie corrigée : ${score} sur ${total}`}>
+      <article className={`${s.feuille} ${cache ? "rl-goutte-cache" : ""}`} aria-label={`Copie corrigée : ${score} sur ${total}`}>
+        {goutte}
         <header className={s.tete}>
           <div style={{ minWidth: 0 }}>
             {surTitre ? <div className={s.kicker}>{surTitre}</div> : null}

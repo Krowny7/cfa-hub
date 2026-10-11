@@ -1,6 +1,7 @@
 "use client";
 
 import { CeremonieSansFaute } from "@/components/adn/CeremonieSansFaute";
+import { GoutteVerdict } from "@/components/adn/GoutteVerdict";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { analyserSession, empreinte, signalerLeonard, type SignalLeonard } from "@/lib/leonard/signal";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
@@ -10,7 +11,7 @@ import { SceauJour } from "@/components/adn/Sceau";
 import { RepriseRatures } from "@/components/session/RepriseRatures";
 import { CeremonieSceaux } from "@/components/profil/CeremonieSceaux";
 import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
-import { nombre, ratures } from "@/lib/voice";
+import { nombre, pctScore, ratures, verdictSession } from "@/lib/voice";
 import { ligneAnneauFin } from "@/lib/voice-z3";
 
 // La fin d'une session (moment 5) : la copie corrigée, l'avancée de l'anneau
@@ -39,7 +40,7 @@ import { ligneAnneauFin } from "@/lib/voice-z3";
 //                          l'écran), tous deux dans components/session/parts
 //   liens                  liens secondaires (nouvelle session, retour…)
 //   notes                  une ligne sous les actions (erreur d'enregistrement…)
-//   anime                  false : copie posée (revisite), sans cérémonie de sceau
+//   anime                  false : copie posée (revisite), sans goutte d'encre ni cérémonie de sceau
 //   children               la correction détaillée, sous la copie
 
 /** Une ligne de marge : la première ligne de l'énoncé, en texte simple. */
@@ -177,6 +178,9 @@ export function FinDeSession({
   // la clé ne sert qu'au client, après le montage
   const [jourCopie] = useState(() => new Date().toLocaleDateString("sv"));
   const [reprise, setReprise] = useState(false);
+  // la goutte d'encre tombe d'abord sur la copie (une fois par copie), puis la copie se corrige sous l'encre qui s'efface
+  const [goutteFinie, setGoutteFinie] = useState(!anime);
+  const cleCopie = "fs:" + empreinte(epreuve, score, total, ...review.map((r) => r.question_id));
   // de retour de la reprise : la copie est déjà posée, on la retrouve en haut
   const [revenu, setRevenu] = useState(false);
   const feuille = useRef<HTMLDivElement | null>(null);
@@ -211,7 +215,13 @@ export function FinDeSession({
         total={total}
         questions={lignes ?? lignesDeCopie(review)}
         matieres={matieres ?? matieresDeCopie(review)}
-        anime={anime && !revenu}
+        anime={anime && !revenu && goutteFinie}
+        cache={anime && !revenu && !goutteFinie}
+        goutte={
+          anime && !revenu ? (
+            <GoutteVerdict cle={cleCopie} mot={verdictSession(score, total).titre} score={`${score}/${total}`} detail={pctScore(score, total) ?? undefined} onFin={() => setGoutteFinie(true)} />
+          ) : undefined
+        }
         className="mx-auto"
         anneau={ajoutes > 0 ? <AnneauFin jour={jour} ajoutes={ajoutes} /> : undefined}
         actions={

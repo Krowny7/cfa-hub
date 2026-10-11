@@ -1,0 +1,148 @@
+/* La goutte d'encre du résultat : une goutte tombe, l'encre de la palette de
+   l'espace s'étale en tache et le score apparaît dedans, puis l'encre s'efface
+   sur le résultat. Environ 2,4 s en tout, une fois par résultat.
+   Texture et voile : les classes .rl-encre de globals.css (palette). Décor
+   seulement : pointer-events none partout. Coupé en mode discret et en
+   mouvement réduit (le composant ne monte rien, le résultat s'affiche). */
+
+.racine {
+  /* le point de chute : au milieu de la couche, mais jamais plus bas que 300 px
+     (un résultat haut, sur téléphone, garde la goutte dans le premier écran) */
+  --cy: min(55cqh, 300px);
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  border-radius: var(--goutte-rayon, inherit);
+  background: var(--goutte-fond, transparent);
+  pointer-events: none;
+  container-type: size;
+}
+.racine.sort {
+  animation: fondu 0.45s ease-out forwards;
+}
+
+.chute {
+  position: absolute;
+  left: 50%;
+  top: -36px;
+  z-index: 1;
+  width: 22px;
+  height: 32px;
+  margin-left: -11px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--pal-1, #121214);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  opacity: 0;
+}
+
+.tache {
+  position: absolute;
+  inset: -40px;
+  z-index: 2;
+  background: var(--pal-1, #121214);
+  clip-path: circle(0% at 50% calc(var(--cy) + 40px));
+  filter: url(#rl-goutte-bavure);
+}
+
+.resultat {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--cy);
+  translate: 0 -50%;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 16px;
+  text-align: center;
+  color: #f4f2ea;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+}
+/* un halo sombre derrière le score : la texture de l'encre reste vivante autour, le chiffre se lit */
+.resultat::before {
+  content: "";
+  position: absolute;
+  inset: -30px 0;
+  z-index: -1;
+  background: radial-gradient(ellipse 42% 60% at 50% 50%, rgba(12, 9, 7, 0.62), rgba(12, 9, 7, 0));
+}
+.mot {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(244, 242, 234, 0.78);
+}
+.score {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: clamp(40px, 13cqi, 76px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.detail {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(244, 242, 234, 0.9);
+}
+
+/* le temps de chaque geste : la chute, puis l'étalement, puis le score */
+.joue .chute {
+  animation: chute 0.3s ease-in 0.12s forwards;
+}
+.joue .tache {
+  animation: etale 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.4s forwards;
+}
+.joue .resultat {
+  animation: apparait 0.6s ease-out 0.87s forwards;
+}
+
+@keyframes chute {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(calc(var(--cy) + 20px)) scaleY(0.7);
+  }
+}
+@keyframes etale {
+  from {
+    clip-path: circle(0% at 50% calc(var(--cy) + 40px));
+  }
+  to {
+    clip-path: circle(120% at 50% calc(var(--cy) + 40px));
+  }
+}
+@keyframes apparait {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fondu {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .racine {
+    display: none;
+  }
+}
+:global(html[data-rl-motion="off"]) .racine,
+:global(html[data-discreet="1"]) .racine {
+  display: none;
+}

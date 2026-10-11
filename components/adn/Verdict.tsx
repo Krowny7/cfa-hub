@@ -13,6 +13,9 @@
 //   4. la question décisive, entourée au stylo rouge, puis les actions.
 // Ensuite (même duel, `cle`), l'écran s'affiche figé dans son état final.
 // Mouvement réduit : figé d'emblée.
+// Avant la séquence, la première fois : la goutte d'encre (GoutteVerdict) tombe
+// sur le verdict, l'encre de la palette s'étale et « Victoire. 22 – 19 » y
+// apparaît (environ 2 s) ; la séquence se joue sous l'encre qui s'efface.
 //
 //   <Verdict
 //     issue="victoire"                                   // | "defaite" | "nulle"
@@ -54,6 +57,7 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { rankFor, TIERS } from "@/lib/ranks";
 import { pointsAvant, signe, SOMMET, verdictDuel, type IssueDuel } from "@/lib/voice";
 import { CeremonieSansFaute } from "./CeremonieSansFaute";
+import { GoutteVerdict } from "./GoutteVerdict";
 import { marquerCeremonie } from "@/lib/ceremonie-en-cours";
 import { SceauMention, type MentionDuel } from "./Sceau";
 import { EASE_INK, EASE_OUT, STAMP_KF, usePartition, type Partition } from "./sound-timeline";
@@ -202,6 +206,10 @@ export function Verdict({
   // séquence ou figé : décidé au montage (la séquence ne joue qu'une fois par duel)
   const [joue, setJoue] = useState<boolean | null>(mode === "fige" ? false : mode === "sequence" ? true : null);
   const [fini, setFini] = useState(false);
+  // la goutte d'encre précède la séquence (une fois par duel) ; les aperçus figés et les duels sans clé s'en passent
+  const goutte = joue === true && figerA == null && !!cle;
+  const [goutteFinie, setGoutteFinie] = useState(false);
+  const attendGoutte = goutte && !goutteFinie;
   useEffect(() => {
     if (mode !== "auto") return;
     if (cle && dejaVu(cle)) setJoue(false);
@@ -342,7 +350,7 @@ export function Verdict({
   };
 
   const { passer } = usePartition(build, {
-    actif: joue === true,
+    actif: joue === true && !attendGoutte,
     figerA,
     cle: cle ?? "",
     onFin: () => {
@@ -372,10 +380,20 @@ export function Verdict({
   return (
     <section
       ref={root}
-      className={`${s.verdict} ${joue === null ? s.arme : ""} ${className}`}
+      className={`${s.verdict} ${joue === null ? s.arme : ""} ${attendGoutte ? "rl-goutte-cache" : ""} ${className}`}
       aria-label={`${v.mot} ${v.phrase}`}
       data-issue={issue}
     >
+      {goutte && (
+        <GoutteVerdict
+          cle={"duel:" + cle}
+          mot={v.mot}
+          score={eux ? `${moi.score} – ${eux.score}` : `${moi.score}/${n}`}
+          detail={enjeu ? `${signe(enjeu.apres - enjeu.avant)} ELO` : (pctScore(moi.score, n) ?? undefined)}
+          rayon="20px"
+          onFin={() => setGoutteFinie(true)}
+        />
+      )}
       <div ref={ref("tete")} className={s.tete}>
         <span className={s.kicker}>{contexte}</span>
         {joue && !fini && figerA === null ? (

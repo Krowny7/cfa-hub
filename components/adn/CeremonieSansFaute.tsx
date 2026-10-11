@@ -26,7 +26,7 @@
 //   onFin          appelé quand elle s'efface
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { finirCeremonie, marquerCeremonie } from "@/lib/ceremonie-en-cours";
+import { finirCeremonie, marquerCeremonie, resteGoutte } from "@/lib/ceremonie-en-cours";
 import { Sceau } from "./Sceau";
 import { jouerSon, vibrer } from "./sound";
 import s from "./CeremonieSansFaute.module.css";
@@ -106,24 +106,35 @@ export function CeremonieSansFaute({
     if (!parfait) return;
     if (document.documentElement.dataset.discreet === "1") return;
     if (!force && rendueA && Date.now() - new Date(rendueA).getTime() > 30 * 60_000) return;
-    if (!force && dejaVue("sf:" + cle)) return;
-    fini.current = false;
-    setEtat("joue");
-    if (figer !== undefined) return;
-    marquerCeremonie(DUREE);
-    // les sons partent de minuteurs annulés au démontage : quitter l'écran
-    // tout de suite (ou le double montage du mode strict) ne les laisse pas filer
+    // la goutte d'encre du résultat passe d'abord (components/adn/GoutteVerdict)
+    const attente = figer === undefined ? resteGoutte() : 0;
     const minuteurs: number[] = [];
-    if (!reduit()) {
-      minuteurs.push(
-        window.setTimeout(() => jouerSon("stylo", { moment: "ceremonie", variante: "tic", duree: D_COCHES, volume: 0.6 }), T_COCHES * 1000),
-        window.setTimeout(() => {
-          jouerSon("tampon", { moment: "ceremonie" });
-          vibrer(14);
-        }, (T_SCEAU + 0.18) * 1000),
-      );
-    }
-    minuteurs.push(window.setTimeout(fermer, DUREE));
+    const demarrer = () => {
+      if (!force && dejaVue("sf:" + cle)) return;
+      fini.current = false;
+      setEtat("joue");
+      if (figer !== undefined) return;
+      marquerCeremonie(DUREE);
+      // les sons partent de minuteurs annulés au démontage : quitter l'écran
+      // tout de suite (ou le double montage du mode strict) ne les laisse pas filer
+      if (!reduit()) {
+        minuteurs.push(
+          window.setTimeout(() => jouerSon("stylo", { moment: "ceremonie", variante: "tic", duree: D_COCHES, volume: 0.6 }), T_COCHES * 1000),
+          window.setTimeout(() => {
+            jouerSon("tampon", { moment: "ceremonie" });
+            vibrer(14);
+          }, (T_SCEAU + 0.18) * 1000),
+        );
+      }
+      minuteurs.push(window.setTimeout(fermer, DUREE));
+    };
+    // la goutte part parfois plus tard que prévu : on la suit jusqu'à ce qu'elle ait fini
+    const attendre = () => {
+      if (resteGoutte() > 0) minuteurs.push(window.setTimeout(attendre, 200));
+      else demarrer();
+    };
+    if (attente > 0) attendre();
+    else demarrer();
     return () => minuteurs.forEach((m) => window.clearTimeout(m));
     // une seule fois par clé
     // eslint-disable-next-line react-hooks/exhaustive-deps
