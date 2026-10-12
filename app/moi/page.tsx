@@ -17,7 +17,7 @@ import { getAnswerStats } from "@/lib/answer-stats";
 import { countPlayers, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import { loadActivity, parisDay, parisHour } from "@/components/accueil/queries";
-import { etatDuJour } from "@/lib/voice";
+import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
 import type { MoiData } from "@/components/moi/types";
 import { etatObjectif, reglageInitial } from "@/lib/objectif";
 
@@ -61,7 +61,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -92,6 +92,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     lireEtatAtelier(supabase, user.id),
     // les Ateliers clos (historique, Stats)
     lireHistoriqueAteliers(supabase, user.id),
+    // la série d'encre (null tant que migration_serie_encre.sql n'est pas collée : l'ancien calcul)
+    lireSerieEncre(supabase),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -99,8 +101,9 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
 
   const xpTotal = Number(profile?.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
-  const { streak, todayDone } = calcStreakAndToday(xpDays, { today: parisDay(new Date(now)), actifs: activity.activeDays });
-  const dayState = todayDone || activity.today > 0 ? "fait" : etatDuJour(0, parisHour(new Date(now)));
+  // UNE seule série : celle d'encre (10 questions, joker) quand la migration est collée, l'ancien calcul sinon
+  const ancien = calcStreakAndToday(xpDays, { today: parisDay(new Date(now)), actifs: activity.activeDays });
+  const { streak, dayState, serie: serieEncre, reste: serieReste } = joursEncreUnifies(serieBase, activity.today, parisHour(new Date(now)), ancien);
   const last30 = xpLastDays(xpDays, 30, new Date(now));
 
   const d: MoiData = {
@@ -110,6 +113,9 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     examDate: profile?.exam_date ?? null,
     streak,
     dayState,
+    serieReste,
+    serieSeuil: serieEncre?.seuil ?? null,
+    serieJoker: serieEncre && serieEncre.serieAffichee > 0 ? serieEncre.joker : null,
     xpTotal,
     level: lvl.level,
     levelPct: Math.round(lvl.progressPct * 100),

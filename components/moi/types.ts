@@ -70,10 +70,16 @@ export type MoiData = {
   avatarUrl: string | null;
   /** date d'examen (AAAA-MM-JJ), null si pas fixée */
   examDate: string | null;
-  /** jours d'encre (aujourd'hui compris s'il est fait, sinon jusqu'à hier) */
+  /** jours d'encre (aujourd'hui compris s'il est fait, sinon jusqu'à hier) : la série d'encre (10 questions, joker), l'ancien calcul sans la migration */
   streak: number;
-  /** le bâton du jour : fait, en attente, ou sec le soir (etatDuJour) */
+  /** le bâton du jour : fait (10 questions), en attente, ou sec le soir (etatDuJour) */
   dayState: EtatJour;
+  /** questions qui manquent pour que le jour compte ; absent ou null : ancien calcul, une réponse suffit */
+  serieReste?: number | null;
+  /** questions par jour qui comptent (10) ; absent ou null : ancien calcul */
+  serieSeuil?: number | null;
+  /** le joker de la semaine est encore là (null : pas de série en cours, ou ancien calcul) */
+  serieJoker?: boolean | null;
   xpTotal: number;
   level: number;
   /** progression dans le niveau, 0–100 */

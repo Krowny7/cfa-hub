@@ -17,6 +17,7 @@ import { tallyOf } from "@/lib/answer-stats";
 import { Batons } from "@/components/adn/Batons";
 import { LEXIQUE, VIDE, serie } from "@/lib/voice";
 import { MOI } from "@/lib/voice-z1";
+import { SERIE } from "@/lib/voice-serie";
 import type { MoiData } from "@/components/moi/types";
 import { PointsFaiblesCarte, type RepliMatiere } from "@/components/moi/PointsFaibles";
 import { AteliersHistorique } from "@/components/atelier/AteliersHistorique";
@@ -159,7 +160,12 @@ export function ActivityCard({ d }: { d: MoiData }) {
           <div className="mt-3">
             <Batons jours={d.streak} jour={d.dayState} height={28} max={4} />
           </div>
-          <p className={"t-micro mt-2 max-w-[240px] " + (d.dayState === "sec" ? "font-semibold text-white" : "")}>{d.dayState === "fait" || d.streak === 0 ? MOI.serieAide(d.streak) : serie(d.streak, d.dayState).ligne}</p>
+          <p className={"t-micro mt-2 max-w-[240px] " + (d.dayState === "sec" ? "font-semibold text-white" : "")}>{d.dayState === "fait" || d.streak === 0 ? MOI.serieAide(d.streak, d.serieSeuil) : serie(d.streak, d.dayState, d.serieReste).ligne}</p>
+          {typeof d.serieJoker === "boolean" && (
+            <p className="t-micro m-0 mt-1" title={SERIE.jokerAide}>
+              {SERIE.joker(d.serieJoker)}
+            </p>
+          )}
         </div>
 
         <ActivityHeatmap days={d.xpDays} />

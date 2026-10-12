@@ -100,6 +100,7 @@ export function SessionClient({
   flashSets,
   streak = 0,
   etatJour = "attente",
+  serieReste = null,
   traitsJour = null,
   demo,
 }: {
@@ -109,6 +110,8 @@ export function SessionClient({
   streak?: number;
   /** le trait du jour : fait, en attente, ou encre sèche (le soir, rien encore) */
   etatJour?: EtatJour;
+  /** questions qui manquent pour que le jour compte (la série d'encre, 10 questions) ; null : ancien calcul, une réponse suffit */
+  serieReste?: number | null;
   /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
   traitsJour?: number | null;
   demo?: SessionDemo;
@@ -158,9 +161,11 @@ export function SessionClient({
   // durée réelle de la session, figée à la fin (sur-titre de la copie)
   const [dureeS, setDureeS] = useState<number | null>(demo?.duree ?? null);
   // un trait tracé ici aujourd'hui : la ligne de série le dit au retour à « Préparer »
-  const [traceIci, setTraceIci] = useState(false);
-  const jourIci: EtatJour = traceIci ? "fait" : etatJour;
-  const serieIci = traceIci && etatJour !== "fait" ? streak + 1 : streak;
+  // réponses corrigées pendant cette session : elles comptent pour le jour (la série d'encre le compte à partir de 10 questions)
+  const [repondusIci, setRepondusIci] = useState(0);
+  const resteIci = typeof serieReste === "number" ? Math.max(0, serieReste - repondusIci) : null;
+  const jourIci: EtatJour = (resteIci !== null ? resteIci === 0 : repondusIci > 0) ? "fait" : etatJour;
+  const serieIci = jourIci === "fait" && etatJour !== "fait" ? streak + 1 : streak;
 
   const activeSets = mode === "qcm" ? qcmSets : flashSets;
   const isOfficial = qcmSets.find((s) => s.id === selSetId)?.isOfficial ?? false;
@@ -344,7 +349,7 @@ export function SessionClient({
     if (!demo) void supabase.rpc("noter_reponse", { p_question_id: currentQ.id, p_selected_index: selectedChoice, p_source: "session" }).then(() => undefined);
     // une réponse corrigée = un trait (le logo vivant avance)
     if (!demo) poserTrait(1);
-    setTraceIci(true);
+    setRepondusIci((n) => n + 1);
 
     if (isOfficial) {
       try {
@@ -509,7 +514,7 @@ export function SessionClient({
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
             <p className="t-small m-0 inline-flex items-center gap-2.5">
               {(serieIci > 0 || jourIci === "fait") && <Batons jours={serieIci} jour={jourIci} height={18} max={2} />}
-              {serieSession(serieIci, jourIci)}
+              {serieSession(serieIci, jourIci, resteIci)}
             </p>
             <button type="button" className="btn btn-primary btn-lg rl-press w-full sm:w-auto" disabled={!canStart} onClick={startSession}>
               Démarrer · 15 min <ArrowRight size={17} aria-hidden />
