@@ -328,6 +328,7 @@ export const DOSSIERS = {
   "Éthique et Standards Professionnels (Système)": "ethics",
   "Méthodes Quantitatives (Système)": "quant",
   "Économie (Système)": "economics",
+  "Economics (Système)": "economics",
   "Finance d'Entreprise (Système)": "corporate",
   "Analyse des États Financiers (Système)": "fsa",
   "Financial Statement Analysis (Système)": "fsa",
@@ -346,4 +347,5 @@ export const DRILLS = {
   Equity: { matiere: "equity", fiche: "equity", script: "equity" },
   "Fixed Income": { matiere: "fixed_income", fiche: "fixed-income", script: "fixed-income" },
   "Portfolio Management": { matiere: "portfolio", fiche: "portfolio-management", script: "pm" },
+  Economics: { matiere: "economics", fiche: "economics", script: "economics" },
 };

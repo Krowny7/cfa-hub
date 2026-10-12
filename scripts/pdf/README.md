@@ -30,6 +30,9 @@ onto the existing PDF, matching its own style exactly.
 ## The sheet's design system (as built so far)
 
 - Page size: 675.12 × 863.04 pt (every page, checked).
+  Exception: the Economics concept sheet's 5 synthèse pages are 675.12 × 618.96 pt
+  (same width). Its QCM/Corrigé pages (built by `build_qcm_pages.py economics
+  <concept_pdf> <out_pdf>`, data in `qcm_data/economics_raw.txt`) keep 863.04.
 - Fonts — same families as the four Windows system fonts, so pull the FULL
   files from `C:\Windows\Fonts\` rather than the PDF's own subsets:
   `DejaVuSansMono(-Bold)` for the small mono labels/footer, `LiberationSans`

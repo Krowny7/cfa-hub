@@ -262,7 +262,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 12, schweser: 12 },
     cours: "/courses/economics?module=1",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -274,7 +274,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 13, schweser: 13 },
     cours: "/courses/economics?module=2",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -286,7 +286,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 14, schweser: 14 },
     cours: "/courses/economics?module=3",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -298,7 +298,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 15, schweser: 15 },
     cours: "/courses/economics?module=4",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -310,7 +310,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 16, schweser: 16 },
     cours: "/courses/economics?module=5",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -322,7 +322,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 17, schweser: 17 },
     cours: "/courses/economics?module=6",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -334,7 +334,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 18, schweser: 18 },
     cours: "/courses/economics?module=7",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -346,7 +346,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 19, schweser: 19 },
     cours: "/courses/economics?module=8",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/economics?page=5", page: 5 }],
     flashcards: [],
   },
   {

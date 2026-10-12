@@ -1,0 +1,204 @@
+PAGE 1 — Firms & Market Structures
+SRC: R12 Q34
+Q1: A firm is operating in a perfectly competitive market. Market price is greater than average variable cost (AVC) but lower than average total cost (ATC). Which of the following statements is most accurate?
+A) The firm should continue to produce and sell its product in the short run but not in the long run, unless the price increases.
+B) The firm should decrease its production in the short run in order to increase price and either reduce losses or produce profits.
+C) If the owner thinks the price eventually will exceed ATC, the firm should shut down its operations temporarily and resume when price exceeds ATC.
+ANSWER: A
+EXPLANATION: Comme P > AVC, chaque unité vendue couvre une partie des coûts fixes : à court terme l'entreprise continue de produire (si elle s'arrêtait, elle perdrait tous ses coûts fixes sans rien récupérer). Mais P < ATC, donc elle perd de l'argent et, à long terme, elle sort du marché sauf si le prix remonte au-dessus de l'ATC. B est faux : en concurrence parfaite, la firme est price taker et réduire sa production ne change pas le prix. C est faux : un arrêt temporaire fait perdre les coûts fixes alors que continuer en couvre une partie ; la règle d'arrêt à court terme est P < AVC, pas P < ATC.
+
+SRC: R12 Q6
+Q2: A key difference between the short-run and long-run outputs under monopolistic competition is that in the long run, the price is:
+A) above average total cost, such that economic profits are positive.
+B) equal to average total cost, such that economic profits are zero.
+C) below average total cost, such that economic profits are negative.
+ANSWER: B
+EXPLANATION: À court terme, une firme en concurrence monopolistique peut gagner un profit économique positif (P > ATC). Les barrières à l'entrée étant faibles, de nouveaux concurrents arrivent, la demande de chaque firme se déplace vers la gauche et le prix retombe au niveau de l'ATC : profit économique nul à long terme (P = ATC). A est faux : un profit positif attire des entrées, il ne persiste donc pas. C est faux : des pertes feraient sortir des firmes jusqu'au retour à P = ATC.
+
+SRC: R12 Q40
+Q3: A key difference in oligopoly price setting between the Cournot model and the Stackelberg model is that the latter assumes:
+A) a strategic game model versus the former, which is a rule-based model.
+B) sequential rather than simultaneous pricing by market participants.
+C) competitors' prices will not change.
+ANSWER: B
+EXPLANATION: Dans le modèle de Stackelberg, les décisions sont séquentielles : le leader fixe son prix en premier et l'autre firme choisit le sien en connaissant celui du leader. Dans le modèle de Cournot, les décisions sont simultanées et chaque firme suppose que le prix (ou la production) du concurrent ne changera pas : C décrit donc Cournot, pas Stackelberg. A est faux : les deux modèles sont des modèles de jeu stratégique fondés sur des règles, ce n'est pas ce qui les distingue.
+
+SRC: R12 Q14
+Q4: The sale price per unit that would maximize profits for all oligopoly participants is equal to $25 per unit. The sale price that would exist in a perfectly competitive market structure is equal to $18 per unit. The most likely price for a firm in an oligopoly to charge will be closest to:
+A) $30.
+B) $20.
+C) $25.
+ANSWER: B
+EXPLANATION: Le prix d'un oligopole se situe entre deux bornes : le prix de concurrence parfaite (18 $) et le prix qui maximiserait le profit commun si toutes les firmes s'entendaient (25 $). La collusion est instable (chaque firme est tentée de tricher, comme dans l'OPEC), donc le prix réel reste en dessous du prix de collusion : 20 $ est le seul choix compris entre les deux bornes. A est faux : 30 $ dépasse même le prix de collusion. C est faux : 25 $ supposerait une collusion parfaite et durable, ce qui n'est pas le cas le plus probable.
+
+SRC: R12 Q11
+Q5: The most effective way to assess the impact of a potential merger on the market structure of an industry is to:
+A) calculate the n-firm concentration ratio.
+B) analyze barriers to entry.
+C) calculate the Herfindahl-Hirschman Index.
+ANSWER: C
+EXPLANATION: Le HHI (somme des carrés des parts de marché) est bien plus sensible aux fusions que le ratio de concentration à N firmes : quand deux firmes fusionnent, leur part cumulée est élevée au carré et l'indice monte nettement, alors que le CRN peut ne pas bouger (par exemple si les deux firmes étaient déjà parmi les N plus grandes). A est donc faux. B est faux : les barrières à l'entrée comptent pour juger la structure d'un marché, mais elles ne mesurent pas l'effet d'une fusion sur la concentration.
+
+PAGE 2 — Business Cycles & Fiscal Policy
+SRC: R13 Q8
+Q1: A firm's most likely initial response to a cyclical increase in the inventory-to-sales ratio is to adjust their utilization of labor by:
+A) adding new workers.
+B) laying off employees.
+C) reducing overtime.
+ANSWER: C
+EXPLANATION: Une hausse cyclique du ratio stocks/ventes (I/S) signale que les ventes ralentissent plus vite que la production : la croissance faiblit. Les firmes ajustent d'abord les heures (elles réduisent les heures supplémentaires), car licencier puis réembaucher coûte cher et elles attendent d'être sûres que la contraction est bien là. B est donc l'étape suivante, pas la réaction initiale. A est faux : embaucher irait à l'opposé du ralentissement signalé par le ratio.
+
+SRC: R13 Q10
+Q2: Which of the following economic indicators is classified as a leading indicator for the United States economy?
+A) Average duration of unemployment.
+B) Index of consumer expectations.
+C) Industrial production.
+ANSWER: B
+EXPLANATION: Les anticipations des consommateurs précèdent leurs dépenses : l'indice est un indicateur avancé (leading), comme les permis de construire, les nouvelles commandes ou l'écart de taux à 10 ans. A est faux : la durée moyenne du chômage est un indicateur retardé (lagging), car le chômage réagit en dernier. C est faux : la production industrielle est un indicateur coïncident (coincident), qui reflète l'état actuel de l'économie.
+
+SRC: R14 Q5
+Q3: Robert Necco and Nelson Packard are economists at Economic Research Associates. ERA asks Necco and Packard for their opinions about the effects of fiscal policy on real GDP for an economy currently experiencing a recession. Necco states that real GDP is likely to increase if both government spending and taxes are increased by the same amount. Packard states that if both government spending and taxes are increased by the same amount, there is no expected net effect on real GDP. Are the statements made by Necco and Packard CORRECT?
+A) Necco: Correct; Packard: Incorrect.
+B) Necco: Incorrect; Packard: Correct.
+C) Necco: Incorrect; Packard: Incorrect.
+ANSWER: A
+EXPLANATION: Le multiplicateur des dépenses publiques est plus fort que celui des impôts : toute hausse de G entre dans la demande, alors qu'une hausse d'impôts ne réduit la dépense qu'à hauteur de la propension marginale à consommer (le reste vient de l'épargne). Une hausse égale de G et des impôts a donc un effet net positif sur le PIB réel (effet du budget équilibré). Necco a raison. Packard a tort : l'effet net n'est pas nul mais positif, ce qui élimine B et C.
+
+SRC: R14 Q14
+Q4: The country of Zurkistan is experiencing both high interest rates and high inflation. The government passes laws that reduce government spending and increase taxes. It takes many months before interest rates fall and inflation is reduced. This is an example of:
+A) action lag and automatic stabilizers.
+B) recognition lag in discretionary fiscal policy.
+C) impact lag in discretionary fiscal policy.
+ANSWER: C
+EXPLANATION: Le gouvernement a voté de nouvelles lois de dépenses et d'impôts : c'est une politique budgétaire discrétionnaire. Le délai décrit sépare la mesure de son effet sur l'économie (taux, inflation) : c'est le délai d'impact (impact lag). A est faux : le délai d'action (action lag) est celui qui sépare la reconnaissance du problème du vote de la mesure, et les stabilisateurs automatiques n'exigent aucune loi. B est faux : le délai de reconnaissance (recognition lag) est le temps nécessaire pour constater qu'une action est requise, avant tout vote.
+
+SRC: R14 Q30
+Q5: Arguments against being concerned about the size of a fiscal deficit include:
+A) higher future taxes.
+B) Ricardian equivalence.
+C) the crowding-out effect.
+ANSWER: B
+EXPLANATION: L'équivalence ricardienne dit que les ménages anticipent les impôts futurs nécessaires pour rembourser la dette et épargnent donc le déficit : que l'État finance ses dépenses par la dette ou par l'impôt, la demande totale est la même, donc le déficit n'est pas préoccupant. A est faux : des impôts futurs plus élevés (et leurs effets négatifs sur l'incitation au travail et à l'entrepreneuriat) sont un argument pour s'inquiéter du déficit. C est faux aussi : l'effet d'éviction (crowding out) est un argument pour s'inquiéter, car l'emprunt public prend la place de l'emprunt privé et fait monter les taux.
+
+PAGE 3 — Monetary Policy & Geopolitics
+SRC: R15 Q1
+Q1: Assume the U.S. economy is undergoing a recession. In its efforts to stimulate the economy by trying to influence short-term interest rates the Fed is most likely to take which two actions?
+A) Buy Treasury securities and decrease bank reserve requirements.
+B) Sell Treasury securities and decrease bank reserve requirements.
+C) Sell Treasury securities and increase bank reserve requirements.
+ANSWER: A
+EXPLANATION: En récession, la banque centrale mène une politique expansionniste pour faire baisser les taux courts : elle achète des titres (open market, qui injecte des réserves dans les banques) et réduit le taux de réserves obligatoires (les banques peuvent prêter davantage). B est faux : vendre des titres retire des réserves du système et pousse les taux à la hausse, ce qui est restrictif. C est faux : vendre des titres et relever les réserves obligatoires sont deux gestes restrictifs.
+
+SRC: R15 Q24
+Q2: An economy's long-term trend rate of real GDP growth is 3% and the central bank's target inflation rate is 2%. If the policy rate is 6%, monetary policy is:
+A) contractionary.
+B) expansionary.
+C) neutral.
+ANSWER: A
+EXPLANATION: Le taux neutre est égal à la croissance réelle tendancielle plus l'inflation cible : 3 % + 2 % = 5 %. Le taux directeur (6 %) est supérieur au taux neutre, donc la politique monétaire est restrictive (contractionary) : elle freine l'économie. Elle serait expansionniste si le taux directeur était inférieur au taux neutre, et neutre s'il lui était égal. B et C sont donc faux.
+
+SRC: R15 Q41
+Q3: Which of the following fiscal and monetary policy scenarios is most likely to increase the size of the public sector relative to the private sector?
+A) Contractionary fiscal and monetary policy.
+B) Expansionary fiscal policy and contractionary monetary policy.
+C) Expansionary monetary policy and contractionary fiscal policy.
+ANSWER: B
+EXPLANATION: Une politique budgétaire expansionniste augmente les dépenses publiques et donc le poids du secteur public ; une politique monétaire restrictive (taux élevés) freine l'investissement et la consommation du secteur privé. Ensemble, la demande monte, les taux montent et la part de l'État dans le PIB augmente. A est faux : une politique budgétaire restrictive réduit les dépenses publiques, donc la part de l'État ne progresse pas. C est faux : c'est la combinaison inverse, qui réduit la part de l'État et profite au secteur privé.
+
+SRC: R16 Q6
+Q4: A country that generally engages in bilateralism is best characterized as exhibiting:
+A) cooperation and nationalism.
+B) non-cooperation and globalization.
+C) cooperation and globalization.
+ANSWER: A
+EXPLANATION: Les quatre archétypes croisent coopération ou non-coopération avec nationalisme ou mondialisation : le bilatéralisme est coopération + nationalisme (accords entre deux pays, mais priorité aux intérêts nationaux) ; le multilatéralisme est coopération + mondialisation ; l'autarcie est non-coopération + nationalisme ; l'hégémonie est non-coopération + mondialisation. B décrit donc l'hégémonie et C le multilatéralisme.
+
+SRC: R16 Q10
+Q5: Exogenous geopolitical risk factors are best described as those that are:
+A) known or anticipated long-term effects.
+B) unanticipated.
+C) known in terms of timing but not outcome.
+ANSWER: B
+EXPLANATION: Un risque exogène est soudain et imprévu (séisme, invasion) : on ne peut pas l'anticiper, d'où l'importance d'évaluer sa vitesse et son impact. A décrit le risque thématique (thematic risk), dont les effets sont connus et durables (guerre civile, climat). C décrit le risque d'événement (event risk), dont la date est connue mais pas le résultat (une élection par exemple).
+
+PAGE 4 — International Trade & FX Market
+SRC: R17 Q1
+Q1: Two countries trade freely with each other and have agreed to specific tariffs on imports from other countries. The workers in either country may freely cross the common border to work in the other country. The two countries have agreed to common economic policies, but they use separate currencies. This type of cooperation is best described as a(n):
+A) economic union.
+B) monetary union.
+C) customs union.
+ANSWER: A
+EXPLANATION: Les cinq niveaux d'intégration, du plus faible au plus fort, sont : zone de libre-échange, union douanière, marché commun, union économique, union monétaire. Ici il y a libre-échange, un tarif extérieur commun, la libre circulation du travail et des politiques économiques communes, mais des monnaies séparées : c'est une union économique. B est faux : l'union monétaire exige en plus une monnaie unique. C est faux : l'union douanière se limite au libre-échange et au tarif extérieur commun, sans libre circulation du travail ni politiques économiques communes.
+
+SRC: R17 Q20
+Q2: The least likely result of import quotas and voluntary export restraints is:
+A) a decrease in the quantity of imports of the product.
+B) a shift in production toward higher-cost suppliers.
+C) increased revenue for the government.
+ANSWER: C
+EXPLANATION: Contrairement au tarif (une taxe qui rapporte à l'État), un quota d'importation ou une restriction volontaire d'exportation (VER) ne génère pas nécessairement de recettes publiques : la rente revient aux détenteurs de licences ou, pour un VER, aux exportateurs étrangers. A est un effet attendu : les deux mesures plafonnent la quantité importée. B est un effet attendu aussi : la production se déplace vers des fournisseurs plus coûteux, d'où une perte sèche (deadweight loss).
+
+SRC: R18 Q22
+Q3: The exchange rate for Australian dollars per British pound (AUD/GBP) was 1.4800 five years ago and is 1.6300 today. The percent change in the Australian dollar relative to the British pound is closest to:
+A) appreciation of 10.1%.
+B) depreciation of 10.1%.
+C) depreciation of 9.2%.
+ANSWER: C
+EXPLANATION: Dans AUD/GBP, la livre est la devise de base : 1,6300 / 1,4800 - 1 = +10,1 % mesure l'appréciation de la livre, pas celle du dollar australien. Pour la variation de l'AUD, on inverse d'abord pour que l'AUD devienne la base : 1 / 1,4800 = 0,6757 GBP/AUD, puis 1 / 1,6300 = 0,6135 GBP/AUD, d'où 0,6135 / 0,6757 - 1 = -9,2 % : le dollar australien se déprécie de 9,2 %. A est faux (mauvais sens et mauvaise devise). B est faux : 10,1 % est la variation de la livre, pas celle de l'AUD.
+
+SRC: R18 Q11
+Q4: At a base period, the CPIs of the countries of Tuolumne (currency is the TOL) and Bodee (currency is the BDE) are both 100, and the exchange rate is 0.90 BDE/TOL. One year later, the exchange rate is 0.75 BDE/TOL, and the CPI has risen to 110 in Tuolumne and 105 in Bodee. The real exchange rate is closest to:
+A) 0.72 BDE/TOL.
+B) 0.79 BDE/TOL.
+C) 0.83 BDE/TOL.
+ANSWER: B
+EXPLANATION: Taux réel (price/base) = taux nominal × CPI de la base / CPI de la price. Dans BDE/TOL, la base est la TOL (Tuolumne) et la price la BDE (Bodee) : 0,75 × 110 / 105 = 0,7857, soit environ 0,79 BDE/TOL. A (0,72) correspond aux deux indices inversés : 0,75 × 105 / 110. C (0,83) correspond à 0,75 × 110 / 100, qui oublie l'inflation de Bodee.
+
+SRC: R18 Q16
+Q5: In which of the following exchange rate regimes can a country participate without giving up its own currency?
+A) Crawling peg or formal dollarization.
+B) Monetary union or currency board.
+C) Target zone or conventional fixed peg.
+ANSWER: C
+EXPLANATION: Avec la dollarisation formelle ou l'union monétaire, un pays n'a plus sa propre monnaie (il utilise celle d'un autre pays ou une monnaie commune). Avec un currency board, un fixed peg conventionnel, une target zone ou un crawling peg, il garde sa monnaie et gère son taux de change par rapport à une devise ou à un panier. A est faux à cause de la dollarisation formelle, B à cause de l'union monétaire.
+
+PAGE 5 — Exchange Rate Calculations
+SRC: R19 Q1
+Q1: If the spot exchange rate between the British pound and the U.S. dollar is GBP/USD 0.7775, and the spot exchange rate between the Canadian dollar and the British pound is CAD/GBP 1.8325, what is the USD/CAD spot cross exchange rate?
+A) 0.42428.
+B) 1.42477.
+C) 0.70186.
+ANSWER: C
+EXPLANATION: Il faut que la devise commune (GBP) se simplifie : on inverse GBP/USD 0,7775 pour obtenir USD/GBP = 1 / 0,7775 = 1,28617, puis on divise par CAD/GBP 1,8325 (même dénominateur GBP) : USD/CAD = 1,28617 / 1,8325 = 0,7019 (0,70186 avec l'arrondi du corrigé). B (1,42477) est le produit 0,7775 × 1,8325, soit CAD/USD, l'inverse du taux demandé. A (0,42428) vient d'une division sans inversion (0,7775 / 1,8325).
+
+SRC: R19 Q3
+Q2: The USD/EUR spot exchange rate is 1.3500 and 6-month forward points are -75. The 6-month forward exchange rate is:
+A) 1.3425, and the USD is at a forward discount.
+B) 1.3425, and the USD is at a forward premium.
+C) 1.3575, and the USD is at a forward discount.
+ANSWER: B
+EXPLANATION: Le taux est coté à 4 décimales : un point vaut 0,0001, donc -75 points = -0,0075 et forward = spot + points = 1,3500 - 0,0075 = 1,3425 USD/EUR. Le forward USD/EUR étant inférieur au spot, il faut moins de USD pour acheter un EUR à terme : l'EUR (devise de base) est à forward discount et le USD (devise price) à forward premium. A a le bon taux mais se trompe de sens. C ajoute les points au lieu de les retrancher.
+
+SRC: R19 Q15
+Q3: The spot exchange rate for CHF/EUR is 0.8342 and the 1-year forward quotation is -0.353%. The 1-year forward exchange rate for EUR/CHF is closest to:
+A) 1.2022.
+B) 0.8313.
+C) 1.2029.
+ANSWER: C
+EXPLANATION: Cotation en % : forward = spot × (1 + %), sur le taux tel qu'il est coté. CHF/EUR forward = 0,8342 × (1 - 0,00353) = 0,8313. Mais la question porte sur EUR/CHF, l'inverse : 1 / 0,8313 = 1,2030, soit environ 1,2029. B est faux : 0,8313 s'arrête à l'étape intermédiaire et reste un CHF/EUR. A est faux : le résultat correct est d'environ 1,2029 - 1,2030.
+
+SRC: R19 Q17
+Q4: The three-month interest rate in the currency MNO is 4% and the three-month interest rate for the currency PQR is 5%. Based only on this information, the three-month forward MNO/PQR exchange rate:
+A) is greater than spot MNO/PQR.
+B) may be greater than or less than spot MNO/PQR.
+C) is less than spot MNO/PQR.
+ANSWER: C
+EXPLANATION: Dans MNO/PQR, la PQR est la base et la MNO la price. Selon la parité des taux d'intérêt couverte, F = S × (1 + i price × t) / (1 + i base × t) = S × (1 + 4 % × t) / (1 + 5 % × t) : le numérateur est plus petit que le dénominateur, donc F < S. La devise au taux d'intérêt le plus élevé (ici la base, PQR) est à forward discount. A est faux : ce serait vrai si le taux de la price dépassait celui de la base. B est faux : la relation d'arbitrage fixe le sens sans ambiguïté.
+
+SRC: R19 Q12
+Q5: The spot exchange rate for Canadian dollars (CAD) per Swiss franc (CHF) is 1.1350 CAD/CHF and the 12-month forward exchange rate is 1.1460 CAD/CHF. The forward quote is a:
+A) discount of 110 points and the CAD is at a forward discount to the CHF.
+B) premium of 11 points and the CAD is at a forward premium to the CHF.
+C) premium of 110 points and the CAD is at a forward discount to the CHF.
+ANSWER: C
+EXPLANATION: Taux à 4 décimales : 1,1460 - 1,1350 = 0,0110, soit 110 points. Le forward est supérieur au spot : la cotation est à premium de 110 points pour la base (CHF), car il faut plus de CAD pour acheter un CHF à terme. La devise price (CAD) est donc à forward discount par rapport au CHF. A est faux : un forward supérieur au spot est un premium, pas un discount. B est faux : l'écart vaut 110 points (0,0110), pas 11, et le CAD est à discount, pas à premium.

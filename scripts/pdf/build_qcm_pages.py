@@ -11,6 +11,14 @@ below is taken from that extraction), so no font registration is needed.
 Usage:
     python build_qcm_pages.py fsa
     python build_qcm_pages.py pm
+    python build_qcm_pages.py economics <concept_pdf> <out_pdf>
+
+For `economics` the two PDF paths are passed as arguments (not coded in this
+file). Its concept pages are 675.12 x 618.96 pt (shorter than the other
+sheets' 863.04), but the QCM/Corrigé pages keep the 675.12 x 863.04 layout
+measured above: the viewer fits pages to the width, so mixing heights is fine
+and 5 questions per page would not fit in 619 pt. Any argument given after the
+topic overrides the PDF paths of fsa/pm too.
 """
 import io
 import re
@@ -215,6 +223,8 @@ def draw_qcm_page(c, header_prefix, page_idx_1based, total_pages, page: Page, fo
                     c.drawString(OPT_LEFT, td(yy + 6.6), line)
                 line_i += 1
         y_top += h + CARD_GAP
+    assert y_top - CARD_GAP <= FOOTER_Y_TOPDOWN - 4, (
+        f"QCM page {page.title!r}: cards end at {y_top - CARD_GAP:.1f}pt, past the footer line")
     draw_footer_text(c, footer_num)
 
 
@@ -268,6 +278,7 @@ _SANITIZE = {
     "ρ": "rho",     # ρ: not in WinAnsi
     "β": "beta",    # β: not in WinAnsi
     "₁": "1", "₂": "2", "₀": "0", "₃": "3",  # subscripts
+    "≈": "~", "≥": ">=", "≤": "<=", "→": "->", "≠": "!=",
 }
 
 
@@ -283,9 +294,12 @@ def sanitize(s):
 # --------------------------------------------------------------------------
 def parse_raw(text, order):
     """order: list of (reading_number:int, fiche_title:str) in the desired
-    final page order. Returns list[Page] in that order."""
+    final page order. Returns list[Page] in that order. Blocks are headed
+    `READING N — title` (one reading per page) or `PAGE N — title` (when a
+    page covers several readings, as in Economics); `SRC:` lines between
+    questions are ignored."""
     blocks = {}
-    parts = re.split(r'\nREADING\s+(\d+)\s+—\s+[^\n]*\n', "\n" + text.strip() + "\n")
+    parts = re.split(r'\n(?:READING|PAGE)\s+(\d+)\s+—\s+[^\n]*\n', "\n" + text.strip() + "\n")
     # parts[0] is empty/preamble; then alternates: number, body, number, body...
     for i in range(1, len(parts), 2):
         num = int(parts[i])
@@ -386,12 +400,30 @@ TOPICS = {
             (88, "Introduction to Risk Management"),
         ],
     ),
+    "economics": dict(
+        concept_pdf=None,  # <concept_pdf> <out_pdf> are passed as arguments
+        out_pdf=None,
+        header_prefix="CFA LEVEL I — ECONOMICS",
+        topic_label="Economics",
+        raw_file="qcm_data/economics_raw.txt",
+        order=[
+            (1, "Firms & Market Structures"),
+            (2, "Business Cycles & Fiscal Policy"),
+            (3, "Monetary Policy & Geopolitics"),
+            (4, "International Trade & FX Market"),
+            (5, "Exchange Rate Calculations"),
+        ],
+    ),
 }
 
 
 def main():
     key = sys.argv[1]
-    cfg = TOPICS[key]
+    cfg = dict(TOPICS[key])
+    if len(sys.argv) >= 4:
+        cfg["concept_pdf"], cfg["out_pdf"] = sys.argv[2], sys.argv[3]
+    if not cfg["concept_pdf"] or not cfg["out_pdf"]:
+        sys.exit(f"usage: python build_qcm_pages.py {key} <concept_pdf> <out_pdf>")
     with open(f"{HERE}/{cfg['raw_file']}", encoding="utf-8") as f:
         raw = f.read()
     pages = parse_raw(raw, cfg["order"])

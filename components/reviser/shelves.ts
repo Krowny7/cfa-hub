@@ -30,6 +30,10 @@ const FICHE_INFO: Record<string, { meta: string; desc: string }> = {
     meta: "6 synthèses · 13 pages",
     desc: "Risque et rendement, CAPM, construction, biais, gestion du risque.",
   },
+  economics: {
+    meta: "5 synthèses · 12 pages",
+    desc: "Structures de marché, cycles, politiques budgétaire et monétaire, commerce, change.",
+  },
 };
 
 /** Contenu d'une fiche (nombre de synthèses et de pages, thèmes). */
