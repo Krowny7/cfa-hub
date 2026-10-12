@@ -1,4 +1,4 @@
-import { SerieEncreLigne } from "@/components/accueil/SerieEncreLigne";
+import { PalierSerie, SerieEncreLigne } from "@/components/accueil/SerieEncreLigne";
 import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
@@ -290,7 +290,7 @@ function CarteCinq({ d, daily, primaire }: { d: AccueilData; daily: TodayDaily; 
   );
 }
 
-/** J-n · n jours d'encre, puis les bâtons de la série. */
+/** J-n · n jours d'encre · ×2 (UNE seule série, celle d'encre), puis les bâtons et le joker. */
 function LigneSerie({ d }: { d: AccueilData }) {
   const jj = jourJ(d.examDaysLeft);
   const sec = d.dayState === "sec";
@@ -306,7 +306,13 @@ function LigneSerie({ d }: { d: AccueilData }) {
             {MOI.fixeJourJ}
           </Link>
         )}
-        {d.streak > 0 && <> · {joursEncre(d.streak)}</>}
+        {d.streak > 0 && (
+          <>
+            {" · "}
+            {joursEncre(d.streak)}
+            <PalierSerie s={d.serieEncre} />
+          </>
+        )}
       </p>
       {/* au retour après une absence, la série cassée ne s'affiche pas */}
       {!d.returning && (
@@ -314,10 +320,10 @@ function LigneSerie({ d }: { d: AccueilData }) {
           <span className="shrink-0">
             <Batons jours={d.streak} jour={d.dayState} height={26} max={4} />
           </span>
-          <span className={"t-micro min-w-0 " + (sec ? "font-semibold text-white" : "")}>{ligneSerie(d.streak, d.dayState, d.seenBefore)}</span>
+          <span className={"t-micro min-w-0 " + (sec ? "font-semibold text-white" : "")}>{ligneSerie(d.streak, d.dayState, d.seenBefore, d.serieReste)}</span>
         </div>
       )}
-      {/* la série d'encre : le palier d'XP, les jours d'affilée, le joker (rien sans la migration) */}
+      {/* le joker de la semaine et, le soir, le temps qu'il reste (rien sans la migration) */}
       <SerieEncreLigne d={d} />
     </div>
   );
@@ -356,7 +362,7 @@ function titreDuJour(d: AccueilData) {
 function ActionTraits({ d }: { d: AccueilData }) {
   const r = d.resume;
   const soir = d.dayState === "sec" && d.streak > 0;
-  const label = d.returning ? REPRISE.action : !r ? REPRISE.choisir : soir ? ENCRE.uneQuestion : RDV.traits.gagner;
+  const label = d.returning ? REPRISE.action : !r ? REPRISE.choisir : soir ? (typeof d.serieReste === "number" ? ENCRE.pourGarder(d.serieReste) : ENCRE.uneQuestion) : RDV.traits.gagner;
   return (
     <Bouton href={r?.href ?? "/reviser"} plein large>
       {label}

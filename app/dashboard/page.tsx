@@ -8,8 +8,7 @@ import { getLeaderboardRank, getMyRating, getOpenChallenges, getRatingHistory } 
 import { getTodayDaily } from "@/lib/daily";
 import { lireVainqueurDuJour } from "@/lib/vainqueur-du-jour";
 import { getReviewableDuels } from "@/lib/duels";
-import { etatDuJour } from "@/lib/voice";
-import { avecAnneau, lireSerieEncre } from "@/lib/serie-encre";
+import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
 import { JOURS_RETOUR } from "@/lib/voice-z1";
 import { etatObjectif, objectifDe } from "@/lib/objectif";
 import { demandesDe } from "@/lib/profil/donnees";
@@ -101,8 +100,9 @@ export default async function Dashboard() {
   const dayKey = parisDay(now);
   const hour = parisHour(now);
   const xpDays = Array.isArray(xpDailyRes.data) ? (xpDailyRes.data as XpDay[]).map((x) => ({ day: String(x.day).slice(0, 10), xp: Number(x.xp) || 0 })) : [];
-  const { streak, todayDone } = calcStreakAndToday(xpDays, { today: dayKey, actifs: activity.activeDays });
-  const dayState = todayDone || activity.today > 0 ? "fait" : etatDuJour(0, hour);
+  // UNE seule série : celle d'encre (10 questions, joker) quand la migration est collée, l'ancien calcul sinon
+  const ancien = calcStreakAndToday(xpDays, { today: dayKey, actifs: activity.activeDays });
+  const { streak, dayState, serie: serieEncre, reste: serieReste } = joursEncreUnifies(serieBase, activity.today, hour, ancien);
 
   // Dernier passage : au-delà de JOURS_RETOUR jours sans rien, la variante « retour ».
   const last = lastActiveDay([
@@ -141,7 +141,8 @@ export default async function Dashboard() {
     examDaysLeft,
     examDateLabel: examDate ? `le ${new Date(examDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : null,
     streak,
-    serieEncre: serieBase ? avecAnneau(serieBase, activity.today) : null,
+    serieEncre,
+    serieReste,
     dayState,
     seenBefore: last !== null,
     returning,

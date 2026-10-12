@@ -4,6 +4,7 @@ import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
 import { Batons } from "@/components/adn/Batons";
 import { Icone, type IconeNom } from "@/components/adn/icons";
 import { SceauTenu } from "@/components/accueil/SceauTenu";
+import { PalierSerie } from "@/components/accueil/SerieEncreLigne";
 import { ACCUEIL, ENCRE, joursEncre, jourJ, retour, titreAccueil } from "@/lib/voice";
 import { ligneSerie, REPRISE } from "@/lib/voice-z1";
 import { agoLabel } from "@/components/accueil/format";
@@ -38,7 +39,13 @@ export function JourHero({ d }: { d: AccueilData }) {
             Fixe ton jour J
           </Link>
         )}
-        {d.streak > 0 && <> · {joursEncre(d.streak)}</>}
+        {d.streak > 0 && (
+          <>
+            {" · "}
+            {joursEncre(d.streak)}
+            <PalierSerie s={d.serieEncre} />
+          </>
+        )}
       </p>
       {/* les bâtons : le bâton du jour tracé, en attente au crayon, ou sec le
           soir ; au retour après une absence, la série cassée ne s'affiche pas */}
@@ -47,7 +54,7 @@ export function JourHero({ d }: { d: AccueilData }) {
           <span className="shrink-0">
             <Batons jours={d.streak} jour={d.dayState} height={30} max={4} />
           </span>
-          <span className={"t-micro min-w-0 " + (sec ? "font-semibold text-white" : "")}>{ligneSerie(d.streak, d.dayState, d.seenBefore)}</span>
+          <span className={"t-micro min-w-0 " + (sec ? "font-semibold text-white" : "")}>{ligneSerie(d.streak, d.dayState, d.seenBefore, d.serieReste)}</span>
         </div>
       )}
     </div>
@@ -71,7 +78,7 @@ export function ouReprendre(r: ResumeItem) {
 }
 
 /** La prochaine action : reprendre, premier usage, ou la variante « retour ». */
-export function ResumeHero({ resume, returning = false, evening = false, now }: { resume: ResumeItem | null; returning?: boolean; evening?: boolean; now?: number }) {
+export function ResumeHero({ resume, returning = false, evening = false, reste = null, now }: { resume: ResumeItem | null; returning?: boolean; evening?: boolean; reste?: number | null; now?: number }) {
   if (returning) {
     // la variante « retour » (3 jours sans venir, voix `retour()`) : du texte
     // simple et une action ; pas de « tu nous as manqué », la série cassée
@@ -143,7 +150,7 @@ export function ResumeHero({ resume, returning = false, evening = false, now }: 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 sm:pl-[76px]">
         <Link href={resume.href} className="btn btn-primary btn-lg">
           {/* le soir, rien encore : une seule petite action pour garder l'encre */}
-          {evening ? ENCRE.uneQuestion : resume.cta} <ArrowRight size={17} aria-hidden />
+          {evening ? (reste !== null ? ENCRE.pourGarder(reste) : ENCRE.uneQuestion) : resume.cta} <ArrowRight size={17} aria-hidden />
         </Link>
         {resume.audio && (
           <Link href={resume.audio.href} title={resume.audio.title} className="t-small inline-flex items-center gap-2 font-semibold hover:text-white">

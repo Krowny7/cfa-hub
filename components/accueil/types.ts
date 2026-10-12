@@ -96,11 +96,13 @@ export type AccueilData = {
   hour: number;
   examDaysLeft: number | null;
   examDateLabel: string | null;
-  /** jours d'encre : aujourd'hui compris s'il est fait, sinon jusqu'à hier (calcStreakAndToday) */
+  /** jours d'encre : aujourd'hui compris s'il est fait, sinon jusqu'à hier. UNE seule série : celle d'encre (10 questions, joker) ; l'ancien calcul (calcStreakAndToday) tant que la migration n'est pas collée */
   streak: number;
-  /** la série d'encre (bonus d'XP des jours d'affilée) ; null ou absent : migration_serie_encre.sql pas encore collée, rien à montrer */
+  /** la série d'encre (palier d'XP, joker, rappel du soir) ; null ou absent : migration_serie_encre.sql pas encore collée, l'ancien calcul */
   serieEncre?: SerieEncre | null;
-  /** le bâton du jour : fait, en attente, ou sec le soir (etatDuJour) */
+  /** questions qui manquent pour que le jour compte (null ou absent : ancien calcul, une réponse suffit) */
+  serieReste?: number | null;
+  /** le bâton du jour : fait (10 questions), en attente, ou sec le soir (etatDuJour) */
   dayState: EtatJour;
   /** déjà venu au moins une fois (une série perdue se dit « l'encre a séché ») */
   seenBefore: boolean;
