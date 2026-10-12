@@ -2110,6 +2110,26 @@ html:not([data-discreet="1"]) .rl-encre[data-palette]::before {
   will-change: transform;
   animation: rl-encre-derive 18s linear infinite;
 }
+/* Le liquide des insignes (components/nav/EncreVive : canvas WebGL, même
+   shader que les insignes de rang) recouvre la texture dès sa première image
+   (data-vivant) ; la texture ne sert plus que de repli (sans WebGL, mouvement
+   réduit, data-rl-motion="off"). Coupé en mode discret avec le reste. */
+.rl-encre-vif {
+  display: none;
+}
+html:not([data-discreet="1"]) .rl-encre[data-palette] > .rl-encre-vif {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  pointer-events: none;
+  border-radius: inherit;
+}
+html:not([data-discreet="1"]) .rl-encre[data-palette][data-vivant]::before {
+  display: none;
+}
 html:not([data-discreet="1"]) .rl-encre[data-palette]::after {
   content: "";
   position: absolute;

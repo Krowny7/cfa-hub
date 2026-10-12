@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { SPACES, activeSpace } from "@/lib/nav";
 import { paletteDeChemin, styleDePalette } from "@/lib/palettes";
 import { ICONE_ESPACE, Icone } from "@/components/adn/icons";
+import { EncreVive } from "@/components/nav/EncreVive";
 
 // Les quatre espaces, en contrôle segmenté : l'indicateur glisse (avec un
 // léger ressort) sous l'onglet actif. Il se place par transform (sa largeur
 // est celle d'un onglet : translateX(100 %) = un onglet plus loin). Il se
-// remplit de l'encre vivante de la palette de la page (lib/palettes.ts,
-// styles .rl-encre dans globals.css) ; le texte de l'onglet passe en blanc.
+// remplit du liquide des insignes de rang, aux couleurs de la palette de la
+// page (lib/palettes.ts, EncreVive ; texture de repli et voile : .rl-encre
+// dans globals.css) ; le texte de l'onglet passe en blanc.
 // `chemin` : pour les aperçus, force la route lue.
 export function SpaceNav({ chemin }: { chemin?: string } = {}) {
   const courant = usePathname();
@@ -33,7 +35,9 @@ export function SpaceNav({ chemin }: { chemin?: string } = {}) {
             transform: `translateX(${Math.max(ix, 0) * 100}%)`,
             opacity: ix >= 0 ? 1 : 0,
           }}
-        />
+        >
+          {palette && <EncreVive tons={palette.liquide} />}
+        </span>
         {SPACES.map((s) => {
           const on = s.key === active;
           return (

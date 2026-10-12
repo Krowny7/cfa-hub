@@ -26,8 +26,10 @@ export type Palette = {
   inspiration: string;
   /** du plus sombre au plus clair */
   couleurs: CouleurNommee[];
-  /** texture d'encre (256 × 256, raccord en mosaïque) */
+  /** texture d'encre (256 × 256, raccord en mosaïque) : repli du liquide */
   encre: string;
+  /** les quatre couleurs du liquide des insignes [fond, principal, bandes, traînées claires] */
+  liquide: [string, string, string, string];
   /** opacité du voile sombre en haut et en bas de l'onglet */
   voile: [number, number];
 };
@@ -38,18 +40,43 @@ const luminance = (hex: string) => {
   return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
 };
 
+const hexVersRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const rgbVersHex = (c: number[]) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+
+/**
+ * Les quatre couleurs du liquide des insignes (de la plus sombre à la plus
+ * claire) tirées d'une palette : quatre couleurs, telles quelles ; plus, on
+ * écarte les deux extrêmes (le noir et le blanc cassé, que le voile et le
+ * texte fournissent déjà) ; moins, on interpole.
+ */
+function quatreTons(couleurs: CouleurNommee[]): [string, string, string, string] {
+  const n = couleurs.length;
+  return [0, 1, 2, 3].map((i) => {
+    if (n >= 4) return couleurs[n === 4 ? i : Math.min(n - 2, Math.round(1 + (i * (n - 3)) / 3))].hex;
+    const p = (i * (n - 1)) / 3;
+    const a = Math.floor(p), k = p - a;
+    if (k < 0.001) return couleurs[a].hex;
+    const x = hexVersRgb(couleurs[a].hex), y = hexVersRgb(couleurs[a + 1].hex);
+    return rgbVersHex(x.map((v, j) => v + (y[j] - v) * k));
+  }) as [string, string, string, string];
+}
+
 export const PALETTES: Record<PaletteCle, Palette> = Object.fromEntries(
-  donnees.palettes.map((p) => [
-    p.key,
-    {
-      key: p.key as PaletteCle,
-      nom: p.nom,
-      inspiration: p.inspiration,
-      couleurs: [...p.couleurs].sort((a, b) => luminance(a.hex) - luminance(b.hex)),
-      encre: `/encres/${p.key}.webp`,
-      voile: p.voile as [number, number],
-    },
-  ]),
+  donnees.palettes.map((p) => {
+    const couleurs = [...p.couleurs].sort((a, b) => luminance(a.hex) - luminance(b.hex));
+    return [
+      p.key,
+      {
+        key: p.key as PaletteCle,
+        nom: p.nom,
+        inspiration: p.inspiration,
+        couleurs,
+        encre: `/encres/${p.key}.webp`,
+        liquide: quatreTons(couleurs),
+        voile: p.voile as [number, number],
+      },
+    ];
+  }),
 ) as Record<PaletteCle, Palette>;
 
 /** Routes de chaque palette (le premier préfixe qui correspond l'emporte). */

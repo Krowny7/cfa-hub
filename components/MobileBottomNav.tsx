@@ -5,13 +5,15 @@ import { usePathname } from "next/navigation";
 import { SPACES, activeSpace } from "@/lib/nav";
 import { paletteDeChemin, styleDePalette } from "@/lib/palettes";
 import { ICONE_ESPACE, Icone, type IconeNom } from "@/components/adn/icons";
+import { EncreVive } from "@/components/nav/EncreVive";
 
 // Barre du bas (mobile) : flottante et translucide, l'accueil puis les quatre
 // espaces ; une pastille d'encre glisse sous l'onglet actif (même geste que
 // le contrôle segmenté de la barre du haut), placée par transform ; l'icône
-// qui devient active fait un petit rebond. La pastille se remplit de l'encre
-// vivante de la palette de la page (lib/palettes.ts, styles .rl-encre dans
-// globals.css), l'accueil compris. `chemin` : pour les aperçus, force la route.
+// qui devient active fait un petit rebond. La pastille se remplit du liquide
+// des insignes de rang, aux couleurs de la palette de la page (lib/palettes.ts,
+// EncreVive ; texture de repli et voile : .rl-encre dans globals.css), l'accueil
+// compris. `chemin` : pour les aperçus, force la route.
 export function MobileBottomNav({ chemin }: { chemin?: string } = {}) {
   const courant = usePathname();
   const pathname = chemin ?? courant ?? "/";
@@ -50,7 +52,9 @@ export function MobileBottomNav({ chemin }: { chemin?: string } = {}) {
           opacity: ix >= 0 ? 1 : 0,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,.14), 0 4px 12px -4px rgba(0,0,0,.35)",
         }}
-      />
+      >
+        {palette && <EncreVive tons={palette.liquide} />}
+      </span>
       {items.map(({ key, label, href, icone, on }) => (
         <Link
           key={key}

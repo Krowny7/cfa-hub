@@ -11,9 +11,24 @@ import { INSIGNES, LIQUIDE_FRAG, LIQUIDE_VERT, formesDe, liquideFige, type Forme
 // - des arcs courent le long des arêtes, par rafales.
 // Seuls les insignes visibles bougent (IntersectionObserver). Mouvement
 // réduit, ?mouvement=off ou onglet caché : rien ne bouge.
+// Le même liquide (même shader, même vitesse, même boucle) remplit aussi
+// l'onglet actif des barres de navigation (animerEncre) : aux couleurs de la
+// palette de la page, dans un canvas à la taille de l'onglet.
+
+type Encre = {
+  /** pixels du canvas par « carré de référence » du shader (le motif garde l'échelle des insignes) */
+  ref: number;
+  courant: number[][];
+  fondu: { de: number[][]; vers: number[][]; debut: number } | null;
+  cle: string;
+  peint: boolean;
+};
 
 type Entree = {
+  /** -1 pour l'encre d'un onglet */
   palier: number;
+  encre?: Encre;
+  racine?: HTMLElement;
   canvas: HTMLCanvasElement | null;
   bruit: SVGElement | null;
   eclairs: SVGGElement | null;
@@ -37,12 +52,13 @@ const immobile = () =>
   document.documentElement.dataset.rlMotion === "off";
 
 // ── le liquide : un contexte WebGL partagé, recopié dans chaque canvas ────
-type Moteur = { peindre: (cible: HTMLCanvasElement, palier: number, t: number) => void };
+type Moteur = { peindre: (cible: HTMLCanvasElement, couleurs: number[][], graine: number, t: number, ref?: number) => void };
 let moteur: Moteur | null | undefined;
 const rgb = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
+const couleursInsignes = INSIGNES.map((d) => d.liquide.map(rgb));
 function creerMoteur(): Moteur | null {
   try {
     const cv = document.createElement("canvas");
@@ -69,15 +85,17 @@ function creerMoteur(): Moteur | null {
     gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
     const U = (n: string) => gl.getUniformLocation(prog, n);
     const u = { res: U("res"), t: U("t"), graine: U("graine"), c: [U("c0"), U("c1"), U("c2"), U("c3")] };
-    const couleurs = INSIGNES.map((d) => d.liquide.map(rgb));
     return {
-      peindre(cible, palier, t) {
+      // ref : sans lui, le motif remplit tout le canvas (insignes carrés) ; avec
+      // lui, il garde son échelle et le canvas en découvre autant que sa forme
+      // (l'onglet, bien plus large que haut)
+      peindre(cible, couleurs, graine, t, ref) {
         const w = Math.min(256, cible.width), h = Math.min(256, cible.height);
         gl.viewport(0, 0, w, h);
-        gl.uniform2f(u.res, w, h);
+        gl.uniform2f(u.res, ref ?? w, ref ?? h);
         gl.uniform1f(u.t, t);
-        gl.uniform1f(u.graine, liquideFige(palier).graine);
-        couleurs[palier].forEach((c, k) => gl.uniform3fv(u.c[k], c));
+        gl.uniform1f(u.graine, graine);
+        couleurs.forEach((c, k) => gl.uniform3fv(u.c[k], c));
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         const ctx = cible.getContext("2d");
         if (!ctx) return;
@@ -141,6 +159,99 @@ function dessinerArcs(g: SVGGElement, palier: number) {
   g.innerHTML = h;
 }
 
+// ── l'encre des onglets : le même liquide, aux couleurs de la palette ─────
+const ENCRE_GRAINE = 12.4;
+const ENCRE_T0 = 9;
+const ENCRE_V = 0.5; // la vitesse des insignes (0.45 à 0.55)
+const ENCRE_ECHELLE = 96; // px CSS d'un carré de référence (le liquide d'un insigne de 96 px)
+const ENCRE_DPR = 1.5;
+const ENCRE_FONDU = 450; // ms : changement de palette, calé sur la glissade de la pastille
+
+const lisse = (k: number) => k * k * (3 - 2 * k);
+/** Les couleurs affichées à l'instant t (en plein fondu entre deux palettes, ou non). */
+function couleursEncre(en: Encre, t: number): number[][] {
+  if (!en.fondu) return en.courant;
+  const k = Math.max(0, Math.min(1, (t - en.fondu.debut) / ENCRE_FONDU));
+  const { de, vers } = en.fondu;
+  if (k >= 1) {
+    en.courant = vers;
+    en.fondu = null;
+    return vers;
+  }
+  return de.map((a, i) => a.map((v, j) => v + (vers[i][j] - v) * lisse(k)));
+}
+function peindreEncre(e: Entree, t: number) {
+  const en = e.encre!;
+  // mode discret : l'onglet n'a ni texture ni liquide (le CSS masque le canvas)
+  if (!moteur || !e.canvas || !en.ref || document.documentElement.dataset.discreet === "1") return;
+  moteur.peindre(e.canvas, couleursEncre(en, t), ENCRE_GRAINE, ENCRE_T0 + ((t - e.depart) / 1000) * ENCRE_V, en.ref);
+  if (!en.peint) {
+    // dès la première image : le CSS retire la texture de repli
+    en.peint = true;
+    e.racine?.setAttribute("data-vivant", "1");
+  }
+}
+
+/**
+ * Fait couler le liquide des insignes dans le canvas d'un onglet (`racine` :
+ * l'onglet, qui contient le canvas). `tons` : quatre couleurs #rrggbb
+ * [fond, principal, bandes, traînées claires], comme `liquide` d'un insigne.
+ */
+export function animerEncre(racine: HTMLElement, canvas: HTMLCanvasElement, tons: readonly string[]) {
+  if (typeof window === "undefined") return { regler: (_: readonly string[]) => {}, arreter: () => {} };
+  const en: Encre = { ref: 0, courant: tons.map(rgb), fondu: null, cle: tons.join(), peint: false };
+  const e: Entree = { palier: -1, encre: en, racine, canvas, bruit: null, eclairs: null, arcs: false, visible: false, depart: performance.now(), v: ENCRE_V, prochain: 0, fin: 0, derniere: 0 };
+  entrees.add(e);
+  parElement.set(racine, e);
+  // canvas à la taille de l'onglet (devicePixelRatio plafonné, 256 px au plus par côté)
+  const mesurer = (w: number, h: number) => {
+    if (w < 2 || h < 2) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, ENCRE_DPR);
+    const cw = Math.max(1, Math.min(256, Math.round(w * dpr))), ch = Math.max(1, Math.min(256, Math.round(h * dpr)));
+    if (canvas.width !== cw || canvas.height !== ch) {
+      canvas.width = cw;
+      canvas.height = ch;
+    }
+    en.ref = ENCRE_ECHELLE * (cw / w);
+  };
+  let ro: ResizeObserver | null = null;
+  if (typeof ResizeObserver !== "undefined") {
+    ro = new ResizeObserver((l) => {
+      const r = l[l.length - 1]?.contentRect;
+      if (r) mesurer(r.width, r.height);
+    });
+    ro.observe(racine);
+  } else mesurer(racine.offsetWidth, racine.offsetHeight);
+  if (typeof IntersectionObserver === "undefined") e.visible = true;
+  else {
+    observateur ??= new IntersectionObserver((list) => {
+      for (const it of list) {
+        const x = parElement.get(it.target);
+        if (x) x.visible = it.isIntersecting;
+      }
+    });
+    observateur.observe(racine);
+  }
+  if (!raf) raf = requestAnimationFrame(boucle);
+  return {
+    /** change de palette : les couleurs se fondent de l'une à l'autre */
+    regler(nouveaux: readonly string[]) {
+      const cle = nouveaux.join();
+      if (cle === en.cle) return;
+      en.cle = cle;
+      const t = performance.now();
+      en.courant = couleursEncre(en, t);
+      en.fondu = { de: en.courant, vers: nouveaux.map(rgb), debut: t };
+    },
+    arreter() {
+      entrees.delete(e);
+      ro?.disconnect();
+      observateur?.unobserve(racine);
+      racine.removeAttribute("data-vivant");
+    },
+  };
+}
+
 // ── la boucle ─────────────────────────────────────────────────────────────
 let dernierLiquide = 0, dernierBruit = 0;
 function boucle(t: number) {
@@ -153,7 +264,11 @@ function boucle(t: number) {
       if (moteur)
         for (const e of entrees) {
           if (!e.visible || !e.canvas) continue;
-          moteur.peindre(e.canvas, e.palier, liquideFige(e.palier).t + ((t - e.depart) / 1000) * e.v);
+          if (e.encre) peindreEncre(e, t);
+          else {
+            const f = liquideFige(e.palier);
+            moteur.peindre(e.canvas, couleursInsignes[e.palier], f.graine, f.t + ((t - e.depart) / 1000) * e.v);
+          }
         }
     }
     if (t - dernierBruit > 70) {
@@ -165,7 +280,7 @@ function boucle(t: number) {
       }
     }
     for (const e of entrees) {
-      const el = INSIGNES[e.palier].elec;
+      const el = e.palier >= 0 ? INSIGNES[e.palier].elec : undefined;
       if (!e.visible || !e.arcs || !e.eclairs || !el || !el.arcs) continue;
       if (t > e.prochain) {
         e.fin = t + 220 + Math.random() * 260;
