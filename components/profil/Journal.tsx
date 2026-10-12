@@ -138,7 +138,7 @@ export function Journal({
           )}
         </div>
         <div className="card flex flex-col p-5 sm:p-6">
-          <CarnetJours jours={journal.jours} aujourdhui={journal.aujourdhui} serie={journal.serie} record={journal.record} />
+          <CarnetJours jours={journal.jours} aujourdhui={journal.aujourdhui} serie={journal.serie} record={journal.record} seuil={journal.seuil} />
         </div>
       </div>
 

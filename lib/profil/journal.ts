@@ -3,6 +3,7 @@ import { getRatingHistory, type RatingEvent, type RatingSource } from "@/lib/rat
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { joursAvant, jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
+import { SEUIL_JOUR, calculerSerie } from "@/lib/serie-encre";
 import { displayName } from "@/components/classement/format";
 import { SCEAUX, type SceauGarde } from "@/lib/profil/sceaux";
 import type { ProfilStats } from "@/lib/profil/catalogue";
@@ -60,6 +61,8 @@ export type Journal = {
   jours: Map<string, number>;
   serie: number;
   record: number;
+  /** questions qui font un jour d'encre (la série d'encre) ; null : l'ancien calcul, une question suffit */
+  seuil: number | null;
   /** du plus récent au plus ancien */
   evenements: EvenementJournal[];
 };
@@ -162,7 +165,14 @@ function paliers(historique: RatingEvent[], debut: string, mastery: number | nul
   return out.reverse(); // le plus récent d'abord
 }
 
-/** Les séries qui atteignent 7, 30 ou 100 jours, dans la fenêtre. */
+/** Les séries d'encre (10 questions, joker) qui atteignent 7, 30 ou 100 jours, dans la fenêtre. */
+function seriesEncreNotables(jours: Map<string, number>, aujourdhui: string, debut: string): EvenementJournal[] {
+  return calculerSerie(jours, aujourdhui)
+    .atteints.filter((a) => SERIES_NOTABLES.includes(a.n) && a.jour >= debut)
+    .map((a): EvenementJournal => ({ type: "serie", cle: `serie-${a.jour}`, jour: a.jour, jours: a.n }));
+}
+
+/** L'ancien calcul (sans la migration) : les séries qui atteignent 7, 30 ou 100 jours avec au moins une question, dans la fenêtre. */
 function seriesNotables(actifs: string[], debut: string): EvenementJournal[] {
   const set = new Set(actifs);
   const out: EvenementJournal[] = [];
@@ -250,7 +260,7 @@ export async function journalDe({
       })
       .filter((e) => e.jour >= debut),
     ...paliers(historique, debut, mastery),
-    ...seriesNotables(actifs, debut),
+    ...(stats.serieEncre ? seriesEncreNotables(jours, aujourdhui, debut) : seriesNotables(actifs, debut)),
     ...sceauxGagnes(gardes ?? [], debut),
   ];
   // du plus récent au plus ancien ; le même jour : les paliers, les sceaux, les victoires, la série (chacun déjà du plus récent au plus ancien)
@@ -263,6 +273,7 @@ export async function journalDe({
     jours,
     serie: stats.serie,
     record: stats.meilleureSerie,
+    seuil: stats.serieEncre ? SEUIL_JOUR : null,
     evenements,
   };
 }

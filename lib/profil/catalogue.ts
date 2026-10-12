@@ -17,10 +17,12 @@ import { DISPOSITION_DEFAUT, blocsDe, dispositionDepuis, validerDisposition, typ
 export type ProfilStats = {
   /** questions posées, toutes sources */
   questions: number;
-  /** plus longue série de jours avec au moins une question */
+  /** plus longue série d'encre (jours d'affilée à 10 questions, avec joker ; au moins une question par jour sans la migration) */
   meilleureSerie: number;
   /** série en cours (jusqu'à hier si rien aujourd'hui) */
   serie: number;
+  /** meilleureSerie et serie suivent la série d'encre (migration_serie_encre.sql collée), pas l'ancien calcul */
+  serieEncre?: boolean;
   /** questions posées aujourd'hui (Paris) : le dernier jour du carnet du Journal */
   duJour?: number;
   duelsGagnes: number;

@@ -5,6 +5,7 @@ import { chargerTraitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { joursAvant, jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
 import { levelInfoFromXp } from "@/lib/leveling";
+import { calculerSerie } from "@/lib/serie-encre";
 import { DEFAULT_ELO, TIERS, TOP_TIER, rankFor } from "@/lib/ranks";
 import { getLeaderboardRank } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
@@ -53,12 +54,28 @@ export function series(jours: string[], aujourdhui: string): { meilleure: number
   return { meilleure, enCours };
 }
 
+/**
+ * La migration de la série d'encre est-elle collée ? (la table se lit sans
+ * erreur, même vide pour un autre joueur) Sa meilleure série, si on la lit.
+ * null : table absente, l'ancien calcul des séries.
+ */
+async function serieEncreLue(sb: SupabaseClient, userId: string): Promise<{ meilleure: number } | null> {
+  try {
+    const { data, error } = await sb.from("serie_encre").select("meilleure").eq("user_id", userId).maybeSingle();
+    if (error) return null;
+    const n = Number((data as { meilleure?: number } | null)?.meilleure ?? 0);
+    return { meilleure: Number.isFinite(n) && n > 0 ? Math.floor(n) : 0 };
+  } catch {
+    return null;
+  }
+}
+
 /** Les exploits d'un joueur (une lecture par requête). */
 export const statsProfil = cache(async (userId: string, fallback: SupabaseClient): Promise<ProfilStats> => {
   const sb = admin() ?? fallback;
   const aujourdhui = jourParis();
   try {
-    const [jours, jour, duelsJoues, duelsGagnes, defisRendus, calculsJustes, examensBlancs, profil, rating, maxElo, place, topics] = await Promise.all([
+    const [jours, jour, duelsJoues, duelsGagnes, defisRendus, calculsJustes, examensBlancs, profil, rating, maxElo, place, topics, serieLue] = await Promise.all([
       joursAvant(userId, aujourdhui).catch(() => [] as { day: string; n: number }[]),
       chargerTraitsDuJour(sb, userId, 3000).catch(() => null),
       compte(() => sb.from("duels").select("id", { count: "exact", head: true }).or(`challenger_id.eq.${userId},opponent_id.eq.${userId}`).eq("status", "finished")),
@@ -71,9 +88,21 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
       sb.from("rating_events").select("elo_after").eq("user_id", userId).order("elo_after", { ascending: false }).limit(1).maybeSingle(),
       getLeaderboardRank(sb, userId).catch(() => null),
       getTopicMastery(sb, userId).catch(() => []),
+      serieEncreLue(sb, userId),
     ]);
-    const actifs = [...jours.filter((j) => j.n > 0).map((j) => j.day), ...((jour ?? 0) > 0 ? [aujourdhui] : [])];
-    const { meilleure, enCours } = series(actifs, aujourdhui);
+    // UNE seule série : celle d'encre (10 questions par jour, un joker par semaine) quand la
+    // migration est collée, recalculée ici d'après les questions par jour ; sinon l'ancien calcul
+    const parJour = new Map(jours.filter((j) => j.n > 0).map((j) => [j.day, j.n] as [string, number]));
+    if ((jour ?? 0) > 0) parJour.set(aujourdhui, jour as number);
+    let meilleure: number;
+    let enCours: number;
+    if (serieLue) {
+      const c = calculerSerie(parJour, aujourdhui);
+      meilleure = Math.max(c.meilleure, serieLue.meilleure);
+      enCours = c.serieAffichee;
+    } else {
+      ({ meilleure, enCours } = series([...parJour.keys()], aujourdhui));
+    }
     const mastery = topics.length ? programMastery(topics) : null;
     const elo = Number((rating.data as { elo?: number } | null)?.elo ?? DEFAULT_ELO);
     const top = Number((maxElo.data as { elo_after?: number } | null)?.elo_after ?? elo);
@@ -83,6 +112,7 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
       questions: jours.reduce((s, j) => s + j.n, 0) + (jour ?? 0),
       meilleureSerie: meilleure,
       serie: enCours,
+      serieEncre: !!serieLue,
       duJour: jour ?? 0,
       duelsGagnes,
       duelsJoues,

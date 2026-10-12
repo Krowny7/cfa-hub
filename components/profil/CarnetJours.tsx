@@ -16,7 +16,7 @@ const SEMAINES_TELEPHONE = 18;
 
 const niveau = (n: number) => (n <= 0 ? 0 : n < OBJECTIF_DU_JOUR / 2 ? 1 : n < OBJECTIF_DU_JOUR ? 2 : 3);
 
-export function CarnetJours({ jours, aujourdhui, serie, record }: { jours: Map<string, number>; aujourdhui: string; serie: number; record: number }) {
+export function CarnetJours({ jours, aujourdhui, serie, record, seuil = null }: { jours: Map<string, number>; aujourdhui: string; serie: number; record: number; seuil?: number | null }) {
   // la première case : le lundi d'il y a 51 semaines
   const dow = (new Date(aujourdhui + "T12:00:00Z").getUTCDay() + 6) % 7;
   const debut = decaleJour(aujourdhui, -dow - (SEMAINES - 1) * 7);
@@ -26,8 +26,10 @@ export function CarnetJours({ jours, aujourdhui, serie, record }: { jours: Map<s
     const jour = decaleJour(debut, i);
     cases.push({ jour, n: jours.get(jour) ?? 0, avenir: jour > aujourdhui });
   }
-  const actifs = cases.filter((c) => c.n > 0).length;
-  const actifsTel = cases.filter((c) => c.n > 0 && c.jour >= debutTel).length;
+  // un jour d'encre est un jour de la série d'encre (10 questions) ; sans la migration, un jour avec au moins une question
+  const minimum = seuil ?? 1;
+  const actifs = cases.filter((c) => c.n >= minimum).length;
+  const actifsTel = cases.filter((c) => c.n >= minimum && c.jour >= debutTel).length;
 
   return (
     <div className="flex flex-col gap-3">

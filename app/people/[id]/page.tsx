@@ -1,4 +1,3 @@
-import { lireMeilleureSerie } from "@/lib/serie-encre";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -177,7 +176,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       : Promise.resolve(null);
 
   // l'en-tête, commun aux onglets
-  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, depuisVisite, saisons, serieMeilleure] = await Promise.all([
+  const [leaderboardRank, masteries, { style, pins, journal: visibiliteJournal }, stats, relation, lienBrut, amis, nomBrut, face, o, journal, sceaux, parCible, depuisVisite, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     styleLu,
@@ -198,8 +197,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     commeMoi ? monRetour(supabase) : Promise.resolve(null),
     // la saison en cours et son palmarès (null sans la migration) ; la lecture clôt les saisons échues
     lireSaisons(supabase, id),
-    // la meilleure série d'encre (null sans la migration ou sans série)
-    lireMeilleureSerie(supabase, id),
   ]);
 
   const datesPic = await datesPicLues;
@@ -241,7 +238,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     linkedin: lien,
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
-    serieMeilleure,
+    // la meilleure série d'encre : celle des stats (une seule série), rien sans la migration
+    serieMeilleure: stats.serieEncre ? stats.meilleureSerie : null,
     provenance: provenances(style, acquisDe(stats, etats, datesPic)),
   };
 
