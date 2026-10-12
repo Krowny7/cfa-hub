@@ -5,6 +5,7 @@ import type { EtatObjectif } from "@/lib/objectif";
 import type { Nouveaute } from "@/lib/profil/nouveau";
 import type { TuilePointFaible } from "@/lib/points-faibles";
 import type { VainqueurDuJour } from "@/lib/vainqueur-du-jour";
+import type { SerieEncre } from "@/lib/serie-encre";
 
 export type { TodayDaily } from "@/lib/daily";
 
@@ -97,6 +98,8 @@ export type AccueilData = {
   examDateLabel: string | null;
   /** jours d'encre : aujourd'hui compris s'il est fait, sinon jusqu'à hier (calcStreakAndToday) */
   streak: number;
+  /** la série d'encre (bonus d'XP des jours d'affilée) ; null ou absent : migration_serie_encre.sql pas encore collée, rien à montrer */
+  serieEncre?: SerieEncre | null;
   /** le bâton du jour : fait, en attente, ou sec le soir (etatDuJour) */
   dayState: EtatJour;
   /** déjà venu au moins une fois (une série perdue se dit « l'encre a séché ») */

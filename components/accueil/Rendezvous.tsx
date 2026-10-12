@@ -1,3 +1,4 @@
+import { SerieEncreLigne } from "@/components/accueil/SerieEncreLigne";
 import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 import { AnneauDuJour } from "@/components/adn/AnneauDuJour";
@@ -316,6 +317,8 @@ function LigneSerie({ d }: { d: AccueilData }) {
           <span className={"t-micro min-w-0 " + (sec ? "font-semibold text-white" : "")}>{ligneSerie(d.streak, d.dayState, d.seenBefore)}</span>
         </div>
       )}
+      {/* la série d'encre : le palier d'XP, les jours d'affilée, le joker (rien sans la migration) */}
+      <SerieEncreLigne d={d} />
     </div>
   );
 }

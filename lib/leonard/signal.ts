@@ -27,6 +27,7 @@ export type EvenementLeonard =
   | "atelier-dur"
   | "atelier-fini"
   | "rang-monte"
+  | "serie-sept"
   | "sceau-gagne"
   | "retour"
   | "tard"

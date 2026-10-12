@@ -3,6 +3,7 @@ import { ProgressSection } from "@/components/accueil/Sections";
 import { Rendezvous } from "@/components/accueil/Rendezvous";
 import type { AccueilData } from "@/components/accueil/types";
 import { DuNouveau } from "@/components/accueil/DuNouveau";
+import { CelebrationSerie } from "@/components/serie/CelebrationSerie";
 
 export type { AccueilData } from "@/components/accueil/types";
 
@@ -22,6 +23,8 @@ export function DashboardView({ d, tab }: { d: AccueilData; now?: number; tab?: 
       {/* le logo vivant de la barre du haut se recale sur la journée lue ici */}
       <AnneauDuJourSync repondues={d.activity.today} />
       <Rendezvous d={d} />
+      {/* le palier de 7 jours de la série d'encre : une petite célébration, une fois par série */}
+      {d.serieEncre && d.serieEncre.serieAffichee >= 7 && <CelebrationSerie serie={d.serieEncre.serieAffichee} cle={d.serieEncre.debut ?? d.serieEncre.jour} doubleDeja={d.serieEncre.mult === 2} />}
       {d.duNouveau && <DuNouveau nouvelles={d.duNouveau} />}
       <ProgressSection d={d} tab={tab} />
     </div>

@@ -12,7 +12,7 @@ export type Replique = { texte: string; pose: Pose };
 export type Evenement =
   | "tuto" | "erreurs-serie" | "session-ratee" | "session-moyenne" | "session-reussie" | "session-parfaite"
   | "serie-bonnes" | "progression" | "duel-gagne" | "duel-perdu" | "duel-ecrase" | "duel-nul"
-  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "sceau-gagne" | "retour" | "tard" | "furtif"
+  | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "serie-sept" | "sceau-gagne" | "retour" | "tard" | "furtif"
   | "nouveautes";
 
 /** Les deux visites guidées (TUTO, NOUVEAUTES) : des étapes, pas des répliques au hasard. */
@@ -261,6 +261,15 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
     { texte: "Bull run officiel sur ton profil.", pose: "fier" },
     { texte: "Grand Maître un jour ? Franchement, je commence à y croire.", pose: "etonne" },
     { texte: "Ah ouais ? Nouveau rang ? Solide. Très solide.", pose: "etonne" },
+  ],
+
+  "serie-sept": [
+    { texte: "Sept jours d’affilée. Moi, j’ai mis quatre ans sur un sourire.", pose: "fier" },
+    { texte: "Une semaine sans lâcher. Ton XP double, et ça, c’est de l’intérêt composé.", pose: "fier" },
+    { texte: "Sept jours d’encre. Le mois prochain, on parlera de rente.", pose: "moqueur" },
+    { texte: "Régularité récompensée : c’est la seule martingale qui marche.", pose: "fier" },
+    { texte: "Tu as tenu une semaine. Les Médicis auraient signé pour moins.", pose: "etonne" },
+    { texte: "Streak de 7. Ne regarde pas en bas, ça double.", pose: "etonne" },
   ],
 
   "sceau-gagne": [

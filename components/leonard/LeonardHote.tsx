@@ -57,7 +57,7 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
 };
 // ce que la cérémonie du sans-faute fête déjà : Léonard ne le redit pas
 const FETES_PAR_CEREMONIE = new Set<EvenementLeonard>(["session-parfaite", "defi-reussi", "duel-gagne"]);
-const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "sceau-gagne", "session-parfaite", "retour"]);
+const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "serie-sept", "sceau-gagne", "session-parfaite", "retour"]);
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];

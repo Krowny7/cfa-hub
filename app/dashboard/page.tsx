@@ -9,6 +9,7 @@ import { getTodayDaily } from "@/lib/daily";
 import { lireVainqueurDuJour } from "@/lib/vainqueur-du-jour";
 import { getReviewableDuels } from "@/lib/duels";
 import { etatDuJour } from "@/lib/voice";
+import { avecAnneau, lireSerieEncre } from "@/lib/serie-encre";
 import { JOURS_RETOUR } from "@/lib/voice-z1";
 import { etatObjectif, objectifDe } from "@/lib/objectif";
 import { demandesDe } from "@/lib/profil/donnees";
@@ -52,7 +53,7 @@ export default async function Dashboard() {
 
   const now = new Date();
 
-  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq, pointFaible, vainqueur] =
+  const [profileRes, xpDailyRes, topics, topicAvg, programAvg, rating, history, open, myRank, activityRaw, errors, resume, mockExam, daily, reviewable, cinq, pointFaible, vainqueur, serieBase] =
     await Promise.all([
       supabase.from("profiles").select("username,exam_date").eq("id", user.id).maybeSingle(),
       // XP par jour : sert seulement à la série (le détail est sur /moi).
@@ -84,6 +85,8 @@ export default async function Dashboard() {
       loadPointFaible(supabase, user.id, now),
       // le vainqueur d'hier aux 30 du jour (null s'il n'y en a pas : pas de bannière)
       lireVainqueurDuJour(supabase, admin, user.id, parisDay(now)),
+      // la série d'encre (null tant que migration_serie_encre.sql n'est pas collée)
+      lireSerieEncre(supabase),
     ]);
 
   const profile = profileRes.data as { username?: string | null; exam_date?: string | null } | null;
@@ -138,6 +141,7 @@ export default async function Dashboard() {
     examDaysLeft,
     examDateLabel: examDate ? `le ${new Date(examDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}` : null,
     streak,
+    serieEncre: serieBase ? avecAnneau(serieBase, activity.today) : null,
     dayState,
     seenBefore: last !== null,
     returning,
