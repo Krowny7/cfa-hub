@@ -16,7 +16,7 @@ import { activeSpace, type Space } from "./nav";
 // (url de la texture), `--pal-voile-haut` / `--pal-voile-bas` (opacité du voile
 // sombre qui garde le texte blanc lisible) et `data-palette` pour les styles.
 
-export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "sanguine" | "florence";
+export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "ebene" | "florence";
 
 export type CouleurNommee = { nom: string; hex: string };
 
@@ -84,7 +84,7 @@ const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
   { palette: "san-romano", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair"] },
   { palette: "atelier", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams", "/atelier"] },
   { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards"] },
-  { palette: "sanguine", prefixes: ["/moi"] },
+  { palette: "ebene", prefixes: ["/moi"] },
   { palette: "florence", prefixes: ["/dashboard"] },
 ];
 
@@ -93,7 +93,7 @@ const PALETTE_DE_L_ESPACE: Record<Space["key"], PaletteCle> = {
   reviser: "studiolo",
   entrainer: "atelier",
   classement: "san-romano",
-  moi: "sanguine",
+  moi: "ebene",
 };
 
 const sous = (chemin: string, prefixe: string) => chemin === prefixe || chemin.startsWith(prefixe + "/");
