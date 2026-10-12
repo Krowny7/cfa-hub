@@ -1,3 +1,4 @@
+import { SERIE } from "@/lib/voice-serie";
 import Link from "next/link";
 import { PageHero } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
@@ -53,6 +54,8 @@ export type EnteteData = {
   amis: number | null;
   /** meilleur palier atteint (index dans TIERS), affiché s'il dépasse l'actuel */
   pic?: number | null;
+  /** la meilleure série d'encre, en jours (absent ou null : rien à montrer) */
+  serieMeilleure?: number | null;
   /** d'où viennent le cadre et la bannière s'ils bougent (« Liquide Diamant, gagné le 12 oct. ») */
   provenance?: { cadre: string | null; banniere: string | null };
 };
@@ -212,6 +215,7 @@ export function EnteteJoueur({
             )}
           </div>
           {picNom && !apercu && <p className="m-0 -mt-1.5 text-[13px] font-semibold text-muted lg:hidden">{ENTETE.pic(picNom)}</p>}
+          {d.serieMeilleure ? <p className="m-0 -mt-1.5 text-[13px] font-semibold text-muted" title="Le plus de jours d'affilée à 10 questions ou plus">{SERIE.meilleure(d.serieMeilleure)}</p> : null}
           {d.style.bio && (apercu ? <p className="t-small m-0 max-w-[560px] whitespace-pre-line text-white">{d.style.bio}</p> : <BioRepliable texte={d.style.bio} />)}
           {(actions || d.linkedin) && (
             <div className={"flex flex-wrap items-center gap-2 " + (apercu ? "" : "[&_.btn]:min-h-[44px] max-sm:[&_.btn]:px-3")}>
