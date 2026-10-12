@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowRight, Check, ChevronDown, Hourglass, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPICS, TOPIC_LABELS, trophyTier } from "@/lib/practiceTopics";
@@ -119,6 +120,7 @@ export function PracticeSession({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [xpAwarded, setXpAwarded] = useState(demo?.xp ?? 0);
+  const [xpMult, setXpMult] = useState(1);
   const [lastDuration, setLastDuration] = useState<number | null>(demo?.duration ?? null);
   // traits posés par la copie rendue (l'anneau du jour sous la copie)
   const [ajoutes, setAjoutes] = useState(demo?.phase === "done" ? demo?.total ?? 0 : 0);
@@ -242,7 +244,11 @@ export function PracticeSession({
       setReview((data?.review ?? []) as ReviewQuestion[]);
       setScore(data?.score ?? 0);
       setTotal(data?.total ?? 0);
-      setXpAwarded(data?.xp_awarded ?? 0);
+      // la fonction rend l'XP de base (somme de la session) ; le trigger de la série d'encre y ajoute le bonus en base
+      const xpBase = Number(data?.xp_awarded ?? 0) || 0;
+      const mult = xpBase > 0 ? await multDuJour(supabase) : 1;
+      setXpAwarded(xpAvecSerie(xpBase, mult));
+      setXpMult(mult);
       setLastDuration(duration);
       // la copie rendue d'un bloc : autant de traits que de questions (comme l'anneau du jour)
       const n = Number(data?.total ?? 0) || 0;
@@ -557,7 +563,7 @@ export function PracticeSession({
     const tier = trophyTier(selected.size);
     const many = new Set(review.map((q) => q.topic ?? "")).size > 1;
     const minutes = lastDuration ? Math.max(1, Math.round(lastDuration / 60)) : null;
-    const meta = [passed ? `trophée ${tier.label}` : null, xpAwarded > 0 ? `+${xpAwarded} XP` : null].filter(Boolean).join(" · ");
+    const meta = [passed ? `trophée ${tier.label}` : null, xpAwarded > 0 ? texteGain(xpAwarded, xpMult) : null].filter(Boolean).join(" · ");
 
     return (
       <div className="rl-page">

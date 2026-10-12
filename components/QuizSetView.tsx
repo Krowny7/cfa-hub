@@ -1,5 +1,6 @@
 "use client";
 
+import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -273,7 +274,10 @@ export function QuizSetView({
       // (.then lance la requête : sans lui, le builder de Supabase ne part jamais)
       if (!demo) void supabase.rpc("noter_reponse", { p_question_id: questionId, p_selected_index: selectedIndex, p_source: "qcm" }).then(() => undefined);
 
-      const xp = Number(row?.xp_awarded ?? 0) || 0;
+      // la fonction rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus en base
+      const xpBase = Number(row?.xp_awarded ?? 0) || 0;
+      const mult = xpBase > 0 && !demo ? await multDuJour(supabase) : 1;
+      const xp = xpAvecSerie(xpBase, mult);
       const isCorrect = Boolean(row?.is_correct);
       const correctIndex = row?.correct_index;
       const reveal = typeof correctIndex === "number" ? { correctIndex, explanation: row?.explanation ?? null } : null;
@@ -282,7 +286,7 @@ export function QuizSetView({
       if (!demo) poserTrait(1);
       setTraces((v) => v + 1);
       if (xp > 0) setXpRun((v) => v + xp);
-      if (isCorrect && xp > 0) setFeedback({ tone: "xp", text: `+${xp} XP` });
+      if (isCorrect && xp > 0) setFeedback({ tone: "xp", text: texteGain(xp, mult) });
       else if (isCorrect && official) setFeedback({ tone: "info", text: QCM.dejaReussie });
     } catch (e: unknown) {
       // Réseau coupé : on note la réponse sans correction pour pouvoir avancer.

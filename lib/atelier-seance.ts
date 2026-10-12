@@ -1,3 +1,4 @@
+import { multDuJour, xpAvecSerie } from "@/lib/serie-encre";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CalcQuestionPublic } from "@/lib/calc/engine";
 import type { ApresNotion, AvantNotion, BilanAtelier, ItemPool, Niveau, Reponse } from "@/lib/atelier";
@@ -92,11 +93,11 @@ export const fonctionAbsente = (e: { code?: string; message?: string } | null | 
   !!e && (["PGRST202", "PGRST205", "42883", "42P01", "42703"].includes(e.code ?? "") || /could not find/i.test(e.message ?? ""));
 
 export type ResultatLancer = { kind: "ok"; seance: SeanceAtelier } | { kind: "vide" } | { kind: "indisponible" } | { kind: "erreur" };
-export type ReponseQcm = { ferme: true } | { ferme: false; juste: boolean; choix: number; bonne: number | null; explication: string | null; statut: string | null; xp: number };
+export type ReponseQcm = { ferme: true } | { ferme: false; juste: boolean; choix: number; bonne: number | null; explication: string | null; statut: string | null; xp: number; mult?: number };
 export type ReponseCalc =
   | { ferme: true }
   | { ferme: false; status: "format"; indice: string }
-  | { ferme: false; status: "juste" | "faux"; valeur: number | null; bonne: number | null; solution: string[]; xp: number }
+  | { ferme: false; status: "juste" | "faux"; valeur: number | null; bonne: number | null; solution: string[]; xp: number; mult?: number }
   | { ferme: false; status: "erreur"; message: string };
 export type ClotureAtelier = { score: number; total: number; xp: number; secondes: number; apres: Record<string, ApresNotion> | null };
 
@@ -118,6 +119,9 @@ export async function repondreQcm(sb: SupabaseClient, id: string, i: number, cho
   if (error) throw new Error(error.message);
   const r = (data ?? {}) as Brut;
   if (r.ferme === true) return { ferme: true };
+  // la fonction rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus en base
+  const xpBase = num(r.xp);
+  const mult = xpBase > 0 ? await multDuJour(sb) : 1;
   return {
     ferme: false,
     juste: r.is_correct === true,
@@ -125,7 +129,8 @@ export async function repondreQcm(sb: SupabaseClient, id: string, i: number, cho
     bonne: numOuNull(r.correct_index),
     explication: r.explanation ? String(r.explanation) : null,
     statut: r.statut ? String(r.statut) : null,
-    xp: num(r.xp),
+    xp: xpAvecSerie(xpBase, mult),
+    mult,
   };
 }
 

@@ -1,3 +1,4 @@
+import { multDuJour, xpAvecSerie } from "@/lib/serie-encre";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AnswerMode, AnswerRow } from "@/lib/ficheLog";
 
@@ -6,6 +7,8 @@ export type SubmitResult = {
   correctIndex: number | null;
   explanation: string | null;
   xp: number;
+  /** palier de la série d'encre appliqué à l'XP (1 : aucun) */
+  mult?: number;
 };
 
 export type NewAnswer = {
@@ -87,11 +90,15 @@ export function createSupabaseFicheApi(supabase: SupabaseClient): FicheApi {
         explanation?: string | null;
         xp_awarded?: number;
       } | null;
+      // la fonction rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus en base
+      const xpBase = Number(row?.xp_awarded ?? 0) || 0;
+      const mult = xpBase > 0 ? await multDuJour(supabase) : 1;
       return {
         isCorrect: Boolean(row?.is_correct),
         correctIndex: typeof row?.correct_index === "number" ? row.correct_index : null,
         explanation: row?.explanation ?? null,
-        xp: Number(row?.xp_awarded ?? 0) || 0,
+        xp: xpAvecSerie(xpBase, mult),
+        mult,
       };
     },
 

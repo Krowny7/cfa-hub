@@ -1,5 +1,6 @@
 "use client";
 
+import { libelleMult } from "@/lib/serie-encre";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, BookOpen, Check, Circle, X } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
@@ -22,8 +23,8 @@ import PctScore from "@/components/adn/PctScore";
 // barre d'action collée en bas au pouce, le rappel dans un tiroir.
 
 type Corrige =
-  | { k: "qcm"; juste: boolean; choix: number; bonne: number | null; explication: string | null; statut: string | null; xp: number }
-  | ({ k: "calc"; xp: number } & CorrigeCalc);
+  | { k: "qcm"; juste: boolean; choix: number; bonne: number | null; explication: string | null; statut: string | null; xp: number; mult?: number }
+  | ({ k: "calc"; xp: number; mult?: number } & CorrigeCalc);
 
 export type FinSeance = { reponses: Reponse[]; secondes: number; ajoutes: number; vuAt: string | null };
 
@@ -148,7 +149,7 @@ export function AtelierSeance({
       majItem(item.i, (x) =>
         x.k === "calc" ? x : retest ? { ...x, retest: { choix: r.choix, juste: r.juste } } : { ...x, premier: { choix: r.choix, juste: r.juste, bonne: r.bonne, explication: r.explication, statut: r.statut } },
       );
-      setCorrige({ k: "qcm", juste: r.juste, choix: r.choix, bonne: r.bonne, explication: r.explication, statut: r.statut, xp: r.xp });
+      setCorrige({ k: "qcm", juste: r.juste, choix: r.choix, bonne: r.bonne, explication: r.explication, statut: r.statut, xp: r.xp, mult: r.mult });
     } catch {
       setMessage(V.erreurReponse);
     } finally {
@@ -168,7 +169,7 @@ export function AtelierSeance({
       const juste = r.status === "juste";
       noter(item.i, juste);
       majItem(item.i, (x) => (x.k !== "calc" ? x : retest ? { ...x, retest: { valeur: r.valeur, juste } } : { ...x, premier: { valeur: r.valeur, juste, bonne: r.bonne, solution: r.solution } }));
-      setCorrige({ k: "calc", juste, valeur: r.valeur, bonne: r.bonne, solution: r.solution, xp: r.xp });
+      setCorrige({ k: "calc", juste, valeur: r.valeur, bonne: r.bonne, solution: r.solution, xp: r.xp, mult: r.mult });
     } catch {
       setMessage(V.erreurReponse);
     } finally {
@@ -281,7 +282,7 @@ export function AtelierSeance({
             )}
             {/* la barre d'action : collée en bas au pouce sur téléphone (au-dessus de la barre des espaces) */}
             <div className="sticky bottom-[calc(88px+env(safe-area-inset-bottom,0px))] z-20 -mx-2 flex items-center justify-between gap-3 rounded-[16px] bg-[var(--surface)] px-2 py-2 md:static md:mx-0 md:bg-transparent md:p-0">
-              <span className="t-micro min-w-0 truncate">{corrige && corrige.xp > 0 ? V.xp(corrige.xp) : ""}</span>
+              <span className="t-micro min-w-0 truncate">{corrige && corrige.xp > 0 ? V.xp(corrige.xp) + (libelleMult(corrige.mult ?? 1) ? ` (${libelleMult(corrige.mult ?? 1)})` : "") : ""}</span>
               {corrige ? (
                 <button type="button" className="btn btn-primary rl-press min-h-[44px] w-full sm:w-auto" onClick={() => suivante(reponses, rappelsVus, secondes)} autoFocus>
                   {V.suivante} <ArrowRight size={16} aria-hidden />

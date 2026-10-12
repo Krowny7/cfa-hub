@@ -1,5 +1,6 @@
 "use client";
 
+import { libelleMult, multDuJour } from "@/lib/serie-encre";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, X, Zap } from "lucide-react";
@@ -45,7 +46,7 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
   const [selected, setSelected] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<(EclairFinish & { marks: TickMark[] }) | null>(demo?.result ?? null);
+  const [result, setResult] = useState<(EclairFinish & { marks: TickMark[]; mult?: number }) | null>(demo?.result ?? null);
   const [done, setDone] = useState(todayDone);
   const finishingRef = useRef(false);
 
@@ -67,7 +68,9 @@ export function EclairRunner({ todayDone, cinqAFaire, depart, demo }: { todayDon
         const r = supabase ? await finishEclair(supabase, id) : { score: 0, total: 0, seconds: 0, xpAwarded: 0, today: done + 1 };
         // la série rendue : autant de traits que de réponses (anneau du jour)
         if (r.total > 0) poserTrait(r.total);
-        setResult({ ...r, marks: m });
+        // le palier de la série d'encre (l'XP rendue par la base le contient déjà)
+        const mult = supabase && r.xpAwarded > 0 ? await multDuJour(supabase) : 1;
+        setResult({ ...r, marks: m, mult });
         setDone(r.today);
         setPhase("done");
       } catch (e) {
@@ -399,7 +402,7 @@ function Explication({ text }: { text: string }) {
 }
 
 /** Le bilan d'une série : le score, le temps, l'XP, et « Encore 5 ». */
-function Bilan({ result, done, cinqAFaire, onEncore }: { result: EclairFinish & { marks: TickMark[] }; done: number; cinqAFaire: boolean; onEncore: () => void }) {
+function Bilan({ result, done, cinqAFaire, onEncore }: { result: EclairFinish & { marks: TickMark[]; mult?: number }; done: number; cinqAFaire: boolean; onEncore: () => void }) {
   const total = result.total || result.marks.length;
   return (
     <div className="mx-auto grid w-full max-w-[820px] gap-4">
@@ -421,7 +424,7 @@ function Bilan({ result, done, cinqAFaire, onEncore }: { result: EclairFinish & 
         <p className="t-small m-0 flex flex-wrap gap-x-3 gap-y-1 font-mono">
           <span>{clock(result.seconds)}</span>
           <span aria-hidden>·</span>
-          <span>{ECLAIR.xp(result.xpAwarded)}</span>
+          <span>{ECLAIR.xp(result.xpAwarded)}{result.xpAwarded > 0 && libelleMult(result.mult ?? 1) ? ` (${libelleMult(result.mult ?? 1)})` : ""}</span>
         </p>
         <div className="flex flex-wrap items-center gap-2.5">
           <button type="button" className="btn btn-primary" onClick={onEncore} autoFocus>

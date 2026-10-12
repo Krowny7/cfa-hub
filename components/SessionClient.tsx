@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, CheckCircle2, Layers, ListChecks, Repeat, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { saveAnswerResult } from "@/lib/session-stats";
 import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
 import type { QuizQuestion, Flashcard, AwardXpResult } from "@/lib/types";
@@ -143,6 +144,7 @@ export function SessionClient({
   const [totalCorrect, setTotalCorrect] = useState(demo?.totalCorrect ?? 0);
   const [xpEarned, setXpEarned] = useState(demo?.xpEarned ?? 0);
   const [lastXpGain, setLastXpGain] = useState<number | null>(demo?.lastXpGain ?? null);
+  const [lastXpMult, setLastXpMult] = useState(1);
   // Questions répondues pendant la session : correction et « Copier pour l'IA » à la fin
   const [log, setLog] = useState<ReviewQuestion[]>(demo?.log ?? []);
 
@@ -355,8 +357,12 @@ export function SessionClient({
         });
         const result = data as AwardXpResult | null;
         if (result && result.xp_awarded > 0) {
-          setXpEarned((x) => x + result.xp_awarded);
-          setLastXpGain(result.xp_awarded);
+          // la fonction rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus en base
+          const mult = await multDuJour(supabase);
+          const gain = xpAvecSerie(result.xp_awarded, mult);
+          setXpEarned((x) => x + gain);
+          setLastXpGain(gain);
+          setLastXpMult(mult);
         }
       } catch {}
     }
@@ -634,7 +640,7 @@ export function SessionClient({
                   <p className={"m-0 inline-flex items-center gap-2 text-[15px] font-semibold " + (right ? "" : "text-pen")} aria-live="polite">
                     {right ? <Check size={17} aria-hidden /> : <X size={17} aria-hidden />}
                     {right ? REPONSE.juste : REPONSE.rature}
-                    {lastXpGain !== null && lastXpGain > 0 && <span className="chip chip-quiet chip-sm ml-1 text-white">+{lastXpGain} XP</span>}
+                    {lastXpGain !== null && lastXpGain > 0 && <span className="chip chip-quiet chip-sm ml-1 text-white">{texteGain(lastXpGain, lastXpMult)}</span>}
                   </p>
                 ) : (
                   <span className="t-micro">Choisis une réponse, puis valide.</span>

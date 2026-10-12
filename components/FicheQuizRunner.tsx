@@ -1,5 +1,6 @@
 "use client";
 
+import { texteGain } from "@/lib/serie-encre";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, CircleCheck, CircleX, ClipboardCheck, Copy, Pause, RotateCcw, X } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
@@ -122,7 +123,7 @@ export function FicheQuizRunner({
   const startDone = initialDone ?? [];
   const [idx, setIdx] = useState(Math.min(startDone.length, items.length - 1));
   const [selected, setSelected] = useState<number | null>(null);
-  const [result, setResult] = useState<{ correctIndex: number | null; explanation: string | null; isCorrect: boolean; xp: number } | null>(null);
+  const [result, setResult] = useState<{ correctIndex: number | null; explanation: string | null; isCorrect: boolean; xp: number; mult?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<ReviewItem[]>(startDone);
@@ -499,7 +500,7 @@ export function FicheQuizRunner({
               )}
               <span className={`t-h3 ${result.isCorrect ? "" : "text-pen"}`}>{result.isCorrect ? QUIZ.juste : QUIZ.rature}</span>
               {result.xp > 0 && (
-                <span className="rounded-full bg-surface px-2 py-0.5 font-mono text-[11.5px] font-semibold text-muted">+{result.xp} XP</span>
+                <span className="rounded-full bg-surface px-2 py-0.5 font-mono text-[11.5px] font-semibold text-muted">{texteGain(result.xp, result.mult ?? 1)}</span>
               )}
               <span className="-mr-2 ml-auto flex items-center">
                 {current && <MarqueQuestion questionId={current.q.id} source="fiche" variante="lien" />}

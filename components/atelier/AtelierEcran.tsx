@@ -1,5 +1,6 @@
 "use client";
 
+import { multDuJour, xpAvecSerie } from "@/lib/serie-encre";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -53,7 +54,13 @@ export function AtelierEcran({
     return {
       lancer: (notions) => lancerAtelier(notions),
       repondre: (id, i, choix, retest, secondes) => repondreQcm(sb, id, i, choix, retest, secondes),
-      repondreCalc: (id, i, raw, retest, secondes) => repondreCalcAtelier({ id, i, raw, retest, secondes }),
+      repondreCalc: async (id, i, raw, retest, secondes) => {
+        const r = await repondreCalcAtelier({ id, i, raw, retest, secondes });
+        // la base rend l'XP de base ; le trigger de la série d'encre y ajoute le bonus
+        if (r.ferme || (r.status !== "juste" && r.status !== "faux") || !(r.xp > 0)) return r;
+        const mult = await multDuJour(sb);
+        return { ...r, xp: xpAvecSerie(r.xp, mult), mult };
+      },
       clore: (id, secondes) => cloreAtelier(sb, id, secondes),
     };
   }, [demo]);
