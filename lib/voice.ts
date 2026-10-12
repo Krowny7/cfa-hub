@@ -197,16 +197,22 @@ export function etatDuJour(reponduesAujourdhui: number, heureParis: number): Eta
   return heureParis >= HEURE_ENCRE_SECHE ? "sec" : "attente";
 }
 
-export function serie(jours: number, jour: EtatJour): { titre: string; ligne: string } {
+/**
+ * @param reste questions qui manquent pour que le jour compte (la série à
+ *              10 questions, lib/serie-encre) ; absent : l'ancien calcul, où
+ *              une réponse suffisait
+ */
+export function serie(jours: number, jour: EtatJour, reste?: number | null): { titre: string; ligne: string } {
   const j = Math.max(0, Math.round(jours));
-  if (j === 0 && jour !== "fait") return { titre: "Papier blanc", ligne: "Un trait suffit pour commencer." };
+  const aReste = typeof reste === "number" && reste > 0;
+  if (j === 0 && jour !== "fait") return { titre: "Papier blanc", ligne: aReste ? `${questions(reste)} pour commencer.` : "Un trait suffit pour commencer." };
   const titre = j === 1 ? "1 jour" : `${nombre(j)} jours`;
   if (jour === "fait") {
     const palier = j === 100 ? "Cent traits." : j === 30 ? "Un mois d'encre." : j === 7 ? "Une semaine d'encre." : null;
     return { titre, ligne: palier ?? "ton trait d'aujourd'hui est tracé" };
   }
-  if (jour === "sec") return { titre, ligne: "encre sèche ce soir · une question suffit" };
-  return { titre, ligne: "le trait du jour reste à tracer" };
+  if (jour === "sec") return { titre, ligne: aReste ? `encre sèche ce soir · encore ${questions(reste)}` : "encre sèche ce soir · une question suffit" };
+  return { titre, ligne: aReste ? `encore ${questions(reste)} pour compter ce jour` : "le trait du jour reste à tracer" };
 }
 
 export const ENCRE = {
@@ -214,8 +220,12 @@ export const ENCRE = {
   neLaissePasSecher: "Ne laisse pas sécher l'encre.",
   /** série perdue */
   aSeche: "L'encre a séché. Un trait suffit pour repartir.",
+  /** série perdue, quand un jour compte à partir de `reste` questions */
+  aSecheReste: (reste: number) => `L'encre a séché. ${questions(reste)} pour repartir.`,
   /** bouton du soir */
   uneQuestion: "Une question · 30 secondes",
+  /** bouton du soir, quand un jour compte à partir de 10 questions : ce qui manque pour garder la série */
+  pourGarder: (reste: number) => (reste >= 10 ? "10 questions · 5 minutes" : `Encore ${questions(reste)}`),
 } as const;
 
 /** Le retour après 3 jours d'absence (texte simple, sans « tu nous as manqué »). */

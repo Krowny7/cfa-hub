@@ -13,9 +13,9 @@ import { ENCRE, LEXIQUE, nombre, pct, pluriel, serie, signe, type EtatJour } fro
  * sauf une série perdue (déjà venu, rien depuis avant-hier) : « L'encre a
  * séché. Un trait suffit pour repartir. »
  */
-export function ligneSerie(jours: number, jour: EtatJour, dejaVenu: boolean): string {
-  if (jours <= 0 && jour !== "fait" && dejaVenu) return ENCRE.aSeche;
-  return serie(jours, jour).ligne;
+export function ligneSerie(jours: number, jour: EtatJour, dejaVenu: boolean, reste?: number | null): string {
+  if (jours <= 0 && jour !== "fait" && dejaVenu) return typeof reste === "number" && reste > 0 ? ENCRE.aSecheReste(reste) : ENCRE.aSeche;
+  return serie(jours, jour, reste).ligne;
 }
 
 /** Jours sans venir à partir desquels l'accueil prend la variante « retour ». */
@@ -99,7 +99,14 @@ export const MOI = {
   rayee: "rayée",
   autres: (n: number) => `Et ${pluriel(n, "autre", "autres")} : ouvre une fiche, onglet « Mes erreurs », pour tout reprendre.`,
   /** carte Activité, sous les bâtons */
-  serieAide: (jours: number) => (jours > 0 ? "Une question par jour suffit à garder l'encre fraîche." : "Une question aujourd'hui, et le premier bâton est tracé."),
+  serieAide: (jours: number, seuil?: number | null) =>
+    seuil
+      ? jours > 0
+        ? `${pluriel(seuil, "question", "questions")} par jour gardent l'encre fraîche.`
+        : `${pluriel(seuil, "question", "questions")} aujourd'hui, et le premier bâton est tracé.`
+      : jours > 0
+        ? "Une question par jour suffit à garder l'encre fraîche."
+        : "Une question aujourd'hui, et le premier bâton est tracé.",
   /** carte Activité, le détail replié (il vivait sur le profil public) */
   xpParJour: "XP par jour · 90 jours",
 } as const;

@@ -52,6 +52,10 @@ export function levelInfoFromXp(xpTotal: number): LevelInfo {
 // Partagé entre l'accueil, Moi et la Session (série visible pendant
 // l'effort, pas seulement avant/après) : une seule source de vérité pour
 // la série (les « jours d'encre ») à partir des événements XP quotidiens.
+// ⚠ Ancien calcul (au moins une réponse par jour) : il ne sert plus que de repli
+// tant que migration_serie_encre.sql n'est pas collée. Avec la migration, la
+// série est celle d'encre (10 questions, joker) : lib/serie-encre.ts,
+// joursEncreUnifies.
 export type XpDay = { day: string; xp: number };
 
 export type StreakInfo = {

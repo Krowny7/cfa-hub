@@ -113,10 +113,12 @@ export const FLASHCARDS = {
  * Préparer une session : les jours d'encre en jeu, selon le trait du jour.
  * « 6 jours d'encre · ton trait d'aujourd'hui est tracé » ; le soir, rien
  * encore : « 6 jours d'encre · encre sèche ce soir · une question suffit ».
+ * `reste` : les questions qui manquent au jour pour compter (la série à
+ * 10 questions) ; absent, l'ancien calcul.
  */
-export function serieSession(jours: number, etat: EtatJour = "attente"): string {
-  if (jours <= 0 && etat !== "fait") return "Papier blanc. Un trait suffit pour commencer.";
-  return `${joursEncre(Math.max(jours, 1))} · ${serie(jours, etat).ligne}`;
+export function serieSession(jours: number, etat: EtatJour = "attente", reste?: number | null): string {
+  if (jours <= 0 && etat !== "fait") return typeof reste === "number" && reste > 0 ? `Papier blanc. ${questions(reste)} pour commencer.` : "Papier blanc. Un trait suffit pour commencer.";
+  return `${joursEncre(Math.max(jours, 1))} · ${serie(jours, etat, reste).ligne}`;
 }
 
 /** « Copier pour l'IA » : la petite ligne dans le bouton. */

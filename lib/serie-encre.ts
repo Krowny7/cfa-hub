@@ -4,11 +4,15 @@
 // par semaine couvre un jour manqué. Le bonus ne touche que l'XP, et c'est la
 // base qui l'applique (trigger sur xp_events) : le site ne fait que l'afficher.
 //
-// Sans la migration, `lireSerieEncre` rend null et rien de neuf n'est affiché
-// (la série en « jours d'encre » de l'Accueil reste ce qu'elle était).
+// Une seule série : les « jours d'encre » du site (Accueil, bâtons, Moi, Session,
+// profil) sont cette série. Sans la migration, `lireSerieEncre` rend null et
+// chaque écran retombe sur l'ancien calcul (calcStreakAndToday : au moins une
+// réponse par jour) ; `joursEncreUnifies` fait ce choix, en un seul endroit.
 // Module neutre (ni « use client » ni serveur) : le chargement prend le client
 // Supabase qu'on lui passe ; `multDuJour` garde le palier en mémoire, par jour.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { decaleJour } from "@/lib/objectif-calc";
+import { etatDuJour, type EtatJour } from "@/lib/voice";
 
 export const SEUIL_JOUR = 10;
 export type Palier = 1 | 1.5 | 2;
@@ -79,18 +83,6 @@ export async function lireSerieEncre(supabase: SupabaseClient): Promise<SerieEnc
   }
 }
 
-/** La meilleure série d'un joueur (get_serie_meilleure) ; null sans la migration ou sans série. */
-export async function lireMeilleureSerie(supabase: SupabaseClient, id: string): Promise<number | null> {
-  try {
-    const { data, error } = await supabase.rpc("get_serie_meilleure", { p_ids: [id] });
-    if (error || !Array.isArray(data)) return null;
-    const n = Number((data as { user_id?: string; meilleure?: number }[]).find((x) => x.user_id === id)?.meilleure ?? 0);
-    return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Recale le statut sur le nombre de questions de l'anneau de l'Accueil
  * (la même mesure que la base, lue au même moment) : « fait » et la série
@@ -101,6 +93,92 @@ export function avecAnneau(s: SerieEncre, repondues: number): SerieEncre {
   const fait = aujourdhui >= s.seuil;
   const serieAffichee = s.serie + (fait ? 1 : 0);
   return { ...s, aujourdhui, fait, serieAffichee, meilleure: Math.max(s.meilleure, serieAffichee) };
+}
+
+/** Ce que les écrans lisent des « jours d'encre » : le nombre, le bâton du jour, et le statut quand la migration est là. */
+export type JoursEncre = {
+  /** jours d'encre : aujourd'hui compris s'il est fait, sinon jusqu'à hier */
+  streak: number;
+  /** le bâton du jour : tracé (10 questions), en attente, ou sec le soir */
+  dayState: EtatJour;
+  /** le statut recalé sur l'anneau ; null : migration pas collée, ancien calcul */
+  serie: SerieEncre | null;
+  /** questions qui manquent pour que le jour compte (null : ancien calcul, une réponse suffit) */
+  reste: number | null;
+};
+
+/**
+ * La série unique des écrans. Avec le statut de la migration : la série à
+ * 10 questions et son joker. Sans : l'ancien calcul (`ancien`, au moins une
+ * réponse par jour). `repondues` : les questions du jour, comme l'anneau.
+ */
+export function joursEncreUnifies(
+  statut: SerieEncre | null,
+  repondues: number,
+  heure: number,
+  ancien: { streak: number; todayDone: boolean },
+): JoursEncre {
+  if (!statut) {
+    const fait = ancien.todayDone || repondues > 0;
+    return { streak: ancien.streak, dayState: fait ? "fait" : etatDuJour(0, heure), serie: null, reste: null };
+  }
+  const s = avecAnneau(statut, repondues);
+  return { streak: s.serieAffichee, dayState: s.fait ? "fait" : etatDuJour(0, heure), serie: s, reste: Math.max(0, s.seuil - s.aujourdhui) };
+}
+
+// ---------------------------------------------------------------------------
+// La même série recalculée côté serveur à partir des questions par jour : les
+// profils (celui d'un autre joueur n'a pas de statut à lire), le Journal, les
+// sceaux. Mêmes règles que _serie_avancer dans la migration.
+
+export type CalculSerie = {
+  /** jours d'affilée à la veille */
+  serie: number;
+  /** aujourd'hui compris s'il est fait */
+  serieAffichee: number;
+  fait: boolean;
+  /** la meilleure série, aujourd'hui compris */
+  meilleure: number;
+  /** chaque jour qui allonge la série, avec sa longueur (7, 30, 100 : les paliers notables) */
+  atteints: { jour: string; n: number }[];
+};
+
+const lundiDe = (jour: string) => decaleJour(jour, -((new Date(jour + "T12:00:00Z").getUTCDay() + 6) % 7));
+
+/** La série d'un joueur d'après ses questions par jour (jour de Paris). */
+export function calculerSerie(jours: Map<string, number>, aujourdhui: string, seuil = SEUIL_JOUR): CalculSerie {
+  let premier: string | null = null;
+  for (const [j, n] of jours) if (n > 0 && j < aujourdhui && (premier === null || j < premier)) premier = j;
+  let serie = 0;
+  let meilleure = 0;
+  let sauvee = false;
+  let jokerSemaine: string | null = null;
+  const atteints: { jour: string; n: number }[] = [];
+  if (premier) {
+    for (let jour = premier; jour < aujourdhui; jour = decaleJour(jour, 1)) {
+      if ((jours.get(jour) ?? 0) >= seuil) {
+        serie++;
+        sauvee = false;
+        atteints.push({ jour, n: serie });
+        meilleure = Math.max(meilleure, serie);
+      } else if (serie > 0) {
+        const lundi = lundiDe(jour);
+        if (sauvee || jokerSemaine === lundi) {
+          serie = 0;
+          sauvee = false;
+        } else {
+          jokerSemaine = lundi;
+          sauvee = true;
+        }
+      } else {
+        sauvee = false;
+      }
+    }
+  }
+  const fait = (jours.get(aujourdhui) ?? 0) >= seuil;
+  const serieAffichee = serie + (fait ? 1 : 0);
+  if (fait) atteints.push({ jour: aujourdhui, n: serieAffichee });
+  return { serie, serieAffichee, fait, meilleure: Math.max(meilleure, serieAffichee), atteints };
 }
 
 /** L'XP réelle d'un gain de base (arrondi 0,5 vers le haut, comme la base). */
