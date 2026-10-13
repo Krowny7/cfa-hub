@@ -227,6 +227,7 @@ export const INSCRIPTION = {
   photo: "Une photo ? Facultatif : ton sceau en tient lieu.",
   photoAction: "Ajouter une photo",
   photoChanger: "Changer de photo",
+  photoRecadrer: "Recadrer",
   photoOk: "Photo ajoutée.",
   photoErreur: "La photo n'a pas pu être envoyée. Ton sceau suffit : tu pourras réessayer dans Moi › Réglages.",
   entrer: "Entrer dans le lobby",

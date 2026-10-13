@@ -2,9 +2,12 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ImagePlus } from "lucide-react";
+import { ArrowRight, Check, Crop, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 import { PremierTrait } from "@/components/adn/PremierTrait";
+import { RecadragePhoto } from "@/components/ui/RecadragePhoto";
+import { enregistrerPhotoProfil } from "@/lib/profil/photo";
+import type { PhotoRecadree } from "@/lib/profil/recadrage";
 import { INSCRIPTION } from "@/lib/voice-z1";
 import { CLE_NOUVEAUTES_COMPTE, CLE_PRESENTATION, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION } from "@/lib/presentation";
 import { CLE_NOUVEAUTES, CLE_TUTO } from "@/lib/leonard/reglages";
@@ -51,6 +54,8 @@ export function OnboardingForm({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // ce qu'on recadre : le fichier choisi, ou l'adresse de la photo posée
+  const [aRecadrer, setARecadrer] = useState<File | string | null>(null);
   // un pseudo refusé : on remonte le premier trait à l'étape du nom
   const [essai, setEssai] = useState(0);
   const [etape, setEtape] = useState<Etape | undefined>(undefined);
@@ -117,28 +122,15 @@ export function OnboardingForm({
     }
   }
 
-  async function uploadAvatar(file: File) {
+  // La photo recadrée (RecadragePhoto) part à la place de l'original ; si l'envoi
+  // échoue, l'erreur remonte à la fenêtre, qui reste ouverte (réessayer, ou annuler : le sceau suffit).
+  async function envoyerPhoto(photo: PhotoRecadree) {
     setMsg(null);
     if (apercu) {
-      setAvatarUrl(URL.createObjectURL(file));
+      setAvatarUrl(URL.createObjectURL(photo.blob));
       return;
     }
-    setBusy(true);
-    try {
-      const id = await userId();
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `${id}/${Date.now()}.${ext}`;
-      const up = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
-      if (up.error) throw up.error;
-      const publicUrl = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
-      const { error } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", id);
-      if (error) throw error;
-      setAvatarUrl(publicUrl);
-    } catch {
-      setMsg(INSCRIPTION.photoErreur);
-    } finally {
-      setBusy(false);
-    }
+    setAvatarUrl(await enregistrerPhotoProfil(supabase, await userId(), photo));
   }
 
   // La présentation de cette version est vue : le middleware n'y renvoie
@@ -213,11 +205,22 @@ export function OnboardingForm({
               disabled={busy}
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) void uploadAvatar(f);
+                if (f) setARecadrer(f);
                 e.currentTarget.value = "";
               }}
             />
           </label>
+          {avatarUrl && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setARecadrer(avatarUrl)}
+              className="t-micro inline-flex cursor-pointer items-center gap-1.5 font-semibold text-white underline decoration-line-2 underline-offset-4 hover:decoration-current disabled:pointer-events-none disabled:opacity-45"
+            >
+              <Crop size={13} aria-hidden /> {INSCRIPTION.photoRecadrer}
+            </button>
+          )}
+          <RecadragePhoto source={aRecadrer} onValider={envoyerPhoto} onFermer={() => setARecadrer(null)} />
         </div>
       )}
     </div>
