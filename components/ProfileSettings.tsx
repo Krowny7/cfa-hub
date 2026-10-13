@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { UserRound } from "lucide-react";
+import { Crop, UserRound } from "lucide-react";
 import { friendlyError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/browser";
 import { useI18n } from "@/components/I18nProvider";
 import { SceauPerso } from "@/components/adn/SceauPerso";
+import { RecadragePhoto } from "@/components/ui/RecadragePhoto";
+import { enregistrerPhotoProfil } from "@/lib/profil/photo";
+import type { PhotoRecadree } from "@/lib/profil/recadrage";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -20,6 +23,8 @@ export function ProfileSettings() {
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // ce qu'on recadre : le fichier qui vient d'être choisi, ou l'adresse de la photo actuelle
+  const [aRecadrer, setARecadrer] = useState<File | string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -73,36 +78,15 @@ export function ProfileSettings() {
     }
   }
 
-  async function uploadAvatar(file: File) {
+  // La photo recadrée (RecadragePhoto) part à la place de l'original ; en cas
+  // d'échec, l'erreur remonte à la fenêtre, qui reste ouverte.
+  async function envoyerPhoto(photo: PhotoRecadree) {
     setMsg(null);
-    setBusy(true);
-    try {
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth.user;
-      if (!user) throw new Error("Not logged in");
-
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-
-      const up = await supabase.storage.from("avatars").upload(path, file, {
-        upsert: true,
-        contentType: file.type
-      });
-      if (up.error) throw up.error;
-
-      const pub = supabase.storage.from("avatars").getPublicUrl(path);
-      const publicUrl = pub.data.publicUrl;
-
-      const { error } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
-      if (error) throw error;
-
-      setAvatarUrl(publicUrl);
-      setMsg(t("settings.updated"));
-    } catch (e: unknown) {
-      setMsg(`${friendlyError(e, t("common.error"))}`);
-    } finally {
-      setBusy(false);
-    }
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth.user;
+    if (!user) throw new Error("Not logged in");
+    setAvatarUrl(await enregistrerPhotoProfil(supabase, user.id, photo));
+    setMsg(t("settings.updated"));
   }
 
   return (
@@ -124,20 +108,27 @@ export function ProfileSettings() {
         <div className="min-w-0">
           <div className="text-[14px] font-semibold">{t("settings.avatarLabel")}</div>
           <div className="mt-0.5 text-[12.5px] text-muted">{t("settings.avatarHint")}</div>
-          <label className={"btn btn-secondary mt-2 min-h-[36px] cursor-pointer text-[13px] " + (loading || busy ? "pointer-events-none opacity-45" : "")}>
-            {avatarUrl ? "Changer de photo" : "Ajouter une photo (facultatif)"}
-            <input
-              className="sr-only"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              disabled={loading || busy}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) uploadAvatar(f);
-                e.currentTarget.value = "";
-              }}
-            />
-          </label>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <label className={"btn btn-secondary min-h-[36px] cursor-pointer text-[13px] " + (loading || busy ? "pointer-events-none opacity-45" : "")}>
+              {avatarUrl ? "Changer de photo" : "Ajouter une photo (facultatif)"}
+              <input
+                className="sr-only"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={loading || busy}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setARecadrer(f);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+            {avatarUrl && (
+              <button type="button" className="btn btn-ghost min-h-[36px] text-[13px]" disabled={loading || busy} onClick={() => setARecadrer(avatarUrl)}>
+                <Crop size={14} aria-hidden /> Recadrer
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -169,6 +160,8 @@ export function ProfileSettings() {
           {msg}
         </div>
       )}
+
+      <RecadragePhoto source={aRecadrer} onValider={envoyerPhoto} onFermer={() => setARecadrer(null)} />
     </div>
   );
 }
