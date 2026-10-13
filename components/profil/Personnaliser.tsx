@@ -20,6 +20,7 @@ import {
   SectionCouleur,
   SectionLinkedin,
   SectionNom,
+  SectionPhoto,
   SectionPoses,
   SectionVitrine,
   type Brouillon,
@@ -122,6 +123,11 @@ export function Personnaliser({
   const [envoiMedia, setEnvoiMedia] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, start] = useTransition();
+  // La photo s'enregistre à part, tout de suite (PhotoProfil) : on l'affiche aussitôt,
+  // puis la page rafraîchie apporte la même adresse. Hors du brouillon : elle ne
+  // compte pas dans « Modifications non enregistrées ».
+  const [photoChangee, setPhotoChangee] = useState<string | null>(null);
+  const avatarUrl = photoChangee ?? carte.avatarUrl;
 
   const courant: Enregistre = { style, linkedin, visibilite, nom, nomVisibilite, pins };
   const modifie = JSON.stringify(courant) !== JSON.stringify(enregistre);
@@ -153,6 +159,7 @@ export function Personnaliser({
   // l'en-tête en direct : le style en cours, le nom, le LinkedIn, la provenance des pièces qui bougent
   const apercu: EnteteData = {
     ...carte,
+    avatarUrl,
     style,
     nomComplet: nettoyerNom(nom),
     linkedin: lienOk && linkedin.trim() ? normaliserLinkedin(linkedin) : null,
@@ -317,7 +324,20 @@ export function Personnaliser({
           {(zone === "banniere" || zone === "sceau") && <Regle />}
           <div className="flex flex-col gap-6">
             {zone === "banniere" && <SectionBanniere b={b} gains={gains} onEnvoi={setEnvoiImage} />}
-            {zone === "sceau" && <SectionCadre b={b} gains={gains} nom={carte.name} avatarUrl={carte.avatarUrl} />}
+            {zone === "sceau" && (
+              <>
+                <SectionPhoto
+                  nom={carte.name}
+                  avatarUrl={avatarUrl}
+                  disabled={pending}
+                  onChange={(url) => {
+                    setPhotoChangee(url);
+                    router.refresh();
+                  }}
+                />
+                <SectionCadre b={b} gains={gains} nom={carte.name} avatarUrl={avatarUrl} />
+              </>
+            )}
             {zone === "poses" && <SectionPoses gagnes={gagnes} pins={pins} setPins={puis(setPins)} base={base} />}
             {zone === "encre" && <SectionCouleur b={b} />}
             {zone === "identite" && (

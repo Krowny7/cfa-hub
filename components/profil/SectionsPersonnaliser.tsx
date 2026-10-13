@@ -5,6 +5,7 @@ import { Check, ImagePlus, Lock, Trash2 } from "lucide-react";
 import { MarqueLinkedin } from "@/components/profil/EnteteJoueur";
 import { Banniere, CadreSceau, classesProfil as sp } from "@/components/profil/Pieces";
 import { SceauDe } from "@/components/profil/FicheSceau";
+import { PhotoProfil } from "@/components/profil/PhotoProfil";
 import { createClient } from "@/lib/supabase/browser";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import type { EtatSceau } from "@/lib/profil/sceaux";
@@ -293,6 +294,15 @@ export function SectionCouleur({ b }: { b: Brouillon }) {
           Autre
         </label>
       </div>
+    </Section>
+  );
+}
+
+/** Ta photo : l'aperçu, changer, recadrer. Elle s'enregistre aussitôt, sans passer par « Enregistrer ». */
+export function SectionPhoto({ nom, avatarUrl, onChange, disabled }: { nom: string; avatarUrl: string | null; onChange: (url: string) => void; disabled?: boolean }) {
+  return (
+    <Section titre="Ta photo" aide="Elle se met à jour tout de suite, sans passer par « Enregistrer ». Sans photo, ton sceau d'initiales en tient lieu.">
+      <PhotoProfil avatarUrl={avatarUrl} nom={nom} onEnregistre={onChange} disabled={disabled} libelle={false} confirmation="Photo mise à jour." />
     </Section>
   );
 }

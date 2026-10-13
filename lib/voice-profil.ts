@@ -232,7 +232,7 @@ export const PERSO = {
   regle: "Ce qui est fixe est libre ; ce qui bouge ou qui brille se gagne.",
   zones: {
     banniere: "Bannière",
-    sceau: "Cadre du sceau",
+    sceau: "Photo et cadre",
     poses: "Sceaux posés",
     encre: "Encre",
     identite: "Nom et bio",

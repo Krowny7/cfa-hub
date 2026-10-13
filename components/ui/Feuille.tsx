@@ -47,7 +47,11 @@ export function Feuille({
   return (
     <dialog
       ref={dialog}
-      onClose={onFermer}
+      onClose={(e) => {
+        // « close » remonte dans l'arbre React : la fermeture d'une fenêtre posée dans la
+        // feuille (recadrage de la photo) ne doit pas fermer la feuille
+        if (e.target === e.currentTarget) onFermer();
+      }}
       onClick={(e) => {
         if (e.target === dialog.current) onFermer(); // toucher hors de la feuille
       }}
