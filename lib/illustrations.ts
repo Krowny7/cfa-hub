@@ -84,8 +84,8 @@ export const ILLUSTRATIONS = {
   },
   "reviser-bibliotheque": {
     src: "/illustrations/reviser-bibliotheque.webp",
-    alt: "La bibliothèque-cabinet d'étude : un studiolo de marqueterie",
-    credit: "Studiolo du palais ducal de Gubbio (Giuliano da Maiano, atelier), Metropolitan Museum of Art, CC0 (commons.wikimedia.org, Studiolo_from_the_Ducal_Palace_in_Gubbio_MET_DT213911).",
+    alt: "La Bibliothèque : grande salle de lecture voûtée, plafond peint et doré, galeries de livres",
+    credit: "Image peinte pour Ranked Lobby (2026-10-13), fournie par l'utilisateur.",
     emplacement: "Réviser : carte « lieu » La Bibliothèque, image carrée en tête de carte sur ordinateur (environ 365 px de large) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
     prompt:
       STYLE +
@@ -241,8 +241,8 @@ export const ILLUSTRATIONS = {
   },
   "qcm-bibliotheque": {
     src: "/illustrations/qcm-bibliotheque.webp",
-    alt: "Un cabinet de lecture : la Vision de saint Augustin",
-    credit: "Vittore Carpaccio, Vision de saint Augustin, 1502, domaine public, https://commons.wikimedia.org/wiki/File:Vittore_carpaccio,_visione_di_sant%27agostino_01.jpg.",
+    alt: "La Bibliothèque : grande salle de lecture voûtée, plafond peint et doré, galeries de livres",
+    credit: "Image peinte pour Ranked Lobby (2026-10-13), fournie par l'utilisateur.",
     emplacement: "/qcm : carte « lieu » La Bibliothèque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la bibliothèque d'un palais florentin vers 1500, dans l'univers de Léonard de Vinci. De hauts rayonnages de bois classés par matière, des codex reliés de cuir, une échelle de bibliothèque, une table de lecture où sont ouverts un codex et des feuillets de questions. Une haute fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, cuir fauve, brun, ivoire, touches de vert sauge). Vue de trois quarts, la table de lecture au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
   },
