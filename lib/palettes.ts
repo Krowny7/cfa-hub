@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import donnees from "./palettes.json";
 import { activeSpace, type Space } from "./nav";
 
-// Une palette par espace du site, toutes dans la même famille chaude. Elles
+// Une palette par espace du site (le Codex a la sienne : sépia et encre brune), toutes dans la même famille chaude. Elles
 // servent aux illustrations et à l'encre décorative : chaque page a la sienne,
 // ses cinq couleurs nommées (de la plus sombre à la plus claire) et sa texture
 // d'encre vivante (public/encres/<palette>.webp, recolorée depuis la texture
@@ -16,7 +16,7 @@ import { activeSpace, type Space } from "./nav";
 // (url de la texture), `--pal-voile-haut` / `--pal-voile-bas` (opacité du voile
 // sombre qui garde le texte blanc lisible) et `data-palette` pour les styles.
 
-export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "ebene" | "florence";
+export type PaletteCle = "san-romano" | "atelier" | "studiolo" | "ebene" | "florence" | "carnet";
 
 export type CouleurNommee = { nom: string; hex: string };
 
@@ -84,6 +84,7 @@ const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
   { palette: "san-romano", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair"] },
   { palette: "atelier", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams", "/atelier"] },
   { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards"] },
+  { palette: "carnet", prefixes: ["/codex"] },
   { palette: "ebene", prefixes: ["/moi"] },
   { palette: "florence", prefixes: ["/dashboard"] },
 ];
@@ -94,6 +95,7 @@ const PALETTE_DE_L_ESPACE: Record<Space["key"], PaletteCle> = {
   entrainer: "atelier",
   classement: "san-romano",
   moi: "ebene",
+  codex: "carnet",
 };
 
 const sous = (chemin: string, prefixe: string) => chemin === prefixe || chemin.startsWith(prefixe + "/");

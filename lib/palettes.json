@@ -142,6 +142,33 @@
           "hex": "#f3ebdb"
         }
       ]
+    },
+    {
+      "key": "carnet",
+      "nom": "Carnet de Léonard",
+      "inspiration": "les feuillets du Codex Atlanticus : sépia et encre brune sur papier de chiffon",
+      "voile": [
+        0.4,
+        0.68
+      ],
+      "couleurs": [
+        {
+          "nom": "encre brune",
+          "hex": "#2b1a0e"
+        },
+        {
+          "nom": "sépia",
+          "hex": "#6d4a2a"
+        },
+        {
+          "nom": "sanguine",
+          "hex": "#a8623a"
+        },
+        {
+          "nom": "papier de chiffon",
+          "hex": "#e9d9b4"
+        }
+      ]
     }
   ]
 }

@@ -1,9 +1,9 @@
-// Les quatre espaces du site et les routes qui leur appartiennent (pour
+// Les cinq espaces du site (le Codex en tête : c'est lui qui dit quoi faire) et les routes qui leur appartiennent (pour
 // savoir quel onglet allumer). Le logo mène à l'accueil (/dashboard).
 // Module neutre (pas de "use client").
 
 export type Space = {
-  key: "reviser" | "entrainer" | "classement" | "moi";
+  key: "codex" | "reviser" | "entrainer" | "classement" | "moi";
   label: string;
   href: string;
   /** préfixes de route rattachés à l'espace */
@@ -11,6 +11,7 @@ export type Space = {
 };
 
 export const SPACES: Space[] = [
+  { key: "codex", label: "Codex", href: "/codex", match: ["/codex"] },
   { key: "reviser", label: "Réviser", href: "/reviser", match: ["/reviser", "/fiches", "/courses", "/flashcards"] },
   { key: "entrainer", label: "S'entraîner", href: "/entrainement", match: ["/entrainement", "/qcm", "/practice", "/official-exams", "/session", "/exam", "/defi", "/calculs", "/atelier"] },
   { key: "classement", label: "Classement", href: "/classement", match: ["/classement", "/duel", "/mock-exams", "/people"] },

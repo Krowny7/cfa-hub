@@ -5,8 +5,8 @@ import { brush, ringPts, stroke, type Pt } from "@/components/ink/geometry";
  * ronde) et sa levée (pointe effilée), dans une grille de 24. Elles prennent
  * la couleur du texte (currentColor) et restent lisibles dès 16 px.
  *
- * Douze icônes aux endroits clés : l'accueil (l'anneau du logo), les quatre
- * espaces (réviser, s'entraîner, classement, moi), puis duel, examen, fiche,
+ * Treize icônes aux endroits clés : l'accueil (l'anneau du logo), les cinq
+ * espaces (codex, réviser, s'entraîner, classement, moi), puis duel, examen, fiche,
  * cours, flashcards, erreurs (la rature) et série (les bâtons).
  *
  * Props :
@@ -26,6 +26,7 @@ export type IconeNom =
   | "entrainer"
   | "classement"
   | "moi"
+  | "codex"
   | "duel"
   | "examen"
   | "fiche"
@@ -34,10 +35,10 @@ export type IconeNom =
   | "erreurs"
   | "serie";
 
-export const ICONES: IconeNom[] = ["accueil", "reviser", "entrainer", "classement", "moi", "duel", "examen", "fiche", "cours", "flashcards", "erreurs", "serie"];
+export const ICONES: IconeNom[] = ["accueil", "reviser", "entrainer", "classement", "moi", "codex", "duel", "examen", "fiche", "cours", "flashcards", "erreurs", "serie"];
 
 /** Icône de chaque espace (lib/nav.ts) */
-export const ICONE_ESPACE = { reviser: "reviser", entrainer: "entrainer", classement: "classement", moi: "moi" } as const satisfies Record<string, IconeNom>;
+export const ICONE_ESPACE = { codex: "codex", reviser: "reviser", entrainer: "entrainer", classement: "classement", moi: "moi" } as const satisfies Record<string, IconeNom>;
 
 type S = { p: Pt[]; w: number; end?: number; attack?: number; per?: number };
 
@@ -72,6 +73,12 @@ const GLYPHS: Record<Exclude<IconeNom, "accueil">, S[]> = {
   moi: [
     s(arc(12, 8, 3.9, -80, 262, 11), 2.3, 0.45),
     s([[4.4, 20.4], [5.8, 16.3], [9, 14.4], [12, 14], [15, 14.4], [18.2, 16.3], [19.6, 20.4]], 2.5, 0.4),
+  ],
+  // la carte du Codex : une feuille dépliée en trois volets, deux plis
+  codex: [
+    s([[3.6, 6.6], [9, 4.8], [15, 6.8], [20.4, 5], [20.5, 11.5], [20.4, 17.8], [15, 19.6], [9, 17.6], [3.6, 19.4], [3.5, 12.8]], 2.2, 0.55),
+    s([[9, 5.4], [9.1, 11.5], [9, 17.2]], 1.5, 0.6, 0.2),
+    s([[15, 7.4], [14.9, 13.5], [15, 19]], 1.5, 0.6, 0.2),
   ],
   // deux lames croisées, avec leurs gardes
   // (la lame part de la garde et s'affine vers la pointe ; la poignée dépasse
