@@ -152,9 +152,7 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
           <h2 id={`${uid}titre`} className={`${s.panneauTitre} font-brand`}>
             Tes quêtes
           </h2>
-          <span className="t-micro font-mono tabular-nums">
-            {panneau.quetes.length} sur 4
-          </span>
+          <span className="t-micro">{panneau.aReclamer > 0 ? `${panneau.aReclamer} à réclamer` : "aujourd'hui"}</span>
         </div>
       )}
       {panneau.quetes.length === 0 ? (

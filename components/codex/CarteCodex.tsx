@@ -191,6 +191,10 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
   }, [vue, montre, onQuete, onActe]);
 }
 
+// le point visé à l'ouverture : à mi-chemin entre « tu es ici » et le tronc,
+// pour que l'étape en cours ET les actes (et leurs noms) tiennent dans la vue
+const vise = (p: { x: number; y: number }) => ({ x: (p.x + CX) / 2, y: p.y });
+
 const Z_MIN = 0.32;
 const Z_DEPART = (rw: number) => (rw < 1100 ? 0.54 : 0.66);
 const Z_MAX = 1.6;
@@ -270,7 +274,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
           colRef.current = false;
           setColOuverte(false);
         }
-        centrer(ici, Z_DEPART(width));
+        centrer(vise(ici), Z_DEPART(width));
       }
       else appliquer();
     });
@@ -380,7 +384,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
         <div
           ref={monde}
           className={c.monde}
-          style={{ width: W, height: H, transform: `translate(${430 - ici.x * 0.66}px, ${330 - ici.y * 0.66}px) scale(0.66)` }}
+          style={{ width: W, height: H, transform: `translate(${430 - vise(ici).x * 0.66}px, ${330 - ici.y * 0.66}px) scale(0.66)` }}
         >
           <svg className={c.traits} width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
             {traits}
@@ -415,7 +419,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
         <button type="button" className={c.outil} onClick={() => zoomer(cam.current.z / 1.25)} aria-label="Dézoomer">
           <Minus size={17} aria-hidden />
         </button>
-        <button type="button" className={c.outil} onClick={() => centrer(ici, Z_DEPART(boite.current?.getBoundingClientRect().width ?? 1200))}>
+        <button type="button" className={c.outil} onClick={() => centrer(vise(ici), Z_DEPART(boite.current?.getBoundingClientRect().width ?? 1200))}>
           <LocateFixed size={16} aria-hidden /> Où j'en suis
         </button>
       </div>
