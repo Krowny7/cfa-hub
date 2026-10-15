@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex } from "@/lib/codex/serveur";
+import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import type { Emplacement } from "@/lib/codex/types";
 import type { VueCodex } from "@/lib/codex/vue";
 
@@ -30,6 +31,22 @@ export async function codexSynchroniser(): Promise<VueCodex | null> {
   if (!user) return null;
   oublierCodex(user.id);
   return lireCodex(supabase, user, { force: true, persister: true });
+}
+
+/**
+ * Le point léger, pour les écrans qui ne sont pas le Codex (fin de séance,
+ * accueil) : recalcule tout de suite, verse les récompenses, écrit le
+ * dévoilement dans le compte, et ne rend que ce qu'il faut fêter ou annoncer.
+ */
+export async function codexPoint(): Promise<BilanCodex> {
+  const { supabase, user } = await joueur();
+  if (!user) return BILAN_VIDE;
+  oublierCodex(user.id);
+  try {
+    return bilanDe(await lireCodex(supabase, user, { force: true, persister: true }));
+  } catch {
+    return BILAN_VIDE;
+  }
 }
 
 /**

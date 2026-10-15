@@ -31,6 +31,9 @@ export type LigneQuete = {
   xpVersee: number | null;
   cosmetique?: string;
   titreGagne?: string;
+  /** le nom lisible de la pièce et du titre (pour l'écran, qui n'a pas le catalogue) */
+  cosmetiqueNom?: string;
+  titreNom?: string;
   retro: boolean;
   termineeLe: string | null;
   /** la fanfare n'a pas été jouée */
@@ -54,6 +57,8 @@ export type VueActe = {
   quetes: LigneQuete[];
   /** la réplique du moment : ouverture tant que l'acte est en cours, clôture quand il est clos */
   replique: RepliqueCodex;
+  /** la fanfare de sa clôture n'a pas été jouée */
+  aFeter: boolean;
 };
 
 export type VueContrat = {
@@ -98,6 +103,8 @@ export type VueCodex = {
   possessions: Possession[];
   stats: { faites: number; total: number; xpCodex: number };
   devoile: EtatDevoilement | null;
+  /** ce qui vient d'être dévoilé, avec la réplique de Léonard (l'écran n'a pas le catalogue de dévoilement) */
+  devoileNouveaux: { id: string; quoi: string; libelle: string; replique: string }[];
   /** récompenses versées à CET appel (fanfare) */
   nouvelles: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; titreQuete: string }[];
   /** « Léonard a feuilleté ton carnet » : à jouer une fois */
@@ -107,8 +114,15 @@ export type VueCodex = {
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
   disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, prochaine: null,
   trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], branches: [], longCours: [], exploits: [],
-  possessions: [], stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, nouvelles: [], retro: null,
+  possessions: [], stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null,
 });
+
+let NOMS_COSMETIQUES: Map<string, string> | null = null;
+/** Le nom lisible d'une pièce ou d'un titre du Codex (« banniere:carnet » → « Carnet de Léonard »). */
+function nomDe(cle: string): string | undefined {
+  NOMS_COSMETIQUES ??= new Map([...COSMETIQUES_CODEX, ...titresMaitres()].map((c) => [c.cle, c.nom]));
+  return NOMS_COSMETIQUES.get(cle);
+}
 
 export function ligneDe(s: EtatQuete): LigneQuete {
   const q = s.quete;
@@ -131,8 +145,8 @@ export function ligneDe(s: EtatQuete): LigneQuete {
     fraction: s.fait ? 1 : cible ? Math.max(0, Math.min(1, valeur / cible)) : 0,
     xp: q.recompense.xp,
     xpVersee: l && (l.etat === "recompensee" || l.etat === "terminee") ? l.xp : null,
-    ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}),
-    ...(q.recompense.titre ? { titreGagne: q.recompense.titre } : {}),
+    ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique, ...(nomDe(q.recompense.cosmetique) ? { cosmetiqueNom: nomDe(q.recompense.cosmetique) } : {}) } : {}),
+    ...(q.recompense.titre ? { titreGagne: q.recompense.titre, ...(nomDe(q.recompense.titre) ? { titreNom: nomDe(q.recompense.titre) } : {}) } : {}),
     retro: s.retro,
     termineeLe: l?.terminee_le ?? (s.fait && s.atteint ? s.atteint.toISOString() : null),
     aFeter: !!l && l.etat === "recompensee" && !l.vu && !l.retro,
@@ -170,7 +184,9 @@ export function construireVue(
     const quetes = unique.filter((x) => x.s.quete.famille === "trame" && x.s.quete.acte === a.id).sort((p, q) => p.s.quete.ordre - q.s.quete.ordre).map((x) => x.l);
     const clos = r.actesClos.includes(a.id);
     const comptees = quetes.filter((x) => !x.optionnelle);
-    return { acte: a, clos, courant: r.acteCourant?.id === a.id, faites: comptees.filter((x) => x.etat === "terminee").length, total: comptees.length, quetes, replique: clos ? a.cloture : a.ouverture };
+    const ligneActe = e.progression.find((l) => l.quete_id === `acte:${a.id}`);
+    const aFeter = !!ligneActe && ligneActe.etat === "recompensee" && !ligneActe.vu && !ligneActe.retro;
+    return { acte: a, clos, courant: r.acteCourant?.id === a.id, faites: comptees.filter((x) => x.etat === "terminee").length, total: comptees.length, quetes, replique: clos ? a.cloture : a.ouverture, aFeter };
   });
 
   const contrats: VueContrat[] = r.contrats
@@ -213,7 +229,6 @@ export function construireVue(
 
   const faites = r.etats.filter((s) => s.fait && s.quete.famille !== "contrat").length;
   const ligneReco = reco ? lignes.find((x) => x.s.quete.id === reco.quete.id && x.s.periode === reco.periode)?.l : null;
-  void DECOUVERTE;
   return {
     disponible: true,
     jour: e.jour,
@@ -233,6 +248,10 @@ export function construireVue(
     possessions,
     stats: { faites, total: r.etats.filter((s) => s.quete.famille !== "contrat" && !s.quete.optionnelle).length, xpCodex: e.progression.reduce((s, l) => s + (l.etat === "recompensee" ? l.xp : 0), 0) },
     devoile: extra.devoile,
+    devoileNouveaux: (extra.devoile?.nouveaux ?? []).flatMap((id) => {
+      const d = DECOUVERTE.find((x) => x.id === id);
+      return d ? [{ id: d.id, quoi: d.quoi, libelle: d.libelle, replique: d.replique }] : [];
+    }),
     nouvelles: extra.nouvelles ?? [],
     retro: extra.retro ?? null,
   };
