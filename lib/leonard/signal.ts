@@ -31,12 +31,18 @@ export type EvenementLeonard =
   | "sceau-gagne"
   | "retour"
   | "tard"
-  | "furtif";
+  | "furtif"
+  | "quete-faite"
+  | "acte-nouveau"
+  | "devoile"
+  | "carnet";
 
 export type SignalLeonard = {
   evt: EvenementLeonard;
   /** valeurs des marqueurs {score}, {pct}, {n}, {notion} des répliques */
   vars?: Record<string, string | number>;
+  /** une réplique précise (un acte qui s'ouvre, un onglet dévoilé) à la place du tirage au sort de l'événement */
+  replique?: { texte: string; pose: "base" | "fier" | "moqueur" | "decu" | "etonne" };
   /** attendre avant d'apparaître (laisser un écran de résultat se poser) */
   delai?: number;
 };

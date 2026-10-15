@@ -13,6 +13,7 @@ export type Evenement =
   | "tuto" | "erreurs-serie" | "session-ratee" | "session-moyenne" | "session-reussie" | "session-parfaite"
   | "serie-bonnes" | "progression" | "duel-gagne" | "duel-perdu" | "duel-ecrase" | "duel-nul"
   | "defi-reussi" | "defi-rate" | "atelier-progres" | "atelier-rayees" | "atelier-dur" | "atelier-fini" | "rang-monte" | "serie-sept" | "sceau-gagne" | "retour" | "tard" | "furtif"
+  | "quete-faite" | "acte-nouveau" | "devoile" | "carnet"
   | "nouveautes";
 
 /** Les deux visites guidées (TUTO, NOUVEAUTES) : des étapes, pas des répliques au hasard. */
@@ -281,6 +282,35 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
     { texte: "Pose-le sur ton profil. Qu’ils voient tous.", pose: "moqueur" },
   ],
 
+  // Le Codex (lib/codex) : une quête accomplie, un nouvel acte, un onglet dévoilé, le carnet feuilleté.
+  // « acte-nouveau », « devoile » et « carnet » portent leur propre réplique (SignalLeonard.replique) ;
+  // celles d'ici ne servent que de repli.
+  "quete-faite": [
+    { texte: "Tamponné. Verrocchio aurait dit « pas mal ». Moi je dis bravo.", pose: "fier" },
+    { texte: "Une de moins sur la carte. Elle faisait moins la maligne au début.", pose: "moqueur" },
+    { texte: "Quête accomplie. Le petit tampon rouge, c’est de la vraie encre. Presque.", pose: "fier" },
+    { texte: "Voilà. Une ligne de plus dans mon carnet, à ton nom.", pose: "base" },
+    { texte: "Ça se tamponne et ça ne s’efface pas. Contrairement à mes esquisses.", pose: "fier" },
+    { texte: "Encore une. À ce rythme, je vais manquer d’encre. Jamais.", pose: "etonne" },
+    { texte: "Joli trait. La carte te doit quelques points d’XP.", pose: "fier" },
+    { texte: "Mission accomplie. Pas de cinématique, mais mon applaudissement compte double.", pose: "moqueur" },
+    { texte: "Une quête de bouclée. La prochaine t’attend déjà, elle est impatiente.", pose: "base" },
+    { texte: "Un tampon de plus. Les Médicis auraient mis ça au mur.", pose: "fier" },
+  ],
+
+  "acte-nouveau": [
+    { texte: "Nouvel acte. Le rideau se lève, et il y a de la poussière partout.", pose: "base" },
+    { texte: "On tourne la page du carnet. Prends de l’encre.", pose: "fier" },
+  ],
+
+  "devoile": [
+    { texte: "Une nouvelle pièce de l’atelier vient de s’ouvrir.", pose: "fier" },
+  ],
+
+  "carnet": [
+    { texte: "J’ai feuilleté ton carnet. Il y avait déjà de belles pages.", pose: "fier" },
+  ],
+
   "retour": [
     { texte: "Tiens, un revenant. On te croyait perdu.", pose: "etonne" },
     { texte: "Ton retour était plus attendu que Silksong.", pose: "etonne" },
@@ -349,6 +379,7 @@ export const TUTO: EtapeTuto[] = [
   { page: "/entrainement", cible: "session", texte: "S’entraîner. Une session sur tes points faibles, et le défi du jour. Ça, c’est le quotidien.", pose: "fier" },
   { page: "/entrainement", cible: "contre", texte: "Examens blancs classés et duels : là, ça compte pour ton rang. Viens pas pleurer après.", pose: "moqueur" },
   { page: "/classement", cible: "rang", texte: "Ton rang, de Bronze à Grand Maître. En dessous, le classement et tes duels. Ici, on se mesure. Et on se chambre.", pose: "etonne" },
+  { page: "/codex", cible: "prochaine", facultatif: true, texte: "Et ça, c’est mon carnet : le Codex. Une seule quête à la fois, celle qui sert le plus. Quand tu ne sais plus quoi faire, tu viens ici.", pose: "fier" },
   { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Tu le feras pas, hein ?", pose: "decu" },
   { page: "/dashboard", cible: "defi", texte: "Fin de la visite. Ton premier trait t’attend. Je repasse de temps en temps… surtout quand tu te trompes.", pose: "fier" },
 ];

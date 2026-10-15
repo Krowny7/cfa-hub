@@ -54,16 +54,17 @@ const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "atelier-dur": 0.6,
   "atelier-fini": 0.5,
   tard: 0.6,
+  "quete-faite": 0.55,
 };
 // ce que la cérémonie du sans-faute fête déjà : Léonard ne le redit pas
 const FETES_PAR_CEREMONIE = new Set<EvenementLeonard>(["session-parfaite", "defi-reussi", "duel-gagne"]);
-const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "serie-sept", "sceau-gagne", "session-parfaite", "retour"]);
+const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "serie-sept", "sceau-gagne", "session-parfaite", "retour", "acte-nouveau", "devoile", "carnet"]);
 const ECART_MIN = 4 * 60_000;
 const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];
 const pageMuette = (chemin: string) => PAGES_MUETTES.some((p) => chemin.startsWith(p));
 // les pages où une visite peut commencer (ou reprendre) : jamais pendant un exercice
-const PAGES_CALMES = ["/dashboard", "/entrainement", "/reviser", "/classement", "/moi", "/people/"];
+const PAGES_CALMES = ["/dashboard", "/codex", "/entrainement", "/reviser", "/classement", "/moi", "/people/"];
 const pageCalme = (chemin: string) => {
   if (PAGES_CALMES.some((p) => chemin === p || (p.endsWith("/") ? chemin.startsWith(p) : chemin.startsWith(p + "/")))) return true;
   try {
@@ -300,6 +301,7 @@ export function LeonardHote() {
     let repliques: Replique[];
     if (sig.evt === "tuto") repliques = TUTO;
     else if (sig.evt === "nouveautes") repliques = NOUVEAUTES;
+    else if (sig.replique) repliques = [sig.replique];
     else {
       const r = choisir(sig.evt, sig.vars);
       if (!r) return;
