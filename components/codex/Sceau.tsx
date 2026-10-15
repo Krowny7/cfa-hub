@@ -1,43 +1,85 @@
 import type { LigneQuete } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
-import s from "./Codex.module.css";
+import { INK } from "@/components/ui/InkDefs";
+import s from "./Encre.module.css";
 
-// Une quête, sous la forme d'un sceau à tamponner. Quatre états lisibles sans
-// couleur seule : verrouillée (contour en pointillé, petit cadenas), disponible
-// (anneau plein, centre vide), en cours (l'anneau se remplit d'encre selon la
-// progression), terminée (le sceau est tamponné : disque vermillon, double
-// anneau, coche au pinceau). Une énigme (exploit caché) porte un « ? ».
-// Dessin léger : quelques cercles et deux tracés (pas d'encre recopiée, voir
-// le piège d'hydratation des SVG lourds du dépôt). Sans état : serveur ou client.
+// Une quête, sous la forme d'un sceau hexagonal tamponné, le même que ceux du
+// profil (tracé partagé INK.sealHex, <use href> : jamais d'encre recopiée,
+// voir le piège d'hydratation des SVG lourds). Quatre états lisibles sans
+// couleur seule :
+//   à conquérir (verrouillée)  contour au crayon, en pointillé pâle
+//   disponible                 contour d'encre et filet, un point au centre
+//   en cours                   contour ocre, l'encre d'or monte selon la progression
+//   terminée                   tamponné : hexagone vermillon, filet et coche en réserve
+// Une énigme (exploit caché) porte un « ? » ; `signe` pose un « ! » (la quête
+// à prendre). Sans état : serveur ou client.
 
-const R = 20;
-const C = 2 * Math.PI * R;
-
-export function Sceau({ l, taille = 44, neuf = false }: { l: Pick<LigneQuete, "etat" | "fraction" | "affichage" | "retro">; taille?: number; neuf?: boolean }) {
+export function Sceau({
+  l,
+  taille = 44,
+  neuf = false,
+  signe,
+}: {
+  l: Pick<LigneQuete, "etat" | "fraction" | "affichage" | "retro">;
+  taille?: number;
+  neuf?: boolean;
+  /** « ! », « ? », ou un chiffre romain (les actes) */
+  signe?: string;
+}) {
   const enigme = l.affichage === "indice" && l.etat !== "terminee";
   const etat = l.etat;
+  const marque = signe ?? (enigme ? "?" : null);
+  // le niveau d'encre (en cours), en % de la hauteur de l'hexagone rogné par le haut
+  const niveau = Math.round(100 - 100 * Math.max(0.08, Math.min(1, l.fraction)));
+  // un chiffre romain se resserre pour tenir dans l'hexagone
+  const corps = marque && marque.length > 1 ? { fontSize: Math.min(40, 92 / marque.length) } : undefined;
+  const yTexte = corps ? 60 + corps.fontSize * 0.36 : 77;
   return (
-    <svg viewBox="0 0 48 48" width={taille} height={taille} aria-hidden className={`${s.sceau} ${s["e_" + etat]} ${neuf ? s.neuf : ""}`} focusable="false">
+    <svg viewBox="0 0 120 120" width={taille} height={taille} aria-hidden focusable="false" className={`${s.sceau} ${s["e_" + etat]} ${neuf ? s.neuf : ""}`}>
       {etat === "terminee" ? (
+        <g className={s.tampon}>
+          <use href={INK.sealHex} className={s.tamponFond} />
+          <use href={INK.sealHexIn} className={s.reserveFilet} />
+          {signe ? (
+            <text x="60" y={yTexte} textAnchor="middle" className={s.reserveTexte} style={corps}>
+              {signe}
+            </text>
+          ) : (
+            <path d="M40 62 L54 75 L82 45" className={s.reserveCoche} />
+          )}
+        </g>
+      ) : etat === "verrouillee" ? (
         <>
-          <circle cx="24" cy="24" r="22" className={s.tamponFond} />
-          <circle cx="24" cy="24" r="22" className={s.tamponBord} />
-          <circle cx="24" cy="24" r="17.5" className={s.tamponFin} />
-          <path d="M14.6 25.2 L21.2 31.4 L34.2 16.8" className={s.coche} />
+          <use href={INK.sealHex} className={s.crayon} />
+          {marque ? (
+            <text x="60" y={corps ? yTexte : 76} textAnchor="middle" className={s.signeCrayon} style={corps}>
+              {marque}
+            </text>
+          ) : (
+            <g className={s.cadenas}>
+              <rect x="49" y="58" width="22" height="17" rx="3.5" />
+              <path d="M54 58 V52.5 a6 6 0 0 1 12 0 V58" />
+            </g>
+          )}
         </>
       ) : (
         <>
-          <circle cx="24" cy="24" r={R} className={s.anneau} />
-          {etat === "active" && <circle cx="24" cy="24" r={R} className={s.arc} strokeDasharray={`${Math.max(0.04, l.fraction) * C} ${C}`} transform="rotate(-90 24 24)" />}
-          {etat === "verrouillee" && !enigme && (
-            <g className={s.cadenas}>
-              <rect x="17.5" y="22.5" width="13" height="9.5" rx="2.2" />
-              <path d="M20.5 22.5 V19.6 a3.5 3.5 0 0 1 7 0 V22.5" fill="none" />
-            </g>
+          {etat === "active" && (
+            <>
+              <use href={INK.sealHex} className={s.fond} />
+              {/* l'encre d'or : l'hexagone rogné par le haut (CSS, sans identifiant : rien à désaccorder à l'hydratation) */}
+              <use href={INK.sealHex} className={s.orEncre} style={{ clipPath: `inset(${niveau}% 0 0 0)` }} />
+            </>
           )}
-          {enigme && <path d="M19.6 19.6 a4.6 4.6 0 1 1 6.6 4.2 c-1.6 .9 -2.2 1.6 -2.2 3.4 M24 31.6 v.3" className={s.enigme} />}
-          {etat === "disponible" && !enigme && <circle cx="24" cy="24" r="3.4" className={s.point} />}
-          {etat === "active" && <circle cx="24" cy="24" r="3.4" className={s.pointPen} />}
+          <use href={INK.sealHex} className={etat === "active" ? s.contourOr : s.contour} />
+          <use href={INK.sealHexIn} className={etat === "active" ? s.filetOr : s.filet} />
+          {marque ? (
+            <text x="60" y={yTexte} textAnchor="middle" className={etat === "active" ? s.signeOr : s.signe} style={corps}>
+              {marque}
+            </text>
+          ) : etat === "disponible" ? (
+            <circle cx="60" cy="60" r="7" className={s.point} />
+          ) : null}
         </>
       )}
     </svg>

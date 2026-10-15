@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
+import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import type { Emplacement } from "@/lib/codex/types";
 import type { VueCodex } from "@/lib/codex/vue";
 
@@ -68,6 +69,32 @@ export async function codexReclamer(queteId: string, periode = ""): Promise<Resu
   const ligne = toutes.find((l) => l.id === queteId && l.periode === periode);
   if (ligne?.etat === "terminee") return { ok: true, xp: ligne.xpVersee ?? 0, deja: true };
   return { ok: false, raison: "aucun" };
+}
+
+/**
+ * Le panneau « Tes quêtes » du sceau de la barre du haut, relu à son
+ * ouverture (la barre reste montée d'une page à l'autre : ses données
+ * vieillissent). Sans recalcul forcé : le Codex est gardé 45 s en mémoire.
+ */
+export async function codexPanneau(): Promise<Panneau> {
+  const { supabase, user } = await joueur();
+  if (!user) return PANNEAU_VIDE;
+  try {
+    return panneauDe(await lireCodex(supabase, user));
+  } catch {
+    return PANNEAU_VIDE;
+  }
+}
+
+/** « Réclamer » depuis le panneau : la récompense (filet, idempotent), puis la fanfare est marquée jouée. */
+export async function codexReclamerPanneau(queteId: string, periode = ""): Promise<Resultat<{ xp: number; panneau: Panneau }>> {
+  const r = await codexReclamer(queteId, periode);
+  if (!r.ok) return r;
+  await codexVus([queteId]);
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  oublierCodex(user.id);
+  return { ok: true, xp: r.xp, panneau: panneauDe(await lireCodex(supabase, user)) };
 }
 
 /** Changer UN des contrats du jour (une seule fois par jour, pas un contrat déjà rempli). */

@@ -1,0 +1,421 @@
+/* Le Codex, DA « Encre » : papier de chiffon sépia, encre brune, tampon
+   vermillon (terminé), ocre et or (en cours), contour d'encre (disponible),
+   crayon en pointillé (à conquérir). Les teintes viennent de la palette
+   « carnet » (lib/palettes.json). Clair et nuit ; mode discret : plus d'or
+   ni de rouge, l'encre seule ; mouvement réduit : rien ne bouge. */
+
+.carnet,
+.bouton,
+.panneau {
+  --c-encre: #2b1a0e;
+  --c-sepia: #6d4a2a;
+  --c-sanguine: #a8623a;
+  --c-or: #c08f2c;
+  --c-or-clair: #f2d68c;
+  --c-or-fonce: #8c5e16;
+  --c-crayon: rgba(109, 74, 42, 0.5);
+  --c-papier: color-mix(in oklab, var(--paper) 52%, #e9d9b4);
+  --c-papier-2: color-mix(in oklab, var(--paper) 25%, #e9d9b4);
+  --c-reserve: var(--surface);
+}
+:global(html[data-theme="nuit"]) :is(.carnet, .bouton, .panneau) {
+  --c-encre: #f0dfc0;
+  --c-sepia: #d2ad7c;
+  --c-sanguine: #e3916a;
+  --c-or: #e2b558;
+  --c-or-clair: #f6dc96;
+  --c-or-fonce: #b0812c;
+  --c-crayon: rgba(210, 173, 124, 0.42);
+  --c-papier: color-mix(in oklab, var(--paper) 88%, #6d4a2a);
+  --c-papier-2: color-mix(in oklab, var(--paper) 80%, #6d4a2a);
+}
+:global(html[data-discreet="1"]) :is(.carnet, .bouton, .panneau) {
+  --c-or: var(--ink-2);
+  --c-or-clair: var(--ink-3);
+  --c-or-fonce: var(--ink);
+  --c-sanguine: var(--ink);
+}
+
+/* ---------- le sceau hexagonal ---------- */
+.sceau {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+.contour {
+  fill: var(--c-reserve);
+  stroke: var(--c-encre);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+.filet {
+  fill: none;
+  stroke: var(--c-encre);
+  stroke-width: 2.2;
+  opacity: 0.5;
+}
+.point {
+  fill: var(--c-encre);
+}
+.contourOr {
+  fill: none;
+  stroke: var(--c-or);
+  stroke-width: 7.5;
+  stroke-linejoin: round;
+}
+.filetOr {
+  fill: none;
+  stroke: var(--c-or-fonce);
+  stroke-width: 2.2;
+  opacity: 0.55;
+}
+.orEncre {
+  fill: var(--c-or);
+  opacity: 0.42;
+}
+.signe,
+.signeOr,
+.signeCrayon {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 46px;
+  fill: var(--c-encre);
+}
+.signeOr {
+  fill: var(--c-or-fonce);
+}
+.signeCrayon {
+  fill: var(--c-crayon);
+  font-size: 40px;
+}
+.fond {
+  fill: var(--c-reserve);
+}
+.crayon {
+  fill: var(--c-reserve);
+  stroke: var(--c-crayon);
+  stroke-width: 3.6;
+  stroke-dasharray: 2 9;
+  stroke-linecap: round;
+}
+.cadenas rect {
+  fill: var(--c-crayon);
+}
+.cadenas path {
+  fill: none;
+  stroke: var(--c-crayon);
+  stroke-width: 3.6;
+}
+.tampon {
+  filter: url(#rl-ink);
+}
+.tamponFond {
+  fill: var(--pen);
+}
+.reserveFilet {
+  fill: none;
+  stroke: var(--c-reserve);
+  stroke-width: 2.6;
+  opacity: 0.9;
+}
+.reserveCoche {
+  fill: none;
+  stroke: var(--c-reserve);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.reserveTexte {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 40px;
+  fill: var(--c-reserve);
+}
+.e_terminee {
+  rotate: -7deg;
+}
+.neuf {
+  animation: tampon 0.6s var(--ease-spring) both;
+}
+@keyframes tampon {
+  0% { transform: scale(1.6); opacity: 0; }
+  60% { transform: scale(0.94); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ---------- la jauge au pinceau ---------- */
+.jauge {
+  position: relative;
+  display: block;
+  height: 8px;
+  color: var(--c-sepia);
+}
+.jauge.or {
+  color: var(--c-or);
+}
+.jauge svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.jaugeFond {
+  opacity: 0.2;
+}
+.jaugeTrace {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+}
+.jaugeTrace svg {
+  max-width: none;
+}
+
+/* ---------- le sceau « ! » de la barre du haut ---------- */
+.ancre {
+  position: relative;
+}
+.bouton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s var(--ease-spring);
+}
+.bouton:hover {
+  background: color-mix(in oklab, var(--ink) 5%, transparent);
+}
+.bouton:active {
+  transform: scale(0.95);
+}
+.bouton:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.bouton svg {
+  width: 38px;
+  height: 38px;
+  rotate: -7deg;
+  overflow: visible;
+}
+.bouton[data-etat="calme"] svg {
+  width: 30px;
+  height: 30px;
+}
+.pose {
+  animation: tampon 0.55s var(--ease-spring) both;
+}
+.reflet {
+  animation: reflet 3.6s ease-in-out 1s infinite;
+}
+@keyframes reflet {
+  0%, 55% { transform: translateX(-60px); }
+  100% { transform: translateX(150px); }
+}
+.calmeContour {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 6.5;
+  stroke-linejoin: round;
+}
+.calmeFilet {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 2.2;
+}
+.calmeSigne {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 44px;
+  fill: var(--ink-3);
+}
+.signeReserve {
+  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
+  font-size: 58px;
+  fill: #fff8e6;
+}
+.compte {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--pen);
+  color: #fff;
+  font: 600 10.5px/18px var(--font-mono, ui-monospace), monospace;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--paper);
+  pointer-events: none;
+}
+
+/* ---------- le panneau « Tes quêtes » ---------- */
+.panneau {
+  --c-reserve: var(--surface);
+  position: absolute;
+  right: -6px;
+  top: calc(100% + 10px);
+  z-index: 60;
+  width: min(410px, calc(100vw - 32px));
+  max-height: min(78vh, 640px);
+  overflow-y: auto;
+  border-radius: 20px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+  padding: 16px 14px 12px;
+  color: var(--ink);
+  transform-origin: top right;
+  animation: ouvre 0.2s var(--ease-out) both;
+}
+@keyframes ouvre {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+.panneauTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 10px;
+}
+.panneauTitre {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.1;
+}
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ligne.principale {
+  --c-reserve: var(--c-papier);
+  background: var(--c-papier);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 22%, transparent);
+  padding: 12px 12px;
+}
+.ligne.recompense {
+  background: color-mix(in oklab, var(--c-or) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-or) 45%, transparent);
+}
+.ligneTitre {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+  overflow-wrap: anywhere;
+}
+.principale .ligneTitre {
+  font-size: 15px;
+}
+.ligneSous {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.ligne .jauge {
+  margin-top: 7px;
+  max-width: 220px;
+}
+.action {
+  min-height: 36px;
+  white-space: nowrap;
+}
+.reclamer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  color: #2b1a0e;
+  background: linear-gradient(135deg, #f7e19a, #d7a640 55%, #b98a2c);
+  box-shadow: inset 0 0 0 1px rgba(140, 94, 22, 0.45), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+.reclamer:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+:global(html[data-discreet="1"]) .reclamer {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 4px 2px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.lienPlein {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 4px;
+}
+.lienPlein:hover {
+  text-decoration-color: var(--ink);
+}
+.lienDiscret {
+  border: 0;
+  background: none;
+  padding: 6px 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+.lienDiscret:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.vide {
+  margin: 0;
+  padding: 12px 6px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.replique {
+  margin: 0;
+  font-family: var(--font-plume), "Segoe Print", cursive;
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--c-sepia);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neuf,
+  .pose,
+  .reflet,
+  .panneau {
+    animation: none !important;
+  }
+}
