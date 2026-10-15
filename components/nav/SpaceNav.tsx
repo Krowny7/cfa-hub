@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SPACES, activeSpace } from "@/lib/nav";
+import { activeSpace } from "@/lib/nav";
 import { paletteDeChemin, styleDePalette } from "@/lib/palettes";
 import { ICONE_ESPACE, Icone } from "@/components/adn/icons";
 import { EncreVive } from "@/components/nav/EncreVive";
+import { useSpacesVisibles } from "@/components/nav/DevoileContext";
 
-// Les quatre espaces, en contrôle segmenté : l'indicateur glisse (avec un
+// Les espaces (cinq, moins ceux que le joueur n'a pas encore découverts : voir
+// DevoileContext), en contrôle segmenté : l'indicateur glisse (avec un
 // léger ressort) sous l'onglet actif. Il se place par transform (sa largeur
 // est celle d'un onglet : translateX(100 %) = un onglet plus loin). Il se
 // remplit du liquide des insignes de rang, aux couleurs de la palette de la
@@ -18,6 +20,7 @@ export function SpaceNav({ chemin }: { chemin?: string } = {}) {
   const courant = usePathname();
   const pathname = chemin ?? courant ?? "/";
   const active = activeSpace(pathname);
+  const { spaces: SPACES } = useSpacesVisibles(active);
   const ix = SPACES.findIndex((s) => s.key === active);
   const palette = ix >= 0 ? paletteDeChemin(pathname) : null;
 
@@ -41,7 +44,7 @@ export function SpaceNav({ chemin }: { chemin?: string } = {}) {
         {SPACES.map((s) => {
           const on = s.key === active;
           return (
-            <Link key={s.key} href={s.href} className={"seg-item px-4 text-[13.5px]" + (on && palette ? " rl-encre-on" : "")} aria-current={on ? "page" : undefined}>
+            <Link key={s.key} href={s.href} className={"seg-item px-4 text-[13.5px]" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined}>
               <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} />
               {s.label}
             </Link>

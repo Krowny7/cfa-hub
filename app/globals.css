@@ -2164,3 +2164,37 @@ html[data-rl-motion="off"] .rl-encre[data-palette]::before {
 .rl-goutte-cache > :not([data-goutte-encre]) {
   visibility: hidden;
 }
+
+/* Un onglet qui vient d'être dévoilé (Codex › découverte progressive,
+   components/nav/DevoileContext) : il entre avec un petit rebond et une tache
+   d'encre qui s'étale puis s'efface derrière lui. */
+.rl-onglet-neuf {
+  position: relative;
+  animation: rl-onglet-entre 0.9s var(--ease-spring) both;
+}
+.rl-onglet-neuf::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--pal-3, #7d4527) 0%, var(--pal-2, #4a3020) 55%, transparent 100%);
+  animation: rl-onglet-tache 1.6s var(--ease-out) both;
+}
+@keyframes rl-onglet-entre {
+  0% { opacity: 0; transform: translateY(8px) scale(0.86); }
+  45% { opacity: 1; transform: translateY(0) scale(1.07); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes rl-onglet-tache {
+  0% { opacity: 0; transform: scale(0.3); }
+  25% { opacity: 0.55; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-onglet-neuf,
+  .rl-onglet-neuf::before {
+    animation: none !important;
+  }
+}

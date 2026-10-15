@@ -6,6 +6,8 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Splash } from "@/components/Splash";
 import { InkDefs } from "@/components/ui/InkDefs";
 import { LeonardHote } from "@/components/leonard/LeonardHote";
+import { DevoileProvider } from "@/components/nav/DevoileContext";
+import { etatNavCodex } from "@/lib/codex/nav-serveur";
 
 // DA V2 : Geist pour l'interface et les titres, Geist Mono pour les chiffres
 // alignés, Dela Gothic One réservée au logo et aux grands chiffres (.font-brand).
@@ -21,7 +23,8 @@ export const metadata = {
   description: "Le savoir se conquiert — l'espace de révision partagé",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nav = await etatNavCodex();
   return (
     <html lang="fr" className={`${geist.variable} ${geistMono.variable} ${dela.variable} ${plume.variable}`} suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
@@ -55,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <InkDefs />
         <Providers>
+         <DevoileProvider initial={nav}>
           <TopBar />
 
           {/* Conteneur par défaut : colonne de lecture (max-w-4xl). Les pages
@@ -64,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
 
           <MobileBottomNav />
+         </DevoileProvider>
 
           {/* Léonard, la mascotte : apparaît sur signal des écrans (components/leonard) */}
           <LeonardHote />
