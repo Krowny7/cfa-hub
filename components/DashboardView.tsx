@@ -17,8 +17,8 @@ export type { AccueilData } from "@/components/accueil/types";
 // 2. « Du nouveau » : les nouvelles des amis, s'il y en a ;
 // 3. « Ta progression » : une carte à onglets.
 // Le reste vit sur /classement et /moi.
-// `codex` : la ligne « Ta quête » et les contrats du jour, posée sous les traits
-// du jour (components/codex/LigneCodex ; flux Suspense côté serveur).
+// `codex` : la petite cérémonie du Codex (quêtes tamponnées, acte qui s'ouvre), posée sous les traits
+// du jour (components/codex/CodexAccueil ; flux Suspense côté serveur).
 export function DashboardView({ d, tab, codex }: { d: AccueilData; now?: number; tab?: string; codex?: React.ReactNode }) {
   return (
     <div className="rl-wide rl-page">
