@@ -54,7 +54,7 @@ console.log("\n# un compte neuf (aucun historique)");
   const reco = recommander(e2, r);
   check("LA prochaine quête : le premier trait", reco?.quete.id === "trame:prologue:premier-trait", reco?.quete.id);
   check("rien à écrire sauf les ouvertures (disponible)", r.lot.every((i) => i.etat === "disponible") && r.lot.length > 0, String(r.lot.length));
-  check("les quêtes d'événements non suivis (cours, cartes, fiches ouvertes) restent masquées", !r.etats.some((s) => s.quete.id === "branche:fsa:cours") && !r.etats.some((s) => s.quete.id === "branche:fsa:flashcards"));
+  check("cours, cartes et fiches ouvertes sont branchés (codexNoter) : leurs étapes bonus sont là, facultatives", r.etats.some((s) => s.quete.id === "branche:fsa:cours" && s.quete.optionnelle) && r.etats.some((s) => s.quete.id === "branche:fsa:flashcards" && s.quete.optionnelle));
 }
 
 console.log("\n# la cascade (le même historique valide tout ce qui est déjà rempli)");
