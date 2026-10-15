@@ -1,0 +1,841 @@
+/* Le Codex : une carte façon carnet de Léonard. Sobre, DA « Encre » : papier,
+   encre, un seul rouge (le tampon). Les teintes sépia viennent de la palette
+   « carnet » (lib/palettes.json), posée en variables --pal-* sur la page. */
+
+.page {
+  --sepia: #6d4a2a;
+  --sepia-2: #a9855d;
+  --papier-carnet: color-mix(in oklab, var(--paper) 88%, #e9d9b4 12%);
+}
+:global(html[data-theme="nuit"]) .page {
+  --sepia: #d2ad7c;
+  --sepia-2: #8d6f4a;
+  --papier-carnet: color-mix(in oklab, var(--paper) 92%, #6d4a2a 8%);
+}
+
+/* ---------- le sceau ---------- */
+.sceau {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+.anneau {
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.e_verrouillee .anneau {
+  fill: transparent;
+  stroke: var(--ink-3);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 4.2;
+  opacity: 0.75;
+}
+.e_active .anneau {
+  stroke: var(--line-2);
+  stroke-width: 3.2;
+}
+.arc {
+  fill: none;
+  stroke: var(--pen);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+}
+.point {
+  fill: var(--ink);
+  opacity: 0.85;
+}
+.pointPen {
+  fill: var(--pen);
+}
+.cadenas rect {
+  fill: var(--ink-3);
+  opacity: 0.7;
+}
+.cadenas path {
+  stroke: var(--ink-3);
+  stroke-width: 1.8;
+  opacity: 0.7;
+}
+.enigme {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.tamponFond {
+  fill: var(--pen);
+}
+.tamponBord {
+  fill: none;
+  stroke: color-mix(in oklab, var(--pen) 70%, #000 30%);
+  stroke-width: 1.6;
+  opacity: 0.55;
+}
+.tamponFin {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 1.2;
+}
+.coche {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.e_terminee {
+  transform: rotate(-6deg);
+}
+.neuf {
+  animation: tampon 0.7s var(--ease-spring) both;
+}
+@keyframes tampon {
+  0% { transform: scale(1.7) rotate(-14deg); opacity: 0; }
+  55% { transform: scale(0.92) rotate(-6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .neuf { animation: none; }
+}
+
+/* ---------- une quête (bouton) ---------- */
+.quete {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 10px 10px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s var(--ease-spring);
+}
+.quete:hover {
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+.quete:active {
+  transform: scale(0.99);
+}
+.quete:focus-visible,
+.mini:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.queteTexte {
+  min-width: 0;
+  flex: 1;
+}
+.queteTitre {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+  overflow-wrap: anywhere;
+}
+.queteTitre.dim {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.queteLigne {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.barre {
+  position: relative;
+  height: 5px;
+  margin-top: 7px;
+  border-radius: 99px;
+  background: var(--line-2);
+  overflow: hidden;
+}
+.barre > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: var(--sepia);
+}
+
+/* ---------- le chemin (rail vertical) ---------- */
+.chemin {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chemin > li {
+  position: relative;
+}
+.chemin > li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 31px;
+  top: 52px;
+  bottom: -6px;
+  width: 0;
+  border-left: 2px dashed var(--line-2);
+  pointer-events: none;
+}
+.chemin > li.fait:not(:last-child)::after {
+  border-left: 2px solid color-mix(in oklab, var(--pen) 45%, transparent);
+}
+
+/* ---------- les actes ---------- */
+.acte {
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--papier-carnet);
+}
+.acteCourant {
+  border-color: color-mix(in oklab, var(--sepia) 45%, var(--line));
+  box-shadow: var(--shadow-1);
+}
+.acteTete {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  background: transparent;
+  padding: 14px 16px;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 18px;
+}
+.acteTete:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+.numeral {
+  display: grid;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  border: 1.5px solid var(--sepia);
+  color: var(--sepia);
+  font-family: var(--font-brand), var(--font-sans);
+  font-size: 14px;
+  line-height: 1;
+}
+.acteCourant .numeral {
+  background: var(--sepia);
+  color: var(--paper);
+}
+.acteClos .numeral {
+  background: var(--pen);
+  border-color: var(--pen);
+  color: #fff;
+}
+.acteAvenir {
+  opacity: 0.72;
+}
+.replique {
+  margin: 0;
+  font-family: var(--font-plume), var(--font-sans);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--sepia);
+}
+.frise {
+  display: none;
+}
+@media (min-width: 900px) {
+  .frise {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 14px;
+    overflow-x: auto;
+  }
+  .friseNoeud {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 4px 2px;
+    font-size: 11px;
+    color: var(--ink-2);
+    text-align: center;
+  }
+  .friseNoeud::before {
+    content: "";
+    position: absolute;
+    top: 24px;
+    left: -50%;
+    width: 100%;
+    border-top: 2px dashed var(--line-2);
+    z-index: 0;
+  }
+  .friseNoeud:first-child::before {
+    display: none;
+  }
+  .friseNoeud > * {
+    position: relative;
+    z-index: 1;
+  }
+  .friseNoeud .numeral {
+    background: var(--paper);
+  }
+  .friseNoeud.clos .numeral {
+    background: var(--pen);
+  }
+  .friseNoeud.courant .numeral {
+    background: var(--sepia);
+    color: var(--paper);
+  }
+  .friseNoeud:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    border-radius: 10px;
+  }
+}
+.queteGrille {
+  display: grid;
+  gap: 2px 18px;
+}
+@media (min-width: 900px) {
+  .queteGrille {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- les branches ---------- */
+.branches {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 900px) {
+  .branches {
+    gap: 6px;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+.col {
+  min-width: 0;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--papier-carnet);
+}
+.colTete {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 16px;
+}
+.colTete:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+@media (min-width: 900px) {
+  .colTete {
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 4px 8px;
+    text-align: center;
+    cursor: default;
+  }
+}
+.colCorps {
+  padding: 0 6px 12px;
+}
+.etapes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.etape {
+  position: relative;
+}
+.etape:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 27px;
+  top: 46px;
+  bottom: -6px;
+  border-left: 2px dashed var(--line-2);
+  pointer-events: none;
+}
+.etape.fait:not(:last-child)::after {
+  border-left: 2px solid color-mix(in oklab, var(--pen) 45%, transparent);
+}
+@media (min-width: 900px) {
+  .etape:not(:last-child)::after {
+    left: 50%;
+    transform: translateX(-1px);
+    top: 44px;
+  }
+}
+.mini {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 6px 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.mini:hover {
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+.miniNom {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.miniNom.dim {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+@media (min-width: 900px) {
+  .mini {
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 2px 10px;
+    text-align: center;
+    justify-content: flex-start;
+  }
+  .miniNom {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+}
+.maitre .miniNom {
+  color: var(--pen);
+}
+
+/* ---------- le long cours, les exploits ---------- */
+.chaines {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 900px) {
+  .chaines {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.paliers {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.paliers li {
+  height: 6px;
+  flex: 1;
+  border-radius: 99px;
+  background: var(--line-2);
+}
+.paliers li.ok {
+  background: var(--pen);
+}
+.paliers li.cours {
+  background: color-mix(in oklab, var(--sepia) 60%, var(--line-2));
+}
+.exploits {
+  display: grid;
+  gap: 4px 14px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 700px) {
+  .exploits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .exploits {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- une page encore blanche ---------- */
+.blanche {
+  border-radius: 18px;
+  border: 1.5px dashed var(--line-2);
+  padding: 22px 20px;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* ---------- l'en-tête, encre sépia ---------- */
+.entete {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 22px;
+  color: #fff;
+  background: var(--pal-1, #2b1a0e);
+}
+.enteteContenu {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+}
+@media (min-width: 900px) {
+  .enteteContenu {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: end;
+    padding: 30px 32px;
+    gap: 28px;
+  }
+}
+.enteteTitre {
+  margin: 0;
+  font-size: clamp(30px, 4.6vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  color: #fff;
+}
+.enteteStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.82);
+}
+.enteteStats b {
+  font-family: var(--font-geist-mono), monospace;
+  font-weight: 600;
+  color: #fff;
+}
+.enteteReplique {
+  margin: 0;
+  font-family: var(--font-plume), var(--font-sans);
+  font-size: 21px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.94);
+}
+.boutonClair {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0 16px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.boutonClair:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.boutonClair:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---------- la prochaine quête ---------- */
+.prochaine {
+  position: relative;
+  display: grid;
+  gap: 14px 22px;
+  padding: 22px 20px;
+  background-image: linear-gradient(180deg, transparent 0 calc(100% - 1px), transparent 0);
+}
+@media (min-width: 700px) {
+  .prochaine {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 28px 32px;
+  }
+}
+.prochaineSceau {
+  width: 72px;
+  height: 72px;
+}
+.prochaineTitre {
+  margin: 4px 0 0;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.pourquoi {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ---------- les contrats ---------- */
+.contrats {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 900px) {
+  .contrats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.contrat {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--papier-carnet);
+  padding: 6px 6px 12px;
+}
+.contratEtiquette {
+  margin: 8px 12px 0;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sepia);
+}
+.contratPied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+}
+.lien {
+  border: 0;
+  background: transparent;
+  padding: 6px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.lien:hover {
+  color: var(--ink);
+}
+.lien:disabled {
+  opacity: 0.5;
+  cursor: default;
+  text-decoration: none;
+}
+
+/* ---------- le détail d'une quête ---------- */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(14, 10, 7, 0.5);
+  animation: voileEntre 0.2s ease both;
+}
+@media (min-width: 700px) {
+  .voile {
+    align-items: center;
+    padding: 24px;
+  }
+}
+.feuille {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 22px 22px 0 0;
+  border: 1px solid var(--line-2);
+  background: var(--papier-carnet);
+  box-shadow: var(--shadow-3);
+  padding: 22px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+  animation: feuilleEntre 0.32s var(--ease-out) both;
+}
+@media (min-width: 700px) {
+  .feuille {
+    border-radius: 22px;
+    padding: 26px 28px;
+  }
+}
+@keyframes voileEntre {
+  from { opacity: 0; }
+}
+@keyframes feuilleEntre {
+  from { opacity: 0; transform: translateY(24px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voile, .feuille { animation: none; }
+}
+.fermer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  height: 40px;
+  width: 40px;
+  place-items: center;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.fermer:hover {
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
+}
+.fermer:focus-visible {
+  outline: 2px solid var(--ink);
+}
+.detailBloc {
+  margin-top: 14px;
+}
+.detailBloc h3 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.detailBloc p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.leonardLigne {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--sepia);
+  background: color-mix(in oklab, var(--sepia) 8%, transparent);
+  border-radius: 0 12px 12px 0;
+  font-family: var(--font-plume), var(--font-sans);
+  font-size: 19px;
+  line-height: 1.3;
+  color: var(--sepia);
+}
+
+/* ---------- accueil : la ligne « Ta quête » ---------- */
+.accueil {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.accueilQuete {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 4px;
+  margin: -4px;
+  color: inherit;
+  text-decoration: none;
+}
+.accueilQuete:hover {
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+.accueilQuete:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.accueilContrats {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.accueilContrat {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.accueilContrat.fait {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--pen) 60%, transparent);
+}
+
+/* ---------- la fanfare ---------- */
+.fete {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  border-radius: 20px;
+  border: 1px solid color-mix(in oklab, var(--sepia) 40%, var(--line));
+  background: var(--papier-carnet);
+  box-shadow: var(--shadow-2);
+  padding: 16px 18px;
+}
+
+@media (max-width: 899px) {
+  .colCorps.ferme {
+    display: none;
+  }
+}
+@media (min-width: 900px) {
+  .queteGrille > li::after {
+    display: none;
+  }
+}
+.chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--ink-3);
+  transition: transform 0.2s var(--ease-out);
+}
+.chevron.haut {
+  transform: rotate(180deg);
+}
+@media (min-width: 900px) {
+  .colTete .chevron {
+    display: none;
+  }
+}
