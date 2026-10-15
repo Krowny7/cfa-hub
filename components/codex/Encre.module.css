@@ -419,3 +419,12 @@
     animation: none !important;
   }
 }
+/* le réglage « mouvement » du site (Réglages) : la barre du haut est hors de .rl-route */
+:global(html[data-rl-motion="off"]) :is(.neuf, .pose, .reflet, .panneau) {
+  animation: none !important;
+}
+/* mode discret : les signes reprennent la police du texte, comme .font-brand */
+:global(html[data-discreet="1"]) :is(.signe, .signeOr, .signeCrayon, .reserveTexte, .calmeSigne, .signeReserve) {
+  font-family: var(--font-sans);
+  font-weight: 800;
+}

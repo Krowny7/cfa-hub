@@ -471,3 +471,7 @@
     transition: none;
   }
 }
+:global(html[data-rl-motion="off"]) .ici {
+  animation: none;
+  opacity: 0.8;
+}
