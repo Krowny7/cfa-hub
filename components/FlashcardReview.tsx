@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { codexNoter } from "@/lib/codex/actions";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Maximize2, Minimize2, RotateCcw } from "lucide-react";
 import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
@@ -80,12 +81,15 @@ export function FlashcardReview({
   cards,
   setId,
   traitsJour = null,
+  matiere,
   demo,
 }: {
   cards: Card[];
   setId?: string;
   /** traits du jour lus par le serveur : le sceau du jour en fin de passe si la journée est tenue */
   traitsJour?: number | null;
+  /** la matière du paquet (clé du programme), si elle est connue : pour le Codex */
+  matiere?: string;
   demo?: FlashcardDemo;
 }) {
   const jour = useTraitsDuJour(traitsJour);
@@ -151,8 +155,19 @@ export function FlashcardReview({
     setFlipped(false);
   }
 
+  // cartes révisées, notées pour le Codex par paquets de 10 et en fin de passe
+  const aNoter = useRef(0);
+  function noterCartes(force: boolean) {
+    if (demo || (aNoter.current < 10 && !(force && aNoter.current > 0))) return;
+    const cartes = aNoter.current;
+    aNoter.current = 0;
+    codexNoter("flashcards_revues", matiere ? { matiere, cartes } : { cartes }).catch(() => undefined);
+  }
+
   function mark(gotIt: boolean) {
     if (!current) return;
+    aNoter.current += 1;
+    noterCartes(i >= total - 1);
     setSessionMarks((prev) => ({ ...prev, [current.id]: gotIt }));
     if (setId && !demo) {
       // Écrit pour LA PROCHAINE session — n'affecte jamais l'ordre de celle-ci.

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { FCard, Rule, Formula, KFormula, Sec, Reading, FTable } from "@/components/fiche";
+import { FicheOuverte } from "@/components/codex/FicheOuverte";
 
 // Fiche de lecture Derivatives (Readings 66–75), en JSX. Composant serveur :
 // les formules KaTeX sont rendues côté serveur, aucun JavaScript à charger.
@@ -30,6 +31,8 @@ const CONTENTS: [string, string, string][] = [
 export default function DerivativesFiche() {
   return (
     <>
+      {/* le Codex note l'ouverture de la fiche (étape « fiche » de la branche Derivatives) */}
+      <FicheOuverte matiere="derivatives" fiche="derivatives" />
       {/* ── Sous-navigation collante, pleine largeur, sous la barre du haut ── */}
       <nav
         aria-label="Lectures"

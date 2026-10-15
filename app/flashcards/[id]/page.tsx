@@ -67,7 +67,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       />
 
       {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}
-      <FlashcardReview cards={cards} setId={id} traitsJour={traitsJour} />
+      <FlashcardReview cards={cards} setId={id} traitsJour={traitsJour} matiere={subject?.key} />
 
       {/* Le set : toutes les cartes (pour tous), ajout et import (propriétaire), repliés */}
       <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Download, ExternalLink, FileText, Headphones } from "lucide-react";
 import { CourseAudioPlayer } from "@/components/CourseAudioPlayer";
 import type { Course } from "@/lib/courses";
+import { SUBJECTS } from "@/components/reviser/catalog";
 
 // Présentation d'un cours complet (sans requête, rendue aussi par l'aperçu) :
 // en-tête, puis le deck à gauche et l'audio à droite sur grand écran —
@@ -43,6 +44,7 @@ export function CourseView({
               title={course.title}
               duration={course.minutes * 60}
               startModule={startModule}
+              matiere={SUBJECTS.find((x) => x.course === course.slug)?.key}
             />
           </aside>
         )}

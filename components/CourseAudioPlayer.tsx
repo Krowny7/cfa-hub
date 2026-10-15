@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { codexNoter } from "@/lib/codex/actions";
 import { FastForward, Pause, Play, Rewind, SkipBack, SkipForward } from "lucide-react";
 import { COURS } from "@/lib/voice-z4";
 
@@ -37,6 +38,7 @@ export function CourseAudioPlayer({
   title,
   duration: durationHint,
   startModule = null,
+  matiere,
 }: {
   src: string;
   chapters: Chapter[];
@@ -48,11 +50,15 @@ export function CourseAudioPlayer({
   duration?: number;
   /** module à démarrer (1 = le premier) ; null : reprise habituelle */
   startModule?: number | null;
+  /** la matière du cours (clé du programme) : le Codex compte les minutes écoutées */
+  matiere?: string;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
   const pendingSeek = useRef<number | null>(null);
   const lastSaved = useRef(0);
+  // minutes écoutées pour le Codex : on cumule le temps réellement joué (pas les sauts) et on le note par paquets
+  const ecoute = useRef({ acc: 0, dernier: -1 });
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(durationHint ?? 0);
@@ -115,7 +121,19 @@ export function CourseAudioPlayer({
       pendingSeek.current = null;
       if (!audio.duration || p < audio.duration - 5) audio.currentTime = p;
     };
+    const noterEcoute = (force = false) => {
+      const e = ecoute.current;
+      const minutes = Math.floor(e.acc / 60);
+      if (minutes < 1 || (!force && minutes < 5)) return;
+      e.acc -= minutes * 60;
+      codexNoter("cours_ecoute", { matiere: matiere ?? "", minutes }).catch(() => undefined);
+    };
     const onTime = () => {
+      const e = ecoute.current;
+      const d = audio.currentTime - e.dernier;
+      if (e.dernier >= 0 && d > 0 && d < 1.5 && matiere) e.acc += d;
+      e.dernier = audio.currentTime;
+      noterEcoute();
       setCurrent(audio.currentTime);
       if (Math.abs(audio.currentTime - lastSaved.current) >= 5) {
         lastSaved.current = audio.currentTime;
@@ -131,10 +149,13 @@ export function CourseAudioPlayer({
       setModulePret(null);
     };
     const onPause = () => {
+      ecoute.current.dernier = -1;
+      noterEcoute(true);
       setPlaying(false);
       savePosition(audio.currentTime, audio.duration || 0);
     };
     const onEnded = () => {
+      noterEcoute(true);
       setPlaying(false);
       savePosition(audio.duration || 0, audio.duration || 0);
     };
