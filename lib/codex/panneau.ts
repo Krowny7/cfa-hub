@@ -1,7 +1,7 @@
 // Le panneau « Tes quêtes », derrière le sceau « ! » de la barre du haut :
 // quatre quêtes au plus, tirées de la vue du Codex (lib/codex/vue.ts). Dans
-// l'ordre : les récompenses à réclamer, la quête principale (la
-// recommandation du moteur), les contrats du jour pas encore remplis, la
+// l'ordre : la quête principale (la recommandation du moteur), deux
+// récompenses à réclamer au plus, les contrats du jour pas encore remplis, la
 // quête au long cours la plus avancée. Léger (quelques lignes, pas la vue
 // entière, qui pèse une centaine de Ko). Module neutre (serveur et navigateur).
 
@@ -43,6 +43,7 @@ export type Panneau = {
 export const PANNEAU_VIDE: Panneau = { disponible: false, jour: "", quetes: [], aPrendre: [], aReclamer: 0, changementPossible: false };
 
 export const MAX_QUETES = 4;
+const MAX_RECOMPENSES = 2;
 
 const cleDe = (l: Pick<LigneQuete, "id" | "periode">) => `${l.id}|${l.periode}`;
 
@@ -86,12 +87,15 @@ export function panneauDe(vue: VueCodex): Panneau {
     recompenses.push(versPanneau(l, "recompense", `Accomplie · +${l.xpVersee ?? l.xp} XP${l.titreNom ? ` · titre « ${l.titreNom} »` : l.cosmetiqueNom ? ` · ${l.cosmetiqueNom}` : ""}`));
   }
 
-  const liste: QuetePanneau[] = [...recompenses];
+  // la quête principale en tête (mise en avant), puis deux récompenses au plus
+  // (les suivantes viennent une fois celles-ci réclamées) : elle ne disparaît jamais
+  const liste: QuetePanneau[] = [];
   const p = vue.prochaine;
   if (p && !vues.has(cleDe(p.ligne))) {
     liste.push(versPanneau(p.ligne, "principale", `Quête principale${compte(p.ligne)}`));
     vues.add(cleDe(p.ligne));
   }
+  liste.push(...recompenses.slice(0, MAX_RECOMPENSES));
   if (contratsVus) {
     for (const c of vue.contrats) {
       if (c.ligne.etat === "terminee" || vues.has(cleDe(c.ligne))) continue;

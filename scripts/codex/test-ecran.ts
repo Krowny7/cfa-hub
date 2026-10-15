@@ -8,6 +8,7 @@ import { DECOUVERTE, ACTES } from "@/lib/codex/catalogue";
 import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoile-lite";
 import { estDevoile } from "@/lib/codex/moteur";
 import { bilanDe } from "@/lib/codex/bilan";
+import { MAX_QUETES, panneauDe } from "@/lib/codex/panneau";
 import { SPACES } from "@/lib/nav";
 import { paletteDeChemin } from "@/lib/palettes";
 import { exempleCodex } from "./exemple";
@@ -48,6 +49,18 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
   check("neuf : les contrats du jour restent masqués tant qu'ils ne sont pas dévoilés", n.contrats.length === 0);
   check("milieu : les contrats sont montrés (3)", b.contrats.length === 3, String(b.contrats.length));
 }
+
+console.log("\n# le panneau « Tes quêtes » (sceau de la barre du haut)");
+for (const sc of ["neuf", "milieu", "fin"] as const) {
+  const pn = panneauDe(exempleCodex(sc));
+  const genres = pn.quetes.map((q) => q.genre);
+  check(`${sc} : ${MAX_QUETES} quêtes au plus, sans doublon`, pn.quetes.length <= MAX_QUETES && new Set(pn.quetes.map((q) => q.cle)).size === pn.quetes.length, genres.join());
+  check(`${sc} : la principale en tête, une seule, deux récompenses au plus`, genres.filter((g) => g === "principale").length <= 1 && (!genres.includes("principale") || genres[0] === "principale") && genres.filter((g) => g === "recompense").length <= 2, genres.join());
+  check(`${sc} : le « ! » ne compte que des quêtes du panneau, à prendre`, pn.aPrendre.every((k) => pn.quetes.some((q) => q.cle === k && q.etat === "disponible" && q.genre !== "recompense")));
+  check(`${sc} : jamais un sceau du profil à réclamer ici`, pn.quetes.every((q) => !q.id.startsWith("exploit:sceau:")));
+}
+check("neuf : pas de contrat dans le panneau tant qu'ils ne sont pas dévoilés", panneauDe(exempleCodex("neuf")).quetes.every((q) => q.genre !== "contrat"));
+check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);
