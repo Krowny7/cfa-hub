@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SceauDe } from "@/components/profil/FicheSceau";
+import { FeteCodex } from "@/components/codex/FeteCodex";
 import { resteCeremonie } from "@/lib/ceremonie-en-cours";
 import { signalerLeonard } from "@/lib/leonard/signal";
 import { sceauxAFeter, sceauxFetes, type SceauAFeter } from "@/lib/profil/actions-sceaux";
@@ -18,6 +19,9 @@ import { CEREMONIE, condition, titreSceau } from "@/lib/voice-profil";
 // copie, elle n'est pas dans le premier écran), en haut, au-dessus de la
 // place de Léonard. Chaque sceau n'est fêté qu'une fois (sceauxFetes).
 // Sans la base, ou sans nouveau sceau : rien.
+// Le Codex (components/codex/FeteCodex) se cale ici : en fin de séance il
+// recalcule la progression du joueur, fête les quêtes tamponnées et annonce
+// l'acte qui s'ouvre, sous la carte du sceau (ou seul).
 // `onResultat(n)` : le nombre de sceaux fêtés (0 : rien, ou échec) ; l'écran
 // répond true si Léonard peut venir féliciter (une seule apparition par
 // écran : il n'est pas déjà venu, et l'écran ne l'appellera pas). Il vient
@@ -118,7 +122,10 @@ export function CeremonieSceaux({
     return () => io.disconnect();
   }, [fete]);
 
-  if (!fete) return null;
+  // le Codex : après les sceaux (leurs réponses sont enregistrées), une carte de plus au besoin
+  const codex = demo ? null : <FeteCodex attenteMs={ATTENTE_MS + 700} className={fete ? "mt-3" : className} />;
+  // (même place dans l'arbre avant et après le sceau : la carte du Codex ne se remonte pas)
+  if (!fete) return <>{null}{codex}</>;
   const [e, ...autres] = fete.etats;
   return (
     <>
@@ -138,6 +145,7 @@ export function CeremonieSceaux({
           </Link>
         </div>
       </section>
+      {codex}
       {cale > 0 && <div aria-hidden style={{ height: cale }} />}
     </>
   );

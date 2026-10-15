@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ import { etatObjectif, objectifDe } from "@/lib/objectif";
 import { demandesDe } from "@/lib/profil/donnees";
 import { nouveautesAmis } from "@/lib/profil/nouveau";
 import { DashboardView } from "@/components/DashboardView";
+import { CodexAccueil } from "@/components/codex/CodexAccueil";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import {
   daysBetweenKeys,
@@ -183,5 +185,15 @@ export default async function Dashboard() {
     masteryAvg: programAvg,
   };
 
-  return <DashboardView d={d} now={now.getTime()} />;
+  return (
+    <DashboardView
+      d={d}
+      now={now.getTime()}
+      codex={
+        <Suspense fallback={null}>
+          <CodexAccueil supabase={supabase} user={user} />
+        </Suspense>
+      }
+    />
+  );
 }

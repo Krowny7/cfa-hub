@@ -371,7 +371,7 @@ function ActionTraits({ d }: { d: AccueilData }) {
 }
 
 /** Tes traits du jour : l'anneau, les bâtons, J-n. Le bouton plein n'y vient qu'après les 30 et les 5. */
-function CarteTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
+function CarteTraits({ d, primaire, codex }: { d: AccueilData; primaire: Primaire; codex?: React.ReactNode }) {
   return (
     <section aria-label={RDV.traits.nom} className="card rl-in flex min-w-0 flex-1 flex-col gap-4 p-5 md:p-6" style={{ animationDelay: ".08s" }}>
       <div className="min-w-0">
@@ -384,12 +384,13 @@ function CarteTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
       </div>
       <LigneSerie d={d} />
       {primaire === "traits" && <ActionTraits d={d} />}
+      {codex}
     </section>
   );
 }
 
 /** Sans défi jouable : les traits du jour prennent le héros (l'ancienne journée, sans la reprise). */
-function HerosTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
+function HerosTraits({ d, primaire, codex }: { d: AccueilData; primaire: Primaire; codex?: React.ReactNode }) {
   return (
     <section aria-label={RDV.traits.nom} className="card-hero rl-in flex min-w-0 flex-1 flex-col overflow-hidden" style={{ padding: 0 }}>
       <div className="shrink-0 overflow-hidden border-b border-line" style={{ height: "clamp(64px, 7vw, 100px)" }}>
@@ -408,6 +409,7 @@ function HerosTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
         <div className="flex min-w-0 flex-col gap-4">
           <ListeClassee titre={TUILES.titre} items={lignesAujourdhui(d)} />
           <AnneauGrand d={d} size={170} />
+          {codex}
         </div>
       </div>
     </section>
@@ -626,7 +628,7 @@ function TuilesCalmes({ d, trenteCalme }: { d: AccueilData; trenteCalme: TodayDa
 /* ------------------------------------------------------------------ */
 
 /** Les 30 du jour en héros, les 5 et les traits à droite, puis reprendre et le duel, le rang, les liens. */
-export function Rendezvous({ d }: { d: AccueilData }) {
+export function Rendezvous({ d, codex }: { d: AccueilData; codex?: React.ReactNode }) {
   const daily = d.daily;
   const cinq = cinqVisible(d.cinq) ? d.cinq : null;
   const trente = daily && defiEnTete(daily) ? daily : null;
@@ -641,12 +643,12 @@ export function Rendezvous({ d }: { d: AccueilData }) {
     <div className="flex flex-col gap-4 md:gap-[18px]">
       <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
         <div className={"flex min-w-0 flex-col " + (colonne ? "lg:col-span-8" : "lg:col-span-12")}>
-          {defiHeros ? <HerosDefi d={d} daily={defiHeros} primaire={primaire} /> : <HerosTraits d={d} primaire={primaire} />}
+          {defiHeros ? <HerosDefi d={d} daily={defiHeros} primaire={primaire} /> : <HerosTraits d={d} primaire={primaire} codex={codex} />}
         </div>
         {colonne && (
           <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-4">
             {cinqColonne && <CarteCinq d={d} daily={cinqColonne} primaire={primaire} />}
-            {defiHeros && <CarteTraits d={d} primaire={primaire} />}
+            {defiHeros && <CarteTraits d={d} primaire={primaire} codex={codex} />}
             {trenteCalme && (
               <div data-leonard="defi">
                 <DefiTile daily={trenteCalme} nowIso={d.nowIso} actionEnBas className="h-full" />

@@ -17,12 +17,14 @@ export type { AccueilData } from "@/components/accueil/types";
 // 2. « Du nouveau » : les nouvelles des amis, s'il y en a ;
 // 3. « Ta progression » : une carte à onglets.
 // Le reste vit sur /classement et /moi.
-export function DashboardView({ d, tab }: { d: AccueilData; now?: number; tab?: string }) {
+// `codex` : la ligne « Ta quête » et les contrats du jour, posée sous les traits
+// du jour (components/codex/LigneCodex ; flux Suspense côté serveur).
+export function DashboardView({ d, tab, codex }: { d: AccueilData; now?: number; tab?: string; codex?: React.ReactNode }) {
   return (
     <div className="rl-wide rl-page">
       {/* le logo vivant de la barre du haut se recale sur la journée lue ici */}
       <AnneauDuJourSync repondues={d.activity.today} />
-      <Rendezvous d={d} />
+      <Rendezvous d={d} codex={codex} />
       {/* le palier de 7 jours de la série d'encre : une petite célébration, une fois par série */}
       {d.serieEncre && d.serieEncre.serieAffichee >= 7 && <CelebrationSerie serie={d.serieEncre.serieAffichee} cle={d.serieEncre.debut ?? d.serieEncre.jour} doubleDeja={d.serieEncre.mult === 2} />}
       {d.duNouveau && <DuNouveau nouvelles={d.duNouveau} />}
