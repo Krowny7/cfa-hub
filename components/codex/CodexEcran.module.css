@@ -1,0 +1,98 @@
+/* L'écran /codex : un en-tête court, puis la carte (ordinateur) ou le chemin
+   (téléphone). Les jetons --c-* viennent de Encre.module.css (.carnet). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.tete {
+  display: grid;
+  gap: 14px;
+  align-items: end;
+}
+@media (min-width: 900px) {
+  .tete {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 560px);
+    gap: 24px;
+  }
+}
+.titre {
+  margin: 4px 0 0;
+  font-size: clamp(30px, 4.4vw, 44px);
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.stats {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.stats b {
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-weight: 600;
+  color: var(--ink);
+}
+.prochaine {
+  --c-reserve: var(--c-papier);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 10px;
+  border-radius: 18px;
+  background: var(--c-papier);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 24%, transparent);
+}
+.prochaineSceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.prochaineSceau:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.prochaineSur {
+  margin: 0;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--c-sepia);
+}
+.prochaineTitre {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.prochaineJauge {
+  margin-top: 6px;
+  max-width: 240px;
+}
+.surOrdi {
+  display: none;
+}
+.surTel {
+  display: block;
+}
+@media (min-width: 900px) {
+  .surOrdi {
+    display: block;
+  }
+  .surTel {
+    display: none;
+  }
+}
+@media (max-width: 899px) {
+  .prochaine :global(.btn) {
+    padding-inline: 12px;
+  }
+}

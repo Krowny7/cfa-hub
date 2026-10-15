@@ -6,6 +6,8 @@ import { ArrowRight, X } from "lucide-react";
 import type { LigneQuete } from "@/lib/codex/vue";
 import { CODEX, choisirReplique } from "@/lib/voice-codex";
 import { Sceau } from "@/components/codex/Sceau";
+import { JaugePinceau } from "@/components/codex/JaugePinceau";
+import e from "./Encre.module.css";
 import s from "./Codex.module.css";
 
 // Le détail d'une quête : une feuille qui monte du bas (téléphone) ou une
@@ -58,13 +60,13 @@ export function DetailQuete({
 
   return (
     <div className={s.voile} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-labelledby="codex-detail-titre" className={s.feuille}>
+      <div role="dialog" aria-modal="true" aria-labelledby="codex-detail-titre" className={`${s.feuille} ${e.carnet}`}>
         <button ref={fermer} type="button" className={s.fermer} onClick={onClose} aria-label={CODEX.detail.fermer}>
           <X size={20} aria-hidden />
         </button>
 
         <div className="flex items-start gap-4 pr-10">
-          <Sceau l={l} taille={60} />
+          <Sceau l={l} taille={64} />
           <div className="min-w-0">
             <p className="t-eyebrow m-0">
               {CODEX.famille[l.famille]}
@@ -88,9 +90,7 @@ export function DetailQuete({
               <p>{l.consigne}</p>
               {showProgress && (
                 <>
-                  <div className={s.barre} role="progressbar" aria-valuemin={0} aria-valuemax={Math.round(l.cible)} aria-valuenow={Math.floor(l.valeur)} aria-label="Progression">
-                    <span style={{ width: `${Math.round(l.fraction * 100)}%` }} />
-                  </div>
+                  <JaugePinceau fraction={l.fraction} or={l.etat === "active"} label={`Progression : ${Math.floor(l.valeur)} sur ${Math.floor(l.cible)}`} className="mt-2 max-w-[320px]" />
                   <p className="t-micro mt-1.5 font-mono tabular-nums">
                     {Math.floor(l.valeur).toLocaleString("fr-FR")} / {Math.floor(l.cible).toLocaleString("fr-FR")}
                   </p>

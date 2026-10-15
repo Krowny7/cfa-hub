@@ -1,0 +1,473 @@
+/* La carte du Codex : une page de carnet sépia (palette « carnet »), traits
+   au pinceau, sceaux tamponnés, noms à la plume. Les jetons --c-* viennent
+   de Encre.module.css (.carnet). */
+
+.plume {
+  font-family: var(--font-plume), "Segoe Print", cursive;
+  font-weight: 700;
+}
+.mono {
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 0;
+}
+.pale {
+  opacity: 0.55;
+}
+
+/* ---------- l'arbre ---------- */
+.arbreCadre {
+  --c-reserve: var(--c-papier);
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 22%, transparent), var(--shadow-2, 0 10px 30px -18px rgba(0, 0, 0, 0.3));
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 55%, color-mix(in oklab, var(--c-sepia) 14%, transparent)),
+    repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in oklab, var(--c-sepia) 7%, transparent) 31px 32px),
+    var(--c-papier);
+}
+.arbre {
+  position: relative;
+  height: clamp(560px, calc(100vh - 250px), 820px);
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.arbre:active {
+  cursor: grabbing;
+}
+.arbre:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+}
+.monde {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.traits {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.tronc {
+  color: var(--c-sepia);
+  opacity: 0.85;
+}
+.branche {
+  color: var(--c-sepia);
+  opacity: 0.72;
+}
+.rameau {
+  color: var(--c-sepia);
+  opacity: 0.6;
+}
+.arc {
+  fill: none;
+  stroke: var(--c-crayon);
+  stroke-width: 3;
+  stroke-dasharray: 1 11;
+  stroke-linecap: round;
+}
+.pointille {
+  stroke: var(--c-crayon);
+  stroke-width: 4;
+  stroke-dasharray: 1 12;
+  stroke-linecap: round;
+}
+
+.noeud {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.16s var(--ease-spring);
+}
+.noeud:hover {
+  transform: scale(1.09);
+}
+.noeud:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.etiquetteActe,
+.etiquetteBranche {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.etiquetteActe .plume {
+  font-size: 27px;
+  line-height: 1;
+  color: var(--c-encre);
+}
+.etiquetteBranche {
+  font-size: 15px;
+  line-height: 1.1;
+  color: var(--c-encre);
+}
+.aGauche {
+  align-items: flex-end;
+  text-align: right;
+}
+.aDroite {
+  align-items: flex-start;
+}
+.titreCouronne {
+  position: absolute;
+  width: 600px;
+  text-align: center;
+  font-size: 34px;
+  color: var(--c-sepia);
+  pointer-events: none;
+}
+.blanche {
+  position: absolute;
+  max-width: 300px;
+  font-family: var(--font-plume), "Segoe Print", cursive;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--c-crayon);
+  pointer-events: none;
+}
+
+/* « tu es ici » : un anneau d'or qui respire, le mot à la plume vermillon */
+.ici {
+  position: absolute;
+  color: var(--c-or);
+  rotate: -18deg;
+  animation: respire 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes respire {
+  0%, 100% { transform: scale(0.94); opacity: 0.95; }
+  50% { transform: scale(1.06); opacity: 0.55; }
+}
+.iciMot {
+  position: absolute;
+  font-family: var(--font-plume), "Segoe Print", cursive;
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--pen);
+  rotate: -6deg;
+  pointer-events: none;
+}
+
+/* outils, légende, colonne */
+.outils {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  display: flex;
+  gap: 6px;
+}
+.outil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line-2), 0 2px 8px -4px rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.outil:hover {
+  background: var(--surface);
+}
+.outil:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.legende {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 7px 12px;
+  list-style: none;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--c-papier) 86%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 18%, transparent);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.legende li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.colonne {
+  --c-reserve: var(--surface);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: 316px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--surface) 94%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line-2), var(--shadow-3);
+  backdrop-filter: blur(8px);
+}
+.colonneFermee {
+  bottom: auto;
+  width: auto;
+  background: transparent;
+  box-shadow: none;
+}
+.colonneBascule {
+  align-self: flex-end;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 4px 4px 0 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.colonneFermee .colonneBascule {
+  margin: 0;
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.colonneBascule:hover {
+  color: var(--ink);
+}
+.colonneBascule:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.colonneCorps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 14px 16px;
+  margin-top: -30px;
+}
+.colTitre {
+  margin: 0 0 8px;
+  font-family: var(--font-plume), "Segoe Print", cursive;
+  font-weight: 700;
+  font-size: 25px;
+  line-height: 1.05;
+  color: var(--c-sepia);
+}
+.colListe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.blancheCol {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.compacte {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 6px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.compacte:hover {
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+.compacte:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.compacteSur {
+  display: block;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.compacteTitre {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.chaine {
+  padding: 8px 0 6px;
+  border-top: 1px solid var(--line);
+}
+.chaine:first-child {
+  border-top: 0;
+}
+.chaineTitre {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.paliers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 6px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- le téléphone ---------- */
+.tel {
+  --c-reserve: var(--c-papier);
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in oklab, var(--c-sepia) 7%, transparent) 31px 32px),
+    var(--c-papier);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 22%, transparent);
+}
+.selecteur {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.selecteur::-webkit-scrollbar {
+  display: none;
+}
+.puce,
+.puceTexte {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--surface) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 20%, transparent);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.puce {
+  padding: 0;
+}
+.puceOn {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--c-encre);
+}
+.puce:focus-visible,
+.puceTexte:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.telCorps {
+  padding: 14px 8px 24px;
+}
+.teteChemin {
+  padding: 0 10px 6px;
+  text-align: center;
+}
+.titreChemin {
+  margin: 2px 0 0;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--c-encre);
+}
+.repliqueChemin {
+  margin: 6px auto 0;
+  max-width: 34ch;
+  font-size: 13px;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--ink-2);
+}
+.chemin {
+  position: relative;
+  margin: 8px auto 0;
+  max-width: 100%;
+}
+.cheminListe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cheminEtiquette {
+  position: absolute;
+  max-width: 128px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--c-encre);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.cheminEtiquette small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.cheminEtiquette.fort {
+  font-size: 14.5px;
+}
+.cheminEtiquette.fort small {
+  color: var(--pen);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ici {
+    animation: none;
+    opacity: 0.8;
+  }
+  .noeud {
+    transition: none;
+  }
+}
