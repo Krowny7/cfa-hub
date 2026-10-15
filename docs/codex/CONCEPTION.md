@@ -209,3 +209,22 @@ Au lancement (et à la première lecture du Codex par un compte) : toutes les qu
 | notion d'une réponse | `quiz_questions.notion` (questions de banque) | les autres sources se rattachent par `question_id` quand c'est possible, sinon notion nulle |
 
 Les quêtes qui en dépendent sont toutes **bonus** ou **contrats** : rien n'est bloqué en attendant.
+
+## 14. Le moteur (implémenté)
+
+| Pièce | Fichier | Rôle |
+|---|---|---|
+| Base | `migration_codex.sql` | journal d'événements (`codex_journal`), comptage et mesures (`codex_lire`), progression (`codex_progression`), contrats du jour (`codex_contrats`), récompenses uniques (`codex_ecrire`), événements non suivis ailleurs (`codex_evenements` + `codex_noter`) |
+| Moteur | `lib/codex/moteur.ts` | pur : `planifier` (compteurs à demander) → `evaluer` (cascade des prérequis, rétroactivité, lot à écrire) ; `recommander` ; `tirerContrats` ; `devoiler` |
+| Vue | `lib/codex/vue.ts` | `construireVue` : ce que l'écran affiche, dans l'ordre décidé |
+| Serveur | `lib/codex/serveur.ts` | lit, évalue, écrit, repli sans migration (`VUE_INDISPONIBLE`) |
+| Actions | `lib/codex/actions.ts` | gestes du joueur (synchroniser, réclamer, changer un contrat, fanfares, « Tout montrer », noter) |
+| Tests | `scripts/codex/test-moteur.ts` + banc PGlite `sim-codex.mjs` | moteur pur / SQL |
+
+Règles de mise en œuvre :
+- **Le catalogue n'est pas en base.** Le site envoie ses objectifs à `codex_lire` (compteurs filtrés par événement, fenêtre, distinct, somme ; il récupère la date où le seuil est franchi) et lit les mesures que la base sait faire. Les mesures qui demandent le catalogue ou les rangs (maîtrise du programme, notions vues, palier, niveau, rythme de l'objectif) sont calculées dans le moteur.
+- **Récompense versée automatiquement et UNE fois** : quand l'objectif est rempli, `codex_ecrire` passe la ligne à « récompensée », insère l'XP dans `xp_events` (source `codex`, non multipliée par la série d'encre) et dans `profiles.xp_total`, dans la même transaction. Un index unique sur `xp_events` double la sécurité. « Réclamer » est un filet explicite et idempotent.
+- **Rétroactivité** : au premier calcul d'un compte, ou pour une quête dont la date d'atteinte précède le dernier calcul (prérequis tombés après coup, nouvelle quête sur une vieille histoire). Les contrats et les fenêtres « depuis l'ouverture » ne le sont jamais. XP prise sur un budget d'un niveau, cosmétiques et titres tous donnés, une seule cérémonie (`codex_joueur.retro`).
+- **Mesures** : la maîtrise d'une matière ne compte qu'à partir de 40 questions de sessions ciblées mono-matière (comme les sceaux) ; la maîtrise du programme est la moyenne des matières du catalogue, les non mesurées à 0 ; le palier atteint tient compte du verrou de maîtrise (Diamant 60 %…).
+- **Contrats** : tirés côté site (graine joueur + jour, budget 45 min, pas le modèle de la veille, phase du jour J), gardés par la base (le premier tirage de la journée gagne), un changement par jour et pas sur un contrat rempli.
+- **Dévoilement** : `user_metadata.rl_codex {devoile, jours}` ; compte ancien (inscrit avant `LANCEMENT_CODEX` de `lib/codex/moteur.ts`, ou ≥ 50 questions) : tout visible. Les « minutes de présence » sont les minutes depuis l'inscription (filet 45 min ou 2ᵉ jour).
