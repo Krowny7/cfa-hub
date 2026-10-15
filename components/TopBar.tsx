@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n/core";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -16,10 +17,11 @@ import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/server";
 import { PresenceHeartbeat } from "@/components/presence/PresenceHeartbeat";
+import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 
 // Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
-// espaces en contrôle segmenté, puis la recherche et le badge de rang du
-// joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
+// espaces en contrôle segmenté, puis la recherche, le sceau « ! » des quêtes
+// du Codex (diffusé en flux) et le badge de rang du joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
 // déconnexion). Translucide et collante, avec un léger flou. Un trait d'encre
 // court sous la barre pendant qu'une page se fait attendre (NavProgress).
 //
@@ -80,6 +82,9 @@ export async function TopBar() {
           {user ? (
             <>
               <CommandPalette />
+              <Suspense fallback={null}>
+                <SceauQuetesServeur />
+              </Suspense>
               <UserMenu tier={tier} />
               <PresenceHeartbeat />
             </>
