@@ -55,8 +55,12 @@
 -- 4. codex_mesures_v3(uuid, text) : ce que la base sait faire (les
 --    « capacités » : fil, journal 2 ou 3, séances, À revoir, maîtrise,
 --    trophées, débrief, ratures sèches), lu à l'exécution, plus les mesures
---    nouvelles (jours d'encre de toute une vie, programmes menés). Clé
---    service seulement. Réécrite en entier par chaque lot qui l'étend.
+--    nouvelles du fil rouge : jours d'encre de toute une vie, programmes
+--    menés, maîtres (branches menées à « Maître de… », tous programmes),
+--    trophées par source et par palier (trophees_joueur quand
+--    migration_v3_profil.sql est collée, sinon les séances ciblées, avec le
+--    plafond par taille). Clé service seulement. Réécrite en entier par chaque
+--    lot qui l'étend.
 --
 -- Ordre de collage : migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
@@ -400,14 +404,17 @@ REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticat
 
 -- ── 4. codex_mesures_v3 (le site, clé service) ──────────────────────
 -- Réécrite EN ENTIER, en place, par chaque lot qui l'étend (A2b, A3b, A4a).
--- Rend {capacites, jours_encre_total, programmes_menes}. Les capacités sont
--- lues à l'exécution : ce que la base sait faire selon ce qui est collé.
+-- Rend {capacites, jours_encre_total, programmes_menes, maitres_total,
+-- trophees}. Les capacités sont lues à l'exécution : ce que la base sait
+-- faire selon ce qui est collé.
 CREATE OR REPLACE FUNCTION codex_mesures_v3(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_capacites jsonb;
   v_jours int;
   v_menes int;
+  v_maitres int;
+  v_trophees jsonb := '[]'::jsonb;
 BEGIN
   IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
     RAISE EXCEPTION 'programme invalide : %', p_programme;
@@ -430,7 +437,35 @@ BEGIN
   -- les jours d'encre de toute une vie : 10 questions ou plus dans le jour de Paris, tous programmes
   SELECT count(*)::int INTO v_jours FROM _codex_jours(p_user) j WHERE j.n >= 10;
   SELECT count(*)::int INTO v_menes FROM codex_programmes_joueur WHERE user_id = p_user AND statut = 'mene';
-  RETURN jsonb_build_object('capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes);
+  -- les branches menées jusqu'à « Maître de… », tous programmes (« branche:fsa:maitre », « cfa-l2/branche:fsa:maitre »)
+  SELECT count(*)::int INTO v_maitres FROM codex_progression
+  WHERE user_id = p_user AND etat = 'recompensee' AND periode = '' AND quete_id ~ '^([a-z0-9-]+/)?branche:[^:/]+:maitre$';
+  -- les trophées (V3 §2.5), une ligne par source et par palier (1 bronze … 4 diamant) :
+  -- trophees_joueur (migration_v3_profil.sql §2) quand elle est collée ; sinon la
+  -- seule source « ciblee », comme get_user_practice_trophies (séance à 70 % ou
+  -- mieux, palier par le nombre de matières), avec le plafond par taille
+  -- (moins de 30 questions : argent au plus ; moins de 60 : or au plus).
+  IF to_regprocedure('public.trophees_joueur(uuid)') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT coalesce(jsonb_agg(jsonb_build_object('source', t.source, 'palier', t.palier, 'n', t.n) ORDER BY t.source, t.palier), '[]'::jsonb)
+      FROM trophees_joueur($1) t WHERE t.n > 0
+    $q$ INTO v_trophees USING p_user;
+  ELSIF to_regclass('public.practice_session_results') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT coalesce(jsonb_agg(jsonb_build_object('source', 'ciblee', 'palier', x.palier, 'n', x.n) ORDER BY x.palier), '[]'::jsonb)
+      FROM (
+        SELECT least(CASE WHEN s.k >= 7 THEN 4 WHEN s.k >= 4 THEN 3 WHEN s.k >= 2 THEN 2 ELSE 1 END,
+                     CASE WHEN s.total < 30 THEN 2 WHEN s.total < 60 THEN 3 ELSE 4 END) AS palier,
+               count(*)::int AS n
+        FROM (SELECT coalesce(array_length(r.topics, 1), 1) AS k, r.total
+              FROM practice_session_results r
+              WHERE r.user_id = $1 AND r.total > 0 AND r.score::numeric / r.total >= 0.7) s
+        GROUP BY 1
+      ) x
+    $q$ INTO v_trophees USING p_user;
+  END IF;
+  RETURN jsonb_build_object('capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
+                            'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb));
 END $$;
 
 REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
