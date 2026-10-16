@@ -11,8 +11,9 @@ import { quandSeche } from "@/components/moi/ratures-data";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 
 // « Mettre au propre » (Moi › Erreurs) : les ratures en cours repassées une
-// à une, au hasard (rature_suivante), dans le tri choisi. Juste : rayée (elle
-// rejoint les anciennes) ; faux : elle reste (rature_repondre). Même chose
+// à une (rature_suivante : au hasard, ou dans l'ordre avec la section §3a
+// ci-dessous), dans le tri choisi. Juste : rayée (elle rejoint les
+// anciennes) ; faux : elle reste (rature_repondre). Même chose
 // pour « Rejouer les anciennes », une révision : juste, elle reste rayée ;
 // faux, elle revient en cours. La correction ne vient qu'après la réponse.
 // On s'arrête quand on veut, on revient plus tard. Avec `theme` (« Tes points
