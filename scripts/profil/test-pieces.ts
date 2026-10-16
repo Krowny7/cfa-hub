@@ -8,7 +8,9 @@
 // pièces du Codex, pièces des trophées, du fil rouge et des programmes,
 // folios ; une clé déclarée des deux côtés n'apparaît qu'une fois ; un type
 // inconnu est ignoré), chaque sorte de condition (unDe compris), les dates,
-// les réexports de lib/profil/catalogue.ts, compter, lireTrophees, lireAcquis ;
+// les réexports de lib/profil/catalogue.ts, compter, palierCiblee (plafond par
+// taille), SOURCES_TROPHEE, lireTrophees (get_user_trophees, puis le repli
+// ciblé), mesTropheesDepuis, lireAcquis ;
 // lireStyles (relu sans titre ni folio sans migration_v3_profil.sql §1),
 // styleDepuis, validerStyle (pièce gagnée, déjà portée, inconnue), les titres
 // portables et leur affichage (32 caractères au plus).
@@ -17,7 +19,7 @@ import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, contenuDuProgramme,
 import { donneurs } from "@/lib/codex/vue";
 import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as remplieCatalogue, STATS_VIDES } from "@/lib/profil/catalogue";
 import { codexDepuis, lireAcquis, type Acquis, type Condition } from "@/lib/profil/acquis";
-import { compter, lignesCiblees, lireTrophees, palierTrophee, type LigneTrophee } from "@/lib/trophees";
+import { ORDRE_SOURCES_TROPHEE, SOURCES_TROPHEE, compter, lignesCiblees, lireTrophees, mesTropheesDepuis, palierCiblee, palierTrophee, type LigneTrophee, type SourceTrophee } from "@/lib/trophees";
 import type { CosmetiqueCodex } from "@/lib/codex/types";
 
 let ko = 0;
@@ -205,12 +207,86 @@ async function main() {
     check("palierTrophee : « or » → 3", palierTrophee("or") === 3 && palierTrophee("diamant") === 4);
     check("lignesCiblees : palier = trophyTier (1, 2–3, 4–6, 7 et plus)", egal(lignesCiblees([1, 3, 6, 7].map((t) => ({ topic_count: t, trophy_count: "2" }))).map((l) => l.palier), [1, 2, 3, 4]));
 
-    const rpc = (r: () => Promise<{ data: unknown; error: unknown }>) => ({ rpc: r }) as unknown as SupabaseClient;
-    const lu = await lireTrophees(rpc(async () => ({ data: [{ topic_count: 8, trophy_count: 2 }, { topic_count: 1, trophy_count: 5 }], error: null })), "u");
-    check("lireTrophees : le repli ciblé, complet = false", !lu.complet && lu.total === 7 && lu.auMoins(4) === 2 && lu.lignes.every((l) => l.source === "ciblee"));
-    const ko1 = await lireTrophees(rpc(async () => ({ data: null, error: { code: "PGRST202", message: "Could not find the function" } })), "u");
-    const ko2 = await lireTrophees(rpc(async () => { throw new Error("réseau"); }), "u");
-    check("lireTrophees : erreur ou exception → compte vide, sans bruit", ko1.total === 0 && !ko1.complet && ko2.total === 0);
+    check(
+      "palierCiblee : trophyTier plafonné par la taille (29/30 et 59/60 questions, 6/7 matières)",
+      egal(
+        [[1, 10], [4, 29], [4, 30], [7, 59], [7, 60], [6, 60], [2, 29], [0, 100], [7, NaN]].map(([m, t]) => palierCiblee(m, t)),
+        [1, 2, 3, 3, 4, 3, 2, 1, 2],
+      ),
+    );
+    const paliersAttendus: Record<SourceTrophee, number[]> = { ciblee: [1, 2, 3, 4], blanc: [1, 2, 3, 4], trente: [1, 2, 3, 4], cinq: [1], drill: [1, 2], fiche: [3, 4], atelier: [1, 2], duel: [1], revoir: [1, 2] };
+    check(
+      "SOURCES_TROPHEE : chaque source a un nom, un lien et la règle de ses seuls paliers (V3 §2.2)",
+      ORDRE_SOURCES_TROPHEE.every((s) => {
+        const d = SOURCES_TROPHEE[s];
+        return !!d.nom && d.lien.startsWith("/") && egal(Object.keys(d.regle).map(Number), paliersAttendus[s]) && Object.values(d.regle).every((r) => !!r && r.length < 90);
+      }) && Object.keys(SOURCES_TROPHEE).length === ORDRE_SOURCES_TROPHEE.length,
+    );
+
+    /** un faux client : chaque fonction de la base répond (ou lève) à sa façon ; les appels sont notés */
+    type Reponse = { data: unknown; error: unknown } | Error;
+    const appels: string[] = [];
+    const rpc = (r: Record<string, Reponse>) =>
+      ({
+        rpc: async (nom: string, args: unknown) => {
+          appels.push(`${nom}(${JSON.stringify(args)})`);
+          const x = r[nom] ?? { data: null, error: { code: "PGRST202", message: "Could not find the function" } };
+          if (x instanceof Error) throw x;
+          return x;
+        },
+      }) as unknown as SupabaseClient;
+    const absente = { data: null, error: { code: "PGRST202", message: "Could not find the function public.get_user_trophees" } };
+    const ciblees = { data: [{ topic_count: 8, trophy_count: 2 }, { topic_count: 1, trophy_count: 5 }], error: null };
+    const toutes = {
+      data: [
+        { source: "trente", palier: 4, n: "2" },
+        { source: "ciblee", palier: 3, n: 1 },
+        { source: "fiche", palier: 3, n: "1" },
+        { source: "inconnue", palier: 1, n: "3" },
+        { source: "blanc", palier: 5, n: "1" },
+      ],
+      error: null,
+    };
+    const plein = await lireTrophees(rpc({ get_user_trophees: toutes, get_user_practice_trophies: ciblees }), "u");
+    check(
+      "lireTrophees : toutes les sources par get_user_trophees, complet = true, lignes invalides écartées",
+      plein.complet && plein.total === 4 && plein.auMoins(4) === 2 && plein.auMoins(3) === 4 && egal(plein.sources, ["ciblee", "trente", "fiche"]) && egal(appels, ['get_user_trophees({"p_user_id":"u"})']),
+      JSON.stringify(appels),
+    );
+    appels.length = 0;
+    const lu = await lireTrophees(rpc({ get_user_trophees: absente, get_user_practice_trophies: ciblees }), "u");
+    check("lireTrophees : sans la §2, le repli ciblé, complet = false", !lu.complet && lu.total === 7 && lu.auMoins(4) === 2 && lu.lignes.every((l) => l.source === "ciblee") && appels.length === 2);
+    const leve = await lireTrophees(rpc({ get_user_trophees: new Error("réseau"), get_user_practice_trophies: ciblees }), "u");
+    check("lireTrophees : get_user_trophees lève → le repli ciblé", !leve.complet && leve.total === 7);
+    const ko1 = await lireTrophees(rpc({ get_user_trophees: absente, get_user_practice_trophies: absente }), "u");
+    const ko2 = await lireTrophees(rpc({ get_user_trophees: new Error("réseau"), get_user_practice_trophies: new Error("réseau") }), "u");
+    check("lireTrophees : erreur ou exception partout → compte vide, sans bruit", ko1.total === 0 && !ko1.complet && ko2.total === 0 && !ko2.complet);
+
+    appels.length = 0;
+    const gagnes = await mesTropheesDepuis(
+      rpc({
+        mes_trophees_depuis: {
+          data: [
+            { source: "trente", palier: 3, quand: "2026-10-16T08:30:00Z", ref: "Les 30 du jour du 16 oct." },
+            { source: "ciblee", palier: "2", quand: "2026-10-16T09:00:00Z", ref: null },
+            { source: "inconnue", palier: 1, quand: "2026-10-16T09:00:00Z", ref: "x" },
+            { source: "cinq", palier: 0, quand: "2026-10-16T09:00:00Z", ref: "x" },
+          ],
+          error: null,
+        },
+      }),
+      "2026-10-16T08:00:00.000Z",
+    );
+    check(
+      "mesTropheesDepuis : les trophées valides, dans l'ordre, libellé vide s'il manque",
+      egal(gagnes, [{ source: "trente", palier: 3, ref: "Les 30 du jour du 16 oct." }, { source: "ciblee", palier: 2, ref: "" }]) && egal(appels, ['mes_trophees_depuis({"p_depuis":"2026-10-16T08:00:00.000Z"})']),
+      JSON.stringify(gagnes),
+    );
+    appels.length = 0;
+    const sansSection = await mesTropheesDepuis(rpc({}), "2026-10-16T08:00:00Z");
+    const panne = await mesTropheesDepuis(rpc({ mes_trophees_depuis: new Error("réseau") }), "2026-10-16T08:00:00Z");
+    const dateFausse = await mesTropheesDepuis(rpc({}), "hier");
+    check("mesTropheesDepuis : sans la §2, en panne ou date illisible → aucun, sans bruit (et sans appel pour la date)", sansSection.length === 0 && panne.length === 0 && dateFausse.length === 0 && appels.length === 2);
   }
 
   console.log("\n# lireAcquis");
@@ -234,7 +310,12 @@ async function main() {
     };
     const absente = { data: null, error: { code: "42P01", message: 'relation "x" does not exist' } };
     const client = (tables: Record<string, { data: unknown; error: unknown }>) =>
-      ({ from: (t: string) => requete(tables[t] ?? absente), rpc: async () => ({ data: [{ topic_count: 7, trophy_count: 1 }], error: null }) }) as unknown as SupabaseClient;
+      ({
+        from: (t: string) => requete(tables[t] ?? absente),
+        // la §2 des trophées n'est pas collée : le repli ciblé
+        rpc: async (nom: string) =>
+          nom === "get_user_practice_trophies" ? { data: [{ topic_count: 7, trophy_count: 1 }], error: null } : { data: null, error: { code: "PGRST202", message: "Could not find the function" } },
+      }) as unknown as SupabaseClient;
     const base = { stats: { ...STATS_VIDES, questions: 1234, picAtteint: 4 }, sceaux: [], datesPic: [] };
 
     const plein = await lireAcquis(
