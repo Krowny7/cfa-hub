@@ -198,6 +198,49 @@ export async function lireTrophees(supabase: SupabaseClient, userId: string): Pr
 /** Un trophée tout juste gagné, pour l'annonce (« Trophée d'or · Les 30 du jour »). */
 export type TropheeGagne = { source: SourceTrophee; palier: PalierTrophee; ref: string };
 
+/** « Or » : le nom d'un palier. */
+export const nomPalier = (p: PalierTrophee): string => PALIERS_TROPHEE[p - 1].nom;
+
+const DE_PALIER: Record<PalierTrophee, string> = { 1: "de bronze", 2: "d'argent", 3: "d'or", 4: "de diamant" };
+
+/** « Trophée d'or · Les 30 du jour ». */
+export const nomTrophee = (t: { source: SourceTrophee; palier: PalierTrophee }): string => `Trophée ${DE_PALIER[t.palier]} · ${SOURCES_TROPHEE[t.source].nom}`;
+
+/**
+ * Les lignes de l'annonce de fin de séance : d'abord les trophées que l'écran
+ * connaît déjà (calculés sur place, affichés sans attendre la base), chacun
+ * remplacé par celui de la base de même source et de même palier s'il y est
+ * (son libellé fait foi) ; puis les autres trophées de la base, dans leur
+ * ordre. `max` lignes au plus ; `reste` compte celles qui n'y tiennent pas.
+ */
+export function annonceTrophees(base: TropheeGagne[], connus: TropheeGagne[] = [], max = 3): { lignes: TropheeGagne[]; reste: number } {
+  const restants = [...base];
+  const tous = connus.map((c) => {
+    const i = restants.findIndex((b) => b.source === c.source && b.palier === c.palier);
+    return i < 0 ? c : restants.splice(i, 1)[0];
+  });
+  tous.push(...restants);
+  const m = Math.max(0, max);
+  return { lignes: tous.slice(0, m), reste: Math.max(0, tous.length - m) };
+}
+
+/** Une ligne du détail « Par source » de la Salle : le nombre de trophées à chaque palier (null : la source ne donne pas ce palier) et sa règle. */
+export type LigneSalle = { source: SourceTrophee; nom: string; total: number; cases: { palier: PalierTrophee; n: number | null; regle: string | null }[] };
+
+/** Le détail « Par source » : une ligne par source (toutes, ou celles données), dans l'ordre d'affichage. */
+export function tableauSalle(lignes: LigneTrophee[], sources: readonly SourceTrophee[] = ORDRE_SOURCES_TROPHEE): LigneSalle[] {
+  return ORDRE_SOURCES_TROPHEE.filter((s) => sources.includes(s)).map((source) => {
+    const def = SOURCES_TROPHEE[source];
+    const cases = PALIERS_TROPHEE.map(({ palier }) => {
+      const regle = def.regle[palier] ?? null;
+      const n = lignes.reduce((t, l) => (l.source === source && l.palier === palier ? t + l.n : t), 0);
+      // un trophée compté à un palier que la règle ne donne pas (ancien compte) reste affiché
+      return { palier, n: regle !== null || n > 0 ? n : null, regle };
+    });
+    return { source, nom: def.nom, total: cases.reduce((t, c) => t + (c.n ?? 0), 0), cases };
+  });
+}
+
 /**
  * Les trophées du joueur connecté gagnés depuis un instant (ISO), du plus
  * ancien au plus récent : mes_trophees_depuis, avec le client du joueur (la
