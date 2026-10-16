@@ -23,14 +23,14 @@ import { decaleJour, lireObjectifMeta } from "@/lib/objectif-calc";
 import { visiteVue } from "@/lib/presentation";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-faibles-data";
-import { ACTES, contenuDuProgramme } from "@/lib/codex/catalogue";
+import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
-  LECTURE_VIDE, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
+  LECTURE_VIDE, actesDuJoueur, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import { CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, ecarter, lireCapacites, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
-import { lireProgrammesJoueur, programmeActif, suiteDe, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -222,8 +222,10 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       return repli(user.id, jour);
     }
     const joueur = joueurR.data as { premier_calcul: string; dernier_calcul: string } | null;
-    const contenu = contenuDuProgramme();
+    // l'arbre du programme actif (CFA I : le catalogue par défaut du moteur)
+    const contenu = actif.matieres();
     const entree: Entree = {
+      ...(actif.cle === PROGRAMME ? {} : { catalogue: catalogueComplet(actif.cle) }),
       contenu,
       now,
       jour,
@@ -286,7 +288,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       const w = (error ? null : data) as { recompenses?: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; retro: boolean }[]; retro?: VueCodex["retro"] } | null;
       retro = w?.retro ?? null;
       const titres = new Map(resultat.etats.map((s) => [s.quete.id, s.quete.titre]));
-      for (const x of ACTES) titres.set(`acte:${x.id}`, x.titre);
+      for (const x of actesDuJoueur(entree)) titres.set(`acte:${x.id}`, x.titre);
       nouvelles = (w?.recompenses ?? []).filter((x) => !x.retro).map((x) => ({ quete: x.quete, periode: x.periode, xp: x.xp, nominal: x.nominal, cosmetique: x.cosmetique, titre: x.titre, titreQuete: titres.get(x.quete) ?? x.quete }));
       // relire les lignes écrites (XP versée, fanfare) et réévaluer sans rappeler la base
       const apres = error ? null : await lireLignes(a, user.id);
@@ -298,6 +300,17 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     } else if (!retro) {
       const j = await a.rpc("codex_ecrire", { p_user: user.id, p_lot: [], p_budget_retro: 0 }).then((x) => x, () => null);
       retro = (j?.data as { retro?: VueCodex["retro"] } | null)?.retro ?? null;
+    }
+
+    // un programme sans examen est mené quand le dernier acte de sa trame se clôt (V3 §1.6) ; sans §3, rien
+    const fil = filDesActes(actif);
+    if (!actif.examen && ligneActive && fil.length && resultat.actesClos.includes(fil[fil.length - 1].id)) {
+      try {
+        const { error } = await a.rpc("codex_programme_poser", { p_user: user.id, p_programme: actif.cle, p_statut: "mene", p_jour_j: null });
+        if (!error) entree.programmes = programmes.map((p) => (p === ligneActive ? { ...p, statut: "mene" as const } : p));
+      } catch {
+        // reposé au calcul suivant
+      }
     }
 
     // le dévoilement progressif

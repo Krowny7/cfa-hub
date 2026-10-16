@@ -14,7 +14,7 @@ import {
   REGISTRE, actesDe, catalogueComplet, cosmetiquesDe, genererArbre, idDe, lireProgrammesJoueur, modelesContrats, nomEnTete, programmeActif, programmeDe, programmeDeId, slugDe, suiteDe,
   type DefinitionProgramme, type ProgrammeJoueur,
 } from "@/lib/codex/programmes";
-import { apresExamenDe, evaluer, phaseJoueur, quetesASuivre, requisOk, type Entree } from "@/lib/codex/moteur";
+import { apresExamenDe, evaluer, indexerLecture, phaseJoueur, planifier, quetesASuivre, requisOk, tirerContrats, type Entree, type LectureSql } from "@/lib/codex/moteur";
 import { CAPACITES_VIDE, lireCapacites } from "@/lib/codex/reglage";
 import { construireVue } from "@/lib/codex/vue";
 import type { Objectif, Quete } from "@/lib/codex/types";
@@ -137,6 +137,8 @@ console.log("\n# les programmes du joueur, « apresExamen », les capacités");
   check("lireProgrammesJoueur garde les lignes valides seulement", lus.length === 1 && lus[0].jourJ === "2026-11-12");
   check("sans ligne : CFA I actif", programmeActif(undefined) === CFA_L1 && programmeActif([]) === CFA_L1);
   check("la ligne « actif » choisit le programme", programmeActif([{ programme: "histoire/essai", statut: "actif", jourJ: null, meneLe: null }]) === PROGRAMME_ESSAI);
+  check("sans actif : le dernier mené (on reste dans son arbre)", programmeActif([{ programme: "finance/cfa-l1", statut: "mene", jourJ: null, meneLe: "2026-11-20T10:00:00Z" }, { programme: "histoire/essai", statut: "mene", jourJ: null, meneLe: "2027-01-05T10:00:00Z" }]) === PROGRAMME_ESSAI);
+  check("une ligne en pause seule : CFA I", programmeActif([{ programme: "histoire/essai", statut: "pause", jourJ: null, meneLe: null }]) === CFA_L1);
   const e = (o: Partial<Entree>) => ({ jour: "2026-11-20", jourJ: null, programmes: [], ...o });
   check("apresExamen : faux sans jour J ni programme mené", !apresExamenDe(e({})));
   check("apresExamen : vrai le lendemain du jour J, faux le jour même", apresExamenDe(e({ jourJ: "2026-11-19" })) && !apresExamenDe(e({ jourJ: "2026-11-20" })));
@@ -177,6 +179,27 @@ console.log("\n# les programmes du joueur, « apresExamen », les capacités");
   const s1 = vueDe({ ...base, programmes: [ligne("finance/cfa-l1", "mene")] }).suite;
   check("la vue l'annonce sans bouton tant que CFA II n'est pas public", s1?.annonce === "Le Niveau II arrive. Ton fil rouge continue d'ici là." && s1.ouvrable === false && s1.court === "CFA II", JSON.stringify(s1));
   check("rien à annoncer avant", vueDe(base).suite === null);
+}
+
+console.log("\n# le moteur tourne sur l'arbre d'essai (ses actes, ses contrats)");
+{
+  const essai: ProgrammeJoueur = { programme: PROGRAMME_ESSAI.cle, statut: "actif", jourJ: null, meneLe: null };
+  const e: Entree = {
+    catalogue: catalogueComplet(PROGRAMME_ESSAI.cle), contenu: PROGRAMME_ESSAI.matieres(), programmes: [essai],
+    now: new Date("2026-10-17T10:00:00Z"), jour: "2026-10-17", jourJ: null, objectif: null, visiteVue: false,
+    progression: [], contrats: [], premier: false, dernierCalcul: new Date("2026-10-16T10:00:00Z"), lecture: { compteurs: {}, mesures: { xp_total: 0 }, speciaux: {} },
+  };
+  // des réponses dans les matières de l'essai (tous les compteurs de réponses remplis)
+  const demandes = planifier(e);
+  const brut: LectureSql = { ...e.lecture, compteurs: Object.fromEntries(demandes.map((d) => [d.id, d.evenement === "question_repondue" ? { n: 12, atteint: "2026-10-17T09:00:00Z" } : { n: 0, atteint: null }])) };
+  const r = evaluer({ ...e, lecture: brut }, indexerLecture(demandes, brut));
+  check("les actes 0 et 1 se closent (premier pas dans chaque matière), l'acte 2 devient l'acte en cours", r.actesClos.join(",") === "essai/g0,essai/g1" && r.acteCourant?.id === "essai/g2", `${r.actesClos.join(",")} · ${r.acteCourant?.id}`);
+  check("la clôture s'écrit « acte:essai/g0 », aucun acte de CFA I", r.lot.some((x) => x.quete === "acte:essai/g0") && !r.lot.some((x) => /^acte:(prologue|acte\d|epilogue)$/.test(x.quete)));
+  check("phase par avancement : consolidation (l'acte 1 est clos)", r.phase === "consolidation");
+  const v = construireVue({ ...e, lecture: brut }, r, null, { devoile: null });
+  check("la vue montre les cinq actes de l'essai", v.trame.map((a) => a.acte.id).join(" ") === "essai/g0 essai/g1 essai/g2 essai/g3 essai/g4" && v.trame[0].clos);
+  const tires = tirerContrats({ ...e, lecture: brut }, "joueur-essai");
+  check("ses contrats du jour n'utilisent que ses outils", tires.length > 0 && tires.every((t) => !["drill-page", "duel", "matiere-faible", "atelier", "calculs", "cours", "flashcards", "defi"].includes(t.modele)), tires.map((t) => t.modele).join(","));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert.");

@@ -18,7 +18,7 @@ import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMM
 import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
-import { programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { actesDe, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { notionParId, notionsDeMatiere } from "@/lib/notions";
@@ -140,6 +140,9 @@ export function apresExamenDe(e: Pick<Entree, "programmes" | "jour" | "jourJ">):
   const j = joursAvantExamen(e.jour, e.jourJ);
   return !!programmeActif(e.programmes).examen && j !== null && j < 0;
 }
+
+/** Les actes de la trame du joueur : ceux de son programme actif (CFA I : ACTES). */
+export const actesDuJoueur = (e: Pick<Entree, "programmes">): Acte[] => actesDe(programmeActif(e.programmes));
 
 /** Les actes clos d'après les lignes de progression (« acte:<id> » récompensé). */
 export const actesClosDe = (progression: LigneProgression[]): string[] =>
@@ -532,8 +535,11 @@ export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Em
     }
     return p;
   };
+  const outils = programmeActif(e.programmes).outils;
   const eligible = (m: ModeleContrat) => {
     if (!evenementsDe(m.objectif).every((ev) => queteBrancheeEv(ev))) return false;
+    // un modèle dont le programme n'a pas l'outil (pas de drill en histoire) n'est jamais tiré
+    if (!(m.requiert ?? []).every((o) => outils.has(o))) return false;
     if (m.poids[phase] <= 0) return false;
     return m.eligible.every((x) => eligibleMesure(x, e));
   };
@@ -712,6 +718,7 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
 export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>): Resultat {
   const contenu = e.contenu ?? contenuDuProgramme();
   const { catalogue, instances } = quetesASuivre(e, contenu);
+  const actes = actesDuJoueur(e);
   const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
   const niveau = levelInfoFromXp(e.lecture.mesures.xp_total ?? 0).level;
   const resolveur: Contexte["compteur"] = (d) => {
@@ -760,7 +767,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
         change = true;
       }
     }
-    for (const a of ACTES) {
+    for (const a of actes) {
       if (actesClos.has(a.id)) continue;
       const dedans = tri.filter((s) => s.quete.acte === a.id && !s.quete.optionnelle);
       if (dedans.length && dedans.every((s) => s.fait)) {
@@ -789,7 +796,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
       if (!l || l.etat !== etat || Math.abs(Number(l.progression) - v) > 1e-9) lot.push({ ...base, etat, progression: v, cible: st.ev?.cible ?? 1 });
     }
   }
-  for (const a of ACTES) {
+  for (const a of actes) {
     if (!actesClos.has(a.id) || lignesActes.has(a.id)) continue;
     const atteint = actesFaits.get(a.id) ?? null;
     const retro = retroDe(atteint) && a.id !== "epilogue";
@@ -808,7 +815,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     niveau,
     phase: phaseJoueur(e, actesClos),
     actesClos: [...actesClos],
-    acteCourant: acteCourantDe(actesClos),
+    acteCourant: acteCourantDe(actesClos, actes),
     contrats: instances.filter((i) => i.quete.famille === "contrat" && i.quete.repetition === "quotidienne"),
     trioFait,
   };
@@ -820,9 +827,10 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
  * quand tout le fil est clos : sinon il garderait « tu es ici », le bonus
  * d'acte et l'annonce du rideau longtemps après qu'on l'a dépassé.
  */
-export function acteCourantDe(actesClos: Set<string> | string[]): Acte | null {
+export function acteCourantDe(actesClos: Set<string> | string[], actes: Acte[] = ACTES): Acte | null {
   const clos = actesClos instanceof Set ? actesClos : new Set(actesClos);
-  const ouverts = ACTES.filter((a) => !clos.has(a.id) && a.id !== "epilogue");
+  // l'épilogue (numéro 99) est calé sur le jour J : jamais l'acte en cours
+  const ouverts = actes.filter((a) => !clos.has(a.id) && a.numero !== 99);
   return ouverts.find((a) => !a.parallele) ?? ouverts[0] ?? null;
 }
 
@@ -910,7 +918,7 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
     return !!d;
   });
   const prologue = ouvertes.filter((s) => s.quete.acte === "prologue").sort((a, b) => a.quete.ordre - b.quete.ordre);
-  const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? ACTES.find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
+  const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? actesDuJoueur(e).find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
   if (prologue.length) return dernier(prologue[0]);
   const joursAvant = joursAvantExamen(e.jour, e.jourJ);
   const aucuneAvance = (m: ContenuMatiere | undefined) => (m ? maitriseDe(e, m.key) : null);

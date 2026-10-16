@@ -118,10 +118,15 @@ export function lireProgrammesJoueur(lignes: unknown): ProgrammeJoueur[] {
   });
 }
 
-/** Le programme actif d'un joueur : sa ligne « actif », sinon CFA I (repli : le comportement d'avant la v3). */
+/**
+ * Le programme du joueur : sa ligne « actif » ; sinon le dernier mené (il
+ * reste dans son arbre, la suite lui est proposée) ; sinon CFA I (repli :
+ * le comportement d'avant la v3).
+ */
 export function programmeActif(programmes: ProgrammeJoueur[] | undefined): DefinitionProgramme {
   const actif = programmes?.find((p) => p.statut === "actif");
-  return (actif && programmeDe(actif.programme)) || PROGRAMME_DEFAUT;
+  const mene = programmes?.filter((p) => p.statut === "mene").sort((a, b) => (b.meneLe ?? "").localeCompare(a.meneLe ?? ""))[0];
+  return ((actif ?? mene) && programmeDe((actif ?? mene)!.programme)) || PROGRAMME_DEFAUT;
 }
 
 /**

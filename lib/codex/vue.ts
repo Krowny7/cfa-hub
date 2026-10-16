@@ -7,7 +7,7 @@
 import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { nomEnTete, suiteDe } from "@/lib/codex/programmes";
-import { affichage, budgetDuJour, contexteDestination, joursAvantExamen, parametresDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import { actesDuJoueur, affichage, budgetDuJour, contexteDestination, joursAvantExamen, parametresDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -222,7 +222,7 @@ export function construireVue(
   const unique = lignes.filter((x) => x.s.quete.repetition === "unique");
   const phase = PHASES.find((p) => p.phase === r.phase) ?? PHASES[0];
 
-  const trame: VueActe[] = ACTES.map((a) => {
+  const trame: VueActe[] = actesDuJoueur(e).map((a) => {
     const quetes = unique.filter((x) => x.s.quete.famille === "trame" && x.s.quete.acte === a.id).sort((p, q) => p.s.quete.ordre - q.s.quete.ordre).map((x) => x.l);
     const clos = r.actesClos.includes(a.id);
     const comptees = quetes.filter((x) => !x.optionnelle);
