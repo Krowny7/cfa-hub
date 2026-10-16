@@ -1,5 +1,6 @@
 // Tests légers du modèle des pièces de collection (lib/profil/pieces.ts), de
-// l'Acquis (lib/profil/acquis.ts) et du compte des trophées (lib/trophees.ts),
+// l'Acquis (lib/profil/acquis.ts), du compte des trophées (lib/trophees.ts)
+// et du style porté (lib/profil/styles.ts : lecture, validation, titres),
 // sans base ni réseau (les lectures passent par un faux client).
 //   npx tsx --tsconfig tsconfig.json scripts/profil/test-pieces.ts
 // Vérifie : clés uniques, aucune collision de clé nue, chaque clé nue conforme
@@ -7,7 +8,10 @@
 // pièces du Codex, pièces des trophées, du fil rouge et des programmes,
 // folios ; une clé déclarée des deux côtés n'apparaît qu'une fois ; un type
 // inconnu est ignoré), chaque sorte de condition (unDe compris), les dates,
-// les réexports de lib/profil/catalogue.ts, compter, lireTrophees, lireAcquis.
+// les réexports de lib/profil/catalogue.ts, compter, lireTrophees, lireAcquis ;
+// lireStyles (relu sans titre ni folio sans migration_v3_profil.sql §1),
+// styleDepuis, validerStyle (pièce gagnée, déjà portée, inconnue), les titres
+// portables et leur affichage (32 caractères au plus).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
 import { donneurs } from "@/lib/codex/vue";
@@ -249,6 +253,111 @@ async function main() {
     check("lireAcquis sans les tables du Codex : vaut acquisDe (plus les trophées ciblés)", vide.codex.size === 0 && egal(vide.fil, {}) && vide.programmesMenes.length === 0 && vide.questions === 1234 && vide.trophees?.total === 1);
     const casse = await lireAcquis({ from: () => { throw new Error("réseau"); }, rpc: async () => { throw new Error("réseau"); } } as unknown as SupabaseClient, "u3", base);
     check("lireAcquis : exception partout → Acquis vide, sans erreur", casse.codex.size === 0 && casse.trophees?.total === 0 && casse.programmesMenes.length === 0);
+  }
+
+  console.log("\n# Le style porté (lib/profil/styles.ts)");
+  {
+    const { lireStyles, nomTitre, styleDepuis, titresPortables, validerStyle } = await import("@/lib/profil/styles");
+    const { STYLE_DEFAUT } = await import("@/lib/profil/catalogue");
+    const { titreCourt, TITRE_MAX } = await import("@/components/profil/TitrePorte");
+    const a = (o: Partial<Acquis> = {}): Acquis => ({ ...acquisDe(STATS_VIDES), ...o });
+    // les quêtes du Codex qui donnent un titre de maître et le cadre « Sanguine »
+    const maitreFI = pieceNue("titre", "maitre:fixed_income")!;
+    const queteFI = maitreFI.condition?.k === "codex" ? maitreFI.condition.quete : "";
+    const sanguine = pieceNue("cadre", "sanguine")!;
+    const queteSanguine = sanguine.condition?.k === "codex" ? sanguine.condition.quete : "";
+    check("les pièces d'essai existent (titre de maître FI, cadre Sanguine, Copiste)", !!queteFI && !!queteSanguine && !!pieceNue("titre", "copiste"));
+
+    // lireStyles : la requête, le repli sans les colonnes de la v3, les pannes
+    const appels: string[] = [];
+    const client = (reponse: (cols: string) => { data: unknown; error: unknown } | Promise<never>) =>
+      ({
+        from: (t: string) => ({
+          select: (cols: string) => ({
+            in: (col: string, ids: string[]) => {
+              appels.push(`${t}:${cols}:${col}=${ids.join("|")}`);
+              return reponse(cols);
+            },
+          }),
+        }),
+      }) as unknown as SupabaseClient;
+    const sansV3 = (cols: string) =>
+      /titre|folio/.test(cols) ? { data: null, error: { code: "42703", message: "column profile_style.titre does not exist" } } : { data: [{ user_id: "u1", banner_url: "https://x/b.webp" }], error: null };
+    appels.length = 0;
+    const relu = await lireStyles(client(sansV3), ["u1", "u1", ""], ["banner_url", "titre"]);
+    check(
+      "lireStyles sans §1 : demande titre, relit sans lui (une colonne absente ne fait rien perdre)",
+      egal(appels, ["profile_style:user_id,banner_url,titre:user_id=u1", "profile_style:user_id,banner_url:user_id=u1"]) && relu?.get("u1")?.banner_url === "https://x/b.webp" && relu?.get("u1")?.titre === null,
+      appels.join(" ; "),
+    );
+    appels.length = 0;
+    const avec = await lireStyles(client(() => ({ data: [{ user_id: "u1", banner_url: null, titre: "copiste" }], error: null })), ["u1"], ["banner_url", "titre"]);
+    check("lireStyles avec §1 : une seule lecture, le titre lu", appels.length === 1 && avec?.get("u1")?.titre === "copiste");
+    appels.length = 0;
+    const tout = await lireStyles(client(() => ({ data: [{ user_id: "u1", frame: "or" }], error: null })), ["u1"]);
+    check("lireStyles « * » : la ligne entière, titre et folio à null s'ils manquent", egal(appels, ["profile_style:*:user_id=u1"]) && tout?.get("u1")?.frame === "or" && tout?.get("u1")?.titre === null && tout?.get("u1")?.folio === null);
+    appels.length = 0;
+    const autre = await lireStyles(client(() => ({ data: null, error: { code: "42501", message: "permission denied" } })), ["u1"], ["banner_url", "titre"]);
+    const absente = await lireStyles(client(() => ({ data: null, error: { code: "42P01", message: 'relation "profile_style" does not exist' } })), ["u1"], ["banner_url"]);
+    const panne = await lireStyles(client(() => Promise.reject(new Error("réseau"))), ["u1"]);
+    check("lireStyles : autre erreur, table absente ou réseau → null, sans relance inutile", autre === null && absente === null && panne === null && appels.length === 3, appels.join(" ; "));
+    appels.length = 0;
+    const personne = await lireStyles(client(sansV3), []);
+    check("lireStyles : aucun joueur → aucune lecture", personne?.size === 0 && appels.length === 0);
+
+    // styleDepuis : titre et folio, pièces du Codex comprises
+    const lu = styleDepuis({ frame: "sanguine", banner: "nuit", titre: "maitre:fixed_income", folio: "mains" });
+    check("styleDepuis : cadre du Codex, titre et folio connus gardés", lu.frame === "sanguine" && lu.banner === "nuit" && lu.titre === "maitre:fixed_income" && lu.folio === "mains");
+    const inconnu = styleDepuis({ frame: "inconnu", banner: "x", titre: "roi", folio: "maitre:fsa" });
+    check("styleDepuis : inconnus → défaut (titre et folio à null)", inconnu.frame === STYLE_DEFAUT.frame && inconnu.banner === STYLE_DEFAUT.banner && inconnu.titre === null && inconnu.folio === null);
+    const avant = styleDepuis({ frame: "or" });
+    check("styleDepuis : ligne d'avant §1 (sans les colonnes) → titre et folio à null", avant.titre === null && avant.folio === null && avant.frame === "or");
+    check("STYLE_DEFAUT : ni titre ni folio", STYLE_DEFAUT.titre === null && STYLE_DEFAUT.folio === null);
+
+    // validerStyle : gagné, déjà porté, inconnu
+    const porte = { frame: "aucun", banner: "lavis", titre: null, folio: null };
+    const forge = validerStyle({ ...STYLE_DEFAUT, titre: "copiste" }, a(), null, null, porte);
+    check("titre non possédé (forgé) → refusé, aucun titre", forge.style.titre === null && egal(forge.refus, ["le titre Copiste"]), forge.refus.join(", "));
+    const gagne = validerStyle({ ...STYLE_DEFAUT, titre: "copiste" }, a({ fil: { questions: 4 } }), null, null, porte);
+    check("titre gagné (fil rouge) → porté", gagne.style.titre === "copiste" && gagne.refus.length === 0);
+    const deja = validerStyle({ ...STYLE_DEFAUT, titre: "copiste" }, a(), null, null, { ...porte, titre: "copiste" });
+    check("titre déjà porté, condition plus remplie → conservé (rien de gagné repris)", deja.style.titre === "copiste" && deja.refus.length === 0);
+    const inconnuV = validerStyle({ ...STYLE_DEFAUT, titre: "roi-du-monde", folio: "joconde", frame: "trone", banner: "x" }, a(), null, null, porte);
+    check(
+      "clés inconnues → défaut, sans refus",
+      inconnuV.style.titre === null && inconnuV.style.folio === null && inconnuV.style.frame === STYLE_DEFAUT.frame && inconnuV.style.banner === STYLE_DEFAUT.banner && inconnuV.refus.length === 0,
+    );
+    const maitre = validerStyle({ ...STYLE_DEFAUT, titre: "maitre:fixed_income" }, a({ codex: new Map([[queteFI, "2026-10-12"]]) }), null, null, porte);
+    check("titre de maître gagné au Codex (trait bas) → porté", maitre.style.titre === "maitre:fixed_income" && maitre.refus.length === 0);
+    const cadre = validerStyle({ ...STYLE_DEFAUT, frame: "sanguine" }, a({ codex: new Map([[queteSanguine, null]]) }), null, null, porte);
+    const cadreKo = validerStyle({ ...STYLE_DEFAUT, frame: "sanguine" }, a(), null, null, porte);
+    check("cadre du Codex : gagné → porté ; pas gagné → refusé", cadre.style.frame === "sanguine" && cadreKo.style.frame === STYLE_DEFAUT.frame && egal(cadreKo.refus, ["le cadre Sanguine"]), cadreKo.refus.join(", "));
+    const ancien = validerStyle({ ...STYLE_DEFAUT, frame: "or" }, a({ questions: 600 }), null, null, porte);
+    const ancienKo = validerStyle({ ...STYLE_DEFAUT, frame: "or", banner: "or-vivant" }, a({ questions: 10 }), null, null, porte);
+    check("cadres et motifs du profil : inchangés (gagné porté, sinon refus)", ancien.style.frame === "or" && ancienKo.style.frame === "aucun" && egal(ancienKo.refus, ["le cadre Or", "la bannière Or vivant"]), ancienKo.refus.join(", "));
+    const folio = validerStyle({ ...STYLE_DEFAUT, folio: "mains" }, a({ codex: new Map([["acte:acte1", null]]) }), null, null, porte);
+    const folioKo = validerStyle({ ...STYLE_DEFAUT, folio: "mains" }, a(), null, null, porte);
+    check("folio : gagné (acte I clos) → posé ; pas gagné → refusé", folio.style.folio === "mains" && folioKo.style.folio === null && folioKo.refus.length === 1);
+    const sansTitre: Partial<typeof STYLE_DEFAUT> = { ...STYLE_DEFAUT };
+    delete sansTitre.titre;
+    delete sansTitre.folio;
+    const garde = validerStyle(sansTitre, a(), null, null, { ...porte, titre: "copiste", folio: "mains" });
+    check("titre et folio absents de l'envoi → ceux qu'il porte, inchangés", garde.style.titre === "copiste" && garde.style.folio === "mains" && garde.refus.length === 0);
+    const retire = validerStyle({ ...STYLE_DEFAUT, titre: null }, a(), null, null, { ...porte, titre: "copiste" });
+    check("« Aucun » retire le titre porté", retire.style.titre === null && retire.refus.length === 0);
+
+    // les titres portables et leur nom
+    const portables = titresPortables(a({ fil: { questions: 4 }, codex: new Map([[queteFI, null]]) }), "encre-vie");
+    const ordreDe = (nue: string) => pieceNue("titre", nue)!.ordre;
+    check(
+      "titresPortables : possédés + déjà porté, dans l'ordre du catalogue",
+      egal(portables.map((t) => t.nue).sort(), ["copiste", "encre-vie", "maitre:fixed_income"].sort()) && portables.every((t, i, l) => i === 0 || ordreDe(l[i - 1].nue) < ordreDe(t.nue)),
+      portables.map((t) => t.nue).join(", "),
+    );
+    check("titresPortables : rien de gagné → aucun", titresPortables(a()).length === 0);
+    check("nomTitre : le nom lisible ; aucun ou inconnu → null", nomTitre("copiste") === "Copiste" && nomTitre(null) === null && nomTitre("roi") === null);
+    const long = "Maître de la très longue matière imaginaire";
+    check(`titreCourt : ${TITRE_MAX} caractères au plus, avec une ellipse`, titreCourt("Copiste") === "Copiste" && titreCourt(long).length <= TITRE_MAX && titreCourt(long).endsWith("…"));
   }
 
   console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
