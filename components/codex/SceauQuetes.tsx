@@ -70,7 +70,8 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
     void codexPanneau().then(
       (p) => {
         if (p.disponible) {
-          if (p.versees && !deja.length) setAnnonce({ versees: p.versees, rare: p.rare });
+          // relu avant l'acquittement : il contient au moins ce qu'on avait, et ce qui est tombé depuis
+          if (p.versees) setAnnonce({ versees: p.versees, rare: p.rare });
           setPanneau(panneauAcquitte(p));
         }
         const cles = [...new Set([...deja, ...(p.versees?.cles ?? [])])];

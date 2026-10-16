@@ -143,9 +143,9 @@ export function panneauDe(vue: VueCodex): Panneau {
     ? { n: lignes.length, xp: lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
     : null;
   const rare: Panneau["rare"] = actes.length
-    ? { quoi: "acte", libelle: `${actes[0].acte.titre} : acte clos` }
+    ? { quoi: "acte", libelle: `Acte clos : ${actes[0].acte.titre}` }
     : piece
-      ? { quoi: "piece", libelle: piece.cosmetiqueNom ?? "une pièce nouvelle" }
+      ? { quoi: "piece", libelle: piece.cosmetiqueNom ? `Pièce gagnée : ${piece.cosmetiqueNom}` : "Une pièce gagnée" }
       : null;
 
   return {
