@@ -18,12 +18,14 @@ import { CarteLieu } from "@/components/ui/CarteLieu";
 import { Illustration } from "@/components/ui/Illustration";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { TuileCalme } from "@/components/ui/Tuiles";
+import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import { hrefPersonnaliser } from "@/lib/profil/onglets";
 import { jourJ, joursEncre } from "@/lib/voice";
 import { MOI, SOURCES_RATURE } from "@/lib/voice-z1";
 import { CAB } from "@/lib/voice-moi";
+import { compter } from "@/lib/trophees";
 import type { MoiData } from "@/components/moi/types";
 import s from "@/components/moi/Moi.module.css";
 
@@ -239,6 +241,13 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
           ]}
         />
       </div>
+
+      {/* la Salle des trophées, sous le résumé : les quatre paliers, le détail par source à la demande */}
+      {d.trophees && (
+        <div id="trophees" className="scroll-mt-24">
+          <SalleDesTrophees compte={compter(d.trophees.lignes)} complet={d.trophees.complet} />
+        </div>
+      )}
 
       {/* « Tes points faibles » (et l'historique des Ateliers) : la cible de la visite de Léonard et de plusieurs liens du site */}
       <PointsFaiblesEtAteliers d={d} />
