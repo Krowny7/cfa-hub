@@ -18,6 +18,19 @@
   opacity: 0.55;
 }
 
+/* ---------- la zone : la carte, et la colonne à côté (≥ 1 180 px) ou dessous ---------- */
+.zone {
+  --h-carte: clamp(560px, calc(100vh - 250px), 820px);
+  display: grid;
+  gap: 14px;
+  align-items: start;
+}
+@media (min-width: 1180px) {
+  .zone:is([data-col="auto"], [data-col="1"]) {
+    grid-template-columns: minmax(0, 1fr) 316px;
+  }
+}
+
 /* ---------- l'arbre ---------- */
 .arbreCadre {
   --c-reserve: var(--c-papier);
@@ -32,7 +45,7 @@
 }
 .arbre {
   position: relative;
-  height: clamp(560px, calc(100vh - 250px), 820px);
+  height: var(--h-carte);
   overflow: hidden;
   touch-action: none;
   cursor: grab;
@@ -71,13 +84,6 @@
 .rameau {
   color: var(--c-sepia);
   opacity: 0.6;
-}
-.arc {
-  fill: none;
-  stroke: var(--c-crayon);
-  stroke-width: 3;
-  stroke-dasharray: 1 11;
-  stroke-linecap: round;
 }
 .pointille {
   stroke: var(--c-crayon);
@@ -120,9 +126,12 @@
   color: var(--c-encre);
 }
 .etiquetteBranche {
-  font-size: 15px;
-  line-height: 1.1;
+  font-size: max(15px, calc(12px * var(--zinv, 1)));
+  line-height: 1.05;
   color: var(--c-encre);
+}
+.etiquetteBranche .mono {
+  font-size: max(11px, calc(9px * var(--zinv, 1)));
 }
 .aGauche {
   align-items: flex-end;
@@ -131,13 +140,44 @@
 .aDroite {
   align-items: flex-start;
 }
-.titreCouronne {
+
+/* le médaillon des exploits : un grand sceau et son nom, qui ouvre la galerie */
+.medaillon {
   position: absolute;
-  width: 600px;
-  text-align: center;
-  font-size: 34px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 62px 24px 24px 62px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s var(--ease-spring);
+  transform-origin: 62px 50%;
+}
+.medaillon:hover {
+  transform: scale(1.05);
+}
+.medaillon:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 6px;
+}
+.medaillonMot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+.medaillonMot .plume {
+  font-size: max(30px, calc(13px * var(--zinv, 1)));
+  line-height: 1;
+  color: var(--c-encre);
+}
+.medaillonMot .mono {
+  font-size: max(15px, calc(11px * var(--zinv, 1)));
   color: var(--c-sepia);
-  pointer-events: none;
 }
 .blanche {
   position: absolute;
@@ -225,43 +265,59 @@
   align-items: center;
   gap: 6px;
 }
+.astuce {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--ink) 82%, transparent);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.astuceOn {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 .colonne {
   --c-reserve: var(--surface);
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: 316px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   border-radius: 18px;
-  background: color-mix(in oklab, var(--surface) 94%, transparent);
-  box-shadow: inset 0 0 0 1px var(--line-2), var(--shadow-3);
-  backdrop-filter: blur(8px);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-2);
 }
-.colonneFermee {
-  bottom: auto;
-  width: auto;
-  background: transparent;
-  box-shadow: none;
+@media (min-width: 1180px) {
+  .zone:is([data-col="auto"], [data-col="1"]) .colonne {
+    height: var(--h-carte);
+  }
 }
 .colonneBascule {
   align-self: flex-end;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  margin: 4px 4px 0 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 2px 2px 0 0;
+  padding: 0 12px;
   border: 0;
   border-radius: 12px;
   background: transparent;
   color: var(--ink-2);
+  text-align: left;
   cursor: pointer;
-}
-.colonneFermee .colonneBascule {
-  margin: 0;
-  background: color-mix(in oklab, var(--surface) 88%, transparent);
-  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 .colonneBascule:hover {
   color: var(--ink);
@@ -270,12 +326,63 @@
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
+.colonneMot {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+.colonneMot .plume {
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--c-sepia);
+}
+.retourne {
+  transform: rotate(180deg);
+}
 .colonneCorps {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 0 14px 16px;
-  margin-top: -30px;
+  margin-top: -34px;
+}
+/* repliée : une barre « Aujourd'hui » sous la carte, que l'on déplie */
+.zone[data-col="0"] .colonneBascule {
+  align-self: stretch;
+  margin: 0;
+  padding: 6px 14px;
+}
+.zone[data-col="0"] .colonneMot {
+  display: flex;
+}
+.zone[data-col="0"] .colonneCorps {
+  display: none;
+}
+@media (max-width: 1179px) {
+  .zone[data-col="auto"] .colonneBascule {
+    align-self: stretch;
+    margin: 0;
+    padding: 6px 14px;
+  }
+  .zone[data-col="auto"] .colonneMot {
+    display: flex;
+  }
+  .zone[data-col="auto"] .colonneCorps {
+    display: none;
+  }
+  /* dépliée sous la carte : les deux sections côte à côte */
+  .zone[data-col="1"] .colonneCorps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 8px 28px;
+    overflow: visible;
+  }
+  .zone[data-col="1"] .colonneCorps > section {
+    margin-top: 0;
+  }
 }
 .colTitre {
   margin: 0 0 8px;
@@ -351,6 +458,23 @@
   margin: 6px 0 2px;
   padding: 0;
   list-style: none;
+}
+
+/* ---------- la galerie des exploits ---------- */
+.galerie {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 2px 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.galerieSous {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-3);
 }
 
 /* ---------- le téléphone ---------- */
@@ -467,7 +591,9 @@
     animation: none;
     opacity: 0.8;
   }
-  .noeud {
+  .noeud,
+  .medaillon,
+  .astuce {
     transition: none;
   }
 }
