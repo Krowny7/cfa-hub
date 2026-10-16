@@ -85,6 +85,13 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
   check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);
   const trois = panneauDe({ ...exempleCodex("milieu"), trio: { ...exempleCodex("milieu").trio, faits: 3, total: 3, fait: true } });
   check("3 sur 3 : l'anneau est fermé (arcs pleins)", trois.arcs.faits === 3 && trois.arcs.total === 3);
+  const vm = exempleCodex("milieu");
+  const ct = vm.contrats.find((c) => c.ligne.etat !== "terminee");
+  if (ct && vm.prochaine) {
+    const pc = panneauDe({ ...vm, prochaine: { ...vm.prochaine, ligne: ct.ligne } });
+    check("un contrat recommandé : en tête, une seule fois, il garde son « Changer »", pc.quetes[0].genre === "principale" && pc.quetes[0].emplacement === ct.emplacement && pc.quetes[0].changeable === ct.changeable && pc.quetes.filter((q) => q.cle === pc.quetes[0].cle).length === 1);
+  }
+  check("chaque contrat changeable du panneau porte son emplacement (« Changer » par contrat)", m.quetes.filter((q) => q.genre === "contrat").every((q) => !!q.emplacement && typeof q.changeable === "boolean"));
 }
 
 console.log("\n# les récompenses versées s'annoncent une fois (acquittées à l'ouverture)");

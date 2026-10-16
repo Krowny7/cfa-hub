@@ -341,7 +341,7 @@ function Ligne({
 }) {
   const principale = q.genre === "principale";
   const l = { etat: q.etat, fraction: q.fraction, affichage: "complet" as const, retro: false };
-  const changer = q.genre === "contrat" && q.changeable;
+  const changer = !!q.emplacement && !!q.changeable;
   return (
     <li className={`${s.ligne} ${principale ? s.principale : ""}`}>
       <Sceau l={l} taille={principale ? 46 : 38} signe={principale && q.etat !== "terminee" ? "!" : undefined} />

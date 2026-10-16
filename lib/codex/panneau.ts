@@ -119,7 +119,9 @@ export function panneauDe(vue: VueCodex): Panneau {
   const pris = new Set<string>();
   const p = vue.prochaine;
   if (p && p.ligne.etat !== "terminee") {
-    liste.push(versPanneau(p.ligne, "principale", "Ta prochaine quête"));
+    // un contrat du jour recommandé garde son « Changer »
+    const ct = vue.contrats.find((c) => cleDe(c.ligne) === cleDe(p.ligne));
+    liste.push(versPanneau(p.ligne, "principale", "Ta prochaine quête", ct ? { emplacement: ct.emplacement, changeable: ct.changeable } : {}));
     pris.add(cleDe(p.ligne));
   }
   if (contratsVus) {
