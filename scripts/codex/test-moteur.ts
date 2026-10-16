@@ -3,7 +3,10 @@
 // Vérifie : le catalogue, la cascade des prérequis (nœuds de convergence), la
 // rétroactivité et ses plafonds, le tirage des contrats du jour, la
 // recommandation, le dévoilement progressif, et que la table codex_matieres de
-// migration_codex.sql reflète bien SUBJECTS (components/reviser/catalog.ts).
+// migration_codex.sql reflète bien SUBJECTS (components/reviser/catalog.ts) ; puis
+// un test par correction immédiate de docs/codex/V3.md §6 (élision, séance
+// ciblée, objectifs à faire baisser, acte courant, veille, après le jour J,
+// textes, XP affichée, migration_codex_v3.sql).
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
@@ -220,6 +223,7 @@ console.log("\n# v3 §6.5 : la séance ciblée à la taille réelle de la matiè
   const q = catalogueCodex().find((x) => x.id === "branche:quant:ciblee")!;
   const f = (q.objectif as { filtre?: { questions?: { min?: number } } }).filtre;
   check("branche Quant : 14 questions au moins, lien en format 180", f?.questions?.min === 14 && q.lien === "/practice?topic=quant&format=180" && q.consigne.includes("14 questions"), `${f?.questions?.min} ${q.lien}`);
+  check("acte II, « Une matière, une séance » : lien en format 180", catalogueCodex().find((x) => x.id === "trame:a2:ciblee")?.lien === "/practice?format=180");
   const qe = catalogueCodex().find((x) => x.id === "branche:ethics:ciblee")!;
   check("branche Ethics : 15 questions, format par défaut", (qe.objectif as { filtre?: { questions?: { min?: number } } }).filtre?.questions?.min === 15 && qe.lien === "/practice?topic=ethics");
   const m = MODELES_CONTRATS.find((x) => x.id === "matiere-faible")!;
