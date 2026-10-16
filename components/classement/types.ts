@@ -16,6 +16,8 @@ export type BoardRow = {
   isMe: boolean;
   /** image de bannière du profil (chargée pour les trois premiers seulement : le podium) */
   bannerUrl?: string | null;
+  /** le titre porté, lisible (« Copiste ») : le podium seulement */
+  titre?: string | null;
 };
 
 export type NextExam = {

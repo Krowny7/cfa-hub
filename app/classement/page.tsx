@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard, getLeaderboardRank, getMyRating, getOpenChallenges, getRatingHistory, getRecentDuels } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { ClassementView } from "@/components/classement/ClassementView";
-import { bannieresDe, countPlayers, getNextRankedExam, getPastRankedExams, lastDeltaByUser, masteryByUser, toBoardRows, tryAdmin } from "@/components/classement/data";
+import { countPlayers, getNextRankedExam, getPastRankedExams, lastDeltaByUser, masteryByUser, podiumDe, toBoardRows, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import type { ClassementData } from "@/components/classement/types";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
@@ -39,18 +39,18 @@ export default async function ClassementPage() {
   const mastery = programMastery(topics);
   const ids = leaderboard.map((r) => r.userId);
   if (!ids.includes(user.id)) ids.push(user.id);
-  const [masteries, deltas, bannieres] = await Promise.all([
+  const [masteries, deltas, podium] = await Promise.all([
     masteryByUser(admin, ids),
     lastDeltaByUser(admin, ids),
     // les bannières des trois premiers : le fond de leur carte du podium
-    bannieresDe(supabase, leaderboard.slice(0, 3).map((r) => r.userId)),
+    podiumDe(supabase, leaderboard.slice(0, 3).map((r) => r.userId)),
   ]);
   // Ma maîtrise et mon dernier match viennent de mes propres lectures
   // (toujours disponibles, même sans clé admin).
   masteries.set(user.id, mastery);
   if (history.length) deltas.set(user.id, history[history.length - 1].delta);
 
-  const board = toBoardRows(leaderboard, user.id, masteries, deltas).map((r) => (bannieres.has(r.userId) ? { ...r, bannerUrl: bannieres.get(r.userId) } : r));
+  const board = toBoardRows(leaderboard, user.id, masteries, deltas).map((r) => (podium.has(r.userId) ? { ...r, ...podium.get(r.userId) } : r));
   const inBoard = board.some((r) => r.isMe);
   const profile = profileRes.data as { username: string | null; avatar_url: string | null } | null;
 

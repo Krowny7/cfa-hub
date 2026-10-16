@@ -5,6 +5,7 @@ import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { useHorsEcran } from "@/components/ui/useHorsEcran";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
+import { TitrePorte } from "@/components/profil/TitrePorte";
 import { signed } from "@/components/classement/format";
 import type { BoardRow } from "@/components/classement/types";
 import { PLACEMENT_GAMES, rankFor, teinteDeRang } from "@/lib/ranks";
@@ -164,6 +165,7 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
       <img className={s.insigne} src={`/ranks/v2/petit-${tier}-128.png`} width={128} height={128} alt="" draggable={false} />
       <span className={s.bas}>
         <span className={s.pseudo + " font-brand"}>{r.isMe ? PODIUM.toi : r.name}</span>
+        <TitrePorte titre={r.titre} className="-mt-[1cqw] text-[max(10px,5.4cqw)] [color:rgba(255,255,255,0.86)] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]" />
         <span className={s.rang}>
           <span>{nomRang}</span>
           <b>{nombre(r.elo)}</b>

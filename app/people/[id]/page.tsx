@@ -46,6 +46,7 @@ import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/pr
 import { aPortee, posesDe, sceauxGagnes, vusParUnAutre } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
+import { nomTitre } from "@/lib/profil/styles";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
@@ -226,6 +227,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     id,
     name: display,
     nomComplet,
+    titre: nomTitre(style.titre),
     avatarUrl: profile.avatar_url ?? null,
     style,
     niveau: lvl.level,

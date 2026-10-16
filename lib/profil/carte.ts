@@ -7,11 +7,12 @@ import { DEFAULT_ELO } from "@/lib/ranks";
 import { lireStyle, statsProfil } from "@/lib/profil/donnees";
 import { posesDe, sceauxDe, type EtatSceau } from "@/lib/profil/sceaux";
 import type { StyleProfil } from "@/lib/profil/catalogue";
+import { nomTitre } from "@/lib/profil/styles";
 
 // La carte joueur (components/profil/CarteJoueur.tsx), côté serveur : ce
 // qu'il faut pour la feuille ouverte au toucher d'un joueur (classement,
-// lobby des duels, amis) : bannière et sceau, rang et pic, niveau, ses 3
-// sceaux posés. Rien de privé : ce que l'en-tête de son profil montre à
+// lobby des duels, amis) : bannière et sceau, titre porté, rang et pic,
+// niveau, ses 3 sceaux posés. Rien de privé : ce que l'en-tête de son profil montre à
 // tout le monde. Module serveur (l'action : app/people/carte.ts).
 
 export type CarteData = {
@@ -19,6 +20,8 @@ export type CarteData = {
   nom: string;
   avatarUrl: string | null;
   style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame">;
+  /** le titre porté, lisible (« Copiste ») ; null : aucun */
+  titre: string | null;
   niveau: number;
   elo: number;
   mastery: number | null;
@@ -50,6 +53,7 @@ export async function lireCarte(sb: SupabaseClient, id: string, moi: string | nu
       nom: displayName(p.username, id),
       avatarUrl: p.avatar_url,
       style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame },
+      titre: nomTitre(style.titre),
       niveau: levelInfoFromXp(Number(p.xp_total ?? 0) || 0).level,
       elo: r?.elo ?? DEFAULT_ELO,
       mastery: maitrises.get(id) ?? null,
