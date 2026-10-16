@@ -26,6 +26,8 @@ export type LigneQuete = {
   cible: number;
   /** 0–1 */
   fraction: number;
+  /** objectif « à faire baisser » pas encore tenu : la valeur mesurée et le seuil (« 120 ratures, sous 50 ») */
+  baisse?: { actuel: number; seuil: number };
   /** l'XP visée / l'XP réellement versée (plafonnée), seulement si terminée */
   xp: number;
   xpVersee: number | null;
@@ -143,6 +145,7 @@ export function ligneDe(s: EtatQuete): LigneQuete {
     valeur,
     cible,
     fraction: s.fait ? 1 : cible ? Math.max(0, Math.min(1, valeur / cible)) : 0,
+    ...(!s.fait && ev?.baisse ? { baisse: ev.baisse } : {}),
     xp: q.recompense.xp,
     xpVersee: l && (l.etat === "recompensee" || l.etat === "terminee") ? l.xp : null,
     ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique, ...(nomDe(q.recompense.cosmetique) ? { cosmetiqueNom: nomDe(q.recompense.cosmetique) } : {}) } : {}),

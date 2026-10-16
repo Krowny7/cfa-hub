@@ -65,7 +65,7 @@ function versPanneau(l: LigneQuete, genre: GenreQuete, sous: string, extra: Part
   };
 }
 
-const compte = (l: LigneQuete) => (l.cible > 1 ? ` · ${Math.floor(l.valeur).toLocaleString("fr-FR")}/${Math.floor(l.cible).toLocaleString("fr-FR")}` : "");
+const compte = (l: LigneQuete) => (l.baisse ? ` · ${l.baisse.actuel.toLocaleString("fr-FR")} → ${l.baisse.seuil.toLocaleString("fr-FR")}` : l.cible > 1 ? ` · ${Math.floor(l.valeur).toLocaleString("fr-FR")}/${Math.floor(l.cible).toLocaleString("fr-FR")}` : "");
 
 const EMPLACEMENT: Record<string, string> = { faiblesse: "ton point faible", entretien: "l'entretien", variete: "la variété" };
 

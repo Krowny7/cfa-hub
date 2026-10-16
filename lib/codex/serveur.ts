@@ -19,7 +19,7 @@ import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-faibles-data";
 import { ACTES, contenuDuProgramme } from "@/lib/codex/catalogue";
 import {
-  LECTURE_VIDE, devoiler, evaluer, indexerLecture, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
+  LECTURE_VIDE, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, type VueCodex } from "@/lib/codex/vue";
@@ -133,8 +133,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage)
     if (entree.contrats.length < 3) {
-      const mesures = await lire(a, user.id, [], jour);
+      const mesures = await lire(a, user.id, demandesActivite(contenu, jour), jour);
       if (!mesures) return vide;
+      entree.activite = lireActivite(contenu, mesures);
       const hierMap = Object.fromEntries((contratsParJour.get(hier) ?? []).map((c) => [c.emplacement, c.modele]));
       const tirage = tirerContrats({ ...entree, lecture: mesures }, user.id, hierMap);
       if (tirage.length) {

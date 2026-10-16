@@ -109,7 +109,8 @@ export function PracticeSession({
     // sans thème demandé, la session conseillée : les matières mesurées sous 50 %
     return new Set(TOPICS.filter((t) => typeof mastery[t.key] === "number" && (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key));
   });
-  const [format, setFormat] = useState<90 | 180>(demo?.format ?? 90);
+  // ?format=180 (lien d'une quête du Codex : certaines matières n'atteignent 15 questions qu'en format complet)
+  const [format, setFormat] = useState<90 | 180>(demo?.format ?? (searchParams.get("format") === "180" ? 180 : 90));
   const [questions, setQuestions] = useState<ActiveQuestion[]>(demo?.questions ?? []);
   const [answers, setAnswers] = useState<(number | null)[]>(demo?.answers ?? (demo?.questions ?? []).map(() => null));
   const [idx, setIdx] = useState(demo?.idx ?? 0);

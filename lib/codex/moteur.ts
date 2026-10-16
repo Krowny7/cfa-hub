@@ -14,7 +14,8 @@
 //      construit la vue (prochaine quête, contrats, branches…).
 // La bible : docs/codex/CONCEPTION.md.
 
-import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, catalogueCodex, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { gabarit } from "@/lib/codex/elision";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { notionParId, notionsDeMatiere } from "@/lib/notions";
@@ -103,7 +104,25 @@ export type Entree = {
   derniereMatiere?: string | null;
   /** points faibles, du plus net au moins net (notion, score 0–100) */
   pointsFaibles?: { notion: string; score: number }[];
+  /** réponses par matière, sur JOURS_OUBLI jours et depuis toujours (demandesActivite) : le contrat « prend la poussière » */
+  activite?: Record<string, { recentes: number; total: number }>;
 };
+
+/** Une matière sans réponse depuis ce nombre de jours « prend la poussière ». */
+export const JOURS_OUBLI = 10;
+
+/** Les compteurs à demander à codex_lire pour l'activité par matière (avant le tirage des contrats). */
+export function demandesActivite(contenu: ContenuMatiere[], jour: string): Demande[] {
+  return contenu.flatMap((m) => [
+    { id: `activite:${m.key}:recentes`, evenement: "question_repondue" as const, filtre: { matiere: m.key }, fenetre: { jours: JOURS_OUBLI }, jour, seuil: 1 },
+    { id: `activite:${m.key}:total`, evenement: "question_repondue" as const, filtre: { matiere: m.key }, fenetre: "toujours", jour, seuil: 1 },
+  ]);
+}
+
+/** L'activité par matière lue dans la réponse de codex_lire (demandesActivite). */
+export function lireActivite(contenu: ContenuMatiere[], brut: LectureSql): NonNullable<Entree["activite"]> {
+  return Object.fromEntries(contenu.map((m) => [m.key, { recentes: brut.compteurs[`activite:${m.key}:recentes`]?.n ?? 0, total: brut.compteurs[`activite:${m.key}:total`]?.n ?? 0 }]));
+}
 
 // ── Petits outils ──────────────────────────────────────────────────────
 
@@ -124,7 +143,15 @@ export const joursAvantExamen = (jour: string, jourJ: string | null) => (jourJ ?
 // ── L'évaluation d'un objectif ─────────────────────────────────────────
 
 /** Résultat d'un objectif : fait ou non, avancée (valeur / cible), date d'atteinte si on la connaît. */
-export type Ev = { fait: boolean; valeur: number; cible: number; atteint: Date | null; inconnu?: boolean };
+export type Ev = {
+  fait: boolean;
+  valeur: number;
+  cible: number;
+  atteint: Date | null;
+  inconnu?: boolean;
+  /** objectif « à faire baisser » (ratures sous un seuil) : la valeur mesurée et le seuil ; valeur/cible est alors l'avancée (0–1) */
+  baisse?: { actuel: number; seuil: number };
+};
 
 type Contexte = {
   e: Entree;
@@ -248,8 +275,13 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
   const seuil = o.seuil;
   const fini = (valeur: number | null, atteint: Date | null = null): Ev => {
     if (valeur === null) return { fait: false, valeur: 0, cible: seuil, atteint: null, inconnu: true };
-    const fait = sens === ">=" ? valeur >= seuil : valeur <= seuil;
-    return { fait, valeur: sens === ">=" ? Math.min(valeur, seuil) : valeur, cible: seuil, atteint: fait ? atteint : null };
+    if (sens === ">=") {
+      const fait = valeur >= seuil;
+      return { fait, valeur: Math.min(valeur, seuil), cible: seuil, atteint: fait ? atteint : null };
+    }
+    // à faire baisser : la jauge se remplit en descendant, (seuil + 1) / (valeur + 1), pleine au seuil
+    const fait = valeur <= seuil;
+    return { fait, valeur: fait ? 1 : Math.floor((100 * (seuil + 1)) / (valeur + 1)) / 100, cible: 1, atteint: fait ? atteint : null, baisse: { actuel: valeur, seuil } };
   };
   if (f.__indisponible) return fini(null);
   const matieres = c.contenu.map((m) => m.key);
@@ -265,9 +297,12 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "drill_pages_restantes": {
       const m = f.matiere as string | undefined;
       const total = m ? M.drill_totaux?.[m] : Object.values(M.drill_totaux ?? {}).reduce((s, x) => s + x, 0);
-      if (total === undefined) return fini(null);
-      const passees = (M.drill_pages ?? []).filter((p) => !m || p.matiere === m).length;
-      return fini(Math.max(0, total - passees));
+      if (total === undefined || total <= 0) return fini(null);
+      const passees = Math.min(total, (M.drill_pages ?? []).filter((p) => !m || p.matiere === m).length);
+      if (sens === ">=") return fini(total - passees);
+      // « toutes les pages » : la jauge compte les pages passées sur celles de la fiche
+      const cible = Math.max(1, total - seuil);
+      return { fait: total - passees <= seuil, valeur: Math.min(passees, cible), cible, atteint: null };
     }
     case "drill_pages_reussies": {
       const m = f.matiere as string | undefined;
@@ -374,32 +409,44 @@ export const BUDGET_TRIO = 45;
 
 const modeleParId = (id: string) => MODELES_CONTRATS.find((m) => m.id === id) ?? null;
 
-/** Le titre ou la consigne d'un modèle avec ses paramètres. */
+/**
+ * Le titre ou la consigne d'un modèle avec ses paramètres, l'article élidé
+ * (« Séance d'Economics »). {questions} et {format} : la taille d'une séance
+ * ciblée dans la matière (cibleeDe).
+ */
 export function libelle(texte: string, params: ContratTire["params"], contenu: ContenuMatiere[] = contenuDuProgramme()) {
   const mat = contenu.find((m) => m.key === params.matiere);
   const notion = notionParId(params.notion);
   const fiche = contenu.find((m) => m.fiche === params.fiche);
-  return texte
-    .replaceAll("{matiere}", mat?.nom ?? params.matiere ?? "")
-    .replaceAll("{notion}", notion?.court ?? params.notion ?? "")
-    .replaceAll("{fiche}", fiche?.court ?? params.fiche ?? "");
+  const cib = mat ? cibleeDe(mat.poids) : null;
+  return gabarit(texte, {
+    matiere: mat?.nom ?? params.matiere ?? "",
+    notion: notion?.court ?? params.notion ?? "",
+    fiche: fiche?.court ?? params.fiche ?? "",
+    questions: String(cib?.questions ?? 15),
+    format: cib ? formatCiblee(cib.format) : "",
+  });
 }
 
 /** Une instance de contrat : la quête du jour (id contrat:<modèle>:<jour>), objectifs et paramètres résolus. */
 export function instanceContrat(m: ModeleContrat, params: ContratTire["params"], jour: string, contenu: ContenuMatiere[]): Quete {
+  // une séance ciblée se règle sur la matière tirée : seuil possible, lien vers le bon format
+  const mat = contenu.find((x) => x.key === params.matiere);
+  const ciblee = mat && estCiblee(m.objectif) ? cibleeDe(mat.poids) : null;
+  const lien = ciblee && mat ? lienCiblee(mat.key, ciblee.format) : m.lien;
   return {
     id: `contrat:${m.id}:${jour}`,
     famille: "contrat",
     programme: PROGRAMME,
     titre: libelle(m.titre, params, contenu),
     consigne: libelle(m.consigne, params, contenu),
-    objectif: m.objectif,
+    objectif: mat && ciblee ? ajusterCiblee(m.objectif, mat.poids) : m.objectif,
     prerequis: [],
     recompense: { xp: XP.contrat },
     repetition: "quotidienne",
     visibilite: "visible",
     duree: m.duree,
-    ...(m.lien ? { lien: m.lien } : {}),
+    ...(lien ? { lien } : {}),
     ...(params.matiere ? { matiere: params.matiere } : {}),
     ordre: 1000 + EMPLACEMENTS.indexOf(m.emplacement),
   };
@@ -425,8 +472,10 @@ export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Em
   const matiere = risque[0]?.m.key;
   const avecDrill = risque.find((x) => x.m.fiche && x.m.drill)?.m;
   const notion = e.pointsFaibles?.[0]?.notion;
-  // matière « oubliée » : la plus lourde parmi les moins travaillées (pas de date de dernière activité : les moins mesurées d'abord)
-  const oubliee = [...contenu].sort((a, b) => (M.maitrise?.[a.key]?.questions ?? 0) - (M.maitrise?.[b.key]?.questions ?? 0) || b.poids - a.poids)[0]?.key;
+  // matière « oubliée » : déjà travaillée, sans une réponse depuis JOURS_OUBLI jours (compté par la base), la plus lourde d'abord ;
+  // sans ce compte (e.activite absent), pas de contrat « prend la poussière » : son texte serait faux
+  const act = e.activite;
+  const oubliee = act ? [...contenu].filter((m) => (act[m.key]?.total ?? 0) > 0 && (act[m.key]?.recentes ?? 0) === 0).sort((a, b) => b.poids - a.poids)[0]?.key : undefined;
   const sources = (m: ModeleContrat): ContratTire["params"] | null => {
     const p: ContratTire["params"] = {};
     for (const nom of m.params) {
@@ -708,10 +757,22 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     niveau,
     phase,
     actesClos: [...actesClos],
-    acteCourant: ACTES.find((a) => !actesClos.has(a.id) && a.id !== "epilogue") ?? null,
+    acteCourant: acteCourantDe(actesClos),
     contrats: instances.filter((i) => i.quete.famille === "contrat" && i.quete.repetition === "quotidienne"),
     trioFait,
   };
+}
+
+/**
+ * L'acte en cours : le premier acte non clos du fil (prologue, II, III…),
+ * hors épilogue. Un acte parallèle (l'acte I, les outils) ne le devient que
+ * quand tout le fil est clos : sinon il garderait « tu es ici », le bonus
+ * d'acte et l'annonce du rideau longtemps après qu'on l'a dépassé.
+ */
+export function acteCourantDe(actesClos: Set<string> | string[]): Acte | null {
+  const clos = actesClos instanceof Set ? actesClos : new Set(actesClos);
+  const ouverts = ACTES.filter((a) => !clos.has(a.id) && a.id !== "epilogue");
+  return ouverts.find((a) => !a.parallele) ?? ouverts[0] ?? null;
 }
 
 /** Pas de rétroactivité pour une fenêtre « depuisOuverture » (le départ est l'ouverture). */

@@ -292,6 +292,8 @@ export type Acte = {
   cloture: RepliqueCodex;
   /** récompense de clôture (toutes ses quêtes non optionnelles faites) */
   recompense: Recompense;
+  /** à côté du fil (l'acte I, les outils) : jamais l'acte courant tant qu'un acte du fil reste ouvert, et sa clôture n'annonce pas de rideau */
+  parallele?: true;
 };
 
 /** Une quête au long cours : une chaîne de paliers sur des semaines. */
@@ -306,8 +308,8 @@ export type Chaine = {
 /** Emplacement d'un contrat dans les 3 du jour. */
 export type Emplacement = "faiblesse" | "entretien" | "variete";
 
-/** Phase de préparation, calée sur le jour J. */
-export type Phase = "fondations" | "consolidation" | "repetition" | "veillee";
+/** Phase de préparation, calée sur le jour J (« apres » : l'examen est passé, le Codex continue). */
+export type Phase = "fondations" | "consolidation" | "repetition" | "veillee" | "apres";
 
 /** Un modèle de contrat du jour, instancié chaque jour avec ses paramètres. */
 export type ModeleContrat = {

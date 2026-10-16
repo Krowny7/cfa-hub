@@ -11,6 +11,7 @@ import { notionsDeMatiere } from "@/lib/notions";
 import { xpNeededForLevelUp } from "@/lib/leveling";
 import { SCEAUX, SCEAUX_BASE } from "@/lib/profil/sceaux";
 import { condition as conditionSceau, nomSceau } from "@/lib/voice-profil";
+import { de } from "@/lib/codex/elision";
 import type {
   Acte, Chaine, ChampDe, CosmetiqueCodex, Devoilement, EtapeBranche, Fenetre, Filtre, FiltreMesure, Objectif, ObjectifCompteur,
   ObjectifMesure, ModeleContrat, Phase, Prerequis, Quete, SourceDonnee, TypeEvenement, TypeMesure,
@@ -182,6 +183,7 @@ export const ACTES: Acte[] = [
     titre: "Broyer les couleurs",
     sousTitre: "Avant le pinceau, l'apprenti apprend ses outils.",
     but: "Essayer chaque outil du site une fois : fiche, 5 du jour, rature, Atelier, duel, calcul.",
+    parallele: true,
     ouverture: { texte: "Un bon apprenti connaît chaque pot de l'atelier. Ouvre-les tous, même celui qui sent bizarre.", pose: "moqueur" },
     cloture: { texte: "Tu connais la maison. Maintenant, on va salir des pinceaux pour de vrai.", pose: "fier" },
     recompense: { xp: 120 },
@@ -314,7 +316,7 @@ export const QUETES_TRAME: Quete[] = [
   quete({ id: "trame:ep:blanc", famille: "trame", acte: "epilogue", ordre: 90, titre: "La répétition générale", consigne: "Rends un examen blanc complet (90 questions ou plus) dans le dernier mois.", objectif: compte("examen_blanc_rendu", 1, { questions: { min: 90 } }, { fenetre: "depuisOuverture" }), prerequis: [{ k: "joursAvantExamen", max: 30, min: 3 }], recompense: { xp: 200 }, visibilite: "ouverte", lien: "/mock-exams" }),
   quete({ id: "trame:ep:carnet", famille: "trame", acte: "epilogue", ordre: 91, titre: "Nettoyer le carnet", consigne: "Descends sous 20 ratures en cours avant la dernière semaine.", objectif: mesure("ratures_ouvertes", 20, undefined, "<="), prerequis: [{ k: "joursAvantExamen", max: 21, min: 3 }], recompense: { xp: 200 }, visibilite: "ouverte" }),
   quete({ id: "trame:ep:ethique", famille: "trame", acte: "epilogue", ordre: 92, titre: "Relire les Standards", consigne: "Réponds à 40 questions d'Éthique dans les deux dernières semaines.", objectif: compte("question_repondue", 40, { matiere: "ethics" }, { fenetre: "depuisOuverture" }), prerequis: [{ k: "joursAvantExamen", max: 14, min: 1 }], recompense: { xp: 150 }, visibilite: "ouverte" }),
-  quete({ id: "trame:ep:veille", famille: "trame", acte: "epilogue", ordre: 93, titre: "La veille", consigne: "Une dernière série éclair ou les 5 du jour, puis pose le crayon.", objectif: unDe(compte("eclair_rendue", 1, undefined, { fenetre: "jour" }), compte("cinq_rendu", 1, undefined, { fenetre: "jour" })), prerequis: [{ k: "joursAvantExamen", max: 1, min: 1 }], recompense: { xp: 100 }, visibilite: "ouverte", duree: 5 }),
+  quete({ id: "trame:ep:veille", famille: "trame", acte: "epilogue", ordre: 93, titre: "La veille", consigne: "Une dernière série éclair ou les 5 du jour, puis pose le crayon.", objectif: unDe(compte("eclair_rendue", 1, undefined, { fenetre: "jour" }), compte("cinq_rendu", 1, undefined, { fenetre: "jour" })), prerequis: [{ k: "joursAvantExamen", max: 3, min: 1 }], recompense: { xp: 100 }, visibilite: "ouverte", duree: 5 }),
 ];
 
 // ── Les quêtes au long cours ───────────────────────────────────────────
@@ -516,32 +518,71 @@ export const QUETES_EXPLOITS: Quete[] = [
   ),
 ];
 
+// ── La séance ciblée : sa taille réelle ────────────────────────────────
+// Une session ciblée d'une seule matière compte round(poids × format)
+// questions (generate_practice_session, migration_practice_sessions.sql ;
+// formats de components/PracticeSession.tsx). En 180, Quant, Economics et
+// Corporate n'en ont que 14, Derivatives 12 : le seuil d'une quête ou d'un
+// contrat de séance ciblée est la taille la plus grande possible, plafonnée
+// à 15, et le lien ouvre le plus petit format qui l'atteint.
+
+/** Les formats de l'entraînement ciblé (questions d'un examen entier). */
+export const FORMATS_CIBLEE = [90, 180] as const;
+export type FormatCiblee = (typeof FORMATS_CIBLEE)[number];
+/** Le seuil visé d'une séance ciblée (s'il est possible dans la matière). */
+export const SEUIL_CIBLEE = 15;
+/** Questions d'une matière dans une session ciblée de ce format (même arrondi que la base). */
+export const questionsCiblee = (poids: number, format: number) => Math.round((poids * format) / 100);
+/** Le seuil d'une séance ciblée pour une matière, et le plus petit format qui l'atteint. */
+export function cibleeDe(poids: number): { questions: number; format: FormatCiblee } {
+  const max = Math.max(...FORMATS_CIBLEE.map((f) => questionsCiblee(poids, f)));
+  const questions = Math.max(1, Math.min(SEUIL_CIBLEE, max));
+  return { questions, format: FORMATS_CIBLEE.find((f) => questionsCiblee(poids, f) >= questions) ?? FORMATS_CIBLEE[FORMATS_CIBLEE.length - 1] };
+}
+/** Le lien d'une séance ciblée : la matière cochée, le format choisi. */
+export const lienCiblee = (matiere: string, format: FormatCiblee) => `/practice?topic=${encodeURIComponent(matiere)}${format !== FORMATS_CIBLEE[0] ? `&format=${format}` : ""}`;
+/** « (format 180) » dans une consigne, rien pour le format par défaut. */
+export const formatCiblee = (format: FormatCiblee) => (format !== FORMATS_CIBLEE[0] ? ` (format ${format})` : "");
+
+/** Un objectif de séance ciblée ramené à la taille possible dans la matière (contrats : la matière vient des paramètres). */
+export function ajusterCiblee(o: Objectif, poids: number): Objectif {
+  if (o.k === "tous" || o.k === "unDe") return { ...o, objectifs: o.objectifs.map((x) => ajusterCiblee(x, poids)) };
+  if (o.k !== "compteur" || o.evenement !== "session_terminee") return o;
+  const f = o.filtre as Record<string, unknown> | undefined;
+  const q = f?.questions as { min?: number } | undefined;
+  if (!f || f.source !== "ciblee" || typeof q?.min !== "number") return o;
+  return { ...o, filtre: { ...f, questions: { ...q, min: Math.min(q.min, cibleeDe(poids).questions) } } } as Objectif;
+}
+/** L'objectif est-il une séance ciblée ? */
+export const estCiblee = (o: Objectif): boolean =>
+  o.k === "tous" || o.k === "unDe" ? o.objectifs.some(estCiblee) : o.k === "compteur" && o.evenement === "session_terminee" && (o.filtre as Record<string, unknown> | undefined)?.source === "ciblee";
+
 // ── Contrats ───────────────────────────────────────────────────────────
 // Trois par jour, un par emplacement, choisis pour le joueur (voir
 // CONCEPTION.md) ; le trio tient en 30 à 45 minutes. Plus des contrats de
 // la semaine, qui sont des quêtes ordinaires à répétition hebdomadaire.
 
-const toutes = (n: number): Record<Phase, number> => ({ fondations: n, consolidation: n, repetition: n, veillee: n });
+const toutes = (n: number): Record<Phase, number> => ({ fondations: n, consolidation: n, repetition: n, veillee: n, apres: n });
 
 export const MODELES_CONTRATS: ModeleContrat[] = [
   // faiblesse : ce qui coince le plus, pondéré par le poids à l'examen
-  { id: "notion-faible", emplacement: "faiblesse", titre: "Atelier : {notion}", consigne: "Décroche 8 bonnes réponses sur {notion}.", objectif: compte("question_repondue", 8, { notion: { param: "notion" }, juste: true }, { fenetre: "jour" }), params: ["notion"], eligible: [], poids: { fondations: 3, consolidation: 4, repetition: 4, veillee: 2 }, duree: 15 },
-  { id: "matiere-faible", emplacement: "faiblesse", titre: "Séance de {matiere}", consigne: "Réussis une session ciblée de 15 questions en {matiere} à 65 % ou plus.", objectif: compte("session_terminee", 1, { source: "ciblee", matiere: { param: "matiere" }, questions: { min: 15 }, pct: { min: 65 } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(3), duree: 25, lien: "/practice" },
-  { id: "drill-page", emplacement: "faiblesse", titre: "Une page de {fiche}", consigne: "Passe une page de drill de la fiche {fiche} à 70 % ou plus.", objectif: compte("drill_page_terminee", 1, { fiche: { param: "fiche" }, pct: { min: 70 } }, { fenetre: "jour" }), params: ["fiche"], eligible: [], poids: { fondations: 4, consolidation: 2, repetition: 1, veillee: 0 }, duree: 20, lien: "/fiches" },
-  { id: "atelier", emplacement: "faiblesse", titre: "Une séance d'Atelier", consigne: "Termine une séance d'Atelier.", objectif: compte("seance_atelier", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 3)], poids: { fondations: 2, consolidation: 3, repetition: 3, veillee: 1 }, duree: 30, lien: "/atelier" },
+  { id: "notion-faible", emplacement: "faiblesse", titre: "Sur la notion : {notion}", consigne: "Décroche 8 bonnes réponses sur {notion}, où tu veux (l'Atelier s'y prête bien).", objectif: compte("question_repondue", 8, { notion: { param: "notion" }, juste: true }, { fenetre: "jour" }), params: ["notion"], eligible: [], poids: { fondations: 3, consolidation: 4, repetition: 4, veillee: 2, apres: 2 }, duree: 15 },
+  { id: "matiere-faible", emplacement: "faiblesse", titre: "Séance de {matiere}", consigne: "Réussis une session ciblée de {questions} questions en {matiere}{format} à 65 % ou plus.", objectif: compte("session_terminee", 1, { source: "ciblee", matiere: { param: "matiere" }, questions: { min: SEUIL_CIBLEE }, pct: { min: 65 } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(3), duree: 25, lien: "/practice" },
+  { id: "drill-page", emplacement: "faiblesse", titre: "Une page de {fiche}", consigne: "Passe une page de drill de la fiche {fiche} à 70 % ou plus.", objectif: compte("drill_page_terminee", 1, { fiche: { param: "fiche" }, pct: { min: 70 } }, { fenetre: "jour" }), params: ["fiche"], eligible: [], poids: { fondations: 4, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 20, lien: "/fiches" },
+  { id: "atelier", emplacement: "faiblesse", titre: "Une séance d'Atelier", consigne: "Termine une séance d'Atelier.", objectif: compte("seance_atelier", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 3)], poids: { fondations: 2, consolidation: 3, repetition: 3, veillee: 1, apres: 2 }, duree: 30, lien: "/atelier" },
   { id: "calculs", emplacement: "faiblesse", titre: "Les calculs de {matiere}", consigne: "Réponds juste à 10 calculs de {matiere}.", objectif: compte("calcul_repondu", 10, { matiere: { param: "matiere" }, juste: true }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(1), duree: 10, lien: "/calculs" },
   // entretien : ne pas laisser filer ce qu'on sait
-  { id: "ratures", emplacement: "entretien", titre: "Gratter cinq ratures", consigne: "Raye 5 ratures en les réussissant.", objectif: compte("rature_rayee", 5, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 5)], poids: { fondations: 3, consolidation: 3, repetition: 4, veillee: 4 }, duree: 10 },
+  { id: "ratures", emplacement: "entretien", titre: "Gratter cinq ratures", consigne: "Raye 5 ratures en les réussissant.", objectif: compte("rature_rayee", 5, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 5)], poids: { fondations: 3, consolidation: 3, repetition: 4, veillee: 4, apres: 2 }, duree: 10 },
   { id: "ratures-vieilles", emplacement: "entretien", titre: "Les vieilles ratures", consigne: "Raye 3 ratures de plus de 7 jours.", objectif: compte("rature_rayee", 3, { ageJours: { min: 7 } }, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 10)], poids: toutes(2), duree: 10 },
-  { id: "rappel", emplacement: "entretien", titre: "La mémoire longue", consigne: "Réussis 10 questions vues il y a plus de 7 jours.", objectif: compte("question_repondue", 10, { juste: true, ecartJours: { min: 7 } }, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 200)], poids: { fondations: 1, consolidation: 3, repetition: 3, veillee: 2 }, duree: 15 },
-  { id: "matiere-oubliee", emplacement: "entretien", titre: "{matiere} prend la poussière", consigne: "Réponds à 15 questions de {matiere}, pas travaillée depuis 10 jours.", objectif: compte("question_repondue", 15, { matiere: { param: "matiere" } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(2), duree: 15 },
-  { id: "cours", emplacement: "entretien", titre: "Le cours de {matiere}", consigne: "Écoute 20 minutes du cours de {matiere}.", objectif: compte("cours_ecoute", 20, { matiere: { param: "matiere" } }, { fenetre: "jour", somme: "minutes" }), params: ["matiere"], eligible: [], poids: { fondations: 2, consolidation: 1, repetition: 0, veillee: 0 }, duree: 20 },
+  { id: "rappel", emplacement: "entretien", titre: "La mémoire longue", consigne: "Réussis 10 questions vues il y a plus de 7 jours.", objectif: compte("question_repondue", 10, { juste: true, ecartJours: { min: 7 } }, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 200)], poids: { fondations: 1, consolidation: 3, repetition: 3, veillee: 2, apres: 3 }, duree: 15 },
+  { id: "matiere-oubliee", emplacement: "entretien", titre: "{matiere} prend la poussière", consigne: "Réponds à 15 questions de {matiere} : tu n'y as pas touché depuis 10 jours au moins.", objectif: compte("question_repondue", 15, { matiere: { param: "matiere" } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(2), duree: 15 },
+  { id: "cours", emplacement: "entretien", titre: "Le cours de {matiere}", consigne: "Écoute 20 minutes du cours de {matiere}.", objectif: compte("cours_ecoute", 20, { matiere: { param: "matiere" } }, { fenetre: "jour", somme: "minutes" }), params: ["matiere"], eligible: [], poids: { fondations: 2, consolidation: 1, repetition: 0, veillee: 0, apres: 1 }, duree: 20 },
   { id: "flashcards", emplacement: "entretien", titre: "Le paquet de cartes", consigne: "Révise 30 flashcards.", objectif: compte("flashcards_revues", 30, undefined, { fenetre: "jour", somme: "cartes" }), params: [], eligible: [], poids: toutes(1), duree: 10, lien: "/flashcards" },
   // variété : un format qu'on n'a pas fait récemment, calé sur la phase
   { id: "cinq", emplacement: "variete", titre: "Les 5 du jour à 4/5", consigne: "Rends les 5 du jour avec 4 bonnes réponses ou plus.", objectif: compte("cinq_rendu", 1, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(3), duree: 5, lien: "/defi/cinq" },
   { id: "eclair", emplacement: "variete", titre: "Deux séries éclair", consigne: "Réussis deux séries éclair à 4/5 ou plus.", objectif: compte("eclair_rendue", 2, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(2), duree: 10, lien: "/eclair" },
-  { id: "duel", emplacement: "variete", titre: "Un duel", consigne: "Joue un duel.", objectif: compte("duel_termine", 1, undefined, { fenetre: "jour" }), params: [], eligible: [], poids: { fondations: 2, consolidation: 2, repetition: 1, veillee: 0 }, duree: 10, lien: "/duel" },
-  { id: "defi", emplacement: "variete", titre: "Les 30 du jour", consigne: "Rends les 30 du jour.", objectif: compte("defi_rendu", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 100)], poids: { fondations: 1, consolidation: 2, repetition: 4, veillee: 1 }, duree: 40, lien: "/defi" },
+  { id: "duel", emplacement: "variete", titre: "Un duel", consigne: "Joue un duel.", objectif: compte("duel_termine", 1, undefined, { fenetre: "jour" }), params: [], eligible: [], poids: { fondations: 2, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 10, lien: "/duel" },
+  { id: "defi", emplacement: "variete", titre: "Les 30 du jour", consigne: "Rends les 30 du jour.", objectif: compte("defi_rendu", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 100)], poids: { fondations: 1, consolidation: 2, repetition: 4, veillee: 1, apres: 1 }, duree: 40, lien: "/defi" },
 ];
 
 export const QUETES_CONTRATS_HEBDO: Quete[] = [
@@ -557,11 +598,13 @@ export const PHASES: { phase: Phase; nom: string; depuis: number; replique: stri
   { phase: "consolidation", nom: "La consolidation", depuis: 90, replique: "Trois mois. On reprend ce qui s'efface et on bouche les trous." },
   { phase: "repetition", nom: "La répétition générale", depuis: 30, replique: "Un mois. Examens blancs, ratures, rythme de l'épreuve." },
   { phase: "veillee", nom: "La veillée", depuis: 7, replique: "Une semaine. On entretient, on ne commence plus rien." },
+  { phase: "apres", nom: "Après l'épreuve", depuis: -Infinity, replique: "L'examen est passé. La bottega reste ouverte : on garde la main, et on prépare la suite." },
 ];
 
-/** La phase d'un joueur selon les jours restants avant son examen (null : pas de jour J → fondations). */
+/** La phase d'un joueur selon les jours restants avant son examen (null : pas de jour J → fondations ; jour J passé → après). */
 export function phaseDe(joursAvant: number | null): Phase {
-  if (joursAvant === null || joursAvant < 0) return "fondations";
+  if (joursAvant === null) return "fondations";
+  if (joursAvant < 0) return "apres";
   if (joursAvant <= 7) return "veillee";
   if (joursAvant <= 30) return "repetition";
   if (joursAvant <= 90) return "consolidation";
@@ -594,6 +637,7 @@ export const RECOMMANDATION = {
     consolidation: { couverture: 1.1, maitrise: 1.2, memoire: 1.2, examens: 1, regularite: 1, competition: 0.8, methode: 1 },
     repetition: { couverture: 0.8, maitrise: 1.2, memoire: 1.3, examens: 1.5, regularite: 1, competition: 0.5, methode: 1 },
     veillee: { couverture: 0.5, maitrise: 1, memoire: 1.4, examens: 1.1, regularite: 1, competition: 0.3, methode: 0.8 },
+    apres: { couverture: 1, maitrise: 1, memoire: 1.2, examens: 0.6, regularite: 1.1, competition: 1, methode: 1 },
   } satisfies Record<Phase, Record<Chaine["axe"], number>>,
 } as const;
 
@@ -657,7 +701,7 @@ export const ETAPES: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "fla
 
 /** Les titres « Maître de <matière> » (cosmétiques générés). */
 export const titresMaitres = (contenu: ContenuMatiere[] = contenuDuProgramme()): CosmetiqueCodex[] =>
-  contenu.map((m) => ({ cle: titreMaitre(m.key), type: "titre", nom: `Maître de ${m.court}`, description: `A mené la branche ${m.nom} à son terme.` }));
+  contenu.map((m) => ({ cle: titreMaitre(m.key), type: "titre", nom: `Maître ${de(m.court)}`, description: `A mené la branche ${m.nom} à son terme.` }));
 
 /**
  * Une branche par matière. Le tronc : premier pas → (fiche → drill) →
@@ -669,45 +713,46 @@ export const titresMaitres = (contenu: ContenuMatiere[] = contenuDuProgramme()):
 export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme(), programme = PROGRAMME): Quete[] {
   return contenu.flatMap((m) => {
     const id = (e: EtapeBranche) => `branche:${m.key}:${e}`;
-    const de = { matiere: m.key };
+    const dm = { matiere: m.key };
     const b = (etape: EtapeBranche, q: Omit<Base, "id" | "famille" | "ordre" | "matiere" | "etape">): Quete =>
       ({ ...quete({ ...q, id: id(etape), famille: "branche", ordre: ETAPES.indexOf(etape) + 1, matiere: m.key, etape }), programme });
-    const out: Quete[] = [b("entree", { titre: `Premier pas en ${m.court}`, consigne: `Réponds à 10 questions de ${m.nom}.`, objectif: compte("question_repondue", 10, de), recompense: { xp: 30 }, duree: 8 })];
+    const out: Quete[] = [b("entree", { titre: `Premier pas en ${m.court}`, consigne: `Réponds à 10 questions ${de(m.nom)}.`, objectif: compte("question_repondue", 10, dm), recompense: { xp: 30 }, duree: 8 })];
     if (m.cours)
-      out.push(b("cours", { optionnelle: true, titre: "L'oreille du maître", consigne: `Écoute 30 minutes du cours complet de ${m.nom}.`, objectif: compte("cours_ecoute", 30, de, { somme: "minutes" }), recompense: { xp: 40 }, lien: `/courses/${m.cours}`, duree: 30 }));
+      out.push(b("cours", { optionnelle: true, titre: "L'oreille du maître", consigne: `Écoute 30 minutes du cours complet ${de(m.nom)}.`, objectif: compte("cours_ecoute", 30, dm, { somme: "minutes" }), recompense: { xp: 40 }, lien: `/courses/${m.cours}`, duree: 30 }));
     if (m.fiche && m.drill) {
-      out.push(b("fiche", { titre: `La fiche ${m.court}`, consigne: "Lis une page de la fiche et passe son drill de 15 questions.", objectif: compte("drill_page_terminee", 1, de), recompense: { xp: 40 }, lien: `/fiches/${m.fiche}`, duree: 20 }));
-      out.push(b("drill", { titre: "Le drill complet", consigne: `Passe toutes les pages de drill de la fiche ${m.court}.`, pourquoi: "La fiche couvre le cours entier : chaque page passée, c'est un thème vu une fois au moins.", objectif: tous(compte("drill_page_terminee", 1, de), mesure("drill_pages_restantes", 0, de, "<=")), prerequis: [apres(id("fiche"))], recompense: { xp: 100 }, lien: `/fiches/${m.fiche}` }));
+      out.push(b("fiche", { titre: `La fiche ${m.court}`, consigne: "Lis une page de la fiche et passe son drill de 15 questions.", objectif: compte("drill_page_terminee", 1, dm), recompense: { xp: 40 }, lien: `/fiches/${m.fiche}`, duree: 20 }));
+      out.push(b("drill", { titre: "Le drill complet", consigne: `Passe toutes les pages de drill de la fiche ${m.court}.`, pourquoi: "La fiche couvre le cours entier : chaque page passée, c'est un thème vu une fois au moins.", objectif: mesure("drill_pages_restantes", 0, dm, "<="), prerequis: [apres(id("fiche"))], recompense: { xp: 100 }, lien: `/fiches/${m.fiche}` }));
     } else if (m.fiche) {
-      out.push(b("fiche", { optionnelle: true, titre: `La fiche ${m.court}`, consigne: `Ouvre la fiche ${m.court} et lis-la.`, objectif: compte("fiche_ouverte", 1, de), recompense: { xp: 30 }, lien: `/fiches/${m.fiche}`, duree: 20 }));
+      out.push(b("fiche", { optionnelle: true, titre: `La fiche ${m.court}`, consigne: `Ouvre la fiche ${m.court} et lis-la.`, objectif: compte("fiche_ouverte", 1, dm), recompense: { xp: 30 }, lien: `/fiches/${m.fiche}`, duree: 20 }));
     }
     if (m.flashcards)
-      out.push(b("flashcards", { optionnelle: true, titre: "Le paquet de cartes", consigne: `Révise 40 flashcards de ${m.nom}.`, objectif: compte("flashcards_revues", 40, de, { somme: "cartes" }), recompense: { xp: 30 }, lien: "/flashcards", duree: 15 }));
+      out.push(b("flashcards", { optionnelle: true, titre: "Le paquet de cartes", consigne: `Révise 40 flashcards ${de(m.nom)}.`, objectif: compte("flashcards_revues", 40, dm, { somme: "cartes" }), recompense: { xp: 30 }, lien: "/flashcards", duree: 15 }));
+    const cib = cibleeDe(m.poids);
     out.push(
       b("ciblee", {
         titre: "La séance ciblée",
-        consigne: `Réussis une session ciblée de ${m.nom}, 15 questions au moins, à 70 % ou plus.`,
+        consigne: `Réussis une session ciblée ${de(m.nom)}, ${cib.questions} questions au moins${formatCiblee(cib.format)}, à 70 % ou plus.`,
         pourquoi: "C'est l'épreuve de la branche : celle que la guilde attend de chaque matière.",
-        objectif: compte("session_terminee", 1, { source: "ciblee", matiere: m.key, questions: { min: 15 }, pct: { min: 70 } }),
+        objectif: compte("session_terminee", 1, { source: "ciblee", matiere: m.key, questions: { min: cib.questions }, pct: { min: 70 } }),
         prerequis: [apres(m.drill ? id("drill") : id("entree"))],
         recompense: { xp: 120 },
-        lien: "/practice",
+        lien: lienCiblee(m.key, cib.format),
         duree: 25,
       }),
       b("tour", {
-        titre: `Le tour de ${m.court}`,
-        consigne: `Vois chacune des ${m.notions} notions de ${m.nom} (5 réponses au moins dans chacune).`,
+        titre: `Le tour ${de(m.court)}`,
+        consigne: `Vois chacune des ${m.notions} notions ${de(m.nom)} (5 réponses au moins dans chacune).`,
         pourquoi: "Une notion jamais vue, c'est une question jouée à pile ou face.",
-        objectif: mesure("notions_vues_pct", 100, de),
+        objectif: mesure("notions_vues_pct", 100, dm),
         prerequis: [apres(id("entree"))],
         recompense: { xp: Math.min(150, 60 + 5 * m.notions) },
       }),
-      b("maitrise60", { titre: "Le pigment tient", consigne: `Monte ${m.nom} à 60 % de maîtrise.`, pourquoi: "60 % : la zone où l'on commence à réussir le CFA.", objectif: mesure("maitrise", 60, de), prerequis: [apres(id("ciblee"))], recompense: { xp: 180 } }),
-      b("maitrise75", { titre: "La couleur juste", consigne: `Monte ${m.nom} à 75 % de maîtrise.`, objectif: mesure("maitrise", 75, de), prerequis: [apres(id("maitrise60"))], recompense: { xp: 260 } }),
+      b("maitrise60", { titre: "Le pigment tient", consigne: `Monte ${m.nom} à 60 % de maîtrise.`, pourquoi: "60 % : la zone où l'on commence à réussir le CFA.", objectif: mesure("maitrise", 60, dm), prerequis: [apres(id("ciblee"))], recompense: { xp: 180 } }),
+      b("maitrise75", { titre: "La couleur juste", consigne: `Monte ${m.nom} à 75 % de maîtrise.`, objectif: mesure("maitrise", 75, dm), prerequis: [apres(id("maitrise60"))], recompense: { xp: 260 } }),
       b("maitre", {
-        titre: `Maître de ${m.court}`,
+        titre: `Maître ${de(m.court)}`,
         consigne: `85 % de maîtrise en ${m.nom}, toutes ses notions vues et 5 ratures en cours au plus.`,
-        objectif: tous(mesure("maitrise", 85, de), mesure("notions_vues_pct", 100, de), mesure("ratures_ouvertes", 5, de, "<=")),
+        objectif: tous(mesure("maitrise", 85, dm), mesure("notions_vues_pct", 100, dm), mesure("ratures_ouvertes", 5, dm, "<=")),
         prerequis: [apres(id("maitrise75")), apres(id("tour"))],
         recompense: { xp: 400, titre: titreMaitre(m.key) },
       }),

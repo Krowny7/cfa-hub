@@ -14,7 +14,8 @@ export const CODEX = {
   kicker: (phase: string) => `Codex · ${phase}`,
   quetesFaites: (f: number, t: number) => `${f} sur ${t} quêtes`,
   xpGagnee: (xp: number) => `${xp.toLocaleString("fr-FR")} XP gagnés ici`,
-  jourJ: (n: number) => (n <= 0 ? "C'est le jour J" : `J-${n}`),
+  /** null une fois le jour J passé (la phase « Après l'épreuve » le dit déjà) */
+  jourJ: (n: number): string | null => (n === 0 ? "C'est le jour J" : n > 0 ? `J-${n}` : null),
   toutMontrer: "Tout montrer",
   toutMontrerAide: "Le carnet se dévoile au fil de tes séances. Si tu préfères tout voir tout de suite, c'est permis.",
   prochaine: {
@@ -81,7 +82,8 @@ export const CODEX = {
     pourquoi: "Pourquoi",
     recompense: "Récompense",
     xp: (n: number) => `+${n} XP`,
-    xpPlafonnee: (v: number, n: number) => `+${v} XP versés (${n} visés, plafonnés à ton niveau)`,
+    /** l'XP réellement versée (plafonnée à ton niveau) : on ne montre que ce qu'on a reçu */
+    xpPlafonnee: (v: number) => `+${v} XP`,
     faiteLe: (d: string) => `Tamponnée le ${d}`,
     faiteAvant: (d: string) => `Déjà acquise avant le ${d} : Léonard l'a trouvée en feuilletant ton carnet`,
     reclamer: "Réclamer la récompense",

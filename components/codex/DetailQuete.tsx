@@ -52,7 +52,7 @@ export function DetailQuete({
   const titre = enigme ? "Exploit caché" : l.titre;
   const aReclamer = l.etat === "terminee" && l.xpVersee === null && !l.retro && !!reclamer;
   const recompense = [
-    l.xp > 0 ? (l.etat === "terminee" && l.xpVersee !== null && l.xpVersee < l.xp ? CODEX.detail.xpPlafonnee(l.xpVersee, l.xp) : CODEX.detail.xp(l.xp)) : null,
+    l.xp > 0 ? (l.etat === "terminee" && l.xpVersee !== null && l.xpVersee < l.xp ? CODEX.detail.xpPlafonnee(l.xpVersee) : CODEX.detail.xp(l.xp)) : null,
     l.titreGagne ? CODEX.detail.titreGagne(l.titreNom ?? l.titreGagne) : null,
     l.cosmetique ? CODEX.detail.cosmetique(l.cosmetiqueNom ?? l.cosmetique) : null,
   ].filter(Boolean) as string[];

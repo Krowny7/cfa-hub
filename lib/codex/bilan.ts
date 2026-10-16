@@ -69,7 +69,8 @@ export function bilanDe(vue: VueCodex): BilanCodex {
     if (!a.aFeter) continue;
     const def = ACTES.find((x) => x.id === a.acte.id);
     fetes.push({ quete: `acte:${a.acte.id}`, periode: "", titre: a.acte.titre, famille: "acte", xp: def?.recompense.xp ?? 0, recompense: nomCosmetique(vue, def?.recompense.cosmetique) ?? nomCosmetique(vue, def?.recompense.titre), rang: 0 });
-    const courant = vue.trame.find((x) => x.courant);
+    // un acte parallèle (l'acte I) se referme sans lever de rideau : le fil n'a pas bougé
+    const courant = a.acte.parallele ? null : vue.trame.find((x) => x.courant);
     if (courant && !acteNouveau) acteNouveau = { id: courant.acte.id, titre: courant.acte.titre, sousTitre: courant.acte.sousTitre, replique: courant.acte.ouverture, precedent: a.acte.titre };
   }
   fetes.sort((a, b) => a.rang - b.rang || b.xp - a.xp);
