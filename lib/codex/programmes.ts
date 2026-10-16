@@ -89,7 +89,12 @@ export function genererArbre(def: DefinitionProgramme): Quete[] {
   return [...trame, ...generees, ...(def.quetesPropres?.() ?? [])];
 }
 
-/** Le catalogue du joueur : l'arbre du programme actif, puis les quêtes communes à tous (exploits ; le fil rouge arrive avec A2b). */
+/**
+ * Le catalogue du joueur : l'arbre du programme actif, puis les exploits,
+ * communs à tous. Le fil rouge, commun lui aussi, n'y est pas : ses paliers
+ * dépendent de la progression (les atteints et le suivant), le moteur les
+ * ajoute à chaque calcul (quetesASuivre, lib/codex/fil-rouge.ts).
+ */
 export function catalogueComplet(programmeActif: string): Quete[] {
   const def = programmeDe(programmeActif) ?? CFA_L1;
   return [...genererArbre(def), ...QUETES_EXPLOITS];
