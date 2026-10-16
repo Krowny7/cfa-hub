@@ -20,7 +20,8 @@ export function contenuDuProgramme(): ContenuMatiere[] {
     const t = TOPICS.find((x) => x.key === s.key);
     const drill = !!s.fiche && !!s.drillPrefix;
     const flashcards = s.flashcardFolders.length > 0;
-    const outils: Outil[] = [...(s.fiche ? (["fiche"] as const) : []), ...(drill ? (["drill"] as const) : []), ...(s.course ? (["cours"] as const) : []), ...(flashcards ? (["flashcards"] as const) : [])];
+    const existe: Partial<Record<Outil, boolean>> = { fiche: !!s.fiche, drill, cours: !!s.course, flashcards };
+    const outils = (["fiche", "drill", "cours", "flashcards"] as const).filter((o) => existe[o]);
     return {
       key: s.key,
       nom: t?.label ?? s.name,
@@ -31,7 +32,7 @@ export function contenuDuProgramme(): ContenuMatiere[] {
       cours: s.course,
       flashcards,
       notions: notionsDeMatiere(s.key).length,
-      outils,
+      outils: [...outils],
     };
   });
 }

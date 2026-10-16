@@ -604,10 +604,11 @@ export const QUETES_CONTRATS_HEBDO: Quete[] = [
 
 // ── Les phases (calées sur le jour J) ──────────────────────────────────
 
-export const PHASES: { phase: Phase; nom: string; depuis: number; replique: string }[] = [
+/** `sansDate` : la réplique d'une phase atteinte par l'avancement, sans jour J (aucune durée à annoncer). */
+export const PHASES: { phase: Phase; nom: string; depuis: number; replique: string; sansDate?: string }[] = [
   { phase: "fondations", nom: "Les fondations", depuis: Infinity, replique: "On pose les murs avant la fresque : tout le programme, une fois." },
-  { phase: "consolidation", nom: "La consolidation", depuis: 90, replique: "Trois mois. On reprend ce qui s'efface et on bouche les trous." },
-  { phase: "repetition", nom: "La répétition générale", depuis: 30, replique: "Un mois. Examens blancs, ratures, rythme de l'épreuve." },
+  { phase: "consolidation", nom: "La consolidation", depuis: 90, replique: "Trois mois. On reprend ce qui s'efface et on bouche les trous.", sansDate: "On reprend ce qui s'efface et on bouche les trous." },
+  { phase: "repetition", nom: "La répétition générale", depuis: 30, replique: "Un mois. Examens blancs, ratures, rythme de l'épreuve.", sansDate: "On répète : examens blancs, ratures, rythme de l'épreuve." },
   { phase: "veillee", nom: "La veillée", depuis: 7, replique: "Une semaine. On entretient, on ne commence plus rien." },
   { phase: "apres", nom: "Après l'épreuve", depuis: -Infinity, replique: "L'examen est passé. La bottega reste ouverte : on garde la main, et on prépare la suite." },
 ];

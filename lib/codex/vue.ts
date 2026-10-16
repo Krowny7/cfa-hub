@@ -276,7 +276,7 @@ export function construireVue(
     jour: e.jour,
     phase: r.phase,
     phaseNom: phase.nom,
-    phaseReplique: phase.replique,
+    phaseReplique: e.jourJ === null ? (phase.sansDate ?? phase.replique) : phase.replique,
     joursAvant: joursAvantExamen(e.jour, e.jourJ),
     niveau: r.niveau,
     budget: budgetDuJour(e),

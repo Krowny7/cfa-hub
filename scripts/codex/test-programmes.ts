@@ -179,6 +179,13 @@ console.log("\n# les programmes du joueur, « apresExamen », les capacités");
   const s1 = vueDe({ ...base, programmes: [ligne("finance/cfa-l1", "mene")] }).suite;
   check("la vue l'annonce sans bouton tant que CFA II n'est pas public", s1?.annonce === "Le Niveau II arrive. Ton fil rouge continue d'ici là." && s1.ouvrable === false && s1.court === "CFA II", JSON.stringify(s1));
   check("rien à annoncer avant", vueDe(base).suite === null);
+
+  // sans jour J, la phase vient de l'avancement : sa réplique n'annonce aucune durée
+  const acteFait = (id: string) => ({ quete_id: `acte:${id}`, periode: "", etat: "recompensee" as const, progression: 1, cible: 1, ouverte_le: "2026-10-01T00:00:00Z", terminee_le: "2026-10-02T00:00:00Z", recompensee_le: "2026-10-02T00:00:00Z", retro: false, xp: 100, cosmetique: null, titre: null, vu: true });
+  const v2 = vueDe({ ...base, progression: [acteFait("prologue"), acteFait("acte2")] });
+  check("sans jour J, acte II clos : consolidation, sans « Trois mois »", v2.phase === "consolidation" && !v2.phaseReplique.includes("mois"), v2.phaseReplique);
+  const v3 = vueDe({ ...base, jourJ: "2026-12-20", progression: [acteFait("prologue"), acteFait("acte2")] });
+  check("avec un jour J : la règle par la date et sa réplique", v3.phase === "consolidation" && v3.phaseReplique.startsWith("Trois mois"), v3.phaseReplique);
 }
 
 console.log("\n# le moteur tourne sur l'arbre d'essai (ses actes, ses contrats)");
