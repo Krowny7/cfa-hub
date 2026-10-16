@@ -10,6 +10,7 @@ import {
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue, type VueCodex } from "@/lib/codex/vue";
+import { CAPACITES_VIDE } from "@/lib/codex/reglage";
 import type { Budget } from "@/lib/codex/types";
 
 export type Scenario = "neuf" | "milieu" | "fin";
@@ -33,12 +34,16 @@ export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; 
     progression: [], contrats: [], premier: false, dernierCalcul: new Date("2026-10-15T10:00:00Z"), lecture: LECTURE_VIDE,
     pointsFaibles: [{ notion: "Duration", score: 31 }, { notion: "Hypothesis testing", score: 40 }],
     budget: opts.budget ?? null, ecartees: opts.ecartees ?? [],
+    // le fil rouge : « à venir » au milieu (la base ne sait pas encore l'écrire), tamponnable à la fin
+    ...(fin ? { capacites: { ...CAPACITES_VIDE, fil: true } } : {}),
   };
   const maitrise = Object.fromEntries(contenu.map((m, i) => [m.key, { pct: neuf ? 0 : fin ? 58 + ((i * 7) % 28) : 28 + ((i * 11) % 45), questions: neuf ? 0 : fin ? 220 : 40 + i * 12, debut: neuf ? null : 30 + (i % 4) * 8 }]));
   const lecture0: LectureSql = {
     compteurs: {}, speciaux: {},
     mesures: {
       xp_total: neuf ? 0 : fin ? 9200 : 3100, maitrise, ratures_ouvertes: { total: neuf ? 0 : 14, matieres: {} }, serie: neuf ? 0 : 4, meilleure_serie: neuf ? 0 : 9, elo: neuf ? null : 1180,
+      jours_encre_total: neuf ? 0 : fin ? 64 : 21, maitres_total: fin ? 1 : 0, programmes_menes: 0,
+      trophees: neuf ? [] : fin ? [{ source: "ciblee", palier: 3, n: 3 }, { source: "ciblee", palier: 4, n: 1 }] : [{ source: "ciblee", palier: 2, n: 2 }],
       inscrit_le: neuf ? "2026-10-16T13:20:00+02:00" : "2026-08-12T09:00:00+02:00", jours: neuf ? [] : Array.from({ length: fin ? 40 : 18 }, (_, i) => ({ jour: `2026-09-${String((i % 28) + 1).padStart(2, "0")}`, n: 12 + (i % 5) })),
     },
   };

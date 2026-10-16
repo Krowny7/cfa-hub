@@ -92,7 +92,7 @@ export type VueChapitreFil = {
   id: string;
   titre: string;
   pourquoi: string;
-  /** paliers récompensés (écrits en base) */
+  /** le plus haut palier tamponné (écrit en base, ou rempli par ce calcul quand la base sait l'écrire) */
   faits: number;
   courant: LigneQuete | null;
   suivant: LigneQuete | null;
@@ -292,7 +292,9 @@ export function construireVue(
         // « à venir » : aucune XP annoncée (le détail n'affiche pas « +n XP » à zéro)
         .map((x) => (aVenir ? { ...x.l, xp: 0 } : x.l));
       const restants = paliers.filter((x) => x.etat !== "terminee");
-      return { id: c.id, titre: c.titre, pourquoi: c.pourquoi, faits: recompenses[c.id] ?? 0, courant: restants[0] ?? null, suivant: restants[1] ?? null, recents: paliers.filter((x) => x.aFeter) };
+      // tamponnés : ceux de la base, et ceux que ce calcul vient de remplir (écrits avec lui) ; « à venir » : la base seule
+      const faits = Math.max(recompenses[c.id] ?? 0, ...(aVenir ? [] : paliers.filter((x) => x.etat === "terminee").map((x) => x.palier ?? 0)));
+      return { id: c.id, titre: c.titre, pourquoi: c.pourquoi, faits, courant: restants[0] ?? null, suivant: restants[1] ?? null, recents: paliers.filter((x) => x.aFeter) };
     }),
   };
 
