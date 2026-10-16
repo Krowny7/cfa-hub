@@ -92,6 +92,12 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
     check("un contrat recommandé : en tête, une seule fois, il garde son « Changer »", pc.quetes[0].genre === "principale" && pc.quetes[0].emplacement === ct.emplacement && pc.quetes[0].changeable === ct.changeable && pc.quetes.filter((q) => q.cle === pc.quetes[0].cle).length === 1);
   }
   check("chaque contrat changeable du panneau porte son emplacement (« Changer » par contrat)", m.quetes.filter((q) => q.genre === "contrat").every((q) => !!q.emplacement && typeof q.changeable === "boolean"));
+  // V3 §1.5 : plus aucune chaîne à proposer → le palier du fil rouge le plus avancé, s'il s'écrit déjà
+  const vf = exempleCodex("fin");
+  const fil = panneauDe({ ...vf, longCours: [] }).quetes.filter((q) => q.genre === "fil");
+  check("chaînes toutes finies : le fil rouge prend la place du long cours (un palier, « Le fil rouge · … », lançable)", fil.length === 1 && fil[0].id.startsWith("fil:") && fil[0].sur.startsWith("Le fil rouge · ") && !!fil[0].destination, JSON.stringify(fil.map((q) => [q.id, q.sur])));
+  check("une chaîne en cours : pas de fil rouge dans le panneau", !panneauDe(vf).quetes.some((q) => q.genre === "fil"));
+  check("fil rouge « à venir » (la base ne l'écrit pas encore) : jamais dans le panneau", !panneauDe({ ...exempleCodex("milieu"), longCours: [] }).quetes.some((q) => q.genre === "fil"));
 }
 
 console.log("\n# les récompenses versées s'annoncent une fois (acquittées à l'ouverture)");

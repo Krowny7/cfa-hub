@@ -93,7 +93,7 @@ function versPanneau(l: LigneQuete, genre: GenreQuete, sur: string, extra: Parti
 
 /** Toutes les quêtes de la vue (une même quête peut y figurer deux fois : la clé les dédoublonne). */
 const toutesLignes = (vue: VueCodex): LigneQuete[] => [
-  ...vue.contrats.map((c) => c.ligne), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.exploits, ...vue.hebdo,
+  ...vue.contrats.map((c) => c.ligne), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.filRouge.chapitres.flatMap((c) => c.recents), ...vue.exploits, ...vue.hebdo,
 ];
 
 /** Les récompenses versées dont la fanfare n'a pas été jouée (hors sceaux du profil, qui ont leur cérémonie), et les actes clos à fêter. */
@@ -136,6 +136,13 @@ export function panneauDe(vue: VueCodex): Panneau {
       .filter((c) => c.courant && c.courant.etat !== "verrouillee" && !pris.has(cleDe(c.courant)))
       .sort((a, b) => b.courant!.fraction - a.courant!.fraction)[0];
     if (chaine?.courant) liste.push(versPanneau(chaine.courant, "longcours", `Au long cours · ${chaine.chaine.titre}`));
+    // plus aucune chaîne à proposer : le palier du fil rouge le plus avancé prend la place (V3 §1.5), s'il s'écrit déjà
+    else if (!vue.filRouge.aVenir) {
+      const ch = vue.filRouge.chapitres
+        .filter((c) => c.courant && c.courant.etat !== "verrouillee" && c.courant.destination && !pris.has(cleDe(c.courant)))
+        .sort((a, b) => b.courant!.fraction - a.courant!.fraction)[0];
+      if (ch?.courant) liste.push(versPanneau(ch.courant, "fil", `Le fil rouge · ${ch.titre}`));
+    }
   }
 
   const { lignes, actes } = aAnnoncer(vue);
