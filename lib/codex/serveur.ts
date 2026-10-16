@@ -154,6 +154,11 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       pointsFaibles(supabase),
     ]);
     if (joueurR.error && baseAbsente(joueurR.error)) return vide;
+    // une lecture ratée de codex_joueur ferait passer le joueur pour neuf (tout rétroactif) : on s'arrête là
+    if (joueurR.error) {
+      await consigner(a, user.id, "", `codex_joueur illisible : ${joueurR.error.message}`);
+      return repli(user.id, jour);
+    }
     if (lignes === null) {
       await consigner(a, user.id, "", "codex_progression illisible");
       return repli(user.id, jour);
