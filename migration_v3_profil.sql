@@ -85,9 +85,9 @@ $$;
 
 -- Tous les trophées d'un joueur, un par ligne : (source, palier, quand, ref).
 -- ref est un libellé court (« FSA, Equity, Ethics », « Les 30 du jour du
--- 14 oct. », « Fiche FSA »). Les seuils suivent la spécification V3 §2.2 et
--- lib/trophees.ts (SOURCES_TROPHEE) ; chaque source ne vit que si ses
--- tables existent.
+-- 14 oct. », « Fiche FSA »). Les seuils sont ceux que lib/trophees.ts
+-- (SOURCES_TROPHEE) affiche ; chaque source ne vit que si ses tables
+-- existent.
 CREATE OR REPLACE FUNCTION _trophees_liste(p_user uuid)
 RETURNS TABLE (source text, palier smallint, quand timestamptz, ref text)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public

@@ -160,6 +160,19 @@ export function lignesTrophees(rows: { source: unknown; palier: unknown; n: unkn
 }
 
 /**
+ * La mesure « trophees » du Codex : le nombre de trophées de palier `palier`
+ * ou mieux (bronze par défaut), de la source si elle est donnée, sur les
+ * lignes de trophees_joueur (les mesures v3 du Codex). Les lignes invalides
+ * ne comptent pas.
+ */
+export function mesureTrophees(
+  lignes: { source: unknown; palier: unknown; n: unknown }[],
+  filtre: { palier?: ClePalierTrophee; source?: SourceTrophee } = {},
+): number {
+  return compter(lignesTrophees(lignes)).auMoins(palierTrophee(filtre.palier ?? "bronze"), filtre.source);
+}
+
+/**
  * Les trophées d'un joueur, lus par le client donné (agrégats seulement :
  * ni date, ni libellé). Toutes les sources par get_user_trophees
  * (`complet: true`) ; sans la section §2, le repli get_user_practice_trophies

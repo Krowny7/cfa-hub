@@ -9,8 +9,8 @@
 // folios ; une clé déclarée des deux côtés n'apparaît qu'une fois ; un type
 // inconnu est ignoré), chaque sorte de condition (unDe compris), les dates,
 // les réexports de lib/profil/catalogue.ts, compter, palierCiblee (plafond par
-// taille), SOURCES_TROPHEE, lireTrophees (get_user_trophees, puis le repli
-// ciblé), mesTropheesDepuis, lireAcquis ;
+// taille), mesureTrophees, SOURCES_TROPHEE, lireTrophees (get_user_trophees,
+// puis le repli ciblé), mesTropheesDepuis, lireAcquis ;
 // lireStyles (relu sans titre ni folio sans migration_v3_profil.sql §1),
 // styleDepuis, validerStyle (pièce gagnée, déjà portée, inconnue), les titres
 // portables et leur affichage (32 caractères au plus).
@@ -19,7 +19,7 @@ import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, contenuDuProgramme,
 import { donneurs } from "@/lib/codex/vue";
 import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as remplieCatalogue, STATS_VIDES } from "@/lib/profil/catalogue";
 import { codexDepuis, lireAcquis, type Acquis, type Condition } from "@/lib/profil/acquis";
-import { ORDRE_SOURCES_TROPHEE, SOURCES_TROPHEE, compter, lignesCiblees, lireTrophees, mesTropheesDepuis, palierCiblee, palierTrophee, type LigneTrophee, type SourceTrophee } from "@/lib/trophees";
+import { ORDRE_SOURCES_TROPHEE, SOURCES_TROPHEE, compter, lignesCiblees, lireTrophees, mesTropheesDepuis, mesureTrophees, palierCiblee, palierTrophee, type LigneTrophee, type SourceTrophee } from "@/lib/trophees";
 import type { CosmetiqueCodex } from "@/lib/codex/types";
 
 let ko = 0;
@@ -212,6 +212,19 @@ async function main() {
       egal(
         [[1, 10], [4, 29], [4, 30], [7, 59], [7, 60], [6, 60], [2, 29], [0, 100], [7, NaN]].map(([m, t]) => palierCiblee(m, t)),
         [1, 2, 3, 3, 4, 3, 2, 1, 2],
+      ),
+    );
+    const sql = [
+      { source: "ciblee", palier: 4, n: "2" },
+      { source: "trente", palier: 3, n: 1 },
+      { source: "drill", palier: 1, n: 4 },
+      { source: "inconnue", palier: 4, n: 5 },
+    ];
+    check(
+      "mesureTrophees : palier ou mieux (bronze par défaut), source si donnée, lignes invalides écartées",
+      egal(
+        [mesureTrophees(sql), mesureTrophees(sql, { palier: "or" }), mesureTrophees(sql, { palier: "diamant" }), mesureTrophees(sql, { palier: "or", source: "trente" }), mesureTrophees(sql, { palier: "diamant", source: "trente" }), mesureTrophees([])],
+        [7, 3, 2, 1, 0, 0],
       ),
     );
     const paliersAttendus: Record<SourceTrophee, number[]> = { ciblee: [1, 2, 3, 4], blanc: [1, 2, 3, 4], trente: [1, 2, 3, 4], cinq: [1], drill: [1, 2], fiche: [3, 4], atelier: [1, 2], duel: [1], revoir: [1, 2] };
