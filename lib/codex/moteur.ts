@@ -18,11 +18,12 @@ import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMM
 import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
+import { programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { notionParId, notionsDeMatiere } from "@/lib/notions";
 import { decaleJour, joursEntre } from "@/lib/objectif-calc";
-import type { Acte, Budget, Capacites, Comparaison, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement } from "@/lib/codex/types";
+import type { Acte, Budget, Capacites, Comparaison, Requis, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement } from "@/lib/codex/types";
 
 // ── Ce que la base donne ───────────────────────────────────────────────
 
@@ -57,6 +58,10 @@ export type MesuresSql = {
   inscrit_le?: string;
   serie?: number;
   meilleure_serie?: number;
+  /** codex_mesures_v3 (migration_codex_v3.sql §4) : jours à 10 questions ou plus, à vie */
+  jours_encre_total?: number;
+  /** codex_mesures_v3 : programmes menés (codex_programmes_joueur, statut « mene ») */
+  programmes_menes?: number;
 };
 
 export type LectureSql = { compteurs: Record<string, ResultatCompteur>; mesures: MesuresSql; speciaux: Record<string, number> };
@@ -114,10 +119,36 @@ export type Entree = {
   ecartees?: string[];
   /** ce que la base sait faire (V3 §1.8) ; absent : rien (CAPACITES_VIDE) */
   capacites?: Capacites;
+  /** les programmes du joueur (codex_programmes_joueur, V3 §1.6) ; absent ou vide : CFA I actif, rien de mené */
+  programmes?: ProgrammeJoueur[];
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
 export const capacitesDe = (e: Pick<Entree, "capacites">): Capacites => e.capacites ?? CAPACITES_VIDE;
+
+/** La base sait-elle faire ce que la quête exige (Quete.requiert) ? Sinon la quête n'est pas branchée à l'exécution. */
+export function requisOk(q: Pick<Quete, "requiert">, c: Capacites): boolean {
+  return (q.requiert ?? []).every((r: Requis) => (r === "journal3" ? c.journal === 3 : c[r]));
+}
+
+/**
+ * L'examen est-il derrière le joueur (prérequis « apresExamen », V3 §1.6) :
+ * un programme mené, ou le jour J de son programme actif (daté) passé.
+ */
+export function apresExamenDe(e: Pick<Entree, "programmes" | "jour" | "jourJ">): boolean {
+  if (e.programmes?.some((p) => p.statut === "mene")) return true;
+  const j = joursAvantExamen(e.jour, e.jourJ);
+  return !!programmeActif(e.programmes).examen && j !== null && j < 0;
+}
+
+/** Les actes clos d'après les lignes de progression (« acte:<id> » récompensé). */
+export const actesClosDe = (progression: LigneProgression[]): string[] =>
+  progression.filter((l) => l.quete_id.startsWith("acte:") && (l.etat === "recompensee" || l.etat === "terminee")).map((l) => l.quete_id.slice(5));
+
+/** La phase du joueur : par son jour J s'il en a un, sinon par l'avancement de la trame de son programme (V3 §1.4). */
+export function phaseJoueur(e: Pick<Entree, "programmes" | "jour" | "jourJ">, actesClos: Iterable<string>): Phase {
+  return phaseDe(joursAvantExamen(e.jour, e.jourJ), { def: programmeActif(e.programmes), actesClos, apresExamen: apresExamenDe(e) });
+}
 
 /** Le budget du jour : celui que le joueur a choisi, sinon celui de son rythme des 7 derniers jours actifs. */
 export const budgetDuJour = (e: Pick<Entree, "budget" | "lecture">): Budget => e.budget ?? budgetParDefaut(questionsDes7Jours(e.lecture.mesures.jours));
@@ -371,9 +402,9 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
 function branchesFaites(c: Contexte, etape: EtapeBranche) {
   let faites = 0;
   for (const m of c.contenu) {
-    const id = `branche:${m.key}:${etape}`;
-    const existe = c.catalogue.some((q) => q.id === id);
-    if (!existe || c.faites.has(clePeriode(id, ""))) faites++;
+    // par la matière et l'étape (l'id porte le préfixe du programme hors CFA I)
+    const q = c.catalogue.find((x) => x.famille === "branche" && x.matiere === m.key && x.etape === etape);
+    if (!q || c.faites.has(clePeriode(q.id, ""))) faites++;
   }
   return { faites, total: c.contenu.length };
 }
@@ -479,7 +510,7 @@ export type Instance = { quete: Quete; periode: string; params: ContratTire["par
 export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Emplacement, string>> = {}): ContratTire[] {
   const contenu = e.contenu ?? contenuDuProgramme();
   const rnd = graine(`${joueur}:${e.jour}`);
-  const phase = phaseDe(joursAvantExamen(e.jour, e.jourJ));
+  const phase = phaseJoueur(e, actesClosDe(e.progression));
   const M = e.lecture.mesures;
   // paramètres : matière la plus à risque (poids × (1 − maîtrise), inconnue = 0,2), notion la plus faible, fiche de la matière
   const risque = contenu
@@ -598,12 +629,16 @@ export type Resultat = {
 
 const ordreFamille = { trame: 0, branche: 1, longcours: 2, contrat: 3, exploit: 4 } as const;
 
+/** Une quête suivie : ni retirée, ni sur un événement pas encore suivi en base, ni sur ce que la base ne sait pas encore faire (V3 §1.8). */
+const suivie = (q: Quete, c: Capacites) => !q.retiree && queteBranchee(q) && requisOk(q, c);
+
 /** Les quêtes à suivre : catalogue branché et non retiré, plus les instances du jour. */
 export function quetesASuivre(e: Entree, contenu: ContenuMatiere[]): { catalogue: Quete[]; instances: Instance[] } {
   const catalogue = e.catalogue ?? catalogueCodex(contenu);
+  const capacites = capacitesDe(e);
   const instances: Instance[] = [];
   for (const q of catalogue) {
-    if (q.retiree || !queteBranchee(q)) continue;
+    if (!suivie(q, capacites)) continue;
     instances.push({ quete: q, periode: periodeDe(q, e.jour), params: {} });
   }
   for (const c of e.contrats) {
@@ -651,8 +686,8 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
   switch (p.k) {
     case "quete": {
       const q = c.catalogue.find((x) => x.id === p.id);
-      // une quête retirée ou pas encore branchée ne bloque jamais
-      if (!q || q.retiree || !queteBranchee(q)) return true;
+      // une quête retirée ou pas encore branchée (événement, capacité de la base) ne bloque jamais
+      if (!q || !suivie(q, capacitesDe(c.e))) return true;
       return c.faites.has(clePeriode(p.id, ""));
     }
     case "acte": return actesClos.has(p.id);
@@ -665,6 +700,7 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
       const j = joursAvantExamen(c.e.jour, c.e.jourJ);
       return j !== null && j <= p.max && j >= (p.min ?? 0);
     }
+    case "apresExamen": return apresExamenDe(c.e);
     case "unDe": return p.prerequis.some((x) => prerequisOk(x, c, actesClos));
   }
 }
@@ -678,7 +714,6 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   const { catalogue, instances } = quetesASuivre(e, contenu);
   const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
   const niveau = levelInfoFromXp(e.lecture.mesures.xp_total ?? 0).level;
-  const phase = phaseDe(joursAvantExamen(e.jour, e.jourJ));
   const resolveur: Contexte["compteur"] = (d) => {
     const cle = JSON.stringify([d.evenement, d.filtre ?? null, d.fenetre ?? null, d.jour ?? null, d.distinct ?? null, d.somme ?? null, d.seuil]);
     return compteurs[cle] ?? { n: 0, atteint: null };
@@ -771,7 +806,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     lot,
     budgetRetro: plafondRetro(niveau),
     niveau,
-    phase,
+    phase: phaseJoueur(e, actesClos),
     actesClos: [...actesClos],
     acteCourant: acteCourantDe(actesClos),
     contrats: instances.filter((i) => i.quete.famille === "contrat" && i.quete.repetition === "quotidienne"),
@@ -818,14 +853,14 @@ export type Recommandation = {
 };
 
 const virgule = (n: number) => String(n).replace(".", ",");
-const ETAPES_AVANT_JALON: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "tour"];
+const ETAPES_AVANT_JALON: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour"];
 
 /**
  * Ce que le résolveur de destinations (lib/codex/destinations.ts) sait du
  * joueur : lu sur l'entrée et, s'il est là, sur le résultat de l'évaluation
  * (les quêtes faites, pour « branches à une étape »).
  */
-export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats">): ContexteDestination {
+export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats"> & Partial<Pick<Resultat, "phase">>): ContexteDestination {
   const contenu = e.contenu ?? contenuDuProgramme();
   const M = e.lecture.mesures;
   const comptes = M.notions ?? {};
@@ -840,11 +875,13 @@ export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats">): Con
     pointsFaibles: e.pointsFaibles ?? [],
     drillPageFaible: Object.fromEntries(contenu.map((m) => [m.key, pageFaible(m.key)])),
     revoir: null,
-    phase: phaseDe(joursAvant),
+    phase: r?.phase ?? phaseJoueur(e, actesClosDe(e.progression)),
     joursAvant,
     tailleMaxCiblee: (k) => tailleMaxCiblee(contenu.find((m) => m.key === k)?.poids ?? 0),
     routes: ROUTES,
     practiceV3: PRACTICE_V3,
+    programme: programmeActif(e.programmes).cle,
+    outils: programmeActif(e.programmes).outils,
     ...(r ? { faites: new Set(r.etats.filter((s) => s.fait && s.periode === "").map((s) => s.quete.id)) } : {}),
   };
 }

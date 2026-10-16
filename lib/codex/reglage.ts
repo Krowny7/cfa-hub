@@ -56,6 +56,14 @@ function capacitesDe(x: unknown): Partial<Capacites> | null {
 }
 
 /**
+ * Les capacités de la base rendues par codex_mesures_v3 (V3 §1.8) ; une clé
+ * absente ou mal formée vaut « ne sait pas » (fonction absente : CAPACITES_VIDE).
+ */
+export function lireCapacites(x: unknown): Capacites {
+  return { ...CAPACITES_VIDE, ...(capacitesDe(x) ?? {}) };
+}
+
+/**
  * Le réglage du jour, d'après la lecture à part des colonnes v3 :
  * `absente` (colonnes ou table absentes : §2 pas collée) → le compte ;
  * sinon la ligne (null : pas encore de ligne, rien de réglé).

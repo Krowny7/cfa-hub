@@ -8,7 +8,8 @@
 // Module neutre et pur : le contexte (maîtrises, points faibles…) est lu par
 // le moteur (contexteDestination, lib/codex/moteur.ts).
 
-import { CHAINES, cibleeDe, genererBranches, lienCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { CHAINES, PROGRAMME, cibleeDe, genererBranches, lienCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { idDe } from "@/lib/codex/programmes/ids";
 import { notionParId } from "@/lib/notions";
 import { defSceau } from "@/lib/profil/sceaux";
 import type { ContratTire, Ev } from "@/lib/codex/moteur";
@@ -49,6 +50,9 @@ export type ContexteDestination = {
   practiceV3: boolean;
   /** les quêtes uniques déjà faites (ids) : « branches à une étape » vise la première branche qui ne l'a pas */
   faites?: ReadonlySet<string>;
+  /** le programme actif (absent : CFA I) et ses outils (absent : tous) ; un outil absent du programme prend le repli d'entraînement (REPLI_OUTIL) */
+  programme?: string;
+  outils?: ReadonlySet<Outil>;
 };
 
 /**
@@ -109,6 +113,18 @@ export const ROUTES: ReadonlySet<string> = new Set([
 export const REPLIS: Record<string, string> = {
   "/revoir": "/moi?onglet=erreurs&reprise=1",
 };
+
+/**
+ * Un programme sans l'outil d'une destination (un programme d'histoire n'a
+ * ni séance ciblée, ni drill, ni examen blanc) : on s'entraîne avec le
+ * premier de ces outils qu'il a, sinon la quête n'est pas lançable.
+ */
+const REPLI_OUTIL: { outil: Outil; href: string; duree: number }[] = [
+  { outil: "ciblee", href: "/practice", duree: 20 },
+  { outil: "eclair", href: "/eclair", duree: 10 },
+  { outil: "cinq", href: "/defi/cinq", duree: 5 },
+];
+const OUTILS: ReadonlySet<string> = new Set<Outil>(["ciblee", "fiche", "drill", "cours", "flashcards", "atelier", "calculs", "blancs", "trente", "cinq", "eclair", "duels", "revoir"]);
 
 /** /practice comprend-il topic=all, n, poids et go ? (posé à vrai par A4a, après F1) */
 export const PRACTICE_V3 = false;
@@ -331,12 +347,12 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
 /** « Branches à une étape » : la destination de cette étape dans la première branche (poids décroissants) qui ne l'a pas. */
 function cibleEtape(etape: EtapeBranche, ctx: ContexteDestination): Cible | null {
   const faites = ctx.faites ?? new Set<string>();
+  const programme = ctx.programme ?? PROGRAMME;
   for (const m of [...ctx.contenu].sort((a, b) => b.poids - a.poids)) {
-    const id = `branche:${m.key}:${etape}`;
-    if (faites.has(id)) continue;
     // une branche sans cette étape compte pour faite (branchesFaites, moteur)
-    const q = genererBranches([m]).find((x) => x.id === id);
-    const c = q ? resoudre(q.objectif, q, {}, ctx) : null;
+    const q = genererBranches([m], programme, ctx.outils).find((x) => x.etape === etape);
+    if (!q || faites.has(idDe(programme, q.id))) continue;
+    const c = resoudre(q.objectif, q, {}, ctx);
     if (c) return q!.duree ? { ...c, duree: q!.duree } : c;
   }
   return null;
@@ -347,13 +363,18 @@ function cibleSpeciale(cle: string, q: Quete, params: ContratTire["params"], ctx
   const mat = matiereDe(ctx, params.matiere ?? q.matiere);
   if (cle.startsWith("serie_bonnes")) return { href: lienPractice(ctx, { topic: mat?.key ?? "all", n: 20 }), duree: 20, outil: "ciblee", ...(mat ? { matiere: mat.key } : {}) };
   if (cle.startsWith("serie_calculs")) return { ...CALCULS, duree: 15 };
+  if (cle === "justes_sur_20_matiere") return { href: lienPractice(ctx, { topic: mat?.key ?? "all", n: 20 }), duree: 20, outil: "ciblee", ...(mat ? { matiere: mat.key } : {}) };
   if (cle === "phenix") return TRENTE;
   if (cle === "retour" || cle === "aube") return CINQ;
   return null;
 }
 
-/** Une cible placée dans cette copie : sa page existe, sinon son repli ; ni l'un ni l'autre → rien. */
+/** Une cible placée dans cette copie et ce programme : son outil existe (sinon REPLI_OUTIL), sa page existe, sinon son repli ; ni l'un ni l'autre → rien. */
 function placer(c: Cible | null, ctx: ContexteDestination): Cible | null {
+  if (c && ctx.outils && OUTILS.has(c.outil) && !ctx.outils.has(c.outil as Outil)) {
+    const r = REPLI_OUTIL.find((x) => ctx.outils!.has(x.outil));
+    c = r ? { href: r.href, duree: r.duree, outil: r.outil, ...(c.matiere ? { matiere: c.matiere } : {}) } : null;
+  }
   if (!c || !c.href.startsWith("/")) return null;
   const chemin = cheminDe(c.href);
   if (routeExiste(chemin, ctx.routes)) return c;

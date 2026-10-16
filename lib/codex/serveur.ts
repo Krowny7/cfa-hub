@@ -29,8 +29,9 @@ import {
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
-import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
-import type { Budget, Emplacement } from "@/lib/codex/types";
+import { CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, ecarter, lireCapacites, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
+import { lireProgrammesJoueur, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
 
@@ -142,6 +143,39 @@ async function lireReglage(a: SupabaseClient, user: Joueur, jour: string): Promi
   }
 }
 
+/** Les programmes du joueur (codex_programmes_joueur, V3 §1.6) ; table absente ou illisible : aucun (CFA I actif). */
+async function lireProgrammes(a: SupabaseClient, id: string): Promise<ProgrammeJoueur[]> {
+  try {
+    const { data, error } = await a.from("codex_programmes_joueur").select("programme,statut,jour_j,mene_le").eq("user_id", id).limit(50);
+    return error ? [] : lireProgrammesJoueur(data);
+  } catch {
+    return [];
+  }
+}
+
+type MesuresV3 = { capacites: Capacites; jours_encre_total?: number; programmes_menes?: number };
+
+/**
+ * Les mesures v3 et les capacités de la base (codex_mesures_v3, V3 §1.8), en
+ * un appel. Fonction absente ou en erreur : la base ne sait rien faire de
+ * nouveau (CAPACITES_VIDE), et les mesures v3 restent inconnues.
+ */
+async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): Promise<MesuresV3> {
+  try {
+    const { data, error } = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
+    if (error || !data || typeof data !== "object") return { capacites: CAPACITES_VIDE };
+    const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown };
+    const n = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? { v: x } : null);
+    return {
+      capacites: lireCapacites(d.capacites),
+      ...(n(d.jours_encre_total) ? { jours_encre_total: n(d.jours_encre_total)!.v } : {}),
+      ...(n(d.programmes_menes) ? { programmes_menes: n(d.programmes_menes)!.v } : {}),
+    };
+  } catch {
+    return { capacites: CAPACITES_VIDE };
+  }
+}
+
 async function dateExamenDe(a: SupabaseClient, id: string): Promise<string | null> {
   try {
     const { data, error } = await a.from("profiles").select("exam_date").eq("id", id).maybeSingle();
@@ -162,14 +196,21 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
   if (!a) return vide;
   try {
     const hier = decaleJour(jour, -1);
-    const [joueurR, reglage, lignes, contratsParJour, jourJ, pf] = await Promise.all([
+    const [joueurR, reglage, lignes, contratsParJour, dateExamen, pf, programmes] = await Promise.all([
       a.from("codex_joueur").select(COLONNES_JOUEUR).eq("user_id", user.id).maybeSingle(),
       lireReglage(a, user, jour),
       lireLignes(a, user.id),
       lireContrats(a, user.id, [jour, hier]),
       dateExamenDe(a, user.id),
       pointsFaibles(supabase),
+      lireProgrammes(a, user.id),
     ]);
+    // le programme actif (sans ligne : CFA I) ; son jour J, sinon celui du profil (le repli d'avant la v3)
+    const actif = programmeActif(programmes);
+    const ligneActive = programmes.find((p) => p.programme === actif.cle && p.statut === "actif");
+    const jourJ = actif.examen ? (ligneActive?.jourJ ?? dateExamen) : null;
+    // les mesures v3 et les capacités : lues pendant le tirage des contrats, attendues avant le plan des compteurs
+    const v3P = lireMesuresV3(a, user.id, actif.cle);
     if (joueurR.error && baseAbsente(joueurR.error)) return vide;
     // une lecture ratée de codex_joueur ferait passer le joueur pour neuf (tout rétroactif) : on s'arrête là
     if (joueurR.error) {
@@ -197,6 +238,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       pointsFaibles: pf,
       budget: reglage.budget,
       ecartees: reglage.ecartees,
+      programmes,
     };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage)
@@ -216,6 +258,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       }
     }
 
+    // ce que la base sait faire décide des quêtes suivies, donc des compteurs demandés
+    const v3 = await v3P;
+    entree.capacites = v3.capacites;
     // les compteurs de toutes les quêtes, en un seul appel
     const demandes = planifier(entree);
     const lecture = await lire(a, user.id, demandes, jour);
@@ -223,8 +268,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       await consigner(a, user.id, "", "codex_lire a échoué");
       return repli(user.id, jour);
     }
-    entree.lecture = lecture;
-    const compteurs = indexerLecture(demandes, lecture);
+    entree.lecture = { ...lecture, mesures: { ...lecture.mesures, ...(v3.jours_encre_total !== undefined ? { jours_encre_total: v3.jours_encre_total } : {}), ...(v3.programmes_menes !== undefined ? { programmes_menes: v3.programmes_menes } : {}) } };
+    const compteurs = indexerLecture(demandes, entree.lecture);
     let resultat = evaluer(entree, compteurs);
 
     // l'écriture : récompenses uniques, ouvertures, progression
