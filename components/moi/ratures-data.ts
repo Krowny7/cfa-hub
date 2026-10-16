@@ -56,8 +56,8 @@ export type RaturesPage = {
   sources: Record<string, number>;
   /** anciennes scellées ; absent sans la section §3a */
   scellees?: number;
-  /** en cours, réussies trop tôt, qui sèchent encore ; absent sans la section §3a */
-  fraiches?: number;
+  /** en cours, qui sèchent encore (moins de 24 h depuis l'erreur) : Mise au propre ne les propose pas ; absent sans la section §3a */
+  sechent?: number;
   items: RatureItem[];
 };
 
@@ -98,7 +98,7 @@ type Brut = {
   retirees: number;
   retirees_semaine: number;
   scellees?: number;
-  fraiches?: number;
+  sechent?: number;
   filtre: number;
   sources: Record<string, number> | null;
   items: Ligne[] | null;
@@ -114,7 +114,7 @@ export function pageDe(r: Brut): RaturesPage {
     sources: r.sources ?? {},
     // absents tant que la section §3a manque : le carnet ne parle pas de séchage
     scellees: r.scellees === undefined ? undefined : Number(r.scellees) || 0,
-    fraiches: r.fraiches === undefined ? undefined : Number(r.fraiches) || 0,
+    sechent: r.sechent === undefined ? undefined : Number(r.sechent) || 0,
     items: (r.items ?? []).map((l) => ({
       questionId: l.question_id,
       prompt: l.prompt,

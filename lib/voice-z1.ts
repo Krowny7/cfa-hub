@@ -196,7 +196,7 @@ export const CARNET = {
   scelleeDetail: "Rayée, puis réussie de nouveau une semaine plus tard : elle tient.",
   scellees: (n: number) => pluriel(n, "scellée", "scellées"),
   /** sous « Mettre au propre » : les ratures du carnet qui ne sont pas encore proposées */
-  fraichesSous: (n: number) => `${pluriel(n, "rature sèche", "ratures sèchent")} encore : ${n > 1 ? "elles reviendront" : "elle reviendra"} demain.`,
+  sechentSous: (n: number) => `${pluriel(n, "rature sèche", "ratures sèchent")} encore : ${n > 1 ? "elles reviendront" : "elle reviendra"} demain.`,
   propreFraiche: (q: { demain: true } | { demain: false; heure: number } | null) =>
     `Juste. Encre fraîche : elle sèche ${q && !q.demain ? `à ${q.heure} h` : "demain"}, une bonne réponse la rayera alors.`,
   propreSeche: "Tout ce qui reste sèche demain.",

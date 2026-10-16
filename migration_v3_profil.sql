@@ -515,8 +515,9 @@ END;
 $$;
 
 -- La lecture du carnet (migration_ratures_reprise.sql), plus : les ratures
--- scellées, celles en cours qui sèchent encore (réussies trop tôt), et, par
--- rature, seche_le et scellee_le.
+-- scellées, celles en cours qui sèchent encore (manquées il y a moins de
+-- 24 h, réussies trop tôt ou non : Mise au propre ne les propose pas), et,
+-- par rature, seche_le et scellee_le.
 CREATE OR REPLACE FUNCTION get_ratures(p_source text DEFAULT NULL, p_retirees boolean DEFAULT false, p_limit int DEFAULT 20, p_offset int DEFAULT 0)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -546,7 +547,7 @@ BEGIN
     'retirees', (SELECT count(*) FROM mes WHERE removed_at IS NOT NULL),
     'retirees_semaine', (SELECT count(*) FROM mes WHERE removed_at > now() - interval '7 days'),
     'scellees', (SELECT count(*) FROM mes WHERE removed_at IS NOT NULL AND scellee_le IS NOT NULL),
-    'fraiches', (SELECT count(*) FROM mes WHERE removed_at IS NULL AND seche_le > now()),
+    'sechent', (SELECT count(*) FROM mes WHERE removed_at IS NULL AND now() < coalesce(seche_le, last_missed_at + interval '24 hours')),
     'filtre', (SELECT count(*) FROM mes WHERE (removed_at IS NOT NULL) = v_ret AND (p_source IS NULL OR p_source = ANY (sources))),
     'sources', coalesce((SELECT json_object_agg(s, n) FROM (SELECT s, count(*) AS n FROM mes, unnest(sources) AS s WHERE (removed_at IS NOT NULL) = v_ret GROUP BY s) x), '{}'::json),
     'items', coalesce((SELECT json_agg(json_build_object(
@@ -740,7 +741,7 @@ BEGIN
     'retirees', (SELECT count(*) FROM mes WHERE removed_at IS NOT NULL),
     'retirees_semaine', (SELECT count(*) FROM mes WHERE removed_at > now() - interval '7 days'),
     'scellees', (SELECT count(*) FROM mes WHERE removed_at IS NOT NULL AND scellee_le IS NOT NULL),
-    'fraiches', (SELECT count(*) FROM mes WHERE removed_at IS NULL AND seche_le > now()),
+    'sechent', (SELECT count(*) FROM mes WHERE removed_at IS NULL AND now() < coalesce(seche_le, last_missed_at + interval '24 hours')),
     'filtre', (SELECT count(*) FROM vue),
     'sources', coalesce((SELECT json_object_agg(s, n) FROM (SELECT s, count(*) AS n FROM mes, unnest(sources) AS s WHERE (removed_at IS NOT NULL) = v_ret GROUP BY s) x), '{}'::json),
     -- les notions du carnet, les plus chargées d'abord (en cours, puis anciennes)

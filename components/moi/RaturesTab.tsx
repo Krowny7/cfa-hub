@@ -68,8 +68,8 @@ type Liste = { vue: Vue; filtre: number; items: RatureItem[] };
 const VUE0: Vue = { source: null, retirees: false, notion: null };
 
 /** Le séchage du carnet (migration_v3_profil.sql §3a) : anciennes scellées, ratures en cours qui sèchent encore ; null tant que la section manque. */
-const encreDe = (p: Pick<RaturesPage, "scellees" | "fraiches">) =>
-  p.scellees === undefined || p.fraiches === undefined ? null : { scellees: p.scellees, fraiches: p.fraiches };
+const encreDe = (p: Pick<RaturesPage, "scellees" | "sechent">) =>
+  p.scellees === undefined || p.sechent === undefined ? null : { scellees: p.scellees, sechent: p.sechent };
 const memeVue = (a: Vue, b: Vue) => a.source === b.source && a.retirees === b.retirees && a.notion === b.notion;
 
 export function RaturesTab({
@@ -209,7 +209,7 @@ export function RaturesTab({
   // une rature repassée qui change de temps (rayée, ou revenue en cours) : les compteurs suivent ;
   // encre fraîche ou scellée : elle ne change pas de temps, seul son compte bouge
   function apresReponse(statut: string, srcs: string[]) {
-    if (statut === "fraiche") return setEncre((e) => e && { ...e, fraiches: e.fraiches + 1 });
+    if (statut === "fraiche") return setEncre((e) => e && { ...e, sechent: e.sechent + 1 });
     if (statut === "scellee") return setEncre((e) => e && { ...e, scellees: e.scellees + 1 });
     if (statut !== "rayee" && statut !== "revenue") return;
     setCompte((c) => {
@@ -327,7 +327,7 @@ export function RaturesTab({
             </button>
             <p className="t-micro m-0">{anciennes ? CARNET.rejouerSous : CARNET.propreSous}</p>
             {/* tout le carnet en cours : celles qui sèchent encore ne seront pas proposées aujourd'hui */}
-            {!anciennes && !liste.vue.source && notionOuverte === null && encre && encre.fraiches > 0 && <p className="t-micro m-0">{CARNET.fraichesSous(encre.fraiches)}</p>}
+            {!anciennes && !liste.vue.source && notionOuverte === null && encre && encre.sechent > 0 && <p className="t-micro m-0">{CARNET.sechentSous(encre.sechent)}</p>}
           </div>
         )}
         {/* ranger par source (les filtres) ou par notion (la liste à droite) */}

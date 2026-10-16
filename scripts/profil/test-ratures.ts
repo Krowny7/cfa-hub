@@ -39,12 +39,12 @@ const ligne = {
   folder_name: null,
 };
 const avant = pageDe({ total: 1, retirees: 0, retirees_semaine: 0, filtre: 1, sources: { fiche: 1 }, items: [ligne] });
-check("sans la section : ni scellées ni fraîches (le carnet ne parle pas de séchage)", avant.scellees === undefined && avant.fraiches === undefined);
+check("sans la section : ni scellées ni ratures qui sèchent (le carnet ne parle pas de séchage)", avant.scellees === undefined && avant.sechent === undefined);
 check("sans la section : seche_le et scellee_le à null sur chaque rature", avant.items[0].secheLe === null && avant.items[0].scelleeLe === null);
-const apres = pageDe({ total: 1, retirees: 0, retirees_semaine: 0, scellees: 2, fraiches: 1, filtre: 1, sources: {}, items: [{ ...ligne, seche_le: "2026-10-17T10:00:00Z", scellee_le: null }] });
-check("avec la section : scellées et fraîches comptées, seche_le lu", apres.scellees === 2 && apres.fraiches === 1 && apres.items[0].secheLe === "2026-10-17T10:00:00Z");
-const zero = pageDe({ total: 0, retirees: 0, retirees_semaine: 0, scellees: 0, fraiches: 0, filtre: 0, sources: null, items: null });
-check("avec la section, rien à compter : 0 (et non absent)", zero.scellees === 0 && zero.fraiches === 0);
+const apres = pageDe({ total: 1, retirees: 0, retirees_semaine: 0, scellees: 2, sechent: 1, filtre: 1, sources: {}, items: [{ ...ligne, seche_le: "2026-10-17T10:00:00Z", scellee_le: null }] });
+check("avec la section : scellées et ratures qui sèchent comptées, seche_le lu", apres.scellees === 2 && apres.sechent === 1 && apres.items[0].secheLe === "2026-10-17T10:00:00Z");
+const zero = pageDe({ total: 0, retirees: 0, retirees_semaine: 0, scellees: 0, sechent: 0, filtre: 0, sources: null, items: null });
+check("avec la section, rien à compter : 0 (et non absent)", zero.scellees === 0 && zero.sechent === 0);
 
 // ── quandSeche ───────────────────────────────────────────────────────────
 const at = (iso: string) => new Date(iso).getTime();
@@ -99,7 +99,7 @@ check("bilan de Mise au propre sans séchage : comme avant", CARNET.propreBilan(
 check("badge : « encre fraîche · sèche demain », « … · sèche à 15 h »", CARNET.encreFraiche({ demain: true }) === "encre fraîche · sèche demain" && CARNET.encreFraiche({ demain: false, heure: 15 }) === "encre fraîche · sèche à 15 h");
 check("réponse fraîche : l'heure si connue, sinon « demain »", CARNET.propreFraiche({ demain: false, heure: 9 }).includes("elle sèche à 9 h") && CARNET.propreFraiche(null).includes("elle sèche demain"), CARNET.propreFraiche(null));
 check("« Tout ce qui reste sèche demain » (U6)", CARNET.propreSeche === "Tout ce qui reste sèche demain.");
-check("fraîches sous le bouton : singulier et pluriel", CARNET.fraichesSous(1) === "1 rature sèche encore : elle reviendra demain." && CARNET.fraichesSous(3) === "3 ratures sèchent encore : elles reviendront demain.", CARNET.fraichesSous(3));
+check("sous le bouton, celles qui sèchent : singulier et pluriel", CARNET.sechentSous(1) === "1 rature sèche encore : elle reviendra demain." && CARNET.sechentSous(3) === "3 ratures sèchent encore : elles reviendront demain.", CARNET.sechentSous(3));
 check("scellées : « 1 scellée », « 4 scellées »", CARNET.scellees(1) === "1 scellée" && CARNET.scellees(4) === "4 scellées");
 check("Atelier : « 1 réussie, elle sèche demain », « 2 réussies, elles sèchent demain »", ATELIER.fraiches(1) === "1 réussie, elle sèche demain" && ATELIER.fraiches(2) === "2 réussies, elles sèchent demain");
 check("Atelier : un statut « fraiche » a son texte (pas « rayée »)", !!ATELIER.statut.fraiche && !/rayée du carnet/.test(ATELIER.statut.fraiche));
