@@ -16,11 +16,15 @@ import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, statsProfil } from "@
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { posesDe } from "@/lib/profil/sceaux";
 import { LIEN_DEFAUT, NOM_DEFAUT, acquisDe } from "@/lib/profil/catalogue";
+import { lireAcquis } from "@/lib/profil/acquis";
+import { titresPortables } from "@/lib/profil/styles";
 
 // Personnaliser, côté serveur (/people/<moi>?personnaliser=1, sur son
 // propre profil seulement) : tout ce que l'ancien éditeur /moi/profil
 // lisait (le style, le LinkedIn et le nom tels quels, les blocs de la page),
-// plus ce qui ouvre les pièces gagnées (questions, pic et sa date, sceaux).
+// plus ce qui ouvre les pièces gagnées (questions, pic et sa date, sceaux)
+// et les titres qu'il peut porter (gagnés au Codex, aux trophées, au fil
+// rouge : l'Acquis complet reste ici, la page n'en reçoit que la liste).
 
 type ProfilLu = { username: string | null; avatar_url: string | null; xp_total: number | null };
 
@@ -45,7 +49,7 @@ async function progression(sb: SupabaseClient, id: string) {
 export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: string; supabase: SupabaseClient; profil: ProfilLu; rating: { elo: number; games_played: number } | null }) {
   const admin = tryAdmin();
   const statsLues = statsProfil(id, supabase);
-  const [place, masteries, { style, disponible, pins }, lien, stats, amis, nom, moyennes, answers, trophyRows, progress, sceaux, datesPic] = await Promise.all([
+  const [place, masteries, { style, disponible, pins }, lien, stats, amis, nom, moyennes, answers, trophyRows, progress, sceaux, datesPic, acquisLu] = await Promise.all([
     getLeaderboardRank(supabase, id),
     masteryByUser(admin, [id]),
     lireStyle(supabase, id),
@@ -60,7 +64,10 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     progression(supabase, id),
     statsLues.then((s) => sceauxDuJoueur(id, s)),
     datesDuPic(supabase, id),
+    // le Codex, les trophées, les programmes menés (le profil s'y ajoute plus bas)
+    statsLues.then((s) => lireAcquis(admin ?? supabase, id, { stats: s, sceaux: [], datesPic: [] })),
   ]);
+  const titres = titresPortables({ ...acquisLu, sceaux: sceaux.etats, datesPic }, style.titre);
 
   const xpTotal = Number(profil.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
@@ -99,6 +106,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
         moyennes={moyennes}
         amis={amis}
         banqueGifs={!!process.env.KLIPY_API_KEY}
+        titres={titres}
         rendus={{
           reponses: answers?.available ? <AnswerSummary stats={answers} name={carte.name} isMe /> : null,
           trophees: <PracticeTrophies rows={trophyRows} />,
