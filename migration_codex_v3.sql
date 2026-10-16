@@ -23,6 +23,20 @@
 --       reversée : la ligne est marquée récompensée avec l'XP d'alors, sans
 --       fanfare. Le résultat gagne un champ « erreurs » (nombre de quêtes
 --       consignées à cet appel).
+--
+-- 2. Le réglage du jour du joueur (V3 §9.2, §1.9), dans codex_joueur :
+--    a. quatre colonnes : budget_min (15, 30, 60 ou 90 min, « J'ai … min »
+--       du panneau) et budget_jour (le jour de Paris où il a été choisi : il
+--       ne vaut que ce jour-là) ; ecartees ({jour, ids} : les quêtes écartées
+--       par « Une autre idée ? », pour la journée) ; capacites_vues (ce que
+--       la base savait faire au dernier calcul, pour le rattrapage).
+--       Le site les lit par une requête à part : sans elles, il garde ces
+--       réglages dans le compte (user_metadata) et rien d'autre ne change.
+--    b. codex_joueur_regler(uuid, smallint, jsonb) : pose le budget du jour
+--       et/ou les quêtes écartées (NULL : inchangé). Ne crée jamais la ligne
+--       du joueur (elle naît au premier calcul, qui décide du rétroactif).
+--    c. codex_joueur_capacites(uuid, jsonb) : pose les capacités vues.
+--    Les deux : clé service seulement.
 
 DO $$
 BEGIN
@@ -225,3 +239,55 @@ REVOKE ALL ON FUNCTION codex_erreur_noter(uuid, text, text, text) FROM PUBLIC, a
 REVOKE ALL ON FUNCTION codex_ecrire(uuid, jsonb, int) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_erreur_noter(uuid, text, text, text) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_ecrire(uuid, jsonb, int) TO service_role;
+
+-- ── 2a. codex_joueur : le réglage du jour ────────────────────────────
+ALTER TABLE codex_joueur ADD COLUMN IF NOT EXISTS budget_min smallint CHECK (budget_min IN (15, 30, 60, 90));
+ALTER TABLE codex_joueur ADD COLUMN IF NOT EXISTS budget_jour date;
+-- {"jour": "AAAA-MM-JJ", "ids": ["trame:a2:…", …]}
+ALTER TABLE codex_joueur ADD COLUMN IF NOT EXISTS ecartees jsonb;
+-- {"fil": true, "journal": 3, …} : les capacités de la base au dernier calcul écrit
+ALTER TABLE codex_joueur ADD COLUMN IF NOT EXISTS capacites_vues jsonb;
+
+-- ── 2b. codex_joueur_regler (le site, clé service) ───────────────────
+-- p_budget : 15, 30, 60 ou 90 (NULL : inchangé), valable le jour de Paris.
+-- p_ecartees : {"jour", "ids"} (NULL : inchangé) ; 30 ids au plus, 120
+-- caractères chacun. Rend toujours vide ; sans ligne codex_joueur, rien.
+CREATE OR REPLACE FUNCTION codex_joueur_regler(p_user uuid, p_budget smallint, p_ecartees jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_jour date := (now() AT TIME ZONE 'Europe/Paris')::date;
+BEGIN
+  IF p_budget IS NOT NULL AND p_budget NOT IN (15, 30, 60, 90) THEN
+    RAISE EXCEPTION 'budget invalide : %', p_budget;
+  END IF;
+  IF p_ecartees IS NOT NULL AND (
+       jsonb_typeof(p_ecartees) <> 'object'
+    OR jsonb_typeof(p_ecartees -> 'ids') IS DISTINCT FROM 'array'
+    OR jsonb_array_length(p_ecartees -> 'ids') > 30
+    OR coalesce(p_ecartees ->> 'jour', '') !~ '^\d{4}-\d{2}-\d{2}$'
+    OR EXISTS (SELECT 1 FROM jsonb_array_elements(p_ecartees -> 'ids') x
+               WHERE jsonb_typeof(x) <> 'string' OR char_length(x #>> '{}') > 120)
+  ) THEN
+    RAISE EXCEPTION 'quêtes écartées invalides';
+  END IF;
+  UPDATE codex_joueur SET
+    budget_min  = coalesce(p_budget, budget_min),
+    budget_jour = CASE WHEN p_budget IS NOT NULL THEN v_jour ELSE budget_jour END,
+    ecartees    = coalesce(p_ecartees, ecartees)
+  WHERE user_id = p_user;
+END $$;
+
+-- ── 2c. codex_joueur_capacites (le site, clé service) ────────────────
+CREATE OR REPLACE FUNCTION codex_joueur_capacites(p_user uuid, p_vues jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_vues IS NULL OR jsonb_typeof(p_vues) <> 'object' OR length(p_vues::text) > 2000 THEN
+    RAISE EXCEPTION 'capacités invalides';
+  END IF;
+  UPDATE codex_joueur SET capacites_vues = p_vues WHERE user_id = p_user;
+END $$;
+
+REVOKE ALL ON FUNCTION codex_joueur_regler(uuid, smallint, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_joueur_capacites(uuid, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_joueur_regler(uuid, smallint, jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION codex_joueur_capacites(uuid, jsonb) TO service_role;
