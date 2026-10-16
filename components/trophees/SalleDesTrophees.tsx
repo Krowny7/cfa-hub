@@ -106,7 +106,7 @@ export function SalleDesTrophees({
       {/* le détail à la demande : par source, la règle de chaque palier en infobulle */}
       <details className="group/s mt-4">
         <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-[13px] font-semibold text-muted transition-colors hover:text-white md:min-h-0 [&::-webkit-details-marker]:hidden">
-          <ChevronRight size={14} aria-hidden className="transition-transform group-open/s:rotate-90" />
+          <ChevronRight size={14} aria-hidden className="transition-transform group-open/s:rotate-90 motion-reduce:transition-none" />
           Par source
         </summary>
         <div className="mt-2">

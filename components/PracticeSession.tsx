@@ -443,7 +443,7 @@ export function PracticeSession({
                     {taille !== null ? (
                       <p className="t-small m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span>
-                          {taille} questions tirées parmi tes matières{lien.poids ? ", aux poids officiels de l'examen" : ""}.
+                          Séance de {taille} questions{selected.size > 1 ? (lien.poids ? ", mêlées aux poids officiels de l'examen" : ", à parts égales entre tes matières") : ""}.
                         </span>
                         <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setTaille(null)}>
                           Choisir un format
@@ -658,14 +658,17 @@ export function PracticeSession({
             </>
           }
           notes={
-            <>
-              <AnnonceTrophee depuis={debut} connus={gagne} className="pt-1" />
-              {error && (
-                <p role="alert" className="m-0 text-sm text-pen">
-                  {error}
-                </p>
-              )}
-            </>
+            // une séance ciblée ne donne que son propre trophée : sans lui, pas d'annonce (ni de ligne vide)
+            gagne.length > 0 || error ? (
+              <>
+                {gagne.length > 0 && <AnnonceTrophee depuis={debut} connus={gagne} className="pt-1" />}
+                {error && (
+                  <p role="alert" className="m-0 text-sm text-pen">
+                    {error}
+                  </p>
+                )}
+              </>
+            ) : null
           }
         >
           {many && <TopicBreakdown review={review} />}
