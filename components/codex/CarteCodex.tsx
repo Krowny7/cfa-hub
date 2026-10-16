@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronDown, Minus, PanelRightClose, PanelRightOpen, Plus, LocateFixed } from "lucide-react";
 import { INK } from "@/components/ui/InkDefs";
 import type { LigneQuete, VueActe, VueBranche, VueChaine, VueCodex, VueContrat } from "@/lib/codex/vue";
@@ -198,8 +199,20 @@ function Medaillon({ m, onOuvrir, onFocus }: { m: { x: number; y: number; gagnes
   );
 }
 
+/** Le lien vers la Collection du profil, sous les exploits : les sceaux y vivent (D5). */
+function LienCollection({ href }: { href: string | null }) {
+  if (!href) return null;
+  return (
+    <p className="t-small m-0 mt-2 text-center">
+      <Link href={href} className="inline-flex min-h-[44px] items-center underline underline-offset-4">
+        {CODEX.exploits.collection}
+      </Link>
+    </p>
+  );
+}
+
 /** La galerie des exploits : chacun avec son nom (ou son indice, s'il est caché), les tamponnés d'abord. */
-function GalerieExploits({ exploits, onQuete }: { exploits: LigneQuete[]; onQuete: SurQuete }) {
+function GalerieExploits({ exploits, collection, onQuete }: { exploits: LigneQuete[]; collection: string | null; onQuete: SurQuete }) {
   const rang = { terminee: 0, active: 1, disponible: 2, verrouillee: 3 } as const;
   const liste = visibles(exploits)
     .map((q, i) => ({ q, i }))
@@ -228,6 +241,7 @@ function GalerieExploits({ exploits, onQuete }: { exploits: LigneQuete[]; onQuet
         })}
       </ul>
       {caches > 0 && <p className="t-micro m-0 mt-3 text-center">{caches === 1 ? "Et un exploit dont je ne dis rien." : `Et ${caches} exploits dont je ne dis rien.`}</p>}
+      <LienCollection href={collection} />
     </div>
   );
 }
@@ -531,6 +545,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
       <Feuille ouvert={galerie} onFermer={() => setGalerie(false)} titre={`${CODEX.exploits.titre} · ${exploitsGagnes}/${vue.exploits.length}`}>
         <GalerieExploits
           exploits={vue.exploits}
+          collection={vue.collection}
           onQuete={(q) => {
             setGalerie(false);
             onQuete(q);
@@ -768,6 +783,7 @@ export function CheminCodex({ vue, montre, onQuete }: { vue: VueCodex; montre: M
           <>
             <TeteChemin sur={CODEX.exploits.gagnes(vue.exploits.filter((q) => q.etat === "terminee").length)} titre={CODEX.exploits.titre} replique={CODEX.exploits.sous} />
             <Chemin quetes={vue.exploits} onQuete={onQuete} nom={(l) => l.titre} />
+            <LienCollection href={vue.collection} />
           </>
         )}
         {choix.type === "longcours" && (

@@ -73,6 +73,8 @@ export const CODEX = {
     sous: "Certains sont cachés. Je ne dirai rien. Enfin, presque rien.",
     enigme: "Une énigme",
     gagnes: (n: number) => (n === 0 ? "Aucun pour l'instant" : n === 1 ? "1 exploit" : `${n} exploits`),
+    /** les sceaux du profil ont quitté les exploits (D5) : ils sont dans la Collection */
+    collection: "Tes sceaux sont dans la Collection",
   },
   pageBlanche: "Cette page du carnet est encore blanche. Elle se remplira d'elle-même, ou d'un clic sur « Tout montrer ».",
   etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Tamponnée" } as Record<EtatLigne, string>,
@@ -92,6 +94,8 @@ export const CODEX = {
     aller: "Y aller",
     fermer: "Fermer",
     optionnelle: "Facultative : elle ne bloque rien.",
+    /** un miroir (V3 §8.2) : la même quête, payée une seule fois */
+    compteeAvec: (titre: string) => `Comptée avec « ${titre} » : une seule récompense pour les deux.`,
     duree: (m: number) => `environ ${m} min`,
     titreGagne: (t: string) => `Titre : ${t}`,
     cosmetique: (c: string) => `Pièce : ${c}`,

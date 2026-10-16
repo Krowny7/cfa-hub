@@ -359,7 +359,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
 
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
-    const vue = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait });
+    const vue = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id });
     MEMO.set(user.id, { at: Date.now(), vue });
     DERNIER.set(user.id, vue);
     return { vue, entree, resultat };
