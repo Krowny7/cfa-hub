@@ -257,7 +257,7 @@ async function main() {
 
   console.log("\n# Le style porté (lib/profil/styles.ts)");
   {
-    const { lireStyles, nomTitre, styleDepuis, titresPortables, validerStyle } = await import("@/lib/profil/styles");
+    const { ecrireStyle, lireStyles, nomTitre, styleDepuis, titresPortables, validerStyle } = await import("@/lib/profil/styles");
     const { STYLE_DEFAUT } = await import("@/lib/profil/catalogue");
     const { titreCourt, TITRE_MAX } = await import("@/components/profil/TitrePorte");
     const a = (o: Partial<Acquis> = {}): Acquis => ({ ...acquisDe(STATS_VIDES), ...o });
@@ -304,6 +304,37 @@ async function main() {
     appels.length = 0;
     const personne = await lireStyles(client(sansV3), []);
     check("lireStyles : aucun joueur → aucune lecture", personne?.size === 0 && appels.length === 0);
+
+    // ecrireStyle : une écriture si tout est là ; sans §1, réécrit sans titre ni folio ; sans les médias, sans disposition
+    const ecrits: string[][] = [];
+    /** un faux client service role : `manque` = colonnes absentes de la table (ou toute la table) */
+    const admin = (manque: string[] | "table") =>
+      ({
+        from: (t: string) => ({
+          upsert: async (l: Record<string, unknown>, o: { onConflict: string }) => {
+            ecrits.push(Object.keys(l));
+            if (t !== "profile_style" || o.onConflict !== "user_id") return { error: { message: "mauvaise table" } };
+            if (manque === "table") return { error: { code: "42P01", message: 'relation "public.profile_style" does not exist' } };
+            const absente = manque.find((c) => c in l);
+            return { error: absente ? { code: "PGRST204", message: `Could not find the '${absente}' column of 'profile_style' in the schema cache` } : null };
+          },
+        }),
+      }) as unknown as SupabaseClient;
+    const aEcrire = { ...STYLE_DEFAUT, frame: "or", titre: "copiste", folio: "mains" };
+    ecrits.length = 0;
+    const plein = await ecrireStyle(admin([]), "u1", aEcrire, "2026-10-17T00:00:00Z");
+    check("ecrireStyle avec §1 : une écriture, titre et folio compris", !plein.error && plein.titreFolio && plein.disposition && ecrits.length === 1 && ["titre", "folio", "layout", "frame", "updated_at"].every((c) => ecrits[0].includes(c)));
+    ecrits.length = 0;
+    const ecritSansV3 = await ecrireStyle(admin(["titre", "folio"]), "u1", aEcrire, "2026-10-17T00:00:00Z");
+    check(
+      "ecrireStyle sans §1 : réécrit sans titre ni folio, cadre et disposition enregistrés comme aujourd'hui",
+      !ecritSansV3.error && !ecritSansV3.titreFolio && ecritSansV3.disposition && ecrits.length === 2 && !ecrits[1].includes("titre") && !ecrits[1].includes("folio") && ecrits[1].includes("frame") && ecrits[1].includes("layout"),
+    );
+    ecrits.length = 0;
+    const sansMedias = await ecrireStyle(admin(["titre", "folio", "layout"]), "u1", aEcrire, "2026-10-17T00:00:00Z");
+    check("ecrireStyle sans §1 ni médias : le reste (cadre, bannière…) s'enregistre", !sansMedias.error && !sansMedias.titreFolio && !sansMedias.disposition && ecrits.length === 3 && ecrits[2].includes("frame") && !ecrits[2].includes("layout"));
+    const sansTable = await ecrireStyle(admin("table"), "u1", aEcrire, "2026-10-17T00:00:00Z");
+    check("ecrireStyle sans la table : l'erreur remonte (« la base n'est pas encore prête »)", !!sansTable.error && /does not exist/.test(sansTable.error.message));
 
     // styleDepuis : titre et folio, pièces du Codex comprises
     const lu = styleDepuis({ frame: "sanguine", banner: "nuit", titre: "maitre:fixed_income", folio: "mains" });

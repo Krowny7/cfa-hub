@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lireStyle, statsProfil } from "@/lib/profil/donnees";
-import { baseAbsente, sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { nettoyerNom, normaliserLinkedin, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { lireAcquis } from "@/lib/profil/acquis";
-import { validerStyle } from "@/lib/profil/styles";
+import { ecrireStyle, validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
 
 // Enregistrer son profil : le style (revalidé : cadres, bannières, titre et
@@ -64,34 +64,18 @@ export async function enregistrerProfil(input: {
   let style = valide.style;
 
   const now = new Date().toISOString();
-  const ligne = {
-    user_id: user.id,
-    banner: style.banner,
-    banner_url: style.bannerUrl,
-    banner_pos: style.bannerPos,
-    accent: style.accent,
-    frame: style.frame,
-    showcase: style.showcase,
-    show_radar: style.radar,
-    bio: style.bio,
-    updated_at: now,
-  };
-  const complet = { ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH };
-  let s = await admin.from("profile_style").upsert({ ...complet, titre: style.titre, folio: style.folio }, { onConflict: "user_id" });
-  // le titre et le folio arrivent avec migration_v3_profil.sql : sans eux, le
-  // reste ; ce qu'il porte ne change pas (rien à porter tant que la base manque)
-  if (s.error && baseAbsente(s.error)) {
-    s = await admin.from("profile_style").upsert(complet, { onConflict: "user_id" });
-    if (!s.error && style.titre !== porte.titre) refus.push("le titre (la base n'est pas encore prête)");
-    if (!s.error && style.folio !== porte.folio) refus.push("le folio (la base n'est pas encore prête)");
-    style = { ...style, titre: porte.titre, folio: porte.folio };
-  }
-  const dispositionOk = !s.error;
-  // disposition, ambiance et hauteur de bannière arrivent avec
-  // migration_profil_medias.sql : sans elles, le reste
-  if (s.error && /layout|ambiance|banner_h|column|schema cache/i.test(s.error.message)) {
-    s = await admin.from("profile_style").upsert(ligne, { onConflict: "user_id" });
-    if (!s.error) refus.push("la disposition et l'ambiance (la base n'est pas encore prête)");
+  // les colonnes les plus récentes se replient si la base ne les a pas encore (lib/profil/styles.ts)
+  const s = await ecrireStyle(admin, user.id, style, now);
+  const dispositionOk = s.disposition;
+  if (!s.error) {
+    // titre et folio (migration_v3_profil.sql) : ce qu'il porte ne change pas tant que la base manque
+    if (!s.titreFolio) {
+      if (style.titre !== porte.titre) refus.push("le titre (la base n'est pas encore prête)");
+      if (style.folio !== porte.folio) refus.push("le folio (la base n'est pas encore prête)");
+      style = { ...style, titre: porte.titre, folio: porte.folio };
+    }
+    // disposition, ambiance et hauteur de bannière (migration_profil_medias.sql)
+    if (!s.disposition) refus.push("la disposition et l'ambiance (la base n'est pas encore prête)");
   }
   if (s.error) {
     return {

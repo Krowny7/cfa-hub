@@ -5,10 +5,12 @@ import { blocsDe, dispositionDepuis, validerDisposition, type Prefixes } from "@
 import { pieceNue, piecesDuType, possede, type Acquis, type TypePiece } from "@/lib/profil/pieces";
 
 // Le style d'un profil (table profile_style) : son unique lecteur, sa
-// lecture en StyleProfil et la validation de ce que le joueur veut porter.
+// lecture en StyleProfil, la validation de ce que le joueur veut porter et
+// son écriture.
 // Les colonnes titre et folio arrivent avec migration_v3_profil.sql §1 :
 // lireStyles les demande et, tant qu'elles manquent, relit sans elles
-// (titre et folio à null), sans jamais perdre le reste de la ligne.
+// (titre et folio à null), sans jamais perdre le reste de la ligne ;
+// ecrireStyle, de même, réécrit sans elles.
 // Un cadre, une bannière, un titre ou un folio se porte s'il est gagné
 // (lib/profil/pieces.ts) ou s'il est déjà porté : rien de gagné n'est repris.
 // Module serveur en pratique : il connaît toutes les pièces (le Codex
@@ -45,6 +47,46 @@ export async function lireStyles(sb: SupabaseClient, ids: string[], colonnes: "*
   } catch {
     return null;
   }
+}
+
+/** Ce que l'écriture du style a pu enregistrer. */
+export type EcritureStyle = {
+  /** l'erreur qui reste après les replis (null : enregistré) */
+  error: { message: string; code?: string } | null;
+  /** le titre et le folio sont enregistrés (migration_v3_profil.sql collée) */
+  titreFolio: boolean;
+  /** la disposition, l'ambiance et la hauteur de bannière sont enregistrées (migration_profil_medias.sql collée) */
+  disposition: boolean;
+};
+
+/**
+ * Écrit le style d'un joueur, déjà validé (client service role : les joueurs
+ * n'écrivent pas profile_style). Les colonnes venues après
+ * migration_profil.sql se replient l'une après l'autre : sans titre ni folio
+ * (migration_v3_profil.sql), puis sans disposition, ambiance ni hauteur de
+ * bannière (migration_profil_medias.sql) ; le reste s'enregistre.
+ */
+export async function ecrireStyle(admin: SupabaseClient, userId: string, style: StyleProfil, quand: string): Promise<EcritureStyle> {
+  const ligne = {
+    user_id: userId,
+    banner: style.banner,
+    banner_url: style.bannerUrl,
+    banner_pos: style.bannerPos,
+    accent: style.accent,
+    frame: style.frame,
+    showcase: style.showcase,
+    show_radar: style.radar,
+    bio: style.bio,
+    updated_at: quand,
+  };
+  const complet = { ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH };
+  const ecrire = (l: Record<string, unknown>) => admin.from("profile_style").upsert(l, { onConflict: "user_id" });
+  let s = await ecrire({ ...complet, titre: style.titre, folio: style.folio });
+  const titreFolio = !s.error;
+  if (s.error && baseAbsente(s.error)) s = await ecrire(complet);
+  const disposition = !s.error;
+  if (s.error && /layout|ambiance|banner_h|column|schema cache/i.test(s.error.message)) s = await ecrire(ligne);
+  return { error: s.error ? { message: s.error.message, code: s.error.code } : null, titreFolio, disposition };
 }
 
 /** La clé nue d'une pièce connue de ce type, sinon null. */
