@@ -208,11 +208,11 @@ console.log("\n# les raisons");
 console.log("\n# recommander ne propose que des quêtes lançables");
 {
   const q = (id: string, objectif: Quete["objectif"], ordre: number): Quete => ({ id, famille: "trame", programme: PROGRAMME, titre: id, consigne: id, objectif, prerequis: [], recompense: { xp: 10 }, repetition: "unique", visibilite: "visible", ordre });
-  // à score égal, la première l'emporterait ; elle ne mène nulle part
+  // à score égal, la première l'emporterait ; elle ne mène nulle part (son spécial est lu, à 0 : sinon elle serait hors jeu, V3 §8)
   const catalogue = [q("test:nulle-part", { k: "special", cle: "inconnu" }, 1), q("test:cinq", { k: "compteur", evenement: "cinq_rendu", seuil: 1 }, 2)];
   const e = base({ catalogue });
   const demandes = planifier(e);
-  const brut: LectureSql = { ...e.lecture, compteurs: Object.fromEntries(demandes.map((d): [string, ResultatCompteur] => [d.id, { n: 0, atteint: null }])) };
+  const brut: LectureSql = { ...e.lecture, speciaux: { ...e.lecture.speciaux, inconnu: 0 }, compteurs: Object.fromEntries(demandes.map((d): [string, ResultatCompteur] => [d.id, { n: 0, atteint: null }])) };
   const r = evaluer({ ...e, lecture: brut }, indexerLecture(demandes, brut));
   check("la quête sans destination est ouverte (visible dans l'arbre)", r.etats.some((s) => s.quete.id === "test:nulle-part" && s.ouverte && !s.fait));
   check("… mais jamais proposée", recommander({ ...e, lecture: brut }, r)?.quete.id === "test:cinq", recommander({ ...e, lecture: brut }, r)?.quete.id);

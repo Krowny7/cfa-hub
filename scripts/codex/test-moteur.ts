@@ -7,11 +7,13 @@
 // un test par correction immédiate de docs/codex/V3.md §6 (élision, séance
 // ciblée, objectifs à faire baisser, acte courant, veille, après le jour J,
 // textes, XP affichée, migration_codex_v3.sql) ; enfin le fil rouge et le
-// rattrapage au déploiement (V3 §1.5, §1.9 : un joueur de 12 000 réponses).
+// rattrapage au déploiement (V3 §1.5, §1.9 : un joueur de 12 000 réponses) ;
+// le catalogue taillé (V3 §8.1 à §8.4, §8.6 : retraits, miroirs, actes I et V,
+// quêtes hors jeu sans le SQL, prérequis souples, XP des contrats).
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
-import { ACTES, MODELES_CONTRATS, catalogueCodex, cibleeDe, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue } from "@/lib/codex/catalogue";
+import { ACTES, MODELES_CONTRATS, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
   LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, planifier, recommander, tirerContrats,
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
@@ -21,6 +23,8 @@ import { CAPACITES_VIDE } from "@/lib/codex/reglage";
 import { bilanDe } from "@/lib/codex/bilan";
 import { de, gabarit } from "@/lib/codex/elision";
 import { CODEX } from "@/lib/voice-codex";
+import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
+import type { Quete } from "@/lib/codex/types";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -79,8 +83,9 @@ console.log("\n# la cascade (le même historique valide tout ce qui est déjà r
   check("l'acte du prologue est clos (la visite est facultative)", r.actesClos.includes("prologue"));
   check("acte I : « première fiche » faite en cascade", fait(r, "trame:a1:fiche"));
   check("acte II : « les dix pigments » faite (toutes les branches ont fait leur premier pas)", fait(r, "trame:a2:dix"));
-  check("branche fsa : premier pas et fiche en cascade, mais pas le drill complet (pages restantes inconnues)", fait(r, "branche:fsa:entree") && fait(r, "branche:fsa:fiche") && !fait(r, "branche:fsa:drill") && !fait(r, "branche:fsa:ciblee"));
-  check("nœud de convergence : l'acte V reste fermé (aucune branche n'a passé sa séance ciblée)", !ouverte(r, "trame:a5:blanc"));
+  const drill = r.etats.find((s) => s.quete.id === "branche:fsa:drill");
+  check("branche fsa : premier pas et fiche en cascade ; le drill complet (pages inconnues) est hors jeu et masqué, il ne bloque pas la séance ciblée (V3 §8)", fait(r, "branche:fsa:entree") && fait(r, "branche:fsa:fiche") && !fait(r, "branche:fsa:drill") && !!drill?.horsJeu && drill.masquee && fait(r, "branche:fsa:ciblee"));
+  check("nœud de convergence : l'acte V reste fermé (l'acte IV n'est pas clos)", !ouverte(r, "trame:a5:blanc") && !r.actesClos.includes("acte4"));
   check("Ethics (sans drill) : sa séance ciblée est ouverte dès le premier pas, mais pas faite", ouverte(r, "branche:ethics:ciblee") && !fait(r, "branche:ethics:ciblee"));
   const retro = r.lot.filter((i) => i.etat === "terminee");
   check("tout ce qui est validé au premier calcul est rétroactif (sauf les contrats)", retro.length > 10 && retro.filter((i) => i.famille !== "contrat").every((i) => i.retro === true), String(retro.length));
@@ -112,7 +117,7 @@ console.log("\n# le nœud de convergence de l'acte V");
   });
   const { r } = repondre(e, () => 99);
   check("avec tout validé : toutes les branches ont passé leur séance ciblée", contenu.every((m) => fait(r, `branche:${m.key}:ciblee`)));
-  check("l'acte IV est clos et l'acte V s'ouvre (acte IV clos + toutesBranches « ciblée »)", r.actesClos.includes("acte4") && ouverte(r, "trame:a5:blanc"));
+  check("l'acte IV est clos et l'acte V s'ouvre (acte IV clos + 8 branches sur 10 à leur séance ciblée)", r.actesClos.includes("acte4") && ouverte(r, "trame:a5:blanc"));
   check("prérequis tombés après coup : les quêtes déjà remplies sont validées avec leur date, donc rétroactives", r.lot.filter((i) => i.etat === "terminee" && i.atteint?.startsWith("2026-09-01") && i.famille !== "contrat").every((i) => i.retro === true));
   // V3 §1.8 : sans les capacités de la base (rien de collé), rien ne change
   const cap = capacitesDe(e);
@@ -156,7 +161,8 @@ console.log("\n# les contrats du jour");
   const { r, demandes } = repondre(e2, (d) => (d.fenetre === "jour" ? 99 : 0));
   check("trois instances du jour (contrat:<modèle>:<jour>)", r.contrats.length === 3 && r.contrats.every((i) => i.quete.id.endsWith(":" + jour)));
   check("les demandes de contrat portent le jour et la fenêtre « jour »", demandes.some((d) => d.fenetre === "jour" && d.jour === jour));
-  check("trois contrats faits = trio fait (+50 XP) et chacun 30 XP", r.trioFait && r.lot.some((i) => i.quete === `contrat:trio:${jour}` && i.xp === 50) && r.lot.filter((i) => i.famille === "contrat" && i.xp === 30).length === 3);
+  const xpAttendue = (id: string) => xpContrat(MODELES_CONTRATS.find((m) => id.startsWith(`contrat:${m.id}:`))?.duree ?? 0);
+  check("trois contrats faits = trio fait (+50 XP), chacun l'XP de sa durée (V3 §8.6)", r.trioFait && r.lot.some((i) => i.quete === `contrat:trio:${jour}` && i.xp === 50) && r.lot.filter((i) => i.famille === "contrat" && i.quete !== `contrat:trio:${jour}` && i.xp === xpAttendue(i.quete)).length === 3);
   check("jamais rétroactif", r.lot.filter((i) => i.famille === "contrat").every((i) => !i.retro));
   const deja: LigneProgression[] = r.lot.filter((i) => i.famille === "contrat").map((i) => ({ quete_id: i.quete, periode: i.periode, etat: "recompensee", progression: 1, cible: 1, ouverte_le: now.toISOString(), terminee_le: now.toISOString(), recompensee_le: now.toISOString(), retro: false, xp: i.xp ?? 0, cosmetique: null, titre: null, vu: false }));
   const r2 = repondre({ ...e2, progression: deja }, (d) => (d.fenetre === "jour" ? 99 : 0)).r;
@@ -183,7 +189,7 @@ console.log("\n# la prochaine quête pèse la matière");
   check("une seule recommandation, ouverte et non faite", !!reco && !fait(r, reco.quete.id) && ouverte(r, reco.quete.id), reco?.quete.id);
   check("avec une ligne de pourquoi", !!reco && reco.pourquoi.length > 10, reco?.pourquoi);
   const vue = construireVue(e2, r, reco, { devoile: null });
-  check("la vue : 10 branches, 8 actes, des chaînes au long cours", vue.branches.length === 10 && vue.trame.length === 8 && vue.longCours.length === 15, `${vue.branches.length}/${vue.trame.length}/${vue.longCours.length}`);
+  check("la vue : 10 branches, 8 actes, 9 chaînes au long cours (6 retirées, V3 §8.1)", vue.branches.length === 10 && vue.trame.length === 8 && vue.longCours.length === 9, `${vue.branches.length}/${vue.trame.length}/${vue.longCours.length}`);
   check("la vue : les exploits cachés ne sont pas montrés", vue.exploits.every((x) => x.affichage !== "cache"));
 }
 
@@ -392,6 +398,134 @@ console.log("\n# v3 §6.14 : migration_codex_v3.sql (le banc PGlite la joue : si
   const fonctions = [...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]);
   check("fonctions en SECURITY DEFINER SET search_path = public, fermées à anon et authenticated", fonctions.length >= 5 && (sql.match(/SECURITY DEFINER SET search_path = public/g) ?? []).length === fonctions.length && fonctions.every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon, authenticated`).test(sql)), fonctions.join());
   check("§2 : colonnes de codex_joueur ajoutées sans rien retirer, budget borné", /ADD COLUMN IF NOT EXISTS budget_min smallint CHECK \(budget_min IN \(15, 30, 60, 90\)\)/.test(sql) && /ADD COLUMN IF NOT EXISTS capacites_vues jsonb/.test(sql) && !/ALTER TABLE codex_joueur DROP/i.test(sql));
+}
+
+console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V, hors jeu, souple, XP des contrats)");
+{
+  const cat = catalogueCodex();
+  const retirees = cat.filter((q) => q.retiree);
+  const publies = (JSON.parse(readFileSync("scripts/codex/ids-publies.json", "utf8")) as { quetes: string[] }).quetes;
+  const ids = new Set(cat.map((q) => q.id));
+  check("58 quêtes retirées (V3 §8.1), toujours au catalogue", retirees.length === 58, String(retirees.length));
+  check("tous les ids publiés sont encore là (retirés ou non)", publies.every((id) => ids.has(id)), publies.filter((id) => !ids.has(id)).join(" "));
+  check("les 22 « Sceau X », l'aube, la machine volante, les tours, la carte, justesse/trentaine/atelier/calculs/sources sont retirés",
+    cat.filter((q) => q.id.startsWith("exploit:sceau:")).every((q) => q.retiree) && cat.filter((q) => q.id.startsWith("exploit:sceau:")).length === 22
+    && ["exploit:aube", "exploit:machine-volante", "trame:a3:notions", "trame:a4:defis", "trame:a5:notions"].every((id) => cat.find((q) => q.id === id)?.retiree)
+    && contenu.every((m) => cat.find((q) => q.id === `branche:${m.key}:tour`)?.retiree)
+    && ["carte", "justesse", "trentaine", "atelier", "calculs", "sources"].every((c) => cat.filter((q) => q.chaine === c).every((q) => q.retiree)));
+  const miroirs = cat.filter((q) => q.miroir);
+  check("5 miroirs (le 6e, la carte tenue, vient avec A3b), chacun vers une quête de la trame qui paie", miroirs.length === 5 && miroirs.every((q) => cat.find((x) => x.id === q.miroir && x.famille === "trame" && !x.retiree)), miroirs.map((q) => q.id).join(" "));
+  check("SEUIL_ACTE_V = CFA_L1.seuils.acteV = 8 (D6)", SEUIL_ACTE_V === 8 && CFA_L1.seuils.acteV === 8);
+  check("xpContrat : 5 → 10, 10 → 10, 15 → 20, 20 → 25, 25 → 30, 30 → 35, 40 → 50", [[5, 10], [10, 10], [15, 20], [20, 25], [25, 30], [30, 35], [40, 50]].every(([d, x]) => xpContrat(d) === x));
+
+  const ligne = (id: string, o: Partial<LigneProgression> = {}): LigneProgression => ({ quete_id: id, periode: "", etat: "recompensee", progression: 1, cible: 1, ouverte_le: "2026-09-01T10:00:00Z", terminee_le: "2026-09-01T10:00:00Z", recompensee_le: "2026-09-01T10:00:00Z", retro: false, xp: 50, cosmetique: null, titre: null, vu: true, ...o });
+
+  // retirées : jamais suivies ni montrées, mais ce qu'elles ont donné reste
+  {
+    const sceaux = cat.filter((q) => q.id.startsWith("exploit:sceau:")).map((q) => ligne(q.id));
+    const e = base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), progression: [...sceaux, ligne("longcours:carte:5", { cosmetique: "banniere:imola", xp: 450 })] });
+    const { r, e: e2 } = repondre(e, () => 0);
+    const v = construireVue(e2, r, null, { devoile: null, joueur: "u1" });
+    check("aucune retirée dans les états ni dans le lot", !r.etats.some((s) => s.quete.retiree) && !r.lot.some((i) => retirees.some((q) => q.id === i.quete)));
+    check("la vue : ni sceau parmi les exploits, ni « Le tour », ni « La carte »", !v.exploits.some((l) => l.id.startsWith("exploit:sceau:")) && v.branches.every((b) => !b.etapes.some((l) => l.etape === "tour")) && !v.longCours.some((c) => c.chaine.id === "carte"));
+    check("« Codex Atlanticus » compte les quêtes retirées déjà tamponnées (22 sceaux et la carte)", r.etats.find((s) => s.quete.id === "exploit:codex-atlanticus")?.ev?.valeur === 23, String(r.etats.find((s) => s.quete.id === "exploit:codex-atlanticus")?.ev?.valeur));
+    check("la bannière d'Imola, gagnée par une chaîne retirée, reste possédée", v.possessions.some((x) => x.cle === "banniere:imola" && x.quete === "longcours:carte:5"));
+    check("le lien vers la Collection, sous les exploits", v.collection === "/people/u1?onglet=sceaux#profil-onglets" && construireVue(e2, r, null, { devoile: null }).collection === null);
+  }
+
+  // les miroirs : tamponnés avec leur quête payeuse, jamais payés deux fois
+  {
+    const { r, e: e2 } = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2027-02-20", lecture: { compteurs: {}, mesures: { xp_total: 0, jours: Array.from({ length: 5 }, (_, w) => [0, 1, 2, 3].map((d) => ({ jour: new Date(Date.UTC(2026, 8, 7 + 7 * w + d)).toISOString().slice(0, 10), n: 20 }))).flat() }, speciaux: {} } }), () => 0);
+    const item = r.lot.find((i) => i.quete === "longcours:encre:2");
+    check("« Un mois d'encre » rempli avant l'acte IV : tamponné sans XP, la chaîne continue", item?.etat === "terminee" && item.xp === 0 && !item.cosmetique && ouverte(r, "longcours:encre:3") && !ouverte(r, "trame:a4:semaines"), JSON.stringify(item));
+    const v = construireVue(e2, r, null, { devoile: null });
+    const l = v.longCours.find((c) => c.chaine.id === "encre")?.paliers.find((x) => x.id === "longcours:encre:2");
+    check("la vue : le miroir ne vise aucune XP et dit avec quoi il compte", l?.xp === 0 && l.compteeAvec === "Un mois d'atelier", `${l?.xp} ${l?.compteeAvec}`);
+  }
+  {
+    // la payeuse tombe : le miroir se tamponne avec elle, elle seule paie ; un miroir déjà payé n'est pas repris
+    const e = base({
+      premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2027-02-20",
+      progression: [...["prologue", "acte2", "acte3"].map((a) => ligne(`acte:${a}`)), ligne("longcours:remontee:1", { xp: 120, vu: false })],
+      lecture: { compteurs: {}, mesures: { xp_total: 0, maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: 70, questions: 200, debut: 40 }])) }, speciaux: {} },
+    });
+    const { r, e: e2 } = repondre(e, (d) => (d.evenement === "examen_blanc_rendu" ? 1 : 0));
+    const blanc = r.lot.find((i) => i.quete === "trame:a4:blanc");
+    const mecene = r.lot.find((i) => i.quete === "longcours:commandes:1");
+    check("« La commande » paie, « Le premier mécène » (son miroir) est tamponné à 0 XP", blanc?.etat === "terminee" && (blanc.xp ?? 0) > 0 && mecene?.etat === "terminee" && mecene.xp === 0, `${JSON.stringify(blanc)} ${JSON.stringify(mecene)}`);
+    check("un miroir déjà payé avant la v3 n'est ni réécrit ni repris ; sa payeuse paie", !r.lot.some((i) => i.quete === "longcours:remontee:1") && (r.lot.find((i) => i.quete === "trame:a4:remontee")?.xp ?? 0) > 0);
+    const l = construireVue(e2, r, null, { devoile: null }).longCours.flatMap((c) => c.paliers).find((x) => x.id === "longcours:remontee:1");
+    check("pas de fanfare pour un miroir (même non vu)", l?.aFeter === false);
+  }
+
+  // l'acte I : la visite de la bottega, close avec 4 outils sur 7 ; le prologue sans jour J
+  {
+    const outils = new Set(["drill_page_terminee", "cinq_rendu", "rature_rayee", "seance_atelier"]);
+    const avec = (n: number) => repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z") }), (d) => (d.evenement === "question_repondue" ? 50 : [...outils].slice(0, n).includes(d.evenement) ? 1 : 0));
+    const { r: r4, e: e4 } = avec(4);
+    const { r: r3 } = avec(3);
+    const a1 = ACTES.find((a) => a.id === "acte1")!;
+    check("acte I : « La visite de la bottega », clos avec 4 quêtes sur 7", a1.titre === "La visite de la bottega" && a1.closAvec?.n === 4 && catalogueCodex().filter((q) => q.acte === "acte1" && !q.retiree).length === 7);
+    check("4 outils sans le duel : l'acte I se clôt ; 3 : pas encore", r4.actesClos.includes("acte1") && !fait(r4, "trame:a1:duel") && !r3.actesClos.includes("acte1"));
+    check("ses 7 quêtes sont facultatives", catalogueCodex().filter((q) => q.acte === "acte1").every((q) => q.optionnelle));
+    const va = construireVue(e4, r4, null, { devoile: null }).trame.find((a) => a.acte.id === "acte1");
+    check("la vue compte l'acte I sur 4", va?.total === 4 && va.faites === 4 && va.clos, `${va?.faites}/${va?.total}`);
+    check("sans jour J : le prologue se clôt, la chaîne du rythme s'ouvre après « Dix coups de pinceau »", r4.actesClos.includes("prologue") && !fait(r4, "trame:prologue:jour-j") && ouverte(r4, "longcours:rythme:1"));
+  }
+
+  // l'acte V à 8 matières sur 10, et les matières à rattraper
+  const convergence = (sans: string[], o: Partial<Entree> = {}) =>
+    repondre(base({
+      premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2027-02-20",
+      lecture: {
+        compteurs: {},
+        mesures: {
+          xp_total: 5000, serie: 4, meilleure_serie: 10,
+          notions: Object.fromEntries(contenu.flatMap((m) => notionsDeMatiere(m.key).map((n) => [n.id, 10]))),
+          drill_totaux: { fsa: 1, equity: 1, economics: 1, fixed_income: 1, portfolio: 1 },
+          drill_pages: ["fsa", "equity", "economics", "fixed_income", "portfolio"].map((m) => ({ matiere: m, page: 1, meilleur: 90 })),
+          ratures_ouvertes: { total: 10, matieres: {} },
+          maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: 90, questions: 200, debut: 50 }])),
+          jours: Array.from({ length: 6 }, (_, w) => [0, 1, 2, 3, 4].map((d) => ({ jour: new Date(Date.UTC(2026, 8, 7 + 7 * w + d)).toISOString().slice(0, 10), n: 20 }))).flat(),
+        },
+        speciaux: {},
+      },
+      ...o,
+    }), (d) => (d.evenement === "session_terminee" && sans.includes(String(d.filtre?.matiere)) ? 0 : 99));
+  {
+    const { r, e: e2 } = convergence(["quant", "economics"]);
+    check("8 séances ciblées sur 10 : l'acte V s'ouvre", r.actesClos.includes("acte4") && ouverte(r, "trame:a5:blanc") && !fait(r, "branche:quant:ciblee"));
+    const a5 = construireVue(e2, r, null, { devoile: null }).trame.find((a) => a.acte.id === "acte5");
+    check("la vue : Quant et Economics « à rattraper »", JSON.stringify([...(a5?.aRattraper ?? [])].sort()) === JSON.stringify(["economics", "quant"]), JSON.stringify(a5?.aRattraper));
+    const { r: r7 } = convergence(["quant", "economics", "ethics"]);
+    check("7 sur 10 : l'acte V reste fermé", r7.actesClos.includes("acte4") && !ouverte(r7, "trame:a5:blanc"));
+  }
+
+  // sans §4 (V3 §8) : une quête dont la mesure est inconnue est hors jeu ; les actes se closent, « Maître de… » reste atteignable
+  {
+    const q = (id: string, acte: string | undefined, objectif: Quete["objectif"], prerequis: Quete["prerequis"]): Quete => ({ id, famille: acte ? "trame" : "branche", programme: PROGRAMME, titre: id, consigne: "Une quête de la v3.", objectif, prerequis, recompense: { xp: 100 }, repetition: "unique", visibilite: "visible", ordre: 99, ...(acte ? { acte } : { matiere: "fsa" }) });
+    const tenues3 = q("trame:a3:essai-v3", "acte3", { k: "mesure", mesure: "trophees", seuil: 1 }, [{ k: "acte", id: "acte2" }]);
+    const tenues5 = q("trame:a5:essai-v3", "acte5", { k: "mesure", mesure: "jours_encre_total", seuil: 30 }, [{ k: "acte", id: "acte4" }]);
+    const carte = q("branche:fsa:essai-v3", undefined, { k: "mesure", mesure: "maitres_total", seuil: 1 }, []);
+    const signature = q("branche:fsa:essai-souple", undefined, { k: "compteur", evenement: "duel_termine", seuil: 1000 }, []);
+    const catalogue = [
+      ...catalogueCodex().map((x) => (x.id === "branche:fsa:maitre" ? { ...x, prerequis: [...x.prerequis, { k: "quete" as const, id: carte.id }, { k: "quete" as const, id: signature.id, souple: true as const }] } : x)),
+      tenues3, tenues5, carte, signature,
+    ];
+    const { r, e: e2 } = convergence([], { catalogue, progression: [ligne("trame:a5:essai-v3", { etat: "active", progression: 12, cible: 30, terminee_le: null, recompensee_le: null, xp: 0 })] });
+    const st = (id: string) => r.etats.find((s) => s.quete.id === id);
+    check("sans §4 : les actes III et V se closent sans leurs quêtes v3", r.actesClos.includes("acte3") && r.actesClos.includes("acte5"), r.actesClos.join());
+    check("« Maître de FSA » atteignable : prérequis hors jeu ignoré, prérequis souple seulement conseillé avant l'examen", fait(r, "branche:fsa:maitre"));
+    check("hors jeu jamais commencée : masquée ; commencée : affichée, gelée", !!st("trame:a3:essai-v3")?.masquee && !!st("trame:a5:essai-v3")?.horsJeu && !st("trame:a5:essai-v3")?.masquee);
+    check("rien ne s'écrit pour une quête hors jeu (la progression gelée reste en base)", !r.lot.some((i) => i.quete.endsWith("essai-v3")));
+    const v = construireVue(e2, r, null, { devoile: null });
+    const a3 = v.trame.find((a) => a.acte.id === "acte3")!;
+    const a5 = v.trame.find((a) => a.acte.id === "acte5")!;
+    const gelee = a5.quetes.find((l) => l.id === "trame:a5:essai-v3");
+    check("la vue : la masquée n'apparaît pas, la gelée garde sa progression et ne compte pas", !a3.quetes.some((l) => l.id === "trame:a3:essai-v3") && gelee?.gelee === true && gelee.valeur === 12 && a5.faites === a5.total, `${gelee?.valeur} ${a5.faites}/${a5.total}`);
+    const { r: rApres } = convergence([], { catalogue, jourJ: "2026-10-01" });
+    check("après l'examen, le prérequis souple bloque « Maître de FSA »", !fait(rApres, "branche:fsa:maitre") && fait(rApres, "branche:equity:maitre"));
+  }
 }
 
 console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");
