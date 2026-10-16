@@ -11,8 +11,8 @@ import { ecrireStyle, validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
 
 // Enregistrer son profil : le style (revalidé : cadres, bannières, titre et
-// folio gagnés, ou déjà portés, seulement ; image de bannière et médias venus de son
-// dossier ; la disposition des blocs), le LinkedIn (adresse
+// folio gagnés, ou déjà portés, seulement ; image de bannière et médias
+// venus de son dossier ; la disposition des blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
