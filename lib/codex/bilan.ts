@@ -4,7 +4,6 @@
 // vue complète côté serveur, il ne porte que quelques lignes (la vue entière
 // pèse une centaine de Ko). Module neutre.
 
-import { ACTES } from "@/lib/codex/catalogue";
 import type { Famille, RepliqueCodex } from "@/lib/codex/types";
 import { devoileLite } from "@/lib/codex/devoile-lite";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
@@ -67,8 +66,9 @@ export function bilanDe(vue: VueCodex): BilanCodex {
   let acteNouveau: BilanCodex["acteNouveau"] = null;
   for (const a of vue.trame) {
     if (!a.aFeter) continue;
-    const def = ACTES.find((x) => x.id === a.acte.id);
-    fetes.push({ quete: `acte:${a.acte.id}`, periode: "", titre: a.acte.titre, famille: "acte", xp: def?.recompense.xp ?? 0, recompense: nomCosmetique(vue, def?.recompense.cosmetique) ?? nomCosmetique(vue, def?.recompense.titre), rang: 0 });
+    // l'acte de la trame du joueur (CFA I ou générique), tel que la vue le porte
+    const def = a.acte;
+    fetes.push({ quete: `acte:${a.acte.id}`, periode: "", titre: a.acte.titre, famille: "acte", xp: def.recompense.xp, recompense: nomCosmetique(vue, def.recompense.cosmetique) ?? nomCosmetique(vue, def.recompense.titre), rang: 0 });
     // un acte parallèle (l'acte I) se referme sans lever de rideau : le fil n'a pas bougé
     const courant = a.acte.parallele ? null : vue.trame.find((x) => x.courant);
     if (courant && !acteNouveau) acteNouveau = { id: courant.acte.id, titre: courant.acte.titre, sousTitre: courant.acte.sousTitre, replique: courant.acte.ouverture, precedent: a.acte.titre };

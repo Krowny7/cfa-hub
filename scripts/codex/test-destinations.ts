@@ -5,7 +5,8 @@
 // instancié a une destination interne, dans ROUTES, d'une durée positive ;
 // les replis (« /revoir » absent → le carnet ; practiceV3 faux → jamais
 // topic=all, n, poids ni go) ; le premier sous-objectif non rempli ; les
-// raisons ; et que recommander ne propose jamais une quête non lançable.
+// raisons ; que recommander ne propose jamais une quête non lançable ; et
+// que l'arbre d'un programme d'essai (V3 §1.7) mène partout, dans ses outils.
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { MODELES_CONTRATS, PROGRAMME, catalogueCodex, cibleeDe, contenuDuProgramme, genererBranches, lienCiblee } from "@/lib/codex/catalogue";
