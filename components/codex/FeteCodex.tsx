@@ -55,7 +55,8 @@ export function FeteCodex({
     const t = window.setTimeout(async () => {
       let b: BilanCodex | null = null;
       try {
-        b = await codexPoint();
+        // l'accueil vient de calculer (initial) : la vue gardée suffit, seul le dévoilement s'écrit
+        b = await codexPoint(initial ? { recalcul: false } : undefined);
       } catch {
         b = null;
       }

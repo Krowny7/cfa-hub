@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex } from "@/lib/codex/serveur";
+import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex, recompenseEcrite, type Joueur } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import type { Emplacement } from "@/lib/codex/types";
@@ -38,29 +38,38 @@ export async function codexSynchroniser(): Promise<VueCodex | null> {
  * Le point léger, pour les écrans qui ne sont pas le Codex (fin de séance,
  * accueil) : recalcule tout de suite, verse les récompenses, écrit le
  * dévoilement dans le compte, et ne rend que ce qu'il faut fêter ou annoncer.
+ * `recalcul: false` (l'accueil, qui vient de calculer) : la vue gardée suffit,
+ * seul le dévoilement est écrit.
  */
-export async function codexPoint(): Promise<BilanCodex> {
+export async function codexPoint(opts: { recalcul?: boolean } = {}): Promise<BilanCodex> {
   const { supabase, user } = await joueur();
   if (!user) return BILAN_VIDE;
-  oublierCodex(user.id);
+  const recalcul = opts?.recalcul !== false;
   try {
-    return bilanDe(await lireCodex(supabase, user, { force: true, persister: true }));
+    return bilanDe(await lireCodex(supabase, user, { force: recalcul, persister: true }));
   } catch {
     return BILAN_VIDE;
   }
 }
 
 /**
- * « Réclamer » une récompense : verse, si ce n'est pas déjà fait, la
- * récompense d'une quête dont l'objectif est rempli (le Codex les verse
- * déjà tout seul à chaque synchronisation : ceci sert de geste explicite
- * et de filet). Idempotent : réclamer deux fois ne verse qu'une fois.
+ * « Réclamer » une récompense. Le Codex verse déjà tout seul les récompenses
+ * à chaque synchronisation : ceci lit la ligne écrite (sans recalcul) ; ce
+ * n'est que si elle n'est pas encore écrite (remplie depuis le dernier
+ * calcul) qu'un calcul complet sert de filet. Idempotent : réclamer deux
+ * fois ne verse qu'une fois.
  */
 export async function codexReclamer(queteId: string, periode = ""): Promise<Resultat<{ xp: number; deja: boolean }>> {
   const { supabase, user } = await joueur();
   if (!user) return { ok: false, raison: "connexion" };
+  return reclamerPour(supabase, user, queteId, periode);
+}
+
+async function reclamerPour(supabase: Awaited<ReturnType<typeof createClient>>, user: Joueur, queteId: string, periode: string): Promise<Resultat<{ xp: number; deja: boolean }>> {
   if (typeof queteId !== "string" || queteId.length > 120 || typeof periode !== "string") return { ok: false, raison: "refus" };
-  oublierCodex(user.id);
+  const ecrite = await recompenseEcrite(user.id, queteId, periode);
+  if (ecrite === "indisponible") return { ok: false, raison: "indisponible" };
+  if (ecrite) return { ok: true, xp: ecrite.xp, deja: ecrite.vu };
   const vue = await lireCodex(supabase, user, { force: true, persister: true });
   if (!vue.disponible) return { ok: false, raison: "indisponible" };
   const recue = vue.nouvelles.find((n) => n.quete === queteId && n.periode === periode);
@@ -86,14 +95,13 @@ export async function codexPanneau(): Promise<Panneau> {
   }
 }
 
-/** « Réclamer » depuis le panneau : la récompense (filet, idempotent), puis la fanfare est marquée jouée. */
+/** « Réclamer » depuis le panneau : la récompense (filet, idempotent), puis la fanfare est marquée jouée ; le panneau se relit sur la vue gardée, corrigée (pas de recalcul). */
 export async function codexReclamerPanneau(queteId: string, periode = ""): Promise<Resultat<{ xp: number; panneau: Panneau }>> {
-  const r = await codexReclamer(queteId, periode);
-  if (!r.ok) return r;
-  await codexVus([queteId]);
   const { supabase, user } = await joueur();
   if (!user) return { ok: false, raison: "connexion" };
-  oublierCodex(user.id);
+  const r = await reclamerPour(supabase, user, queteId, periode);
+  if (!r.ok) return r;
+  await marquerVus(user.id, [queteId]);
   return { ok: true, xp: r.xp, panneau: panneauDe(await lireCodex(supabase, user)) };
 }
 

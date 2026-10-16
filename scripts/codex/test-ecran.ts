@@ -12,6 +12,7 @@ import { MAX_QUETES, panneauDe } from "@/lib/codex/panneau";
 import { SPACES } from "@/lib/nav";
 import { paletteDeChemin } from "@/lib/palettes";
 import { exempleCodex } from "./exemple";
+import { vueSansFetes } from "@/lib/codex/vue";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -61,6 +62,23 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
 }
 check("neuf : pas de contrat dans le panneau tant qu'ils ne sont pas dévoilés", panneauDe(exempleCodex("neuf")).quetes.every((q) => q.genre !== "contrat"));
 check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);
+
+console.log("\n# v3 §6.14 : « Réclamer » sans recalcul (la vue gardée est corrigée sur place)");
+{
+  const vue = exempleCodex("milieu");
+  const lignesDe = (v: typeof vue) => [...v.trame.flatMap((a) => a.quetes), ...v.branches.flatMap((x) => x.etapes), ...v.longCours.flatMap((c) => c.paliers), ...v.exploits, ...v.contrats.map((c) => c.ligne), ...v.hebdo];
+  const aFeter = lignesDe(vue).filter((l) => l.aFeter).map((l) => l.id);
+  const pn = panneauDe(vue);
+  const premiere = pn.quetes.find((q) => q.genre === "recompense");
+  check("milieu : au moins une récompense à réclamer dans le panneau", !!premiere && aFeter.length > 0, String(aFeter.length));
+  const apres = vueSansFetes(vue, premiere ? [premiere.id] : []);
+  const pn2 = panneauDe(apres);
+  check("réclamée : elle quitte le panneau et le compte « ? » baisse d'un", !!premiere && !pn2.quetes.some((q) => q.cle === premiere.cle && q.genre === "recompense") && pn2.aReclamer === pn.aReclamer - 1, `${pn.aReclamer} → ${pn2.aReclamer}`);
+  const toutes = vueSansFetes(vue, aFeter);
+  check("toutes jouées : plus rien à fêter ni à réclamer, le reste de la vue intact", lignesDe(toutes).every((l) => !l.aFeter) && panneauDe(toutes).aReclamer === 0 && bilanDe(toutes).fetes.every((f) => f.famille === "acte") && toutes.branches.length === vue.branches.length && toutes.contrats.length === vue.contrats.length);
+  const actes = vue.trame.filter((a) => a.aFeter).map((a) => `acte:${a.acte.id}`);
+  check("un id « acte:… » éteint la fanfare de l'acte", vueSansFetes(vue, actes).trame.every((a) => !a.aFeter));
+}
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

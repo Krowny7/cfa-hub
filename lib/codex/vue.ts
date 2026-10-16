@@ -164,6 +164,26 @@ export function ligneDe(s: EtatQuete): LigneQuete {
   };
 }
 
+/**
+ * La vue une fois les fanfares de ces quêtes jouées (codex_vus) : plus rien à
+ * fêter ni à réclamer pour elles, sans recalculer le Codex. Un id « acte:… »
+ * éteint la fanfare de l'acte.
+ */
+export function vueSansFetes(v: VueCodex, quetes: string[]): VueCodex {
+  const ids = new Set(quetes);
+  const f = (l: LigneQuete): LigneQuete => (l.aFeter && ids.has(l.id) ? { ...l, aFeter: false } : l);
+  return {
+    ...v,
+    prochaine: v.prochaine ? { ...v.prochaine, ligne: f(v.prochaine.ligne) } : null,
+    trame: v.trame.map((a) => ({ ...a, aFeter: a.aFeter && !ids.has(`acte:${a.acte.id}`), quetes: a.quetes.map(f) })),
+    contrats: v.contrats.map((c) => ({ ...c, ligne: f(c.ligne) })),
+    hebdo: v.hebdo.map(f),
+    branches: v.branches.map((b) => ({ ...b, etapes: b.etapes.map(f) })),
+    longCours: v.longCours.map((c) => ({ ...c, paliers: c.paliers.map(f), courant: c.courant && f(c.courant), suivant: c.suivant && f(c.suivant) })),
+    exploits: v.exploits.map(f),
+  };
+}
+
 /** Quel cosmétique vient de quelle quête (ou de quel acte) : la possession se déduit de ce qu'on a fait. */
 export function donneurs(contenu: ContenuMatiere[] = contenuDuProgramme(), quetes: { id: string; recompense: { cosmetique?: string; titre?: string } }[] = []): Map<string, string> {
   const m = new Map<string, string>();

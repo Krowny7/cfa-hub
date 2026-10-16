@@ -3,11 +3,17 @@
 // rend la vue de l'écran (lib/codex/vue.ts). Tout passe par le client service
 // role (comme les sceaux) : les joueurs n'écrivent rien eux-mêmes.
 //
-// REPLI : sans la migration (table ou fonction absente), sans clé admin ou au
-// moindre souci, on rend VUE_INDISPONIBLE (disponible: false) et le site
-// marche comme avant ; rien ne lève. Un calcul est mis en mémoire 45 s par
-// joueur (le Codex ne clignote pas, la base n'est pas martelée) ; `force`
-// (fin de séance, action du joueur) le contourne.
+// REPLI : sans la migration (table ou fonction absente) ou sans clé admin, on
+// rend VUE_INDISPONIBLE (disponible: false) et le site marche comme avant ;
+// rien ne lève. Au moindre souci ensuite (lecture qui échoue, exception), on
+// sert le DERNIER état calculé du jour plutôt que « indisponible », et
+// l'erreur est consignée (codex_erreurs, migration_codex_v3.sql ; silencieux
+// sans elle). Une écriture refusée n'éteint plus rien : la vue évaluée est
+// servie, les récompenses partiront au calcul suivant.
+// UN SEUL CALCUL À LA FOIS par joueur : les lectures simultanées (barre du
+// haut, accueil, panneau) rejoignent le calcul en cours ; un calcul est
+// ensuite gardé 45 s (le Codex ne clignote pas, la base n'est pas martelée) ;
+// `force` (fin de séance, action du joueur) en lance un neuf.
 // Module serveur.
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
@@ -22,7 +28,7 @@ import {
   LECTURE_VIDE, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
-import { VUE_INDISPONIBLE, construireVue, type VueCodex } from "@/lib/codex/vue";
+import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import type { Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -37,8 +43,42 @@ function admin(): SupabaseClient | null {
 
 const MEMO_MS = 45_000;
 const MEMO = new Map<string, { at: number; vue: VueCodex }>();
+/** Le dernier état réussi de chaque joueur (même jour) : servi si un calcul échoue. */
+const DERNIER = new Map<string, VueCodex>();
+/** Les calculs en cours, partagés par les lectures simultanées d'un même joueur. */
+const ENCOURS = new Map<string, Promise<Retour>>();
+/** Les erreurs déjà écrites dans la console par cette instance (une fois chacune). */
+const SIGNALEES = new Set<string>();
 
 type Retour = { vue: VueCodex; entree: Entree | null; resultat: Resultat | null };
+
+/** Change la vue gardée d'un joueur (fanfare jouée, dévoilement écrit) sans la recalculer. */
+function patcher(userId: string, f: (v: VueCodex) => VueCodex) {
+  const m = MEMO.get(userId);
+  if (m) MEMO.set(userId, { ...m, vue: f(m.vue) });
+  const d = DERNIER.get(userId);
+  if (d) DERNIER.set(userId, f(d));
+}
+
+/** Le repli : le dernier état réussi du jour, sinon « indisponible ». */
+function repli(userId: string, jour: string): Retour {
+  const d = DERNIER.get(userId);
+  return { vue: d && d.jour === jour ? { ...d, nouvelles: [] } : VUE_INDISPONIBLE(jour), entree: null, resultat: null };
+}
+
+/** Consigne une erreur du Codex (codex_erreurs) ; la console ne la voit qu'une fois par instance. */
+async function consigner(a: SupabaseClient, userId: string, quete: string, message: string) {
+  const cle = `${quete}|${message}`;
+  if (!SIGNALEES.has(cle) && SIGNALEES.size < 200) {
+    SIGNALEES.add(cle);
+    console.error(`codex${quete ? ` (${quete})` : ""}:`, message);
+  }
+  try {
+    await a.rpc("codex_erreur_noter", { p_user: userId, p_quete: quete.slice(0, 120), p_periode: "", p_message: message.slice(0, 1000) });
+  } catch {
+    // sans migration_codex_v3.sql : la console suffit
+  }
+}
 
 async function lire(a: SupabaseClient, id: string, demandes: unknown[], jour: string): Promise<LectureSql | null> {
   try {
@@ -97,8 +137,8 @@ async function dateExamenDe(a: SupabaseClient, id: string): Promise<string | nul
   }
 }
 
-/** Le calcul complet : lit, évalue, écrit les récompenses, bâtit la vue. */
-async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: { persister: boolean }): Promise<Retour> {
+/** Le calcul complet : lit, évalue, écrit les récompenses, bâtit la vue (le dévoilement est écrit par lireCodex). */
+async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour> {
   const jour = jourParis();
   const now = new Date();
   const a = admin();
@@ -113,7 +153,11 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
       dateExamenDe(a, user.id),
       pointsFaibles(supabase),
     ]);
-    if (lignes === null || (joueurR.error && baseAbsente(joueurR.error))) return vide;
+    if (joueurR.error && baseAbsente(joueurR.error)) return vide;
+    if (lignes === null) {
+      await consigner(a, user.id, "", "codex_progression illisible");
+      return repli(user.id, jour);
+    }
     const joueur = joueurR.data as { premier_calcul: string; dernier_calcul: string } | null;
     const contenu = contenuDuProgramme();
     const entree: Entree = {
@@ -134,7 +178,10 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
     // les contrats du jour : tirés une fois (la base garde le premier tirage)
     if (entree.contrats.length < 3) {
       const mesures = await lire(a, user.id, demandesActivite(contenu, jour), jour);
-      if (!mesures) return vide;
+      if (!mesures) {
+        await consigner(a, user.id, "", "codex_lire (tirage des contrats) a échoué");
+        return repli(user.id, jour);
+      }
       entree.activite = lireActivite(contenu, mesures);
       const hierMap = Object.fromEntries((contratsParJour.get(hier) ?? []).map((c) => [c.emplacement, c.modele]));
       const tirage = tirerContrats({ ...entree, lecture: mesures }, user.id, hierMap);
@@ -148,7 +195,10 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
     // les compteurs de toutes les quêtes, en un seul appel
     const demandes = planifier(entree);
     const lecture = await lire(a, user.id, demandes, jour);
-    if (!lecture) return vide;
+    if (!lecture) {
+      await consigner(a, user.id, "", "codex_lire a échoué");
+      return repli(user.id, jour);
+    }
     entree.lecture = lecture;
     const compteurs = indexerLecture(demandes, lecture);
     let resultat = evaluer(entree, compteurs);
@@ -159,16 +209,18 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
     if (resultat.lot.length || entree.premier) {
       const { data, error } = await a.rpc("codex_ecrire", { p_user: user.id, p_lot: resultat.lot, p_budget_retro: resultat.budgetRetro });
       if (error) {
-        if (!baseAbsente(error)) console.error("codex_ecrire:", error.message);
-        return vide;
+        if (baseAbsente(error)) return vide;
+        // écriture refusée en entier (sans migration_codex_v3.sql, une seule ligne en conflit suffit) :
+        // la vue évaluée est servie quand même, les récompenses partiront au prochain calcul
+        await consigner(a, user.id, "", `codex_ecrire : ${error.message}`);
       }
-      const w = data as { recompenses?: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; retro: boolean }[]; retro?: VueCodex["retro"] } | null;
+      const w = (error ? null : data) as { recompenses?: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; retro: boolean }[]; retro?: VueCodex["retro"] } | null;
       retro = w?.retro ?? null;
       const titres = new Map(resultat.etats.map((s) => [s.quete.id, s.quete.titre]));
       for (const x of ACTES) titres.set(`acte:${x.id}`, x.titre);
       nouvelles = (w?.recompenses ?? []).filter((x) => !x.retro).map((x) => ({ quete: x.quete, periode: x.periode, xp: x.xp, nominal: x.nominal, cosmetique: x.cosmetique, titre: x.titre, titreQuete: titres.get(x.quete) ?? x.quete }));
       // relire les lignes écrites (XP versée, fanfare) et réévaluer sans rappeler la base
-      const apres = await lireLignes(a, user.id);
+      const apres = error ? null : await lireLignes(a, user.id);
       if (apres) {
         entree.progression = apres;
         entree.premier = false;
@@ -184,22 +236,39 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
     const faites = new Set(resultat.etats.filter((s) => s.fait).map((s) => `${s.quete.id}|${s.periode}`));
     const questions = (lecture.mesures.jours ?? []).reduce((s, j) => s + j.n, 0);
     const devoile = devoiler(meta, { inscritLe: lecture.mesures.inscrit_le ?? user.created_at ?? null, questions, faites, now, jour });
-    if (persister && devoile.change) {
-      try {
-        await supabase.auth.updateUser({ data: { rl_codex: { devoile: devoile.devoile, jours: devoile.jours } } });
-      } catch {
-        // le dévoilement se recalcule à la prochaine visite
-      }
-    }
 
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
     const vue = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait });
     MEMO.set(user.id, { at: Date.now(), vue });
+    DERNIER.set(user.id, vue);
     return { vue, entree, resultat };
   } catch (e) {
-    console.error("codex:", e instanceof Error ? e.message : e);
-    return vide;
+    await consigner(a, user.id, "", e instanceof Error ? e.message : String(e));
+    return repli(user.id, jour);
+  }
+}
+
+/** Un seul calcul à la fois par joueur : une lecture simple rejoint celui en cours ; une lecture forcée en lance un neuf, que les suivantes rejoignent. */
+function calculUnique(supabase: SupabaseClient, user: Joueur, force: boolean): Promise<Retour> {
+  const enCours = ENCOURS.get(user.id);
+  if (!force && enCours) return enCours;
+  const p = calculer(supabase, user).finally(() => {
+    if (ENCOURS.get(user.id) === p) ENCOURS.delete(user.id);
+  });
+  ENCOURS.set(user.id, p);
+  return p;
+}
+
+/** Écrit le dévoilement dans le compte (user_metadata rl_codex), une fois. */
+async function persisterDevoile(supabase: SupabaseClient, userId: string, vue: VueCodex) {
+  const d = vue.devoile;
+  if (!d?.change) return;
+  try {
+    await supabase.auth.updateUser({ data: { rl_codex: { devoile: d.devoile, jours: d.jours } } });
+    patcher(userId, (v) => (v.devoile ? { ...v, devoile: { ...v.devoile, change: false } } : v));
+  } catch {
+    // le dévoilement se recalcule à la prochaine visite
   }
 }
 
@@ -211,32 +280,53 @@ async function calculer(supabase: SupabaseClient, user: Joueur, { persister }: {
  */
 export async function lireCodex(supabase: SupabaseClient, user: Joueur, opts: { force?: boolean; persister?: boolean } = {}): Promise<VueCodex> {
   const memo = MEMO.get(user.id);
-  if (!opts.force && memo && Date.now() - memo.at < MEMO_MS) return { ...memo.vue, nouvelles: [] };
-  return (await calculer(supabase, user, { persister: !!opts.persister })).vue;
+  const vue = !opts.force && memo && Date.now() - memo.at < MEMO_MS ? { ...memo.vue, nouvelles: [] } : (await calculUnique(supabase, user, !!opts.force)).vue;
+  if (opts.persister && vue.devoile?.change) await persisterDevoile(supabase, user.id, vue);
+  return vue;
+}
+
+/** La récompense d'une quête telle qu'elle est écrite (codex_progression), sans recalcul ; null : pas encore versée. */
+export async function recompenseEcrite(userId: string, queteId: string, periode: string): Promise<{ xp: number; vu: boolean } | null | "indisponible"> {
+  const a = admin();
+  if (!a) return "indisponible";
+  try {
+    const { data, error } = await a.from("codex_progression").select("etat,xp,vu").eq("user_id", userId).eq("quete_id", queteId).eq("periode", periode).maybeSingle();
+    if (error) return "indisponible";
+    const l = data as { etat: string; xp: number | string; vu: boolean } | null;
+    return l && (l.etat === "recompensee" || l.etat === "terminee") ? { xp: Number(l.xp) || 0, vu: !!l.vu } : null;
+  } catch {
+    return "indisponible";
+  }
 }
 
 /** Les compteurs et la décision d'un changement de contrat (une seule fois par jour). */
 export async function changerContrat(supabase: SupabaseClient, user: Joueur, emplacement: Emplacement): Promise<{ ok: true; vue: VueCodex } | { ok: false; raison: "connexion" | "indisponible" | "refus" | "aucun" }> {
   const a = admin();
   if (!a) return { ok: false, raison: "indisponible" };
-  const { entree } = await calculer(supabase, user, { persister: false });
+  const { entree } = await calculer(supabase, user);
   if (!entree) return { ok: false, raison: "indisponible" };
+  // l'activité par matière (contrat « prend la poussière ») n'est lue qu'au tirage : la relire pour le remplaçant
+  if (!entree.activite) {
+    const act = await lire(a, user.id, demandesActivite(entree.contenu ?? contenuDuProgramme(), entree.jour), entree.jour);
+    if (act) entree.activite = lireActivite(entree.contenu ?? contenuDuProgramme(), act);
+  }
   const actuel = entree.contrats.find((c) => c.emplacement === emplacement);
   if (!actuel) return { ok: false, raison: "aucun" };
   const autre = remplacantContrat(entree, user.id, emplacement, actuel.modele);
   if (!autre) return { ok: false, raison: "aucun" };
   const { error } = await a.rpc("codex_contrat_changer", { p_user: user.id, p_jour: entree.jour, p_emplacement: emplacement, p_modele: autre.modele, p_params: autre.params });
   if (error) return { ok: false, raison: baseAbsente(error) ? "indisponible" : "refus" };
-  return { ok: true, vue: (await calculer(supabase, user, { persister: false })).vue };
+  return { ok: true, vue: (await calculUnique(supabase, user, true)).vue };
 }
 
-/** Marque des fanfares comme jouées. */
+/** Marque des fanfares comme jouées ; la vue gardée est corrigée sur place (pas de recalcul). */
 export async function marquerVus(userId: string, quetes: string[]): Promise<boolean> {
   const a = admin();
   if (!a || !quetes.length) return false;
   try {
     const { error } = await a.rpc("codex_vus", { p_user: userId, p_quetes: quetes.slice(0, 100) });
-    MEMO.delete(userId);
+    if (!error) patcher(userId, (v) => vueSansFetes(v, quetes));
+    else MEMO.delete(userId);
     return !error;
   } catch {
     return false;
@@ -249,7 +339,8 @@ export async function marquerRetroVue(userId: string): Promise<boolean> {
   if (!a) return false;
   try {
     const { error } = await a.rpc("codex_retro_vue", { p_user: userId });
-    MEMO.delete(userId);
+    if (!error) patcher(userId, (v) => ({ ...v, retro: null }));
+    else MEMO.delete(userId);
     return !error;
   } catch {
     return false;
