@@ -8,7 +8,10 @@ import { createClient } from "@/lib/supabase/browser";
 import { multDuJour, texteGain, xpAvecSerie } from "@/lib/serie-encre";
 import { friendlyError } from "@/lib/errors";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
-import { TOPICS, TOPIC_LABELS, trophyTier } from "@/lib/practiceTopics";
+import { TOPICS, TOPIC_LABELS } from "@/lib/practiceTopics";
+import { lireLienPractice, matieresServies, repartir, tirerSeance } from "@/lib/practice-lien";
+import { nomPalier, palierCiblee, type TropheeGagne } from "@/lib/trophees";
+import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
 import { SectionHead } from "@/components/session/ui";
 import { Icone } from "@/components/adn/icons";
 import { CarteLieu } from "@/components/ui/CarteLieu";
@@ -39,7 +42,11 @@ import { EPREUVE } from "@/lib/voice-z3";
 
 // Entraînement ciblé : on choisit ses matières, on reçoit le nombre de
 // questions qu'elles pèsent dans un vrai examen, chronométré, corrigé à la fin
-// (correction entièrement serveur : submit_practice_session).
+// (correction entièrement serveur : submit_practice_session). Un lien peut
+// demander ses matières, sa taille, ses poids, son format, et la préparer tout
+// de suite (lib/practice-lien : topic=a,b,c ou all, n, poids, format, go).
+// Le trophée de la séance suit le plafond par taille (palierCiblee) et
+// s'annonce en fin de séance (AnnonceTrophee).
 
 type ActiveQuestion = { id: string; position: number; prompt: string; choices: string[] };
 
@@ -98,19 +105,27 @@ export function PracticeSession({
   const traits = useTraitsDuJour(traitsJour);
 
   const [phase, setPhase] = useState<Phase>(demo?.phase ?? "builder");
-  // Pré-sélectionne le thème passé en query param (ex: lien "S'entraîner sur
-  // X" depuis le panneau Points faibles du dashboard) — sans forcer le choix,
-  // l'utilisateur peut toujours l'enlever ou en ajouter d'autres.
+  // Ce que demande le lien (ex: « S'entraîner sur X » depuis les points
+  // faibles, un bloc de la séance du jour) : les matières sont pré-cochées
+  // sans forcer le choix, l'utilisateur peut toujours en enlever ou en ajouter.
   const searchParams = useSearchParams();
+  const [lien] = useState(() => lireLienPractice((k) => searchParams.get(k)));
   const [selected, setSelected] = useState<Set<string>>(() => {
     if (demo?.selected) return new Set(demo.selected);
-    const fromUrl = searchParams.get("topic");
-    if (fromUrl && TOPICS.some((x) => x.key === fromUrl)) return new Set([fromUrl]);
+    if (lien.matieres) return new Set(lien.matieres);
     // sans thème demandé, la session conseillée : les matières mesurées sous 50 %
     return new Set(TOPICS.filter((t) => typeof mastery[t.key] === "number" && (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key));
   });
   // ?format=180 (lien d'une quête du Codex : certaines matières n'atteignent 15 questions qu'en format complet)
-  const [format, setFormat] = useState<90 | 180>(demo?.format ?? (searchParams.get("format") === "180" ? 180 : 90));
+  const [format, setFormat] = useState<90 | 180>(demo?.format ?? lien.format ?? 90);
+  // ?n= : la taille demandée par le lien ; choisir un format la rend au format
+  const [taille, setTaille] = useState<number | null>(demo ? null : lien.taille);
+  // les matières de la séance tirée (celles qui ont reçu des questions) : la copie, le trophée
+  const [tirees, setTirees] = useState<string[]>(demo?.selected ?? []);
+  // l'instant où l'épreuve a commencé : l'annonce des trophées compte depuis lui
+  const [debut, setDebut] = useState("");
+  // ?go=1 : la séance se prépare dès l'arrivée (le constructeur ne s'affiche qu'en cas d'échec)
+  const [enRoute, setEnRoute] = useState(!demo && lien.go);
   const [questions, setQuestions] = useState<ActiveQuestion[]>(demo?.questions ?? []);
   const [answers, setAnswers] = useState<(number | null)[]>(demo?.answers ?? (demo?.questions ?? []).map(() => null));
   const [idx, setIdx] = useState(demo?.idx ?? 0);
@@ -182,39 +197,70 @@ export function PracticeSession({
     });
   }
 
-  const previewCount = [...selected].reduce((sum, key) => {
-    const w = TOPICS.find((t) => t.key === key)?.weight ?? 0;
-    return sum + Math.round((w / 100) * format);
-  }, 0);
+  const previewCount =
+    taille ??
+    [...selected].reduce((sum, key) => {
+      const w = TOPICS.find((t) => t.key === key)?.weight ?? 0;
+      return sum + Math.round((w / 100) * format);
+    }, 0);
   const previewMinutes = Math.max(5, Math.round(previewCount * MIN_PER_QUESTION_MINUTES));
+  // les matières qui recevront des questions (une petite séance aux poids officiels peut en laisser une de côté)
+  const previewMatieres = taille !== null ? matieresServies(repartir(taille, [...selected], { poids: lien.poids })).length : selected.size;
 
-  async function generate(topics: Set<string> = selected, fmt: 90 | 180 = format) {
+  async function generate(topics: Set<string> = selected, fmt: 90 | 180 = format, n: number | null = taille) {
     if (topics.size === 0) return;
     setBusy(true);
     setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc("generate_practice_session", {
-        p_topics: [...topics],
-        p_format: fmt,
-      });
-      if (rpcError) throw new Error(rpcError.message);
-      const qs = (data ?? []) as ActiveQuestion[];
+      const cles = [...topics];
+      let qs: ActiveQuestion[];
+      let servies = cles;
+      if (n === null) {
+        const { data, error: rpcError } = await supabase.rpc("generate_practice_session", {
+          p_topics: cles,
+          p_format: fmt,
+        });
+        if (rpcError) throw new Error(rpcError.message);
+        qs = (data ?? []) as ActiveQuestion[];
+      } else {
+        // une taille demandée : chaque matière tirée à part, au format complet
+        // (sa plus grande réserve), puis la part de chacune, mêlées
+        const lus = await Promise.all(cles.map((t) => supabase.rpc("generate_practice_session", { p_topics: [t], p_format: 180 })));
+        const rate = lus.find((r) => r.error);
+        if (rate?.error) throw new Error(rate.error.message);
+        const tirage = tirerSeance(Object.fromEntries(cles.map((t, i) => [t, (lus[i].data ?? []) as ActiveQuestion[]])), n, cles, { poids: lien.poids });
+        qs = tirage.questions.map((q, i) => ({ ...q, position: i }));
+        servies = tirage.matieres;
+      }
       if (qs.length === 0) {
         setError("Aucune question disponible pour cette sélection.");
         return;
       }
       setQuestions(qs);
       setAnswers(qs.map(() => null));
+      setTirees(servies);
       setSecondsLeft(Math.max(5, Math.round(qs.length * MIN_PER_QUESTION_MINUTES)) * 60);
       setPhase("ready");
     } catch (e: unknown) {
       setError(friendlyError(e, "Erreur lors de la génération"));
     } finally {
       setBusy(false);
+      setEnRoute(false);
     }
   }
 
+  // ?go=1 : une seule préparation, à l'arrivée
+  const parti = useRef(false);
+  useEffect(() => {
+    if (!enRoute || parti.current) return;
+    parti.current = true;
+    if (selected.size === 0) setEnRoute(false);
+    else void generate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function start() {
+    setDebut(new Date().toISOString());
     setIdx(0);
     elapsedRef.current = 0;
     setPaused(false);
@@ -232,7 +278,7 @@ export function PracticeSession({
 
     const duration = elapsedRef.current;
     const payload = questions.map((q, i) => ({ question_id: q.id, selected_index: answersRef.current[i] }));
-    const topicsArr = [...selected];
+    const topicsArr = tirees;
 
     try {
       const { data, error: rpcError } = await supabase.rpc("submit_practice_session", {
@@ -305,7 +351,7 @@ export function PracticeSession({
   if (phase === "builder") {
     const measured = TOPICS.filter((t) => mastery[t.key] !== null && mastery[t.key] !== undefined);
     const weak = measured.filter((t) => (mastery[t.key] as number) < WEAK_BELOW).map((t) => t.key);
-    const tier = trophyTier(selected.size);
+    const palier = palierCiblee(previewMatieres, previewCount);
     const history = showAllHistory ? pastSessions : pastSessions.slice(0, 6);
     const canChart = pastSessions.length >= 2;
     const last5 = pastSessions.slice(0, 5);
@@ -321,8 +367,20 @@ export function PracticeSession({
       const tout = new Set(TOPICS.map((t) => t.key));
       setSelected(tout);
       setFormat(90);
-      void generate(tout, 90);
+      setTaille(null);
+      void generate(tout, 90, null);
     };
+
+    // ?go=1 : la séance se prépare ; le constructeur attend (il revient si elle échoue)
+    if (enRoute) {
+      return (
+        <div className="grid gap-6 py-2 md:py-8">
+          <p className="card-quiet t-small m-0 px-5 py-4" role="status">
+            Préparation de ta séance…
+          </p>
+        </div>
+      );
+    }
 
     return (
       <Page
@@ -374,7 +432,7 @@ export function PracticeSession({
                       <p className="t-micro m-0 inline-flex items-center gap-1.5">
                         {selected.size > 0 ? (
                           <>
-                            <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {tier.label.toLowerCase()} à 70 % ou plus
+                            <Trophy size={13} aria-hidden /> {fmtMinutes(previewMinutes)} · trophée {nomPalier(palier).toLowerCase()} à 70 % ou plus
                           </>
                         ) : (
                           STUDIOLO.choisir
@@ -382,15 +440,26 @@ export function PracticeSession({
                       </p>
                     </div>
                     <p className="t-body m-0 max-w-[420px] text-muted">{STUDIOLO.phrase(weak.length)}</p>
-                    <Seg
-                      label="Format"
-                      value={String(format) as "90" | "180"}
-                      onChange={(v) => setFormat(Number(v) as 90 | 180)}
-                      options={[
-                        { key: "90", label: "Demi-examen · 90" },
-                        { key: "180", label: "Complet · 180" },
-                      ]}
-                    />
+                    {taille !== null ? (
+                      <p className="t-small m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span>
+                          {taille} questions tirées parmi tes matières{lien.poids ? ", aux poids officiels de l'examen" : ""}.
+                        </span>
+                        <button type="button" className="ink-link min-h-[44px] text-[13px] font-semibold md:min-h-0" onClick={() => setTaille(null)}>
+                          Choisir un format
+                        </button>
+                      </p>
+                    ) : (
+                      <Seg
+                        label="Format"
+                        value={String(format) as "90" | "180"}
+                        onChange={(v) => setFormat(Number(v) as 90 | 180)}
+                        options={[
+                          { key: "90", label: "Demi-examen · 90" },
+                          { key: "180", label: "Complet · 180" },
+                        ]}
+                      />
+                    )}
                     <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
                       <button type="button" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]" disabled={selected.size === 0 || busy} onClick={() => void generate()}>
                         {busy ? "Préparation…" : "Générer la session"} {!busy && <ArrowRight size={16} aria-hidden />}
@@ -468,7 +537,7 @@ export function PracticeSession({
                   {history.map((s) => {
                     const pct = pctOf(s.score, s.total);
                     const passed = pct >= PASS_THRESHOLD;
-                    const tierS = trophyTier(s.topics.length);
+                    const palierS = nomPalier(palierCiblee(s.topics.length, s.total)).toLowerCase();
                     const expanded = expandedHistoryId === s.id;
                     const rev = historyReviews[s.id];
                     return (
@@ -481,7 +550,7 @@ export function PracticeSession({
                         >
                           <span
                             className={"grid h-9 w-9 shrink-0 place-items-center rounded-[11px] " + (passed ? "bg-white text-black" : "bg-surface-2 text-muted")}
-                            title={passed ? `Trophée ${tierS.label}` : "Sous 70 %"}
+                            title={passed ? `Trophée ${palierS}` : "Sous 70 %"}
                           >
                             <Trophy size={16} aria-hidden strokeWidth={passed ? 2.2 : 1.6} />
                           </span>
@@ -490,7 +559,7 @@ export function PracticeSession({
                             <span className="t-micro mt-0.5 block">
                               {dayLabel(s.completed_at)} · {s.total} questions
                               {s.duration_seconds ? ` · ${fmtMinutes(Math.max(1, Math.round(s.duration_seconds / 60)))}` : ""}
-                              {passed ? ` · trophée ${tierS.label}` : ""}
+                              {passed ? ` · trophée ${palierS}` : ""}
                             </span>
                           </span>
                           <span className="shrink-0 text-right">
@@ -533,8 +602,7 @@ export function PracticeSession({
     );
   }
 
-  const topicNames = topicsSummary([...selected], 3);
-  const topicShort = topicsSummary([...selected], 1);
+  const topicNames = topicsSummary(tirees, 3);
 
   // ── PRÊTE ──
   if (phase === "ready") {
@@ -561,16 +629,17 @@ export function PracticeSession({
   if (phase === "done") {
     const pct = total > 0 ? Math.round((score / total) * 100) : null;
     const passed = pct !== null && pct >= PASS_THRESHOLD;
-    const tier = trophyTier(selected.size);
+    // le trophée de la séance, connu sur place (même règle qu'en base : plafond par taille) ; l'annonce le montre tout de suite
+    const gagne: TropheeGagne[] = passed ? [{ source: "ciblee", palier: palierCiblee(tirees.length, total), ref: topicsSummary(tirees, 3) }] : [];
     const many = new Set(review.map((q) => q.topic ?? "")).size > 1;
     const minutes = lastDuration ? Math.max(1, Math.round(lastDuration / 60)) : null;
-    const meta = [passed ? `trophée ${tier.label}` : null, xpAwarded > 0 ? texteGain(xpAwarded, xpMult) : null].filter(Boolean).join(" · ");
+    const meta = xpAwarded > 0 ? texteGain(xpAwarded, xpMult) : "";
 
     return (
       <div className="rl-page">
         <FinDeSession
           epreuve={surTitreSession(EPREUVE.practice, total, minutes)}
-          titre={topicsSummary([...selected], 2) || EPREUVE.practice}
+          titre={topicsSummary(tirees, 2) || EPREUVE.practice}
           meta={meta || undefined}
           score={score}
           total={total}
@@ -589,11 +658,14 @@ export function PracticeSession({
             </>
           }
           notes={
-            error ? (
-              <p role="alert" className="m-0 text-sm text-pen">
-                {error}
-              </p>
-            ) : null
+            <>
+              <AnnonceTrophee depuis={debut} connus={gagne} className="pt-1" />
+              {error && (
+                <p role="alert" className="m-0 text-sm text-pen">
+                  {error}
+                </p>
+              )}
+            </>
           }
         >
           {many && <TopicBreakdown review={review} />}
