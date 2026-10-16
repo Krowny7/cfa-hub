@@ -77,6 +77,10 @@ export const REG = {
       retirees > 0 ? `en cours · ${retirees} retirée${s(retirees)}${semaine > 0 ? `, dont ${semaine} cette semaine` : ""}` : "en cours · rien de retiré pour l'instant",
     phrase: "Une rature sort du carnet quand tu la réussis deux fois de suite. Commence par celles qui reviennent.",
     phraseVide: "Rien à reprendre pour l'instant : les ratures rayées restent dans les anciennes.",
+    /** les ratures qui sèchent (migration_v3_profil.sql §3a) */
+    phraseSeche: "Une rature se raye quand tu la réussis au moins un jour après l'erreur : l'encre doit sécher. Commence par celles qui reviennent.",
+    sechent: (n: number) => `${fmtInt(n)} ${n > 1 ? "sèchent" : "sèche"} encore`,
+    scellees: (n: number) => `${fmtInt(n)} scellée${s(n)} : ${n > 1 ? "elles tiennent" : "elle tient"}.`,
     action: "Les reprendre une à une",
     liste: "D'où elles viennent",
     listeTitre: "Toutes tes ratures",

@@ -6,12 +6,13 @@
 // rayée, jamais reprise, demain, l'heure de Paris le jour même, heure d'été
 // et d'hiver), bilanSeche (le bilan de l'Atelier : une rature fraîche n'est
 // pas rayée, le compte d'après du serveur gardé), et les textes (bilan de
-// Mise au propre, badge, « Tout ce qui reste sèche demain », Atelier).
+// Mise au propre, badge, « Tout ce qui reste sèche demain », Registre, Atelier).
 import { bilanSeche, pageDe, quandSeche } from "@/components/moi/ratures-data";
 import type { BilanAtelier } from "@/lib/atelier";
 import type { ItemSeance } from "@/lib/atelier-seance";
 import { CARNET } from "@/lib/voice-z1";
 import { ATELIER } from "@/lib/voice-atelier";
+import { REG } from "@/lib/voice-moi";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -102,6 +103,7 @@ check("« Tout ce qui reste sèche demain » (U6)", CARNET.propreSeche === "Tout
 check("sous le bouton, celles qui sèchent : singulier et pluriel", CARNET.sechentSous(1) === "1 rature sèche encore : elle reviendra demain." && CARNET.sechentSous(3) === "3 ratures sèchent encore : elles reviendront demain.", CARNET.sechentSous(3));
 check("scellées : « 1 scellée », « 4 scellées »", CARNET.scellees(1) === "1 scellée" && CARNET.scellees(4) === "4 scellées");
 check("Atelier : « 1 réussie, elle sèche demain », « 2 réussies, elles sèchent demain »", ATELIER.fraiches(1) === "1 réussie, elle sèche demain" && ATELIER.fraiches(2) === "2 réussies, elles sèchent demain");
+check("Registre : « 1 sèche encore », « 2 scellées : elles tiennent. », la règle de l'encre qui sèche", REG.ratures.sechent(1) === "1 sèche encore" && REG.ratures.sechent(3) === "3 sèchent encore" && REG.ratures.scellees(2) === "2 scellées : elles tiennent." && /un jour après l'erreur/.test(REG.ratures.phraseSeche));
 check("Atelier : un statut « fraiche » a son texte (pas « rayée »)", !!ATELIER.statut.fraiche && !/rayée du carnet/.test(ATELIER.statut.fraiche));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
