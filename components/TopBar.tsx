@@ -19,11 +19,15 @@ import { createClient } from "@/lib/supabase/server";
 import { PresenceHeartbeat } from "@/components/presence/PresenceHeartbeat";
 import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 
-// Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
+// Barre du haut : logo vivant (→ accueil), domaine · programme, les cinq
 // espaces en contrôle segmenté, puis la recherche, le sceau « ! » des quêtes
 // du Codex (diffusé en flux) et le badge de rang du joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
 // déconnexion). Translucide et collante, avec un léger flou. Un trait d'encre
 // court sous la barre pendant qu'une page se fait attendre (NavProgress).
+// Le logo mène à l'accueil, sur téléphone aussi (la barre du bas n'a
+// plus d'onglet « Accueil »). Aux largeurs moyennes, la place va aux espaces :
+// domaine abrégé sous 1 280 px, mot « RANKED LOBBY » masqué de 768 à 1 023 px
+// (l'anneau reste) ; les onglets eux-mêmes s'ajustent au reste (SpaceNav).
 //
 // Le logo suit la journée : l'anneau se trace au nombre de traits du jour
 // (une lecture légère, en parallèle du rang, avec repli sur le logo plein).
@@ -67,17 +71,22 @@ export async function TopBar() {
           <span className="inline-flex items-center gap-2.5">
             <span className="sr-only">{t(locale, "appName")}, accueil</span>
             <AnneauDuJourLogo repondues={traits} objectif={objectif} size={26} landing publie />
-            <span aria-hidden className="font-brand leading-none">
+            <span aria-hidden className={"font-brand leading-none" + (user ? " md:max-lg:hidden" : "")}>
               RANKED LOBBY
             </span>
           </span>
         </Link>
         {user && (
-          <div className="hidden lg:block">
-            <DomainSwitcher />
-          </div>
+          <>
+            <div className="hidden lg:block xl:hidden">
+              <DomainSwitcher compact />
+            </div>
+            <div className="hidden xl:block">
+              <DomainSwitcher />
+            </div>
+          </>
         )}
-        <div className="flex flex-1 justify-center">{user && <SpaceNav />}</div>
+        <div className="@container flex min-w-0 flex-1 justify-center">{user && <SpaceNav />}</div>
         <div className="flex items-center gap-2">
           {user ? (
             <>

@@ -8,24 +8,24 @@ import { ICONE_ESPACE, Icone, type IconeNom } from "@/components/adn/icons";
 import { EncreVive } from "@/components/nav/EncreVive";
 import { useSpacesVisibles } from "@/components/nav/DevoileContext";
 
-// Barre du bas (mobile) : flottante et translucide, l'accueil puis les espaces
-// (cinq, moins ceux pas encore découverts : DevoileContext) ; une pastille d'encre glisse sous l'onglet actif (même geste que
-// le contrôle segmenté de la barre du haut), placée par transform ; l'icône
-// qui devient active fait un petit rebond. La pastille se remplit du liquide
-// des insignes de rang, aux couleurs de la palette de la page (lib/palettes.ts,
-// EncreVive ; texture de repli et voile : .rl-encre dans globals.css), l'accueil
-// compris. `chemin` : pour les aperçus, force la route.
+// Barre du bas (mobile) : flottante et translucide, les espaces (cinq, moins
+// ceux pas encore découverts : DevoileContext). Pas d'onglet « Accueil » : le
+// logo de la barre du haut y mène (décision du 16 octobre 2026), et cinq
+// onglets laissent leur nom entier même à 360 px. Une pastille d'encre glisse
+// sous l'onglet actif (même geste que le contrôle segmenté de la barre du
+// haut), placée par transform ; l'icône qui devient active fait un petit
+// rebond. La pastille se remplit du liquide des insignes de rang, aux couleurs
+// de la palette de la page (lib/palettes.ts, EncreVive ; texture de repli et
+// voile : .rl-encre dans globals.css) ; sur l'accueil, aucun onglet n'est
+// allumé. `chemin` : pour les aperçus, force la route.
 export function MobileBottomNav({ chemin }: { chemin?: string } = {}) {
   const courant = usePathname();
   const pathname = chemin ?? courant ?? "/";
   const space = activeSpace(pathname);
   const { spaces: SPACES } = useSpacesVisibles(space);
   if (pathname.startsWith("/login") || pathname.startsWith("/share")) return null;
-  const home = pathname === "/" || pathname === "/dashboard";
-  const items = [
-    { key: "home", label: "Accueil", href: "/dashboard", icone: "accueil" as IconeNom, on: home, neuf: false },
-    ...SPACES.map((s) => ({ key: s.key, label: s.label, href: s.href, icone: ICONE_ESPACE[s.key] as IconeNom, on: s.key === space, neuf: s.neuf })),
-  ];
+  const items = SPACES.map((s) => ({ key: s.key, label: s.label, href: s.href, icone: ICONE_ESPACE[s.key] as IconeNom, on: s.key === space, neuf: s.neuf }));
+  if (!items.length) return null;
   const ix = items.findIndex((i) => i.on);
   const n = items.length;
   const palette = ix >= 0 ? paletteDeChemin(pathname) : null;
@@ -71,7 +71,7 @@ export function MobileBottomNav({ chemin }: { chemin?: string } = {}) {
           }
         >
           <Icone nom={icone} size={21} appui={on ? 1.12 : 0.95} className={on ? "rl-nudge" : undefined} />
-          <span className="max-w-full truncate px-0.5">{label}</span>
+          <span className="whitespace-nowrap max-[359px]:text-[9.5px] max-[359px]:tracking-[-0.02em]">{label}</span>
         </Link>
       ))}
     </nav>
