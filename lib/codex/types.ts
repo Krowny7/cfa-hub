@@ -157,7 +157,20 @@ export type TypeMesure =
   /** branches de matière qui ont passé l'étape filtre.etape (nombre) */
   | "branches_etape"
   /** la même chose en part des branches du programme, 0–100 */
-  | "branches_etape_pct";
+  | "branches_etape_pct"
+  // ── v3 (codex_mesures_v3, migration_codex_v3.sql §4 ; inconnues sans elle) ──
+  /** jours à 10 questions ou plus, à vie, tous programmes */
+  | "jours_encre_total"
+  /** branches menées jusqu'à « Maître de… » (quêtes *branche:*:maitre récompensées), tous programmes */
+  | "maitres_total"
+  /** programmes menés (codex_programmes_joueur, statut « mene ») */
+  | "programmes_menes"
+  /** trophées de palier ≥ filtre.palier (bronze par défaut), de la source filtre.source si donnée (V3 §2.5) */
+  | "trophees"
+  /** pièces de collection possédées, hors pièces libres (compterPiecesCodex, lib/codex/fil-rouge.ts ; calculée par le moteur) */
+  | "pieces_possedees"
+  /** semaines (lun.–dim.) à 2 jours d'encre ou plus après l'examen (calculée par le moteur) */
+  | "semaines_entretien";
 
 export type FiltreMesure = {
   matiere?: Matiere | Param;
@@ -173,6 +186,9 @@ export type FiltreMesure = {
   famille?: Famille;
   chaine?: string;
   etape?: EtapeBranche;
+  /** trophées : palier minimal (« 1 or » = or ou mieux) et source (lib/trophees.ts, V3 §2.5) */
+  palier?: "bronze" | "argent" | "or" | "diamant";
+  source?: string;
 };
 
 // ── Objectifs ──────────────────────────────────────────────────────────
@@ -205,7 +221,8 @@ export type Objectif = ObjectifCompteur | ObjectifMesure | ObjectifSpecial | { k
 
 // ── Quêtes ─────────────────────────────────────────────────────────────
 
-export type Famille = "trame" | "branche" | "longcours" | "contrat" | "exploit";
+/** « fil » : le fil rouge, commun à tous les programmes (lib/codex/fil-rouge.ts, V3 §1.5). */
+export type Famille = "trame" | "branche" | "longcours" | "contrat" | "exploit" | "fil";
 
 /** Les étapes d'une branche de matière (voir genererBranches ; « serie » remplace « ciblee » dans un programme sans séance ciblée). */
 export type EtapeBranche = "entree" | "cours" | "fiche" | "drill" | "flashcards" | "ciblee" | "serie" | "tour" | "maitrise60" | "maitrise75" | "maitre";
@@ -275,6 +292,8 @@ export type Quete = {
   ordre: number;
   /** ce que la base doit savoir faire (V3 §1.8) : sinon la quête n'est pas branchée à l'exécution (masquée, ignorée par la clôture d'acte et les prérequis) */
   requiert?: Requis[];
+  /** parue avec la v3 du Codex : au premier calcul v3, déjà remplie, elle est rattrapée en rétro (V3 §1.9) */
+  nouvelle?: "v3";
 };
 
 // ── Regroupements ──────────────────────────────────────────────────────
@@ -341,7 +360,8 @@ export type ModeleContrat = {
 /** Une pièce cosmétique que seul le Codex donne (à brancher dans lib/profil/catalogue.ts). */
 export type CosmetiqueCodex = {
   cle: string;
-  type: "cadre" | "banniere" | "titre";
+  /** « folio » : une planche du carnet (V3 §3.7) */
+  type: "cadre" | "banniere" | "titre" | "folio";
   nom: string;
   description: string;
   /** elle bouge (« ce qui brille se gagne ») */

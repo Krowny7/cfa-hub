@@ -341,8 +341,33 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "branches_etape":
     case "branches_etape_pct":
       return f?.etape ? cibleEtape(f.etape, ctx) : null;
+    // le fil rouge (V3 §1.5)
+    case "jours_encre_total":
+    case "semaines_entretien":
+      return CINQ;
+    case "maitres_total": return cibleEtape("maitre", ctx);
+    case "programmes_menes":
+    case "pieces_possedees":
+      return { href: "/codex", duree: 5, outil: "codex" };
+    case "trophees": {
+      const s = typeof f?.source === "string" ? TROPHEE_VERS[f.source] : undefined;
+      return s ?? { href: lienPractice(ctx, { topic: "all", n: 30, poids: true }), duree: 30, outil: "ciblee" };
+    }
   }
 }
+
+/** Où se gagne un trophée de chaque source (copie locale des liens de SOURCES_TROPHEE, lib/trophees.ts, avant la fusion F1). */
+const TROPHEE_VERS: Record<string, Cible> = {
+  ciblee: { href: "/practice", duree: 30, outil: "ciblee" },
+  blanc: BLANCS,
+  trente: TRENTE,
+  cinq: CINQ,
+  drill: { href: "/fiches", duree: 20, outil: "drill" },
+  fiche: { href: "/fiches", duree: 20, outil: "drill" },
+  atelier: ATELIER,
+  duel: DUEL,
+  revoir: revoir(20),
+};
 
 /** « Branches à une étape » : la destination de cette étape dans la première branche (poids décroissants) qui ne l'a pas. */
 function cibleEtape(etape: EtapeBranche, ctx: ContexteDestination): Cible | null {

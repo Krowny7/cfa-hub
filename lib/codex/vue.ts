@@ -7,7 +7,8 @@
 import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { nomEnTete, suiteDe } from "@/lib/codex/programmes";
-import { actesDuJoueur, affichage, budgetDuJour, contexteDestination, joursAvantExamen, parametresDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
+import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -86,6 +87,25 @@ export type VueBranche = {
 
 export type VueChaine = { chaine: Chaine; paliers: LigneQuete[]; courant: LigneQuete | null; suivant: LigneQuete | null; faits: number };
 
+/** Un chapitre du fil rouge : son palier en cours (et le suivant), ce qui est tamponné. */
+export type VueChapitreFil = {
+  id: string;
+  titre: string;
+  pourquoi: string;
+  /** paliers récompensés (écrits en base) */
+  faits: number;
+  courant: LigneQuete | null;
+  suivant: LigneQuete | null;
+  /** les paliers tamponnés dont la fanfare n'a pas été jouée (bilan, fête) */
+  recents: LigneQuete[];
+};
+
+/**
+ * Le fil rouge (V3 §1.5). `aVenir` : la base ne sait pas encore l'écrire
+ * (capacité « fil » absente) : il se lit, sans tampon, sans fête ni XP annoncée.
+ */
+export type VueFilRouge = { chapitres: VueChapitreFil[]; aVenir: boolean };
+
 export type Possession = { cle: string; type: CosmetiqueCodex["type"]; nom: string; quete: string; le: string | null; retro: boolean };
 
 export type VueCodex = {
@@ -108,6 +128,8 @@ export type VueCodex = {
   hebdo: LigneQuete[];
   branches: VueBranche[];
   longCours: VueChaine[];
+  /** le fil rouge, commun à tous les programmes (sous les chaînes) */
+  filRouge: VueFilRouge;
   exploits: LigneQuete[];
   /** ce que le joueur possède grâce au Codex (cadres, bannières, titres) */
   possessions: Possession[];
@@ -125,7 +147,7 @@ export type VueCodex = {
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
   disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, prochaine: null,
-  trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], branches: [], longCours: [], exploits: [],
+  trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
   possessions: [], stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null,
 });
 
@@ -197,6 +219,7 @@ export function vueSansFetes(v: VueCodex, quetes: string[]): VueCodex {
     hebdo: v.hebdo.map(f),
     branches: v.branches.map((b) => ({ ...b, etapes: b.etapes.map(f) })),
     longCours: v.longCours.map((c) => ({ ...c, paliers: c.paliers.map(f), courant: c.courant && f(c.courant), suivant: c.suivant && f(c.suivant) })),
+    filRouge: { ...v.filRouge, chapitres: v.filRouge.chapitres.map((c) => ({ ...c, courant: c.courant && f(c.courant), suivant: c.suivant && f(c.suivant), recents: c.recents.filter((l) => !ids.has(l.id)) })) },
     exploits: v.exploits.map(f),
   };
 }
@@ -257,6 +280,17 @@ export function construireVue(
     return { chaine: c, paliers, faits, courant: paliers.find((x) => x.etat !== "terminee") ?? null, suivant: paliers.filter((x) => x.etat !== "terminee")[1] ?? null };
   }).filter((c) => c.paliers.length > 0);
 
+  // le fil rouge : par chapitre, le premier palier pas encore fait (sans la capacité « fil », rien n'est écrit : « à venir »)
+  const recompenses = paliersRecompenses(e.progression);
+  const filRouge: VueFilRouge = {
+    aVenir: !capacitesDe(e).fil,
+    chapitres: CHAPITRES_FIL.map((c) => {
+      const paliers = unique.filter((x) => x.s.quete.famille === "fil" && palierFilDe(x.s.quete.id)?.chapitre === c.id).sort((p, q) => (p.s.quete.palier ?? 0) - (q.s.quete.palier ?? 0)).map((x) => x.l);
+      const restants = paliers.filter((x) => x.etat !== "terminee");
+      return { id: c.id, titre: c.titre, pourquoi: c.pourquoi, faits: recompenses[c.id] ?? 0, courant: restants[0] ?? null, suivant: restants[1] ?? null, recents: paliers.filter((x) => x.aFeter) };
+    }),
+  };
+
   const exploits = unique.filter((x) => x.s.quete.famille === "exploit" && x.l.affichage !== "cache").sort((p, q) => p.s.quete.ordre - q.s.quete.ordre).map((x) => x.l);
 
   const par = donneurs(contenu, r.etats.map((s) => s.quete));
@@ -269,7 +303,9 @@ export function construireVue(
     if (c && l) possessions.push({ cle, type: c.type, nom: c.nom, quete: id, le: l.terminee_le, retro: !!l.retro });
   }
 
-  const faites = r.etats.filter((s) => s.fait && s.quete.famille !== "contrat").length;
+  // le fil rouge, sans fin, n'entre pas dans le compte du Codex (il a sa section)
+  const comptee = (s: EtatQuete) => s.quete.famille !== "contrat" && s.quete.famille !== "fil";
+  const faites = r.etats.filter((s) => s.fait && comptee(s)).length;
   const ligneReco = reco ? lignes.find((x) => x.s.quete.id === reco.quete.id && x.s.periode === reco.periode)?.l : null;
   return {
     disponible: true,
@@ -288,9 +324,10 @@ export function construireVue(
     hebdo,
     branches,
     longCours,
+    filRouge,
     exploits,
     possessions,
-    stats: { faites, total: r.etats.filter((s) => s.quete.famille !== "contrat" && !s.quete.optionnelle).length, xpCodex: e.progression.reduce((s, l) => s + (l.etat === "recompensee" ? l.xp : 0), 0) },
+    stats: { faites, total: r.etats.filter((s) => comptee(s) && !s.quete.optionnelle).length, xpCodex: e.progression.reduce((s, l) => s + (l.etat === "recompensee" ? l.xp : 0), 0) },
     devoile: extra.devoile,
     devoileNouveaux: (extra.devoile?.nouveaux ?? []).flatMap((id) => {
       const d = DECOUVERTE.find((x) => x.id === id);

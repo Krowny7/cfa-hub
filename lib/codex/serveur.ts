@@ -27,7 +27,7 @@ import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-
 import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
   LECTURE_VIDE, actesDuJoueur, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
-  type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
+  type ContratTire, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import { CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, ecarter, lireCapacites, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
@@ -154,7 +154,20 @@ async function lireProgrammes(a: SupabaseClient, id: string): Promise<ProgrammeJ
   }
 }
 
-type MesuresV3 = { capacites: Capacites; jours_encre_total?: number; programmes_menes?: number };
+type MesuresV3 = { capacites: Capacites } & Pick<MesuresSql, "jours_encre_total" | "programmes_menes" | "maitres_total" | "trophees">;
+
+const nombre = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : undefined);
+
+/** Les trophées rendus par codex_mesures_v3 ([{source, palier, n}]) ; une ligne mal formée est ignorée, autre chose qu'une liste : inconnus. */
+function lireTropheesV3(x: unknown): MesuresSql["trophees"] {
+  if (!Array.isArray(x)) return undefined;
+  return x.flatMap((l) => {
+    const o = l as { source?: unknown; palier?: unknown; n?: unknown } | null;
+    const palier = nombre(o?.palier);
+    const n = nombre(o?.n);
+    return o && typeof o.source === "string" && palier !== undefined && n !== undefined ? [{ source: o.source, palier, n }] : [];
+  });
+}
 
 /**
  * Les mesures v3 et les capacités de la base (codex_mesures_v3, V3 §1.8), en
@@ -165,11 +178,35 @@ async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): 
   try {
     const { data, error } = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
     if (error || !data || typeof data !== "object") return { capacites: CAPACITES_VIDE };
-    const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown };
-    const nombre = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : undefined);
-    return { capacites: lireCapacites(d.capacites), jours_encre_total: nombre(d.jours_encre_total), programmes_menes: nombre(d.programmes_menes) };
+    const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown; maitres_total?: unknown; trophees?: unknown };
+    return {
+      capacites: lireCapacites(d.capacites),
+      jours_encre_total: nombre(d.jours_encre_total),
+      programmes_menes: nombre(d.programmes_menes),
+      maitres_total: nombre(d.maitres_total),
+      trophees: lireTropheesV3(d.trophees),
+    };
   } catch {
     return { capacites: CAPACITES_VIDE };
+  }
+}
+
+/**
+ * Le marqueur du rattrapage (V3 §1.9), écrit après une écriture réussie du
+ * lot : codex_joueur.capacites_vues (§2) ; sans elle, le compte
+ * (user_metadata.rl_codex.capacites_vues, par la clé service : aucun cookie
+ * à poser pendant un rendu). Un échec se rejoue au calcul suivant.
+ */
+async function ecrireCapacitesVues(a: SupabaseClient, user: Joueur, ou: ReglageJour["ou"], vues: Capacites) {
+  try {
+    if (ou === "base") {
+      const { error } = await a.rpc("codex_joueur_capacites", { p_user: user.id, p_vues: vues });
+      if (!error || !baseAbsente(error)) return;
+    }
+    const rl_codex = { ...((user.user_metadata as { rl_codex?: Record<string, unknown> } | null)?.rl_codex ?? {}), capacites_vues: vues };
+    await a.auth.admin.updateUserById(user.id, { user_metadata: { rl_codex } });
+  } catch {
+    // rejoué au calcul suivant
   }
 }
 
@@ -238,6 +275,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       budget: reglage.budget,
       ecartees: reglage.ecartees,
       programmes,
+      capacitesVues: reglage.capacitesVues,
     };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage)
@@ -267,7 +305,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       await consigner(a, user.id, "", "codex_lire a échoué");
       return repli(user.id, jour);
     }
-    entree.lecture = { ...lecture, mesures: { ...lecture.mesures, jours_encre_total: v3.jours_encre_total, programmes_menes: v3.programmes_menes } };
+    entree.lecture = { ...lecture, mesures: { ...lecture.mesures, jours_encre_total: v3.jours_encre_total, programmes_menes: v3.programmes_menes, maitres_total: v3.maitres_total, trophees: v3.trophees } };
     const compteurs = indexerLecture(demandes, entree.lecture);
     let resultat = evaluer(entree, compteurs);
 
@@ -287,6 +325,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       const titres = new Map(resultat.etats.map((s) => [s.quete.id, s.quete.titre]));
       for (const x of actesDuJoueur(entree)) titres.set(`acte:${x.id}`, x.titre);
       nouvelles = (w?.recompenses ?? []).filter((x) => !x.retro).map((x) => ({ quete: x.quete, periode: x.periode, xp: x.xp, nominal: x.nominal, cosmetique: x.cosmetique, titre: x.titre, titreQuete: titres.get(x.quete) ?? x.quete }));
+      // le lot est écrit : le rattrapage est fait, son marqueur peut avancer (V3 §1.9)
+      if (!error && resultat.capacitesVues) await ecrireCapacitesVues(a, user, reglage.ou, resultat.capacitesVues);
       // relire les lignes écrites (XP versée, fanfare) et réévaluer sans rappeler la base
       const apres = error ? null : await lireLignes(a, user.id);
       if (apres) {
@@ -297,6 +337,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     } else if (!retro) {
       const j = await a.rpc("codex_ecrire", { p_user: user.id, p_lot: [], p_budget_retro: 0 }).then((x) => x, () => null);
       retro = (j?.data as { retro?: VueCodex["retro"] } | null)?.retro ?? null;
+      if (j && !j.error && resultat.capacitesVues) await ecrireCapacitesVues(a, user, reglage.ou, resultat.capacitesVues);
     }
 
     // un programme sans examen est mené quand le dernier acte de sa trame se clôt (V3 §1.6) ; sans §3, rien
@@ -344,7 +385,10 @@ async function persisterDevoile(supabase: SupabaseClient, userId: string, vue: V
   const d = vue.devoile;
   if (!d?.change) return;
   try {
-    await supabase.auth.updateUser({ data: { rl_codex: { devoile: d.devoile, jours: d.jours } } });
+    // rl_codex garde aussi le marqueur du rattrapage (capacites_vues, sans la §2) : on ne l'écrase pas
+    const { data } = await supabase.auth.getUser();
+    const avant = (data.user?.user_metadata as { rl_codex?: Record<string, unknown> } | undefined)?.rl_codex ?? {};
+    await supabase.auth.updateUser({ data: { rl_codex: { ...avant, devoile: d.devoile, jours: d.jours } } });
     patcher(userId, (v) => (v.devoile ? { ...v, devoile: { ...v.devoile, change: false } } : v));
   } catch {
     // le dévoilement se recalcule à la prochaine visite

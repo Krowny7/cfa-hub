@@ -36,7 +36,7 @@ export type BilanCodex = {
 
 export const BILAN_VIDE: BilanCodex = { disponible: false, fetes: [], acteNouveau: null, devoile: null, prochaine: null, contrats: [], trio: { faits: 0, total: 0, fait: false }, retro: null };
 
-const NOMS_TYPE: Record<string, string> = { titre: "Titre", banniere: "Bannière", cadre: "Cadre" };
+const NOMS_TYPE: Record<string, string> = { titre: "Titre", banniere: "Bannière", cadre: "Cadre", folio: "Folio" };
 
 function nomCosmetique(vue: VueCodex, cle: string | null | undefined): string | null {
   if (!cle) return null;
@@ -44,11 +44,11 @@ function nomCosmetique(vue: VueCodex, cle: string | null | undefined): string | 
   return p ? `${NOMS_TYPE[p.type] ?? "Pièce"} : ${p.nom}` : null;
 }
 
-const RANG: Record<Famille, number> = { exploit: 2, longcours: 2, branche: 3, trame: 3, contrat: 4 };
+const RANG: Record<Famille, number> = { exploit: 2, longcours: 2, fil: 2, branche: 3, trame: 3, contrat: 4 };
 
 /** Toutes les lignes de la vue qui peuvent être fêtées. */
 function lignes(vue: VueCodex): LigneQuete[] {
-  return [...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.exploits, ...vue.contrats.map((c) => c.ligne), ...vue.hebdo];
+  return [...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.filRouge.chapitres.flatMap((c) => c.recents), ...vue.exploits, ...vue.contrats.map((c) => c.ligne), ...vue.hebdo];
 }
 
 export function bilanDe(vue: VueCodex): BilanCodex {

@@ -12,6 +12,7 @@ import { condition as conditionSceau, nomSceau } from "@/lib/voice-profil";
 import { de } from "@/lib/codex/elision";
 import { contenuDuProgramme } from "@/lib/codex/programmes/cfa-l1";
 import { actesGeneriques } from "@/lib/codex/programmes/generique";
+import { PIECES_FIL, paliersFil } from "@/lib/codex/fil-rouge";
 import { ID_MAX, PROGRAMME_GLOBAL, PROGRAMME_HISTORIQUE, cleLocale, estGlobal, slugDe, slugDeId } from "@/lib/codex/programmes/ids";
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import type {
@@ -81,6 +82,12 @@ export const MESURES: Record<TypeMesure, SourceDonnee> = {
   quetes_terminees: { libelle: "Quêtes terminées", source: "codex_progression (termine_le non nul)", branche: true },
   branches_etape: { libelle: "Branches à une étape", source: "codex_progression des quêtes branche:*:<etape>", branche: true },
   branches_etape_pct: { libelle: "Part des branches à une étape", source: "branches_etape / branches du programme (une branche sans l'étape compte faite)", branche: true },
+  jours_encre_total: { libelle: "Jours d'encre, à vie", source: "codex_mesures_v3 : _codex_jours (≥ 10 questions), tous programmes", branche: true },
+  maitres_total: { libelle: "Maîtres", source: "codex_mesures_v3 : codex_progression des quêtes *branche:*:maitre récompensées, tous programmes", branche: true },
+  programmes_menes: { libelle: "Programmes menés", source: "codex_mesures_v3 : codex_programmes_joueur (statut « mene »)", branche: true },
+  trophees: { libelle: "Trophées", source: "codex_mesures_v3 : trophees_joueur (migration_v3_profil.sql), sinon les séances ciblées en ligne, plafonnées par taille", branche: true },
+  pieces_possedees: { libelle: "Pièces de collection", source: "le moteur : compterPiecesCodex (lib/codex/fil-rouge.ts) sur codex_progression, les sceaux et les trophées", branche: true },
+  semaines_entretien: { libelle: "Semaines de main gardée", source: "le moteur : jours d'encre (codex_lire) après le jour J passé ou le programme mené", branche: true },
 };
 
 /** Les prédicats spéciaux (ObjectifSpecial) : à coder un par un dans le moteur. */
@@ -139,6 +146,8 @@ export const COSMETIQUES_CODEX: CosmetiqueCodex[] = [
   { cle: "titre:commande", type: "titre", nom: "Commande honorée", description: "Un examen blanc à 80 % ou plus." },
   { cle: "titre:duelliste", type: "titre", nom: "Duelliste de la guilde", description: "A atteint le palier Diamant." },
   { cle: "titre:codex", type: "titre", nom: "Codex Atlanticus", description: "Cent quêtes du Codex terminées." },
+  // le fil rouge (lib/codex/fil-rouge.ts, V3 §1.5) : ses pièces et ses titres
+  ...PIECES_FIL,
   // « Maître de <matière> » : un titre par branche, généré (titreMaitre)
 ];
 
@@ -812,9 +821,14 @@ export function catalogueCodex(contenu: ContenuMatiere[] = contenuDuProgramme())
   return [...QUETES_TRAME, ...genererBranches(contenu), ...QUETES_LONG_COURS, ...QUETES_EXPLOITS, ...QUETES_CONTRATS_HEBDO];
 }
 
-/** Les incohérences du catalogue de CFA I (ids en double, prérequis vers rien, cosmétiques inconnus) ; [] : tout va bien. */
+/**
+ * Les incohérences du catalogue de CFA I (ids en double, prérequis vers rien,
+ * cosmétiques inconnus), avec les 12 premiers paliers de chaque chapitre du
+ * fil rouge ; [] : tout va bien.
+ */
 export function verifierCatalogue(contenu: ContenuMatiere[] = contenuDuProgramme()): string[] {
-  return verifierQuetes(catalogueCodex(contenu), { actes: ACTES, cosmetiques: [...COSMETIQUES_CODEX, ...titresMaitres(contenu)], decouverte: DECOUVERTE });
+  const quetes = [...catalogueCodex(contenu), ...paliersFil([acteClos("prologue")])];
+  return verifierQuetes(quetes, { actes: ACTES, cosmetiques: [...COSMETIQUES_CODEX, ...titresMaitres(contenu)], decouverte: DECOUVERTE });
 }
 
 /**

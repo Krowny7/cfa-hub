@@ -19,11 +19,12 @@ import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Dest
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
 import { actesDe, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { CHAPITRES_FIL, compterPiecesCodex, palierAtteint, paliersRecompenses, quetesFilRouge, tropheesAuMoins, type TropheesLus } from "@/lib/codex/fil-rouge";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { notionParId, notionsDeMatiere } from "@/lib/notions";
 import { decaleJour, joursEntre } from "@/lib/objectif-calc";
-import type { Acte, Budget, Capacites, Comparaison, Requis, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement } from "@/lib/codex/types";
+import type { Acte, Budget, Capacite, Capacites, Comparaison, Requis, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement, TypeMesure } from "@/lib/codex/types";
 
 // ── Ce que la base donne ───────────────────────────────────────────────
 
@@ -62,6 +63,10 @@ export type MesuresSql = {
   jours_encre_total?: number;
   /** codex_mesures_v3 : programmes menés (codex_programmes_joueur, statut « mene ») */
   programmes_menes?: number;
+  /** codex_mesures_v3 : branches menées jusqu'à « Maître de… », tous programmes */
+  maitres_total?: number;
+  /** codex_mesures_v3 : trophées par source et par palier (1 bronze … 4 diamant), V3 §2.5 */
+  trophees?: TropheesLus;
 };
 
 export type LectureSql = { compteurs: Record<string, ResultatCompteur>; mesures: MesuresSql; speciaux: Record<string, number> };
@@ -121,6 +126,12 @@ export type Entree = {
   capacites?: Capacites;
   /** les programmes du joueur (codex_programmes_joueur, V3 §1.6) ; absent ou vide : CFA I actif, rien de mené */
   programmes?: ProgrammeJoueur[];
+  /**
+   * Le marqueur du rattrapage (V3 §1.9) : les capacités de la base vues au
+   * dernier calcul écrit. null : jamais (premier calcul v3) ; absent : pas de
+   * rattrapage (aperçus, tests d'avant la v3).
+   */
+  capacitesVues?: Partial<Capacites> | null;
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
@@ -129,6 +140,41 @@ export const capacitesDe = (e: Pick<Entree, "capacites">): Capacites => e.capaci
 /** La base sait-elle faire ce que la quête exige (Quete.requiert) ? Sinon la quête n'est pas branchée à l'exécution. */
 export function requisOk(q: Pick<Quete, "requiert">, c: Capacites): boolean {
   return (q.requiert ?? []).every((r: Requis) => (r === "journal3" ? c.journal === 3 : c[r]));
+}
+
+/** Ce qu'une quête exige de la base : son `requiert`, plus la capacité « fil » pour un palier du fil rouge (il ne s'écrit pas sans elle). */
+export const requisDe = (q: Pick<Quete, "requiert" | "famille">): Requis[] => (q.famille === "fil" ? [...(q.requiert ?? []), "fil"] : (q.requiert ?? []));
+
+const CLES_CAPACITES: Capacite[] = ["fil", "seances", "revoir", "maitrise", "trophees", "debrief", "ratures_seches"];
+
+/**
+ * Ce qui est nouveau pour ce joueur depuis son dernier calcul écrit (le
+ * rattrapage, V3 §1.9) : `v3` au premier calcul v3 (aucun marqueur), et les
+ * capacités de la base qui s'allument pour la première fois. null : pas de
+ * marqueur dans l'entrée, rien à rattraper.
+ */
+export function nouveautesDe(e: Pick<Entree, "capacites" | "capacitesVues">): { v3: boolean; requis: Set<Requis> } | null {
+  if (e.capacitesVues === undefined) return null;
+  const c = capacitesDe(e);
+  const vues = e.capacitesVues;
+  const requis = new Set<Requis>(CLES_CAPACITES.filter((k) => c[k] && !vues?.[k]));
+  if (c.journal === 3 && vues?.journal !== 3) requis.add("journal3");
+  return { v3: vues === null, requis };
+}
+
+/**
+ * Le marqueur à écrire après une écriture réussie du lot : tout ce qui a été
+ * vu (une capacité vue le reste) ; null : inchangé, ou pas de marqueur dans
+ * l'entrée.
+ */
+export function marqueurDe(e: Pick<Entree, "capacites" | "capacitesVues">): Capacites | null {
+  if (e.capacitesVues === undefined) return null;
+  const c = capacitesDe(e);
+  const vues = e.capacitesVues ?? {};
+  const out: Capacites = { ...c, journal: vues.journal === 3 || c.journal === 3 ? 3 : 2 };
+  for (const k of CLES_CAPACITES) out[k] = !!vues[k] || c[k];
+  const change = e.capacitesVues === null || CLES_CAPACITES.some((k) => out[k] !== !!vues[k]) || out.journal !== (vues.journal ?? 2);
+  return change ? out : null;
 }
 
 /**
@@ -301,6 +347,24 @@ function semainesActives(jours: { jour: string; n: number }[], n: number) {
   return [...parSemaine.values()].filter((x) => x >= n).length;
 }
 
+/**
+ * Le jour depuis lequel on « garde la main » (chapitre entretien du fil
+ * rouge) : le premier jour J passé, admis ou non (celui du joueur ou d'un de
+ * ses programmes), ou le jour où un programme a été mené ; null : pas encore.
+ */
+export function debutEntretien(e: Pick<Entree, "jour" | "jourJ" | "programmes">): string | null {
+  const jours = [e.jourJ, ...(e.programmes ?? []).map((p) => p.jourJ)].filter((j): j is string => !!j && j < e.jour);
+  const menes = (e.programmes ?? []).filter((p) => p.statut === "mene" && p.meneLe).map((p) => p.meneLe!.slice(0, 10));
+  return [...jours, ...menes].sort()[0] ?? null;
+}
+
+/** Semaines (lun.–dim.) à 2 jours d'encre ou plus, comptées après le début de l'entretien. */
+function semainesEntretien(e: Entree): number {
+  const depuis = debutEntretien(e);
+  if (!depuis) return 0;
+  return semainesActives((e.lecture.mesures.jours ?? []).filter((j) => String(j.jour).slice(0, 10) > depuis), 2);
+}
+
 /** Semaines complètes (lun.–dim.) où le rythme vers l'objectif a été tenu. */
 function semainesAuRythme(e: Entree) {
   if (!e.objectif || !e.jourJ) return 0;
@@ -390,7 +454,8 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "duels_joues": return mesureCompteur(c, "duel_termine", seuil);
     case "amis": return mesureCompteur(c, "ami_ajoute", seuil);
     case "quetes_terminees": {
-      const faites = c.catalogue.filter((q) => c.faites.has(clePeriode(q.id, "")) && q.famille !== "contrat" && (!f.famille || q.famille === f.famille) && (!f.chaine || q.chaine === f.chaine));
+      // le fil rouge, sans fin, ne compte que si on le demande (famille « fil »)
+      const faites = c.catalogue.filter((q) => c.faites.has(clePeriode(q.id, "")) && q.famille !== "contrat" && (f.famille ? q.famille === f.famille : q.famille !== "fil") && (!f.chaine || q.chaine === f.chaine));
       return fini(faites.length);
     }
     case "branches_etape": return fini(branchesFaites(c, f.etape as EtapeBranche).faites);
@@ -398,8 +463,40 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
       const { faites, total } = branchesFaites(c, f.etape as EtapeBranche);
       return fini(total ? Math.floor((100 * faites) / total) : 100);
     }
+    // v3 : sans codex_mesures_v3, inconnues (la quête ne se valide pas)
+    case "jours_encre_total": return fini(M.jours_encre_total ?? null);
+    case "maitres_total": return fini(M.maitres_total ?? null);
+    case "programmes_menes": return fini(M.programmes_menes ?? null);
+    case "trophees": return fini(M.trophees ? tropheesAuMoins(M.trophees, RANG_TROPHEE[f.palier ?? "bronze"], f.source) : null);
+    case "pieces_possedees": return fini(compterPiecesCodex({ progression: c.e.progression, sceaux: M.sceaux, trophees: M.trophees }));
+    case "semaines_entretien": return fini(semainesEntretien(c.e));
   }
 }
+
+/** Le rang d'un palier de trophée (lib/trophees.ts : 1 bronze … 4 diamant). */
+const RANG_TROPHEE = { bronze: 1, argent: 2, or: 3, diamant: 4 } as const;
+
+/**
+ * La valeur d'un chapitre du fil rouge sous un filtre, quel que soit le
+ * palier : une seule demande à codex_lire pour les questions (son n est le
+ * total), la mesure sinon ; null : inconnue.
+ */
+function valeurFil(mesure: TypeMesure, filtre: FiltreMesure | undefined, c: Contexte): number | null {
+  if (mesure === "questions_total") return c.compteur({ evenement: "question_repondue", fenetre: "toujours", seuil: 1 }).n;
+  const ev = mesureObjectif({ k: "mesure", mesure, seuil: Number.POSITIVE_INFINITY, ...(filtre ? { filtre } : {}) }, c);
+  return ev.inconnu ? null : ev.valeur;
+}
+
+/** Un palier du fil rouge : la valeur de son chapitre comparée à son seuil (pas de date d'atteinte lue : c'est l'instant du calcul). */
+function evalFil(o: Objectif, c: Contexte): Ev {
+  if (o.k !== "mesure") return evalObjectif(o, c);
+  const v = valeurFil(o.mesure, o.filtre, c);
+  if (v === null) return { fait: false, valeur: 0, cible: o.seuil, atteint: null, inconnu: true };
+  return { fait: v >= o.seuil, valeur: Math.min(v, o.seuil), cible: o.seuil, atteint: null };
+}
+
+/** L'évaluation d'une quête : celle de son objectif (un palier du fil rouge passe par la valeur de son chapitre). */
+const evalQuete = (q: Pick<Quete, "famille" | "objectif">, c: Contexte): Ev => (q.famille === "fil" ? evalFil(q.objectif, c) : evalObjectif(q.objectif, c));
 
 /** Branches (matières) qui ont passé une étape ; une branche sans cette étape compte pour faite. */
 function branchesFaites(c: Contexte, etape: EtapeBranche) {
@@ -605,7 +702,7 @@ export type EtatQuete = {
 export type ItemEcriture = {
   quete: string;
   periode: string;
-  famille: "trame" | "branche" | "longcours" | "contrat" | "exploit" | "acte";
+  famille: "trame" | "branche" | "longcours" | "contrat" | "exploit" | "acte" | "fil";
   etat: "disponible" | "active" | "terminee";
   progression?: number;
   cible?: number;
@@ -631,16 +728,29 @@ export type Resultat = {
   /** les contrats du jour (instances) et leur état */
   contrats: Instance[];
   trioFait: boolean;
+  /** le marqueur du rattrapage à écrire après une écriture réussie du lot (marqueurDe) ; null : inchangé */
+  capacitesVues: Capacites | null;
 };
 
-const ordreFamille = { trame: 0, branche: 1, longcours: 2, contrat: 3, exploit: 4 } as const;
+const ordreFamille = { trame: 0, branche: 1, longcours: 2, contrat: 3, exploit: 4, fil: 5 } as const;
 
 /** Une quête suivie : ni retirée, ni sur un événement pas encore suivi en base, ni sur ce que la base ne sait pas encore faire (V3 §1.8). */
 const suivie = (q: Quete, c: Capacites) => !q.retiree && queteBranchee(q) && requisOk(q, c);
 
-/** Les quêtes à suivre : catalogue branché et non retiré, plus les instances du jour. */
-export function quetesASuivre(e: Entree, contenu: ContenuMatiere[]): { catalogue: Quete[]; instances: Instance[] } {
-  const catalogue = e.catalogue ?? catalogueCodex(contenu);
+/** Ce qui ouvre le premier palier du fil rouge : l'acte 0 du programme du joueur (le prologue de CFA I). */
+function ouvertureFil(e: Entree): Prerequis[] {
+  const actes = actesDuJoueur(e);
+  const zero = actes.find((a) => a.numero === 0) ?? actes[0];
+  return zero ? [{ k: "acte", id: zero.id }] : [];
+}
+
+/**
+ * Les quêtes à suivre : catalogue branché et non retiré, les paliers du fil
+ * rouge (atteints et pas encore récompensés, plus le suivant ; `atteints`
+ * absent : le palier en cours et le suivant), plus les instances du jour.
+ */
+export function quetesASuivre(e: Entree, contenu: ContenuMatiere[], atteints?: Record<string, number>): { catalogue: Quete[]; instances: Instance[] } {
+  const catalogue = [...(e.catalogue ?? catalogueCodex(contenu)), ...quetesFilRouge(e.progression, { ouverture: ouvertureFil(e), atteints })];
   const capacites = capacitesDe(e);
   const instances: Instance[] = [];
   for (const q of catalogue) {
@@ -673,7 +783,7 @@ export function planifier(e: Entree): Demande[] {
   const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
   for (const { quete, periode, params } of instances) {
     const l = lignes.get(clePeriode(quete.id, periode));
-    evalObjectif(quete.objectif, { ...contexteBlanc(e, contenu, collecte, catalogue), periode, ouverteLe: dateOu(l?.ouverte_le), params });
+    evalQuete(quete, { ...contexteBlanc(e, contenu, collecte, catalogue), periode, ouverteLe: dateOu(l?.ouverte_le), params });
   }
   return [...demandes.values()];
 }
@@ -717,14 +827,19 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
  */
 export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>): Resultat {
   const contenu = e.contenu ?? contenuDuProgramme();
-  const { catalogue, instances } = quetesASuivre(e, contenu);
-  const actes = actesDuJoueur(e);
-  const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
-  const niveau = levelInfoFromXp(e.lecture.mesures.xp_total ?? 0).level;
   const resolveur: Contexte["compteur"] = (d) => {
     const cle = JSON.stringify([d.evenement, d.filtre ?? null, d.fenetre ?? null, d.jour ?? null, d.distinct ?? null, d.somme ?? null, d.seuil]);
     return compteurs[cle] ?? { n: 0, atteint: null };
   };
+  // le fil rouge : jusqu'où chaque chapitre est atteint (ses paliers atteints sont instanciés d'un coup)
+  const sonde = contexteBlanc(e, contenu, resolveur);
+  const recompenses = paliersRecompenses(e.progression);
+  const atteints = Object.fromEntries(CHAPITRES_FIL.map((c) => [c.id, palierAtteint(c, (f) => valeurFil(c.mesure, f, sonde), recompenses[c.id] ?? 0)]));
+  const { catalogue, instances } = quetesASuivre(e, contenu, atteints);
+  const actes = actesDuJoueur(e);
+  const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
+  const niveau = levelInfoFromXp(e.lecture.mesures.xp_total ?? 0).level;
+  const capacites = capacitesDe(e);
   const ctx = contexteBlanc(e, contenu, resolveur, catalogue);
   const etats = new Map<string, EtatQuete>();
   for (const { quete, periode } of instances) {
@@ -759,7 +874,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
         change = true;
       }
       if (!st.ouverte) continue;
-      st.ev = evalObjectif(q.objectif, c);
+      st.ev = evalQuete(q, c);
       if (st.ev.fait) {
         st.fait = true;
         st.atteint = st.ev.atteint;
@@ -782,11 +897,17 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   const lot: ItemEcriture[] = [];
   const plafond = plafondQuete(niveau);
   const retroDe = (atteint: Date | null) => e.premier || (!!atteint && !!e.dernierCalcul && atteint.getTime() < e.dernierCalcul.getTime());
+  // le rattrapage (V3 §1.9) : déjà remplie et dépendante de ce qui est nouveau (quête de la v3 au premier
+  // calcul v3, capacité vue pour la première fois) → rétro, quelle que soit sa date d'atteinte
+  const nouveau = nouveautesDe(e);
+  const rattrapee = (q: Quete) => !!nouveau && ((nouveau.v3 && q.nouvelle === "v3") || requisDe(q).some((r) => nouveau.requis.has(r)));
   for (const st of tri) {
     const q = st.quete;
+    // sans la capacité « fil » (CHECK de codex_progression pas encore élargi), aucun palier du fil ne s'écrit (V3 §1.8)
+    if (q.famille === "fil" && !capacites.fil) continue;
     const base = { quete: q.id, periode: st.periode, famille: q.famille as ItemEcriture["famille"] };
     if (st.fait && !(st.ligne && (st.ligne.etat === "recompensee" || st.ligne.etat === "terminee"))) {
-      const retro = q.repetition === "unique" && !usesDepuisOuverture(q.objectif) && retroDe(st.atteint);
+      const retro = q.repetition === "unique" && (rattrapee(q) || (!usesDepuisOuverture(q.objectif) && retroDe(st.atteint)));
       st.retro = retro;
       lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp: q.recompense.xp, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(q.recompense.titre ? { titre: q.recompense.titre } : {}) });
     } else if (!st.fait && st.ouverte) {
@@ -818,6 +939,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     acteCourant: acteCourantDe(actesClos, actes),
     contrats: instances.filter((i) => i.quete.famille === "contrat" && i.quete.repetition === "quotidienne"),
     trioFait,
+    capacitesVues: marqueurDe(e),
   };
 }
 
@@ -911,12 +1033,15 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const ecartees = new Set(e.ecartees ?? []);
   const budget = budgetDuJour(e);
   const destinations = new Map<EtatQuete, Destination>();
-  const ouvertes = r.etats.filter((s) => {
+  const lancables = r.etats.filter((s) => {
     if (!s.ouverte || s.fait || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
     const d = destinationDe(s.quete, parametresDe(e, s), dest, s.ev ?? undefined);
     if (d) destinations.set(s, d);
     return !!d;
   });
+  // le fil rouge ne passe qu'en dernier recours : quand aucune quête du programme n'est proposable (V3 §1.5)
+  const duProgramme = lancables.filter((s) => s.quete.famille !== "fil");
+  const ouvertes = duProgramme.length ? duProgramme : lancables;
   const prologue = ouvertes.filter((s) => s.quete.acte === "prologue").sort((a, b) => a.quete.ordre - b.quete.ordre);
   const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? actesDuJoueur(e).find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
   if (prologue.length) return dernier(prologue[0]);
