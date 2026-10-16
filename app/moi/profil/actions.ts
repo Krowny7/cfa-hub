@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lireStyle, statsProfil } from "@/lib/profil/donnees";
-import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
-import { acquisDe, nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { baseAbsente, sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { nettoyerNom, normaliserLinkedin, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { lireAcquis } from "@/lib/profil/acquis";
+import { validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
 
-// Enregistrer son profil : le style (revalidé : cadres et bannières gagnés,
-// ou déjà portés, seulement ; image de bannière et médias venus de son
+// Enregistrer son profil : le style (revalidé : cadres, bannières, titre et
+// folio gagnés, ou déjà portés, seulement ; image de bannière et médias venus de son
 // dossier ; la disposition des blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
@@ -44,15 +46,22 @@ export async function enregistrerProfil(input: {
   if (input.linkedin.trim() && !linkedin) return { ok: false, erreur: "Adresse LinkedIn non reconnue : colle le lien de ton profil (linkedin.com/in/…)." };
   const visibilite = VISIBILITES.includes(input.visibilite) ? input.visibilite : "friends";
 
-  // ce qui ouvre les pièces gagnées : questions, pic, sceaux ; et ce qu'il porte déjà (on ne reprend rien)
+  // ce qui ouvre les pièces gagnées : questions, pic, sceaux, quêtes du Codex,
+  // trophées, programmes menés ; et ce qu'il porte déjà (on ne reprend rien)
   const stats = await statsProfil(user.id, supabase);
-  const [{ etats }, { style: porte }] = await Promise.all([sceauxDuJoueur(user.id, stats), lireStyle(admin, user.id)]);
+  const [{ etats }, { style: porte }, acquis] = await Promise.all([
+    sceauxDuJoueur(user.id, stats),
+    lireStyle(admin, user.id),
+    lireAcquis(admin, user.id, { stats, sceaux: [], datesPic: [] }),
+  ]);
   // l'image de bannière doit venir du dossier du joueur dans le stockage
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
   const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;
   const dossier = (bucket: string) => `${base}/storage/v1/object/public/${bucket}/${user.id}/`;
   const prefixesMedias = base ? { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) } : null;
-  const { style, refus } = validerStyle(input.style ?? {}, acquisDe(stats, etats), prefixe, prefixesMedias, porte);
+  const valide = validerStyle(input.style ?? {}, { ...acquis, sceaux: etats }, prefixe, prefixesMedias, porte);
+  const refus = valide.refus;
+  let style = valide.style;
 
   const now = new Date().toISOString();
   const ligne = {
@@ -67,7 +76,16 @@ export async function enregistrerProfil(input: {
     bio: style.bio,
     updated_at: now,
   };
-  let s = await admin.from("profile_style").upsert({ ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH }, { onConflict: "user_id" });
+  const complet = { ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH };
+  let s = await admin.from("profile_style").upsert({ ...complet, titre: style.titre, folio: style.folio }, { onConflict: "user_id" });
+  // le titre et le folio arrivent avec migration_v3_profil.sql : sans eux, le
+  // reste ; ce qu'il porte ne change pas (rien à porter tant que la base manque)
+  if (s.error && baseAbsente(s.error)) {
+    s = await admin.from("profile_style").upsert(complet, { onConflict: "user_id" });
+    if (!s.error && style.titre !== porte.titre) refus.push("le titre (la base n'est pas encore prête)");
+    if (!s.error && style.folio !== porte.folio) refus.push("le folio (la base n'est pas encore prête)");
+    style = { ...style, titre: porte.titre, folio: porte.folio };
+  }
   const dispositionOk = !s.error;
   // disposition, ambiance et hauteur de bannière arrivent avec
   // migration_profil_medias.sql : sans elles, le reste

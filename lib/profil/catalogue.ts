@@ -1,18 +1,18 @@
-// Le profil de joueur : ce qui se personnalise, ce qui se gagne, et la
-// validation d'un style avant écriture. La règle : ce qui est fixe est
+// Le profil de joueur : ce qui se personnalise et ce qui se gagne. La règle : ce qui est fixe est
 // libre (l'image de la bannière ou un motif fixe, la couleur, la vitrine, le
 // radar, la bio, le nom) ; ce qui bouge ou qui brille se gagne (les cadres
 // de métal au nombre de questions ; les cadres liquides et l'aura au pic de
 // palier ; le cadre « Dorure » et les bannières vivantes aux sceaux). Pas
 // d'inventaire : ce qu'on possède se déduit de ce qu'on a fait (Acquis).
 // Rien ne s'achète, et une pièce portée ne se reprend pas.
-// Module neutre (client et serveur) : le serveur revalide tout avant
-// d'écrire (app/moi/profil/actions.ts).
+// Module neutre (client et serveur). La lecture d'un style en base et sa
+// validation avant écriture vivent dans lib/profil/styles.ts : elles
+// connaissent toutes les pièces (lib/profil/pieces.ts, qui part d'ici).
 
 import { TIERS } from "@/lib/ranks";
 import type { EtatSceau } from "@/lib/profil/sceaux";
 import { champsBaseVides, remplie, type Acquis, type ConditionProfil } from "@/lib/profil/acquis";
-import { DISPOSITION_DEFAUT, blocsDe, dispositionDepuis, validerDisposition, type Disposition, type Prefixes } from "@/lib/profil/disposition";
+import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -225,6 +225,10 @@ export type StyleProfil = {
   /** le fond de la page : sobre, teinté de sa couleur, ou sa bannière floutée */
   ambiance: Ambiance;
   bannerH: HauteurBanniere;
+  /** le titre porté sous le pseudo (clé nue d'une pièce « titre », « maitre:fsa ») ; null : aucun */
+  titre: string | null;
+  /** le folio posé sur la page (clé nue d'une pièce « folio », « mains ») ; null : aucun */
+  folio: string | null;
 };
 
 export const STYLE_DEFAUT: StyleProfil = {
@@ -239,6 +243,8 @@ export const STYLE_DEFAUT: StyleProfil = {
   disposition: DISPOSITION_DEFAUT,
   ambiance: "aucune",
   bannerH: "normale",
+  titre: null,
+  folio: null,
 };
 export const BIO_MAX = 160;
 export const NOM_MAX = 60;
@@ -301,76 +307,4 @@ export function nettoyerNom(raw: string | null | undefined): string | null {
     .trim()
     .slice(0, NOM_MAX);
   return s || null;
-}
-
-/**
- * Ne garde que des valeurs connues et des cadres gagnés (le reste revient au
- * défaut). `prefixeImage` : l'adresse publique du dossier du joueur dans le
- * stockage ; une image ailleurs est refusée. `prefixesMedias` : de même pour
- * les images et la vidéo de la disposition (buckets profil-medias et
- * profil-videos).
- */
-export function validerStyle(
-  input: Partial<StyleProfil>,
-  a: Acquis,
-  prefixeImage: string | null,
-  prefixesMedias: Prefixes | null = null,
-  porte: Pick<StyleProfil, "frame" | "banner"> | null = null,
-): { style: StyleProfil; refus: string[] } {
-  const refus: string[] = [];
-  // gagné, ou déjà porté (on ne reprend rien : un pic de Top 10 perdu garde son cadre)
-  const c = CADRES.find((x) => x.key === input.frame);
-  let frame = STYLE_DEFAUT.frame;
-  if (c) {
-    if (cadreDebloque(c, a) || c.key === porte?.frame) frame = c.key;
-    else refus.push(`le cadre ${c.nom}`);
-  }
-  const m = motifDe(input.banner);
-  let banner = STYLE_DEFAUT.banner;
-  if (m) {
-    if (motifDebloque(m, a) || m.key === porte?.banner) banner = m.key;
-    else refus.push(`la bannière ${m.nom}`);
-  }
-  const url = typeof input.bannerUrl === "string" ? input.bannerUrl.trim() : "";
-  const bannerUrl = url && prefixeImage && url.startsWith(prefixeImage) && /^[A-Za-z0-9:/._%-]+$/.test(url) && url.length <= 500 ? url : null;
-  if (url && !bannerUrl) refus.push("l'image de bannière");
-  const keys = new Set<string>(VITRINE.map((v) => v.key));
-  const disp = Array.isArray(input.disposition) ? validerDisposition(input.disposition, prefixesMedias) : null;
-  if (disp) refus.push(...disp.refus);
-  const disposition = disp ? disp.disposition : dispositionDepuis(null, input.radar !== false);
-  return {
-    style: {
-      banner,
-      bannerUrl,
-      bannerPos: Math.max(0, Math.min(100, Math.round(Number(input.bannerPos ?? 50)) || 0)),
-      accent: estCouleur(input.accent) ? input.accent.toLowerCase() : STYLE_DEFAUT.accent,
-      frame,
-      showcase: vitrineDepuis(input.showcase),
-      radar: blocsDe(disposition).some((b) => b.k === "radar"),
-      bio: nettoyerBio(input.bio),
-      disposition,
-      ambiance: AMBIANCES.some((a) => a.key === input.ambiance) ? (input.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,
-      bannerH: HAUTEURS.some((h) => h.key === input.bannerH) ? (input.bannerH as HauteurBanniere) : STYLE_DEFAUT.bannerH,
-    },
-    refus,
-  };
-}
-
-/** Un style lu en base (colonnes de profile_style), valeurs inconnues ramenées au défaut. */
-export function styleDepuis(row: Record<string, unknown> | null | undefined): StyleProfil {
-  if (!row) return STYLE_DEFAUT;
-  const keys = new Set<string>(VITRINE.map((v) => v.key));
-  return {
-    banner: MOTIFS.some((m) => m.key === row.banner) ? (row.banner as string) : STYLE_DEFAUT.banner,
-    bannerUrl: typeof row.banner_url === "string" && row.banner_url ? row.banner_url : null,
-    bannerPos: Number.isFinite(Number(row.banner_pos)) ? Math.max(0, Math.min(100, Number(row.banner_pos))) : 50,
-    accent: estCouleur(row.accent) ? (row.accent as string) : STYLE_DEFAUT.accent,
-    frame: CADRES.some((c) => c.key === row.frame) ? (row.frame as string) : STYLE_DEFAUT.frame,
-    showcase: Array.isArray(row.showcase) ? vitrineDepuis(row.showcase) : STYLE_DEFAUT.showcase,
-    radar: row.show_radar !== false,
-    bio: typeof row.bio === "string" ? nettoyerBio(row.bio) : null,
-    disposition: dispositionDepuis(row.layout, row.show_radar !== false),
-    ambiance: AMBIANCES.some((a) => a.key === row.ambiance) ? (row.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,
-    bannerH: HAUTEURS.some((h) => h.key === row.banner_h) ? (row.banner_h as HauteurBanniere) : STYLE_DEFAUT.bannerH,
-  };
 }
