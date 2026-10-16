@@ -178,29 +178,31 @@ BEGIN
         WHERE l.user_id = p_user AND l.mode = 'page'
         GROUP BY l.run_id, l.set_id
       ), complets AS (
-        SELECT p.*, qs.title, split_part(qs.title, ' — ', 1) AS fiche
+        SELECT p.*, split_part(qs.title, ' — ', 1) AS fiche, substring(qs.title FROM 'Page ([0-9]+)')::int AS page
         FROM passages p
         JOIN quiz_sets qs ON qs.id = p.set_id
         WHERE qs.title ~ '^[^—]+ — Drill Fiche Page [0-9]+'
           AND p.distincts >= greatest(1, (SELECT count(*) FROM quiz_questions qq WHERE qq.set_id = p.set_id))
       ), premiers AS (
-        SELECT DISTINCT ON (c.set_id) c.* FROM complets c ORDER BY c.set_id, c.debut, c.run_id
+        SELECT DISTINCT ON (c.fiche, c.page) c.* FROM complets c ORDER BY c.fiche, c.page, c.debut, c.run_id
       ), pages AS (
-        SELECT qs.id, split_part(qs.title, ' — ', 1) AS fiche
+        -- les pages de la fiche comme le Codex les compte (drill_totaux) : par
+        -- numéro, publiées, et non vides
+        SELECT DISTINCT split_part(qs.title, ' — ', 1) AS fiche, substring(qs.title FROM 'Page ([0-9]+)')::int AS page
         FROM quiz_sets qs
-        WHERE qs.title ~ '^[^—]+ — Drill Fiche Page [0-9]+' AND qs.is_official AND qs.official_published
+        WHERE qs.title ~ '^[^—]+ — Drill Fiche Page [0-9]+' AND qs.official_published
           AND split_part(qs.title, ' — ', 1) IN (SELECT c.fiche FROM complets c)
           AND EXISTS (SELECT 1 FROM quiz_questions qq WHERE qq.set_id = qs.id)
       ), par_page AS (
-        SELECT pg.fiche, pg.id,
+        SELECT pg.fiche, pg.page,
                min(c.fin) FILTER (WHERE c.justes * 5 >= 4 * c.n) AS t_or,
                min(c.fin) FILTER (WHERE c.justes >= c.n) AS t_diamant
         FROM pages pg
-        LEFT JOIN complets c ON c.set_id = pg.id
-        GROUP BY pg.fiche, pg.id
+        LEFT JOIN complets c ON c.fiche = pg.fiche AND c.page = pg.page
+        GROUP BY pg.fiche, pg.page
       )
       SELECT 'drill'::text, (CASE WHEN p.justes >= p.n THEN 2 ELSE 1 END)::smallint, p.fin,
-             'Drill ' || _trophee_matiere(p.fiche) || ', page ' || substring(p.title FROM 'Page ([0-9]+)')
+             'Drill ' || _trophee_matiere(p.fiche) || ', page ' || p.page
       FROM premiers p
       WHERE p.justes * 10 >= 9 * p.n
       UNION ALL
