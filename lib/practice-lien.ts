@@ -65,28 +65,34 @@ export function repartir(n: number, matieres: string[], o: { poids?: boolean; di
   const parts: Record<string, number> = Object.fromEntries(matieres.map((m) => [m, 0]));
   const plafond = (m: string) => (o.dispo ? Math.max(0, Math.floor(o.dispo[m] ?? 0)) : Infinity);
   const poidsDe = (m: string) => (o.poids ? POIDS[m] ?? 0 : m in POIDS ? 1 : 0);
+  const total = Math.max(0, Math.floor(n) || 0);
   let ouvertes = [...new Set(matieres)].filter((m) => poidsDe(m) > 0 && plafond(m) > 0);
-  let reste = Math.max(0, Math.floor(n) || 0);
-  while (reste > 0 && ouvertes.length > 0) {
+  let fixe = 0;
+  // on répartit tout ce qui reste entre les matières ouvertes ; celles qui
+  // débordent donnent ce qu'elles ont et sortent, et l'on recommence
+  while (ouvertes.length > 0) {
+    const reste = total - fixe;
     const w = ouvertes.map(poidsDe);
     const somme = w.reduce((a, b) => a + b, 0);
     const brut = w.map((x) => (reste * x) / somme);
-    const base = brut.map(Math.floor);
-    let manque = reste - base.reduce((a, b) => a + b, 0);
-    const ordre = base.map((_, i) => i).sort((a, b) => brut[b] - base[b] - (brut[a] - base[a]) || a - b);
+    const part = brut.map(Math.floor);
+    let manque = reste - part.reduce((a, b) => a + b, 0);
+    const ordre = part.map((_, i) => i).sort((a, b) => brut[b] - part[b] - (brut[a] - part[a]) || a - b);
     for (const i of ordre) {
       if (manque <= 0) break;
-      base[i] += 1;
+      part[i] += 1;
       manque -= 1;
     }
-    let pose = 0;
-    ouvertes.forEach((m, i) => {
-      const k = Math.min(base[i], plafond(m) - parts[m]);
-      parts[m] += k;
-      pose += k;
-    });
-    reste -= pose;
-    ouvertes = ouvertes.filter((m) => parts[m] < plafond(m));
+    const debordent = ouvertes.filter((m, i) => part[i] > plafond(m));
+    if (debordent.length === 0) {
+      ouvertes.forEach((m, i) => (parts[m] = part[i]));
+      break;
+    }
+    for (const m of debordent) {
+      parts[m] = plafond(m);
+      fixe += parts[m];
+    }
+    ouvertes = ouvertes.filter((m) => !debordent.includes(m));
   }
   return parts;
 }
