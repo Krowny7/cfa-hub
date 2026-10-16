@@ -7,6 +7,7 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Explanation } from "@/components/session/parts";
 import { Rature } from "@/components/adn/Rature";
 import { rubriqueDe } from "@/components/moi/marquees-data";
+import { quandSeche } from "@/components/moi/ratures-data";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 
 // « Mettre au propre » (Moi › Erreurs) : les ratures en cours repassées une
@@ -18,6 +19,13 @@ import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 // faibles »), seules les ratures en cours de la notion
 // (rature_suivante_notion, migration_notions.sql) ou, en repli, des sets du
 // thème (rature_suivante_theme, migration_points_faibles.sql).
+// Les ratures qui sèchent (migration_v3_profil.sql §3a) : seules les ratures
+// sèches sont proposées, la plus ancienne erreur d'abord ; réussie moins de
+// 24 h après l'erreur, une rature reste en cours à l'encre fraîche
+// (« fraiche ») ; une ancienne réussie une semaine après son rayage est
+// scellée (« scellee »). Il ne reste que des fraîches : « vide », et le tour
+// s'arrête sur « Tout ce qui reste sèche demain ». Sans la section, tout se
+// passe comme avant.
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -39,8 +47,10 @@ type Resultat = {
   bonne: number;
   explication: string | null;
   choisi: number;
-  /** rayee, reste (en cours) ; ancienne, revenue (anciennes) */
+  /** rayee, fraiche, reste (en cours) ; ancienne, scellee, revenue (anciennes) */
   statut: string;
+  /** fraîche : quand elle sèche */
+  secheLe: string | null;
 };
 
 type QuestionTiree = { question_id: string; prompt: string; choices: string[]; sources: string[]; set_title: string | null; folder_name: string | null };
@@ -70,7 +80,10 @@ export function MiseAuPropre({
   const sb = useMemo(() => createClient(), []);
   const [tiree, setTiree] = useState<Tiree | null>(null);
   const [reste, setReste] = useState<number | null>(null);
-  const [fini, setFini] = useState<"vide" | "tour" | null>(null);
+  // vide : plus rien au tri ; tour : toutes repassées ; seche : il ne reste que des fraîches
+  const [fini, setFini] = useState<"vide" | "tour" | "seche" | null>(null);
+  // ratures du tri qui sèchent encore (pas proposées)
+  const [sechent, setSechent] = useState(0);
   const [choix, setChoix] = useState<number | null>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [envoi, setEnvoi] = useState(false);
@@ -80,7 +93,7 @@ export function MiseAuPropre({
   // la notion, sinon les sets du thème, en clé stable (le tirage ne se relance pas à chaque rendu du parent)
   const notion = theme?.notion ?? null;
   const cleSets = theme && !notion ? theme.sets.join(",") : null;
-  const [bilan, setBilan] = useState({ rayees: 0, restees: 0 });
+  const [bilan, setBilan] = useState({ rayees: 0, restees: 0, seches: 0 });
   const vues = useRef<string[]>([]);
   const haut = useRef<HTMLDivElement>(null);
 
@@ -103,11 +116,12 @@ export function MiseAuPropre({
             });
     setEnvoi(false);
     if (error) return (notion !== null || cleSets !== null) && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
-    const r = data as { carnet: number; reste: number; question: null | QuestionTiree };
+    const r = data as { carnet: number; reste: number; question: null | QuestionTiree; vide?: boolean; sechent?: number };
     setReste(Number(r.reste) || 0);
+    setSechent(Number(r.sechent) || 0);
     if (!r.question) {
       setTiree(null);
-      setFini(Number(r.carnet) > 0 ? "tour" : "vide");
+      setFini(r.vide === true ? "seche" : Number(r.carnet) > 0 ? "tour" : "vide");
       return;
     }
     setFini(null);
@@ -153,6 +167,7 @@ export function MiseAuPropre({
       explanation: string | null;
       selected_index: number;
       statut: string;
+      seche_le?: string | null;
     };
     vues.current = [...vues.current, tiree.questionId];
     setResultat({
@@ -161,9 +176,12 @@ export function MiseAuPropre({
       explication: r.explanation,
       choisi: r.selected_index,
       statut: r.statut,
+      secheLe: r.seche_le ?? null,
     });
     setReste((n) => (n === null ? n : Math.max(0, n - 1)));
-    setBilan((b) => (r.is_correct ? { ...b, rayees: b.rayees + 1 } : { ...b, restees: b.restees + 1 }));
+    setBilan((b) =>
+      r.statut === "fraiche" ? { ...b, seches: b.seches + 1 } : r.is_correct ? { ...b, rayees: b.rayees + 1 } : { ...b, restees: b.restees + 1 },
+    );
     onStatut(r.statut, tiree.sources);
   }, [anciennes, choix, demo, envoi, onStatut, resultat, sb, tiree]);
 
@@ -201,7 +219,7 @@ export function MiseAuPropre({
         {/* reprise par thème pas encore ouverte : pas de bilan */}
         {!indisponible && (
           <p className="t-micro m-0 font-mono">
-            {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees)}
+            {anciennes ? CARNET.rejouerBilan(bilan.rayees, bilan.restees) : CARNET.propreBilan(bilan.rayees, bilan.restees, bilan.seches)}
             {reste !== null && !fini ? ` · ${anciennes ? CARNET.rejouerRestantes(reste) : CARNET.propreRestantes(reste)}` : ""}
           </p>
         )}
@@ -222,7 +240,15 @@ export function MiseAuPropre({
         </div>
       ) : fini ? (
         <div className="grid gap-3 py-4">
-          <p className="t-h3 m-0">{fini === "vide" ? (anciennes ? CARNET.rejouerFini : CARNET.propreFini) : CARNET.propreFiniVue}</p>
+          <p className="t-h3 m-0">
+            {fini === "seche" ? CARNET.propreSeche : fini === "vide" ? (anciennes ? CARNET.rejouerFini : CARNET.propreFini) : CARNET.propreFiniVue}
+          </p>
+          {/* les fraîches attendent leur lendemain : on le dit, sans reproche */}
+          {fini === "seche" ? (
+            <p className="t-small m-0">{CARNET.propreSecheTexte(sechent)}</p>
+          ) : (
+            fini === "tour" && sechent > 0 && <p className="t-small m-0">{CARNET.propreSechent(sechent)}</p>
+          )}
           <div className="flex flex-wrap gap-2">
             {fini === "tour" && (
               <button
@@ -253,13 +279,13 @@ export function MiseAuPropre({
           <p className="t-micro m-0">
             {tiree.rubrique} · {tiree.sources.map((s) => NOMS.get(s) ?? s).join(", ")}
           </p>
-          {/* juste : l'énoncé se raye d'un trait de pinceau (un tableau, lui, reste tel quel) */}
+          {/* juste : l'énoncé se raye d'un trait de pinceau (un tableau, lui, reste tel quel) ; encre fraîche : pas encore */}
           {tiree.prompt.includes("\t") ? (
             <QuestionPrompt text={tiree.prompt} className="text-[16px] font-semibold leading-[1.6] tracking-[-0.006em] break-words [overflow-wrap:anywhere] md:text-[17px]" />
           ) : (
             <Rature
-              rayee={!!resultat?.juste}
-              son={resultat?.juste ? "micro" : false}
+              rayee={!!resultat?.juste && resultat.statut !== "fraiche"}
+              son={resultat?.juste && resultat.statut !== "fraiche" ? "micro" : false}
               className="block whitespace-pre-line text-[16px] font-semibold leading-[1.6] tracking-[-0.006em] break-words [overflow-wrap:anywhere] md:text-[17px]"
             >
               {tiree.prompt}
@@ -320,8 +346,11 @@ export function MiseAuPropre({
 
           {resultat && (
             <p className={"m-0 text-[15px] font-bold " + (resultat.juste ? "" : "text-pen")} role="status">
-              {{ rayee: CARNET.propreRayee, reste: CARNET.propreReste, ancienne: CARNET.rejouerAcquise, revenue: CARNET.rejouerRevenue }[resultat.statut] ??
-                (resultat.juste ? CARNET.propreRayee : CARNET.propreReste)}
+              {resultat.statut === "fraiche"
+                ? CARNET.propreFraiche(quandSeche({ secheLe: resultat.secheLe, removedAt: null }))
+                : ({ rayee: CARNET.propreRayee, reste: CARNET.propreReste, ancienne: CARNET.rejouerAcquise, scellee: CARNET.rejouerScellee, revenue: CARNET.rejouerRevenue }[
+                    resultat.statut
+                  ] ?? (resultat.juste ? CARNET.propreRayee : CARNET.propreReste))}
             </p>
           )}
           {resultat?.explication && <Explanation text={resultat.explication} />}

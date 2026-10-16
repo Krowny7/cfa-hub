@@ -11,7 +11,7 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Explanation } from "@/components/session/parts";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { fmtAgo } from "@/components/classement/format";
-import { lireRatures, lireRaturesNotion, PAGE_RATURES, type CarnetNotions, type NotionCarnet, type RatureItem, type RaturesPage } from "@/components/moi/ratures-data";
+import { lireRatures, lireRaturesNotion, PAGE_RATURES, quandSeche, type CarnetNotions, type NotionCarnet, type RatureItem, type RaturesPage } from "@/components/moi/ratures-data";
 import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 import { nombre } from "@/lib/voice";
@@ -29,7 +29,11 @@ import type { SourceMarque } from "@/lib/marques";
 // Rangé par notion (dès que les questions portent leur notion,
 // migration_carnet_notions.sql) : à droite, les notions du carnet, les plus
 // chargées d'abord ; une notion s'ouvre sur ses ratures, et « Mettre au
-// propre » se limite alors à elle.
+// propre » se limite alors à elle. Les ratures qui sèchent
+// (migration_v3_profil.sql §3a) : une rature réussie trop tôt porte « encre
+// fraîche · sèche demain », une ancienne scellée « scellée », et le compte
+// des scellées rejoint celui des anciennes ; sans la section, rien de tout
+// cela ne s'affiche.
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -62,6 +66,10 @@ type Compte = { total: number; retirees: number; semaine: number; sources: Recor
 type Liste = { vue: Vue; filtre: number; items: RatureItem[] };
 
 const VUE0: Vue = { source: null, retirees: false, notion: null };
+
+/** Le séchage du carnet (migration_v3_profil.sql §3a) : anciennes scellées, ratures en cours qui sèchent encore ; null tant que la section manque. */
+const encreDe = (p: Pick<RaturesPage, "scellees" | "fraiches">) =>
+  p.scellees === undefined || p.fraiches === undefined ? null : { scellees: p.scellees, fraiches: p.fraiches };
 const memeVue = (a: Vue, b: Vue) => a.source === b.source && a.retirees === b.retirees && a.notion === b.notion;
 
 export function RaturesTab({
@@ -89,6 +97,8 @@ export function RaturesTab({
   const [groupe, setGroupe] = useState(false);
   const [notionsListe, setNotionsListe] = useState<NotionCarnet[]>(notions?.liste ?? []);
   const [compte, setCompte] = useState<Compte>({ total: initial.total, retirees: initial.retirees, semaine: initial.retireesSemaine, sources: initial.sources });
+  // le séchage (section §3a) : anciennes scellées, ratures en cours qui sèchent encore ; null sans la section
+  const [encre, setEncre] = useState(encreDe(initial));
   const [charge, setCharge] = useState(false);
   const [erreur, setErreur] = useState(false);
   const [ouverte, setOuverte] = useState<string | null>(null);
@@ -123,6 +133,7 @@ export function RaturesTab({
     const p = r.page;
     if (r.notions) setNotionsListe(r.notions);
     setCompte({ total: p.total, retirees: p.retirees, semaine: p.retireesSemaine, sources: p.sources });
+    setEncre(encreDe(p));
     if (offset === 0) {
       setListe({ vue: v, filtre: p.filtre, items: p.items });
       setBascules({});
@@ -152,6 +163,7 @@ export function RaturesTab({
     if (moi !== jeton.current || "error" in r) return;
     setNotionsListe(r.notions);
     setCompte({ total: r.page.total, retirees: r.page.retirees, semaine: r.page.retireesSemaine, sources: r.page.sources });
+    setEncre(encreDe(r.page));
   }
 
   function ranger(parNotion: boolean) {
@@ -194,8 +206,11 @@ export function RaturesTab({
     }
   }
 
-  // une rature repassée qui change de temps (rayée, ou revenue en cours) : les compteurs suivent
+  // une rature repassée qui change de temps (rayée, ou revenue en cours) : les compteurs suivent ;
+  // encre fraîche ou scellée : elle ne change pas de temps, seul son compte bouge
   function apresReponse(statut: string, srcs: string[]) {
+    if (statut === "fraiche") return setEncre((e) => e && { ...e, fraiches: e.fraiches + 1 });
+    if (statut === "scellee") return setEncre((e) => e && { ...e, scellees: e.scellees + 1 });
     if (statut !== "rayee" && statut !== "revenue") return;
     setCompte((c) => {
       const sources = { ...c.sources };
@@ -281,7 +296,13 @@ export function RaturesTab({
         </div>}
         {!sansResume && (compte.semaine > 0 || compte.retirees > 0) && (
           <p className="t-small m-0 font-medium">
-            {[compte.semaine > 0 ? CARNET.retireesSemaine(compte.semaine) : null, compte.retirees > 0 ? CARNET.retireesTotal(compte.retirees) : null].filter(Boolean).join(" · ")}
+            {[
+              compte.semaine > 0 ? CARNET.retireesSemaine(compte.semaine) : null,
+              compte.retirees > 0 ? CARNET.retireesTotal(compte.retirees) : null,
+              encre && encre.scellees > 0 ? CARNET.scellees(encre.scellees) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
         {/* les deux temps du carnet : en cours, anciennes (rayées) */}
@@ -305,6 +326,8 @@ export function RaturesTab({
               {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre} · {nombre(aRepasser)}
             </button>
             <p className="t-micro m-0">{anciennes ? CARNET.rejouerSous : CARNET.propreSous}</p>
+            {/* tout le carnet en cours : celles qui sèchent encore ne seront pas proposées aujourd'hui */}
+            {!anciennes && !liste.vue.source && notionOuverte === null && encre && encre.fraiches > 0 && <p className="t-micro m-0">{CARNET.fraichesSous(encre.fraiches)}</p>}
           </div>
         )}
         {/* ranger par source (les filtres) ou par notion (la liste à droite) */}
@@ -341,6 +364,7 @@ export function RaturesTab({
             <ArrowRight size={12} aria-hidden className="transition-transform group-open:rotate-90" /> Comment marche le carnet ?
           </summary>
           <p className="t-micro m-0 mt-1.5">{CARNET.regle}</p>
+          {encre && <p className="t-micro m-0 mt-1.5">{CARNET.regleSeche}</p>}
         </details>}
       </div>
 
@@ -484,6 +508,8 @@ function LigneRature({
   const id = `rature-${it.questionId}`;
   const sources = it.sources.length ? it.sources : [it.lastSource];
   const blanc = it.lastSelected === null;
+  // réussie trop tôt : elle sèche encore (demain, ou à telle heure aujourd'hui)
+  const seche = quandSeche(it, now);
   return (
     <li className={"py-1 transition-opacity " + (basculee ? "opacity-60" : "")}>
       <button type="button" className="rl-row flex w-full items-start gap-3 rounded-[12px] px-2 py-3 text-left" aria-expanded={ouverte} aria-controls={id} onClick={onOuvrir}>
@@ -497,6 +523,18 @@ function LigneRature({
           <span className="t-micro block">
             {it.rubrique} · {sources.map(nomSource).join(", ")} · {blanc ? CARNET.sansReponse : CARNET.ratee(it.misses)} · {fmtAgo(it.lastMissedAt, now)}
             {it.correctSince > 0 && <span className="font-semibold text-white"> · {CARNET.reussieDepuis(it.correctSince)}</span>}
+            {seche && (
+              <span className="font-semibold text-white" title={CARNET.encreFraicheDetail}>
+                {" "}
+                · {CARNET.encreFraiche(seche)}
+              </span>
+            )}
+            {it.scelleeLe && it.removedAt !== null && (
+              <span className="font-semibold text-white" title={CARNET.scelleeDetail}>
+                {" "}
+                · {CARNET.scellee}
+              </span>
+            )}
           </span>
         </span>
         <ChevronDown size={16} aria-hidden className={"mt-0.5 shrink-0 text-muted transition-transform " + (ouverte ? "rotate-180" : "")} />

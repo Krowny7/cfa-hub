@@ -106,6 +106,8 @@ export const ATELIER = {
   arreterLabel: "Arrêter l'Atelier",
   statut: {
     rayee: "Juste : rayée du carnet.",
+    /** réussie trop tôt après l'erreur (migration_v3_profil.sql §3a) : pas encore rayée */
+    fraiche: "Juste. Encre fraîche : elle sèche d'abord, tu la rayeras demain.",
     ancienne: "Juste.",
     reste: "Elle reste au carnet.",
     revenue: "Elle revient au carnet.",
@@ -156,6 +158,8 @@ export const ATELIER = {
   raturesAvant: (avant: number) => nombre(avant),
   raturesApres: (apres: number) => `→ ${nombre(apres)}`,
   rayees: (n: number) => `${pluriel(n, "rayée", "rayées")}`,
+  /** réussies sans être rayées : l'encre sèche (migration_v3_profil.sql §3a) */
+  fraiches: (n: number) => (n > 1 ? `${nombre(n)} réussies, elles sèchent demain` : "1 réussie, elle sèche demain"),
   nouvelles: (n: number) => `${pluriel(n, "nouvelle", "nouvelles")}`,
   calcul: (avant: { ok: number; n: number } | null, pendant: { ok: number; n: number }, niveau: Niveau) =>
     `calcul ${avant ? `${nombre(avant.ok)}/${nombre(avant.n)} → ` : ""}${nombre(pendant.ok)}/${nombre(pendant.n)} ${NIVEAU_CALCUL[niveau]}`,
