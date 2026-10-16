@@ -12,7 +12,7 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
 import { ACTES, MODELES_CONTRATS, catalogueCodex, cibleeDe, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue } from "@/lib/codex/catalogue";
 import {
-  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, planifier, recommander, tirerContrats,
+  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, planifier, recommander, tirerContrats,
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
@@ -112,6 +112,10 @@ console.log("\n# le nœud de convergence de l'acte V");
   check("avec tout validé : toutes les branches ont passé leur séance ciblée", contenu.every((m) => fait(r, `branche:${m.key}:ciblee`)));
   check("l'acte IV est clos et l'acte V s'ouvre (acte IV clos + toutesBranches « ciblée »)", r.actesClos.includes("acte4") && ouverte(r, "trame:a5:blanc"));
   check("prérequis tombés après coup : les quêtes déjà remplies sont validées avec leur date, donc rétroactives", r.lot.filter((i) => i.etat === "terminee" && i.atteint?.startsWith("2026-09-01") && i.famille !== "contrat").every((i) => i.retro === true));
+  // V3 §1.8 : sans les capacités de la base (rien de collé), rien ne change
+  const cap = capacitesDe(e);
+  check("v3 §1.8 : sans capacités, toutes fausses (journal 2), aucun item « fil » dans le lot", Object.entries(cap).every(([k, v]) => (k === "journal" ? v === 2 : v === false)) && r.lot.every((i) => (i.famille as string) !== "fil"));
+  check("v3 §1.8 : sans capacités, les actes III et V se closent comme aujourd'hui, « Maître de… » atteignable", r.actesClos.includes("acte3") && r.actesClos.includes("acte5") && contenu.every((m) => fait(r, `branche:${m.key}:maitre`)), r.actesClos.join());
 }
 
 console.log("\n# la récompense d'une quête gagnée aujourd'hui n'est pas rétroactive");
