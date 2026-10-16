@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex, recompenseEcrite, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
+import { estBudget } from "@/lib/codex/reglage";
 import type { Emplacement } from "@/lib/codex/types";
 import type { VueCodex } from "@/lib/codex/vue";
 
@@ -95,14 +96,28 @@ export async function codexPanneau(): Promise<Panneau> {
   }
 }
 
-/** « Réclamer » depuis le panneau : la récompense (filet, idempotent), puis la fanfare est marquée jouée ; le panneau se relit sur la vue gardée, corrigée (pas de recalcul). */
-export async function codexReclamerPanneau(queteId: string, periode = ""): Promise<Resultat<{ xp: number; panneau: Panneau }>> {
+/**
+ * « Une autre idée ? » sous ta prochaine quête : elle est écartée jusqu'à
+ * demain (le moteur ne la propose plus aujourd'hui ; elle reste dans
+ * l'arbre), et le panneau se relit avec la suivante.
+ */
+export async function codexAutreIdee(queteId: string): Promise<Resultat<{ panneau: Panneau }>> {
   const { supabase, user } = await joueur();
   if (!user) return { ok: false, raison: "connexion" };
-  const r = await reclamerPour(supabase, user, queteId, periode);
+  if (typeof queteId !== "string" || !queteId || queteId.length > 120) return { ok: false, raison: "refus" };
+  const r = await reglerJour(supabase, user, { ecarter: queteId });
+  return r.ok ? { ok: true, panneau: panneauDe(r.vue) } : r;
+}
+
+/** « J'ai [15] [30] [60] [90] min » : le temps que le joueur se donne aujourd'hui ; les quêtes plus longues reculent. */
+export async function codexSeanceBudget(budget: number): Promise<Resultat<{ panneau: Panneau }>> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  if (!estBudget(budget)) return { ok: false, raison: "refus" };
+  const r = await reglerJour(supabase, user, { budget });
   if (!r.ok) return r;
-  await marquerVus(user.id, [queteId]);
-  return { ok: true, xp: r.xp, panneau: panneauDe(await lireCodex(supabase, user)) };
+  revalidatePath("/codex");
+  return { ok: true, panneau: panneauDe(r.vue) };
 }
 
 /** Changer UN des contrats du jour (une seule fois par jour, pas un contrat déjà rempli). */

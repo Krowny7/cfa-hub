@@ -68,6 +68,9 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
   };
 
   const p = vue.prochaine;
+  const pDest = p?.ligne.destination;
+  const pLien = pDest?.href ?? p?.ligne.lien;
+  const pDuree = pDest?.duree ?? p?.ligne.duree;
   const jourJ = vue.joursAvant !== null ? CODEX.jourJ(vue.joursAvant) : null;
 
   return (
@@ -100,13 +103,14 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
               <div className="min-w-0 flex-1">
                 <p className={c.prochaineSur}>
                   {CODEX.prochaine.eyebrow}
-                  {p.ligne.duree ? ` · ${CODEX.prochaine.minutes(p.ligne.duree)}` : ""}
+                  {pDuree ? ` · ${CODEX.prochaine.minutes(pDuree)}` : ""}
                 </p>
                 <p className={c.prochaineTitre}>{p.ligne.titre}</p>
+                {pDest?.raison && <p className="t-small m-0 mt-0.5">{pDest.raison}</p>}
                 {p.ligne.cible > 1 && <JaugePinceau fraction={p.ligne.fraction} or={p.ligne.etat === "active"} className={c.prochaineJauge} label={`${Math.floor(p.ligne.valeur)} sur ${Math.floor(p.ligne.cible)}`} />}
               </div>
-              {p.ligne.lien ? (
-                <Link href={p.ligne.lien} className="btn btn-primary rl-press shrink-0">
+              {pLien ? (
+                <Link href={pLien} className="btn btn-primary rl-press shrink-0">
                   {CODEX.detail.aller} <ArrowRight size={16} aria-hidden />
                 </Link>
               ) : (
@@ -152,7 +156,7 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
         )}
       </Feuille>
 
-      {ouverte && <DetailQuete l={ouverte} nomMatiere={nomMatiere(vue, ouverte.matiere)} onClose={fermer} reclamer={reclamer} />}
+      {ouverte && <DetailQuete l={ouverte} nomMatiere={nomMatiere(vue, ouverte.matiere)} prochaine={!!p && ouverte.id === p.ligne.id && ouverte.periode === p.ligne.periode} onClose={fermer} reclamer={reclamer} />}
     </div>
   );
 }

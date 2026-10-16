@@ -471,7 +471,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
             {etiquettes}
             <Ici x={ici.x} y={ici.y} r={60} />
             <span className={c.iciMot} style={{ left: ici.x + 44, top: ici.y + 26 }} aria-hidden>
-              tu es ici
+              ta prochaine
             </span>
             {medaillon && <Medaillon m={medaillon} onOuvrir={() => setGalerie(true)} onFocus={() => voir(medaillon.x, medaillon.y)} />}
             {noeuds.map((nd) => (
@@ -691,7 +691,7 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
               >
                 {enigme ? CODEX.exploits.enigme : nom(q)}
                 <small>
-                  {q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)}/${Math.floor(q.cible)}` : grand ? "à toi" : CODEX.etat[q.etat].toLowerCase()}
+                  {q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)}/${Math.floor(q.cible)}` : grand ? "ta prochaine" : CODEX.etat[q.etat].toLowerCase()}
                 </small>
               </span>
             </li>

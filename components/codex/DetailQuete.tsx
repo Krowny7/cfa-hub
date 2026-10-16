@@ -12,20 +12,24 @@ import s from "./Codex.module.css";
 
 // Le détail d'une quête : une feuille qui monte du bas (téléphone) ou une
 // fiche au centre (ordinateur). L'objectif, la progression, la récompense, ce
-// que Léonard en pense. Échap ou un clic à côté referme. `reclamer` : le geste
-// explicite pour une récompense qui n'aurait pas été versée (le moteur les
-// verse déjà tout seul ; ceci est le filet).
+// que Léonard en pense, et « Y aller » (sa destination, lib/codex/destinations.ts)
+// avec sa durée et sa raison chiffrée. Échap ou un clic à côté referme.
+// `prochaine` : c'est ta prochaine quête. `reclamer` : le geste explicite pour
+// une récompense qui n'aurait pas été versée (le moteur les verse déjà tout
+// seul ; ceci est le filet).
 
 const jourLong = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
 
 export function DetailQuete({
   l,
   nomMatiere,
+  prochaine = false,
   onClose,
   reclamer,
 }: {
   l: LigneQuete;
   nomMatiere?: string;
+  prochaine?: boolean;
   onClose: () => void;
   reclamer?: (l: LigneQuete) => Promise<string | null>;
 }) {
@@ -57,6 +61,9 @@ export function DetailQuete({
     l.cosmetique ? CODEX.detail.cosmetique(l.cosmetiqueNom ?? l.cosmetique) : null,
   ].filter(Boolean) as string[];
   const showProgress = !enigme && l.etat !== "terminee" && l.cible > 1;
+  const lien = l.destination?.href ?? l.lien;
+  const duree = l.destination?.duree ?? l.duree;
+  const raison = l.destination?.raison ?? null;
 
   return (
     <div className={s.voile} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -69,6 +76,7 @@ export function DetailQuete({
           <Sceau l={l} taille={64} />
           <div className="min-w-0">
             <p className="t-eyebrow m-0">
+              {prochaine && !enigme ? `${CODEX.prochaine.eyebrow} · ` : ""}
               {CODEX.famille[l.famille]}
               {nomMatiere ? ` · ${nomMatiere}` : ""} · {enigme ? CODEX.exploits.enigme : CODEX.etat[l.etat]}
             </p>
@@ -97,10 +105,11 @@ export function DetailQuete({
                 </>
               )}
             </div>
-            {l.pourquoi && (
+            {(raison || l.pourquoi) && (
               <div className={s.detailBloc}>
                 <h3>{CODEX.detail.pourquoi}</h3>
-                <p>{l.pourquoi}</p>
+                {raison && <p>{raison}</p>}
+                {l.pourquoi && l.pourquoi !== raison && <p>{l.pourquoi}</p>}
               </div>
             )}
           </>
@@ -123,13 +132,13 @@ export function DetailQuete({
           <p className="t-micro mt-3">{l.retro ? CODEX.detail.faiteAvant(jourLong(l.termineeLe)) : CODEX.detail.faiteLe(jourLong(l.termineeLe))}</p>
         )}
         {l.optionnelle && <p className="t-micro mt-1">{CODEX.detail.optionnelle}</p>}
-        {l.duree && l.etat !== "terminee" && !enigme && <p className="t-micro mt-1">{CODEX.detail.duree(l.duree)}</p>}
+        {duree && l.etat !== "terminee" && !enigme && <p className="t-micro mt-1">{CODEX.detail.duree(duree)}</p>}
 
         <p className={s.leonardLigne}>{enigme ? "Je ne dirai rien. Enfin, presque rien : relis l'énigme." : verrouille ? choisirReplique("verrouillee", l.id) : choisirReplique(l.etat, l.id)}</p>
 
         <div className="mt-5 flex flex-wrap gap-3">
-          {l.lien && l.etat !== "terminee" && !verrouille && !enigme && (
-            <Link href={l.lien} className="btn btn-primary btn-lg rl-press w-full sm:w-auto" onClick={onClose}>
+          {lien && l.etat !== "terminee" && !verrouille && !enigme && (
+            <Link href={lien} className="btn btn-primary btn-lg rl-press w-full sm:w-auto" onClick={onClose}>
               {CODEX.detail.aller} <ArrowRight size={17} aria-hidden />
             </Link>
           )}

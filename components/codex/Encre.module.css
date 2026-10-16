@@ -202,10 +202,6 @@
   rotate: -7deg;
   overflow: visible;
 }
-.bouton[data-etat="calme"] svg {
-  width: 30px;
-  height: 30px;
-}
 .pose {
   animation: tampon 0.55s var(--ease-spring) both;
 }
@@ -216,41 +212,58 @@
   0%, 55% { transform: translateX(-60px); }
   100% { transform: translateX(150px); }
 }
-.calmeContour {
+/* les arcs des contrats du jour : à l'encre une fois remplis, au crayon avant */
+.arcPlein,
+.arcVide {
+  fill: none;
+  stroke-width: 7.5;
+  stroke-linecap: round;
+}
+.arcPlein {
+  stroke: var(--c-sepia);
+}
+.arcVide {
+  stroke: var(--c-crayon);
+  stroke-width: 4;
+  stroke-dasharray: 2 7;
+}
+/* 3 sur 3 : l'anneau se ferme, un petit tampon s'y pose (600 ms) */
+.anneauFerme {
+  transform-origin: 60px 60px;
+  animation: ferme 0.6s var(--ease-spring) both;
+}
+@keyframes ferme {
+  from { opacity: 0.4; transform: scale(0.9); }
+}
+.tamponMini {
+  transform-origin: 96px 96px;
+  animation: tampon 0.6s var(--ease-spring) 0.15s both;
+}
+/* au calme : le petit carnet */
+.carnetTrait {
   fill: none;
   stroke: var(--ink-2);
-  stroke-width: 6.5;
+  stroke-width: 5;
+  stroke-linecap: round;
   stroke-linejoin: round;
 }
-.calmeFilet {
-  fill: none;
-  stroke: var(--ink-3);
-  stroke-width: 2.2;
+.sousSceau {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 4px);
+  translate: -50% 0;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.calmeSigne {
-  font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
-  font-size: 44px;
-  fill: var(--ink-3);
+@media (max-width: 767px) {
+  .sousSceau {
+    display: none;
+  }
 }
 .signeReserve {
   font-family: var(--font-brand), "Dela Gothic One", "Arial Black", sans-serif;
   font-size: 58px;
   fill: #fff8e6;
-}
-.compte {
-  position: absolute;
-  top: -3px;
-  right: -5px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 99px;
-  background: var(--pen);
-  color: #fff;
-  font: 600 10.5px/18px var(--font-mono, ui-monospace), monospace;
-  text-align: center;
-  box-shadow: 0 0 0 2px var(--paper);
-  pointer-events: none;
 }
 
 /* ---------- le panneau « Tes quêtes » ---------- */
@@ -309,10 +322,6 @@
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-sepia) 22%, transparent);
   padding: 12px 12px;
 }
-.ligne.recompense {
-  background: color-mix(in oklab, var(--c-or) 12%, var(--surface));
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-or) 45%, transparent);
-}
 .ligneTitre {
   display: block;
   font-size: 14px;
@@ -323,6 +332,13 @@
 }
 .principale .ligneTitre {
   font-size: 15px;
+}
+.ligneSur {
+  display: block;
+  margin-bottom: 1px;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--ink-3);
 }
 .ligneSous {
   display: block;
@@ -339,28 +355,81 @@
   min-height: 36px;
   white-space: nowrap;
 }
-.reclamer {
-  display: inline-flex;
+.gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 2px;
+}
+.geste {
+  min-height: 32px;
+  font-size: 12.5px;
+}
+/* « 3 quêtes tamponnées · +190 XP » : une ligne, annoncée une fois */
+.versees {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 12px;
+  gap: 6px;
+  margin: 10px 4px 0;
+  color: var(--ink-2);
+}
+.budget {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-2);
+}
+.budget button {
+  min-width: 36px;
+  min-height: 32px;
+  padding: 0 6px;
   border: 0;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 650;
+  border-radius: 8px;
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font: 600 12.5px/1 var(--font-mono, ui-monospace), monospace;
   cursor: pointer;
-  color: #2b1a0e;
-  background: linear-gradient(135deg, #f7e19a, #d7a640 55%, #b98a2c);
-  box-shadow: inset 0 0 0 1px rgba(140, 94, 22, 0.45), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
 }
-.reclamer:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-:global(html[data-discreet="1"]) .reclamer {
+.budget button[aria-pressed="true"] {
   background: var(--ink);
   color: var(--paper);
+  box-shadow: none;
+}
+.budget button:disabled {
+  cursor: default;
+}
+.semaine {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.semaine summary {
+  cursor: pointer;
+}
+.semaine ul {
+  margin: 6px 0 0;
+  padding: 0 0 0 4px;
+  list-style: none;
+  font-size: 12.5px;
+}
+.semaine li[data-faite] {
+  color: var(--ink-3);
+}
+@media (max-width: 767px) {
+  .action,
+  .geste,
+  .budget button {
+    min-height: 44px;
+  }
+  .budget button {
+    min-width: 44px;
+  }
+  .semaine summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 .pied {
   display: flex;
@@ -415,16 +484,18 @@
   .neuf,
   .pose,
   .reflet,
-  .panneau {
+  .panneau,
+  .anneauFerme,
+  .tamponMini {
     animation: none !important;
   }
 }
 /* le réglage « mouvement » du site (Réglages) : la barre du haut est hors de .rl-route */
-:global(html[data-rl-motion="off"]) :is(.neuf, .pose, .reflet, .panneau) {
+:global(html[data-rl-motion="off"]) :is(.neuf, .pose, .reflet, .panneau, .anneauFerme, .tamponMini) {
   animation: none !important;
 }
 /* mode discret : les signes reprennent la police du texte, comme .font-brand */
-:global(html[data-discreet="1"]) :is(.signe, .signeOr, .signeCrayon, .reserveTexte, .calmeSigne, .signeReserve) {
+:global(html[data-discreet="1"]) :is(.signe, .signeOr, .signeCrayon, .reserveTexte, .signeReserve) {
   font-family: var(--font-sans);
   font-weight: 800;
 }

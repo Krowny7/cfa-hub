@@ -13,9 +13,9 @@ export type Space = {
 export const SPACES: Space[] = [
   { key: "codex", label: "Codex", href: "/codex", match: ["/codex"] },
   { key: "reviser", label: "Réviser", href: "/reviser", match: ["/reviser", "/fiches", "/courses", "/flashcards"] },
-  { key: "entrainer", label: "S'entraîner", href: "/entrainement", match: ["/entrainement", "/qcm", "/practice", "/official-exams", "/session", "/exam", "/defi", "/calculs", "/atelier"] },
+  { key: "entrainer", label: "S'entraîner", href: "/entrainement", match: ["/entrainement", "/qcm", "/practice", "/official-exams", "/session", "/exam", "/defi", "/eclair", "/calculs", "/atelier"] },
   { key: "classement", label: "Classement", href: "/classement", match: ["/classement", "/duel", "/mock-exams", "/people"] },
-  { key: "moi", label: "Moi", href: "/moi", match: ["/moi", "/settings", "/onboarding"] },
+  { key: "moi", label: "Moi", href: "/moi", match: ["/moi", "/revoir", "/settings", "/onboarding"] },
 ];
 
 export function activeSpace(pathname: string): Space["key"] | null {

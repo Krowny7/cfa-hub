@@ -1,15 +1,20 @@
-// Le panneau « Tes quêtes », derrière le sceau « ! » de la barre du haut :
-// quatre quêtes au plus, tirées de la vue du Codex (lib/codex/vue.ts). Dans
-// l'ordre : la quête principale (la recommandation du moteur), deux
-// récompenses à réclamer au plus, les contrats du jour pas encore remplis, la
-// quête au long cours la plus avancée. Léger (quelques lignes, pas la vue
-// entière, qui pèse une centaine de Ko). Module neutre (serveur et navigateur).
+// Le panneau « Tes quêtes », derrière le sceau de la barre du haut (V3 §9.2) :
+// QUOI FAIRE, en quatre lignes au plus, tirées de la vue du Codex
+// (lib/codex/vue.ts). Dans l'ordre : ta prochaine quête (la recommandation du
+// moteur), les contrats du jour pas encore remplis, la quête au long cours la
+// plus avancée. Chaque ligne porte sa destination (« Y aller »), sa durée et
+// une raison chiffrée. Les récompenses ne se réclament plus : elles sont
+// versées toutes seules, et une seule ligne en pied le dit (« 3 quêtes
+// tamponnées · +190 XP »), acquittée à l'ouverture.
+// Léger (quelques lignes, pas la vue entière, qui pèse une centaine de Ko).
+// Module neutre (serveur et navigateur).
 
 import { devoileLite } from "@/lib/codex/devoile-lite";
-import type { Emplacement } from "@/lib/codex/types";
+import type { Destination } from "@/lib/codex/destinations";
+import type { Budget, Emplacement } from "@/lib/codex/types";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
 
-export type GenreQuete = "recompense" | "principale" | "contrat" | "longcours";
+export type GenreQuete = "principale" | "contrat" | "longcours" | "fil";
 
 export type QuetePanneau = {
   /** id|periode : la clé d'une quête dans le temps (un contrat change chaque jour) */
@@ -18,13 +23,17 @@ export type QuetePanneau = {
   periode: string;
   genre: GenreQuete;
   titre: string;
-  sous: string;
+  /** la petite ligne au-dessus du titre : « Ta prochaine quête », « Contrat du jour · ton point faible », « Au long cours · … » */
+  sur: string;
   etat: EtatLigne;
   valeur: number;
   cible: number;
   fraction: number;
   xp: number;
-  lien: string | null;
+  destination: Destination | null;
+  raison: string | null;
+  /** minutes ; null : on ne sait pas */
+  duree: number | null;
   emplacement?: Emplacement;
   changeable?: boolean;
 };
@@ -32,42 +41,73 @@ export type QuetePanneau = {
 export type Panneau = {
   disponible: boolean;
   jour: string;
+  /** quatre au plus : ta prochaine quête, les contrats du jour restants, un long cours */
   quetes: QuetePanneau[];
-  /** les quêtes à prendre (disponibles, pas entamées) : le « ! » les compte, une fois vues il se tait */
-  aPrendre: string[];
-  /** récompenses à réclamer : le « ? » */
-  aReclamer: number;
-  changementPossible: boolean;
+  /** les récompenses versées pas encore annoncées : une ligne en pied, acquittée à l'ouverture (codexVus(cles)) */
+  versees: { n: number; xp: number; cles: string[]; titre: string | null } | null;
+  /** les contrats du jour : un arc d'encre chacun autour du sceau */
+  arcs: { faits: number; total: number };
+  /** le seul motif du « ! » doré : un acte clos, une pièce gagnée */
+  rare: { quoi: "acte" | "piece"; libelle: string } | null;
+  budget: Budget | null;
+  /** les contrats de la semaine (le détail se déplie : leurs titres) */
+  semaine: { faits: number; total: number; quetes: { titre: string; faite: boolean }[] };
+  /** la file « À revoir » (null : pas encore en base) */
+  revoir: { aujourdhui: number; demain: number } | null;
+  /** la séance du jour (V3 §6, lot A5) */
+  seance: { lancee: boolean; faits: number; total: number; suivant: { titre: string; href: string } | null } | null;
 };
 
-export const PANNEAU_VIDE: Panneau = { disponible: false, jour: "", quetes: [], aPrendre: [], aReclamer: 0, changementPossible: false };
+export const PANNEAU_VIDE: Panneau = {
+  disponible: false, jour: "", quetes: [], versees: null, arcs: { faits: 0, total: 0 }, rare: null, budget: null, semaine: { faits: 0, total: 0, quetes: [] }, revoir: null, seance: null,
+};
 
 export const MAX_QUETES = 4;
-const MAX_RECOMPENSES = 2;
+/** Les arcs du sceau : trois contrats par jour au plus. */
+export const MAX_ARCS = 3;
 
 const cleDe = (l: Pick<LigneQuete, "id" | "periode">) => `${l.id}|${l.periode}`;
 
-function versPanneau(l: LigneQuete, genre: GenreQuete, sous: string, extra: Partial<QuetePanneau> = {}): QuetePanneau {
+const EMPLACEMENT: Record<string, string> = { faiblesse: "ton point faible", entretien: "l'entretien", variete: "la variété" };
+
+function versPanneau(l: LigneQuete, genre: GenreQuete, sur: string, extra: Partial<QuetePanneau> = {}): QuetePanneau {
+  const destination = l.destination ?? null;
   return {
     cle: cleDe(l),
     id: l.id,
     periode: l.periode,
     genre,
     titre: l.titre,
-    sous,
+    sur,
     etat: l.etat,
     valeur: l.valeur,
     cible: l.cible,
     fraction: l.fraction,
     xp: l.xpVersee ?? l.xp,
-    lien: l.lien ?? null,
+    destination,
+    raison: destination?.raison ?? null,
+    duree: destination?.duree ?? l.duree ?? null,
     ...extra,
   };
 }
 
-const compte = (l: LigneQuete) => (l.baisse ? ` · ${l.baisse.actuel.toLocaleString("fr-FR")} → ${l.baisse.seuil.toLocaleString("fr-FR")}` : l.cible > 1 ? ` · ${Math.floor(l.valeur).toLocaleString("fr-FR")}/${Math.floor(l.cible).toLocaleString("fr-FR")}` : "");
+/** Toutes les quêtes de la vue (une même quête peut y figurer deux fois : la clé les dédoublonne). */
+const toutesLignes = (vue: VueCodex): LigneQuete[] => [
+  ...vue.contrats.map((c) => c.ligne), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.exploits, ...vue.hebdo,
+];
 
-const EMPLACEMENT: Record<string, string> = { faiblesse: "ton point faible", entretien: "l'entretien", variete: "la variété" };
+/** Les récompenses versées dont la fanfare n'a pas été jouée (hors sceaux du profil, qui ont leur cérémonie), et les actes clos à fêter. */
+function aAnnoncer(vue: VueCodex): { lignes: LigneQuete[]; actes: VueCodex["trame"] } {
+  const vues = new Set<string>();
+  const lignes: LigneQuete[] = [];
+  for (const l of toutesLignes(vue)) {
+    const k = cleDe(l);
+    if (!l.aFeter || vues.has(k) || l.id.startsWith("exploit:sceau:")) continue;
+    vues.add(k);
+    lignes.push(l);
+  }
+  return { lignes, actes: vue.trame.filter((a) => a.aFeter) };
+}
 
 export function panneauDe(vue: VueCodex): Panneau {
   if (!vue.disponible) return PANNEAU_VIDE;
@@ -75,48 +115,58 @@ export function panneauDe(vue: VueCodex): Panneau {
   const contratsVus = devoileLite(d, "codex:contrats");
   const longCoursVu = devoileLite(d, "codex:longcours");
 
-  // les récompenses à réclamer : versées par le moteur, fanfare pas encore jouée
-  const toutes = [...vue.contrats.map((c) => c.ligne), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.exploits, ...vue.hebdo];
-  const vues = new Set<string>();
-  const recompenses: QuetePanneau[] = [];
-  for (const l of toutes) {
-    const k = cleDe(l);
-    // les sceaux du profil ont leur propre cérémonie
-    if (!l.aFeter || vues.has(k) || l.id.startsWith("exploit:sceau:")) continue;
-    vues.add(k);
-    recompenses.push(versPanneau(l, "recompense", `Accomplie · +${l.xpVersee ?? l.xp} XP${l.titreNom ? ` · titre « ${l.titreNom} »` : l.cosmetiqueNom ? ` · ${l.cosmetiqueNom}` : ""}`));
-  }
-
-  // la quête principale en tête (mise en avant), puis deux récompenses au plus
-  // (les suivantes viennent une fois celles-ci réclamées) : elle ne disparaît jamais
   const liste: QuetePanneau[] = [];
+  const pris = new Set<string>();
   const p = vue.prochaine;
-  if (p && !vues.has(cleDe(p.ligne))) {
-    liste.push(versPanneau(p.ligne, "principale", `Quête principale${compte(p.ligne)}`));
-    vues.add(cleDe(p.ligne));
+  if (p && p.ligne.etat !== "terminee") {
+    liste.push(versPanneau(p.ligne, "principale", "Ta prochaine quête"));
+    pris.add(cleDe(p.ligne));
   }
-  liste.push(...recompenses.slice(0, MAX_RECOMPENSES));
   if (contratsVus) {
     for (const c of vue.contrats) {
-      if (c.ligne.etat === "terminee" || vues.has(cleDe(c.ligne))) continue;
-      vues.add(cleDe(c.ligne));
-      liste.push(versPanneau(c.ligne, "contrat", `Contrat du jour · ${EMPLACEMENT[c.emplacement] ?? c.emplacement}${compte(c.ligne)}`, { emplacement: c.emplacement, changeable: c.changeable }));
+      if (c.ligne.etat === "terminee" || pris.has(cleDe(c.ligne))) continue;
+      pris.add(cleDe(c.ligne));
+      liste.push(versPanneau(c.ligne, "contrat", `Contrat du jour · ${EMPLACEMENT[c.emplacement] ?? c.emplacement}`, { emplacement: c.emplacement, changeable: c.changeable }));
     }
   }
   if (longCoursVu) {
     const chaine = vue.longCours
-      .filter((c) => c.courant && c.courant.etat !== "verrouillee" && !vues.has(cleDe(c.courant)))
+      .filter((c) => c.courant && c.courant.etat !== "verrouillee" && !pris.has(cleDe(c.courant)))
       .sort((a, b) => b.courant!.fraction - a.courant!.fraction)[0];
-    if (chaine?.courant) liste.push(versPanneau(chaine.courant, "longcours", `Au long cours · ${chaine.chaine.titre}${compte(chaine.courant)}`));
+    if (chaine?.courant) liste.push(versPanneau(chaine.courant, "longcours", `Au long cours · ${chaine.chaine.titre}`));
   }
 
-  const quetes = liste.slice(0, MAX_QUETES);
+  const { lignes, actes } = aAnnoncer(vue);
+  const titre = lignes.find((l) => l.titreNom)?.titreNom ?? null;
+  const piece = lignes.find((l) => l.cosmetique);
+  const versees = lignes.length || actes.length
+    ? { n: lignes.length, xp: lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
+    : null;
+  const rare: Panneau["rare"] = actes.length
+    ? { quoi: "acte", libelle: `${actes[0].acte.titre} : acte clos` }
+    : piece
+      ? { quoi: "piece", libelle: piece.cosmetiqueNom ?? "une pièce nouvelle" }
+      : null;
+
   return {
     disponible: true,
     jour: vue.jour,
-    quetes,
-    aPrendre: quetes.filter((q) => q.genre !== "recompense" && q.etat === "disponible").map((q) => q.cle),
-    aReclamer: recompenses.length,
-    changementPossible: contratsVus && vue.trio.changementPossible,
+    quetes: liste.slice(0, MAX_QUETES),
+    versees,
+    arcs: contratsVus ? { faits: Math.min(MAX_ARCS, vue.trio.faits), total: Math.min(MAX_ARCS, vue.trio.total) } : { faits: 0, total: 0 },
+    rare,
+    budget: vue.budget,
+    semaine: { faits: vue.hebdo.filter((l) => l.etat === "terminee").length, total: vue.hebdo.length, quetes: vue.hebdo.map((l) => ({ titre: l.titre, faite: l.etat === "terminee" })) },
+    revoir: vue.revoir,
+    seance: null,
   };
 }
+
+/** « 3 quêtes tamponnées · +190 XP · titre Garzone » : la ligne des récompenses versées. */
+export function ligneVersees(v: NonNullable<Panneau["versees"]>): string {
+  const debut = v.n ? `${v.n} quête${v.n > 1 ? "s" : ""} tamponnée${v.n > 1 ? "s" : ""}` : "Un acte clos";
+  return [debut, ...(v.xp > 0 ? [`+${v.xp.toLocaleString("fr-FR")} XP`] : []), ...(v.titre ? [`titre ${v.titre}`] : [])].join(" · ");
+}
+
+/** Le panneau une fois les récompenses annoncées (codexVus) : plus de ligne en pied ni de « ! » doré. */
+export const panneauAcquitte = (p: Panneau): Panneau => ({ ...p, versees: null, rare: null });
