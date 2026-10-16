@@ -630,8 +630,7 @@ export const RECOMMANDATION = {
   memeMatiere: 1.15,
   /** quête de l'acte en cours */
   acteCourant: 1.2,
-  /** au-delà de la durée cible, la quête est moins proposée */
-  dureeCible: 45,
+  /** plus longue que le budget du jour (budgetDuJour, moteur), la quête est moins proposée */
   horsDuree: 0.7,
   /** urgence par phase et par axe de chaîne */
   urgence: {

@@ -15,13 +15,14 @@
 // La bible : docs/codex/CONCEPTION.md.
 
 import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, tailleMaxCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
-import { PRACTICE_V3, ROUTES, lancable, type ContexteDestination } from "@/lib/codex/destinations";
+import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
+import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { notionParId, notionsDeMatiere } from "@/lib/notions";
 import { decaleJour, joursEntre } from "@/lib/objectif-calc";
-import type { Acte, Comparaison, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement } from "@/lib/codex/types";
+import type { Acte, Budget, Capacites, Comparaison, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement } from "@/lib/codex/types";
 
 // ── Ce que la base donne ───────────────────────────────────────────────
 
@@ -107,7 +108,19 @@ export type Entree = {
   pointsFaibles?: { notion: string; score: number }[];
   /** réponses par matière, sur JOURS_OUBLI jours et depuis toujours (demandesActivite) : le contrat « prend la poussière » */
   activite?: Record<string, { recentes: number; total: number }>;
+  /** le temps que le joueur s'est donné aujourd'hui (« J'ai 30 min ») ; absent : budgetDuJour le déduit de son rythme */
+  budget?: Budget | null;
+  /** les quêtes écartées aujourd'hui par « Une autre idée ? » (ids) : recommander ne les propose plus jusqu'à demain */
+  ecartees?: string[];
+  /** ce que la base sait faire (V3 §1.8) ; absent : rien (CAPACITES_VIDE) */
+  capacites?: Capacites;
 };
+
+/** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
+export const capacitesDe = (e: Pick<Entree, "capacites">): Capacites => e.capacites ?? CAPACITES_VIDE;
+
+/** Le budget du jour : celui que le joueur a choisi, sinon celui de son rythme des 7 derniers jours actifs. */
+export const budgetDuJour = (e: Pick<Entree, "budget" | "lecture">): Budget => e.budget ?? budgetParDefaut(questionsDes7Jours(e.lecture.mesures.jours));
 
 /** Une matière sans réponse depuis ce nombre de jours « prend la poussière ». */
 export const JOURS_OUBLI = 10;
@@ -786,7 +799,7 @@ function usesDepuisOuverture(o: Objectif): boolean {
 }
 
 /** Les paramètres d'une instance de contrat (vide pour les autres). */
-function parametresDe(e: Entree, st: Pick<EtatQuete, "quete" | "periode">): Contexte["params"] {
+export function parametresDe(e: Entree, st: Pick<EtatQuete, "quete" | "periode">): Contexte["params"] {
   if (st.quete.famille !== "contrat" || st.quete.repetition !== "quotidienne") return {};
   const m = /^contrat:(.+):(\d{4}-\d{2}-\d{2})$/.exec(st.quete.id);
   return e.contrats.find((c) => c.modele === m?.[1])?.params ?? {};
@@ -840,15 +853,25 @@ export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats">): Con
  * LA prochaine quête (CONCEPTION.md §10) : avant tout le prologue, dans
  * l'ordre ; sinon la quête ouverte au meilleur score = importance (poids de la
  * matière à l'examen) × faiblesse × urgence (phase, axe, acte en cours) ×
- * continuité (entamée, même matière) × durée. Les exploits ne sont jamais
- * recommandés ; les quêtes cachées non plus, ni celles qui ne mènent nulle
- * part dans cette copie du site (non lançables : elles restent dans l'arbre).
+ * continuité (entamée, même matière) × durée (une quête plus longue que le
+ * budget du jour recule). Les exploits ne sont jamais recommandés ; les
+ * quêtes cachées non plus, ni celles qui ne mènent nulle part dans cette
+ * copie du site (non lançables : elles restent dans l'arbre), ni celles que
+ * le joueur a écartées aujourd'hui (« Une autre idée ? »).
  */
 export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const contenu = e.contenu ?? contenuDuProgramme();
   const R = RECOMMANDATION;
   const dest = contexteDestination(e, r);
-  const ouvertes = r.etats.filter((s) => s.ouverte && !s.fait && s.quete.famille !== "exploit" && s.quete.visibilite !== "cachee" && s.quete.visibilite !== "indice" && !s.quete.optionnelle && lancable(s.quete, dest, parametresDe(e, s)));
+  const ecartees = new Set(e.ecartees ?? []);
+  const budget = budgetDuJour(e);
+  const destinations = new Map<EtatQuete, Destination>();
+  const ouvertes = r.etats.filter((s) => {
+    if (!s.ouverte || s.fait || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
+    const d = destinationDe(s.quete, parametresDe(e, s), dest, s.ev ?? undefined);
+    if (d) destinations.set(s, d);
+    return !!d;
+  });
   const prologue = ouvertes.filter((s) => s.quete.acte === "prologue").sort((a, b) => a.quete.ordre - b.quete.ordre);
   const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? ACTES.find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
   if (prologue.length) return dernier(prologue[0]);
@@ -873,7 +896,7 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
     const av = avanceeDe(s);
     let continuite = av >= 0.5 ? R.continuiteMoitie : av > 0 ? R.continuite : 1;
     if (e.derniereMatiere && cle === e.derniereMatiere) continuite *= R.memeMatiere;
-    const duree = (q.duree ?? 20) <= R.dureeCible ? 1 : R.horsDuree;
+    const duree = (destinations.get(s)?.duree ?? 20) <= budget ? 1 : R.horsDuree;
     const score = 100 * importance * faiblesse * urgence * continuite * duree;
     if (!meilleur || score > meilleur.score) {
       let pourquoi: string;

@@ -82,7 +82,7 @@ export function bilanDe(vue: VueCodex): BilanCodex {
     devoile: vue.devoile ? { devoile: vue.devoile.devoile, nouveaux: vue.devoileNouveaux } : null,
     contrats: vue.devoile && !devoileLite(vue.devoile.devoile, "codex:contrats") ? [] : vue.contrats.map((c) => ({ id: c.ligne.id, titre: c.ligne.titre, etat: c.ligne.etat, valeur: c.ligne.valeur, cible: c.ligne.cible })),
     trio: { faits: vue.trio.faits, total: vue.trio.total, fait: vue.trio.fait },
-    prochaine: p ? { titre: p.ligne.titre, lien: p.ligne.lien ?? null, pourquoi: p.pourquoi, valeur: p.ligne.valeur, cible: p.ligne.cible, duree: p.ligne.duree ?? null } : null,
+    prochaine: p ? { titre: p.ligne.titre, lien: p.ligne.destination?.href ?? p.ligne.lien ?? null, pourquoi: p.ligne.destination?.raison ?? p.pourquoi, valeur: p.ligne.valeur, cible: p.ligne.cible, duree: p.ligne.destination?.duree ?? p.ligne.duree ?? null } : null,
     retro: vue.retro,
   };
 }

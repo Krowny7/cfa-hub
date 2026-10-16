@@ -29,7 +29,8 @@ import {
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
-import type { Emplacement } from "@/lib/codex/types";
+import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
+import type { Budget, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
 
@@ -126,6 +127,21 @@ async function pointsFaibles(supabase: SupabaseClient): Promise<{ notion: string
   }
 }
 
+/**
+ * Le réglage du jour (budget, quêtes écartées, capacités vues) : les colonnes
+ * v3 de codex_joueur, lues à part (une colonne absente ne coûte rien à la
+ * lecture principale) ; sans elles (§2 pas collée), le compte.
+ */
+async function lireReglage(a: SupabaseClient, user: Joueur, jour: string): Promise<ReglageJour> {
+  try {
+    const { data, error } = await a.from("codex_joueur").select(COLONNES_V3).eq("user_id", user.id).maybeSingle();
+    // une autre erreur (réseau) : rien de réglé aujourd'hui, sans basculer sur le compte
+    return reglageDe({ ligne: error ? null : (data as Parameters<typeof reglageDe>[0]["ligne"]), absente: !!error && baseAbsente(error) }, user.user_metadata, jour);
+  } catch {
+    return reglageDe({ ligne: null, absente: true }, user.user_metadata, jour);
+  }
+}
+
 async function dateExamenDe(a: SupabaseClient, id: string): Promise<string | null> {
   try {
     const { data, error } = await a.from("profiles").select("exam_date").eq("id", id).maybeSingle();
@@ -146,8 +162,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
   if (!a) return vide;
   try {
     const hier = decaleJour(jour, -1);
-    const [joueurR, lignes, contratsParJour, jourJ, pf] = await Promise.all([
-      a.from("codex_joueur").select("premier_calcul,dernier_calcul").eq("user_id", user.id).maybeSingle(),
+    const [joueurR, reglage, lignes, contratsParJour, jourJ, pf] = await Promise.all([
+      a.from("codex_joueur").select(COLONNES_JOUEUR).eq("user_id", user.id).maybeSingle(),
+      lireReglage(a, user, jour),
       lireLignes(a, user.id),
       lireContrats(a, user.id, [jour, hier]),
       dateExamenDe(a, user.id),
@@ -178,6 +195,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       dernierCalcul: joueur ? new Date(joueur.dernier_calcul) : null,
       lecture: LECTURE_VIDE,
       pointsFaibles: pf,
+      budget: reglage.budget,
+      ecartees: reglage.ecartees,
     };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage)
@@ -322,6 +341,44 @@ export async function changerContrat(supabase: SupabaseClient, user: Joueur, emp
   const { error } = await a.rpc("codex_contrat_changer", { p_user: user.id, p_jour: entree.jour, p_emplacement: emplacement, p_modele: autre.modele, p_params: autre.params });
   if (error) return { ok: false, raison: baseAbsente(error) ? "indisponible" : "refus" };
   return { ok: true, vue: (await calculUnique(supabase, user, true)).vue };
+}
+
+/**
+ * Le réglage du jour du joueur : son budget (« J'ai 30 min ») et/ou une quête
+ * écartée (« Une autre idée ? », jusqu'à demain). Écrit en base
+ * (codex_joueur_regler) ; sans la §2, dans le compte (rl_codex_jour). Puis le
+ * Codex est recalculé.
+ */
+export async function reglerJour(supabase: SupabaseClient, user: Joueur, quoi: { budget?: Budget; ecarter?: string }): Promise<{ ok: true; vue: VueCodex } | { ok: false; raison: "indisponible" | "refus" }> {
+  const a = admin();
+  if (!a) return { ok: false, raison: "indisponible" };
+  const jour = jourParis();
+  const reglage = await lireReglage(a, user, jour);
+  const ecartees = quoi.ecarter ? ecarter(reglage, quoi.ecarter) : null;
+  let joueur: Joueur = user;
+  let enBase = reglage.ou === "base";
+  if (enBase) {
+    try {
+      const { error } = await a.rpc("codex_joueur_regler", { p_user: user.id, p_budget: quoi.budget ?? null, p_ecartees: ecartees ? { jour, ids: ecartees } : null });
+      if (error && !baseAbsente(error)) return { ok: false, raison: "refus" };
+      enBase = !error;
+    } catch {
+      return { ok: false, raison: "refus" };
+    }
+  }
+  if (!enBase) {
+    const rl_codex_jour = { jour, budget: quoi.budget ?? reglage.budget, ecartees: ecartees ?? reglage.ecartees };
+    try {
+      const { data, error } = await supabase.auth.updateUser({ data: { rl_codex_jour } });
+      if (error) return { ok: false, raison: "refus" };
+      if (data.user) joueur = data.user;
+    } catch {
+      return { ok: false, raison: "refus" };
+    }
+  }
+  MEMO.delete(user.id);
+  const { vue } = await calculUnique(supabase, joueur, true);
+  return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
 }
 
 /** Marque des fanfares comme jouées ; la vue gardée est corrigée sur place (pas de recalcul). */

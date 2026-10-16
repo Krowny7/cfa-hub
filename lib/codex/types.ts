@@ -366,3 +366,13 @@ export type Outil = "ciblee" | "fiche" | "drill" | "cours" | "flashcards" | "ate
 
 /** Les sources d'un type d'événement ou de mesure (pour le moteur). */
 export type SourceDonnee = { libelle: string; source: string; branche: boolean };
+
+/** Ce que la base sait faire (V3 §1.8), lu à l'exécution par codex_mesures_v3 : tant
+ *  que le SQL n'est pas collé, tout est faux et le moteur n'écrit, ne paie et
+ *  n'exige rien qui en dépende. */
+export type Capacite = "fil" | "seances" | "revoir" | "maitrise" | "trophees" | "debrief" | "ratures_seches";
+/** journal : 2 (codex_journal d'origine) ou 3 (événements v3, marqueur _codex_journal_v3). */
+export type Capacites = Record<Capacite, boolean> & { journal: 2 | 3 };
+
+/** Le temps que le joueur se donne aujourd'hui (« J'ai 30 min »), en minutes. */
+export type Budget = 15 | 30 | 60 | 90;

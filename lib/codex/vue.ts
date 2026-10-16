@@ -5,8 +5,9 @@
 // long cours, les exploits. L'écran ne calcule rien : il lit ceci.
 
 import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
-import { affichage, joursAvantExamen, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
-import type { Acte, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, RepliqueCodex } from "@/lib/codex/types";
+import { destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
+import { affichage, budgetDuJour, contexteDestination, joursAvantExamen, parametresDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
 
@@ -41,6 +42,8 @@ export type LigneQuete = {
   /** la fanfare n'a pas été jouée */
   aFeter: boolean;
   lien?: string;
+  /** où la faire (« Y aller »), combien de temps et pourquoi : seulement pour une quête ouverte, pas faite, qui mène quelque part */
+  destination?: Destination;
   duree?: number;
   optionnelle?: boolean;
   acte?: string;
@@ -93,6 +96,10 @@ export type VueCodex = {
   phaseReplique: string;
   joursAvant: number | null;
   niveau: number;
+  /** le temps que le joueur se donne aujourd'hui (choisi, sinon déduit de son rythme) ; null : Codex indisponible */
+  budget: Budget | null;
+  /** la file « À revoir » (null : pas encore en base, V3 §5) */
+  revoir: { aujourdhui: number; demain: number } | null;
   prochaine: (Recommandation & { ligne: LigneQuete }) | null;
   trame: VueActe[];
   contrats: VueContrat[];
@@ -114,7 +121,7 @@ export type VueCodex = {
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
-  disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, prochaine: null,
+  disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, prochaine: null,
   trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], branches: [], longCours: [], exploits: [],
   possessions: [], stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null,
 });
@@ -126,10 +133,16 @@ function nomDe(cle: string): string | undefined {
   return NOMS_COSMETIQUES.get(cle);
 }
 
-export function ligneDe(s: EtatQuete): LigneQuete {
+/**
+ * Une quête telle que l'écran l'affiche. `dest` : le contexte du résolveur et
+ * les paramètres (contrat) ; sans lui, pas de destination (aperçus, tests).
+ */
+export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params: ContratTire["params"] }): LigneQuete {
   const q = s.quete;
   const l = s.ligne;
   const ev = s.ev;
+  const ouverte = s.ouverte && !s.fait && affichage(s) === "complet";
+  const destination = dest && ouverte ? destinationDe(q, dest.params, dest.ctx, ev ?? undefined) : null;
   const valeur = s.fait ? (ev?.cible ?? l?.cible ?? 1) : (ev?.valeur ?? Number(l?.progression ?? 0));
   const cible = ev?.cible ?? l?.cible ?? 1;
   return {
@@ -154,6 +167,7 @@ export function ligneDe(s: EtatQuete): LigneQuete {
     termineeLe: l?.terminee_le ?? (s.fait && s.atteint ? s.atteint.toISOString() : null),
     aFeter: !!l && l.etat === "recompensee" && !l.vu && !l.retro,
     ...(q.lien ? { lien: q.lien } : {}),
+    ...(destination ? { destination } : {}),
     ...(q.duree ? { duree: q.duree } : {}),
     ...(q.optionnelle ? { optionnelle: true } : {}),
     ...(q.acte ? { acte: q.acte } : {}),
@@ -199,7 +213,9 @@ export function construireVue(
   extra: { devoile: EtatDevoilement | null; nouvelles?: VueCodex["nouvelles"]; retro?: VueCodex["retro"]; changementFait?: boolean },
 ): VueCodex {
   const contenu = e.contenu ?? contenuDuProgramme();
-  const lignes = r.etats.map((s) => ({ s, l: ligneDe(s) }));
+  const ctx = contexteDestination(e, r);
+  const ligne = (s: EtatQuete) => ligneDe(s, { ctx, params: parametresDe(e, s) });
+  const lignes = r.etats.map((s) => ({ s, l: ligne(s) }));
   const unique = lignes.filter((x) => x.s.quete.repetition === "unique");
   const phase = PHASES.find((p) => p.phase === r.phase) ?? PHASES[0];
 
@@ -216,7 +232,7 @@ export function construireVue(
     .filter((i) => i.emplacement)
     .map((i) => {
       const s = r.etats.find((x) => x.quete.id === i.quete.id && x.periode === i.periode)!;
-      const l = ligneDe(s);
+      const l = ligne(s);
       return { emplacement: i.emplacement!, modele: i.quete.id.split(":")[1], ligne: l, changeable: !extra.changementFait && l.etat !== "terminee" };
     });
   const faitsDuJour = contrats.filter((c) => c.ligne.etat === "terminee").length;
@@ -260,6 +276,8 @@ export function construireVue(
     phaseReplique: phase.replique,
     joursAvant: joursAvantExamen(e.jour, e.jourJ),
     niveau: r.niveau,
+    budget: budgetDuJour(e),
+    revoir: null,
     prochaine: reco && ligneReco ? { ...reco, ligne: ligneReco } : null,
     trame,
     contrats,
