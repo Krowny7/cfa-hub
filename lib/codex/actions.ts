@@ -106,7 +106,9 @@ export async function codexAutreIdee(queteId: string): Promise<Resultat<{ pannea
   if (!user) return { ok: false, raison: "connexion" };
   if (typeof queteId !== "string" || !queteId || queteId.length > 120) return { ok: false, raison: "refus" };
   const r = await reglerJour(supabase, user, { ecarter: queteId });
-  return r.ok ? { ok: true, panneau: panneauDe(r.vue) } : r;
+  if (!r.ok) return r;
+  revalidatePath("/codex");
+  return { ok: true, panneau: panneauDe(r.vue) };
 }
 
 /** « J'ai [15] [30] [60] [90] min » : le temps que le joueur se donne aujourd'hui ; les quêtes plus longues reculent. */
