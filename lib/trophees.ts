@@ -154,7 +154,7 @@ export function lignesCiblees(rows: { topic_count: number | null; trophy_count: 
   return rows.map((r) => ({ source: "ciblee" as const, palier: PALIER_DU_TIER[trophyTier(Number(r.topic_count) || 1).key] ?? 1, n: Number(r.trophy_count) || 0 }));
 }
 
-/** Les lignes de get_user_trophees (n arrive en texte : bigint) ; compter écarte les lignes invalides. */
+/** Les lignes de get_user_trophees ou de trophees_joueur (n est un bigint : nombre ou texte) ; compter écarte les lignes invalides. */
 export function lignesTrophees(rows: { source: unknown; palier: unknown; n: unknown }[]): LigneTrophee[] {
   return rows.map((r) => ({ source: r.source as SourceTrophee, palier: Number(r.palier) as PalierTrophee, n: Number(r.n) || 0 }));
 }
