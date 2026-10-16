@@ -14,7 +14,7 @@
 //      construit la vue (prochaine quête, contrats, branches…).
 // La bible : docs/codex/CONCEPTION.md.
 
-import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, tailleMaxCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, xpContrat, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, tailleMaxCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
@@ -256,6 +256,8 @@ type Contexte = {
   compteur: (d: Omit<Demande, "id">) => ResultatCompteur;
   /** les quêtes terminées pendant la cascade */
   faites: Set<string>;
+  /** les quêtes hors jeu : leur mesure est inconnue à l'exécution (ids) ; elles ne bloquent rien */
+  horsJeu: Set<string>;
   catalogue: Quete[];
   /** instance évaluée : sa période et son départ (fenêtre depuisOuverture) */
   periode: string;
@@ -589,7 +591,7 @@ export function instanceContrat(m: ModeleContrat, params: ContratTire["params"],
     consigne: libelle(m.consigne, params, contenu),
     objectif: mat && ciblee ? ajusterCiblee(m.objectif, mat.poids) : m.objectif,
     prerequis: [],
-    recompense: { xp: XP.contrat },
+    recompense: { xp: xpContrat(m.duree) },
     repetition: "quotidienne",
     visibilite: "visible",
     duree: m.duree,
@@ -677,7 +679,7 @@ const queteBrancheeEv = (ev: TypeEvenement) => queteBranchee({ objectif: { k: "c
 // ── Le contexte d'évaluation ───────────────────────────────────────────
 
 function contexteBlanc(e: Entree, contenu: ContenuMatiere[], compteur: Contexte["compteur"], catalogue: Quete[] = []): Contexte {
-  return { e, contenu, compteur, faites: new Set(), catalogue, periode: "", ouverteLe: null, params: {} };
+  return { e, contenu, compteur, faites: new Set(), horsJeu: new Set(), catalogue, periode: "", ouverteLe: null, params: {} };
 }
 
 // ── L'état d'une quête ─────────────────────────────────────────────────
@@ -695,7 +697,13 @@ export type EtatQuete = {
   ligne: LigneProgression | null;
   /** validée d'après l'historique (rétroactive) */
   retro: boolean;
-  /** hors-ligne : pas encore branchée en base ou retirée */
+  /**
+   * hors jeu (V3 §8) : sa mesure est inconnue à l'exécution (le SQL qui la
+   * lit n'est pas collé) ; elle est traitée comme non branchée : elle ne
+   * bloque ni un prérequis ni la clôture d'un acte, et rien ne s'écrit pour elle
+   */
+  horsJeu: boolean;
+  /** hors jeu et jamais commencée (aucune ligne en base) : à ne pas afficher ; commencée, elle reste affichée, gelée */
   masquee: boolean;
 };
 
@@ -802,8 +810,10 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
   switch (p.k) {
     case "quete": {
       const q = c.catalogue.find((x) => x.id === p.id);
-      // une quête retirée ou pas encore branchée (événement, capacité de la base) ne bloque jamais
-      if (!q || !suivie(q, capacitesDe(c.e))) return true;
+      // une quête retirée, pas encore branchée (événement, capacité de la base) ou hors jeu (mesure inconnue) ne bloque jamais
+      if (!q || !suivie(q, capacitesDe(c.e)) || c.horsJeu.has(p.id)) return true;
+      // souple : conseillée avant l'examen, exigée après (V3 §8.5)
+      if (p.souple && !apresExamenDe(c.e)) return true;
       return c.faites.has(clePeriode(p.id, ""));
     }
     case "acte": return actesClos.has(p.id);
@@ -851,9 +861,22 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
       ouverteLe: l ? new Date(l.ouverte_le) : null,
       fait: recompensee,
       atteint: recompensee ? dateOu(l!.terminee_le) : null,
-      ev: null, ligne: l, retro: !!l?.retro, masquee: false,
+      ev: null, ligne: l, retro: !!l?.retro, horsJeu: false, masquee: false,
     });
     if (recompensee) ctx.faites.add(clePeriode(quete.id, periode));
+  }
+  // une quête retirée déjà tamponnée reste faite (« Codex Atlanticus » la compte ; rien de gagné n'est repris)
+  const retirees = new Set(catalogue.filter((q) => q.retiree).map((q) => q.id));
+  for (const l of e.progression) if (l.periode === "" && retirees.has(l.quete_id) && (l.etat === "recompensee" || l.etat === "terminee")) ctx.faites.add(clePeriode(l.quete_id, ""));
+  // hors jeu (V3 §8) : une quête dont la mesure est inconnue à l'exécution (le SQL qui la lit n'est pas
+  // collé) est traitée comme non branchée ; le fil rouge a sa propre règle (la capacité « fil », aVenir)
+  for (const st of etats.values()) {
+    if (st.fait || st.quete.famille === "fil") continue;
+    const ev = evalQuete(st.quete, { ...ctx, periode: st.periode, ouverteLe: st.ouverteLe ?? e.now, params: parametresDe(e, st) });
+    if (!ev.inconnu) continue;
+    st.horsJeu = true;
+    st.masquee = !st.ligne;
+    if (st.periode === "") ctx.horsJeu.add(st.quete.id);
   }
   const actesClos = new Set<string>();
   const lignesActes = new Map(e.progression.filter((l) => l.quete_id.startsWith("acte:")).map((l) => [l.quete_id.slice(5), l]));
@@ -861,17 +884,29 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   const actesFaits = new Map<string, Date | null>([...actesClos].map((id) => [id, dateOu(lignesActes.get(id)!.terminee_le)]));
 
   const tri = [...etats.values()].sort((a, b) => (ordreFamille[a.quete.famille as keyof typeof ordreFamille] ?? 9) - (ordreFamille[b.quete.famille as keyof typeof ordreFamille] ?? 9) || a.quete.ordre - b.quete.ordre);
+  const parId = new Map(tri.filter((s) => s.periode === "").map((s) => [s.quete.id, s]));
   // la cascade : jusqu'à ce que plus rien ne change
   for (let tour = 0, change = true; change && tour < 60; tour++) {
     change = false;
     for (const st of tri) {
-      if (st.fait) continue;
+      if (st.fait || st.horsJeu) continue;
       const q = st.quete;
       const c: Contexte = { ...ctx, periode: st.periode, ouverteLe: st.ouverteLe ?? e.now, params: parametresDe(e, st) };
       if (!st.ouverte && q.prerequis.every((p) => prerequisOk(p, c, actesClos))) {
         st.ouverte = true;
         st.ouverteLe = e.now;
         change = true;
+      }
+      // un miroir (V3 §8.2) se tamponne avec sa quête payeuse, même avant d'être ouvert : sa chaîne ne reste pas en arrière
+      const payeuse = q.miroir ? parId.get(q.miroir) : undefined;
+      if (payeuse?.fait) {
+        st.ouverte = true;
+        st.fait = true;
+        st.atteint = payeuse.atteint;
+        st.ev = { fait: true, valeur: payeuse.ev?.cible ?? 1, cible: payeuse.ev?.cible ?? 1, atteint: payeuse.atteint };
+        ctx.faites.add(clePeriode(q.id, st.periode));
+        change = true;
+        continue;
       }
       if (!st.ouverte) continue;
       st.ev = evalQuete(q, c);
@@ -884,10 +919,10 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     }
     for (const a of actes) {
       if (actesClos.has(a.id)) continue;
-      const dedans = tri.filter((s) => s.quete.acte === a.id && !s.quete.optionnelle);
-      if (dedans.length && dedans.every((s) => s.fait)) {
+      const clos = clotureActe(a, tri.filter((s) => s.quete.acte === a.id && !s.horsJeu));
+      if (clos) {
         actesClos.add(a.id);
-        actesFaits.set(a.id, dmax(dedans.map((s) => s.atteint ?? e.now)));
+        actesFaits.set(a.id, clos.atteint ?? e.now);
         change = true;
       }
     }
@@ -905,11 +940,15 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     const q = st.quete;
     // sans la capacité « fil » (CHECK de codex_progression pas encore élargi), aucun palier du fil ne s'écrit (V3 §1.8)
     if (q.famille === "fil" && !capacites.fil) continue;
+    // hors jeu : gelée, rien ne s'écrit (sa progression en base reste telle quelle)
+    if (st.horsJeu) continue;
     const base = { quete: q.id, periode: st.periode, famille: q.famille as ItemEcriture["famille"] };
     if (st.fait && !(st.ligne && (st.ligne.etat === "recompensee" || st.ligne.etat === "terminee"))) {
       const retro = q.repetition === "unique" && (rattrapee(q) || (!usesDepuisOuverture(q.objectif) && retroDe(st.atteint)));
       st.retro = retro;
-      lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp: q.recompense.xp, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(q.recompense.titre ? { titre: q.recompense.titre } : {}) });
+      // un miroir est tamponné sans rien verser : sa quête payeuse paie (V3 §8.2)
+      const paie = !q.miroir;
+      lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp: paie ? q.recompense.xp : 0, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(paie && q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(paie && q.recompense.titre ? { titre: q.recompense.titre } : {}) });
     } else if (!st.fait && st.ouverte) {
       const v = st.ev ? st.ev.valeur : 0;
       const etat = v > 0 ? "active" : "disponible";
@@ -941,6 +980,26 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     trioFait,
     capacitesVues: marqueurDe(e),
   };
+}
+
+/**
+ * La clôture d'un acte, d'après ses quêtes suivies et en jeu : toutes ses
+ * quêtes non optionnelles faites ; avec `closAvec`, n de ses quêtes,
+ * optionnelles comprises (l'acte I : 4 outils sur 7). La date : celle de la
+ * dernière quête qu'il fallait. null : pas encore clos.
+ */
+export function clotureActe(a: Pick<Acte, "closAvec">, dedans: Pick<EtatQuete, "quete" | "fait" | "atteint">[]): { atteint: Date | null } | null {
+  if (a.closAvec) {
+    const n = Math.min(a.closAvec.n, dedans.length);
+    const faites = dedans.filter((s) => s.fait);
+    if (n < 1 || faites.length < n) return null;
+    // la n-ième quête faite, dans l'ordre des dates (une date inconnue compte pour la plus récente)
+    const dates = faites.map((s) => s.atteint).sort((x, y) => (x ? x.getTime() : Infinity) - (y ? y.getTime() : Infinity));
+    return { atteint: dates[n - 1] ?? null };
+  }
+  const requises = dedans.filter((s) => !s.quete.optionnelle);
+  if (!requises.length || !requises.every((s) => s.fait)) return null;
+  return { atteint: dmax(requises.map((s) => s.atteint)) };
 }
 
 /**
@@ -1034,7 +1093,7 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const budget = budgetDuJour(e);
   const destinations = new Map<EtatQuete, Destination>();
   const lancables = r.etats.filter((s) => {
-    if (!s.ouverte || s.fait || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
+    if (!s.ouverte || s.fait || s.horsJeu || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
     const d = destinationDe(s.quete, parametresDe(e, s), dest, s.ev ?? undefined);
     if (d) destinations.set(s, d);
     return !!d;
