@@ -10,7 +10,8 @@
 // d'écrire (app/moi/profil/actions.ts).
 
 import { TIERS } from "@/lib/ranks";
-import type { DatePalier, EtatSceau } from "@/lib/profil/sceaux";
+import type { EtatSceau } from "@/lib/profil/sceaux";
+import { champsBaseVides, remplie, type Acquis, type ConditionProfil } from "@/lib/profil/acquis";
 import { DISPOSITION_DEFAUT, blocsDe, dispositionDepuis, validerDisposition, type Disposition, type Prefixes } from "@/lib/profil/disposition";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
@@ -63,69 +64,16 @@ export const STATS_VIDES: ProfilStats = {
 };
 
 // ── Ce qui se gagne ────────────────────────────────────────────────────
-/** La condition d'une pièce gagnée. */
-export type Condition =
-  | { k: "questions"; n: number }
-  /** avoir atteint ce palier (index dans TIERS) au moins une fois */
-  | { k: "pic"; palier: number }
-  /** n sceaux à la dorure */
-  | { k: "dorures"; n: number }
-  /** un sceau à ce palier au moins (1 encre, 2 vermillon, 3 dorure) */
-  | { k: "sceau"; cle: string; palier: number };
+// Les conditions, l'Acquis, remplie et dateGagnee vivent dans
+// lib/profil/acquis.ts (toutes les pièces de collection, lib/profil/pieces.ts) ;
+// ils restent importables d'ici. Les cadres et les motifs n'emploient que les
+// conditions du profil (questions, pic, sceaux).
+export { dateGagnee, dorures, remplie, type Acquis } from "@/lib/profil/acquis";
+/** La condition d'un cadre ou d'un motif (toutes les conditions : lib/profil/pieces.ts). */
+export type Condition = ConditionProfil;
 
-/** Ce que le joueur a fait : de quoi ouvrir les pièces gagnées. */
-export type Acquis = {
-  questions: number;
-  /** meilleur palier atteint par l'ELO, sans verrou de maîtrise (index dans TIERS ; ProfilStats.picAtteint) */
-  pic: number;
-  /** ses sceaux (paliers, et dates avec la base) */
-  sceaux: EtatSceau[];
-  /** la date du premier passage à chaque palier (index dans TIERS) ; null : inconnue */
-  datesPic: (string | null)[];
-};
-
-export const acquisDe = (s: ProfilStats, sceaux: EtatSceau[] = [], datesPic: (string | null)[] = []): Acquis => ({ questions: s.questions, pic: s.picAtteint, sceaux, datesPic });
-
-/** Le palier d'un sceau (0 : pas gagné). */
-const palierSceau = (a: Acquis, cle: string): number => a.sceaux.find((e) => e.def.cle === cle)?.palier ?? 0;
-/** Les sceaux à la dorure. */
-export const dorures = (a: Acquis) => a.sceaux.filter((e) => e.palier === 3).length;
-
-/** La condition est remplie (null : pièce libre). */
-export function remplie(c: Condition | null, a: Acquis): boolean {
-  if (!c) return true;
-  switch (c.k) {
-    case "questions":
-      return a.questions >= c.n;
-    case "pic":
-      return a.pic >= c.palier;
-    case "dorures":
-      return dorures(a) >= c.n;
-    case "sceau":
-      return palierSceau(a, c.cle) >= c.palier;
-  }
-}
-
-/** Le jour où la condition a été remplie, s'il est connu (le pic : rating_events ; les sceaux : la base). */
-export function dateGagnee(c: Condition | null, a: Acquis): DatePalier | null {
-  if (!c || !remplie(c, a)) return null;
-  switch (c.k) {
-    case "pic": {
-      const iso = a.datesPic[c.palier];
-      return iso ? { iso, avant: false } : null;
-    }
-    case "sceau":
-      return a.sceaux.find((e) => e.def.cle === c.cle)?.dates?.[c.palier - 1] ?? null;
-    case "dorures": {
-      // la n-ième dorure, si toutes sont datées
-      const dates = a.sceaux.filter((e) => e.palier === 3).map((e) => e.dates?.[2] ?? null);
-      if (dates.some((d) => !d)) return null;
-      return (dates as DatePalier[]).sort((x, y) => x.iso.localeCompare(y.iso))[c.n - 1] ?? null;
-    }
-    case "questions":
-      return null;
-  }
-}
+/** L'Acquis de ce que le profil sait déjà ; les champs du Codex, des trophées et des programmes restent vides (lireAcquis les lit). */
+export const acquisDe = (s: ProfilStats, sceaux: EtatSceau[] = [], datesPic: (string | null)[] = []): Acquis => ({ questions: s.questions, pic: s.picAtteint, sceaux, datesPic, ...champsBaseVides() });
 
 // ── Bannières : une image à soi, ou un motif ───────────────────────────
 // (les motifs fixes sont libres, « Feuille d'or » et « Éclat de diamant »
