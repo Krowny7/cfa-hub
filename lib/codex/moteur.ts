@@ -14,7 +14,8 @@
 //      construit la vue (prochaine quête, contrats, branches…).
 // La bible : docs/codex/CONCEPTION.md.
 
-import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, tailleMaxCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { PRACTICE_V3, ROUTES, lancable, type ContexteDestination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
@@ -151,6 +152,8 @@ export type Ev = {
   inconnu?: boolean;
   /** objectif « à faire baisser » (ratures sous un seuil) : la valeur mesurée et le seuil ; valeur/cible est alors l'avancée (0–1) */
   baisse?: { actuel: number; seuil: number };
+  /** objectif composé (tous / unDe) : l'évaluation de chaque sous-objectif, dans l'ordre (le résolveur de destinations vise le premier non rempli) */
+  sous?: Ev[];
 };
 
 type Contexte = {
@@ -375,12 +378,12 @@ export function evalObjectif(o: Objectif, c: Contexte): Ev {
     case "tous": {
       const l = o.objectifs.map((x) => evalObjectif(x, c));
       const fait = l.every((x) => x.fait);
-      return { fait, valeur: l.reduce((s, x) => s + clamp01(x.valeur / (x.cible || 1)), 0), cible: l.length, atteint: fait ? dmax(l.map((x) => x.atteint)) : null, inconnu: l.some((x) => x.inconnu) };
+      return { fait, valeur: l.reduce((s, x) => s + clamp01(x.valeur / (x.cible || 1)), 0), cible: l.length, atteint: fait ? dmax(l.map((x) => x.atteint)) : null, inconnu: l.some((x) => x.inconnu), sous: l };
     }
     case "unDe": {
       const l = o.objectifs.map((x) => evalObjectif(x, c));
       const fait = l.some((x) => x.fait);
-      return { fait, valeur: Math.max(0, ...l.map((x) => clamp01(x.valeur / (x.cible || 1)))), cible: 1, atteint: fait ? dmin(l.filter((x) => x.fait).map((x) => x.atteint)) : null, inconnu: l.every((x) => x.inconnu) };
+      return { fait, valeur: Math.max(0, ...l.map((x) => clamp01(x.valeur / (x.cible || 1)))), cible: 1, atteint: fait ? dmin(l.filter((x) => x.fait).map((x) => x.atteint)) : null, inconnu: l.every((x) => x.inconnu), sous: l };
     }
   }
 }
@@ -805,16 +808,47 @@ const virgule = (n: number) => String(n).replace(".", ",");
 const ETAPES_AVANT_JALON: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "tour"];
 
 /**
+ * Ce que le résolveur de destinations (lib/codex/destinations.ts) sait du
+ * joueur : lu sur l'entrée et, s'il est là, sur le résultat de l'évaluation
+ * (les quêtes faites, pour « branches à une étape »).
+ */
+export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats">): ContexteDestination {
+  const contenu = e.contenu ?? contenuDuProgramme();
+  const M = e.lecture.mesures;
+  const comptes = M.notions ?? {};
+  const pages = M.drill_pages ?? [];
+  const joursAvant = joursAvantExamen(e.jour, e.jourJ);
+  // la page de drill la plus faible d'une matière : le plus bas meilleur score, la première à égalité
+  const pageFaible = (k: string) => pages.filter((p) => p.matiere === k).sort((a, b) => a.meilleur - b.meilleur || a.page - b.page)[0]?.page ?? null;
+  return {
+    contenu,
+    maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: maitriseDe(e, m.key) }])),
+    notionsNonVues: Object.fromEntries(contenu.map((m) => [m.key, notionsDeMatiere(m.key).filter((n) => (comptes[n.id] ?? 0) < 5).length])),
+    pointsFaibles: e.pointsFaibles ?? [],
+    drillPageFaible: Object.fromEntries(contenu.map((m) => [m.key, pageFaible(m.key)])),
+    revoir: null,
+    phase: phaseDe(joursAvant),
+    joursAvant,
+    tailleMaxCiblee: (k) => tailleMaxCiblee(contenu.find((m) => m.key === k)?.poids ?? 0),
+    routes: ROUTES,
+    practiceV3: PRACTICE_V3,
+    ...(r ? { faites: new Set(r.etats.filter((s) => s.fait && s.periode === "").map((s) => s.quete.id)) } : {}),
+  };
+}
+
+/**
  * LA prochaine quête (CONCEPTION.md §10) : avant tout le prologue, dans
  * l'ordre ; sinon la quête ouverte au meilleur score = importance (poids de la
  * matière à l'examen) × faiblesse × urgence (phase, axe, acte en cours) ×
  * continuité (entamée, même matière) × durée. Les exploits ne sont jamais
- * recommandés ; les quêtes cachées non plus.
+ * recommandés ; les quêtes cachées non plus, ni celles qui ne mènent nulle
+ * part dans cette copie du site (non lançables : elles restent dans l'arbre).
  */
 export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const contenu = e.contenu ?? contenuDuProgramme();
   const R = RECOMMANDATION;
-  const ouvertes = r.etats.filter((s) => s.ouverte && !s.fait && s.quete.famille !== "exploit" && s.quete.visibilite !== "cachee" && s.quete.visibilite !== "indice" && !s.quete.optionnelle);
+  const dest = contexteDestination(e, r);
+  const ouvertes = r.etats.filter((s) => s.ouverte && !s.fait && s.quete.famille !== "exploit" && s.quete.visibilite !== "cachee" && s.quete.visibilite !== "indice" && !s.quete.optionnelle && lancable(s.quete, dest, parametresDe(e, s)));
   const prologue = ouvertes.filter((s) => s.quete.acte === "prologue").sort((a, b) => a.quete.ordre - b.quete.ordre);
   const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? ACTES.find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
   if (prologue.length) return dernier(prologue[0]);

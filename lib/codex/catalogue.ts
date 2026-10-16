@@ -533,9 +533,11 @@ export type FormatCiblee = (typeof FORMATS_CIBLEE)[number];
 export const SEUIL_CIBLEE = 15;
 /** Questions d'une matière dans une session ciblée de ce format (même arrondi que la base). */
 export const questionsCiblee = (poids: number, format: number) => Math.round((poids * format) / 100);
+/** La plus grande séance ciblée possible dans une matière (son plus grand format) : 14 en Quant, 12 en Derivatives. */
+export const tailleMaxCiblee = (poids: number) => Math.max(...FORMATS_CIBLEE.map((f) => questionsCiblee(poids, f)));
 /** Le seuil d'une séance ciblée pour une matière, et le plus petit format qui l'atteint. */
 export function cibleeDe(poids: number): { questions: number; format: FormatCiblee } {
-  const max = Math.max(...FORMATS_CIBLEE.map((f) => questionsCiblee(poids, f)));
+  const max = tailleMaxCiblee(poids);
   const questions = Math.max(1, Math.min(SEUIL_CIBLEE, max));
   return { questions, format: FORMATS_CIBLEE.find((f) => questionsCiblee(poids, f) >= questions) ?? FORMATS_CIBLEE[FORMATS_CIBLEE.length - 1] };
 }

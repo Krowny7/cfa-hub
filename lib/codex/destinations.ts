@@ -1,0 +1,449 @@
+// Le Codex : le résolveur de destinations. Pour chaque quête, l'endroit du
+// site où la faire (le bouton « Y aller »), sa durée et une ligne chiffrée
+// qui dit pourquoi. Tout part de l'objectif : une quête nouvelle n'a rien à
+// déclarer ici tant que son type d'événement ou de mesure a sa ligne.
+// Un lien ne mène jamais à une page absente de cette copie du site (ROUTES) :
+// il prend son repli (REPLIS), sinon la quête n'est pas lançable et le moteur
+// ne la propose pas (elle reste visible dans l'arbre).
+// Module neutre et pur : le contexte (maîtrises, points faibles…) est lu par
+// le moteur (contexteDestination, lib/codex/moteur.ts).
+
+import { CHAINES, cibleeDe, genererBranches, lienCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { notionParId } from "@/lib/notions";
+import { defSceau } from "@/lib/profil/sceaux";
+import type { ContratTire, Ev } from "@/lib/codex/moteur";
+import type { EtapeBranche, FiltreMesure, Objectif, Outil, Phase, Prerequis, Quete } from "@/lib/codex/types";
+
+export type Destination = {
+  /** toujours interne, commence par « / » */
+  href: string;
+  /** un seul libellé partout */
+  libelle: "Y aller";
+  /** minutes, > 0 : la durée de la quête, sinon celle de sa destination */
+  duree: number;
+  /** une ligne chiffrée (raisonDe), ou rien */
+  raison: string | null;
+  outil: Outil | "codex" | "profil" | "classement";
+};
+
+export type ContexteDestination = {
+  contenu: ContenuMatiere[];
+  /** maîtrise par matière (pct null : pas encore mesurée) */
+  maitrise: Record<string, { pct: number | null; statut?: string }>;
+  /** notions pas encore vues (moins de 5 réponses), par matière */
+  notionsNonVues: Record<string, number>;
+  /** points faibles, du plus net au moins net (notion, score 0–100) */
+  pointsFaibles: { notion: string; score: number }[];
+  /** matière → page de drill la plus faible (null : aucune page passée) */
+  drillPageFaible: Record<string, number | null>;
+  /** la file « À revoir » (null : pas encore en base) */
+  revoir: { aujourdhui: number } | null;
+  phase: Phase;
+  /** jours avant l'examen (négatif : passé) ; null sans jour J */
+  joursAvant: number | null;
+  /** la plus grande séance ciblée possible dans une matière (tailleMaxCiblee, lib/codex/catalogue.ts) */
+  tailleMaxCiblee: (m: string) => number;
+  /** les routes présentes dans CETTE copie du site (ROUTES) */
+  routes: ReadonlySet<string>;
+  /** /practice comprend topic=all, n, poids et go (faux avant F1) */
+  practiceV3: boolean;
+  /** les quêtes uniques déjà faites (ids) : « branches à une étape » vise la première branche qui ne l'a pas */
+  faites?: ReadonlySet<string>;
+};
+
+/**
+ * Les pages du site (dossier app/, hors api et aperçus locaux), un segment
+ * dynamique entre crochets. Tenue à la main : scripts/codex/test-destinations.ts
+ * la compare au dossier app/. « /revoir » y entre quand sa page arrive.
+ */
+export const ROUTES: ReadonlySet<string> = new Set([
+  "/",
+  "/atelier",
+  "/calculs",
+  "/calculs/[matiere]",
+  "/calculs/[matiere]/[type]",
+  "/classement",
+  "/codex",
+  "/courses",
+  "/courses/[slug]",
+  "/dashboard",
+  "/defi",
+  "/defi/[date]",
+  "/defi/cinq",
+  "/defi/cinq/[date]",
+  "/duel",
+  "/duel/[id]",
+  "/eclair",
+  "/entrainement",
+  "/exam",
+  "/fiches",
+  "/fiches/derivatives",
+  "/fiches/economics",
+  "/fiches/equity",
+  "/fiches/financial-statement-analysis",
+  "/fiches/fixed-income",
+  "/fiches/portfolio-management",
+  "/flashcards",
+  "/flashcards/[id]",
+  "/login",
+  "/mock-exams",
+  "/mock-exams/[id]",
+  "/moi",
+  "/moi/profil",
+  "/official-exams",
+  "/onboarding",
+  "/people",
+  "/people/[id]",
+  "/practice",
+  "/qcm",
+  "/qcm/[id]",
+  "/reviser",
+  "/scratch",
+  "/session",
+  "/settings",
+  "/share/flashcards/[token]",
+  "/share/qcm/[token]",
+]);
+
+/** Une page absente de cette copie → la page qui la remplace en attendant. */
+export const REPLIS: Record<string, string> = {
+  "/revoir": "/moi?onglet=erreurs&reprise=1",
+};
+
+/** /practice comprend-il topic=all, n, poids et go ? (posé à vrai par A4a, après F1) */
+export const PRACTICE_V3 = false;
+
+const cheminDe = (href: string) => href.split(/[?#]/)[0];
+
+/** Le chemin existe-t-il parmi ces routes (un segment [x] vaut n'importe quel segment non vide) ? */
+export function routeExiste(chemin: string, routes: ReadonlySet<string> = ROUTES): boolean {
+  if (routes.has(chemin)) return true;
+  const parts = chemin.split("/");
+  for (const r of routes) {
+    if (!r.includes("[")) continue;
+    const rp = r.split("/");
+    if (rp.length === parts.length && rp.every((s, i) => s === parts[i] || (/^\[[^.\]]+\]$/.test(s) && parts[i] !== ""))) return true;
+  }
+  return false;
+}
+
+// ── Les cibles ─────────────────────────────────────────────────────────
+
+/** Une destination avant la durée de la quête et sa raison ; `matiere` et `notions` nourrissent la raison. */
+type Cible = { href: string; duree: number; outil: Destination["outil"]; matiere?: string; notions?: true };
+
+const CINQ: Cible = { href: "/defi/cinq", duree: 5, outil: "cinq" };
+const TRENTE: Cible = { href: "/defi", duree: 40, outil: "trente" };
+const DUEL: Cible = { href: "/duel", duree: 10, outil: "duels" };
+const BLANCS: Cible = { href: "/mock-exams", duree: 90, outil: "blancs" };
+const ATELIER: Cible = { href: "/atelier", duree: 30, outil: "atelier" };
+const CALCULS: Cible = { href: "/calculs", duree: 10, outil: "calculs" };
+const revoir = (duree: number): Cible => ({ href: "/revoir", duree, outil: "revoir" });
+
+/** Les sceaux et leur outil (matiere:<m> : la maîtrise de la matière). */
+const SCEAU_VERS: Record<string, Cible> = {
+  assiduite: CINQ,
+  "copie-pleine": CINQ,
+  "defi-tenu": TRENTE,
+  duelliste: DUEL,
+  "coup-d-eclat": DUEL,
+  calculateur: CALCULS,
+  "examen-blanc": BLANCS,
+  "mise-au-propre": revoir(15),
+};
+
+/** Un lien d'entraînement : sans practiceV3, seuls topic=<clé> et format passent (jamais topic=all, n, poids ni go). */
+function lienPractice(ctx: ContexteDestination, p: { topic: string; n?: number; format?: number; poids?: true }): string {
+  const q: string[] = [];
+  if (ctx.practiceV3 || p.topic !== "all") q.push(`topic=${encodeURIComponent(p.topic)}`);
+  if (ctx.practiceV3 && p.n) q.push(`n=${p.n}`);
+  if (ctx.practiceV3 && p.poids) q.push("poids=1");
+  if (p.format && (ctx.practiceV3 || p.topic !== "all")) q.push(`format=${p.format}`);
+  return q.length ? `/practice?${q.join("&")}` : "/practice";
+}
+
+/**
+ * Une séance ciblée dans une matière. Sans practiceV3, la taille vient du
+ * format seul : le plus petit qui atteint le seuil de la quête (cibleeDe).
+ * Avec : 20 questions au plus, en format 180 si la matière n'en a pas 20.
+ */
+function lienSeanceCiblee(ctx: ContexteDestination, m: ContenuMatiere): string {
+  if (!ctx.practiceV3) return lienCiblee(m.key, cibleeDe(m.poids).format);
+  const max = ctx.tailleMaxCiblee(m.key);
+  return lienPractice(ctx, { topic: m.key, n: Math.min(20, max), format: max < 20 ? 180 : 90 });
+}
+
+/** La fiche d'une matière, ouverte sur sa page de drill la plus faible si on la connaît. */
+function lienFiche(ctx: ContexteDestination, m: ContenuMatiere, pageFaible: boolean): string {
+  const p = pageFaible && m.drill ? ctx.drillPageFaible[m.key] : null;
+  return `/fiches/${m.fiche}${p && p > 0 ? `?page=${p}` : ""}`;
+}
+
+/** La matière au plus fort poids × manque (manque d'une matière : 0–1), parmi celles qui passent le filtre. */
+function argmax(ctx: ContexteDestination, manque: (m: ContenuMatiere) => number, filtre: (m: ContenuMatiere) => boolean = () => true): ContenuMatiere | null {
+  let meilleur: ContenuMatiere | null = null;
+  let score = -1;
+  for (const m of ctx.contenu) {
+    if (!filtre(m)) continue;
+    const s = m.poids * manque(m);
+    if (s > score) [meilleur, score] = [m, s];
+  }
+  return meilleur;
+}
+
+/** La faiblesse d'une matière : 1 − maîtrise (inconnue : 20 %, comme le tirage des contrats). */
+const faiblesse = (ctx: ContexteDestination) => (m: ContenuMatiere) => 1 - (ctx.maitrise[m.key]?.pct ?? 20) / 100;
+/** La part des notions d'une matière pas encore vues. */
+const partNonVue = (ctx: ContexteDestination) => (m: ContenuMatiere) => (m.notions ? (ctx.notionsNonVues[m.key] ?? m.notions) / m.notions : 0);
+const avecDrill = (m: ContenuMatiere) => !!m.fiche && m.drill;
+
+/**
+ * « Ce qui coince » : la matière au plus fort poids × faiblesse ; une notion
+ * de cette matière nette en point faible (score ≥ 60) va à l'Atelier si la
+ * séance dure 20 minutes ou plus, sinon une séance de la matière.
+ */
+function coince(ctx: ContexteDestination, duree: number): Cible | null {
+  const m = argmax(ctx, faiblesse(ctx));
+  if (!m) return null;
+  const pf = duree >= 20 ? ctx.pointsFaibles.find((p) => p.score >= 60 && notionParId(p.notion)?.matiere === m.key) : undefined;
+  if (pf) return { href: `/atelier?notion=${encodeURIComponent(pf.notion)}`, duree, outil: "atelier", matiere: m.key };
+  return { href: lienPractice(ctx, { topic: m.key, n: duree >= 25 ? 20 : 15 }), duree, outil: "ciblee", matiere: m.key };
+}
+
+/** La valeur texte d'un champ de filtre ; un paramètre de contrat est remplacé (la matière, à défaut, par celle de la quête). */
+function valeur(f: Record<string, unknown> | undefined, champ: string, q: Quete, params: ContratTire["params"]): string | undefined {
+  const v = f?.[champ];
+  if (v && typeof v === "object" && !Array.isArray(v) && "param" in v) {
+    const nom = (v as { param: keyof ContratTire["params"] }).param;
+    return params[nom] ?? (nom === "matiere" ? q.matiere : undefined);
+  }
+  return typeof v === "string" ? v : undefined;
+}
+
+const matiereDe = (ctx: ContexteDestination, cle: string | undefined) => (cle ? ctx.contenu.find((m) => m.key === cle) : undefined);
+
+/** La destination d'un compteur d'événements. */
+function cibleCompteur(o: Extract<Objectif, { k: "compteur" }>, q: Quete, params: ContratTire["params"], ctx: ContexteDestination): Cible | null {
+  const f = o.filtre as Record<string, unknown> | undefined;
+  const mat = matiereDe(ctx, valeur(f, "matiere", q, params));
+  const matiere = mat ? { matiere: mat.key } : {};
+  switch (o.evenement) {
+    case "question_repondue": {
+      const notion = valeur(f, "notion", q, params);
+      if (notion) {
+        const n = notionParId(notion);
+        return { href: `/atelier?notion=${encodeURIComponent(notion)}`, duree: 15, outil: "atelier", ...(n ? { matiere: n.matiere } : {}) };
+      }
+      if (mat) return { href: lienPractice(ctx, { topic: mat.key, n: 15 }), duree: 15, outil: "ciblee", matiere: mat.key };
+      if (f?.juste === true && f.ecartJours !== undefined) return revoir(15);
+      return CINQ;
+    }
+    case "session_terminee": {
+      if (f?.source === "ciblee") {
+        // sans matière (l'acte II) : celle qui coince le plus parmi celles qui atteignent la taille demandée
+        const min = (f.questions as { min?: number } | undefined)?.min ?? 0;
+        const m = mat ?? argmax(ctx, faiblesse(ctx), (x) => ctx.tailleMaxCiblee(x.key) >= min);
+        if (m) return { href: lienSeanceCiblee(ctx, m), duree: 25, outil: "ciblee", matiere: m.key };
+      }
+      return { href: lienPractice(ctx, { topic: "all", n: 20, poids: true }), duree: 25, outil: "ciblee" };
+    }
+    case "drill_page_terminee": {
+      const fiche = valeur(f, "fiche", q, params);
+      const m = fiche ? ctx.contenu.find((x) => x.fiche === fiche) : (mat ?? argmax(ctx, faiblesse(ctx), avecDrill));
+      if (m?.fiche) return { href: lienFiche(ctx, m, true), duree: 20, outil: "drill", matiere: m.key };
+      return fiche ? { href: `/fiches/${encodeURIComponent(fiche)}`, duree: 20, outil: "drill" } : null;
+    }
+    case "defi_rendu": return TRENTE;
+    case "cinq_rendu": return CINQ;
+    case "eclair_rendue": return { href: "/eclair", duree: 5, outil: "eclair" };
+    case "duel_termine": return DUEL;
+    case "examen_blanc_rendu": return BLANCS;
+    case "seance_atelier": return ATELIER;
+    case "rature_rayee":
+      return f?.ageJours !== undefined ? { href: "/moi?onglet=erreurs&reprise=1&ordre=anciennes", duree: 10, outil: "revoir" } : revoir(10);
+    case "calcul_repondu": return { ...CALCULS, ...matiere };
+    case "cours_ecoute": return mat?.cours ? { href: `/courses/${mat.cours}`, duree: 20, outil: "cours", matiere: mat.key } : { href: "/courses", duree: 20, outil: "cours" };
+    case "flashcards_revues": return { href: "/flashcards", duree: 10, outil: "flashcards", ...matiere };
+    case "fiche_ouverte": return mat?.fiche ? { href: `/fiches/${mat.fiche}`, duree: 20, outil: "fiche", matiere: mat.key } : { href: "/fiches", duree: 20, outil: "fiche" };
+    case "palier_atteint": return DUEL;
+    case "jour_encre": return { ...CINQ, duree: 10 };
+    case "question_marquee": return CINQ;
+    case "ami_ajoute": return { href: "/people", duree: 3, outil: "classement" };
+  }
+}
+
+/** La destination d'une mesure. */
+function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: ContratTire["params"], ctx: ContexteDestination): Cible | null {
+  const f = o.filtre as (FiltreMesure & Record<string, unknown>) | undefined;
+  const mat = matiereDe(ctx, valeur(f, "matiere", q, params));
+  switch (o.mesure) {
+    case "maitrise":
+      return mat ? { href: lienPractice(ctx, { topic: mat.key, n: 20, format: 180 }), duree: 25, outil: "ciblee", matiere: mat.key } : coince(ctx, 25);
+    case "maitrise_programme":
+    case "matieres_au_dessus":
+    case "matieres_remontees":
+      return coince(ctx, 25);
+    case "notions_vues":
+    case "notions_vues_pct": {
+      const m = mat ?? argmax(ctx, partNonVue(ctx));
+      if (!m) return null;
+      if (avecDrill(m)) return { href: lienFiche(ctx, m, false), duree: 20, outil: "drill", matiere: m.key, notions: true };
+      return { href: lienPractice(ctx, { topic: m.key, n: 15 }), duree: 20, outil: "ciblee", matiere: m.key, notions: true };
+    }
+    case "drill_pages_restantes":
+    case "drill_pages_reussies": {
+      const m = mat ?? argmax(ctx, faiblesse(ctx), avecDrill);
+      return m?.fiche ? { href: lienFiche(ctx, m, o.mesure === "drill_pages_reussies"), duree: 20, outil: "drill", matiere: m.key } : null;
+    }
+    case "ratures_ouvertes":
+    case "ratures_rayees":
+    case "rappels_espaces":
+      return { ...revoir(15), ...(mat ? { matiere: mat.key } : {}) };
+    case "semaines_actives":
+    case "serie":
+    case "meilleure_serie":
+    case "semaines_objectif_tenu":
+    case "questions_total":
+    case "niveau":
+      return CINQ;
+    case "types_calcul_tenus": return CALCULS;
+    case "examens_blancs_au_dessus": return BLANCS;
+    case "elo":
+    case "pic_palier":
+    case "duels_joues":
+      return DUEL;
+    case "jour_j_fixe": return { href: "/moi?onglet=reglages#objectif", duree: 1, outil: "profil" };
+    case "visite_vue": return { href: "/dashboard?visite=1", duree: 3, outil: "codex" };
+    case "amis": return { href: "/people", duree: 3, outil: "classement" };
+    case "sceau": {
+      const cle = f?.cle;
+      if (!cle) return null;
+      if (cle.startsWith("matiere:")) return cibleMesure({ k: "mesure", mesure: "maitrise", seuil: o.seuil, filtre: { matiere: cle.slice(8) } }, q, params, ctx);
+      return SCEAU_VERS[cle] ?? (defSceau(cle)?.famille === "mentions" ? DUEL : null);
+    }
+    case "quetes_terminees": return { href: "/codex", duree: 5, outil: "codex" };
+    case "branches_etape":
+    case "branches_etape_pct":
+      return f?.etape ? cibleEtape(f.etape, ctx) : null;
+  }
+}
+
+/** « Branches à une étape » : la destination de cette étape dans la première branche (poids décroissants) qui ne l'a pas. */
+function cibleEtape(etape: EtapeBranche, ctx: ContexteDestination): Cible | null {
+  const faites = ctx.faites ?? new Set<string>();
+  for (const m of [...ctx.contenu].sort((a, b) => b.poids - a.poids)) {
+    const id = `branche:${m.key}:${etape}`;
+    if (faites.has(id)) continue;
+    // une branche sans cette étape compte pour faite (branchesFaites, moteur)
+    const q = genererBranches([m]).find((x) => x.id === id);
+    const c = q ? resoudre(q.objectif, q, {}, ctx) : null;
+    if (c) return q!.duree ? { ...c, duree: q!.duree } : c;
+  }
+  return null;
+}
+
+/** La destination d'un prédicat spécial (`_matiere` : la variante par matière). */
+function cibleSpeciale(cle: string, q: Quete, params: ContratTire["params"], ctx: ContexteDestination): Cible | null {
+  const mat = matiereDe(ctx, params.matiere ?? q.matiere);
+  if (cle.startsWith("serie_bonnes")) return { href: lienPractice(ctx, { topic: mat?.key ?? "all", n: 20 }), duree: 20, outil: "ciblee", ...(mat ? { matiere: mat.key } : {}) };
+  if (cle.startsWith("serie_calculs")) return { ...CALCULS, duree: 15 };
+  if (cle === "phenix") return TRENTE;
+  if (cle === "retour" || cle === "aube") return CINQ;
+  return null;
+}
+
+/** Une cible placée dans cette copie : sa page existe, sinon son repli ; ni l'un ni l'autre → rien. */
+function placer(c: Cible | null, ctx: ContexteDestination): Cible | null {
+  if (!c || !c.href.startsWith("/")) return null;
+  const chemin = cheminDe(c.href);
+  if (routeExiste(chemin, ctx.routes)) return c;
+  const repli = REPLIS[chemin];
+  return repli && routeExiste(cheminDe(repli), ctx.routes) ? { ...c, href: repli } : null;
+}
+
+/** La destination d'un objectif ; `tous` / `unDe` : le premier sous-objectif non rempli qui mène quelque part. */
+function resoudre(o: Objectif, q: Quete, params: ContratTire["params"], ctx: ContexteDestination, ev?: Ev): Cible | null {
+  switch (o.k) {
+    case "tous":
+    case "unDe":
+      for (const [i, x] of o.objectifs.entries()) {
+        if (ev?.sous?.[i]?.fait) continue;
+        const c = resoudre(x, q, params, ctx, ev?.sous?.[i]);
+        if (c) return c;
+      }
+      return null;
+    case "compteur": return placer(cibleCompteur(o, q, params, ctx), ctx);
+    case "mesure": return placer(cibleMesure(o, q, params, ctx), ctx);
+    case "special": return placer(cibleSpeciale(o.cle, q, params, ctx), ctx);
+  }
+}
+
+// ── Les raisons ────────────────────────────────────────────────────────
+
+const virgule = (n: number) => String(n).replace(".", ",");
+
+/** Coupe une phrase à n caractères au plus, sur un mot. */
+function raccourci(s: string, n: number): string {
+  if (s.length <= n) return s;
+  const coupe = s.slice(0, n - 1);
+  const i = coupe.lastIndexOf(" ");
+  return (i > n / 2 ? coupe.slice(0, i) : coupe).replace(/[\s,;:.]+$/, "") + "…";
+}
+
+/** La quête est-elle calée sur le jour J (fenêtre avant l'examen) ? */
+const caleeSurExamen = (p: Prerequis[]): boolean => p.some((x) => x.k === "joursAvantExamen" || (x.k === "unDe" && caleeSurExamen(x.prerequis)));
+
+/** Une avancée lisible « 12/25 » : des entiers, ni objectif à faire baisser ni objectif composé. */
+const avanceeLisible = (ev: Ev) => !ev.inconnu && !ev.baisse && !ev.sous && ev.cible > 1 && Number.isInteger(ev.valeur) && Number.isInteger(ev.cible);
+
+/** « FSA pèse 12,5 % de l'examen et tu es à 48 % » (ou ses notions vues, ou pas encore de mesure). */
+function raisonMatiere(m: ContenuMatiere, ctx: ContexteDestination, notions: boolean): string {
+  const debut = `${m.court} pèse ${virgule(m.poids)} % de l'examen`;
+  const vues = m.notions - (ctx.notionsNonVues[m.key] ?? m.notions);
+  if (notions && m.notions > 0 && vues < m.notions) {
+    return vues > 0 ? `${debut} et tu n'as vu que ${vues} de ses ${m.notions} notions` : `${debut} et tu n'as encore vu aucune de ses ${m.notions} notions`;
+  }
+  const pct = ctx.maitrise[m.key]?.pct ?? null;
+  return pct === null ? `${debut} et tu n'y as pas encore de mesure` : `${debut} et tu es à ${pct} %`;
+}
+
+function raison(q: Quete, c: Cible | null, ctx: ContexteDestination, ev?: Ev): string | null {
+  const j = ctx.joursAvant;
+  if (j !== null && j >= 0 && caleeSurExamen(q.prerequis)) {
+    if (q.pourquoi) return `${j === 0 ? "Jour J" : `J-${j}`} · ${q.pourquoi}`;
+    return j === 0 ? "L'examen, c'est aujourd'hui" : j === 1 ? "L'examen, c'est demain" : `L'examen est dans ${j} jours`;
+  }
+  if (c?.outil === "revoir" && ctx.revoir && ctx.revoir.aujourdhui > 0) return `${ctx.revoir.aujourdhui} à revoir aujourd'hui`;
+  const chaine = q.chaine ? CHAINES.find((x) => x.id === q.chaine) : undefined;
+  if (chaine) {
+    const pourquoi = raccourci(chaine.pourquoi, 80);
+    return ev && avanceeLisible(ev) ? `${ev.valeur}/${ev.cible} · ${pourquoi}` : pourquoi;
+  }
+  const m = matiereDe(ctx, c?.matiere ?? q.matiere);
+  if (m) return raisonMatiere(m, ctx, !!c?.notions);
+  return q.pourquoi ?? null;
+}
+
+// ── L'API ──────────────────────────────────────────────────────────────
+
+/**
+ * Où faire cette quête, combien de temps, et pourquoi. `params` : ceux d'un
+ * contrat du jour ; `ev` : son évaluation (le premier sous-objectif non
+ * rempli d'un objectif composé, l'avancée d'une chaîne). null : la quête n'a
+ * aucune destination dans cette copie du site (elle n'est pas lançable).
+ */
+export function destinationDe(q: Quete, params: ContratTire["params"], ctx: ContexteDestination, ev?: Ev): Destination | null {
+  const c = resoudre(q.objectif, q, params, ctx, ev);
+  if (!c) return null;
+  return { href: c.href, libelle: "Y aller", duree: q.duree && q.duree > 0 ? q.duree : c.duree, raison: raison(q, c, ctx, ev), outil: c.outil };
+}
+
+/** La ligne « pourquoi » d'une quête, chiffrée (jamais « Quête principale · 40/100 ») ; null s'il n'y a rien d'utile à dire. */
+export function raisonDe(q: Quete, ctx: ContexteDestination, ev?: Ev, params: ContratTire["params"] = {}): string | null {
+  return raison(q, resoudre(q.objectif, q, params, ctx, ev), ctx, ev);
+}
+
+/** La quête mène-t-elle quelque part dans cette copie du site ? */
+export function lancable(q: Quete, ctx: ContexteDestination, params: ContratTire["params"] = {}): boolean {
+  return resoudre(q.objectif, q, params, ctx) !== null;
+}

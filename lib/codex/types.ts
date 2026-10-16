@@ -361,5 +361,8 @@ export type Devoilement = {
   replique: string;
 };
 
+/** Un outil du site (ce qu'ouvre le bouton « Y aller » d'une quête ; ce qu'un programme sait faire). */
+export type Outil = "ciblee" | "fiche" | "drill" | "cours" | "flashcards" | "atelier" | "calculs" | "blancs" | "trente" | "cinq" | "eclair" | "duels" | "revoir";
+
 /** Les sources d'un type d'événement ou de mesure (pour le moteur). */
 export type SourceDonnee = { libelle: string; source: string; branche: boolean };
