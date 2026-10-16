@@ -282,10 +282,15 @@ export function construireVue(
 
   // le fil rouge : par chapitre, le premier palier pas encore fait (sans la capacité « fil », rien n'est écrit : « à venir »)
   const recompenses = paliersRecompenses(e.progression);
+  const aVenir = !capacitesDe(e).fil;
   const filRouge: VueFilRouge = {
-    aVenir: !capacitesDe(e).fil,
+    aVenir,
     chapitres: CHAPITRES_FIL.map((c) => {
-      const paliers = unique.filter((x) => x.s.quete.famille === "fil" && palierFilDe(x.s.quete.id)?.chapitre === c.id).sort((p, q) => (p.s.quete.palier ?? 0) - (q.s.quete.palier ?? 0)).map((x) => x.l);
+      const paliers = unique
+        .filter((x) => x.s.quete.famille === "fil" && palierFilDe(x.s.quete.id)?.chapitre === c.id)
+        .sort((p, q) => (p.s.quete.palier ?? 0) - (q.s.quete.palier ?? 0))
+        // « à venir » : aucune XP annoncée (le détail n'affiche pas « +n XP » à zéro)
+        .map((x) => (aVenir ? { ...x.l, xp: 0 } : x.l));
       const restants = paliers.filter((x) => x.etat !== "terminee");
       return { id: c.id, titre: c.titre, pourquoi: c.pourquoi, faits: recompenses[c.id] ?? 0, courant: restants[0] ?? null, suivant: restants[1] ?? null, recents: paliers.filter((x) => x.aFeter) };
     }),

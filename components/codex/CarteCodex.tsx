@@ -7,6 +7,7 @@ import type { LigneQuete, VueActe, VueBranche, VueChaine, VueCodex, VueContrat }
 import { CODEX, romain } from "@/lib/voice-codex";
 import { Sceau, libelleSceau } from "@/components/codex/Sceau";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
+import { FilRouge } from "@/components/codex/FilRouge";
 import { Feuille } from "@/components/ui/Feuille";
 import e from "./Encre.module.css";
 import c from "./Carte.module.css";
@@ -599,6 +600,8 @@ export function Colonne({ vue, montre, onQuete, onChanger, occupe }: { vue: VueC
         </h2>
         {!montre("codex:longcours") ? <p className={c.blancheCol}>{CODEX.pageBlanche}</p> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
       </section>
+      {/* le fil rouge, sous les chaînes (V3 §1.5) : dévoilé avec elles */}
+      {montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
     </>
   );
 }
@@ -771,6 +774,7 @@ export function CheminCodex({ vue, montre, onQuete }: { vue: VueCodex; montre: M
           <>
             <TeteChemin sur="Les grands chantiers" titre={CODEX.longCours.titre} replique={CODEX.longCours.sous} />
             <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />
+            <FilRouge fil={vue.filRouge} onQuete={onQuete} />
           </>
         )}
       </div>
