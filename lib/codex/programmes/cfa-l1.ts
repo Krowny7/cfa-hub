@@ -10,7 +10,7 @@
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { TOPICS } from "@/lib/practiceTopics";
 import { notionsDeMatiere } from "@/lib/notions";
-import { ACTES, CHAINES, QUETES_CONTRATS_HEBDO, QUETES_LONG_COURS, QUETES_TRAME, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { ACTES, CHAINES, QUETES_CONTRATS_HEBDO, QUETES_LONG_COURS, QUETES_TRAME, SEUIL_ACTE_V, type ContenuMatiere } from "@/lib/codex/catalogue";
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import type { Outil } from "@/lib/codex/types";
 
@@ -57,7 +57,10 @@ export const CFA_L1: DefinitionProgramme = {
     const sans = new Set(CHAINES.filter((c) => (c.requiert ?? []).some((o) => !OUTILS_CFA.has(o))).map((c) => c.id));
     return [...QUETES_LONG_COURS.filter((q) => !q.chaine || !sans.has(q.chaine)), ...QUETES_CONTRATS_HEBDO];
   },
-  seuils: { acteV: 8 },
+  // l'acte V : huit matières sur dix à leur séance ciblée (D6), le seuil vit avec la trame
+  get seuils() {
+    return { acteV: SEUIL_ACTE_V };
+  },
   suivant: "finance/cfa-l2",
   public: true,
 };

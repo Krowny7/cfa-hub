@@ -228,8 +228,9 @@ export type Famille = "trame" | "branche" | "longcours" | "contrat" | "exploit" 
 export type EtapeBranche = "entree" | "cours" | "fiche" | "drill" | "flashcards" | "ciblee" | "serie" | "tour" | "maitrise60" | "maitrise75" | "maitre";
 
 export type Prerequis =
-  | { k: "quete"; id: string }
-  /** un acte de la trame est clos (toutes ses quêtes non optionnelles faites) */
+  /** souple : conseillée, elle ne bloque qu'une fois l'examen derrière le joueur (apresExamen, V3 §8.5) */
+  | { k: "quete"; id: string; souple?: true }
+  /** un acte de la trame est clos (toutes ses quêtes non optionnelles faites, ou Acte.closAvec) */
   | { k: "acte"; id: string }
   /** nœud de convergence : chaque branche du programme a passé cette étape (une branche sans l'étape compte pour faite) */
   | { k: "toutesBranches"; etape: EtapeBranche }
@@ -278,6 +279,12 @@ export type Quete = {
   optionnelle?: true;
   /** retirée : plus proposée ni affichée, mais la progression gardée (on ne supprime jamais un id publié) */
   retiree?: true;
+  /**
+   * le doublon exact d'une autre quête, celle qui paie (son id) : affiché, il se
+   * tamponne avec elle (ou sur son objectif, le même, si elle n'est pas encore
+   * ouverte) mais ne verse ni XP ni pièce, sans fanfare (V3 §8.2)
+   */
+  miroir?: string;
   /** où la faire (href du site), si un seul endroit s'impose */
   lien?: string;
   /** durée estimée, en minutes (recommandation : on préfère ≤ 45) */
@@ -313,8 +320,10 @@ export type Acte = {
   but: string;
   ouverture: RepliqueCodex;
   cloture: RepliqueCodex;
-  /** récompense de clôture (toutes ses quêtes non optionnelles faites) */
+  /** récompense de clôture (toutes ses quêtes non optionnelles faites, ou closAvec) */
   recompense: Recompense;
+  /** l'acte se clôt avec n de ses quêtes, optionnelles comprises (l'acte I : 4 outils sur 7, V3 §8.3) */
+  closAvec?: { n: number };
   /** à côté du fil (l'acte I, les outils) : jamais l'acte courant tant qu'un acte du fil reste ouvert, et sa clôture n'annonce pas de rideau */
   parallele?: true;
 };
