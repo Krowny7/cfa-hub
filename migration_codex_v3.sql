@@ -37,6 +37,29 @@
 --       du joueur (elle naît au premier calcul, qui décide du rétroactif).
 --    c. codex_joueur_capacites(uuid, jsonb) : pose les capacités vues.
 --    Les deux : clé service seulement.
+--
+-- 3. Les programmes du joueur (V3 §1.2, §1.6) : le Codex tient plusieurs
+--    programmes (CFA I, II, III, histoire…) et un fil rouge commun.
+--    a. codex_programmes_joueur : un statut par programme (actif, pause,
+--       mené, abandonné), un seul actif ; le jour J propre (NULL : CFA I lit
+--       profiles.exam_date). Le joueur lit les siennes ; aucune écriture
+--       directe. Sans ligne : CFA I actif (le comportement d'avant).
+--    b. codex_programme_poser(uuid, text, text, date) : pose un statut ;
+--       « actif » met l'ancien actif en pause, « mene » date la fin. Clé
+--       service seulement.
+--    c. le CHECK de codex_progression.famille accepte « fil » (le fil
+--       rouge) ; codex_ecrire (§1) le laisse passer. Aucune ligne ne change.
+--    d. codex_contrats.programme (informatif) et codex_matieres.programme ;
+--       _codex_matiere rend une clé qualifiée hors CFA I (« essai:renaissance »).
+--
+-- 4. codex_mesures_v3(uuid, text) : ce que la base sait faire (les
+--    « capacités » : fil, journal 2 ou 3, séances, À revoir, maîtrise,
+--    trophées, débrief, ratures sèches), lu à l'exécution, plus les mesures
+--    nouvelles (jours d'encre de toute une vie, programmes menés). Clé
+--    service seulement. Réécrite en entier par chaque lot qui l'étend.
+--
+-- Ordre de collage : migration_v3_profil.sql (s'il existe), puis ce fichier.
+-- Chacun marche seul : une dépendance croisée est testée à l'exécution.
 
 DO $$
 BEGIN
@@ -146,7 +169,7 @@ BEGIN
     v_fam := it.v->>'famille';
     v_etat := it.v->>'etat';
     CONTINUE WHEN v_id IS NULL OR char_length(v_id) NOT BETWEEN 1 AND 120 OR v_etat IS NULL
-               OR v_fam NOT IN ('trame', 'branche', 'longcours', 'contrat', 'exploit', 'acte');
+               OR v_fam NOT IN ('trame', 'branche', 'longcours', 'contrat', 'exploit', 'acte', 'fil');
 
     -- chaque quête dans sa sous-transaction : une erreur est consignée, les autres passent
     BEGIN
@@ -291,3 +314,124 @@ REVOKE ALL ON FUNCTION codex_joueur_regler(uuid, smallint, jsonb) FROM PUBLIC, a
 REVOKE ALL ON FUNCTION codex_joueur_capacites(uuid, jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_joueur_regler(uuid, smallint, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_joueur_capacites(uuid, jsonb) TO service_role;
+
+-- ── 3a. codex_programmes_joueur ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS codex_programmes_joueur (
+  user_id   uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- « domaine/programme » (lib/domains.ts) : « finance/cfa-l1 », « histoire/essai »
+  programme text        NOT NULL CHECK (programme ~ '^[a-z]+/[a-z0-9-]{2,40}$'),
+  statut    text        NOT NULL DEFAULT 'actif' CHECK (statut IN ('actif', 'pause', 'mene', 'abandonne')),
+  -- NULL : CFA I lit profiles.exam_date (le repli d'avant la v3)
+  jour_j    date,
+  debut     timestamptz NOT NULL DEFAULT now(),
+  mene_le   timestamptz,
+  PRIMARY KEY (user_id, programme)
+);
+-- un seul programme actif par joueur
+CREATE UNIQUE INDEX IF NOT EXISTS codex_programmes_joueur_un_actif ON codex_programmes_joueur (user_id) WHERE statut = 'actif';
+ALTER TABLE codex_programmes_joueur ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS codex_programmes_joueur_select_own ON codex_programmes_joueur;
+CREATE POLICY codex_programmes_joueur_select_own ON codex_programmes_joueur FOR SELECT TO authenticated USING (user_id = auth.uid());
+-- aucune politique d'écriture : codex_programme_poser seulement
+
+-- ── 3b. codex_programme_poser (le site, clé service) ────────────────
+-- Pose le statut d'un programme du joueur. « actif » met l'actif précédent
+-- en pause et recopie le programme dans codex_joueur.programme (le miroir) ;
+-- « mene » date la fin (mene_le, une fois). p_jour_j NULL : inchangé.
+CREATE OR REPLACE FUNCTION codex_programme_poser(p_user uuid, p_programme text, p_statut text, p_jour_j date DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
+    RAISE EXCEPTION 'programme invalide : %', p_programme;
+  END IF;
+  IF p_statut IS NULL OR p_statut NOT IN ('actif', 'pause', 'mene', 'abandonne') THEN
+    RAISE EXCEPTION 'statut invalide : %', p_statut;
+  END IF;
+  IF p_statut = 'actif' THEN
+    UPDATE codex_programmes_joueur SET statut = 'pause'
+    WHERE user_id = p_user AND statut = 'actif' AND programme <> p_programme;
+    UPDATE codex_joueur SET programme = p_programme WHERE user_id = p_user;
+  END IF;
+  INSERT INTO codex_programmes_joueur AS t (user_id, programme, statut, jour_j, mene_le)
+  VALUES (p_user, p_programme, p_statut, p_jour_j, CASE WHEN p_statut = 'mene' THEN now() END)
+  ON CONFLICT (user_id, programme) DO UPDATE SET
+    statut  = EXCLUDED.statut,
+    jour_j  = coalesce(EXCLUDED.jour_j, t.jour_j),
+    mene_le = CASE WHEN EXCLUDED.statut = 'mene' THEN coalesce(t.mene_le, now()) ELSE t.mene_le END;
+END $$;
+
+REVOKE ALL ON FUNCTION codex_programme_poser(uuid, text, text, date) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_programme_poser(uuid, text, text, date) TO service_role;
+
+-- ── 3c. la famille « fil » (le fil rouge, V3 §1.5) ──────────────────
+-- Le CHECK d'origine est recréé avec « fil » en plus ; aucune ligne ne change.
+-- codex_ecrire (§1) laisse passer « fil » ; tant que ce CHECK ne le permet
+-- pas, le site n'en envoie jamais (capacité « fil », §4).
+ALTER TABLE codex_progression DROP CONSTRAINT IF EXISTS codex_progression_famille_check;
+ALTER TABLE codex_progression ADD CONSTRAINT codex_progression_famille_check
+  CHECK (famille IN ('trame', 'branche', 'longcours', 'contrat', 'exploit', 'acte', 'fil'));
+
+-- ── 3d. le programme des contrats et des matières ───────────────────
+-- codex_contrats : informatif (la clé reste par jour).
+ALTER TABLE codex_contrats ADD COLUMN IF NOT EXISTS programme text NOT NULL DEFAULT 'finance/cfa-l1';
+-- codex_matieres : hors CFA I, la clé rendue est qualifiée (« essai:renaissance »),
+-- pour que les réponses du Niveau I ne comptent jamais au Niveau II.
+ALTER TABLE codex_matieres ADD COLUMN IF NOT EXISTS programme text NOT NULL DEFAULT 'finance/cfa-l1';
+
+-- La matière d'un quiz : son dossier d'abord (les dossiers de deux programmes
+-- sont disjoints), sinon le début de son titre (CFA I d'abord, à égalité).
+-- Hors CFA I, une clé nue est qualifiée du slug de son programme.
+CREATE OR REPLACE FUNCTION _codex_matiere(p_dossier text, p_titre text)
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT CASE WHEN x.programme = 'finance/cfa-l1' OR position(':' IN x.cle) > 0 THEN x.cle
+              ELSE split_part(x.programme, '/', 2) || ':' || x.cle END
+  FROM (
+    SELECT m.cle, m.programme, 0 AS rang FROM codex_matieres m
+    WHERE p_dossier IS NOT NULL AND p_dossier = ANY (m.dossiers)
+    UNION ALL
+    SELECT m.cle, m.programme, 1 FROM codex_matieres m
+    WHERE p_titre IS NOT NULL AND (m.prefixe_drill = split_part(p_titre, ' — ', 1) OR lower(m.nom) = lower(split_part(p_titre, ' — ', 1)))
+  ) x
+  ORDER BY x.rang, (x.programme <> 'finance/cfa-l1'), x.cle
+  LIMIT 1;
+$$;
+REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticated;
+
+-- ── 4. codex_mesures_v3 (le site, clé service) ──────────────────────
+-- Réécrite EN ENTIER, en place, par chaque lot qui l'étend (A2b, A3b, A4a).
+-- Rend {capacites, jours_encre_total, programmes_menes}. Les capacités sont
+-- lues à l'exécution : ce que la base sait faire selon ce qui est collé.
+CREATE OR REPLACE FUNCTION codex_mesures_v3(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_capacites jsonb;
+  v_jours int;
+  v_menes int;
+BEGIN
+  IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
+    RAISE EXCEPTION 'programme invalide : %', p_programme;
+  END IF;
+  v_capacites := jsonb_build_object(
+    -- le CHECK de codex_progression.famille accepte « fil » (§3c)
+    'fil', EXISTS (SELECT 1 FROM pg_constraint c
+                   WHERE c.conrelid = 'public.codex_progression'::regclass AND c.conname = 'codex_progression_famille_check'
+                     AND pg_get_constraintdef(c.oid) LIKE '%''fil''%'),
+    -- le journal v3 (§5) pose son marqueur
+    'journal', CASE WHEN to_regprocedure('public._codex_journal_v3()') IS NOT NULL THEN 3 ELSE 2 END,
+    'seances', to_regclass('public.codex_seances') IS NOT NULL,
+    'revoir', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'revisions_dues'),
+    'maitrise', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'maitrise_joueur'),
+    'trophees', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'trophees_joueur'),
+    'debrief', to_regclass('public.blanc_debrief') IS NOT NULL,
+    'ratures_seches', EXISTS (SELECT 1 FROM pg_attribute a
+                              WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'seche_le' AND NOT a.attisdropped)
+  );
+  -- les jours d'encre de toute une vie : 10 questions ou plus dans le jour de Paris, tous programmes
+  SELECT count(*)::int INTO v_jours FROM _codex_jours(p_user) j WHERE j.n >= 10;
+  SELECT count(*)::int INTO v_menes FROM codex_programmes_joueur WHERE user_id = p_user AND statut = 'mene';
+  RETURN jsonb_build_object('capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes);
+END $$;
+
+REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_mesures_v3(uuid, text) TO service_role;
