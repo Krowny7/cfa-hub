@@ -9,12 +9,14 @@
 // annonceTrophees (connus d'abord, remplacés par la base, 3 lignes puis
 // « +n »), tableauSalle ; le rendu de SalleDesTrophees (résumé, détail par
 // source, repli, vide, compact, profil d'un autre), de PracticeTrophies
-// (adaptateur) et d'AnnonceTrophee (les trophées connus, sans attendre).
+// (adaptateur) et d'AnnonceTrophee (les trophées connus, sans attendre) ;
+// sans migration_v3_profil.sql §2, la Salle compte comme l'ancien bloc.
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { TAILLE_MAX, TAILLE_MIN, lireLienPractice, matieresServies, melanger, repartir, tirerSeance } from "@/lib/practice-lien";
 import { TOPICS } from "@/lib/practiceTopics";
-import { annonceTrophees, compter, nomPalier, nomTrophee, palierCiblee, tableauSalle, type LigneTrophee, type TropheeGagne } from "@/lib/trophees";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { annonceTrophees, compter, lireTrophees, nomPalier, nomTrophee, palierCiblee, tableauSalle, type LigneTrophee, type TropheeGagne } from "@/lib/trophees";
 import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
 import { PracticeTrophies } from "@/components/PracticeTrophies";
@@ -141,9 +143,23 @@ const compacte = renderToStaticMarkup(<SalleDesTrophees compte={compter(lignes)}
 check("Salle compacte : une ligne de paliers, sans cases, le détail gardé", tuiles(compacte) === 0 && compacte.includes("Diamant") && compacte.includes("Par source"));
 const adapte = renderToStaticMarkup(<PracticeTrophies rows={[{ topic_count: 1, trophy_count: 4 }, { topic_count: 3, trophy_count: 2 }, { topic_count: 7, trophy_count: 1 }]} />);
 check("PracticeTrophies : l'adaptateur rend la Salle de l'entraînement ciblé seul", adapte.includes(">Trophées<") && adapte.includes("7 trophées") && rangees(adapte) === 1 && !adapte.includes("prochaine mise à jour"));
+// sans migration_v3_profil.sql §2 : la Salle du profil et de Moi montre les mêmes nombres que l'ancien bloc
+const anciennes = [{ topic_count: 1, trophy_count: 4 }, { topic_count: 3, trophy_count: 2 }, { topic_count: 7, trophy_count: 1 }];
+const sansSection = { rpc: async (nom: string) => (nom === "get_user_trophees" ? { data: null, error: { code: "PGRST202", message: "Could not find the function" } } : { data: anciennes, error: null }) } as unknown as SupabaseClient;
+const nombresTuiles = (html: string) => [...html.matchAll(/t-num block text-\[26px\] tabular-nums">(\d+)</g)].map((m) => Number(m[1]));
+const avantSalle = renderToStaticMarkup(<PracticeTrophies rows={anciennes} />);
+
 const annonce = renderToStaticMarkup(<AnnonceTrophee depuis="" connus={[local]} />);
 check("AnnonceTrophee : les trophées connus s'affichent sans attendre la base", annonce.includes("Trophée d&#x27;or · Entraînement ciblé") && annonce.includes("FSA, Equity") && annonce.includes('role="status"'));
 check("AnnonceTrophee : rien à annoncer → rien", renderToStaticMarkup(<AnnonceTrophee depuis="2026-10-17T00:00:00Z" />) === "");
 
-console.log(ko === 0 ? "\nTout est vert." : `\n${ko} échec(s).`);
-process.exit(ko === 0 ? 0 : 1);
+void lireTrophees(sansSection, "u").then((lu) => {
+  const salle = renderToStaticMarkup(<SalleDesTrophees compte={lu} complet={lu.complet} />);
+  check(
+    "sans la §2 : la Salle (profil, Moi) compte comme l'ancien bloc, et le dit",
+    !lu.complet && egal(nombresTuiles(salle), nombresTuiles(avantSalle)) && egal(nombresTuiles(salle), [4, 2, 0, 1]) && salle.includes("prochaine mise à jour"),
+    JSON.stringify(nombresTuiles(salle)),
+  );
+  console.log(ko === 0 ? "\nTout est vert." : `\n${ko} échec(s).`);
+  process.exit(ko === 0 ? 0 : 1);
+});
