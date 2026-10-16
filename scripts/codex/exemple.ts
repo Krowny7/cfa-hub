@@ -10,6 +10,7 @@ import {
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue, type VueCodex } from "@/lib/codex/vue";
+import type { Budget } from "@/lib/codex/types";
 
 export type Scenario = "neuf" | "milieu" | "fin";
 
@@ -23,13 +24,15 @@ function hash(s: string) {
   return h >>> 0;
 }
 
-export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout" } = {}): VueCodex {
+/** `budget`, `ecartees` : le réglage du jour (« J'ai 30 min », « Une autre idée ? »). */
+export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[] } = {}): VueCodex {
   const fin = sc === "fin";
   const neuf = sc === "neuf";
   const e: Entree = {
     contenu, now: NOW, jour: JOUR, jourJ: neuf ? null : fin ? "2026-11-20" : "2027-02-20", objectif: neuf ? null : { total: 6000, depuis: "2026-09-01" }, visiteVue: !neuf,
     progression: [], contrats: [], premier: false, dernierCalcul: new Date("2026-10-15T10:00:00Z"), lecture: LECTURE_VIDE,
     pointsFaibles: [{ notion: "Duration", score: 31 }, { notion: "Hypothesis testing", score: 40 }],
+    budget: opts.budget ?? null, ecartees: opts.ecartees ?? [],
   };
   const maitrise = Object.fromEntries(contenu.map((m, i) => [m.key, { pct: neuf ? 0 : fin ? 58 + ((i * 7) % 28) : 28 + ((i * 11) % 45), questions: neuf ? 0 : fin ? 220 : 40 + i * 12, debut: neuf ? null : 30 + (i % 4) * 8 }]));
   const lecture0: LectureSql = {

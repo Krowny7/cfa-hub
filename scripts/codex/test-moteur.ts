@@ -324,7 +324,9 @@ console.log("\n# v3 §6.14 : migration_codex_v3.sql (le banc PGlite la joue : si
   check("idempotente : aucune suppression de table ni de données", !/DROP\s+TABLE|DELETE\s+FROM|TRUNCATE/i.test(sql));
   check("codex_erreurs : RLS, le joueur lit les siennes, aucune politique d'écriture", /ALTER TABLE codex_erreurs ENABLE ROW LEVEL SECURITY/.test(sql) && /codex_erreurs FOR SELECT TO authenticated USING \(user_id = auth\.uid\(\)\)/.test(sql) && !/codex_erreurs FOR (INSERT|UPDATE|DELETE|ALL)/.test(sql));
   check("codex_ecrire : une sous-transaction par quête, l'erreur consignée", /EXCEPTION WHEN OTHERS THEN\s+v_err := v_err \+ 1;\s+PERFORM _codex_erreur/.test(sql));
-  check("fonctions en SECURITY DEFINER SET search_path = public, fermées à anon et authenticated", (sql.match(/SECURITY DEFINER SET search_path = public/g) ?? []).length === 3 && /REVOKE ALL ON FUNCTION codex_erreur_noter\(uuid, text, text, text\) FROM PUBLIC, anon, authenticated/.test(sql));
+  const fonctions = [...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]);
+  check("fonctions en SECURITY DEFINER SET search_path = public, fermées à anon et authenticated", fonctions.length >= 5 && (sql.match(/SECURITY DEFINER SET search_path = public/g) ?? []).length === fonctions.length && fonctions.every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon, authenticated`).test(sql)), fonctions.join());
+  check("§2 : colonnes de codex_joueur ajoutées sans rien retirer, budget borné", /ADD COLUMN IF NOT EXISTS budget_min smallint CHECK \(budget_min IN \(15, 30, 60, 90\)\)/.test(sql) && /ADD COLUMN IF NOT EXISTS capacites_vues jsonb/.test(sql) && !/ALTER TABLE codex_joueur DROP/i.test(sql));
 }
 
 console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");
