@@ -6,7 +6,8 @@
 // migration_codex.sql reflète bien SUBJECTS (components/reviser/catalog.ts) ; puis
 // un test par correction immédiate de docs/codex/V3.md §6 (élision, séance
 // ciblée, objectifs à faire baisser, acte courant, veille, après le jour J,
-// textes, XP affichée, migration_codex_v3.sql).
+// textes, XP affichée, migration_codex_v3.sql) ; enfin le fil rouge et le
+// rattrapage au déploiement (V3 §1.5, §1.9 : un joueur de 12 000 réponses).
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
