@@ -207,8 +207,8 @@ export type Objectif = ObjectifCompteur | ObjectifMesure | ObjectifSpecial | { k
 
 export type Famille = "trame" | "branche" | "longcours" | "contrat" | "exploit";
 
-/** Les étapes d'une branche de matière (voir genererBranches). */
-export type EtapeBranche = "entree" | "cours" | "fiche" | "drill" | "flashcards" | "ciblee" | "tour" | "maitrise60" | "maitrise75" | "maitre";
+/** Les étapes d'une branche de matière (voir genererBranches ; « serie » remplace « ciblee » dans un programme sans séance ciblée). */
+export type EtapeBranche = "entree" | "cours" | "fiche" | "drill" | "flashcards" | "ciblee" | "serie" | "tour" | "maitrise60" | "maitrise75" | "maitre";
 
 export type Prerequis =
   | { k: "quete"; id: string }
@@ -220,6 +220,8 @@ export type Prerequis =
   | { k: "branches"; etape: EtapeBranche; n: number }
   /** fenêtre calée sur le jour J du joueur (sans jour J : jamais ouverte) */
   | { k: "joursAvantExamen"; max: number; min?: number }
+  /** l'examen est derrière le joueur : un programme mené, ou le jour J du programme actif passé (V3 §1.6) */
+  | { k: "apresExamen" }
   | { k: "unDe"; prerequis: Prerequis[] };
 
 export type Repetition = "unique" | "quotidienne" | "hebdomadaire";
@@ -271,6 +273,8 @@ export type Quete = {
   etape?: EtapeBranche;
   /** ordre d'affichage dans sa famille */
   ordre: number;
+  /** ce que la base doit savoir faire (V3 §1.8) : sinon la quête n'est pas branchée à l'exécution (masquée, ignorée par la clôture d'acte et les prérequis) */
+  requiert?: Requis[];
 };
 
 // ── Regroupements ──────────────────────────────────────────────────────
@@ -303,6 +307,8 @@ export type Chaine = {
   /** l'axe de préparation qu'elle sert */
   axe: "couverture" | "maitrise" | "memoire" | "examens" | "regularite" | "competition" | "methode";
   pourquoi: string;
+  /** les outils sans lesquels un programme n'a pas cette chaîne (genererArbre, lib/codex/programmes.ts) */
+  requiert?: Outil[];
 };
 
 /** Emplacement d'un contrat dans les 3 du jour. */
@@ -328,6 +334,8 @@ export type ModeleContrat = {
   poids: Record<Phase, number>;
   duree: number;
   lien?: string;
+  /** les outils sans lesquels un programme ne tire jamais ce modèle (modelesContrats, lib/codex/programmes.ts) */
+  requiert?: Outil[];
 };
 
 /** Une pièce cosmétique que seul le Codex donne (à brancher dans lib/profil/catalogue.ts). */
@@ -373,6 +381,8 @@ export type SourceDonnee = { libelle: string; source: string; branche: boolean }
 export type Capacite = "fil" | "seances" | "revoir" | "maitrise" | "trophees" | "debrief" | "ratures_seches";
 /** journal : 2 (codex_journal d'origine) ou 3 (événements v3, marqueur _codex_journal_v3). */
 export type Capacites = Record<Capacite, boolean> & { journal: 2 | 3 };
+/** Ce qu'une quête peut exiger de la base (Quete.requiert) : une capacité, ou le journal v3. */
+export type Requis = Capacite | "journal3";
 
 /** Le temps que le joueur se donne aujourd'hui (« J'ai 30 min »), en minutes. */
 export type Budget = 15 | 30 | 60 | 90;

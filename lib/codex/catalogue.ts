@@ -5,20 +5,25 @@
 // progression des joueurs s'y accroche), en créer un autre.
 // La bible : docs/codex/CONCEPTION.md. Module neutre (client et serveur).
 
-import { SUBJECTS } from "@/components/reviser/catalog";
 import { TOPICS } from "@/lib/practiceTopics";
-import { notionsDeMatiere } from "@/lib/notions";
 import { xpNeededForLevelUp } from "@/lib/leveling";
 import { SCEAUX, SCEAUX_BASE } from "@/lib/profil/sceaux";
 import { condition as conditionSceau, nomSceau } from "@/lib/voice-profil";
 import { de } from "@/lib/codex/elision";
+import { contenuDuProgramme } from "@/lib/codex/programmes/cfa-l1";
+import { actesGeneriques } from "@/lib/codex/programmes/generique";
+import { ID_MAX, PROGRAMME_GLOBAL, PROGRAMME_HISTORIQUE, cleLocale, estGlobal, slugDe, slugDeId } from "@/lib/codex/programmes/ids";
+import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import type {
   Acte, Chaine, ChampDe, CosmetiqueCodex, Devoilement, EtapeBranche, Fenetre, Filtre, FiltreMesure, Objectif, ObjectifCompteur,
-  ObjectifMesure, ModeleContrat, Phase, Prerequis, Quete, SourceDonnee, TypeEvenement, TypeMesure,
+  ObjectifMesure, ModeleContrat, Outil, Phase, Prerequis, Quete, SourceDonnee, TypeEvenement, TypeMesure,
 } from "@/lib/codex/types";
 
-/** Le programme de cet arbre (lib/domains.ts : domaine/programme). */
-export const PROGRAMME = "finance/cfa-l1";
+/** Le programme de cet arbre (lib/domains.ts : domaine/programme) ; les autres sont au registre (lib/codex/programmes.ts). */
+export const PROGRAMME = PROGRAMME_HISTORIQUE;
+
+// le contenu de CFA I vit avec sa définition (lib/codex/programmes/cfa-l1.ts) ; gardé ici pour les appelants
+export { contenuDuProgramme };
 
 // ── Sources du moteur ──────────────────────────────────────────────────
 // Où le moteur lit chaque événement et chaque mesure. branche : false = pas
@@ -85,6 +90,7 @@ export const SPECIAUX: Record<string, string> = {
   phenix: "les 30 du jour ratés (< 50 %) un jour, puis réussis à ≥ 80 % le lendemain",
   retour: "un jour à ≥ 20 questions après au moins 14 jours sans aucune réponse",
   aube: "10 questions répondues avant 7 h (Paris) le même jour",
+  justes_sur_20_matiere: "bonnes réponses parmi les 20 dernières de la matière de la quête (l'étape « serie » d'une branche sans séance ciblée)",
 };
 
 // ── Barème ─────────────────────────────────────────────────────────────
@@ -327,16 +333,16 @@ export const CHAINES: Chaine[] = [
   { id: "metier", titre: "Le métier", axe: "maitrise", pourquoi: "Des matières solides une à une, pas une moyenne qui cache un trou." },
   { id: "memoire", titre: "La mémoire longue", axe: "memoire", pourquoi: "Réussir une question revue une semaine plus tard : c'est ça, savoir." },
   { id: "carnet", titre: "Le carnet propre", axe: "memoire", pourquoi: "Beaucoup répondre et garder peu d'erreurs ouvertes : apprendre de ses ratures." },
-  { id: "commandes", titre: "Les commandes", axe: "examens", pourquoi: "L'examen se gagne aussi à l'endurance : 180 questions, deux sessions." },
+  { id: "commandes", titre: "Les commandes", axe: "examens", pourquoi: "L'examen se gagne aussi à l'endurance : 180 questions, deux sessions.", requiert: ["blancs"] },
   { id: "encre", titre: "L'encre fidèle", axe: "regularite", pourquoi: "Quatre jours par semaine pendant des mois valent mieux que sept jours en mai." },
   { id: "justesse", titre: "La justesse", axe: "methode", pourquoi: "Des séances réussies, pas des séances longues." },
   { id: "remontee", titre: "La remontée", axe: "maitrise", pourquoi: "Transformer un point faible en point fort, matière par matière." },
-  { id: "calculs", titre: "Le calcul juste", axe: "methode", pourquoi: "Les formules à la calculatrice, sans hésiter : du temps gagné pour le reste." },
-  { id: "sources", titre: "Les sources", axe: "couverture", pourquoi: "Les fiches et leurs drills, page après page : la base du cours." },
-  { id: "atelier", titre: "L'Atelier", axe: "methode", pourquoi: "Trente minutes sur ce qui coince, et des ratures qui tombent." },
-  { id: "trentaine", titre: "La trentaine", axe: "examens", pourquoi: "Les 30 du jour, chronométrés : le rythme de l'examen en petit." },
+  { id: "calculs", titre: "Le calcul juste", axe: "methode", pourquoi: "Les formules à la calculatrice, sans hésiter : du temps gagné pour le reste.", requiert: ["calculs"] },
+  { id: "sources", titre: "Les sources", axe: "couverture", pourquoi: "Les fiches et leurs drills, page après page : la base du cours.", requiert: ["drill"] },
+  { id: "atelier", titre: "L'Atelier", axe: "methode", pourquoi: "Trente minutes sur ce qui coince, et des ratures qui tombent.", requiert: ["atelier"] },
+  { id: "trentaine", titre: "La trentaine", axe: "examens", pourquoi: "Les 30 du jour, chronométrés : le rythme de l'examen en petit.", requiert: ["trente"] },
   { id: "rythme", titre: "Le rythme", axe: "regularite", pourquoi: "Tenir la cadence prévue jusqu'à ta date, semaine après semaine." },
-  { id: "joute", titre: "La joute", axe: "competition", pourquoi: "La compétition qui fait réviser : les paliers du haut demandent de la maîtrise." },
+  { id: "joute", titre: "La joute", axe: "competition", pourquoi: "La compétition qui fait réviser : les paliers du haut demandent de la maîtrise.", requiert: ["duels"] },
 ];
 
 type Palier = { titre: string; consigne: string; objectif: Objectif; xp: number; cosmetique?: string; titreGagne?: string };
@@ -468,9 +474,12 @@ export const QUETES_LONG_COURS: Quete[] = [
 // leur ajoute une petite XP au premier palier. Les exploits nouveaux sont
 // cachés, et se gardent dans la même table sceaux (clé « exploit:<id> »,
 // palier 1) : une seule Collection, une seule cérémonie.
+// Ils sont communs à tous les programmes (programme « global », ids inchangés).
+
+const exploit = (q: Base): Quete => ({ ...quete(q), programme: PROGRAMME_GLOBAL });
 
 const EXPLOITS_SCEAUX: Quete[] = [...SCEAUX, ...SCEAUX_BASE].map((s, i) =>
-  quete({
+  exploit({
     id: `exploit:sceau:${s.cle}`,
     famille: "exploit",
     ordre: i + 1,
@@ -504,7 +513,7 @@ const EXPLOITS_NOUVEAUX: Exploit[] = [
 export const QUETES_EXPLOITS: Quete[] = [
   ...EXPLOITS_SCEAUX,
   ...EXPLOITS_NOUVEAUX.map(([cle, titre, consigne, objectif, xp, indice, cosmetique, titreGagne], i) =>
-    quete({
+    exploit({
       id: `exploit:${cle}`,
       famille: "exploit",
       ordre: 100 + i,
@@ -569,22 +578,22 @@ const toutes = (n: number): Record<Phase, number> => ({ fondations: n, consolida
 export const MODELES_CONTRATS: ModeleContrat[] = [
   // faiblesse : ce qui coince le plus, pondéré par le poids à l'examen
   { id: "notion-faible", emplacement: "faiblesse", titre: "Sur la notion : {notion}", consigne: "Décroche 8 bonnes réponses sur {notion}, où tu veux (l'Atelier s'y prête bien).", objectif: compte("question_repondue", 8, { notion: { param: "notion" }, juste: true }, { fenetre: "jour" }), params: ["notion"], eligible: [], poids: { fondations: 3, consolidation: 4, repetition: 4, veillee: 2, apres: 2 }, duree: 15 },
-  { id: "matiere-faible", emplacement: "faiblesse", titre: "Séance de {matiere}", consigne: "Réussis une session ciblée de {questions} questions en {matiere}{format} à 65 % ou plus.", objectif: compte("session_terminee", 1, { source: "ciblee", matiere: { param: "matiere" }, questions: { min: SEUIL_CIBLEE }, pct: { min: 65 } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(3), duree: 25, lien: "/practice" },
-  { id: "drill-page", emplacement: "faiblesse", titre: "Une page de {fiche}", consigne: "Passe une page de drill de la fiche {fiche} à 70 % ou plus.", objectif: compte("drill_page_terminee", 1, { fiche: { param: "fiche" }, pct: { min: 70 } }, { fenetre: "jour" }), params: ["fiche"], eligible: [], poids: { fondations: 4, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 20, lien: "/fiches" },
-  { id: "atelier", emplacement: "faiblesse", titre: "Une séance d'Atelier", consigne: "Termine une séance d'Atelier.", objectif: compte("seance_atelier", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 3)], poids: { fondations: 2, consolidation: 3, repetition: 3, veillee: 1, apres: 2 }, duree: 30, lien: "/atelier" },
-  { id: "calculs", emplacement: "faiblesse", titre: "Les calculs de {matiere}", consigne: "Réponds juste à 10 calculs de {matiere}.", objectif: compte("calcul_repondu", 10, { matiere: { param: "matiere" }, juste: true }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(1), duree: 10, lien: "/calculs" },
+  { id: "matiere-faible", emplacement: "faiblesse", titre: "Séance de {matiere}", consigne: "Réussis une session ciblée de {questions} questions en {matiere}{format} à 65 % ou plus.", objectif: compte("session_terminee", 1, { source: "ciblee", matiere: { param: "matiere" }, questions: { min: SEUIL_CIBLEE }, pct: { min: 65 } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(3), duree: 25, lien: "/practice", requiert: ["ciblee"] },
+  { id: "drill-page", emplacement: "faiblesse", titre: "Une page de {fiche}", consigne: "Passe une page de drill de la fiche {fiche} à 70 % ou plus.", objectif: compte("drill_page_terminee", 1, { fiche: { param: "fiche" }, pct: { min: 70 } }, { fenetre: "jour" }), params: ["fiche"], eligible: [], poids: { fondations: 4, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 20, lien: "/fiches", requiert: ["drill"] },
+  { id: "atelier", emplacement: "faiblesse", titre: "Une séance d'Atelier", consigne: "Termine une séance d'Atelier.", objectif: compte("seance_atelier", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 3)], poids: { fondations: 2, consolidation: 3, repetition: 3, veillee: 1, apres: 2 }, duree: 30, lien: "/atelier", requiert: ["atelier"] },
+  { id: "calculs", emplacement: "faiblesse", titre: "Les calculs de {matiere}", consigne: "Réponds juste à 10 calculs de {matiere}.", objectif: compte("calcul_repondu", 10, { matiere: { param: "matiere" }, juste: true }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(1), duree: 10, lien: "/calculs", requiert: ["calculs"] },
   // entretien : ne pas laisser filer ce qu'on sait
   { id: "ratures", emplacement: "entretien", titre: "Gratter cinq ratures", consigne: "Raye 5 ratures en les réussissant.", objectif: compte("rature_rayee", 5, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 5)], poids: { fondations: 3, consolidation: 3, repetition: 4, veillee: 4, apres: 2 }, duree: 10 },
   { id: "ratures-vieilles", emplacement: "entretien", titre: "Les vieilles ratures", consigne: "Raye 3 ratures de plus de 7 jours.", objectif: compte("rature_rayee", 3, { ageJours: { min: 7 } }, { fenetre: "jour" }), params: [], eligible: [mesure("ratures_ouvertes", 10)], poids: toutes(2), duree: 10 },
   { id: "rappel", emplacement: "entretien", titre: "La mémoire longue", consigne: "Réussis 10 questions vues il y a plus de 7 jours.", objectif: compte("question_repondue", 10, { juste: true, ecartJours: { min: 7 } }, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 200)], poids: { fondations: 1, consolidation: 3, repetition: 3, veillee: 2, apres: 3 }, duree: 15 },
   { id: "matiere-oubliee", emplacement: "entretien", titre: "{matiere} prend la poussière", consigne: "Réponds à 15 questions de {matiere} : tu n'y as pas touché depuis 10 jours au moins.", objectif: compte("question_repondue", 15, { matiere: { param: "matiere" } }, { fenetre: "jour" }), params: ["matiere"], eligible: [], poids: toutes(2), duree: 15 },
-  { id: "cours", emplacement: "entretien", titre: "Le cours de {matiere}", consigne: "Écoute 20 minutes du cours de {matiere}.", objectif: compte("cours_ecoute", 20, { matiere: { param: "matiere" } }, { fenetre: "jour", somme: "minutes" }), params: ["matiere"], eligible: [], poids: { fondations: 2, consolidation: 1, repetition: 0, veillee: 0, apres: 1 }, duree: 20 },
-  { id: "flashcards", emplacement: "entretien", titre: "Le paquet de cartes", consigne: "Révise 30 flashcards.", objectif: compte("flashcards_revues", 30, undefined, { fenetre: "jour", somme: "cartes" }), params: [], eligible: [], poids: toutes(1), duree: 10, lien: "/flashcards" },
+  { id: "cours", emplacement: "entretien", titre: "Le cours de {matiere}", consigne: "Écoute 20 minutes du cours de {matiere}.", objectif: compte("cours_ecoute", 20, { matiere: { param: "matiere" } }, { fenetre: "jour", somme: "minutes" }), params: ["matiere"], eligible: [], poids: { fondations: 2, consolidation: 1, repetition: 0, veillee: 0, apres: 1 }, duree: 20, requiert: ["cours"] },
+  { id: "flashcards", emplacement: "entretien", titre: "Le paquet de cartes", consigne: "Révise 30 flashcards.", objectif: compte("flashcards_revues", 30, undefined, { fenetre: "jour", somme: "cartes" }), params: [], eligible: [], poids: toutes(1), duree: 10, lien: "/flashcards", requiert: ["flashcards"] },
   // variété : un format qu'on n'a pas fait récemment, calé sur la phase
-  { id: "cinq", emplacement: "variete", titre: "Les 5 du jour à 4/5", consigne: "Rends les 5 du jour avec 4 bonnes réponses ou plus.", objectif: compte("cinq_rendu", 1, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(3), duree: 5, lien: "/defi/cinq" },
-  { id: "eclair", emplacement: "variete", titre: "Deux séries éclair", consigne: "Réussis deux séries éclair à 4/5 ou plus.", objectif: compte("eclair_rendue", 2, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(2), duree: 10, lien: "/eclair" },
-  { id: "duel", emplacement: "variete", titre: "Un duel", consigne: "Joue un duel.", objectif: compte("duel_termine", 1, undefined, { fenetre: "jour" }), params: [], eligible: [], poids: { fondations: 2, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 10, lien: "/duel" },
-  { id: "defi", emplacement: "variete", titre: "Les 30 du jour", consigne: "Rends les 30 du jour.", objectif: compte("defi_rendu", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 100)], poids: { fondations: 1, consolidation: 2, repetition: 4, veillee: 1, apres: 1 }, duree: 40, lien: "/defi" },
+  { id: "cinq", emplacement: "variete", titre: "Les 5 du jour à 4/5", consigne: "Rends les 5 du jour avec 4 bonnes réponses ou plus.", objectif: compte("cinq_rendu", 1, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(3), duree: 5, lien: "/defi/cinq", requiert: ["cinq"] },
+  { id: "eclair", emplacement: "variete", titre: "Deux séries éclair", consigne: "Réussis deux séries éclair à 4/5 ou plus.", objectif: compte("eclair_rendue", 2, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(2), duree: 10, lien: "/eclair", requiert: ["eclair"] },
+  { id: "duel", emplacement: "variete", titre: "Un duel", consigne: "Joue un duel.", objectif: compte("duel_termine", 1, undefined, { fenetre: "jour" }), params: [], eligible: [], poids: { fondations: 2, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 10, lien: "/duel", requiert: ["duels"] },
+  { id: "defi", emplacement: "variete", titre: "Les 30 du jour", consigne: "Rends les 30 du jour.", objectif: compte("defi_rendu", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 100)], poids: { fondations: 1, consolidation: 2, repetition: 4, veillee: 1, apres: 1 }, duree: 40, lien: "/defi", requiert: ["trente"] },
 ];
 
 export const QUETES_CONTRATS_HEBDO: Quete[] = [
@@ -603,14 +612,43 @@ export const PHASES: { phase: Phase; nom: string; depuis: number; replique: stri
   { phase: "apres", nom: "Après l'épreuve", depuis: -Infinity, replique: "L'examen est passé. La bottega reste ouverte : on garde la main, et on prépare la suite." },
 ];
 
-/** La phase d'un joueur selon les jours restants avant son examen (null : pas de jour J → fondations ; jour J passé → après). */
-export function phaseDe(joursAvant: number | null): Phase {
-  if (joursAvant === null) return "fondations";
-  if (joursAvant < 0) return "apres";
-  if (joursAvant <= 7) return "veillee";
-  if (joursAvant <= 30) return "repetition";
-  if (joursAvant <= 90) return "consolidation";
-  return "fondations";
+/** Sans jour J (V3 §1.4) : le programme du joueur, ses actes clos, et s'il a déjà l'examen derrière lui (un programme mené). */
+export type ContextePhase = { def: Pick<DefinitionProgramme, "cle" | "court" | "nom" | "examen" | "trame">; actesClos: Iterable<string>; apresExamen: boolean };
+
+/**
+ * Les actes qui font le fil d'une trame, dans l'ordre : ni les actes
+ * parallèles (l'acte I, les outils) ni l'épilogue (calé sur le jour J).
+ */
+export function filDesActes(def: ContextePhase["def"]): Acte[] {
+  const actes = def.trame === "generique" ? actesGeneriques(def) : def.trame.actes;
+  return actes.filter((a) => !a.parallele && a.numero !== 99).sort((a, b) => a.numero - b.numero);
+}
+
+/**
+ * La phase d'un joueur. Avec un jour J (programme daté) : selon les jours
+ * restants (passé → après). Sans jour J ou sans examen, et avec `ctx` : par
+ * l'avancement de la trame — fondations tant que le 2e acte du fil (l'acte II
+ * de CFA I, l'acte 1 générique) n'est pas clos, consolidation jusqu'à la
+ * clôture de l'avant-dernier, répétition jusqu'au dernier, après ensuite ;
+ * jamais de veillée sans date. Sans `ctx` : fondations (l'ancien comportement).
+ */
+export function phaseDe(joursAvant: number | null, ctx?: ContextePhase): Phase {
+  if (joursAvant !== null && (!ctx || ctx.def.examen)) {
+    if (joursAvant < 0) return "apres";
+    if (joursAvant <= 7) return "veillee";
+    if (joursAvant <= 30) return "repetition";
+    if (joursAvant <= 90) return "consolidation";
+    return "fondations";
+  }
+  if (!ctx) return "fondations";
+  if (ctx.apresExamen) return "apres";
+  const clos = new Set(ctx.actesClos);
+  const fil = filDesActes(ctx.def);
+  const estClos = (i: number) => i >= 0 && i < fil.length && clos.has(fil[i].id);
+  if (fil.length < 2 || !estClos(1)) return "fondations";
+  if (!estClos(fil.length - 2)) return "consolidation";
+  if (!estClos(fil.length - 1)) return "repetition";
+  return "apres";
 }
 
 // ── La recommandation (la « prochaine quête ») ─────────────────────────
@@ -677,28 +715,12 @@ export type ContenuMatiere = {
   cours: string | null;
   flashcards: boolean;
   notions: number;
+  /** ce qui existe pour CETTE matière (fiche, drill, cours, flashcards) : une étape de branche sans son outil n'est pas générée */
+  outils: Outil[];
 };
 
-/** Le contenu du programme CFA I, lu dans les catalogues du site. */
-export function contenuDuProgramme(): ContenuMatiere[] {
-  return SUBJECTS.map((s) => {
-    const t = TOPICS.find((x) => x.key === s.key);
-    return {
-      key: s.key,
-      nom: t?.label ?? s.name,
-      court: s.short,
-      poids: t?.weight ?? 0,
-      fiche: s.fiche,
-      drill: !!s.fiche && !!s.drillPrefix,
-      cours: s.course,
-      flashcards: s.flashcardFolders.length > 0,
-      notions: notionsDeMatiere(s.key).length,
-    };
-  });
-}
-
-/** Les étapes d'une branche, dans l'ordre d'affichage. */
-export const ETAPES: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "tour", "maitrise60", "maitrise75", "maitre"];
+/** Les étapes d'une branche, dans l'ordre d'affichage (« serie » : à la place de « ciblee » sans séance ciblée). */
+export const ETAPES: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour", "maitrise60", "maitrise75", "maitre"];
 
 /** Les titres « Maître de <matière> » (cosmétiques générés). */
 export const titresMaitres = (contenu: ContenuMatiere[] = contenuDuProgramme()): CosmetiqueCodex[] =>
@@ -710,36 +732,56 @@ export const titresMaitres = (contenu: ContenuMatiere[] = contenuDuProgramme()):
  * « Maître de … », avec le tour des notions en parallèle. Cours et
  * flashcards sont des étapes bonus (jamais bloquantes). Une matière sans
  * fiche n'a pas d'étape fiche ; une fiche sans drill n'a pas d'étape drill.
+ * `outils` : ceux du programme (absent : tous). Une étape dont l'outil manque
+ * au programme ou à la matière n'est pas générée ; sans séance ciblée, le
+ * jalon devient « serie » (15 justes sur les 20 dernières réponses de la
+ * matière). Les ids sont LOCAUX, sur la clé nue de la matière
+ * (« branche:fsa:entree ») : genererArbre (lib/codex/programmes.ts) les
+ * préfixe hors CFA I ; filtres et titre de maître gardent la clé qualifiée.
  */
-export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme(), programme = PROGRAMME): Quete[] {
+export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme(), programme = PROGRAMME, outils?: ReadonlySet<Outil>): Quete[] {
+  const duProgramme = (o: Outil) => !outils || outils.has(o);
+  const jalon: EtapeBranche = duProgramme("ciblee") ? "ciblee" : "serie";
   return contenu.flatMap((m) => {
-    const id = (e: EtapeBranche) => `branche:${m.key}:${e}`;
+    const id = (e: EtapeBranche) => `branche:${cleLocale(m.key)}:${e}`;
+    const a = (o: Outil) => duProgramme(o) && m.outils.includes(o);
     const dm = { matiere: m.key };
     const b = (etape: EtapeBranche, q: Omit<Base, "id" | "famille" | "ordre" | "matiere" | "etape">): Quete =>
       ({ ...quete({ ...q, id: id(etape), famille: "branche", ordre: ETAPES.indexOf(etape) + 1, matiere: m.key, etape }), programme });
     const out: Quete[] = [b("entree", { titre: `Premier pas en ${m.court}`, consigne: `Réponds à 10 questions ${de(m.nom)}.`, objectif: compte("question_repondue", 10, dm), recompense: { xp: 30 }, duree: 8 })];
-    if (m.cours)
+    if (m.cours && a("cours"))
       out.push(b("cours", { optionnelle: true, titre: "L'oreille du maître", consigne: `Écoute 30 minutes du cours complet ${de(m.nom)}.`, objectif: compte("cours_ecoute", 30, dm, { somme: "minutes" }), recompense: { xp: 40 }, lien: `/courses/${m.cours}`, duree: 30 }));
-    if (m.fiche && m.drill) {
+    const drill = !!m.fiche && m.drill && a("fiche") && a("drill");
+    if (drill) {
       out.push(b("fiche", { titre: `La fiche ${m.court}`, consigne: "Lis une page de la fiche et passe son drill de 15 questions.", objectif: compte("drill_page_terminee", 1, dm), recompense: { xp: 40 }, lien: `/fiches/${m.fiche}`, duree: 20 }));
       out.push(b("drill", { titre: "Le drill complet", consigne: `Passe toutes les pages de drill de la fiche ${m.court}.`, pourquoi: "La fiche couvre le cours entier : chaque page passée, c'est un thème vu une fois au moins.", objectif: mesure("drill_pages_restantes", 0, dm, "<="), prerequis: [apres(id("fiche"))], recompense: { xp: 100 }, lien: `/fiches/${m.fiche}` }));
-    } else if (m.fiche) {
+    } else if (m.fiche && a("fiche")) {
       out.push(b("fiche", { optionnelle: true, titre: `La fiche ${m.court}`, consigne: `Ouvre la fiche ${m.court} et lis-la.`, objectif: compte("fiche_ouverte", 1, dm), recompense: { xp: 30 }, lien: `/fiches/${m.fiche}`, duree: 20 }));
     }
-    if (m.flashcards)
+    if (m.flashcards && a("flashcards"))
       out.push(b("flashcards", { optionnelle: true, titre: "Le paquet de cartes", consigne: `Révise 40 flashcards ${de(m.nom)}.`, objectif: compte("flashcards_revues", 40, dm, { somme: "cartes" }), recompense: { xp: 30 }, lien: "/flashcards", duree: 15 }));
     const cib = cibleeDe(m.poids);
     out.push(
-      b("ciblee", {
-        titre: "La séance ciblée",
-        consigne: `Réussis une session ciblée ${de(m.nom)}, ${cib.questions} questions au moins${formatCiblee(cib.format)}, à 70 % ou plus.`,
-        pourquoi: "C'est l'épreuve de la branche : celle que la guilde attend de chaque matière.",
-        objectif: compte("session_terminee", 1, { source: "ciblee", matiere: m.key, questions: { min: cib.questions }, pct: { min: 70 } }),
-        prerequis: [apres(m.drill ? id("drill") : id("entree"))],
-        recompense: { xp: 120 },
-        lien: lienCiblee(m.key, cib.format),
-        duree: 25,
-      }),
+      jalon === "ciblee"
+        ? b("ciblee", {
+            titre: "La séance ciblée",
+            consigne: `Réussis une session ciblée ${de(m.nom)}, ${cib.questions} questions au moins${formatCiblee(cib.format)}, à 70 % ou plus.`,
+            pourquoi: "C'est l'épreuve de la branche : celle que la guilde attend de chaque matière.",
+            objectif: compte("session_terminee", 1, { source: "ciblee", matiere: m.key, questions: { min: cib.questions }, pct: { min: 70 } }),
+            prerequis: [apres(drill ? id("drill") : id("entree"))],
+            recompense: { xp: 120 },
+            lien: lienCiblee(m.key, cib.format),
+            duree: 25,
+          })
+        : b("serie", {
+            titre: "La série juste",
+            consigne: `Réussis 15 des 20 dernières questions ${de(m.nom)}.`,
+            pourquoi: "C'est l'épreuve de la branche : une matière qui tient sur vingt questions de suite.",
+            objectif: { k: "special", cle: "justes_sur_20_matiere", seuil: 15 },
+            prerequis: [apres(drill ? id("drill") : id("entree"))],
+            recompense: { xp: 120 },
+            duree: 20,
+          }),
       b("tour", {
         titre: `Le tour ${de(m.court)}`,
         consigne: `Vois chacune des ${m.notions} notions ${de(m.nom)} (5 réponses au moins dans chacune).`,
@@ -748,7 +790,7 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
         prerequis: [apres(id("entree"))],
         recompense: { xp: Math.min(150, 60 + 5 * m.notions) },
       }),
-      b("maitrise60", { titre: "Le pigment tient", consigne: `Monte ${m.nom} à 60 % de maîtrise.`, pourquoi: "60 % : la zone où l'on commence à réussir le CFA.", objectif: mesure("maitrise", 60, dm), prerequis: [apres(id("ciblee"))], recompense: { xp: 180 } }),
+      b("maitrise60", { titre: "Le pigment tient", consigne: `Monte ${m.nom} à 60 % de maîtrise.`, pourquoi: "60 % : la zone où l'on commence à réussir le CFA.", objectif: mesure("maitrise", 60, dm), prerequis: [apres(id(jalon))], recompense: { xp: 180 } }),
       b("maitrise75", { titre: "La couleur juste", consigne: `Monte ${m.nom} à 75 % de maîtrise.`, objectif: mesure("maitrise", 75, dm), prerequis: [apres(id("maitrise60"))], recompense: { xp: 260 } }),
       b("maitre", {
         titre: `Maître ${de(m.court)}`,
@@ -769,16 +811,30 @@ export function catalogueCodex(contenu: ContenuMatiere[] = contenuDuProgramme())
   return [...QUETES_TRAME, ...genererBranches(contenu), ...QUETES_LONG_COURS, ...QUETES_EXPLOITS, ...QUETES_CONTRATS_HEBDO];
 }
 
-/** Les incohérences du catalogue (ids en double, prérequis vers rien, cosmétiques inconnus) ; [] : tout va bien. */
+/** Les incohérences du catalogue de CFA I (ids en double, prérequis vers rien, cosmétiques inconnus) ; [] : tout va bien. */
 export function verifierCatalogue(contenu: ContenuMatiere[] = contenuDuProgramme()): string[] {
-  const qs = catalogueCodex(contenu);
+  return verifierQuetes(catalogueCodex(contenu), { actes: ACTES, cosmetiques: [...COSMETIQUES_CODEX, ...titresMaitres(contenu)], decouverte: DECOUVERTE });
+}
+
+/**
+ * Les incohérences d'un lot de quêtes, quel que soit son programme : ids en
+ * double, trop longs (120) ou contenant « | » (le séparateur des clés du
+ * panneau), préfixe d'id qui ne correspond pas au programme de la quête,
+ * prérequis vers rien, cosmétiques inconnus.
+ */
+export function verifierQuetes(qs: Quete[], o: { actes: Acte[]; cosmetiques: CosmetiqueCodex[]; decouverte?: Devoilement[] }): string[] {
   const ids = new Set<string>();
   const erreurs: string[] = [];
-  const actes = new Set(ACTES.map((a) => a.id));
-  const cosmetiques = new Set([...COSMETIQUES_CODEX, ...titresMaitres(contenu)].map((c) => c.cle));
+  const actes = new Set(o.actes.map((a) => a.id));
+  const cosmetiques = new Set(o.cosmetiques.map((c) => c.cle));
   for (const q of qs) {
     if (ids.has(q.id)) erreurs.push(`id en double : ${q.id}`);
     ids.add(q.id);
+    if (q.id.length > ID_MAX) erreurs.push(`${q.id} : id de plus de ${ID_MAX} caractères`);
+    if (q.id.includes("|")) erreurs.push(`${q.id} : « | » interdit dans un id`);
+    const attendu = q.programme === PROGRAMME_HISTORIQUE || q.programme === PROGRAMME_GLOBAL ? "" : slugDe(q.programme);
+    if (slugDeId(q.id) !== attendu) erreurs.push(`${q.id} : préfixe incohérent avec le programme ${q.programme}`);
+    if (estGlobal(q.id) !== (q.programme === PROGRAMME_GLOBAL)) erreurs.push(`${q.id} : quête commune hors du programme « global » (ou l'inverse)`);
   }
   const verifPre = (q: Quete, p: Prerequis) => {
     if (p.k === "quete" && !ids.has(p.id)) erreurs.push(`${q.id} : prérequis inconnu ${p.id}`);
@@ -790,8 +846,8 @@ export function verifierCatalogue(contenu: ContenuMatiere[] = contenuDuProgramme
     if (q.acte && !actes.has(q.acte)) erreurs.push(`${q.id} : acte inconnu ${q.acte}`);
     for (const c of [q.recompense.cosmetique, q.recompense.titre]) if (c && !cosmetiques.has(c)) erreurs.push(`${q.id} : cosmétique inconnu ${c}`);
   }
-  for (const a of ACTES) for (const c of [a.recompense.cosmetique, a.recompense.titre]) if (c && !cosmetiques.has(c)) erreurs.push(`acte ${a.id} : cosmétique inconnu ${c}`);
-  for (const d of DECOUVERTE) for (const w of d.quand) if (w.k === "quete" && !ids.has(w.id)) erreurs.push(`dévoilement ${d.id} : quête inconnue ${w.id}`);
+  for (const a of o.actes) for (const c of [a.recompense.cosmetique, a.recompense.titre]) if (c && !cosmetiques.has(c)) erreurs.push(`acte ${a.id} : cosmétique inconnu ${c}`);
+  for (const d of o.decouverte ?? []) for (const w of d.quand) if (w.k === "quete" && !ids.has(w.id)) erreurs.push(`dévoilement ${d.id} : quête inconnue ${w.id}`);
   return erreurs;
 }
 
