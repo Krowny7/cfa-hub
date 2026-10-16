@@ -4,7 +4,8 @@
 // étape « serie » sans séance ciblée, aucun outil absent) ; les phases par
 // avancement sans jour J ; les ids publiés de CFA I tous présents ; deux
 // programmes aux mêmes noms de matière sans rien de commun ; le prérequis
-// « apresExamen » ; les quêtes non branchées faute de capacité de la base.
+// « apresExamen » ; les quêtes non branchées faute de capacité de la base ;
+// le fil rouge (paliers figés, croissants, instanciés d'un coup).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ACTES, COSMETIQUES_CODEX, catalogueCodex, contenuDuProgramme, evenementsDe, phaseDe, titresMaitres, verifierQuetes } from "@/lib/codex/catalogue";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/codex/programmes";
 import { apresExamenDe, evaluer, indexerLecture, phaseJoueur, planifier, quetesASuivre, requisOk, tirerContrats, type Entree, type LectureSql } from "@/lib/codex/moteur";
 import { CAPACITES_VIDE, lireCapacites } from "@/lib/codex/reglage";
+import { CHAPITRES_FIL, PALIERS_PUBLIES, compterPiecesCodex, filtreFil, idFil, palierAtteint, paliersFil, quetesFilRouge, seuilFil } from "@/lib/codex/fil-rouge";
 import { construireVue } from "@/lib/codex/vue";
 import type { Objectif, Quete } from "@/lib/codex/types";
 
@@ -111,6 +113,42 @@ console.log("\n# 3. CFA I : les ids publiés restent, le catalogue ne change pas
   check("registre : CFA I public, CFA II et III déclarés non publics, la route de Milan chaînée",
     REGISTRE.map((p) => `${p.cle}:${p.public}`).join(" ") === "finance/cfa-l1:true finance/cfa-l2:false finance/cfa-l3:false" && CFA_L1.suivant === "finance/cfa-l2" && programmeDe("finance/cfa-l2")?.suivant === "finance/cfa-l3");
   check("les programmes d'essai ne sont pas au registre, mais joignables", !REGISTRE.includes(PROGRAMME_ESSAI) && programmeDe("histoire/essai") === PROGRAMME_ESSAI);
+}
+
+console.log("\n# 4. le fil rouge : 12 paliers figés par chapitre, croissants, ids uniques");
+{
+  const publies = (JSON.parse(readFileSync(join(process.cwd(), "scripts/codex/ids-publies.json"), "utf8")) as { fil: Record<string, { id: string; seuil: number; palier?: string }[]> }).fil;
+  const RANG = { bronze: 1, argent: 2, or: 3, diamant: 4 } as const;
+  check(`${CHAPITRES_FIL.length} chapitres, tous figés dans ids-publies.json`, CHAPITRES_FIL.length === 7 && CHAPITRES_FIL.every((c) => publies[c.id]?.length === PALIERS_PUBLIES));
+  for (const c of CHAPITRES_FIL) {
+    const cles = Array.from({ length: PALIERS_PUBLIES }, (_, i) => [RANG[filtreFil(c, i + 1)?.palier ?? "bronze"], seuilFil(c, i + 1)] as const);
+    const croissants = cles.every((k, i) => i === 0 || k[0] > cles[i - 1][0] || (k[0] === cles[i - 1][0] && k[1] > cles[i - 1][1]));
+    const memes = publies[c.id].every((p, i) => p.id === idFil(c.id, i + 1) && p.seuil === seuilFil(c, i + 1) && (p.palier ?? undefined) === filtreFil(c, i + 1)?.palier);
+    check(`${c.id} : strictement croissants en (filtre, seuil), seuils égaux aux publiés`, croissants && memes, cles.map((k) => k.join("/")).join(" "));
+  }
+  const douze = paliersFil([{ k: "acte", id: "prologue" }]);
+  check("ids uniques, tous « fil:<chapitre>:<n> », programme « global », famille « fil »", new Set(douze.map((q) => q.id)).size === douze.length && douze.every((q) => /^fil:[a-z]+:\d+$/.test(q.id) && q.programme === "global" && q.famille === "fil" && programmeDeId(q.id) === "global"));
+  const trophees = CHAPITRES_FIL.find((c) => c.id === "trophees")!;
+  check("trophées : 1 or, 5 or, puis 1, 10, 25, 50 diamants, puis +25", [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `${seuilFil(trophees, n)}${filtreFil(trophees, n)?.palier?.[0]}`).join(" ") === "1o 5o 1d 10d 25d 50d 75d 100d");
+  const questions = CHAPITRES_FIL.find((c) => c.id === "questions")!;
+  check("le copiste : 1 000 · 2 500 · 5 000 · 10 000 · 20 000, puis +10 000 ; XP min(500, 60 + 40 n)", seuilFil(questions, 6) === 30000 && questions.xp(1) === 100 && questions.xp(20) === 500 && questions.titrePalier(1, 1000) === "1 000 questions");
+  check("les pièces du fil sont des récompenses connues (titre au 4e palier du copiste, cadre au 3e de l'encre…)", douze.find((q) => q.id === "fil:questions:4")?.recompense.titre === "titre:copiste" && douze.find((q) => q.id === "fil:encre:3")?.recompense.cosmetique === "cadre:plume" && douze.find((q) => q.id === "fil:maitres:2")?.recompense.cosmetique === "folio:galerie");
+  check("« Garder la main » ne s'ouvre qu'après l'examen ; les autres à l'acte 0 du programme", douze.find((q) => q.id === "fil:entretien:1")?.prerequis[0]?.k === "apresExamen" && douze.find((q) => q.id === "fil:encre:1")?.prerequis[0]?.k === "acte");
+  // l'instanciation : tous les paliers atteints et pas encore récompensés, plus le suivant
+  const recompense = (id: string, vu = true) => ({ quete_id: id, etat: "recompensee", vu });
+  const ids = (qs: Quete[], c: string) => qs.filter((q) => q.id.startsWith(`fil:${c}:`)).map((q) => q.palier).join(",");
+  const neuf = quetesFilRouge([], { ouverture: [] });
+  check("sans rien : le palier en cours et le suivant de chaque chapitre", CHAPITRES_FIL.every((c) => ids(neuf, c.id) === "1,2"));
+  const avance = quetesFilRouge([recompense("fil:questions:1")], { ouverture: [], atteints: { questions: 4 } });
+  check("1 palier récompensé, 4 atteints : les paliers 2 à 4 d'un coup, plus le 5e", ids(avance, "questions") === "2,3,4,5");
+  check("un palier récompensé pas encore fêté reste dans la vue (la fanfare)", ids(quetesFilRouge([recompense("fil:encre:1", false)], { ouverture: [] }), "encre") === "1,2,3");
+  check("palierAtteint : dans l'ordre, s'arrête au premier palier manquant", palierAtteint(questions, () => 12000) === 4 && palierAtteint(trophees, (f) => (f?.palier === "or" ? 7 : 0)) === 2 && palierAtteint(trophees, (f) => (f?.palier === "or" ? 3 : 12)) === 1 && palierAtteint(questions, () => null) === 0);
+  // les pièces possédées : codex, sceaux, trophées, sans doublon
+  const p = compterPiecesCodex({
+    progression: [{ etat: "recompensee", cosmetique: "cadre:sanguine", titre: "titre:compagnon" }, { etat: "recompensee", cosmetique: "cadre:diamant-taille", titre: null }, { etat: "active", cosmetique: "cadre:laurier", titre: null }],
+    trophees: [{ source: "ciblee", palier: 4, n: 2 }],
+  });
+  check("compterPiecesCodex : pièces versées + pièces d'état des trophées, sans doublon ni quête en cours", p === 3, String(p));
 }
 
 console.log("\n# 6. deux programmes aux mêmes noms de matière");

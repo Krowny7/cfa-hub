@@ -233,5 +233,370 @@
     "trame:prologue:premier-trait",
     "trame:prologue:premiere-seance",
     "trame:prologue:visite"
-  ]
+  ],
+  "fil": {
+    "questions": [
+      {
+        "id": "fil:questions:1",
+        "seuil": 1000
+      },
+      {
+        "id": "fil:questions:2",
+        "seuil": 2500
+      },
+      {
+        "id": "fil:questions:3",
+        "seuil": 5000
+      },
+      {
+        "id": "fil:questions:4",
+        "seuil": 10000
+      },
+      {
+        "id": "fil:questions:5",
+        "seuil": 20000
+      },
+      {
+        "id": "fil:questions:6",
+        "seuil": 30000
+      },
+      {
+        "id": "fil:questions:7",
+        "seuil": 40000
+      },
+      {
+        "id": "fil:questions:8",
+        "seuil": 50000
+      },
+      {
+        "id": "fil:questions:9",
+        "seuil": 60000
+      },
+      {
+        "id": "fil:questions:10",
+        "seuil": 70000
+      },
+      {
+        "id": "fil:questions:11",
+        "seuil": 80000
+      },
+      {
+        "id": "fil:questions:12",
+        "seuil": 90000
+      }
+    ],
+    "encre": [
+      {
+        "id": "fil:encre:1",
+        "seuil": 30
+      },
+      {
+        "id": "fil:encre:2",
+        "seuil": 60
+      },
+      {
+        "id": "fil:encre:3",
+        "seuil": 100
+      },
+      {
+        "id": "fil:encre:4",
+        "seuil": 150
+      },
+      {
+        "id": "fil:encre:5",
+        "seuil": 200
+      },
+      {
+        "id": "fil:encre:6",
+        "seuil": 300
+      },
+      {
+        "id": "fil:encre:7",
+        "seuil": 400
+      },
+      {
+        "id": "fil:encre:8",
+        "seuil": 500
+      },
+      {
+        "id": "fil:encre:9",
+        "seuil": 600
+      },
+      {
+        "id": "fil:encre:10",
+        "seuil": 700
+      },
+      {
+        "id": "fil:encre:11",
+        "seuil": 800
+      },
+      {
+        "id": "fil:encre:12",
+        "seuil": 900
+      }
+    ],
+    "maitres": [
+      {
+        "id": "fil:maitres:1",
+        "seuil": 1
+      },
+      {
+        "id": "fil:maitres:2",
+        "seuil": 3
+      },
+      {
+        "id": "fil:maitres:3",
+        "seuil": 5
+      },
+      {
+        "id": "fil:maitres:4",
+        "seuil": 10
+      },
+      {
+        "id": "fil:maitres:5",
+        "seuil": 15
+      },
+      {
+        "id": "fil:maitres:6",
+        "seuil": 20
+      },
+      {
+        "id": "fil:maitres:7",
+        "seuil": 25
+      },
+      {
+        "id": "fil:maitres:8",
+        "seuil": 30
+      },
+      {
+        "id": "fil:maitres:9",
+        "seuil": 35
+      },
+      {
+        "id": "fil:maitres:10",
+        "seuil": 40
+      },
+      {
+        "id": "fil:maitres:11",
+        "seuil": 45
+      },
+      {
+        "id": "fil:maitres:12",
+        "seuil": 50
+      }
+    ],
+    "programmes": [
+      {
+        "id": "fil:programmes:1",
+        "seuil": 1
+      },
+      {
+        "id": "fil:programmes:2",
+        "seuil": 2
+      },
+      {
+        "id": "fil:programmes:3",
+        "seuil": 3
+      },
+      {
+        "id": "fil:programmes:4",
+        "seuil": 4
+      },
+      {
+        "id": "fil:programmes:5",
+        "seuil": 5
+      },
+      {
+        "id": "fil:programmes:6",
+        "seuil": 6
+      },
+      {
+        "id": "fil:programmes:7",
+        "seuil": 7
+      },
+      {
+        "id": "fil:programmes:8",
+        "seuil": 8
+      },
+      {
+        "id": "fil:programmes:9",
+        "seuil": 9
+      },
+      {
+        "id": "fil:programmes:10",
+        "seuil": 10
+      },
+      {
+        "id": "fil:programmes:11",
+        "seuil": 11
+      },
+      {
+        "id": "fil:programmes:12",
+        "seuil": 12
+      }
+    ],
+    "trophees": [
+      {
+        "id": "fil:trophees:1",
+        "seuil": 1,
+        "palier": "or"
+      },
+      {
+        "id": "fil:trophees:2",
+        "seuil": 5,
+        "palier": "or"
+      },
+      {
+        "id": "fil:trophees:3",
+        "seuil": 1,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:4",
+        "seuil": 10,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:5",
+        "seuil": 25,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:6",
+        "seuil": 50,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:7",
+        "seuil": 75,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:8",
+        "seuil": 100,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:9",
+        "seuil": 125,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:10",
+        "seuil": 150,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:11",
+        "seuil": 175,
+        "palier": "diamant"
+      },
+      {
+        "id": "fil:trophees:12",
+        "seuil": 200,
+        "palier": "diamant"
+      }
+    ],
+    "collection": [
+      {
+        "id": "fil:collection:1",
+        "seuil": 5
+      },
+      {
+        "id": "fil:collection:2",
+        "seuil": 10
+      },
+      {
+        "id": "fil:collection:3",
+        "seuil": 20
+      },
+      {
+        "id": "fil:collection:4",
+        "seuil": 35
+      },
+      {
+        "id": "fil:collection:5",
+        "seuil": 50
+      },
+      {
+        "id": "fil:collection:6",
+        "seuil": 65
+      },
+      {
+        "id": "fil:collection:7",
+        "seuil": 80
+      },
+      {
+        "id": "fil:collection:8",
+        "seuil": 95
+      },
+      {
+        "id": "fil:collection:9",
+        "seuil": 110
+      },
+      {
+        "id": "fil:collection:10",
+        "seuil": 125
+      },
+      {
+        "id": "fil:collection:11",
+        "seuil": 140
+      },
+      {
+        "id": "fil:collection:12",
+        "seuil": 155
+      }
+    ],
+    "entretien": [
+      {
+        "id": "fil:entretien:1",
+        "seuil": 4
+      },
+      {
+        "id": "fil:entretien:2",
+        "seuil": 12
+      },
+      {
+        "id": "fil:entretien:3",
+        "seuil": 26
+      },
+      {
+        "id": "fil:entretien:4",
+        "seuil": 52
+      },
+      {
+        "id": "fil:entretien:5",
+        "seuil": 78
+      },
+      {
+        "id": "fil:entretien:6",
+        "seuil": 104
+      },
+      {
+        "id": "fil:entretien:7",
+        "seuil": 130
+      },
+      {
+        "id": "fil:entretien:8",
+        "seuil": 156
+      },
+      {
+        "id": "fil:entretien:9",
+        "seuil": 182
+      },
+      {
+        "id": "fil:entretien:10",
+        "seuil": 208
+      },
+      {
+        "id": "fil:entretien:11",
+        "seuil": 234
+      },
+      {
+        "id": "fil:entretien:12",
+        "seuil": 260
+      }
+    ]
+  },
+  "noteFil": "Les 12 premiers paliers de chaque chapitre du fil rouge et leur seuil (V3 §1.2, §1.7 point 4) : ajout en fin de liste seulement, jamais un seuil modifié."
 }

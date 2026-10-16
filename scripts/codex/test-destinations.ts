@@ -15,6 +15,7 @@ import { PRACTICE_V3, REPLIS, ROUTES, destinationDe, lancable, raisonDe, routeEx
 import { notionsDeMatiere } from "@/lib/notions";
 import { genererArbre } from "@/lib/codex/programmes";
 import { PROGRAMME_ESSAI } from "@/lib/codex/programmes/essai";
+import { paliersFil } from "@/lib/codex/fil-rouge";
 import type { Quete } from "@/lib/codex/types";
 
 let ko = 0;
@@ -230,6 +231,20 @@ console.log("\n# l'arbre d'un programme d'essai (V3 §1.7) : une destination par
   check("« serie » : la série éclair (repli d'entraînement de l'essai), raison sur la matière", serie?.href === "/eclair" && !!serie.raison?.startsWith("Renaissance pèse 50 %"), `${serie?.href} · ${serie?.raison}`);
   const pigments = destinationDe(arbre.find((q) => q.id === "essai/trame:g1:pigments")!, {}, { ...ctx, faites: new Set(["essai/branche:renaissance:entree"]) });
   check("« branches à une étape » vise la première branche qui ne l'a pas (ids préfixés)", pigments?.raison?.startsWith("Cartographie pèse 30 %") ?? false, pigments?.raison ?? "");
+}
+
+console.log("\n# le fil rouge (V3 §1.5) : chaque palier figé mène quelque part, dans les outils du programme");
+{
+  const paliers = paliersFil([{ k: "acte", id: "prologue" }]);
+  for (const [nom, ctx] of [["compte neuf", neuf], ["joueur en route", enRoute]] as const) {
+    const ko_ = paliers.map((q) => [q.id, defaut(destinationDe(q, {}, ctx))] as const).filter(([, e]) => e);
+    check(`${nom} : ${paliers.length - ko_.length}/${paliers.length} paliers lançables`, ko_.length === 0, ko_.slice(0, 5).map(([id, e]) => `${id} (${e})`).join(" | "));
+  }
+  const diamant = destinationDe(paliers.find((q) => q.id === "fil:trophees:3")!, {}, neuf);
+  check("un trophée sans source : une séance mêlée (avant F1, /practice nu)", diamant?.href === "/practice", diamant?.href);
+  const essai: ContexteDestination = { ...contexteDestination(base({ contenu: PROGRAMME_ESSAI.matieres() })), programme: PROGRAMME_ESSAI.cle, outils: PROGRAMME_ESSAI.outils };
+  const horsOutils = paliers.map((q) => [q.id, destinationDe(q, {}, essai)] as const).filter(([, d]) => !d || !["cinq", "eclair", "revoir", "codex", "profil", "classement"].includes(d.outil));
+  check("dans l'arbre d'essai : aucun palier ne mène à un outil absent", horsOutils.length === 0, horsOutils.map(([id, d]) => `${id} ${d?.outil} ${d?.href}`).join(" | "));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert.");

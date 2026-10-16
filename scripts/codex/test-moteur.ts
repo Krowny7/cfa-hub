@@ -16,6 +16,7 @@ import {
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
+import { CAPACITES_VIDE } from "@/lib/codex/reglage";
 import { bilanDe } from "@/lib/codex/bilan";
 import { de, gabarit } from "@/lib/codex/elision";
 import { CODEX } from "@/lib/voice-codex";
@@ -317,6 +318,65 @@ console.log("\n# v3 §6.12 : les textes qui mentent");
   check("l'activité se demande à la base (fenêtre de 10 jours et depuis toujours)", dem.length === 2 * contenu.length && dem.some((d) => JSON.stringify(d.fenetre) === '{"jours":10}') && act.fsa.total === 9 && act.fsa.recentes === 0);
   const m = MODELES_CONTRATS.find((x) => x.id === "matiere-oubliee")!;
   check("sa consigne dit vrai (10 jours au moins)", libelle(m.consigne, { matiere: "equity" }).includes("10 jours au moins") && libelle(m.consigne, { matiere: "equity" }).includes("d'Investissements en Actions"), libelle(m.consigne, { matiere: "equity" }));
+}
+
+console.log("\n# v3 §1.5 et §1.9 : le fil rouge et le rattrapage (un joueur de 12 000 réponses)");
+{
+  const ligneFaite = (id: string, o: Partial<LigneProgression> = {}): LigneProgression => ({
+    quete_id: id, periode: "", etat: "recompensee", progression: 1, cible: 1, ouverte_le: "2026-09-01T00:00:00Z", terminee_le: "2026-09-01T00:00:00Z",
+    recompensee_le: "2026-09-01T00:00:00Z", retro: true, xp: 0, cosmetique: null, titre: null, vu: true, ...o,
+  });
+  const AVEC_FIL = { ...CAPACITES_VIDE, fil: true };
+  // un joueur avancé : prologue clos, 12 000 réponses, 45 jours d'encre ; premier calcul v3 (aucun marqueur), la base sait écrire le fil
+  const avance = (o: Partial<Entree> = {}) =>
+    base({
+      premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2026-11-12", progression: [ligneFaite("acte:prologue")], capacites: AVEC_FIL, capacitesVues: null,
+      lecture: { compteurs: {}, mesures: { xp_total: 30000, jours_encre_total: 45, maitres_total: 0, programmes_menes: 0, trophees: [] }, speciaux: {} },
+      ...o,
+    });
+  const toutes = (d: Demande) => (d.evenement === "question_repondue" && !d.filtre ? 12000 : 0);
+  const { r, e: e1 } = repondre(avance(), toutes);
+  const fil = r.lot.filter((i) => i.famille === "fil");
+  const faits = fil.filter((i) => i.etat === "terminee").map((i) => i.quete).sort();
+  check("un seul calcul verse les 5 paliers atteints (4 du copiste, 1 de l'encre)", faits.join(" ") === "fil:encre:1 fil:questions:1 fil:questions:2 fil:questions:3 fil:questions:4", faits.join(" "));
+  check("le palier suivant est en cours (12 000 / 20 000), pas versé", fil.some((i) => i.quete === "fil:questions:5" && i.etat === "active" && i.progression === 12000 && i.cible === 20000));
+  const termines = r.lot.filter((i) => i.etat === "terminee");
+  // (les quêtes d'avant la v3 que ce profil factice n'a pas en base suivent la règle d'avant : une mesure remplie sans date n'est pas rétro)
+  const rattrapees = termines.filter((i) => i.famille === "fil");
+  check("tout le nouveau versé est en rétro : une seule cérémonie, aucune fête par quête", rattrapees.length === 5 && rattrapees.every((i) => i.retro === true), termines.filter((i) => !i.retro).map((i) => i.quete).join(" "));
+  const verse = Math.min(r.budgetRetro, termines.filter((i) => i.retro).reduce((s, i) => s + Math.min(i.xp ?? 0, i.plafond ?? 0), 0));
+  check(`XP versée ≤ plafondRetro (${verse} ≤ ${plafondRetro(r.niveau)})`, verse <= plafondRetro(r.niveau) && r.budgetRetro === plafondRetro(r.niveau));
+  check("le marqueur à écrire : la capacité « fil » vue", r.capacitesVues?.fil === true);
+  const v = construireVue(e1, r, null, { devoile: null });
+  check("la vue : 7 chapitres, le copiste en cours au 5e palier, tamponnable (pas « à venir »)", v.filRouge.chapitres.length === 7 && !v.filRouge.aVenir && v.filRouge.chapitres[0].courant?.id === "fil:questions:5");
+  check("le fil n'entre pas dans le compte des quêtes du Codex", v.stats.total === construireVue(e1, { ...r, etats: r.etats.filter((s) => s.quete.famille !== "fil") }, null, { devoile: null }).stats.total);
+
+  // le calcul suivant : tout est écrit, le marqueur a avancé → rien de plus
+  const ecrit = r.lot.filter((i) => i.etat === "terminee").map((i) => ligneFaite(i.quete, { periode: i.periode, retro: !!i.retro, xp: i.xp ?? 0 }));
+  const { r: r2 } = repondre(avance({ progression: [ligneFaite("acte:prologue"), ...ecrit], capacitesVues: r.capacitesVues }), toutes);
+  check("le calcul suivant ne verse rien, le marqueur ne bouge plus", !r2.lot.some((i) => i.etat === "terminee") && r2.capacitesVues === null, r2.lot.filter((i) => i.etat === "terminee").map((i) => i.quete).join(" "));
+
+  // la capacité « fil » s'allume après coup (SQL collé plus tard) : rattrapage, même pour un palier atteint aujourd'hui
+  const vuSansFil = { ...CAPACITES_VIDE };
+  const { r: r3 } = repondre(avance({ capacitesVues: vuSansFil, dernierCalcul: new Date("2026-10-15T09:59:00Z") }), toutes);
+  check("capacité vue pour la première fois : les paliers déjà remplis passent en rétro", r3.lot.filter((i) => i.famille === "fil" && i.etat === "terminee").every((i) => i.retro) && r3.lot.some((i) => i.famille === "fil" && i.etat === "terminee"));
+
+  // le marqueur posé, la capacité déjà vue : un palier franchi pour de bon se fête
+  const { r: r4 } = repondre(
+    avance({ capacitesVues: AVEC_FIL, dernierCalcul: new Date("2026-10-15T09:59:00Z"), progression: [ligneFaite("acte:prologue"), ...[1, 2, 3, 4].map((n) => ligneFaite(`fil:questions:${n}`)), ligneFaite("fil:encre:1")] }),
+    (d) => (d.evenement === "question_repondue" && !d.filtre ? 20000 : 0),
+  );
+  const cinquieme = r4.lot.find((i) => i.quete === "fil:questions:5");
+  check("20 000 réponses, marqueur posé : le 5e palier du copiste est versé sans rétro (fête), 260 XP visés", cinquieme?.etat === "terminee" && cinquieme.retro === false && cinquieme.xp === 260, JSON.stringify(cinquieme));
+
+  // sans la capacité « fil » (CHECK pas élargi) : rien du fil n'est écrit, il se lit « à venir »
+  const { r: r5, e: e5 } = repondre(avance({ capacites: CAPACITES_VIDE }), toutes);
+  check("sans la capacité « fil » : aucun item « fil » dans le lot", !r5.lot.some((i) => (i.famille as string) === "fil"));
+  const v5 = construireVue(e5, r5, null, { devoile: null });
+  check("… et la vue le dit « à venir », les chapitres toujours lisibles", v5.filRouge.aVenir && v5.filRouge.chapitres.every((c) => c.faits === 0) && v5.filRouge.chapitres[0].courant !== null);
+  check("sans marqueur dans l'entrée (aperçus, anciens tests) : pas de rattrapage, pas de marqueur", r5.capacitesVues !== null && repondre(avance({ capacitesVues: undefined }), toutes).r.capacitesVues === null);
+  check("« Garder la main » reste fermé avant l'examen", !r.etats.find((s) => s.quete.id === "fil:entretien:1")?.ouverte);
+  check("le fil n'est jamais LA prochaine quête tant que le programme en propose une", recommander(e1, r)?.quete.famille !== "fil");
 }
 
 console.log("\n# v3 §6.15 : l'XP plafonnée s'affiche sobrement");
