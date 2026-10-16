@@ -12,6 +12,7 @@ import { CADRES, MOTIFS } from "@/lib/profil/catalogue";
 import { idFil, remplie, type Acquis, type Condition, type ConditionProfil } from "@/lib/profil/acquis";
 import { ACTES, COSMETIQUES_CODEX, PROGRAMME, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
 import { donneurs } from "@/lib/codex/vue";
+import { pluriel } from "@/lib/voice";
 import { romain } from "@/lib/voice-codex";
 import { conditionPiece } from "@/lib/voice-profil";
 
@@ -87,19 +88,27 @@ const QUETES = catalogueCodex(CONTENU);
 /** cosmétique → quête (ou « acte:<id> ») qui le donne */
 const DONNEURS = donneurs(CONTENU, QUETES);
 
-/** Les chapitres du fil rouge (lib/codex/fil-rouge.ts, couloir A) : titre et seuils des paliers listés. */
-const FIL: Record<string, { titre: string; seuil: (n: number) => string }> = {
-  questions: { titre: "Le copiste", seuil: (n) => `${["1 000", "2 500", "5 000", "10 000", "20 000"][n - 1] ?? "des milliers de"} questions posées` },
-  encre: { titre: "L'encre de toute une vie", seuil: (n) => `${[30, 60, 100, 150, 200, 300][n - 1] ?? "des centaines de"} jours d'encre` },
-  maitres: { titre: "La galerie des maîtres", seuil: (n) => `${[1, 3, 5, 10, 15, 20][n - 1] ?? "de nombreux"} titres « Maître de… »` },
-  programmes: { titre: "La route de Milan", seuil: (n) => (n === 1 ? "un programme mené" : `${n} programmes menés`) },
-  trophees: { titre: "La salle des trophées", seuil: (n) => ["un trophée d'or", "5 trophées d'or", "un trophée diamant", "10 trophées diamant", "25 trophées diamant", "50 trophées diamant"][n - 1] ?? "des dizaines de trophées diamant" },
-  collection: { titre: "Le cabinet de curiosités", seuil: (n) => `${[5, 10, 20, 35, 50][n - 1] ?? "des dizaines de"} pièces de collection` },
-  entretien: { titre: "Garder la main", seuil: (n) => `${[4, 12, 26, 52][n - 1] ?? "des dizaines de"} semaines d'entretien` },
+/**
+ * Les chapitres du fil rouge (§1.5) : titre, paliers listés puis pas
+ * constant, et ce que compte le seuil. Copie locale de CHAPITRES_FIL
+ * (lib/codex/fil-rouge.ts, lot A2b), à reprendre après la fusion F1.
+ */
+const FIL: Record<string, { titre: string; paliers: number[]; pas: number; seuil: (s: number, n: number) => string }> = {
+  questions: { titre: "Le copiste", paliers: [1000, 2500, 5000, 10000, 20000], pas: 10000, seuil: (s) => pluriel(s, "question posée", "questions posées") },
+  encre: { titre: "L'encre de toute une vie", paliers: [30, 60, 100, 150, 200, 300], pas: 100, seuil: (s) => pluriel(s, "jour d'encre", "jours d'encre") },
+  maitres: { titre: "La galerie des maîtres", paliers: [1, 3, 5, 10, 15, 20], pas: 5, seuil: (s) => pluriel(s, "titre « Maître de… »", "titres « Maître de… »") },
+  programmes: { titre: "La route de Milan", paliers: [1, 2, 3], pas: 1, seuil: (s) => pluriel(s, "programme mené", "programmes menés") },
+  // 1 or, 5 or, puis des diamants
+  trophees: { titre: "La salle des trophées", paliers: [1, 5, 1, 10, 25, 50], pas: 25, seuil: (s, n) => (n <= 2 ? pluriel(s, "trophée d'or", "trophées d'or") : pluriel(s, "trophée diamant", "trophées diamant")) },
+  collection: { titre: "Le cabinet de curiosités", paliers: [5, 10, 20, 35, 50], pas: 15, seuil: (s) => pluriel(s, "pièce de collection", "pièces de collection") },
+  entretien: { titre: "Garder la main", paliers: [4, 12, 26, 52], pas: 26, seuil: (s) => pluriel(s, "semaine d'entretien", "semaines d'entretien") },
 };
-const obtentionFil = (chapitre: string, palier: number) => {
+/** « Fil rouge « Le copiste » : 10 000 questions posées » (au-delà des paliers listés : le pas constant). */
+const obtentionFil = (chapitre: string, n: number) => {
   const c = FIL[chapitre];
-  return c ? `Fil rouge « ${c.titre} » : ${c.seuil(palier)}` : `Fil rouge, palier ${palier}`;
+  if (!c) return `Fil rouge, palier ${n}`;
+  const seuil = n <= c.paliers.length ? c.paliers[n - 1] : c.paliers[c.paliers.length - 1] + (n - c.paliers.length) * c.pas;
+  return `Fil rouge « ${c.titre} » : ${c.seuil(seuil, n)}`;
 };
 const FIL_ID = /^fil:([a-z0-9-]+):([1-9][0-9]*)$/;
 

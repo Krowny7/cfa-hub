@@ -83,7 +83,7 @@ async function main() {
     const codex = [...COSMETIQUES_CODEX.filter((c) => TYPES_PIECE.includes(c.type)), ...titresMaitres()];
     check("chaque cosmétique et titre du Codex est une pièce, une seule fois", codex.every((c) => PIECES.filter((p) => p.cle === c.cle).length === 1));
     // celles qui ne sont déclarées que par le Codex (les autres gardent leur fiche d'ici)
-    const seulement = codex.filter((c) => pieceDe(c.cle)?.origine === "codex" && c.type !== "folio");
+    const seulement = codex.filter((c) => pieceDe(c.cle)?.origine === "codex" && (c.type as string) !== "folio");
     check("une pièce du seul Codex : son nom, et la quête (ou l'acte) qui la donne", seulement.length >= 30 && seulement.every((c) => {
       const p = pieceDe(c.cle);
       return p?.nom === c.nom && p.condition?.k === "codex" && (quetes.has(p.condition.quete) || p.condition.quete.startsWith("acte:"));
