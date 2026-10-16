@@ -1,0 +1,234 @@
+// Tests légers du modèle des pièces de collection (lib/profil/pieces.ts), de
+// l'Acquis (lib/profil/acquis.ts) et du compte des trophées (lib/trophees.ts),
+// sans base ni réseau (les lectures passent par un faux client).
+//   npx tsx --tsconfig tsconfig.json scripts/profil/test-pieces.ts
+// Vérifie : clés uniques, aucune collision de clé nue, chaque clé nue conforme
+// à l'expression de sa colonne de profile_style, l'assemblage (cadres, motifs,
+// pièces du Codex, pièces des trophées, du fil rouge et des programmes,
+// folios ; une clé déclarée des deux côtés n'apparaît qu'une fois ; un type
+// inconnu est ignoré), chaque sorte de condition (unDe compris), les dates,
+// les réexports de lib/profil/catalogue.ts, compter, lireTrophees, lireAcquis.
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, titresMaitres } from "@/lib/codex/catalogue";
+import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as remplieCatalogue, STATS_VIDES } from "@/lib/profil/catalogue";
+import { codexDepuis, lireAcquis, type Acquis, type Condition } from "@/lib/profil/acquis";
+import { compter, lignesCiblees, lireTrophees, palierTrophee, type LigneTrophee } from "@/lib/trophees";
+import type { CosmetiqueCodex } from "@/lib/codex/types";
+
+let ko = 0;
+const check = (label: string, cond: boolean, extra = "") => {
+  console.log((cond ? "ok   " : "KO   ") + label + (extra ? "  " + extra : ""));
+  if (!cond) ko++;
+};
+const egal = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
+
+// Ce que les lots du couloir A ajouteront au Codex, simulé AVANT l'assemblage
+// des pièces : une pièce des trophées aussi déclarée au Codex (et donnée par
+// une quête), un folio déclaré au Codex, un type que le profil ne connaît pas.
+const QUETE_ESSAI = "exploit:essai-diamant";
+QUETES_EXPLOITS.push({ ...QUETES_EXPLOITS[QUETES_EXPLOITS.length - 1], id: QUETE_ESSAI, recompense: { xp: 0, cosmetique: "cadre:diamant-taille" } });
+COSMETIQUES_CODEX.push(
+  { cle: "cadre:diamant-taille", type: "cadre", nom: "Diamant (nom du Codex)", description: "Description du Codex.", anime: true },
+  { cle: "folio:mains", type: "folio" as CosmetiqueCodex["type"], nom: "Étude de mains (Codex)", description: "Le folio décrit par le Codex." },
+  { cle: "embleme:essai", type: "embleme" as CosmetiqueCodex["type"], nom: "Emblème", description: "Un type inconnu." },
+);
+
+async function main() {
+  const { FOLIOS, PIECES, TYPES_PIECE, cleNue, pieceDe, pieceNue, piecesDuType, possede, remplie, dateGagnee } = await import("@/lib/profil/pieces");
+
+  console.log("# Clés");
+  {
+    const cles = PIECES.map((p) => p.cle);
+    check("aucune clé n'apparaît deux fois dans PIECES", new Set(cles).size === cles.length, cles.filter((c, i) => cles.indexOf(c) !== i).join(", "));
+    check("chaque clé vaut « <type>:<nue> »", PIECES.every((p) => p.cle === `${p.type}:${p.nue}` && TYPES_PIECE.includes(p.type)));
+    for (const t of TYPES_PIECE) {
+      const nues = piecesDuType(t).map((p) => p.nue);
+      check(`${t} : aucune collision de clé nue`, new Set(nues).size === nues.length);
+    }
+    // les expressions des colonnes de profile_style : titre et folio, celles des
+    // CHECK de migration_v3_profil.sql §1 ; frame et banner n'ont pas de CHECK
+    // en base (la validation est côté site) : on leur impose celle du folio
+    const COLONNES: Record<string, RegExp> = { cadre: /^[a-z0-9_-]{2,60}$/, banniere: /^[a-z0-9_-]{2,60}$/, titre: /^[a-z0-9:_-]{2,80}$/, folio: /^[a-z0-9_-]{2,60}$/ };
+    const hors = PIECES.filter((p) => !COLONNES[p.type].test(p.nue));
+    check("toute clé nue respecte l'expression de sa colonne", hors.length === 0, hors.map((p) => p.cle).join(", "));
+    check("« maitre:fixed_income » (trait bas) est une clé nue de titre", !!pieceNue("titre", "maitre:fixed_income"));
+    check("cleNue : « cadre:sanguine » → « sanguine », « titre:maitre:fsa » → « maitre:fsa »", cleNue("cadre:sanguine") === "sanguine" && cleNue("titre:maitre:fsa") === "maitre:fsa");
+    check("pieceDe / pieceNue : inconnue → null", pieceDe("cadre:inconnu") === null && pieceNue("titre", "inconnu") === null);
+    check("ordre croissant dans chaque type", TYPES_PIECE.every((t) => piecesDuType(t).every((p, i) => p.ordre === i)));
+    check("nom, description et obtention renseignés partout", PIECES.every((p) => p.nom.trim() && p.description.trim() && p.obtention.trim()));
+  }
+
+  console.log("\n# Assemblage");
+  {
+    check("les cadres du profil gardent leur clé nue", CADRES.every((c) => pieceNue("cadre", c.key)?.condition === c.condition));
+    check("les motifs du profil deviennent des bannières", MOTIFS.every((m) => pieceNue("banniere", m.key)?.condition === (m.condition ?? null)));
+    const quetes = new Set(catalogueCodex().map((q) => q.id));
+    const codex = [...COSMETIQUES_CODEX.filter((c) => ["cadre", "banniere", "titre"].includes(c.type) && c.cle !== "cadre:diamant-taille"), ...titresMaitres()];
+    check("chaque cosmétique et titre du Codex est une pièce, donnée par une quête", codex.every((c) => {
+      const p = pieceDe(c.cle);
+      return !!p && p.origine === "codex" && p.nom === c.nom && p.condition?.k === "codex" && (quetes.has(p.condition.quete) || p.condition.quete.startsWith("acte:"));
+    }));
+    check("les pièces animées du Codex sont « css »", codex.filter((c) => c.anime).every((c) => pieceDe(c.cle)?.anime === "css"));
+    check("un type inconnu du Codex est ignoré", !PIECES.some((p) => p.cle.startsWith("embleme:")));
+    check("cadre:sanguine ← acte IV", egal(pieceDe("cadre:sanguine")?.condition, { k: "codex", quete: "acte:acte4" }) && pieceDe("cadre:sanguine")?.obtention === "Clore l'acte IV, « La première commande »");
+    check("titre:maitre:fsa ← branche:fsa:maitre, programme CFA I", egal(pieceDe("titre:maitre:fsa")?.condition, { k: "codex", quete: "branche:fsa:maitre" }) && pieceDe("titre:maitre:fsa")?.programme === "finance/cfa-l1");
+    check("titre:codex (exploit caché) : légendaire, global, sans dévoiler la quête", pieceDe("titre:codex")?.rarete === "legendaire" && pieceDe("titre:codex")?.programme === "global" && pieceDe("titre:codex")?.obtention === "Un exploit caché du Codex");
+    const rarete = (cle: string) => pieceDe(cle)?.rarete;
+    check(
+      "raretés : apprenti commune, or commune, platine rare, liquide diamant précieuse, aura légendaire, maître de bottega légendaire, Imola précieuse",
+      rarete("titre:apprenti") === "commune" && rarete("cadre:or") === "commune" && rarete("cadre:platine") === "rare" && rarete("cadre:liquide-diamant") === "precieuse" && rarete("cadre:aura") === "legendaire" && rarete("titre:maitre-bottega") === "legendaire" && rarete("banniere:imola") === "precieuse",
+    );
+    check(
+      "cadres et bannières du profil : origine et obtention",
+      pieceDe("cadre:aucun")?.origine === "libre" && pieceDe("cadre:aucun")?.obtention === "Libre" && pieceDe("cadre:bronze")?.origine === "questions" && pieceDe("cadre:aura")?.origine === "rang" &&
+        pieceDe("cadre:liquide-diamant")?.obtention === "Atteindre le palier Diamant une fois" && pieceDe("cadre:dorure")?.origine === "sceau" && PIECES.filter((p) => p.origine !== "codex" && p.type !== "titre").every((p) => p.programme === "global"),
+    );
+
+    // §3.3 point 4
+    const t = (palier: 1 | 2 | 3 | 4, n: number, sources?: number): Condition => ({ k: "trophees", palier, n, ...(sources ? { sources } : {}) });
+    const f = (chapitre: string, palier: number): Condition => ({ k: "fil", chapitre, palier });
+    const attendues: [string, Condition, string][] = [
+      ["banniere:salle-trophees", { k: "unDe", conditions: [t(3, 10), f("trophees", 5)] }, "precieuse"],
+      ["titre:collectionneur", { k: "unDe", conditions: [t(4, 10), f("trophees", 4)] }, "precieuse"],
+      ["cadre:vitrine-or", t(3, 1, 4), "legendaire"],
+      ["cadre:plume", f("encre", 3), "rare"],
+      ["titre:copiste", f("questions", 4), "precieuse"],
+      ["titre:encre-vie", f("encre", 6), "legendaire"],
+      ["titre:entretien", f("entretien", 2), "precieuse"],
+      ["banniere:route-milan", { k: "programme", programme: "finance/cfa-l1" }, "legendaire"],
+    ];
+    for (const [cle, condition, r] of attendues) check(`${cle} : condition et rareté du §3.3`, egal(pieceDe(cle)?.condition, condition) && pieceDe(cle)?.rarete === r);
+    const diamant = pieceDe("cadre:diamant-taille");
+    check(
+      "clé déclarée des deux côtés : une entrée, la fiche d'ici, la quête du Codex en « ou »",
+      PIECES.filter((p) => p.cle === "cadre:diamant-taille").length === 1 && diamant?.nom === "Diamant taillé" && diamant.rarete === "rare" &&
+        egal(diamant.condition, { k: "unDe", conditions: [t(4, 1), f("trophees", 3), { k: "codex", quete: QUETE_ESSAI }] }),
+    );
+
+    // §3.3 point 5
+    const folios = piecesDuType("folio");
+    check("19 folios, sans image, provisoires", folios.length === 19 && FOLIOS.length === 19 && folios.every((p) => p.folio?.image === null && p.folio.provisoire));
+    check("chaque folio s'ouvre par sa quête", folios.every((p) => p.condition?.k === "codex" && p.condition.quete === FOLIOS.find((x) => `folio:${x.nue}` === p.cle)?.quete));
+    check("les quêtes des folios existent (actes, « Maître de… ») ou sont du fil rouge", FOLIOS.every((x) => quetes.has(x.quete) || /^acte:(acte[1-6]|epilogue)$/.test(x.quete) || /^fil:(maitres|collection):\d+$/.test(x.quete)));
+    check("folio déclaré au Codex : une entrée, nom et description du Codex, rareté et obtention d'ici", PIECES.filter((p) => p.cle === "folio:mains").length === 1 && pieceDe("folio:mains")?.nom === "Étude de mains (Codex)" && pieceDe("folio:mains")?.description === "Le folio décrit par le Codex." && !!pieceDe("folio:mains")?.obtention.startsWith("Clore l'acte I, « ") && pieceDe("folio:mains")?.rarete === "precieuse");
+    check("folio non déclaré au Codex : le nom de l'œuvre", pieceDe("folio:deluge")?.nom === "Le Déluge" && pieceDe("folio:galerie")?.origine === "fil" && pieceDe("folio:galerie")?.obtention === "Fil rouge « La galerie des maîtres » : 3 titres « Maître de… »");
+  }
+
+  console.log("\n# Conditions");
+  {
+    const a = (o: Partial<Acquis> = {}): Acquis => ({ ...acquisDe(STATS_VIDES), ...o });
+    const salle = (lignes: LigneTrophee[]) => compter(lignes);
+    check("acquisDe : champs nouveaux vides, une Map neuve à chaque appel", (() => {
+      const x = acquisDe(STATS_VIDES);
+      const y = acquisDe(STATS_VIDES);
+      return x.codex.size === 0 && x.codex !== y.codex && x.trophees === null && egal(x.fil, {}) && x.programmesMenes.length === 0;
+    })());
+    check("catalogue.ts réexporte remplie et dateGagnee (les mêmes)", remplieCatalogue === remplie && dateGagneeCatalogue === dateGagnee);
+    check("profil : 500 questions ouvrent « Or », pas « Platine »", possede(pieceDe("cadre:or")!, a({ questions: 500 })) && !possede(pieceDe("cadre:platine")!, a({ questions: 500 })));
+    check("libre : toujours possédée", possede(pieceDe("cadre:pinceau")!, a()));
+
+    const codex = a({ codex: new Map([["acte:acte4", "2026-10-12"]]) });
+    check("codex : l'acte IV clos ouvre « Sanguine » et « Compagnon », pas « Guilde »", possede(pieceDe("cadre:sanguine")!, codex) && possede(pieceDe("titre:compagnon")!, codex) && !possede(pieceDe("titre:guilde")!, codex));
+    check("codex : la date de la récompense", egal(dateGagnee(pieceDe("cadre:sanguine")!.condition, codex), { iso: "2026-10-12", avant: false }));
+
+    check("trophées : non lus → rien", !possede(pieceDe("cadre:diamant-taille")!, a()));
+    const unDiamant = a({ trophees: salle([{ source: "ciblee", palier: 4, n: 1 }]) });
+    check("trophées : un diamant ouvre « Diamant taillé », pas « Collectionneur »", possede(pieceDe("cadre:diamant-taille")!, unDiamant) && !possede(pieceDe("titre:collectionneur")!, unDiamant));
+    const dixOr = a({ trophees: salle([{ source: "trente", palier: 3, n: 6 }, { source: "blanc", palier: 4, n: 4 }]) });
+    check("trophées : « or » veut dire « or ou mieux » (6 or + 4 diamants = 10)", possede(pieceDe("banniere:salle-trophees")!, dixOr));
+    const trois = salle([{ source: "ciblee", palier: 3, n: 5 }, { source: "trente", palier: 4, n: 1 }, { source: "fiche", palier: 3, n: 1 }, { source: "drill", palier: 2, n: 9 }]);
+    check("trophées : un or dans 3 sources ne suffit pas pour la vitrine", !possede(pieceDe("cadre:vitrine-or")!, a({ trophees: trois })));
+    const quatre = salle([...trois.lignes, { source: "duel", palier: 3, n: 1 }]);
+    check("trophées : un or dans 4 sources ouvre la vitrine", possede(pieceDe("cadre:vitrine-or")!, a({ trophees: quatre })));
+    check("trophées : source donnée", remplie({ k: "trophees", palier: 3, n: 5, source: "ciblee" }, a({ trophees: trois })) && !remplie({ k: "trophees", palier: 3, n: 2, source: "trente" }, a({ trophees: trois })));
+    check("trophées : sans date (le dernier trophée n'est pas le jour où la condition s'est remplie)", dateGagnee(pieceDe("cadre:vitrine-or")!.condition, a({ trophees: quatre })) === null);
+
+    check("fil : encre 3 ouvre « Plume », encre 2 non", possede(pieceDe("cadre:plume")!, a({ fil: { encre: 3 } })) && !possede(pieceDe("cadre:plume")!, a({ fil: { encre: 2 } })));
+    check("fil : le palier 4 des trophées ouvre « Collectionneur » (unDe)", possede(pieceDe("titre:collectionneur")!, a({ fil: { trophees: 4 } })));
+    check("fil : la date du palier, lue dans les quêtes récompensées", egal(dateGagnee(pieceDe("cadre:plume")!.condition, a({ fil: { encre: 4 }, codex: new Map([["fil:encre:3", "2026-09-30"]]) })), { iso: "2026-09-30", avant: false }));
+    check("programme : CFA I mené ouvre « La route de Milan »", possede(pieceDe("banniere:route-milan")!, a({ programmesMenes: ["finance/cfa-l1"] })) && !possede(pieceDe("banniere:route-milan")!, a({ programmesMenes: ["finance/cfa-l2"] })));
+    check("folio : « fil:maitres:2 » ouvre « galerie »", possede(pieceDe("folio:galerie")!, a({ codex: new Map([["fil:maitres:2", null]]) })));
+
+    const ou: Condition = { k: "unDe", conditions: [{ k: "questions", n: 10_000 }, { k: "unDe", conditions: [{ k: "codex", quete: "acte:acte2" }, { k: "fil", chapitre: "encre", palier: 1 }] }] };
+    check("unDe : imbriqué, une seule branche suffit", remplie(ou, a({ fil: { encre: 1 } })) && !remplie(ou, a({ questions: 9_999 })) && remplie({ k: "unDe", conditions: [] }, a()) === false);
+    const deux = a({ codex: new Map<string, string | null>([["acte:acte2", "2026-10-03"], ["fil:encre:1", "2026-09-20"]]), fil: { encre: 1 } });
+    check("unDe : la plus ancienne date des branches remplies", egal(dateGagnee(ou, deux), { iso: "2026-09-20", avant: false }));
+    check("unDe : une branche remplie sans date → pas de date", dateGagnee(ou, a({ codex: new Map([["acte:acte2", "2026-10-03"]]), questions: 10_000 })) === null);
+  }
+
+  console.log("\n# Trophées");
+  {
+    const c = compter([
+      { source: "ciblee", palier: 1, n: 2 },
+      { source: "ciblee", palier: 1, n: 3, dernier: "2026-10-10T08:00:00Z" },
+      { source: "blanc", palier: 3, n: 1, dernier: "2026-10-01T08:00:00Z" },
+      { source: "trente", palier: 4, n: 2 },
+      { source: "inconnue" as never, palier: 2, n: 4 },
+      { source: "cinq", palier: 5 as never, n: 1 },
+      { source: "drill", palier: 2, n: 0 },
+    ]);
+    check("compter : doublons fusionnés, lignes invalides ignorées", c.lignes.length === 3 && c.lignes[0].n === 5 && c.lignes[0].dernier === "2026-10-10T08:00:00Z");
+    check("compter : total et paliers exacts", c.total === 8 && egal(c.parPalier, { 1: 5, 2: 0, 3: 1, 4: 2 }));
+    check("compter : auMoins (or ou mieux, par source)", c.auMoins(3) === 3 && c.auMoins(1) === 8 && c.auMoins(3, "blanc") === 1 && c.auMoins(4, "blanc") === 0);
+    check("compter : les sources à l'or ou mieux, dans l'ordre", egal(c.sources, ["blanc", "trente"]));
+    check("palierTrophee : « or » → 3", palierTrophee("or") === 3 && palierTrophee("diamant") === 4);
+    check("lignesCiblees : palier = trophyTier (1, 2–3, 4–6, 7 et plus)", egal(lignesCiblees([1, 3, 6, 7].map((t) => ({ topic_count: t, trophy_count: "2" }))).map((l) => l.palier), [1, 2, 3, 4]));
+
+    const rpc = (r: () => Promise<{ data: unknown; error: unknown }>) => ({ rpc: r }) as unknown as SupabaseClient;
+    const lu = await lireTrophees(rpc(async () => ({ data: [{ topic_count: 8, trophy_count: 2 }, { topic_count: 1, trophy_count: 5 }], error: null })), "u");
+    check("lireTrophees : le repli ciblé, complet = false", !lu.complet && lu.total === 7 && lu.auMoins(4) === 2 && lu.lignes.every((l) => l.source === "ciblee"));
+    const ko1 = await lireTrophees(rpc(async () => ({ data: null, error: { code: "PGRST202", message: "Could not find the function" } })), "u");
+    const ko2 = await lireTrophees(rpc(async () => { throw new Error("réseau"); }), "u");
+    check("lireTrophees : erreur ou exception → compte vide, sans bruit", ko1.total === 0 && !ko1.complet && ko2.total === 0);
+  }
+
+  console.log("\n# lireAcquis");
+  {
+    const jours = codexDepuis([
+      { quete_id: "acte:acte4", recompensee_le: "2026-10-15T23:30:00Z" },
+      { quete_id: "acte:acte4", recompensee_le: "2026-10-12T09:00:00Z" },
+      { quete_id: "fil:encre:2", recompensee_le: null },
+      { quete_id: "fil:encre:3", recompensee_le: "2026-10-01T10:00:00Z" },
+      { quete_id: "fil:trophees:1", recompensee_le: "2026-10-01T10:00:00Z" },
+    ]);
+    check("codexDepuis : jour de Paris (23 h 30 UTC le 15 → le 16), la plus ancienne récompense", codexDepuis([{ quete_id: "x", recompensee_le: "2026-10-15T23:30:00Z" }]).codex.get("x") === "2026-10-16" && jours.codex.get("acte:acte4") === "2026-10-12");
+    check("codexDepuis : le fil rouge, plus haut palier par chapitre", egal(jours.fil, { encre: 3, trophees: 1 }));
+
+    const filtres: string[] = [];
+    const requete = (res: { data: unknown; error: unknown }) => {
+      const q: Record<string, unknown> = {};
+      for (const m of ["select", "eq", "neq", "limit"]) q[m] = (...args: unknown[]) => (filtres.push(`${m}(${args.join(",")})`), q);
+      q.then = (ok: (v: unknown) => unknown, ko: (e: unknown) => unknown) => Promise.resolve(res).then(ok, ko);
+      return q;
+    };
+    const absente = { data: null, error: { code: "42P01", message: 'relation "x" does not exist' } };
+    const client = (tables: Record<string, { data: unknown; error: unknown }>) =>
+      ({ from: (t: string) => requete(tables[t] ?? absente), rpc: async () => ({ data: [{ topic_count: 7, trophy_count: 1 }], error: null }) }) as unknown as SupabaseClient;
+    const base = { stats: { ...STATS_VIDES, questions: 1234, picAtteint: 4 }, sceaux: [], datesPic: [] };
+
+    const plein = await lireAcquis(
+      client({
+        codex_progression: { data: [{ quete_id: "acte:acte4", recompensee_le: "2026-10-12T09:00:00Z" }, { quete_id: "fil:trophees:3", recompensee_le: "2026-10-13T09:00:00Z" }], error: null },
+        codex_programmes_joueur: { data: [{ programme: "finance/cfa-l1" }], error: null },
+      }),
+      "u1",
+      base,
+    );
+    check("lireAcquis : la requête du Codex (le joueur, récompensées, sans contrats, 5 000 au plus)", ["select(quete_id,recompensee_le)", "eq(user_id,u1)", "eq(etat,recompensee)", "neq(famille,contrat)", "limit(5000)"].every((x) => filtres.includes(x)));
+    check("lireAcquis : profil, Codex, fil, trophées, programmes", plein.questions === 1234 && plein.pic === 4 && plein.codex.get("acte:acte4") === "2026-10-12" && plein.fil.trophees === 3 && plein.trophees?.auMoins(4) === 1 && egal(plein.programmesMenes, ["finance/cfa-l1"]));
+    check("lireAcquis : les pièces s'en déduisent", possede(pieceDe("cadre:sanguine")!, plein) && possede(pieceDe("cadre:diamant-taille")!, plein) && possede(pieceDe("banniere:route-milan")!, plein));
+
+    const vide = await lireAcquis(client({}), "u2", base);
+    check("lireAcquis sans les tables du Codex : vaut acquisDe (plus les trophées ciblés)", vide.codex.size === 0 && egal(vide.fil, {}) && vide.programmesMenes.length === 0 && vide.questions === 1234 && vide.trophees?.total === 1);
+    const casse = await lireAcquis({ from: () => { throw new Error("réseau"); }, rpc: async () => { throw new Error("réseau"); } } as unknown as SupabaseClient, "u3", base);
+    check("lireAcquis : exception partout → Acquis vide, sans erreur", casse.codex.size === 0 && casse.trophees?.total === 0 && casse.programmesMenes.length === 0);
+  }
+
+  console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
+  process.exit(ko ? 1 : 0);
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
