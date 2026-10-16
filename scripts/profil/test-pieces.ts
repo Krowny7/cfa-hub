@@ -9,7 +9,8 @@
 // inconnu est ignoré), chaque sorte de condition (unDe compris), les dates,
 // les réexports de lib/profil/catalogue.ts, compter, lireTrophees, lireAcquis.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, titresMaitres } from "@/lib/codex/catalogue";
+import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
+import { donneurs } from "@/lib/codex/vue";
 import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as remplieCatalogue, STATS_VIDES } from "@/lib/profil/catalogue";
 import { codexDepuis, lireAcquis, type Acquis, type Condition } from "@/lib/profil/acquis";
 import { compter, lignesCiblees, lireTrophees, palierTrophee, type LigneTrophee } from "@/lib/trophees";
@@ -22,16 +23,32 @@ const check = (label: string, cond: boolean, extra = "") => {
 };
 const egal = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
 
+// Les folios que le Codex déclare vraiment (aucun avant la fusion F1 ; les
+// mêmes que FOLIOS après), relevés avant les ajouts simulés ci-dessous.
+const FOLIOS_DU_CODEX = COSMETIQUES_CODEX.filter((c) => (c.type as string) === "folio").map((c) => c.cle);
+
 // Ce que les lots du couloir A ajouteront au Codex, simulé AVANT l'assemblage
 // des pièces : une pièce des trophées aussi déclarée au Codex (et donnée par
 // une quête), un folio déclaré au Codex, un type que le profil ne connaît pas.
-const QUETE_ESSAI = "exploit:essai-diamant";
-QUETES_EXPLOITS.push({ ...QUETES_EXPLOITS[QUETES_EXPLOITS.length - 1], id: QUETE_ESSAI, recompense: { xp: 0, cosmetique: "cadre:diamant-taille" } });
+const QUETE_ESSAI = "exploit:essai-vitrine";
+const modele = QUETES_EXPLOITS[QUETES_EXPLOITS.length - 1];
+QUETES_EXPLOITS.push(
+  { ...modele, id: QUETE_ESSAI, recompense: { xp: 0, cosmetique: "cadre:vitrine-or" } },
+  // le palier du fil rouge qui donne « Plume » (lib/codex/fil-rouge.ts, lot A2b)
+  { ...modele, id: "fil:encre:3", recompense: { xp: 0, cosmetique: "cadre:plume" } },
+);
 COSMETIQUES_CODEX.push(
-  { cle: "cadre:diamant-taille", type: "cadre", nom: "Diamant (nom du Codex)", description: "Description du Codex.", anime: true },
+  { cle: "cadre:vitrine-or", type: "cadre", nom: "Vitrine (nom du Codex)", description: "Description du Codex.", anime: true },
   { cle: "folio:mains", type: "folio" as CosmetiqueCodex["type"], nom: "Étude de mains (Codex)", description: "Le folio décrit par le Codex." },
   { cle: "embleme:essai", type: "embleme" as CosmetiqueCodex["type"], nom: "Emblème", description: "Un type inconnu." },
 );
+
+/** La condition d'état d'une pièce, sans les quêtes du Codex qui la donnent aussi (en « ou », §3.3 point 6). */
+const sansQuete = (c: Condition | null): Condition | null => {
+  if (c?.k !== "unDe") return c;
+  const reste = c.conditions.filter((x) => x.k !== "codex");
+  return reste.length === 1 ? reste[0] : { k: "unDe", conditions: reste };
+};
 
 async function main() {
   const { FOLIOS, PIECES, TYPES_PIECE, cleNue, pieceDe, pieceNue, piecesDuType, possede, remplie, dateGagnee } = await import("@/lib/profil/pieces");
@@ -63,12 +80,15 @@ async function main() {
     check("les cadres du profil gardent leur clé nue", CADRES.every((c) => pieceNue("cadre", c.key)?.condition === c.condition));
     check("les motifs du profil deviennent des bannières", MOTIFS.every((m) => pieceNue("banniere", m.key)?.condition === (m.condition ?? null)));
     const quetes = new Set(catalogueCodex().map((q) => q.id));
-    const codex = [...COSMETIQUES_CODEX.filter((c) => ["cadre", "banniere", "titre"].includes(c.type) && c.cle !== "cadre:diamant-taille"), ...titresMaitres()];
-    check("chaque cosmétique et titre du Codex est une pièce, donnée par une quête", codex.every((c) => {
+    const codex = [...COSMETIQUES_CODEX.filter((c) => TYPES_PIECE.includes(c.type)), ...titresMaitres()];
+    check("chaque cosmétique et titre du Codex est une pièce, une seule fois", codex.every((c) => PIECES.filter((p) => p.cle === c.cle).length === 1));
+    // celles qui ne sont déclarées que par le Codex (les autres gardent leur fiche d'ici)
+    const seulement = codex.filter((c) => pieceDe(c.cle)?.origine === "codex" && c.type !== "folio");
+    check("une pièce du seul Codex : son nom, et la quête (ou l'acte) qui la donne", seulement.length >= 30 && seulement.every((c) => {
       const p = pieceDe(c.cle);
-      return !!p && p.origine === "codex" && p.nom === c.nom && p.condition?.k === "codex" && (quetes.has(p.condition.quete) || p.condition.quete.startsWith("acte:"));
+      return p?.nom === c.nom && p.condition?.k === "codex" && (quetes.has(p.condition.quete) || p.condition.quete.startsWith("acte:"));
     }));
-    check("les pièces animées du Codex sont « css »", codex.filter((c) => c.anime).every((c) => pieceDe(c.cle)?.anime === "css"));
+    check("les pièces animées du Codex sont « css »", seulement.filter((c) => c.anime).every((c) => pieceDe(c.cle)?.anime === "css"));
     check("un type inconnu du Codex est ignoré", !PIECES.some((p) => p.cle.startsWith("embleme:")));
     check("cadre:sanguine ← acte IV", egal(pieceDe("cadre:sanguine")?.condition, { k: "codex", quete: "acte:acte4" }) && pieceDe("cadre:sanguine")?.obtention === "Clore l'acte IV, « La première commande »");
     check("titre:maitre:fsa ← branche:fsa:maitre, programme CFA I", egal(pieceDe("titre:maitre:fsa")?.condition, { k: "codex", quete: "branche:fsa:maitre" }) && pieceDe("titre:maitre:fsa")?.programme === "finance/cfa-l1");
@@ -88,6 +108,7 @@ async function main() {
     const t = (palier: 1 | 2 | 3 | 4, n: number, sources?: number): Condition => ({ k: "trophees", palier, n, ...(sources ? { sources } : {}) });
     const f = (chapitre: string, palier: number): Condition => ({ k: "fil", chapitre, palier });
     const attendues: [string, Condition, string][] = [
+      ["cadre:diamant-taille", { k: "unDe", conditions: [t(4, 1), f("trophees", 3)] }, "rare"],
       ["banniere:salle-trophees", { k: "unDe", conditions: [t(3, 10), f("trophees", 5)] }, "precieuse"],
       ["titre:collectionneur", { k: "unDe", conditions: [t(4, 10), f("trophees", 4)] }, "precieuse"],
       ["cadre:vitrine-or", t(3, 1, 4), "legendaire"],
@@ -97,13 +118,14 @@ async function main() {
       ["titre:entretien", f("entretien", 2), "precieuse"],
       ["banniere:route-milan", { k: "programme", programme: "finance/cfa-l1" }, "legendaire"],
     ];
-    for (const [cle, condition, r] of attendues) check(`${cle} : condition et rareté du §3.3`, egal(pieceDe(cle)?.condition, condition) && pieceDe(cle)?.rarete === r);
-    const diamant = pieceDe("cadre:diamant-taille");
+    for (const [cle, condition, r] of attendues) check(`${cle} : condition et rareté du §3.3`, egal(sansQuete(pieceDe(cle)?.condition ?? null), condition) && pieceDe(cle)?.rarete === r);
+    const vitrine = pieceDe("cadre:vitrine-or");
     check(
       "clé déclarée des deux côtés : une entrée, la fiche d'ici, la quête du Codex en « ou »",
-      PIECES.filter((p) => p.cle === "cadre:diamant-taille").length === 1 && diamant?.nom === "Diamant taillé" && diamant.rarete === "rare" &&
-        egal(diamant.condition, { k: "unDe", conditions: [t(4, 1), f("trophees", 3), { k: "codex", quete: QUETE_ESSAI }] }),
+      PIECES.filter((p) => p.cle === "cadre:vitrine-or").length === 1 && vitrine?.nom === "Vitrine d'or" && vitrine.origine === "trophee" &&
+        egal(vitrine.condition, { k: "unDe", conditions: [t(3, 1, 4), { k: "codex", quete: QUETE_ESSAI }] }),
     );
+    check("la quête du fil rouge qui donne la pièce est déjà sa condition : rien d'ajouté", egal(pieceDe("cadre:plume")?.condition, f("encre", 3)));
 
     // §3.3 point 5
     const folios = piecesDuType("folio");
@@ -111,7 +133,12 @@ async function main() {
     check("chaque folio s'ouvre par sa quête", folios.every((p) => p.condition?.k === "codex" && p.condition.quete === FOLIOS.find((x) => `folio:${x.nue}` === p.cle)?.quete));
     check("les quêtes des folios existent (actes, « Maître de… ») ou sont du fil rouge", FOLIOS.every((x) => quetes.has(x.quete) || /^acte:(acte[1-6]|epilogue)$/.test(x.quete) || /^fil:(maitres|collection):\d+$/.test(x.quete)));
     check("folio déclaré au Codex : une entrée, nom et description du Codex, rareté et obtention d'ici", PIECES.filter((p) => p.cle === "folio:mains").length === 1 && pieceDe("folio:mains")?.nom === "Étude de mains (Codex)" && pieceDe("folio:mains")?.description === "Le folio décrit par le Codex." && !!pieceDe("folio:mains")?.obtention.startsWith("Clore l'acte I, « ") && pieceDe("folio:mains")?.rarete === "precieuse");
-    check("folio non déclaré au Codex : le nom de l'œuvre", pieceDe("folio:deluge")?.nom === "Le Déluge" && pieceDe("folio:galerie")?.origine === "fil" && pieceDe("folio:galerie")?.obtention === "Fil rouge « La galerie des maîtres » : 3 titres « Maître de… »");
+    check("folio non déclaré au Codex : le nom de l'œuvre", FOLIOS_DU_CODEX.includes("folio:deluge") || pieceDe("folio:deluge")?.nom === "Le Déluge");
+    check("folio du fil rouge : origine et obtention", pieceDe("folio:galerie")?.origine === "fil" && pieceDe("folio:galerie")?.obtention === "Fil rouge « La galerie des maîtres » : 3 titres « Maître de… »");
+    const ici = FOLIOS.map((x) => `folio:${x.nue}`).sort();
+    check("les folios du Codex sont ceux d'ici (aucun avant la fusion F1)", FOLIOS_DU_CODEX.length === 0 || egal([...FOLIOS_DU_CODEX].sort(), ici), FOLIOS_DU_CODEX.join(", "));
+    const par = donneurs(contenuDuProgramme(), catalogueCodex());
+    check("un folio donné par une quête du Codex l'est par la quête déclarée ici", FOLIOS.every((x) => !par.has(`folio:${x.nue}`) || par.get(`folio:${x.nue}`) === x.quete));
   }
 
   console.log("\n# Conditions");
