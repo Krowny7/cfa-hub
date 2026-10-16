@@ -1,6 +1,7 @@
 // Le Codex, côté serveur : lit la base (migration_codex.sql), fait tourner le
-// moteur (lib/codex/moteur.ts), écrit la progression et les récompenses, et
-// rend la vue de l'écran (lib/codex/vue.ts). Tout passe par le client service
+// moteur (lib/codex/moteur.ts) sur l'arbre du programme actif du joueur
+// (codex_programmes_joueur ; sans elle, CFA I), écrit la progression et les
+// récompenses, et rend la vue de l'écran (lib/codex/vue.ts). Tout passe par le client service
 // role (comme les sceaux) : les joueurs n'écrivent rien eux-mêmes.
 //
 // REPLI : sans la migration (table ou fonction absente) ou sans clé admin, on
@@ -165,12 +166,8 @@ async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): 
     const { data, error } = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
     if (error || !data || typeof data !== "object") return { capacites: CAPACITES_VIDE };
     const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown };
-    const n = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? { v: x } : null);
-    return {
-      capacites: lireCapacites(d.capacites),
-      ...(n(d.jours_encre_total) ? { jours_encre_total: n(d.jours_encre_total)!.v } : {}),
-      ...(n(d.programmes_menes) ? { programmes_menes: n(d.programmes_menes)!.v } : {}),
-    };
+    const nombre = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : undefined);
+    return { capacites: lireCapacites(d.capacites), jours_encre_total: nombre(d.jours_encre_total), programmes_menes: nombre(d.programmes_menes) };
   } catch {
     return { capacites: CAPACITES_VIDE };
   }
@@ -270,7 +267,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       await consigner(a, user.id, "", "codex_lire a échoué");
       return repli(user.id, jour);
     }
-    entree.lecture = { ...lecture, mesures: { ...lecture.mesures, ...(v3.jours_encre_total !== undefined ? { jours_encre_total: v3.jours_encre_total } : {}), ...(v3.programmes_menes !== undefined ? { programmes_menes: v3.programmes_menes } : {}) } };
+    entree.lecture = { ...lecture, mesures: { ...lecture.mesures, jours_encre_total: v3.jours_encre_total, programmes_menes: v3.programmes_menes } };
     const compteurs = indexerLecture(demandes, entree.lecture);
     let resultat = evaluer(entree, compteurs);
 

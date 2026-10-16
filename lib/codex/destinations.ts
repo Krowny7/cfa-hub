@@ -353,7 +353,7 @@ function cibleEtape(etape: EtapeBranche, ctx: ContexteDestination): Cible | null
     const q = genererBranches([m], programme, ctx.outils).find((x) => x.etape === etape);
     if (!q || faites.has(idDe(programme, q.id))) continue;
     const c = resoudre(q.objectif, q, {}, ctx);
-    if (c) return q!.duree ? { ...c, duree: q!.duree } : c;
+    if (c) return q.duree ? { ...c, duree: q.duree } : c;
   }
   return null;
 }
