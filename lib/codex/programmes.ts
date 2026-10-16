@@ -123,3 +123,17 @@ export function programmeActif(programmes: ProgrammeJoueur[] | undefined): Defin
   const actif = programmes?.find((p) => p.statut === "actif");
   return (actif && programmeDe(actif.programme)) || PROGRAMME_DEFAUT;
 }
+
+/**
+ * La suite proposée (« La route de Milan ») : le programme qui suit celui du
+ * joueur une fois celui-ci mené, tant qu'il ne l'a pas commencé ; null sinon.
+ */
+export function suiteDe(programmes: ProgrammeJoueur[] | undefined): DefinitionProgramme | null {
+  const courant = programmeActif(programmes);
+  if (!courant.suivant || programmes?.find((p) => p.programme === courant.cle)?.statut !== "mene") return null;
+  if (programmes.some((p) => p.programme === courant.suivant)) return null;
+  return programmeDe(courant.suivant);
+}
+
+/** Le nom d'un programme en tête de phrase : « Le Niveau II » pour un niveau du CFA, sinon son nom. */
+export const nomEnTete = (def: Pick<DefinitionProgramme, "nom">) => (/^CFA Niveau /.test(def.nom) ? `Le ${def.nom.slice(4)}` : def.nom);

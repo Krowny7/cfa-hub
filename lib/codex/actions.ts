@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
@@ -120,6 +120,17 @@ export async function codexSeanceBudget(budget: number): Promise<Resultat<{ pann
   if (!r.ok) return r;
   revalidatePath("/codex");
   return { ok: true, panneau: panneauDe(r.vue) };
+}
+
+/** « Ouvrir CFA II » : le programme suivant devient l'actif, une fois le sien mené (la route de Milan). */
+export async function codexOuvrirProgramme(programme: string): Promise<Resultat<{ vue: VueCodex }>> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  if (typeof programme !== "string" || !/^[a-z]+\/[a-z0-9-]{2,40}$/.test(programme)) return { ok: false, raison: "refus" };
+  const r = await ouvrirProgramme(supabase, user, programme);
+  if (!r.ok) return r;
+  revalidatePath("/codex");
+  return { ok: true, vue: r.vue };
 }
 
 /** Changer UN des contrats du jour (une seule fois par jour, pas un contrat déjà rempli). */

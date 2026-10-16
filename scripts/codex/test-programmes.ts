@@ -11,11 +11,12 @@ import { ACTES, COSMETIQUES_CODEX, catalogueCodex, contenuDuProgramme, evenement
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { PROGRAMME_ESSAI, PROGRAMME_ESSAI_BIS } from "@/lib/codex/programmes/essai";
 import {
-  REGISTRE, actesDe, catalogueComplet, cosmetiquesDe, genererArbre, idDe, lireProgrammesJoueur, modelesContrats, programmeActif, programmeDe, programmeDeId, slugDe,
-  type DefinitionProgramme,
+  REGISTRE, actesDe, catalogueComplet, cosmetiquesDe, genererArbre, idDe, lireProgrammesJoueur, modelesContrats, nomEnTete, programmeActif, programmeDe, programmeDeId, slugDe, suiteDe,
+  type DefinitionProgramme, type ProgrammeJoueur,
 } from "@/lib/codex/programmes";
 import { apresExamenDe, evaluer, phaseJoueur, quetesASuivre, requisOk, type Entree } from "@/lib/codex/moteur";
 import { CAPACITES_VIDE, lireCapacites } from "@/lib/codex/reglage";
+import { construireVue } from "@/lib/codex/vue";
 import type { Objectif, Quete } from "@/lib/codex/types";
 
 let ko = 0;
@@ -165,6 +166,17 @@ console.log("\n# les programmes du joueur, « apresExamen », les capacités");
   check("« apresExamen » ouvert une fois le jour J passé", r2.etats.find((s) => s.quete.id === apresEx.id)?.ouverte === true);
   check("le lot d'écriture ne contient jamais une quête non suivie", !r.lot.some((x) => x.quete === exige.id));
   check("ACTES de CFA I inchangés (8 actes)", ACTES.length === 8);
+
+  // la route de Milan
+  const ligne = (programme: string, statut: ProgrammeJoueur["statut"]): ProgrammeJoueur => ({ programme, statut, jourJ: null, meneLe: null });
+  check("la route de Milan : rien tant que CFA I n'est pas mené", suiteDe(undefined) === null && suiteDe([ligne("finance/cfa-l1", "actif")]) === null);
+  check("CFA I mené : CFA II proposé", suiteDe([ligne("finance/cfa-l1", "mene")])?.cle === "finance/cfa-l2");
+  check("CFA II déjà commencé (actif ou en pause) : plus de proposition", suiteDe([ligne("finance/cfa-l1", "mene"), ligne("finance/cfa-l2", "pause")]) === null);
+  check("« Le Niveau II » en tête de phrase ; un autre programme garde son nom", nomEnTete(programmeDe("finance/cfa-l2")!) === "Le Niveau II" && nomEnTete(PROGRAMME_ESSAI) === "Programme d'essai");
+  const vueDe = (e: Entree) => construireVue(e, evaluer(e, {}), null, { devoile: null });
+  const s1 = vueDe({ ...base, programmes: [ligne("finance/cfa-l1", "mene")] }).suite;
+  check("la vue l'annonce sans bouton tant que CFA II n'est pas public", s1?.annonce === "Le Niveau II arrive. Ton fil rouge continue d'ici là." && s1.ouvrable === false && s1.court === "CFA II", JSON.stringify(s1));
+  check("rien à annoncer avant", vueDe(base).suite === null);
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert.");

@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { devoileLite } from "@/lib/codex/devoile-lite";
 import type { LigneQuete, VueActe, VueCodex, VueContrat } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
-import { codexChangerContrat, codexReclamer, codexToutMontrer } from "@/lib/codex/actions";
+import { codexChangerContrat, codexOuvrirProgramme, codexReclamer, codexToutMontrer } from "@/lib/codex/actions";
 import { Sceau } from "@/components/codex/Sceau";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { DetailQuete } from "@/components/codex/DetailQuete";
@@ -59,6 +59,15 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
       const r = await codexChangerContrat(ct.emplacement);
       if (r.ok) setVue(r.vue);
       else setMessage(r.raison === "refus" ? CODEX.contrats.changeDeja : "Pas d'autre contrat à te proposer pour l'instant.");
+    });
+
+  const ouvrirSuite = (programme: string) =>
+    demarrer(async () => {
+      setMessage(null);
+      if (demo) return;
+      const r = await codexOuvrirProgramme(programme);
+      if (r.ok) setVue(r.vue);
+      else setMessage("Impossible d'ouvrir ce programme pour l'instant. Réessaie dans un instant.");
     });
 
   const reclamer = async (l: LigneQuete): Promise<string | null> => {
@@ -124,6 +133,17 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
           )}
         </div>
       </header>
+
+      {vue.suite && (
+        <section className="card-quiet flex flex-wrap items-center gap-3 p-3" aria-label="La route de Milan">
+          <p className="t-small m-0 min-w-0 flex-1">{vue.suite.annonce}</p>
+          {vue.suite.ouvrable && (
+            <button type="button" className="btn btn-primary rl-press shrink-0" onClick={() => ouvrirSuite(vue.suite!.programme)} disabled={occupe}>
+              Ouvrir {vue.suite.court} <ArrowRight size={16} aria-hidden />
+            </button>
+          )}
+        </section>
+      )}
 
       {message && (
         <p role="status" className="card-quiet t-small p-3">

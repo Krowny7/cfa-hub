@@ -30,7 +30,7 @@ import {
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import { CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, ecarter, lireCapacites, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
-import { lireProgrammesJoueur, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { lireProgrammesJoueur, programmeActif, suiteDe, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -423,6 +423,28 @@ export async function reglerJour(supabase: SupabaseClient, user: Joueur, quoi: {
   }
   MEMO.delete(user.id);
   const { vue } = await calculUnique(supabase, joueur, true);
+  return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
+}
+
+/**
+ * « Ouvrir CFA II » (la route de Milan, V3 §1.6) : le programme proposé
+ * devient l'actif (codex_programme_poser), l'ancien reste mené. Refusé si ce
+ * n'est pas la suite du joueur ou qu'elle n'est pas publique ; sans §3 :
+ * indisponible. Puis le Codex est recalculé.
+ */
+export async function ouvrirProgramme(supabase: SupabaseClient, user: Joueur, programme: string): Promise<{ ok: true; vue: VueCodex } | { ok: false; raison: "indisponible" | "refus" }> {
+  const a = admin();
+  if (!a) return { ok: false, raison: "indisponible" };
+  const suite = suiteDe(await lireProgrammes(a, user.id));
+  if (!suite || suite.cle !== programme || !suite.public) return { ok: false, raison: "refus" };
+  try {
+    const { error } = await a.rpc("codex_programme_poser", { p_user: user.id, p_programme: programme, p_statut: "actif", p_jour_j: null });
+    if (error) return { ok: false, raison: baseAbsente(error) ? "indisponible" : "refus" };
+  } catch {
+    return { ok: false, raison: "refus" };
+  }
+  MEMO.delete(user.id);
+  const { vue } = await calculUnique(supabase, user, true);
   return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
 }
 
