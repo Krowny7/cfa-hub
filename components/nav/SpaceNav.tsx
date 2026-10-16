@@ -17,8 +17,9 @@ import { useSpacesVisibles } from "@/components/nav/DevoileContext";
 // dans globals.css) ; le texte de l'onglet passe en blanc.
 // Les onglets s'ajustent à la place que la barre du haut leur laisse (requête
 // de conteneur : le parent porte `@container`) : icône et nom à partir de
-// 680 px, le nom seul en dessous (marges réduites), l'icône seule sous 450 px
-// (le nom reste lu par les lecteurs d'écran). Jamais de chevauchement.
+// 700 px, le nom seul en dessous (marges réduites), l'icône seule sous 470 px
+// (le nom reste lu par les lecteurs d'écran). Seuils tirés des chasses de
+// Geist : « Classement », le plus large, fait 5,53 em. Jamais de chevauchement.
 // `chemin` : pour les aperçus, force la route lue.
 export function SpaceNav({ chemin }: { chemin?: string } = {}) {
   const courant = usePathname();
@@ -48,9 +49,9 @@ export function SpaceNav({ chemin }: { chemin?: string } = {}) {
         {SPACES.map((s) => {
           const on = s.key === active;
           return (
-            <Link key={s.key} href={s.href} className={"seg-item gap-0 px-3 text-[13px] @min-[450px]:px-2 @min-[500px]:px-3 @min-[500px]:text-[13.5px] @min-[680px]:gap-[7px] @min-[680px]:px-4" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined}>
-              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} className="hidden @min-[680px]:block @max-[449px]:block" />
-              <span className="@max-[449px]:sr-only">{s.label}</span>
+            <Link key={s.key} href={s.href} className={"seg-item gap-0 px-3 text-[13px] @min-[470px]:px-2 @min-[530px]:px-3 @min-[530px]:text-[13.5px] @min-[700px]:gap-[7px] @min-[700px]:px-4" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined}>
+              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} className="hidden @min-[700px]:block @max-[469px]:block" />
+              <span className="@max-[469px]:sr-only">{s.label}</span>
             </Link>
           );
         })}

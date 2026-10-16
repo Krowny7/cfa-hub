@@ -26,9 +26,9 @@ import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 // court sous la barre pendant qu'une page se fait attendre (NavProgress).
 // Le logo mène à l'accueil, sur téléphone aussi (la barre du bas n'a
 // plus d'onglet « Accueil »). Aux largeurs moyennes, la place va aux espaces :
-// le sélecteur de domaine n'apparaît qu'à partir de 1 280 px, le mot
-// « RANKED LOBBY » s'efface de 768 à 1 023 px (l'anneau reste) ; les onglets
-// eux-mêmes s'ajustent à ce qui reste (SpaceNav).
+// le sélecteur de domaine, abrégé (« CFA I »), n'apparaît qu'à partir de
+// 1 280 px ; le mot « RANKED LOBBY » s'efface de 768 à 1 023 px (l'anneau
+// reste) ; les onglets eux-mêmes s'ajustent à ce qui reste (SpaceNav).
 //
 // Le logo suit la journée : l'anneau se trace au nombre de traits du jour
 // (une lecture légère, en parallèle du rang, avec repli sur le logo plein).
@@ -79,7 +79,7 @@ export async function TopBar() {
         </Link>
         {user && (
           <div className="hidden xl:block">
-            <DomainSwitcher />
+            <DomainSwitcher compact />
           </div>
         )}
         <div className="@container flex min-w-0 flex-1 justify-center">{user && <SpaceNav />}</div>
