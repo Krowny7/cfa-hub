@@ -4,6 +4,7 @@ import { useNightTheme } from "@/components/ThemeToggle";
 import { useDiscreetMode } from "@/components/DiscreetToggle";
 import { useState } from "react";
 import { useReglagesLeonard } from "@/lib/leonard/reglages";
+import { RESUME_NOUVEAUTES } from "@/lib/leonard/repliques";
 import { useEtatNav } from "@/components/nav/DevoileContext";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import { codexToutMontrer } from "@/lib/codex/actions";
@@ -85,7 +86,7 @@ export function AppearanceSwitches() {
           <div className="flex items-center justify-between gap-4 py-3">
             <span className="min-w-0 flex-1">
               <span className="block text-[14px] font-semibold">Les nouveautés</span>
-              <span className="t-micro mt-0.5 block">Points faibles, l&apos;Atelier, sceaux, Journal, saisons : Léonard te montre ce qui a changé.</span>
+              <span className="t-micro mt-0.5 block">{RESUME_NOUVEAUTES} : Léonard te montre ce qui a changé.</span>
             </span>
             <button type="button" className="btn btn-secondary btn-sm" onClick={leo.revoirNouveautes}>
               Revoir

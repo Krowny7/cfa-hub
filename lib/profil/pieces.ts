@@ -13,8 +13,8 @@ import { idFil, remplie, type Acquis, type Condition, type ConditionProfil } fro
 import { ACTES, COSMETIQUES_CODEX, PROGRAMME, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
 import { programmeDe } from "@/lib/codex/programmes";
 import { donneurs } from "@/lib/codex/vue";
-import { pluriel } from "@/lib/voice";
 import { romain } from "@/lib/voice-codex";
+import { enigmeClaire, titreActe, titreClair, titreClairDe } from "@/lib/codex/titres-clairs";
 import { conditionPiece } from "@/lib/voice-profil";
 
 export { dateGagnee, remplie, type Acquis, type Condition } from "@/lib/profil/acquis";
@@ -95,39 +95,38 @@ const DONNEURS = donneurs(CONTENU, QUETES);
 const donneurPrincipal = (ids: string[] | undefined): string | undefined => ids?.find((id) => !QUETES.find((q) => q.id === id)?.retiree) ?? ids?.[0];
 
 /**
- * Les chapitres du fil rouge (§1.5) : titre, paliers listés puis pas
- * constant, et ce que compte le seuil. Copie locale de CHAPITRES_FIL
- * (lib/codex/fil-rouge.ts, lot A2b), à reprendre après la fusion F1.
+ * La consigne d'un palier du fil rouge, en clair : « Fil rouge : Répondre à
+ * 10 000 questions » (le seuil lu dans CHAPITRES_FIL, lib/codex/fil-rouge.ts,
+ * par titres-clairs) ; un chapitre inconnu : son numéro de palier.
  */
-const FIL: Record<string, { titre: string; paliers: number[]; pas: number; seuil: (s: number, n: number) => string }> = {
-  questions: { titre: "Le copiste", paliers: [1000, 2500, 5000, 10000, 20000], pas: 10000, seuil: (s) => pluriel(s, "question posée", "questions posées") },
-  encre: { titre: "L'encre de toute une vie", paliers: [30, 60, 100, 150, 200, 300], pas: 100, seuil: (s) => pluriel(s, "jour d'encre", "jours d'encre") },
-  maitres: { titre: "La galerie des maîtres", paliers: [1, 3, 5, 10, 15, 20], pas: 5, seuil: (s) => pluriel(s, "titre « Maître de… »", "titres « Maître de… »") },
-  programmes: { titre: "La route de Milan", paliers: [1, 2, 3], pas: 1, seuil: (s) => pluriel(s, "programme mené", "programmes menés") },
-  // 1 or, 5 or, puis des diamants
-  trophees: { titre: "La salle des trophées", paliers: [1, 5, 1, 10, 25, 50], pas: 25, seuil: (s, n) => (n <= 2 ? pluriel(s, "trophée d'or", "trophées d'or") : pluriel(s, "trophée diamant", "trophées diamant")) },
-  collection: { titre: "Le cabinet de curiosités", paliers: [5, 10, 20, 35, 50], pas: 15, seuil: (s) => pluriel(s, "pièce de collection", "pièces de collection") },
-  entretien: { titre: "Garder la main", paliers: [4, 12, 26, 52], pas: 26, seuil: (s) => pluriel(s, "semaine d'entretien", "semaines d'entretien") },
-};
-/** « Fil rouge « Le copiste » : 10 000 questions posées » (au-delà des paliers listés : le pas constant). */
 const obtentionFil = (chapitre: string, n: number) => {
-  const c = FIL[chapitre];
-  if (!c) return `Fil rouge, palier ${n}`;
-  const seuil = n <= c.paliers.length ? c.paliers[n - 1] : c.paliers[c.paliers.length - 1] + (n - c.paliers.length) * c.pas;
-  return `Fil rouge « ${c.titre} » : ${c.seuil(seuil, n)}`;
+  const t = titreClairDe({ id: `fil:${chapitre}:${n}`, titre: "", famille: "fil" });
+  return t ? `Fil rouge : ${t}` : `Fil rouge, palier ${n}`;
 };
 const FIL_ID = /^fil:([a-z0-9-]+):([1-9][0-9]*)$/;
 
-/** Comment s'obtient une pièce du Codex : « Clore l'acte IV, « La première commande » », « Quête « Sfumato » du Codex ». */
+/**
+ * Comment s'obtient une pièce du Codex, en clair (Codex simplifié) : la
+ * consigne de la quête qui la donne (« Quête du Codex : FSA à 60 % de
+ * maîtrise »), l'acte à finir (« Finir l'acte IV : Premier examen blanc »),
+ * l'énigme lisible d'un exploit ; un exploit caché ne se dévoile pas.
+ */
 function obtentionCodex(quete: string): string {
   const acte = ACTES.find((a) => `acte:${a.id}` === quete);
-  if (acte) return acte.numero === 0 ? `Clore le prologue, « ${acte.titre} »` : acte.numero === 99 ? `Clore l'épilogue, « ${acte.titre} »` : `Clore l'acte ${romain(acte.numero)}, « ${acte.titre} »`;
+  if (acte) {
+    const titre = titreActe(acte);
+    return acte.numero === 0 ? `Finir le prologue : ${titre}` : acte.numero === 99 ? `Finir l'épilogue : ${titre}` : `Finir l'acte ${romain(acte.numero)} : ${titre}`;
+  }
   const palier = FIL_ID.exec(quete);
   if (palier) return obtentionFil(palier[1], Number(palier[2]));
   const q = QUETES.find((x) => x.id === quete);
   if (!q) return "Une quête du Codex";
   if (q.visibilite === "cachee") return "Un exploit caché du Codex";
-  return `${q.famille === "exploit" ? "Exploit" : "Quête"} « ${q.titre} » du Codex`;
+  if (q.famille === "exploit") {
+    const enigme = enigmeClaire(q);
+    return enigme ? `Exploit « ${q.titre} » : ${enigme}` : `Exploit « ${q.titre} » du Codex`;
+  }
+  return `Quête du Codex : ${titreClair(q)}`;
 }
 
 /** La rareté d'une pièce du Codex, d'après la quête qui la donne. */

@@ -12,21 +12,19 @@ export type { AccueilData } from "@/components/accueil/types";
 // (app/preview-da/accueil). Trois niveaux de lecture :
 // 1. le rendez-vous du jour (components/accueil/Rendezvous.tsx), dans l'ordre :
 //    Les 30 du jour en héros ; à droite Les 5 du jour puis Tes traits du jour
-//    (l'anneau, les bâtons, J-n) ; dessous « Reprendre » et le duel en tuiles
-//    calmes, le rang en bande d'encre et trois liens ;
+//    (l'anneau, sur téléphone comme sur ordinateur, les bâtons, J-n) ; dessous
+//    le vainqueur du jour, « Reprendre » et le duel en tuiles calmes, le rang
+//    en bande d'encre et trois liens ;
 // 2. « Du nouveau » : les nouvelles des amis, s'il y en a ;
 // 3. « Ta progression » : une carte à onglets.
-// Le reste vit sur /classement et /moi.
-// `codex` : la petite cérémonie du Codex (quêtes tamponnées, acte qui s'ouvre), posée sous les traits
-// du jour (components/codex/CodexAccueil ; flux Suspense côté serveur).
-// `seance` : la séance du jour (components/codex/SeanceAccueil ; second flux Suspense), en carte
-// pleine largeur sous la grille des 30 et des 5 du jour, qui ne bouge pas.
-export function DashboardView({ d, tab, codex, seance }: { d: AccueilData; now?: number; tab?: string; codex?: React.ReactNode; seance?: React.ReactNode }) {
+// Le reste vit sur /classement et /moi. Rien du Codex ici : les quêtes sont un
+// guide secondaire, derrière le sceau de la barre du haut et sur /codex.
+export function DashboardView({ d, tab }: { d: AccueilData; now?: number; tab?: string }) {
   return (
     <div className="rl-wide rl-page">
       {/* le logo vivant de la barre du haut se recale sur la journée lue ici */}
       <AnneauDuJourSync repondues={d.activity.today} />
-      <Rendezvous d={d} codex={codex} seance={seance} />
+      <Rendezvous d={d} />
       {/* le palier de 7 jours de la série d'encre : une petite célébration, une fois par série */}
       {d.serieEncre && d.serieEncre.serieAffichee >= 7 && <CelebrationSerie serie={d.serieEncre.serieAffichee} cle={d.serieEncre.debut ?? d.serieEncre.jour} doubleDeja={d.serieEncre.mult === 2} />}
       {d.duNouveau && <DuNouveau nouvelles={d.duNouveau} />}

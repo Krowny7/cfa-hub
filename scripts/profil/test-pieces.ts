@@ -18,6 +18,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
 import { donneurs } from "@/lib/codex/vue";
+import { titreClair } from "@/lib/codex/titres-clairs";
 import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as remplieCatalogue, STATS_VIDES } from "@/lib/profil/catalogue";
 import { codexDepuis, lireAcquis, type Acquis, type Condition } from "@/lib/profil/acquis";
 import { ORDRE_SOURCES_TROPHEE, SOURCES_TROPHEE, compter, lignesCiblees, lireTrophees, mesTropheesDepuis, mesureTrophees, palierCiblee, palierTrophee, type LigneTrophee, type SourceTrophee } from "@/lib/trophees";
@@ -101,11 +102,18 @@ async function main() {
       const p = pieceDe(c.cle);
       if (p?.condition?.k !== "unDe") return true;
       const actuelle = p.condition.conditions.map((x) => (x.k === "codex" ? catalogueCodex().find((q) => q.id === x.quete) : undefined)).find((q) => q && !q.retiree);
-      return !actuelle || actuelle.visibilite === "cachee" || p.obtention.includes(actuelle.titre);
+      return !actuelle || actuelle.visibilite === "cachee" || actuelle.famille === "exploit" || p.obtention.includes(titreClair(actuelle));
     }));
     check("les pièces animées du Codex sont « css »", seulement.filter((c) => c.anime).every((c) => pieceDe(c.cle)?.anime === "css"));
     check("un type inconnu du Codex est ignoré", !PIECES.some((p) => p.cle.startsWith("embleme:")));
-    check("cadre:sanguine ← acte IV", egal(pieceDe("cadre:sanguine")?.condition, { k: "codex", quete: "acte:acte4" }) && pieceDe("cadre:sanguine")?.obtention === "Clore l'acte IV, « La première commande »");
+    check("cadre:sanguine ← acte IV", egal(pieceDe("cadre:sanguine")?.condition, { k: "codex", quete: "acte:acte4" }) && pieceDe("cadre:sanguine")?.obtention === "Finir l'acte IV : Premier examen blanc");
+    check(
+      "les consignes du Codex sont en clair (titres clairs, ni « Clore », ni nom d'histoire pour une quête ou un chapitre)",
+      PIECES.filter((p) => p.origine === "codex" || p.origine === "fil").every((p) => !p.obtention.startsWith("Clore") && !p.obtention.startsWith("Quête « ") && !p.obtention.startsWith("Fil rouge « ")),
+      PIECES.filter((p) => /^(Clore|Quête « |Fil rouge « )/.test(p.obtention)).map((p) => p.cle).join(","),
+    );
+    const maitreFsa = catalogueCodex().find((q) => q.id === "branche:fsa:maitre");
+    check("une quête de branche se dit par son titre clair", !!maitreFsa && pieceDe("titre:maitre:fsa")?.obtention === `Quête du Codex : ${titreClair(maitreFsa)}` && titreClair(maitreFsa).startsWith("FSA à "));
     check("titre:maitre:fsa ← branche:fsa:maitre, programme CFA I", egal(pieceDe("titre:maitre:fsa")?.condition, { k: "codex", quete: "branche:fsa:maitre" }) && pieceDe("titre:maitre:fsa")?.programme === "finance/cfa-l1");
     check("titre:codex (exploit caché) : légendaire, global, sans dévoiler la quête", pieceDe("titre:codex")?.rarete === "legendaire" && pieceDe("titre:codex")?.programme === "global" && pieceDe("titre:codex")?.obtention === "Un exploit caché du Codex");
     const rarete = (cle: string) => pieceDe(cle)?.rarete;
@@ -147,9 +155,9 @@ async function main() {
     check("19 folios, sans image, provisoires", folios.length === 19 && FOLIOS.length === 19 && folios.every((p) => p.folio?.image === null && p.folio.provisoire));
     check("chaque folio s'ouvre par sa quête", folios.every((p) => p.condition?.k === "codex" && p.condition.quete === FOLIOS.find((x) => `folio:${x.nue}` === p.cle)?.quete));
     check("les quêtes des folios existent (actes, « Maître de… ») ou sont du fil rouge", FOLIOS.every((x) => quetes.has(x.quete) || /^acte:(acte[1-6]|epilogue)$/.test(x.quete) || /^fil:(maitres|collection):\d+$/.test(x.quete)));
-    check("folio déclaré au Codex : une entrée, nom et description du Codex, rareté et obtention d'ici", PIECES.filter((p) => p.cle === "folio:mains").length === 1 && pieceDe("folio:mains")?.nom === "Étude de mains (Codex)" && pieceDe("folio:mains")?.description === "Le folio décrit par le Codex." && !!pieceDe("folio:mains")?.obtention.startsWith("Clore l'acte I, « ") && pieceDe("folio:mains")?.rarete === "precieuse");
+    check("folio déclaré au Codex : une entrée, nom et description du Codex, rareté et obtention d'ici", PIECES.filter((p) => p.cle === "folio:mains").length === 1 && pieceDe("folio:mains")?.nom === "Étude de mains (Codex)" && pieceDe("folio:mains")?.description === "Le folio décrit par le Codex." && !!pieceDe("folio:mains")?.obtention.startsWith("Finir l'acte I : ") && pieceDe("folio:mains")?.rarete === "precieuse");
     check("folio non déclaré au Codex : le nom de l'œuvre", FOLIOS_DU_CODEX.includes("folio:deluge") || pieceDe("folio:deluge")?.nom === "Le Déluge");
-    check("folio du fil rouge : origine et obtention", pieceDe("folio:galerie")?.origine === "fil" && pieceDe("folio:galerie")?.obtention === "Fil rouge « La galerie des maîtres » : 3 titres « Maître de… »");
+    check("folio du fil rouge : origine et obtention", pieceDe("folio:galerie")?.origine === "fil" && pieceDe("folio:galerie")?.obtention === "Fil rouge : 3 titres « Maître de… »");
     const ici = FOLIOS.map((x) => `folio:${x.nue}`).sort();
     check("les folios du Codex sont ceux d'ici (aucun avant la fusion F1)", FOLIOS_DU_CODEX.length === 0 || egal([...FOLIOS_DU_CODEX].sort(), ici), FOLIOS_DU_CODEX.join(", "));
     const par = donneurs(contenuDuProgramme(), catalogueCodex());

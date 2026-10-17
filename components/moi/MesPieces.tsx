@@ -18,13 +18,15 @@ import type { Rarete, TypePiece } from "@/lib/profil/pieces";
 // Moi › Mes pièces (V3 §3.8) : l'étagère de tout ce qui se porte sur le
 // profil, en quatre rayons (cadres, bannières, titres, folios). Les pièces
 // possédées d'abord, qui bougent si elles bougent ; puis les silhouettes
-// (grisées, immobiles), avec la façon de les obtenir et, si une quête du
-// Codex les donne, « Y aller ». Un résumé (« 23 pièces sur 61 · 4 folios »)
-// et un filtre « Ce que j'ai / Tout ».
+// (grisées, immobiles), avec leur consigne en clair. Pas de lien sur
+// l'étagère : une pièce se touche, sa fiche dit le reste. Un résumé
+// (« 23 pièces sur 75 · 4 folios ») et un filtre « Ce que j'ai / Tout » ;
+// chaque compte dit ce qui est dessiné.
 // Toucher une pièce ouvre sa feuille : l'aperçu en grand (l'en-tête du
 // profil, comme les autres le verront ; la planche pour un folio), puis
 // « Porter » ou « Retirer » (porterPiece) ; une silhouette s'y montre en
-// lecture, grisée, avec comment l'obtenir.
+// lecture, grisée, avec comment l'obtenir et, si une quête du Codex la
+// donne, « Voir la quête ».
 // Au plus deux éléments animés à l'écran sur téléphone : les deux premières
 // pièces possédées qui bougent ; tout se fige quand la feuille est ouverte
 // (son aperçu bouge à leur place). Le mouvement réduit fige tout (CSS).
@@ -40,7 +42,7 @@ const T = {
   portee: "Portée",
   porter: "Porter",
   retirer: "Retirer",
-  allerA: "Y aller",
+  voirQuete: "Voir la quête",
   commentObtenir: "Comment l'obtenir",
   pasEncore: "Pas encore à toi",
   baseAbsente: "La personnalisation arrive bientôt : la base n'est pas encore prête.",
@@ -183,7 +185,7 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
   );
 }
 
-/** Une pièce sur l'étagère : sa vignette, son nom, et « Portée » ou comment l'obtenir. */
+/** Une pièce sur l'étagère : sa vignette, son nom, et « Portée » ou sa consigne. Toute la carte ouvre la fiche. */
 function CartePiece({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; carte: EnteteData; style: StyleProfil; anime: boolean; onOuvrir: () => void }) {
   const fige = !anime;
   const vignette =
@@ -222,18 +224,12 @@ function CartePiece({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; car
           ) : null}
         </span>
       </button>
-      {/* une silhouette qu'une quête du Codex donne : y aller tout de suite */}
-      {!p.possedee && p.allerA && (
-        <Link href={p.allerA} className="ink-link mx-2.5 mb-1 inline-flex min-h-[44px] w-fit items-center gap-1 text-[13px] font-semibold" aria-label={`${T.allerA} : ${p.nom}`}>
-          {T.allerA} <ArrowRight size={13} aria-hidden />
-        </Link>
-      )}
     </div>
   );
 }
 
-/** La feuille d'une pièce : l'aperçu en grand, ce que c'est, comment l'obtenir. */
-function ContenuFeuille({ p, carte, imageDeBanniere }: { p: PieceEtagere; carte: EnteteData; imageDeBanniere: boolean }) {
+/** La feuille d'une pièce : l'aperçu en grand, ce que c'est, comment l'obtenir et, s'il y a lieu, « Voir la quête ». */
+export function ContenuFeuille({ p, carte, imageDeBanniere }: { p: PieceEtagere; carte: EnteteData; imageDeBanniere: boolean }) {
   return (
     <div className="flex flex-col gap-4">
       <div className={p.possedee ? "" : "pointer-events-none opacity-50 grayscale"}>
@@ -249,9 +245,9 @@ function ContenuFeuille({ p, carte, imageDeBanniere }: { p: PieceEtagere; carte:
         <div className="flex flex-col gap-2 border-t border-line pt-3">
           <p className="t-eyebrow m-0">{T.commentObtenir}</p>
           <p className="m-0 text-[14px] font-semibold">{p.obtention}</p>
-          {p.allerA && (
-            <Link href={p.allerA} className="ink-link inline-flex min-h-[44px] w-fit items-center gap-1 text-[14px] font-semibold">
-              {T.allerA} <ArrowRight size={14} aria-hidden />
+          {p.voirQuete && (
+            <Link href={p.voirQuete} className="ink-link inline-flex min-h-[44px] w-fit items-center gap-1 text-[14px] font-semibold">
+              {T.voirQuete} <ArrowRight size={14} aria-hidden />
             </Link>
           )}
         </div>

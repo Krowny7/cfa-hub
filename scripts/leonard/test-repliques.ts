@@ -7,13 +7,15 @@
 // (prioritaires comptées, visite hors compte, jour J et mode sobre muets,
 // écart de 4 minutes, hasard, minuit à Paris) ; l'hôte branché sur ce plafond
 // et son bouton d'action de 44 px (la bulle attend tant qu'on la survole) ;
-// la visite en 4 étapes et les nouveautés v3 (V3 §11.4), leurs cibles posées
+// Léonard muet sur une quête faite et un acte qui s'ouvre (Codex simplifié
+// §4.6) ; la visite en 5 étapes et les nouveautés v4 (Codex simplifié : le
+// sceau des quêtes, « Récupérer », le Codex dans Moi), leurs cibles posées
 // dans les pages.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, REPLIQUES, TUTO, type Replique } from "@/lib/leonard/repliques";
+import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, REPLIQUES, RESUME_NOUVEAUTES, TUTO, type Replique } from "@/lib/leonard/repliques";
 import { VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
-import { ECART_MIN, MAX_JOUR, PRIORITAIRES, decider, jourParis, type Compteur, type Contexte } from "@/lib/leonard/apparitions";
+import { ECART_MIN, MAX_JOUR, MUETS, PRIORITAIRES, decider, jourParis, type Compteur, type Contexte } from "@/lib/leonard/apparitions";
 import type { EvenementLeonard } from "@/lib/leonard/signal";
 
 let ko = 0;
@@ -115,11 +117,11 @@ function journee(evts: EvenementLeonard[], pas = 5 * MIN, depart: Partial<Contex
 
 check("Plafond : 5 par jour", MAX_JOUR === 5);
 {
-  const { vus, compteur } = journee(Array(8).fill("quete-faite"));
+  const { vus, compteur } = journee(Array(8).fill("atelier-fini"));
   check("Huit réactions ordinaires espacées : 5 apparaissent", vus.length === 5 && compteur.n === 5, J({ vus: vus.length, compteur }));
 }
 {
-  const { vus } = journee(["quete-faite", "duel-gagne", "atelier-fini", "defi-reussi", "rang-monte", "sceau-gagne", "session-parfaite", "progression"]);
+  const { vus } = journee(["serie-bonnes", "duel-gagne", "atelier-fini", "defi-reussi", "rang-monte", "sceau-gagne", "session-parfaite", "progression"]);
   check("Les prioritaires comptent dans les 5 (rang, sceau, sans-faute, progression refusés au-delà)", vus.length === 5 && vus[4] === "rang-monte", J(vus));
 }
 {
@@ -135,7 +137,7 @@ check("Plafond : 5 par jour", MAX_JOUR === 5);
   const evts: EvenementLeonard[] = ["tuto", "rang-monte", "furtif", "sceau-gagne", "retour"];
   const refus = evts.map((e) => decider(e, ctx({ jourJ: true })));
   check("Le jour J : rien, pas même la visite ni un prioritaire", refus.every((d) => !d.ok && d.refus === "jour-j"), J(refus));
-  const { vus } = journee(Array(6).fill("quete-faite"), 5 * MIN, { jourJ: true });
+  const { vus } = journee(Array(6).fill("atelier-fini"), 5 * MIN, { jourJ: true });
   check("Le jour J, une journée entière de signaux : aucune apparition", vus.length === 0);
 }
 {
@@ -146,13 +148,13 @@ check("Plafond : 5 par jour", MAX_JOUR === 5);
   check("Mode sobre : la visite reste", v.ok);
 }
 {
-  const proche = decider("quete-faite", ctx({ dernier: T0 - (ECART_MIN - MIN) }));
+  const proche = decider("atelier-fini", ctx({ dernier: T0 - (ECART_MIN - MIN) }));
   const prio = decider("progression", ctx({ dernier: T0 - MIN }));
-  const loin = decider("quete-faite", ctx({ dernier: T0 - ECART_MIN }));
+  const loin = decider("atelier-fini", ctx({ dernier: T0 - ECART_MIN }));
   check("Écart : une réaction ordinaire 3 min après une autre est refusée", !proche.ok && proche.refus === "ecart", J(proche));
   check("Écart : un prioritaire passe 1 min après", prio.ok, J(prio));
   check("Écart : 4 min après, elle passe", loin.ok, J(loin));
-  check("Une seule journée resserrée : jamais plus d'une apparition ordinaire par 4 min", journee(Array(10).fill("quete-faite"), MIN).vus.length === 3);
+  check("Une seule journée resserrée : jamais plus d'une apparition ordinaire par 4 min", journee(Array(10).fill("atelier-fini"), MIN).vus.length === 3);
 }
 {
   const non = decider("session-moyenne", ctx({ hasard: 0.5 }));
@@ -161,10 +163,18 @@ check("Plafond : 5 par jour", MAX_JOUR === 5);
   check("Les visites sont prioritaires", PRIORITAIRES.has("tuto") && PRIORITAIRES.has("nouveautes"));
 }
 {
+  // Codex simplifié §4.6 : Léonard ne parle qu'aux fêtes, quel que soit l'émetteur
+  const muets = (["quete-faite", "acte-nouveau"] as const).map((e) => decider(e, ctx()));
+  check("Une quête faite, un acte qui s'ouvre : Léonard se tait", muets.every((d) => !d.ok && d.refus === "muet"), J(muets));
+  check("Muets même au premier signal du jour, hasard favorable", [...MUETS].every((e) => !PRIORITAIRES.has(e)) && !decider("acte-nouveau", ctx({ hasard: 0 })).ok);
+  const fetes = (["sceau-gagne", "devoile", "carnet", "rang-monte"] as const).map((e) => decider(e, ctx()));
+  check("Ses fêtes restent : un sceau, une pièce dévoilée, le parcours relu, un rang", fetes.every((d) => d.ok), J(fetes));
+}
+{
   // minuit à Paris (UTC+2 en octobre) : 21 h 30 UTC = 23 h 30 la veille, 22 h 30 UTC = 0 h 30 le lendemain
   const veille: Compteur = { j: "2026-10-16", n: 5 };
-  const avant = decider("quete-faite", ctx({ compteur: veille, maintenant: Date.parse("2026-10-16T21:30:00Z") }));
-  const apres = decider("quete-faite", ctx({ compteur: veille, maintenant: Date.parse("2026-10-16T22:30:00Z") }));
+  const avant = decider("atelier-fini", ctx({ compteur: veille, maintenant: Date.parse("2026-10-16T21:30:00Z") }));
+  const apres = decider("atelier-fini", ctx({ compteur: veille, maintenant: Date.parse("2026-10-16T22:30:00Z") }));
   check("23 h 30 à Paris : encore le même jour, plafond atteint", !avant.ok && avant.refus === "plafond", J(avant));
   check("0 h 30 à Paris : jour nouveau, compteur remis à 1", apres.ok && apres.compteur.j === "2026-10-17" && apres.compteur.n === 1, J(apres));
   check("jourParis : « 2026-10-17 »", jourParis(T0) === "2026-10-17");
@@ -178,22 +188,43 @@ check("L'hôte affiche l'action en bouton de 44 px", /replique\.action\.href/.te
 check("Une bulle survolée ou au clavier ne repart pas sous la main", /onPointerEnter=\{scene\.tuto \? undefined : retenir\}/.test(hote) && /onFocus=\{scene\.tuto \? undefined : retenir\}/.test(hote));
 
 // ── la visite et les nouveautés (V3 §11.4) ──────────────────────────────
-console.log("\n# la visite en 4 étapes, les nouveautés v3");
+console.log("\n# la visite en 5 étapes, les nouveautés v4 (Codex simplifié)");
 const etapes = (l: { page: string; cible?: string }[]) => l.map((x) => `${x.page}#${x.cible ?? ""}`).join(" ");
-check("la visite : les 30 et les 5, la séance, le cap, les réglages", etapes(TUTO) === "/dashboard#defi /dashboard#seance /codex#cap /moi?onglet=reglages#reglages", etapes(TUTO));
-check("la visite parle du mode sobre à l'étape des réglages", /mode sobre/.test(TUTO[3]?.texte ?? ""));
-check("les nouveautés v3 : la séance du jour, le cap, Mes pièces", etapes(NOUVEAUTES) === "/dashboard#seance /codex#cap /moi?onglet=pieces#mes-pieces", etapes(NOUVEAUTES));
-check("Mes pièces reste facultative (l'onglet peut manquer) ; la séance et le cap ont un repli", NOUVEAUTES[2]?.facultatif === true && !!NOUVEAUTES[0]?.repli && !!NOUVEAUTES[1]?.repli);
-check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v3", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 3 && !nouveautesVues({ rl_nouveautes: 2 }) && nouveautesVues({ rl_nouveautes: 3 }));
-// les cibles de la visite sont posées dans les pages (data-leonard)
-const CIBLES: Record<string, string> = { defi: "components/accueil/Rendezvous.tsx", seance: "components/codex/SeanceDuJour.tsx", cap: "components/codex/Cap.tsx", prochaine: "components/codex/CodexEcran.tsx", reglages: "components/moi/AppearanceSwitches.tsx", "mes-pieces": "components/moi/MesPieces.tsx" };
-for (const [cible, f] of Object.entries(CIBLES)) check(`cible « ${cible} » posée (${f})`, readFileSync(join(RACINE, f), "utf8").includes(`data-leonard="${cible}"`));
+check(
+  "la visite : les 30 et les 5, l'anneau des traits, le sceau des quêtes, le Codex dans Moi, les réglages",
+  etapes(TUTO) === "/dashboard#defi /dashboard#anneau /dashboard#sceau-quetes /moi#moi-codex /moi?onglet=reglages#reglages",
+  etapes(TUTO),
+);
+check("la visite parle du mode sobre à l'étape des réglages", /mode sobre/.test(TUTO.find((x) => x.cible === "reglages")?.texte ?? ""));
+check("les nouveautés v4 : le sceau des quêtes, « Récupérer », le Codex dans Moi", etapes(NOUVEAUTES) === "/dashboard#sceau-quetes /dashboard#sceau-quetes /moi#moi-codex", etapes(NOUVEAUTES));
+check(
+  "les réglages résument les nouveautés de cette version (« Revoir »)",
+  RESUME_NOUVEAUTES.includes("« Récupérer »") && RESUME_NOUVEAUTES.includes("Moi") && readFileSync(join(RACINE, "components/moi/AppearanceSwitches.tsx"), "utf8").includes("{RESUME_NOUVEAUTES}"),
+);
+check("les nouveautés v4 nomment « Récupérer », et le mode sobre qui s'en passe", NOUVEAUTES.some((x) => x.texte.includes("« Récupérer »") && /mode sobre/.test(x.texte)));
+// le sceau n'est dans la barre qu'avec le Codex : ses étapes, et elles seules, sont facultatives
+check("seules les étapes du sceau sont facultatives", [...TUTO, ...NOUVEAUTES].every((x) => (x.cible === "sceau-quetes") === !!x.facultatif));
+check("le Codex a quitté la barre : aucune étape ne mène à /codex", [...TUTO, ...NOUVEAUTES].every((x) => !x.page.startsWith("/codex")));
+check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v4", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 4 && !nouveautesVues({ rl_nouveautes: 3 }) && nouveautesVues({ rl_nouveautes: 4 }));
+// les cibles de la visite sont posées dans les pages : l'attribut data-leonard,
+// ou dataLeonard passé à un composant qui le pose (TuileCalme) ; hors commentaires
+const CIBLES: Record<string, string> = { defi: "components/accueil/Rendezvous.tsx", anneau: "components/accueil/Rendezvous.tsx", "sceau-quetes": "components/codex/SceauQuetes.tsx", "moi-codex": "components/moi/CodexMoi.tsx", reglages: "components/moi/AppearanceSwitches.tsx" };
+const sansCommentaires = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const posee = (f: string, cible: string) => {
+  const src = sansCommentaires(readFileSync(join(RACINE, f), "utf8"));
+  return src.includes(`data-leonard="${cible}"`) || src.includes(`dataLeonard="${cible}"`);
+};
+for (const [cible, f] of Object.entries(CIBLES)) check(`cible « ${cible} » posée (${f})`, posee(f, cible));
+check(
+  "la tuile Codex de Moi est une TuileCalme, qui pose son repère",
+  /<TuileCalme[\s\S]*?dataLeonard="moi-codex"/.test(readFileSync(join(RACINE, "components/moi/CodexMoi.tsx"), "utf8")) && readFileSync(join(RACINE, "components/ui/Tuiles.tsx"), "utf8").includes("data-leonard={dataLeonard}"),
+);
 // toutes les étapes, facultatives comprises : une cible facultative jamais posée
 // faisait sauter l'étape à chaque fois (la visite des nouveautés revenait sans fin)
 check("chaque étape de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES].every((x) => !x.cible || x.cible in CIBLES), [...TUTO, ...NOUVEAUTES].flatMap((x) => (x.cible && !(x.cible in CIBLES) ? [x.cible] : [])).join(" "));
 check("chaque repli de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES].every((x) => !x.repli || x.repli in CIBLES));
 // une visite courte est retenue quand ses étapes obligatoires ont joué (pas « 3 » fixe)
-check("une visite courte (3 étapes, une facultative) est retenue sans sa facultative", hote.includes("montrees.current >= Math.min(3, scene.repliques.filter((e) => !(e as EtapeTuto).facultatif).length)") && NOUVEAUTES.filter((x) => !x.facultatif).length <= 3);
+check("une visite courte est retenue sur ses étapes obligatoires, sans ses facultatives", hote.includes("montrees.current >= Math.min(3, scene.repliques.filter((e) => !(e as EtapeTuto).facultatif).length)") && NOUVEAUTES.filter((x) => !x.facultatif).length <= 3);
 const fautesVisite = [...TUTO, ...NOUVEAUTES].flatMap((x) => (interditDans(x.texte) ? [x.texte] : []));
 check("la visite ne moque personne", fautesVisite.length === 0, fautesVisite.join(" ; "));
 

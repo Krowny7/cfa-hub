@@ -24,6 +24,8 @@ import { lireTrophees } from "@/lib/trophees";
 import { lireEtagere } from "@/components/moi/pieces-data";
 import { MesPieces } from "@/components/moi/MesPieces";
 import { lirePauses } from "@/components/moi/repos-data";
+import { lireCodexMoi } from "@/lib/profil/codex-moi";
+import { lireSobre } from "@/lib/codex/sobre";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
 
@@ -69,7 +71,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos, codex] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -109,6 +111,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     tab === "pieces" ? lireEtagere(supabase, admin, user.id, tropheesLus).catch(() => null) : Promise.resolve(null),
     // les jours de repos de la série déjà posés (Réglages ; null sans la migration du Codex §8)
     tab === "reglages" ? lirePauses(supabase, new Date(now)) : Promise.resolve(null),
+    // le Codex vu de Moi (la tuile d'entrée et l'historique) : une lecture légère, sur Stats seulement
+    tab === "stats" ? lireCodexMoi(supabase, user.id, { sobre: lireSobre(user) }) : Promise.resolve(null),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -150,6 +154,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier, !!admin),
     ateliers,
     ...(trophees ? { trophees: { lignes: trophees.lignes, complet: trophees.complet } } : {}),
+    ...(codex ? { codex } : {}),
   };
 
   const etagere = pieces ? (

@@ -30,7 +30,6 @@ const ATELIER: Action = { libelle: "Atelier", href: "/atelier" };
 const FICHES: Action = { libelle: "Relire une fiche", href: "/reviser" };
 const ECLAIR: Action = { libelle: "Cinq questions", href: "/eclair" };
 const DUEL: Action = { libelle: "Un autre duel", href: "/duel" };
-const CODEX: Action = { libelle: "Ouvrir le Codex", href: "/codex" };
 
 /**
  * Les échecs : chaque réplique finit par un pas concret et porte son `action`.
@@ -262,7 +261,8 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
 
   // Le Codex (lib/codex) : une quête accomplie, un nouvel acte, un onglet dévoilé, le carnet feuilleté.
   // « acte-nouveau », « devoile » et « carnet » portent leur propre réplique (SignalLeonard.replique) ;
-  // celles d'ici ne servent que de repli.
+  // celles d'ici ne servent que de repli. Une quête faite et un acte qui s'ouvre sont désormais muets
+  // (Codex simplifié §4.6, MUETS dans lib/leonard/apparitions) : Léonard ne parle qu'aux fêtes.
   "quete-faite": [
     { texte: "Tamponné. Verrocchio aurait dit « pas mal ». Moi je dis bravo.", pose: "fier" },
     { texte: "Une de moins sur la carte. Elle faisait moins la maligne au début.", pose: "moqueur" },
@@ -292,8 +292,8 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   "retour": [
     { texte: "Te revoilà ! L’atelier est resté ouvert et les pinceaux sont propres. Cinq questions pour reprendre la main ?", pose: "etonne", action: ECLAIR },
     { texte: "Respawn au dernier feu de camp. On reprend doucement : une petite série d’abord.", pose: "base", action: ECLAIR },
-    { texte: "Moi aussi, j’ai laissé des tableaux en plan pendant des années. L’important, c’est d’y revenir. Le Codex sait par où reprendre.", pose: "base", action: CODEX },
-    { texte: "Bon retour à Florence. Ta place était gardée, ton carnet aussi.", pose: "fier", action: CODEX },
+    { texte: "Moi aussi, j’ai laissé des tableaux en plan pendant des années. L’important, c’est d’y revenir. Cinq questions, et on reprend le fil.", pose: "base", action: ECLAIR },
+    { texte: "Bon retour à Florence. Ta place était gardée, ton carnet de ratures aussi.", pose: "fier", action: RATURES },
     { texte: "Ton retour était plus attendu que Silksong. Lui aussi a fini par arriver, et il valait l’attente.", pose: "etonne", action: ECLAIR },
   ],
 
@@ -332,28 +332,36 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
  * son attribut data-leonard). Sans cet élément sur la page, il éclaire son
  * `repli` s'il y en a un ; une étape `facultatif` est sautée (rien à montrer
  * à ce joueur-là). La page « /profil » est le profil du joueur (/people/<son id>).
- * La visite d'accueil tient en 4 étapes (V3 §11.4) : les 30 et les 5 du jour,
- * la séance du jour, le cap du carnet, les réglages (me couper, le mode sobre).
+ * La visite d'accueil tient en 5 étapes (Codex simplifié, 17 octobre 2026) :
+ * les 30 et les 5 du jour, les traits du jour et leur anneau, le sceau des
+ * quêtes en haut à droite (un guide secondaire ; sauté sans le Codex), la
+ * tuile Codex de Moi (le Codex a quitté la barre), les réglages (me couper,
+ * le mode sobre).
  */
 export type EtapeTuto = Replique & { page: string; cible?: string; repli?: string; facultatif?: boolean };
 
 export const TUTO: EtapeTuto[] = [
   { page: "/dashboard", cible: "defi", texte: "Moi c’est Léonard. Oui, celui de la Joconde. Ici, ton rendez-vous de chaque jour : les 30 et les 5 du jour. Un peu chaque jour, et ça rentre.", pose: "fier" },
-  { page: "/dashboard", cible: "seance", facultatif: true, texte: "Juste en dessous, ta séance du jour. Je la compose pour toi, selon ce qui sert le plus. Un bouton, et tu y vas.", pose: "base" },
-  { page: "/codex", cible: "cap", repli: "prochaine", texte: "Mon carnet, le Codex. En haut, où tu en es, matière par matière, et pourquoi. Quand tu ne sais plus quoi faire, tu viens ici.", pose: "fier" },
-  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Le mode sobre range aussi les fanfares et l’XP. Tu le feras pas, hein ? Allez, ton premier trait t’attend.", pose: "decu" },
+  { page: "/dashboard", cible: "anneau", texte: "Et là, tes traits du jour : chaque réponse trace un bout de l’anneau. Fermé, ton objectif du jour est tenu. Giotto traçait ses cercles à main levée ; toi, tu réponds.", pose: "base" },
+  { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "En haut à droite, mon sceau : quelques quêtes pour te guider, et ce que tu as gagné, à récupérer. Des idées, pas des ordres : ton plan reste le tien.", pose: "base" },
+  { page: "/moi", cible: "moi-codex", texte: "Le Codex, mon grand livre de quêtes, est rangé ici, dans Moi : ton parcours, tes quêtes faites, ce qu’elles t’ont rapporté. Pour les curieux.", pose: "fier" },
+  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Le mode sobre range aussi les fanfares : l’XP arrive seule. Tu le feras pas, hein ? Allez, ton premier trait t’attend.", pose: "decu" },
 ];
 
 /**
  * Les nouveautés d'une version (lib/presentation, VERSION_NOUVEAUTES) : une
  * visite courte, une fois par compte, pour ceux qui ont déjà fait la visite
- * d'accueil. Version 3 (Codex v3, V3 §11.4) : la séance du jour sous les 30
- * et les 5, le cap en tête du carnet, l'étagère « Mes pièces » (Moi, onglet
- * pieces ; facultative tant que l'onglet n'est pas là). Une étape dont
+ * d'accueil. Version 4 (Codex simplifié, 17 octobre 2026) : les quêtes logent
+ * dans le sceau en haut à droite, une quête faite se récupère (« Récupérer »),
+ * et le Codex a quitté la barre pour une tuile de Moi. Le sceau n'est là
+ * qu'avec le Codex : ses deux étapes sont facultatives. Une étape dont
  * l'élément peut manquer (pas de données) est facultative ou a un repli.
  */
 export const NOUVEAUTES: EtapeTuto[] = [
-  { page: "/dashboard", cible: "seance", repli: "defi", texte: "Re. J’ai rangé l’atelier pendant ton absence. Sous les 30 et les 5 du jour, ta séance du jour : je la compose pour toi, tu n’as qu’à appuyer.", pose: "fier" },
-  { page: "/codex", cible: "cap", repli: "prochaine", texte: "En tête du carnet, le cap : où tu en es, matière par matière, et ce qui te coûte des points. Une seule maîtrise, la même partout.", pose: "base" },
-  { page: "/moi?onglet=pieces", cible: "mes-pieces", facultatif: true, texte: "Et voici tes pièces, sur une étagère : cadres, bannières, titres, folios. Ce qui te manque est en gris, avec le chemin pour l’avoir. Comme mes croquis.", pose: "fier" },
+  { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Re. J’ai rangé l’atelier. Les quêtes logent maintenant en haut à droite, dans ce sceau : celles du jour, et la suite si tu en veux.", pose: "fier" },
+  { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Une quête faite ne paie plus en douce : un chiffre se pose sur le sceau, tu touches « Récupérer », et l’XP est à toi. En mode sobre, elle arrive seule.", pose: "base" },
+  { page: "/moi", cible: "moi-codex", texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, avec l’historique de tes quêtes. Quand tu veux, sans obligation.", pose: "base" },
 ];
+
+/** Ce que montrent les nouveautés de cette version, en une ligne (Moi › Réglages, « Les nouveautés »). */
+export const RESUME_NOUVEAUTES = "Le sceau des quêtes, « Récupérer », le Codex dans Moi";
