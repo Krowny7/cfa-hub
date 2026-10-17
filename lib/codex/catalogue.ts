@@ -780,8 +780,10 @@ export const QUETES_CONTRATS_HEBDO: Quete[] = [
 
 /**
  * Le débrief d'un examen blanc (V3 §7.6) : classer ses erreurs (savoir,
- * lecture, calcul, temps, chance), une fois par jour au plus. Déclaré ici ;
- * il vit quand le journal v3 et blanc_debrief sont collés (A4b).
+ * lecture, calcul, temps, chance), une fois par jour au plus. Il vit quand le
+ * journal v3 et blanc_debrief sont collés, et seulement si un blanc l'attend :
+ * à part du trio du jour (il n'a pas d'emplacement), la vue le porte
+ * (VueCodex.debrief) et le panneau le propose avant les contrats tirés.
  */
 export const QUETE_DEBRIEF: Quete = quete({
   id: "contrat:debrief",
