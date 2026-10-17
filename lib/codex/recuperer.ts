@@ -204,6 +204,8 @@ export const TEXTES_RECUPERER = {
   /** la ligne de fin d'outil : « 2 quêtes à récupérer » */
   ligne: (n: number) => `${n} quête${n > 1 ? "s" : ""} à récupérer`,
   enCours: "Récupération…",
+  /** le bouton d'une quête, une fois récupérée */
+  recuperee: "Récupérée",
   echec: "Pas pu récupérer. Réessaie dans un instant.",
   fait: (f: Pick<FaitAujourdhui, "n" | "xp">, sobre = false) => `Fait aujourd'hui : ${f.n}${f.xp > 0 && !sobre ? ` · ${xp(f.xp)}` : ""}`,
   suite: (titre: string) => `La suite : ${titre}`,

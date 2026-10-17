@@ -1,5 +1,6 @@
 import type { LigneQuete } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
+import { libelleEtat } from "@/lib/codex/tout";
 import { INK } from "@/components/ui/InkDefs";
 import s from "./Encre.module.css";
 
@@ -86,9 +87,9 @@ export function Sceau({
   );
 }
 
-/** Le libellé lu par un lecteur d'écran : « Titre, tamponnée » / « Titre, en cours, 3 sur 5 ». */
-export function libelleSceau(l: Pick<LigneQuete, "titre" | "etat" | "valeur" | "cible" | "affichage">): string {
-  const etat = l.affichage === "indice" && l.etat !== "terminee" ? CODEX.exploits.enigme : CODEX.etat[l.etat].toLowerCase();
+/** Le libellé lu par un lecteur d'écran, dans les quatre états : « Titre, faite le 12 oct. » / « Titre, en cours, 3 sur 5 ». */
+export function libelleSceau(l: Pick<LigneQuete, "titre" | "etat" | "valeur" | "cible" | "affichage"> & Partial<Pick<LigneQuete, "aRecuperer" | "termineeLe">>): string {
+  const etat = l.affichage === "indice" && l.etat !== "terminee" ? CODEX.exploits.enigme : libelleEtat({ etat: l.etat, aRecuperer: l.aRecuperer, termineeLe: l.termineeLe ?? null }).toLowerCase();
   const t = l.affichage === "indice" && l.etat !== "terminee" ? "" : l.titre + ", ";
   return `${t}${etat}${l.etat === "active" ? `, ${Math.floor(l.valeur)} sur ${Math.floor(l.cible)}` : ""}`;
 }

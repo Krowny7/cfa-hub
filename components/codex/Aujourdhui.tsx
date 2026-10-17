@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { MAITRISE, TEXTES_CAP } from "@/lib/codex/cap";
 import { TEXTES_JOUR as T, acteEnCours, compteNeuf, etapesActe, preparationJour, objectifSemaine, resumeFait, resumeQuetesDuJour, resumeSemaine } from "@/lib/codex/aujourdhui";
 import { gainsSeance } from "@/lib/codex/seance-etat";
@@ -33,9 +33,6 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
   const preparation = neuf ? null : preparationJour(vue.cap);
   const acte = acteEnCours(vue.trame);
   const contrats = [...vue.contrats.map((c) => c.ligne), ...(vue.debrief ? [vue.debrief] : [])];
-  const hebdo = vue.hebdo.filter((l) => l.affichage !== "cache");
-  const objectif = objectifSemaine(vue.rythme?.semaine);
-  const semaine = hebdo.length > 0 || !!objectif || !!vue.rythme?.lundi || !!vue.rythme?.plan;
 
   return (
     <div className={s.grille}>
@@ -127,23 +124,34 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
           </details>
         )}
 
-        {semaine && (
-          <details className={s.pli} open={!!vue.rythme?.lundi || undefined}>
-            <summary>
-              {T.semaine} {hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
-            </summary>
-            <div className={s.pliCorps}>
-              {objectif && <p className="t-small m-0">{objectif}</p>}
-              {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={onVue} />}
-              {vue.rythme?.plan && <Plan plan={vue.rythme.plan} jour={vue.jour} />}
-              {hebdo.map((l) => (
-                <LigneQuete key={l.id + l.periode} l={l} sobre={vue.sobre} onOuvrir={onQuete} />
-              ))}
-              {hebdo.length > 0 && <p className="t-micro m-0">{CODEX.contrats.semaine} : {T.jusquaDimanche}</p>}
-            </div>
-          </details>
-        )}
+        <TaSemaine vue={vue} demo={demo} onQuete={onQuete} onVue={onVue} />
       </div>
     </div>
+  );
+}
+
+/**
+ * « Ta semaine ▸ » : l'objectif choisi le lundi (la carte du lundi, repli
+ * ouvert ce jour-là), le plan, les quêtes de la semaine, « jusqu'à
+ * dimanche ». Dans « Aujourd'hui » et dans « Tout le Codex ». Rien à dire :
+ * pas de repli.
+ */
+export function TaSemaine({ vue, demo = false, onQuete, onVue, ligne }: { vue: VueCodex; demo?: boolean; onQuete: (l: Ligne) => void; onVue?: (v: VueCodex) => void; ligne?: (l: Ligne) => React.ReactNode }) {
+  const hebdo = vue.hebdo.filter((l) => l.affichage !== "cache");
+  const objectif = objectifSemaine(vue.rythme?.semaine);
+  if (!(hebdo.length > 0 || !!objectif || !!vue.rythme?.lundi || !!vue.rythme?.plan)) return null;
+  return (
+    <details className={s.pli} open={!!vue.rythme?.lundi || undefined}>
+      <summary>
+        {T.semaine} {hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
+      </summary>
+      <div className={s.pliCorps}>
+        {objectif && <p className="t-small m-0">{objectif}</p>}
+        {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={onVue} />}
+        {vue.rythme?.plan && <Plan plan={vue.rythme.plan} jour={vue.jour} />}
+        {hebdo.map((l) => (ligne ? <Fragment key={l.id + l.periode}>{ligne(l)}</Fragment> : <LigneQuete key={l.id + l.periode} l={l} sobre={vue.sobre} onOuvrir={onQuete} />))}
+        {hebdo.length > 0 && <p className="t-micro m-0">{CODEX.contrats.semaine} : {T.jusquaDimanche}</p>}
+      </div>
+    </details>
   );
 }

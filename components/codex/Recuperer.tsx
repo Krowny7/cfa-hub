@@ -20,7 +20,11 @@ import { Sceau } from "@/components/codex/Sceau";
 //  - « bloc » (panneau du sceau, /codex) : « À récupérer · 3 », trois lignes
 //    au plus, « et N autres », puis le bouton plein « Tout récupérer · +190 XP » ;
 //  - « ligne » (fin d'outil) : « 2 quêtes à récupérer » et un bouton contour
-//    « Récupérer +60 XP ».
+//    « Récupérer +60 XP » ;
+//  - « bouton » (la ligne d'une quête dans « Tout le Codex », son détail) : le
+//    bouton seul, « Récupérer » (`court`) ou « Récupérer +40 XP », qui ne
+//    récupère que ses `items` ; la page se rafraîchit une fois les fêtes
+//    passées (la ligne qui le porte disparaît alors : les fêtes vont au bout).
 // Le geste : le bouton se désactive pendant l'appel ; au retour, le tampon
 // tombe sur chaque ligne (100 ms de décalage, trois lignes au plus), l'XP se
 // compte en 500 ms et la barre de niveau avance (la page se rafraîchit) ;
@@ -50,6 +54,8 @@ export function Recuperer({
   fait = FAIT_VIDE,
   sobre = false,
   cadre = true,
+  court = false,
+  contour = false,
   demo = false,
   className = "",
   onFini,
@@ -59,12 +65,15 @@ export function Recuperer({
   total?: { n: number; xp: number };
   /** le jour de Paris de la vue (les dates « d'hier », « mer. 14 oct. ») */
   jour: string;
-  variante?: "bloc" | "ligne";
+  variante?: "bloc" | "ligne" | "bouton";
   /** ce qui est déjà fait aujourd'hui : le bloc s'y replie une fois tout récupéré */
   fait?: FaitAujourdhui;
   sobre?: boolean;
   /** faux : sans carte, titre en sur-titre (le panneau « Aujourd'hui ») */
   cadre?: boolean;
+  /** « bouton » : « Récupérer » seul, sans l'XP ; contour plutôt que plein */
+  court?: boolean;
+  contour?: boolean;
   demo?: boolean;
   className?: string;
   onFini?: () => void;
@@ -100,6 +109,23 @@ export function Recuperer({
     }
   }, [phase, tour, fetes.length, onFini]);
 
+  // « bouton » : la page se rafraîchit une fois tout joué (avant, elle retirerait la ligne et ses fêtes)
+  const seul = variante === "bouton";
+  useEffect(() => {
+    if (seul && phase === "fini" && !demo) rafraichir();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seul, phase, demo]);
+
+  // le niveau de la barre du haut, et le panneau du sceau qui se relit
+  function rafraichir() {
+    router.refresh();
+    try {
+      window.dispatchEvent(new Event(EVENEMENT_CODEX_POINT));
+    } catch {
+      // relu à la page suivante
+    }
+  }
+
   const liste = prises ?? items;
   if (!liste.length && phase === "pret") return null;
   const montres = liste.slice(0, LIGNES_MONTREES);
@@ -134,8 +160,8 @@ export function Recuperer({
       r = { ok: true, recues: pris.map(({ quete, periode }) => ({ quete, periode })), xp: xpAVerser(pris), restant: 0, fetes: grandesFetes(pris, sobre) };
     } else {
       try {
-        // tout ce qui attend (le serveur relit la liste entière)
-        r = await codexRecuperer();
+        // tout ce qui attend (le serveur relit la liste entière) ; « bouton » : ses quêtes seules
+        r = await codexRecuperer(seul ? pris.map(({ quete, periode }) => ({ quete, periode })) : undefined);
       } catch {
         r = null;
       }
@@ -150,15 +176,7 @@ export function Recuperer({
     setPrises(recues.length ? recues : pris);
     setApres(faitApres(fait, recues, r.xp));
     setFetes(r.fetes);
-    if (!demo) {
-      // le niveau de la barre du haut, et le panneau du sceau qui se relit
-      router.refresh();
-      try {
-        window.dispatchEvent(new Event(EVENEMENT_CODEX_POINT));
-      } catch {
-        // relu à la page suivante
-      }
-    }
+    if (!demo && !seul) rafraichir();
     const reduit = mouvementReduit();
     const suite: Phase = r.fetes.length ? "fetes" : "fini";
     compter(sobre ? 0 : r.xp, reduit);
@@ -182,6 +200,30 @@ export function Recuperer({
 
   const fete = phase === "fetes" && tour < fetes.length ? fetes[tour] : null;
   const ecran = fete && scene && createPortal(<Fete key={fete.quete + fete.periode} {...habitFete(fete, { sobre, acte: null, autres: 0 })} onFin={() => setTour((t) => t + 1)} />, scene);
+
+  // « bouton » : le bouton, puis l'XP qui se compte, puis « Récupérée »
+  if (seul) {
+    const fait = phase === "geste" || phase === "fetes" || phase === "fini";
+    return (
+      <span className={"inline-flex flex-col items-end gap-1 " + className}>
+        {ecran}
+        {fait ? (
+          <span className="t-small t-num inline-flex min-h-[44px] items-center" aria-live="polite">
+            {phase === "geste" && !sobre && compte > 0 ? `+${compte.toLocaleString("fr-FR")} XP` : T.recuperee}
+          </span>
+        ) : (
+          <button type="button" className={(contour ? "btn btn-secondary" : "btn btn-primary") + " rl-press min-h-[44px] w-full"} disabled={phase !== "pret"} aria-busy={phase === "envoi"} onClick={recuperer}>
+            {phase === "envoi" ? T.enCours : court ? T.un(0) : dejaVerse ? T.voir : T.un(xp)}
+          </button>
+        )}
+        {echec && (
+          <span role="alert" className="t-small">
+            {T.echec}
+          </span>
+        )}
+      </span>
+    );
+  }
 
   // replié : « Fait aujourd'hui : 4 · +230 XP ▸ »
   if (phase === "fini" || (phase === "fetes" && variante === "ligne")) {

@@ -34,11 +34,15 @@ import { contenuDuProgramme } from "@/lib/codex/catalogue";
 import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
 import * as MAITRISE_UNIQUE from "@/lib/maitrise";
 import * as CAP from "@/lib/codex/cap";
-import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, premiereBlanche, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
+import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
 import { manqueDe } from "@/lib/codex/vue";
 import { matiereCoince } from "@/lib/codex/seance";
 import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, objectifSemaine, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
 import type { EtatQuete } from "@/lib/codex/moteur";
+import {
+  TEXTES_TOUT, aRecupererDe, actesParcours, avanceeActe, avanceeDetail, compteActe, dureeDetail, etapesMontrees, etatClair, exploitsTout, libelleEtat, matieresFinies, matieresTout,
+  objectifsLongs, plusDetail, queteParDefaut, recompenseDetail, resumeExploits, resumeMatieres, resumeObjectifs, resumeParcours, retrouver, surTitre, texteExploit, texteGain,
+} from "@/lib/codex/tout";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -398,14 +402,13 @@ console.log("\n# la carte en trois niveaux (V3 §10.1)");
   // deux segments, sur téléphone comme sur ordinateur, gardés dans l'URL (Codex simplifié, §3.3)
   check("deux segments : Aujourd'hui · Tout le Codex", SEGMENTS_TEL.map((s) => s.libelle).join(" · ") === "Aujourd'hui · Tout le Codex");
   check("le segment lu dans ?vue= ; inconnu ou absent : Aujourd'hui", segmentDe("tout") === "tout" && segmentDe("xyz") === "aujourdhui" && segmentDe(undefined) === "aujourdhui" && segmentDe("") === "aujourdhui");
-  check("les anciens segments et la carte (liens profonds) mènent à « Tout le Codex »", ["parcours", "matieres", "chantiers", "exploits", "carte"].every((v) => segmentDe(v) === "tout"));
+  check("les anciens segments (liens profonds) mènent à « Tout le Codex »", ["parcours", "matieres", "chantiers", "exploits"].every((v) => segmentDe(v) === "tout"));
+  check("?vue=carte : la carte en plein écran", segmentDe("carte") === "carte");
 
-  // la page blanche : la phrase entière une fois par écran (V3 §11.3)
-  const montreSauf = (...caches: string[]) => (q: string) => !caches.includes(q);
-  check("page blanche : la première famille masquée dans l'ordre de lecture (carte, puis colonne)", premiereBlanche(montreSauf("codex:longcours", "codex:contrats")) === "codex:contrats" && premiereBlanche(montreSauf("codex:longcours")) === "codex:longcours" && premiereBlanche(montreSauf("codex:branches", "codex:longcours")) === "codex:branches");
-  check("page blanche : rien de masqué, personne ne la dit", premiereBlanche(() => true) === null);
+  // la page blanche a quitté l'écran (Codex simplifié, §6) : une famille pas encore dévoilée n'a pas de repli
   const carteSrc = readFileSync("components/codex/CarteCodex.tsx", "utf8");
-  check("page blanche : la colonne (contrats, long cours) passe par PageBlanche", carteSrc.includes('<PageBlanche quoi="codex:longcours"') && carteSrc.includes('<PageBlanche quoi="codex:contrats"'));
+  const toutSrc = readFileSync("components/codex/ToutLeCodex.tsx", "utf8");
+  check("plus de « page encore blanche » sur la carte ni dans « Tout le Codex »", !carteSrc.includes("pageBlanche") && !carteSrc.includes("PageBlanche") && !toutSrc.includes("pageBlanche"));
 
   // la maîtrise unique : cap.ts réexporte lib/maitrise.ts (après F2)
   check("cap.ts réexporte la maîtrise unique (mêmes fonctions, mêmes constantes)", CAP.fuites === MAITRISE_UNIQUE.fuites && CAP.preparationDe === MAITRISE_UNIQUE.preparationDe && CAP.zoneDe === MAITRISE_UNIQUE.zoneDe && CAP.gainPreparation === MAITRISE_UNIQUE.gainPreparation && CAP.MAITRISE === MAITRISE_UNIQUE.MAITRISE);
@@ -453,6 +456,90 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
   check("… ses étapes : à faire d'abord, puis faites, sans les cachées", etapes.every((l) => l.affichage !== "cache") && etapes.findIndex((l) => l.etat === "terminee") >= etapes.filter((l) => l.etat !== "terminee").length - (etapes.some((l) => l.etat === "terminee") ? 0 : etapes.length));
   check("Ta semaine : l'objectif du lundi, « Ton objectif : 4 jours d'encre · Le banquier » ; rien sans choix", objectifSemaine({ cible: 4, nom: "Le banquier" }) === "Ton objectif : 4 jours d'encre · Le banquier" && objectifSemaine({ cible: 1, nom: "" }) === "Ton objectif : 1 jour d'encre" && objectifSemaine(null) === null);
   check("Ta semaine : « · 1 sur 2 »", resumeSemaine([{ etat: "terminee" }, { etat: "active" }] as never) === "· 1 sur 2");
+}
+
+console.log("\n# /codex « Tout le Codex », la ligne et le détail (Codex simplifié, §2, §3.3, §3.4, §3.6)");
+{
+  const v = exempleCodex("milieu", { unique: true });
+  const l0 = v.branches[0].etapes[0];
+  const avec = (o: Partial<typeof l0>) => ({ ...l0, ...o });
+  check("quatre états : à faire (verrouillée comprise), en cours, à récupérer, faite",
+    etatClair(avec({ etat: "disponible" })) === "afaire" && etatClair(avec({ etat: "verrouillee" })) === "afaire" && etatClair(avec({ etat: "active" })) === "encours" && etatClair(avec({ etat: "terminee", aRecuperer: true })) === "recuperer" && etatClair(avec({ etat: "terminee", aRecuperer: undefined })) === "faite");
+  check("« Faite le 12 oct. », « À récupérer », « En cours », « À faire » ; jamais « tamponnée »",
+    libelleEtat(avec({ etat: "terminee", aRecuperer: undefined, termineeLe: "2026-10-12T10:00:00Z" })) === "Faite le 12 oct." && libelleEtat(avec({ etat: "terminee", aRecuperer: true })) === "À récupérer" && libelleEtat(avec({ etat: "active" })) === "En cours" && libelleEtat(avec({ etat: "verrouillee" })) === "À faire" && libelleEtat(avec({ etat: "terminee", aRecuperer: undefined, termineeLe: null })) === "Faite");
+
+  // les replis
+  const etiq = (a: { numero: number }) => `Acte ${a.numero}`;
+  const courant = v.trame.find((a) => a.courant && !(a.acte.numero === 1 && a.quetes.every((q) => q.optionnelle)));
+  check("Parcours : « · Acte n · 4 sur 5 », l'acte en cours (jamais la visite)", !!courant && resumeParcours(v.trame, etiq) === `· Acte ${courant.acte.numero} · ${avanceeActe(courant)}`, resumeParcours(v.trame, etiq) ?? "");
+  check("Parcours : rien quand aucun acte n'est en cours", resumeParcours(v.trame.map((a) => ({ ...a, courant: false })), etiq) === null);
+  check("Parcours : un acte sans étape à montrer n'a pas de ligne", actesParcours(v.trame).every((a) => a.quetes.some((q) => q.affichage !== "cache")));
+  const q = (etat: "terminee" | "active" | "disponible", optionnelle = false) => ({ ...l0, id: Math.random().toString(36), etat, optionnelle, affichage: "complet" as const });
+  const acte = { ...v.trame[0], quetes: [q("terminee"), q("active"), q("disponible"), q("disponible"), q("disponible"), q("terminee", true), q("disponible", true)] };
+  check("un acte : les facultatives comptées à part, « 1 sur 5 + 2 facultatives »", avanceeActe(acte) === "1 sur 5 + 2 facultatives" && compteActe(acte).facultatives === 2);
+  const visite = { ...v.trame[0], quetes: [q("terminee", true), q("disponible", true)] };
+  check("la visite (rien d'obligatoire) : ses facultatives comptées, « 1 sur 2 »", avanceeActe(visite) === "1 sur 2");
+  const long = { ...v.trame[0], quetes: [q("terminee"), q("terminee"), q("terminee"), q("terminee"), q("active")] };
+  const m = etapesMontrees(long);
+  check("les étapes d'un acte : à faire d'abord, deux faites au plus, « et 2 autres faites »", m.lignes.length === 3 && m.lignes[0].etat === "active" && m.autres === 2 && TEXTES_TOUT.autresFaites(m.autres) === "et 2 autres faites");
+
+  const cap = v.cap!;
+  const matieres = matieresTout(v.branches, cap);
+  check("Matières : une ligne par matière pas finie, avec son étape suivante", matieres.length === v.branches.length - matieresFinies(v.branches) && matieres.every((x) => x.etape.etat !== "terminee"));
+  check("… triées par gain de préparation, du plus grand au plus petit", matieres.every((x, i) => i === 0 || matieres[i - 1].gain >= x.gain), matieres.map((x) => `${x.b.contenu.court} ${x.gain}`).join(", "));
+  const total = cap.matieres.reduce((sm, x) => sm + x.poids, 0);
+  const premiere = cap.matieres.find((x) => x.cle === matieres[0]?.b.contenu.key);
+  const pct = premiere?.pct ?? 0;
+  const seuil = matieres[0]?.etape.etape === "maitrise60" ? 60 : matieres[0]?.etape.etape === "maitrise75" ? 75 : pct < 60 ? 60 : pct < 75 ? 75 : 0;
+  check("… le gain : poids × points jusqu'au seuil que vise l'étape (60 puis 75 %), au dixième", !!premiere && matieres[0].gain === Math.round((premiere.poids / total) * Math.max(0, seuil - pct) * 10) / 10, `${matieres[0]?.gain}`);
+  check("« +1,2 pt » ; rien sans gain", texteGain(1.2) === "+1,2 pt" && texteGain(0) === null, String(texteGain(1.2)));
+  check("Matières : « · 2 validées sur 10 », « · 1 validée sur 10 »", resumeMatieres(v.branches.map((b, i) => ({ ...b, maitre: i < 2 }))) === `· 2 validées sur ${v.branches.length}` && resumeMatieres(v.branches.map((b, i) => ({ ...b, maitre: i < 1 }))) === `· 1 validée sur ${v.branches.length}`);
+
+  const chaines = v.longCours.map((c, i) => ({ ...c, courant: c.courant ? { ...c.courant, fraction: [0.2, 0.9, 0.5, 0.7][i % 4] } : null }));
+  const obj = objectifsLongs(chaines, { chapitres: [], aVenir: false });
+  check("Objectifs longs : une ligne par chaîne en cours, la plus proche de la fin d'abord", obj.length === chaines.filter((c) => !!c.courant).length && obj.every((o, i) => i === 0 || obj[i - 1].ligne.fraction >= o.ligne.fraction));
+  check("… « étape 2 sur 5 » sous chacune", obj.every((o) => /^étape \d+ sur \d+$/.test(o.sous)), obj[0]?.sous);
+  const fil = { chapitres: [{ id: "f1", titre: "Le métier", pourquoi: "", faits: 1, courant: { ...l0, id: "fil:1", famille: "fil" as const }, suivant: null, recents: [] }], aVenir: false };
+  const avecFil = objectifsLongs(chaines, fil);
+  check("… le fil rouge vient en dernier, « Fil rouge · Le métier »", avecFil[avecFil.length - 1].sous === "Fil rouge · Le métier" && avecFil.length === obj.length + 1);
+  check("Objectifs longs : « · n en cours »", resumeObjectifs(chaines) === `· ${chaines.filter((c) => !!c.courant).length} en cours`);
+
+  const ex = [{ ...l0, id: "e1", famille: "exploit" as const, etat: "terminee" as const, aRecuperer: true as const }, { ...l0, id: "e2", famille: "exploit" as const, etat: "disponible" as const, affichage: "indice" as const, indice: "Un sans-faute sur une séance de 20 questions" }, { ...l0, id: "e3", famille: "exploit" as const, etat: "terminee" as const, aRecuperer: undefined }, { ...l0, id: "e4", famille: "exploit" as const, affichage: "cache" as const }];
+  const tri = exploitsTout(ex);
+  check("Exploits : à récupérer, puis à trouver, puis trouvés ; jamais un caché", tri.aRecuperer.map((x) => x.id).join() === "e1" && tri.aTrouver.map((x) => x.id).join() === "e2" && tri.trouves.map((x) => x.id).join() === "e3");
+  check("… « · 2 sur 3 » (les trouvés, récupérés ou non)", resumeExploits(ex) === "· 2 sur 3");
+  check("… une énigme se lit (son indice) sous le nom de l'exploit", texteExploit(ex[1]) === "Un sans-faute sur une séance de 20 questions" && texteExploit({ ...ex[1], etat: "terminee" }) === ex[1].consigne);
+
+  check("le détail d'office : la première à récupérer, sinon la première en cours", queteParDefaut([q("disponible"), q("active"), { ...q("terminee"), aRecuperer: true as const }])?.aRecuperer === true && queteParDefaut([q("disponible"), q("active")])?.etat === "active" && queteParDefaut([q("terminee")]) === null);
+
+  // le détail allégé
+  check("sur-titre : famille · matière, deux informations au plus", surTitre({ famille: "branche" }, { matiere: "FSA" }) === "Matière · FSA" && surTitre({ famille: "contrat" }) === "Quête du jour" && surTitre({ famille: "contrat" }, { semaine: true }) === "Quête de la semaine" && surTitre({ famille: "longcours" }) === "Objectif long");
+  check("avancée : « 51 sur 60 » et « Il manque : 9 » ; rien une fois faite", JSON.stringify(avanceeDetail({ etat: "active", valeur: 51, cible: 60, affichage: "complet" })) === JSON.stringify({ texte: "51 sur 60", manque: "Il manque : 9" }) && avanceeDetail({ etat: "terminee", valeur: 60, cible: 60, affichage: "complet" }) === null);
+  check("… à faire baisser : « 120, à passer sous 50 »", avanceeDetail({ etat: "active", valeur: 120, cible: 50, affichage: "complet", baisse: { actuel: 120, seuil: 50 } })?.texte === "120, à passer sous 50");
+  check("récompense sur une ligne : « +40 XP · Titre : Apprenti » ; sobre : rien", recompenseDetail({ ...l0, xp: 40, xpVersee: null, etat: "active", titreGagne: "t", titreNom: "Apprenti", cosmetique: undefined, folio: undefined }, false) === "+40 XP · Titre : Apprenti" && recompenseDetail({ ...l0, xp: 40 }, true) === null);
+  check("durée honnête : « ≈ 10 min » si elle se finit aujourd'hui", dureeDetail({ ...l0, etat: "disponible", aRecuperer: undefined, famille: "contrat", etape: undefined, duree: 10, destination: undefined, affichage: "complet" }) === "≈ 10 min");
+  check("… « jusqu'à dimanche » pour une quête de la semaine, « sur plusieurs semaines » pour une maîtrise ou un objectif long",
+    dureeDetail({ ...l0, etat: "disponible", famille: "contrat", duree: 10, affichage: "complet" }, { semaine: true }) === "jusqu'à dimanche" && dureeDetail({ ...l0, etat: "active", famille: "branche", etape: "maitrise60", duree: 25, affichage: "complet" }) === "sur plusieurs semaines" && dureeDetail({ ...l0, etat: "active", famille: "longcours", duree: 5, affichage: "complet" }) === "sur plusieurs semaines");
+  check("… rien pour une quête faite ou à récupérer", dureeDetail({ ...l0, etat: "terminee", duree: 10 }) === null && dureeDetail({ ...l0, etat: "active", aRecuperer: true, duree: 10 }) === null);
+  const b = v.branches.find((x) => x.etapes.filter((e) => e.affichage !== "cache").length > 1)!;
+  const etape = b.etapes.filter((e) => e.affichage !== "cache")[1];
+  check("« Plus » : « Matière FSA · étape 2 sur 6 »", plusDetail({ ...etape, famille: "branche", matiere: b.contenu.key }, v).includes(`Matière ${b.contenu.court} · étape 2 sur ${b.etapes.filter((e) => e.affichage !== "cache").length}`), plusDetail(etape, v).join(" | "));
+  const ch = v.longCours.find((c) => c.paliers.length > 1)!;
+  check("« Plus » : la chaîne et la place de l'étape", plusDetail({ ...ch.paliers[1], chaine: ch.chaine.id }, v)[0] === `${ch.chaine.titre} · étape 2 sur ${ch.paliers.length}`);
+  check("« Plus » : « comptée avec » et la date", plusDetail({ ...l0, famille: "exploit", chaine: undefined, compteeAvec: { id: "x", titre: "Un mois" }, etat: "terminee", termineeLe: "2026-10-12T10:00:00Z", retro: false }, v).join(" | ") === "Comptée avec « Un mois » : une seule récompense pour les deux. | Faite le 12 octobre 2026");
+
+  const item = { quete: l0.id, periode: l0.periode, titre: "x" };
+  check("la ligne « À récupérer » d'une quête : même id, même période", aRecupererDe([item], l0) === item && aRecupererDe([{ ...item, periode: "autre" }], l0) === null);
+  check("une quête ouverte se relit dans la vue nouvelle (même id, même période)", retrouver(v, l0)?.id === l0.id && retrouver(v, { id: "inconnue", periode: "" }) === null);
+
+  // la ligne et le détail : un seul composant, sans réplique de Léonard ni police manuscrite
+  const carteSrc = readFileSync("components/codex/CarteCodex.tsx", "utf8");
+  const ligneSrc = readFileSync("components/codex/LigneQuete.tsx", "utf8");
+  const detailSrc = readFileSync("components/codex/DetailQuete.tsx", "utf8");
+  check("le détail : ni réplique de Léonard, ni « Réclamer la récompense », ni double pourquoi", !detailSrc.includes("choisirReplique") && !detailSrc.includes("leonardLigne") && !detailSrc.includes("reclamer") && (detailSrc.match(/T\.pourquoi/g) ?? []).length === 1);
+  check("la ligne : jamais un bouton dans un bouton (« Récupérer » à côté)", ligneSrc.includes("ligneAvecAction") && ligneSrc.includes("{bouton}"));
+  check("plus de police manuscrite ni de réplique dans les titres de chemin", !/className=\{`\$\{c\.plume\} \$\{c\.titreChemin\}`\}/.test(carteSrc) && !carteSrc.includes("repliqueChemin") && !carteSrc.includes("acte.replique"));
+  check("la carte : « À faire » d'office, la légende complète (glyphes et quatre états)", carteSrc.includes('useState<FiltreCarte>(cible ? "tout" : "afaire")') && ["à faire", "en cours", "à récupérer", "faite", "séance ciblée", "Maître"].every((x) => carteSrc.includes(x)));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

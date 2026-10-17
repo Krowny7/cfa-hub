@@ -43,13 +43,15 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
   for (const unique of [false, true]) {
     const jour = rendre(<CodexEcran vue={exempleCodex(sc, { unique })} demo />);
     const tout = rendre(<CodexEcran vue={exempleCodex(sc, { unique })} segment="tout" demo />);
-    check(`${sc}${unique ? " (maîtrise unique)" : ""} : rendu sans erreur, deux segments, la carte (filtres et recherche) dans « Tout le Codex »`, !!jour && !!tout && compte(jour, /role="tab"/g) === 2 && !jour.includes("Mes faiblesses") && tout.includes("Mes faiblesses") && tout.includes('placeholder="Chercher une quête"'));
+    const carte = rendre(<CodexEcran vue={exempleCodex(sc, { unique })} segment="carte" demo />);
+    check(`${sc}${unique ? " (maîtrise unique)" : ""} : rendu sans erreur, deux segments, les replis dans « Tout le Codex », la carte (filtres et recherche) dans « Voir la carte »`,
+      !!jour && !!tout && !!carte && compte(jour, /role="tab"/g) === 2 && !jour.includes("Mes faiblesses") && !tout.includes("Mes faiblesses") && tout.includes("Voir la carte") && carte.includes("Mes faiblesses") && carte.includes('placeholder="Chercher une quête"'));
   }
 }
 
 console.log("\n# la carte en trois niveaux");
 {
-  const html = rendre(<CodexEcran vue={exempleCodex("milieu", { unique: true })} segment="tout" demo />) ?? "";
+  const html = rendre(<CodexEcran vue={exempleCodex("milieu", { unique: true })} segment="carte" demo />) ?? "";
   check("le monde s'ouvre au zoom moyen (niveau 2)", html.includes('data-niveau="2"'));
   check("dix pastilles de matière, pour le niveau dézoomé", compte(html, /class="pastille pastilleCarte/g) === 10);
   const glyphes = ["F", "D", "◎", "S", "♛"].map((g) => compte(html, new RegExp(`>${g}</text>`, "g")));
@@ -58,18 +60,35 @@ console.log("\n# la carte en trois niveaux");
   check("les textes de taille fixe sont marqués pour être masqués sous 12 px", html.includes('data-px="13"') && html.includes('data-px="24"'));
   check("la visite de la bottega se tient à côté du tronc", compte(html, /class="outilsActe"/g) === 1);
   check("une quête verrouillée dit ce qui manque (libellé lu)", /aria-label="[^"]*\. (D'abord|Clore|Séance|S'ouvre)/.test(html.replace(/&#x27;/g, "'")));
-  const neuf = rendre(<CodexEcran vue={exempleCodex("neuf")} segment="tout" demo />) ?? "";
+  const neuf = rendre(<CodexEcran vue={exempleCodex("neuf")} segment="carte" demo />) ?? "";
   check("compte neuf : pas de pastille tant que les branches ne sont pas dévoilées", compte(neuf, /pastilleCarte/g) === 0);
 }
 
-console.log("\n# « Tout le Codex » sur téléphone");
+console.log("\n# la carte sur téléphone");
 {
   const vue = exempleCodex("milieu", { unique: true });
   const corps = rendre(<CodexTel vue={vue} montre={() => true} onQuete={() => {}} />) ?? "";
   check("le parcours : le chemin d'un acte et son sélecteur", corps.includes('aria-label="Les actes"') && corps.includes("data-ici"));
   check("les matières : la grille 2 × 5 des pastilles", compte(corps, /pastilleGrille/g) === 10 && corps.includes('aria-label="Les matières"'));
-  check("le long cours", corps.includes(vue.longCours[0].chaine.titre.replace(/'/g, "&#x27;")));
-  check("les exploits en chemin", compte(corps, /class="chemin"/g) >= 2);
+  check("la légende complète, sous les chemins", corps.includes('aria-label="Légende"') && corps.includes("à récupérer") && corps.includes("séance ciblée"));
+  check("ni réplique ni sous-titre d'acte", !corps.includes("repliqueChemin") && !vue.trame.some((a) => a.replique.texte && corps.includes(a.replique.texte.replace(/'/g, "&#x27;").slice(0, 30))));
+}
+
+console.log("\n# /codex « Tout le Codex » (Codex simplifié, §3.3)");
+{
+  const vue = exempleCodex("milieu", { unique: true });
+  const html = rendre(<CodexEcran vue={vue} segment="tout" demo />) ?? "";
+  const replis = ["Parcours", "Matières", "Objectifs longs", "Exploits"];
+  check("quatre replis, dans l'ordre, puis « Voir la carte »", replis.every((r) => html.includes(`<summary>${r} `)) && replis.map((r) => html.indexOf(`<summary>${r} `)).every((x, i, t) => i === 0 || t[i - 1] < x) && html.indexOf("Voir la carte") > html.indexOf("<summary>Exploits "));
+  check("chaque repli résumé en une ligne (« · Acte … », « · n validée(s) sur 10 », « · n en cours », « · n sur m »)", /<summary>Parcours <span[^>]*>· Acte /.test(html) && /<summary>Matières <span[^>]*>· \d+ validées? sur 10/.test(html) && /<summary>Objectifs longs <span[^>]*>· \d+ en cours/.test(html) && /<summary>Exploits <span[^>]*>· \d+ sur \d+/.test(html));
+  check("des lignes de quête, pas de carte ni de « Y aller » dans les listes", compte(html, /class="ligne"/g) > 10 && !html.includes("Mes faiblesses") && !html.includes("Y aller"));
+  check("ni « page encore blanche », ni « tamponnée »", !html.includes("encore blanche") && !/[Tt]amponnée/.test(html));
+  const aRec = vue.trame.flatMap((a) => a.quetes).find((q) => q.affichage !== "cache") ?? vue.exploits[0];
+  const recup = { ...vue, exploits: vue.exploits.map((q, i) => (i === 0 ? { ...q, etat: "terminee" as const, aRecuperer: true as const, affichage: "complet" as const } : q)) };
+  const h = rendre(<CodexEcran vue={recup} segment="tout" demo />) ?? "";
+  check("une quête à récupérer porte son bouton « Récupérer », à côté de la ligne", !!aRec && /class="ligneAvecAction"/.test(h) && /<button[^>]*class="btn btn-primary[^"]*"[^>]*>Récupérer<\/button>/.test(h));
+  const sobre = rendre(<CodexEcran vue={{ ...vue, sobre: true }} segment="tout" demo />) ?? "";
+  check("le mode sobre tait l'XP des lignes", !/\+\d+ XP/.test(sobre));
 }
 
 console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");

@@ -1,44 +1,81 @@
+import type { ReactNode } from "react";
 import type { LigneQuete as Ligne } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
+import { libelleEtat } from "@/lib/codex/tout";
 import { Sceau, libelleSceau } from "@/components/codex/Sceau";
 import s from "./Aujourdhui.module.css";
 
-// Une quête sur une ligne (Codex simplifié, §2) : toute la ligne ouvre son
-// détail. À gauche, le sceau en 28 px (vide : à faire, entamé : en cours,
-// plein : à récupérer, tamponné : faite) ; au centre, le titre (l'action),
-// une barre fine unie et l'avancée avec son unité ; à droite, une seule
-// chose : « +40 XP », « À récupérer » ou « Faite le 12 oct. ». Au moins
-// 64 px de haut. Le mode sobre tait l'XP.
-
-const jourCourt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
+// Une quête sur une ligne (Codex simplifié, §2), la même partout : toute la
+// ligne ouvre son détail. À gauche, le sceau en 28 px (vide : à faire,
+// entamé : en cours, plein : à récupérer, tamponné : faite) ; au centre, le
+// titre (l'action), une barre fine unie et l'avancée avec son unité ; à
+// droite, une seule chose : « +40 XP », « À récupérer » (ou le bouton
+// « Récupérer », `action`) ou « Faite le 12 oct. ». Au moins 64 px de haut.
+// `sous` : un mot de plus sur la ligne de l'avancée (« étape 2 sur 5 ») ;
+// `texte` : une ligne lisible à la place de l'avancée, sans barre (l'énigme
+// d'un exploit) ; `choisie` : la quête montrée dans le détail, à côté (sur
+// ordinateur). Le mode sobre tait l'XP.
 
 /** Ce que la ligne dit à droite. */
 export function droiteLigne(l: Pick<Ligne, "etat" | "aRecuperer" | "termineeLe" | "xp">, sobre: boolean): string | null {
-  if (l.aRecuperer) return "À récupérer";
-  if (l.etat === "terminee") return l.termineeLe ? `Faite le ${jourCourt(l.termineeLe)}` : CODEX.etat.terminee;
+  if (l.aRecuperer || l.etat === "terminee") return libelleEtat(l);
   return !sobre && l.xp > 0 ? `+${l.xp} XP` : null;
 }
 
-export function LigneQuete({ l, sobre = false, onOuvrir }: { l: Ligne; sobre?: boolean; onOuvrir: (l: Ligne) => void }) {
+export function LigneQuete({
+  l,
+  sobre = false,
+  onOuvrir,
+  sous,
+  texte,
+  action,
+  choisie = false,
+}: {
+  l: Ligne;
+  sobre?: boolean;
+  onOuvrir: (l: Ligne) => void;
+  sous?: string | null;
+  texte?: string | null;
+  /** à la place du mot de droite : le bouton « Récupérer » */
+  action?: ReactNode;
+  choisie?: boolean;
+}) {
   const enigme = l.affichage === "indice" && l.etat !== "terminee";
-  const titre = enigme ? CODEX.exploits.enigme : l.titre;
-  const avancee = !enigme && l.etat !== "terminee" && l.cible > 1 ? `${Math.floor(l.valeur).toLocaleString("fr-FR")} sur ${Math.floor(l.cible).toLocaleString("fr-FR")}` : null;
+  // une énigme lisible (`texte`) garde le nom de l'exploit ; sans elle, « Une énigme »
+  const titre = enigme && !texte ? CODEX.exploits.enigme : l.titre;
+  const mesure = !texte && !enigme && l.etat !== "terminee" && l.cible > 1;
+  const avancee = mesure ? `${Math.floor(l.valeur).toLocaleString("fr-FR")} sur ${Math.floor(l.cible).toLocaleString("fr-FR")}` : null;
+  const ligneSous = texte ?? [avancee, sous].filter(Boolean).join(" · ");
   const droite = droiteLigne(l, sobre);
-  return (
-    <button type="button" className={s.ligne} data-etat={l.aRecuperer ? "recuperer" : l.etat} onClick={() => onOuvrir(l)} aria-haspopup="dialog" aria-label={libelleSceau(l)}>
+  const bouton = (
+    <button
+      type="button"
+      className={s.ligne}
+      data-etat={l.aRecuperer ? "recuperer" : l.etat}
+      data-choisie={choisie || undefined}
+      aria-current={choisie || undefined}
+      onClick={() => onOuvrir(l)}
+      aria-haspopup="dialog"
+      aria-label={libelleSceau(l)}
+    >
       <Sceau l={l} taille={28} />
       <span className={s.ligneMilieu}>
         <span className={s.ligneTitre}>{titre}</span>
-        {avancee && (
-          <>
-            <span className={s.barre} aria-hidden>
-              <i style={{ width: `${Math.round(l.fraction * 100)}%` }} />
-            </span>
-            <span className="t-small t-num">{avancee}</span>
-          </>
+        {mesure && (
+          <span className={s.barre} aria-hidden>
+            <i style={{ width: `${Math.round(l.fraction * 100)}%` }} />
+          </span>
         )}
+        {ligneSous && <span className="t-small t-num">{ligneSous}</span>}
       </span>
-      {droite && <span className={l.aRecuperer ? s.ligneRecuperer : "t-micro"}>{droite}</span>}
+      {!action && droite && <span className={l.aRecuperer ? s.ligneRecuperer : "t-micro"}>{droite}</span>}
     </button>
+  );
+  if (!action) return bouton;
+  return (
+    <div className={s.ligneAvecAction}>
+      {bouton}
+      <span className={s.ligneAction}>{action}</span>
+    </div>
   );
 }

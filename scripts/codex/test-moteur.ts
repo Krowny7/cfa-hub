@@ -864,7 +864,8 @@ console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)"
   check("les fêtes jouées au clic « Récupérer » (components/fete, chargée à la demande), une par une", !fete.includes("habitFete(") && recuperer.includes('import("@/components/fete/Fete")') && recuperer.includes("ssr: false") && recuperer.includes("habitFete(fete"));
   const detail = readFileSync("components/codex/DetailQuete.tsx", "utf8");
   const carte = readFileSync("components/codex/CarteCodex.tsx", "utf8");
-  check("mode sobre : le détail d'une quête sans récompense, le trio sans XP, le tampon ancré sur la carte (data-quete)", detail.includes("const recompense = sobre ? []") && carte.includes("vue.sobre ? CODEX.contrats.trioFaitSobre") && carte.includes("data-quete={nd.cle}"));
+  const tout = readFileSync("lib/codex/tout.ts", "utf8");
+  check("mode sobre : le détail d'une quête sans récompense, le tampon ancré sur la carte (data-quete)", detail.includes("recompenseDetail(l, sobre)") && tout.includes("if (sobre) return null;") && carte.includes("data-quete={nd.cle}"));
 }
 
 console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");

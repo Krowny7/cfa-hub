@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { devoileLite } from "@/lib/codex/devoile-lite";
 import type { LigneQuete, VueActe, VueCodex, VueContrat } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
-import { codexChangerContrat, codexOuvrirProgramme, codexReclamer, codexToutMontrer } from "@/lib/codex/actions";
+import { codexChangerContrat, codexOuvrirProgramme, codexToutMontrer } from "@/lib/codex/actions";
+import { TEXTES_TOUT, aRecupererDe, avanceeActe, plusDetail, retrouver } from "@/lib/codex/tout";
 import { DetailQuete } from "@/components/codex/DetailQuete";
 import { Aujourdhui } from "@/components/codex/Aujourdhui";
+import { ToutLeCodex } from "@/components/codex/ToutLeCodex";
 import { Veillee } from "@/components/codex/Veillee";
 import { Malle } from "@/components/codex/Malle";
 import { BonneChance } from "@/components/codex/BonneChance";
@@ -15,8 +17,8 @@ import { PoseLePinceau } from "@/components/codex/PoseLePinceau";
 import { FilRouge } from "@/components/codex/FilRouge";
 import { Verdict } from "@/components/codex/Verdict";
 import { QUETE_VEILLE, pinceauPose } from "@/lib/codex/calendrier";
-import { ArbreCodex, Chemin, CodexTel, Colonne, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
-import { quetesDeLaCarte, segmentDe, type SegmentTel } from "@/lib/codex/carte";
+import { ArbreCodex, Chemin, CodexTel, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
+import { quetesDeLaCarte, segmentDe, type VueSegment } from "@/lib/codex/carte";
 import { Feuille } from "@/components/ui/Feuille";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import e from "./Encre.module.css";
@@ -30,16 +32,19 @@ import j from "./Aujourdhui.module.css";
 //                  seul bouton plein) et les replis d'une ligne (Quêtes du
 //                  jour, Fait aujourd'hui, Préparation, l'acte, Ta semaine) :
 //                  components/codex/Aujourdhui.tsx, deux colonnes sur ordinateur ;
-//   Tout le Codex  la carte (l'arbre sur ordinateur, les chemins sur
-//                  téléphone), en attendant ses quatre replis (lot A5).
+//   Tout le Codex  quatre replis (Parcours, Matières, Objectifs longs,
+//                  Exploits), « Ta semaine » et « Voir la carte » ;
+//                  maître-détail sur ordinateur : components/codex/ToutLeCodex.tsx.
+// « Voir la carte » (?vue=carte) : la carte sur toute la largeur (l'arbre sur
+// ordinateur, les chemins sur téléphone), « ← Tout le Codex » pour revenir.
 // Un ancien segment (?vue=parcours, matieres…) mène à « Tout le Codex ».
 // Le calendrier (V3 §7.1, `vue.moment`) : en veillée, les sept tampons et
 // « On ne commence plus rien. » ; la malle (J-3 à J-1) avant le fil ; le
 // jour J, « Bonne chance. » seule ; le lendemain, « Pose le pinceau. », sans
 // séance ; après l'examen, le fil rouge passe en tête de « Tout le Codex ».
 // Un clic sur une quête ouvre son détail ; sur un acte, la feuille de l'acte.
-// `quete` (?quete=…, « Chercher une quête » de la palette) : « Tout le
-// Codex » s'ouvre, la carte vient à elle, son détail s'ouvre sur téléphone.
+// `quete` (?quete=…, « Chercher une quête » de la palette) : la carte
+// s'ouvre et vient à elle ; son détail s'ouvre sur téléphone.
 // `demo` : aperçus (aucune action serveur).
 
 type Props = { vue: VueCodex; demo?: boolean; segment?: string; quete?: string };
@@ -48,9 +53,13 @@ const nomMatiere = (vue: VueCodex, key?: string) => (key ? vue.branches.find((b)
 
 export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, quete }: Props) {
   const [vue, setVue] = useState(depart);
-  // la page rafraîchie (« Récupérer » l'a demandé) : la vue nouvelle du serveur remplace la locale
-  useEffect(() => setVue(depart), [depart]);
   const [ouverte, setOuverte] = useState<LigneQuete | null>(null);
+  // la page rafraîchie (« Récupérer » l'a demandé) : la vue nouvelle du serveur remplace la locale,
+  // et la quête ouverte se relit (elle n'attend plus « Récupérer »)
+  useEffect(() => {
+    setVue(depart);
+    setOuverte((o) => (o ? (retrouver(depart, o) ?? o) : o));
+  }, [depart]);
   const [acte, setActe] = useState<VueActe | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   // « Voir le Codex » le jour J
@@ -64,9 +73,9 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
   }, []);
   const ouvrirActe = useCallback((a: VueActe) => setActe(a), []);
   const fermer = useCallback(() => setOuverte(null), []);
-  // une quête cherchée (?quete=) se montre sur la carte : « Tout le Codex »
-  const [segment, setSegment] = useState<SegmentTel>(() => (quete ? "tout" : segmentDe(segmentUrl)));
-  const choisirSegment = (s: SegmentTel) => {
+  // une quête cherchée (?quete=) se montre sur la carte
+  const [segment, setSegment] = useState<VueSegment>(() => (quete ? "carte" : segmentDe(segmentUrl)));
+  const choisirSegment = (s: VueSegment) => {
     setSegment(s);
     try {
       const u = new URL(window.location.href);
@@ -119,10 +128,25 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
       else setMessage("Impossible d'ouvrir ce programme pour l'instant. Réessaie dans un instant.");
     });
 
-  const reclamer = async (l: LigneQuete): Promise<string | null> => {
-    if (demo) return CODEX.detail.reclame;
-    const r = await codexReclamer(l.id, l.periode);
-    return r.ok ? CODEX.detail.reclame : "La récompense n'a pas pu être versée. Réessaie dans un instant.";
+  // le détail d'une quête, en feuille (téléphone) ou en panneau (« Tout le Codex » sur ordinateur)
+  const detail = (l: LigneQuete, forme: "feuille" | "panneau") => {
+    const contrat = vue.contrats.find((ct) => ct.changeable && ct.ligne.id === l.id && ct.ligne.periode === l.periode && ct.ligne.etat !== "terminee");
+    return (
+      <DetailQuete
+        key={forme + l.id + l.periode}
+        l={l}
+        forme={forme}
+        sobre={vue.sobre}
+        nomMatiere={nomMatiere(vue, l.matiere)}
+        semaine={vue.hebdo.some((h) => h.id === l.id)}
+        plus={plusDetail(l, vue)}
+        recuperer={aRecupererDe(vue.aRecuperer, l)}
+        jour={vue.jour}
+        demo={demo}
+        onClose={fermer}
+        changer={contrat ? { occupe, onChanger: () => changer(contrat) } : undefined}
+      />
+    );
   };
 
   const moment = vue.moment;
@@ -130,8 +154,6 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
   // la même règle ici garde les aperçus (vues d'exemple) cohérents
   const avecSeance = !pinceauPose(moment);
   const veille = moment === "malle" ? (vue.trame.flatMap((a) => a.quetes).find((l) => l.id === QUETE_VEILLE) ?? null) : null;
-  // une quête du jour ouverte : « Changer » dans son détail, tant que c'est possible
-  const contratOuvert = ouverte ? vue.contrats.find((ct) => ct.changeable && ct.ligne.id === ouverte.id && ct.ligne.periode === ouverte.periode) : undefined;
 
   // le jour J : une seule carte (V3 §7.4)
   if (moment === "jourJ" && !deplie) {
@@ -146,7 +168,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
       <h1 className="t-h3 font-brand m-0">{CODEX.nom}</h1>
       <div className={c.segments}>
-        <SegmentsTel segment={segment} onChoisir={choisirSegment} />
+        <SegmentsTel segment={segment === "carte" ? "tout" : segment} onChoisir={choisirSegment} />
       </div>
 
       {message && (
@@ -167,7 +189,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
             {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
             <Aujourdhui vue={vue} fil={avecSeance} demo={demo} onQuete={ouvrir} onVue={setVue} />
           </>
-        ) : (
+        ) : segment === "tout" ? (
           <>
             {/* après l'examen, le fil rouge continue : il passe en tête (V3 §7.1) */}
             {moment === "apres" && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={ouvrir} />}
@@ -179,20 +201,29 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
               </p>
             )}
             {vue.suite && (
-              <section className="card-quiet flex flex-wrap items-center gap-3 p-3" aria-label="La route de Milan">
+              <section className="card-quiet flex flex-wrap items-center gap-3 p-3" aria-label="La suite">
                 <p className="t-small m-0 min-w-0 flex-1">{vue.suite.annonce}</p>
                 {vue.suite.ouvrable && (
-                  <button type="button" className="btn btn-primary rl-press shrink-0" onClick={() => ouvrirSuite(vue.suite!.programme)} disabled={occupe}>
+                  <button type="button" className="btn btn-secondary rl-press shrink-0" onClick={() => ouvrirSuite(vue.suite!.programme)} disabled={occupe}>
                     Ouvrir {vue.suite.court} <ArrowRight size={16} aria-hidden />
                   </button>
                 )}
               </section>
             )}
+            <ToutLeCodex vue={vue} montre={montre} demo={demo} filRouge={moment !== "apres"} onQuete={ouvrir} onVue={setVue} onCarte={() => choisirSegment("carte")} detail={(l) => detail(l, "panneau")} />
+          </>
+        ) : (
+          <>
+            <p className="m-0">
+              <button type="button" className={j.lien} onClick={() => choisirSegment("tout")}>
+                <ArrowLeft size={15} aria-hidden className="inline align-[-2px]" /> {TEXTES_TOUT.retourCarte}
+              </button>
+            </p>
             <div className={c.surOrdi} data-leonard="trame">
-              <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={allumees} cible={quete} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />} />
+              <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={allumees} cible={quete} />
             </div>
             <div className={c.surTel}>
-              <CodexTel vue={vue} montre={montre} onQuete={ouvrir} filRouge={moment !== "apres"} />
+              <CodexTel vue={vue} montre={montre} onQuete={ouvrir} />
             </div>
           </>
         )}
@@ -201,7 +232,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
       <Feuille ouvert={!!acte} onFermer={() => setActe(null)} titre={acte ? etiquetteActe(acte.acte) : "Acte"}>
         {acte && (
           <div className={e.carnet}>
-            <TeteChemin sur={`${acte.clos ? CODEX.trame.clos : acte.courant ? CODEX.trame.enCours : CODEX.trame.aVenir} · ${acte.faites}/${acte.total}`} titre={acte.acte.titre} />
+            <TeteChemin sur={`${etiquetteActe(acte.acte)} · ${avanceeActe(acte)}`} titre={acte.acte.titre} />
             <p className="t-small m-0 mt-1 text-center">{acte.acte.but}</p>
             <Chemin
               quetes={acte.quetes}
@@ -215,16 +246,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         )}
       </Feuille>
 
-      {ouverte && (
-        <DetailQuete
-          l={ouverte}
-          sobre={vue.sobre}
-          nomMatiere={nomMatiere(vue, ouverte.matiere)}
-          onClose={fermer}
-          reclamer={reclamer}
-          changer={contratOuvert ? { occupe, onChanger: () => changer(contratOuvert) } : undefined}
-        />
-      )}
+      {ouverte && detail(ouverte, "feuille")}
     </div>
   );
 }

@@ -1,54 +1,66 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowRight, X } from "lucide-react";
 import type { LigneQuete } from "@/lib/codex/vue";
-import { CODEX, choisirReplique } from "@/lib/voice-codex";
-import { Sceau } from "@/components/codex/Sceau";
-import { JaugePinceau } from "@/components/codex/JaugePinceau";
+import type { ARecuperer } from "@/lib/codex/recuperer";
+import { TEXTES_TOUT as T, avanceeDetail, dureeDetail, etatClair, libelleEtat, recompenseDetail, surTitre, texteExploit } from "@/lib/codex/tout";
+import { CODEX } from "@/lib/voice-codex";
+import { Recuperer } from "@/components/codex/Recuperer";
 import e from "./Encre.module.css";
 import s from "./Codex.module.css";
 import j from "./Aujourdhui.module.css";
 
-// Le détail d'une quête : une feuille qui monte du bas (téléphone) ou une
-// fiche au centre (ordinateur). L'objectif, la progression, la récompense, ce
-// que Léonard en pense, et « Y aller » (sa destination, lib/codex/destinations.ts)
-// avec sa durée et sa raison chiffrée. Échap ou un clic à côté referme.
-// `prochaine` : c'est ta prochaine quête. `reclamer` : le geste explicite pour
-// une récompense qui n'aurait pas été versée (le moteur les verse déjà tout
-// seul ; ceci est le filet). `changer` : une quête du jour qu'on peut encore
-// changer (« Changer » ne vit plus dans les listes, Codex simplifié §3.3).
-
-const jourLong = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
+// Le détail d'une quête, allégé (Codex simplifié, §3.6) : une feuille qui
+// monte du bas (téléphone, et « Aujourd'hui » sur ordinateur), ou le panneau
+// à côté de la liste (« Tout le Codex » sur ordinateur, `forme="panneau"`).
+// Dans l'ordre : le sur-titre (famille · matière), le titre (l'action) et son
+// état (À faire · En cours · À récupérer · Faite le 12 oct.), la barre et ce
+// qui manque, la récompense sur une ligne, UN bouton (« Y aller »,
+// « Récupérer +40 XP », ou rien : la date en gris), « Changer cette quête »
+// en lien discret pour une quête du jour, puis « Pourquoi ▸ » et « Plus ▸ »
+// repliés. La durée ne se dit que si la quête peut se finir aujourd'hui.
+// Léonard n'y parle pas. Échap ou un clic à côté referme la feuille.
 
 export function DetailQuete({
   l,
   nomMatiere,
-  prochaine = false,
   sobre = false,
+  forme = "feuille",
+  semaine = false,
+  plus = [],
+  recuperer,
+  jour,
+  demo = false,
   onClose,
-  reclamer,
   changer,
 }: {
   l: LigneQuete;
   nomMatiere?: string;
-  prochaine?: boolean;
   /** le mode sobre (lib/codex/sobre) : ni XP ni pièce dans la récompense */
   sobre?: boolean;
+  forme?: "feuille" | "panneau";
+  /** une quête de la semaine (« jusqu'à dimanche ») */
+  semaine?: boolean;
+  /** « Plus ▸ » : la chaîne ou la matière et sa place, « comptée avec », les dates (lib/codex/tout, plusDetail) */
+  plus?: string[];
+  /** ce qui attend « Récupérer » pour cette quête (vue.aRecuperer) */
+  recuperer?: ARecuperer | null;
+  jour: string;
+  demo?: boolean;
   onClose: () => void;
-  reclamer?: (l: LigneQuete) => Promise<string | null>;
-  /** une quête du jour qu'on peut encore changer : « Changer », en lien discret */
+  /** une quête du jour qu'on peut encore changer : « Changer cette quête », en lien discret */
   changer?: { occupe: boolean; onChanger: () => void };
 }) {
   const fermer = useRef<HTMLButtonElement | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [occupe, setOccupe] = useState(false);
+  const feuille = forme === "feuille";
 
   useEffect(() => {
+    if (!feuille) return;
     const avant = document.activeElement as HTMLElement | null;
     fermer.current?.focus();
-    const touche = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const touche = (ev: KeyboardEvent) => ev.key === "Escape" && onClose();
     window.addEventListener("keydown", touche);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -57,143 +69,127 @@ export function DetailQuete({
       document.body.style.overflow = overflow;
       avant?.focus?.();
     };
-  }, [onClose]);
+  }, [onClose, feuille]);
 
   const enigme = l.affichage === "indice" && l.etat !== "terminee";
-  const verrouille = l.affichage === "verrouille";
-  const titre = enigme ? "Exploit caché" : l.titre;
-  const aReclamer = l.etat === "terminee" && l.xpVersee === null && !l.retro && !!reclamer;
-  const recompense = sobre ? [] : [
-    l.xp > 0 ? (l.etat === "terminee" && l.xpVersee !== null && l.xpVersee < l.xp ? CODEX.detail.xpPlafonnee(l.xpVersee) : CODEX.detail.xp(l.xp)) : null,
-    l.titreGagne ? CODEX.detail.titreGagne(l.titreNom ?? l.titreGagne) : null,
-    l.cosmetique ? CODEX.detail.cosmetique(l.cosmetiqueNom ?? l.cosmetique) : null,
-    l.folio ? CODEX.detail.cosmetique(l.folioNom ?? l.folio) : null,
-  ].filter(Boolean) as string[];
-  const showProgress = !enigme && l.etat !== "terminee" && l.cible > 1;
+  const verrouille = l.etat === "verrouillee";
+  const etat = etatClair(l);
+  const avancee = enigme ? null : avanceeDetail(l);
+  const recompense = recompenseDetail(l, sobre);
+  const duree = dureeDetail(l, { semaine });
   const lien = l.destination?.href ?? l.lien;
-  const duree = l.destination?.duree ?? l.duree;
-  const raison = l.destination?.raison ?? null;
+  // un seul « pourquoi » : la raison chiffrée de la destination, sinon celui du catalogue
+  const pourquoi = enigme ? null : (l.destination?.raison ?? l.pourquoi ?? null);
+  // à récupérer : l'entrée de vue.aRecuperer, sinon la ligne elle-même (sa récompense attend)
+  const item: ARecuperer | null = l.aRecuperer
+    ? (recuperer ?? { quete: l.id, periode: l.periode, titre: l.titre, famille: l.famille, xp: l.xp, aVerser: true, le: null, recompense: null, piece: null })
+    : null;
 
+  const corps = (
+    <div className={j.dq}>
+      <p className="t-micro m-0 pr-10">{surTitre(l, { matiere: nomMatiere, semaine })}</p>
+      <div className={j.dqTete}>
+        <h2 id={feuille ? "codex-detail-titre" : undefined} className={j.dqTitre}>
+          {l.titre}
+        </h2>
+        <span className={j.etat} data-etat={etat}>
+          {libelleEtat(l)}
+        </span>
+      </div>
+      {l.optionnelle && <p className="t-micro m-0">{T.facultative}</p>}
+
+      {enigme ? (
+        <p className="t-small m-0">{texteExploit(l)}</p>
+      ) : (
+        <p className="t-small m-0">{l.consigne}</p>
+      )}
+      {l.differee && <p className="t-micro m-0">{T.apresExamen}</p>}
+
+      {avancee && (
+        <div className="flex flex-col gap-1.5">
+          <span className={j.barre} aria-hidden>
+            <i style={{ width: `${Math.round(l.fraction * 100)}%` }} />
+          </span>
+          <p className={`${j.dqAvance} m-0`}>
+            <b>{avancee.texte}</b>
+            {avancee.manque && <span>{avancee.manque}</span>}
+          </p>
+        </div>
+      )}
+
+      {/* verrouillée : ce qui manque, prérequis par prérequis (V3 §10.1) ; la carte les allume */}
+      {l.manque && l.manque.length > 0 && (
+        <div>
+          <p className="t-micro m-0">{T.manque}</p>
+          <ul className={j.plusListe}>
+            {l.manque.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {recompense && <p className={j.dqRecompense}>{recompense}</p>}
+      {duree && <p className="t-micro m-0">{duree}</p>}
+
+      {item ? (
+        <Recuperer items={[item]} jour={jour} variante="bouton" sobre={sobre} demo={demo} />
+      ) : etat === "faite" ? (
+        <p className="t-small m-0 text-[var(--ink-3)]">{libelleEtat(l)}</p>
+      ) : (
+        lien &&
+        !verrouille &&
+        !enigme && (
+          <Link href={lien} className="btn btn-primary btn-lg rl-press w-full" onClick={onClose}>
+            {T.aller} <ArrowRight size={17} aria-hidden />
+          </Link>
+        )
+      )}
+      {changer && (
+        <p className="m-0 text-center">
+          <button type="button" className={j.lien} disabled={changer.occupe} onClick={changer.onChanger} title={CODEX.contrats.changerAide}>
+            {T.changer}
+          </button>
+        </p>
+      )}
+
+      {pourquoi && (
+        <details className={j.pli}>
+          <summary>{T.pourquoi}</summary>
+          <div className={j.pliCorps}>
+            <p className="t-small m-0">{pourquoi}</p>
+          </div>
+        </details>
+      )}
+      {plus.length > 0 && (
+        <details className={j.pli}>
+          <summary>{T.plus}</summary>
+          <div className={j.pliCorps}>
+            <ul className={j.plusListe}>
+              {plus.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          </div>
+        </details>
+      )}
+    </div>
+  );
+
+  if (!feuille) {
+    return (
+      <section className={`card ${j.panneauDetail}`} aria-label={l.titre}>
+        {corps}
+      </section>
+    );
+  }
   return (
-    <div className={s.voile} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={s.voile} onMouseDown={(ev) => ev.target === ev.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="codex-detail-titre" className={`${s.feuille} ${e.carnet}`}>
         <button ref={fermer} type="button" className={s.fermer} onClick={onClose} aria-label={CODEX.detail.fermer}>
           <X size={20} aria-hidden />
         </button>
-
-        <div className="flex items-start gap-4 pr-10">
-          <Sceau l={l} taille={64} />
-          <div className="min-w-0">
-            <p className="t-eyebrow m-0">
-              {prochaine && !enigme ? `${CODEX.prochaine.eyebrow} · ` : ""}
-              {CODEX.famille[l.famille]}
-              {nomMatiere ? ` · ${nomMatiere}` : ""} · {enigme ? CODEX.exploits.enigme : CODEX.etat[l.etat]}
-            </p>
-            <h2 id="codex-detail-titre" className="t-h2 m-0 mt-1 [overflow-wrap:anywhere]">
-              {titre}
-            </h2>
-          </div>
-        </div>
-
-        {enigme ? (
-          <div className={s.detailBloc}>
-            <h3>{CODEX.exploits.enigme}</h3>
-            <p>{l.indice}</p>
-          </div>
-        ) : (
-          <>
-            <div className={s.detailBloc}>
-              <h3>{CODEX.detail.objectif}</h3>
-              <p>{l.consigne}</p>
-              {/* en sprint, un palier de régularité hors de portée d'ici le jour J (V3 §10.2) */}
-              {l.differee && <p className="t-small mt-1">{"Pour après l'examen : d'ici là, il ne te sera pas proposé. Il compte quand même si tu y arrives."}</p>}
-              {showProgress && (
-                <>
-                  <JaugePinceau fraction={l.fraction} or={l.etat === "active"} label={`Progression : ${Math.floor(l.valeur)} sur ${Math.floor(l.cible)}`} className="mt-2 max-w-[320px]" />
-                  <p className="t-micro mt-1.5 font-mono tabular-nums">
-                    {Math.floor(l.valeur).toLocaleString("fr-FR")} / {Math.floor(l.cible).toLocaleString("fr-FR")}
-                  </p>
-                </>
-              )}
-            </div>
-            {/* verrouillée : ce qui manque, prérequis par prérequis (V3 §10.1) ; la carte les allume */}
-            {l.manque && l.manque.length > 0 && (
-              <div className={s.detailBloc}>
-                <h3>Ce qui manque</h3>
-                <ul className="m-0 list-none p-0">
-                  {l.manque.map((m) => (
-                    <li key={m} className="text-[14.5px] leading-6">
-                      {m}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {(raison || l.pourquoi) && (
-              <div className={s.detailBloc}>
-                <h3>{CODEX.detail.pourquoi}</h3>
-                {raison && <p>{raison}</p>}
-                {l.pourquoi && l.pourquoi !== raison && <p>{l.pourquoi}</p>}
-              </div>
-            )}
-          </>
-        )}
-
-        {recompense.length > 0 && (
-          <div className={s.detailBloc}>
-            <h3>{CODEX.detail.recompense}</h3>
-            <ul className="m-0 list-none p-0">
-              {recompense.map((r) => (
-                <li key={r} className="text-[14.5px] leading-6">
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {l.etat === "terminee" && l.termineeLe && (
-          <p className="t-micro mt-3">{l.retro ? CODEX.detail.faiteAvant(jourLong(l.termineeLe)) : CODEX.detail.faiteLe(jourLong(l.termineeLe))}</p>
-        )}
-        {l.optionnelle && <p className="t-micro mt-1">{CODEX.detail.optionnelle}</p>}
-        {l.compteeAvec && <p className="t-micro mt-1">{CODEX.detail.compteeAvec(l.compteeAvec.titre)}</p>}
-        {duree && l.etat !== "terminee" && !enigme && <p className="t-micro mt-1">{CODEX.detail.duree(duree)}</p>}
-
-        <p className={s.leonardLigne}>{enigme ? "Je ne dirai rien. Enfin, presque rien : relis l'énigme." : verrouille ? choisirReplique("verrouillee", l.id) : choisirReplique(l.etat, l.id)}</p>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          {lien && l.etat !== "terminee" && !verrouille && !enigme && (
-            <Link href={lien} className="btn btn-primary btn-lg rl-press w-full sm:w-auto" onClick={onClose}>
-              {CODEX.detail.aller} <ArrowRight size={17} aria-hidden />
-            </Link>
-          )}
-          {aReclamer && (
-            <button
-              type="button"
-              className="btn btn-primary btn-lg rl-press w-full sm:w-auto"
-              disabled={occupe}
-              onClick={async () => {
-                setOccupe(true);
-                setMessage(await reclamer!(l));
-                setOccupe(false);
-              }}
-            >
-              {CODEX.detail.reclamer}
-            </button>
-          )}
-        </div>
-        {changer && (
-          <p className="m-0 mt-3">
-            <button type="button" className={j.lien} disabled={changer.occupe} onClick={changer.onChanger} title={CODEX.contrats.changerAide}>
-              {CODEX.contrats.changer}
-            </button>
-          </p>
-        )}
-        {message && (
-          <p role="status" className="t-small mt-3">
-            {message}
-          </p>
-        )}
+        {corps}
       </div>
     </div>
   );

@@ -149,7 +149,7 @@ console.log("\n# les écrans");
   const fete = readFileSync("components/codex/FeteCodex.tsx", "utf8");
   check("FeteCodex : plus de fête automatique, la ligne « Récupérer » et « La suite » en fin d'outil", !fete.includes("codexVus(") && !fete.includes("components/fete/Fete") && fete.includes('<Recuperer variante="ligne"') && fete.includes("TEXTES_RECUPERER.suite("));
   const rec = readFileSync("components/codex/Recuperer.tsx", "utf8");
-  check("Recuperer : le clic récupère tout ce qui attend (le serveur relit la liste)", rec.includes("r = await codexRecuperer();"));
+  check("Recuperer : le clic récupère tout ce qui attend (le serveur relit la liste) ; « bouton » : ses quêtes seules", rec.includes("r = await codexRecuperer(seul ? pris.map(({ quete, periode }) => ({ quete, periode })) : undefined);"));
   check("Recuperer : l'action, le tampon décalé, le compte, le mouvement réduit, les fêtes une par une, l'échec", rec.includes("codexRecuperer(") && rec.includes("DECALAGE_TAMPON_MS") && rec.includes("COMPTE_XP_MS") && rec.includes("mouvementReduit()") && rec.includes("onFin={() => setTour((t) => t + 1)}") && rec.includes("T.echec") && rec.includes("disabled={occupe}"));
   const actions = readFileSync("lib/codex/actions.ts", "utf8");
   const action = actions.slice(actions.indexOf("export async function codexRecuperer"));

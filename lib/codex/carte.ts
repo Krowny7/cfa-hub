@@ -177,21 +177,6 @@ export function quetesDeLaCarte(vue: Pick<VueCodex, "trame" | "branches" | "long
   return out;
 }
 
-// ── Les pages encore blanches (V3 §11.3) ───────────────────────────────
-
-/** Les familles que le dévoilement range, dans l'ordre de lecture de l'écran d'ordinateur : la carte, puis la colonne. */
-export const ORDRE_BLANCHES = ["codex:branches", "codex:contrats", "codex:longcours"] as const;
-
-/**
- * La famille qui dit « Cette page du carnet est encore blanche » : la
- * première encore masquée, dans l'ordre de lecture ; les suivantes disent
- * moins (la phrase n'apparaît qu'une fois par écran). Null : tout est montré.
- * Sur téléphone, un segment à la fois : chacun dit la phrase entière.
- */
-export function premiereBlanche(montre: (quoi: string) => boolean): (typeof ORDRE_BLANCHES)[number] | null {
-  return ORDRE_BLANCHES.find((q) => !montre(q)) ?? null;
-}
-
 // ── Les deux segments de /codex (Codex simplifié, §3.3) ──────────────
 
 export type SegmentTel = "aujourdhui" | "tout";
@@ -202,10 +187,14 @@ export const SEGMENTS_TEL: { cle: SegmentTel; libelle: string }[] = [
   { cle: "tout", libelle: "Tout le Codex" },
 ];
 
-/** Les anciens segments (cinq, avant le Codex simplifié) et la carte : des liens profonds qui mènent à « Tout le Codex ». */
-const VERS_TOUT = ["parcours", "matieres", "chantiers", "exploits", "carte"];
+/** Ce que /codex montre : un des deux segments, ou la carte en plein écran (« Voir la carte », ?vue=carte). */
+export type VueSegment = SegmentTel | "carte";
 
-/** Le segment lu dans l'URL ; un ancien segment : Tout le Codex ; inconnu ou absent : Aujourd'hui. */
-export function segmentDe(v: string | null | undefined): SegmentTel {
+/** Les anciens segments (cinq, avant le Codex simplifié) : des liens profonds qui mènent à « Tout le Codex ». */
+const VERS_TOUT = ["parcours", "matieres", "chantiers", "exploits"];
+
+/** Le segment lu dans l'URL ; la carte ; un ancien segment : Tout le Codex ; inconnu ou absent : Aujourd'hui. */
+export function segmentDe(v: string | null | undefined): VueSegment {
+  if (v === "carte") return "carte";
   return v === "tout" || (!!v && VERS_TOUT.includes(v)) ? "tout" : "aujourdhui";
 }

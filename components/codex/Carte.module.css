@@ -1063,3 +1063,17 @@
   animation: none;
   opacity: 0.8;
 }
+
+/* la légende sous les chemins (téléphone) : dans le flux, pas sur la carte */
+.legendeFixe {
+  position: static;
+  margin: 8px 10px 0;
+}
+.glyphe {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}

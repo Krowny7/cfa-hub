@@ -340,3 +340,179 @@
   font-weight: 650;
   white-space: nowrap;
 }
+/* la quête montrée dans le détail, à côté (ordinateur) */
+.ligne[data-choisie] {
+  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+/* une ligne et son bouton « Récupérer » : deux cibles côte à côte, jamais un bouton dans un bouton */
+.ligneAvecAction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ligneAvecAction > .ligne {
+  flex: 1;
+  min-width: 0;
+}
+.ligneAction {
+  flex: none;
+}
+
+/* ── « Tout le Codex » (§3.3, §3.4) ───────────────────────────────── */
+.tout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .tout {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
+    gap: 24px;
+  }
+}
+@media (min-width: 1180px) {
+  .tout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+}
+.toutListe {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.panneauDetail {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .panneauDetail {
+    display: block;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    padding: 20px;
+  }
+}
+.sousTitre {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+.acte > summary {
+  min-height: 44px;
+  font-size: 14px;
+}
+.lienCarte {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  font-size: 14.5px;
+  font-weight: 650;
+  color: var(--ink);
+  text-decoration: none;
+}
+.lienCarte:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lienCarte:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ── Le détail d'une quête (§3.6) ─────────────────────────────────── */
+.dq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.dqTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dqTitre {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.etat {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.etat[data-etat="encours"] {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.etat[data-etat="recuperer"] {
+  color: var(--pen);
+  box-shadow: inset 0 0 0 1px var(--pen);
+}
+.etat[data-etat="faite"] {
+  color: var(--ink-3);
+}
+.dqAvance {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 10px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.dqAvance b {
+  color: var(--ink);
+  font-weight: 620;
+}
+.dqRecompense {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 620;
+}
+.dq .pli > summary {
+  min-height: 44px;
+  font-size: 13.5px;
+}
+.plusListe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0 0 0 16px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+/* « Voir la carte » : un bouton qui se lit comme un lien, au pied des replis */
+.pliBouton {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+}
+@media (min-width: 1024px) {
+  .panneauVide {
+    position: sticky;
+    top: 16px;
+  }
+}

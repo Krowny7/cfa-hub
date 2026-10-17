@@ -2,16 +2,16 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Minus, PanelRightClose, PanelRightOpen, Plus, LocateFixed, X } from "lucide-react";
+import { Minus, Plus, LocateFixed, X } from "lucide-react";
 import { INK } from "@/components/ui/InkDefs";
-import type { LigneQuete, VueActe, VueBranche, VueChaine, VueCodex, VueContrat } from "@/lib/codex/vue";
+import type { LigneQuete, VueActe, VueBranche, VueCodex } from "@/lib/codex/vue";
 import { CODEX, romain } from "@/lib/voice-codex";
 import { Sceau, libelleSceau } from "@/components/codex/Sceau";
-import { JaugePinceau } from "@/components/codex/JaugePinceau";
-import { FilRouge } from "@/components/codex/FilRouge";
+import { LigneQuete as Ligne } from "@/components/codex/LigneQuete";
 import { FeuillesNotions, PastilleMatiere } from "@/components/codex/PastilleMatiere";
 import { Feuille } from "@/components/ui/Feuille";
-import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, premiereBlanche, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
+import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
+import { avanceeActe, libelleEtat } from "@/lib/codex/tout";
 import e from "./Encre.module.css";
 import c from "./Carte.module.css";
 
@@ -29,11 +29,11 @@ import c from "./Carte.module.css";
 //   zoome sur sa branche et montre ses notions en petites feuilles. Filtres
 //   (« Tout · À faire · Mes faiblesses ») et « Chercher une quête » en haut à
 //   droite ; une quête verrouillée allume ses prérequis.
-//   À côté de la carte (à partir de 1 180 px), sinon sous elle et repliée :
-//   la colonne des contrats du jour et des quêtes au long cours.
-//   Téléphone : cinq segments (Aujourd'hui, Parcours, Matières, Chantiers,
-//   Exploits) ; un chemin vertical par acte ou par branche, l'étape en cours
-//   en grand avec son « ! ».
+//   C'est « Voir la carte » (?vue=carte, Codex simplifié §3.4) : sur toute la
+//   largeur, filtrée d'office sur « À faire » ; les étapes facultatives sont
+//   pâlies et comptées à part ; la légende dit les glyphes et les quatre états.
+//   Téléphone : un chemin vertical par acte, et la grille des matières ;
+//   l'étape en cours en grand, dans l'anneau.
 // Tous les traits sont au pinceau (tracé partagé INK.swash, <use href>) ;
 // chaque quête est un sceau tamponné (components/codex/Sceau).
 
@@ -144,7 +144,7 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
         <span key={"ea" + a.acte.id} className={`${c.etiquetteActe} ${droite ? c.aDroite : c.aGauche} ${!a.clos && !a.courant ? c.pale : ""}`} style={{ left: droite ? CX + 48 : undefined, right: droite ? undefined : W - CX + 48, top: i === iBase ? y - 62 : y - 26 }}>
           <span className={c.plume}>{a.acte.titre}</span>
           <span className={c.mono}>
-            {etiquetteActe(a.acte)} · {a.faites}/{a.total}
+            {etiquetteActe(a.acte)} · {avanceeActe(a)}
           </span>
         </span>,
       );
@@ -171,7 +171,7 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
           if (estIci) ici = { x: xJ(j), y };
           const t = q === courante ? 46 : 38;
           // au zoom moyen, le glyphe de l'étape (F, D, ◎, S, ♛) ; au zoom fort, son nom dessous
-          noeuds.push({ cle: q.id, x: xJ(j), y, t, l: q, q, ressort: q === courante, signe: estIci ? "!" : glypheEtape(q.etape), label: `${b.contenu.court}, ${nomEtape(q)} : ${libelleSceau(q)}`, ouvrir: () => onQuete(q), ici: estIci });
+          noeuds.push({ cle: q.id, x: xJ(j), y, t, l: q, q, ressort: q === courante, signe: glypheEtape(q.etape), label: `${b.contenu.court}, ${nomEtape(q)} : ${libelleSceau(q)}`, ouvrir: () => onQuete(q), ici: estIci });
           etiquettes.push(
             <span key={"ne" + q.id} className={c.nomEtape} data-px="13" style={{ left: xJ(j) - 46, top: y + t / 2 + 4 }} aria-hidden>
               {nomEtape(q)}
@@ -190,12 +190,6 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
           </span>,
         );
       });
-    } else {
-      etiquettes.push(
-        <span key="blanche-b" className={`${c.blanche} ${c.aDroite}`} data-px="22" style={{ left: CX + BX + 20, top: yBase - 230 }}>
-          {CODEX.pageBlanche}
-        </span>,
-      );
     }
 
     // les exploits : un seul médaillon au-dessus du tronc (relié par un
@@ -209,7 +203,7 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
     }
 
     ici ??= { x: CX, y: yActe(Math.max(0, tronc.findIndex((a) => a.courant))) };
-    // la prochaine est un outil de la visite : son sceau porte le « ! », pas d'anneau sur la carte
+    // la prochaine est un outil de la visite : pas d'anneau sur la carte
     const iciVisite = !!visite && !!p && visite.quetes.some((q) => q.id === p.id) && !noeuds.some((nd) => nd.ici);
     return { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite: visite && posVisite ? { a: visite, ...posVisite } : null, iciVisite };
   }, [vue, montre, onQuete, onActe]);
@@ -256,7 +250,7 @@ function VisiteCarte({ v, ici, onQuete }: { v: { a: VueActe; droite: number; y: 
         {quetes.map((q) => (
           <li key={q.id}>
             <button type="button" className={`${c.noeud} ${q.id === ici ? c.trouve : ""}`} style={{ position: "relative", width: 40, height: 40 }} onClick={() => onQuete(q)} aria-label={libelleSceau(q)} aria-haspopup="dialog" title={q.titre}>
-              <Sceau l={q} taille={40} signe={q.id === ici ? "!" : undefined} />
+              <Sceau l={q} taille={40} />
             </button>
           </li>
         ))}
@@ -287,9 +281,6 @@ function GalerieExploits({ exploits, collection, onQuete }: { exploits: LigneQue
   const caches = exploits.length - liste.length;
   return (
     <div className={e.carnet}>
-      <p className={c.repliqueChemin} style={{ marginTop: 0 }}>
-        « {CODEX.exploits.sous} »
-      </p>
       <ul className={c.galerie}>
         {liste.map((q) => {
           const enigme = q.affichage === "indice" && q.etat !== "terminee";
@@ -299,7 +290,7 @@ function GalerieExploits({ exploits, collection, onQuete }: { exploits: LigneQue
                 <Sceau l={q} taille={40} />
                 <span className="min-w-0 flex-1">
                   <span className={c.compacteTitre}>{enigme ? CODEX.exploits.enigme : q.titre}</span>
-                  <span className={c.galerieSous}>{enigme ? (q.indice ?? CODEX.etat[q.etat]) : q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)}/${Math.floor(q.cible)}` : CODEX.etat[q.etat]}</span>
+                  <span className={c.galerieSous}>{enigme ? (q.indice ?? libelleEtat(q)) : q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)} sur ${Math.floor(q.cible)}` : libelleEtat(q)}</span>
                 </span>
               </button>
             </li>
@@ -323,22 +314,17 @@ const Z_DEPART = (rw: number) => (rw < 1100 ? 0.56 : 0.66);
 // le zoom sur une branche (une pastille touchée, une quête trouvée) : moyen, près du fort
 const Z_BRANCHE = 0.95;
 const Z_MAX = 1.6;
-// la colonne « Aujourd'hui » se tient à côté de la carte à partir de cette
-// largeur d'écran (Carte.module.css, .zone) ; en dessous, elle passe sous la
-// carte, repliée
-const LARGE = "(min-width: 1180px)";
 
 /**
  * `allume` : les prérequis à allumer (la quête verrouillée ouverte en détail) ;
  * `cible` : une quête à montrer à l'ouverture (« Chercher une quête » de la
- * palette, /codex?quete=…).
+ * palette, /codex?quete=…), qui ouvre la carte sur « Tout ».
  */
-export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cible }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onActe: SurActe; colonne: React.ReactNode; allume?: string[]; cible?: string | null }) {
-  // la colonne part repliée tant qu'elle n'a rien à montrer (nouveau compte)
-  const colonneUtile = montre("codex:contrats") || montre("codex:longcours");
+export function ArbreCodex({ vue, montre, onQuete, onActe, allume, cible }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onActe: SurActe; allume?: string[]; cible?: string | null }) {
   const { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite, iciVisite } = useGeometrie(vue, montre, onQuete, onActe);
   // les filtres, la recherche, la branche ouverte (ses notions), les prérequis survolés, la quête trouvée
-  const [filtre, setFiltre] = useState<FiltreCarte>("tout");
+  // d'office, ce qui reste à faire ; « Tout » est à un clic (une quête cherchée : tout)
+  const [filtre, setFiltre] = useState<FiltreCarte>(cible ? "tout" : "afaire");
   const [texte, setTexte] = useState("");
   const [ouverte, setOuverte] = useState<string | null>(null);
   const [survol, setSurvol] = useState<string[] | null>(null);
@@ -361,22 +347,9 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
   const pointeurs = useRef(new Map<number, { x: number; y: number }>());
   const geste = useRef<{ x: number; y: number; tx: number; ty: number; bouge: boolean } | null>(null);
   const pince = useRef<{ d: number; z: number } | null>(null);
-  // null : l'état par défaut, réglé en CSS (à côté de la carte à partir de
-  // 1 180 px, repliée sous elle en dessous) ; sinon, le choix du joueur
-  const [colChoix, setColChoix] = useState<boolean | null>(colonneUtile ? null : false);
-  const [large, setLarge] = useState(false);
-  const colOuverte = colChoix ?? large;
   const [galerie, setGalerie] = useState(false);
   const [astuce, setAstuce] = useState(false);
   const minuteur = useRef<number | undefined>(undefined);
-
-  useEffect(() => {
-    const mq = window.matchMedia(LARGE);
-    const maj = () => setLarge(mq.matches);
-    maj();
-    mq.addEventListener("change", maj);
-    return () => mq.removeEventListener("change", maj);
-  }, []);
 
   const appliquer = useCallback(() => {
     const b = boite.current;
@@ -587,10 +560,9 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
   const estompee = (q: LigneQuete | undefined) => !!q && (!garde(q, filtre, faibles) || (!!trouvees && !trouvees.has(q.id)));
 
   const exploitsGagnes = medaillon?.gagnes ?? 0;
-  const contratsFaits = vue.contrats.filter((ct) => ct.ligne.etat === "terminee").length;
 
   return (
-    <div className={c.zone} data-col={colChoix === null ? "auto" : colChoix ? "1" : "0"}>
+    <div className={c.zone} data-col="0">
       <div className={`${c.arbreCadre} ${e.carnet}`}>
         <div
           ref={boite}
@@ -636,6 +608,8 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
                 q ? c.etape : "",
                 q && seche(q, vue.jour) ? c.sec : "",
                 nd.ressort ? c.ressort : "",
+                // une étape facultative : pâlie (elle ne bloque rien, comptée à part)
+                q?.optionnelle ? c.pale : "",
                 estompee(q) ? c.estompe : "",
                 allumes.has(nd.cle) ? c.allume : "",
                 trouve === nd.cle ? c.trouve : "",
@@ -749,23 +723,6 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
         </p>
       </div>
 
-      <aside className={`${c.colonne} ${e.carnet}`} aria-label="Aujourd'hui et au long cours">
-        <button type="button" className={c.colonneBascule} onClick={() => setColChoix(!colOuverte)} aria-expanded={colOuverte} aria-controls="codex-colonne">
-          <span className={c.colonneMot}>
-            <span className={c.plume}>Aujourd'hui</span>
-            <span className={c.mono}>
-              {vue.contrats.length ? `${contratsFaits}/${vue.contrats.length} contrats · ` : ""}
-              au long cours
-            </span>
-          </span>
-          <span className="sr-only">{colOuverte ? "Replier la colonne" : "Déplier la colonne"}</span>
-          {large ? colOuverte ? <PanelRightClose size={17} aria-hidden /> : <PanelRightOpen size={17} aria-hidden /> : <ChevronDown size={18} aria-hidden className={colOuverte ? c.retourne : undefined} />}
-        </button>
-        <div id="codex-colonne" className={c.colonneCorps}>
-          {colonne}
-        </div>
-      </aside>
-
       <Feuille ouvert={galerie} onFermer={() => setGalerie(false)} titre={`${CODEX.exploits.titre} · ${exploitsGagnes}/${vue.exploits.length}`}>
         <GalerieExploits
           exploits={vue.exploits}
@@ -780,126 +737,38 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
   );
 }
 
-function Legende() {
+/** Les glyphes des étapes (lib/codex/carte, glypheEtape), pour la légende. */
+const GLYPHES: [string, string][] = [
+  ["F", "fiche"],
+  ["D", "drill"],
+  ["◎", "séance ciblée"],
+  ["S", "signature"],
+  ["♛", "Maître"],
+];
+
+/** La légende complète : les quatre états (à faire, en cours, à récupérer, faite) et les glyphes des étapes. `fixe` : sous les chemins (téléphone), pas sur la carte. */
+export function Legende({ fixe = false }: { fixe?: boolean }) {
   const l = (etat: LigneQuete["etat"], fraction = 0.5) => ({ etat, fraction, affichage: "complet" as const, retro: false });
   return (
-    <ul className={c.legende} data-hors-carte aria-label="Légende">
+    <ul className={`${c.legende} ${fixe ? c.legendeFixe : ""}`} data-hors-carte aria-label="Légende">
       <li>
-        <Sceau l={l("terminee")} taille={18} /> tamponnée
+        <Sceau l={l("disponible", 0)} taille={18} /> à faire
       </li>
       <li>
         <Sceau l={l("active")} taille={18} /> en cours
       </li>
       <li>
-        <Sceau l={l("disponible")} taille={18} /> à prendre
+        <Sceau l={l("active", 1)} taille={18} /> à récupérer
       </li>
       <li>
-        <Sceau l={l("verrouillee")} taille={18} /> à conquérir
+        <Sceau l={l("terminee")} taille={18} /> faite
       </li>
-    </ul>
-  );
-}
-
-/* ================================================================== */
-/* La colonne : aujourd'hui, au long cours                             */
-/* ================================================================== */
-
-/** `filRouge` faux : le fil rouge est déjà en tête de page (après l'examen, V3 §7.1). */
-export function Colonne({ vue, montre, onQuete, onChanger, occupe, filRouge = true }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; filRouge?: boolean }) {
-  return (
-    <>
-      <ContratsDuJour vue={vue} montre={montre} onQuete={onQuete} onChanger={onChanger} occupe={occupe} />
-      <section aria-labelledby="col-long" data-leonard="longcours" className="mt-5">
-        <h2 id="col-long" className={c.colTitre}>
-          {CODEX.longCours.titre}
-        </h2>
-        {!montre("codex:longcours") ? <PageBlanche quoi="codex:longcours" montre={montre} /> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
-      </section>
-      {/* le fil rouge, sous les chaînes (V3 §1.5) : dévoilé avec elles */}
-      {filRouge && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
-    </>
-  );
-}
-
-/** Une famille encore masquée de la colonne : la phrase entière si c'est la première de l'écran, sinon quelques mots. `seule` : le segment du téléphone, qui la dit toujours en entier. */
-function PageBlanche({ quoi, montre, seule = false }: { quoi: string; montre: Montre; seule?: boolean }) {
-  return <p className={c.blancheCol}>{seule || premiereBlanche(montre) === quoi ? CODEX.pageBlanche : CODEX.pageBlancheAussi}</p>;
-}
-
-/** Les contrats du jour (et le débrief d'un blanc) : la colonne, et le segment « Aujourd'hui » du téléphone. */
-function ContratsDuJour({ vue, montre, onQuete, onChanger, occupe, id = "col-jour" }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; id?: string }) {
-  return (
-    <>
-      <section aria-labelledby={id} data-leonard="contrats">
-        <h2 id={id} className={c.colTitre}>
-          Aujourd'hui
-        </h2>
-        {!montre("codex:contrats") ? (
-          <PageBlanche quoi="codex:contrats" montre={montre} seule={id !== "col-jour"} />
-        ) : vue.contrats.length === 0 ? (
-          <p className={c.blancheCol}>Les contrats d'aujourd'hui se tirent à la première visite du jour.</p>
-        ) : (
-          <>
-            <ul className={c.colListe}>
-              {vue.contrats.map((ct) => (
-                <li key={ct.emplacement}>
-                  <LigneCompacte l={ct.ligne} sur={CODEX.contrats.emplacement[ct.emplacement]} onQuete={onQuete} />
-                  {ct.ligne.etat !== "terminee" && ct.changeable && (
-                    <button type="button" className={e.lienDiscret} style={{ marginLeft: 46, fontSize: 12 }} disabled={occupe} onClick={() => onChanger(ct)} title={CODEX.contrats.changerAide}>
-                      {CODEX.contrats.changer}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <p className="t-micro m-0 mt-2">{vue.trio.fait ? (vue.sobre ? CODEX.contrats.trioFaitSobre : CODEX.contrats.trioFait(vue.trio.xp)) : `${vue.sobre ? CODEX.contrats.trioSobre : CODEX.contrats.trio(vue.trio.xp)} (${vue.trio.faits}/${vue.trio.total})`}</p>
-          </>
-        )}
-        {/* le débrief d'un examen blanc (V3 §7.6) : à part du trio, tant qu'un blanc l'attend */}
-        {montre("codex:contrats") && vue.debrief && (
-          <div className="mt-3">
-            <LigneCompacte l={vue.debrief} sur="Le débrief · ton dernier examen blanc" onQuete={onQuete} />
-          </div>
-        )}
-      </section>
-    </>
-  );
-}
-
-function LigneCompacte({ l, sur, onQuete }: { l: LigneQuete; sur?: string; onQuete: SurQuete }) {
-  return (
-    <button type="button" className={c.compacte} onClick={() => onQuete(l)} aria-label={libelleSceau(l)} aria-haspopup="dialog">
-      <Sceau l={l} taille={34} />
-      <span className="min-w-0 flex-1">
-        {sur && <span className={c.compacteSur}>{sur}</span>}
-        <span className={c.compacteTitre}>{l.titre}</span>
-        {l.cible > 1 && l.etat !== "terminee" && <JaugePinceau fraction={l.fraction} or={l.etat === "active"} className="mt-1.5" />}
-      </span>
-    </button>
-  );
-}
-
-export function ChainesCompactes({ chaines, onQuete }: { chaines: VueChaine[]; onQuete: SurQuete }) {
-  return (
-    <ul className={c.colListe}>
-      {chaines.map((ch) => (
-        <li key={ch.chaine.id} className={c.chaine}>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className={c.chaineTitre}>{ch.chaine.titre}</span>
-            <span className={c.mono}>
-              {ch.faits}/{ch.paliers.length}
-            </span>
-          </div>
-          <ol className={c.paliers} aria-label={CODEX.longCours.palier(Math.min(ch.faits + 1, ch.paliers.length), ch.paliers.length)}>
-            {ch.paliers.map((pa) => (
-              <li key={pa.id}>
-                <Sceau l={pa} taille={16} />
-              </li>
-            ))}
-          </ol>
-          {ch.courant ? <LigneCompacte l={ch.courant} onQuete={onQuete} /> : <p className="t-micro m-0">{CODEX.longCours.fini}</p>}
+      {GLYPHES.map(([g, mot]) => (
+        <li key={g}>
+          <b className={c.glyphe}>{g}</b> {mot}
         </li>
       ))}
+      <li>pâle : facultative</li>
     </ul>
   );
 }
@@ -945,7 +814,7 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
             <li key={q.id + q.periode}>
               {grand && <Ici x={x} y={y} r={56} />}
               <button type="button" className={c.noeud} style={{ left: x - t / 2, top: y - t / 2, width: t, height: t }} onClick={() => onQuete(q)} aria-label={libelleSceau(q)} aria-haspopup="dialog" data-ici={grand || undefined}>
-                <Sceau l={q} taille={t} signe={grand ? "!" : undefined} />
+                <Sceau l={q} taille={t} />
               </button>
               <span
                 className={`${c.cheminEtiquette} ${grand ? c.fort : ""} ${q.etat === "verrouillee" ? c.pale : ""}`}
@@ -954,7 +823,7 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
               >
                 {enigme ? CODEX.exploits.enigme : nom(q)}
                 <small>
-                  {q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)}/${Math.floor(q.cible)}` : grand ? "ta prochaine" : CODEX.etat[q.etat].toLowerCase()}
+                  {q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)} sur ${Math.floor(q.cible)}` : grand ? "ta prochaine" : libelleEtat(q).toLowerCase()}
                 </small>
               </span>
             </li>
@@ -1002,37 +871,17 @@ export function SegmentsTel({ segment, onChoisir }: { segment: SegmentTel; onCho
 }
 
 /**
- * « Tout le Codex » sur téléphone, en attendant ses quatre replis (lot A5) :
- * le parcours (le tronc des actes), les matières (la grille 2 × 5 des
- * pastilles), le long cours et le fil rouge, les exploits, l'un sous l'autre.
+ * La carte sur téléphone (« Voir la carte », ?vue=carte) : le parcours (le
+ * chemin d'un acte, un acte à la fois) et les matières (la grille 2 × 5 des
+ * pastilles), puis la légende. Les objectifs longs et les exploits sont dans
+ * les replis de « Tout le Codex ».
  */
-export function CodexTel({ vue, montre, onQuete, filRouge = true }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; filRouge?: boolean }) {
+export function CodexTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; onQuete: SurQuete }) {
   return (
     <div className={`${c.tel} ${e.carnet}`}>
       <ParcoursTel vue={vue} onQuete={onQuete} />
-      <MatieresTel vue={vue} montre={montre} onQuete={onQuete} />
-      <div className={c.telCorps} data-leonard="longcours">
-        <TeteChemin sur="Les grands chantiers" titre={CODEX.longCours.titre} replique={CODEX.longCours.sous} />
-        {montre("codex:longcours") ? (
-          <>
-            <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />
-            {filRouge && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
-          </>
-        ) : (
-          <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
-        )}
-      </div>
-      <div className={c.telCorps}>
-        <TeteChemin sur={CODEX.exploits.gagnes(vue.exploits.filter((q) => q.etat === "terminee").length)} titre={CODEX.exploits.titre} replique={CODEX.exploits.sous} />
-        {montre("codex:exploits") ? (
-          <>
-            <Chemin quetes={vue.exploits} onQuete={onQuete} nom={(l) => l.titre} />
-            <LienCollection href={vue.collection} />
-          </>
-        ) : (
-          <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
-        )}
-      </div>
+      {montre("codex:branches") && <MatieresTel vue={vue} onQuete={onQuete} />}
+      <Legende fixe />
     </div>
   );
 }
@@ -1066,7 +915,8 @@ function ParcoursTel({ vue, onQuete }: { vue: VueCodex; onQuete: SurQuete }) {
       <div className={c.telCorps} data-leonard="trame" ref={corps}>
         {acte && (
           <>
-            <TeteChemin sur={`${etiquetteActe(acte.acte)} · ${acte.clos ? CODEX.trame.clos : acte.courant ? CODEX.trame.enCours : CODEX.trame.aVenir} · ${acte.faites}/${acte.total}`} titre={acte.acte.titre} replique={acte.replique.texte} />
+            <TeteChemin sur={`${etiquetteActe(acte.acte)} · ${avanceeActe(acte)}`} titre={acte.acte.titre} />
+            {acte.acte.but && <p className="t-small m-0 px-3 text-center">{acte.acte.but}</p>}
             <Chemin quetes={acte.quetes} ici={p?.id} onQuete={onQuete} nom={(l) => l.titre} />
           </>
         )}
@@ -1075,14 +925,9 @@ function ParcoursTel({ vue, onQuete }: { vue: VueCodex; onQuete: SurQuete }) {
             <summary>
               {visite.acte.titre} · {visite.faites}/{visite.total}
             </summary>
-            <p className="t-small m-0 mb-2 italic">{visite.acte.sousTitre}</p>
-            <ul className={c.colListe}>
-              {visibles(visite.quetes).map((q) => (
-                <li key={q.id}>
-                  <LigneCompacte l={q} onQuete={onQuete} />
-                </li>
-              ))}
-            </ul>
+            {visibles(visite.quetes).map((q) => (
+              <Ligne key={q.id} l={q} sobre={vue.sobre} onOuvrir={onQuete} />
+            ))}
           </details>
         )}
       </div>
@@ -1096,7 +941,7 @@ function ParcoursTel({ vue, onQuete }: { vue: VueCodex; onQuete: SurQuete }) {
  * la page y défile (sans animation en mouvement réduit) et le focus passe au
  * titre de la branche.
  */
-function MatieresTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; onQuete: SurQuete }) {
+function MatieresTel({ vue, onQuete }: { vue: VueCodex; onQuete: SurQuete }) {
   const [cle, setCle] = useState<string | null>(null);
   const branche = vue.branches.find((b) => b.contenu.key === cle);
   const corps = useRef<HTMLDivElement | null>(null);
@@ -1108,7 +953,7 @@ function MatieresTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; 
     el.scrollIntoView({ block: "start", behavior: doux ? "smooth" : "auto" });
     el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
   }, [cle]);
-  if (!montre("codex:branches") || !vue.branches.length) return <p className={`${c.blancheCol} ${c.telCorps}`}>{CODEX.pageBlanche}</p>;
+  if (!vue.branches.length) return null;
   return (
     <>
       <ul className={c.grilleMatieres} aria-label="Les matières">
@@ -1133,21 +978,20 @@ function MatieresTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; 
 function BrancheChemin({ b, ici, onQuete, focusable }: { b: VueBranche; ici?: string; onQuete: SurQuete; focusable?: boolean }) {
   return (
     <>
-      <TeteChemin sur={`Branche · ${b.faites}/${b.total}${b.maitre ? " · Maître" : ""}`} titre={b.contenu.nom} replique={CODEX.branches.sous} focusable={focusable} />
+      <TeteChemin sur={`${b.faites} sur ${b.total}${b.maitre ? " · Maître" : ""}`} titre={b.contenu.nom} focusable={focusable} />
       <Chemin quetes={b.etapes} ici={ici} onQuete={onQuete} nom={nomEtape} />
     </>
   );
 }
 
-/** `focusable` : le titre reçoit le focus quand le contenu s'ouvre (tabIndex -1, hors de l'ordre de tabulation). */
-export function TeteChemin({ sur, titre, replique, focusable }: { sur: string; titre: string; replique?: string; focusable?: boolean }) {
+/** Le titre d'un chemin (un acte, une matière), sans police manuscrite. `focusable` : le titre reçoit le focus quand le contenu s'ouvre (tabIndex -1, hors de l'ordre de tabulation). */
+export function TeteChemin({ sur, titre, focusable }: { sur: string; titre: string; focusable?: boolean }) {
   return (
     <div className={c.teteChemin}>
       <p className={c.mono}>{sur}</p>
-      <h2 className={`${c.plume} ${c.titreChemin}`} tabIndex={focusable ? -1 : undefined}>
+      <h2 className={`t-h3 ${c.titreChemin}`} tabIndex={focusable ? -1 : undefined}>
         {titre}
       </h2>
-      {replique && <p className={c.repliqueChemin}>« {replique} »</p>}
     </div>
   );
 }
