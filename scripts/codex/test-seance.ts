@@ -120,6 +120,12 @@ console.log("\n# l'épreuve");
   check("les 30 du jour pas faits : l'épreuve, ce sont eux (/defi, 40 min)", d?.destination.href === "/defi" && d.duree === 40, J(d?.destination));
   const avant = composerSeance(entree({ phase: "repetition", joursAvant: 20, budget: 90, trenteFait: true, dest: { ...dest, practiceV3: false } })).blocs.find((b) => b.genre === "epreuve");
   check("sans les paramètres v3 de /practice : jamais topic=all, le lien nu", avant?.destination.href === "/practice", J(avant?.destination.href));
+  const r60 = composerSeance(entree({ phase: "repetition", joursAvant: 26, budget: 60, trenteFait: true, revoir: { ...revoir, aujourdhui: 20 } }));
+  check("répétition · 60 min, 20 à revoir : l'épreuve est proposée (retouches 15 + épreuve 45 : le budget est plein)", J(genres(r60)) === J(["retouches", "epreuve"]) && r60.blocs[0].n === 15 && r60.duree <= 65, J(r60.blocs.map((b) => [b.genre, b.duree])));
+  const r30 = composerSeance(entree({ phase: "repetition", joursAvant: 26, budget: 30, trenteFait: true, revoir: { ...revoir, aujourdhui: 20 } }));
+  check("répétition · 30 min : retouches + ce qui coince (l'épreuve hors budget)", J(genres(r30)) === J(["retouches", "coince"]) && r30.duree <= 35, J(r30.blocs.map((b) => [b.genre, b.duree])));
+  const r90 = composerSeance(entree({ phase: "repetition", joursAvant: 26, budget: 90, trenteFait: true, revoir: { ...revoir, aujourdhui: 25 } }));
+  check("répétition · 90 min : retouches 15, l'épreuve, ce qui coince, les 5", J(genres(r90)) === J(["retouches", "epreuve", "coince", "cinq"]) && r90.blocs[0].n === 15 && r90.duree <= 95, J(r90.blocs.map((b) => [b.genre, b.duree])));
   for (const j of [7, 5, 4]) {
     const s = composerSeance(entree({ phase: "veillee", joursAvant: j, budget: 60 }));
     check(`veillée J-${j} (60 min) : l'épreuve est proposée`, genres(s).includes("epreuve"), J(genres(s)));

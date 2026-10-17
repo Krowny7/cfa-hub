@@ -97,7 +97,8 @@ export const budgetParDefaut = (questionsParJour7: number[]): Budget => budgetPa
 export const ORDRE_BLOCS: Record<Phase, readonly GenreBloc[]> = {
   fondations: ["cinq", "retouches", "nouveau", "coince", "trente"],
   consolidation: ["cinq", "retouches", "coince", "nouveau", "trente"],
-  repetition: ["retouches", "coince", "epreuve", "cinq"],
+  // l'épreuve avant ce qui coince : dès 60 min elle entre (retouches 15 + épreuve 45), coince à 90 min
+  repetition: ["retouches", "epreuve", "coince", "cinq"],
   veillee: ["retouches", "epreuve", "cinq", "coince"],
   apres: ["retouches", "coince", "nouveau"],
 };
@@ -108,8 +109,8 @@ export const MAX_BLOCS: Record<Budget, number> = { 15: 2, 30: 2, 60: 3, 90: 4 };
 export const MARGE_SEANCE = 5;
 /** Le plus court des blocs : sous ce reste, on s'arrête. */
 const DUREE_MIN = 5;
-/** Retouches : de 5 à 25 questions (≈ 1 min chacune), 15 au plus en veillée ; proposées dès 5 à revoir. */
-export const RETOUCHES = { min: 5, max: 25, veillee: 15 } as const;
+/** Retouches : de 5 à 25 questions (≈ 1 min chacune), 15 au plus en répétition et en veillée (l'épreuve passe) ; proposées dès 5 à revoir. */
+export const RETOUCHES = { min: 5, max: 25, repetition: 15, veillee: 15 } as const;
 /** Les 30 du jour dans la séance : dès 60 min et 100 questions posées. */
 export const TRENTE_SEANCE = { budget: 60, questions: 100 } as const;
 /** L'épreuve en veillée : de J-7 à J-4 (ensuite, la malle et le repos). */
@@ -270,7 +271,8 @@ function blocDe(genre: GenreBloc, e: EntreeSeance, restant: number): Bloc | null
     case "retouches": {
       const r = e.revoir;
       if (!r || r.aujourdhui < RETOUCHES.min || !outils.has("revoir")) return null;
-      const n = Math.min(clamp(Math.min(r.aujourdhui, restant), RETOUCHES.min, RETOUCHES.max), enMalle(e) ? VEILLEE.retouchesMalle : e.phase === "veillee" ? RETOUCHES.veillee : RETOUCHES.max);
+      const plafond = enMalle(e) ? VEILLEE.retouchesMalle : e.phase === "veillee" ? RETOUCHES.veillee : e.phase === "repetition" ? RETOUCHES.repetition : RETOUCHES.max;
+      const n = Math.min(clamp(Math.min(r.aujourdhui, restant), RETOUCHES.min, RETOUCHES.max), plafond);
       return avec({ k: "revoir", n }, n, raisonRetouches(r), { n });
     }
     case "coince": {
