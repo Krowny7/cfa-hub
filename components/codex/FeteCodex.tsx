@@ -4,12 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { BilanCodex, FeteCodex as Fete } from "@/lib/codex/bilan";
-import { codexPoint, codexRetroVue, codexVus } from "@/lib/codex/actions";
+import { codexPoint, codexRetroVue, codexSeanceBudget, codexSeanceFinir, codexVus } from "@/lib/codex/actions";
+import { EVENEMENT_CODEX_POINT } from "@/lib/codex/panneau";
+import { budgetSuivant } from "@/lib/codex/seance";
 import { signalerLeonard } from "@/lib/leonard/signal";
 import { resteCeremonie } from "@/lib/ceremonie-en-cours";
 import { CODEX } from "@/lib/voice-codex";
 import { Sceau } from "@/components/codex/Sceau";
 import { annoncerDevoile } from "@/components/codex/annoncer";
+import { FinDeSeance } from "@/components/codex/SeanceDuJour";
+import { marqueIci, noterSeanceIci, poserMarqueIci } from "@/components/codex/seance-ici";
+import e from "./Encre.module.css";
 import s from "./Codex.module.css";
 
 // La petite cérémonie du Codex, posée là où le joueur est : en fin de séance
@@ -19,6 +24,11 @@ import s from "./Codex.module.css";
 // Léonard dit sa réplique), puis « Léonard a feuilleté ton carnet » pour les
 // comptes existants, une seule fois. Rien n'est lourd : une carte, pas un
 // plein écran. Chaque fanfare n'est jouée qu'une fois (codexVus).
+//
+// En fin d'outil, si ce dernier bloc vient de tenir la séance du jour : « Ce
+// que ça a fait avancer » (V3 §6.5), une fois par jour, avec « C'est assez
+// pour aujourd'hui » ou « Encore un bloc ? ». Après chaque point, l'événement
+// rl:codex-point dit à la pastille de la barre du haut de relire la séance.
 //
 // `initial` : le bilan déjà lu côté serveur (accueil, /codex). Sans lui
 // (fin de séance), le composant demande le point au serveur après `attenteMs`,
@@ -43,6 +53,8 @@ export function FeteCodex({
 }) {
   const [bilan, setBilan] = useState<BilanCodex | null>(initial ?? null);
   const [retroVue, setRetroVue] = useState(false);
+  const [finVue, setFinVue] = useState(false);
+  const [occupe, setOccupe] = useState(false);
   const carte = useRef<HTMLElement | null>(null);
   const joue = useRef(false);
 
@@ -59,6 +71,12 @@ export function FeteCodex({
         b = await codexPoint(initial ? { recalcul: false } : undefined);
       } catch {
         b = null;
+      }
+      // la pastille « Continuer » relit la séance (le bloc suivant se déduit des objectifs)
+      try {
+        window.dispatchEvent(new Event(EVENEMENT_CODEX_POINT));
+      } catch {
+        // la pastille se relira à la page suivante
       }
       if (fini || !b || !b.disponible) return;
       // le dévoilement : l'onglet s'encre, Léonard dit sa réplique (comptes neufs seulement)
@@ -106,12 +124,46 @@ export function FeteCodex({
     return () => window.clearTimeout(t);
   }, [retro]);
 
-  if (!aFeter && !retro) return null;
+  // la séance tenue : fêtée une fois par jour, en fin d'outil seulement (l'accueil et /codex la montrent dans leur carte)
+  const finSeance = !initial && !finVue && bilan?.seance ? bilan.seance : null;
+  useEffect(() => {
+    if (finSeance && !demo && marqueIci("fetee", finSeance.jour)) setFinVue(true);
+  }, [finSeance, demo]);
+  const clore = (encore: boolean) => {
+    if (!finSeance) return;
+    setOccupe(true);
+    if (!demo) poserMarqueIci("fetee", finSeance.jour);
+    const suite = encore ? budgetSuivant(finSeance.budget) : null;
+    const geste = demo ? Promise.resolve(null) : suite ? codexSeanceBudget(suite) : codexSeanceFinir();
+    void geste
+      .then((r) => {
+        if (!demo && !encore && (!r?.ok || !("gardee" in r) || !r.gardee)) noterSeanceIci(finSeance.jour, "finie");
+        try {
+          window.dispatchEvent(new Event(EVENEMENT_CODEX_POINT));
+        } catch {
+          // rien
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        setOccupe(false);
+        setFinVue(true);
+      });
+  };
+
+  if (!aFeter && !retro && !finSeance) return null;
   const grandes = fetes.slice(0, 2);
   const autres = fetes.length - grandes.length;
 
   return (
     <div className={"flex flex-col gap-3 " + className}>
+      {finSeance && (
+        <section aria-label="La séance du jour" className={`${s.fete} ${e.carnet}`}>
+          <div className="min-w-0 flex-1">
+            <FinDeSeance gains={finSeance.gains} lanceeLe={finSeance.lanceeLe} demo={demo} occupe={occupe} onAssez={() => clore(false)} onEncore={budgetSuivant(finSeance.budget) ? () => clore(true) : null} />
+          </div>
+        </section>
+      )}
       {retro && (
         <section aria-live="polite" className={s.fete}>
           <div className="shrink-0">

@@ -21,7 +21,9 @@ import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 
 // Barre du haut : logo vivant (→ accueil), domaine · programme, les cinq
 // espaces en contrôle segmenté, puis la recherche, le sceau « ! » des quêtes
-// du Codex (diffusé en flux) et le badge de rang du joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
+// du Codex et la pastille de la séance du jour lancée (« Séance 2/3 ·
+// Continuer → » ; sur téléphone, une bande au-dessus de la barre d'onglets),
+// diffusés en flux, et le badge de rang du joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
 // déconnexion). Translucide et collante, avec un léger flou. Un trait d'encre
 // court sous la barre pendant qu'une page se fait attendre (NavProgress).
 // Le logo mène à l'accueil, sur téléphone aussi (la barre du bas n'a
