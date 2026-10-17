@@ -17,7 +17,7 @@ import { ID_MAX, PROGRAMME_GLOBAL, PROGRAMME_HISTORIQUE, cleLocale, estGlobal, s
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import type {
   Acte, Chaine, ChampDe, CosmetiqueCodex, Devoilement, EtapeBranche, Fenetre, Filtre, FiltreMesure, Objectif, ObjectifCompteur,
-  ObjectifMesure, ModeleContrat, Outil, Phase, Prerequis, Quete, SourceDonnee, TypeEvenement, TypeMesure,
+  ObjectifMesure, ModeleContrat, Outil, Phase, Prerequis, Quete, Requis, SourceDonnee, TypeEvenement, TypeMesure,
 } from "@/lib/codex/types";
 
 /** Le programme de cet arbre (lib/domains.ts : domaine/programme) ; les autres sont au registre (lib/codex/programmes.ts). */
@@ -50,6 +50,9 @@ export const EVENEMENTS: Record<TypeEvenement, SourceDonnee> = {
   jour_encre: { libelle: "Un jour d'encre", source: "serie_encre / _serie_reponses_jour (≥ 10 questions par jour de Paris)", branche: true },
   question_marquee: { libelle: "Une question marquée", source: "question_flags (created_at)", branche: true },
   ami_ajoute: { libelle: "Un ami", source: "friendships (acceptée)", branche: true },
+  // journal v3 (migration_codex_v3.sql §5) : les quêtes qui les comptent portent requiert « journal3 »
+  seance_juste: { libelle: "Une séance juste", source: "codex_journal v3 : pages de fiche (run_id), séances ciblées, séries éclair et « À revoir » (eclair_series), les 30 du jour, Atelier ; réponses neuves ou dues via _reponses_cache", branche: true },
+  blanc_debriefe: { libelle: "Un examen blanc débriefé", source: "codex_journal v3 : blanc_debrief (migration_v3_profil.sql §5), daté du dernier classement", branche: true },
 };
 
 export const MESURES: Record<TypeMesure, SourceDonnee> = {
@@ -88,6 +91,11 @@ export const MESURES: Record<TypeMesure, SourceDonnee> = {
   trophees: { libelle: "Trophées", source: "codex_mesures_v3 : trophees_joueur (migration_v3_profil.sql), sinon les séances ciblées en ligne, plafonnées par taille", branche: true },
   pieces_possedees: { libelle: "Pièces de collection", source: "le moteur : compterPiecesCodex (lib/codex/fil-rouge.ts) sur codex_progression, les sceaux et les trophées", branche: true },
   semaines_entretien: { libelle: "Semaines de main gardée", source: "le moteur : jours d'encre (codex_lire) après le jour J passé ou le programme mené", branche: true },
+  trophees_sources: { libelle: "Sources de trophées", source: "le moteur : trophées de codex_mesures_v3, sources distinctes à un palier", branche: true },
+  notions_tenues: { libelle: "Notions tenues", source: "codex_mesures_v3 : notions_tenues {notion: {n, j5}} (5 réponses, 3 justes sur les 5 dernières)", branche: true },
+  notions_tenues_pct: { libelle: "Part des notions tenues", source: "notions_tenues / notionsDeMatiere (lib/notions.ts), pondérée par le poids des matières", branche: true },
+  malle_faite: { libelle: "La malle prête", source: "user_metadata.rl_malle (5 cases cochées ou plus), lu par le serveur", branche: true },
+  blancs_a_debriefer: { libelle: "Examens blancs à débriefer", source: "codex_mesures_v3 : blanc_debrief, blancs rendus depuis 7 jours classés à moins de 80 %", branche: true },
 };
 
 /** Les prédicats spéciaux (ObjectifSpecial) : à coder un par un dans le moteur. */
@@ -98,6 +106,9 @@ export const SPECIAUX: Record<string, string> = {
   retour: "un jour à ≥ 20 questions après au moins 14 jours sans aucune réponse",
   aube: "10 questions répondues avant 7 h (Paris) le même jour",
   justes_sur_20_matiere: "bonnes réponses parmi les 20 dernières de la matière de la quête (l'étape « serie » d'une branche sans séance ciblée)",
+  // par matière (ObjectifSpecial.matiere ; codex_mesures_v3 : speciaux_matiere, V3 §8.7)
+  serie_bonnes_matiere: "plus longue suite de bonnes réponses d'affilée dans la matière, dans une même séance (une erreur ou 20 min de silence la rompt)",
+  serie_calculs_matiere: "plus longue suite de calculs justes d'affilée dans la matière",
 };
 
 // ── Barème ─────────────────────────────────────────────────────────────
@@ -130,6 +141,47 @@ export const plafondRetro = (niveau: number) => xpNeededForLevelUp(niveau);
 // que des pièces qui bougent, et des titres (une ligne sous le pseudo). À
 // brancher dans lib/profil/catalogue.ts (Condition { k: "codex"; quete }).
 
+// ── Les folios (V3 §3.7) ───────────────────────────────────────────────
+// Un dessin de Léonard (domaine public) par acte clos et par « Maître
+// de… » du CFA I. Jamais tirés au sort. Tant que l'image manque
+// (public/folios/<clé nue>.webp), la carte « papier » montre le nom de
+// l'œuvre à la plume : jamais d'image cassée.
+
+/** clé nue, ce qui le donne (« acte:<id> » ou l'id de quête), l'œuvre. */
+const FOLIOS: [nue: string, donnePar: string, oeuvre: string][] = [
+  ["mains", "acte:acte1", "Étude de mains"],
+  ["draperie", "acte:acte2", "Étude de draperie"],
+  ["codex-leicester", "acte:acte3", "Une page du Codex Leicester"],
+  ["adoration", "acte:acte4", "Étude pour l'Adoration des Mages"],
+  ["chevaux", "acte:acte5", "Études de chevaux"],
+  ["autoportrait", "acte:acte6", "Autoportrait à la sanguine"],
+  ["deluge", "acte:epilogue", "Le Déluge"],
+  ["vieillard", "branche:ethics:maitre", "Profil de vieillard"],
+  ["polyedres", "branche:quant:maitre", "Polyèdres dessinés pour la Divina proportione"],
+  ["moulin", "branche:economics:maitre", "Étude de moulin"],
+  ["tourbillons", "branche:fsa:maitre", "Études de tourbillons d'eau"],
+  ["pont", "branche:corporate:maitre", "Projet de pont"],
+  ["chats", "branche:equity:maitre", "Études de chats"],
+  ["arbalete", "branche:fixed_income:maitre", "L'arbalète géante"],
+  ["vis-aerienne", "branche:derivatives:maitre", "La vis aérienne"],
+  ["char", "branche:alternatives:maitre", "Le char d'assaut"],
+  ["ornithoptere", "branche:portfolio:maitre", "L'ornithoptère"],
+];
+
+/** Le folio que donne un acte (« acte:<id> ») ou une quête du CFA I, s'il y en a un. */
+export const folioDe = (donnePar: string): string | undefined => {
+  const f = FOLIOS.find(([, d]) => d === donnePar);
+  return f ? `folio:${f[0]}` : undefined;
+};
+
+const FOLIOS_CFA_L1: CosmetiqueCodex[] = FOLIOS.map(([nue, , oeuvre]) => ({
+  cle: `folio:${nue}`,
+  type: "folio",
+  nom: oeuvre,
+  description: "Une planche du carnet de Léonard.",
+  folio: { oeuvre, image: null, provisoire: true },
+}));
+
 export const COSMETIQUES_CODEX: CosmetiqueCodex[] = [
   { cle: "banniere:carnet", type: "banniere", nom: "Carnet de Léonard", description: "Des croquis à la plume qui se dessinent et s'effacent dans la marge.", anime: true },
   { cle: "banniere:florence", type: "banniere", nom: "Florence à l'aube", description: "Le Duomo sort de la brume, la lumière monte sur le papier.", anime: true },
@@ -151,6 +203,9 @@ export const COSMETIQUES_CODEX: CosmetiqueCodex[] = [
   { cle: "titre:commande", type: "titre", nom: "Commande honorée", description: "Un examen blanc à 80 % ou plus." },
   { cle: "titre:duelliste", type: "titre", nom: "Duelliste de la guilde", description: "A atteint le palier Diamant." },
   { cle: "titre:codex", type: "titre", nom: "Codex Atlanticus", description: "Cent quêtes du Codex terminées." },
+  { cle: "titre:main-juste", type: "titre", nom: "La main juste", description: "Deux cents séances réussies sur du neuf ou du dû." },
+  // les folios : une planche du carnet par acte clos et par « Maître de… » (V3 §3.7)
+  ...FOLIOS_CFA_L1,
   // le fil rouge (lib/codex/fil-rouge.ts, V3 §1.5) : ses pièces et ses titres
   ...PIECES_FIL,
   // « Maître de <matière> » : un titre par branche, généré (titreMaitre)
@@ -179,6 +234,8 @@ const mesure = (m: TypeMesure, seuil: number, filtre?: FiltreMesure, sens: ">=" 
 const tous = (...objectifs: Objectif[]): Objectif => ({ k: "tous", objectifs });
 const unDe = (...objectifs: Objectif[]): Objectif => ({ k: "unDe", objectifs });
 const apres = (id: string): Prerequis => ({ k: "quete", id });
+/** conseillée : elle ne bloque qu'une fois l'examen derrière le joueur (V3 §8.5) */
+const souple = (id: string): Prerequis => ({ k: "quete", id, souple: true });
 const acteClos = (id: string): Prerequis => ({ k: "acte", id });
 
 type Base = Omit<Quete, "programme" | "prerequis" | "repetition" | "visibilite"> & Partial<Pick<Quete, "prerequis" | "repetition" | "visibilite">>;
@@ -208,7 +265,7 @@ export const ACTES: Acte[] = [
     closAvec: { n: 4 },
     ouverture: { texte: "Un bon apprenti connaît les pots de l'atelier. Ouvre ceux qui te tentent, même celui qui sent bizarre.", pose: "moqueur" },
     cloture: { texte: "Tu connais la maison. Maintenant, on va salir des pinceaux pour de vrai.", pose: "fier" },
-    recompense: { xp: 120 },
+    recompense: { xp: 120, folio: "folio:mains" },
   },
   {
     id: "acte2",
@@ -218,7 +275,7 @@ export const ACTES: Acte[] = [
     but: "Toucher aux dix matières et réussir une première séance ciblée.",
     ouverture: { texte: "Dix pigments sur la palette. On ne peint pas un ciel avec un seul bleu, ni un CFA avec la seule FSA.", pose: "base" },
     cloture: { texte: "Les dix pots sont ouverts. Ça sent la peinture et un peu l'Éthique : c'est normal.", pose: "fier" },
-    recompense: { xp: 200, cosmetique: "banniere:carnet", titre: "titre:garzone" },
+    recompense: { xp: 200, cosmetique: "banniere:carnet", titre: "titre:garzone", folio: "folio:draperie" },
   },
   {
     id: "acte3",
@@ -228,7 +285,7 @@ export const ACTES: Acte[] = [
     but: "Couvrir le programme notion par notion, et faire tenir ce qu'on apprend.",
     ouverture: { texte: "J'ai rempli sept mille pages de carnets. Je ne t'en demande pas tant. Juste toutes les notions.", pose: "moqueur" },
     cloture: { texte: "Tes carnets se remplissent, et ce qui est dedans reste. Le reste, c'est de l'encre perdue.", pose: "fier" },
-    recompense: { xp: 250 },
+    recompense: { xp: 250, folio: "folio:codex-leicester" },
   },
   {
     id: "acte4",
@@ -238,7 +295,7 @@ export const ACTES: Acte[] = [
     but: "Rendre un premier examen blanc et tenir un rythme sur plusieurs semaines.",
     ouverture: { texte: "Un client ! Il paie en florins et il juge sur pièce. Comme le CFA Institute, en moins poli.", pose: "etonne" },
     cloture: { texte: "Commande livrée. Le mécène a hoché la tête. Chez les Médicis, c'est un triomphe.", pose: "fier" },
-    recompense: { xp: 300, cosmetique: "cadre:sanguine", titre: "titre:compagnon" },
+    recompense: { xp: 300, cosmetique: "cadre:sanguine", titre: "titre:compagnon", folio: "folio:adoration" },
   },
   {
     id: "acte5",
@@ -248,7 +305,7 @@ export const ACTES: Acte[] = [
     but: "Huit matières sur dix ont passé leur séance ciblée : place au programme entier.",
     ouverture: { texte: "Tes branches ont tenu leur épreuve, ou presque toutes. La guilde t'attend. Tiens-toi droit, ils regardent les mains.", pose: "base" },
     cloture: { texte: "Admis à la guilde. J'y suis entré en 1472. Toi, aujourd'hui. On a presque le même parcours.", pose: "fier" },
-    recompense: { xp: 400, cosmetique: "banniere:florence", titre: "titre:guilde" },
+    recompense: { xp: 400, cosmetique: "banniere:florence", titre: "titre:guilde", folio: "folio:chevaux" },
   },
   {
     id: "acte6",
@@ -258,7 +315,7 @@ export const ACTES: Acte[] = [
     but: "Le niveau de l'examen, partout : 70 % de maîtrise, des examens blancs réussis, l'Éthique solide.",
     ouverture: { texte: "La Joconde m'a pris seize ans. Toi, tu as jusqu'au jour J. Pas de pression.", pose: "moqueur" },
     cloture: { texte: "Signé. Encadré. Je le mettrais bien au Louvre, mais il paraît que la place est prise.", pose: "fier" },
-    recompense: { xp: 600, cosmetique: "cadre:laurier", titre: "titre:maitre-bottega" },
+    recompense: { xp: 600, cosmetique: "cadre:laurier", titre: "titre:maitre-bottega", folio: "folio:autoportrait" },
   },
   {
     id: "epilogue",
@@ -268,7 +325,7 @@ export const ACTES: Acte[] = [
     but: "Un dernier mois calé sur ta date : examen blanc, carnet propre, Éthique, puis repos.",
     ouverture: { texte: "Trente jours. On ne commence plus de fresque : on reprend les retouches.", pose: "base" },
     cloture: { texte: "Pose le pinceau. Dors. Même moi je dormais, parfois. Rarement, mais quand même.", pose: "fier" },
-    recompense: { xp: 300, titre: "titre:jour-j" },
+    recompense: { xp: 300, titre: "titre:jour-j", folio: "folio:deluge" },
   },
 ];
 
@@ -308,6 +365,7 @@ export const QUETES_TRAME: Quete[] = [
   quete({ id: "trame:a3:maitrises", famille: "trame", acte: "acte3", ordre: 31, titre: "Trois couleurs qui tiennent", consigne: "Monte trois matières à 60 % de maîtrise.", objectif: mesure("matieres_au_dessus", 3, { pct: 60 }), prerequis: [acteClos("acte2")], recompense: { xp: 120 } }),
   quete({ id: "trame:a3:ratures", famille: "trame", acte: "acte3", ordre: 32, titre: "Le grattoir", consigne: "Raye 20 ratures en les réussissant en reprise.", objectif: mesure("ratures_rayees", 20), prerequis: [acteClos("acte2")], recompense: { xp: 80 } }),
   quete({ id: "trame:a3:rappels", famille: "trame", acte: "acte3", ordre: 33, titre: "Ce qui reste après une semaine", consigne: "Réussis 20 questions que tu avais vues il y a plus de 7 jours.", pourquoi: "Ce qu'on retrouve après une semaine, on le retrouvera le jour J.", objectif: mesure("rappels_espaces", 20, { n: 7 }), prerequis: [acteClos("acte2")], recompense: { xp: 100 } }),
+  quete({ id: "trame:a3:tenues", famille: "trame", acte: "acte3", ordre: 35, nouvelle: "v3", titre: "Vingt-cinq carnets tenus", consigne: "Tiens 25 notions du programme : 5 réponses au moins, dont 3 justes sur les 5 dernières.", pourquoi: "Une notion vue une fois s'oublie ; une notion tenue se retrouve le jour J.", objectif: mesure("notions_tenues", 25), prerequis: [acteClos("acte2")], recompense: { xp: 100 } }),
   quete({ id: "trame:a3:atelier", famille: "trame", acte: "acte3", ordre: 34, titre: "Trois passages à l'Atelier", consigne: "Termine trois séances d'Atelier.", objectif: compte("seance_atelier", 3), prerequis: [acteClos("acte2")], recompense: { xp: 80 }, lien: "/atelier" }),
 
   // Acte IV : la première commande
@@ -324,8 +382,9 @@ export const QUETES_TRAME: Quete[] = [
     ["programme", "Six dixièmes du tableau", "Atteins 60 % de maîtrise sur tout le programme.", mesure("maitrise_programme", 60), 250],
     ["notions", "Les trois quarts de la carte", "Vois 75 % des notions du programme.", mesure("notions_vues_pct", 75), 200],
     ["carnet", "Un carnet lisible", "Descends sous 50 ratures en cours.", mesure("ratures_ouvertes", 50, undefined, "<="), 150],
+    ["tenues", "Les trois quarts de la carte", "Tiens 75 % des notions du programme, pondérées par le poids des matières.", mesure("notions_tenues_pct", 75), 200],
   ] as const).map(([cle, titre, consigne, objectif, xp], i) =>
-    quete({ id: `trame:a5:${cle}`, famille: "trame", acte: "acte5", ordre: 50 + i, titre, consigne, objectif, prerequis: [acteClos("acte4"), { k: "branches", etape: "ciblee", n: SEUIL_ACTE_V }], recompense: { xp }, ...(cle === "notions" ? { retiree: true as const } : {}) }),
+    quete({ id: `trame:a5:${cle}`, famille: "trame", acte: "acte5", ordre: 50 + i, titre, consigne, objectif, prerequis: [acteClos("acte4"), { k: "branches", etape: "ciblee", n: SEUIL_ACTE_V }], recompense: { xp }, ...(cle === "notions" ? { retiree: true as const } : {}), ...(cle === "tenues" ? { nouvelle: "v3" as const } : {}) }),
   ),
 
   // Acte VI : le chef-d'œuvre
@@ -343,6 +402,9 @@ export const QUETES_TRAME: Quete[] = [
   quete({ id: "trame:ep:carnet", famille: "trame", acte: "epilogue", ordre: 91, titre: "Nettoyer le carnet", consigne: "Descends sous 20 ratures en cours avant la dernière semaine.", objectif: mesure("ratures_ouvertes", 20, undefined, "<="), prerequis: [{ k: "joursAvantExamen", max: 21, min: 3 }], recompense: { xp: 200 }, visibilite: "ouverte" }),
   quete({ id: "trame:ep:ethique", famille: "trame", acte: "epilogue", ordre: 92, titre: "Relire les Standards", consigne: "Réponds à 40 questions d'Éthique dans les deux dernières semaines.", objectif: compte("question_repondue", 40, { matiere: "ethics" }, { fenetre: "depuisOuverture" }), prerequis: [{ k: "joursAvantExamen", max: 14, min: 1 }], recompense: { xp: 150 }, visibilite: "ouverte" }),
   quete({ id: "trame:ep:veille", famille: "trame", acte: "epilogue", ordre: 93, titre: "La veille", consigne: "Une dernière série éclair ou les 5 du jour, puis pose le crayon.", objectif: unDe(compte("eclair_rendue", 1, undefined, { fenetre: "jour" }), compte("cinq_rendu", 1, undefined, { fenetre: "jour" })), prerequis: [{ k: "joursAvantExamen", max: 3, min: 1 }], recompense: { xp: 100 }, visibilite: "ouverte", duree: 5 }),
+  // la malle (V3 §7.3) et le lendemain (V3 §7.5) : à côté du fil, ils ne retiennent pas l'épilogue
+  quete({ id: "trame:ep:malle", famille: "trame", acte: "epilogue", ordre: 94, optionnelle: true, nouvelle: "v3", titre: "La malle est prête", consigne: "Coche cinq cases de la malle : convocation, pièce d'identité, calculatrice…", pourquoi: "Le jour J, rien ne doit manquer que tu aurais pu prévoir la veille.", objectif: mesure("malle_faite", 1), prerequis: [{ k: "joursAvantExamen", max: 3, min: 1 }], recompense: { xp: 50 }, visibilite: "ouverte", duree: 5 }),
+  quete({ id: "trame:ep:lendemain", famille: "trame", acte: "epilogue", ordre: 95, optionnelle: true, nouvelle: "v3", titre: "Pose le pinceau", consigne: "Regarde le chemin parcouru depuis ton premier trait.", objectif: compte("question_repondue", 1), prerequis: [{ k: "apresExamen" }], recompense: { xp: 0 }, visibilite: "ouverte", duree: 2 }),
 ];
 
 // ── Les quêtes au long cours ───────────────────────────────────────────
@@ -363,15 +425,24 @@ export const CHAINES: Chaine[] = [
   { id: "trentaine", titre: "La trentaine", axe: "examens", pourquoi: "Les 30 du jour, chronométrés : le rythme de l'examen en petit.", requiert: ["trente"] },
   { id: "rythme", titre: "Le rythme", axe: "regularite", pourquoi: "Tenir la cadence prévue jusqu'à ta date, semaine après semaine." },
   { id: "joute", titre: "La joute", axe: "competition", pourquoi: "La compétition qui fait réviser : les paliers du haut demandent de la maîtrise.", requiert: ["duels"] },
+  // v3 (V3 §8.5) : la main juste remplace justesse, trentaine, Atelier et calculs ; la carte tenue remplace la carte
+  { id: "main-juste", titre: "La main juste", axe: "methode", pourquoi: "Des séances réussies sur du neuf ou du dû : celles qui font vraiment avancer." },
+  { id: "carte-tenue", titre: "La carte tenue", axe: "couverture", pourquoi: "Une notion qu'on retrouve juste trois fois sur cinq, c'est une notion acquise." },
 ];
 
 type Palier = { titre: string; consigne: string; objectif: Objectif; xp: number; cosmetique?: string; titreGagne?: string; miroir?: string };
 
-/** Une chaîne : chaque palier ouvre le suivant. `retiree` : toute la chaîne est retirée (ids gardés, V3 §8.1). */
-function chaine(id: string, paliers: Palier[], prerequis: Prerequis[] = [], o: { retiree?: true } = {}): Quete[] {
+/**
+ * Une chaîne : chaque palier ouvre le suivant. `retiree` : toute la chaîne est
+ * retirée (ids gardés, V3 §8.1) ; `requiert` : ce que la base doit savoir faire
+ * (V3 §1.8) ; `nouvelle` : parue avec la v3 (rattrapage, V3 §1.9).
+ */
+function chaine(id: string, paliers: Palier[], prerequis: Prerequis[] = [], o: { retiree?: true; requiert?: Requis[]; nouvelle?: "v3" } = {}): Quete[] {
   return paliers.map((p, i) =>
     quete({
       ...(o.retiree ? { retiree: true } : {}),
+      ...(o.requiert ? { requiert: o.requiert } : {}),
+      ...(o.nouvelle ? { nouvelle: o.nouvelle } : {}),
       ...(p.miroir ? { miroir: p.miroir } : {}),
       id: `longcours:${id}:${i + 1}`,
       famille: "longcours",
@@ -392,6 +463,15 @@ const maitriseProg = (n: number, titre: string, xp: number, extra: Partial<Palie
 const matieres70 = (n: number, titre: string, xp: number, extra: Partial<Palier> = {}): Palier => ({ titre, consigne: n === 1 ? "Monte une matière à 70 % de maîtrise." : `Monte ${n} matières à 70 % de maîtrise.`, objectif: mesure("matieres_au_dessus", n, { pct: 70 }), xp, ...extra });
 const rappels = (n: number, titre: string, xp: number, extra: Partial<Palier> = {}): Palier => ({ titre, consigne: `Réussis ${n} questions revues au moins 7 jours après la précédente.`, objectif: mesure("rappels_espaces", n, { n: 7 }), xp, ...extra });
 const semaines = (n: number, titre: string, xp: number, extra: Partial<Palier> = {}): Palier => ({ titre, consigne: `Tiens ${n} semaines à 4 jours d'encre ou plus.`, objectif: mesure("semaines_actives", n, { n: 4 }), xp, ...extra });
+const tenues = (n: number, titre: string, xp: number, extra: Partial<Palier> = {}): Palier => ({ titre, consigne: n === 100 ? "Tiens toutes les notions du programme." : `Tiens ${n} % des notions du programme, pondérées par le poids des matières.`, objectif: mesure("notions_tenues_pct", n), xp, ...extra });
+/** Une séance juste (V3 §8.5) : 70 % ou mieux, 10 questions au moins, la moitié neuves ou dues. */
+const mainJuste = (n: number, titre: string, xp: number, extra: Partial<Palier> = {}): Palier => ({
+  titre,
+  consigne: `Réussis ${n} séance${n > 1 ? "s" : ""} à 70 % ou mieux, dont la moitié au moins de questions neuves ou à revoir.`,
+  objectif: compte("seance_juste", n, { pct: { min: 70 }, questions: { min: 10 }, fraiches: { min: 50 } }),
+  xp,
+  ...extra,
+});
 const seances = (n: number, titre: string, xp: number): Palier => ({ titre, consigne: `Réussis ${n} séances de 20 questions ou plus à 70 % ou mieux.`, objectif: compte("session_terminee", n, { questions: { min: 20 }, pct: { min: 70 } }), xp });
 
 // Retirées (V3 §8.1) : « La carte » (notions vues, remplacée par les notions
@@ -492,6 +572,31 @@ export const QUETES_LONG_COURS: Quete[] = [
     // le jour J est facultatif (V3 §8.3) : la chaîne s'ouvre avec le prologue, sans date elle attend
     [apres("trame:prologue:dix")],
   ),
+  ...chaine(
+    "main-juste",
+    [
+      mainJuste(5, "Cinq séances justes", 60),
+      mainJuste(15, "Quinze séances justes", 140),
+      mainJuste(40, "Quarante séances justes", 250),
+      mainJuste(100, "Cent séances justes", 400),
+      mainJuste(200, "La main juste", 500, { titreGagne: "titre:main-juste" }),
+    ],
+    [],
+    // l'événement seance_juste naît avec le journal v3 : sans lui, la chaîne n'est pas branchée (masquée)
+    { requiert: ["journal3"], nouvelle: "v3" },
+  ),
+  ...chaine(
+    "carte-tenue",
+    [
+      tenues(10, "Le premier croquis", 60),
+      tenues(25, "Les contours", 120),
+      tenues(50, "La moitié de la carte", 200),
+      tenues(75, "Les marges", 300, { miroir: "trame:a5:tenues" }),
+      tenues(100, "La carte entière", 450, { cosmetique: "banniere:imola" }),
+    ],
+    [],
+    { nouvelle: "v3" },
+  ),
   ...chaine("joute", [
     { titre: "Cinq duels", consigne: "Joue cinq duels.", objectif: mesure("duels_joues", 5), xp: 50 },
     { titre: "Vingt-cinq duels", consigne: "Joue vingt-cinq duels.", objectif: mesure("duels_joues", 25), xp: 120 },
@@ -547,6 +652,32 @@ const EXPLOITS_NOUVEAUX: Exploit[] = [
   ["calcul-plume", "Le calcul à la plume", "20 calculs justes d'affilée.", { k: "special", cle: "serie_calculs", seuil: 20 }, 100, null],
 ];
 
+/** La cadence de l'examen : entre 75 et 110 s par question en moyenne, sur une épreuve assez longue pour compter. */
+const CADENCE = { secondesParQuestion: { min: 75, max: 110 }, pct: { min: 70 } } as const;
+
+/** Les exploits de la v3 (V3 §8.5, §2.6) : la cadence juste, et les trophées. */
+const EXPLOITS_V3: Quete[] = [
+  exploit({
+    id: "exploit:rythme",
+    famille: "exploit",
+    ordre: 200,
+    nouvelle: "v3",
+    titre: "La machine volante",
+    consigne: "Réussir à 70 % un examen blanc de 45 questions ou plus, ou une séance mêlée de 30 questions ou plus, entre 75 et 110 secondes par question.",
+    objectif: unDe(
+      compte("examen_blanc_rendu", 1, { questions: { min: 45 }, ...CADENCE }),
+      compte("session_terminee", 1, { source: "ciblee", matiere: null, questions: { min: 30 }, ...CADENCE }),
+    ),
+    recompense: { xp: 150, cosmetique: "banniere:machine-volante" },
+    visibilite: "indice",
+    indice: "Ni trop vite, ni trop lent : le vol tient à la cadence.",
+    // le temps par question naît avec le journal v3
+    requiert: ["journal3"],
+  }),
+  exploit({ id: "exploit:grand-chelem", famille: "exploit", ordre: 201, nouvelle: "v3", titre: "Le grand chelem", consigne: "Gagner un trophée d'or ou mieux sur quatre chemins différents.", objectif: mesure("trophees_sources", 4, { palier: "or" }), recompense: { xp: 150 }, visibilite: "indice", indice: "Quatre ors, quatre chemins." }),
+  exploit({ id: "exploit:vitrine", famille: "exploit", ordre: 202, nouvelle: "v3", titre: "La vitrine", consigne: "Gagner au moins un trophée sur six chemins différents.", objectif: mesure("trophees_sources", 6), recompense: { xp: 120 }, visibilite: "cachee" }),
+];
+
 export const QUETES_EXPLOITS: Quete[] = [
   ...EXPLOITS_SCEAUX,
   ...EXPLOITS_NOUVEAUX.map(([cle, titre, consigne, objectif, xp, indice, cosmetique, titreGagne], i) =>
@@ -563,6 +694,7 @@ export const QUETES_EXPLOITS: Quete[] = [
       ...(EXPLOITS_RETIRES.has(cle) ? { retiree: true as const } : {}),
     }),
   ),
+  ...EXPLOITS_V3,
 ];
 
 // ── La séance ciblée : sa taille réelle ────────────────────────────────
@@ -639,6 +771,28 @@ export const QUETES_CONTRATS_HEBDO: Quete[] = [
   quete({ id: "contrat:hebdo:pigments", famille: "contrat", repetition: "hebdomadaire", ordre: 2, titre: "Le tour des pigments", consigne: "Réponds juste dans 6 matières différentes cette semaine.", objectif: compte("question_repondue", 6, { juste: true }, { fenetre: "semaine", distinct: "matiere" }), recompense: { xp: 100 } }),
   quete({ id: "contrat:hebdo:commande", famille: "contrat", repetition: "hebdomadaire", ordre: 3, titre: "La commande de la semaine", consigne: "Rends un examen blanc cette semaine.", objectif: compte("examen_blanc_rendu", 1, undefined, { fenetre: "semaine" }), prerequis: [{ k: "joursAvantExamen", max: 60 }], visibilite: "ouverte", recompense: { xp: 150 }, lien: "/mock-exams" }),
 ];
+
+/**
+ * Le débrief d'un examen blanc (V3 §7.6) : classer ses erreurs (savoir,
+ * lecture, calcul, temps, chance), une fois par jour au plus. Déclaré ici ;
+ * il vit quand le journal v3 et blanc_debrief sont collés (A4b).
+ */
+export const QUETE_DEBRIEF: Quete = quete({
+  id: "contrat:debrief",
+  famille: "contrat",
+  repetition: "quotidienne",
+  visibilite: "ouverte",
+  ordre: 4,
+  nouvelle: "v3",
+  titre: "Le débrief",
+  consigne: "Classe au moins 80 % des erreurs de ton dernier examen blanc : savoir, lecture, calcul, temps ou chance.",
+  pourquoi: "Savoir pourquoi on s'est trompé, c'est la moitié de la correction.",
+  objectif: compte("blanc_debriefe", 1, { part: { min: 80 } }, { fenetre: "jour" }),
+  prerequis: [{ k: "etat", mesure: "blancs_a_debriefer", seuil: 1 }],
+  recompense: { xp: 80 },
+  requiert: ["journal3", "debrief"],
+  duree: 10,
+});
 
 // ── Les phases (calées sur le jour J) ──────────────────────────────────
 
@@ -759,7 +913,45 @@ export type ContenuMatiere = {
 };
 
 /** Les étapes d'une branche, dans l'ordre d'affichage (« serie » : à la place de « ciblee » sans séance ciblée). */
-export const ETAPES: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour", "maitrise60", "maitrise75", "maitre"];
+export const ETAPES: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour", "carte", "maitrise60", "maitrise75", "signature", "maitre"];
+
+/**
+ * Les épreuves signatures du CFA I (V3 §8.5), par clé de matière : une
+ * performance propre à la matière, avant « Maître de… ». « page » : une page
+ * de drill de la fiche à 100 % ; sinon la plus longue suite de bonnes
+ * réponses (ou de calculs justes) d'affilée dans la matière.
+ */
+const SIGNATURES_CFA_L1: Record<string, { titre: string } & ({ k: "page" } | { k: "serie_bonnes_matiere" | "serie_calculs_matiere"; seuil: number })> = {
+  ethics: { titre: "Dix cas d'école", k: "serie_bonnes_matiere", seuil: 10 },
+  quant: { titre: "La règle à calcul", k: "serie_calculs_matiere", seuil: 10 },
+  economics: { titre: "Le marché tenu", k: "serie_bonnes_matiere", seuil: 12 },
+  fsa: { titre: "Le bilan sans faute", k: "page" },
+  corporate: { titre: "Le conseil d'administration", k: "serie_bonnes_matiere", seuil: 12 },
+  equity: { titre: "L'évaluation juste", k: "page" },
+  fixed_income: { titre: "Vingt calculs justes", k: "serie_calculs_matiere", seuil: 20 },
+  derivatives: { titre: "Le contrat clair", k: "serie_bonnes_matiere", seuil: 10 },
+  alternatives: { titre: "Les actifs réels", k: "serie_bonnes_matiere", seuil: 12 },
+  portfolio: { titre: "Le portefeuille équilibré", k: "page" },
+};
+
+/**
+ * L'épreuve signature d'une matière : celle du tableau pour le CFA I ; la
+ * règle générique ailleurs (ou quand l'outil manque) : 12 bonnes réponses
+ * d'affilée, 10 si la matière pèse moins de 7 %.
+ */
+function signatureDe(m: ContenuMatiere, programme: string, drill: boolean, calculs: boolean): { titre: string; consigne: string; objectif: Objectif } {
+  const s = programme === PROGRAMME ? SIGNATURES_CFA_L1[m.key] : undefined;
+  if (s?.k === "page" && drill)
+    return { titre: s.titre, consigne: `Passe une page de drill de la fiche ${m.court} à 100 %.`, objectif: compte("drill_page_terminee", 1, { matiere: m.key, pct: { min: 100 } }) };
+  if (s?.k === "serie_calculs_matiere" && calculs)
+    return { titre: s.titre, consigne: `Enchaîne ${s.seuil} calculs justes d'affilée ${de(m.nom)}.`, objectif: { k: "special", cle: s.k, seuil: s.seuil, matiere: m.key } };
+  const seuil = s?.k === "serie_bonnes_matiere" ? s.seuil : m.poids < 7 ? 10 : 12;
+  return {
+    titre: s?.titre ?? `L'épreuve ${de(m.court)}`,
+    consigne: `Enchaîne ${seuil} bonnes réponses d'affilée ${de(m.nom)}, dans une même séance.`,
+    objectif: { k: "special", cle: "serie_bonnes_matiere", seuil, matiere: m.key },
+  };
+}
 
 /** Les titres « Maître de <matière> » (cosmétiques générés). */
 export const titresMaitres = (contenu: ContenuMatiere[] = contenuDuProgramme()): CosmetiqueCodex[] =>
@@ -800,6 +992,8 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
     if (m.flashcards && a("flashcards"))
       out.push(b("flashcards", { optionnelle: true, titre: "Le paquet de cartes", consigne: `Révise 40 flashcards ${de(m.nom)}.`, objectif: compte("flashcards_revues", 40, dm, { somme: "cartes" }), recompense: { xp: 30 }, lien: "/flashcards", duree: 15 }));
     const cib = cibleeDe(m.poids);
+    // le folio de « Maître de… » (CFA I seulement, V3 §3.7)
+    const folio = programme === PROGRAMME ? folioDe(id("maitre")) : undefined;
     out.push(
       jalon === "ciblee"
         ? b("ciblee", {
@@ -821,7 +1015,7 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
             recompense: { xp: 120 },
             duree: 20,
           }),
-      // retirée (V3 §8.1) : les notions tenues la remplacent (« La carte de … », A3b)
+      // retirée (V3 §8.1) : les notions tenues la remplacent (« La carte de … »)
       b("tour", {
         retiree: true,
         titre: `Le tour ${de(m.court)}`,
@@ -831,14 +1025,26 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
         prerequis: [apres(id("entree"))],
         recompense: { xp: Math.min(150, 60 + 5 * m.notions) },
       }),
+      // les notions tenues de la matière (V3 §8.5)
+      b("carte", {
+        nouvelle: "v3",
+        titre: `La carte ${de(m.court)}`,
+        consigne: `Tiens chacune des ${m.notions} notions ${de(m.nom)} : 5 réponses au moins, dont 3 justes sur les 5 dernières.`,
+        pourquoi: "Une notion qu'on retrouve juste trois fois sur cinq ne se joue plus à pile ou face.",
+        objectif: mesure("notions_tenues_pct", 100, dm),
+        prerequis: [apres(id("entree"))],
+        recompense: { xp: Math.min(150, 60 + 5 * m.notions) },
+      }),
       b("maitrise60", { titre: "Le pigment tient", consigne: `Monte ${m.nom} à 60 % de maîtrise.`, pourquoi: "60 % : la zone où l'on commence à réussir le CFA.", objectif: mesure("maitrise", 60, dm), prerequis: [apres(id(jalon))], recompense: { xp: 180 } }),
       b("maitrise75", { titre: "La couleur juste", consigne: `Monte ${m.nom} à 75 % de maîtrise.`, objectif: mesure("maitrise", 75, dm), prerequis: [apres(id("maitrise60"))], recompense: { xp: 260 } }),
+      b("signature", { ...signatureDe(m, programme, drill, duProgramme("calculs")), nouvelle: "v3", pourquoi: "L'épreuve signature de la branche : la preuve qu'on tient la matière, pas seulement sa moyenne.", prerequis: [apres(id("maitrise60"))], recompense: { xp: 200 }, duree: 20 }),
       b("maitre", {
         titre: `Maître ${de(m.court)}`,
         consigne: `85 % de maîtrise en ${m.nom}, toutes ses notions vues et 5 ratures en cours au plus.`,
         objectif: tous(mesure("maitrise", 85, dm), mesure("notions_vues_pct", 100, dm), mesure("ratures_ouvertes", 5, dm, "<=")),
-        prerequis: [apres(id("maitrise75")), apres(id("tour"))],
-        recompense: { xp: 400, titre: titreMaitre(m.key) },
+        // la carte et la signature sont conseillées ; elles ne bloquent qu'une fois l'examen passé (U2, V3 §8.5)
+        prerequis: [apres(id("maitrise75")), souple(id("carte")), souple(id("signature"))],
+        recompense: { xp: 400, titre: titreMaitre(m.key), ...(folio ? { folio } : {}) },
       }),
     );
     return out;
@@ -849,7 +1055,27 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
 
 /** Toutes les quêtes uniques et hebdomadaires du programme (les contrats du jour sont des modèles). */
 export function catalogueCodex(contenu: ContenuMatiere[] = contenuDuProgramme()): Quete[] {
-  return [...QUETES_TRAME, ...genererBranches(contenu), ...QUETES_LONG_COURS, ...QUETES_EXPLOITS, ...QUETES_CONTRATS_HEBDO];
+  return [...QUETES_TRAME, ...genererBranches(contenu), ...QUETES_LONG_COURS, ...QUETES_EXPLOITS, ...QUETES_CONTRATS_HEBDO, QUETE_DEBRIEF];
+}
+
+/** Les familles du compte final (V3 §8.8) : les contrats hebdomadaires et le débrief comptent ensemble. */
+export type FamilleCompte = "trame" | "branche" | "longcours" | "exploit" | "contrat";
+
+/**
+ * Le compte du catalogue d'un programme, par famille (V3 §8.8) : toutes les
+ * quêtes, les retirées, celles hors compte (les miroirs, et les satellites
+ * d'une branche : cours, flashcards, fiche sans drill, toutes facultatives)
+ * et les visibles, ce qui reste.
+ */
+export function compterCatalogue(quetes: Quete[] = catalogueCodex()): Record<FamilleCompte | "total", { toutes: number; retirees: number; horsCompte: number; visibles: number }> {
+  const familles: FamilleCompte[] = ["trame", "branche", "longcours", "exploit", "contrat"];
+  const compte = (qs: Quete[]) => {
+    const retirees = qs.filter((q) => q.retiree).length;
+    const horsCompte = qs.filter((q) => !q.retiree && (!!q.miroir || (q.famille === "branche" && !!q.optionnelle))).length;
+    return { toutes: qs.length, retirees, horsCompte, visibles: qs.length - retirees - horsCompte };
+  };
+  const parFamille = Object.fromEntries(familles.map((f) => [f, compte(quetes.filter((q) => q.famille === f))])) as Record<FamilleCompte, ReturnType<typeof compte>>;
+  return { ...parFamille, total: compte(quetes.filter((q) => familles.includes(q.famille as FamilleCompte))) };
 }
 
 /**
@@ -873,6 +1099,7 @@ export function verifierQuetes(qs: Quete[], o: { actes: Acte[]; cosmetiques: Cos
   const erreurs: string[] = [];
   const actes = new Set(o.actes.map((a) => a.id));
   const cosmetiques = new Set(o.cosmetiques.map((c) => c.cle));
+  const folios = new Map(o.cosmetiques.map((c) => [c.cle, c.type === "folio"]));
   for (const q of qs) {
     if (ids.has(q.id)) erreurs.push(`id en double : ${q.id}`);
     ids.add(q.id);
@@ -896,9 +1123,13 @@ export function verifierQuetes(qs: Quete[], o: { actes: Acte[]; cosmetiques: Cos
       else if (payeuse.retiree || payeuse.miroir) erreurs.push(`${q.id} : miroir de ${q.miroir}, qui ne paie pas (retirée ou miroir)`);
     }
     if (q.acte && !actes.has(q.acte)) erreurs.push(`${q.id} : acte inconnu ${q.acte}`);
-    for (const c of [q.recompense.cosmetique, q.recompense.titre]) if (c && !cosmetiques.has(c)) erreurs.push(`${q.id} : cosmétique inconnu ${c}`);
+    for (const c of [q.recompense.cosmetique, q.recompense.titre, q.recompense.folio]) if (c && !cosmetiques.has(c)) erreurs.push(`${q.id} : cosmétique inconnu ${c}`);
+    if (q.recompense.folio && folios.get(q.recompense.folio) === false) erreurs.push(`${q.id} : ${q.recompense.folio} n'est pas un folio`);
   }
-  for (const a of o.actes) for (const c of [a.recompense.cosmetique, a.recompense.titre]) if (c && !cosmetiques.has(c)) erreurs.push(`acte ${a.id} : cosmétique inconnu ${c}`);
+  for (const a of o.actes) {
+    for (const c of [a.recompense.cosmetique, a.recompense.titre, a.recompense.folio]) if (c && !cosmetiques.has(c)) erreurs.push(`acte ${a.id} : cosmétique inconnu ${c}`);
+    if (a.recompense.folio && folios.get(a.recompense.folio) === false) erreurs.push(`acte ${a.id} : ${a.recompense.folio} n'est pas un folio`);
+  }
   for (const a of o.actes) {
     const n = qs.filter((q) => q.acte === a.id && !q.retiree).length;
     if (a.closAvec && (a.closAvec.n < 1 || a.closAvec.n > n)) erreurs.push(`acte ${a.id} : clos avec ${a.closAvec.n} quêtes sur ${n}`);
