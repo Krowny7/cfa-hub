@@ -6,7 +6,7 @@
 
 import { contenuDuProgramme } from "@/lib/codex/catalogue";
 import { maitriseDuCodex } from "@/lib/codex/cap";
-import { contexteDestination, evaluer, evaluerObjectifs, planifier, type Entree, type MesuresSql } from "@/lib/codex/moteur";
+import { budgetDuJour, contexteDestination, evaluer, evaluerObjectifs, planifier, type Entree, type MesuresSql } from "@/lib/codex/moteur";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { notionsDeMatiere } from "@/lib/notions";
 import {
@@ -234,6 +234,11 @@ console.log("\n# l'instantané du panneau (codex_vue_cache)");
 
 console.log("\n# le budget par défaut");
 check("sans historique : 30 min ; 40 questions par jour (48 min) : 60 ; 10 par jour : 15", budgetParDefaut([]) === 30 && budgetParDefaut([40, 38, 42, 40]) === 60 && budgetParDefaut([10, 12, 9]) === 15);
+{
+  const jours = (aujourdhui: number) => ({ ...mesures, jours: [{ jour: "2026-10-14", n: 40 }, { jour: "2026-10-15", n: 42 }, { jour: "2026-10-16", n: 38 }, { jour, n: aujourdhui }] });
+  const b = (n: number) => budgetDuJour(base({ lecture: { compteurs: {}, mesures: jours(n), speciaux: {} } }));
+  check("le budget par défaut ne bouge pas dans la journée (aujourd'hui n'y compte pas) : la séance non plus", b(0) === 60 && b(200) === 60 && b(3) === 60, J([b(0), b(200), b(3)]));
+}
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

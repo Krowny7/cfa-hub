@@ -100,7 +100,12 @@ export function budgetParDefaut(questionsParJour7: number[]): Budget {
   return BUDGETS.reduce((m, b) => (Math.abs(b - minutes) < Math.abs(m - minutes) ? b : m), BUDGETS[0]);
 }
 
-/** Les questions des 7 derniers jours actifs, du plus ancien au plus récent (mesure « jours » de codex_lire). */
-export function questionsDes7Jours(jours: { jour: string; n: number }[] | undefined): number[] {
-  return [...(jours ?? [])].filter((j) => j.n > 0).sort((a, b) => a.jour.localeCompare(b.jour)).slice(-7).map((j) => j.n);
+/**
+ * Les questions des 7 derniers jours actifs, du plus ancien au plus récent
+ * (mesure « jours » de codex_lire). `avant` : seulement les jours d'avant
+ * celui-ci (aujourd'hui) : le budget par défaut ne bouge pas dans la journée,
+ * la séance du jour non plus.
+ */
+export function questionsDes7Jours(jours: { jour: string; n: number }[] | undefined, avant?: string): number[] {
+  return [...(jours ?? [])].filter((j) => j.n > 0 && (!avant || String(j.jour).slice(0, 10) < avant)).sort((a, b) => a.jour.localeCompare(b.jour)).slice(-7).map((j) => j.n);
 }

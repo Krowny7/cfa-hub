@@ -227,8 +227,8 @@ export function phaseJoueur(e: Pick<Entree, "programmes" | "jour" | "jourJ">, ac
   return phaseDe(joursAvantExamen(e.jour, e.jourJ), { def: programmeActif(e.programmes), actesClos, apresExamen: apresExamenDe(e) });
 }
 
-/** Le budget du jour : celui que le joueur a choisi, sinon celui de son rythme des 7 derniers jours actifs. */
-export const budgetDuJour = (e: Pick<Entree, "budget" | "lecture">): Budget => e.budget ?? budgetParDefaut(questionsDes7Jours(e.lecture.mesures.jours));
+/** Le budget du jour : celui que le joueur a choisi, sinon celui de son rythme des 7 derniers jours actifs avant aujourd'hui (il ne bouge pas dans la journée). */
+export const budgetDuJour = (e: Pick<Entree, "budget" | "lecture" | "jour">): Budget => e.budget ?? budgetParDefaut(questionsDes7Jours(e.lecture.mesures.jours, e.jour));
 
 /** Une matière sans réponse depuis ce nombre de jours « prend la poussière ». */
 export const JOURS_OUBLI = 10;
