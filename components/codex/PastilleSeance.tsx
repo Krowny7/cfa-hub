@@ -96,6 +96,7 @@ export function PastilleSeance({ initial, jour, demo = false, chemin: cheminImpo
     <>
       <Link
         href={p.href}
+        aria-label={`${texte} · Continuer`}
         className="rl-press hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold md:inline-flex"
         style={{ boxShadow: "inset 0 0 0 1px var(--line-2)", color: "var(--ink)" }}
       >

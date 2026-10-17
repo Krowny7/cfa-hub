@@ -150,6 +150,11 @@ a.titre:hover {
     min-width: 44px;
     min-height: 44px;
   }
+  /* le titre d'un bloc ouvre ce bloc : une cible de 44 px sur toute la largeur */
+  .titre {
+    display: flex;
+    min-height: 44px;
+  }
   .bloc {
     flex-wrap: wrap;
   }

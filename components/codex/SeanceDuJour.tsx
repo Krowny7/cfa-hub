@@ -162,7 +162,7 @@ export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false
           <div className={s.budget} role="group" aria-label={TEXTES.budget}>
             <span>J&apos;ai</span>
             {BUDGETS.map((b) => (
-              <button key={b} type="button" aria-pressed={seance.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
+              <button key={b} type="button" aria-label={`${b} minutes`} aria-pressed={seance.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
                 {b}
               </button>
             ))}

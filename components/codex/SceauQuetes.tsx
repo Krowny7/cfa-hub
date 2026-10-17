@@ -195,7 +195,7 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
           <div className={s.budget} role="group" aria-label="Le temps que tu te donnes aujourd'hui">
             <span>J&apos;ai</span>
             {BUDGETS.map((b) => (
-              <button key={b} type="button" aria-pressed={panneau.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
+              <button key={b} type="button" aria-label={`${b} minutes`} aria-pressed={panneau.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
                 {b}
               </button>
             ))}
