@@ -87,7 +87,7 @@ export function Malle({ coches: depart, veille, demo = false, onVue }: Props) {
       {veille && veille.etat !== "verrouillee" && (
         <section className={`card-quiet ${k.veille}`} aria-label={veille.titre}>
           <div className="min-w-0 flex-1">
-            <p className={`t-micro ${k.sur}`}>{veille.etat === "terminee" ? "Fait" : "La veille"}</p>
+            <p className={`t-micro ${k.sur}`}>{veille.etat === "terminee" ? "Fait" : "À faire"}</p>
             <p className="t-h3 m-0">{veille.titre}</p>
             <p className="t-small m-0">{veille.consigne}</p>
           </div>

@@ -198,7 +198,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
 
       {replie ? (
         <p className="m-0">
-          <button type="button" className="btn rl-press" onClick={() => setDeplie(true)}>
+          <button type="button" className="btn btn-secondary rl-press min-h-[44px]" onClick={() => setDeplie(true)}>
             Voir la carte
           </button>
         </p>
