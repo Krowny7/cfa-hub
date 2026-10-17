@@ -8,7 +8,7 @@
 // le fil rouge (paliers figés, croissants, instanciés d'un coup).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACTES, COSMETIQUES_CODEX, catalogueCodex, contenuDuProgramme, evenementsDe, phaseDe, titresMaitres, verifierQuetes } from "@/lib/codex/catalogue";
+import { ACTES, COSMETIQUES_CODEX, catalogueCodex, contenuDuProgramme, evenementsDe, genererBranches, phaseDe, titresMaitres, verifierQuetes } from "@/lib/codex/catalogue";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { PROGRAMME_ESSAI, PROGRAMME_ESSAI_BIS } from "@/lib/codex/programmes/essai";
 import {
@@ -59,7 +59,7 @@ console.log("# 1. l'arbre du programme d'essai");
   check("aucun événement inconnu", arbre.every((q) => evenementsDe(q.objectif).every((e) => typeof e === "string")));
   for (const m of PROGRAMME_ESSAI.matieres()) {
     const etapes = new Set(arbre.filter((q) => q.matiere === m.key).map((q) => q.etape));
-    const attendues = ["entree", "serie", "tour", "maitrise60", "maitrise75", "maitre"];
+    const attendues = ["entree", "serie", "carte", "maitrise60", "maitrise75", "signature", "maitre"];
     check(`${m.key} : ${attendues.join(", ")} ; ni « ciblee », ni fiche, drill, cours, flashcards`,
       attendues.every((e) => etapes.has(e as never)) && !["ciblee", "fiche", "drill", "cours", "flashcards"].some((e) => etapes.has(e as never)), [...etapes].join(","));
   }
@@ -73,7 +73,19 @@ console.log("# 1. l'arbre du programme d'essai");
     actesDe(PROGRAMME_ESSAI).map((a) => a.id).join(" ") === "essai/g0 essai/g1 essai/g2 essai/g3 essai/g4" && cosmetiquesDe(PROGRAMME_ESSAI)[0]?.nom === "Maître d'Essai" && actesDe(PROGRAMME_ESSAI)[4].recompense.titre === cosmetiquesDe(PROGRAMME_ESSAI)[0].cle);
   check("les réponses de la trame ne comptent que les matières du programme", trame.filter((q) => q.objectif.k === "compteur").every((q) => matieresDe(q.objectif).length === 3));
   const chaines = arbre.filter((q) => q.famille === "longcours");
-  check("chaînes retenues seulement (memoire, encre), ouvertes à la clôture de l'acte 0", new Set(chaines.map((q) => q.chaine)).size === 2 && chaines.filter((q) => q.palier === 1).every((q) => q.prerequis.some((p) => p.k === "acte" && p.id === "essai/g0")));
+  check("chaînes retenues seulement (memoire, encre, main-juste), ouvertes à la clôture de l'acte 0", new Set(chaines.map((q) => q.chaine)).size === 3 && chaines.filter((q) => q.palier === 1).every((q) => q.prerequis.some((p) => p.k === "acte" && p.id === "essai/g0")));
+  check("« La main juste » générique attend le journal v3 (sans lui, pas branchée)", chaines.filter((q) => q.chaine === "main-juste").every((q) => JSON.stringify(q.requiert) === JSON.stringify(["journal3"])) && chaines.some((q) => q.chaine === "main-juste"));
+  const signature = arbre.find((q) => q.id === "essai/branche:renaissance:signature")!;
+  const signatureMeca = arbre.find((q) => q.id === "essai/branche:mecanique:signature")!;
+  const legere = genererBranches([{ ...PROGRAMME_ESSAI.matieres()[2], poids: 6 }], PROGRAMME_ESSAI.cle, PROGRAMME_ESSAI.outils).find((q) => q.etape === "signature");
+  check("épreuve signature générique : 12 bonnes réponses d'affilée dans la matière (10 sous 7 % de poids), après maîtrise 60",
+    JSON.stringify(signature?.objectif) === JSON.stringify({ k: "special", cle: "serie_bonnes_matiere", seuil: 12, matiere: "essai:renaissance" }) && signature.titre === "L'épreuve de Renaissance"
+    && signature.prerequis.some((p) => p.k === "quete" && p.id === "essai/branche:renaissance:maitrise60") && signatureMeca?.objectif.k === "special"
+    && legere?.objectif.k === "special" && legere.objectif.seuil === 10);
+  check("hors CFA I, pas d'étape « tour » (retirée, elle ne garde que les ids publiés du CFA I)", !arbre.some((q) => q.etape === "tour"));
+  const maitre = arbre.find((q) => q.id === "essai/branche:renaissance:maitre")!;
+  check("« Maître de… » : carte et signature en prérequis souples (ids préfixés), aucun folio hors CFA I",
+    ["carte", "signature"].every((e) => maitre.prerequis.some((p) => p.k === "quete" && p.id === `essai/branche:renaissance:${e}` && p.souple)) && !maitre.recompense.folio);
   check("modèles de contrats : seulement ceux dont l'essai a les outils", modelesContrats(PROGRAMME_ESSAI).every((m) => (m.requiert ?? []).every((o) => PROGRAMME_ESSAI.outils.has(o))) && !modelesContrats(PROGRAMME_ESSAI).some((m) => m.id === "drill-page" || m.id === "duel"));
   check("CFA I tire tous ses modèles", modelesContrats(CFA_L1).length > 10);
 }

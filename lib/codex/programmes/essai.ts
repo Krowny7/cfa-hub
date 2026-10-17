@@ -38,8 +38,7 @@ export const PROGRAMME_ESSAI: DefinitionProgramme = {
   ],
   outils: OUTILS_ESSAI,
   trame: "generique",
-  // « main-juste » s'y ajoutera avec sa chaîne générique (A3b)
-  chaines: ["memoire", "encre"],
+  chaines: ["memoire", "encre", "main-juste"],
   seuils: { acteV: 2 },
   suivant: null,
   public: false,

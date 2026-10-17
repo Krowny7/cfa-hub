@@ -11,7 +11,7 @@ import { de } from "@/lib/codex/elision";
 import { slugDe } from "@/lib/codex/programmes/ids";
 import type { ContenuMatiere } from "@/lib/codex/catalogue";
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
-import type { Acte, Chaine, CosmetiqueCodex, FiltreMesure, Objectif, ObjectifMesure, Outil, Prerequis, Quete, TypeMesure } from "@/lib/codex/types";
+import type { Acte, Chaine, CosmetiqueCodex, FiltreMesure, Objectif, ObjectifMesure, Outil, Prerequis, Quete, Requis, TypeMesure } from "@/lib/codex/types";
 
 /** Ce dont la trame générique a besoin d'un programme. */
 type Def = Pick<DefinitionProgramme, "cle" | "court" | "matieres">;
@@ -93,9 +93,10 @@ export function quetesTrameGenerique(def: Def & Pick<DefinitionProgramme, "nom">
 // ── Les chaînes génériques ─────────────────────────────────────────────
 
 type Palier = { titre: string; consigne: string; objectif: Objectif; xp: number };
-export type ChaineGenerique = Chaine & { paliers: Palier[] };
+/** `base` : ce que la base doit savoir faire pour la suivre (V3 §1.8 ; sans, la chaîne n'est pas branchée). */
+export type ChaineGenerique = Chaine & { paliers: Palier[]; base?: Requis[] };
 
-/** Les chaînes qu'un programme peut retenir (DefinitionProgramme.chaines). « main-juste » arrive avec A3b. */
+/** Les chaînes qu'un programme peut retenir (DefinitionProgramme.chaines). */
 export const CHAINES_GENERIQUES: ChaineGenerique[] = [
   {
     id: "memoire",
@@ -110,6 +111,20 @@ export const CHAINES_GENERIQUES: ChaineGenerique[] = [
     axe: "regularite",
     pourquoi: "Quatre jours par semaine pendant des mois valent mieux que sept jours d'affilée une seule fois.",
     paliers: [2, 4, 8, 16].map((n, i) => ({ titre: ["Deux semaines", "Un mois d'encre", "Deux mois d'encre", "Une saison d'encre"][i], consigne: `Tiens ${n} semaines à 4 jours d'encre ou plus.`, objectif: mesure("semaines_actives", n, { n: 4 }), xp: [60, 120, 200, 300][i] })),
+  },
+  {
+    // la même que celle du CFA I (V3 §8.5) : des séances réussies sur du neuf ou du dû, journal v3 requis
+    id: "main-juste",
+    titre: "La main juste",
+    axe: "methode",
+    pourquoi: "Des séances réussies sur du neuf ou du dû : celles qui font vraiment avancer.",
+    base: ["journal3"],
+    paliers: [5, 15, 40, 100].map((n, i) => ({
+      titre: ["Cinq séances justes", "Quinze séances justes", "Quarante séances justes", "Cent séances justes"][i],
+      consigne: `Réussis ${n} séances à 70 % ou mieux, dont la moitié au moins de questions neuves ou à revoir.`,
+      objectif: { k: "compteur", evenement: "seance_juste", filtre: { pct: { min: 70 }, questions: { min: 10 }, fraiches: { min: 50 } }, seuil: n },
+      xp: [60, 140, 250, 400][i],
+    })),
   },
 ];
 
@@ -131,6 +146,7 @@ export function quetesChainesGeneriques(def: Pick<DefinitionProgramme, "cle" | "
       recompense: { xp: p.xp },
       repetition: "unique",
       visibilite: "visible",
+      ...(c.base ? { requiert: c.base } : {}),
     })),
   );
 }

@@ -1015,16 +1015,20 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
             recompense: { xp: 120 },
             duree: 20,
           }),
-      // retirée (V3 §8.1) : les notions tenues la remplacent (« La carte de … »)
-      b("tour", {
-        retiree: true,
-        titre: `Le tour ${de(m.court)}`,
-        consigne: `Vois chacune des ${m.notions} notions ${de(m.nom)} (5 réponses au moins dans chacune).`,
-        pourquoi: "Une notion jamais vue, c'est une question jouée à pile ou face.",
-        objectif: mesure("notions_vues_pct", 100, dm),
-        prerequis: [apres(id("entree"))],
-        recompense: { xp: Math.min(150, 60 + 5 * m.notions) },
-      }),
+      // retirée (V3 §8.1) : les notions tenues la remplacent (« La carte de … ») ; gardée pour les ids publiés du CFA I
+      ...(programme === PROGRAMME
+        ? [
+            b("tour", {
+              retiree: true,
+              titre: `Le tour ${de(m.court)}`,
+              consigne: `Vois chacune des ${m.notions} notions ${de(m.nom)} (5 réponses au moins dans chacune).`,
+              pourquoi: "Une notion jamais vue, c'est une question jouée à pile ou face.",
+              objectif: mesure("notions_vues_pct", 100, dm),
+              prerequis: [apres(id("entree"))],
+              recompense: { xp: Math.min(150, 60 + 5 * m.notions) },
+            }),
+          ]
+        : []),
       // les notions tenues de la matière (V3 §8.5)
       b("carte", {
         nouvelle: "v3",
