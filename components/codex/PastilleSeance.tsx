@@ -83,7 +83,8 @@ export function PastilleSeance({ initial, jour, demo = false, chemin: cheminImpo
         className="rl-press hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold md:inline-flex"
         style={{ boxShadow: "inset 0 0 0 1px var(--line-2)", color: "var(--ink)" }}
       >
-        {texte} · Continuer <ArrowRight size={14} aria-hidden />
+        <span className="hidden lg:inline">Séance&nbsp;</span>
+        {p.rang}/{p.total} · Continuer <ArrowRight size={14} aria-hidden />
       </Link>
       {/* la bande du téléphone sort de la barre du haut (son flou ferait de la barre le repère de « fixed ») */}
       {monte &&

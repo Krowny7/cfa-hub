@@ -82,7 +82,11 @@ export function FeteCodex({
       // le dévoilement : l'onglet s'encre, Léonard dit sa réplique (comptes neufs seulement)
       if (b.devoile) annoncerDevoile(b.devoile.devoile, b.devoile.nouveaux);
       // en fin de séance, c'est le bilan frais qui fait foi ; sinon on garde ce que le serveur a déjà rendu
-      if (!initial) setBilan(b);
+      if (!initial) {
+        // la séance tenue n'est fêtée qu'une fois par jour
+        if (b.seance && marqueIci("fetee", b.seance.jour)) setFinVue(true);
+        setBilan(b);
+      }
     }, initial ? 400 : attenteMs);
     return () => {
       fini = true;
@@ -126,9 +130,6 @@ export function FeteCodex({
 
   // la séance tenue : fêtée une fois par jour, en fin d'outil seulement (l'accueil et /codex la montrent dans leur carte)
   const finSeance = !initial && !finVue && bilan?.seance ? bilan.seance : null;
-  useEffect(() => {
-    if (finSeance && !demo && marqueIci("fetee", finSeance.jour)) setFinVue(true);
-  }, [finSeance, demo]);
   const clore = (encore: boolean) => {
     if (!finSeance) return;
     setOccupe(true);
