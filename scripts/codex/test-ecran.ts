@@ -8,7 +8,11 @@
 // idée ? », budget) et le réglage du jour avec et sans la §2 (V3 §9.2) ; le
 // cap en tête de /codex (préparation, fuites, mesure provisoire, V3 §4.6) ;
 // le calendrier (V3 §7) : un cas par moment (J-8, J-7, J-3, J-0, J+1, J+10,
-// sans date), la veillée à un seul contrat, la malle, le récap du lendemain.
+// sans date), la veillée à un seul contrat, la malle, le récap du lendemain ;
+// la carte en trois niveaux (V3 §10.1) : niveaux par échelle, texte masqué
+// sous 12 px, encre qui pâlit, encre sèche, glyphes, filtres, recherche, ce
+// qui manque à une quête verrouillée, pastilles et notions, segments du
+// téléphone, palette.
 import { DECOUVERTE, ACTES } from "@/lib/codex/catalogue";
 import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoile-lite";
 import { estDevoile } from "@/lib/codex/moteur";
@@ -26,6 +30,11 @@ import { DUREE_VEILLEE, LECTURE_VIDE, emplacementsDe, tirerContrats, type Entree
 import { MODELES_CONTRATS } from "@/lib/codex/catalogue";
 import { decaleJour } from "@/lib/objectif-calc";
 import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
+import * as MAITRISE_UNIQUE from "@/lib/maitrise";
+import * as CAP from "@/lib/codex/cap";
+import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
+import { manqueDe } from "@/lib/codex/vue";
+import type { EtatQuete } from "@/lib/codex/moteur";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -301,6 +310,76 @@ console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
     /contrats\.length < emplacementsDe\(phaseJoueur\(/.test(src) && /momentCalme\(momentDe\(/.test(src) && src.includes("malleCoches: malle.length"));
   check("data-jour-j (lu par Léonard) : sur le sceau de la barre du haut et sur « Bonne chance »",
     readFileSync("components/codex/SceauQuetes.tsx", "utf8").includes("data-jour-j={panneau.jourJ || undefined}") && readFileSync("components/codex/BonneChance.tsx", "utf8").includes("data-jour-j"));
+}
+
+console.log("\n# la carte en trois niveaux (V3 §10.1)");
+{
+  check("niveaux : dézoomé sous 0,55, moyen jusqu'à 1,1, fort au-dessus",
+    niveauDe(0.4) === 1 && niveauDe(0.549) === 1 && niveauDe(ECHELLES.moyen) === 2 && niveauDe(0.66) === 2 && niveauDe(ECHELLES.fort) === 2 && niveauDe(1.11) === 3 && niveauDe(1.6) === 3);
+  check("aucun texte sous 12 px à l'écran : 13 px lisible dès 0,93, 24 px dès 0,5", lisible(13, 0.93) && !lisible(13, 0.92) && lisible(24, 0.5) && !lisible(22, 0.5));
+  check("les tailles fixes masquées (pas réduites) selon l'échelle", taillesCachees(0.5, [13, 22, 24]).join() === "13,22" && taillesCachees(1.1, [13, 22, 24]).join() === "" && taillesCachees(0.4, [13, 22, 24]).join() === "13,22,24");
+  check("l'encre qui pâlit : 1 − min(0,6 ; jours / 30), pleine si inconnue",
+    opaciteFraicheur(0) === 1 && opaciteFraicheur(3) === 0.9 && opaciteFraicheur(15) === 0.5 && opaciteFraicheur(18) === 0.4 && opaciteFraicheur(90) === 0.4 && opaciteFraicheur(null) === 1);
+  const t = (termineeLe: string | null, etat: "terminee" | "active" = "terminee") => ({ etat, termineeLe });
+  check("l'encre sèche après 14 jours, jamais sur une quête pas faite", seche(t("2026-10-01T10:00:00Z"), "2026-10-16") && !seche(t("2026-10-02T10:00:00Z"), "2026-10-16") && !seche(t(null), "2026-10-16") && !seche(t("2026-09-01T10:00:00Z", "active"), "2026-10-16"));
+  check("les glyphes : F fiche, D drill, ◎ séance ciblée (ou série juste), S signature, ♛ Maître",
+    glypheEtape("fiche") === "F" && glypheEtape("drill") === "D" && glypheEtape("ciblee") === "◎" && glypheEtape("serie") === "◎" && glypheEtape("signature") === "S" && glypheEtape("maitre") === "♛" && glypheEtape("cours") === undefined);
+  check("une notion : vue à 5 réponses, tenue à 3 justes sur les 5 dernières", etatNotion(4, 4) === "non_vue" && etatNotion(5, null) === "vue" && etatNotion(5, 2) === "vue" && etatNotion(9, 3) === "tenue");
+
+  // les filtres
+  const faibles = new Set(["fsa"]);
+  check("filtres : Tout, À faire, Mes faiblesses", FILTRES.map((f) => f.libelle).join(" · ") === "Tout · À faire · Mes faiblesses");
+  check("« À faire » : ouvertes et pas faites", garde({ etat: "disponible" }, "afaire", faibles) && garde({ etat: "active" }, "afaire", faibles) && !garde({ etat: "terminee" }, "afaire", faibles) && !garde({ etat: "verrouillee" }, "afaire", faibles));
+  check("« Mes faiblesses » : les matières en zone basse", garde({ etat: "terminee", matiere: "fsa" }, "faiblesses", faibles) && !garde({ etat: "disponible", matiere: "quant" }, "faiblesses", faibles) && !garde({ etat: "disponible" }, "faiblesses", faibles) && garde({ etat: "verrouillee" }, "tout", faibles));
+  const u = exempleCodex("milieu", { unique: true });
+  const zb = u.cap!.matieres.filter((m) => m.zone === "basse").map((m) => m.cle).sort().join();
+  check("les faiblesses viennent du cap (zone basse)", [...matieresFaibles(u.cap)].sort().join() === zb && matieresFaibles(null).size === 0, zb);
+
+  // la recherche
+  check("recherche : sans accents ni casse, « Œ » comme « oe »", normaliser("Élève ŒUVRE") === "eleve oeuvre");
+  const items = [{ titre: "Première fiche", consigne: "Ouvre une fiche" }, { titre: "Le drill", consigne: "Finis une page de fiche" }, { titre: "Séance ciblée", consigne: "Dix questions" }];
+  check("recherche : tous les mots, le titre d'abord, la consigne ensuite", chercher(items, "fiche").map((x) => x.titre).join() === "Première fiche,Le drill" && chercher(items, "seance ciblee").length === 1 && chercher(items, "f").length === 0);
+  check("recherche : 8 résultats au plus", chercher(Array.from({ length: 20 }, (_, i) => ({ titre: `Quête ${i}` })), "quete").length === 8);
+  const cherchables = quetesDeLaCarte(exempleCodex("milieu"));
+  check("recherche : jamais une énigme ni une quête cachée, une fois chacune", cherchables.length > 50 && cherchables.every((l) => l.affichage !== "cache" && !(l.affichage === "indice" && l.etat !== "terminee")) && new Set(cherchables.map((l) => l.id)).size === cherchables.length);
+
+  // les pastilles et les notions (la vue les porte)
+  const b = u.branches.find((x) => x.maitrise.statut !== "non_mesuree") ?? u.branches[0];
+  const p = pastilleDe(b);
+  check("une pastille : sigle, pourcentage (≈ si provisoire), anneau = étapes faites / total, encre selon la fraîcheur",
+    p.court === b.contenu.court && p.pct === pctCap(b.maitrise) && p.fraction === (b.total ? b.faites / b.total : 0) && p.opacite === opaciteFraicheur(b.maitrise.jours), JSON.stringify(p));
+  check("dix pastilles, chacune avec ses notions en feuilles", u.branches.length === 10 && u.branches.every((x) => x.notions.length > 0 && x.notions.every((n) => ["non_vue", "vue", "tenue"].includes(n.etat))));
+  check("sans maîtrise unique : la fraîcheur est inconnue, l'encre reste pleine", exempleCodex("milieu").branches.every((x) => x.maitrise.jours === null && pastilleDe(x).opacite === 1));
+
+  // ce qui manque à une quête verrouillée
+  const v = exempleCodex("milieu");
+  const verrouillees = [...v.trame.flatMap((a) => a.quetes), ...v.branches.flatMap((x) => x.etapes)].filter((l) => l.etat === "verrouillee" && l.affichage !== "cache" && l.affichage !== "indice");
+  check("chaque quête verrouillée visible dit ce qui lui manque", verrouillees.length > 0 && verrouillees.every((l) => !!l.manque?.length), `${verrouillees.filter((l) => l.manque?.length).length}/${verrouillees.length}`);
+  const contenu = v.branches.map((x) => x.contenu);
+  const etat = (id: string, o: Omit<Partial<EtatQuete>, "quete"> & { quete: Partial<EtatQuete["quete"]> }) => ({ periode: "", ouverte: true, ouverteLe: null, fait: false, atteint: null, ev: null, ligne: null, retro: false, horsJeu: false, masquee: false, ...o, quete: { id, titre: id, ...o.quete } }) as unknown as EtatQuete;
+  const etats = contenu.map((m, i) => etat(`branche:${m.key}:ciblee`, { fait: i < 7, quete: { famille: "branche", matiere: m.key, etape: "ciblee" } }));
+  const r = { etats: [...etats, etat("trame:a4:x", { quete: { titre: "La grande revue" } })], actesClos: ["prologue"] };
+  const m8 = manqueDe({ prerequis: [{ k: "branches", etape: "ciblee", n: 8 }] }, r, contenu, { apres: false, joursAvant: 30 });
+  check("« Séance ciblée : 7 matières sur 8, encore 1 parmi … » et les trois étapes allumées", m8.manque[0] === `Séance ciblée : 7 matières sur 8, encore 1 parmi ${contenu.slice(7).map((m) => m.court).join(", ")}` && m8.allume.length === 3, m8.manque[0]);
+  const m10 = manqueDe({ prerequis: [{ k: "toutesBranches", etape: "ciblee" }] }, r, contenu, { apres: false, joursAvant: 30 });
+  check("toutes les branches : « il manque … »", m10.manque[0] === `Séance ciblée : 7 matières sur 10, il manque ${contenu.slice(7).map((m) => m.court).join(", ")}`, m10.manque[0]);
+  const autres = manqueDe({ prerequis: [{ k: "quete", id: "trame:a4:x" }, { k: "acte", id: "acte3" }, { k: "acte", id: "prologue" }, { k: "joursAvantExamen", max: 7 }, { k: "apresExamen" }, { k: "quete", id: "trame:a4:x", souple: true }] }, r, contenu, { apres: false, joursAvant: 30 });
+  check("une quête, un acte, une fenêtre, l'après-examen ; un acte clos et une quête souple ne manquent pas",
+    autres.manque.join(" | ") === "D'abord : « La grande revue » | Clore l'acte III | S'ouvre à J-7 | S'ouvre après l'examen" && autres.allume.join() === "trame:a4:x,acte:acte3", autres.manque.join(" | "));
+  check("sans date d'examen : la fenêtre le dit", manqueDe({ prerequis: [{ k: "joursAvantExamen", max: 7 }] }, r, contenu, { apres: false, joursAvant: null }).manque[0] === "S'ouvre à J-7, une fois ta date d'examen posée");
+
+  // le téléphone : cinq segments, gardés dans l'URL
+  check("cinq segments : Aujourd'hui · Parcours · Matières · Chantiers · Exploits", SEGMENTS_TEL.map((s) => s.libelle).join(" · ") === "Aujourd'hui · Parcours · Matières · Chantiers · Exploits");
+  check("le segment lu dans ?vue= ; inconnu ou absent : Aujourd'hui", segmentDe("matieres") === "matieres" && segmentDe("xyz") === "aujourdhui" && segmentDe(undefined) === "aujourdhui");
+
+  // la maîtrise unique : cap.ts réexporte lib/maitrise.ts (après F2)
+  check("cap.ts réexporte la maîtrise unique (mêmes fonctions, mêmes constantes)", CAP.fuites === MAITRISE_UNIQUE.fuites && CAP.preparationDe === MAITRISE_UNIQUE.preparationDe && CAP.zoneDe === MAITRISE_UNIQUE.zoneDe && CAP.gainPreparation === MAITRISE_UNIQUE.gainPreparation && CAP.MAITRISE === MAITRISE_UNIQUE.MAITRISE);
+
+  // les écrans : les niveaux posés par la caméra, la palette qui cherche les quêtes
+  const carte = readFileSync("components/codex/CarteCodex.tsx", "utf8");
+  check("CarteCodex : niveau et textes masqués posés sur le monde à chaque mouvement", carte.includes("m.dataset.niveau = String(niveauDe(k.z))") && carte.includes("taillesCachees(k.z, TAILLES_FIXES)"));
+  const palette = readFileSync("components/nav/CommandPalette.tsx", "utf8");
+  check("palette : « Quêtes du Codex », 8 au plus, vers /codex?quete=…", palette.includes('"Quêtes du Codex"') && palette.includes("chercher(toutes, q, 8)") && palette.includes("/codex?quete="));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

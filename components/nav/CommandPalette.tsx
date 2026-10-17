@@ -10,6 +10,7 @@ import {
   Home,
   Layers,
   ListChecks,
+  ScrollText,
   Search,
   Settings,
   Swords,
@@ -22,7 +23,10 @@ import { COURSES } from "@/lib/courses";
 import { signalNavStart } from "@/components/ui/motion/NavProgress";
 
 // Palette de commandes (⌘K / Ctrl+K), à la Raycast : on tape quelques
-// lettres et on saute n'importe où — espaces, pages, fiches, cours.
+// lettres et on saute n'importe où — espaces, pages, fiches, cours, et les
+// quêtes du Codex (8 au plus, V3 §10.1 : /codex?quete=… centre la carte sur
+// elle). Le catalogue du Codex n'est chargé qu'à la première recherche ;
+// jamais une quête cachée ni une énigme.
 
 type Entry = { label: string; hint: string; href: string; group: string; Icon: typeof Home };
 
@@ -58,6 +62,21 @@ const ENTRIES: Entry[] = [
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+type QueteCherchee = { id: string; titre: string; consigne: string };
+let QUETES: Promise<{ quetes: QueteCherchee[]; chercher: (items: QueteCherchee[], texte: string, n?: number) => QueteCherchee[] }> | null = null;
+
+/** Les quêtes qu'on peut chercher (trame, branches, long cours, exploits visibles), chargées une fois. */
+function quetesDuCodex() {
+  QUETES ??= Promise.all([import("@/lib/codex/catalogue"), import("@/lib/codex/carte")]).then(([cat, carte]) => ({
+    quetes: cat
+      .catalogueCodex()
+      .filter((q) => !q.retiree && ["trame", "branche", "longcours", "exploit"].includes(q.famille) && (q.visibilite === "visible" || q.visibilite === "ouverte"))
+      .map((q) => ({ id: q.id, titre: q.titre, consigne: q.consigne })),
+    chercher: carte.chercher,
+  }));
+  return QUETES;
+}
+
 function matches(e: Entry, q: string) {
   if (!q) return true;
   const hay = norm(`${e.label} ${e.hint} ${e.group}`);
@@ -76,7 +95,25 @@ export function CommandPalette() {
   const list = useRef<HTMLDivElement | null>(null);
   const [mac, setMac] = useState(true);
 
-  const results = useMemo(() => ENTRIES.filter((e) => matches(e, q)), [q]);
+  const [quetes, setQuetes] = useState<Entry[]>([]);
+  const results = useMemo(() => [...ENTRIES.filter((e) => matches(e, q)), ...quetes], [q, quetes]);
+
+  // les quêtes du Codex : à partir de deux lettres, 8 au plus
+  useEffect(() => {
+    if (!open || q.trim().length < 2) return setQuetes([]);
+    let vivant = true;
+    quetesDuCodex()
+      .then(({ quetes: toutes, chercher }) => {
+        if (!vivant) return;
+        setQuetes(chercher(toutes, q, 8).map((x) => ({ label: x.titre, hint: x.consigne, href: `/codex?quete=${encodeURIComponent(x.id)}`, group: "Quêtes du Codex", Icon: ScrollText })));
+      })
+      .catch(() => {
+        QUETES = null;
+      });
+    return () => {
+      vivant = false;
+    };
+  }, [open, q]);
 
   useEffect(() => {
     setMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
