@@ -10,6 +10,7 @@
 
 import { CHAINES, PROGRAMME, cibleeDe, genererBranches, lienCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { idDe } from "@/lib/codex/programmes/ids";
+import { gainPreparation, type MaitriseMatiere } from "@/lib/codex/cap";
 import { notionParId } from "@/lib/notions";
 import { defSceau } from "@/lib/profil/sceaux";
 import type { ContratTire, Ev } from "@/lib/codex/moteur";
@@ -31,6 +32,8 @@ export type ContexteDestination = {
   contenu: ContenuMatiere[];
   /** maîtrise par matière (pct null : pas encore mesurée) */
   maitrise: Record<string, { pct: number | null; statut?: string }>;
+  /** la maîtrise de chaque matière comme le cap la compte (provisoires comprises) : le gain de préparation d'une quête de maîtrise ; absent : pas de gain affiché */
+  maitrises?: MaitriseMatiere[];
   /** notions pas encore vues (moins de 5 réponses), par matière */
   notionsNonVues: Record<string, number>;
   /** notions pas encore tenues (V3 §8.5), par matière ; null ou absent : pas encore lues (codex_mesures_v3) */
@@ -218,12 +221,13 @@ const partNonTenue = (ctx: ContexteDestination) => (m: ContenuMatiere) => (!ctx.
 const avecDrill = (m: ContenuMatiere) => !!m.fiche && m.drill;
 
 /**
- * « Ce qui coince » : la matière au plus fort poids × faiblesse ; une notion
- * de cette matière nette en point faible (score ≥ 60) va à l'Atelier si la
- * séance dure 20 minutes ou plus, sinon une séance de la matière.
+ * « Ce qui coince » : la matière au plus fort poids × faiblesse (ou celle
+ * qu'on donne : la première fuite du cap) ; une notion de cette matière nette
+ * en point faible (score ≥ 60) va à l'Atelier si la séance dure 20 minutes ou
+ * plus, sinon une séance de la matière.
  */
-function coince(ctx: ContexteDestination, duree: number): Cible | null {
-  const m = argmax(ctx, faiblesse(ctx));
+function coince(ctx: ContexteDestination, duree: number, matiere?: string): Cible | null {
+  const m = matiere !== undefined ? (matiereDe(ctx, matiere) ?? null) : argmax(ctx, faiblesse(ctx));
   if (!m) return null;
   const pf = duree >= 20 ? ctx.pointsFaibles.find((p) => p.score >= 60 && notionParId(p.notion)?.matiere === m.key) : undefined;
   if (pf) return { href: `/atelier?notion=${encodeURIComponent(pf.notion)}`, duree, outil: "atelier", matiere: m.key };
@@ -291,7 +295,8 @@ function cibleCompteur(o: Extract<Objectif, { k: "compteur" }>, q: Quete, params
     case "ami_ajoute": return { href: "/people", duree: 3, outil: "classement" };
     // une séance juste (V3 §8.5) : ce qui coince, sur du neuf ou du dû
     case "seance_juste": return coince(ctx, 20);
-    // le débrief : la liste des blancs (la revue du dernier, avec ?debrief=1, arrive avec A4b)
+    // le débrief : la liste des blancs ; codex_mesures_v3 n'en rend que le compte, pas la référence
+    // qui mènerait droit à la revue (/mock-exams/<ref>?debrief=1)
     case "blanc_debriefe": return { ...BLANCS, duree: 10 };
     // une séance « À revoir » (journal v3) : la file du jour
     case "revoir_rendue": return revoir(15);
@@ -310,6 +315,7 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "maitrise_programme":
     case "matieres_au_dessus":
     case "matieres_remontees":
+    case "preparation":
       return coince(ctx, 25);
     case "notions_vues":
     case "notions_vues_pct": {
@@ -326,6 +332,8 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "ratures_ouvertes":
     case "ratures_rayees":
     case "rappels_espaces":
+    case "revisions_dues":
+    case "ratures_scellees":
       return { ...revoir(15), ...(mat ? { matiere: mat.key } : {}) };
     case "semaines_actives":
     case "serie":
@@ -478,6 +486,27 @@ function raisonMatiere(m: ContenuMatiere, ctx: ContexteDestination, notions: Cib
   return pct === null ? `${debut} et tu n'y as pas encore de mesure` : `${debut} et tu es à ${pct} %`;
 }
 
+/** Le seuil de maîtrise que vise une quête dans sa matière (objectif « maitrise », seul ou dans un « tous ») ; null : aucun. */
+function seuilMaitrise(o: Objectif): number | null {
+  if (o.k === "mesure") return o.mesure === "maitrise" ? o.seuil : null;
+  if (o.k === "tous") {
+    for (const x of o.objectifs) {
+      const s = seuilMaitrise(x);
+      if (s !== null) return s;
+    }
+  }
+  return null;
+}
+
+/** « +1,2 pt de préparation » : ce que rapporterait la quête de maîtrise au cap (V3 §4.7), dès un demi-point ; null sinon. */
+function gainDe(q: Quete, m: ContenuMatiere, ctx: ContexteDestination): string | null {
+  const seuil = seuilMaitrise(q.objectif);
+  const mm = ctx.maitrises?.find((x) => x.cle === m.key);
+  if (seuil === null || !mm || !ctx.maitrises) return null;
+  const gain = gainPreparation(mm, seuil, ctx.maitrises);
+  return gain >= 0.5 ? `+${virgule(gain)} pt de préparation` : null;
+}
+
 function raison(q: Quete, c: Cible | null, ctx: ContexteDestination, ev?: Ev): string | null {
   const j = ctx.joursAvant;
   if (j !== null && j >= 0 && caleeSurExamen(q.prerequis)) {
@@ -491,7 +520,10 @@ function raison(q: Quete, c: Cible | null, ctx: ContexteDestination, ev?: Ev): s
     return ev && avanceeLisible(ev) ? `${ev.valeur}/${ev.cible} · ${pourquoi}` : pourquoi;
   }
   const m = matiereDe(ctx, c?.matiere ?? q.matiere);
-  if (m) return raisonMatiere(m, ctx, c?.notions);
+  if (m) {
+    const gain = gainDe(q, m, ctx);
+    return gain ? `${raisonMatiere(m, ctx, c?.notions)} · ${gain}` : raisonMatiere(m, ctx, c?.notions);
+  }
   return q.pourquoi ?? null;
 }
 
@@ -507,6 +539,17 @@ export function destinationDe(q: Quete, params: ContratTire["params"], ctx: Cont
   const c = resoudre(q.objectif, q, params, ctx, ev);
   if (!c) return null;
   return { href: c.href, libelle: "Y aller", duree: q.duree && q.duree > 0 ? q.duree : c.duree, raison: raison(q, c, ctx, ev), outil: c.outil };
+}
+
+/**
+ * « Y aller » du cap (V3 §4.7) : ce qui coince dans cette matière (la première
+ * fuite), une séance de 25 minutes ; null : la matière n'est pas du programme,
+ * ou rien n'y mène dans cette copie du site.
+ */
+export function destinationCoince(ctx: ContexteDestination, matiere: string): Destination | null {
+  const c = placer(coince(ctx, 25, matiere), ctx);
+  const m = matiereDe(ctx, matiere);
+  return c ? { href: c.href, libelle: "Y aller", duree: c.duree, raison: m ? raisonMatiere(m, ctx, undefined) : null, outil: c.outil } : null;
 }
 
 /** La ligne « pourquoi » d'une quête, chiffrée (jamais « Quête principale · 40/100 ») ; null s'il n'y a rien d'utile à dire. */

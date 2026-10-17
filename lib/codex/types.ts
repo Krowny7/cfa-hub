@@ -195,7 +195,13 @@ export type TypeMesure =
   /** la malle de l'examen prête : 5 cases cochées ou plus (user_metadata.rl_malle, V3 §7.3) */
   | "malle_faite"
   /** examens blancs rendus depuis 7 jours ou moins, classés à moins de 80 % (blanc_debrief, V3 §7.6) */
-  | "blancs_a_debriefer";
+  | "blancs_a_debriefer"
+  /** la file « À revoir » du jour : ratures sèches et rappels dus, 25 au plus (revisions_dues, V3 §5.1) */
+  | "revisions_dues"
+  /** ratures scellées : réussies de nouveau 7 jours au moins après leur rayage (V3 §5.3) */
+  | "ratures_scellees"
+  /** la préparation, 0–100 : la maîtrise des matières pondérée par leur poids, les non mesurées à 0 (lib/codex/cap.ts, V3 §4.6) */
+  | "preparation";
 
 export type FiltreMesure = {
   matiere?: Matiere | Param;

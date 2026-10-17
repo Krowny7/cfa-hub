@@ -18,6 +18,7 @@ import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMM
 import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
+import { maitriseDuCodex, maitriseLue } from "@/lib/codex/cap";
 import { actesDe, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, compterPiecesCodex, palierAtteint, paliersRecompenses, quetesFilRouge, tropheesAuMoins, type TropheesLus } from "@/lib/codex/fil-rouge";
 import { levelInfoFromXp } from "@/lib/leveling";
@@ -375,14 +376,43 @@ function notionsTenues(c: Contexte, matiere?: string): { tenues: number; pct: nu
   return { tenues, pct: poids ? Math.floor((100 * part) / poids) : 0 };
 }
 
-/** Maîtrise d'une matière, 0 si elle n'est pas encore mesurée (40 questions, comme les sceaux). */
+/**
+ * Maîtrise d'une matière, null tant qu'elle n'est pas mesurée : la maîtrise
+ * unique au statut « mesuree » (40 réponses dans sa fenêtre) quand
+ * codex_mesures_v3 la rend, sinon l'ancienne mesure à 40 questions, comme les
+ * sceaux (maitriseLue, lib/codex/cap.ts).
+ */
 export const MAITRISE_MIN = 40;
 export const maitriseDe = (e: Pick<Entree, "lecture">, matiere: string) => {
-  const m = e.lecture.mesures.maitrise?.[matiere];
-  return m && m.questions >= MAITRISE_MIN ? m.pct : null;
+  const m = maitriseLue(e.lecture.mesures, matiere);
+  return m.statut === "mesuree" ? m.pct : null;
 };
 export const maitriseProgramme = (e: Pick<Entree, "lecture">, contenu: ContenuMatiere[]) =>
   contenu.length ? Math.round(contenu.reduce((s, m) => s + (maitriseDe(e, m.key) ?? 0), 0) / contenu.length) : 0;
+
+/**
+ * La maîtrise du programme à l'ancienne règle (codex_lire, 40 questions) :
+ * le rang en dépend, et le rang garde partout l'ancienne maîtrise (V3 §4.5).
+ */
+const maitriseProgrammeAncienne = (e: Pick<Entree, "lecture">, contenu: ContenuMatiere[]) => {
+  const M = e.lecture.mesures.maitrise;
+  const pct = (k: string) => (M?.[k] && M[k].questions >= MAITRISE_MIN ? M[k].pct : 0);
+  return contenu.length ? Math.round(contenu.reduce((s, m) => s + pct(m.key), 0) / contenu.length) : 0;
+};
+
+/** Le plafond de la file « À revoir » affichée (V3 §5.1) : le reste attend, sans reproche. */
+export const REVOIR_MAX = 25;
+
+/**
+ * La file « À revoir » (V3 §5.4) : revisions_dues lue par codex_mesures_v3 ;
+ * sans elle, le repli commun, les ratures en cours bornées à 25 (rien pour
+ * demain) ; null : rien de connu.
+ */
+export function revoirDe(e: Pick<Entree, "lecture">): { aujourdhui: number; demain: number } | null {
+  const M = e.lecture.mesures;
+  if (M.revoir) return { aujourdhui: Math.min(REVOIR_MAX, M.revoir.aujourdhui), demain: Math.min(REVOIR_MAX, M.revoir.demain) };
+  return M.ratures_ouvertes ? { aujourdhui: Math.min(REVOIR_MAX, M.ratures_ouvertes.total), demain: 0 } : null;
+}
 
 /** Semaines (lun.–dim.) avec au moins n jours d'encre. */
 function semainesActives(jours: { jour: string; n: number }[], n: number) {
@@ -473,7 +503,7 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "elo": return fini(M.elo ?? DEFAULT_ELO);
     case "pic_palier": {
       const elo = Math.max(M.elo ?? DEFAULT_ELO, M.pic_elo ?? 0);
-      return fini(rankFor(elo, maitriseProgramme(c.e, c.contenu), null).tierIndex);
+      return fini(rankFor(elo, maitriseProgrammeAncienne(c.e, c.contenu), null).tierIndex);
     }
     case "niveau": return fini(levelInfoFromXp(M.xp_total ?? 0).level);
     case "serie": return fini(M.serie ?? 0);
@@ -489,8 +519,8 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "matieres_remontees": {
       const n = f.n ?? 10;
       return fini(matieres.filter((k) => {
-        const m = M.maitrise?.[k];
-        return !!m && m.questions >= MAITRISE_MIN && m.debut !== null && m.pct - m.debut >= n;
+        const m = maitriseLue(M, k);
+        return m.statut === "mesuree" && m.pct !== null && m.debut !== null && m.pct - m.debut >= n;
       }).length);
     }
     case "types_calcul_tenus": return fini(M.types_calcul_tenus ?? 0);
@@ -527,6 +557,10 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "notions_tenues_pct": return fini(notionsTenues(c, f.matiere as string | undefined)?.pct ?? null);
     case "malle_faite": return fini(c.e.malleCoches === undefined ? null : c.e.malleCoches >= MALLE_PRETE ? 1 : 0);
     case "blancs_a_debriefer": return fini(M.blancs_a_debriefer ?? null);
+    // sans revisions_dues (migration_v3_profil.sql §3b), inconnue : le repli des ratures en cours ne dit pas ce qui est dû
+    case "revisions_dues": return fini(M.revoir ? Math.min(REVOIR_MAX, M.revoir.aujourdhui) : null);
+    case "ratures_scellees": return fini(M.ratures_scellees ?? null);
+    case "preparation": return fini(maitriseDuCodex(c.contenu, M).preparation);
   }
 }
 
@@ -814,7 +848,7 @@ export type Resultat = {
   actesClos: string[];
   /** l'acte en cours : le premier non clos, dans l'ordre */
   acteCourant: Acte | null;
-  /** les contrats du jour (instances) et leur état */
+  /** les contrats du jour tirés (instances, un par emplacement ; sans le débrief) */
   contrats: Instance[];
   trioFait: boolean;
   /** le marqueur du rattrapage à écrire après une écriture réussie du lot (marqueurDe) ; null : inchangé */
@@ -1048,8 +1082,9 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     const retro = retroDe(atteint) && a.id !== "epilogue";
     lot.push({ quete: `acte:${a.id}`, periode: "", famille: "acte", etat: "terminee", cible: 1, retro, xp: a.recompense.xp, plafond, ...(atteint ? { atteint: atteint.toISOString() } : {}), ...(a.recompense.cosmetique ? { cosmetique: a.recompense.cosmetique } : {}), ...(a.recompense.titre ? { titre: a.recompense.titre } : {}) });
   }
-  // le trio du jour
-  const dujour = tri.filter((s) => s.quete.famille === "contrat" && s.quete.repetition === "quotidienne" && s.periode === e.jour);
+  // le trio du jour : les contrats tirés, un par emplacement (le débrief, quotidien lui aussi, n'en est pas)
+  const duTrio = new Set(instances.filter((i) => i.emplacement).map((i) => clePeriode(i.quete.id, i.periode)));
+  const dujour = tri.filter((s) => duTrio.has(clePeriode(s.quete.id, s.periode)));
   const trioFait = dujour.length === EMPLACEMENTS.length && dujour.every((s) => s.fait);
   if (trioFait && !lignes.has(clePeriode(`contrat:trio:${e.jour}`, e.jour))) {
     lot.push({ quete: `contrat:trio:${e.jour}`, periode: e.jour, famille: "contrat", etat: "terminee", cible: 3, retro: false, xp: XP.contratTrio, plafond });
@@ -1062,7 +1097,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     phase: phaseJoueur(e, actesClos),
     actesClos: [...actesClos],
     acteCourant: acteCourantDe(actesClos, actes),
-    contrats: instances.filter((i) => i.quete.famille === "contrat" && i.quete.repetition === "quotidienne"),
+    contrats: instances.filter((i) => i.emplacement),
     trioFait,
     capacitesVues: marqueurDe(e),
   };
@@ -1146,7 +1181,8 @@ export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats"> & Par
   const pageFaible = (k: string) => pages.filter((p) => p.matiere === k).sort((a, b) => a.meilleur - b.meilleur || a.page - b.page)[0]?.page ?? null;
   return {
     contenu,
-    maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: maitriseDe(e, m.key) }])),
+    maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: maitriseDe(e, m.key), statut: maitriseLue(M, m.key).statut }])),
+    maitrises: maitriseDuCodex(contenu, M).matieres,
     notionsNonVues: Object.fromEntries(contenu.map((m) => [m.key, notionsDeMatiere(m.key).filter((n) => (comptes[n.id] ?? 0) < 5).length])),
     // les notions pas encore tenues, si codex_mesures_v3 les a lues (V3 §8.5)
     notionsNonTenues: M.notions_tenues
@@ -1154,7 +1190,7 @@ export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats"> & Par
       : null,
     pointsFaibles: e.pointsFaibles ?? [],
     drillPageFaible: Object.fromEntries(contenu.map((m) => [m.key, pageFaible(m.key)])),
-    revoir: null,
+    revoir: revoirDe(e),
     phase: r?.phase ?? phaseJoueur(e, actesClosDe(e.progression)),
     joursAvant,
     tailleMaxCiblee: (k) => tailleMaxCiblee(contenu.find((m) => m.key === k)?.poids ?? 0),

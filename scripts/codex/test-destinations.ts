@@ -192,8 +192,14 @@ console.log("\n# les raisons");
 {
   const virgule = (n: number) => String(n).replace(".", ",");
   const pctFsa = enRoute.maitrise.fsa.pct;
-  check("matière mesurée", raisonDe(quete("branche:fsa:maitrise60"), enRoute) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu es à ${pctFsa} %`, raisonDe(quete("branche:fsa:maitrise60"), enRoute) ?? "");
-  check("matière pas encore mesurée", raisonDe(quete("branche:fsa:maitrise60"), neuf) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu n'y as pas encore de mesure`);
+  // une quête de maîtrise dit ce qu'elle rapporte au cap (V3 §4.7) : (poids / Σ poids) × (seuil − pct), dès un demi-point
+  const gain = (pct: number) => Math.round(((fsa.poids / contenu.reduce((s, m) => s + m.poids, 0)) * (60 - pct)) * 10) / 10;
+  const gainFsa = gain(pctFsa ?? 0);
+  check("matière mesurée, et son gain de préparation", gainFsa >= 0.5 && raisonDe(quete("branche:fsa:maitrise60"), enRoute) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu es à ${pctFsa} % · +${virgule(gainFsa)} pt de préparation`, raisonDe(quete("branche:fsa:maitrise60"), enRoute) ?? "");
+  check("matière pas encore mesurée : le gain compte depuis zéro", raisonDe(quete("branche:fsa:maitrise60"), neuf) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu n'y as pas encore de mesure · +${virgule(gain(0))} pt de préparation`, raisonDe(quete("branche:fsa:maitrise60"), neuf) ?? "");
+  const proche = avec(enRoute, { maitrises: enRoute.maitrises!.map((m) => (m.cle === "fsa" ? { ...m, pct: 58 } : m)) });
+  check("un gain sous le demi-point ne se dit pas", raisonDe(quete("branche:fsa:maitrise60"), proche) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu es à ${pctFsa} %`, raisonDe(quete("branche:fsa:maitrise60"), proche) ?? "");
+  check("sans la maîtrise du cap dans le contexte : pas de gain", raisonDe(quete("branche:fsa:maitrise60"), avec(enRoute, { maitrises: undefined })) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu es à ${pctFsa} %`);
   const n = notionsDeMatiere("fsa").length;
   check("les notions d'une matière", raisonDe(quete("branche:fsa:tour"), enRoute) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu n'as vu que 2 de ses ${n} notions`, raisonDe(quete("branche:fsa:tour"), enRoute) ?? "");
   check("… aucune encore", raisonDe(quete("branche:fsa:tour"), neuf) === `FSA pèse ${virgule(fsa.poids)} % de l'examen et tu n'as encore vu aucune de ses ${n} notions`);
@@ -220,7 +226,7 @@ console.log("\n# les ajouts du catalogue taillé (V3 §8.5) : chacun mène quelq
   const tenues = avec(enRoute, { notionsNonTenues: { ...Object.fromEntries(contenu.map((m) => [m.key, m.notions])), fsa: nFsa - 3 } });
   check("… les notions tenues lues : la raison les compte", raisonDe(quete("branche:fsa:carte"), tenues) === `FSA pèse 12,5 % de l'examen et tu tiens 3 de ses ${nFsa} notions`, raisonDe(quete("branche:fsa:carte"), tenues) ?? "");
   check("… aucune encore", raisonDe(quete("branche:fsa:carte"), avec(tenues, { notionsNonTenues: Object.fromEntries(contenu.map((m) => [m.key, m.notions])) })) === `FSA pèse 12,5 % de l'examen et tu ne tiens encore aucune de ses ${nFsa} notions`);
-  check("… pas encore lues : la maîtrise, comme avant", raisonDe(quete("branche:fsa:carte"), enRoute) === raisonDe(quete("branche:fsa:maitrise60"), enRoute));
+  check("… pas encore lues : la maîtrise, comme avant (sans gain : ce n'est pas une quête de maîtrise)", raisonDe(quete("branche:fsa:carte"), enRoute) === raisonDe(quete("branche:fsa:maitrise60"), avec(enRoute, { maitrises: undefined })));
   check("… avec practiceV3 : 20 questions", d("branche:fsa:carte", avec(enRoute, { practiceV3: true }))?.href === "/practice?topic=fsa&n=20");
   check("signatures : Ethics une séance d'Ethics, Quant les calculs, FSA sa fiche", d("branche:ethics:signature")?.href === "/practice?topic=ethics" && d("branche:quant:signature")?.href === "/calculs" && d("branche:fsa:signature")?.href?.startsWith("/fiches/financial-statement-analysis") === true,
     [d("branche:ethics:signature")?.href, d("branche:quant:signature")?.href, d("branche:fsa:signature")?.href].join(" "));

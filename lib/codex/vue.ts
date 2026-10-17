@@ -4,11 +4,12 @@
 // (acte en cours), les contrats du jour et de la semaine, les branches, le
 // long cours, les exploits. L'écran ne calcule rien : il lit ceci.
 
-import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, catalogueCodex, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
-import { destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
-import { nomEnTete, suiteDe } from "@/lib/codex/programmes";
+import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, QUETE_DEBRIEF, catalogueCodex, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { capDe, maitriseDuCodex, type VueCap } from "@/lib/codex/cap";
+import { destinationCoince, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
+import { nomEnTete, programmeActif, suiteDe } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
-import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -131,13 +132,17 @@ export type VueCodex = {
   niveau: number;
   /** le temps que le joueur se donne aujourd'hui (choisi, sinon déduit de son rythme) ; null : Codex indisponible */
   budget: Budget | null;
-  /** la file « À revoir » (null : pas encore en base, V3 §5) */
+  /** la file « À revoir » (revisions_dues ; repli : les ratures en cours, 25 au plus ; null : rien de connu, V3 §5.4) */
   revoir: { aujourdhui: number; demain: number } | null;
+  /** le cap en tête de /codex : la préparation, les matières, les trois fuites (V3 §4.6) ; null : Codex indisponible */
+  cap: VueCap | null;
   prochaine: (Recommandation & { ligne: LigneQuete }) | null;
   trame: VueActe[];
   contrats: VueContrat[];
   trio: { fait: boolean; xp: number; faits: number; total: number; changementPossible: boolean };
   hebdo: LigneQuete[];
+  /** le débrief du dernier examen blanc (contrat:debrief, V3 §7.6), quand un blanc l'attend ; null sinon */
+  debrief: LigneQuete | null;
   branches: VueBranche[];
   longCours: VueChaine[];
   /** le fil rouge, commun à tous les programmes (sous les chaînes) */
@@ -160,8 +165,8 @@ export type VueCodex = {
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
-  disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, prochaine: null,
-  trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
+  disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, cap: null, prochaine: null,
+  trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], debrief: null, branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
   possessions: [], collection: null, stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null,
 });
 
@@ -233,6 +238,7 @@ export function vueSansFetes(v: VueCodex, quetes: string[]): VueCodex {
     trame: v.trame.map((a) => ({ ...a, aFeter: a.aFeter && !ids.has(`acte:${a.acte.id}`), quetes: a.quetes.map(f) })),
     contrats: v.contrats.map((c) => ({ ...c, ligne: f(c.ligne) })),
     hebdo: v.hebdo.map(f),
+    debrief: v.debrief && f(v.debrief),
     branches: v.branches.map((b) => ({ ...b, etapes: b.etapes.map(f) })),
     longCours: v.longCours.map((c) => ({ ...c, paliers: c.paliers.map(f), courant: c.courant && f(c.courant), suivant: c.suivant && f(c.suivant) })),
     filRouge: { ...v.filRouge, chapitres: v.filRouge.chapitres.map((c) => ({ ...c, courant: c.courant && f(c.courant), suivant: c.suivant && f(c.suivant), recents: c.recents.filter((l) => !ids.has(l.id)) })) },
@@ -317,6 +323,15 @@ export function construireVue(
   const faitsDuJour = contrats.filter((c) => c.ligne.etat === "terminee").length;
 
   const hebdo = lignes.filter((x) => x.s.quete.famille === "contrat" && x.s.quete.repetition === "hebdomadaire" && x.l.affichage !== "cache").map((x) => x.l);
+  // le débrief : visible quand un blanc l'attend (prérequis d'état), ou fait aujourd'hui
+  const debrief = lignes.find((x) => x.s.quete.id === QUETE_DEBRIEF.id && x.s.periode === e.jour && x.l.affichage !== "cache")?.l ?? null;
+
+  // le cap : la maîtrise des matières, sans J-n pour un programme sans examen (V3 §4.6)
+  const cap = capDe(maitriseDuCodex(contenu, e.lecture.mesures), {
+    jour: e.jour,
+    joursAvant: programmeActif(e.programmes).examen ? joursAvantExamen(e.jour, e.jourJ) : null,
+    destination: (m) => destinationCoince(ctx, m),
+  });
 
   const branches: VueBranche[] = contenu.map((m) => {
     const etapes = unique
@@ -383,12 +398,14 @@ export function construireVue(
     joursAvant: joursAvantExamen(e.jour, e.jourJ),
     niveau: r.niveau,
     budget: budgetDuJour(e),
-    revoir: null,
+    revoir: revoirDe(e),
+    cap,
     prochaine: reco && ligneReco ? { ...reco, ligne: ligneReco } : null,
     trame,
     contrats,
     trio: { fait: r.trioFait, xp: 50, faits: faitsDuJour, total: contrats.length, changementPossible: !extra.changementFait && contrats.some((c) => c.changeable) },
     hebdo,
+    debrief,
     branches,
     longCours,
     filRouge,

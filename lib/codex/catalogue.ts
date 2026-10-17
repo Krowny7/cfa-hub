@@ -58,7 +58,7 @@ export const EVENEMENTS: Record<TypeEvenement, SourceDonnee> = {
 };
 
 export const MESURES: Record<TypeMesure, SourceDonnee> = {
-  maitrise: { libelle: "Maîtrise d'une matière", source: "getTopicMastery (lib/mastery.ts) ; mesurée dès 40 questions (MAITRISE_MIN_QUESTIONS)", branche: true },
+  maitrise: { libelle: "Maîtrise d'une matière", source: "codex_mesures_v3 : maitrise_joueur, statut « mesuree » (40 réponses) ; sinon codex_lire, séances ciblées d'une matière, 40 questions (maitriseLue, lib/codex/cap.ts)", branche: true },
   maitrise_programme: { libelle: "Maîtrise du programme", source: "programMastery (lib/mastery.ts)", branche: true },
   matieres_au_dessus: { libelle: "Matières au-dessus d'un seuil", source: "getTopicMastery", branche: true },
   notions_vues: { libelle: "Notions vues", source: "question_repondue groupé par notion (≥ 5 réponses)", branche: true },
@@ -98,6 +98,9 @@ export const MESURES: Record<TypeMesure, SourceDonnee> = {
   notions_tenues_pct: { libelle: "Part des notions tenues", source: "notions_tenues / notionsDeMatiere (lib/notions.ts), pondérée par le poids des matières", branche: true },
   malle_faite: { libelle: "La malle prête", source: "user_metadata.rl_malle (5 cases cochées ou plus), lu par le serveur", branche: true },
   blancs_a_debriefer: { libelle: "Examens blancs à débriefer", source: "codex_mesures_v3 : blanc_debrief, blancs rendus depuis 7 jours classés à moins de 80 %", branche: true },
+  revisions_dues: { libelle: "À revoir aujourd'hui", source: "codex_mesures_v3 : revisions_dues (migration_v3_profil.sql §3b), ratures sèches et rappels dus, 25 au plus", branche: true },
+  ratures_scellees: { libelle: "Ratures scellées", source: "codex_mesures_v3 : ratures.scellee_le (migration_v3_profil.sql §3a)", branche: true },
+  preparation: { libelle: "Préparation", source: "le moteur : maîtrise des matières pondérée par leur poids (lib/codex/cap.ts), maîtrise unique sinon l'ancienne", branche: true },
 };
 
 /** Les prédicats spéciaux (ObjectifSpecial) : à coder un par un dans le moteur. */

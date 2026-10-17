@@ -1,8 +1,8 @@
 // Le panneau « Tes quêtes », derrière le sceau de la barre du haut (V3 §9.2) :
 // QUOI FAIRE, en quatre lignes au plus, tirées de la vue du Codex
 // (lib/codex/vue.ts). Dans l'ordre : ta prochaine quête (la recommandation du
-// moteur), les contrats du jour pas encore remplis, la quête au long cours la
-// plus avancée. Chaque ligne porte sa destination (« Y aller »), sa durée et
+// moteur), le débrief d'un examen blanc s'il en attend un, les contrats du
+// jour pas encore remplis, la quête au long cours la plus avancée. Chaque ligne porte sa destination (« Y aller »), sa durée et
 // une raison chiffrée. Les récompenses ne se réclament plus : elles sont
 // versées toutes seules, et une seule ligne en pied le dit (« 3 quêtes
 // tamponnées · +190 XP »), acquittée à l'ouverture.
@@ -52,7 +52,7 @@ export type Panneau = {
   budget: Budget | null;
   /** les contrats de la semaine (le détail se déplie : leurs titres) */
   semaine: { faits: number; total: number; quetes: { titre: string; faite: boolean }[] };
-  /** la file « À revoir » (null : pas encore en base) */
+  /** la file « À revoir » : « 15 à revoir » sous le sceau (revisions_dues ; repli : les ratures en cours, 25 au plus ; null : rien de connu) */
   revoir: { aujourdhui: number; demain: number } | null;
   /** la séance du jour (V3 §6, lot A5) */
   seance: { lancee: boolean; faits: number; total: number; suivant: { titre: string; href: string } | null } | null;
@@ -93,7 +93,7 @@ function versPanneau(l: LigneQuete, genre: GenreQuete, sur: string, extra: Parti
 
 /** Toutes les quêtes de la vue (une même quête peut y figurer deux fois : la clé les dédoublonne). */
 const toutesLignes = (vue: VueCodex): LigneQuete[] => [
-  ...vue.contrats.map((c) => c.ligne), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.filRouge.chapitres.flatMap((c) => c.recents), ...vue.exploits, ...vue.hebdo,
+  ...vue.contrats.map((c) => c.ligne), ...(vue.debrief ? [vue.debrief] : []), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.filRouge.chapitres.flatMap((c) => c.recents), ...vue.exploits, ...vue.hebdo,
 ];
 
 /** Les récompenses versées dont la fanfare n'a pas été jouée (hors sceaux du profil, qui ont leur cérémonie), et les actes clos à fêter. */
@@ -125,6 +125,12 @@ export function panneauDe(vue: VueCodex): Panneau {
     pris.add(cleDe(p.ligne));
   }
   if (contratsVus) {
+    // le débrief d'un blanc (V3 §7.6) : rare et utile tant que le blanc est frais, il passe avant les contrats tirés
+    const db = vue.debrief;
+    if (db && db.etat !== "terminee" && db.etat !== "verrouillee" && !pris.has(cleDe(db))) {
+      pris.add(cleDe(db));
+      liste.push(versPanneau(db, "contrat", "Contrat du jour · le débrief"));
+    }
     for (const c of vue.contrats) {
       if (c.ligne.etat === "terminee" || pris.has(cleDe(c.ligne))) continue;
       pris.add(cleDe(c.ligne));
