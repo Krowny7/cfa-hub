@@ -17,7 +17,7 @@ import { MODELES_CONTRATS, evenementsDe, type ContenuMatiere } from "@/lib/codex
 import { destinationBloc, type CibleBloc, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { de } from "@/lib/codex/elision";
 import { budgetParDefaut as budgetParDefautReglage } from "@/lib/codex/reglage";
-import type { Maitrise } from "@/lib/codex/cap";
+import { scoreFaiblesse, type Maitrise } from "@/lib/codex/cap";
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import { lireInstantane, type InstantaneSeance } from "@/lib/codex/seance-etat";
 import type { VueContrat } from "@/lib/codex/vue";
@@ -222,8 +222,9 @@ export function raisonEpreuve(joursAvant: number | null, defi: boolean): string 
 }
 
 /**
- * La matière de « ce qui coince » : le plus fort poids × (1 − maîtrise), une
- * matière pas encore mesurée comptant pour 20 % ; en veillée, seulement une
+ * La matière de « ce qui coince » : le point faible, plus fort poids ×
+ * (1 − maîtrise), une matière pas encore mesurée comptant pour 20 %
+ * (scoreFaiblesse, lib/codex/cap.ts, la définition unique) ; en veillée, seulement une
  * matière déjà en zone moyenne ou haute (on consolide, on ne découvre plus).
  */
 export function matiereCoince(m: MaitriseCodex, veillee: boolean, facteur: (matiere: string) => number = () => 1): Maitrise["matieres"][number] | null {
@@ -231,7 +232,7 @@ export function matiereCoince(m: MaitriseCodex, veillee: boolean, facteur: (mati
   let score = -1;
   for (const x of m.matieres) {
     if (veillee && x.zone !== "moyenne" && x.zone !== "haute") continue;
-    const s = x.poids * (1 - (x.pct ?? 20) / 100) * facteur(x.cle);
+    const s = scoreFaiblesse(x) * facteur(x.cle);
     if (s > score) [meilleure, score] = [x, s];
   }
   return meilleure;

@@ -15,7 +15,7 @@ import type { ContenuMatiere } from "@/lib/codex/catalogue";
 import type { MesuresSql } from "@/lib/codex/moteur";
 import type { Destination } from "@/lib/codex/destinations";
 import { joursEntre } from "@/lib/objectif-calc";
-import { MAITRISE, fuites, libellePct, preparationDe, zoneDe, type Maitrise, type MaitriseMatiere, type StatutMaitrise } from "@/lib/maitrise";
+import { MAITRISE, fuites, gainPreparation, libellePct, preparationDe, zoneDe, type Maitrise, type MaitriseMatiere, type StatutMaitrise } from "@/lib/maitrise";
 
 export { MAITRISE, zoneDe, preparationDe, gainPreparation, fuites, type StatutMaitrise, type MaitriseMatiere, type Maitrise } from "@/lib/maitrise";
 
@@ -98,18 +98,43 @@ export type VueCap = {
   provisoire: boolean;
   matieres: LigneCap[];
   fuites: { cle: string; court: string; points: number }[];
-  /** « Y aller » : ce qui coince dans la première fuite (null : aucune, ou nulle part où aller) */
+  /** le point faible, la définition unique (pointFaibleDe) : celui du fil et de « Ce qui te coûte le plus » */
+  faible: PointFaible | null;
+  /** « Y aller » : ce qui coince dans le point faible, s'il coûte des points (null : aucun, ou nulle part où aller) */
   destination: Destination | null;
 };
 
+// ── Le point faible : une seule définition (Codex simplifié, §6) ───────
+
+/** Une matière pas encore mesurée compte pour cette maîtrise (en %). */
+export const MAITRISE_INCONNUE = 20;
+
 /**
- * Le cap : la préparation, sa zone, la règle des matières, les trois fuites et
- * où aller pour la première. `destination` : le résolveur (destinationCoince,
- * lib/codex/destinations.ts) appliqué à la matière de la première fuite.
+ * Ce que pèse une matière comme point faible : poids × (1 − maîtrise), une
+ * matière pas encore mesurée comptant pour 20 %. La seule définition : le
+ * fil (« ce qui coince », lib/codex/seance.ts), la préparation et le cap.
+ */
+export const scoreFaiblesse = (m: { poids: number; pct: number | null }): number => m.poids * (1 - (m.pct ?? MAITRISE_INCONNUE) / 100);
+
+/** Le point faible : la matière, et les points de préparation qu'elle coûte sous le repère (0 : elle le tient). */
+export type PointFaible = { cle: string; nom: string; court: string; points: number };
+
+/** Le point faible du programme : le plus fort poids × (1 − maîtrise) ; null sans matière. */
+export function pointFaibleDe(ms: MaitriseMatiere[]): PointFaible | null {
+  let meilleure: MaitriseMatiere | null = null;
+  for (const m of ms) if (!meilleure || scoreFaiblesse(m) > scoreFaiblesse(meilleure)) meilleure = m;
+  return meilleure ? { cle: meilleure.cle, nom: meilleure.nom, court: meilleure.court, points: gainPreparation(meilleure, MAITRISE.REPERE, ms) } : null;
+}
+
+/**
+ * Le cap : la préparation, sa zone, la règle des matières, les trois fuites,
+ * le point faible et où aller pour lui. `destination` : le résolveur
+ * (destinationCoince, lib/codex/destinations.ts) appliqué au point faible.
  */
 export function capDe(m: Maitrise, o: { jour: string; joursAvant: number | null; destination: (matiere: string) => Destination | null }): VueCap {
   const total = sommePoids(m.matieres);
   const f = fuites(m.matieres);
+  const faible = pointFaibleDe(m.matieres);
   return {
     joursAvant: o.joursAvant,
     preparation: m.preparation,
@@ -123,7 +148,8 @@ export function capDe(m: Maitrise, o: { jour: string; joursAvant: number | null;
       fraicheur: fraicheurDe(x.derniere, o.jour),
     })),
     fuites: f,
-    destination: f.length ? o.destination(f[0].cle) : null,
+    faible,
+    destination: faible && faible.points > 0 ? o.destination(faible.cle) : null,
   };
 }
 
