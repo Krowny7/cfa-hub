@@ -22,14 +22,22 @@ export function Malle({ coches: depart, veille, demo = false, onVue }: Props) {
   const [coches, setCoches] = useState<string[]>(depart);
   const [message, setMessage] = useState<string | null>(null);
   const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (minuteur.current) clearTimeout(minuteur.current);
-  }, []);
+  // les cases pas encore envoyées : parties tout de suite si on quitte la page avant le délai
+  const enAttente = useRef<string[] | null>(null);
+  useEffect(
+    () => () => {
+      if (minuteur.current) clearTimeout(minuteur.current);
+      if (enAttente.current) void codexMalle(enAttente.current).catch(() => null);
+    },
+    [],
+  );
 
   const garder = (suivantes: string[]) => {
     if (demo) return;
     if (minuteur.current) clearTimeout(minuteur.current);
+    enAttente.current = suivantes;
     minuteur.current = setTimeout(async () => {
+      enAttente.current = null;
       const r = await codexMalle(suivantes).catch(() => null);
       if (!r || !r.ok) return setMessage("Ta malle n'a pas pu être gardée pour l'instant. Réessaie dans un instant.");
       setMessage(null);

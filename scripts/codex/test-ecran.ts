@@ -296,6 +296,11 @@ console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
   const texte = texteRecap({ ...r, questions: 6240, heures: 125, joursEncre: 64 });
   check("le texte partagé : les chiffres du travail, en français", texte === `Ma préparation · CFA Niveau I : ${(6240).toLocaleString("fr-FR")} questions, ≈ 125 h de travail, 64 jours d'encre. Le pinceau est posé.`, texte);
   check("une date longue : « 1er novembre 2026 », « 12 août 2026 »", dateLongue("2026-11-01") === "1er novembre 2026" && dateLongue("2026-08-12T10:00:00Z") === "12 août 2026");
+  const src = readFileSync("lib/codex/serveur.ts", "utf8");
+  check("serveur.ts : un seul contrat tiré en veillée, rien ne se dévoile les derniers jours, la malle lue dans le compte",
+    /contrats\.length < emplacementsDe\(phaseJoueur\(/.test(src) && /momentCalme\(momentDe\(/.test(src) && src.includes("malleCoches: malle.length"));
+  check("data-jour-j (lu par Léonard) : sur le sceau de la barre du haut et sur « Bonne chance »",
+    readFileSync("components/codex/SceauQuetes.tsx", "utf8").includes("data-jour-j={panneau.jourJ || undefined}") && readFileSync("components/codex/BonneChance.tsx", "utf8").includes("data-jour-j"));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
