@@ -40,7 +40,7 @@ import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSea
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
 import { lireRythme, poserSemaine, poserVerdict } from "@/lib/codex/rythme-serveur";
-import { recalageVerdict, type Bande, type StatutVerdict } from "@/lib/codex/plan";
+import { recalageVerdict, type StatutVerdict } from "@/lib/codex/plan";
 import type { Commande } from "@/lib/codex/catalogue";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -715,7 +715,7 @@ export async function saisirVerdict(supabase: SupabaseClient, user: Joueur, stat
   if (!a) return { ok: false, raison: "indisponible" };
   const v = (await lireCodex(supabase, user)).rythme?.verdict;
   if (!v) return { ok: false, raison: "refus" };
-  const r = await poserVerdict(a, supabase, user, { programme: v.programme, session: v.session, statut, bandes: bandesValides(bandes, v.matieres.map((m) => m.cle)) as Record<string, Bande> });
+  const r = await poserVerdict(a, supabase, user, { programme: v.programme, session: v.session, statut, bandes: bandesValides(bandes, v.matieres.map((m) => m.cle)) });
   if (!r.ok) return r;
   MEMO.delete(user.id);
   // sans la §8, le verdict est dans le compte : le calcul relit l'utilisateur à jour
