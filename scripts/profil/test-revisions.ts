@@ -6,10 +6,12 @@
 // client admin comme par la session), les pastilles « rature » et
 // « rappel · J+7 », la ligne « 15 à revoir · demain 22 », la taille ?n=, la
 // réponse de revoir_lancer (étiquettes rangées par question, « vide »,
-// « bientôt »), les textes du bilan, et getEclairStats (séries éclair
-// seulement avec la colonne genre, relue sans elle sinon).
+// « bientôt »), les textes du bilan, getEclairStats (séries éclair
+// seulement avec la colonne genre, relue sans elle sinon) et l'historique de
+// Moi (« À revoir » nommée et menant à /revoir).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getEclairStats } from "@/lib/eclair";
+import { getSessionHistory } from "@/components/moi/history-data";
 import {
   REVOIR,
   lancementDepuis,
@@ -141,6 +143,36 @@ const main = async () => {
   check("getEclairStats avec genre : trois lectures filtrées « eclair »", avec.filtres.length === 3 && avec.filtres.every((f) => f.includes("eq:genre=eclair")) && avec.s?.today === 2 && avec.s.recentPct === 90, J(avec.s));
   const sans = await stats(false);
   check("getEclairStats sans la colonne : relue sans le filtre, mêmes stats qu'avant", sans.filtres.length === 6 && sans.filtres.slice(3).every((f) => !f.includes("eq:genre=eclair")) && sans.s?.today === 3 && sans.s.total === 3, J(sans.s));
+
+  // ── l'historique de Moi : « À revoir » nommée ─────────────────────────
+  const historique = async (avecGenre: boolean) => {
+    const colonnes: string[] = [];
+    const sb = {
+      from: (t: string) => {
+        const ch: Record<string, unknown> = {};
+        let cols = "";
+        ch.select = (c: string) => ((cols = c), colonnes.push(`${t}:${c}`), ch);
+        for (const m of ["eq", "not", "order", "limit"]) ch[m] = () => ch;
+        ch.then = (ok: (v: unknown) => unknown) => {
+          if (t !== "eclair_series") return Promise.resolve({ data: [], error: null }).then(ok);
+          if (cols.includes("genre") && !avecGenre) return Promise.resolve({ data: null, error: { code: "42703", message: "column eclair_series.genre does not exist" } }).then(ok);
+          const rows = [
+            { id: "e1", score: 4, total: 5, finished_at: "2026-10-17T08:00:00Z", ...(avecGenre ? { genre: "eclair" } : {}) },
+            { id: "e2", score: 13, total: 15, finished_at: "2026-10-17T09:00:00Z", ...(avecGenre ? { genre: "revoir" } : {}) },
+          ];
+          return Promise.resolve({ data: rows, error: null }).then(ok);
+        };
+        return ch;
+      },
+    };
+    return { h: await getSessionHistory(sb as unknown as SupabaseClient, "u1", Date.parse("2026-10-17T10:00:00Z")), colonnes };
+  };
+  const h1 = await historique(true);
+  check("historique : la séance « À revoir » nommée et menant à /revoir, la série éclair inchangée",
+    J(h1.h.map((x) => [x.title, x.href, x.total])) === J([["À revoir", "/revoir", 15], ["5 questions de cours", "/eclair", 5]]), J(h1.h.map((x) => x.title)));
+  const h2 = await historique(false);
+  check("historique sans la colonne genre : relu sans elle, tout en séries éclair comme avant",
+    h2.h.length === 2 && h2.h.every((x) => x.href === "/eclair") && h2.colonnes.filter((c) => c.startsWith("eclair_series")).length === 2, J(h2.colonnes));
 
   console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
   process.exit(ko ? 1 : 0);

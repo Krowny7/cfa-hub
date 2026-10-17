@@ -1,5 +1,5 @@
 // Lectures serveur de l'onglet Stats de Moi : dernières sessions terminées
-// (QCM, flashcards, entraînement ciblé, séries éclair) et précision globale. Chaque lecture
+// (QCM, flashcards, entraînement ciblé, séries éclair et « À revoir ») et précision globale. Chaque lecture
 // dégrade proprement : table absente ou erreur → liste vide / null.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { subjectByKey } from "@/components/reviser/catalog";
@@ -10,7 +10,8 @@ const LIMIT = 20;
 
 type SetSession = { id: string; set_id: string; set_title: string | null; mode: string | null; correct: number | null; total: number | null; occurred_at: string };
 type PracticeRow = { id: string; topics: string[] | null; score: number | null; total: number | null; completed_at: string };
-type EclairRow = { id: string; score: number | null; total: number | null; finished_at: string };
+/** genre : 'eclair' ou 'revoir' (migration_v3_profil.sql §3b) ; absent avant elle. */
+type EclairRow = { id: string; score: number | null; total: number | null; finished_at: string; genre?: string };
 
 function topicsTitle(keys: string[]) {
   if (keys.length === 0) return "Toutes matières";
@@ -47,17 +48,15 @@ export async function getSessionHistory(supabase: SupabaseClient, userId: string
         return [];
       }
     })(),
-    // séries éclair rendues (table absente avant la migration : liste vide)
+    // séries éclair et séances « À revoir » rendues (table absente avant la
+    // migration : liste vide ; colonne genre absente : relue sans elle)
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("eclair_series")
-          .select("id,score,total,finished_at")
-          .eq("user_id", userId)
-          .not("finished_at", "is", null)
-          .order("finished_at", { ascending: false })
-          .limit(LIMIT);
-        return error ? [] : ((data ?? []) as EclairRow[]);
+        const lire = (cols: string) =>
+          supabase.from("eclair_series").select(cols).eq("user_id", userId).not("finished_at", "is", null).order("finished_at", { ascending: false }).limit(LIMIT);
+        let { data, error } = await lire("id,score,total,finished_at,genre");
+        if (error && (error.code === "42703" || /does not exist/i.test(error.message ?? ""))) ({ data, error } = await lire("id,score,total,finished_at"));
+        return error ? [] : ((data ?? []) as unknown as EclairRow[]);
       } catch {
         return [];
       }
@@ -91,15 +90,16 @@ export async function getSessionHistory(supabase: SupabaseClient, userId: string
     });
   }
   for (const r of eclair) {
+    const revoir = r.genre === "revoir";
     out.push({
       id: `e-${r.id}`,
       kind: "eclair",
-      title: "5 questions de cours",
+      title: revoir ? "À revoir" : "5 questions de cours",
       correct: Number(r.score) || 0,
       total: Number(r.total) || 0,
       at: r.finished_at,
       ago: fmtAgo(r.finished_at, now),
-      href: "/eclair",
+      href: revoir ? "/revoir" : "/eclair",
     });
   }
   return out.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, LIMIT);
