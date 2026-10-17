@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -15,8 +14,6 @@ import { etatObjectif, objectifDe } from "@/lib/objectif";
 import { demandesDe } from "@/lib/profil/donnees";
 import { nouveautesAmis } from "@/lib/profil/nouveau";
 import { DashboardView } from "@/components/DashboardView";
-import { CodexAccueil } from "@/components/codex/CodexAccueil";
-import { SeanceAccueil } from "@/components/codex/SeanceAccueil";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import {
   daysBetweenKeys,
@@ -186,21 +183,6 @@ export default async function Dashboard() {
     masteryAvg: programAvg,
   };
 
-  return (
-    <DashboardView
-      d={d}
-      now={now.getTime()}
-      codex={
-        <Suspense fallback={null}>
-          <CodexAccueil supabase={supabase} user={user} />
-        </Suspense>
-      }
-      // la séance du jour, sous les 30 et les 5 du jour ; le même calcul du Codex que la cérémonie (calculUnique)
-      seance={
-        <Suspense fallback={null}>
-          <SeanceAccueil supabase={supabase} user={user} />
-        </Suspense>
-      }
-    />
-  );
+  // rien du Codex ici : ses quêtes vivent derrière le sceau de la barre du haut, et sur /codex
+  return <DashboardView d={d} now={now.getTime()} />;
 }

@@ -32,9 +32,12 @@ import s from "./Rendezvous.module.css";
 // 1. Les 30 du jour en héros (le rendez-vous de tous : l'état, les joueurs, la
 //    meilleure copie, l'heure où ça se fige, l'action) ;
 // 2. à droite, Les 5 du jour (la carte nette, son bouton), puis Tes traits du
-//    jour (l'anneau, les bâtons, J-n) : ils restent dans le premier écran ;
-// 3. dessous, « Reprendre » (le dernier trait) et le duel en tuiles calmes, le
-//    rang en bande d'encre, une rangée de liens.
+//    jour (l'anneau, les bâtons, J-n) : ils restent dans le premier écran. Sur
+//    téléphone, les trois se suivent dans cet ordre, l'anneau compris ;
+// 3. dessous, le vainqueur du jour, « Reprendre » (le dernier trait) et le duel
+//    en tuiles calmes, le rang en bande d'encre, une rangée de liens.
+// Rien du Codex ici : les quêtes sont un guide secondaire, derrière le sceau de
+// la barre du haut et sur /codex.
 // Un seul bouton plein en haut de page : la première action pas encore faite
 // dans l'ordre 30 du jour, 5 du jour, traits du jour. Si les 30 ne sont pas
 // jouables (« bientôt », indisponibles), Les 5 prennent le héros ; sans les 5,
@@ -334,26 +337,17 @@ function LigneSerie({ d }: { d: AccueilData }) {
   );
 }
 
-/** Téléphone : la barre des traits du jour (le grand anneau est réservé à l'ordinateur). */
-function BarreTraits({ d }: { d: AccueilData }) {
-  const pctJour = Math.min(100, Math.round((d.activity.today / d.dailyGoal) * 100));
-  return (
-    <span data-leonard="anneau" className={s.tel + " w-full items-center gap-2.5"}>
-      <span className="ink-bar block h-1.5 flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pctJour} aria-label={RDV.traits.nom}>
-        <span style={{ width: `${pctJour}%` }} />
-      </span>
-      <span className="font-mono text-[12px] font-semibold tabular-nums">
-        {d.activity.today}/{d.dailyGoal}
-      </span>
-    </span>
-  );
-}
-
-/** Ordinateur : le grand anneau du jour, avec le sceau « TENU » quand la journée l'est. */
-function AnneauGrand({ d, size }: { d: AccueilData; size: number }) {
+/**
+ * Le grand anneau du jour, avec le sceau « TENU » quand la journée l'est : sur
+ * téléphone comme sur ordinateur (c'est l'ADN du site et le suivi de
+ * l'objectif du jour). `seul` : l'anneau ne se montre qu'à cette taille
+ * d'écran (le héros des traits le pose à deux places, une seule visible).
+ */
+function AnneauGrand({ d, size, seul }: { d: AccueilData; size: number; seul?: "tel" | "ordi" }) {
   const tenu = d.activity.today >= d.dailyGoal;
+  const ou = seul === "tel" ? s.tel + " " : seul === "ordi" ? s.ordi + " " : "";
   return (
-    <div data-leonard="anneau" className={s.deskBloc + " self-center"}>
+    <div data-leonard="anneau" className={ou + "self-center"}>
       <AnneauDuJour repondues={d.activity.today} objectif={d.dailyGoal} size={size} sceau={tenu ? <SceauTenu day={d.dayKey} /> : undefined} />
     </div>
   );
@@ -375,27 +369,29 @@ function ActionTraits({ d }: { d: AccueilData }) {
   );
 }
 
-/** Tes traits du jour : l'anneau, les bâtons, J-n. Le bouton plein n'y vient qu'après les 30 et les 5. */
-function CarteTraits({ d, primaire, codex }: { d: AccueilData; primaire: Primaire; codex?: React.ReactNode }) {
+/** Tes traits du jour : l'anneau (téléphone compris), les bâtons, J-n. Le bouton plein n'y vient qu'après les 30 et les 5. */
+function CarteTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
   return (
     <section aria-label={RDV.traits.nom} className="card rl-in flex min-w-0 flex-1 flex-col gap-4 p-5 md:p-6" style={{ animationDelay: ".08s" }}>
       <div className="min-w-0">
         <p className="t-eyebrow">{RDV.traits.nom}</p>
         <h2 className="t-h2 m-0 mt-1.5 [overflow-wrap:anywhere]">{titreDuJour(d)}</h2>
       </div>
-      <BarreTraits d={d} />
       <div className="my-auto flex justify-center">
         <AnneauGrand d={d} size={170} />
       </div>
       <LigneSerie d={d} />
       {primaire === "traits" && <ActionTraits d={d} />}
-      {codex}
     </section>
   );
 }
 
-/** Sans défi jouable : les traits du jour prennent le héros (l'ancienne journée, sans la reprise). */
-function HerosTraits({ d, primaire, codex }: { d: AccueilData; primaire: Primaire; codex?: React.ReactNode }) {
+/**
+ * Sans défi jouable : les traits du jour prennent le héros (l'ancienne journée,
+ * sans la reprise). L'anneau suit le titre sur téléphone, et tient la colonne
+ * de droite sur ordinateur, sous la liste « Aujourd'hui ».
+ */
+function HerosTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
   return (
     <section aria-label={RDV.traits.nom} className="card-hero rl-in flex min-w-0 flex-1 flex-col overflow-hidden" style={{ padding: 0 }}>
       <div className="shrink-0 overflow-hidden border-b border-line" style={{ height: "clamp(64px, 7vw, 100px)" }}>
@@ -407,14 +403,13 @@ function HerosTraits({ d, primaire, codex }: { d: AccueilData; primaire: Primair
           <h1 className="t-h1 m-0 [overflow-wrap:anywhere]" style={TITRE_HEROS}>
             {titreDuJour(d)}
           </h1>
+          <AnneauGrand d={d} size={170} seul="tel" />
           <LigneSerie d={d} />
-          <BarreTraits d={d} />
           {primaire === "traits" && <ActionTraits d={d} />}
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           <ListeClassee titre={TUILES.titre} items={lignesAujourdhui(d)} />
-          <AnneauGrand d={d} size={170} />
-          {codex}
+          <AnneauGrand d={d} size={170} seul="ordi" />
         </div>
       </div>
     </section>
@@ -633,11 +628,12 @@ function TuilesCalmes({ d, trenteCalme }: { d: AccueilData; trenteCalme: TodayDa
 /* ------------------------------------------------------------------ */
 
 /**
- * Les 30 du jour en héros, les 5 et les traits à droite, puis la séance du
- * jour (`seance`, pleine largeur, SOUS eux : ils gardent leur place), reprendre
- * et le duel, le rang, les liens.
+ * Les 30 du jour en héros, les 5 et les traits à droite (dessous sur
+ * téléphone, dans cet ordre), puis le vainqueur du jour, reprendre et le
+ * duel, le rang, les liens. Rien du Codex : ses quêtes sont derrière le sceau
+ * de la barre du haut.
  */
-export function Rendezvous({ d, codex, seance }: { d: AccueilData; codex?: React.ReactNode; seance?: React.ReactNode }) {
+export function Rendezvous({ d }: { d: AccueilData }) {
   const daily = d.daily;
   const cinq = cinqVisible(d.cinq) ? d.cinq : null;
   const trente = daily && defiEnTete(daily) ? daily : null;
@@ -652,12 +648,12 @@ export function Rendezvous({ d, codex, seance }: { d: AccueilData; codex?: React
     <div className="flex flex-col gap-4 md:gap-[18px]">
       <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
         <div className={"flex min-w-0 flex-col " + (colonne ? "lg:col-span-8" : "lg:col-span-12")}>
-          {defiHeros ? <HerosDefi d={d} daily={defiHeros} primaire={primaire} /> : <HerosTraits d={d} primaire={primaire} codex={codex} />}
+          {defiHeros ? <HerosDefi d={d} daily={defiHeros} primaire={primaire} /> : <HerosTraits d={d} primaire={primaire} />}
         </div>
         {colonne && (
           <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-4">
             {cinqColonne && <CarteCinq d={d} daily={cinqColonne} primaire={primaire} />}
-            {defiHeros && <CarteTraits d={d} primaire={primaire} codex={codex} />}
+            {defiHeros && <CarteTraits d={d} primaire={primaire} />}
             {trenteCalme && (
               <div data-leonard="defi">
                 <DefiTile daily={trenteCalme} nowIso={d.nowIso} actionEnBas className="h-full" />
@@ -666,7 +662,6 @@ export function Rendezvous({ d, codex, seance }: { d: AccueilData; codex?: React
           </div>
         )}
       </div>
-      {seance}
       {d.vainqueur && <VainqueurDuJour v={d.vainqueur} />}
       <TuilesCalmes d={d} trenteCalme={colonne ? null : trenteCalme} />
       <BandeRang d={d} />

@@ -1,9 +1,9 @@
 /* Accueil « Le rendez-vous » : les quelques réglages d'écran qui ne se disent
    pas en classes utilitaires. Téléphone sous 768 px, ordinateur au-dessus. */
 
-/* la barre des traits du jour ne se voit que sur téléphone */
+/* le héros des traits pose l'anneau à deux places : sous le titre sur téléphone… */
 .tel {
-  display: inline-flex;
+  display: block;
 }
 @media (min-width: 768px) {
   .tel {
@@ -11,12 +11,12 @@
   }
 }
 
-/* le grand anneau ne se voit que sur ordinateur */
-.deskBloc {
+/* … et dans la colonne de droite sur ordinateur */
+.ordi {
   display: none;
 }
 @media (min-width: 768px) {
-  .deskBloc {
+  .ordi {
     display: block;
   }
 }
