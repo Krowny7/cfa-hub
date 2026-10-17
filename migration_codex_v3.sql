@@ -94,6 +94,10 @@
 --       dans la même transaction, sur une seule lecture des réponses.
 --    e. _codex_journal_v3() : le marqueur du journal v3 (capacité
 --       « journal » à 3).
+--    f. _codex_jours_lus(uuid) : les questions par jour du joueur, lues une
+--       fois par appel de codex_lire (pg_temp._cjours) ; le journal (jours
+--       d'encre) et codex_mesures_v3 les y prennent au lieu de relire toutes
+--       les sources ; appelés seuls, ils relisent (_codex_jours).
 --
 -- 6. La séance du jour (V3 §6.2) :
 --    a. codex_seances : une séance par joueur et par jour (budget, blocs,
@@ -543,7 +547,7 @@ BEGIN
                               WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'seche_le' AND NOT a.attisdropped)
   );
   -- les jours d'encre de toute une vie : 10 questions ou plus dans le jour de Paris, tous programmes
-  SELECT count(*)::int INTO v_jours FROM _codex_jours(p_user) j WHERE j.n >= 10;
+  SELECT count(*)::int INTO v_jours FROM _codex_jours_lus(p_user) j WHERE j.n >= 10;
   SELECT count(*)::int INTO v_menes FROM codex_programmes_joueur WHERE user_id = p_user AND statut = 'mene';
   -- les branches menées jusqu'à « Maître de… », tous programmes (« branche:fsa:maitre », « cfa-l2/branche:fsa:maitre »)
   SELECT count(*)::int INTO v_maitres FROM codex_progression
@@ -1124,7 +1128,7 @@ BEGIN
   v_parts := array_append(v_parts, $q$
     SELECT 'jour_encre'::text, ((s.jour + time '12:00') AT TIME ZONE 'Europe/Paris'),
            jsonb_build_object('serie', row_number() OVER (PARTITION BY s.groupe ORDER BY s.jour)::int, 'joker', false)
-    FROM (SELECT j.jour, j.jour - (row_number() OVER (ORDER BY j.jour))::int AS groupe FROM _codex_jours($1) j WHERE j.n >= 10) s
+    FROM (SELECT j.jour, j.jour - (row_number() OVER (ORDER BY j.jour))::int AS groupe FROM _codex_jours_lus($1) j WHERE j.n >= 10) s
   $q$);
 
   -- questions marquées
@@ -1198,11 +1202,15 @@ BEGIN
 
   DROP TABLE IF EXISTS pg_temp._cj;
   DROP TABLE IF EXISTS pg_temp._cjours;
+  DROP TABLE IF EXISTS pg_temp._cjours_cle;
+  -- les questions par jour, lues une fois avant le journal : ses jours d'encre et
+  -- codex_mesures_v3 les relisent ici (_codex_jours_lus, clé du joueur)
+  CREATE TEMP TABLE _cjours ON COMMIT DROP AS SELECT j.jour, j.n FROM _codex_jours(p_user) j;
+  CREATE TEMP TABLE _cjours_cle ON COMMIT DROP AS SELECT p_user AS user_id;
   CREATE TEMP TABLE _cj ON COMMIT DROP AS SELECT j.evenement, j.quand, j.champs FROM codex_journal(p_user) j;
   -- chaque demande ne parcourt que les lignes de son événement
   CREATE INDEX ON pg_temp._cj (evenement, quand);
   ANALYZE pg_temp._cj;
-  CREATE TEMP TABLE _cjours ON COMMIT DROP AS SELECT j.jour, j.n FROM _codex_jours(p_user) j;
 
   -- ── les compteurs ──
   FOR d IN SELECT value AS v FROM jsonb_array_elements(p_demandes) LOOP
@@ -1407,6 +1415,30 @@ END;
 $$;
 
 
+-- 5f. Les questions par jour du joueur (_codex_jours) : celles que codex_lire a
+-- lues pour cet appel (pg_temp._cjours, avec sa clé pg_temp._cjours_cle) quand
+-- c'est le même joueur, sinon une lecture de toutes les sources. Le journal
+-- (jours d'encre) et codex_mesures_v3 (jours d'encre de toute une vie) les
+-- lisaient chacun à part : trois lectures par appel de codex_lire, une seule
+-- maintenant.
+CREATE OR REPLACE FUNCTION _codex_jours_lus(p_user uuid)
+RETURNS TABLE (jour date, n int)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_lus boolean := false;
+BEGIN
+  IF to_regclass('pg_temp._cjours_cle') IS NOT NULL AND to_regclass('pg_temp._cjours') IS NOT NULL THEN
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM pg_temp._cjours_cle WHERE user_id = $1)' INTO v_lus USING p_user;
+  END IF;
+  IF v_lus THEN
+    RETURN QUERY EXECUTE 'SELECT c.jour, c.n FROM pg_temp._cjours c';
+  ELSE
+    RETURN QUERY SELECT j.jour, j.n FROM _codex_jours(p_user) j;
+  END IF;
+END;
+$$;
+
 -- 5e. Le marqueur du journal v3 (codex_mesures_v3 : capacité « journal » à 3).
 -- Posé en dernier : il ne dit vrai qu'une fois le journal et la lecture en place.
 CREATE OR REPLACE FUNCTION _codex_journal_v3()
@@ -1419,6 +1451,7 @@ REVOKE ALL ON FUNCTION _codex_reponses_v3(uuid) FROM PUBLIC, anon, authenticated
 REVOKE ALL ON FUNCTION codex_journal(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION codex_lire(uuid, jsonb, date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _codex_journal_v3() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _codex_jours_lus(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_journal(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_lire(uuid, jsonb, date) TO service_role;
 
