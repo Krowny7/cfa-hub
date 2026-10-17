@@ -365,6 +365,8 @@ function Reponses({ d, f }: Ctx) {
   const r = d.reponses!;
   const max = Math.max(1, ...r.sources.map((x) => x.n));
   const sources = r.sources.slice(0, f === "tuile" ? 3 : 5);
+  // sur son propre profil : le détail par matière (Moi › Statistiques)
+  const lien = d.moi && r.total > 0;
   return (
     <Coque f={f} label={T.reponses}>
       <Etiquette f={f} icone={<CircleCheck size={17} aria-hidden />} titre={T.reponses} droite={r.total > 0 ? <Repere>{T.justes(r.precision)}</Repere> : undefined} />
@@ -378,18 +380,23 @@ function Reponses({ d, f }: Ctx) {
           </div>
           <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label={T.parSource}>
             {sources.map((x) => (
-              <li key={x.source} className="grid items-center gap-3" style={{ gridTemplateColumns: "112px minmax(0,1fr) 48px" }}>
+              <li key={x.source} className="grid items-center gap-3" style={{ gridTemplateColumns: "112px minmax(0,1fr) 96px" }}>
                 <span className="truncate text-[13px] font-semibold">{x.nom}</span>
                 <span className="relative block h-2 rounded-full bg-[color-mix(in_oklab,var(--ink)_7%,transparent)]">
                   <span className={`absolute inset-y-0 left-0 rounded-full ${s.filet}`} style={{ width: `${(x.n / max) * 100}%` }} />
                 </span>
-                <span className="text-right font-mono text-[12px] tabular-nums">{nombre(x.n)}</span>
+                {/* le volume, puis la précision de la source (comme AnswerSummary) */}
+                <span className="text-right font-mono text-[12px] tabular-nums">
+                  {nombre(x.n)}
+                  <span className="text-muted"> · {x.pct} %</span>
+                </span>
               </li>
             ))}
           </ul>
         </div>
       )}
-      {r.incomplet && <p className="t-micro m-0 mt-auto">{T.incomplet}</p>}
+      {r.incomplet && <p className={"t-micro m-0" + (lien ? "" : " mt-auto")}>{T.incomplet}</p>}
+      {lien && <Lien href="/moi?onglet=stats">{T.detailMatieres}</Lien>}
     </Coque>
   );
 }

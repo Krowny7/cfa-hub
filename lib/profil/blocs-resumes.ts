@@ -9,11 +9,14 @@ import type { LigneTrophee } from "@/lib/trophees";
 import type { Journal } from "@/lib/profil/journal";
 import type { ExtraitJournal, ResumeReponses, ResumeTrophees } from "@/lib/profil/blocs-donnees";
 
-/** Les questions répondues : total, justes, précision et sources non vides (de la plus jouée à la moins jouée) ; null si rien n'a pu être lu. */
+/** Les questions répondues : total, justes, précision et sources non vides avec la leur (de la plus jouée à la moins jouée) ; null si rien n'a pu être lu. */
 export function resumeReponses(s: AnswerStats): ResumeReponses | null {
   if (!s.available) return null;
   const t = tallyOf(s.by);
-  const sources = ANSWER_SOURCES.map((source) => ({ source, nom: SOURCE_LABELS[source], n: tallyOf(s.by, source).n }))
+  const sources = ANSWER_SOURCES.map((source) => {
+    const v = tallyOf(s.by, source);
+    return { source, nom: SOURCE_LABELS[source], n: v.n, pct: v.pct ?? 0 };
+  })
     .filter((x) => x.n > 0)
     .sort((a, b) => b.n - a.n);
   return { total: t.n, justes: t.ok, precision: t.pct, sources, incomplet: s.missing.length > 0 };

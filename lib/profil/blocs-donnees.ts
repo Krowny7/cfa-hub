@@ -21,8 +21,8 @@ export type ResumeReponses = {
   justes: number;
   /** % de bonnes réponses, null sans réponse */
   precision: number | null;
-  /** sources non vides, de la plus jouée à la moins jouée */
-  sources: { source: AnswerSource; nom: string; n: number }[];
+  /** sources non vides, de la plus jouée à la moins jouée, avec leur précision (%) */
+  sources: { source: AnswerSource; nom: string; n: number; pct: number }[];
   /** des sources n'ont pas pu être lues (le compte est un minimum) */
   incomplet: boolean;
 };

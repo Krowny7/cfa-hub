@@ -530,6 +530,11 @@ console.log("# Les données des blocs");
     !!r && r.total === 50 && r.justes === 37 && r.precision === 74 && egal(r.sources.map((s) => s.source), ["qcm", "daily"]) && r.sources[0].nom === "QCM" && r.incomplet,
     JSON.stringify(r),
   );
+  check(
+    "réponses : la précision de chaque source (QCM 75 %, défi du jour 70 %)",
+    !!r && egal(r.sources.map((s) => s.pct), [75, 70]),
+    JSON.stringify(r),
+  );
   check("réponses illisibles : null", resumeReponses({ available: false, missing: [], by: {}, subjects: [] }) === null);
   const t = resumeTrophees({ lignes: [{ source: "ciblee", palier: 3, n: 2 }] as never, complet: false, auMoins: () => 0 } as never);
   check("trophées : lignes et complet, sans fonction", egal(Object.keys(t), ["lignes", "complet"]) && t.complet === false && t.lignes.length === 1);

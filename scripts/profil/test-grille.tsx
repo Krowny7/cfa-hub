@@ -190,6 +190,14 @@ for (const [f, n] of [
   check("trophées : aucun, le texte de la Salle", zero.includes("Aucun trophée pour l&#x27;instant."));
 }
 
+// questions répondues : la précision de chaque source ; sur son profil, le détail par matière
+{
+  const autre = rend(<BlocProfil bloc={{ k: "reponses", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: false }} />);
+  const moi = rend(<BlocProfil bloc={{ k: "reponses", f: "heros" }} f="heros" d={{ ...RICHE, moi: true }} />);
+  check("réponses : « 980 · 72 % » par source", autre.includes(" · <!-- -->72<!-- --> %") || autre.includes(" · 72 %"), autre.slice(autre.indexOf("Sessions"), autre.indexOf("Sessions") + 400));
+  check("réponses : « Le détail par matière » sur son profil seulement", moi.includes("/moi?onglet=stats") && !autre.includes("/moi?onglet=stats"));
+}
+
 // chiffres clés en héros et en bande : autant de colonnes que de pièces gardées
 {
   const cols = (showcase: DonneesBlocs["showcase"], f: Format) => rend(<BlocProfil bloc={{ k: "vitrine", f }} f={f} d={{ ...RICHE, showcase }} />);

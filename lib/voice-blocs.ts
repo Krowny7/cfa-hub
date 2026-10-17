@@ -47,6 +47,7 @@ export const BLOCS_PROFIL = {
   sansReponse: "Aucune réponse pour l'instant.",
   incomplet: "Au moins : certaines sources ne se lisent pas ici.",
   parSource: "Réponses par source",
+  detailMatieres: "Le détail par matière",
 
   // Trophées
   trophees: "Trophées",
