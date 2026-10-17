@@ -247,7 +247,11 @@ console.log("# Le repos de la série");
   check("le réglage : ses règles, ses plages, « Retirer » pour ce qui est à venir seulement", html.includes("Repos de la série") && html.includes("deux jours par semaine") && html.includes("mardi 20 oct.") && (html.match(/>Retirer</g) ?? []).length === 2);
   const routeur = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
   const sobre = (on: boolean) => renderToStaticMarkup(<AppRouterContext.Provider value={routeur}><ModeSobre initial={on} /></AppRouterContext.Provider>);
-  check("le mode sobre : un interrupteur qui part de l'état du compte", sobre(true).includes('aria-checked="true"') && sobre(false).includes('aria-checked="false"') && sobre(true).includes("Mode sobre"));
+  check("le mode sobre : un interrupteur qui part de l'état du compte", sobre(true).includes('aria-checked="true"') && sobre(false).includes('aria-checked="false"'));
+  check(
+    "il dit ce qu'il fait : « Récompenses versées d'office, sans animation », « Fait aujourd'hui » reste",
+    sobre(false).includes("Récompenses versées d&#x27;office, sans animation") && sobre(false).includes("Récupérer") && sobre(false).includes("Fait aujourd&#x27;hui") && !sobre(false).includes("Mode sobre"),
+  );
   check("libellés : un jour, une plage", libellePlage({ de: "2026-10-24", a: "2026-10-24" }, auj) === "samedi 24 oct." && libellePlage({ de: "2026-11-03", a: "2026-11-07" }, auj) === "du mardi 3 au samedi 7 nov." && libellePlage({ de: "2027-01-02", a: "2027-01-02" }, auj) === "samedi 2 janv. 2027");
 }
 
