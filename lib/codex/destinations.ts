@@ -552,6 +552,41 @@ export function destinationCoince(ctx: ContexteDestination, matiere: string): De
   return c ? { href: c.href, libelle: "Y aller", duree: c.duree, raison: m ? raisonMatiere(m, ctx, undefined) : null, outil: c.outil } : null;
 }
 
+/** Ce que vise un bloc de la séance du jour (lib/codex/seance.ts, V3 §6.1). */
+export type CibleBloc =
+  | { k: "cinq" }
+  | { k: "trente" }
+  /** « À revoir », n questions (≈ n minutes) */
+  | { k: "revoir"; n: number }
+  | { k: "coince"; matiere: string; duree: number }
+  | { k: "nouveau"; matiere: string; duree: number }
+  /** les 30 du jour (`defi`) ou 30 questions mêlées aux poids officiels */
+  | { k: "epreuve"; defi: boolean; duree: number };
+
+/**
+ * Le lien d'un bloc de la séance du jour, placé comme celui d'une quête
+ * (routes de cette copie, replis, outils du programme) ; la raison est
+ * celle du bloc (lib/codex/seance.ts). null : rien n'y mène ici.
+ */
+export function destinationBloc(b: CibleBloc, ctx: ContexteDestination): Destination | null {
+  let c: Cible | null;
+  switch (b.k) {
+    case "cinq": c = CINQ; break;
+    case "trente": c = TRENTE; break;
+    case "revoir": c = { href: `/revoir?n=${b.n}`, duree: b.n, outil: "revoir" }; break;
+    case "coince": c = coince(ctx, b.duree, b.matiere); break;
+    case "nouveau": {
+      // une fiche avec drill ouvre son drill ; sinon une séance de 15 questions dans la matière
+      const m = matiereDe(ctx, b.matiere);
+      c = !m ? null : avecDrill(m) ? { href: lienFiche(ctx, m, false), duree: b.duree, outil: "drill", matiere: m.key } : { href: lienPractice(ctx, { topic: m.key, n: 15 }), duree: b.duree, outil: "ciblee", matiere: m.key };
+      break;
+    }
+    case "epreuve": c = b.defi ? { ...TRENTE, duree: b.duree } : { href: lienPractice(ctx, { topic: "all", n: 30, poids: true }), duree: b.duree, outil: "ciblee" }; break;
+  }
+  const p = placer(c, ctx);
+  return p ? { href: p.href, libelle: "Y aller", duree: p.duree, raison: null, outil: p.outil } : null;
+}
+
 /** La ligne « pourquoi » d'une quête, chiffrée (jamais « Quête principale · 40/100 ») ; null s'il n'y a rien d'utile à dire. */
 export function raisonDe(q: Quete, ctx: ContexteDestination, ev?: Ev, params: ContratTire["params"] = {}): string | null {
   return raison(q, resoudre(q.objectif, q, params, ctx, ev), ctx, ev);

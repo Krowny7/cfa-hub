@@ -152,6 +152,12 @@ export type Entree = {
   capacitesVues?: Partial<Capacites> | null;
   /** la malle de l'examen (user_metadata.rl_malle, V3 §7.3) : cases cochées ; absent : pas encore lue (la quête n'est pas branchée) */
   malleCoches?: number;
+  /**
+   * La séance du jour déjà proposée (codex_seances, V3 §6) : les objectifs de
+   * ses blocs, demandés à codex_lire avec le reste (evaluerObjectifs) ;
+   * `lanceeLe` : le départ de la fenêtre « depuisLancement » (null : le jour).
+   */
+  seance?: { objectifs: Objectif[]; lanceeLe: string | null };
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
@@ -308,6 +314,7 @@ function resoudreFiltre(f: Record<string, Comparaison> | FiltreMesure | undefine
 
 function fenetreDe(f: Fenetre | undefined, c: Contexte): unknown {
   if (f === "depuisOuverture") return { depuis: (c.ouverteLe ?? c.e.now).toISOString() };
+  if (f === "depuisLancement") return c.e.seance?.lanceeLe ? { depuis: c.e.seance.lanceeLe } : "jour";
   return f ?? "toujours";
 }
 
@@ -908,7 +915,20 @@ export function planifier(e: Entree): Demande[] {
     const l = lignes.get(clePeriode(quete.id, periode));
     evalQuete(quete, { ...contexteBlanc(e, contenu, collecte, catalogue), periode, ouverteLe: dateOu(l?.ouverte_le), params });
   }
+  // les blocs de la séance du jour : leurs compteurs partent dans le même appel
+  for (const o of e.seance?.objectifs ?? []) evalObjectif(o, contexteBlanc(e, contenu, collecte));
   return [...demandes.values()];
+}
+
+/**
+ * Des objectifs hors quêtes (les blocs de la séance du jour, V3 §6.1),
+ * évalués sur les compteurs lus : ceux d'Entree.seance ont été demandés par
+ * planifier ; un compteur jamais demandé vaut 0.
+ */
+export function evaluerObjectifs(e: Entree, compteurs: Record<string, ResultatCompteur>, objectifs: Objectif[]): Ev[] {
+  const resolveur: Contexte["compteur"] = (d) => compteurs[JSON.stringify([d.evenement, d.filtre ?? null, d.fenetre ?? null, d.jour ?? null, d.distinct ?? null, d.somme ?? null, d.seuil])] ?? { n: 0, atteint: null };
+  const ctx = contexteBlanc(e, e.contenu ?? contenuDuProgramme(), resolveur);
+  return objectifs.map((o) => evalObjectif(o, ctx));
 }
 
 /** Indexe les réponses de codex_lire par la clé d'une demande (même construction que planifier). */

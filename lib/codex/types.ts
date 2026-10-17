@@ -116,6 +116,8 @@ export type Fenetre =
   | "semaine"
   /** depuis l'ouverture de la quête (prérequis remplis) : pas de rétroactivité */
   | "depuisOuverture"
+  /** depuis le lancement de la séance du jour (codex_seances.lancee_le, V3 §6.1) ; pas lancée : le jour */
+  | "depuisLancement"
   | { jours: number };
 
 // ── Mesures ────────────────────────────────────────────────────────────
