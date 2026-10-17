@@ -27,7 +27,7 @@ export type BilanCodex = {
   /** l'acte qui vient de s'ouvrir après la clôture d'un acte (fanfare non jouée) */
   acteNouveau: { id: string; titre: string; sousTitre: string; replique: RepliqueCodex; precedent: string } | null;
   /** nouvel onglet dévoilé (nouveau compte seulement) */
-  devoile: { devoile: string[] | "tout"; nouveaux: { id: string; quoi: string; libelle: string; replique: string }[] } | null;
+  devoile: { devoile: string[] | "tout"; nouveaux: VueCodex["devoileNouveaux"] } | null;
   prochaine: { titre: string; lien: string | null; pourquoi: string; valeur: number; cible: number; duree: number | null } | null;
   /** les 3 contrats du jour, en petit (accueil) ; vides tant que les contrats ne sont pas dévoilés */
   contrats: { id: string; titre: string; etat: EtatLigne; valeur: number; cible: number }[];

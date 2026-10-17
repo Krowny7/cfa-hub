@@ -16,8 +16,8 @@ import { PIECES_FIL, paliersFil } from "@/lib/codex/fil-rouge";
 import { ID_MAX, PROGRAMME_GLOBAL, PROGRAMME_HISTORIQUE, cleLocale, estGlobal, slugDe, slugDeId } from "@/lib/codex/programmes/ids";
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import type {
-  Acte, Chaine, ChampDe, CosmetiqueCodex, Devoilement, EtapeBranche, Fenetre, Filtre, FiltreMesure, Objectif, ObjectifCompteur,
-  ObjectifMesure, ModeleContrat, Outil, Phase, Prerequis, Quete, Requis, SourceDonnee, TypeEvenement, TypeMesure,
+  Acte, Chaine, ChampDe, CosmetiqueCodex, Declencheur, Devoilement, EtapeBranche, Fenetre, Filtre, FiltreMesure, Objectif, ObjectifCompteur,
+  ObjectifMesure, ModeleContrat, Outil, Phase, Prerequis, Quete, Requis, SourceDonnee, TypeEvenement, TypeMesure, VagueDecouverte,
 } from "@/lib/codex/types";
 
 /** Le programme de cet arbre (lib/domains.ts : domaine/programme) ; les autres sont au registre (lib/codex/programmes.ts). */
@@ -882,21 +882,33 @@ export const RECOMMANDATION = {
 } as const;
 
 // ── Le dévoilement progressif (nouveau compte) ─────────────────────────
-// Tout est accessible dès la première séance : au pire 45 minutes de
-// présence, le deuxième jour de visite ou le bouton « Tout montrer ».
-// Un lien direct marche toujours (rien n'est verrouillé, seulement rangé).
-// Comptes existants (inscrits avant le Codex, ou 50 questions et plus) : tout visible.
+// Trois vagues (V3 §11.3) : chaque vague a ses déclencheurs communs, et le
+// premier rempli dévoile toute la vague. Tout est accessible dès la première
+// séance : au pire 45 minutes de présence, le deuxième jour de visite ou le
+// bouton « Tout montrer ». Un lien direct marche toujours (rien n'est
+// verrouillé, seulement rangé). Comptes existants (inscrits avant le Codex,
+// ou 50 questions et plus) : tout visible. Les identifiants ne changent pas
+// (déjà rangés dans rl_codex.devoile). Le fil rouge suit les quêtes au long
+// cours (vague 3). Léonard ne parle qu'une fois par vague : la réplique de
+// la première ligne de la vague (repliquesDeVague, moteur).
 
-const filet = (minutes: number): Devoilement["quand"] => [{ k: "minutes", n: minutes }, { k: "visite", n: 2 }, { k: "manuel" }];
+const vague = (quete: string, minutes: number): Declencheur[] => [{ k: "quete", id: quete }, { k: "minutes", n: minutes }, { k: "visite", n: 2 }, { k: "manuel" }];
+
+/** Les déclencheurs communs de chaque vague : le premier trait, 10 questions, une séance entière ; ou 10, 20, 45 minutes ; ou le 2e jour de visite. */
+export const VAGUES_DECOUVERTE: Record<VagueDecouverte, Declencheur[]> = {
+  1: vague("trame:prologue:premier-trait", 10),
+  2: vague("trame:prologue:dix", 20),
+  3: vague("trame:prologue:premiere-seance", 45),
+};
 
 export const DECOUVERTE: Devoilement[] = [
-  { id: "reviser", quoi: "menu:reviser", libelle: "Réviser", quand: [{ k: "quete", id: "trame:prologue:premier-trait" }, ...filet(10)], replique: "La bibliothèque est ouverte : fiches, cours, flashcards. Sers-toi." },
-  { id: "branches", quoi: "codex:branches", libelle: "Les branches de matière", quand: [{ k: "quete", id: "trame:prologue:premier-trait" }, ...filet(10)], replique: "Dix branches, une par matière. Chacune pousse à son rythme." },
-  { id: "entrainer", quoi: "menu:entrainer", libelle: "S'entraîner", quand: [{ k: "quete", id: "trame:prologue:dix" }, ...filet(15)], replique: "La salle d'entraînement. Tes points faibles s'y afficheront dès qu'ils existent." },
-  { id: "contrats", quoi: "codex:contrats", libelle: "Les contrats du jour", quand: [{ k: "quete", id: "trame:prologue:premiere-seance" }, ...filet(20)], replique: "Trois contrats par jour, taillés pour toi. Trois quarts d'heure, pas plus." },
-  { id: "longcours", quoi: "codex:longcours", libelle: "Les quêtes au long cours", quand: [{ k: "quete", id: "trame:prologue:premiere-seance" }, ...filet(30)], replique: "Les grands chantiers. Ceux qui se comptent en semaines." },
-  { id: "classement", quoi: "menu:classement", libelle: "Classement", quand: [{ k: "quete", id: "trame:a1:duel" }, { k: "quete", id: "trame:a1:cinq" }, ...filet(30)], replique: "Les duels, les examens blancs et le classement. Que les meilleurs gagnent, et les autres révisent." },
-  { id: "exploits", quoi: "codex:exploits", libelle: "Les exploits", quand: [{ k: "quete", id: "trame:prologue:premiere-seance" }, ...filet(45)], replique: "Certains exploits sont cachés. Je ne dirai rien. Enfin, presque rien." },
+  { id: "reviser", quoi: "menu:reviser", libelle: "Réviser", vague: 1, quand: VAGUES_DECOUVERTE[1], replique: "La bibliothèque est ouverte, et les branches de tes dix matières ont poussé. Sers-toi." },
+  { id: "branches", quoi: "codex:branches", libelle: "Les branches de matière", vague: 1, quand: VAGUES_DECOUVERTE[1], replique: "Dix branches, une par matière. Chacune pousse à son rythme." },
+  { id: "entrainer", quoi: "menu:entrainer", libelle: "S'entraîner", vague: 2, quand: VAGUES_DECOUVERTE[2], replique: "La salle d'entraînement est ouverte, et trois contrats t'attendent chaque jour. Trois quarts d'heure, pas plus." },
+  { id: "contrats", quoi: "codex:contrats", libelle: "Les contrats du jour", vague: 2, quand: VAGUES_DECOUVERTE[2], replique: "Trois contrats par jour, taillés pour toi. Trois quarts d'heure, pas plus." },
+  { id: "classement", quoi: "menu:classement", libelle: "Classement", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Le classement, les grands chantiers et les exploits : tout le carnet est à toi. Certains exploits sont cachés. Je ne dirai rien." },
+  { id: "longcours", quoi: "codex:longcours", libelle: "Les quêtes au long cours", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Les grands chantiers. Ceux qui se comptent en semaines." },
+  { id: "exploits", quoi: "codex:exploits", libelle: "Les exploits", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Certains exploits sont cachés. Je ne dirai rien. Enfin, presque rien." },
 ];
 
 // ── Les branches de matière (générées) ─────────────────────────────────

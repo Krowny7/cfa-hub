@@ -10,7 +10,7 @@ import { etatNotion, type EtatNotion } from "@/lib/codex/carte";
 import { destinationCoince, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { nomEnTete, programmeActif, suiteDe } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
-import { actesDuJoueur, affichage, apresExamenDe, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import { actesDuJoueur, affichage, apresExamenDe, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, repliquesDeVague, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { VueSeance } from "@/lib/codex/seance";
 import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
 import { notionsDeMatiere } from "@/lib/notions";
@@ -171,7 +171,8 @@ export type VueCodex = {
   stats: { faites: number; total: number; xpCodex: number };
   devoile: EtatDevoilement | null;
   /** ce qui vient d'être dévoilé, avec la réplique de Léonard (l'écran n'a pas le catalogue de dévoilement) */
-  devoileNouveaux: { id: string; quoi: string; libelle: string; replique: string }[];
+  /** ce qui vient d'être dévoilé ; `replique` : null sauf pour le premier dévoilement d'une vague (Léonard ne parle qu'une fois par vague) */
+  devoileNouveaux: { id: string; quoi: string; libelle: string; replique: string | null }[];
   /** récompenses versées à CET appel (fanfare) */
   nouvelles: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; titreQuete: string }[];
   /** « Léonard a feuilleté ton carnet » : à jouer une fois */
@@ -526,10 +527,7 @@ export function construireVue(
     collection: extra.joueur ? `/people/${extra.joueur}?onglet=sceaux#profil-onglets` : null,
     stats: { faites, total: r.etats.filter((s) => comptee(s) && !s.quete.optionnelle).length, xpCodex: e.progression.reduce((s, l) => s + (l.etat === "recompensee" ? l.xp : 0), 0) },
     devoile: extra.devoile,
-    devoileNouveaux: (extra.devoile?.nouveaux ?? []).flatMap((id) => {
-      const d = DECOUVERTE.find((x) => x.id === id);
-      return d ? [{ id: d.id, quoi: d.quoi, libelle: d.libelle, replique: d.replique }] : [];
-    }),
+    devoileNouveaux: devoileNouveaux(extra.devoile),
     nouvelles: extra.nouvelles ?? [],
     retro: extra.retro ?? null,
     suite: suiteVue(e),
@@ -539,6 +537,18 @@ export function construireVue(
     malle: moment === "malle" ? { coches: extra.malle ?? [] } : null,
     recap: moment === "lendemain" ? recapDe({ programme: programmeActif(e.programmes).nom, debut, jourJ: e.jourJ, jours: M.jours ?? [], maitrise, raturesScellees: M.ratures_scellees, trophees: M.trophees }) : null,
   };
+}
+
+/** Ce qui vient d'être dévoilé, avec la seule réplique de chaque vague (V3 §11.3). */
+function devoileNouveaux(d: EtatDevoilement | null | undefined): VueCodex["devoileNouveaux"] {
+  const nouveaux = d?.nouveaux ?? [];
+  if (!d || !nouveaux.length) return [];
+  const avant = d.devoile === "tout" ? [] : d.devoile.filter((id) => !nouveaux.includes(id));
+  const parlent = repliquesDeVague(nouveaux, avant);
+  return nouveaux.flatMap((id) => {
+    const l = DECOUVERTE.find((x) => x.id === id);
+    return l ? [{ id: l.id, quoi: l.quoi, libelle: l.libelle, replique: parlent.has(l.id) ? l.replique : null }] : [];
+  });
 }
 
 /** « La route de Milan » : le programme suivant annoncé (pas encore public : aucun bouton), ou proposé. */

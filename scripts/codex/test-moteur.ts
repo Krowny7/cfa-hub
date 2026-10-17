@@ -14,9 +14,9 @@
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
-import { ACTES, COSMETIQUES_CODEX, MODELES_CONTRATS, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
+import { ACTES, COSMETIQUES_CODEX, DECOUVERTE, MODELES_CONTRATS, VAGUES_DECOUVERTE, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
-  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, revoirDe, tirerContrats,
+  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, repliquesDeVague, revoirDe, tirerContrats,
   type Demande, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
@@ -203,7 +203,27 @@ console.log("\n# le dévoilement progressif");
   d = devoiler(META_CODEX_VIDE, { ...neuf, faites: new Set(["trame:prologue:premier-trait|"]) });
   check("premier trait : Réviser et les branches", d.devoile !== "tout" && d.devoile.includes("reviser") && d.devoile.includes("branches") && !d.devoile.includes("entrainer"));
   d = devoiler({ devoile: d.devoile, jours: d.jours }, { ...neuf, faites: new Set(["trame:prologue:premier-trait|", "trame:prologue:dix|"]) });
-  check("10 questions : S'entraîner", d.devoile !== "tout" && d.devoile.includes("entrainer") && d.nouveaux.join() === "entrainer");
+  check("10 questions : la vague 2, S'entraîner et les contrats", d.devoile !== "tout" && d.nouveaux.join() === "entrainer,contrats", d.nouveaux.join());
+  d = devoiler({ devoile: d.devoile, jours: d.jours }, { ...neuf, faites: new Set(["trame:prologue:premier-trait|", "trame:prologue:dix|", "trame:prologue:premiere-seance|"]) });
+  check("une séance entière : la vague 3, classement, long cours (et fil rouge), exploits", d.devoile !== "tout" && d.nouveaux.join() === "classement,longcours,exploits", d.nouveaux.join());
+  const a = (min: number) => devoiler(META_CODEX_VIDE, { ...neuf, now: new Date(Date.parse(neuf.inscritLe) + min * 60_000) }).devoile;
+  check("10 minutes : la vague 1 seule", JSON.stringify(a(10)) === JSON.stringify(["reviser", "branches"]) && JSON.stringify(a(9)) === "[]", JSON.stringify(a(10)));
+  check("20 minutes : les vagues 1 et 2", JSON.stringify(a(20)) === JSON.stringify(["reviser", "branches", "entrainer", "contrats"]) && !a(44).includes("classement"), JSON.stringify(a(20)));
+  check("un duel seul ne dévoile plus le classement (déclencheurs communs de la vague 3)", !(devoiler(META_CODEX_VIDE, { ...neuf, faites: new Set(["trame:a1:duel|"]) }).devoile as string[]).includes("classement"));
+  check("les lignes d'une vague partagent ses déclencheurs, les trois vagues sont remplies", DECOUVERTE.every((x) => x.quand === VAGUES_DECOUVERTE[x.vague]) && ([1, 2, 3] as const).every((v) => DECOUVERTE.some((x) => x.vague === v)));
+  check("les identifiants rangés dans rl_codex.devoile ne changent pas", DECOUVERTE.map((x) => x.id).sort().join() === "branches,classement,contrats,entrainer,exploits,longcours,reviser");
+  // Léonard : une réplique par vague, celle du premier dévoilement de la vague
+  check("tout d'un coup : trois répliques, une par vague", [...repliquesDeVague(DECOUVERTE.map((x) => x.id), [])].join() === "reviser,entrainer,classement");
+  check("une vague déjà entamée ne fait plus parler Léonard", repliquesDeVague(["contrats"], ["reviser", "branches", "entrainer"]).size === 0);
+  check("la première ligne dévoilée d'une vague parle, même si ce n'est pas la première du catalogue", [...repliquesDeVague(["branches", "longcours"], ["reviser"])].join() === "longcours");
+  {
+    const { r, e } = repondre(base(), () => 0);
+    const tout = devoiler(META_CODEX_VIDE, { ...neuf, jour: "2026-10-17", now: new Date("2026-10-17T09:00:00+02:00") });
+    const v = construireVue(e, r, null, { devoile: tout });
+    const parle = v.devoileNouveaux.filter((x) => x.replique);
+    check("la vue : sept dévoilements, trois répliques", v.devoileNouveaux.length === 7 && parle.map((x) => x.id).join() === "reviser,entrainer,classement", parle.map((x) => x.id).join());
+    check("le bilan porte les mêmes répliques", bilanDe(v).devoile?.nouveaux.filter((x) => x.replique).length === 3);
+  }
   d = devoiler(META_CODEX_VIDE, { ...neuf, now: new Date("2026-10-16T09:50:00+02:00") });
   check("45 minutes : tout est là, sans rien avoir fait", d.devoile !== "tout" && d.devoile.length === 7, d.devoile === "tout" ? "tout" : String(d.devoile.length));
   d = devoiler({ devoile: [], jours: ["2026-10-16"] }, { ...neuf, jour: "2026-10-17" });

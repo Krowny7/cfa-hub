@@ -438,14 +438,18 @@ export type Declencheur =
   /** le bouton « Tout montrer » */
   | { k: "manuel" };
 
+/** La vague d'un dévoilement (V3 §11.3) : 1 Réviser et les branches, 2 S'entraîner et les contrats, 3 le reste. */
+export type VagueDecouverte = 1 | 2 | 3;
+
 export type Devoilement = {
   id: string;
   /** ce qui apparaît : un onglet du menu, une famille du Codex, un bloc */
   quoi: string;
   libelle: string;
-  /** le premier déclencheur rempli dévoile */
+  vague: VagueDecouverte;
+  /** le premier déclencheur rempli dévoile (les déclencheurs communs de la vague) */
   quand: Declencheur[];
-  /** réplique de Léonard au dévoilement */
+  /** réplique de Léonard au dévoilement : dite seulement pour la première ligne de la vague */
   replique: string;
 };
 

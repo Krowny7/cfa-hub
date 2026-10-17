@@ -1374,6 +1374,22 @@ export function devoiler(meta: MetaCodex, p: { inscritLe: string | null; questio
   return { devoile: [...meta.devoile, ...nouveaux], jours, nouveaux, change: nouveaux.length > 0 || jours !== meta.jours };
 }
 
+/**
+ * Les dévoilements dont Léonard dit la réplique (V3 §11.3) : une seule par
+ * vague, celle du premier dévoilement de la vague ; rien pour une vague déjà
+ * entamée avant cet appel (`avant` : ce qui était dévoilé jusque-là).
+ */
+export function repliquesDeVague(nouveaux: string[], avant: string[]): Set<string> {
+  const entamees = new Set(DECOUVERTE.filter((d) => avant.includes(d.id)).map((d) => d.vague));
+  const parlent = new Set<string>();
+  for (const d of DECOUVERTE) {
+    if (!nouveaux.includes(d.id) || entamees.has(d.vague)) continue;
+    entamees.add(d.vague);
+    parlent.add(d.id);
+  }
+  return parlent;
+}
+
 /** Un élément (onglet, famille du Codex) est-il dévoilé ? Les liens directs marchent toujours : ceci ne sert qu'à ranger. */
 export function estDevoile(d: string[] | "tout", quoi: string): boolean {
   if (d === "tout") return true;
