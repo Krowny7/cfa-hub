@@ -12,6 +12,11 @@ import { Cap } from "@/components/codex/Cap";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { DetailQuete } from "@/components/codex/DetailQuete";
 import { SeanceDuJour } from "@/components/codex/SeanceDuJour";
+import { Veillee } from "@/components/codex/Veillee";
+import { Malle } from "@/components/codex/Malle";
+import { BonneChance } from "@/components/codex/BonneChance";
+import { PoseLePinceau } from "@/components/codex/PoseLePinceau";
+import { QUETE_VEILLE } from "@/lib/codex/calendrier";
 import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
 import { ArbreCodex, Chemin, CheminCodex, Colonne, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
 import { Feuille } from "@/components/ui/Feuille";
@@ -28,6 +33,10 @@ import c from "./CodexEcran.module.css";
 // moment) est derrière le sceau « ! » de la barre du haut. Un clic sur un
 // sceau ouvre son détail ; sur un acte, la feuille de l'acte. Les familles pas
 // encore dévoilées (nouveau compte) restent des pages blanches.
+// Le calendrier (V3 §7.1, `vue.moment`) change l'ordre : en veillée, les sept
+// tampons, la séance, « On ne commence plus rien. » et la carte repliée ; la
+// malle (J-3 à J-1) avant la séance ; le jour J, « Bonne chance. » seule ; le
+// lendemain, « Pose le pinceau. » puis la carte, sans séance.
 // `demo` : aperçus (aucune action serveur).
 
 type Props = { vue: VueCodex; demo?: boolean };
@@ -39,6 +48,8 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
   const [ouverte, setOuverte] = useState<LigneQuete | null>(null);
   const [acte, setActe] = useState<VueActe | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  // la carte repliée de la dernière semaine, « Voir le Codex » le jour J
+  const [deplie, setDeplie] = useState(false);
   const [occupe, demarrer] = useTransition();
   const ouvrir = useCallback((l: LigneQuete) => setOuverte(l), []);
   const ouvrirActe = useCallback((a: VueActe) => setActe(a), []);
@@ -88,6 +99,21 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
   const jourJ = vue.joursAvant !== null ? CODEX.jourJ(vue.joursAvant) : null;
   const seance = vue.seance?.blocs.length ? vue.seance : null;
   const gains = useMemo(() => (seance ? gainsSeance(seance.avant, vue) : []), [seance, vue]);
+  const moment = vue.moment;
+  const calme = moment === "veillee" || moment === "malle";
+  const replie = calme && !deplie;
+  // le lendemain, on a posé le pinceau : pas de séance
+  const avecSeance = moment !== "lendemain" && moment !== "jourJ";
+  const veille = moment === "malle" ? (vue.trame.flatMap((a) => a.quetes).find((l) => l.id === QUETE_VEILLE) ?? null) : null;
+
+  // le jour J : une seule carte (V3 §7.4)
+  if (moment === "jourJ" && !deplie) {
+    return (
+      <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
+        <BonneChance onVoir={() => setDeplie(true)} />
+      </div>
+    );
+  }
 
   return (
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
@@ -96,60 +122,12 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
         {CODEX.titre} · {vue.phaseNom}
         {!vue.cap && jourJ ? ` · ${jourJ}` : ""}
       </h1>
+      {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}
+      {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} onVue={setVue} />}
+      {moment === "lendemain" && vue.recap && <PoseLePinceau recap={vue.recap} />}
       {/* la phase est déjà dans le titre : l'en-tête de la séance ne garde que J-n */}
-      {seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, "")} gains={gains} mode="plein" demo={demo} />}
-      <header className={`${c.tete} rl-in`}>
-        <div className="min-w-0">
-          {vue.cap && <Cap cap={vue.cap} />}
-          {d !== "tout" && (
-            <p className={c.stats}>
-              <button type="button" className={e.lienDiscret} onClick={toutMontrer} disabled={occupe} title={CODEX.toutMontrerAide}>
-                {CODEX.toutMontrer}
-              </button>
-            </p>
-          )}
-        </div>
-        <div className={c.prochaine} data-leonard="prochaine">
-          {p ? (
-            <>
-              <button type="button" className={c.prochaineSceau} onClick={() => ouvrir(p.ligne)} aria-label={`Le détail : ${p.ligne.titre}`}>
-                <Sceau l={p.ligne} taille={52} signe="!" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <p className={c.prochaineSur}>
-                  {CODEX.prochaine.eyebrow}
-                  {pDuree ? ` · ${CODEX.prochaine.minutes(pDuree)}` : ""}
-                </p>
-                <p className={c.prochaineTitre}>{p.ligne.titre}</p>
-                {pDest?.raison && <p className="t-small m-0 mt-0.5">{pDest.raison}</p>}
-                {p.ligne.cible > 1 && <JaugePinceau fraction={p.ligne.fraction} or={p.ligne.etat === "active"} className={c.prochaineJauge} label={`${Math.floor(p.ligne.valeur)} sur ${Math.floor(p.ligne.cible)}`} />}
-              </div>
-              {pLien ? (
-                <Link href={pLien} className="btn btn-primary rl-press shrink-0">
-                  {CODEX.detail.aller} <ArrowRight size={16} aria-hidden />
-                </Link>
-              ) : (
-                <button type="button" className="btn btn-primary rl-press shrink-0" onClick={() => ouvrir(p.ligne)}>
-                  {CODEX.detail.aller} <ArrowRight size={16} aria-hidden />
-                </button>
-              )}
-            </>
-          ) : (
-            <p className={e.replique}>{CODEX.prochaine.rien}</p>
-          )}
-        </div>
-      </header>
-
-      {vue.suite && (
-        <section className="card-quiet flex flex-wrap items-center gap-3 p-3" aria-label="La route de Milan">
-          <p className="t-small m-0 min-w-0 flex-1">{vue.suite.annonce}</p>
-          {vue.suite.ouvrable && (
-            <button type="button" className="btn btn-primary rl-press shrink-0" onClick={() => ouvrirSuite(vue.suite!.programme)} disabled={occupe}>
-              Ouvrir {vue.suite.court} <ArrowRight size={16} aria-hidden />
-            </button>
-          )}
-        </section>
-      )}
+      {avecSeance && seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, "")} gains={gains} mode="plein" demo={demo} />}
+      {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
 
       {message && (
         <p role="status" className="card-quiet t-small p-3">
@@ -157,12 +135,75 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
         </p>
       )}
 
-      <div className={c.surOrdi} data-leonard="trame">
-        <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} />} />
-      </div>
-      <div className={c.surTel}>
-        <CheminCodex vue={vue} montre={montre} onQuete={ouvrir} />
-      </div>
+      {replie ? (
+        <p className="m-0">
+          <button type="button" className="btn rl-press" onClick={() => setDeplie(true)}>
+            Voir la carte
+          </button>
+        </p>
+      ) : (
+        <>
+          <header className={`${c.tete} rl-in`}>
+            <div className="min-w-0">
+              {vue.cap && <Cap cap={vue.cap} />}
+              {d !== "tout" && (
+                <p className={c.stats}>
+                  <button type="button" className={e.lienDiscret} onClick={toutMontrer} disabled={occupe} title={CODEX.toutMontrerAide}>
+                    {CODEX.toutMontrer}
+                  </button>
+                </p>
+              )}
+            </div>
+            <div className={c.prochaine} data-leonard="prochaine">
+              {p ? (
+                <>
+                  <button type="button" className={c.prochaineSceau} onClick={() => ouvrir(p.ligne)} aria-label={`Le détail : ${p.ligne.titre}`}>
+                    <Sceau l={p.ligne} taille={52} signe="!" />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className={c.prochaineSur}>
+                      {CODEX.prochaine.eyebrow}
+                      {pDuree ? ` · ${CODEX.prochaine.minutes(pDuree)}` : ""}
+                    </p>
+                    <p className={c.prochaineTitre}>{p.ligne.titre}</p>
+                    {pDest?.raison && <p className="t-small m-0 mt-0.5">{pDest.raison}</p>}
+                    {p.ligne.cible > 1 && <JaugePinceau fraction={p.ligne.fraction} or={p.ligne.etat === "active"} className={c.prochaineJauge} label={`${Math.floor(p.ligne.valeur)} sur ${Math.floor(p.ligne.cible)}`} />}
+                  </div>
+                  {pLien ? (
+                    <Link href={pLien} className="btn btn-primary rl-press shrink-0">
+                      {CODEX.detail.aller} <ArrowRight size={16} aria-hidden />
+                    </Link>
+                  ) : (
+                    <button type="button" className="btn btn-primary rl-press shrink-0" onClick={() => ouvrir(p.ligne)}>
+                      {CODEX.detail.aller} <ArrowRight size={16} aria-hidden />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className={e.replique}>{CODEX.prochaine.rien}</p>
+              )}
+            </div>
+          </header>
+
+          {vue.suite && (
+            <section className="card-quiet flex flex-wrap items-center gap-3 p-3" aria-label="La route de Milan">
+              <p className="t-small m-0 min-w-0 flex-1">{vue.suite.annonce}</p>
+              {vue.suite.ouvrable && (
+                <button type="button" className="btn btn-primary rl-press shrink-0" onClick={() => ouvrirSuite(vue.suite!.programme)} disabled={occupe}>
+                  Ouvrir {vue.suite.court} <ArrowRight size={16} aria-hidden />
+                </button>
+              )}
+            </section>
+          )}
+
+          <div className={c.surOrdi} data-leonard="trame">
+            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} />} />
+          </div>
+          <div className={c.surTel}>
+            <CheminCodex vue={vue} montre={montre} onQuete={ouvrir} />
+          </div>
+        </>
+      )}
 
       <Feuille ouvert={!!acte} onFermer={() => setActe(null)} titre={acte ? etiquetteActe(acte.acte) : "Acte"}>
         {acte && (

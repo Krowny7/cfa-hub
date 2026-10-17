@@ -9,6 +9,7 @@ import { useEtatNav } from "@/components/nav/DevoileContext";
 import { codexAutreIdee, codexChangerContrat, codexPanneau, codexSeanceBudget, codexVus } from "@/lib/codex/actions";
 import { ligneVersees, panneauAcquitte, panneauDe, type Panneau, type QuetePanneau } from "@/lib/codex/panneau";
 import { BUDGETS } from "@/lib/codex/reglage";
+import { BONNE_CHANCE } from "@/lib/codex/calendrier";
 import type { Budget } from "@/lib/codex/types";
 import { CODEX } from "@/lib/voice-codex";
 import { Sceau } from "@/components/codex/Sceau";
@@ -163,7 +164,12 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
           <span className="t-micro">{arcs.total > 0 ? `contrats du jour : ${arcs.faits}/${arcs.total}` : "aujourd'hui"}</span>
         </div>
       )}
-      {panneau.quetes.length === 0 ? (
+      {panneau.jourJ ? (
+        // le jour J (V3 §7.4) : rien à faire ici, seulement ceci
+        <p className={s.replique} style={{ padding: "6px 6px 10px" }}>
+          {BONNE_CHANCE.titre} {BONNE_CHANCE.texte}
+        </p>
+      ) : panneau.quetes.length === 0 ? (
         <p className={s.replique} style={{ padding: "6px 6px 10px" }}>
           {CODEX.prochaine.rien}
         </p>
@@ -185,15 +191,17 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
         </p>
       )}
       <div className={s.pied}>
-        <div className={s.budget} role="group" aria-label="Le temps que tu te donnes aujourd'hui">
-          <span>J&apos;ai</span>
-          {BUDGETS.map((b) => (
-            <button key={b} type="button" aria-pressed={panneau.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
-              {b}
-            </button>
-          ))}
-          <span>min</span>
-        </div>
+        {!panneau.jourJ && (
+          <div className={s.budget} role="group" aria-label="Le temps que tu te donnes aujourd'hui">
+            <span>J&apos;ai</span>
+            {BUDGETS.map((b) => (
+              <button key={b} type="button" aria-pressed={panneau.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
+                {b}
+              </button>
+            ))}
+            <span>min</span>
+          </div>
+        )}
         {semaine.total > 0 && (
           <details className={s.semaine}>
             <summary>
@@ -217,7 +225,8 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
   );
 
   return (
-    <div className={s.ancre}>
+    // data-jour-j : Léonard ne surgit pas le jour de l'examen (il lit cet attribut, V3 §7.4)
+    <div className={s.ancre} data-jour-j={panneau.jourJ || undefined}>
       <button
         ref={bouton}
         type="button"
