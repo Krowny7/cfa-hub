@@ -16,6 +16,8 @@ import {
   TopicBreakdown,
 } from "@/components/session/parts";
 import { fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+import { DebriefCopie, EnteteDebrief, piedDebrief, type CopieDebrief } from "@/components/session/Debrief";
+import { secondesDe } from "@/lib/debrief";
 import { FinDeSession } from "@/components/session/FinDeSession";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
@@ -50,9 +52,11 @@ type Props = {
   traitsJour?: number | null;
   /** aperçu (app/preview-da) : écran et réponses de départ, chrono figé ; "rendue" : la copie juste remise */
   demo?: { phase: "ready" | "active" | "rendue"; answers?: (number | null)[]; idx?: number; secondsLeft?: number; duree?: number };
+  /** le débrief de la copie (V3 §7.6) : la cause de chaque erreur, sous la correction */
+  debrief?: CopieDebrief | null;
 };
 
-export function MockExamRunner({ examId, title, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, traitsJour = null, demo }: Props) {
+export function MockExamRunner({ examId, title, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, traitsJour = null, demo, debrief = null }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const jour = useTraitsDuJour(traitsJour);
   // copie remise pendant cette visite : la copie se corrige sous tes yeux et
@@ -162,6 +166,8 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
     const score = review.filter((r) => r.is_correct).length;
     const minutes = rendue?.duree ? Math.max(1, Math.round(rendue.duree / 60)) : null;
     const eloLigne = elo ? (elo.delta !== null ? ELO_COPIE.applique(elo.delta) : elo.note) : null;
+    // le temps par question : lu par la page, sinon celui de la copie qu'on vient de rendre
+    const copie = debrief ? { ...debrief, secondesParQuestion: debrief.secondesParQuestion ?? secondesDe(rendue?.duree, total) } : null;
 
     if (total === 0) {
       return (
@@ -200,7 +206,19 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
           }
         >
           <TopicBreakdown review={review} />
-          <ReviewSection review={review} defaultOpen={false} source="examen" />
+          {copie ? (
+            <DebriefCopie copie={copie} review={review} demo={Boolean(demo)}>
+              <ReviewSection
+                review={review}
+                defaultOpen={copie.ouvrir === true}
+                source="examen"
+                entete={(ouvrir) => <EnteteDebrief ouvrir={ouvrir} />}
+                piedDe={piedDebrief}
+              />
+            </DebriefCopie>
+          ) : (
+            <ReviewSection review={review} defaultOpen={false} source="examen" />
+          )}
         </FinDeSession>
       </>
     );
