@@ -15,6 +15,7 @@
 // styleDepuis, validerStyle (pièce gagnée, déjà portée, inconnue), les titres
 // portables et leur affichage (32 caractères au plus).
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { readFileSync } from "node:fs";
 import { COSMETIQUES_CODEX, QUETES_EXPLOITS, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
 import { donneurs } from "@/lib/codex/vue";
 import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as remplieCatalogue, STATS_VIDES } from "@/lib/profil/catalogue";
@@ -363,6 +364,15 @@ async function main() {
     check("lireAcquis sans les tables du Codex : vaut acquisDe (plus les trophées ciblés)", vide.codex.size === 0 && egal(vide.fil, {}) && vide.programmesMenes.length === 0 && vide.questions === 1234 && vide.trophees?.total === 1);
     const casse = await lireAcquis({ from: () => { throw new Error("réseau"); }, rpc: async () => { throw new Error("réseau"); } } as unknown as SupabaseClient, "u3", base);
     check("lireAcquis : exception partout → Acquis vide, sans erreur", casse.codex.size === 0 && casse.trophees?.total === 0 && casse.programmesMenes.length === 0);
+    // la page Moi lit les trophées une fois et les passe : lireAcquis ne les relit pas
+    let rpcs = 0;
+    const compte = { ...client({}), rpc: async () => (rpcs++, { data: null, error: { code: "PGRST202", message: "Could not find the function" } }) } as unknown as SupabaseClient;
+    const dejaLus = compter([{ source: "blanc", palier: 4, n: 2 } as LigneTrophee]);
+    const repris = await lireAcquis(compte, "u4", { ...base, trophees: Promise.resolve(dejaLus) });
+    check("lireAcquis : des trophées déjà lus sont repris tels quels, aucune RPC de trophées", repris.trophees === dejaLus && rpcs === 0, `${rpcs}`);
+    const moi = readFileSync("app/moi/page.tsx", "utf8");
+    check("Moi : les trophées lus seulement sur Stats et Mes pièces, une fois, passés à l'étagère",
+      moi.includes(`tab === "stats" || tab === "pieces" ? lireTrophees(supabase, user.id)`) && moi.includes("lireEtagere(supabase, admin, user.id, tropheesLus)") && (moi.match(/lireTrophees\(/g) ?? []).length === 1);
   }
 
   console.log("\n# Le style porté (lib/profil/styles.ts)");

@@ -195,9 +195,11 @@ async function lireProgrammesMenes(admin: SupabaseClient, userId: string): Promi
  * sceaux, dates du pic), plus les quêtes récompensées du Codex, ses trophées
  * et ses programmes menés. Chaque lecture se replie en silence sur le vide :
  * sans les migrations du Codex ou de la v3, l'Acquis vaut celui d'acquisDe.
+ * `base.trophees` : les trophées déjà lus par l'appelant (la page Moi les lit
+ * une fois pour la Salle et l'étagère) ; absent : lus ici.
  */
-export async function lireAcquis(admin: SupabaseClient, userId: string, base: { stats: ProfilStats; sceaux: EtatSceau[]; datesPic: (string | null)[] }): Promise<Acquis> {
-  const [codex, trophees, programmesMenes] = await Promise.all([lireCodex(admin, userId), lireTrophees(admin, userId), lireProgrammesMenes(admin, userId)]);
+export async function lireAcquis(admin: SupabaseClient, userId: string, base: { stats: ProfilStats; sceaux: EtatSceau[]; datesPic: (string | null)[]; trophees?: Promise<CompteTrophees | null> }): Promise<Acquis> {
+  const [codex, trophees, programmesMenes] = await Promise.all([lireCodex(admin, userId), base.trophees ?? lireTrophees(admin, userId), lireProgrammesMenes(admin, userId)]);
   return {
     questions: base.stats.questions,
     pic: base.stats.picAtteint,

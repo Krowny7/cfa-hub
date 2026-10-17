@@ -11,6 +11,7 @@ import { lireAcquis } from "@/lib/profil/acquis";
 import { etagere, type Etagere } from "@/lib/profil/etagere";
 import { nomTitre } from "@/lib/profil/styles";
 import type { ProfilStats, StyleProfil } from "@/lib/profil/catalogue";
+import type { CompteTrophees } from "@/lib/trophees";
 
 export type DonneesEtagere = {
   etagere: Etagere;
@@ -24,7 +25,8 @@ export type DonneesEtagere = {
   stats: ProfilStats;
 };
 
-export async function lireEtagere(supabase: SupabaseClient, admin: SupabaseClient | null, userId: string): Promise<DonneesEtagere> {
+/** `trophees` : les trophées déjà lus par la page (une seule lecture pour la Salle et l'étagère) ; absent : lus par lireAcquis. */
+export async function lireEtagere(supabase: SupabaseClient, admin: SupabaseClient | null, userId: string, trophees?: Promise<CompteTrophees | null>): Promise<DonneesEtagere> {
   const statsLues = statsProfil(userId, supabase);
   const [lu, nom, stats, sceaux, datesPic, acquis] = await Promise.all([
     lireStyle(admin ?? supabase, userId),
@@ -32,7 +34,7 @@ export async function lireEtagere(supabase: SupabaseClient, admin: SupabaseClien
     statsLues,
     statsLues.then((s) => sceauxDuJoueur(userId, s)),
     datesDuPic(supabase, userId),
-    statsLues.then((s) => lireAcquis(admin ?? supabase, userId, { stats: s, sceaux: [], datesPic: [] })),
+    statsLues.then((s) => lireAcquis(admin ?? supabase, userId, { stats: s, sceaux: [], datesPic: [], ...(trophees ? { trophees } : {}) })),
   ]);
   return {
     etagere: etagere({ ...acquis, sceaux: sceaux.etats, datesPic }, lu.style, lu.style.bannerUrl),

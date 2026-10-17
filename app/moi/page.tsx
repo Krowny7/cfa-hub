@@ -56,6 +56,9 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     return basic.data as ProfileRow;
   })();
 
+  // les trophées : seulement sur Stats (la Salle des trophées) et Mes pièces (l'étagère les reprend)
+  const tropheesLus = tab === "stats" || tab === "pieces" ? lireTrophees(supabase, user.id).catch(() => null) : Promise.resolve(null);
+
   const xpCall = (async (): Promise<XpDay[]> => {
     try {
       const { data } = await supabase.rpc("get_xp_daily", { p_days: 90 });
@@ -99,10 +102,11 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     lireHistoriqueAteliers(supabase, user.id),
     // la série d'encre (null tant que migration_serie_encre.sql n'est pas collée : l'ancien calcul)
     lireSerieEncre(supabase),
-    // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul (repli sans bruit)
-    lireTrophees(supabase, user.id),
-    // Mes pièces : l'étagère et ce qu'il porte (sur son onglet seulement)
-    tab === "pieces" ? lireEtagere(supabase, admin, user.id).catch(() => null) : Promise.resolve(null),
+    // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul (repli sans bruit) ;
+    // lue une fois, seulement sur les onglets qui la montrent (Stats, Mes pièces)
+    tropheesLus,
+    // Mes pièces : l'étagère et ce qu'il porte (sur son onglet seulement), avec les mêmes trophées
+    tab === "pieces" ? lireEtagere(supabase, admin, user.id, tropheesLus).catch(() => null) : Promise.resolve(null),
     // les jours de repos de la série déjà posés (Réglages ; null sans la migration du Codex §8)
     tab === "reglages" ? lirePauses(supabase, new Date(now)) : Promise.resolve(null),
   ]);
@@ -145,7 +149,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     objectif,
     pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier, !!admin),
     ateliers,
-    trophees: { lignes: trophees.lignes, complet: trophees.complet },
+    ...(trophees ? { trophees: { lignes: trophees.lignes, complet: trophees.complet } } : {}),
   };
 
   const etagere = pieces ? (
