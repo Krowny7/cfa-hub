@@ -393,7 +393,8 @@ check("« +50 XP » (plus « versés, visés, plafonnés »)", CODEX.detail.xpPl
 console.log("\n# v3 §6.14 : migration_codex_v3.sql (le banc PGlite la joue : sim-codex-v3.mjs)");
 {
   const sql = readFileSync("migration_codex_v3.sql", "utf8");
-  check("idempotente : aucune suppression de table ni de données", !/DROP\s+TABLE|DELETE\s+FROM|TRUNCATE/i.test(sql));
+  // seules les tables temporaires de la transaction (le cache des réponses, le journal de codex_lire) se suppriment
+  check("idempotente : aucune suppression de table ni de données", !/DROP\s+TABLE(?!\s+(IF\s+EXISTS\s+)?pg_temp\.)|DELETE\s+FROM|TRUNCATE/i.test(sql));
   check("codex_erreurs : RLS, le joueur lit les siennes, aucune politique d'écriture", /ALTER TABLE codex_erreurs ENABLE ROW LEVEL SECURITY/.test(sql) && /codex_erreurs FOR SELECT TO authenticated USING \(user_id = auth\.uid\(\)\)/.test(sql) && !/codex_erreurs FOR (INSERT|UPDATE|DELETE|ALL)/.test(sql));
   check("codex_ecrire : une sous-transaction par quête, l'erreur consignée", /EXCEPTION WHEN OTHERS THEN\s+v_err := v_err \+ 1;\s+PERFORM _codex_erreur/.test(sql));
   const fonctions = [...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]);

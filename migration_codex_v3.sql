@@ -1351,7 +1351,7 @@ $$;
 -- 5e. Le marqueur du journal v3 (codex_mesures_v3 : capacité « journal » à 3).
 -- Posé en dernier : il ne dit vrai qu'une fois le journal et la lecture en place.
 CREATE OR REPLACE FUNCTION _codex_journal_v3()
-RETURNS int LANGUAGE sql IMMUTABLE
+RETURNS int LANGUAGE sql IMMUTABLE SECURITY DEFINER SET search_path = public
 AS $$ SELECT 3 $$;
 
 REVOKE ALL ON FUNCTION _reponses_cache(uuid) FROM PUBLIC, anon, authenticated;
