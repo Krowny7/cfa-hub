@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { BilanCodex, FeteCodex as Fete } from "@/lib/codex/bilan";
+import { habitFete, tailleFete, type BilanCodex } from "@/lib/codex/bilan";
 import { codexPoint, codexRetroVue, codexSeanceBudget, codexSeanceFinir, codexVus } from "@/lib/codex/actions";
 import { EVENEMENT_CODEX_POINT } from "@/lib/codex/panneau";
 import { budgetSuivant } from "@/lib/codex/seance-etat";
@@ -19,11 +20,15 @@ import s from "./Codex.module.css";
 
 // La petite cérémonie du Codex, posée là où le joueur est : en fin de séance
 // (CeremonieSceaux l'appelle), sur l'accueil et sur /codex. Elle fête les
-// quêtes tamponnées (le sceau se pose avec un coup de tampon, une carte par
-// grande étape, les petites en une ligne), annonce l'acte qui s'ouvre (et
-// Léonard dit sa réplique), puis « Léonard a feuilleté ton carnet » pour les
-// comptes existants, une seule fois. Rien n'est lourd : une carte, pas un
-// plein écran. Chaque fanfare n'est jouée qu'une fois (codexVus).
+// quêtes tamponnées avec les quatre tailles de fête (components/fete, V3
+// §3.10 ; tailleFete) : une ligne pour un contrat ou une étape, une carte
+// pour un jalon (le tampon tombe sur la quête si la carte du Codex est à
+// l'écran), une page qui se tourne pour un acte clos (Léonard y dit la
+// réplique de l'acte qui s'ouvre), le plein cadre pour « Maître de… » ou le
+// chef-d'œuvre. Trois fêtes au plus, l'une après l'autre ; en mode sobre,
+// des lignes sans XP ni pièce. Puis « Léonard a feuilleté ton carnet » pour
+// les comptes existants, une seule fois. Chaque fanfare n'est jouée qu'une
+// fois (codexVus).
 //
 // En fin d'outil, si ce dernier bloc vient de tenir la séance du jour : « Ce
 // que ça a fait avancer » (V3 §6.5), une fois par jour, avec « C'est assez
@@ -37,6 +42,27 @@ import s from "./Codex.module.css";
 // `demo` : aperçus, aucune action serveur.
 
 const ATTENTE_PAR_DEFAUT = 1800;
+/** Au plus trois fêtes jouées l'une après l'autre ; la dernière dit combien d'autres quêtes sont tamponnées. */
+export const MAX_FETES = 3;
+/** Le temps que l'écran se pose avant la première fête (ms). */
+const AVANT_FETE = 600;
+
+// la fête elle-même : chargée au moment de fêter (elle tire le catalogue des pièces), jamais rendue côté serveur
+const Fete = dynamic(() => import("@/components/fete/Fete").then((m) => m.Fete), { ssr: false });
+
+/** La position de la quête sur la carte du Codex (data-quete), si elle est à l'écran : le tampon y tombe. */
+function ancreDe(quete: string): { x: number; y: number } | null {
+  try {
+    const el = document.querySelector(`[data-quete="${CSS.escape(quete)}"]`);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (!r.width || r.bottom < 0 || r.right < 0 || r.top > window.innerHeight || r.left > window.innerWidth) return null;
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  } catch {
+    return null;
+  }
+}
+
 
 export function FeteCodex({
   initial,
@@ -55,8 +81,9 @@ export function FeteCodex({
   const [retroVue, setRetroVue] = useState(false);
   const [finVue, setFinVue] = useState(false);
   const [occupe, setOccupe] = useState(false);
-  const carte = useRef<HTMLElement | null>(null);
   const joue = useRef(false);
+  // la fête jouée : -1 avant la première, puis son rang parmi celles qu'on joue
+  const [tour, setTour] = useState(-1);
 
   // le point au serveur : fin de séance (rien en main), ou écrire le dévoilement
   useEffect(() => {
@@ -99,23 +126,31 @@ export function FeteCodex({
   const fetes = bilan?.fetes ?? [];
   const acte = bilan?.acteNouveau ?? null;
   const aFeter = fetes.length > 0;
+  const sobre = !!bilan?.sobre;
+  const jouees = fetes.slice(0, MAX_FETES);
 
-  // la fanfare : Léonard (une apparition), puis « vu » côté serveur
+  // la fanfare : les fêtes l'une après l'autre (après une cérémonie en cours), Léonard, puis « vu » côté serveur
   useEffect(() => {
     if (!bilan || !aFeter || joue.current) return;
     joue.current = true;
     const premier = fetes[0];
-    if (acte) {
+    const depart = window.setTimeout(() => setTour(0), resteCeremonie() + AVANT_FETE);
+    // la réplique de l'acte qui s'ouvre est dite sur la page qui se tourne ; sinon, Léonard passe la dire
+    const surLaPage = !!acte && !!habitFete(premier, { sobre, acte, autres: 0 }).replique;
+    if (acte && !surLaPage) {
       signalerLeonard({ evt: "acte-nouveau", replique: acte.replique, delai: 2200 }, `acte:${acte.id}`);
-    } else {
+    } else if (!acte) {
       signalerLeonard({ evt: "quete-faite", delai: 2200 }, `quete:${premier.quete}:${premier.periode}`);
     }
-    if (!demo) {
-      const t = window.setTimeout(() => {
-        codexVus(fetes.map((f) => f.quete)).catch(() => undefined);
-      }, 1500);
-      return () => window.clearTimeout(t);
-    }
+    const vus = demo
+      ? null
+      : window.setTimeout(() => {
+          codexVus(fetes.map((f) => f.quete)).catch(() => undefined);
+        }, 1500);
+    return () => {
+      window.clearTimeout(depart);
+      if (vus !== null) window.clearTimeout(vus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bilan]);
 
@@ -152,12 +187,22 @@ export function FeteCodex({
       });
   };
 
-  if (!aFeter && !retro && !finSeance) return null;
-  const grandes = fetes.slice(0, 2);
-  const autres = fetes.length - grandes.length;
+  const enCours = tour >= 0 && tour < jouees.length ? jouees[tour] : null;
+  if (!enCours && !retro && !finSeance) return null;
+  // la fête se pose par-dessus la page (position fixe) : elle ne prend aucune place dans la colonne
+  const fete = enCours && (
+    <Fete
+      key={enCours.quete + enCours.periode}
+      {...habitFete(enCours, { sobre, acte, autres: tour === jouees.length - 1 ? fetes.length - jouees.length : 0 })}
+      ancre={tailleFete(enCours) === "carte" && !sobre ? ancreDe(enCours.quete) : null}
+      onFin={() => setTour((t) => t + 1)}
+    />
+  );
+  if (!retro && !finSeance) return fete;
 
   return (
     <div className={"flex flex-col gap-3 " + className}>
+      {fete}
       {finSeance && (
         <section aria-label="La séance du jour" className={`${s.fete} ${e.carnet}`}>
           <div className="min-w-0 flex-1">
@@ -174,7 +219,7 @@ export function FeteCodex({
             <p className="t-eyebrow m-0">{CODEX.nom}</p>
             <p className="t-h2 m-0">{CODEX.retro.titre}</p>
             <p className="t-small m-0 mt-1">
-              {CODEX.retro.ligne(retro.quetes, retro.xp)}
+              {sobre ? CODEX.retro.ligneSobre(retro.quetes) : CODEX.retro.ligne(retro.quetes, retro.xp)}
               {retro.actes.length ? ` ${CODEX.retro.actes(retro.actes.length)}.` : ""}
             </p>
             <div className="mt-3 flex flex-wrap gap-3">
@@ -195,36 +240,7 @@ export function FeteCodex({
           </div>
         </section>
       )}
-      {aFeter && (
-        <section ref={carte} aria-live="polite" className={s.fete}>
-          <div className="shrink-0">
-            <Sceau l={{ etat: "terminee", fraction: 1, affichage: "complet", retro: false }} taille={64} neuf />
-          </div>
-          <div className="min-w-0">
-            <p className="t-eyebrow m-0">{acte ? CODEX.fete.acte : CODEX.fete.quete}</p>
-            {grandes.map((f) => (
-              <LigneFete key={f.quete + f.periode} f={f} />
-            ))}
-            {autres > 0 && <p className="t-micro m-0 mt-1">{CODEX.fete.autres(autres)}</p>}
-            {acte && <p className="t-small m-0 mt-1">{CODEX.fete.acteNouveau(acte.titre)}</p>}
-            <Link href="/codex" className="btn btn-secondary rl-press mt-3 min-h-[44px] w-fit">
-              {CODEX.fete.suite} <ArrowRight size={16} aria-hidden />
-            </Link>
-          </div>
-        </section>
-      )}
     </div>
   );
 }
 
-function LigneFete({ f }: { f: Fete }) {
-  return (
-    <p className="m-0 mt-0.5 text-[16px] font-bold leading-tight tracking-[-0.012em] [overflow-wrap:anywhere]">
-      {f.titre}
-      <span className="ml-2 text-[12.5px] font-medium tracking-normal text-muted">
-        {f.xp > 0 ? `+${f.xp} XP` : ""}
-        {f.recompense ? `${f.xp > 0 ? " · " : ""}${f.recompense}` : ""}
-      </span>
-    </p>
-  );
-}

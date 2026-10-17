@@ -646,6 +646,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
                 <button
                   key={nd.cle}
                   type="button"
+                  data-quete={nd.cle}
                   className={classes.filter(Boolean).join(" ")}
                   style={{ left: nd.x - nd.t / 2, top: nd.y - nd.t / 2, width: nd.t, height: nd.t }}
                   aria-label={q?.manque ? `${nd.label}. ${q.manque.join(". ")}` : nd.label}
@@ -851,7 +852,7 @@ function ContratsDuJour({ vue, montre, onQuete, onChanger, occupe, id = "col-jou
                 </li>
               ))}
             </ul>
-            <p className="t-micro m-0 mt-2">{vue.trio.fait ? CODEX.contrats.trioFait(vue.trio.xp) : `${CODEX.contrats.trio(vue.trio.xp)} (${vue.trio.faits}/${vue.trio.total})`}</p>
+            <p className="t-micro m-0 mt-2">{vue.trio.fait ? (vue.sobre ? CODEX.contrats.trioFaitSobre : CODEX.contrats.trioFait(vue.trio.xp)) : `${vue.sobre ? CODEX.contrats.trioSobre : CODEX.contrats.trio(vue.trio.xp)} (${vue.trio.faits}/${vue.trio.total})`}</p>
           </>
         )}
         {/* le débrief d'un examen blanc (V3 §7.6) : à part du trio, tant qu'un blanc l'attend */}

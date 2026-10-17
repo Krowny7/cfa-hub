@@ -10,7 +10,8 @@
 // rattrapage au déploiement (V3 §1.5, §1.9 : un joueur de 12 000 réponses) ;
 // le catalogue taillé (V3 §8.1 à §8.4, §8.6 : retraits, miroirs, actes I et V,
 // quêtes hors jeu sans le SQL, prérequis souples, XP des contrats) ; la
-// maîtrise unique, le cap et les mesures de la mémoire (V3 §4.6, §4.7, lot A4b).
+// maîtrise unique, le cap et les mesures de la mémoire (V3 §4.6, §4.7, lot A4b) ;
+// les tailles de fête et le mode sobre (V3 §3.10, §11.5, lot A9).
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
@@ -22,7 +23,8 @@ import {
 import { construireVue } from "@/lib/codex/vue";
 import { panneauDe } from "@/lib/codex/panneau";
 import { CAPACITES_VIDE } from "@/lib/codex/reglage";
-import { bilanDe } from "@/lib/codex/bilan";
+import { bilanDe, habitFete, tailleFete, type FeteCodex } from "@/lib/codex/bilan";
+import { CLE_SOBRE, feteSobre, lireSobre } from "@/lib/codex/sobre";
 import { de, gabarit } from "@/lib/codex/elision";
 import { CODEX } from "@/lib/voice-codex";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
@@ -749,6 +751,49 @@ console.log("\n# v3 §4.6, §4.7 : la maîtrise unique, le cap, la mémoire (A4b
   const sans = avecMesures({ blancs_a_debriefer: 0 }, { capacites: capa });
   const vSans = construireVue(sans, repondre(sans, () => 0).r, null, { devoile: null });
   check("aucun blanc à débriefer : rien à montrer", vSans.debrief === null);
+}
+
+console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)");
+{
+  const J = JSON.stringify;
+  const t = (quete: string) => tailleFete({ quete });
+  const attendu: [string, string][] = [
+    ["contrat:quotidien:serie", "ligne"], ["contrat:debrief", "ligne"], ["trame:prologue:dix", "ligne"], ["branche:fsa:entree", "ligne"], ["branche:fsa:drill", "ligne"],
+    ["branche:fsa:ciblee", "carte"], ["branche:ethics:serie", "carte"], ["branche:fsa:maitrise60", "carte"], ["branche:fsa:maitrise75", "carte"], ["branche:fsa:signature", "carte"],
+    ["longcours:remontee:1", "carte"], ["fil:encre:3", "carte"], ["exploit:nuit-blanche", "carte"],
+    ["acte:acte3", "page"], ["acte:prologue", "page"], ["acte:essai/g1", "page"],
+    ["branche:fixed_income:maitre", "plein"], ["cfa-l2/branche:fsa:maitre", "plein"], ["acte:acte6", "plein"], ["acte:epilogue", "plein"], ["fil:programmes:1", "plein"],
+  ];
+  const faux = attendu.filter(([q, x]) => t(q) !== x).map(([q, x]) => `${q} : ${t(q)} au lieu de ${x}`);
+  check("tailleFete : ligne (contrat, étape), carte (jalon, palier, exploit), page (acte), plein (Maître, chef-d'œuvre, épilogue, programme mené)", faux.length === 0, faux.join(" ; "));
+  check("une étape préfixée d'un autre programme garde sa taille", t("cfa-l2/branche:fsa:ciblee") === "carte" && t("cfa-l2/branche:fsa:cours") === "ligne");
+
+  // le mode sobre : la clé du compte, fixée par V3 §13.2
+  check("lireSobre : vrai seulement si rl_sobre vaut true", CLE_SOBRE === "rl_sobre" && lireSobre({ user_metadata: { rl_sobre: true } }) && !lireSobre({ user_metadata: { rl_sobre: "true" } }) && !lireSobre({ user_metadata: {} }) && !lireSobre({ user_metadata: null }) && !lireSobre(null));
+  check("feteSobre : une ligne sans XP ni pièce ; hors mode sobre, rien ne change", J(feteSobre({ taille: "plein", xp: 400, piece: "titre:maitre-bottega" }, true)) === J({ taille: "ligne" }) && J(feteSobre({ taille: "carte", xp: 50 }, false)) === J({ taille: "carte", xp: 50 }));
+
+  const acte: FeteCodex = { quete: "acte:acte3", periode: "", titre: "La bottega", famille: "acte", xp: 150, recompense: "Cadre : Sanguine", piece: "cadre:sanguine", rang: 0 };
+  const ouvre = { id: "acte4", titre: "Le grand atelier", sousTitre: "", replique: { texte: "On monte d'un étage.", pose: "fier" as const }, precedent: "La bottega" };
+  const h = habitFete(acte, { sobre: false, acte: ouvre, autres: 0 });
+  check("un acte clos : une page, l'XP, la pièce, l'acte qui s'ouvre, et la réplique de Léonard", h.taille === "page" && h.xp === 150 && h.piece === "cadre:sanguine" && !!h.sous?.includes("Le grand atelier") && h.replique?.texte === "On monte d'un étage.", J(h));
+  const hs = habitFete(acte, { sobre: true, acte: ouvre, autres: 0 });
+  check("le même acte en mode sobre : une ligne, sans XP, sans pièce, sans réplique", hs.taille === "ligne" && hs.xp === undefined && hs.piece === undefined && !hs.replique, J(hs));
+  const contrat: FeteCodex = { quete: "contrat:quotidien:serie", periode: "2026-10-17", titre: "Série de cinq", famille: "contrat", xp: 20, recompense: null, piece: null, rang: 4 };
+  check("la dernière fête jouée dit les autres quêtes tamponnées", habitFete(contrat, { sobre: false, acte: null, autres: 2 }).titre === `Série de cinq, ${CODEX.fete.autres(2)}`);
+  check("un jalon : une carte, sans réplique (Léonard passe la dire)", (() => { const c = habitFete({ ...contrat, quete: "branche:fsa:ciblee", famille: "branche" }, { sobre: false, acte: null, autres: 0 }); return c.taille === "carte" && !c.replique && c.xp === 20; })());
+
+  // la vue et le bilan portent le mode sobre ; par défaut, il est éteint
+  const { r, e } = repondre(base(), () => 0);
+  const vs = construireVue(e, r, null, { devoile: null, sobre: true });
+  const vn = construireVue(e, r, null, { devoile: null });
+  check("la vue et le bilan portent le mode sobre ; sans réglage, éteint", vs.sobre && bilanDe(vs).sobre === true && !vn.sobre && bilanDe(vn).sobre === false);
+  check("le mode sobre garde la séance, le panneau, le cap et les contrats", J(panneauDe(vs)) === J(panneauDe(vn)) && J(vs.contrats) === J(vn.contrats) && J(vs.cap) === J(vn.cap) && J(vs.seance) === J(vn.seance));
+  // les écrans : la fête branchée sur components/fete, l'XP rangée en mode sobre
+  const fete = readFileSync("components/codex/FeteCodex.tsx", "utf8");
+  check("FeteCodex joue les quatre tailles (components/fete, chargée à la demande), trois au plus", fete.includes('import("@/components/fete/Fete")') && fete.includes("ssr: false") && fete.includes("habitFete(enCours") && fete.includes("MAX_FETES = 3"));
+  const detail = readFileSync("components/codex/DetailQuete.tsx", "utf8");
+  const carte = readFileSync("components/codex/CarteCodex.tsx", "utf8");
+  check("mode sobre : le détail d'une quête sans récompense, le trio sans XP, le tampon ancré sur la carte (data-quete)", detail.includes("const recompense = sobre ? []") && carte.includes("vue.sobre ? CODEX.contrats.trioFaitSobre") && carte.includes("data-quete={nd.cle}"));
 }
 
 console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");
