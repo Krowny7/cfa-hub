@@ -269,7 +269,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
       )}
       {etroit && (
         <Feuille ouvert={ouvert} onFermer={fermer} titre="Aujourd'hui">
-          <div className={s.panneau} style={{ position: "static", width: "auto", boxShadow: "none", border: 0, padding: "4px 0 0", maxHeight: "none", animation: "none" }}>
+          <div className={s.panneau} style={{ position: "static", width: "auto", boxShadow: "none", border: 0, padding: "4px 0 0", maxHeight: "none", animation: "none", overflow: "visible" }}>
             {contenu}
           </div>
         </Feuille>

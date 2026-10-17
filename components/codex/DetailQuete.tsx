@@ -60,7 +60,9 @@ export function DetailQuete({
     if (!feuille) return;
     const avant = document.activeElement as HTMLElement | null;
     fermer.current?.focus();
-    const touche = (ev: KeyboardEvent) => ev.key === "Escape" && onClose();
+    // Échap pendant une fête (portail sur la page) passe la fête, pas la fiche :
+    // fermer la fiche démonterait Recuperer avant son « fini » (même garde que SceauQuetes)
+    const touche = (ev: KeyboardEvent) => ev.key === "Escape" && !document.querySelector("[data-fete]") && onClose();
     window.addEventListener("keydown", touche);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
