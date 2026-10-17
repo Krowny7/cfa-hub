@@ -30,6 +30,7 @@ import {
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
+import { panneauAGarder, panneauDe, panneauDuCache, type Panneau } from "@/lib/codex/panneau";
 import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesuresV3DeLecture, type MesuresV3 } from "@/lib/codex/mesures-v3";
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
 import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
@@ -287,6 +288,49 @@ async function seanceDuJour(
   return { jour, budget, phase: resultat.phase, blocs, duree: blocs.reduce((s, b) => s + b.duree, 0), faits: dans, lancee: !!lanceeLe, lanceeLe, finie: tenue || !!finieLe, finieLe, gardee };
 }
 
+// ── L'instantané du panneau (codex_vue_cache, V3 §6.2) ─────────────────
+
+/** Garde le panneau et la séance du dernier calcul ; un échec ne coûte rien (la barre recalcule). */
+async function poserCache(a: SupabaseClient, userId: string, jour: string, vue: VueCodex) {
+  try {
+    await a.rpc("codex_vue_cache_poser", { p_user: userId, p_jour: jour, p_panneau: panneauAGarder(panneauDe(vue)), p_seance: vue.seance });
+  } catch {
+    // sans la §6, ou la base occupée : rien de gardé
+  }
+}
+
+/** L'instantané n'est plus juste (fin d'un outil, récompenses annoncées) : le prochain panneau se recalcule. */
+export async function oublierPanneau(userId: string) {
+  const a = admin();
+  if (!a) return;
+  try {
+    await a.rpc("codex_vue_cache_marquer", { p_user: userId });
+  } catch {
+    // sans la §6 : pas d'instantané
+  }
+}
+
+/**
+ * Le panneau de la barre du haut : le calcul gardé 45 s s'il y en a un ;
+ * sinon l'instantané de moins de 10 min, s'il n'est pas marqué ; sinon un
+ * calcul complet. Sans la §6 : comme avant (le calcul).
+ */
+export async function lirePanneau(supabase: SupabaseClient, user: Joueur): Promise<Panneau> {
+  const memo = MEMO.get(user.id);
+  if (memo && Date.now() - memo.at < MEMO_MS) return panneauDe(memo.vue);
+  const a = admin();
+  if (a) {
+    try {
+      const { data, error } = await a.from("codex_vue_cache").select("jour,panneau,calcule_le,a_recalculer").eq("user_id", user.id).maybeSingle();
+      const p = error ? null : panneauDuCache(data, jourParis(), Date.now());
+      if (p) return p;
+    } catch {
+      // sans la §6 : le calcul
+    }
+  }
+  return panneauDe(await lireCodex(supabase, user));
+}
+
 /** Le calcul complet : lit, évalue, écrit les récompenses, bâtit la vue (le dévoilement est écrit par lireCodex). */
 async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour> {
   const jour = jourParis();
@@ -442,6 +486,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const vue: VueCodex = { ...construite, seance };
     MEMO.set(user.id, { at: Date.now(), vue });
     DERNIER.set(user.id, vue);
+    // l'instantané du panneau, pour la barre du haut (§6 collée seulement)
+    if (!seanceLue.absente) await poserCache(a, user.id, jour, vue);
     return { vue, entree, resultat };
   } catch (e) {
     await consigner(a, user.id, "", e instanceof Error ? e.message : String(e));
@@ -643,6 +689,8 @@ export async function marquerVus(userId: string, quetes: string[]): Promise<bool
     const { error } = await a.rpc("codex_vus", { p_user: userId, p_quetes: quetes.slice(0, 100) });
     if (!error) patcher(userId, (v) => vueSansFetes(v, quetes));
     else MEMO.delete(userId);
+    // l'instantané du panneau annoncerait encore ces récompenses
+    if (!error) await oublierPanneau(userId);
     return !error;
   } catch {
     return false;

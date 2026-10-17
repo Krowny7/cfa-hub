@@ -13,7 +13,7 @@ import {
   MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage,
   type EntreeSeance, type GenreBloc, type RevoirCodex, type VueSeance,
 } from "@/lib/codex/seance";
-import { seancePanneau } from "@/lib/codex/panneau";
+import { PANNEAU_VIDE, panneauAGarder, panneauDuCache, seancePanneau } from "@/lib/codex/panneau";
 import type { Budget, Phase } from "@/lib/codex/types";
 
 let ko = 0;
@@ -202,6 +202,18 @@ console.log("\n# garder ou recomposer, relire la base, la pastille");
   const p = seancePanneau(vs);
   check("la pastille : « Séance 1/3 », lancée, le bloc suivant et son lien", !!p && p.lancee && p.faits === 1 && p.total === 3 && p.suivant?.titre === s.blocs[1].titre && p.suivant.href === s.blocs[1].destination.href, J(p));
   check("la pastille d'une séance finie : plus de bloc suivant ; pas de séance : rien", seancePanneau({ ...vs, finie: true, finieLe: "2026-10-17T09:00:00Z" })?.suivant === null && seancePanneau(null) === null);
+}
+
+console.log("\n# l'instantané du panneau (codex_vue_cache)");
+{
+  const p = { ...PANNEAU_VIDE, disponible: true, jour };
+  const t = Date.parse("2026-10-17T10:00:00Z");
+  const ligne = (o: Record<string, unknown> = {}) => ({ jour, panneau: panneauAGarder(p), calcule_le: "2026-10-17T09:55:00Z", a_recalculer: false, ...o });
+  check("relu : du jour, de moins de 10 min, pas marqué, de la même forme", J(panneauDuCache(ligne(), jour, t)) === J(p));
+  check("recalculé : marqué, trop vieux, d'hier, d'une autre forme, absent ou d'un Codex indisponible",
+    panneauDuCache(ligne({ a_recalculer: true }), jour, t) === null && panneauDuCache(ligne({ calcule_le: "2026-10-17T09:49:00Z" }), jour, t) === null
+      && panneauDuCache(ligne({ jour: "2026-10-16" }), jour, t) === null && panneauDuCache(ligne({ panneau: { version: 0, panneau: p } }), jour, t) === null
+      && panneauDuCache(ligne({ panneau: p }), jour, t) === null && panneauDuCache(null, jour, t) === null && panneauDuCache(ligne({ panneau: panneauAGarder(PANNEAU_VIDE) }), jour, t) === null);
 }
 
 console.log("\n# le budget par défaut");

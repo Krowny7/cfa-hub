@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, lireCodex, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
@@ -48,6 +48,8 @@ export async function codexPoint(opts: { recalcul?: boolean } = {}): Promise<Bil
   if (!user) return BILAN_VIDE;
   const recalcul = opts?.recalcul !== false;
   try {
+    // la fin d'un outil : l'instantané du panneau n'est plus juste (le calcul qui suit le reposera)
+    if (recalcul) await oublierPanneau(user.id);
     return bilanDe(await lireCodex(supabase, user, { force: recalcul, persister: true }));
   } catch {
     return BILAN_VIDE;
@@ -85,13 +87,14 @@ async function reclamerPour(supabase: Awaited<ReturnType<typeof createClient>>, 
 /**
  * Le panneau « Tes quêtes » du sceau de la barre du haut, relu à son
  * ouverture (la barre reste montée d'une page à l'autre : ses données
- * vieillissent). Sans recalcul forcé : le Codex est gardé 45 s en mémoire.
+ * vieillissent). Sans recalcul forcé : le Codex gardé 45 s en mémoire, sinon
+ * l'instantané de moins de 10 min (codex_vue_cache), sinon un calcul.
  */
 export async function codexPanneau(): Promise<Panneau> {
   const { supabase, user } = await joueur();
   if (!user) return PANNEAU_VIDE;
   try {
-    return panneauDe(await lireCodex(supabase, user));
+    return await lirePanneau(supabase, user);
   } catch {
     return PANNEAU_VIDE;
   }

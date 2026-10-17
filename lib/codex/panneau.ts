@@ -198,3 +198,27 @@ export function ligneVersees(v: NonNullable<Panneau["versees"]>): string {
 
 /** Le panneau une fois les récompenses annoncées (codexVus) : plus de ligne en pied ni de « ! » doré. */
 export const panneauAcquitte = (p: Panneau): Panneau => ({ ...p, versees: null, rare: null });
+
+// ── L'instantané (codex_vue_cache, migration_codex_v3.sql §6) ──────────
+
+/** La forme du panneau gardé : à changer dès que Panneau change, pour qu'un instantané d'avant ne soit jamais relu. */
+export const VERSION_PANNEAU = 1;
+/** Un instantané plus vieux ne sert plus. */
+export const CACHE_PANNEAU_MS = 10 * 60_000;
+
+/** Le panneau tel qu'il se garde. */
+export const panneauAGarder = (p: Panneau) => ({ version: VERSION_PANNEAU, panneau: p });
+
+/**
+ * Le panneau gardé, s'il sert encore : du même jour, de moins de 10 min, pas
+ * marqué « à recalculer » (fin d'un outil, récompenses annoncées), de la même
+ * forme. null : il faut recalculer.
+ */
+export function panneauDuCache(ligne: unknown, jour: string, maintenant: number): Panneau | null {
+  const l = ligne as { jour?: unknown; panneau?: unknown; calcule_le?: unknown; a_recalculer?: unknown } | null;
+  if (!l || typeof l !== "object" || l.a_recalculer !== false || String(l.jour ?? "").slice(0, 10) !== jour) return null;
+  const quand = typeof l.calcule_le === "string" ? Date.parse(l.calcule_le) : NaN;
+  if (!(maintenant - quand >= 0 && maintenant - quand < CACHE_PANNEAU_MS)) return null;
+  const g = l.panneau as { version?: unknown; panneau?: Panneau } | null;
+  return g && g.version === VERSION_PANNEAU && g.panneau && g.panneau.disponible === true && g.panneau.jour === jour ? g.panneau : null;
+}
