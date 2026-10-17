@@ -6,7 +6,7 @@
 // remplit ; pas de doublon) ; le plafond de 5 apparitions par jour de Paris
 // (prioritaires comptées, visite hors compte, jour J et mode sobre muets,
 // écart de 4 minutes, hasard, minuit à Paris) ; l'hôte branché sur ce plafond
-// et son bouton d'action de 44 px.
+// et son bouton d'action de 44 px (la bulle attend tant qu'on la survole).
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, REPLIQUES, type Replique } from "@/lib/leonard/repliques";
@@ -166,6 +166,7 @@ const hote = readFileSync(join(RACINE, "components/leonard/LeonardHote.tsx"), "u
 check("L'hôte décide avec lib/leonard/apparitions (plus de plafond à 10 en local)", /from "@\/lib\/leonard\/apparitions"/.test(hote) && /decider\(sig\.evt/.test(hote) && !/MAX_JOUR\s*=/.test(hote));
 check("L'hôte lit le jour J (data-jour-j) et le mode sobre (rl_sobre)", /\[data-jour-j\]/.test(hote) && /rl_sobre/.test(hote));
 check("L'hôte affiche l'action en bouton de 44 px", /replique\.action\.href/.test(hote) && /min-h-\[44px\]/.test(hote));
+check("Une bulle survolée ou au clavier ne repart pas sous la main", /onPointerEnter=\{scene\.tuto \? undefined : retenir\}/.test(hote) && /onFocus=\{scene\.tuto \? undefined : retenir\}/.test(hote));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

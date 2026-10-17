@@ -747,6 +747,18 @@ export function LeonardHote() {
     return () => window.removeEventListener("keydown", touche);
   }, [scene, plusTard]);
 
+  // la main ou le clavier sur une bulle furtive : il attend qu'on ait fini
+  // (le temps de prendre le pas proposé), puis repart peu après
+  const retenir = () => {
+    if (minuteur.current) window.clearTimeout(minuteur.current);
+    minuteur.current = null;
+  };
+  const relacher = () => {
+    if (!scene || scene.tuto || sortie) return;
+    retenir();
+    minuteur.current = window.setTimeout(() => fermer(), 2400);
+  };
+
   const suivant = () => {
     if (!scene) return;
     if (i + 1 < scene.repliques.length) setI(i + 1);
@@ -781,7 +793,15 @@ export function LeonardHote() {
         style={{ ["--leo-h" as string]: `${h}px`, ["--leo-w" as string]: `${w}px`, ...(pret ? null : { opacity: 0 }) }}
       >
         {enPlace && (
-          <div key={i} className={`${s.bulle} ${calme ? s.calme : ""} ${sortie ? s.sort : ""}`} role="status">
+          <div
+            key={i}
+            className={`${s.bulle} ${calme ? s.calme : ""} ${sortie ? s.sort : ""}`}
+            role="status"
+            onPointerEnter={scene.tuto ? undefined : retenir}
+            onPointerLeave={scene.tuto ? undefined : relacher}
+            onFocus={scene.tuto ? undefined : retenir}
+            onBlur={scene.tuto ? undefined : relacher}
+          >
             <div className={s.tete}>
               <span className={s.point} aria-hidden />
               <span className={s.nom}>Léonard</span>
