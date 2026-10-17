@@ -131,7 +131,8 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
       <div className="flex flex-col gap-3">
         <FilMoi />
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="min-w-0">
+          {/* la cible de Léonard quand il présente l'étagère (les nouveautés, V3 §11.4) */}
+          <div className="min-w-0" data-leonard="pieces">
             <p className="t-eyebrow m-0">{T.surtitre}</p>
             <h1 className="t-h1 m-0 mt-1">{T.titre}</h1>
             <p className="t-num m-0 mt-2 text-[15px] font-semibold">{resumeEtagere(etagere)}</p>

@@ -796,24 +796,28 @@
     radial-gradient(70% 120% at 50% 0%, rgba(255, 214, 140, 0.28), transparent 70%),
     linear-gradient(180deg, #2a2117, #120d08);
 }
+/* chaque calque monte d'un nombre entier de motifs (--monte) : la boucle ne saute pas */
 .eclats {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  height: 200%;
+  height: calc(100% + 1000px);
   background: radial-gradient(circle, rgba(255, 226, 150, 0.85) 1px, transparent 1.8px) 0 0 / 47px 53px;
   opacity: 0.55;
+  --monte: -530px;
   animation: monte 12s linear infinite;
 }
 .eclatsMoyens {
   background: radial-gradient(circle, rgba(255, 236, 180, 0.9) 1.4px, transparent 2.2px) 19px 11px / 71px 67px;
   opacity: 0.7;
+  --monte: -670px;
   animation-duration: 18s;
 }
 .eclatsProches {
   background: radial-gradient(circle, rgba(255, 245, 210, 0.95) 2px, transparent 3px) 31px 23px / 113px 97px;
   opacity: 0.8;
+  --monte: -970px;
   animation-duration: 26s;
 }
 @keyframes monte {
@@ -821,7 +825,7 @@
     transform: translateY(0);
   }
   to {
-    transform: translateY(-50%);
+    transform: translateY(var(--monte, -530px));
   }
 }
 .routeMilan {
