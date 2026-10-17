@@ -154,7 +154,8 @@ export function deplacerVers(d: Disposition, i: number, p: PlaceVide): Dispositi
   const sans = d.filter((_, j) => j !== i);
   const place: PlaceVide = p.i !== null ? { ...p, i: apres(p.i), apres: apres(p.i) } : { ...p, apres: apres(p.apres) };
   const l = remplirPlace(sans, place, b);
-  return l === sans ? d : l;
+  // refusé, ou rien n'a bougé (un bloc qui ne va pas à la place retombe où il était) : même liste
+  return l === sans || JSON.stringify(l) === JSON.stringify(d) ? d : l;
 }
 
 /** Ajoute le bloc `b` à la fin de la page, à son format (le plus proche s'il n'est pas permis). */
@@ -164,10 +165,32 @@ export function ajouter(d: Disposition, b: Bloc): Disposition {
   return l ? normaliser(l) : d;
 }
 
-/** Retire le bloc `i` : un bloc fixe est masqué (il garde ses réglages), un média est retiré (son fichier part à l'enregistrement). */
+/**
+ * Retire le bloc `i` : un bloc fixe est masqué (il garde ses réglages), un
+ * média est retiré (son fichier part à l'enregistrement). En tuile ou en
+ * héros, sa place reste, libre : le reste de la page ne bouge pas (une
+ * place libre de fin de page ou une rangée toute libre part, normaliser).
+ * Une bande part avec sa rangée.
+ */
 export function retirer(d: Disposition, i: number): Disposition {
-  if (!dans(d, i) || !estBloc(d[i])) return d;
-  return normaliser(d.filter((_, j) => j !== i));
+  const e = d[i];
+  if (!dans(d, i) || !estBloc(e)) return d;
+  const f = e.f;
+  if (f === "bande") return normaliser(d.filter((_, j) => j !== i));
+  const place: ElementPage = { k: "libre", f };
+  return normaliser(d.map((x, j) => (j === i ? place : x)));
+}
+
+/**
+ * Déplace l'élément `i` à l'index `j` (il prend la place de `j`, qui recule
+ * ou avance d'un cran avec ceux d'entre les deux) ; chacun garde son format.
+ * Le glisser au téléphone, où l'on ne règle que l'ordre.
+ */
+export function deplacerA(d: Disposition, i: number, j: number): Disposition {
+  if (!dans(d, i) || !dans(d, j) || i === j || !estBloc(d[i])) return d;
+  const l = d.filter((_, k) => k !== i);
+  l.splice(j, 0, d[i]);
+  return normaliser(l);
 }
 
 /** Ferme la place libre `i` : les éléments suivants remontent. */

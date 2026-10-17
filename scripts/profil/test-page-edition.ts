@@ -33,6 +33,7 @@ import {
   deplacer,
   deplacerVers,
   echanger,
+  deplacerA,
   fermerPlace,
   mettreALaPlace,
   peutAjouterMedia,
@@ -200,7 +201,23 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
   check("blocsMasques : les blocs absents, dans l'ordre", egal(blocsMasques(d).map((b) => b.k), ["radar", "reponses", "trophees", "progression", "folio", "journal", "saisons"]));
   const t: Disposition = [fixe("vitrine", "bande"), image("heros"), fixe("amis", "tuile")];
   const r = retirer(t, 1);
-  check("retirer : un média part de la liste", court(r) === "vitrine:bande amis:tuile" && !r.some(estMedia));
+  check("retirer : un média part de la liste (en héros, sa place reste libre)", court(r) === "vitrine:bande libre:heros amis:tuile" && !r.some(estMedia));
+  // masquer en tuile ou en héros : la place reste libre, la suite de la page ne bouge pas
+  const rang: Disposition = [fixe("radar", "heros"), fixe("amis", "tuile"), fixe("journal", "tuile"), fixe("folio", "tuile"), image("tuile")];
+  check("retirer : un héros laisse sa place libre (les rangées ne bougent pas)", court(retirer(rang, 0)) === "libre:heros amis:tuile journal:tuile folio:tuile image:tuile");
+  check("retirer : une tuile au milieu d'une rangée laisse sa place libre", court(retirer(rang, 3)) === "radar:heros amis:tuile journal:tuile libre:tuile image:tuile");
+  check("retirer : un média en tuile laisse aussi sa place", court(retirer([image("tuile"), fixe("amis", "tuile")], 0)) === "libre:tuile amis:tuile");
+  check("retirer : une bande part avec sa rangée", court(retirer([fixe("vitrine", "bande"), fixe("amis", "tuile")], 0)) === "amis:tuile");
+  check("retirer : la dernière tuile de la page ne laisse rien", court(retirer([fixe("vitrine", "bande"), fixe("amis", "tuile")], 1)) === "vitrine:bande");
+  check("retirer : une rangée devenue toute libre part", court(retirer([fixe("radar", "heros"), fixe("vitrine", "bande")], 0)) === "vitrine:bande");
+}
+
+// ── deplacerA (le glisser au téléphone : l'ordre seul) ─────────────────
+{
+  const d: Disposition = [fixe("vitrine", "bande"), fixe("radar", "heros"), fixe("amis", "tuile"), fixe("journal", "tuile")];
+  check("deplacerA : vers le bas, il prend l'index visé, formats gardés", court(deplacerA(d, 0, 2)) === "radar:heros amis:tuile vitrine:bande journal:tuile");
+  check("deplacerA : vers le haut", court(deplacerA(d, 3, 0)) === "journal:tuile vitrine:bande radar:heros amis:tuile");
+  check("deplacerA : sur place, hors liste ou une place libre (même liste)", deplacerA(d, 1, 1) === d && deplacerA(d, 0, 9) === d && deplacerA([libre("tuile"), fixe("amis", "tuile")], 0, 1).length === 2);
 }
 
 // ── 6 médias, 1 vidéo ─────────────────────────────────────────────────
@@ -266,7 +283,7 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
       const avant = d;
       const i = Math.floor(hasard() * Math.max(1, d.length));
       const places = rangees(d).flatMap((r, ri) => placesVides(r, ri));
-      const op = Math.floor(hasard() * 10);
+      const op = Math.floor(hasard() * 11);
       let retire: Set<string> | null = null; // ce que l'opération a le droit d'enlever
       const cle = (e: ElementPage) => (estMedia(e) ? e.id : e.k);
       switch (op) {
@@ -302,6 +319,9 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
         case 9:
           // une place libre posée à la main (comme une conversion d'avant), puis la forme propre
           d = validerDisposition([...d.slice(0, i), { k: "libre", f: un(["tuile", "heros"] as const) }, ...d.slice(i)], "lecture").disposition;
+          break;
+        case 10:
+          d = deplacerA(d, i, Math.floor(hasard() * Math.max(1, d.length)));
           break;
       }
       operations++;

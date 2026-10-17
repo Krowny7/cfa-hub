@@ -37,6 +37,7 @@ export const EDITEUR_PAGE = {
   apres: "Après",
   mettreALaPlace: "Mettre à la place",
   pose: "posé · échanger",
+  remplacerMediaAide: "un bloc pas encore posé remplace ce média : son fichier part à l'enregistrement",
   nouveau: "nouveau",
   masquer: "Masquer ce bloc",
   masquerAide: "garde ses réglages",

@@ -38,7 +38,7 @@ import {
   type Format,
   type PlaceVide,
 } from "@/lib/profil/disposition";
-import { ajouter, blocsMasques, changerFormat, deplacer, deplacerVers, echanger, fermerPlace, mettreALaPlace, peutAjouterMedia, remplirPlace, retirer } from "@/lib/profil/page-edition";
+import { ajouter, blocsMasques, changerFormat, deplacer, deplacerA, deplacerVers, echanger, fermerPlace, mettreALaPlace, peutAjouterMedia, remplirPlace, retirer } from "@/lib/profil/page-edition";
 import { Refus, envoyerMedia, estFichierVideo } from "@/lib/profil/envoi-media";
 import { EDITEUR_PAGE as T } from "@/lib/voice-editeur";
 import s from "./EditeurPage.module.css";
@@ -82,6 +82,9 @@ function Vignette({ f }: { f: Format }) {
     </span>
   );
 }
+
+/** Ordinateur (dès 1 024 px) : les formats et les places libres jouent. */
+const grandEcran = () => window.matchMedia("(min-width: 1024px)").matches;
 
 /** ce qui prend le focus dans un menu de la barre */
 const FOCALISABLES = 'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
@@ -250,7 +253,10 @@ export function EditeurPage({
       if (estLibre(l[c.i])) {
         const p = placeDe(c, l);
         if (p) appliquer(deplacerVers(l, i, p));
-      } else appliquer(echanger(l, i, c.i));
+      }
+      // sur un autre bloc : sur ordinateur, ils échangent place et format ; au téléphone (une colonne,
+      // où l'on ne voit pas les formats), il vient à sa place et chacun garde son format
+      else appliquer(grandEcran() ? echanger(l, i, c.i) : deplacerA(l, i, c.i));
       return;
     }
     const p = placeDe(c, l);
@@ -637,13 +643,17 @@ export function EditeurPage({
                 </button>
               </span>
               <span className="t-micro px-2.5 pb-1 pt-2">{T.mettreALaPlace}</span>
+              {/* un média remplacé par un bloc neuf est retiré : son fichier part, comme avec « Retirer ce média » */}
+              {media && <span className="t-micro px-2.5 pb-1 font-normal">{T.remplacerMediaAide}</span>}
               {BLOCS.filter((x) => x.k !== b.k).map((x) => (
                 <button
                   key={x.k}
                   type="button"
                   className={s.ligne}
                   onClick={() => {
-                    appliquer(mettreALaPlace(d, i, x.k));
+                    // déjà posé : au téléphone, il vient à cette place sans toucher aux formats (sur ordinateur, ils échangent place et format)
+                    const ailleurs = d.findIndex((e) => e.k === x.k);
+                    appliquer(ailleurs >= 0 && !grandEcran() ? deplacerA(d, ailleurs, i) : mettreALaPlace(d, i, x.k));
                     setChoisi(x.k);
                     fermer();
                   }}
