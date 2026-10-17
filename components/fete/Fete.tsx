@@ -119,13 +119,15 @@ export function FeteVue({
 
   if (taille === "ligne") {
     return (
-      <button type="button" role="status" aria-live="polite" className={s.ligne} onClick={onPasser} data-fete="ligne" data-etape={etape}>
-        <Check size={16} strokeWidth={2.6} aria-hidden className="shrink-0" />
-        <span className="min-w-0 text-[14px] font-semibold leading-snug [overflow-wrap:anywhere]">
-          {titre}
-          {gain && <span className="font-medium text-muted"> · {gain}</span>}
-        </span>
-      </button>
+      <div role="status" aria-live="polite" data-fete="ligne" data-etape={etape}>
+        <button type="button" className={s.ligne} onClick={onPasser}>
+          <Check size={16} strokeWidth={2.6} aria-hidden className="shrink-0" />
+          <span className="min-w-0 text-[14px] font-semibold leading-snug [overflow-wrap:anywhere]">
+            {titre}
+            {gain && <span className="font-medium text-muted"> · {gain}</span>}
+          </span>
+        </button>
+      </div>
     );
   }
 

@@ -166,3 +166,27 @@ export async function noterCause(client: SupabaseClient, source: SourceDebrief, 
     return { ok: false, absente: false };
   }
 }
+
+/** La répartition de tous les débriefs récents (mes_causes) : % par cause, et le nombre d'erreurs classées. */
+export type MesCauses = { parts: Record<CauseErreur, number>; n: number };
+
+/** La réponse de mes_causes ; illisible : null. */
+export function causesDepuis(data: unknown): MesCauses | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const r = data as Raw;
+  if (!("n" in r)) return null;
+  const parts = causesVides();
+  for (const c of CAUSES) parts[c.cle] = Math.min(100, entier(r[c.cle]));
+  return { parts, n: entier(r.n) };
+}
+
+/** Les causes des débriefs des `jours` derniers jours du joueur connecté ; section absente : null. */
+export async function lireMesCauses(client: SupabaseClient, jours = 60): Promise<MesCauses | null> {
+  try {
+    const { data, error } = await client.rpc("mes_causes", { p_jours: jours });
+    if (error) return null;
+    return causesDepuis(data);
+  } catch {
+    return null;
+  }
+}

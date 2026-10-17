@@ -143,7 +143,7 @@ export function EnteteDebrief({ ouvrir }: { ouvrir?: () => void }) {
   const montrer = actif && etat.erreurs > 0;
   const reste = etat.erreurs - etat.classees;
   return (
-    <div className="card-quiet flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4" aria-label={DEBRIEF.titre}>
+    <div role="group" aria-label={DEBRIEF.titre} className="card-quiet flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-4">
       <div className="grid min-w-0 gap-1">
         {montrer && (
           <p className="m-0 text-[14.5px] font-semibold" aria-live="polite">
@@ -185,15 +185,14 @@ export function CausesErreur({ questionId, compact = false }: { questionId: stri
       <p id={`debrief-${questionId}`} className="t-micro m-0">
         {DEBRIEF.question}
       </p>
-      <div role="radiogroup" aria-labelledby={`debrief-${questionId}`} className="mt-2 flex flex-wrap gap-2">
+      <div role="group" aria-labelledby={`debrief-${questionId}`} className="mt-2 flex flex-wrap gap-2">
         {CAUSES.map((c) => {
           const oui = choisie === c.cle;
           return (
             <button
               key={c.cle}
               type="button"
-              role="radio"
-              aria-checked={oui}
+              aria-pressed={oui}
               onClick={() => ctx.noter(questionId, c.cle)}
               className={
                 "min-h-[44px] rounded-[10px] border px-3 text-[13px] leading-tight transition-colors " +

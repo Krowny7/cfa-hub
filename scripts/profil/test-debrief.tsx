@@ -6,11 +6,11 @@
 // avecCause (classée une fois, cause modifiable), la répartition (visible à
 // 80 %, triée, arrondie, « 30 % de lecture »), le temps par question
 // (« 1 min 32 », cible 75 à 110 s), les replis (section absente : lecture
-// null, toucher « absente », jamais d'erreur) ; le rendu de la correction
-// avec le débrief (en-tête, cinq causes sous chaque question ratée seulement,
-// ancres), et sans la section (boutons masqués, temps affiché) ; Fete : les
-// quatre tailles, Échap, durées, mouvement réduit (rendu final d'emblée,
-// réplique comprise), le format « +50 XP ».
+// null, toucher « absente », jamais d'erreur ; mes_causes lue) ; le rendu
+// de la correction avec le débrief (en-tête, cinq causes sous chaque
+// question ratée seulement, ancres), et sans la section (boutons masqués,
+// temps affiché) ; Fete : les quatre tailles, Échap, durées, mouvement
+// réduit (rendu final d'emblée, réplique comprise), le format « +50 XP ».
 import "./sans-css";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -19,6 +19,7 @@ import {
   CAUSES,
   DEBRIEF,
   avecCause,
+  causesDepuis,
   debriefAbsent,
   dureeCourte,
   etatDepuis,
@@ -26,6 +27,7 @@ import {
   hrefDebrief,
   ligneRepartition,
   lireDebrief,
+  lireMesCauses,
   noterCause,
   repartition,
   repartitionVisible,
@@ -90,6 +92,9 @@ async function main() {
   const nAbs = await noterCause(client(absente), "blanc", "x", "q", "savoir");
   const nRef = await noterCause(client({ code: "P0001", message: "Not a missed question" }), "blanc", "x", "q", "savoir");
   const nOk = await noterCause(client(null, { erreurs: 4, classees: 2 }), "officiel", "x", "q", "savoir");
+  const mc = causesDepuis({ savoir: 20, lecture: 40, calcul: 20, temps: 20, chance: 0, n: 5 });
+  check("causesDepuis (mes_causes) : % par cause et n ; illisible → null", mc?.n === 5 && mc.parts.lecture === 40 && mc.parts.chance === 0 && causesDepuis({ savoir: 1 }) === null && causesDepuis(null) === null);
+  check("lireMesCauses : section absente → null ; lue", (await lireMesCauses(client(absente))) === null && (await lireMesCauses(client(null, { lecture: 30, n: 10 })))?.parts.lecture === 30);
   check("noterCause : absente / refusée / enregistrée", !nAbs.ok && nAbs.absente && !nRef.ok && !nRef.absente && nOk.ok && nOk.classees === 2, JSON.stringify({ nAbs, nRef, nOk }));
 
   // ── le rendu de la correction avec le débrief ───────────────────────
@@ -106,9 +111,9 @@ async function main() {
   const texte = sansNbsp(avec.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").split("&#x27;").join("'"));
   check("en-tête : « Débrief : 1/2 erreurs classées », le temps et sa cible", texte.includes("Débrief : 1/2 erreurs classées") && texte.includes("1 min 32 par question") && texte.includes("cible 75 à 110 s"), texte.slice(0, 300));
   check("en-tête : sous 80 %, l'invitation et « Reprendre le débrief »", texte.includes(DEBRIEF.aClasser) && texte.includes(DEBRIEF.reprendre));
-  const groupes = avec.match(/role="radiogroup"/g)?.length ?? 0;
-  check("cinq causes sous chaque question ratée (2), aucune sous la juste", groupes === 2 && (avec.match(/role="radio"/g)?.length ?? 0) === 10, String(groupes));
-  check("la cause choisie est cochée (aria-checked) et modifiable (les autres restent touchables)", (avec.match(/aria-checked="true"/g)?.length ?? 0) === 1 && /aria-checked="true"[^>]*>Lecture de l(&#x27;|')énoncé</.test(avec));
+  const groupes = avec.match(/data-debrief/g)?.length ?? 0;
+  check("cinq causes sous chaque question ratée (2), aucune sous la juste", groupes === 2 && (avec.match(/aria-pressed=/g)?.length ?? 0) === 10, String(groupes));
+  check("la cause choisie est enfoncée (aria-pressed) et modifiable (les autres restent touchables)", (avec.match(/aria-pressed="true"/g)?.length ?? 0) === 1 && /aria-pressed="true"[^>]*>Lecture de l(&#x27;|')énoncé</.test(avec));
   check("chaque question porte son ancre (?debrief=1 y mène)", avec.includes('id="revue-q2"') && avec.includes('id="revue-q3"'));
   const fini = { ...etat, classees: 2, causes: { ...etat.causes, calcul: 1 }, notes: { q2: "lecture" as const, q3: "calcul" as const } };
   const tout = sansNbsp(renderToStaticMarkup(
@@ -123,14 +128,14 @@ async function main() {
       <ReviewSection review={review} defaultOpen entete={(o) => <EnteteDebrief ouvrir={o} />} piedDe={piedDebrief} />
     </DebriefCopie>,
   ));
-  check("sans la section : boutons de cause masqués, temps par question affiché", !sans.includes('role="radiogroup"') && !sans.includes("Débrief :") && sans.includes("1 min 15 par question"));
+  check("sans la section : boutons de cause masqués, temps par question affiché", !sans.includes("data-debrief") && !sans.includes("Débrief :") && sans.includes("1 min 15 par question"));
   const nu = renderToStaticMarkup(<ReviewSection review={review} defaultOpen />);
-  check("ReviewSection sans débrief : inchangée (ni ancre ni causes)", !nu.includes("revue-") && !nu.includes("radiogroup") && nu.includes("Question q2"));
+  check("ReviewSection sans débrief : inchangée (ni ancre ni causes)", !nu.includes("revue-") && !nu.includes("data-debrief") && nu.includes("Question q2"));
 
   // ── Fete : les quatre tailles ───────────────────────────────────────
   const rien = () => undefined;
   const ligne = renderToStaticMarkup(<FeteVue taille="ligne" titre="Contrat tenu" xp={20} etape="posee" onPasser={rien} />);
-  check("ligne : « Contrat tenu · +20 XP », un bouton (clic : passée)", ligne.includes('data-fete="ligne"') && sansNbsp(ligne.replace(/<[^>]+>/g, "")).includes("Contrat tenu · +20 XP") && ligne.startsWith("<button"));
+  check("ligne : « Contrat tenu · +20 XP », annoncée (role status), un bouton (clic : passée)", ligne.includes('data-fete="ligne"') && ligne.includes('role="status"') && sansNbsp(ligne.replace(/<[^>]+>/g, "")).includes("Contrat tenu · +20 XP") && ligne.includes("<button"));
   const carte = renderToStaticMarkup(<FeteVue taille="carte" titre="Premier pas en Quant" sous="Jalon de branche" xp={50} etape="entree" onPasser={rien} />);
   const carteAncre = renderToStaticMarkup(<FeteVue taille="carte" titre="Premier pas" ancre={{ x: 120, y: 340 }} etape="entree" onPasser={rien} />);
   check("carte : centrée, le tampon sur la carte, ou à l'ancre (coordonnées de la quête)", carte.includes('data-fete="carte"') && carte.includes("+50 XP") && !carte.includes("tamponAncre") && carteAncre.includes("tamponAncre") && /left:120px;top:340px/.test(carteAncre));
