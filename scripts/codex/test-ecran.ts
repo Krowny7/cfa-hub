@@ -539,6 +539,8 @@ console.log("\n# /codex « Tout le Codex », la ligne et le détail (Codex simpl
   const detailSrc = readFileSync("components/codex/DetailQuete.tsx", "utf8");
   check("le détail : ni réplique de Léonard, ni « Réclamer la récompense », ni double pourquoi", !detailSrc.includes("choisirReplique") && !detailSrc.includes("leonardLigne") && !detailSrc.includes("reclamer") && (detailSrc.match(/T\.pourquoi/g) ?? []).length === 1);
   check("la ligne : jamais un bouton dans un bouton (« Récupérer » à côté)", ligneSrc.includes("ligneAvecAction") && ligneSrc.includes("{bouton}"));
+  const filSrc = readFileSync("components/codex/FilRouge.tsx", "utf8");
+  check("une seule ligne de quête partout : la galerie des exploits et le fil rouge aussi", !carteSrc.includes("LigneCompacte") && !carteSrc.includes("c.compacte") && carteSrc.includes("<Ligne key={q.id + q.periode}") && filSrc.includes("<LigneQuete l={ch.courant}") && !filSrc.includes("c.compacte"));
   check("plus de police manuscrite ni de réplique dans les titres de chemin", !/className=\{`\$\{c\.plume\} \$\{c\.titreChemin\}`\}/.test(carteSrc) && !carteSrc.includes("repliqueChemin") && !carteSrc.includes("acte.replique"));
   check("la carte : « À faire » d'office, la légende complète (glyphes et quatre états)", carteSrc.includes('useState<FiltreCarte>(cible ? "tout" : "afaire")') && ["à faire", "en cours", "à récupérer", "faite", "séance ciblée", "Maître"].every((x) => carteSrc.includes(x)));
 }

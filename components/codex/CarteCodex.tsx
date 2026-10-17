@@ -11,7 +11,7 @@ import { LigneQuete as Ligne } from "@/components/codex/LigneQuete";
 import { FeuillesNotions, PastilleMatiere } from "@/components/codex/PastilleMatiere";
 import { Feuille } from "@/components/ui/Feuille";
 import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
-import { avanceeActe, libelleEtat } from "@/lib/codex/tout";
+import { avanceeActe, exploitsTout, libelleEtat, texteExploit } from "@/lib/codex/tout";
 import e from "./Encre.module.css";
 import c from "./Carte.module.css";
 
@@ -271,33 +271,16 @@ function LienCollection({ href }: { href: string | null }) {
   );
 }
 
-/** La galerie des exploits : chacun avec son nom (ou son indice, s'il est caché), les tamponnés d'abord. */
-function GalerieExploits({ exploits, collection, onQuete }: { exploits: LigneQuete[]; collection: string | null; onQuete: SurQuete }) {
-  const rang = { terminee: 0, active: 1, disponible: 2, verrouillee: 3 } as const;
-  const liste = visibles(exploits)
-    .map((q, i) => ({ q, i }))
-    .sort((a, b) => rang[a.q.etat] - rang[b.q.etat] || a.i - b.i)
-    .map((x) => x.q);
-  const caches = exploits.length - liste.length;
+/** La galerie des exploits, en lignes de quête : à récupérer, à trouver (le nom et l'énigme lisible), puis trouvés. */
+function GalerieExploits({ exploits, collection, sobre, onQuete }: { exploits: LigneQuete[]; collection: string | null; sobre: boolean; onQuete: SurQuete }) {
+  const { aRecuperer, aTrouver, trouves } = exploitsTout(exploits);
+  const caches = exploits.length - visibles(exploits).length;
   return (
     <div className={e.carnet}>
-      <ul className={c.galerie}>
-        {liste.map((q) => {
-          const enigme = q.affichage === "indice" && q.etat !== "terminee";
-          return (
-            <li key={q.id + q.periode}>
-              <button type="button" className={c.compacte} onClick={() => onQuete(q)} aria-haspopup="dialog" aria-label={enigme ? `Exploit caché : ${q.indice ?? CODEX.exploits.enigme}` : libelleSceau(q)}>
-                <Sceau l={q} taille={40} />
-                <span className="min-w-0 flex-1">
-                  <span className={c.compacteTitre}>{enigme ? CODEX.exploits.enigme : q.titre}</span>
-                  <span className={c.galerieSous}>{enigme ? (q.indice ?? libelleEtat(q)) : q.etat === "active" && q.cible > 1 ? `${Math.floor(q.valeur)} sur ${Math.floor(q.cible)}` : libelleEtat(q)}</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      {caches > 0 && <p className="t-micro m-0 mt-3 text-center">{caches === 1 ? "Et un exploit dont je ne dis rien." : `Et ${caches} exploits dont je ne dis rien.`}</p>}
+      {[...aRecuperer, ...aTrouver, ...trouves].map((q) => (
+        <Ligne key={q.id + q.periode} l={q} sobre={sobre} onOuvrir={onQuete} texte={q.etat === "terminee" ? q.consigne : texteExploit(q)} />
+      ))}
+      {caches > 0 && <p className="t-micro m-0 mt-3 text-center">{caches === 1 ? "Et 1 exploit caché." : `Et ${caches} exploits cachés.`}</p>}
       <LienCollection href={collection} />
     </div>
   );
@@ -727,6 +710,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, allume, cible }: { vu
         <GalerieExploits
           exploits={vue.exploits}
           collection={vue.collection}
+          sobre={vue.sobre}
           onQuete={(q) => {
             setGalerie(false);
             onQuete(q);
