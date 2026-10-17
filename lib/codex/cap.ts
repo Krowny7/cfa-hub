@@ -4,10 +4,8 @@
 // ici (maitriseLue), la vue construit le cap (capDe), l'écran l'affiche
 // (components/codex/Cap.tsx).
 //
-// MAITRISE, StatutMaitrise, MaitriseMatiere, Maitrise, zoneDe, preparationDe,
-// fuites et gainPreparation sont une COPIE LOCALE de lib/maitrise.ts (couloir
-// B, V3 §4.3) : le Codex n'en importe rien avant la fusion F2 ; ensuite, ce
-// fichier la réexporte (lot A7). Garder les signatures identiques.
+// La maîtrise unique (types, constantes, zones, préparation, fuites) vient de
+// lib/maitrise.ts (V3 §4.3) ; ce fichier la réexporte pour le Codex (lot A7).
 //
 // La maîtrise vient de codex_mesures_v3 (la maîtrise unique, maitrise_joueur)
 // quand la base la donne ; sinon de l'ancienne mesure de codex_lire (séances
@@ -17,74 +15,11 @@ import type { ContenuMatiere } from "@/lib/codex/catalogue";
 import type { MesuresSql } from "@/lib/codex/moteur";
 import type { Destination } from "@/lib/codex/destinations";
 import { joursEntre } from "@/lib/objectif-calc";
+import { MAITRISE, fuites, preparationDe, zoneDe, type Maitrise, type MaitriseMatiere, type StatutMaitrise } from "@/lib/maitrise";
 
-// ── Copie locale de lib/maitrise.ts (V3 §4.3) ──────────────────────────
-
-export const MAITRISE = { FENETRE: 60, SEUIL_PROVISOIRE: 10, SEUIL_MESURE: 40, POIDS_PREMIERE: 2, POIDS_RAPPROCHEE: 0.5, ZONES: [50, 70] as const, REPERE: 70 } as const;
-
-export type StatutMaitrise = "non_mesuree" | "provisoire" | "mesuree";
-
-export type MaitriseMatiere = {
-  cle: string;
-  nom: string;
-  court: string;
-  /** poids à l'examen, en % */
-  poids: number;
-  /** null : pas encore mesurée (moins de 10 réponses) */
-  pct: number | null;
-  /** réponses de la fenêtre (60 au plus) */
-  n: number;
-  /** réponses en tout */
-  total: number;
-  statut: StatutMaitrise;
-  /** la dernière réponse dans la matière (ISO) ; null : on ne la connaît pas */
-  derniere: string | null;
-  /** la maîtrise des 40 premières réponses (null sous 40) */
-  debut: number | null;
-  /** l'ancienne règle, gardée pour le verrou des rangs (V3 §4.5) */
-  ancienne: number | null;
-  zone: "basse" | "moyenne" | "haute" | null;
-};
-
-export type Maitrise = {
-  matieres: MaitriseMatiere[];
-  /** la préparation, 0–100 : la maîtrise pondérée par le poids des matières, les non mesurées à 0 */
-  preparation: number;
-  /** part du poids mesurée (40 réponses ou plus), 0–100 */
-  couverture: number;
-  /** « ancienne » : maitrise_joueur absente, la mesure est l'ancienne (affichée « provisoire ») */
-  source: "unique" | "ancienne";
-};
-
-/** La zone d'une maîtrise : basse sous 50, moyenne de 50 à 69, haute à 70 et plus ; null : pas mesurée. */
-export function zoneDe(pct: number | null): MaitriseMatiere["zone"] {
-  if (pct === null) return null;
-  return pct < MAITRISE.ZONES[0] ? "basse" : pct < MAITRISE.ZONES[1] ? "moyenne" : "haute";
-}
+export { MAITRISE, zoneDe, preparationDe, gainPreparation, fuites, type StatutMaitrise, type MaitriseMatiere, type Maitrise } from "@/lib/maitrise";
 
 const sommePoids = (ms: Pick<MaitriseMatiere, "poids">[]) => ms.reduce((s, m) => s + m.poids, 0);
-const auDixieme = (x: number) => Math.round(x * 10) / 10;
-
-/** La préparation : Σ poids × (pct ?? 0) / Σ poids, arrondie. */
-export function preparationDe(ms: MaitriseMatiere[]): number {
-  const total = sommePoids(ms);
-  return total > 0 ? Math.round(ms.reduce((s, m) => s + m.poids * (m.pct ?? 0), 0) / total) : 0;
-}
-
-/** Ce que gagnerait la préparation si la matière atteignait ce seuil : (poids / Σ poids) × max(0, seuil − pct), au dixième. */
-export function gainPreparation(m: MaitriseMatiere, seuil: number, ms: MaitriseMatiere[]): number {
-  const total = sommePoids(ms);
-  return total > 0 ? auDixieme((m.poids / total) * Math.max(0, seuil - (m.pct ?? 0))) : 0;
-}
-
-/** Les fuites (V3 §4.7) : les points de préparation perdus sous le repère de 70 %, par matière, les plus fortes d'abord. */
-export function fuites(ms: MaitriseMatiere[], n = 3): { cle: string; court: string; points: number }[] {
-  return ms
-    .map((m) => ({ cle: m.cle, court: m.court, points: gainPreparation(m, MAITRISE.REPERE, ms) }))
-    .filter((f) => f.points > 0)
-    .sort((a, b) => b.points - a.points || a.cle.localeCompare(b.cle))
-    .slice(0, n);
-}
 
 // ── La maîtrise telle que le Codex la lit ──────────────────────────────
 
@@ -132,11 +67,16 @@ export function maitriseDuCodex(contenu: ContenuMatiere[], mesures: Pick<Mesures
 /** Le jour de Paris d'un instant (lib/objectif.ts est un module serveur). */
 const JOUR_PARIS = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });
 
+/** Les jours (de Paris) écoulés depuis cet instant jusqu'à `jour`, 0 au moins ; null : instant inconnu. */
+export function joursDepuis(instant: string | null, jour: string): number | null {
+  const t = instant ? Date.parse(instant) : NaN;
+  return Number.isFinite(t) ? Math.max(0, joursEntre(JOUR_PARIS.format(t), jour)) : null;
+}
+
 /** « aujourd'hui », « hier », « il y a 12 j » : la dernière réponse dans la matière ; null : on ne la connaît pas. */
 export function fraicheurDe(derniere: string | null, jour: string): string | null {
-  const t = derniere ? Date.parse(derniere) : NaN;
-  if (!Number.isFinite(t)) return null;
-  const n = Math.max(0, joursEntre(JOUR_PARIS.format(t), jour));
+  const n = joursDepuis(derniere, jour);
+  if (n === null) return null;
   return n === 0 ? "aujourd'hui" : n === 1 ? "hier" : `il y a ${n} j`;
 }
 
