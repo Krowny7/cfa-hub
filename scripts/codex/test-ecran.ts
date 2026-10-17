@@ -97,6 +97,8 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
   const m = panneauDe(exempleCodex("milieu"));
   check("milieu : trois arcs (les contrats du jour)", m.arcs.total === 3, JSON.stringify(m.arcs));
   check("milieu : la ligne des récompenses versées", !!m.versees && m.versees.n > 0 && m.versees.xp > 0 && ligneVersees(m.versees).startsWith(`${m.versees.n} quête`) && ligneVersees(m.versees).includes(" tamponnée") && ligneVersees(m.versees).endsWith(" XP"), m.versees ? ligneVersees(m.versees) : "");
+  const ms = panneauDe({ ...exempleCodex("milieu"), sobre: true });
+  check("mode sobre : les mêmes quêtes tamponnées, sans XP, sans titre ni pièce", !!ms.versees && ms.versees.n === m.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(m.versees?.cles) && !ligneVersees(ms.versees).includes("XP") && ms.versees.titre === null && ms.rare?.quoi !== "piece" && JSON.stringify(ms.quetes) === JSON.stringify(m.quetes), ms.versees ? ligneVersees(ms.versees) : "");
   check("ligne des récompenses : singulier, titre", ligneVersees({ n: 1, xp: 40, cles: ["x"], titre: "Garzone" }) === "1 quête tamponnée · +40 XP · titre Garzone");
   check("la semaine : faits ≤ total, une ligne par contrat", m.semaine.faits <= m.semaine.total && m.semaine.quetes.length === m.semaine.total);
   check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);

@@ -158,10 +158,11 @@ export function panneauDe(vue: VueCodex): Panneau {
   }
 
   const { lignes, actes } = aAnnoncer(vue);
-  const titre = lignes.find((l) => l.titreNom)?.titreNom ?? null;
-  const piece = lignes.find((l) => l.cosmetique);
+  // le mode sobre (lib/codex/sobre) : les quêtes tamponnées sont dites, sans leur XP ni leurs pièces
+  const titre = vue.sobre ? null : (lignes.find((l) => l.titreNom)?.titreNom ?? null);
+  const piece = vue.sobre ? undefined : lignes.find((l) => l.cosmetique);
   const versees = lignes.length || actes.length
-    ? { n: lignes.length, xp: lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
+    ? { n: lignes.length, xp: vue.sobre ? 0 : lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
     : null;
   const rare: Panneau["rare"] = actes.length
     ? { quoi: "acte", libelle: `Acte clos : ${actes[0].acte.titre}` }

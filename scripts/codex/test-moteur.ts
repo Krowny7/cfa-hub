@@ -787,7 +787,7 @@ console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)"
   const vs = construireVue(e, r, null, { devoile: null, sobre: true });
   const vn = construireVue(e, r, null, { devoile: null });
   check("la vue et le bilan portent le mode sobre ; sans réglage, éteint", vs.sobre && bilanDe(vs).sobre === true && !vn.sobre && bilanDe(vn).sobre === false);
-  check("le mode sobre garde la séance, le panneau, le cap et les contrats", J(panneauDe(vs)) === J(panneauDe(vn)) && J(vs.contrats) === J(vn.contrats) && J(vs.cap) === J(vn.cap) && J(vs.seance) === J(vn.seance));
+  check("le mode sobre garde la séance, les quêtes du panneau, le cap et les contrats", J(panneauDe(vs).quetes) === J(panneauDe(vn).quetes) && J(panneauDe(vs).seance) === J(panneauDe(vn).seance) && J(vs.contrats) === J(vn.contrats) && J(vs.cap) === J(vn.cap) && J(vs.seance) === J(vn.seance));
   // les écrans : la fête branchée sur components/fete, l'XP rangée en mode sobre
   const fete = readFileSync("components/codex/FeteCodex.tsx", "utf8");
   check("FeteCodex joue les quatre tailles (components/fete, chargée à la demande), trois au plus", fete.includes('import("@/components/fete/Fete")') && fete.includes("ssr: false") && fete.includes("habitFete(enCours") && fete.includes("MAX_FETES = 3"));
