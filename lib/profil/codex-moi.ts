@@ -17,6 +17,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ACTES, catalogueCodex, contenuDuProgramme } from "@/lib/codex/catalogue";
 import { modeleDeContrat, nomActe, titreClair, titreContrat } from "@/lib/codex/titres-clairs";
 import type { Quete } from "@/lib/codex/types";
+import { attendRecuperer } from "@/lib/codex/recuperer";
 
 /** Une ligne de codex_progression, telle que Moi la lit. */
 export type LigneCodexMoi = {
@@ -69,7 +70,6 @@ function jourDe(horodatage: string | null): string | null {
 }
 
 const xpDe = (l: Pick<LigneCodexMoi, "xp">) => Math.max(0, Number(l.xp) || 0);
-const rapporte = (l: LigneCodexMoi) => xpDe(l) > 0 || !!l.cosmetique || !!l.titre;
 const faite = (l: LigneCodexMoi) => l.etat === "terminee" || l.etat === "recompensee";
 
 // ── Les titres ─────────────────────────────────────────────────────────
@@ -105,9 +105,8 @@ export function codexMoiDe(lignes: LigneCodexMoi[], o: { sobre: boolean; titre?:
   const titre = o.titre ?? titreLigne;
   const utiles = lignes.filter((l) => !estMiroir(l.quete_id));
   const faites = utiles.filter(faite);
-  const aRecuperer = utiles.filter(
-    (l) => l.etat === "terminee" || (!o.sobre && l.etat === "recompensee" && !l.vu && !l.retro && rapporte(l) && !l.quete_id.startsWith("exploit:sceau:")),
-  ).length;
+  // la règle unique de « Récupérer » (lib/codex/recuperer), celle de la vue et du panneau
+  const aRecuperer = utiles.filter((l) => attendRecuperer(l, o.sobre)).length;
   const xp = utiles.filter((l) => l.etat === "recompensee").reduce((s, l) => s + xpDe(l), 0);
 
   // les plus récentes d'abord ; les rétroactives (comptées d'office) à part, en dernier

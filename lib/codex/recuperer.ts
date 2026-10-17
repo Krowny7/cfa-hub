@@ -67,7 +67,20 @@ export const cleRecuperer = (x: { quete: string; periode: string }) => `${x.quet
 export type Noms = { titre: (id: string) => string | null; recompense: (cle: string | null) => string | null };
 
 /** Une ligne rapporte-t-elle quelque chose (XP, pièce ou titre) ? */
-const rapporte = (l: Pick<LigneProgression, "xp" | "cosmetique" | "titre">) => (Number(l.xp) || 0) > 0 || !!l.cosmetique || !!l.titre;
+const rapporte = (l: { xp: number | string | null; cosmetique: string | null; titre: string | null }) => (Number(l.xp) || 0) > 0 || !!l.cosmetique || !!l.titre;
+
+/** Ce qu'il faut d'une ligne de codex_progression pour savoir si elle attend « Récupérer » (la vue, et Moi qui lit la table). */
+export type LigneAttente = { quete_id: string; etat: string; vu: boolean | null; retro: boolean | null; xp: number | string | null; cosmetique: string | null; titre: string | null };
+
+/**
+ * La règle unique de « Récupérer » (la vue, le panneau, la tuile de Moi) :
+ * une ligne « terminee » attend d'être versée ; hors mode sobre, une ligne
+ * « recompensee » pas encore vue, non rétroactive, qui rapporte quelque
+ * chose, attend son accusé (le repli sans la §9). Jamais un sceau du profil
+ * (il a sa cérémonie).
+ */
+export const attendRecuperer = (l: LigneAttente, sobre: boolean): boolean =>
+  l.etat === "terminee" || (!sobre && l.etat === "recompensee" && !l.vu && !l.retro && rapporte(l) && !l.quete_id.startsWith("exploit:sceau:"));
 
 /**
  * Ce qui attend « Récupérer », les plus récentes d'abord : les lignes
@@ -80,8 +93,7 @@ export function aRecupererDe(lignes: LigneProgression[], o: Noms & { sobre: bool
   const out: (ARecuperer & { t: number })[] = [];
   for (const l of lignes) {
     const aVerser = l.etat === "terminee";
-    const accuse = !o.sobre && l.etat === "recompensee" && !l.vu && !l.retro && rapporte(l) && !l.quete_id.startsWith("exploit:sceau:");
-    if (!(aVerser || accuse) || o.ignorer?.(l.quete_id)) continue;
+    if (!attendRecuperer(l, o.sobre) || o.ignorer?.(l.quete_id)) continue;
     const piece = l.cosmetique ?? l.titre ?? null;
     out.push({
       quete: l.quete_id,
