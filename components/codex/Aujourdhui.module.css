@@ -23,6 +23,19 @@
   grid-area: recuperer;
   min-width: 0;
 }
+.zoneRecuperer:empty {
+  display: none;
+}
+/* rien à récupérer : pas de rangée vide (ni son écart) au-dessus du fil */
+.grille:has(> .zoneRecuperer:empty) {
+  grid-template-areas: "fil" "replis";
+}
+@media (min-width: 1024px) {
+  .grille:has(> .zoneRecuperer:empty) {
+    grid-template-areas: "fil replis";
+    grid-template-rows: auto;
+  }
+}
 .zoneFil {
   grid-area: fil;
   min-width: 0;

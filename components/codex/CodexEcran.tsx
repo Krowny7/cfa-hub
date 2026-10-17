@@ -48,6 +48,8 @@ const nomMatiere = (vue: VueCodex, key?: string) => (key ? vue.branches.find((b)
 
 export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, quete }: Props) {
   const [vue, setVue] = useState(depart);
+  // la page rafraîchie (« Récupérer » l'a demandé) : la vue nouvelle du serveur remplace la locale
+  useEffect(() => setVue(depart), [depart]);
   const [ouverte, setOuverte] = useState<LigneQuete | null>(null);
   const [acte, setActe] = useState<VueActe | null>(null);
   const [message, setMessage] = useState<string | null>(null);

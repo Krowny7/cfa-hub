@@ -39,11 +39,10 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
 
   return (
     <div className={s.grille}>
-      {aRecuperer && (
-        <div className={s.zoneRecuperer}>
-          <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} demo={demo} />
-        </div>
-      )}
+      {/* toujours monté : la page rafraîchie au clic vide la liste, le geste et les fêtes continuent (vide, il ne rend rien) */}
+      <div className={s.zoneRecuperer}>
+        <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} demo={demo} />
+      </div>
 
       <div className={s.zoneFil}>{neuf ? <FilNeuf plein={!aRecuperer} /> : seance ? <Fil seance={seance} vue={vue} gains={gains} plein={!aRecuperer} demo={demo} /> : null}</div>
 

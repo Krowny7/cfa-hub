@@ -90,6 +90,7 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
     const h = jour(milieu);
     check("quelque chose à récupérer : le bouton du bloc est le seul plein, le fil passe en contour", pleins(h) === 1 && !/class="btn btn-primary[^"]*"[^>]*>Commencer/.test(h) && /class="btn btn-secondary[^"]*"[^>]*>Commencer/.test(h), `${pleins(h)} bouton(s) plein(s)`);
   } else check("l'exemple « milieu » a quelque chose à récupérer", false);
+  check("rien à récupérer : le bloc reste monté, vide (le geste survit au rafraîchissement de la page)", html.includes('<div class="zoneRecuperer"></div>'));
   const neuf = jour(exempleCodex("neuf"));
   check("le compte neuf : une étape, « 10 questions pour faire connaissance », pas de préparation", compte(neuf, /aria-current="step"/g) === 1 && neuf.includes("10 questions pour faire connaissance") && !neuf.includes("Préparation") && !neuf.includes("Une autre idée"));
   const sobre = jour({ ...sans, sobre: true });
