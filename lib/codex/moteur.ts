@@ -969,6 +969,8 @@ export const semaineEntamee = (progression: Pick<LigneProgression, "quete_id" | 
  * contrats de la commande remplacent le tour des pigments et l'examen blanc
  * de la semaine. Sans choix pour la semaine en cours : le catalogue tel quel.
  */
+const catalogueDuProgramme = (e: Entree, contenu: ContenuMatiere[]): Quete[] => avecSemaine(e.catalogue ?? catalogueCodex(contenu), e, contenu);
+
 function avecSemaine(catalogue: Quete[], e: Pick<Entree, "semaine" | "jour" | "progression">, contenu: ContenuMatiere[]): Quete[] {
   if (!e.semaine || e.semaine.lundi !== lundiDe(e.jour)) return catalogue;
   // un choix posé après qu'un contrat de la semaine a payé ne remplace rien : sa commande
@@ -981,9 +983,10 @@ function avecSemaine(catalogue: Quete[], e: Pick<Entree, "semaine" | "jour" | "p
  * Les quêtes à suivre : catalogue branché et non retiré, les paliers du fil
  * rouge (atteints et pas encore récompensés, plus le suivant ; `atteints`
  * absent : le palier en cours et le suivant), plus les instances du jour.
+ * `duProgramme` : le catalogue du programme et de la semaine, s'il est déjà construit.
  */
-export function quetesASuivre(e: Entree, contenu: ContenuMatiere[], atteints?: Record<string, number>): { catalogue: Quete[]; instances: Instance[] } {
-  const catalogue = [...avecSemaine(e.catalogue ?? catalogueCodex(contenu), e, contenu), ...quetesFilRouge(e.progression, { ouverture: ouvertureFil(e), atteints })];
+export function quetesASuivre(e: Entree, contenu: ContenuMatiere[], atteints?: Record<string, number>, duProgramme?: Quete[]): { catalogue: Quete[]; instances: Instance[] } {
+  const catalogue = [...(duProgramme ?? catalogueDuProgramme(e, contenu)), ...quetesFilRouge(e.progression, { ouverture: ouvertureFil(e), atteints })];
   const capacites = capacitesDe(e);
   const instances: Instance[] = [];
   for (const q of catalogue) {
@@ -1095,11 +1098,13 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     const cle = JSON.stringify([d.evenement, d.filtre ?? null, d.fenetre ?? null, d.jour ?? null, d.distinct ?? null, d.somme ?? null, d.seuil]);
     return compteurs[cle] ?? { n: 0, atteint: null };
   };
-  // le fil rouge : jusqu'où chaque chapitre est atteint (ses paliers atteints sont instanciés d'un coup)
-  const sonde = contexteBlanc(e, contenu, resolveur);
+  // le fil rouge : jusqu'où chaque chapitre est atteint (ses paliers atteints sont instanciés d'un coup) ;
+  // la sonde a le catalogue du programme : « pieces_possedees » y compte les folios des quêtes
+  const duProgramme = catalogueDuProgramme(e, contenu);
+  const sonde = contexteBlanc(e, contenu, resolveur, duProgramme);
   const recompenses = paliersRecompenses(e.progression);
   const atteints = Object.fromEntries(CHAPITRES_FIL.map((c) => [c.id, palierAtteint(c, (f) => valeurFil(c.mesure, f, sonde), recompenses[c.id] ?? 0)]));
-  const { catalogue, instances } = quetesASuivre(e, contenu, atteints);
+  const { catalogue, instances } = quetesASuivre(e, contenu, atteints, duProgramme);
   const actes = actesDuJoueur(e);
   const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
   const niveau = levelInfoFromXp(e.lecture.mesures.xp_total ?? 0).level;

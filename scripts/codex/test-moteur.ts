@@ -697,6 +697,13 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
     const { r } = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: avecFil, progression: [ligne("acte:prologue"), ligne("acte:acte1"), ligne("branche:fsa:maitre", { titre: "titre:maitre:fsa" })] }), () => 0);
     const collection = r.etats.find((s) => s.quete.id === "fil:collection:1");
     check("les pièces de collection comptent les folios gagnés (acte I, Maître de FSA) avec le titre", collection?.ev?.valeur === 3, String(collection?.ev?.valeur));
+    // la sonde du fil rouge compte comme l'évaluation : les folios des quêtes y sont (10 « Maître de… » : 10 titres + 10 folios = 20 pièces)
+    const maitres = contenu.map((m) => ligne(`branche:${m.key}:maitre`, { titre: `titre:maitre:${m.key}` }));
+    const { r: r20 } = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: avecFil, progression: [ligne("acte:prologue"), ...maitres] }), () => 0);
+    const paliers = r20.etats.filter((s) => s.quete.id.startsWith("fil:collection:"));
+    check("20 pièces dont 10 folios de quêtes : les paliers 1 à 3 atteints au même calcul, le 4e (35) instancié en suivant",
+      [1, 2, 3].every((n) => paliers.some((s) => s.quete.id === `fil:collection:${n}` && s.fait)) && paliers.some((s) => s.quete.id === "fil:collection:4" && !s.fait),
+      paliers.map((s) => `${s.quete.palier}:${s.fait ? "fait" : "-"}`).join(" "));
   }
 
   // les exploits de la v3 et le débrief
