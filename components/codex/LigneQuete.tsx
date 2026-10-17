@@ -45,7 +45,6 @@ export function LigneQuete({
   const titre = enigme && !texte ? CODEX.exploits.enigme : l.titre;
   const mesure = !texte && !enigme && l.etat !== "terminee" && l.cible > 1;
   const avancee = mesure ? `${Math.floor(l.valeur).toLocaleString("fr-FR")} sur ${Math.floor(l.cible).toLocaleString("fr-FR")}` : null;
-  const ligneSous = texte ?? [avancee, sous].filter(Boolean).join(" · ");
   const droite = droiteLigne(l, sobre);
   const bouton = (
     <button
@@ -66,7 +65,18 @@ export function LigneQuete({
             <i style={{ width: `${Math.round(l.fraction * 100)}%` }} />
           </span>
         )}
-        {ligneSous && <span className="t-small t-num">{ligneSous}</span>}
+        {texte ? (
+          <span className="t-small">{texte}</span>
+        ) : (
+          (avancee || sous) && (
+            // l'avancée en chiffres (t-num), le mot de plus en texte
+            <span className="t-small">
+              {avancee && <span className="t-num">{avancee}</span>}
+              {avancee && sous ? " · " : ""}
+              {sous}
+            </span>
+          )
+        )}
       </span>
       {!action && droite && <span className={l.aRecuperer ? s.ligneRecuperer : "t-micro"}>{droite}</span>}
     </button>

@@ -475,10 +475,11 @@ console.log("\n# /codex « Tout le Codex », la ligne et le détail (Codex simpl
   check("Parcours : rien quand aucun acte n'est en cours", resumeParcours(v.trame.map((a) => ({ ...a, courant: false })), etiq) === null);
   check("Parcours : un acte sans étape à montrer n'a pas de ligne", actesParcours(v.trame).every((a) => a.quetes.some((q) => q.affichage !== "cache")));
   const q = (etat: "terminee" | "active" | "disponible", optionnelle = false) => ({ ...l0, id: Math.random().toString(36), etat, optionnelle, affichage: "complet" as const });
-  const acte = { ...v.trame[0], quetes: [q("terminee"), q("active"), q("disponible"), q("disponible"), q("disponible"), q("terminee", true), q("disponible", true)] };
-  check("un acte : les facultatives comptées à part, « 1 sur 5 + 2 facultatives »", avanceeActe(acte) === "1 sur 5 + 2 facultatives" && compteActe(acte).facultatives === 2);
-  const visite = { ...v.trame[0], quetes: [q("terminee", true), q("disponible", true)] };
-  check("la visite (rien d'obligatoire) : ses facultatives comptées, « 1 sur 2 »", avanceeActe(visite) === "1 sur 2");
+  const sansClos: (typeof v.trame)[number]["acte"] = { ...v.trame[0].acte, closAvec: undefined };
+  const acte = { ...v.trame[0], acte: sansClos, faites: 1, total: 5, quetes: [q("terminee"), q("active"), q("disponible"), q("disponible"), q("disponible"), q("terminee", true), q("disponible", true)] };
+  check("un acte : le compte du moteur, les facultatives à part, « 1 sur 5 + 2 facultatives »", avanceeActe(acte) === "1 sur 5 + 2 facultatives" && compteActe(acte).facultatives === 2);
+  const visite = { ...acte, acte: { ...sansClos, closAvec: { n: 4 } }, faites: 2, total: 4, quetes: [q("terminee", true), q("terminee", true), q("disponible", true)] };
+  check("la visite (close par 4 outils au choix) : « 2 sur 4 », rien à part", avanceeActe(visite) === "2 sur 4");
   const long = { ...v.trame[0], quetes: [q("terminee"), q("terminee"), q("terminee"), q("terminee"), q("active")] };
   const m = etapesMontrees(long);
   check("les étapes d'un acte : à faire d'abord, deux faites au plus, « et 2 autres faites »", m.lignes.length === 3 && m.lignes[0].etat === "active" && m.autres === 2 && TEXTES_TOUT.autresFaites(m.autres) === "et 2 autres faites");

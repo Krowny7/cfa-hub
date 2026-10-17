@@ -244,7 +244,7 @@ function VisiteCarte({ v, ici, onQuete }: { v: { a: VueActe; droite: number; y: 
         {v.a.acte.titre}
       </span>
       <span className={c.mono} style={{ display: "block", marginTop: 4, fontSize: "max(11px, calc(12px * var(--zinv, 1)))" }}>
-        {etiquetteActe(v.a.acte)} · {v.a.faites}/{v.a.total} · aucun n'est obligatoire
+        {etiquetteActe(v.a.acte)} · {avanceeActe(v.a)} · aucun n'est obligatoire
       </span>
       <ul className="m-0 mt-2 flex list-none flex-wrap gap-1.5 p-0">
         {quetes.map((q) => (

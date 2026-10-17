@@ -342,8 +342,8 @@
 }
 /* la quête montrée dans le détail, à côté (ordinateur) */
 .ligne[data-choisie] {
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
-  box-shadow: inset 2px 0 0 var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 /* une ligne et son bouton « Récupérer » : deux cibles côte à côte, jamais un bouton dans un bouton */
 .ligneAvecAction {

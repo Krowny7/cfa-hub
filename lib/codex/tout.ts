@@ -69,13 +69,14 @@ export const prochaineDe = (l: LigneQuete[]): LigneQuete | null =>
 /** La visite (acte I) : des outils facultatifs à côté du tronc, pas l'acte à suivre. */
 const estVisite = (a: VueActe) => a.acte.numero === 1 && a.quetes.length > 0 && a.quetes.every((q) => q.optionnelle);
 
-/** Un acte compté : ses étapes obligatoires (faites sur total) et ses facultatives à part. */
-export function compteActe(a: VueActe): { faites: number; total: number; facultatives: number } {
-  const v = visibles(a.quetes);
-  const oblig = v.filter((q) => !q.optionnelle);
-  // la visite n'a que des facultatives : on les compte, faute de mieux
-  if (!oblig.length) return { faites: v.filter((q) => q.etat === "terminee").length, total: v.length, facultatives: 0 };
-  return { faites: oblig.filter((q) => q.etat === "terminee").length, total: oblig.length, facultatives: v.length - oblig.length };
+/**
+ * Un acte compté : ses étapes faites sur celles qui le closent (le compte du
+ * moteur, `faites` et `total`), et ses étapes facultatives à part. Un acte
+ * clos par n étapes au choix (la visite : 4 outils sur 7) n'en a pas « à part ».
+ */
+export function compteActe(a: Pick<VueActe, "acte" | "faites" | "total" | "quetes">): { faites: number; total: number; facultatives: number } {
+  const facultatives = a.acte.closAvec ? 0 : visibles(a.quetes).filter((q) => q.optionnelle).length;
+  return { faites: a.faites, total: a.total, facultatives };
 }
 
 /** « 4 sur 5 », « 1 sur 5 + 2 facultatives ». */
