@@ -389,14 +389,21 @@ export const SONDES_SEANCE: readonly Objectif[] = [
  * Ce que disent les compteurs, évalués sur Entree.seance (les sondes, puis un
  * objectif par bloc gardé) : les 5 et les 30 du jour rendus, les blocs faits
  * (jamais un fait retiré), et si la séance lancée est tenue (le bonus du trio).
+ * Les 5 et les 30 du jour ne se jouent qu'une fois par jour : rendus
+ * aujourd'hui, même avant le lancement, leur bloc est fait (et l'épreuve qui
+ * mène aux 30 du jour aussi) ; ils se cochent ainsi des deux côtés de
+ * l'accueil (V3 §6.3).
  */
 export function faitsDeSeance(g: Pick<SeanceGardee, "blocs" | "faits" | "lanceeLe"> | null, evs: readonly { fait: boolean }[]): { cinqFait: boolean; trenteFait: boolean; faits: GenreBloc[]; tenue: boolean } {
+  const cinqFait = !!evs[0]?.fait;
+  const trenteFait = !!evs[1]?.fait;
   const faits: GenreBloc[] = [...(g?.faits ?? [])];
   g?.blocs.forEach((b, i) => {
-    if (evs[SONDES_SEANCE.length + i]?.fait && !faits.includes(b.genre)) faits.push(b.genre);
+    const duJour = (b.genre === "cinq" && cinqFait) || ((b.genre === "trente" || (b.genre === "epreuve" && b.destination.outil === "trente")) && trenteFait);
+    if ((duJour || evs[SONDES_SEANCE.length + i]?.fait) && !faits.includes(b.genre)) faits.push(b.genre);
   });
   const tenue = !!g?.lanceeLe && g.blocs.length > 0 && g.blocs.every((b) => faits.includes(b.genre));
-  return { cinqFait: !!evs[0]?.fait, trenteFait: !!evs[1]?.fait, faits, tenue };
+  return { cinqFait, trenteFait, faits, tenue };
 }
 
 /**

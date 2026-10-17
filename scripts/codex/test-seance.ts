@@ -215,6 +215,16 @@ console.log("\n# les blocs faits et le bonus du trio");
   const lus = faitsDeSeance(g, ev(true, false, false, true, false));
   check("les sondes (5 et 30 rendus), puis un bloc par objectif ; un fait gardé ne se perd pas", lus.cinqFait && !lus.trenteFait && J(lus.faits) === J(["cinq", genres(s)[1]]) && !lus.tenue, J(lus));
   check("tous les blocs faits d'une séance lancée : tenue", faitsDeSeance(g, ev(false, false, true, true, true)).tenue);
+  {
+    const avec5 = composerSeance(entree({ phase: "fondations", budget: 60 }));
+    const g5 = { blocs: avec5.blocs, faits: [] as GenreBloc[], lanceeLe: "2026-10-17T07:30:00Z" };
+    const l5 = faitsDeSeance(g5, ev(true, false, ...avec5.blocs.map(() => false)));
+    check("les 5 du jour rendus avant le lancement : leur bloc est fait quand même (coché des deux côtés de l'accueil)", genres(avec5).includes("cinq") && l5.faits.includes("cinq") && l5.faits.length === 1, J(l5.faits));
+    const ep = composerSeance(entree({ phase: "repetition", budget: 90, joursAvant: 20 }));
+    const blocEp = ep.blocs.find((b) => b.genre === "epreuve");
+    const lEp = faitsDeSeance({ blocs: ep.blocs, faits: [], lanceeLe: null }, ev(false, true, ...ep.blocs.map(() => false)));
+    check("… de même l'épreuve qui mène aux 30 du jour, une fois les 30 rendus", !blocEp || blocEp.destination.outil !== "trente" || lEp.faits.includes("epreuve"), J([blocEp?.destination.href, lEp.faits]));
+  }
   check("… pas lancée : pas tenue (pas de bonus)", !faitsDeSeance({ ...g, lanceeLe: null }, ev(false, false, true, true, true)).tenue && !faitsDeSeance(null, ev(true, true)).tenue);
   const sansContrats = evaluer(base({ seance: { objectifs: [], lanceeLe: g.lanceeLe, tenue: true } }), {});
   check("la séance lancée et tenue verse le bonus du trio (même id, même XP), sans trois contrats sur trois", sansContrats.trioFait && sansContrats.lot.some((i) => i.quete === `contrat:trio:${jour}` && i.xp === 50), J(sansContrats.lot.filter((i) => i.famille === "contrat")));
