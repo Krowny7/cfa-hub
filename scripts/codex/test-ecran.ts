@@ -5,7 +5,8 @@
 // dévoilement, le bilan léger (fanfares, acte, dévoilement), que l'écran
 // ne reçoit jamais une quête cachée, le panneau « Tes quêtes » (quatre lignes
 // à faire, arcs, « ! » doré, récompenses annoncées une fois, « Une autre
-// idée ? », budget) et le réglage du jour avec et sans la §2 (V3 §9.2).
+// idée ? », budget) et le réglage du jour avec et sans la §2 (V3 §9.2) ; le
+// cap en tête de /codex (préparation, fuites, mesure provisoire, V3 §4.6).
 import { DECOUVERTE, ACTES } from "@/lib/codex/catalogue";
 import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoile-lite";
 import { estDevoile } from "@/lib/codex/moteur";
@@ -18,6 +19,7 @@ import { SPACES, activeSpace } from "@/lib/nav";
 import { paletteDeChemin } from "@/lib/palettes";
 import { exempleCodex } from "./exemple";
 import { vueSansFetes, type VueCodex } from "@/lib/codex/vue";
+import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -159,6 +161,62 @@ console.log("\n# le réglage du jour, avec et sans la §2 (migration_codex_v3.sq
 console.log("\n# la navigation : les pages nouvelles allument leur onglet");
 check("/eclair dans « S'entraîner », comme /defi", activeSpace("/eclair") === "entrainer" && activeSpace("/defi") === "entrainer");
 check("/revoir dans « Moi », comme le carnet", activeSpace("/revoir") === "moi" && activeSpace("/moi") === "moi");
+
+console.log("\n# le cap en tête de /codex (V3 §4.6, §4.7)");
+{
+  const mm = (cle: string, poids: number, pct: number | null, statut: MaitriseMatiere["statut"], o: Partial<MaitriseMatiere> = {}): MaitriseMatiere =>
+    ({ cle, nom: cle, court: cle.toUpperCase(), poids, pct, n: statut === "mesuree" ? 60 : statut === "provisoire" ? 23 : 0, total: 0, statut, derniere: null, debut: null, ancienne: null, zone: zoneDe(pct), ...o });
+  // dix matières, 100 points de poids : trois fuites nettes, une matière au repère
+  const ms = [mm("fsa", 13, 45, "mesuree"), mm("equity", 12, 50, "mesuree"), mm("ethics", 15, 57, "provisoire"), mm("quant", 8, 70, "mesuree"), mm("economics", 8, 66, "mesuree"),
+    mm("corporate", 8, 65, "mesuree"), mm("fixed_income", 11, 62, "mesuree"), mm("derivatives", 6, null, "non_mesuree"), mm("alternatives", 7, 68, "mesuree"), mm("portfolio", 12, 69, "mesuree")];
+  const prep = preparationDe(ms);
+  const attendu = Math.round(ms.reduce((s, m) => s + m.poids * (m.pct ?? 0), 0) / 100);
+  check("la préparation : Σ poids × pct / Σ poids, les non mesurées à 0", prep === attendu, String(prep));
+  const f = fuites(ms);
+  check("les fuites : (poids / Σ poids) × (70 − pct), au dixième, trois au plus, les plus fortes d'abord", JSON.stringify(f.map((x) => [x.cle, x.points])) === JSON.stringify([["derivatives", 4.2], ["fsa", 3.3], ["equity", 2.4]]), JSON.stringify(f));
+  check("… une matière non mesurée fuit de tout son poids (Derivatives, 6 % : 4,2 pts)", f[0].cle === "derivatives");
+  check("… une matière au repère ne fuit pas", !fuites(ms, 10).some((x) => x.cle === "quant"));
+  check("le gain d'une quête de maîtrise : au dixième, rien au-dessus du seuil", gainPreparation(ms[0], 60, ms) === 2 && gainPreparation(ms[3], 60, ms) === 0);
+  check("les zones : basse sous 50, moyenne jusqu'à 69, haute à 70", zoneDe(49) === "basse" && zoneDe(50) === "moyenne" && zoneDe(69) === "moyenne" && zoneDe(70) === "haute" && zoneDe(null) === null);
+
+  const vise: string[] = [];
+  const cap = capDe({ matieres: ms, preparation: prep, couverture: 77, source: "unique" }, { jour: "2026-10-16", joursAvant: 27, destination: (m) => (vise.push(m), { href: `/practice?topic=${m}&n=20`, libelle: "Y aller", duree: 25, raison: null, outil: "ciblee" }) });
+  check("l'en-tête : « J-27 · Préparation n % · zone … · repère 70 % »", enTeteCap(cap) === `J-27 · Préparation ${prep} % · ${TEXTES_CAP.zone[cap.zone]} · repère 70 %`, enTeteCap(cap));
+  check("… sans J-n sans jour J (ou un programme sans examen) ; « Jour J » le jour même", !enTeteCap({ ...cap, joursAvant: null }).includes("J-") && enTeteCap({ ...cap, joursAvant: 0 }).startsWith("Jour J ·") && !enTeteCap({ ...cap, joursAvant: -3 }).includes("J"));
+  check("la ligne des fuites : l'unité une fois, après la première", ligneFuites(cap.fuites) === "DERIVATIVES −4,2 pts · FSA −3,3 · EQUITY −2,4" && titreFuites(3) === "Les trois fuites :" && titreFuites(1) === "La fuite :", ligneFuites(cap.fuites));
+  check("« Y aller » : la première fuite", vise.join() === "derivatives" && cap.destination?.href === "/practice?topic=derivatives&n=20");
+  check("la règle : un segment par matière, larges comme leur poids (100 % en tout)", cap.matieres.length === 10 && Math.abs(cap.matieres.reduce((s, m) => s + m.part, 0) - 100) < 1e-9);
+  check("mesure unique : pas de « mesure provisoire »", !cap.provisoire && capDe({ matieres: ms, preparation: prep, couverture: 0, source: "ancienne" }, { jour: "2026-10-16", joursAvant: null, destination: () => null }).provisoire);
+  const eth = cap.matieres.find((m) => m.cle === "ethics")!;
+  check("une matière provisoire : « ≈ 57 % », l'infobulle « provisoire · 23 réponses sur 40 »", pctCap(eth) === "≈ 57 %" && aideMatiereCap(eth) === "provisoire · 23 réponses sur 40");
+  check("une matière non mesurée : « pas encore mesurée », sans zone", ligneMatiereCap(cap.matieres.find((m) => m.cle === "derivatives")!) === "DERIVATIVES · pas encore mesurée");
+  check("la fraîcheur : aujourd'hui, hier, il y a n j (jour de Paris), inconnue sans date",
+    fraicheurDe("2026-10-16T22:30:00Z", "2026-10-17") === "aujourd'hui" && fraicheurDe("2026-10-16T08:00:00Z", "2026-10-17") === "hier" && fraicheurDe("2026-10-05T08:00:00Z", "2026-10-17") === "il y a 12 j" && fraicheurDe(null, "2026-10-17") === null);
+  check("une ligne du détail : « FSA · 45 % · zone basse · touchée il y a 12 j »", ligneMatiereCap({ ...cap.matieres[0], fraicheur: fraicheurDe("2026-10-04T08:00:00Z", "2026-10-16") }) === "FSA · 45 % · zone basse · touchée il y a 12 j");
+  check("aucune fuite : une phrase, pas de « Y aller »", capDe({ matieres: ms.map((m) => ({ ...m, pct: 80, statut: "mesuree" as const })), preparation: 80, couverture: 100, source: "unique" }, { jour: "2026-10-16", joursAvant: 20, destination: () => ({ href: "/x", libelle: "Y aller", duree: 1, raison: null, outil: "ciblee" }) }).destination === null);
+
+  // la maîtrise du Codex : unique si la base la rend, sinon l'ancienne (« provisoire »)
+  const contenu = exempleCodex("milieu").branches.map((b) => b.contenu);
+  const ancienne = maitriseDuCodex(contenu, { maitrise: { fsa: { pct: 64, questions: 41, debut: null }, quant: { pct: 50, questions: 12, debut: null } } });
+  check("repli (ancienne mesure) : mesurée à 40 questions, provisoire dès 5, source « ancienne »", ancienne.source === "ancienne" && ancienne.matieres.find((m) => m.cle === "fsa")?.statut === "mesuree" && ancienne.matieres.find((m) => m.cle === "quant")?.statut === "provisoire" && ancienne.matieres.find((m) => m.cle === "ethics")?.statut === "non_mesuree");
+  const uni = maitriseDuCodex(contenu, { maitrise: { fsa: { pct: 64, questions: 41, debut: null } }, maitrise_unique: { quant: { pct: 52, questions: 23, total: 23, debut: null, statut: "provisoire", derniere: "2026-10-10T10:00:00Z", ancienne: 48 } } });
+  check("maîtrise unique : elle passe devant ; une matière absente n'est pas mesurée", uni.source === "unique" && uni.matieres.find((m) => m.cle === "quant")?.pct === 52 && uni.matieres.find((m) => m.cle === "fsa")?.statut === "non_mesuree");
+
+  // la vue d'exemple (codex_lire seul, sans codex_mesures_v3) : le cap est là, en mesure provisoire
+  for (const sc of ["neuf", "milieu", "fin"] as const) {
+    const v = exempleCodex(sc);
+    check(`${sc} : le cap en tête, sur l'ancienne mesure (« mesure provisoire »), le J-n du joueur`, !!v.cap && v.cap.provisoire && v.cap.matieres.length === 10 && v.cap.joursAvant === v.joursAvant);
+  }
+  const m = exempleCodex("milieu").cap!;
+  check("milieu : trois fuites et « Y aller » vers ce qui coince dans la première", m.fuites.length === 3 && !!m.destination && m.destination.href.startsWith("/") && m.destination.libelle === "Y aller", m.destination?.href);
+}
+
+console.log("\n# la file « À revoir » et le débrief dans le panneau");
+{
+  const v = exempleCodex("milieu");
+  check("repli : la file vient des ratures en cours (14), rien pour demain", JSON.stringify(v.revoir) === JSON.stringify({ aujourdhui: 14, demain: 0 }) && JSON.stringify(panneauDe(v).revoir) === JSON.stringify(v.revoir));
+  check("sans débrief en attente : rien dans la vue", v.debrief === null);
+}
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

@@ -9,14 +9,15 @@
 // textes, XP affichée, migration_codex_v3.sql) ; enfin le fil rouge et le
 // rattrapage au déploiement (V3 §1.5, §1.9 : un joueur de 12 000 réponses) ;
 // le catalogue taillé (V3 §8.1 à §8.4, §8.6 : retraits, miroirs, actes I et V,
-// quêtes hors jeu sans le SQL, prérequis souples, XP des contrats).
+// quêtes hors jeu sans le SQL, prérequis souples, XP des contrats) ; la
+// maîtrise unique, le cap et les mesures de la mémoire (V3 §4.6, §4.7, lot A4b).
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
 import { ACTES, COSMETIQUES_CODEX, MODELES_CONTRATS, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
-  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, planifier, recommander, tirerContrats,
-  type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
+  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, revoirDe, tirerContrats,
+  type Demande, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
 import { panneauDe } from "@/lib/codex/panneau";
@@ -671,6 +672,63 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
     check("le lendemain : 0 XP, ouvert une fois le jour J passé, jamais avant", q("trame:ep:lendemain").recompense.xp === 0 && fait(malle(7, "2026-10-14"), "trame:ep:lendemain") && !ouverte(malle(7, "2026-10-17"), "trame:ep:lendemain"));
     check("ni l'une ni l'autre ne retient l'épilogue (facultatives)", q("trame:ep:malle").optionnelle === true && q("trame:ep:lendemain").optionnelle === true);
   }
+}
+
+console.log("\n# v3 §4.6, §4.7 : la maîtrise unique, le cap, la mémoire (A4b)");
+{
+  type Unique = NonNullable<MesuresSql["maitrise_unique"]>[string];
+  const u = (pct: number | null, questions: number, statut: Unique["statut"], o: Partial<Unique> = {}): Unique => ({ pct, questions, total: questions, debut: null, statut, derniere: null, ancienne: null, ...o });
+  const avecMesures = (m: MesuresSql, o: Partial<Entree> = {}) => base({ ...o, lecture: { compteurs: {}, mesures: { xp_total: 0, ...m }, speciaux: {} } });
+  const ancien = { fsa: { pct: 70, questions: 40, debut: 50 }, quant: { pct: 90, questions: 39, debut: null } };
+  check("format ancien : mesurée à 40 questions, pas à 39", maitriseDe(avecMesures({ maitrise: ancien }), "fsa") === 70 && maitriseDe(avecMesures({ maitrise: ancien }), "quant") === null);
+  const unique = avecMesures({ maitrise: ancien, maitrise_unique: { fsa: u(55, 23, "provisoire"), quant: u(62, 45, "mesuree") } });
+  check("maîtrise unique : seul le statut « mesuree » compte, elle passe devant l'ancienne", maitriseDe(unique, "quant") === 62 && maitriseDe(unique, "fsa") === null);
+  check("… une matière absente de la maîtrise unique n'a aucune réponse : pas mesurée", maitriseDe(unique, "ethics") === null);
+  const seuil60 = (m: MesuresSql) => fait(repondre(avecMesures(m), () => 99).r, "branche:quant:maitrise60");
+  check("« maîtrise 60 » de Quant : faite au format ancien (62 % sur 120) et au nouveau (62 % mesurée)", seuil60({ maitrise: { quant: { pct: 62, questions: 120, debut: null } } }) && seuil60({ maitrise_unique: { quant: u(62, 60, "mesuree") } }));
+  check("… pas sur une maîtrise unique provisoire, même haute", !seuil60({ maitrise: { quant: { pct: 62, questions: 120, debut: null } }, maitrise_unique: { quant: u(80, 30, "provisoire") } }));
+  const remontee: Quete = { id: "essai:remontee", famille: "longcours", programme: PROGRAMME, titre: "r", consigne: "r", objectif: { k: "mesure", mesure: "matieres_remontees", filtre: { n: 10 }, seuil: 1 }, prerequis: [], recompense: { xp: 0 }, repetition: "unique", visibilite: "visible", ordre: 1 };
+  const remontees = (m: MesuresSql) => repondre(avecMesures(m, { catalogue: [remontee] }), () => 0).r.etats.find((x) => x.quete.id === remontee.id)?.ev?.valeur;
+  check("matières remontées : le début de la maîtrise unique quand elle est là", remontees({ maitrise_unique: { quant: u(70, 60, "mesuree", { debut: 40 }) } }) === 1 && remontees({ maitrise_unique: { quant: u(70, 30, "provisoire", { debut: 40 }) } }) === 0);
+
+  // le rang garde l'ancienne règle (V3 §4.5) : la maîtrise unique ne fait monter aucun palier
+  const palierOr = (m: MesuresSql) => repondre(avecMesures({ elo: 1500, ...m }), () => 99).r.etats.find((x) => x.quete.objectif.k === "mesure" && x.quete.objectif.mesure === "pic_palier" && x.quete.objectif.seuil === 2)?.ev?.valeur;
+  const vieux = { maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: 30, questions: 60, debut: null }])) };
+  check("le palier atteint se calcule sur l'ancienne maîtrise, avec ou sans la maîtrise unique",
+    palierOr(vieux) !== undefined && palierOr(vieux) === palierOr({ ...vieux, maitrise_unique: Object.fromEntries(contenu.map((m) => [m.key, u(95, 60, "mesuree")])) }), `${palierOr(vieux)}`);
+
+  // les mesures nouvelles, lues par une quête d'essai
+  const essai = (mesure: "revisions_dues" | "ratures_scellees" | "preparation", seuil: number): Quete => ({
+    id: `essai:${mesure}`, famille: "longcours", programme: PROGRAMME, titre: mesure, consigne: mesure, objectif: { k: "mesure", mesure, seuil }, prerequis: [], recompense: { xp: 0 }, repetition: "unique", visibilite: "visible", ordre: 1,
+  });
+  const ev = (q: Quete, m: MesuresSql) => repondre(avecMesures(m, { catalogue: [q] }), () => 0).r.etats.find((x) => x.quete.id === q.id);
+  const revoir = { aujourdhui: 40, demain: 30, ratures: 12, rappels: 28 };
+  check("« à revoir aujourd'hui » : la file de revisions_dues, 25 au plus ; sans elle, inconnue (hors jeu)", ev(essai("revisions_dues", 25), { revoir })?.fait === true && ev(essai("revisions_dues", 26), { revoir })?.ev?.valeur === 25 && ev(essai("revisions_dues", 1), { ratures_ouvertes: { total: 9, matieres: {} } })?.horsJeu === true);
+  check("ratures scellées : lues ; sans elles, inconnues", ev(essai("ratures_scellees", 3), { ratures_scellees: 3 })?.fait === true && ev(essai("ratures_scellees", 3), {})?.horsJeu === true);
+  const poids = contenu.reduce((x, m) => x + m.poids, 0);
+  const fsa = contenu.find((m) => m.key === "fsa")!;
+  const prep = Math.round((fsa.poids * 80) / poids);
+  check("la préparation : la maîtrise pondérée par les poids, provisoires comprises, jamais inconnue", ev(essai("preparation", prep), { maitrise_unique: { fsa: u(80, 20, "provisoire") } })?.fait === true && ev(essai("preparation", prep + 1), { maitrise_unique: { fsa: u(80, 20, "provisoire") } })?.fait === false && ev(essai("preparation", 1), {})?.horsJeu === false, String(prep));
+
+  // la file « À revoir » portée par la vue et le panneau (V3 §5.4)
+  check("la file : revisions_dues bornée à 25 ; repli : les ratures en cours bornées à 25, rien pour demain ; rien de connu : null",
+    JSON.stringify(revoirDe(avecMesures({ revoir }))) === JSON.stringify({ aujourdhui: 25, demain: 25 }) && JSON.stringify(revoirDe(avecMesures({ ratures_ouvertes: { total: 285, matieres: {} } }))) === JSON.stringify({ aujourdhui: 25, demain: 0 }) && revoirDe(avecMesures({})) === null);
+
+  // le débrief vivant : il paie, il se montre, il ne fausse pas le trio du jour
+  const capa = { ...CAPACITES_VIDE, journal: 3 as const, debrief: true };
+  const e0 = avecMesures({ blancs_a_debriefer: 1, ratures_ouvertes: { total: 20, matieres: {} } }, { capacites: capa });
+  const e1 = { ...e0, contrats: tirerContrats(e0, "joueur-debrief") };
+  const { r, e: e2 } = repondre(e1, () => 99);
+  check("trois contrats tirés, le débrief en plus : le trio compte trois contrats, et se fait", r.contrats.length === 3 && r.trioFait && r.lot.some((i) => i.quete === `contrat:trio:${jour}`), `${r.contrats.length} · ${r.trioFait}`);
+  check("le débrief fait verse ses 80 XP, à la période du jour", r.lot.some((i) => i.quete === "contrat:debrief" && i.periode === jour && i.etat === "terminee" && i.xp === 80));
+  const vue = construireVue(e2, r, recommander(e2, r), { devoile: null });
+  check("la vue le porte à part des contrats tirés (les 3 contrats restent 3)", vue.debrief?.id === "contrat:debrief" && vue.contrats.length === 3 && vue.trio.total === 3);
+  const { r: rOuvert, e: eOuvert } = repondre(e1, (d) => (d.evenement === "blanc_debriefe" ? 0 : 99));
+  const pOuvert = panneauDe(construireVue(eOuvert, rOuvert, recommander(eOuvert, rOuvert), { devoile: null }));
+  check("pas encore fait : le panneau le propose, avec sa destination (les examens blancs)", pOuvert.quetes.some((x) => x.id === "contrat:debrief" && x.sur === "Contrat du jour · le débrief" && x.destination?.href === "/mock-exams"), pOuvert.quetes.map((x) => x.id).join());
+  const sans = avecMesures({ blancs_a_debriefer: 0 }, { capacites: capa });
+  const vSans = construireVue(sans, repondre(sans, () => 0).r, null, { devoile: null });
+  check("aucun blanc à débriefer : rien à montrer", vSans.debrief === null);
 }
 
 console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");

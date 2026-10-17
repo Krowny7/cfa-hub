@@ -6,12 +6,13 @@
 // les replis (« /revoir » absent → le carnet ; practiceV3 faux → jamais
 // topic=all, n, poids ni go ; vrai depuis A4a) ; le premier sous-objectif non rempli ; les
 // raisons ; que recommander ne propose jamais une quête non lançable ; et
-// que l'arbre d'un programme d'essai (V3 §1.7) mène partout, dans ses outils.
+// que l'arbre d'un programme d'essai (V3 §1.7) mène partout, dans ses outils ;
+// les lignes du cap et de la mémoire (A4b : « à revoir », préparation, fuites).
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { MODELES_CONTRATS, PROGRAMME, catalogueCodex, cibleeDe, contenuDuProgramme, genererBranches, lienCiblee } from "@/lib/codex/catalogue";
 import { contexteDestination, evaluer, indexerLecture, instanceContrat, planifier, recommander, type Ev, type Entree, type LectureSql, type ResultatCompteur } from "@/lib/codex/moteur";
-import { PRACTICE_V3, REPLIS, ROUTES, destinationDe, lancable, raisonDe, routeExiste, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
+import { PRACTICE_V3, REPLIS, ROUTES, destinationCoince, destinationDe, lancable, raisonDe, routeExiste, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { notionsDeMatiere } from "@/lib/notions";
 import { genererArbre } from "@/lib/codex/programmes";
 import { PROGRAMME_ESSAI } from "@/lib/codex/programmes/essai";
@@ -277,6 +278,32 @@ console.log("\n# le fil rouge (V3 §1.5) : chaque palier figé mène quelque par
   const essai: ContexteDestination = { ...contexteDestination(base({ contenu: PROGRAMME_ESSAI.matieres() })), programme: PROGRAMME_ESSAI.cle, outils: PROGRAMME_ESSAI.outils };
   const horsOutils = paliers.map((q) => [q.id, destinationDe(q, {}, essai)] as const).filter(([, d]) => !d || !["cinq", "eclair", "revoir", "codex", "profil", "classement"].includes(d.outil));
   check("dans l'arbre d'essai : aucun palier ne mène à un outil absent", horsOutils.length === 0, horsOutils.map(([id, d]) => `${id} ${d?.outil} ${d?.href}`).join(" | "));
+}
+
+console.log("\n# le cap et la mémoire (A4b) : les lignes nouvelles");
+{
+  const avecRevoir = avec(enRoute, { routes: new Set([...ROUTES, "/revoir"]) });
+  const essai = (mesure: "revisions_dues" | "ratures_scellees" | "preparation"): Quete => ({
+    id: `essai:${mesure}`, famille: "longcours", programme: PROGRAMME, titre: mesure, consigne: mesure, objectif: { k: "mesure", mesure, seuil: 1 }, prerequis: [], recompense: { xp: 0 }, repetition: "unique", visibilite: "visible", ordre: 1,
+  });
+  check("« à revoir aujourd'hui », ratures scellées : « À revoir » (15 min) ; avant F2, le carnet",
+    (["revisions_dues", "ratures_scellees"] as const).every((m) => destinationDe(essai(m), {}, avecRevoir)?.href === "/revoir" && destinationDe(essai(m), {}, avecRevoir)?.duree === 15 && destinationDe(essai(m), {}, enRoute)?.href === REPLIS["/revoir"]));
+  check("… avec la file connue, la raison la compte", destinationDe(essai("revisions_dues"), {}, avec(avecRevoir, { revoir: { aujourdhui: 15 } }))?.raison === "15 à revoir aujourd'hui");
+  const prep = destinationDe(essai("preparation"), {}, avec(enRoute, { practiceV3: true }));
+  check("la préparation : ce qui coince (25 min)", !!prep && prep.duree === 25 && (prep.href.startsWith("/atelier?notion=") || prep.href.startsWith("/practice?topic=")), prep?.href);
+
+  // « Y aller » du cap : ce qui coince dans la matière de la première fuite
+  const pf = destinationCoince(enRoute, "fsa");
+  check("la première fuite a un point faible net : l'Atelier sur la notion, raison sur la matière", pf?.href === `/atelier?notion=${encodeURIComponent(notionFsa)}` && pf.duree === 25 && !!pf.raison?.startsWith("FSA pèse"), pf?.href);
+  const sansPf = destinationCoince(avec(neuf, { practiceV3: true }), "fsa");
+  check("… sinon une séance de la matière (20 questions)", sansPf?.href === "/practice?topic=fsa&n=20", sansPf?.href);
+  check("… une matière hors du programme : rien", destinationCoince(enRoute, "histoire") === null);
+
+  // la chaîne « La mémoire longue » et le contrat de rappel ont enfin leur séance : « À revoir » (V3.md, cran 4)
+  const memoire = catalogueCodex().filter((q) => q.chaine === "memoire");
+  check(`la mémoire longue (${memoire.length} paliers) : « À revoir » ; avant F2, le carnet`, memoire.length === 5 && memoire.every((q) => destinationDe(q, {}, avecRevoir)?.href === "/revoir" && destinationDe(q, {}, enRoute)?.href === REPLIS["/revoir"]));
+  const rappel = MODELES_CONTRATS.find((m) => m.id === "rappel")!;
+  check("le contrat de rappel : « À revoir »", destinationDe(instanceContrat(rappel, {}, jour, contenu), {}, avecRevoir)?.href === "/revoir");
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert.");
