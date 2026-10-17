@@ -1,7 +1,8 @@
 // L'étagère « Mes pièces » (Moi › Mes pièces, V3 §3.8) : toutes les pièces
 // de collection rangées en quatre rayons (cadres, bannières, titres,
-// folios), celles qu'on possède d'abord, puis les silhouettes avec la façon
-// de les obtenir et, si une quête du Codex les donne, où aller. Ce module
+// folios), celles qu'on possède d'abord, puis les silhouettes avec leur
+// consigne en clair et, si une quête du Codex les donne, le lien vers elle
+// (dans la fiche de la pièce). Ce module
 // prépare des données simples pour l'écran (leur forme : etagere-vue.ts ;
 // components/moi/MesPieces.tsx ne charge pas le catalogue) et calcule le style
 // qui résulte de « Porter » ou « Retirer » (app/moi/profil/actions.ts).
@@ -23,14 +24,15 @@ const HORS_ETAGERE = new Set(["cadre:aucun"]);
 const porteeDu = (type: TypePiece, porte: Porte): string | null =>
   type === "cadre" ? porte.frame : type === "banniere" ? porte.banner : type === "titre" ? porte.titre : porte.folio;
 
-/** Le lien « Y aller » vers la quête du Codex qui donne la pièce. */
+/** Le lien « Voir la quête » vers la quête du Codex qui donne la pièce. */
 export const hrefQuete = (id: string) => `/codex?quete=${encodeURIComponent(id)}`;
 
 /**
  * L'étagère d'un joueur : ce qu'il possède (Acquis complet, lireAcquis) et
  * ce qu'il porte. Dans chaque rayon, les pièces possédées d'abord (dans
  * l'ordre du catalogue), puis les silhouettes. Ce qui est porté compte comme
- * possédé (rien de gagné n'est repris).
+ * possédé (rien de gagné n'est repris). Les comptes disent ce qui est
+ * dessiné : les pièces libres (motifs fixes) comprises.
  */
 export function etagere(a: Acquis, porte: Porte, bannerUrl: string | null = null): Etagere {
   const rayons = TYPES_PIECE.map((type): Rayon => {
@@ -51,14 +53,13 @@ export function etagere(a: Acquis, porte: Porte, bannerUrl: string | null = null
         possedee,
         portee: estPortee,
         libre: p.condition === null,
-        allerA: quete ? hrefQuete(quete) : null,
+        voirQuete: quete ? hrefQuete(quete) : null,
         programme: programmeCourt(p),
         ...(p.folio ? { folio: { oeuvre: p.folio.oeuvre, image: p.folio.image, anecdote: p.folio.anecdote } } : {}),
       };
     });
     const triees = [...pieces.filter((p) => p.possedee), ...pieces.filter((p) => !p.possedee)];
-    const collection = pieces.filter((p) => !p.libre);
-    return { type, titre: RAYONS[type], pieces: triees, possedees: collection.filter((p) => p.possedee).length, total: collection.length };
+    return { type, titre: RAYONS[type], pieces: triees, possedees: pieces.filter((p) => p.possedee).length, total: pieces.length };
   });
   return {
     rayons,

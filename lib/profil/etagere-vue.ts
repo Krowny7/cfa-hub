@@ -21,22 +21,23 @@ export type PieceEtagere = {
   possedee: boolean;
   /** elle est portée en ce moment */
   portee: boolean;
-  /** libre : pas une pièce de collection (motifs fixes, cadre au pinceau) ; hors du compte */
+  /** libre : pas une pièce de collection (motifs fixes, cadre au pinceau) ; dessinée, donc comptée */
   libre: boolean;
-  /** pas encore à soi et donnée par une quête du Codex : « Y aller » (/codex?quete=<id>) */
-  allerA: string | null;
+  /** pas encore à soi et donnée par une quête du Codex : « Voir la quête » dans sa fiche (/codex?quete=<id>) */
+  voirQuete: string | null;
   /** le nom court de son programme d'origine (« CFA I ») ; pièce globale : null (V3 §1.6) */
   programme: string | null;
   folio?: { oeuvre: string; image: string | null; anecdote: [string, string] };
 };
 
+/** `possedees` / `total` : les pièces dessinées dans le rayon (les libres comprises), pour que le compte dise ce qu'on voit. */
 export type Rayon = { type: TypePiece; titre: string; pieces: PieceEtagere[]; possedees: number; total: number };
 
 export type Etagere = {
   rayons: Rayon[];
-  /** pièces de collection possédées (les libres ne comptent pas) */
+  /** pièces possédées, dans tous les rayons (la somme de leurs comptes) */
   possedees: number;
-  /** pièces de collection en tout */
+  /** pièces dessinées en tout */
   total: number;
   /** folios possédés */
   folios: number;

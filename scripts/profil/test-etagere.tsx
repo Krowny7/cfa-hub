@@ -6,13 +6,15 @@
 // « css » a son rendu et réciproquement, ce qui bouge, le rendu des décors,
 // figé en vignette ; le CSS n'anime que transform, opacity,
 // background-position et le tracé, et se fige en mouvement réduit) ;
-// l'étagère (rayons, ordre, compte sans les libres, folios, ce qui est porté
-// reste à soi, « Y aller » vers une quête non retirée, image de bannière) ;
+// l'étagère (rayons, ordre, compte de ce qui est dessiné, folios, ce qui est
+// porté reste à soi, « Voir la quête » vers une quête non retirée, image de
+// bannière) ;
 // le résumé ; deux pièces animées au plus sur téléphone, aucune sous la
 // feuille ; ce qui se retire ; stylePorte (cadre, bannière et son image,
 // titre, folio et son bloc) ; le bloc « Folio » (demi-largeur, première case
 // vide, douze rangées, validé) ; les anecdotes des folios et leurs images ;
-// FOLIOS.md ; l'écran « Mes pièces » (résumé, rayons, silhouettes, deux
+// FOLIOS.md ; l'écran « Mes pièces » (résumé, rayons, silhouettes et leur
+// consigne, aucun lien sur l'étagère, « Voir la quête » dans la fiche, deux
 // pièces animées au premier rendu) ; le repos de la série (plages, règles,
 // libellés).
 import "./sans-css";
@@ -32,7 +34,7 @@ import { DISPOSITION_DEFAUT, RANGEES_MAX, avecBlocFolio, rangeeNeuve, validerDis
 import { catalogueCodex, contenuDuProgramme } from "@/lib/codex/catalogue";
 import { REFUS_POSE, ajouterJours, joursEntre, libellePlage, lundiDe, plagesDe, refusDeLaBase, refusPose, type JourPause } from "@/components/moi/repos";
 import type { Acquis } from "@/lib/profil/acquis";
-import { MesPieces } from "@/components/moi/MesPieces";
+import { ContenuFeuille, MesPieces } from "@/components/moi/MesPieces";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { ReposSerie } from "@/components/moi/ReposSerie";
 import { ModeSobre } from "@/components/moi/ModeSobre";
@@ -94,25 +96,29 @@ console.log("# L'étagère");
   const toutes = e.rayons.flatMap((r) => r.pieces);
   check("« Sans cadre » n'est pas sur l'étagère", !toutes.some((p) => p.cle === "cadre:aucun"));
   check("toutes les autres pièces y sont", toutes.length === PIECES.length - 1);
-  check("joueur neuf : rien de possédé hors des libres, aucun folio", e.possedees === 0 && e.folios === 0 && toutes.filter((p) => p.possedee).every((p) => p.libre));
-  check("le compte laisse les libres de côté", e.total === PIECES.filter((p) => p.condition !== null).length && e.total === e.rayons.reduce((n, r) => n + r.total, 0));
+  const libres = toutes.filter((p) => p.libre).length;
+  check("joueur neuf : rien de possédé hors des libres, aucun folio", libres > 0 && e.possedees === libres && e.folios === 0 && toutes.filter((p) => p.possedee).every((p) => p.libre));
+  check(
+    "les comptes disent ce qui est dessiné (libres comprises), et le résumé est leur somme",
+    e.rayons.every((r) => r.total === r.pieces.length && r.possedees === r.pieces.filter((p) => p.possedee).length) && e.total === toutes.length && e.total === e.rayons.reduce((n, r) => n + r.total, 0) && e.possedees === e.rayons.reduce((n, r) => n + r.possedees, 0),
+  );
   check("dans chaque rayon, les possédées d'abord", e.rayons.every((r) => r.pieces.findIndex((p) => !p.possedee) === -1 || r.pieces.slice(r.pieces.findIndex((p) => !p.possedee)).every((p) => !p.possedee)));
   const mains = toutes.find((p) => p.cle === "folio:mains");
-  check("une silhouette donnée par le Codex : « Y aller » vers sa quête", mains?.allerA === hrefQuete("acte:acte1") && mains.allerA === "/codex?quete=acte%3Aacte1");
-  check("une silhouette gagnée aux questions : pas de « Y aller »", toutes.find((p) => p.cle === "cadre:bronze")?.allerA === null);
+  check("une silhouette donnée par le Codex : « Voir la quête » vers elle", mains?.voirQuete === hrefQuete("acte:acte1") && mains.voirQuete === "/codex?quete=acte%3Aacte1");
+  check("une silhouette gagnée aux questions : pas de quête à voir", toutes.find((p) => p.cle === "cadre:bronze")?.voirQuete === null);
   check("les folios ont leur planche et leur anecdote", toutes.filter((p) => p.type === "folio").every((p) => !!p.folio?.oeuvre && p.folio.anecdote.every(Boolean)));
   check("ce qui bouge est marqué (Liquide, Sanguine, Route de Milan ; pas un titre)", !!toutes.find((p) => p.cle === "cadre:liquide-diamant")?.anime && !!toutes.find((p) => p.cle === "banniere:route-milan")?.anime && toutes.filter((p) => p.type === "titre").every((p) => !p.anime));
 
-  // les quêtes retirées gardent ce qu'elles ont donné, mais « Y aller » mène à celle qui donne aujourd'hui
+  // les quêtes retirées gardent ce qu'elles ont donné, mais « Voir la quête » mène à celle qui donne aujourd'hui
   const quetes = catalogueCodex(contenuDuProgramme());
   const retirees = new Set(quetes.filter((q) => q.retiree).map((q) => q.id));
   const allers = PIECES.map((p) => queteDe(p)).filter((q): q is string => !!q);
-  check("« Y aller » ne mène jamais à une quête retirée", allers.length > 0 && allers.every((q) => !retirees.has(q)), allers.filter((q) => retirees.has(q)).join(","));
+  check("« Voir la quête » ne mène jamais à une quête retirée", allers.length > 0 && allers.every((q) => !retirees.has(q)), allers.filter((q) => retirees.has(q)).join(","));
 
   const a: Acquis = { ...vide, questions: 600, codex: new Map([["acte:acte1", "2026-10-10"]]) };
   const e2 = etagere(a, porteDe({ frame: "or" }));
   const cadreOr = e2.rayons[0].pieces.find((p) => p.nue === "or");
-  check("pièces gagnées comptées (bronze, argent, or ; un folio)", e2.folios === 1 && e2.possedees === 4 && resumeEtagere(e2) === `4 pièces sur ${e2.total} · 1 folio`);
+  check("pièces gagnées comptées (bronze, argent, or ; un folio ; plus les libres)", e2.folios === 1 && e2.possedees === 4 + libres && resumeEtagere(e2) === `${4 + libres} pièces sur ${e2.total} · 1 folio`);
   check("la pièce portée est marquée, et seule de son rayon", !!cadreOr?.portee && e2.rayons[0].pieces.filter((p) => p.portee).length === 1);
   const e3 = etagere(vide, porteDe({ frame: "liquide-diamant", titre: "copiste" }));
   check("ce qui est porté reste à soi, même sans la condition (rien de gagné repris)", !!e3.rayons[0].pieces.find((p) => p.nue === "liquide-diamant")?.possedee && !!e3.rayons[2].pieces.find((p) => p.nue === "copiste")?.portee);
@@ -124,7 +130,7 @@ console.log("# Résumé, animations, retrait");
 {
   check("résumé : « 23 pièces sur 61 · 4 folios »", resumeEtagere({ possedees: 23, total: 61, folios: 4 }) === "23 pièces sur 61 · 4 folios");
   check("résumé : singulier, sans folio", resumeEtagere({ possedees: 1, total: 61, folios: 0 }) === "1 pièce sur 61" && resumeEtagere({ possedees: 0, total: 61, folios: 1 }) === "0 pièce sur 61 · 1 folio");
-  const p = (cle: string, possedee: boolean, anime: boolean): PieceEtagere => ({ cle, type: "cadre", nue: cle, nom: cle, description: "", obtention: "", rarete: "rare", anime, possedee, portee: false, libre: false, allerA: null, programme: null });
+  const p = (cle: string, possedee: boolean, anime: boolean): PieceEtagere => ({ cle, type: "cadre", nue: cle, nom: cle, description: "", obtention: "", rarete: "rare", anime, possedee, portee: false, libre: false, voirQuete: null, programme: null });
   const liste = [p("a", true, true), p("b", true, false), p("c", false, true), p("d", true, true), p("e", true, true)];
   check(`téléphone : ${ANIMEES_TELEPHONE} pièces animées au plus, les premières possédées qui bougent`, [...piecesAnimees(liste, { telephone: true, feuille: false })].join() === "a,d");
   check("ordinateur : toutes les possédées qui bougent ; jamais une silhouette", [...piecesAnimees(liste, { telephone: false, feuille: false })].join() === "a,d,e");
@@ -190,9 +196,14 @@ console.log("# L'écran « Mes pièces »");
   check("le titre, le résumé et le filtre", html.includes("Mes pièces") && html.includes(resumeEtagere(e)) && html.includes("Ce que j&#x27;ai") && html.includes(">Tout<"));
   check("les quatre rayons, avec leur compte", ["Cadres", "Bannières", "Titres", "Folios"].every((t) => html.includes(t)) && html.includes(`${e.rayons[3].possedees}/${e.rayons[3].total}`));
   check("la pièce portée est dite « Portée »", html.includes("Portée"));
-  check("les silhouettes sont grisées et disent comment les obtenir", html.includes("opacity-35 grayscale") && html.includes("Clore l&#x27;acte II"));
-  check("une silhouette donnée par le Codex : « Y aller » sur l'étagère même", html.includes(`href="${hrefQuete("acte:acte2")}"`) && html.includes("Y aller"));
-  check("pas de « Y aller » pour ce qu'on a déjà", !html.includes(`href="${hrefQuete("acte:acte1")}"`));
+  check("les silhouettes sont grisées et disent leur consigne en clair", html.includes("opacity-35 grayscale") && html.includes("Finir l&#x27;acte II : Les 10 matières"));
+  check("aucun lien vers le Codex sur l'étagère : ni « Y aller » ni « Voir la quête »", !html.includes("Y aller") && !html.includes("Voir la quête") && !html.includes("/codex?quete="));
+  const silhouette = e.rayons.flatMap((r) => r.pieces).find((x) => !x.possedee && x.voirQuete);
+  const fiche = silhouette ? renderToStaticMarkup(<ContenuFeuille p={silhouette} carte={carte} imageDeBanniere={false} />) : "";
+  check("la fiche d'une silhouette du Codex : sa consigne et « Voir la quête »", !!silhouette && fiche.includes("Comment l&#x27;obtenir") && fiche.includes("Voir la quête") && fiche.includes(`href="${silhouette.voirQuete}"`));
+  const sansQuete = e.rayons.flatMap((r) => r.pieces).find((x) => !x.possedee && !x.voirQuete);
+  const ficheSans = sansQuete ? renderToStaticMarkup(<ContenuFeuille p={sansQuete} carte={carte} imageDeBanniere={false} />) : "";
+  check("la fiche d'une pièce sans quête : sa consigne, pas de « Voir la quête »", !!sansQuete && ficheSans.includes("Comment l&#x27;obtenir") && !ficheSans.includes("Voir la quête"));
   // avant l'hydratation, on se compte en téléphone : au plus deux pièces possédées qui bougent ne sont pas figées
   const cartes = html.split("<li ").slice(1);
   const bougent = cartes.filter((c) => !c.includes("opacity-35") && (c.includes("vivant") || c.includes("dessine")) && !c.includes("fige"));
