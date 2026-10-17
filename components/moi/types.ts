@@ -9,6 +9,7 @@ import type { Ratures } from "@/components/moi/ratures-data";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
 import type { HistoriqueAteliers } from "@/lib/atelier-seance";
 import type { LigneTrophee } from "@/lib/trophees";
+import type { CodexMoi } from "@/lib/profil/codex-moi";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -113,4 +114,6 @@ export type MoiData = {
   ateliers?: HistoriqueAteliers | null;
   /** la Salle des trophées (lignes de lireTrophees ; complet = false : l'entraînement ciblé seul) ; absent : pas de Salle */
   trophees?: { lignes: LigneTrophee[]; complet: boolean };
+  /** le Codex vu de Moi : la tuile d'entrée et le bloc avec l'historique (lib/profil/codex-moi.ts) ; absent : pas de tuile */
+  codex?: CodexMoi;
 };

@@ -163,6 +163,19 @@ export const CODEX = {
   },
   /** le mode sobre, dans les réglages */
   sobre: "Récompenses versées d'office, sans animation",
+  sobreAide: "Pas de « Récupérer » : l'XP et les pièces arrivent seules, sans fête ni « +XP », et Léonard ne passe plus. Tes quêtes et « Fait aujourd'hui » restent.",
+  /** Moi : la tuile Codex (l'entrée du Codex) et le bloc Codex, avec son historique */
+  moi: {
+    aRecuperer: (n: number) => (n === 1 ? "1 quête à récupérer" : `${nombre(n)} quêtes à récupérer`),
+    vide: "Des quêtes pour guider tes révisions, à ton rythme.",
+    ouvrir: "Ouvrir le Codex",
+    historiqueSous: "Tes quêtes faites, jour par jour.",
+    historiqueVide: "Aucune quête faite pour l'instant.",
+    aujourdhui: "Aujourd'hui",
+    hier: "Hier",
+    arrivee: "Comptées à ton arrivée",
+    plusAnciennes: (n: number) => (n === 1 ? "et 1 plus ancienne" : `et ${nombre(n)} plus anciennes`),
+  },
   indisponible: {
     titre: "Le Codex n'est pas encore ouvert",
     ligne: "Le Codex se prépare : reviens dans quelques instants. Tout le reste du site marche normalement.",

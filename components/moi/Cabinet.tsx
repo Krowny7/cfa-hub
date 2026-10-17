@@ -20,6 +20,7 @@ import { Illustration } from "@/components/ui/Illustration";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { TuileCalme } from "@/components/ui/Tuiles";
 import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
+import { BlocCodex, TuileCodex } from "@/components/moi/CodexMoi";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import { hrefPersonnaliser } from "@/lib/profil/onglets";
@@ -33,8 +34,10 @@ import s from "@/components/moi/Moi.module.css";
 // L'espace Moi (variante B « Le Cabinet ») : Moi devient ton cabinet de
 // travail. Le héros est ton carnet de ratures (repli : ton objectif d'ici
 // l'examen quand le carnet est vide) ; le lieu illustré, « Ton cabinet »,
-// porte ton pseudo ; deux tuiles calmes (objectif ou carnet, marquées) ; le
-// rang a la bande d'encre ; une rangée de liens ; « Tes points faibles » ;
+// porte ton pseudo ; les tuiles calmes : le Codex d'abord (son entrée, depuis
+// qu'il a quitté la barre), puis l'objectif ou le carnet, et les marquées ; le
+// rang a la bande d'encre ; une rangée de liens ; la Salle des trophées et le
+// bloc « Codex » (historique replié) ; « Tes points faibles » ;
 // « Tes matières » sous le bandeau du cabinet de curiosités ; « Le détail »
 // replié. Composant de présentation : tout vient des props.
 
@@ -176,7 +179,9 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
         <div className={"grid lg:grid-cols-12 " + GAP}>
           <Heros d={d} lu={lu} className="lg:col-span-8 lg:row-start-1" />
           <CarteCabinet d={d} lu={lu} className="lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch" />
-          <div className={"grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 " + GAP}>
+          <div className={"grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 xl:grid-cols-3 " + GAP}>
+            {/* le Codex : en tête des tuiles, sur toute la largeur tant qu'elles ne tiennent pas à trois */}
+            {d.codex && <TuileCodex c={d.codex} className="md:col-span-2 xl:col-span-1" />}
             {lu.r && o ? (
               <TuileCalme
                 icone={<Icone nom="examen" size={18} />}
@@ -250,6 +255,9 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
           <SalleDesTrophees compte={compter(d.trophees.lignes)} complet={d.trophees.complet} />
         </div>
       )}
+
+      {/* le Codex : le résumé et l'historique des quêtes faites, replié */}
+      {d.codex && <BlocCodex c={d.codex} now={now} />}
 
       {/* « Tes points faibles » (et l'historique des Ateliers) : la cible de la visite de Léonard et de plusieurs liens du site */}
       <PointsFaiblesEtAteliers d={d} />
