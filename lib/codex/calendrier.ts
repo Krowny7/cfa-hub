@@ -81,7 +81,9 @@ export const CASES_MALLE: readonly CaseMalle[] = [
   { id: "identite", libelle: "Pièce d'identité (passeport) valide" },
   { id: "calculatrice", libelle: "Calculatrice autorisée (BA II Plus ou HP 12C) et piles de rechange" },
   { id: "trajet", libelle: "Trajet et heure d'arrivée vérifiés" },
-  { id: "montre", libelle: "Montre analogique non connectée", facultative: true },
+  // en centre Prometric, aucune montre n'entre en salle (le temps est à l'écran) : la case dit de la laisser au casier ;
+  // l'id « montre » est gardé pour les coches déjà enregistrées
+  { id: "montre", libelle: "Casier : rien en poche, ni montre ni téléphone (le temps est à l'écran)", facultative: true },
   { id: "sommeil", libelle: "Sommeil : couché à heure fixe trois soirs" },
   { id: "pause", libelle: "Eau et en-cas pour la pause" },
 ];

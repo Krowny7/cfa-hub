@@ -301,6 +301,7 @@ console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
   const motif = t.map((x) => (x.encre ? "e" : x.aVenir ? "v" : "s")).join("");
   check("tampons : de J-7 à J-1, remplis à 10 questions, un jour à venir n'est jamais rempli", t.length === 7 && t[0].jour === "2026-11-05" && t[6].jour === "2026-11-11" && motif === "esevvvv" && t[2].aujourdhui, motif);
   check("cases de la malle : sept, une facultative, prête à cinq", CASES_MALLE.length === 7 && CASES_MALLE.filter((c) => c.facultative).length === 1 && MALLE_PRETE === 5);
+  check("la malle n'invite pas à apporter une montre : elle reste au casier (Prometric)", CASES_MALLE.every((c) => !/montre (analogique|non connectée)/i.test(c.libelle)) && /casier/i.test(CASES_MALLE.find((c) => c.id === "montre")?.libelle ?? ""));
   check("cases cochées : connues, sans doublon, dans l'ordre de la malle", JSON.stringify(cochesValides(["pause", "x", "convocation", "pause", 3])) === '["convocation","pause"]' && cochesValides("non").length === 0);
   check("la malle se lit dans le compte, pour son programme seulement", lireMalle({ rl_malle: { programme: "finance/cfa-l1", coches: ["trajet"] } }, "finance/cfa-l1").join() === "trajet" && lireMalle({ rl_malle: { programme: "histoire/essai", coches: ["trajet"] } }, "finance/cfa-l1").length === 0 && lireMalle(null, "finance/cfa-l1").length === 0);
   const contenu = exempleCodex("milieu").branches.map((b) => b.contenu);
