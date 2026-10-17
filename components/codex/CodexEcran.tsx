@@ -16,6 +16,7 @@ import { Veillee } from "@/components/codex/Veillee";
 import { Malle } from "@/components/codex/Malle";
 import { BonneChance } from "@/components/codex/BonneChance";
 import { PoseLePinceau } from "@/components/codex/PoseLePinceau";
+import { FilRouge } from "@/components/codex/FilRouge";
 import { QUETE_VEILLE } from "@/lib/codex/calendrier";
 import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
 import { ArbreCodex, Chemin, CheminCodex, Colonne, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
@@ -36,7 +37,8 @@ import c from "./CodexEcran.module.css";
 // Le calendrier (V3 §7.1, `vue.moment`) change l'ordre : en veillée, les sept
 // tampons, la séance, « On ne commence plus rien. » et la carte repliée ; la
 // malle (J-3 à J-1) avant la séance ; le jour J, « Bonne chance. » seule ; le
-// lendemain, « Pose le pinceau. » puis la carte, sans séance.
+// lendemain, « Pose le pinceau. » puis la carte, sans séance ; après, le fil
+// rouge passe en tête.
 // `demo` : aperçus (aucune action serveur).
 
 type Props = { vue: VueCodex; demo?: boolean };
@@ -128,6 +130,8 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
       {/* la phase est déjà dans le titre : l'en-tête de la séance ne garde que J-n */}
       {avecSeance && seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, "")} gains={gains} mode="plein" demo={demo} />}
       {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
+      {/* après l'examen, le fil rouge continue : il passe en tête (V3 §7.1) */}
+      {moment === "apres" && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={ouvrir} />}
 
       {message && (
         <p role="status" className="card-quiet t-small p-3">
@@ -197,7 +201,7 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
           )}
 
           <div className={c.surOrdi} data-leonard="trame">
-            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} />} />
+            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />} />
           </div>
           <div className={c.surTel}>
             <CheminCodex vue={vue} montre={montre} onQuete={ouvrir} />

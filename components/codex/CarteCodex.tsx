@@ -580,7 +580,8 @@ function Legende() {
 /* La colonne : aujourd'hui, au long cours                             */
 /* ================================================================== */
 
-export function Colonne({ vue, montre, onQuete, onChanger, occupe }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean }) {
+/** `filRouge` faux : le fil rouge est déjà en tête de page (après l'examen, V3 §7.1). */
+export function Colonne({ vue, montre, onQuete, onChanger, occupe, filRouge = true }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; filRouge?: boolean }) {
   return (
     <>
       <section aria-labelledby="col-jour" data-leonard="contrats">
@@ -622,7 +623,7 @@ export function Colonne({ vue, montre, onQuete, onChanger, occupe }: { vue: VueC
         {!montre("codex:longcours") ? <p className={c.blancheCol}>{CODEX.pageBlanche}</p> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
       </section>
       {/* le fil rouge, sous les chaînes (V3 §1.5) : dévoilé avec elles */}
-      {montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
+      {filRouge && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
     </>
   );
 }
