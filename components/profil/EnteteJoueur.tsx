@@ -185,7 +185,7 @@ export function EnteteJoueur({
                   <PageHero kicker={kicker} title={<span className="[overflow-wrap:anywhere]">{d.name}</span>} enso={false} className="w-fit max-w-full max-lg:hidden" />
                 </>
               )}
-              <TitrePorte titre={d.titre} className="mt-1" />
+              <TitrePorte titre={d.titre} className="mt-1 max-md:line-clamp-2 max-md:whitespace-normal" />
               {d.nomComplet && <p className={`${s.nomComplet} m-0 mt-1 ${apercu ? "text-[18px] sm:text-[20px]" : "text-[15px] lg:text-[20px]"}`}>{d.nomComplet}</p>}
               {presence && !apercu && (
                 <div className="mt-1 min-h-[21px] text-[13px] font-semibold text-muted lg:mt-2 lg:text-[14px]">
