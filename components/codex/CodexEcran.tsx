@@ -174,9 +174,17 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         </div>
       )}
       {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
-      {/* le rythme long (V3 §10.3, §10.5) : le choix du lundi ; après l'examen, le verdict */}
-      {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={setVue} />}
-      {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
+      {/* le rythme long (V3 §10.3, §10.5) : le choix du lundi ; après l'examen, le verdict (sur téléphone, dans « Aujourd'hui ») */}
+      {vue.rythme?.lundi && (
+        <div className={horsSegment}>
+          <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={setVue} />
+        </div>
+      )}
+      {vue.rythme?.verdict && (
+        <div className={horsSegment}>
+          <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />
+        </div>
+      )}
       {/* après l'examen, le fil rouge continue : il passe en tête (V3 §7.1) */}
       {moment === "apres" && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={ouvrir} />}
 
