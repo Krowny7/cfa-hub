@@ -19,18 +19,20 @@ import { createClient } from "@/lib/supabase/server";
 import { PresenceHeartbeat } from "@/components/presence/PresenceHeartbeat";
 import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 
-// Barre du haut : logo vivant (→ accueil), domaine · programme, les cinq
-// espaces en contrôle segmenté, puis la recherche, le sceau « ! » des quêtes
-// du Codex et la pastille de la séance du jour lancée (« Séance 2/3 ·
-// Continuer → » ; sur téléphone, une bande au-dessus de la barre d'onglets),
-// diffusés en flux, et le badge de rang du joueur, qui ouvre son menu (Moi, thème nuit, mode discret, réglages,
-// déconnexion). Translucide et collante, avec un léger flou. Un trait d'encre
-// court sous la barre pendant qu'une page se fait attendre (NavProgress).
-// Le logo mène à l'accueil, sur téléphone aussi (la barre du bas n'a
-// plus d'onglet « Accueil »). Aux largeurs moyennes, la place va aux espaces :
-// le sélecteur de domaine, abrégé (« CFA I »), n'apparaît qu'à partir de
-// 1 280 px ; le mot « RANKED LOBBY » s'efface de 768 à 1 023 px (l'anneau
-// reste) ; les onglets eux-mêmes s'ajustent à ce qui reste (SpaceNav).
+// Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
+// espaces en contrôle segmenté (le Codex n'en est plus un : il s'ouvre depuis
+// Moi), puis la recherche, le sceau des quêtes (sa pastille « à récupérer » et
+// son panneau « Aujourd'hui ») et la pastille de la séance du jour lancée
+// (« Séance 2/3 · Continuer → » ; sur téléphone, une bande au-dessus de la
+// barre d'onglets), diffusés en flux, et le badge de rang du joueur, qui ouvre
+// son menu (Moi, thème nuit, mode discret, réglages, déconnexion).
+// Translucide et collante, avec un léger flou. Un trait d'encre court sous la
+// barre pendant qu'une page se fait attendre (NavProgress).
+// Le logo mène à l'accueil (la barre du bas a aussi son onglet « Accueil »).
+// Aux largeurs moyennes, la place va aux espaces : le sélecteur de domaine,
+// abrégé (« CFA I »), n'apparaît qu'à partir de 1 280 px ; le mot « RANKED
+// LOBBY » s'efface de 768 à 1 023 px (l'anneau reste) ; les onglets eux-mêmes
+// s'ajustent à ce qui reste (SpaceNav).
 //
 // Le logo suit la journée : l'anneau se trace au nombre de traits du jour
 // (une lecture légère, en parallèle du rang, avec repli sur le logo plein).

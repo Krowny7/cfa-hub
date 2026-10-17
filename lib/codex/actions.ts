@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recompenseEcrite, recupererCodex, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, lireXpTotal, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recompenseEcrite, recupererCodex, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
 import { CIBLES_SEMAINE, COMMANDES, type Commande } from "@/lib/codex/catalogue";
 import type { StatutVerdict } from "@/lib/codex/plan";
 import { BILAN_VIDE, bilanDe, type BilanCodex, type FeteCodex } from "@/lib/codex/bilan";
@@ -132,7 +132,7 @@ export async function codexRecuperer(cles?: { quete: string; periode: string }[]
 }
 
 /**
- * Le panneau « Tes quêtes » du sceau de la barre du haut, relu à son
+ * Le panneau « Aujourd'hui » du sceau de la barre du haut, relu à son
  * ouverture (la barre reste montée d'une page à l'autre : ses données
  * vieillissent). Sans recalcul forcé : le Codex gardé 45 s en mémoire, sinon
  * l'instantané de moins de 10 min (codex_vue_cache), sinon un calcul.
@@ -145,6 +145,16 @@ export async function codexPanneau(): Promise<Panneau> {
   } catch {
     return PANNEAU_VIDE;
   }
+}
+
+/**
+ * L'XP totale du joueur, relue à l'ouverture du panneau « Aujourd'hui » (sa
+ * ligne de niveau) : la barre du haut ne se relit pas d'une page à l'autre.
+ * null : hors connexion ou illisible.
+ */
+export async function codexXp(): Promise<number | null> {
+  const { supabase, user } = await joueur();
+  return user ? lireXpTotal(supabase, user.id) : null;
 }
 
 /**

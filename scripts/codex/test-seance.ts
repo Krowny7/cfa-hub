@@ -15,6 +15,7 @@ import {
   type EntreeSeance, type GenreBloc, type RevoirCodex, type VueSeance,
 } from "@/lib/codex/seance";
 import { PANNEAU_VIDE, panneauAGarder, panneauDuCache, pastilleSeance, seancePanneau } from "@/lib/codex/panneau";
+import type { VueContrat } from "@/lib/codex/vue";
 import { MAX_GAINS, budgetSuivant, enteteSeance, etapeSeance, gainsSeance, instantaneSeance, lireInstantane, rangEnCours } from "@/lib/codex/seance";
 import { bilanDe } from "@/lib/codex/bilan";
 import { exempleCodex } from "@/scripts/codex/exemple";
@@ -215,6 +216,12 @@ console.log("\n# garder ou recomposer, relire la base, la pastille");
   const p = seancePanneau(vs);
   check("la pastille : « Séance 1/3 », lancée, le bloc suivant et son lien", !!p && p.lancee && p.faits === 1 && p.total === 3 && p.suivant?.titre === s.blocs[1].titre && p.suivant.href === s.blocs[1].destination.href, J(p));
   check("la pastille d'une séance finie : plus de bloc suivant ; pas de séance : rien", seancePanneau({ ...vs, finie: true, finieLe: "2026-10-17T09:00:00Z" })?.suivant === null && seancePanneau(null) === null);
+  // « La suite » du panneau « Aujourd'hui » : la durée du bloc et l'XP des quêtes du jour qu'il remplit
+  check("« La suite » : la durée du bloc ; sans quête du jour liée, pas d'XP", p?.suivant?.duree === s.blocs[1].duree && p.suivant.xp === 0, J(p?.suivant));
+  const contrat = (id: string, xp: number, etat: "active" | "terminee") => ({ emplacement: "faiblesse", modele: "m", changeable: false, ligne: { id, periode: jour, xp, etat } }) as unknown as VueContrat;
+  const lie = { ...vs, blocs: vs.blocs.map((b, i) => (i === 1 ? { ...b, contrats: ["contrat:a", "contrat:b", "contrat:c"] } : b)) };
+  const pl = seancePanneau(lie, [contrat("contrat:a", 20, "active"), contrat("contrat:b", 15, "terminee"), contrat("contrat:c", 10, "active"), contrat("contrat:d", 99, "active")]);
+  check("« La suite » : +XP des quêtes du jour que le bloc remplit, pas celles déjà faites ni les autres", pl?.suivant?.xp === 30, J(pl?.suivant));
 }
 
 console.log("\n# les blocs faits et le bonus du trio");
@@ -297,13 +304,13 @@ console.log("\n# l'écran de la séance : étapes, « Continuer · 2/3 », « En
 
 console.log("\n# la pastille « Séance 2/3 · Continuer → »");
 {
-  const seance = { lancee: true, faits: 1, total: 3, suivant: { titre: "Ce qui coince", href: "/practice?topic=fsa&n=20" } };
+  const seance = { lancee: true, faits: 1, total: 3, suivant: { titre: "Ce qui coince", href: "/practice?topic=fsa&n=20", duree: 20, xp: 0 } };
   check("lancée : « Séance 2/3 » et le lien du bloc en cours", J(pastilleSeance(seance, "/dashboard")) === J({ rang: 2, total: 3, href: "/practice?topic=fsa&n=20" }));
   check("cachée sur la page du bloc en cours (requête ignorée), masquée pour la journée, pas lancée, finie, ou sans séance",
     pastilleSeance(seance, "/practice") === null && pastilleSeance(seance, "/practice/") === null && pastilleSeance(seance, "/dashboard", { masquee: true }) === null
       && pastilleSeance({ ...seance, lancee: false }, "/dashboard") === null && pastilleSeance({ ...seance, suivant: null }, "/dashboard") === null && pastilleSeance(null, "/dashboard") === null);
   check("sans la base : lancée dans ce navigateur, elle se montre", !!pastilleSeance({ ...seance, lancee: false }, "/codex", { lanceeIci: true }));
-  check("une autre page qui commence pareil n'est pas la destination", !!pastilleSeance({ ...seance, suivant: { titre: "Les 5 du jour", href: "/defi/cinq" } }, "/defi"));
+  check("une autre page qui commence pareil n'est pas la destination", !!pastilleSeance({ ...seance, suivant: { titre: "Les 5 du jour", href: "/defi/cinq", duree: 5, xp: 0 } }, "/defi"));
 }
 
 console.log("\n# « Ce que ça a fait avancer » (l'instantané au lancement, les gains)");

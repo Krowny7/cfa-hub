@@ -1,63 +1,43 @@
-// Le panneau « Tes quêtes », derrière le sceau de la barre du haut (V3 §9.2) :
-// QUOI FAIRE, en quatre lignes au plus, tirées de la vue du Codex
-// (lib/codex/vue.ts). Dans l'ordre : ta prochaine quête (la recommandation du
-// moteur), le débrief d'un examen blanc s'il en attend un, les contrats du
-// jour pas encore remplis, la quête au long cours la plus avancée. Chaque ligne porte sa destination (« Y aller »), sa durée et
-// une raison chiffrée. Les récompenses ne se réclament plus : elles sont
-// versées toutes seules, et une seule ligne en pied le dit (« 3 quêtes
-// tamponnées · +190 XP »), acquittée à l'ouverture.
+// Le panneau « Aujourd'hui », derrière le sceau de la barre du haut (Codex
+// simplifié, 17 octobre 2026 ; il remplace « Tes quêtes », V3 §9.2). Trois
+// zones au plus, sous la ligne de niveau :
+//  1. « À récupérer · 3 » : les quêtes faites qui attendent le clic
+//     (lib/codex/recuperer ; la pastille chiffrée du sceau en est le compte) ;
+//  2. « La suite » : l'étape en cours de la séance du jour, sa durée, l'XP des
+//     quêtes du jour qu'elle remplit, et « Commencer » ;
+//  3. en pied, « Fait aujourd'hui : 4 · +230 XP ▸ » et « Ouvrir le Codex → ».
+// Les quêtes ne sont qu'un guide secondaire : plus de prochaine quête, de
+// contrats ni de long cours ici (tout est dans /codex). Le sceau ne porte plus
+// d'arcs ni de « ! » ; « 14 à revoir » devient la pastille de l'onglet Réviser.
+// Les récompenses versées d'office (mode sobre, quête sans XP) ne s'annoncent
+// plus : elles sont acquittées sans bruit à l'ouverture et se lisent dans
+// « Fait aujourd'hui ».
 // Léger (quelques lignes, pas la vue entière, qui pèse une centaine de Ko).
 // Module neutre (serveur et navigateur).
 
-import { devoileLite } from "@/lib/codex/devoile-lite";
-import type { Destination } from "@/lib/codex/destinations";
 import type { VueSeance } from "@/lib/codex/seance";
-import type { Budget, Emplacement } from "@/lib/codex/types";
-import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
+import type { LigneQuete, VueCodex, VueContrat } from "@/lib/codex/vue";
 import { FAIT_VIDE, LIGNES_MONTREES, cleRecuperer, xpAVerser, type ARecuperer, type FaitAujourdhui } from "@/lib/codex/recuperer";
 
-export type GenreQuete = "principale" | "contrat" | "longcours" | "fil";
-
-export type QuetePanneau = {
-  /** id|periode : la clé d'une quête dans le temps (un contrat change chaque jour) */
-  cle: string;
-  id: string;
-  periode: string;
-  genre: GenreQuete;
+/** L'étape en cours de la séance : « Refaire 14 questions ratées · 10 min · +10 XP ». */
+export type SuitePanneau = {
   titre: string;
-  /** la petite ligne au-dessus du titre : « Ta prochaine quête », « Contrat du jour · ton point faible », « Au long cours · … » */
-  sur: string;
-  etat: EtatLigne;
-  valeur: number;
-  cible: number;
-  fraction: number;
+  href: string;
+  /** minutes */
+  duree: number;
+  /** l'XP des quêtes du jour pas encore remplies que ce bloc fait avancer (0 : aucune) */
   xp: number;
-  destination: Destination | null;
-  raison: string | null;
-  /** minutes ; null : on ne sait pas */
-  duree: number | null;
-  emplacement?: Emplacement;
-  changeable?: boolean;
 };
 
 export type Panneau = {
   disponible: boolean;
   jour: string;
-  /** quatre au plus : ta prochaine quête, les contrats du jour restants, un long cours */
-  quetes: QuetePanneau[];
-  /** les récompenses versées pas encore annoncées : une ligne en pied, acquittée à l'ouverture (codexVus(cles)) */
-  versees: { n: number; xp: number; cles: string[]; titre: string | null } | null;
-  /** les contrats du jour : un arc d'encre chacun autour du sceau */
-  arcs: { faits: number; total: number };
-  /** le seul motif du « ! » doré : un acte clos, une pièce gagnée */
-  rare: { quoi: "acte" | "piece"; libelle: string } | null;
-  budget: Budget | null;
-  /** les contrats de la semaine (le détail se déplie : leurs titres) */
-  semaine: { faits: number; total: number; quetes: { titre: string; faite: boolean }[] };
-  /** la file « À revoir » : « 15 à revoir » sous le sceau (revisions_dues ; repli : les ratures en cours, 25 au plus ; null : rien de connu) */
+  /** les récompenses versées d'office pas encore vues : acquittées sans bruit à l'ouverture (codexVus(cles)) */
+  versees: { n: number; xp: number; cles: string[] } | null;
+  /** la file « À revoir » : la pastille de l'onglet Réviser (revisions_dues ; repli : les ratures en cours, 25 au plus ; null : rien de connu) */
   revoir: { aujourdhui: number; demain: number } | null;
-  /** la séance du jour (V3 §6, lot A5) */
-  seance: { lancee: boolean; faits: number; total: number; suivant: { titre: string; href: string } | null } | null;
+  /** la séance du jour (V3 §6) : « La suite » du panneau et la pastille « Séance 2/3 · Continuer → » */
+  seance: { lancee: boolean; faits: number; total: number; suivant: SuitePanneau | null } | null;
   /** le jour J (V3 §7.4) : le panneau se réduit à « Bonne chance », Léonard ne surgit pas (attribut data-jour-j) */
   jourJ: boolean;
   /**
@@ -71,37 +51,10 @@ export type Panneau = {
 };
 
 export const PANNEAU_VIDE: Panneau = {
-  disponible: false, jour: "", quetes: [], versees: null, arcs: { faits: 0, total: 0 }, rare: null, budget: null, semaine: { faits: 0, total: 0, quetes: [] }, revoir: null, seance: null, jourJ: false, recuperer: { n: 0, xp: 0, items: [] }, fait: FAIT_VIDE,
+  disponible: false, jour: "", versees: null, revoir: null, seance: null, jourJ: false, recuperer: { n: 0, xp: 0, items: [] }, fait: FAIT_VIDE,
 };
 
-export const MAX_QUETES = 4;
-/** Les arcs du sceau : trois contrats par jour au plus. */
-export const MAX_ARCS = 3;
-
 const cleDe = (l: Pick<LigneQuete, "id" | "periode">) => `${l.id}|${l.periode}`;
-
-const EMPLACEMENT: Record<string, string> = { faiblesse: "ton point faible", entretien: "l'entretien", variete: "la variété" };
-
-function versPanneau(l: LigneQuete, genre: GenreQuete, sur: string, extra: Partial<QuetePanneau> = {}): QuetePanneau {
-  const destination = l.destination ?? null;
-  return {
-    cle: cleDe(l),
-    id: l.id,
-    periode: l.periode,
-    genre,
-    titre: l.titre,
-    sur,
-    etat: l.etat,
-    valeur: l.valeur,
-    cible: l.cible,
-    fraction: l.fraction,
-    xp: l.xpVersee ?? l.xp,
-    destination,
-    raison: destination?.raison ?? null,
-    duree: destination?.duree ?? l.duree ?? null,
-    ...extra,
-  };
-}
 
 /** Toutes les quêtes de la vue (une même quête peut y figurer deux fois : la clé les dédoublonne). */
 const toutesLignes = (vue: VueCodex): LigneQuete[] => [
@@ -109,12 +62,11 @@ const toutesLignes = (vue: VueCodex): LigneQuete[] => [
 ];
 
 /**
- * Les récompenses versées dont la fanfare n'a pas été jouée (hors sceaux du
- * profil, qui ont leur cérémonie), et les actes clos à fêter ; sans ce qui
- * attend « Récupérer » (le clic en accuse réception : l'ouverture du
- * panneau ne doit pas l'acquitter).
+ * Les récompenses versées pas encore vues (hors sceaux du profil, qui ont
+ * leur cérémonie), et les actes clos ; sans ce qui attend « Récupérer » (le
+ * clic en accuse réception : l'ouverture du panneau ne doit pas l'acquitter).
  */
-function aAnnoncer(vue: VueCodex): { lignes: LigneQuete[]; actes: VueCodex["trame"] } {
+function aAcquitter(vue: VueCodex): { lignes: LigneQuete[]; actes: VueCodex["trame"] } {
   const vues = new Set<string>((vue.aRecuperer ?? []).map(cleRecuperer));
   const lignes: LigneQuete[] = [];
   for (const l of toutesLignes(vue)) {
@@ -130,93 +82,48 @@ export function panneauDe(vue: VueCodex): Panneau {
   if (!vue.disponible) return PANNEAU_VIDE;
   // le jour J : rien à faire, rien à annoncer, seulement « Bonne chance » (V3 §7.4)
   if (vue.moment === "jourJ") return { ...PANNEAU_VIDE, disponible: true, jour: vue.jour, jourJ: true };
-  const d = vue.devoile?.devoile ?? "tout";
-  const contratsVus = devoileLite(d, "codex:contrats");
-  const longCoursVu = devoileLite(d, "codex:longcours");
-
-  const liste: QuetePanneau[] = [];
-  const pris = new Set<string>();
-  const p = vue.prochaine;
-  if (p && p.ligne.etat !== "terminee") {
-    // un contrat du jour recommandé garde son « Changer »
-    const ct = vue.contrats.find((c) => cleDe(c.ligne) === cleDe(p.ligne));
-    liste.push(versPanneau(p.ligne, "principale", "Ta prochaine quête", ct ? { emplacement: ct.emplacement, changeable: ct.changeable } : {}));
-    pris.add(cleDe(p.ligne));
-  }
-  if (contratsVus) {
-    // le débrief d'un blanc (V3 §7.6) : rare et utile tant que le blanc est frais, il passe avant les contrats tirés
-    const db = vue.debrief;
-    if (db && db.etat !== "terminee" && db.etat !== "verrouillee" && !pris.has(cleDe(db))) {
-      pris.add(cleDe(db));
-      liste.push(versPanneau(db, "contrat", "Contrat du jour · le débrief"));
-    }
-    for (const c of vue.contrats) {
-      if (c.ligne.etat === "terminee" || pris.has(cleDe(c.ligne))) continue;
-      pris.add(cleDe(c.ligne));
-      liste.push(versPanneau(c.ligne, "contrat", `Contrat du jour · ${EMPLACEMENT[c.emplacement] ?? c.emplacement}`, { emplacement: c.emplacement, changeable: c.changeable }));
-    }
-  }
-  if (longCoursVu) {
-    // un miroir (V3 §8.2) ne double pas sa quête payeuse, déjà proposée
-    const chaine = vue.longCours
-      .filter((c) => c.courant && c.courant.etat !== "verrouillee" && !pris.has(cleDe(c.courant)) && !(c.courant.compteeAvec && pris.has(cleDe({ id: c.courant.compteeAvec.id, periode: "" }))))
-      .sort((a, b) => b.courant!.fraction - a.courant!.fraction)[0];
-    if (chaine?.courant) liste.push(versPanneau(chaine.courant, "longcours", `Au long cours · ${chaine.chaine.titre}`));
-    // plus aucune chaîne à proposer : le palier du fil rouge le plus avancé prend la place (V3 §1.5), s'il s'écrit déjà
-    else if (!vue.filRouge.aVenir) {
-      const ch = vue.filRouge.chapitres
-        .filter((c) => c.courant && c.courant.etat !== "verrouillee" && c.courant.destination && !pris.has(cleDe(c.courant)))
-        .sort((a, b) => b.courant!.fraction - a.courant!.fraction)[0];
-      if (ch?.courant) liste.push(versPanneau(ch.courant, "fil", `Le fil rouge · ${ch.titre}`));
-    }
-  }
-
-  const { lignes, actes } = aAnnoncer(vue);
-  // le mode sobre (lib/codex/sobre) : les quêtes tamponnées sont dites, sans leur XP ni leurs pièces
-  const titre = vue.sobre ? null : (lignes.find((l) => l.titreNom)?.titreNom ?? null);
-  const piece = vue.sobre ? undefined : lignes.find((l) => l.cosmetique);
+  const { lignes, actes } = aAcquitter(vue);
   const versees = lignes.length || actes.length
     // l'XP d'un acte clos entre dans le total (elle en était oubliée)
-    ? { n: lignes.length, xp: vue.sobre ? 0 : lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0) + actes.reduce((s, a) => s + a.acte.recompense.xp, 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
+    ? { n: lignes.length, xp: vue.sobre ? 0 : lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0) + actes.reduce((s, a) => s + a.acte.recompense.xp, 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])] }
     : null;
-  const rare: Panneau["rare"] = actes.length
-    ? { quoi: "acte", libelle: `Acte clos : ${actes[0].acte.titre}` }
-    : piece
-      ? { quoi: "piece", libelle: piece.cosmetiqueNom ? `Pièce gagnée : ${piece.cosmetiqueNom}` : "Une pièce gagnée" }
-      : null;
-
+  const enAttente = vue.aRecuperer ?? [];
   return {
     disponible: true,
     jour: vue.jour,
-    quetes: liste.slice(0, MAX_QUETES),
     versees,
-    arcs: contratsVus ? { faits: Math.min(MAX_ARCS, vue.trio.faits), total: Math.min(MAX_ARCS, vue.trio.total) } : { faits: 0, total: 0 },
-    rare,
-    budget: vue.budget,
-    semaine: { faits: vue.hebdo.filter((l) => l.etat === "terminee").length, total: vue.hebdo.length, quetes: vue.hebdo.map((l) => ({ titre: l.titre, faite: l.etat === "terminee" })) },
     revoir: vue.revoir,
-    seance: seancePanneau(vue.seance),
+    seance: seancePanneau(vue.seance, vue.contrats),
     jourJ: false,
-    recuperer: { n: (vue.aRecuperer ?? []).length, xp: vue.sobre ? 0 : xpAVerser(vue.aRecuperer ?? []), items: (vue.aRecuperer ?? []).slice(0, LIGNES_MONTREES) },
+    recuperer: { n: enAttente.length, xp: vue.sobre ? 0 : xpAVerser(enAttente), items: enAttente.slice(0, LIGNES_MONTREES) },
     fait: vue.faitAujourdhui ?? FAIT_VIDE,
   };
 }
 
 /**
- * La séance du jour pour la pastille « Séance 2/3 · Continuer → » (V3 §6.4) :
- * lancée ou non, où elle en est, et le bloc suivant (le premier pas fait ;
- * aucun une fois la séance finie). null : pas de séance.
+ * La séance du jour pour « La suite » du panneau et la pastille « Séance 2/3
+ * · Continuer → » (V3 §6.4) : lancée ou non, où elle en est, et le bloc
+ * suivant (le premier pas fait ; aucun une fois la séance finie), avec sa
+ * durée et l'XP des quêtes du jour pas encore remplies qu'il fait avancer
+ * (`contrats` : ceux de la vue). null : pas de séance.
  */
-export function seancePanneau(s: VueSeance | null): Panneau["seance"] {
+export function seancePanneau(s: VueSeance | null, contrats: VueContrat[] = []): Panneau["seance"] {
   if (!s || !s.blocs.length) return null;
-  const suivant = s.finie ? undefined : s.blocs.find((b) => !s.faits.includes(b.genre));
-  return { lancee: s.lancee, faits: s.blocs.filter((b) => s.faits.includes(b.genre)).length, total: s.blocs.length, suivant: suivant ? { titre: suivant.titre, href: suivant.destination.href } : null };
+  const b = s.finie ? undefined : s.blocs.find((x) => !s.faits.includes(x.genre));
+  const xp = b ? contrats.filter((c) => b.contrats.includes(c.ligne.id) && c.ligne.etat !== "terminee").reduce((n, c) => n + c.ligne.xp, 0) : 0;
+  return {
+    lancee: s.lancee,
+    faits: s.blocs.filter((x) => s.faits.includes(x.genre)).length,
+    total: s.blocs.length,
+    suivant: b ? { titre: b.titre, href: b.destination.href, duree: b.duree, xp } : null,
+  };
 }
 
 /**
  * L'événement du navigateur qui dit « le Codex a bougé » : émis par FeteCodex
- * juste après codexPoint() (la fin d'un outil) et par la séance du jour après
- * un geste ; la pastille de la barre du haut relit alors le panneau.
+ * juste après codexPoint() (la fin d'un outil), par la séance du jour après
+ * un geste et par « Récupérer » ; le sceau et la pastille de la barre du haut
+ * relisent alors le panneau.
  */
 export const EVENEMENT_CODEX_POINT = "rl:codex-point";
 
@@ -236,19 +143,13 @@ export function pastilleSeance(s: Panneau["seance"], chemin: string, o: { masque
   return { rang: Math.min(s.total, s.faits + 1), total: s.total, href: s.suivant.href };
 }
 
-/** « 3 quêtes tamponnées · +190 XP · titre Garzone » : la ligne des récompenses versées. */
-export function ligneVersees(v: NonNullable<Panneau["versees"]>): string {
-  const debut = v.n ? `${v.n} quête${v.n > 1 ? "s" : ""} tamponnée${v.n > 1 ? "s" : ""}` : "Un acte clos";
-  return [debut, ...(v.xp > 0 ? [`+${v.xp.toLocaleString("fr-FR")} XP`] : []), ...(v.titre ? [`titre ${v.titre}`] : [])].join(" · ");
-}
-
-/** Le panneau une fois les récompenses annoncées (codexVus) : plus de ligne en pied ni de « ! » doré. */
-export const panneauAcquitte = (p: Panneau): Panneau => ({ ...p, versees: null, rare: null });
+/** Le panneau une fois les récompenses versées d'office acquittées (codexVus). */
+export const panneauAcquitte = (p: Panneau): Panneau => ({ ...p, versees: null });
 
 // ── L'instantané (codex_vue_cache, migration_codex_v3.sql §6) ──────────
 
 /** La forme du panneau gardé : à changer dès que Panneau change, pour qu'un instantané d'avant ne soit jamais relu. */
-export const VERSION_PANNEAU = 3;
+export const VERSION_PANNEAU = 4;
 /** Un instantané plus vieux ne sert plus. */
 export const CACHE_PANNEAU_MS = 10 * 60_000;
 

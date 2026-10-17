@@ -521,8 +521,6 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     const { r, e: e2 } = repondre(e, () => 0);
     const reco = recommander(e2, r);
     check("la payeuse ouverte passe devant son miroir", ouverte(r, "longcours:encre:2") && ouverte(r, "trame:a4:semaines") && reco?.quete.id === "trame:a4:semaines", reco?.quete.id);
-    const pn = panneauDe(construireVue(e2, r, reco, { devoile: null }));
-    check("le panneau ne propose pas le miroir en plus de sa payeuse", pn.quetes.some((q) => q.cle === "trame:a4:semaines|") && !pn.quetes.some((q) => q.cle.startsWith("longcours:encre:2|")), pn.quetes.map((q) => q.cle).join(" "));
   }
 
   // l'acte I : la visite de la bottega, close avec 4 outils sur 7 ; le prologue sans jour J
@@ -806,8 +804,8 @@ console.log("\n# v3 §4.6, §4.7 : la maîtrise unique, le cap, la mémoire (A4b
   const vue = construireVue(e2, r, recommander(e2, r), { devoile: null });
   check("la vue le porte à part des contrats tirés (les 3 contrats restent 3)", vue.debrief?.id === "contrat:debrief" && vue.contrats.length === 3 && vue.trio.total === 3);
   const { r: rOuvert, e: eOuvert } = repondre(e1, (d) => (d.evenement === "blanc_debriefe" ? 0 : 99));
-  const pOuvert = panneauDe(construireVue(eOuvert, rOuvert, recommander(eOuvert, rOuvert), { devoile: null }));
-  check("pas encore fait : le panneau le propose, avec sa destination (les examens blancs)", pOuvert.quetes.some((x) => x.id === "contrat:debrief" && x.sur === "Contrat du jour · le débrief" && x.destination?.href === "/mock-exams"), pOuvert.quetes.map((x) => x.id).join());
+  const vOuvert = construireVue(eOuvert, rOuvert, recommander(eOuvert, rOuvert), { devoile: null });
+  check("pas encore fait : la vue le propose, avec sa destination (les examens blancs)", vOuvert.debrief?.id === "contrat:debrief" && vOuvert.debrief.etat !== "terminee" && vOuvert.debrief.destination?.href === "/mock-exams", JSON.stringify(vOuvert.debrief));
   const sans = avecMesures({ blancs_a_debriefer: 0 }, { capacites: capa });
   const vSans = construireVue(sans, repondre(sans, () => 0).r, null, { devoile: null });
   check("aucun blanc à débriefer : rien à montrer", vSans.debrief === null);
@@ -852,7 +850,7 @@ console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)"
   const vs = construireVue(e, r, null, { devoile: null, sobre: true });
   const vn = construireVue(e, r, null, { devoile: null });
   check("la vue et le bilan portent le mode sobre ; sans réglage, éteint", vs.sobre && bilanDe(vs).sobre === true && !vn.sobre && bilanDe(vn).sobre === false);
-  check("le mode sobre garde la séance, les quêtes du panneau, le cap et les contrats", J(panneauDe(vs).quetes) === J(panneauDe(vn).quetes) && J(panneauDe(vs).seance) === J(panneauDe(vn).seance) && J(vs.contrats) === J(vn.contrats) && J(vs.cap) === J(vn.cap) && J(vs.seance) === J(vn.seance));
+  check("le mode sobre garde la séance (et « La suite » du panneau), le cap et les contrats", J(panneauDe(vs).seance) === J(panneauDe(vn).seance) && J(vs.contrats) === J(vn.contrats) && J(vs.cap) === J(vn.cap) && J(vs.seance) === J(vn.seance));
   // les écrans : la fête branchée sur components/fete, l'XP rangée en mode sobre
   const fete = readFileSync("components/codex/FeteCodex.tsx", "utf8");
   // Codex simplifié : plus de fête automatique, les grandes fêtes se jouent au clic « Récupérer » (scripts/codex/test-recuperer.ts)

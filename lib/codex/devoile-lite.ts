@@ -15,7 +15,7 @@ export const ID_DEVOILE: Record<string, string> = {
   "codex:exploits": "exploits",
 };
 
-/** L'espace du menu → ce qui le dévoile (le Codex et Moi sont toujours visibles). */
+/** L'espace du menu → ce qui le dévoile (Moi est toujours visible ; le Codex n'est plus un onglet). */
 export const DEVOILE_DE_L_ESPACE: Record<string, string | undefined> = {
   reviser: "menu:reviser",
   entrainer: "menu:entrainer",

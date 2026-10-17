@@ -2,30 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { activeSpace } from "@/lib/nav";
+import { activeSpace, libelleOnglet } from "@/lib/nav";
 import { paletteDeChemin, styleDePalette } from "@/lib/palettes";
 import { ICONE_ESPACE, Icone } from "@/components/adn/icons";
 import { EncreVive } from "@/components/nav/EncreVive";
-import { useSpacesVisibles } from "@/components/nav/DevoileContext";
+import { useEtatNav, useSpacesVisibles } from "@/components/nav/DevoileContext";
+import { PastilleRevoir } from "@/components/nav/PastilleRevoir";
 
-// Les espaces (cinq, moins ceux que le joueur n'a pas encore découverts : voir
-// DevoileContext), en contrôle segmenté : l'indicateur glisse (avec un
+// Les espaces (quatre, moins ceux que le joueur n'a pas encore découverts :
+// voir DevoileContext), en contrôle segmenté : l'indicateur glisse (avec un
 // léger ressort) sous l'onglet actif. Il se place par transform (sa largeur
 // est celle d'un onglet : translateX(100 %) = un onglet plus loin). Il se
 // remplit du liquide des insignes de rang, aux couleurs de la palette de la
 // page (lib/palettes.ts, EncreVive ; texture de repli et voile : .rl-encre
-// dans globals.css) ; le texte de l'onglet passe en blanc.
+// dans globals.css) ; le texte de l'onglet passe en blanc. Réviser porte la
+// pastille « à revoir » (PastilleRevoir). Le Codex n'est plus un onglet : il
+// s'ouvre depuis Moi, qui s'allume sur /codex.
 // Les onglets s'ajustent à la place que la barre du haut leur laisse (requête
 // de conteneur : le parent porte `@container`) : icône et nom à partir de
-// 700 px, le nom seul en dessous (marges réduites), l'icône seule sous 470 px
+// 570 px, le nom seul en dessous (marges réduites), l'icône seule sous 380 px
 // (le nom reste lu par les lecteurs d'écran). Seuils tirés des chasses de
-// Geist : « Classement », le plus large, fait 5,53 em. Jamais de chevauchement.
+// Geist : « Classement », le plus large, fait 5,53 em ; quatre colonnes égales.
+// Jamais de chevauchement.
 // `chemin` : pour les aperçus, force la route lue.
 export function SpaceNav({ chemin }: { chemin?: string } = {}) {
   const courant = usePathname();
   const pathname = chemin ?? courant ?? "/";
   const active = activeSpace(pathname);
   const { spaces: SPACES } = useSpacesVisibles(active);
+  const { revoir } = useEtatNav();
   const ix = SPACES.findIndex((s) => s.key === active);
   const palette = ix >= 0 ? paletteDeChemin(pathname) : null;
 
@@ -49,9 +54,10 @@ export function SpaceNav({ chemin }: { chemin?: string } = {}) {
         {SPACES.map((s) => {
           const on = s.key === active;
           return (
-            <Link key={s.key} href={s.href} className={"seg-item gap-0 px-3 text-[13px] @min-[470px]:px-2 @min-[530px]:px-3 @min-[530px]:text-[13.5px] @min-[700px]:gap-[7px] @min-[700px]:px-4" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined}>
-              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} className="hidden @min-[700px]:block @max-[469px]:block" />
-              <span className="@max-[469px]:sr-only">{s.label}</span>
+            <Link key={s.key} href={s.href} className={"seg-item gap-0 px-3 text-[13px] @min-[380px]:px-2 @min-[430px]:px-3 @min-[430px]:text-[13.5px] @min-[570px]:gap-[7px] @min-[570px]:px-4" + (on && palette ? " rl-encre-on" : "") + (s.neuf ? " rl-onglet-neuf" : "")} aria-current={on ? "page" : undefined} aria-label={libelleOnglet(s.key, s.label, revoir)}>
+              <Icone nom={ICONE_ESPACE[s.key]} size={17} appui={on ? 1.12 : 0.95} className="hidden @min-[570px]:block @max-[379px]:block" />
+              <span className="@max-[379px]:sr-only">{s.label}</span>
+              {s.key === "reviser" && <PastilleRevoir className="-right-0.5 -top-1.5" />}
             </Link>
           );
         })}

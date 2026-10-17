@@ -95,7 +95,6 @@ const PALETTE_DE_L_ESPACE: Record<Space["key"], PaletteCle> = {
   entrainer: "atelier",
   classement: "san-romano",
   moi: "ebene",
-  codex: "carnet",
 };
 
 const sous = (chemin: string, prefixe: string) => chemin === prefixe || chemin.startsWith(prefixe + "/");

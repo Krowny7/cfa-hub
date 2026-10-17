@@ -18,10 +18,10 @@ import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoil
 import { estDevoile, marqueurDe, nouveautesDe } from "@/lib/codex/moteur";
 import { bilanDe } from "@/lib/codex/bilan";
 import { readFileSync } from "node:fs";
-import { MAX_ARCS, MAX_QUETES, ligneVersees, panneauAcquitte, panneauDe } from "@/lib/codex/panneau";
+import { VERSION_PANNEAU, panneauAcquitte, panneauDe } from "@/lib/codex/panneau";
 import { BUDGETS, CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, budgetParDefaut, ecarter, questionsDes7Jours, reglageDe } from "@/lib/codex/reglage";
 import { capacitesDe } from "@/lib/codex/moteur";
-import { SPACES, activeSpace } from "@/lib/nav";
+import { SPACES, activeSpace, chiffrePastille, estAccueil, libelleOnglet } from "@/lib/nav";
 import { paletteDeChemin } from "@/lib/palettes";
 import { exempleCodex } from "./exemple";
 import { vueSansFetes, type VueCodex } from "@/lib/codex/vue";
@@ -50,12 +50,24 @@ check("devoileLite et estDevoile répondent pareil", DECOUVERTE.every((d) => ["t
 check("les trois onglets masquables sont bien dans la table de la navigation", Object.values(DEVOILE_DE_L_ESPACE).every((q) => q && DECOUVERTE.some((d) => d.quoi === q)));
 
 console.log("\n# la navigation");
-check("cinq espaces, le Codex en tête", SPACES.length === 5 && SPACES[0].key === "codex");
-check("la palette du Codex est « carnet »", paletteDeChemin("/codex")?.key === "carnet");
-const visibles = (d: string[] | "tout") => SPACES.filter((s) => s.key === "codex" || s.key === "moi" || !DEVOILE_DE_L_ESPACE[s.key] || devoileLite(d, DEVOILE_DE_L_ESPACE[s.key]!)).map((s) => s.key).join();
-check("compte neuf : Codex et Moi seulement", visibles([]) === "codex,moi", visibles([]));
-check("après le premier trait : + Réviser", visibles(["reviser", "branches"]) === "codex,reviser,moi");
-check("tout dévoilé : les cinq", visibles("tout").split(",").length === 5);
+check("quatre espaces, sans le Codex (il s'ouvre depuis Moi)", SPACES.length === 4 && SPACES.every((x) => (x.key as string) !== "codex" && x.href !== "/codex"), SPACES.map((x) => x.key).join());
+check("/codex et ses liens profonds allument « Moi »", activeSpace("/codex") === "moi" && activeSpace("/codex/x") === "moi");
+check("la palette du Codex reste « carnet » (par la route), celle de Moi « ébène »", paletteDeChemin("/codex")?.key === "carnet" && paletteDeChemin("/moi")?.key === "ebene");
+check("l'accueil : / et /dashboard, rien d'autre", estAccueil("/") && estAccueil("/dashboard") && !estAccueil("/dashboard/x") && !estAccueil("/codex"));
+const visibles = (d: string[] | "tout") => SPACES.filter((s) => s.key === "moi" || !DEVOILE_DE_L_ESPACE[s.key] || devoileLite(d, DEVOILE_DE_L_ESPACE[s.key]!)).map((s) => s.key).join();
+check("compte neuf : Moi seulement (l'accueil a le logo, et son onglet sur téléphone)", visibles([]) === "moi", visibles([]));
+check("après le premier trait : + Réviser", visibles(["reviser", "branches"]) === "reviser,moi");
+check("tout dévoilé : les quatre", visibles("tout").split(",").length === 4);
+check("pastilles : rien à zéro, le nombre, « 9+ » au-delà (99+ pour Réviser)", chiffrePastille(0) === null && chiffrePastille(null) === null && chiffrePastille(-2) === null && chiffrePastille(3) === "3" && chiffrePastille(9) === "9" && chiffrePastille(12) === "9+" && chiffrePastille(42, 99) === "42" && chiffrePastille(120, 99) === "99+");
+check("« 14 à revoir » se lit dans le nom de l'onglet Réviser, et de lui seul", libelleOnglet("reviser", "Réviser", 14) === "Réviser, 14 à revoir" && libelleOnglet("reviser", "Réviser", 0) === undefined && libelleOnglet("reviser", "Réviser", null) === undefined && libelleOnglet("moi", "Moi", 14) === undefined);
+{
+  const fichiers = ["components/nav/SpaceNav.tsx", "components/MobileBottomNav.tsx"].map((f) => readFileSync(f, "utf8"));
+  check("la pastille « à revoir » est sur Réviser, en haut et en bas", fichiers.every((f) => f.includes('key === "reviser" && <PastilleRevoir')));
+  check("la barre du bas rend son onglet « Accueil » (vers /dashboard)", fichiers[1].includes('label: "Accueil", href: "/dashboard"'));
+  check("la recherche Ctrl K garde une entrée « Codex »", readFileSync("components/nav/CommandPalette.tsx", "utf8").includes('label: "Codex", hint:'));
+  const sceau = readFileSync("components/codex/SceauQuetes.tsx", "utf8");
+  check("le sceau : plus de « ! », d'arcs ni de « à revoir » ; « Ouvrir le Codex → » reste", !/SceauBarre|arcPlein|signeReserve|sousSceau|revoir\.aujourdhui\} à revoir/.test(sceau) && sceau.includes("Ouvrir le Codex →") && sceau.includes('data-leonard="sceau-quetes"'));
+}
 
 console.log("\n# la vue et le bilan");
 for (const sc of ["neuf", "milieu", "fin"] as const) {
@@ -75,54 +87,32 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
   check("milieu : les contrats sont montrés (3)", b.contrats.length === 3, String(b.contrats.length));
 }
 
-console.log("\n# le panneau « Tes quêtes » (sceau de la barre du haut, V3 §9.2)");
-const GENRES = new Set(["principale", "contrat", "longcours", "fil"]);
+console.log("\n# le panneau « Aujourd'hui » (sceau de la barre du haut, Codex simplifié)");
 for (const sc of ["neuf", "milieu", "fin"] as const) {
   const vue = exempleCodex(sc);
   const pn = panneauDe(vue);
-  const genres = pn.quetes.map((q) => q.genre);
-  check(`${sc} : ${MAX_QUETES} lignes au plus, sans doublon`, pn.quetes.length <= MAX_QUETES && new Set(pn.quetes.map((q) => q.cle)).size === pn.quetes.length, genres.join());
-  check(`${sc} : jamais une ligne « récompense », que des choses à faire`, genres.every((g) => GENRES.has(g)) && pn.quetes.every((q) => q.etat !== "terminee"), genres.join());
-  check(`${sc} : ta prochaine quête en tête, une seule`, genres.filter((g) => g === "principale").length <= 1 && (!genres.includes("principale") || genres[0] === "principale"), genres.join());
-  check(`${sc} : chaque ligne qui mène quelque part dit « Y aller », un lien interne, une durée`, pn.quetes.every((q) => !q.destination || (q.destination.libelle === "Y aller" && q.destination.href.startsWith("/") && !q.destination.href.includes("undefined") && (q.duree ?? 0) > 0)));
-  check(`${sc} : jamais « Quête principale » ni « tu es ici »`, pn.quetes.every((q) => !/Quête principale|tu es ici/.test(`${q.sur} ${q.raison ?? ""}`)));
-  check(`${sc} : arcs entre 0 et 3, faits ≤ total`, pn.arcs.total >= 0 && pn.arcs.total <= MAX_ARCS && pn.arcs.faits >= 0 && pn.arcs.faits <= pn.arcs.total, JSON.stringify(pn.arcs));
-  const actes = vue.trame.some((a) => a.aFeter);
-  check(`${sc} : le « ! » doré seulement pour un acte clos ou une pièce gagnée`, pn.rare === null || (pn.rare.quoi === "acte" ? actes : pn.rare.quoi === "piece" && !!pn.versees), JSON.stringify(pn.rare));
-  check(`${sc} : jamais un sceau du profil dans les récompenses annoncées`, (pn.versees?.cles ?? []).every((k) => !k.startsWith("exploit:sceau:")));
-  check(`${sc} : budget du jour parmi 15/30/60/90`, pn.budget !== null && BUDGETS.includes(pn.budget), String(pn.budget));
+  const attente = vue.aRecuperer ?? [];
+  check(`${sc} : plus de liste de quêtes, d'arcs, de « ! » ni de budget`, ["quetes", "arcs", "rare", "budget", "semaine"].every((k) => !(k in pn)), Object.keys(pn).join());
+  check(`${sc} : « À récupérer » compte tout ce qui attend (la pastille), en montre trois au plus`, pn.recuperer.n === attente.length && pn.recuperer.items.length === Math.min(3, attente.length), `${pn.recuperer.n}`);
+  check(`${sc} : « Fait aujourd'hui » est celui de la vue`, JSON.stringify(pn.fait) === JSON.stringify(vue.faitAujourdhui ?? { n: 0, xp: 0, quetes: [] }));
+  check(`${sc} : « 14 à revoir » vient de la vue (la pastille de Réviser)`, JSON.stringify(pn.revoir) === JSON.stringify(vue.revoir));
+  const suite = pn.seance?.suivant;
+  check(`${sc} : « La suite » mène quelque part, avec une durée`, !suite || (suite.href.startsWith("/") && !suite.href.includes("undefined") && suite.duree > 0 && suite.xp >= 0), JSON.stringify(suite));
+  check(`${sc} : jamais un sceau du profil dans les récompenses acquittées`, (pn.versees?.cles ?? []).every((k) => !k.startsWith("exploit:sceau:")));
 }
+check("la forme gardée du panneau change de version (un instantané d'avant n'est jamais relu)", VERSION_PANNEAU === 4);
 {
   const n = panneauDe(exempleCodex("neuf"));
-  check("neuf : pas de contrat ni d'arc tant que les contrats ne sont pas dévoilés", n.quetes.every((q) => q.genre !== "contrat") && n.arcs.total === 0);
-  check("neuf : au calme (rien de rare, rien d'annoncé)", n.rare === null && n.versees === null);
+  check("neuf : au calme (rien à récupérer, rien à acquitter)", n.recuperer.n === 0 && n.versees === null);
   const m = panneauDe(exempleCodex("milieu"));
-  check("milieu : trois arcs (les contrats du jour)", m.arcs.total === 3, JSON.stringify(m.arcs));
   // l'exemple « milieu » : des récompenses déjà versées, pas encore vues (le repli sans la §9) : elles attendent « Récupérer »
-  check("milieu : déjà versées, pas vues : elles attendent « Récupérer », le pied ne les annonce pas (l'ouverture ne les acquitte pas)", m.recuperer.n > 0 && m.recuperer.xp === 0 && m.versees === null, JSON.stringify(m.recuperer.n));
-  // ce qui n'attend pas « Récupérer » (le mode sobre : versées d'office) s'annonce en pied, comme avant
+  check("milieu : déjà versées, pas vues : elles attendent « Récupérer », l'ouverture ne les acquitte pas", m.recuperer.n > 0 && m.recuperer.xp === 0 && m.versees === null, JSON.stringify(m.recuperer.n));
+  // ce qui n'attend pas « Récupérer » (le mode sobre : versées d'office) est acquitté sans bruit à l'ouverture
   const mv = panneauDe({ ...exempleCodex("milieu"), aRecuperer: [] });
-  check("milieu, rien en attente : la ligne des récompenses versées", !!mv.versees && mv.versees.n > 0 && mv.versees.xp > 0 && ligneVersees(mv.versees).startsWith(`${mv.versees.n} quête`) && ligneVersees(mv.versees).includes(" tamponnée") && ligneVersees(mv.versees).endsWith(" XP"), mv.versees ? ligneVersees(mv.versees) : "");
+  check("milieu, rien en attente : les récompenses versées d'office à acquitter", !!mv.versees && mv.versees.n > 0 && mv.versees.xp > 0 && mv.recuperer.n === 0);
   const ms = panneauDe({ ...exempleCodex("milieu"), sobre: true, aRecuperer: [] });
-  check("mode sobre : les mêmes quêtes tamponnées, sans XP, sans titre ni pièce", !!ms.versees && ms.versees.n === mv.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(mv.versees?.cles) && !ligneVersees(ms.versees).includes("XP") && ms.versees.titre === null && ms.rare?.quoi !== "piece" && JSON.stringify(ms.quetes) === JSON.stringify(m.quetes), ms.versees ? ligneVersees(ms.versees) : "");
-  check("ligne des récompenses : singulier, titre", ligneVersees({ n: 1, xp: 40, cles: ["x"], titre: "Garzone" }) === "1 quête tamponnée · +40 XP · titre Garzone");
-  check("la semaine : faits ≤ total, une ligne par contrat", m.semaine.faits <= m.semaine.total && m.semaine.quetes.length === m.semaine.total);
+  check("mode sobre : les mêmes quêtes à acquitter, sans XP", !!ms.versees && ms.versees.n === mv.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(mv.versees?.cles) && ms.versees.xp === 0);
   check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);
-  const trois = panneauDe({ ...exempleCodex("milieu"), trio: { ...exempleCodex("milieu").trio, faits: 3, total: 3, fait: true } });
-  check("3 sur 3 : l'anneau est fermé (arcs pleins)", trois.arcs.faits === 3 && trois.arcs.total === 3);
-  const vm = exempleCodex("milieu");
-  const ct = vm.contrats.find((c) => c.ligne.etat !== "terminee");
-  if (ct && vm.prochaine) {
-    const pc = panneauDe({ ...vm, prochaine: { ...vm.prochaine, ligne: ct.ligne } });
-    check("un contrat recommandé : en tête, une seule fois, il garde son « Changer »", pc.quetes[0].genre === "principale" && pc.quetes[0].emplacement === ct.emplacement && pc.quetes[0].changeable === ct.changeable && pc.quetes.filter((q) => q.cle === pc.quetes[0].cle).length === 1);
-  }
-  check("chaque contrat changeable du panneau porte son emplacement (« Changer » par contrat)", m.quetes.filter((q) => q.genre === "contrat").every((q) => !!q.emplacement && typeof q.changeable === "boolean"));
-  // V3 §1.5 : plus aucune chaîne à proposer → le palier du fil rouge le plus avancé, s'il s'écrit déjà
-  const vf = exempleCodex("fin");
-  const fil = panneauDe({ ...vf, longCours: [] }).quetes.filter((q) => q.genre === "fil");
-  check("chaînes toutes finies : le fil rouge prend la place du long cours (un palier, « Le fil rouge · … », lançable)", fil.length === 1 && fil[0].id.startsWith("fil:") && fil[0].sur.startsWith("Le fil rouge · ") && !!fil[0].destination, JSON.stringify(fil.map((q) => [q.id, q.sur])));
-  check("une chaîne en cours : pas de fil rouge dans le panneau", !panneauDe(vf).quetes.some((q) => q.genre === "fil"));
-  check("fil rouge « à venir » (la base ne l'écrit pas encore) : jamais dans le panneau", !panneauDe({ ...exempleCodex("milieu"), longCours: [] }).quetes.some((q) => q.genre === "fil"));
 }
 
 console.log("\n# les récompenses versées s'annoncent une fois (acquittées à l'ouverture)");
@@ -133,16 +123,16 @@ console.log("\n# les récompenses versées s'annoncent une fois (acquittées à 
   const pn = panneauDe(vue);
   check("milieu : des récompenses à annoncer", !!pn.versees && pn.versees.cles.length > 0);
   const apres = panneauDe(vueSansFetes(vue, pn.versees?.cles ?? []));
-  check("acquittées (codexVus(cles)) : la ligne disparaît à la réouverture, le « ! » doré aussi", apres.versees === null && apres.rare === null, JSON.stringify(apres.versees));
-  check("et les quêtes à faire restent les mêmes", JSON.stringify(apres.quetes.map((q) => q.cle)) === JSON.stringify(pn.quetes.map((q) => q.cle)));
-  check("panneauAcquitte : plus rien à annoncer, le reste intact", panneauAcquitte(pn).versees === null && panneauAcquitte(pn).rare === null && panneauAcquitte(pn).quetes === pn.quetes);
+  check("acquittées (codexVus(cles)) : plus rien à acquitter à la réouverture", apres.versees === null, JSON.stringify(apres.versees));
+  check("et « La suite » reste la même", JSON.stringify(apres.seance) === JSON.stringify(pn.seance));
+  check("panneauAcquitte : plus rien à acquitter, le reste intact", panneauAcquitte(pn).versees === null && panneauAcquitte(pn).seance === pn.seance && panneauAcquitte(pn).recuperer === pn.recuperer);
   const toutes = vueSansFetes(vue, lignesDe(vue).filter((l) => l.aFeter).map((l) => l.id));
   check("toutes jouées : plus rien à fêter, le bilan ne garde que les actes", lignesDe(toutes).every((l) => !l.aFeter) && bilanDe(toutes).fetes.every((f) => f.famille === "acte") && toutes.branches.length === vue.branches.length);
   const actes = vue.trame.filter((a) => a.aFeter).map((a) => `acte:${a.acte.id}`);
   check("un id « acte:… » éteint la fanfare de l'acte", vueSansFetes(vue, actes).trame.every((a) => !a.aFeter));
   const avecActe = { ...vue, trame: vue.trame.map((a, i) => (i === 1 ? { ...a, aFeter: true } : a)) };
   const pa = panneauDe(avecActe);
-  check("un acte clos à fêter : « ! » doré (acte) et sa clé dans les annonces", pa.rare?.quoi === "acte" && !!pa.versees?.cles.includes(`acte:${vue.trame[1].acte.id}`), JSON.stringify(pa.rare));
+  check("un acte clos versé d'office : sa clé à acquitter, son XP comptée", !!pa.versees?.cles.includes(`acte:${vue.trame[1].acte.id}`) && pa.versees.xp >= vue.trame[1].acte.recompense.xp, JSON.stringify(pa.versees));
 }
 
 console.log("\n# « Une autre idée ? » et « J'ai … min »");
@@ -156,7 +146,7 @@ console.log("\n# « Une autre idée ? » et « J'ai … min »");
   const court = exempleCodex("milieu", { budget: 15 });
   const long = exempleCodex("milieu", { budget: 90 });
   const duree = (v: VueCodex) => v.prochaine?.ligne.destination?.duree ?? 0;
-  check("budget choisi : il est celui du panneau", panneauDe(court).budget === 15 && panneauDe(long).budget === 90);
+  check("budget choisi : il est celui de la vue", court.budget === 15 && long.budget === 90);
   check("budget 15 : la prochaine quête n'est pas plus longue qu'avec 90", duree(court) <= duree(long) || duree(court) <= 15, `${duree(court)} / ${duree(long)}`);
   check("budget par défaut : 30 sans historique", budgetParDefaut([]) === 30);
   check("budget par défaut : 12 questions par jour → 15 min", budgetParDefaut([10, 12, 14]) === 15);
@@ -264,7 +254,7 @@ console.log("\n# le calendrier (V3 §7) : un cas par moment");
   const j7 = v(7);
   const pn7 = panneauDe(j7);
   check("J-7 : la veillée, sept tampons de J-7 à J-1, aujourd'hui le premier, les autres à venir", j7.moment === "veillee" && j7.tampons?.length === 7 && j7.tampons[0].aujourdhui && j7.tampons.slice(1).every((t) => t.aVenir && !t.encre) && j7.tampons[6].jour === decaleJour(J, 6), JSON.stringify(j7.tampons?.map((t) => t.jour)));
-  check("J-7 : un seul contrat, l'entretien, 15 min au plus ; un seul arc autour du sceau", j7.contrats.length <= 1 && j7.contrats.every((c) => c.emplacement === "entretien" && (c.ligne.duree ?? 0) <= DUREE_VEILLEE) && pn7.arcs.total <= 1, JSON.stringify(j7.contrats.map((c) => [c.emplacement, c.ligne.duree])));
+  check("J-7 : un seul contrat, l'entretien, 15 min au plus", j7.contrats.length <= 1 && j7.contrats.every((c) => c.emplacement === "entretien" && (c.ligne.duree ?? 0) <= DUREE_VEILLEE), JSON.stringify(j7.contrats.map((c) => [c.emplacement, c.ligne.duree])));
   check("J-7 : pas de compte à rebours dans la raison de la prochaine quête", !/Plus que/.test(j7.prochaine?.pourquoi ?? ""), j7.prochaine?.pourquoi);
   check("J-7 : aucune chaîne au long cours à entamer n'est proposée", !(j7.prochaine?.quete.chaine && (j7.prochaine.quete.palier ?? 1) <= 1 && j7.prochaine.avancee === 0));
 
@@ -278,7 +268,7 @@ console.log("\n# le calendrier (V3 §7) : un cas par moment");
   const j0 = v(0);
   const pn0 = panneauDe(j0);
   check("J-0 : le jour J, aucune quête recommandée", j0.moment === "jourJ" && j0.prochaine === null);
-  check("J-0 : le panneau réduit à « Bonne chance » (rien à faire, rien d'annoncé, ni budget ni séance)", pn0.disponible && pn0.jourJ && pn0.quetes.length === 0 && pn0.versees === null && pn0.arcs.total === 0 && pn0.seance === null && pn0.budget === null);
+  check("J-0 : le panneau réduit à « Bonne chance » (rien à récupérer, rien à acquitter, ni séance ni « à revoir »)", pn0.disponible && pn0.jourJ && pn0.recuperer.n === 0 && pn0.versees === null && pn0.seance === null && pn0.revoir === null);
   check("hors du jour J, le panneau n'est jamais réduit", !panneauDe(j8).jourJ && !pn7.jourJ && !panneauDe(j3).jourJ);
 
   const j1 = v(-1);

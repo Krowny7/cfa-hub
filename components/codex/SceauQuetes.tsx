@@ -2,44 +2,53 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
-import { INK } from "@/components/ui/InkDefs";
+import { useRouter } from "next/navigation";
 import { Feuille } from "@/components/ui/Feuille";
 import { useEtatNav } from "@/components/nav/DevoileContext";
-import { codexAutreIdee, codexChangerContrat, codexPanneau, codexSeanceBudget, codexVus } from "@/lib/codex/actions";
-import { ligneVersees, panneauAcquitte, panneauDe, type Panneau, type QuetePanneau } from "@/lib/codex/panneau";
-import { BUDGETS } from "@/lib/codex/reglage";
+import { codexPanneau, codexSeanceLancer, codexVus, codexXp } from "@/lib/codex/actions";
+import { EVENEMENT_CODEX_POINT, panneauAcquitte, type Panneau, type SuitePanneau } from "@/lib/codex/panneau";
+import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
 import { BONNE_CHANCE } from "@/lib/codex/calendrier";
-import type { Budget } from "@/lib/codex/types";
-import { CODEX } from "@/lib/voice-codex";
+import { levelInfoFromXp } from "@/lib/leveling";
+import { chiffrePastille } from "@/lib/nav";
 import { Sceau } from "@/components/codex/Sceau";
-import { JaugePinceau } from "@/components/codex/JaugePinceau";
+import { Recuperer } from "@/components/codex/Recuperer";
+import { noterSeanceIci } from "@/components/codex/seance-ici";
 import s from "./Encre.module.css";
 
-// Le sceau de la barre du haut : la boussole quotidienne du Codex (V3 §9.2).
-//   trois arcs d'encre   un par contrat du jour, remplis à mesure ; à 3 sur 3
-//                        l'anneau se ferme et un petit tampon s'y pose
-//   « ! » doré           seulement pour ce qui est rare : un acte clos, une
-//                        pièce gagnée (une fois le panneau ouvert, il se tait)
-//   petit carnet         au calme (pas de « ! » gris, pas de pastille)
-// Un clic ouvre « Tes quêtes » : quoi faire, en quatre lignes au plus
-// (lib/codex/panneau.ts), chacune avec « Y aller » ; en pied, ce qui a été
-// tamponné depuis la dernière fois (annoncé une fois, puis acquitté), le
-// temps qu'on se donne (« J'ai 30 min ») et la semaine. Un popover ancré sur
-// ordinateur, une feuille par le bas sur téléphone. Le panneau est relu à
-// chaque ouverture (la barre reste montée d'une page à l'autre).
+// Le sceau de la barre du haut et son panneau « Aujourd'hui » (Codex
+// simplifié, 17 octobre 2026). Les quêtes sont un guide secondaire : c'est
+// leur seul point d'entrée hors de /codex.
+//   le sceau      calme, sans arcs ni « ! » ; une pastille chiffrée, couleur
+//                 tampon et sans pulsation, seulement s'il y a quelque chose à
+//                 récupérer (« 9+ » au-delà). « 14 à revoir » l'a quitté : c'est
+//                 la pastille de l'onglet Réviser (poserRevoir, DevoileContext).
+//   le panneau    un popover ancré sur ordinateur, une feuille par le bas sur
+//                 téléphone. En tête, la ligne de niveau (là où l'XP
+//                 récupérée arrive), puis trois zones au plus
+//                 (lib/codex/panneau.ts) : « À récupérer » (Recuperer, le
+//                 bouton plein « Tout récupérer »), « La suite » (l'étape en
+//                 cours de la séance du jour et « Commencer », plein s'il n'y
+//                 a rien à récupérer), et en pied « Fait aujourd'hui ▸ » et
+//                 « Ouvrir le Codex → ».
+// Le panneau et l'XP sont relus à chaque ouverture (la barre reste montée
+// d'une page à l'autre) et quand le Codex bouge (fin d'un outil, Récupérer :
+// EVENEMENT_CODEX_POINT). Les récompenses versées d'office sont acquittées
+// sans bruit à l'ouverture (codexVus). Le jour J : « Bonne chance », rien d'autre.
 // `demo` : aperçus (aucune action serveur) ; `ouvert` : ouvert d'emblée.
 
-type Annonce = { versees: NonNullable<Panneau["versees"]>; rare: Panneau["rare"] };
-
-// identifiants fixes (un seul sceau par barre ; deux copies définiraient la même chose) : pas de useId, rien à désaccorder à l'hydratation
+// identifiants fixes (un seul sceau par barre) : pas de useId, rien à désaccorder à l'hydratation
 const uid = "rl-sceau-quetes-";
 
-export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = false }: { initial: Panneau; demo?: boolean; ouvert?: boolean }) {
-  const { codex } = useEtatNav();
+export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouvert: ouvertDepart = false }: { initial: Panneau; xp?: number | null; demo?: boolean; ouvert?: boolean }) {
+  const { codex, poserRevoir } = useEtatNav();
+  const router = useRouter();
   const [panneau, setPanneau] = useState(initial);
+  const [xp, setXp] = useState(xpServeur);
   const [ouvert, setOuvert] = useState(ouvertDepart);
-  const [annonce, setAnnonce] = useState<Annonce | null>(ouvertDepart && initial.versees ? { versees: initial.versees, rare: initial.rare } : null);
+  // chaque ouverture remonte « Récupérer » à neuf ; `recupere` : il a fini son geste ici (il dit lui-même « Fait aujourd'hui »)
+  const [ouvertures, setOuvertures] = useState(0);
+  const [recupere, setRecupere] = useState(false);
   const [etroit, setEtroit] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [occupe, demarrer] = useTransition();
@@ -47,6 +56,7 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
   const boite = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setPanneau(initial), [initial]);
+  useEffect(() => setXp(xpServeur), [xpServeur]);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
     const suivre = () => setEtroit(mq.matches);
@@ -54,6 +64,23 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
     mq.addEventListener("change", suivre);
     return () => mq.removeEventListener("change", suivre);
   }, []);
+
+  // « 14 à revoir » : la pastille de l'onglet Réviser
+  const revoir = panneau.disponible && !panneau.jourJ ? (panneau.revoir?.aujourdhui ?? null) : null;
+  useEffect(() => {
+    poserRevoir(revoir);
+    return () => poserRevoir(null);
+  }, [revoir, poserRevoir]);
+
+  // le Codex a bougé (fin d'un outil, Récupérer) : la pastille se relit
+  useEffect(() => {
+    if (demo) return;
+    const relire = () => {
+      void codexPanneau().then((p) => p.disponible && setPanneau(p), () => undefined);
+    };
+    window.addEventListener(EVENEMENT_CODEX_POINT, relire);
+    return () => window.removeEventListener(EVENEMENT_CODEX_POINT, relire);
+  }, [demo]);
 
   const fermer = useCallback(() => {
     setOuvert(false);
@@ -63,18 +90,16 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
   const ouvrir = () => {
     setOuvert(true);
     setMessage(null);
-    // ce qui a été tamponné s'annonce une fois, à cette ouverture ; le « ! » doré se tait
+    setRecupere(false);
+    setOuvertures((n) => n + 1);
+    // les récompenses versées d'office : acquittées sans bruit
     const deja = panneau.versees?.cles ?? [];
-    setAnnonce(panneau.versees ? { versees: panneau.versees, rare: panneau.rare } : null);
     setPanneau(panneauAcquitte);
     if (demo) return;
-    void codexPanneau().then(
-      (p) => {
-        if (p.disponible) {
-          // relu avant l'acquittement : il contient au moins ce qu'on avait, et ce qui est tombé depuis
-          if (p.versees) setAnnonce({ versees: p.versees, rare: p.rare });
-          setPanneau(panneauAcquitte(p));
-        }
+    void Promise.all([codexPanneau(), codexXp()]).then(
+      ([p, x]) => {
+        if (p.disponible) setPanneau(panneauAcquitte(p));
+        if (x !== null) setXp(x);
         const cles = [...new Set([...deja, ...(p.versees?.cles ?? [])])];
         if (cles.length) void codexVus(cles);
       },
@@ -88,9 +113,12 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
   useEffect(() => {
     if (!ouvert || etroit) return;
     boite.current?.querySelector<HTMLElement>("a, button")?.focus();
-    const touche = (e: KeyboardEvent) => e.key === "Escape" && fermer();
+    // Échap passe d'abord une grande fête en cours (elle l'écoute), pas le panneau
+    const touche = (e: KeyboardEvent) => e.key === "Escape" && !document.querySelector("[data-fete]") && fermer();
     const dehors = (e: PointerEvent) => {
       const t = e.target as Node;
+      // une grande fête (Récupérer) se joue hors du panneau : elle ne le ferme pas
+      if ((t as Element).closest?.("[data-fete]")) return;
       if (!boite.current?.contains(t) && !bouton.current?.contains(t)) setOuvert(false);
     };
     window.addEventListener("keydown", touche);
@@ -103,122 +131,111 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
 
   if (!codex || !panneau.disponible) return null;
 
-  const changerContrat = (q: QuetePanneau) =>
+  const seance = panneau.seance;
+  const rec = panneau.recuperer;
+  const aRecuperer = rec.n > 0 && !recupere;
+
+  // « Commencer » : la séance du jour se lance (en base, sinon dans ce navigateur), puis on y va
+  const commencer = (suite: SuitePanneau) =>
     demarrer(async () => {
-      if (!q.emplacement) return;
+      setMessage(null);
       if (demo) {
-        setMessage("Contrat changé (aperçu).");
+        setMessage("Séance lancée (aperçu).");
         return;
       }
-      const r = await codexChangerContrat(q.emplacement);
-      if (r.ok) {
-        setPanneau(panneauAcquitte(panneauDe(r.vue)));
-        setMessage("Contrat changé. Le prochain changement, ce sera demain.");
-      } else setMessage(r.raison === "refus" ? CODEX.contrats.changeDeja : "Pas d'autre contrat à te proposer pour l'instant.");
-    });
-
-  const autreIdee = (q: QuetePanneau) =>
-    demarrer(async () => {
-      if (demo) {
-        setPanneau((p) => ({ ...p, quetes: p.quetes.filter((x) => x.cle !== q.cle) }));
-        setMessage("Mise de côté jusqu'à demain (aperçu).");
-        return;
+      if (!seance?.lancee) {
+        const r = await codexSeanceLancer().catch(() => null);
+        if (!r?.ok || !r.gardee) noterSeanceIci(panneau.jour, "lancee");
+        try {
+          window.dispatchEvent(new Event(EVENEMENT_CODEX_POINT));
+        } catch {
+          // relu à la page suivante
+        }
       }
-      const r = await codexAutreIdee(q.id);
-      if (r.ok) {
-        setPanneau(panneauAcquitte(r.panneau));
-        setMessage(`« ${q.titre} » attendra demain.`);
-      } else setMessage("Pas d'autre idée pour l'instant. Réessaie dans un instant.");
+      setOuvert(false);
+      router.push(suite.href);
     });
 
-  const choisirBudget = (b: Budget) =>
-    demarrer(async () => {
-      if (b === panneau.budget) return;
-      if (demo) {
-        setPanneau((p) => ({ ...p, budget: b }));
-        return;
-      }
-      const r = await codexSeanceBudget(b);
-      if (r.ok) setPanneau(panneauAcquitte(r.panneau));
-      else setMessage("Le temps n'a pas pu être enregistré. Réessaie dans un instant.");
-    });
-
-  const { arcs, rare, revoir } = panneau;
-  const ferme = arcs.total > 0 && arcs.faits >= arcs.total;
-  const etat = rare ? "rare" : ferme ? "ferme" : "calme";
-  const libelle = [
-    "Tes quêtes",
-    arcs.total > 0 ? `${arcs.faits} contrat${arcs.faits > 1 ? "s" : ""} du jour sur ${arcs.total}` : null,
-    rare?.libelle ?? null,
-    revoir && revoir.aujourdhui > 0 ? `${revoir.aujourdhui} à revoir` : null,
-  ].filter(Boolean).join(" · ");
-  const semaine = panneau.semaine;
+  const pastille = chiffrePastille(rec.n);
+  const libelle = rec.n > 0 ? `Aujourd'hui : ${TEXTES_RECUPERER.ligne(rec.n)}` : "Aujourd'hui : tes quêtes";
+  const niveau = xp === null ? null : levelInfoFromXp(xp);
+  const fait = panneau.fait;
 
   const contenu = (
     <>
       {!etroit && (
-        <div className={s.panneauTete}>
-          <h2 id={`${uid}titre`} className={`${s.panneauTitre} font-brand`}>
-            Tes quêtes
-          </h2>
-          <span className="t-micro">{arcs.total > 0 ? `contrats du jour : ${arcs.faits}/${arcs.total}` : "aujourd'hui"}</span>
+        <h2 id={`${uid}titre`} className={`t-h3 ${s.panneauTitre}`}>
+          Aujourd&apos;hui
+        </h2>
+      )}
+      {niveau && !panneau.jourJ && (
+        <div className={s.niveau} role="group" aria-label={`Niveau ${niveau.level}, ${niveau.xpIntoLevel} XP sur ${niveau.xpForNextLevel}`}>
+          <span className={`${s.niveauN} font-brand`} aria-hidden>
+            Niv. {niveau.level}
+          </span>
+          <span className={s.niveauBarre} aria-hidden>
+            <span style={{ width: `${Math.round(niveau.progressPct * 1000) / 10}%` }} />
+          </span>
+          <span className={`${s.niveauXp} t-num`} aria-hidden>
+            {niveau.xpIntoLevel.toLocaleString("fr-FR")} / {niveau.xpForNextLevel.toLocaleString("fr-FR")} XP
+          </span>
         </div>
       )}
       {panneau.jourJ ? (
         // le jour J (V3 §7.4) : rien à faire ici, seulement ceci
-        <p className={s.replique} style={{ padding: "6px 6px 10px" }}>
+        <p className={s.jourJ}>
           {BONNE_CHANCE.titre} {BONNE_CHANCE.texte}
         </p>
-      ) : panneau.quetes.length === 0 ? (
-        <p className={s.replique} style={{ padding: "6px 6px 10px" }}>
-          {CODEX.prochaine.rien}
-        </p>
       ) : (
-        <ul className={s.liste}>
-          {panneau.quetes.map((q) => (
-            <Ligne key={q.cle} q={q} occupe={occupe} onChanger={changerContrat} onAutre={autreIdee} onAller={() => setOuvert(false)} />
-          ))}
-        </ul>
-      )}
-      {message && (
-        <p role="status" className="t-small m-0 mt-2 px-1">
-          {message}
-        </p>
-      )}
-      {annonce && (
-        <p className={`t-small ${s.versees}`}>
-          <Check size={14} aria-hidden /> {[annonce.rare?.libelle, ligneVersees(annonce.versees)].filter(Boolean).join(" · ")}
-        </p>
+        <>
+          {/* toujours monté : il garde ses quêtes pendant le geste, même quand le panneau relu n'en a plus */}
+          <Recuperer key={ouvertures} items={rec.items} total={{ n: rec.n, xp: rec.xp }} jour={panneau.jour} fait={fait} cadre={false} demo={demo} onFini={() => setRecupere(true)} />
+          {seance && (
+            <div className={s.zone}>
+              <p className="t-eyebrow m-0">La suite</p>
+              {seance.suivant ? (
+                <div className={s.suite}>
+                  <span className="min-w-0">
+                    <span className={s.suiteTitre}>{seance.suivant.titre}</span>
+                    <span className="t-micro t-num">
+                      {seance.suivant.duree} min{seance.suivant.xp > 0 ? ` · +${seance.suivant.xp.toLocaleString("fr-FR")} XP` : ""}
+                    </span>
+                  </span>
+                  <button type="button" className={`btn ${aRecuperer ? "btn-secondary" : "btn-primary"} rl-press min-h-[44px]`} disabled={occupe} aria-busy={occupe} onClick={() => commencer(seance.suivant!)}>
+                    {seance.lancee ? "Continuer" : "Commencer"}
+                  </button>
+                </div>
+              ) : (
+                <p className="t-small m-0">Séance du jour faite.</p>
+              )}
+            </div>
+          )}
+          {message && (
+            <p role="status" className="t-small m-0">
+              {message}
+            </p>
+          )}
+        </>
       )}
       <div className={s.pied}>
-        {!panneau.jourJ && (
-          <div className={s.budget} role="group" aria-label="Le temps que tu te donnes aujourd'hui">
-            <span>J&apos;ai</span>
-            {BUDGETS.map((b) => (
-              <button key={b} type="button" aria-label={`${b} minutes`} aria-pressed={panneau.budget === b} disabled={occupe} onClick={() => choisirBudget(b)}>
-                {b}
-              </button>
-            ))}
-            <span>min</span>
-          </div>
-        )}
-        {semaine.total > 0 && (
-          <details className={s.semaine}>
-            <summary>
-              Semaine : {semaine.faits}/{semaine.total}
-            </summary>
-            <ul>
-              {semaine.quetes.map((x) => (
-                <li key={x.titre} data-faite={x.faite || undefined}>
-                  {x.faite ? "✓ " : ""}
-                  {x.titre}
+        {/* « Récupérer » dit lui-même « Fait aujourd'hui » une fois son geste fini */}
+        {!panneau.jourJ && !recupere && fait.n > 0 ? (
+          <details>
+            <summary>{TEXTES_RECUPERER.fait(fait)}</summary>
+            <ul className={s.faitListe}>
+              {fait.quetes.map((q) => (
+                <li key={`${q.quete}|${q.periode}`}>
+                  <span className="min-w-0 truncate">{q.titre}</span>
+                  {q.xp > 0 && <span className="t-num shrink-0">+{q.xp.toLocaleString("fr-FR")} XP</span>}
                 </li>
               ))}
             </ul>
           </details>
+        ) : (
+          <span />
         )}
         <Link href="/codex" className={s.lienPlein} onClick={() => setOuvert(false)}>
-          Voir le Codex complet →
+          Ouvrir le Codex →
         </Link>
       </div>
     </>
@@ -231,7 +248,6 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
         ref={bouton}
         type="button"
         className={s.bouton}
-        data-etat={etat}
         data-leonard="sceau-quetes"
         aria-label={libelle}
         aria-haspopup="dialog"
@@ -239,148 +255,25 @@ export function SceauQuetes({ initial, demo = false, ouvert: ouvertDepart = fals
         aria-controls={ouvert && !etroit ? `${uid}panneau` : undefined}
         onClick={() => (ouvert ? fermer() : ouvrir())}
       >
-        <SceauBarre arcs={arcs} rare={!!rare} />
+        <Sceau l={{ etat: "disponible", fraction: 0, affichage: "complet", retro: false }} taille={34} />
+        {pastille && !panneau.jourJ && (
+          <span className={`${s.pastille} t-num`} aria-hidden>
+            {pastille}
+          </span>
+        )}
       </button>
-      {revoir && revoir.aujourdhui > 0 && (
-        <span className={`t-micro ${s.sousSceau}`} aria-hidden>
-          {revoir.aujourdhui} à revoir
-        </span>
-      )}
       {ouvert && !etroit && (
         <div ref={boite} id={`${uid}panneau`} role="dialog" aria-labelledby={`${uid}titre`} className={s.panneau}>
           {contenu}
         </div>
       )}
       {etroit && (
-        <Feuille ouvert={ouvert} onFermer={fermer} titre="Tes quêtes">
+        <Feuille ouvert={ouvert} onFermer={fermer} titre="Aujourd'hui">
           <div className={s.panneau} style={{ position: "static", width: "auto", boxShadow: "none", border: 0, padding: "4px 0 0", maxHeight: "none", animation: "none" }}>
             {contenu}
           </div>
         </Feuille>
       )}
     </div>
-  );
-}
-
-/** Un arc de cercle (centre 60,60), en degrés, 0 en haut, dans le sens des aiguilles. */
-function arc(r: number, debut: number, fin: number): string {
-  const pt = (a: number) => {
-    const t = ((a - 90) * Math.PI) / 180;
-    return `${(60 + r * Math.cos(t)).toFixed(1)} ${(60 + r * Math.sin(t)).toFixed(1)}`;
-  };
-  return `M${pt(debut)} A${r} ${r} 0 ${fin - debut > 180 ? 1 : 0} 1 ${pt(fin)}`;
-}
-
-const R_ARCS = 53;
-const ECART = 16;
-
-/**
- * Le sceau lui-même : les arcs des contrats du jour autour ; au centre, le
- * « ! » doré tamponné (rare) ou le petit carnet ; à 3 sur 3, l'anneau fermé
- * et son tampon.
- */
-function SceauBarre({ arcs, rare }: { arcs: Panneau["arcs"]; rare: boolean }) {
-  const ferme = arcs.total > 0 && arcs.faits >= arcs.total;
-  const part = arcs.total > 0 ? 360 / arcs.total : 0;
-  return (
-    <svg viewBox="0 0 120 120" aria-hidden>
-      {ferme ? (
-        <circle cx="60" cy="60" r={R_ARCS} className={`${s.arcPlein} ${s.anneauFerme}`} key="ferme" />
-      ) : (
-        Array.from({ length: arcs.total }, (_, i) => <path key={i} d={arc(R_ARCS, i * part + ECART / 2, (i + 1) * part - ECART / 2)} className={i < arcs.faits ? s.arcPlein : s.arcVide} />)
-      )}
-      {rare ? (
-        <g key="rare" className={s.pose} style={{ transformOrigin: "60px 60px" }}>
-          <g transform="translate(60 60) scale(0.7) translate(-60 -60)">
-            <defs>
-              <linearGradient id={`${uid}o`} x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" style={{ stopColor: "var(--c-or-clair)" }} />
-                <stop offset=".5" style={{ stopColor: "var(--c-or)" }} />
-                <stop offset="1" style={{ stopColor: "var(--c-or-fonce)" }} />
-              </linearGradient>
-              <linearGradient id={`${uid}r`} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#fff" stopOpacity={0} />
-                <stop offset=".5" stopColor="#fff" stopOpacity={0.65} />
-                <stop offset="1" stopColor="#fff" stopOpacity={0} />
-              </linearGradient>
-              <clipPath id={`${uid}c`}>
-                <use href={INK.sealHex} />
-              </clipPath>
-            </defs>
-            <g filter="url(#rl-ink)">
-              <use href={INK.sealHex} fill={`url(#${uid}o)`} />
-              <use href={INK.sealHexIn} fill="none" stroke="#fff8e6" strokeWidth={2.6} opacity={0.75} />
-              <text x="60" y="82" textAnchor="middle" className={s.signeReserve}>
-                !
-              </text>
-            </g>
-            <g clipPath={`url(#${uid}c)`}>
-              <polygon className={`${s.reflet} rl-deco`} points="26,-10 50,-10 24,130 0,130" fill={`url(#${uid}r)`} />
-            </g>
-          </g>
-        </g>
-      ) : (
-        <g className={s.carnetTrait}>
-          <rect x="41" y="35" width="38" height="50" rx="5" />
-          <path d="M50 35 V85 M57 50 H71 M57 60 H71 M57 70 H66" />
-        </g>
-      )}
-      {ferme && (
-        <g className={s.tamponMini} key="tampon">
-          <circle cx="96" cy="96" r="16" className={s.tamponFond} />
-          <path d="M88.5 96.5 L94 102 L104 90" className={s.reserveCoche} style={{ strokeWidth: 4.5 }} />
-        </g>
-      )}
-    </svg>
-  );
-}
-
-function Ligne({
-  q,
-  occupe,
-  onChanger,
-  onAutre,
-  onAller,
-}: {
-  q: QuetePanneau;
-  occupe: boolean;
-  onChanger: (q: QuetePanneau) => void;
-  onAutre: (q: QuetePanneau) => void;
-  onAller: () => void;
-}) {
-  const principale = q.genre === "principale";
-  const l = { etat: q.etat, fraction: q.fraction, affichage: "complet" as const, retro: false };
-  const changer = !!q.emplacement && !!q.changeable;
-  return (
-    <li className={`${s.ligne} ${principale ? s.principale : ""}`}>
-      <Sceau l={l} taille={principale ? 46 : 38} signe={principale && q.etat !== "terminee" ? "!" : undefined} />
-      <span className="min-w-0">
-        <span className={s.ligneSur}>
-          {q.sur}
-          {q.duree ? ` · ${CODEX.prochaine.minutes(q.duree)}` : ""}
-        </span>
-        <span className={s.ligneTitre}>{q.titre}</span>
-        {q.raison && <span className={s.ligneSous}>{q.raison}</span>}
-        {q.cible > 1 && <JaugePinceau fraction={q.fraction} or={q.etat === "active"} label={`${Math.floor(q.valeur)} sur ${Math.floor(q.cible)}`} />}
-        {(principale || changer) && (
-          <span className={s.gestes}>
-            {principale && (
-              <button type="button" className={`${s.lienDiscret} ${s.geste}`} disabled={occupe} onClick={() => onAutre(q)}>
-                Une autre idée ?
-              </button>
-            )}
-            {changer && (
-              <button type="button" className={`${s.lienDiscret} ${s.geste}`} disabled={occupe} onClick={() => onChanger(q)} title={CODEX.contrats.changerAide}>
-                Changer
-              </button>
-            )}
-          </span>
-        )}
-      </span>
-      <Link href={q.destination?.href ?? "/codex"} className={`btn ${principale ? "btn-primary" : "btn-secondary"} btn-sm rl-press ${s.action}`} onClick={onAller}>
-        {q.destination ? q.destination.libelle : "Voir"}
-        {principale && <ArrowRight size={15} aria-hidden />}
-      </Link>
-    </li>
   );
 }

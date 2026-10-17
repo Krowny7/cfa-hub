@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
@@ -25,12 +26,16 @@ import { Sceau } from "@/components/codex/Sceau";
 // compte en 500 ms et la barre de niveau avance (la page se rafraîchit) ;
 // puis les grandes fêtes se jouent une par une, chacune passable ; enfin le
 // bloc se replie en « Fait aujourd'hui : 4 · +230 XP ». Mouvement réduit :
-// l'état final d'emblée. Échec : un mot, rien ne bouge.
+// l'état final d'emblée. Échec : un mot, rien ne bouge. Les grandes fêtes se
+// jouent dans la fenêtre modale qui porte le bloc (la feuille du panneau, sur
+// téléphone), sinon sur la page : jamais dans la barre du haut, dont le flou
+// enfermerait leur plein écran.
 // Sans la §9 (tout est déjà versé) : « Déjà versé · Voir ce que tu as gagné »,
 // le même geste, sans XP comptée. Le clic récupère TOUT ce qui attend (le
 // serveur le relit) : `items` peut n'en être que le début, `total` dit alors
-// combien en tout et l'XP à verser (le panneau). `demo` : aperçus, aucune
-// action serveur.
+// combien en tout et l'XP à verser (le panneau). `cadre` faux : le bloc sans
+// sa carte, titre en sur-titre (une zone du panneau « Aujourd'hui »).
+// `demo` : aperçus, aucune action serveur.
 
 // la fête : chargée au moment de fêter (elle tire le catalogue des pièces), jamais rendue côté serveur
 const Fete = dynamic(() => import("@/components/fete/Fete").then((m) => m.Fete), { ssr: false });
@@ -44,6 +49,7 @@ export function Recuperer({
   variante = "bloc",
   fait = FAIT_VIDE,
   sobre = false,
+  cadre = true,
   demo = false,
   className = "",
   onFini,
@@ -57,6 +63,8 @@ export function Recuperer({
   /** ce qui est déjà fait aujourd'hui : le bloc s'y replie une fois tout récupéré */
   fait?: FaitAujourdhui;
   sobre?: boolean;
+  /** faux : sans carte, titre en sur-titre (le panneau « Aujourd'hui ») */
+  cadre?: boolean;
   demo?: boolean;
   className?: string;
   onFini?: () => void;
@@ -71,6 +79,8 @@ export function Recuperer({
   const [fetes, setFetes] = useState<FeteCodex[]>([]);
   const [tour, setTour] = useState(0);
   const [apres, setApres] = useState<FaitAujourdhui | null>(null);
+  // où jouer les grandes fêtes (lu au clic)
+  const [scene, setScene] = useState<Element | null>(null);
   const minuteries = useRef<number[]>([]);
   const image = useRef<number | null>(null);
 
@@ -113,8 +123,9 @@ export function Recuperer({
     image.current = window.requestAnimationFrame(pas);
   };
 
-  const recuperer = async () => {
+  const recuperer = async (e: MouseEvent<HTMLButtonElement>) => {
     if (phase !== "pret") return;
+    setScene(e.currentTarget.closest("dialog") ?? document.body);
     const pris = items.slice(0, MAX_RECUPERER);
     setEchec(false);
     setPhase("envoi");
@@ -170,7 +181,7 @@ export function Recuperer({
   };
 
   const fete = phase === "fetes" && tour < fetes.length ? fetes[tour] : null;
-  const ecran = fete && <Fete key={fete.quete + fete.periode} {...habitFete(fete, { sobre, acte: null, autres: 0 })} onFin={() => setTour((t) => t + 1)} />;
+  const ecran = fete && scene && createPortal(<Fete key={fete.quete + fete.periode} {...habitFete(fete, { sobre, acte: null, autres: 0 })} onFin={() => setTour((t) => t + 1)} />, scene);
 
   // replié : « Fait aujourd'hui : 4 · +230 XP ▸ »
   if (phase === "fini" || (phase === "fetes" && variante === "ligne")) {
@@ -229,9 +240,9 @@ export function Recuperer({
   }
 
   return (
-    <section aria-label={T.titre(n)} className={"card-quiet flex flex-col gap-3 p-4 " + className}>
+    <section aria-label={T.titre(n)} className={(cadre ? "card-quiet p-4 " : "") + "flex flex-col gap-3 " + className}>
       {ecran}
-      <h2 className="t-h3 m-0">{T.titre(n)}</h2>
+      <h2 className={cadre ? "t-h3 m-0" : "t-eyebrow m-0"}>{T.titre(n)}</h2>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
         {montres.map((x, i) => {
           const sous = [x.recompense, dateRecuperer(x.le, jour)].filter(Boolean).join(" · ");

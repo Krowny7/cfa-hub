@@ -358,6 +358,22 @@ export async function oublierPanneau(userId: string) {
 }
 
 /**
+ * L'XP totale du joueur (profiles.xp_total), pour la ligne de niveau en tête
+ * du panneau « Aujourd'hui » : là où l'XP récupérée arrive. Lue à part, jamais
+ * gardée (le panneau, lui, l'est 10 min). null : illisible.
+ */
+export async function lireXpTotal(supabase: SupabaseClient, userId: string): Promise<number | null> {
+  try {
+    const { data, error } = await supabase.from("profiles").select("xp_total").eq("id", userId).maybeSingle();
+    if (error || !data) return null;
+    const xp = Number((data as { xp_total?: unknown }).xp_total);
+    return Number.isFinite(xp) ? Math.max(0, xp) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Le panneau de la barre du haut : le calcul gardé 45 s s'il y en a un ;
  * sinon l'instantané de moins de 10 min, s'il n'est pas marqué ; sinon un
  * calcul complet. Sans la §6 : comme avant (le calcul).

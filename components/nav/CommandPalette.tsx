@@ -23,8 +23,8 @@ import { COURSES } from "@/lib/courses";
 import { signalNavStart } from "@/components/ui/motion/NavProgress";
 
 // Palette de commandes (⌘K / Ctrl+K), à la Raycast : on tape quelques
-// lettres et on saute n'importe où — espaces, pages, fiches, cours, et les
-// quêtes du Codex (8 au plus, V3 §10.1 : /codex?quete=… centre la carte sur
+// lettres et on saute n'importe où — espaces (et le Codex, qui n'est plus un
+// onglet), pages, fiches, cours, et les quêtes du Codex (8 au plus, V3 §10.1 : /codex?quete=… centre la carte sur
 // elle). Le catalogue du Codex n'est chargé qu'à la première recherche ;
 // jamais une quête cachée ni une énigme.
 
@@ -45,6 +45,8 @@ const ENTRIES: Entry[] = [
   { label: "S'entraîner", hint: "QCM, sessions, examens", href: "/entrainement", group: "Espaces", Icon: Target },
   { label: "Classement", hint: "Rang, ELO, duels", href: "/classement", group: "Espaces", Icon: Trophy },
   { label: "Moi", hint: "Profil, erreurs, réglages", href: "/moi", group: "Espaces", Icon: User },
+  // le Codex n'est plus un onglet (il s'ouvre depuis Moi) : la recherche le garde
+  { label: "Codex", hint: "Tes quêtes, le parcours, les exploits", href: "/codex", group: "Espaces", Icon: ScrollText },
   { label: "Défi du jour", hint: "Les mêmes 30 questions pour tous, classement du jour", href: "/defi", group: "Actions", Icon: Target },
   { label: "Lancer un duel", hint: "30 questions, ELO en jeu", href: "/duel", group: "Actions", Icon: Swords },
   { label: "Examens blancs", hint: "Examens classés et inscriptions", href: "/mock-exams", group: "Actions", Icon: ListChecks },
