@@ -39,6 +39,10 @@ import { cochesValides, lireMalle, momentCalme, momentDe } from "@/lib/codex/cal
 import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import { lireSobre } from "@/lib/codex/sobre";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
+import { bandesValides, vueRythme } from "@/lib/codex/rythme";
+import { lireRythme, poserSemaine, poserVerdict } from "@/lib/codex/rythme-serveur";
+import { recalageVerdict, type StatutVerdict } from "@/lib/codex/plan";
+import type { Commande } from "@/lib/codex/catalogue";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
 
@@ -264,6 +268,7 @@ async function seanceDuJour(
       notionsNonVues: contenu.map((m) => ({ matiere: m.key, n: dest.notionsNonVues[m.key] ?? 0, total: m.notions })),
       contrats: vue.contrats, def: o.actif, ecartes, dest,
       blocsFaits: (precedente?.blocs ?? []).filter((b) => faits.includes(b.genre)),
+      recalage: recalageVerdict(entree.verdict, jour),
     }).blocs;
   }
   if (!blocs.length) return null;
@@ -340,7 +345,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
   if (!a) return vide;
   try {
     const hier = decaleJour(jour, -1);
-    const [joueurR, reglage, lignes, contratsParJour, dateExamen, pf, programmes, seanceLue] = await Promise.all([
+    const [joueurR, reglage, lignes, contratsParJour, dateExamen, pf, programmes, seanceLue, rythmeLu] = await Promise.all([
       a.from("codex_joueur").select(COLONNES_JOUEUR).eq("user_id", user.id).maybeSingle(),
       lireReglage(a, user, jour),
       lireLignes(a, user.id),
@@ -349,6 +354,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       pointsFaibles(supabase),
       lireProgrammes(a, user.id),
       lireSeance(a, user.id, jour),
+      lireRythme(a, user, jour),
     ]);
     // le programme actif (sans ligne : CFA I) ; son jour J, sinon celui du profil (le repli d'avant la v3)
     const actif = programmeActif(programmes);
@@ -391,6 +397,10 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       programmes,
       capacitesVues: reglage.capacitesVues,
       malleCoches: malle.length,
+      // le rythme long (V3 §10.2 à §10.5) : le sprint, la semaine choisie, le verdict de la dernière session
+      premierCalcul: joueur?.premier_calcul ?? null,
+      semaine: rythmeLu.semaine,
+      verdict: rythmeLu.verdicts.find((v) => v.programme === actif.cle) ?? null,
     };
     // la séance du jour déjà proposée (en base ; sans la §6, celle de cette instance) : les objectifs de
     // ses blocs et les sondes du jour (5 et 30 rendus) partent avec les compteurs des quêtes
@@ -398,7 +408,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     entree.seance = { objectifs: [...SONDES_SEANCE, ...(seancePrecedente?.blocs ?? []).map((b) => b.objectif)], lanceeLe: seancePrecedente?.lanceeLe ?? null };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage) ; un seul en veillée
-    if (entree.contrats.length < emplacementsDe(phaseJoueur(entree, actesClosDe(entree.progression))).length) {
+    // (le jour d'un retour, la reprise douce est seule : rien à compléter)
+    if (entree.contrats.length < emplacementsDe(phaseJoueur(entree, actesClosDe(entree.progression))).length && !entree.contrats.some((c) => c.modele === "reprise")) {
       const mesures = await lire(a, user.id, demandesActivite(contenu, jour), jour);
       if (!mesures) {
         await consigner(a, user.id, "", "codex_lire (tirage des contrats) a échoué");
@@ -493,7 +504,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const changementFait = entree.contrats.some((c) => c.change);
     const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id, malle, sobre: lireSobre(user) });
     const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
-    const vue: VueCodex = { ...construite, seance };
+    const rythme = vueRythme(entree, compteurs, { semaineDispo: rythmeLu.semaineDispo, capacites: entree.capacites, moment: construite.moment, verdicts: rythmeLu.verdicts });
+    const vue: VueCodex = { ...construite, seance, rythme };
     MEMO.set(user.id, { at: Date.now(), vue });
     DERNIER.set(user.id, vue);
     // l'instantané du panneau, pour la barre du haut (§6 collée seulement)
@@ -677,6 +689,42 @@ export async function ouvrirProgramme(supabase: SupabaseClient, user: Joueur, pr
   }
   MEMO.delete(user.id);
   const { vue } = await calculUnique(supabase, user, true);
+  return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
+}
+
+/**
+ * Le choix du lundi (V3 §10.3) : la cible et la commande de la semaine,
+ * gardées en base (codex_semaine) ; le banquier vise la matière lourde la plus
+ * faible du dernier calcul. Puis le Codex recalculé avec les contrats de la
+ * commande. Sans la §8 de migration_codex_v3.sql : indisponible.
+ */
+export async function choisirSemaine(supabase: SupabaseClient, user: Joueur, choix: { cible: number; commande: Commande }): Promise<{ ok: true; vue: VueCodex } | { ok: false; raison: "indisponible" | "refus" }> {
+  const a = admin();
+  if (!a) return { ok: false, raison: "indisponible" };
+  const { entree } = choix.commande === "banquier" ? await calculUnique(supabase, user, false) : { entree: null };
+  const r = await poserSemaine(a, user, jourParis(), choix, entree);
+  if (!r.ok) return r;
+  MEMO.delete(user.id);
+  const { vue } = await calculUnique(supabase, user, true);
+  return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
+}
+
+/**
+ * Le verdict de l'examen (V3 §10.5), pour la session du jour J passé : gardé
+ * en base (codex_resultat ; sans la §8, dans le compte). « Admis » mène le
+ * programme : le Codex recalculé propose la suite.
+ */
+export async function saisirVerdict(supabase: SupabaseClient, user: Joueur, statut: StatutVerdict, bandes: unknown): Promise<{ ok: true; vue: VueCodex } | { ok: false; raison: "indisponible" | "refus" }> {
+  const a = admin();
+  if (!a) return { ok: false, raison: "indisponible" };
+  const v = (await lireCodex(supabase, user)).rythme?.verdict;
+  if (!v) return { ok: false, raison: "refus" };
+  const r = await poserVerdict(a, supabase, user, { programme: v.programme, session: v.session, statut, bandes: bandesValides(bandes, v.matieres.map((m) => m.cle)) });
+  if (!r.ok) return r;
+  MEMO.delete(user.id);
+  // sans la §8, le verdict est dans le compte : le calcul relit l'utilisateur à jour
+  const { data } = await supabase.auth.getUser();
+  const { vue } = await calculUnique(supabase, data.user ?? user, true);
   return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
 }
 

@@ -66,7 +66,8 @@ export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; 
       xp_total: neuf ? 0 : fin ? 9200 : 3100, maitrise, ratures_ouvertes: { total: neuf ? 0 : 14, matieres: {} }, serie: neuf ? 0 : 4, meilleure_serie: neuf ? 0 : 9, elo: neuf ? null : 1180,
       jours_encre_total: neuf ? 0 : fin ? 64 : 21, maitres_total: fin ? 1 : 0, programmes_menes: 0,
       trophees: neuf ? [] : fin ? [{ source: "ciblee", palier: 3, n: 3 }, { source: "ciblee", palier: 4, n: 1 }] : [{ source: "ciblee", palier: 2, n: 2 }],
-      inscrit_le: neuf ? "2026-10-16T13:20:00+02:00" : "2026-08-12T09:00:00+02:00", jours: neuf ? [] : Array.from({ length: fin ? 40 : 18 }, (_, i) => ({ jour: `2026-09-${String((i % 28) + 1).padStart(2, "0")}`, n: 12 + (i % 5) })),
+      // un joueur actif répond aussi la veille (sinon, ce serait le jour de la reprise douce, V3 §10.4)
+      inscrit_le: neuf ? "2026-10-16T13:20:00+02:00" : "2026-08-12T09:00:00+02:00", jours: neuf ? [] : [...Array.from({ length: fin ? 40 : 18 }, (_, i) => ({ jour: `2026-09-${String((i % 28) + 1).padStart(2, "0")}`, n: 12 + (i % 5) })), { jour: "2026-10-15", n: 12 }],
     },
   };
   const reponse = (d: Demande): number => {

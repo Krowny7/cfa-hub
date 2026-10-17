@@ -100,6 +100,8 @@ export function DetailQuete({
             <div className={s.detailBloc}>
               <h3>{CODEX.detail.objectif}</h3>
               <p>{l.consigne}</p>
+              {/* en sprint, un palier de régularité hors de portée d'ici le jour J (V3 §10.2) */}
+              {l.differee && <p className="t-small mt-1">{"Pour après l'examen : d'ici là, il ne te sera pas proposé. Il compte quand même si tu y arrives."}</p>}
               {showProgress && (
                 <>
                   <JaugePinceau fraction={l.fraction} or={l.etat === "active"} label={`Progression : ${Math.floor(l.valeur)} sur ${Math.floor(l.cible)}`} className="mt-2 max-w-[320px]" />

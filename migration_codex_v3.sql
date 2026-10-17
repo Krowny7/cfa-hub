@@ -103,6 +103,30 @@
 --    Toutes : clé service seulement. Sans cette section, la séance est
 --    recomposée à chaque calcul et rien n'est gardé.
 --
+-- 8. Le rythme long (V3 §10.3 à §10.5) :
+--    a. codex_semaine : le choix du lundi (cible de 3 à 5 jours d'encre, une
+--       commande : banquier, copiste ou ingénieur, et ce qu'elle vise). Le
+--       joueur lit les siens ; aucune écriture directe.
+--    b. codex_semaine_poser(uuid, date, smallint, text, jsonb) : la semaine
+--       en cours seulement ; le premier choix gagne. Clé service seulement.
+--    c. codex_contrats.modele_origine (le modèle remplacé) ;
+--       codex_contrat_changer redéfinie à l'identique pour le garder.
+--    d. serie_pauses : les jours de repos et de pause de la série d'encre.
+--       Le joueur lit les siens ; aucune écriture directe.
+--    e. serie_pause_poser(date, date, text) : le joueur connecté, jamais dans
+--       le passé ; repos : 2 jours par semaine au plus ; pause : 14 jours
+--       d'affilée et 30 jours par année glissante au plus.
+--    f. serie_pause_retirer(date) : un jour à venir seulement.
+--    g. _serie_avancer : même signature, même verrou, mêmes règles ; un jour
+--       de repos ou de pause sans ses 10 questions est neutre (ni +1, ni
+--       cassure, ni joker). Rien n'est fait sans migration_serie_encre.sql.
+--    h. codex_resultat : le verdict de l'examen, privé (une ligne par
+--       programme et par session « AAAA-MM », bandes facultatives).
+--    i. codex_resultat_poser(uuid, text, text, text, jsonb) : « admis » mène
+--       le programme (§3b) ; rien n'est repris. Clé service seulement.
+--    Sans cette section : les contrats de la semaine comme avant, pas de
+--    repos ni de pause, le verdict gardé dans le compte (rl_verdict).
+--
 -- Ordre de collage :migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
 
@@ -1566,3 +1590,379 @@ GRANT EXECUTE ON FUNCTION codex_seance_poser(uuid, date, smallint, jsonb, text[]
 GRANT EXECUTE ON FUNCTION codex_seance_marquer(uuid, date, text, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_vue_cache_poser(uuid, date, jsonb, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_vue_cache_marquer(uuid) TO service_role;
+
+
+-- ── 8. Le rythme long (V3 §10.3 à §10.5) ─────────────────────────────
+
+-- 8a. codex_semaine : le choix du lundi (V3 §10.3). La cible de la semaine
+-- (3, 4 ou 5 jours d'encre) et une commande parmi trois ; « params » fige ce
+-- que la commande vise au moment du choix (le banquier : la matière et sa
+-- maîtrise de départ). Un choix par semaine, gardé jusqu'au dimanche.
+CREATE TABLE IF NOT EXISTS codex_semaine (
+  user_id  uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  lundi    date        NOT NULL CHECK (extract(isodow FROM lundi) = 1),
+  cible    smallint    NOT NULL CHECK (cible BETWEEN 3 AND 5),
+  commande text        NOT NULL CHECK (commande IN ('banquier', 'copiste', 'ingenieur')),
+  params   jsonb       NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(params) = 'object' AND length(params::text) <= 500),
+  pose_le  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, lundi)
+);
+ALTER TABLE codex_semaine ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS codex_semaine_select_own ON codex_semaine;
+CREATE POLICY codex_semaine_select_own ON codex_semaine FOR SELECT TO authenticated USING (user_id = auth.uid());
+-- aucune politique d'écriture : codex_semaine_poser seulement
+
+-- 8b. codex_semaine_poser(uuid, date, smallint, text, jsonb) : pose le choix
+-- de la semaine en cours (p_lundi = le lundi de la semaine de Paris). Le
+-- premier choix gagne : un second appel la même semaine relit le premier.
+-- Rend la ligne (jsonb). Clé service seulement.
+CREATE OR REPLACE FUNCTION codex_semaine_poser(p_user uuid, p_lundi date, p_cible smallint, p_commande text, p_params jsonb DEFAULT '{}'::jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_lundi date := date_trunc('week', ((now() AT TIME ZONE 'Europe/Paris')::date)::timestamp)::date;
+  v_ligne codex_semaine;
+BEGIN
+  IF p_user IS NULL OR p_lundi IS NULL OR p_lundi <> v_lundi THEN
+    RAISE EXCEPTION 'seule la semaine en cours se choisit';
+  END IF;
+  IF p_cible IS NULL OR p_cible NOT BETWEEN 3 AND 5 THEN
+    RAISE EXCEPTION 'cible invalide : %', p_cible;
+  END IF;
+  IF p_commande IS NULL OR p_commande NOT IN ('banquier', 'copiste', 'ingenieur') THEN
+    RAISE EXCEPTION 'commande inconnue : %', p_commande;
+  END IF;
+  IF p_params IS NOT NULL AND (jsonb_typeof(p_params) <> 'object' OR length(p_params::text) > 500) THEN
+    RAISE EXCEPTION 'paramètres invalides';
+  END IF;
+  INSERT INTO codex_semaine (user_id, lundi, cible, commande, params)
+  VALUES (p_user, p_lundi, p_cible, p_commande, coalesce(p_params, '{}'::jsonb))
+  ON CONFLICT (user_id, lundi) DO NOTHING;
+  SELECT * INTO v_ligne FROM codex_semaine WHERE user_id = p_user AND lundi = p_lundi;
+  RETURN jsonb_build_object('lundi', v_ligne.lundi, 'cible', v_ligne.cible, 'commande', v_ligne.commande,
+                            'params', v_ligne.params, 'pose_le', v_ligne.pose_le);
+END $$;
+
+REVOKE ALL ON FUNCTION codex_semaine_poser(uuid, date, smallint, text, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_semaine_poser(uuid, date, smallint, text, jsonb) TO service_role;
+
+-- 8c. codex_contrats.modele_origine : le modèle remplacé quand on change un
+-- contrat du jour. codex_contrat_changer : même signature, même résultat,
+-- même règles (migration_codex.sql) ; il garde en plus le modèle d'origine.
+ALTER TABLE codex_contrats ADD COLUMN IF NOT EXISTS modele_origine text;
+
+CREATE OR REPLACE FUNCTION codex_contrat_changer(p_user uuid, p_jour date, p_emplacement text, p_modele text, p_params jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_ancien codex_contrats;
+BEGIN
+  IF p_user IS NULL OR p_jour IS NULL OR coalesce(p_modele, '') = '' THEN
+    RAISE EXCEPTION 'Contrat invalide';
+  END IF;
+  IF p_jour <> (now() AT TIME ZONE 'Europe/Paris')::date THEN
+    RAISE EXCEPTION 'Seuls les contrats d''aujourd''hui se changent';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('codex_contrats:' || p_user::text));
+  SELECT * INTO v_ancien FROM codex_contrats WHERE user_id = p_user AND jour = p_jour AND emplacement = p_emplacement;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Pas de contrat à cet emplacement';
+  END IF;
+  IF EXISTS (SELECT 1 FROM codex_contrats WHERE user_id = p_user AND jour = p_jour AND change) THEN
+    RAISE EXCEPTION 'Un seul changement par jour';
+  END IF;
+  IF EXISTS (SELECT 1 FROM codex_progression
+             WHERE user_id = p_user AND periode = p_jour::text AND quete_id = 'contrat:' || v_ancien.modele || ':' || p_jour::text
+               AND etat IN ('terminee', 'recompensee')) THEN
+    RAISE EXCEPTION 'Ce contrat est déjà rempli';
+  END IF;
+  UPDATE codex_contrats
+  SET modele = left(p_modele, 60), params = CASE WHEN jsonb_typeof(p_params) = 'object' THEN p_params ELSE '{}'::jsonb END,
+      change = true, tire_le = now(), modele_origine = coalesce(modele_origine, v_ancien.modele)
+  WHERE user_id = p_user AND jour = p_jour AND emplacement = p_emplacement;
+  RETURN (SELECT coalesce(jsonb_agg(jsonb_build_object('emplacement', c.emplacement, 'modele', c.modele, 'params', c.params, 'change', c.change)
+                                     ORDER BY CASE c.emplacement WHEN 'faiblesse' THEN 1 WHEN 'entretien' THEN 2 ELSE 3 END), '[]'::jsonb)
+          FROM codex_contrats c WHERE c.user_id = p_user AND c.jour = p_jour);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION codex_contrat_changer(uuid, date, text, text, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_contrat_changer(uuid, date, text, text, jsonb) TO service_role;
+
+-- 8d. serie_pauses : les jours de repos et de pause de la série d'encre
+-- (V3 §10.4). Un tel jour est neutre : sans ses 10 questions, il ne casse
+-- pas la série, ne l'allonge pas et ne prend pas le joker. Le joueur lit les
+-- siens ; aucune écriture directe.
+CREATE TABLE IF NOT EXISTS serie_pauses (
+  user_id uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  jour    date        NOT NULL,
+  genre   text        NOT NULL CHECK (genre IN ('repos', 'pause')),
+  pose_le timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, jour)
+);
+ALTER TABLE serie_pauses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS serie_pauses_select_own ON serie_pauses;
+CREATE POLICY serie_pauses_select_own ON serie_pauses FOR SELECT TO authenticated USING (user_id = auth.uid());
+-- aucune politique d'écriture : serie_pause_poser et serie_pause_retirer seulement
+
+-- Les jours de repos et de pause du joueur connecté, d'aujourd'hui (Paris) à la fin.
+CREATE OR REPLACE FUNCTION _serie_pauses_a_venir(p_uid uuid)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT coalesce(jsonb_agg(jsonb_build_object('jour', p.jour, 'genre', p.genre) ORDER BY p.jour), '[]'::jsonb)
+  FROM serie_pauses p
+  WHERE p.user_id = p_uid AND p.jour >= (now() AT TIME ZONE 'Europe/Paris')::date
+$$;
+
+-- 8e. serie_pause_poser(date, date, text) : le joueur connecté pose des jours
+-- de repos ou de pause, d'aujourd'hui au plus tôt (jamais dans le passé : un
+-- jour manqué ne se rattrape pas après coup). Repos : 2 jours au plus par
+-- semaine (lundi-dimanche). Pause : 14 jours d'affilée au plus, et 30 jours au
+-- plus sur toute fenêtre de 365 jours. Un jour déjà posé change de genre.
+-- Rend les jours à venir ([{jour, genre}]).
+CREATE OR REPLACE FUNCTION serie_pause_poser(p_de date, p_a date, p_genre text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_auj    date := (now() AT TIME ZONE 'Europe/Paris')::date;
+  v_trop   boolean;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF p_genre IS NULL OR p_genre NOT IN ('repos', 'pause') THEN
+    RAISE EXCEPTION 'genre inconnu : %', p_genre;
+  END IF;
+  IF p_de IS NULL OR p_a IS NULL OR p_a < p_de THEN
+    RAISE EXCEPTION 'dates invalides';
+  END IF;
+  IF p_de < v_auj THEN
+    RAISE EXCEPTION 'un jour passé ne se pose pas';
+  END IF;
+  IF p_a > v_auj + 365 OR p_a - p_de >= 14 THEN
+    RAISE EXCEPTION 'trop de jours d''un coup';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('serie_pauses:' || v_uid::text));
+
+  INSERT INTO serie_pauses AS s (user_id, jour, genre)
+  SELECT v_uid, g.d::date, p_genre FROM generate_series(p_de::timestamp, p_a::timestamp, interval '1 day') g(d)
+  ON CONFLICT (user_id, jour) DO UPDATE SET genre = EXCLUDED.genre, pose_le = now();
+
+  IF p_genre = 'repos' THEN
+    -- 2 jours de repos au plus dans chaque semaine touchée
+    SELECT EXISTS (
+      SELECT 1 FROM serie_pauses p
+      WHERE p.user_id = v_uid AND p.genre = 'repos'
+        AND date_trunc('week', p.jour::timestamp) BETWEEN date_trunc('week', p_de::timestamp) AND date_trunc('week', p_a::timestamp)
+      GROUP BY date_trunc('week', p.jour::timestamp) HAVING count(*) > 2
+    ) INTO v_trop;
+    IF v_trop THEN
+      RAISE EXCEPTION 'deux jours de repos par semaine au plus';
+    END IF;
+  ELSE
+    -- 14 jours de pause d'affilée au plus (avec les pauses déjà posées autour)
+    SELECT EXISTS (
+      SELECT 1 FROM (
+        SELECT p.jour - (row_number() OVER (ORDER BY p.jour))::int AS ilot
+        FROM serie_pauses p
+        WHERE p.user_id = v_uid AND p.genre = 'pause' AND p.jour BETWEEN p_de - 30 AND p_a + 30
+      ) x GROUP BY x.ilot HAVING count(*) > 14
+    ) INTO v_trop;
+    IF v_trop THEN
+      RAISE EXCEPTION 'quatorze jours de pause d''affilée au plus';
+    END IF;
+    -- 30 jours de pause au plus sur toute fenêtre de 365 jours qui touche les jours posés
+    SELECT EXISTS (
+      SELECT 1 FROM generate_series(p_de::timestamp, p_a::timestamp, interval '1 day') g(d)
+      WHERE (SELECT count(*) FROM serie_pauses p WHERE p.user_id = v_uid AND p.genre = 'pause' AND p.jour BETWEEN g.d::date - 364 AND g.d::date) > 30
+         OR (SELECT count(*) FROM serie_pauses p WHERE p.user_id = v_uid AND p.genre = 'pause' AND p.jour BETWEEN g.d::date AND g.d::date + 364) > 30
+    ) INTO v_trop;
+    IF v_trop THEN
+      RAISE EXCEPTION 'trente jours de pause par an au plus';
+    END IF;
+  END IF;
+  RETURN _serie_pauses_a_venir(v_uid);
+END $$;
+
+-- 8f. serie_pause_retirer(date) : retire un jour de repos ou de pause à venir
+-- (demain au plus tôt : aujourd'hui et le passé restent tels qu'ils ont été
+-- vécus). Rend les jours à venir.
+CREATE OR REPLACE FUNCTION serie_pause_retirer(p_jour date)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF p_jour IS NULL OR p_jour <= (now() AT TIME ZONE 'Europe/Paris')::date THEN
+    RAISE EXCEPTION 'seul un jour à venir se retire';
+  END IF;
+  DELETE FROM serie_pauses WHERE user_id = v_uid AND jour = p_jour;
+  RETURN _serie_pauses_a_venir(v_uid);
+END $$;
+
+REVOKE ALL ON FUNCTION _serie_pauses_a_venir(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION serie_pause_poser(date, date, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION serie_pause_retirer(date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION serie_pause_poser(date, date, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION serie_pause_retirer(date) TO authenticated;
+
+-- 8g. _serie_avancer(uuid, date) : copie à l'identique de
+-- migration_serie_encre.sql, plus les jours neutres. Elle est appelée par le
+-- déclencheur xp_events_serie_bonus à chaque gain d'XP : même signature, même
+-- verrou, aucune erreur levée, et une seule lecture de plus (par la clé
+-- primaire de serie_pauses), pour un jour sous les 10 questions seulement.
+-- Sans migration_serie_encre.sql (pas de type serie_encre), rien n'est fait.
+DO $do$
+BEGIN
+  IF to_regclass('public.serie_encre') IS NULL THEN
+    RETURN;
+  END IF;
+  EXECUTE $fn$
+CREATE OR REPLACE FUNCTION _serie_avancer(p_uid uuid, p_jour date)
+RETURNS serie_encre
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_row    serie_encre;
+  v_neuf   boolean := false;
+  v_a      date := p_jour - 1;
+  v_de     date;
+  r        record;
+  v_lundi  date;
+  -- les jours de repos et de pause (§8d) ; sans la table, aucun jour neutre
+  v_pauses boolean := to_regclass('public.serie_pauses') IS NOT NULL;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('serie_encre:' || p_uid::text));
+  SELECT * INTO v_row FROM serie_encre WHERE user_id = p_uid;
+  IF NOT FOUND THEN
+    v_neuf := true;
+    -- premier calcul : depuis le premier jour de réponse
+    SELECT min(c.jour) INTO v_de FROM _serie_reponses_jour(p_uid, DATE '2000-01-01', v_a) c;
+    v_row.user_id := p_uid;
+    v_row.jusqu_au := coalesce(v_de, p_jour) - 1;
+    v_row.serie := 0;
+    v_row.debut := NULL;
+    v_row.joker_semaine := NULL;
+    v_row.veille_sauvee := false;
+    v_row.meilleure := 0;
+    v_row.meilleure_le := NULL;
+  END IF;
+
+  IF v_row.jusqu_au < v_a THEN
+    FOR r IN
+      SELECT g.d::date AS jour, coalesce(c.n, 0) AS n
+      FROM generate_series((v_row.jusqu_au + 1)::timestamp, v_a::timestamp, interval '1 day') AS g(d)
+      LEFT JOIN _serie_reponses_jour(p_uid, v_row.jusqu_au + 1, v_a) c ON c.jour = g.d::date
+      ORDER BY 1
+    LOOP
+      IF r.n < _serie_seuil() AND v_pauses THEN
+        IF EXISTS (SELECT 1 FROM serie_pauses p WHERE p.user_id = p_uid AND p.jour = r.jour) THEN
+          -- jour de repos ou de pause : neutre (ni +1, ni cassure, ni joker)
+          v_row.jusqu_au := r.jour;
+          CONTINUE;
+        END IF;
+      END IF;
+      IF r.n >= _serie_seuil() THEN
+        v_row.serie := v_row.serie + 1;
+        IF v_row.serie = 1 THEN v_row.debut := r.jour; END IF;
+        v_row.veille_sauvee := false;
+        IF v_row.serie > v_row.meilleure THEN
+          v_row.meilleure := v_row.serie;
+          v_row.meilleure_le := r.jour;
+        END IF;
+      ELSIF v_row.serie > 0 THEN
+        v_lundi := date_trunc('week', r.jour::timestamp)::date;
+        IF v_row.veille_sauvee OR v_row.joker_semaine = v_lundi THEN
+          -- deux jours manqués d'affilée, ou un second dans la semaine : la série casse
+          v_row.serie := 0;
+          v_row.debut := NULL;
+          v_row.veille_sauvee := false;
+        ELSE
+          -- le joker de la semaine : le jour manqué ne compte pas, mais ne casse rien
+          v_row.joker_semaine := v_lundi;
+          v_row.veille_sauvee := true;
+        END IF;
+      ELSE
+        v_row.veille_sauvee := false;
+      END IF;
+      v_row.jusqu_au := r.jour;
+    END LOOP;
+  ELSIF NOT v_neuf THEN
+    RETURN v_row;
+  END IF;
+
+  INSERT INTO serie_encre (user_id, jusqu_au, serie, debut, joker_semaine, veille_sauvee, meilleure, meilleure_le, mis_a_jour)
+  VALUES (v_row.user_id, v_row.jusqu_au, v_row.serie, v_row.debut, v_row.joker_semaine, v_row.veille_sauvee, v_row.meilleure, v_row.meilleure_le, now())
+  ON CONFLICT (user_id) DO UPDATE
+    SET jusqu_au = EXCLUDED.jusqu_au, serie = EXCLUDED.serie, debut = EXCLUDED.debut,
+        joker_semaine = EXCLUDED.joker_semaine, veille_sauvee = EXCLUDED.veille_sauvee,
+        meilleure = greatest(serie_encre.meilleure, EXCLUDED.meilleure),
+        meilleure_le = CASE WHEN EXCLUDED.meilleure > serie_encre.meilleure THEN EXCLUDED.meilleure_le ELSE serie_encre.meilleure_le END,
+        mis_a_jour = now();
+  SELECT * INTO v_row FROM serie_encre WHERE user_id = p_uid;
+  RETURN v_row;
+END;
+$$;
+$fn$;
+  EXECUTE 'REVOKE ALL ON FUNCTION _serie_avancer(uuid, date) FROM PUBLIC, anon, authenticated';
+END $do$;
+
+-- 8h. codex_resultat : le verdict de l'examen (V3 §10.5), privé. Une ligne
+-- par programme et par session (« AAAA-MM ») ; bandes facultatives par
+-- matière ({cle: basse | moyenne | haute}, soit < 50, 50–70, > 70 %).
+CREATE TABLE IF NOT EXISTS codex_resultat (
+  user_id   uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  programme text        NOT NULL CHECK (programme ~ '^[a-z]+/[a-z0-9-]{2,40}$'),
+  session   text        NOT NULL CHECK (session ~ '^[0-9]{4}-[0-9]{2}$'),
+  statut    text        NOT NULL CHECK (statut IN ('admis', 'pas_cette_fois', 'reporte')),
+  bandes    jsonb       NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(bandes) = 'object'),
+  saisi_le  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, programme, session)
+);
+ALTER TABLE codex_resultat ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS codex_resultat_select_own ON codex_resultat;
+CREATE POLICY codex_resultat_select_own ON codex_resultat FOR SELECT TO authenticated USING (user_id = auth.uid());
+-- aucune politique d'écriture : codex_resultat_poser seulement
+
+-- 8i. codex_resultat_poser(uuid, text, text, text, jsonb) : pose ou corrige le
+-- verdict d'une session. « admis » mène le programme (codex_programme_poser,
+-- §3b) ; rien de gagné n'est repris si le verdict change ensuite. Rend la
+-- ligne (jsonb). Clé service seulement.
+CREATE OR REPLACE FUNCTION codex_resultat_poser(p_user uuid, p_programme text, p_session text, p_statut text, p_bandes jsonb DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_ligne codex_resultat;
+BEGIN
+  IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
+    RAISE EXCEPTION 'programme invalide : %', p_programme;
+  END IF;
+  IF p_session IS NULL OR p_session !~ '^[0-9]{4}-(0[1-9]|1[0-2])$' THEN
+    RAISE EXCEPTION 'session invalide : %', p_session;
+  END IF;
+  IF p_statut IS NULL OR p_statut NOT IN ('admis', 'pas_cette_fois', 'reporte') THEN
+    RAISE EXCEPTION 'statut invalide : %', p_statut;
+  END IF;
+  IF p_bandes IS NOT NULL AND (
+       jsonb_typeof(p_bandes) <> 'object' OR length(p_bandes::text) > 1000
+       OR EXISTS (SELECT 1 FROM jsonb_each(p_bandes) b
+                  WHERE b.key !~ '^[a-z0-9:_-]{1,60}$' OR jsonb_typeof(b.value) <> 'string'
+                     OR b.value #>> '{}' NOT IN ('basse', 'moyenne', 'haute'))) THEN
+    RAISE EXCEPTION 'bandes invalides';
+  END IF;
+  INSERT INTO codex_resultat AS t (user_id, programme, session, statut, bandes)
+  VALUES (p_user, p_programme, p_session, p_statut, CASE WHEN p_statut = 'pas_cette_fois' THEN coalesce(p_bandes, '{}'::jsonb) ELSE '{}'::jsonb END)
+  ON CONFLICT (user_id, programme, session) DO UPDATE SET
+    statut   = EXCLUDED.statut,
+    bandes   = CASE WHEN EXCLUDED.statut = 'pas_cette_fois' AND p_bandes IS NULL THEN t.bandes ELSE EXCLUDED.bandes END,
+    saisi_le = now()
+  RETURNING * INTO v_ligne;
+  IF p_statut = 'admis' THEN
+    PERFORM codex_programme_poser(p_user, p_programme, 'mene');
+  END IF;
+  RETURN jsonb_build_object('programme', v_ligne.programme, 'session', v_ligne.session, 'statut', v_ligne.statut,
+                            'bandes', v_ligne.bandes, 'saisi_le', v_ligne.saisi_le);
+END $$;
+
+REVOKE ALL ON FUNCTION codex_resultat_poser(uuid, text, text, text, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_resultat_poser(uuid, text, text, text, jsonb) TO service_role;

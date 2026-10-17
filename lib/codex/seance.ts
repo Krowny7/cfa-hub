@@ -84,6 +84,8 @@ export type EntreeSeance = {
   dest: ContexteDestination;
   /** les blocs déjà faits de la séance précédente du jour : gardés tels quels, en tête */
   blocsFaits?: Bloc[];
+  /** après un « pas cette fois » (V3 §10.5, recalageVerdict) : les bandes basses pèsent plus, les retouches passent en tête */
+  recalage?: { facteur: (matiere: string) => number } | null;
 };
 
 /** Le budget par défaut : la médiane des 7 derniers jours actifs × 1,2 min, au budget le plus proche (30 sans historique). */
@@ -223,12 +225,12 @@ export function raisonEpreuve(joursAvant: number | null, defi: boolean): string 
  * matière pas encore mesurée comptant pour 20 % ; en veillée, seulement une
  * matière déjà en zone moyenne ou haute (on consolide, on ne découvre plus).
  */
-export function matiereCoince(m: MaitriseCodex, veillee: boolean): Maitrise["matieres"][number] | null {
+export function matiereCoince(m: MaitriseCodex, veillee: boolean, facteur: (matiere: string) => number = () => 1): Maitrise["matieres"][number] | null {
   let meilleure: Maitrise["matieres"][number] | null = null;
   let score = -1;
   for (const x of m.matieres) {
     if (veillee && x.zone !== "moyenne" && x.zone !== "haute") continue;
-    const s = x.poids * (1 - (x.pct ?? 20) / 100);
+    const s = x.poids * (1 - (x.pct ?? 20) / 100) * facteur(x.cle);
     if (s > score) [meilleure, score] = [x, s];
   }
   return meilleure;
@@ -273,7 +275,7 @@ function blocDe(genre: GenreBloc, e: EntreeSeance, restant: number): Bloc | null
     }
     case "coince": {
       const veillee = e.phase === "veillee";
-      const m = matiereCoince(e.maitrise, veillee);
+      const m = matiereCoince(e.maitrise, veillee, e.recalage?.facteur);
       if (!m) return null;
       const duree = veillee || e.budget <= 30 ? 15 : 25;
       return avec({ k: "coince", matiere: m.cle, duree }, duree, raisonCoince(m), { matiere: m.cle });
@@ -304,7 +306,8 @@ export function composerSeance(entree: EntreeSeance): Seance {
   for (const b of e.blocsFaits ?? []) if (!blocs.some((x) => x.genre === b.genre)) blocs.push(b);
   let total = blocs.reduce((s, b) => s + b.duree, 0);
   const max = Math.max(MAX_BLOCS[e.budget], blocs.length);
-  for (const genre of enMalle(e) ? ORDRE_MALLE : ORDRE_BLOCS[e.phase]) {
+  const ordre = enMalle(e) ? ORDRE_MALLE : ORDRE_BLOCS[e.phase];
+  for (const genre of e.recalage ? ["retouches" as const, ...ordre.filter((g) => g !== "retouches")] : ordre) {
     if (blocs.length >= max || e.budget - total < DUREE_MIN) break;
     if (blocs.some((b) => b.genre === genre) || e.ecartes.includes(genre)) continue;
     const b = blocDe(genre, e, e.budget - total);

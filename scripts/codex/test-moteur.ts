@@ -11,13 +11,16 @@
 // le catalogue taillé (V3 §8.1 à §8.4, §8.6 : retraits, miroirs, actes I et V,
 // quêtes hors jeu sans le SQL, prérequis souples, XP des contrats) ; la
 // maîtrise unique, le cap et les mesures de la mémoire (V3 §4.6, §4.7, lot A4b) ;
-// les tailles de fête et le mode sobre (V3 §3.10, §11.5, lot A9).
+// les tailles de fête et le mode sobre (V3 §3.10, §11.5, lot A9) ;
+// le rythme long (V3 §10.2 à §10.5, lot A8 : plan daté, sprint, reprise, semaine,
+// verdict, jours neutres de la série d'encre).
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
 import { ACTES, COSMETIQUES_CODEX, DECOUVERTE, MODELES_CONTRATS, VAGUES_DECOUVERTE, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
   LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, repliquesDeVague, revoirDe, tirerContrats,
+  budgetDuJour, contexteDestination, repriseDuJour,
   type Demande, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
@@ -29,6 +32,13 @@ import { de, gabarit } from "@/lib/codex/elision";
 import { CODEX } from "@/lib/voice-codex";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import type { Quete } from "@/lib/codex/types";
+import { quetesSemaine, xpSemaineEncre } from "@/lib/codex/catalogue";
+import { JALONS_CFA_L1, commandesPossibles, dateApproximative, enReprise, estSprint, facteurBande, libelleEcart, lireSemaine, lireVerdict, matiereBanquier, planDe, recalageVerdict, sessionDe } from "@/lib/codex/plan";
+import { matiereCoince } from "@/lib/codex/seance";
+import { maitriseDuCodex } from "@/lib/codex/cap";
+import { calculerSerie } from "@/lib/serie-encre";
+import { bandesValides, vueRythme } from "@/lib/codex/rythme";
+import { destinationDe } from "@/lib/codex/destinations";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -142,9 +152,10 @@ console.log("\n# la récompense d'une quête gagnée aujourd'hui n'est pas rétr
 
 console.log("\n# les contrats du jour");
 {
+  // des joueurs actifs (une réponse hier) : sans elle, ce serait le jour de la reprise douce (V3 §10.4)
   const e = base({
     premier: false,
-    lecture: { compteurs: {}, mesures: { xp_total: 0, maitrise: { fsa: { pct: 48, questions: 120, debut: 40 } }, ratures_ouvertes: { total: 12, matieres: {} }, jours: [{ jour: "2026-10-01", n: 300 }] }, speciaux: {} },
+    lecture: { compteurs: {}, mesures: { xp_total: 0, maitrise: { fsa: { pct: 48, questions: 120, debut: 40 } }, ratures_ouvertes: { total: 12, matieres: {} }, jours: [{ jour: "2026-10-01", n: 300 }, { jour: "2026-10-14", n: 10 }] }, speciaux: {} },
     pointsFaibles: [{ notion: "fixed_income:11", score: 80 }],
   });
   const t1 = tirerContrats(e, "joueur-1");
@@ -330,7 +341,7 @@ console.log("\n# v3 §6.11 : après le jour J");
   const { r, e: e2 } = repondre(base({ jourJ: "2026-10-01" }), () => 0);
   const v = construireVue(e2, r, null, { devoile: null });
   check("la vue dit « Après l'épreuve »", v.phase === "apres" && v.phaseNom === "Après l'épreuve", v.phaseNom);
-  const t = tirerContrats({ ...base({ jourJ: "2026-10-01" }), lecture: { compteurs: {}, mesures: { xp_total: 0, ratures_ouvertes: { total: 12, matieres: {} }, jours: [{ jour: "2026-09-01", n: 400 }] }, speciaux: {} } }, "joueur-1");
+  const t = tirerContrats({ ...base({ jourJ: "2026-10-01" }), lecture: { compteurs: {}, mesures: { xp_total: 0, ratures_ouvertes: { total: 12, matieres: {} }, jours: [{ jour: "2026-09-01", n: 400 }, { jour: "2026-10-14", n: 10 }] }, speciaux: {} } }, "joueur-1");
   check("les contrats se tirent encore après l'examen", t.length === 3, String(t.length));
 }
 
@@ -338,7 +349,7 @@ console.log("\n# v3 §6.12 : les textes qui mentent");
 {
   const notion = MODELES_CONTRATS.find((m) => m.id === "notion-faible")!;
   check("« Sur la notion : … » (pas « Atelier : » : toute réponse compte)", notion.titre.startsWith("Sur la notion") && !notion.titre.startsWith("Atelier"));
-  const lecture = { compteurs: {}, mesures: { xp_total: 0, maitrise: {}, ratures_ouvertes: { total: 0, matieres: {} }, jours: [{ jour: "2026-10-01", n: 300 }] }, speciaux: {} };
+  const lecture = { compteurs: {}, mesures: { xp_total: 0, maitrise: {}, ratures_ouvertes: { total: 0, matieres: {} }, jours: [{ jour: "2026-10-01", n: 300 }, { jour: "2026-10-14", n: 10 }] }, speciaux: {} };
   const tirer = (activite?: Entree["activite"]) => Array.from({ length: 40 }, (_, i) => tirerContrats({ ...base({ lecture }), activite }, "j" + i)).flat();
   check("sans l'activité par matière : jamais « prend la poussière »", !tirer().some((c) => c.modele === "matiere-oubliee"));
   const activite = Object.fromEntries(contenu.map((m) => [m.key, { recentes: m.key === "equity" || m.key === "quant" ? 0 : 5, total: m.key === "quant" ? 0 : 50 }]));
@@ -417,11 +428,14 @@ console.log("\n# v3 §6.14 : migration_codex_v3.sql (le banc PGlite la joue : si
 {
   const sql = readFileSync("migration_codex_v3.sql", "utf8");
   // seules les tables temporaires de la transaction (le cache des réponses, le journal de codex_lire) se suppriment
-  check("idempotente : aucune suppression de table ni de données", !/DROP\s+TABLE(?!\s+(IF\s+EXISTS\s+)?pg_temp\.)|DELETE\s+FROM|TRUNCATE/i.test(sql));
+  // et un seul DELETE : le retrait d'un jour de repos à venir, par le joueur lui-même (§8f)
+  check("idempotente : aucune suppression de table ni de données", !/DROP\s+TABLE(?!\s+(IF\s+EXISTS\s+)?pg_temp\.)|DELETE\s+FROM(?!\s+serie_pauses\s+WHERE\s+user_id\s*=\s*v_uid\s+AND\s+jour\s*=\s*p_jour;)|TRUNCATE/i.test(sql));
   check("codex_erreurs : RLS, le joueur lit les siennes, aucune politique d'écriture", /ALTER TABLE codex_erreurs ENABLE ROW LEVEL SECURITY/.test(sql) && /codex_erreurs FOR SELECT TO authenticated USING \(user_id = auth\.uid\(\)\)/.test(sql) && !/codex_erreurs FOR (INSERT|UPDATE|DELETE|ALL)/.test(sql));
   check("codex_ecrire : une sous-transaction par quête, l'erreur consignée", /EXCEPTION WHEN OTHERS THEN\s+v_err := v_err \+ 1;\s+PERFORM _codex_erreur/.test(sql));
   const fonctions = [...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g)].map((m) => m[1]);
-  check("fonctions en SECURITY DEFINER SET search_path = public, fermées à anon et authenticated", fonctions.length >= 5 && (sql.match(/SECURITY DEFINER SET search_path = public/g) ?? []).length === fonctions.length && fonctions.every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon, authenticated`).test(sql)), fonctions.join());
+  const joueur = new Set([...sql.matchAll(/GRANT EXECUTE ON FUNCTION (\w+)\([^)]*\) TO authenticated/g)].map((m) => m[1]));
+  check("fonctions en SECURITY DEFINER SET search_path = public, fermées à anon et authenticated", fonctions.length >= 5 && (sql.match(/SECURITY DEFINER SET search_path = public/g) ?? []).length === fonctions.length && fonctions.every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon, authenticated`).test(sql) || joueur.has(f)), fonctions.join());
+  check("les fonctions du joueur (repos, pause) : fermées à anon, ouvertes à authenticated, sur auth.uid()", joueur.size === 2 && [...joueur].every((f) => new RegExp(`REVOKE ALL ON FUNCTION ${f}\\([^)]*\\) FROM PUBLIC, anon;`).test(sql) && new RegExp(`CREATE OR REPLACE FUNCTION ${f}\\([^]*?v_uid\\s+uuid := auth\\.uid\\(\\)`).test(sql)), [...joueur].join());
   check("§2 : colonnes de codex_joueur ajoutées sans rien retirer, budget borné", /ADD COLUMN IF NOT EXISTS budget_min smallint CHECK \(budget_min IN \(15, 30, 60, 90\)\)/.test(sql) && /ADD COLUMN IF NOT EXISTS capacites_vues jsonb/.test(sql) && !/ALTER TABLE codex_joueur DROP/i.test(sql));
 }
 
@@ -794,6 +808,115 @@ console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)"
   const detail = readFileSync("components/codex/DetailQuete.tsx", "utf8");
   const carte = readFileSync("components/codex/CarteCodex.tsx", "utf8");
   check("mode sobre : le détail d'une quête sans récompense, le trio sans XP, le tampon ancré sur la carte (data-quete)", detail.includes("const recompense = sobre ? []") && carte.includes("vue.sobre ? CODEX.contrats.trioFaitSobre") && carte.includes("data-quete={nd.cle}"));
+}
+
+console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
+{
+  // le plan daté : la frise se lit sur le dernier jalon échu
+  const J = "2026-11-12";
+  const evs = (fait: boolean, atteint: string | null) => JALONS_CFA_L1.map((x) => (x.j === 45 ? { fait, atteint: atteint ? new Date(atteint + "T10:00:00Z") : null } : { fait: x.j > 45, atteint: null }));
+  check("plan : le 10 octobre, dernier jalon échu J-45 (le 28 septembre), fait le 20 : 8 jours d'avance", planDe(JALONS_CFA_L1, evs(true, "2026-09-20"), "2026-10-10", J).libelle === "8 jours d'avance");
+  check("plan : pas fait : 12 jours de retard", planDe(JALONS_CFA_L1, evs(false, null), "2026-10-10", J).ecart === -12);
+  check("plan : une mesure faite sans date d'atteinte : à l'heure", planDe(JALONS_CFA_L1, evs(true, null), "2026-10-10", J).libelle === "à l'heure");
+  const tot = planDe(JALONS_CFA_L1, JALONS_CFA_L1.map((x) => ({ fait: x.j === 120, atteint: x.j === 120 ? new Date("2026-07-05T10:00:00Z") : null })), "2026-07-01", J);
+  check("plan : aucun jalon échu, le prochain déjà fait : 10 jours d'avance", tot.libelle === "10 jours d'avance" && tot.prochain?.j === 120, tot.libelle);
+  check("plan : les libellés (« 1 jour de retard »)", libelleEcart(-1) === "1 jour de retard" && libelleEcart(5) === "5 jours d'avance" && libelleEcart(0) === "à l'heure");
+  check("plan : ses objectifs partent avec les compteurs (jour J connu), aucun sans jour J", planifier(base({ jourJ: J })).length > planifier(base()).length);
+
+  // le mode sprint
+  check("sprint : jour J à 4 semaines du premier calcul", estSprint(J, "2026-10-16T08:00:00Z", "2026-10-17") && !estSprint(J, "2026-08-01T08:00:00Z", "2026-10-17") && !estSprint(null, null, "2026-10-17"));
+  const eS = base({ jourJ: J, premierCalcul: "2026-10-15T08:00:00Z", premier: false });
+  const { r: rS, e: eS2 } = repondre(eS, () => 0);
+  const encre = rS.etats.filter((s) => s.quete.chaine === "encre");
+  check("sprint : les paliers « Deux mois » et au-delà passent après l'examen, pas « Un mois »", encre.filter((s) => s.differee).map((s) => s.quete.palier).join(",") === "3,4,5", encre.map((s) => `${s.quete.palier}:${!!s.differee}`).join(" "));
+  const reco = recommander(eS2, rS);
+  check("sprint : jamais proposés", !reco || !rS.etats.some((s) => s.differee && s.quete.id === reco.quete.id));
+  const hors = repondre(base({ jourJ: J, premierCalcul: "2026-06-01T08:00:00Z", premier: false }), () => 0).r;
+  check("hors sprint : aucun palier différé", !hors.etats.some((s) => s.differee));
+  const duree = (c: { modele: string }) => MODELES_CONTRATS.find((m) => m.id === c.modele)?.duree ?? 0;
+  const sprintes = Array.from({ length: 30 }, (_, i) => tirerContrats(eS, "sprint-" + i)).flat();
+  check("sprint : des contrats courts (15 minutes au plus chacun)", sprintes.length >= 60 && sprintes.every((c) => duree(c) <= 15), String(Math.max(...sprintes.map(duree))));
+  const longs = Array.from({ length: 30 }, (_, i) => tirerContrats({ ...eS, premierCalcul: "2026-06-01T08:00:00Z" }, "sprint-" + i)).flat();
+  check("hors sprint : des contrats plus longs restent possibles", longs.some((c) => duree(c) > 15));
+
+  // le retour après 4 jours sans réponse
+  const retour = (dernier: string, o: Partial<Entree> = {}) => base({ lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-09-01", n: 50 }, { jour: dernier, n: 30 }] }, speciaux: {} }, ...o });
+  const t4 = tirerContrats(retour("2026-10-10"), "j-retour");
+  check("retour à 4 jours (le 10, puis rien les 11, 12, 13 et 14) : un seul contrat, la reprise", t4.length === 1 && t4[0].modele === "reprise" && t4[0].emplacement === "entretien", JSON.stringify(t4));
+  check("... son id : contrat:reprise:<jour>, 10 questions", instanceContrat(MODELES_CONTRATS.find((m) => m.id === "reprise")!, {}, jour, contenu).id === "contrat:reprise:2026-10-15");
+  check("... la séance du jour : 15 minutes (budget choisi : gardé)", budgetDuJour(retour("2026-10-10")) === 15 && budgetDuJour(retour("2026-10-10", { budget: 60 })) === 60);
+  check("3 jours sans réponse : pas de reprise", !repriseDuJour(retour("2026-10-11")) && tirerContrats(retour("2026-10-11"), "j-retour").length === 3);
+  check("un compte neuf n'est pas un retour", !enReprise([], jour) && !enReprise(undefined, jour));
+  check("la reprise n'est jamais tirée au sort", Array.from({ length: 40 }, (_, i) => tirerContrats(base(), "j" + i)).flat().every((c) => c.modele !== "reprise"));
+
+  // la semaine choisie
+  const lundi = "2026-10-12";
+  const ids = (s: Entree["semaine"]) => repondre(base({ semaine: s }), () => 0).r.etats.filter((x) => x.quete.repetition === "hebdomadaire" && x.quete.famille === "contrat").map((x) => x.quete.id).sort().join(",");
+  check("sans choix : les trois contrats de la semaine d'avant", ids(null) === "contrat:hebdo:commande,contrat:hebdo:encre,contrat:hebdo:pigments", ids(null));
+  check("l'ingénieur : semaine d'encre + demi-examen + deux 30 du jour", ids({ lundi, cible: 3, commande: "ingenieur", params: {} }) === "contrat:hebdo:encre,contrat:hebdo:ingenieur-blanc,contrat:hebdo:ingenieur-trente");
+  check("un choix d'une autre semaine ne compte pas", ids({ lundi: "2026-10-05", cible: 3, commande: "ingenieur", params: {} }) === ids(null));
+  const ban = quetesSemaine({ lundi, cible: 4, commande: "banquier", params: { matiere: "quant", depart: 52 } }, contenu);
+  const obj = ban[1]?.objectif;
+  check("le banquier : la matière choisie à 57 % (52 + 5)", ban.length === 2 && obj?.k === "mesure" && obj.seuil === 57 && (obj.filtre as { matiere?: string } | undefined)?.matiere === "quant" && ban[1].id === "contrat:hebdo:banquier");
+  const enc = ban[0].objectif;
+  check("la semaine d'encre prend la cible (4 jours, 110 XP ; 3 : 95 ; 5 : 120)", enc.k === "compteur" && enc.seuil === 4 && ban[0].recompense.xp === 110 && xpSemaineEncre(3) === 95 && xpSemaineEncre(5) === 120);
+  check("le banquier sans matière : la semaine d'encre seule", quetesSemaine({ lundi, cible: 5, commande: "banquier", params: {} }, contenu).length === 1);
+  check("le copiste attend la base (journal v3, À revoir, ratures sèches)", quetesSemaine({ lundi, cible: 5, commande: "copiste", params: {} }, contenu).slice(1).every((q) => (q.requiert ?? []).includes("journal3")));
+  check("lireSemaine : autre semaine, cible 6 ou commande inconnue → rien", lireSemaine({ lundi, cible: 4, commande: "copiste" }, lundi)?.cible === 4 && !lireSemaine({ lundi: "2026-10-05", cible: 4, commande: "copiste" }, lundi) && !lireSemaine({ lundi, cible: 6, commande: "copiste" }, lundi) && !lireSemaine({ lundi, cible: 4, commande: "peintre" }, lundi));
+  const mb = matiereBanquier(contenu, (c) => ({ ethics: 80, fsa: 45, equity: 62, fixed_income: 50 } as Record<string, number>)[c] ?? 90);
+  check("la matière du banquier : la plus faible des lourdes", mb?.matiere === "fsa" && mb.depart === 45, JSON.stringify(mb));
+  check("le copiste n'est proposé qu'avec ce que la base sait faire", commandesPossibles(() => false).join(",") === "banquier,ingenieur" && commandesPossibles(() => true).length === 3);
+  check("une commande demande aussi ses outils au programme (sans blancs ni 30 du jour : pas d'ingénieur)", commandesPossibles(() => true, new Set(["revoir", "cinq"] as const)).join(",") === "banquier,copiste" && commandesPossibles(() => true, CFA_L1.outils).length === 3);
+
+  const ctxD = contexteDestination(base());
+  const dela = (["banquier", "copiste", "ingenieur"] as const).flatMap((c) => quetesSemaine({ lundi, cible: 4, commande: c, params: { matiere: "quant", depart: 40 } }, contenu));
+  const sansDest = dela.filter((q) => !destinationDe(q, {}, ctxD));
+  check("chaque contrat de la semaine a sa destination (« Y aller »)", dela.length === 8 && sansDest.length === 0, sansDest.map((q) => q.id).join());
+
+  // la date approximative
+  const auj = "2026-10-17";
+  check("date : « vers mi-novembre » → le 15", dateApproximative("vers mi-novembre", auj) === "2026-11-15");
+  check("date : début (5), fin (25), le mois seul (15)", dateApproximative("début décembre", auj) === "2026-12-05" && dateApproximative("fin novembre", auj) === "2026-11-25" && dateApproximative("Novembre", auj) === "2026-11-15");
+  check("date : un mois passé tombe l'an prochain", dateApproximative("mi-septembre", auj) === "2027-09-15");
+  check("date : une date exacte est gardée", dateApproximative("12/11/2026", auj) === "2026-11-12" && dateApproximative("12 novembre", auj) === "2026-11-12" && dateApproximative("2026-11-12", auj) === "2026-11-12");
+  check("date : illisible → null", dateApproximative("un jour", auj) === null);
+
+  // le verdict
+  const v = lireVerdict({ programme: "finance/cfa-l1", session: "2026-11", statut: "pas_cette_fois", bandes: { quant: "basse", fsa: "moyenne", x: "nulle" }, saisi_le: "2026-12-20T10:00:00Z" });
+  check("verdict lu, bande inconnue écartée", v?.statut === "pas_cette_fois" && v.bandes.quant === "basse" && !("x" in v.bandes));
+  check("verdict mal formé → null", !lireVerdict({ programme: "finance/cfa-l1", session: "2026-13", statut: "admis" }) && !lireVerdict({ programme: "finance/cfa-l1", session: "2026-11", statut: "recale" }));
+  check("bande basse : ×1,3 pendant 60 jours, puis ×1 ; moyenne ou admis : ×1", facteurBande(v, "quant", "2027-01-10") === 1.3 && facteurBande(v, "quant", "2027-02-19") === 1 && facteurBande(v, "fsa", "2027-01-10") === 1 && facteurBande(v && { ...v, statut: "admis" }, "quant", "2027-01-10") === 1);
+  check("la session d'un jour J", sessionDe("2026-11-12") === "2026-11");
+  const rec = recalageVerdict(v, "2027-01-10");
+  check("recalage : 60 jours après un « pas cette fois », puis plus rien ; jamais après « admis »", !!rec && rec.facteur("quant") === 1.3 && rec.facteur("fsa") === 1 && !recalageVerdict(v, "2027-02-19") && !recalageVerdict(v && { ...v, statut: "admis" }, "2027-01-10"));
+  const pcts: Record<string, number> = { quant: 20, fsa: 40 };
+  const mc = maitriseDuCodex(contenu, { maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: pcts[m.key] ?? 80, questions: 60, debut: 40 }])) });
+  check("séance : « ce qui coince » passe à la matière en bande basse (Quant ×1,3 devant FSA)", matiereCoince(mc, false)?.cle === "fsa" && matiereCoince(mc, false, rec!.facteur)?.cle === "quant");
+
+  // ce que /codex en montre (lib/codex/rythme.ts)
+  const active = (o: Partial<Entree> = {}) => base({ jourJ: "2026-11-12", lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-06", n: 40 }, { jour: "2026-10-08", n: 9 }, { jour: "2026-10-14", n: 12 }] }, speciaux: {} }, ...o });
+  const vr = (e: Entree, o: Partial<Parameters<typeof vueRythme>[2]> = {}) => vueRythme(e, {}, { semaineDispo: true, capacites: CAPACITES_VIDE, moment: "courant", verdicts: [], ...o });
+  const v1 = vr(active());
+  check("vue : le plan (six jalons) au cours ordinaire", v1.plan?.jalons.length === 6 && !vr(active(), { moment: "veillee" }).plan);
+  check("vue : le lundi relit la semaine passée (49 questions, 1 jour d'encre)", v1.lundi?.questions === 49 && v1.lundi.joursEncre === 1 && v1.lundi.lundi === "2026-10-12", JSON.stringify(v1.lundi));
+  check("vue : sans la base qui le garde, pas de carte du lundi", !vr(active(), { semaineDispo: false }).lundi);
+  check("vue : sans les capacités, le copiste n'est pas proposé", v1.lundi?.commandes.map((c) => c.id).join(",") === "banquier,ingenieur");
+  const choisi = vr(active({ semaine: { lundi: "2026-10-12", cible: 4, commande: "ingenieur", params: {} } }));
+  check("vue : la semaine choisie, plus de carte du lundi", !choisi.lundi && choisi.semaine?.commande === "ingenieur" && choisi.semaine.nom === "L'ingénieur");
+  check("vue : pas de carte du lundi en veillée ni pour un compte neuf", !vr(active(), { moment: "veillee" }).lundi && !vr(base({ jourJ: "2026-11-12" })).lundi);
+  const apres = base({ jourJ: "2026-10-01" });
+  const vv = vr(apres, { moment: "apres", verdicts: [{ programme: "finance/cfa-l1", session: "2026-10", statut: "reporte", bandes: {}, saisiLe: "2026-10-12T10:00:00Z" }] });
+  check("vue : le verdict après l'examen, session du jour J, déjà saisi", vv.verdict?.session === "2026-10" && vv.verdict.saisi?.statut === "reporte" && vv.verdict.matieres.length === 10);
+  check("vue : pas de verdict avant l'examen", !v1.verdict && !vr(apres, { moment: "lendemain" }).verdict);
+  check("vue : la reprise du jour", vr(base({ lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-01", n: 30 }] }, speciaux: {} } })).reprise && !v1.reprise);
+  check("les bandes reçues : matières connues et bandes valides seulement", JSON.stringify(bandesValides({ quant: "basse", fsa: "nulle", inconnue: "haute", ethics: "haute" }, ["quant", "fsa", "ethics"])) === JSON.stringify({ quant: "basse", ethics: "haute" }) && Object.keys(bandesValides("x", ["quant"])).length === 0);
+
+  // la série d'encre et ses jours neutres (lib/serie-encre.ts, mêmes règles que _serie_avancer)
+  const js = new Map([["2026-09-01", 10], ["2026-09-02", 10], ["2026-09-03", 10], ["2026-09-06", 12]]);
+  const pauses = new Set(["2026-09-04", "2026-09-05"]);
+  check("série : deux jours de pause d'affilée ne cassent rien (4)", calculerSerie(js, "2026-09-07", 10, pauses).serie === 4);
+  check("série : sans les pauses, deux manqués d'affilée la cassent (1)", calculerSerie(js, "2026-09-07").serie === 1);
+  check("série : un jour de pause à 10 questions compte quand même", calculerSerie(new Map([["2026-09-01", 10], ["2026-09-02", 10]]), "2026-09-03", 10, new Set(["2026-09-02"])).serie === 2);
 }
 
 console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");

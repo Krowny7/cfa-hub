@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, recompenseEcrite, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
+import { CIBLES_SEMAINE, COMMANDES, type Commande } from "@/lib/codex/catalogue";
+import type { StatutVerdict } from "@/lib/codex/plan";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
@@ -204,6 +206,32 @@ export async function codexMalle(coches: string[]): Promise<Resultat<{ coches: s
   if (!r.ok) return r;
   if (r.vue) revalidatePath("/codex");
   return { ok: true, coches: r.coches, vue: r.vue };
+}
+
+/**
+ * Le choix du lundi (V3 §10.3) : la cible de la semaine (3, 4 ou 5 jours
+ * d'encre) et sa commande. Le premier choix de la semaine gagne. Rend le
+ * Codex recalculé (les contrats de la semaine ont changé).
+ */
+export async function codexChoisirSemaine(cible: number, commande: Commande): Promise<Resultat<{ vue: VueCodex }>> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  if (!(CIBLES_SEMAINE as readonly number[]).includes(cible) || !COMMANDES.some((c) => c.id === commande)) return { ok: false, raison: "refus" };
+  const r = await choisirSemaine(supabase, user, { cible, commande });
+  if (!r.ok) return r;
+  revalidatePath("/codex");
+  return { ok: true, vue: r.vue };
+}
+
+/** Le verdict de l'examen (V3 §10.5) : admis, pas cette fois (bandes facultatives par matière) ou reporté. Rien n'est public. */
+export async function codexVerdict(statut: StatutVerdict, bandes: Record<string, string> = {}): Promise<Resultat<{ vue: VueCodex }>> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  if (!["admis", "pas_cette_fois", "reporte"].includes(statut) || !bandes || typeof bandes !== "object") return { ok: false, raison: "refus" };
+  const r = await saisirVerdict(supabase, user, statut, bandes);
+  if (!r.ok) return r;
+  revalidatePath("/codex");
+  return { ok: true, vue: r.vue };
 }
 
 /** Changer UN des contrats du jour (une seule fois par jour, pas un contrat déjà rempli). */

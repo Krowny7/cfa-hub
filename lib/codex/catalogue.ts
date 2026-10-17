@@ -770,6 +770,8 @@ export const MODELES_CONTRATS: ModeleContrat[] = [
   { id: "eclair", emplacement: "variete", titre: "Deux séries éclair", consigne: "Réussis deux séries éclair à 4/5 ou plus.", objectif: compte("eclair_rendue", 2, { justes: { min: 4 } }, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(2), duree: 10, lien: "/eclair", requiert: ["eclair"] },
   { id: "duel", emplacement: "variete", titre: "Un duel", consigne: "Joue un duel.", objectif: compte("duel_termine", 1, undefined, { fenetre: "jour" }), params: [], eligible: [], poids: { fondations: 2, consolidation: 2, repetition: 1, veillee: 0, apres: 2 }, duree: 10, lien: "/duel", requiert: ["duels"] },
   { id: "defi", emplacement: "variete", titre: "Les 30 du jour", consigne: "Rends les 30 du jour.", objectif: compte("defi_rendu", 1, undefined, { fenetre: "jour" }), params: [], eligible: [mesure("questions_total", 100)], poids: { fondations: 1, consolidation: 2, repetition: 4, veillee: 1, apres: 1 }, duree: 40, lien: "/defi", requiert: ["trente"] },
+  // la reprise douce (V3 §10.4) : jamais tirée au sort (poids nuls) ; le jour du retour, le moteur la pose seule
+  { id: "reprise", emplacement: "entretien", titre: "La reprise", consigne: "Réponds à 10 questions, où tu veux : la main revient vite.", objectif: compte("question_repondue", 10, undefined, { fenetre: "jour" }), params: [], eligible: [], poids: toutes(0), duree: 10 },
 ];
 
 export const QUETES_CONTRATS_HEBDO: Quete[] = [
@@ -777,6 +779,56 @@ export const QUETES_CONTRATS_HEBDO: Quete[] = [
   quete({ id: "contrat:hebdo:pigments", famille: "contrat", repetition: "hebdomadaire", ordre: 2, titre: "Le tour des pigments", consigne: "Réponds juste dans 6 matières différentes cette semaine.", objectif: compte("question_repondue", 6, { juste: true }, { fenetre: "semaine", distinct: "matiere" }), recompense: { xp: 100 } }),
   quete({ id: "contrat:hebdo:commande", famille: "contrat", repetition: "hebdomadaire", ordre: 3, titre: "La commande de la semaine", consigne: "Rends un examen blanc cette semaine.", objectif: compte("examen_blanc_rendu", 1, undefined, { fenetre: "semaine" }), prerequis: [{ k: "joursAvantExamen", max: 60 }], visibilite: "ouverte", recompense: { xp: 150 }, lien: "/mock-exams" }),
 ];
+
+// ── La semaine choisie (V3 §10.3) ──────────────────────────────────────
+// Le lundi (ou à la première visite de la semaine), le joueur choisit sa
+// cible (3, 4 ou 5 jours d'encre) et une commande parmi trois. La semaine
+// d'encre prend sa cible ; la commande remplace le tour des pigments et
+// l'examen blanc de la semaine. Sans choix : les trois contrats d'avant.
+
+export type Commande = "banquier" | "copiste" | "ingenieur";
+export const CIBLES_SEMAINE = [3, 4, 5] as const;
+/** Le choix de la semaine (codex_semaine) ; `matiere` et `depart` : ce que vise le banquier, figés au choix. */
+export type Semaine = { lundi: string; cible: number; commande: Commande; params: { matiere?: string; depart?: number } };
+
+/** `requiert` : ce que la base doit savoir faire ; `outils` : ce que le programme doit avoir (sinon la commande n'est pas proposée). */
+export const COMMANDES: { id: Commande; nom: string; resume: string; requiert?: Requis[]; outils?: Outil[] }[] = [
+  { id: "banquier", nom: "Le banquier", resume: "Pousse ta matière lourde la plus faible de 5 points." },
+  { id: "copiste", nom: "Le copiste", resume: "Vide tes révisions cinq jours et scelle 15 ratures.", requiert: ["journal3", "revoir", "ratures_seches"], outils: ["revoir"] },
+  { id: "ingenieur", nom: "L'ingénieur", resume: "Un demi-examen blanc et deux fois les 30 du jour.", outils: ["blancs", "trente"] },
+];
+
+/** L'XP de la semaine d'encre selon sa cible : 5 jours valent l'XP d'avant, 3 jours un peu moins. */
+export const xpSemaineEncre = (cible: number) => Math.round((XP.hebdo * (cible + 5)) / 50) * 5;
+
+const hebdo = (q: Omit<Base, "famille" | "repetition">): Quete => quete({ famille: "contrat", repetition: "hebdomadaire", ...q });
+
+/**
+ * Les contrats de la semaine choisie : la semaine d'encre à sa cible (même
+ * id), puis ceux de la commande. Le banquier sans matière (choix incomplet)
+ * n'a que la semaine d'encre.
+ */
+export function quetesSemaine(s: Semaine, contenu: ContenuMatiere[]): Quete[] {
+  const cible = Math.min(5, Math.max(3, Math.round(s.cible)));
+  const encre = hebdo({ id: "contrat:hebdo:encre", ordre: 1, titre: "La semaine d'encre", consigne: `Valide ${cible} jours d'encre cette semaine.`, objectif: compte("jour_encre", cible, undefined, { fenetre: "semaine" }), recompense: { xp: xpSemaineEncre(cible) } });
+  if (s.commande === "banquier") {
+    const m = contenu.find((x) => x.key === s.params.matiere);
+    if (!m) return [encre];
+    const seuil = Math.min(100, Math.round(s.params.depart ?? 0) + 5);
+    return [encre, hebdo({ id: "contrat:hebdo:banquier", ordre: 2, titre: "Le banquier", consigne: `Pousse ${m.nom} de 5 points cette semaine : ${seuil} % de maîtrise.`, objectif: mesure("maitrise", seuil, { matiere: m.key }), recompense: { xp: 150 }, matiere: m.key, lien: lienCiblee(m.key, cibleeDe(m.poids).format) })];
+  }
+  if (s.commande === "copiste")
+    return [
+      encre,
+      hebdo({ id: "contrat:hebdo:copiste-revoir", ordre: 2, titre: "Le copiste : les révisions", consigne: "Vide tes révisions « À revoir » cinq jours cette semaine.", objectif: compte("revoir_rendue", 5, undefined, { fenetre: "semaine", distinct: "jour" }), requiert: ["journal3", "revoir"], recompense: { xp: 100 }, lien: "/revoir" }),
+      hebdo({ id: "contrat:hebdo:copiste-scellees", ordre: 3, titre: "Le copiste : les ratures", consigne: "Scelle 15 ratures cette semaine.", objectif: compte("rature_scellee", 15, undefined, { fenetre: "semaine" }), requiert: ["journal3", "ratures_seches"], recompense: { xp: 100 } }),
+    ];
+  return [
+    encre,
+    hebdo({ id: "contrat:hebdo:ingenieur-blanc", ordre: 2, titre: "L'ingénieur : le demi-examen", consigne: "Rends un examen blanc de 90 questions ou plus cette semaine.", objectif: compte("examen_blanc_rendu", 1, { questions: { min: 90 } }, { fenetre: "semaine" }), recompense: { xp: 150 }, lien: "/mock-exams" }),
+    hebdo({ id: "contrat:hebdo:ingenieur-trente", ordre: 3, titre: "L'ingénieur : les 30 du jour", consigne: "Rends les 30 du jour deux fois cette semaine.", objectif: compte("defi_rendu", 2, undefined, { fenetre: "semaine" }), recompense: { xp: 80 }, lien: "/defi" }),
+  ];
+}
 
 /**
  * Le débrief d'un examen blanc (V3 §7.6) : classer ses erreurs (savoir,

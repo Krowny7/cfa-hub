@@ -17,6 +17,9 @@ import { Malle } from "@/components/codex/Malle";
 import { BonneChance } from "@/components/codex/BonneChance";
 import { PoseLePinceau } from "@/components/codex/PoseLePinceau";
 import { FilRouge } from "@/components/codex/FilRouge";
+import { Plan } from "@/components/codex/Plan";
+import { Lundi } from "@/components/codex/Lundi";
+import { Verdict } from "@/components/codex/Verdict";
 import { QUETE_VEILLE } from "@/lib/codex/calendrier";
 import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
 import { ArbreCodex, Chemin, CodexTel, Colonne, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
@@ -171,6 +174,9 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         </div>
       )}
       {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
+      {/* le rythme long (V3 §10.3, §10.5) : le choix du lundi ; après l'examen, le verdict */}
+      {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={setVue} />}
+      {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
       {/* après l'examen, le fil rouge continue : il passe en tête (V3 §7.1) */}
       {moment === "apres" && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={ouvrir} />}
 
@@ -190,6 +196,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         <>
           <header className={`${c.tete} ${horsSegment ?? ""} rl-in`}>
             <div className="min-w-0">
+              {vue.rythme?.plan && <Plan plan={vue.rythme.plan} jour={vue.jour} />}
               {vue.cap && <Cap cap={vue.cap} />}
               {d !== "tout" && (
                 <p className={c.stats}>
