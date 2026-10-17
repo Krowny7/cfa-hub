@@ -161,7 +161,7 @@ export function FeteVue({
             {gain && <p className="t-num m-0 mt-3 text-[20px]">{gain}</p>}
             {replique && etape === "posee" && (
               <figure className={s.replique} data-pose={replique.pose}>
-                <blockquote className="m-0 text-[14.5px] leading-relaxed">« {replique.texte} »</blockquote>
+                <blockquote className="m-0 text-[14.5px] leading-relaxed">« {replique.texte} »</blockquote>
                 <figcaption className="t-micro mt-1.5">Léonard</figcaption>
               </figure>
             )}
@@ -189,7 +189,7 @@ export function FeteVue({
         {gain && <p className="t-num m-0 text-[24px]">{gain}</p>}
         {replique && (
           <figure className="m-0 max-w-[440px]" data-pose={replique.pose}>
-            <blockquote className="m-0 text-[14.5px] leading-relaxed">« {replique.texte} »</blockquote>
+            <blockquote className="m-0 text-[14.5px] leading-relaxed">« {replique.texte} »</blockquote>
             <figcaption className="t-micro mt-1.5">Léonard</figcaption>
           </figure>
         )}

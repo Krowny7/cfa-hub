@@ -288,7 +288,7 @@ function GalerieExploits({ exploits, collection, onQuete }: { exploits: LigneQue
   return (
     <div className={e.carnet}>
       <p className={c.repliqueChemin} style={{ marginTop: 0 }}>
-        « {CODEX.exploits.sous} »
+        « {CODEX.exploits.sous} »
       </p>
       <ul className={c.galerie}>
         {liste.map((q) => {
@@ -724,7 +724,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
                     </li>
                   ))
                 ) : (
-                  <li className={c.resultatVide}>Aucune quête ne parle de « {texte.trim()} ».</li>
+                  <li className={c.resultatVide}>Aucune quête ne parle de « {texte.trim()} ».</li>
                 )}
               </ul>
             )}
@@ -1157,7 +1157,7 @@ export function TeteChemin({ sur, titre, replique, focusable }: { sur: string; t
       <h2 className={`${c.plume} ${c.titreChemin}`} tabIndex={focusable ? -1 : undefined}>
         {titre}
       </h2>
-      {replique && <p className={c.repliqueChemin}>« {replique} »</p>}
+      {replique && <p className={c.repliqueChemin}>« {replique} »</p>}
     </div>
   );
 }

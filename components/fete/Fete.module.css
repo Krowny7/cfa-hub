@@ -15,6 +15,11 @@
   animation: voileEntre 0.2s ease both;
 }
 .plein {
+  /* plus haut que l'écran (petit téléphone, barre du navigateur) : la page défile,
+     « Continuer » reste atteignable ; centré par les marges auto de .pleinCorps */
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--paper);
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px));
 }
@@ -107,6 +112,7 @@
   gap: 14px;
   width: 100%;
   max-width: 520px;
+  margin: auto 0;
   text-align: center;
   animation: carteEntre 0.4s var(--ease-out) both;
 }
