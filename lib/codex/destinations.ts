@@ -33,6 +33,8 @@ export type ContexteDestination = {
   maitrise: Record<string, { pct: number | null; statut?: string }>;
   /** notions pas encore vues (moins de 5 réponses), par matière */
   notionsNonVues: Record<string, number>;
+  /** notions pas encore tenues (V3 §8.5), par matière ; null ou absent : pas encore lues (codex_mesures_v3) */
+  notionsNonTenues?: Record<string, number> | null;
   /** points faibles, du plus net au moins net (notion, score 0–100) */
   pointsFaibles: { notion: string; score: number }[];
   /** matière → page de drill la plus faible (null : aucune page passée) */
@@ -145,8 +147,8 @@ export function routeExiste(chemin: string, routes: ReadonlySet<string> = ROUTES
 
 // ── Les cibles ─────────────────────────────────────────────────────────
 
-/** Une destination avant la durée de la quête et sa raison ; `matiere` et `notions` nourrissent la raison. */
-type Cible = { href: string; duree: number; outil: Destination["outil"]; matiere?: string; notions?: true };
+/** Une destination avant la durée de la quête et sa raison ; `matiere` et `notions` (vues ou tenues) nourrissent la raison. */
+type Cible = { href: string; duree: number; outil: Destination["outil"]; matiere?: string; notions?: "vues" | "tenues" };
 
 const CINQ: Cible = { href: "/defi/cinq", duree: 5, outil: "cinq" };
 const TRENTE: Cible = { href: "/defi", duree: 40, outil: "trente" };
@@ -211,6 +213,8 @@ function argmax(ctx: ContexteDestination, manque: (m: ContenuMatiere) => number,
 const faiblesse = (ctx: ContexteDestination) => (m: ContenuMatiere) => 1 - (ctx.maitrise[m.key]?.pct ?? 20) / 100;
 /** La part des notions d'une matière pas encore vues. */
 const partNonVue = (ctx: ContexteDestination) => (m: ContenuMatiere) => (m.notions ? (ctx.notionsNonVues[m.key] ?? m.notions) / m.notions : 0);
+/** La part des notions d'une matière pas encore tenues (celle des non vues tant qu'on ne les lit pas). */
+const partNonTenue = (ctx: ContexteDestination) => (m: ContenuMatiere) => (!ctx.notionsNonTenues ? partNonVue(ctx)(m) : m.notions ? (ctx.notionsNonTenues[m.key] ?? m.notions) / m.notions : 0);
 const avecDrill = (m: ContenuMatiere) => !!m.fiche && m.drill;
 
 /**
@@ -307,8 +311,8 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "notions_vues_pct": {
       const m = mat ?? argmax(ctx, partNonVue(ctx));
       if (!m) return null;
-      if (avecDrill(m)) return { href: lienFiche(ctx, m, false), duree: 20, outil: "drill", matiere: m.key, notions: true };
-      return { href: lienPractice(ctx, { topic: m.key, n: 15 }), duree: 20, outil: "ciblee", matiere: m.key, notions: true };
+      if (avecDrill(m)) return { href: lienFiche(ctx, m, false), duree: 20, outil: "drill", matiere: m.key, notions: "vues" };
+      return { href: lienPractice(ctx, { topic: m.key, n: 15 }), duree: 20, outil: "ciblee", matiere: m.key, notions: "vues" };
     }
     case "drill_pages_restantes":
     case "drill_pages_reussies": {
@@ -361,8 +365,8 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     // les notions tenues : une séance de la matière (la plus lourde à couvrir sans matière), là où ses notions reviennent
     case "notions_tenues":
     case "notions_tenues_pct": {
-      const m = mat ?? argmax(ctx, partNonVue(ctx));
-      return m ? { href: lienPractice(ctx, { topic: m.key, n: 20 }), duree: 20, outil: "ciblee", matiere: m.key } : null;
+      const m = mat ?? argmax(ctx, partNonTenue(ctx));
+      return m ? { href: lienPractice(ctx, { topic: m.key, n: 20 }), duree: 20, outil: "ciblee", matiere: m.key, notions: "tenues" } : null;
     }
     case "malle_faite": return { href: "/codex", duree: 5, outil: "codex" };
     case "blancs_a_debriefer": return { ...BLANCS, duree: 10 };
@@ -455,11 +459,15 @@ const caleeSurExamen = (p: Prerequis[]): boolean => p.some((x) => x.k === "jours
 /** Une avancée lisible « 12/25 » : des entiers, ni objectif à faire baisser ni objectif composé. */
 const avanceeLisible = (ev: Ev) => !ev.inconnu && !ev.baisse && !ev.sous && ev.cible > 1 && Number.isInteger(ev.valeur) && Number.isInteger(ev.cible);
 
-/** « FSA pèse 12,5 % de l'examen et tu es à 48 % » (ou ses notions vues, ou pas encore de mesure). */
-function raisonMatiere(m: ContenuMatiere, ctx: ContexteDestination, notions: boolean): string {
+/** « FSA pèse 12,5 % de l'examen et tu es à 48 % » (ou ses notions vues ou tenues, ou pas encore de mesure). */
+function raisonMatiere(m: ContenuMatiere, ctx: ContexteDestination, notions: Cible["notions"]): string {
   const debut = `${m.court} pèse ${virgule(m.poids)} % de l'examen`;
+  const tenues = ctx.notionsNonTenues ? m.notions - (ctx.notionsNonTenues[m.key] ?? m.notions) : null;
+  if (notions === "tenues" && tenues !== null && m.notions > 0 && tenues < m.notions) {
+    return tenues > 0 ? `${debut} et tu tiens ${tenues} de ses ${m.notions} notions` : `${debut} et tu ne tiens encore aucune de ses ${m.notions} notions`;
+  }
   const vues = m.notions - (ctx.notionsNonVues[m.key] ?? m.notions);
-  if (notions && m.notions > 0 && vues < m.notions) {
+  if (notions === "vues" && m.notions > 0 && vues < m.notions) {
     return vues > 0 ? `${debut} et tu n'as vu que ${vues} de ses ${m.notions} notions` : `${debut} et tu n'as encore vu aucune de ses ${m.notions} notions`;
   }
   const pct = ctx.maitrise[m.key]?.pct ?? null;
@@ -479,7 +487,7 @@ function raison(q: Quete, c: Cible | null, ctx: ContexteDestination, ev?: Ev): s
     return ev && avanceeLisible(ev) ? `${ev.valeur}/${ev.cible} · ${pourquoi}` : pourquoi;
   }
   const m = matiereDe(ctx, c?.matiere ?? q.matiere);
-  if (m) return raisonMatiere(m, ctx, !!c?.notions);
+  if (m) return raisonMatiere(m, ctx, c?.notions);
   return q.pourquoi ?? null;
 }
 

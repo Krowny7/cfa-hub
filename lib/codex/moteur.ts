@@ -1137,6 +1137,10 @@ export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats"> & Par
     contenu,
     maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: maitriseDe(e, m.key) }])),
     notionsNonVues: Object.fromEntries(contenu.map((m) => [m.key, notionsDeMatiere(m.key).filter((n) => (comptes[n.id] ?? 0) < 5).length])),
+    // les notions pas encore tenues, si codex_mesures_v3 les a lues (V3 §8.5)
+    notionsNonTenues: M.notions_tenues
+      ? Object.fromEntries(contenu.map((m) => [m.key, notionsDeMatiere(m.key).filter((n) => (M.notions_tenues![n.id]?.n ?? 0) < NOTION_TENUE.reponses || (M.notions_tenues![n.id]?.j5 ?? 0) < NOTION_TENUE.justesSur5).length]))
+      : null,
     pointsFaibles: e.pointsFaibles ?? [],
     drillPageFaible: Object.fromEntries(contenu.map((m) => [m.key, pageFaible(m.key)])),
     revoir: null,

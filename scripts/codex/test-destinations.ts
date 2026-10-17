@@ -212,6 +212,11 @@ console.log("\n# les ajouts du catalogue taillé (V3 §8.5) : chacun mène quelq
   const sans = nouvelles.filter((q) => defaut(d(q.id)) || defaut(d(q.id, neuf)));
   check(`${nouvelles.length} quêtes nouvelles de la v3 : toutes lançables, compte neuf comme joueur en route`, nouvelles.length > 30 && sans.length === 0, sans.map((q) => `${q.id} (${defaut(d(q.id))})`).slice(0, 4).join(" | "));
   check("la carte de FSA : une séance de FSA, raison sur la matière", d("branche:fsa:carte")?.href === "/practice?topic=fsa" && !!d("branche:fsa:carte")?.raison?.startsWith("FSA pèse"), `${d("branche:fsa:carte")?.href} · ${d("branche:fsa:carte")?.raison}`);
+  const nFsa = notionsDeMatiere("fsa").length;
+  const tenues = avec(enRoute, { notionsNonTenues: { ...Object.fromEntries(contenu.map((m) => [m.key, m.notions])), fsa: nFsa - 3 } });
+  check("… les notions tenues lues : la raison les compte", raisonDe(quete("branche:fsa:carte"), tenues) === `FSA pèse 12,5 % de l'examen et tu tiens 3 de ses ${nFsa} notions`, raisonDe(quete("branche:fsa:carte"), tenues) ?? "");
+  check("… aucune encore", raisonDe(quete("branche:fsa:carte"), avec(tenues, { notionsNonTenues: Object.fromEntries(contenu.map((m) => [m.key, m.notions])) })) === `FSA pèse 12,5 % de l'examen et tu ne tiens encore aucune de ses ${nFsa} notions`);
+  check("… pas encore lues : la maîtrise, comme avant", raisonDe(quete("branche:fsa:carte"), enRoute) === raisonDe(quete("branche:fsa:maitrise60"), enRoute));
   check("… avec practiceV3 : 20 questions", d("branche:fsa:carte", avec(enRoute, { practiceV3: true }))?.href === "/practice?topic=fsa&n=20");
   check("signatures : Ethics une séance d'Ethics, Quant les calculs, FSA sa fiche", d("branche:ethics:signature")?.href === "/practice?topic=ethics" && d("branche:quant:signature")?.href === "/calculs" && d("branche:fsa:signature")?.href?.startsWith("/fiches/financial-statement-analysis") === true,
     [d("branche:ethics:signature")?.href, d("branche:quant:signature")?.href, d("branche:fsa:signature")?.href].join(" "));
