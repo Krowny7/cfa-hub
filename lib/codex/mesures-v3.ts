@@ -129,6 +129,19 @@ export function mesuresV3DeLecture(v3: unknown, programme: string): MesuresV3 | 
   return d && d.programme === programme ? mesuresV3De(d) : null;
 }
 
+/**
+ * La réponse de l'appel à part à codex_mesures_v3 (null : l'appel a levé).
+ * Fonction absente (`absente`, baseAbsente côté serveur) : la base ne sait
+ * rien faire de nouveau. Une autre erreur : null, en panne. Le calcul
+ * s'arrête alors (repli) : sans capacités, des quêtes passeraient hors jeu et
+ * un acte se clorait sans elles, pour de bon.
+ */
+export function mesuresV3DeReponse(r: { data: unknown; error: unknown } | null, absente: boolean): MesuresV3 | null {
+  if (!r) return null;
+  if (r.error) return absente ? MESURES_V3_VIDES : null;
+  return mesuresV3De(r.data);
+}
+
 /** Les mesures v3 versées dans les mesures du moteur (clés absentes : inconnues). */
 export function avecMesuresV3(mesures: MesuresSql, v3: MesuresV3): MesuresSql {
   const { capacites: _capacites, ...m } = v3;

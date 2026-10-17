@@ -7,7 +7,8 @@
 // versées dans celles du moteur sans écraser les autres ; le plan des
 // compteurs avant de connaître les capacités (toutes, journal 3) demande
 // au moins tout ce que demande le plan à capacités connues.
-import { avecMesuresV3, CAPACITES_TOUTES, MESURES_V3_VIDES, mesuresV3De, mesuresV3DeLecture } from "@/lib/codex/mesures-v3";
+import { avecMesuresV3, CAPACITES_TOUTES, MESURES_V3_VIDES, mesuresV3De, mesuresV3DeLecture, mesuresV3DeReponse } from "@/lib/codex/mesures-v3";
+import { readFileSync } from "node:fs";
 import { CAPACITES_VIDE } from "@/lib/codex/reglage";
 import { LECTURE_VIDE, planifier, type Entree } from "@/lib/codex/moteur";
 import { contenuDuProgramme } from "@/lib/codex/catalogue";
@@ -79,6 +80,19 @@ console.log("\n# le plan des compteurs avant de connaître les capacités");
   check("CAPACITES_TOUTES : toutes vraies, journal 3", CAPACITES_TOUTES.journal === 3 && Object.entries(CAPACITES_TOUTES).every(([k, v]) => k === "journal" || v === true));
   check("le plan à toutes capacités contient celui sans capacité et celui du couloir B", vides.every((k) => toutes.has(k)) && v3.every((k) => toutes.has(k)), `${toutes.size} / ${vides.length} / ${v3.length}`);
   check("… et y ajoute les compteurs du journal v3 (séances justes)", [...toutes].some((k) => k.includes("seance_juste")) && !vides.some((k) => k.includes("seance_juste")));
+}
+
+// l'appel à part en panne : rien n'est évalué ni écrit (aucun acte clos, aucun lot)
+{
+  check("réponse : fonction absente → rien de nouveau (capacités vides)", mesuresV3DeReponse({ data: null, error: { code: "PGRST202" } }, true) === MESURES_V3_VIDES);
+  check("réponse : autre erreur (délai, réseau) ou appel qui lève → null (en panne)", mesuresV3DeReponse({ data: null, error: { code: "57014" } }, false) === null && mesuresV3DeReponse(null, false) === null);
+  check("réponse : lue clé par clé", mesuresV3DeReponse({ data: brut, error: null }, false)?.capacites.maitrise === true);
+  const src = readFileSync("lib/codex/serveur.ts", "utf8");
+  const i = src.indexOf("const v3 = v3Lu ?? mesuresV3DeLecture(");
+  const panne = src.indexOf("if (!v3) {", i);
+  const sortie = src.indexOf("return repli(user.id, jour);", panne);
+  check("serveur.ts : mesures v3 en panne → consigné puis repli, avant l'évaluation et codex_ecrire",
+    i > 0 && panne > i && sortie > panne && sortie < src.indexOf("evaluer(entree, compteurs)", i) && src.indexOf("evaluer(entree, compteurs)", i) < src.indexOf(`a.rpc("codex_ecrire"`, i));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert.");

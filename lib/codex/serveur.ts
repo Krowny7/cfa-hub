@@ -31,7 +31,7 @@ import {
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import { panneauAGarder, panneauDe, panneauDuCache, type Panneau } from "@/lib/codex/panneau";
-import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesuresV3DeLecture, type MesuresV3 } from "@/lib/codex/mesures-v3";
+import { CAPACITES_TOUTES, avecMesuresV3, mesuresV3DeLecture, mesuresV3DeReponse, type MesuresV3 } from "@/lib/codex/mesures-v3";
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
 import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { maitriseDuCodex } from "@/lib/codex/cap";
@@ -168,16 +168,18 @@ async function lireProgrammes(a: SupabaseClient, id: string): Promise<ProgrammeJ
 /**
  * Les mesures v3 et les capacités de la base (codex_mesures_v3, V3 §1.8), lues
  * à part : sans la §5 de migration_codex_v3.sql (codex_lire ne les rend pas),
- * ou si codex_lire ne les a pas rendues. Fonction absente ou en erreur : la
- * base ne sait rien faire de nouveau (CAPACITES_VIDE), les mesures v3 restent
- * inconnues.
+ * ou si codex_lire ne les a pas rendues. Fonction absente : la base ne sait
+ * rien faire de nouveau (CAPACITES_VIDE), les mesures v3 restent inconnues.
+ * Une autre erreur (réseau, délai, panne) : null. Le calcul s'arrête alors
+ * (repli) : sans capacités, des quêtes passeraient hors jeu et un acte se
+ * clorait sans elles, pour de bon.
  */
-async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): Promise<MesuresV3> {
+async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): Promise<MesuresV3 | null> {
   try {
-    const { data, error } = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
-    return error ? MESURES_V3_VIDES : mesuresV3De(data);
+    const r = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
+    return mesuresV3DeReponse(r, baseAbsente(r.error));
   } catch {
-    return MESURES_V3_VIDES;
+    return mesuresV3DeReponse(null, false);
   }
 }
 
@@ -436,6 +438,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     // ce que la base sait faire décide des quêtes suivies, donc des compteurs demandés : connu d'avance
     // quand les mesures sont lues à part ; sinon on demande les compteurs de tout ce qu'elle pourrait
     // suivre (les compteurs en trop ne coûtent rien), et codex_lire dit ce qu'elle sait faire
+    // (en panne : null, comme sans lecture à part ; codex_lire ou une seconde lecture les rendront, sinon repli)
     const v3Lu = v3Apart ? await v3Apart : null;
     entree.capacites = v3Lu?.capacites ?? CAPACITES_TOUTES;
     // les compteurs de toutes les quêtes, en un seul appel
@@ -448,6 +451,11 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const { v3: v3Brut, ...lecture } = lu;
     // codex_lire sans « v3 » (§5 pas collée, ou mesures en panne, consignée) : l'appel à part
     const v3 = v3Lu ?? mesuresV3DeLecture(v3Brut, actif.cle) ?? (await lireMesuresV3(a, user.id, actif.cle));
+    // mesures v3 en panne : ne rien évaluer ni écrire sans elles (aucun acte clos, aucun lot)
+    if (!v3) {
+      await consigner(a, user.id, "", "codex_mesures_v3 illisible");
+      return repli(user.id, jour);
+    }
     entree.capacites = v3.capacites;
     entree.lecture = { ...lecture, mesures: avecMesuresV3(lecture.mesures, v3) };
     const compteurs = indexerLecture(demandes, entree.lecture);
