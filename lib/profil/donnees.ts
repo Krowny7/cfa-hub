@@ -125,7 +125,7 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
       palierMax: meilleur,
       picAtteint: Math.max(meilleur, rankFor(Math.max(elo, top), null, place).tierIndex),
       top10: actuel === TOP_TIER,
-      matieres: topics.map((t) => ({ key: t.key, pct: t.pct, answered: t.answered })),
+      matieres: topics.map((t) => ({ key: t.key, pct: t.pct, answered: t.answered, ...(t.statut ? { statut: t.statut } : {}) })),
     };
   } catch {
     return STATS_VIDES;

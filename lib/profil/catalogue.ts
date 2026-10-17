@@ -11,6 +11,7 @@
 
 import { TIERS } from "@/lib/ranks";
 import type { EtatSceau } from "@/lib/profil/sceaux";
+import type { StatutMaitrise } from "@/lib/maitrise";
 import { champsBaseVides, remplie, type Acquis, type ConditionProfil } from "@/lib/profil/acquis";
 import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 
@@ -42,8 +43,8 @@ export type ProfilStats = {
    */
   picAtteint: number;
   top10: boolean;
-  /** maîtrise par matière (précision, questions) */
-  matieres: { key: string; pct: number | null; answered: number }[];
+  /** maîtrise par matière (maîtrise unique, réponses ; statut : non mesurée, provisoire, mesurée) */
+  matieres: { key: string; pct: number | null; answered: number; statut?: StatutMaitrise }[];
 };
 
 export const STATS_VIDES: ProfilStats = {
