@@ -44,7 +44,15 @@ export interface ChampsEvenement {
     justes: number;
     /** 0–100 */
     pct: number;
+    /** secondes par question (durée de la séance / questions ; journal v3, séance ciblée seulement) */
+    secondesParQuestion?: number | null;
   };
+  /**
+   * une séance réussie qui a fait travailler du neuf ou du dû (journal v3, V3 §8.5) :
+   * `fraiches` = part (%) des réponses à des questions neuves, ou déjà vues il y a un jour ou plus.
+   * Pages de fiche, séances ciblées, séries éclair et « À revoir », les 30 du jour, Atelier ; pas les QCM.
+   */
+  seance_juste: { source: SourceReponse | "revoir"; pct: number; questions: number; fraiches: number };
   /** une page de drill de fiche passée en entier (quiz_answer_log, mode page) */
   drill_page_terminee: { matiere: Matiere; fiche: string; page: number; questions: number; justes: number; pct: number };
   /** les 30 du jour rendus */
@@ -62,7 +70,10 @@ export interface ChampsEvenement {
     /** mention gagnée (duel_mentions), null sinon */
     mention: string | null;
   };
-  examen_blanc_rendu: { questions: number; justes: number; pct: number; officiel: boolean; reprise: boolean };
+  /** secondesParQuestion : journal v3 (durée du blanc / questions) */
+  examen_blanc_rendu: { questions: number; justes: number; pct: number; officiel: boolean; reprise: boolean; secondesParQuestion?: number | null };
+  /** le débrief d'un examen blanc (blanc_debrief, migration_v3_profil.sql §5 ; journal v3), daté du dernier classement ; part = classées / erreurs, en % */
+  blanc_debriefe: { source: "blanc" | "officiel"; ref: string; erreurs: number; classees: number; part: number };
   seance_atelier: { questions: number; justes: number; notions: number; rayees: number };
   /** une rature rayée par une bonne réponse en reprise (ratures.rayee_le) */
   rature_rayee: { matiere: Matiere | null; notion: NotionId | null; ageJours: number; erreurs: number };
@@ -170,7 +181,17 @@ export type TypeMesure =
   /** pièces de collection possédées, hors pièces libres (compterPiecesCodex, lib/codex/fil-rouge.ts ; calculée par le moteur) */
   | "pieces_possedees"
   /** semaines (lun.–dim.) à 2 jours d'encre ou plus après l'examen (calculée par le moteur) */
-  | "semaines_entretien";
+  | "semaines_entretien"
+  /** sources de trophées où l'on en a au moins un de palier ≥ filtre.palier (bronze par défaut) */
+  | "trophees_sources"
+  /** notions « tenues » : 5 réponses au moins, dont 3 justes sur les 5 dernières (filtre.matiere possible ; V3 §8.5) */
+  | "notions_tenues"
+  /** la part des notions tenues, 0–100 : dans la matière du filtre, sinon pondérée par le poids des matières */
+  | "notions_tenues_pct"
+  /** la malle de l'examen prête : 5 cases cochées ou plus (user_metadata.rl_malle, V3 §7.3) */
+  | "malle_faite"
+  /** examens blancs rendus depuis 7 jours ou moins, classés à moins de 80 % (blanc_debrief, V3 §7.6) */
+  | "blancs_a_debriefer";
 
 export type FiltreMesure = {
   matiere?: Matiere | Param;
@@ -215,7 +236,13 @@ export type ObjectifMesure = { k: "mesure"; mesure: TypeMesure; filtre?: FiltreM
  * Un prédicat nommé, codé à part dans le moteur, pour ce que la grammaire ne
  * dit pas (« 10 bonnes d'affilée », « revenir après 14 jours ») : à garder rare.
  */
-export type ObjectifSpecial = { k: "special"; cle: string; seuil?: number };
+export type ObjectifSpecial = {
+  k: "special";
+  cle: string;
+  seuil?: number;
+  /** la variante par matière d'un spécial (serie_bonnes_matiere, serie_calculs_matiere : V3 §8.7) */
+  matiere?: Matiere;
+};
 
 export type Objectif = ObjectifCompteur | ObjectifMesure | ObjectifSpecial | { k: "tous"; objectifs: Objectif[] } | { k: "unDe"; objectifs: Objectif[] };
 
@@ -225,7 +252,7 @@ export type Objectif = ObjectifCompteur | ObjectifMesure | ObjectifSpecial | { k
 export type Famille = "trame" | "branche" | "longcours" | "contrat" | "exploit" | "fil";
 
 /** Les étapes d'une branche de matière (voir genererBranches ; « serie » remplace « ciblee » dans un programme sans séance ciblée). */
-export type EtapeBranche = "entree" | "cours" | "fiche" | "drill" | "flashcards" | "ciblee" | "serie" | "tour" | "maitrise60" | "maitrise75" | "maitre";
+export type EtapeBranche = "entree" | "cours" | "fiche" | "drill" | "flashcards" | "ciblee" | "serie" | "tour" | "carte" | "maitrise60" | "maitrise75" | "signature" | "maitre";
 
 export type Prerequis =
   /** souple : conseillée, elle ne bloque qu'une fois l'examen derrière le joueur (apresExamen, V3 §8.5) */
@@ -240,6 +267,8 @@ export type Prerequis =
   | { k: "joursAvantExamen"; max: number; min?: number }
   /** l'examen est derrière le joueur : un programme mené, ou le jour J du programme actif passé (V3 §1.6) */
   | { k: "apresExamen" }
+  /** un état mesuré atteint (mesure ≥ seuil) ; une mesure inconnue ne l'ouvre pas (V3 §7.6) */
+  | { k: "etat"; mesure: TypeMesure; seuil: number }
   | { k: "unDe"; prerequis: Prerequis[] };
 
 export type Repetition = "unique" | "quotidienne" | "hebdomadaire";
@@ -254,8 +283,12 @@ export type Visibilite =
   /** cachée, mais une énigme est lisible (champ indice) */
   | "indice";
 
-/** Une pièce cosmétique gagnée (COSMETIQUES_CODEX) ; jamais du contenu de révision. */
-export type Recompense = { xp: number; cosmetique?: string; titre?: string };
+/**
+ * Une pièce cosmétique gagnée (COSMETIQUES_CODEX) ; jamais du contenu de révision.
+ * `folio` : une planche du carnet, en plus (V3 §3.7) ; elle n'a pas de colonne
+ * dans codex_progression : la posséder, c'est avoir la quête (ou l'acte) récompensée.
+ */
+export type Recompense = { xp: number; cosmetique?: string; titre?: string; folio?: string };
 
 export type Quete = {
   /** stable, jamais réutilisé : « trame:prologue:dix », « branche:fsa:drill », « longcours:carte:3 » */
@@ -375,6 +408,12 @@ export type CosmetiqueCodex = {
   description: string;
   /** elle bouge (« ce qui brille se gagne ») */
   anime?: true;
+  /**
+   * un folio : l'œuvre (un dessin de Léonard, domaine public) et son image
+   * (public/folios/<clé nue>.webp) ; image null et provisoire tant qu'elle
+   * manque : la carte « papier » affiche le nom de l'œuvre à la plume (V3 §3.7)
+   */
+  folio?: { oeuvre: string; image: string | null; provisoire: boolean };
 };
 
 /** Le dévoilement progressif d'un nouveau compte. */
