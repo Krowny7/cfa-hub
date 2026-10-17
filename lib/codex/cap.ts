@@ -15,7 +15,7 @@ import type { ContenuMatiere } from "@/lib/codex/catalogue";
 import type { MesuresSql } from "@/lib/codex/moteur";
 import type { Destination } from "@/lib/codex/destinations";
 import { joursEntre } from "@/lib/objectif-calc";
-import { MAITRISE, fuites, preparationDe, zoneDe, type Maitrise, type MaitriseMatiere, type StatutMaitrise } from "@/lib/maitrise";
+import { MAITRISE, fuites, libellePct, preparationDe, zoneDe, type Maitrise, type MaitriseMatiere, type StatutMaitrise } from "@/lib/maitrise";
 
 export { MAITRISE, zoneDe, preparationDe, gainPreparation, fuites, type StatutMaitrise, type MaitriseMatiere, type Maitrise } from "@/lib/maitrise";
 
@@ -154,10 +154,10 @@ export function ligneFuites(f: VueCap["fuites"]): string {
   return f.map((x, i) => `${x.court} −${dixieme(x.points)}${i === 0 ? " pts" : ""}`).join(" · ");
 }
 
-/** « 52 % », « ≈ 52 % » (provisoire), « pas encore mesurée ». */
+/** « 52 % », « ≈ 52 % » (provisoire), « pas encore mesurée ». Espaces insécables (libellePct) : ni « ≈ » ni « % » seul en fin de ligne. */
 export function pctCap(l: Pick<LigneCap, "pct" | "statut">): string {
   if (l.pct === null || l.statut === "non_mesuree") return "pas encore mesurée";
-  return l.statut === "provisoire" ? `≈ ${l.pct} %` : `${l.pct} %`;
+  return libellePct(l) ?? "pas encore mesurée";
 }
 
 /** « FSA · ≈ 52 % · zone moyenne · touchée il y a 12 j » : une ligne du détail par matière. */

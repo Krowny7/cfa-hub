@@ -214,11 +214,11 @@ console.log("\n# le cap en tête de /codex (V3 §4.6, §4.7)");
   check("la règle : un segment par matière, larges comme leur poids (100 % en tout)", cap.matieres.length === 10 && Math.abs(cap.matieres.reduce((s, m) => s + m.part, 0) - 100) < 1e-9);
   check("mesure unique : pas de « mesure provisoire »", !cap.provisoire && capDe({ matieres: ms, preparation: prep, couverture: 0, source: "ancienne" }, { jour: "2026-10-16", joursAvant: null, destination: () => null }).provisoire);
   const eth = cap.matieres.find((m) => m.cle === "ethics")!;
-  check("une matière provisoire : « ≈ 57 % », l'infobulle « provisoire · 23 réponses sur 40 »", pctCap(eth) === "≈ 57 %" && aideMatiereCap(eth) === "provisoire · 23 réponses sur 40");
+  check("une matière provisoire : « ≈ 57 % », l'infobulle « provisoire · 23 réponses sur 40 »", pctCap(eth) === "≈\u00a057\u00a0%" && aideMatiereCap(eth) === "provisoire · 23 réponses sur 40");
   check("une matière non mesurée : « pas encore mesurée », sans zone", ligneMatiereCap(cap.matieres.find((m) => m.cle === "derivatives")!) === "DERIVATIVES · pas encore mesurée");
   check("la fraîcheur : aujourd'hui, hier, il y a n j (jour de Paris), inconnue sans date",
     fraicheurDe("2026-10-16T22:30:00Z", "2026-10-17") === "aujourd'hui" && fraicheurDe("2026-10-16T08:00:00Z", "2026-10-17") === "hier" && fraicheurDe("2026-10-05T08:00:00Z", "2026-10-17") === "il y a 12 j" && fraicheurDe(null, "2026-10-17") === null);
-  check("une ligne du détail : « FSA · 45 % · zone basse · touchée il y a 12 j »", ligneMatiereCap({ ...cap.matieres[0], fraicheur: fraicheurDe("2026-10-04T08:00:00Z", "2026-10-16") }) === "FSA · 45 % · zone basse · touchée il y a 12 j");
+  check("une ligne du détail : « FSA · 45 % · zone basse · touchée il y a 12 j »", ligneMatiereCap({ ...cap.matieres[0], fraicheur: fraicheurDe("2026-10-04T08:00:00Z", "2026-10-16") }) === "FSA · 45\u00a0% · zone basse · touchée il y a 12 j");
   check("aucune fuite : une phrase, pas de « Y aller »", capDe({ matieres: ms.map((m) => ({ ...m, pct: 80, statut: "mesuree" as const })), preparation: 80, couverture: 100, source: "unique" }, { jour: "2026-10-16", joursAvant: 20, destination: () => ({ href: "/x", libelle: "Y aller", duree: 1, raison: null, outil: "ciblee" }) }).destination === null);
 
   // la maîtrise du Codex : unique si la base la rend, sinon l'ancienne (« provisoire »)

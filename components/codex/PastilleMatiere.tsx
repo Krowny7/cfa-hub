@@ -15,7 +15,7 @@ import c from "./Carte.module.css";
 const R = 42;
 
 /** Le pourcentage tel qu'il tient dans l'anneau : « 52 % », « ≈52 % », « – ». */
-const auCentre = (p: Pick<PastilleVue, "pct">) => (p.pct.startsWith("pas") ? "–" : p.pct.replace("≈ ", "≈"));
+const auCentre = (p: Pick<PastilleVue, "pct">) => (p.pct.startsWith("pas") ? "–" : p.pct.replace(/≈\s/, "≈"));
 
 export function PastilleMatiere({
   p,
