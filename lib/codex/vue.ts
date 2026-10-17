@@ -11,6 +11,7 @@ import { nomEnTete, programmeActif, suiteDe } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
 import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { VueSeance } from "@/lib/codex/seance";
+import type { VueRythme } from "@/lib/codex/rythme";
 import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
@@ -58,6 +59,8 @@ export type LigneQuete = {
   compteeAvec?: { id: string; titre: string };
   /** hors jeu mais commencée (sa mesure est inconnue, V3 §8) : affichée telle quelle, elle ne bloque rien et ne compte pas */
   gelee?: boolean;
+  /** en sprint, un palier de régularité hors de portée avant le jour J : « après l'examen », jamais proposé (V3 §10.2) */
+  differee?: true;
   acte?: string;
   chaine?: string;
   palier?: number;
@@ -174,6 +177,8 @@ export type VueCodex = {
   malle: { coches: string[] } | null;
   /** le lendemain (J+1 à J+7) : le récap de la préparation ; null sinon */
   recap: Recap | null;
+  /** le rythme long (V3 §10.2 à §10.5, lib/codex/rythme.ts) : le plan daté, le lundi, le verdict, la reprise ; absent : aperçus */
+  rythme?: VueRythme | null;
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
@@ -229,6 +234,7 @@ export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params:
     ...(q.duree ? { duree: q.duree } : {}),
     ...(q.optionnelle ? { optionnelle: true } : {}),
     ...(s.horsJeu ? { gelee: true } : {}),
+    ...(s.differee ? { differee: true as const } : {}),
     ...(q.acte ? { acte: q.acte } : {}),
     ...(q.chaine ? { chaine: q.chaine } : {}),
     ...(q.palier ? { palier: q.palier } : {}),

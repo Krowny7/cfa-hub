@@ -33,6 +33,7 @@ import type { Quete } from "@/lib/codex/types";
 import { quetesSemaine, xpSemaineEncre } from "@/lib/codex/catalogue";
 import { JALONS_CFA_L1, commandesPossibles, dateApproximative, enReprise, estSprint, facteurBande, libelleEcart, lireSemaine, lireVerdict, matiereBanquier, planDe, sessionDe } from "@/lib/codex/plan";
 import { calculerSerie } from "@/lib/serie-encre";
+import { bandesValides, vueRythme } from "@/lib/codex/rythme";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -812,6 +813,24 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("verdict mal formé → null", !lireVerdict({ programme: "finance/cfa-l1", session: "2026-13", statut: "admis" }) && !lireVerdict({ programme: "finance/cfa-l1", session: "2026-11", statut: "recale" }));
   check("bande basse : ×1,3 pendant 60 jours, puis ×1 ; moyenne ou admis : ×1", facteurBande(v, "quant", "2027-01-10") === 1.3 && facteurBande(v, "quant", "2027-02-19") === 1 && facteurBande(v, "fsa", "2027-01-10") === 1 && facteurBande(v && { ...v, statut: "admis" }, "quant", "2027-01-10") === 1);
   check("la session d'un jour J", sessionDe("2026-11-12") === "2026-11");
+
+  // ce que /codex en montre (lib/codex/rythme.ts)
+  const active = (o: Partial<Entree> = {}) => base({ jourJ: "2026-11-12", lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-06", n: 40 }, { jour: "2026-10-08", n: 9 }, { jour: "2026-10-14", n: 12 }] }, speciaux: {} }, ...o });
+  const vr = (e: Entree, o: Partial<Parameters<typeof vueRythme>[2]> = {}) => vueRythme(e, {}, { semaineDispo: true, capacites: CAPACITES_VIDE, moment: "courant", verdicts: [], ...o });
+  const v1 = vr(active());
+  check("vue : le plan (six jalons) au cours ordinaire", v1.plan?.jalons.length === 6 && !vr(active(), { moment: "veillee" }).plan);
+  check("vue : le lundi relit la semaine passée (49 questions, 1 jour d'encre)", v1.lundi?.questions === 49 && v1.lundi.joursEncre === 1 && v1.lundi.lundi === "2026-10-12", JSON.stringify(v1.lundi));
+  check("vue : sans la base qui le garde, pas de carte du lundi", !vr(active(), { semaineDispo: false }).lundi);
+  check("vue : sans les capacités, le copiste n'est pas proposé", v1.lundi?.commandes.map((c) => c.id).join(",") === "banquier,ingenieur");
+  const choisi = vr(active({ semaine: { lundi: "2026-10-12", cible: 4, commande: "ingenieur", params: {} } }));
+  check("vue : la semaine choisie, plus de carte du lundi", !choisi.lundi && choisi.semaine?.commande === "ingenieur" && choisi.semaine.nom === "L'ingénieur");
+  check("vue : pas de carte du lundi en veillée ni pour un compte neuf", !vr(active(), { moment: "veillee" }).lundi && !vr(base({ jourJ: "2026-11-12" })).lundi);
+  const apres = base({ jourJ: "2026-10-01" });
+  const vv = vr(apres, { moment: "apres", verdicts: [{ programme: "finance/cfa-l1", session: "2026-10", statut: "reporte", bandes: {}, saisiLe: "2026-10-12T10:00:00Z" }] });
+  check("vue : le verdict après l'examen, session du jour J, déjà saisi", vv.verdict?.session === "2026-10" && vv.verdict.saisi?.statut === "reporte" && vv.verdict.matieres.length === 10);
+  check("vue : pas de verdict avant l'examen", !v1.verdict && !vr(apres, { moment: "lendemain" }).verdict);
+  check("vue : la reprise du jour", vr(base({ lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-01", n: 30 }] }, speciaux: {} } })).reprise && !v1.reprise);
+  check("les bandes reçues : matières connues et bandes valides seulement", JSON.stringify(bandesValides({ quant: "basse", fsa: "nulle", inconnue: "haute", ethics: "haute" }, ["quant", "fsa", "ethics"])) === JSON.stringify({ quant: "basse", ethics: "haute" }) && Object.keys(bandesValides("x", ["quant"])).length === 0);
 
   // la série d'encre et ses jours neutres (lib/serie-encre.ts, mêmes règles que _serie_avancer)
   const js = new Map([["2026-09-01", 10], ["2026-09-02", 10], ["2026-09-03", 10], ["2026-09-06", 12]]);
