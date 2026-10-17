@@ -106,6 +106,14 @@ export const IMAGE_MAX_PX = 2400;
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const EXT_IMAGE = /[.](jpe?g|png|webp|gif)$/i;
 const EXT_VIDEO = /[.](mp4|mov|webm)$/i;
+/**
+ * Le nom exact d'un fichier envoyé par le joueur : `<id>.<ext>`
+ * (envoyerMedia, depuis le premier média). Rien d'autre après le dossier :
+ * ni « .. » ni « %2e%2e », que le navigateur ramènerait chez un autre joueur.
+ */
+const nomFichier = (id: string, video: boolean) => new RegExp(`^${id}[.](${video ? "mp4|mov|webm" : "jpe?g|png|webp|gif"})$`, "i");
+/** Relu de la base : le bucket, un dossier de joueur (son uuid), puis ce nom exact. */
+const adresseRelue = (bucket: string) => new RegExp(`^https:[/][/][A-Za-z0-9.:-]+[/]storage[/]v1[/]object[/]public[/]${bucket}[/][0-9a-f-]{36}[/]([^/]+)$`);
 
 export const estMedia = (e: ElementPage): e is BlocMedia => e.k === "media";
 export const estLibre = (e: ElementPage): e is PlaceLibre => e.k === "libre";
@@ -430,8 +438,9 @@ export function depuisAncienne(raw: unknown[]): Record<string, unknown>[] {
  * Valide une disposition : blocs connus (une fois chacun), à un format
  * permis (un format refusé prend le plus proche, un format inconnu celui
  * par défaut), places libres en tuile ou en héros, médias venus des
- * dossiers du joueur (`prefixes` ; null : aucun envoi accepté ; « lecture » :
- * relu de la base, déjà vérifié à l'écriture, seul le bucket est contrôlé)
+ * dossiers du joueur, sous leur nom exact `<id>.<ext>` (`prefixes` ; null :
+ * aucun envoi accepté ; « lecture » : relu de la base, déjà vérifié à
+ * l'écriture, le bucket et un dossier de joueur sont contrôlés)
  * ou GIF de la banque KLIPY (adresse en klipy.com) ; six médias au plus,
  * dont une vidéo. Puis la forme propre (normaliser). Les anciennes formes
  * (rangées à modèles, liste de blocs) sont acceptées et converties.
@@ -451,11 +460,9 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     const url = typeof b.url === "string" ? b.url.trim() : "";
     const klipy = type === "image" && URL_KLIPY.test(url);
     const bucket = type === "video" ? BUCKET_VIDEOS : BUCKET_MEDIAS;
-    const dossierOk =
-      klipy ||
-      (prefixes === "lecture"
-        ? new RegExp(`^https:[/][/][^/]+[/]storage[/]v1[/]object[/]public[/]${bucket}[/]`).test(url)
-        : !!prefixes && url.startsWith(type === "video" ? prefixes.videos : prefixes.images));
+    const prefixe = prefixes && prefixes !== "lecture" ? (type === "video" ? prefixes.videos : prefixes.images) : null;
+    const fichier = prefixes === "lecture" ? (adresseRelue(bucket).exec(url)?.[1] ?? null) : prefixe && url.startsWith(prefixe) ? url.slice(prefixe.length) : null;
+    const dossierOk = klipy || (!!id && fichier !== null && nomFichier(id, type === "video").test(fichier));
     const ok =
       id && type && dossierOk && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && (type === "video" ? EXT_VIDEO : EXT_IMAGE).test(url) && !vus.has("m:" + id);
     if (!ok || medias >= MEDIAS_MAX || (type === "video" && videos >= VIDEOS_MAX)) {

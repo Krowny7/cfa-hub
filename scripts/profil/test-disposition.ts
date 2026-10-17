@@ -57,6 +57,7 @@ const egal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 // ── Des médias comme en base ──────────────────────────────────────────
 const BASE = "https://abcdefgh.supabase.co/storage/v1/object/public";
 const UID = "1b2c3d4e-0000-4000-8000-000000000001";
+const UID2 = "2b2c3d4e-0000-4000-8000-000000000002";
 const PREFIXES: Prefixes = { images: `${BASE}/profil-medias/${UID}/`, videos: `${BASE}/profil-videos/${UID}/` };
 type Brut = Record<string, unknown>;
 const img = (id: string, extra: Brut = {}): Brut => ({ k: "media", id, type: "image", url: `${PREFIXES.images}${id}.webp`, ratio: 1.5, legende: "Le week-end avant l'examen blanc.", ...extra });
@@ -268,11 +269,28 @@ console.log("# La validation");
   check("image de son dossier : gardée", avec(img("imagea1")).disposition.length === 1 && avec(img("imagea1")).refus.length === 0);
   check("image d'un autre dossier : refusée", avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` })).disposition.length === 0 && egal(avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` })).refus, ["un ou plusieurs médias"]));
   check("sans dossier connu (null) : refusée ; KLIPY : gardé", avec(img("imagea1"), null).disposition.length === 0 && avec(gif("gifkl01"), null).disposition.length === 1);
-  check("relue : le bucket seul compte", avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` }), "lecture").disposition.length === 1 && avec(vid("video01", { url: `${BASE}/profil-medias/${UID}/video01.mp4` }), "lecture").disposition.length === 0);
+  check("relue : le bucket compte, pas le joueur", avec(img("imagea1", { url: `${BASE}/profil-medias/${UID2}/imagea1.webp` }), "lecture").disposition.length === 1 && avec(vid("video01", { url: `${BASE}/profil-medias/${UID}/video01.mp4` }), "lecture").disposition.length === 0);
+  // un chemin que le navigateur ramènerait chez un autre joueur (new URL) : refusé, à l'écriture comme à la relecture
+  const detours = [`${PREFIXES.images}../${UID2}/zzzzzz.jpg`, `${PREFIXES.images}%2e%2e/%2e%2e/avatars/${UID2}/1.jpg`, `${PREFIXES.images}sous/imagea1.jpg`];
+  check(
+    "« ../ » et « %2e%2e » refusés (élément retiré, refus des médias)",
+    detours.every((url) => {
+      const e = avec(img("imagea1", { url }));
+      return e.disposition.length === 0 && egal(e.refus, ["un ou plusieurs médias"]) && avec(img("imagea1", { url }), "lecture").disposition.length === 0;
+    }),
+  );
+  check(
+    "le nom du fichier est l'id du média (« <id>.<ext> »)",
+    avec(img("imagea1", { url: `${PREFIXES.images}imageb2.jpg` })).disposition.length === 0 &&
+      avec(img("imagea1", { url: `${BASE}/profil-medias/${UID2}/imageb2.jpg` }), "lecture").disposition.length === 0 &&
+      ["jpg", "jpeg", "png", "webp", "gif"].every((x) => avec(img("imagea1", { url: `${PREFIXES.images}imagea1.${x}` })).disposition.length === 1) &&
+      ["mp4", "mov", "webm"].every((x) => avec(vid("video01", { url: `${PREFIXES.videos}video01.${x}` }), "lecture").disposition.length === 1),
+  );
+  check("relue : un dossier qui n'est pas un uuid refusé", avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` }), "lecture").disposition.length === 0);
   check("extension refusée", avec(img("imagea1", { url: `${PREFIXES.images}imagea1.mp4` })).disposition.length === 0 && avec(vid("video01", { url: `${PREFIXES.videos}video01.webp` })).disposition.length === 0);
   check("« # » refusé (jamais de #t= enregistré)", avec(vid("video01", { url: `${PREFIXES.videos}video01.mp4#t=4` })).disposition.length === 0);
   check("id invalide refusé", avec(img("A!")).disposition.length === 0 && avec(img("abc")).disposition.length === 0);
-  check("adresse de plus de 500 caractères refusée", avec(img("imagea1", { url: `${PREFIXES.images}${"a".repeat(500)}.webp` })).disposition.length === 0);
+  check("adresse de plus de 500 caractères refusée", avec(img("imagea1", { url: `https://${"h".repeat(500)}.supabase.co/storage/v1/object/public/profil-medias/${UID}/imagea1.webp` }), "lecture").disposition.length === 0);
   const sept = validerDisposition(Array.from({ length: 7 }, (_, i) => img(`image0${i}`, { f: "tuile" })), PREFIXES);
   check("6 médias au plus", sept.disposition.filter((e) => e.k === "media").length === 6 && egal(sept.refus, ["un ou plusieurs médias"]));
   const deux = validerDisposition([vid("video01", { f: "tuile" }), vid("video02", { f: "tuile" })], PREFIXES);
@@ -325,9 +343,10 @@ console.log("# La validation");
 
 console.log("# Le poids");
 {
+  // le nom du fichier est l'id du média : l'hôte s'allonge jusqu'à 500 caractères
   const url = (bucket: string, id: string, ext: string) => {
-    const debut = `${BASE}/${bucket}/${UID}/`;
-    return debut + id + "x".repeat(500 - debut.length - id.length - ext.length) + ext;
+    const fin = `.supabase.co/storage/v1/object/public/${bucket}/${UID}/${id}${ext}`;
+    return "https://" + "h".repeat(500 - "https://".length - fin.length) + fin;
   };
   const legende = "Été à Sceaux : révisions d'éthique, cafés serrés, fiches à l'encre, déjà mûr ?!".padEnd(80, "é");
   const gros: Brut[] = [

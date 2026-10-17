@@ -151,7 +151,9 @@ export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImag
   const titre = input.titre === undefined ? nueConnue("titre", porte?.titre) : choisir("titre", input.titre, porte?.titre, (nom) => `le titre ${nom}`);
   const folio = input.folio === undefined ? nueConnue("folio", porte?.folio) : choisir("folio", input.folio, porte?.folio, (nom) => `le folio ${nom}`);
   const url = typeof input.bannerUrl === "string" ? input.bannerUrl.trim() : "";
-  const bannerUrl = url && prefixeImage && url.startsWith(prefixeImage) && /^[A-Za-z0-9:/._%-]+$/.test(url) && url.length <= 500 ? url : null;
+  // après le dossier du joueur, un nom de fichier seul (« banniere-<ms>.<ext> ») : ni « .. » ni « %2e »
+  const nomBanniere = url && prefixeImage && url.startsWith(prefixeImage) ? url.slice(prefixeImage.length) : "";
+  const bannerUrl = /^[A-Za-z0-9_-]+[.][A-Za-z0-9]{2,5}$/.test(nomBanniere) && url.length <= 500 ? url : null;
   if (url && !bannerUrl) refus.push("l'image de bannière");
   const disp = Array.isArray(input.disposition) ? validerDisposition(input.disposition, prefixesMedias) : null;
   if (disp) refus.push(...disp.refus);

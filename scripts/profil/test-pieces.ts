@@ -486,6 +486,20 @@ async function main() {
       "clés inconnues → défaut, sans refus",
       inconnuV.style.titre === null && inconnuV.style.folio === null && inconnuV.style.frame === STYLE_DEFAUT.frame && inconnuV.style.banner === STYLE_DEFAUT.banner && inconnuV.refus.length === 0,
     );
+    // l'image de bannière : un nom de fichier seul après le dossier du joueur
+    const dossierB = "https://abcdefgh.supabase.co/storage/v1/object/public/avatars/1b2c3d4e-0000-4000-8000-000000000001/";
+    const banniere = (u: string) => validerStyle({ ...STYLE_DEFAUT, bannerUrl: u }, a(), dossierB, null, porte);
+    check(
+      "bannière : « banniere-<ms>.webp » et « <ms>.jpg » gardées",
+      banniere(dossierB + "banniere-1760000000000.webp").style.bannerUrl === dossierB + "banniere-1760000000000.webp" && banniere(dossierB + "1760000000000.jpg").refus.length === 0,
+    );
+    check(
+      "bannière : « ../ » et « %2e%2e » vers un autre dossier refusés",
+      ["../2b2c3d4e-0000-4000-8000-000000000002/1.jpg", "%2e%2e/%2e%2e/avatars/2b2c3d4e-0000-4000-8000-000000000002/1.jpg", "sous/1.jpg", "1"].every((r) => {
+        const v = banniere(dossierB + r);
+        return v.style.bannerUrl === null && egal(v.refus, ["l'image de bannière"]);
+      }),
+    );
     const maitre = validerStyle({ ...STYLE_DEFAUT, titre: "maitre:fixed_income" }, a({ codex: new Map([[queteFI, "2026-10-12"]]) }), null, null, porte);
     check("titre de maître gagné au Codex (trait bas) → porté", maitre.style.titre === "maitre:fixed_income" && maitre.refus.length === 0);
     const cadre = validerStyle({ ...STYLE_DEFAUT, frame: "sanguine" }, a({ codex: new Map([[queteSanguine, null]]) }), null, null, porte);
