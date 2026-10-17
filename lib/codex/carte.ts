@@ -192,20 +192,20 @@ export function premiereBlanche(montre: (quoi: string) => boolean): (typeof ORDR
   return ORDRE_BLANCHES.find((q) => !montre(q)) ?? null;
 }
 
-// ── Le téléphone : cinq segments ───────────────────────────────────────
+// ── Les deux segments de /codex (Codex simplifié, §3.3) ──────────────
 
-export type SegmentTel = "aujourdhui" | "parcours" | "matieres" | "chantiers" | "exploits";
+export type SegmentTel = "aujourdhui" | "tout";
 
-/** Les cinq segments en tête de /codex sur téléphone ; le segment est gardé dans l'URL (?vue=). */
+/** Les deux segments en tête de /codex, sur téléphone comme sur ordinateur ; le segment est gardé dans l'URL (?vue=). */
 export const SEGMENTS_TEL: { cle: SegmentTel; libelle: string }[] = [
   { cle: "aujourdhui", libelle: "Aujourd'hui" },
-  { cle: "parcours", libelle: "Parcours" },
-  { cle: "matieres", libelle: "Matières" },
-  { cle: "chantiers", libelle: "Chantiers" },
-  { cle: "exploits", libelle: "Exploits" },
+  { cle: "tout", libelle: "Tout le Codex" },
 ];
 
-/** Le segment lu dans l'URL ; inconnu ou absent : Aujourd'hui. */
+/** Les anciens segments (cinq, avant le Codex simplifié) et la carte : des liens profonds qui mènent à « Tout le Codex ». */
+const VERS_TOUT = ["parcours", "matieres", "chantiers", "exploits", "carte"];
+
+/** Le segment lu dans l'URL ; un ancien segment : Tout le Codex ; inconnu ou absent : Aujourd'hui. */
 export function segmentDe(v: string | null | undefined): SegmentTel {
-  return SEGMENTS_TEL.find((s) => s.cle === v)?.cle ?? "aujourdhui";
+  return v === "tout" || (!!v && VERS_TOUT.includes(v)) ? "tout" : "aujourdhui";
 }

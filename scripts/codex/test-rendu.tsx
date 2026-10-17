@@ -5,14 +5,17 @@
 // avec et sans la maîtrise unique, et ce que la carte en trois niveaux y met
 // (V3 §10.1) : le monde au zoom moyen au premier rendu, les dix pastilles,
 // les glyphes et les noms d'étapes, la visite de la bottega à côté du
-// tronc, les filtres et la recherche, les cinq segments du téléphone et le
-// corps de chacun (la grille 2 × 5 des matières, ses notions au toucher).
+// tronc, les filtres et la recherche, « Tout le Codex » sur téléphone (la
+// grille 2 × 5 des matières, ses notions au toucher) ; et le segment
+// « Aujourd'hui » (Codex simplifié, §3.3) : un seul bouton plein, « Une
+// autre idée ? » sur la seule étape en cours, les replis, le compte neuf.
 import "./sans-css";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { CodexEcran } from "@/components/codex/CodexEcran";
 import { CodexTel } from "@/components/codex/CarteCodex";
-import { SEGMENTS_TEL } from "@/lib/codex/carte";
+import type { VueCodex } from "@/lib/codex/vue";
 import { exempleCodex } from "./exemple";
 
 // le JSX des composants (tsconfig « preserve ») attend React en portée
@@ -24,9 +27,11 @@ const check = (label: string, cond: boolean, extra = "") => {
   if (!cond) ko++;
 };
 const compte = (html: string, re: RegExp) => (html.match(re) ?? []).length;
+// le fil et « Récupérer » lisent le routeur (useRouter) : un routeur muet
+const routeur = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
 const rendre = (el: React.ReactElement): string | null => {
   try {
-    return renderToStaticMarkup(el);
+    return renderToStaticMarkup(<AppRouterContext.Provider value={routeur}>{el}</AppRouterContext.Provider>);
   } catch (e) {
     console.log(e);
     return null;
@@ -36,14 +41,15 @@ const rendre = (el: React.ReactElement): string | null => {
 console.log("# /codex se rend (trois scénarios, avec et sans la maîtrise unique)");
 for (const sc of ["neuf", "milieu", "fin"] as const) {
   for (const unique of [false, true]) {
-    const html = rendre(<CodexEcran vue={exempleCodex(sc, { unique })} demo />);
-    check(`${sc}${unique ? " (maîtrise unique)" : ""} : rendu sans erreur, cinq segments, filtres et recherche`, !!html && compte(html, /role="tab"/g) === 5 && html.includes("Mes faiblesses") && html.includes('placeholder="Chercher une quête"'));
+    const jour = rendre(<CodexEcran vue={exempleCodex(sc, { unique })} demo />);
+    const tout = rendre(<CodexEcran vue={exempleCodex(sc, { unique })} segment="tout" demo />);
+    check(`${sc}${unique ? " (maîtrise unique)" : ""} : rendu sans erreur, deux segments, la carte (filtres et recherche) dans « Tout le Codex »`, !!jour && !!tout && compte(jour, /role="tab"/g) === 2 && !jour.includes("Mes faiblesses") && tout.includes("Mes faiblesses") && tout.includes('placeholder="Chercher une quête"'));
   }
 }
 
 console.log("\n# la carte en trois niveaux");
 {
-  const html = rendre(<CodexEcran vue={exempleCodex("milieu", { unique: true })} demo />) ?? "";
+  const html = rendre(<CodexEcran vue={exempleCodex("milieu", { unique: true })} segment="tout" demo />) ?? "";
   check("le monde s'ouvre au zoom moyen (niveau 2)", html.includes('data-niveau="2"'));
   check("dix pastilles de matière, pour le niveau dézoomé", compte(html, /class="pastille pastilleCarte/g) === 10);
   const glyphes = ["F", "D", "◎", "S", "♛"].map((g) => compte(html, new RegExp(`>${g}</text>`, "g")));
@@ -52,20 +58,42 @@ console.log("\n# la carte en trois niveaux");
   check("les textes de taille fixe sont marqués pour être masqués sous 12 px", html.includes('data-px="13"') && html.includes('data-px="24"'));
   check("la visite de la bottega se tient à côté du tronc", compte(html, /class="outilsActe"/g) === 1);
   check("une quête verrouillée dit ce qui manque (libellé lu)", /aria-label="[^"]*\. (D'abord|Clore|Séance|S'ouvre)/.test(html.replace(/&#x27;/g, "'")));
-  const neuf = rendre(<CodexEcran vue={exempleCodex("neuf")} demo />) ?? "";
+  const neuf = rendre(<CodexEcran vue={exempleCodex("neuf")} segment="tout" demo />) ?? "";
   check("compte neuf : pas de pastille tant que les branches ne sont pas dévoilées", compte(neuf, /pastilleCarte/g) === 0);
 }
 
-console.log("\n# le téléphone : cinq segments");
+console.log("\n# « Tout le Codex » sur téléphone");
 {
   const vue = exempleCodex("milieu", { unique: true });
-  const corps = (cle: (typeof SEGMENTS_TEL)[number]["cle"]) => rendre(<CodexTel segment={cle} vue={vue} montre={() => true} onQuete={() => {}} onChanger={() => {}} occupe={false} />) ?? "";
-  check("Aujourd'hui : les contrats du jour", corps("aujourdhui").includes('id="tel-jour"') && compte(corps("aujourdhui"), /class="compacte"/g) === vue.contrats.length, `${vue.contrats.length} contrats`);
-  check("Parcours : le chemin d'un acte et son sélecteur", corps("parcours").includes('aria-label="Les actes"') && corps("parcours").includes("data-ici"));
-  const m = corps("matieres");
-  check("Matières : la grille 2 × 5 des pastilles", compte(m, /pastilleGrille/g) === 10 && m.includes('aria-label="Les matières"'));
-  check("Chantiers : le long cours", corps("chantiers").includes(vue.longCours[0].chaine.titre.replace(/'/g, "&#x27;")));
-  check("Exploits : les exploits en chemin", corps("exploits").includes('class="chemin"') && compte(corps("exploits"), /aria-haspopup="dialog"/g) === vue.exploits.filter((l) => l.affichage !== "cache").length);
+  const corps = rendre(<CodexTel vue={vue} montre={() => true} onQuete={() => {}} />) ?? "";
+  check("le parcours : le chemin d'un acte et son sélecteur", corps.includes('aria-label="Les actes"') && corps.includes("data-ici"));
+  check("les matières : la grille 2 × 5 des pastilles", compte(corps, /pastilleGrille/g) === 10 && corps.includes('aria-label="Les matières"'));
+  check("le long cours", corps.includes(vue.longCours[0].chaine.titre.replace(/'/g, "&#x27;")));
+  check("les exploits en chemin", compte(corps, /class="chemin"/g) >= 2);
+}
+
+console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
+{
+  const jour = (v: VueCodex) => rendre(<CodexEcran vue={v} demo />) ?? "";
+  const pleins = (html: string) => compte(html, /class="btn btn-primary/g);
+  const milieu = exempleCodex("milieu", { unique: true, seance: "proposee" });
+  const sans = { ...milieu, aRecuperer: [] };
+  const html = jour(sans);
+  check("le titre : « Codex », sans phase ni « Le carnet de Léonard »", /<h1 class="t-h3 font-brand m-0">Codex<\/h1>/.test(html) && !html.includes("Le carnet de Léonard") && !html.includes(milieu.phaseNom));
+  check("deux segments, « Aujourd'hui » choisi", compte(html, /role="tab"/g) === 2 && /aria-selected="true"[^>]*>Aujourd&#x27;hui</.test(html));
+  check("le fil : la séance en étapes, un seul bouton plein", !!milieu.seance && milieu.seance.blocs.every((b) => html.includes(b.titre.replace(/'/g, "&#x27;"))) && pleins(html) === 1, `${pleins(html)} bouton(s) plein(s)`);
+  check("« Une autre idée ? » sur la seule étape en cours", compte(html, /Une autre idée \?/g) === 1 && compte(html, /aria-current="step"/g) === 1);
+  check("une seule puce de temps (« 30 min ▾ »), le choix replié", compte(html, /aria-expanded="false" aria-controls="fil-temps"/g) === 1 && !html.includes('id="fil-temps"'));
+  check("les replis : Quêtes du jour, Fait aujourd'hui, l'acte en cours", html.includes("Quêtes du jour") && html.includes("Fait aujourd&#x27;hui") && /<details[^>]*><summary>Acte /.test(html));
+  check("ni la carte ni la prochaine quête au « ! » dans « Aujourd'hui »", !html.includes("Mes faiblesses") && !html.includes('data-leonard="prochaine"'));
+  if (milieu.aRecuperer.length) {
+    const h = jour(milieu);
+    check("quelque chose à récupérer : le bouton du bloc est le seul plein, le fil passe en contour", pleins(h) === 1 && !/class="btn btn-primary[^"]*"[^>]*>Commencer/.test(h) && /class="btn btn-secondary[^"]*"[^>]*>Commencer/.test(h), `${pleins(h)} bouton(s) plein(s)`);
+  } else check("l'exemple « milieu » a quelque chose à récupérer", false);
+  const neuf = jour(exempleCodex("neuf"));
+  check("le compte neuf : une étape, « 10 questions pour faire connaissance », pas de préparation", compte(neuf, /aria-current="step"/g) === 1 && neuf.includes("10 questions pour faire connaissance") && !neuf.includes("Préparation") && !neuf.includes("Une autre idée"));
+  const sobre = jour({ ...sans, sobre: true });
+  check("le mode sobre tait l'XP des replis et des étapes", !/\+\d+ XP/.test(sobre));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

@@ -157,8 +157,9 @@ console.log("\n# les écrans");
   const serveur = readFileSync("lib/codex/serveur.ts", "utf8").replace(/\r\n/g, "\n");
   check("serveur : codex_recuperer, le repli codex_vus, la vue gardée et le panneau oubliés", serveur.includes('a.rpc("codex_recuperer"') && serveur.includes("await marquerVus(user.id") && serveur.includes("MEMO.delete(user.id);\n  await oublierPanneau(user.id);\n  return { ok: true, recues"));
   check("serveur : le mode sobre verse d'office ce qui attendait", serveur.includes("entree.sobre && entree.progression.some((l) => l.etat === \"terminee\")") && serveur.includes("sobre: lireSobre(user)"));
-  const page = readFileSync("app/codex/page.tsx", "utf8");
-  check("/codex montre le bloc « À récupérer »", page.includes("<Recuperer items={vue.aRecuperer}"));
+  // le segment « Aujourd'hui » de /codex porte le bloc (Codex simplifié, §3.3)
+  const page = readFileSync("components/codex/Aujourdhui.tsx", "utf8");
+  check("/codex « Aujourd'hui » montre le bloc « À récupérer »", page.includes("<Recuperer items={vue.aRecuperer}"));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

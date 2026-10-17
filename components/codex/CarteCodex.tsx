@@ -966,10 +966,10 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
 }
 
 /* ================================================================== */
-/* Le téléphone : cinq segments (V3 §10.1)                             */
+/* Les deux segments (Codex simplifié, §3.3) et le téléphone           */
 /* ================================================================== */
 
-/** La barre des cinq segments, en tête de /codex sur téléphone (onglets : flèches, Début, Fin). */
+/** La barre des deux segments, en tête de /codex, sur téléphone comme sur ordinateur (onglets : flèches, Début, Fin). */
 export function SegmentsTel({ segment, onChoisir }: { segment: SegmentTel; onChoisir: (s: SegmentTel) => void }) {
   const clavier = (ev: React.KeyboardEvent) => {
     const i = SEGMENTS_TEL.findIndex((s) => s.cle === segment);
@@ -1002,47 +1002,37 @@ export function SegmentsTel({ segment, onChoisir }: { segment: SegmentTel; onCho
 }
 
 /**
- * Le corps du segment choisi. « Aujourd'hui » : les contrats (la séance et le
- * cap sont au-dessus, dans la page) ; « Parcours » : le tronc des actes ;
- * « Matières » : la grille 2 × 5 des pastilles ; « Chantiers » : le long
- * cours et le fil rouge ; « Exploits ».
+ * « Tout le Codex » sur téléphone, en attendant ses quatre replis (lot A5) :
+ * le parcours (le tronc des actes), les matières (la grille 2 × 5 des
+ * pastilles), le long cours et le fil rouge, les exploits, l'un sous l'autre.
  */
-export function CodexTel({ segment, vue, montre, onQuete, onChanger, occupe, filRouge = true }: { segment: SegmentTel; vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; filRouge?: boolean }) {
+export function CodexTel({ vue, montre, onQuete, filRouge = true }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; filRouge?: boolean }) {
   return (
-    <div id="codex-segment" role="tabpanel" aria-labelledby={"codex-seg-" + segment} className={`${c.tel} ${e.carnet}`}>
-      {segment === "aujourdhui" && (
-        <div className={c.telCorps}>
-          <ContratsDuJour vue={vue} montre={montre} onQuete={onQuete} onChanger={onChanger} occupe={occupe} id="tel-jour" />
-        </div>
-      )}
-      {segment === "parcours" && <ParcoursTel vue={vue} onQuete={onQuete} />}
-      {segment === "matieres" && <MatieresTel vue={vue} montre={montre} onQuete={onQuete} />}
-      {segment === "chantiers" && (
-        <div className={c.telCorps} data-leonard="longcours">
-          <TeteChemin sur="Les grands chantiers" titre={CODEX.longCours.titre} replique={CODEX.longCours.sous} />
-          {montre("codex:longcours") ? (
-            <>
-              <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />
-              {filRouge && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
-            </>
-          ) : (
-            <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
-          )}
-        </div>
-      )}
-      {segment === "exploits" && (
-        <div className={c.telCorps}>
-          <TeteChemin sur={CODEX.exploits.gagnes(vue.exploits.filter((q) => q.etat === "terminee").length)} titre={CODEX.exploits.titre} replique={CODEX.exploits.sous} />
-          {montre("codex:exploits") ? (
-            <>
-              <Chemin quetes={vue.exploits} onQuete={onQuete} nom={(l) => l.titre} />
-              <LienCollection href={vue.collection} />
-            </>
-          ) : (
-            <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
-          )}
-        </div>
-      )}
+    <div className={`${c.tel} ${e.carnet}`}>
+      <ParcoursTel vue={vue} onQuete={onQuete} />
+      <MatieresTel vue={vue} montre={montre} onQuete={onQuete} />
+      <div className={c.telCorps} data-leonard="longcours">
+        <TeteChemin sur="Les grands chantiers" titre={CODEX.longCours.titre} replique={CODEX.longCours.sous} />
+        {montre("codex:longcours") ? (
+          <>
+            <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />
+            {filRouge && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
+          </>
+        ) : (
+          <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
+        )}
+      </div>
+      <div className={c.telCorps}>
+        <TeteChemin sur={CODEX.exploits.gagnes(vue.exploits.filter((q) => q.etat === "terminee").length)} titre={CODEX.exploits.titre} replique={CODEX.exploits.sous} />
+        {montre("codex:exploits") ? (
+          <>
+            <Chemin quetes={vue.exploits} onQuete={onQuete} nom={(l) => l.titre} />
+            <LienCollection href={vue.collection} />
+          </>
+        ) : (
+          <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
+        )}
+      </div>
     </div>
   );
 }

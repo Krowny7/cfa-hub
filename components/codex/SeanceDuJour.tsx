@@ -49,6 +49,8 @@ const TEXTES = {
   plusRien: "Plus d'autre idée pour aujourd'hui : garde celle-ci, ou change ton temps.",
   oups: "Ça n'a pas pris. Réessaie dans un instant.",
 } as const;
+/** Les textes de la séance, repris par le fil de /codex. */
+export const TEXTES_SEANCE = TEXTES;
 
 const signaler = () => {
   try {
@@ -60,7 +62,13 @@ const signaler = () => {
 
 const minutes = (m: number) => `${m} min`;
 
-export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false }: { seance: VueSeance; entete: string; gains: GainSeance[]; mode: "compact" | "plein"; demo?: boolean }) {
+/**
+ * L'état de la séance et ses gestes (« Commencer », le temps, « Une autre
+ * idée ? », « J'arrête là »), partagés par cette carte et le fil de /codex
+ * (components/codex/Fil.tsx). Sans la base, ce navigateur garde « lancée » et
+ * « finie » ; la trace « vue » part une fois par jour.
+ */
+export function useSeanceDuJour(depart: VueSeance, demo: boolean) {
   const router = useRouter();
   const [seance, setSeance] = useState(depart);
   const [message, setMessage] = useState<string | null>(null);
@@ -86,7 +94,6 @@ export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false
   const etape = etapeSeance(seance);
   const suivant = blocSuivant(seance);
   const { rang, total } = rangEnCours(seance);
-  const plein = mode === "plein";
 
   const commencer = () =>
     demarrer(async () => {
@@ -151,6 +158,13 @@ export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false
     });
 
   const encore = budgetSuivant(seance.budget);
+
+  return { seance, message, occupe, etape, suivant, rang, total, encore, commencer, choisirBudget, autre, finir };
+}
+
+export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false }: { seance: VueSeance; entete: string; gains: GainSeance[]; mode: "compact" | "plein"; demo?: boolean }) {
+  const { seance, message, occupe, etape, suivant, rang, total, encore, commencer, choisirBudget, autre, finir } = useSeanceDuJour(depart, demo);
+  const plein = mode === "plein";
 
   return (
     <section aria-label={TEXTES.titre} data-leonard="seance" className={`card rl-in ${e.carnet} ${plein ? "" : s.compact} flex min-w-0 flex-col gap-3 p-5 md:p-6`} style={{ animationDelay: ".1s" }}>
@@ -240,7 +254,7 @@ export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false
 }
 
 /** Les gains de la séance ; `jauge` : la jauge repassée au pinceau sous chacun (pas sur l'accueil : le texte seul). */
-function ListeGains({ gains, jauge = true }: { gains: GainSeance[]; jauge?: boolean }) {
+export function ListeGains({ gains, jauge = true }: { gains: GainSeance[]; jauge?: boolean }) {
   return (
     <ul className={s.gains}>
       {gains.map((g) => (
@@ -266,6 +280,7 @@ export function FinDeSeance({
   occupe = false,
   demo = false,
   jauge = true,
+  plein = true,
   onAssez,
   onEncore,
 }: {
@@ -275,6 +290,8 @@ export function FinDeSeance({
   demo?: boolean;
   /** la jauge sous chaque gain (false : texte seul, l'accueil) */
   jauge?: boolean;
+  /** faux : « C'est assez » en contour (un autre bouton plein tient l'écran, « Tout récupérer ») */
+  plein?: boolean;
   onAssez: () => void;
   onEncore: (() => void) | null;
 }) {
@@ -293,7 +310,7 @@ export function FinDeSeance({
       )}
       {lanceeLe && !demo && <AnnonceTrophee depuis={lanceeLe} />}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn btn-primary rl-press min-h-[44px] w-full sm:w-fit" disabled={occupe} onClick={onAssez}>
+        <button type="button" className={`btn ${plein ? "btn-primary" : "btn-secondary"} rl-press min-h-[44px] w-full sm:w-fit`} disabled={occupe} onClick={onAssez}>
           {TEXTES.assez}
         </button>
         {onEncore && (

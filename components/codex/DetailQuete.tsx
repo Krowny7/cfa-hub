@@ -9,6 +9,7 @@ import { Sceau } from "@/components/codex/Sceau";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import e from "./Encre.module.css";
 import s from "./Codex.module.css";
+import j from "./Aujourdhui.module.css";
 
 // Le détail d'une quête : une feuille qui monte du bas (téléphone) ou une
 // fiche au centre (ordinateur). L'objectif, la progression, la récompense, ce
@@ -16,7 +17,8 @@ import s from "./Codex.module.css";
 // avec sa durée et sa raison chiffrée. Échap ou un clic à côté referme.
 // `prochaine` : c'est ta prochaine quête. `reclamer` : le geste explicite pour
 // une récompense qui n'aurait pas été versée (le moteur les verse déjà tout
-// seul ; ceci est le filet).
+// seul ; ceci est le filet). `changer` : une quête du jour qu'on peut encore
+// changer (« Changer » ne vit plus dans les listes, Codex simplifié §3.3).
 
 const jourLong = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
 
@@ -27,6 +29,7 @@ export function DetailQuete({
   sobre = false,
   onClose,
   reclamer,
+  changer,
 }: {
   l: LigneQuete;
   nomMatiere?: string;
@@ -35,6 +38,8 @@ export function DetailQuete({
   sobre?: boolean;
   onClose: () => void;
   reclamer?: (l: LigneQuete) => Promise<string | null>;
+  /** une quête du jour qu'on peut encore changer : « Changer », en lien discret */
+  changer?: { occupe: boolean; onChanger: () => void };
 }) {
   const fermer = useRef<HTMLButtonElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -177,6 +182,13 @@ export function DetailQuete({
             </button>
           )}
         </div>
+        {changer && (
+          <p className="m-0 mt-3">
+            <button type="button" className={j.lien} disabled={changer.occupe} onClick={changer.onChanger} title={CODEX.contrats.changerAide}>
+              {CODEX.contrats.changer}
+            </button>
+          </p>
+        )}
         {message && (
           <p role="status" className="t-small mt-3">
             {message}

@@ -6,14 +6,13 @@ import { lireCodex } from "@/lib/codex/serveur";
 import { CODEX } from "@/lib/voice-codex";
 import { CodexEcran } from "@/components/codex/CodexEcran";
 import { FeteCodex } from "@/components/codex/FeteCodex";
-import { Recuperer } from "@/components/codex/Recuperer";
 
-// Le Codex : la carte de ce qu'il y a à faire (quêtes, contrats du jour,
-// branches de matière, long cours, exploits). Le calcul est fait côté serveur
+// Le Codex : « Aujourd'hui » (À récupérer, la séance du jour en étapes, les
+// replis) et « Tout le Codex » (la carte). Le calcul est fait côté serveur
 // (lib/codex/serveur.ts) ; l'écran ne calcule rien. Sans la migration, un
 // message clair, et le reste du site marche comme avant.
-// ?vue= : le segment ouvert sur téléphone ; ?quete= : la quête à montrer
-// (« Chercher une quête », dans la palette Ctrl K).
+// ?vue= : le segment ouvert (« tout » ; les anciens segments y mènent) ;
+// ?quete= : la quête à montrer (« Chercher une quête », dans la palette Ctrl K).
 export const metadata = { title: "Codex · Ranked Lobby" };
 
 export default async function CodexPage({ searchParams }: { searchParams?: Promise<{ vue?: string; quete?: string }> }) {
@@ -42,8 +41,6 @@ export default async function CodexPage({ searchParams }: { searchParams?: Promi
     <>
       <div className="rl-wide">
         <FeteCodex initial={bilan} persister={!!vue.devoile?.change} className="mb-4" />
-        {/* « Récupérer » : les quêtes faites qui attendent le clic (le segment « Aujourd'hui » l'accueillera) */}
-        <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} className="mx-auto mb-4 max-w-[660px]" />
       </div>
       <CodexEcran vue={vue} segment={sp.vue} quete={sp.quete} />
     </>

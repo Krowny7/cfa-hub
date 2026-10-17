@@ -36,6 +36,8 @@ import * as MAITRISE_UNIQUE from "@/lib/maitrise";
 import * as CAP from "@/lib/codex/cap";
 import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, premiereBlanche, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
 import { manqueDe } from "@/lib/codex/vue";
+import { matiereCoince } from "@/lib/codex/seance";
+import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
 import type { EtatQuete } from "@/lib/codex/moteur";
 
 let ko = 0;
@@ -205,7 +207,10 @@ console.log("\n# le cap en tête de /codex (V3 §4.6, §4.7)");
   check("l'en-tête : « J-27 · Préparation n % · zone … · repère 70 % »", enTeteCap(cap) === `J-27 · Préparation ${prep} % · ${TEXTES_CAP.zone[cap.zone]} · repère 70 %`, enTeteCap(cap));
   check("… sans J-n sans jour J (ou un programme sans examen) ; « Jour J » le jour même", !enTeteCap({ ...cap, joursAvant: null }).includes("J-") && enTeteCap({ ...cap, joursAvant: 0 }).startsWith("Jour J ·") && !enTeteCap({ ...cap, joursAvant: -3 }).includes("J"));
   check("la ligne des fuites : l'unité une fois, après la première", ligneFuites(cap.fuites) === "DERIVATIVES −4,2 pts · FSA −3,3 · EQUITY −2,4" && titreFuites(3) === "Les trois fuites :" && titreFuites(1) === "La fuite :", ligneFuites(cap.fuites));
-  check("« Y aller » : la première fuite", vise.join() === "derivatives" && cap.destination?.href === "/practice?topic=derivatives&n=20");
+  // le point faible, la définition unique : poids × (1 − maîtrise), inconnue à 20 % (FSA : 13 × 0,55 = 7,15, devant Ethics 6,45 et Equity 6)
+  check("le point faible : le plus fort poids × (1 − maîtrise), et les points qu'il coûte sous le repère", cap.faible?.cle === "fsa" && cap.faible.points === 3.3 && CAP.scoreFaiblesse({ poids: 6, pct: null }) === 6 * 0.8, JSON.stringify(cap.faible));
+  check("« Y aller » : le point faible (pas la première fuite)", vise.join() === "fsa" && cap.destination?.href === "/practice?topic=fsa&n=20");
+  check("le fil vise le même point faible (« ce qui coince », hors veillée)", matiereCoince({ matieres: ms, preparation: prep, couverture: 77, source: "unique" }, false)?.cle === cap.faible?.cle);
   check("la règle : un segment par matière, larges comme leur poids (100 % en tout)", cap.matieres.length === 10 && Math.abs(cap.matieres.reduce((s, m) => s + m.part, 0) - 100) < 1e-9);
   check("mesure unique : pas de « mesure provisoire »", !cap.provisoire && capDe({ matieres: ms, preparation: prep, couverture: 0, source: "ancienne" }, { jour: "2026-10-16", joursAvant: null, destination: () => null }).provisoire);
   const eth = cap.matieres.find((m) => m.cle === "ethics")!;
@@ -390,9 +395,10 @@ console.log("\n# la carte en trois niveaux (V3 §10.1)");
     autres.manque.join(" | ") === "D'abord : « La grande revue » | Clore l'acte III | S'ouvre à J-7 | S'ouvre après l'examen" && autres.allume.join() === "trame:a4:x,acte:acte3", autres.manque.join(" | "));
   check("sans date d'examen : la fenêtre le dit", manqueDe({ prerequis: [{ k: "joursAvantExamen", max: 7 }] }, r, contenu, { apres: false, joursAvant: null }).manque[0] === "S'ouvre à J-7, une fois ta date d'examen posée");
 
-  // le téléphone : cinq segments, gardés dans l'URL
-  check("cinq segments : Aujourd'hui · Parcours · Matières · Chantiers · Exploits", SEGMENTS_TEL.map((s) => s.libelle).join(" · ") === "Aujourd'hui · Parcours · Matières · Chantiers · Exploits");
-  check("le segment lu dans ?vue= ; inconnu ou absent : Aujourd'hui", segmentDe("matieres") === "matieres" && segmentDe("xyz") === "aujourdhui" && segmentDe(undefined) === "aujourdhui");
+  // deux segments, sur téléphone comme sur ordinateur, gardés dans l'URL (Codex simplifié, §3.3)
+  check("deux segments : Aujourd'hui · Tout le Codex", SEGMENTS_TEL.map((s) => s.libelle).join(" · ") === "Aujourd'hui · Tout le Codex");
+  check("le segment lu dans ?vue= ; inconnu ou absent : Aujourd'hui", segmentDe("tout") === "tout" && segmentDe("xyz") === "aujourdhui" && segmentDe(undefined) === "aujourdhui" && segmentDe("") === "aujourdhui");
+  check("les anciens segments et la carte (liens profonds) mènent à « Tout le Codex »", ["parcours", "matieres", "chantiers", "exploits", "carte"].every((v) => segmentDe(v) === "tout"));
 
   // la page blanche : la phrase entière une fois par écran (V3 §11.3)
   const montreSauf = (...caches: string[]) => (q: string) => !caches.includes(q);
@@ -416,6 +422,36 @@ console.log("\n# la carte en trois niveaux (V3 §10.1)");
   check("branche ouverte : défilement (mouvement réduit respecté) puis focus sur son titre (tabIndex -1)",
     matieresTel.includes("controle={idBranche}") && matieresTel.includes("id={idBranche}") && /scrollIntoView\(\{ block: "start", behavior: doux \? "smooth" : "auto" \}\)/.test(matieresTel)
       && matieresTel.includes('querySelector<HTMLElement>("h2")?.focus({ preventScroll: true })') && carte.includes("tabIndex={focusable ? -1 : undefined}"));
+}
+
+console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
+{
+  const v = exempleCodex("milieu", { unique: true });
+  const blocs = (n: number) => Array.from({ length: n }, (_, i) => ({ genre: (["cinq", "retouches", "coince", "nouveau"] as const)[i], duree: 5 }));
+  check("la tête du fil : « 3 étapes · 25 min », puis « 1 étape faite sur 3 », « 2 étapes faites sur 3 »",
+    teteFil({ blocs: blocs(3) as never, faits: [], duree: 25 }) === "3 étapes · 25 min" && teteFil({ blocs: blocs(3) as never, faits: ["cinq"], duree: 25 }) === "1 étape faite sur 3 · 25 min" && teteFil({ blocs: blocs(3) as never, faits: ["cinq", "retouches"], duree: 25 }) === "2 étapes faites sur 3 · 25 min");
+  const ct = v.contrats.find((c) => c.ligne.etat !== "terminee" && c.ligne.xp > 0);
+  check("« +XP » : l'XP des quêtes du jour que l'étape remplit (b.contrats), pas encore faites", !!ct && xpEtape({ contrats: [ct.ligne.id] }, v.contrats) === ct.ligne.xp && xpEtape({ contrats: [] }, v.contrats) === 0 && xpEtape({ contrats: [ct.ligne.id] }, v.contrats.map((c) => ({ ...c, ligne: { ...c.ligne, etat: "terminee" as const } }))) === 0);
+  const b0 = v.branches[0];
+  const proche = { ...b0, etapes: b0.etapes.map((l, i) => (i === 0 ? { ...l, etat: "active" as const, affichage: "complet" as const, fraction: SEUIL_FAIT_AVANCER, valeur: 51, cible: 60, titre: "FSA à 60 % de maîtrise" } : l)) };
+  check("« fait avancer » : une étape de la matière à 80 % ou plus, « (51 → 60) »", faitAvancer({ matiere: b0.contenu.key }, [proche]) === "fait avancer : FSA à 60 % de maîtrise (51 → 60)");
+  check("… rien sous 80 %, ni sans matière", faitAvancer({ matiere: b0.contenu.key }, [{ ...proche, etapes: proche.etapes.map((l, i) => (i === 0 ? { ...l, fraction: 0.79 } : l)) }]) === null && faitAvancer({}, [proche]) === null);
+  check("le compte neuf : aucune réponse et aucune quête faite", compteNeuf(exempleCodex("neuf")) && !compteNeuf(v) && !compteNeuf({ ...exempleCodex("neuf"), stats: { faites: 1, total: 10, xpCodex: 10 } }));
+  check("le compte neuf a une étape, « 10 questions pour faire connaissance · 5 min »", TEXTES_JOUR.neuf.titre === "10 questions pour faire connaissance" && TEXTES_JOUR.neuf.duree === 5);
+  check("Quêtes du jour : « · 1 sur 3 · +50 XP à 3 sur 3 » ; sobre ou bonus gagné : sans l'XP",
+    resumeQuetesDuJour({ fait: false, xp: 50, faits: 1, total: 3, changementPossible: true }, false) === "· 1 sur 3 · +50 XP à 3 sur 3" && resumeQuetesDuJour({ fait: false, xp: 50, faits: 1, total: 3, changementPossible: true }, true) === "· 1 sur 3" && resumeQuetesDuJour({ fait: true, xp: 50, faits: 3, total: 3, changementPossible: false }, false) === "· 3 sur 3");
+  check("Fait aujourd'hui : « · 4 · +230 XP » ; sobre : le nombre seul", resumeFait({ n: 4, xp: 230, quetes: [] }, false) === "· 4 · +230 XP" && resumeFait({ n: 4, xp: 230, quetes: [] }, true) === "· 4" && resumeFait({ n: 0, xp: 0, quetes: [] }, false) === "· 0");
+  const capV = v.cap!;
+  const avecMesures = (n: number) => ({ ...capV, matieres: capV.matieres.map((m, i) => ({ ...m, statut: (i < n ? "mesuree" : "non_mesuree") as typeof m.statut, pct: i < n ? 50 : null })) });
+  check(`Préparation : masquée sous ${MATIERES_PREPARATION} matières mesurées, montrée dès ${MATIERES_PREPARATION}`, preparationJour(avecMesures(MATIERES_PREPARATION - 1)) === null && preparationJour(avecMesures(MATIERES_PREPARATION)) !== null && preparationJour(null) === null);
+  const p = preparationJour({ ...avecMesures(10), faible: { cle: "ethics", nom: "Ethics", court: "Ethics", points: 7.2 } });
+  check("… ses valeurs écrites (« Ethics 50 % · … »), « Ce qui te coûte le plus : Ethics (−7 pts) »", !!p && p.valeurs.split(" · ").length === 10 && p.valeurs.includes("50\u00a0%") && p.faible?.texte === "Ethics (−7 pts)", p?.valeurs);
+  check("… un point faible au repère n'est pas « ce qui coûte »", preparationJour({ ...avecMesures(10), faible: { cle: "ethics", nom: "Ethics", court: "Ethics", points: 0 } })?.faible === null);
+  const a = acteEnCours(v.trame);
+  check("l'acte en cours : le courant, jamais la visite de la bottega", !!a && a.courant && !(a.acte.numero === 1 && a.quetes.every((q) => q.optionnelle)), a?.acte.id);
+  const etapes = a ? etapesActe(a) : [];
+  check("… ses étapes : à faire d'abord, puis faites, sans les cachées", etapes.every((l) => l.affichage !== "cache") && etapes.findIndex((l) => l.etat === "terminee") >= etapes.filter((l) => l.etat !== "terminee").length - (etapes.some((l) => l.etat === "terminee") ? 0 : etapes.length));
+  check("Ta semaine : « · 1 sur 2 »", resumeSemaine([{ etat: "terminee" }, { etat: "active" }] as never) === "· 1 sur 2");
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
