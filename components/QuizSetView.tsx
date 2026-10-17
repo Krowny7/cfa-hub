@@ -14,6 +14,8 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { FinDeSession } from "@/components/session/FinDeSession";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { CopierPourIA, ReviewSection } from "@/components/session/parts";
+import { DebriefCopie, EnteteDebrief, piedDebrief } from "@/components/session/Debrief";
+import { secondesDe } from "@/lib/debrief";
 import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { surTitreSession } from "@/lib/voice";
@@ -152,6 +154,7 @@ export function QuizSetView({
   done = null,
   settingsSlot,
   traitsJour = null,
+  debrief = false,
   demo,
 }: {
   setId: string;
@@ -167,6 +170,8 @@ export function QuizSetView({
   settingsSlot?: React.ReactNode;
   /** traits du jour lus par le serveur (anneau du jour sous la copie) ; null : inconnu */
   traitsJour?: number | null;
+  /** examen officiel (« Mocks Officiels ») : le débrief des erreurs sous la correction (V3 §7.6) */
+  debrief?: boolean;
   demo?: QuizDemo;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -187,6 +192,8 @@ export function QuizSetView({
   const [dureeS, setDureeS] = useState<number | null>(null);
   // traits posés par ce passage (réponses corrigées par le serveur) : l'anneau sous la copie
   const [traces, setTraces] = useState(demo?.stage === "done" ? demo?.results?.length ?? 0 : 0);
+  // la copie enregistrée (quiz_attempts.id) : la référence du débrief ; null tant qu'elle n'est pas connue
+  const [essai, setEssai] = useState<string | null>(null);
 
   // La bonne réponse n'est connue qu'APRÈS soumission (voir
   // migration_fix_answer_leak.sql) — révélée par award_quiz_question_xp,
@@ -221,6 +228,7 @@ export function QuizSetView({
     setXpRun(0);
     setDureeS(null);
     setTraces(0);
+    setEssai(null);
     setStartedAt(Date.now());
   }
 
@@ -230,13 +238,26 @@ export function QuizSetView({
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return;
       const duration = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
-      await supabase.from("quiz_attempts").insert({
+      const { error: insErr } = await supabase.from("quiz_attempts").insert({
         user_id: auth.user.id,
         set_id: setId,
         score: finalScore,
         total: questions.length,
         duration_seconds: duration,
       });
+      // examen officiel : la copie qu'on vient d'enregistrer, pour le débrief
+      // (lue à part : l'enregistrement ne dépend jamais de cette lecture)
+      if (debrief && !insErr) {
+        const { data } = await supabase
+          .from("quiz_attempts")
+          .select("id")
+          .eq("user_id", auth.user.id)
+          .eq("set_id", setId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const id = (data?.[0] as { id?: string } | undefined)?.id;
+        if (id) setEssai(id);
+      }
     } catch (e) {
       // Non-critical pour l'utilisateur (le score reste affiché localement),
       // mais on log pour ne pas perdre le signal en cas de bug silencieux.
@@ -522,7 +543,13 @@ export function QuizSetView({
           </>
         }
       >
-        <ReviewSection review={review} />
+        {debrief ? (
+          <DebriefCopie copie={{ source: "officiel", ref: essai, secondesParQuestion: secondesDe(dureeS, results.length) }} review={review} demo={Boolean(demo)}>
+            <ReviewSection review={review} entete={(ouvrir) => <EnteteDebrief ouvrir={ouvrir} />} piedDe={piedDebrief} />
+          </DebriefCopie>
+        ) : (
+          <ReviewSection review={review} />
+        )}
       </FinDeSession>
     </div>
   );

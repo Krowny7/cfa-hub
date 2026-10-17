@@ -171,6 +171,7 @@ export default async function QuizSetPage({ params }: PageProps) {
         initialQuestions={initialQuestions}
         title={set.title}
         official={isOfficial}
+        debrief={isOfficial && folderName === "Mocks Officiels (Système)"}
         done={done}
         traitsJour={traitsJour}
         settingsSlot={
