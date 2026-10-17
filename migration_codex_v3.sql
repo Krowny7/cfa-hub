@@ -167,6 +167,24 @@
 --    d'office, comme avant. L'XP récupérée compte le jour du clic dans les
 --    classements de la semaine ; la série d'encre ne multiplie pas l'XP du
 --    Codex, rien ne change pour elle.
+--    RETOUR EN ARRIÈRE vers un site d'avant « Récupérer » (6db1769 ou plus
+--    ancien) après le collage du §9 : ce site tient « terminee » pour fait
+--    et n'a aucun bouton « Récupérer ». Les quêtes en attente n'y seraient
+--    ni versées ni proposées : l'XP n'est pas perdue, mais reste invisible.
+--    Une fois l'ancien site en ligne (il ne met plus rien en attente ;
+--    lancée avant, la requête laisserait passer ce que le site actuel
+--    diffère encore), verser ce qui attend depuis l'éditeur SQL (rôle
+--    propriétaire ; la fonction est fermée aux joueurs) :
+--      SELECT u.user_id, codex_recuperer(u.user_id, NULL)
+--      FROM (SELECT DISTINCT user_id FROM codex_progression
+--            WHERE etat = 'terminee') u;
+--    puis contrôler :
+--      SELECT count(*) FROM codex_progression WHERE etat = 'terminee';
+--    et relancer la première tant que le compte n'est pas 0 : la fonction
+--    prend 200 quêtes au plus par joueur et par appel. Un compte qui ne
+--    baisse plus signale une ligne en erreur : voir codex_erreurs. Rien
+--    d'autre à défaire : le codex_ecrire du §9 verse d'office tout item
+--    sans « differer », ce que l'ancien site envoie.
 --
 -- Ordre de collage :migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
@@ -1709,7 +1727,8 @@ GRANT EXECUTE ON FUNCTION codex_resultat_poser(uuid, text, text, text, jsonb) TO
 -- ════════════════════════════════════════════════════════════════════
 -- 9. « Récupérer » (Codex simplifié). Cette section se colle seule ou
 -- avec tout le fichier : codex_ecrire et codex_mesures_v3 y sont définies
--- en entier (leur seule définition du fichier).
+-- en entier (leur seule définition du fichier). Retour en arrière vers un
+-- site sans « Récupérer » : la requête de secours de l'en-tête (§9).
 -- ════════════════════════════════════════════════════════════════════
 
 -- Collée seule, elle suppose les sections 1 à 8 déjà en place.
