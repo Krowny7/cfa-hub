@@ -7,9 +7,10 @@
 -- APRÈS ce fichier. Ils remettraient codex_ecrire, codex_journal, codex_lire
 -- et _serie_avancer dans leur version d'avant (les quêtes du fil rouge ne
 -- s'écriraient plus ; les jours de repos et de pause seraient ignorés par la
--- série). Si c'est fait, recollez ce fichier ensuite. Les capacités « fil »
--- et « journal » de codex_mesures_v3 se lisent sur le corps de codex_ecrire et
--- de codex_journal : le Codex s'y adapte, mais _serie_avancer, non.
+-- série). Si c'est fait, recollez ce fichier ensuite. Les capacités « fil »,
+-- « journal » et « recuperer » de codex_mesures_v3 se lisent sur le corps de
+-- codex_ecrire et de codex_journal : le Codex s'y adapte, mais _serie_avancer,
+-- non.
 --
 -- 1. La robustesse de l'écriture (V3 §6, point 14). Avant : une seule ligne
 --    en conflit (par exemple une XP déjà versée dont la ligne de progression
@@ -31,6 +32,7 @@
 --       reversée : la ligne est marquée récompensée avec l'XP d'alors, sans
 --       fanfare. Le résultat gagne un champ « erreurs » (nombre de quêtes
 --       consignées à cet appel).
+--       Définie au §9, qui l'étend (« Récupérer »).
 --
 -- 2. Le réglage du jour du joueur (V3 §9.2, §1.9), dans codex_joueur :
 --    a. quatre colonnes : budget_min (15, 30, 60 ou 90 min, « J'ai … min »
@@ -75,6 +77,8 @@
 --    scellées, les examens blancs à débriefer et la répartition des causes
 --    d'erreur (blanc_debrief). Clé service seulement. Réécrite en entier par
 --    chaque lot qui l'étend.
+--    Définie au §9 : les maîtres comptent les branches faites, récupérées
+--    ou non, et la capacité « recuperer » s'ajoute.
 --
 -- 5. Le journal v3 et une seule lecture des réponses par appel (V3 §12.3bis) :
 --    a. _reponses_cache(uuid) : les réponses du joueur lues une fois par
@@ -145,6 +149,25 @@
 --    Sans cette section : les contrats de la semaine comme avant, pas de
 --    repos ni de pause, le verdict gardé dans le compte (rl_verdict).
 --
+-- 9. « Récupérer » (Codex simplifié) : une quête remplie attend le clic du
+--    joueur, qui verse vraiment sa récompense.
+--    a. les lignes « terminee » dont l'XP est déjà versée passent
+--       « recompensee », sans versement (rejouable) ;
+--    b. codex_ecrire : un item « differer » (non rétroactif, XP pas encore
+--       versée) est écrit « terminee », sans rien verser ; le reste comme
+--       au §1d. Le résultat gagne « differees » ;
+--    c. codex_recuperer(uuid, jsonb) : verse les quêtes qui attendent
+--       (toutes, ou une liste de {quete, periode}), une seule fois même sur
+--       un double clic. Clé service seulement ;
+--    d. codex_mesures_v3 : les maîtres comptent les branches faites,
+--       récupérées ou non ; capacité « recuperer » (codex_recuperer ET un
+--       codex_ecrire qui diffère).
+--    codex_ecrire et codex_mesures_v3 ne sont définies qu'ici, en entier :
+--    ce §9 se colle seul ou avec tout le fichier. Sans lui, tout est versé
+--    d'office, comme avant. L'XP récupérée compte le jour du clic dans les
+--    classements de la semaine ; la série d'encre ne multiplie pas l'XP du
+--    Codex, rien ne change pour elle.
+--
 -- Ordre de collage :migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
 
@@ -207,148 +230,11 @@ END;
 $$;
 
 -- ── 1d. codex_ecrire, tolérante ──────────────────────────────────────
--- Même contrat que dans migration_codex.sql (voir son en-tête, section 8).
-CREATE OR REPLACE FUNCTION codex_ecrire(p_user uuid, p_lot jsonb, p_budget_retro int DEFAULT 0)
-RETURNS jsonb
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
-AS $$
-DECLARE
-  it         record;
-  v_now      timestamptz := now();
-  v_premier  boolean;
-  v_id       text;
-  v_per      text;
-  v_fam      text;
-  v_etat     text;
-  v_retro    boolean;
-  v_nominal  int;
-  v_xp       int;
-  v_deja     int;
-  v_restant  int := greatest(0, coalesce(p_budget_retro, 0));
-  v_atteint  timestamptz;
-  v_cos      text;
-  v_titre    text;
-  v_ok       int;
-  v_recs     jsonb := '[]'::jsonb;
-  v_res      jsonb;
-  v_actes    text[] := '{}';
-  v_coss     text[] := '{}';
-  v_titres   text[] := '{}';
-  v_retro_xp int := 0;
-  v_retro_n  int := 0;
-  v_err      int := 0;
-BEGIN
-  IF p_user IS NULL OR p_lot IS NULL OR jsonb_typeof(p_lot) <> 'array' THEN
-    RAISE EXCEPTION 'Lot invalide';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = p_user) THEN
-    RAISE EXCEPTION 'Joueur introuvable';
-  END IF;
-  PERFORM pg_advisory_xact_lock(hashtext('codex:' || p_user::text));
-
-  INSERT INTO codex_joueur (user_id, premier_calcul, dernier_calcul) VALUES (p_user, v_now, v_now) ON CONFLICT (user_id) DO NOTHING;
-  GET DIAGNOSTICS v_ok = ROW_COUNT;
-  v_premier := v_ok > 0;
-
-  FOR it IN SELECT value AS v FROM jsonb_array_elements(p_lot) LOOP
-    v_id := it.v->>'quete';
-    v_per := coalesce(it.v->>'periode', '');
-    v_fam := it.v->>'famille';
-    v_etat := it.v->>'etat';
-    CONTINUE WHEN v_id IS NULL OR char_length(v_id) NOT BETWEEN 1 AND 120 OR v_etat IS NULL
-               OR v_fam NOT IN ('trame', 'branche', 'longcours', 'contrat', 'exploit', 'acte', 'fil');
-
-    -- chaque quête dans sa sous-transaction : une erreur est consignée, les autres passent
-    BEGIN
-      IF v_etat IN ('disponible', 'active') THEN
-        INSERT INTO codex_progression (user_id, quete_id, periode, famille, etat, progression, cible, ouverte_le, maj)
-        VALUES (p_user, v_id, v_per, v_fam, v_etat, coalesce((it.v->>'progression')::numeric, 0), (it.v->>'cible')::numeric, v_now, v_now)
-        ON CONFLICT (user_id, quete_id, periode) DO UPDATE
-          SET etat = EXCLUDED.etat, progression = EXCLUDED.progression, cible = EXCLUDED.cible, maj = v_now
-          WHERE codex_progression.etat IN ('verrouillee', 'disponible', 'active');
-
-      ELSIF v_etat = 'terminee' THEN
-        v_retro := coalesce((it.v->>'retro')::boolean, false);
-        v_nominal := greatest(0, coalesce((it.v->>'xp')::int, 0));
-        v_xp := least(v_nominal, greatest(0, coalesce((it.v->>'plafond')::int, v_nominal)), 5000);
-        IF v_retro THEN
-          v_xp := least(v_xp, v_restant);
-        END IF;
-        v_atteint := least(coalesce((it.v->>'atteint')::timestamptz, v_now), v_now);
-        v_cos := nullif(it.v->>'cosmetique', '');
-        v_titre := nullif(it.v->>'titre', '');
-
-        -- déjà versée (ligne effacée ou réécrite à la main) : on ne reverse pas, sans fanfare
-        SELECT xp INTO v_deja FROM xp_events
-        WHERE user_id = p_user AND source = 'codex' AND meta->>'quete' = v_id AND meta->>'periode' = v_per
-        LIMIT 1;
-
-        INSERT INTO codex_progression (user_id, quete_id, periode, famille, etat, progression, cible, ouverte_le, terminee_le, recompensee_le, retro, xp, cosmetique, titre, vu, maj)
-        VALUES (p_user, v_id, v_per, v_fam, 'recompensee', coalesce((it.v->>'cible')::numeric, 1), (it.v->>'cible')::numeric,
-                v_atteint, v_atteint, v_now, v_retro, coalesce(v_deja, v_xp), v_cos, v_titre, v_retro OR v_deja IS NOT NULL, v_now)
-        ON CONFLICT (user_id, quete_id, periode) DO UPDATE
-          SET etat = 'recompensee', progression = coalesce(EXCLUDED.cible, EXCLUDED.progression), cible = EXCLUDED.cible,
-              terminee_le = coalesce(codex_progression.terminee_le, EXCLUDED.terminee_le), recompensee_le = v_now,
-              retro = EXCLUDED.retro, xp = EXCLUDED.xp, cosmetique = EXCLUDED.cosmetique, titre = EXCLUDED.titre, vu = EXCLUDED.vu, maj = v_now
-          WHERE codex_progression.etat <> 'recompensee';
-        GET DIAGNOSTICS v_ok = ROW_COUNT;
-
-        -- déjà récompensée, ou XP déjà versée : rien de plus (ni XP, ni fanfare, ni budget pris)
-        IF v_ok > 0 AND v_deja IS NULL THEN
-          IF v_xp > 0 THEN
-            INSERT INTO xp_events (user_id, xp, source, meta)
-            VALUES (p_user, v_xp, 'codex', jsonb_build_object('quete', v_id, 'periode', v_per, 'retro', v_retro, 'xp_vise', v_nominal));
-            UPDATE profiles SET xp_total = xp_total + v_xp WHERE id = p_user;
-          END IF;
-
-          -- un exploit nouveau se garde aussi parmi les sceaux (palier 1)
-          IF v_fam = 'exploit' AND v_id LIKE 'exploit:%' AND v_id NOT LIKE 'exploit:sceau:%' AND to_regclass('public.sceaux') IS NOT NULL THEN
-            EXECUTE 'INSERT INTO sceaux (user_id, cle, palier, dates, retro, vu) VALUES ($1, $2, 1, ARRAY[$3::timestamptz], $4, $4) ON CONFLICT (user_id, cle) DO NOTHING'
-              USING p_user, left(v_id, 64), v_atteint, v_retro;
-          END IF;
-
-          v_recs := v_recs || jsonb_build_object('quete', v_id, 'periode', v_per, 'xp', v_xp, 'nominal', v_nominal, 'retro', v_retro, 'cosmetique', v_cos, 'titre', v_titre);
-          IF v_retro THEN
-            v_restant := v_restant - v_xp;
-            v_retro_xp := v_retro_xp + v_xp;
-            v_retro_n := v_retro_n + 1;
-            IF v_fam = 'acte' THEN v_actes := array_append(v_actes, v_id); END IF;
-            IF v_cos IS NOT NULL AND v_cos NOT LIKE 'titre:%' THEN v_coss := array_append(v_coss, v_cos); END IF;
-            IF v_cos LIKE 'titre:%' THEN v_titres := array_append(v_titres, v_cos); END IF;
-            IF v_titre IS NOT NULL THEN v_titres := array_append(v_titres, v_titre); END IF;
-          END IF;
-        END IF;
-      END IF;
-    EXCEPTION WHEN OTHERS THEN
-      v_err := v_err + 1;
-      PERFORM _codex_erreur(p_user, v_id, v_per, SQLSTATE || ' ' || SQLERRM);
-    END;
-  END LOOP;
-
-  -- la rétroactivité s'ajoute au résumé de la cérémonie (jusqu'à ce qu'elle soit jouée)
-  IF v_retro_n > 0 THEN
-    UPDATE codex_joueur j
-    SET retro = jsonb_build_object(
-          'xp', coalesce((j.retro->>'xp')::int, 0) + v_retro_xp,
-          'quetes', coalesce((j.retro->>'quetes')::int, 0) + v_retro_n,
-          'actes', coalesce(j.retro->'actes', '[]'::jsonb) || to_jsonb(v_actes),
-          'cosmetiques', coalesce(j.retro->'cosmetiques', '[]'::jsonb) || to_jsonb(v_coss),
-          'titres', coalesce(j.retro->'titres', '[]'::jsonb) || to_jsonb(v_titres)),
-        retro_vue = false
-    WHERE j.user_id = p_user;
-  END IF;
-  UPDATE codex_joueur SET dernier_calcul = v_now WHERE user_id = p_user;
-  SELECT CASE WHEN NOT retro_vue THEN retro END INTO v_res FROM codex_joueur WHERE user_id = p_user;
-
-  RETURN jsonb_build_object('recompenses', v_recs, 'retro', v_res, 'premier', v_premier, 'erreurs', v_err);
-END;
-$$;
+-- Définie au §9 (fin du fichier), qui l'étend : une seule définition.
 
 REVOKE ALL ON FUNCTION _codex_erreur(uuid, text, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION codex_erreur_noter(uuid, text, text, text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION codex_ecrire(uuid, jsonb, int) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_erreur_noter(uuid, text, text, text) TO service_role;
-GRANT EXECUTE ON FUNCTION codex_ecrire(uuid, jsonb, int) TO service_role;
 
 -- ── 2a. codex_joueur : le réglage du jour ────────────────────────────
 ALTER TABLE codex_joueur ADD COLUMN IF NOT EXISTS budget_min smallint CHECK (budget_min IN (15, 30, 60, 90));
@@ -486,249 +372,7 @@ $$;
 REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticated;
 
 -- ── 4. codex_mesures_v3 (le site, clé service) ──────────────────────
--- Réécrite EN ENTIER, en place, par chaque lot qui l'étend (A2b, A3b, A4a).
--- Rend {programme, capacites, jours_encre_total, programmes_menes,
--- maitres_total, trophees, notions_tenues, speciaux_matiere} et, quand la base
--- sait les lire, {maitrise, revoir, ratures_scellees, blancs_a_debriefer,
--- causes} (clé absente sinon : la mesure reste inconnue du site). Les
--- capacités sont lues à l'exécution : ce que la base sait faire selon ce qui
--- est collé. Les réponses du joueur sont lues une fois par appel
--- (_codex_reponses_v3, §5) : appelée par codex_lire, la fonction réutilise la
--- lecture du journal. VOLATILE : le cache est une table temporaire.
---   notions_tenues     : {"<notion>": {"n": réponses, "j5": justes parmi les 5 dernières}}
---                        (une notion est tenue à n ≥ 5 et j5 ≥ 3 : lib/codex/moteur.ts)
---   speciaux_matiere   : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n},
---                         "justes_sur_20": {"<matière>": n}}
---                        bonnes réponses d'affilée dans la matière (une erreur ou 20 min de
---                        silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée ;
---                        bonnes réponses parmi les 20 dernières de la matière (l'étape « serie »
---                        d'une branche sans séance ciblée)
---   maitrise           : {"<matière>": {"pct", "questions", "total", "debut", "statut", "derniere", "ancienne"}}
---                        la maîtrise unique (maitrise_joueur, migration_v3_profil.sql §4) ;
---                        questions = réponses de la fenêtre (60 au plus), pct null sous 10
---   revoir             : {"aujourdhui", "demain", "ratures", "rappels"} (revisions_dues, §3b)
---   ratures_scellees   : ratures scellées (ratures.scellee_le, §3a) et toujours rayées,
---                        comme le carnet (get_ratures.scellees) : remise en cours à la
---                        main, elle ne compte plus (l'événement rature_scellee, daté, reste)
---   blancs_a_debriefer : copies rendues depuis 7 jours (examens blancs et officiels) dont
---                        moins de 80 % des erreurs sont classées (blanc_debrief, §5)
---   causes             : {"savoir", "lecture", "calcul", "temps", "chance" (en %), "n"}, les
---                        erreurs classées des 60 derniers jours (comme mes_causes)
-CREATE OR REPLACE FUNCTION codex_mesures_v3(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
-RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_capacites jsonb;
-  v_jours int;
-  v_menes int;
-  v_maitres int;
-  v_trophees jsonb := '[]'::jsonb;
-  v_tenues jsonb;
-  v_bonnes jsonb;
-  v_justes jsonb;
-  v_calculs jsonb := '{}'::jsonb;
-  v_tmp jsonb;
-  v_copies text[] := '{}';
-  v_plus jsonb := '{}'::jsonb;
-  v_n int;
-BEGIN
-  IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
-    RAISE EXCEPTION 'programme invalide : %', p_programme;
-  END IF;
-  v_capacites := jsonb_build_object(
-    -- le CHECK de codex_progression.famille accepte « fil » (§3c) ET codex_ecrire l'écrit
-    -- (§1d) : chaque capacité se lit sur la fonction elle-même, pas sur un marqueur. Un
-    -- migration_codex.sql recollé après ce fichier remet le codex_ecrire v2, qui saute en
-    -- silence toute famille « fil » (la quête serait fêtée à chaque calcul) : fil faux.
-    'fil', EXISTS (SELECT 1 FROM pg_constraint c
-                   WHERE c.conrelid = 'public.codex_progression'::regclass AND c.conname = 'codex_progression_famille_check'
-                     AND pg_get_constraintdef(c.oid) LIKE '%''fil''%')
-           AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_ecrire(uuid,jsonb,integer)')) LIKE '%''fil''%', false),
-    -- les mesures nouvelles de cette fonction (notions tenues, spéciaux par matière, trophées)
-    'mesures', true,
-    -- le journal v3 (§5) : son marqueur ET un codex_journal qui rend ses événements
-    -- (seance_juste) ; le journal v2 recollé par-dessus : 2
-    'journal', CASE WHEN to_regprocedure('public._codex_journal_v3()') IS NOT NULL
-                     AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_journal(uuid)')) LIKE '%seance_juste%', false)
-                    THEN 3 ELSE 2 END,
-    'seances', to_regclass('public.codex_seances') IS NOT NULL,
-    'revoir', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'revisions_dues'),
-    'maitrise', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'maitrise_joueur'),
-    'trophees', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'trophees_joueur'),
-    'debrief', to_regclass('public.blanc_debrief') IS NOT NULL,
-    'ratures_seches', EXISTS (SELECT 1 FROM pg_attribute a
-                              WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'seche_le' AND NOT a.attisdropped)
-  );
-  -- les jours d'encre de toute une vie : 10 questions ou plus dans le jour de Paris, tous programmes
-  SELECT count(*)::int INTO v_jours FROM _codex_jours_lus(p_user) j WHERE j.n >= 10;
-  SELECT count(*)::int INTO v_menes FROM codex_programmes_joueur WHERE user_id = p_user AND statut = 'mene';
-  -- les branches menées jusqu'à « Maître de… », tous programmes (« branche:fsa:maitre », « cfa-l2/branche:fsa:maitre »)
-  SELECT count(*)::int INTO v_maitres FROM codex_progression
-  WHERE user_id = p_user AND etat = 'recompensee' AND periode = '' AND quete_id ~ '^([a-z0-9-]+/)?branche:[^:/]+:maitre$';
-  -- les trophées (V3 §2.5), une ligne par source et par palier (1 bronze … 4 diamant) :
-  -- trophees_joueur (migration_v3_profil.sql §2) quand elle est collée ; sinon la
-  -- seule source « ciblee », comme get_user_practice_trophies (séance à 70 % ou
-  -- mieux, palier par le nombre de matières), avec le plafond par taille
-  -- (moins de 30 questions : argent au plus ; moins de 60 : or au plus) pour les
-  -- seules séances rendues depuis la mise en ligne v3 (18 octobre 2026, minuit à
-  -- Paris, comme _trophee_ciblee et PLAFOND_CIBLEE_DEPUIS) : rien de gagné repris.
-  IF to_regprocedure('public.trophees_joueur(uuid)') IS NOT NULL THEN
-    EXECUTE $q$
-      SELECT coalesce(jsonb_agg(jsonb_build_object('source', t.source, 'palier', t.palier, 'n', t.n) ORDER BY t.source, t.palier), '[]'::jsonb)
-      FROM trophees_joueur($1) t WHERE t.n > 0
-    $q$ INTO v_trophees USING p_user;
-  ELSIF to_regclass('public.practice_session_results') IS NOT NULL THEN
-    EXECUTE $q$
-      SELECT coalesce(jsonb_agg(jsonb_build_object('source', 'ciblee', 'palier', x.palier, 'n', x.n) ORDER BY x.palier), '[]'::jsonb)
-      FROM (
-        SELECT CASE WHEN s.completed_at < timestamptz '2026-10-18 00:00:00+02' THEN s.brut
-                    ELSE least(s.brut, CASE WHEN s.total < 30 THEN 2 WHEN s.total < 60 THEN 3 ELSE 4 END) END AS palier,
-               count(*)::int AS n
-        FROM (SELECT CASE WHEN coalesce(array_length(r.topics, 1), 1) >= 7 THEN 4 WHEN coalesce(array_length(r.topics, 1), 1) >= 4 THEN 3
-                          WHEN coalesce(array_length(r.topics, 1), 1) >= 2 THEN 2 ELSE 1 END AS brut,
-                     r.total, r.completed_at
-              FROM practice_session_results r
-              WHERE r.user_id = $1 AND r.total > 0 AND r.score::numeric / r.total >= 0.7) s
-        GROUP BY 1
-      ) x
-    $q$ INTO v_trophees USING p_user;
-  END IF;
-  -- les réponses du joueur, lues une fois par appel (_codex_reponses_v3 : même rattachement à la
-  -- matière et à la notion que codex_journal) : les notions tenues (V3 §8.5), réponses par notion
-  -- et justes parmi les 5 dernières ; et la plus longue suite de bonnes réponses d'affilée dans
-  -- chaque matière (V3 §8.7)
-  WITH rep AS MATERIALIZED (
-    SELECT r.ok, r.at, r.matiere, r.notion, row_number() OVER (ORDER BY r.at) AS ord
-    FROM _codex_reponses_v3(p_user) r
-  )
-  SELECT
-    (SELECT coalesce(jsonb_object_agg(t.notion, jsonb_build_object('n', t.n, 'j5', t.j5)), '{}'::jsonb)
-     FROM (SELECT x.notion, count(*)::int AS n, (count(*) FILTER (WHERE x.ok AND x.rang <= 5))::int AS j5
-           FROM (SELECT c.notion, c.ok, row_number() OVER (PARTITION BY c.notion ORDER BY c.at DESC, c.ord DESC) AS rang
-                 FROM rep c WHERE c.notion IS NOT NULL) x
-           GROUP BY x.notion) t),
-    (SELECT coalesce(jsonb_object_agg(y.matiere, y.n), '{}'::jsonb)
-     FROM (SELECT z.matiere, max(z.c)::int AS n
-           FROM (SELECT g.matiere, g.grp, count(*) AS c
-                 FROM (SELECT s.matiere, s.ok, sum(CASE WHEN NOT s.ok OR s.silence THEN 1 ELSE 0 END) OVER (PARTITION BY s.matiere ORDER BY s.at, s.ord) AS grp
-                       FROM (SELECT c.matiere, c.ok, c.at, c.ord,
-                                    (c.at - lag(c.at) OVER (PARTITION BY c.matiere ORDER BY c.at, c.ord)) > interval '20 minutes' AS silence
-                             FROM rep c WHERE c.matiere IS NOT NULL) s) g
-                 WHERE g.ok
-                 GROUP BY g.matiere, g.grp) z
-           GROUP BY z.matiere) y),
-    -- les bonnes réponses parmi les 20 dernières de chaque matière
-    (SELECT coalesce(jsonb_object_agg(j.matiere, j.n), '{}'::jsonb)
-     FROM (SELECT x.matiere, (count(*) FILTER (WHERE x.ok))::int AS n
-           FROM (SELECT c.matiere, c.ok, row_number() OVER (PARTITION BY c.matiere ORDER BY c.at DESC, c.ord DESC) AS rang
-                 FROM rep c WHERE c.matiere IS NOT NULL) x
-           WHERE x.rang <= 20
-           GROUP BY x.matiere) j)
-  INTO v_tenues, v_bonnes, v_justes;
-  -- … et de calculs justes (calc_attempts, la matière est le sujet du calcul)
-  IF to_regclass('public.calc_attempts') IS NOT NULL THEN
-    EXECUTE $q$
-      SELECT coalesce(jsonb_object_agg(y.matiere, y.n), '{}'::jsonb)
-      FROM (
-        SELECT z.matiere, max(z.c)::int AS n
-        FROM (
-          SELECT g.matiere, g.grp, count(*) AS c
-          FROM (SELECT c.topic AS matiere, c.correct,
-                       sum(CASE WHEN c.correct THEN 0 ELSE 1 END) OVER (PARTITION BY c.topic ORDER BY c.answered_at, c.id) AS grp
-                FROM calc_attempts c
-                WHERE c.user_id = $1 AND EXISTS (SELECT 1 FROM codex_matieres m WHERE m.cle = c.topic)) g
-          WHERE g.correct
-          GROUP BY g.matiere, g.grp
-        ) z
-        GROUP BY z.matiere
-      ) y
-    $q$ INTO v_calculs USING p_user;
-  END IF;
-
-  -- la maîtrise unique (V3 §4), au format des mesures du Codex : questions = réponses de la
-  -- fenêtre (le statut « mesuree » commence à 40) ; ancienne garde le verrou des rangs (§4.5).
-  -- maitrise_joueur lit le même cache des réponses.
-  IF to_regprocedure('public.maitrise_joueur(uuid,text)') IS NOT NULL THEN
-    EXECUTE 'SELECT maitrise_joueur($1, $2)' INTO v_tmp USING p_user, p_programme;
-    IF jsonb_typeof(v_tmp -> 'matieres') = 'object' THEN
-      SELECT coalesce(jsonb_object_agg(m.key, jsonb_build_object(
-               'pct', m.value -> 'pct', 'questions', coalesce((m.value ->> 'n')::int, 0), 'total', coalesce((m.value ->> 'total')::int, 0),
-               'debut', m.value -> 'debut', 'statut', m.value -> 'statut', 'derniere', m.value -> 'derniere', 'ancienne', m.value -> 'ancienne')), '{}'::jsonb)
-      INTO v_tmp
-      FROM jsonb_each(v_tmp -> 'matieres') m
-      WHERE jsonb_typeof(m.value) = 'object';
-      v_plus := v_plus || jsonb_build_object('maitrise', v_tmp);
-    END IF;
-  END IF;
-  -- la file « À revoir » (V3 §5.1) : les comptes seulement (le site lit la file elle-même à part)
-  IF to_regprocedure('public.revisions_dues(uuid,date,integer)') IS NOT NULL THEN
-    EXECUTE 'SELECT revisions_dues($1, NULL, 25)' INTO v_tmp USING p_user;
-    IF jsonb_typeof(v_tmp) = 'object' THEN
-      v_plus := v_plus || jsonb_build_object('revoir', jsonb_build_object(
-        'aujourdhui', coalesce(v_tmp -> 'aujourdhui', '0'::jsonb), 'demain', coalesce(v_tmp -> 'demain', '0'::jsonb),
-        'ratures', coalesce(v_tmp -> 'ratures', '0'::jsonb), 'rappels', coalesce(v_tmp -> 'rappels', '0'::jsonb)));
-    END IF;
-  END IF;
-  -- les ratures scellées (V3 §5.3)
-  IF EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'scellee_le' AND NOT a.attisdropped) THEN
-    EXECUTE 'SELECT count(*)::int FROM ratures WHERE user_id = $1 AND scellee_le IS NOT NULL AND removed_at IS NOT NULL' INTO v_n USING p_user;
-    v_plus := v_plus || jsonb_build_object('ratures_scellees', v_n);
-  END IF;
-  -- le débrief des examens blancs (V3 §7.6) : les copies rendues depuis 7 jours qui restent à
-  -- débriefer (erreurs de la copie d'après _blanc_erreurs ; classées à moins de 80 %), et la
-  -- répartition des causes sur 60 jours
-  IF to_regclass('public.blanc_debrief') IS NOT NULL AND to_regprocedure('public._blanc_erreurs(uuid,text,uuid)') IS NOT NULL THEN
-    IF to_regclass('public.mock_exam_results') IS NOT NULL THEN
-      v_copies := array_append(v_copies, $q$
-        SELECT 'blanc'::text AS source, r.exam_id AS ref FROM mock_exam_results r
-        WHERE r.user_id = $1 AND r.completed_at >= now() - interval '7 days'
-      $q$);
-    END IF;
-    IF to_regclass('public.quiz_attempts') IS NOT NULL THEN
-      v_copies := array_append(v_copies, $q$
-        SELECT 'officiel'::text, a.id FROM quiz_attempts a
-        JOIN quiz_sets qs ON qs.id = a.set_id
-        JOIN library_folders lf ON lf.id = qs.folder_id AND lf.name = 'Mocks Officiels (Système)'
-        WHERE a.user_id = $1 AND a.created_at >= now() - interval '7 days'
-      $q$);
-    END IF;
-    v_n := 0;
-    IF cardinality(v_copies) > 0 THEN
-      EXECUTE format($q$
-        SELECT count(*)::int FROM (
-          SELECT (SELECT count(*) FROM _blanc_erreurs($1, c.source, c.ref)) AS erreurs,
-                 (SELECT count(*) FROM blanc_debrief d WHERE d.user_id = $1 AND d.source = c.source AND d.ref = c.ref) AS classees
-          FROM (%s) c
-        ) x
-        WHERE x.erreurs > 0 AND x.classees * 100 < x.erreurs * 80
-      $q$, array_to_string(v_copies, ' UNION ALL ')) INTO v_n USING p_user;
-    END IF;
-    v_plus := v_plus || jsonb_build_object('blancs_a_debriefer', v_n);
-    EXECUTE $q$
-      SELECT jsonb_build_object(
-               'savoir', CASE WHEN x.n > 0 THEN round(100.0 * x.savoir / x.n)::int ELSE 0 END,
-               'lecture', CASE WHEN x.n > 0 THEN round(100.0 * x.lecture / x.n)::int ELSE 0 END,
-               'calcul', CASE WHEN x.n > 0 THEN round(100.0 * x.calcul / x.n)::int ELSE 0 END,
-               'temps', CASE WHEN x.n > 0 THEN round(100.0 * x.temps / x.n)::int ELSE 0 END,
-               'chance', CASE WHEN x.n > 0 THEN round(100.0 * x.chance / x.n)::int ELSE 0 END,
-               'n', x.n)
-      FROM (SELECT count(*)::int AS n,
-                   count(*) FILTER (WHERE d.cause = 'savoir') AS savoir, count(*) FILTER (WHERE d.cause = 'lecture') AS lecture,
-                   count(*) FILTER (WHERE d.cause = 'calcul') AS calcul, count(*) FILTER (WHERE d.cause = 'temps') AS temps,
-                   count(*) FILTER (WHERE d.cause = 'chance') AS chance
-            FROM blanc_debrief d WHERE d.user_id = $1 AND d.note_le >= now() - interval '60 days') x
-    $q$ INTO v_tmp USING p_user;
-    v_plus := v_plus || jsonb_build_object('causes', v_tmp);
-  END IF;
-
-  RETURN jsonb_build_object('programme', p_programme, 'capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
-                            'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb),
-                            'notions_tenues', v_tenues,
-                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb), 'justes_sur_20', v_justes))
-         || v_plus;
-END $$;
-
-REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION codex_mesures_v3(uuid, text) TO service_role;
+-- Définie au §9d (fin du fichier), qui l'étend : une seule définition.
 
 -- ── 5. le journal v3, une seule lecture des réponses par appel ──────
 -- 5a. Les réponses du joueur lues une fois par appel (V3 §12.3bis) : une
@@ -2061,3 +1705,541 @@ END $$;
 
 REVOKE ALL ON FUNCTION codex_resultat_poser(uuid, text, text, text, jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_resultat_poser(uuid, text, text, text, jsonb) TO service_role;
+
+-- ════════════════════════════════════════════════════════════════════
+-- 9. « Récupérer » (Codex simplifié). Cette section se colle seule ou
+-- avec tout le fichier : codex_ecrire et codex_mesures_v3 y sont définies
+-- en entier (leur seule définition du fichier).
+-- ════════════════════════════════════════════════════════════════════
+
+-- Collée seule, elle suppose les sections 1 à 8 déjà en place.
+DO $$
+BEGIN
+  IF to_regprocedure('public._codex_erreur(uuid,text,text,text)') IS NULL OR to_regprocedure('public._codex_jours_lus(uuid)') IS NULL THEN
+    RAISE EXCEPTION 'Coller d''abord les sections 1 à 8 de migration_codex_v3.sql';
+  END IF;
+END $$;
+
+-- 9a. Les lignes « terminee » dont l'XP est déjà dans xp_events (aucun
+-- codex_ecrire d'avant n'en écrit, mais une ligne réécrite à la main peut
+-- l'être) passent « recompensee », sans versement ni fanfare : elles
+-- n'attendent pas dans « À récupérer ». Rejouable : une quête différée
+-- n'a pas d'XP versée tant qu'elle attend, elle n'est donc jamais touchée.
+UPDATE codex_progression p
+SET etat = 'recompensee', xp = e.xp, recompensee_le = coalesce(p.recompensee_le, e.occurred_at), vu = true, maj = now()
+FROM xp_events e
+WHERE p.etat = 'terminee' AND e.source = 'codex' AND e.user_id = p.user_id
+  AND e.meta->>'quete' = p.quete_id AND e.meta->>'periode' = p.periode;
+
+-- 9b. codex_ecrire, tolérante (§1) et qui sait différer. Même contrat que
+-- dans migration_codex.sql (voir son en-tête, section 8), plus :
+--   item « differer » à vrai, non rétroactif, XP pas encore versée : la
+--   ligne est écrite « terminee » (terminee_le, l'XP déjà plafonnée, le
+--   cosmétique et le titre ; vu faux, recompensee_le vide), sans
+--   xp_events, sans profiles, sans sceaux. Elle attend codex_recuperer.
+--   Une ligne déjà terminée ou récompensée ne bouge pas.
+--   Les autres items gardent le chemin d'avant : récompensés et versés
+--   tout de suite (le rétroactif aussi : sa cérémonie ne change pas).
+-- Le résultat gagne « differees » (les quêtes mises en attente à cet
+-- appel, même forme que « recompenses »).
+CREATE OR REPLACE FUNCTION codex_ecrire(p_user uuid, p_lot jsonb, p_budget_retro int DEFAULT 0)
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  it         record;
+  v_now      timestamptz := now();
+  v_premier  boolean;
+  v_id       text;
+  v_per      text;
+  v_fam      text;
+  v_etat     text;
+  v_retro    boolean;
+  v_nominal  int;
+  v_xp       int;
+  v_deja     int;
+  v_restant  int := greatest(0, coalesce(p_budget_retro, 0));
+  v_atteint  timestamptz;
+  v_cos      text;
+  v_titre    text;
+  v_ok       int;
+  v_recs     jsonb := '[]'::jsonb;
+  v_diffs    jsonb := '[]'::jsonb;
+  v_res      jsonb;
+  v_actes    text[] := '{}';
+  v_coss     text[] := '{}';
+  v_titres   text[] := '{}';
+  v_retro_xp int := 0;
+  v_retro_n  int := 0;
+  v_err      int := 0;
+BEGIN
+  IF p_user IS NULL OR p_lot IS NULL OR jsonb_typeof(p_lot) <> 'array' THEN
+    RAISE EXCEPTION 'Lot invalide';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = p_user) THEN
+    RAISE EXCEPTION 'Joueur introuvable';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('codex:' || p_user::text));
+
+  INSERT INTO codex_joueur (user_id, premier_calcul, dernier_calcul) VALUES (p_user, v_now, v_now) ON CONFLICT (user_id) DO NOTHING;
+  GET DIAGNOSTICS v_ok = ROW_COUNT;
+  v_premier := v_ok > 0;
+
+  FOR it IN SELECT value AS v FROM jsonb_array_elements(p_lot) LOOP
+    v_id := it.v->>'quete';
+    v_per := coalesce(it.v->>'periode', '');
+    v_fam := it.v->>'famille';
+    v_etat := it.v->>'etat';
+    CONTINUE WHEN v_id IS NULL OR char_length(v_id) NOT BETWEEN 1 AND 120 OR v_etat IS NULL
+               OR v_fam NOT IN ('trame', 'branche', 'longcours', 'contrat', 'exploit', 'acte', 'fil');
+
+    -- chaque quête dans sa sous-transaction : une erreur est consignée, les autres passent
+    BEGIN
+      IF v_etat IN ('disponible', 'active') THEN
+        INSERT INTO codex_progression (user_id, quete_id, periode, famille, etat, progression, cible, ouverte_le, maj)
+        VALUES (p_user, v_id, v_per, v_fam, v_etat, coalesce((it.v->>'progression')::numeric, 0), (it.v->>'cible')::numeric, v_now, v_now)
+        ON CONFLICT (user_id, quete_id, periode) DO UPDATE
+          SET etat = EXCLUDED.etat, progression = EXCLUDED.progression, cible = EXCLUDED.cible, maj = v_now
+          WHERE codex_progression.etat IN ('verrouillee', 'disponible', 'active');
+
+      ELSIF v_etat = 'terminee' THEN
+        v_retro := coalesce((it.v->>'retro')::boolean, false);
+        v_nominal := greatest(0, coalesce((it.v->>'xp')::int, 0));
+        v_xp := least(v_nominal, greatest(0, coalesce((it.v->>'plafond')::int, v_nominal)), 5000);
+        IF v_retro THEN
+          v_xp := least(v_xp, v_restant);
+        END IF;
+        v_atteint := least(coalesce((it.v->>'atteint')::timestamptz, v_now), v_now);
+        v_cos := nullif(it.v->>'cosmetique', '');
+        v_titre := nullif(it.v->>'titre', '');
+
+        -- déjà versée (ligne effacée ou réécrite à la main) : on ne reverse pas, sans fanfare
+        SELECT xp INTO v_deja FROM xp_events
+        WHERE user_id = p_user AND source = 'codex' AND meta->>'quete' = v_id AND meta->>'periode' = v_per
+        LIMIT 1;
+
+        IF coalesce((it.v->>'differer')::boolean, false) AND NOT v_retro AND v_deja IS NULL THEN
+          -- « Récupérer » : faite, sa récompense attend le clic du joueur (codex_recuperer)
+          INSERT INTO codex_progression (user_id, quete_id, periode, famille, etat, progression, cible, ouverte_le, terminee_le, retro, xp, cosmetique, titre, vu, maj)
+          VALUES (p_user, v_id, v_per, v_fam, 'terminee', coalesce((it.v->>'cible')::numeric, 1), (it.v->>'cible')::numeric,
+                  v_atteint, v_atteint, false, v_xp, v_cos, v_titre, false, v_now)
+          ON CONFLICT (user_id, quete_id, periode) DO UPDATE
+            SET etat = 'terminee', progression = coalesce(EXCLUDED.cible, EXCLUDED.progression), cible = EXCLUDED.cible,
+                terminee_le = coalesce(codex_progression.terminee_le, EXCLUDED.terminee_le), recompensee_le = NULL,
+                retro = false, xp = EXCLUDED.xp, cosmetique = EXCLUDED.cosmetique, titre = EXCLUDED.titre, vu = false, maj = v_now
+            WHERE codex_progression.etat NOT IN ('terminee', 'recompensee');
+          GET DIAGNOSTICS v_ok = ROW_COUNT;
+          IF v_ok > 0 THEN
+            v_diffs := v_diffs || jsonb_build_object('quete', v_id, 'periode', v_per, 'xp', v_xp, 'nominal', v_nominal, 'retro', false, 'cosmetique', v_cos, 'titre', v_titre);
+          END IF;
+
+        ELSE
+          INSERT INTO codex_progression (user_id, quete_id, periode, famille, etat, progression, cible, ouverte_le, terminee_le, recompensee_le, retro, xp, cosmetique, titre, vu, maj)
+          VALUES (p_user, v_id, v_per, v_fam, 'recompensee', coalesce((it.v->>'cible')::numeric, 1), (it.v->>'cible')::numeric,
+                  v_atteint, v_atteint, v_now, v_retro, coalesce(v_deja, v_xp), v_cos, v_titre, v_retro OR v_deja IS NOT NULL, v_now)
+          ON CONFLICT (user_id, quete_id, periode) DO UPDATE
+            SET etat = 'recompensee', progression = coalesce(EXCLUDED.cible, EXCLUDED.progression), cible = EXCLUDED.cible,
+                terminee_le = coalesce(codex_progression.terminee_le, EXCLUDED.terminee_le), recompensee_le = v_now,
+                retro = EXCLUDED.retro, xp = EXCLUDED.xp, cosmetique = EXCLUDED.cosmetique, titre = EXCLUDED.titre, vu = EXCLUDED.vu, maj = v_now
+            WHERE codex_progression.etat <> 'recompensee';
+          GET DIAGNOSTICS v_ok = ROW_COUNT;
+
+          -- déjà récompensée, ou XP déjà versée : rien de plus (ni XP, ni fanfare, ni budget pris)
+          IF v_ok > 0 AND v_deja IS NULL THEN
+            IF v_xp > 0 THEN
+              INSERT INTO xp_events (user_id, xp, source, meta)
+              VALUES (p_user, v_xp, 'codex', jsonb_build_object('quete', v_id, 'periode', v_per, 'retro', v_retro, 'xp_vise', v_nominal));
+              UPDATE profiles SET xp_total = xp_total + v_xp WHERE id = p_user;
+            END IF;
+
+            -- un exploit nouveau se garde aussi parmi les sceaux (palier 1)
+            IF v_fam = 'exploit' AND v_id LIKE 'exploit:%' AND v_id NOT LIKE 'exploit:sceau:%' AND to_regclass('public.sceaux') IS NOT NULL THEN
+              EXECUTE 'INSERT INTO sceaux (user_id, cle, palier, dates, retro, vu) VALUES ($1, $2, 1, ARRAY[$3::timestamptz], $4, $4) ON CONFLICT (user_id, cle) DO NOTHING'
+                USING p_user, left(v_id, 64), v_atteint, v_retro;
+            END IF;
+
+            v_recs := v_recs || jsonb_build_object('quete', v_id, 'periode', v_per, 'xp', v_xp, 'nominal', v_nominal, 'retro', v_retro, 'cosmetique', v_cos, 'titre', v_titre);
+            IF v_retro THEN
+              v_restant := v_restant - v_xp;
+              v_retro_xp := v_retro_xp + v_xp;
+              v_retro_n := v_retro_n + 1;
+              IF v_fam = 'acte' THEN v_actes := array_append(v_actes, v_id); END IF;
+              IF v_cos IS NOT NULL AND v_cos NOT LIKE 'titre:%' THEN v_coss := array_append(v_coss, v_cos); END IF;
+              IF v_cos LIKE 'titre:%' THEN v_titres := array_append(v_titres, v_cos); END IF;
+              IF v_titre IS NOT NULL THEN v_titres := array_append(v_titres, v_titre); END IF;
+            END IF;
+          END IF;
+        END IF;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      v_err := v_err + 1;
+      PERFORM _codex_erreur(p_user, v_id, v_per, SQLSTATE || ' ' || SQLERRM);
+    END;
+  END LOOP;
+
+  -- la rétroactivité s'ajoute au résumé de la cérémonie (jusqu'à ce qu'elle soit jouée)
+  IF v_retro_n > 0 THEN
+    UPDATE codex_joueur j
+    SET retro = jsonb_build_object(
+          'xp', coalesce((j.retro->>'xp')::int, 0) + v_retro_xp,
+          'quetes', coalesce((j.retro->>'quetes')::int, 0) + v_retro_n,
+          'actes', coalesce(j.retro->'actes', '[]'::jsonb) || to_jsonb(v_actes),
+          'cosmetiques', coalesce(j.retro->'cosmetiques', '[]'::jsonb) || to_jsonb(v_coss),
+          'titres', coalesce(j.retro->'titres', '[]'::jsonb) || to_jsonb(v_titres)),
+        retro_vue = false
+    WHERE j.user_id = p_user;
+  END IF;
+  UPDATE codex_joueur SET dernier_calcul = v_now WHERE user_id = p_user;
+  SELECT CASE WHEN NOT retro_vue THEN retro END INTO v_res FROM codex_joueur WHERE user_id = p_user;
+
+  RETURN jsonb_build_object('recompenses', v_recs, 'differees', v_diffs, 'retro', v_res, 'premier', v_premier, 'erreurs', v_err);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION codex_ecrire(uuid, jsonb, int) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_ecrire(uuid, jsonb, int) TO service_role;
+
+-- 9c. codex_recuperer(uuid, jsonb) : le clic « Récupérer ». Verse les quêtes
+-- faites qui attendent (« terminee ») : toutes (p_cles NULL) ou celles de la
+-- liste [{"quete": …, "periode": …}] (periode absente : ''). 200 au plus par
+-- appel, les plus anciennes d'abord. Pour chacune : l'XP dans xp_events
+-- (source « codex », meta.differe vrai) et profiles.xp_total, l'exploit
+-- parmi les sceaux, puis la ligne « recompensee » (vu vrai : le site joue
+-- les fêtes d'après ce résultat). Un double clic ou deux onglets ne versent
+-- qu'une fois : même verrou que codex_ecrire, lignes prises FOR UPDATE, et
+-- l'index unique xp_events_codex_une_fois refuse un second versement (la
+-- ligne est alors récompensée sans rien verser). Une ligne en erreur est
+-- consignée (codex_erreurs) et n'empêche pas les autres.
+-- Rend {"recuperees": [{quete, periode, famille, xp, cosmetique, titre,
+-- terminee_le}], "xp": l'XP versée à cet appel, "restant": les quêtes qui
+-- attendent encore, "erreurs"}. Clé service seulement.
+CREATE OR REPLACE FUNCTION codex_recuperer(p_user uuid, p_cles jsonb DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  r         record;
+  v_now     timestamptz := now();
+  v_ok      int;
+  v_xp      int;
+  v_deja    int;
+  v_total   int := 0;
+  v_recs    jsonb := '[]'::jsonb;
+  v_restant int;
+  v_err     int := 0;
+BEGIN
+  IF p_user IS NULL THEN
+    RAISE EXCEPTION 'Joueur manquant';
+  END IF;
+  IF p_cles IS NOT NULL AND jsonb_typeof(p_cles) <> 'array' THEN
+    RAISE EXCEPTION 'Clés invalides';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtext('codex:' || p_user::text));
+
+  FOR r IN
+    SELECT p.quete_id, p.periode, p.famille, p.xp, p.cosmetique, p.titre, p.terminee_le
+    FROM codex_progression p
+    WHERE p.user_id = p_user AND p.etat = 'terminee'
+      AND (p_cles IS NULL OR EXISTS (SELECT 1 FROM jsonb_array_elements(p_cles) c
+                                     WHERE c->>'quete' = p.quete_id AND coalesce(c->>'periode', '') = p.periode))
+    ORDER BY p.terminee_le NULLS LAST, p.quete_id, p.periode
+    LIMIT 200
+    FOR UPDATE
+  LOOP
+    BEGIN
+      v_xp := greatest(0, coalesce(r.xp, 0));
+      v_deja := NULL;
+      IF v_xp > 0 THEN
+        INSERT INTO xp_events (user_id, xp, source, meta)
+        VALUES (p_user, v_xp, 'codex', jsonb_build_object('quete', r.quete_id, 'periode', r.periode, 'retro', false, 'xp_vise', v_xp, 'differe', true))
+        ON CONFLICT (user_id, (meta->>'quete'), (meta->>'periode')) WHERE source = 'codex' DO NOTHING;
+        GET DIAGNOSTICS v_ok = ROW_COUNT;
+        IF v_ok > 0 THEN
+          UPDATE profiles SET xp_total = xp_total + v_xp WHERE id = p_user;
+        ELSE
+          -- déjà versée (un autre appel, un autre chemin) : rien de plus, la ligne garde l'XP d'alors
+          SELECT xp INTO v_deja FROM xp_events
+          WHERE user_id = p_user AND source = 'codex' AND meta->>'quete' = r.quete_id AND meta->>'periode' = r.periode
+          LIMIT 1;
+          v_deja := coalesce(v_deja, v_xp);
+        END IF;
+      END IF;
+
+      -- un exploit nouveau se garde aussi parmi les sceaux (palier 1), comme dans codex_ecrire
+      IF r.famille = 'exploit' AND r.quete_id LIKE 'exploit:%' AND r.quete_id NOT LIKE 'exploit:sceau:%' AND to_regclass('public.sceaux') IS NOT NULL THEN
+        EXECUTE 'INSERT INTO sceaux (user_id, cle, palier, dates, retro, vu) VALUES ($1, $2, 1, ARRAY[$3::timestamptz], false, false) ON CONFLICT (user_id, cle) DO NOTHING'
+          USING p_user, left(r.quete_id, 64), coalesce(r.terminee_le, v_now);
+      END IF;
+
+      UPDATE codex_progression
+      SET etat = 'recompensee', recompensee_le = v_now, vu = true, xp = coalesce(v_deja, xp), maj = v_now
+      WHERE user_id = p_user AND quete_id = r.quete_id AND periode = r.periode;
+
+      v_recs := v_recs || jsonb_build_object('quete', r.quete_id, 'periode', r.periode, 'famille', r.famille,
+                                             'xp', CASE WHEN v_deja IS NULL THEN v_xp ELSE 0 END,
+                                             'cosmetique', r.cosmetique, 'titre', r.titre, 'terminee_le', r.terminee_le);
+      IF v_deja IS NULL THEN v_total := v_total + v_xp; END IF;
+    EXCEPTION WHEN OTHERS THEN
+      v_err := v_err + 1;
+      PERFORM _codex_erreur(p_user, r.quete_id, r.periode, 'codex_recuperer : ' || SQLSTATE || ' ' || SQLERRM);
+    END;
+  END LOOP;
+
+  SELECT count(*)::int INTO v_restant FROM codex_progression WHERE user_id = p_user AND etat = 'terminee';
+  RETURN jsonb_build_object('recuperees', v_recs, 'xp', v_total, 'restant', v_restant, 'erreurs', v_err);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION codex_recuperer(uuid, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_recuperer(uuid, jsonb) TO service_role;
+
+-- ── 9d. codex_mesures_v3 (le site, clé service) ─────────────────────
+-- Réécrite EN ENTIER par chaque lot qui l'étend (A2b, A3b, A4a, puis §9 :
+-- « Récupérer »), dans la dernière section qui la touche.
+-- Rend {programme, capacites, jours_encre_total, programmes_menes,
+-- maitres_total, trophees, notions_tenues, speciaux_matiere} et, quand la base
+-- sait les lire, {maitrise, revoir, ratures_scellees, blancs_a_debriefer,
+-- causes} (clé absente sinon : la mesure reste inconnue du site). Les
+-- capacités sont lues à l'exécution : ce que la base sait faire selon ce qui
+-- est collé. Les réponses du joueur sont lues une fois par appel
+-- (_codex_reponses_v3, §5) : appelée par codex_lire, la fonction réutilise la
+-- lecture du journal. VOLATILE : le cache est une table temporaire.
+--   notions_tenues     : {"<notion>": {"n": réponses, "j5": justes parmi les 5 dernières}}
+--                        (une notion est tenue à n ≥ 5 et j5 ≥ 3 : lib/codex/moteur.ts)
+--   speciaux_matiere   : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n},
+--                         "justes_sur_20": {"<matière>": n}}
+--                        bonnes réponses d'affilée dans la matière (une erreur ou 20 min de
+--                        silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée ;
+--                        bonnes réponses parmi les 20 dernières de la matière (l'étape « serie »
+--                        d'une branche sans séance ciblée)
+--   maitrise           : {"<matière>": {"pct", "questions", "total", "debut", "statut", "derniere", "ancienne"}}
+--                        la maîtrise unique (maitrise_joueur, migration_v3_profil.sql §4) ;
+--                        questions = réponses de la fenêtre (60 au plus), pct null sous 10
+--   revoir             : {"aujourdhui", "demain", "ratures", "rappels"} (revisions_dues, §3b)
+--   ratures_scellees   : ratures scellées (ratures.scellee_le, §3a) et toujours rayées,
+--                        comme le carnet (get_ratures.scellees) : remise en cours à la
+--                        main, elle ne compte plus (l'événement rature_scellee, daté, reste)
+--   blancs_a_debriefer : copies rendues depuis 7 jours (examens blancs et officiels) dont
+--                        moins de 80 % des erreurs sont classées (blanc_debrief, §5)
+--   causes             : {"savoir", "lecture", "calcul", "temps", "chance" (en %), "n"}, les
+--                        erreurs classées des 60 derniers jours (comme mes_causes)
+CREATE OR REPLACE FUNCTION codex_mesures_v3(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_capacites jsonb;
+  v_jours int;
+  v_menes int;
+  v_maitres int;
+  v_trophees jsonb := '[]'::jsonb;
+  v_tenues jsonb;
+  v_bonnes jsonb;
+  v_justes jsonb;
+  v_calculs jsonb := '{}'::jsonb;
+  v_tmp jsonb;
+  v_copies text[] := '{}';
+  v_plus jsonb := '{}'::jsonb;
+  v_n int;
+BEGIN
+  IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
+    RAISE EXCEPTION 'programme invalide : %', p_programme;
+  END IF;
+  v_capacites := jsonb_build_object(
+    -- le CHECK de codex_progression.famille accepte « fil » (§3c) ET codex_ecrire l'écrit
+    -- (§1d) : chaque capacité se lit sur la fonction elle-même, pas sur un marqueur. Un
+    -- migration_codex.sql recollé après ce fichier remet le codex_ecrire v2, qui saute en
+    -- silence toute famille « fil » (la quête serait fêtée à chaque calcul) : fil faux.
+    'fil', EXISTS (SELECT 1 FROM pg_constraint c
+                   WHERE c.conrelid = 'public.codex_progression'::regclass AND c.conname = 'codex_progression_famille_check'
+                     AND pg_get_constraintdef(c.oid) LIKE '%''fil''%')
+           AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_ecrire(uuid,jsonb,integer)')) LIKE '%''fil''%', false),
+    -- les mesures nouvelles de cette fonction (notions tenues, spéciaux par matière, trophées)
+    'mesures', true,
+    -- le journal v3 (§5) : son marqueur ET un codex_journal qui rend ses événements
+    -- (seance_juste) ; le journal v2 recollé par-dessus : 2
+    'journal', CASE WHEN to_regprocedure('public._codex_journal_v3()') IS NOT NULL
+                     AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_journal(uuid)')) LIKE '%seance_juste%', false)
+                    THEN 3 ELSE 2 END,
+    'seances', to_regclass('public.codex_seances') IS NOT NULL,
+    'revoir', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'revisions_dues'),
+    'maitrise', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'maitrise_joueur'),
+    'trophees', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'trophees_joueur'),
+    'debrief', to_regclass('public.blanc_debrief') IS NOT NULL,
+    'ratures_seches', EXISTS (SELECT 1 FROM pg_attribute a
+                              WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'seche_le' AND NOT a.attisdropped),
+    -- « Récupérer » (§9) : codex_recuperer ET un codex_ecrire qui sait différer (un
+    -- codex_ecrire d'avant recollé par-dessus verse tout de suite : recuperer faux)
+    'recuperer', to_regprocedure('public.codex_recuperer(uuid,jsonb)') IS NOT NULL
+                 AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_ecrire(uuid,jsonb,integer)')) LIKE '%differer%', false)
+  );
+  -- les jours d'encre de toute une vie : 10 questions ou plus dans le jour de Paris, tous programmes
+  SELECT count(*)::int INTO v_jours FROM _codex_jours_lus(p_user) j WHERE j.n >= 10;
+  SELECT count(*)::int INTO v_menes FROM codex_programmes_joueur WHERE user_id = p_user AND statut = 'mene';
+  -- les branches menées jusqu'à « Maître de… », tous programmes (« branche:fsa:maitre », « cfa-l2/branche:fsa:maitre »),
+  -- récupérées ou non (§9) : « fait » n'est pas « versé », le fil rouge n'attend pas le clic
+  SELECT count(*)::int INTO v_maitres FROM codex_progression
+  WHERE user_id = p_user AND etat IN ('terminee', 'recompensee') AND periode = '' AND quete_id ~ '^([a-z0-9-]+/)?branche:[^:/]+:maitre$';
+  -- les trophées (V3 §2.5), une ligne par source et par palier (1 bronze … 4 diamant) :
+  -- trophees_joueur (migration_v3_profil.sql §2) quand elle est collée ; sinon la
+  -- seule source « ciblee », comme get_user_practice_trophies (séance à 70 % ou
+  -- mieux, palier par le nombre de matières), avec le plafond par taille
+  -- (moins de 30 questions : argent au plus ; moins de 60 : or au plus) pour les
+  -- seules séances rendues depuis la mise en ligne v3 (18 octobre 2026, minuit à
+  -- Paris, comme _trophee_ciblee et PLAFOND_CIBLEE_DEPUIS) : rien de gagné repris.
+  IF to_regprocedure('public.trophees_joueur(uuid)') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT coalesce(jsonb_agg(jsonb_build_object('source', t.source, 'palier', t.palier, 'n', t.n) ORDER BY t.source, t.palier), '[]'::jsonb)
+      FROM trophees_joueur($1) t WHERE t.n > 0
+    $q$ INTO v_trophees USING p_user;
+  ELSIF to_regclass('public.practice_session_results') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT coalesce(jsonb_agg(jsonb_build_object('source', 'ciblee', 'palier', x.palier, 'n', x.n) ORDER BY x.palier), '[]'::jsonb)
+      FROM (
+        SELECT CASE WHEN s.completed_at < timestamptz '2026-10-18 00:00:00+02' THEN s.brut
+                    ELSE least(s.brut, CASE WHEN s.total < 30 THEN 2 WHEN s.total < 60 THEN 3 ELSE 4 END) END AS palier,
+               count(*)::int AS n
+        FROM (SELECT CASE WHEN coalesce(array_length(r.topics, 1), 1) >= 7 THEN 4 WHEN coalesce(array_length(r.topics, 1), 1) >= 4 THEN 3
+                          WHEN coalesce(array_length(r.topics, 1), 1) >= 2 THEN 2 ELSE 1 END AS brut,
+                     r.total, r.completed_at
+              FROM practice_session_results r
+              WHERE r.user_id = $1 AND r.total > 0 AND r.score::numeric / r.total >= 0.7) s
+        GROUP BY 1
+      ) x
+    $q$ INTO v_trophees USING p_user;
+  END IF;
+  -- les réponses du joueur, lues une fois par appel (_codex_reponses_v3 : même rattachement à la
+  -- matière et à la notion que codex_journal) : les notions tenues (V3 §8.5), réponses par notion
+  -- et justes parmi les 5 dernières ; et la plus longue suite de bonnes réponses d'affilée dans
+  -- chaque matière (V3 §8.7)
+  WITH rep AS MATERIALIZED (
+    SELECT r.ok, r.at, r.matiere, r.notion, row_number() OVER (ORDER BY r.at) AS ord
+    FROM _codex_reponses_v3(p_user) r
+  )
+  SELECT
+    (SELECT coalesce(jsonb_object_agg(t.notion, jsonb_build_object('n', t.n, 'j5', t.j5)), '{}'::jsonb)
+     FROM (SELECT x.notion, count(*)::int AS n, (count(*) FILTER (WHERE x.ok AND x.rang <= 5))::int AS j5
+           FROM (SELECT c.notion, c.ok, row_number() OVER (PARTITION BY c.notion ORDER BY c.at DESC, c.ord DESC) AS rang
+                 FROM rep c WHERE c.notion IS NOT NULL) x
+           GROUP BY x.notion) t),
+    (SELECT coalesce(jsonb_object_agg(y.matiere, y.n), '{}'::jsonb)
+     FROM (SELECT z.matiere, max(z.c)::int AS n
+           FROM (SELECT g.matiere, g.grp, count(*) AS c
+                 FROM (SELECT s.matiere, s.ok, sum(CASE WHEN NOT s.ok OR s.silence THEN 1 ELSE 0 END) OVER (PARTITION BY s.matiere ORDER BY s.at, s.ord) AS grp
+                       FROM (SELECT c.matiere, c.ok, c.at, c.ord,
+                                    (c.at - lag(c.at) OVER (PARTITION BY c.matiere ORDER BY c.at, c.ord)) > interval '20 minutes' AS silence
+                             FROM rep c WHERE c.matiere IS NOT NULL) s) g
+                 WHERE g.ok
+                 GROUP BY g.matiere, g.grp) z
+           GROUP BY z.matiere) y),
+    -- les bonnes réponses parmi les 20 dernières de chaque matière
+    (SELECT coalesce(jsonb_object_agg(j.matiere, j.n), '{}'::jsonb)
+     FROM (SELECT x.matiere, (count(*) FILTER (WHERE x.ok))::int AS n
+           FROM (SELECT c.matiere, c.ok, row_number() OVER (PARTITION BY c.matiere ORDER BY c.at DESC, c.ord DESC) AS rang
+                 FROM rep c WHERE c.matiere IS NOT NULL) x
+           WHERE x.rang <= 20
+           GROUP BY x.matiere) j)
+  INTO v_tenues, v_bonnes, v_justes;
+  -- … et de calculs justes (calc_attempts, la matière est le sujet du calcul)
+  IF to_regclass('public.calc_attempts') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT coalesce(jsonb_object_agg(y.matiere, y.n), '{}'::jsonb)
+      FROM (
+        SELECT z.matiere, max(z.c)::int AS n
+        FROM (
+          SELECT g.matiere, g.grp, count(*) AS c
+          FROM (SELECT c.topic AS matiere, c.correct,
+                       sum(CASE WHEN c.correct THEN 0 ELSE 1 END) OVER (PARTITION BY c.topic ORDER BY c.answered_at, c.id) AS grp
+                FROM calc_attempts c
+                WHERE c.user_id = $1 AND EXISTS (SELECT 1 FROM codex_matieres m WHERE m.cle = c.topic)) g
+          WHERE g.correct
+          GROUP BY g.matiere, g.grp
+        ) z
+        GROUP BY z.matiere
+      ) y
+    $q$ INTO v_calculs USING p_user;
+  END IF;
+
+  -- la maîtrise unique (V3 §4), au format des mesures du Codex : questions = réponses de la
+  -- fenêtre (le statut « mesuree » commence à 40) ; ancienne garde le verrou des rangs (§4.5).
+  -- maitrise_joueur lit le même cache des réponses.
+  IF to_regprocedure('public.maitrise_joueur(uuid,text)') IS NOT NULL THEN
+    EXECUTE 'SELECT maitrise_joueur($1, $2)' INTO v_tmp USING p_user, p_programme;
+    IF jsonb_typeof(v_tmp -> 'matieres') = 'object' THEN
+      SELECT coalesce(jsonb_object_agg(m.key, jsonb_build_object(
+               'pct', m.value -> 'pct', 'questions', coalesce((m.value ->> 'n')::int, 0), 'total', coalesce((m.value ->> 'total')::int, 0),
+               'debut', m.value -> 'debut', 'statut', m.value -> 'statut', 'derniere', m.value -> 'derniere', 'ancienne', m.value -> 'ancienne')), '{}'::jsonb)
+      INTO v_tmp
+      FROM jsonb_each(v_tmp -> 'matieres') m
+      WHERE jsonb_typeof(m.value) = 'object';
+      v_plus := v_plus || jsonb_build_object('maitrise', v_tmp);
+    END IF;
+  END IF;
+  -- la file « À revoir » (V3 §5.1) : les comptes seulement (le site lit la file elle-même à part)
+  IF to_regprocedure('public.revisions_dues(uuid,date,integer)') IS NOT NULL THEN
+    EXECUTE 'SELECT revisions_dues($1, NULL, 25)' INTO v_tmp USING p_user;
+    IF jsonb_typeof(v_tmp) = 'object' THEN
+      v_plus := v_plus || jsonb_build_object('revoir', jsonb_build_object(
+        'aujourdhui', coalesce(v_tmp -> 'aujourdhui', '0'::jsonb), 'demain', coalesce(v_tmp -> 'demain', '0'::jsonb),
+        'ratures', coalesce(v_tmp -> 'ratures', '0'::jsonb), 'rappels', coalesce(v_tmp -> 'rappels', '0'::jsonb)));
+    END IF;
+  END IF;
+  -- les ratures scellées (V3 §5.3)
+  IF EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'scellee_le' AND NOT a.attisdropped) THEN
+    EXECUTE 'SELECT count(*)::int FROM ratures WHERE user_id = $1 AND scellee_le IS NOT NULL AND removed_at IS NOT NULL' INTO v_n USING p_user;
+    v_plus := v_plus || jsonb_build_object('ratures_scellees', v_n);
+  END IF;
+  -- le débrief des examens blancs (V3 §7.6) : les copies rendues depuis 7 jours qui restent à
+  -- débriefer (erreurs de la copie d'après _blanc_erreurs ; classées à moins de 80 %), et la
+  -- répartition des causes sur 60 jours
+  IF to_regclass('public.blanc_debrief') IS NOT NULL AND to_regprocedure('public._blanc_erreurs(uuid,text,uuid)') IS NOT NULL THEN
+    IF to_regclass('public.mock_exam_results') IS NOT NULL THEN
+      v_copies := array_append(v_copies, $q$
+        SELECT 'blanc'::text AS source, r.exam_id AS ref FROM mock_exam_results r
+        WHERE r.user_id = $1 AND r.completed_at >= now() - interval '7 days'
+      $q$);
+    END IF;
+    IF to_regclass('public.quiz_attempts') IS NOT NULL THEN
+      v_copies := array_append(v_copies, $q$
+        SELECT 'officiel'::text, a.id FROM quiz_attempts a
+        JOIN quiz_sets qs ON qs.id = a.set_id
+        JOIN library_folders lf ON lf.id = qs.folder_id AND lf.name = 'Mocks Officiels (Système)'
+        WHERE a.user_id = $1 AND a.created_at >= now() - interval '7 days'
+      $q$);
+    END IF;
+    v_n := 0;
+    IF cardinality(v_copies) > 0 THEN
+      EXECUTE format($q$
+        SELECT count(*)::int FROM (
+          SELECT (SELECT count(*) FROM _blanc_erreurs($1, c.source, c.ref)) AS erreurs,
+                 (SELECT count(*) FROM blanc_debrief d WHERE d.user_id = $1 AND d.source = c.source AND d.ref = c.ref) AS classees
+          FROM (%s) c
+        ) x
+        WHERE x.erreurs > 0 AND x.classees * 100 < x.erreurs * 80
+      $q$, array_to_string(v_copies, ' UNION ALL ')) INTO v_n USING p_user;
+    END IF;
+    v_plus := v_plus || jsonb_build_object('blancs_a_debriefer', v_n);
+    EXECUTE $q$
+      SELECT jsonb_build_object(
+               'savoir', CASE WHEN x.n > 0 THEN round(100.0 * x.savoir / x.n)::int ELSE 0 END,
+               'lecture', CASE WHEN x.n > 0 THEN round(100.0 * x.lecture / x.n)::int ELSE 0 END,
+               'calcul', CASE WHEN x.n > 0 THEN round(100.0 * x.calcul / x.n)::int ELSE 0 END,
+               'temps', CASE WHEN x.n > 0 THEN round(100.0 * x.temps / x.n)::int ELSE 0 END,
+               'chance', CASE WHEN x.n > 0 THEN round(100.0 * x.chance / x.n)::int ELSE 0 END,
+               'n', x.n)
+      FROM (SELECT count(*)::int AS n,
+                   count(*) FILTER (WHERE d.cause = 'savoir') AS savoir, count(*) FILTER (WHERE d.cause = 'lecture') AS lecture,
+                   count(*) FILTER (WHERE d.cause = 'calcul') AS calcul, count(*) FILTER (WHERE d.cause = 'temps') AS temps,
+                   count(*) FILTER (WHERE d.cause = 'chance') AS chance
+            FROM blanc_debrief d WHERE d.user_id = $1 AND d.note_le >= now() - interval '60 days') x
+    $q$ INTO v_tmp USING p_user;
+    v_plus := v_plus || jsonb_build_object('causes', v_tmp);
+  END IF;
+
+  RETURN jsonb_build_object('programme', p_programme, 'capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
+                            'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb),
+                            'notions_tenues', v_tenues,
+                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb), 'justes_sur_20', v_justes))
+         || v_plus;
+END $$;
+
+REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_mesures_v3(uuid, text) TO service_role;
