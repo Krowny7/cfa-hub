@@ -186,9 +186,14 @@ check("les nouveautés v3 : la séance du jour, le cap, Mes pièces", etapes(NOU
 check("Mes pièces reste facultative (l'onglet peut manquer) ; la séance et le cap ont un repli", NOUVEAUTES[2]?.facultatif === true && !!NOUVEAUTES[0]?.repli && !!NOUVEAUTES[1]?.repli);
 check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v3", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 3 && !nouveautesVues({ rl_nouveautes: 2 }) && nouveautesVues({ rl_nouveautes: 3 }));
 // les cibles de la visite sont posées dans les pages (data-leonard)
-const CIBLES: Record<string, string> = { defi: "components/accueil/Rendezvous.tsx", seance: "components/codex/SeanceDuJour.tsx", cap: "components/codex/Cap.tsx", prochaine: "components/codex/CodexEcran.tsx", reglages: "components/moi/AppearanceSwitches.tsx" };
+const CIBLES: Record<string, string> = { defi: "components/accueil/Rendezvous.tsx", seance: "components/codex/SeanceDuJour.tsx", cap: "components/codex/Cap.tsx", prochaine: "components/codex/CodexEcran.tsx", reglages: "components/moi/AppearanceSwitches.tsx", "mes-pieces": "components/moi/MesPieces.tsx" };
 for (const [cible, f] of Object.entries(CIBLES)) check(`cible « ${cible} » posée (${f})`, readFileSync(join(RACINE, f), "utf8").includes(`data-leonard="${cible}"`));
-check("chaque étape non facultative de la visite vise une cible connue (ou son repli)", [...TUTO, ...NOUVEAUTES].filter((x) => !x.facultatif).every((x) => !x.cible || x.cible in CIBLES || (!!x.repli && x.repli in CIBLES)));
+// toutes les étapes, facultatives comprises : une cible facultative jamais posée
+// faisait sauter l'étape à chaque fois (la visite des nouveautés revenait sans fin)
+check("chaque étape de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES].every((x) => !x.cible || x.cible in CIBLES), [...TUTO, ...NOUVEAUTES].flatMap((x) => (x.cible && !(x.cible in CIBLES) ? [x.cible] : [])).join(" "));
+check("chaque repli de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES].every((x) => !x.repli || x.repli in CIBLES));
+// une visite courte est retenue quand ses étapes obligatoires ont joué (pas « 3 » fixe)
+check("une visite courte (3 étapes, une facultative) est retenue sans sa facultative", hote.includes("montrees.current >= Math.min(3, scene.repliques.filter((e) => !(e as EtapeTuto).facultatif).length)") && NOUVEAUTES.filter((x) => !x.facultatif).length <= 3);
 const fautesVisite = [...TUTO, ...NOUVEAUTES].flatMap((x) => (interditDans(x.texte) ? [x.texte] : []));
 check("la visite ne moque personne", fautesVisite.length === 0, fautesVisite.join(" ; "));
 

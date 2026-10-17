@@ -127,7 +127,7 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
     });
 
   return (
-    <div className="rl-wide flex flex-col gap-6 md:gap-8">
+    <div className="rl-wide flex flex-col gap-6 md:gap-8" data-leonard="mes-pieces">
       <div className="flex flex-col gap-3">
         <FilMoi />
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">

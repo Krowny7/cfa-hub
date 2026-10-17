@@ -573,9 +573,12 @@ export function LeonardHote() {
     if (scene.visite) retenirEnCours({ v: scene.visite, i });
     // une étape sans rien à montrer (facultative, sans adresse, page qui
     // n'arrive pas) : la suivante ; la visite n'est retenue que si elle a joué
+    // (3 étapes montrées, ou toutes ses étapes obligatoires pour une visite
+    // courte : sinon une visite de 3 étapes dont une facultative manquée
+    // reviendrait à chaque visite, sans fin)
     const sauter = () => {
       if (i + 1 < scene.repliques.length) setI(i + 1);
-      else if (montrees.current >= 3) finirTuto();
+      else if (montrees.current >= Math.min(3, scene.repliques.filter((e) => !(e as EtapeTuto).facultatif).length)) finirTuto();
       else {
         retenirEnCours(null);
         fermer();
