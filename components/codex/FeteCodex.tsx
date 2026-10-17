@@ -63,7 +63,6 @@ function ancreDe(quete: string): { x: number; y: number } | null {
   }
 }
 
-
 export function FeteCodex({
   initial,
   persister = false,
