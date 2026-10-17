@@ -142,6 +142,18 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, format
     if (!demo && phase === "play" && deadline !== null && remaining <= 0) void finish();
   }, [demo, deadline, finish, phase, remaining]);
 
+  // Pas de pause : le chrono tourne sur le serveur même page fermée. Fermer
+  // ou recharger l'onglet pendant la copie demande donc une confirmation.
+  useEffect(() => {
+    if (demo || phase !== "play") return;
+    const retenir = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", retenir);
+    return () => window.removeEventListener("beforeunload", retenir);
+  }, [demo, phase]);
+
   const validate = useCallback(async () => {
     if (selected === null || current === null || sending || phase !== "play") return;
     setSending(true);
@@ -360,7 +372,11 @@ export function DefiRunner({ day, today, questionCount, timeLimitSeconds, format
           </section>
 
           <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[13px] text-muted">
-            <span>{DEFI.definitif}</span>
+            <span>
+              {DEFI.definitif}
+              <br />
+              <strong className="font-semibold">{DEFI.chronoTourne}</strong>
+            </span>
             <button type="button" onClick={() => void handIn()} className="font-semibold transition-colors hover:text-white">
               {DEFI.rendre}
             </button>

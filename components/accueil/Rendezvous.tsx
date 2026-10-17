@@ -19,7 +19,7 @@ import { agoLabel, countdown, plural } from "@/components/accueil/format";
 import { EXAM_SOON_DAYS } from "@/components/accueil/CompeteCards";
 import { ouReprendre } from "@/components/accueil/HomeCards";
 import type { AccueilData, TodayDaily } from "@/components/accueil/types";
-import { reviewHref, rankLine, timeLeftLabel } from "@/lib/daily";
+import { FORMATS, reviewHref, rankLine, timeLeftLabel } from "@/lib/daily";
 import { reviewLeftLabel } from "@/lib/duels";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { ACCUEIL, DUEL, ENCRE, SOMMET, joursEncre, jourJ, nombre, placement as placementLine, pointsAvant, retour, titreAccueil } from "@/lib/voice";
@@ -116,6 +116,7 @@ function etatDefi(d: AccueilData, daily: TodayDaily): { stats: React.ReactNode; 
             {chrono && <Stat k={T.chrono}>{chrono}</Stat>}
             {fige}
           </dl>
+          <p className="t-micro m-0">{DEFI.chronoTourne}</p>
         </div>
       ),
       action: { href: daily.href, label: DEFI.tuile.reprendre },
@@ -123,15 +124,18 @@ function etatDefi(d: AccueilData, daily: TodayDaily): { stats: React.ReactNode; 
   }
   return {
     stats: (
-      <dl className="m-0 flex flex-wrap gap-x-7 gap-y-3">
-        <Stat k={T.joueurs}>{daily.players}</Stat>
-        {daily.topScore !== null && daily.players > 0 && (
-          <Stat k={T.meilleure}>
-            {daily.topScore}/{daily.questionCount}
-          </Stat>
-        )}
-        {fige}
-      </dl>
+      <div className="flex min-w-0 flex-col gap-3">
+        <dl className="m-0 flex flex-wrap gap-x-7 gap-y-3">
+          <Stat k={T.joueurs}>{daily.players}</Stat>
+          {daily.topScore !== null && daily.players > 0 && (
+            <Stat k={T.meilleure}>
+              {daily.topScore}/{daily.questionCount}
+            </Stat>
+          )}
+          {fige}
+        </dl>
+        {!cinq && <p className="t-micro m-0">{DEFI.sansPause(FORMATS[daily.format].minutes)}</p>}
+      </div>
     ),
     action: { href: daily.href, label: cinq ? RDV.cinq.jouer : T.rendre },
   };

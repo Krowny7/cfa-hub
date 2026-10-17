@@ -92,6 +92,9 @@ export const DEFI = {
   envoi: "Envoi…",
   rendre: "Rendre ma copie",
   definitif: "Réponses définitives · correction dès ta copie rendue",
+  /** pas de pause : le chrono du serveur tourne même page fermée (dit avant de commencer et pendant la copie) */
+  sansPause: (minutes: number) => `${minutes} min d'affilée, sans pause : le chrono tourne même si tu quittes la page.`,
+  chronoTourne: "Pas de pause : le chrono tourne même page fermée.",
   pasPartie: "Ta réponse n'est pas partie — réessaie.",
   repondues: "répondues",
   avancement: "Avancement de ta copie",
