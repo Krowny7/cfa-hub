@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { MAITRISE, TEXTES_CAP } from "@/lib/codex/cap";
 import { TEXTES_JOUR as T, acteEnCours, compteNeuf, etapesActe, preparationJour, objectifSemaine, resumeFait, resumeQuetesDuJour, resumeSemaine } from "@/lib/codex/aujourdhui";
 import { gainsSeance } from "@/lib/codex/seance-etat";
@@ -33,12 +33,14 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
   const preparation = neuf ? null : preparationJour(vue.cap);
   const acte = acteEnCours(vue.trame);
   const contrats = [...vue.contrats.map((c) => c.ligne), ...(vue.debrief ? [vue.debrief] : [])];
+  // « Tout récupérer » fini : le bloc dit lui-même « Fait aujourd'hui » (pas deux fois la même liste)
+  const [recupere, setRecupere] = useState(false);
 
   return (
     <div className={s.grille}>
       {/* toujours monté : la page rafraîchie au clic vide la liste, le geste et les fêtes continuent (vide, il ne rend rien) */}
       <div className={s.zoneRecuperer}>
-        <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} demo={demo} />
+        <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} demo={demo} onFini={() => setRecupere(true)} />
       </div>
 
       <div className={s.zoneFil}>{neuf ? <FilNeuf plein={!aRecuperer} /> : seance ? <Fil seance={seance} vue={vue} gains={gains} plein={!aRecuperer} demo={demo} /> : null}</div>
@@ -57,6 +59,7 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
           </details>
         )}
 
+        {!recupere && (
         <details className={s.pli}>
           <summary>
             {T.fait} <span className={s.val}>{resumeFait(vue.faitAujourdhui, vue.sobre)}</span>
@@ -76,6 +79,7 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
             )}
           </div>
         </details>
+        )}
 
         {preparation && (
           <details className={s.pli} data-leonard="cap">
@@ -131,8 +135,8 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
 }
 
 /**
- * « Ta semaine ▸ » : l'objectif choisi le lundi (la carte du lundi, repli
- * ouvert ce jour-là), le plan, les quêtes de la semaine, « jusqu'à
+ * « Ta semaine ▸ » : l'objectif choisi le lundi (la carte du lundi, repliée
+ * comme le reste : un écran n'a qu'un bouton plein, celui du fil), le plan, les quêtes de la semaine, « jusqu'à
  * dimanche ». Dans « Aujourd'hui » et dans « Tout le Codex ». Rien à dire :
  * pas de repli.
  */
@@ -141,7 +145,7 @@ export function TaSemaine({ vue, demo = false, onQuete, onVue, ligne }: { vue: V
   const objectif = objectifSemaine(vue.rythme?.semaine);
   if (!(hebdo.length > 0 || !!objectif || !!vue.rythme?.lundi || !!vue.rythme?.plan)) return null;
   return (
-    <details className={s.pli} open={!!vue.rythme?.lundi || undefined}>
+    <details className={s.pli}>
       <summary>
         {T.semaine} {hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
       </summary>

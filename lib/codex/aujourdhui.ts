@@ -77,9 +77,9 @@ export function resumeQuetesDuJour(trio: VueCodex["trio"], sobre: boolean): stri
   return `· ${trio.faits} sur ${trio.total}${bonus}`;
 }
 
-/** « · 4 · +230 XP » (sobre, ou sans XP : le nombre seul). */
+/** « : 4 · +230 XP », comme TEXTES_RECUPERER.fait (sobre, ou sans XP : le nombre seul). */
 export function resumeFait(f: FaitAujourdhui, sobre: boolean): string {
-  return `· ${f.n}${!sobre && f.xp > 0 ? ` · +${f.xp} XP` : ""}`;
+  return `: ${f.n}${!sobre && f.xp > 0 ? ` · +${f.xp.toLocaleString("fr-FR")} XP` : ""}`;
 }
 
 /** La préparation se montre dès 3 matières mesurées (même provisoirement) : avant, elle ne voudrait rien dire. */

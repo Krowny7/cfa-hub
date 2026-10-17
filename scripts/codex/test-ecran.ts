@@ -37,6 +37,7 @@ import * as CAP from "@/lib/codex/cap";
 import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
 import { manqueDe } from "@/lib/codex/vue";
 import { matiereCoince } from "@/lib/codex/seance";
+import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
 import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, objectifSemaine, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
 import type { EtatQuete } from "@/lib/codex/moteur";
 import {
@@ -444,7 +445,9 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
   check("le compte neuf a une étape, « 10 questions pour faire connaissance · 5 min »", TEXTES_JOUR.neuf.titre === "10 questions pour faire connaissance" && TEXTES_JOUR.neuf.duree === 5);
   check("Quêtes du jour : « · 1 sur 3 · +50 XP à 3 sur 3 » ; sobre ou bonus gagné : sans l'XP",
     resumeQuetesDuJour({ fait: false, xp: 50, faits: 1, total: 3, changementPossible: true }, false) === "· 1 sur 3 · +50 XP à 3 sur 3" && resumeQuetesDuJour({ fait: false, xp: 50, faits: 1, total: 3, changementPossible: true }, true) === "· 1 sur 3" && resumeQuetesDuJour({ fait: true, xp: 50, faits: 3, total: 3, changementPossible: false }, false) === "· 3 sur 3");
-  check("Fait aujourd'hui : « · 4 · +230 XP » ; sobre : le nombre seul", resumeFait({ n: 4, xp: 230, quetes: [] }, false) === "· 4 · +230 XP" && resumeFait({ n: 4, xp: 230, quetes: [] }, true) === "· 4" && resumeFait({ n: 0, xp: 0, quetes: [] }, false) === "· 0");
+  check("Fait aujourd'hui : « : 4 · +230 XP » (comme le bloc Récupérer replié) ; sobre : le nombre seul", resumeFait({ n: 4, xp: 230, quetes: [] }, false) === ": 4 · +230 XP" && resumeFait({ n: 4, xp: 230, quetes: [] }, true) === ": 4" && resumeFait({ n: 0, xp: 0, quetes: [] }, false) === ": 0" && `Fait aujourd'hui ${resumeFait({ n: 4, xp: 230, quetes: [] }, false)}` === TEXTES_RECUPERER.fait({ n: 4, xp: 230 }));
+  const auj = readFileSync("components/codex/Aujourdhui.tsx", "utf8");
+  check("Aujourd'hui : « Ta semaine » repliée (un seul bouton plein) ; « Fait aujourd'hui » une seule fois après « Tout récupérer »", !auj.includes("open={!!vue.rythme?.lundi") && auj.includes("onFini={() => setRecupere(true)}") && auj.includes("{!recupere && ("));
   const capV = v.cap!;
   const avecMesures = (n: number) => ({ ...capV, matieres: capV.matieres.map((m, i) => ({ ...m, statut: (i < n ? "mesuree" : "non_mesuree") as typeof m.statut, pct: i < n ? 50 : null })) });
   check(`Préparation : masquée sous ${MATIERES_PREPARATION} matières mesurées, montrée dès ${MATIERES_PREPARATION}`, preparationJour(avecMesures(MATIERES_PREPARATION - 1)) === null && preparationJour(avecMesures(MATIERES_PREPARATION)) !== null && preparationJour(null) === null);

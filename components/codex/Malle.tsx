@@ -12,13 +12,14 @@ import k from "./Calendrier.module.css";
 // cochées, elle est prête (la quête « La malle est prête »). Les cases se
 // gardent dans le compte (codexMalle), un instant après le dernier geste.
 // En dessous, « La veille » (trame:ep:veille) quand elle est ouverte.
-// `demo` : aperçus (rien n'est gardé).
+// `demo` : aperçus (rien n'est gardé). `plein` faux : un autre bouton plein
+// est à l'écran (le fil, « Tout récupérer ») ; le lien de la veille passe en contour.
 
 const ATTENTE_MS = 800;
 
-type Props = { coches: string[]; veille: LigneQuete | null; demo?: boolean; onVue?: (v: VueCodex) => void };
+type Props = { coches: string[]; veille: LigneQuete | null; demo?: boolean; plein?: boolean; onVue?: (v: VueCodex) => void };
 
-export function Malle({ coches: depart, veille, demo = false, onVue }: Props) {
+export function Malle({ coches: depart, veille, demo = false, plein = true, onVue }: Props) {
   const [coches, setCoches] = useState<string[]>(depart);
   const [message, setMessage] = useState<string | null>(null);
   const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,7 +93,7 @@ export function Malle({ coches: depart, veille, demo = false, onVue }: Props) {
             <p className="t-small m-0">{veille.consigne}</p>
           </div>
           {veille.etat !== "terminee" && veille.destination && (
-            <Link href={veille.destination.href} className="btn btn-primary rl-press shrink-0">
+            <Link href={veille.destination.href} className={`btn ${plein ? "btn-primary" : "btn-secondary"} rl-press shrink-0 min-h-[44px]`}>
               {veille.destination.libelle} <ArrowRight size={16} aria-hidden />
             </Link>
           )}

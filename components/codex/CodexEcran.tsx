@@ -183,7 +183,8 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
           <>
             {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}
             {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
-            {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} onVue={setVue} />}
+            {/* un seul bouton plein : celui du fil ou « Tout récupérer » s'ils sont là */}
+            {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} plein={!(avecSeance && vue.seance?.blocs.length) && !vue.aRecuperer.length} onVue={setVue} />}
             {moment === "lendemain" && vue.recap && <PoseLePinceau recap={vue.recap} />}
             {/* dès le lendemain de l'examen : le verdict (V3 §10.5) */}
             {vue.rythme?.verdict && <Verdict verdict={vue.rythme.verdict} demo={demo} onVue={setVue} />}
