@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import Link from "next/link";
 import { Personnaliser } from "@/components/profil/Personnaliser";
 import type { EnteteData } from "@/components/profil/EnteteJoueur";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
@@ -19,6 +20,8 @@ import { LIEN_DEFAUT, NOM_DEFAUT, acquisDe } from "@/lib/profil/catalogue";
 import { lireAcquis } from "@/lib/profil/acquis";
 import { titresPortables } from "@/lib/profil/styles";
 import { lireTrophees } from "@/lib/trophees";
+import { folioPorte } from "@/lib/profil/etagere";
+import { BlocFolio } from "@/components/profil/Folio";
 
 // Personnaliser, côté serveur (/people/<moi>?personnaliser=1, sur son
 // propre profil seulement) : tout ce que l'ancien éditeur /moi/profil
@@ -36,6 +39,18 @@ async function progression(sb: SupabaseClient, id: string) {
   } catch {
     return [];
   }
+}
+
+/** Le bloc « Folio » dans l'éditeur : le folio porté, sinon où en choisir un. */
+function FolioOuInvite({ nue }: { nue: string | null }) {
+  const f = folioPorte(nue);
+  if (f) return <BlocFolio f={f} />;
+  return (
+    <Link href="/moi?onglet=pieces" className="flex min-h-[120px] flex-col items-center justify-center gap-1 rounded-[18px] border border-dashed border-line-2 p-6 text-center text-muted transition-colors hover:border-white hover:text-white">
+      <span className="text-[14px] font-semibold">Aucun folio porté</span>
+      <span className="t-micro max-w-[240px]">Choisis-en un dans Moi › Mes pièces : il se pose ici, avec son anecdote.</span>
+    </Link>
+  );
 }
 
 export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: string; supabase: SupabaseClient; profil: ProfilLu; rating: { elo: number; games_played: number } | null }) {
@@ -104,6 +119,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
           reponses: answers?.available ? <AnswerSummary stats={answers} name={carte.name} isMe /> : null,
           trophees: <SalleDesTrophees compte={trophees} complet={trophees.complet} />,
           progression: <PracticeProgressChart pastSessions={progress} topicLabels={TOPIC_LABELS} />,
+          folio: <FolioOuInvite nue={style.folio} />,
         }}
       />
     </div>

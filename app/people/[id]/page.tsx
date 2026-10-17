@@ -54,6 +54,8 @@ import { ENTETE, FACE, JOURNAL, provenances } from "@/lib/voice-profil";
 import { SAISONS } from "@/lib/voice-saisons";
 import type { Profile, Rating } from "@/lib/types";
 import { lireTrophees } from "@/lib/trophees";
+import { folioPorte } from "@/lib/profil/etagere";
+import { BlocFolio } from "@/components/profil/Folio";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string; personnaliser?: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
@@ -387,6 +389,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   } else {
     // la page jamais composée : sa case vide invite le propriétaire à poser une image, et s'efface pour les autres
     const parDefaut = estDispositionDefaut(style.disposition);
+    // le folio porté (Moi › Mes pièces), dans son bloc
+    const folio = folioPorte(style.folio);
     panneau = (
       <GrilleBlocs
         disposition={parDefaut && !commeMoi ? sansCaseVide(style.disposition) : style.disposition}
@@ -408,6 +412,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           reponses: o.answers?.available ? <AnswerSummary stats={o.answers} name={display} isMe={commeMoi} /> : null,
           trophees: o.trophees ? <SalleDesTrophees compte={o.trophees} complet={o.trophees.complet} moi={commeMoi} /> : null,
           progression: <PracticeProgressChart pastSessions={o.progressSessions} topicLabels={TOPIC_LABELS} />,
+          folio: folio ? <BlocFolio f={folio} /> : null,
         }}
       />
     );

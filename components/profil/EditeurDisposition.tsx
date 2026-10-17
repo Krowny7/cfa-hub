@@ -30,6 +30,7 @@ import {
   estVideo,
   infoBloc,
   nouvelId,
+  rangeeNeuve,
   tailleDe,
   type Bloc,
   type BlocFixe,
@@ -255,11 +256,11 @@ export function EditeurDisposition({
       d[ri] = { m, c };
       enTrop.forEach((b, j) => d.splice(ri + 1 + j, 0, { m: "plein", c: [b] }));
     });
-  /** Pose un bloc : dans la case visée si elle est libre, sinon dans une nouvelle rangée pleine à la fin. */
+  /** Pose un bloc : dans la case visée si elle est libre, sinon dans une nouvelle rangée à la fin (pleine ; deux moitiés pour le folio). */
   const placer = (b: Bloc, ou: Pos | null) =>
     maj((d) => {
       if (ou && d[ou.r] && !d[ou.r].c[ou.c]) d[ou.r].c[ou.c] = b;
-      else d.push({ m: "plein", c: [b] });
+      else d.push(rangeeNeuve(b));
     });
   const deposer = (g: Glisse, c: Glisse) => {
     if (g.type === "case" && c.type === "case" && !memePos(g.p, c.p)) echanger(g.p, c.p);
