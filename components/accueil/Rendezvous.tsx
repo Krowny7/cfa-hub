@@ -165,7 +165,8 @@ function lignesAujourdhui(d: AccueilData): ItemListe[] {
     const matieres = d.errors.bySubject.slice(0, 2).map((m) => m.short).join(" · ");
     out.push({
       href: d.errors.carnet ? "/moi?onglet=erreurs" : (d.errors.bySubject[0]?.href ?? "/fiches"),
-      libelle: `${d.errors.total} ${plural(d.errors.total, "rature")} à revoir`,
+      // « au carnet » : le mot « à revoir » reste à la file du jour (la séance : « 15 à revoir »)
+      libelle: `${d.errors.total} ${plural(d.errors.total, "rature")} ${d.errors.carnet ? "au carnet" : "à reprendre"}`,
       aside: matieres,
       cacheTel: true,
     });

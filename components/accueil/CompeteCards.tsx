@@ -93,7 +93,8 @@ export function RaturesTile({ errors }: { errors: ErrorsSummary }) {
       {errors.total > 0 ? (
         <span className="flex items-baseline gap-2">
           <span className="t-num text-[30px] leading-none">{nombre(errors.total)}</span>
-          <span className="text-[14px] font-semibold text-muted">{errors.carnet ? "à revoir" : "à reprendre"}</span>
+          {/* « au carnet » : le mot « à revoir » reste à la file du jour (revisions_dues, la séance) */}
+          <span className="text-[14px] font-semibold text-muted">{errors.carnet ? "au carnet" : "à reprendre"}</span>
         </span>
       ) : (
         <span className="t-h3 block">{t.valeur}</span>
