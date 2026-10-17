@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, lireCodex, marquerRetroVue, marquerVus, oublierCodex, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, lireCodex, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
+import { ECARTE_SEANCE, estGenreBloc, type VueSeance } from "@/lib/codex/seance";
 import type { Emplacement } from "@/lib/codex/types";
 import type { VueCodex } from "@/lib/codex/vue";
 
@@ -120,6 +121,54 @@ export async function codexSeanceBudget(budget: number): Promise<Resultat<{ pann
   if (!r.ok) return r;
   revalidatePath("/codex");
   return { ok: true, panneau: panneauDe(r.vue) };
+}
+
+/** Ce que rendent les gestes de la séance du jour : la séance et le panneau relus ; `gardee` faux : la base ne la garde pas (« Continuer » se garde aussi dans le navigateur). */
+type RetourSeance = Resultat<{ seance: VueSeance | null; panneau: Panneau; gardee: boolean }>;
+
+async function marquer(quoi: "lancee" | "finie"): Promise<RetourSeance> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  const r = await marquerSeance(supabase, user, quoi);
+  if (!r.ok) return r;
+  revalidatePath("/codex");
+  return { ok: true, seance: r.vue.seance, panneau: panneauDe(r.vue), gardee: r.gardee };
+}
+
+/** « Commencer » la séance du jour : ses blocs comptent dès maintenant, et l'instantané « avant » est pris. */
+export async function codexSeanceLancer(): Promise<RetourSeance> {
+  return marquer("lancee");
+}
+
+/** « J'arrête là » : la séance du jour est finie, même si tous ses blocs ne sont pas faits. */
+export async function codexSeanceFinir(): Promise<RetourSeance> {
+  return marquer("finie");
+}
+
+/** La séance du jour a été affichée (la trace « proposée, vue, lancée », V3 §6.6) ; silencieux. */
+export async function codexSeanceVue(): Promise<boolean> {
+  const { supabase, user } = await joueur();
+  if (!user) return false;
+  try {
+    return (await marquerSeance(supabase, user, "vue")).ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * « Une autre idée ? » sur un bloc de la séance : son genre est écarté pour
+ * la journée (rangé avec les quêtes écartées, « seance:coince ») et la séance
+ * est recomposée ; un bloc fait n'est jamais retiré.
+ */
+export async function codexSeanceAutre(genre: string): Promise<RetourSeance> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  if (!estGenreBloc(genre)) return { ok: false, raison: "refus" };
+  const r = await reglerJour(supabase, user, { ecarter: `${ECARTE_SEANCE}${genre}` });
+  if (!r.ok) return r;
+  revalidatePath("/codex");
+  return { ok: true, seance: r.vue.seance, panneau: panneauDe(r.vue), gardee: !!r.vue.seance?.gardee };
 }
 
 /** « Ouvrir CFA II » : le programme suivant devient l'actif, une fois le sien mené (la route de Milan). */
