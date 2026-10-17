@@ -237,7 +237,8 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
           label={CAB.liensLabel}
           liens={[
             { href: `/people/${d.userId}?vue=inconnu`, icon: <Eye size={19} aria-hidden />, title: CAB.voirCommeLesAutres, desc: CAB.voirCommeLesAutresDesc },
-            { href: "#detail", icon: <Icone nom="entrainer" size={20} />, title: CAB.sessions, desc: CAB.sessionsDesc(d.sessions.length, d.sessions[0]?.ago ?? null) },
+            // l'étagère des pièces (le détail des séances reste juste en dessous, et par la courbe de l'objectif)
+            { href: ONGLET("pieces"), icon: <Palette size={19} aria-hidden />, title: "Mes pièces", desc: "Cadres, bannières, titres et folios : ce que tu as gagné, ce que tu portes." },
             { href: ONGLET("reglages"), icon: <Settings2 size={19} aria-hidden />, title: CAB.reglages, desc: CAB.reglagesDesc },
           ]}
         />

@@ -21,6 +21,9 @@ import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
 import type { MoiData } from "@/components/moi/types";
 import { etatObjectif, reglageInitial } from "@/lib/objectif";
 import { lireTrophees } from "@/lib/trophees";
+import { lireEtagere } from "@/components/moi/pieces-data";
+import { MesPieces } from "@/components/moi/MesPieces";
+import { lirePauses } from "@/components/moi/repos-data";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
 
@@ -32,8 +35,9 @@ type ProfileRow = {
   active_group_id: string | null;
 } | null;
 
-// Espace « Moi » : en-tête (profil, rang compact) puis trois onglets liables
-// avec ?onglet=stats|erreurs|reglages. Chaque lecture dégrade proprement.
+// Espace « Moi » : en-tête (profil, rang compact) puis des onglets liables
+// avec ?onglet=stats|erreurs|marquees|pieces|reglages. Chaque lecture dégrade
+// proprement. L'étagère « Mes pièces » n'est lue que sur son onglet.
 export default async function MoiPage({ searchParams }: { searchParams?: Promise<{ onglet?: string }> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
@@ -62,7 +66,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -97,6 +101,10 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     lireSerieEncre(supabase),
     // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul (repli sans bruit)
     lireTrophees(supabase, user.id),
+    // Mes pièces : l'étagère et ce qu'il porte (sur son onglet seulement)
+    tab === "pieces" ? lireEtagere(supabase, admin, user.id).catch(() => null) : Promise.resolve(null),
+    // les jours de repos de la série déjà posés (Réglages ; null sans la migration du Codex §8)
+    tab === "reglages" ? lirePauses(supabase, new Date(now)) : Promise.resolve(null),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -140,12 +148,46 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     trophees: { lignes: trophees.lignes, complet: trophees.complet },
   };
 
+  const etagere = pieces ? (
+    <MesPieces
+      etagere={pieces.etagere}
+      disponible={pieces.disponible}
+      carte={{
+        id: user.id,
+        name: d.name,
+        nomComplet: pieces.nomComplet,
+        titre: pieces.titre,
+        avatarUrl: d.avatarUrl,
+        style: pieces.style,
+        niveau: d.level,
+        levelPct: d.levelPct,
+        xpTotal,
+        elo: rating.elo,
+        mastery: d.me.mastery,
+        place: myRank,
+        gamesPlayed: rating.gamesPlayed,
+        linkedin: null,
+        amis: null,
+        pic: pieces.stats.palierMax,
+      }}
+    />
+  ) : null;
+
   return (
     <MoiView
       d={d}
       tab={tab}
       now={now}
-      settings={<SettingsPanel activeGroupId={profile?.active_group_id ?? null} groups={(groupsRes.data ?? []) as unknown as GroupRow[]} objectif={reglageInitial(objectif)} />}
+      pieces={etagere}
+      settings={
+        <SettingsPanel
+          activeGroupId={profile?.active_group_id ?? null}
+          groups={(groupsRes.data ?? []) as unknown as GroupRow[]}
+          objectif={reglageInitial(objectif)}
+          sobre={user.user_metadata?.rl_sobre === true}
+          repos={repos}
+        />
+      }
     />
   );
 }

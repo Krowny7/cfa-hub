@@ -6,7 +6,8 @@ import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { Provenance } from "@/components/profil/Provenance";
 import { TitrePorte } from "@/components/profil/TitrePorte";
-import { cadreDe, motifDe, type StyleProfil } from "@/lib/profil/catalogue";
+import { type StyleProfil } from "@/lib/profil/catalogue";
+import { banniereBouge, cadreBouge } from "@/lib/profil/rendus";
 import { nombre } from "@/lib/voice";
 import { PresenceText } from "@/components/presence/Presence";
 import { BioRepliable } from "@/components/profil/BioRepliable";
@@ -124,9 +125,8 @@ export function EnteteJoueur({
   const picNom = d.pic !== undefined && d.pic !== null && d.pic > rang.tierIndex ? TIERS[d.pic].name : null;
   const eloPlace = ENTETE.eloPlace(d.elo, d.place !== null ? ordinal(d.place) : null);
   // ce qui bouge : sur téléphone, le cadre passe avant la bannière, qui passe avant les reflets des sceaux
-  const cadreAnime = !!cadreDe(d.style.frame).anime;
-  const motif = d.style.bannerUrl ? null : motifDe(d.style.banner);
-  const banniereAnimee = !!motif?.anime;
+  const cadreAnime = cadreBouge(d.style.frame);
+  const banniereAnimee = banniereBouge(d.style.banner, d.style.bannerUrl);
   const sceau = <CadreSceau frame={d.style.frame} name={d.name} avatarUrl={d.avatarUrl} size={apercu ? 88 : 128} />;
 
   return (
@@ -146,7 +146,7 @@ export function EnteteJoueur({
           }
         />
         {/* la bannière gagnée qui bouge : toute sa surface dit d'où elle vient, au survol ou au toucher */}
-        {!apercu && banniereAnimee && motif && d.provenance?.banniere && <Provenance texte={d.provenance.banniere} plein className="z-[2]" />}
+        {!apercu && banniereAnimee && d.provenance?.banniere && <Provenance texte={d.provenance.banniere} plein className="z-[2]" />}
         {haut && (
           <div className={apercu ? "absolute left-4 top-3 z-[3]" : "absolute inset-x-0 top-3 z-[3] sm:top-4"}>
             <div className={apercu ? "" : "mx-auto w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]"}>{haut}</div>

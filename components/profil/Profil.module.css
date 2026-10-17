@@ -378,3 +378,503 @@
     radial-gradient(55% 45% at 18% 8%, color-mix(in oklab, var(--acc, var(--ink)) 20%, transparent), transparent 72%),
     radial-gradient(45% 40% at 86% 22%, color-mix(in oklab, var(--acc, var(--ink)) 13%, transparent), transparent 72%);
 }
+
+/* ── Pièces dessinées (V3 §3.9) ─────────────────────────────────────── */
+/* Les cadres et les bannières du Codex, des trophées, du fil rouge et des
+   programmes, en CSS seul : transform, opacity, background-position, et le
+   tracé d'un trait (stroke-dashoffset). Le style de base de chaque élément
+   animé (.anim) est son état de repos, le dernier de l'animation : la
+   route tracée, la couronne entière, les facettes allumées. En mouvement
+   réduit, en vignette (.fige) et sur téléphone quand il faut se calmer
+   (.calme), l'animation s'arrête et ce repos reste. */
+.fige .anim,
+.fige.anim {
+  animation: none !important;
+}
+@media (max-width: 1023px) {
+  .calme .anim,
+  .calme.anim {
+    animation: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim {
+    animation: none !important;
+  }
+}
+:global(html[data-rl-motion="off"]) .anim {
+  animation: none !important;
+}
+
+/* les cadres dessinés : le sceau au-dessus de l'anneau, le décor posé dessus */
+.dessine {
+  position: relative;
+}
+.dessine > :not(.deco) {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.deco {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  border-radius: inherit;
+}
+@keyframes tourne {
+  to {
+    transform: rotate(1turn);
+  }
+}
+/* Diamant taillé : six facettes autour du sceau, qui s'allument tour à tour */
+.diamantTaille {
+  background: conic-gradient(from 200deg, #f4f8ff, #afc0f5, #5a5cc0, #c9d6ff, #8f9cf0, #eef2ff, #7f86e0, #f4f8ff);
+}
+.facette {
+  z-index: 2;
+  transform: rotate(calc(var(--i) * 60deg + 30deg));
+  opacity: 0.75;
+  animation: scintille 4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.66s);
+}
+.facette::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - var(--pad, 6px) * 0.6);
+  top: calc(var(--pad, 6px) * -0.1);
+  width: calc(var(--pad, 6px) * 1.2);
+  height: calc(var(--pad, 6px) * 1.2);
+  background: #fff;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+@keyframes scintille {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+/* Vitrine d'or : l'or, et un reflet qui en fait le tour */
+.vitrineOr {
+  overflow: hidden;
+  background: conic-gradient(from 210deg, #6f4c0e, #ddae45 22%, #fff3c4 48%, #ddae45 72%, #6f4c0e);
+  box-shadow: 0 0 0 1px var(--line), 0 0 16px 1px rgba(221, 174, 69, 0.4);
+}
+.refletTour {
+  inset: -50%;
+  border-radius: 0;
+  background: conic-gradient(from 0deg, transparent 0 78%, rgba(255, 252, 230, 0.95) 88%, transparent 98%);
+  animation: tourne 6s linear infinite;
+}
+/* Plume : un anneau d'encre, et une plume qui en suit le bord */
+.cadrePlume {
+  background: var(--ink);
+}
+.orbite {
+  z-index: 2;
+  border-radius: 0;
+  animation: tourne var(--t, 9s) linear infinite;
+}
+.plume {
+  position: absolute;
+  left: 50%;
+  top: -16%;
+  width: 26%;
+  height: auto;
+  overflow: visible;
+  transform: translateX(-50%) rotate(78deg);
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+/* Sanguine : la craie rouge, et un trait plus vif qui en fait le tour */
+.sanguine {
+  overflow: hidden;
+  background: conic-gradient(from 30deg, #8f3320, #c4583a 30%, #a8432a 55%, #d0714e 80%, #8f3320);
+}
+.craie {
+  inset: -50%;
+  border-radius: 0;
+  background: conic-gradient(from 0deg, transparent 0 70%, rgba(246, 205, 180, 0.7) 92%, transparent 100%);
+  animation: tourne 10s linear infinite;
+}
+/* Sfumato : un contour fondu qui se dissipe et revient */
+.sfumato {
+  overflow: hidden;
+  background: color-mix(in oklab, var(--ink) 45%, var(--surface));
+}
+.fumee {
+  inset: -12%;
+  border-radius: 34%;
+  background: radial-gradient(closest-side, transparent 64%, color-mix(in oklab, var(--ink) 80%, transparent) 82%, transparent 100%);
+  opacity: 0.85;
+  animation: fume 6s ease-in-out infinite;
+}
+@keyframes fume {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(1.08) rotate(8deg);
+  }
+}
+/* Encre fidèle : un anneau d'encre, et une goutte qui en fait le tour */
+.encreFidele {
+  background: var(--ink);
+}
+.goutte {
+  position: absolute;
+  left: calc(50% - var(--pad, 6px) * 0.55);
+  top: calc(var(--pad, 6px) * -0.35);
+  width: calc(var(--pad, 6px) * 1.1);
+  height: calc(var(--pad, 6px) * 1.5);
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--surface) 55%, var(--ink)), var(--ink) 60%);
+  box-shadow: 0 0 0 1.5px var(--surface);
+  transform: rotate(-90deg);
+}
+/* Laurier : douze feuilles sur l'anneau, qui poussent l'une après l'autre */
+.laurier {
+  background: color-mix(in oklab, #5d7a3e 26%, var(--surface));
+}
+.rameau {
+  z-index: 2;
+  border-radius: 0;
+  transform: rotate(calc(var(--i) * 30deg));
+}
+.feuille {
+  position: absolute;
+  left: calc(50% - var(--pad, 6px) * 0.4);
+  top: calc(var(--pad, 6px) * -0.3);
+  width: calc(var(--pad, 6px) * 0.8);
+  height: calc(var(--pad, 6px) * 1.6);
+  border-radius: 50% 0;
+  background: linear-gradient(135deg, #7d9a52, #4d6a2e);
+  transform: rotate(40deg);
+  animation: pousse 12s ease-out infinite;
+  animation-delay: calc(var(--i) * 0.45s);
+}
+@keyframes pousse {
+  0% {
+    opacity: 0;
+    transform: rotate(40deg) scale(0.2);
+  }
+  12%,
+  85% {
+    opacity: 1;
+    transform: rotate(40deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(40deg) scale(1);
+  }
+}
+/* Vitruve : le cercle fixe, le carré qui tourne lentement, à la sanguine */
+.vitruve {
+  background: color-mix(in oklab, #b0874f 22%, var(--surface));
+}
+.vitruveTrace {
+  inset: -9%;
+  width: 118%;
+  height: 118%;
+  overflow: visible;
+  border-radius: 0;
+  fill: none;
+  stroke: #9a5b34;
+  stroke-width: 1.3;
+}
+.carre {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: tourne 40s linear infinite;
+}
+
+/* les bannières dessinées */
+.carnet {
+  background:
+    linear-gradient(90deg, transparent 54px, color-mix(in oklab, var(--pen) 55%, transparent) 54px 55.5px, transparent 55.5px),
+    repeating-linear-gradient(180deg, transparent 0 25px, color-mix(in oklab, var(--ink) 10%, transparent) 25px 26px),
+    color-mix(in oklab, #c9a66b 12%, var(--surface-2));
+  color: color-mix(in oklab, #7a4a26 70%, var(--ink));
+}
+.croquis {
+  position: absolute;
+  right: 6%;
+  top: 50%;
+  width: min(30%, 190px);
+  height: auto;
+  transform: translateY(-50%) rotate(-12deg);
+}
+.trace {
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 0;
+  animation: trace 9s ease-in-out infinite;
+}
+@keyframes trace {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  55%,
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+.croquisTrait {
+  position: absolute;
+  left: 18%;
+  bottom: 14%;
+  width: min(36%, 260px);
+  height: auto;
+  opacity: 0.5;
+  animation: apparait 9s ease-in-out infinite;
+  animation-delay: -4s;
+}
+@keyframes apparait {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  40%,
+  70% {
+    opacity: 0.5;
+  }
+}
+.florence {
+  background: linear-gradient(180deg, color-mix(in oklab, #e9b98a 40%, var(--surface-2)), color-mix(in oklab, #b9c4d8 35%, var(--surface-2)));
+}
+.aube {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 90% at 62% 100%, rgba(255, 214, 160, 0.75), transparent 70%);
+  opacity: 1;
+  animation: aube 10s ease-in-out infinite alternate;
+}
+@keyframes aube {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.dome {
+  position: absolute;
+  left: 58%;
+  bottom: 0;
+  width: min(16%, 120px);
+  aspect-ratio: 1 / 1.05;
+  background:
+    linear-gradient(90deg, transparent 47%, color-mix(in oklab, var(--ink) 55%, transparent) 47% 53%, transparent 53%) 0 0 / 100% 22% no-repeat,
+    radial-gradient(100% 120% at 50% 100%, color-mix(in oklab, #a2482e 70%, var(--ink)) 60%, transparent 61%) 0 22% / 100% 60% no-repeat,
+    linear-gradient(color-mix(in oklab, #d8cbb2 60%, var(--ink)), color-mix(in oklab, #d8cbb2 60%, var(--ink))) 0 100% / 100% 20% no-repeat;
+}
+.brume {
+  position: absolute;
+  inset: 40% -30% -10% -30%;
+  background: radial-gradient(50% 60% at 50% 60%, color-mix(in oklab, var(--surface) 85%, transparent), transparent 75%);
+  opacity: 0.35;
+  animation: brume 12s ease-in-out infinite alternate;
+}
+.brumeHaute {
+  inset: 25% -40% 20% -20%;
+  animation-duration: 16s;
+  animation-direction: alternate-reverse;
+}
+@keyframes brume {
+  from {
+    transform: translateX(-12%);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateX(12%);
+    opacity: 0.35;
+  }
+}
+.imola {
+  background:
+    radial-gradient(55% 130% at 80% 50%, color-mix(in oklab, #c9a66b 22%, transparent), transparent 72%),
+    var(--surface-2);
+  color: color-mix(in oklab, #7a4a26 65%, var(--ink));
+}
+.plan {
+  position: absolute;
+  right: 5%;
+  top: 50%;
+  width: min(36%, 230px);
+  height: auto;
+  transform: translateY(-50%);
+}
+.vent {
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 0;
+  opacity: 0.7;
+  animation: vent 10s ease-out infinite;
+  animation-delay: calc(var(--i) * 0.35s);
+}
+@keyframes vent {
+  0%,
+  20% {
+    stroke-dashoffset: 100;
+  }
+  45%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+.machineVolante {
+  background:
+    radial-gradient(120% 60% at 30% 118%, color-mix(in oklab, #6f8a4e 30%, var(--surface-2)) 60%, transparent 61%),
+    radial-gradient(110% 55% at 85% 125%, color-mix(in oklab, #5d7a3e 34%, var(--surface-2)) 60%, transparent 61%),
+    linear-gradient(180deg, color-mix(in oklab, #9fb6cf 28%, var(--surface-2)), var(--surface-2));
+}
+.vol {
+  position: absolute;
+  left: 42%;
+  top: 14%;
+  width: min(22%, 150px);
+  color: var(--ink);
+  animation: plane 14s ease-in-out infinite alternate;
+}
+.vol svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  fill: currentColor;
+}
+@keyframes plane {
+  from {
+    transform: translate(-60%, 8%);
+  }
+  to {
+    transform: translate(60%, -6%);
+  }
+}
+.aile {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  opacity: 0.85;
+  animation: bat 1.6s ease-in-out infinite alternate;
+}
+.aileDroite {
+  animation-name: batDroite;
+}
+@keyframes bat {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(10deg);
+  }
+}
+@keyframes batDroite {
+  from {
+    transform: rotate(14deg);
+  }
+  to {
+    transform: rotate(-10deg);
+  }
+}
+.salleTrophees {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 64px, rgba(221, 174, 69, 0.22) 64px 66px, transparent 66px 96px),
+    radial-gradient(70% 120% at 50% 0%, rgba(255, 214, 140, 0.28), transparent 70%),
+    linear-gradient(180deg, #2a2117, #120d08);
+}
+/* chaque calque monte d'un nombre entier de motifs (--monte) : la boucle ne saute pas */
+.eclats {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100% + 1000px);
+  background: radial-gradient(circle, rgba(255, 226, 150, 0.85) 1px, transparent 1.8px) 0 0 / 47px 53px;
+  opacity: 0.55;
+  --monte: -530px;
+  animation: monte 12s linear infinite;
+}
+.eclatsMoyens {
+  background: radial-gradient(circle, rgba(255, 236, 180, 0.9) 1.4px, transparent 2.2px) 19px 11px / 71px 67px;
+  opacity: 0.7;
+  --monte: -670px;
+  animation-duration: 18s;
+}
+.eclatsProches {
+  background: radial-gradient(circle, rgba(255, 245, 210, 0.95) 2px, transparent 3px) 31px 23px / 113px 97px;
+  opacity: 0.8;
+  --monte: -970px;
+  animation-duration: 26s;
+}
+@keyframes monte {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--monte, -530px));
+  }
+}
+.routeMilan {
+  background:
+    radial-gradient(60% 120% at 92% 0%, color-mix(in oklab, var(--acc) 16%, transparent), transparent 64%),
+    color-mix(in oklab, #c9a66b 10%, var(--surface-2));
+}
+.route {
+  position: absolute;
+  inset: 8% 4%;
+  width: 92%;
+  height: 84%;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+}
+.routeFond {
+  stroke: color-mix(in oklab, var(--ink) 22%, transparent);
+  stroke-width: 1.2;
+  stroke-dasharray: 1.2 1.6;
+}
+.routeTrait {
+  stroke: var(--acc, var(--ink));
+  stroke-width: 2.6;
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 0;
+  animation: route 8s cubic-bezier(0.45, 0, 0.25, 1) 1 both;
+}
+@keyframes route {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.etape {
+  fill: var(--ink);
+}
+.arrivee {
+  fill: var(--acc, var(--ink));
+  animation: arrivee 8s ease-out 1 both;
+}
+@keyframes arrivee {
+  0%,
+  92% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

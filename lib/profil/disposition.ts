@@ -24,6 +24,8 @@ export const BLOCS = [
   { k: "reponses", nom: "Questions répondues" },
   { k: "trophees", nom: "Trophées" },
   { k: "progression", nom: "Progression" },
+  // le folio porté (Moi › Mes pièces) et son anecdote ; posé en demi-largeur
+  { k: "folio", nom: "Folio" },
 ] as const;
 export type CleBloc = (typeof BLOCS)[number]["k"];
 
@@ -64,6 +66,29 @@ export const MODELES: { key: ModeleRangee; nom: string; cases: number }[] = [
   { key: "quatre", nom: "Grille de quatre", cases: 4 },
 ];
 export const casesDe = (m: ModeleRangee) => MODELES.find((x) => x.key === m)?.cases ?? 1;
+
+/** Les blocs posés en demi-largeur quand on les ajoute sans case visée (une moitié vide à côté). */
+const DEMI_PAR_DEFAUT: ReadonlySet<string> = new Set(["folio"]);
+/** La rangée neuve d'un bloc ajouté sans case visée : pleine, ou deux moitiés (le folio). */
+export const rangeeNeuve = (b: Bloc): Rangee => (DEMI_PAR_DEFAUT.has(b.k) ? { m: "deux", c: [b, null] } : { m: "plein", c: [b] });
+
+/**
+ * La disposition avec le bloc du folio : inchangée s'il y est déjà ; sinon
+ * dans la première case vide, ou dans une rangée neuve de deux moitiés à la
+ * fin (rien, s'il y a déjà douze rangées).
+ */
+export function avecBlocFolio(d: Disposition): Disposition {
+  if (d.some((r) => r.c.some((b) => b?.k === "folio"))) return d;
+  const copie = d.map((r) => ({ m: r.m, c: [...r.c] }));
+  for (const r of copie) {
+    const i = r.c.findIndex((b) => !b);
+    if (i >= 0) {
+      r.c[i] = { k: "folio" };
+      return copie;
+    }
+  }
+  return copie.length < RANGEES_MAX ? [...copie, rangeeNeuve({ k: "folio" })] : d;
+}
 
 /** Une case : un bloc, ou rien (case vide). */
 export type Case = Bloc | null;

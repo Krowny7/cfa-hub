@@ -167,29 +167,35 @@ const DECLAREES: Declaree[] = [
 ];
 
 // ── Folios : un dessin de Léonard par acte clos et par « Maître de… » ──
-// Images à venir (public/folios/<nue>.webp, lot B6) : d'ici là, une carte
-// « papier » avec le nom de l'œuvre. Les anecdotes viennent avec les images.
-export const FOLIOS: { nue: string; quete: string; oeuvre: string }[] = [
-  { nue: "mains", quete: "acte:acte1", oeuvre: "Étude de mains" },
-  { nue: "draperie", quete: "acte:acte2", oeuvre: "Étude de draperie" },
-  { nue: "codex-leicester", quete: "acte:acte3", oeuvre: "Une page du Codex Leicester" },
-  { nue: "adoration", quete: "acte:acte4", oeuvre: "Étude pour l'Adoration des Mages" },
-  { nue: "chevaux", quete: "acte:acte5", oeuvre: "Études de chevaux" },
-  { nue: "autoportrait", quete: "acte:acte6", oeuvre: "Autoportrait à la sanguine" },
-  { nue: "deluge", quete: "acte:epilogue", oeuvre: "Le Déluge" },
-  { nue: "vieillard", quete: "branche:ethics:maitre", oeuvre: "Profil de vieillard" },
-  { nue: "polyedres", quete: "branche:quant:maitre", oeuvre: "Polyèdres dessinés pour la Divina proportione" },
-  { nue: "moulin", quete: "branche:economics:maitre", oeuvre: "Étude de moulin" },
-  { nue: "tourbillons", quete: "branche:fsa:maitre", oeuvre: "Études de tourbillons d'eau" },
-  { nue: "pont", quete: "branche:corporate:maitre", oeuvre: "Projet de pont" },
-  { nue: "chats", quete: "branche:equity:maitre", oeuvre: "Études de chats" },
-  { nue: "arbalete", quete: "branche:fixed_income:maitre", oeuvre: "L'arbalète géante" },
-  { nue: "vis-aerienne", quete: "branche:derivatives:maitre", oeuvre: "La vis aérienne" },
-  { nue: "char", quete: "branche:alternatives:maitre", oeuvre: "Le char d'assaut" },
-  { nue: "ornithoptere", quete: "branche:portfolio:maitre", oeuvre: "L'ornithoptère" },
-  { nue: "galerie", quete: "fil:maitres:2", oeuvre: "Études de proportions" },
-  { nue: "cabinet", quete: "fil:collection:3", oeuvre: "Feuille d'études diverses" },
+// Chacun a son anecdote : deux lignes sobres et vérifiables, sans date
+// inventée (les sources : docs/codex/FOLIOS.md). L'image vient de
+// public/folios/<nue>.webp quand elle y est (FOLIOS_ILLUSTRES) ; d'ici là,
+// une carte « papier » avec le nom de l'œuvre à la plume, jamais d'image cassée.
+export const FOLIOS: { nue: string; quete: string; oeuvre: string; anecdote: [string, string] }[] = [
+  { nue: "mains", quete: "acte:acte1", oeuvre: "Étude de mains", anecdote: ["Pointe d'argent rehaussée de blanc, sur papier préparé.", "On la rapproche du portrait de Ginevra de' Benci, dont le bas a été coupé."] },
+  { nue: "draperie", quete: "acte:acte2", oeuvre: "Étude de draperie", anecdote: ["Peinte au pinceau, en gris et en blanc, sur une toile de lin.", "Vasari raconte qu'il drapait des modèles d'argile d'étoffes trempées dans la terre."] },
+  { nue: "codex-leicester", quete: "acte:acte3", oeuvre: "Une page du Codex Leicester", anecdote: ["Un carnet sur l'eau, la Lune et les fossiles, écrit de droite à gauche.", "C'est le seul grand carnet de Léonard resté entre des mains privées."] },
+  { nue: "adoration", quete: "acte:acte4", oeuvre: "Étude pour l'Adoration des Mages", anecdote: ["Une étude de perspective pour le fond du tableau : escaliers, arcades, cavaliers.", "Le tableau, commandé par les moines de San Donato a Scopeto, est resté inachevé."] },
+  { nue: "chevaux", quete: "acte:acte5", oeuvre: "Études de chevaux", anecdote: ["Des études pour le cheval de bronze promis aux Sforza, à Milan.", "Le bronze qui lui était réservé finit fondu en canons : le cheval ne fut jamais coulé."] },
+  { nue: "autoportrait", quete: "acte:acte6", oeuvre: "Autoportrait à la sanguine", anecdote: ["Une sanguine conservée à la Biblioteca Reale de Turin, rarement montrée.", "On discute encore pour savoir si c'est bien Léonard qui s'y est dessiné."] },
+  { nue: "deluge", quete: "acte:epilogue", oeuvre: "Le Déluge", anecdote: ["Une série de dessins à la pierre noire, faite dans ses dernières années.", "L'eau et le vent y emportent tout, en tourbillons qui se répondent."] },
+  { nue: "vieillard", quete: "branche:ethics:maitre", oeuvre: "Profil de vieillard", anecdote: ["Léonard dessinait volontiers les visages marqués, de profil.", "Vasari dit qu'il suivait parfois toute une journée un passant dont la tête l'intriguait."] },
+  { nue: "polyedres", quete: "branche:quant:maitre", oeuvre: "Polyèdres dessinés pour la Divina proportione", anecdote: ["Les solides du traité de Luca Pacioli, son ami mathématicien.", "Léonard les dessine pleins puis évidés, pour qu'on voie au travers."] },
+  { nue: "moulin", quete: "branche:economics:maitre", oeuvre: "Étude de moulin", anecdote: ["Roues, engrenages et chutes d'eau : Léonard cherchait comment l'eau travaille.", "Beaucoup de ses machines sont réunies dans le Codex Atlanticus, à Milan."] },
+  { nue: "tourbillons", quete: "branche:fsa:maitre", oeuvre: "Études de tourbillons d'eau", anecdote: ["L'eau qui contourne un obstacle, observée trait par trait.", "Dans ses notes, il compare ces tourbillons aux boucles d'une chevelure."] },
+  { nue: "pont", quete: "branche:corporate:maitre", oeuvre: "Projet de pont", anecdote: ["Un pont d'une seule arche, proposé au sultan Bayezid II pour la Corne d'Or.", "Il ne fut pas bâti ; une version réduite existe aujourd'hui en Norvège."] },
+  { nue: "chats", quete: "branche:equity:maitre", oeuvre: "Études de chats", anecdote: ["Des chats qui dorment, se lèchent, se battent, sur une même feuille.", "En cherchant bien, on y trouve aussi un petit dragon."] },
+  { nue: "arbalete", quete: "branche:fixed_income:maitre", oeuvre: "L'arbalète géante", anecdote: ["Une arbalète de plus de vingt mètres d'envergure, montée sur six roues.", "Elle ne fut jamais construite : Léonard se présentait aussi en ingénieur militaire."] },
+  { nue: "vis-aerienne", quete: "branche:derivatives:maitre", oeuvre: "La vis aérienne", anecdote: ["Une vis de lin amidonné qui devait s'élever en tournant dans l'air.", "On la cite souvent comme une lointaine aïeule de l'hélicoptère."] },
+  { nue: "char", quete: "branche:alternatives:maitre", oeuvre: "Le char d'assaut", anecdote: ["Un char couvert comme une carapace de tortue, armé tout autour.", "Huit hommes devaient le faire avancer à la manivelle, de l'intérieur."] },
+  { nue: "ornithoptere", quete: "branche:portfolio:maitre", oeuvre: "L'ornithoptère", anecdote: ["Une machine à ailes battantes, mue par la seule force d'un homme.", "Léonard a rempli un carnet entier sur le vol des oiseaux, aujourd'hui à Turin."] },
+  { nue: "galerie", quete: "fil:maitres:2", oeuvre: "Études de proportions", anecdote: ["Léonard mesurait les corps pour en trouver les rapports, comme Vitruve avant lui.", "Son Homme de Vitruve est conservé à Venise, aux Gallerie dell'Accademia."] },
+  { nue: "cabinet", quete: "fil:collection:3", oeuvre: "Feuille d'études diverses", anecdote: ["Sur une même feuille : une machine, un visage, une note, un calcul.", "Il écrivait de droite à gauche, en miroir, et passait d'un sujet à l'autre."] },
 ];
+/** Les folios dont l'image est dans public/folios (<nue>.webp, 600 × 800) : les autres restent provisoires. */
+export const FOLIOS_ILLUSTRES: string[] = [];
+/** L'image d'un folio, si elle est là. */
+export const imageFolio = (nue: string): string | null => (FOLIOS_ILLUSTRES.includes(nue) ? `/folios/${nue}.webp` : null);
 
 // ── L'assemblage ───────────────────────────────────────────────────────
 /** La condition couvre déjà la quête (la même quête, ou le même palier du fil rouge). */
@@ -277,7 +283,7 @@ function assembler(): Piece[] {
       origine: FIL_ID.test(f.quete) ? "fil" : "codex",
       condition: { k: "codex", quete: f.quete },
       programme: PROGRAMME_GLOBAL,
-      folio: { image: null, anecdote: ["", ""], provisoire: true, oeuvre: f.oeuvre },
+      folio: { image: imageFolio(f.nue), anecdote: f.anecdote, provisoire: !imageFolio(f.nue), oeuvre: f.oeuvre },
     });
   }
   return out;
@@ -294,3 +300,18 @@ export const pieceNue = (type: TypePiece, nue: string): Piece | null => PAR_CLE.
 export const piecesDuType = (t: TypePiece): Piece[] => PIECES.filter((p) => p.type === t);
 /** Le joueur possède la pièce (sa condition est remplie ; libre : toujours). */
 export const possede = (p: Piece, a: Acquis): boolean => remplie(p.condition, a);
+
+/** Les quêtes du Codex (ou « acte:<id> », « fil:<c>:<n> ») que nomme une condition, dans l'ordre. */
+const quetesDe = (c: Condition | null): string[] =>
+  !c ? [] : c.k === "codex" ? [c.quete] : c.k === "fil" ? [idFil(c.chapitre, c.palier)] : c.k === "unDe" ? c.conditions.flatMap(quetesDe) : [];
+
+/**
+ * La quête du Codex où aller chercher la pièce (« Y aller » de l'étagère) :
+ * celle qui la donne aujourd'hui (une non retirée), sinon la première que
+ * nomme sa condition ; aucune (questions, rang, sceaux, trophées) : null.
+ */
+export function queteDe(p: Piece): string | null {
+  const ids = quetesDe(p.condition);
+  if (!ids.length) return null;
+  return donneurPrincipal(DONNEURS.get(p.cle)?.filter((id) => ids.includes(id))) ?? ids.find((id) => !QUETES.find((q) => q.id === id)?.retiree) ?? null;
+}
