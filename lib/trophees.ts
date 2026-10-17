@@ -74,7 +74,7 @@ export const SOURCES_TROPHEE: Record<SourceTrophee, { nom: string; regle: Partia
   atelier: { nom: "L'Atelier", regle: { 1: "70 % ou plus et 3 ratures rayées", 2: "80 % ou plus et 5 ratures rayées" }, lien: "/atelier" },
   duel: { nom: "Duel sans faute", regle: { 1: "un duel gagné avec la mention « Sans-faute »" }, lien: "/duel" },
   // /revoir renvoie à la reprise du carnet tant que la section §3b n'est pas collée
-  revoir: { nom: "À revoir", regle: { 1: "90 % ou plus sur 15 questions ou plus", 2: "100 % sur 25 questions ou plus" }, lien: "/revoir" },
+  revoir: { nom: "À revoir", regle: { 1: "90 % ou plus sur 15 questions ou plus, rendue en entier", 2: "100 % sur 25 questions ou plus, rendue en entier" }, lien: "/revoir" },
 };
 
 /**

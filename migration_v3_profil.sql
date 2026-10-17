@@ -1,9 +1,21 @@
 -- Codex v3, côté profil : les pièces portées, les trophées, la mémoire, la
 -- maîtrise et le débrief des examens blancs.
 -- À coller dans le SQL Editor de Supabase, après toutes les migrations déjà
--- en place. Ordre de collage des deux fichiers du Codex v3 :
--- migration_v3_profil.sql, puis migration_codex_v3.sql. Chacun marche aussi
--- seul. Idempotente (rejouable).
+-- en place : tout l'ordre de collage (order.txt) jusqu'à migration_codex.sql,
+-- dont migration_series_eclair.sql, migration_points_faibles.sql,
+-- migration_notions.sql, migration_atelier.sql, migration_carnet_notions.sql
+-- et migration_profil_sceaux.sql. Ordre de collage des deux fichiers du
+-- Codex v3 : migration_v3_profil.sql, puis migration_codex_v3.sql. Chacun
+-- marche aussi seul. Idempotente (rejouable).
+--
+-- ATTENTION : ce fichier redéfinit, avec le filtre « sèche » (section 3a) ou
+-- les séries « À revoir » (section 3b), des fonctions de ces migrations :
+-- rature_suivante_theme, rature_suivante_notion, ratures_par_notion,
+-- atelier_lancer, eclair_start, eclair_finish. Si l'une d'elles est collée
+-- ou recollée APRÈS ce fichier, recollez ce fichier ensuite (sinon Mise au
+-- propre et l'Atelier reproposent les ratures fraîches, et /eclair peut
+-- reprendre une « À revoir »). Une fonction absente au collage est sautée :
+-- un avertissement (WARNING) le dit dans le SQL Editor.
 -- Le site marche sans ce fichier : chaque lecture se replie en silence sur
 -- l'ancien comportement tant qu'il n'est pas collé.
 --
@@ -30,7 +42,9 @@
 --    réussie au moins 24 h après l'erreur ; réussie plus tôt, elle reste en
 --    cours, à l'encre fraîche (seche_le), et sèche le lendemain. Une rature
 --    rayée puis réussie de nouveau au moins 7 jours plus tard est scellée
---    (scellee_le). Une nouvelle erreur efface les deux. Le déclencheur
+--    (scellee_le). Une nouvelle erreur efface la date de séchage, et le
+--    sceau seulement si elle ramène la rature au carnet (une erreur plus
+--    ancienne que le rayage, rejouée en retard, ne reprend rien). Le déclencheur
 --    ratures_a_seche décide au moment du rayage : Mise au propre, Atelier et
 --    « À revoir » sont couverts sans réécrire leur geste. Rien n'est
 --    rétroactif : aucune ligne n'est réécrite, et seule une réussite
@@ -313,8 +327,11 @@ BEGIN
       WHERE m.user_id = p_user AND m.mention = 'sansFaute';
   END IF;
 
-  -- revoir : une séance « À revoir » close (eclair_series.genre, posée par la
-  -- section 3b) d'au moins 15 questions, 90 % bronze, 100 % sur 25 argent
+  -- revoir : une séance « À revoir » rendue en entier (eclair_series.genre,
+  -- posée par la section 3b) d'au moins 15 questions, 90 % bronze, 100 % sur
+  -- 25 argent. Rendue en entier, comme l'événement revoir_rendue du Codex : une
+  -- séance laissée en route (close d'office par _revoir_clore, ou arrêtée par
+  -- « Arrêter ») ne compte que les réponses données, elle ne vaut rien ici
   IF EXISTS (SELECT 1 FROM information_schema.columns
              WHERE table_schema = 'public' AND table_name = 'eclair_series' AND column_name = 'genre') THEN
     RETURN QUERY
@@ -322,6 +339,7 @@ BEGIN
              e.finished_at, 'À revoir du ' || _trophee_jour((e.finished_at AT TIME ZONE 'Europe/Paris')::date)
       FROM eclair_series e
       WHERE e.user_id = p_user AND e.genre = 'revoir' AND e.finished_at IS NOT NULL
+        AND e.total = coalesce(array_length(e.question_ids, 1), 0)
         AND e.total >= 15 AND e.score * 10 >= 9 * e.total;
   END IF;
 END;
@@ -414,8 +432,13 @@ $$;
 -- reste en cours, à l'encre fraîche. Une ancienne (rayée, rayee_le de
 -- migration_profil_sceaux.sql, lue sans dépendre de la colonne) réussie de
 -- nouveau, de n'importe où, 7 jours au moins après son rayage : scellée.
--- Une nouvelle erreur efface les deux. Le nom passe avant ratures_rayee_le
--- (ordre alphabétique des déclencheurs) : rayee_le suit la décision.
+-- Une nouvelle erreur : la date de séchage suit la dernière erreur (seche_le
+-- effacé quand last_missed_at avance) ; le sceau ne tombe que si l'erreur
+-- ramène la rature au carnet (postérieure au rayage). Une erreur ancienne
+-- arrivée en retard (réponse sous embargo, rejouée par _ratures_rejouer),
+-- antérieure au rayage, laisse la rature rayée et scellée : rien de gagné
+-- n'est repris. Le nom passe avant ratures_rayee_le (ordre alphabétique des
+-- déclencheurs) : rayee_le suit la décision.
 CREATE OR REPLACE FUNCTION _rature_a_seche()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -435,8 +458,14 @@ BEGIN
      AND NEW.last_correct_at >= _ratures_v3_depuis() AND OLD.scellee_le IS NULL THEN
     NEW.scellee_le := NEW.last_correct_at;
   END IF;
-  IF NEW.misses > OLD.misses THEN
+  IF NEW.misses > OLD.misses AND NEW.last_missed_at > coalesce(OLD.last_missed_at, '-infinity'::timestamptz) THEN
     NEW.seche_le := NULL;
+  END IF;
+  -- le sceau : rayée, elle ne le perd que si l'erreur la ramène au carnet ; remise en cours à la
+  -- main (retirer_rature), seulement pour une erreur postérieure au scellement
+  IF NEW.misses > OLD.misses AND OLD.scellee_le IS NOT NULL
+     AND ((OLD.removed_at IS NOT NULL AND NEW.removed_at IS NULL)
+          OR (OLD.removed_at IS NULL AND NEW.last_missed_at > OLD.scellee_le)) THEN
     NEW.scellee_le := NULL;
   END IF;
   RETURN NEW;
@@ -699,6 +728,8 @@ BEGIN
 END;
 $$
 $fn$;
+  ELSE
+    RAISE WARNING '%', 'rature_suivante_theme (migration_points_faibles.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;
 
   IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NOT NULL THEN
@@ -759,6 +790,8 @@ BEGIN
 END;
 $$
 $fn$;
+  ELSE
+    RAISE WARNING '%', 'rature_suivante_notion (migration_notions.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;
 
   IF to_regprocedure('public.ratures_par_notion(text, boolean, integer, integer)') IS NOT NULL THEN
@@ -836,6 +869,8 @@ BEGIN
 END;
 $$
 $fn$;
+  ELSE
+    RAISE WARNING '%', 'ratures_par_notion (migration_carnet_notions.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;
 END $do$;
 
@@ -1004,6 +1039,8 @@ BEGIN
 END;
 $$
 $fn$;
+  ELSE
+    RAISE WARNING '%', 'atelier_lancer (migration_atelier.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;
 END $do$;
 
