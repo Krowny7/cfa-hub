@@ -11,7 +11,8 @@
 // forcée quand sa taille est inconnue) ; aDuContenu des blocs sans
 // données ; le balisage de la Salle des trophées inchangé après
 // l'extraction de ParSource ; le radar en héros garde des libellés « moy »
-// que la règle sansMoy masque.
+// que la règle sansMoy masque ; EditeurPage (Personnaliser) rend cette même
+// grille et ces mêmes blocs, inertes sous leur barre, places libres comprises.
 import "./sans-css";
 import "./react-global";
 import { createHash } from "node:crypto";
@@ -20,6 +21,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { GrilleProfil } from "@/components/profil/GrilleProfil";
 import { BlocProfil, ICONE_BLOC } from "@/components/profil/BlocsProfil";
 import { PageProfil } from "@/components/profil/PageProfil";
+import { EditeurPage } from "@/components/profil/EditeurPage";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { aDuContenu, type DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { BLOCS, FORMATS_PERMIS, estMedia, genreDe, type Bloc, type BlocMedia, type Disposition, type Format, type GenreBloc, type PlaceVide } from "@/lib/profil/disposition";
@@ -251,6 +254,32 @@ for (const [f, n] of [
   check('radar en héros : des tspan à fill-opacity="0.85" (la règle sansMoy vise encore quelque chose)', html.includes('fill-opacity="0.85"') && html.includes("sansMoy"));
   check("radar en héros : le titre-réponse « FSA en tête »", html.includes("FSA en tête"));
   check("radar : « Me comparer » chez un autre, pas chez soi", html.includes("Me comparer") && !rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: true }} />).includes("Me comparer"));
+}
+
+// ── EditeurPage : Personnaliser rend la vraie grille et les vrais blocs ──
+{
+  const rien = () => undefined;
+  const editeur = (d: Disposition, x: DonneesBlocs) =>
+    rend(<EditeurPage disposition={d} onChange={rien} donnees={x} showcase={x.showcase} onShowcase={rien} supabase={{} as SupabaseClient} banqueGifs />);
+  const riche = editeur(DISPO_RICHE, RICHE);
+  check(
+    "éditeur : la grille de la page (GrilleProfil), une case par élément, chaque bloc inerte sous sa barre",
+    riche.includes('<div class="grille">') && compte(riche, "data-case=") === DISPO_RICHE.length && compte(riche, 'class="barre"') === DISPO_RICHE.length && compte(riche, "inert") === DISPO_RICHE.length,
+  );
+  check("éditeur : les vrais blocs (BlocProfil), avec leurs données", ["Chiffres clés", "Journal", "Saisons", "Folio", "Trophées", "Questions répondues"].every((t) => riche.includes(t)));
+  const aTrous: Disposition = [
+    { k: "vitrine", f: "bande" },
+    { k: "amis", f: "heros" },
+    { k: "libre", f: "tuile" },
+    { k: "radar", f: "heros" },
+  ];
+  const trous = editeur(aTrous, SOBRE);
+  check(
+    "éditeur : un élément libre et une fin de rangée proposent « Choisir un module », visés au glisser, cachés sous 1 024 px",
+    compte(trous, "Choisir un module") >= 2 && trous.includes('data-case="2" class="@container case p4 placeEdition"') && trous.includes('data-place="2" class="case p4 placeEdition"'),
+  );
+  const sobre = editeur(DISPO_SOBRE, { ...SOBRE, amis: null });
+  check("éditeur : un bloc sans données garde son cadre et dit qu'il n'a rien à montrer", compte(sobre, "data-case=") === DISPO_SOBRE.length && sobre.includes("rien à montrer pour l&#x27;instant"));
 }
 
 // ── ParSource : la Salle des trophées rend le même balisage qu'avant l'extraction ──
