@@ -58,8 +58,18 @@
 --    par appel (corps identique à celui de migration_codex_v3.sql).
 --    Sans cette section, /revoir dit « bientôt » et renvoie à « Mettre au
 --    propre », et les compteurs comptent les ratures ouvertes (25 au plus).
--- Les sections suivantes (maîtrise, débrief des blancs) s'ajoutent à la
--- suite, lot après lot.
+-- 4. La maîtrise unique : une seule définition de la maîtrise d'une
+--    matière, partout (Codex, profil, sceaux de matière). maitrise_joueur
+--    (service role) lit toutes les réponses du joueur (_reponses_cache) :
+--    les 60 plus récentes de chaque matière, la première réponse à une
+--    question pesant 2, une réponse donnée moins de 24 h après la
+--    précédente à la même question 0,5, les autres 1. Sous 10 réponses la
+--    matière n'est pas mesurée, de 10 à 39 elle est provisoire, mesurée à
+--    40. Elle rend aussi le début (les 40 premières réponses) et
+--    l'ancienne mesure (séances ciblées d'une seule matière, 5 questions au
+--    moins), qui garde seule le verrou des rangs : aucun rang ne bouge.
+--    Sans cette section, le site garde l'ancienne mesure partout.
+-- La section suivante (débrief des blancs) s'ajoute à la suite.
 
 -- ── 1. le titre porté et le folio ─────────────────────────────────────
 ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS titre text;
@@ -1457,3 +1467,99 @@ GRANT EXECUTE ON FUNCTION revoir_lancer(int) TO authenticated;
 GRANT EXECUTE ON FUNCTION revoir_repondre(uuid, int, int) TO authenticated;
 GRANT EXECUTE ON FUNCTION eclair_start() TO authenticated;
 GRANT EXECUTE ON FUNCTION eclair_finish(uuid) TO authenticated;
+
+-- ── 4. la maîtrise unique ─────────────────────────────────────────────
+-- La maîtrise d'un joueur, matière par matière, pour un programme (défaut :
+-- le CFA Niveau I, clés nues ; un autre programme a des clés « slug:m »,
+-- « finance/cfa-l2 » → « cfa-l2:fsa »). Mêmes constantes que lib/maitrise.ts
+-- (MAITRISE) : fenêtre 60, provisoire dès 10, mesurée dès 40, poids 2 / 0,5
+-- / 1, début sur 40.
+-- { v: 1, matieres: { <clé>: { pct, n, total, statut, derniere, debut, ancienne } } }
+--   pct      : 100 × Σ(poids × juste) / Σ poids sur les 60 réponses les plus
+--              récentes, arrondi ; null sous 10 réponses ;
+--   n        : réponses dans la fenêtre (60 au plus) ; total : toutes ;
+--   statut   : non_mesuree (< 10), provisoire (10 à 39), mesuree (40 et plus) ;
+--   derniere : la dernière réponse de la matière ;
+--   debut    : le même calcul sur les 40 premières réponses (null sous 40) ;
+--   ancienne : l'ancienne règle de lib/mastery.ts (séances ciblées d'une
+--              seule matière, 5 questions au moins), arrondie comme
+--              Math.round : le verrou des rangs la lit seule (CFA I).
+-- Une matière sans réponse ni ancienne mesure est absente (le site la
+-- complète en non_mesuree). Rend NULL sans _reponses_joueur ou
+-- _codex_matiere (le site se replie sur l'ancienne mesure).
+CREATE OR REPLACE FUNCTION maitrise_joueur(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_prog text := coalesce(p_programme, 'finance/cfa-l1');
+  v_cfa1 boolean;
+  v_pref text;
+  v_res  jsonb;
+BEGIN
+  IF p_user IS NULL OR to_regprocedure('public._reponses_joueur(uuid)') IS NULL
+     OR to_regprocedure('public._codex_matiere(text,text)') IS NULL THEN
+    RETURN NULL;
+  END IF;
+  v_cfa1 := v_prog = 'finance/cfa-l1';
+  -- le préfixe des clés d'un autre programme : son slug (sans le domaine)
+  v_pref := CASE WHEN strpos(v_prog, '/') > 0 THEN split_part(v_prog, '/', 2) ELSE v_prog END || ':';
+  PERFORM _reponses_cache(p_user);
+
+  WITH rep AS (
+    SELECT c.matiere, c.question_id, c.ok, c.at,
+           lag(c.at) OVER (PARTITION BY c.question_id ORDER BY c.at, c.ok) AS avant
+    FROM pg_temp._rep_cache c
+    WHERE c.matiere IS NOT NULL AND c.at IS NOT NULL
+      AND CASE WHEN v_cfa1 THEN strpos(c.matiere, ':') = 0 ELSE left(c.matiere, length(v_pref)) = v_pref END
+  ),
+  pesees AS (
+    SELECT rep.matiere, rep.ok, rep.at,
+           CASE WHEN rep.avant IS NULL THEN 2.0
+                WHEN rep.at - rep.avant < interval '24 hours' THEN 0.5
+                ELSE 1.0 END AS poids,
+           row_number() OVER (PARTITION BY rep.matiere ORDER BY rep.at DESC, rep.question_id, rep.ok) AS recent,
+           row_number() OVER (PARTITION BY rep.matiere ORDER BY rep.at, rep.question_id, rep.ok) AS ancien
+    FROM rep
+  ),
+  agg AS (
+    SELECT p.matiere,
+           count(*) FILTER (WHERE p.recent <= 60)::int AS n,
+           count(*)::int AS total,
+           sum(p.poids) FILTER (WHERE p.recent <= 60 AND p.ok) AS fj,
+           sum(p.poids) FILTER (WHERE p.recent <= 60) AS f,
+           sum(p.poids) FILTER (WHERE p.ancien <= 40 AND p.ok) AS dj,
+           sum(p.poids) FILTER (WHERE p.ancien <= 40) AS d,
+           max(p.at) AS derniere
+    FROM pesees p
+    GROUP BY p.matiere
+  ),
+  anc AS (
+    SELECT r.topics[1] AS matiere, sum(coalesce(r.score, 0)) AS justes, sum(coalesce(r.total, 0)) AS questions
+    FROM practice_session_results r
+    WHERE v_cfa1 AND r.user_id = p_user AND cardinality(r.topics) = 1 AND strpos(r.topics[1], ':') = 0
+    GROUP BY r.topics[1]
+  ),
+  cles AS (
+    SELECT agg.matiere FROM agg UNION SELECT anc.matiere FROM anc
+  )
+  SELECT jsonb_build_object('v', 1, 'matieres', coalesce(jsonb_object_agg(k.matiere, jsonb_build_object(
+           'pct', CASE WHEN coalesce(a.n, 0) >= 10 THEN round(100 * coalesce(a.fj, 0) / a.f)::int END,
+           'n', coalesce(a.n, 0),
+           'total', coalesce(a.total, 0),
+           'statut', CASE WHEN coalesce(a.n, 0) >= 40 THEN 'mesuree' WHEN coalesce(a.n, 0) >= 10 THEN 'provisoire' ELSE 'non_mesuree' END,
+           'derniere', a.derniere,
+           'debut', CASE WHEN coalesce(a.total, 0) >= 40 THEN round(100 * coalesce(a.dj, 0) / a.d)::int END,
+           -- (justes / questions) × 100 en double précision, arrondi comme Math.round
+           'ancienne', CASE WHEN x.questions >= 5 THEN floor(x.justes::float8 / x.questions::float8 * 100 + 0.5)::int END
+         )), '{}'::jsonb))
+  INTO v_res
+  FROM cles k
+  LEFT JOIN agg a ON a.matiere = k.matiere
+  LEFT JOIN anc x ON x.matiere = k.matiere;
+  RETURN v_res;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION maitrise_joueur(uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION maitrise_joueur(uuid, text) TO service_role;
