@@ -6,7 +6,7 @@
 
 import type { Budget, Famille, RepliqueCodex } from "@/lib/codex/types";
 import { devoileLite } from "@/lib/codex/devoile-lite";
-import { etapeSeance, gainsSeance, type GainSeance } from "@/lib/codex/seance";
+import { etapeSeance, gainsSeance, type GainSeance } from "@/lib/codex/seance-etat";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
 
 export type FeteCodex = {

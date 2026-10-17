@@ -1,5 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { enteteSeance, gainsSeance } from "@/lib/codex/seance";
+import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
 import { lireCodex } from "@/lib/codex/serveur";
 import { SeanceDuJour } from "@/components/codex/SeanceDuJour";
 

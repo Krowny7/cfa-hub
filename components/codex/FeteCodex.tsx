@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import type { BilanCodex, FeteCodex as Fete } from "@/lib/codex/bilan";
 import { codexPoint, codexRetroVue, codexSeanceBudget, codexSeanceFinir, codexVus } from "@/lib/codex/actions";
 import { EVENEMENT_CODEX_POINT } from "@/lib/codex/panneau";
-import { budgetSuivant } from "@/lib/codex/seance";
+import { budgetSuivant } from "@/lib/codex/seance-etat";
 import { signalerLeonard } from "@/lib/leonard/signal";
 import { resteCeremonie } from "@/lib/ceremonie-en-cours";
 import { CODEX } from "@/lib/voice-codex";

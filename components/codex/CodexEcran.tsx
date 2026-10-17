@@ -12,7 +12,7 @@ import { Cap } from "@/components/codex/Cap";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { DetailQuete } from "@/components/codex/DetailQuete";
 import { SeanceDuJour } from "@/components/codex/SeanceDuJour";
-import { enteteSeance, gainsSeance } from "@/lib/codex/seance";
+import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
 import { ArbreCodex, Chemin, CheminCodex, Colonne, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
 import { Feuille } from "@/components/ui/Feuille";
 import { annoncerDevoile } from "@/components/codex/annoncer";
