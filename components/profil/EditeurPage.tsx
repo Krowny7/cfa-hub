@@ -631,7 +631,7 @@ export function EditeurPage({
             <MoreHorizontal size={15} aria-hidden />
           </button>
           {ouvert("plus") && (
-            <MenuFlottant ancre={`plus:${cle}`} largeur={270} label={T.plusAide} onFermer={fermer}>
+            <MenuFlottant ancre={`plus:${cle}`} largeur={310} label={T.plusAide} onFermer={fermer}>
               <span className="flex gap-1.5 p-1">
                 <button type="button" className={"btn btn-secondary btn-sm flex-1 " + s.outil} onClick={() => appliquer(deplacer(d, i, -1))} disabled={i === 0}>
                   <ArrowLeft size={14} aria-hidden className="max-lg:hidden" />
@@ -659,7 +659,7 @@ export function EditeurPage({
                   }}
                 >
                   {ICONE_BLOC[x.k]} {x.nom}
-                  {d.some((e) => e.k === x.k) ? <span className="t-micro ml-auto">{T.pose}</span> : "neuf" in x && x.neuf ? <span className="t-micro ml-auto">{T.nouveau}</span> : null}
+                  {d.some((e) => e.k === x.k) ? <span className="t-micro ml-auto shrink-0 whitespace-nowrap">{T.pose}</span> : "neuf" in x && x.neuf ? <span className="t-micro ml-auto shrink-0 whitespace-nowrap">{T.nouveau}</span> : null}
                 </button>
               ))}
               <span className="my-1 border-t border-line" />
@@ -709,10 +709,9 @@ export function EditeurPage({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* la carte « Ta page » : le compte, la règle, et le plan */}
+      {/* la carte du plan : le compte, la règle, et le plan (le titre « Ta page » est celui de la section, dans Personnaliser) */}
       <div className="card-quiet flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4">
         <div className="min-w-0 flex-[1_1_300px]">
-          <p className="t-eyebrow m-0">{T.carteTitre}</p>
           <p className="m-0 text-[15px] font-semibold">{T.compte(blocs.length, lignes.length)}</p>
           <p className={"t-small m-0 " + s.grandSeul}>{T.aideOrdinateur}</p>
           <p className={"t-small m-0 " + s.petitSeul}>{T.aideTelephone}</p>

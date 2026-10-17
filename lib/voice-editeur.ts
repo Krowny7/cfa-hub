@@ -12,8 +12,7 @@ const UN_FORMAT: Record<"tuile" | "heros", string> = { tuile: "une tuile", heros
 export const EDITEUR_PAGE = {
   /** sous « Ta page », en tête de la section */
   aide: "Choisis le format de chaque bloc, range-les dans l'ordre que tu veux, masque ceux que tu ne veux pas.",
-  // ── la carte « Ta page » et son plan ──
-  carteTitre: "Ta page",
+  // ── la carte du plan, sous « Ta page » ──
   /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 3 formats : tuile, héros ou bande. » */
   compte: (blocs: number, rangees: number) => `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 3 formats : tuile, héros ou bande.`,
   aideOrdinateur: "L'ordre est libre ; les rangées se forment seules et leurs bas s'alignent. Une place libre reste libre : choisis-y un module, ou laisse-la vide.",
