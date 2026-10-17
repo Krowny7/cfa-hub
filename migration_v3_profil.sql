@@ -125,6 +125,19 @@ AS $$
                CASE WHEN p_total < 30 THEN 2 WHEN p_total < 60 THEN 3 ELSE 4 END)::smallint;
 $$;
 
+-- La même chose selon la date de la séance : le plafond par taille ne touche
+-- que les séances rendues depuis la mise en ligne v3 (18 octobre 2026, minuit
+-- à Paris, PLAFOND_CIBLEE_DEPUIS dans lib/trophees.ts). Une séance plus
+-- ancienne garde le palier de trophyTier qu'elle affichait : rien de gagné
+-- n'est repris.
+CREATE OR REPLACE FUNCTION _trophee_ciblee(p_matieres int, p_total int, p_quand timestamptz)
+RETURNS smallint LANGUAGE sql IMMUTABLE
+AS $$
+  SELECT CASE WHEN p_quand < timestamptz '2026-10-18 00:00:00+02'
+              THEN (CASE WHEN p_matieres >= 7 THEN 4 WHEN p_matieres >= 4 THEN 3 WHEN p_matieres >= 2 THEN 2 ELSE 1 END)::smallint
+              ELSE _trophee_ciblee(p_matieres, p_total) END;
+$$;
+
 -- Le palier d'un examen blanc d'au moins 30 questions réussi à 60 % ou plus :
 -- 70 % l'argent, 80 % l'or, 90 % le diamant s'il compte 90 questions ou plus.
 CREATE OR REPLACE FUNCTION _trophee_blanc(p_score int, p_total int)
@@ -156,7 +169,7 @@ BEGIN
   -- libellé : trois matières au plus, sinon « FSA, Quant +5 » (topicsShort)
   IF to_regclass('public.practice_session_results') IS NOT NULL THEN
     RETURN QUERY
-      SELECT 'ciblee'::text, _trophee_ciblee(x.nb, r.total), r.completed_at,
+      SELECT 'ciblee'::text, _trophee_ciblee(x.nb, r.total, r.completed_at), r.completed_at,
              coalesce(nullif(CASE WHEN x.nb <= 3 THEN array_to_string(x.noms, ', ')
                                   ELSE array_to_string(x.noms[1:2], ', ') || ' +' || (x.nb - 2) END, ''),
                       'Entraînement ciblé')
@@ -356,6 +369,7 @@ $$;
 REVOKE ALL ON FUNCTION _trophee_matiere(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _trophee_jour(date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _trophee_ciblee(int, int) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _trophee_ciblee(int, int, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _trophee_blanc(int, int) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _trophees_liste(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _trophees_joueur(uuid) FROM PUBLIC, anon, authenticated;

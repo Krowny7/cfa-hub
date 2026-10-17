@@ -222,6 +222,14 @@ async function main() {
         [1, 2, 3, 3, 4, 3, 2, 1, 2],
       ),
     );
+    check(
+      "palierCiblee : le plafond ne touche que les séances rendues depuis la mise en ligne v3",
+      palierCiblee(7, 54, "2026-10-17T21:59:59Z") === 4 &&
+        palierCiblee(7, 54, "2026-10-17T22:00:00Z") === 3 &&
+        palierCiblee(4, 29, "2026-10-01T10:00:00Z") === 3 &&
+        palierCiblee(4, 29, "2026-10-20T10:00:00Z") === 2 &&
+        palierCiblee(7, 59, "pas une date") === 3,
+    );
     const sql = [
       { source: "ciblee", palier: 4, n: "2" },
       { source: "trente", palier: 3, n: 1 },

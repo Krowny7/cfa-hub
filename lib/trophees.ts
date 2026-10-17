@@ -82,11 +82,30 @@ export const SOURCES_TROPHEE: Record<SourceTrophee, { nom: string; regle: Partia
  * de trophyTier selon le nombre de matières, plafonné par la taille de la
  * séance (moins de 30 questions : l'argent au plus ; moins de 60 : l'or au
  * plus). Même règle que _trophee_ciblee en base, pour la fin de séance.
+ * Le plafond ne touche que les séances rendues depuis PLAFOND_CIBLEE_DEPUIS :
+ * une séance plus ancienne garde le palier qu'elle affichait (rien de gagné
+ * n'est repris). Sans date (fin de séance), la séance est nouvelle.
  */
-export function palierCiblee(matieres: number, total: number): PalierTrophee {
+export function palierCiblee(matieres: number, total: number, rendueLe?: string | null): PalierTrophee {
   const brut = PALIER_DU_TIER[trophyTier(Math.max(1, Math.floor(matieres) || 1)).key] ?? 1;
+  if (rendueLe && avantPlafondCiblee(rendueLe)) return brut;
   const plafond: PalierTrophee = total >= 60 ? 4 : total >= 30 ? 3 : 2;
   return Math.min(brut, plafond) as PalierTrophee;
+}
+
+/**
+ * Le jour de la mise en ligne v3 (minuit, heure de Paris) : le plafond par
+ * taille des séances ciblées ne s'applique qu'aux séances rendues depuis.
+ * Même instant que dans _trophee_ciblee(int, int, timestamptz) et que le
+ * repli de codex_mesures_v3.
+ */
+export const PLAFOND_CIBLEE_DEPUIS = "2026-10-18T00:00:00+02:00";
+const PLAFOND_CIBLEE_MS = Date.parse(PLAFOND_CIBLEE_DEPUIS);
+
+/** Vrai si la séance a été rendue avant le plafond (date illisible : non). */
+export function avantPlafondCiblee(rendueLe: string): boolean {
+  const t = Date.parse(rendueLe);
+  return Number.isFinite(t) && t < PLAFOND_CIBLEE_MS;
 }
 
 /**

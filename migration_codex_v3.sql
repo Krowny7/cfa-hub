@@ -537,7 +537,9 @@ BEGIN
   -- trophees_joueur (migration_v3_profil.sql §2) quand elle est collée ; sinon la
   -- seule source « ciblee », comme get_user_practice_trophies (séance à 70 % ou
   -- mieux, palier par le nombre de matières), avec le plafond par taille
-  -- (moins de 30 questions : argent au plus ; moins de 60 : or au plus).
+  -- (moins de 30 questions : argent au plus ; moins de 60 : or au plus) pour les
+  -- seules séances rendues depuis la mise en ligne v3 (18 octobre 2026, minuit à
+  -- Paris, comme _trophee_ciblee et PLAFOND_CIBLEE_DEPUIS) : rien de gagné repris.
   IF to_regprocedure('public.trophees_joueur(uuid)') IS NOT NULL THEN
     EXECUTE $q$
       SELECT coalesce(jsonb_agg(jsonb_build_object('source', t.source, 'palier', t.palier, 'n', t.n) ORDER BY t.source, t.palier), '[]'::jsonb)
@@ -547,10 +549,12 @@ BEGIN
     EXECUTE $q$
       SELECT coalesce(jsonb_agg(jsonb_build_object('source', 'ciblee', 'palier', x.palier, 'n', x.n) ORDER BY x.palier), '[]'::jsonb)
       FROM (
-        SELECT least(CASE WHEN s.k >= 7 THEN 4 WHEN s.k >= 4 THEN 3 WHEN s.k >= 2 THEN 2 ELSE 1 END,
-                     CASE WHEN s.total < 30 THEN 2 WHEN s.total < 60 THEN 3 ELSE 4 END) AS palier,
+        SELECT CASE WHEN s.completed_at < timestamptz '2026-10-18 00:00:00+02' THEN s.brut
+                    ELSE least(s.brut, CASE WHEN s.total < 30 THEN 2 WHEN s.total < 60 THEN 3 ELSE 4 END) END AS palier,
                count(*)::int AS n
-        FROM (SELECT coalesce(array_length(r.topics, 1), 1) AS k, r.total
+        FROM (SELECT CASE WHEN coalesce(array_length(r.topics, 1), 1) >= 7 THEN 4 WHEN coalesce(array_length(r.topics, 1), 1) >= 4 THEN 3
+                          WHEN coalesce(array_length(r.topics, 1), 1) >= 2 THEN 2 ELSE 1 END AS brut,
+                     r.total, r.completed_at
               FROM practice_session_results r
               WHERE r.user_id = $1 AND r.total > 0 AND r.score::numeric / r.total >= 0.7) s
         GROUP BY 1

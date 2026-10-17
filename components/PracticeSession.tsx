@@ -537,7 +537,7 @@ export function PracticeSession({
                   {history.map((s) => {
                     const pct = pctOf(s.score, s.total);
                     const passed = pct >= PASS_THRESHOLD;
-                    const palierS = nomPalier(palierCiblee(s.topics.length, s.total)).toLowerCase();
+                    const palierS = nomPalier(palierCiblee(s.topics.length, s.total, s.completed_at)).toLowerCase();
                     const expanded = expandedHistoryId === s.id;
                     const rev = historyReviews[s.id];
                     return (
