@@ -79,8 +79,9 @@ export type LigneAttente = { quete_id: string; etat: string; vu: boolean | null;
  * la vue du jour : le bonus des 3 quêtes du jour (« contrat:trio:… ») et les
  * contrats des jours passés gardent vu faux sans fin. Sans cette borne, tout
  * cet arriéré s'afficherait « Déjà versé » à la mise en ligne. Le lendemain
- * de la mise en ligne du Codex simplifié ; la §9a de migration_codex_v3.sql
- * acquitte en base l'arriéré d'avant la même date.
+ * de la mise en ligne du Codex simplifié. La base n'est pas touchée : cet
+ * arriéré y garde vu faux, seule cette borne l'écarte (la §9a de
+ * migration_codex_v3.sql ne normalise que les lignes « terminee »).
  */
 export const DEBUT_RECUPERER = "2026-10-18";
 
