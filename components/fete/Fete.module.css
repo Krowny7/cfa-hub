@@ -1,0 +1,147 @@
+/* Les quatre tailles de fête (components/fete/Fete.tsx, V3 §3.10) : une
+   ligne, une carte, une page qui se tourne, un plein cadre. Papier et encre :
+   pas d'ornement, pas de jauge à l'encre. Sous prefers-reduced-motion, rien
+   ne bouge : le rendu final est posé d'emblée. */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in oklab, var(--paper) 62%, transparent);
+  animation: voileEntre 0.2s ease both;
+}
+.plein {
+  background: var(--paper);
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── ligne : en bas sur téléphone (au-dessus de la barre), en coin sur ordinateur ── */
+.ligne {
+  position: fixed;
+  z-index: 95;
+  left: 16px;
+  right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+  color: var(--ink);
+  text-align: left;
+  animation: ligneEntre 0.28s var(--ease-out) both;
+}
+@media (min-width: 768px) {
+  .ligne {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    max-width: 380px;
+  }
+}
+
+/* ── carte : centrée ; le tampon tombe à l'ancre, sinon sur la carte ── */
+.carte,
+.page {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+  padding: 28px 22px 22px;
+  text-align: center;
+  animation: carteEntre 0.3s var(--ease-out) both;
+}
+.tampon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px var(--ink);
+  color: var(--ink);
+  animation: tamponTombe 0.42s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.tamponAncre {
+  position: fixed;
+  z-index: 96;
+  margin: 0;
+  translate: -50% -50%;
+  background: var(--surface);
+}
+
+/* ── page : elle se tourne, puis Léonard dit sa réplique ── */
+.scene {
+  perspective: 1200px;
+  width: 100%;
+  max-width: 420px;
+}
+.page {
+  max-width: none;
+  transform-origin: left center;
+  animation: pageTourne 0.7s var(--ease-out) both;
+}
+.replique {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  animation: voileEntre 0.4s ease both;
+}
+
+/* ── plein cadre : la pièce gagnée en grand ── */
+.pleinCorps {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  animation: carteEntre 0.4s var(--ease-out) both;
+}
+.piece {
+  display: grid;
+  place-items: center;
+  width: min(240px, 64vw);
+  aspect-ratio: 3 / 4;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  border-top: 4px solid var(--rarete, var(--ink));
+  background: var(--surface);
+  padding: 18px;
+}
+.piece[data-rarete="commune"] { --rarete: var(--line-2); }
+.piece[data-rarete="rare"] { --rarete: var(--ink); }
+.piece[data-rarete="precieuse"] { --rarete: var(--pen); }
+.piece[data-rarete="legendaire"] { --rarete: #b8862b; }
+
+@keyframes voileEntre {
+  from { opacity: 0; }
+}
+@keyframes ligneEntre {
+  from { opacity: 0; transform: translateY(12px); }
+}
+@keyframes carteEntre {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+}
+@keyframes tamponTombe {
+  from { opacity: 0; transform: scale(1.7) rotate(-8deg); }
+  70% { opacity: 1; transform: scale(0.94) rotate(1deg); }
+}
+@keyframes pageTourne {
+  from { opacity: 0.4; transform: rotateY(-88deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voile, .ligne, .carte, .tampon, .page, .replique, .pleinCorps { animation: none; }
+}
