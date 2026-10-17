@@ -25,11 +25,11 @@ import { FACE } from "@/lib/voice-profil";
 export type MatierePct = { key: string; pct: number | null; statut?: StatutMaitrise; answered?: number };
 
 /** L'infobulle d'une maîtrise provisoire, par matière (« provisoire · 23 réponses sur 40 »). */
-const provisoires = (ms: MatierePct[]) =>
+export const provisoires = (ms: MatierePct[]) =>
   new Map(ms.map((m) => [m.key, m.pct !== null && m.statut ? infobulleMaitrise({ statut: m.statut, n: m.answered ?? 0 }) : null]));
 
 /** Le détail d'une ligne, en clair : la matière, puis chaque chiffre dit ce qu'il est. */
-function infobulle(
+export function infobulle(
   l: { complet: string; me: number | null; avg: number | null; toi: number | null; meProv: string | null; toiProv: string | null },
   actif: boolean,
   qui: string,
@@ -52,6 +52,23 @@ function infobulle(
     l.avg === null ? "moyenne des joueurs : pas encore connue" : `moyenne des joueurs : ${l.avg} % (le trait)`,
     d === null ? "" : d === 0 ? "pile dans la moyenne" : `${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "au-dessus de" : "sous"} la moyenne (le chiffre ${d > 0 ? "+" : "−"}${Math.abs(d)})`,
   ].filter(Boolean);
+}
+
+/** Le bilan de la comparaison, sous les barres : qui mène, dans combien de matières mesurées en commun. */
+export function BilanComparaison({ lignes, nom, className }: { lignes: { me: number | null; toi: number | null }[]; nom: string; className: string }) {
+  const communes = lignes.filter((l) => l.me !== null && l.toi !== null);
+  if (!communes.length) return <p className={className}>Vous n&apos;avez encore aucune matière mesurée en commun.</p>;
+  const devant = communes.filter((l) => (l.toi as number) > (l.me as number)).length;
+  const derriere = communes.filter((l) => (l.toi as number) < (l.me as number)).length;
+  const pastille = (c: string) => <span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-[3px] align-[-1px]" style={{ background: `color-mix(in oklab, ${c} 45%, transparent)`, boxShadow: `inset 0 0 0 1.5px ${c}` }} />;
+  return (
+    <p className={className}>
+      Sur {communes.length} {communes.length > 1 ? "matières mesurées" : "matière mesurée"} en commun{NBSP}:{" "}
+      <span className="font-semibold" style={{ color: "var(--gain)" }}>{pastille("var(--gain)")}tu mènes dans {devant}</span>,{" "}
+      <span className="font-semibold" style={{ color: "var(--perte)" }}>{pastille("var(--perte)")}{nom} dans {derriere}</span>
+      {communes.length - devant - derriere ? `, égalité dans ${communes.length - devant - derriere}` : ""}. Sur le radar, en vert ce que tu couvres en plus, en rouge ce que {nom} couvre en plus de toi.
+    </p>
+  );
 }
 
 export function RadarComparable({
@@ -211,25 +228,7 @@ export function RadarComparable({
                 );
               })}
             </ol>
-            {actif && (
-              <p className="t-small m-0 @4xl:col-span-2">
-                {(() => {
-                  const communes = lignes.filter((l) => l.me !== null && l.toi !== null);
-                  if (!communes.length) return "Vous n'avez encore aucune matière mesurée en commun.";
-                  const devant = communes.filter((l) => (l.toi as number) > (l.me as number)).length;
-                  const derriere = communes.filter((l) => (l.toi as number) < (l.me as number)).length;
-                  const pastille = (c: string) => <span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-[3px] align-[-1px]" style={{ background: `color-mix(in oklab, ${c} 45%, transparent)`, boxShadow: `inset 0 0 0 1.5px ${c}` }} />;
-                  return (
-                    <>
-                      Sur {communes.length} {communes.length > 1 ? "matières mesurées" : "matière mesurée"} en commun{NBSP}:{" "}
-                      <span className="font-semibold" style={{ color: "var(--gain)" }}>{pastille("var(--gain)")}tu mènes dans {devant}</span>,{" "}
-                      <span className="font-semibold" style={{ color: "var(--perte)" }}>{pastille("var(--perte)")}{nom} dans {derriere}</span>
-                      {communes.length - devant - derriere ? `, égalité dans ${communes.length - devant - derriere}` : ""}. Sur le radar, en vert ce que tu couvres en plus, en rouge ce que {nom} couvre en plus de toi.
-                    </>
-                  );
-                })()}
-              </p>
-            )}
+            {actif && <BilanComparaison lignes={lignes} nom={nom} className="t-small m-0 @4xl:col-span-2" />}
           </div>
         </Detail>
         {mesurees === 0 && <p className="t-small m-0 text-center @4xl:col-span-2">Aucune matière mesurée pour l&apos;instant : le radar se dessine avec les sessions d&apos;entraînement.</p>}

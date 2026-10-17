@@ -21,6 +21,7 @@ export const BLOCS_PROFIL = {
   faceMoyenne: "face à la moyenne des joueurs",
   enComparaison: (nom: string) => `${nom} (épais) · toi (fin)`,
   comparer: "Me comparer",
+  comparerImpossible: "Aucune de tes matières n'est encore mesurée",
   arreter: "Arrêter",
   toi: "toi",
   enTete: (matiere: string) => `${matiere} en tête`,

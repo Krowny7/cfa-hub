@@ -17,6 +17,7 @@ import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { VideoProfil } from "@/components/profil/VideoProfil";
 import { classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
+import { BilanComparaison, infobulle, provisoires } from "@/components/profil/RadarComparable";
 import { PAS_MESUREE, infobulleMaitrise, libellePct } from "@/lib/maitrise";
 import { VITRINE, couleurCss, type ProfilStats, type VitrineKey } from "@/lib/profil/catalogue";
 import { defSceau } from "@/lib/profil/sceaux";
@@ -170,13 +171,20 @@ function Chiffres({ d, f }: Ctx) {
 }
 
 // ── Radar des matières ───────────────────────────────────────────────────
-type LigneMatiere = { key: string; nom: string; me: number | null; avg: number | null; toi: number | null };
+/** meProv, toiProv : l'infobulle d'une maîtrise provisoire (la sienne, la mienne), qui s'écrit « ≈ 52 » */
+type LigneMatiere = { key: string; nom: string; complet: string; me: number | null; avg: number | null; toi: number | null; meProv: string | null; toiProv: string | null };
 
-function Barres({ lignes, n, deuxCol = false, comparer, maCouleur }: { lignes: LigneMatiere[]; n: number; deuxCol?: boolean; comparer: boolean; maCouleur: string }) {
+/** Une maîtrise, « ≈ » devant si elle est provisoire. */
+const maitrise = (v: number, prov: string | null) => `${prov ? "≈" : ""}${v}`;
+
+function Barres({ lignes, n, deuxCol = false, comparer, maCouleur, qui }: { lignes: LigneMatiere[]; n: number; deuxCol?: boolean; comparer: boolean; maCouleur: string; qui: string }) {
   return (
     <ol className={"m-0 flex list-none flex-col gap-2 p-0 " + (deuxCol ? b.barres2 : "")} aria-label={T.ordreMatieres}>
-      {lignes.slice(0, n).map((l) => (
-        <li key={l.key} className="grid items-center gap-3 py-0.5" style={{ gridTemplateColumns: "88px minmax(0,1fr) 44px" }}>
+      {lignes.slice(0, n).map((l) => {
+        // le détail de la ligne en clair, chaque chiffre dit ce qu'il est (comme l'ancien radar)
+        const bulle = infobulle(l, comparer, qui);
+        return (
+        <li key={l.key} aria-label={bulle.join(". ")} title={bulle.join("\n")} className="grid items-center gap-3 py-0.5" style={{ gridTemplateColumns: "88px minmax(0,1fr) 44px" }}>
           <span className={"truncate text-[13px] " + (l.me === null ? "text-muted" : "font-semibold")}>{l.nom}</span>
           <span className="flex flex-col gap-1">
             <span className="relative block h-2 rounded-full bg-[color-mix(in_oklab,var(--ink)_7%,transparent)]">
@@ -190,9 +198,10 @@ function Barres({ lignes, n, deuxCol = false, comparer, maCouleur }: { lignes: L
               </span>
             )}
           </span>
-          <span className="text-right font-mono text-[12px] font-semibold tabular-nums">{l.me === null ? "—" : l.me}</span>
+          <span className="text-right font-mono text-[12px] font-semibold tabular-nums">{l.me === null ? "—" : maitrise(l.me, l.meProv)}</span>
         </li>
-      ))}
+        );
+      })}
     </ol>
   );
 }
@@ -215,9 +224,18 @@ function RadarBloc({ d, f }: Ctx) {
     const me = m?.pct ?? null;
     return { label: x.code, nom: x.name, qui, me, avg: d.radar.moyennes[x.key] ?? null, provisoire: m && me !== null && m.statut ? infobulleMaitrise({ statut: m.statut, n: m.answered ?? 0 }) : null };
   });
-  const lignes: LigneMatiere[] = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, me: sien.get(x.key)?.pct ?? null, avg: d.radar.moyennes[x.key] ?? null, toi: mien.get(x.key) ?? null })).sort(
-    (a, c) => (c.me ?? -1) - (a.me ?? -1),
-  );
+  const sienProv = provisoires(d.stats.matieres);
+  const mienProv = provisoires(miennes ?? []);
+  const lignes: LigneMatiere[] = SUBJECTS.map((x) => ({
+    key: x.key,
+    nom: x.short,
+    complet: x.name,
+    me: sien.get(x.key)?.pct ?? null,
+    avg: d.radar.moyennes[x.key] ?? null,
+    toi: mien.get(x.key) ?? null,
+    meProv: sienProv.get(x.key) ?? null,
+    toiProv: mienProv.get(x.key) ?? null,
+  })).sort((a, c) => (c.me ?? -1) - (a.me ?? -1));
   const grand = f !== "tuile";
   const radar = (
     // en héros et en bande, la liste de droite compare déjà à la moyenne : les libellés gardent « ETH 71 +5 », sans « moy »
@@ -236,14 +254,25 @@ function RadarBloc({ d, f }: Ctx) {
   const fragile = mesurees[mesurees.length - 1];
   const matieres = d.moi ? T.tesMatieres : T.sesMatieres;
   const sur = actif ? T.enComparaison(d.nom) : T.faceMoyenne;
-  const bouton = peutComparer && (
-    <button type="button" className={"btn btn-sm shrink-0 " + (actif ? "btn-primary" : "btn-secondary")} aria-pressed={actif} onClick={() => setComparer((v) => !v)}>
+  // sur le profil d'un autre ; grisé, avec sa raison, tant qu'aucune de mes matières n'est mesurée
+  const bouton = !d.moi && (
+    <button
+      type="button"
+      className={"btn btn-sm shrink-0 " + (actif ? "btn-primary" : "btn-secondary")}
+      aria-pressed={actif}
+      disabled={!peutComparer}
+      title={peutComparer ? undefined : T.comparerImpossible}
+      onClick={() => setComparer((v) => !v)}
+    >
       {actif ? T.arreter : T.comparer}
     </button>
   );
+  // le bilan de la comparaison : sous les barres (héros, bande), dans le repli des 10 matières (tuile)
+  const bilan = actif && <BilanComparaison lignes={lignes} nom={d.nom} className="t-small m-0" />;
   const dix = (
     <Detail libelle={T.dixMatieres}>
-      <Barres lignes={lignes} n={10} comparer={actif} maCouleur={maCouleur} />
+      <Barres lignes={lignes} n={10} comparer={actif} maCouleur={maCouleur} qui={qui} />
+      {!grand && bilan}
     </Detail>
   );
   if (!grand)
@@ -256,7 +285,7 @@ function RadarBloc({ d, f }: Ctx) {
           {radar}
           {sure && fragile && sure !== fragile && (
             <p className="t-small m-0">
-              {T.plusSure} : <b className="font-semibold text-white">{sure.nom}</b> {sure.me} % · {T.aReprendreMin} : <b className="font-semibold text-white">{fragile.nom}</b> {fragile.me} %
+              {T.plusSure} : <b className="font-semibold text-white">{sure.nom}</b> {maitrise(sure.me!, sure.meProv)} % · {T.aReprendreMin} : <b className="font-semibold text-white">{fragile.nom}</b> {maitrise(fragile.me!, fragile.meProv)} %
             </p>
           )}
           <div className="mt-auto">{dix}</div>
@@ -275,7 +304,7 @@ function RadarBloc({ d, f }: Ctx) {
             <h3 className="t-h1 m-0">{sure ? T.enTete(sure.nom) : matieres}</h3>
             {fragile && fragile !== sure && (
               <p className="t-small m-0">
-                {T.aReprendre} : <b className="font-semibold text-white">{fragile.nom}</b> {fragile.me} %
+                {T.aReprendre} : <b className="font-semibold text-white">{fragile.nom}</b> {maitrise(fragile.me!, fragile.meProv)} %
               </p>
             )}
           </div>
@@ -285,7 +314,8 @@ function RadarBloc({ d, f }: Ctx) {
           {radar}
           <div className="flex min-w-0 flex-col gap-3">
             <p className="t-eyebrow m-0">{d.moi ? T.tesPlusSures : T.sesPlusSures}</p>
-            <Barres lignes={lignes} n={4} deuxCol={f === "bande"} comparer={actif} maCouleur={maCouleur} />
+            <Barres lignes={lignes} n={4} deuxCol={f === "bande"} comparer={actif} maCouleur={maCouleur} qui={qui} />
+            {bilan}
             {dix}
           </div>
         </div>

@@ -20,6 +20,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GrilleProfil } from "@/components/profil/GrilleProfil";
 import { BlocProfil, ICONE_BLOC } from "@/components/profil/BlocsProfil";
+import { BilanComparaison } from "@/components/profil/RadarComparable";
 import { PageProfil } from "@/components/profil/PageProfil";
 import { EditeurPage } from "@/components/profil/EditeurPage";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -263,6 +264,16 @@ for (const [f, n] of [
   check('radar en héros : des tspan à fill-opacity="0.85" (la règle sansMoy vise encore quelque chose)', html.includes('fill-opacity="0.85"') && html.includes("sansMoy"));
   check("radar en héros : le titre-réponse « FSA en tête »", html.includes("FSA en tête"));
   check("radar : « Me comparer » chez un autre, pas chez soi", html.includes("Me comparer") && !rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: true }} />).includes("Me comparer"));
+  // ce que montrait RadarComparable : « ≈ » des maîtrises provisoires, le détail de chaque ligne, le bouton grisé et sa raison
+  const tuile = rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={RICHE} />);
+  check("radar : une maîtrise provisoire s'écrit « ≈47 » dans la liste", tuile.includes(">≈47<") && !tuile.includes(">≈71<"));
+  check("radar : chaque ligne dit ses chiffres (aria-label)", tuile.includes('aria-label="Alternative Investments. ') && tuile.includes("≈ 47 % de bonnes réponses (provisoire"));
+  const fsaProv = { ...RICHE, stats: { ...RICHE.stats, matieres: RICHE.stats.matieres.map((m) => (m.key === "fixed_income" ? { ...m, statut: "provisoire" as const, answered: 20 } : m)) } };
+  check("radar : « À reprendre » garde le « ≈ »", rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={fsaProv} />).includes("≈38 %"));
+  const sansMiennes = rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={{ ...RICHE, radar: { ...RICHE.radar, miennes: null } }} />);
+  check("radar : sans matière mesurée chez moi, « Me comparer » grisé avec sa raison", sansMiennes.includes("Me comparer") && sansMiennes.includes('disabled=""') && sansMiennes.includes("encore mesurée"));
+  const bilan = rend(<BilanComparaison lignes={[{ me: 50, toi: 60 }, { me: 70, toi: 40 }, { me: 30, toi: 30 }, { me: null, toi: 20 }]} nom="Inès" className="x" />);
+  check("radar : le bilan de la comparaison (3 en commun : 1, 1, égalité 1)", bilan.includes("Sur 3 matières mesurées en commun") && bilan.includes("tu mènes dans 1") && bilan.includes("Inès dans 1") && bilan.includes("égalité dans 1"));
 }
 
 // ── EditeurPage : Personnaliser rend la vraie grille et les vrais blocs ──
