@@ -608,6 +608,12 @@ export function Colonne({ vue, montre, onQuete, onChanger, occupe }: { vue: VueC
             <p className="t-micro m-0 mt-2">{vue.trio.fait ? CODEX.contrats.trioFait(vue.trio.xp) : `${CODEX.contrats.trio(vue.trio.xp)} (${vue.trio.faits}/${vue.trio.total})`}</p>
           </>
         )}
+        {/* le débrief d'un examen blanc (V3 §7.6) : à part du trio, tant qu'un blanc l'attend */}
+        {montre("codex:contrats") && vue.debrief && (
+          <div className="mt-3">
+            <LigneCompacte l={vue.debrief} sur="Le débrief · ton dernier examen blanc" onQuete={onQuete} />
+          </div>
+        )}
       </section>
       <section aria-labelledby="col-long" data-leonard="longcours" className="mt-5">
         <h2 id="col-long" className={c.colTitre}>
