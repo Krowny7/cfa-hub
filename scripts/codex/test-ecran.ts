@@ -17,7 +17,7 @@ import { DECOUVERTE, ACTES } from "@/lib/codex/catalogue";
 import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoile-lite";
 import { estDevoile, marqueurDe, nouveautesDe } from "@/lib/codex/moteur";
 import { bilanDe } from "@/lib/codex/bilan";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { VERSION_PANNEAU, panneauAcquitte, panneauDe } from "@/lib/codex/panneau";
 import { BUDGETS, CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, budgetParDefaut, ecarter, questionsDes7Jours, reglageDe } from "@/lib/codex/reglage";
 import { capacitesDe } from "@/lib/codex/moteur";
@@ -339,8 +339,9 @@ console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
     /const sansSeance = pinceauPose\(momentDe\(/.test(src) && src.includes("tenue: !sansSeance && seanceLus.tenue") && src.includes("seance = sansSeance ? null : await seanceDuJour("));
   check("serveur.ts : la séance et le rythme long ont chacun leur try (consigné une fois) : leur panne ne fait plus servir le repli",
     /try \{\s*seance = sansSeance \? null : await seanceDuJour\([^]*?\} catch \(x\) \{\s*await consigner\(a, user\.id, "", `seance : /.test(src) && /try \{\s*rythme = vueRythme\([^]*?\} catch \(x\) \{\s*await consigner\(a, user\.id, "", `rythme : /.test(src));
-  check("l'accueil et /codex suivent la même règle (pinceauPose)",
-    readFileSync("components/codex/SeanceAccueil.tsx", "utf8").includes("pinceauPose(vue.moment)") && readFileSync("components/codex/CodexEcran.tsx", "utf8").includes("const avecSeance = !pinceauPose(moment);"));
+  // l'accueil ne montre plus rien du Codex (Codex simplifié, ajustement A) : ses deux composants sont retirés
+  check("/codex suit la règle (pinceauPose) ; l'accueil n'a plus de composant du Codex",
+    readFileSync("components/codex/CodexEcran.tsx", "utf8").includes("const avecSeance = !pinceauPose(moment);") && !existsSync("components/codex/SeanceAccueil.tsx") && !existsSync("components/codex/CodexAccueil.tsx"));
 }
 
 console.log("\n# la carte en trois niveaux (V3 §10.1)");

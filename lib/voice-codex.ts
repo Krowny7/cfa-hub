@@ -275,20 +275,8 @@ export const PHASES_CLAIRES: Record<Phase, { nom: string; phrase: string }> = {
   apres: { nom: "Après l'examen", phrase: "Garder la main, et préparer la suite." },
 };
 
-/** Les mots de Léonard sur une quête, selon son état (déterministe : même quête, même phrase). Plus affichés dans les fiches (Codex simplifié §4.6). */
-export const REPLIQUES_QUETE: Record<EtatLigne, string[]> = {
-  terminee: ["Faite. Je ne reviens pas dessus.", "Celle-là, c'est acquis pour de bon.", "Proprement faite. Je range mes vannes.", "Une de plus, et pas du genre qu'on efface."],
-  active: ["Elle a commencé à prendre forme. Continue, ne la laisse pas sécher.", "Tu y es presque, ou pas loin. À toi de voir lequel des deux.", "Le trait est posé, il reste à le repasser.", "En cours, c'est le meilleur état : la peinture est encore fraîche."],
-  disponible: ["Elle t'attend depuis un moment, elle ne mord pas.", "Prends ton temps, mais pas toute la matinée.", "Rien de compliqué. Juste le premier trait.", "Celle-ci est ouverte pour toi."],
-  verrouillee: ["Pas encore. Il faut d'abord finir ce qui la précède.", "Elle viendra, une fois les marches d'avant montées.", "Fermée encore. Chaque chose en son temps, disait mon maître.", "Je vois que tu regardes déjà plus loin. J'aime ça."],
-};
-
-export const choisirReplique = (etat: EtatLigne, id: string): string => {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const l = REPLIQUES_QUETE[etat];
-  return l[h % l.length];
-};
+// Léonard ne parle plus dans les fiches de quête (Codex simplifié §4.6) : ses
+// répliques par état sont retirées ; il ne parle qu'aux fêtes.
 
 export function romain(n: number): string {
   const t: [number, string][] = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
