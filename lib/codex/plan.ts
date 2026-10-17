@@ -78,13 +78,14 @@ export const semainesRestantes = (jour: string, jourJ: string) => Math.max(0, Ma
 const AXE_CHAINE = new Map(CHAINES.map((c) => [c.id, c.axe]));
 
 /**
- * En sprint, un palier d'une chaîne de régularité dont le seuil (en semaines)
- * dépasse les semaines restantes passe « après l'examen » : il n'est plus
- * proposé, il reste visible et peut toujours se remplir.
+ * En sprint, un palier d'une chaîne de régularité dont ce qui manque (le
+ * seuil en semaines moins `valeur`, les semaines déjà tenues) dépasse les
+ * semaines restantes passe « après l'examen » : il n'est plus proposé, il
+ * reste visible et peut toujours se remplir.
  */
-export function differeeEnSprint(q: Pick<Quete, "famille" | "chaine" | "objectif">, semaines: number): boolean {
+export function differeeEnSprint(q: Pick<Quete, "famille" | "chaine" | "objectif">, semaines: number, valeur = 0): boolean {
   if (q.famille !== "longcours" || !q.chaine || AXE_CHAINE.get(q.chaine) !== "regularite") return false;
-  return q.objectif.k === "mesure" && q.objectif.seuil > semaines;
+  return q.objectif.k === "mesure" && q.objectif.seuil - valeur > semaines;
 }
 
 // ── La date approximative (§10.2) ──────────────────────────────────────

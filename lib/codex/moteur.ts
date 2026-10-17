@@ -1107,11 +1107,13 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   const ctx = contexteBlanc(e, contenu, resolveur, catalogue);
   const etats = new Map<string, EtatQuete>();
   const semaines = sprintDe(e) && e.jourJ ? semainesRestantes(e.jour, e.jourJ) : null;
+  // en sprint : ce qui manque au palier (son seuil moins les semaines déjà tenues) contre les semaines restantes
+  const differee = (q: Quete) => semaines !== null && differeeEnSprint(q, semaines) && q.objectif.k === "mesure" && differeeEnSprint(q, semaines, mesureObjectif(q.objectif, ctx).valeur);
   for (const { quete, periode } of instances) {
     const l = lignes.get(clePeriode(quete.id, periode)) ?? null;
     const recompensee = l?.etat === "recompensee" || l?.etat === "terminee";
     etats.set(clePeriode(quete.id, periode), {
-      ...(semaines !== null && differeeEnSprint(quete, semaines) ? { differee: true as const } : {}),
+      ...(differee(quete) ? { differee: true as const } : {}),
       quete, periode,
       ouverte: !!l && l.etat !== "verrouillee",
       ouverteLe: l ? new Date(l.ouverte_le) : null,

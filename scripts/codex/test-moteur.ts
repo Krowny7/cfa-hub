@@ -875,6 +875,11 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("sprint : les paliers « Deux mois » et au-delà passent après l'examen, pas « Un mois »", encre.filter((s) => s.differee).map((s) => s.quete.palier).join(",") === "3,4,5", encre.map((s) => `${s.quete.palier}:${!!s.differee}`).join(" "));
   const reco = recommander(eS2, rS);
   check("sprint : jamais proposés", !reco || !rS.etats.some((s) => s.differee && s.quete.id === reco.quete.id));
+  // six semaines déjà tenues (4 jours d'encre chacune), 4 semaines restantes : il manque 2 à « Deux mois », 6 à « Une saison »
+  const tenues = Array.from({ length: 6 }, (_, w) => [0, 1, 2, 3].map((d) => ({ jour: new Date(Date.UTC(2026, 7, 31 + 7 * w + d)).toISOString().slice(0, 10), n: 20 }))).flat();
+  const r6 = repondre({ ...eS, lecture: { compteurs: {}, mesures: { xp_total: 0, jours: tenues }, speciaux: {} } }, () => 0).r;
+  const differe = (palier: number) => r6.etats.find((s) => s.quete.chaine === "encre" && s.quete.palier === palier)?.differee === true;
+  check("sprint, 6 semaines tenues : « Deux mois » (il en manque 2) reste proposé, « Une saison » (il en manque 6) passe après l'examen", !differe(3) && differe(4) && differe(5), r6.etats.filter((s) => s.quete.chaine === "encre").map((s) => `${s.quete.palier}:${!!s.differee}`).join(" "));
   const hors = repondre(base({ jourJ: J, premierCalcul: "2026-06-01T08:00:00Z", premier: false }), () => 0).r;
   check("hors sprint : aucun palier différé", !hors.etats.some((s) => s.differee));
   const duree = (c: { modele: string }) => MODELES_CONTRATS.find((m) => m.id === c.modele)?.duree ?? 0;
