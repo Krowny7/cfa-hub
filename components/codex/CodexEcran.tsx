@@ -96,7 +96,8 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
         {CODEX.titre} · {vue.phaseNom}
         {!vue.cap && jourJ ? ` · ${jourJ}` : ""}
       </h1>
-      {seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, vue.phaseNom)} gains={gains} mode="plein" demo={demo} />}
+      {/* la phase est déjà dans le titre : l'en-tête de la séance ne garde que J-n */}
+      {seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, "")} gains={gains} mode="plein" demo={demo} />}
       <header className={`${c.tete} rl-in`}>
         <div className="min-w-0">
           {vue.cap && <Cap cap={vue.cap} />}
