@@ -2,51 +2,19 @@
 // de collection rangées en quatre rayons (cadres, bannières, titres,
 // folios), celles qu'on possède d'abord, puis les silhouettes avec la façon
 // de les obtenir et, si une quête du Codex les donne, où aller. Ce module
-// prépare des données simples pour l'écran (components/moi/MesPieces.tsx,
-// un composant client qui ne charge pas le catalogue) et calcule le style
+// prépare des données simples pour l'écran (leur forme : etagere-vue.ts ;
+// components/moi/MesPieces.tsx ne charge pas le catalogue) et calcule le style
 // qui résulte de « Porter » ou « Retirer » (app/moi/profil/actions.ts).
 // Module serveur en pratique : il connaît toutes les pièces (le Codex compris).
 
 import { STYLE_DEFAUT, type StyleProfil } from "@/lib/profil/catalogue";
 import { avecBlocFolio } from "@/lib/profil/disposition";
-import { PIECES, TYPES_PIECE, possede, queteDe, type Acquis, type Rarete, type TypePiece } from "@/lib/profil/pieces";
+import { PIECES, TYPES_PIECE, possede, queteDe, type Acquis, type TypePiece } from "@/lib/profil/pieces";
+import { RAYONS, type Etagere, type PieceEtagere, type Rayon } from "@/lib/profil/etagere-vue";
 import { banniereBouge, cadreBouge } from "@/lib/profil/rendus";
 import type { Porte } from "@/lib/profil/styles";
 
-/** Une pièce telle que l'étagère la montre (données simples, sérialisables). */
-export type PieceEtagere = {
-  cle: string;
-  type: TypePiece;
-  nue: string;
-  nom: string;
-  description: string;
-  obtention: string;
-  rarete: Rarete;
-  /** elle bouge sur le profil (cadre vivant ou dessiné, bannière vivante ou dessinée) */
-  anime: boolean;
-  possedee: boolean;
-  /** elle est portée en ce moment */
-  portee: boolean;
-  /** libre : pas une pièce de collection (motifs fixes, cadre au pinceau) ; hors du compte */
-  libre: boolean;
-  /** pas encore à soi et donnée par une quête du Codex : « Y aller » (/codex?quete=<id>) */
-  allerA: string | null;
-  folio?: { oeuvre: string; image: string | null; anecdote: [string, string] };
-};
-
-export type Rayon = { type: TypePiece; titre: string; pieces: PieceEtagere[]; possedees: number; total: number };
-
-export type Etagere = {
-  rayons: Rayon[];
-  /** pièces de collection possédées (les libres ne comptent pas) */
-  possedees: number;
-  /** pièces de collection en tout */
-  total: number;
-  /** folios possédés */
-  folios: number;
-};
-
-export const RAYONS: Record<TypePiece, string> = { cadre: "Cadres", banniere: "Bannières", titre: "Titres", folio: "Folios" };
+export { RAYONS, resumeEtagere, type Etagere, type PieceEtagere, type Rayon } from "@/lib/profil/etagere-vue";
 
 /** « Sans cadre » n'est pas une pièce : c'est ce que « Retirer » remet. */
 const HORS_ETAGERE = new Set(["cadre:aucun"]);
@@ -116,12 +84,6 @@ export function stylePorte(style: StyleProfil, type: TypePiece, nue: string | nu
     case "folio":
       return nue ? { ...style, folio: nue, disposition: avecBlocFolio(style.disposition) } : { ...style, folio: null };
   }
-}
-
-/** « 23 pièces sur 61 · 4 folios » */
-export function resumeEtagere(e: Pick<Etagere, "possedees" | "total" | "folios">): string {
-  const pieces = `${e.possedees} ${e.possedees > 1 ? "pièces" : "pièce"} sur ${e.total}`;
-  return e.folios > 0 ? `${pieces} · ${e.folios} ${e.folios > 1 ? "folios" : "folio"}` : pieces;
 }
 
 /** Le folio porté, pour le bloc « Folio » de la page de profil ; aucun, ou inconnu : null. */

@@ -12,7 +12,7 @@ import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur"
 import { Feuille } from "@/components/ui/Feuille";
 import { porterPiece } from "@/app/moi/profil/actions";
 import { STYLE_DEFAUT, type StyleProfil } from "@/lib/profil/catalogue";
-import { resumeEtagere, type Etagere, type PieceEtagere } from "@/lib/profil/etagere";
+import { piecesAnimees, resumeEtagere, retirable, type Etagere, type PieceEtagere } from "@/lib/profil/etagere-vue";
 import type { Rarete, TypePiece } from "@/lib/profil/pieces";
 
 // Moi › Mes pièces (V3 §3.8) : l'étagère de tout ce qui se porte sur le
@@ -29,7 +29,7 @@ import type { Rarete, TypePiece } from "@/lib/profil/pieces";
 // pièces possédées qui bougent ; tout se fige quand la feuille est ouverte
 // (son aperçu bouge à leur place). Le mouvement réduit fige tout (CSS).
 // Les données arrivent toutes prêtes du serveur (components/moi/pieces-data.ts) :
-// ce composant ne charge pas le catalogue des pièces.
+// ce composant ne charge pas le catalogue des pièces (lib/profil/etagere-vue.ts seulement).
 
 const T = {
   surtitre: "Ta collection",
@@ -58,9 +58,6 @@ const LISERE: Record<Rarete, string> = {
   legendaire: "#c8962b",
 };
 
-/** Sur téléphone, au plus deux pièces animées à l'écran. */
-const ANIMEES_TELEPHONE = 2;
-
 /** Téléphone et tablette (moins de 1024 px) ; avant l'hydratation : oui (le moins animé). */
 function useTelephone(): boolean {
   const [tel, setTel] = useState(true);
@@ -80,9 +77,6 @@ function avecPiece(style: StyleProfil, p: PieceEtagere): StyleProfil {
   if (p.type === "banniere") return { ...style, banner: p.nue, bannerUrl: null };
   return style;
 }
-
-/** On peut retirer ce qui est porté, sauf ce qui est déjà le défaut (« Sans cadre », le motif par défaut). */
-const retirable = (p: PieceEtagere) => p.portee && !(p.type === "banniere" && p.nue === STYLE_DEFAUT.banner);
 
 export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; carte: EnteteData; disponible: boolean }) {
   const router = useRouter();
@@ -109,16 +103,7 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
     [etagere, portees, style.bannerUrl, tout],
   );
   // les pièces qui ont le droit de bouger : toutes sur ordinateur, les deux premières sur téléphone ; aucune sous la feuille
-  const animees = useMemo(() => {
-    const ok = new Set<string>();
-    if (ouverte) return ok;
-    for (const p of rayons.flatMap((r) => r.pieces)) {
-      if (!p.possedee || !p.anime) continue;
-      if (telephone && ok.size >= ANIMEES_TELEPHONE) break;
-      ok.add(p.cle);
-    }
-    return ok;
-  }, [rayons, telephone, ouverte]);
+  const animees = useMemo(() => piecesAnimees(rayons.flatMap((r) => r.pieces), { telephone, feuille: !!ouverte }), [rayons, telephone, ouverte]);
 
   const ouvrir = (p: PieceEtagere) => {
     setMsg(null);
