@@ -11,9 +11,12 @@ import { FeteCodex } from "@/components/codex/FeteCodex";
 // branches de matière, long cours, exploits). Le calcul est fait côté serveur
 // (lib/codex/serveur.ts) ; l'écran ne calcule rien. Sans la migration, un
 // message clair, et le reste du site marche comme avant.
+// ?vue= : le segment ouvert sur téléphone ; ?quete= : la quête à montrer
+// (« Chercher une quête », dans la palette Ctrl K).
 export const metadata = { title: "Codex · Ranked Lobby" };
 
-export default async function CodexPage() {
+export default async function CodexPage({ searchParams }: { searchParams?: Promise<{ vue?: string; quete?: string }> }) {
+  const sp = (await searchParams) ?? {};
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
@@ -39,7 +42,7 @@ export default async function CodexPage() {
       <div className="rl-wide">
         <FeteCodex initial={bilan} persister={!!vue.devoile?.change} className="mb-4" />
       </div>
-      <CodexEcran vue={vue} />
+      <CodexEcran vue={vue} segment={sp.vue} quete={sp.quete} />
     </>
   );
 }

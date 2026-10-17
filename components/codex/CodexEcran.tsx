@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { devoileLite } from "@/lib/codex/devoile-lite";
@@ -19,7 +19,8 @@ import { PoseLePinceau } from "@/components/codex/PoseLePinceau";
 import { FilRouge } from "@/components/codex/FilRouge";
 import { QUETE_VEILLE } from "@/lib/codex/calendrier";
 import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
-import { ArbreCodex, Chemin, CheminCodex, Colonne, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
+import { ArbreCodex, Chemin, CodexTel, Colonne, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
+import { quetesDeLaCarte, segmentDe, type SegmentTel } from "@/lib/codex/carte";
 import { Feuille } from "@/components/ui/Feuille";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import e from "./Encre.module.css";
@@ -39,13 +40,17 @@ import c from "./CodexEcran.module.css";
 // malle (J-3 à J-1) avant la séance ; le jour J, « Bonne chance. » seule ; le
 // lendemain, « Pose le pinceau. » puis la carte, sans séance ; après, le fil
 // rouge passe en tête.
+// Sur téléphone, cinq segments en tête (V3 §10.1) : Aujourd'hui (la séance,
+// le cap, les contrats), Parcours, Matières, Chantiers, Exploits ; le segment
+// est gardé dans l'URL (?vue=). `quete` (?quete=…, « Chercher une quête » de
+// la palette) : la carte s'ouvre sur elle, son détail sur téléphone.
 // `demo` : aperçus (aucune action serveur).
 
-type Props = { vue: VueCodex; demo?: boolean };
+type Props = { vue: VueCodex; demo?: boolean; segment?: string; quete?: string };
 
 const nomMatiere = (vue: VueCodex, key?: string) => (key ? vue.branches.find((b) => b.contenu.key === key)?.contenu.nom : undefined);
 
-export function CodexEcran({ vue: depart, demo = false }: Props) {
+export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, quete }: Props) {
   const [vue, setVue] = useState(depart);
   const [ouverte, setOuverte] = useState<LigneQuete | null>(null);
   const [acte, setActe] = useState<VueActe | null>(null);
@@ -56,6 +61,24 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
   const ouvrir = useCallback((l: LigneQuete) => setOuverte(l), []);
   const ouvrirActe = useCallback((a: VueActe) => setActe(a), []);
   const fermer = useCallback(() => setOuverte(null), []);
+  const [segment, setSegment] = useState<SegmentTel>(() => segmentDe(segmentUrl));
+  const choisirSegment = (s: SegmentTel) => {
+    setSegment(s);
+    try {
+      const u = new URL(window.location.href);
+      if (s === "aujourdhui") u.searchParams.delete("vue");
+      else u.searchParams.set("vue", s);
+      window.history.replaceState(window.history.state, "", u);
+    } catch {
+      // l'URL reste telle quelle
+    }
+  };
+  // la quête cherchée : sur téléphone, son détail s'ouvre (sur ordinateur, la carte vient à elle)
+  useEffect(() => {
+    if (!quete || !window.matchMedia("(max-width: 899px)").matches) return;
+    const l = quetesDeLaCarte(depart).find((x) => x.id === quete);
+    if (l) setOuverte(l);
+  }, [quete, depart]);
 
   const d = vue.devoile?.devoile ?? "tout";
   const montre = useCallback((quoi: string) => devoileLite(d, quoi), [d]);
@@ -107,6 +130,8 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
   // le lendemain, on a posé le pinceau : pas de séance
   const avecSeance = moment !== "lendemain" && moment !== "jourJ";
   const veille = moment === "malle" ? (vue.trame.flatMap((a) => a.quetes).find((l) => l.id === QUETE_VEILLE) ?? null) : null;
+  // sur téléphone, hors du segment « Aujourd'hui » : ni la séance ni le cap
+  const horsSegment = !replie && segment !== "aujourdhui" ? c.horsTel : undefined;
 
   // le jour J : une seule carte (V3 §7.4)
   if (moment === "jourJ" && !deplie) {
@@ -127,8 +152,17 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
       {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}
       {moment === "malle" && vue.malle && <Malle coches={vue.malle.coches} veille={veille} demo={demo} onVue={setVue} />}
       {moment === "lendemain" && vue.recap && <PoseLePinceau recap={vue.recap} />}
+      {!replie && (
+        <div className={c.surTel}>
+          <SegmentsTel segment={segment} onChoisir={choisirSegment} />
+        </div>
+      )}
       {/* la phase est déjà dans le titre : l'en-tête de la séance ne garde que J-n */}
-      {avecSeance && seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, "")} gains={gains} mode="plein" demo={demo} />}
+      {avecSeance && seance && (
+        <div className={horsSegment}>
+          <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, "")} gains={gains} mode="plein" demo={demo} />
+        </div>
+      )}
       {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
       {/* après l'examen, le fil rouge continue : il passe en tête (V3 §7.1) */}
       {moment === "apres" && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={ouvrir} />}
@@ -147,7 +181,7 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
         </p>
       ) : (
         <>
-          <header className={`${c.tete} rl-in`}>
+          <header className={`${c.tete} ${horsSegment ?? ""} rl-in`}>
             <div className="min-w-0">
               {vue.cap && <Cap cap={vue.cap} />}
               {d !== "tout" && (
@@ -201,10 +235,10 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
           )}
 
           <div className={c.surOrdi} data-leonard="trame">
-            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />} />
+            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={ouverte?.allume} cible={quete} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />} />
           </div>
           <div className={c.surTel}>
-            <CheminCodex vue={vue} montre={montre} onQuete={ouvrir} />
+            <CodexTel segment={segment} vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />
           </div>
         </>
       )}

@@ -81,6 +81,10 @@
   }
 }
 @media (max-width: 899px) {
+  /* téléphone, hors du segment « Aujourd'hui » : la séance et le cap s'effacent (V3 §10.1) */
+  .horsTel {
+    display: none;
+  }
   .prochaine :global(.btn) {
     padding-inline: 12px;
   }
