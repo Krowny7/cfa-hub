@@ -280,7 +280,10 @@ export async function codexToutMontrer(): Promise<Resultat> {
   const { supabase, user } = await joueur();
   if (!user) return { ok: false, raison: "connexion" };
   try {
-    const { error } = await supabase.auth.updateUser({ data: { rl_codex: { devoile: "tout", jours: [] } } });
+    // rl_codex garde aussi le marqueur du rattrapage (capacites_vues, sans la §2) : on ne l'écrase pas
+    // (user vient de getUser : ses métadonnées sont celles du compte)
+    const avant = (user.user_metadata as { rl_codex?: Record<string, unknown> } | undefined)?.rl_codex ?? {};
+    const { error } = await supabase.auth.updateUser({ data: { rl_codex: { ...avant, devoile: "tout", jours: [] } } });
     if (error) return { ok: false, raison: "erreur" };
   } catch {
     return { ok: false, raison: "erreur" };

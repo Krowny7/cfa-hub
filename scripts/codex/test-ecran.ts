@@ -15,7 +15,7 @@
 // téléphone, palette.
 import { DECOUVERTE, ACTES } from "@/lib/codex/catalogue";
 import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoile-lite";
-import { estDevoile } from "@/lib/codex/moteur";
+import { estDevoile, marqueurDe, nouveautesDe } from "@/lib/codex/moteur";
 import { bilanDe } from "@/lib/codex/bilan";
 import { readFileSync } from "node:fs";
 import { MAX_ARCS, MAX_QUETES, ligneVersees, panneauAcquitte, panneauDe } from "@/lib/codex/panneau";
@@ -168,6 +168,13 @@ console.log("\n# le réglage du jour, avec et sans la §2 (migration_codex_v3.sq
   check("avec §2 : la ligne prime sur le compte (valeurs invalides écartées)", avec.ou === "base" && avec.budget === 90 && JSON.stringify(avec.ecartees) === '["a","b"]' && avec.capacitesVues === null);
   check("avec §2 : un budget d'un autre jour ne vaut plus", reglageDe({ ligne: { budget_min: 90, budget_jour: "2026-10-15", ecartees: null, capacites_vues: null }, absente: false }, meta, J).budget === null);
   check("avec §2, pas encore de ligne : rien de réglé", reglageDe({ ligne: null, absente: false }, meta, J).budget === null);
+  // le marqueur du rattrapage ne retombe jamais à « jamais vu » sur une panne (tout le nouveau passerait en rétro)
+  const panne = reglageDe({ ligne: null, absente: false, panne: true }, meta, J);
+  const leve = reglageDe({ ligne: null, absente: true, panne: true }, meta, J);
+  check("lecture en panne (réseau, délai) ou qui lève : marqueur inconnu (undefined), ni rattrapage ni marqueur écrit",
+    panne.capacitesVues === undefined && panne.ou === "base" && leve.capacitesVues === undefined && leve.budget === 60
+      && nouveautesDe({ capacites: CAPACITES_VIDE, capacitesVues: panne.capacitesVues }) === null && marqueurDe({ capacites: CAPACITES_VIDE, capacitesVues: panne.capacitesVues }) === null);
+  check("« Tout montrer » garde le reste de rl_codex (capacites_vues)", /rl_codex: \{ \.\.\.avant, devoile: "tout", jours: \[\] \}/.test(readFileSync("lib/codex/actions.ts", "utf8")));
   check("écarter : sans doublon, 30 au plus", JSON.stringify(ecarter({ ...sans, ecartees: ["a", "b"] }, "a")) === '["b","a"]' && ecarter({ ...sans, ecartees: Array.from({ length: 30 }, (_, i) => `q${i}`) }, "z").length === 30);
   check("la lecture principale de codex_joueur ne lit aucune colonne v3", !COLONNES_V3.split(",").some((c) => COLONNES_JOUEUR.includes(c)));
   const src = readFileSync("lib/codex/serveur.ts", "utf8");
@@ -316,7 +323,9 @@ console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
   check("pinceau posé : le jour J et de J+1 à J+7 ; pas à J-1 ni à J+8, ni sans jour J",
     pinceauPose(momentDe(0, "repetition")) && pinceauPose(momentDe(-1, "apres")) && pinceauPose(momentDe(-7, "apres")) && !pinceauPose(momentDe(1, "veillee")) && !pinceauPose(momentDe(-8, "apres")) && !pinceauPose(momentDe(null, "apres")));
   check("serveur.ts : à J+1, aucune séance composée ni écrite, aucun bonus du trio pour une séance tenue",
-    /const sansSeance = pinceauPose\(momentDe\(/.test(src) && src.includes("tenue: !sansSeance && seanceLus.tenue") && src.includes("const seance = sansSeance ? null : await seanceDuJour("));
+    /const sansSeance = pinceauPose\(momentDe\(/.test(src) && src.includes("tenue: !sansSeance && seanceLus.tenue") && src.includes("seance = sansSeance ? null : await seanceDuJour("));
+  check("serveur.ts : la séance et le rythme long ont chacun leur try (consigné une fois) : leur panne ne fait plus servir le repli",
+    /try \{\s*seance = sansSeance \? null : await seanceDuJour\([^]*?\} catch \(x\) \{\s*await consigner\(a, user\.id, "", `seance : /.test(src) && /try \{\s*rythme = vueRythme\([^]*?\} catch \(x\) \{\s*await consigner\(a, user\.id, "", `rythme : /.test(src));
   check("l'accueil et /codex suivent la même règle (pinceauPose)",
     readFileSync("components/codex/SeanceAccueil.tsx", "utf8").includes("pinceauPose(vue.moment)") && readFileSync("components/codex/CodexEcran.tsx", "utf8").includes("const avecSeance = !pinceauPose(moment);"));
 }

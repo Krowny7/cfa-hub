@@ -148,10 +148,13 @@ async function pointsFaibles(supabase: SupabaseClient): Promise<{ notion: string
 async function lireReglage(a: SupabaseClient, user: Joueur, jour: string): Promise<ReglageJour> {
   try {
     const { data, error } = await a.from("codex_joueur").select(COLONNES_V3).eq("user_id", user.id).maybeSingle();
-    // une autre erreur (réseau) : rien de réglé aujourd'hui, sans basculer sur le compte
-    return reglageDe({ ligne: error ? null : (data as Parameters<typeof reglageDe>[0]["ligne"]), absente: !!error && baseAbsente(error) }, user.user_metadata, jour);
+    // une autre erreur (réseau) : rien de réglé aujourd'hui, sans basculer sur le compte, et le marqueur
+    // du rattrapage inconnu (pas « jamais vu » : tout le nouveau passerait en rétro)
+    const absente = !!error && baseAbsente(error);
+    return reglageDe({ ligne: error ? null : (data as Parameters<typeof reglageDe>[0]["ligne"]), absente, panne: !!error && !absente }, user.user_metadata, jour);
   } catch {
-    return reglageDe({ ligne: null, absente: true }, user.user_metadata, jour);
+    // l'appel a levé : le budget du compte faute de mieux, le marqueur inconnu (il peut être en base)
+    return reglageDe({ ligne: null, absente: true, panne: true }, user.user_metadata, jour);
   }
 }
 
@@ -418,8 +421,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     // ses blocs et les sondes du jour (5 et 30 rendus) partent avec les compteurs des quêtes
     const seancePrecedente = seanceLue.absente ? seanceEnMemoire(user.id, jour) : seanceLue.gardee;
     // le jour J et le lendemain : pas de séance (V3 §7.4, §7.5) ; ces moments ne dépendent que du jour J
-    // (sans lui, momentDe rend « courant » ou « après », quelle que soit la phase)
-    const sansSeance = pinceauPose(momentDe(actif.examen ? joursAvantExamen(jour, jourJ) : null, "courant"));
+    // (sans lui, momentDe rend « courant » ou « après » : la phase passée ici n'y change rien)
+    const sansSeance = pinceauPose(momentDe(actif.examen ? joursAvantExamen(jour, jourJ) : null, "fondations"));
     entree.seance = { objectifs: [...SONDES_SEANCE, ...(seancePrecedente?.blocs ?? []).map((b) => b.objectif)], lanceeLe: seancePrecedente?.lanceeLe ?? null };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage) ; un seul en veillée
@@ -524,8 +527,20 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
     const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id, malle, sobre: lireSobre(user) });
-    const seance = sansSeance ? null : await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
-    const rythme = vueRythme(entree, compteurs, { semaineDispo: rythmeLu.semaineDispo, capacites: entree.capacites, moment: construite.moment, verdicts: rythmeLu.verdicts });
+    // la séance et le rythme long sont secondaires : une panne de l'un ne coûte que lui (le lot est déjà
+    // écrit, la vue principale et ses nouvelles doivent être servies et annoncées)
+    let seance: VueSeance | null = null;
+    try {
+      seance = sansSeance ? null : await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
+    } catch (x) {
+      await consigner(a, user.id, "", `seance : ${x instanceof Error ? x.message : String(x)}`);
+    }
+    let rythme: VueCodex["rythme"] = null;
+    try {
+      rythme = vueRythme(entree, compteurs, { semaineDispo: rythmeLu.semaineDispo, capacites: entree.capacites, moment: construite.moment, verdicts: rythmeLu.verdicts });
+    } catch (x) {
+      await consigner(a, user.id, "", `rythme : ${x instanceof Error ? x.message : String(x)}`);
+    }
     const vue: VueCodex = { ...construite, seance, rythme };
     MEMO.set(user.id, { at: Date.now(), vue });
     DERNIER.set(user.id, vue);

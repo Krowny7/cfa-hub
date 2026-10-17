@@ -27,8 +27,12 @@ export type ReglageJour = {
   budget: Budget | null;
   /** les quêtes écartées ce jour-là (ids) */
   ecartees: string[];
-  /** les capacités vues au dernier calcul écrit (null : jamais) */
-  capacitesVues: Partial<Capacites> | null;
+  /**
+   * les capacités vues au dernier calcul écrit (null : jamais) ; undefined :
+   * illisibles à ce calcul (panne) : ni rattrapage ni marqueur écrit, plutôt
+   * que de prendre le joueur pour « jamais vu » (tout le nouveau en rétro)
+   */
+  capacitesVues: Partial<Capacites> | null | undefined;
   /** où ce réglage s'écrit : la base (§2 collée) ou le compte */
   ou: "base" | "compte";
 };
@@ -66,11 +70,16 @@ export function lireCapacites(x: unknown): Capacites {
 /**
  * Le réglage du jour, d'après la lecture à part des colonnes v3 :
  * `absente` (colonnes ou table absentes : §2 pas collée) → le compte ;
- * sinon la ligne (null : pas encore de ligne, rien de réglé).
+ * sinon la ligne (null : pas encore de ligne, rien de réglé). `panne` : la
+ * lecture a échoué autrement (réseau, délai) : le marqueur du rattrapage est
+ * inconnu (undefined), jamais « jamais vu ».
  */
-export function reglageDe(lu: { ligne: LigneV3 | null; absente: boolean }, meta: unknown, jour: string): ReglageJour {
-  if (lu.absente) return reglageDuCompte(meta, jour);
-  const l = lu.ligne;
+export function reglageDe(lu: { ligne: LigneV3 | null; absente: boolean; panne?: boolean }, meta: unknown, jour: string): ReglageJour {
+  const r = lu.absente ? reglageDuCompte(meta, jour) : reglageDeLigne(lu.ligne, jour);
+  return lu.panne ? { ...r, capacitesVues: undefined } : r;
+}
+
+function reglageDeLigne(l: LigneV3 | null, jour: string): ReglageJour {
   const budget = l && estBudget(l.budget_min) && String(l.budget_jour ?? "").slice(0, 10) === jour ? l.budget_min : null;
   return { budget, ecartees: ecarteesDu(l?.ecartees, jour), capacitesVues: capacitesDe(l?.capacites_vues), ou: "base" };
 }
