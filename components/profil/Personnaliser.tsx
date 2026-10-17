@@ -5,9 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
-import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
-import { RadarComparable } from "@/components/profil/RadarComparable";
-import { EditeurDisposition } from "@/components/profil/EditeurDisposition";
+import { EditeurPage } from "@/components/profil/EditeurPage";
 import { AmbianceProfil } from "@/components/profil/Pieces";
 import { SceauxPoses } from "@/components/profil/SceauxPoses";
 import { Feuille } from "@/components/ui/Feuille";
@@ -29,13 +27,12 @@ import {
 import { enregistrerProfil } from "@/app/moi/profil/actions";
 import { poserSceaux } from "@/lib/profil/actions-sceaux";
 import { createClient } from "@/lib/supabase/browser";
-import { rankFor } from "@/lib/ranks";
 import { posesDe } from "@/lib/profil/sceaux";
-import type { AmiLite } from "@/lib/profil/donnees";
-import type { CleBloc } from "@/lib/profil/disposition";
+import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import type { TitrePortable } from "@/lib/profil/styles";
-import { couleurCss, linkedinLisible, nettoyerNom, normaliserLinkedin, type Acquis, type NomProfil, type ProfilStats, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { couleurCss, linkedinLisible, nettoyerNom, normaliserLinkedin, type Acquis, type NomProfil, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { ENTETE, PERSO, provenances } from "@/lib/voice-profil";
+import { EDITEUR_PAGE } from "@/lib/voice-editeur";
 import { JOUEURS } from "@/lib/voice-z2a";
 
 // Personnaliser son profil sur la page elle-même (/people/<moi>?personnaliser=1) :
@@ -43,10 +40,11 @@ import { JOUEURS } from "@/lib/voice-z2a";
 // bio, page) ; le toucher ouvre la Feuille de la zone (en bas sur
 // téléphone, 70 % de la hauteur ; tiroir de 420 px à droite sur
 // ordinateur), et la vraie page change en direct dessous. Les sections sont
-// celles de l'ancien éditeur (SectionsPersonnaliser.tsx). La page se range
-// sur place (EditeurDisposition : appui long ou flèches, au doigt comme à
-// la souris). Une barre collée en bas enregistre ou annule ; le serveur
-// revalide tout (cadres et bannières gagnés, ou déjà portés).
+// celles de l'ancien éditeur (SectionsPersonnaliser.tsx). La page se compose
+// sur place (EditeurPage : chaque bloc à l'un des 3 formats du site, rangé
+// par sa barre d'outils, au doigt comme à la souris). Une barre collée en
+// bas enregistre ou annule ; le serveur revalide tout (cadres et bannières
+// gagnés, ou déjà portés ; la liste des blocs).
 
 type Zone = keyof typeof PERSO.zones;
 type Enregistre = { style: StyleProfil; linkedin: string; visibilite: Visibilite; nom: string; nomVisibilite: "public" | "friends"; pins: string[] };
@@ -72,7 +70,6 @@ function Crayon({ label, onClick, texte, children }: { label: string; onClick: (
 
 export function Personnaliser({
   carte,
-  stats,
   acquis,
   initial,
   pins: pinsInitiaux,
@@ -81,14 +78,11 @@ export function Personnaliser({
   visibilite: visibiliteInitiale,
   nom: nomInitial,
   disponible,
-  moyennes,
-  amis,
-  rendus: rendusServeur,
+  donnees,
   banqueGifs = false,
   titres = [],
 }: {
   carte: EnteteData;
-  stats: ProfilStats;
   /** ce qui ouvre les pièces gagnées (questions, pic, sceaux, dates) */
   acquis: Acquis;
   initial: StyleProfil;
@@ -100,11 +94,8 @@ export function Personnaliser({
   visibilite: Visibilite;
   nom: NomProfil;
   disponible: boolean;
-  /** moyenne des joueurs par matière (le radar) */
-  moyennes: Record<string, number | null>;
-  amis: { amis: AmiLite[]; total: number } | null;
-  /** les blocs rendus par le serveur (réponses, trophées, progression) */
-  rendus: Partial<Record<CleBloc, React.ReactNode>>;
+  /** ce que montrent les blocs de la page, lu par le serveur (la couleur et les chiffres clés suivent le brouillon) */
+  donnees: DonneesBlocs;
   /** la banque de GIF est branchée */
   banqueGifs?: boolean;
   /** les titres qu'il peut porter (gagnés, ou déjà porté), lus par le serveur */
@@ -216,16 +207,6 @@ export function Personnaliser({
       router.refresh();
     });
 
-  const rk = rankFor(carte.elo, carte.mastery, carte.place);
-  const rang = { tierIndex: rk.tierIndex, division: rk.division, elo: carte.elo, mastery: carte.mastery };
-  // les blocs de la page, avec les réglages en cours (couleur, chiffres clés)
-  const rendus: Partial<Record<CleBloc, React.ReactNode>> = {
-    vitrine: <Vitrine style={style} stats={stats} rang={rang} />,
-    radar: <RadarComparable matieres={stats.matieres} moyennes={moyennes} accent={style.accent} nom={carte.name} moi />,
-    amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi /> : null,
-    ...rendusServeur,
-  };
-
   const statut = msg ? (
     <span role="status" className={"text-[13px] font-medium " + (msg.ok ? "" : "text-pen")}>
       {msg.texte}
@@ -279,12 +260,21 @@ export function Personnaliser({
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0 flex-[1_1_260px]">
               <p className="t-eyebrow m-0">{PERSO.zones.page}</p>
-              <p className="t-small m-0 mt-1">{PERSO.pageAide}</p>
+              <p className="t-small m-0 mt-1">{EDITEUR_PAGE.aide}</p>
             </div>
             <Crayon label={PERSO.modifier(PERSO.pageCrayon)} texte={PERSO.pageCrayon} onClick={() => ouvrir("page")} />
           </div>
           {!disponible && <p className="t-small m-0 rounded-[12px] border border-dashed border-line-2 p-3">{PERSO.basePasPrete}</p>}
-          <EditeurDisposition disposition={style.disposition} onChange={(d) => set("disposition", d)} rendus={rendus} supabase={supabase} onEnvoi={setEnvoiMedia} banqueGifs={banqueGifs} />
+          <EditeurPage
+            disposition={style.disposition}
+            onChange={(d) => set("disposition", d)}
+            donnees={{ ...donnees, accent: style.accent, showcase: style.showcase }}
+            showcase={style.showcase}
+            onShowcase={(v) => set("showcase", v)}
+            supabase={supabase}
+            onEnvoi={setEnvoiMedia}
+            banqueGifs={banqueGifs}
+          />
         </section>
       </div>
 

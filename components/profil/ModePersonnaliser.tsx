@@ -1,13 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import Link from "next/link";
 import { Personnaliser } from "@/components/profil/Personnaliser";
 import type { EnteteData } from "@/components/profil/EnteteJoueur";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
-import { AnswerSummary } from "@/components/moi/AnswerSummary";
-import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
-import { PracticeProgressChart } from "@/components/PracticeProgressChart";
-import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { getLeaderboardRank } from "@/lib/rating";
 import { DEFAULT_ELO } from "@/lib/ranks";
@@ -21,7 +16,10 @@ import { lireAcquis } from "@/lib/profil/acquis";
 import { titresPortables } from "@/lib/profil/styles";
 import { lireTrophees } from "@/lib/trophees";
 import { folioPorte } from "@/lib/profil/etagere";
-import { BlocFolio } from "@/components/profil/Folio";
+import { journalDe } from "@/lib/profil/journal";
+import { lireSaisons } from "@/lib/profil/saisons";
+import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
+import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
 
 // Personnaliser, côté serveur (/people/<moi>?personnaliser=1, sur son
 // propre profil seulement) : tout ce que l'ancien éditeur /moi/profil
@@ -29,6 +27,9 @@ import { BlocFolio } from "@/components/profil/Folio";
 // plus ce qui ouvre les pièces gagnées (questions, pic et sa date, sceaux)
 // et les titres qu'il peut porter (gagnés au Codex, aux trophées, au fil
 // rouge : l'Acquis complet reste ici, la page n'en reçoit que la liste).
+// Les blocs de la page reçoivent leurs données une seule fois
+// (DonneesBlocs) : les siennes, Journal compris (toujours ouvert pour lui :
+// il peut poser le bloc), et ses saisons.
 
 type ProfilLu = { username: string | null; avatar_url: string | null; xp_total: number | null };
 
@@ -41,24 +42,14 @@ async function progression(sb: SupabaseClient, id: string) {
   }
 }
 
-/** Le bloc « Folio » dans l'éditeur : le folio porté, sinon où en choisir un. */
-function FolioOuInvite({ nue }: { nue: string | null }) {
-  const f = folioPorte(nue);
-  if (f) return <BlocFolio f={f} />;
-  return (
-    <Link href="/moi?onglet=pieces" className="flex min-h-[120px] flex-col items-center justify-center gap-1 rounded-[18px] border border-dashed border-line-2 p-6 text-center text-muted transition-colors hover:border-white hover:text-white">
-      <span className="text-[14px] font-semibold">Aucun folio porté</span>
-      <span className="t-micro max-w-[240px]">Choisis-en un dans Moi › Mes pièces : il se pose ici, avec son anecdote.</span>
-    </Link>
-  );
-}
-
 export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: string; supabase: SupabaseClient; profil: ProfilLu; rating: { elo: number; games_played: number } | null }) {
   const admin = tryAdmin();
   const statsLues = statsProfil(id, supabase);
-  const [place, masteries, { style, disponible, pins }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu] = await Promise.all([
+  const maitrisesLues = masteryByUser(admin, [id]);
+  const sceauxLus = statsLues.then((s) => sceauxDuJoueur(id, s));
+  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons] = await Promise.all([
     getLeaderboardRank(supabase, id),
-    masteryByUser(admin, [id]),
+    maitrisesLues,
     lireStyle(supabase, id),
     lireLien(supabase, id),
     statsLues,
@@ -70,10 +61,15 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul
     lireTrophees(supabase, id),
     progression(supabase, id),
-    statsLues.then((s) => sceauxDuJoueur(id, s)),
+    sceauxLus,
     datesDuPic(supabase, id),
     // le Codex, les trophées, les programmes menés (le profil s'y ajoute plus bas)
     statsLues.then((s) => lireAcquis(admin ?? supabase, id, { stats: s, sceaux: [], datesPic: [] })),
+    // le bloc Journal : le sien, toujours ouvert pour lui (la courbe avec son client, les victoires avec l'admin)
+    Promise.all([statsLues, maitrisesLues, sceauxLus])
+      .then(([s, m, sc]) => journalDe({ id, sb: supabase, admin, stats: s, mastery: m.get(id) ?? null, gardes: sc.gardes }))
+      .catch(() => null),
+    lireSaisons(supabase, id),
   ]);
   const titres = titresPortables({ ...acquisLu, sceaux: sceaux.etats, datesPic }, style.titre);
 
@@ -97,12 +93,30 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
   };
+  // les blocs de la page (la couleur et les chiffres clés suivent ensuite le brouillon)
+  const donnees: DonneesBlocs = {
+    id,
+    nom: carte.name,
+    moi: true,
+    viewerId: id,
+    accent: style.accent,
+    showcase: style.showcase,
+    stats,
+    radar: { moyennes, miennes: null, monAccent: null },
+    amis,
+    reponses: answers ? resumeReponses(answers) : null,
+    trophees: resumeTrophees(trophees),
+    progression: progress,
+    folio: folioPorte(style.folio),
+    journal: journal ? extraitJournal(journal) : null,
+    saisons,
+    visibiliteJournal,
+  };
 
   return (
     <div className="rl-wide rl-page">
       <Personnaliser
         carte={carte}
-        stats={stats}
         acquis={acquisDe(stats, sceaux.etats, datesPic)}
         initial={style}
         pins={posesDe(sceaux.etats, sceaux.base ? pins : null).map((e) => e.def.cle)}
@@ -111,16 +125,9 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
         visibilite={lien?.visibilite ?? LIEN_DEFAUT.visibilite}
         nom={nom ?? NOM_DEFAUT}
         disponible={disponible}
-        moyennes={moyennes}
-        amis={amis}
+        donnees={donnees}
         banqueGifs={!!process.env.KLIPY_API_KEY}
         titres={titres}
-        rendus={{
-          reponses: answers?.available ? <AnswerSummary stats={answers} name={carte.name} isMe /> : null,
-          trophees: <SalleDesTrophees compte={trophees} complet={trophees.complet} />,
-          progression: <PracticeProgressChart pastSessions={progress} topicLabels={TOPIC_LABELS} />,
-          folio: <FolioOuInvite nue={style.folio} />,
-        }}
       />
     </div>
   );
