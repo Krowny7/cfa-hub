@@ -11,7 +11,7 @@ import { budgetDuJour, contexteDestination, evaluer, evaluerObjectifs, planifier
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { notionsDeMatiere } from "@/lib/notions";
 import {
-  MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, faitsDeSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage,
+  MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, faitsDeSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage, SEANCE_TENUE_MIN,
   type EntreeSeance, type GenreBloc, type RevoirCodex, type VueSeance,
 } from "@/lib/codex/seance";
 import { PANNEAU_VIDE, panneauAGarder, panneauDuCache, pastilleSeance, seancePanneau } from "@/lib/codex/panneau";
@@ -236,6 +236,20 @@ console.log("\n# les blocs faits et le bonus du trio");
     check("… de même l'épreuve qui mène aux 30 du jour, une fois les 30 rendus", !blocEp || blocEp.destination.outil !== "trente" || lEp.faits.includes("epreuve"), J([blocEp?.destination.href, lEp.faits]));
   }
   check("… pas lancée : pas tenue (pas de bonus)", !faitsDeSeance({ ...g, lanceeLe: null }, ev(false, false, true, true, true)).tenue && !faitsDeSeance(null, ev(true, true)).tenue);
+  {
+    // la malle sans révisions dues : la séance gardée n'est que [cinq] ; les 5 rendus avant le lancement ne la « tiennent » pas
+    const cinq = composerSeance(entree({ phase: "fondations", budget: 60 })).blocs.find((b) => b.genre === "cinq")!;
+    const gc = { blocs: [cinq], faits: [] as GenreBloc[], lanceeLe: "2026-10-17T07:30:00Z" };
+    const avant = faitsDeSeance(gc, ev(true, false, false));
+    const trio = evaluer(base({ seance: { objectifs: [], lanceeLe: gc.lanceeLe, tenue: avant.tenue } }), {});
+    check("séance [cinq], les 5 rendus avant le lancement : bloc fait, mais pas tenue ni contrat:trio", avant.faits.includes("cinq") && !avant.tenue && !trio.lot.some((i) => i.quete.startsWith("contrat:trio:")), J(avant));
+    check(`… rendus après le lancement : moins de ${SEANCE_TENUE_MIN} minutes, pas tenue non plus`, !faitsDeSeance(gc, ev(true, false, true)).tenue);
+    const s15 = composerSeance(entree({ phase: "fondations", budget: 60 }));
+    const g15 = { blocs: s15.blocs, faits: [] as GenreBloc[], lanceeLe: gc.lanceeLe };
+    const i5 = s15.blocs.findIndex((b) => b.genre === "cinq");
+    const leReste = s15.blocs.map((_, i) => i !== i5);
+    check("… les 5 rendus avant, le reste fait après le lancement : tenue", s15.duree >= SEANCE_TENUE_MIN && faitsDeSeance(g15, ev(true, false, ...leReste)).tenue, J(genres(s15)));
+  }
   const sansContrats = evaluer(base({ seance: { objectifs: [], lanceeLe: g.lanceeLe, tenue: true } }), {});
   check("la séance lancée et tenue verse le bonus du trio (même id, même XP), sans trois contrats sur trois", sansContrats.trioFait && sansContrats.lot.some((i) => i.quete === `contrat:trio:${jour}` && i.xp === 50), J(sansContrats.lot.filter((i) => i.famille === "contrat")));
   const deja = evaluer(base({ seance: { objectifs: [], lanceeLe: g.lanceeLe, tenue: true }, progression: [{ quete_id: `contrat:trio:${jour}`, periode: jour, etat: "recompensee", progression: 3, cible: 3, ouverte_le: now.toISOString(), terminee_le: now.toISOString(), recompensee_le: now.toISOString(), retro: false, xp: 50, cosmetique: null, titre: null, vu: true }] }), {});

@@ -400,6 +400,9 @@ export const SONDES_SEANCE: readonly Objectif[] = [
   { k: "compteur", evenement: "defi_rendu", seuil: 1, fenetre: "jour" },
 ];
 
+/** Le bonus du trio veut une vraie séance : 15 minutes au moins, dont un bloc fait après le lancement. */
+export const SEANCE_TENUE_MIN = 15;
+
 /**
  * Ce que disent les compteurs, évalués sur Entree.seance (les sondes, puis un
  * objectif par bloc gardé) : les 5 et les 30 du jour rendus, les blocs faits
@@ -407,17 +410,23 @@ export const SONDES_SEANCE: readonly Objectif[] = [
  * Les 5 et les 30 du jour ne se jouent qu'une fois par jour : rendus
  * aujourd'hui, même avant le lancement, leur bloc est fait (et l'épreuve qui
  * mène aux 30 du jour aussi) ; ils se cochent ainsi des deux côtés de
- * l'accueil (V3 §6.3).
+ * l'accueil (V3 §6.3). Mais ils ne suffisent pas au bonus : la séance tenue
+ * compte SEANCE_TENUE_MIN minutes au moins, et un de ses blocs au moins a été
+ * fait après le lancement (son objectif, compté depuis le lancement, rempli).
  */
 export function faitsDeSeance(g: Pick<SeanceGardee, "blocs" | "faits" | "lanceeLe"> | null, evs: readonly { fait: boolean }[]): { cinqFait: boolean; trenteFait: boolean; faits: GenreBloc[]; tenue: boolean } {
   const cinqFait = !!evs[0]?.fait;
   const trenteFait = !!evs[1]?.fait;
   const faits: GenreBloc[] = [...(g?.faits ?? [])];
+  let apresLancement = false;
   g?.blocs.forEach((b, i) => {
     const duJour = (b.genre === "cinq" && cinqFait) || ((b.genre === "trente" || (b.genre === "epreuve" && b.destination.outil === "trente")) && trenteFait);
-    if ((duJour || evs[SONDES_SEANCE.length + i]?.fait) && !faits.includes(b.genre)) faits.push(b.genre);
+    const parObjectif = !!evs[SONDES_SEANCE.length + i]?.fait;
+    if (parObjectif) apresLancement = true;
+    if ((duJour || parObjectif) && !faits.includes(b.genre)) faits.push(b.genre);
   });
-  const tenue = !!g?.lanceeLe && g.blocs.length > 0 && g.blocs.every((b) => faits.includes(b.genre));
+  const duree = g?.blocs.reduce((s, b) => s + b.duree, 0) ?? 0;
+  const tenue = !!g?.lanceeLe && g.blocs.length > 0 && g.blocs.every((b) => faits.includes(b.genre)) && apresLancement && duree >= SEANCE_TENUE_MIN;
   return { cinqFait, trenteFait, faits, tenue };
 }
 
