@@ -14,7 +14,8 @@ import s from "./Aujourdhui.module.css";
 // `sous` : un mot de plus sur la ligne de l'avancée (« étape 2 sur 5 ») ;
 // `texte` : une ligne lisible à la place de l'avancée, sans barre (l'énigme
 // d'un exploit) ; `choisie` : la quête montrée dans le détail, à côté (sur
-// ordinateur). Le mode sobre tait l'XP.
+// ordinateur, où la ligne n'ouvre pas de feuille : `feuille` faux). Le mode
+// sobre tait l'XP.
 
 /** Ce que la ligne dit à droite. */
 export function droiteLigne(l: Pick<Ligne, "etat" | "aRecuperer" | "termineeLe" | "xp">, sobre: boolean): string | null {
@@ -30,6 +31,7 @@ export function LigneQuete({
   texte,
   action,
   choisie = false,
+  feuille = true,
 }: {
   l: Ligne;
   sobre?: boolean;
@@ -39,6 +41,8 @@ export function LigneQuete({
   /** à la place du mot de droite : le bouton « Récupérer » */
   action?: ReactNode;
   choisie?: boolean;
+  /** faux : la ligne montre son détail à côté, sans ouvrir de feuille */
+  feuille?: boolean;
 }) {
   const enigme = l.affichage === "indice" && l.etat !== "terminee";
   // une énigme lisible (`texte`) garde le nom de l'exploit ; sans elle, « Une énigme »
@@ -54,7 +58,7 @@ export function LigneQuete({
       data-choisie={choisie || undefined}
       aria-current={choisie || undefined}
       onClick={() => onOuvrir(l)}
-      aria-haspopup="dialog"
+      aria-haspopup={feuille ? "dialog" : undefined}
       aria-label={libelleSceau(l)}
     >
       <Sceau l={l} taille={28} />

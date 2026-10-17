@@ -88,6 +88,7 @@ export function ToutLeCodex({
         sous={o.sous}
         texte={o.texte}
         choisie={large && !!choisie && cle(choisie) === cle(l)}
+        feuille={!large}
         action={l.aRecuperer ? <Recuperer items={[attend ?? { quete: l.id, periode: l.periode, titre: l.titre, famille: l.famille, xp: l.xp, aVerser: true, le: null, recompense: null, piece: null }]} jour={vue.jour} variante="bouton" court sobre={vue.sobre} demo={demo} /> : undefined}
       />
     );
