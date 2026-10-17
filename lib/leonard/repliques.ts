@@ -332,42 +332,28 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
  * son attribut data-leonard). Sans cet élément sur la page, il éclaire son
  * `repli` s'il y en a un ; une étape `facultatif` est sautée (rien à montrer
  * à ce joueur-là). La page « /profil » est le profil du joueur (/people/<son id>).
+ * La visite d'accueil tient en 4 étapes (V3 §11.4) : les 30 et les 5 du jour,
+ * la séance du jour, le cap du carnet, les réglages (me couper, le mode sobre).
  */
 export type EtapeTuto = Replique & { page: string; cible?: string; repli?: string; facultatif?: boolean };
 
 export const TUTO: EtapeTuto[] = [
-  { page: "/dashboard", texte: "Moi c’est Léonard. Oui, celui de la Joconde. Suis-moi, je te fais visiter : une minute, promis.", pose: "base" },
-  { page: "/dashboard", cible: "anneau", texte: "Ton anneau du jour. Chaque question répondue, un trait. Tu le fermes avant minuit, t’es un génie.", pose: "fier" },
-  { page: "/dashboard", cible: "defi", texte: "Le défi du jour : les mêmes questions pour tout le monde, résultats publics. Pas de pression. Si, un peu.", pose: "moqueur" },
-  { page: "/reviser", cible: "fiches", texte: "Réviser. Les fiches, c’est comme mes carnets : en mieux rangées, et lisibles sans miroir.", pose: "fier" },
-  { page: "/reviser", cible: "formats", texte: "Les flashcards et les cours complets, à lire ou à écouter. T’as plus aucune excuse.", pose: "base" },
-  { page: "/entrainement", cible: "session", texte: "S’entraîner. Une session sur tes points faibles, et le défi du jour. Ça, c’est le quotidien.", pose: "fier" },
-  { page: "/entrainement", cible: "contre", texte: "Examens blancs classés et duels : là, ça compte pour ton rang. Viens pas pleurer après.", pose: "moqueur" },
-  { page: "/classement", cible: "rang", texte: "Ton rang, de Bronze à Grand Maître. En dessous, le classement et tes duels. Ici, on se mesure. Et on se chambre.", pose: "etonne" },
-  { page: "/codex", cible: "prochaine", facultatif: true, texte: "Et ça, c’est mon carnet : le Codex. Une seule quête à la fois, celle qui sert le plus. Quand tu ne sais plus quoi faire, tu viens ici.", pose: "fier" },
-  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Tu le feras pas, hein ?", pose: "decu" },
-  { page: "/dashboard", cible: "defi", texte: "Fin de la visite. Ton premier trait t’attend. Je repasse de temps en temps… surtout quand tu te trompes.", pose: "fier" },
+  { page: "/dashboard", cible: "defi", texte: "Moi c’est Léonard. Oui, celui de la Joconde. Ici, ton rendez-vous de chaque jour : les 30 et les 5 du jour. Un peu chaque jour, et ça rentre.", pose: "fier" },
+  { page: "/dashboard", cible: "seance", facultatif: true, texte: "Juste en dessous, ta séance du jour. Je la compose pour toi, selon ce qui sert le plus. Un bouton, et tu y vas.", pose: "base" },
+  { page: "/codex", cible: "cap", repli: "prochaine", texte: "Mon carnet, le Codex. En haut, où tu en es, matière par matière, et pourquoi. Quand tu ne sais plus quoi faire, tu viens ici.", pose: "fier" },
+  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Le mode sobre range aussi les fanfares et l’XP. Tu le feras pas, hein ? Allez, ton premier trait t’attend.", pose: "decu" },
 ];
 
 /**
  * Les nouveautés d'une version (lib/presentation, VERSION_NOUVEAUTES) : une
  * visite courte, une fois par compte, pour ceux qui ont déjà fait la visite
- * d'accueil. Version 2 (octobre 2026, relancée pour tous) : points faibles et
- * la carte de l'Atelier (son nom, sa plume, l'établi qui s'anime), carnet par
- * notion, profil (sceaux, Journal, saisons, Personnaliser), carte joueur et
- * tampons, « Du nouveau ». Une étape dont l'élément peut manquer (pas de
- * données) est facultative ou a un repli.
+ * d'accueil. Version 3 (Codex v3, V3 §11.4) : la séance du jour sous les 30
+ * et les 5, le cap en tête du carnet, l'étagère « Mes pièces » (Moi, onglet
+ * pieces ; facultative tant que l'onglet n'est pas là). Une étape dont
+ * l'élément peut manquer (pas de données) est facultative ou a un repli.
  */
 export const NOUVEAUTES: EtapeTuto[] = [
-  { page: "/dashboard", texte: "Re. Pendant que tu dormais, j’ai fait des travaux. Je te montre les nouveautés : deux minutes, chrono.", pose: "fier" },
-  { page: "/entrainement", cible: "points-faibles", repli: "session", texte: "Ton point faible, notion par notion. Je sais exactement où tu coinces. Désolé, pas désolé.", pose: "moqueur" },
-  { page: "/entrainement", cible: "atelier", facultatif: true, texte: "Et voici l’Atelier. Son nom en grand, sa plume dans un sceau, et l’établi qui s’anime : c’est mon coin. 30 minutes sur tes trois notions les plus faibles : rappel, ratures, du neuf, un calcul, un bilan. Tu ressors réparé.", pose: "fier" },
-  { page: "/moi?onglet=erreurs", cible: "carnet-notions", facultatif: true, texte: "Ton carnet de ratures se range aussi par notion. Pratique pour voir où ça saigne.", pose: "etonne" },
-  { page: "/profil", cible: "sceaux-poses", facultatif: true, texte: "Ton profil a pris du galon. Ici, tes trois plus beaux sceaux. Ou les trois que tu choisis : t’es chez toi.", pose: "fier" },
-  { page: "/profil?onglet=sceaux", cible: "collection", texte: "La collection : encre, vermillon, dorure. Ceux en relief, tu les as pas encore. Au boulot.", pose: "moqueur" },
-  { page: "/profil?onglet=journal", cible: "journal", texte: "Le Journal : ta courbe d’ELO, tes jours joués, tes exploits. Et chaque saison, ton pic est gravé pour toujours. Comme ma Joconde.", pose: "base" },
-  { page: "/profil?onglet=journal", cible: "personnaliser", texte: "Personnaliser, direct sur la page. Ce qui est fixe est libre. Ce qui bouge ou qui brille, ça se gagne.", pose: "fier" },
-  { page: "/classement", cible: "joueurs", texte: "Touche un joueur : sa carte s’ouvre. Défie-le, va voir son profil, laisse-lui un tampon. Bravo, Respect… ou Revanche ?", pose: "moqueur" },
-  { page: "/dashboard", cible: "du-nouveau", facultatif: true, texte: "Et ici, les nouvelles de tes amis : qui est monté, qui t’a battu. Pour la rancune, c’est pratique.", pose: "moqueur" },
-  { page: "/dashboard", cible: "anneau", texte: "C’est tout. Va faire un Atelier, je te regarde. Enfin, de loin.", pose: "fier" },
+  { page: "/dashboard", cible: "seance", repli: "defi", texte: "Re. J’ai rangé l’atelier pendant ton absence. Sous les 30 et les 5 du jour, ta séance du jour : je la compose pour toi, tu n’as qu’à appuyer.", pose: "fier" },
+  { page: "/codex", cible: "cap", repli: "prochaine", texte: "En tête du carnet, le cap : où tu en es, matière par matière, et ce qui te coûte des points. Une seule maîtrise, la même partout.", pose: "base" },
+  { page: "/moi?onglet=pieces", cible: "mes-pieces", facultatif: true, texte: "Et voici tes pièces, sur une étagère : cadres, bannières, titres, folios. Ce qui te manque est en gris, avec le chemin pour l’avoir. Comme mes croquis.", pose: "fier" },
 ];

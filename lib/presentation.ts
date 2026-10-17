@@ -36,7 +36,10 @@ export function visiteVue(meta: Meta) {
 // est dispensé dès son premier trait (components/OnboardingForm).
 //   rl_nouveautes    les nouveautés vues (ou passées) dans cette version
 // Version 2 : relancée pour tous (la v1 n'avait pas joué chez tout le monde).
-export const VERSION_NOUVEAUTES = 2;
+// Version 3 (Codex v3, V3 §11.4) : la séance du jour, le cap, Mes pièces. La
+// visite d'accueil passe à 4 étapes sans changer VERSION_PRESENTATION : qui
+// l'a déjà vue ne la refait pas, il a les nouveautés à la place.
+export const VERSION_NOUVEAUTES = 3;
 export const CLE_NOUVEAUTES_COMPTE = "rl_nouveautes";
 
 /** Les nouveautés de cette version sont-elles déjà vues sur ce compte ? */

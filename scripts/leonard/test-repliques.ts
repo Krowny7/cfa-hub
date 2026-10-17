@@ -6,10 +6,13 @@
 // remplit ; pas de doublon) ; le plafond de 5 apparitions par jour de Paris
 // (prioritaires comptées, visite hors compte, jour J et mode sobre muets,
 // écart de 4 minutes, hasard, minuit à Paris) ; l'hôte branché sur ce plafond
-// et son bouton d'action de 44 px (la bulle attend tant qu'on la survole).
+// et son bouton d'action de 44 px (la bulle attend tant qu'on la survole) ;
+// la visite en 4 étapes et les nouveautés v3 (V3 §11.4), leurs cibles posées
+// dans les pages.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, REPLIQUES, type Replique } from "@/lib/leonard/repliques";
+import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, REPLIQUES, TUTO, type Replique } from "@/lib/leonard/repliques";
+import { VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
 import { ECART_MIN, MAX_JOUR, PRIORITAIRES, decider, jourParis, type Compteur, type Contexte } from "@/lib/leonard/apparitions";
 import type { EvenementLeonard } from "@/lib/leonard/signal";
 
@@ -167,6 +170,21 @@ check("L'hôte décide avec lib/leonard/apparitions (plus de plafond à 10 en lo
 check("L'hôte lit le jour J (data-jour-j) et le mode sobre (rl_sobre)", /\[data-jour-j\]/.test(hote) && /rl_sobre/.test(hote));
 check("L'hôte affiche l'action en bouton de 44 px", /replique\.action\.href/.test(hote) && /min-h-\[44px\]/.test(hote));
 check("Une bulle survolée ou au clavier ne repart pas sous la main", /onPointerEnter=\{scene\.tuto \? undefined : retenir\}/.test(hote) && /onFocus=\{scene\.tuto \? undefined : retenir\}/.test(hote));
+
+// ── la visite et les nouveautés (V3 §11.4) ──────────────────────────────
+console.log("\n# la visite en 4 étapes, les nouveautés v3");
+const etapes = (l: { page: string; cible?: string }[]) => l.map((x) => `${x.page}#${x.cible ?? ""}`).join(" ");
+check("la visite : les 30 et les 5, la séance, le cap, les réglages", etapes(TUTO) === "/dashboard#defi /dashboard#seance /codex#cap /moi?onglet=reglages#reglages", etapes(TUTO));
+check("la visite parle du mode sobre à l'étape des réglages", /mode sobre/.test(TUTO[3]?.texte ?? ""));
+check("les nouveautés v3 : la séance du jour, le cap, Mes pièces", etapes(NOUVEAUTES) === "/dashboard#seance /codex#cap /moi?onglet=pieces#mes-pieces", etapes(NOUVEAUTES));
+check("Mes pièces reste facultative (l'onglet peut manquer) ; la séance et le cap ont un repli", NOUVEAUTES[2]?.facultatif === true && !!NOUVEAUTES[0]?.repli && !!NOUVEAUTES[1]?.repli);
+check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v3", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 3 && !nouveautesVues({ rl_nouveautes: 2 }) && nouveautesVues({ rl_nouveautes: 3 }));
+// les cibles de la visite sont posées dans les pages (data-leonard)
+const CIBLES: Record<string, string> = { defi: "components/accueil/Rendezvous.tsx", seance: "components/codex/SeanceDuJour.tsx", cap: "components/codex/Cap.tsx", prochaine: "components/codex/CodexEcran.tsx", reglages: "components/moi/AppearanceSwitches.tsx" };
+for (const [cible, f] of Object.entries(CIBLES)) check(`cible « ${cible} » posée (${f})`, readFileSync(join(RACINE, f), "utf8").includes(`data-leonard="${cible}"`));
+check("chaque étape non facultative de la visite vise une cible connue (ou son repli)", [...TUTO, ...NOUVEAUTES].filter((x) => !x.facultatif).every((x) => !x.cible || x.cible in CIBLES || (!!x.repli && x.repli in CIBLES)));
+const fautesVisite = [...TUTO, ...NOUVEAUTES].flatMap((x) => (interditDans(x.texte) ? [x.texte] : []));
+check("la visite ne moque personne", fautesVisite.length === 0, fautesVisite.join(" ; "));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);
