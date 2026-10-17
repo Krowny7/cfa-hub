@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, recompenseEcrite, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recompenseEcrite, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
 import { CIBLES_SEMAINE, COMMANDES, type Commande } from "@/lib/codex/catalogue";
 import type { StatutVerdict } from "@/lib/codex/plan";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
@@ -100,6 +100,22 @@ export async function codexPanneau(): Promise<Panneau> {
     return await lirePanneau(supabase, user);
   } catch {
     return PANNEAU_VIDE;
+  }
+}
+
+/**
+ * Le panneau déjà calculé (mémo de 45 s ou instantané de moins de 10 min),
+ * sans jamais lancer de calcul : null s'il n'y en a pas. La pastille de
+ * séance le relit au fil des pages ; le calcul complet reste réservé à
+ * l'ouverture du sceau, aux pages du Codex et aux fins d'outil.
+ */
+export async function codexPanneauGarde(): Promise<Panneau | null> {
+  const { user } = await joueur();
+  if (!user) return null;
+  try {
+    return await panneauGarde(user.id);
+  } catch {
+    return null;
   }
 }
 

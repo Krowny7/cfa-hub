@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, X } from "lucide-react";
 import { useEtatNav } from "@/components/nav/DevoileContext";
-import { codexPanneau } from "@/lib/codex/actions";
+import { codexPanneau, codexPanneauGarde } from "@/lib/codex/actions";
 import { EVENEMENT_CODEX_POINT, pastilleSeance, type Panneau } from "@/lib/codex/panneau";
 import { marqueIci, poserMarqueIci, seanceIci } from "@/components/codex/seance-ici";
 
@@ -17,8 +17,9 @@ import { marqueIci, poserMarqueIci, seanceIci } from "@/components/codex/seance-
 // d'onglets, que « × » masque pour la journée. Visible seulement si la séance
 // est lancée, pas finie, pas masquée, et que la page courante n'est pas déjà
 // la destination du bloc en cours (lib/codex/panneau.ts, pastilleSeance).
-// Relue (codexPanneau) à chaque changement de page, au plus une fois toutes
-// les 20 s, et tout de suite à l'événement rl:codex-point (fin d'un outil,
+// Relue sans calcul (codexPanneauGarde) à chaque changement de page, au plus
+// une fois toutes les 20 s et seulement pendant une séance en cours ; relue
+// (codexPanneau) tout de suite à l'événement rl:codex-point (fin d'un outil,
 // geste sur la séance). `demo` : aperçus (aucune action serveur, `chemin` imposé).
 
 /** Une relecture au plus toutes les 20 s au fil des pages. */
@@ -43,23 +44,38 @@ export function PastilleSeance({ initial, jour, demo = false, chemin: cheminImpo
     setIci({ lancee: etat === "lancee", masquee: marqueIci("masquee", jour) || etat === "finie" });
   }, [demo, jour]);
 
-  // relire : à chaque page (au plus toutes les 20 s), et à chaque point du Codex
+  // l'état courant, lu par l'effet de relecture sans le relancer à chaque rendu
+  // (cet effet-ci passe avant lui : il est déclaré avant)
+  const courant = useRef({ codex, seance, ici });
+  useEffect(() => {
+    courant.current = { codex, seance, ici };
+  });
+
+  // relire. Au fil des pages (au plus toutes les 20 s) : seulement quand une
+  // séance est en cours et que la pastille peut s'afficher, et sans calcul
+  // (codexPanneauGarde : le mémo ou l'instantané ; rien de gardé, on garde
+  // l'état). À chaque point du Codex (fin d'un outil, geste sur la séance) :
+  // le panneau, que le point vient de recalculer.
   useEffect(() => {
     if (demo) return;
     let vivant = true;
-    const relire = () => {
-      lu.current = Date.now();
-      void codexPanneau().then(
-        (p) => {
-          if (!vivant || !p.disponible) return;
-          setSeance(p.seance);
-          const etat = seanceIci(jour);
-          setIci((x) => ({ lancee: x.lancee || etat === "lancee", masquee: x.masquee || etat === "finie" }));
-        },
-        () => undefined,
-      );
+    const appliquer = (p: Panneau | null) => {
+      if (!vivant || !p?.disponible) return;
+      setSeance(p.seance);
+      const etat = seanceIci(jour);
+      setIci((x) => ({ lancee: x.lancee || etat === "lancee", masquee: x.masquee || etat === "finie" }));
     };
-    if (Date.now() - lu.current >= RELIRE_MS) relire();
+    const relire = () => {
+      if (!courant.current.codex) return;
+      lu.current = Date.now();
+      void codexPanneau().then(appliquer, () => undefined);
+    };
+    const { codex: visible, seance: s, ici: i } = courant.current;
+    const enCours = visible && !!(s?.lancee || i.lancee) && !!s?.suivant && !i.masquee;
+    if (enCours && Date.now() - lu.current >= RELIRE_MS) {
+      lu.current = Date.now();
+      void codexPanneauGarde().then(appliquer, () => undefined);
+    }
     window.addEventListener(EVENEMENT_CODEX_POINT, relire);
     return () => {
       vivant = false;

@@ -321,19 +321,27 @@ export async function oublierPanneau(userId: string) {
  * calcul complet. Sans la §6 : comme avant (le calcul).
  */
 export async function lirePanneau(supabase: SupabaseClient, user: Joueur): Promise<Panneau> {
-  const memo = MEMO.get(user.id);
+  return (await panneauGarde(user.id)) ?? panneauDe(await lireCodex(supabase, user));
+}
+
+/**
+ * Le panneau déjà calculé, sans rien calculer : le calcul gardé 45 s, sinon
+ * l'instantané de moins de 10 min s'il n'est pas marqué ; null sinon (et
+ * toujours sans la §6, hors du mémo). La pastille de séance s'en contente au
+ * fil des pages : le calcul complet reste à l'ouverture du sceau et au Codex.
+ */
+export async function panneauGarde(userId: string): Promise<Panneau | null> {
+  const memo = MEMO.get(userId);
   if (memo && Date.now() - memo.at < MEMO_MS) return panneauDe(memo.vue);
   const a = admin();
-  if (a) {
-    try {
-      const { data, error } = await a.from("codex_vue_cache").select("jour,panneau,calcule_le,a_recalculer").eq("user_id", user.id).maybeSingle();
-      const p = error ? null : panneauDuCache(data, jourParis(), Date.now());
-      if (p) return p;
-    } catch {
-      // sans la §6 : le calcul
-    }
+  if (!a) return null;
+  try {
+    const { data, error } = await a.from("codex_vue_cache").select("jour,panneau,calcule_le,a_recalculer").eq("user_id", userId).maybeSingle();
+    return error ? null : panneauDuCache(data, jourParis(), Date.now());
+  } catch {
+    // sans la §6 : rien de gardé
+    return null;
   }
-  return panneauDe(await lireCodex(supabase, user));
 }
 
 /** Le calcul complet : lit, évalue, écrit les récompenses, bâtit la vue (le dévoilement est écrit par lireCodex). */
