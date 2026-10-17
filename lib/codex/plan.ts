@@ -3,7 +3,7 @@
 // douce après une absence, la semaine choisie le lundi et le verdict.
 // Module pur (ni base ni réseau) : le serveur lit les tables (codex_semaine,
 // codex_resultat, ou le compte sans elles) et passe les lignes au moteur.
-import type { Objectif, Quete } from "@/lib/codex/types";
+import type { Objectif, Outil, Quete } from "@/lib/codex/types";
 import { CHAINES, COMMANDES, type Commande, type ContenuMatiere, type Semaine } from "@/lib/codex/catalogue";
 import { decaleJour, joursEntre } from "@/lib/objectif-calc";
 
@@ -166,9 +166,13 @@ export function matiereBanquier(contenu: ContenuMatiere[], maitrise: (cle: strin
   return m ? { matiere: m.x.key, depart: Math.round(m.pct) } : null;
 }
 
-/** Les commandes que la base sait suivre (le copiste attend le journal v3, « À revoir » et les ratures sèches). */
-export const commandesPossibles = (ok: (r: NonNullable<(typeof COMMANDES)[number]["requiert"]>[number]) => boolean): Commande[] =>
-  COMMANDES.filter((c) => (c.requiert ?? []).every(ok)).map((c) => c.id);
+/**
+ * Les commandes que la base sait suivre (le copiste attend le journal v3, « À
+ * revoir » et les ratures sèches) et que le programme permet (`outils` absent :
+ * tous les outils, CFA I).
+ */
+export const commandesPossibles = (ok: (r: NonNullable<(typeof COMMANDES)[number]["requiert"]>[number]) => boolean, outils?: ReadonlySet<Outil>): Commande[] =>
+  COMMANDES.filter((c) => (c.requiert ?? []).every(ok) && (!outils || (c.outils ?? []).every((o) => outils.has(o)))).map((c) => c.id);
 
 // ── Le verdict (§10.5) ─────────────────────────────────────────────────
 

@@ -791,10 +791,11 @@ export const CIBLES_SEMAINE = [3, 4, 5] as const;
 /** Le choix de la semaine (codex_semaine) ; `matiere` et `depart` : ce que vise le banquier, figés au choix. */
 export type Semaine = { lundi: string; cible: number; commande: Commande; params: { matiere?: string; depart?: number } };
 
-export const COMMANDES: { id: Commande; nom: string; resume: string; requiert?: Requis[] }[] = [
+/** `requiert` : ce que la base doit savoir faire ; `outils` : ce que le programme doit avoir (sinon la commande n'est pas proposée). */
+export const COMMANDES: { id: Commande; nom: string; resume: string; requiert?: Requis[]; outils?: Outil[] }[] = [
   { id: "banquier", nom: "Le banquier", resume: "Pousse ta matière lourde la plus faible de 5 points." },
-  { id: "copiste", nom: "Le copiste", resume: "Vide tes révisions cinq jours et scelle 15 ratures.", requiert: ["journal3", "revoir", "ratures_seches"] },
-  { id: "ingenieur", nom: "L'ingénieur", resume: "Un demi-examen blanc et deux fois les 30 du jour." },
+  { id: "copiste", nom: "Le copiste", resume: "Vide tes révisions cinq jours et scelle 15 ratures.", requiert: ["journal3", "revoir", "ratures_seches"], outils: ["revoir"] },
+  { id: "ingenieur", nom: "L'ingénieur", resume: "Un demi-examen blanc et deux fois les 30 du jour.", outils: ["blancs", "trente"] },
 ];
 
 /** L'XP de la semaine d'encre selon sa cible : 5 jours valent l'XP d'avant, 3 jours un peu moins. */

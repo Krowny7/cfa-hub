@@ -801,6 +801,7 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   const mb = matiereBanquier(contenu, (c) => ({ ethics: 80, fsa: 45, equity: 62, fixed_income: 50 } as Record<string, number>)[c] ?? 90);
   check("la matière du banquier : la plus faible des lourdes", mb?.matiere === "fsa" && mb.depart === 45, JSON.stringify(mb));
   check("le copiste n'est proposé qu'avec ce que la base sait faire", commandesPossibles(() => false).join(",") === "banquier,ingenieur" && commandesPossibles(() => true).length === 3);
+  check("une commande demande aussi ses outils au programme (sans blancs ni 30 du jour : pas d'ingénieur)", commandesPossibles(() => true, new Set(["revoir", "cinq"] as const)).join(",") === "banquier,copiste" && commandesPossibles(() => true, CFA_L1.outils).length === 3);
 
   const ctxD = contexteDestination(base());
   const dela = (["banquier", "copiste", "ingenieur"] as const).flatMap((c) => quetesSemaine({ lundi, cible: 4, commande: c, params: { matiere: "quant", depart: 40 } }, contenu));

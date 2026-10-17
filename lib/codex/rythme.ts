@@ -75,7 +75,7 @@ export function vueRythme(
   const jalons = e.jourJ ? jalonsDe(def.cle) : [];
   const plan = e.jourJ && jalons.length && o.moment === "courant" ? planDe(jalons, evaluerObjectifs(e, compteurs, objectifsPlan(e)), e.jour, e.jourJ) : null;
   const choisie = e.semaine && e.semaine.lundi === lundi ? e.semaine : null;
-  const possibles = commandesPossibles((r) => (r === "journal3" ? o.capacites.journal === 3 : o.capacites[r]));
+  const possibles = commandesPossibles((r) => (r === "journal3" ? o.capacites.journal === 3 : o.capacites[r]), def.outils);
   const lundiVue: VueLundi | null =
     o.semaineDispo && !choisie && !calme && (e.lecture.mesures.jours ?? []).some((j) => j.n > 0)
       ? { lundi, ...relue(e, contenu, lundi), cibles: [...CIBLES_SEMAINE], commandes: COMMANDES.filter((c) => possibles.includes(c.id)).map(({ id, nom, resume }) => ({ id, nom, resume })) }
