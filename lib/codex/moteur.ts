@@ -67,6 +67,12 @@ export type MesuresSql = {
   maitres_total?: number;
   /** codex_mesures_v3 : trophées par source et par palier (1 bronze … 4 diamant), V3 §2.5 */
   trophees?: TropheesLus;
+  /** codex_mesures_v3 : par notion, les réponses (n) et les justes parmi les 5 dernières (j5), V3 §8.5 */
+  notions_tenues?: Record<string, { n: number; j5: number }>;
+  /** codex_mesures_v3 : les spéciaux par matière (plus longues suites d'affilée), V3 §8.7 */
+  speciaux_matiere?: { serie_bonnes?: Record<string, number>; serie_calculs?: Record<string, number> };
+  /** codex_mesures_v3 (A4a) : examens blancs à débriefer, V3 §7.6 */
+  blancs_a_debriefer?: number;
 };
 
 export type LectureSql = { compteurs: Record<string, ResultatCompteur>; mesures: MesuresSql; speciaux: Record<string, number> };
@@ -132,6 +138,8 @@ export type Entree = {
    * rattrapage (aperçus, tests d'avant la v3).
    */
   capacitesVues?: Partial<Capacites> | null;
+  /** la malle de l'examen (user_metadata.rl_malle, V3 §7.3) : cases cochées ; absent : pas encore lue (la quête n'est pas branchée) */
+  malleCoches?: number;
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
@@ -329,6 +337,33 @@ function notionsVues(c: Contexte, matiere?: string) {
   return { total, vues };
 }
 
+/** Une notion tenue (V3 §8.5) : 5 réponses au moins, dont 3 justes sur les 5 dernières. */
+export const NOTION_TENUE = { reponses: 5, justesSur5: 3 } as const;
+
+/**
+ * Les notions tenues de ces matières, et la part tenue (0–100) : dans une
+ * matière, tenues / notions ; sur le programme, la part de chaque matière
+ * pondérée par son poids à l'examen. null : codex_mesures_v3 ne l'a pas dit.
+ */
+function notionsTenues(c: Contexte, matiere?: string): { tenues: number; pct: number } | null {
+  const t = c.e.lecture.mesures.notions_tenues;
+  if (!t) return null;
+  const tenue = (id: string) => (t[id]?.n ?? 0) >= NOTION_TENUE.reponses && (t[id]?.j5 ?? 0) >= NOTION_TENUE.justesSur5;
+  const matieres = matiere ? c.contenu.filter((m) => m.key === matiere) : c.contenu;
+  let tenues = 0;
+  let poids = 0;
+  let part = 0;
+  for (const m of matieres) {
+    const notions = notionsDeMatiere(m.key);
+    if (!notions.length) continue;
+    const n = notions.filter((x) => tenue(x.id)).length;
+    tenues += n;
+    poids += m.poids;
+    part += (m.poids * n) / notions.length;
+  }
+  return { tenues, pct: poids ? Math.floor((100 * part) / poids) : 0 };
+}
+
 /** Maîtrise d'une matière, 0 si elle n'est pas encore mesurée (40 questions, comme les sceaux). */
 export const MAITRISE_MIN = 40;
 export const maitriseDe = (e: Pick<Entree, "lecture">, matiere: string) => {
@@ -470,9 +505,40 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "maitres_total": return fini(M.maitres_total ?? null);
     case "programmes_menes": return fini(M.programmes_menes ?? null);
     case "trophees": return fini(M.trophees ? tropheesAuMoins(M.trophees, RANG_TROPHEE[f.palier ?? "bronze"], f.source) : null);
-    case "pieces_possedees": return fini(compterPiecesCodex({ progression: c.e.progression, sceaux: M.sceaux, trophees: M.trophees }));
+    case "pieces_possedees": return fini(compterPiecesCodex({ progression: c.e.progression, sceaux: M.sceaux, trophees: M.trophees, folios: foliosDonnes(c.catalogue) }));
     case "semaines_entretien": return fini(semainesEntretien(c.e));
+    case "trophees_sources": {
+      if (!M.trophees) return fini(null);
+      const p = RANG_TROPHEE[f.palier ?? "bronze"];
+      return fini(new Set(M.trophees.filter((x) => x.palier >= p && x.n > 0).map((x) => x.source)).size);
+    }
+    case "notions_tenues": return fini(notionsTenues(c, f.matiere as string | undefined)?.tenues ?? null);
+    case "notions_tenues_pct": return fini(notionsTenues(c, f.matiere as string | undefined)?.pct ?? null);
+    case "malle_faite": return fini(c.e.malleCoches === undefined ? null : c.e.malleCoches >= MALLE_PRETE ? 1 : 0);
+    case "blancs_a_debriefer": return fini(M.blancs_a_debriefer ?? null);
   }
+}
+
+/** La malle est prête à 5 cases cochées sur 7 (V3 §7.3). */
+export const MALLE_PRETE = 5;
+
+/**
+ * La valeur d'un spécial : dans speciaux (codex_lire), ou par matière dans
+ * speciaux_matiere (codex_mesures_v3 : « serie_bonnes_matiere » se lit sous
+ * serie_bonnes) ; undefined : inconnue (la base ne le calcule pas encore).
+ */
+function valeurSpeciale(o: Extract<Objectif, { k: "special" }>, e: Pick<Entree, "lecture">): number | undefined {
+  if (!o.matiere) return e.lecture.speciaux[o.cle];
+  const parMatiere = e.lecture.mesures.speciaux_matiere?.[o.cle.replace(/_matiere$/, "") as "serie_bonnes" | "serie_calculs"];
+  return parMatiere ? (parMatiere[o.matiere] ?? 0) : undefined;
+}
+
+/** Les folios donnés (V3 §3.7) : quête ou « acte:<id> » → clé du folio ; ils n'ont pas de colonne dans codex_progression. */
+function foliosDonnes(catalogue: Quete[]): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const a of ACTES) if (a.recompense.folio) m.set(`acte:${a.id}`, a.recompense.folio);
+  for (const q of catalogue) if (q.recompense.folio) m.set(q.id, q.recompense.folio);
+  return m;
 }
 
 /** Le rang d'un palier de trophée (lib/trophees.ts : 1 bronze … 4 diamant). */
@@ -520,7 +586,7 @@ export function evalObjectif(o: Objectif, c: Contexte): Ev {
     case "compteur": return compteurObjectif(o, c);
     case "mesure": return mesureObjectif(o, c);
     case "special": {
-      const v = c.e.lecture.speciaux[o.cle];
+      const v = valeurSpeciale(o, c.e);
       const seuil = o.seuil ?? 1;
       if (v === undefined) return { fait: false, valeur: 0, cible: seuil, atteint: null, inconnu: true };
       return { fait: v >= seuil, valeur: Math.min(v, seuil), cible: seuil, atteint: null };
@@ -831,6 +897,11 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
       return j !== null && j <= p.max && j >= (p.min ?? 0);
     }
     case "apresExamen": return apresExamenDe(c.e);
+    case "etat": {
+      // une mesure inconnue (le SQL qui la lit n'est pas collé) n'ouvre rien
+      const ev = mesureObjectif({ k: "mesure", mesure: p.mesure, seuil: p.seuil }, c);
+      return !ev.inconnu && ev.fait;
+    }
     case "unDe": return p.prerequis.some((x) => prerequisOk(x, c, actesClos));
   }
 }

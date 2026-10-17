@@ -274,12 +274,20 @@ function parSceaux(c: Condition | null | undefined, sceaux: Record<string, numbe
   return false;
 }
 
-export function compterPiecesCodex(p: { progression: { etat: string; cosmetique: string | null; titre: string | null }[]; sceaux?: Record<string, number>; trophees?: TropheesLus }): number {
+export function compterPiecesCodex(p: {
+  progression: { quete_id?: string; etat: string; cosmetique: string | null; titre: string | null }[];
+  sceaux?: Record<string, number>;
+  trophees?: TropheesLus;
+  /** quête ou « acte:<id> » → folio donné (Recompense.folio : il n'a pas de colonne) */
+  folios?: ReadonlyMap<string, string>;
+}): number {
   const cles = new Set<string>();
   for (const l of p.progression) {
     if (l.etat !== "recompensee" && l.etat !== "terminee") continue;
     if (l.cosmetique) cles.add(l.cosmetique);
     if (l.titre) cles.add(l.titre);
+    const folio = l.quete_id ? p.folios?.get(l.quete_id) : undefined;
+    if (folio) cles.add(folio);
   }
   const sceaux = p.sceaux ?? {};
   for (const c of CADRES) if (parSceaux(c.condition, sceaux)) cles.add(`cadre:${c.key}`);
