@@ -34,7 +34,8 @@ import s from "./Leonard.module.css";
 //   guidée non comptée ; une toutes les 4 minutes au plus, avec un peu de
 //   hasard, pour les réactions ordinaires (lib/leonard/apparitions). Aucune
 //   le jour J (l'écran du jour J porte data-jour-j, retenu pour la journée)
-//   ni en mode sobre (user_metadata.rl_sobre).
+//   ni en mode sobre (user_metadata.rl_sobre). Rien non plus pour une quête
+//   faite ou un acte qui s'ouvre : dans le Codex, il ne parle qu'aux fêtes.
 // - Une réplique d'échec propose un pas concret : un bouton (ses ratures,
 //   l'Atelier…) qui l'emmène et congédie Léonard.
 // - Il surgit du bord bas de l'écran, la bulle (une carte du site) s'écrit,
