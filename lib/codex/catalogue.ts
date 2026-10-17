@@ -365,7 +365,7 @@ export const QUETES_TRAME: Quete[] = [
   quete({ id: "trame:a3:maitrises", famille: "trame", acte: "acte3", ordre: 31, titre: "Trois couleurs qui tiennent", consigne: "Monte trois matières à 60 % de maîtrise.", objectif: mesure("matieres_au_dessus", 3, { pct: 60 }), prerequis: [acteClos("acte2")], recompense: { xp: 120 } }),
   quete({ id: "trame:a3:ratures", famille: "trame", acte: "acte3", ordre: 32, titre: "Le grattoir", consigne: "Raye 20 ratures en les réussissant en reprise.", objectif: mesure("ratures_rayees", 20), prerequis: [acteClos("acte2")], recompense: { xp: 80 } }),
   quete({ id: "trame:a3:rappels", famille: "trame", acte: "acte3", ordre: 33, titre: "Ce qui reste après une semaine", consigne: "Réussis 20 questions que tu avais vues il y a plus de 7 jours.", pourquoi: "Ce qu'on retrouve après une semaine, on le retrouvera le jour J.", objectif: mesure("rappels_espaces", 20, { n: 7 }), prerequis: [acteClos("acte2")], recompense: { xp: 100 } }),
-  quete({ id: "trame:a3:tenues", famille: "trame", acte: "acte3", ordre: 35, nouvelle: "v3", titre: "Vingt-cinq carnets tenus", consigne: "Tiens 25 notions du programme : 5 réponses au moins, dont 3 justes sur les 5 dernières.", pourquoi: "Une notion vue une fois s'oublie ; une notion tenue se retrouve le jour J.", objectif: mesure("notions_tenues", 25), prerequis: [acteClos("acte2")], recompense: { xp: 100 } }),
+  quete({ id: "trame:a3:tenues", famille: "trame", acte: "acte3", ordre: 35, nouvelle: "v3", requiert: ["mesures"], titre: "Vingt-cinq carnets tenus", consigne: "Tiens 25 notions du programme : 5 réponses au moins, dont 3 justes sur les 5 dernières.", pourquoi: "Une notion vue une fois s'oublie ; une notion tenue se retrouve le jour J.", objectif: mesure("notions_tenues", 25), prerequis: [acteClos("acte2")], recompense: { xp: 100 } }),
   quete({ id: "trame:a3:atelier", famille: "trame", acte: "acte3", ordre: 34, titre: "Trois passages à l'Atelier", consigne: "Termine trois séances d'Atelier.", objectif: compte("seance_atelier", 3), prerequis: [acteClos("acte2")], recompense: { xp: 80 }, lien: "/atelier" }),
 
   // Acte IV : la première commande
@@ -384,7 +384,7 @@ export const QUETES_TRAME: Quete[] = [
     ["carnet", "Un carnet lisible", "Descends sous 50 ratures en cours.", mesure("ratures_ouvertes", 50, undefined, "<="), 150],
     ["tenues", "Les trois quarts de la carte", "Tiens 75 % des notions du programme, pondérées par le poids des matières.", mesure("notions_tenues_pct", 75), 200],
   ] as const).map(([cle, titre, consigne, objectif, xp], i) =>
-    quete({ id: `trame:a5:${cle}`, famille: "trame", acte: "acte5", ordre: 50 + i, titre, consigne, objectif, prerequis: [acteClos("acte4"), { k: "branches", etape: "ciblee", n: SEUIL_ACTE_V }], recompense: { xp }, ...(cle === "notions" ? { retiree: true as const } : {}), ...(cle === "tenues" ? { nouvelle: "v3" as const } : {}) }),
+    quete({ id: `trame:a5:${cle}`, famille: "trame", acte: "acte5", ordre: 50 + i, titre, consigne, objectif, prerequis: [acteClos("acte4"), { k: "branches", etape: "ciblee", n: SEUIL_ACTE_V }], recompense: { xp }, ...(cle === "notions" ? { retiree: true as const } : {}), ...(cle === "tenues" ? { nouvelle: "v3" as const, requiert: ["mesures" as const] } : {}) }),
   ),
 
   // Acte VI : le chef-d'œuvre
@@ -595,7 +595,8 @@ export const QUETES_LONG_COURS: Quete[] = [
       tenues(100, "La carte entière", 450, { cosmetique: "banniere:imola" }),
     ],
     [],
-    { nouvelle: "v3" },
+    // les notions tenues viennent de codex_mesures_v3 : sans elle, la chaîne n'est pas branchée
+    { requiert: ["mesures"], nouvelle: "v3" },
   ),
   ...chaine("joute", [
     { titre: "Cinq duels", consigne: "Joue cinq duels.", objectif: mesure("duels_joues", 5), xp: 50 },
@@ -674,8 +675,8 @@ const EXPLOITS_V3: Quete[] = [
     // le temps par question naît avec le journal v3
     requiert: ["journal3"],
   }),
-  exploit({ id: "exploit:grand-chelem", famille: "exploit", ordre: 201, nouvelle: "v3", titre: "Le grand chelem", consigne: "Gagner un trophée d'or ou mieux sur quatre chemins différents.", objectif: mesure("trophees_sources", 4, { palier: "or" }), recompense: { xp: 150 }, visibilite: "indice", indice: "Quatre ors, quatre chemins." }),
-  exploit({ id: "exploit:vitrine", famille: "exploit", ordre: 202, nouvelle: "v3", titre: "La vitrine", consigne: "Gagner au moins un trophée sur six chemins différents.", objectif: mesure("trophees_sources", 6), recompense: { xp: 120 }, visibilite: "cachee" }),
+  exploit({ id: "exploit:grand-chelem", famille: "exploit", ordre: 201, nouvelle: "v3", titre: "Le grand chelem", consigne: "Gagner un trophée d'or ou mieux sur quatre chemins différents.", objectif: mesure("trophees_sources", 4, { palier: "or" }), recompense: { xp: 150 }, visibilite: "indice", indice: "Quatre ors, quatre chemins.", requiert: ["mesures"] }),
+  exploit({ id: "exploit:vitrine", famille: "exploit", ordre: 202, nouvelle: "v3", titre: "La vitrine", consigne: "Gagner au moins un trophée sur six chemins différents.", objectif: mesure("trophees_sources", 6), recompense: { xp: 120 }, visibilite: "cachee", requiert: ["mesures"] }),
 ];
 
 export const QUETES_EXPLOITS: Quete[] = [
@@ -939,17 +940,19 @@ const SIGNATURES_CFA_L1: Record<string, { titre: string } & ({ k: "page" } | { k
  * règle générique ailleurs (ou quand l'outil manque) : 12 bonnes réponses
  * d'affilée, 10 si la matière pèse moins de 7 %.
  */
-function signatureDe(m: ContenuMatiere, programme: string, drill: boolean, calculs: boolean): { titre: string; consigne: string; objectif: Objectif } {
+function signatureDe(m: ContenuMatiere, programme: string, drill: boolean, calculs: boolean): { titre: string; consigne: string; objectif: Objectif; requiert?: Requis[] } {
   const s = programme === PROGRAMME ? SIGNATURES_CFA_L1[m.key] : undefined;
   if (s?.k === "page" && drill)
     return { titre: s.titre, consigne: `Passe une page de drill de la fiche ${m.court} à 100 %.`, objectif: compte("drill_page_terminee", 1, { matiere: m.key, pct: { min: 100 } }) };
   if (s?.k === "serie_calculs_matiere" && calculs)
-    return { titre: s.titre, consigne: `Enchaîne ${s.seuil} calculs justes d'affilée ${de(m.nom)}.`, objectif: { k: "special", cle: s.k, seuil: s.seuil, matiere: m.key } };
+    return { titre: s.titre, consigne: `Enchaîne ${s.seuil} calculs justes d'affilée ${de(m.nom)}.`, objectif: { k: "special", cle: s.k, seuil: s.seuil, matiere: m.key }, requiert: ["mesures"] };
   const seuil = s?.k === "serie_bonnes_matiere" ? s.seuil : m.poids < 7 ? 10 : 12;
   return {
     titre: s?.titre ?? `L'épreuve ${de(m.court)}`,
     consigne: `Enchaîne ${seuil} bonnes réponses d'affilée ${de(m.nom)}, dans une même séance.`,
     objectif: { k: "special", cle: "serie_bonnes_matiere", seuil, matiere: m.key },
+    // les suites par matière viennent de codex_mesures_v3 (speciaux_matiere)
+    requiert: ["mesures"],
   };
 }
 
@@ -1032,6 +1035,7 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
       // les notions tenues de la matière (V3 §8.5)
       b("carte", {
         nouvelle: "v3",
+        requiert: ["mesures"],
         titre: `La carte ${de(m.court)}`,
         consigne: `Tiens chacune des ${m.notions} notions ${de(m.nom)} : 5 réponses au moins, dont 3 justes sur les 5 dernières.`,
         pourquoi: "Une notion qu'on retrouve juste trois fois sur cinq ne se joue plus à pile ou face.",

@@ -573,8 +573,9 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
     && JSON.stringify(q("branche:quant:signature").objectif) === JSON.stringify({ k: "special", cle: "serie_calculs_matiere", seuil: 10, matiere: "quant" })
     && JSON.stringify(q("branche:fixed_income:signature").objectif) === JSON.stringify({ k: "special", cle: "serie_calculs_matiere", seuil: 20, matiere: "fixed_income" })
     && q("branche:fsa:signature").objectif.k === "compteur" && q("branche:fsa:signature").titre === "Le bilan sans faute");
+  const MESURES = { ...CAPACITES_VIDE, mesures: true };
   const avance = (mesures: Partial<LectureSql["mesures"]>, o: Partial<Entree> = {}) => repondre(base({
-    premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2027-02-20",
+    premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2027-02-20", capacites: MESURES,
     lecture: { compteurs: {}, mesures: { xp_total: 0, maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: 65, questions: 200, debut: 40 }])), ...mesures }, speciaux: { serie_bonnes: 30 } },
     ...o,
   }), (d) => (d.evenement === "drill_page_terminee" && (d.filtre?.pct as { min?: number } | undefined)?.min === 100 ? 0 : 99));
@@ -587,8 +588,10 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
     check("FSA : la page de drill à 100 % pas encore passée", !fait(r, "branche:fsa:signature"));
   }
   {
+    const { r: sans } = avance({}, { capacites: CAPACITES_VIDE });
+    check("sans codex_mesures_v3 (capacité « mesures ») : cartes et signatures par suite pas suivies, la page de drill reste en jeu", !st(sans, "branche:fsa:carte") && !st(sans, "branche:ethics:signature") && st(sans, "branche:fsa:signature")?.horsJeu === false);
     const { r, e: e2 } = avance({});
-    check("sans codex_mesures_v3 : cartes et signatures par suite hors jeu (masquées), la page de drill reste en jeu", st(r, "branche:fsa:carte")?.masquee === true && st(r, "branche:ethics:signature")?.masquee === true && st(r, "branche:fsa:signature")?.horsJeu === false);
+    check("avec elle mais sans la clé (fonction d'une version antérieure) : hors jeu, masquées", st(r, "branche:fsa:carte")?.masquee === true && st(r, "branche:ethics:signature")?.masquee === true);
     const v = construireVue(e2, r, null, { devoile: null });
     const montrees = v.branches.flatMap((b) => b.etapes.filter((l) => l.etape === "carte" || l.etape === "signature").map((l) => l.id));
     check("la vue : seules les signatures par page de drill (FSA, Equity, Portfolio) restent montrées", JSON.stringify(montrees.sort()) === JSON.stringify(["branche:equity:signature", "branche:fsa:signature", "branche:portfolio:signature"]), montrees.join(" "));
@@ -604,6 +607,16 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
     check("la carte tenue au palier 4 est le miroir de « Les trois quarts de la carte » ; le sommet donne Imola", q("longcours:carte-tenue:4").miroir === "trame:a5:tenues" && q("longcours:carte-tenue:5").recompense.cosmetique === "banniere:imola");
     const presque = Object.fromEntries(notionsDeMatiere("fsa").map((n) => [n.id, { n: 4, j5: 4 }]));
     check("une notion à 4 réponses (même toutes justes) n'est pas tenue", avance({ notions_tenues: presque }).r.etats.find((s) => s.quete.id === "branche:fsa:carte")?.ev?.valeur === 0);
+  }
+
+  // le rattrapage (V3 §1.9) : la §4 collée après le premier calcul v3, une carte déjà tenue passe en rétro
+  {
+    const vues = { ...CAPACITES_VIDE };
+    const { r } = avance({ notions_tenues: toutesTenues("fsa") }, { capacitesVues: vues });
+    const { r: ensuite } = avance({ notions_tenues: toutesTenues("fsa") }, { capacitesVues: MESURES, dernierCalcul: new Date("2026-10-16T00:00:00Z") });
+    const item = (x: typeof r, id: string) => x.lot.find((i) => i.quete === id);
+    check("la capacité « mesures » vue pour la première fois : la carte de FSA, déjà tenue, est rattrapée en rétro", item(r, "branche:fsa:carte")?.retro === true, JSON.stringify(item(r, "branche:fsa:carte")));
+    check("… une fois la capacité vue, une carte qui se remplit paie normalement", item(ensuite, "branche:fsa:carte")?.retro === false, JSON.stringify(item(ensuite, "branche:fsa:carte")));
   }
 
   // la main juste : le journal v3 d'abord
@@ -633,13 +646,14 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
 
   // les exploits de la v3 et le débrief
   {
-    const trophees = (t: { source: string; palier: number; n: number }[]) => repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), lecture: { compteurs: {}, mesures: { xp_total: 0, trophees: t }, speciaux: {} } }), () => 0).r;
+    const trophees = (t: { source: string; palier: number; n: number }[]) => repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: MESURES, lecture: { compteurs: {}, mesures: { xp_total: 0, trophees: t }, speciaux: {} } }), () => 0).r;
     const quatreOr = trophees(["ciblee", "blanc", "trente", "fiche"].map((source) => ({ source, palier: 3, n: 1 })).concat([{ source: "cinq", palier: 1, n: 4 }, { source: "drill", palier: 2, n: 1 }]));
     check("le grand chelem : un or sur quatre chemins ; la vitrine : un trophée sur six", fait(quatreOr, "exploit:grand-chelem") && fait(quatreOr, "exploit:vitrine"));
     const troisOr = trophees(["ciblee", "blanc", "trente"].map((source) => ({ source, palier: 4, n: 3 })));
     check("… trois sources seulement (même en diamant) : ni l'un ni l'autre", !fait(troisOr, "exploit:grand-chelem") && !fait(troisOr, "exploit:vitrine"));
     const { r: rien } = repondre(base(), () => 0);
-    check("sans trophées lus : les deux exploits hors jeu ; la cadence attend le journal v3", st(rien, "exploit:grand-chelem")?.horsJeu === true && !st(rien, "exploit:rythme"));
+    const { r: sansCle } = repondre(base({ capacites: MESURES }), () => 0);
+    check("sans codex_mesures_v3 : les exploits de trophées pas suivis, la cadence attend le journal v3 ; trophées non lus : hors jeu", !st(rien, "exploit:grand-chelem") && !st(rien, "exploit:rythme") && st(sansCle, "exploit:grand-chelem")?.horsJeu === true);
     check("la cadence garde la bannière de la machine volante", q("exploit:rythme").recompense.cosmetique === "banniere:machine-volante" && q("exploit:machine-volante").retiree === true);
     const debrief = q("contrat:debrief");
     check("le débrief : quotidien, 80 XP, attend le journal v3 et blanc_debrief", debrief.repetition === "quotidienne" && debrief.recompense.xp === 80 && JSON.stringify(debrief.requiert) === JSON.stringify(["journal3", "debrief"]) && !rien.etats.some((s) => s.quete.id === "contrat:debrief"));

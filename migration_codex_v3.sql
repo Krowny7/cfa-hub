@@ -53,7 +53,7 @@
 --       _codex_matiere rend une clé qualifiée hors CFA I (« essai:renaissance »).
 --
 -- 4. codex_mesures_v3(uuid, text) : ce que la base sait faire (les
---    « capacités » : fil, journal 2 ou 3, séances, À revoir, maîtrise,
+--    « capacités » : fil, mesures, journal 2 ou 3, séances, À revoir, maîtrise,
 --    trophées, débrief, ratures sèches), lu à l'exécution, plus les mesures
 --    nouvelles du fil rouge : jours d'encre de toute une vie, programmes
 --    menés, maîtres (branches menées à « Maître de… », tous programmes),
@@ -434,6 +434,8 @@ BEGIN
     'fil', EXISTS (SELECT 1 FROM pg_constraint c
                    WHERE c.conrelid = 'public.codex_progression'::regclass AND c.conname = 'codex_progression_famille_check'
                      AND pg_get_constraintdef(c.oid) LIKE '%''fil''%'),
+    -- les mesures nouvelles de cette fonction (notions tenues, spéciaux par matière, trophées)
+    'mesures', true,
     -- le journal v3 (§5) pose son marqueur
     'journal', CASE WHEN to_regprocedure('public._codex_journal_v3()') IS NOT NULL THEN 3 ELSE 2 END,
     'seances', to_regclass('public.codex_seances') IS NOT NULL,

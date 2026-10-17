@@ -20,7 +20,7 @@ export const estBudget = (b: unknown): b is Budget => typeof b === "number" && (
 /** Les quêtes écartées d'une journée : 30 au plus (la base refuse au-delà). */
 export const MAX_ECARTEES = 30;
 
-export const CAPACITES_VIDE: Capacites = { fil: false, seances: false, revoir: false, maitrise: false, trophees: false, debrief: false, ratures_seches: false, journal: 2 };
+export const CAPACITES_VIDE: Capacites = { fil: false, mesures: false, seances: false, revoir: false, maitrise: false, trophees: false, debrief: false, ratures_seches: false, journal: 2 };
 
 export type ReglageJour = {
   /** le budget choisi CE jour-là (null : pas choisi, le défaut s'applique) */

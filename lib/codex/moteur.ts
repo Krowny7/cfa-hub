@@ -153,7 +153,7 @@ export function requisOk(q: Pick<Quete, "requiert">, c: Capacites): boolean {
 /** Ce qu'une quête exige de la base : son `requiert`, plus la capacité « fil » pour un palier du fil rouge (il ne s'écrit pas sans elle). */
 export const requisDe = (q: Pick<Quete, "requiert" | "famille">): Requis[] => (q.famille === "fil" ? [...(q.requiert ?? []), "fil"] : (q.requiert ?? []));
 
-const CLES_CAPACITES: Capacite[] = ["fil", "seances", "revoir", "maitrise", "trophees", "debrief", "ratures_seches"];
+const CLES_CAPACITES: Capacite[] = ["fil", "mesures", "seances", "revoir", "maitrise", "trophees", "debrief", "ratures_seches"];
 
 /**
  * Ce qui est nouveau pour ce joueur depuis son dernier calcul écrit (le
