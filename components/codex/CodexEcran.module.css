@@ -7,6 +7,10 @@
   flex-direction: column;
   gap: 16px;
 }
+/* les deux segments : toute la largeur sur téléphone, une largeur de lecture au-delà */
+.segments {
+  max-width: 460px;
+}
 .surOrdi {
   display: none;
 }

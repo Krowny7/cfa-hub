@@ -81,7 +81,7 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
         </details>
 
         {preparation && (
-          <details className={s.pli}>
+          <details className={s.pli} data-leonard="cap">
             <summary>
               {T.preparation} <span className={s.val}>{preparation.pct} %</span>
             </summary>

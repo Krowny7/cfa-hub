@@ -142,6 +142,11 @@
   padding: 12px 0 14px;
   border-block: 1px solid var(--line);
 }
+/* la dernière étape : pas de filet sous elle */
+.enCours:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
 .enCours .rang {
   box-shadow: inset 0 0 0 2px var(--ink);
   color: var(--ink);

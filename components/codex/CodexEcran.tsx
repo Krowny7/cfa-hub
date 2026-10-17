@@ -143,7 +143,9 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
   return (
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
       <h1 className="t-h3 font-brand m-0">{CODEX.nom}</h1>
-      <SegmentsTel segment={segment} onChoisir={choisirSegment} />
+      <div className={c.segments}>
+        <SegmentsTel segment={segment} onChoisir={choisirSegment} />
+      </div>
 
       {message && (
         <p role="status" className="card-quiet t-small p-3">
@@ -151,7 +153,8 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         </p>
       )}
 
-      <div id="codex-segment" role="tabpanel" aria-labelledby={"codex-seg-" + segment} className={c.page}>
+      {/* la visite de Léonard s'y pose quand la préparation n'est pas montrée (cible « cap » sinon) */}
+      <div id="codex-segment" role="tabpanel" aria-labelledby={"codex-seg-" + segment} className={c.page} data-leonard="prochaine">
         {segment === "aujourdhui" ? (
           <>
             {moment === "veillee" && vue.tampons && <Veillee tampons={vue.tampons} />}

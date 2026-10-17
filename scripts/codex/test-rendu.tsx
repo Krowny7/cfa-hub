@@ -85,7 +85,7 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
   check("« Une autre idée ? » sur la seule étape en cours", compte(html, /Une autre idée \?/g) === 1 && compte(html, /aria-current="step"/g) === 1);
   check("une seule puce de temps (« 30 min ▾ »), le choix replié", compte(html, /aria-expanded="false" aria-controls="fil-temps"/g) === 1 && !html.includes('id="fil-temps"'));
   check("les replis : Quêtes du jour, Fait aujourd'hui, l'acte en cours", html.includes("Quêtes du jour") && html.includes("Fait aujourd&#x27;hui") && /<details[^>]*><summary>Acte /.test(html));
-  check("ni la carte ni la prochaine quête au « ! » dans « Aujourd'hui »", !html.includes("Mes faiblesses") && !html.includes('data-leonard="prochaine"'));
+  check("ni la carte, ni la prochaine quête au « ! », ni le cap en bloc dans « Aujourd'hui »", !html.includes("Mes faiblesses") && !html.includes("Ta prochaine quête") && !html.includes('aria-label="Le cap"'));
   if (milieu.aRecuperer.length) {
     const h = jour(milieu);
     check("quelque chose à récupérer : le bouton du bloc est le seul plein, le fil passe en contour", pleins(h) === 1 && !/class="btn btn-primary[^"]*"[^>]*>Commencer/.test(h) && /class="btn btn-secondary[^"]*"[^>]*>Commencer/.test(h), `${pleins(h)} bouton(s) plein(s)`);

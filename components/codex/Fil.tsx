@@ -11,8 +11,8 @@ import { FinDeSeance, ListeGains, TEXTES_SEANCE, useSeanceDuJour } from "@/compo
 import s from "./Aujourdhui.module.css";
 
 // Le fil de /codex (Codex simplifié, §2 et §3.3) : la séance du jour en
-// étapes, sous le titre « Aujourd'hui ». Une étape faite tient sur une ligne
-// cochée ; l'étape en cours montre sa raison, « +XP » si elle remplit une
+// étapes (le segment porte déjà « Aujourd'hui » : le titre n'est que lu).
+// Une étape faite tient sur une ligne cochée ; l'étape en cours montre sa raison, « +XP » si elle remplit une
 // quête du jour, au plus une mention « fait avancer », LE bouton et « Une
 // autre idée ? » ; les étapes à venir tiennent sur une ligne, sans bouton.
 // Une seule puce « 30 min ▾ » déplie le temps (15, 30, 60, 90). `plein` faux :
@@ -29,10 +29,10 @@ export function Fil({ seance: depart, vue, gains, plein, demo = false }: { seanc
     <section aria-labelledby="fil-titre" data-leonard="seance" className={`card ${s.fil}`}>
       <div className={s.filTete}>
         <div className="min-w-0">
-          <h2 id="fil-titre" className="t-h3 m-0">
+          <h2 id="fil-titre" className="sr-only">
             {T.titre}
           </h2>
-          <p className="t-small t-num m-0">{etape === "close" ? TEXTES_SEANCE.close : teteFil(seance)}</p>
+          <p className="t-small m-0 font-semibold">{etape === "close" ? TEXTES_SEANCE.close : teteFil(seance)}</p>
         </div>
         {etape !== "close" && (
           <div className={s.budget}>
@@ -148,7 +148,7 @@ export function Fil({ seance: depart, vue, gains, plein, demo = false }: { seanc
 export function FilNeuf({ plein }: { plein: boolean }) {
   return (
     <section aria-labelledby="fil-titre" className={`card ${s.fil}`}>
-      <h2 id="fil-titre" className="t-h3 m-0">
+      <h2 id="fil-titre" className="sr-only">
         {T.titre}
       </h2>
       <ol className={s.etapes}>
