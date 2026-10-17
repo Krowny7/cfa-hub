@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import type { LigneQuete as Ligne } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
 import { libelleEtat } from "@/lib/codex/tout";
-import { Sceau, libelleSceau } from "@/components/codex/Sceau";
+import { texteAvancee, texteBaisse } from "@/lib/codex/unite";
+import { Sceau } from "@/components/codex/Sceau";
 import s from "./Aujourdhui.module.css";
 
 // Une quête sur une ligne (Codex simplifié, §2), la même partout : toute la
@@ -15,7 +16,8 @@ import s from "./Aujourdhui.module.css";
 // `texte` : une ligne lisible à la place de l'avancée, sans barre (l'énigme
 // d'un exploit) ; `choisie` : la quête montrée dans le détail, à côté (sur
 // ordinateur, où la ligne n'ouvre pas de feuille : `feuille` faux). Le mode
-// sobre tait l'XP.
+// sobre tait l'XP. Le lecteur d'écran lit la ligne telle qu'elle est écrite
+// (titre, avancée, récompense), plus son état quand la droite ne le dit pas.
 
 /** Ce que la ligne dit à droite. */
 export function droiteLigne(l: Pick<Ligne, "etat" | "aRecuperer" | "termineeLe" | "xp">, sobre: boolean): string | null {
@@ -48,8 +50,12 @@ export function LigneQuete({
   // une énigme lisible (`texte`) garde le nom de l'exploit ; sans elle, « Une énigme »
   const titre = enigme && !texte ? CODEX.exploits.enigme : l.titre;
   const mesure = !texte && !enigme && l.etat !== "terminee" && l.cible > 1;
-  const avancee = mesure ? `${Math.floor(l.valeur).toLocaleString("fr-FR")} sur ${Math.floor(l.cible).toLocaleString("fr-FR")}` : null;
+  // l'avancée avec son unité (« 28 % → 60 % », « 3 sur 4 semaines »), comme dans le détail
+  const avancee = mesure ? (l.baisse ? texteBaisse(l.baisse, l.unite) : texteAvancee(l).texte) : null;
   const droite = droiteLigne(l, sobre);
+  // l'état, pour le lecteur d'écran seulement, quand rien de visible ne le dit
+  const etatDit = !action && (l.aRecuperer || l.etat === "terminee");
+  const etatLu = enigme ? (texte ? CODEX.exploits.enigme.toLowerCase() : null) : etatDit ? null : libelleEtat(l).toLowerCase();
   const bouton = (
     <button
       type="button"
@@ -59,11 +65,13 @@ export function LigneQuete({
       aria-current={choisie || undefined}
       onClick={() => onOuvrir(l)}
       aria-haspopup={feuille ? "dialog" : undefined}
-      aria-label={libelleSceau(l)}
     >
       <Sceau l={l} taille={28} />
       <span className={s.ligneMilieu}>
-        <span className={s.ligneTitre}>{titre}</span>
+        <span className={s.ligneTitre}>
+          {titre}
+          {etatLu && <span className="sr-only">, {etatLu}</span>}
+        </span>
         {mesure && (
           <span className={s.barre} aria-hidden>
             <i style={{ width: `${Math.round(l.fraction * 100)}%` }} />

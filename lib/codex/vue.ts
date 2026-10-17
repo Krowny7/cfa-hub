@@ -4,6 +4,7 @@
 // (acte en cours), les contrats du jour et de la semaine, les branches, le
 // long cours, les exploits. L'écran ne calcule rien : il lit ceci.
 
+import { uniteDe, type Unite } from "@/lib/codex/unite";
 import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, QUETE_DEBRIEF, catalogueCodex, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { capDe, joursDepuis, maitriseDuCodex, type VueCap } from "@/lib/codex/cap";
 import { etatNotion, type EtatNotion } from "@/lib/codex/carte";
@@ -43,6 +44,8 @@ export type LigneQuete = {
   fraction: number;
   /** objectif « à faire baisser » pas encore tenu : la valeur mesurée et le seuil (« 120 ratures, sous 50 ») */
   baisse?: { actuel: number; seuil: number };
+  /** l'unité de l'avancée (lib/codex/unite) : « pct » (28 % → 60 %), le mot compté ; absente : le nombre nu */
+  unite?: Unite;
   /** l'XP visée / l'XP réellement versée (plafonnée), seulement si terminée ; un miroir n'en vise aucune */
   xp: number;
   xpVersee: number | null;
@@ -253,6 +256,7 @@ export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params:
     cible,
     fraction: s.fait ? 1 : cible ? Math.max(0, Math.min(1, valeur / cible)) : 0,
     ...(!s.fait && ev?.baisse ? { baisse: ev.baisse } : {}),
+    ...(uniteDe(q.objectif) ? { unite: uniteDe(q.objectif)! } : {}),
     xp: q.miroir ? 0 : q.recompense.xp,
     xpVersee: l && (l.etat === "recompensee" || l.etat === "terminee") ? l.xp : null,
     ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique, ...(nomDe(q.recompense.cosmetique) ? { cosmetiqueNom: nomDe(q.recompense.cosmetique) } : {}) } : {}),

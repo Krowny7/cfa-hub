@@ -38,6 +38,8 @@ import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEta
 import { manqueDe } from "@/lib/codex/vue";
 import { matiereCoince } from "@/lib/codex/seance";
 import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
+import { texteAvancee, uniteDe } from "@/lib/codex/unite";
+import { catalogueCodex } from "@/lib/codex/catalogue";
 import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, objectifSemaine, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
 import type { EtatQuete } from "@/lib/codex/moteur";
 import {
@@ -521,6 +523,19 @@ console.log("\n# /codex « Tout le Codex », la ligne et le détail (Codex simpl
   check("sur-titre : famille · matière, deux informations au plus", surTitre({ famille: "branche" }, { matiere: "FSA" }) === "Matière · FSA" && surTitre({ famille: "contrat" }) === "Quête du jour" && surTitre({ famille: "contrat" }, { semaine: true }) === "Quête de la semaine" && surTitre({ famille: "longcours" }) === "Objectif long");
   check("avancée : « 51 sur 60 » et « Il manque : 9 » ; rien une fois faite", JSON.stringify(avanceeDetail({ etat: "active", valeur: 51, cible: 60, affichage: "complet" })) === JSON.stringify({ texte: "51 sur 60", manque: "Il manque : 9" }) && avanceeDetail({ etat: "terminee", valeur: 60, cible: 60, affichage: "complet" }) === null);
   check("… à faire baisser : « 120, à passer sous 50 »", avanceeDetail({ etat: "active", valeur: 120, cible: 50, affichage: "complet", baisse: { actuel: 120, seuil: 50 } })?.texte === "120, à passer sous 50");
+  // l'avancée avec son unité (§4 règle 2, §3.6.3)
+  check("unité : une maîtrise « 51 % → 60 % » et « Il manque : 9 points »", JSON.stringify(avanceeDetail({ etat: "active", valeur: 51, cible: 60, affichage: "complet", unite: "pct" })) === JSON.stringify({ texte: "51 % → 60 %", manque: "Il manque : 9 points" }));
+  check("unité : « 3 sur 4 semaines » et « Il manque : 1 semaine » ; « 4 sur 30 min »", JSON.stringify(texteAvancee({ valeur: 3, cible: 4, unite: ["semaine", "semaines"] })) === JSON.stringify({ texte: "3 sur 4 semaines", manque: "Il manque : 1 semaine" }) && texteAvancee({ valeur: 4, cible: 30, unite: ["min", "min"] }).texte === "4 sur 30 min");
+  check("unité : à faire baisser, « 120 ratures, à passer sous 50 »", avanceeDetail({ etat: "active", valeur: 120, cible: 50, affichage: "complet", baisse: { actuel: 120, seuil: 50 }, unite: ["rature", "ratures"] })?.texte === "120 ratures, à passer sous 50");
+  const cat = catalogueCodex();
+  const maitriseCat = cat.find((q) => q.objectif.k === "mesure" && q.objectif.mesure === "maitrise");
+  const minutesCat = cat.find((q) => q.objectif.k === "compteur" && q.objectif.somme === "minutes");
+  const encreCat = cat.find((q) => q.objectif.k === "mesure" && q.objectif.mesure === "semaines_actives");
+  check("unité lue sur le catalogue : maîtrise en %, minutes, semaines", uniteDe(maitriseCat!.objectif) === "pct" && JSON.stringify(uniteDe(minutesCat!.objectif)) === JSON.stringify(["min", "min"]) && JSON.stringify(uniteDe(encreCat!.objectif)) === JSON.stringify(["semaine", "semaines"]));
+  const lignesUnite = [...v.branches.flatMap((b) => b.etapes)].filter((l) => l.etat !== "terminee" && l.cible > 1);
+  check("la vue porte l'unité des étapes de matière (maîtrise : %)", lignesUnite.length > 0 && lignesUnite.some((l) => l.unite === "pct"), JSON.stringify(lignesUnite.slice(0, 2).map((l) => [l.id, l.unite])));
+  const ligneUnite = readFileSync("components/codex/LigneQuete.tsx", "utf8");
+  check("la ligne écrit l'avancée avec le même formateur que le détail, et sans aria-label qui la remplace", ligneUnite.includes("texteAvancee(l).texte") && !ligneUnite.includes("aria-label={libelleSceau(l)}") && ligneUnite.includes('className="sr-only"'));
   check("récompense sur une ligne : « +40 XP · Titre : Apprenti » ; sobre : rien", recompenseDetail({ ...l0, xp: 40, xpVersee: null, etat: "active", titreGagne: "t", titreNom: "Apprenti", cosmetique: undefined, folio: undefined }, false) === "+40 XP · Titre : Apprenti" && recompenseDetail({ ...l0, xp: 40 }, true) === null);
   check("durée honnête : « ≈ 10 min » si elle se finit aujourd'hui", dureeDetail({ ...l0, etat: "disponible", aRecuperer: undefined, famille: "contrat", etape: undefined, duree: 10, destination: undefined, affichage: "complet" }) === "≈ 10 min");
   check("… « jusqu'à dimanche » pour une quête de la semaine, « sur plusieurs semaines » pour une maîtrise ou un objectif long",

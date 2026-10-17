@@ -10,6 +10,7 @@
 import type { VueCap } from "@/lib/codex/cap";
 import type { Famille } from "@/lib/codex/types";
 import type { LigneQuete, VueActe, VueBranche, VueChaine, VueCodex } from "@/lib/codex/vue";
+import { texteAvancee, texteBaisse } from "@/lib/codex/unite";
 
 export const TEXTES_TOUT = {
   parcours: "Parcours",
@@ -219,14 +220,15 @@ export function surTitre(l: Pick<LigneQuete, "famille">, o: { matiere?: string; 
   return o.matiere ? `${f} · ${o.matiere}` : f;
 }
 
-const n = (x: number) => Math.floor(x).toLocaleString("fr-FR");
-
-/** L'avancée du détail : « 51 sur 60 » et « Il manque : 9 » ; à faire baisser : « 120, à passer sous 50 ». Null : rien à mesurer. */
-export function avanceeDetail(l: Pick<LigneQuete, "etat" | "valeur" | "cible" | "baisse" | "affichage">): { texte: string; manque: string | null } | null {
+/**
+ * L'avancée du détail, avec son unité (lib/codex/unite) : « 51 % → 60 % » et
+ * « Il manque : 9 points », « 3 sur 4 semaines » et « Il manque : 1 semaine » ;
+ * à faire baisser : « 120 ratures, à passer sous 50 ». Null : rien à mesurer.
+ */
+export function avanceeDetail(l: Pick<LigneQuete, "etat" | "valeur" | "cible" | "baisse" | "affichage" | "unite">): { texte: string; manque: string | null } | null {
   if (l.etat === "terminee" || (l.affichage === "indice") || l.cible <= 1) return null;
-  if (l.baisse) return { texte: `${n(l.baisse.actuel)}, à passer sous ${n(l.baisse.seuil)}`, manque: null };
-  const reste = Math.max(0, Math.ceil(l.cible - l.valeur));
-  return { texte: `${n(l.valeur)} sur ${n(l.cible)}`, manque: reste > 0 ? `Il manque : ${reste.toLocaleString("fr-FR")}` : null };
+  if (l.baisse) return { texte: texteBaisse(l.baisse, l.unite), manque: null };
+  return texteAvancee(l);
 }
 
 /** La récompense sur une ligne : « +40 XP · Cadre : Sfumato ». Le mode sobre ne la dit pas. */
