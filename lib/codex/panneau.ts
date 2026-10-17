@@ -132,8 +132,9 @@ export function panneauDe(vue: VueCodex): Panneau {
     }
   }
   if (longCoursVu) {
+    // un miroir (V3 §8.2) ne double pas sa quête payeuse, déjà proposée
     const chaine = vue.longCours
-      .filter((c) => c.courant && c.courant.etat !== "verrouillee" && !pris.has(cleDe(c.courant)))
+      .filter((c) => c.courant && c.courant.etat !== "verrouillee" && !pris.has(cleDe(c.courant)) && !(c.courant.compteeAvec && pris.has(cleDe({ id: c.courant.compteeAvec.id, periode: "" }))))
       .sort((a, b) => b.courant!.fraction - a.courant!.fraction)[0];
     if (chaine?.courant) liste.push(versPanneau(chaine.courant, "longcours", `Au long cours · ${chaine.chaine.titre}`));
     // plus aucune chaîne à proposer : le palier du fil rouge le plus avancé prend la place (V3 §1.5), s'il s'écrit déjà

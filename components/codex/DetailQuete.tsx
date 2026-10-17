@@ -132,7 +132,7 @@ export function DetailQuete({
           <p className="t-micro mt-3">{l.retro ? CODEX.detail.faiteAvant(jourLong(l.termineeLe)) : CODEX.detail.faiteLe(jourLong(l.termineeLe))}</p>
         )}
         {l.optionnelle && <p className="t-micro mt-1">{CODEX.detail.optionnelle}</p>}
-        {l.compteeAvec && <p className="t-micro mt-1">{CODEX.detail.compteeAvec(l.compteeAvec)}</p>}
+        {l.compteeAvec && <p className="t-micro mt-1">{CODEX.detail.compteeAvec(l.compteeAvec.titre)}</p>}
         {duree && l.etat !== "terminee" && !enigme && <p className="t-micro mt-1">{CODEX.detail.duree(duree)}</p>}
 
         <p className={s.leonardLigne}>{enigme ? "Je ne dirai rien. Enfin, presque rien : relis l'énigme." : verrouille ? choisirReplique("verrouillee", l.id) : choisirReplique(l.etat, l.id)}</p>

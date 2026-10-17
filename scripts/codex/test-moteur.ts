@@ -19,6 +19,7 @@ import {
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
+import { panneauDe } from "@/lib/codex/panneau";
 import { CAPACITES_VIDE } from "@/lib/codex/reglage";
 import { bilanDe } from "@/lib/codex/bilan";
 import { de, gabarit } from "@/lib/codex/elision";
@@ -440,7 +441,7 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     check("« Un mois d'encre » rempli avant l'acte IV : tamponné sans XP, la chaîne continue", item?.etat === "terminee" && item.xp === 0 && !item.cosmetique && ouverte(r, "longcours:encre:3") && !ouverte(r, "trame:a4:semaines"), JSON.stringify(item));
     const v = construireVue(e2, r, null, { devoile: null });
     const l = v.longCours.find((c) => c.chaine.id === "encre")?.paliers.find((x) => x.id === "longcours:encre:2");
-    check("la vue : le miroir ne vise aucune XP et dit avec quoi il compte", l?.xp === 0 && l.compteeAvec === "Un mois d'atelier", `${l?.xp} ${l?.compteeAvec}`);
+    check("la vue : le miroir ne vise aucune XP et dit avec quoi il compte", l?.xp === 0 && l.compteeAvec?.id === "trame:a4:semaines" && l.compteeAvec.titre === "Un mois d'atelier", `${l?.xp} ${JSON.stringify(l?.compteeAvec)}`);
   }
   {
     // la payeuse tombe : le miroir se tamponne avec elle, elle seule paie ; un miroir déjà payé n'est pas repris
@@ -456,6 +457,17 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     check("un miroir déjà payé avant la v3 n'est ni réécrit ni repris ; sa payeuse paie", !r.lot.some((i) => i.quete === "longcours:remontee:1") && (r.lot.find((i) => i.quete === "trame:a4:remontee")?.xp ?? 0) > 0);
     const l = construireVue(e2, r, null, { devoile: null }).longCours.flatMap((c) => c.paliers).find((x) => x.id === "longcours:remontee:1");
     check("pas de fanfare pour un miroir (même non vu)", l?.aFeter === false);
+  }
+  {
+    // la payeuse et son miroir ouverts, ni l'une ni l'autre faite : c'est la payeuse qu'on propose, une seule fois
+    const catalogue = catalogueCodex().filter((q) => ["trame:a4:semaines", "longcours:encre:1", "longcours:encre:2"].includes(q.id));
+    const jours = Array.from({ length: 2 }, (_, w) => [0, 1, 2, 3].map((d) => ({ jour: new Date(Date.UTC(2026, 8, 7 + 7 * w + d)).toISOString().slice(0, 10), n: 20 }))).flat();
+    const e = base({ catalogue, premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), progression: ["prologue", "acte2", "acte3"].map((a) => ligne(`acte:${a}`)), lecture: { compteurs: {}, mesures: { xp_total: 0, jours }, speciaux: {} } });
+    const { r, e: e2 } = repondre(e, () => 0);
+    const reco = recommander(e2, r);
+    check("la payeuse ouverte passe devant son miroir", ouverte(r, "longcours:encre:2") && ouverte(r, "trame:a4:semaines") && reco?.quete.id === "trame:a4:semaines", reco?.quete.id);
+    const pn = panneauDe(construireVue(e2, r, reco, { devoile: null }));
+    check("le panneau ne propose pas le miroir en plus de sa payeuse", pn.quetes.some((q) => q.cle === "trame:a4:semaines|") && !pn.quetes.some((q) => q.cle.startsWith("longcours:encre:2|")), pn.quetes.map((q) => q.cle).join(" "));
   }
 
   // l'acte I : la visite de la bottega, close avec 4 outils sur 7 ; le prologue sans jour J

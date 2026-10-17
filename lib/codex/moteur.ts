@@ -1092,7 +1092,10 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const ecartees = new Set(e.ecartees ?? []);
   const budget = budgetDuJour(e);
   const destinations = new Map<EtatQuete, Destination>();
+  // un miroir (V3 §8.2) ne passe pas devant sa quête payeuse : quand elle est ouverte, c'est elle qu'on propose
+  const payeusesOuvertes = new Set(r.etats.filter((s) => s.ouverte && !s.fait && !s.horsJeu && s.periode === "").map((s) => s.quete.id));
   const lancables = r.etats.filter((s) => {
+    if (s.quete.miroir && payeusesOuvertes.has(s.quete.miroir)) return false;
     if (!s.ouverte || s.fait || s.horsJeu || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
     const d = destinationDe(s.quete, parametresDe(e, s), dest, s.ev ?? undefined);
     if (d) destinations.set(s, d);

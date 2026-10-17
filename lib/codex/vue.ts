@@ -48,8 +48,8 @@ export type LigneQuete = {
   destination?: Destination;
   duree?: number;
   optionnelle?: boolean;
-  /** un miroir (V3 §8.2) : le titre de la quête qui paie (« Comptée avec « Un mois d'atelier » ») */
-  compteeAvec?: string;
+  /** un miroir (V3 §8.2) : la quête qui paie, son id et son titre (« Comptée avec « Un mois d'atelier » ») */
+  compteeAvec?: { id: string; titre: string };
   /** hors jeu mais commencée (sa mesure est inconnue, V3 §8) : affichée telle quelle, elle ne bloque rien et ne compte pas */
   gelee?: boolean;
   acte?: string;
@@ -282,8 +282,8 @@ export function construireVue(
   const titres = new Map(r.etats.map((s) => [s.quete.id, s.quete.titre]));
   const ligne = (s: EtatQuete): LigneQuete => {
     const l = ligneDe(s, { ctx, params: parametresDe(e, s) });
-    const avec = s.quete.miroir ? titres.get(s.quete.miroir) : undefined;
-    return avec ? { ...l, compteeAvec: avec } : l;
+    const titre = s.quete.miroir ? titres.get(s.quete.miroir) : undefined;
+    return s.quete.miroir && titre ? { ...l, compteeAvec: { id: s.quete.miroir, titre } } : l;
   };
   // hors jeu et jamais commencée (mesure inconnue, V3 §8) : rien à montrer ; commencée, elle reste, gelée
   const lignes = r.etats.filter((s) => !s.masquee).map((s) => ({ s, l: ligne(s) }));
