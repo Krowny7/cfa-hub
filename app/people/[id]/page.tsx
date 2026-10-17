@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronRight, Eye, Palette, UserCheck, UserPlus } from "luci
 import { createClient } from "@/lib/supabase/server";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { getLeaderboardRank, getMyRating } from "@/lib/rating";
-import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
+import { DEFAULT_ELO } from "@/lib/ranks";
 import { getTopicAverages } from "@/lib/mastery";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
@@ -208,7 +208,6 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const lvl = levelInfoFromXp(xpTotal);
   const elo = rating?.elo ?? DEFAULT_ELO;
   const mastery = masteries.get(id) ?? null;
-  const rank = rankFor(elo, mastery, leaderboardRank);
 
   // les sceaux : la collection, les 3 posés (choisis, sinon les plus rares), le total ; un autre
   // ne reçoit ni les mesures ni l'avancée (nombre de mentions, ratures rayées…)
