@@ -61,8 +61,31 @@
 --    migration_v3_profil.sql est collée, sinon les séances ciblées, avec le
 --    plafond par taille) ; les notions tenues (par notion : réponses, et
 --    justes parmi les 5 dernières) ; les spéciaux par matière (plus longue
---    suite de bonnes réponses d'affilée, de calculs justes d'affilée). Clé
---    service seulement. Réécrite en entier par chaque lot qui l'étend.
+--    suite de bonnes réponses d'affilée, de calculs justes d'affilée) ; et,
+--    quand migration_v3_profil.sql est collée : la maîtrise unique
+--    (maitrise_joueur), la file « À revoir » (revisions_dues), les ratures
+--    scellées, les examens blancs à débriefer et la répartition des causes
+--    d'erreur (blanc_debrief). Clé service seulement. Réécrite en entier par
+--    chaque lot qui l'étend.
+--
+-- 5. Le journal v3 et une seule lecture des réponses par appel (V3 §12.3bis) :
+--    a. _reponses_cache(uuid) : les réponses du joueur lues une fois par
+--       appel, dans une table temporaire indexée de la transaction. Corps
+--       identique dans migration_v3_profil.sql : le second fichier collé
+--       remplace la fonction par le même texte.
+--    b. _codex_reponses_v3(uuid) : les réponses rangées par matière et par
+--       notion, lues dans ce cache (sans _reponses_joueur : les fiches
+--       seules, comme avant).
+--    c. codex_journal(uuid) : même signature, mêmes événements qu'avant, plus
+--       la durée par question des séances ciblées et des examens blancs,
+--       les séances justes (séances réussies, part des questions neuves ou
+--       dues), et, selon ce qui est collé : « À revoir » rendue (séries
+--       éclair à part), rature scellée, examen blanc débriefé.
+--    d. codex_lire(uuid, jsonb, date) : même signature, même résultat, plus
+--       « v3 » (codex_mesures_v3 du programme actif) : journal et mesures
+--       dans la même transaction, sur une seule lecture des réponses.
+--    e. _codex_journal_v3() : le marqueur du journal v3 (capacité
+--       « journal » à 3).
 --
 -- Ordre de collage : migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
@@ -406,16 +429,30 @@ REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticat
 
 -- ── 4. codex_mesures_v3 (le site, clé service) ──────────────────────
 -- Réécrite EN ENTIER, en place, par chaque lot qui l'étend (A2b, A3b, A4a).
--- Rend {capacites, jours_encre_total, programmes_menes, maitres_total,
--- trophees, notions_tenues, speciaux_matiere}. Les capacités sont lues à
--- l'exécution : ce que la base sait faire selon ce qui est collé.
---   notions_tenues   : {"<notion>": {"n": réponses, "j5": justes parmi les 5 dernières}}
---                      (une notion est tenue à n ≥ 5 et j5 ≥ 3 : lib/codex/moteur.ts)
---   speciaux_matiere : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n}}
---                      bonnes réponses d'affilée dans la matière (une erreur ou 20 min de
---                      silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée
+-- Rend {programme, capacites, jours_encre_total, programmes_menes,
+-- maitres_total, trophees, notions_tenues, speciaux_matiere} et, quand la base
+-- sait les lire, {maitrise, revoir, ratures_scellees, blancs_a_debriefer,
+-- causes} (clé absente sinon : la mesure reste inconnue du site). Les
+-- capacités sont lues à l'exécution : ce que la base sait faire selon ce qui
+-- est collé. Les réponses du joueur sont lues une fois par appel
+-- (_codex_reponses_v3, §5) : appelée par codex_lire, la fonction réutilise la
+-- lecture du journal. VOLATILE : le cache est une table temporaire.
+--   notions_tenues     : {"<notion>": {"n": réponses, "j5": justes parmi les 5 dernières}}
+--                        (une notion est tenue à n ≥ 5 et j5 ≥ 3 : lib/codex/moteur.ts)
+--   speciaux_matiere   : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n}}
+--                        bonnes réponses d'affilée dans la matière (une erreur ou 20 min de
+--                        silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée
+--   maitrise           : {"<matière>": {"pct", "questions", "total", "debut", "statut", "derniere", "ancienne"}}
+--                        la maîtrise unique (maitrise_joueur, migration_v3_profil.sql §4) ;
+--                        questions = réponses de la fenêtre (60 au plus), pct null sous 10
+--   revoir             : {"aujourdhui", "demain", "ratures", "rappels"} (revisions_dues, §3b)
+--   ratures_scellees   : ratures scellées (ratures.scellee_le, §3a)
+--   blancs_a_debriefer : copies rendues depuis 7 jours (examens blancs et officiels) dont
+--                        moins de 80 % des erreurs sont classées (blanc_debrief, §5)
+--   causes             : {"savoir", "lecture", "calcul", "temps", "chance" (en %), "n"}, les
+--                        erreurs classées des 60 derniers jours (comme mes_causes)
 CREATE OR REPLACE FUNCTION codex_mesures_v3(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_capacites jsonb;
   v_jours int;
@@ -425,6 +462,10 @@ DECLARE
   v_tenues jsonb;
   v_bonnes jsonb;
   v_calculs jsonb := '{}'::jsonb;
+  v_tmp jsonb;
+  v_copies text[] := '{}';
+  v_plus jsonb := '{}'::jsonb;
+  v_n int;
 BEGIN
   IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
     RAISE EXCEPTION 'programme invalide : %', p_programme;
@@ -476,20 +517,13 @@ BEGIN
       ) x
     $q$ INTO v_trophees USING p_user;
   END IF;
-  -- les réponses du joueur, lues une fois (même rattachement à la matière et à la notion que codex_journal) :
-  -- les notions tenues (V3 §8.5), réponses par notion et justes parmi les 5 dernières ; et la plus longue
-  -- suite de bonnes réponses d'affilée dans chaque matière (V3 §8.7)
+  -- les réponses du joueur, lues une fois par appel (_codex_reponses_v3 : même rattachement à la
+  -- matière et à la notion que codex_journal) : les notions tenues (V3 §8.5), réponses par notion
+  -- et justes parmi les 5 dernières ; et la plus longue suite de bonnes réponses d'affilée dans
+  -- chaque matière (V3 §8.7)
   WITH rep AS MATERIALIZED (
-    SELECT r.ok, r.at, q.matiere, q.notion, row_number() OVER (ORDER BY r.at) AS ord
-    FROM _codex_reponses(p_user) r
-    LEFT JOIN LATERAL (
-      SELECT _codex_matiere(lf.name, qs.title) AS matiere, to_jsonb(qq) ->> 'notion' AS notion
-      FROM quiz_questions qq
-      LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
-      LEFT JOIN library_folders lf ON lf.id = qs.folder_id
-      WHERE qq.id = r.question_id
-      LIMIT 1
-    ) q ON true
+    SELECT r.ok, r.at, r.matiere, r.notion, row_number() OVER (ORDER BY r.at) AS ord
+    FROM _codex_reponses_v3(p_user) r
   )
   SELECT
     (SELECT coalesce(jsonb_object_agg(t.notion, jsonb_build_object('n', t.n, 'j5', t.j5)), '{}'::jsonb)
@@ -527,11 +561,804 @@ BEGIN
       ) y
     $q$ INTO v_calculs USING p_user;
   END IF;
-  RETURN jsonb_build_object('capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
+
+  -- la maîtrise unique (V3 §4), au format des mesures du Codex : questions = réponses de la
+  -- fenêtre (le statut « mesuree » commence à 40) ; ancienne garde le verrou des rangs (§4.5).
+  -- maitrise_joueur lit le même cache des réponses.
+  IF to_regprocedure('public.maitrise_joueur(uuid,text)') IS NOT NULL THEN
+    EXECUTE 'SELECT maitrise_joueur($1, $2)' INTO v_tmp USING p_user, p_programme;
+    IF jsonb_typeof(v_tmp -> 'matieres') = 'object' THEN
+      SELECT coalesce(jsonb_object_agg(m.key, jsonb_build_object(
+               'pct', m.value -> 'pct', 'questions', coalesce((m.value ->> 'n')::int, 0), 'total', coalesce((m.value ->> 'total')::int, 0),
+               'debut', m.value -> 'debut', 'statut', m.value -> 'statut', 'derniere', m.value -> 'derniere', 'ancienne', m.value -> 'ancienne')), '{}'::jsonb)
+      INTO v_tmp
+      FROM jsonb_each(v_tmp -> 'matieres') m
+      WHERE jsonb_typeof(m.value) = 'object';
+      v_plus := v_plus || jsonb_build_object('maitrise', v_tmp);
+    END IF;
+  END IF;
+  -- la file « À revoir » (V3 §5.1) : les comptes seulement (le site lit la file elle-même à part)
+  IF to_regprocedure('public.revisions_dues(uuid,date,integer)') IS NOT NULL THEN
+    EXECUTE 'SELECT revisions_dues($1, NULL, 25)' INTO v_tmp USING p_user;
+    IF jsonb_typeof(v_tmp) = 'object' THEN
+      v_plus := v_plus || jsonb_build_object('revoir', jsonb_build_object(
+        'aujourdhui', coalesce(v_tmp -> 'aujourdhui', '0'::jsonb), 'demain', coalesce(v_tmp -> 'demain', '0'::jsonb),
+        'ratures', coalesce(v_tmp -> 'ratures', '0'::jsonb), 'rappels', coalesce(v_tmp -> 'rappels', '0'::jsonb)));
+    END IF;
+  END IF;
+  -- les ratures scellées (V3 §5.3)
+  IF EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'scellee_le' AND NOT a.attisdropped) THEN
+    EXECUTE 'SELECT count(*)::int FROM ratures WHERE user_id = $1 AND scellee_le IS NOT NULL' INTO v_n USING p_user;
+    v_plus := v_plus || jsonb_build_object('ratures_scellees', v_n);
+  END IF;
+  -- le débrief des examens blancs (V3 §7.6) : les copies rendues depuis 7 jours qui restent à
+  -- débriefer (erreurs de la copie d'après _blanc_erreurs ; classées à moins de 80 %), et la
+  -- répartition des causes sur 60 jours
+  IF to_regclass('public.blanc_debrief') IS NOT NULL AND to_regprocedure('public._blanc_erreurs(uuid,text,uuid)') IS NOT NULL THEN
+    IF to_regclass('public.mock_exam_results') IS NOT NULL THEN
+      v_copies := array_append(v_copies, $q$
+        SELECT 'blanc'::text AS source, r.exam_id AS ref FROM mock_exam_results r
+        WHERE r.user_id = $1 AND r.completed_at >= now() - interval '7 days'
+      $q$);
+    END IF;
+    IF to_regclass('public.quiz_attempts') IS NOT NULL THEN
+      v_copies := array_append(v_copies, $q$
+        SELECT 'officiel'::text, a.id FROM quiz_attempts a
+        JOIN quiz_sets qs ON qs.id = a.set_id
+        JOIN library_folders lf ON lf.id = qs.folder_id AND lf.name = 'Mocks Officiels (Système)'
+        WHERE a.user_id = $1 AND a.created_at >= now() - interval '7 days'
+      $q$);
+    END IF;
+    v_n := 0;
+    IF cardinality(v_copies) > 0 THEN
+      EXECUTE format($q$
+        SELECT count(*)::int FROM (
+          SELECT (SELECT count(*) FROM _blanc_erreurs($1, c.source, c.ref)) AS erreurs,
+                 (SELECT count(*) FROM blanc_debrief d WHERE d.user_id = $1 AND d.source = c.source AND d.ref = c.ref) AS classees
+          FROM (%s) c
+        ) x
+        WHERE x.erreurs > 0 AND x.classees * 100 < x.erreurs * 80
+      $q$, array_to_string(v_copies, ' UNION ALL ')) INTO v_n USING p_user;
+    END IF;
+    v_plus := v_plus || jsonb_build_object('blancs_a_debriefer', v_n);
+    EXECUTE $q$
+      SELECT jsonb_build_object(
+               'savoir', CASE WHEN x.n > 0 THEN round(100.0 * x.savoir / x.n)::int ELSE 0 END,
+               'lecture', CASE WHEN x.n > 0 THEN round(100.0 * x.lecture / x.n)::int ELSE 0 END,
+               'calcul', CASE WHEN x.n > 0 THEN round(100.0 * x.calcul / x.n)::int ELSE 0 END,
+               'temps', CASE WHEN x.n > 0 THEN round(100.0 * x.temps / x.n)::int ELSE 0 END,
+               'chance', CASE WHEN x.n > 0 THEN round(100.0 * x.chance / x.n)::int ELSE 0 END,
+               'n', x.n)
+      FROM (SELECT count(*)::int AS n,
+                   count(*) FILTER (WHERE d.cause = 'savoir') AS savoir, count(*) FILTER (WHERE d.cause = 'lecture') AS lecture,
+                   count(*) FILTER (WHERE d.cause = 'calcul') AS calcul, count(*) FILTER (WHERE d.cause = 'temps') AS temps,
+                   count(*) FILTER (WHERE d.cause = 'chance') AS chance
+            FROM blanc_debrief d WHERE d.user_id = $1 AND d.note_le >= now() - interval '60 days') x
+    $q$ INTO v_tmp USING p_user;
+    v_plus := v_plus || jsonb_build_object('causes', v_tmp);
+  END IF;
+
+  RETURN jsonb_build_object('programme', p_programme, 'capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
                             'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb),
                             'notions_tenues', v_tenues,
-                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb)));
+                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb)))
+         || v_plus;
 END $$;
 
 REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_mesures_v3(uuid, text) TO service_role;
+
+-- ── 5. le journal v3, une seule lecture des réponses par appel ──────
+-- 5a. Les réponses du joueur lues une fois par appel (V3 §12.3bis) : une
+-- table temporaire de la transaction, indexée, partagée par tous les lecteurs
+-- du même appel (codex_journal, codex_mesures_v3, maitrise_joueur,
+-- revisions_dues). Même texte attendu dans migration_v3_profil.sql (V3
+-- §12.3bis) : celui-ci range chaque question dans sa matière une seule fois
+-- (et non à chaque réponse : 30 000 appels de _codex_matiere coûtaient plus
+-- d'une seconde), mêmes colonnes, mêmes lignes.
+CREATE OR REPLACE FUNCTION _reponses_cache(p_user uuid) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF to_regclass('pg_temp._rep_cache') IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM pg_temp._rep_cache_cle WHERE user_id = p_user) THEN RETURN; END IF;
+    DROP TABLE pg_temp._rep_cache; DROP TABLE IF EXISTS pg_temp._rep_cache_cle;   -- table temporaire de la transaction, pas une donnée
+  END IF;
+  CREATE TEMP TABLE _rep_cache ON COMMIT DROP AS
+    WITH r AS MATERIALIZED (SELECT x.question_id, x.source, x.ok, x.at FROM _reponses_joueur(p_user) x),
+    m AS (
+      SELECT d.question_id,
+             (SELECT _codex_matiere(lf.name, qs.title)
+              FROM quiz_questions qq
+              LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
+              LEFT JOIN library_folders lf ON lf.id = qs.folder_id
+              WHERE qq.id = d.question_id
+              LIMIT 1) AS matiere
+      FROM (SELECT DISTINCT r.question_id FROM r WHERE r.question_id IS NOT NULL) d
+    )
+    SELECT r.question_id, r.source, r.ok, r.at, m.matiere
+    FROM r LEFT JOIN m ON m.question_id = r.question_id;
+  CREATE INDEX ON pg_temp._rep_cache (question_id, at);
+  CREATE INDEX ON pg_temp._rep_cache (matiere, at);
+  CREATE TEMP TABLE _rep_cache_cle ON COMMIT DROP AS SELECT p_user AS user_id;
+END $$;
+
+-- 5b. Une colonne existe-t-elle (table du schéma public) ? Le journal ne lit
+-- une colonne nouvelle que si elle est collée.
+CREATE OR REPLACE FUNCTION _codex_colonne(p_table text, p_colonne text)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT EXISTS (SELECT 1 FROM pg_attribute a
+                 WHERE a.attrelid = to_regclass('public.' || p_table) AND a.attname = p_colonne AND a.attnum > 0 AND NOT a.attisdropped);
+$$;
+
+-- Les réponses du joueur rangées par matière et par notion : le cache de
+-- l'appel (_reponses_cache) quand _reponses_joueur existe ; sinon les
+-- réponses de fiche seules (_codex_reponses), comme le journal d'avant.
+CREATE OR REPLACE FUNCTION _codex_reponses_v3(p_user uuid)
+RETURNS TABLE (question_id uuid, source text, ok boolean, at timestamptz, matiere text, notion text)
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_notion text := CASE WHEN _codex_colonne('quiz_questions', 'notion') THEN 'qq.notion::text' ELSE 'NULL::text' END;
+BEGIN
+  IF to_regprocedure('public._reponses_joueur(uuid)') IS NOT NULL THEN
+    PERFORM _reponses_cache(p_user);
+    RETURN QUERY EXECUTE format($q$
+      SELECT c.question_id, c.source, c.ok, c.at, c.matiere, %s
+      FROM pg_temp._rep_cache c LEFT JOIN quiz_questions qq ON qq.id = c.question_id
+      WHERE c.ok IS NOT NULL AND c.at IS NOT NULL
+    $q$, v_notion);
+  ELSE
+    RETURN QUERY EXECUTE format($q$
+      SELECT r.question_id, r.source, r.ok, r.at, _codex_matiere(lf.name, qs.title), %s
+      FROM _codex_reponses($1) r
+      LEFT JOIN quiz_questions qq ON qq.id = r.question_id
+      LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
+      LEFT JOIN library_folders lf ON lf.id = qs.folder_id
+    $q$, v_notion) USING p_user;
+  END IF;
+END;
+$$;
+
+-- 5c. Le journal v3 : celui de migration_codex.sql (mêmes événements, mêmes
+-- lignes), dont les réponses passent par le cache, plus :
+--   session_terminee.secondesParQuestion   séances ciblées (durée / questions)
+--   examen_blanc_rendu.secondesParQuestion examens blancs, reprises et officiels
+--   eclair_rendue                          les séries éclair seules quand eclair_series.genre existe
+--   revoir_rendue {questions, justes, pct} une « À revoir » rendue en entier (pas celle close d'office)
+--   seance_juste {source, pct, questions, fraiches}
+--                                          une séance réussie (70 % ou mieux) : page de fiche, séance
+--                                          ciblée, série éclair ou « À revoir », les 30 du jour, Atelier
+--                                          (pas les QCM : leurs réponses ne sont pas gardées) ; fraiches =
+--                                          part (%) de ses questions neuves ou dues (aucune réponse dans
+--                                          le jour qui précède la séance)
+--   rature_scellee {matiere, notion, ageJours}       quand ratures.scellee_le existe
+--   blanc_debriefe {source, ref, erreurs, classees, part}
+--                                          quand blanc_debrief existe, daté du dernier classement
+-- VOLATILE : le cache est une table temporaire de la transaction.
+CREATE OR REPLACE FUNCTION codex_journal(p_user uuid)
+RETURNS TABLE (evenement text, quand timestamptz, champs jsonb)
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_parts   text[] := '{}';
+  v_ami     text := 'false';
+  v_ment    text := 'NULL::text';
+  v_rayee   boolean;
+  v_cache   boolean := to_regprocedure('public._reponses_joueur(uuid)') IS NOT NULL;
+  v_genre   text := CASE WHEN _codex_colonne('eclair_series', 'genre') THEN 'e.genre' ELSE '''eclair''::text' END;
+  v_seances text[] := '{}';
+BEGIN
+  IF p_user IS NULL THEN
+    RETURN;
+  END IF;
+  -- le cache des réponses existe avant que la requête du journal soit préparée (seance_juste le lit)
+  IF v_cache THEN
+    PERFORM _reponses_cache(p_user);
+  END IF;
+
+  -- question_repondue : une réponse, toutes sources. matiere / notion via la question ;
+  -- premiere et ecartJours via la réponse précédente du joueur à la même question.
+  v_parts := array_append(v_parts, $q$
+    SELECT 'question_repondue'::text, x.at,
+           jsonb_build_object('source', x.src, 'matiere', x.matiere, 'notion', x.notion, 'juste', x.ok, 'question', x.qid::text,
+                              'premiere', x.prev IS NULL,
+                              'ecartJours', CASE WHEN x.prev IS NULL THEN NULL ELSE floor(extract(epoch FROM (x.at - x.prev)) / 86400)::int END)
+    FROM (
+      SELECT r.question_id AS qid,
+             CASE r.source WHEN 'daily' THEN 'defi' WHEN 'practice' THEN 'ciblee' WHEN 'mock' THEN 'blanc' ELSE r.source END AS src,
+             r.ok, r.at, lag(r.at) OVER (PARTITION BY r.question_id ORDER BY r.at) AS prev,
+             r.matiere, r.notion
+      FROM _codex_reponses_v3($1) r
+    ) x
+  $q$);
+
+  -- session_terminee + drill_page_terminee : les pages de fiche passées en entier
+  IF to_regclass('public.quiz_answer_log') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'session_terminee'::text, p.fin,
+             jsonb_build_object('source', 'fiche', 'matiere', _codex_matiere(p.dossier, p.titre), 'questions', p.n, 'justes', p.justes,
+                                'pct', round(100.0 * p.justes / greatest(p.n, 1))::int)
+      FROM _codex_pages($1) p WHERE p.complet
+    $q$);
+    v_parts := array_append(v_parts, $q$
+      SELECT 'drill_page_terminee'::text, p.fin,
+             jsonb_build_object('matiere', _codex_matiere(p.dossier, p.titre),
+                                'fiche', (SELECT m.fiche FROM codex_matieres m WHERE m.prefixe_drill = split_part(p.titre, ' — ', 1) LIMIT 1),
+                                'page', (substring(p.titre FROM 'Page ([0-9]+)'))::int, 'questions', p.n, 'justes', p.justes,
+                                'pct', round(100.0 * p.justes / greatest(p.n, 1))::int)
+      FROM _codex_pages($1) p WHERE p.complet AND p.titre ~ ' — Drill Fiche Page [0-9]+'
+    $q$);
+    -- seance_juste : la page de fiche, ses questions et le moment de sa première réponse
+    v_seances := array_append(v_seances, $q$
+      SELECT 'fiche'::text AS src, z.run_id::text AS cle, z.debut, z.fin, z.n::int AS questions, z.justes::int AS justes, z.question_id AS qid
+      FROM (
+        SELECT l.run_id, l.question_id, min(l.answered_at) OVER w AS debut, max(l.answered_at) OVER w AS fin,
+               count(*) OVER w AS n, count(*) FILTER (WHERE l.is_correct) OVER w AS justes
+        FROM quiz_answer_log l WHERE l.user_id = $1 AND l.mode = 'page'
+        WINDOW w AS (PARTITION BY l.run_id, l.set_id)
+      ) z
+      -- une page passée en entier (_codex_pages), réussie
+      WHERE round(100.0 * z.justes / z.n) >= 70
+        AND z.run_id IN (SELECT c.run_id FROM _codex_pages($1) c WHERE c.complet)
+    $q$);
+  END IF;
+
+  -- session_terminee : sessions ciblées (avec la durée par question), QCM chronométrés, QCM entiers et examens officiels
+  IF to_regclass('public.practice_session_results') IS NOT NULL THEN
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'session_terminee'::text, r.completed_at,
+             jsonb_build_object('source', 'ciblee', 'matiere', CASE WHEN cardinality(r.topics) = 1 THEN r.topics[1] END,
+                                'questions', r.total, 'justes', r.score, 'pct', round(100.0 * r.score / r.total)::int,
+                                'secondesParQuestion', %s)
+      FROM practice_session_results r WHERE r.user_id = $1 AND r.total > 0 AND r.completed_at IS NOT NULL
+    $q$, CASE WHEN _codex_colonne('practice_session_results', 'duration_seconds')
+              THEN 'CASE WHEN r.duration_seconds > 0 THEN round(r.duration_seconds::numeric / r.total)::int END' ELSE 'NULL::int' END));
+    -- seance_juste : les réponses d'une séance ciblée sont datées de sa fin (_reponses_joueur)
+    v_seances := array_append(v_seances, $q$
+      SELECT 'ciblee'::text, r.id::text, r.completed_at, r.completed_at, r.total, r.score, c.question_id
+      FROM practice_session_results r
+      JOIN pg_temp._rep_cache c ON c.source = 'practice' AND c.at = r.completed_at
+      WHERE r.user_id = $1 AND r.total > 0 AND r.completed_at IS NOT NULL AND round(100.0 * r.score / r.total) >= 70
+    $q$);
+  END IF;
+  IF to_regclass('public.practice_sessions') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'session_terminee'::text, s.occurred_at,
+             jsonb_build_object('source', 'qcm', 'matiere', NULL, 'questions', s.total, 'justes', s.correct, 'pct', round(100.0 * s.correct / s.total)::int)
+      FROM practice_sessions s WHERE s.user_id = $1 AND s.mode = 'qcm' AND s.total > 0
+    $q$);
+    -- flashcards_revues : les séances de cartes de /session (practice_sessions, mode flashcards)
+    v_parts := array_append(v_parts, $q$
+      SELECT 'flashcards_revues'::text, s.occurred_at,
+             jsonb_build_object('matiere', (SELECT _codex_matiere(lf.name, s.set_title) FROM quiz_sets qs LEFT JOIN library_folders lf ON lf.id = qs.folder_id WHERE qs.id = s.set_id),
+                                'cartes', s.total)
+      FROM practice_sessions s WHERE s.user_id = $1 AND s.mode = 'flashcards' AND s.total > 0
+    $q$);
+  END IF;
+  IF to_regclass('public.quiz_attempts') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'session_terminee'::text, a.created_at,
+             jsonb_build_object('source', CASE WHEN lf.name = 'Mocks Officiels (Système)' THEN 'examen' ELSE 'qcm' END, 'matiere', NULL,
+                                'questions', a.total, 'justes', a.score, 'pct', round(100.0 * a.score / a.total)::int)
+      FROM quiz_attempts a
+      LEFT JOIN quiz_sets qs ON qs.id = a.set_id
+      LEFT JOIN library_folders lf ON lf.id = qs.folder_id
+      WHERE a.user_id = $1 AND a.total > 0 AND a.score IS NOT NULL
+    $q$);
+    -- examens officiels joués en entier (/qcm)
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'examen_blanc_rendu'::text, a.created_at,
+             jsonb_build_object('questions', a.total, 'justes', a.score, 'pct', round(100.0 * a.score / a.total)::int, 'officiel', true, 'reprise', false,
+                                'secondesParQuestion', %s)
+      FROM quiz_attempts a
+      JOIN quiz_sets qs ON qs.id = a.set_id
+      JOIN library_folders lf ON lf.id = qs.folder_id AND lf.name = 'Mocks Officiels (Système)'
+      WHERE a.user_id = $1 AND a.total > 0 AND a.score IS NOT NULL
+    $q$, CASE WHEN _codex_colonne('quiz_attempts', 'duration_seconds')
+              THEN 'CASE WHEN a.duration_seconds > 0 THEN round(a.duration_seconds::numeric / a.total)::int END' ELSE 'NULL::int' END));
+  END IF;
+
+  -- les 30 du jour / les 5 du jour rendus
+  IF to_regclass('public.daily_attempts') IS NOT NULL AND to_regclass('public.daily_challenges') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'defi_rendu'::text, t.finished_at,
+             jsonb_build_object('questions', t.total, 'justes', t.score, 'pct', round(100.0 * t.score / t.total)::int)
+      FROM daily_attempts t JOIN daily_challenges c ON c.id = t.challenge_id
+      WHERE t.user_id = $1 AND t.finished_at IS NOT NULL AND t.total > 0 AND c.program <> 'cfa-l1-cinq'
+    $q$);
+    v_parts := array_append(v_parts, $q$
+      SELECT 'cinq_rendu'::text, t.finished_at,
+             jsonb_build_object('justes', t.score, 'secondes', t.seconds,
+                                'rang', 1 + (SELECT count(*) FROM daily_attempts o
+                                             WHERE o.challenge_id = t.challenge_id AND o.finished_at IS NOT NULL AND o.user_id <> t.user_id
+                                               AND (o.score > t.score OR (o.score = t.score AND coalesce(o.seconds, 1000000) < coalesce(t.seconds, 1000000)))))
+      FROM daily_attempts t JOIN daily_challenges c ON c.id = t.challenge_id
+      WHERE t.user_id = $1 AND t.finished_at IS NOT NULL AND t.score IS NOT NULL AND c.program = 'cfa-l1-cinq'
+    $q$);
+    -- seance_juste : les 30 du jour (pas les 5)
+    IF to_regclass('public.daily_answers') IS NOT NULL THEN
+      v_seances := array_append(v_seances, $q$
+        SELECT 'defi'::text, t.challenge_id::text, t.started_at, t.finished_at, t.total, t.score, a.question_id
+        FROM daily_attempts t
+        JOIN daily_challenges c ON c.id = t.challenge_id AND c.program <> 'cfa-l1-cinq'
+        JOIN daily_answers a ON a.challenge_id = t.challenge_id AND a.user_id = t.user_id AND a.question_id IS NOT NULL AND a.selected_index IS NOT NULL
+        WHERE t.user_id = $1 AND t.finished_at IS NOT NULL AND t.total > 0 AND round(100.0 * t.score / t.total) >= 70
+      $q$);
+    END IF;
+  END IF;
+
+  -- séries éclair (sans les « À revoir » quand eclair_series.genre existe), et « À revoir » rendues en entier
+  IF to_regclass('public.eclair_series') IS NOT NULL THEN
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'eclair_rendue'::text, e.finished_at, jsonb_build_object('questions', coalesce(e.total, 0), 'justes', coalesce(e.score, 0))
+      FROM eclair_series e WHERE e.user_id = $1 AND e.finished_at IS NOT NULL AND %s = 'eclair'
+    $q$, v_genre));
+    IF v_genre = 'e.genre' THEN
+      v_parts := array_append(v_parts, $q$
+        SELECT 'revoir_rendue'::text, e.finished_at,
+               jsonb_build_object('questions', e.total, 'justes', coalesce(e.score, 0), 'pct', round(100.0 * coalesce(e.score, 0) / e.total)::int)
+        FROM eclair_series e
+        WHERE e.user_id = $1 AND e.genre = 'revoir' AND e.finished_at IS NOT NULL AND e.total > 0
+          AND e.total = coalesce(array_length(e.question_ids, 1), 0)
+      $q$);
+    END IF;
+    -- seance_juste : une série éclair, ou une « À revoir » rendue en entier
+    v_seances := array_append(v_seances, format($q$
+      SELECT %1$s, e.id::text, e.started_at, e.finished_at, e.total, coalesce(e.score, 0), t.qid
+      FROM eclair_series e CROSS JOIN LATERAL unnest(e.question_ids) WITH ORDINALITY AS t(qid, pos)
+      WHERE e.user_id = $1 AND e.finished_at IS NOT NULL AND e.total > 0 AND e.answers[t.pos] IS NOT NULL
+        AND round(100.0 * coalesce(e.score, 0) / e.total) >= 70
+        AND (%1$s = 'eclair' OR e.total = coalesce(array_length(e.question_ids, 1), 0))
+    $q$, v_genre));
+  END IF;
+
+  -- duels terminés (réglés, deux joueurs)
+  IF to_regclass('public.duels') IS NOT NULL THEN
+    IF to_regclass('public.friendships') IS NOT NULL THEN
+      v_ami := $q$EXISTS (SELECT 1 FROM friendships f WHERE f.status = 'accepted'
+                           AND ((f.requester = $1 AND f.addressee = d.autre) OR (f.requester = d.autre AND f.addressee = $1)))$q$;
+    END IF;
+    IF to_regclass('public.duel_mentions') IS NOT NULL THEN
+      v_ment := $q$(SELECT m.mention FROM duel_mentions m WHERE m.duel_id = d.id AND m.user_id = $1 ORDER BY m.mention LIMIT 1)$q$;
+    END IF;
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'duel_termine'::text, d.fin,
+             jsonb_build_object('resultat', CASE WHEN d.winner_id = $1 THEN 'victoire' WHEN d.winner_id IS NULL THEN 'nul' ELSE 'defaite' END,
+                                'ecartPaliers', coalesce(_codex_palier(d.elo_autre) - _codex_palier(d.elo_moi), 0),
+                                'ami', %s, 'mention', %s)
+      FROM (
+        SELECT du.id, du.winner_id,
+               coalesce(du.finished_at, CASE WHEN du.challenger_id = $1 THEN du.challenger_finished_at ELSE du.opponent_finished_at END) AS fin,
+               CASE WHEN du.challenger_id = $1 THEN du.opponent_id ELSE du.challenger_id END AS autre,
+               CASE WHEN du.challenger_id = $1 THEN du.challenger_elo_before ELSE du.opponent_elo_before END AS elo_moi,
+               CASE WHEN du.challenger_id = $1 THEN du.opponent_elo_before ELSE du.challenger_elo_before END AS elo_autre
+        FROM duels du
+        WHERE du.status = 'finished' AND du.opponent_id IS NOT NULL AND $1 IN (du.challenger_id, du.opponent_id)
+      ) d
+      WHERE d.fin IS NOT NULL
+    $q$, v_ami, v_ment));
+  END IF;
+
+  -- examens blancs classés (première copie) et reprises, avec la durée par question
+  IF to_regclass('public.mock_exam_results') IS NOT NULL THEN
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'examen_blanc_rendu'::text, r.completed_at,
+             jsonb_build_object('questions', r.total, 'justes', r.score, 'pct', round(100.0 * r.score / r.total)::int, 'officiel', false, 'reprise', false,
+                                'secondesParQuestion', %s)
+      FROM mock_exam_results r WHERE r.user_id = $1 AND r.total > 0 AND r.completed_at IS NOT NULL
+    $q$, CASE WHEN _codex_colonne('mock_exam_results', 'duration_seconds')
+              THEN 'CASE WHEN r.duration_seconds > 0 THEN round(r.duration_seconds::numeric / r.total)::int END' ELSE 'NULL::int' END));
+  END IF;
+  IF to_regclass('public.mock_exam_attempts') IS NOT NULL THEN
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'examen_blanc_rendu'::text, r.completed_at,
+             jsonb_build_object('questions', r.total, 'justes', r.score, 'pct', round(100.0 * r.score / r.total)::int, 'officiel', false, 'reprise', true,
+                                'secondesParQuestion', %s)
+      FROM mock_exam_attempts r WHERE r.user_id = $1 AND r.total > 0 AND r.completed_at IS NOT NULL
+    $q$, CASE WHEN _codex_colonne('mock_exam_attempts', 'duration_seconds')
+              THEN 'CASE WHEN r.duration_seconds > 0 THEN round(r.duration_seconds::numeric / r.total)::int END' ELSE 'NULL::int' END));
+  END IF;
+
+  -- séances d'Atelier terminées
+  IF to_regclass('public.ateliers') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'seance_atelier'::text, a.finished_at,
+             jsonb_build_object('questions', coalesce(a.total, 0), 'justes', coalesce(a.score, 0), 'notions', cardinality(a.notions),
+                                'rayees', (SELECT count(*) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(a.reponses) = 'array' THEN a.reponses ELSE '[]'::jsonb END) x
+                                           WHERE x->>'k' = 'rature' AND coalesce((x->>'ok')::boolean, false) AND NOT coalesce((x->>'r')::boolean, false)))
+      FROM ateliers a WHERE a.user_id = $1 AND a.finished_at IS NOT NULL
+    $q$);
+    -- seance_juste : les questions de l'Atelier (ratures et neuves, hors re-test)
+    v_seances := array_append(v_seances, $q$
+      SELECT 'atelier'::text, a.id::text, a.started_at, a.finished_at, a.total, coalesce(a.score, 0), (x->>'q')::uuid
+      FROM ateliers a
+      CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(a.reponses) = 'array' THEN a.reponses ELSE '[]'::jsonb END) AS x
+      WHERE a.user_id = $1 AND a.finished_at IS NOT NULL AND coalesce(a.total, 0) > 0
+        AND round(100.0 * coalesce(a.score, 0) / a.total) >= 70
+        AND x->>'k' IN ('rature', 'neuve') AND NOT coalesce((x->>'r')::boolean, false)
+        AND x->>'q' ~* '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
+    $q$);
+  END IF;
+
+  -- seance_juste : les séances réussies et la part de leurs questions neuves ou dues (aucune réponse du
+  -- joueur à la même question dans le jour qui précède la séance), lue dans le cache, index (question_id, at)
+  IF v_cache AND cardinality(v_seances) > 0 THEN
+    v_parts := array_append(v_parts, format($q$
+      SELECT 'seance_juste'::text, s.fin,
+             jsonb_build_object('source', s.src, 'pct', round(100.0 * s.justes / s.questions)::int, 'questions', s.questions,
+                                'fraiches', round(100.0 * count(*) FILTER (WHERE s.fraiche) / count(*))::int)
+      FROM (
+        SELECT i.src, i.cle, i.fin, i.questions, i.justes,
+               NOT EXISTS (SELECT 1 FROM pg_temp._rep_cache p
+                           WHERE p.question_id = i.qid AND p.at < i.debut AND p.at >= i.debut - interval '1 day') AS fraiche
+        FROM (%s) i
+        WHERE i.fin IS NOT NULL AND i.debut IS NOT NULL AND i.qid IS NOT NULL
+      ) s
+      GROUP BY s.src, s.cle, s.fin, s.questions, s.justes
+    $q$, array_to_string(v_seances, E'\nUNION ALL\n')));
+  END IF;
+
+  -- ratures rayées par une bonne réponse en reprise (ratures.rayee_le, migration_profil_sceaux.sql)
+  SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'ratures' AND column_name = 'rayee_le') INTO v_rayee;
+  IF v_rayee THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'rature_rayee'::text, r.rayee_le,
+             jsonb_build_object('matiere', _codex_matiere(r.folder_name, r.set_title),
+                                'notion', (SELECT to_jsonb(qq) ->> 'notion' FROM quiz_questions qq WHERE qq.id = r.question_id),
+                                'ageJours', greatest(0, floor(extract(epoch FROM (r.rayee_le - r.first_missed_at)) / 86400))::int,
+                                'erreurs', r.misses)
+      FROM ratures r WHERE r.user_id = $1 AND r.rayee_le IS NOT NULL
+    $q$);
+  END IF;
+  -- ratures scellées (ratures.scellee_le, migration_v3_profil.sql §3a)
+  IF _codex_colonne('ratures', 'scellee_le') THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'rature_scellee'::text, r.scellee_le,
+             jsonb_build_object('matiere', _codex_matiere(r.folder_name, r.set_title),
+                                'notion', (SELECT to_jsonb(qq) ->> 'notion' FROM quiz_questions qq WHERE qq.id = r.question_id),
+                                'ageJours', greatest(0, floor(extract(epoch FROM (r.scellee_le - r.first_missed_at)) / 86400))::int)
+      FROM ratures r WHERE r.user_id = $1 AND r.scellee_le IS NOT NULL
+    $q$);
+  END IF;
+
+  -- examens blancs débriefés (blanc_debrief, migration_v3_profil.sql §5) : une ligne par copie, datée
+  -- du dernier classement ; erreurs d'après _blanc_erreurs (au moins les classées), part en %
+  IF to_regclass('public.blanc_debrief') IS NOT NULL AND to_regprocedure('public._blanc_erreurs(uuid,text,uuid)') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'blanc_debriefe'::text, d.quand,
+             jsonb_build_object('source', d.source, 'ref', d.ref::text, 'erreurs', d.erreurs, 'classees', d.classees,
+                                'part', round(100.0 * d.classees / d.erreurs)::int)
+      FROM (
+        SELECT b.source, b.ref, b.quand, b.classees, greatest(b.classees, (SELECT count(*)::int FROM _blanc_erreurs($1, b.source, b.ref))) AS erreurs
+        FROM (SELECT g.source, g.ref, max(g.note_le) AS quand, count(*)::int AS classees
+              FROM blanc_debrief g WHERE g.user_id = $1 GROUP BY g.source, g.ref) b
+      ) d
+    $q$);
+  END IF;
+
+  -- calculs purs
+  IF to_regclass('public.calc_attempts') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'calcul_repondu'::text, c.answered_at,
+             jsonb_build_object('matiere', (SELECT m.cle FROM codex_matieres m WHERE m.cle = c.topic), 'type', c.type_key, 'juste', c.correct)
+      FROM calc_attempts c WHERE c.user_id = $1
+    $q$);
+  END IF;
+
+  -- cours écoutés, cartes révisées, fiches ouvertes (codex_noter)
+  v_parts := array_append(v_parts, $q$
+    SELECT e.type, e.quand, e.champs FROM codex_evenements e WHERE e.user_id = $1
+  $q$);
+
+  -- passages de palier (première fois qu'un ELO atteint chaque palier)
+  IF to_regclass('public.rating_events') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'palier_atteint'::text, min(r.created_at), jsonb_build_object('palier', t.p)
+      FROM generate_series(1, 6) AS t(p)
+      JOIN rating_events r ON r.user_id = $1 AND _codex_palier(r.elo_after) >= t.p
+      GROUP BY t.p
+    $q$);
+  END IF;
+
+  -- jours d'encre : un jour à 10 questions ou plus ; serie = jours d'affilée jusqu'à celui-là
+  v_parts := array_append(v_parts, $q$
+    SELECT 'jour_encre'::text, ((s.jour + time '12:00') AT TIME ZONE 'Europe/Paris'),
+           jsonb_build_object('serie', row_number() OVER (PARTITION BY s.groupe ORDER BY s.jour)::int, 'joker', false)
+    FROM (SELECT j.jour, j.jour - (row_number() OVER (ORDER BY j.jour))::int AS groupe FROM _codex_jours($1) j WHERE j.n >= 10) s
+  $q$);
+
+  -- questions marquées
+  IF to_regclass('public.question_flags') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'question_marquee'::text, f.created_at,
+             jsonb_build_object('matiere', (SELECT _codex_matiere(lf.name, qs.title) FROM quiz_questions qq
+                                            JOIN quiz_sets qs ON qs.id = qq.set_id LEFT JOIN library_folders lf ON lf.id = qs.folder_id WHERE qq.id = f.question_id))
+      FROM question_flags f WHERE f.user_id = $1
+    $q$);
+  END IF;
+
+  -- amis
+  IF to_regclass('public.friendships') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$
+      SELECT 'ami_ajoute'::text, coalesce(f.responded_at, f.created_at), '{}'::jsonb
+      FROM friendships f WHERE f.status = 'accepted' AND $1 IN (f.requester, f.addressee)
+    $q$);
+  END IF;
+
+  RETURN QUERY EXECUTE array_to_string(v_parts, E'\nUNION ALL\n') USING p_user;
+END;
+$$;
+
+-- 5d. codex_lire : celui de migration_codex.sql (mêmes compteurs, mêmes
+-- mesures, mêmes spéciaux), qui remplit le cache des réponses en tête (le
+-- journal, les mesures v3 et la maîtrise unique le partagent), puis ajoute
+-- « v3 » : codex_mesures_v3 du programme actif, dans la même transaction.
+--   résultat : { compteurs, mesures, speciaux, v3? }   (v3 absente : le site appelle codex_mesures_v3 à part)
+CREATE OR REPLACE FUNCTION codex_lire(p_user uuid, p_demandes jsonb, p_jour date DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_jour   date := coalesce(p_jour, (now() AT TIME ZONE 'Europe/Paris')::date);
+  v_today  date := (now() AT TIME ZONE 'Europe/Paris')::date;
+  d        record;
+  v_ev     text;
+  v_cond   text;
+  v_seuil  numeric;
+  v_dist   text;
+  v_somme  text;
+  v_val    text;
+  v_n      numeric;
+  v_at     timestamptz;
+  v_comp   jsonb := '{}'::jsonb;
+  v_mes    jsonb := '{}'::jsonb;
+  v_spe    jsonb := '{}'::jsonb;
+  v_tmp    jsonb;
+  v_b      numeric;
+  v_c      numeric;
+  v_ph     boolean;
+  v_re     boolean;
+  v_au     boolean;
+  v_fin    date;
+  v_prog   text := 'finance/cfa-l1';
+  v_actif  text;
+  v_v3     jsonb;
+BEGIN
+  IF p_user IS NULL THEN
+    RAISE EXCEPTION 'Joueur manquant';
+  END IF;
+  IF p_demandes IS NULL OR jsonb_typeof(p_demandes) <> 'array' THEN
+    p_demandes := '[]'::jsonb;
+  END IF;
+
+  -- les réponses du joueur, lues une fois pour tout l'appel : journal, mesures v3, maîtrise unique
+  IF to_regprocedure('public._reponses_joueur(uuid)') IS NOT NULL THEN
+    PERFORM _reponses_cache(p_user);
+  END IF;
+
+  DROP TABLE IF EXISTS pg_temp._cj;
+  DROP TABLE IF EXISTS pg_temp._cjours;
+  CREATE TEMP TABLE _cj ON COMMIT DROP AS SELECT j.evenement, j.quand, j.champs FROM codex_journal(p_user) j;
+  -- chaque demande ne parcourt que les lignes de son événement
+  CREATE INDEX ON pg_temp._cj (evenement, quand);
+  ANALYZE pg_temp._cj;
+  CREATE TEMP TABLE _cjours ON COMMIT DROP AS SELECT j.jour, j.n FROM _codex_jours(p_user) j;
+
+  -- ── les compteurs ──
+  FOR d IN SELECT value AS v FROM jsonb_array_elements(p_demandes) LOOP
+    v_ev := d.v->>'evenement';
+    CONTINUE WHEN v_ev IS NULL OR coalesce(d.v->>'id', '') = '';
+    v_cond := format('evenement = %L AND %s AND %s', v_ev, _codex_filtre(d.v->'filtre'),
+                     _codex_fenetre(d.v->'fenetre', coalesce((d.v->>'jour')::date, v_jour)));
+    v_seuil := greatest(1, coalesce((d.v->>'seuil')::numeric, 1));
+    v_dist := d.v->>'distinct';
+    v_somme := d.v->>'somme';
+    v_at := NULL;
+    IF v_somme IS NOT NULL THEN
+      IF v_somme !~ '^[A-Za-z_]{1,40}$' THEN RAISE EXCEPTION 'Champ invalide : %', v_somme; END IF;
+      EXECUTE format($f$
+        SELECT coalesce(sum(s.v), 0),
+               (SELECT b.quand FROM (SELECT a.quand, sum(a.v) OVER (ORDER BY a.quand, a.ord) AS c
+                                     FROM (SELECT quand, (champs->>%L)::numeric AS v, row_number() OVER (ORDER BY quand) AS ord
+                                           FROM pg_temp._cj WHERE %s) a) b
+                WHERE b.c >= %s ORDER BY b.quand LIMIT 1)
+        FROM (SELECT (champs->>%L)::numeric AS v FROM pg_temp._cj WHERE %s) s
+      $f$, v_somme, v_cond, v_seuil, v_somme, v_cond) INTO v_n, v_at;
+    ELSIF v_dist IS NOT NULL THEN
+      IF v_dist = 'jour' THEN
+        v_val := $v$((quand AT TIME ZONE 'Europe/Paris')::date)::text$v$;
+      ELSE
+        IF v_dist !~ '^[A-Za-z_]{1,40}$' THEN RAISE EXCEPTION 'Champ invalide : %', v_dist; END IF;
+        v_val := format('(champs->>%L)', v_dist);
+      END IF;
+      EXECUTE format($f$
+        SELECT count(*)::numeric,
+               (SELECT z.t FROM (SELECT min(quand) AS t FROM (SELECT quand, %s AS val FROM pg_temp._cj WHERE %s) y
+                                 WHERE y.val IS NOT NULL GROUP BY y.val ORDER BY t OFFSET %s LIMIT 1) z)
+        FROM (SELECT DISTINCT %s AS val FROM pg_temp._cj WHERE %s) x WHERE x.val IS NOT NULL
+      $f$, v_val, v_cond, (v_seuil - 1)::bigint, v_val, v_cond) INTO v_n, v_at;
+    ELSE
+      EXECUTE format($f$
+        SELECT count(*)::numeric,
+               (SELECT quand FROM pg_temp._cj WHERE %s ORDER BY quand OFFSET %s LIMIT 1)
+        FROM pg_temp._cj WHERE %s
+      $f$, v_cond, (v_seuil - 1)::bigint, v_cond) INTO v_n, v_at;
+    END IF;
+    v_comp := v_comp || jsonb_build_object(d.v->>'id', jsonb_build_object('n', coalesce(v_n, 0), 'atteint', v_at));
+  END LOOP;
+
+  -- ── les mesures ──
+  -- ratures en cours, au total et par matière
+  IF to_regclass('public.ratures') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT jsonb_build_object('total', count(*),
+               'matieres', coalesce((SELECT jsonb_object_agg(m, c) FROM (SELECT _codex_matiere(r2.folder_name, r2.set_title) AS m, count(*) AS c
+                                       FROM ratures r2 WHERE r2.user_id = $1 AND r2.removed_at IS NULL AND r2.visible_from <= now()
+                                       GROUP BY 1) g WHERE g.m IS NOT NULL), '{}'::jsonb))
+      FROM ratures r WHERE r.user_id = $1 AND r.removed_at IS NULL AND r.visible_from <= now()
+    $q$ INTO v_tmp USING p_user;
+    v_mes := v_mes || jsonb_build_object('ratures_ouvertes', v_tmp);
+  END IF;
+  -- réponses par notion (pour « notions vues » : 5 réponses ou plus)
+  SELECT coalesce(jsonb_object_agg(g.notion, g.n), '{}'::jsonb) INTO v_tmp
+  FROM (SELECT champs->>'notion' AS notion, count(*) AS n FROM pg_temp._cj
+        WHERE evenement = 'question_repondue' AND champs->>'notion' IS NOT NULL GROUP BY 1) g;
+  v_mes := v_mes || jsonb_build_object('notions', v_tmp);
+  -- questions par jour (jours d'encre, rythme de l'objectif)
+  SELECT coalesce(jsonb_agg(jsonb_build_object('jour', j.jour, 'n', j.n) ORDER BY j.jour), '[]'::jsonb) INTO v_tmp FROM pg_temp._cjours j;
+  v_mes := v_mes || jsonb_build_object('jours', v_tmp);
+  -- pages de drill passées : meilleure note par (matière, page)
+  SELECT coalesce(jsonb_agg(jsonb_build_object('matiere', g.matiere, 'page', g.page, 'meilleur', g.meilleur)), '[]'::jsonb) INTO v_tmp
+  FROM (SELECT champs->>'matiere' AS matiere, (champs->>'page')::int AS page, max((champs->>'pct')::numeric) AS meilleur
+        FROM pg_temp._cj WHERE evenement = 'drill_page_terminee' AND champs->>'matiere' IS NOT NULL GROUP BY 1, 2) g;
+  v_mes := v_mes || jsonb_build_object('drill_pages', v_tmp);
+  -- pages de drill qui existent, par matière
+  SELECT coalesce(jsonb_object_agg(g.matiere, g.pages), '{}'::jsonb) INTO v_tmp
+  FROM (SELECT m.cle AS matiere, count(DISTINCT substring(qs.title FROM 'Page ([0-9]+)'))::int AS pages
+        FROM quiz_sets qs JOIN codex_matieres m ON m.prefixe_drill = split_part(qs.title, ' — ', 1)
+        WHERE qs.title ~ ' — Drill Fiche Page [0-9]+' AND coalesce(to_jsonb(qs) ->> 'official_published', 'true') <> 'false'
+        GROUP BY m.cle) g;
+  v_mes := v_mes || jsonb_build_object('drill_totaux', v_tmp);
+  -- maîtrise par matière : sessions ciblées d'une seule matière (comme lib/mastery.ts), et la maîtrise de ses premières questions
+  IF to_regclass('public.practice_session_results') IS NOT NULL THEN
+    EXECUTE $q$
+      WITH s AS (
+        SELECT r.topics[1] AS matiere, r.score, r.total,
+               sum(r.total) OVER (PARTITION BY r.topics[1] ORDER BY r.completed_at, r.id) - r.total AS avant
+        FROM practice_session_results r WHERE r.user_id = $1 AND cardinality(r.topics) = 1 AND r.total > 0
+      ), actuel AS (
+        SELECT matiere, sum(score) AS justes, sum(total) AS questions FROM s GROUP BY matiere
+      ), debut AS (
+        SELECT matiere, sum(score) AS justes, sum(total) AS questions FROM s WHERE avant < 40 GROUP BY matiere
+      )
+      SELECT coalesce(jsonb_object_agg(a.matiere, jsonb_build_object(
+               'questions', a.questions,
+               'pct', round(100.0 * a.justes / a.questions)::int,
+               'debut', CASE WHEN d.questions >= 40 THEN round(100.0 * d.justes / d.questions)::int END)), '{}'::jsonb)
+      FROM actuel a LEFT JOIN debut d ON d.matiere = a.matiere
+    $q$ INTO v_tmp USING p_user;
+    v_mes := v_mes || jsonb_build_object('maitrise', v_tmp);
+  END IF;
+  -- types de calcul tenus : au moins 5 essais, et 5 justes sur les 6 derniers
+  IF to_regclass('public.calc_attempts') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT count(*) FROM (
+        SELECT type_key FROM (
+          SELECT c.type_key, c.correct, row_number() OVER (PARTITION BY c.topic, c.type_key ORDER BY c.answered_at DESC, c.id DESC) AS rang
+          FROM calc_attempts c WHERE c.user_id = $1
+        ) x WHERE x.rang <= 6 GROUP BY type_key HAVING count(*) >= 5 AND count(*) FILTER (WHERE correct) >= 5
+      ) t
+    $q$ INTO v_n USING p_user;
+    v_mes := v_mes || jsonb_build_object('types_calcul_tenus', coalesce(v_n, 0));
+  END IF;
+  -- sceaux gagnés
+  IF to_regclass('public.sceaux') IS NOT NULL THEN
+    EXECUTE $q$SELECT coalesce(jsonb_object_agg(cle, palier), '{}'::jsonb) FROM sceaux WHERE user_id = $1$q$ INTO v_tmp USING p_user;
+    v_mes := v_mes || jsonb_build_object('sceaux', v_tmp);
+  END IF;
+  -- ELO actuel et plus haut ELO connu
+  IF to_regclass('public.ratings') IS NOT NULL THEN
+    EXECUTE $q$SELECT max((to_jsonb(r) ->> 'elo')::int) FROM ratings r WHERE r.user_id = $1$q$ INTO v_n USING p_user;
+    v_mes := v_mes || jsonb_build_object('elo', v_n);
+  END IF;
+  IF to_regclass('public.rating_events') IS NOT NULL THEN
+    EXECUTE $q$SELECT max(elo_after) FROM rating_events WHERE user_id = $1$q$ INTO v_n USING p_user;
+    v_mes := v_mes || jsonb_build_object('pic_elo', v_n);
+  END IF;
+  -- XP, ancienneté
+  SELECT jsonb_build_object('xp_total', coalesce(p.xp_total, 0), 'inscrit_le', p.created_at) INTO v_tmp FROM profiles p WHERE p.id = p_user;
+  v_mes := v_mes || coalesce(v_tmp, '{}'::jsonb);
+  -- série d'encre : jours d'affilée à 10 questions (sans le joker), en cours et meilleure ;
+  -- celles de serie_encre (avec joker) l'emportent quand la table existe
+  SELECT coalesce(max(g.n), 0) INTO v_b
+  FROM (SELECT count(*) AS n FROM (SELECT j.jour - (row_number() OVER (ORDER BY j.jour))::int AS grp FROM pg_temp._cjours j WHERE j.n >= 10) s GROUP BY grp) g;
+  -- série en cours : on remonte jour par jour depuis aujourd'hui (ou hier)
+  v_c := 0;
+  v_fin := CASE WHEN EXISTS (SELECT 1 FROM pg_temp._cjours WHERE jour = v_today AND n >= 10) THEN v_today ELSE v_today - 1 END;
+  WHILE EXISTS (SELECT 1 FROM pg_temp._cjours WHERE jour = v_fin AND n >= 10) LOOP
+    v_c := v_c + 1;
+    v_fin := v_fin - 1;
+  END LOOP;
+  IF to_regclass('public.serie_encre') IS NOT NULL THEN
+    EXECUTE $q$SELECT greatest($2, coalesce(max(meilleure), 0)) FROM serie_encre WHERE user_id = $1$q$ INTO v_b USING p_user, v_b;
+  END IF;
+  v_mes := v_mes || jsonb_build_object('serie', v_c, 'meilleure_serie', greatest(v_b, v_c));
+
+  -- ── les prédicats spéciaux ──
+  -- serie_bonnes : plus longue suite de bonnes réponses d'affilée (rompue par une erreur ou 20 min de silence)
+  SELECT coalesce(max(g.n), 0) INTO v_b FROM (
+    SELECT count(*) AS n FROM (
+      SELECT s.quand, s.juste, sum(CASE WHEN NOT s.juste OR s.silence THEN 1 ELSE 0 END) OVER (ORDER BY s.quand, s.ord) AS grp FROM (
+        SELECT quand, coalesce((champs->>'juste')::boolean, false) AS juste,
+               (quand - lag(quand) OVER (ORDER BY quand, ord)) > interval '20 minutes' AS silence, ord
+        FROM (SELECT quand, champs, row_number() OVER (ORDER BY quand) AS ord FROM pg_temp._cj WHERE evenement = 'question_repondue') a
+      ) s
+    ) t WHERE t.juste GROUP BY t.grp
+  ) g;
+  v_spe := v_spe || jsonb_build_object('serie_bonnes', v_b);
+  -- serie_calculs : plus longue suite de calculs justes
+  SELECT coalesce(max(g.n), 0) INTO v_b FROM (
+    SELECT count(*) AS n FROM (
+      SELECT s.juste, sum(CASE WHEN NOT s.juste THEN 1 ELSE 0 END) OVER (ORDER BY s.quand, s.ord) AS grp FROM (
+        SELECT quand, ord, coalesce((champs->>'juste')::boolean, false) AS juste
+        FROM (SELECT quand, champs, row_number() OVER (ORDER BY quand) AS ord FROM pg_temp._cj WHERE evenement = 'calcul_repondu') a
+      ) s
+    ) t WHERE t.juste GROUP BY t.grp
+  ) g;
+  v_spe := v_spe || jsonb_build_object('serie_calculs', v_b);
+  -- phénix : les 30 du jour sous 50 % un jour, puis à 80 % ou plus le lendemain
+  SELECT EXISTS (
+    SELECT 1 FROM (SELECT (quand AT TIME ZONE 'Europe/Paris')::date AS j, max((champs->>'pct')::numeric) AS pct
+                   FROM pg_temp._cj WHERE evenement = 'defi_rendu' GROUP BY 1) a
+    JOIN (SELECT (quand AT TIME ZONE 'Europe/Paris')::date AS j, max((champs->>'pct')::numeric) AS pct
+          FROM pg_temp._cj WHERE evenement = 'defi_rendu' GROUP BY 1) b ON b.j = a.j + 1
+    WHERE a.pct < 50 AND b.pct >= 80) INTO v_ph;
+  -- retour : un jour à 20 questions ou plus après au moins 14 jours sans aucune réponse
+  SELECT EXISTS (
+    SELECT 1 FROM (SELECT j, n, lag(j) OVER (ORDER BY j) AS prev
+                   FROM (SELECT (quand AT TIME ZONE 'Europe/Paris')::date AS j, count(*) AS n FROM pg_temp._cj WHERE evenement = 'question_repondue' GROUP BY 1) q) z
+    WHERE z.n >= 20 AND z.prev IS NOT NULL AND z.j - z.prev > 14) INTO v_re;
+  -- aube : 10 questions avant 7 h (Paris) le même jour
+  SELECT EXISTS (
+    SELECT 1 FROM (SELECT (quand AT TIME ZONE 'Europe/Paris')::date AS j,
+                          count(*) FILTER (WHERE extract(hour FROM quand AT TIME ZONE 'Europe/Paris') < 7) AS n
+                   FROM pg_temp._cj WHERE evenement = 'question_repondue' GROUP BY 1) z
+    WHERE z.n >= 10) INTO v_au;
+  v_spe := v_spe || jsonb_build_object('phenix', CASE WHEN v_ph THEN 1 ELSE 0 END, 'retour', CASE WHEN v_re THEN 1 ELSE 0 END, 'aube', CASE WHEN v_au THEN 1 ELSE 0 END);
+
+  -- ── les mesures v3 (§4) du programme actif (sans ligne : CFA I), sur la même lecture des
+  -- réponses. Une erreur est consignée et ne coûte que la clé « v3 » : le site les relit à part.
+  IF to_regprocedure('public.codex_mesures_v3(uuid,text)') IS NOT NULL THEN
+    BEGIN
+      IF to_regclass('public.codex_programmes_joueur') IS NOT NULL THEN
+        EXECUTE $q$SELECT programme FROM codex_programmes_joueur WHERE user_id = $1 AND statut = 'actif' LIMIT 1$q$ INTO v_actif USING p_user;
+        v_prog := coalesce(v_actif, v_prog);
+      END IF;
+      v_v3 := codex_mesures_v3(p_user, v_prog);
+    EXCEPTION WHEN OTHERS THEN
+      v_v3 := NULL;
+      PERFORM _codex_erreur(p_user, '', '', 'codex_mesures_v3 (codex_lire) : ' || SQLERRM);
+    END;
+  END IF;
+
+  RETURN jsonb_build_object('compteurs', v_comp, 'mesures', v_mes, 'speciaux', v_spe)
+         || CASE WHEN v_v3 IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('v3', v_v3) END;
+END;
+$$;
+
+
+-- 5e. Le marqueur du journal v3 (codex_mesures_v3 : capacité « journal » à 3).
+-- Posé en dernier : il ne dit vrai qu'une fois le journal et la lecture en place.
+CREATE OR REPLACE FUNCTION _codex_journal_v3()
+RETURNS int LANGUAGE sql IMMUTABLE
+AS $$ SELECT 3 $$;
+
+REVOKE ALL ON FUNCTION _reponses_cache(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _codex_colonne(text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _codex_reponses_v3(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_journal(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_lire(uuid, jsonb, date) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _codex_journal_v3() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_journal(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION codex_lire(uuid, jsonb, date) TO service_role;
