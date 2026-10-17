@@ -433,7 +433,7 @@ export function SectionNom({ nom, setNom, visibilite, setVisibilite }: { nom: st
 /** Le titre porté sous le pseudo : aucun, ou l'un de ceux qu'il a gagnés (ou porte déjà). */
 export function SectionTitre({ b, titres }: { b: Brouillon; titres: TitrePortable[] }) {
   const { style, set } = b;
-  const choix: { nue: string | null; nom: string; description: string }[] = [{ nue: null, nom: "Aucun", description: "Rien sous ton pseudo." }, ...titres];
+  const choix: { nue: string | null; nom: string; description: string; programme?: string | null }[] = [{ nue: null, nom: "Aucun", description: "Rien sous ton pseudo." }, ...titres];
   return (
     <Section titre="Titre" aide="En petites capitales sous ton pseudo : sur ton profil, ta carte de joueur et le podium.">
       {titres.length === 0 ? (
@@ -455,7 +455,11 @@ export function SectionTitre({ b, titres }: { b: Brouillon; titres: TitrePortabl
                   {on && <Check size={12} strokeWidth={3} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]">{t.nom}</span>
+                  <span className="block truncate text-[14px] font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]">
+                    {t.nom}
+                    {/* son programme d'origine (« Maître de FSA · CFA I ») */}
+                    {t.programme && <span className="t-micro tracking-normal [font-variant-caps:normal]"> · {t.programme}</span>}
+                  </span>
                   <span className="t-micro block">{t.description}</span>
                 </span>
               </button>

@@ -9,7 +9,7 @@
 
 import { STYLE_DEFAUT, type StyleProfil } from "@/lib/profil/catalogue";
 import { avecBlocFolio } from "@/lib/profil/disposition";
-import { PIECES, TYPES_PIECE, possede, queteDe, type Acquis, type TypePiece } from "@/lib/profil/pieces";
+import { PIECES, TYPES_PIECE, possede, programmeCourt, queteDe, type Acquis, type TypePiece } from "@/lib/profil/pieces";
 import { RAYONS, type Etagere, type PieceEtagere, type Rayon } from "@/lib/profil/etagere-vue";
 import { banniereBouge, cadreBouge } from "@/lib/profil/rendus";
 import type { Porte } from "@/lib/profil/styles";
@@ -52,6 +52,7 @@ export function etagere(a: Acquis, porte: Porte, bannerUrl: string | null = null
         portee: estPortee,
         libre: p.condition === null,
         allerA: quete ? hrefQuete(quete) : null,
+        programme: programmeCourt(p),
         ...(p.folio ? { folio: { oeuvre: p.folio.oeuvre, image: p.folio.image, anecdote: p.folio.anecdote } } : {}),
       };
     });

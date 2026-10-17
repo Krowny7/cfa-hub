@@ -213,6 +213,8 @@ function CartePiece({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; car
         </span>
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="line-clamp-2 text-[13.5px] font-semibold leading-snug">{p.nom}</span>
+          {/* son programme d'origine (« Maître de FSA · CFA I ») ; une pièce globale n'en a pas */}
+          {p.programme && <span className="t-micro">{p.programme}</span>}
           {p.portee ? (
             <span className="t-micro font-semibold text-[var(--ink)]">{T.portee}</span>
           ) : !p.possedee ? (

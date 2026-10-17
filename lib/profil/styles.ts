@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { AMBIANCES, HAUTEURS, STYLE_DEFAUT, estCouleur, nettoyerBio, vitrineDepuis, type Ambiance, type HauteurBanniere, type StyleProfil } from "@/lib/profil/catalogue";
 import { blocsDe, dispositionDepuis, validerDisposition, type Prefixes } from "@/lib/profil/disposition";
-import { pieceNue, piecesDuType, possede, type Acquis, type TypePiece } from "@/lib/profil/pieces";
+import { pieceNue, piecesDuType, possede, programmeCourt, type Acquis, type TypePiece } from "@/lib/profil/pieces";
 
 // Le style d'un profil (table profile_style) : son unique lecteur, sa
 // lecture en StyleProfil, la validation de ce que le joueur veut porter et
@@ -95,12 +95,13 @@ const nueConnue = (type: TypePiece, v: unknown): string | null => (typeof v === 
 /** Le nom lisible du titre porté (« Copiste », « Maître de Fixed Income ») ; aucun, ou inconnu : null. */
 export const nomTitre = (nue: string | null | undefined): string | null => (nue ? (pieceNue("titre", nue)?.nom ?? null) : null);
 
-export type TitrePortable = { nue: string; nom: string; description: string };
+/** `programme` : le nom court du programme d'origine (« CFA I »), null pour un titre global (V3 §1.6). */
+export type TitrePortable = { nue: string; nom: string; description: string; programme: string | null };
 /** Les titres que le joueur peut porter : ceux qu'il possède, et celui qu'il porte déjà (dans l'ordre du catalogue). */
 export function titresPortables(a: Acquis, porte: string | null = null): TitrePortable[] {
   return piecesDuType("titre")
     .filter((p) => possede(p, a) || p.nue === porte)
-    .map((p) => ({ nue: p.nue, nom: p.nom, description: p.description }));
+    .map((p) => ({ nue: p.nue, nom: p.nom, description: p.description, programme: programmeCourt(p) }));
 }
 
 /** Un style lu en base (colonnes de profile_style), valeurs inconnues ramenées au défaut. */

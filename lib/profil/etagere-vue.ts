@@ -25,6 +25,8 @@ export type PieceEtagere = {
   libre: boolean;
   /** pas encore à soi et donnée par une quête du Codex : « Y aller » (/codex?quete=<id>) */
   allerA: string | null;
+  /** le nom court de son programme d'origine (« CFA I ») ; pièce globale : null (V3 §1.6) */
+  programme: string | null;
   folio?: { oeuvre: string; image: string | null; anecdote: [string, string] };
 };
 

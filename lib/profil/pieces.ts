@@ -11,6 +11,7 @@ import { TIERS } from "@/lib/ranks";
 import { CADRES, MOTIFS } from "@/lib/profil/catalogue";
 import { idFil, remplie, type Acquis, type Condition, type ConditionProfil } from "@/lib/profil/acquis";
 import { ACTES, COSMETIQUES_CODEX, PROGRAMME, catalogueCodex, contenuDuProgramme, titresMaitres } from "@/lib/codex/catalogue";
+import { programmeDe } from "@/lib/codex/programmes";
 import { donneurs } from "@/lib/codex/vue";
 import { pluriel } from "@/lib/voice";
 import { romain } from "@/lib/voice-codex";
@@ -138,6 +139,11 @@ function rareteCodex(cle: string, quete: string): Rarete {
   if (q?.famille === "exploit") return q.visibilite === "cachee" ? "legendaire" : "precieuse";
   // sommet d'une chaîne au long cours ; une quête de branche (ou autre) : rare
   return q?.famille === "longcours" ? "precieuse" : "rare";
+}
+
+/** Le nom court du programme d'origine (« CFA I »), affiché après le nom (V3 §1.6) ; global ou inconnu : null. */
+export function programmeCourt(p: Pick<Piece, "programme">): string | null {
+  return p.programme === PROGRAMME_GLOBAL ? null : (programmeDe(p.programme)?.court ?? null);
 }
 
 /** Le programme d'origine d'un titre gagné au Codex (les exploits et le fil rouge sont globaux). */
