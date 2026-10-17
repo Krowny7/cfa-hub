@@ -954,7 +954,7 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   const apres = base({ jourJ: "2026-10-01" });
   const vv = vr(apres, { moment: "apres", verdicts: [{ programme: "finance/cfa-l1", session: "2026-10", statut: "reporte", bandes: {}, saisiLe: "2026-10-12T10:00:00Z" }] });
   check("vue : le verdict après l'examen, session du jour J, déjà saisi", vv.verdict?.session === "2026-10" && vv.verdict.saisi?.statut === "reporte" && vv.verdict.matieres.length === 10);
-  check("vue : pas de verdict avant l'examen", !v1.verdict && !vr(apres, { moment: "lendemain" }).verdict);
+  check("vue : le verdict dès le lendemain (J+1, V3 §7.1), jamais avant l'examen ni en veillée", !v1.verdict && !!vr(apres, { moment: "lendemain" }).verdict && !vr(apres, { moment: "veillee" }).verdict && !vr(apres, { moment: "jourJ" }).verdict);
   check("vue : la reprise du jour", vr(base({ lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-01", n: 30 }] }, speciaux: {} } })).reprise && !v1.reprise);
   check("les bandes reçues : matières connues et bandes valides seulement", JSON.stringify(bandesValides({ quant: "basse", fsa: "nulle", inconnue: "haute", ethics: "haute" }, ["quant", "fsa", "ethics"])) === JSON.stringify({ quant: "basse", ethics: "haute" }) && Object.keys(bandesValides("x", ["quant"])).length === 0);
 

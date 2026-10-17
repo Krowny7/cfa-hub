@@ -29,6 +29,8 @@ import { CASES_MALLE, MALLE_PRETE, QUETE_VEILLE, cochesValides, dateLongue, lire
 import { DUREE_VEILLEE, LECTURE_VIDE, emplacementsDe, tirerContrats, type Entree } from "@/lib/codex/moteur";
 import { MODELES_CONTRATS } from "@/lib/codex/catalogue";
 import { decaleJour } from "@/lib/objectif-calc";
+import { vueRythme } from "@/lib/codex/rythme";
+import { contenuDuProgramme } from "@/lib/codex/catalogue";
 import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
 import * as MAITRISE_UNIQUE from "@/lib/maitrise";
 import * as CAP from "@/lib/codex/cap";
@@ -277,6 +279,12 @@ console.log("\n# le calendrier (V3 §7) : un cas par moment");
   const j1 = v(-1);
   check("J+1 : le lendemain, le récap de la préparation (questions, jours d'encre, préparation)", j1.moment === "lendemain" && j1.phase === "apres" && !!j1.recap && j1.recap.questions > 0 && j1.recap.joursEncre > 0 && j1.recap.preparation === j1.cap?.preparation && j1.recap.programme === "CFA Niveau I", JSON.stringify(j1.recap));
   check("J+1 : « Pose le pinceau » (trame:ep:lendemain) est ouverte", lignes(j1).some((l) => l.id === "trame:ep:lendemain" && l.etat !== "verrouillee"));
+  // le verdict se saisit dès J+1 (V3 §7.1), « reporté » ou « admis » compris : rendu sous « Pose le pinceau »
+  const entreeJ1: Entree = { contenu: contenuDuProgramme(), now: new Date(`${J}T10:00:00Z`), jour: J, jourJ: decaleJour(J, -1), objectif: null, visiteVue: true, progression: [], contrats: [], premier: false, dernierCalcul: null, lecture: LECTURE_VIDE };
+  const rythmeJ1 = vueRythme(entreeJ1, {}, { semaineDispo: true, capacites: CAPACITES_VIDE, moment: j1.moment, verdicts: [] });
+  const ecran = readFileSync("components/codex/CodexEcran.tsx", "utf8");
+  check("J+1 : le verdict (session de l'examen d'hier) est proposé, et /codex le rend après « Pose le pinceau »",
+    rythmeJ1.verdict?.session === decaleJour(J, -1).slice(0, 7) && rythmeJ1.verdict.saisi === null && ecran.indexOf("<PoseLePinceau") < ecran.indexOf("<Verdict ") && !/moment === "apres" && vue\.rythme\?\.verdict/.test(ecran), JSON.stringify(rythmeJ1.verdict?.session));
 
   const j10 = v(-10);
   check("J+10 : après l'épreuve, plus de récap", j10.moment === "apres" && j10.recap === null && j10.phase === "apres");

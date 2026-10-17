@@ -83,8 +83,9 @@ export function vueRythme(
       ? { lundi, ...relue(e, contenu, lundi), cibles: [...CIBLES_SEMAINE], commandes: COMMANDES.filter((c) => possibles.includes(c.id)).map(({ id, nom, resume }) => ({ id, nom, resume })) }
       : null;
   const session = e.jourJ ? sessionDe(e.jourJ) : null;
+  // le verdict dès J+1 (V3 §7.1) : le lendemain (sous « Pose le pinceau »), puis après
   const verdict: VueVerdict | null =
-    def.examen && session && o.moment === "apres"
+    def.examen && session && (o.moment === "apres" || o.moment === "lendemain")
       ? { programme: def.cle, session, saisi: o.verdicts.find((v) => v.programme === def.cle && v.session === session) ?? null, matieres: contenu.map((m) => ({ cle: m.key, nom: m.nom })) }
       : null;
   return {

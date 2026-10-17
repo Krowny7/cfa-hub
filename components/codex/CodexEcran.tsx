@@ -175,7 +175,8 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         </div>
       )}
       {moment === "veillee" && <p className={e.replique}>On ne commence plus rien.</p>}
-      {/* le rythme long (V3 §10.3, §10.5) : le choix du lundi ; après l'examen, le verdict (sur téléphone, dans « Aujourd'hui ») */}
+      {/* le rythme long (V3 §10.3, §10.5) : le choix du lundi ; dès le lendemain de l'examen (J+1, sous « Pose le pinceau »),
+          le verdict (sur téléphone, dans « Aujourd'hui ») */}
       {vue.rythme?.lundi && (
         <div className={horsSegment}>
           <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={setVue} />
