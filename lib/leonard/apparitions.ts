@@ -10,6 +10,9 @@
 //   la visite reste.
 // - Entre deux apparitions ordinaires, 4 minutes au moins, et un peu de
 //   hasard selon l'événement.
+// - Plus un mot quand une quête est faite ni quand un acte s'ouvre (Codex
+//   simplifié §4.6) : Léonard ne parle qu'aux fêtes (un acte, un « Maître
+//   de… », une pièce), jouées au clic dans leur propre cadre (components/fete).
 
 import type { EvenementLeonard } from "./signal";
 
@@ -34,11 +37,13 @@ export const PROBA: Partial<Record<EvenementLeonard, number>> = {
   "atelier-dur": 0.6,
   "atelier-fini": 0.5,
   tard: 0.6,
-  "quete-faite": 0.55,
 };
 
 /** Ce qui passe sans délai ni hasard (mais compte dans les 5, sauf la visite). */
-export const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "serie-sept", "sceau-gagne", "session-parfaite", "retour", "acte-nouveau", "devoile", "carnet"]);
+export const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "serie-sept", "sceau-gagne", "session-parfaite", "retour", "devoile", "carnet"]);
+
+/** Ce dont Léonard ne parle plus, quel que soit l'émetteur (Codex simplifié §4.6). */
+export const MUETS = new Set<EvenementLeonard>(["quete-faite", "acte-nouveau"]);
 
 export const estVisite = (evt: EvenementLeonard) => evt === "tuto" || evt === "nouveautes";
 
@@ -61,11 +66,12 @@ export type Contexte = {
   hasard: number;
 };
 
-export type Refus = "jour-j" | "sobre" | "plafond" | "ecart" | "hasard";
+export type Refus = "muet" | "jour-j" | "sobre" | "plafond" | "ecart" | "hasard";
 export type Decision = { ok: true; compteur: Compteur } | { ok: false; refus: Refus };
 
 /** Léonard apparaît-il pour cet événement ? Si oui, le compteur à garder. */
 export function decider(evt: EvenementLeonard, c: Contexte): Decision {
+  if (MUETS.has(evt)) return { ok: false, refus: "muet" };
   if (c.jourJ) return { ok: false, refus: "jour-j" };
   const j = jourParis(c.maintenant);
   const n = c.compteur.j === j ? c.compteur.n : 0;

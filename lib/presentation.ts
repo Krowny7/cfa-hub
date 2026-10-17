@@ -39,7 +39,10 @@ export function visiteVue(meta: Meta) {
 // Version 3 (Codex v3, V3 §11.4) : la séance du jour, le cap, Mes pièces. La
 // visite d'accueil passe à 4 étapes sans changer VERSION_PRESENTATION : qui
 // l'a déjà vue ne la refait pas, il a les nouveautés à la place.
-export const VERSION_NOUVEAUTES = 3;
+// Version 4 (Codex simplifié, 17 octobre 2026) : le sceau des quêtes en haut
+// à droite et « Récupérer », le Codex dans Moi. La visite d'accueil passe à
+// 5 étapes, toujours sans changer VERSION_PRESENTATION.
+export const VERSION_NOUVEAUTES = 4;
 export const CLE_NOUVEAUTES_COMPTE = "rl_nouveautes";
 
 /** Les nouveautés de cette version sont-elles déjà vues sur ce compte ? */
