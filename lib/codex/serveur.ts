@@ -38,6 +38,7 @@ import { maitriseDuCodex } from "@/lib/codex/cap";
 import { cochesValides, lireMalle, momentCalme, momentDe, pinceauPose } from "@/lib/codex/calendrier";
 import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import { lireSobre } from "@/lib/codex/sobre";
+import { MAX_RECUPERER, cleRecuperer, familleDe, titreHorsVue, TEXTES_RECUPERER, type ARecuperer } from "@/lib/codex/recuperer";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
 import { lireRythme, poserSemaine, poserVerdict } from "@/lib/codex/rythme-serveur";
@@ -453,6 +454,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       premierCalcul: joueur?.premier_calcul ?? null,
       semaine: rythmeLu.semaine,
       verdict: rythmeLu.verdicts.find((v) => v.programme === actif.cle) ?? null,
+      // « versées d'office » : rien n'attend « Récupérer » (lib/codex/recuperer)
+      sobre: lireSobre(user),
     };
     // la séance du jour déjà proposée (en base ; sans la §6, celle de cette instance) : les objectifs de
     // ses blocs et les sondes du jour (5 et 30 rendus) partent avec les compteurs des quêtes
@@ -539,6 +542,16 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       const j = await a.rpc("codex_ecrire", { p_user: user.id, p_lot: [], p_budget_retro: 0 }).then((x) => x, () => null);
       retro = (j?.data as { retro?: VueCodex["retro"] } | null)?.retro ?? null;
       if (j && !j.error && resultat.capacitesVues) await ecrireCapacitesVues(a, user, reglage.ou, resultat.capacitesVues);
+    }
+
+    // le mode sobre verse d'office : ce qui attendait encore le clic (d'avant l'interrupteur) est versé sans bouton
+    if (entree.sobre && entree.progression.some((l) => l.etat === "terminee")) {
+      const verse = await recupererEnBase(a, user.id, null);
+      const apres = verse ? await lireLignes(a, user.id) : null;
+      if (apres) {
+        entree.progression = apres;
+        resultat = evaluer(entree, compteurs);
+      }
     }
 
     // un programme sans examen est mené quand le dernier acte de sa trame se clôt (V3 §1.6) ; sans §3, rien
@@ -632,15 +645,15 @@ export async function lireCodex(supabase: SupabaseClient, user: Joueur, opts: { 
   return vue;
 }
 
-/** La récompense d'une quête telle qu'elle est écrite (codex_progression), sans recalcul ; null : pas encore versée. */
-export async function recompenseEcrite(userId: string, queteId: string, periode: string): Promise<{ xp: number; vu: boolean } | null | "indisponible"> {
+/** La récompense d'une quête telle qu'elle est écrite (codex_progression), sans recalcul ; null : pas encore faite. `attend` : faite, elle attend « Récupérer ». */
+export async function recompenseEcrite(userId: string, queteId: string, periode: string): Promise<{ xp: number; vu: boolean; attend: boolean } | null | "indisponible"> {
   const a = admin();
   if (!a) return "indisponible";
   try {
     const { data, error } = await a.from("codex_progression").select("etat,xp,vu").eq("user_id", userId).eq("quete_id", queteId).eq("periode", periode).maybeSingle();
     if (error) return "indisponible";
     const l = data as { etat: string; xp: number | string; vu: boolean } | null;
-    return l && (l.etat === "recompensee" || l.etat === "terminee") ? { xp: Number(l.xp) || 0, vu: !!l.vu } : null;
+    return l && (l.etat === "recompensee" || l.etat === "terminee") ? { xp: Number(l.xp) || 0, vu: !!l.vu, attend: l.etat === "terminee" } : null;
   } catch {
     return "indisponible";
   }
@@ -826,6 +839,93 @@ export async function ecrireMalle(supabase: SupabaseClient, user: Joueur, coches
   MEMO.delete(user.id);
   const { vue } = await calculUnique(supabase, joueur, true);
   return { ok: true, coches: valides, vue: vue.disponible ? vue : null };
+}
+
+// ── « Récupérer » (Codex simplifié, migration_codex_v3.sql §9) ──────────
+
+type LigneRecuperee = { quete: string; periode: string; famille: string; xp: number; cosmetique: string | null; titre: string | null; terminee_le: string | null };
+
+/**
+ * codex_recuperer : verse les quêtes faites qui attendent (`cles` : celles-là
+ * seulement ; null : toutes). null : la fonction manque (§9 pas collée) ou
+ * l'appel a échoué (consigné) ; `refus` : l'échec n'est pas une absence.
+ */
+async function recupererEnBase(a: SupabaseClient, userId: string, cles: { quete: string; periode: string }[] | null): Promise<{ recuperees: LigneRecuperee[]; xp: number; restant: number } | null | "refus"> {
+  try {
+    const { data, error } = await a.rpc("codex_recuperer", { p_user: userId, p_cles: cles });
+    if (error) {
+      if (baseAbsente(error)) return null;
+      await consigner(a, userId, "", `codex_recuperer : ${error.message}`);
+      return "refus";
+    }
+    const d = (data ?? {}) as { recuperees?: LigneRecuperee[]; xp?: number; restant?: number };
+    return { recuperees: Array.isArray(d.recuperees) ? d.recuperees : [], xp: Number(d.xp) || 0, restant: Number(d.restant) || 0 };
+  } catch {
+    return "refus";
+  }
+}
+
+/**
+ * Le clic « Récupérer » (lib/codex/recuperer) : verse les quêtes faites qui
+ * attendent (codex_recuperer) et accuse réception de celles déjà versées
+ * (repli sans la §9 : codex_vus). `cles` : celles-là seulement ; null :
+ * toutes. Rend ce qui a été récupéré (titres et pièces lus dans la vue d'avant
+ * le clic), l'XP versée à ce clic (0 pour le déjà versé) et ce qui attend
+ * encore. La vue gardée et l'instantané du panneau sont ensuite oubliés : le
+ * prochain calcul relit tout. Un double clic ne verse qu'une fois (la base).
+ */
+export async function recupererCodex(
+  supabase: SupabaseClient,
+  user: Joueur,
+  cles: { quete: string; periode: string }[] | null,
+): Promise<{ ok: true; recues: ARecuperer[]; xp: number; restant: number; sobre: boolean } | { ok: false; raison: "indisponible" | "refus" }> {
+  const a = admin();
+  if (!a) return { ok: false, raison: "indisponible" };
+  const vue = await lireCodex(supabase, user);
+  if (!vue.disponible) return { ok: false, raison: "indisponible" };
+  const voulues = cles ? new Set(cles.map(cleRecuperer)) : null;
+  const choisies = vue.aRecuperer.filter((x) => !voulues || voulues.has(cleRecuperer(x)));
+  const parCle = new Map(vue.aRecuperer.map((x) => [cleRecuperer(x), x]));
+  const recues: ARecuperer[] = [];
+  let xp = 0;
+  let restantBase: number | null = null;
+
+  // à verser : toutes (la base peut en savoir plus que la vue gardée), ou celles demandées qui attendent
+  const aVerser = cles ? cles.filter((c) => parCle.get(cleRecuperer(c))?.aVerser !== false) : null;
+  if (!aVerser || aVerser.length) {
+    const r = await recupererEnBase(a, user.id, aVerser ? aVerser.slice(0, MAX_RECUPERER) : null);
+    if (r === "refus") return { ok: false, raison: "refus" };
+    if (r) {
+      xp = r.xp;
+      restantBase = r.restant;
+      for (const l of r.recuperees) {
+        const connue = parCle.get(cleRecuperer(l));
+        recues.push({
+          ...(connue ?? { titre: titreHorsVue(l.quete) ?? TEXTES_RECUPERER.sansTitre, famille: familleDe(l.quete), le: null, recompense: null, piece: l.cosmetique ?? l.titre ?? null }),
+          quete: l.quete,
+          periode: l.periode,
+          xp: Math.max(0, Number(l.xp) || 0),
+          aVerser: true,
+        });
+      }
+    }
+  }
+
+  // déjà versées : le clic en accuse réception (la fanfare est jouée par l'écran)
+  const accuses = choisies.filter((x) => !x.aVerser);
+  if (accuses.length) {
+    const ok = await marquerVus(user.id, [...new Set(accuses.map((x) => x.quete))]);
+    if (!ok && !recues.length) return { ok: false, raison: "refus" };
+    if (ok) recues.push(...accuses);
+  }
+
+  const prises = new Set(recues.map(cleRecuperer));
+  const restant = (restantBase ?? vue.aRecuperer.filter((x) => x.aVerser && !prises.has(cleRecuperer(x))).length) + vue.aRecuperer.filter((x) => !x.aVerser && !prises.has(cleRecuperer(x))).length;
+  // la vue de repli ne les propose plus ; le prochain calcul relit tout (XP, possessions, fait aujourd'hui)
+  patcher(user.id, (v) => ({ ...v, aRecuperer: v.aRecuperer.filter((x) => !prises.has(cleRecuperer(x))) }));
+  MEMO.delete(user.id);
+  await oublierPanneau(user.id);
+  return { ok: true, recues, xp, restant, sobre: vue.sobre };
 }
 
 /** Marque des fanfares comme jouées ; la vue gardée est corrigée sur place (pas de recalcul). */

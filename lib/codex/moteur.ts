@@ -168,6 +168,8 @@ export type Entree = {
   semaine?: Semaine | null;
   /** le verdict de l'examen (codex_resultat, V3 §10.5) : les bandes basses pèsent plus dans la faiblesse */
   verdict?: Verdict | null;
+  /** le mode sobre du joueur (lib/codex/sobre) : les récompenses sont versées d'office, rien n'attend « Récupérer » */
+  sobre?: boolean;
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
@@ -919,6 +921,13 @@ export type ItemEcriture = {
   plafond?: number;
   cosmetique?: string;
   titre?: string;
+  /**
+   * « Récupérer » (codex_ecrire, migration_codex_v3.sql §9) : la quête est
+   * écrite faite (« terminee ») et sa récompense attend le clic du joueur
+   * (codex_recuperer). Seulement si la base sait différer, hors mode sobre,
+   * pour une quête non rétroactive qui rapporte quelque chose.
+   */
+  differer?: true;
 };
 
 export type Resultat = {
@@ -1088,6 +1097,10 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
 /** Les objectifs des prérequis d'une quête (k « objectif », dans « unDe » compris) : planifier demande leurs compteurs. */
 const objectifsDesPrerequis = (ps: Prerequis[]): Objectif[] => ps.flatMap((p) => (p.k === "objectif" ? [p.objectif] : p.k === "unDe" ? objectifsDesPrerequis(p.prerequis) : []));
 
+/** L'XP des quêtes faites qui attendent « Récupérer » (lignes « terminee » : pas encore dans xp_total). */
+export const xpEnAttente = (lignes: Pick<LigneProgression, "etat" | "xp">[]): number =>
+  lignes.reduce((s, l) => s + (l.etat === "terminee" ? Math.max(0, Number(l.xp) || 0) : 0), 0);
+
 /**
  * Passe 2 : la cascade. `compteurs` : codex_lire indexé (indexerLecture).
  * Rend les états, ce qu'il faut écrire, la phase, les actes clos.
@@ -1193,7 +1206,12 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
 
   // l'écriture
   const lot: ItemEcriture[] = [];
-  const plafond = plafondQuete(niveau);
+  // le plafond se calcule sur le niveau que le joueur aura une fois tout récupéré : xp_total et l'XP qui attend le clic
+  const plafond = plafondQuete(levelInfoFromXp((e.lecture.mesures.xp_total ?? 0) + xpEnAttente(e.progression)).level);
+  // « Récupérer » : la base sait différer et le joueur n'a pas choisi les récompenses versées d'office
+  const differer = !!capacites.recuperer && !e.sobre;
+  const attend = (retro: boolean | undefined, xp: number, r: { cosmetique?: string; titre?: string; folio?: string }) =>
+    differer && !retro && (xp > 0 || !!r.cosmetique || !!r.titre || !!r.folio) ? { differer: true as const } : {};
   const retroDe = (atteint: Date | null) => e.premier || (!!atteint && !!e.dernierCalcul && atteint.getTime() < e.dernierCalcul.getTime());
   // le rattrapage (V3 §1.9) : déjà remplie et dépendante de ce qui est nouveau (quête de la v3 au premier
   // calcul v3, capacité vue pour la première fois) → rétro, quelle que soit sa date d'atteinte
@@ -1220,7 +1238,8 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
       // un miroir est tamponné sans rien verser : sa quête payeuse paie (V3 §8.2), moins ce que ses
       // miroirs ont déjà versé ; elle garde cosmétique et titre, et compte pour la clôture d'acte
       const paie = !q.miroir;
-      lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp: paie ? Math.max(0, q.recompense.xp - dejaVerse(q)) : 0, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(paie && q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(paie && q.recompense.titre ? { titre: q.recompense.titre } : {}) });
+      const xp = paie ? Math.max(0, q.recompense.xp - dejaVerse(q)) : 0;
+      lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(paie && q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(paie && q.recompense.titre ? { titre: q.recompense.titre } : {}), ...attend(retro, xp, paie ? q.recompense : {}) });
     } else if (!st.fait && st.ouverte) {
       const v = st.ev ? st.ev.valeur : 0;
       const etat = v > 0 ? "active" : "disponible";
@@ -1232,7 +1251,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     if (!actesClos.has(a.id) || lignesActes.has(a.id)) continue;
     const atteint = actesFaits.get(a.id) ?? null;
     const retro = retroDe(atteint) && a.id !== "epilogue";
-    lot.push({ quete: `acte:${a.id}`, periode: "", famille: "acte", etat: "terminee", cible: 1, retro, xp: a.recompense.xp, plafond, ...(atteint ? { atteint: atteint.toISOString() } : {}), ...(a.recompense.cosmetique ? { cosmetique: a.recompense.cosmetique } : {}), ...(a.recompense.titre ? { titre: a.recompense.titre } : {}) });
+    lot.push({ quete: `acte:${a.id}`, periode: "", famille: "acte", etat: "terminee", cible: 1, retro, xp: a.recompense.xp, plafond, ...(atteint ? { atteint: atteint.toISOString() } : {}), ...(a.recompense.cosmetique ? { cosmetique: a.recompense.cosmetique } : {}), ...(a.recompense.titre ? { titre: a.recompense.titre } : {}), ...attend(retro, a.recompense.xp, a.recompense) });
   }
   // le trio du jour : les contrats tirés, un par emplacement (le débrief, quotidien lui aussi, n'en est pas)
   const duTrio = new Set(instances.filter((i) => i.emplacement).map((i) => clePeriode(i.quete.id, i.periode)));
@@ -1240,7 +1259,7 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   // ou la séance du jour lancée et tenue (V3 §6.4) : même id, même XP, une fois par jour
   const trioFait = (dujour.length === EMPLACEMENTS.length && dujour.every((s) => s.fait)) || e.seance?.tenue === true;
   if (trioFait && !lignes.has(clePeriode(`contrat:trio:${e.jour}`, e.jour))) {
-    lot.push({ quete: `contrat:trio:${e.jour}`, periode: e.jour, famille: "contrat", etat: "terminee", cible: 3, retro: false, xp: XP.contratTrio, plafond });
+    lot.push({ quete: `contrat:trio:${e.jour}`, periode: e.jour, famille: "contrat", etat: "terminee", cible: 3, retro: false, xp: XP.contratTrio, plafond, ...attend(false, XP.contratTrio, {}) });
   }
   return {
     etats: [...etats.values()],

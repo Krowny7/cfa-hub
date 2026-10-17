@@ -20,7 +20,7 @@ export const estBudget = (b: unknown): b is Budget => typeof b === "number" && (
 /** Les quêtes écartées d'une journée : 30 au plus (la base refuse au-delà). */
 export const MAX_ECARTEES = 30;
 
-export const CAPACITES_VIDE: Capacites = { fil: false, mesures: false, seances: false, revoir: false, maitrise: false, trophees: false, debrief: false, ratures_seches: false, journal: 2 };
+export const CAPACITES_VIDE: Capacites = { fil: false, mesures: false, seances: false, revoir: false, maitrise: false, trophees: false, debrief: false, ratures_seches: false, journal: 2, recuperer: false };
 
 export type ReglageJour = {
   /** le budget choisi CE jour-là (null : pas choisi, le défaut s'applique) */
@@ -51,7 +51,7 @@ function capacitesDe(x: unknown): Partial<Capacites> | null {
   if (!x || typeof x !== "object" || Array.isArray(x)) return null;
   const o = x as Record<string, unknown>;
   const out: Partial<Capacites> = {};
-  for (const k of Object.keys(CAPACITES_VIDE) as (Capacite | "journal")[]) {
+  for (const k of Object.keys(CAPACITES_VIDE) as (Capacite | "journal" | "recuperer")[]) {
     if (k === "journal") {
       if (o.journal === 2 || o.journal === 3) out.journal = o.journal;
     } else if (typeof o[k] === "boolean") out[k] = o[k] as boolean;

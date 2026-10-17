@@ -470,8 +470,13 @@ export type SourceDonnee = { libelle: string; source: string; branche: boolean }
  *  n'exige rien qui en dépende. */
 /** « mesures » : codex_mesures_v3 rend les mesures nouvelles (notions tenues, spéciaux par matière, trophées) ; la §4 est collée. */
 export type Capacite = "fil" | "mesures" | "seances" | "revoir" | "maitrise" | "trophees" | "debrief" | "ratures_seches";
-/** journal : 2 (codex_journal d'origine) ou 3 (événements v3, marqueur _codex_journal_v3). */
-export type Capacites = Record<Capacite, boolean> & { journal: 2 | 3 };
+/**
+ * journal : 2 (codex_journal d'origine) ou 3 (événements v3, marqueur _codex_journal_v3).
+ * recuperer : la base sait différer une récompense jusqu'au clic « Récupérer »
+ * (codex_recuperer, migration_codex_v3.sql §9) ; aucune quête ne l'exige et
+ * elle n'entre pas dans le rattrapage. Absente : faux.
+ */
+export type Capacites = Record<Capacite, boolean> & { journal: 2 | 3; recuperer?: boolean };
 /** Ce qu'une quête peut exiger de la base (Quete.requiert) : une capacité, ou le journal v3. */
 export type Requis = Capacite | "journal3";
 

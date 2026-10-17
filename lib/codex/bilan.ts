@@ -15,6 +15,7 @@ import { slugDeId } from "@/lib/codex/programmes/ids";
 import { feteSobre } from "@/lib/codex/sobre";
 import { CODEX } from "@/lib/voice-codex";
 import { etapeSeance, gainsSeance, type GainSeance } from "@/lib/codex/seance-etat";
+import type { ARecuperer, FaitAujourdhui } from "@/lib/codex/recuperer";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
 
 export type FeteCodex = {
@@ -47,6 +48,14 @@ export type BilanCodex = {
   seance?: FinSeance | null;
   /** le mode sobre du joueur (lib/codex/sobre) : les fêtes tiennent en une ligne, sans XP ni pièce */
   sobre?: boolean;
+  /** le jour de Paris du calcul */
+  jour?: string;
+  /** « Récupérer » (lib/codex/recuperer) : ce qui attend le clic ; la ligne de fin d'outil le propose */
+  aRecuperer?: ARecuperer[];
+  /** ce qui est fait aujourd'hui (le bloc s'y replie une fois tout récupéré) */
+  fait?: FaitAujourdhui;
+  /** l'étape suivante de la séance du jour : « La suite : … → » en fin d'outil ; null : rien */
+  suite?: { titre: string; href: string } | null;
 };
 
 /** La fin d'une séance tenue : ses plus grands gains depuis le lancement, de quoi annoncer les trophées, et le budget (pour « Encore un bloc ? »). */
@@ -114,6 +123,13 @@ export function habitFete(f: FeteCodex, o: { sobre: boolean; acte: BilanCodex["a
   return { taille, titre: f.titre, ...(sous ? { sous } : {}), xp, piece, replique: ouvre && (taille === "page" || taille === "plein") ? ouvre.replique : null };
 }
 
+/** L'étape suivante de la séance du jour (le premier bloc pas fait), tant qu'elle n'est pas finie. */
+function suiteDe(vue: VueCodex): BilanCodex["suite"] {
+  const s = vue.seance;
+  const b = s && !s.finie ? s.blocs.find((x) => !s.faits.includes(x.genre)) : undefined;
+  return b ? { titre: b.titre, href: b.destination.href } : null;
+}
+
 export function bilanDe(vue: VueCodex): BilanCodex {
   if (!vue.disponible) return BILAN_VIDE;
   const fetes: FeteCodex[] = [];
@@ -149,5 +165,9 @@ export function bilanDe(vue: VueCodex): BilanCodex {
     retro: vue.retro,
     seance: vue.seance && vue.seance.lancee && etapeSeance(vue.seance) === "tenue" ? { jour: vue.seance.jour, budget: vue.seance.budget, lanceeLe: vue.seance.lanceeLe, gains: gainsSeance(vue.seance.avant, vue) } : null,
     sobre: vue.sobre,
+    jour: vue.jour,
+    aRecuperer: vue.aRecuperer,
+    fait: vue.faitAujourdhui,
+    suite: suiteDe(vue),
   };
 }

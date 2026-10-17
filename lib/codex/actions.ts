@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recompenseEcrite, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recompenseEcrite, recupererCodex, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
 import { CIBLES_SEMAINE, COMMANDES, type Commande } from "@/lib/codex/catalogue";
 import type { StatutVerdict } from "@/lib/codex/plan";
-import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
+import { BILAN_VIDE, bilanDe, type BilanCodex, type FeteCodex } from "@/lib/codex/bilan";
+import { MAX_RECUPERER, grandesFetes } from "@/lib/codex/recuperer";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
 import { ECARTE_SEANCE, estGenreBloc, type VueSeance } from "@/lib/codex/seance";
@@ -76,6 +77,13 @@ async function reclamerPour(supabase: Awaited<ReturnType<typeof createClient>>, 
   if (typeof queteId !== "string" || queteId.length > 120 || typeof periode !== "string") return { ok: false, raison: "refus" };
   const ecrite = await recompenseEcrite(user.id, queteId, periode);
   if (ecrite === "indisponible") return { ok: false, raison: "indisponible" };
+  // faite, elle attend « Récupérer » : la réclamer la récupère
+  if (ecrite?.attend) {
+    const r = await recupererCodex(supabase, user, [{ quete: queteId, periode }]);
+    if (!r.ok) return r;
+    revalidatePath("/", "layout");
+    return { ok: true, xp: r.xp, deja: false };
+  }
   if (ecrite) return { ok: true, xp: ecrite.xp, deja: ecrite.vu };
   const vue = await lireCodex(supabase, user, { force: true, persister: true });
   if (!vue.disponible) return { ok: false, raison: "indisponible" };
@@ -85,6 +93,42 @@ async function reclamerPour(supabase: Awaited<ReturnType<typeof createClient>>, 
   const ligne = toutes.find((l) => l.id === queteId && l.periode === periode);
   if (ligne?.etat === "terminee") return { ok: true, xp: ligne.xpVersee ?? 0, deja: true };
   return { ok: false, raison: "aucun" };
+}
+
+/** Les clés reçues du navigateur : une liste de {quete, periode} bien formés, MAX_RECUPERER au plus ; null : refusées. */
+function clesValides(x: unknown): { quete: string; periode: string }[] | null {
+  if (!Array.isArray(x) || x.length > MAX_RECUPERER) return null;
+  const out: { quete: string; periode: string }[] = [];
+  for (const c of x) {
+    const o = c as { quete?: unknown; periode?: unknown } | null;
+    if (!o || typeof o.quete !== "string" || !o.quete || o.quete.length > 120 || typeof o.periode !== "string" || o.periode.length > 20) return null;
+    out.push({ quete: o.quete, periode: o.periode });
+  }
+  return out;
+}
+
+/**
+ * « Récupérer » (Codex simplifié) : verse les quêtes faites qui attendent le
+ * clic (codex_recuperer, migration_codex_v3.sql §9) ; sans la §9, accuse
+ * réception de celles déjà versées (la barre de niveau ne bouge pas).
+ * `cles` : celles-là seulement ; absent : toutes. Rend les quêtes
+ * récupérées, l'XP versée à ce clic, ce qui attend encore et les grandes
+ * fêtes à jouer une par une (acte clos, « Maître de… », pièce gagnée). Le
+ * niveau de la barre du haut se rafraîchit.
+ */
+export async function codexRecuperer(cles?: { quete: string; periode: string }[]): Promise<Resultat<{ recues: { quete: string; periode: string }[]; xp: number; restant: number; fetes: FeteCodex[] }>> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  const valides = cles === undefined ? null : clesValides(cles);
+  if (cles !== undefined && !valides) return { ok: false, raison: "refus" };
+  try {
+    const r = await recupererCodex(supabase, user, valides);
+    if (!r.ok) return r;
+    revalidatePath("/", "layout");
+    return { ok: true, recues: r.recues.map((x) => ({ quete: x.quete, periode: x.periode })), xp: r.xp, restant: r.restant, fetes: grandesFetes(r.recues, r.sobre) };
+  } catch {
+    return { ok: false, raison: "erreur" };
+  }
 }
 
 /**

@@ -16,6 +16,7 @@ import type { VueRythme } from "@/lib/codex/rythme";
 import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
 import { notionsDeMatiere } from "@/lib/notions";
 import { CODEX, romain } from "@/lib/voice-codex";
+import { FAIT_VIDE, aRecupererDe, cleRecuperer, faitAujourdhuiDe, nomRecompense, titreHorsVue, type ARecuperer, type FaitAujourdhui } from "@/lib/codex/recuperer";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -195,13 +196,17 @@ export type VueCodex = {
   sobre: boolean;
   /** le rythme long (V3 §10.2 à §10.5, lib/codex/rythme.ts) : le plan daté, le lundi, le verdict, la reprise ; absent : aperçus */
   rythme?: VueRythme | null;
+  /** « Récupérer » (lib/codex/recuperer) : les quêtes faites qui attendent le clic, les plus récentes d'abord */
+  aRecuperer: ARecuperer[];
+  /** les quêtes récompensées aujourd'hui (jour de Paris), hors rétroactif */
+  faitAujourdhui: FaitAujourdhui;
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
   disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, cap: null, prochaine: null,
   trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], debrief: null, branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
   possessions: [], collection: null, stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null, seance: null,
-  moment: "courant", tampons: null, malle: null, recap: null, sobre: false,
+  moment: "courant", tampons: null, malle: null, recap: null, sobre: false, aRecuperer: [], faitAujourdhui: FAIT_VIDE,
 });
 
 let NOMS_COSMETIQUES: Map<string, string> | null = null;
@@ -493,12 +498,14 @@ export function construireVue(
   const par = donneurs(contenu, [...r.etats.map((s) => s.quete), ...retirees]);
   const noms = new Map<string, CosmetiqueCodex>([...COSMETIQUES_CODEX, ...titresMaitres(contenu)].map((c) => [c.cle, c]));
   const faitesPar = new Map(e.progression.filter((l) => l.etat === "recompensee").map((l) => [l.quete_id, l]));
+  // une pièce qui attend « Récupérer » n'est pas encore possédée (elle n'est portable qu'après le clic)
+  const enAttente = new Set(e.progression.filter((l) => l.etat === "terminee").map((l) => l.quete_id));
   const possessions: Possession[] = [];
   for (const [cle, ids] of par) {
     const c = noms.get(cle);
     if (!c) continue;
     for (const id of ids) {
-      const l = faitesPar.get(id) ?? (r.etats.find((s) => s.quete.id === id && s.fait && !s.quete.miroir) ? { terminee_le: null, retro: false } : null);
+      const l = faitesPar.get(id) ?? (!enAttente.has(id) && r.etats.find((s) => s.quete.id === id && s.fait && !s.quete.miroir) ? { terminee_le: null, retro: false } : null);
       if (!l) continue;
       possessions.push({ cle, type: c.type, nom: c.nom, quete: id, le: l.terminee_le, retro: !!l.retro });
       break;
@@ -509,6 +516,17 @@ export function construireVue(
   const comptee = (s: EtatQuete) => s.quete.famille !== "contrat" && s.quete.famille !== "fil" && !s.horsJeu;
   const faites = r.etats.filter((s) => s.fait && comptee(s)).length;
   const ligneReco = reco ? lignes.find((x) => x.s.quete.id === reco.quete.id && x.s.periode === reco.periode)?.l : null;
+
+  // « Récupérer » : ce qui attend le clic, et ce qui est fait aujourd'hui (un miroir compte avec sa quête payeuse)
+  const titresActes = new Map(actesDuJoueur(e).map((a) => [`acte:${a.id}`, a.titre]));
+  const miroirs = new Set(r.etats.filter((s) => s.quete.miroir).map((s) => s.quete.id));
+  const titreDe = (id: string) => titres.get(id) ?? titresActes.get(id) ?? titreHorsVue(id);
+  const recompenseDe = (cle: string | null) => {
+    const c = cle ? noms.get(cle) : undefined;
+    return c ? nomRecompense(c) : null;
+  };
+  const aRecuperer = aRecupererDe(e.progression, { titre: titreDe, recompense: recompenseDe, sobre: !!extra.sobre, ignorer: (id) => miroirs.has(id) });
+  const faitAujourdhui = faitAujourdhuiDe(e.progression, e.jour, { titre: titreDe, attente: new Set(aRecuperer.map(cleRecuperer)), ignorer: (id) => miroirs.has(id) });
   return {
     disponible: true,
     jour: e.jour,
@@ -544,6 +562,8 @@ export function construireVue(
     malle: moment === "malle" ? { coches: extra.malle ?? [] } : null,
     recap: moment === "lendemain" ? recapDe({ programme: programmeActif(e.programmes).nom, debut, jourJ: e.jourJ, jours: M.jours ?? [], maitrise, raturesScellees: M.ratures_scellees, trophees: M.trophees }) : null,
     sobre: extra.sobre ?? false,
+    aRecuperer,
+    faitAujourdhui,
   };
 }
 
