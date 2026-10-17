@@ -18,7 +18,7 @@ import { Sceau } from "@/components/codex/Sceau";
 // qui attendent le clic. Deux formes :
 //  - « bloc » (panneau du sceau, /codex) : « À récupérer · 3 », trois lignes
 //    au plus, « et N autres », puis le bouton plein « Tout récupérer · +190 XP » ;
-//  - « ligne » (fin d'outil) : « 2 quêtes faites » et un bouton contour
+//  - « ligne » (fin d'outil) : « 2 quêtes à récupérer » et un bouton contour
 //    « Récupérer +60 XP ».
 // Le geste : le bouton se désactive pendant l'appel ; au retour, le tampon
 // tombe sur chaque ligne (100 ms de décalage, trois lignes au plus), l'XP se
@@ -210,7 +210,7 @@ export function Recuperer({
       <div className={"flex flex-wrap items-center gap-x-3 gap-y-2 " + className}>
         <span className="shrink-0">{sceau(0)}</span>
         <p className="t-small m-0 min-w-0 flex-1">
-          {T.faites(n)}
+          {T.ligne(n)}
           {dejaVerse ? ` · ${T.dejaVerse}` : ""}
         </p>
         {comptee ?? (

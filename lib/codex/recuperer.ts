@@ -201,8 +201,8 @@ export const TEXTES_RECUPERER = {
   dejaVerse: "Déjà versé",
   voir: "Voir ce que tu as gagné",
   autres: (n: number) => `et ${n} autre${n > 1 ? "s" : ""}`,
-  /** la ligne de fin d'outil : « 2 quêtes faites » */
-  faites: (n: number) => `${n} quête${n > 1 ? "s" : ""} faite${n > 1 ? "s" : ""}`,
+  /** la ligne de fin d'outil : « 2 quêtes à récupérer » */
+  ligne: (n: number) => `${n} quête${n > 1 ? "s" : ""} à récupérer`,
   enCours: "Récupération…",
   echec: "Pas pu récupérer. Réessaie dans un instant.",
   fait: (f: Pick<FaitAujourdhui, "n" | "xp">, sobre = false) => `Fait aujourd'hui : ${f.n}${f.xp > 0 && !sobre ? ` · ${xp(f.xp)}` : ""}`,

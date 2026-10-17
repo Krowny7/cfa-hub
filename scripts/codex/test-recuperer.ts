@@ -140,7 +140,7 @@ console.log("\n# les dates et les mots");
   check("dateRecuperer : aujourd'hui rien, « d'hier », sinon « mer. 14 oct. »", dateRecuperer("2026-10-17", jour) === null && dateRecuperer("2026-10-16", jour) === "d'hier" && dateRecuperer("2026-10-14", jour) === "mer. 14 oct." && dateRecuperer("2026-10-01", jour) === "jeu. 1er oct." && dateRecuperer(null, jour) === null);
   check("jourDe : le jour de Paris d'un horodatage", jourDe("2026-10-16T22:30:00Z") === "2026-10-17" && jourDe(null) === null && jourDe("n'importe quoi") === null);
   check("les boutons", T.tout(190) === "Tout récupérer · +190 XP" && T.tout(0) === "Tout récupérer" && T.un(60) === "Récupérer +60 XP" && T.tout(1250) === "Tout récupérer · +1 250 XP");
-  check("les lignes", T.titre(3) === "À récupérer · 3" && T.faites(2) === "2 quêtes faites" && T.faites(1) === "1 quête faite" && T.autres(4) === "et 4 autres" && T.fait({ n: 4, xp: 230 }) === "Fait aujourd'hui : 4 · +230 XP" && T.fait({ n: 4, xp: 230 }, true) === "Fait aujourd'hui : 4");
+  check("les lignes", T.titre(3) === "À récupérer · 3" && T.ligne(2) === "2 quêtes à récupérer" && T.ligne(1) === "1 quête à récupérer" && T.autres(4) === "et 4 autres" && T.fait({ n: 4, xp: 230 }) === "Fait aujourd'hui : 4 · +230 XP" && T.fait({ n: 4, xp: 230 }, true) === "Fait aujourd'hui : 4");
   check("le repli et l'échec", T.dejaVerse === "Déjà versé" && T.voir === "Voir ce que tu as gagné" && T.echec === "Pas pu récupérer. Réessaie dans un instant.");
 }
 

@@ -24,7 +24,7 @@ import s from "./Codex.module.css";
 // automatique (Codex simplifié) : les quêtes faites attendent « Récupérer »,
 // et leurs grandes fêtes se jouent au clic (components/codex/Recuperer).
 //
-// En fin d'outil : une ligne « 2 quêtes faites · Récupérer +60 XP » (bouton
+// En fin d'outil : une ligne « 2 quêtes à récupérer · Récupérer +60 XP » (bouton
 // contour, tampon compris), puis « La suite : … → », l'étape suivante de la
 // séance du jour. Si ce dernier bloc vient de tenir la séance : « Ce que ça
 // a fait avancer » (V3 §6.5), une fois par jour, avec « C'est assez pour
