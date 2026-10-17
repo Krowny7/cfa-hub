@@ -30,6 +30,8 @@ export type RadarAxis = {
   nom?: string;
   /** qui est « me » dans l'infobulle : « toi » (défaut) ou le pseudo du joueur regardé */
   qui?: string;
+  /** maîtrise provisoire de « me » : « provisoire · 23 réponses sur 40 » (l'infobulle dit « ≈ 52 % ») */
+  provisoire?: string | null;
 };
 
 const ecartEnClair = (d: number) => (d === 0 ? "pile dans la moyenne" : `${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "au-dessus de" : "sous"} la moyenne`);
@@ -39,7 +41,7 @@ function titreAxe(a: RadarAxis, autre: number | null, comparaison: RadarComparai
   const nom = a.nom ?? a.label;
   const qui = a.qui ?? "toi";
   if (a.soon) return `${nom} : bientôt`;
-  const me = a.me === null ? "pas encore mesurée" : `${a.me} % de bonnes réponses`;
+  const me = a.me === null ? "pas encore mesurée" : `${a.provisoire ? "≈ " : ""}${a.me} % de bonnes réponses${a.provisoire ? ` (${a.provisoire})` : ""}`;
   if (comparaison) {
     const toi = autre === null ? "pas encore mesurée" : `${autre} %`;
     const d = autre !== null && a.me !== null ? Math.round(autre - a.me) : null;

@@ -143,16 +143,16 @@ export const CARNET = {
   videFiltre: "Aucune rature de ce côté-là.",
   videRetirees: "Aucune ancienne rature pour l'instant : celles que tu rayes arrivent ici.",
   erreur: "Le carnet ne répond pas pour l'instant. Réessaie dans un moment.",
-  /** « Mettre au propre » : repasser ses ratures au hasard */
+  /** « Mettre au propre » : repasser ses ratures une à une */
   propre: "Mettre au propre",
-  propreSous: "Tes ratures dans le désordre : une bonne réponse la raye du carnet, une erreur la garde.",
+  propreSous: "Tes ratures une à une : une bonne réponse la raye du carnet, une erreur la garde.",
   propreTitre: "Mise au propre",
   propreFiltre: (filtre: string | null) => (filtre ? `Mise au propre · ${filtre}` : "Mise au propre"),
   propreRayee: "Rayée : elle rejoint les anciennes.",
   propreReste: "Elle reste en cours.",
   /** rejouer les anciennes : une révision */
   rejouer: "Rejouer les anciennes",
-  rejouerSous: "Une révision dans le désordre : juste, elle reste rayée ; une erreur la remet en cours.",
+  rejouerSous: "Une révision, une à une : juste, elle reste rayée ; une erreur la remet en cours.",
   rejouerFiltre: (filtre: string | null) => (filtre ? `Révision des anciennes · ${filtre}` : "Révision des anciennes"),
   rejouerAcquise: "Toujours acquise.",
   rejouerRevenue: "Elle revient en cours.",
@@ -163,8 +163,10 @@ export const CARNET = {
   propreValider: "Valider",
   propreSuivante: "Rature suivante",
   propreArreter: "Arrêter là",
-  propreBilan: (rayees: number, restees: number) =>
-    [rayees > 0 ? `${pluriel(rayees, "rayée", "rayées")}` : null, restees > 0 ? `${pluriel(restees, "restée", "restées")}` : null].filter(Boolean).join(" · ") || "c'est parti",
+  propreBilan: (rayees: number, restees: number, seches = 0) =>
+    [rayees > 0 ? `${pluriel(rayees, "rayée", "rayées")}` : null, seches > 0 ? `${pluriel(seches, "qui sèche", "qui sèchent")}` : null, restees > 0 ? `${pluriel(restees, "restée", "restées")}` : null]
+      .filter(Boolean)
+      .join(" · ") || "c'est parti",
   propreRestantes: (n: number) => `${pluriel(n, "rature", "ratures")} à reprendre`,
   propreFini: "Carnet au propre : plus aucune rature ici.",
   propreFiniVue: "Tu as repassé toutes les ratures de ce tri. Relance pour un nouveau tour.",
@@ -185,6 +187,22 @@ export const CARNET = {
   sansNotionRepere: "questions retirées de la banque ou pas encore rangées",
   notionInconnue: "Autre notion",
   ratures: (n: number) => pluriel(n, "rature", "ratures"),
+  /** les ratures qui sèchent (migration_v3_profil.sql §3a) : rayées seulement 24 h après l'erreur, scellées à 7 jours */
+  regleSeche: "Une rature ne se raye qu'une fois sèche : réussie moins de 24 h après l'erreur, elle reste à l'encre fraîche jusqu'au lendemain. Réussie de nouveau une semaine après son rayage, elle est scellée.",
+  /** « encre fraîche · sèche demain », ou « sèche à 15 h » le jour même */
+  encreFraiche: (q: { demain: true } | { demain: false; heure: number }) => `encre fraîche · sèche ${q.demain ? "demain" : `à ${q.heure} h`}`,
+  encreFraicheDetail: "Réussie trop tôt après l'erreur : elle sèche d'abord, puis une bonne réponse la rayera.",
+  scellee: "scellée",
+  scelleeDetail: "Rayée, puis réussie de nouveau une semaine plus tard : elle tient.",
+  scellees: (n: number) => pluriel(n, "scellée", "scellées"),
+  /** sous « Mettre au propre » : les ratures du carnet qui ne sont pas encore proposées */
+  sechentSous: (n: number) => `${pluriel(n, "rature sèche", "ratures sèchent")} encore : ${n > 1 ? "elles reviendront" : "elle reviendra"} demain.`,
+  propreFraiche: (q: { demain: true } | { demain: false; heure: number } | null) =>
+    `Juste. Encre fraîche : elle sèche ${q && !q.demain ? `à ${q.heure} h` : "demain"}, une bonne réponse la rayera alors.`,
+  propreSeche: "Tout ce qui reste sèche demain.",
+  propreSecheTexte: (n: number) => `${pluriel(n, "rature est", "ratures sont")} encore à l'encre fraîche : moins de 24 h depuis l'erreur. Repasse demain pour ${n > 1 ? "les" : "la"} rayer.`,
+  propreSechent: (n: number) => `${pluriel(n, "autre sèche", "autres sèchent")} encore : à demain.`,
+  rejouerScellee: "Scellée : elle tient depuis plus d'une semaine.",
 } as const;
 
 /** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */

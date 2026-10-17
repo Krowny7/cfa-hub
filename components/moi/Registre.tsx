@@ -48,8 +48,9 @@ function resumeRatures(d: MoiData): Resume | null {
   return {
     kicker: T.kicker,
     titre: T.titre(r.total),
-    repere: T.repere(r.retirees, r.retireesSemaine),
-    phrase: r.total > 0 ? T.phrase : T.phraseVide,
+    // les ratures qui sèchent (section §3a) : la règle change, et celles qui sèchent encore ne sont pas proposées
+    repere: [T.repere(r.retirees, r.retireesSemaine), r.sechent ? T.sechent(r.sechent) : null].filter(Boolean).join(" · "),
+    phrase: r.total > 0 ? (r.scellees !== undefined ? T.phraseSeche : T.phrase) : T.phraseVide,
     action:
       r.total > 0 ? (
         <LienCarnet action="propre" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]">
@@ -65,7 +66,7 @@ function resumeRatures(d: MoiData): Resume | null {
     aside: {
       kicker: T.asideKicker,
       titre: T.asideTitre(r.retirees),
-      ligne: T.asideLigne(r.retirees, r.retireesSemaine),
+      ligne: [T.asideLigne(r.retirees, r.retireesSemaine), r.scellees ? T.scellees(r.scellees) : null].filter(Boolean).join(" "),
       lien:
         r.retirees > 0 ? (
           <LienCarnet action="anciennes" className="ink-link mt-auto inline-flex w-fit items-center gap-1 pt-1 text-[14px] font-semibold">

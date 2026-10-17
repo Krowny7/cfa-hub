@@ -50,7 +50,7 @@ function absente(message: string | undefined, code?: string) {
   return code === "PGRST202" || code === "42883" || /could not find the function|does not exist/i.test(message ?? "");
 }
 
-function toQuestion(r: Raw): EclairQuestion {
+export function toQuestion(r: Raw): EclairQuestion {
   return {
     position: num(r.position),
     id: String(r.id ?? ""),
@@ -106,17 +106,31 @@ function debutDuJourParis(now = new Date()) {
   return new Date(base - 3600_000).toISOString();
 }
 
-/** Mes séries rendues (table absente : null, l'entrée reste discrète). */
+/**
+ * Mes séries éclair rendues (table absente : null, l'entrée reste discrète).
+ * Les séances « À revoir » vivent dans la même table (genre 'revoir',
+ * migration_v3_profil.sql §3b) et n'en font pas partie ; sans la colonne,
+ * la lecture se refait sans ce filtre.
+ */
 export async function getEclairStats(supabase: SupabaseClient, userId: string): Promise<EclairStats | null> {
   try {
     const depuis = debutDuJourParis();
-    const [jour, tout, recentes] = await Promise.all([
-      supabase.from("eclair_series").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("finished_at", depuis),
-      supabase.from("eclair_series").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
-      supabase.from("eclair_series").select("score,total").eq("user_id", userId).not("finished_at", "is", null).order("finished_at", { ascending: false }).limit(20),
-    ]);
+    const lire = (filtre: boolean) => {
+      const mes = (cols: string, head = false) => {
+        const r = supabase.from("eclair_series").select(cols, head ? { count: "exact", head: true } : undefined).eq("user_id", userId);
+        return filtre ? r.eq("genre", "eclair") : r;
+      };
+      return Promise.all([
+        mes("id", true).gte("finished_at", depuis),
+        mes("id", true).not("finished_at", "is", null),
+        mes("score,total").not("finished_at", "is", null).order("finished_at", { ascending: false }).limit(20),
+      ]);
+    };
+    let [jour, tout, recentes] = await lire(true);
+    const sansGenre = [jour, tout, recentes].some((x) => x.error && absente(x.error.message, x.error.code));
+    if (sansGenre) [jour, tout, recentes] = await lire(false);
     if (jour.error || tout.error || recentes.error) return null;
-    const rows = (recentes.data ?? []) as { score: number | null; total: number | null }[];
+    const rows = (recentes.data ?? []) as unknown as { score: number | null; total: number | null }[];
     const justes = rows.reduce((s, r) => s + num(r.score), 0);
     const total = rows.reduce((s, r) => s + num(r.total), 0);
     return { today: jour.count ?? 0, total: tout.count ?? 0, recentPct: total > 0 ? Math.round((justes / total) * 100) : null };

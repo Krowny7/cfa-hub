@@ -16,6 +16,10 @@ import {
   TopicBreakdown,
 } from "@/components/session/parts";
 import { fmtMinutes, type ReviewQuestion } from "@/components/session/review";
+import { DebriefCopie, EnteteDebrief, piedDebrief, type CopieDebrief } from "@/components/session/Debrief";
+import { secondesDe } from "@/lib/debrief";
+import { palierBlanc } from "@/lib/trophees";
+import { AnnonceTrophee } from "@/components/trophees/AnnonceTrophee";
 import { FinDeSession } from "@/components/session/FinDeSession";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
@@ -50,14 +54,16 @@ type Props = {
   traitsJour?: number | null;
   /** aperçu (app/preview-da) : écran et réponses de départ, chrono figé ; "rendue" : la copie juste remise */
   demo?: { phase: "ready" | "active" | "rendue"; answers?: (number | null)[]; idx?: number; secondsLeft?: number; duree?: number };
+  /** le débrief de la copie (V3 §7.6) : la cause de chaque erreur, sous la correction */
+  debrief?: CopieDebrief | null;
 };
 
-export function MockExamRunner({ examId, title, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, traitsJour = null, demo }: Props) {
+export function MockExamRunner({ examId, title, durationMinutes, questions, review: initialReview, alreadyDone, elo = null, traitsJour = null, demo, debrief = null }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const jour = useTraitsDuJour(traitsJour);
   // copie remise pendant cette visite : la copie se corrige sous tes yeux et
   // l'anneau du jour avance ; à la revisite, elle est posée
-  const [rendue, setRendue] = useState<{ ajoutes: number; duree: number } | null>(
+  const [rendue, setRendue] = useState<{ ajoutes: number; duree: number; depuis?: string } | null>(
     demo?.phase === "rendue" ? { ajoutes: initialReview.filter((r) => r.selected_index !== null).length, duree: demo.duree ?? 0 } : null,
   );
 
@@ -128,7 +134,7 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
       setReview(rv);
       // la copie remise d'un bloc : autant de traits que de questions (comme l'anneau du jour)
       const n = rv.length || questions.length;
-      setRendue({ ajoutes: n, duree: duration });
+      setRendue({ ajoutes: n, duree: duration, depuis: new Date(startedAtRef.current || Date.now()).toISOString() });
       poserTrait(n);
       setPhase("done");
     } catch (e: unknown) {
@@ -162,6 +168,10 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
     const score = review.filter((r) => r.is_correct).length;
     const minutes = rendue?.duree ? Math.max(1, Math.round(rendue.duree / 60)) : null;
     const eloLigne = elo ? (elo.delta !== null ? ELO_COPIE.applique(elo.delta) : elo.note) : null;
+    // le temps par question : lu par la page, sinon celui de la copie qu'on vient de rendre
+    const copie = debrief ? { ...debrief, secondesParQuestion: debrief.secondesParQuestion ?? secondesDe(rendue?.duree, total) } : null;
+    // la copie qu'on vient de rendre (la première, la seule qui compte) : son trophée s'annonce
+    const palier = rendue?.depuis && !demo ? palierBlanc(score, total) : null;
 
     if (total === 0) {
       return (
@@ -187,10 +197,17 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
           anime={rendue !== null}
           ia={<CopyForAi review={review} score={score} total={total} kind="mock" size="action" onError={setError} />}
           notes={
-            error ? (
-              <p role="alert" className="m-0 text-sm text-pen">
-                {error}
-              </p>
+            error || palier ? (
+              <>
+                {palier && rendue?.depuis && (
+                  <AnnonceTrophee depuis={rendue.depuis} connus={[{ source: "blanc", palier, ref: title ?? EPREUVE.mock }]} className="pt-1" />
+                )}
+                {error && (
+                  <p role="alert" className="m-0 text-sm text-pen">
+                    {error}
+                  </p>
+                )}
+              </>
             ) : null
           }
           liens={
@@ -200,7 +217,19 @@ export function MockExamRunner({ examId, title, durationMinutes, questions, revi
           }
         >
           <TopicBreakdown review={review} />
-          <ReviewSection review={review} defaultOpen={false} source="examen" />
+          {copie ? (
+            <DebriefCopie copie={copie} review={review} demo={Boolean(demo)}>
+              <ReviewSection
+                review={review}
+                defaultOpen={copie.ouvrir === true}
+                source="examen"
+                entete={(ouvrir) => <EnteteDebrief ouvrir={ouvrir} />}
+                piedDe={piedDebrief}
+              />
+            </DebriefCopie>
+          ) : (
+            <ReviewSection review={review} defaultOpen={false} source="examen" />
+          )}
         </FinDeSession>
       </>
     );

@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { EVENEMENT_LEONARD, type EvenementLeonard, type SignalLeonard } from "@/lib/leonard/signal";
 import { CLE_NOUVEAUTES, CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/lib/leonard/reglages";
+import { decider, jourParis, type Compteur } from "@/lib/leonard/apparitions";
 import type { LeonardRig } from "@/lib/leonard/rig";
 import { NOUVEAUTES, REPLIQUES, TUTO, type EtapeTuto, type Replique, type Visite } from "@/lib/leonard/repliques";
 import { CLE_NOUVEAUTES_COMPTE, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
@@ -27,9 +29,13 @@ import s from "./Leonard.module.css";
 // - Une visite n'est retenue « vue » que finie ou passée (« Passer ») ; la
 //   croix ou Échap la remettent à la session suivante. Interrompue (page
 //   rechargée, navigation ratée), elle reprend à son étape (sessionStorage).
-// - Ensuite, des apparitions furtives : au plus une toutes les 4 minutes et
-//   10 par jour (sauf visite, progression, montée de rang, sceau gagné, sans-faute),
-//   avec un peu de hasard pour les réactions ordinaires.
+// - Ensuite, des apparitions furtives : au plus 5 par jour de Paris, visite
+//   guidée non comptée ; une toutes les 4 minutes au plus, avec un peu de
+//   hasard, pour les réactions ordinaires (lib/leonard/apparitions). Aucune
+//   le jour J (l'écran du jour J porte data-jour-j, retenu pour la journée)
+//   ni en mode sobre (user_metadata.rl_sobre).
+// - Une réplique d'échec propose un pas concret : un bouton (ses ratures,
+//   l'Atelier…) qui l'emmène et congédie Léonard.
 // - Il surgit du bord bas de l'écran, la bulle (une carte du site) s'écrit,
 //   il parle, puis repart seul ; un clic le congédie. Sans son.
 // - Animations coupées (réglage, ou mouvement réduit) : image fixe, sans
@@ -37,30 +43,8 @@ import s from "./Leonard.module.css";
 // Le moteur (PixiJS) n'est chargé que lorsqu'une apparition est décidée,
 // pendant le délai qui la précède ; trop lent, il entre en image fixe.
 
-const PROBA: Partial<Record<EvenementLeonard, number>> = {
-  "session-ratee": 0.55,
-  "session-moyenne": 0.3,
-  "session-reussie": 0.45,
-  "erreurs-serie": 0.75,
-  "serie-bonnes": 0.8,
-  "duel-gagne": 0.8,
-  "duel-perdu": 0.65,
-  "duel-ecrase": 0.85,
-  "duel-nul": 0.5,
-  "defi-reussi": 0.55,
-  "defi-rate": 0.55,
-  "atelier-progres": 0.9,
-  "atelier-rayees": 0.75,
-  "atelier-dur": 0.6,
-  "atelier-fini": 0.5,
-  tard: 0.6,
-  "quete-faite": 0.55,
-};
 // ce que la cérémonie du sans-faute fête déjà : Léonard ne le redit pas
 const FETES_PAR_CEREMONIE = new Set<EvenementLeonard>(["session-parfaite", "defi-reussi", "duel-gagne"]);
-const PRIORITAIRES = new Set<EvenementLeonard>(["tuto", "nouveautes", "progression", "rang-monte", "serie-sept", "sceau-gagne", "session-parfaite", "retour", "acte-nouveau", "devoile", "carnet"]);
-const ECART_MIN = 4 * 60_000;
-const MAX_JOUR = 10;
 const PAGES_MUETTES = ["/login", "/onboarding", "/auth", "/share"];
 const pageMuette = (chemin: string) => PAGES_MUETTES.some((p) => chemin.startsWith(p));
 // les pages où une visite peut commencer (ou reprendre) : jamais pendant un exercice
@@ -86,8 +70,8 @@ const CLE_EN_COURS = "rl_leonard_en_cours";
 // Banc d'essai local (sessionStorage) : la visite passe par les aperçus /preview-da.
 const CLE_ESSAI = "rl_leonard_essai";
 const CLE_ESSAI_ID = "rl_leonard_essai_id"; // le profil montré sur le banc d'essai
+const CLE_JOUR_J = "rl_leonard_jour_j";
 
-const jourLocal = () => new Date().toLocaleDateString("fr-CA");
 function lire<T>(cle: string, defaut: T): T {
   try {
     const v = localStorage.getItem(cle);
@@ -129,6 +113,22 @@ const muet = () => {
   } catch {
     return true;
   }
+};
+/**
+ * Le jour J (V3 §7.4) : l'écran du jour J porte data-jour-j. Vu une fois, il
+ * vaut pour toute la journée, sur toutes les pages.
+ */
+const jourJ = () => {
+  const j = jourParis();
+  try {
+    if (document.querySelector("[data-jour-j]")) {
+      ecrire(CLE_JOUR_J, j);
+      return true;
+    }
+  } catch {
+    // document indisponible : on s'en tient au souvenir
+  }
+  return lire<string>(CLE_JOUR_J, "") === j;
 };
 const telephone = () => window.innerWidth < 768;
 const hauteurVoulue = (visite: boolean) => (telephone() ? (visite ? 170 : 150) : visite ? 300 : 210);
@@ -285,18 +285,40 @@ export function LeonardHote() {
   // une visite décidée qui attend son moment (compte, intro) : elle survit
   // aux changements de page calmes, s'annule en entrant dans un exercice
   const attente = useRef<{ arret: () => void } | null>(null);
+  const sobre = useRef(false); // le mode sobre du compte (lu sur la session de l'appareil)
+
+  // le mode sobre (user_metadata.rl_sobre, V3 §11.5) : lu sur la session
+  // gardée par le navigateur (sans réseau), relu quand un réglage change
+  useEffect(() => {
+    let vivant = true;
+    const lireSobre = () =>
+      void import("@/lib/supabase/browser")
+        .then(({ createClient }) => createClient().auth.getSession())
+        .then(({ data }) => {
+          if (vivant) sobre.current = data.session?.user.user_metadata?.rl_sobre === true;
+        })
+        .catch(() => {});
+    lireSobre();
+    window.addEventListener(EVENEMENT_REGLAGES, lireSobre);
+    return () => {
+      vivant = false;
+      window.removeEventListener(EVENEMENT_REGLAGES, lireSobre);
+    };
+  }, []);
 
   // ── décider d'apparaître ────────────────────────────────────────────
   const montrer = useCallback((sig: SignalLeonard, depart = 0) => {
     if (visible.current || muet()) return;
     if (pageMuette(window.location.pathname)) return;
-    const prio = PRIORITAIRES.has(sig.evt);
-    const jour = lire<{ j: string; n: number }>(CLE_JOUR, { j: "", n: 0 });
-    const n = jour.j === jourLocal() ? jour.n : 0;
-    if (!prio) {
-      if (Date.now() - lire<number>(CLE_DERNIER, 0) < ECART_MIN || n >= MAX_JOUR) return;
-      if (Math.random() > (PROBA[sig.evt] ?? 1)) return;
-    }
+    const decision = decider(sig.evt, {
+      compteur: lire<Compteur>(CLE_JOUR, { j: "", n: 0 }),
+      dernier: lire<number>(CLE_DERNIER, 0),
+      maintenant: Date.now(),
+      jourJ: jourJ(),
+      sobre: sobre.current,
+      hasard: Math.random(),
+    });
+    if (!decision.ok) return;
     const visite: Visite | null = sig.evt === "tuto" || sig.evt === "nouveautes" ? sig.evt : null;
     let repliques: Replique[];
     if (sig.evt === "tuto") repliques = TUTO;
@@ -309,9 +331,9 @@ export function LeonardHote() {
     }
     visible.current = true;
     ecrire(CLE_DERNIER, Date.now());
-    ecrire(CLE_JOUR, { j: jourLocal(), n: n + 1 });
+    ecrire(CLE_JOUR, decision.compteur);
     const lancer = () => {
-      if (muet()) {
+      if (muet() || jourJ()) {
         visible.current = false;
         return;
       }
@@ -423,8 +445,8 @@ export function LeonardHote() {
     ecrire(CLE_VISITE, Date.now());
     let t: number;
     if (derniere && Date.now() - derniere > 3 * 86_400_000) t = window.setTimeout(() => montrer({ evt: "retour" }), 2200);
-    else if (lire<string>(CLE_FURTIF, "") !== jourLocal() && Math.random() < 0.35) {
-      ecrire(CLE_FURTIF, jourLocal());
+    else if (lire<string>(CLE_FURTIF, "") !== jourParis() && Math.random() < 0.35) {
+      ecrire(CLE_FURTIF, jourParis());
       t = window.setTimeout(() => montrer({ evt: "furtif" }), 5000 + Math.random() * 4000);
     } else {
       // précharger le moteur pendant que la page se repose
@@ -694,7 +716,9 @@ export function LeonardHote() {
       raf = requestAnimationFrame(pas);
     }
     // une apparition furtive repart seule ; la visite attend le joueur
-    if (!scene.tuto) minuteur.current = window.setTimeout(() => fermer(), Math.max(4200, n * 65 + 2400));
+    // (plus longtemps quand elle propose un pas : le temps de le lire et de le prendre)
+    const pause = replique.action ? 6000 : 2400;
+    if (!scene.tuto) minuteur.current = window.setTimeout(() => fermer(), Math.max(4200, n * 65 + pause));
     else suivantRef.current?.focus({ preventScroll: true });
     return () => {
       cancelAnimationFrame(raf);
@@ -722,6 +746,18 @@ export function LeonardHote() {
     window.addEventListener("keydown", touche);
     return () => window.removeEventListener("keydown", touche);
   }, [scene, plusTard]);
+
+  // la main ou le clavier sur une bulle furtive : il attend qu'on ait fini
+  // (le temps de prendre le pas proposé), puis repart peu après
+  const retenir = () => {
+    if (minuteur.current) window.clearTimeout(minuteur.current);
+    minuteur.current = null;
+  };
+  const relacher = () => {
+    if (!scene || scene.tuto || sortie) return;
+    retenir();
+    minuteur.current = window.setTimeout(() => fermer(), 2400);
+  };
 
   const suivant = () => {
     if (!scene) return;
@@ -757,7 +793,15 @@ export function LeonardHote() {
         style={{ ["--leo-h" as string]: `${h}px`, ["--leo-w" as string]: `${w}px`, ...(pret ? null : { opacity: 0 }) }}
       >
         {enPlace && (
-          <div key={i} className={`${s.bulle} ${calme ? s.calme : ""} ${sortie ? s.sort : ""}`} role="status">
+          <div
+            key={i}
+            className={`${s.bulle} ${calme ? s.calme : ""} ${sortie ? s.sort : ""}`}
+            role="status"
+            onPointerEnter={scene.tuto ? undefined : retenir}
+            onPointerLeave={scene.tuto ? undefined : relacher}
+            onFocus={scene.tuto ? undefined : retenir}
+            onBlur={scene.tuto ? undefined : relacher}
+          >
             <div className={s.tete}>
               <span className={s.point} aria-hidden />
               <span className={s.nom}>Léonard</span>
@@ -776,6 +820,13 @@ export function LeonardHote() {
                 {replique.texte.slice(ecrit)}
               </span>
             </p>
+            {!scene.tuto && replique.action && (
+              <div className={s.actions}>
+                <Link href={replique.action.href} className="btn btn-primary btn-sm min-h-[44px]" onClick={fermer}>
+                  {replique.action.libelle}
+                </Link>
+              </div>
+            )}
             {scene.tuto && (
               <div className={s.actions}>
                 {!dernier && (

@@ -24,6 +24,7 @@ export function buildTopicStats(topics: TopicMastery[], averages: Record<string,
     short: RADAR_SHORT[t.key] ?? t.label,
     pct: t.pct,
     answered: t.answered,
+    ...(t.statut ? { statut: t.statut } : {}),
     avg: averages[t.key] ?? null,
   }));
 }

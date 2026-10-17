@@ -20,8 +20,9 @@ import {
 } from "@/components/session/MockExamViews";
 import { cleanTopic, type ReviewQuestion } from "@/components/session/review";
 import { DETAIL, ELO_EXAMEN } from "@/lib/voice-z3b";
+import { PARAM_DEBRIEF, lireDebrief, secondesDe, type EtatDebrief } from "@/lib/debrief";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 // Question sans correct_index/explanation — c'est tout ce que le client
 // reçoit pendant que l'examen est en cours. La correction n'arrive que via
@@ -62,8 +63,10 @@ type PastAttempt = {
   completed_at: string;
 };
 
-export default async function MockExamDetailPage({ params }: PageProps) {
+export default async function MockExamDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  // ?debrief=1 (lien du Codex) : la correction s'ouvre sur la première erreur non classée
+  const ouvrirDebrief = (await searchParams)?.[PARAM_DEBRIEF] === "1";
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
@@ -132,10 +135,12 @@ export default async function MockExamDetailPage({ params }: PageProps) {
 
   let topicBreakdownAll: TopicBreakdownRow[] = [];
   let pastAttempts: PastAttempt[] = [];
+  // le débrief de la copie (migration_v3_profil.sql §5) ; null : section absente, boutons masqués
+  let debriefLu: EtatDebrief | null = null;
 
   if (isRegistered && exam.status !== "draft") {
     if (alreadyDone) {
-      const [{ data: reviewData }, { data: topicData }, { data: attemptsData }] = await Promise.all([
+      const [{ data: reviewData }, { data: topicData }, { data: attemptsData }, debriefData] = await Promise.all([
         supabase.rpc("get_mock_exam_review", { p_exam_id: id }),
         supabase.rpc("get_mock_exam_topic_breakdown_all", { p_exam_id: id }),
         supabase
@@ -144,8 +149,10 @@ export default async function MockExamDetailPage({ params }: PageProps) {
           .eq("exam_id", id)
           .eq("user_id", auth.user.id)
           .order("completed_at", { ascending: false }),
+        lireDebrief(supabase, "blanc", id),
       ]);
       review = (reviewData ?? []) as ReviewQuestion[];
+      debriefLu = debriefData;
       topicBreakdownAll = (topicData ?? []) as TopicBreakdownRow[];
       pastAttempts = (attemptsData ?? []) as PastAttempt[];
     } else if (withinWindow && exam.status === "open") {
@@ -280,6 +287,14 @@ export default async function MockExamDetailPage({ params }: PageProps) {
           alreadyDone={alreadyDone}
           elo={eloInfo}
           traitsJour={traitsJour}
+          debrief={{
+            source: "blanc",
+            ref: exam.id,
+            // copie rendue à cette visite : l'état se lit après le rendu
+            initial: alreadyDone ? debriefLu : undefined,
+            secondesParQuestion: myResult ? secondesDe(myResult.duration_seconds, myResult.total) : null,
+            ouvrir: ouvrirDebrief,
+          }}
         />
       )}
 

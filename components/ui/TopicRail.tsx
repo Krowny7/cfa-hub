@@ -25,6 +25,8 @@ export type TopicRailItem = {
   code: string;
   /** maîtrise 0–100, null = pas encore mesurée */
   pct: number | null;
+  /** maîtrise provisoire : son infobulle (« provisoire · 23 réponses sur 40 ») ; le chiffre s'écrit « ≈ 52 % » */
+  provisoire?: string | null;
   /** formats disponibles (Réviser) : à l'encre s'ils existent, en filigrane sinon */
   formats?: { fiche: boolean; course: boolean; cards: boolean } | null;
   /** une ligne discrète sous le chiffre (« moy. 62 % », « 17,5 % de l'examen ») */
@@ -89,7 +91,9 @@ function Card({ it, i, on }: { it: TopicRailItem; i: number; on: boolean }) {
       <span className="mt-auto block pt-4">
         <span className="flex items-center gap-2.5">
           <BrushMeter pct={it.pct} mark={it.mark} on={on} delay={0.25 + i * 0.04} />
-          <span className={"shrink-0 font-mono text-[12.5px] font-semibold tabular-nums " + (it.pct === null ? sub : "")}>{it.pct === null ? "—" : `${it.pct} %`}</span>
+          <span className={"shrink-0 font-mono text-[12.5px] font-semibold tabular-nums " + (it.pct === null ? sub : "")} title={it.provisoire ?? undefined}>
+            {it.pct === null ? "—" : `${it.provisoire ? "≈ " : ""}${it.pct} %`}
+          </span>
         </span>
         {it.formats ? (
           <span className={"mt-2 flex items-center gap-2 " + sub} aria-hidden>
@@ -149,7 +153,7 @@ export function TopicRail({
             : "card hover:-translate-y-0.5 hover:shadow-[var(--edge),0_1px_2px_rgba(17,17,17,0.04),0_14px_26px_-14px_rgba(17,17,17,0.26)]";
         const desc = [
           `${pad2(it.index)}, ${it.name}`,
-          it.pct === null ? "maîtrise pas encore mesurée" : `maîtrise ${it.pct} %${it.pct < WEAK_BELOW ? ", à renforcer" : ""}`,
+          it.pct === null ? "maîtrise pas encore mesurée" : `maîtrise ${it.provisoire ? "≈ " : ""}${it.pct} %${it.provisoire ? `, ${it.provisoire}` : ""}${it.pct < WEAK_BELOW ? ", à renforcer" : ""}`,
           it.note,
           it.mark != null && !it.note?.includes("moy") ? `moyenne des joueurs ${it.mark} %` : null,
           it.formats ? formatsLabel(it.formats) : null,

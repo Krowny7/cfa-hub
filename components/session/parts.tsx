@@ -6,6 +6,7 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { InkProgressRing } from "@/components/ui/InkRings";
 import { SectionHead } from "@/components/session/ui";
 import {
+  ancreRevue,
   buildAiExportText,
   cleanTopic,
   fmtClock,
@@ -662,11 +663,29 @@ export function Explanation({ text, compact = false, className = "" }: { text: s
   );
 }
 
-/** Une question corrigée : l'énoncé, les réponses annotées, l'explication. */
-export function ReviewItem({ q, n, compact = false, source = "session" }: { q: ReviewQuestion; n: number; compact?: boolean; source?: SourceMarque }) {
+/**
+ * Une question corrigée : l'énoncé, les réponses annotées, l'explication.
+ * `pied` : posé sous l'explication (le débrief d'une copie) ; `ancre` : l'id
+ * de la carte, pour y mener (scroll-mt : sous la barre du haut).
+ */
+export function ReviewItem({
+  q,
+  n,
+  compact = false,
+  source = "session",
+  pied,
+  ancre,
+}: {
+  q: ReviewQuestion;
+  n: number;
+  compact?: boolean;
+  source?: SourceMarque;
+  pied?: React.ReactNode;
+  ancre?: string;
+}) {
   const status = q.is_correct ? "ok" : q.selected_index === null ? "skip" : "ko";
   return (
-    <article className={(compact ? "card-quiet p-4" : "card p-5 md:p-7") + " min-w-0"}>
+    <article id={ancre} className={(compact ? "card-quiet p-4" : "card p-5 md:p-7") + " min-w-0" + (ancre ? " scroll-mt-24" : "")}>
       <div className="flex items-center justify-between gap-3">
         <p className="t-micro m-0 min-w-0 truncate">
           <span className="font-semibold text-white tabular-nums">Q{n}</span>
@@ -729,6 +748,7 @@ export function ReviewItem({ q, n, compact = false, source = "session" }: { q: R
         })}
       </ul>
       {q.explanation && <Explanation text={q.explanation} compact={compact} className="mt-4" />}
+      {pied}
     </article>
   );
 }
@@ -741,6 +761,8 @@ export function ReviewSection({
   compact = false,
   action,
   source = "session",
+  entete,
+  piedDe,
 }: {
   review: ReviewQuestion[];
   title?: string;
@@ -750,11 +772,19 @@ export function ReviewSection({
   action?: React.ReactNode;
   /** origine des questions marquées depuis cette correction */
   source?: SourceMarque;
+  /** posé sous le titre, même repliée (le débrief) ; `ouvrir` déplie la correction sur les ratures */
+  entete?: (ouvrir: () => void) => React.ReactNode;
+  /** le pied de chaque question (le débrief) ; chaque carte reçoit alors une ancre */
+  piedDe?: (q: ReviewQuestion) => React.ReactNode;
 }) {
   const errors = review.filter((q) => !q.is_correct).length;
   const [filter, setFilter] = useState<"errors" | "all">(errors > 0 ? "errors" : "all");
   const [open, setOpen] = useState(defaultOpen);
   const items = review.map((q, i) => ({ q, n: i + 1 })).filter(({ q }) => filter === "all" || !q.is_correct);
+  const ouvrir = () => {
+    setOpen(true);
+    if (errors > 0) setFilter("errors");
+  };
 
   if (review.length === 0) return null;
 
@@ -793,6 +823,7 @@ export function ReviewSection({
           {action}
         </div>
       )}
+      {entete?.(ouvrir)}
       {!open ? (
         <div className="card-quiet flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <p className="t-small m-0">
@@ -809,7 +840,15 @@ export function ReviewSection({
       ) : (
         <div className={"grid grid-cols-1 " + (compact ? "gap-2.5" : "gap-3 md:gap-4")}>
           {items.map(({ q, n }) => (
-            <ReviewItem key={q.question_id + "-" + n} q={q} n={n} compact={compact} source={source} />
+            <ReviewItem
+              key={q.question_id + "-" + n}
+              q={q}
+              n={n}
+              compact={compact}
+              source={source}
+              pied={piedDe?.(q)}
+              ancre={piedDe ? ancreRevue(q.question_id) : undefined}
+            />
           ))}
         </div>
       )}

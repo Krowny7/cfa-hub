@@ -73,8 +73,8 @@ export const SOURCES_TROPHEE: Record<SourceTrophee, { nom: string; regle: Partia
   },
   atelier: { nom: "L'Atelier", regle: { 1: "70 % ou plus et 3 ratures rayées", 2: "80 % ou plus et 5 ratures rayées" }, lien: "/atelier" },
   duel: { nom: "Duel sans faute", regle: { 1: "un duel gagné avec la mention « Sans-faute »" }, lien: "/duel" },
-  // « À revoir » (/revoir) arrive avec la file des révisions ; d'ici là, la reprise du carnet
-  revoir: { nom: "À revoir", regle: { 1: "90 % ou plus sur 15 questions ou plus", 2: "100 % sur 25 questions ou plus" }, lien: "/moi?onglet=erreurs&reprise=1" },
+  // /revoir renvoie à la reprise du carnet tant que la section §3b n'est pas collée
+  revoir: { nom: "À revoir", regle: { 1: "90 % ou plus sur 15 questions ou plus", 2: "100 % sur 25 questions ou plus" }, lien: "/revoir" },
 };
 
 /**
@@ -87,6 +87,20 @@ export function palierCiblee(matieres: number, total: number): PalierTrophee {
   const brut = PALIER_DU_TIER[trophyTier(Math.max(1, Math.floor(matieres) || 1)).key] ?? 1;
   const plafond: PalierTrophee = total >= 60 ? 4 : total >= 30 ? 3 : 2;
   return Math.min(brut, plafond) as PalierTrophee;
+}
+
+/**
+ * Le palier d'une première copie d'examen blanc : 60 % bronze, 70 % argent,
+ * 80 % or, 90 % diamant sur 90 questions ou plus (l'or sinon) ; rien sous
+ * 60 % ni sous 30 questions. Même règle que _trophee_blanc en base, pour
+ * l'annonce sous la copie rendue.
+ */
+export function palierBlanc(score: number, total: number): PalierTrophee | null {
+  if (!(total >= 30) || score * 10 < 6 * total) return null;
+  if (score * 10 >= 9 * total && total >= 90) return 4;
+  if (score * 10 >= 8 * total) return 3;
+  if (score * 10 >= 7 * total) return 2;
+  return 1;
 }
 
 /** Une ligne de la Salle : n trophées d'une source à un palier (dernier : le plus récent, s'il est connu). */

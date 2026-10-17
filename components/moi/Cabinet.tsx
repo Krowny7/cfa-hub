@@ -6,6 +6,7 @@ import { Icone } from "@/components/adn/icons";
 import { Avatar } from "@/components/classement/Avatar";
 import { daysUntil, fmtInt, ordinal } from "@/components/classement/format";
 import { subjectByKey } from "@/components/reviser/catalog";
+import { libellePct } from "@/lib/maitrise";
 import { BoutonPlein, HerosMoi, ListeClassee } from "@/components/moi/Briques";
 import { Detail } from "@/components/moi/Clients";
 import { PointsFaiblesEtAteliers, ActivityCard, vuesMatieres } from "@/components/moi/StatsSection";
@@ -58,7 +59,7 @@ function lire(d: MoiData, now?: number) {
     .filter((t) => t.pct !== null)
     .sort((a, b) => (a.pct as number) - (b.pct as number))
     .slice(0, 3)
-    .map((t) => ({ key: t.key, nom: subjectByKey(t.key)?.name ?? t.label, pct: t.pct as number }));
+    .map((t) => ({ key: t.key, nom: subjectByKey(t.key)?.name ?? t.label, pct: t.pct as number, valeur: libellePct(t) ?? `${t.pct} %` }));
   const r = d.ratures.available && d.ratures.total > 0 ? d.ratures : null;
   const source = r ? (Object.entries(r.sources).sort((a, b) => b[1] - a[1])[0] ?? null) : null;
   const o = d.objectif.etat === "trajectoire" ? d.objectif.t : null;
@@ -92,7 +93,7 @@ function HerosObjectif({ lu, className }: { lu: Lu; className?: string }) {
         repere={CAB.sansObjectifRepere}
         phrase={CAB.sansObjectifPhrase}
         action={<BoutonPlein href="/moi?onglet=reglages#objectif" label={CAB.sansObjectifAction} />}
-        liste={lu.faibles.length ? <ListeClassee titre={CAB.fragiles} lignes={lu.faibles.map((x) => ({ cle: x.key, nom: x.nom, pct: x.pct, valeur: `${x.pct} %`, href: `/practice?topic=${x.key}` }))} /> : undefined}
+        liste={lu.faibles.length ? <ListeClassee titre={CAB.fragiles} lignes={lu.faibles.map((x) => ({ cle: x.key, nom: x.nom, pct: x.pct, valeur: x.valeur, href: `/practice?topic=${x.key}` }))} /> : undefined}
       />
     );
   }
@@ -110,7 +111,7 @@ function HerosObjectif({ lu, className }: { lu: Lu; className?: string }) {
       detail={CAB.objectifPlan(o.quotidien, f?.nom ?? null)}
       action={<BoutonPlein href={f ? `/practice?topic=${f.key}` : "/practice"} label={CAB.travailler(f?.nom ?? null)} />}
       lien={{ href: "#detail", label: CAB.courbe }}
-      liste={lu.faibles.length ? <ListeClassee titre={CAB.ouPrendre} lignes={lu.faibles.map((x) => ({ cle: x.key, nom: x.nom, pct: x.pct, valeur: `${x.pct} %`, href: `/practice?topic=${x.key}` }))} /> : undefined}
+      liste={lu.faibles.length ? <ListeClassee titre={CAB.ouPrendre} lignes={lu.faibles.map((x) => ({ cle: x.key, nom: x.nom, pct: x.pct, valeur: x.valeur, href: `/practice?topic=${x.key}` }))} /> : undefined}
     />
   );
 }
@@ -127,7 +128,7 @@ function Heros({ d, lu, className }: { d: MoiData; lu: Lu; className?: string })
       repere={CAB.carnetRepere(r.retirees, r.retireesSemaine)}
       phrase={CAB.carnetPhrase(lu.source?.nom ?? null, lu.source?.n ?? 0, r.total)}
       action={<BoutonPlein href={ONGLET("erreurs")} label={CAB.carnetAction} icon={<PenLine size={16} aria-hidden />} />}
-      liste={lu.faibles.length ? <ListeClassee titre={CAB.fragiles} lignes={lu.faibles.map((f) => ({ cle: f.key, nom: f.nom, pct: f.pct, valeur: `${f.pct} %`, href: `/practice?topic=${f.key}` }))} /> : undefined}
+      liste={lu.faibles.length ? <ListeClassee titre={CAB.fragiles} lignes={lu.faibles.map((f) => ({ cle: f.key, nom: f.nom, pct: f.pct, valeur: f.valeur, href: `/practice?topic=${f.key}` }))} /> : undefined}
     />
   );
 }

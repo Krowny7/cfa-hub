@@ -3,6 +3,7 @@ import type { MyRank } from "@/components/classement/types";
 import type { AnswerStats } from "@/lib/answer-stats";
 import type { EtatObjectif } from "@/lib/objectif";
 import type { EtatJour } from "@/lib/voice";
+import type { StatutMaitrise } from "@/lib/maitrise";
 import type { Marquees } from "@/components/moi/marquees-data";
 import type { Ratures } from "@/components/moi/ratures-data";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
@@ -48,6 +49,8 @@ export type TopicStat = {
   short: string;
   pct: number | null;
   answered: number;
+  /** non mesurée, provisoire (« ≈ 52 % »), mesurée */
+  statut?: StatutMaitrise;
   /** moyenne des joueurs, null si inconnue */
   avg: number | null;
 };

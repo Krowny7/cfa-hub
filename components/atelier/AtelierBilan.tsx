@@ -9,6 +9,7 @@ import type { LigneCopie, MatiereCopie } from "@/components/adn/CopieCorrigee";
 import type { ReviewQuestion } from "@/components/session/review";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { bilan as calculerBilan, type BilanAtelier, type Reponse } from "@/lib/atelier";
+import { bilanSeche } from "@/components/moi/ratures-data";
 import type { ClotureAtelier, ItemSeance, RappelNotion, SeanceAtelier } from "@/lib/atelier-seance";
 import { ATELIER as V } from "@/lib/voice-atelier";
 import { analyserAtelier } from "@/lib/leonard/signal";
@@ -21,7 +22,9 @@ import { analyserAtelier } from "@/lib/leonard/signal";
 // en dernier, sur la même largeur que la copie. À l'arrêt (bilan partiel), la
 // même lecture par notion, et « Reprendre » sous 24 heures. Léonard commente
 // le bilan (une seule réaction par Atelier, à la place de celle d'une
-// session ; ses réglages et sa fréquence décident s'il apparaît).
+// session ; ses réglages et sa fréquence décident s'il apparaît). Une
+// rature réussie sans être rayée (encre fraîche, migration_v3_profil.sql
+// §3a) n'est pas comptée rayée : « réussie, elle sèche demain ».
 
 const TOUCHER = "relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
 
@@ -63,7 +66,7 @@ function revue(items: ItemSeance[], reponses: Reponse[], rappels: Record<string,
 }
 
 /** Par notion : avant → pendant, ratures, calcul (le bilan, l'arrêt, et l'historique des Ateliers dans Moi). anime : false, le chiffre rayé est posé sans geste (l'historique). */
-export function ParNotion({ b, rappels, anime = true }: { b: BilanAtelier; rappels: Noms; anime?: boolean }) {
+export function ParNotion({ b, rappels, anime = true, fraiches = {} }: { b: BilanAtelier; rappels: Noms; anime?: boolean; /** par notion, les ratures réussies qui sèchent encore (pas rayées) */ fraiches?: Record<string, number> }) {
   return (
     <ul className="m-0 grid grid-cols-[minmax(0,1fr)] list-none gap-0 divide-y divide-line p-0">
       {b.notions.map((n) => (
@@ -88,8 +91,8 @@ export function ParNotion({ b, rappels, anime = true }: { b: BilanAtelier; rappe
               ) : (
                 V.ratures(n.ratures.avant, n.ratures.apres)
               )}
-              {(n.ratures.rayees > 0 || n.ratures.nouvelles > 0) && (
-                <span className="text-muted"> ({[n.ratures.rayees > 0 ? V.rayees(n.ratures.rayees) : null, n.ratures.nouvelles > 0 ? V.nouvelles(n.ratures.nouvelles) : null].filter(Boolean).join(", ")})</span>
+              {(n.ratures.rayees > 0 || n.ratures.nouvelles > 0 || (fraiches[n.notion] ?? 0) > 0) && (
+                <span className="text-muted"> ({[n.ratures.rayees > 0 ? V.rayees(n.ratures.rayees) : null, (fraiches[n.notion] ?? 0) > 0 ? V.fraiches(fraiches[n.notion]) : null, n.ratures.nouvelles > 0 ? V.nouvelles(n.ratures.nouvelles) : null].filter(Boolean).join(", ")})</span>
               )}
             </p>
           )}
@@ -140,7 +143,8 @@ export function AtelierBilan({
   onAutre: () => void;
 }) {
   const jour = useTraitsDuJour(traits);
-  const b = calculerBilan({ notions: seance.notions, items: seance.items, reponses }, seance.avant, cloture?.apres ?? null);
+  // une rature réussie mais encore fraîche n'est pas rayée
+  const { bilan: b, fraiches } = bilanSeche(calculerBilan({ notions: seance.notions, items: seance.items, reponses }, seance.avant, cloture?.apres ?? null), seance.items, cloture?.apres);
   const { review, lignes } = revue(seance.items, reponses, rappels);
   const matieres: MatiereCopie[] = seance.notions.map((n) => {
     const x = b.notions.find((y) => y.notion === n);
@@ -174,7 +178,7 @@ export function AtelierBilan({
       />
       <section className="card grid gap-4 p-5 md:p-7" aria-label={V.parNotion}>
         <p className="t-eyebrow m-0">{V.parNotion}</p>
-        <ParNotion b={b} rappels={rappels} />
+        <ParNotion b={b} rappels={rappels} fraiches={fraiches} />
         <div className="grid gap-1 border-t border-line pt-4">
           {b.retest.n > 0 && <p className="t-small m-0">{V.retest(b.retest.ok, b.retest.n)}</p>}
           {xp > 0 && <p className="t-small m-0">{V.xpGagne(xp)}</p>}
@@ -223,7 +227,7 @@ export function AtelierPause({
   onClore: () => void;
 }) {
   const heure = useHeureReprise(vuAt);
-  const b = calculerBilan({ notions: seance.notions, items: seance.items, reponses }, seance.avant, null);
+  const { bilan: b, fraiches } = bilanSeche(calculerBilan({ notions: seance.notions, items: seance.items, reponses }, seance.avant, null), seance.items, null);
   return (
     <div className="mx-auto grid w-full max-w-[720px] gap-4">
       <section className="card-hero rl-in grid gap-5 p-6 md:p-8" aria-label={V.pauseTitre}>
@@ -232,7 +236,7 @@ export function AtelierPause({
           <h2 className="t-h1 m-0">{V.pauseTitre}</h2>
           <p className="t-small m-0">{heure ? V.pauseTexte(heure) : V.pauseTexteSansHeure}</p>
         </div>
-        <ParNotion b={b} rappels={rappels} />
+        <ParNotion b={b} rappels={rappels} fraiches={fraiches} />
         <div className="flex flex-wrap items-center gap-2.5">
           <button type="button" className="btn btn-primary rl-press min-h-[44px]" onClick={onReprendre} autoFocus>
             {V.reprendreCourt} <ArrowRight size={16} aria-hidden />

@@ -23,6 +23,7 @@ import { PointsFaiblesCarte, type RepliMatiere } from "@/components/moi/PointsFa
 import { AteliersHistorique } from "@/components/atelier/AteliersHistorique";
 import { parisDay } from "@/lib/daily";
 import { decaleJour } from "@/lib/objectif-calc";
+import { infobulleMaitrise } from "@/lib/maitrise";
 
 /** La matière la plus fragile (maîtrise mesurée), pour le repli de « Tes points faibles ». */
 function matiereFragile(d: MoiData): RepliMatiere {
@@ -45,7 +46,7 @@ function xp90Jours(xpDays: MoiData["xpDays"]): { day: string; xp: number }[] {
 /** Les matières en rangée horizontale et, en second, le radar (toi contre la moyenne). */
 /** Les deux vues des matières : la rangée de cartes (dans une carte ou à nu) et le radar (toi contre la moyenne). */
 export function vuesMatieres(d: MoiData, dansCarte = true) {
-  const axes = d.topics.map((t) => ({ label: t.short, nom: t.label, me: t.pct, avg: t.avg }));
+  const axes = d.topics.map((t) => ({ label: t.short, nom: t.label, me: t.pct, avg: t.avg, provisoire: t.pct !== null && t.statut ? infobulleMaitrise({ statut: t.statut, n: t.answered }) : null }));
   const known = d.topics.filter((t) => t.pct !== null).sort((a, b) => (b.pct as number) - (a.pct as number));
   const top = known.slice(0, Math.min(3, Math.floor(known.length / 2) || known.length));
   const low = known.length >= 2 ? known.slice(-Math.min(3, Math.floor(known.length / 2))).reverse() : [];

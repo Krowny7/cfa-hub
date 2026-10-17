@@ -1,14 +1,19 @@
 // Répliques de Léonard, la mascotte de Ranked Lobby.
 // Module sans dépendance. Marqueurs à remplacer par l'appelant :
-//   {score} → « 7/10 »   (session-ratee, session-moyenne, session-reussie, session-parfaite)
-//   {pct}   → « 70 % »   (mêmes événements)
+//   {score} → « 7/10 »   (session-*, erreurs-serie, defi-*, atelier-* ; « 3-5 » pour un duel)
+//   {pct}   → « 70 % »   (session-*, erreurs-serie, defi-*)
 //   {n}     → « 8 »      (serie-bonnes : nombre de bonnes réponses d'affilée ;
+//                         erreurs-serie : nombre d'erreurs d'affilée ;
 //                         atelier-rayees : ratures rayées pendant l'Atelier)
 //   {notion} → « Duration » (atelier-progres, atelier-dur : la notion dont il parle)
 // Les autres événements n'utilisent aucun marqueur.
+// Une réplique peut proposer un pas concret (`action`) : un bouton sous la
+// bulle, qui mène à la page et congédie Léonard (components/leonard).
 
 export type Pose = "base" | "fier" | "moqueur" | "decu" | "etonne";
-export type Replique = { texte: string; pose: Pose };
+/** Le pas concret qu'une réplique propose : un bouton sous la bulle. */
+export type Action = { libelle: string; href: string };
+export type Replique = { texte: string; pose: Pose; action?: Action };
 export type Evenement =
   | "tuto" | "erreurs-serie" | "session-ratee" | "session-moyenne" | "session-reussie" | "session-parfaite"
   | "serie-bonnes" | "progression" | "duel-gagne" | "duel-perdu" | "duel-ecrase" | "duel-nul"
@@ -19,50 +24,46 @@ export type Evenement =
 /** Les deux visites guidées (TUTO, NOUVEAUTES) : des étapes, pas des répliques au hasard. */
 export type Visite = "tuto" | "nouveautes";
 
+// Les pas concrets proposés après un échec (et au retour).
+const RATURES: Action = { libelle: "Voir mes ratures", href: "/moi?onglet=erreurs" };
+const ATELIER: Action = { libelle: "Atelier", href: "/atelier" };
+const FICHES: Action = { libelle: "Relire une fiche", href: "/reviser" };
+const ECLAIR: Action = { libelle: "Cinq questions", href: "/eclair" };
+const DUEL: Action = { libelle: "Un autre duel", href: "/duel" };
+const CODEX: Action = { libelle: "Ouvrir le Codex", href: "/codex" };
+
+/**
+ * Les échecs : chaque réplique finit par un pas concret et porte son `action`.
+ * Jamais de moquerie de l'effort ni de l'absence ; la taquinerie vise Léonard
+ * lui-même, Florence ou la finance (scripts/leonard/test-repliques.ts).
+ */
+export const EVENEMENTS_ECHEC = ["erreurs-serie", "session-ratee", "session-moyenne", "defi-rate", "duel-perdu", "duel-ecrase", "atelier-dur"] as const;
+/** Les événements où le joueur peut se sentir jugé : les échecs, le retour, la nuit. */
+export const EVENEMENTS_DELICATS = [...EVENEMENTS_ECHEC, "retour", "tard"] as const;
+
 export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   "erreurs-serie": [
-    { texte: "Et 1, et 2 et 3-0, on dirait l’OM.", pose: "moqueur" },
-    { texte: "Trois d’affilée. Tu fais exprès pour me voir, avoue.", pose: "moqueur" },
-    { texte: "Jusqu’ici tout va bien… Ah non, en fait.", pose: "decu" },
-    { texte: "Courbe des taux inversée. Récession en vue sur ta session.", pose: "decu" },
-    { texte: "Tu veux un 50/50 ? Un appel à un ami ?", pose: "moqueur" },
-    { texte: "Tu fais ton Perceval : « c’est pas faux ». Si, c’est faux.", pose: "moqueur" },
-    { texte: "Margin call : ton cerveau réclame des liquidités. Vite.", pose: "decu" },
-    { texte: "Chat, c’est réel ? Trois erreurs de suite ?", pose: "etonne" },
-    { texte: "-1000 d’aura. Ça se rattrape, mais pas en cliquant au hasard.", pose: "moqueur" },
-    { texte: "On a jeté de la soupe sur ma Joconde. Elle a tenu. Toi aussi.", pose: "base" },
-    { texte: "Respire. Lis l’énoncé. Puis relis le bout que t’as sauté.", pose: "base" },
-    { texte: "Stop-loss déclenché. On coupe la perte et on repart.", pose: "base" },
+    { texte: "{n} erreurs d’affilée. Mon cheval de bronze, lui, n’a jamais été fondu : tu fais déjà mieux que moi. Relis-les demain, elles auront séché.", pose: "base", action: RATURES },
+    { texte: "Les Bardi et les Peruzzi ont fait faillite coup sur coup, vers 1345. Toi, ce n’est qu’une série d’erreurs. La fiche de la notion, et ça repart.", pose: "decu", action: FICHES },
+    { texte: "Des erreurs en chaîne, c’est un signal, pas un verdict. Stop-loss : on coupe, et on reprend la notion à l’Atelier.", pose: "base", action: ATELIER },
+    { texte: "Quand mes couleurs craquelaient, je reprenais l’enduit. Ici, pareil : l’énoncé jusqu’au bout, puis la fiche.", pose: "base", action: FICHES },
+    { texte: "Une série noire, même les Médicis en ont eu. Tes ratures sont au carnet : demain, à froid, elles passeront mieux.", pose: "base", action: RATURES },
   ],
 
   "session-ratee": [
-    { texte: "{score}. Krach de 1929, version révisions.", pose: "decu" },
-    { texte: "T’as révisé. T’as cliqué. T’as raté. Bref.", pose: "decu" },
-    { texte: "Au bilan : beaucoup de passif, très peu d’actif.", pose: "moqueur" },
-    { texte: "{score}. Je le note dans mes carnets. En miroir, personne ne lira.", pose: "moqueur" },
-    { texte: "Bonne nouvelle : à {pct}, c’est le moment de buy the dip.", pose: "base" },
-    { texte: "{pct}. Not stonks. Vraiment pas stonks.", pose: "decu" },
-    { texte: "Joueur du Grenier ferait un épisode sur cette session.", pose: "moqueur" },
-    { texte: "Wasted. Respawn dans 3, 2, 1…", pose: "moqueur" },
-    { texte: "Etchebest serait déjà en train de hurler. Moi, je souris.", pose: "moqueur" },
-    { texte: "{score} ? Même en 1500, sans Internet, j’aurais fait mieux.", pose: "moqueur" },
-    { texte: "Le fond est touché. Techniquement, c’est un point d’entrée.", pose: "base" },
-    { texte: "On va dire que c’était un échauffement. Un long échauffement.", pose: "base" },
+    { texte: "Celle-là m’aurait eu aussi. On la reprend demain, elle aura séché.", pose: "base", action: RATURES },
+    { texte: "Une séance difficile, c’est une séance qui apprend. Dix minutes à l’Atelier ?", pose: "base", action: ATELIER },
+    { texte: "{score}. Ma Cène s’écaillait déjà de mon vivant, on l’a restaurée. On fait pareil : tes ratures, demain, quand elles auront séché.", pose: "base", action: RATURES },
+    { texte: "Chez Verrocchio, j’ai gâché plus d’un panneau avant le premier bon. Une fiche, et on y retourne.", pose: "base", action: FICHES },
+    { texte: "{pct}. Le fond est touché : techniquement, c’est un point d’entrée. Cinq questions pour reprendre la main ?", pose: "base", action: ECLAIR },
   ],
 
   "session-moyenne": [
-    { texte: "{score}. Mi-figue, mi-raisin. Plutôt raisin sec.", pose: "moqueur" },
-    { texte: "{pct}. Sur un malentendu, ça peut marcher. Pas au CFA.", pose: "moqueur" },
-    { texte: "Correct. Comme une pizza surgelée : ça dépanne, ça régale pas.", pose: "base" },
-    { texte: "Rebond du chat mort ou vraie reprise ? À suivre.", pose: "etonne" },
-    { texte: "{score}. Marche aléatoire ? Avoue, t’en as cliqué deux ou trois au pif.", pose: "moqueur" },
-    { texte: "Rendement moyen, risque élevé. Ton ratio de Sharpe fait la tête.", pose: "decu" },
-    { texte: "{pct}, c’est « pas mal ». Le CFA, lui, veut « bien ».", pose: "base" },
-    { texte: "{score}. On dirait un bulletin de 3e : « peut mieux faire ».", pose: "moqueur" },
-    { texte: "Moitié juste, moitié faux. Ton portefeuille est bien diversifié.", pose: "moqueur" },
-    { texte: "{pct}. Pas de quoi faire un TikTok, pas de quoi pleurer.", pose: "base" },
-    { texte: "Pas un chef-d’œuvre, pas un gribouillis. Une esquisse.", pose: "base" },
-    { texte: "Pas mal. Pas fou. Mais pas mal.", pose: "fier" },
+    { texte: "{score}. Pas un chef-d’œuvre, pas un gribouillis : une esquisse. Tes ratures du jour diront où repasser le trait.", pose: "base", action: RATURES },
+    { texte: "{pct}. Le CFA veut « bien », tu tiens « pas mal ». L’écart tient souvent en deux ou trois notions, et l’Atelier les connaît.", pose: "base", action: ATELIER },
+    { texte: "Rendement correct, volatilité élevée : ton ratio de Sharpe réclame une fiche. Une seule suffit pour ce soir.", pose: "moqueur", action: FICHES },
+    { texte: "Mi-figue, mi-raisin, comme mes comptes chez les Médicis. Tes ratures sont au carnet ; demain, elles auront séché.", pose: "moqueur", action: RATURES },
+    { texte: "{score}. Rebond du chat mort ou vraie reprise ? Cinq questions de plus pour trancher.", pose: "etonne", action: ECLAIR },
   ],
 
   "session-reussie": [
@@ -141,33 +142,19 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   ],
 
   "duel-perdu": [
-    { texte: "Carapace bleue à deux mètres de l’arrivée. Classique.", pose: "decu" },
-    { texte: "La tribu a parlé. Rends-moi ton flambeau.", pose: "decu" },
-    { texte: "Mission échouée. On l’aura la prochaine fois.", pose: "moqueur" },
-    { texte: "« J’ai cliqué trop vite » ? Standard I(C), misrepresentation.", pose: "moqueur" },
-    { texte: "Le seum est autorisé. Cinq minutes, pas plus.", pose: "moqueur" },
-    { texte: "Revanche ? Je dis ça, je dis rien.", pose: "base" },
-    { texte: "Même la Joconde s’est fait voler en 1911. Elle est revenue.", pose: "base" },
-    { texte: "Ton ELO a pris un petit drawdown. Rien de grave.", pose: "decu" },
-    { texte: "Il a gagné le duel. Toi, mon respect. Un peu.", pose: "moqueur" },
-    { texte: "Défaite. Ma machine volante aussi, au début. Et à la fin.", pose: "decu" },
-    { texte: "Tu l’as laissé gagner, c’est ça ? Trop gentil.", pose: "moqueur" },
-    { texte: "Note son pseudo. La vengeance se mange froide.", pose: "moqueur" },
+    { texte: "Carapace bleue à deux mètres de l’arrivée. Revois les questions qui ont coûté le duel, et la revanche viendra.", pose: "decu", action: RATURES },
+    { texte: "Même la Joconde s’est fait voler en 1911. Elle est revenue. Un autre duel, quand tu veux.", pose: "base", action: DUEL },
+    { texte: "Ton ELO a pris un petit drawdown. Rien de grave : les questions manquées sont au carnet, à relire avant le prochain.", pose: "decu", action: RATURES },
+    { texte: "Défaite. Ma machine volante aussi, au début. Et à la fin. Une fiche sur la notion qui a coincé ?", pose: "decu", action: FICHES },
+    { texte: "Revanche ? Je dis ça, je dis rien. Relis d’abord celles qui t’ont piégé.", pose: "moqueur", action: RATURES },
   ],
 
   "duel-ecrase": [
-    { texte: "Joueur 456, éliminé. Pas de deuxième jeu.", pose: "decu" },
-    { texte: "5-0, comme l’Inter en finale. Douloureux.", pose: "moqueur" },
-    { texte: "Même Lehman Brothers a tenu plus longtemps.", pose: "moqueur" },
-    { texte: "C’est plus un duel, c’est une liquidation judiciaire.", pose: "decu" },
-    { texte: "Même le Louvre a mieux défendu ses bijoux.", pose: "moqueur" },
-    { texte: "Je lance la coffin dance ou t’es encore vivant ?", pose: "moqueur" },
-    { texte: "YOU DIED. En lettres rouges, oui.", pose: "decu" },
-    { texte: "Fatality. Sauf que c’est lui qui l’a faite.", pose: "moqueur" },
-    { texte: "Il a vendu ton ELO à découvert. Et il a encaissé.", pose: "moqueur" },
-    { texte: "C’était pas un duel. C’était un tuto… pour lui.", pose: "decu" },
-    { texte: "Ah ouais ? Ah ouais. Il t’a pas raté.", pose: "etonne" },
-    { texte: "On n’en parle plus jamais. Sauf moi, demain.", pose: "moqueur" },
+    { texte: "Il t’a pris de vitesse. Le duel dit surtout où creuser : les questions manquées t’attendent au carnet.", pose: "base", action: RATURES },
+    { texte: "Un écart pareil, les Médicis appelaient ça une mauvaise saison. Ils rouvraient la banque le lundi. Dix minutes à l’Atelier ?", pose: "base", action: ATELIER },
+    { texte: "Il a vendu ton ELO à découvert, et il a encaissé. On rachète bas : une fiche sur la notion qui a coincé.", pose: "moqueur", action: FICHES },
+    { texte: "Fatality. Le genre de coup qu’on ne prend qu’une fois : la notion en cause, en fiche, ce soir.", pose: "moqueur", action: FICHES },
+    { texte: "On n’en parle plus. Ou plutôt si : dans ton carnet, question par question.", pose: "base", action: RATURES },
   ],
 
   "duel-nul": [
@@ -199,17 +186,10 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   ],
 
   "defi-rate": [
-    { texte: "Défi raté. Même Wordle t’aurait laissé six essais.", pose: "moqueur" },
-    { texte: "Le défi a gagné aujourd’hui. Il fait la fête, là.", pose: "moqueur" },
-    { texte: "Le défi a parié contre toi. Et il a eu raison.", pose: "moqueur" },
-    { texte: "Rater un défi, c’est humain. Deux d’affilée, c’est une tendance.", pose: "decu" },
-    { texte: "Défi : 1. Toi : 0. Le match retour, c’est demain.", pose: "base" },
-    { texte: "On dira que c’était le défi d’hier.", pose: "moqueur" },
-    { texte: "Daily quest échouée. Pas d’XP aujourd’hui.", pose: "decu" },
-    { texte: "Mon cheval en bronze n’a jamais vu le jour. On s’en remet.", pose: "base" },
-    { texte: "Le défi était coriace. Toi aussi, d’habitude.", pose: "moqueur" },
-    { texte: "Raté. Le défi dormira mieux que toi ce soir.", pose: "decu" },
-    { texte: "Défi raté. Ta série vient de faire un krach éclair.", pose: "decu" },
+    { texte: "Le défi a gagné aujourd’hui. Match retour demain ; d’ici là, ses questions t’attendent au carnet.", pose: "base", action: RATURES },
+    { texte: "Défi : 1, toi : 0. Mon cheval de bronze n’a jamais vu le jour, et je m’en suis remis. Une fiche, et demain on recommence.", pose: "base", action: FICHES },
+    { texte: "Les questions du jour étaient coriaces. Reprends les manquées demain, à froid : elles auront séché.", pose: "base", action: RATURES },
+    { texte: "De peu ou de beaucoup, le remède est le même : la notion qui a coincé, à l’Atelier.", pose: "base", action: ATELIER },
   ],
 
   // le bilan de l'Atelier (la séance de 30 minutes sur ses points faibles)
@@ -232,12 +212,10 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   ],
 
   "atelier-dur": [
-    { texte: "{notion}, ça résiste. La Joconde, j’ai mis seize ans. Toi, on a le temps.", pose: "base" },
-    { texte: "{score}. {notion} te tient tête. Relis le chapitre, puis on y retourne.", pose: "base" },
-    { texte: "{notion} : le marbre est dur. On taille quand même.", pose: "base" },
-    { texte: "Un atelier, c’est fait pour salir ses mains. Là, elles sont bien sales.", pose: "moqueur" },
-    { texte: "{notion}, c’est un drawdown. Pas une faillite.", pose: "decu" },
-    { texte: "Même mes premiers croquis étaient bancals. Demain, {notion} encore.", pose: "base" },
+    { texte: "{notion}, ça résiste. La Joconde, j’ai mis seize ans. Relis la fiche, et on y retourne demain.", pose: "base", action: FICHES },
+    { texte: "{score}. {notion} te tient tête. Le marbre est dur, on taille quand même : la fiche d’abord.", pose: "base", action: FICHES },
+    { texte: "{notion} : un drawdown, pas une faillite. Ses ratures sèchent ; demain, on les reprend.", pose: "base", action: RATURES },
+    { texte: "Même mes premiers croquis étaient bancals. Demain, {notion} encore, à l’Atelier.", pose: "base", action: ATELIER },
   ],
 
   "atelier-fini": [
@@ -312,33 +290,20 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   ],
 
   "retour": [
-    { texte: "Tiens, un revenant. On te croyait perdu.", pose: "etonne" },
-    { texte: "Ton retour était plus attendu que Silksong.", pose: "etonne" },
-    { texte: "Comme Monte-Cristo : parti longtemps, revenu pour se venger ?", pose: "moqueur" },
-    { texte: "J’ai mis des années à finir la Joconde. Ton absence, je pardonne.", pose: "base" },
-    { texte: "Le marché a bougé pendant ton absence. Toi, non.", pose: "moqueur" },
-    { texte: "Retraite spirituelle ou retraite anticipée ?", pose: "moqueur" },
-    { texte: "Tes flashcards ont pleuré. J’ai dû les consoler.", pose: "decu" },
-    { texte: "Le hibou de Duolingo m’a demandé de tes nouvelles.", pose: "moqueur" },
-    { texte: "Respawn au dernier feu de camp. On reprend ?", pose: "base" },
-    { texte: "Tes neurones ont pris des congés payés ?", pose: "moqueur" },
-    { texte: "Pendant ton absence, la date de l’examen n’a pas bougé.", pose: "base" },
-    { texte: "Te revoilà ! J’avais commencé ton portrait-robot.", pose: "etonne" },
+    { texte: "Te revoilà ! L’atelier est resté ouvert et les pinceaux sont propres. Cinq questions pour reprendre la main ?", pose: "etonne", action: ECLAIR },
+    { texte: "Respawn au dernier feu de camp. On reprend doucement : une petite série d’abord.", pose: "base", action: ECLAIR },
+    { texte: "Moi aussi, j’ai laissé des tableaux en plan pendant des années. L’important, c’est d’y revenir. Le Codex sait par où reprendre.", pose: "base", action: CODEX },
+    { texte: "Bon retour à Florence. Ta place était gardée, ton carnet aussi.", pose: "fier", action: CODEX },
+    { texte: "Ton retour était plus attendu que Silksong. Lui aussi a fini par arriver, et il valait l’attente.", pose: "etonne", action: ECLAIR },
   ],
 
   "tard": [
-    { texte: "POV : minuit passé, et toi tu révises la duration.", pose: "moqueur" },
-    { texte: "Tokyo va bientôt ouvrir. Toi, t’as jamais fermé.", pose: "moqueur" },
-    { texte: "On dit que je dormais 20 minutes toutes les 4 heures. Faux. Dors.", pose: "base" },
-    { texte: "Marché efficient : ton score intègre déjà ta fatigue.", pose: "moqueur" },
-    { texte: "Après minuit, les flashcards se transforment en citrouilles.", pose: "moqueur" },
-    { texte: "Même le Louvre est fermé. Ferme les yeux, toi aussi.", pose: "base" },
-    { texte: "Session de nuit : risque overnight maximal.", pose: "moqueur" },
-    { texte: "Insomnie ou ambition ? Les deux, je vois.", pose: "etonne" },
-    { texte: "Tu révises comme un streamer en subathon. Sans les dons.", pose: "moqueur" },
-    { texte: "Ton lit a lancé un avis de recherche.", pose: "base" },
+    { texte: "On dit que je dormais vingt minutes toutes les quatre heures. C’est faux. Dors.", pose: "base" },
+    { texte: "Même le Louvre est fermé. Ferme les yeux, toi aussi : la mémoire se range pendant le sommeil.", pose: "base" },
     { texte: "Réviser la nuit, ça paie. Dormir aussi, et c’est gratuit.", pose: "base" },
-    { texte: "Mode chauve-souris activé. Respect. Mais va dormir.", pose: "etonne" },
+    { texte: "Tokyo va bientôt ouvrir. Toi, tu as assez travaillé pour fermer.", pose: "moqueur" },
+    { texte: "Ton lit a lancé un avis de recherche. Je lui dis que tu arrives ?", pose: "moqueur" },
+    { texte: "Session de nuit : risque overnight élevé. La suite attendra demain, fraîche et dispose.", pose: "base" },
   ],
 
   "furtif": [

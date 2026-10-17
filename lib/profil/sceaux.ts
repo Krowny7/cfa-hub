@@ -40,7 +40,7 @@ export type DefSceau = {
   mention?: MentionDuel;
 };
 
-/** une matière n'est mesurée qu'à partir de 40 questions */
+/** une matière n'est mesurée qu'à partir de 40 réponses (MAITRISE.SEUIL_MESURE, lib/maitrise.ts) */
 export const MAITRISE_MIN_QUESTIONS = 40;
 
 export const SCEAUX: DefSceau[] = [
@@ -134,35 +134,41 @@ export type EtatSceau = {
   raretes?: (number | null)[];
 };
 
-function mesure(def: DefSceau, s: ProfilStats, m: MesuresBase | null): { valeur: number; questions: number | null } {
-  if (def.mention) return { valeur: m?.mentions[def.mention] ?? 0, questions: null };
+type Mesure = { valeur: number; questions: number | null; mesuree: boolean };
+
+function mesure(def: DefSceau, s: ProfilStats, m: MesuresBase | null): Mesure {
+  const compte = (valeur: number): Mesure => ({ valeur, questions: null, mesuree: true });
+  if (def.mention) return compte(m?.mentions[def.mention] ?? 0);
   switch (def.cle) {
     case "coup-d-eclat":
-      return { valeur: m?.coupDeclat ?? 0, questions: null };
+      return compte(m?.coupDeclat ?? 0);
     case "mise-au-propre":
-      return { valeur: m?.rayees ?? 0, questions: null };
+      return compte(m?.rayees ?? 0);
     case "assiduite":
-      return { valeur: s.meilleureSerie, questions: null };
+      return compte(s.meilleureSerie);
     case "copie-pleine":
-      return { valeur: s.questions, questions: null };
+      return compte(s.questions);
     case "defi-tenu":
-      return { valeur: s.defisRendus, questions: null };
+      return compte(s.defisRendus);
     case "duelliste":
-      return { valeur: s.duelsGagnes, questions: null };
+      return compte(s.duelsGagnes);
     case "calculateur":
-      return { valeur: s.calculsJustes, questions: null };
+      return compte(s.calculsJustes);
     case "examen-blanc":
-      return { valeur: s.examensBlancs, questions: null };
+      return compte(s.examensBlancs);
     default: {
+      // la maîtrise unique : le sceau ne progresse que sur une matière
+      // mesurée (40 réponses) ; sans statut (ancienne lecture), 40 questions
       const m = s.matieres.find((x) => x.key === def.matiere);
-      return { valeur: m && m.pct !== null ? Math.round(m.pct) : 0, questions: m ? m.answered : 0 };
+      const questions = m ? m.answered : 0;
+      const mesuree = m?.statut ? m.statut === "mesuree" : questions >= MAITRISE_MIN_QUESTIONS;
+      return { valeur: m && m.pct !== null ? Math.round(m.pct) : 0, questions, mesuree };
     }
   }
 }
 
 /** Le palier que donnent les mesures du jour. */
-function palierMesure(def: DefSceau, valeur: number, questions: number | null): Palier {
-  const mesuree = questions === null || questions >= MAITRISE_MIN_QUESTIONS;
+function palierMesure(def: DefSceau, { valeur, mesuree }: Mesure): Palier {
   return (mesuree ? def.seuils.filter((x) => valeur >= x).length : 0) as Palier;
 }
 
@@ -179,10 +185,10 @@ function raretesDe(cle: string, r: Rarete): (number | null)[] {
  */
 export function etatSceau(def: DefSceau, s: ProfilStats, base: BaseSceaux | null = null): EtatSceau {
   const inconnu = !!base && !base.mesures && SCEAUX_BASE.includes(def);
-  const { valeur, questions } = mesure(def, s, base?.mesures ?? null);
-  const mesuree = questions === null || questions >= MAITRISE_MIN_QUESTIONS;
+  const lue = mesure(def, s, base?.mesures ?? null);
+  const { valeur, questions, mesuree } = lue;
   const garde = base?.gardes.find((g) => g.cle === def.cle) ?? null;
-  const palier = Math.max(inconnu ? 0 : palierMesure(def, valeur, questions), garde?.palier ?? 0) as Palier;
+  const palier = Math.max(inconnu ? 0 : palierMesure(def, lue), garde?.palier ?? 0) as Palier;
   const prochain: number | null = palier < 3 ? (def.seuils as readonly number[])[palier] : null;
   let avance = 1;
   if (prochain !== null) {
@@ -236,8 +242,7 @@ export const vusParUnAutre = (etats: EtatSceau[]): EtatSceau[] =>
 export function paliersMesures(s: ProfilStats, m: MesuresBase): Record<string, number> {
   const out: Record<string, number> = {};
   for (const d of catalogueSceaux(true)) {
-    const { valeur, questions } = mesure(d, s, m);
-    const p = palierMesure(d, valeur, questions);
+    const p = palierMesure(d, mesure(d, s, m));
     if (p > 0) out[d.cle] = p;
   }
   return out;

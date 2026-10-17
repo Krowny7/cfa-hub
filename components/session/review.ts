@@ -32,6 +32,9 @@ export type ReviewQuestion = {
 
 export const PASS_THRESHOLD = 70;
 
+/** L'ancre d'une question dans la correction (ReviewSection avec un pied : le débrief y mène). */
+export const ancreRevue = (questionId: string) => `revue-${questionId}`;
+
 export const letter = (i: number) => String.fromCharCode(65 + i);
 
 export function pctOf(score: number, total: number) {
