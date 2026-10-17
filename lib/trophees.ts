@@ -89,6 +89,20 @@ export function palierCiblee(matieres: number, total: number): PalierTrophee {
   return Math.min(brut, plafond) as PalierTrophee;
 }
 
+/**
+ * Le palier d'une première copie d'examen blanc : 60 % bronze, 70 % argent,
+ * 80 % or, 90 % diamant sur 90 questions ou plus (l'or sinon) ; rien sous
+ * 60 % ni sous 30 questions. Même règle que _trophee_blanc en base, pour
+ * l'annonce sous la copie rendue.
+ */
+export function palierBlanc(score: number, total: number): PalierTrophee | null {
+  if (!(total >= 30) || score * 10 < 6 * total) return null;
+  if (score * 10 >= 9 * total && total >= 90) return 4;
+  if (score * 10 >= 8 * total) return 3;
+  if (score * 10 >= 7 * total) return 2;
+  return 1;
+}
+
 /** Une ligne de la Salle : n trophées d'une source à un palier (dernier : le plus récent, s'il est connu). */
 export type LigneTrophee = { source: SourceTrophee; palier: PalierTrophee; n: number; dernier?: string | null };
 

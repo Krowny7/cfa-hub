@@ -10,7 +10,8 @@
 // de la correction avec le débrief (en-tête, cinq causes sous chaque
 // question ratée seulement, ancres), et sans la section (boutons masqués,
 // temps affiché) ; Fete : les quatre tailles, Échap, durées, mouvement
-// réduit (rendu final d'emblée, réplique comprise), le format « +50 XP ».
+// réduit (rendu final d'emblée, réplique comprise), le format « +50 XP » ;
+// palierBlanc (le trophée annoncé sous la copie rendue).
 import "./sans-css";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -38,6 +39,7 @@ import type { ReviewQuestion } from "@/components/session/review";
 import { ReviewSection } from "@/components/session/parts";
 import { DebriefCopie, EnteteDebrief, piedDebrief } from "@/components/session/Debrief";
 import { DUREE_FETE, FeteVue, etapeInitiale, texteXp, touchePasse } from "@/components/fete/Fete";
+import { palierBlanc } from "@/lib/trophees";
 
 // tsx compile le JSX à l'ancienne (React.createElement) : React global pour les composants rendus
 (globalThis as { React?: typeof React }).React = React;
@@ -131,6 +133,10 @@ async function main() {
   check("sans la section : boutons de cause masqués, temps par question affiché", !sans.includes("data-debrief") && !sans.includes("Débrief :") && sans.includes("1 min 15 par question"));
   const nu = renderToStaticMarkup(<ReviewSection review={review} defaultOpen />);
   check("ReviewSection sans débrief : inchangée (ni ancre ni causes)", !nu.includes("revue-") && !nu.includes("data-debrief") && nu.includes("Question q2"));
+
+  // ── le trophée de la copie rendue (annoncé sous la copie) ───────────
+  check("palierBlanc : 29 questions rien, 17/30 rien, 18/30 bronze, 70 % argent, 80 % or, 90 % diamant sur 90, 100 % sur 89 or",
+    palierBlanc(29, 29) === null && palierBlanc(17, 30) === null && palierBlanc(18, 30) === 1 && palierBlanc(70, 100) === 2 && palierBlanc(80, 100) === 3 && palierBlanc(81, 90) === 4 && palierBlanc(89, 89) === 3);
 
   // ── Fete : les quatre tailles ───────────────────────────────────────
   const rien = () => undefined;
