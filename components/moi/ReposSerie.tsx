@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { CalendarOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { joursEntre, libellePlage, plagesDe, refusPose, type GenrePause, type JourPause, type PlagePause } from "@/components/moi/repos";
+import { ajouterJours, joursEntre, libellePlage, plagesDe, refusDeLaBase, refusPose, type GenrePause, type JourPause, type PlagePause } from "@/components/moi/repos";
 import type { ReposInitial } from "@/components/moi/repos-data";
 
 // Moi › Réglages : le repos de la série d'encre (V3 §10.4). Des jours posés
@@ -52,7 +52,8 @@ export function ReposSerie({ initial }: { initial: ReposInitial | null }) {
   const refus = refusPose(de, fin, genre, aujourdhui, poses);
 
   const relire = async (sb: ReturnType<typeof createClient>) => {
-    const { data } = await sb.from("serie_pauses").select("jour,genre").gte("jour", aujourdhui).order("jour").limit(400);
+    // depuis un an, comme lirePauses (repos-data.ts) : les règles comptent aussi les jours passés
+    const { data } = await sb.from("serie_pauses").select("jour,genre").gte("jour", ajouterJours(aujourdhui, -364)).order("jour").limit(800);
     if (Array.isArray(data))
       setPoses(data.flatMap((r: { jour?: unknown; genre?: unknown }): JourPause[] => (typeof r.jour === "string" && (r.genre === "repos" || r.genre === "pause") ? [{ jour: r.jour.slice(0, 10), genre: r.genre }] : [])));
   };
@@ -63,7 +64,7 @@ export function ReposSerie({ initial }: { initial: ReposInitial | null }) {
       const sb = createClient();
       const { error } = await sb.rpc("serie_pause_poser", { p_de: de, p_a: fin, p_genre: genre });
       if (absente(error)) return setCache(true);
-      if (error) return setMsg({ ok: false, texte: T.refuse });
+      if (error) return setMsg({ ok: false, texte: refusDeLaBase(error.message) ?? T.refuse });
       await relire(sb).catch(() => {});
       setMsg({ ok: true, texte: T.pose });
     });
@@ -84,7 +85,8 @@ export function ReposSerie({ initial }: { initial: ReposInitial | null }) {
       setMsg((m) => (m && !m.ok ? m : { ok: true, texte: T.retire }));
     });
 
-  const plages = plagesDe(poses);
+  // « Déjà posés » : aujourd'hui et après (les jours passés ne servent qu'aux règles)
+  const plages = plagesDe(poses.filter((p) => p.jour >= aujourdhui));
   return (
     <div id="repos" className="card flex flex-col gap-3 p-[22px]">
       <h3 className="m-0 flex items-center gap-2 text-[13px] font-semibold text-muted">

@@ -3,8 +3,8 @@
 // sous les 10 questions). Le repos : deux jours par semaine au plus. La
 // pause : 14 jours d'affilée au plus, 30 jours sur une année glissante.
 // Jamais dans le passé. La base fait foi (serie_pause_poser, migration du
-// Codex) ; ces règles, recopiées ici, ne servent qu'à prévenir le joueur
-// avant d'envoyer. Les jours sont des jours de Paris (« AAAA-MM-JJ »).
+// Codex) ; ces règles, recopiées ici à l'identique (jours passés compris),
+// ne servent qu'à prévenir le joueur avant d'envoyer. Les jours sont des jours de Paris (« AAAA-MM-JJ »).
 // Module neutre (client et serveur), sans accès à la base.
 
 export type GenrePause = "repos" | "pause";
@@ -52,29 +52,57 @@ export function plagesDe(jours: JourPause[]): PlagePause[] {
   return out;
 }
 
+/** Les refus, dans les mots du réglage (les mêmes pour la vérification d'avant l'envoi et pour la base). */
+export const REFUS_POSE = {
+  passe: "Un repos se pose aujourd'hui ou plus tard, jamais dans le passé.",
+  repos: "Deux jours de repos par semaine au plus : pour plus long, pose une pause.",
+  affilee: `Une pause dure ${PAUSE_MAX_AFFILEE} jours d'affilée au plus.`,
+  annee: `${PAUSE_MAX_ANNEE} jours de pause par an au plus.`,
+} as const;
+
 /**
- * Ce qui empêche de poser ces jours (le message à montrer), ou null : pas
- * dans le passé, la fin après le début, deux jours de repos par semaine,
- * une pause de 14 jours d'affilée et 30 jours par an au plus (en comptant
- * ce qui est déjà posé ; un jour déjà posé n'est pas compté deux fois).
+ * Ce qui empêche de poser ces jours (le message à montrer), ou null. Les
+ * règles de serie_pause_poser, sur l'état d'après la pose (un jour déjà posé
+ * prend le genre choisi, il n'est pas compté deux fois) et sur TOUS les jours
+ * posés qu'elle regarde, passés compris (`poses` : depuis aujourd'hui - 364,
+ * lirePauses) : pas dans le passé, la fin après le début ; deux jours de
+ * repos dans chaque semaine touchée ; une pause de 14 jours d'affilée au
+ * plus, avec les pauses posées autour (±30 jours) ; 30 jours de pause sur
+ * toute fenêtre de 365 jours qui touche les jours posés.
  */
 export function refusPose(de: string, a: string, genre: GenrePause, aujourdhui: string, poses: JourPause[]): string | null {
   if (!estJour(de) || !estJour(a)) return "Choisis un jour de début et un jour de fin.";
-  if (de < aujourdhui) return "Un repos se pose aujourd'hui ou plus tard, jamais dans le passé.";
+  if (de < aujourdhui) return REFUS_POSE.passe;
   if (a < de) return "La fin vient après le début.";
   const jours = joursEntre(de, a);
-  const deja = new Set(poses.map((p) => p.jour));
-  const neufs = jours.filter((j) => !deja.has(j));
+  // l'état d'après la pose : la base écrase le genre d'un jour déjà posé
+  const apres = new Map(poses.map((p) => [p.jour, p.genre] as const));
+  for (const j of jours) apres.set(j, genre);
+  const duGenre = [...apres].filter(([, g]) => g === genre).map(([j]) => j).sort();
   if (genre === "repos") {
+    const semaines = new Set(jours.map(lundiDe));
     const parSemaine = new Map<string, number>();
-    for (const j of [...poses.filter((p) => p.genre === "repos").map((p) => p.jour), ...neufs]) parSemaine.set(lundiDe(j), (parSemaine.get(lundiDe(j)) ?? 0) + 1);
-    if ([...parSemaine.values()].some((n) => n > REPOS_PAR_SEMAINE)) return `Deux jours de repos par semaine au plus : pour plus long, pose une pause.`;
-    return null;
+    for (const j of duGenre) if (semaines.has(lundiDe(j))) parSemaine.set(lundiDe(j), (parSemaine.get(lundiDe(j)) ?? 0) + 1);
+    return [...parSemaine.values()].some((n) => n > REPOS_PAR_SEMAINE) ? REFUS_POSE.repos : null;
   }
-  if (jours.length > PAUSE_MAX_AFFILEE) return `Une pause dure ${PAUSE_MAX_AFFILEE} jours d'affilée au plus.`;
-  const debutAnnee = ajouterJours(a, -364);
-  const dansLAnnee = poses.filter((p) => p.genre === "pause" && p.jour >= debutAnnee && p.jour <= a).length + neufs.length;
-  if (dansLAnnee > PAUSE_MAX_ANNEE) return `${PAUSE_MAX_ANNEE} jours de pause par an au plus.`;
+  if (jours.length > PAUSE_MAX_AFFILEE) return REFUS_POSE.affilee;
+  // les îlots de pause qui se suivent, dans la fenêtre que regarde la base (±30 jours)
+  const bas = ajouterJours(de, -30);
+  const haut = ajouterJours(a, 30);
+  const proches = duGenre.filter((j) => j >= bas && j <= haut).map((jour): JourPause => ({ jour, genre }));
+  if (plagesDe(proches).some((p) => p.n > PAUSE_MAX_AFFILEE)) return REFUS_POSE.affilee;
+  const compte = (du: string, au: string) => duGenre.filter((j) => j >= du && j <= au).length;
+  if (jours.some((j) => compte(ajouterJours(j, -364), j) > PAUSE_MAX_ANNEE || compte(j, ajouterJours(j, 364)) > PAUSE_MAX_ANNEE)) return REFUS_POSE.annee;
+  return null;
+}
+
+/** Le refus de la base (exception de serie_pause_poser) dans les mots du réglage ; null : un autre souci. */
+export function refusDeLaBase(message: string | null | undefined): string | null {
+  const m = message ?? "";
+  if (/deux jours de repos/i.test(m)) return REFUS_POSE.repos;
+  if (/quatorze jours|trop de jours/i.test(m)) return REFUS_POSE.affilee;
+  if (/trente jours/i.test(m)) return REFUS_POSE.annee;
+  if (/jour passé/i.test(m)) return REFUS_POSE.passe;
   return null;
 }
 
