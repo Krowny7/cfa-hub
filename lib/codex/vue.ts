@@ -54,6 +54,8 @@ export type LigneQuete = {
   termineeLe: string | null;
   /** la fanfare n'a pas été jouée */
   aFeter: boolean;
+  /** faite, sa récompense attend « Récupérer » (ligne « terminee » : XP pas encore versée, lib/codex/recuperer) */
+  aRecuperer?: true;
   lien?: string;
   /** où la faire (« Y aller »), combien de temps et pourquoi : seulement pour une quête ouverte, pas faite, qui mène quelque part */
   destination?: Destination;
@@ -250,6 +252,7 @@ export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params:
     retro: s.retro,
     termineeLe: l?.terminee_le ?? (s.fait && s.atteint ? s.atteint.toISOString() : null),
     aFeter: !!l && l.etat === "recompensee" && !l.vu && !l.retro && !q.miroir,
+    ...(l?.etat === "terminee" ? { aRecuperer: true as const } : {}),
     ...(q.lien ? { lien: q.lien } : {}),
     ...(destination ? { destination } : {}),
     ...(q.duree ? { duree: q.duree } : {}),

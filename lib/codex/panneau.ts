@@ -176,7 +176,8 @@ export function panneauDe(vue: VueCodex): Panneau {
   const titre = vue.sobre ? null : (lignes.find((l) => l.titreNom)?.titreNom ?? null);
   const piece = vue.sobre ? undefined : lignes.find((l) => l.cosmetique);
   const versees = lignes.length || actes.length
-    ? { n: lignes.length, xp: vue.sobre ? 0 : lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
+    // l'XP d'un acte clos entre dans le total (elle en était oubliée)
+    ? { n: lignes.length, xp: vue.sobre ? 0 : lignes.reduce((s, l) => s + (l.xpVersee ?? l.xp), 0) + actes.reduce((s, a) => s + a.acte.recompense.xp, 0), cles: [...new Set([...lignes.map((l) => l.id), ...actes.map((a) => `acte:${a.acte.id}`)])], titre }
     : null;
   const rare: Panneau["rare"] = actes.length
     ? { quoi: "acte", libelle: `Acte clos : ${actes[0].acte.titre}` }

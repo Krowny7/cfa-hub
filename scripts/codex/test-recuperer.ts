@@ -92,6 +92,8 @@ console.log("\n# la vue : « À récupérer » et « Fait aujourd'hui »");
   check("un acte : son titre, sa pièce nommée, sa date de Paris", acte.famille === "acte" && acte.titre.length > 0 && acte.titre !== T.sansTitre && acte.recompense?.startsWith("Bannière : ") === true && acte.le === "2026-10-17" && acte.aVerser, J(acte));
   check("un contrat d'un autre jour garde un titre clair et sa date", v.aRecuperer[3].titre === "Les 3 quêtes du jour" && v.aRecuperer[3].le === "2026-10-14");
   check("« Fait aujourd'hui » : la quête versée aujourd'hui, pas le rétroactif ni ce qui attend", v.faitAujourdhui.n === 1 && v.faitAujourdhui.xp === 15 && v.faitAujourdhui.quetes[0].quete === "trame:prologue:jour-j", J(v.faitAujourdhui));
+  const prologue = v.trame.find((a) => a.acte.id === "prologue")?.quetes ?? [];
+  check("la ligne d'une quête qui attend le dit (aRecuperer) ; une quête versée, non", prologue.find((l) => l.id === "trame:prologue:dix")?.aRecuperer === true && prologue.find((l) => l.id === "trame:prologue:jour-j")?.aRecuperer === undefined);
   check("une pièce qui attend n'est pas encore possédée", !v.possessions.some((p) => p.cle === "banniere:carnet"));
   check("le bilan de fin d'outil porte ce qui attend, le jour et « Fait aujourd'hui »", J(bilanDe(v).aRecuperer) === J(v.aRecuperer) && bilanDe(v).jour === jour && bilanDe(v).fait?.n === 1);
   check("l'XP annoncée : celle qui reste à verser", xpAVerser(v.aRecuperer) === 20 + 30 + 60 + 50);
@@ -101,6 +103,10 @@ console.log("\n# la vue : « À récupérer » et « Fait aujourd'hui »");
   // sans la §9 : déjà versée, pas vue ; l'ouverture du panneau ne doit pas l'acquitter avant le clic
   const sansSql = repondre(base({ progression: [ligne("trame:prologue:premier-trait", { vu: false })] }), () => 0);
   const vr = construireVue(sansSql.e, sansSql.r, null, { devoile: null });
+  const avecActe = repondre(base({ progression: [ligne("acte:prologue", { vu: false, xp: 60 })] }), () => 0);
+  const va = construireVue(avecActe.e, avecActe.r, null, { devoile: null });
+  const xpActe = va.trame.find((a) => a.acte.id === "prologue")?.acte.recompense.xp ?? -1;
+  check("un acte clos déjà versé attend aussi ; annoncé en pied (rien en attente), son XP entre dans le total", va.aRecuperer.some((x) => x.quete === "acte:prologue") && panneauDe({ ...va, aRecuperer: [] }).versees?.xp === xpActe && xpActe > 0, J(panneauDe({ ...va, aRecuperer: [] }).versees));
   check("repli : elle attend « Récupérer » (déjà versée) et le panneau ne l'annonce pas en pied", vr.aRecuperer.length === 1 && !vr.aRecuperer[0].aVerser && panneauDe(vr).versees === null && panneauDe(vr).recuperer.n === 1 && panneauDe(vr).recuperer.xp === 0, J(panneauDe(vr).versees));
 
   // le repli sans la §9 : déjà versé, pas encore vu
