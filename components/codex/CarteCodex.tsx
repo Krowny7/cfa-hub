@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Minus, PanelRightClose, PanelRightOpen, Plus, LocateFixed, X } from "lucide-react";
 import { INK } from "@/components/ui/InkDefs";
@@ -1100,23 +1100,37 @@ function ParcoursTel({ vue, onQuete }: { vue: VueCodex; onQuete: SurQuete }) {
   );
 }
 
-/** Les matières : la grille 2 × 5 des pastilles ; une pastille touchée ouvre sa branche et ses notions. */
+/**
+ * Les matières : la grille 2 × 5 des pastilles ; une pastille touchée ouvre sa
+ * branche et ses notions sous la grille, souvent hors de l'écran du téléphone :
+ * la page y défile (sans animation en mouvement réduit) et le focus passe au
+ * titre de la branche.
+ */
 function MatieresTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; onQuete: SurQuete }) {
   const [cle, setCle] = useState<string | null>(null);
   const branche = vue.branches.find((b) => b.contenu.key === cle);
+  const corps = useRef<HTMLDivElement | null>(null);
+  const idBranche = useId();
+  useEffect(() => {
+    const el = corps.current;
+    if (!cle || !el) return;
+    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "start", behavior: doux ? "smooth" : "auto" });
+    el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, [cle]);
   if (!montre("codex:branches") || !vue.branches.length) return <p className={`${c.blancheCol} ${c.telCorps}`}>{CODEX.pageBlanche}</p>;
   return (
     <>
       <ul className={c.grilleMatieres} aria-label="Les matières">
         {vue.branches.map((b) => (
           <li key={b.contenu.key}>
-            <PastilleMatiere p={pastilleDe(b)} forme="grille" presse={cle === b.contenu.key} onClick={() => setCle(cle === b.contenu.key ? null : b.contenu.key)} />
+            <PastilleMatiere p={pastilleDe(b)} forme="grille" presse={cle === b.contenu.key} controle={idBranche} onClick={() => setCle(cle === b.contenu.key ? null : b.contenu.key)} />
           </li>
         ))}
       </ul>
       {branche && (
-        <div className={c.telCorps}>
-          <BrancheChemin b={branche} ici={vue.prochaine?.ligne.id} onQuete={onQuete} />
+        <div ref={corps} id={idBranche} className={`${c.telCorps} ${c.brancheOuverte}`}>
+          <BrancheChemin b={branche} ici={vue.prochaine?.ligne.id} onQuete={onQuete} focusable />
           <div className="px-3">
             <FeuillesNotions notions={branche.notions} noms />
           </div>
@@ -1126,20 +1140,23 @@ function MatieresTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; 
   );
 }
 
-function BrancheChemin({ b, ici, onQuete }: { b: VueBranche; ici?: string; onQuete: SurQuete }) {
+function BrancheChemin({ b, ici, onQuete, focusable }: { b: VueBranche; ici?: string; onQuete: SurQuete; focusable?: boolean }) {
   return (
     <>
-      <TeteChemin sur={`Branche · ${b.faites}/${b.total}${b.maitre ? " · Maître" : ""}`} titre={b.contenu.nom} replique={CODEX.branches.sous} />
+      <TeteChemin sur={`Branche · ${b.faites}/${b.total}${b.maitre ? " · Maître" : ""}`} titre={b.contenu.nom} replique={CODEX.branches.sous} focusable={focusable} />
       <Chemin quetes={b.etapes} ici={ici} onQuete={onQuete} nom={nomEtape} />
     </>
   );
 }
 
-export function TeteChemin({ sur, titre, replique }: { sur: string; titre: string; replique?: string }) {
+/** `focusable` : le titre reçoit le focus quand le contenu s'ouvre (tabIndex -1, hors de l'ordre de tabulation). */
+export function TeteChemin({ sur, titre, replique, focusable }: { sur: string; titre: string; replique?: string; focusable?: boolean }) {
   return (
     <div className={c.teteChemin}>
       <p className={c.mono}>{sur}</p>
-      <h2 className={`${c.plume} ${c.titreChemin}`}>{titre}</h2>
+      <h2 className={`${c.plume} ${c.titreChemin}`} tabIndex={focusable ? -1 : undefined}>
+        {titre}
+      </h2>
       {replique && <p className={c.repliqueChemin}>« {replique} »</p>}
     </div>
   );

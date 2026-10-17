@@ -22,6 +22,7 @@ export function PastilleMatiere({
   forme,
   onClick,
   presse,
+  controle,
   style,
   className,
 }: {
@@ -30,6 +31,8 @@ export function PastilleMatiere({
   onClick?: () => void;
   /** la branche est ouverte (grille du téléphone) */
   presse?: boolean;
+  /** l'id du conteneur que la pastille déplie (grille du téléphone) */
+  controle?: string;
   style?: CSSProperties;
   className?: string;
 }) {
@@ -43,7 +46,8 @@ export function PastilleMatiere({
       style={{ ...style, ["--encre" as string]: p.opacite }}
       onClick={onClick}
       aria-label={label}
-      aria-pressed={presse}
+      aria-expanded={forme === "grille" ? !!presse : undefined}
+      aria-controls={forme === "grille" ? controle : undefined}
       title={p.touchee ?? undefined}
     >
       <span className={c.pastilleAnneau}>

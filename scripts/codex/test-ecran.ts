@@ -414,6 +414,13 @@ console.log("\n# la carte en trois niveaux (V3 §10.1)");
   check("CarteCodex : niveau et textes masqués posés sur le monde à chaque mouvement", carte.includes("m.dataset.niveau = String(niveauDe(k.z))") && carte.includes("taillesCachees(k.z, TAILLES_FIXES)"));
   const palette = readFileSync("components/nav/CommandPalette.tsx", "utf8");
   check("palette : « Quêtes du Codex », 8 au plus, vers /codex?quete=…", palette.includes('"Quêtes du Codex"') && palette.includes("chercher(toutes, q, 8)") && palette.includes("/codex?quete="));
+  // la grille des matières du téléphone : la pastille déplie sa branche (aria-expanded, aria-controls), la page y défile, le focus suit
+  const pastille = readFileSync("components/codex/PastilleMatiere.tsx", "utf8");
+  check("pastille de la grille : aria-expanded et aria-controls, plus d'aria-pressed", pastille.includes('aria-expanded={forme === "grille" ? !!presse : undefined}') && pastille.includes('aria-controls={forme === "grille" ? controle : undefined}') && !pastille.includes("aria-pressed"));
+  const matieresTel = carte.slice(carte.indexOf("function MatieresTel"), carte.indexOf("function BrancheChemin"));
+  check("branche ouverte : défilement (mouvement réduit respecté) puis focus sur son titre (tabIndex -1)",
+    matieresTel.includes("controle={idBranche}") && matieresTel.includes("id={idBranche}") && /scrollIntoView\(\{ block: "start", behavior: doux \? "smooth" : "auto" \}\)/.test(matieresTel)
+      && matieresTel.includes('querySelector<HTMLElement>("h2")?.focus({ preventScroll: true })') && carte.includes("tabIndex={focusable ? -1 : undefined}"));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

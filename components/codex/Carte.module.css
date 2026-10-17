@@ -538,6 +538,18 @@
 .telCorps {
   padding: 14px 8px 24px;
 }
+/* la branche ouverte depuis la grille des matières : la page y défile sous la barre du haut (64 px) */
+.brancheOuverte {
+  scroll-margin-top: 72px;
+}
+.brancheOuverte .titreChemin:focus {
+  outline: none;
+}
+.brancheOuverte .titreChemin:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
 .teteChemin {
   padding: 0 10px 6px;
   text-align: center;
