@@ -285,6 +285,10 @@ function cibleCompteur(o: Extract<Objectif, { k: "compteur" }>, q: Quete, params
     case "jour_encre": return { ...CINQ, duree: 10 };
     case "question_marquee": return CINQ;
     case "ami_ajoute": return { href: "/people", duree: 3, outil: "classement" };
+    // une séance juste (V3 §8.5) : ce qui coince, sur du neuf ou du dû
+    case "seance_juste": return coince(ctx, 20);
+    // le débrief : la liste des blancs (la revue du dernier, avec ?debrief=1, arrive avec A4b)
+    case "blanc_debriefe": return { ...BLANCS, duree: 10 };
   }
 }
 
@@ -353,6 +357,15 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
       const s = typeof f?.source === "string" ? TROPHEE_VERS[f.source] : undefined;
       return s ?? { href: lienPractice(ctx, { topic: "all", n: 30, poids: true }), duree: 30, outil: "ciblee" };
     }
+    case "trophees_sources": return { href: lienPractice(ctx, { topic: "all", n: 30, poids: true }), duree: 30, outil: "ciblee" };
+    // les notions tenues : une séance de la matière (la plus lourde à couvrir sans matière), là où ses notions reviennent
+    case "notions_tenues":
+    case "notions_tenues_pct": {
+      const m = mat ?? argmax(ctx, partNonVue(ctx));
+      return m ? { href: lienPractice(ctx, { topic: m.key, n: 20 }), duree: 20, outil: "ciblee", matiere: m.key } : null;
+    }
+    case "malle_faite": return { href: "/codex", duree: 5, outil: "codex" };
+    case "blancs_a_debriefer": return { ...BLANCS, duree: 10 };
   }
 }
 

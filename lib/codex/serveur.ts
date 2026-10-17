@@ -154,7 +154,7 @@ async function lireProgrammes(a: SupabaseClient, id: string): Promise<ProgrammeJ
   }
 }
 
-type MesuresV3 = { capacites: Capacites } & Pick<MesuresSql, "jours_encre_total" | "programmes_menes" | "maitres_total" | "trophees">;
+type MesuresV3 = { capacites: Capacites } & Pick<MesuresSql, "jours_encre_total" | "programmes_menes" | "maitres_total" | "trophees" | "notions_tenues" | "speciaux_matiere">;
 
 const nombre = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : undefined);
 
@@ -169,6 +169,28 @@ function lireTropheesV3(x: unknown): MesuresSql["trophees"] {
   });
 }
 
+/** Les notions tenues ({notion: {n, j5}}) ; une entrée mal formée est ignorée, autre chose qu'un objet : inconnues. */
+function lireNotionsTenues(x: unknown): MesuresSql["notions_tenues"] {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return undefined;
+  const out: NonNullable<MesuresSql["notions_tenues"]> = {};
+  for (const [notion, v] of Object.entries(x as Record<string, unknown>)) {
+    const o = v as { n?: unknown; j5?: unknown } | null;
+    const n = nombre(o?.n);
+    const j5 = nombre(o?.j5);
+    if (n !== undefined && j5 !== undefined) out[notion] = { n, j5 };
+  }
+  return out;
+}
+
+/** Les spéciaux par matière ({serie_bonnes: {m: n}, serie_calculs: {m: n}}) ; autre chose qu'un objet : inconnus. */
+function lireSpeciauxMatiere(x: unknown): MesuresSql["speciaux_matiere"] {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return undefined;
+  const parMatiere = (y: unknown) =>
+    y && typeof y === "object" && !Array.isArray(y) ? Object.fromEntries(Object.entries(y as Record<string, unknown>).flatMap(([m, n]) => (nombre(n) !== undefined ? [[m, n as number]] : []))) : {};
+  const d = x as { serie_bonnes?: unknown; serie_calculs?: unknown };
+  return { serie_bonnes: parMatiere(d.serie_bonnes), serie_calculs: parMatiere(d.serie_calculs) };
+}
+
 /**
  * Les mesures v3 et les capacités de la base (codex_mesures_v3, V3 §1.8), en
  * un appel. Fonction absente ou en erreur : la base ne sait rien faire de
@@ -178,13 +200,15 @@ async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): 
   try {
     const { data, error } = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
     if (error || !data || typeof data !== "object") return { capacites: CAPACITES_VIDE };
-    const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown; maitres_total?: unknown; trophees?: unknown };
+    const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown; maitres_total?: unknown; trophees?: unknown; notions_tenues?: unknown; speciaux_matiere?: unknown };
     return {
       capacites: lireCapacites(d.capacites),
       jours_encre_total: nombre(d.jours_encre_total),
       programmes_menes: nombre(d.programmes_menes),
       maitres_total: nombre(d.maitres_total),
       trophees: lireTropheesV3(d.trophees),
+      notions_tenues: lireNotionsTenues(d.notions_tenues),
+      speciaux_matiere: lireSpeciauxMatiere(d.speciaux_matiere),
     };
   } catch {
     return { capacites: CAPACITES_VIDE };
@@ -305,7 +329,18 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       await consigner(a, user.id, "", "codex_lire a échoué");
       return repli(user.id, jour);
     }
-    entree.lecture = { ...lecture, mesures: { ...lecture.mesures, jours_encre_total: v3.jours_encre_total, programmes_menes: v3.programmes_menes, maitres_total: v3.maitres_total, trophees: v3.trophees } };
+    entree.lecture = {
+      ...lecture,
+      mesures: {
+        ...lecture.mesures,
+        jours_encre_total: v3.jours_encre_total,
+        programmes_menes: v3.programmes_menes,
+        maitres_total: v3.maitres_total,
+        trophees: v3.trophees,
+        notions_tenues: v3.notions_tenues,
+        speciaux_matiere: v3.speciaux_matiere,
+      },
+    };
     const compteurs = indexerLecture(demandes, entree.lecture);
     let resultat = evaluer(entree, compteurs);
 

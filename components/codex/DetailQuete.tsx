@@ -59,6 +59,7 @@ export function DetailQuete({
     l.xp > 0 ? (l.etat === "terminee" && l.xpVersee !== null && l.xpVersee < l.xp ? CODEX.detail.xpPlafonnee(l.xpVersee) : CODEX.detail.xp(l.xp)) : null,
     l.titreGagne ? CODEX.detail.titreGagne(l.titreNom ?? l.titreGagne) : null,
     l.cosmetique ? CODEX.detail.cosmetique(l.cosmetiqueNom ?? l.cosmetique) : null,
+    l.folio ? CODEX.detail.cosmetique(l.folioNom ?? l.folio) : null,
   ].filter(Boolean) as string[];
   const showProgress = !enigme && l.etat !== "terminee" && l.cible > 1;
   const lien = l.destination?.href ?? l.lien;

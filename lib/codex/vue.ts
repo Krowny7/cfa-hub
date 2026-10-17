@@ -39,6 +39,9 @@ export type LigneQuete = {
   /** le nom lisible de la pièce et du titre (pour l'écran, qui n'a pas le catalogue) */
   cosmetiqueNom?: string;
   titreNom?: string;
+  /** le folio donné en plus (V3 §3.7), et son nom (l'œuvre) */
+  folio?: string;
+  folioNom?: string;
   retro: boolean;
   termineeLe: string | null;
   /** la fanfare n'a pas été jouée */
@@ -199,6 +202,7 @@ export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params:
     xpVersee: l && (l.etat === "recompensee" || l.etat === "terminee") ? l.xp : null,
     ...(q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique, ...(nomDe(q.recompense.cosmetique) ? { cosmetiqueNom: nomDe(q.recompense.cosmetique) } : {}) } : {}),
     ...(q.recompense.titre ? { titreGagne: q.recompense.titre, ...(nomDe(q.recompense.titre) ? { titreNom: nomDe(q.recompense.titre) } : {}) } : {}),
+    ...(q.recompense.folio ? { folio: q.recompense.folio, ...(nomDe(q.recompense.folio) ? { folioNom: nomDe(q.recompense.folio) } : {}) } : {}),
     retro: s.retro,
     termineeLe: l?.terminee_le ?? (s.fait && s.atteint ? s.atteint.toISOString() : null),
     aFeter: !!l && l.etat === "recompensee" && !l.vu && !l.retro && !q.miroir,
@@ -241,15 +245,15 @@ export function vueSansFetes(v: VueCodex, quetes: string[]): VueCodex {
  * déduit de ce qu'on a fait. Une pièce peut avoir plusieurs donneurs : la
  * quête retirée qui la donnait, et celle qui la donne aujourd'hui (V3 §8.1).
  */
-export function donneurs(contenu: ContenuMatiere[] = contenuDuProgramme(), quetes: { id: string; recompense: { cosmetique?: string; titre?: string } }[] = []): Map<string, string[]> {
+export function donneurs(contenu: ContenuMatiere[] = contenuDuProgramme(), quetes: { id: string; recompense: { cosmetique?: string; titre?: string; folio?: string } }[] = []): Map<string, string[]> {
   const m = new Map<string, string[]>();
   const ajouter = (c: string | undefined, id: string) => {
     if (!c) return;
     const l = m.get(c) ?? [];
     if (!l.includes(id)) m.set(c, [...l, id]);
   };
-  for (const a of ACTES) for (const c of [a.recompense.cosmetique, a.recompense.titre]) ajouter(c, `acte:${a.id}`);
-  for (const q of quetes) for (const c of [q.recompense.cosmetique, q.recompense.titre]) ajouter(c, q.id);
+  for (const a of ACTES) for (const c of [a.recompense.cosmetique, a.recompense.titre, a.recompense.folio]) ajouter(c, `acte:${a.id}`);
+  for (const q of quetes) for (const c of [q.recompense.cosmetique, q.recompense.titre, q.recompense.folio]) ajouter(c, q.id);
   return m;
 }
 
