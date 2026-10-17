@@ -177,6 +177,21 @@ export function quetesDeLaCarte(vue: Pick<VueCodex, "trame" | "branches" | "long
   return out;
 }
 
+// ── Les pages encore blanches (V3 §11.3) ───────────────────────────────
+
+/** Les familles que le dévoilement range, dans l'ordre de lecture de l'écran d'ordinateur : la carte, puis la colonne. */
+export const ORDRE_BLANCHES = ["codex:branches", "codex:contrats", "codex:longcours"] as const;
+
+/**
+ * La famille qui dit « Cette page du carnet est encore blanche » : la
+ * première encore masquée, dans l'ordre de lecture ; les suivantes disent
+ * moins (la phrase n'apparaît qu'une fois par écran). Null : tout est montré.
+ * Sur téléphone, un segment à la fois : chacun dit la phrase entière.
+ */
+export function premiereBlanche(montre: (quoi: string) => boolean): (typeof ORDRE_BLANCHES)[number] | null {
+  return ORDRE_BLANCHES.find((q) => !montre(q)) ?? null;
+}
+
 // ── Le téléphone : cinq segments ───────────────────────────────────────
 
 export type SegmentTel = "aujourdhui" | "parcours" | "matieres" | "chantiers" | "exploits";

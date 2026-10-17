@@ -32,7 +32,7 @@ import { decaleJour } from "@/lib/objectif-calc";
 import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
 import * as MAITRISE_UNIQUE from "@/lib/maitrise";
 import * as CAP from "@/lib/codex/cap";
-import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
+import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, premiereBlanche, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
 import { manqueDe } from "@/lib/codex/vue";
 import type { EtatQuete } from "@/lib/codex/moteur";
 
@@ -371,6 +371,13 @@ console.log("\n# la carte en trois niveaux (V3 §10.1)");
   // le téléphone : cinq segments, gardés dans l'URL
   check("cinq segments : Aujourd'hui · Parcours · Matières · Chantiers · Exploits", SEGMENTS_TEL.map((s) => s.libelle).join(" · ") === "Aujourd'hui · Parcours · Matières · Chantiers · Exploits");
   check("le segment lu dans ?vue= ; inconnu ou absent : Aujourd'hui", segmentDe("matieres") === "matieres" && segmentDe("xyz") === "aujourdhui" && segmentDe(undefined) === "aujourdhui");
+
+  // la page blanche : la phrase entière une fois par écran (V3 §11.3)
+  const montreSauf = (...caches: string[]) => (q: string) => !caches.includes(q);
+  check("page blanche : la première famille masquée dans l'ordre de lecture (carte, puis colonne)", premiereBlanche(montreSauf("codex:longcours", "codex:contrats")) === "codex:contrats" && premiereBlanche(montreSauf("codex:longcours")) === "codex:longcours" && premiereBlanche(montreSauf("codex:branches", "codex:longcours")) === "codex:branches");
+  check("page blanche : rien de masqué, personne ne la dit", premiereBlanche(() => true) === null);
+  const carteSrc = readFileSync("components/codex/CarteCodex.tsx", "utf8");
+  check("page blanche : la colonne (contrats, long cours) passe par PageBlanche", carteSrc.includes('<PageBlanche quoi="codex:longcours"') && carteSrc.includes('<PageBlanche quoi="codex:contrats"'));
 
   // la maîtrise unique : cap.ts réexporte lib/maitrise.ts (après F2)
   check("cap.ts réexporte la maîtrise unique (mêmes fonctions, mêmes constantes)", CAP.fuites === MAITRISE_UNIQUE.fuites && CAP.preparationDe === MAITRISE_UNIQUE.preparationDe && CAP.zoneDe === MAITRISE_UNIQUE.zoneDe && CAP.gainPreparation === MAITRISE_UNIQUE.gainPreparation && CAP.MAITRISE === MAITRISE_UNIQUE.MAITRISE);

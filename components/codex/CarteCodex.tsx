@@ -11,7 +11,7 @@ import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { FilRouge } from "@/components/codex/FilRouge";
 import { FeuillesNotions, PastilleMatiere } from "@/components/codex/PastilleMatiere";
 import { Feuille } from "@/components/ui/Feuille";
-import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
+import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, premiereBlanche, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
 import e from "./Encre.module.css";
 import c from "./Carte.module.css";
 
@@ -812,12 +812,17 @@ export function Colonne({ vue, montre, onQuete, onChanger, occupe, filRouge = tr
         <h2 id="col-long" className={c.colTitre}>
           {CODEX.longCours.titre}
         </h2>
-        {!montre("codex:longcours") ? <p className={c.blancheCol}>{CODEX.pageBlanche}</p> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
+        {!montre("codex:longcours") ? <PageBlanche quoi="codex:longcours" montre={montre} /> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
       </section>
       {/* le fil rouge, sous les chaînes (V3 §1.5) : dévoilé avec elles */}
       {filRouge && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
     </>
   );
+}
+
+/** Une famille encore masquée de la colonne : la phrase entière si c'est la première de l'écran, sinon quelques mots. `seule` : le segment du téléphone, qui la dit toujours en entier. */
+function PageBlanche({ quoi, montre, seule = false }: { quoi: string; montre: Montre; seule?: boolean }) {
+  return <p className={c.blancheCol}>{seule || premiereBlanche(montre) === quoi ? CODEX.pageBlanche : CODEX.pageBlancheAussi}</p>;
 }
 
 /** Les contrats du jour (et le débrief d'un blanc) : la colonne, et le segment « Aujourd'hui » du téléphone. */
@@ -829,7 +834,7 @@ function ContratsDuJour({ vue, montre, onQuete, onChanger, occupe, id = "col-jou
           Aujourd'hui
         </h2>
         {!montre("codex:contrats") ? (
-          <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
+          <PageBlanche quoi="codex:contrats" montre={montre} seule={id !== "col-jour"} />
         ) : vue.contrats.length === 0 ? (
           <p className={c.blancheCol}>Les contrats d'aujourd'hui se tirent à la première visite du jour.</p>
         ) : (

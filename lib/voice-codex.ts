@@ -80,6 +80,8 @@ export const CODEX = {
     collection: "Voir la Collection",
   },
   pageBlanche: "Cette page du carnet est encore blanche. Elle se remplira d'elle-même, ou d'un clic sur « Tout montrer ».",
+  /** une deuxième page blanche sur le même écran : la phrase entière n'est dite qu'une fois */
+  pageBlancheAussi: "Encore blanche, elle aussi.",
   etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Tamponnée" } as Record<EtatLigne, string>,
   // satisfies : une famille nouvelle sans libellé ne compile pas
   famille: { trame: "Trame", branche: "Branche", longcours: "Long cours", contrat: "Contrat", exploit: "Exploit", fil: "Fil rouge" } satisfies Record<Famille, string>,
