@@ -500,13 +500,17 @@ function evalFil(o: Objectif, c: Contexte): Ev {
 /** L'évaluation d'une quête : celle de son objectif (un palier du fil rouge passe par la valeur de son chapitre). */
 const evalQuete = (q: Pick<Quete, "famille" | "objectif">, c: Contexte): Ev => (q.famille === "fil" ? evalFil(q.objectif, c) : evalObjectif(q.objectif, c));
 
-/** Branches (matières) qui ont passé une étape ; une branche sans cette étape compte pour faite. */
-function branchesFaites(c: Contexte, etape: EtapeBranche) {
+/**
+ * Branches (matières) qui ont passé une étape ; une branche sans cette étape
+ * compte pour faite. `prerequis` : pour un nœud de convergence, une étape hors
+ * jeu (mesure inconnue, V3 §8) compte aussi pour faite, elle ne bloque rien.
+ */
+function branchesFaites(c: Contexte, etape: EtapeBranche, prerequis = false) {
   let faites = 0;
   for (const m of c.contenu) {
     // par la matière et l'étape (l'id porte le préfixe du programme hors CFA I)
-    const q = c.catalogue.find((x) => x.famille === "branche" && x.matiere === m.key && x.etape === etape);
-    if (!q || c.faites.has(clePeriode(q.id, ""))) faites++;
+    const q = c.catalogue.find((x) => x.famille === "branche" && x.matiere === m.key && x.etape === etape && !x.retiree);
+    if (!q || c.faites.has(clePeriode(q.id, "")) || (prerequis && c.horsJeu.has(q.id))) faites++;
   }
   return { faites, total: c.contenu.length };
 }
@@ -818,10 +822,10 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
     }
     case "acte": return actesClos.has(p.id);
     case "toutesBranches": {
-      const { faites, total } = branchesFaites(c, p.etape);
+      const { faites, total } = branchesFaites(c, p.etape, true);
       return faites >= total;
     }
-    case "branches": return branchesFaites(c, p.etape).faites >= p.n;
+    case "branches": return branchesFaites(c, p.etape, true).faites >= p.n;
     case "joursAvantExamen": {
       const j = joursAvantExamen(c.e.jour, c.e.jourJ);
       return j !== null && j <= p.max && j >= (p.min ?? 0);

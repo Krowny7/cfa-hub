@@ -537,6 +537,10 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     check("la vue : la masquée n'apparaît pas, la gelée garde sa progression et ne compte pas", !a3.quetes.some((l) => l.id === "trame:a3:essai-v3") && gelee?.gelee === true && gelee.valeur === 12 && a5.faites === a5.total, `${gelee?.valeur} ${a5.faites}/${a5.total}`);
     const { r: rApres } = convergence([], { catalogue, jourJ: "2026-10-01" });
     check("après l'examen, le prérequis souple bloque « Maître de FSA »", !fait(rApres, "branche:fsa:maitre") && fait(rApres, "branche:equity:maitre"));
+    // un nœud de convergence ne bloque pas sur une étape hors jeu (le drill complet sans le nombre de pages)
+    const noeud = q("trame:a2:essai-noeud", "acte2", { k: "compteur", evenement: "duel_termine", seuil: 1 }, [{ k: "toutesBranches", etape: "drill" }]);
+    const { r: rn } = repondre(base({ catalogue: [...catalogueCodex(), noeud] }), () => 0);
+    check("« toutes les branches au drill » : les drills hors jeu ne bloquent pas le nœud", rn.etats.filter((x) => x.quete.etape === "drill").every((x) => x.horsJeu) && ouverte(rn, "trame:a2:essai-noeud"));
   }
 }
 
