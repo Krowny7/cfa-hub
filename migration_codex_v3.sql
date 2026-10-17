@@ -59,8 +59,10 @@
 --    menés, maîtres (branches menées à « Maître de… », tous programmes),
 --    trophées par source et par palier (trophees_joueur quand
 --    migration_v3_profil.sql est collée, sinon les séances ciblées, avec le
---    plafond par taille). Clé service seulement. Réécrite en entier par chaque
---    lot qui l'étend.
+--    plafond par taille) ; les notions tenues (par notion : réponses, et
+--    justes parmi les 5 dernières) ; les spéciaux par matière (plus longue
+--    suite de bonnes réponses d'affilée, de calculs justes d'affilée). Clé
+--    service seulement. Réécrite en entier par chaque lot qui l'étend.
 --
 -- Ordre de collage : migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
@@ -405,8 +407,13 @@ REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticat
 -- ── 4. codex_mesures_v3 (le site, clé service) ──────────────────────
 -- Réécrite EN ENTIER, en place, par chaque lot qui l'étend (A2b, A3b, A4a).
 -- Rend {capacites, jours_encre_total, programmes_menes, maitres_total,
--- trophees}. Les capacités sont lues à l'exécution : ce que la base sait
--- faire selon ce qui est collé.
+-- trophees, notions_tenues, speciaux_matiere}. Les capacités sont lues à
+-- l'exécution : ce que la base sait faire selon ce qui est collé.
+--   notions_tenues   : {"<notion>": {"n": réponses, "j5": justes parmi les 5 dernières}}
+--                      (une notion est tenue à n ≥ 5 et j5 ≥ 3 : lib/codex/moteur.ts)
+--   speciaux_matiere : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n}}
+--                      bonnes réponses d'affilée dans la matière (une erreur ou 20 min de
+--                      silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée
 CREATE OR REPLACE FUNCTION codex_mesures_v3(p_user uuid, p_programme text DEFAULT 'finance/cfa-l1')
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -415,6 +422,9 @@ DECLARE
   v_menes int;
   v_maitres int;
   v_trophees jsonb := '[]'::jsonb;
+  v_tenues jsonb;
+  v_bonnes jsonb;
+  v_calculs jsonb := '{}'::jsonb;
 BEGIN
   IF p_user IS NULL OR p_programme IS NULL OR p_programme !~ '^[a-z]+/[a-z0-9-]{2,40}$' THEN
     RAISE EXCEPTION 'programme invalide : %', p_programme;
@@ -464,8 +474,61 @@ BEGIN
       ) x
     $q$ INTO v_trophees USING p_user;
   END IF;
+  -- les réponses du joueur, lues une fois (même rattachement à la matière et à la notion que codex_journal) :
+  -- les notions tenues (V3 §8.5), réponses par notion et justes parmi les 5 dernières ; et la plus longue
+  -- suite de bonnes réponses d'affilée dans chaque matière (V3 §8.7)
+  WITH rep AS MATERIALIZED (
+    SELECT r.ok, r.at, q.matiere, q.notion, row_number() OVER (ORDER BY r.at) AS ord
+    FROM _codex_reponses(p_user) r
+    LEFT JOIN LATERAL (
+      SELECT _codex_matiere(lf.name, qs.title) AS matiere, to_jsonb(qq) ->> 'notion' AS notion
+      FROM quiz_questions qq
+      LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
+      LEFT JOIN library_folders lf ON lf.id = qs.folder_id
+      WHERE qq.id = r.question_id
+      LIMIT 1
+    ) q ON true
+  )
+  SELECT
+    (SELECT coalesce(jsonb_object_agg(t.notion, jsonb_build_object('n', t.n, 'j5', t.j5)), '{}'::jsonb)
+     FROM (SELECT x.notion, count(*)::int AS n, (count(*) FILTER (WHERE x.ok AND x.rang <= 5))::int AS j5
+           FROM (SELECT c.notion, c.ok, row_number() OVER (PARTITION BY c.notion ORDER BY c.at DESC, c.ord DESC) AS rang
+                 FROM rep c WHERE c.notion IS NOT NULL) x
+           GROUP BY x.notion) t),
+    (SELECT coalesce(jsonb_object_agg(y.matiere, y.n), '{}'::jsonb)
+     FROM (SELECT z.matiere, max(z.c)::int AS n
+           FROM (SELECT g.matiere, g.grp, count(*) AS c
+                 FROM (SELECT s.matiere, s.ok, sum(CASE WHEN NOT s.ok OR s.silence THEN 1 ELSE 0 END) OVER (PARTITION BY s.matiere ORDER BY s.at, s.ord) AS grp
+                       FROM (SELECT c.matiere, c.ok, c.at, c.ord,
+                                    (c.at - lag(c.at) OVER (PARTITION BY c.matiere ORDER BY c.at, c.ord)) > interval '20 minutes' AS silence
+                             FROM rep c WHERE c.matiere IS NOT NULL) s) g
+                 WHERE g.ok
+                 GROUP BY g.matiere, g.grp) z
+           GROUP BY z.matiere) y)
+  INTO v_tenues, v_bonnes;
+  -- … et de calculs justes (calc_attempts, la matière est le sujet du calcul)
+  IF to_regclass('public.calc_attempts') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT coalesce(jsonb_object_agg(y.matiere, y.n), '{}'::jsonb)
+      FROM (
+        SELECT z.matiere, max(z.c)::int AS n
+        FROM (
+          SELECT g.matiere, g.grp, count(*) AS c
+          FROM (SELECT c.topic AS matiere, c.correct,
+                       sum(CASE WHEN c.correct THEN 0 ELSE 1 END) OVER (PARTITION BY c.topic ORDER BY c.answered_at, c.id) AS grp
+                FROM calc_attempts c
+                WHERE c.user_id = $1 AND EXISTS (SELECT 1 FROM codex_matieres m WHERE m.cle = c.topic)) g
+          WHERE g.correct
+          GROUP BY g.matiere, g.grp
+        ) z
+        GROUP BY z.matiere
+      ) y
+    $q$ INTO v_calculs USING p_user;
+  END IF;
   RETURN jsonb_build_object('capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
-                            'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb));
+                            'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb),
+                            'notions_tenues', v_tenues,
+                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb)));
 END $$;
 
 REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
