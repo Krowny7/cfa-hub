@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { oublierCodex, oublierPanneau } from "@/lib/codex/serveur";
 
 // Le mode sobre (V3 §11.5), réglé dans Moi › Réglages : une seule clé du
 // compte, user_metadata.rl_sobre (true : sobre ; false : comme d'habitude),
@@ -22,6 +23,9 @@ export async function reglerSobre(sobre: boolean): Promise<ResultatSobre> {
   } catch {
     return { ok: false, erreur: "Réglage impossible, réessaie dans un instant." };
   }
+  // la vue du Codex gardée 45 s et l'instantané du panneau portent encore l'ancien réglage
+  oublierCodex(auth.user.id);
+  await oublierPanneau(auth.user.id);
   revalidatePath("/", "layout");
   return { ok: true, sobre };
 }
