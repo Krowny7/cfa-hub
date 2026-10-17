@@ -19,7 +19,7 @@ import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Dest
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
 import { MALLE_PRETE } from "@/lib/codex/calendrier";
-import { maitriseDuCodex, maitriseLue } from "@/lib/codex/cap";
+import { maitriseDuCodex, maitriseLue, scoreFaiblesse } from "@/lib/codex/cap";
 import { actesDe, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, compterPiecesCodex, palierAtteint, paliersRecompenses, quetesFilRouge, tropheesAuMoins, type TropheesLus } from "@/lib/codex/fil-rouge";
 import { levelInfoFromXp } from "@/lib/leveling";
@@ -805,10 +805,11 @@ export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Em
   const rnd = graine(`${joueur}:${e.jour}`);
   const phase = phaseJoueur(e, actesClosDe(e.progression));
   const M = e.lecture.mesures;
-  // paramètres : matière la plus à risque (poids × (1 − maîtrise), inconnue = 0,2), notion la plus faible, fiche de la matière
+  // paramètres : le point faible (scoreFaiblesse, la définition unique : poids × (1 − maîtrise), inconnue = 20 %,
+  // la maîtrise lue comme le cap et la séance la lisent, provisoire comprise), notion la plus faible, fiche de la matière
   const risque = contenu
     // après un « pas cette fois », une matière en bande basse pèse ×1,3 pendant 60 jours (V3 §10.5)
-    .map((m) => ({ m, r: m.poids * (1 - (maitriseDe(e, m.key) ?? 20) / 100) * facteurBande(e.verdict, m.key, e.jour) }))
+    .map((m) => ({ m, r: scoreFaiblesse({ poids: m.poids, pct: maitriseLue(e.lecture.mesures, m.key).pct }) * facteurBande(e.verdict, m.key, e.jour) }))
     .sort((a, b) => b.r - a.r);
   const matiere = risque[0]?.m.key;
   const avecDrill = risque.find((x) => x.m.fiche && x.m.drill)?.m;
