@@ -49,9 +49,9 @@ export type MaitriseMatiere = {
   poids: number;
   /** null : pas encore mesurée (moins de 10 réponses) */
   pct: number | null;
-  /** réponses dans la fenêtre (60 au plus) */
+  /** réponses dans la fenêtre (60 au plus) ; en repli, les questions de l'ancienne mesure */
   n: number;
-  /** toutes les réponses de la matière */
+  /** toutes les réponses de la matière (en repli : comme n) */
   total: number;
   statut: StatutMaitrise;
   /** la dernière réponse (ISO), null si inconnue */
