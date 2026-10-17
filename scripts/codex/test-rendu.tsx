@@ -100,7 +100,9 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
   const html = jour(sans);
   check("le titre : « Codex », sans phase ni « Le carnet de Léonard »", /<h1 class="t-h3 font-brand m-0">Codex<\/h1>/.test(html) && !html.includes("Le carnet de Léonard") && !html.includes(milieu.phaseNom));
   check("deux segments, « Aujourd'hui » choisi", compte(html, /role="tab"/g) === 2 && /aria-selected="true"[^>]*>Aujourd&#x27;hui</.test(html));
-  check("le fil : la séance en étapes, un seul bouton plein", !!milieu.seance && milieu.seance.blocs.every((b) => html.includes(b.titre.replace(/'/g, "&#x27;"))) && pleins(html) === 1, `${pleins(html)} bouton(s) plein(s)`);
+  // le texte sans balises : un mot maison du titre (« ratures ») est un bouton (components/ui/Mot)
+  const texte = html.replace(/<[^>]+>/g, "");
+  check("le fil : la séance en étapes, un seul bouton plein", !!milieu.seance && milieu.seance.blocs.every((b) => texte.includes(b.titre.replace(/'/g, "&#x27;"))) && pleins(html) === 1, `${pleins(html)} bouton(s) plein(s)`);
   check("« Une autre idée ? » sur la seule étape en cours", compte(html, /Une autre idée \?/g) === 1 && compte(html, /aria-current="step"/g) === 1);
   check("une seule puce de temps (« 30 min ▾ »), le choix replié", compte(html, /aria-expanded="false" aria-controls="fil-temps"/g) === 1 && !html.includes('id="fil-temps"'));
   check("les replis : Quêtes du jour, Fait aujourd'hui, l'acte en cours", html.includes("Quêtes du jour") && html.includes("Fait aujourd&#x27;hui") && /<details[^>]*><summary>Acte /.test(html));
