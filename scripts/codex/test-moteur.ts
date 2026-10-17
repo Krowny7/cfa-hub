@@ -19,7 +19,7 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
 import { ACTES, COSMETIQUES_CODEX, DECOUVERTE, MODELES_CONTRATS, VAGUES_DECOUVERTE, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
-  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, repliquesDeVague, revoirDe, tirerContrats,
+  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, dependancesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, repliquesDeVague, revoirDe, tirerContrats,
   budgetDuJour, contexteDestination, repriseDuJour,
   type Demande, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type ResultatCompteur,
 } from "@/lib/codex/moteur";
@@ -496,9 +496,19 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     const blanc = r.lot.find((i) => i.quete === "trame:a4:blanc");
     const mecene = r.lot.find((i) => i.quete === "longcours:commandes:1");
     check("« La commande » paie, « Le premier mécène » (son miroir) est tamponné à 0 XP", blanc?.etat === "terminee" && (blanc.xp ?? 0) > 0 && mecene?.etat === "terminee" && mecene.xp === 0, `${JSON.stringify(blanc)} ${JSON.stringify(mecene)}`);
-    check("un miroir déjà payé avant la v3 n'est ni réécrit ni repris ; sa payeuse paie", !r.lot.some((i) => i.quete === "longcours:remontee:1") && (r.lot.find((i) => i.quete === "trame:a4:remontee")?.xp ?? 0) > 0);
+    const remontee = r.lot.find((i) => i.quete === "trame:a4:remontee");
+    check("un miroir déjà payé avant la v3 (120) n'est ni réécrit ni repris ; sa payeuse (120) est tamponnée à 0 XP", !r.lot.some((i) => i.quete === "longcours:remontee:1") && remontee?.etat === "terminee" && remontee.xp === 0, JSON.stringify(remontee));
     const l = construireVue(e2, r, null, { devoile: null }).longCours.flatMap((c) => c.paliers).find((x) => x.id === "longcours:remontee:1");
     check("pas de fanfare pour un miroir (même non vu)", l?.aFeter === false);
+  }
+  {
+    // un miroir payé 120 avant la v3, une payeuse à 150 : elle ne verse que les 30 qui manquent, et compte pour l'acte
+    const catalogue = catalogueCodex().filter((q) => ["trame:a4:semaines", "longcours:encre:1", "longcours:encre:2"].includes(q.id));
+    const jours = Array.from({ length: 5 }, (_, w) => [0, 1, 2, 3].map((d) => ({ jour: new Date(Date.UTC(2026, 8, 7 + 7 * w + d)).toISOString().slice(0, 10), n: 20 }))).flat();
+    const e = base({ catalogue, premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), progression: [...["prologue", "acte2", "acte3"].map((a) => ligne(`acte:${a}`)), ligne("longcours:encre:1"), ligne("longcours:encre:2", { xp: 120 })], lecture: { compteurs: {}, mesures: { xp_total: 0, jours }, speciaux: {} } });
+    const { r } = repondre(e, () => 0);
+    const semaines = r.lot.find((i) => i.quete === "trame:a4:semaines");
+    check("miroir payé 120 avant la v3, payeuse à 150 : 30 XP, terminée", cat.find((x) => x.id === "trame:a4:semaines")?.recompense.xp === 150 && semaines?.etat === "terminee" && semaines.xp === 30 && fait(r, "trame:a4:semaines"), JSON.stringify(semaines));
   }
   {
     // la payeuse et son miroir ouverts, ni l'une ni l'autre faite : c'est la payeuse qu'on propose, une seule fois
@@ -730,6 +740,23 @@ console.log("\n# v3 §4.6, §4.7 : la maîtrise unique, le cap, la mémoire (A4b
   const remontee: Quete = { id: "essai:remontee", famille: "longcours", programme: PROGRAMME, titre: "r", consigne: "r", objectif: { k: "mesure", mesure: "matieres_remontees", filtre: { n: 10 }, seuil: 1 }, prerequis: [], recompense: { xp: 0 }, repetition: "unique", visibilite: "visible", ordre: 1 };
   const remontees = (m: MesuresSql) => repondre(avecMesures(m, { catalogue: [remontee] }), () => 0).r.etats.find((x) => x.quete.id === remontee.id)?.ev?.valeur;
   check("matières remontées : le début de la maîtrise unique quand elle est là", remontees({ maitrise_unique: { quant: u(70, 60, "mesuree", { debut: 40 }) } }) === 1 && remontees({ maitrise_unique: { quant: u(70, 30, "provisoire", { debut: 40 }) } }) === 0);
+
+  // le rattrapage (V3 §1.9) : la capacité « maitrise » vue pour la première fois, la maîtrise unique remplit
+  // « maîtrise 60 » d'un coup (sans date d'atteinte) : en rétro, plafonnée, une seule cérémonie
+  {
+    const vues = { ...CAPACITES_VIDE, mesures: true };
+    const capa = { ...CAPACITES_VIDE, mesures: true, maitrise: true };
+    const tout = (o: Partial<Entree>) => repondre(avecMesures({ maitrise_unique: Object.fromEntries(contenu.map((m) => [m.key, u(m.key === "quant" ? 62 : 20, 60, "mesuree")])) }, { premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: capa, ...o }), () => 99).r;
+    const r = tout({ capacitesVues: vues });
+    const item = r.lot.find((i) => i.quete === "branche:quant:maitrise60");
+    const dependantes = r.lot.filter((i) => i.etat === "terminee" && dependancesDe(cat.find((x) => x.id === i.quete) ?? { famille: "contrat", objectif: { k: "special", cle: "" } }).includes("maitrise"));
+    const verse = Math.min(r.budgetRetro, r.lot.filter((i) => i.etat === "terminee" && i.retro).reduce((s, i) => s + Math.min(i.xp ?? 0, i.plafond ?? 0), 0));
+    check("capacité « maitrise » vue pour la première fois : « maîtrise 60 » de Quant rattrapée en rétro, aucune fête par quête, XP ≤ plafondRetro", item?.etat === "terminee" && item.retro === true && dependantes.length > 0 && dependantes.every((i) => i.retro) && verse <= plafondRetro(r.niveau) && r.capacitesVues?.maitrise === true, JSON.stringify(item));
+    const ensuite = tout({ capacitesVues: capa }).lot.find((i) => i.quete === "branche:quant:maitrise60");
+    check("… une fois la capacité vue, une maîtrise 60 qui se remplit paie normalement", ensuite?.retro === false, JSON.stringify(ensuite));
+    const m60 = cat.find((x) => x.id === "branche:quant:maitrise60")!;
+    check("la dépendance ne sert qu'au rattrapage : « maîtrise 60 » n'exige rien de la base pour être suivie", !(m60.requiert ?? []).includes("maitrise") && dependancesDe(m60).includes("maitrise"));
+  }
 
   // le rang garde l'ancienne règle (V3 §4.5) : la maîtrise unique ne fait monter aucun palier
   const palierOr = (m: MesuresSql) => repondre(avecMesures({ elo: 1500, ...m }), () => 99).r.etats.find((x) => x.quete.objectif.k === "mesure" && x.quete.objectif.mesure === "pic_palier" && x.quete.objectif.seuil === 2)?.ev?.valeur;

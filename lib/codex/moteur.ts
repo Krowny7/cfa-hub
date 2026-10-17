@@ -181,6 +181,35 @@ export function requisOk(q: Pick<Quete, "requiert">, c: Capacites): boolean {
 /** Ce qu'une quête exige de la base : son `requiert`, plus la capacité « fil » pour un palier du fil rouge (il ne s'écrit pas sans elle). */
 export const requisDe = (q: Pick<Quete, "requiert" | "famille">): Requis[] => (q.famille === "fil" ? [...(q.requiert ?? []), "fil"] : (q.requiert ?? []));
 
+/**
+ * Les mesures qui changent de source quand une capacité s'allume, sans que la
+ * quête en dépende pour être suivie : la maîtrise passe de l'ancienne règle à
+ * la maîtrise unique (maitriseLue, lib/codex/cap.ts) dès que codex_mesures_v3
+ * la rend. `pic_palier` lit l'ancienne maîtrise : il n'en est pas.
+ */
+const MESURES_DE_CAPACITE: Partial<Record<string, Requis>> = {
+  maitrise: "maitrise",
+  maitrise_programme: "maitrise",
+  matieres_au_dessus: "maitrise",
+  matieres_remontees: "maitrise",
+  preparation: "maitrise",
+};
+const capacitesDeObjectif = (o: Objectif, out: Set<Requis>): Set<Requis> => {
+  if (o.k === "mesure") {
+    const r = MESURES_DE_CAPACITE[o.mesure];
+    if (r) out.add(r);
+  } else if (o.k === "tous" || o.k === "unDe") for (const x of o.objectifs) capacitesDeObjectif(x, out);
+  return out;
+};
+
+/**
+ * Ce dont dépend une quête pour le rattrapage (V3 §1.9) : ce qu'elle exige
+ * (requisDe), plus la capacité dont une de ses mesures change de source. Sert
+ * au rattrapage seulement : `suivie` n'en tient pas compte (la quête reste
+ * affichée et jouable sans la capacité, sur l'ancienne mesure).
+ */
+export const dependancesDe = (q: Pick<Quete, "requiert" | "famille" | "objectif">): Requis[] => [...capacitesDeObjectif(q.objectif, new Set(requisDe(q)))];
+
 const CLES_CAPACITES: Capacite[] = ["fil", "mesures", "seances", "revoir", "maitrise", "trophees", "debrief", "ratures_seches"];
 
 /**
@@ -1134,7 +1163,15 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   // le rattrapage (V3 §1.9) : déjà remplie et dépendante de ce qui est nouveau (quête de la v3 au premier
   // calcul v3, capacité vue pour la première fois) → rétro, quelle que soit sa date d'atteinte
   const nouveau = nouveautesDe(e);
-  const rattrapee = (q: Quete) => !!nouveau && ((nouveau.v3 && q.nouvelle === "v3") || requisDe(q).some((r) => nouveau.requis.has(r)));
+  const rattrapee = (q: Quete) => !!nouveau && ((nouveau.v3 && q.nouvelle === "v3") || dependancesDe(q).some((r) => nouveau.requis.has(r)));
+  // l'XP déjà versée par les miroirs d'une payeuse (payés avant la v3, quand ils n'en étaient pas) :
+  // la payeuse ne verse que le reste, jamais deux fois la même chose (V3 §8.2)
+  const miroirsDe = new Map<string, string[]>();
+  for (const x of catalogue) if (x.miroir) miroirsDe.set(x.miroir, [...(miroirsDe.get(x.miroir) ?? []), x.id]);
+  const dejaVerse = (q: Quete) => (miroirsDe.get(q.id) ?? []).reduce((s, id) => {
+    const l = lignes.get(clePeriode(id, ""));
+    return s + (l && (l.etat === "recompensee" || l.etat === "terminee") ? Math.max(0, Number(l.xp) || 0) : 0);
+  }, 0);
   for (const st of tri) {
     const q = st.quete;
     // sans la capacité « fil » (CHECK de codex_progression pas encore élargi), aucun palier du fil ne s'écrit (V3 §1.8)
@@ -1145,9 +1182,10 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
     if (st.fait && !(st.ligne && (st.ligne.etat === "recompensee" || st.ligne.etat === "terminee"))) {
       const retro = q.repetition === "unique" && (rattrapee(q) || (!usesDepuisOuverture(q.objectif) && retroDe(st.atteint)));
       st.retro = retro;
-      // un miroir est tamponné sans rien verser : sa quête payeuse paie (V3 §8.2)
+      // un miroir est tamponné sans rien verser : sa quête payeuse paie (V3 §8.2), moins ce que ses
+      // miroirs ont déjà versé ; elle garde cosmétique et titre, et compte pour la clôture d'acte
       const paie = !q.miroir;
-      lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp: paie ? q.recompense.xp : 0, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(paie && q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(paie && q.recompense.titre ? { titre: q.recompense.titre } : {}) });
+      lot.push({ ...base, etat: "terminee", cible: st.ev?.cible ?? 1, retro, xp: paie ? Math.max(0, q.recompense.xp - dejaVerse(q)) : 0, plafond, ...(st.atteint ? { atteint: st.atteint.toISOString() } : {}), ...(paie && q.recompense.cosmetique ? { cosmetique: q.recompense.cosmetique } : {}), ...(paie && q.recompense.titre ? { titre: q.recompense.titre } : {}) });
     } else if (!st.fait && st.ouverte) {
       const v = st.ev ? st.ev.valeur : 0;
       const etat = v > 0 ? "active" : "disponible";
