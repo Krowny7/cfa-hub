@@ -185,7 +185,10 @@ export const requisDe = (q: Pick<Quete, "requiert" | "famille">): Requis[] => (q
  * Les mesures qui changent de source quand une capacité s'allume, sans que la
  * quête en dépende pour être suivie : la maîtrise passe de l'ancienne règle à
  * la maîtrise unique (maitriseLue, lib/codex/cap.ts) dès que codex_mesures_v3
- * la rend. `pic_palier` lit l'ancienne maîtrise : il n'en est pas.
+ * la rend. `pic_palier` lit l'ancienne maîtrise : il n'en est pas. Les
+ * trophées de même : sans trophees_joueur, la seule source « ciblee » ; avec,
+ * toutes (les paliers du chapitre « trophees » du fil rouge déjà remplis
+ * passent alors en rétro).
  */
 const MESURES_DE_CAPACITE: Partial<Record<string, Requis>> = {
   maitrise: "maitrise",
@@ -193,6 +196,8 @@ const MESURES_DE_CAPACITE: Partial<Record<string, Requis>> = {
   matieres_au_dessus: "maitrise",
   matieres_remontees: "maitrise",
   preparation: "maitrise",
+  trophees: "trophees",
+  trophees_sources: "trophees",
 };
 const capacitesDeObjectif = (o: Objectif, out: Set<Requis>): Set<Requis> => {
   if (o.k === "mesure") {

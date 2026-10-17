@@ -701,14 +701,19 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
 
   // les exploits de la v3 et le débrief
   {
-    const trophees = (t: { source: string; palier: number; n: number }[]) => repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: MESURES, lecture: { compteurs: {}, mesures: { xp_total: 0, trophees: t }, speciaux: {} } }), () => 0).r;
+    const TROPHEES = { ...MESURES, trophees: true };
+    const trophees = (t: { source: string; palier: number; n: number }[]) => repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: TROPHEES, lecture: { compteurs: {}, mesures: { xp_total: 0, trophees: t }, speciaux: {} } }), () => 0).r;
     const quatreOr = trophees(["ciblee", "blanc", "trente", "fiche"].map((source) => ({ source, palier: 3, n: 1 })).concat([{ source: "cinq", palier: 1, n: 4 }, { source: "drill", palier: 2, n: 1 }]));
     check("le grand chelem : un or sur quatre chemins ; la vitrine : un trophée sur six", fait(quatreOr, "exploit:grand-chelem") && fait(quatreOr, "exploit:vitrine"));
     const troisOr = trophees(["ciblee", "blanc", "trente"].map((source) => ({ source, palier: 4, n: 3 })));
     check("… trois sources seulement (même en diamant) : ni l'un ni l'autre", !fait(troisOr, "exploit:grand-chelem") && !fait(troisOr, "exploit:vitrine"));
     const { r: rien } = repondre(base(), () => 0);
-    const { r: sansCle } = repondre(base({ capacites: MESURES }), () => 0);
+    const { r: sansCle } = repondre(base({ capacites: TROPHEES }), () => 0);
     check("sans codex_mesures_v3 : les exploits de trophées pas suivis, la cadence attend le journal v3 ; trophées non lus : hors jeu", !st(rien, "exploit:grand-chelem") && !st(rien, "exploit:rythme") && st(sansCle, "exploit:grand-chelem")?.horsJeu === true);
+    // sans trophees_joueur (la seule source « ciblee ») : plusieurs chemins sont impossibles, les deux exploits attendent
+    const cibleeSeule = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: MESURES, lecture: { compteurs: {}, mesures: { xp_total: 0, trophees: [{ source: "ciblee", palier: 3, n: 2 }] }, speciaux: {} } }), () => 0).r;
+    check("sans la capacité « trophees » : ni le grand chelem ni la vitrine suivis ; ils en dépendent (rattrapage)", !st(cibleeSeule, "exploit:grand-chelem") && !st(cibleeSeule, "exploit:vitrine") && dependancesDe(q("exploit:vitrine")).includes("trophees"));
+    check("… le chapitre « trophees » du fil reste suivi sur la source ciblée, et passe en rétro quand la capacité s'allume", dependancesDe({ famille: "fil", objectif: { k: "mesure", mesure: "trophees", seuil: 1 } }).includes("trophees"));
     check("la cadence garde la bannière de la machine volante", q("exploit:rythme").recompense.cosmetique === "banniere:machine-volante" && q("exploit:machine-volante").retiree === true);
     const debrief = q("contrat:debrief");
     check("le débrief : quotidien, 80 XP, attend le journal v3 et blanc_debrief", debrief.repetition === "quotidienne" && debrief.recompense.xp === 80 && JSON.stringify(debrief.requiert) === JSON.stringify(["journal3", "debrief"]) && !rien.etats.some((s) => s.quete.id === "contrat:debrief"));

@@ -680,8 +680,9 @@ const EXPLOITS_V3: Quete[] = [
     // le temps par question naît avec le journal v3
     requiert: ["journal3"],
   }),
-  exploit({ id: "exploit:grand-chelem", famille: "exploit", ordre: 201, nouvelle: "v3", titre: "Le grand chelem", consigne: "Gagner un trophée d'or ou mieux sur quatre chemins différents.", objectif: mesure("trophees_sources", 4, { palier: "or" }), recompense: { xp: 150 }, visibilite: "indice", indice: "Quatre ors, quatre chemins.", requiert: ["mesures"] }),
-  exploit({ id: "exploit:vitrine", famille: "exploit", ordre: 202, nouvelle: "v3", titre: "La vitrine", consigne: "Gagner au moins un trophée sur six chemins différents.", objectif: mesure("trophees_sources", 6), recompense: { xp: 120 }, visibilite: "cachee", requiert: ["mesures"] }),
+  exploit({ id: "exploit:grand-chelem", famille: "exploit", ordre: 201, nouvelle: "v3", titre: "Le grand chelem", consigne: "Gagner un trophée d'or ou mieux sur quatre chemins différents.", objectif: mesure("trophees_sources", 4, { palier: "or" }), recompense: { xp: 150 }, visibilite: "indice", indice: "Quatre ors, quatre chemins.", requiert: ["mesures", "trophees"] }),
+  // sans trophees_joueur, codex_mesures_v3 ne rend que la source « ciblee » : plusieurs chemins sont impossibles
+  exploit({ id: "exploit:vitrine", famille: "exploit", ordre: 202, nouvelle: "v3", titre: "La vitrine", consigne: "Gagner au moins un trophée sur six chemins différents.", objectif: mesure("trophees_sources", 6), recompense: { xp: 120 }, visibilite: "cachee", requiert: ["mesures", "trophees"] }),
 ];
 
 export const QUETES_EXPLOITS: Quete[] = [
