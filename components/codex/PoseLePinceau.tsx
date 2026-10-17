@@ -36,9 +36,9 @@ export function PoseLePinceau({ recap }: { recap: Recap }) {
 
   const chiffres: [string, string][] = [
     [nombre(recap.questions), recap.questions > 1 ? "questions" : "question"],
-    ...(recap.heures > 0 ? [[`≈ ${nombre(recap.heures)} h`, "de travail (1,2 min par question)"] as [string, string]] : []),
+    ...(recap.heures > 0 ? [[`≈ ${nombre(recap.heures)} h`, "de travail, à 1,2 min la question"] as [string, string]] : []),
     [nombre(recap.joursEncre), recap.joursEncre > 1 ? "jours d'encre" : "jour d'encre"],
-    [`${recap.preparation} %`, "de préparation, à la fin"],
+    [`${recap.preparation} %`, "de préparation finale"],
     ...(recap.raturesScellees !== null ? [[nombre(recap.raturesScellees), "ratures scellées"] as [string, string]] : []),
     ...(recap.trophees !== null ? [[nombre(recap.trophees), recap.trophees > 1 ? "trophées gagnés" : "trophée gagné"] as [string, string]] : []),
   ];
