@@ -1,8 +1,8 @@
 // Le Codex est-il en place côté base (migration_codex.sql collée) ? Une
 // sonde légère, gardée en mémoire (10 min si oui, 30 s si non : on réessaie
 // vite après que l'utilisateur a collé le SQL). Sert à la barre de navigation
-// et au dévoilement : sans la migration, tout est montré et l'onglet Codex
-// n'est pas proposé. Ne lève jamais. Module serveur.
+// et au dévoilement : sans la migration, tout est montré et le sceau des
+// quêtes n'est pas proposé. Ne lève jamais. Module serveur.
 
 import { createAdminClient } from "@/lib/supabase/admin";
 

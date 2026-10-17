@@ -261,7 +261,7 @@ export function Recuperer({
       {reste > 0 && <p className="t-micro m-0">{T.autres(reste)}</p>}
       {dejaVerse && <p className="t-micro m-0">{T.dejaVerse}</p>}
       {comptee ?? (
-        <button type="button" className="btn btn-primary rl-press min-h-[44px] w-full sm:w-fit" disabled={occupe} aria-busy={phase === "envoi"} onClick={recuperer}>
+        <button type="button" className={"btn btn-primary rl-press min-h-[44px] w-full" + (cadre ? " sm:w-fit" : "")} disabled={occupe} aria-busy={phase === "envoi"} onClick={recuperer}>
           {phase === "envoi" ? T.enCours : dejaVerse ? T.voir : T.tout(xp)}
         </button>
       )}

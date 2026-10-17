@@ -1,9 +1,9 @@
 // L'état de la navigation pour le compte connecté, lu sans toucher aux
 // données de jeu : le dévoilement écrit dans le compte (user_metadata
 // rl_codex), la date d'inscription, et la sonde « la migration est-elle
-// collée ». Sans migration, ou hors connexion : tout est montré et l'onglet
-// Codex n'est pas proposé. Un compte inscrit avant LANCEMENT_CODEX voit tout
-// dès le premier jour. Module serveur.
+// collée ». Sans migration, ou hors connexion : tout est montré et le sceau
+// des quêtes n'est pas proposé. Un compte inscrit avant LANCEMENT_CODEX voit
+// tout dès le premier jour. Module serveur.
 
 import { cache } from "react";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
