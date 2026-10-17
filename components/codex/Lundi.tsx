@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { codexChoisirSemaine } from "@/lib/codex/actions";
+import { AvecMots } from "@/components/ui/Mot";
 import type { Commande } from "@/lib/codex/catalogue";
 import type { VueLundi } from "@/lib/codex/rythme";
 import type { VueCodex } from "@/lib/codex/vue";
@@ -59,7 +60,10 @@ export function Lundi({ lundi, demo = false, onVue }: Props) {
       </div>
 
       <fieldset className={r.choix}>
-        <legend>{CODEX.lundi.cible}</legend>
+        {/* « Combien de jours d'encre… » : le mot maison a sa définition, au doigt (§4.4) */}
+        <legend>
+          <AvecMots texte={CODEX.lundi.cible} />
+        </legend>
         <div className={r.cibles}>
           {lundi.cibles.map((n) => (
             <button key={n} type="button" className={`${r.pastille} rl-press`} aria-pressed={cible === n} onClick={() => setCible(n)}>

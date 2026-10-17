@@ -16,6 +16,7 @@
 import { tailleFete, type FeteCodex } from "@/lib/codex/bilan";
 import type { LigneProgression } from "@/lib/codex/moteur";
 import type { Famille } from "@/lib/codex/types";
+import { CODEX } from "@/lib/voice-codex";
 
 /** Une quête faite qui attend « Récupérer ». */
 export type ARecuperer = {
@@ -222,30 +223,5 @@ export function dateRecuperer(le: string | null, jour: string): string | null {
   return `${JOURS_COURTS[new Date(t).getUTCDay()]} ${j === 1 ? "1er" : j} ${MOIS_COURTS[m - 1]}`;
 }
 
-const xp = (n: number) => `+${n.toLocaleString("fr-FR")} XP`;
-
-/** Les mots de « Récupérer ». */
-export const TEXTES_RECUPERER = {
-  titre: (n: number) => `À récupérer · ${n}`,
-  /** le bouton plein du bloc */
-  tout: (n: number) => (n > 0 ? `Tout récupérer · ${xp(n)}` : "Tout récupérer"),
-  /** le bouton d'une seule quête, et celui de la ligne en fin d'outil */
-  un: (n: number) => (n > 0 ? `Récupérer ${xp(n)}` : "Récupérer"),
-  /** déjà versé (repli sans la §9) */
-  dejaVerse: "Déjà versé",
-  voir: "Voir ce que tu as gagné",
-  /** le bouton court d'une ligne de liste, déjà versé */
-  voirCourt: "Voir",
-  autres: (n: number) => `et ${n} autre${n > 1 ? "s" : ""}`,
-  /** la ligne de fin d'outil : « 2 quêtes à récupérer » */
-  ligne: (n: number) => `${n} quête${n > 1 ? "s" : ""} à récupérer`,
-  /** la même, quand tout est déjà versé (repli sans la §9) : « 2 quêtes faites · Déjà versé » */
-  faites: (n: number) => `${n} quête${n > 1 ? "s" : ""} faite${n > 1 ? "s" : ""}`,
-  enCours: "Récupération…",
-  /** le bouton d'une quête, une fois récupérée */
-  recuperee: "Récupérée",
-  echec: "Pas pu récupérer. Réessaie dans un instant.",
-  fait: (f: Pick<FaitAujourdhui, "n" | "xp">, sobre = false) => `Fait aujourd'hui : ${f.n}${f.xp > 0 && !sobre ? ` · ${xp(f.xp)}` : ""}`,
-  suite: (titre: string) => `La suite : ${titre}`,
-  sansTitre: "Une quête du Codex",
-};
+/** Les mots de « Récupérer » : ceux de lib/voice-codex.ts (la seule table des mots du Codex). */
+export const TEXTES_RECUPERER = CODEX.recuperer;

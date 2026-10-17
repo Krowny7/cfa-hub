@@ -4,6 +4,10 @@
 // maîtrise, séance, examen blanc, quête, étape), plus trois mots maison :
 // trait, rature et jour d'encre. Léonard ne parle qu'aux fêtes (retro, fete).
 // Les titres clairs des quêtes et des actes sont dans lib/codex/titres-clairs.ts.
+// C'est la SEULE table des mots du Codex : lib/codex/recuperer.ts
+// (TEXTES_RECUPERER) et lib/codex/aujourdhui.ts (TEXTES_JOUR, la tête du fil,
+// « fait avancer », l'objectif de la semaine) la réexportent ; les tests
+// (scripts/codex/test-titres-clairs.ts) portent donc sur ce qui s'affiche.
 // Module neutre, sans dépendance au catalogue (utilisable côté navigateur).
 
 import { de } from "@/lib/codex/elision";
@@ -15,12 +19,12 @@ const nombre = (n: number) => n.toLocaleString("fr-FR");
 const pluriel = (n: number, mot: string, mots = `${mot}s`) => `${nombre(n)} ${n > 1 ? mots : mot}`;
 /** « 12,5 » : le poids d'une matière, à la française. */
 const virgule = (n: number) => String(n).replace(".", ",");
+/** « +1 240 XP » */
+const plusXp = (n: number) => `+${nombre(n)} XP`;
 
 export const CODEX = {
   nom: "Codex",
   titre: "Codex",
-  sousTitre: "Tes quêtes, du jour et au long cours.",
-  kicker: (phase: string) => `Codex · ${phase}`,
   /** le bloc Codex de Moi : « 37 quêtes faites · 2 140 XP gagnés dans le Codex » */
   quetesFaites: (n: number) => (n === 1 ? "1 quête faite" : `${nombre(n)} quêtes faites`),
   xpGagnee: (xp: number) => `${nombre(xp)} XP gagnés dans le Codex`,
@@ -29,13 +33,6 @@ export const CODEX = {
   jourJ: (n: number): string | null => (n === 0 ? "C'est le jour J" : n > 0 ? `J-${n}` : null),
   toutMontrer: "Tout montrer",
   toutMontrerAide: "Le Codex se dévoile au fil de tes séances. Tu peux aussi tout voir tout de suite.",
-  prochaine: {
-    eyebrow: "La suite",
-    aller: "Y aller",
-    entamee: "En cours",
-    rien: "Rien d'urgent. Les 5 du jour, si tu as 5 minutes.",
-    minutes: (m: number) => `≈ ${m} min`,
-  },
   trame: {
     titre: "Parcours",
     sous: "Du premier trait au jour J, acte par acte.",
@@ -96,9 +93,6 @@ export const CODEX = {
     /** les sceaux du profil ont quitté les exploits (D5) : ils sont dans la Collection du profil */
     collection: "Voir la Collection",
   },
-  pageBlanche: "Rien ici pour l'instant : tes séances le rempliront, ou « Tout montrer ».",
-  /** une deuxième page vide sur le même écran : la phrase entière n'est dite qu'une fois */
-  pageBlancheAussi: "Rien ici non plus pour l'instant.",
   etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Faite" } as Record<EtatLigne, string>,
   /** l'état d'une quête remplie dont la récompense attend le clic */
   aRecuperer: "À récupérer",
@@ -129,32 +123,60 @@ export const CODEX = {
     titreGagne: (t: string) => `Titre : ${t}`,
     cosmetique: (c: string) => `Pièce : ${c}`,
   },
-  /** « Récupérer » : la récompense d'une quête faite se verse au clic (Codex simplifié §5) */
+  /**
+   * « Récupérer » : la récompense d'une quête faite se verse au clic (Codex
+   * simplifié §5). Réexporté tel quel par lib/codex/recuperer.ts (TEXTES_RECUPERER) ;
+   * la pastille du sceau (« 9+ ») est chiffrePastille (lib/nav).
+   */
   recuperer: {
     titre: (n: number) => `À récupérer · ${n}`,
-    bouton: "Récupérer",
-    boutonXp: (xp: number) => (xp > 0 ? `Récupérer +${xp} XP` : "Récupérer"),
-    tout: (xp: number) => (xp > 0 ? `Tout récupérer · +${xp} XP` : "Tout récupérer"),
-    autres: (n: number) => (n === 1 ? "et 1 autre" : `et ${n} autres`),
-    /** la pastille du sceau : « 9+ » au-delà */
-    pastille: (n: number) => (n > 9 ? "9+" : String(n)),
+    /** le bouton plein du bloc */
+    tout: (n: number) => (n > 0 ? `Tout récupérer · ${plusXp(n)}` : "Tout récupérer"),
+    /** le bouton d'une seule quête, et celui de la ligne en fin d'outil */
+    un: (n: number) => (n > 0 ? `Récupérer ${plusXp(n)}` : "Récupérer"),
     /** sans le SQL de Récupérer : l'XP est déjà dans le total */
-    dejaVerse: "Déjà versé · voir ce que tu as gagné",
+    dejaVerse: "Déjà versé",
+    voir: "Voir ce que tu as gagné",
+    /** le bouton court d'une ligne de liste, déjà versé */
+    voirCourt: "Voir",
+    autres: (n: number) => `et ${n} autre${n > 1 ? "s" : ""}`,
+    /** la ligne de fin d'outil et l'étiquette du sceau : « 2 quêtes à récupérer » */
+    ligne: (n: number) => `${n} quête${n > 1 ? "s" : ""} à récupérer`,
+    /** la même, quand tout est déjà versé (repli sans la §9) : « 2 quêtes faites · Déjà versé » */
+    faites: (n: number) => `${n} quête${n > 1 ? "s" : ""} faite${n > 1 ? "s" : ""}`,
+    enCours: "Récupération…",
+    /** le bouton d'une quête, une fois récupérée */
+    recuperee: "Récupérée",
     echec: "Pas pu récupérer. Réessaie dans un instant.",
-    /** la ligne de fin d'outil (bilan) */
-    ligne: (n: number, xp: number) => `${n === 1 ? "1 quête faite" : `${n} quêtes faites`}${xp > 0 ? ` · Récupérer +${xp} XP` : " · Récupérer"}`,
+    fait: (f: { n: number; xp: number }, sobre = false) => `Fait aujourd'hui : ${f.n}${f.xp > 0 && !sobre ? ` · ${plusXp(f.xp)}` : ""}`,
+    suite: (titre: string) => `La suite : ${titre}`,
+    sansTitre: "Une quête du Codex",
   },
-  /** le panneau du sceau et le segment « Aujourd'hui » de /codex */
+  /**
+   * Le segment « Aujourd'hui » de /codex et le panneau du sceau. Réexporté tel
+   * quel par lib/codex/aujourdhui.ts (TEXTES_JOUR).
+   */
   aujourdhui: {
     titre: "Aujourd'hui",
+    budget: "Le temps que tu te donnes aujourd'hui",
+    budgetPuce: (b: number) => `${b} min`,
+    autre: "Une autre idée ?",
+    /** le panneau du sceau : l'étape en cours du fil */
     suite: "La suite",
-    fait: (n: number, xp: number) => `Fait aujourd'hui : ${n}${xp > 0 ? ` · +${xp} XP` : ""}`,
-    ouvrirCodex: "Ouvrir le Codex",
-    toutLeCodex: "Tout le Codex",
+    quetesDuJour: "Quêtes du jour",
+    fait: "Fait aujourd'hui",
+    rienFait: "Rien de fait pour l'instant aujourd'hui.",
+    preparation: "Préparation",
+    coute: "Ce qui te coûte le plus :",
     semaine: "Ta semaine",
-    carte: "Voir la carte",
-    preparation: (pct: number) => `Préparation ${pct} %`,
-    pasUnPronostic: "Ce n'est pas un pronostic : le CFA Institute ne publie pas la note de passage.",
+    /** le lundi, tant que l'objectif de la semaine n'est pas choisi (le repli reste fermé : un seul bouton plein) */
+    aChoisir: "· objectif à choisir",
+    jusquaDimanche: "jusqu'à dimanche",
+    segments: "Le Codex",
+    /** « Ton objectif : 4 jours d'encre · Le banquier » : le choix du lundi */
+    objectif: (cible: number, nom: string) => `Ton objectif : ${cible} jour${cible > 1 ? "s" : ""} d'encre${nom ? ` · ${nom}` : ""}`,
+    /** le compte neuf : une seule étape, pas de préparation */
+    neuf: { titre: "10 questions pour faire connaissance", duree: 5, raison: "Pour voir où tu en es, matière par matière.", href: "/practice" },
   },
   /** le choix du lundi (le nom imagé de chaque choix reste ; son résumé clair : resumeSemaine, lib/codex/titres-clairs.ts) */
   lundi: {
@@ -180,11 +202,6 @@ export const CODEX = {
     ligne: "Le Codex se prépare : reviens dans quelques instants. Tout le reste du site marche normalement.",
     retour: "Retour à l'accueil",
   },
-  accueil: {
-    maQuete: "Ta quête",
-    contrats: "Quêtes du jour",
-    ouvrir: "Ouvrir le Codex",
-  },
   // les fêtes : la seule place de l'histoire (et de Léonard)
   fete: {
     quete: "Quête accomplie",
@@ -206,7 +223,7 @@ export const CODEX = {
 
 /**
  * Les mots maison, et leur définition : elle s'ouvre au doigt à leur
- * premier usage sur un écran (pas d'infobulle title=).
+ * premier usage sur un écran (pas d'infobulle title=) : components/ui/Mot.tsx.
  */
 export const MOTS_MAISON = {
   trait: { mot: "trait", definition: "Une question répondue. Tes traits du jour suivent ton objectif." },
@@ -214,6 +231,29 @@ export const MOTS_MAISON = {
   jourEncre: { mot: "jour d'encre", definition: "Un jour avec 10 questions ou plus." },
   notionTenue: { mot: "notion tenue", definition: "3 justes sur tes 5 dernières réponses de la notion." },
 } as const;
+
+export type MotMaison = keyof typeof MOTS_MAISON;
+
+// « trait » n'est pas cherché dans un texte (« traité », « trait d'union »…) :
+// sa définition sert à l'anneau. \p{L} autour : pas de mot coupé (« raturé »).
+const MOTS_CHERCHES: [MotMaison, RegExp][] = [
+  ["rature", /(?<!\p{L})ratures?(?!\p{L})/iu],
+  ["jourEncre", /(?<!\p{L})jours? d['’]encre(?!\p{L})/iu],
+  ["notionTenue", /(?<!\p{L})notions? tenues?(?!\p{L})/iu],
+];
+
+/**
+ * Le premier mot maison d'un texte (« Corriger 14 ratures »), découpé pour
+ * que l'écran en fasse un mot à définir ; null : aucun.
+ */
+export function premierMotMaison(texte: string): { avant: string; mot: string; cle: MotMaison; apres: string } | null {
+  let r: { i: number; mot: string; cle: MotMaison } | null = null;
+  for (const [cle, re] of MOTS_CHERCHES) {
+    const m = re.exec(texte);
+    if (m && (r === null || m.index < r.i)) r = { i: m.index, mot: m[0], cle };
+  }
+  return r ? { avant: texte.slice(0, r.i), mot: r.mot, cle: r.cle, apres: texte.slice(r.i + r.mot.length) } : null;
+}
 
 /** Le libellé de famille d'une quête : un contrat de la semaine n'est pas une quête du jour. */
 export const familleDe = (q: { famille: Famille; repetition?: Repetition }): string =>
@@ -225,14 +265,14 @@ export const familleDe = (q: { famille: Famille; repetition?: Repetition }): str
 // son bouton et « Une autre idée ? ».
 
 export const SEANCE = {
-  titre: "Aujourd'hui",
-  /** « Aujourd'hui · 25 min · 1 sur 3 fait » */
-  entete: (minutes: number, faits: number, total: number) => `Aujourd'hui · ${minutes} min · ${faits} sur ${total} ${faits > 1 ? "faits" : "fait"}`,
-  commencer: "Commencer",
-  autreIdee: "Une autre idée ?",
-  /** le compte neuf : une seule étape */
-  compteNeuf: { titre: "10 questions pour faire connaissance", duree: 5 },
-  /** « fait avancer : FSA à 60 % (51 → 60) » */
+  /**
+   * La tête du fil (lib/codex/aujourdhui teteFil) : « 3 étapes · 25 min »,
+   * « 1 étape faite sur 3 · 25 min ». Le titre « Aujourd'hui » est déjà
+   * celui du segment : il n'est pas répété.
+   */
+  entete: (total: number, faits: number, minutes: number) =>
+    `${faits === 0 ? pluriel(total, "étape") : `${pluriel(faits, "étape")} ${faits > 1 ? "faites" : "faite"} sur ${total}`} · ${minutes} min`,
+  /** « fait avancer : FSA à 60 % (51 → 60) » (lib/codex/aujourdhui faitAvancer) */
   faitAvancer: (titre: string, de_: number, a: number) => `fait avancer : ${titre} (${de_} → ${a})`,
   /** l'étape d'un bloc ; `matiere` : son nom court (« FSA ») */
   bloc: (genre: GenreBloc, p: { n?: number; matiere?: string; defi?: boolean } = {}): string => {

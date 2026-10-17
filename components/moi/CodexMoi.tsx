@@ -7,6 +7,7 @@ import { jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
 import { CODEX } from "@/lib/voice-codex";
 import type { CodexMoi, JourCodex } from "@/lib/profil/codex-moi";
+import { OuvrirSurAncre } from "@/components/moi/OuvrirSurAncre";
 
 // Le Codex dans Moi (Codex simplifié, ajustement C) : le Codex a quitté la
 // barre des espaces, on y entre par cette tuile, en haut de Moi. Elle dit
@@ -17,6 +18,9 @@ import type { CodexMoi, JourCodex } from "@/lib/profil/codex-moi";
 // présentation : tout vient de lib/profil/codex-moi.ts.
 
 const lienTuile = "ink-link inline-flex min-h-[44px] w-fit items-center gap-1 text-[14px] font-semibold";
+
+/** L'ancre de l'historique : le lien « Historique » de la tuile y mène, et le repli s'ouvre à l'arrivée. */
+export const ANCRE_HISTORIQUE = "codex-historique";
 
 /** « 37 quêtes faites · 2 140 XP gagnés dans le Codex » ; rien de fait (ou Codex fermé) : la phrase d'accueil. */
 export const resumeCodex = (c: CodexMoi): string => (c.faites > 0 ? `${CODEX.quetesFaites(c.faites)} · ${CODEX.xpGagnee(c.xp)}` : CODEX.moi.vide);
@@ -29,7 +33,8 @@ export function TuileCodex({ c, className }: { c: CodexMoi; className?: string }
       dataLeonard="moi-codex"
       icone={<Icone nom="codex" size={18} />}
       titre={CODEX.nom}
-      droite={c.faites > 0 ? <span className="t-micro font-mono font-semibold">{c.faites}</span> : undefined}
+      // le chiffre nu (« 37 ») : la ligne dit déjà « 37 quêtes faites », il est caché aux lecteurs d'écran
+      droite={c.faites > 0 ? <span className="t-micro font-mono font-semibold" aria-hidden>{c.faites}</span> : undefined}
       fort={c.aRecuperer > 0 ? CODEX.moi.aRecuperer(c.aRecuperer) : undefined}
       ligne={resumeCodex(c)}
       actions={
@@ -38,7 +43,7 @@ export function TuileCodex({ c, className }: { c: CodexMoi; className?: string }
             {CODEX.moi.ouvrir} <ArrowRight size={14} aria-hidden />
           </Link>
           {c.historique.length > 0 && (
-            <a href="#codex" className={lienTuile}>
+            <a href={`#${ANCRE_HISTORIQUE}`} className={lienTuile}>
               {CODEX.historique}
             </a>
           )}
@@ -87,8 +92,9 @@ export function BlocCodex({ c, now }: { c: CodexMoi; now?: number }) {
           {CODEX.moi.ouvrir} <ArrowRight size={14} aria-hidden />
         </Link>
       </div>
-      <p className="t-num m-0 text-[15px] font-semibold">{resumeCodex(c)}</p>
-      <details className="card-quiet group/h p-5 md:p-6">
+      {/* une phrase, en police courante (t-num est réservé à un seul grand chiffre par carte) */}
+      <p className="m-0 text-[15px] font-semibold leading-snug">{resumeCodex(c)}</p>
+      <details id={ANCRE_HISTORIQUE} className="card-quiet group/h scroll-mt-24 p-5 md:p-6">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
           <span>
             <span className="block text-[16px] font-bold tracking-[-0.01em]">{CODEX.historique}</span>
@@ -103,6 +109,7 @@ export function BlocCodex({ c, now }: { c: CodexMoi; now?: number }) {
         </ol>
         {c.plusAnciennes > 0 && <p className="t-micro m-0 mt-3">{CODEX.moi.plusAnciennes(c.plusAnciennes)}</p>}
       </details>
+      <OuvrirSurAncre id={ANCRE_HISTORIQUE} />
     </section>
   );
 }

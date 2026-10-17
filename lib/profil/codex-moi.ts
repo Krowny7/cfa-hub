@@ -145,7 +145,7 @@ export async function lireCodexMoi(supabase: SupabaseClient, userId: string, o: 
       .in("etat", ["terminee", "recompensee"])
       .order("terminee_le", { ascending: false, nullsFirst: false })
       .limit(LIGNES_MAX);
-    // table absente (migration_codex.sql pas collée) ou autre souci : la tuile reste un lien
+    // table absente (migration_codex.sql pas collée) ou autre souci : disponible faux, Moi ne pose pas la tuile
     if (error) return CODEX_MOI_VIDE;
     return codexMoiDe((data ?? []) as LigneCodexMoi[], o);
   } catch {

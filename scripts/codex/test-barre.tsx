@@ -56,7 +56,7 @@ check("(l'exemple « milieu » a des quêtes à récupérer)", items.length > 0,
   check("le panneau s'appelle « Aujourd'hui », la ligne de niveau en tête", html.includes(">Aujourd'hui</h2>") && html.includes("Niv. ") && html.includes("XP sur "));
   const autres = 4 - Math.min(3, items.length);
   check("À récupérer : trois lignes au plus, « et N autres », le bouton plein « Tout récupérer »", html.includes("À récupérer · 4") && html.includes(`et ${autres} autre${autres > 1 ? "s" : ""}`) && html.includes("Tout récupérer · +300 XP"));
-  check("La suite : l'étape, sa durée et son XP, « Commencer » en contour (il y a à récupérer)", html.includes("La suite") && html.includes("Corriger 14 ratures") && html.includes("10 min · +10 XP") && /btn btn-secondary[^"]*"[^>]*>Commencer</.test(html));
+  check("La suite : l'étape (« ratures » se définit au tap), sa durée et son XP, « Commencer » en contour (il y a à récupérer)", html.includes("La suite") && /Corriger 14 <button[^>]*aria-expanded="false"[^>]*>ratures<\/button>/.test(html) && html.includes("10 min · +10 XP") && /btn btn-secondary[^"]*"[^>]*>Commencer</.test(html));
   check("en pied : « Fait aujourd'hui » et « Ouvrir le Codex → »", html.includes("Fait aujourd'hui : 1 · +10 XP") && html.includes("Ouvrir le Codex →"));
   check("un seul bouton plein : « Tout récupérer »", compte(html, /btn btn-primary/g) === 1);
   check("plus de « ! », de « Y aller », de « Changer », d'« Une autre idée ? », de budget ni de « à revoir »", !/>!<|Y aller|Changer|Une autre idée|J'ai|à revoir/.test(html));

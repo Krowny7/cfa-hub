@@ -195,15 +195,16 @@ check(
   etapes(TUTO) === "/dashboard#defi /dashboard#anneau /dashboard#sceau-quetes /moi#moi-codex /moi?onglet=reglages#reglages",
   etapes(TUTO),
 );
-check("la visite parle du mode sobre à l'étape des réglages", /mode sobre/.test(TUTO.find((x) => x.cible === "reglages")?.texte ?? ""));
+check("la visite parle des récompenses versées d'office à l'étape des réglages (le nom du réglage à l'écran)", /Récompenses versées d’office/.test(TUTO.find((x) => x.cible === "reglages")?.texte ?? ""));
 check("les nouveautés v4 : le sceau des quêtes, « Récupérer », le Codex dans Moi", etapes(NOUVEAUTES) === "/dashboard#sceau-quetes /dashboard#sceau-quetes /moi#moi-codex", etapes(NOUVEAUTES));
 check(
   "les réglages résument les nouveautés de cette version (« Revoir »)",
   RESUME_NOUVEAUTES.includes("« Récupérer »") && RESUME_NOUVEAUTES.includes("Moi") && readFileSync(join(RACINE, "components/moi/AppearanceSwitches.tsx"), "utf8").includes("{RESUME_NOUVEAUTES}"),
 );
-check("les nouveautés v4 nomment « Récupérer », et le mode sobre qui s'en passe", NOUVEAUTES.some((x) => x.texte.includes("« Récupérer »") && /mode sobre/.test(x.texte)));
+check("les nouveautés v4 nomment « Récupérer », et les récompenses versées d'office qui s'en passent", NOUVEAUTES.some((x) => x.texte.includes("« Récupérer »") && /récompenses versées d’office/.test(x.texte)));
 // le sceau n'est dans la barre qu'avec le Codex : ses étapes, et elles seules, sont facultatives
-check("seules les étapes du sceau sont facultatives", [...TUTO, ...NOUVEAUTES].every((x) => (x.cible === "sceau-quetes") === !!x.facultatif));
+check("seules les étapes du sceau et de la tuile Codex de Moi sont facultatives (absents sans le Codex)", [...TUTO, ...NOUVEAUTES].every((x) => (x.cible === "sceau-quetes" || x.cible === "moi-codex") === !!x.facultatif));
+check("Léonard ne parle plus de « mode sobre » : le réglage s'appelle « Récompenses versées d'office »", [...TUTO, ...NOUVEAUTES].every((x) => !/mode sobre/i.test(x.texte)));
 check("le Codex a quitté la barre : aucune étape ne mène à /codex", [...TUTO, ...NOUVEAUTES].every((x) => !x.page.startsWith("/codex")));
 check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v4", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 4 && !nouveautesVues({ rl_nouveautes: 3 }) && nouveautesVues({ rl_nouveautes: 4 }));
 // les cibles de la visite sont posées dans les pages : l'attribut data-leonard,

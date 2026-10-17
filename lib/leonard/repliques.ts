@@ -335,8 +335,8 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
  * La visite d'accueil tient en 5 étapes (Codex simplifié, 17 octobre 2026) :
  * les 30 et les 5 du jour, les traits du jour et leur anneau, le sceau des
  * quêtes en haut à droite (un guide secondaire ; sauté sans le Codex), la
- * tuile Codex de Moi (le Codex a quitté la barre), les réglages (me couper,
- * le mode sobre).
+ * tuile Codex de Moi (le Codex a quitté la barre ; sautée sans le Codex
+ * lisible), les réglages (me couper, les récompenses versées d'office).
  */
 export type EtapeTuto = Replique & { page: string; cible?: string; repli?: string; facultatif?: boolean };
 
@@ -344,8 +344,8 @@ export const TUTO: EtapeTuto[] = [
   { page: "/dashboard", cible: "defi", texte: "Moi c’est Léonard. Oui, celui de la Joconde. Ici, ton rendez-vous de chaque jour : les 30 et les 5 du jour. Un peu chaque jour, et ça rentre.", pose: "fier" },
   { page: "/dashboard", cible: "anneau", texte: "Et là, tes traits du jour : chaque réponse trace un bout de l’anneau. Fermé, ton objectif du jour est tenu. Giotto traçait ses cercles à main levée ; toi, tu réponds.", pose: "base" },
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "En haut à droite, mon sceau : quelques quêtes pour te guider, et ce que tu as gagné, à récupérer. Des idées, pas des ordres : ton plan reste le tien.", pose: "base" },
-  { page: "/moi", cible: "moi-codex", texte: "Le Codex, mon grand livre de quêtes, est rangé ici, dans Moi : ton parcours, tes quêtes faites, ce qu’elles t’ont rapporté. Pour les curieux.", pose: "fier" },
-  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Le mode sobre range aussi les fanfares : l’XP arrive seule. Tu le feras pas, hein ? Allez, ton premier trait t’attend.", pose: "decu" },
+  { page: "/moi", cible: "moi-codex", facultatif: true, texte: "Le Codex, mon grand livre de quêtes, est rangé ici, dans Moi : ton parcours, tes quêtes faites, ce qu’elles t’ont rapporté. Pour les curieux.", pose: "fier" },
+  { page: "/moi?onglet=reglages", cible: "reglages", texte: "Et si je te saoule, c’est ici qu’on me coupe. Le réglage “Récompenses versées d’office” range aussi les fanfares : l’XP arrive seule. Tu le feras pas, hein ? Allez, ton premier trait t’attend.", pose: "decu" },
 ];
 
 /**
@@ -353,14 +353,14 @@ export const TUTO: EtapeTuto[] = [
  * visite courte, une fois par compte, pour ceux qui ont déjà fait la visite
  * d'accueil. Version 4 (Codex simplifié, 17 octobre 2026) : les quêtes logent
  * dans le sceau en haut à droite, une quête faite se récupère (« Récupérer »),
- * et le Codex a quitté la barre pour une tuile de Moi. Le sceau n'est là
- * qu'avec le Codex : ses deux étapes sont facultatives. Une étape dont
+ * et le Codex a quitté la barre pour une tuile de Moi. Le sceau et la tuile
+ * ne sont là qu'avec le Codex : leurs étapes sont facultatives. Une étape dont
  * l'élément peut manquer (pas de données) est facultative ou a un repli.
  */
 export const NOUVEAUTES: EtapeTuto[] = [
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Re. J’ai rangé l’atelier. Les quêtes logent maintenant en haut à droite, dans ce sceau : celles du jour, et la suite si tu en veux.", pose: "fier" },
-  { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Une quête faite ne paie plus en douce : un chiffre se pose sur le sceau, tu touches « Récupérer », et l’XP est à toi. En mode sobre, elle arrive seule.", pose: "base" },
-  { page: "/moi", cible: "moi-codex", texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, avec l’historique de tes quêtes. Quand tu veux, sans obligation.", pose: "base" },
+  { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Une quête faite ne paie plus en douce : un chiffre se pose sur le sceau, tu touches « Récupérer », et l’XP est à toi. Avec les récompenses versées d’office, elle arrive seule.", pose: "base" },
+  { page: "/moi", cible: "moi-codex", facultatif: true, texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, avec l’historique de tes quêtes. Quand tu veux, sans obligation.", pose: "base" },
 ];
 
 /** Ce que montrent les nouveautés de cette version, en une ligne (Moi › Réglages, « Les nouveautés »). */
