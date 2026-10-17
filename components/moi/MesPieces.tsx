@@ -203,7 +203,7 @@ function CartePiece({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; car
     <button
       type="button"
       onClick={onOuvrir}
-      className="card-quiet flex h-full min-h-[44px] w-full flex-col gap-2 border-t-[3px] p-2.5 text-left transition-colors hover:border-line-2"
+      className="card-quiet flex h-full min-h-[44px] w-full flex-col gap-2 rounded-[14px] border-t-[3px] p-2.5 text-left"
       style={{ borderTopColor: LISERE[p.rarete] }}
       aria-label={`${p.nom}${p.portee ? `, ${T.portee.toLowerCase()}` : p.possedee ? "" : `, ${T.pasEncore.toLowerCase()} : ${p.obtention}`}`}
     >

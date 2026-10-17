@@ -12,7 +12,9 @@
 // feuille ; ce qui se retire ; stylePorte (cadre, bannière et son image,
 // titre, folio et son bloc) ; le bloc « Folio » (demi-largeur, première case
 // vide, douze rangées, validé) ; les anecdotes des folios et leurs images ;
-// FOLIOS.md ; le repos de la série (plages, règles, libellés).
+// FOLIOS.md ; l'écran « Mes pièces » (résumé, rayons, silhouettes, deux
+// pièces animées au premier rendu) ; le repos de la série (plages, règles,
+// libellés).
 import "./sans-css";
 import fs from "node:fs";
 import path from "node:path";
@@ -30,6 +32,10 @@ import { DISPOSITION_DEFAUT, RANGEES_MAX, avecBlocFolio, rangeeNeuve, validerDis
 import { catalogueCodex, contenuDuProgramme } from "@/lib/codex/catalogue";
 import { ajouterJours, joursEntre, libellePlage, lundiDe, plagesDe, refusPose, type JourPause } from "@/components/moi/repos";
 import type { Acquis } from "@/lib/profil/acquis";
+import { MesPieces } from "@/components/moi/MesPieces";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { ReposSerie } from "@/components/moi/ReposSerie";
+import { ModeSobre } from "@/components/moi/ModeSobre";
 
 // tsx compile le JSX à l'ancienne (React.createElement) : React global pour les composants rendus
 (globalThis as { React?: typeof React }).React = React;
@@ -168,6 +174,29 @@ console.log("# Les folios");
   check("FOLIOS.md cite les 19 folios", FOLIOS.every((f) => doc.includes(`\`${f.nue}\``)));
 }
 
+console.log("# L'écran « Mes pièces »");
+{
+  const routeur = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
+  // trois cadres qui bougent (deux liquides, Sanguine) : le plafond du téléphone doit jouer
+  const a: Acquis = { ...vide, questions: 600, pic: 4, codex: new Map([["acte:acte1", null], ["acte:acte4", null]]) };
+  const e = etagere(a, porteDe({ frame: "liquide-platine" }));
+  check("(au moins trois pièces possédées bougent)", e.rayons.flatMap((r) => r.pieces).filter((p) => p.possedee && p.anime).length >= 3);
+  const carte = { id: "u1", name: "Léa", nomComplet: null, avatarUrl: null, style: { ...STYLE_DEFAUT, frame: "liquide-platine" }, niveau: 3, levelPct: 40, xpTotal: 900, elo: 1200, mastery: 50, place: 4, gamesPlayed: 12, linkedin: null, amis: null };
+  const html = renderToStaticMarkup(
+    <AppRouterContext.Provider value={routeur}>
+      <MesPieces etagere={e} carte={carte} disponible />
+    </AppRouterContext.Provider>,
+  );
+  check("le titre, le résumé et le filtre", html.includes("Mes pièces") && html.includes(resumeEtagere(e)) && html.includes("Ce que j&#x27;ai") && html.includes(">Tout<"));
+  check("les quatre rayons, avec leur compte", ["Cadres", "Bannières", "Titres", "Folios"].every((t) => html.includes(t)) && html.includes(`${e.rayons[3].possedees}/${e.rayons[3].total}`));
+  check("la pièce portée est dite « Portée »", html.includes("Portée"));
+  check("les silhouettes sont grisées et disent comment les obtenir", html.includes("opacity-35 grayscale") && html.includes("Clore l&#x27;acte II"));
+  // avant l'hydratation, on se compte en téléphone : au plus deux pièces possédées qui bougent ne sont pas figées
+  const cartes = html.split("<li ").slice(1);
+  const bougent = cartes.filter((c) => !c.includes("opacity-35") && (c.includes("vivant") || c.includes("dessine")) && !c.includes("fige"));
+  check(`au plus ${ANIMEES_TELEPHONE} pièces animées au premier rendu (téléphone)`, bougent.length <= ANIMEES_TELEPHONE && bougent.length > 0, String(bougent.length));
+}
+
 console.log("# Le repos de la série");
 {
   check("jours : décalage, intervalle, lundi", ajouterJours("2026-10-31", 1) === "2026-11-01" && joursEntre("2026-10-30", "2026-11-02").length === 4 && joursEntre("2026-11-02", "2026-11-01").length === 0 && lundiDe("2026-10-18") === "2026-10-12" && lundiDe("2026-10-19") === "2026-10-19");
@@ -187,6 +216,12 @@ console.log("# Le repos de la série");
   check("pause : 14 jours d'affilée au plus", refusPose("2026-11-01", "2026-11-14", "pause", auj, []) === null && !!refusPose("2026-11-01", "2026-11-15", "pause", auj, []));
   const vingt = joursEntre("2026-11-01", "2026-11-14").concat(joursEntre("2026-12-01", "2026-12-06")).map((jour): JourPause => ({ jour, genre: "pause" }));
   check("pause : 30 jours sur une année glissante", refusPose("2027-01-04", "2027-01-13", "pause", auj, vingt) === null && !!refusPose("2027-01-04", "2027-01-14", "pause", auj, vingt));
+  check("sans la table des pauses : le réglage ne s'affiche pas", renderToStaticMarkup(<ReposSerie initial={null} />) === "");
+  const html = renderToStaticMarkup(<ReposSerie initial={{ aujourdhui: "2026-10-20", poses }} />);
+  check("le réglage : ses règles, ses plages, « Retirer » pour ce qui est à venir seulement", html.includes("Repos de la série") && html.includes("deux jours par semaine") && html.includes("mardi 20 oct.") && (html.match(/>Retirer</g) ?? []).length === 2);
+  const routeur = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
+  const sobre = (on: boolean) => renderToStaticMarkup(<AppRouterContext.Provider value={routeur}><ModeSobre initial={on} /></AppRouterContext.Provider>);
+  check("le mode sobre : un interrupteur qui part de l'état du compte", sobre(true).includes('aria-checked="true"') && sobre(false).includes('aria-checked="false"') && sobre(true).includes("Mode sobre"));
   check("libellés : un jour, une plage", libellePlage({ de: "2026-10-24", a: "2026-10-24" }, auj) === "samedi 24 oct." && libellePlage({ de: "2026-11-03", a: "2026-11-07" }, auj) === "du mardi 3 au samedi 7 nov." && libellePlage({ de: "2027-01-02", a: "2027-01-02" }, auj) === "samedi 2 janv. 2027");
 }
 
