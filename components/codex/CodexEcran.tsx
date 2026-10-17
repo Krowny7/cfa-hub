@@ -20,7 +20,7 @@ import { FilRouge } from "@/components/codex/FilRouge";
 import { Plan } from "@/components/codex/Plan";
 import { Lundi } from "@/components/codex/Lundi";
 import { Verdict } from "@/components/codex/Verdict";
-import { QUETE_VEILLE } from "@/lib/codex/calendrier";
+import { QUETE_VEILLE, pinceauPose } from "@/lib/codex/calendrier";
 import { enteteSeance, gainsSeance } from "@/lib/codex/seance-etat";
 import { ArbreCodex, Chemin, CodexTel, Colonne, SegmentsTel, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
 import { quetesDeLaCarte, segmentDe, type SegmentTel } from "@/lib/codex/carte";
@@ -137,8 +137,9 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
   const moment = vue.moment;
   const calme = moment === "veillee" || moment === "malle";
   const replie = calme && !deplie;
-  // le lendemain, on a posé le pinceau : pas de séance
-  const avecSeance = moment !== "lendemain" && moment !== "jourJ";
+  // le jour J et le lendemain, on a posé le pinceau : le serveur ne rend pas de séance (pinceauPose) ;
+  // la même règle ici garde les aperçus (vues d'exemple) cohérents
+  const avecSeance = !pinceauPose(moment);
   const veille = moment === "malle" ? (vue.trame.flatMap((a) => a.quetes).find((l) => l.id === QUETE_VEILLE) ?? null) : null;
   // sur téléphone, hors du segment « Aujourd'hui » : ni la séance ni le cap
   const horsSegment = !replie && segment !== "aujourdhui" ? c.horsTel : undefined;

@@ -25,7 +25,7 @@ import { SPACES, activeSpace } from "@/lib/nav";
 import { paletteDeChemin } from "@/lib/palettes";
 import { exempleCodex } from "./exemple";
 import { vueSansFetes, type VueCodex } from "@/lib/codex/vue";
-import { CASES_MALLE, MALLE_PRETE, QUETE_VEILLE, cochesValides, dateLongue, lireMalle, momentDe, recapDe, tamponsVeillee, texteRecap } from "@/lib/codex/calendrier";
+import { CASES_MALLE, MALLE_PRETE, QUETE_VEILLE, cochesValides, dateLongue, lireMalle, momentDe, pinceauPose, recapDe, tamponsVeillee, texteRecap } from "@/lib/codex/calendrier";
 import { DUREE_VEILLEE, LECTURE_VIDE, emplacementsDe, tirerContrats, type Entree } from "@/lib/codex/moteur";
 import { MODELES_CONTRATS } from "@/lib/codex/catalogue";
 import { decaleJour } from "@/lib/objectif-calc";
@@ -312,6 +312,13 @@ console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
     /contrats\.length < emplacementsDe\(phaseJoueur\(/.test(src) && /momentCalme\(momentDe\(/.test(src) && src.includes("malleCoches: malle.length"));
   check("data-jour-j (lu par Léonard) : sur le sceau de la barre du haut et sur « Bonne chance »",
     readFileSync("components/codex/SceauQuetes.tsx", "utf8").includes("data-jour-j={panneau.jourJ || undefined}") && readFileSync("components/codex/BonneChance.tsx", "utf8").includes("data-jour-j"));
+  // J+1 (et jusqu'à J+7) : on a posé le pinceau, une seule règle pour l'accueil, la pastille et /codex
+  check("pinceau posé : le jour J et de J+1 à J+7 ; pas à J-1 ni à J+8, ni sans jour J",
+    pinceauPose(momentDe(0, "repetition")) && pinceauPose(momentDe(-1, "apres")) && pinceauPose(momentDe(-7, "apres")) && !pinceauPose(momentDe(1, "veillee")) && !pinceauPose(momentDe(-8, "apres")) && !pinceauPose(momentDe(null, "apres")));
+  check("serveur.ts : à J+1, aucune séance composée ni écrite, aucun bonus du trio pour une séance tenue",
+    /const sansSeance = pinceauPose\(momentDe\(/.test(src) && src.includes("tenue: !sansSeance && seanceLus.tenue") && src.includes("const seance = sansSeance ? null : await seanceDuJour("));
+  check("l'accueil et /codex suivent la même règle (pinceauPose)",
+    readFileSync("components/codex/SeanceAccueil.tsx", "utf8").includes("pinceauPose(vue.moment)") && readFileSync("components/codex/CodexEcran.tsx", "utf8").includes("const avecSeance = !pinceauPose(moment);"));
 }
 
 console.log("\n# la carte en trois niveaux (V3 §10.1)");

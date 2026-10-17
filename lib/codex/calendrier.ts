@@ -33,6 +33,14 @@ export function momentDe(joursAvant: number | null, phase: Phase): Moment {
 /** Les derniers jours avant l'examen (veillée, malle, jour J) : le Codex se fait calme, rien de neuf ne s'ouvre ni ne se dévoile. */
 export const momentCalme = (m: Moment) => m === "veillee" || m === "malle" || m === "jourJ";
 
+/**
+ * Le jour J et le lendemain (V3 §7.4, §7.5) : on a posé le pinceau. Pas de
+ * séance du jour : ni composée, ni gardée, ni bonus du trio pour une séance
+ * tenue. Décidé une fois, côté serveur (lib/codex/serveur.ts) : l'accueil, la
+ * pastille et /codex ne lisent que `vue.seance`.
+ */
+export const pinceauPose = (m: Moment) => m === "jourJ" || m === "lendemain";
+
 /** « La veille » (V3 §7.3, ouverte de J-3 à J-1) : montrée sous la malle. */
 export const QUETE_VEILLE = "trame:ep:veille";
 
