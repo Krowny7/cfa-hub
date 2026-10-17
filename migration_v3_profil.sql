@@ -56,6 +56,10 @@
 --    ou encre fraîche). eclair_start et eclair_finish ne voient plus que les
 --    séries éclair. _reponses_cache : les réponses du joueur lues une fois
 --    par appel (corps identique à celui de migration_codex_v3.sql).
+--    _serie_reponses_jour (série d'encre) redéfinie : une série éclair ou
+--    « À revoir » laissée en route compte ses réponses le jour où elles ont
+--    été données, et sa clôture d'office (_revoir_clore, eclair_start) la
+--    date dans ce même jour : le lendemain ne la fige plus sans elle.
 --    Sans cette section, /revoir dit « bientôt » et renvoie à « Mettre au
 --    propre », et les compteurs comptent les ratures ouvertes (25 au plus).
 -- 4. La maîtrise unique : une seule définition de la maîtrise d'une
@@ -1047,6 +1051,13 @@ BEGIN
     WHERE user_id = v_uid AND genre = 'eclair' AND finished_at IS NULL AND started_at < now() - interval '6 hours'
   LOOP
     PERFORM _eclair_close(v_old);
+    -- close d'office : datée dans son propre jour de Paris (au plus 6 h après son
+    -- début), pas aujourd'hui : ses réponses restent comptées le jour où elles
+    -- ont été données (série d'encre, anneau), comme pendant qu'elle était ouverte
+    UPDATE eclair_series
+    SET finished_at = least(finished_at, started_at + interval '6 hours',
+                            (((started_at AT TIME ZONE 'Europe/Paris')::date + 1)::timestamp AT TIME ZONE 'Europe/Paris') - interval '1 microsecond')
+    WHERE id = v_old AND finished_at IS NOT NULL;
   END LOOP;
 
   SELECT * INTO v_s FROM eclair_series
@@ -1312,7 +1323,10 @@ $$;
 
 -- Une « À revoir » laissée en route : close avec les réponses déjà données,
 -- sans XP (celle de la série se gagne en la rendant) ; sans aucune réponse,
--- elle s'efface, comme une série éclair.
+-- elle s'efface, comme une série éclair. Elle est datée dans son propre jour
+-- de Paris (au plus 6 h après son début), pas le jour où on la clôt : ses
+-- réponses restent comptées le jour où elles ont été données, comme pendant
+-- qu'elle était ouverte (_serie_reponses_jour ci-dessous).
 CREATE OR REPLACE FUNCTION _revoir_clore(p_id uuid)
 RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -1335,7 +1349,80 @@ BEGIN
     DELETE FROM eclair_series WHERE id = p_id;
     RETURN;
   END IF;
-  UPDATE eclair_series SET finished_at = now(), score = v_score, total = v_total WHERE id = p_id;
+  UPDATE eclair_series
+  SET finished_at = least(now(), v_s.started_at + interval '6 hours',
+                          (((v_s.started_at AT TIME ZONE 'Europe/Paris')::date + 1)::timestamp AT TIME ZONE 'Europe/Paris') - interval '1 microsecond'),
+      score = v_score, total = v_total
+  WHERE id = p_id;
+END;
+$$;
+
+-- Les questions répondues par jour de Paris, toutes sources (série d'encre,
+-- jours d'encre du Codex) : la fonction de migration_serie_encre.sql, à une
+-- source près. Une série éclair ou « À revoir » encore ouverte compte déjà
+-- ses réponses données, le jour où elle a commencé : une série laissée en
+-- route (onglet fermé) n'attend plus d'être close pour compter, et le jour
+-- n'est pas figé sans elle au premier gain d'XP du lendemain. Close, elle
+-- compte son total le jour de sa fin, datée dans ce même jour (_revoir_clore,
+-- eclair_start) : jamais deux fois. Le reste est recopié tel quel.
+CREATE OR REPLACE FUNCTION _serie_reponses_jour(p_uid uuid, p_de date, p_a date)
+RETURNS TABLE (jour date, n int)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_t0    timestamptz := p_de::timestamp AT TIME ZONE 'Europe/Paris';
+  v_t1    timestamptz := (p_a + 1)::timestamp AT TIME ZONE 'Europe/Paris';
+  v_parts text[] := '{}';
+BEGIN
+  IF p_uid IS NULL OR p_de IS NULL OR p_a IS NULL OR p_a < p_de THEN
+    RETURN;
+  END IF;
+  IF to_regclass('public.quiz_answer_log') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT answered_at AS ts, 1 AS n FROM quiz_answer_log WHERE user_id = $1$q$::text);
+  END IF;
+  IF to_regclass('public.practice_sessions') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT occurred_at, coalesce(total, 0) FROM practice_sessions WHERE user_id = $1 AND mode = 'qcm'$q$::text);
+  END IF;
+  IF to_regclass('public.practice_session_results') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT completed_at, coalesce(total, 0) FROM practice_session_results WHERE user_id = $1$q$::text);
+  END IF;
+  IF to_regclass('public.mock_exam_results') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT completed_at, coalesce(total, 0) FROM mock_exam_results WHERE user_id = $1$q$::text);
+  END IF;
+  IF to_regclass('public.mock_exam_attempts') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT completed_at, coalesce(total, 0) FROM mock_exam_attempts WHERE user_id = $1$q$::text);
+  END IF;
+  IF to_regclass('public.duels') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT coalesce(CASE WHEN challenger_id = $1 THEN challenger_finished_at ELSE opponent_finished_at END, finished_at),
+                                    coalesce(array_length(question_ids, 1), 0)
+                             FROM duels WHERE (challenger_id = $1 OR opponent_id = $1) AND status = 'finished'$q$::text);
+  END IF;
+  IF to_regclass('public.daily_attempts') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT finished_at, coalesce(total, 0) FROM daily_attempts WHERE user_id = $1 AND finished_at IS NOT NULL$q$::text);
+  END IF;
+  IF to_regclass('public.quiz_attempts') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT created_at, coalesce(total, 0) FROM quiz_attempts WHERE user_id = $1$q$::text);
+  END IF;
+  IF to_regclass('public.eclair_series') IS NOT NULL THEN
+    -- close : son total, le jour de sa fin ; ouverte : ses réponses données, le jour de son début
+    v_parts := array_append(v_parts, $q$SELECT coalesce(finished_at, started_at),
+                                    CASE WHEN finished_at IS NOT NULL THEN coalesce(total, 0)
+                                         ELSE (SELECT count(*)::int FROM unnest(answers) AS a(v) WHERE a.v IS NOT NULL) END
+                             FROM eclair_series WHERE user_id = $1$q$::text);
+  END IF;
+  IF to_regclass('public.ateliers') IS NOT NULL THEN
+    v_parts := array_append(v_parts, $q$SELECT (r->>'at')::timestamptz, 1
+                             FROM ateliers a
+                             CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(a.reponses) = 'array' THEN a.reponses ELSE '[]'::jsonb END) AS r
+                             WHERE a.user_id = $1 AND coalesce(r->>'k', '') <> 'calc' AND r->>'at' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'$q$::text);
+  END IF;
+  IF cardinality(v_parts) = 0 THEN
+    RETURN;
+  END IF;
+  RETURN QUERY EXECUTE
+    'SELECT (u.ts AT TIME ZONE ''Europe/Paris'')::date, sum(u.n)::int FROM (' || array_to_string(v_parts, ' UNION ALL ') || ') u(ts, n)'
+    || ' WHERE u.ts >= $2 AND u.ts < $3 AND u.n > 0 GROUP BY 1'
+    USING p_uid, v_t0, v_t1;
 END;
 $$;
 
@@ -1485,6 +1572,7 @@ $$;
 REVOKE ALL ON FUNCTION _reponses_cache(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _revoir_paliers(uuid, timestamptz) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _revoir_clore(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _serie_reponses_jour(uuid, date, date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _revoir_json(eclair_series, jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION revisions_dues(uuid, date, int) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION mes_revisions_dues(int) FROM PUBLIC, anon;
