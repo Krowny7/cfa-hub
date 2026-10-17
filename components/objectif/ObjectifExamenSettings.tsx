@@ -20,18 +20,31 @@ import {
 } from "@/lib/objectif-calc";
 import { OBJECTIF } from "@/lib/voice-objectif";
 import { jourJ, nombre } from "@/lib/voice";
+import { dateApproximative } from "@/lib/codex/date-approx";
+
+/** La saisie « à peu près » de la date (V3 §10.2). */
+const APPROX = {
+  label: "Ou à peu près",
+  exemple: "vers mi-novembre",
+  prendre: "Prendre cette date",
+  illisible: "Un mois suffit : « vers mi-novembre », « début décembre ».",
+};
 
 // Le réglage « Ton examen » (Moi › Réglages) : la date d'examen et l'objectif
 // de questions à avoir posées ce jour-là, avec le rythme qui en découle,
 // calculé pendant la saisie (déjà posées, reste, par jour). La date va dans
 // profiles.exam_date ; l'objectif dans les métadonnées du compte
 // (rl_objectif : { total, depuis }), sans migration. Un nouvel objectif, ou
-// une nouvelle date, fait repartir la droite d'aujourd'hui.
+// une nouvelle date, fait repartir la droite d'aujourd'hui. Sans date exacte,
+// une saisie à peu près (« vers mi-novembre » → le 15, dateApproximative)
+// propose une date, posée dans le champ puis enregistrée comme les autres.
 
 export function ObjectifExamenSettings({ initial }: { initial: ObjectifInitial }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const [date, setDate] = useState(initial.examen ?? "");
+  const [approx, setApprox] = useState("");
+  const dateApprox = approx.trim() ? dateApproximative(approx, initial.aujourdhui) : null;
   const [total, setTotal] = useState<string>(initial.meta ? String(initial.meta.total) : "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -99,6 +112,27 @@ export function ObjectifExamenSettings({ initial }: { initial: ObjectifInitial }
             </button>
           )}
         </div>
+        {/* sans date exacte : à peu près (« vers mi-novembre » → le 15), posée dans le champ, enregistrée avec le reste */}
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="rl-exam-approx" className="t-micro">
+            {APPROX.label}
+          </label>
+          <input
+            id="rl-exam-approx"
+            className="input w-[200px] max-w-full"
+            type="text"
+            placeholder={APPROX.exemple}
+            value={approx}
+            onChange={(e) => setApprox(e.target.value.slice(0, 40))}
+            disabled={busy}
+          />
+          {dateApprox && dateApprox !== date && (
+            <button className="btn btn-ghost min-h-[44px] text-[13px]" type="button" disabled={busy} onClick={() => { setDate(dateApprox); setApprox(""); }}>
+              → {new Date(`${dateApprox}T00:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })} · {APPROX.prendre}
+            </button>
+          )}
+        </div>
+        {approx.trim() !== "" && !dateApprox && <p className="t-micro m-0">{APPROX.illisible}</p>}
       </div>
 
       <div id="objectif" className="flex scroll-mt-24 flex-col gap-1.5">
