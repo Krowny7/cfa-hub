@@ -22,6 +22,8 @@ export const TEXTES_JOUR = {
   preparation: "Préparation",
   coute: "Ce qui te coûte le plus :",
   semaine: "Ta semaine",
+  /** le lundi, tant que l'objectif de la semaine n'est pas choisi (le repli reste fermé : un seul bouton plein) */
+  aChoisir: "· objectif à choisir",
   jusquaDimanche: "jusqu'à dimanche",
   segments: "Le Codex",
   /** le compte neuf : une seule étape, pas de préparation */

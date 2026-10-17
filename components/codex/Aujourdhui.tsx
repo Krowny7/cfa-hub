@@ -148,7 +148,7 @@ export function TaSemaine({ vue, demo = false, onQuete, onVue, ligne }: { vue: V
   return (
     <details className={s.pli}>
       <summary>
-        {T.semaine} {hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
+        {T.semaine} {vue.rythme?.lundi ? <span className={s.val}>{T.aChoisir}</span> : hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
       </summary>
       <div className={s.pliCorps}>
         {objectif && <p className="t-small m-0">{objectif}</p>}
