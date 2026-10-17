@@ -25,8 +25,6 @@ const plusXp = (n: number) => `+${nombre(n)} XP`;
 export const CODEX = {
   nom: "Codex",
   titre: "Codex",
-  sousTitre: "Tes quêtes, du jour et au long cours.",
-  kicker: (phase: string) => `Codex · ${phase}`,
   /** le bloc Codex de Moi : « 37 quêtes faites · 2 140 XP gagnés dans le Codex » */
   quetesFaites: (n: number) => (n === 1 ? "1 quête faite" : `${nombre(n)} quêtes faites`),
   xpGagnee: (xp: number) => `${nombre(xp)} XP gagnés dans le Codex`,
@@ -35,13 +33,6 @@ export const CODEX = {
   jourJ: (n: number): string | null => (n === 0 ? "C'est le jour J" : n > 0 ? `J-${n}` : null),
   toutMontrer: "Tout montrer",
   toutMontrerAide: "Le Codex se dévoile au fil de tes séances. Tu peux aussi tout voir tout de suite.",
-  prochaine: {
-    eyebrow: "La suite",
-    aller: "Y aller",
-    entamee: "En cours",
-    rien: "Rien d'urgent. Les 5 du jour, si tu as 5 minutes.",
-    minutes: (m: number) => `≈ ${m} min`,
-  },
   trame: {
     titre: "Parcours",
     sous: "Du premier trait au jour J, acte par acte.",
@@ -102,9 +93,6 @@ export const CODEX = {
     /** les sceaux du profil ont quitté les exploits (D5) : ils sont dans la Collection du profil */
     collection: "Voir la Collection",
   },
-  pageBlanche: "Rien ici pour l'instant : tes séances le rempliront, ou « Tout montrer ».",
-  /** une deuxième page vide sur le même écran : la phrase entière n'est dite qu'une fois */
-  pageBlancheAussi: "Rien ici non plus pour l'instant.",
   etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Faite" } as Record<EtatLigne, string>,
   /** l'état d'une quête remplie dont la récompense attend le clic */
   aRecuperer: "À récupérer",
