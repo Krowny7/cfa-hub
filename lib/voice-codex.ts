@@ -73,8 +73,8 @@ export const CODEX = {
     sous: "Certains sont cachés. Je ne dirai rien. Enfin, presque rien.",
     enigme: "Une énigme",
     gagnes: (n: number) => (n === 0 ? "Aucun pour l'instant" : n === 1 ? "1 exploit" : `${n} exploits`),
-    /** les sceaux du profil ont quitté les exploits (D5) : ils sont dans la Collection */
-    collection: "Tes sceaux sont dans la Collection",
+    /** les sceaux du profil ont quitté les exploits (D5) : ils sont dans la Collection du profil */
+    collection: "Voir la Collection",
   },
   pageBlanche: "Cette page du carnet est encore blanche. Elle se remplira d'elle-même, ou d'un clic sur « Tout montrer ».",
   etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Tamponnée" } as Record<EtatLigne, string>,
