@@ -13,7 +13,10 @@ import {
   MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, faitsDeSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage,
   type EntreeSeance, type GenreBloc, type RevoirCodex, type VueSeance,
 } from "@/lib/codex/seance";
-import { PANNEAU_VIDE, panneauAGarder, panneauDuCache, seancePanneau } from "@/lib/codex/panneau";
+import { PANNEAU_VIDE, panneauAGarder, panneauDuCache, pastilleSeance, seancePanneau } from "@/lib/codex/panneau";
+import { MAX_GAINS, budgetSuivant, enteteSeance, etapeSeance, gainsSeance, instantaneSeance, lireInstantane, rangEnCours } from "@/lib/codex/seance";
+import { bilanDe } from "@/lib/codex/bilan";
+import { exempleCodex } from "@/scripts/codex/exemple";
 import type { Budget, Phase } from "@/lib/codex/types";
 
 let ko = 0;
@@ -238,6 +241,77 @@ check("sans historique : 30 min ; 40 questions par jour (48 min) : 60 ; 10 par j
   const jours = (aujourdhui: number) => ({ ...mesures, jours: [{ jour: "2026-10-14", n: 40 }, { jour: "2026-10-15", n: 42 }, { jour: "2026-10-16", n: 38 }, { jour, n: aujourdhui }] });
   const b = (n: number) => budgetDuJour(base({ lecture: { compteurs: {}, mesures: jours(n), speciaux: {} } }));
   check("le budget par défaut ne bouge pas dans la journée (aujourd'hui n'y compte pas) : la séance non plus", b(0) === 60 && b(200) === 60 && b(3) === 60, J([b(0), b(200), b(3)]));
+}
+
+console.log("\n# l'écran de la séance : étapes, « Continuer · 2/3 », « Encore un bloc ? » (V3 §6.3–§6.5)");
+{
+  const s = composerSeance(entree({ phase: "consolidation", budget: 60 }));
+  const v = (o: Partial<VueSeance> = {}): VueSeance => ({ ...s, faits: [], lancee: false, lanceeLe: null, finie: false, finieLe: null, gardee: true, ...o });
+  const tous = s.blocs.map((b) => b.genre);
+  check("proposée (« Commencer ») → en cours (« Continuer ») → tenue → close",
+    etapeSeance(v()) === "proposee" && etapeSeance(v({ lancee: true, faits: [tous[0]] })) === "enCours" && etapeSeance(v({ lancee: true, faits: tous, finie: true })) === "tenue"
+      && etapeSeance(v({ lancee: true, faits: [tous[0]], finie: true, finieLe: "2026-10-17T09:00:00Z" })) === "close");
+  check("tous les blocs faits sans l'avoir lancée : tenue quand même (pas de bonus, mais rien à commencer)", etapeSeance(v({ faits: tous })) === "tenue");
+  check("« Continuer · 2/3 » : le premier bloc pas fait ; tous faits : le total",
+    J(rangEnCours(v({ faits: [tous[0]] }))) === J({ rang: 2, total: 3 }) && J(rangEnCours(v({ faits: tous }))) === J({ rang: 3, total: 3 }) && rangEnCours(v({ faits: [tous[1]] })).rang === 1);
+  check("« Encore un bloc ? » : le budget du dessus, rien au-delà de 90 min", budgetSuivant(15) === 30 && budgetSuivant(30) === 60 && budgetSuivant(60) === 90 && budgetSuivant(90) === null);
+  const plus = composerSeance(entree({ phase: "consolidation", budget: 90, blocsFaits: s.blocs }));
+  check("… et la séance recomposée garde ses blocs faits en tête, avec un bloc de plus", plus.blocs.length > s.blocs.length && J(plus.blocs.slice(0, s.blocs.length).map((b) => b.genre)) === J(tous), J(plus.blocs.map((b) => b.genre)));
+  check("l'en-tête : « J-10 · Répétition générale », « Jour J · … », la phase seule sans jour J",
+    enteteSeance(10, "Répétition générale") === "J-10 · Répétition générale" && enteteSeance(0, "Veillée") === "Jour J · Veillée" && enteteSeance(null, "Fondations") === "Fondations" && enteteSeance(-2, "Après") === "Après");
+}
+
+console.log("\n# la pastille « Séance 2/3 · Continuer → »");
+{
+  const seance = { lancee: true, faits: 1, total: 3, suivant: { titre: "Ce qui coince", href: "/practice?topic=fsa&n=20" } };
+  check("lancée : « Séance 2/3 » et le lien du bloc en cours", J(pastilleSeance(seance, "/dashboard")) === J({ rang: 2, total: 3, href: "/practice?topic=fsa&n=20" }));
+  check("cachée sur la page du bloc en cours (requête ignorée), masquée pour la journée, pas lancée, finie, ou sans séance",
+    pastilleSeance(seance, "/practice") === null && pastilleSeance(seance, "/practice/") === null && pastilleSeance(seance, "/dashboard", { masquee: true }) === null
+      && pastilleSeance({ ...seance, lancee: false }, "/dashboard") === null && pastilleSeance({ ...seance, suivant: null }, "/dashboard") === null && pastilleSeance(null, "/dashboard") === null);
+  check("sans la base : lancée dans ce navigateur, elle se montre", !!pastilleSeance({ ...seance, lancee: false }, "/codex", { lanceeIci: true }));
+  check("une autre page qui commence pareil n'est pas la destination", !!pastilleSeance({ ...seance, suivant: { titre: "Les 5 du jour", href: "/defi/cinq" } }, "/defi"));
+}
+
+console.log("\n# « Ce que ça a fait avancer » (l'instantané au lancement, les gains)");
+{
+  const vue = exempleCodex("milieu", { unique: true });
+  const avant = instantaneSeance(vue);
+  check("l'instantané : la maîtrise mesurée, la file « À revoir », 5 quêtes visées au plus (la prochaine d'abord)",
+    Object.keys(avant.quetes).length > 0 && Object.keys(avant.quetes).length <= 5 && (!vue.prochaine || `${vue.prochaine.ligne.id}|${vue.prochaine.ligne.periode}` in avant.quetes) && Object.keys(avant.maitrise).length > 0,
+    J(avant).slice(0, 160));
+  check("relu tel quel ; illisible : null ; valeurs hors bornes écartées",
+    J(lireInstantane(JSON.parse(J(avant)))) === J(avant) && lireInstantane(null) === null && lireInstantane([1]) === null
+      && J(lireInstantane({ maitrise: { fsa: 140, quant: 50 }, revoir: -3, quetes: { a: 2, b: 0.5 } })) === J({ maitrise: { quant: 50 }, revoir: null, quetes: { b: 0.5 } }));
+  check("rien n'a bougé : aucun gain (la régularité, déjà) ; sans instantané : aucun", gainsSeance(avant, vue).length === 0 && gainsSeance(null, vue).length === 0);
+  const [q0] = Object.keys(avant.quetes);
+  const m0 = Object.keys(avant.maitrise)[0];
+  const moins = { maitrise: { ...avant.maitrise, [m0]: avant.maitrise[m0] - 6 }, revoir: (avant.revoir ?? 0) + 9, quetes: { ...avant.quetes, [q0]: Math.max(0, avant.quetes[q0] - 0.4) } };
+  const gains = gainsSeance(moins, vue);
+  const court = vue.cap?.matieres.find((m) => m.cle === m0)?.court ?? "";
+  check("les gains : la quête qui a avancé, la matière qui a monté ; trois au plus, le plus grand d'abord, jauges entre 0 et 1",
+    gains.length >= 2 && gains.length <= MAX_GAINS && gains.some((g) => g.cle === `quete:${q0}`) && gains.some((g) => g.cle === `maitrise:${m0}` && g.texte === `${court} ${avant.maitrise[m0] - 6} % → ${avant.maitrise[m0]} %`)
+      && gains.every((g, i) => i === 0 || gains[i - 1].poids >= g.poids) && gains.every((g) => g.fraction >= 0 && g.fraction <= 1),
+    J(gains));
+  check("« À revoir 23 → 14 » : la file qui baisse est un gain",
+    avant.revoir === null || gainsSeance({ maitrise: {}, revoir: avant.revoir + 9, quetes: {} }, vue).some((g) => g.texte === `À revoir ${avant.revoir! + 9} → ${avant.revoir}`));
+  const ligne = { budget_min: 60, blocs: versStockage(composerSeance(entree({ phase: "consolidation", budget: 60 })).blocs), faits: [], lancee_le: "2026-10-17T07:30:00Z", finie_le: null, avant: moins };
+  check("la séance gardée relit son instantané (codex_seances.avant)", J(lireSeanceGardee(JSON.parse(J(ligne)))?.avant) === J(lireInstantane(moins)));
+}
+
+console.log("\n# la séance d'exemple (aperçus) et la fin de séance en fin d'outil (FeteCodex)");
+{
+  const etapes = ["proposee", "enCours", "tenue", "close"] as const;
+  const vues = etapes.map((x) => exempleCodex("milieu", { seance: x }));
+  check("une séance à chaque étape, avec des blocs lançables",
+    vues.every((v, i) => !!v.seance && v.seance.blocs.length > 0 && etapeSeance(v.seance) === etapes[i] && v.seance.blocs.every((b) => b.destination.href.startsWith("/"))),
+    J(vues.map((v) => v.seance && etapeSeance(v.seance))));
+  const tenue = vues[2];
+  const g = gainsSeance(tenue.seance!.avant, tenue);
+  check("tenue : ce qu'elle a fait avancer (1 à 3 lignes)", g.length >= 1 && g.length <= MAX_GAINS, J(g));
+  const b = bilanDe(tenue);
+  check("le bilan de fin d'outil porte la séance tenue (gains, lancement, budget) ; pas une séance proposée, en cours ou close",
+    !!b.seance && b.seance.gains.length >= 1 && b.seance.lanceeLe === tenue.seance!.lanceeLe && b.seance.budget === tenue.seance!.budget && [vues[0], vues[1], vues[3]].every((v) => !bilanDe(v).seance));
+  check("sans séance (le Codex d'avant) : le bilan n'en dit rien", !bilanDe(exempleCodex("milieu")).seance);
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

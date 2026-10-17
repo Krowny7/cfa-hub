@@ -35,7 +35,7 @@ import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesures
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
 import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { maitriseDuCodex } from "@/lib/codex/cap";
-import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
+import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -225,7 +225,7 @@ async function lireSeance(a: SupabaseClient, id: string, jour: string): Promise<
 /** Sans la §6 : la dernière séance calculée aujourd'hui par cette instance tient lieu de séance gardée. */
 function seanceEnMemoire(userId: string, jour: string): SeanceGardee | null {
   const s = DERNIER.get(userId)?.seance;
-  return s && s.jour === jour ? { budget: s.budget, blocs: s.blocs, faits: s.faits, lanceeLe: s.lanceeLe, finieLe: s.finieLe } : null;
+  return s && s.jour === jour ? { budget: s.budget, blocs: s.blocs, faits: s.faits, lanceeLe: s.lanceeLe, finieLe: s.finieLe, avant: s.avant ?? null } : null;
 }
 
 /**
@@ -283,7 +283,7 @@ async function seanceDuJour(
   // un bloc à faire de plus (recomposée) : la séance n'est plus finie
   const finieLe = recomposer && !tenue ? null : (precedente?.finieLe ?? null);
   const lanceeLe = precedente?.lanceeLe ?? null;
-  return { jour, budget, phase: resultat.phase, blocs, duree: blocs.reduce((s, b) => s + b.duree, 0), faits: dans, lancee: !!lanceeLe, lanceeLe, finie: tenue || !!finieLe, finieLe, gardee };
+  return { jour, budget, phase: resultat.phase, blocs, duree: blocs.reduce((s, b) => s + b.duree, 0), faits: dans, lancee: !!lanceeLe, lanceeLe, finie: tenue || !!finieLe, finieLe, gardee, avant: lanceeLe ? (precedente?.avant ?? null) : null };
 }
 
 // ── L'instantané du panneau (codex_vue_cache, V3 §6.2) ─────────────────
@@ -608,20 +608,6 @@ export async function reglerJour(supabase: SupabaseClient, user: Joueur, quoi: {
 }
 
 /**
- * L'instantané au lancement de la séance (V3 §6.5) : la maîtrise par matière,
- * la file « À revoir », et l'avancée de cinq quêtes visées au plus (la
- * prochaine, puis les contrats du jour pas encore faits).
- */
-function instantaneSeance(v: VueCodex): { maitrise: Record<string, number>; revoir: number | null; quetes: Record<string, number> } {
-  const visees = [...(v.prochaine ? [v.prochaine.ligne] : []), ...v.contrats.map((c) => c.ligne).filter((l) => l.etat !== "terminee")].slice(0, 5);
-  return {
-    maitrise: Object.fromEntries((v.cap?.matieres ?? []).flatMap((m) => (m.pct === null ? [] : [[m.cle, m.pct]]))),
-    revoir: v.revoir?.aujourdhui ?? null,
-    quetes: Object.fromEntries(visees.map((l) => [`${l.id}|${l.periode}`, Math.round(l.fraction * 100) / 100])),
-  };
-}
-
-/**
  * Une marque sur la séance du jour (V3 §6.2, §6.6) : « vue » (première
  * fois affichée), « lancee » (« Commencer » : les blocs comptent dès
  * maintenant, l'instantané est pris), « finie » (« J'arrête là »). En base
@@ -648,7 +634,7 @@ export async function marquerSeance(supabase: SupabaseClient, user: Joueur, quoi
   if (!gardee && quoi !== "vue") {
     const maintenant = new Date().toISOString();
     patcher(user.id, (v) => (v.seance && v.seance.jour === jour
-      ? { ...v, seance: quoi === "lancee" ? { ...v.seance, lancee: true, lanceeLe: v.seance.lanceeLe ?? maintenant } : { ...v.seance, finie: true, finieLe: v.seance.finieLe ?? maintenant } }
+      ? { ...v, seance: quoi === "lancee" ? { ...v.seance, lancee: true, lanceeLe: v.seance.lanceeLe ?? maintenant, avant: v.seance.avant ?? instantaneSeance(v) } : { ...v.seance, finie: true, finieLe: v.seance.finieLe ?? maintenant } }
       : v));
   }
   if (quoi === "vue") {

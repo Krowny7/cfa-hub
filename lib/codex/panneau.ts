@@ -190,6 +190,29 @@ export function seancePanneau(s: VueSeance | null): Panneau["seance"] {
   return { lancee: s.lancee, faits: s.blocs.filter((b) => s.faits.includes(b.genre)).length, total: s.blocs.length, suivant: suivant ? { titre: suivant.titre, href: suivant.destination.href } : null };
 }
 
+/**
+ * L'événement du navigateur qui dit « le Codex a bougé » : émis par FeteCodex
+ * juste après codexPoint() (la fin d'un outil) et par la séance du jour après
+ * un geste ; la pastille de la barre du haut relit alors le panneau.
+ */
+export const EVENEMENT_CODEX_POINT = "rl:codex-point";
+
+/** Le chemin d'un lien, sans la requête ni l'ancre (« /practice?topic=fsa » → « /practice »). */
+const cheminDe = (href: string) => href.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+
+/**
+ * La pastille « Séance 2/3 · Continuer → » de la barre du haut (V3 §6.4) :
+ * seulement si la séance du jour est lancée (en base, ou dans ce navigateur
+ * quand la base ne la garde pas : `lanceeIci`), pas finie, pas masquée pour
+ * la journée, et que la page courante n'est pas déjà la destination du bloc
+ * en cours. `rang` : le bloc en cours (le premier pas fait). null : rien à montrer.
+ */
+export function pastilleSeance(s: Panneau["seance"], chemin: string, o: { masquee?: boolean; lanceeIci?: boolean } = {}): { rang: number; total: number; href: string } | null {
+  if (!s || !s.suivant || o.masquee || !(s.lancee || o.lanceeIci)) return null;
+  if (cheminDe(chemin) === cheminDe(s.suivant.href)) return null;
+  return { rang: Math.min(s.total, s.faits + 1), total: s.total, href: s.suivant.href };
+}
+
 /** « 3 quêtes tamponnées · +190 XP · titre Garzone » : la ligne des récompenses versées. */
 export function ligneVersees(v: NonNullable<Panneau["versees"]>): string {
   const debut = v.n ? `${v.n} quête${v.n > 1 ? "s" : ""} tamponnée${v.n > 1 ? "s" : ""}` : "Un acte clos";

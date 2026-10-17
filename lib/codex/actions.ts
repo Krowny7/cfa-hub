@@ -115,15 +115,20 @@ export async function codexAutreIdee(queteId: string): Promise<Resultat<{ pannea
   return { ok: true, panneau: panneauDe(r.vue) };
 }
 
-/** « J'ai [15] [30] [60] [90] min » : le temps que le joueur se donne aujourd'hui ; les quêtes plus longues reculent. */
-export async function codexSeanceBudget(budget: number): Promise<Resultat<{ panneau: Panneau }>> {
+/**
+ * « J'ai [15] [30] [60] [90] min » : le temps que le joueur se donne
+ * aujourd'hui ; les quêtes plus longues reculent et la séance du jour se
+ * recompose (ses blocs faits restent). Aussi « Encore un bloc ? » (le budget
+ * du dessus).
+ */
+export async function codexSeanceBudget(budget: number): Promise<Resultat<{ panneau: Panneau; seance: VueSeance | null }>> {
   const { supabase, user } = await joueur();
   if (!user) return { ok: false, raison: "connexion" };
   if (!estBudget(budget)) return { ok: false, raison: "refus" };
   const r = await reglerJour(supabase, user, { budget });
   if (!r.ok) return r;
   revalidatePath("/codex");
-  return { ok: true, panneau: panneauDe(r.vue) };
+  return { ok: true, panneau: panneauDe(r.vue), seance: r.vue.seance };
 }
 
 /** Ce que rendent les gestes de la séance du jour : la séance et le panneau relus ; `gardee` faux : la base ne la garde pas (« Continuer » se garde aussi dans le navigateur). */

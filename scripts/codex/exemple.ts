@@ -4,11 +4,16 @@
 //   neuf   : compte du jour même, rien de fait, presque rien de dévoilé
 //   milieu : quelques semaines de travail, plusieurs actes avancés
 //   fin    : proche du jour J, beaucoup de choses faites
+// `seance` : la séance du jour d'exemple, à l'étape voulue (proposée, en
+// cours, tenue avec ce qu'elle a fait avancer, close).
 import { contenuDuProgramme } from "@/lib/codex/catalogue";
+import { maitriseDuCodex } from "@/lib/codex/cap";
 import {
-  LECTURE_VIDE, evaluer, indexerLecture, planifier, recommander, tirerContrats,
-  type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
+  LECTURE_VIDE, budgetDuJour, contexteDestination, evaluer, indexerLecture, joursAvantExamen, planifier, recommander, tirerContrats,
+  type Demande, type Entree, type LectureSql, type LigneProgression, type Resultat, type ResultatCompteur,
 } from "@/lib/codex/moteur";
+import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
+import { composerSeance, instantaneSeance, revoirCodexDe, type EtapeSeance, type VueSeance } from "@/lib/codex/seance";
 import { construireVue, type VueCodex } from "@/lib/codex/vue";
 import { CAPACITES_VIDE } from "@/lib/codex/reglage";
 import type { Budget } from "@/lib/codex/types";
@@ -29,7 +34,7 @@ function hash(s: string) {
  * `budget`, `ecartees` : le réglage du jour (« J'ai 30 min », « Une autre idée ? ») ;
  * `unique` : la maîtrise unique et la file « À revoir » lues (codex_mesures_v3 et le SQL du couloir B collés).
  */
-export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[]; unique?: boolean } = {}): VueCodex {
+export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[]; unique?: boolean; seance?: EtapeSeance } = {}): VueCodex {
   const fin = sc === "fin";
   const neuf = sc === "neuf";
   const e: Entree = {
@@ -90,5 +95,33 @@ export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; 
   }
   if (e.progression.length) r = evaluer(e, compteurs);
   const reco = recommander(e, r);
-  return construireVue(e, r, reco, { devoile: { devoile: opts.devoile ?? (neuf ? [] : "tout"), jours: [JOUR], nouveaux: [], change: false } });
+  const vue = construireVue(e, r, reco, { devoile: { devoile: opts.devoile ?? (neuf ? [] : "tout"), jours: [JOUR], nouveaux: [], change: false } });
+  return opts.seance ? { ...vue, seance: seanceExemple(e, r, vue, opts.seance) } : vue;
+}
+
+/** La séance du jour d'exemple, composée comme le serveur la compose (lib/codex/serveur.ts), à l'étape voulue. */
+function seanceExemple(e: Entree, r: Resultat, vue: VueCodex, etape: EtapeSeance): VueSeance | null {
+  const dest = contexteDestination(e, r);
+  const budget = budgetDuJour(e);
+  const s = composerSeance({
+    jour: JOUR, phase: r.phase, joursAvant: joursAvantExamen(JOUR, e.jourJ), budget,
+    maitrise: maitriseDuCodex(contenu, e.lecture.mesures), revoir: revoirCodexDe(e.lecture.mesures) ?? { aujourdhui: 14, demain: 9, ratures: 9, rappels: 5, complet: true },
+    cinqFait: false, trenteFait: false, trenteDispo: true, questionsTotal: (e.lecture.mesures.jours ?? []).reduce((n, j) => n + j.n, 0) || 2400,
+    notionsNonVues: contenu.map((m) => ({ matiere: m.key, n: dest.notionsNonVues[m.key] ?? 0, total: m.notions })),
+    contrats: vue.contrats, def: CFA_L1, ecartes: [], dest,
+  });
+  if (!s.blocs.length) return null;
+  const lanceeLe = etape === "proposee" ? null : new Date(NOW.getTime() - 50 * 60_000).toISOString();
+  const faits = etape === "proposee" ? [] : etape === "enCours" ? [s.blocs[0].genre] : s.blocs.map((b) => b.genre);
+  // « avant » : un peu moins qu'aujourd'hui, pour que la séance ait fait avancer quelque chose
+  const ici = instantaneSeance(vue);
+  const avant = lanceeLe
+    ? {
+        maitrise: Object.fromEntries(Object.entries(ici.maitrise).map(([k, v], i) => [k, i < 2 ? Math.max(0, v - 4 + i) : v])),
+        revoir: ici.revoir === null ? null : ici.revoir + 7,
+        quetes: Object.fromEntries(Object.entries(ici.quetes).map(([k, v]) => [k, Math.max(0, Math.round((v - 0.3) * 100) / 100)])),
+      }
+    : null;
+  const finieLe = etape === "close" ? NOW.toISOString() : null;
+  return { ...s, faits, lancee: !!lanceeLe, lanceeLe, finie: etape === "tenue" || etape === "close", finieLe, gardee: true, avant };
 }

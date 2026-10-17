@@ -4,8 +4,9 @@
 // vue complète côté serveur, il ne porte que quelques lignes (la vue entière
 // pèse une centaine de Ko). Module neutre.
 
-import type { Famille, RepliqueCodex } from "@/lib/codex/types";
+import type { Budget, Famille, RepliqueCodex } from "@/lib/codex/types";
 import { devoileLite } from "@/lib/codex/devoile-lite";
+import { etapeSeance, gainsSeance, type GainSeance } from "@/lib/codex/seance";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
 
 export type FeteCodex = {
@@ -32,7 +33,12 @@ export type BilanCodex = {
   contrats: { id: string; titre: string; etat: EtatLigne; valeur: number; cible: number }[];
   trio: { faits: number; total: number; fait: boolean };
   retro: VueCodex["retro"];
+  /** la séance du jour lancée et tenue, pas encore close : « Ce que ça a fait avancer » en fin d'outil (V3 §6.5) */
+  seance?: FinSeance | null;
 };
+
+/** La fin d'une séance tenue : ses plus grands gains depuis le lancement, de quoi annoncer les trophées, et le budget (pour « Encore un bloc ? »). */
+export type FinSeance = { jour: string; budget: Budget; lanceeLe: string | null; gains: GainSeance[] };
 
 export const BILAN_VIDE: BilanCodex = { disponible: false, fetes: [], acteNouveau: null, devoile: null, prochaine: null, contrats: [], trio: { faits: 0, total: 0, fait: false }, retro: null };
 
@@ -84,5 +90,6 @@ export function bilanDe(vue: VueCodex): BilanCodex {
     trio: { faits: vue.trio.faits, total: vue.trio.total, fait: vue.trio.fait },
     prochaine: p ? { titre: p.ligne.titre, lien: p.ligne.destination?.href ?? p.ligne.lien ?? null, pourquoi: p.ligne.destination?.raison ?? p.pourquoi, valeur: p.ligne.valeur, cible: p.ligne.cible, duree: p.ligne.destination?.duree ?? p.ligne.duree ?? null } : null,
     retro: vue.retro,
+    seance: vue.seance && vue.seance.lancee && etapeSeance(vue.seance) === "tenue" ? { jour: vue.seance.jour, budget: vue.seance.budget, lanceeLe: vue.seance.lanceeLe, gains: gainsSeance(vue.seance.avant, vue) } : null,
   };
 }
