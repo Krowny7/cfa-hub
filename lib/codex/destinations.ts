@@ -63,7 +63,7 @@ export type ContexteDestination = {
 /**
  * Les pages du site (dossier app/, hors api et aperçus locaux), un segment
  * dynamique entre crochets. Tenue à la main : scripts/codex/test-destinations.ts
- * la compare au dossier app/. « /revoir » y entre quand sa page arrive.
+ * la compare au dossier app/. « /revoir » y est entré à la fusion F2.
  */
 export const ROUTES: ReadonlySet<string> = new Set([
   "/",
@@ -107,6 +107,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/qcm",
   "/qcm/[id]",
   "/reviser",
+  "/revoir",
   "/scratch",
   "/session",
   "/settings",
@@ -114,7 +115,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/share/qcm/[token]",
 ]);
 
-/** Une page absente de cette copie → la page qui la remplace en attendant. */
+/** Une page absente de cette copie → la page qui la remplace en attendant (« /revoir » : gardé pour une copie qui ne l'aurait pas). */
 export const REPLIS: Record<string, string> = {
   "/revoir": "/moi?onglet=erreurs&reprise=1",
 };

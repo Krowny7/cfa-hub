@@ -58,6 +58,8 @@ const enRoute: ContexteDestination = {
   practiceV3: false,
 };
 const avec = (ctx: ContexteDestination, o: Partial<ContexteDestination>): ContexteDestination => ({ ...ctx, ...o });
+/** une copie du site sans la page « À revoir » (avant F2) : le repli REPLIS joue */
+const sansRevoir = avec(enRoute, { routes: new Set([...ROUTES].filter((r) => r !== "/revoir")) });
 const quete = (id: string) => catalogueCodex().find((q) => q.id === id)!;
 
 /** Une destination bien formée : interne, sans trou, dans les routes, d'une durée positive. */
@@ -134,11 +136,11 @@ console.log("\n# les replis");
 {
   check("REPLIS : /revoir → le carnet de ratures", REPLIS["/revoir"] === "/moi?onglet=erreurs&reprise=1");
   check("aucune page de repli n'est elle-même absente", Object.values(REPLIS).every((h) => routeExiste(h.split(/[?#]/)[0])));
-  check("avant F2, /revoir n'est pas une page de cette copie", !ROUTES.has("/revoir"));
+  check("depuis F2, /revoir est une page de cette copie", ROUTES.has("/revoir"));
   const rature = quete("trame:a1:rature");
-  check("sans /revoir : une rature à rayer mène au carnet", destinationDe(rature, {}, enRoute)?.href === "/moi?onglet=erreurs&reprise=1");
+  check("sans /revoir : une rature à rayer mène au carnet", destinationDe(rature, {}, sansRevoir)?.href === "/moi?onglet=erreurs&reprise=1");
   const avecRevoir = avec(enRoute, { routes: new Set([...ROUTES, "/revoir"]) });
-  check("avec /revoir : elle mène à « À revoir »", destinationDe(rature, {}, avecRevoir)?.href === "/revoir");
+  check("avec /revoir : elle mène à « À revoir »", destinationDe(rature, {}, avecRevoir)?.href === "/revoir" && destinationDe(rature, {}, enRoute)?.href === "/revoir");
   const sansDuel = avec(enRoute, { routes: new Set([...ROUTES].filter((r) => r !== "/duel")) });
   check("page absente sans repli : pas de destination, pas lançable", destinationDe(quete("trame:a1:duel"), {}, sansDuel) === null && !lancable(quete("trame:a1:duel"), sansDuel));
 
@@ -287,7 +289,7 @@ console.log("\n# le cap et la mémoire (A4b) : les lignes nouvelles");
     id: `essai:${mesure}`, famille: "longcours", programme: PROGRAMME, titre: mesure, consigne: mesure, objectif: { k: "mesure", mesure, seuil: 1 }, prerequis: [], recompense: { xp: 0 }, repetition: "unique", visibilite: "visible", ordre: 1,
   });
   check("« à revoir aujourd'hui », ratures scellées : « À revoir » (15 min) ; avant F2, le carnet",
-    (["revisions_dues", "ratures_scellees"] as const).every((m) => destinationDe(essai(m), {}, avecRevoir)?.href === "/revoir" && destinationDe(essai(m), {}, avecRevoir)?.duree === 15 && destinationDe(essai(m), {}, enRoute)?.href === REPLIS["/revoir"]));
+    (["revisions_dues", "ratures_scellees"] as const).every((m) => destinationDe(essai(m), {}, avecRevoir)?.href === "/revoir" && destinationDe(essai(m), {}, avecRevoir)?.duree === 15 && destinationDe(essai(m), {}, sansRevoir)?.href === REPLIS["/revoir"]));
   check("… avec la file connue, la raison la compte", destinationDe(essai("revisions_dues"), {}, avec(avecRevoir, { revoir: { aujourdhui: 15 } }))?.raison === "15 à revoir aujourd'hui");
   const prep = destinationDe(essai("preparation"), {}, avec(enRoute, { practiceV3: true }));
   check("la préparation : ce qui coince (25 min)", !!prep && prep.duree === 25 && (prep.href.startsWith("/atelier?notion=") || prep.href.startsWith("/practice?topic=")), prep?.href);
@@ -301,7 +303,7 @@ console.log("\n# le cap et la mémoire (A4b) : les lignes nouvelles");
 
   // la chaîne « La mémoire longue » et le contrat de rappel ont enfin leur séance : « À revoir » (V3.md, cran 4)
   const memoire = catalogueCodex().filter((q) => q.chaine === "memoire");
-  check(`la mémoire longue (${memoire.length} paliers) : « À revoir » ; avant F2, le carnet`, memoire.length === 5 && memoire.every((q) => destinationDe(q, {}, avecRevoir)?.href === "/revoir" && destinationDe(q, {}, enRoute)?.href === REPLIS["/revoir"]));
+  check(`la mémoire longue (${memoire.length} paliers) : « À revoir » ; avant F2, le carnet`, memoire.length === 5 && memoire.every((q) => destinationDe(q, {}, avecRevoir)?.href === "/revoir" && destinationDe(q, {}, sansRevoir)?.href === REPLIS["/revoir"]));
   const rappel = MODELES_CONTRATS.find((m) => m.id === "rappel")!;
   check("le contrat de rappel : « À revoir »", destinationDe(instanceContrat(rappel, {}, jour, contenu), {}, avecRevoir)?.href === "/revoir");
 }
