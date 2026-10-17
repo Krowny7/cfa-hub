@@ -186,6 +186,15 @@ for (const [f, n] of [
   check("trophées : aucun, le texte de la Salle", zero.includes("Aucun trophée pour l&#x27;instant."));
 }
 
+// chiffres clés en héros et en bande : autant de colonnes que de pièces gardées
+{
+  const cols = (showcase: DonneesBlocs["showcase"], f: Format) => rend(<BlocProfil bloc={{ k: "vitrine", f }} f={f} d={{ ...RICHE, showcase }} />);
+  check(
+    "chiffres clés : 1 pièce, 1 colonne ; 2 pièces, 2 ; 3 pièces, 3 (héros et bande)",
+    (["heros", "bande"] as Format[]).every((f) => cols(["questions"], f).includes("--n:1") && cols(["questions", "serie"], f).includes("--n:2") && cols(["questions", "serie", "matiere"], f).includes("--n:3")),
+  );
+}
+
 // vidéo : l'adresse rendue porte la couverture, l'adresse enregistrée non
 {
   const v = MEDIAS.video;

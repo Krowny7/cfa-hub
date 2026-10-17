@@ -77,8 +77,9 @@
   border-top: 1px solid var(--line);
 }
 @media (min-width: 1024px) {
+  /* autant de colonnes que de pièces gardées (--n, de 1 à 3) */
   .chiffresCols {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
   }
   .chiffresCols > * + * {
     border-top: 0;

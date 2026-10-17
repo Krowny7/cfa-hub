@@ -137,9 +137,9 @@ function Chiffres({ d, f }: Ctx) {
   const keys = d.showcase.length ? d.showcase : (["questions", "serie", "matiere"] as VitrineKey[]);
   const pieces = keys.map((k) => ({ k, ...pieceVitrine(k, d.stats) }));
   if (f !== "tuile")
-    // héros et bande : trois cases séparées d'un filet, sans étiquette, le chiffre en premier
+    // héros et bande : une case par pièce (une à trois) séparées d'un filet, sans étiquette, le chiffre en premier
     return (
-      <section aria-label={T.chiffres} className={"card min-w-0 px-1 py-1 " + b.chiffres + " " + b.chiffresCols} style={styleAccent(d.accent)}>
+      <section aria-label={T.chiffres} className={"card min-w-0 px-1 py-1 " + b.chiffres + " " + b.chiffresCols} style={{ ...styleAccent(d.accent), ["--n" as string]: pieces.length }}>
         {pieces.map((p) => (
           <div key={p.k} className={"flex min-w-0 items-center justify-between gap-4 px-5 py-4 lg:flex-col lg:items-start lg:justify-center lg:px-6 " + b.piece}>
             <div className="flex min-w-0 flex-col gap-1">
