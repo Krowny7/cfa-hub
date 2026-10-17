@@ -19,7 +19,7 @@ import { notionsDeMatiere } from "@/lib/notions";
 import { ACTES, COSMETIQUES_CODEX, MODELES_CONTRATS, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
   LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, revoirDe, tirerContrats,
-  budgetDuJour, repriseDuJour,
+  budgetDuJour, contexteDestination, repriseDuJour,
   type Demande, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type ResultatCompteur,
 } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
@@ -34,6 +34,7 @@ import { quetesSemaine, xpSemaineEncre } from "@/lib/codex/catalogue";
 import { JALONS_CFA_L1, commandesPossibles, dateApproximative, enReprise, estSprint, facteurBande, libelleEcart, lireSemaine, lireVerdict, matiereBanquier, planDe, sessionDe } from "@/lib/codex/plan";
 import { calculerSerie } from "@/lib/serie-encre";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
+import { destinationDe } from "@/lib/codex/destinations";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -798,6 +799,11 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   const mb = matiereBanquier(contenu, (c) => ({ ethics: 80, fsa: 45, equity: 62, fixed_income: 50 } as Record<string, number>)[c] ?? 90);
   check("la matière du banquier : la plus faible des lourdes", mb?.matiere === "fsa" && mb.depart === 45, JSON.stringify(mb));
   check("le copiste n'est proposé qu'avec ce que la base sait faire", commandesPossibles(() => false).join(",") === "banquier,ingenieur" && commandesPossibles(() => true).length === 3);
+
+  const ctxD = contexteDestination(base());
+  const dela = (["banquier", "copiste", "ingenieur"] as const).flatMap((c) => quetesSemaine({ lundi, cible: 4, commande: c, params: { matiere: "quant", depart: 40 } }, contenu));
+  const sansDest = dela.filter((q) => !destinationDe(q, {}, ctxD));
+  check("chaque contrat de la semaine a sa destination (« Y aller »)", dela.length === 8 && sansDest.length === 0, sansDest.map((q) => q.id).join());
 
   // la date approximative
   const auj = "2026-10-17";
