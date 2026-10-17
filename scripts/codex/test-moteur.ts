@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
-import { ACTES, MODELES_CONTRATS, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
+import { ACTES, COSMETIQUES_CODEX, MODELES_CONTRATS, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
   LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, planifier, recommander, tirerContrats,
   type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur,
@@ -53,7 +53,7 @@ const ouverte = (r: ReturnType<typeof evaluer>, id: string) => r.etats.find((s) 
 console.log("# le catalogue");
 check("verifierCatalogue() ne trouve rien", verifierCatalogue().length === 0, verifierCatalogue().join(" | "));
 const cat = catalogueCodex();
-check("231 quêtes", cat.length === 231, String(cat.length));
+check("269 quêtes (231 avant la v3, 38 ajoutées : V3 §8.8)", cat.length === 269, String(cat.length));
 
 console.log("\n# un compte neuf (aucun historique)");
 {
@@ -415,7 +415,7 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     && contenu.every((m) => cat.find((q) => q.id === `branche:${m.key}:tour`)?.retiree)
     && ["carte", "justesse", "trentaine", "atelier", "calculs", "sources"].every((c) => cat.filter((q) => q.chaine === c).every((q) => q.retiree)));
   const miroirs = cat.filter((q) => q.miroir);
-  check("5 miroirs (le 6e, la carte tenue, vient avec A3b), chacun vers une quête de la trame qui paie", miroirs.length === 5 && miroirs.every((q) => cat.find((x) => x.id === q.miroir && x.famille === "trame" && !x.retiree)), miroirs.map((q) => q.id).join(" "));
+  check("6 miroirs, chacun vers une quête de la trame qui paie", miroirs.length === 6 && miroirs.every((q) => cat.find((x) => x.id === q.miroir && x.famille === "trame" && !x.retiree)), miroirs.map((q) => q.id).join(" "));
   check("SEUIL_ACTE_V = CFA_L1.seuils.acteV = 8 (D6)", SEUIL_ACTE_V === 8 && CFA_L1.seuils.acteV === 8);
   check("xpContrat : 5 → 10, 10 → 10, 15 → 20, 20 → 25, 25 → 30, 30 → 35, 40 → 50", [[5, 10], [10, 10], [15, 20], [20, 25], [25, 30], [30, 35], [40, 50]].every(([d, x]) => xpContrat(d) === x));
 
@@ -541,6 +541,120 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     const noeud = q("trame:a2:essai-noeud", "acte2", { k: "compteur", evenement: "duel_termine", seuil: 1 }, [{ k: "toutesBranches", etape: "drill" }]);
     const { r: rn } = repondre(base({ catalogue: [...catalogueCodex(), noeud] }), () => 0);
     check("« toutes les branches au drill » : les drills hors jeu ne bloquent pas le nœud", rn.etats.filter((x) => x.quete.etape === "drill").every((x) => x.horsJeu) && ouverte(rn, "trame:a2:essai-noeud"));
+  }
+}
+
+console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, cartes et signatures, folios, exploits, débrief)");
+{
+  const cat = catalogueCodex();
+  const q = (id: string) => cat.find((x) => x.id === id)!;
+  const ligne = (id: string, o: Partial<LigneProgression> = {}): LigneProgression => ({ quete_id: id, periode: "", etat: "recompensee", progression: 1, cible: 1, ouverte_le: "2026-09-01T10:00:00Z", terminee_le: "2026-09-01T10:00:00Z", recompensee_le: "2026-09-01T10:00:00Z", retro: false, xp: 50, cosmetique: null, titre: null, vu: true, ...o });
+  const st = (r: ReturnType<typeof evaluer>, id: string) => r.etats.find((s) => s.quete.id === id);
+
+  // le compte final (V3 §8.8)
+  const c = compterCatalogue();
+  check(`visibles du CFA I : ${c.total.visibles}, dans [170, 190] (≈ 184)`, c.total.visibles >= 170 && c.total.visibles <= 190, JSON.stringify(c.total));
+  check("par famille : trame 40, branches 80, long cours 43, exploits 17, contrats 4 ; 58 retirées, 27 hors compte",
+    c.trame.visibles === 40 && c.branche.visibles === 80 && c.longcours.visibles === 43 && c.exploit.visibles === 17 && c.contrat.visibles === 4 && c.total.retirees === 58 && c.total.horsCompte === 27,
+    (["trame", "branche", "longcours", "exploit", "contrat"] as const).map((f) => `${f} ${c[f].visibles}`).join(" "));
+  check("les 21 satellites hors compte : cours, flashcards, fiche sans drill (facultatifs)", cat.filter((x) => x.famille === "branche" && x.optionnelle && !x.retiree).every((x) => ["cours", "flashcards", "fiche"].includes(x.etape ?? "")));
+
+  // les branches : la carte (notions tenues) et l'épreuve signature, avant « Maître de… »
+  const tenu = { n: 6, j5: 3 };
+  const toutesTenues = (m: string) => Object.fromEntries(notionsDeMatiere(m).map((n) => [n.id, tenu]));
+  check("chaque matière : « La carte de … » (notions tenues à 100 %) et une épreuve signature à 200 XP",
+    contenu.every((m) => q(`branche:${m.key}:carte`)?.objectif.k === "mesure" && q(`branche:${m.key}:signature`)?.recompense.xp === 200));
+  const prerequisMaitre = q("branche:fsa:maitre").prerequis;
+  check("« Maître de… » : maîtrise 75, puis carte et signature en prérequis SOUPLES (U2)",
+    prerequisMaitre.some((p) => p.k === "quete" && p.id === "branche:fsa:maitrise75" && !p.souple)
+    && ["carte", "signature"].every((e) => prerequisMaitre.some((p) => p.k === "quete" && p.id === `branche:fsa:${e}` && p.souple)) && !prerequisMaitre.some((p) => p.k === "quete" && p.id.endsWith(":tour")));
+  check("signatures du CFA I : Ethics 10 bonnes, Quant 10 calculs, Fixed Income 20 calculs, FSA une page à 100 %",
+    JSON.stringify(q("branche:ethics:signature").objectif) === JSON.stringify({ k: "special", cle: "serie_bonnes_matiere", seuil: 10, matiere: "ethics" })
+    && JSON.stringify(q("branche:quant:signature").objectif) === JSON.stringify({ k: "special", cle: "serie_calculs_matiere", seuil: 10, matiere: "quant" })
+    && JSON.stringify(q("branche:fixed_income:signature").objectif) === JSON.stringify({ k: "special", cle: "serie_calculs_matiere", seuil: 20, matiere: "fixed_income" })
+    && q("branche:fsa:signature").objectif.k === "compteur" && q("branche:fsa:signature").titre === "Le bilan sans faute");
+  const avance = (mesures: Partial<LectureSql["mesures"]>, o: Partial<Entree> = {}) => repondre(base({
+    premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), jourJ: "2027-02-20",
+    lecture: { compteurs: {}, mesures: { xp_total: 0, maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: 65, questions: 200, debut: 40 }])), ...mesures }, speciaux: { serie_bonnes: 30 } },
+    ...o,
+  }), (d) => (d.evenement === "drill_page_terminee" && (d.filtre?.pct as { min?: number } | undefined)?.min === 100 ? 0 : 99));
+  {
+    const equity = Object.fromEntries(notionsDeMatiere("equity").map((n, i) => [n.id, i === 0 ? { n: 5, j5: 2 } : tenu]));
+    const { r } = avance({ notions_tenues: { ...toutesTenues("fsa"), ...equity }, speciaux_matiere: { serie_bonnes: { ethics: 10, economics: 11 }, serie_calculs: { quant: 10 } } });
+    check("la carte de FSA : toutes ses notions tenues → faite ; Equity, une notion à 2 justes sur 5 → pas encore", fait(r, "branche:fsa:carte") && !fait(r, "branche:equity:carte") && st(r, "branche:equity:carte")?.horsJeu === false);
+    check("signatures par matière : Ethics à 10 d'affilée faite, Economics à 11 pas encore (12), Quant à 10 calculs faite", fait(r, "branche:ethics:signature") && !fait(r, "branche:economics:signature") && fait(r, "branche:quant:signature"));
+    check("une suite globale de 30 ne remplit pas une signature de matière ; une matière absente vaut 0, pas « inconnue »", !fait(r, "branche:corporate:signature") && st(r, "branche:corporate:signature")?.horsJeu === false && st(r, "branche:corporate:signature")?.ev?.valeur === 0);
+    check("FSA : la page de drill à 100 % pas encore passée", !fait(r, "branche:fsa:signature"));
+  }
+  {
+    const { r, e: e2 } = avance({});
+    check("sans codex_mesures_v3 : cartes et signatures par suite hors jeu (masquées), la page de drill reste en jeu", st(r, "branche:fsa:carte")?.masquee === true && st(r, "branche:ethics:signature")?.masquee === true && st(r, "branche:fsa:signature")?.horsJeu === false);
+    const v = construireVue(e2, r, null, { devoile: null });
+    const montrees = v.branches.flatMap((b) => b.etapes.filter((l) => l.etape === "carte" || l.etape === "signature").map((l) => l.id));
+    check("la vue : seules les signatures par page de drill (FSA, Equity, Portfolio) restent montrées", JSON.stringify(montrees.sort()) === JSON.stringify(["branche:equity:signature", "branche:fsa:signature", "branche:portfolio:signature"]), montrees.join(" "));
+  }
+
+  // les notions tenues : pondérées par le poids des matières (trame, carte tenue)
+  {
+    const { r } = avance({ notions_tenues: toutesTenues("ethics") }, { progression: ["prologue", "acte2"].map((x) => ligne(`acte:${x}`)) });
+    const poidsEthics = contenu.find((m) => m.key === "ethics")!.poids;
+    const pct = Math.floor((100 * poidsEthics) / contenu.reduce((s, m) => s + m.poids, 0));
+    check(`Ethics seule tenue : ${pct} % pondérés (son poids), pas sa part des notions`, st(r, "longcours:carte-tenue:2")?.ev?.valeur === Math.min(25, pct) && fait(r, "longcours:carte-tenue:1") === pct >= 10, String(st(r, "longcours:carte-tenue:2")?.ev?.valeur));
+    check("« Vingt-cinq carnets tenus » : le nombre de notions tenues", st(r, "trame:a3:tenues")?.ev?.valeur === Math.min(25, notionsDeMatiere("ethics").length), String(st(r, "trame:a3:tenues")?.ev?.valeur));
+    check("la carte tenue au palier 4 est le miroir de « Les trois quarts de la carte » ; le sommet donne Imola", q("longcours:carte-tenue:4").miroir === "trame:a5:tenues" && q("longcours:carte-tenue:5").recompense.cosmetique === "banniere:imola");
+    const presque = Object.fromEntries(notionsDeMatiere("fsa").map((n) => [n.id, { n: 4, j5: 4 }]));
+    check("une notion à 4 réponses (même toutes justes) n'est pas tenue", avance({ notions_tenues: presque }).r.etats.find((s) => s.quete.id === "branche:fsa:carte")?.ev?.valeur === 0);
+  }
+
+  // la main juste : le journal v3 d'abord
+  {
+    const compteSeances = (d: Demande) => (d.evenement === "seance_juste" ? 16 : 0);
+    const { r: sans } = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z") }), compteSeances);
+    const v3 = { ...CAPACITES_VIDE, journal: 3 as const };
+    const { r: avecJ, demandes } = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: v3 }), compteSeances);
+    check("sans journal v3 : la main juste n'est pas suivie, rien n'est demandé à la base", !sans.etats.some((s) => s.quete.chaine === "main-juste") && !planifier(base()).some((d) => d.evenement === "seance_juste"));
+    check("avec : 16 séances justes → deux paliers, filtre 70 % / 10 questions / 50 % de fraîches", fait(avecJ, "longcours:main-juste:1") && fait(avecJ, "longcours:main-juste:2") && !fait(avecJ, "longcours:main-juste:3")
+      && demandes.some((d) => d.evenement === "seance_juste" && JSON.stringify(d.filtre) === JSON.stringify({ pct: { min: 70 }, questions: { min: 10 }, fraiches: { min: 50 } })));
+    check("le sommet donne le titre « La main juste »", q("longcours:main-juste:5").recompense.titre === "titre:main-juste" && COSMETIQUES_CODEX.some((x) => x.cle === "titre:main-juste"));
+  }
+
+  // les folios : un par acte clos et par « Maître de… » du CFA I, plus deux du fil rouge
+  {
+    const folios = COSMETIQUES_CODEX.filter((x) => x.type === "folio");
+    const donnes = [...ACTES.map((a) => a.recompense.folio), ...cat.map((x) => x.recompense.folio)].filter((x): x is string => !!x);
+    check("19 folios (17 du CFA I, 2 du fil rouge) ; ceux du CFA I provisoires, sans image", folios.length === 19 && folios.filter((f) => f.folio).length === 17 && folios.every((f) => !f.folio || (f.folio.image === null && f.folio.provisoire)), String(folios.length));
+    check("les actes I à VI et l'épilogue en donnent un ; chaque « Maître de… » aussi ; jamais deux fois le même",
+      ACTES.filter((a) => a.id !== "prologue").every((a) => !!a.recompense.folio) && contenu.every((m) => !!q(`branche:${m.key}:maitre`).recompense.folio) && donnes.length === 17 && new Set(donnes).size === 17);
+    const avecFil = { ...CAPACITES_VIDE, fil: true };
+    const { r } = repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), capacites: avecFil, progression: [ligne("acte:prologue"), ligne("acte:acte1"), ligne("branche:fsa:maitre", { titre: "titre:maitre:fsa" })] }), () => 0);
+    const collection = r.etats.find((s) => s.quete.id === "fil:collection:1");
+    check("les pièces de collection comptent les folios gagnés (acte I, Maître de FSA) avec le titre", collection?.ev?.valeur === 3, String(collection?.ev?.valeur));
+  }
+
+  // les exploits de la v3 et le débrief
+  {
+    const trophees = (t: { source: string; palier: number; n: number }[]) => repondre(base({ premier: false, dernierCalcul: new Date("2026-10-14T00:00:00Z"), lecture: { compteurs: {}, mesures: { xp_total: 0, trophees: t }, speciaux: {} } }), () => 0).r;
+    const quatreOr = trophees(["ciblee", "blanc", "trente", "fiche"].map((source) => ({ source, palier: 3, n: 1 })).concat([{ source: "cinq", palier: 1, n: 4 }, { source: "drill", palier: 2, n: 1 }]));
+    check("le grand chelem : un or sur quatre chemins ; la vitrine : un trophée sur six", fait(quatreOr, "exploit:grand-chelem") && fait(quatreOr, "exploit:vitrine"));
+    const troisOr = trophees(["ciblee", "blanc", "trente"].map((source) => ({ source, palier: 4, n: 3 })));
+    check("… trois sources seulement (même en diamant) : ni l'un ni l'autre", !fait(troisOr, "exploit:grand-chelem") && !fait(troisOr, "exploit:vitrine"));
+    const { r: rien } = repondre(base(), () => 0);
+    check("sans trophées lus : les deux exploits hors jeu ; la cadence attend le journal v3", st(rien, "exploit:grand-chelem")?.horsJeu === true && !st(rien, "exploit:rythme"));
+    check("la cadence garde la bannière de la machine volante", q("exploit:rythme").recompense.cosmetique === "banniere:machine-volante" && q("exploit:machine-volante").retiree === true);
+    const debrief = q("contrat:debrief");
+    check("le débrief : quotidien, 80 XP, attend le journal v3 et blanc_debrief", debrief.repetition === "quotidienne" && debrief.recompense.xp === 80 && JSON.stringify(debrief.requiert) === JSON.stringify(["journal3", "debrief"]) && !rien.etats.some((s) => s.quete.id === "contrat:debrief"));
+    const capa = { ...CAPACITES_VIDE, journal: 3 as const, debrief: true };
+    const ouvert = (n: number | undefined) => repondre(base({ capacites: capa, lecture: { compteurs: {}, mesures: { xp_total: 0, ...(n === undefined ? {} : { blancs_a_debriefer: n }) }, speciaux: {} } }), () => 0).r;
+    check("prérequis d'état : un blanc à débriefer l'ouvre ; aucun, ou la mesure inconnue, non", ouverte(ouvert(1), "contrat:debrief") && !ouverte(ouvert(0), "contrat:debrief") && !ouverte(ouvert(undefined), "contrat:debrief"));
+  }
+
+  // la malle et le lendemain (V3 §7.3, §7.5)
+  {
+    const malle = (coches: number | undefined, jourJ: string) => repondre(base({ jourJ, ...(coches === undefined ? {} : { malleCoches: coches }) }), () => 1).r;
+    check("la malle : hors jeu tant qu'elle n'est pas lue ; prête à 5 cases, à J-2", st(malle(undefined, "2026-10-17"), "trame:ep:malle")?.horsJeu === true && fait(malle(5, "2026-10-17"), "trame:ep:malle") && !fait(malle(4, "2026-10-17"), "trame:ep:malle"));
+    check("… fermée à J-10", !ouverte(malle(7, "2026-10-25"), "trame:ep:malle"));
+    check("le lendemain : 0 XP, ouvert une fois le jour J passé, jamais avant", q("trame:ep:lendemain").recompense.xp === 0 && fait(malle(7, "2026-10-14"), "trame:ep:lendemain") && !ouverte(malle(7, "2026-10-17"), "trame:ep:lendemain"));
+    check("ni l'une ni l'autre ne retient l'épilogue (facultatives)", q("trame:ep:malle").optionnelle === true && q("trame:ep:lendemain").optionnelle === true);
   }
 }
 
