@@ -7,7 +7,7 @@
 // les mots de l'écran (lib/voice-codex.ts) : la séance, les phases, Récupérer.
 // Usage, depuis le dépôt : npx tsx --tsconfig tsconfig.json scripts/codex/test-titres-clairs.ts
 
-import { ACTES, CHAINES, COMMANDES, MODELES_CONTRATS, catalogueCodex, contenuDuProgramme, quetesSemaine } from "@/lib/codex/catalogue";
+import { ACTES, CHAINES, COMMANDES, MODELES_CONTRATS, catalogueCodex, contenuDuProgramme, genererBranches, quetesSemaine } from "@/lib/codex/catalogue";
 import { CHAPITRES_FIL, paliersFil } from "@/lib/codex/fil-rouge";
 import { instanceContrat } from "@/lib/codex/moteur";
 import { actesGeneriques } from "@/lib/codex/programmes/generique";
@@ -191,6 +191,15 @@ const inconnue = { id: "trame:g0:premiere", titre: "La première question", fami
 check("une quête inconnue d'ici garde le titre du catalogue", titreClairDe(inconnue) === null && titreClair(inconnue) === "La première question");
 const branche = catalogue.find((q) => q.id === "branche:fsa:maitrise60")!;
 check("une branche d'une matière inconnue garde son titre", titreClair({ ...branche, matiere: "inconnue" }) === branche.titre);
+// un autre programme (clés de matière qualifiées ; genererArbre préfixera les ids) : son contenu donne les noms courts
+const contenuL2 = contenu.map((m) => ({ ...m, key: `cfa-l2:${m.key}` }));
+const branchesL2 = genererBranches(contenuL2, "finance/cfa-l2").filter((q) => !q.retiree);
+const l2Mauvaises = branchesL2.filter((q) => {
+  const x = titreClairDe(q, { contenu: contenuL2 });
+  return !x || x.length > TITRE_MAX || banni(x);
+}).map((q) => q.id);
+check("les branches d'un autre programme : titres clairs avec son contenu", branchesL2.length > 50 && l2Mauvaises.length === 0 && titreClair(branchesL2.find((q) => q.id === "branche:fsa:maitrise60")!, { contenu: contenuL2 }) === "FSA à 60 % de maîtrise", liste(l2Mauvaises));
+check("sans son contenu, une branche d'un autre programme garde son titre", titreClairDe(branchesL2[0]) === null);
 // une ligne de la vue (LigneQuete) n'a pas l'objectif : il se lit dans le catalogue, la cible remplace le seuil
 const ligne = (id: string, extra: Record<string, unknown> = {}) => {
   const q = catalogue.find((x) => x.id === id)!;
