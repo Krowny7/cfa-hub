@@ -370,11 +370,14 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "programmes_menes":
     case "pieces_possedees":
       return { href: "/codex", duree: 5, outil: "codex" };
+    // sans source (ou la source « ciblee ») : une séance mêlée aux poids officiels qui PEUT donner le
+    // palier visé ; le plafond par taille (lib/trophees.ts, palierCiblee) ne donne le diamant qu'à
+    // 60 questions ou plus : 30 suffisent pour l'or, pas pour « Un diamant » ni « 10 diamants »
     case "trophees": {
-      const s = typeof f?.source === "string" ? TROPHEE_VERS[f.source] : undefined;
-      return s ?? { href: lienPractice(ctx, { topic: "all", n: 30, poids: true }), duree: 30, outil: "ciblee" };
+      const s = typeof f?.source === "string" && f.source !== "ciblee" ? TROPHEE_VERS[f.source] : undefined;
+      return s ?? cibleeTrophee(ctx, f?.palier);
     }
-    case "trophees_sources": return { href: lienPractice(ctx, { topic: "all", n: 30, poids: true }), duree: 30, outil: "ciblee" };
+    case "trophees_sources": return cibleeTrophee(ctx, f?.palier);
     // les notions tenues : une séance de la matière (la plus lourde à couvrir sans matière), là où ses notions reviennent
     case "notions_tenues":
     case "notions_tenues_pct": {
@@ -384,6 +387,17 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "malle_faite": return { href: "/codex", duree: 5, outil: "codex" };
     case "blancs_a_debriefer": return { ...BLANCS, duree: 10 };
   }
+}
+
+/**
+ * La séance ciblée mêlée (toutes les matières, aux poids officiels) qui peut
+ * donner un trophée du palier visé : 60 questions pour un diamant (10
+ * matières servies et 60 questions : palierCiblee rend le diamant), 30 sinon
+ * (l'or au plus). Sans practiceV3 : /practice nu.
+ */
+function cibleeTrophee(ctx: ContexteDestination, palier: unknown): Cible {
+  const n = palier === "diamant" ? 60 : 30;
+  return { href: lienPractice(ctx, { topic: "all", n, poids: true }), duree: n, outil: "ciblee" };
 }
 
 /** Où se gagne un trophée de chaque source (copie locale des liens de SOURCES_TROPHEE, lib/trophees.ts, avant la fusion F1). */
