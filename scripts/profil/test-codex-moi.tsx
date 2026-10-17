@@ -125,6 +125,7 @@ console.log("# Leur place dans Moi");
   const cabinet = fs.readFileSync(path.join(RACINE, "components/moi/Cabinet.tsx"), "utf8");
   const page = fs.readFileSync(path.join(RACINE, "app/moi/page.tsx"), "utf8");
   check("la tuile Codex vient en tête des tuiles de Moi", cabinet.includes("<TuileCodex") && cabinet.indexOf("<TuileCodex") < cabinet.indexOf("CAB.tuileObjectif") && cabinet.indexOf("<TuileCodex") < cabinet.indexOf("CAB.tuileMarquees"));
+  check("sur téléphone, la carte du cabinet passe après les tuiles (la tuile Codex reste haut) ; à sa place sur ordinateur", /<CarteCabinet[^>]*className="order-last lg:order-none /.test(cabinet));
   check("le bloc Codex suit la Salle des trophées", cabinet.indexOf("<BlocCodex") > cabinet.indexOf("<SalleDesTrophees"));
   check("Moi lit le Codex sur Stats seulement, sans le moteur", page.includes('tab === "stats" ? lireCodexMoi(') && !page.includes("lireCodex(") && !page.includes("lib/codex/serveur"));
 }

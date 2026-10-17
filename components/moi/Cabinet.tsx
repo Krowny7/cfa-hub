@@ -178,7 +178,8 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
         </figure>
         <div className={"grid lg:grid-cols-12 " + GAP}>
           <Heros d={d} lu={lu} className="lg:col-span-8 lg:row-start-1" />
-          <CarteCabinet d={d} lu={lu} className="lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch" />
+          {/* téléphone et tablette : la carte du cabinet après les tuiles, pour que la tuile Codex reste haut (l'image est déjà en bandeau) */}
+          <CarteCabinet d={d} lu={lu} className="order-last lg:order-none lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch" />
           <div className={"grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 xl:grid-cols-3 " + GAP}>
             {/* le Codex : en tête des tuiles, sur toute la largeur tant qu'elles ne tiennent pas à trois */}
             {d.codex && <TuileCodex c={d.codex} className="md:col-span-2 xl:col-span-1" />}
