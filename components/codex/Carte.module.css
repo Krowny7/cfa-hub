@@ -183,7 +183,7 @@
   color: var(--c-encre);
 }
 .medaillonMot .mono {
-  font-size: max(15px, calc(11px * var(--zinv, 1)));
+  font-size: max(15px, calc(12px * var(--zinv, 1)));
   color: var(--c-sepia);
 }
 .blanche {

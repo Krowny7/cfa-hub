@@ -209,7 +209,9 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
     }
 
     ici ??= { x: CX, y: yActe(Math.max(0, tronc.findIndex((a) => a.courant))) };
-    return { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite: visite && posVisite ? { a: visite, ...posVisite } : null };
+    // la prochaine est un outil de la visite : son sceau porte le « ! », pas d'anneau sur la carte
+    const iciVisite = !!visite && !!p && visite.quetes.some((q) => q.id === p.id) && !noeuds.some((nd) => nd.ici);
+    return { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite: visite && posVisite ? { a: visite, ...posVisite } : null, iciVisite };
   }, [vue, montre, onQuete, onActe]);
 }
 
@@ -334,7 +336,7 @@ const LARGE = "(min-width: 1180px)";
 export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cible }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onActe: SurActe; colonne: React.ReactNode; allume?: string[]; cible?: string | null }) {
   // la colonne part repliée tant qu'elle n'a rien à montrer (nouveau compte)
   const colonneUtile = montre("codex:contrats") || montre("codex:longcours");
-  const { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite } = useGeometrie(vue, montre, onQuete, onActe);
+  const { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite, iciVisite } = useGeometrie(vue, montre, onQuete, onActe);
   // les filtres, la recherche, la branche ouverte (ses notions), les prérequis survolés, la quête trouvée
   const [filtre, setFiltre] = useState<FiltreCarte>("tout");
   const [texte, setTexte] = useState("");
@@ -618,10 +620,14 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
               {traits}
             </svg>
             {etiquettes}
-            <Ici x={ici.x} y={ici.y} r={60} />
-            <span className={c.iciMot} data-px="24" style={{ left: ici.x + 44, top: ici.y + 26 }} aria-hidden>
-              ta prochaine
-            </span>
+            {!iciVisite && (
+              <>
+                <Ici x={ici.x} y={ici.y} r={60} />
+                <span className={c.iciMot} data-px="24" style={{ left: ici.x + 44, top: ici.y + 26 }} aria-hidden>
+                  ta prochaine
+                </span>
+              </>
+            )}
             {medaillon && <Medaillon m={medaillon} onOuvrir={() => setGalerie(true)} onFocus={() => voir(medaillon.x, medaillon.y)} />}
             {noeuds.map((nd) => {
               const q = nd.q;
