@@ -84,6 +84,12 @@ const tous: Replique[] = Object.values(REPLIQUES).flat();
 const textes = tous.map((r) => r.texte);
 check("Aucune réplique en double", new Set(textes).size === textes.length);
 check("Poses connues", tous.every((r) => ["base", "fier", "moqueur", "decu", "etonne"].includes(r.pose)));
+// après un échec, Léonard ne prend jamais l'air moqueur (§11.1 : la pointe vise lui-même, Florence ou la finance)
+check(
+  "Aucune réplique d'échec en pose moqueur",
+  EVENEMENTS_ECHEC.every((e) => REPLIQUES[e].every((r) => r.pose !== "moqueur")),
+  J(EVENEMENTS_ECHEC.flatMap((e) => REPLIQUES[e].filter((r) => r.pose === "moqueur").map((r) => r.texte))),
+);
 
 // ── le plafond des apparitions ──────────────────────────────────────────
 const T0 = Date.parse("2026-10-17T08:00:00Z"); // 10 h à Paris

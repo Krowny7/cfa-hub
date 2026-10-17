@@ -61,8 +61,8 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   "session-moyenne": [
     { texte: "{score}. Pas un chef-d’œuvre, pas un gribouillis : une esquisse. Tes ratures du jour diront où repasser le trait.", pose: "base", action: RATURES },
     { texte: "{pct}. Le CFA veut « bien », tu tiens « pas mal ». L’écart tient souvent en deux ou trois notions, et l’Atelier les connaît.", pose: "base", action: ATELIER },
-    { texte: "Rendement correct, volatilité élevée : ton ratio de Sharpe réclame une fiche. Une seule suffit pour ce soir.", pose: "moqueur", action: FICHES },
-    { texte: "Mi-figue, mi-raisin, comme mes comptes chez les Médicis. Tes ratures sont au carnet ; demain, elles auront séché.", pose: "moqueur", action: RATURES },
+    { texte: "Rendement correct, volatilité élevée : ton ratio de Sharpe réclame une fiche. Une seule suffit pour ce soir.", pose: "etonne", action: FICHES },
+    { texte: "Mi-figue, mi-raisin, comme mes comptes chez les Médicis. Tes ratures sont au carnet ; demain, elles auront séché.", pose: "base", action: RATURES },
     { texte: "{score}. Rebond du chat mort ou vraie reprise ? Cinq questions de plus pour trancher.", pose: "etonne", action: ECLAIR },
   ],
 
@@ -146,14 +146,14 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
     { texte: "Même la Joconde s’est fait voler en 1911. Elle est revenue. Un autre duel, quand tu veux.", pose: "base", action: DUEL },
     { texte: "Ton ELO a pris un petit drawdown. Rien de grave : les questions manquées sont au carnet, à relire avant le prochain.", pose: "decu", action: RATURES },
     { texte: "Défaite. Ma machine volante aussi, au début. Et à la fin. Une fiche sur la notion qui a coincé ?", pose: "decu", action: FICHES },
-    { texte: "Revanche ? Je dis ça, je dis rien. Relis d’abord celles qui t’ont piégé.", pose: "moqueur", action: RATURES },
+    { texte: "Revanche ? Je dis ça, je dis rien. Relis d’abord celles qui t’ont piégé.", pose: "base", action: RATURES },
   ],
 
   "duel-ecrase": [
     { texte: "Il t’a pris de vitesse. Le duel dit surtout où creuser : les questions manquées t’attendent au carnet.", pose: "base", action: RATURES },
     { texte: "Un écart pareil, les Médicis appelaient ça une mauvaise saison. Ils rouvraient la banque le lundi. Dix minutes à l’Atelier ?", pose: "base", action: ATELIER },
-    { texte: "Il a vendu ton ELO à découvert, et il a encaissé. On rachète bas : une fiche sur la notion qui a coincé.", pose: "moqueur", action: FICHES },
-    { texte: "Fatality. Le genre de coup qu’on ne prend qu’une fois : la notion en cause, en fiche, ce soir.", pose: "moqueur", action: FICHES },
+    { texte: "Il a vendu ton ELO à découvert, et il a encaissé. On rachète bas : une fiche sur la notion qui a coincé.", pose: "decu", action: FICHES },
+    { texte: "Fatality. Le bronze de mon cheval des Sforza est parti en canons : j’en ai pris une pareille. La notion en cause, en fiche, ce soir.", pose: "decu", action: FICHES },
     { texte: "On n’en parle plus. Ou plutôt si : dans ton carnet, question par question.", pose: "base", action: RATURES },
   ],
 
