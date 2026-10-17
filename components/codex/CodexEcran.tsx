@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { devoileLite } from "@/lib/codex/devoile-lite";
@@ -11,15 +11,18 @@ import { Sceau } from "@/components/codex/Sceau";
 import { Cap } from "@/components/codex/Cap";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { DetailQuete } from "@/components/codex/DetailQuete";
+import { SeanceDuJour } from "@/components/codex/SeanceDuJour";
+import { enteteSeance, gainsSeance } from "@/lib/codex/seance";
 import { ArbreCodex, Chemin, CheminCodex, Colonne, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
 import { Feuille } from "@/components/ui/Feuille";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import e from "./Encre.module.css";
 import c from "./CodexEcran.module.css";
 
-// L'écran du Codex (/codex) : l'arbre complet. Un en-tête court (le cap : la
-// préparation, la règle des matières et les trois fuites, V3 §4.6 ; la
-// prochaine quête en une ligne), puis la carte : l'arbre
+// L'écran du Codex (/codex) : l'arbre complet. En tête, la séance du jour
+// (components/codex/SeanceDuJour, mode plein, V3 §6.4) ; puis un en-tête
+// court (le cap : la préparation, la règle des matières et les trois fuites,
+// V3 §4.6 ; la prochaine quête en une ligne), puis la carte : l'arbre
 // qu'on parcourt sur ordinateur, un chemin par acte ou par branche sur
 // téléphone (components/codex/CarteCodex). Le quotidien (les quatre quêtes du
 // moment) est derrière le sceau « ! » de la barre du haut. Un clic sur un
@@ -83,21 +86,20 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
   const pLien = pDest?.href ?? p?.ligne.lien;
   const pDuree = pDest?.duree ?? p?.ligne.duree;
   const jourJ = vue.joursAvant !== null ? CODEX.jourJ(vue.joursAvant) : null;
+  const seance = vue.seance?.blocs.length ? vue.seance : null;
+  const gains = useMemo(() => (seance ? gainsSeance(seance.avant, vue) : []), [seance, vue]);
 
   return (
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
+      {/* le titre en petit : la séance du jour, puis le cap (préparation, fuites), tiennent la tête de page */}
+      <h1 className="t-micro m-0">
+        {CODEX.titre} · {vue.phaseNom}
+        {!vue.cap && jourJ ? ` · ${jourJ}` : ""}
+      </h1>
+      {seance && <SeanceDuJour seance={seance} entete={enteteSeance(vue.joursAvant, vue.phaseNom)} gains={gains} mode="plein" demo={demo} />}
       <header className={`${c.tete} rl-in`}>
         <div className="min-w-0">
-          {/* le titre en petit : le cap (préparation, fuites) tient la tête de page */}
-          <h1 className="t-micro m-0">
-            {CODEX.titre} · {vue.phaseNom}
-            {!vue.cap && jourJ ? ` · ${jourJ}` : ""}
-          </h1>
-          {vue.cap && (
-            <div className="mt-2">
-              <Cap cap={vue.cap} />
-            </div>
-          )}
+          {vue.cap && <Cap cap={vue.cap} />}
           {d !== "tout" && (
             <p className={c.stats}>
               <button type="button" className={e.lienDiscret} onClick={toutMontrer} disabled={occupe} title={CODEX.toutMontrerAide}>

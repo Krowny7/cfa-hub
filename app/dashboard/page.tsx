@@ -16,6 +16,7 @@ import { demandesDe } from "@/lib/profil/donnees";
 import { nouveautesAmis } from "@/lib/profil/nouveau";
 import { DashboardView } from "@/components/DashboardView";
 import { CodexAccueil } from "@/components/codex/CodexAccueil";
+import { SeanceAccueil } from "@/components/codex/SeanceAccueil";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import {
   daysBetweenKeys,
@@ -192,6 +193,12 @@ export default async function Dashboard() {
       codex={
         <Suspense fallback={null}>
           <CodexAccueil supabase={supabase} user={user} />
+        </Suspense>
+      }
+      // la séance du jour, sous les 30 et les 5 du jour ; le même calcul du Codex que la cérémonie (calculUnique)
+      seance={
+        <Suspense fallback={null}>
+          <SeanceAccueil supabase={supabase} user={user} />
         </Suspense>
       }
     />

@@ -627,8 +627,12 @@ function TuilesCalmes({ d, trenteCalme }: { d: AccueilData; trenteCalme: TodayDa
 /* L'ensemble                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Les 30 du jour en héros, les 5 et les traits à droite, puis reprendre et le duel, le rang, les liens. */
-export function Rendezvous({ d, codex }: { d: AccueilData; codex?: React.ReactNode }) {
+/**
+ * Les 30 du jour en héros, les 5 et les traits à droite, puis la séance du
+ * jour (`seance`, pleine largeur, SOUS eux : ils gardent leur place), reprendre
+ * et le duel, le rang, les liens.
+ */
+export function Rendezvous({ d, codex, seance }: { d: AccueilData; codex?: React.ReactNode; seance?: React.ReactNode }) {
   const daily = d.daily;
   const cinq = cinqVisible(d.cinq) ? d.cinq : null;
   const trente = daily && defiEnTete(daily) ? daily : null;
@@ -657,6 +661,7 @@ export function Rendezvous({ d, codex }: { d: AccueilData; codex?: React.ReactNo
           </div>
         )}
       </div>
+      {seance}
       {d.vainqueur && <VainqueurDuJour v={d.vainqueur} />}
       <TuilesCalmes d={d} trenteCalme={colonne ? null : trenteCalme} />
       <BandeRang d={d} />

@@ -1,0 +1,160 @@
+/* La séance du jour (V3 §6.3 à §6.5) : une carte d'encre, des blocs
+   numérotés, le temps qu'on se donne, un seul geste principal. Téléphone :
+   blocs empilés, cibles de 44 px ; mouvement réduit : rien ne bouge. */
+
+.budget {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.budget button {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font: 600 13px/1 var(--font-mono, ui-monospace), monospace;
+  cursor: pointer;
+}
+.budget button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: none;
+}
+.budget button:disabled {
+  cursor: default;
+}
+
+.blocs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bloc {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.bloc:first-child {
+  border-top: 0;
+}
+.rang {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--line-2, var(--line));
+  font: 600 12.5px/1 var(--font-mono, ui-monospace), monospace;
+  color: var(--ink-2);
+}
+.fait .rang {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: none;
+}
+.encours .rang {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+  color: var(--ink);
+}
+.corps {
+  min-width: 0;
+  flex: 1;
+}
+.titre {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+a.titre:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.fait .titre {
+  color: var(--ink-2);
+}
+.duree {
+  font: 500 12.5px/1 var(--font-mono, ui-monospace), monospace;
+  color: var(--ink-3, var(--ink-2));
+  white-space: nowrap;
+}
+.raison {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.compact .raison {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.autre {
+  flex-shrink: 0;
+  min-height: 32px;
+  border: 0;
+  background: none;
+  padding: 4px 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+.autre:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.gains {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.gains li {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.gains .jauge {
+  max-width: 260px;
+}
+
+@media (max-width: 767px) {
+  .budget button,
+  .autre {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .bloc {
+    flex-wrap: wrap;
+  }
+  .autre {
+    margin-left: 36px;
+    padding: 0 2px;
+  }
+}
