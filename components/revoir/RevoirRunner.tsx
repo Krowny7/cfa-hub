@@ -253,16 +253,18 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 truncate text-[14px] font-bold md:text-[16px]">
-              <RotateCcw size={15} aria-hidden className="shrink-0" /> {REVOIR.enTete(Math.min(current + 1, Math.max(n, 1)), Math.max(n, 1))}
+              <RotateCcw size={15} aria-hidden className="shrink-0" /> {n > 0 ? REVOIR.enTete(Math.min(current + 1, n), n) : REVOIR.nom}
             </div>
           </div>
-          <div className="min-w-0 text-right">
-            <div className="font-mono text-[14px] font-semibold tabular-nums md:text-[16px]">
-              {justes}
-              <span className="font-normal text-muted">/{n}</span>
+          {n > 0 && (
+            <div className="min-w-0 text-right">
+              <div className="font-mono text-[14px] font-semibold tabular-nums md:text-[16px]">
+                {justes}
+                <span className="font-normal text-muted">/{n}</span>
+              </div>
+              <div className="t-micro truncate">{REVOIR.justes}</div>
             </div>
-            <div className="t-micro truncate">{REVOIR.justes}</div>
-          </div>
+          )}
         </div>
         {/* jusqu'à 25 coches : sur leur propre ligne, comme les 30 du jour */}
         {n > 0 && <Ticks className="mt-3" marks={marks} label="Ta séance" height={26} />}
