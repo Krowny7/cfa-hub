@@ -6,11 +6,11 @@
 
 import { contenuDuProgramme } from "@/lib/codex/catalogue";
 import { maitriseDuCodex } from "@/lib/codex/cap";
-import { contexteDestination, evaluerObjectifs, planifier, type Entree, type MesuresSql } from "@/lib/codex/moteur";
+import { contexteDestination, evaluer, evaluerObjectifs, planifier, type Entree, type MesuresSql } from "@/lib/codex/moteur";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { notionsDeMatiere } from "@/lib/notions";
 import {
-  MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage,
+  MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, faitsDeSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage,
   type EntreeSeance, type GenreBloc, type RevoirCodex, type VueSeance,
 } from "@/lib/codex/seance";
 import { PANNEAU_VIDE, panneauAGarder, panneauDuCache, seancePanneau } from "@/lib/codex/panneau";
@@ -202,6 +202,22 @@ console.log("\n# garder ou recomposer, relire la base, la pastille");
   const p = seancePanneau(vs);
   check("la pastille : « Séance 1/3 », lancée, le bloc suivant et son lien", !!p && p.lancee && p.faits === 1 && p.total === 3 && p.suivant?.titre === s.blocs[1].titre && p.suivant.href === s.blocs[1].destination.href, J(p));
   check("la pastille d'une séance finie : plus de bloc suivant ; pas de séance : rien", seancePanneau({ ...vs, finie: true, finieLe: "2026-10-17T09:00:00Z" })?.suivant === null && seancePanneau(null) === null);
+}
+
+console.log("\n# les blocs faits et le bonus du trio");
+{
+  const s = composerSeance(entree({ phase: "consolidation", budget: 60 }));
+  const g = { blocs: s.blocs, faits: ["cinq"] as GenreBloc[], lanceeLe: "2026-10-17T07:30:00Z" };
+  const ev = (...f: boolean[]) => f.map((fait) => ({ fait }));
+  const lus = faitsDeSeance(g, ev(true, false, false, true, false));
+  check("les sondes (5 et 30 rendus), puis un bloc par objectif ; un fait gardé ne se perd pas", lus.cinqFait && !lus.trenteFait && J(lus.faits) === J(["cinq", genres(s)[1]]) && !lus.tenue, J(lus));
+  check("tous les blocs faits d'une séance lancée : tenue", faitsDeSeance(g, ev(false, false, true, true, true)).tenue);
+  check("… pas lancée : pas tenue (pas de bonus)", !faitsDeSeance({ ...g, lanceeLe: null }, ev(false, false, true, true, true)).tenue && !faitsDeSeance(null, ev(true, true)).tenue);
+  const sansContrats = evaluer(base({ seance: { objectifs: [], lanceeLe: g.lanceeLe, tenue: true } }), {});
+  check("la séance lancée et tenue verse le bonus du trio (même id, même XP), sans trois contrats sur trois", sansContrats.trioFait && sansContrats.lot.some((i) => i.quete === `contrat:trio:${jour}` && i.xp === 50), J(sansContrats.lot.filter((i) => i.famille === "contrat")));
+  const deja = evaluer(base({ seance: { objectifs: [], lanceeLe: g.lanceeLe, tenue: true }, progression: [{ quete_id: `contrat:trio:${jour}`, periode: jour, etat: "recompensee", progression: 3, cible: 3, ouverte_le: now.toISOString(), terminee_le: now.toISOString(), recompensee_le: now.toISOString(), retro: false, xp: 50, cosmetique: null, titre: null, vu: true }] }), {});
+  check("une fois par jour : déjà versé, rien de plus", !deja.lot.some((i) => i.quete === `contrat:trio:${jour}`));
+  check("pas tenue : pas de bonus", !evaluer(base({ seance: { objectifs: [], lanceeLe: g.lanceeLe, tenue: false } }), {}).lot.some((i) => i.quete === `contrat:trio:${jour}`));
 }
 
 console.log("\n# l'instantané du panneau (codex_vue_cache)");

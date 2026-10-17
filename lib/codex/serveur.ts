@@ -27,7 +27,7 @@ import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-
 import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
   LECTURE_VIDE, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
-  type ContratTire, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur, type Resultat,
+  type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import { panneauAGarder, panneauDe, panneauDuCache, type Panneau } from "@/lib/codex/panneau";
@@ -35,7 +35,7 @@ import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesures
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
 import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { maitriseDuCodex } from "@/lib/codex/cap";
-import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, lireSeanceGardee, revoirCodexDe, versStockage, type GenreBloc, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
+import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -239,16 +239,11 @@ function seanceEnMemoire(userId: string, jour: string): SeanceGardee | null {
 async function seanceDuJour(
   a: SupabaseClient,
   user: Joueur,
-  o: { entree: Entree; resultat: Resultat; vue: VueCodex; compteurs: Record<string, ResultatCompteur>; actif: DefinitionProgramme; reglage: ReglageJour; lue: Awaited<ReturnType<typeof lireSeance>>; precedente: SeanceGardee | null },
+  o: { entree: Entree; resultat: Resultat; vue: VueCodex; lus: ReturnType<typeof faitsDeSeance>; actif: DefinitionProgramme; lue: Awaited<ReturnType<typeof lireSeance>>; precedente: SeanceGardee | null },
 ): Promise<VueSeance | null> {
   const { entree, resultat, vue, precedente } = o;
   const jour = entree.jour;
-  const evs = evaluerObjectifs(entree, o.compteurs, entree.seance?.objectifs ?? []);
-  const [cinqFait, trenteFait] = [!!evs[0]?.fait, !!evs[1]?.fait];
-  const faits: GenreBloc[] = [...(precedente?.faits ?? [])];
-  precedente?.blocs.forEach((b, i) => {
-    if (evs[SONDES_SEANCE.length + i]?.fait && !faits.includes(b.genre)) faits.push(b.genre);
-  });
+  const { cinqFait, trenteFait, faits } = o.lus;
   const budget = budgetDuJour(entree);
   const ecartes = ecartesSeance(entree.ecartees ?? []);
   const recomposer = aRecomposer(precedente, budget, ecartes, faits);
@@ -273,7 +268,10 @@ async function seanceDuJour(
   const gardee = !o.lue.absente && o.lue.lue;
   if (gardee) {
     try {
-      if (recomposer) await a.rpc("codex_seance_poser", { p_user: user.id, p_jour: jour, p_budget: budget, p_blocs: versStockage(blocs), p_ecartes: ecartes });
+      if (recomposer) {
+        const { error } = await a.rpc("codex_seance_poser", { p_user: user.id, p_jour: jour, p_budget: budget, p_blocs: versStockage(blocs), p_ecartes: ecartes });
+        if (error) await consigner(a, user.id, "", `codex_seance_poser : ${error.message}`);
+      }
       const nouveaux = faits.filter((g) => !(precedente?.faits ?? []).includes(g));
       if (nouveaux.length) await a.rpc("codex_seance_marquer", { p_user: user.id, p_jour: jour, p_quoi: "fait", p_val: nouveaux });
     } catch {
@@ -429,6 +427,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     entree.capacites = v3.capacites;
     entree.lecture = { ...lecture, mesures: avecMesuresV3(lecture.mesures, v3) };
     const compteurs = indexerLecture(demandes, entree.lecture);
+    // les blocs faits de la séance gardée, lus sur les mêmes compteurs ; lancée et tenue, elle verse le bonus du trio
+    const seanceLus = faitsDeSeance(seancePrecedente, evaluerObjectifs(entree, compteurs, entree.seance.objectifs));
+    entree.seance = { ...entree.seance, tenue: seanceLus.tenue };
     let resultat = evaluer(entree, compteurs);
 
     // l'écriture : récompenses uniques, ouvertures, progression
@@ -482,7 +483,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
     const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id });
-    const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, compteurs, actif, reglage, lue: seanceLue, precedente: seancePrecedente });
+    const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
     const vue: VueCodex = { ...construite, seance };
     MEMO.set(user.id, { at: Date.now(), vue });
     DERNIER.set(user.id, vue);

@@ -385,6 +385,20 @@ export const SONDES_SEANCE: readonly Objectif[] = [
 ];
 
 /**
+ * Ce que disent les compteurs, évalués sur Entree.seance (les sondes, puis un
+ * objectif par bloc gardé) : les 5 et les 30 du jour rendus, les blocs faits
+ * (jamais un fait retiré), et si la séance lancée est tenue (le bonus du trio).
+ */
+export function faitsDeSeance(g: Pick<SeanceGardee, "blocs" | "faits" | "lanceeLe"> | null, evs: readonly { fait: boolean }[]): { cinqFait: boolean; trenteFait: boolean; faits: GenreBloc[]; tenue: boolean } {
+  const faits: GenreBloc[] = [...(g?.faits ?? [])];
+  g?.blocs.forEach((b, i) => {
+    if (evs[SONDES_SEANCE.length + i]?.fait && !faits.includes(b.genre)) faits.push(b.genre);
+  });
+  const tenue = !!g?.lanceeLe && g.blocs.length > 0 && g.blocs.every((b) => faits.includes(b.genre));
+  return { cinqFait: !!evs[0]?.fait, trenteFait: !!evs[1]?.fait, faits, tenue };
+}
+
+/**
  * La séance gardée tient-elle encore ? Non s'il n'y en a pas, si le budget du
  * jour a changé, ou si un de ses blocs à faire vient d'être écarté (« Une
  * autre idée ? ») : on recompose, en gardant les blocs faits.

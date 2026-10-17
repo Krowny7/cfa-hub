@@ -155,9 +155,11 @@ export type Entree = {
   /**
    * La séance du jour déjà proposée (codex_seances, V3 §6) : les objectifs de
    * ses blocs, demandés à codex_lire avec le reste (evaluerObjectifs) ;
-   * `lanceeLe` : le départ de la fenêtre « depuisLancement » (null : le jour).
+   * `lanceeLe` : le départ de la fenêtre « depuisLancement » (null : le jour) ;
+   * `tenue` : lancée, tous ses blocs faits : le bonus du trio est versé, comme
+   * pour trois contrats sur trois (V3 §6.4).
    */
-  seance?: { objectifs: Objectif[]; lanceeLe: string | null };
+  seance?: { objectifs: Objectif[]; lanceeLe: string | null; tenue?: boolean };
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
@@ -1105,7 +1107,8 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   // le trio du jour : les contrats tirés, un par emplacement (le débrief, quotidien lui aussi, n'en est pas)
   const duTrio = new Set(instances.filter((i) => i.emplacement).map((i) => clePeriode(i.quete.id, i.periode)));
   const dujour = tri.filter((s) => duTrio.has(clePeriode(s.quete.id, s.periode)));
-  const trioFait = dujour.length === EMPLACEMENTS.length && dujour.every((s) => s.fait);
+  // ou la séance du jour lancée et tenue (V3 §6.4) : même id, même XP, une fois par jour
+  const trioFait = (dujour.length === EMPLACEMENTS.length && dujour.every((s) => s.fait)) || e.seance?.tenue === true;
   if (trioFait && !lignes.has(clePeriode(`contrat:trio:${e.jour}`, e.jour))) {
     lot.push({ quete: `contrat:trio:${e.jour}`, periode: e.jour, famille: "contrat", etat: "terminee", cible: 3, retro: false, xp: XP.contratTrio, plafond });
   }
