@@ -248,7 +248,7 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
 
   return (
     <div className="grid gap-5 md:gap-6">
-      {/* En-tête : « À revoir · 7/15 », ses coches, les justes */}
+      {/* En-tête : « À revoir · 7/15 », les justes, puis les coches */}
       <header className="sticky top-[72px] z-30 rounded-[18px] border border-line bg-surface/90 px-4 py-3 shadow-[var(--shadow-1)] backdrop-blur-md md:px-6 md:py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -256,7 +256,6 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
               <RotateCcw size={15} aria-hidden className="shrink-0" /> {REVOIR.enTete(Math.min(current + 1, Math.max(n, 1)), Math.max(n, 1))}
             </div>
           </div>
-          {n > 0 && <Ticks marks={marks} label="Ta séance" height={26} className="min-w-0" />}
           <div className="min-w-0 text-right">
             <div className="font-mono text-[14px] font-semibold tabular-nums md:text-[16px]">
               {justes}
@@ -265,6 +264,8 @@ export function RevoirRunner({ taille, file, destination }: { taille: number; fi
             <div className="t-micro truncate">{REVOIR.justes}</div>
           </div>
         </div>
+        {/* jusqu'à 25 coches : sur leur propre ligne, comme les 30 du jour */}
+        {n > 0 && <Ticks className="mt-3" marks={marks} label="Ta séance" height={26} />}
       </header>
 
       {phase === "loading" || !q ? (
