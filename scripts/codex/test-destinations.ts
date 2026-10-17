@@ -205,6 +205,23 @@ console.log("\n# les raisons");
   check("aucune raison sur plusieurs lignes ni « Quête principale »", destinations.every((x) => x.raison === null || (!x.raison.includes("\n") && !x.raison.includes("Quête principale"))));
 }
 
+console.log("\n# les ajouts du catalogue taillé (V3 §8.5) : chacun mène quelque part");
+{
+  const d = (id: string, ctx = enRoute) => destinationDe(quete(id), {}, ctx);
+  const nouvelles = catalogueCodex().filter((q) => q.nouvelle === "v3" && !q.miroir);
+  const sans = nouvelles.filter((q) => defaut(d(q.id)) || defaut(d(q.id, neuf)));
+  check(`${nouvelles.length} quêtes nouvelles de la v3 : toutes lançables, compte neuf comme joueur en route`, nouvelles.length > 30 && sans.length === 0, sans.map((q) => `${q.id} (${defaut(d(q.id))})`).slice(0, 4).join(" | "));
+  check("la carte de FSA : une séance de FSA, raison sur la matière", d("branche:fsa:carte")?.href === "/practice?topic=fsa" && !!d("branche:fsa:carte")?.raison?.startsWith("FSA pèse"), `${d("branche:fsa:carte")?.href} · ${d("branche:fsa:carte")?.raison}`);
+  check("… avec practiceV3 : 20 questions", d("branche:fsa:carte", avec(enRoute, { practiceV3: true }))?.href === "/practice?topic=fsa&n=20");
+  check("signatures : Ethics une séance d'Ethics, Quant les calculs, FSA sa fiche", d("branche:ethics:signature")?.href === "/practice?topic=ethics" && d("branche:quant:signature")?.href === "/calculs" && d("branche:fsa:signature")?.href?.startsWith("/fiches/financial-statement-analysis") === true,
+    [d("branche:ethics:signature")?.href, d("branche:quant:signature")?.href, d("branche:fsa:signature")?.href].join(" "));
+  const mj = d("longcours:main-juste:1");
+  check("la main juste : ce qui coince (une séance, ou l'Atelier sur une notion faible)", !!mj && (mj.href.startsWith("/practice?topic=") || mj.href.startsWith("/atelier?notion=")), mj?.href);
+  check("la carte tenue : une séance de la matière la plus lourde à couvrir", d("longcours:carte-tenue:1")?.href.startsWith("/practice?topic=") === true, d("longcours:carte-tenue:1")?.href);
+  check("la malle : le Codex ; le débrief : les examens blancs (10 min)", d("trame:ep:malle")?.href === "/codex" && d("contrat:debrief")?.href === "/mock-exams" && d("contrat:debrief")?.duree === 10);
+  check("la raison de la malle : les jours qui restent", raisonDe(quete("trame:ep:malle"), avec(enRoute, { joursAvant: 2 })) === "J-2 · Le jour J, rien ne doit manquer que tu aurais pu prévoir la veille.", raisonDe(quete("trame:ep:malle"), avec(enRoute, { joursAvant: 2 })) ?? "");
+}
+
 console.log("\n# recommander ne propose que des quêtes lançables");
 {
   const q = (id: string, objectif: Quete["objectif"], ordre: number): Quete => ({ id, famille: "trame", programme: PROGRAMME, titre: id, consigne: id, objectif, prerequis: [], recompense: { xp: 10 }, repetition: "unique", visibilite: "visible", ordre });
