@@ -281,6 +281,12 @@ export type Prerequis =
   | { k: "apresExamen" }
   /** un état mesuré atteint (mesure ≥ seuil) ; une mesure inconnue ne l'ouvre pas (V3 §7.6) */
   | { k: "etat"; mesure: TypeMesure; seuil: number }
+  /**
+   * un objectif déjà rempli, évalué comme celui d'une quête (ses compteurs sont
+   * demandés à codex_lire avec les autres) ; inconnu : ne l'ouvre pas. Pour une
+   * quête dont l'état qui l'ouvre retombe une fois le travail fait (le débrief).
+   */
+  | { k: "objectif"; objectif: Objectif }
   | { k: "unDe"; prerequis: Prerequis[] };
 
 export type Repetition = "unique" | "quotidienne" | "hebdomadaire";

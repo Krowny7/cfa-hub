@@ -1813,9 +1813,12 @@ BEGIN
     RAISE EXCEPTION 'Not a missed question';
   END IF;
 
+  -- changer la cause garde la date du premier classement : le débrief du Codex (événement
+  -- blanc_debriefe, migration_codex_v3.sql) est daté du moment où la copie franchit 80 %, et un
+  -- reclassement ne doit pas le redater (sinon « Le débrief » repaierait chaque jour)
   INSERT INTO blanc_debrief (user_id, source, ref, question_id, cause, note_le)
   VALUES (v_uid, p_source, p_ref, p_question, p_cause, now())
-  ON CONFLICT (user_id, source, ref, question_id) DO UPDATE SET cause = excluded.cause, note_le = excluded.note_le;
+  ON CONFLICT (user_id, source, ref, question_id) DO UPDATE SET cause = excluded.cause;
 
   SELECT count(*)::int INTO v_classees
   FROM blanc_debrief d

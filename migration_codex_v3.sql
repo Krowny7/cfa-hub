@@ -1086,16 +1086,26 @@ BEGIN
   END IF;
 
   -- examens blancs débriefés (blanc_debrief, migration_v3_profil.sql §5) : une ligne par copie, datée
-  -- du dernier classement ; erreurs d'après _blanc_erreurs (au moins les classées), part en %
+  -- du premier instant où la part classée atteint 80 % (la k-ième erreur classée, dans l'ordre des
+  -- premiers classements : blanc_debrief_noter ne touche plus note_le quand on change une cause), de
+  -- sorte que reclasser une erreur ne redate rien ; sous 80 %, du dernier classement. Erreurs d'après
+  -- _blanc_erreurs (au moins les classées), part en %
   IF to_regclass('public.blanc_debrief') IS NOT NULL AND to_regprocedure('public._blanc_erreurs(uuid,text,uuid)') IS NOT NULL THEN
     v_parts := array_append(v_parts, $q$
-      SELECT 'blanc_debriefe'::text, d.quand,
+      SELECT 'blanc_debriefe'::text, coalesce(d.franchi, d.dernier),
              jsonb_build_object('source', d.source, 'ref', d.ref::text, 'erreurs', d.erreurs, 'classees', d.classees,
                                 'part', round(100.0 * d.classees / d.erreurs)::int)
       FROM (
-        SELECT b.source, b.ref, b.quand, b.classees, greatest(b.classees, (SELECT count(*)::int FROM _blanc_erreurs($1, b.source, b.ref))) AS erreurs
-        FROM (SELECT g.source, g.ref, max(g.note_le) AS quand, count(*)::int AS classees
-              FROM blanc_debrief g WHERE g.user_id = $1 GROUP BY g.source, g.ref) b
+        SELECT e.source, e.ref, e.dernier, e.classees, e.erreurs,
+               (SELECT min(x.note_le)
+                  FROM (SELECT g2.note_le, row_number() OVER (ORDER BY g2.note_le, g2.question_id) AS k
+                          FROM blanc_debrief g2 WHERE g2.user_id = $1 AND g2.source = e.source AND g2.ref = e.ref) x
+                 WHERE round(100.0 * x.k / e.erreurs) >= 80) AS franchi
+        FROM (
+          SELECT b.source, b.ref, b.dernier, b.classees, greatest(b.classees, (SELECT count(*)::int FROM _blanc_erreurs($1, b.source, b.ref))) AS erreurs
+          FROM (SELECT g.source, g.ref, max(g.note_le) AS dernier, count(*)::int AS classees
+                FROM blanc_debrief g WHERE g.user_id = $1 GROUP BY g.source, g.ref) b
+        ) e
       ) d
     $q$);
   END IF;

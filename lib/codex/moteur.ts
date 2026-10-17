@@ -1010,7 +1010,9 @@ export function planifier(e: Entree): Demande[] {
   const lignes = new Map(e.progression.map((l) => [clePeriode(l.quete_id, l.periode), l]));
   for (const { quete, periode, params } of instances) {
     const l = lignes.get(clePeriode(quete.id, periode));
-    evalQuete(quete, { ...contexteBlanc(e, contenu, collecte, catalogue), periode, ouverteLe: dateOu(l?.ouverte_le), params });
+    const c = { ...contexteBlanc(e, contenu, collecte, catalogue), periode, ouverteLe: dateOu(l?.ouverte_le), params };
+    evalQuete(quete, c);
+    for (const o of objectifsDesPrerequis(quete.prerequis)) evalObjectif(o, c);
   }
   // les blocs de la séance du jour : leurs compteurs partent dans le même appel
   for (const o of e.seance?.objectifs ?? []) evalObjectif(o, contexteBlanc(e, contenu, collecte));
@@ -1066,9 +1068,16 @@ function prerequisOk(p: Prerequis, c: Contexte, actesClos: Set<string>): boolean
       const ev = mesureObjectif({ k: "mesure", mesure: p.mesure, seuil: p.seuil }, c);
       return !ev.inconnu && ev.fait;
     }
+    case "objectif": {
+      const ev = evalObjectif(p.objectif, c);
+      return !ev.inconnu && ev.fait;
+    }
     case "unDe": return p.prerequis.some((x) => prerequisOk(x, c, actesClos));
   }
 }
+
+/** Les objectifs des prérequis d'une quête (k « objectif », dans « unDe » compris) : planifier demande leurs compteurs. */
+const objectifsDesPrerequis = (ps: Prerequis[]): Objectif[] => ps.flatMap((p) => (p.k === "objectif" ? [p.objectif] : p.k === "unDe" ? objectifsDesPrerequis(p.prerequis) : []));
 
 /**
  * Passe 2 : la cascade. `compteurs` : codex_lire indexé (indexerLecture).

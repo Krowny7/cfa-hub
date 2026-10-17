@@ -796,6 +796,11 @@ console.log("\n# v3 §4.6, §4.7 : la maîtrise unique, le cap, la mémoire (A4b
   const sans = avecMesures({ blancs_a_debriefer: 0 }, { capacites: capa });
   const vSans = construireVue(sans, repondre(sans, () => 0).r, null, { devoile: null });
   check("aucun blanc à débriefer : rien à montrer", vSans.debrief === null);
+  // le parcours naturel : blanc rendu puis débriefé d'une traite entre deux calculs (blancs_a_debriefer déjà
+  // retombé à 0) : la quête s'ouvre sur le débrief du jour et paie
+  const traite = repondre(sans, (d) => (d.evenement === "blanc_debriefe" && (d.filtre?.part as { min?: number } | undefined)?.min === 80 ? 1 : 0)).r;
+  check("débrief complété avant le premier calcul du jour : la quête paie ses 80 XP", traite.lot.some((i) => i.quete === "contrat:debrief" && i.periode === jour && i.etat === "terminee" && i.xp === 80), traite.lot.filter((i) => i.quete.includes("debrief")).map((i) => JSON.stringify(i)).join(" "));
+  check("… et rien sans débrief du jour ni blanc qui attend", !repondre(sans, () => 0).r.lot.some((i) => i.quete === "contrat:debrief" && i.etat === "terminee"));
 }
 
 console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)");

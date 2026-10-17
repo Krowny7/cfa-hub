@@ -848,7 +848,9 @@ export const QUETE_DEBRIEF: Quete = quete({
   consigne: "Classe au moins 80 % des erreurs de ton dernier examen blanc : savoir, lecture, calcul, temps ou chance.",
   pourquoi: "Savoir pourquoi on s'est trompé, c'est la moitié de la correction.",
   objectif: compte("blanc_debriefe", 1, { part: { min: 80 } }, { fenetre: "jour" }),
-  prerequis: [{ k: "etat", mesure: "blancs_a_debriefer", seuil: 1 }],
+  // un blanc l'attend, ou il vient d'être débriefé aujourd'hui : blancs_a_debriefer retombe à 0 dès 80 %
+  // classées, et un débrief fait d'une traite entre deux calculs doit payer quand même
+  prerequis: [{ k: "unDe", prerequis: [{ k: "etat", mesure: "blancs_a_debriefer", seuil: 1 }, { k: "objectif", objectif: compte("blanc_debriefe", 1, { part: { min: 80 } }, { fenetre: "jour" }) }] }],
   recompense: { xp: 80 },
   requiert: ["journal3", "debrief"],
   duree: 10,
