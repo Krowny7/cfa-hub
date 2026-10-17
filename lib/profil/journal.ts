@@ -3,7 +3,7 @@ import { getRatingHistory, type RatingEvent, type RatingSource } from "@/lib/rat
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { joursAvant, jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
-import { SEUIL_JOUR, calculerSerie } from "@/lib/serie-encre";
+import { SEUIL_JOUR, calculerSerie, joursDePause } from "@/lib/serie-encre";
 import { displayName } from "@/components/classement/format";
 import { SCEAUX, type SceauGarde } from "@/lib/profil/sceaux";
 import type { ProfilStats } from "@/lib/profil/catalogue";
@@ -165,9 +165,9 @@ function paliers(historique: RatingEvent[], debut: string, mastery: number | nul
   return out.reverse(); // le plus récent d'abord
 }
 
-/** Les séries d'encre (10 questions, joker) qui atteignent 7, 30 ou 100 jours, dans la fenêtre. */
-function seriesEncreNotables(jours: Map<string, number>, aujourdhui: string, debut: string): EvenementJournal[] {
-  return calculerSerie(jours, aujourdhui)
+/** Les séries d'encre (10 questions, joker, jours de repos et de pause neutres) qui atteignent 7, 30 ou 100 jours, dans la fenêtre. */
+function seriesEncreNotables(jours: Map<string, number>, aujourdhui: string, debut: string, pauses: ReadonlySet<string> = new Set()): EvenementJournal[] {
+  return calculerSerie(jours, aujourdhui, undefined, pauses)
     .atteints.filter((a) => SERIES_NOTABLES.includes(a.n) && a.jour >= debut)
     .map((a): EvenementJournal => ({ type: "serie", cle: `serie-${a.jour}`, jour: a.jour, jours: a.n }));
 }
@@ -231,10 +231,12 @@ export async function journalDe({
   const debut = decaleJour(aujourdhui, -(JOURS_JOURNAL - 1));
   // la veille du premier jour, à midi : une marge large, le filtre par jour de Paris fait le reste
   const debutIso = new Date(Date.parse(decaleJour(debut, -1) + "T12:00:00Z")).toISOString();
-  const [lus, avant, gagnes] = await Promise.all([
+  const [lus, avant, gagnes, pauses] = await Promise.all([
     getRatingHistory(sb, id, 1000),
     joursAvant(id, aujourdhui).catch(() => [] as { day: string; n: number }[]),
     victoires(admin ?? sb, id, debutIso),
+    // les jours de repos et de pause (migration_codex_v3.sql §8) : neutres pour la série, comme en base
+    stats.serieEncre ? joursDePause(admin ?? sb, id, aujourdhui) : Promise.resolve(new Set<string>()),
   ]);
   const historique = enChaine(lus);
 
@@ -260,7 +262,7 @@ export async function journalDe({
       })
       .filter((e) => e.jour >= debut),
     ...paliers(historique, debut, mastery),
-    ...(stats.serieEncre ? seriesEncreNotables(jours, aujourdhui, debut) : seriesNotables(actifs, debut)),
+    ...(stats.serieEncre ? seriesEncreNotables(jours, aujourdhui, debut, pauses) : seriesNotables(actifs, debut)),
     ...sceauxGagnes(gardes ?? [], debut),
   ];
   // du plus récent au plus ancien ; le même jour : les paliers, les sceaux, les victoires, la série (chacun déjà du plus récent au plus ancien)

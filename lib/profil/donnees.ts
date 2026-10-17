@@ -5,7 +5,7 @@ import { chargerTraitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { joursAvant, jourParis } from "@/lib/objectif";
 import { decaleJour } from "@/lib/objectif-calc";
 import { levelInfoFromXp } from "@/lib/leveling";
-import { calculerSerie } from "@/lib/serie-encre";
+import { calculerSerie, joursDePause } from "@/lib/serie-encre";
 import { DEFAULT_ELO, TIERS, TOP_TIER, rankFor } from "@/lib/ranks";
 import { getLeaderboardRank } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
@@ -76,7 +76,7 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
   const sb = admin() ?? fallback;
   const aujourdhui = jourParis();
   try {
-    const [jours, jour, duelsJoues, duelsGagnes, defisRendus, calculsJustes, examensBlancs, profil, rating, maxElo, place, topics, serieLue] = await Promise.all([
+    const [jours, jour, duelsJoues, duelsGagnes, defisRendus, calculsJustes, examensBlancs, profil, rating, maxElo, place, topics, serieLue, pauses] = await Promise.all([
       joursAvant(userId, aujourdhui).catch(() => [] as { day: string; n: number }[]),
       chargerTraitsDuJour(sb, userId, 3000).catch(() => null),
       compte(() => sb.from("duels").select("id", { count: "exact", head: true }).or(`challenger_id.eq.${userId},opponent_id.eq.${userId}`).eq("status", "finished")),
@@ -90,15 +90,17 @@ export const statsProfil = cache(async (userId: string, fallback: SupabaseClient
       getLeaderboardRank(sb, userId).catch(() => null),
       getTopicMastery(sb, userId).catch(() => []),
       serieEncreLue(sb, userId),
+      joursDePause(sb, userId, aujourdhui),
     ]);
     // UNE seule série : celle d'encre (10 questions par jour, un joker par semaine) quand la
-    // migration est collée, recalculée ici d'après les questions par jour ; sinon l'ancien calcul
+    // migration est collée, recalculée ici d'après les questions par jour et les jours de repos
+    // ou de pause (neutres, comme _serie_avancer, migration_codex_v3.sql §8) ; sinon l'ancien calcul
     const parJour = new Map(jours.filter((j) => j.n > 0).map((j) => [j.day, j.n] as [string, number]));
     if ((jour ?? 0) > 0) parJour.set(aujourdhui, jour as number);
     let meilleure: number;
     let enCours: number;
     if (serieLue) {
-      const c = calculerSerie(parJour, aujourdhui);
+      const c = calculerSerie(parJour, aujourdhui, undefined, pauses);
       meilleure = Math.max(c.meilleure, serieLue.meilleure);
       enCours = c.serieAffichee;
     } else {

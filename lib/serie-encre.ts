@@ -200,10 +200,14 @@ export type Pauses = {
   aVenir: { jour: string; genre: GenrePause }[];
 };
 
-/** Les jours de repos et de pause du joueur connecté ; null sans la migration (ni repos ni pause) ou en cas d'erreur. */
-export async function lirePauses(supabase: SupabaseClient, aujourdhui: string): Promise<Pauses | null> {
+/**
+ * Les jours de repos et de pause d'un joueur ; null sans la migration (ni
+ * repos ni pause) ou en cas d'erreur. Toujours filtrée par joueur : avec le
+ * client admin, la policy ne le ferait pas.
+ */
+export async function lirePauses(supabase: SupabaseClient, userId: string, aujourdhui: string): Promise<Pauses | null> {
   try {
-    const { data, error } = await supabase.from("serie_pauses").select("jour,genre").order("jour").limit(1000);
+    const { data, error } = await supabase.from("serie_pauses").select("jour,genre").eq("user_id", userId).order("jour").limit(1000);
     if (error || !Array.isArray(data)) return null;
     const jours = new Set<string>();
     const aVenir: Pauses["aVenir"] = [];
@@ -217,6 +221,11 @@ export async function lirePauses(supabase: SupabaseClient, aujourdhui: string): 
   } catch {
     return null;
   }
+}
+
+/** Ses jours de repos et de pause, pour calculerSerie : vide sans la migration ou en cas d'erreur (la série d'avant). */
+export async function joursDePause(supabase: SupabaseClient, userId: string, aujourdhui: string): Promise<Set<string>> {
+  return (await lirePauses(supabase, userId, aujourdhui))?.jours ?? new Set();
 }
 
 /** L'XP réelle d'un gain de base (arrondi 0,5 vers le haut, comme la base). */

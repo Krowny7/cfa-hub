@@ -36,7 +36,9 @@ import { quetesSemaine, xpSemaineEncre } from "@/lib/codex/catalogue";
 import { JALONS_CFA_L1, commandesPossibles, dateApproximative, enReprise, estSprint, facteurBande, libelleEcart, lireSemaine, lireVerdict, matiereBanquier, planDe, recalageVerdict, sessionDe } from "@/lib/codex/plan";
 import { matiereCoince } from "@/lib/codex/seance";
 import { maitriseDuCodex } from "@/lib/codex/cap";
-import { calculerSerie } from "@/lib/serie-encre";
+import { calculerSerie, joursDePause, lirePauses } from "@/lib/serie-encre";
+import { decaleJour } from "@/lib/objectif-calc";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
 import { destinationDe } from "@/lib/codex/destinations";
 
@@ -45,6 +47,8 @@ const check = (label: string, cond: boolean, extra = "") => {
   console.log((cond ? "ok   " : "KO   ") + label + (extra ? "  " + extra : ""));
   if (!cond) ko++;
 };
+/** les vérifications asynchrones, attendues avant le compte final */
+const attentes: Promise<unknown>[] = [];
 
 const contenu = contenuDuProgramme();
 const jour = "2026-10-15";
@@ -917,6 +921,26 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("série : deux jours de pause d'affilée ne cassent rien (4)", calculerSerie(js, "2026-09-07", 10, pauses).serie === 4);
   check("série : sans les pauses, deux manqués d'affilée la cassent (1)", calculerSerie(js, "2026-09-07").serie === 1);
   check("série : un jour de pause à 10 questions compte quand même", calculerSerie(new Map([["2026-09-01", 10], ["2026-09-02", 10]]), "2026-09-03", 10, new Set(["2026-09-02"])).serie === 2);
+  // les cas de sim-rythme.mjs (_serie_avancer de migration_codex_v3.sql §8), mêmes jours, même nombre
+  // que le profil (statsProfil) et le Journal, qui passent maintenant les pauses à calculerSerie
+  const jd = (debut: string, n: number) => Array.from({ length: n }, (_, i) => decaleJour(debut, i));
+  const dix = (jours: string[]) => new Map(jours.map((j) => [j, 10] as [string, number]));
+  const repos = calculerSerie(dix(["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-05", "2026-09-06"]), "2026-09-07", undefined, new Set(["2026-09-04"]));
+  check("série = SQL : un repos au milieu, ni +1 ni cassure (5)", repos.serie === 5);
+  check("série = SQL : une pause de 5 jours, 4 + 1 = 5 ; sans elle, 1", calculerSerie(dix([...jd("2026-09-01", 4), "2026-09-10"]), "2026-09-11", undefined, new Set(jd("2026-09-05", 5))).serie === 5 && calculerSerie(dix([...jd("2026-09-01", 4), "2026-09-10"]), "2026-09-11").serie === 1);
+  check("série = SQL : un manqué juste après une pause, couvert par le joker (3)", calculerSerie(dix(["2026-09-01", "2026-09-02", "2026-09-05"]), "2026-09-06", undefined, new Set(["2026-09-03"])).serie === 3);
+  check("série = SQL : manqué, pause, manqué : la série casse (0)", calculerSerie(dix(["2026-09-01", "2026-09-02"]), "2026-09-06", undefined, new Set(["2026-09-04"])).serie === 0);
+  // lirePauses : toujours filtrée par joueur (le client admin ne passe pas par la policy)
+  const filtres: string[] = [];
+  const faux = { from: () => { const q = { select: () => q, eq: (c: string, v: string) => (filtres.push(`${c}=${v}`), q), order: () => q, limit: async () => ({ data: [{ jour: "2026-09-04", genre: "repos" }, { jour: "2026-10-20", genre: "pause" }, { jour: "2026-10-21", genre: "autre" }], error: null }) }; return q; } } as unknown as SupabaseClient;
+  const panne = { from: () => { throw new Error("relation serie_pauses does not exist"); } } as unknown as SupabaseClient;
+  attentes.push(
+    (async () => {
+      const lp = await lirePauses(faux, "u-1", "2026-10-17");
+      check("lirePauses : filtrée par joueur, jours passés gardés pour la série, à venir dans l'ordre", JSON.stringify(filtres) === JSON.stringify(["user_id=u-1"]) && lp?.jours.size === 2 && lp.aVenir.length === 1 && lp.aVenir[0].genre === "pause");
+      check("joursDePause : vide sans la migration", (await joursDePause(panne, "u-1", "2026-10-17")).size === 0);
+    })(),
+  );
 }
 
 console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");
@@ -932,5 +956,13 @@ console.log("\n# codex_matieres (migration_codex.sql) reflète SUBJECTS");
   }
 }
 
-console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
-process.exit(ko ? 1 : 0);
+void Promise.all(attentes).then(
+  () => {
+    console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
+    process.exit(ko ? 1 : 0);
+  },
+  (e) => {
+    console.error(e);
+    process.exit(1);
+  },
+);
