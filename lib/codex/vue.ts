@@ -5,13 +5,16 @@
 // long cours, les exploits. L'écran ne calcule rien : il lit ceci.
 
 import { ACTES, CHAINES, COSMETIQUES_CODEX, DECOUVERTE, ETAPES, PHASES, QUETE_DEBRIEF, catalogueCodex, titresMaitres, contenuDuProgramme, type ContenuMatiere } from "@/lib/codex/catalogue";
-import { capDe, maitriseDuCodex, type VueCap } from "@/lib/codex/cap";
+import { capDe, joursDepuis, maitriseDuCodex, type VueCap } from "@/lib/codex/cap";
+import { etatNotion, type EtatNotion } from "@/lib/codex/carte";
 import { destinationCoince, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { nomEnTete, programmeActif, suiteDe } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
-import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import { actesDuJoueur, affichage, apresExamenDe, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { VueSeance } from "@/lib/codex/seance";
 import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
+import { notionsDeMatiere } from "@/lib/notions";
+import { CODEX, romain } from "@/lib/voice-codex";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -63,6 +66,13 @@ export type LigneQuete = {
   palier?: number;
   matiere?: string;
   etape?: EtapeBranche;
+  /**
+   * verrouillée : ce qui manque, une ligne par prérequis pas rempli
+   * (« Séance ciblée : 7 matières sur 8, il manque Quant »), et les sceaux de
+   * la carte à allumer (ids de quêtes, « acte:… »), V3 §10.1
+   */
+  manque?: string[];
+  allume?: string[];
 };
 
 export type VueActe = {
@@ -98,6 +108,10 @@ export type VueBranche = {
   total: number;
   /** « Maître de … » obtenu */
   maitre: boolean;
+  /** la pastille de la carte (V3 §10.1) : la maîtrise de la matière, et les jours depuis sa dernière réponse (null : inconnus) */
+  maitrise: Pick<VueCap["matieres"][number], "pct" | "statut" | "zone" | "n"> & { jours: number | null };
+  /** ses notions, en petites feuilles : non vue (contour), vue (trait), tenue (pleine) */
+  notions: { id: string; court: string; etat: EtatNotion }[];
 };
 
 export type VueChaine = { chaine: Chaine; paliers: LigneQuete[]; courant: LigneQuete | null; suivant: LigneQuete | null; faits: number };
@@ -293,6 +307,69 @@ function aRattraperDe(quetes: Quete[], r: Pick<Resultat, "etats">, contenu: Cont
   return contenu.length - manquent.length >= p.n ? manquent.map((m) => m.key) : [];
 }
 
+/**
+ * Ce qui manque à une quête verrouillée (V3 §10.1) : une ligne par prérequis
+ * pas rempli, et les sceaux de la carte à allumer. Lu dans l'évaluation (les
+ * quêtes faites, les actes clos), avec les mêmes règles que le moteur : une
+ * quête hors jeu ne bloque rien, une quête souple ne bloque qu'après
+ * l'examen, une branche sans l'étape compte pour faite.
+ */
+export function manqueDe(
+  q: Pick<Quete, "prerequis">,
+  r: Pick<Resultat, "etats" | "actesClos">,
+  contenu: ContenuMatiere[],
+  o: { apres: boolean; joursAvant: number | null },
+): { manque: string[]; allume: string[] } {
+  const manque: string[] = [];
+  const allume: string[] = [];
+  const etatDe = (id: string) => r.etats.find((s) => s.quete.id === id && s.periode === "");
+  for (const p of q.prerequis) {
+    switch (p.k) {
+      case "quete": {
+        const s = etatDe(p.id);
+        if (!s || s.fait || s.horsJeu || (p.souple && !o.apres)) break;
+        allume.push(p.id);
+        manque.push(`D'abord : « ${s.quete.titre} »`);
+        break;
+      }
+      case "acte": {
+        if (r.actesClos.includes(p.id)) break;
+        const a = ACTES.find((x) => x.id === p.id);
+        if (!a) break;
+        allume.push(`acte:${p.id}`);
+        manque.push(`Clore ${a.numero === 0 ? "le prologue" : a.numero >= 99 ? "l'épilogue" : `l'acte ${romain(a.numero)}`}`);
+        break;
+      }
+      case "branches":
+      case "toutesBranches": {
+        const pas = contenu.flatMap((m) => {
+          const s = r.etats.find((x) => x.quete.famille === "branche" && x.quete.matiere === m.key && x.quete.etape === p.etape && x.periode === "");
+          return s && !s.fait && !s.horsJeu ? [{ m, s }] : [];
+        });
+        const n = p.k === "branches" ? p.n : contenu.length;
+        const faites = contenu.length - pas.length;
+        if (faites >= n) break;
+        for (const x of pas) allume.push(x.s.quete.id);
+        const liste = pas.map((x) => x.m.court).join(", ");
+        const tete = `${CODEX.branches.etapes[p.etape]} : ${faites} matière${faites > 1 ? "s" : ""} sur ${n}`;
+        manque.push(pas.length === n - faites ? `${tete}, il manque ${liste}` : `${tete}, encore ${n - faites} parmi ${liste}`);
+        break;
+      }
+      case "joursAvantExamen":
+        if (o.joursAvant === null) manque.push(`S'ouvre à J-${p.max}, une fois ta date d'examen posée`);
+        else if (o.joursAvant > p.max) manque.push(`S'ouvre à J-${p.max}`);
+        break;
+      case "apresExamen":
+        if (!o.apres) manque.push("S'ouvre après l'examen");
+        break;
+      // un état mesuré, ou l'une de plusieurs conditions : la consigne le dit déjà
+      default:
+        break;
+    }
+  }
+  return { manque, allume };
+}
+
 export function construireVue(
   e: Entree,
   r: Resultat,
@@ -303,10 +380,16 @@ export function construireVue(
   const ctx = contexteDestination(e, r);
   // un miroir dit avec quelle quête il compte (V3 §8.2)
   const titres = new Map(r.etats.map((s) => [s.quete.id, s.quete.titre]));
+  // une quête verrouillée dit ce qui lui manque et allume ses prérequis (V3 §10.1)
+  const apres = apresExamenDe(e);
+  const joursAvant = joursAvantExamen(e.jour, e.jourJ);
   const ligne = (s: EtatQuete): LigneQuete => {
     const l = ligneDe(s, { ctx, params: parametresDe(e, s) });
     const titre = s.quete.miroir ? titres.get(s.quete.miroir) : undefined;
-    return s.quete.miroir && titre ? { ...l, compteeAvec: { id: s.quete.miroir, titre } } : l;
+    const avec = s.quete.miroir && titre ? { ...l, compteeAvec: { id: s.quete.miroir, titre } } : l;
+    if (avec.etat !== "verrouillee" || avec.affichage === "cache" || avec.affichage === "indice") return avec;
+    const m = manqueDe(s.quete, r, contenu, { apres, joursAvant });
+    return m.manque.length ? { ...avec, manque: m.manque, ...(m.allume.length ? { allume: m.allume } : {}) } : avec;
   };
   // hors jeu et jamais commencée (mesure inconnue, V3 §8) : rien à montrer ; commencée, elle reste, gelée
   const lignes = r.etats.filter((s) => !s.masquee).map((s) => ({ s, l: ligne(s) }));
@@ -354,7 +437,21 @@ export function construireVue(
       .sort((p, q) => ETAPES.indexOf(p.s.quete.etape!) - ETAPES.indexOf(q.s.quete.etape!))
       .map((x) => x.l);
     const comptees = etapes.filter((x) => !x.optionnelle && !x.gelee);
-    return { contenu: m, etapes, faites: comptees.filter((x) => x.etat === "terminee").length, total: comptees.length, maitre: etapes.some((x) => x.etape === "maitre" && x.etat === "terminee") };
+    // la pastille (V3 §10.1) : la maîtrise, l'encre qui pâlit, les notions en feuilles
+    const mm = maitrise.matieres.find((x) => x.cle === m.key);
+    const notions = notionsDeMatiere(m.key).map((n) => {
+      const t = M.notions_tenues?.[n.id];
+      return { id: n.id, court: n.court, etat: etatNotion(t?.n ?? M.notions?.[n.id] ?? 0, t ? t.j5 : null) };
+    });
+    return {
+      contenu: m,
+      etapes,
+      faites: comptees.filter((x) => x.etat === "terminee").length,
+      total: comptees.length,
+      maitre: etapes.some((x) => x.etape === "maitre" && x.etat === "terminee"),
+      maitrise: { pct: mm?.pct ?? null, statut: mm?.statut ?? "non_mesuree", zone: mm?.zone ?? null, n: mm?.n ?? 0, jours: joursDepuis(mm?.derniere ?? null, e.jour) },
+      notions,
+    };
   });
 
   const longCours: VueChaine[] = CHAINES.map((c) => {

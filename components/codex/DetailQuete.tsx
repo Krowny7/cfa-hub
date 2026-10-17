@@ -106,6 +106,19 @@ export function DetailQuete({
                 </>
               )}
             </div>
+            {/* verrouillée : ce qui manque, prérequis par prérequis (V3 §10.1) ; la carte les allume */}
+            {l.manque && l.manque.length > 0 && (
+              <div className={s.detailBloc}>
+                <h3>Ce qui manque</h3>
+                <ul className="m-0 list-none p-0">
+                  {l.manque.map((m) => (
+                    <li key={m} className="text-[14.5px] leading-6">
+                      {m}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {(raison || l.pourquoi) && (
               <div className={s.detailBloc}>
                 <h3>{CODEX.detail.pourquoi}</h3>
