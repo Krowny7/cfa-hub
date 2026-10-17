@@ -87,7 +87,23 @@
 --    e. _codex_journal_v3() : le marqueur du journal v3 (capacité
 --       « journal » à 3).
 --
--- Ordre de collage : migration_v3_profil.sql (s'il existe), puis ce fichier.
+-- 6. La séance du jour (V3 §6.2) :
+--    a. codex_seances : une séance par joueur et par jour (budget, blocs,
+--       genres écartés, blocs faits ; la trace : proposée, vue, lancée,
+--       finie ; l'instantané au lancement). Le joueur lit les siennes ;
+--       aucune écriture directe. Sa présence ouvre la capacité « seances ».
+--    b. codex_vue_cache : le dernier panneau et la dernière séance calculés
+--       (RLS sans politique : le serveur seul).
+--    c. codex_seance_poser(uuid, date, smallint, jsonb, text[]) : crée ou
+--       recompose la séance du jour ; un bloc fait n'est jamais retiré.
+--    d. codex_seance_marquer(uuid, date, text, jsonb) : vue, lancée, bloc
+--       fait, finie, instantané ; chaque date n'est posée qu'une fois.
+--    e. codex_vue_cache_poser(uuid, date, jsonb, jsonb) et
+--       codex_vue_cache_marquer(uuid) : l'instantané et son « à recalculer ».
+--    Toutes : clé service seulement. Sans cette section, la séance est
+--    recomposée à chaque calcul et rien n'est gardé.
+--
+-- Ordre de collage :migration_v3_profil.sql (s'il existe), puis ce fichier.
 -- Chacun marche seul : une dépendance croisée est testée à l'exécution.
 
 DO $$
@@ -1362,3 +1378,191 @@ REVOKE ALL ON FUNCTION codex_lire(uuid, jsonb, date) FROM PUBLIC, anon, authenti
 REVOKE ALL ON FUNCTION _codex_journal_v3() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_journal(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_lire(uuid, jsonb, date) TO service_role;
+
+
+-- ── 6. La séance du jour (V3 §6.2) ───────────────────────────────────
+
+-- 6a. codex_seances : une séance par joueur et par jour de Paris. Les blocs
+-- sont ceux que le site a composés (lib/codex/seance.ts) ; « faits » : les
+-- genres des blocs faits, d'après leurs objectifs (jamais retirés).
+CREATE TABLE IF NOT EXISTS codex_seances (
+  user_id     uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  jour        date        NOT NULL,
+  programme   text        NOT NULL DEFAULT 'finance/cfa-l1',
+  budget_min  smallint    NOT NULL CHECK (budget_min IN (15, 30, 60, 90)),
+  -- [{genre, titre, duree, raison, href, outil, matiere?, n?, contrats?}]
+  blocs       jsonb       NOT NULL,
+  ecartes     text[]      NOT NULL DEFAULT '{}',
+  -- l'instantané au lancement : {maitrise: {cle: pct}, revoir, quetes: {id: fraction}} (V3 §6.5)
+  avant       jsonb,
+  proposee_le timestamptz NOT NULL DEFAULT now(),
+  vue_le      timestamptz,
+  lancee_le   timestamptz,
+  faits       text[]      NOT NULL DEFAULT '{}',
+  finie_le    timestamptz,
+  PRIMARY KEY (user_id, jour)
+);
+ALTER TABLE codex_seances ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS codex_seances_select_own ON codex_seances;
+CREATE POLICY codex_seances_select_own ON codex_seances FOR SELECT TO authenticated USING (user_id = auth.uid());
+-- aucune politique d'écriture : codex_seance_poser et codex_seance_marquer seulement
+
+-- 6b. codex_vue_cache : le dernier panneau et la dernière séance calculés
+-- (l'accueil et la barre du haut les relisent s'ils ont moins de 10 min et
+-- ne sont pas marqués). Aucune politique : le serveur seul, par la clé service.
+CREATE TABLE IF NOT EXISTS codex_vue_cache (
+  user_id       uuid        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  jour          date        NOT NULL,
+  panneau       jsonb,
+  seance        jsonb,
+  calcule_le    timestamptz NOT NULL DEFAULT now(),
+  a_recalculer  boolean     NOT NULL DEFAULT false
+);
+ALTER TABLE codex_vue_cache ENABLE ROW LEVEL SECURITY;
+
+-- 6c. _codex_seance_json : une ligne de codex_seances telle que le site la lit.
+CREATE OR REPLACE FUNCTION _codex_seance_json(s codex_seances)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT jsonb_build_object(
+    'jour', s.jour, 'programme', s.programme, 'budget_min', s.budget_min, 'blocs', s.blocs, 'ecartes', to_jsonb(s.ecartes),
+    'avant', s.avant, 'proposee_le', s.proposee_le, 'vue_le', s.vue_le, 'lancee_le', s.lancee_le, 'faits', to_jsonb(s.faits), 'finie_le', s.finie_le)
+$$;
+
+-- 6d. codex_seance_poser(uuid, date, smallint, jsonb, text[]) : crée la séance
+-- du jour, ou la recompose (budget changé, « Une autre idée ? », « Encore un
+-- bloc ? »). Les blocs faits de la séance d'avant que la nouvelle n'a plus
+-- sont gardés en tête : un bloc fait n'est jamais retiré. Une séance qui
+-- regagne un bloc à faire n'est plus finie. Rend la ligne (jsonb).
+CREATE OR REPLACE FUNCTION codex_seance_poser(p_user uuid, p_jour date, p_budget smallint, p_blocs jsonb, p_ecartes text[])
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_genres CONSTANT text[] := ARRAY['cinq', 'trente', 'retouches', 'coince', 'nouveau', 'epreuve'];
+  v_avant  codex_seances;
+  v_gardes jsonb := '[]'::jsonb;
+  v_ligne  codex_seances;
+BEGIN
+  IF p_user IS NULL OR p_jour IS NULL THEN
+    RAISE EXCEPTION 'joueur ou jour manquant';
+  END IF;
+  IF p_budget IS NULL OR p_budget NOT IN (15, 30, 60, 90) THEN
+    RAISE EXCEPTION 'budget invalide : %', p_budget;
+  END IF;
+  IF p_blocs IS NULL OR jsonb_typeof(p_blocs) <> 'array' OR jsonb_array_length(p_blocs) > 6 OR length(p_blocs::text) > 8000
+     OR EXISTS (SELECT 1 FROM jsonb_array_elements(p_blocs) b
+                WHERE jsonb_typeof(b) <> 'object'
+                   OR NOT coalesce(b ->> 'genre' = ANY (v_genres), false)
+                   OR coalesce(b ->> 'href', '') !~ '^/[^/]'
+                   OR jsonb_typeof(b -> 'duree') IS DISTINCT FROM 'number')
+     OR (SELECT count(DISTINCT b ->> 'genre') FROM jsonb_array_elements(p_blocs) b) <> jsonb_array_length(p_blocs) THEN
+    RAISE EXCEPTION 'blocs invalides';
+  END IF;
+  IF cardinality(coalesce(p_ecartes, '{}')) > 6 OR NOT (coalesce(p_ecartes, '{}') <@ v_genres) THEN
+    RAISE EXCEPTION 'genres écartés invalides';
+  END IF;
+
+  SELECT * INTO v_avant FROM codex_seances WHERE user_id = p_user AND jour = p_jour FOR UPDATE;
+  IF FOUND THEN
+    SELECT coalesce(jsonb_agg(b ORDER BY i), '[]'::jsonb) INTO v_gardes
+    FROM jsonb_array_elements(v_avant.blocs) WITH ORDINALITY AS t(b, i)
+    WHERE b ->> 'genre' = ANY (v_avant.faits)
+      AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(p_blocs) n WHERE n ->> 'genre' = t.b ->> 'genre');
+  END IF;
+
+  INSERT INTO codex_seances AS s (user_id, jour, budget_min, blocs, ecartes)
+  VALUES (p_user, p_jour, p_budget, v_gardes || p_blocs, coalesce(p_ecartes, '{}'))
+  ON CONFLICT (user_id, jour) DO UPDATE SET
+    budget_min  = EXCLUDED.budget_min,
+    blocs       = EXCLUDED.blocs,
+    ecartes     = EXCLUDED.ecartes,
+    proposee_le = CASE WHEN s.blocs IS DISTINCT FROM EXCLUDED.blocs THEN now() ELSE s.proposee_le END,
+    -- un bloc à faire de plus : la séance n'est plus finie
+    finie_le    = CASE WHEN EXISTS (SELECT 1 FROM jsonb_array_elements(EXCLUDED.blocs) b WHERE NOT coalesce(b ->> 'genre' = ANY (s.faits), false)) THEN NULL ELSE s.finie_le END
+  RETURNING * INTO v_ligne;
+  RETURN _codex_seance_json(v_ligne);
+END $$;
+
+-- 6e. codex_seance_marquer(uuid, date, text, jsonb) : la trace de la séance.
+--   « vue »    : première fois affichée (vue_le, une fois) ;
+--   « lancee » : « Commencer » (lancee_le, une fois) ;
+--   « fait »   : p_val = un genre ou une liste de genres, ajoutés aux faits
+--                s'ils sont dans la séance ; tous faits → finie_le ;
+--   « finie »  : « J'arrête là » (finie_le, une fois) ;
+--   « avant »  : l'instantané au lancement (un objet, une fois).
+-- Sans séance ce jour-là : NULL, rien n'est écrit.
+CREATE OR REPLACE FUNCTION codex_seance_marquer(p_user uuid, p_jour date, p_quoi text, p_val jsonb DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_ligne codex_seances;
+  v_faits text[];
+BEGIN
+  IF p_quoi IS NULL OR p_quoi NOT IN ('vue', 'lancee', 'fait', 'finie', 'avant') THEN
+    RAISE EXCEPTION 'marque inconnue : %', p_quoi;
+  END IF;
+  SELECT * INTO v_ligne FROM codex_seances WHERE user_id = p_user AND jour = p_jour FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+  IF p_quoi = 'vue' THEN
+    UPDATE codex_seances SET vue_le = coalesce(vue_le, now()) WHERE user_id = p_user AND jour = p_jour RETURNING * INTO v_ligne;
+  ELSIF p_quoi = 'lancee' THEN
+    UPDATE codex_seances SET lancee_le = coalesce(lancee_le, now()) WHERE user_id = p_user AND jour = p_jour RETURNING * INTO v_ligne;
+  ELSIF p_quoi = 'finie' THEN
+    UPDATE codex_seances SET finie_le = coalesce(finie_le, now()) WHERE user_id = p_user AND jour = p_jour RETURNING * INTO v_ligne;
+  ELSIF p_quoi = 'avant' THEN
+    IF p_val IS NULL OR jsonb_typeof(p_val) <> 'object' OR length(p_val::text) > 8000 THEN
+      RAISE EXCEPTION 'instantané invalide';
+    END IF;
+    UPDATE codex_seances SET avant = coalesce(avant, p_val) WHERE user_id = p_user AND jour = p_jour RETURNING * INTO v_ligne;
+  ELSE
+    IF p_val IS NULL OR jsonb_typeof(p_val) NOT IN ('string', 'array') THEN
+      RAISE EXCEPTION 'genres invalides';
+    END IF;
+    SELECT ARRAY(
+      SELECT DISTINCT t.g FROM (
+        SELECT unnest(v_ligne.faits) AS g
+        UNION SELECT p_val #>> '{}' WHERE jsonb_typeof(p_val) = 'string'
+        UNION SELECT x FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(p_val) = 'array' THEN p_val ELSE '[]'::jsonb END) x
+      ) t
+      WHERE EXISTS (SELECT 1 FROM jsonb_array_elements(v_ligne.blocs) b WHERE b ->> 'genre' = t.g)
+      ORDER BY t.g
+    ) INTO v_faits;
+    UPDATE codex_seances SET
+      faits    = v_faits,
+      finie_le = CASE WHEN NOT EXISTS (SELECT 1 FROM jsonb_array_elements(blocs) b WHERE NOT coalesce(b ->> 'genre' = ANY (v_faits), false)) THEN coalesce(finie_le, now()) ELSE finie_le END
+    WHERE user_id = p_user AND jour = p_jour RETURNING * INTO v_ligne;
+  END IF;
+  RETURN _codex_seance_json(v_ligne);
+END $$;
+
+-- 6f. codex_vue_cache_poser(uuid, date, jsonb, jsonb) : garde le dernier
+-- calcul (panneau, séance) et le dit à jour.
+CREATE OR REPLACE FUNCTION codex_vue_cache_poser(p_user uuid, p_jour date, p_panneau jsonb, p_seance jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF p_user IS NULL OR p_jour IS NULL THEN
+    RAISE EXCEPTION 'joueur ou jour manquant';
+  END IF;
+  IF length(coalesce(p_panneau, 'null'::jsonb)::text) > 100000 OR length(coalesce(p_seance, 'null'::jsonb)::text) > 20000 THEN
+    RAISE EXCEPTION 'instantané trop lourd';
+  END IF;
+  INSERT INTO codex_vue_cache AS c (user_id, jour, panneau, seance, calcule_le, a_recalculer)
+  VALUES (p_user, p_jour, p_panneau, p_seance, now(), false)
+  ON CONFLICT (user_id) DO UPDATE SET jour = EXCLUDED.jour, panneau = EXCLUDED.panneau, seance = EXCLUDED.seance, calcule_le = now(), a_recalculer = false;
+END $$;
+
+-- 6g. codex_vue_cache_marquer(uuid) : la fin d'un outil (codexPoint) marque
+-- l'instantané à recalculer. Sans instantané : rien.
+CREATE OR REPLACE FUNCTION codex_vue_cache_marquer(p_user uuid)
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  UPDATE codex_vue_cache SET a_recalculer = true WHERE user_id = p_user
+$$;
+
+REVOKE ALL ON FUNCTION _codex_seance_json(codex_seances) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_seance_poser(uuid, date, smallint, jsonb, text[]) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_seance_marquer(uuid, date, text, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_vue_cache_poser(uuid, date, jsonb, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_vue_cache_marquer(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION codex_seance_poser(uuid, date, smallint, jsonb, text[]) TO service_role;
+GRANT EXECUTE ON FUNCTION codex_seance_marquer(uuid, date, text, jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION codex_vue_cache_poser(uuid, date, jsonb, jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION codex_vue_cache_marquer(uuid) TO service_role;
