@@ -145,8 +145,12 @@ export type CalculSerie = {
 
 const lundiDe = (jour: string) => decaleJour(jour, -((new Date(jour + "T12:00:00Z").getUTCDay() + 6) % 7));
 
-/** La série d'un joueur d'après ses questions par jour (jour de Paris). */
-export function calculerSerie(jours: Map<string, number>, aujourdhui: string, seuil = SEUIL_JOUR): CalculSerie {
+/**
+ * La série d'un joueur d'après ses questions par jour (jour de Paris).
+ * `pauses` : ses jours de repos et de pause (lirePauses) ; sans leurs 10
+ * questions, ils sont neutres : ni +1, ni cassure, ni joker.
+ */
+export function calculerSerie(jours: Map<string, number>, aujourdhui: string, seuil = SEUIL_JOUR, pauses: ReadonlySet<string> = new Set()): CalculSerie {
   let premier: string | null = null;
   for (const [j, n] of jours) if (n > 0 && j < aujourdhui && (premier === null || j < premier)) premier = j;
   let serie = 0;
@@ -161,6 +165,8 @@ export function calculerSerie(jours: Map<string, number>, aujourdhui: string, se
         sauvee = false;
         atteints.push({ jour, n: serie });
         meilleure = Math.max(meilleure, serie);
+      } else if (pauses.has(jour)) {
+        // jour de repos ou de pause : rien ne bouge
       } else if (serie > 0) {
         const lundi = lundiDe(jour);
         if (sauvee || jokerSemaine === lundi) {
@@ -179,6 +185,38 @@ export function calculerSerie(jours: Map<string, number>, aujourdhui: string, se
   const serieAffichee = serie + (fait ? 1 : 0);
   if (fait) atteints.push({ jour: aujourdhui, n: serieAffichee });
   return { serie, serieAffichee, fait, meilleure: Math.max(meilleure, serieAffichee), atteints };
+}
+
+// ---------------------------------------------------------------------------
+// Le repos et la pause (migration_codex_v3.sql §8, V3 §10.4) : des jours posés
+// d'avance où la série ne bouge pas. Le réglage est dans Moi › Réglages ; ici,
+// la lecture seulement.
+
+export type GenrePause = "repos" | "pause";
+export type Pauses = {
+  /** tous les jours posés (passés compris), pour calculerSerie */
+  jours: Set<string>;
+  /** les jours d'aujourd'hui à la fin, dans l'ordre */
+  aVenir: { jour: string; genre: GenrePause }[];
+};
+
+/** Les jours de repos et de pause du joueur connecté ; null sans la migration (ni repos ni pause) ou en cas d'erreur. */
+export async function lirePauses(supabase: SupabaseClient, aujourdhui: string): Promise<Pauses | null> {
+  try {
+    const { data, error } = await supabase.from("serie_pauses").select("jour,genre").order("jour").limit(1000);
+    if (error || !Array.isArray(data)) return null;
+    const jours = new Set<string>();
+    const aVenir: Pauses["aVenir"] = [];
+    for (const r of data as { jour: unknown; genre: unknown }[]) {
+      if (typeof r.jour !== "string" || (r.genre !== "repos" && r.genre !== "pause")) continue;
+      const jour = r.jour.slice(0, 10);
+      jours.add(jour);
+      if (jour >= aujourdhui) aVenir.push({ jour, genre: r.genre });
+    }
+    return { jours, aVenir };
+  } catch {
+    return null;
+  }
 }
 
 /** L'XP réelle d'un gain de base (arrondi 0,5 vers le haut, comme la base). */

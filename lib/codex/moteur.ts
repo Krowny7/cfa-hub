@@ -14,7 +14,7 @@
 //      construit la vue (prochaine quête, contrats, branches…).
 // La bible : docs/codex/CONCEPTION.md.
 
-import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, xpContrat, ajusterCiblee, catalogueCodex, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, tailleMaxCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMMANDATION, XP, xpContrat, ajusterCiblee, catalogueCodex, quetesSemaine, type Semaine, cibleeDe, contenuDuProgramme, estCiblee, formatCiblee, lienCiblee, phaseDe, plafondQuete, plafondRetro, queteBranchee, evenementsDe, tailleMaxCiblee, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
@@ -26,6 +26,7 @@ import { levelInfoFromXp } from "@/lib/leveling";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { notionParId, notionsDeMatiere } from "@/lib/notions";
 import { decaleJour, joursEntre } from "@/lib/objectif-calc";
+import { BUDGET_REPRISE, DUREE_SPRINT, differeeEnSprint, enReprise, estSprint, facteurBande, jalonsDe, semainesRestantes, type Verdict } from "@/lib/codex/plan";
 import type { Acte, Budget, Capacite, Capacites, Comparaison, Requis, Emplacement, EtapeBranche, Fenetre, FiltreMesure, ModeleContrat, Objectif, Phase, Prerequis, Quete, TypeEvenement, TypeMesure } from "@/lib/codex/types";
 
 // ── Ce que la base donne ───────────────────────────────────────────────
@@ -161,6 +162,12 @@ export type Entree = {
    * pour trois contrats sur trois (V3 §6.4).
    */
   seance?: { objectifs: Objectif[]; lanceeLe: string | null; tenue?: boolean };
+  /** le premier calcul du Codex (codex_joueur.premier_calcul) : il décide du mode sprint (V3 §10.2) ; absent : aujourd'hui */
+  premierCalcul?: string | null;
+  /** le choix de la semaine (codex_semaine, V3 §10.3) ; absent ou d'une autre semaine : les contrats de la semaine d'avant */
+  semaine?: Semaine | null;
+  /** le verdict de l'examen (codex_resultat, V3 §10.5) : les bandes basses pèsent plus dans la faiblesse */
+  verdict?: Verdict | null;
 };
 
 /** Ce que la base sait faire pour cette entrée : rien tant que codex_mesures_v3 ne l'a pas dit. */
@@ -228,8 +235,22 @@ export function phaseJoueur(e: Pick<Entree, "programmes" | "jour" | "jourJ">, ac
   return phaseDe(joursAvantExamen(e.jour, e.jourJ), { def: programmeActif(e.programmes), actesClos, apresExamen: apresExamenDe(e) });
 }
 
-/** Le budget du jour : celui que le joueur a choisi, sinon celui de son rythme des 7 derniers jours actifs avant aujourd'hui (il ne bouge pas dans la journée). */
-export const budgetDuJour = (e: Pick<Entree, "budget" | "lecture" | "jour">): Budget => e.budget ?? budgetParDefaut(questionsDes7Jours(e.lecture.mesures.jours, e.jour));
+/**
+ * Le budget du jour : celui que le joueur a choisi, sinon celui de son rythme des 7 derniers jours actifs avant
+ * aujourd'hui (il ne bouge pas dans la journée) ; le jour d'un retour après une absence, 15 minutes (V3 §10.4).
+ */
+export const budgetDuJour = (e: Pick<Entree, "budget" | "lecture" | "jour">): Budget =>
+  e.budget ?? (repriseDuJour(e) ? BUDGET_REPRISE : budgetParDefaut(questionsDes7Jours(e.lecture.mesures.jours, e.jour)));
+
+/** Le jour du retour après 4 jours sans réponse au moins : reprise douce, un seul contrat, séance courte (V3 §10.4). */
+export const repriseDuJour = (e: Pick<Entree, "lecture" | "jour">): boolean => enReprise(e.lecture.mesures.jours, e.jour);
+
+/** Le mode sprint (V3 §10.2) : un programme daté dont le jour J tombait à moins de 8 semaines du premier calcul. */
+export const sprintDe = (e: Pick<Entree, "jour" | "jourJ" | "premierCalcul" | "programmes">): boolean =>
+  !!programmeActif(e.programmes).examen && estSprint(e.jourJ, e.premierCalcul ?? null, e.jour);
+
+/** Les objectifs du plan daté (V3 §10.2), demandés à codex_lire avec le reste ; aucun sans jour J. */
+export const objectifsPlan = (e: Pick<Entree, "jourJ" | "programmes">): Objectif[] => (e.jourJ ? jalonsDe(programmeActif(e.programmes).cle).map((j) => j.objectif) : []);
 
 /** Une matière sans réponse depuis ce nombre de jours « prend la poussière ». */
 export const JOURS_OUBLI = 10;
@@ -742,12 +763,15 @@ export type Instance = { quete: Quete; periode: string; params: ContratTire["par
  */
 export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Emplacement, string>> = {}): ContratTire[] {
   const contenu = e.contenu ?? contenuDuProgramme();
+  // le jour du retour après une absence : la reprise douce, seule (V3 §10.4)
+  if (repriseDuJour(e)) return [{ emplacement: "entretien", modele: "reprise", params: {}, change: false }];
   const rnd = graine(`${joueur}:${e.jour}`);
   const phase = phaseJoueur(e, actesClosDe(e.progression));
   const M = e.lecture.mesures;
   // paramètres : matière la plus à risque (poids × (1 − maîtrise), inconnue = 0,2), notion la plus faible, fiche de la matière
   const risque = contenu
-    .map((m) => ({ m, r: m.poids * (1 - (maitriseDe(e, m.key) ?? 20) / 100) }))
+    // après un « pas cette fois », une matière en bande basse pèse ×1,3 pendant 60 jours (V3 §10.5)
+    .map((m) => ({ m, r: m.poids * (1 - (maitriseDe(e, m.key) ?? 20) / 100) * facteurBande(e.verdict, m.key, e.jour) }))
     .sort((a, b) => b.r - a.r);
   const matiere = risque[0]?.m.key;
   const avecDrill = risque.find((x) => x.m.fiche && x.m.drill)?.m;
@@ -776,10 +800,13 @@ export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Em
   const choisis: ContratTire[] = [];
   let duree = 0;
   const veillee = phase === "veillee";
+  // en sprint, des contrats courts : 15 minutes au plus quand l'emplacement en a un (V3 §10.2)
+  const sprint = sprintDe(e);
   const emplacements = emplacementsDe(phase);
   emplacements.forEach((emp, i) => {
     let pool = MODELES_CONTRATS.filter((m) => m.emplacement === emp && eligible(m) && sources(m) && m.id !== hier[emp]);
     if (!pool.length) pool = MODELES_CONTRATS.filter((m) => m.emplacement === emp && eligible(m) && sources(m));
+    if (sprint && pool.some((m) => m.duree <= DUREE_SPRINT)) pool = pool.filter((m) => m.duree <= DUREE_SPRINT);
     const restant = veillee ? DUREE_VEILLEE : BUDGET_TRIO - duree - (emplacements.length - 1 - i) * 5;
     const tenables = pool.filter((m) => m.duree <= restant);
     if (tenables.length) pool = tenables;
@@ -840,6 +867,8 @@ export type EtatQuete = {
   horsJeu: boolean;
   /** hors jeu et jamais commencée (aucune ligne en base) : à ne pas afficher ; commencée, elle reste affichée, gelée */
   masquee: boolean;
+  /** en sprint, un palier de régularité hors de portée avant le jour J : « après l'examen », pas proposé (V3 §10.2) */
+  differee?: true;
 };
 
 export type ItemEcriture = {
@@ -887,13 +916,26 @@ function ouvertureFil(e: Entree): Prerequis[] {
   return zero ? [{ k: "acte", id: zero.id }] : [];
 }
 
+/** Les contrats de la semaine que le choix du lundi remplace (V3 §10.3). */
+const HEBDO_REMPLACES = new Set(["contrat:hebdo:encre", "contrat:hebdo:pigments", "contrat:hebdo:commande"]);
+
+/**
+ * La semaine choisie (V3 §10.3) : la semaine d'encre prend sa cible et les
+ * contrats de la commande remplacent le tour des pigments et l'examen blanc
+ * de la semaine. Sans choix pour la semaine en cours : le catalogue tel quel.
+ */
+function avecSemaine(catalogue: Quete[], e: Pick<Entree, "semaine" | "jour">, contenu: ContenuMatiere[]): Quete[] {
+  if (!e.semaine || e.semaine.lundi !== lundiDe(e.jour)) return catalogue;
+  return [...catalogue.filter((q) => !HEBDO_REMPLACES.has(q.id)), ...quetesSemaine(e.semaine, contenu)];
+}
+
 /**
  * Les quêtes à suivre : catalogue branché et non retiré, les paliers du fil
  * rouge (atteints et pas encore récompensés, plus le suivant ; `atteints`
  * absent : le palier en cours et le suivant), plus les instances du jour.
  */
 export function quetesASuivre(e: Entree, contenu: ContenuMatiere[], atteints?: Record<string, number>): { catalogue: Quete[]; instances: Instance[] } {
-  const catalogue = [...(e.catalogue ?? catalogueCodex(contenu)), ...quetesFilRouge(e.progression, { ouverture: ouvertureFil(e), atteints })];
+  const catalogue = [...avecSemaine(e.catalogue ?? catalogueCodex(contenu), e, contenu), ...quetesFilRouge(e.progression, { ouverture: ouvertureFil(e), atteints })];
   const capacites = capacitesDe(e);
   const instances: Instance[] = [];
   for (const q of catalogue) {
@@ -930,6 +972,8 @@ export function planifier(e: Entree): Demande[] {
   }
   // les blocs de la séance du jour : leurs compteurs partent dans le même appel
   for (const o of e.seance?.objectifs ?? []) evalObjectif(o, contexteBlanc(e, contenu, collecte));
+  // les jalons du plan daté (V3 §10.2), de même
+  for (const o of objectifsPlan(e)) evalObjectif(o, contexteBlanc(e, contenu, collecte));
   return [...demandes.values()];
 }
 
@@ -1005,10 +1049,12 @@ export function evaluer(e: Entree, compteurs: Record<string, ResultatCompteur>):
   const capacites = capacitesDe(e);
   const ctx = contexteBlanc(e, contenu, resolveur, catalogue);
   const etats = new Map<string, EtatQuete>();
+  const semaines = sprintDe(e) && e.jourJ ? semainesRestantes(e.jour, e.jourJ) : null;
   for (const { quete, periode } of instances) {
     const l = lignes.get(clePeriode(quete.id, periode)) ?? null;
     const recompensee = l?.etat === "recompensee" || l?.etat === "terminee";
     etats.set(clePeriode(quete.id, periode), {
+      ...(semaines !== null && differeeEnSprint(quete, semaines) ? { differee: true as const } : {}),
       quete, periode,
       ouverte: !!l && l.etat !== "verrouillee",
       ouverteLe: l ? new Date(l.ouverte_le) : null,
@@ -1257,7 +1303,7 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const payeusesOuvertes = new Set(r.etats.filter((s) => s.ouverte && !s.fait && !s.horsJeu && s.periode === "").map((s) => s.quete.id));
   const lancables = r.etats.filter((s) => {
     if (s.quete.miroir && payeusesOuvertes.has(s.quete.miroir)) return false;
-    if (!s.ouverte || s.fait || s.horsJeu || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
+    if (!s.ouverte || s.fait || s.horsJeu || s.differee || s.quete.famille === "exploit" || s.quete.visibilite === "cachee" || s.quete.visibilite === "indice" || s.quete.optionnelle || ecartees.has(s.quete.id)) return false;
     const d = destinationDe(s.quete, parametresDe(e, s), dest, s.ev ?? undefined);
     if (d) destinations.set(s, d);
     return !!d;
