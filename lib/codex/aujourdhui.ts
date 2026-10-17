@@ -10,34 +10,16 @@ import { pctCap, type PointFaible, type VueCap } from "@/lib/codex/cap";
 import type { FaitAujourdhui } from "@/lib/codex/recuperer";
 import type { Bloc, VueSeance } from "@/lib/codex/seance";
 import type { LigneQuete, VueActe, VueCodex } from "@/lib/codex/vue";
+import { CODEX, SEANCE } from "@/lib/voice-codex";
 
-export const TEXTES_JOUR = {
-  titre: "Aujourd'hui",
-  budget: "Le temps que tu te donnes aujourd'hui",
-  budgetPuce: (b: number) => `${b} min`,
-  autre: "Une autre idée ?",
-  quetesDuJour: "Quêtes du jour",
-  fait: "Fait aujourd'hui",
-  rienFait: "Rien de fait pour l'instant aujourd'hui.",
-  preparation: "Préparation",
-  coute: "Ce qui te coûte le plus :",
-  semaine: "Ta semaine",
-  jusquaDimanche: "jusqu'à dimanche",
-  segments: "Le Codex",
-  /** le compte neuf : une seule étape, pas de préparation */
-  neuf: { titre: "10 questions pour faire connaissance", duree: 5, raison: "Pour voir où tu en es, matière par matière.", href: "/practice" },
-} as const;
+/** Les mots du segment : ceux de lib/voice-codex.ts (la seule table des mots du Codex). */
+export const TEXTES_JOUR = CODEX.aujourdhui;
 
 // ── Le fil ─────────────────────────────────────────────────────────────
 
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
-
 /** « 3 étapes · 25 min », « 1 étape faite sur 3 · 25 min », « 3 étapes faites sur 3 · 25 min ». */
 export function teteFil(s: Pick<VueSeance, "blocs" | "faits" | "duree">): string {
-  const total = s.blocs.length;
-  const faits = s.blocs.filter((b) => s.faits.includes(b.genre)).length;
-  const avance = faits === 0 ? pluriel(total, "étape") : `${pluriel(faits, "étape")} ${faits > 1 ? "faites" : "faite"} sur ${total}`;
-  return `${avance} · ${s.duree} min`;
+  return SEANCE.entete(s.blocs.length, s.blocs.filter((b) => s.faits.includes(b.genre)).length, s.duree);
 }
 
 /** L'XP des quêtes du jour qu'une étape remplit (`b.contrats`), celles pas encore faites ; 0 : aucune. */
@@ -57,7 +39,7 @@ export const SEUIL_FAIT_AVANCER = 0.8;
 export function faitAvancer(b: Pick<Bloc, "matiere">, branches: VueCodex["branches"]): string | null {
   if (!b.matiere) return null;
   const l = branches.find((x) => x.contenu.key === b.matiere)?.etapes.find((q) => q.etat === "active" && q.affichage === "complet" && q.fraction >= SEUIL_FAIT_AVANCER);
-  return l ? `fait avancer : ${l.titre} (${Math.floor(l.valeur)} → ${Math.floor(l.cible)})` : null;
+  return l ? SEANCE.faitAvancer(l.titre, Math.floor(l.valeur), Math.floor(l.cible)) : null;
 }
 
 /**
@@ -118,8 +100,7 @@ export function etapesActe(a: VueActe): LigneQuete[] {
 
 /** « Ton objectif : 4 jours d'encre · Le banquier » : le choix du lundi (null : pas encore choisi). */
 export function objectifSemaine(sem: { cible: number; nom: string } | null | undefined): string | null {
-  if (!sem) return null;
-  return `Ton objectif : ${sem.cible} jour${sem.cible > 1 ? "s" : ""} d'encre${sem.nom ? ` · ${sem.nom}` : ""}`;
+  return sem ? CODEX.aujourdhui.objectif(sem.cible, sem.nom) : null;
 }
 
 /** « · 4 sur 5 » : les quêtes de la semaine faites. */

@@ -7,6 +7,7 @@ import { TEXTES_JOUR as T, acteEnCours, compteNeuf, etapesActe, preparationJour,
 import { gainsSeance } from "@/lib/codex/seance-etat";
 import type { LigneQuete as Ligne, VueCodex } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
+import { AvecMots } from "@/components/ui/Mot";
 import { Fil, FilNeuf } from "@/components/codex/Fil";
 import { LigneQuete } from "@/components/codex/LigneQuete";
 import { Recuperer } from "@/components/codex/Recuperer";
@@ -146,7 +147,11 @@ export function TaSemaine({ vue, demo = false, onQuete, onVue, ligne }: { vue: V
         {T.semaine} {hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
       </summary>
       <div className={s.pliCorps}>
-        {objectif && <p className="t-small m-0">{objectif}</p>}
+        {objectif && (
+          <p className="t-small m-0">
+            <AvecMots texte={objectif} />
+          </p>
+        )}
         {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={onVue} />}
         {vue.rythme?.plan && <Plan plan={vue.rythme.plan} jour={vue.jour} />}
         {hebdo.map((l) => (ligne ? <Fragment key={l.id + l.periode}>{ligne(l)}</Fragment> : <LigneQuete key={l.id + l.periode} l={l} sobre={vue.sobre} onOuvrir={onQuete} />))}

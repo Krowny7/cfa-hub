@@ -8,6 +8,8 @@ import { useEtatNav } from "@/components/nav/DevoileContext";
 import { codexPanneau, codexSeanceLancer, codexVus, codexXp } from "@/lib/codex/actions";
 import { EVENEMENT_CODEX_POINT, panneauAcquitte, type Panneau, type SuitePanneau } from "@/lib/codex/panneau";
 import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
+import { CODEX } from "@/lib/voice-codex";
+import { AvecMots } from "@/components/ui/Mot";
 import { BONNE_CHANCE } from "@/lib/codex/calendrier";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { chiffrePastille } from "@/lib/nav";
@@ -192,11 +194,13 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
           <Recuperer key={ouvertures} items={rec.items} total={{ n: rec.n, xp: rec.xp }} jour={panneau.jour} fait={fait} sobre={panneau.sobre} cadre={false} demo={demo} onFini={() => setRecupere(true)} />
           {seance && (
             <div className={s.zone}>
-              <p className="t-eyebrow m-0">La suite</p>
+              <p className="t-eyebrow m-0">{CODEX.aujourdhui.suite}</p>
               {seance.suivant ? (
                 <div className={s.suite}>
                   <span className="min-w-0">
-                    <span className={s.suiteTitre}>{seance.suivant.titre}</span>
+                    <span className={s.suiteTitre}>
+                      <AvecMots texte={seance.suivant.titre} />
+                    </span>
                     <span className="t-micro t-num">
                       {seance.suivant.duree} min{seance.suivant.xp > 0 && !panneau.sobre ? ` · +${seance.suivant.xp.toLocaleString("fr-FR")} XP` : ""}
                     </span>

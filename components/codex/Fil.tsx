@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import { BUDGETS } from "@/lib/codex/reglage";
 import { TEXTES_JOUR as T, faitAvancer, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
+import { AvecMots } from "@/components/ui/Mot";
 import type { GainSeance, VueSeance } from "@/lib/codex/seance";
 import type { VueCodex } from "@/lib/codex/vue";
 import { FinDeSeance, ListeGains, TEXTES_SEANCE, useSeanceDuJour } from "@/components/codex/SeanceDuJour";
@@ -72,7 +73,7 @@ export function Fil({ seance: depart, vue, gains, plein, demo = false }: { seanc
                   <Check size={14} strokeWidth={3} />
                 </span>
                 <p className={s.etapeNom}>
-                  {b.titre} <span className={s.duree}>{b.duree} min</span>
+                  <AvecMots texte={b.titre} /> <span className={s.duree}>{b.duree} min</span>
                   <span className="sr-only">, fait</span>
                 </p>
               </li>
@@ -85,7 +86,7 @@ export function Fil({ seance: depart, vue, gains, plein, demo = false }: { seanc
                   {i + 1}
                 </span>
                 <p className={s.etapeNom}>
-                  {b.titre} <span className={s.duree}>{b.duree} min</span>
+                  <AvecMots texte={b.titre} /> <span className={s.duree}>{b.duree} min</span>
                 </p>
               </li>
             );
@@ -99,7 +100,7 @@ export function Fil({ seance: depart, vue, gains, plein, demo = false }: { seanc
               </span>
               <div className="flex min-w-0 flex-col gap-2">
                 <p className={s.etapeNom}>
-                  {b.titre} <span className={s.duree}>{b.duree} min</span>
+                  <AvecMots texte={b.titre} /> <span className={s.duree}>{b.duree} min</span>
                 </p>
                 {b.raison && <p className="t-small m-0">{b.raison}</p>}
                 {(xp > 0 || avance) && (

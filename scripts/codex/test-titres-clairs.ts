@@ -16,7 +16,11 @@ import {
   butActe, correspond, enigmeClaire, modeleDeContrat, nomActe, pourquoiClair, resumeSemaine, titreActe, titreClair, titreClairDe, titreContrat,
 } from "@/lib/codex/titres-clairs";
 import { NOTIONS } from "@/lib/notions";
-import { CODEX, MOTS_MAISON, PHASES_CLAIRES, SEANCE, familleDe } from "@/lib/voice-codex";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { CODEX, MOTS_MAISON, PHASES_CLAIRES, SEANCE, familleDe, premierMotMaison } from "@/lib/voice-codex";
+import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
+import { TEXTES_JOUR, faitAvancer, objectifSemaine, teteFil } from "@/lib/codex/aujourdhui";
 import type { Objectif, Quete } from "@/lib/codex/types";
 
 let ko = 0;
@@ -239,7 +243,8 @@ const ecranBannis = ecran.filter((x) => banni(x.texte)).map((x) => `${x.chemin} 
 check("aucun mot banni dans les mots de l'écran (hors fêtes)", ecran.length > 50 && ecranBannis.length === 0, liste(ecranBannis));
 check("l'état d'une quête faite : « Faite », plus « Tamponnée »", CODEX.etat.terminee === "Faite" && CODEX.detail.faiteLe("12 oct.") === "Faite le 12 oct.");
 check("Moi : « 37 quêtes faites · 2 140 XP gagnés dans le Codex »", `${CODEX.quetesFaites(37)} · ${CODEX.xpGagnee(2140)}` === "37 quêtes faites · 2\u202f140 XP gagnés dans le Codex" && CODEX.quetesFaites(1) === "1 quête faite");
-check("Récupérer : le bouton, le bloc et la pastille", CODEX.recuperer.tout(190) === "Tout récupérer · +190 XP" && CODEX.recuperer.titre(3) === "À récupérer · 3" && CODEX.recuperer.pastille(12) === "9+" && CODEX.recuperer.boutonXp(0) === "Récupérer");
+check("une seule table des mots : l'écran lit TEXTES_RECUPERER et TEXTES_JOUR, qui SONT ceux de lib/voice-codex", TEXTES_RECUPERER === CODEX.recuperer && TEXTES_JOUR === CODEX.aujourdhui);
+check("Récupérer : le bouton, le bloc, la ligne", CODEX.recuperer.tout(190) === "Tout récupérer · +190 XP" && CODEX.recuperer.titre(3) === "À récupérer · 3" && CODEX.recuperer.un(0) === "Récupérer" && CODEX.recuperer.ligne(2) === "2 quêtes à récupérer" && CODEX.recuperer.fait({ n: 4, xp: 230 }) === "Fait aujourd'hui : 4 · +230 XP" && CODEX.recuperer.fait({ n: 4, xp: 230 }, true) === "Fait aujourd'hui : 4");
 check("« Quêtes du jour · 1 sur 3 · +50 XP à 3 sur 3 », sans bonus une fois les trois faites", CODEX.contrats.resume(1, 3, 50) === "Quêtes du jour · 1 sur 3 · +50 XP à 3 sur 3" && CODEX.contrats.resume(3, 3, 50) === "Quêtes du jour · 3 sur 3");
 check("un contrat de la semaine n'est pas une quête du jour", familleDe({ famille: "contrat", repetition: "hebdomadaire" }) === "Quête de la semaine" && familleDe({ famille: "contrat", repetition: "quotidienne" }) === "Quête du jour");
 
@@ -256,7 +261,34 @@ const raisons = [
 const raisonsMauvaises = raisons.filter((r) => banni(r) || mots(r) > 12);
 check("les raisons de la séance : 12 mots au plus, sans mot banni", raisonsMauvaises.length === 0, liste(raisonsMauvaises));
 check("la raison de « ce qui coince » : un fait d'examen", SEANCE.raisons.coince({ court: "FSA", poids: 12.5, pct: 48 }) === "FSA pèse 12,5 % de l'examen, tu es à 48 %");
-check("l'en-tête de la séance", SEANCE.entete(25, 1, 3) === "Aujourd'hui · 25 min · 1 sur 3 fait");
+const bloc = (genre: string) => ({ genre }) as never;
+check("la tête du fil, telle qu'affichée (teteFil lit SEANCE.entete)", SEANCE.entete(3, 1, 25) === "1 étape faite sur 3 · 25 min" && SEANCE.entete(3, 0, 25) === "3 étapes · 25 min" && teteFil({ blocs: [bloc("cinq"), bloc("retouches"), bloc("coince")], faits: ["cinq"] as never, duree: 25 }) === "1 étape faite sur 3 · 25 min");
+check("« fait avancer », tel qu'affiché (faitAvancer lit SEANCE.faitAvancer)", SEANCE.faitAvancer("FSA à 60 % de maîtrise", 51, 60) === "fait avancer : FSA à 60 % de maîtrise (51 → 60)" && faitAvancer({}, []) === null);
+check("le compte neuf, une étape : « 10 questions pour faire connaissance · 5 min »", TEXTES_JOUR.neuf.titre === "10 questions pour faire connaissance" && TEXTES_JOUR.neuf.duree === 5);
+check("Ta semaine : « Ton objectif : 4 jours d'encre · Le banquier » (objectifSemaine lit CODEX.aujourdhui.objectif)", objectifSemaine({ cible: 4, nom: "Le banquier" }) === "Ton objectif : 4 jours d'encre · Le banquier" && objectifSemaine(null) === null);
+const decoupe = (t: string) => {
+  const d = premierMotMaison(t);
+  return d ? `${d.avant}[${d.mot}:${d.cle}]${d.apres}` : null;
+};
+check(
+  "le premier mot maison d'un texte se repère (rature, jour d'encre, notion tenue), pas un mot coupé ni « trait »",
+  decoupe("Corriger 14 ratures") === "Corriger 14 [ratures:rature]" &&
+    decoupe("Corriger 1 rature") === "Corriger 1 [rature:rature]" &&
+    decoupe("Ton objectif : 4 jours d'encre · Le banquier") === "Ton objectif : 4 [jours d'encre:jourEncre] · Le banquier" &&
+    decoupe("15 à revoir : 8 ratures, 3 jours d'encre") === "15 à revoir : 8 [ratures:rature], 3 jours d'encre" &&
+    decoupe("Une notion tenue de plus") === "Une [notion tenue:notionTenue] de plus" &&
+    decoupe("Un texte raturé, un traité") === null &&
+    decoupe("Les 5 du jour") === null,
+);
+const sourceDe = (f: string) => readFileSync(join(__dirname, "../..", f), "utf8");
+check(
+  "la définition s'ouvre au doigt au premier mot maison du fil, du panneau du sceau et de « Ta semaine » (AvecMots, sans title=)",
+  sourceDe("components/codex/Fil.tsx").includes("<AvecMots texte={b.titre} />") &&
+    sourceDe("components/codex/SceauQuetes.tsx").includes("<AvecMots texte={seance.suivant.titre} />") &&
+    sourceDe("components/codex/Aujourdhui.tsx").includes("<AvecMots texte={objectif} />") &&
+    !/\stitle=["{]/.test(sourceDe("components/ui/Mot.tsx")) &&
+    sourceDe("components/ui/Mot.tsx").includes("aria-expanded={ouvert}"),
+);
 const phasesMauvaises = Object.values(PHASES_CLAIRES).filter((p) => banni(p.nom) || banni(p.phrase) || mots(p.phrase) > 12);
 check("les mots maison : trait, rature, jour d'encre et notion tenue, définis en clair", Object.values(MOTS_MAISON).map((m) => m.mot).join() === "trait,rature,jour d'encre,notion tenue" && Object.values(MOTS_MAISON).every((m) => !banni(m.definition) && mots(m.definition) <= 12));
 check("les phases en clair, sans mot banni", Object.keys(PHASES_CLAIRES).length === 5 && phasesMauvaises.length === 0, liste(phasesMauvaises.map((p) => p.nom)));
