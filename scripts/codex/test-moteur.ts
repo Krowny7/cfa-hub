@@ -347,6 +347,9 @@ console.log("\n# v3 §6.11 : après le jour J");
   check("la vue dit « Après l'épreuve »", v.phase === "apres" && v.phaseNom === "Après l'épreuve", v.phaseNom);
   const t = tirerContrats({ ...base({ jourJ: "2026-10-01" }), lecture: { compteurs: {}, mesures: { xp_total: 0, ratures_ouvertes: { total: 12, matieres: {} }, jours: [{ jour: "2026-09-01", n: 400 }, { jour: "2026-10-14", n: 10 }] }, speciaux: {} } }, "joueur-1");
   check("les contrats se tirent encore après l'examen", t.length === 3, String(t.length));
+  // le jour J, même un prologue encore ouvert ne fait rien recommander (V3 §7.4)
+  const { r: rJ, e: eJ } = repondre(base({ jourJ: jour }), () => 0);
+  check("le jour J, prologue ouvert : aucune quête recommandée", ouverte(rJ, "trame:prologue:premier-trait") && recommander(eJ, rJ) === null, recommander(eJ, rJ)?.quete.id);
 }
 
 console.log("\n# v3 §6.12 : les textes qui mentent");

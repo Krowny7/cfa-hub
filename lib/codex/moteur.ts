@@ -1379,12 +1379,12 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
   // le fil rouge ne passe qu'en dernier recours : quand aucune quête du programme n'est proposable (V3 §1.5)
   const duProgramme = lancables.filter((s) => s.quete.famille !== "fil");
   const ouvertes = duProgramme.length ? duProgramme : lancables;
+  const joursAvant = joursAvantExamen(e.jour, e.jourJ);
+  // le jour J : aucune quête recommandée (V3 §7.4), pas même celle du prologue
+  if (joursAvant === 0 && programmeActif(e.programmes).examen) return null;
   const prologue = ouvertes.filter((s) => s.quete.acte === "prologue").sort((a, b) => a.quete.ordre - b.quete.ordre);
   const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? actesDuJoueur(e).find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
   if (prologue.length) return dernier(prologue[0]);
-  const joursAvant = joursAvantExamen(e.jour, e.jourJ);
-  // le jour J : aucune quête recommandée (V3 §7.4)
-  if (joursAvant === 0 && programmeActif(e.programmes).examen) return null;
   const aucuneAvance = (m: ContenuMatiere | undefined) => (m ? maitriseDe(e, m.key) : null);
   let meilleur: Recommandation | null = null;
   for (const s of ouvertes) {
