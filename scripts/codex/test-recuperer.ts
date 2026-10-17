@@ -11,6 +11,7 @@ import { contenuDuProgramme, plafondQuete } from "@/lib/codex/catalogue";
 import { evaluer, indexerLecture, marqueurDe, nouveautesDe, planifier, xpEnAttente, type Demande, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur } from "@/lib/codex/moteur";
 import { construireVue } from "@/lib/codex/vue";
 import { bilanDe } from "@/lib/codex/bilan";
+import { panneauDe } from "@/lib/codex/panneau";
 import { CAPACITES_VIDE, lireCapacites } from "@/lib/codex/reglage";
 import { levelInfoFromXp } from "@/lib/leveling";
 import {
@@ -94,6 +95,13 @@ console.log("\n# la vue : « À récupérer » et « Fait aujourd'hui »");
   check("une pièce qui attend n'est pas encore possédée", !v.possessions.some((p) => p.cle === "banniere:carnet"));
   check("le bilan de fin d'outil porte ce qui attend, le jour et « Fait aujourd'hui »", J(bilanDe(v).aRecuperer) === J(v.aRecuperer) && bilanDe(v).jour === jour && bilanDe(v).fait?.n === 1);
   check("l'XP annoncée : celle qui reste à verser", xpAVerser(v.aRecuperer) === 20 + 30 + 60 + 50);
+  const p = panneauDe(v);
+  check("le panneau : combien attendent (la pastille), l'XP à verser, les trois premières, « Fait aujourd'hui »", p.recuperer.n === 4 && p.recuperer.xp === 160 && p.recuperer.items.length === 3 && p.fait.n === 1, J(p.recuperer.n));
+  check("mode sobre : le panneau n'annonce pas d'XP", panneauDe({ ...v, sobre: true }).recuperer.xp === 0);
+  // sans la §9 : déjà versée, pas vue ; l'ouverture du panneau ne doit pas l'acquitter avant le clic
+  const sansSql = repondre(base({ progression: [ligne("trame:prologue:premier-trait", { vu: false })] }), () => 0);
+  const vr = construireVue(sansSql.e, sansSql.r, null, { devoile: null });
+  check("repli : elle attend « Récupérer » (déjà versée) et le panneau ne l'annonce pas en pied", vr.aRecuperer.length === 1 && !vr.aRecuperer[0].aVerser && panneauDe(vr).versees === null && panneauDe(vr).recuperer.n === 1 && panneauDe(vr).recuperer.xp === 0, J(panneauDe(vr).versees));
 
   // le repli sans la §9 : déjà versé, pas encore vu
   const repli = [ligne("trame:prologue:premier-trait", { vu: false }), ligne("trame:prologue:dix", { vu: false, xp: 0 }), ligne("exploit:sceau:fsa", { vu: false }), ligne("trame:prologue:jour-j", { vu: false, retro: true })];
@@ -135,6 +143,7 @@ console.log("\n# les écrans");
   const fete = readFileSync("components/codex/FeteCodex.tsx", "utf8");
   check("FeteCodex : plus de fête automatique, la ligne « Récupérer » et « La suite » en fin d'outil", !fete.includes("codexVus(") && !fete.includes("components/fete/Fete") && fete.includes('<Recuperer variante="ligne"') && fete.includes("TEXTES_RECUPERER.suite("));
   const rec = readFileSync("components/codex/Recuperer.tsx", "utf8");
+  check("Recuperer : le clic récupère tout ce qui attend (le serveur relit la liste)", rec.includes("r = await codexRecuperer();"));
   check("Recuperer : l'action, le tampon décalé, le compte, le mouvement réduit, les fêtes une par une, l'échec", rec.includes("codexRecuperer(") && rec.includes("DECALAGE_TAMPON_MS") && rec.includes("COMPTE_XP_MS") && rec.includes("mouvementReduit()") && rec.includes("onFin={() => setTour((t) => t + 1)}") && rec.includes("T.echec") && rec.includes("disabled={occupe}"));
   const actions = readFileSync("lib/codex/actions.ts", "utf8");
   const action = actions.slice(actions.indexOf("export async function codexRecuperer"));

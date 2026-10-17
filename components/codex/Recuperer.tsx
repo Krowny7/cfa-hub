@@ -27,7 +27,10 @@ import { Sceau } from "@/components/codex/Sceau";
 // bloc se replie en « Fait aujourd'hui : 4 · +230 XP ». Mouvement réduit :
 // l'état final d'emblée. Échec : un mot, rien ne bouge.
 // Sans la §9 (tout est déjà versé) : « Déjà versé · Voir ce que tu as gagné »,
-// le même geste, sans XP comptée. `demo` : aperçus, aucune action serveur.
+// le même geste, sans XP comptée. Le clic récupère TOUT ce qui attend (le
+// serveur le relit) : `items` peut n'en être que le début, `total` dit alors
+// combien en tout et l'XP à verser (le panneau). `demo` : aperçus, aucune
+// action serveur.
 
 // la fête : chargée au moment de fêter (elle tire le catalogue des pièces), jamais rendue côté serveur
 const Fete = dynamic(() => import("@/components/fete/Fete").then((m) => m.Fete), { ssr: false });
@@ -36,6 +39,7 @@ type Phase = "pret" | "envoi" | "geste" | "fetes" | "fini";
 
 export function Recuperer({
   items,
+  total,
   jour,
   variante = "bloc",
   fait = FAIT_VIDE,
@@ -45,7 +49,9 @@ export function Recuperer({
   onFini,
 }: {
   items: ARecuperer[];
-  /** le jour de Paris de la vue (les dates « d'hier », « mar. 14 oct. ») */
+  /** tout ce qui attend, quand `items` n'en montre que le début : combien, et l'XP à verser */
+  total?: { n: number; xp: number };
+  /** le jour de Paris de la vue (les dates « d'hier », « mer. 14 oct. ») */
   jour: string;
   variante?: "bloc" | "ligne";
   /** ce qui est déjà fait aujourd'hui : le bloc s'y replie une fois tout récupéré */
@@ -87,8 +93,9 @@ export function Recuperer({
   const liste = prises ?? items;
   if (!liste.length && phase === "pret") return null;
   const montres = liste.slice(0, LIGNES_MONTREES);
-  const reste = liste.length - montres.length;
-  const xp = sobre ? 0 : xpAVerser(liste);
+  const n = !prises && total ? Math.max(total.n, liste.length) : liste.length;
+  const reste = n - montres.length;
+  const xp = sobre ? 0 : !prises && total ? total.xp : xpAVerser(liste);
   // rien à verser : déjà versé (repli sans la §9), le clic en accuse réception
   const dejaVerse = liste.every((x) => !x.aVerser);
 
@@ -116,7 +123,8 @@ export function Recuperer({
       r = { ok: true, recues: pris.map(({ quete, periode }) => ({ quete, periode })), xp: xpAVerser(pris), restant: 0, fetes: grandesFetes(pris, sobre) };
     } else {
       try {
-        r = await codexRecuperer(pris.map(({ quete, periode }) => ({ quete, periode })));
+        // tout ce qui attend (le serveur relit la liste entière)
+        r = await codexRecuperer();
       } catch {
         r = null;
       }
@@ -166,7 +174,8 @@ export function Recuperer({
 
   // replié : « Fait aujourd'hui : 4 · +230 XP ▸ »
   if (phase === "fini" || (phase === "fetes" && variante === "ligne")) {
-    const f = apres ?? fait;
+    // le compte local tant que la page rafraîchie n'a pas rendu le sien (qui compte tout ce qui a été récupéré)
+    const f = apres && apres.n > fait.n ? apres : fait;
     return (
       <>
         {ecran}
@@ -201,7 +210,7 @@ export function Recuperer({
       <div className={"flex flex-wrap items-center gap-x-3 gap-y-2 " + className}>
         <span className="shrink-0">{sceau(0)}</span>
         <p className="t-small m-0 min-w-0 flex-1">
-          {T.faites(liste.length)}
+          {T.faites(n)}
           {dejaVerse ? ` · ${T.dejaVerse}` : ""}
         </p>
         {comptee ?? (
@@ -220,9 +229,9 @@ export function Recuperer({
   }
 
   return (
-    <section aria-label={T.titre(liste.length)} className={"card-quiet flex flex-col gap-3 p-4 " + className}>
+    <section aria-label={T.titre(n)} className={"card-quiet flex flex-col gap-3 p-4 " + className}>
       {ecran}
-      <h2 className="t-h3 m-0">{T.titre(liste.length)}</h2>
+      <h2 className="t-h3 m-0">{T.titre(n)}</h2>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
         {montres.map((x, i) => {
           const sous = [x.recompense, dateRecuperer(x.le, jour)].filter(Boolean).join(" · ");

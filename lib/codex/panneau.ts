@@ -14,6 +14,7 @@ import type { Destination } from "@/lib/codex/destinations";
 import type { VueSeance } from "@/lib/codex/seance";
 import type { Budget, Emplacement } from "@/lib/codex/types";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
+import { FAIT_VIDE, LIGNES_MONTREES, cleRecuperer, xpAVerser, type ARecuperer, type FaitAujourdhui } from "@/lib/codex/recuperer";
 
 export type GenreQuete = "principale" | "contrat" | "longcours" | "fil";
 
@@ -59,10 +60,18 @@ export type Panneau = {
   seance: { lancee: boolean; faits: number; total: number; suivant: { titre: string; href: string } | null } | null;
   /** le jour J (V3 §7.4) : le panneau se réduit à « Bonne chance », Léonard ne surgit pas (attribut data-jour-j) */
   jourJ: boolean;
+  /**
+   * « Récupérer » (lib/codex/recuperer) : combien de quêtes attendent le clic
+   * (la pastille du sceau), l'XP qu'il versera, et les premières (le bloc en
+   * montre trois ; le clic récupère tout)
+   */
+  recuperer: { n: number; xp: number; items: ARecuperer[] };
+  /** « Fait aujourd'hui : 4 · +230 XP » */
+  fait: FaitAujourdhui;
 };
 
 export const PANNEAU_VIDE: Panneau = {
-  disponible: false, jour: "", quetes: [], versees: null, arcs: { faits: 0, total: 0 }, rare: null, budget: null, semaine: { faits: 0, total: 0, quetes: [] }, revoir: null, seance: null, jourJ: false,
+  disponible: false, jour: "", quetes: [], versees: null, arcs: { faits: 0, total: 0 }, rare: null, budget: null, semaine: { faits: 0, total: 0, quetes: [] }, revoir: null, seance: null, jourJ: false, recuperer: { n: 0, xp: 0, items: [] }, fait: FAIT_VIDE,
 };
 
 export const MAX_QUETES = 4;
@@ -99,9 +108,14 @@ const toutesLignes = (vue: VueCodex): LigneQuete[] => [
   ...vue.contrats.map((c) => c.ligne), ...(vue.debrief ? [vue.debrief] : []), ...vue.trame.flatMap((a) => a.quetes), ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.filRouge.chapitres.flatMap((c) => c.recents), ...vue.exploits, ...vue.hebdo,
 ];
 
-/** Les récompenses versées dont la fanfare n'a pas été jouée (hors sceaux du profil, qui ont leur cérémonie), et les actes clos à fêter. */
+/**
+ * Les récompenses versées dont la fanfare n'a pas été jouée (hors sceaux du
+ * profil, qui ont leur cérémonie), et les actes clos à fêter ; sans ce qui
+ * attend « Récupérer » (le clic en accuse réception : l'ouverture du
+ * panneau ne doit pas l'acquitter).
+ */
 function aAnnoncer(vue: VueCodex): { lignes: LigneQuete[]; actes: VueCodex["trame"] } {
-  const vues = new Set<string>();
+  const vues = new Set<string>((vue.aRecuperer ?? []).map(cleRecuperer));
   const lignes: LigneQuete[] = [];
   for (const l of toutesLignes(vue)) {
     const k = cleDe(l);
@@ -109,7 +123,7 @@ function aAnnoncer(vue: VueCodex): { lignes: LigneQuete[]; actes: VueCodex["tram
     vues.add(k);
     lignes.push(l);
   }
-  return { lignes, actes: vue.trame.filter((a) => a.aFeter) };
+  return { lignes, actes: vue.trame.filter((a) => a.aFeter && !vues.has(`acte:${a.acte.id}|`)) };
 }
 
 export function panneauDe(vue: VueCodex): Panneau {
@@ -182,6 +196,8 @@ export function panneauDe(vue: VueCodex): Panneau {
     revoir: vue.revoir,
     seance: seancePanneau(vue.seance),
     jourJ: false,
+    recuperer: { n: (vue.aRecuperer ?? []).length, xp: vue.sobre ? 0 : xpAVerser(vue.aRecuperer ?? []), items: (vue.aRecuperer ?? []).slice(0, LIGNES_MONTREES) },
+    fait: vue.faitAujourdhui ?? FAIT_VIDE,
   };
 }
 
@@ -231,7 +247,7 @@ export const panneauAcquitte = (p: Panneau): Panneau => ({ ...p, versees: null, 
 // ── L'instantané (codex_vue_cache, migration_codex_v3.sql §6) ──────────
 
 /** La forme du panneau gardé : à changer dès que Panneau change, pour qu'un instantané d'avant ne soit jamais relu. */
-export const VERSION_PANNEAU = 2;
+export const VERSION_PANNEAU = 3;
 /** Un instantané plus vieux ne sert plus. */
 export const CACHE_PANNEAU_MS = 10 * 60_000;
 

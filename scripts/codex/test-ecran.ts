@@ -98,9 +98,13 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
   check("neuf : au calme (rien de rare, rien d'annoncé)", n.rare === null && n.versees === null);
   const m = panneauDe(exempleCodex("milieu"));
   check("milieu : trois arcs (les contrats du jour)", m.arcs.total === 3, JSON.stringify(m.arcs));
-  check("milieu : la ligne des récompenses versées", !!m.versees && m.versees.n > 0 && m.versees.xp > 0 && ligneVersees(m.versees).startsWith(`${m.versees.n} quête`) && ligneVersees(m.versees).includes(" tamponnée") && ligneVersees(m.versees).endsWith(" XP"), m.versees ? ligneVersees(m.versees) : "");
-  const ms = panneauDe({ ...exempleCodex("milieu"), sobre: true });
-  check("mode sobre : les mêmes quêtes tamponnées, sans XP, sans titre ni pièce", !!ms.versees && ms.versees.n === m.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(m.versees?.cles) && !ligneVersees(ms.versees).includes("XP") && ms.versees.titre === null && ms.rare?.quoi !== "piece" && JSON.stringify(ms.quetes) === JSON.stringify(m.quetes), ms.versees ? ligneVersees(ms.versees) : "");
+  // l'exemple « milieu » : des récompenses déjà versées, pas encore vues (le repli sans la §9) : elles attendent « Récupérer »
+  check("milieu : déjà versées, pas vues : elles attendent « Récupérer », le pied ne les annonce pas (l'ouverture ne les acquitte pas)", m.recuperer.n > 0 && m.recuperer.xp === 0 && m.versees === null, JSON.stringify(m.recuperer.n));
+  // ce qui n'attend pas « Récupérer » (le mode sobre : versées d'office) s'annonce en pied, comme avant
+  const mv = panneauDe({ ...exempleCodex("milieu"), aRecuperer: [] });
+  check("milieu, rien en attente : la ligne des récompenses versées", !!mv.versees && mv.versees.n > 0 && mv.versees.xp > 0 && ligneVersees(mv.versees).startsWith(`${mv.versees.n} quête`) && ligneVersees(mv.versees).includes(" tamponnée") && ligneVersees(mv.versees).endsWith(" XP"), mv.versees ? ligneVersees(mv.versees) : "");
+  const ms = panneauDe({ ...exempleCodex("milieu"), sobre: true, aRecuperer: [] });
+  check("mode sobre : les mêmes quêtes tamponnées, sans XP, sans titre ni pièce", !!ms.versees && ms.versees.n === mv.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(mv.versees?.cles) && !ligneVersees(ms.versees).includes("XP") && ms.versees.titre === null && ms.rare?.quoi !== "piece" && JSON.stringify(ms.quetes) === JSON.stringify(m.quetes), ms.versees ? ligneVersees(ms.versees) : "");
   check("ligne des récompenses : singulier, titre", ligneVersees({ n: 1, xp: 40, cles: ["x"], titre: "Garzone" }) === "1 quête tamponnée · +40 XP · titre Garzone");
   check("la semaine : faits ≤ total, une ligne par contrat", m.semaine.faits <= m.semaine.total && m.semaine.quetes.length === m.semaine.total);
   check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);
@@ -123,7 +127,8 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
 
 console.log("\n# les récompenses versées s'annoncent une fois (acquittées à l'ouverture)");
 {
-  const vue = exempleCodex("milieu");
+  // ce qui n'attend pas « Récupérer » (le mode sobre : versées d'office)
+  const vue: VueCodex = { ...exempleCodex("milieu"), aRecuperer: [] };
   const lignesDe = (v: typeof vue) => [...v.trame.flatMap((a) => a.quetes), ...v.branches.flatMap((x) => x.etapes), ...v.longCours.flatMap((c) => c.paliers), ...v.exploits, ...v.contrats.map((c) => c.ligne), ...v.hebdo];
   const pn = panneauDe(vue);
   check("milieu : des récompenses à annoncer", !!pn.versees && pn.versees.cles.length > 0);
