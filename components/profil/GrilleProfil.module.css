@@ -1,0 +1,54 @@
+/* La grille de la page de profil (GrilleProfil.tsx) : la trame du site, 12
+   colonnes dès 1 024 px, une colonne en dessous, dans l'ordre ; écart de
+   16 px (18 dès 768) entre colonnes comme entre rangées. Les cases d'une
+   rangée s'étirent à la même hauteur et leur premier enfant aussi (chaque
+   bloc met son action en bas). En CSS simple : aucune classe arbitraire
+   nouvelle pour Tailwind. */
+
+.grille {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.rangee {
+  display: grid;
+  gap: 16px;
+}
+.case {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.case > * {
+  flex: 1 1 auto;
+}
+.vide {
+  display: none;
+}
+@media (min-width: 768px) {
+  .grille,
+  .rangee {
+    gap: 18px;
+  }
+}
+@media (min-width: 1024px) {
+  .rangee {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .p4 {
+    grid-column: span 4;
+  }
+  .p8 {
+    grid-column: span 8;
+  }
+  .p12 {
+    grid-column: span 12;
+  }
+  .vide {
+    display: block;
+  }
+  /* hors bande, une rangée fait au moins la hauteur d'un héros du site */
+  .haute > .case {
+    min-height: 260px;
+  }
+}
