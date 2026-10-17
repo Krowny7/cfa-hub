@@ -112,7 +112,8 @@ console.log("# La tuile et le bloc");
   const neuve = renderToStaticMarkup(<TuileCodex c={CODEX_MOI_VIDE} />);
   check("sans rien de fait (ou sans la table) : la phrase d'accueil et le lien, ni compte ni historique", neuve.includes("Des quêtes pour guider tes révisions") && neuve.includes('href="/codex"') && !neuve.includes("#codex") && !neuve.includes("à récupérer"));
   const bloc = nbsp(renderToStaticMarkup(<BlocCodex c={plein} now={Date.parse("2026-10-17T12:00:00Z")} />));
-  check("le bloc : son titre, le résumé, le lien", bloc.includes('id="codex"') && bloc.includes("37 quêtes faites · 2 140 XP gagnés dans le Codex") && bloc.includes('href="/codex"'));
+  // le résumé et le lien « Ouvrir le Codex » sont sur la tuile, en haut de Moi : le bloc ne les répète pas
+  check("le bloc : son ancre et un titre pour les lecteurs d'écran, sans répéter le résumé ni le lien de la tuile", bloc.includes('id="codex"') && bloc.includes('class="sr-only"') && !bloc.includes("37 quêtes faites · 2 140 XP gagnés dans le Codex") && !bloc.includes('href="/codex"'));
   check("l'historique est replié", bloc.includes("<details") && !/<details[^>]*\sopen/.test(bloc) && bloc.includes("Historique"));
   check("le repli porte l'ancre du lien « Historique » de la tuile, et s'ouvre à l'arrivée (OuvrirSurAncre)", bloc.includes('<details id="codex-historique"') && fs.readFileSync(path.join(RACINE, "components/moi/CodexMoi.tsx"), "utf8").includes("<OuvrirSurAncre id={ANCRE_HISTORIQUE} />"));
   check("le résumé est une phrase en police courante, pas en t-num (réservé à un seul grand chiffre)", !/class="[^"]*t-num[^"]*">37 quêtes faites/.test(bloc));

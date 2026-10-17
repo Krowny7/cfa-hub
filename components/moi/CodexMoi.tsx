@@ -78,22 +78,15 @@ function Jour({ j, aujourdhui }: { j: JourCodex; aujourdhui: string }) {
   );
 }
 
-/** Le bloc « Codex » de Moi : le résumé, puis l'historique replié. Rien de fait : pas de bloc (la tuile suffit). */
+/** Le bloc « Codex » de Moi : l'historique replié (le résumé et le lien sont déjà sur la tuile, en haut). Rien de fait : pas de bloc. */
 export function BlocCodex({ c, now }: { c: CodexMoi; now?: number }) {
   if (!c.disponible || c.historique.length === 0) return null;
   const aujourdhui = jourParis(now ?? Date.now());
   return (
     <section className="rl-section scroll-mt-24" aria-labelledby="moi-codex" id="codex">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="moi-codex" className="t-h2 m-0">
-          {CODEX.nom}
-        </h2>
-        <Link href="/codex" className={lienTuile}>
-          {CODEX.moi.ouvrir} <ArrowRight size={14} aria-hidden />
-        </Link>
-      </div>
-      {/* une phrase, en police courante (t-num est réservé à un seul grand chiffre par carte) */}
-      <p className="m-0 text-[15px] font-semibold leading-snug">{resumeCodex(c)}</p>
+      <h2 id="moi-codex" className="sr-only">
+        {CODEX.nom}
+      </h2>
       <details id={ANCRE_HISTORIQUE} className="card-quiet group/h scroll-mt-24 p-5 md:p-6">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
           <span>

@@ -37,14 +37,17 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
   // « Tout récupérer » fini : le bloc dit lui-même « Fait aujourd'hui » (pas deux fois la même liste)
   const [recupere, setRecupere] = useState(false);
 
+  // pas de séance (jour J, lendemain, aucune étape) : pas de colonne vide à gauche
+  const filContenu = neuf ? <FilNeuf plein={!aRecuperer} /> : seance ? <Fil seance={seance} vue={vue} gains={gains} plein={!aRecuperer} demo={demo} /> : null;
+
   return (
-    <div className={s.grille}>
+    <div className={filContenu ? s.grille : `${s.grille} ${s.sansFil}`}>
       {/* toujours monté : la page rafraîchie au clic vide la liste, le geste et les fêtes continuent (vide, il ne rend rien) */}
       <div className={s.zoneRecuperer}>
         <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} demo={demo} onFini={() => setRecupere(true)} />
       </div>
 
-      <div className={s.zoneFil}>{neuf ? <FilNeuf plein={!aRecuperer} /> : seance ? <Fil seance={seance} vue={vue} gains={gains} plein={!aRecuperer} demo={demo} /> : null}</div>
+      {filContenu && <div className={s.zoneFil}>{filContenu}</div>}
 
       <div className={`card-quiet ${s.replis}`}>
         {contrats.length > 0 && (

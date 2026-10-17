@@ -40,6 +40,24 @@
   grid-area: fil;
   min-width: 0;
 }
+/* pas de fil (jour J, lendemain, aucune étape) : une seule colonne, sans case vide */
+.grille.sansFil {
+  grid-template-areas: "recuperer" "replis";
+}
+.grille.sansFil:has(> .zoneRecuperer:empty) {
+  grid-template-areas: "replis";
+}
+@media (min-width: 1024px) {
+  .grille.sansFil {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "recuperer" "replis";
+    grid-template-rows: auto;
+    max-width: 760px;
+  }
+  .grille.sansFil:has(> .zoneRecuperer:empty) {
+    grid-template-areas: "replis";
+  }
+}
 .replis {
   grid-area: replis;
   display: flex;
