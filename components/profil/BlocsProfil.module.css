@@ -1,0 +1,141 @@
+/* Les blocs de la page de profil (BlocsProfil.tsx) : ce qui n'a pas
+   d'équivalent dans les classes du site. Les formes propres à un format
+   (héros, bande) ne jouent que dès 1 024 px ; en dessous, chaque bloc garde
+   sa forme compacte (celle de la tuile). En CSS simple : aucune classe
+   arbitraire nouvelle pour Tailwind. */
+
+/* un média qui remplit sa case : l'image (ou la vidéo) absorbe la hauteur de la rangée */
+.absorbe {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  aspect-ratio: var(--r, auto);
+}
+@media (min-width: 1024px) {
+  .absorbe {
+    aspect-ratio: var(--rl, var(--r, auto));
+  }
+  .videoCote {
+    flex: 0 0 min(44%, 320px);
+  }
+}
+.absorbe > img,
+.absorbe > div,
+.absorbe video {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+/* deux colonnes dès 1 024 (radar | barres, folio | texte, total | sources…) */
+.deux {
+  display: grid;
+  gap: 20px 28px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .deux {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .deuxLarge {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+  .deuxRadar {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    gap: 20px 20px;
+  }
+  .barres2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 28px;
+  }
+}
+
+/* les amis : 2 colonnes, puis 3 (héros) ou 6 (bande) */
+.amis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 1024px) {
+  .amisHeros {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .amisBande {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* les chiffres clés : en lignes séparées d'un filet, puis en colonnes */
+.chiffres {
+  display: grid;
+}
+.chiffres > * + * {
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 1024px) {
+  .chiffresCols {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .chiffresCols > * + * {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+  .piece {
+    gap: 6px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+}
+
+/* trophées : 2 × 2, puis 4 en ligne */
+.quatre {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 1024px) {
+  .quatreLigne {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* radar en héros ou en bande : les libellés sans « moy xx » (la liste de droite compare déjà) */
+.sansMoy tspan[fill-opacity="0.85"] {
+  display: none;
+}
+
+/* le GIF : en fond, lui-même agrandi et flouté, sous un voile de papier qui suit le thème */
+.gifFond {
+  position: absolute;
+  inset: -24px;
+  width: calc(100% + 48px);
+  height: calc(100% + 48px);
+  object-fit: cover;
+  filter: blur(22px) saturate(1.1);
+  opacity: 0.9;
+}
+.gifVoile {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--surface) 58%, transparent);
+}
+/* la nuit, les médias clairs n'éblouissent plus */
+:global(html[data-theme="nuit"]) .nuitDoux {
+  filter: brightness(0.86);
+}
+/* la planche du folio, lisible la nuit */
+:global(html[data-theme="nuit"]) .folioNuit > span {
+  background: var(--surface-2) !important;
+}
+:global(html[data-theme="nuit"]) .folioNuit :global(.font-brand) {
+  color: var(--ink) !important;
+}
+
+/* un bloc repris tel quel (la courbe de progression) remplit sa case */
+.remplit > * {
+  flex: 1 1 auto;
+}
