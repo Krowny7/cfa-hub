@@ -1117,7 +1117,8 @@ export type Recommandation = {
 };
 
 const virgule = (n: number) => String(n).replace(".", ",");
-const ETAPES_AVANT_JALON: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour"];
+// la carte (notions tenues) pousse avec les fondations ; l'épreuve signature, avec la maîtrise
+const ETAPES_AVANT_JALON: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour", "carte"];
 
 /**
  * Ce que le résolveur de destinations (lib/codex/destinations.ts) sait du
@@ -1198,7 +1199,7 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
     if (q.famille === "trame" && q.acte === r.acteCourant?.id) urgence = R.acteCourant;
     if (q.famille === "branche" && q.etape) {
       if (r.phase === "fondations" && ETAPES_AVANT_JALON.includes(q.etape)) urgence = 1.2;
-      if ((r.phase === "repetition" || r.phase === "veillee") && ["maitrise60", "maitrise75", "maitre"].includes(q.etape)) urgence = 1.2;
+      if ((r.phase === "repetition" || r.phase === "veillee") && ["maitrise60", "maitrise75", "signature", "maitre"].includes(q.etape)) urgence = 1.2;
     }
     const av = avanceeDe(s);
     let continuite = av >= 0.5 ? R.continuiteMoitie : av > 0 ? R.continuite : 1;
