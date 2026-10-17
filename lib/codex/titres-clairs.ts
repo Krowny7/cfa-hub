@@ -8,6 +8,8 @@
 // d'exploits restent imagés (ce sont des objets de collection) : seule leur
 // énigme se lit en clair. Trois mots maison seulement : trait, rature et
 // jour d'encre (plus « notion tenue »).
+// Le pourquoi, replié dans le détail, est un fait d'examen de 12 mots au plus
+// (pourquoiClair), sans image.
 // Les chiffres des branches, du fil rouge et de la semaine d'encre se lisent
 // dans l'objectif de la quête : le titre ne peut pas mentir sur un seuil.
 // Module neutre et pur (serveur et navigateur).
@@ -40,7 +42,7 @@ export type ContexteTitre = { params?: ParamsContrat; contenu?: ContenuMatiere[]
 export type QueteTitree = Pick<Quete, "id" | "titre" | "famille"> & Partial<Pick<Quete, "objectif" | "matiere" | "etape" | "indice">> & { cible?: number };
 
 /** « 1000 » → « 1 000 » (espace fine insécable, comme le fil rouge). */
-const milliers = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const milliers = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f");
 
 // ── Les quêtes à id fixe (CFA I) ───────────────────────────────────────
 
@@ -354,12 +356,81 @@ export function titreClairDe(q: QueteTitree, o: ContexteTitre = {}): string | nu
 export const titreClair = (q: QueteTitree, o: ContexteTitre = {}): string => titreClairDe(q, o) ?? q.titre;
 
 /** Sans accents ni majuscules, pour chercher. */
-const plat = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const plat = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /** La recherche de la carte : le texte est-il dans le titre clair ou dans celui du catalogue ? */
 export function correspond(q: QueteTitree, recherche: string, o: ContexteTitre = {}): boolean {
   const r = plat(recherche.trim());
   return !r || plat(titreClair(q, o)).includes(r) || plat(q.titre).includes(r);
+}
+
+// ── Le pourquoi : un fait d'examen, 12 mots au plus ────────────────────
+// Replié sous « Pourquoi ▸ » dans le détail (§3.6, §4.3), sans image.
+
+/** Le pourquoi des quêtes à id fixe qui en ont un. */
+export const POURQUOI_CLAIRS: Readonly<Record<string, string>> = {
+  "trame:prologue:jour-j": "Le rythme et les quêtes du jour se calent sur ta date.",
+  "trame:a2:dix": "L'examen interroge les 10 matières, sans exception.",
+  "trame:a2:ciblee": "Il faut 8 matières validées pour ouvrir l'acte V.",
+  "trame:a3:rappels": "Ce qu'on retrouve 7 jours après, on le retrouvera le jour J.",
+  "trame:a3:tenues": "Une notion vue une fois s'oublie ; tenue, elle reste.",
+  "trame:a4:semaines": "Réviser souvent retient mieux que réviser longtemps.",
+  "trame:a6:ethique": "Ethics pèse 17,5 % de l'examen et départage au seuil.",
+  "trame:ep:malle": "Le jour J, rien ne doit manquer.",
+  "contrat:debrief": "Savoir pourquoi on s'est trompé, c'est la moitié de la correction.",
+};
+
+/** Le pourquoi d'une chaîne au long cours, dit par chacune de ses étapes. */
+export const POURQUOI_CHAINES: Readonly<Record<string, string>> = {
+  compas: "Le haut du classement demande 60 % sur tout le programme.",
+  metier: "Une bonne moyenne peut cacher une matière faible.",
+  memoire: "Ce qu'on retrouve 7 jours après, on le retrouvera le jour J.",
+  carnet: "Moins d'erreurs en attente, moins de surprises le jour J.",
+  commandes: "L'examen dure deux fois 2 h 15 : l'endurance se travaille.",
+  encre: "Réviser souvent retient mieux que réviser longtemps.",
+  remontee: "Une matière faible qui remonte rapporte le plus de points.",
+  rythme: "Ton rythme est calculé pour finir le programme avant ta date.",
+  "main-juste": "Une séance réussie sur du neuf fait vraiment avancer.",
+  "carte-tenue": "Une notion tenue : 3 justes sur tes 5 dernières réponses.",
+  joute: "Le haut du classement demande de la maîtrise.",
+};
+
+/** Le pourquoi d'un chapitre du fil rouge. */
+export const POURQUOI_FIL: Readonly<Record<string, string>> = {
+  questions: "Répondre beaucoup reste la base de tout.",
+  encre: "Chaque jour d'encre compte, même loin de l'examen.",
+  maitres: "Une matière tenue à 85 % ne se perd plus.",
+  programmes: "Un programme fini en ouvre un autre.",
+  trophees: "Un trophée récompense une séance réussie, jamais le volume.",
+  collection: "Chaque pièce raconte un moment de ta préparation.",
+  entretien: "Après l'examen, 2 jours par semaine suffisent pour garder la main.",
+};
+
+/** « 12,5 » : le poids d'une matière, à la française. */
+const virgule = (n: number) => String(n).replace(".", ",");
+
+/** Le pourquoi d'une étape de branche : le poids de la matière, sauf pour les étapes qui disent autre chose. */
+function pourquoiBranche(etape: string | undefined, m: ContenuMatiere): string {
+  switch (etape) {
+    case "ciblee": return "Il faut 8 matières validées pour ouvrir l'acte V.";
+    case "carte": return "Une notion tenue : 3 justes sur tes 5 dernières réponses.";
+    case "signature": return "Prouve que la matière tient, pas seulement ta moyenne.";
+    case "drill": return "Une fiche finie couvre tout le cours, page après page.";
+    default: return `${m.court} pèse ${virgule(m.poids)} % de l'examen.`;
+  }
+}
+
+/** Le pourquoi clair d'une quête ou d'une ligne (replié dans le détail) ; null : rien à dire. */
+export function pourquoiClair(q: Pick<QueteTitree, "id" | "famille" | "matiere" | "etape"> & { chaine?: string }, o: Pick<ContexteTitre, "contenu"> = {}): string | null {
+  const fixe = POURQUOI_CLAIRS[q.id];
+  if (fixe) return fixe;
+  if (q.famille === "branche") {
+    const m = matiereDe(q.matiere, o.contenu);
+    return m ? pourquoiBranche(q.etape, m) : null;
+  }
+  if (q.famille === "longcours" && q.chaine) return POURQUOI_CHAINES[q.chaine] ?? null;
+  if (q.famille === "fil") return POURQUOI_FIL[palierFilDe(q.id)?.chapitre ?? ""] ?? null;
+  return null;
 }
 
 // ── Les actes ──────────────────────────────────────────────────────────

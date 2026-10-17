@@ -192,6 +192,17 @@ export const CODEX = {
   },
 };
 
+/**
+ * Les mots maison, et leur définition : elle s'ouvre au doigt à leur
+ * premier usage sur un écran (pas d'infobulle title=).
+ */
+export const MOTS_MAISON = {
+  trait: { mot: "trait", definition: "Une question répondue. Tes traits du jour suivent ton objectif." },
+  rature: { mot: "rature", definition: "Une question ratée, à refaire jusqu'à la réussir." },
+  jourEncre: { mot: "jour d'encre", definition: "Un jour avec 10 questions ou plus." },
+  notionTenue: { mot: "notion tenue", definition: "3 justes sur tes 5 dernières réponses de la notion." },
+} as const;
+
 /** Le libellé de famille d'une quête : un contrat de la semaine n'est pas une quête du jour. */
 export const familleDe = (q: { famille: Famille; repetition?: Repetition }): string =>
   q.famille === "contrat" && q.repetition === "hebdomadaire" ? "Quête de la semaine" : CODEX.famille[q.famille];

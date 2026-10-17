@@ -12,11 +12,11 @@ import { CHAPITRES_FIL, paliersFil } from "@/lib/codex/fil-rouge";
 import { instanceContrat } from "@/lib/codex/moteur";
 import { actesGeneriques } from "@/lib/codex/programmes/generique";
 import {
-  ENIGMES_CLAIRES, RESUMES_SEMAINE, TITRES_CHAINES, TITRES_CHAPITRES_FIL, TITRES_CLAIRS, TITRES_CONTRATS, TITRE_MAX,
-  butActe, correspond, enigmeClaire, modeleDeContrat, nomActe, resumeSemaine, titreActe, titreClair, titreClairDe, titreContrat,
+  ENIGMES_CLAIRES, POURQUOI_CHAINES, POURQUOI_CLAIRS, POURQUOI_FIL, RESUMES_SEMAINE, TITRES_CHAINES, TITRES_CHAPITRES_FIL, TITRES_CLAIRS, TITRES_CONTRATS, TITRE_MAX,
+  butActe, correspond, enigmeClaire, modeleDeContrat, nomActe, pourquoiClair, resumeSemaine, titreActe, titreClair, titreClairDe, titreContrat,
 } from "@/lib/codex/titres-clairs";
 import { NOTIONS } from "@/lib/notions";
-import { CODEX, PHASES_CLAIRES, SEANCE, familleDe } from "@/lib/voice-codex";
+import { CODEX, MOTS_MAISON, PHASES_CLAIRES, SEANCE, familleDe } from "@/lib/voice-codex";
 import type { Objectif, Quete } from "@/lib/codex/types";
 
 let ko = 0;
@@ -87,7 +87,7 @@ check("la table ne titre aucune quête retirée", retirees.length === 0, liste(r
 
 /** Le seuil d'un objectif simple (un compteur ou une mesure), null sinon. */
 const seuilSimple = (o: Objectif): number | null => (o.k === "compteur" || (o.k === "mesure" && o.mesure !== "pic_palier") ? o.seuil : null);
-const sansEspaces = (t: string) => t.replace(/[\s  ]/g, "");
+const sansEspaces = (t: string) => t.replace(/[\s\u202f\u00a0]/g, "");
 const seuilsAbsents = titres
   .filter((x) => x.q.famille !== "exploit")
   .filter((x) => {
@@ -108,7 +108,7 @@ check("la signature dit la série (« 10 calculs sans faute en Quant »)", t("br
 check("la semaine d'encre lit sa cible", titreClair(quetesSemaine({ lundi: "2026-10-12", cible: 3, commande: "copiste", params: {} }, contenu)[0]) === "3 jours d'encre cette semaine");
 check("le banquier nomme sa matière et son seuil", titreClair(semaines.find((q) => q.id === "contrat:hebdo:banquier")!) === "+5 points en FSA : 53 %");
 check("le fil rouge : 10 trophées diamant", titreClair(fil.find((q) => q.id === "fil:trophees:4")!) === "10 trophées diamant" && titreClair(fil.find((q) => q.id === "fil:trophees:1")!) === "1 trophée d'or");
-check("le fil rouge : les milliers à l'espace fine", titreClair(fil.find((q) => q.id === "fil:questions:4")!) === "Répondre à 10 000 questions");
+check("le fil rouge : les milliers à l'espace fine", titreClair(fil.find((q) => q.id === "fil:questions:4")!) === "Répondre à 10\u202f000 questions");
 
 const resumes = COMMANDES.map((c) => resumeSemaine(c));
 check("le choix de la semaine : un résumé clair par choix, sans mot banni", COMMANDES.every((c) => RESUMES_SEMAINE[c.id]) && Object.keys(RESUMES_SEMAINE).length === COMMANDES.length && resumes.every((r) => !banni(r) && mots(r) <= 12), liste(resumes.filter((r) => banni(r))));
@@ -201,6 +201,17 @@ check("une ligne de la semaine d'encre : sa cible", titreClair({ ...ligne("contr
 const dix = catalogue.find((q) => q.id === "trame:a2:dix")!;
 check("la recherche lit les deux noms, sans accents ni majuscules", correspond(dix, "pigments") && correspond(dix, "CHAQUE MATIERE") && !correspond(dix, "examen blanc") && correspond(dix, "  "));
 
+// ── Le pourquoi : un fait d'examen ─────────────────────────────────────
+
+const pourquois = visibles.map((q) => ({ q, p: pourquoiClair(q) })).filter((x) => x.p !== null) as { q: Quete; p: string }[];
+const pourquoisMauvais = pourquois.filter((x) => banni(x.p) || mots(x.p) > 12 || !x.p.endsWith(".")).map((x) => `${x.q.id} : ${x.p}`);
+check("le pourquoi : une phrase de 12 mots au plus, sans mot banni", pourquois.length > 100 && pourquoisMauvais.length === 0, liste(pourquoisMauvais));
+const sansPourquoi = visibles.filter((q) => (q.famille === "branche" || q.famille === "longcours" || q.famille === "fil") && pourquoiClair(q) === null).map((q) => q.id);
+check("chaque étape de branche, d'objectif long et du fil rouge a son pourquoi", sansPourquoi.length === 0, liste(sansPourquoi));
+check("le pourquoi d'une maîtrise : le poids de la matière", pourquoiClair(catalogue.find((q) => q.id === "branche:fsa:maitrise60")!) === "FSA pèse 12,5 % de l'examen.");
+check("les pourquoi à id fixe : des quêtes du catalogue", Object.keys(POURQUOI_CLAIRS).every((id) => ids.has(id)) && Object.keys(POURQUOI_CHAINES).every((id) => CHAINES.some((c) => c.id === id)) && Object.keys(POURQUOI_FIL).length === CHAPITRES_FIL.length);
+check("une quête sans pourquoi n'en invente pas", pourquoiClair(catalogue.find((q) => q.id === "trame:prologue:dix")!) === null);
+
 // ── Les mots de l'écran (lib/voice-codex.ts) ───────────────────────────
 
 /** Tous les textes d'un objet de libellés : ses chaînes, et ses fonctions appelées avec des valeurs d'exemple. */
@@ -218,7 +229,7 @@ const ecran = textes({ ...CODEX, fete: undefined, retro: undefined });
 const ecranBannis = ecran.filter((x) => banni(x.texte)).map((x) => `${x.chemin} « ${banni(x.texte)} » ${x.texte}`);
 check("aucun mot banni dans les mots de l'écran (hors fêtes)", ecran.length > 50 && ecranBannis.length === 0, liste(ecranBannis));
 check("l'état d'une quête faite : « Faite », plus « Tamponnée »", CODEX.etat.terminee === "Faite" && CODEX.detail.faiteLe("12 oct.") === "Faite le 12 oct.");
-check("Moi : « 37 quêtes faites · 2 140 XP gagnés dans le Codex »", `${CODEX.quetesFaites(37)} · ${CODEX.xpGagnee(2140)}` === "37 quêtes faites · 2 140 XP gagnés dans le Codex" && CODEX.quetesFaites(1) === "1 quête faite");
+check("Moi : « 37 quêtes faites · 2 140 XP gagnés dans le Codex »", `${CODEX.quetesFaites(37)} · ${CODEX.xpGagnee(2140)}` === "37 quêtes faites · 2\u202f140 XP gagnés dans le Codex" && CODEX.quetesFaites(1) === "1 quête faite");
 check("Récupérer : le bouton, le bloc et la pastille", CODEX.recuperer.tout(190) === "Tout récupérer · +190 XP" && CODEX.recuperer.titre(3) === "À récupérer · 3" && CODEX.recuperer.pastille(12) === "9+" && CODEX.recuperer.boutonXp(0) === "Récupérer");
 check("« Quêtes du jour · 1 sur 3 · +50 XP à 3 sur 3 », sans bonus une fois les trois faites", CODEX.contrats.resume(1, 3, 50) === "Quêtes du jour · 1 sur 3 · +50 XP à 3 sur 3" && CODEX.contrats.resume(3, 3, 50) === "Quêtes du jour · 3 sur 3");
 check("un contrat de la semaine n'est pas une quête du jour", familleDe({ famille: "contrat", repetition: "hebdomadaire" }) === "Quête de la semaine" && familleDe({ famille: "contrat", repetition: "quotidienne" }) === "Quête du jour");
@@ -238,6 +249,7 @@ check("les raisons de la séance : 12 mots au plus, sans mot banni", raisonsMauv
 check("la raison de « ce qui coince » : un fait d'examen", SEANCE.raisons.coince({ court: "FSA", poids: 12.5, pct: 48 }) === "FSA pèse 12,5 % de l'examen, tu es à 48 %");
 check("l'en-tête de la séance", SEANCE.entete(25, 1, 3) === "Aujourd'hui · 25 min · 1 sur 3 fait");
 const phasesMauvaises = Object.values(PHASES_CLAIRES).filter((p) => banni(p.nom) || banni(p.phrase) || mots(p.phrase) > 12);
+check("les mots maison : trait, rature, jour d'encre et notion tenue, définis en clair", Object.values(MOTS_MAISON).map((m) => m.mot).join() === "trait,rature,jour d'encre,notion tenue" && Object.values(MOTS_MAISON).every((m) => !banni(m.definition) && mots(m.definition) <= 12));
 check("les phases en clair, sans mot banni", Object.keys(PHASES_CLAIRES).length === 5 && phasesMauvaises.length === 0, liste(phasesMauvaises.map((p) => p.nom)));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
