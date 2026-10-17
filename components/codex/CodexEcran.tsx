@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { devoileLite } from "@/lib/codex/devoile-lite";
@@ -58,7 +58,12 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
   // la carte repliée de la dernière semaine, « Voir le Codex » le jour J
   const [deplie, setDeplie] = useState(false);
   const [occupe, demarrer] = useTransition();
-  const ouvrir = useCallback((l: LigneQuete) => setOuverte(l), []);
+  // les prérequis de la dernière quête verrouillée ouverte restent allumés sur la carte (V3 §10.1)
+  const [allumees, setAllumees] = useState<string[] | undefined>(undefined);
+  const ouvrir = useCallback((l: LigneQuete) => {
+    setOuverte(l);
+    setAllumees(l.allume);
+  }, []);
   const ouvrirActe = useCallback((a: VueActe) => setActe(a), []);
   const fermer = useCallback(() => setOuverte(null), []);
   const [segment, setSegment] = useState<SegmentTel>(() => segmentDe(segmentUrl));
@@ -73,9 +78,11 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
       // l'URL reste telle quelle
     }
   };
-  // la quête cherchée : sur téléphone, son détail s'ouvre (sur ordinateur, la carte vient à elle)
+  // la quête cherchée : sur téléphone, son détail s'ouvre (sur ordinateur, la carte vient à elle), une fois par quête demandée
+  const queteVue = useRef<string | null>(null);
   useEffect(() => {
-    if (!quete || !window.matchMedia("(max-width: 899px)").matches) return;
+    if (!quete || quete === queteVue.current || !window.matchMedia("(max-width: 899px)").matches) return;
+    queteVue.current = quete;
     const l = quetesDeLaCarte(depart).find((x) => x.id === quete);
     if (l) setOuverte(l);
   }, [quete, depart]);
@@ -235,7 +242,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
           )}
 
           <div className={c.surOrdi} data-leonard="trame">
-            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={ouverte?.allume} cible={quete} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />} />
+            <ArbreCodex vue={vue} montre={montre} onQuete={ouvrir} onActe={ouvrirActe} allume={allumees} cible={quete} colonne={<Colonne vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />} />
           </div>
           <div className={c.surTel}>
             <CodexTel segment={segment} vue={vue} montre={montre} onQuete={ouvrir} onChanger={changer} occupe={occupe} filRouge={moment !== "apres"} />

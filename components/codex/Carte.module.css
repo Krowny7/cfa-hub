@@ -1025,7 +1025,8 @@
   }
   .noeud,
   .medaillon,
-  .astuce {
+  .astuce,
+  .pastilleAnneau {
     transition: none;
   }
   .allume::after {

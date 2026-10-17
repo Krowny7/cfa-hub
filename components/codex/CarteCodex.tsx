@@ -340,7 +340,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
   const [texte, setTexte] = useState("");
   const [ouverte, setOuverte] = useState<string | null>(null);
   const [survol, setSurvol] = useState<string[] | null>(null);
-  const [trouve, setTrouve] = useState<string | null>(cible ?? null);
+  const [trouve, setTrouve] = useState<string | null>(null);
   const faibles = useMemo(() => matieresFaibles(vue.cap), [vue.cap]);
   const cherchables = useMemo(() => quetesDeLaCarte(vue), [vue]);
   const resultats = useMemo(() => chercher(cherchables, texte), [cherchables, texte]);
@@ -430,6 +430,10 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
 
   // la quête demandée à l'ouverture (/codex?quete=…), si elle est sur la carte
   const depart = useMemo(() => (cible ? (noeuds.find((nd) => nd.cle === (surCarte.get(cible) ?? cible)) ?? null) : null), [cible, noeuds, surCarte]);
+  const departRef = useRef(depart);
+  useEffect(() => {
+    departRef.current = depart;
+  });
 
   // ouverte centrée sur « tu es ici » (ou sur la quête demandée), dès que la
   // carte a une taille (elle est cachée sur téléphone) ; ensuite, quand la
@@ -459,6 +463,14 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cibl
     ro.observe(b);
     return () => ro.disconnect();
   }, [ici, depart, centrer, appliquer]);
+
+  // une autre quête demandée, la carte déjà ouverte (la palette, depuis /codex) : la carte vient à elle
+  useEffect(() => {
+    const d = departRef.current;
+    if (!d || !cam.current.pret) return;
+    centrer(d, Math.max(cam.current.z, Z_BRANCHE));
+    setTrouve(d.cle);
+  }, [cible, centrer]);
 
   // la molette seule fait défiler la page (un mot rappelle le geste du zoom) ;
   // Ctrl (ou ⌘) + molette zoome autour du pointeur, comme le pincement du pavé
