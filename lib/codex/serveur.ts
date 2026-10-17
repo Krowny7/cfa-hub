@@ -905,10 +905,10 @@ function titreRecuperee(id: string): string {
  * (repli sans la §9 : codex_vus). `cles` : celles-là seulement ; null :
  * toutes. Rend ce qui a été récupéré (titres et pièces lus dans la vue d'avant
  * le clic), l'XP versée à ce clic (0 pour le déjà versé) et ce qui attend
- * encore. Pas de calcul complet avant le clic quand la base sait verser
- * (« tout récupérer ») : la vue gardée nomme les lignes, sinon le catalogue ;
- * la vue n'est lue (au besoin calculée) que pour des clés choisies ou pour le
- * repli sans la §9, qui a besoin de ses accusés. La vue gardée et
+ * encore. « Tout récupérer » appelle la base AVANT toute lecture de la vue :
+ * la vue gardée (sans calcul) nomme les lignes et dit les accusés ; sans
+ * elle, la vue n'est calculée qu'après le versement, et son échec n'empêche
+ * rien (le catalogue nomme les lignes), sauf sans la §9. La vue gardée et
  * l'instantané du panneau sont ensuite oubliés : le prochain calcul relit
  * tout. Un double clic ne verse qu'une fois (la base).
  */
@@ -932,8 +932,10 @@ export async function recupererCodex(
   if (!cles) {
     enBase = await recupererEnBase(a, user.id, null);
     if (enBase === "refus") return { ok: false, raison: "refus" };
-    // sans la §9 : seuls les accusés de la vue (la lire, au besoin la calculer)
-    if (enBase === null && !(await lireVue())) return { ok: false, raison: "indisponible" };
+    // les accusés (déjà versées, pas vues) ne sont que dans la vue : la lire, au besoin la calculer
+    // (après le versement : son échec n'empêche rien, sauf sans la §9 où elle seule dit quoi récupérer)
+    const lue = await lireVue();
+    if (enBase === null && !lue) return { ok: false, raison: "indisponible" };
   } else if (!(await lireVue())) {
     return { ok: false, raison: "indisponible" };
   }
