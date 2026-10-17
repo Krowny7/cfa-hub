@@ -44,7 +44,7 @@ export const EVENEMENTS_DELICATS = [...EVENEMENTS_ECHEC, "retour", "tard"] as co
 export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
   "erreurs-serie": [
     { texte: "{n} erreurs d’affilée. Mon cheval de bronze, lui, n’a jamais été fondu : tu fais déjà mieux que moi. Relis-les demain, elles auront séché.", pose: "base", action: RATURES },
-    { texte: "Les Bardi et les Peruzzi ont fait faillite l’un après l’autre en 1345. Toi, ce n’est qu’une série d’erreurs. La fiche de la notion, et ça repart.", pose: "decu", action: FICHES },
+    { texte: "Les Bardi et les Peruzzi ont fait faillite coup sur coup, vers 1345. Toi, ce n’est qu’une série d’erreurs. La fiche de la notion, et ça repart.", pose: "decu", action: FICHES },
     { texte: "Des erreurs en chaîne, c’est un signal, pas un verdict. Stop-loss : on coupe, et on reprend la notion à l’Atelier.", pose: "base", action: ATELIER },
     { texte: "Quand mes couleurs craquelaient, je reprenais l’enduit. Ici, pareil : l’énoncé jusqu’au bout, puis la fiche.", pose: "base", action: FICHES },
     { texte: "Une série noire, même les Médicis en ont eu. Tes ratures sont au carnet : demain, à froid, elles passeront mieux.", pose: "base", action: RATURES },
