@@ -1,5 +1,5 @@
 import { ChevronRight, Trophy } from "lucide-react";
-import { PALIERS_TROPHEE, nomPalier, tableauSalle, type CompteTrophees, type PalierTrophee, type SourceTrophee } from "@/lib/trophees";
+import { PALIERS_TROPHEE, nomPalier, tableauSalle, type CompteTrophees, type LigneTrophee, type PalierTrophee, type SourceTrophee } from "@/lib/trophees";
 import { nombre } from "@/lib/voice";
 
 // La Salle des trophées (V3 §2.7) : le résumé visible (les quatre paliers et
@@ -37,6 +37,68 @@ export function CaseTrophee({ palier, gagne = true, taille = 16, className = "" 
   );
 }
 
+/**
+ * « Par source » : le détail à la demande de la Salle (une ligne par source,
+ * la règle de chaque palier en infobulle). Sur le repli (`complet` faux),
+ * seules les sources vraiment comptées (l'entraînement ciblé). Aussi au pied
+ * du bloc « Trophées » de la page de profil.
+ */
+export function ParSource({ lignes, complet, sources, className = "mt-4" }: { lignes: LigneTrophee[]; complet: boolean; sources?: readonly SourceTrophee[]; className?: string }) {
+  const detail = tableauSalle(lignes, sources ?? (complet ? undefined : ["ciblee"]));
+  return (
+    <details className={"group/s " + className}>
+      <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-[13px] font-semibold text-muted transition-colors hover:text-white md:min-h-0 [&::-webkit-details-marker]:hidden">
+        <ChevronRight size={14} aria-hidden className="transition-transform group-open/s:rotate-90 motion-reduce:transition-none" />
+        Par source
+      </summary>
+      <div className="mt-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_repeat(4,36px)] items-center gap-x-1 px-2 pb-1.5 text-muted" aria-hidden>
+          <span className="t-micro">Source</span>
+          {PALIERS_TROPHEE.map(({ palier }) => (
+            <span key={palier} className="grid place-items-center" title={nomPalier(palier)}>
+              <DessinTrophee palier={palier} taille={14} />
+            </span>
+          ))}
+        </div>
+        <ul className="m-0 list-none divide-y divide-line p-0">
+          {detail.map((l) => {
+            const regles = l.cases.filter((c) => c.regle).map((c) => `${nomPalier(c.palier)} : ${c.regle}`);
+            const nombres = l.cases.filter((c) => c.n !== null).map((c) => `${c.n} ${nomPalier(c.palier).toLowerCase()}`);
+            return (
+              <li
+                key={l.source}
+                tabIndex={0}
+                aria-label={`${l.nom} : ${nombres.join(", ")}. ${regles.join(". ")}.`}
+                className="group/l relative grid cursor-help grid-cols-[minmax(0,1fr)_repeat(4,36px)] items-center gap-x-1 rounded-[8px] px-2 py-2 outline-none transition-colors hover:bg-surface-2 focus:bg-surface-2"
+              >
+                <span className="truncate text-[13.5px] font-semibold" aria-hidden>
+                  {l.nom}
+                </span>
+                {l.cases.map((c) => (
+                  <span key={c.palier} aria-hidden className={"text-center text-[13.5px] tabular-nums " + (c.n ? "font-semibold" : "text-muted")}>
+                    {c.n === null ? "·" : c.n}
+                  </span>
+                ))}
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full left-2 z-20 mb-1.5 w-max max-w-[min(300px,calc(100%-16px))] translate-y-1 rounded-[10px] border border-line-2 bg-surface px-3 py-2 text-[12px] leading-snug opacity-0 shadow-[var(--shadow-2)] transition-[opacity,transform] duration-150 group-hover/l:translate-y-0 group-hover/l:opacity-100 group-focus/l:translate-y-0 group-focus/l:opacity-100 motion-reduce:transition-none"
+                >
+                  <span className="block font-semibold text-white">{l.nom}</span>
+                  {regles.map((r) => (
+                    <span key={r} className="block text-muted">
+                      {r}
+                    </span>
+                  ))}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </details>
+  );
+}
+
 export function SalleDesTrophees({
   compte,
   complet,
@@ -53,8 +115,6 @@ export function SalleDesTrophees({
   titre?: string;
 }) {
   const { total, parPalier } = compte;
-  // sur le repli, le détail n'a que les sources vraiment comptées (l'entraînement ciblé)
-  const detail = tableauSalle(compte.lignes, sources ?? (complet ? undefined : ["ciblee"]));
 
   return (
     // @container : la grille des paliers suit la largeur du bloc (case du profil, page…)
@@ -104,56 +164,7 @@ export function SalleDesTrophees({
       )}
 
       {/* le détail à la demande : par source, la règle de chaque palier en infobulle */}
-      <details className="group/s mt-4">
-        <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-[13px] font-semibold text-muted transition-colors hover:text-white md:min-h-0 [&::-webkit-details-marker]:hidden">
-          <ChevronRight size={14} aria-hidden className="transition-transform group-open/s:rotate-90 motion-reduce:transition-none" />
-          Par source
-        </summary>
-        <div className="mt-2">
-          <div className="grid grid-cols-[minmax(0,1fr)_repeat(4,36px)] items-center gap-x-1 px-2 pb-1.5 text-muted" aria-hidden>
-            <span className="t-micro">Source</span>
-            {PALIERS_TROPHEE.map(({ palier }) => (
-              <span key={palier} className="grid place-items-center" title={nomPalier(palier)}>
-                <DessinTrophee palier={palier} taille={14} />
-              </span>
-            ))}
-          </div>
-          <ul className="m-0 list-none divide-y divide-line p-0">
-            {detail.map((l) => {
-              const regles = l.cases.filter((c) => c.regle).map((c) => `${nomPalier(c.palier)} : ${c.regle}`);
-              const nombres = l.cases.filter((c) => c.n !== null).map((c) => `${c.n} ${nomPalier(c.palier).toLowerCase()}`);
-              return (
-                <li
-                  key={l.source}
-                  tabIndex={0}
-                  aria-label={`${l.nom} : ${nombres.join(", ")}. ${regles.join(". ")}.`}
-                  className="group/l relative grid cursor-help grid-cols-[minmax(0,1fr)_repeat(4,36px)] items-center gap-x-1 rounded-[8px] px-2 py-2 outline-none transition-colors hover:bg-surface-2 focus:bg-surface-2"
-                >
-                  <span className="truncate text-[13.5px] font-semibold" aria-hidden>
-                    {l.nom}
-                  </span>
-                  {l.cases.map((c) => (
-                    <span key={c.palier} aria-hidden className={"text-center text-[13.5px] tabular-nums " + (c.n ? "font-semibold" : "text-muted")}>
-                      {c.n === null ? "·" : c.n}
-                    </span>
-                  ))}
-                  <span
-                    role="tooltip"
-                    className="pointer-events-none absolute bottom-full left-2 z-20 mb-1.5 w-max max-w-[min(300px,calc(100%-16px))] translate-y-1 rounded-[10px] border border-line-2 bg-surface px-3 py-2 text-[12px] leading-snug opacity-0 shadow-[var(--shadow-2)] transition-[opacity,transform] duration-150 group-hover/l:translate-y-0 group-hover/l:opacity-100 group-focus/l:translate-y-0 group-focus/l:opacity-100 motion-reduce:transition-none"
-                  >
-                    <span className="block font-semibold text-white">{l.nom}</span>
-                    {regles.map((r) => (
-                      <span key={r} className="block text-muted">
-                        {r}
-                      </span>
-                    ))}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </details>
+      <ParSource lignes={compte.lignes} complet={complet} sources={sources} />
       {!complet && <p className="t-micro m-0 mt-1">Les autres trophées arrivent avec la prochaine mise à jour.</p>}
     </section>
   );
