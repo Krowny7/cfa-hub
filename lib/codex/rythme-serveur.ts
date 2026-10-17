@@ -6,7 +6,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { COMMANDES, CIBLES_SEMAINE, type Commande, type Semaine } from "@/lib/codex/catalogue";
 import { maitriseLue } from "@/lib/codex/cap";
-import { lundiDe, type Entree } from "@/lib/codex/moteur";
+import { lundiDe, semaineEntamee, type Entree } from "@/lib/codex/moteur";
 import { programmeActif } from "@/lib/codex/programmes";
 import { lireSemaine, lireVerdict, matiereBanquier, type Bande, type StatutVerdict, type Verdict } from "@/lib/codex/plan";
 import type { RythmeLu } from "@/lib/codex/rythme";
@@ -46,6 +46,8 @@ export async function lireRythme(a: SupabaseClient, user: Joueur, jour: string):
  * Le choix du lundi (codex_semaine_poser, clé service) : la semaine en cours,
  * la cible et la commande ; le banquier vise la matière lourde la plus faible
  * d'après les mesures du dernier calcul. Le premier choix de la semaine gagne.
+ * Refusé dès qu'un contrat que la commande remplace a payé cette semaine
+ * (semaineEntamee, lu en base) : la commande repaierait le même travail.
  */
 export async function poserSemaine(
   a: SupabaseClient,
@@ -64,7 +66,11 @@ export async function poserSemaine(
     params = m;
   }
   try {
-    const { error } = await a.rpc("codex_semaine_poser", { p_user: user.id, p_lundi: lundiDe(jour), p_cible: choix.cible, p_commande: choix.commande, p_params: params });
+    const lundi = lundiDe(jour);
+    const payes = await a.from("codex_progression").select("quete_id,periode,etat").eq("user_id", user.id).eq("periode", lundi).like("quete_id", "contrat:hebdo:%");
+    if (payes.error) return { ok: false, raison: "indisponible" };
+    if (semaineEntamee((payes.data ?? []) as Parameters<typeof semaineEntamee>[0], lundi)) return { ok: false, raison: "refus" };
+    const { error } = await a.rpc("codex_semaine_poser", { p_user: user.id, p_lundi: lundi, p_cible: choix.cible, p_commande: choix.commande, p_params: params });
     if (error) return { ok: false, raison: baseAbsente(error) ? "indisponible" : "refus" };
     return { ok: true };
   } catch {

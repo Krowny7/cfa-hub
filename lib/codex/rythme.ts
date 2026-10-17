@@ -4,7 +4,7 @@
 // dans lib/codex/rythme-serveur.ts. Module pur : ni base ni réseau.
 import { COMMANDES, CIBLES_SEMAINE, type Commande, type ContenuMatiere, type Semaine } from "@/lib/codex/catalogue";
 import { maitriseLue } from "@/lib/codex/cap";
-import { evaluerObjectifs, lundiDe, objectifsPlan, repriseDuJour, type Entree, type ResultatCompteur } from "@/lib/codex/moteur";
+import { evaluerObjectifs, lundiDe, objectifsPlan, repriseDuJour, semaineEntamee, type Entree, type ResultatCompteur } from "@/lib/codex/moteur";
 import { programmeActif } from "@/lib/codex/programmes";
 import { commandesPossibles, jalonsDe, planDe, sessionDe, type Bande, type Plan, type Verdict } from "@/lib/codex/plan";
 import type { Moment } from "@/lib/codex/calendrier";
@@ -76,8 +76,10 @@ export function vueRythme(
   const plan = e.jourJ && jalons.length && o.moment === "courant" ? planDe(jalons, evaluerObjectifs(e, compteurs, objectifsPlan(e)), e.jour, e.jourJ) : null;
   const choisie = e.semaine && e.semaine.lundi === lundi ? e.semaine : null;
   const possibles = commandesPossibles((r) => (r === "journal3" ? o.capacites.journal === 3 : o.capacites[r]), def.outils);
+  // pas de carte du lundi une fois qu'un contrat que la commande remplace a payé cette semaine
+  // (calculer() relit les lignes après l'écriture du lot : un contrat payé à ce calcul y est)
   const lundiVue: VueLundi | null =
-    o.semaineDispo && !choisie && !calme && (e.lecture.mesures.jours ?? []).some((j) => j.n > 0)
+    o.semaineDispo && !choisie && !calme && !semaineEntamee(e.progression, lundi) && (e.lecture.mesures.jours ?? []).some((j) => j.n > 0)
       ? { lundi, ...relue(e, contenu, lundi), cibles: [...CIBLES_SEMAINE], commandes: COMMANDES.filter((c) => possibles.includes(c.id)).map(({ id, nom, resume }) => ({ id, nom, resume })) }
       : null;
   const session = e.jourJ ? sessionDe(e.jourJ) : null;

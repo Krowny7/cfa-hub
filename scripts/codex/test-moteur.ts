@@ -19,7 +19,7 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import { notionsDeMatiere } from "@/lib/notions";
 import { ACTES, COSMETIQUES_CODEX, DECOUVERTE, MODELES_CONTRATS, VAGUES_DECOUVERTE, PROGRAMME, SEUIL_ACTE_V, catalogueCodex, cibleeDe, compterCatalogue, contenuDuProgramme, phaseDe, plafondQuete, plafondRetro, questionsCiblee, titresMaitres, verifierCatalogue, xpContrat } from "@/lib/codex/catalogue";
 import {
-  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, dependancesDe, demandesActivite, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, repliquesDeVague, revoirDe, tirerContrats,
+  LANCEMENT_CODEX, META_CODEX_VIDE, acteCourantDe, capacitesDe, dependancesDe, demandesActivite, semaineEntamee, devoiler, evaluer, indexerLecture, instanceContrat, libelle, lireActivite, maitriseDe, planifier, recommander, repliquesDeVague, revoirDe, tirerContrats,
   budgetDuJour, contexteDestination, repriseDuJour,
   type Demande, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type ResultatCompteur,
 } from "@/lib/codex/moteur";
@@ -904,6 +904,16 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   const sansDest = dela.filter((q) => !destinationDe(q, {}, ctxD));
   check("chaque contrat de la semaine a sa destination (« Y aller »)", dela.length === 8 && sansDest.length === 0, sansDest.map((q) => q.id).join());
 
+  // un choix tardif ne repaie pas le même travail : la commande de la semaine (le blanc) déjà payée
+  const payeCetteSemaine = (id: string): LigneProgression => ({ quete_id: id, periode: lundi, etat: "recompensee", progression: 1, cible: 1, ouverte_le: "2026-10-13T08:00:00Z", terminee_le: "2026-10-13T09:00:00Z", recompensee_le: "2026-10-13T09:00:00Z", retro: false, xp: 150, cosmetique: null, titre: null, vu: true });
+  const ingenieur = { lundi, cible: 3, commande: "ingenieur" as const, params: {} };
+  const blancRendu = (d: Demande) => (d.evenement === "examen_blanc_rendu" ? 1 : 0);
+  const tardif = repondre(base({ jourJ: "2026-11-12", semaine: ingenieur, progression: [payeCetteSemaine("contrat:hebdo:commande")] }), blancRendu).r;
+  check("commande de la semaine payée, puis l'ingénieur choisi : aucun nouvel item à XP pour le même blanc", !tardif.lot.some((i) => i.quete.startsWith("contrat:hebdo:ingenieur")) && !tardif.lot.some((i) => (i.xp ?? 0) > 0 && i.quete.startsWith("contrat:hebdo:")) && !tardif.etats.some((s) => s.quete.id.startsWith("contrat:hebdo:ingenieur")), tardif.lot.map((i) => `${i.quete}:${i.xp ?? ""}`).join(" "));
+  check("… le tour des pigments payé : même chose ; la semaine d'encre payée ne bloque rien (même id)", !semaineEntamee([payeCetteSemaine("contrat:hebdo:encre")], lundi) && semaineEntamee([payeCetteSemaine("contrat:hebdo:pigments")], lundi) && !semaineEntamee([{ ...payeCetteSemaine("contrat:hebdo:pigments"), periode: "2026-10-05" }], lundi));
+  const aTemps = repondre(base({ jourJ: "2026-11-12", semaine: ingenieur, progression: [payeCetteSemaine("contrat:hebdo:ingenieur-blanc")] }), blancRendu).r;
+  check("un choix posé à temps tient après que ses propres contrats ont payé", aTemps.etats.some((s) => s.quete.id === "contrat:hebdo:ingenieur-trente") && !aTemps.etats.some((s) => s.quete.id === "contrat:hebdo:commande"));
+
   // la date approximative
   const auj = "2026-10-17";
   check("date : « vers mi-novembre » → le 15", dateApproximative("vers mi-novembre", auj) === "2026-11-15");
@@ -934,6 +944,7 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("vue : sans les capacités, le copiste n'est pas proposé", v1.lundi?.commandes.map((c) => c.id).join(",") === "banquier,ingenieur");
   const choisi = vr(active({ semaine: { lundi: "2026-10-12", cible: 4, commande: "ingenieur", params: {} } }));
   check("vue : la semaine choisie, plus de carte du lundi", !choisi.lundi && choisi.semaine?.commande === "ingenieur" && choisi.semaine.nom === "L'ingénieur");
+  check("vue : la commande de la semaine déjà payée, plus de carte du lundi", !vr(active({ progression: [payeCetteSemaine("contrat:hebdo:commande")] })).lundi && !!vr(active({ progression: [payeCetteSemaine("contrat:hebdo:encre")] })).lundi);
   check("vue : pas de carte du lundi en veillée ni pour un compte neuf", !vr(active(), { moment: "veillee" }).lundi && !vr(base({ jourJ: "2026-11-12" })).lundi);
   const apres = base({ jourJ: "2026-10-01" });
   const vv = vr(apres, { moment: "apres", verdicts: [{ programme: "finance/cfa-l1", session: "2026-10", statut: "reporte", bandes: {}, saisiLe: "2026-10-12T10:00:00Z" }] });

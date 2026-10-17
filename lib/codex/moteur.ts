@@ -949,12 +949,25 @@ function ouvertureFil(e: Entree): Prerequis[] {
 const HEBDO_REMPLACES = new Set(["contrat:hebdo:encre", "contrat:hebdo:pigments", "contrat:hebdo:commande"]);
 
 /**
+ * La semaine a-t-elle déjà payé un des contrats que la commande remplace
+ * (le tour des pigments, l'examen blanc de la semaine ; V3 §10.3) ? Alors le
+ * choix du lundi n'est plus proposé ni accepté : ses contrats repaieraient le
+ * même travail (lib/codex/rythme.ts, rythme-serveur.ts). La semaine d'encre
+ * garde son id avec la cible choisie : déjà payée, elle ne repaie pas.
+ */
+export const semaineEntamee = (progression: Pick<LigneProgression, "quete_id" | "periode" | "etat">[], lundi: string) =>
+  progression.some((l) => l.periode === lundi && HEBDO_REMPLACES.has(l.quete_id) && l.quete_id !== "contrat:hebdo:encre" && (l.etat === "terminee" || l.etat === "recompensee"));
+
+/**
  * La semaine choisie (V3 §10.3) : la semaine d'encre prend sa cible et les
  * contrats de la commande remplacent le tour des pigments et l'examen blanc
  * de la semaine. Sans choix pour la semaine en cours : le catalogue tel quel.
  */
-function avecSemaine(catalogue: Quete[], e: Pick<Entree, "semaine" | "jour">, contenu: ContenuMatiere[]): Quete[] {
+function avecSemaine(catalogue: Quete[], e: Pick<Entree, "semaine" | "jour" | "progression">, contenu: ContenuMatiere[]): Quete[] {
   if (!e.semaine || e.semaine.lundi !== lundiDe(e.jour)) return catalogue;
+  // un choix posé après qu'un contrat de la semaine a payé ne remplace rien : sa commande
+  // repaierait le même travail (le blanc de la semaine, le tour des pigments)
+  if (semaineEntamee(e.progression, e.semaine.lundi)) return catalogue;
   return [...catalogue.filter((q) => !HEBDO_REMPLACES.has(q.id)), ...quetesSemaine(e.semaine, contenu)];
 }
 
