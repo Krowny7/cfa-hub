@@ -51,7 +51,7 @@ console.log("# Le compte");
   const lignes = [
     ligne("trame:prologue:dix", { xp: 30 }),
     ligne("trame:prologue:jour-j", { etat: "terminee", xp: 40, vu: false }), // à verser
-    ligne("trame:a1:cinq", { vu: false, xp: 25 }), // déjà versée, pas vue : le repli de « Récupérer »
+    ligne("trame:a1:cinq", { vu: false, xp: 25, recompensee_le: "2026-10-18T10:00:00Z" }), // déjà versée (depuis DEBUT_RECUPERER), pas vue : le repli de « Récupérer »
     ligne("trame:a1:duel", { vu: false, retro: true, xp: 10 }), // rétroactive : jamais à récupérer
     ligne("trame:a1:cours", { vu: false, xp: 0 }), // ne rapporte rien
     ligne("exploit:sceau:assiduite:1", { vu: false, xp: 15 }), // les sceaux ont leur cérémonie

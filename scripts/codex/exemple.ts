@@ -18,6 +18,7 @@ import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { composerSeance, instantaneSeance, revoirCodexDe, type EtapeSeance, type VueSeance } from "@/lib/codex/seance";
 import { construireVue, type VueCodex } from "@/lib/codex/vue";
 import { CAPACITES_VIDE } from "@/lib/codex/reglage";
+import { DEBUT_RECUPERER } from "@/lib/codex/recuperer";
 import type { Budget } from "@/lib/codex/types";
 
 export type Scenario = "neuf" | "milieu" | "fin";
@@ -91,10 +92,11 @@ export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; 
   e.lecture = lecture;
   const compteurs = indexerLecture(demandes, lecture);
   let r = evaluer(e, compteurs);
-  // quelques lignes « à fêter » pour voir la fanfare
+  // quelques lignes « à fêter » pour voir la fanfare ; déjà versées sans être vues (le repli sans
+  // la §9), après la mise en ligne de « Récupérer » : l'arriéré d'avant n'attend pas (DEBUT_RECUPERER)
   if (!neuf) {
     const faites = r.etats.filter((s) => s.fait && s.quete.famille !== "contrat").slice(0, 2);
-    e.progression = faites.map((s): LigneProgression => ({ quete_id: s.quete.id, periode: s.periode, etat: "recompensee", progression: 1, cible: 1, ouverte_le: NOW.toISOString(), terminee_le: NOW.toISOString(), recompensee_le: NOW.toISOString(), retro: false, xp: s.quete.recompense.xp, cosmetique: null, titre: null, vu: false }));
+    e.progression = faites.map((s): LigneProgression => ({ quete_id: s.quete.id, periode: s.periode, etat: "recompensee", progression: 1, cible: 1, ouverte_le: NOW.toISOString(), terminee_le: NOW.toISOString(), recompensee_le: `${DEBUT_RECUPERER}T08:00:00Z`, retro: false, xp: s.quete.recompense.xp, cosmetique: null, titre: null, vu: false }));
   }
   if (e.progression.length) r = evaluer(e, compteurs);
   const reco = recommander(e, r);
