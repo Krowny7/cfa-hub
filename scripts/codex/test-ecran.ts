@@ -39,6 +39,7 @@ import { manqueDe } from "@/lib/codex/vue";
 import { matiereCoince } from "@/lib/codex/seance";
 import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
 import { texteAvancee, uniteDe } from "@/lib/codex/unite";
+import { motsMaisonDe } from "@/components/codex/MotMaison";
 import { catalogueCodex } from "@/lib/codex/catalogue";
 import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, objectifSemaine, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
 import type { EtatQuete } from "@/lib/codex/moteur";
@@ -534,6 +535,10 @@ console.log("\n# /codex « Tout le Codex », la ligne et le détail (Codex simpl
   check("unité lue sur le catalogue : maîtrise en %, minutes, semaines", uniteDe(maitriseCat!.objectif) === "pct" && JSON.stringify(uniteDe(minutesCat!.objectif)) === JSON.stringify(["min", "min"]) && JSON.stringify(uniteDe(encreCat!.objectif)) === JSON.stringify(["semaine", "semaines"]));
   const lignesUnite = [...v.branches.flatMap((b) => b.etapes)].filter((l) => l.etat !== "terminee" && l.cible > 1);
   check("la vue porte l'unité des étapes de matière (maîtrise : %)", lignesUnite.length > 0 && lignesUnite.some((l) => l.unite === "pct"), JSON.stringify(lignesUnite.slice(0, 2).map((l) => [l.id, l.unite])));
+  // les mots maison : une définition au premier usage, au doigt (§4.4)
+  check("mots maison : rature, jour d'encre, notion tenue, trait ; « traité » n'est pas un trait", JSON.stringify(motsMaisonDe(["Corriger 14 ratures"])) === JSON.stringify(["rature"]) && JSON.stringify(motsMaisonDe(["Ton objectif : 4 jours d'encre", "Corriger 5 ratures"])) === JSON.stringify(["rature", "jourEncre"]) && JSON.stringify(motsMaisonDe(["2 notions tenues"])) === JSON.stringify(["notionTenue"]) && JSON.stringify(motsMaisonDe(["Tes traits du jour"])) === JSON.stringify(["trait"]) && motsMaisonDe(["Un traité", null, "Réviser 40 flashcards"]).length === 0);
+  const motSrc = readFileSync("components/codex/MotMaison.tsx", "utf8");
+  check("mots maison : un repli de 44 px, sans infobulle title=, branché sur le fil, « La suite » du panneau et « Ta semaine »", motSrc.includes("min-h-[44px]") && !motSrc.includes(" title={") && !motSrc.includes(" title=\"") && readFileSync("components/codex/Fil.tsx", "utf8").includes("<MotsMaison") && readFileSync("components/codex/SceauQuetes.tsx", "utf8").includes("<MotsMaison") && readFileSync("components/codex/Aujourdhui.tsx", "utf8").includes("<MotsMaison"));
   const ligneUnite = readFileSync("components/codex/LigneQuete.tsx", "utf8");
   check("la ligne écrit l'avancée avec le même formateur que le détail, et sans aria-label qui la remplace", ligneUnite.includes("texteAvancee(l).texte") && !ligneUnite.includes("aria-label={libelleSceau(l)}") && ligneUnite.includes('className="sr-only"'));
   check("récompense sur une ligne : « +40 XP · Titre : Apprenti » ; sobre : rien", recompenseDetail({ ...l0, xp: 40, xpVersee: null, etat: "active", titreGagne: "t", titreNom: "Apprenti", cosmetique: undefined, folio: undefined }, false) === "+40 XP · Titre : Apprenti" && recompenseDetail({ ...l0, xp: 40 }, true) === null);

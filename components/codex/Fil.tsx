@@ -8,6 +8,7 @@ import { TEXTES_JOUR as T, faitAvancer, teteFil, xpEtape } from "@/lib/codex/auj
 import type { GainSeance, VueSeance } from "@/lib/codex/seance";
 import type { VueCodex } from "@/lib/codex/vue";
 import { FinDeSeance, ListeGains, TEXTES_SEANCE, useSeanceDuJour } from "@/components/codex/SeanceDuJour";
+import { MotsMaison } from "@/components/codex/MotMaison";
 import s from "./Aujourdhui.module.css";
 
 // Le fil de /codex (Codex simplifié, §2 et §3.3) : la séance du jour en
@@ -132,6 +133,8 @@ export function Fil({ seance: depart, vue, gains, plein, demo = false }: { seanc
           );
         })}
       </ol>
+      {/* « Corriger 14 ratures » : le mot maison a sa définition, au doigt (§4.4) */}
+      <MotsMaison textes={seance.blocs.flatMap((b) => [b.titre, b.raison])} />
 
       {message && (
         <p role="status" className="t-small m-0">

@@ -13,6 +13,7 @@ import { levelInfoFromXp } from "@/lib/leveling";
 import { chiffrePastille } from "@/lib/nav";
 import { Sceau } from "@/components/codex/Sceau";
 import { Recuperer } from "@/components/codex/Recuperer";
+import { MotsMaison } from "@/components/codex/MotMaison";
 import { noterSeanceIci } from "@/components/codex/seance-ici";
 import s from "./Encre.module.css";
 
@@ -208,6 +209,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
               ) : (
                 <p className="t-small m-0">Séance du jour faite.</p>
               )}
+              {seance.suivant && <MotsMaison textes={[seance.suivant.titre]} />}
             </div>
           )}
           {message && (

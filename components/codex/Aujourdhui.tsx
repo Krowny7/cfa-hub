@@ -12,6 +12,7 @@ import { LigneQuete } from "@/components/codex/LigneQuete";
 import { Recuperer } from "@/components/codex/Recuperer";
 import { Lundi } from "@/components/codex/Lundi";
 import { Plan } from "@/components/codex/Plan";
+import { MotsMaison } from "@/components/codex/MotMaison";
 import { etiquetteActe } from "@/components/codex/CarteCodex";
 import s from "./Aujourdhui.module.css";
 
@@ -151,6 +152,8 @@ export function TaSemaine({ vue, demo = false, onQuete, onVue, ligne }: { vue: V
       </summary>
       <div className={s.pliCorps}>
         {objectif && <p className="t-small m-0">{objectif}</p>}
+        {/* le choix du lundi se dit en jours d'encre : le mot a sa définition, au doigt (§4.4) */}
+        <MotsMaison textes={[objectif, vue.rythme?.lundi ? "jours d'encre" : null]} />
         {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={onVue} />}
         {vue.rythme?.plan && <Plan plan={vue.rythme.plan} jour={vue.jour} />}
         {hebdo.map((l) => (ligne ? <Fragment key={l.id + l.periode}>{ligne(l)}</Fragment> : <LigneQuete key={l.id + l.periode} l={l} sobre={vue.sobre} onOuvrir={onQuete} />))}
