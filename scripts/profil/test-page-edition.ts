@@ -249,7 +249,7 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
   const media = (): BlocMedia => un([() => image(un(["tuile", "heros", "bande"] as const), { y: un([15, 50, 88]) }), () => gif(), () => video()])();
   const depart: Disposition[] = [
     validerDisposition([{ k: "vitrine", f: "bande" }, { k: "radar", f: "heros" }, { k: "amis", f: "tuile" }], "lecture").disposition,
-    validerDisposition([{ m: "trois", c: [{ k: "folio" }, null, { k: "media", ...gif() }] }, { m: "trois", c: [{ k: "reponses" }, { k: "trophees" }, null] }], "lecture").disposition,
+    validerDisposition([{ m: "trois", c: [{ k: "folio" }, null, gif()] }, { m: "trois", c: [{ k: "reponses" }, { k: "trophees" }, null] }], "lecture").disposition,
     validerDisposition([{ m: "quatre", c: [{ k: "radar" }, { k: "amis" }, null, { k: "trophees" }] }], "lecture").disposition,
     [],
   ];
