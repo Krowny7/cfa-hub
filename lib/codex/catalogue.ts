@@ -606,9 +606,9 @@ export const QUETES_LONG_COURS: Quete[] = [
   ...chaine("joute", [
     { titre: "Cinq duels", consigne: "Joue cinq duels.", objectif: mesure("duels_joues", 5), xp: 50 },
     { titre: "Vingt-cinq duels", consigne: "Joue vingt-cinq duels.", objectif: mesure("duels_joues", 25), xp: 120 },
-    { titre: "L'or", consigne: "Atteins le palier Or.", objectif: mesure("pic_palier", 2), xp: 150 },
-    { titre: "Le platine", consigne: "Atteins le palier Platine.", objectif: mesure("pic_palier", 3), xp: 250 },
-    { titre: "Le diamant", consigne: "Atteins le palier Diamant (il demande 60 % de maîtrise).", objectif: mesure("pic_palier", 4), xp: 400, titreGagne: "titre:duelliste" },
+    { titre: "L'or", consigne: "Atteins le rang Or au classement.", objectif: mesure("pic_palier", 2), xp: 150 },
+    { titre: "Le platine", consigne: "Atteins le rang Platine au classement.", objectif: mesure("pic_palier", 3), xp: 250 },
+    { titre: "Le diamant", consigne: "Atteins le rang Diamant au classement (il demande 60 % de maîtrise).", objectif: mesure("pic_palier", 4), xp: 400, titreGagne: "titre:duelliste" },
   ]),
 ];
 
