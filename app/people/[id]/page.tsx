@@ -3,22 +3,17 @@ import { notFound, redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ArrowLeft, ChevronRight, Eye, Palette, UserCheck, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
-import { PracticeProgressChart } from "@/components/PracticeProgressChart";
-import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { getLeaderboardRank, getMyRating } from "@/lib/rating";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import { getTopicAverages } from "@/lib/mastery";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
-import { AnswerSummary } from "@/components/moi/AnswerSummary";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { Icone } from "@/components/adn/icons";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
-import { ListeAmis, Vitrine } from "@/components/profil/Vitrine";
-import { RadarComparable } from "@/components/profil/RadarComparable";
-import { CaseImage, GrilleBlocs } from "@/components/profil/Blocs";
+import { CaseImage } from "@/components/profil/Blocs";
+import { PageProfil } from "@/components/profil/PageProfil";
 import { AmbianceProfil } from "@/components/profil/Pieces";
 import { AmiBouton } from "@/components/profil/AmiBouton";
 import { OngletsProfil } from "@/components/profil/OngletsProfil";
@@ -35,7 +30,9 @@ import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/
 import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
 import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
 import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
-import { blocsDe, estDispositionDefaut, sansCaseVide } from "@/lib/profil/disposition";
+import { blocsDe, estDispositionDefaut } from "@/lib/profil/disposition";
+import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
+import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
 import { epreuvesCommunes } from "@/lib/profil/epreuves-communes";
 import { journalDe, type EvenementJournal } from "@/lib/profil/journal";
@@ -55,7 +52,6 @@ import { SAISONS } from "@/lib/voice-saisons";
 import type { Profile, Rating } from "@/lib/types";
 import { lireTrophees } from "@/lib/trophees";
 import { folioPorte } from "@/lib/profil/etagere";
-import { BlocFolio } from "@/components/profil/Folio";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string; personnaliser?: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
@@ -77,7 +73,7 @@ async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[
 // (bannière, sceau dans son cadre, pseudo, prénom et nom selon leur
 // visibilité, rang et pic, niveau, bio, LinkedIn selon sa visibilité, ses 3
 // sceaux posés), puis des onglets collants : Profil (les blocs dans l'ordre
-// et à la largeur choisis par le joueur, GrilleBlocs), Sceaux (la
+// et au format choisis par le joueur, PageProfil), Sceaux (la
 // collection), Journal (courbe d'ELO, carnet de jours, fil) et, sur le
 // profil d'un autre, Face-à-face. L'onglet est dans l'URL (?onglet=sceaux)
 // et chaque onglet ne lit que ses données. Sur son
@@ -114,8 +110,10 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
 
   // l'onglet ouvert : ses lectures seulement (celles de Profil suivent les blocs de la page)
   const styleLu = lireStyle(supabase, id);
+  // les blocs posés sur la page (onglet Profil seulement) : ils décident des lectures
+  const blocsLus = styleLu.then(({ style: st }) => new Set<string>(onglet === "profil" ? blocsDe(st.disposition).map((b) => b.k) : []));
   const lecturesOnglet = (async () => {
-    const blocs = new Set(onglet === "profil" ? blocsDe((await styleLu).style.disposition).map((b) => b.k) : []);
+    const blocs = await blocsLus;
     const radar = blocs.has("radar") || onglet === "face-a-face";
     const [moyennes, mesStats, monStyle, answers, trophees, progressSessions, monRating] = await Promise.all([
       radar && admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
@@ -149,8 +147,9 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const journalOuvert = (v: Visibilite, rel: Relation | null) =>
     isMe ? !vue || v === "public" || (vue === "ami" && v === "friends") : v === "public" || (v === "friends" && rel === "amis");
   // la courbe avec mon client (rating_events est lisible par tous), les victoires avec le client admin
+  // (sur l'onglet Profil aussi, si le bloc Journal est posé : même règle d'ouverture)
   const journalLu = (async () => {
-    if (onglet !== "journal") return null;
+    if (onglet !== "journal" && !(onglet === "profil" && (await blocsLus).has("journal"))) return null;
     const [stats, masteries, lu, rel, sceaux] = await Promise.all([statsLues, maitrisesLues, styleLu, relationLue, sceauxLus]);
     if (!journalOuvert(lu.journal, rel)) return null;
     return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null, gardes: sceaux.gardes });
@@ -158,7 +157,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   // les tampons du profil et, sur le Journal, ceux de ses entrées (null sans la migration)
   const tamponsLus = (async () => {
     const j = await journalLu;
-    const entrees = j ? j.evenements.map(cibleEntree).filter((c): c is string => !!c) : [];
+    const entrees = j && onglet === "journal" ? j.evenements.map(cibleEntree).filter((c): c is string => !!c) : [];
     return lireTampons(supabase, id, [CIBLE_PROFIL, ...entrees]);
   })();
 
@@ -387,35 +386,30 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       />
     );
   } else {
-    // la page jamais composée : sa case vide invite le propriétaire à poser une image, et s'efface pour les autres
+    // les données des blocs, lues une seule fois et passées une seule fois au client
+    const blocs = await blocsLus;
+    const donnees: DonneesBlocs = {
+      id,
+      nom: display,
+      moi: commeMoi,
+      viewerId: user.id,
+      accent: style.accent,
+      showcase: style.showcase,
+      stats,
+      radar: { moyennes: o.moyennes, miennes: o.mesStats ? o.mesStats.matieres : null, monAccent: o.monStyle ? o.monStyle.style.accent : null },
+      amis,
+      reponses: o.answers ? resumeReponses(o.answers) : null,
+      trophees: o.trophees ? resumeTrophees(o.trophees) : null,
+      progression: blocs.has("progression") ? o.progressSessions : null,
+      // le folio porté (Moi › Mes pièces), dans son bloc
+      folio: folioPorte(style.folio),
+      journal: journal ? extraitJournal(journal) : null,
+      saisons,
+      visibiliteJournal,
+    };
+    // la page jamais composée : sa place libre invite le propriétaire à poser une image (les autres ne voient rien)
     const parDefaut = estDispositionDefaut(style.disposition);
-    // le folio porté (Moi › Mes pièces), dans son bloc
-    const folio = folioPorte(style.folio);
-    panneau = (
-      <GrilleBlocs
-        disposition={parDefaut && !commeMoi ? sansCaseVide(style.disposition) : style.disposition}
-        caseVide={parDefaut && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : null}
-        rendus={{
-          vitrine: <Vitrine style={style} stats={stats} rang={{ tierIndex: rank.tierIndex, division: rank.division, elo, mastery }} />,
-          radar: (
-            <RadarComparable
-              matieres={stats.matieres}
-              moyennes={o.moyennes}
-              accent={style.accent}
-              nom={display}
-              moi={commeMoi}
-              miennes={o.mesStats ? o.mesStats.matieres : null}
-              monAccent={o.monStyle ? o.monStyle.style.accent : null}
-            />
-          ),
-          amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} viewerId={user.id} /> : null,
-          reponses: o.answers?.available ? <AnswerSummary stats={o.answers} name={display} isMe={commeMoi} /> : null,
-          trophees: o.trophees ? <SalleDesTrophees compte={o.trophees} complet={o.trophees.complet} moi={commeMoi} /> : null,
-          progression: <PracticeProgressChart pastSessions={o.progressSessions} topicLabels={TOPIC_LABELS} />,
-          folio: folio ? <BlocFolio f={folio} /> : null,
-        }}
-      />
-    );
+    panneau = <PageProfil disposition={style.disposition} donnees={donnees} libre={parDefaut && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : undefined} />;
   }
 
   return (
