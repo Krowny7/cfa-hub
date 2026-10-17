@@ -20,6 +20,7 @@ import {
   gainPreparation,
   infobulleMaitrise,
   libellePct,
+  lireAncienne,
   lireMaitrise,
   maitriseAncienne,
   maitriseDepuis,
@@ -67,7 +68,7 @@ function session(rows: LigneAncienne[]) {
     from(table: string) {
       if (table !== "practice_session_results") throw new Error(`table inattendue : ${table}`);
       lectures++;
-      const chaine = { select: () => chaine, eq: () => chaine, limit: async () => ({ data: rows, error: null }) };
+      const chaine = { select: () => chaine, eq: () => chaine, order: () => chaine, limit: async () => ({ data: rows, error: null }), range: async (de: number, a: number) => ({ data: rows.slice(de, a + 1), error: null }) };
       return chaine;
     },
   };
@@ -154,6 +155,14 @@ const main = async () => {
   const lu4 = await lireMaitrise(adminFactice("lance").client, session(lignes).client, "u");
   const lu5 = await lireMaitrise(adminFactice({ data: { v: 1 }, error: null }).client, session(lignes).client, "u");
   check("lireMaitrise : sans clé de service, erreur ou réponse illisible → l'ancienne mesure, sans lancer", [lu3, lu4, lu5].every((x) => x.source === "ancienne"));
+  // plus de 500 séances : toutes comptent (comme maitrise_joueur et le classement), lues par pages
+  const beaucoup: LigneAncienne[] = [
+    ...Array.from({ length: 600 }, () => ({ topics: ["fsa"], score: 5, total: 10 })),
+    ...Array.from({ length: 1900 }, () => ({ topics: ["fsa"], score: 10, total: 10 })),
+  ];
+  const s6 = session(beaucoup);
+  const lu6 = await lireAncienne(s6.client, "u");
+  check("lireAncienne : 2 500 séances, toutes lues (3 pages) : FSA (3 000 + 19 000) / 25 000 = 88 %", lu6.find((x) => x.cle === "fsa")?.pct === 88 && lu6.find((x) => x.cle === "fsa")?.questions === 25000 && s6.lectures() === 3, J(lu6.find((x) => x.cle === "fsa")));
 
   // ── programMastery : l'ancienne seule ────────────────────────────────────
   const tm = (pct: number | null, ancienne: number | null | undefined): TopicMastery => ({ key: "k", label: "k", pct, answered: 60, ...(ancienne !== undefined ? { ancienne } : {}) });

@@ -194,14 +194,30 @@ export function ancienneRegle(rows: LigneAncienne[]): MesureAncienne[] {
   });
 }
 
-/** L'ancienne mesure d'un joueur, lue avec sa session (ou le client admin). */
+/** Les séances lues par page (le plafond d'une réponse de l'API) ; au plus PAGES_ANCIENNE pages. */
+const PAGE_ANCIENNE = 1000;
+const PAGES_ANCIENNE = 50;
+
+/**
+ * L'ancienne mesure d'un joueur, lue avec sa session (ou le client admin) :
+ * TOUTES ses séances, comme maitrise_joueur (CTE `anc`) et le classement, par
+ * pages dans un ordre stable (500 lignes arbitraires faisaient bouger le rang
+ * d'un joueur de plus de 500 séances au collage du §4, V3 §4.5). Une erreur :
+ * aucune séance (comme avant).
+ */
 export async function lireAncienne(supabase: SupabaseClient, userId: string): Promise<MesureAncienne[]> {
-  let rows: LigneAncienne[] = [];
+  const rows: LigneAncienne[] = [];
   try {
-    const { data } = await supabase.from("practice_session_results").select("topics,score,total").eq("user_id", userId).limit(500);
-    rows = (data as LigneAncienne[] | null) ?? [];
+    for (let p = 0; p < PAGES_ANCIENNE; p++) {
+      const de = p * PAGE_ANCIENNE;
+      const { data, error } = await supabase.from("practice_session_results").select("topics,score,total").eq("user_id", userId).order("id").range(de, de + PAGE_ANCIENNE - 1);
+      if (error) return ancienneRegle([]);
+      const page = (data as LigneAncienne[] | null) ?? [];
+      rows.push(...page);
+      if (page.length < PAGE_ANCIENNE) break;
+    }
   } catch {
-    rows = [];
+    return ancienneRegle([]);
   }
   return ancienneRegle(rows);
 }
