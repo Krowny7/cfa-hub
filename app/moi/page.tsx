@@ -102,7 +102,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul (repli sans bruit)
     lireTrophees(supabase, user.id),
     // Mes pièces : l'étagère et ce qu'il porte (sur son onglet seulement)
-    tab === "pieces" ? lireEtagere(supabase, admin, user.id) : Promise.resolve(null),
+    tab === "pieces" ? lireEtagere(supabase, admin, user.id).catch(() => null) : Promise.resolve(null),
     // les jours de repos de la série déjà posés (Réglages ; null sans la migration du Codex §8)
     tab === "reglages" ? lirePauses(supabase, new Date(now)) : Promise.resolve(null),
   ]);

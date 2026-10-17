@@ -26,8 +26,13 @@ export function MoiView({ d, settings, pieces = null, tab = "stats", now }: { d:
         <Registre d={d} liste="ratures" now={now} />
       ) : tab === "marquees" ? (
         <Registre d={d} liste="marquees" now={now} />
-      ) : tab === "pieces" && pieces ? (
-        pieces
+      ) : tab === "pieces" ? (
+        (pieces ?? (
+          <div className="rl-wide flex flex-col gap-3">
+            <FilMoi label={REG.fil} />
+            <p className="card-quiet m-0 p-6 text-[14px]">L&apos;étagère ne s&apos;ouvre pas pour le moment. Réessaie dans un instant.</p>
+          </div>
+        ))
       ) : (
         <div className="rl-wide flex flex-col gap-6 md:gap-8">
           <div className="flex flex-col gap-3">
