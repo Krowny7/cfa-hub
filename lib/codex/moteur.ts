@@ -73,6 +73,17 @@ export type MesuresSql = {
   speciaux_matiere?: { serie_bonnes?: Record<string, number>; serie_calculs?: Record<string, number> };
   /** codex_mesures_v3 (A4a) : examens blancs à débriefer, V3 §7.6 */
   blancs_a_debriefer?: number;
+  /**
+   * codex_mesures_v3 (A4a) : la maîtrise unique (maitrise_joueur, V3 §4) ; questions = réponses de
+   * la fenêtre (60 au plus), pct null sous 10 ; `ancienne` garde le verrou des rangs (§4.5)
+   */
+  maitrise_unique?: Record<string, { pct: number | null; questions: number; total: number; debut: number | null; statut: "non_mesuree" | "provisoire" | "mesuree"; derniere: string | null; ancienne: number | null }>;
+  /** codex_mesures_v3 (A4a) : la file « À revoir » (revisions_dues, V3 §5.1), ses comptes */
+  revoir?: { aujourdhui: number; demain: number; ratures: number; rappels: number };
+  /** codex_mesures_v3 (A4a) : ratures scellées (V3 §5.3) */
+  ratures_scellees?: number;
+  /** codex_mesures_v3 (A4a) : les causes d'erreur des débriefs des 60 derniers jours, en %, et leur nombre (V3 §7.6) */
+  causes?: { savoir: number; lecture: number; calcul: number; temps: number; chance: number; n: number };
 };
 
 export type LectureSql = { compteurs: Record<string, ResultatCompteur>; mesures: MesuresSql; speciaux: Record<string, number> };

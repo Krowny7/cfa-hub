@@ -27,10 +27,11 @@ import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-
 import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
   LECTURE_VIDE, actesDuJoueur, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
-  type ContratTire, type Entree, type LectureSql, type LigneProgression, type MesuresSql, type Resultat,
+  type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
-import { CAPACITES_VIDE, COLONNES_JOUEUR, COLONNES_V3, ecarter, lireCapacites, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
+import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesuresV3DeLecture, type MesuresV3 } from "@/lib/codex/mesures-v3";
+import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
 import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
@@ -83,12 +84,13 @@ async function consigner(a: SupabaseClient, userId: string, quete: string, messa
   }
 }
 
-async function lire(a: SupabaseClient, id: string, demandes: unknown[], jour: string): Promise<LectureSql | null> {
+/** codex_lire : les compteurs, les mesures, les spéciaux ; et « v3 » (les mesures v3, brutes) quand la §5 est collée. */
+async function lire(a: SupabaseClient, id: string, demandes: unknown[], jour: string): Promise<(LectureSql & { v3?: unknown }) | null> {
   try {
     const { data, error } = await a.rpc("codex_lire", { p_user: id, p_demandes: demandes, p_jour: jour });
     if (error || !data || typeof data !== "object") return null;
-    const d = data as Partial<LectureSql>;
-    return { compteurs: d.compteurs ?? {}, mesures: d.mesures ?? {}, speciaux: d.speciaux ?? {} };
+    const d = data as Partial<LectureSql> & { v3?: unknown };
+    return { compteurs: d.compteurs ?? {}, mesures: d.mesures ?? {}, speciaux: d.speciaux ?? {}, v3: d.v3 };
   } catch {
     return null;
   }
@@ -154,64 +156,19 @@ async function lireProgrammes(a: SupabaseClient, id: string): Promise<ProgrammeJ
   }
 }
 
-type MesuresV3 = { capacites: Capacites } & Pick<MesuresSql, "jours_encre_total" | "programmes_menes" | "maitres_total" | "trophees" | "notions_tenues" | "speciaux_matiere">;
-
-const nombre = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : undefined);
-
-/** Les trophées rendus par codex_mesures_v3 ([{source, palier, n}]) ; une ligne mal formée est ignorée, autre chose qu'une liste : inconnus. */
-function lireTropheesV3(x: unknown): MesuresSql["trophees"] {
-  if (!Array.isArray(x)) return undefined;
-  return x.flatMap((l) => {
-    const o = l as { source?: unknown; palier?: unknown; n?: unknown } | null;
-    const palier = nombre(o?.palier);
-    const n = nombre(o?.n);
-    return o && typeof o.source === "string" && palier !== undefined && n !== undefined ? [{ source: o.source, palier, n }] : [];
-  });
-}
-
-/** Les notions tenues ({notion: {n, j5}}) ; une entrée mal formée est ignorée, autre chose qu'un objet : inconnues. */
-function lireNotionsTenues(x: unknown): MesuresSql["notions_tenues"] {
-  if (!x || typeof x !== "object" || Array.isArray(x)) return undefined;
-  const out: NonNullable<MesuresSql["notions_tenues"]> = {};
-  for (const [notion, v] of Object.entries(x as Record<string, unknown>)) {
-    const o = v as { n?: unknown; j5?: unknown } | null;
-    const n = nombre(o?.n);
-    const j5 = nombre(o?.j5);
-    if (n !== undefined && j5 !== undefined) out[notion] = { n, j5 };
-  }
-  return out;
-}
-
-/** Les spéciaux par matière ({serie_bonnes: {m: n}, serie_calculs: {m: n}}) ; autre chose qu'un objet : inconnus. */
-function lireSpeciauxMatiere(x: unknown): MesuresSql["speciaux_matiere"] {
-  if (!x || typeof x !== "object" || Array.isArray(x)) return undefined;
-  const parMatiere = (y: unknown) =>
-    y && typeof y === "object" && !Array.isArray(y) ? Object.fromEntries(Object.entries(y as Record<string, unknown>).flatMap(([m, n]) => (nombre(n) !== undefined ? [[m, n as number]] : []))) : {};
-  const d = x as { serie_bonnes?: unknown; serie_calculs?: unknown };
-  return { serie_bonnes: parMatiere(d.serie_bonnes), serie_calculs: parMatiere(d.serie_calculs) };
-}
-
 /**
- * Les mesures v3 et les capacités de la base (codex_mesures_v3, V3 §1.8), en
- * un appel. Fonction absente ou en erreur : la base ne sait rien faire de
- * nouveau (CAPACITES_VIDE), et les mesures v3 restent inconnues.
+ * Les mesures v3 et les capacités de la base (codex_mesures_v3, V3 §1.8), lues
+ * à part : sans la §5 de migration_codex_v3.sql (codex_lire ne les rend pas),
+ * ou si codex_lire ne les a pas rendues. Fonction absente ou en erreur : la
+ * base ne sait rien faire de nouveau (CAPACITES_VIDE), les mesures v3 restent
+ * inconnues.
  */
 async function lireMesuresV3(a: SupabaseClient, id: string, programme: string): Promise<MesuresV3> {
   try {
     const { data, error } = await a.rpc("codex_mesures_v3", { p_user: id, p_programme: programme });
-    if (error || !data || typeof data !== "object") return { capacites: CAPACITES_VIDE };
-    const d = data as { capacites?: unknown; jours_encre_total?: unknown; programmes_menes?: unknown; maitres_total?: unknown; trophees?: unknown; notions_tenues?: unknown; speciaux_matiere?: unknown };
-    return {
-      capacites: lireCapacites(d.capacites),
-      jours_encre_total: nombre(d.jours_encre_total),
-      programmes_menes: nombre(d.programmes_menes),
-      maitres_total: nombre(d.maitres_total),
-      trophees: lireTropheesV3(d.trophees),
-      notions_tenues: lireNotionsTenues(d.notions_tenues),
-      speciaux_matiere: lireSpeciauxMatiere(d.speciaux_matiere),
-    };
+    return error ? MESURES_V3_VIDES : mesuresV3De(data);
   } catch {
-    return { capacites: CAPACITES_VIDE };
+    return MESURES_V3_VIDES;
   }
 }
 
@@ -267,8 +224,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const actif = programmeActif(programmes);
     const ligneActive = programmes.find((p) => p.programme === actif.cle && p.statut === "actif");
     const jourJ = actif.examen ? (ligneActive?.jourJ ?? dateExamen) : null;
-    // les mesures v3 et les capacités : lues pendant le tirage des contrats, attendues avant le plan des compteurs
-    const v3P = lireMesuresV3(a, user.id, actif.cle);
+    // les mesures v3 et les capacités : rendues par codex_lire quand la §5 est collée (journal 3 au dernier
+    // calcul : une seule lecture des réponses, V3 §12.3bis) ; sinon lues à part, pendant le tirage des contrats
+    const v3Apart = reglage.capacitesVues?.journal === 3 ? null : lireMesuresV3(a, user.id, actif.cle);
     if (joueurR.error && baseAbsente(joueurR.error)) return vide;
     // une lecture ratée de codex_joueur ferait passer le joueur pour neuf (tout rétroactif) : on s'arrête là
     if (joueurR.error) {
@@ -319,28 +277,23 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       }
     }
 
-    // ce que la base sait faire décide des quêtes suivies, donc des compteurs demandés
-    const v3 = await v3P;
-    entree.capacites = v3.capacites;
+    // ce que la base sait faire décide des quêtes suivies, donc des compteurs demandés : connu d'avance
+    // quand les mesures sont lues à part ; sinon on demande les compteurs de tout ce qu'elle pourrait
+    // suivre (les compteurs en trop ne coûtent rien), et codex_lire dit ce qu'elle sait faire
+    const v3Lu = v3Apart ? await v3Apart : null;
+    entree.capacites = v3Lu?.capacites ?? CAPACITES_TOUTES;
     // les compteurs de toutes les quêtes, en un seul appel
     const demandes = planifier(entree);
-    const lecture = await lire(a, user.id, demandes, jour);
-    if (!lecture) {
+    const lu = await lire(a, user.id, demandes, jour);
+    if (!lu) {
       await consigner(a, user.id, "", "codex_lire a échoué");
       return repli(user.id, jour);
     }
-    entree.lecture = {
-      ...lecture,
-      mesures: {
-        ...lecture.mesures,
-        jours_encre_total: v3.jours_encre_total,
-        programmes_menes: v3.programmes_menes,
-        maitres_total: v3.maitres_total,
-        trophees: v3.trophees,
-        notions_tenues: v3.notions_tenues,
-        speciaux_matiere: v3.speciaux_matiere,
-      },
-    };
+    const { v3: v3Brut, ...lecture } = lu;
+    // codex_lire sans « v3 » (§5 pas collée, ou mesures en panne, consignée) : l'appel à part
+    const v3 = v3Lu ?? mesuresV3DeLecture(v3Brut, actif.cle) ?? (await lireMesuresV3(a, user.id, actif.cle));
+    entree.capacites = v3.capacites;
+    entree.lecture = { ...lecture, mesures: avecMesuresV3(lecture.mesures, v3) };
     const compteurs = indexerLecture(demandes, entree.lecture);
     let resultat = evaluer(entree, compteurs);
 
