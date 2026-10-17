@@ -520,11 +520,31 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
 }
 
 /**
+ * L'ancienne page par défaut, telle que l'ancien enregistrement l'écrivait
+ * même sans que le joueur y touche : [plein vitrine] [plein radar]
+ * [grand-petit amis, case vide] (sans la rangée du radar s'il l'avait
+ * masqué ; la case vide nulle ou absente). C'est la page par défaut
+ * d'aujourd'hui (même référence), pas sa conversion rangée par rangée.
+ */
+function ancienneParDefaut(raw: unknown[]): Disposition | null {
+  const rangee = (x: unknown, m: string, k: string, vide: boolean) => {
+    if (!estObjet(x) || x.m !== m || !Array.isArray(x.c)) return false;
+    const [b, ...reste] = x.c;
+    return estObjet(b) && b.k === k && Object.keys(b).length === 1 && (vide ? reste.length <= 1 && reste.every((c) => c === null) : !reste.length);
+  };
+  const fin = raw.length - 1;
+  if ((raw.length !== 2 && raw.length !== 3) || !rangee(raw[0], "plein", "vitrine", false) || !rangee(raw[fin], "grand-petit", "amis", true)) return null;
+  if (raw.length === 2) return DEFAUT_SANS_RADAR;
+  return rangee(raw[1], "plein", "radar", false) ? DISPOSITION_DEFAUT : null;
+}
+
+/**
  * La disposition lue en base. Sans disposition enregistrée : celle par
- * défaut (sans le radar si le joueur l'avait masqué, comme avant).
+ * défaut (sans le radar si le joueur l'avait masqué, comme avant) ; de même
+ * pour l'ancienne page par défaut enregistrée telle quelle.
  */
 export function dispositionDepuis(raw: unknown, radar: boolean): Disposition {
-  if (Array.isArray(raw)) return validerDisposition(raw, "lecture").disposition;
+  if (Array.isArray(raw)) return ancienneParDefaut(raw) ?? validerDisposition(raw, "lecture").disposition;
   return radar ? DISPOSITION_DEFAUT : DEFAUT_SANS_RADAR;
 }
 

@@ -26,7 +26,7 @@ import { EditeurPage } from "@/components/profil/EditeurPage";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { aDuContenu, type DonneesBlocs } from "@/lib/profil/blocs-donnees";
-import { BLOCS, FORMATS_PERMIS, estMedia, genreDe, type Bloc, type BlocMedia, type Disposition, type Format, type GenreBloc, type PlaceVide } from "@/lib/profil/disposition";
+import { BLOCS, DISPOSITION_DEFAUT, FORMATS_PERMIS, estMedia, genreDe, type Bloc, type BlocMedia, type Disposition, type Format, type GenreBloc, type PlaceVide } from "@/lib/profil/disposition";
 import { compter } from "@/lib/trophees";
 import { DISPO_RICHE, DISPO_SOBRE, GIF_EXEMPLE, RICHE, SOBRE, amisExemple } from "./donnees-blocs-exemple";
 import { CAS_SALLE, REFERENCE_SALLE } from "./salle-cas";
@@ -115,6 +115,9 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
   check("page : la page par défaut d'un autre, sans place libre visible", !sobre.includes("Ajoute une image") && sobre.includes("Amis"));
   const invite = rend(<PageProfil disposition={[{ k: "vitrine", f: "bande" }, { k: "amis", f: "heros" }]} donnees={SOBRE} libre={<a href="/perso">Ajoute une image</a>} />);
   check("page : sans radar, la place de 4 à côté des amis reçoit l'invitation", invite.includes("Ajoute une image"));
+  const pleine = rend(<PageProfil disposition={DISPOSITION_DEFAUT} donnees={RICHE} apres={<a href="/perso">Ajoute une image</a>} />);
+  check("page : par défaut, rangées pleines, l'invitation en tuile dans une rangée de plus", compte(pleine, "Ajoute une image") === 1 && pleine.includes('p4"><a href="/perso">') && pleine.lastIndexOf("rangee") < pleine.indexOf("Ajoute une image"));
+  check("page : sans apres, rien de plus", !rend(<PageProfil disposition={DISPOSITION_DEFAUT} donnees={RICHE} />).includes("/perso"));
   const vide = rend(<PageProfil disposition={[{ k: "reponses", f: "tuile" }, { k: "trophees", f: "tuile" }, { k: "journal", f: "tuile" }]} donnees={SOBRE} />);
   check("page : une rangée de blocs sans données ne se rend pas", !vide.includes("rangee"));
 }

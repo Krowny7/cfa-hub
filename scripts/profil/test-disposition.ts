@@ -123,6 +123,7 @@ console.log("# Les formats permis");
 console.log("# La conversion des anciennes formes : les 9 exemples");
 const EXEMPLES: { nom: string; avant: unknown[]; apres: string[] }[] = [
   {
+    // la conversion rangée par rangée ; relue de la base (dispositionDepuis), c'est la page par défaut (« La page par défaut »)
     nom: "1. l'ancienne page par défaut",
     avant: [{ m: "plein", c: [k("vitrine")] }, { m: "plein", c: [k("radar")] }, { m: "grand-petit", c: [k("amis"), null] }],
     apres: ["vitrine:bande", "radar:bande", "amis:heros"],
@@ -445,6 +446,22 @@ console.log("# La page par défaut");
   check("sans radar : chiffres clés en bande, amis en héros", estDispositionDefaut(sans) && egal(abrege(sans), ["vitrine:bande", "amis:heros"]));
   check("la page par défaut : une bande, puis une rangée pleine", egal(abrege(DISPOSITION_DEFAUT), ["vitrine:bande", "radar:heros", "amis:tuile"]) && rangees(DISPOSITION_DEFAUT).every((r) => r.libre === 0));
   check("une disposition enregistrée n'est pas celle par défaut", !estDispositionDefaut(dispositionDepuis([...DISPOSITION_DEFAUT], true)));
+  // l'ancien enregistrement écrivait la page par défaut même sans qu'on y touche : relue, c'est celle d'aujourd'hui
+  const vieux = (c3: unknown[]) => [{ m: "plein", c: [k("vitrine")] }, { m: "plein", c: [k("radar")] }, { m: "grand-petit", c: c3 }];
+  check(
+    "l'ancienne page par défaut (case vide nulle ou absente) : la page par défaut, même référence",
+    dispositionDepuis(vieux([k("amis"), null]), true) === DISPOSITION_DEFAUT && dispositionDepuis(vieux([k("amis")]), false) === DISPOSITION_DEFAUT,
+  );
+  check(
+    "sans la rangée du radar : la page par défaut sans radar, même référence",
+    dispositionDepuis([vieux([k("amis"), null])[0], vieux([k("amis"), null])[2]], false) === sans && dispositionDepuis([vieux([k("amis")])[0], vieux([k("amis")])[2]], true) === sans,
+  );
+  check(
+    "une ancienne page proche mais composée n'est pas celle par défaut",
+    [vieux([k("amis"), k("journal")]), vieux([k("amis", { t: "l" }), null]), [...vieux([k("amis"), null]), { m: "plein", c: [k("journal")] }], [vieux([k("amis")])[1], vieux([k("amis")])[2]]].every(
+      (v) => !estDispositionDefaut(dispositionDepuis(v, true)),
+    ),
+  );
   check("la page par défaut passe la validation à l'identique", egal(lire(DISPOSITION_DEFAUT).disposition, DISPOSITION_DEFAUT) && egal(lire(sans).disposition, sans));
   check("blocsDe : sans les places libres", egal(blocsDe([{ k: "libre", f: "tuile" }, { k: "amis", f: "tuile" }]), [{ k: "amis", f: "tuile" }]));
 }

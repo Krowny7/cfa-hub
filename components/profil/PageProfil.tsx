@@ -11,23 +11,27 @@ import type { Bloc, Disposition } from "@/lib/profil/disposition";
 // le poids de la page n'est pas multiplié par le nombre de blocs. Un bloc
 // sans contenu garde sa place vide sur ordinateur ; les places libres ne se
 // voient pas, sauf `libre` (sur sa propre page par défaut : l'invitation à
-// poser une image).
+// poser une image), ou `apres` quand cette page n'a pas de place libre.
 
 export function PageProfil({
   disposition,
   donnees,
   libre,
+  apres,
 }: {
   disposition: Disposition;
   donnees: DonneesBlocs;
   /** ce qu'on pose dans les places vides (le propriétaire, sur la page par défaut : CaseImage) ; absent : rien */
   libre?: React.ReactNode;
+  /** une tuile sous la grille (la même invitation, quand la page par défaut est pleine) ; absent : rien */
+  apres?: React.ReactNode;
 }) {
   return (
     <GrilleProfil
       disposition={disposition}
       rendre={(c) => (aDuContenu(c.e as Bloc, donnees) ? <BlocProfil bloc={c.e as Bloc} f={c.f} d={donnees} /> : null)}
       libre={libre ? () => libre : undefined}
+      apres={apres}
     />
   );
 }

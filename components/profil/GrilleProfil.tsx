@@ -25,6 +25,7 @@ export function GrilleProfil({
   disposition,
   rendre,
   libre,
+  apres,
   edition = false,
 }: {
   disposition: Disposition;
@@ -32,6 +33,8 @@ export function GrilleProfil({
   rendre: (c: CaseGrille) => React.ReactNode;
   /** une place vide (élément « libre » ou fin de rangée) ; absent : rien n'est rendu */
   libre?: (p: PlaceVide) => React.ReactNode;
+  /** une rangée de plus, après la liste : une tuile (l'invitation à poser une image, sur sa page par défaut sans place libre) */
+  apres?: React.ReactNode;
   /** Personnaliser : aucune rangée sautée, data-case sur chaque case, data-place sur chaque fin de rangée */
   edition?: boolean;
 }) {
@@ -76,6 +79,11 @@ export function GrilleProfil({
             )}
           </div>
         ))}
+      {rendu(apres) && (
+        <div className={g.rangee}>
+          <div className={`@container ${g.case} ${g.p4}`}>{apres}</div>
+        </div>
+      )}
     </div>
   );
 }

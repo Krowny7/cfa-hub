@@ -30,7 +30,7 @@ import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/
 import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
 import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
 import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
-import { blocsDe, estDispositionDefaut } from "@/lib/profil/disposition";
+import { blocsDe, estDispositionDefaut, rangees } from "@/lib/profil/disposition";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
 import { faceAFace, type FaceAFace as Bilan } from "@/lib/profil/face-a-face";
@@ -406,9 +406,11 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       saisons,
       visibiliteJournal,
     };
-    // la page jamais composée : sa place libre invite le propriétaire à poser une image (les autres ne voient rien)
-    const parDefaut = estDispositionDefaut(style.disposition);
-    panneau = <PageProfil disposition={style.disposition} donnees={donnees} libre={parDefaut && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : undefined} />;
+    // la page jamais composée : sa place libre invite le propriétaire à poser une image (les autres ne voient rien) ;
+    // sans place libre (rangées pleines, avec le radar), l'invitation vient en tuile sous la grille
+    const invitation = estDispositionDefaut(style.disposition) && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : undefined;
+    const pleine = rangees(style.disposition).every((r) => r.libre === 0);
+    panneau = <PageProfil disposition={style.disposition} donnees={donnees} libre={invitation} apres={pleine ? invitation : undefined} />;
   }
 
   return (
