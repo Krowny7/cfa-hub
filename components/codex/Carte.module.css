@@ -998,6 +998,16 @@
   white-space: nowrap;
   cursor: pointer;
 }
+/* 360 px : les cinq segments tiennent sans qu'« Exploits » soit coupé */
+@media (max-width: 379px) {
+  .segments {
+    gap: 1px;
+  }
+  .segment {
+    padding: 0 4px;
+    font-size: 12px;
+  }
+}
 .segment[aria-selected="true"] {
   background: var(--surface);
   color: var(--ink);

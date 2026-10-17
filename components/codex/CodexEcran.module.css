@@ -89,3 +89,13 @@
     padding-inline: 12px;
   }
 }
+/* téléphone étroit : « Y aller » passe sous le texte, sur toute la largeur (le texte garde la place) */
+@media (max-width: 519px) {
+  .prochaine {
+    flex-wrap: wrap;
+  }
+  .prochaine :global(.btn) {
+    flex: 1 0 100%;
+    min-height: 44px;
+  }
+}

@@ -162,6 +162,14 @@ a.titre:hover {
   .bloc {
     flex-wrap: wrap;
   }
+  /* le numéro en face de la ligne du titre (44 px de haut) */
+  .rang {
+    margin-top: 10px;
+  }
+  /* le corps prend la ligne : « Une autre idée ? » passe dessous, aligné sur le titre */
+  .corps {
+    flex-basis: calc(100% - 36px);
+  }
   .autre {
     margin-left: 36px;
     padding: 0 2px;
