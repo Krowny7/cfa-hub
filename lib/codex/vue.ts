@@ -10,6 +10,7 @@ import { destinationCoince, destinationDe, type ContexteDestination, type Destin
 import { nomEnTete, programmeActif, suiteDe } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
 import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
+import type { VueSeance } from "@/lib/codex/seance";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -162,12 +163,14 @@ export type VueCodex = {
   retro: { xp: number; quetes: number; actes: string[]; cosmetiques: string[]; titres: string[] } | null;
   /** « La route de Milan » (V3 §1.6) : le programme suivant, une fois le sien mené ; `ouvrable` : il est public (bouton « Ouvrir … ») */
   suite: { programme: string; court: string; annonce: string; ouvrable: boolean } | null;
+  /** la séance du jour (lib/codex/seance.ts, V3 §6), composée par le serveur ; null : pas encore composée, ou Codex indisponible */
+  seance: VueSeance | null;
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
   disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, cap: null, prochaine: null,
   trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], debrief: null, branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
-  possessions: [], collection: null, stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null,
+  possessions: [], collection: null, stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null, seance: null,
 });
 
 let NOMS_COSMETIQUES: Map<string, string> | null = null;
@@ -421,6 +424,7 @@ export function construireVue(
     nouvelles: extra.nouvelles ?? [],
     retro: extra.retro ?? null,
     suite: suiteVue(e),
+    seance: null,
   };
 }
 

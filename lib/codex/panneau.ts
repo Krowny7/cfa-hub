@@ -11,6 +11,7 @@
 
 import { devoileLite } from "@/lib/codex/devoile-lite";
 import type { Destination } from "@/lib/codex/destinations";
+import type { VueSeance } from "@/lib/codex/seance";
 import type { Budget, Emplacement } from "@/lib/codex/types";
 import type { EtatLigne, LigneQuete, VueCodex } from "@/lib/codex/vue";
 
@@ -174,8 +175,19 @@ export function panneauDe(vue: VueCodex): Panneau {
     budget: vue.budget,
     semaine: { faits: vue.hebdo.filter((l) => l.etat === "terminee").length, total: vue.hebdo.length, quetes: vue.hebdo.map((l) => ({ titre: l.titre, faite: l.etat === "terminee" })) },
     revoir: vue.revoir,
-    seance: null,
+    seance: seancePanneau(vue.seance),
   };
+}
+
+/**
+ * La séance du jour pour la pastille « Séance 2/3 · Continuer → » (V3 §6.4) :
+ * lancée ou non, où elle en est, et le bloc suivant (le premier pas fait ;
+ * aucun une fois la séance finie). null : pas de séance.
+ */
+export function seancePanneau(s: VueSeance | null): Panneau["seance"] {
+  if (!s || !s.blocs.length) return null;
+  const suivant = s.finie ? undefined : s.blocs.find((b) => !s.faits.includes(b.genre));
+  return { lancee: s.lancee, faits: s.blocs.filter((b) => s.faits.includes(b.genre)).length, total: s.blocs.length, suivant: suivant ? { titre: suivant.titre, href: suivant.destination.href } : null };
 }
 
 /** « 3 quêtes tamponnées · +190 XP · titre Garzone » : la ligne des récompenses versées. */

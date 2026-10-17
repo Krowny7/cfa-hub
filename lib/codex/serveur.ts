@@ -26,13 +26,15 @@ import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-faibles-data";
 import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
-  LECTURE_VIDE, actesDuJoueur, demandesActivite, devoiler, evaluer, indexerLecture, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
-  type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
+  LECTURE_VIDE, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
+  type ContratTire, type Entree, type LectureSql, type LigneProgression, type ResultatCompteur, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
 import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesuresV3DeLecture, type MesuresV3 } from "@/lib/codex/mesures-v3";
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
-import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { maitriseDuCodex } from "@/lib/codex/cap";
+import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, lireSeanceGardee, revoirCodexDe, versStockage, type GenreBloc, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -202,6 +204,89 @@ async function dateExamenDe(a: SupabaseClient, id: string): Promise<string | nul
   }
 }
 
+// ── La séance du jour (V3 §6.2) ────────────────────────────────────────
+
+/**
+ * La séance du jour gardée en base (codex_seances, migration_codex_v3.sql §6).
+ * `absente` : la §6 n'est pas collée (la séance vit alors dans la mémoire de
+ * l'instance) ; `lue` faux : une autre erreur, on ne réécrit rien ce coup-ci.
+ */
+async function lireSeance(a: SupabaseClient, id: string, jour: string): Promise<{ gardee: SeanceGardee | null; absente: boolean; lue: boolean }> {
+  try {
+    const { data, error } = await a.from("codex_seances").select(COLONNES_SEANCE).eq("user_id", id).eq("jour", jour).maybeSingle();
+    if (error) return { gardee: null, absente: baseAbsente(error), lue: false };
+    return { gardee: lireSeanceGardee(data), absente: false, lue: true };
+  } catch {
+    return { gardee: null, absente: false, lue: false };
+  }
+}
+
+/** Sans la §6 : la dernière séance calculée aujourd'hui par cette instance tient lieu de séance gardée. */
+function seanceEnMemoire(userId: string, jour: string): SeanceGardee | null {
+  const s = DERNIER.get(userId)?.seance;
+  return s && s.jour === jour ? { budget: s.budget, blocs: s.blocs, faits: s.faits, lanceeLe: s.lanceeLe, finieLe: s.finieLe } : null;
+}
+
+/**
+ * La séance du jour, une fois le Codex évalué. Ses blocs faits se lisent sur
+ * leurs objectifs (demandés à codex_lire avec le reste : Entree.seance) ; la
+ * séance gardée tient tant que le budget du jour ne change pas et qu'aucun de
+ * ses blocs à faire n'est écarté ; sinon elle est recomposée, blocs faits en
+ * tête, et reposée en base. Une écriture ratée ne coûte rien : elle se rejoue
+ * au calcul suivant. null : rien à proposer.
+ */
+async function seanceDuJour(
+  a: SupabaseClient,
+  user: Joueur,
+  o: { entree: Entree; resultat: Resultat; vue: VueCodex; compteurs: Record<string, ResultatCompteur>; actif: DefinitionProgramme; reglage: ReglageJour; lue: Awaited<ReturnType<typeof lireSeance>>; precedente: SeanceGardee | null },
+): Promise<VueSeance | null> {
+  const { entree, resultat, vue, precedente } = o;
+  const jour = entree.jour;
+  const evs = evaluerObjectifs(entree, o.compteurs, entree.seance?.objectifs ?? []);
+  const [cinqFait, trenteFait] = [!!evs[0]?.fait, !!evs[1]?.fait];
+  const faits: GenreBloc[] = [...(precedente?.faits ?? [])];
+  precedente?.blocs.forEach((b, i) => {
+    if (evs[SONDES_SEANCE.length + i]?.fait && !faits.includes(b.genre)) faits.push(b.genre);
+  });
+  const budget = budgetDuJour(entree);
+  const ecartes = ecartesSeance(entree.ecartees ?? []);
+  const recomposer = aRecomposer(precedente, budget, ecartes, faits);
+  let blocs = precedente?.blocs ?? [];
+  if (recomposer) {
+    const contenu = entree.contenu ?? contenuDuProgramme();
+    const dest = contexteDestination(entree, resultat);
+    blocs = composerSeance({
+      jour, phase: resultat.phase, joursAvant: joursAvantExamen(jour, entree.jourJ), budget,
+      maitrise: maitriseDuCodex(contenu, entree.lecture.mesures),
+      revoir: revoirCodexDe(entree.lecture.mesures),
+      cinqFait, trenteFait,
+      // les 30 du jour existent chaque jour (la page /defi les tire au premier passage)
+      trenteDispo: o.actif.outils.has("trente"),
+      questionsTotal: (entree.lecture.mesures.jours ?? []).reduce((s, j) => s + j.n, 0),
+      notionsNonVues: contenu.map((m) => ({ matiere: m.key, n: dest.notionsNonVues[m.key] ?? 0, total: m.notions })),
+      contrats: vue.contrats, def: o.actif, ecartes, dest,
+      blocsFaits: (precedente?.blocs ?? []).filter((b) => faits.includes(b.genre)),
+    }).blocs;
+  }
+  if (!blocs.length) return null;
+  const gardee = !o.lue.absente && o.lue.lue;
+  if (gardee) {
+    try {
+      if (recomposer) await a.rpc("codex_seance_poser", { p_user: user.id, p_jour: jour, p_budget: budget, p_blocs: versStockage(blocs), p_ecartes: ecartes });
+      const nouveaux = faits.filter((g) => !(precedente?.faits ?? []).includes(g));
+      if (nouveaux.length) await a.rpc("codex_seance_marquer", { p_user: user.id, p_jour: jour, p_quoi: "fait", p_val: nouveaux });
+    } catch {
+      // reposée au calcul suivant
+    }
+  }
+  const dans = faits.filter((g) => blocs.some((b) => b.genre === g));
+  const tenue = blocs.every((b) => dans.includes(b.genre));
+  // un bloc à faire de plus (recomposée) : la séance n'est plus finie
+  const finieLe = recomposer && !tenue ? null : (precedente?.finieLe ?? null);
+  const lanceeLe = precedente?.lanceeLe ?? null;
+  return { jour, budget, phase: resultat.phase, blocs, duree: blocs.reduce((s, b) => s + b.duree, 0), faits: dans, lancee: !!lanceeLe, lanceeLe, finie: tenue || !!finieLe, finieLe, gardee };
+}
+
 /** Le calcul complet : lit, évalue, écrit les récompenses, bâtit la vue (le dévoilement est écrit par lireCodex). */
 async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour> {
   const jour = jourParis();
@@ -211,7 +296,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
   if (!a) return vide;
   try {
     const hier = decaleJour(jour, -1);
-    const [joueurR, reglage, lignes, contratsParJour, dateExamen, pf, programmes] = await Promise.all([
+    const [joueurR, reglage, lignes, contratsParJour, dateExamen, pf, programmes, seanceLue] = await Promise.all([
       a.from("codex_joueur").select(COLONNES_JOUEUR).eq("user_id", user.id).maybeSingle(),
       lireReglage(a, user, jour),
       lireLignes(a, user.id),
@@ -219,6 +304,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       dateExamenDe(a, user.id),
       pointsFaibles(supabase),
       lireProgrammes(a, user.id),
+      lireSeance(a, user.id, jour),
     ]);
     // le programme actif (sans ligne : CFA I) ; son jour J, sinon celui du profil (le repli d'avant la v3)
     const actif = programmeActif(programmes);
@@ -259,6 +345,10 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       programmes,
       capacitesVues: reglage.capacitesVues,
     };
+    // la séance du jour déjà proposée (en base ; sans la §6, celle de cette instance) : les objectifs de
+    // ses blocs et les sondes du jour (5 et 30 rendus) partent avec les compteurs des quêtes
+    const seancePrecedente = seanceLue.absente ? seanceEnMemoire(user.id, jour) : seanceLue.gardee;
+    entree.seance = { objectifs: [...SONDES_SEANCE, ...(seancePrecedente?.blocs ?? []).map((b) => b.objectif)], lanceeLe: seancePrecedente?.lanceeLe ?? null };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage)
     if (entree.contrats.length < 3) {
@@ -347,7 +437,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
 
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
-    const vue = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id });
+    const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id });
+    const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, compteurs, actif, reglage, lue: seanceLue, precedente: seancePrecedente });
+    const vue: VueCodex = { ...construite, seance };
     MEMO.set(user.id, { at: Date.now(), vue });
     DERNIER.set(user.id, vue);
     return { vue, entree, resultat };
@@ -466,6 +558,59 @@ export async function reglerJour(supabase: SupabaseClient, user: Joueur, quoi: {
   MEMO.delete(user.id);
   const { vue } = await calculUnique(supabase, joueur, true);
   return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
+}
+
+/**
+ * L'instantané au lancement de la séance (V3 §6.5) : la maîtrise par matière,
+ * la file « À revoir », et l'avancée de cinq quêtes visées au plus (la
+ * prochaine, puis les contrats du jour pas encore faits).
+ */
+function instantaneSeance(v: VueCodex): { maitrise: Record<string, number>; revoir: number | null; quetes: Record<string, number> } {
+  const visees = [...(v.prochaine ? [v.prochaine.ligne] : []), ...v.contrats.map((c) => c.ligne).filter((l) => l.etat !== "terminee")].slice(0, 5);
+  return {
+    maitrise: Object.fromEntries((v.cap?.matieres ?? []).flatMap((m) => (m.pct === null ? [] : [[m.cle, m.pct]]))),
+    revoir: v.revoir?.aujourdhui ?? null,
+    quetes: Object.fromEntries(visees.map((l) => [`${l.id}|${l.periode}`, Math.round(l.fraction * 100) / 100])),
+  };
+}
+
+/**
+ * Une marque sur la séance du jour (V3 §6.2, §6.6) : « vue » (première
+ * fois affichée), « lancee » (« Commencer » : les blocs comptent dès
+ * maintenant, l'instantané est pris), « finie » (« J'arrête là »). En base
+ * (codex_seance_marquer) ; sans la §6, dans la séance gardée par cette
+ * instance (`gardee` faux : « Continuer » se garde aussi dans le navigateur).
+ * Puis le Codex est recalculé (sauf pour « vue », une simple trace).
+ */
+export async function marquerSeance(supabase: SupabaseClient, user: Joueur, quoi: "vue" | "lancee" | "finie"): Promise<{ ok: true; vue: VueCodex; gardee: boolean } | { ok: false; raison: "indisponible" | "refus" }> {
+  const a = admin();
+  if (!a) return { ok: false, raison: "indisponible" };
+  const jour = jourParis();
+  let gardee = false;
+  try {
+    const { data, error } = await a.rpc("codex_seance_marquer", { p_user: user.id, p_jour: jour, p_quoi: quoi, p_val: null });
+    if (error && !baseAbsente(error)) return { ok: false, raison: "refus" };
+    gardee = !error && data !== null;
+    const v = MEMO.get(user.id)?.vue ?? DERNIER.get(user.id);
+    if (gardee && quoi === "lancee" && v?.disponible && v.jour === jour) {
+      await a.rpc("codex_seance_marquer", { p_user: user.id, p_jour: jour, p_quoi: "avant", p_val: instantaneSeance(v) });
+    }
+  } catch {
+    return { ok: false, raison: "refus" };
+  }
+  if (!gardee && quoi !== "vue") {
+    const maintenant = new Date().toISOString();
+    patcher(user.id, (v) => (v.seance && v.seance.jour === jour
+      ? { ...v, seance: quoi === "lancee" ? { ...v.seance, lancee: true, lanceeLe: v.seance.lanceeLe ?? maintenant } : { ...v.seance, finie: true, finieLe: v.seance.finieLe ?? maintenant } }
+      : v));
+  }
+  if (quoi === "vue") {
+    const v = MEMO.get(user.id)?.vue ?? DERNIER.get(user.id);
+    return v ? { ok: true, vue: v, gardee } : { ok: false, raison: "indisponible" };
+  }
+  MEMO.delete(user.id);
+  const { vue } = await calculUnique(supabase, user, true);
+  return vue.disponible ? { ok: true, vue, gardee } : { ok: false, raison: "indisponible" };
 }
 
 /**

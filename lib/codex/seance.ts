@@ -310,7 +310,7 @@ export function composerSeance(e: EntreeSeance): Seance {
  * garde (codex_seances ; sinon recomposée par le serveur, « Continuer » se
  * garde dans le navigateur).
  */
-export type VueSeance = Seance & { faits: GenreBloc[]; lancee: boolean; lanceeLe: string | null; finie: boolean; gardee: boolean };
+export type VueSeance = Seance & { faits: GenreBloc[]; lancee: boolean; lanceeLe: string | null; finie: boolean; finieLe: string | null; gardee: boolean };
 
 /** Le bloc en cours : le premier qui n'est pas fait (null : séance tenue). */
 export const blocSuivant = (s: Pick<VueSeance, "blocs" | "faits">): Bloc | null => s.blocs.find((b) => !s.faits.includes(b.genre)) ?? null;
@@ -355,6 +355,53 @@ export function depuisStockage(x: unknown): Bloc[] {
     });
   }
   return out;
+}
+
+// ── Ce que le serveur garde et relit ───────────────────────────────────
+
+/** Les colonnes de codex_seances que le serveur relit à chaque calcul. */
+export const COLONNES_SEANCE = "budget_min,blocs,faits,lancee_le,finie_le";
+
+/** La séance gardée du jour : la ligne de codex_seances, ou (sans elle) la dernière séance calculée par cette instance. */
+export type SeanceGardee = { budget: Budget; blocs: Bloc[]; faits: GenreBloc[]; lanceeLe: string | null; finieLe: string | null };
+
+const dateIso = (x: unknown): string | null => (typeof x === "string" && !Number.isNaN(Date.parse(x)) ? x : null);
+
+/** Une ligne de codex_seances (codex_seance_poser / _marquer, ou un select) ; null : rien d'exploitable. */
+export function lireSeanceGardee(x: unknown): SeanceGardee | null {
+  const o = x as Record<string, unknown> | null;
+  if (!o || typeof o !== "object") return null;
+  const budget = o.budget_min;
+  if (budget !== 15 && budget !== 30 && budget !== 60 && budget !== 90) return null;
+  const blocs = depuisStockage(o.blocs);
+  const faits = Array.isArray(o.faits) ? o.faits.filter((g): g is GenreBloc => estGenreBloc(g) && blocs.some((b) => b.genre === g)) : [];
+  return { budget, blocs, faits, lanceeLe: dateIso(o.lancee_le), finieLe: dateIso(o.finie_le) };
+}
+
+/** Les sondes du jour, demandées avec les blocs : les 5 et les 30 du jour déjà rendus aujourd'hui. */
+export const SONDES_SEANCE: readonly Objectif[] = [
+  { k: "compteur", evenement: "cinq_rendu", seuil: 1, fenetre: "jour" },
+  { k: "compteur", evenement: "defi_rendu", seuil: 1, fenetre: "jour" },
+];
+
+/**
+ * La séance gardée tient-elle encore ? Non s'il n'y en a pas, si le budget du
+ * jour a changé, ou si un de ses blocs à faire vient d'être écarté (« Une
+ * autre idée ? ») : on recompose, en gardant les blocs faits.
+ */
+export function aRecomposer(g: Pick<SeanceGardee, "budget" | "blocs"> | null, budget: Budget, ecartes: GenreBloc[], faits: GenreBloc[]): boolean {
+  if (!g || !g.blocs.length) return true;
+  return g.budget !== budget || g.blocs.some((b) => !faits.includes(b.genre) && ecartes.includes(b.genre));
+}
+
+/** La file « À revoir » pour la séance : revisions_dues (complète) ; sans elle, les ratures en cours, 25 au plus. */
+export function revoirCodexDe(m: { revoir?: { aujourdhui: number; demain: number; ratures: number; rappels: number }; ratures_ouvertes?: { total: number } }): RevoirCodex | null {
+  if (m.revoir) return { aujourdhui: Math.min(RETOUCHES.max, m.revoir.aujourdhui), demain: Math.min(RETOUCHES.max, m.revoir.demain), ratures: m.revoir.ratures, rappels: m.revoir.rappels, complet: true };
+  if (m.ratures_ouvertes) {
+    const n = Math.min(RETOUCHES.max, m.ratures_ouvertes.total);
+    return { aujourdhui: n, demain: 0, ratures: n, rappels: 0, complet: false };
+  }
+  return null;
 }
 
 /** Les genres écartés de la séance, rangés parmi les quêtes écartées du jour (« seance:coince ») : même réglage, avec ou sans la base. */

@@ -10,9 +10,10 @@ import { contexteDestination, evaluerObjectifs, planifier, type Entree, type Mes
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { notionsDeMatiere } from "@/lib/notions";
 import {
-  MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, seanceTenue, versStockage,
-  type EntreeSeance, type GenreBloc, type RevoirCodex,
+  MARGE_SEANCE, MAX_BLOCS, ORDRE_BLOCS, aRecomposer, blocSuivant, budgetParDefaut, composerSeance, depuisStockage, ecartesSeance, lireSeanceGardee, objectifBloc, raisonCoince, raisonEpreuve, raisonNouveau, raisonRetouches, revoirCodexDe, seanceTenue, versStockage,
+  type EntreeSeance, type GenreBloc, type RevoirCodex, type VueSeance,
 } from "@/lib/codex/seance";
+import { seancePanneau } from "@/lib/codex/panneau";
 import type { Budget, Phase } from "@/lib/codex/types";
 
 let ko = 0;
@@ -182,6 +183,25 @@ console.log("\n# les objectifs, comptés depuis le lancement");
   check("fait d'après les compteurs : les 5 rendus, 12 réponses en FSA (ce qui coince) ; pas les retouches", J(faits) === J(["cinq", "coince"]), J(faits));
   check("retouches : la moitié des ratures rayées (⌈n/2⌉) ou une séance « À revoir » rendue", J(objectifBloc("retouches", { n: 15 })) === J({ k: "unDe", objectifs: [{ k: "compteur", evenement: "revoir_rendue", seuil: 1, fenetre: "depuisLancement" }, { k: "compteur", evenement: "rature_rayee", seuil: 8, fenetre: "depuisLancement" }] }));
   check("l'épreuve : une séance mêlée (matière null) de 30 questions ou plus compte", J(objectifBloc("epreuve")).includes(J({ matiere: null, questions: { min: 30 } })));
+}
+
+console.log("\n# garder ou recomposer, relire la base, la pastille");
+{
+  const s = composerSeance(entree({ phase: "consolidation", budget: 60 }));
+  const ligne = { jour, budget_min: 60, blocs: versStockage(s.blocs), faits: ["cinq", "sieste"], lancee_le: "2026-10-17T07:30:00Z", finie_le: null };
+  const g = lireSeanceGardee(JSON.parse(J(ligne)));
+  check("une ligne de codex_seances relue : budget, blocs, faits (un genre inconnu tombe), lancement", !!g && g.budget === 60 && J(g.blocs.map((b) => b.genre)) === J(genres(s)) && J(g.faits) === J(["cinq"]) && g.lanceeLe === "2026-10-17T07:30:00Z" && g.finieLe === null, J(g));
+  check("une ligne illisible : rien (la séance se recompose)", lireSeanceGardee(null) === null && lireSeanceGardee({ budget_min: 45, blocs: [] }) === null);
+  check("la séance gardée tient : même budget, rien d'écarté", !aRecomposer(g, 60, [], ["cinq"]));
+  check("recomposée : pas de séance, budget changé, ou un bloc à faire écarté", aRecomposer(null, 60, [], []) && aRecomposer(g, 30, [], ["cinq"]) && aRecomposer(g, 60, ["coince"], ["cinq"]));
+  check("… mais pas pour un bloc déjà fait qu'on écarte (il reste)", !aRecomposer(g, 60, ["cinq"], ["cinq"]));
+  check("la file pour la séance : revisions_dues complète, sinon les ratures en cours (25 au plus), sinon rien",
+    J(revoirCodexDe({ revoir: { aujourdhui: 30, demain: 40, ratures: 20, rappels: 10 } })) === J({ aujourdhui: 25, demain: 25, ratures: 20, rappels: 10, complet: true })
+      && J(revoirCodexDe({ ratures_ouvertes: { total: 120 } })) === J({ aujourdhui: 25, demain: 0, ratures: 25, rappels: 0, complet: false }) && revoirCodexDe({}) === null);
+  const vs: VueSeance = { ...s, faits: ["cinq"], lancee: true, lanceeLe: "2026-10-17T07:30:00Z", finie: false, finieLe: null, gardee: true };
+  const p = seancePanneau(vs);
+  check("la pastille : « Séance 1/3 », lancée, le bloc suivant et son lien", !!p && p.lancee && p.faits === 1 && p.total === 3 && p.suivant?.titre === s.blocs[1].titre && p.suivant.href === s.blocs[1].destination.href, J(p));
+  check("la pastille d'une séance finie : plus de bloc suivant ; pas de séance : rien", seancePanneau({ ...vs, finie: true, finieLe: "2026-10-17T09:00:00Z" })?.suivant === null && seancePanneau(null) === null);
 }
 
 console.log("\n# le budget par défaut");
