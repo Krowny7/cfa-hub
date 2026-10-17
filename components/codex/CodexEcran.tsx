@@ -268,7 +268,7 @@ export function CodexEcran({ vue: depart, demo = false, segment: segmentUrl, que
         )}
       </Feuille>
 
-      {ouverte && <DetailQuete l={ouverte} nomMatiere={nomMatiere(vue, ouverte.matiere)} prochaine={!!p && ouverte.id === p.ligne.id && ouverte.periode === p.ligne.periode} onClose={fermer} reclamer={reclamer} />}
+      {ouverte && <DetailQuete l={ouverte} sobre={vue.sobre} nomMatiere={nomMatiere(vue, ouverte.matiere)} prochaine={!!p && ouverte.id === p.ligne.id && ouverte.periode === p.ligne.periode} onClose={fermer} reclamer={reclamer} />}
     </div>
   );
 }

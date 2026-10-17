@@ -170,8 +170,7 @@ export type VueCodex = {
   collection: string | null;
   stats: { faites: number; total: number; xpCodex: number };
   devoile: EtatDevoilement | null;
-  /** ce qui vient d'être dévoilé, avec la réplique de Léonard (l'écran n'a pas le catalogue de dévoilement) */
-  /** ce qui vient d'être dévoilé ; `replique` : null sauf pour le premier dévoilement d'une vague (Léonard ne parle qu'une fois par vague) */
+  /** ce qui vient d'être dévoilé, avec la réplique de Léonard (l'écran n'a pas le catalogue de dévoilement) ; `replique` : null sauf pour le premier dévoilement d'une vague (il ne parle qu'une fois par vague) */
   devoileNouveaux: { id: string; quoi: string; libelle: string; replique: string | null }[];
   /** récompenses versées à CET appel (fanfare) */
   nouvelles: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; titreQuete: string }[];
@@ -189,13 +188,15 @@ export type VueCodex = {
   malle: { coches: string[] } | null;
   /** le lendemain (J+1 à J+7) : le récap de la préparation ; null sinon */
   recap: Recap | null;
+  /** le mode sobre du joueur (V3 §11.5, lib/codex/sobre) : ni « +n XP », ni pièces, des fêtes d'une ligne ; la séance, le panneau, le cap et les contrats restent */
+  sobre: boolean;
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
   disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, cap: null, prochaine: null,
   trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], debrief: null, branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
   possessions: [], collection: null, stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null, seance: null,
-  moment: "courant", tampons: null, malle: null, recap: null,
+  moment: "courant", tampons: null, malle: null, recap: null, sobre: false,
 });
 
 let NOMS_COSMETIQUES: Map<string, string> | null = null;
@@ -375,7 +376,7 @@ export function construireVue(
   e: Entree,
   r: Resultat,
   reco: Recommandation | null,
-  extra: { devoile: EtatDevoilement | null; nouvelles?: VueCodex["nouvelles"]; retro?: VueCodex["retro"]; changementFait?: boolean; joueur?: string; malle?: string[] },
+  extra: { devoile: EtatDevoilement | null; nouvelles?: VueCodex["nouvelles"]; retro?: VueCodex["retro"]; changementFait?: boolean; joueur?: string; malle?: string[]; sobre?: boolean },
 ): VueCodex {
   const contenu = e.contenu ?? contenuDuProgramme();
   const ctx = contexteDestination(e, r);
@@ -536,6 +537,7 @@ export function construireVue(
     tampons: moment === "veillee" && joursAvantDate !== null ? tamponsVeillee(e.jour, joursAvantDate, M.jours) : null,
     malle: moment === "malle" ? { coches: extra.malle ?? [] } : null,
     recap: moment === "lendemain" ? recapDe({ programme: programmeActif(e.programmes).nom, debut, jourJ: e.jourJ, jours: M.jours ?? [], maitrise, raturesScellees: M.ratures_scellees, trophees: M.trophees }) : null,
+    sobre: extra.sobre ?? false,
   };
 }
 

@@ -9,6 +9,7 @@ import { CLE_NOUVEAUTES, CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/li
 import { decider, jourParis, type Compteur } from "@/lib/leonard/apparitions";
 import type { LeonardRig } from "@/lib/leonard/rig";
 import { NOUVEAUTES, REPLIQUES, TUTO, type EtapeTuto, type Replique, type Visite } from "@/lib/leonard/repliques";
+import { lireSobre as sobreDuCompte } from "@/lib/codex/sobre";
 import { CLE_NOUVEAUTES_COMPTE, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
 import { ceremonieRecente, resteCeremonie } from "@/lib/ceremonie-en-cours";
 import s from "./Leonard.module.css";
@@ -295,7 +296,7 @@ export function LeonardHote() {
       void import("@/lib/supabase/browser")
         .then(({ createClient }) => createClient().auth.getSession())
         .then(({ data }) => {
-          if (vivant) sobre.current = data.session?.user.user_metadata?.rl_sobre === true;
+          if (vivant) sobre.current = sobreDuCompte(data.session?.user);
         })
         .catch(() => {});
     lireSobre();

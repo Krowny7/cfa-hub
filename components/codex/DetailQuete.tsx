@@ -24,12 +24,15 @@ export function DetailQuete({
   l,
   nomMatiere,
   prochaine = false,
+  sobre = false,
   onClose,
   reclamer,
 }: {
   l: LigneQuete;
   nomMatiere?: string;
   prochaine?: boolean;
+  /** le mode sobre (lib/codex/sobre) : ni XP ni pièce dans la récompense */
+  sobre?: boolean;
   onClose: () => void;
   reclamer?: (l: LigneQuete) => Promise<string | null>;
 }) {
@@ -55,7 +58,7 @@ export function DetailQuete({
   const verrouille = l.affichage === "verrouille";
   const titre = enigme ? "Exploit caché" : l.titre;
   const aReclamer = l.etat === "terminee" && l.xpVersee === null && !l.retro && !!reclamer;
-  const recompense = [
+  const recompense = sobre ? [] : [
     l.xp > 0 ? (l.etat === "terminee" && l.xpVersee !== null && l.xpVersee < l.xp ? CODEX.detail.xpPlafonnee(l.xpVersee) : CODEX.detail.xp(l.xp)) : null,
     l.titreGagne ? CODEX.detail.titreGagne(l.titreNom ?? l.titreGagne) : null,
     l.cosmetique ? CODEX.detail.cosmetique(l.cosmetiqueNom ?? l.cosmetique) : null,

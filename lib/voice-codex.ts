@@ -42,6 +42,9 @@ export const CODEX = {
     changeDeja: "Tu as déjà changé un contrat aujourd'hui.",
     trio: (xp: number) => `Les trois remplis : +${xp} XP de bonus`,
     trioFait: (xp: number) => `Trio tamponné, +${xp} XP`,
+    /** en mode sobre (lib/codex/sobre) : le trio sans son XP */
+    trioSobre: "Les trois remplis : un bonus",
+    trioFaitSobre: "Trio tamponné",
     semaine: "Cette semaine",
   },
   branches: {
@@ -126,6 +129,8 @@ export const CODEX = {
   retro: {
     titre: "Léonard a feuilleté ton carnet",
     ligne: (q: number, xp: number) => (q <= 1 ? `Une quête était déjà accomplie : +${xp} XP.` : `${q} quêtes étaient déjà accomplies : +${xp} XP, plafonnés à ton niveau.`),
+    /** en mode sobre : sans l'XP */
+    ligneSobre: (q: number) => (q <= 1 ? "Une quête était déjà accomplie." : `${q} quêtes étaient déjà accomplies.`),
     actes: (n: number) => (n === 1 ? "1 acte déjà refermé" : `${n} actes déjà refermés`),
     ok: "Merci, Léonard",
   },

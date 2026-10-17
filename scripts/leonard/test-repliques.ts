@@ -167,7 +167,7 @@ check("Plafond : 5 par jour", MAX_JOUR === 5);
 // ── l'hôte branché ───────────────────────────────────────────────────────
 const hote = readFileSync(join(RACINE, "components/leonard/LeonardHote.tsx"), "utf8");
 check("L'hôte décide avec lib/leonard/apparitions (plus de plafond à 10 en local)", /from "@\/lib\/leonard\/apparitions"/.test(hote) && /decider\(sig\.evt/.test(hote) && !/MAX_JOUR\s*=/.test(hote));
-check("L'hôte lit le jour J (data-jour-j) et le mode sobre (rl_sobre)", /\[data-jour-j\]/.test(hote) && /rl_sobre/.test(hote));
+check("L'hôte lit le jour J (data-jour-j) et le mode sobre (lireSobre de lib/codex/sobre)", /\[data-jour-j\]/.test(hote) && hote.includes('from "@/lib/codex/sobre"') && /sobreDuCompte\(data\.session/.test(hote));
 check("L'hôte affiche l'action en bouton de 44 px", /replique\.action\.href/.test(hote) && /min-h-\[44px\]/.test(hote));
 check("Une bulle survolée ou au clavier ne repart pas sous la main", /onPointerEnter=\{scene\.tuto \? undefined : retenir\}/.test(hote) && /onFocus=\{scene\.tuto \? undefined : retenir\}/.test(hote));
 

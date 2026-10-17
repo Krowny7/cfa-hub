@@ -37,6 +37,7 @@ import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type D
 import { maitriseDuCodex } from "@/lib/codex/cap";
 import { cochesValides, lireMalle, momentCalme, momentDe } from "@/lib/codex/calendrier";
 import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
+import { lireSobre } from "@/lib/codex/sobre";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -490,7 +491,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
 
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
-    const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id, malle });
+    const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id, malle, sobre: lireSobre(user) });
     const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
     const vue: VueCodex = { ...construite, seance };
     MEMO.set(user.id, { at: Date.now(), vue });
@@ -538,7 +539,10 @@ async function persisterDevoile(supabase: SupabaseClient, userId: string, vue: V
  */
 export async function lireCodex(supabase: SupabaseClient, user: Joueur, opts: { force?: boolean; persister?: boolean } = {}): Promise<VueCodex> {
   const memo = MEMO.get(user.id);
-  const vue = !opts.force && memo && Date.now() - memo.at < MEMO_MS ? { ...memo.vue, nouvelles: [] } : (await calculUnique(supabase, user, !!opts.force)).vue;
+  const lue = !opts.force && memo && Date.now() - memo.at < MEMO_MS ? { ...memo.vue, nouvelles: [] } : (await calculUnique(supabase, user, !!opts.force)).vue;
+  // le mode sobre se relit à chaque visite : l'interrupteur agit sans attendre la fin du mémo
+  const sobre = lireSobre(user);
+  const vue = lue.sobre === sobre ? lue : { ...lue, sobre };
   if (opts.persister && vue.devoile?.change) await persisterDevoile(supabase, user.id, vue);
   return vue;
 }
