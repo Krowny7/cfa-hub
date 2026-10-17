@@ -89,7 +89,7 @@ export function RadarComparable({
   const actif = comparer && peutComparer;
 
   const qui = moi ? "toi" : nom;
-  const axes = SUBJECTS.map((x) => ({ label: x.code, nom: x.name, qui, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null }));
+  const axes = SUBJECTS.map((x) => ({ label: x.code, nom: x.name, qui, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null, provisoire: sienProv.get(x.key) ?? null }));
   const lignes = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, complet: x.name, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null, toi: mien.get(x.key) ?? null, meProv: sienProv.get(x.key) ?? null, toiProv: mienProv.get(x.key) ?? null })).sort(
     (a, b) => (b.me ?? -1) - (a.me ?? -1),
   );
