@@ -41,8 +41,25 @@
 --    le carnet (get_ratures, ratures_par_notion) lit seche_le et
 --    scellee_le. Sans cette section, le site garde le rayage immédiat et
 --    propose toutes les ratures.
--- Les sections suivantes (« À revoir », maîtrise, débrief des blancs)
--- s'ajoutent à la suite, lot après lot.
+-- 3b. « À revoir » et la file des révisions : une file par joueur, sans
+--    stockage, recalculée à chaque lecture (revisions_dues, service role ;
+--    mes_revisions_dues, le joueur connecté) : d'abord les ratures en cours
+--    et sèches, puis les rappels (questions dont la dernière réponse est
+--    juste, à revoir après 1, 3, 7 puis 21 jours selon le nombre de bonnes
+--    réponses d'affilée espacées d'au moins 20 h ; tenues à la cinquième).
+--    Jamais plus de 25 par jour, le reste attend sans reproche. La séance
+--    « À revoir » (/revoir) réutilise les séries éclair (eclair_series.genre
+--    = 'revoir') : ses réponses comptent d'office dans l'anneau du jour, la
+--    série d'encre, les réponses du joueur et le carnet. revoir_lancer la
+--    crée (ou reprend celle du jour), revoir_repondre raye une rature sèche
+--    réussie (le déclencheur ratures_a_seche de la section 3a décide : rayée
+--    ou encre fraîche). eclair_start et eclair_finish ne voient plus que les
+--    séries éclair. _reponses_cache : les réponses du joueur lues une fois
+--    par appel (corps identique à celui de migration_codex_v3.sql).
+--    Sans cette section, /revoir dit « bientôt » et renvoie à « Mettre au
+--    propre », et les compteurs comptent les ratures ouvertes (25 au plus).
+-- Les sections suivantes (maîtrise, débrief des blancs) s'ajoutent à la
+-- suite, lot après lot.
 
 -- ── 1. le titre porté et le folio ─────────────────────────────────────
 ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS titre text;
@@ -960,3 +977,483 @@ REVOKE ALL ON FUNCTION get_ratures(text, boolean, int, int) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION rature_suivante(text, uuid[], boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION rature_repondre(uuid, int) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_ratures(text, boolean, int, int) TO authenticated;
+
+-- ── 3b. « À revoir » et la file des révisions ─────────────────────────
+-- Le genre d'une série : 'eclair' (/eclair, toutes les séries d'avant) ou
+-- 'revoir' (/revoir). Même table, mêmes réponses, même clôture.
+ALTER TABLE eclair_series ADD COLUMN IF NOT EXISTS genre text NOT NULL DEFAULT 'eclair';
+ALTER TABLE eclair_series DROP CONSTRAINT IF EXISTS eclair_series_genre_check;
+ALTER TABLE eclair_series ADD CONSTRAINT eclair_series_genre_check CHECK (genre IN ('eclair', 'revoir'));
+CREATE INDEX IF NOT EXISTS eclair_series_user_genre_ouverte ON eclair_series (user_id, genre, started_at DESC) WHERE finished_at IS NULL;
+
+-- Commencer (ou reprendre) une série éclair (migration_series_eclair.sql) :
+-- à l'identique, plus « genre = 'eclair' » dans les lectures de série
+-- ouverte (sinon /eclair reprendrait, ou clorait avec XP, une « À revoir »).
+CREATE OR REPLACE FUNCTION eclair_start()
+RETURNS json
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid     uuid := auth.uid();
+  v_s       eclair_series;
+  v_old     uuid;
+  v_today   date := _daily_today();
+  v_exclude uuid[];
+  v_ids     uuid[];
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  -- une seule série à la fois par joueur (deux onglets : la même série)
+  PERFORM pg_advisory_xact_lock(hashtext('eclair:' || v_uid::text));
+
+  FOR v_old IN
+    SELECT id FROM eclair_series
+    WHERE user_id = v_uid AND genre = 'eclair' AND finished_at IS NULL AND started_at < now() - interval '6 hours'
+  LOOP
+    PERFORM _eclair_close(v_old);
+  END LOOP;
+
+  SELECT * INTO v_s FROM eclair_series
+  WHERE user_id = v_uid AND genre = 'eclair' AND finished_at IS NULL
+  ORDER BY started_at DESC LIMIT 1;
+  IF v_s.id IS NOT NULL THEN
+    RETURN _eclair_json(v_s);
+  END IF;
+
+  -- les défis du jour existent dès qu'on tire une série : leurs questions sont écartées
+  PERFORM _daily_ensure(v_today);
+  PERFORM set_config('rl.daily_program', 'cfa-l1-cinq', true);
+  PERFORM _daily_ensure(v_today);
+  PERFORM set_config('rl.daily_program', '', true);
+  SELECT coalesce(array_agg(DISTINCT q), '{}'::uuid[]) INTO v_exclude
+  FROM daily_challenges dc, unnest(dc.question_ids) AS q
+  WHERE dc.day = v_today;
+
+  v_ids := _eclair_pick(v_uid, v_exclude);
+  IF coalesce(array_length(v_ids, 1), 0) < 5 THEN
+    RETURN json_build_object('id', NULL, 'reason', 'no_bank');
+  END IF;
+
+  INSERT INTO eclair_series (user_id, question_ids, answers)
+  VALUES (v_uid, v_ids, array_fill(NULL::int, ARRAY[array_length(v_ids, 1)]))
+  RETURNING * INTO v_s;
+  RETURN _eclair_json(v_s);
+END;
+$$;
+
+-- Rendre une série (migration_series_eclair.sql) : à l'identique, plus
+-- « genre = 'eclair' » dans le compte du jour (une « À revoir » rendue ne
+-- compte pas comme série éclair du jour). Elle rend aussi les « À revoir ».
+CREATE OR REPLACE FUNCTION eclair_finish(p_id uuid)
+RETURNS json
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_s      eclair_series;
+  v_xp     int;
+  v_today  int;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM eclair_series WHERE id = p_id AND user_id = v_uid) THEN
+    RAISE EXCEPTION 'Series not found';
+  END IF;
+  v_s := _eclair_close(p_id);
+  IF v_s.id IS NULL THEN
+    RETURN json_build_object('id', NULL, 'score', 0, 'total', 0, 'xp_awarded', 0, 'today', 0);
+  END IF;
+
+  SELECT coalesce(sum(xp), 0) INTO v_xp FROM xp_events
+  WHERE user_id = v_uid AND source = 'eclair' AND meta->>'series_id' = v_s.id::text;
+  SELECT count(*) INTO v_today FROM eclair_series
+  WHERE user_id = v_uid AND genre = 'eclair' AND finished_at IS NOT NULL
+    AND (finished_at AT TIME ZONE 'Europe/Paris')::date = _daily_today();
+
+  RETURN json_build_object(
+    'id', v_s.id,
+    'score', v_s.score,
+    'total', v_s.total,
+    'seconds', least(extract(epoch FROM v_s.finished_at - v_s.started_at), 3600)::int,
+    'xp_awarded', v_xp,
+    'today', v_today
+  );
+END;
+$$;
+
+-- Les réponses du joueur lues une fois par appel (V3 §12.3bis) : une table
+-- temporaire de la transaction, indexée, partagée par tous les lecteurs du
+-- même appel (codex_journal, codex_mesures_v3, maitrise_joueur,
+-- revisions_dues). Corps identique dans migration_codex_v3.sql : le premier
+-- fichier collé la crée, le second la remplace par le même texte.
+CREATE OR REPLACE FUNCTION _reponses_cache(p_user uuid) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF to_regclass('pg_temp._rep_cache') IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM pg_temp._rep_cache_cle WHERE user_id = p_user) THEN RETURN; END IF;
+    DROP TABLE pg_temp._rep_cache; DROP TABLE IF EXISTS pg_temp._rep_cache_cle;   -- table temporaire de la transaction, pas une donnée
+  END IF;
+  CREATE TEMP TABLE _rep_cache ON COMMIT DROP AS
+    SELECT r.question_id, r.source, r.ok, r.at, m.matiere
+    FROM _reponses_joueur(p_user) r LEFT JOIN LATERAL (
+      SELECT _codex_matiere(lf.name, qs.title) AS matiere
+      FROM quiz_questions qq
+      LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
+      LEFT JOIN library_folders lf ON lf.id = qs.folder_id
+      WHERE qq.id = r.question_id
+      LIMIT 1
+    ) m ON true;
+  CREATE INDEX ON pg_temp._rep_cache (question_id, at);
+  CREATE INDEX ON pg_temp._rep_cache (matiere, at);
+  CREATE TEMP TABLE _rep_cache_cle ON COMMIT DROP AS SELECT p_user AS user_id;
+END $$;
+
+-- Le palier de rappel de chaque question dont la dernière réponse avant
+-- p_avant est juste : k = les bonnes réponses de la série finale (depuis la
+-- dernière erreur), espacées d'au moins 20 h (une rafale le même jour compte
+-- pour une) ; derniere = la dernière bonne réponse. Seules comptent les
+-- réponses des 180 jours avant p_avant (filtre posé avant le calcul).
+CREATE OR REPLACE FUNCTION _revoir_paliers(p_user uuid, p_avant timestamptz)
+RETURNS TABLE (q uuid, k int, derniere timestamptz)
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_q     uuid;
+  v_k     int := 0;
+  v_pose  timestamptz;   -- la dernière bonne réponse comptée dans k
+  v_der   timestamptz;   -- la dernière bonne réponse tout court
+  r       record;
+BEGIN
+  PERFORM _reponses_cache(p_user);
+  FOR r IN
+    WITH rep AS (
+      SELECT c.question_id, c.ok, c.at FROM pg_temp._rep_cache c
+      WHERE c.at < p_avant AND c.at >= p_avant - interval '180 days'
+    ),
+    faux AS (
+      SELECT rep.question_id, max(rep.at) FILTER (WHERE NOT rep.ok) AS dernier_faux FROM rep GROUP BY rep.question_id
+    )
+    SELECT rep.question_id, rep.at
+    FROM rep JOIN faux ON faux.question_id = rep.question_id
+    WHERE rep.ok AND (faux.dernier_faux IS NULL OR rep.at > faux.dernier_faux)
+    ORDER BY rep.question_id, rep.at
+  LOOP
+    IF v_q IS DISTINCT FROM r.question_id THEN
+      IF v_q IS NOT NULL THEN
+        q := v_q; k := v_k; derniere := v_der;
+        RETURN NEXT;
+      END IF;
+      v_q := r.question_id; v_k := 1; v_pose := r.at;
+    ELSIF r.at >= v_pose + interval '20 hours' THEN
+      v_k := v_k + 1; v_pose := r.at;
+    END IF;
+    v_der := r.at;
+  END LOOP;
+  IF v_q IS NOT NULL THEN
+    q := v_q; k := v_k; derniere := v_der;
+    RETURN NEXT;
+  END IF;
+END;
+$$;
+
+-- La file des révisions d'un joueur pour le jour p_jour (Paris ; défaut :
+-- aujourd'hui), p_n éléments au plus (25 au plus) :
+-- { aujourdhui, demain, ratures, rappels, items: [{ q, genre, palier, due }] }.
+-- 1. Les ratures en cours, visibles et sèches (l'erreur + 24 h, ou seche_le) :
+--    la plus ancienne échéance d'abord, puis les plus manquées, puis la
+--    première erreur la plus ancienne. palier 0.
+-- 2. Les rappels : dernière réponse juste, palier k (1 → 1 jour, 2 → 3 jours,
+--    3 → 7 jours, 4 → 21 jours, 5 et plus : tenue, hors de la file), dus
+--    d'ici la fin du jour : le plus en retard d'abord, puis la notion la plus
+--    fragile (taux d'erreur lissé des 30 derniers jours, comme le « manque »
+--    des points faibles). Une rature en cours n'est jamais un rappel.
+-- Écartées : questions des défis du jour, questions disparues de la banque,
+-- dernière réponse de plus de 180 jours. aujourdhui : 25 au plus, le reste
+-- attend ; demain : ce qui reste après aujourd'hui plus ce qui devient dû
+-- demain, 25 au plus.
+CREATE OR REPLACE FUNCTION revisions_dues(p_user uuid, p_jour date DEFAULT NULL, p_n int DEFAULT 25)
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_jour  date := coalesce(p_jour, _daily_today());
+  v_fin   timestamptz;
+  v_fin2  timestamptz;
+  v_n     int := least(greatest(coalesce(p_n, 25), 0), 25);
+  v_defis uuid[];
+  v_res   jsonb;
+BEGIN
+  IF p_user IS NULL THEN
+    RETURN NULL;
+  END IF;
+  v_fin := (v_jour + 1)::timestamp AT TIME ZONE 'Europe/Paris';
+  v_fin2 := (v_jour + 2)::timestamp AT TIME ZONE 'Europe/Paris';
+  PERFORM _reponses_cache(p_user);
+  SELECT coalesce(array_agg(DISTINCT x), '{}'::uuid[]) INTO v_defis
+  FROM daily_challenges dc, unnest(dc.question_ids) AS x
+  WHERE dc.day = v_jour;
+
+  WITH rat AS (
+    SELECT r.question_id, r.misses, r.first_missed_at, r.last_missed_at,
+           coalesce(r.seche_le, r.last_missed_at + interval '24 hours') AS sec
+    FROM ratures r
+    JOIN quiz_questions qq ON qq.id = r.question_id
+    WHERE r.user_id = p_user AND r.removed_at IS NULL AND r.visible_from <= now()
+      AND greatest(r.last_missed_at, coalesce(r.last_correct_at, r.last_missed_at)) >= now() - interval '180 days'
+      AND NOT (r.question_id = ANY (v_defis))
+  ),
+  rat_dues AS (
+    SELECT question_id AS q, 'rature'::text AS genre, 0 AS palier, sec AS due,
+           row_number() OVER (ORDER BY last_missed_at, misses DESC, first_missed_at, question_id) AS o
+    FROM rat WHERE now() >= sec
+  ),
+  pal AS (
+    SELECT p.q, p.k, qq.notion,
+           p.derniere + CASE p.k WHEN 1 THEN interval '1 day' WHEN 2 THEN interval '3 days' WHEN 3 THEN interval '7 days' ELSE interval '21 days' END AS due
+    FROM _revoir_paliers(p_user, now()) p
+    JOIN quiz_questions qq ON qq.id = p.q
+    WHERE p.k BETWEEN 1 AND 4
+      AND NOT (p.q = ANY (v_defis))
+      AND NOT EXISTS (SELECT 1 FROM ratures r WHERE r.user_id = p_user AND r.question_id = p.q AND r.removed_at IS NULL AND r.visible_from <= now())
+  ),
+  fragile AS (
+    SELECT qq.notion, (count(*) FILTER (WHERE NOT c.ok) + 1.0) / (count(*) + 2.0) AS taux
+    FROM pg_temp._rep_cache c
+    JOIN quiz_questions qq ON qq.id = c.question_id
+    WHERE c.at >= now() - interval '30 days' AND qq.notion IN (SELECT DISTINCT pal.notion FROM pal WHERE pal.due <= v_fin)
+    GROUP BY qq.notion
+  ),
+  rap_dues AS (
+    SELECT pal.q, 'rappel'::text AS genre, pal.k AS palier, pal.due,
+           row_number() OVER (ORDER BY pal.due, f.taux DESC NULLS LAST, pal.q) AS o
+    FROM pal LEFT JOIN fragile f ON f.notion = pal.notion
+    WHERE pal.due <= v_fin
+  ),
+  comptes AS (
+    SELECT (SELECT count(*) FROM rat_dues)::int AS nr,
+           (SELECT count(*) FROM rap_dues)::int AS np,
+           ((SELECT count(*) FROM rat WHERE now() < rat.sec AND rat.sec <= v_fin2)
+            + (SELECT count(*) FROM pal WHERE pal.due > v_fin AND pal.due <= v_fin2))::int AS nd
+  ),
+  file AS (
+    SELECT x.*, row_number() OVER (ORDER BY x.rang, x.o) AS i
+    FROM (SELECT rat_dues.q, rat_dues.genre, rat_dues.palier, rat_dues.due, rat_dues.o, 0 AS rang FROM rat_dues
+          UNION ALL
+          SELECT rap_dues.q, rap_dues.genre, rap_dues.palier, rap_dues.due, rap_dues.o, 1 FROM rap_dues) x
+  )
+  SELECT jsonb_build_object(
+    'aujourdhui', least(25, c.nr + c.np),
+    'demain', least(25, greatest(c.nr + c.np - 25, 0) + c.nd),
+    'ratures', c.nr,
+    'rappels', c.np,
+    'items', coalesce((SELECT jsonb_agg(jsonb_build_object('q', f.q, 'genre', f.genre, 'palier', f.palier, 'due', f.due) ORDER BY f.i)
+                       FROM file f WHERE f.i <= v_n), '[]'::jsonb)
+  ) INTO v_res
+  FROM comptes c;
+  RETURN v_res;
+END;
+$$;
+
+-- La file du joueur connecté (compteurs « 15 à revoir · demain 22 »).
+CREATE OR REPLACE FUNCTION mes_revisions_dues(p_n int DEFAULT 25)
+RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  RETURN revisions_dues(auth.uid(), NULL, p_n);
+END;
+$$;
+
+-- Une « À revoir » laissée en route : close avec les réponses déjà données,
+-- sans XP (celle de la série se gagne en la rendant) ; sans aucune réponse,
+-- elle s'efface, comme une série éclair.
+CREATE OR REPLACE FUNCTION _revoir_clore(p_id uuid)
+RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_s     eclair_series;
+  v_score int;
+  v_total int;
+BEGIN
+  SELECT * INTO v_s FROM eclair_series WHERE id = p_id FOR UPDATE;
+  IF v_s.id IS NULL OR v_s.finished_at IS NOT NULL THEN
+    RETURN;
+  END IF;
+  SELECT count(*) FILTER (WHERE v_s.answers[t.pos] = qq.correct_index), count(*)
+  INTO v_score, v_total
+  FROM unnest(v_s.question_ids) WITH ORDINALITY AS t(qid, pos)
+  JOIN quiz_questions qq ON qq.id = t.qid
+  WHERE v_s.answers[t.pos] IS NOT NULL;
+  IF v_total = 0 THEN
+    DELETE FROM eclair_series WHERE id = p_id;
+    RETURN;
+  END IF;
+  UPDATE eclair_series SET finished_at = now(), score = v_score, total = v_total WHERE id = p_id;
+END;
+$$;
+
+-- Une « À revoir » pour le joueur : la série (comme _eclair_json), plus,
+-- par question, son étiquette { q, genre, palier } : celles de la file à la
+-- création, recalculées à la reprise (rature en cours au départ de la
+-- série, sinon rappel et son palier d'alors).
+CREATE OR REPLACE FUNCTION _revoir_json(p_s eclair_series, p_items jsonb)
+RETURNS json
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_etiq jsonb;
+BEGIN
+  IF p_items IS NULL THEN
+    SELECT coalesce(jsonb_agg(jsonb_build_object(
+             'q', t.qid,
+             'genre', CASE WHEN r.question_id IS NOT NULL THEN 'rature' ELSE 'rappel' END,
+             'palier', CASE WHEN r.question_id IS NOT NULL THEN 0 ELSE coalesce(p.k, 0) END
+           ) ORDER BY t.pos), '[]'::jsonb)
+    INTO v_etiq
+    FROM unnest(p_s.question_ids) WITH ORDINALITY AS t(qid, pos)
+    LEFT JOIN ratures r ON r.user_id = p_s.user_id AND r.question_id = t.qid
+      AND r.first_missed_at < p_s.started_at AND r.visible_from <= p_s.started_at
+      AND (r.removed_at IS NULL OR r.removed_at >= p_s.started_at)
+    LEFT JOIN _revoir_paliers(p_s.user_id, p_s.started_at) p ON p.q = t.qid;
+  ELSE
+    SELECT coalesce(jsonb_agg(jsonb_build_object('q', e.x -> 'q', 'genre', e.x -> 'genre', 'palier', e.x -> 'palier') ORDER BY e.o), '[]'::jsonb)
+    INTO v_etiq
+    FROM jsonb_array_elements(p_items) WITH ORDINALITY AS e(x, o);
+  END IF;
+  RETURN (_eclair_json(p_s)::jsonb || jsonb_build_object('genre', 'revoir', 'etiquettes', v_etiq))::json;
+END;
+$$;
+
+-- Lancer « À revoir » (p_n questions, de 5 à 25 ; 15 par défaut) : clôt
+-- d'abord les « À revoir » laissées en route (plus de 6 h, ou d'un autre
+-- jour), reprend celle du jour, sinon en crée une avec la file du jour.
+-- Moins de 5 questions dues : { vide: true, aujourdhui, demain }.
+CREATE OR REPLACE FUNCTION revoir_lancer(p_n int DEFAULT 15)
+RETURNS json
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid   uuid := auth.uid();
+  v_s     eclair_series;
+  v_old   uuid;
+  v_today date := _daily_today();
+  v_rev   jsonb;
+  v_ids   uuid[];
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  -- même verrou que eclair_start : une série à la fois, deux onglets compris
+  PERFORM pg_advisory_xact_lock(hashtext('eclair:' || v_uid::text));
+
+  FOR v_old IN
+    SELECT id FROM eclair_series
+    WHERE user_id = v_uid AND genre = 'revoir' AND finished_at IS NULL
+      AND (started_at < now() - interval '6 hours' OR (started_at AT TIME ZONE 'Europe/Paris')::date <> v_today)
+  LOOP
+    PERFORM _revoir_clore(v_old);
+  END LOOP;
+
+  SELECT * INTO v_s FROM eclair_series
+  WHERE user_id = v_uid AND genre = 'revoir' AND finished_at IS NULL
+  ORDER BY started_at DESC LIMIT 1;
+  IF v_s.id IS NOT NULL THEN
+    RETURN _revoir_json(v_s, NULL);
+  END IF;
+
+  -- les défis du jour existent avant le tirage : leurs questions sont écartées
+  PERFORM _daily_ensure(v_today);
+  PERFORM set_config('rl.daily_program', 'cfa-l1-cinq', true);
+  PERFORM _daily_ensure(v_today);
+  PERFORM set_config('rl.daily_program', '', true);
+
+  v_rev := revisions_dues(v_uid, v_today, least(greatest(coalesce(p_n, 15), 5), 25));
+  IF jsonb_array_length(v_rev -> 'items') < 5 THEN
+    RETURN json_build_object('vide', true, 'aujourdhui', (v_rev ->> 'aujourdhui')::int, 'demain', (v_rev ->> 'demain')::int);
+  END IF;
+
+  SELECT array_agg((e.x ->> 'q')::uuid ORDER BY e.o) INTO v_ids
+  FROM jsonb_array_elements(v_rev -> 'items') WITH ORDINALITY AS e(x, o);
+  INSERT INTO eclair_series (user_id, question_ids, answers, genre)
+  VALUES (v_uid, v_ids, array_fill(NULL::int, ARRAY[array_length(v_ids, 1)]), 'revoir')
+  RETURNING * INTO v_s;
+  RETURN _revoir_json(v_s, v_rev -> 'items');
+END;
+$$;
+
+-- Répondre dans une « À revoir » : le geste d'eclair_answer (réponse
+-- définitive, correction immédiate ; le déclencheur ratures_eclair compte
+-- déjà la reprise), puis, pour une rature en cours réussie, le rayage :
+-- removed_at = last_correct_at, que ratures_a_seche accepte (rayée) ou
+-- refuse (encre fraîche). Rien n'est compté deux fois. rature : « rayee »,
+-- « fraiche » (avec seche_le), « scellee » (une ancienne réussie 7 jours
+-- après son rayage), sinon null.
+CREATE OR REPLACE FUNCTION revoir_repondre(p_id uuid, p_position int, p_choix int)
+RETURNS json
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_s      eclair_series;
+  v_q      uuid;
+  v_neuve  boolean;
+  v_avant  ratures;
+  v_apres  ratures;
+  v_res    jsonb;
+  v_rature text;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  SELECT * INTO v_s FROM eclair_series WHERE id = p_id AND user_id = v_uid AND genre = 'revoir';
+  IF v_s.id IS NULL THEN
+    RAISE EXCEPTION 'Series not found';
+  END IF;
+  IF p_position IS NULL OR p_position < 0 OR p_position >= array_length(v_s.question_ids, 1) THEN
+    RAISE EXCEPTION 'Invalid position';
+  END IF;
+  v_q := v_s.question_ids[p_position + 1];
+  v_neuve := v_s.finished_at IS NULL AND v_s.answers[p_position + 1] IS NULL;
+  SELECT * INTO v_avant FROM ratures WHERE user_id = v_uid AND question_id = v_q;
+
+  v_res := eclair_answer(p_id, p_position, p_choix)::jsonb;
+
+  IF v_neuve AND (v_res ->> 'is_correct')::boolean AND v_avant.question_id IS NOT NULL THEN
+    IF v_avant.removed_at IS NULL AND v_avant.visible_from <= now() THEN
+      UPDATE ratures SET removed_at = last_correct_at
+      WHERE user_id = v_uid AND question_id = v_q AND removed_at IS NULL
+        AND last_correct_at IS NOT NULL AND correct_since > v_avant.correct_since;
+    END IF;
+    SELECT * INTO v_apres FROM ratures WHERE user_id = v_uid AND question_id = v_q;
+    v_rature := CASE
+      WHEN v_avant.removed_at IS NULL AND v_avant.visible_from <= now() THEN CASE WHEN v_apres.removed_at IS NOT NULL THEN 'rayee' ELSE 'fraiche' END
+      WHEN v_avant.removed_at IS NOT NULL AND v_avant.scellee_le IS NULL AND v_apres.scellee_le IS NOT NULL THEN 'scellee'
+    END;
+  END IF;
+
+  RETURN (v_res || jsonb_build_object('rature', v_rature, 'seche_le', CASE WHEN v_rature = 'fraiche' THEN v_apres.seche_le END))::json;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION _reponses_cache(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _revoir_paliers(uuid, timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _revoir_clore(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION _revoir_json(eclair_series, jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION revisions_dues(uuid, date, int) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION mes_revisions_dues(int) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION revoir_lancer(int) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION revoir_repondre(uuid, int, int) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION eclair_start() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION eclair_finish(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION revisions_dues(uuid, date, int) TO service_role;
+GRANT EXECUTE ON FUNCTION mes_revisions_dues(int) TO authenticated;
+GRANT EXECUTE ON FUNCTION revoir_lancer(int) TO authenticated;
+GRANT EXECUTE ON FUNCTION revoir_repondre(uuid, int, int) TO authenticated;
+GRANT EXECUTE ON FUNCTION eclair_start() TO authenticated;
+GRANT EXECUTE ON FUNCTION eclair_finish(uuid) TO authenticated;
