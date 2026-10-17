@@ -12,12 +12,14 @@ Usage:
     python build_qcm_pages.py fsa
     python build_qcm_pages.py pm
     python build_qcm_pages.py economics <concept_pdf> <out_pdf>
+    python build_qcm_pages.py corporate <concept_pdf> <out_pdf>
 
-For `economics` the two PDF paths are passed as arguments (not coded in this
-file). Its concept pages are 675.12 x 618.96 pt (shorter than the other
-sheets' 863.04), but the QCM/Corrigé pages keep the 675.12 x 863.04 layout
-measured above: the viewer fits pages to the width, so mixing heights is fine
-and 5 questions per page would not fit in 619 pt. Any argument given after the
+For `economics` and `corporate` the two PDF paths are passed as arguments
+(not coded in this file). Their concept pages are shorter than the other
+sheets' 863.04 pt (Economics 675.12 x 618.96, Corporate Issuers 675.12 x
+684.0), but the QCM/Corrigé pages keep the 675.12 x 863.04 layout measured
+above: the viewer fits pages to the width, so mixing heights is fine and 5
+questions per page would not fit in 619-684 pt. Any argument given after the
 topic overrides the PDF paths of fsa/pm too.
 """
 import io
@@ -412,6 +414,19 @@ TOPICS = {
             (3, "Monetary Policy & Geopolitics"),
             (4, "International Trade & FX Market"),
             (5, "Exchange Rate Calculations"),
+        ],
+    ),
+    "corporate": dict(
+        concept_pdf=None,  # <concept_pdf> <out_pdf> are passed as arguments
+        out_pdf=None,
+        header_prefix="CFA LEVEL I — CORPORATE ISSUERS",
+        topic_label="Corporate Issuers",
+        raw_file="qcm_data/corporate_raw.txt",
+        order=[
+            (1, "Organizational Forms & Investors"),
+            (2, "Corporate Governance & Working Capital"),
+            (3, "Capital Investments & Capital Allocation"),
+            (4, "Capital Structure & Business Models"),
         ],
     ),
 }

@@ -1,0 +1,163 @@
+PAGE 1 — Organizational Forms & Investors
+SRC: R22 Q8
+Q1: Which of the following statements comparing corporations and general partnerships is most accurate?
+A) Owner liability is only limited under a corporation.
+B) Access to capital is easier under a general partnership, given the less complex business structure.
+C) Both corporations and general partnerships are separate legal entities.
+ANSWER: A
+EXPLANATION: Dans une corporation, la responsabilité des actionnaires est limitée à leur apport ; dans une general partnership, tous les associés sont des general partners à responsabilité illimitée sur les dettes de l'entreprise. Seule la corporation offre donc une responsabilité limitée. B est faux : ce sont les corporations qui ont l'accès le plus large et le plus facile au capital (dette et equity), grâce à leur taille et à leur structure ; une partnership dépend surtout des moyens de ses associés. C est faux : seule la corporation est une entité juridique distincte de ses propriétaires ; la partnership n'est qu'un prolongement juridique de ses associés.
+
+SRC: R22 Q10
+Q2: Under which business structure are profits potentially subject to double taxation?
+A) General partnership.
+B) Limited partnership.
+C) Corporation.
+ANSWER: C
+EXPLANATION: La double imposition vise la corporation : ses bénéfices sont d'abord taxés à l'impôt sur les sociétés (tc), puis les dividendes distribués sont taxés une seconde fois comme revenu personnel des actionnaires (td). Taux effectif avec un payout de 100 % : tc + td × (1 - tc). A et B sont faux : les partnerships, générales comme limitées, sont des structures pass-through ; le profit n'est pas imposé au niveau de l'entreprise, mais une seule fois, comme revenu personnel de chaque associé.
+
+SRC: R22 Q9
+Q3: A corporation that wishes to raise equity capital and have its shares publicly traded is most likely to engage in:
+A) a management buyout.
+B) a direct listing on an exchange.
+C) an initial public offering.
+ANSWER: C
+EXPLANATION: Une IPO (initial public offering) émet des actions nouvelles vendues au public, en général avec un underwriter : le produit de la vente augmente l'equity de l'émetteur, et les actions sont ensuite cotées. Les deux objectifs (lever du capital et être coté) sont atteints. B est faux : un direct listing fait coter des actions existantes sans en émettre de nouvelles ; il ne lève aucun capital. A est faux : un management buyout (une forme de LBO) fait l'inverse, il sort une société de la cote (going private).
+
+SRC: R23 Q3
+Q4: Increasing a company's risk exposure in an effort to increase its growth rate is most likely to be favored by:
+A) owners but not lenders.
+B) neither lenders nor owners.
+C) both lenders and owners.
+ANSWER: A
+EXPLANATION: Les créanciers (lenders) ont une créance contractuelle : leur gain est plafonné aux intérêts promis et au remboursement du principal. Ils ne profitent pas d'une croissance plus forte mais subissent la hausse du risque de défaut : ils y sont opposés. Les actionnaires (owners) détiennent la créance résiduelle, au potentiel de hausse illimité : ils sont favorables à une stratégie plus risquée qui peut accélérer la croissance. B est faux car les actionnaires y sont favorables ; C est faux car les créanciers n'y gagnent rien et y perdent en sécurité.
+
+SRC: R23 Q2
+Q5: The stakeholder theory of corporate governance is primarily focused on:
+A) increasing the value of a company.
+B) resolving the competing interests of those who manage companies and other groups affected by a company's actions.
+C) the interests of various stakeholders rather than the interests of shareholders.
+ANSWER: B
+EXPLANATION: Selon la stakeholder theory, la gouvernance d'entreprise cherche à arbitrer les intérêts concurrents de ceux qui dirigent l'entreprise et de tous les groupes touchés par ses décisions (actionnaires, créanciers, salariés, clients, fournisseurs, communauté...). A est faux : maximiser la valeur (de l'equity) est l'objectif de la shareholder theory. C est faux : les actionnaires font partie des stakeholders ; la théorie ne les écarte pas au profit des autres groupes, elle les compte parmi les intérêts à concilier.
+
+PAGE 2 — Corporate Governance & Working Capital
+SRC: R24 Q3
+Q1: A principal-agent relationship most likely exists between a company's:
+A) customers and suppliers.
+B) directors and regulators.
+C) shareholders and managers.
+ANSWER: C
+EXPLANATION: Les actionnaires (principals) confient, par l'intermédiaire du board, la gestion de l'entreprise aux managers (agents), qui doivent agir dans leur intérêt. Comme les managers ont leurs propres intérêts et en savent plus que les actionnaires (information asymmetry), cette relation crée des agency costs (surveillance, décisions sous-optimales). A est faux : clients et fournisseurs ont une relation commerciale, aucun n'agit pour le compte de l'autre. B est faux : les régulateurs encadrent l'entreprise de l'extérieur ; ils ne mandatent pas les administrateurs pour agir en leur nom.
+
+SRC: R24 Q4
+Q2: Responsibilities of a board of directors' nominations committee are least likely to include:
+A) evaluating the independence of directors.
+B) recruiting qualified members to the board.
+C) selecting an external auditor for the company.
+ANSWER: C
+EXPLANATION: Choisir l'auditeur externe (sous réserve de l'approbation des actionnaires) relève de l'audit committee, qui supervise le reporting financier, les contrôles internes et la relation avec l'auditeur. A et B sont bien des missions du nominations committee : il recrute des candidats qualifiés pour le board et vérifie l'indépendance des administrateurs, en s'appuyant sur le code de gouvernance et la gestion des conflits d'intérêts.
+
+SRC: R25 Q7
+Q3: Buildup Design, Inc., expects a 20% reduction in its days payable outstanding from 50 to 40 days, while its days of inventory on hand and days sales outstanding would remain unchanged. What would be the most likely impact on the cash conversion cycle (CCC)?
+A) The CCC would decrease by 10 days.
+B) The CCC would increase by 10 days.
+C) The CCC would increase by 20%.
+ANSWER: B
+EXPLANATION: CCC = DOH + DSO - DPO. Le DPO est soustrait : s'il baisse de 10 jours (de 50 à 40) pendant que DOH et DSO ne bougent pas, le CCC augmente de 10 jours. Un DPO plus court signifie que les fournisseurs accordent moins de crédit et doivent être payés plus vite : le capital immobilisé dans le cycle d'exploitation augmente. A est faux : c'est le piège du signe, une baisse du DPO allonge le CCC au lieu de le raccourcir. C est faux : la variation se mesure en jours (+10) ; la baisse de 20 % porte sur le DPO, pas sur le CCC, dont la variation relative dépend de son niveau de départ.
+
+SRC: R25 Q6
+Q4: A supplier offers 4/30 net 90 terms. The bank interest rate is 6.5%. Which source of financing is the cheapest?
+A) The bank.
+B) The two cost the same.
+C) The supplier's offered terms.
+ANSWER: A
+EXPLANATION: Avec 4/30 net 90, l'entreprise obtient 4 % de remise si elle paie sous 30 jours ; si elle y renonce, elle garde l'argent 60 jours de plus (90 - 30). Coût annuel effectif de ce crédit fournisseur : (1 + 0,04 / 0,96)^(365/60) - 1 = 1,041667^6,083 - 1, soit environ 28,2 %. Le crédit bancaire ne coûte que 6,5 % : mieux vaut emprunter à la banque, payer sous 30 jours et prendre la remise. B est faux : les deux coûts sont très différents. C est faux : le crédit fournisseur paraît gratuit, mais son coût implicite (la remise perdue) est bien plus élevé que le taux bancaire.
+
+SRC: R25 Q8
+Q5: The quick ratio is considered a more conservative measure of liquidity than the current ratio because the quick ratio excludes:
+A) inventories.
+B) marketable securities.
+C) accounts receivable.
+ANSWER: A
+EXPLANATION: Current ratio = actifs courants / passifs courants ; quick ratio = (cash + titres négociables + créances clients) / passifs courants. Le quick ratio retire les stocks, car ils doivent d'abord être vendus, puis encaissés, avant de devenir du cash : il est donc plus prudent. B et C sont faux : les titres négociables et les créances clients restent au numérateur du quick ratio ; c'est le cash ratio, (cash + titres) / passifs courants, qui retire aussi les créances.
+
+PAGE 3 — Capital Investments & Capital Allocation
+SRC: R26 Q11
+Q1: With respect to capital investments, the greatest amount of detailed analysis is typically required when deciding whether to:
+A) replace a functioning machine with a newer model to reduce costs.
+B) address safety-related concerns.
+C) introduce a new product or develop a new market.
+ANSWER: C
+EXPLANATION: Lancer un nouveau produit ou entrer sur un nouveau marché est un projet d'expansion : les prévisions de ventes et de charges sont très incertaines, d'où l'analyse la plus détaillée. A est faux : remplacer une machine qui fonctionne pour réduire les coûts est un projet going concern, aux flux assez prévisibles, qui demande une analyse légère. B est faux : un projet de sécurité est un projet réglementaire (regulatory), imposé et peu générateur de revenus ; l'analyse consiste surtout à trouver la façon la moins chère de s'y conformer.
+
+SRC: R26 Q6
+Q2: Johnson's Jar Lids is deciding whether to begin producing jars. Johnson's pays a consultant $50,000 for market research that concludes Johnson's sales of jar lids will increase by 5% if it also produces jars. In choosing the cash flows to include when evaluating a project to begin producing jars, Johnson's should:
+A) include both the cost of the market research and the effect on the sales of jar lids.
+B) include the cost of the market research and exclude the effect on the sales of jar lids.
+C) exclude the cost of the market research and include the effect on the sales of jar lids.
+ANSWER: C
+EXPLANATION: On n'analyse que les flux incrémentaux, ceux qui dépendent de la décision. Les 50 000 $ de l'étude de marché sont déjà dépensés quel que soit le choix : c'est un sunk cost, à exclure. La hausse de 5 % des ventes de couvercles est une externalité positive du projet sur un produit existant : elle n'existe que si l'on produit des bocaux, donc elle s'inclut (comme on inclurait, dans l'autre sens, une cannibalisation). A et B sont faux car ils comptent le sunk cost ; B l'est doublement, car il ignore en plus l'externalité.
+
+SRC: R26 Q20
+Q3: The estimated annual after-tax cash flows of a proposed investment are $10,000 in Year 1, $15,000 in Year 2 and $18,000 in Year 3. The after-tax cash flow from the sale of the investment at the end of Year 3 is $120,000. The initial cost of the investment is $100,000, and the required rate of return is 12%. The net present value (NPV) of the project is closest to:
+A) $19,113.
+B) $63,000.
+C) -$66,301.
+ANSWER: A
+EXPLANATION: Le produit de cession s'ajoute au flux de l'année 3 : 18 000 + 120 000 = 138 000. NPV = -100 000 + 10 000 / 1,12 + 15 000 / 1,12^2 + 138 000 / 1,12^3 = -100 000 + 8 929 + 11 958 + 98 226 = 19 113 $. À la calculatrice : CF0 = -100 000 ; CF1 = 10 000 ; CF2 = 15 000 ; CF3 = 138 000 ; I = 12 ; CPT NPV = 19 112. B est faux : 63 000 = 10 000 + 15 000 + 18 000 + 120 000 - 100 000, c'est la somme des flux sans actualisation. C est faux : on obtient ce chiffre en oubliant le produit de cession de 120 000 $.
+
+SRC: R26 Q19
+Q4: If a calculated net present value is negative, the discount rate used is:
+A) greater than the internal rate of return.
+B) less than the internal rate of return.
+C) equal to the internal rate of return.
+ANSWER: A
+EXPLANATION: L'IRR est le taux qui annule la NPV. Pour un projet classique (une sortie de cash puis des entrées), la NPV baisse quand le taux d'actualisation monte : elle est nulle au taux égal à l'IRR, positive en dessous, négative au-dessus. Une NPV négative signifie donc que le taux utilisé dépasse l'IRR ; si ce taux est le taux requis, le projet est rejeté selon les deux critères. B est faux : un taux inférieur à l'IRR donne une NPV positive. C est faux : au taux égal à l'IRR, la NPV vaut exactement zéro.
+
+SRC: R26 Q1
+Q5: Which of the following examples best represents a flexibility option?
+A) In three years, a company can invest $500 million to increase the size of its project by 40%.
+B) In two years, a company can cease operating a factory if the present value of production is negative.
+C) In one year, a company can increase the price of its product by up to 30% if demand rises.
+ANSWER: C
+EXPLANATION: Une flexibility option donne le droit d'ajuster plus tard les décisions d'exploitation : prix, volumes produits, intrants, heures supplémentaires. Pouvoir augmenter le prix si la demande monte en est l'exemple type. A est faux : investir 500 millions de dollars pour agrandir le projet de 40 % est une option d'expansion (sizing option). B est faux : cesser d'exploiter l'usine si la valeur de la production devient négative est une option d'abandon (l'autre sizing option). Toutes ces options sont des droits sans obligation : leur valeur s'ajoute à la NPV et n'est jamais négative.
+
+PAGE 4 — Capital Structure & Business Models
+SRC: R27 Q9
+Q1: Elenore Rice, CFA, is asked to determine the appropriate weighted average cost of capital for Samson Brick Company. Samson's debt outstanding has a market value of $10 million and its common stock outstanding a market value of $30 million. Its marginal tax rate is 40%, its cost of common equity is 12% and its cost of debt is 8%. Samson has no preferred stock. Assuming Samson's ratios reflect the firm's target capital structure, Samson's weighted average cost of capital is closest to:
+A) 9.8%.
+B) 10.4%.
+C) 10.2%.
+ANSWER: C
+EXPLANATION: Poids en valeurs de marché : wd = 10 / (10 + 30) = 25 % et we = 30 / 40 = 75 %. WACC = wd × rd × (1 - t) + we × re = 0,25 × 8 % × (1 - 0,40) + 0,75 × 12 % = 1,2 % + 9 % = 10,2 %. B est faux : 10,4 % = 0,25 × 8 % + 0,75 × 12 %, avec le coût de la dette pris avant impôt (l'économie d'impôt sur les intérêts est oubliée). A est faux : 9,8 % vient de l'erreur qui multiplie le coût de la dette par t (0,40) au lieu de (1 - t) : 0,25 × 8 % × 0,40 + 9 % = 9,8 %.
+
+SRC: R27 Q11
+Q2: Removing the assumption of no taxes, but keeping all of Modigliani and Miller's other assumptions, which of the following would be the optimal capital structure for maximizing the value of a firm?
+A) 100% equity.
+B) 100% debt.
+C) 50% debt and 50% equity.
+ANSWER: B
+EXPLANATION: Avec impôts, les intérêts sont déductibles : la dette crée un tax shield et VL = VU + t × D. Les autres hypothèses de MM étant maintenues (en particulier aucun coût de faillite ni de financial distress), chaque dollar de dette supplémentaire ajoute de la valeur et fait baisser le WACC : la valeur est maximale avec 100 % de dette. A est faux : 100 % equity renonce entièrement au tax shield, c'est la valeur la plus basse (VU). C est faux : MM avec impôts n'a pas d'optimum intermédiaire ; il n'en apparaît un qu'en ajoutant les coûts de financial distress (static trade-off theory).
+
+SRC: R27 Q6
+Q3: Under the static tradeoff theory, the optimal capital structure of a firm is at the point where the:
+A) value of an unlevered firm is at its maximum.
+B) difference between the value of a levered firm and unlevered firm is at its maximum.
+C) cost of financial distress is at its minimum.
+ANSWER: B
+EXPLANATION: Static trade-off : VL = VU + t × D - PV(coûts de financial distress). L'optimum est le niveau de dette qui maximise VL (et minimise le WACC), là où le gain marginal du tax shield égale le coût marginal attendu de la détresse financière. Comme VU est constante (elle ne dépend pas de la dette), maximiser VL revient à maximiser l'écart VL - VU. A est faux : la valeur de la firme non endettée ne varie pas avec la structure du capital, elle n'a pas de maximum à chercher. C est faux : le coût de financial distress est minimal (nul) sans aucune dette, et ce point n'est pas l'optimum puisqu'il renonce à tout le tax shield.
+
+SRC: R28 Q5
+Q4: Binder Company describes itself as a direct sales business. In terms of its business model, this refers to Binder's:
+A) channel strategy.
+B) pricing strategy.
+C) product or service.
+ANSWER: A
+EXPLANATION: La channel strategy (le « where » du business model) décrit comment l'entreprise vend et livre son produit : en direct au client (direct sales), via des intermédiaires comme les distributeurs, ou en omnicanal. « Direct sales » répond à cette question. B est faux : la pricing strategy (le « how much ») porte sur la fixation des prix (tiered, dynamic, bundling...), pas sur le mode de distribution. C est faux : le produit ou service (le « what ») décrit ce que l'entreprise vend et comment elle se différencie, pas la façon dont elle le vend.
+
+SRC: R28 Q6
+Q5: The management of a company that manufactures pens decides to initially offer its products at a significant discount to market price to gain market entry. Afterward, it will offer its products at various discounts based on volume of purchases. Which pricing models best reflect the company's strategy (first the discount to market price, then the discount based on purchase volume)?
+A) Freemium pricing, then dynamic pricing.
+B) Freemium pricing, then tiered pricing.
+C) Penetration pricing, then tiered pricing.
+ANSWER: C
+EXPLANATION: Vendre au départ nettement sous le prix du marché, avec une marge faible voire négative, pour gagner des parts de marché à l'entrée, c'est le penetration pricing. Accorder des remises selon le volume acheté (plus on achète, plus la remise est forte), c'est le tiered pricing. A et B sont faux pour la première étape : le freemium offre gratuitement un produit de base et fait payer les fonctions ou produits supplémentaires, ce qui n'est pas une remise sur le prix du marché. A est aussi faux pour la seconde : le dynamic pricing fait varier le prix selon le moment de l'achat (heure, jour), pas selon le volume.

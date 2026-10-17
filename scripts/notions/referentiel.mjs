@@ -330,6 +330,7 @@ export const DOSSIERS = {
   "Économie (Système)": "economics",
   "Economics (Système)": "economics",
   "Finance d'Entreprise (Système)": "corporate",
+  "Corporate Issuers (Système)": "corporate",
   "Analyse des États Financiers (Système)": "fsa",
   "Financial Statement Analysis (Système)": "fsa",
   "Investissements en Actions (Système)": "equity",
@@ -348,4 +349,5 @@ export const DRILLS = {
   "Fixed Income": { matiere: "fixed_income", fiche: "fixed-income", script: "fixed-income" },
   "Portfolio Management": { matiere: "portfolio", fiche: "portfolio-management", script: "pm" },
   Economics: { matiere: "economics", fiche: "economics", script: "economics" },
+  "Corporate Issuers": { matiere: "corporate", fiche: "corporate-issuers", script: "corporate" },
 };

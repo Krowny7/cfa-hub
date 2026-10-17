@@ -33,6 +33,10 @@ onto the existing PDF, matching its own style exactly.
   Exception: the Economics concept sheet's 5 synthèse pages are 675.12 × 618.96 pt
   (same width). Its QCM/Corrigé pages (built by `build_qcm_pages.py economics
   <concept_pdf> <out_pdf>`, data in `qcm_data/economics_raw.txt`) keep 863.04.
+  Same for Corporate Issuers: 4 synthèse pages of 675.12 × 684.0 pt, QCM/Corrigé
+  pages at 863.04 (`build_qcm_pages.py corporate <concept_pdf> <out_pdf>`, data
+  in `qcm_data/corporate_raw.txt`, upload with `scripts/upload-fiche-corporate.mjs
+  <pdf>`, which backs up the bucket's current file under a dated name first).
 - Fonts — same families as the four Windows system fonts, so pull the FULL
   files from `C:\Windows\Fonts\` rather than the PDF's own subsets:
   `DejaVuSansMono(-Bold)` for the small mono labels/footer, `LiberationSans`

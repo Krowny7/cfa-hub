@@ -37,6 +37,7 @@ const FICHES: [string, string][] = [
   ["derivatives", "Derivatives"],
   ["portfolio-management", "Portfolio Management"],
   ["economics", "Economics"],
+  ["corporate-issuers", "Corporate Issuers"],
 ];
 
 const ENTRIES: Entry[] = [

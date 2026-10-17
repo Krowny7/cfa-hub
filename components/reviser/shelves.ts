@@ -34,6 +34,10 @@ const FICHE_INFO: Record<string, { meta: string; desc: string }> = {
     meta: "5 synthèses · 12 pages",
     desc: "Structures de marché, cycles, politiques budgétaire et monétaire, commerce, change.",
   },
+  "corporate-issuers": {
+    meta: "4 synthèses · 10 pages",
+    desc: "Formes juridiques, gouvernance, BFR et liquidité, investissements, structure du capital, business models.",
+  },
 };
 
 /** Contenu d'une fiche (nombre de synthèses et de pages, thèmes). */
