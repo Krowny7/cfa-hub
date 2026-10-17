@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Minus, PanelRightClose, PanelRightOpen, Plus, LocateFixed } from "lucide-react";
+import { ChevronDown, Minus, PanelRightClose, PanelRightOpen, Plus, LocateFixed, X } from "lucide-react";
 import { INK } from "@/components/ui/InkDefs";
 import type { LigneQuete, VueActe, VueBranche, VueChaine, VueCodex, VueContrat } from "@/lib/codex/vue";
 import { CODEX, romain } from "@/lib/voice-codex";
 import { Sceau, libelleSceau } from "@/components/codex/Sceau";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { FilRouge } from "@/components/codex/FilRouge";
+import { FeuillesNotions, PastilleMatiere } from "@/components/codex/PastilleMatiere";
 import { Feuille } from "@/components/ui/Feuille";
+import { FILTRES, SEGMENTS_TEL, chercher, garde, glypheEtape, matieresFaibles, niveauDe, pastilleDe, quetesDeLaCarte, seche, taillesCachees, type FiltreCarte, type SegmentTel } from "@/lib/codex/carte";
 import e from "./Encre.module.css";
 import c from "./Carte.module.css";
 
@@ -20,11 +22,18 @@ import c from "./Carte.module.css";
 //   l'épilogue en haut) ; les dix branches de matière partent de l'acte II ;
 //   les exploits tiennent dans un médaillon au-dessus du tronc, qui ouvre leur
 //   galerie. La molette fait défiler la page ; Ctrl + molette et le pincement
-//   zooment. Les noms de matières compensent le zoom (jamais sous 12 px).
+//   zooment. Trois niveaux selon le zoom (V3 §10.1, lib/codex/carte.ts) :
+//   dézoomée, le tronc et dix pastilles de matière ; au zoom moyen, les
+//   étapes et leur glyphe ; au zoom fort, leurs noms. Aucun texte sous 12 px
+//   à l'écran : il compense le zoom, ou il est masqué. Une pastille touchée
+//   zoome sur sa branche et montre ses notions en petites feuilles. Filtres
+//   (« Tout · À faire · Mes faiblesses ») et « Chercher une quête » en haut à
+//   droite ; une quête verrouillée allume ses prérequis.
 //   À côté de la carte (à partir de 1 180 px), sinon sous elle et repliée :
 //   la colonne des contrats du jour et des quêtes au long cours.
-//   Téléphone : un chemin vertical par acte ou par branche, l'étape en cours
-//   en grand avec son « ! », et un sélecteur.
+//   Téléphone : cinq segments (Aujourd'hui, Parcours, Matières, Chantiers,
+//   Exploits) ; un chemin vertical par acte ou par branche, l'étape en cours
+//   en grand avec son « ! ».
 // Tous les traits sont au pinceau (tracé partagé INK.swash, <use href>) ;
 // chaque quête est un sceau tamponné (components/codex/Sceau).
 
@@ -83,27 +92,49 @@ type Noeud = {
   y: number;
   t: number;
   l: Pick<LigneQuete, "etat" | "fraction" | "affichage" | "retro">;
+  /** la quête (étape de branche) ; absente pour un acte */
+  q?: LigneQuete;
+  /** la prochaine de sa branche : son trait ressort */
+  ressort?: boolean;
   signe?: string;
   label: string;
   ouvrir: () => void;
   ici?: boolean;
 };
 
+/** Une pastille de matière sur la carte dézoomée, et où ouvrir sa branche. */
+type PastilleCarte = { b: VueBranche; x: number; y: number; cote: -1 | 1; milieu: number };
+
+// les tailles fixes de texte dans la carte (data-px), masquées si trop petites à l'écran
+const TAILLES_FIXES = [13, 22, 24] as const;
+
+/** L'acte I, « la visite de la bottega » : des outils à essayer, aucun obligatoire (V3 §8.3). Il se tient à côté du tronc. */
+export const estVisite = (a: VueActe) => a.acte.numero === 1 && a.quetes.length > 0 && a.quetes.every((q) => q.optionnelle);
+
 function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: SurActe) {
   return useMemo(() => {
     const noeuds: Noeud[] = [];
     const traits: React.ReactNode[] = [];
     const etiquettes: React.ReactNode[] = [];
-    const n = vue.trame.length;
-    const iBase = Math.max(0, Math.min(n - 1, vue.trame.findIndex((a) => a.acte.numero === 2) === -1 ? 2 : vue.trame.findIndex((a) => a.acte.numero === 2)));
+    const pastilles: PastilleCarte[] = [];
+    const tronc = vue.trame.filter((a) => !estVisite(a));
+    const visite = vue.trame.find(estVisite) ?? null;
+    const n = tronc.length;
+    const iBase = Math.max(0, Math.min(n - 1, tronc.findIndex((a) => a.acte.numero === 2) === -1 ? 2 : tronc.findIndex((a) => a.acte.numero === 2)));
     const yBase = yActe(iBase);
     const yHaut = yActe(n - 1);
     const p = vue.prochaine?.ligne;
     let ici: { x: number; y: number } | null = null;
+    // les matières « à rattraper » de l'acte V (à la sanguine, V3 §8.4)
+    const rattraper = new Set(vue.trame.flatMap((a) => a.aRattraper));
+
+    // la visite de la bottega, à gauche du prologue
+    const posVisite = visite ? { droite: CX - 70, y: yActe(0) - 46 } : null;
+    if (visite && p && visite.quetes.some((q) => q.id === p.id)) ici = { x: posVisite!.droite - 150, y: posVisite!.y + 70 };
 
     // le tronc
     traits.push(<Trait key="tronc" x1={CX} y1={yActe(0) + 80} x2={CX} y2={yHaut - 40} ep={26} className={c.tronc} />);
-    vue.trame.forEach((a, i) => {
+    tronc.forEach((a, i) => {
       const y = yActe(i);
       const droite = i % 2 === 0;
       const contient = !!p && a.quetes.some((q) => q.id === p.id);
@@ -138,21 +169,30 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
         etapes.forEach((q, j) => {
           const estIci = !!p && q.id === p.id;
           if (estIci) ici = { x: xJ(j), y };
-          noeuds.push({ cle: q.id, x: xJ(j), y, t: q === courante ? 46 : 38, l: q, signe: estIci ? "!" : undefined, label: `${b.contenu.court}, ${nomEtape(q)} : ${libelleSceau(q)}`, ouvrir: () => onQuete(q), ici: estIci });
+          const t = q === courante ? 46 : 38;
+          // au zoom moyen, le glyphe de l'étape (F, D, ◎, S, ♛) ; au zoom fort, son nom dessous
+          noeuds.push({ cle: q.id, x: xJ(j), y, t, l: q, q, ressort: q === courante, signe: estIci ? "!" : glypheEtape(q.etape), label: `${b.contenu.court}, ${nomEtape(q)} : ${libelleSceau(q)}`, ouvrir: () => onQuete(q), ici: estIci });
+          etiquettes.push(
+            <span key={"ne" + q.id} className={c.nomEtape} data-px="13" style={{ left: xJ(j) - 46, top: y + t / 2 + 4 }} aria-hidden>
+              {nomEtape(q)}
+            </span>,
+          );
         });
+        pastilles.push({ b, x: xJ(0), y, cote: cote as -1 | 1, milieu: xJ(Math.max(0, etapes.length - 1) / 2) });
         etiquettes.push(
-          <span key={"eb" + b.contenu.key} className={`${c.etiquetteBranche} ${cote < 0 ? c.aGauche : c.aDroite}`} style={{ left: cote > 0 ? CX + BX + 40 : undefined, right: cote < 0 ? W - CX + BX + 40 : undefined, bottom: H - y + 24 }}>
+          <span key={"eb" + b.contenu.key} className={`${c.etiquetteBranche} ${cote < 0 ? c.aGauche : c.aDroite} ${rattraper.has(b.contenu.key) ? c.rattraper : ""}`} style={{ left: cote > 0 ? CX + BX + 40 : undefined, right: cote < 0 ? W - CX + BX + 40 : undefined, bottom: H - y + 24 }}>
             <span className="font-brand">{b.contenu.court}</span>
             <span className={c.mono}>
               {b.faites}/{b.total}
               {b.maitre ? " · Maître" : ""}
+              {rattraper.has(b.contenu.key) ? " · à rattraper" : ""}
             </span>
           </span>,
         );
       });
     } else {
       etiquettes.push(
-        <span key="blanche-b" className={`${c.blanche} ${c.aDroite}`} style={{ left: CX + BX + 20, top: yBase - 230 }}>
+        <span key="blanche-b" className={`${c.blanche} ${c.aDroite}`} data-px="22" style={{ left: CX + BX + 20, top: yBase - 230 }}>
           {CODEX.pageBlanche}
         </span>,
       );
@@ -168,8 +208,8 @@ function useGeometrie(vue: VueCodex, montre: Montre, onQuete: SurQuete, onActe: 
       medaillon = { x: CX, y, gagnes: vue.exploits.filter((q) => q.etat === "terminee").length, total: vue.exploits.length };
     }
 
-    ici ??= { x: CX, y: yActe(Math.max(0, vue.trame.findIndex((a) => a.courant))) };
-    return { noeuds, traits, etiquettes, ici, medaillon };
+    ici ??= { x: CX, y: yActe(Math.max(0, tronc.findIndex((a) => a.courant))) };
+    return { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite: visite && posVisite ? { a: visite, ...posVisite } : null };
   }, [vue, montre, onQuete, onActe]);
 }
 
@@ -196,6 +236,30 @@ function Medaillon({ m, onOuvrir, onFocus }: { m: { x: number; y: number; gagnes
         </span>
       </span>
     </button>
+  );
+}
+
+/** La visite de la bottega (l'acte I) sur la carte : à gauche du prologue, ses outils en petits sceaux, aucun obligatoire. */
+function VisiteCarte({ v, ici, onQuete }: { v: { a: VueActe; droite: number; y: number }; ici?: string; onQuete: SurQuete }) {
+  const quetes = visibles(v.a.quetes);
+  return (
+    <div className={c.outilsActe} style={{ right: W - v.droite, top: v.y }}>
+      <span className={c.plume} style={{ display: "block", fontSize: "max(21px, calc(13px * var(--zinv, 1)))", lineHeight: 1, color: "var(--c-encre)" }}>
+        {v.a.acte.titre}
+      </span>
+      <span className={c.mono} style={{ display: "block", marginTop: 4, fontSize: "max(11px, calc(12px * var(--zinv, 1)))" }}>
+        {etiquetteActe(v.a.acte)} · {v.a.faites}/{v.a.total} · aucun n'est obligatoire
+      </span>
+      <ul className="m-0 mt-2 flex list-none flex-wrap gap-1.5 p-0">
+        {quetes.map((q) => (
+          <li key={q.id}>
+            <button type="button" className={`${c.noeud} ${q.id === ici ? c.trouve : ""}`} style={{ position: "relative", width: 40, height: 40 }} onClick={() => onQuete(q)} aria-label={libelleSceau(q)} aria-haspopup="dialog" title={q.titre}>
+              <Sceau l={q} taille={40} signe={q.id === ici ? "!" : undefined} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -250,18 +314,45 @@ function GalerieExploits({ exploits, collection, onQuete }: { exploits: LigneQue
 // pour que l'étape en cours ET les actes (et leurs noms) tiennent dans la vue
 const vise = (p: { x: number; y: number }) => ({ x: (p.x + CX) / 2, y: p.y });
 
-const Z_MIN = 0.32;
-const Z_DEPART = (rw: number) => (rw < 1100 ? 0.54 : 0.66);
+// dézoomée jusqu'à 0,4 : les dix pastilles (anneau de 48 px à l'écran) tiennent entre deux rangs de branches
+const Z_MIN = 0.4;
+// ouverte au zoom moyen : les étapes et leur glyphe
+const Z_DEPART = (rw: number) => (rw < 1100 ? 0.56 : 0.66);
+// le zoom sur une branche (une pastille touchée, une quête trouvée) : moyen, près du fort
+const Z_BRANCHE = 0.95;
 const Z_MAX = 1.6;
 // la colonne « Aujourd'hui » se tient à côté de la carte à partir de cette
 // largeur d'écran (Carte.module.css, .zone) ; en dessous, elle passe sous la
 // carte, repliée
 const LARGE = "(min-width: 1180px)";
 
-export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onActe: SurActe; colonne: React.ReactNode }) {
+/**
+ * `allume` : les prérequis à allumer (la quête verrouillée ouverte en détail) ;
+ * `cible` : une quête à montrer à l'ouverture (« Chercher une quête » de la
+ * palette, /codex?quete=…).
+ */
+export function ArbreCodex({ vue, montre, onQuete, onActe, colonne, allume, cible }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onActe: SurActe; colonne: React.ReactNode; allume?: string[]; cible?: string | null }) {
   // la colonne part repliée tant qu'elle n'a rien à montrer (nouveau compte)
   const colonneUtile = montre("codex:contrats") || montre("codex:longcours");
-  const { noeuds, traits, etiquettes, ici, medaillon } = useGeometrie(vue, montre, onQuete, onActe);
+  const { noeuds, traits, etiquettes, ici, medaillon, pastilles, visite } = useGeometrie(vue, montre, onQuete, onActe);
+  // les filtres, la recherche, la branche ouverte (ses notions), les prérequis survolés, la quête trouvée
+  const [filtre, setFiltre] = useState<FiltreCarte>("tout");
+  const [texte, setTexte] = useState("");
+  const [ouverte, setOuverte] = useState<string | null>(null);
+  const [survol, setSurvol] = useState<string[] | null>(null);
+  const [trouve, setTrouve] = useState<string | null>(cible ?? null);
+  const faibles = useMemo(() => matieresFaibles(vue.cap), [vue.cap]);
+  const cherchables = useMemo(() => quetesDeLaCarte(vue), [vue]);
+  const resultats = useMemo(() => chercher(cherchables, texte), [cherchables, texte]);
+  const trouvees = useMemo(() => (texte.trim().length >= 2 ? new Set(chercher(cherchables, texte, Infinity).map((l) => l.id)) : null), [cherchables, texte]);
+  // une quête de la trame n'est pas un sceau de la carte : on allume son acte
+  const surCarte = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of vue.trame) for (const q of a.quetes) m.set(q.id, "acte:" + a.acte.id);
+    for (const nd of noeuds) m.set(nd.cle, nd.cle);
+    return m;
+  }, [vue.trame, noeuds]);
+  const allumes = useMemo(() => new Set((survol ?? allume ?? []).map((id) => surCarte.get(id) ?? id)), [survol, allume, surCarte]);
   const boite = useRef<HTMLDivElement | null>(null);
   const monde = useRef<HTMLDivElement | null>(null);
   const cam = useRef({ tx: 0, ty: 0, z: 0.8, pret: false, w: 0, h: 0 });
@@ -299,6 +390,9 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
     m.style.transform = `translate(${k.tx}px, ${k.ty}px) scale(${k.z})`;
     // l'inverse du zoom : les noms de matières le compensent (jamais sous 12 px à l'écran)
     m.style.setProperty("--zinv", (1 / k.z).toFixed(3));
+    // le niveau (1 dézoomé, 2 moyen, 3 fort) et les textes de taille fixe trop petits, masqués (CSS)
+    m.dataset.niveau = String(niveauDe(k.z));
+    m.dataset.cache = taillesCachees(k.z, TAILLES_FIXES).join(" ");
   }, []);
 
   const centrer = useCallback(
@@ -334,9 +428,13 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
     [appliquer],
   );
 
-  // ouverte centrée sur « tu es ici », dès que la carte a une taille (elle est
-  // cachée sur téléphone) ; ensuite, quand la carte change de taille (la
-  // colonne se plie ou se déplie), le centre de la vue reste en place
+  // la quête demandée à l'ouverture (/codex?quete=…), si elle est sur la carte
+  const depart = useMemo(() => (cible ? (noeuds.find((nd) => nd.cle === (surCarte.get(cible) ?? cible)) ?? null) : null), [cible, noeuds, surCarte]);
+
+  // ouverte centrée sur « tu es ici » (ou sur la quête demandée), dès que la
+  // carte a une taille (elle est cachée sur téléphone) ; ensuite, quand la
+  // carte change de taille (la colonne se plie ou se déplie), le centre de la
+  // vue reste en place
   useEffect(() => {
     const b = boite.current;
     if (!b) return;
@@ -344,7 +442,12 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
       const { width, height } = b.getBoundingClientRect();
       if (!width) return;
       const k = cam.current;
-      if (!k.pret) centrer(vise(ici), Z_DEPART(width));
+      if (!k.pret) {
+        if (depart) {
+          centrer(depart, Z_BRANCHE);
+          setTrouve(depart.cle);
+        } else centrer(vise(ici), Z_DEPART(width));
+      }
       else {
         k.tx += (width - k.w) / 2;
         k.ty += (height - k.h) / 2;
@@ -355,7 +458,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
     });
     ro.observe(b);
     return () => ro.disconnect();
-  }, [ici, centrer, appliquer]);
+  }, [ici, depart, centrer, appliquer]);
 
   // la molette seule fait défiler la page (un mot rappelle le geste du zoom) ;
   // Ctrl (ou ⌘) + molette zoome autour du pointeur, comme le pincement du pavé
@@ -451,6 +554,24 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
     if (sx < 40 || sy < 40 || sx > r.width - 40 || sy > r.height - 40) centrer({ x, y });
   };
 
+  // « Chercher une quête » : la carte vient à elle (un acte pour une quête de
+  // la trame) ; une quête hors de la carte (long cours, exploit) ouvre son détail
+  const montrerQuete = (l: LigneQuete) => {
+    const nd = noeuds.find((x) => x.cle === surCarte.get(l.id));
+    setTexte("");
+    if (!nd) return onQuete(l);
+    centrer(nd, Math.max(cam.current.z, Z_BRANCHE));
+    setTrouve(nd.cle);
+  };
+  // une pastille touchée : zoom sur sa branche, ses notions en feuilles
+  const ouvrirBranche = (pc: PastilleCarte) => {
+    setOuverte(pc.b.contenu.key);
+    centrer({ x: pc.milieu, y: pc.y + 40 }, Z_BRANCHE);
+  };
+  const brancheOuverte = vue.branches.find((b) => b.contenu.key === ouverte) ?? null;
+  // estompée : hors du filtre, ou de la recherche en cours
+  const estompee = (q: LigneQuete | undefined) => !!q && (!garde(q, filtre, faibles) || (!!trouvees && !trouvees.has(q.id)));
+
   const exploitsGagnes = medaillon?.gagnes ?? 0;
   const contratsFaits = vue.contrats.filter((ct) => ct.ligne.etat === "terminee").length;
 
@@ -478,6 +599,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
           <div
             ref={monde}
             className={c.monde}
+            data-niveau="2"
             style={{ width: W, height: H, transform: `translate(${430 - vise(ici).x * 0.66}px, ${330 - ici.y * 0.66}px) scale(0.66)`, ["--zinv" as string]: (1 / 0.66).toFixed(3) }}
           >
             <svg className={c.traits} width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden>
@@ -485,25 +607,56 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
             </svg>
             {etiquettes}
             <Ici x={ici.x} y={ici.y} r={60} />
-            <span className={c.iciMot} style={{ left: ici.x + 44, top: ici.y + 26 }} aria-hidden>
+            <span className={c.iciMot} data-px="24" style={{ left: ici.x + 44, top: ici.y + 26 }} aria-hidden>
               ta prochaine
             </span>
             {medaillon && <Medaillon m={medaillon} onOuvrir={() => setGalerie(true)} onFocus={() => voir(medaillon.x, medaillon.y)} />}
-            {noeuds.map((nd) => (
-              <button
-                key={nd.cle}
-                type="button"
-                className={c.noeud}
-                style={{ left: nd.x - nd.t / 2, top: nd.y - nd.t / 2, width: nd.t, height: nd.t }}
-                aria-label={nd.label}
-                aria-haspopup="dialog"
-                title={nd.label}
-                onClick={nd.ouvrir}
-                onFocus={() => voir(nd.x, nd.y)}
-              >
-                <Sceau l={nd.l} taille={nd.t} signe={nd.signe} />
-              </button>
+            {noeuds.map((nd) => {
+              const q = nd.q;
+              const classes = [
+                c.noeud,
+                q ? c.etape : "",
+                q && seche(q, vue.jour) ? c.sec : "",
+                nd.ressort ? c.ressort : "",
+                estompee(q) ? c.estompe : "",
+                allumes.has(nd.cle) ? c.allume : "",
+                trouve === nd.cle ? c.trouve : "",
+              ];
+              // une quête verrouillée allume ses prérequis au survol ou au focus
+              const prerequis = q?.allume;
+              return (
+                <button
+                  key={nd.cle}
+                  type="button"
+                  className={classes.filter(Boolean).join(" ")}
+                  style={{ left: nd.x - nd.t / 2, top: nd.y - nd.t / 2, width: nd.t, height: nd.t }}
+                  aria-label={q?.manque ? `${nd.label}. ${q.manque.join(". ")}` : nd.label}
+                  aria-haspopup="dialog"
+                  title={q?.manque ? [nd.label, ...q.manque].join("\n") : nd.label}
+                  onClick={nd.ouvrir}
+                  onFocus={() => {
+                    voir(nd.x, nd.y);
+                    if (prerequis) setSurvol(prerequis);
+                  }}
+                  onBlur={prerequis ? () => setSurvol(null) : undefined}
+                  onPointerEnter={prerequis ? () => setSurvol(prerequis) : undefined}
+                  onPointerLeave={prerequis ? () => setSurvol(null) : undefined}
+                >
+                  <Sceau l={nd.l} taille={nd.t} signe={nd.signe} />
+                </button>
+              );
+            })}
+            {pastilles.map((pc) => (
+              <PastilleMatiere
+                key={"pm" + pc.b.contenu.key}
+                p={pastilleDe(pc.b)}
+                forme="carte"
+                className={`${pc.cote < 0 ? c.versGauche : ""} ${filtre === "faiblesses" && !faibles.has(pc.b.contenu.key) ? c.estompe : ""}`}
+                style={pc.cote > 0 ? { left: `calc(${pc.x}px - var(--t) / 2)`, top: pc.y } : { right: `calc(${W - pc.x}px - var(--t) / 2)`, top: pc.y }}
+                onClick={() => ouvrirBranche(pc)}
+              />
             ))}
+            {visite && <VisiteCarte v={visite} ici={vue.prochaine?.ligne.id} onQuete={onQuete} />}
           </div>
         </div>
 
@@ -519,6 +672,58 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, colonne }: { vue: Vue
           </button>
         </div>
 
+        <div className={c.barre} data-hors-carte>
+          <div className={c.filtres} role="group" aria-label="Filtrer les quêtes">
+            {FILTRES.map((f) => (
+              <button key={f.cle} type="button" className={c.filtre} aria-pressed={filtre === f.cle} onClick={() => setFiltre(f.cle)}>
+                {f.libelle}
+              </button>
+            ))}
+          </div>
+          <div className={c.cherche}>
+            <input
+              type="search"
+              className={c.chercheChamp}
+              value={texte}
+              onChange={(ev) => setTexte(ev.target.value)}
+              onKeyDown={(ev) => {
+                if (ev.key === "Enter" && resultats[0]) montrerQuete(resultats[0]);
+                else if (ev.key === "Escape") setTexte("");
+              }}
+              placeholder="Chercher une quête"
+              aria-label="Chercher une quête"
+            />
+            {texte.trim().length >= 2 && (
+              <ul className={c.resultats} aria-label="Quêtes trouvées">
+                {resultats.length ? (
+                  resultats.map((l) => (
+                    <li key={l.id}>
+                      <button type="button" className={c.resultat} onClick={() => montrerQuete(l)}>
+                        <Sceau l={l} taille={26} />
+                        <span className="min-w-0 flex-1 truncate">{l.titre}</span>
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <li className={c.resultatVide}>Aucune quête ne parle de « {texte.trim()} ».</li>
+                )}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* la branche touchée : ses notions en petites feuilles, lisibles à tout zoom (hors de la carte) */}
+        {brancheOuverte && (
+          <section className={c.notionsCadre} data-hors-carte aria-label={`Les notions : ${brancheOuverte.contenu.nom}`}>
+            <div className="flex items-center justify-between gap-2">
+              <span className={`font-brand ${c.notionsTitre}`}>{brancheOuverte.contenu.nom}</span>
+              <button type="button" className={c.outil} onClick={() => setOuverte(null)} aria-label="Fermer les notions">
+                <X size={16} aria-hidden />
+              </button>
+            </div>
+            <FeuillesNotions notions={brancheOuverte.notions} noms />
+          </section>
+        )}
         <Legende />
         <p className={`${c.astuce} ${astuce ? c.astuceOn : ""}`} aria-hidden>
           Ctrl + molette, ou pincement, pour zoomer
@@ -584,8 +789,25 @@ function Legende() {
 export function Colonne({ vue, montre, onQuete, onChanger, occupe, filRouge = true }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; filRouge?: boolean }) {
   return (
     <>
-      <section aria-labelledby="col-jour" data-leonard="contrats">
-        <h2 id="col-jour" className={c.colTitre}>
+      <ContratsDuJour vue={vue} montre={montre} onQuete={onQuete} onChanger={onChanger} occupe={occupe} />
+      <section aria-labelledby="col-long" data-leonard="longcours" className="mt-5">
+        <h2 id="col-long" className={c.colTitre}>
+          {CODEX.longCours.titre}
+        </h2>
+        {!montre("codex:longcours") ? <p className={c.blancheCol}>{CODEX.pageBlanche}</p> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
+      </section>
+      {/* le fil rouge, sous les chaînes (V3 §1.5) : dévoilé avec elles */}
+      {filRouge && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
+    </>
+  );
+}
+
+/** Les contrats du jour (et le débrief d'un blanc) : la colonne, et le segment « Aujourd'hui » du téléphone. */
+function ContratsDuJour({ vue, montre, onQuete, onChanger, occupe, id = "col-jour" }: { vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; id?: string }) {
+  return (
+    <>
+      <section aria-labelledby={id} data-leonard="contrats">
+        <h2 id={id} className={c.colTitre}>
           Aujourd'hui
         </h2>
         {!montre("codex:contrats") ? (
@@ -616,14 +838,6 @@ export function Colonne({ vue, montre, onQuete, onChanger, occupe, filRouge = tr
           </div>
         )}
       </section>
-      <section aria-labelledby="col-long" data-leonard="longcours" className="mt-5">
-        <h2 id="col-long" className={c.colTitre}>
-          {CODEX.longCours.titre}
-        </h2>
-        {!montre("codex:longcours") ? <p className={c.blancheCol}>{CODEX.pageBlanche}</p> : <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />}
-      </section>
-      {/* le fil rouge, sous les chaînes (V3 §1.5) : dévoilé avec elles */}
-      {filRouge && montre("codex:longcours") && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
     </>
   );
 }
@@ -706,7 +920,7 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
           return (
             <li key={q.id + q.periode}>
               {grand && <Ici x={x} y={y} r={56} />}
-              <button type="button" className={c.noeud} style={{ left: x - t / 2, top: y - t / 2, width: t, height: t }} onClick={() => onQuete(q)} aria-label={libelleSceau(q)} aria-haspopup="dialog">
+              <button type="button" className={c.noeud} style={{ left: x - t / 2, top: y - t / 2, width: t, height: t }} onClick={() => onQuete(q)} aria-label={libelleSceau(q)} aria-haspopup="dialog" data-ici={grand || undefined}>
                 <Sceau l={q} taille={t} signe={grand ? "!" : undefined} />
               </button>
               <span
@@ -727,81 +941,145 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
   );
 }
 
-type Choix = { type: "acte"; id: string } | { type: "branche"; key: string } | { type: "exploits" } | { type: "longcours" };
+/* ================================================================== */
+/* Le téléphone : cinq segments (V3 §10.1)                             */
+/* ================================================================== */
 
-export function CheminCodex({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; onQuete: SurQuete }) {
+/** La barre des cinq segments, en tête de /codex sur téléphone. */
+export function SegmentsTel({ segment, onChoisir }: { segment: SegmentTel; onChoisir: (s: SegmentTel) => void }) {
+  return (
+    <div className={c.segments} role="tablist" aria-label="Le Codex">
+      {SEGMENTS_TEL.map((s) => (
+        <button key={s.cle} type="button" role="tab" id={"codex-seg-" + s.cle} aria-selected={segment === s.cle} aria-controls="codex-segment" className={c.segment} onClick={() => onChoisir(s.cle)}>
+          {s.libelle}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Le corps du segment choisi. « Aujourd'hui » : les contrats (la séance et le
+ * cap sont au-dessus, dans la page) ; « Parcours » : le tronc des actes ;
+ * « Matières » : la grille 2 × 5 des pastilles ; « Chantiers » : le long
+ * cours et le fil rouge ; « Exploits ».
+ */
+export function CodexTel({ segment, vue, montre, onQuete, onChanger, occupe, filRouge = true }: { segment: SegmentTel; vue: VueCodex; montre: Montre; onQuete: SurQuete; onChanger: (c: VueContrat) => void; occupe: boolean; filRouge?: boolean }) {
+  return (
+    <div id="codex-segment" role="tabpanel" aria-labelledby={"codex-seg-" + segment} className={`${c.tel} ${e.carnet}`}>
+      {segment === "aujourdhui" && (
+        <div className={c.telCorps}>
+          <ContratsDuJour vue={vue} montre={montre} onQuete={onQuete} onChanger={onChanger} occupe={occupe} id="tel-jour" />
+        </div>
+      )}
+      {segment === "parcours" && <ParcoursTel vue={vue} onQuete={onQuete} />}
+      {segment === "matieres" && <MatieresTel vue={vue} montre={montre} onQuete={onQuete} />}
+      {segment === "chantiers" && (
+        <div className={c.telCorps} data-leonard="longcours">
+          <TeteChemin sur="Les grands chantiers" titre={CODEX.longCours.titre} replique={CODEX.longCours.sous} />
+          {montre("codex:longcours") ? (
+            <>
+              <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />
+              {filRouge && <FilRouge fil={vue.filRouge} onQuete={onQuete} />}
+            </>
+          ) : (
+            <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
+          )}
+        </div>
+      )}
+      {segment === "exploits" && (
+        <div className={c.telCorps}>
+          <TeteChemin sur={CODEX.exploits.gagnes(vue.exploits.filter((q) => q.etat === "terminee").length)} titre={CODEX.exploits.titre} replique={CODEX.exploits.sous} />
+          {montre("codex:exploits") ? (
+            <>
+              <Chemin quetes={vue.exploits} onQuete={onQuete} nom={(l) => l.titre} />
+              <LienCollection href={vue.collection} />
+            </>
+          ) : (
+            <p className={c.blancheCol}>{CODEX.pageBlanche}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Le parcours : un acte à la fois (sélecteur), le chemin défile jusqu'à ta prochaine étape ; la visite de la bottega, repliable sous le prologue. */
+function ParcoursTel({ vue, onQuete }: { vue: VueCodex; onQuete: SurQuete }) {
   const p = vue.prochaine?.ligne;
-  const depart: Choix = useMemo(() => {
-    if (p?.matiere && montre("codex:branches")) return { type: "branche", key: p.matiere };
-    const a = vue.trame.find((x) => p && x.quetes.some((q) => q.id === p.id)) ?? vue.trame.find((x) => x.courant) ?? vue.trame[0];
-    return { type: "acte", id: a?.acte.id ?? "" };
-  }, [p, vue.trame, montre]);
-  const [choix, setChoix] = useState<Choix>(depart);
-  const acte = choix.type === "acte" ? vue.trame.find((a) => a.acte.id === choix.id) : undefined;
-  const branche = choix.type === "branche" ? vue.branches.find((b) => b.contenu.key === choix.key) : undefined;
-  const pareil = (x: Choix) => JSON.stringify(x) === JSON.stringify(choix);
+  const tronc = vue.trame.filter((a) => !estVisite(a));
+  const visite = vue.trame.find(estVisite) ?? null;
+  const [id, setId] = useState(() => (tronc.find((x) => p && x.quetes.some((q) => q.id === p.id)) ?? tronc.find((x) => x.courant) ?? tronc[0])?.acte.id ?? "");
+  const acte = tronc.find((a) => a.acte.id === id);
+  const corps = useRef<HTMLDivElement | null>(null);
+
+  // le chemin défile jusqu'à l'étape en cours (sans animation en mouvement réduit)
+  useEffect(() => {
+    const ici = corps.current?.querySelector<HTMLElement>("[data-ici]");
+    if (!ici) return;
+    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    ici.scrollIntoView({ block: "center", behavior: doux ? "smooth" : "auto" });
+  }, [id]);
 
   return (
-    <div className={`${c.tel} ${e.carnet}`}>
+    <>
       <div className={c.selecteur} role="group" aria-label="Les actes">
-        {vue.trame.map((a) => {
-          const x: Choix = { type: "acte", id: a.acte.id };
-          return (
-            <button key={a.acte.id} type="button" className={`${c.puce} ${pareil(x) ? c.puceOn : ""}`} aria-pressed={pareil(x)} onClick={() => setChoix(x)} aria-label={`${etiquetteActe(a.acte)}, ${a.acte.titre}`}>
-              <Sceau l={ligneActe(a)} taille={28} signe={chiffreActe(a.acte)} />
-            </button>
-          );
-        })}
-      </div>
-      <div className={c.selecteur} role="group" aria-label="Les branches et le reste">
-        {montre("codex:branches") &&
-          vue.branches.map((b) => {
-            const x: Choix = { type: "branche", key: b.contenu.key };
-            return (
-              <button key={b.contenu.key} type="button" className={`${c.puceTexte} ${pareil(x) ? c.puceOn : ""}`} aria-pressed={pareil(x)} onClick={() => setChoix(x)}>
-                {b.contenu.court}
-                <span className={c.mono}>
-                  {b.faites}/{b.total}
-                </span>
-              </button>
-            );
-          })}
-        {montre("codex:longcours") && (
-          <button type="button" className={`${c.puceTexte} ${choix.type === "longcours" ? c.puceOn : ""}`} aria-pressed={choix.type === "longcours"} onClick={() => setChoix({ type: "longcours" })}>
-            Long cours
+        {tronc.map((a) => (
+          <button key={a.acte.id} type="button" className={`${c.puce} ${a.acte.id === id ? c.puceOn : ""}`} aria-pressed={a.acte.id === id} onClick={() => setId(a.acte.id)} aria-label={`${etiquetteActe(a.acte)}, ${a.acte.titre}`}>
+            <Sceau l={ligneActe(a)} taille={28} signe={chiffreActe(a.acte)} />
           </button>
-        )}
-        {montre("codex:exploits") && (
-          <button type="button" className={`${c.puceTexte} ${choix.type === "exploits" ? c.puceOn : ""}`} aria-pressed={choix.type === "exploits"} onClick={() => setChoix({ type: "exploits" })}>
-            Exploits
-          </button>
-        )}
+        ))}
       </div>
-
-      <div className={c.telCorps} data-leonard="trame">
+      <div className={c.telCorps} data-leonard="trame" ref={corps}>
         {acte && (
           <>
             <TeteChemin sur={`${etiquetteActe(acte.acte)} · ${acte.clos ? CODEX.trame.clos : acte.courant ? CODEX.trame.enCours : CODEX.trame.aVenir} · ${acte.faites}/${acte.total}`} titre={acte.acte.titre} replique={acte.replique.texte} />
             <Chemin quetes={acte.quetes} ici={p?.id} onQuete={onQuete} nom={(l) => l.titre} />
           </>
         )}
-        {branche && <BrancheChemin b={branche} ici={p?.id} onQuete={onQuete} />}
-        {choix.type === "exploits" && (
-          <>
-            <TeteChemin sur={CODEX.exploits.gagnes(vue.exploits.filter((q) => q.etat === "terminee").length)} titre={CODEX.exploits.titre} replique={CODEX.exploits.sous} />
-            <Chemin quetes={vue.exploits} onQuete={onQuete} nom={(l) => l.titre} />
-            <LienCollection href={vue.collection} />
-          </>
-        )}
-        {choix.type === "longcours" && (
-          <>
-            <TeteChemin sur="Les grands chantiers" titre={CODEX.longCours.titre} replique={CODEX.longCours.sous} />
-            <ChainesCompactes chaines={vue.longCours} onQuete={onQuete} />
-            <FilRouge fil={vue.filRouge} onQuete={onQuete} />
-          </>
+        {visite && acte?.acte.numero === 0 && (
+          <details className={c.outilsActeTel}>
+            <summary>
+              {visite.acte.titre} · {visite.faites}/{visite.total}
+            </summary>
+            <p className="t-small m-0 mb-2 italic">{visite.acte.sousTitre}</p>
+            <ul className={c.colListe}>
+              {visibles(visite.quetes).map((q) => (
+                <li key={q.id}>
+                  <LigneCompacte l={q} onQuete={onQuete} />
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </div>
-    </div>
+    </>
+  );
+}
+
+/** Les matières : la grille 2 × 5 des pastilles ; une pastille touchée ouvre sa branche et ses notions. */
+function MatieresTel({ vue, montre, onQuete }: { vue: VueCodex; montre: Montre; onQuete: SurQuete }) {
+  const [cle, setCle] = useState<string | null>(null);
+  const branche = vue.branches.find((b) => b.contenu.key === cle);
+  if (!montre("codex:branches") || !vue.branches.length) return <p className={`${c.blancheCol} ${c.telCorps}`}>{CODEX.pageBlanche}</p>;
+  return (
+    <>
+      <ul className={c.grilleMatieres} aria-label="Les matières">
+        {vue.branches.map((b) => (
+          <li key={b.contenu.key}>
+            <PastilleMatiere p={pastilleDe(b)} forme="grille" presse={cle === b.contenu.key} onClick={() => setCle(cle === b.contenu.key ? null : b.contenu.key)} />
+          </li>
+        ))}
+      </ul>
+      {branche && (
+        <div className={c.telCorps}>
+          <BrancheChemin b={branche} ici={vue.prochaine?.ligne.id} onQuete={onQuete} />
+          <div className="px-3">
+            <FeuillesNotions notions={branche.notions} noms />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
