@@ -1,0 +1,118 @@
+/* Le cap (components/codex/Cap.tsx) : une ligne, une règle au pinceau, les
+   fuites, le détail replié. Les jetons --c-* viennent de Encre.module.css
+   (.carnet) : basse en sanguine, moyenne en sépia, haute à l'encre. Un trait
+   et des hachures, jamais une jauge remplie. */
+
+.cap {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.ligne {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--c-encre, var(--ink));
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* La règle : un segment par matière, large comme son poids. */
+.regle {
+  display: flex;
+  gap: 3px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.segment {
+  --trait: var(--c-crayon, var(--line));
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 10px;
+  border-bottom: 3px solid var(--trait);
+  border-radius: 0 0 3px 3px;
+}
+.segment[data-zone="basse"],
+.pastille[data-zone="basse"] {
+  --trait: var(--c-sanguine, var(--ink));
+}
+.segment[data-zone="moyenne"],
+.pastille[data-zone="moyenne"] {
+  --trait: var(--c-sepia, var(--ink-2));
+}
+.segment[data-zone="haute"],
+.pastille[data-zone="haute"] {
+  --trait: var(--c-encre, var(--ink));
+}
+/* provisoire ou pas encore mesurée : des hachures au crayon au-dessus du trait */
+.segment[data-hachure] {
+  border-bottom-style: dashed;
+  background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in oklab, var(--trait) 45%, transparent) 4px 5px);
+}
+
+.fuites {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.fuitesTitre {
+  font-weight: 600;
+  color: var(--c-encre, var(--ink));
+}
+.chiffres {
+  font-variant-numeric: tabular-nums;
+}
+.aller {
+  min-height: 44px;
+}
+
+.detail {
+  margin-top: 2px;
+}
+.resume {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+}
+.resume:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.matieres {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .matieres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+  }
+}
+.matiere {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pastille {
+  --trait: var(--c-crayon, var(--line));
+  flex-shrink: 0;
+  width: 14px;
+  height: 0;
+  border-bottom: 3px solid var(--trait);
+  border-radius: 2px;
+}
+.pastille[data-hachure] {
+  border-bottom-style: dashed;
+}

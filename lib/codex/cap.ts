@@ -186,3 +186,46 @@ export function capDe(m: Maitrise, o: { jour: string; joursAvant: number | null;
     destination: f.length ? o.destination(f[0].cle) : null,
   };
 }
+
+// ── Les textes du cap (l'écran les affiche tels quels) ─────────────────
+
+export const TEXTES_CAP = {
+  titre: "Le cap",
+  pronostic: "Ce n'est pas un pronostic : le CFA Institute ne publie pas la note de passage.",
+  provisoire: "Mesure provisoire, d'après tes séances ciblées.",
+  detail: "Détail par matière",
+  aucuneFuite: `Aucune fuite : toutes tes matières tiennent le repère de ${MAITRISE.REPERE} %.`,
+  zone: { basse: "zone basse", moyenne: "zone moyenne", haute: "zone haute" } as const,
+} as const;
+
+const dixieme = (x: number) => x.toFixed(1).replace(".", ",");
+
+/** « J-10 · Préparation 58 % · zone moyenne · repère 70 % » (sans J-n sans jour J, ou l'examen passé). */
+export function enTeteCap(c: Pick<VueCap, "joursAvant" | "preparation" | "zone" | "repere">): string {
+  const j = c.joursAvant === null || c.joursAvant < 0 ? null : c.joursAvant === 0 ? "Jour J" : `J-${c.joursAvant}`;
+  return [...(j ? [j] : []), `Préparation ${c.preparation} %`, TEXTES_CAP.zone[c.zone], `repère ${c.repere} %`].join(" · ");
+}
+
+/** « Les trois fuites : » (ou la fuite, les deux fuites), selon leur nombre. */
+export const titreFuites = (n: number) => (n <= 1 ? "La fuite :" : n === 2 ? "Les deux fuites :" : "Les trois fuites :");
+
+/** « FSA −3,1 pts · Equity −2,4 · Ethics −2,0 » : l'unité une seule fois, après la première. */
+export function ligneFuites(f: VueCap["fuites"]): string {
+  return f.map((x, i) => `${x.court} −${dixieme(x.points)}${i === 0 ? " pts" : ""}`).join(" · ");
+}
+
+/** « 52 % », « ≈ 52 % » (provisoire), « pas encore mesurée ». */
+export function pctCap(l: Pick<LigneCap, "pct" | "statut">): string {
+  if (l.pct === null || l.statut === "non_mesuree") return "pas encore mesurée";
+  return l.statut === "provisoire" ? `≈ ${l.pct} %` : `${l.pct} %`;
+}
+
+/** « FSA · ≈ 52 % · zone moyenne · touchée il y a 12 j » : une ligne du détail par matière. */
+export function ligneMatiereCap(l: LigneCap): string {
+  return [l.court, pctCap(l), ...(l.zone ? [TEXTES_CAP.zone[l.zone]] : []), ...(l.fraicheur ? [`touchée ${l.fraicheur}`] : [])].join(" · ");
+}
+
+/** L'infobulle d'une matière provisoire : « provisoire · 23 réponses sur 40 » ; null sinon. */
+export function aideMatiereCap(l: Pick<LigneCap, "statut" | "n">): string | null {
+  return l.statut === "provisoire" ? `provisoire · ${l.n} réponse${l.n > 1 ? "s" : ""} sur ${MAITRISE.SEUIL_MESURE}` : null;
+}

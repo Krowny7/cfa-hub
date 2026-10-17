@@ -9,7 +9,7 @@
 .tete {
   display: grid;
   gap: 14px;
-  align-items: end;
+  align-items: start;
 }
 @media (min-width: 900px) {
   .tete {
@@ -17,21 +17,10 @@
     gap: 24px;
   }
 }
-.titre {
-  margin: 4px 0 0;
-  font-size: clamp(30px, 4.4vw, 44px);
-  line-height: 1.02;
-  text-wrap: balance;
-}
 .stats {
   margin: 6px 0 0;
   font-size: 13px;
   color: var(--ink-2);
-}
-.stats b {
-  font-family: var(--font-mono, ui-monospace), monospace;
-  font-weight: 600;
-  color: var(--ink);
 }
 .prochaine {
   --c-reserve: var(--c-papier);

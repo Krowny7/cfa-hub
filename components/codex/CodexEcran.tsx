@@ -8,6 +8,7 @@ import type { LigneQuete, VueActe, VueCodex, VueContrat } from "@/lib/codex/vue"
 import { CODEX } from "@/lib/voice-codex";
 import { codexChangerContrat, codexOuvrirProgramme, codexReclamer, codexToutMontrer } from "@/lib/codex/actions";
 import { Sceau } from "@/components/codex/Sceau";
+import { Cap } from "@/components/codex/Cap";
 import { JaugePinceau } from "@/components/codex/JaugePinceau";
 import { DetailQuete } from "@/components/codex/DetailQuete";
 import { ArbreCodex, Chemin, CheminCodex, Colonne, TeteChemin, etiquetteActe } from "@/components/codex/CarteCodex";
@@ -16,8 +17,9 @@ import { annoncerDevoile } from "@/components/codex/annoncer";
 import e from "./Encre.module.css";
 import c from "./CodexEcran.module.css";
 
-// L'écran du Codex (/codex) : l'arbre complet. Un en-tête court (le titre, la
-// phase et le J-n, la prochaine quête en une ligne), puis la carte : l'arbre
+// L'écran du Codex (/codex) : l'arbre complet. Un en-tête court (le cap : la
+// préparation, la règle des matières et les trois fuites, V3 §4.6 ; la
+// prochaine quête en une ligne), puis la carte : l'arbre
 // qu'on parcourt sur ordinateur, un chemin par acte ou par branche sur
 // téléphone (components/codex/CarteCodex). Le quotidien (les quatre quêtes du
 // moment) est derrière le sceau « ! » de la barre du haut. Un clic sur un
@@ -86,22 +88,23 @@ export function CodexEcran({ vue: depart, demo = false }: Props) {
     <div className={`rl-wide rl-page ${e.carnet} ${c.page}`}>
       <header className={`${c.tete} rl-in`}>
         <div className="min-w-0">
-          <p className="t-eyebrow m-0">
-            {CODEX.kicker(vue.phaseNom)}
-            {jourJ ? ` · ${jourJ}` : ""}
-          </p>
-          <h1 className={`${c.titre} font-brand`}>{CODEX.titre}</h1>
-          <p className={c.stats}>
-            <b>{vue.stats.faites}</b>/{vue.stats.total} quêtes · <b>{vue.stats.xpCodex.toLocaleString("fr-FR")}</b> XP gagnés ici
-            {d !== "tout" && (
-              <>
-                {" · "}
-                <button type="button" className={e.lienDiscret} onClick={toutMontrer} disabled={occupe} title={CODEX.toutMontrerAide}>
-                  {CODEX.toutMontrer}
-                </button>
-              </>
-            )}
-          </p>
+          {/* le titre en petit : le cap (préparation, fuites) tient la tête de page */}
+          <h1 className="t-micro m-0">
+            {CODEX.titre} · {vue.phaseNom}
+            {!vue.cap && jourJ ? ` · ${jourJ}` : ""}
+          </h1>
+          {vue.cap && (
+            <div className="mt-2">
+              <Cap cap={vue.cap} />
+            </div>
+          )}
+          {d !== "tout" && (
+            <p className={c.stats}>
+              <button type="button" className={e.lienDiscret} onClick={toutMontrer} disabled={occupe} title={CODEX.toutMontrerAide}>
+                {CODEX.toutMontrer}
+              </button>
+            </p>
+          )}
         </div>
         <div className={c.prochaine} data-leonard="prochaine">
           {p ? (
