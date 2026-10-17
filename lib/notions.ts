@@ -358,7 +358,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 22, schweser: 20 },
     cours: "/courses/corporate-issuers?module=1",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -370,7 +370,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 23, schweser: 21 },
     cours: "/courses/corporate-issuers?module=2",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -382,7 +382,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 24, schweser: 22 },
     cours: "/courses/corporate-issuers?module=3",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -394,7 +394,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 25, schweser: 23 },
     cours: "/courses/corporate-issuers?module=4",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -406,7 +406,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 26, schweser: 24 },
     cours: "/courses/corporate-issuers?module=5",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -418,7 +418,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 27, schweser: 25 },
     cours: "/courses/corporate-issuers?module=6",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -430,7 +430,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 28, schweser: 26 },
     cours: "/courses/corporate-issuers?module=7",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/corporate-issuers?page=4", page: 4 }],
     flashcards: [],
   },
   {
