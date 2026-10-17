@@ -11,8 +11,8 @@
 // bannière) ;
 // le résumé ; deux pièces animées au plus sur téléphone, aucune sous la
 // feuille ; ce qui se retire ; stylePorte (cadre, bannière et son image,
-// titre, folio et son bloc) ; le bloc « Folio » (demi-largeur, première case
-// vide, douze rangées, validé) ; les anecdotes des folios et leurs images ;
+// titre, folio et son bloc) ; le bloc « Folio » (première place libre, fin
+// de la première rangée incomplète, vingt éléments, validé, ancienne forme) ; les anecdotes des folios et leurs images ;
 // FOLIOS.md ; l'écran « Mes pièces » (résumé, rayons, silhouettes et leur
 // consigne, aucun lien sur l'étagère, « Voir la quête » dans la fiche, deux
 // pièces animées au premier rendu) ; le repos de la série (plages, règles,
@@ -30,7 +30,7 @@ import { ANIMEES_TELEPHONE, piecesAnimees, resumeEtagere, retirable, type PieceE
 import { etagere, folioPorte, hrefQuete, stylePorte } from "@/lib/profil/etagere";
 import { FOLIOS, FOLIOS_ILLUSTRES, PIECES, queteDe } from "@/lib/profil/pieces";
 import { STYLE_DEFAUT, STATS_VIDES, acquisDe, type StyleProfil } from "@/lib/profil/catalogue";
-import { DISPOSITION_DEFAUT, RANGEES_MAX, avecBlocFolio, rangeeNeuve, validerDisposition, type Disposition } from "@/lib/profil/disposition";
+import { DISPOSITION_DEFAUT, ELEMENTS_MAX, avecBlocFolio, validerDisposition, type Disposition } from "@/lib/profil/disposition";
 import { catalogueCodex, contenuDuProgramme } from "@/lib/codex/catalogue";
 import { REFUS_POSE, ajouterJours, joursEntre, libellePlage, lundiDe, plagesDe, refusDeLaBase, refusPose, type JourPause } from "@/components/moi/repos";
 import type { Acquis } from "@/lib/profil/acquis";
@@ -146,24 +146,28 @@ console.log("# Porter, retirer");
   check("bannière : portée, l'image laisse sa place ; retirée : le motif par défaut", b.banner === "florence" && b.bannerUrl === null && stylePorte(base, "banniere", null).banner === STYLE_DEFAUT.banner);
   check("titre : porté, retiré", stylePorte(base, "titre", "collectionneur").titre === "collectionneur" && stylePorte(base, "titre", null).titre === null);
   const f = stylePorte(base, "folio", "mains");
-  check("folio : porté, et son bloc posé sur la page", f.folio === "mains" && f.disposition.some((r) => r.c.some((c) => c?.k === "folio")));
+  check("folio : porté, et son bloc posé sur la page", f.folio === "mains" && f.disposition.some((e) => e.k === "folio"));
   check("folio : retiré, la page ne bouge pas", stylePorte(f, "folio", null).folio === null && stylePorte(f, "folio", null).disposition === f.disposition);
   check("le reste du style ne change pas", f.frame === base.frame && f.titre === base.titre && f.bannerUrl === base.bannerUrl && f.accent === base.accent);
 }
 
 console.log("# Le bloc « Folio »");
 {
-  check("ajouté sans case visée : deux moitiés (les autres : pleine largeur)", rangeeNeuve({ k: "folio" }).m === "deux" && rangeeNeuve({ k: "folio" }).c[1] === null && rangeeNeuve({ k: "radar" }).m === "plein");
   const d = avecBlocFolio(DISPOSITION_DEFAUT);
-  check("posé dans la première case vide (à côté des amis)", d[2].c[1]?.k === "folio" && d.length === DISPOSITION_DEFAUT.length && DISPOSITION_DEFAUT[2].c[1] === null);
+  check("page par défaut (rangées pleines) : en tuile à la fin", d.length === DISPOSITION_DEFAUT.length + 1 && d[3].k === "folio" && d[3].f === "tuile");
   check("déjà là : la page ne change pas", avecBlocFolio(d) === d);
-  const pleine: Disposition = [{ m: "plein", c: [{ k: "vitrine" }] }];
-  const d2 = avecBlocFolio(pleine);
-  check("sans case vide : une rangée de deux moitiés à la fin", d2.length === 2 && d2[1].m === "deux" && d2[1].c[0]?.k === "folio");
-  const douze: Disposition = Array.from({ length: RANGEES_MAX }, () => ({ m: "plein" as const, c: [{ k: "vitrine" as const }] }));
-  check("douze rangées pleines : rien d'ajouté", avecBlocFolio(douze) === douze);
-  const v = validerDisposition([{ m: "deux", c: [{ k: "folio" }, null] }], null);
-  check("le bloc « Folio » passe la validation", v.refus.length === 0 && v.disposition[0]?.c[0]?.k === "folio");
+  const libre: Disposition = [{ k: "radar", f: "heros" }, { k: "libre", f: "tuile" }, { k: "amis", f: "tuile" }];
+  const d1 = avecBlocFolio(libre);
+  check("posé à la place de la première place libre, à son format", d1[1].k === "folio" && d1[1].f === "tuile" && d1.length === 3 && libre[1].k === "libre");
+  const incomplete: Disposition = [{ k: "vitrine", f: "bande" }, { k: "amis", f: "heros" }, { k: "radar", f: "heros" }];
+  const d2 = avecBlocFolio(incomplete);
+  check("sinon en tuile après la première rangée incomplète", d2.map((e) => e.k).join() === "vitrine,amis,folio,radar" && d2[2].f === "tuile");
+  const vingt: Disposition = Array.from({ length: ELEMENTS_MAX }, () => ({ k: "vitrine" as const, f: "bande" as const }));
+  check("vingt éléments en rangées pleines : rien d'ajouté", avecBlocFolio(vingt) === vingt);
+  const v = validerDisposition([{ k: "folio", f: "tuile" }], null);
+  check("le bloc « Folio » passe la validation", v.refus.length === 0 && v.disposition[0]?.k === "folio" && v.disposition[0]?.f === "tuile");
+  const ancien = validerDisposition([{ m: "deux", c: [{ k: "folio" }, null] }], null);
+  check("l'ancien folio en deux moitiés se relit en héros", ancien.refus.length === 0 && ancien.disposition.length === 1 && ancien.disposition[0]?.k === "folio" && ancien.disposition[0]?.f === "heros");
 }
 
 console.log("# Les folios");

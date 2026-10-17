@@ -73,7 +73,8 @@ export function etagere(a: Acquis, porte: Porte, bannerUrl: string | null = null
  * Le style après « Porter » (nue) ou « Retirer » (null) une pièce : le
  * cadre revient à « Sans cadre », la bannière au motif par défaut ; porter
  * une bannière retire l'image du joueur (le motif prend sa place) ; porter
- * un folio pose son bloc sur la page s'il n'y est pas (demi-largeur).
+ * un folio pose son bloc sur la page s'il n'y est pas (avecBlocFolio : à la
+ * première place libre, sinon en tuile).
  */
 export function stylePorte(style: StyleProfil, type: TypePiece, nue: string | null): StyleProfil {
   switch (type) {
