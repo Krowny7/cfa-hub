@@ -40,7 +40,7 @@ import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSea
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
 import { lireRythme, poserSemaine, poserVerdict } from "@/lib/codex/rythme-serveur";
-import type { Bande, StatutVerdict } from "@/lib/codex/plan";
+import { recalageVerdict, type Bande, type StatutVerdict } from "@/lib/codex/plan";
 import type { Commande } from "@/lib/codex/catalogue";
 
 export type Joueur = Pick<User, "id" | "user_metadata" | "created_at">;
@@ -267,6 +267,7 @@ async function seanceDuJour(
       notionsNonVues: contenu.map((m) => ({ matiere: m.key, n: dest.notionsNonVues[m.key] ?? 0, total: m.notions })),
       contrats: vue.contrats, def: o.actif, ecartes, dest,
       blocsFaits: (precedente?.blocs ?? []).filter((b) => faits.includes(b.genre)),
+      recalage: recalageVerdict(entree.verdict, jour),
     }).blocs;
   }
   if (!blocs.length) return null;

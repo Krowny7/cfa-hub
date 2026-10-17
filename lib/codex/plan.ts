@@ -203,6 +203,16 @@ export function lireVerdict(raw: unknown): Verdict | null {
   return { programme: r.programme, session, statut, bandes, saisiLe: typeof r.saisi_le === "string" ? r.saisi_le : typeof r.saisiLe === "string" ? r.saisiLe : "" };
 }
 
+/**
+ * Le recalage d'après un « pas cette fois » (60 jours durant) : le poids de
+ * faiblesse de chaque matière et les retouches en tête de la séance du jour ;
+ * null hors de cette fenêtre.
+ */
+export function recalageVerdict(v: Verdict | null | undefined, jour: string): { facteur: (matiere: string) => number } | null {
+  if (!v || v.statut !== "pas_cette_fois" || !v.saisiLe || joursEntre(v.saisiLe.slice(0, 10), jour) > JOURS_BANDES) return null;
+  return { facteur: (m) => facteurBande(v, m, jour) };
+}
+
 /** Le poids de faiblesse d'une matière après un « pas cette fois » : ×1,3 en bande basse, 60 jours durant. */
 export function facteurBande(v: Verdict | null | undefined, matiere: string, jour: string): number {
   if (!v || v.statut !== "pas_cette_fois" || v.bandes[matiere] !== "basse" || !v.saisiLe) return 1;

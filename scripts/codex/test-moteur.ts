@@ -31,7 +31,9 @@ import { CODEX } from "@/lib/voice-codex";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import type { Quete } from "@/lib/codex/types";
 import { quetesSemaine, xpSemaineEncre } from "@/lib/codex/catalogue";
-import { JALONS_CFA_L1, commandesPossibles, dateApproximative, enReprise, estSprint, facteurBande, libelleEcart, lireSemaine, lireVerdict, matiereBanquier, planDe, sessionDe } from "@/lib/codex/plan";
+import { JALONS_CFA_L1, commandesPossibles, dateApproximative, enReprise, estSprint, facteurBande, libelleEcart, lireSemaine, lireVerdict, matiereBanquier, planDe, recalageVerdict, sessionDe } from "@/lib/codex/plan";
+import { matiereCoince } from "@/lib/codex/seance";
+import { maitriseDuCodex } from "@/lib/codex/cap";
 import { calculerSerie } from "@/lib/serie-encre";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
 import { destinationDe } from "@/lib/codex/destinations";
@@ -819,6 +821,11 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("verdict mal formé → null", !lireVerdict({ programme: "finance/cfa-l1", session: "2026-13", statut: "admis" }) && !lireVerdict({ programme: "finance/cfa-l1", session: "2026-11", statut: "recale" }));
   check("bande basse : ×1,3 pendant 60 jours, puis ×1 ; moyenne ou admis : ×1", facteurBande(v, "quant", "2027-01-10") === 1.3 && facteurBande(v, "quant", "2027-02-19") === 1 && facteurBande(v, "fsa", "2027-01-10") === 1 && facteurBande(v && { ...v, statut: "admis" }, "quant", "2027-01-10") === 1);
   check("la session d'un jour J", sessionDe("2026-11-12") === "2026-11");
+  const rec = recalageVerdict(v, "2027-01-10");
+  check("recalage : 60 jours après un « pas cette fois », puis plus rien ; jamais après « admis »", !!rec && rec.facteur("quant") === 1.3 && rec.facteur("fsa") === 1 && !recalageVerdict(v, "2027-02-19") && !recalageVerdict(v && { ...v, statut: "admis" }, "2027-01-10"));
+  const pcts: Record<string, number> = { quant: 20, fsa: 40 };
+  const mc = maitriseDuCodex(contenu, { maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: pcts[m.key] ?? 80, questions: 60, debut: 40 }])) });
+  check("séance : « ce qui coince » passe à la matière en bande basse (Quant ×1,3 devant FSA)", matiereCoince(mc, false)?.cle === "fsa" && matiereCoince(mc, false, rec!.facteur)?.cle === "quant");
 
   // ce que /codex en montre (lib/codex/rythme.ts)
   const active = (o: Partial<Entree> = {}) => base({ jourJ: "2026-11-12", lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-06", n: 40 }, { jour: "2026-10-08", n: 9 }, { jour: "2026-10-14", n: 12 }] }, speciaux: {} }, ...o });
