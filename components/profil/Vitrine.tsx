@@ -7,6 +7,7 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import { VITRINE, type ProfilStats, type StyleProfil, type VitrineKey } from "@/lib/profil/catalogue";
 import type { AmiLite } from "@/lib/profil/donnees";
 import { nombre, pct } from "@/lib/voice";
+import { PAS_MESUREE, libellePct } from "@/lib/maitrise";
 
 // Le bas du profil : la vitrine (trois pièces choisies par le joueur) et ses
 // amis (le radar : RadarComparable). Sans état.
@@ -34,7 +35,7 @@ function Piece({ k, st, rang }: { k: VitrineKey; st: ProfilStats; rang: Rang }) 
       const best = [...st.matieres].filter((m) => m.pct !== null && m.answered >= 10).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0))[0];
       const m = best ? SUBJECTS.find((x) => x.key === best.key) : null;
       grand = m ? m.short : "—";
-      petit = best ? `${pct(best.pct ?? 0)} de maîtrise` : "pas encore mesurée";
+      petit = best ? `${libellePct(best) ?? pct(best.pct ?? 0)} de maîtrise${best.statut === "provisoire" ? " · provisoire" : ""}` : PAS_MESUREE;
       break;
     }
     case "defis":

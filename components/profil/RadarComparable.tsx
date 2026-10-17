@@ -8,6 +8,7 @@ import { classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { couleurCss } from "@/lib/profil/catalogue";
 import { NBSP } from "@/lib/voice";
+import { infobulleMaitrise, type StatutMaitrise } from "@/lib/maitrise";
 import { FACE } from "@/lib/voice-profil";
 
 // Le radar des 10 matières d'un joueur, à sa couleur, face à la moyenne des
@@ -20,24 +21,34 @@ import { FACE } from "@/lib/voice-profil";
 // le radar y reste seul visible, les barres et le bilan des matières passent
 // dans un repli (le résumé des écarts est déjà au-dessus).
 
-export type MatierePct = { key: string; pct: number | null };
+/** statut et answered : une maîtrise provisoire (10 à 39 réponses) s'écrit « ≈ 52 » */
+export type MatierePct = { key: string; pct: number | null; statut?: StatutMaitrise; answered?: number };
+
+/** L'infobulle d'une maîtrise provisoire, par matière (« provisoire · 23 réponses sur 40 »). */
+const provisoires = (ms: MatierePct[]) =>
+  new Map(ms.map((m) => [m.key, m.pct !== null && m.statut ? infobulleMaitrise({ statut: m.statut, n: m.answered ?? 0 }) : null]));
 
 /** Le détail d'une ligne, en clair : la matière, puis chaque chiffre dit ce qu'il est. */
-function infobulle(l: { complet: string; me: number | null; avg: number | null; toi: number | null }, actif: boolean, qui: string) {
-  const pct = (v: number | null) => (v === null ? "pas encore mesurée" : `${v} % de bonnes réponses`);
+function infobulle(
+  l: { complet: string; me: number | null; avg: number | null; toi: number | null; meProv: string | null; toiProv: string | null },
+  actif: boolean,
+  qui: string,
+) {
+  const pct = (v: number | null, prov: string | null = null) =>
+    v === null ? "pas encore mesurée" : `${prov ? "≈ " : ""}${v} % de bonnes réponses${prov ? ` (${prov})` : ""}`;
   if (actif) {
     const d = l.toi !== null && l.me !== null ? Math.round(l.toi - l.me) : null;
     return [
       l.complet,
-      `${qui} : ${pct(l.me)}`,
-      `toi : ${pct(l.toi)}`,
+      `${qui} : ${pct(l.me, l.meProv)}`,
+      `toi : ${pct(l.toi, l.toiProv)}`,
       d === null ? "écart : pas encore comparable" : d === 0 ? "à égalité" : `tu es ${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "devant" : "derrière"}`,
     ];
   }
   const d = l.me !== null && l.avg !== null ? Math.round(l.me - l.avg) : null;
   return [
     l.complet,
-    `${qui === "toi" ? "ta précision" : `précision de ${qui}`} : ${pct(l.me)} (la barre)`,
+    `${qui === "toi" ? "ta précision" : `précision de ${qui}`} : ${pct(l.me, l.meProv)} (la barre)`,
     l.avg === null ? "moyenne des joueurs : pas encore connue" : `moyenne des joueurs : ${l.avg} % (le trait)`,
     d === null ? "" : d === 0 ? "pile dans la moyenne" : `${Math.abs(d)} point${Math.abs(d) > 1 ? "s" : ""} ${d > 0 ? "au-dessus de" : "sous"} la moyenne (le chiffre ${d > 0 ? "+" : "−"}${Math.abs(d)})`,
   ].filter(Boolean);
@@ -72,12 +83,14 @@ export function RadarComparable({
 
   const sien = new Map(matieres.map((m) => [m.key, m.pct]));
   const mien = new Map((miennes ?? []).map((m) => [m.key, m.pct]));
+  const sienProv = provisoires(matieres);
+  const mienProv = provisoires(miennes ?? []);
   const peutComparer = !moi && !!miennes && miennes.some((m) => m.pct !== null);
   const actif = comparer && peutComparer;
 
   const qui = moi ? "toi" : nom;
   const axes = SUBJECTS.map((x) => ({ label: x.code, nom: x.name, qui, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null }));
-  const lignes = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, complet: x.name, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null, toi: mien.get(x.key) ?? null })).sort(
+  const lignes = SUBJECTS.map((x) => ({ key: x.key, nom: x.short, complet: x.name, me: sien.get(x.key) ?? null, avg: moyennes[x.key] ?? null, toi: mien.get(x.key) ?? null, meProv: sienProv.get(x.key) ?? null, toiProv: mienProv.get(x.key) ?? null })).sort(
     (a, b) => (b.me ?? -1) - (a.me ?? -1),
   );
   const mesurees = axes.filter((a) => a.me !== null).length;
@@ -182,10 +195,10 @@ export function RadarComparable({
                       )}
                     </span>
                     <span className="text-right font-mono text-[12px] tabular-nums">
-                      {l.me === null ? <span className="text-muted">—</span> : <b className="font-semibold">{l.me}</b>}
+                      {l.me === null ? <span className="text-muted">—</span> : <b className="font-semibold">{`${l.meProv ? "≈" : ""}${l.me}`}</b>}
                       {actif ? (
                         <>
-                          <span style={{ color: maCouleur }}>{` · ${l.toi === null ? "—" : l.toi}`}</span>
+                          <span style={{ color: maCouleur }}>{` · ${l.toi === null ? "—" : `${l.toiProv ? "≈" : ""}${l.toi}`}`}</span>
                           {l.toi !== null && l.me !== null && Math.round(l.toi - l.me) !== 0 && (
                             <span className="font-semibold" style={{ color: l.toi > l.me ? "var(--gain)" : "var(--perte)" }}>{` ${l.toi > l.me ? "+" : "−"}${Math.abs(Math.round(l.toi - l.me))}`}</span>
                           )}

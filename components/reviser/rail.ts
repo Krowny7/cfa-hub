@@ -1,12 +1,13 @@
 import { SUBJECTS } from "@/components/reviser/catalog";
 import { TOPICS } from "@/lib/practiceTopics";
 import type { TopicRailItem } from "@/components/ui/TopicRail";
+import { infobulleMaitrise, type StatutMaitrise } from "@/lib/maitrise";
 
 // Cartes du sélecteur de matières (components/ui/TopicRail), préparées côté
 // serveur à partir des vraies données : ordre officiel du programme, code
 // court, maîtrise. Module neutre (pas de "use client").
 
-type Row = { key: string; pct: number | null };
+type Row = { key: string; pct: number | null; statut?: StatutMaitrise; answered?: number };
 
 /** « 07 » */
 export const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -28,10 +29,13 @@ export function weightLabel(key: string) {
  * mesurées) ; `extra` ajoute lien, note ou formats matière par matière.
  */
 export function subjectRail(rows: Row[], extra?: (key: string, pct: number | null) => Partial<TopicRailItem>): TopicRailItem[] {
-  const pct = new Map(rows.map((r) => [r.key, r.pct]));
+  const parCle = new Map(rows.map((r) => [r.key, r]));
   return SUBJECTS.map((s, i) => {
-    const p = pct.get(s.key) ?? null;
-    return { key: s.key, index: i + 1, name: s.name, code: s.code, pct: p, ...(extra?.(s.key, p) ?? {}) };
+    const r = parCle.get(s.key);
+    const p = r?.pct ?? null;
+    // une maîtrise provisoire (10 à 39 réponses) s'écrit « ≈ 52 % »
+    const provisoire = p !== null && r?.statut ? infobulleMaitrise({ statut: r.statut, n: r.answered ?? 0 }) : null;
+    return { key: s.key, index: i + 1, name: s.name, code: s.code, pct: p, ...(provisoire ? { provisoire } : {}), ...(extra?.(s.key, p) ?? {}) };
   });
 }
 
