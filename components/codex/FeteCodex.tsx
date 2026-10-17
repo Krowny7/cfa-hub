@@ -20,7 +20,8 @@ import e from "./Encre.module.css";
 import s from "./Codex.module.css";
 
 // La petite cérémonie du Codex, posée là où le joueur est : en fin de séance
-// (CeremonieSceaux l'appelle), sur l'accueil et sur /codex. Plus aucune fête
+// (CeremonieSceaux l'appelle) et sur /codex (l'accueil ne montre plus rien du
+// Codex, Codex simplifié, ajustement A). Plus aucune fête
 // automatique (Codex simplifié) : les quêtes faites attendent « Récupérer »,
 // et leurs grandes fêtes se jouent au clic (components/codex/Recuperer).
 //
@@ -33,7 +34,7 @@ import s from "./Codex.module.css";
 // Partout : « Léonard a feuilleté ton carnet » pour les comptes existants,
 // une seule fois (le rétroactif garde sa cérémonie), et le dévoilement.
 //
-// `initial` : le bilan déjà lu côté serveur (accueil, /codex). Sans lui
+// `initial` : le bilan déjà lu côté serveur (/codex). Sans lui
 // (fin de séance), le composant demande le point au serveur après `attenteMs`,
 // le temps que les réponses de la séance soient enregistrées. `persister` :
 // écrire le dévoilement dans le compte (le rendu serveur ne le peut pas).
@@ -68,7 +69,7 @@ export function FeteCodex({
     const t = window.setTimeout(async () => {
       let b: BilanCodex | null = null;
       try {
-        // l'accueil vient de calculer (initial) : la vue gardée suffit, seul le dévoilement s'écrit
+        // /codex vient de calculer (initial) : la vue gardée suffit, seul le dévoilement s'écrit
         b = await codexPoint(initial ? { recalcul: false } : undefined);
       } catch {
         b = null;
@@ -98,7 +99,7 @@ export function FeteCodex({
   }, []);
 
   const sobre = !!bilan?.sobre;
-  // en fin d'outil seulement (l'accueil et /codex ont leur place pour « Récupérer ») : ce qui attend le clic, et la
+  // en fin d'outil seulement (/codex et le panneau du sceau ont leur place pour « Récupérer ») : ce qui attend le clic, et la
   // suite, sauf si l'on y est déjà (sans `initial`, le bilan n'arrive qu'au navigateur : window est là)
   const aRecuperer = !initial ? (bilan?.aRecuperer ?? []) : [];
   const suite = !initial && bilan?.suite && cheminDe(bilan.suite.href) !== cheminDe(window.location.pathname) ? bilan.suite : null;
@@ -112,7 +113,7 @@ export function FeteCodex({
     return () => window.clearTimeout(t);
   }, [retro]);
 
-  // la séance tenue : fêtée une fois par jour, en fin d'outil seulement (l'accueil et /codex la montrent dans leur carte)
+  // la séance tenue : fêtée une fois par jour, en fin d'outil seulement (/codex la montre dans son fil)
   const finSeance = !initial && !finVue && bilan?.seance ? bilan.seance : null;
   const clore = (encore: boolean) => {
     if (!finSeance) return;

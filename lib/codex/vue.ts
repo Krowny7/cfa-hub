@@ -15,7 +15,7 @@ import type { VueSeance } from "@/lib/codex/seance";
 import type { VueRythme } from "@/lib/codex/rythme";
 import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
 import { notionsDeMatiere } from "@/lib/notions";
-import { CODEX, romain } from "@/lib/voice-codex";
+import { CODEX, PHASES_CLAIRES, romain } from "@/lib/voice-codex";
 import { POURQUOI_FIL, TITRES_CHAINES, TITRES_CHAPITRES_FIL, butActe, enigmeClaire, nomActe, pourquoiClair, titreActe, titreClair } from "@/lib/codex/titres-clairs";
 import { FAIT_VIDE, aRecupererDe, cleRecuperer, faitAujourdhuiDe, nomRecompense, titreHorsVue, type ARecuperer, type FaitAujourdhui } from "@/lib/codex/recuperer";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
@@ -545,7 +545,8 @@ export function construireVue(
     disponible: true,
     jour: e.jour,
     phase: r.phase,
-    phaseNom: phase.nom,
+    // le nom de la phase, dit en clair (lib/voice-codex PHASES_CLAIRES) ; ses répliques restent au catalogue, pour les fêtes
+    phaseNom: PHASES_CLAIRES[r.phase]?.nom ?? phase.nom,
     phaseReplique: e.jourJ === null ? (phase.sansDate ?? phase.replique) : phase.replique,
     joursAvant: joursAvantExamen(e.jour, e.jourJ),
     niveau: r.niveau,

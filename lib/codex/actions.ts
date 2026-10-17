@@ -41,11 +41,10 @@ export async function codexSynchroniser(): Promise<VueCodex | null> {
 }
 
 /**
- * Le point léger, pour les écrans qui ne sont pas le Codex (fin de séance,
- * accueil) : recalcule tout de suite, verse les récompenses, écrit le
- * dévoilement dans le compte, et ne rend que ce qu'il faut fêter ou annoncer.
- * `recalcul: false` (l'accueil, qui vient de calculer) : la vue gardée suffit,
- * seul le dévoilement est écrit.
+ * Le point léger (fin de séance, et /codex au chargement) : recalcule tout de
+ * suite, verse les récompenses, écrit le dévoilement dans le compte, et ne
+ * rend que ce qu'il faut fêter ou annoncer. `recalcul: false` (/codex, qui
+ * vient de calculer) : la vue gardée suffit, seul le dévoilement est écrit.
  */
 export async function codexPoint(opts: { recalcul?: boolean } = {}): Promise<BilanCodex> {
   const { supabase, user } = await joueur();
