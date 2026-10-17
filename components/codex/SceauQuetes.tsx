@@ -189,7 +189,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
       ) : (
         <>
           {/* toujours monté : il garde ses quêtes pendant le geste, même quand le panneau relu n'en a plus */}
-          <Recuperer key={ouvertures} items={rec.items} total={{ n: rec.n, xp: rec.xp }} jour={panneau.jour} fait={fait} cadre={false} demo={demo} onFini={() => setRecupere(true)} />
+          <Recuperer key={ouvertures} items={rec.items} total={{ n: rec.n, xp: rec.xp }} jour={panneau.jour} fait={fait} sobre={panneau.sobre} cadre={false} demo={demo} onFini={() => setRecupere(true)} />
           {seance && (
             <div className={s.zone}>
               <p className="t-eyebrow m-0">La suite</p>
@@ -198,7 +198,7 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
                   <span className="min-w-0">
                     <span className={s.suiteTitre}>{seance.suivant.titre}</span>
                     <span className="t-micro t-num">
-                      {seance.suivant.duree} min{seance.suivant.xp > 0 ? ` · +${seance.suivant.xp.toLocaleString("fr-FR")} XP` : ""}
+                      {seance.suivant.duree} min{seance.suivant.xp > 0 && !panneau.sobre ? ` · +${seance.suivant.xp.toLocaleString("fr-FR")} XP` : ""}
                     </span>
                   </span>
                   <button type="button" className={`btn ${aRecuperer ? "btn-secondary" : "btn-primary"} rl-press min-h-[44px]`} disabled={occupe} aria-busy={occupe} onClick={() => commencer(seance.suivant!)}>
@@ -221,12 +221,12 @@ export function SceauQuetes({ initial, xp: xpServeur = null, demo = false, ouver
         {/* « Récupérer » dit lui-même « Fait aujourd'hui » une fois son geste fini */}
         {!panneau.jourJ && !recupere && fait.n > 0 ? (
           <details>
-            <summary>{TEXTES_RECUPERER.fait(fait)}</summary>
+            <summary>{TEXTES_RECUPERER.fait(fait, panneau.sobre)}</summary>
             <ul className={s.faitListe}>
               {fait.quetes.map((q) => (
                 <li key={`${q.quete}|${q.periode}`}>
                   <span className="min-w-0 truncate">{q.titre}</span>
-                  {q.xp > 0 && <span className="t-num shrink-0">+{q.xp.toLocaleString("fr-FR")} XP</span>}
+                  {q.xp > 0 && !panneau.sobre && <span className="t-num shrink-0">+{q.xp.toLocaleString("fr-FR")} XP</span>}
                 </li>
               ))}
             </ul>

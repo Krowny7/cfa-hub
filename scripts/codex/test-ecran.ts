@@ -111,7 +111,7 @@ check("la forme gardée du panneau change de version (un instantané d'avant n'e
   const mv = panneauDe({ ...exempleCodex("milieu"), aRecuperer: [] });
   check("milieu, rien en attente : les récompenses versées d'office à acquitter", !!mv.versees && mv.versees.n > 0 && mv.versees.xp > 0 && mv.recuperer.n === 0);
   const ms = panneauDe({ ...exempleCodex("milieu"), sobre: true, aRecuperer: [] });
-  check("mode sobre : les mêmes quêtes à acquitter, sans XP", !!ms.versees && ms.versees.n === mv.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(mv.versees?.cles) && ms.versees.xp === 0);
+  check("mode sobre : les mêmes quêtes à acquitter, sans XP ; le panneau le sait (ni « +n XP » ni fête)", !!ms.versees && ms.versees.n === mv.versees?.n && JSON.stringify(ms.versees.cles) === JSON.stringify(mv.versees?.cles) && ms.versees.xp === 0 && ms.sobre && !mv.sobre);
   check("vue indisponible : panneau vide", !panneauDe({ ...exempleCodex("milieu"), disponible: false }).disponible);
 }
 

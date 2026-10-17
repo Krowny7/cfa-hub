@@ -48,10 +48,12 @@ export type Panneau = {
   recuperer: { n: number; xp: number; items: ARecuperer[] };
   /** « Fait aujourd'hui : 4 · +230 XP » */
   fait: FaitAujourdhui;
+  /** le mode sobre (lib/codex/sobre) : ni « +n XP » ni grande fête */
+  sobre: boolean;
 };
 
 export const PANNEAU_VIDE: Panneau = {
-  disponible: false, jour: "", versees: null, revoir: null, seance: null, jourJ: false, recuperer: { n: 0, xp: 0, items: [] }, fait: FAIT_VIDE,
+  disponible: false, jour: "", versees: null, revoir: null, seance: null, jourJ: false, recuperer: { n: 0, xp: 0, items: [] }, fait: FAIT_VIDE, sobre: false,
 };
 
 const cleDe = (l: Pick<LigneQuete, "id" | "periode">) => `${l.id}|${l.periode}`;
@@ -97,6 +99,7 @@ export function panneauDe(vue: VueCodex): Panneau {
     jourJ: false,
     recuperer: { n: enAttente.length, xp: vue.sobre ? 0 : xpAVerser(enAttente), items: enAttente.slice(0, LIGNES_MONTREES) },
     fait: vue.faitAujourdhui ?? FAIT_VIDE,
+    sobre: vue.sobre,
   };
 }
 
