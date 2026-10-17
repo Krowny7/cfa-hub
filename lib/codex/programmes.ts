@@ -135,6 +135,18 @@ export function programmeActif(programmes: ProgrammeJoueur[] | undefined): Defin
 }
 
 /**
+ * Le jour J du programme du joueur : celui de sa ligne
+ * (codex_programmes_joueur.jour_j), sinon, pour CFA I seulement, la date
+ * d'examen du profil (le repli d'avant la v3, V3 §1.6). Un programme suivant
+ * daté par le joueur (CFA II…) sans jour J posé n'en a pas : il n'hérite pas
+ * de la date passée de CFA I, sa phase suit l'avancement. Sans examen : null.
+ */
+export function jourJDuProgramme(def: Pick<DefinitionProgramme, "cle" | "examen">, ligne: Pick<ProgrammeJoueur, "jourJ"> | undefined, dateProfil: string | null): string | null {
+  if (!def.examen) return null;
+  return ligne?.jourJ ?? (def.cle === CFA_L1.cle ? dateProfil : null);
+}
+
+/**
  * La suite proposée (« La route de Milan ») : le programme qui suit celui du
  * joueur une fois celui-ci mené, tant qu'il ne l'a pas commencé ; null sinon.
  */

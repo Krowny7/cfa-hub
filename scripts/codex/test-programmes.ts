@@ -12,7 +12,7 @@ import { ACTES, COSMETIQUES_CODEX, catalogueCodex, contenuDuProgramme, evenement
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
 import { PROGRAMME_ESSAI, PROGRAMME_ESSAI_BIS } from "@/lib/codex/programmes/essai";
 import {
-  REGISTRE, actesDe, catalogueComplet, cosmetiquesDe, genererArbre, idDe, lireProgrammesJoueur, modelesContrats, nomEnTete, programmeActif, programmeDe, programmeDeId, slugDe, suiteDe,
+  REGISTRE, actesDe, catalogueComplet, cosmetiquesDe, genererArbre, idDe, jourJDuProgramme, lireProgrammesJoueur, modelesContrats, nomEnTete, programmeActif, programmeDe, programmeDeId, slugDe, suiteDe,
   type DefinitionProgramme, type ProgrammeJoueur,
 } from "@/lib/codex/programmes";
 import { apresExamenDe, evaluer, indexerLecture, phaseJoueur, planifier, quetesASuivre, requisOk, tirerContrats, type Entree, type LectureSql } from "@/lib/codex/moteur";
@@ -105,6 +105,13 @@ console.log("\n# 2. les phases sans jour J suivent l'avancement");
   check("CFA I sans jour J : fondations tant que l'acte II n'est pas clos (l'acte I parallèle ne compte pas)", phaseDe(null, cfa(["prologue", "acte1"])) === "fondations");
   check("CFA I sans jour J : acte II clos → consolidation ; acte V → répétition ; acte VI → après", phaseDe(null, cfa(["prologue", "acte2"])) === "consolidation" && phaseDe(null, cfa(["prologue", "acte2", "acte3", "acte4", "acte5"])) === "repetition" && phaseDe(null, cfa(["prologue", "acte2", "acte3", "acte4", "acte5", "acte6"])) === "apres");
   check("sans contexte : fondations, comme avant", phaseDe(null) === "fondations");
+  // le jour J : la ligne du programme, sinon le profil pour CFA I seulement (V3 §1.6)
+  const cfa2 = programmeDe("finance/cfa-l2")!;
+  const passe = "2026-11-12";
+  check("CFA I sans ligne ou sans jour J posé : la date du profil (le repli d'avant la v3)", jourJDuProgramme(CFA_L1, undefined, passe) === passe && jourJDuProgramme(CFA_L1, { jourJ: null }, passe) === passe && jourJDuProgramme(CFA_L1, { jourJ: "2027-05-20" }, passe) === "2027-05-20");
+  check("programme suivant daté (CFA II) ouvert sans jour J : null, il n'hérite pas de la date passée de CFA I", !!cfa2.examen && jourJDuProgramme(cfa2, { jourJ: null }, passe) === null && jourJDuProgramme(cfa2, { jourJ: "2027-08-20" }, passe) === "2027-08-20");
+  check("… sa phase suit alors l'avancement (pas « après » dès le premier jour)", phaseDe(null, { def: cfa2, actesClos: [], apresExamen: false }) === "fondations");
+  check("un programme sans examen n'a jamais de jour J", jourJDuProgramme(PROGRAMME_ESSAI, { jourJ: "2027-01-01" }, passe) === null);
 }
 
 console.log("\n# 3. CFA I : les ids publiés restent, le catalogue ne change pas");

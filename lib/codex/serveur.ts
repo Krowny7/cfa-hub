@@ -33,9 +33,9 @@ import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/
 import { panneauAGarder, panneauDe, panneauDuCache, type Panneau } from "@/lib/codex/panneau";
 import { CAPACITES_TOUTES, avecMesuresV3, mesuresV3DeLecture, mesuresV3DeReponse, type MesuresV3 } from "@/lib/codex/mesures-v3";
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
-import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
+import { catalogueComplet, jourJDuProgramme, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { maitriseDuCodex } from "@/lib/codex/cap";
-import { cochesValides, lireMalle, momentCalme, momentDe } from "@/lib/codex/calendrier";
+import { cochesValides, lireMalle, momentCalme, momentDe, pinceauPose } from "@/lib/codex/calendrier";
 import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import { lireSobre } from "@/lib/codex/sobre";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
@@ -366,10 +366,12 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       lireSeance(a, user.id, jour),
       lireRythme(a, user, jour),
     ]);
-    // le programme actif (sans ligne : CFA I) ; son jour J, sinon celui du profil (le repli d'avant la v3)
+    // le programme actif (sans ligne : CFA I) ; son jour J, sinon, pour CFA I seulement, celui du profil
+    // (le repli d'avant la v3, V3 §1.6) : un programme suivant daté sans jour J posé n'hérite pas de la
+    // date passée de CFA I, sa phase suit l'avancement
     const actif = programmeActif(programmes);
     const ligneActive = programmes.find((p) => p.programme === actif.cle && p.statut === "actif");
-    const jourJ = actif.examen ? (ligneActive?.jourJ ?? dateExamen) : null;
+    const jourJ = jourJDuProgramme(actif, programmes.find((p) => p.programme === actif.cle), dateExamen);
     // les mesures v3 et les capacités : rendues par codex_lire quand la §5 est collée (journal 3 au dernier
     // calcul : une seule lecture des réponses, V3 §12.3bis) ; sinon lues à part, pendant le tirage des contrats
     const v3Apart = reglage.capacitesVues?.journal === 3 ? null : lireMesuresV3(a, user.id, actif.cle);
@@ -415,6 +417,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     // la séance du jour déjà proposée (en base ; sans la §6, celle de cette instance) : les objectifs de
     // ses blocs et les sondes du jour (5 et 30 rendus) partent avec les compteurs des quêtes
     const seancePrecedente = seanceLue.absente ? seanceEnMemoire(user.id, jour) : seanceLue.gardee;
+    // le jour J et le lendemain : pas de séance (V3 §7.4, §7.5) ; ces moments ne dépendent que du jour J
+    // (sans lui, momentDe rend « courant » ou « après », quelle que soit la phase)
+    const sansSeance = pinceauPose(momentDe(actif.examen ? joursAvantExamen(jour, jourJ) : null, "courant"));
     entree.seance = { objectifs: [...SONDES_SEANCE, ...(seancePrecedente?.blocs ?? []).map((b) => b.objectif)], lanceeLe: seancePrecedente?.lanceeLe ?? null };
 
     // les contrats du jour : tirés une fois (la base garde le premier tirage) ; un seul en veillée
@@ -461,7 +466,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const compteurs = indexerLecture(demandes, entree.lecture);
     // les blocs faits de la séance gardée, lus sur les mêmes compteurs ; lancée et tenue, elle verse le bonus du trio
     const seanceLus = faitsDeSeance(seancePrecedente, evaluerObjectifs(entree, compteurs, entree.seance.objectifs));
-    entree.seance = { ...entree.seance, tenue: seanceLus.tenue };
+    entree.seance = { ...entree.seance, tenue: !sansSeance && seanceLus.tenue };
     let resultat = evaluer(entree, compteurs);
 
     // l'écriture : récompenses uniques, ouvertures, progression
@@ -519,7 +524,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
     const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id, malle, sobre: lireSobre(user) });
-    const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
+    const seance = sansSeance ? null : await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
     const rythme = vueRythme(entree, compteurs, { semaineDispo: rythmeLu.semaineDispo, capacites: entree.capacites, moment: construite.moment, verdicts: rythmeLu.verdicts });
     const vue: VueCodex = { ...construite, seance, rythme };
     MEMO.set(user.id, { at: Date.now(), vue });
