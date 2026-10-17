@@ -103,12 +103,14 @@ export function PastilleSeance({ initial, jour, demo = false, chemin: cheminImpo
         <span className="hidden lg:inline">Séance</span>
         {p.rang}/{p.total} · Continuer <ArrowRight size={14} aria-hidden />
       </Link>
-      {/* la bande du téléphone sort de la barre du haut (son flou ferait de la barre le repère de « fixed ») */}
+      {/* la bande du téléphone sort de la barre du haut (son flou ferait de la barre le repère de « fixed ») ;
+          data-bande-seance : le bas de page s'allonge d'autant (app/layout.tsx), rien ne reste dessous */}
       {monte &&
         createPortal(
           <div
             role="region"
             aria-label="La séance du jour"
+            data-bande-seance=""
             className="fixed inset-x-3 z-40 flex items-center gap-1 rounded-[16px] border border-line p-1 md:hidden"
             style={{ bottom: "calc(86px + env(safe-area-inset-bottom, 0px))", background: "color-mix(in oklab, var(--paper) 92%, transparent)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
           >

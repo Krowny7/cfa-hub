@@ -30,7 +30,8 @@
   z-index: 95;
   left: 16px;
   right: 16px;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  /* au-dessus de la barre du bas (son haut est à 78 px), à la hauteur de la bande « Séance » */
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
   gap: 10px;

@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* Conteneur par défaut : colonne de lecture (max-w-4xl). Les pages
               V2 (accueil, espaces) s'élargissent à 1240 px avec .rl-wide. */}
-          <main className="min-w-0 overflow-x-clip px-4 pb-28 pt-7 md:px-7 md:pb-14">
+          <main className="min-w-0 overflow-x-clip px-4 pb-28 pt-7 md:px-7 md:pb-14 max-md:[body:has([data-bande-seance])_&]:pb-[168px]">
             <div className="mx-auto max-w-4xl">{children}</div>
           </main>
 
