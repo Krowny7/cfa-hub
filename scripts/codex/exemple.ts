@@ -25,8 +25,11 @@ function hash(s: string) {
   return h >>> 0;
 }
 
-/** `budget`, `ecartees` : le réglage du jour (« J'ai 30 min », « Une autre idée ? »). */
-export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[] } = {}): VueCodex {
+/**
+ * `budget`, `ecartees` : le réglage du jour (« J'ai 30 min », « Une autre idée ? ») ;
+ * `unique` : la maîtrise unique et la file « À revoir » lues (codex_mesures_v3 et le SQL du couloir B collés).
+ */
+export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[]; unique?: boolean } = {}): VueCodex {
   const fin = sc === "fin";
   const neuf = sc === "neuf";
   const e: Entree = {
@@ -38,9 +41,21 @@ export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; 
     ...(fin ? { capacites: { ...CAPACITES_VIDE, fil: true } } : {}),
   };
   const maitrise = Object.fromEntries(contenu.map((m, i) => [m.key, { pct: neuf ? 0 : fin ? 58 + ((i * 7) % 28) : 28 + ((i * 11) % 45), questions: neuf ? 0 : fin ? 220 : 40 + i * 12, debut: neuf ? null : 30 + (i % 4) * 8 }]));
+  // la maîtrise unique : la fenêtre de 60 réponses, provisoire de 10 à 39, la dernière réponse il y a 0 à 14 jours
+  const unique = opts.unique && !neuf
+    ? {
+        maitrise_unique: Object.fromEntries(contenu.map((m, i) => {
+          const n = Math.min(60, fin ? 60 : 8 + i * 6);
+          const statut = n >= 40 ? ("mesuree" as const) : n >= 10 ? ("provisoire" as const) : ("non_mesuree" as const);
+          return [m.key, { pct: statut === "non_mesuree" ? null : maitrise[m.key].pct + 4, questions: n, total: n * 3, debut: null, statut, derniere: `2026-10-${String(16 - ((i * 5) % 15)).padStart(2, "0")}T09:00:00Z`, ancienne: maitrise[m.key].pct }];
+        })),
+        revoir: { aujourdhui: fin ? 18 : 12, demain: fin ? 22 : 9, ratures: 7, rappels: fin ? 11 : 5 },
+      }
+    : {};
   const lecture0: LectureSql = {
     compteurs: {}, speciaux: {},
     mesures: {
+      ...unique,
       xp_total: neuf ? 0 : fin ? 9200 : 3100, maitrise, ratures_ouvertes: { total: neuf ? 0 : 14, matieres: {} }, serie: neuf ? 0 : 4, meilleure_serie: neuf ? 0 : 9, elo: neuf ? null : 1180,
       jours_encre_total: neuf ? 0 : fin ? 64 : 21, maitres_total: fin ? 1 : 0, programmes_menes: 0,
       trophees: neuf ? [] : fin ? [{ source: "ciblee", palier: 3, n: 3 }, { source: "ciblee", palier: 4, n: 1 }] : [{ source: "ciblee", palier: 2, n: 2 }],

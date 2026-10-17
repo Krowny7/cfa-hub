@@ -216,6 +216,9 @@ console.log("\n# la file « À revoir » et le débrief dans le panneau");
   const v = exempleCodex("milieu");
   check("repli : la file vient des ratures en cours (14), rien pour demain", JSON.stringify(v.revoir) === JSON.stringify({ aujourdhui: 14, demain: 0 }) && JSON.stringify(panneauDe(v).revoir) === JSON.stringify(v.revoir));
   check("sans débrief en attente : rien dans la vue", v.debrief === null);
+  const u = exempleCodex("milieu", { unique: true });
+  check("avec revisions_dues : sa file (12, demain 9), portée par le panneau", JSON.stringify(panneauDe(u).revoir) === JSON.stringify({ aujourdhui: 12, demain: 9 }));
+  check("avec la maîtrise unique : le cap n'est plus provisoire, les matières disent leur fraîcheur", !!u.cap && !u.cap.provisoire && u.cap.matieres.every((m) => !!m.fraicheur) && u.cap.matieres.some((m) => m.statut === "provisoire"));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
