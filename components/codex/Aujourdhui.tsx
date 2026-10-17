@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { MAITRISE, TEXTES_CAP } from "@/lib/codex/cap";
-import { TEXTES_JOUR as T, acteEnCours, compteNeuf, etapesActe, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine } from "@/lib/codex/aujourdhui";
+import { TEXTES_JOUR as T, acteEnCours, compteNeuf, etapesActe, preparationJour, objectifSemaine, resumeFait, resumeQuetesDuJour, resumeSemaine } from "@/lib/codex/aujourdhui";
 import { gainsSeance } from "@/lib/codex/seance-etat";
 import type { LigneQuete as Ligne, VueCodex } from "@/lib/codex/vue";
 import { CODEX } from "@/lib/voice-codex";
@@ -34,7 +34,8 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
   const acte = acteEnCours(vue.trame);
   const contrats = [...vue.contrats.map((c) => c.ligne), ...(vue.debrief ? [vue.debrief] : [])];
   const hebdo = vue.hebdo.filter((l) => l.affichage !== "cache");
-  const semaine = hebdo.length > 0 || !!vue.rythme?.lundi || !!vue.rythme?.plan;
+  const objectif = objectifSemaine(vue.rythme?.semaine);
+  const semaine = hebdo.length > 0 || !!objectif || !!vue.rythme?.lundi || !!vue.rythme?.plan;
 
   return (
     <div className={s.grille}>
@@ -133,6 +134,7 @@ export function Aujourdhui({ vue, fil = true, demo = false, onQuete, onVue }: { 
               {T.semaine} {hebdo.length > 0 && <span className={s.val}>{resumeSemaine(hebdo)}</span>}
             </summary>
             <div className={s.pliCorps}>
+              {objectif && <p className="t-small m-0">{objectif}</p>}
               {vue.rythme?.lundi && <Lundi lundi={vue.rythme.lundi} demo={demo} onVue={onVue} />}
               {vue.rythme?.plan && <Plan plan={vue.rythme.plan} jour={vue.jour} />}
               {hebdo.map((l) => (

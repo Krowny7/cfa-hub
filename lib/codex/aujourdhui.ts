@@ -116,5 +116,11 @@ export function etapesActe(a: VueActe): LigneQuete[] {
   return [...vues.filter((q) => q.etat !== "terminee"), ...vues.filter((q) => q.etat === "terminee")];
 }
 
+/** « Ton objectif : 4 jours d'encre · Le banquier » : le choix du lundi (null : pas encore choisi). */
+export function objectifSemaine(sem: { cible: number; nom: string } | null | undefined): string | null {
+  if (!sem) return null;
+  return `Ton objectif : ${sem.cible} jour${sem.cible > 1 ? "s" : ""} d'encre${sem.nom ? ` · ${sem.nom}` : ""}`;
+}
+
 /** « · 4 sur 5 » : les quêtes de la semaine faites. */
 export const resumeSemaine = (hebdo: LigneQuete[]): string => `· ${hebdo.filter((l) => l.etat === "terminee").length} sur ${hebdo.length}`;

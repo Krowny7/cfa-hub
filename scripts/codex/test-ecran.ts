@@ -37,7 +37,7 @@ import * as CAP from "@/lib/codex/cap";
 import { ECHELLES, FILTRES, SEGMENTS_TEL, chercher, etatNotion, garde, glypheEtape, lisible, matieresFaibles, niveauDe, normaliser, opaciteFraicheur, pastilleDe, premiereBlanche, quetesDeLaCarte, segmentDe, seche, taillesCachees } from "@/lib/codex/carte";
 import { manqueDe } from "@/lib/codex/vue";
 import { matiereCoince } from "@/lib/codex/seance";
-import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
+import { MATIERES_PREPARATION, SEUIL_FAIT_AVANCER, TEXTES_JOUR, acteEnCours, compteNeuf, etapesActe, faitAvancer, objectifSemaine, preparationJour, resumeFait, resumeQuetesDuJour, resumeSemaine, teteFil, xpEtape } from "@/lib/codex/aujourdhui";
 import type { EtatQuete } from "@/lib/codex/moteur";
 
 let ko = 0;
@@ -451,6 +451,7 @@ console.log("\n# /codex « Aujourd'hui » (Codex simplifié, §3.3)");
   check("l'acte en cours : le courant, jamais la visite de la bottega", !!a && a.courant && !(a.acte.numero === 1 && a.quetes.every((q) => q.optionnelle)), a?.acte.id);
   const etapes = a ? etapesActe(a) : [];
   check("… ses étapes : à faire d'abord, puis faites, sans les cachées", etapes.every((l) => l.affichage !== "cache") && etapes.findIndex((l) => l.etat === "terminee") >= etapes.filter((l) => l.etat !== "terminee").length - (etapes.some((l) => l.etat === "terminee") ? 0 : etapes.length));
+  check("Ta semaine : l'objectif du lundi, « Ton objectif : 4 jours d'encre · Le banquier » ; rien sans choix", objectifSemaine({ cible: 4, nom: "Le banquier" }) === "Ton objectif : 4 jours d'encre · Le banquier" && objectifSemaine({ cible: 1, nom: "" }) === "Ton objectif : 1 jour d'encre" && objectifSemaine(null) === null);
   check("Ta semaine : « · 1 sur 2 »", resumeSemaine([{ etat: "terminee" }, { etat: "active" }] as never) === "· 1 sur 2");
 }
 
