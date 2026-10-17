@@ -79,7 +79,7 @@ export const REG = {
     phraseVide: "Rien à reprendre pour l'instant : les ratures rayées restent dans les anciennes.",
     /** les ratures qui sèchent (migration_v3_profil.sql §3a) */
     phraseSeche: "Une rature se raye quand tu la réussis au moins un jour après l'erreur : l'encre doit sécher. Commence par celles qui reviennent.",
-    sechent: (n: number) => `${fmtInt(n)} ${n > 1 ? "sèchent" : "sèche"} encore`,
+    sechent: (n: number) => `${fmtInt(n)} encore à l'encre fraîche`,
     scellees: (n: number) => `${fmtInt(n)} scellée${s(n)} : ${n > 1 ? "elles tiennent" : "elle tient"}.`,
     action: "Les reprendre une à une",
     liste: "D'où elles viennent",

@@ -196,12 +196,12 @@ export const CARNET = {
   scelleeDetail: "Rayée, puis réussie de nouveau une semaine plus tard : elle tient.",
   scellees: (n: number) => pluriel(n, "scellée", "scellées"),
   /** sous « Mettre au propre » : les ratures du carnet qui ne sont pas encore proposées */
-  sechentSous: (n: number) => `${pluriel(n, "rature sèche", "ratures sèchent")} encore : ${n > 1 ? "elles reviendront" : "elle reviendra"} demain.`,
+  sechentSous: (n: number) => `${pluriel(n, "rature est", "ratures sont")} encore à l'encre fraîche : ${n > 1 ? "elles reviendront" : "elle reviendra"} demain.`,
   propreFraiche: (q: { demain: true } | { demain: false; heure: number } | null) =>
     `Juste. Encre fraîche : elle sèche ${q && !q.demain ? `à ${q.heure} h` : "demain"}, une bonne réponse la rayera alors.`,
   propreSeche: "Tout ce qui reste sèche demain.",
   propreSecheTexte: (n: number) => `${pluriel(n, "rature est", "ratures sont")} encore à l'encre fraîche : moins de 24 h depuis l'erreur. Repasse demain pour ${n > 1 ? "les" : "la"} rayer.`,
-  propreSechent: (n: number) => `${pluriel(n, "autre sèche", "autres sèchent")} encore : à demain.`,
+  propreSechent: (n: number) => `${pluriel(n, "autre est", "autres sont")} encore à l'encre fraîche : à demain.`,
   rejouerScellee: "Scellée : elle tient depuis plus d'une semaine.",
 } as const;
 

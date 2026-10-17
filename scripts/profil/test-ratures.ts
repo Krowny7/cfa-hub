@@ -100,10 +100,11 @@ check("bilan de Mise au propre sans séchage : comme avant", CARNET.propreBilan(
 check("badge : « encre fraîche · sèche demain », « … · sèche à 15 h »", CARNET.encreFraiche({ demain: true }) === "encre fraîche · sèche demain" && CARNET.encreFraiche({ demain: false, heure: 15 }) === "encre fraîche · sèche à 15 h");
 check("réponse fraîche : l'heure si connue, sinon « demain »", CARNET.propreFraiche({ demain: false, heure: 9 }).includes("elle sèche à 9 h") && CARNET.propreFraiche(null).includes("elle sèche demain"), CARNET.propreFraiche(null));
 check("« Tout ce qui reste sèche demain » (U6)", CARNET.propreSeche === "Tout ce qui reste sèche demain.");
-check("sous le bouton, celles qui sèchent : singulier et pluriel", CARNET.sechentSous(1) === "1 rature sèche encore : elle reviendra demain." && CARNET.sechentSous(3) === "3 ratures sèchent encore : elles reviendront demain.", CARNET.sechentSous(3));
+check("sous le bouton, celles qui sèchent : singulier et pluriel", CARNET.sechentSous(1) === "1 rature est encore à l'encre fraîche : elle reviendra demain." && CARNET.sechentSous(3) === "3 ratures sont encore à l'encre fraîche : elles reviendront demain.", CARNET.sechentSous(3));
+check("« sèche » n'y est jamais l'adjectif (sèches = prêtes à revoir)", !/sèche encore/.test(CARNET.sechentSous(1)) && CARNET.propreSechent(1) === "1 autre est encore à l'encre fraîche : à demain." && CARNET.propreSechent(2) === "2 autres sont encore à l'encre fraîche : à demain.", CARNET.propreSechent(1));
 check("scellées : « 1 scellée », « 4 scellées »", CARNET.scellees(1) === "1 scellée" && CARNET.scellees(4) === "4 scellées");
 check("Atelier : « 1 réussie, elle sèche demain », « 2 réussies, elles sèchent demain »", ATELIER.fraiches(1) === "1 réussie, elle sèche demain" && ATELIER.fraiches(2) === "2 réussies, elles sèchent demain");
-check("Registre : « 1 sèche encore », « 2 scellées : elles tiennent. », la règle de l'encre qui sèche", REG.ratures.sechent(1) === "1 sèche encore" && REG.ratures.sechent(3) === "3 sèchent encore" && REG.ratures.scellees(2) === "2 scellées : elles tiennent." && /un jour après l'erreur/.test(REG.ratures.phraseSeche));
+check("Registre : « 1 encore à l'encre fraîche », « 2 scellées : elles tiennent. », la règle de l'encre qui sèche", REG.ratures.sechent(1) === "1 encore à l'encre fraîche" && REG.ratures.sechent(3) === "3 encore à l'encre fraîche" && REG.ratures.scellees(2) === "2 scellées : elles tiennent." && /un jour après l'erreur/.test(REG.ratures.phraseSeche));
 check("Atelier : un statut « fraiche » a son texte (pas « rayée »)", !!ATELIER.statut.fraiche && !/rayée du carnet/.test(ATELIER.statut.fraiche));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
