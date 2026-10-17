@@ -83,16 +83,56 @@ function Vignette({ f }: { f: Format }) {
   );
 }
 
+/** ce qui prend le focus dans un menu de la barre */
+const FOCALISABLES = 'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+
 /**
  * Un menu de la barre, posé par-dessus la page sous son bouton (au-dessus
  * s'il manque de place) : hors de la grille, dont les cases enferment ce
  * qu'elles contiennent. Il suit son bouton (défilement, redimensionnement),
- * se ferme au clic dehors et à Échap.
+ * se ferme au clic dehors et à Échap. Au clavier, c'est une petite fenêtre
+ * (il porte des champs, des liens, un curseur : pas un role="menu") : à
+ * l'ouverture, le focus y entre (le choix en cours, sinon le premier) ; Tab
+ * y tourne ; à la fermeture, le focus revient à son bouton.
  */
 function MenuFlottant({ ancre, largeur, label, onFermer, children }: { ancre: string; largeur: number; label: string; onFermer: () => void; children: React.ReactNode }) {
   const [pos, setPos] = useState<React.CSSProperties | null>(null);
   const fermer = useRef(onFermer);
   const placer = useRef<() => void>(() => undefined);
+  const panneau = useRef<HTMLDivElement | null>(null);
+  const voile = useRef<HTMLButtonElement | null>(null);
+  const entre = useRef(false);
+  // le focus entre dans le menu dès qu'il est posé (une fois)
+  useEffect(() => {
+    const p = panneau.current;
+    if (!pos || !p || entre.current) return;
+    entre.current = true;
+    (p.querySelector<HTMLElement>('[aria-pressed="true"]:not([disabled])') ?? p.querySelector<HTMLElement>(FOCALISABLES) ?? p).focus();
+  }, [pos]);
+  // à la fermeture (Échap, clic dehors, un choix fait) : le focus revient au bouton du menu, s'il était dedans
+  useLayoutEffect(
+    () => () => {
+      const a = document.activeElement;
+      if (a && a !== document.body && !panneau.current?.contains(a) && a !== voile.current) return;
+      document.querySelector<HTMLElement>(`[data-ancre="${ancre}"]`)?.focus();
+    },
+    [ancre],
+  );
+  /** Tab tourne dans le menu (le voile retient la page derrière). */
+  const tourner = (e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || !panneau.current) return;
+    const f = Array.from(panneau.current.querySelectorAll<HTMLElement>(FOCALISABLES));
+    if (!f.length) return e.preventDefault();
+    const premier = f[0];
+    const dernier = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === premier || document.activeElement === panneau.current)) {
+      e.preventDefault();
+      dernier.focus();
+    } else if (!e.shiftKey && document.activeElement === dernier) {
+      e.preventDefault();
+      premier.focus();
+    }
+  };
   // à chaque rendu (le bloc a pu changer de rangée) : le menu sous son bouton, au-dessus s'il manque de
   // place ; seulement s'il a bougé. Sans bouton (bloc retiré), le menu se ferme.
   useLayoutEffect(() => {
@@ -127,8 +167,9 @@ function MenuFlottant({ ancre, largeur, label, onFermer, children }: { ancre: st
   }, []);
   return createPortal(
     <>
-      <button type="button" aria-label="Fermer le menu" className={s.voile} onClick={() => fermer.current()} />
-      <div role="menu" aria-label={label} className={s.menu} style={pos ?? { visibility: "hidden" }}>
+      {/* le voile : pour la souris et le doigt (au clavier, Échap) */}
+      <button ref={voile} type="button" tabIndex={-1} aria-hidden className={s.voile} onClick={() => fermer.current()} />
+      <div ref={panneau} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} className={s.menu} style={pos ?? { visibility: "hidden" }} onKeyDown={tourner}>
         {children}
       </div>
     </>,
@@ -438,7 +479,7 @@ export function EditeurPage({
             type="button"
             data-ancre={`format:${cle}`}
             className={"btn btn-secondary btn-sm gap-1.5 " + s.grandSeul}
-            aria-haspopup="menu"
+            aria-haspopup="dialog"
             aria-expanded={ouvert("format")}
             aria-label={T.formatDe(nom, nomFormat(b.f))}
             onClick={() => basculer({ type: "format", cle })}
@@ -455,8 +496,7 @@ export function EditeurPage({
                   <button
                     key={f.key}
                     type="button"
-                    role="menuitemradio"
-                    aria-checked={sur}
+                    aria-pressed={sur}
                     disabled={!ok}
                     title={ok ? T.formatPart(f.nom, f.part) : raisonRefus(b, f.key)}
                     onClick={() => {
@@ -484,7 +524,7 @@ export function EditeurPage({
               className={"btn btn-secondary btn-sm px-2.5 " + s.outil}
               aria-label={T.reglages}
               title={T.reglages}
-              aria-haspopup="menu"
+              aria-haspopup="dialog"
               aria-expanded={ouvert("reglages")}
               onClick={() => basculer({ type: "reglages", cle })}
             >
@@ -578,7 +618,7 @@ export function EditeurPage({
             className={"btn btn-secondary btn-sm px-2.5 " + s.outil}
             aria-label={T.plus}
             title={T.plusAide}
-            aria-haspopup="menu"
+            aria-haspopup="dialog"
             aria-expanded={ouvert("plus")}
             onClick={() => basculer({ type: "plus", cle })}
           >
@@ -601,7 +641,6 @@ export function EditeurPage({
                 <button
                   key={x.k}
                   type="button"
-                  role="menuitem"
                   className={s.ligne}
                   onClick={() => {
                     appliquer(mettreALaPlace(d, i, x.k));
@@ -616,7 +655,6 @@ export function EditeurPage({
               <span className="my-1 border-t border-line" />
               <button
                 type="button"
-                role="menuitem"
                 className={s.ligne + " flex-wrap py-1.5"}
                 onClick={() => {
                   appliquer(retirer(d, i));
