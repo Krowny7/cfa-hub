@@ -9,6 +9,7 @@ import { MIN_QUESTIONS_FOR_SIGNAL, programMastery, type TopicMastery } from "@/l
 import { TOPICS } from "@/lib/practiceTopics";
 import type { LeaderboardRow } from "@/lib/rating";
 import { displayName } from "@/components/classement/format";
+import { lireStyles, nomTitre } from "@/lib/profil/styles";
 import type { BoardRow, NextExam, PastExam } from "@/components/classement/types";
 
 /** Client admin, ou null si la clé de service n'est pas configurée. */
@@ -84,20 +85,20 @@ export async function lastDeltaByUser(admin: SupabaseClient | null, userIds: str
 }
 
 /**
- * L'image de bannière du profil de chaque joueur demandé (table profile_style,
- * lisible par tous les joueurs connectés). Sert au podium, où la bannière du
- * joueur est le fond de sa carte. Joueur sans image, table absente : pas
- * d'entrée (le podium prend alors son image par défaut).
+ * Ce que le podium montre du profil de chaque joueur demandé (table
+ * profile_style, lisible par tous les joueurs connectés) : l'image de
+ * bannière, fond de sa carte, et le nom du titre porté, sous le pseudo.
+ * Joueur sans l'un ni l'autre, table absente : pas d'entrée (le podium prend
+ * alors son image par défaut) ; titre absent tant que migration_v3_profil.sql
+ * n'est pas collée.
  */
-export async function bannieresDe(sb: SupabaseClient, userIds: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  if (userIds.length === 0) return out;
-  try {
-    const { data, error } = await sb.from("profile_style").select("user_id,banner_url").in("user_id", userIds);
-    if (error || !data) return out;
-    for (const r of data as Array<{ user_id: string; banner_url: string | null }>) if (r.banner_url) out.set(r.user_id, r.banner_url);
-  } catch {
-    // migration du profil pas encore appliquée
+export async function podiumDe(sb: SupabaseClient, userIds: string[]): Promise<Map<string, { bannerUrl: string | null; titre: string | null }>> {
+  const out = new Map<string, { bannerUrl: string | null; titre: string | null }>();
+  const lignes = await lireStyles(sb, userIds, ["banner_url", "titre"]);
+  for (const [id, r] of lignes ?? []) {
+    const bannerUrl = typeof r.banner_url === "string" && r.banner_url ? r.banner_url : null;
+    const titre = nomTitre(typeof r.titre === "string" ? r.titre : null);
+    if (bannerUrl || titre) out.set(id, { bannerUrl, titre });
   }
   return out;
 }

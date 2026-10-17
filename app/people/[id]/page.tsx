@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ArrowLeft, ChevronRight, Eye, Palette, UserCheck, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { PracticeTrophies } from "@/components/PracticeTrophies";
+import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
@@ -46,12 +46,14 @@ import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/pr
 import { aPortee, posesDe, sceauxGagnes, vusParUnAutre } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
+import { nomTitre } from "@/lib/profil/styles";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
 import { ENTETE, FACE, JOURNAL, provenances } from "@/lib/voice-profil";
 import { SAISONS } from "@/lib/voice-saisons";
 import type { Profile, Rating } from "@/lib/types";
+import { lireTrophees } from "@/lib/trophees";
 
 type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<{ vue?: string; onglet?: string; personnaliser?: string }> };
 type ProfileRow = Pick<Profile, "id" | "username" | "avatar_url" | "xp_total">;
@@ -59,15 +61,6 @@ type RatingRow = Pick<Rating, "elo" | "games_played">;
 type ProgressRow = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
 
 const SANS_DUEL: Bilan = { duels: [], victoires: 0, defaites: 0, nuls: 0, ouvert: null };
-
-async function trophees(sb: SupabaseClient, id: string) {
-  try {
-    const { data } = await sb.rpc("get_user_practice_trophies", { p_user_id: id });
-    return Array.isArray(data) ? data.map((r: { topic_count: number; trophy_count: number }) => ({ topic_count: Number(r.topic_count ?? 0) || 0, trophy_count: Number(r.trophy_count ?? 0) || 0 })) : [];
-  } catch {
-    return []; // fonction pas encore créée
-  }
-}
 
 async function progression(sb: SupabaseClient, id: string): Promise<ProgressRow[]> {
   try {
@@ -122,7 +115,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const lecturesOnglet = (async () => {
     const blocs = new Set(onglet === "profil" ? blocsDe((await styleLu).style.disposition).map((b) => b.k) : []);
     const radar = blocs.has("radar") || onglet === "face-a-face";
-    const [moyennes, mesStats, monStyle, answers, trophyRows, progressSessions, monRating] = await Promise.all([
+    const [moyennes, mesStats, monStyle, answers, trophees, progressSessions, monRating] = await Promise.all([
       radar && admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
       radar && autreJoueur ? statsProfil(user.id, supabase) : Promise.resolve(null),
       radar && autreJoueur ? lireStyle(supabase, user.id) : Promise.resolve(null),
@@ -135,11 +128,12 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           : isMe
             ? getAnswerStats(supabase, id, { detail: false })
             : Promise.resolve(null),
-      blocs.has("trophees") ? trophees(supabase, id) : Promise.resolve([]),
+      // toutes les sources (get_user_trophees), sinon l'entraînement ciblé seul, comme avant
+      blocs.has("trophees") ? lireTrophees(supabase, id) : Promise.resolve(null),
       blocs.has("progression") ? progression(supabase, id) : Promise.resolve([] as ProgressRow[]),
       onglet === "face-a-face" ? getMyRating(supabase, user.id) : Promise.resolve(null),
     ]);
-    return { moyennes, mesStats, monStyle, answers, trophyRows, progressSessions, monRating };
+    return { moyennes, mesStats, monStyle, answers, trophees, progressSessions, monRating };
   })();
   // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
   const statsLues = statsProfil(id, supabase);
@@ -226,6 +220,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     id,
     name: display,
     nomComplet,
+    titre: nomTitre(style.titre),
     avatarUrl: profile.avatar_url ?? null,
     style,
     niveau: lvl.level,
@@ -411,7 +406,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           ),
           amis: amis ? <ListeAmis amis={amis.amis} total={amis.total} moi={commeMoi} viewerId={user.id} /> : null,
           reponses: o.answers?.available ? <AnswerSummary stats={o.answers} name={display} isMe={commeMoi} /> : null,
-          trophees: <PracticeTrophies rows={o.trophyRows} />,
+          trophees: o.trophees ? <SalleDesTrophees compte={o.trophees} complet={o.trophees.complet} moi={commeMoi} /> : null,
           progression: <PracticeProgressChart pastSessions={o.progressSessions} topicLabels={TOPIC_LABELS} />,
         }}
       />

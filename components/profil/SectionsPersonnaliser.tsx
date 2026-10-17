@@ -9,6 +9,7 @@ import { PhotoProfil } from "@/components/profil/PhotoProfil";
 import { createClient } from "@/lib/supabase/browser";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
 import type { EtatSceau } from "@/lib/profil/sceaux";
+import type { TitrePortable } from "@/lib/profil/styles";
 import {
   AMBIANCES,
   BIO_MAX,
@@ -425,6 +426,43 @@ export function SectionNom({ nom, setNom, visibilite, setVisibilite }: { nom: st
           ]}
         />
       </div>
+    </Section>
+  );
+}
+
+/** Le titre porté sous le pseudo : aucun, ou l'un de ceux qu'il a gagnés (ou porte déjà). */
+export function SectionTitre({ b, titres }: { b: Brouillon; titres: TitrePortable[] }) {
+  const { style, set } = b;
+  const choix: { nue: string | null; nom: string; description: string }[] = [{ nue: null, nom: "Aucun", description: "Rien sous ton pseudo." }, ...titres];
+  return (
+    <Section titre="Titre" aide="En petites capitales sous ton pseudo : sur ton profil, ta carte de joueur et le podium.">
+      {titres.length === 0 ? (
+        <p className="t-small m-0">Pas encore de titre : ils se gagnent au Codex, aux trophées et au fil rouge.</p>
+      ) : (
+        <div className="flex flex-col gap-2" role="radiogroup" aria-label="Titre porté">
+          {choix.map((t) => {
+            const on = style.titre === t.nue;
+            return (
+              <button
+                key={t.nue ?? "aucun"}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => set("titre", t.nue)}
+                className={"flex min-h-[44px] items-center gap-3 rounded-[12px] border px-3 py-2 text-left " + (on ? "border-white" : "border-line-2 hover:border-white")}
+              >
+                <span aria-hidden className={"grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border " + (on ? "border-white bg-white text-black" : "border-line-2")}>
+                  {on && <Check size={12} strokeWidth={3} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px] font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]">{t.nom}</span>
+                  <span className="t-micro block">{t.description}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </Section>
   );
 }

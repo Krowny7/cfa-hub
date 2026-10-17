@@ -1,17 +1,18 @@
-// Le profil de joueur : ce qui se personnalise, ce qui se gagne, et la
-// validation d'un style avant écriture. La règle : ce qui est fixe est
+// Le profil de joueur : ce qui se personnalise et ce qui se gagne. La règle : ce qui est fixe est
 // libre (l'image de la bannière ou un motif fixe, la couleur, la vitrine, le
 // radar, la bio, le nom) ; ce qui bouge ou qui brille se gagne (les cadres
 // de métal au nombre de questions ; les cadres liquides et l'aura au pic de
 // palier ; le cadre « Dorure » et les bannières vivantes aux sceaux). Pas
 // d'inventaire : ce qu'on possède se déduit de ce qu'on a fait (Acquis).
 // Rien ne s'achète, et une pièce portée ne se reprend pas.
-// Module neutre (client et serveur) : le serveur revalide tout avant
-// d'écrire (app/moi/profil/actions.ts).
+// Module neutre (client et serveur). La lecture d'un style en base et sa
+// validation avant écriture vivent dans lib/profil/styles.ts : elles
+// connaissent toutes les pièces (lib/profil/pieces.ts, qui part d'ici).
 
 import { TIERS } from "@/lib/ranks";
-import type { DatePalier, EtatSceau } from "@/lib/profil/sceaux";
-import { DISPOSITION_DEFAUT, blocsDe, dispositionDepuis, validerDisposition, type Disposition, type Prefixes } from "@/lib/profil/disposition";
+import type { EtatSceau } from "@/lib/profil/sceaux";
+import { champsBaseVides, remplie, type Acquis, type ConditionProfil } from "@/lib/profil/acquis";
+import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -63,69 +64,16 @@ export const STATS_VIDES: ProfilStats = {
 };
 
 // ── Ce qui se gagne ────────────────────────────────────────────────────
-/** La condition d'une pièce gagnée. */
-export type Condition =
-  | { k: "questions"; n: number }
-  /** avoir atteint ce palier (index dans TIERS) au moins une fois */
-  | { k: "pic"; palier: number }
-  /** n sceaux à la dorure */
-  | { k: "dorures"; n: number }
-  /** un sceau à ce palier au moins (1 encre, 2 vermillon, 3 dorure) */
-  | { k: "sceau"; cle: string; palier: number };
+// Les conditions, l'Acquis, remplie et dateGagnee vivent dans
+// lib/profil/acquis.ts (toutes les pièces de collection, lib/profil/pieces.ts) ;
+// ils restent importables d'ici. Les cadres et les motifs n'emploient que les
+// conditions du profil (questions, pic, sceaux).
+export { dateGagnee, dorures, remplie, type Acquis } from "@/lib/profil/acquis";
+/** La condition d'un cadre ou d'un motif (toutes les conditions : lib/profil/pieces.ts). */
+export type Condition = ConditionProfil;
 
-/** Ce que le joueur a fait : de quoi ouvrir les pièces gagnées. */
-export type Acquis = {
-  questions: number;
-  /** meilleur palier atteint par l'ELO, sans verrou de maîtrise (index dans TIERS ; ProfilStats.picAtteint) */
-  pic: number;
-  /** ses sceaux (paliers, et dates avec la base) */
-  sceaux: EtatSceau[];
-  /** la date du premier passage à chaque palier (index dans TIERS) ; null : inconnue */
-  datesPic: (string | null)[];
-};
-
-export const acquisDe = (s: ProfilStats, sceaux: EtatSceau[] = [], datesPic: (string | null)[] = []): Acquis => ({ questions: s.questions, pic: s.picAtteint, sceaux, datesPic });
-
-/** Le palier d'un sceau (0 : pas gagné). */
-const palierSceau = (a: Acquis, cle: string): number => a.sceaux.find((e) => e.def.cle === cle)?.palier ?? 0;
-/** Les sceaux à la dorure. */
-export const dorures = (a: Acquis) => a.sceaux.filter((e) => e.palier === 3).length;
-
-/** La condition est remplie (null : pièce libre). */
-export function remplie(c: Condition | null, a: Acquis): boolean {
-  if (!c) return true;
-  switch (c.k) {
-    case "questions":
-      return a.questions >= c.n;
-    case "pic":
-      return a.pic >= c.palier;
-    case "dorures":
-      return dorures(a) >= c.n;
-    case "sceau":
-      return palierSceau(a, c.cle) >= c.palier;
-  }
-}
-
-/** Le jour où la condition a été remplie, s'il est connu (le pic : rating_events ; les sceaux : la base). */
-export function dateGagnee(c: Condition | null, a: Acquis): DatePalier | null {
-  if (!c || !remplie(c, a)) return null;
-  switch (c.k) {
-    case "pic": {
-      const iso = a.datesPic[c.palier];
-      return iso ? { iso, avant: false } : null;
-    }
-    case "sceau":
-      return a.sceaux.find((e) => e.def.cle === c.cle)?.dates?.[c.palier - 1] ?? null;
-    case "dorures": {
-      // la n-ième dorure, si toutes sont datées
-      const dates = a.sceaux.filter((e) => e.palier === 3).map((e) => e.dates?.[2] ?? null);
-      if (dates.some((d) => !d)) return null;
-      return (dates as DatePalier[]).sort((x, y) => x.iso.localeCompare(y.iso))[c.n - 1] ?? null;
-    }
-    case "questions":
-      return null;
-  }
-}
+/** L'Acquis de ce que le profil sait déjà ; les champs du Codex, des trophées et des programmes restent vides (lireAcquis les lit). */
+export const acquisDe = (s: ProfilStats, sceaux: EtatSceau[] = [], datesPic: (string | null)[] = []): Acquis => ({ questions: s.questions, pic: s.picAtteint, sceaux, datesPic, ...champsBaseVides() });
 
 // ── Bannières : une image à soi, ou un motif ───────────────────────────
 // (les motifs fixes sont libres, « Feuille d'or » et « Éclat de diamant »
@@ -277,6 +225,10 @@ export type StyleProfil = {
   /** le fond de la page : sobre, teinté de sa couleur, ou sa bannière floutée */
   ambiance: Ambiance;
   bannerH: HauteurBanniere;
+  /** le titre porté sous le pseudo (clé nue d'une pièce « titre », « maitre:fsa ») ; null : aucun */
+  titre: string | null;
+  /** le folio posé sur la page (clé nue d'une pièce « folio », « mains ») ; null : aucun */
+  folio: string | null;
 };
 
 export const STYLE_DEFAUT: StyleProfil = {
@@ -291,6 +243,8 @@ export const STYLE_DEFAUT: StyleProfil = {
   disposition: DISPOSITION_DEFAUT,
   ambiance: "aucune",
   bannerH: "normale",
+  titre: null,
+  folio: null,
 };
 export const BIO_MAX = 160;
 export const NOM_MAX = 60;
@@ -353,76 +307,4 @@ export function nettoyerNom(raw: string | null | undefined): string | null {
     .trim()
     .slice(0, NOM_MAX);
   return s || null;
-}
-
-/**
- * Ne garde que des valeurs connues et des cadres gagnés (le reste revient au
- * défaut). `prefixeImage` : l'adresse publique du dossier du joueur dans le
- * stockage ; une image ailleurs est refusée. `prefixesMedias` : de même pour
- * les images et la vidéo de la disposition (buckets profil-medias et
- * profil-videos).
- */
-export function validerStyle(
-  input: Partial<StyleProfil>,
-  a: Acquis,
-  prefixeImage: string | null,
-  prefixesMedias: Prefixes | null = null,
-  porte: Pick<StyleProfil, "frame" | "banner"> | null = null,
-): { style: StyleProfil; refus: string[] } {
-  const refus: string[] = [];
-  // gagné, ou déjà porté (on ne reprend rien : un pic de Top 10 perdu garde son cadre)
-  const c = CADRES.find((x) => x.key === input.frame);
-  let frame = STYLE_DEFAUT.frame;
-  if (c) {
-    if (cadreDebloque(c, a) || c.key === porte?.frame) frame = c.key;
-    else refus.push(`le cadre ${c.nom}`);
-  }
-  const m = motifDe(input.banner);
-  let banner = STYLE_DEFAUT.banner;
-  if (m) {
-    if (motifDebloque(m, a) || m.key === porte?.banner) banner = m.key;
-    else refus.push(`la bannière ${m.nom}`);
-  }
-  const url = typeof input.bannerUrl === "string" ? input.bannerUrl.trim() : "";
-  const bannerUrl = url && prefixeImage && url.startsWith(prefixeImage) && /^[A-Za-z0-9:/._%-]+$/.test(url) && url.length <= 500 ? url : null;
-  if (url && !bannerUrl) refus.push("l'image de bannière");
-  const keys = new Set<string>(VITRINE.map((v) => v.key));
-  const disp = Array.isArray(input.disposition) ? validerDisposition(input.disposition, prefixesMedias) : null;
-  if (disp) refus.push(...disp.refus);
-  const disposition = disp ? disp.disposition : dispositionDepuis(null, input.radar !== false);
-  return {
-    style: {
-      banner,
-      bannerUrl,
-      bannerPos: Math.max(0, Math.min(100, Math.round(Number(input.bannerPos ?? 50)) || 0)),
-      accent: estCouleur(input.accent) ? input.accent.toLowerCase() : STYLE_DEFAUT.accent,
-      frame,
-      showcase: vitrineDepuis(input.showcase),
-      radar: blocsDe(disposition).some((b) => b.k === "radar"),
-      bio: nettoyerBio(input.bio),
-      disposition,
-      ambiance: AMBIANCES.some((a) => a.key === input.ambiance) ? (input.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,
-      bannerH: HAUTEURS.some((h) => h.key === input.bannerH) ? (input.bannerH as HauteurBanniere) : STYLE_DEFAUT.bannerH,
-    },
-    refus,
-  };
-}
-
-/** Un style lu en base (colonnes de profile_style), valeurs inconnues ramenées au défaut. */
-export function styleDepuis(row: Record<string, unknown> | null | undefined): StyleProfil {
-  if (!row) return STYLE_DEFAUT;
-  const keys = new Set<string>(VITRINE.map((v) => v.key));
-  return {
-    banner: MOTIFS.some((m) => m.key === row.banner) ? (row.banner as string) : STYLE_DEFAUT.banner,
-    bannerUrl: typeof row.banner_url === "string" && row.banner_url ? row.banner_url : null,
-    bannerPos: Number.isFinite(Number(row.banner_pos)) ? Math.max(0, Math.min(100, Number(row.banner_pos))) : 50,
-    accent: estCouleur(row.accent) ? (row.accent as string) : STYLE_DEFAUT.accent,
-    frame: CADRES.some((c) => c.key === row.frame) ? (row.frame as string) : STYLE_DEFAUT.frame,
-    showcase: Array.isArray(row.showcase) ? vitrineDepuis(row.showcase) : STYLE_DEFAUT.showcase,
-    radar: row.show_radar !== false,
-    bio: typeof row.bio === "string" ? nettoyerBio(row.bio) : null,
-    disposition: dispositionDepuis(row.layout, row.show_radar !== false),
-    ambiance: AMBIANCES.some((a) => a.key === row.ambiance) ? (row.ambiance as Ambiance) : STYLE_DEFAUT.ambiance,
-    bannerH: HAUTEURS.some((h) => h.key === row.banner_h) ? (row.banner_h as HauteurBanniere) : STYLE_DEFAUT.bannerH,
-  };
 }

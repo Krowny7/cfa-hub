@@ -5,6 +5,7 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
 import { Provenance } from "@/components/profil/Provenance";
+import { TitrePorte } from "@/components/profil/TitrePorte";
 import { cadreDe, motifDe, type StyleProfil } from "@/lib/profil/catalogue";
 import { nombre } from "@/lib/voice";
 import { PresenceText } from "@/components/presence/Presence";
@@ -16,8 +17,8 @@ import { ENTETE } from "@/lib/voice-profil";
 // L'en-tête du profil, façon jeu vidéo mais sur toute la largeur de la page
 // (pas de carte) : la bannière du joueur (son image, ou un motif) d'un bord
 // à l'autre de l'écran, son sceau dans son cadre qui la chevauche, le
-// pseudo en grand et, dessous en italique, son prénom et nom s'il les
-// montre ; le niveau, la bio, les actions ; à droite, son rang en grand
+// pseudo en grand, dessous son titre porté en petites capitales et, en
+// italique, son prénom et nom s'il les montre ; le niveau, la bio, les actions ; à droite, son rang en grand
 // (RangProfil : l'insigne animé, qui chevauche lui aussi la bannière sur
 // grand écran). Sans état : la page de profil et l'aperçu de l'éditeur (`apercu` :
 // bannière contenue, plus basse) le rendent avec les mêmes données.
@@ -38,6 +39,8 @@ export type EnteteData = {
   name: string;
   /** prénom et nom, s'ils sont visibles par celui qui regarde */
   nomComplet: string | null;
+  /** le titre porté, lisible (« Copiste ») ; absent ou null : aucun */
+  titre?: string | null;
   avatarUrl: string | null;
   style: StyleProfil;
   niveau: number;
@@ -182,6 +185,7 @@ export function EnteteJoueur({
                   <PageHero kicker={kicker} title={<span className="[overflow-wrap:anywhere]">{d.name}</span>} enso={false} className="w-fit max-w-full max-lg:hidden" />
                 </>
               )}
+              <TitrePorte titre={d.titre} className="mt-1" />
               {d.nomComplet && <p className={`${s.nomComplet} m-0 mt-1 ${apercu ? "text-[18px] sm:text-[20px]" : "text-[15px] lg:text-[20px]"}`}>{d.nomComplet}</p>}
               {presence && !apercu && (
                 <div className="mt-1 min-h-[21px] text-[13px] font-semibold text-muted lg:mt-2 lg:text-[14px]">

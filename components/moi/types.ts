@@ -7,6 +7,7 @@ import type { Marquees } from "@/components/moi/marquees-data";
 import type { Ratures } from "@/components/moi/ratures-data";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
 import type { HistoriqueAteliers } from "@/lib/atelier-seance";
+import type { LigneTrophee } from "@/lib/trophees";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -107,4 +108,6 @@ export type MoiData = {
   pointsFaibles?: PointsFaiblesData;
   /** l'historique des Ateliers clos (absent ou vide : pas de carte) */
   ateliers?: HistoriqueAteliers | null;
+  /** la Salle des trophées (lignes de lireTrophees ; complet = false : l'entraînement ciblé seul) ; absent : pas de Salle */
+  trophees?: { lignes: LigneTrophee[]; complet: boolean };
 };

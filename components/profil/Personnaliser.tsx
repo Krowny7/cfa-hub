@@ -22,6 +22,7 @@ import {
   SectionNom,
   SectionPhoto,
   SectionPoses,
+  SectionTitre,
   SectionVitrine,
   type Brouillon,
 } from "@/components/profil/SectionsPersonnaliser";
@@ -32,6 +33,7 @@ import { rankFor } from "@/lib/ranks";
 import { posesDe } from "@/lib/profil/sceaux";
 import type { AmiLite } from "@/lib/profil/donnees";
 import type { CleBloc } from "@/lib/profil/disposition";
+import type { TitrePortable } from "@/lib/profil/styles";
 import { couleurCss, linkedinLisible, nettoyerNom, normaliserLinkedin, type Acquis, type NomProfil, type ProfilStats, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { ENTETE, PERSO, provenances } from "@/lib/voice-profil";
 import { JOUEURS } from "@/lib/voice-z2a";
@@ -83,6 +85,7 @@ export function Personnaliser({
   amis,
   rendus: rendusServeur,
   banqueGifs = false,
+  titres = [],
 }: {
   carte: EnteteData;
   stats: ProfilStats;
@@ -104,6 +107,8 @@ export function Personnaliser({
   rendus: Partial<Record<CleBloc, React.ReactNode>>;
   /** la banque de GIF est branchée */
   banqueGifs?: boolean;
+  /** les titres qu'il peut porter (gagnés, ou déjà porté), lus par le serveur */
+  titres?: TitrePortable[];
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -162,6 +167,7 @@ export function Personnaliser({
     avatarUrl,
     style,
     nomComplet: nettoyerNom(nom),
+    titre: titres.find((t) => t.nue === style.titre)?.nom ?? null,
     linkedin: lienOk && linkedin.trim() ? normaliserLinkedin(linkedin) : null,
     provenance: provenances(style, acquis),
   };
@@ -343,6 +349,7 @@ export function Personnaliser({
             {zone === "identite" && (
               <>
                 <SectionNom nom={nom} setNom={puis(setNom)} visibilite={nomVisibilite} setVisibilite={setNomVisibilite} />
+                <SectionTitre b={b} titres={titres} />
                 <SectionBio b={b} />
                 <SectionLinkedin linkedin={linkedin} setLinkedin={puis(setLinkedin)} lienOk={lienOk} visibilite={visibilite} setVisibilite={setVisibilite} />
               </>

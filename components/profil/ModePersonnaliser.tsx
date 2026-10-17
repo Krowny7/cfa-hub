@@ -4,7 +4,7 @@ import type { EnteteData } from "@/components/profil/EnteteJoueur";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
 import { displayName } from "@/components/classement/format";
 import { AnswerSummary } from "@/components/moi/AnswerSummary";
-import { PracticeTrophies } from "@/components/PracticeTrophies";
+import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { PracticeProgressChart } from "@/components/PracticeProgressChart";
 import { TOPIC_LABELS } from "@/lib/practiceTopics";
 import { levelInfoFromXp } from "@/lib/leveling";
@@ -16,22 +16,18 @@ import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, statsProfil } from "@
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { posesDe } from "@/lib/profil/sceaux";
 import { LIEN_DEFAUT, NOM_DEFAUT, acquisDe } from "@/lib/profil/catalogue";
+import { lireAcquis } from "@/lib/profil/acquis";
+import { titresPortables } from "@/lib/profil/styles";
+import { lireTrophees } from "@/lib/trophees";
 
 // Personnaliser, côté serveur (/people/<moi>?personnaliser=1, sur son
 // propre profil seulement) : tout ce que l'ancien éditeur /moi/profil
 // lisait (le style, le LinkedIn et le nom tels quels, les blocs de la page),
-// plus ce qui ouvre les pièces gagnées (questions, pic et sa date, sceaux).
+// plus ce qui ouvre les pièces gagnées (questions, pic et sa date, sceaux)
+// et les titres qu'il peut porter (gagnés au Codex, aux trophées, au fil
+// rouge : l'Acquis complet reste ici, la page n'en reçoit que la liste).
 
 type ProfilLu = { username: string | null; avatar_url: string | null; xp_total: number | null };
-
-async function trophees(sb: SupabaseClient, id: string) {
-  try {
-    const { data } = await sb.rpc("get_user_practice_trophies", { p_user_id: id });
-    return Array.isArray(data) ? data.map((r: { topic_count: number; trophy_count: number }) => ({ topic_count: Number(r.topic_count ?? 0) || 0, trophy_count: Number(r.trophy_count ?? 0) || 0 })) : [];
-  } catch {
-    return [] as { topic_count: number; trophy_count: number }[];
-  }
-}
 
 async function progression(sb: SupabaseClient, id: string) {
   try {
@@ -45,7 +41,7 @@ async function progression(sb: SupabaseClient, id: string) {
 export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: string; supabase: SupabaseClient; profil: ProfilLu; rating: { elo: number; games_played: number } | null }) {
   const admin = tryAdmin();
   const statsLues = statsProfil(id, supabase);
-  const [place, masteries, { style, disponible, pins }, lien, stats, amis, nom, moyennes, answers, trophyRows, progress, sceaux, datesPic] = await Promise.all([
+  const [place, masteries, { style, disponible, pins }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu] = await Promise.all([
     getLeaderboardRank(supabase, id),
     masteryByUser(admin, [id]),
     lireStyle(supabase, id),
@@ -56,11 +52,15 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     // les blocs de la page, comme sur le profil
     admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
     getAnswerStats(supabase, id, { detail: false }).catch(() => null),
-    trophees(supabase, id),
+    // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul
+    lireTrophees(supabase, id),
     progression(supabase, id),
     statsLues.then((s) => sceauxDuJoueur(id, s)),
     datesDuPic(supabase, id),
+    // le Codex, les trophées, les programmes menés (le profil s'y ajoute plus bas)
+    statsLues.then((s) => lireAcquis(admin ?? supabase, id, { stats: s, sceaux: [], datesPic: [] })),
   ]);
+  const titres = titresPortables({ ...acquisLu, sceaux: sceaux.etats, datesPic }, style.titre);
 
   const xpTotal = Number(profil.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
@@ -99,9 +99,10 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
         moyennes={moyennes}
         amis={amis}
         banqueGifs={!!process.env.KLIPY_API_KEY}
+        titres={titres}
         rendus={{
           reponses: answers?.available ? <AnswerSummary stats={answers} name={carte.name} isMe /> : null,
-          trophees: <PracticeTrophies rows={trophyRows} />,
+          trophees: <SalleDesTrophees compte={trophees} complet={trophees.complet} />,
           progression: <PracticeProgressChart pastSessions={progress} topicLabels={TOPIC_LABELS} />,
         }}
       />

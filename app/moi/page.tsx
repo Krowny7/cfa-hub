@@ -20,6 +20,7 @@ import { loadActivity, parisDay, parisHour } from "@/components/accueil/queries"
 import { joursEncreUnifies, lireSerieEncre } from "@/lib/serie-encre";
 import type { MoiData } from "@/components/moi/types";
 import { etatObjectif, reglageInitial } from "@/lib/objectif";
+import { lireTrophees } from "@/lib/trophees";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
 
@@ -61,7 +62,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -94,6 +95,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     lireHistoriqueAteliers(supabase, user.id),
     // la série d'encre (null tant que migration_serie_encre.sql n'est pas collée : l'ancien calcul)
     lireSerieEncre(supabase),
+    // la Salle des trophées : toutes les sources, sinon l'entraînement ciblé seul (repli sans bruit)
+    lireTrophees(supabase, user.id),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -134,6 +137,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     objectif,
     pointsFaibles: avecAtelier(construirePointsFaibles(answers, basePointsFaibles, banqueQcm, now), atelier, !!admin),
     ateliers,
+    trophees: { lignes: trophees.lignes, complet: trophees.complet },
   };
 
   return (

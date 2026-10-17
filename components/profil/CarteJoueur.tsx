@@ -14,6 +14,7 @@ import type { CarteData } from "@/lib/profil/carte";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import { nombre } from "@/lib/voice";
 import { CARTE } from "@/lib/voice-social";
+import { TitrePorte } from "@/components/profil/TitrePorte";
 
 // La carte joueur, au toucher d'un joueur (classement, lobby des duels,
 // amis) : une Feuille (du bas sur téléphone, panneau à droite sur
@@ -73,6 +74,7 @@ function Contenu({ c }: { c: CarteData }) {
           </span>
           <div className="min-w-0 flex-1 pb-0.5">
             <p className="m-0 truncate text-[21px] font-extrabold leading-tight tracking-[-0.02em]">{c.nom}</p>
+            <TitrePorte titre={c.titre} />
             {!c.moi && (
               <div className="min-h-[19px] text-[13px] font-semibold text-muted">
                 <PresenceText userId={c.id} minuscule repli="hors ligne" />

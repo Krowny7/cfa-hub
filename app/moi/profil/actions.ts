@@ -5,12 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lireStyle, statsProfil } from "@/lib/profil/donnees";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
-import { acquisDe, nettoyerNom, normaliserLinkedin, validerStyle, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { nettoyerNom, normaliserLinkedin, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
+import { lireAcquis } from "@/lib/profil/acquis";
+import { ecrireStyle, validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
 
-// Enregistrer son profil : le style (revalidé : cadres et bannières gagnés,
-// ou déjà portés, seulement ; image de bannière et médias venus de son
-// dossier ; la disposition des blocs), le LinkedIn (adresse
+// Enregistrer son profil : le style (revalidé : cadres, bannières, titre et
+// folio gagnés, ou déjà portés, seulement ; image de bannière et médias
+// venus de son dossier ; la disposition des blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
@@ -44,36 +46,36 @@ export async function enregistrerProfil(input: {
   if (input.linkedin.trim() && !linkedin) return { ok: false, erreur: "Adresse LinkedIn non reconnue : colle le lien de ton profil (linkedin.com/in/…)." };
   const visibilite = VISIBILITES.includes(input.visibilite) ? input.visibilite : "friends";
 
-  // ce qui ouvre les pièces gagnées : questions, pic, sceaux ; et ce qu'il porte déjà (on ne reprend rien)
+  // ce qui ouvre les pièces gagnées : questions, pic, sceaux, quêtes du Codex,
+  // trophées, programmes menés ; et ce qu'il porte déjà (on ne reprend rien)
   const stats = await statsProfil(user.id, supabase);
-  const [{ etats }, { style: porte }] = await Promise.all([sceauxDuJoueur(user.id, stats), lireStyle(admin, user.id)]);
+  const [{ etats }, { style: porte }, acquis] = await Promise.all([
+    sceauxDuJoueur(user.id, stats),
+    lireStyle(admin, user.id),
+    lireAcquis(admin, user.id, { stats, sceaux: [], datesPic: [] }),
+  ]);
   // l'image de bannière doit venir du dossier du joueur dans le stockage
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
   const prefixe = base ? `${base}/storage/v1/object/public/avatars/${user.id}/` : null;
   const dossier = (bucket: string) => `${base}/storage/v1/object/public/${bucket}/${user.id}/`;
   const prefixesMedias = base ? { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) } : null;
-  const { style, refus } = validerStyle(input.style ?? {}, acquisDe(stats, etats), prefixe, prefixesMedias, porte);
+  const valide = validerStyle(input.style ?? {}, { ...acquis, sceaux: etats }, prefixe, prefixesMedias, porte);
+  const refus = valide.refus;
+  let style = valide.style;
 
   const now = new Date().toISOString();
-  const ligne = {
-    user_id: user.id,
-    banner: style.banner,
-    banner_url: style.bannerUrl,
-    banner_pos: style.bannerPos,
-    accent: style.accent,
-    frame: style.frame,
-    showcase: style.showcase,
-    show_radar: style.radar,
-    bio: style.bio,
-    updated_at: now,
-  };
-  let s = await admin.from("profile_style").upsert({ ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH }, { onConflict: "user_id" });
-  const dispositionOk = !s.error;
-  // disposition, ambiance et hauteur de bannière arrivent avec
-  // migration_profil_medias.sql : sans elles, le reste
-  if (s.error && /layout|ambiance|banner_h|column|schema cache/i.test(s.error.message)) {
-    s = await admin.from("profile_style").upsert(ligne, { onConflict: "user_id" });
-    if (!s.error) refus.push("la disposition et l'ambiance (la base n'est pas encore prête)");
+  // les colonnes les plus récentes se replient si la base ne les a pas encore (lib/profil/styles.ts)
+  const s = await ecrireStyle(admin, user.id, style, now);
+  const dispositionOk = s.disposition;
+  if (!s.error) {
+    // titre et folio (migration_v3_profil.sql) : ce qu'il porte ne change pas tant que la base manque
+    if (!s.titreFolio) {
+      if (style.titre !== porte.titre) refus.push("le titre (la base n'est pas encore prête)");
+      if (style.folio !== porte.folio) refus.push("le folio (la base n'est pas encore prête)");
+      style = { ...style, titre: porte.titre, folio: porte.folio };
+    }
+    // disposition, ambiance et hauteur de bannière (migration_profil_medias.sql)
+    if (!s.disposition) refus.push("la disposition et l'ambiance (la base n'est pas encore prête)");
   }
   if (s.error) {
     return {
