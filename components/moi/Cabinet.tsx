@@ -180,9 +180,11 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
           <Heros d={d} lu={lu} className="lg:col-span-8 lg:row-start-1" />
           {/* téléphone et tablette : la carte du cabinet après les tuiles, pour que la tuile Codex reste haut (l'image est déjà en bandeau) */}
           <CarteCabinet d={d} lu={lu} className="order-last lg:order-none lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch" />
-          <div className={"grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 xl:grid-cols-3 " + GAP}>
-            {/* le Codex : en tête des tuiles, sur toute la largeur tant qu'elles ne tiennent pas à trois */}
-            {d.codex && <TuileCodex c={d.codex} className="md:col-span-2 xl:col-span-1" />}
+          {/* téléphone : les tuiles rejoignent la grille (display: contents), pour que la tuile Codex passe avant le héros, au premier écran */}
+          <div className={"contents md:grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 xl:grid-cols-3 " + GAP}>
+            {/* le Codex : en tête des tuiles, sur toute la largeur tant qu'elles ne tiennent pas à trois ;
+                seulement s'il est lisible (sans la table ou après une erreur, pas de lien vers un Codex fermé) */}
+            {d.codex?.disponible && <TuileCodex c={d.codex} className="order-first md:order-none md:col-span-2 xl:col-span-1" />}
             {lu.r && o ? (
               <TuileCalme
                 icone={<Icone nom="examen" size={18} />}
