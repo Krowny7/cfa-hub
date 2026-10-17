@@ -25,7 +25,8 @@ import s from "./SeanceDuJour.module.css";
 // ses compteurs le disent (les 5 et les 30 du jour se cochent aussi en haut
 // de l'accueil).
 //   compact  l'accueil, SOUS les 30 et les 5 du jour (qui gardent leur place) :
-//            raisons sur une ligne, pas de « Une autre idée ? »
+//            raisons sur une ligne, pas de « Une autre idée ? », les gains
+//            en texte seul (« FSA 48 % → 52 % »), sans jauge
 //   plein    en tête de /codex : raisons entières, « Une autre idée ? » par
 //            bloc à faire, « J'arrête là »
 // Sans la table codex_seances, « Commencer » et « J'arrête là » se gardent
@@ -226,11 +227,11 @@ export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false
         </div>
       )}
 
-      {etape === "tenue" && <FinDeSeance gains={gains} lanceeLe={seance.lanceeLe} demo={demo} occupe={occupe} onAssez={finir} onEncore={encore ? () => choisirBudget(encore) : null} />}
+      {etape === "tenue" && <FinDeSeance gains={gains} lanceeLe={seance.lanceeLe} demo={demo} occupe={occupe} jauge={plein} onAssez={finir} onEncore={encore ? () => choisirBudget(encore) : null} />}
 
       {etape === "close" && (
         <>
-          {gains.length > 0 && <ListeGains gains={gains} />}
+          {gains.length > 0 && <ListeGains gains={gains} jauge={plein} />}
           <p className="t-small m-0">{TEXTES.close}</p>
         </>
       )}
@@ -238,13 +239,14 @@ export function SeanceDuJour({ seance: depart, entete, gains, mode, demo = false
   );
 }
 
-function ListeGains({ gains }: { gains: GainSeance[] }) {
+/** Les gains de la séance ; `jauge` : la jauge repassée au pinceau sous chacun (pas sur l'accueil : le texte seul). */
+function ListeGains({ gains, jauge = true }: { gains: GainSeance[]; jauge?: boolean }) {
   return (
     <ul className={s.gains}>
       {gains.map((g) => (
         <li key={g.cle}>
           <span>{g.texte}</span>
-          <JaugePinceau fraction={g.fraction} className={s.jauge} />
+          {jauge && <JaugePinceau fraction={g.fraction} className={s.jauge} />}
         </li>
       ))}
     </ul>
@@ -263,6 +265,7 @@ export function FinDeSeance({
   lanceeLe,
   occupe = false,
   demo = false,
+  jauge = true,
   onAssez,
   onEncore,
 }: {
@@ -270,6 +273,8 @@ export function FinDeSeance({
   lanceeLe: string | null;
   occupe?: boolean;
   demo?: boolean;
+  /** la jauge sous chaque gain (false : texte seul, l'accueil) */
+  jauge?: boolean;
   onAssez: () => void;
   onEncore: (() => void) | null;
 }) {
@@ -281,7 +286,7 @@ export function FinDeSeance({
             <p className="t-eyebrow m-0">{TEXTES.tenue}</p>
             <p className="t-h3 m-0 mt-0.5">{TEXTES.avancer}</p>
           </div>
-          <ListeGains gains={gains} />
+          <ListeGains gains={gains} jauge={jauge} />
         </>
       ) : (
         <p className="t-h3 m-0">{TEXTES.regularite}</p>

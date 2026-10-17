@@ -143,6 +143,10 @@ a.titre:hover {
 .gains .jauge {
   max-width: 260px;
 }
+/* l'accueil : les gains en texte seul, plus serrés */
+.compact .gains {
+  gap: 4px;
+}
 
 @media (max-width: 767px) {
   .budget button,
