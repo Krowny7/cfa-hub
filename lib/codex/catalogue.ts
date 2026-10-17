@@ -53,6 +53,8 @@ export const EVENEMENTS: Record<TypeEvenement, SourceDonnee> = {
   // journal v3 (migration_codex_v3.sql §5) : les quêtes qui les comptent portent requiert « journal3 »
   seance_juste: { libelle: "Une séance juste", source: "codex_journal v3 : pages de fiche (run_id), séances ciblées, séries éclair et « À revoir » (eclair_series), les 30 du jour, Atelier ; réponses neuves ou dues via _reponses_cache", branche: true },
   blanc_debriefe: { libelle: "Un examen blanc débriefé", source: "codex_journal v3 : blanc_debrief (migration_v3_profil.sql §5), daté du dernier classement", branche: true },
+  revoir_rendue: { libelle: "Une séance « À revoir »", source: "codex_journal v3 : eclair_series (genre = 'revoir', migration_v3_profil.sql §3b), rendue en entier", branche: true },
+  rature_scellee: { libelle: "Une rature scellée", source: "codex_journal v3 : ratures.scellee_le (migration_v3_profil.sql §3a) ⨝ quiz_questions.notion", branche: true },
 };
 
 export const MESURES: Record<TypeMesure, SourceDonnee> = {

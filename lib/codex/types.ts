@@ -59,8 +59,10 @@ export interface ChampsEvenement {
   defi_rendu: { questions: number; justes: number; pct: number };
   /** les 5 du jour rendus */
   cinq_rendu: { justes: number; secondes: number | null; rang: number | null };
-  /** une série éclair (5 questions) close */
+  /** une série éclair (5 questions) close ; journal v3 : sans les « À revoir » (eclair_series.genre) */
   eclair_rendue: { questions: number; justes: number };
+  /** une séance « À revoir » rendue en entier (journal v3, eclair_series.genre = 'revoir' ; pas celle close d'office) */
+  revoir_rendue: { questions: number; justes: number; pct: number };
   duel_termine: {
     resultat: ResultatDuel;
     /** paliers d'écart avec l'adversaire avant le duel (positif : il était au-dessus) */
@@ -77,6 +79,8 @@ export interface ChampsEvenement {
   seance_atelier: { questions: number; justes: number; notions: number; rayees: number };
   /** une rature rayée par une bonne réponse en reprise (ratures.rayee_le) */
   rature_rayee: { matiere: Matiere | null; notion: NotionId | null; ageJours: number; erreurs: number };
+  /** une rature scellée : réussie de nouveau 7 jours au moins après son rayage (journal v3, ratures.scellee_le) ; ageJours depuis la première erreur */
+  rature_scellee: { matiere: Matiere | null; notion: NotionId | null; ageJours: number };
   calcul_repondu: { matiere: Matiere | null; type: string; juste: boolean };
   /** ⚠ à suivre en base (aujourd'hui : localStorage du lecteur) */
   cours_ecoute: { matiere: Matiere; minutes: number };

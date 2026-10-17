@@ -128,8 +128,8 @@ const REPLI_OUTIL: { outil: Outil; href: string; duree: number }[] = [
 ];
 const OUTILS: ReadonlySet<string> = new Set<Outil>(["ciblee", "fiche", "drill", "cours", "flashcards", "atelier", "calculs", "blancs", "trente", "cinq", "eclair", "duels", "revoir"]);
 
-/** /practice comprend-il topic=all, n, poids et go ? (posé à vrai par A4a, après F1) */
-export const PRACTICE_V3 = false;
+/** /practice comprend-il topic=all, n, poids et go ? Oui depuis F1 (lib/practice-lien.ts) : posé à vrai par A4a. */
+export const PRACTICE_V3 = true;
 
 const cheminDe = (href: string) => href.split(/[?#]/)[0];
 
@@ -293,6 +293,10 @@ function cibleCompteur(o: Extract<Objectif, { k: "compteur" }>, q: Quete, params
     case "seance_juste": return coince(ctx, 20);
     // le débrief : la liste des blancs (la revue du dernier, avec ?debrief=1, arrive avec A4b)
     case "blanc_debriefe": return { ...BLANCS, duree: 10 };
+    // une séance « À revoir » (journal v3) : la file du jour
+    case "revoir_rendue": return revoir(15);
+    // une rature scellée : la reprise des plus anciennes, celles qui ont eu le temps de sécher
+    case "rature_scellee": return { href: "/moi?onglet=erreurs&reprise=1&ordre=anciennes", duree: 10, outil: "revoir" };
   }
 }
 

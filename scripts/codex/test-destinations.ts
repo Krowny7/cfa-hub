@@ -4,7 +4,7 @@
 // (hors exploits, quêtes retirées et miroirs) et chaque modèle de contrat
 // instancié a une destination interne, dans ROUTES, d'une durée positive ;
 // les replis (« /revoir » absent → le carnet ; practiceV3 faux → jamais
-// topic=all, n, poids ni go) ; le premier sous-objectif non rempli ; les
+// topic=all, n, poids ni go ; vrai depuis A4a) ; le premier sous-objectif non rempli ; les
 // raisons ; que recommander ne propose jamais une quête non lançable ; et
 // que l'arbre d'un programme d'essai (V3 §1.7) mène partout, dans ses outils.
 import { readdirSync } from "node:fs";
@@ -34,9 +34,11 @@ const base = (o: Partial<Entree> = {}): Entree => ({
 const fsa = contenu.find((m) => m.key === "fsa")!;
 const notionFsa = notionsDeMatiere("fsa")[0].id;
 
-// deux joueurs : un compte neuf, et un joueur en route (maîtrises, notions, drill, points faibles, jour J)
-const neuf = contexteDestination(base());
-const enRoute = contexteDestination(
+// deux joueurs : un compte neuf, et un joueur en route (maîtrises, notions, drill, points faibles, jour J) ;
+// liens d'avant F1 (practiceV3 faux), le repli, sauf mention contraire
+const neuf: ContexteDestination = { ...contexteDestination(base()), practiceV3: false };
+const enRoute: ContexteDestination = {
+  ...contexteDestination(
   base({
     jourJ: "2026-11-12",
     pointsFaibles: [{ notion: notionFsa, score: 72 }],
@@ -51,7 +53,9 @@ const enRoute = contexteDestination(
       },
     },
   }),
-);
+  ),
+  practiceV3: false,
+};
 const avec = (ctx: ContexteDestination, o: Partial<ContexteDestination>): ContexteDestination => ({ ...ctx, ...o });
 const quete = (id: string) => catalogueCodex().find((q) => q.id === id)!;
 
@@ -137,7 +141,7 @@ console.log("\n# les replis");
   const sansDuel = avec(enRoute, { routes: new Set([...ROUTES].filter((r) => r !== "/duel")) });
   check("page absente sans repli : pas de destination, pas lançable", destinationDe(quete("trame:a1:duel"), {}, sansDuel) === null && !lancable(quete("trame:a1:duel"), sansDuel));
 
-  check("practiceV3 vaut faux avant F1", PRACTICE_V3 === false);
+  check("practiceV3 vaut vrai depuis F1 (A4a), et le contexte du moteur le porte", PRACTICE_V3 === true && contexteDestination(base()).practiceV3 === true);
   const tous: string[] = [];
   for (const q of catalogueCodex()) for (const ctx of [neuf, enRoute]) { const d = destinationDe(q, {}, ctx); if (d) tous.push(d.href); }
   const fautifs = tous.filter((h) => h.includes("topic=all") || /[?&](n|poids|go)=/.test(h));
