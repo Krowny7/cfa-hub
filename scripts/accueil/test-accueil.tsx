@@ -123,7 +123,7 @@ console.log("\n# l'anneau des traits du jour, sur téléphone comme sur ordinate
   const html = rendre(exemple());
   const anneaux = html.match(/<div data-leonard="anneau" class="([^"]*)"/g) ?? [];
   check("un seul anneau, dans la carte des traits", anneaux.length === 1, String(anneaux.length));
-  check("il n'est caché à aucune taille d'écran (ni « tel » ni « ordi »)", anneaux.length === 1 && anneaux[0].endsWith('class="self-center"'), anneaux[0] ?? "");
+  check("il n'est caché à aucune taille d'écran", anneaux.length === 1 && anneaux[0].endsWith('class="self-center"'), anneaux[0] ?? "");
   const debut = html.indexOf(`aria-label="${RDV.traits.nom}"`);
   const carte = html.slice(debut, html.indexOf("</section>", debut));
   check("l'anneau est dans la carte des traits", carte.includes('data-leonard="anneau"'));
@@ -132,12 +132,17 @@ console.log("\n# l'anneau des traits du jour, sur téléphone comme sur ordinate
 
 console.log("\n# sans défi jouable : les traits prennent le héros, l'anneau suit le titre au téléphone");
 {
-  const html = rendre(exemple({ daily: null, cinq: null }));
+  const html = rendre(exemple({ daily: null, cinq: null, dayState: "attente", incomingDuel: { id: "d2", from: "Inès B.", kind: "incoming" } }));
   check("l'accueil se rend sans les 30 ni les 5 du jour", html.length > 0 && html.includes(`aria-label="${RDV.traits.nom}"`));
-  const tel = html.indexOf('data-leonard="anneau" class="tel self-center"');
-  const ordi = html.indexOf('data-leonard="anneau" class="ordi self-center"');
-  const titre = html.indexOf("<h1");
-  check("deux places pour l'anneau : sous le titre (téléphone), à droite (ordinateur)", tel > titre && titre >= 0 && ordi > tel, `${titre} < ${tel} < ${ordi}`);
+  // un seul anneau par page : son masque SVG porte un id fixe (deux copies se le disputeraient)
+  const anneaux = compte(html, /data-leonard="anneau"/g);
+  check("un seul anneau, jamais en double", anneaux === 1, String(anneaux));
+  const ordre = positions(html, ["<h1", 'data-leonard="anneau"', RDV.traits.gagner, "Inès B. te défie"]);
+  check("ordre du téléphone : titre, anneau, bouton des traits, liste « Aujourd'hui »", croissant(ordre), ordre.join(" < "));
+  check(
+    "sur ordinateur, la liste en haut à droite et l'anneau dessous",
+    /data-leonard="anneau" class="[^"]*md:col-start-2 md:row-start-2/.test(html) && /class="min-w-0 md:col-start-2 md:row-start-1"/.test(html),
+  );
   check("aucune jauge à la place de l'anneau", !html.includes('role="progressbar"'));
 }
 

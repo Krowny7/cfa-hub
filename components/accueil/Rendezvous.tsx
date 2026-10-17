@@ -26,7 +26,6 @@ import { ACCUEIL, DUEL, ENCRE, SOMMET, joursEncre, jourJ, nombre, placement as p
 import { RDV } from "@/lib/voice-accueil";
 import { MOI, REPRISE, TUILES, duelARevoir, ligneSerie, maitriseRequise, verrouCourt } from "@/lib/voice-z1";
 import { joueurs, voixDefi } from "@/lib/voice-z2c";
-import s from "./Rendezvous.module.css";
 
 // Accueil « Le rendez-vous », dans l'ordre de ce qui compte le plus :
 // 1. Les 30 du jour en héros (le rendez-vous de tous : l'état, les joueurs, la
@@ -340,14 +339,12 @@ function LigneSerie({ d }: { d: AccueilData }) {
 /**
  * Le grand anneau du jour, avec le sceau « TENU » quand la journée l'est : sur
  * téléphone comme sur ordinateur (c'est l'ADN du site et le suivi de
- * l'objectif du jour). `seul` : l'anneau ne se montre qu'à cette taille
- * d'écran (le héros des traits le pose à deux places, une seule visible).
+ * l'objectif du jour). Un seul par page : son masque SVG porte un id fixe.
  */
-function AnneauGrand({ d, size, seul }: { d: AccueilData; size: number; seul?: "tel" | "ordi" }) {
+function AnneauGrand({ d, size, className = "self-center" }: { d: AccueilData; size: number; className?: string }) {
   const tenu = d.activity.today >= d.dailyGoal;
-  const ou = seul === "tel" ? s.tel + " " : seul === "ordi" ? s.ordi + " " : "";
   return (
-    <div data-leonard="anneau" className={ou + "self-center"}>
+    <div data-leonard="anneau" className={className}>
       <AnneauDuJour repondues={d.activity.today} objectif={d.dailyGoal} size={size} sceau={tenu ? <SceauTenu day={d.dayKey} /> : undefined} />
     </div>
   );
@@ -388,29 +385,35 @@ function CarteTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
 
 /**
  * Sans défi jouable : les traits du jour prennent le héros (l'ancienne journée,
- * sans la reprise). L'anneau suit le titre sur téléphone, et tient la colonne
- * de droite sur ordinateur, sous la liste « Aujourd'hui ».
+ * sans la reprise). Sur téléphone, tout se suit : le titre, l'anneau, la série
+ * et le bouton, la liste « Aujourd'hui ». Sur ordinateur, deux colonnes : le
+ * titre puis la série à gauche, la liste puis l'anneau à droite (cases de la
+ * grille posées à la main, l'ordre du document reste celui du téléphone).
  */
 function HerosTraits({ d, primaire }: { d: AccueilData; primaire: Primaire }) {
+  const liste = lignesAujourdhui(d);
   return (
     <section aria-label={RDV.traits.nom} className="card-hero rl-in flex min-w-0 flex-1 flex-col overflow-hidden" style={{ padding: 0 }}>
       <div className="shrink-0 overflow-hidden border-b border-line" style={{ height: "clamp(64px, 7vw, 100px)" }}>
         <Illustration nom="accueil-bandeau" position="50% 50%" eager />
       </div>
       <div className="grid min-w-0 gap-x-8 gap-y-4 p-6 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] md:p-8">
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4 md:col-start-1 md:row-start-1">
           <p className="t-eyebrow">{d.dateLabel}</p>
           <h1 className="t-h1 m-0 [overflow-wrap:anywhere]" style={TITRE_HEROS}>
             {titreDuJour(d)}
           </h1>
-          <AnneauGrand d={d} size={170} seul="tel" />
+        </div>
+        <AnneauGrand d={d} size={170} className="justify-self-center md:col-start-2 md:row-start-2" />
+        <div className="flex min-w-0 flex-col gap-4 md:col-start-1 md:row-start-2">
           <LigneSerie d={d} />
           {primaire === "traits" && <ActionTraits d={d} />}
         </div>
-        <div className="flex min-w-0 flex-col gap-4">
-          <ListeClassee titre={TUILES.titre} items={lignesAujourdhui(d)} />
-          <AnneauGrand d={d} size={170} seul="ordi" />
-        </div>
+        {liste.length > 0 && (
+          <div className="min-w-0 md:col-start-2 md:row-start-1">
+            <ListeClassee titre={TUILES.titre} items={liste} />
+          </div>
+        )}
       </div>
     </section>
   );
