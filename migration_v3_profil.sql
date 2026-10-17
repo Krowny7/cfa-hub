@@ -1108,7 +1108,9 @@ $$;
 -- temporaire de la transaction, indexée, partagée par tous les lecteurs du
 -- même appel (codex_journal, codex_mesures_v3, maitrise_joueur,
 -- revisions_dues). Corps identique dans migration_codex_v3.sql : le premier
--- fichier collé la crée, le second la remplace par le même texte.
+-- fichier collé la crée, le second la remplace par le même texte. Chaque
+-- question est rangée dans sa matière une seule fois (et non à chaque
+-- réponse) : mêmes colonnes, mêmes lignes, plus rapide (aligné à F2).
 CREATE OR REPLACE FUNCTION _reponses_cache(p_user uuid) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
@@ -1117,15 +1119,19 @@ BEGIN
     DROP TABLE pg_temp._rep_cache; DROP TABLE IF EXISTS pg_temp._rep_cache_cle;   -- table temporaire de la transaction, pas une donnée
   END IF;
   CREATE TEMP TABLE _rep_cache ON COMMIT DROP AS
+    WITH r AS MATERIALIZED (SELECT x.question_id, x.source, x.ok, x.at FROM _reponses_joueur(p_user) x),
+    m AS (
+      SELECT d.question_id,
+             (SELECT _codex_matiere(lf.name, qs.title)
+              FROM quiz_questions qq
+              LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
+              LEFT JOIN library_folders lf ON lf.id = qs.folder_id
+              WHERE qq.id = d.question_id
+              LIMIT 1) AS matiere
+      FROM (SELECT DISTINCT r.question_id FROM r WHERE r.question_id IS NOT NULL) d
+    )
     SELECT r.question_id, r.source, r.ok, r.at, m.matiere
-    FROM _reponses_joueur(p_user) r LEFT JOIN LATERAL (
-      SELECT _codex_matiere(lf.name, qs.title) AS matiere
-      FROM quiz_questions qq
-      LEFT JOIN quiz_sets qs ON qs.id = qq.set_id
-      LEFT JOIN library_folders lf ON lf.id = qs.folder_id
-      WHERE qq.id = r.question_id
-      LIMIT 1
-    ) m ON true;
+    FROM r LEFT JOIN m ON m.question_id = r.question_id;
   CREATE INDEX ON pg_temp._rep_cache (question_id, at);
   CREATE INDEX ON pg_temp._rep_cache (matiere, at);
   CREATE TEMP TABLE _rep_cache_cle ON COMMIT DROP AS SELECT p_user AS user_id;
