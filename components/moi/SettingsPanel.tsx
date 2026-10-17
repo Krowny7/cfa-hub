@@ -10,12 +10,28 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { REJOUER, SONS } from "@/lib/voice-z1";
 import { PresenceSettings } from "@/components/presence/PresenceSettings";
 import { ReglageJournal } from "@/components/profil/ReglageJournal";
+import { ModeSobre } from "@/components/moi/ModeSobre";
+import { ReposSerie } from "@/components/moi/ReposSerie";
+import type { ReposInitial } from "@/components/moi/repos-data";
 
 // Tous les réglages : profil, examen (date et objectif de questions), apparence (thème, mode
-// discret), sons des moments (et le premier trait à rejouer), confidentialité
+// discret, Léonard, mode sobre), repos de la série, sons des moments (et le premier trait à rejouer), confidentialité
 // (présence en ligne, qui voit mon Journal), groupes, déconnexion. Utilisé par l'onglet Réglages de /moi (/settings y renvoie).
-// Les composants enfants chargent et enregistrent eux-mêmes.
-export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroupId: string | null; groups: GroupRow[]; objectif: ObjectifInitial }) {
+// Les composants enfants chargent et enregistrent eux-mêmes ; `sobre` et `repos` arrivent lus par la page
+// (repos null : la migration du Codex §8 manque, le réglage ne s'affiche pas).
+export function SettingsPanel({
+  activeGroupId,
+  groups,
+  objectif,
+  sobre = false,
+  repos = null,
+}: {
+  activeGroupId: string | null;
+  groups: GroupRow[];
+  objectif: ObjectifInitial;
+  sobre?: boolean;
+  repos?: ReposInitial | null;
+}) {
   return (
     <div className="flex flex-col gap-4 md:gap-[18px]">
       <div className="grid gap-4 md:gap-[18px] lg:grid-cols-2">
@@ -29,7 +45,9 @@ export function SettingsPanel({ activeGroupId, groups, objectif }: { activeGroup
               <Palette size={15} aria-hidden /> Apparence
             </h3>
             <AppearanceSwitches />
+            <ModeSobre initial={sobre} />
           </div>
+          <ReposSerie initial={repos} />
           <div id="sons" className="card flex flex-col p-[22px] pb-3">
             <h3 className="flex items-center gap-2 text-[13px] font-semibold text-muted">
               <Volume2 size={15} aria-hidden /> {SONS.titre}
