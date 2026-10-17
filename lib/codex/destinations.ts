@@ -58,6 +58,8 @@ export type ContexteDestination = {
   /** le programme actif (absent : CFA I) et ses outils (absent : tous) ; un outil absent du programme prend le repli d'entraînement (REPLI_OUTIL) */
   programme?: string;
   outils?: ReadonlySet<Outil>;
+  /** la prochaine quête de trame ouverte et non faite du programme actif (« Programmes menés » y mène) ; absente : /codex */
+  trameSuivante?: Quete | null;
 };
 
 /**
@@ -367,7 +369,12 @@ function cibleMesure(o: Extract<Objectif, { k: "mesure" }>, q: Quete, params: Co
     case "semaines_entretien":
       return CINQ;
     case "maitres_total": return cibleEtape("maitre", ctx);
-    case "programmes_menes":
+    // mener le programme : sa prochaine quête de trame (V3 §9.1) ; sans elle, le Codex
+    // (le contexte passé plus bas n'en a plus : aucune boucle, même si elle demande un programme mené)
+    case "programmes_menes": {
+      const t = ctx.trameSuivante;
+      return (t ? resoudre(t.objectif, t, {}, { ...ctx, trameSuivante: null }) : null) ?? { href: "/codex", duree: 5, outil: "codex" };
+    }
     case "pieces_possedees":
       return { href: "/codex", duree: 5, outil: "codex" };
     // sans source (ou la source « ciblee ») : une séance mêlée aux poids officiels qui PEUT donner le

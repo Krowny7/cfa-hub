@@ -599,7 +599,8 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
     case "branches_etape": return fini(branchesFaites(c, f.etape as EtapeBranche).faites);
     case "branches_etape_pct": {
       const { faites, total } = branchesFaites(c, f.etape as EtapeBranche);
-      return fini(total ? Math.floor((100 * faites) / total) : 100);
+      // un programme sans matière (CFA II tant qu'il n'est pas rempli) : rien n'est fait à vide
+      return fini(total ? Math.floor((100 * faites) / total) : 0);
     }
     // v3 : sans codex_mesures_v3, inconnues (la quête ne se valide pas)
     case "jours_encre_total": return fini(M.jours_encre_total ?? null);
@@ -1306,10 +1307,17 @@ const virgule = (n: number) => String(n).replace(".", ",");
 // la carte (notions tenues) pousse avec les fondations ; l'épreuve signature, avec la maîtrise
 const ETAPES_AVANT_JALON: EtapeBranche[] = ["entree", "cours", "fiche", "drill", "flashcards", "ciblee", "serie", "tour", "carte"];
 
+/** La prochaine quête de trame du programme : ouverte, pas faite, la plus petite par ordre ; null : aucune. */
+function trameSuivante(etats: EtatQuete[], programme: string): Quete | null {
+  const ouvertes = etats.filter((s) => s.quete.famille === "trame" && s.periode === "" && s.ouverte && !s.fait && !s.quete.retiree && s.quete.programme === programme);
+  return ouvertes.sort((a, b) => (a.quete.ordre ?? 0) - (b.quete.ordre ?? 0))[0]?.quete ?? null;
+}
+
 /**
  * Ce que le résolveur de destinations (lib/codex/destinations.ts) sait du
  * joueur : lu sur l'entrée et, s'il est là, sur le résultat de l'évaluation
- * (les quêtes faites, pour « branches à une étape »).
+ * (les quêtes faites, pour « branches à une étape » ; la prochaine quête de
+ * trame, pour « programmes menés »).
  */
 export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats"> & Partial<Pick<Resultat, "phase">>): ContexteDestination {
   const contenu = e.contenu ?? contenuDuProgramme();
@@ -1338,7 +1346,7 @@ export function contexteDestination(e: Entree, r?: Pick<Resultat, "etats"> & Par
     practiceV3: PRACTICE_V3,
     programme: programmeActif(e.programmes).cle,
     outils: programmeActif(e.programmes).outils,
-    ...(r ? { faites: new Set(r.etats.filter((s) => s.fait && s.periode === "").map((s) => s.quete.id)) } : {}),
+    ...(r ? { faites: new Set(r.etats.filter((s) => s.fait && s.periode === "").map((s) => s.quete.id)), trameSuivante: trameSuivante(r.etats, programmeActif(e.programmes).cle) } : {}),
   };
 }
 

@@ -15,10 +15,11 @@ import {
   REGISTRE, actesDe, catalogueComplet, cosmetiquesDe, genererArbre, idDe, jourJDuProgramme, lireProgrammesJoueur, modelesContrats, nomEnTete, programmeActif, programmeDe, programmeDeId, slugDe, suiteDe,
   type DefinitionProgramme, type ProgrammeJoueur,
 } from "@/lib/codex/programmes";
-import { apresExamenDe, evaluer, indexerLecture, phaseJoueur, planifier, quetesASuivre, requisOk, tirerContrats, type Entree, type LectureSql } from "@/lib/codex/moteur";
+import { apresExamenDe, evaluer, indexerLecture, joursAvantExamen, phaseJoueur, planifier, quetesASuivre, requisOk, tirerContrats, type Entree, type LectureSql } from "@/lib/codex/moteur";
 import { CAPACITES_VIDE, lireCapacites } from "@/lib/codex/reglage";
 import { CHAPITRES_FIL, PALIERS_PUBLIES, compterPiecesCodex, filtreFil, idFil, palierAtteint, paliersFil, quetesFilRouge, seuilFil } from "@/lib/codex/fil-rouge";
 import { construireVue } from "@/lib/codex/vue";
+import { momentDe } from "@/lib/codex/calendrier";
 import type { Objectif, Quete } from "@/lib/codex/types";
 
 let ko = 0;
@@ -264,6 +265,37 @@ console.log("\n# le moteur tourne sur l'arbre d'essai (ses actes, ses contrats)"
   check("la vue montre les cinq actes de l'essai", v.trame.map((a) => a.acte.id).join(" ") === "essai/g0 essai/g1 essai/g2 essai/g3 essai/g4" && v.trame[0].clos);
   const tires = tirerContrats({ ...e, lecture: brut }, "joueur-essai");
   check("ses contrats du jour n'utilisent que ses outils", tires.length > 0 && tires.every((t) => !["drill-page", "duel", "matiere-faible", "atelier", "calculs", "cours", "flashcards", "defi"].includes(t.modele)), tires.map((t) => t.modele).join(","));
+}
+
+console.log("\n# un programme daté autre que CFA I (V3 §1.6 : jamais le jour J du profil)");
+{
+  // l'essai, daté par le joueur ; le profil garde la date passée de CFA I
+  const date: DefinitionProgramme = { ...PROGRAMME_ESSAI, examen: { date: "joueur" } };
+  const jour = "2026-11-20";
+  const cfa1Passe = "2026-11-12";
+  const phaseEt = (jourJ: string | null, actesClos: string[] = []) => {
+    const avant = jourJ ? joursAvantExamen(jour, jourJ) : null;
+    const phase = phaseDe(avant, { def: date, actesClos, apresExamen: !!jourJ && jourJ < jour });
+    return { phase, moment: momentDe(avant, phase) };
+  };
+  const sans = phaseEt(jourJDuProgramme(date, { jourJ: null }, cfa1Passe));
+  check("sans jour J propre : phase par avancement (fondations), ni « après » ni lendemain", sans.phase === "fondations" && sans.moment === "courant", JSON.stringify(sans));
+  check("… et par avancement encore avec des actes clos (consolidation)", phaseEt(jourJDuProgramme(date, { jourJ: null }, cfa1Passe), ["essai/g0", "essai/g1"]).phase === "consolidation");
+  const loin = phaseEt(jourJDuProgramme(date, { jourJ: "2027-01-10" }, cfa1Passe));
+  check("avec un jour J propre : phase par la date (J-51 : consolidation)", loin.phase === "consolidation" && loin.moment === "courant", JSON.stringify(loin));
+  const hier = phaseEt(jourJDuProgramme(date, { jourJ: "2026-11-19" }, cfa1Passe));
+  check("avec un jour J propre passé hier : lendemain", hier.phase === "apres" && hier.moment === "lendemain", JSON.stringify(hier));
+
+  // un programme sans matière (CFA II aujourd'hui) : rien ne se remplit à vide
+  const cfa2 = programmeDe("finance/cfa-l2")!;
+  const e2: Entree = {
+    catalogue: catalogueComplet(cfa2.cle), contenu: cfa2.matieres(), programmes: [{ programme: cfa2.cle, statut: "actif", jourJ: null, meneLe: null }],
+    now: new Date("2026-11-20T10:00:00Z"), jour, jourJ: null, objectif: null, visiteVue: false,
+    progression: [], contrats: [], premier: false, dernierCalcul: null, lecture: { compteurs: {}, mesures: { xp_total: 0 }, speciaux: {} },
+  };
+  const r2 = evaluer(e2, {});
+  const aVide = r2.etats.filter((s) => s.fait && s.quete.objectif.k === "mesure" && s.quete.objectif.mesure === "branches_etape_pct");
+  check(`programme sans matière (CFA II : ${cfa2.matieres().length}) : « part des branches » à 0, aucune quête remplie à vide`, cfa2.matieres().length === 0 && aVide.length === 0, aVide.map((s) => s.quete.id).join(" "));
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\nTout est vert.");

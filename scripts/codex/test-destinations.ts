@@ -291,6 +291,17 @@ console.log("\n# le fil rouge (V3 §1.5) : chaque palier figé mène quelque par
   const essai: ContexteDestination = { ...contexteDestination(base({ contenu: PROGRAMME_ESSAI.matieres() })), programme: PROGRAMME_ESSAI.cle, outils: PROGRAMME_ESSAI.outils };
   const horsOutils = paliers.map((q) => [q.id, destinationDe(q, {}, essai)] as const).filter(([, d]) => !d || !["cinq", "eclair", "revoir", "codex", "profil", "classement"].includes(d.outil));
   check("dans l'arbre d'essai : aucun palier ne mène à un outil absent", horsOutils.length === 0, horsOutils.map(([id, d]) => `${id} ${d?.outil} ${d?.href}`).join(" | "));
+  // « Programmes menés » : la prochaine quête de trame du programme (V3 §9.1), sinon le Codex
+  const mene = paliers.find((q) => q.objectif.k === "mesure" && q.objectif.mesure === "programmes_menes")!;
+  const eNeuf = base();
+  const ctxR = contexteDestination(eNeuf, evaluer(eNeuf, {}));
+  const t = ctxR.trameSuivante;
+  const viaTrame = destinationDe(mene, {}, ctxR);
+  const attendu = t ? destinationDe(t, {}, { ...ctxR, trameSuivante: null }) : null;
+  check("« Programmes menés » : la destination de la prochaine quête de trame ouverte du programme",
+    !!mene && !!t && t.famille === "trame" && t.programme === PROGRAMME && !!attendu && viaTrame?.href === attendu.href && viaTrame.href !== "/codex", `${t?.id} → ${viaTrame?.href}`);
+  check("… sans trame à suivre : le Codex ; elle-même en trame suivante : le Codex, sans boucle",
+    destinationDe(mene, {}, neuf)?.href === "/codex" && destinationDe(mene, {}, { ...neuf, trameSuivante: mene })?.href === "/codex");
 }
 
 console.log("\n# le cap et la mémoire (A4b) : les lignes nouvelles");
