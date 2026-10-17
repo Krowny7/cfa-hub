@@ -73,6 +73,28 @@ function patcher(userId: string, f: (v: VueCodex) => VueCodex) {
   if (d) DERNIER.set(userId, f(d));
 }
 
+/** Au plus tant de joueurs gardés par l'instance (DERNIER) : les plus anciens partent d'abord. */
+const GARDES_MAX = 500;
+
+/**
+ * Garde la vue calculée d'un joueur (mémo de 45 s et dernier état réussi). Au
+ * passage, les mémos périmés et les états d'un autre jour partent (seul celui
+ * du jour sert au repli) : les Map ne grossissent pas avec les joueurs passés
+ * par l'instance.
+ */
+function garder(userId: string, vue: VueCodex) {
+  const now = Date.now();
+  for (const [k, m] of MEMO) if (now - m.at >= MEMO_MS) MEMO.delete(k);
+  for (const [k, d] of DERNIER) if (d.jour !== vue.jour) DERNIER.delete(k);
+  MEMO.set(userId, { at: now, vue });
+  DERNIER.delete(userId);
+  DERNIER.set(userId, vue);
+  for (const k of DERNIER.keys()) {
+    if (DERNIER.size <= GARDES_MAX) break;
+    DERNIER.delete(k);
+  }
+}
+
 /** Le repli : le dernier état réussi du jour, sinon « indisponible ». */
 function repli(userId: string, jour: string): Retour {
   const d = DERNIER.get(userId);
@@ -93,10 +115,24 @@ async function consigner(a: SupabaseClient, userId: string, quete: string, messa
   }
 }
 
-/** codex_lire : les compteurs, les mesures, les spéciaux ; et « v3 » (les mesures v3, brutes) quand la §5 est collée. */
-async function lire(a: SupabaseClient, id: string, demandes: unknown[], jour: string): Promise<(LectureSql & { v3?: unknown }) | null> {
+/** La surcharge codex_lire(…, p_v3) manquait à cette date (ms) : on n'y revient qu'après QUATRE_MS. */
+let quatreAbsente = 0;
+const QUATRE_MS = 10 * 60_000;
+
+/**
+ * codex_lire : les compteurs, les mesures, les spéciaux ; et « v3 » (les
+ * mesures v3, brutes) quand la §5 est collée. `v3` faux : sans elles (la
+ * lecture de l'activité, ou des mesures déjà lues à part), par la surcharge à
+ * p_v3 ; absente (fichier d'avant, ou §5 pas collée), l'appel ordinaire.
+ */
+async function lire(a: SupabaseClient, id: string, demandes: unknown[], jour: string, v3 = true): Promise<(LectureSql & { v3?: unknown }) | null> {
   try {
-    const { data, error } = await a.rpc("codex_lire", { p_user: id, p_demandes: demandes, p_jour: jour });
+    let r = !v3 && Date.now() - quatreAbsente >= QUATRE_MS ? await a.rpc("codex_lire", { p_user: id, p_demandes: demandes, p_jour: jour, p_v3: false }) : null;
+    if (r?.error && baseAbsente(r.error)) {
+      quatreAbsente = Date.now();
+      r = null;
+    }
+    const { data, error } = r ?? (await a.rpc("codex_lire", { p_user: id, p_demandes: demandes, p_jour: jour }));
     if (error || !data || typeof data !== "object") return null;
     const d = data as Partial<LectureSql> & { v3?: unknown };
     return { compteurs: d.compteurs ?? {}, mesures: d.mesures ?? {}, speciaux: d.speciaux ?? {}, v3: d.v3 };
@@ -377,6 +413,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const jourJ = jourJDuProgramme(actif, programmes.find((p) => p.programme === actif.cle), dateExamen);
     // les mesures v3 et les capacités : rendues par codex_lire quand la §5 est collée (journal 3 au dernier
     // calcul : une seule lecture des réponses, V3 §12.3bis) ; sinon lues à part, pendant le tirage des contrats
+    // (codex_lire ne les recalcule pas alors : p_v3 à faux)
     const v3Apart = reglage.capacitesVues?.journal === 3 ? null : lireMesuresV3(a, user.id, actif.cle);
     if (joueurR.error && baseAbsente(joueurR.error)) return vide;
     // une lecture ratée de codex_joueur ferait passer le joueur pour neuf (tout rétroactif) : on s'arrête là
@@ -428,7 +465,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     // les contrats du jour : tirés une fois (la base garde le premier tirage) ; un seul en veillée
     // (le jour d'un retour, la reprise douce est seule : rien à compléter)
     if (entree.contrats.length < emplacementsDe(phaseJoueur(entree, actesClosDe(entree.progression))).length && !entree.contrats.some((c) => c.modele === "reprise")) {
-      const mesures = await lire(a, user.id, demandesActivite(contenu, jour), jour);
+      // l'activité seule : pas de mesures v3 (lues plus bas avec tous les compteurs)
+      const mesures = await lire(a, user.id, demandesActivite(contenu, jour), jour, false);
       if (!mesures) {
         await consigner(a, user.id, "", "codex_lire (tirage des contrats) a échoué");
         return repli(user.id, jour);
@@ -451,7 +489,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     entree.capacites = v3Lu?.capacites ?? CAPACITES_TOUTES;
     // les compteurs de toutes les quêtes, en un seul appel
     const demandes = planifier(entree);
-    const lu = await lire(a, user.id, demandes, jour);
+    const lu = await lire(a, user.id, demandes, jour, !v3Lu);
     if (!lu) {
       await consigner(a, user.id, "", "codex_lire a échoué");
       return repli(user.id, jour);
@@ -542,8 +580,7 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       await consigner(a, user.id, "", `rythme : ${x instanceof Error ? x.message : String(x)}`);
     }
     const vue: VueCodex = { ...construite, seance, rythme };
-    MEMO.set(user.id, { at: Date.now(), vue });
-    DERNIER.set(user.id, vue);
+    garder(user.id, vue);
     // l'instantané du panneau, pour la barre du haut (§6 collée seulement)
     if (!seanceLue.absente) await poserCache(a, user.id, jour, vue);
     return { vue, entree, resultat };
@@ -617,7 +654,7 @@ export async function changerContrat(supabase: SupabaseClient, user: Joueur, emp
   if (!entree) return { ok: false, raison: "indisponible" };
   // l'activité par matière (contrat « prend la poussière ») n'est lue qu'au tirage : la relire pour le remplaçant
   if (!entree.activite) {
-    const act = await lire(a, user.id, demandesActivite(entree.contenu ?? contenuDuProgramme(), entree.jour), entree.jour);
+    const act = await lire(a, user.id, demandesActivite(entree.contenu ?? contenuDuProgramme(), entree.jour), entree.jour, false);
     if (act) entree.activite = lireActivite(entree.contenu ?? contenuDuProgramme(), act);
   }
   const actuel = entree.contrats.find((c) => c.emplacement === emplacement);

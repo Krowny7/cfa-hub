@@ -91,7 +91,13 @@
 --       éclair à part), rature scellée, examen blanc débriefé.
 --    d. codex_lire(uuid, jsonb, date) : même signature, même résultat, plus
 --       « v3 » (codex_mesures_v3 du programme actif) : journal et mesures
---       dans la même transaction, sur une seule lecture des réponses.
+--       dans la même transaction, sur une seule lecture des réponses. Elle
+--       appelle codex_lire(uuid, jsonb, date, boolean), la même avec
+--       p_v3 : à faux (lectures de la seule activité par matière, au
+--       tirage et au changement d'un contrat), pas de « v3 », qui serait
+--       calculée pour rien. Une surcharge sans valeur par défaut : un appel
+--       à trois arguments ne peut viser qu'une seule des deux, même si
+--       migration_codex.sql est recollée par-dessus.
 --    e. _codex_journal_v3() : le marqueur du journal v3 (capacité
 --       « journal » à 3).
 --    f. _codex_jours_lus(uuid) : les questions par jour du joueur, lues une
@@ -498,7 +504,9 @@ REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticat
 --                        la maîtrise unique (maitrise_joueur, migration_v3_profil.sql §4) ;
 --                        questions = réponses de la fenêtre (60 au plus), pct null sous 10
 --   revoir             : {"aujourdhui", "demain", "ratures", "rappels"} (revisions_dues, §3b)
---   ratures_scellees   : ratures scellées (ratures.scellee_le, §3a)
+--   ratures_scellees   : ratures scellées (ratures.scellee_le, §3a) et toujours rayées,
+--                        comme le carnet (get_ratures.scellees) : remise en cours à la
+--                        main, elle ne compte plus (l'événement rature_scellee, daté, reste)
 --   blancs_a_debriefer : copies rendues depuis 7 jours (examens blancs et officiels) dont
 --                        moins de 80 % des erreurs sont classées (blanc_debrief, §5)
 --   causes             : {"savoir", "lecture", "calcul", "temps", "chance" (en %), "n"}, les
@@ -651,7 +659,7 @@ BEGIN
   END IF;
   -- les ratures scellées (V3 §5.3)
   IF EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = to_regclass('public.ratures') AND a.attname = 'scellee_le' AND NOT a.attisdropped) THEN
-    EXECUTE 'SELECT count(*)::int FROM ratures WHERE user_id = $1 AND scellee_le IS NOT NULL' INTO v_n USING p_user;
+    EXECUTE 'SELECT count(*)::int FROM ratures WHERE user_id = $1 AND scellee_le IS NOT NULL AND removed_at IS NOT NULL' INTO v_n USING p_user;
     v_plus := v_plus || jsonb_build_object('ratures_scellees', v_n);
   END IF;
   -- le débrief des examens blancs (V3 §7.6) : les copies rendues depuis 7 jours qui restent à
@@ -1168,7 +1176,11 @@ $$;
 -- journal, les mesures v3 et la maîtrise unique le partagent), puis ajoute
 -- « v3 » : codex_mesures_v3 du programme actif, dans la même transaction.
 --   résultat : { compteurs, mesures, speciaux, v3? }   (v3 absente : le site appelle codex_mesures_v3 à part)
-CREATE OR REPLACE FUNCTION codex_lire(p_user uuid, p_demandes jsonb, p_jour date DEFAULT NULL)
+-- p_v3 à faux : sans « v3 » (le site ne lit que des compteurs : l'activité par
+-- matière au tirage des contrats). Sans valeur par défaut, exprès : l'appel à
+-- trois arguments (codex_lire(uuid, jsonb, date), plus bas) reste sans
+-- ambiguïté, même avec la version de migration_codex.sql recollée.
+CREATE OR REPLACE FUNCTION codex_lire(p_user uuid, p_demandes jsonb, p_jour date, p_v3 boolean)
 RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
@@ -1406,7 +1418,8 @@ BEGIN
 
   -- ── les mesures v3 (§4) du programme actif (sans ligne : CFA I), sur la même lecture des
   -- réponses. Une erreur est consignée et ne coûte que la clé « v3 » : le site les relit à part.
-  IF to_regprocedure('public.codex_mesures_v3(uuid,text)') IS NOT NULL THEN
+  -- p_v3 à faux : rien à calculer, le site n'en veut pas.
+  IF coalesce(p_v3, true) AND to_regprocedure('public.codex_mesures_v3(uuid,text)') IS NOT NULL THEN
     BEGIN
       IF to_regclass('public.codex_programmes_joueur') IS NOT NULL THEN
         EXECUTE $q$SELECT programme FROM codex_programmes_joueur WHERE user_id = $1 AND statut = 'actif' LIMIT 1$q$ INTO v_actif USING p_user;
@@ -1423,6 +1436,13 @@ BEGIN
          || CASE WHEN v_v3 IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('v3', v_v3) END;
 END;
 $$;
+
+-- La signature de toujours (celle que le site appelle par défaut) : la même
+-- lecture, avec « v3 ».
+CREATE OR REPLACE FUNCTION codex_lire(p_user uuid, p_demandes jsonb, p_jour date DEFAULT NULL)
+RETURNS jsonb
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$ SELECT codex_lire(p_user, p_demandes, p_jour, true) $$;
 
 
 -- 5f. Les questions par jour du joueur (_codex_jours) : celles que codex_lire a
@@ -1460,10 +1480,12 @@ REVOKE ALL ON FUNCTION _codex_colonne(text, text) FROM PUBLIC, anon, authenticat
 REVOKE ALL ON FUNCTION _codex_reponses_v3(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION codex_journal(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION codex_lire(uuid, jsonb, date) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION codex_lire(uuid, jsonb, date, boolean) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _codex_journal_v3() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION _codex_jours_lus(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_journal(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION codex_lire(uuid, jsonb, date) TO service_role;
+GRANT EXECUTE ON FUNCTION codex_lire(uuid, jsonb, date, boolean) TO service_role;
 
 
 -- ── 6. La séance du jour (V3 §6.2) ───────────────────────────────────
