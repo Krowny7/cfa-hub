@@ -289,6 +289,12 @@ console.log("\n# « Ce que ça a fait avancer » (l'instantané au lancement, le
   check("l'instantané : la maîtrise mesurée, la file « À revoir », 5 quêtes visées au plus (la prochaine d'abord)",
     Object.keys(avant.quetes).length > 0 && Object.keys(avant.quetes).length <= 5 && (!vue.prochaine || `${vue.prochaine.ligne.id}|${vue.prochaine.ligne.periode}` in avant.quetes) && Object.keys(avant.maitrise).length > 0,
     J(avant).slice(0, 160));
+  {
+    const c = vue.contrats.map((x) => x.ligne).filter((l) => l.etat !== "terminee");
+    const dernier = c[c.length - 1];
+    const vis = dernier ? Object.keys(instantaneSeance({ ...vue, prochaine: null, seance: { blocs: [{ ...composerSeance(entree()).blocs[0], contrats: [dernier.id] }] } }).quetes) : [];
+    check("les contrats qu'un bloc fait avancer passent en tête des quêtes visées", !dernier || vis[0] === `${dernier.id}|${dernier.periode}`, J(vis));
+  }
   check("relu tel quel ; illisible : null ; valeurs hors bornes écartées",
     J(lireInstantane(JSON.parse(J(avant)))) === J(avant) && lireInstantane(null) === null && lireInstantane([1]) === null
       && J(lireInstantane({ maitrise: { fsa: 140, quant: 50 }, revoir: -3, quetes: { a: 2, b: 0.5 } })) === J({ maitrise: { quant: 50 }, revoir: null, quetes: { b: 0.5 } }));

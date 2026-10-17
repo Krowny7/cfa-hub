@@ -55,11 +55,17 @@ export const budgetSuivant = (b: Budget): Budget | null => (b === 15 ? 30 : b ==
  */
 export type InstantaneSeance = { maitrise: Record<string, number>; revoir: number | null; quetes: Record<string, number> };
 
-/** Les quêtes visées au lancement, cinq au plus : la prochaine, puis les contrats du jour pas encore faits. */
+/**
+ * Les quêtes visées au lancement, cinq au plus : la prochaine, puis les
+ * contrats du jour pas encore faits, ceux qu'un bloc de la séance fait
+ * avancer d'abord.
+ */
 export const MAX_QUETES_VISEES = 5;
 
-export function instantaneSeance(v: Pick<VueCodex, "prochaine" | "contrats" | "cap" | "revoir">): InstantaneSeance {
-  const visees = [...(v.prochaine ? [v.prochaine.ligne] : []), ...v.contrats.map((c) => c.ligne).filter((l) => l.etat !== "terminee")].slice(0, MAX_QUETES_VISEES);
+export function instantaneSeance(v: Pick<VueCodex, "prochaine" | "contrats" | "cap" | "revoir"> & { seance?: Pick<VueSeance, "blocs"> | null }): InstantaneSeance {
+  const avances = new Set((v.seance?.blocs ?? []).flatMap((b) => b.contrats));
+  const contrats = v.contrats.map((c) => c.ligne).filter((l) => l.etat !== "terminee").sort((a, b) => Number(avances.has(b.id)) - Number(avances.has(a.id)));
+  const visees = [...(v.prochaine ? [v.prochaine.ligne] : []), ...contrats].filter((l, i, t) => t.findIndex((x) => x.id === l.id && x.periode === l.periode) === i).slice(0, MAX_QUETES_VISEES);
   return {
     maitrise: Object.fromEntries((v.cap?.matieres ?? []).flatMap((m) => (m.pct === null ? [] : [[m.cle, m.pct]]))),
     revoir: v.revoir?.aujourdhui ?? null,
