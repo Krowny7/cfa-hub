@@ -180,7 +180,7 @@ console.log("\n# les règles");
   const sous = (...faits: boolean[]): Ev => ({ fait: false, valeur: 0, cible: faits.length, atteint: null, sous: faits.map((f) => ({ fait: f, valeur: f ? 1 : 0, cible: 1, atteint: null })) });
   check("« Maître de FSA » sans évaluation : la maîtrise d'abord", destinationDe(maitre, {}, enRoute)?.href === "/practice?topic=fsa&format=180");
   check("… maîtrise faite : les notions (la fiche)", destinationDe(maitre, {}, enRoute, sous(true, false, false))?.href === "/fiches/financial-statement-analysis");
-  check("… maîtrise et notions faites : les ratures (repli : le carnet)", destinationDe(maitre, {}, enRoute, sous(true, true, false))?.href === "/moi?onglet=erreurs&reprise=1");
+  check("… maîtrise et notions faites : les ratures (« À revoir » ; sans la page, le carnet)", destinationDe(maitre, {}, enRoute, sous(true, true, false))?.href === "/revoir" && destinationDe(maitre, {}, sansRevoir, sous(true, true, false))?.href === "/moi?onglet=erreurs&reprise=1");
   // branches à une étape : la plus lourde qui ne l'a pas
   const drills = contenu.filter((m) => m.fiche && m.drill).sort((a, b) => b.poids - a.poids);
   const a2drill = quete("trame:a2:drill");

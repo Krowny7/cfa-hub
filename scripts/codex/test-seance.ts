@@ -5,6 +5,7 @@
 // Usage, depuis le dépôt : npx tsx --tsconfig tsconfig.json scripts/codex/test-seance.ts
 
 import { contenuDuProgramme } from "@/lib/codex/catalogue";
+import { ROUTES } from "@/lib/codex/destinations";
 import { maitriseDuCodex } from "@/lib/codex/cap";
 import { budgetDuJour, contexteDestination, evaluer, evaluerObjectifs, planifier, type Entree, type MesuresSql } from "@/lib/codex/moteur";
 import { CFA_L1 } from "@/lib/codex/programmes/cfa-l1";
@@ -90,7 +91,10 @@ console.log("\n# les règles des blocs");
   const peu = composerSeance(entree({ revoir: { ...revoir, aujourdhui: 4 } }));
   check("moins de 5 à revoir : pas de retouches", !genres(peu).includes("retouches"), J(genres(peu)));
   const r = composerSeance(entree({ phase: "consolidation", budget: 60 })).blocs.find((b) => b.genre === "retouches");
-  check("retouches : n = min(à revoir, budget restant), lien /revoir pris par son repli tant que la page manque", r?.n === 18 && r.duree === 18 && r.destination.href === "/moi?onglet=erreurs&reprise=1", J(r?.destination));
+  check("retouches : n = min(à revoir, budget restant), lien « À revoir » (/revoir?n=18)", r?.n === 18 && r.duree === 18 && r.destination.href === "/revoir?n=18", J(r?.destination));
+  const sansRevoir = { ...dest, routes: new Set([...ROUTES].filter((x) => x !== "/revoir")) };
+  const rr = composerSeance(entree({ phase: "consolidation", budget: 60, dest: sansRevoir })).blocs.find((b) => b.genre === "retouches");
+  check("… sans la page /revoir : son repli, le carnet", rr?.destination.href === "/moi?onglet=erreurs&reprise=1", J(rr?.destination));
   const v = composerSeance(entree({ phase: "veillee", joursAvant: 5, budget: 60, revoir: { ...revoir, aujourdhui: 25 } })).blocs.find((b) => b.genre === "retouches");
   check("veillée : retouches à 15 au plus", v?.n === 15, J(v?.n));
   const c = composerSeance(entree({ phase: "consolidation", budget: 60 })).blocs.find((b) => b.genre === "coince");
