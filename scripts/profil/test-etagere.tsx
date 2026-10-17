@@ -191,6 +191,8 @@ console.log("# L'écran « Mes pièces »");
   check("les quatre rayons, avec leur compte", ["Cadres", "Bannières", "Titres", "Folios"].every((t) => html.includes(t)) && html.includes(`${e.rayons[3].possedees}/${e.rayons[3].total}`));
   check("la pièce portée est dite « Portée »", html.includes("Portée"));
   check("les silhouettes sont grisées et disent comment les obtenir", html.includes("opacity-35 grayscale") && html.includes("Clore l&#x27;acte II"));
+  check("une silhouette donnée par le Codex : « Y aller » sur l'étagère même", html.includes(`href="${hrefQuete("acte:acte2")}"`) && html.includes("Y aller"));
+  check("pas de « Y aller » pour ce qu'on a déjà", !html.includes(`href="${hrefQuete("acte:acte1")}"`));
   // avant l'hydratation, on se compte en téléphone : au plus deux pièces possédées qui bougent ne sont pas figées
   const cartes = html.split("<li ").slice(1);
   const bougent = cartes.filter((c) => !c.includes("opacity-35") && (c.includes("vivant") || c.includes("dessine")) && !c.includes("fige"));

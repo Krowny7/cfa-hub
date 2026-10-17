@@ -201,25 +201,32 @@ function CartePiece({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; car
       <CarteFolio f={p.folio} />
     ) : null;
   return (
-    <button
-      type="button"
-      onClick={onOuvrir}
-      className="card-quiet flex h-full min-h-[44px] w-full flex-col gap-2 rounded-[14px] border-t-[3px] p-2.5 text-left"
-      style={{ borderTopColor: LISERE[p.rarete] }}
-      aria-label={`${p.nom}${p.portee ? `, ${T.portee.toLowerCase()}` : p.possedee ? "" : `, ${T.pasEncore.toLowerCase()} : ${p.obtention}`}`}
-    >
-      <span className={`block ${p.possedee ? "" : "opacity-35 grayscale"}`} aria-hidden>
-        {vignette}
-      </span>
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="line-clamp-2 text-[13.5px] font-semibold leading-snug">{p.nom}</span>
-        {p.portee ? (
-          <span className="t-micro font-semibold text-[var(--ink)]">{T.portee}</span>
-        ) : !p.possedee ? (
-          <span className="t-micro line-clamp-2">{p.obtention}</span>
-        ) : null}
-      </span>
-    </button>
+    <div className="card-quiet flex h-full flex-col rounded-[14px] border-t-[3px] hover:bg-[var(--surface)]" style={{ borderTopColor: LISERE[p.rarete] }}>
+      <button
+        type="button"
+        onClick={onOuvrir}
+        className="flex min-h-[44px] w-full flex-1 flex-col gap-2 rounded-[14px] p-2.5 text-left"
+        aria-label={`${p.nom}${p.portee ? `, ${T.portee.toLowerCase()}` : p.possedee ? "" : `, ${T.pasEncore.toLowerCase()} : ${p.obtention}`}`}
+      >
+        <span className={`block ${p.possedee ? "" : "opacity-35 grayscale"}`} aria-hidden>
+          {vignette}
+        </span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="line-clamp-2 text-[13.5px] font-semibold leading-snug">{p.nom}</span>
+          {p.portee ? (
+            <span className="t-micro font-semibold text-[var(--ink)]">{T.portee}</span>
+          ) : !p.possedee ? (
+            <span className="t-micro line-clamp-2">{p.obtention}</span>
+          ) : null}
+        </span>
+      </button>
+      {/* une silhouette qu'une quête du Codex donne : y aller tout de suite */}
+      {!p.possedee && p.allerA && (
+        <Link href={p.allerA} className="ink-link mx-2.5 mb-1 inline-flex min-h-[44px] w-fit items-center gap-1 text-[13px] font-semibold" aria-label={`${T.allerA} : ${p.nom}`}>
+          {T.allerA} <ArrowRight size={13} aria-hidden />
+        </Link>
+      )}
+    </div>
   );
 }
 
