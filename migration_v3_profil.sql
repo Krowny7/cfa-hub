@@ -69,7 +69,18 @@
 --    l'ancienne mesure (séances ciblées d'une seule matière, 5 questions au
 --    moins), qui garde seule le verrou des rangs : aucun rang ne bouge.
 --    Sans cette section, le site garde l'ancienne mesure partout.
--- La section suivante (débrief des blancs) s'ajoute à la suite.
+-- 5. Le débrief des examens blancs : sous chaque question ratée d'une copie
+--    (examen blanc, ou examen officiel du dossier « Mocks Officiels
+--    (Système) »), le joueur dit d'où vient l'erreur : savoir, lecture de
+--    l'énoncé, calcul, temps ou chance. Un toucher, modifiable, toujours
+--    permis (aucun délai). La table blanc_debrief ne s'écrit que par
+--    blanc_debrief_noter, qui refuse une question que le joueur n'a pas
+--    ratée dans cette copie ; chacun ne lit que ses lignes.
+--    blanc_debrief_lire rend l'état d'une copie (erreurs, classées,
+--    répartition, temps moyen par question) et mes_causes la répartition de
+--    tous les débriefs récents. Le Codex lit la table (quête « Le débrief »).
+--    Sans cette section, les boutons de cause restent masqués ; le temps par
+--    question s'affiche quand même.
 
 -- ── 1. le titre porté et le folio ─────────────────────────────────────
 ALTER TABLE profile_style ADD COLUMN IF NOT EXISTS titre text;
@@ -1563,3 +1574,240 @@ $$;
 
 REVOKE ALL ON FUNCTION maitrise_joueur(uuid, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION maitrise_joueur(uuid, text) TO service_role;
+
+-- ── 5. le débrief des examens blancs ──────────────────────────────────
+-- Une ligne par question ratée classée. La copie est désignée par sa source
+-- et sa référence : « blanc » → mock_exams.id (une copie par joueur) ;
+-- « officiel » → quiz_attempts.id d'un examen du dossier « Mocks Officiels
+-- (Système) ».
+CREATE TABLE IF NOT EXISTS blanc_debrief (
+  user_id     uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  source      text        NOT NULL CHECK (source IN ('blanc', 'officiel')),
+  ref         uuid        NOT NULL,
+  question_id uuid        NOT NULL,
+  cause       text        NOT NULL CHECK (cause IN ('savoir', 'lecture', 'calcul', 'temps', 'chance')),
+  note_le     timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, source, ref, question_id)
+);
+CREATE INDEX IF NOT EXISTS blanc_debrief_user_note ON blanc_debrief (user_id, note_le);
+
+-- chacun lit les siennes ; aucune écriture directe (blanc_debrief_noter seule)
+ALTER TABLE blanc_debrief ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS blanc_debrief_select_own ON blanc_debrief;
+CREATE POLICY blanc_debrief_select_own ON blanc_debrief FOR SELECT TO authenticated USING (auth.uid() = user_id);
+REVOKE ALL ON TABLE blanc_debrief FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE blanc_debrief FROM authenticated;
+GRANT SELECT ON TABLE blanc_debrief TO authenticated;
+
+-- Les questions ratées d'une copie du joueur (laissées sans réponse
+-- comprises, comme la correction du site) ; rien si la copie n'est pas la
+-- sienne.
+-- - Examen blanc : les questions de l'examen, d'après les réponses rendues
+--   (comme get_mock_exam_review).
+-- - Examen officiel joué en mode examen : les réponses gardées dans la copie.
+-- - Examen officiel joué en entier dans /qcm : la copie ne garde pas ses
+--   réponses, mais chaque erreur a été notée au carnet pendant le passage
+--   (noter_reponse) : ce sont les ratures de ce QCM ravivées entre le début
+--   et la fin du passage. Une erreur refaite plus tard sur la même question
+--   la date d'après : seul le dernier passage se débriefe alors pour elle.
+CREATE OR REPLACE FUNCTION _blanc_erreurs(p_user uuid, p_source text, p_ref uuid)
+RETURNS TABLE (question_id uuid)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_set     uuid;
+  v_answers jsonb;
+  v_at      timestamptz;
+  v_duree   int;
+BEGIN
+  IF p_user IS NULL OR p_ref IS NULL THEN
+    RETURN;
+  END IF;
+
+  IF p_source = 'blanc' THEN
+    IF to_regclass('public.mock_exam_results') IS NULL OR to_regclass('public.mock_exam_questions') IS NULL THEN
+      RETURN;
+    END IF;
+    SELECT r.answers INTO v_answers
+    FROM mock_exam_results r
+    WHERE r.exam_id = p_ref AND r.user_id = p_user AND jsonb_typeof(r.answers) = 'array';
+    IF v_answers IS NULL THEN
+      RETURN;
+    END IF;
+    RETURN QUERY
+      WITH donnees AS (
+        SELECT CASE WHEN e->>'question_id' ~* '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$' THEN (e->>'question_id')::uuid END AS qid,
+               CASE WHEN e->>'selected_index' ~ '^[0-9]{1,3}$' THEN (e->>'selected_index')::int END AS sel
+        FROM jsonb_array_elements(v_answers) AS e
+      )
+      SELECT meq.question_id
+      FROM mock_exam_questions meq
+      JOIN quiz_questions qq ON qq.id = meq.question_id
+      WHERE meq.exam_id = p_ref
+        AND NOT EXISTS (SELECT 1 FROM donnees d WHERE d.qid = qq.id AND d.sel = qq.correct_index);
+    RETURN;
+  END IF;
+
+  IF p_source = 'officiel' THEN
+    IF to_regclass('public.quiz_attempts') IS NULL OR to_regclass('public.library_folders') IS NULL THEN
+      RETURN;
+    END IF;
+    SELECT qa.set_id, qa.answers, qa.created_at, qa.duration_seconds INTO v_set, v_answers, v_at, v_duree
+    FROM quiz_attempts qa
+    JOIN quiz_sets qs ON qs.id = qa.set_id
+    JOIN library_folders lf ON lf.id = qs.folder_id AND lf.name = 'Mocks Officiels (Système)'
+    WHERE qa.id = p_ref AND qa.user_id = p_user;
+    IF v_set IS NULL THEN
+      RETURN;
+    END IF;
+    IF jsonb_typeof(v_answers) = 'array' THEN
+      RETURN QUERY
+        SELECT DISTINCT qq.id
+        FROM jsonb_array_elements(v_answers) AS e
+        JOIN quiz_questions qq
+          ON e->>'question_id' ~* '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$' AND qq.id = (e->>'question_id')::uuid
+        WHERE qq.set_id = v_set
+          AND (CASE WHEN e->>'selected_index' ~ '^[0-9]{1,3}$' THEN (e->>'selected_index')::int END) IS DISTINCT FROM qq.correct_index;
+    ELSIF to_regclass('public.ratures') IS NOT NULL AND v_at IS NOT NULL THEN
+      RETURN QUERY
+        SELECT r.question_id
+        FROM ratures r
+        JOIN quiz_questions qq ON qq.id = r.question_id AND qq.set_id = v_set
+        WHERE r.user_id = p_user
+          AND r.last_missed_at <= v_at + interval '1 minute'
+          AND r.last_missed_at >= v_at - make_interval(secs => coalesce(v_duree, 6 * 3600) + 300);
+    END IF;
+  END IF;
+END;
+$$;
+
+-- Classer une erreur, ou changer sa cause ; rend l'avancement de la copie.
+CREATE OR REPLACE FUNCTION blanc_debrief_noter(p_source text, p_ref uuid, p_question uuid, p_cause text)
+RETURNS json
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid      uuid := auth.uid();
+  v_erreurs  uuid[];
+  v_classees int;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF p_source IS NULL OR p_source NOT IN ('blanc', 'officiel') THEN
+    RAISE EXCEPTION 'Invalid source';
+  END IF;
+  IF p_cause IS NULL OR p_cause NOT IN ('savoir', 'lecture', 'calcul', 'temps', 'chance') THEN
+    RAISE EXCEPTION 'Invalid cause';
+  END IF;
+  SELECT coalesce(array_agg(DISTINCT e.question_id), '{}') INTO v_erreurs FROM _blanc_erreurs(v_uid, p_source, p_ref) e;
+  IF p_question IS NULL OR NOT (p_question = ANY (v_erreurs)) THEN
+    RAISE EXCEPTION 'Not a missed question';
+  END IF;
+
+  INSERT INTO blanc_debrief (user_id, source, ref, question_id, cause, note_le)
+  VALUES (v_uid, p_source, p_ref, p_question, p_cause, now())
+  ON CONFLICT (user_id, source, ref, question_id) DO UPDATE SET cause = excluded.cause, note_le = excluded.note_le;
+
+  SELECT count(*)::int INTO v_classees
+  FROM blanc_debrief d
+  WHERE d.user_id = v_uid AND d.source = p_source AND d.ref = p_ref AND d.question_id = ANY (v_erreurs);
+  RETURN json_build_object('erreurs', cardinality(v_erreurs), 'classees', v_classees);
+END;
+$$;
+
+-- L'état du débrief d'une copie : erreurs, classées, répartition par cause,
+-- la cause de chaque question classée, et le temps moyen par question
+-- (durée de la copie / questions ; null sans durée). NULL si la copie n'est
+-- pas celle du joueur.
+CREATE OR REPLACE FUNCTION blanc_debrief_lire(p_source text, p_ref uuid)
+RETURNS json
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid   uuid := auth.uid();
+  v_total int;
+  v_duree int;
+  v_res   json;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  IF p_source = 'blanc' AND to_regclass('public.mock_exam_results') IS NOT NULL THEN
+    SELECT r.total, r.duration_seconds INTO v_total, v_duree
+    FROM mock_exam_results r WHERE r.exam_id = p_ref AND r.user_id = v_uid;
+  ELSIF p_source = 'officiel' AND to_regclass('public.quiz_attempts') IS NOT NULL THEN
+    SELECT qa.total, qa.duration_seconds INTO v_total, v_duree
+    FROM quiz_attempts qa WHERE qa.id = p_ref AND qa.user_id = v_uid;
+  END IF;
+  IF v_total IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  WITH erreurs AS (
+    SELECT DISTINCT e.question_id FROM _blanc_erreurs(v_uid, p_source, p_ref) e
+  ),
+  notes AS (
+    SELECT d.question_id, d.cause
+    FROM blanc_debrief d JOIN erreurs e ON e.question_id = d.question_id
+    WHERE d.user_id = v_uid AND d.source = p_source AND d.ref = p_ref
+  )
+  SELECT json_build_object(
+           'erreurs', (SELECT count(*) FROM erreurs)::int,
+           'classees', (SELECT count(*) FROM notes)::int,
+           'causes', json_build_object(
+             'savoir', (SELECT count(*) FROM notes WHERE cause = 'savoir')::int,
+             'lecture', (SELECT count(*) FROM notes WHERE cause = 'lecture')::int,
+             'calcul', (SELECT count(*) FROM notes WHERE cause = 'calcul')::int,
+             'temps', (SELECT count(*) FROM notes WHERE cause = 'temps')::int,
+             'chance', (SELECT count(*) FROM notes WHERE cause = 'chance')::int),
+           'notes', coalesce((SELECT json_object_agg(question_id, cause) FROM notes), '{}'::json),
+           'secondesParQuestion', CASE WHEN v_total > 0 AND v_duree > 0 THEN round(v_duree::numeric / v_total)::int END)
+  INTO v_res;
+  RETURN v_res;
+END;
+$$;
+
+-- La répartition des causes de tous les débriefs des p_jours derniers jours
+-- (en %, arrondis), et leur nombre.
+CREATE OR REPLACE FUNCTION mes_causes(p_jours int DEFAULT 60)
+RETURNS json
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_depuis timestamptz := now() - make_interval(days => least(greatest(coalesce(p_jours, 60), 1), 365));
+  v_res    json;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  SELECT json_build_object(
+           'savoir', CASE WHEN x.n > 0 THEN round(100.0 * x.savoir / x.n)::int ELSE 0 END,
+           'lecture', CASE WHEN x.n > 0 THEN round(100.0 * x.lecture / x.n)::int ELSE 0 END,
+           'calcul', CASE WHEN x.n > 0 THEN round(100.0 * x.calcul / x.n)::int ELSE 0 END,
+           'temps', CASE WHEN x.n > 0 THEN round(100.0 * x.temps / x.n)::int ELSE 0 END,
+           'chance', CASE WHEN x.n > 0 THEN round(100.0 * x.chance / x.n)::int ELSE 0 END,
+           'n', x.n)
+  INTO v_res
+  FROM (
+    SELECT count(*)::int AS n,
+           count(*) FILTER (WHERE d.cause = 'savoir') AS savoir,
+           count(*) FILTER (WHERE d.cause = 'lecture') AS lecture,
+           count(*) FILTER (WHERE d.cause = 'calcul') AS calcul,
+           count(*) FILTER (WHERE d.cause = 'temps') AS temps,
+           count(*) FILTER (WHERE d.cause = 'chance') AS chance
+    FROM blanc_debrief d
+    WHERE d.user_id = v_uid AND d.note_le >= v_depuis
+  ) x;
+  RETURN v_res;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION _blanc_erreurs(uuid, text, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION blanc_debrief_noter(text, uuid, uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION blanc_debrief_lire(text, uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION mes_causes(int) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION blanc_debrief_noter(text, uuid, uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION blanc_debrief_lire(text, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION mes_causes(int) TO authenticated;
