@@ -145,15 +145,16 @@ export const normaliser = (s: string) =>
 /**
  * Les quêtes dont le titre ou la consigne contient tous les mots cherchés,
  * celles dont le titre les contient d'abord ; `n` au plus. Moins de deux
- * lettres : rien.
+ * lettres : rien. Le titre se lit sous ses deux noms : le titre clair et
+ * celui du catalogue (`titreCatalogue`, Codex simplifié §4).
  */
-export function chercher<T extends { titre: string; consigne?: string }>(items: readonly T[], texte: string, n = 8): T[] {
+export function chercher<T extends { titre: string; titreCatalogue?: string; consigne?: string }>(items: readonly T[], texte: string, n = 8): T[] {
   const mots = normaliser(texte).split(/\s+/).filter(Boolean);
   if (mots.join("").length < 2) return [];
   const dansTitre: T[] = [];
   const dansConsigne: T[] = [];
   for (const it of items) {
-    const t = normaliser(it.titre);
+    const t = normaliser(it.titreCatalogue ? `${it.titre} ${it.titreCatalogue}` : it.titre);
     if (mots.every((m) => t.includes(m))) dansTitre.push(it);
     else if (mots.every((m) => (t + " " + normaliser(it.consigne ?? "")).includes(m))) dansConsigne.push(it);
   }

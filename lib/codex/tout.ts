@@ -278,6 +278,7 @@ export function plusDetail(l: LigneQuete, vue: Pick<VueCodex, "longCours" | "bra
     if (i >= 0) out.push(`Matière ${b.contenu.court} · étape ${i + 1} sur ${v.length}`);
   }
   const a = l.famille === "trame" ? vue.trame.find((x) => x.quetes.some((q) => q.id === l.id)) : undefined;
+  // le titre de l'acte est déjà clair : la vue le lit dans lib/codex/titres-clairs
   if (a) out.push(`${a.acte.titre} · ${avanceeActe(a)}`);
   if (l.compteeAvec) out.push(`Comptée avec « ${l.compteeAvec.titre} » : une seule récompense pour les deux.`);
   if (l.etat === "terminee" && l.termineeLe) out.push(l.retro ? `Déjà acquise avant le ${jourLong(l.termineeLe)}` : `Faite le ${jourLong(l.termineeLe)}`);

@@ -129,7 +129,8 @@ export function ToutLeCodex({
                 {T.matieres} <span className={s.val}>{resumeMatieres(vue.branches)}</span>
               </summary>
               <div className={s.pliCorps}>
-                {matieres.map((m) => ligne(m.etape, { sous: [m.b.contenu.court, texteGain(m.gain)].filter(Boolean).join(" · ") }))}
+                {/* le titre clair nomme déjà la matière (« FSA à 60 % de maîtrise ») : le sous-titre ne la répète pas */}
+                {matieres.map((m) => ligne(m.etape, { sous: [m.etape.titre.includes(m.b.contenu.court) ? null : m.b.contenu.court, texteGain(m.gain)].filter(Boolean).join(" · ") }))}
                 {matieresFinies(vue.branches) > 0 && <p className="t-micro m-0">{T.matieresFinies(matieresFinies(vue.branches))}</p>}
               </div>
             </details>

@@ -26,7 +26,7 @@ import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-faibles-data";
 import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
-  LECTURE_VIDE, actesClosDe, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, emplacementsDe, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, lireActivite, lireMetaCodex, phaseJoueur, planifier, recommander, remplacantContrat, tirerContrats,
+  LECTURE_VIDE, actesClosDe, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, emplacementsDe, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, lireActivite, lireMetaCodex, parametresDe, phaseJoueur, planifier, recommander, remplacantContrat, tirerContrats,
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
@@ -38,6 +38,7 @@ import { maitriseDuCodex } from "@/lib/codex/cap";
 import { cochesValides, lireMalle, momentCalme, momentDe, pinceauPose } from "@/lib/codex/calendrier";
 import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import { lireSobre } from "@/lib/codex/sobre";
+import { nomActe, titreClair } from "@/lib/codex/titres-clairs";
 import { MAX_RECUPERER, cleRecuperer, familleDe, titreHorsVue, TEXTES_RECUPERER, type ARecuperer } from "@/lib/codex/recuperer";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 import { bandesValides, vueRythme } from "@/lib/codex/rythme";
@@ -542,8 +543,9 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       }
       const w = (error ? null : data) as { recompenses?: { quete: string; periode: string; xp: number; nominal: number; cosmetique: string | null; titre: string | null; retro: boolean }[]; retro?: VueCodex["retro"] } | null;
       retro = w?.retro ?? null;
-      const titres = new Map(resultat.etats.map((s) => [s.quete.id, s.quete.titre]));
-      for (const x of actesDuJoueur(entree)) titres.set(`acte:${x.id}`, x.titre);
+      // les titres clairs (Codex simplifié §4), comme la vue
+      const titres = new Map(resultat.etats.map((s) => [s.quete.id, titreClair(s.quete, { params: parametresDe(entree, s), contenu: entree.contenu })]));
+      for (const x of actesDuJoueur(entree)) titres.set(`acte:${x.id}`, nomActe(x));
       nouvelles = (w?.recompenses ?? []).filter((x) => !x.retro).map((x) => ({ quete: x.quete, periode: x.periode, xp: x.xp, nominal: x.nominal, cosmetique: x.cosmetique, titre: x.titre, titreQuete: titres.get(x.quete) ?? x.quete }));
       // le lot est écrit : le rattrapage est fait, son marqueur peut avancer (V3 §1.9)
       if (!error && resultat.capacitesVues) await ecrireCapacitesVues(a, user, reglage.ou, resultat.capacitesVues);

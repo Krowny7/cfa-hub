@@ -69,11 +69,15 @@ let QUETES: Promise<{ quetes: QueteCherchee[]; chercher: (items: QueteCherchee[]
 
 /** Les quêtes qu'on peut chercher (trame, branches, long cours, exploits visibles), chargées une fois. */
 function quetesDuCodex() {
-  QUETES ??= Promise.all([import("@/lib/codex/catalogue"), import("@/lib/codex/carte")]).then(([cat, carte]) => ({
+  // le titre clair s'affiche ; la recherche lit aussi celui du catalogue (Codex simplifié §4)
+  QUETES ??= Promise.all([import("@/lib/codex/catalogue"), import("@/lib/codex/carte"), import("@/lib/codex/titres-clairs")]).then(([cat, carte, clairs]) => ({
     quetes: cat
       .catalogueCodex()
       .filter((q) => !q.retiree && ["trame", "branche", "longcours", "exploit"].includes(q.famille) && (q.visibilite === "visible" || q.visibilite === "ouverte"))
-      .map((q) => ({ id: q.id, titre: q.titre, consigne: q.consigne })),
+      .map((q) => {
+        const titre = clairs.titreClair(q);
+        return { id: q.id, titre, ...(titre !== q.titre ? { titreCatalogue: q.titre } : {}), consigne: q.consigne };
+      }),
     chercher: carte.chercher,
   }));
   return QUETES;

@@ -492,7 +492,7 @@ console.log("\n# v3 §8 : le catalogue taillé (retraits, miroirs, actes I et V,
     check("« Un mois d'encre » rempli avant l'acte IV : tamponné sans XP, la chaîne continue", item?.etat === "terminee" && item.xp === 0 && !item.cosmetique && ouverte(r, "longcours:encre:3") && !ouverte(r, "trame:a4:semaines"), JSON.stringify(item));
     const v = construireVue(e2, r, null, { devoile: null });
     const l = v.longCours.find((c) => c.chaine.id === "encre")?.paliers.find((x) => x.id === "longcours:encre:2");
-    check("la vue : le miroir ne vise aucune XP et dit avec quoi il compte", l?.xp === 0 && l.compteeAvec?.id === "trame:a4:semaines" && l.compteeAvec.titre === "Un mois d'atelier", `${l?.xp} ${JSON.stringify(l?.compteeAvec)}`);
+    check("la vue : le miroir ne vise aucune XP et dit avec quoi il compte", l?.xp === 0 && l.compteeAvec?.id === "trame:a4:semaines" && l.compteeAvec.titre === "4 semaines à 4 jours d'encre", `${l?.xp} ${JSON.stringify(l?.compteeAvec)}`);
   }
   {
     // la payeuse tombe : le miroir se tamponne avec elle, elle seule paie ; un miroir déjà payé n'est pas repris

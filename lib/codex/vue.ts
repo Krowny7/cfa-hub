@@ -16,6 +16,7 @@ import type { VueRythme } from "@/lib/codex/rythme";
 import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
 import { notionsDeMatiere } from "@/lib/notions";
 import { CODEX, romain } from "@/lib/voice-codex";
+import { POURQUOI_FIL, TITRES_CHAINES, TITRES_CHAPITRES_FIL, butActe, enigmeClaire, nomActe, pourquoiClair, titreActe, titreClair } from "@/lib/codex/titres-clairs";
 import { FAIT_VIDE, aRecupererDe, cleRecuperer, faitAujourdhuiDe, nomRecompense, titreHorsVue, type ARecuperer, type FaitAujourdhui } from "@/lib/codex/recuperer";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
@@ -26,7 +27,10 @@ export type LigneQuete = {
   id: string;
   periode: string;
   famille: Famille;
+  /** le titre clair (lib/codex/titres-clairs : l'action, 40 caractères au plus) ; repli : celui du catalogue */
   titre: string;
+  /** le titre du catalogue, quand il diffère : la recherche de la carte lit les deux noms */
+  titreCatalogue?: string;
   consigne: string;
   pourquoi?: string;
   etat: EtatLigne;
@@ -222,8 +226,12 @@ function nomDe(cle: string): string | undefined {
  * Une quête telle que l'écran l'affiche. `dest` : le contexte du résolveur et
  * les paramètres (contrat) ; sans lui, pas de destination (aperçus, tests).
  */
-export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params: ContratTire["params"] }): LigneQuete {
+export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params: ContratTire["params"]; contenu?: ContenuMatiere[] }): LigneQuete {
   const q = s.quete;
+  // le titre clair (Codex simplifié §4) : l'action ; un exploit garde son nom, son énigme se lit en clair
+  const titre = titreClair(q, { params: dest?.params, contenu: dest?.contenu });
+  const pourquoi = pourquoiClair(q, { contenu: dest?.contenu }) ?? q.pourquoi;
+  const indice = q.famille === "exploit" ? enigmeClaire(q) : (q.indice ?? null);
   const l = s.ligne;
   const ev = s.ev;
   const ouverte = s.ouverte && !s.fait && affichage(s) === "complet";
@@ -234,12 +242,13 @@ export function ligneDe(s: EtatQuete, dest?: { ctx: ContexteDestination; params:
     id: q.id,
     periode: s.periode,
     famille: q.famille,
-    titre: q.titre,
+    titre,
+    ...(titre !== q.titre ? { titreCatalogue: q.titre } : {}),
     consigne: q.consigne,
-    ...(q.pourquoi ? { pourquoi: q.pourquoi } : {}),
+    ...(pourquoi ? { pourquoi } : {}),
     etat: s.fait ? "terminee" : s.ouverte ? (valeur > 0 ? "active" : "disponible") : "verrouillee",
     affichage: affichage(s),
-    ...(q.indice ? { indice: q.indice } : {}),
+    ...(indice ? { indice } : {}),
     valeur,
     cible,
     fraction: s.fait ? 1 : cible ? Math.max(0, Math.min(1, valeur / cible)) : 0,
@@ -345,7 +354,7 @@ export function manqueDe(
         const s = etatDe(p.id);
         if (!s || s.fait || s.horsJeu || (p.souple && !o.apres)) break;
         allume.push(p.id);
-        manque.push(`D'abord : « ${s.quete.titre} »`);
+        manque.push(`D'abord : « ${titreClair(s.quete, { contenu })} »`);
         break;
       }
       case "acte": {
@@ -394,13 +403,13 @@ export function construireVue(
 ): VueCodex {
   const contenu = e.contenu ?? contenuDuProgramme();
   const ctx = contexteDestination(e, r);
-  // un miroir dit avec quelle quête il compte (V3 §8.2)
-  const titres = new Map(r.etats.map((s) => [s.quete.id, s.quete.titre]));
+  // un miroir dit avec quelle quête il compte (V3 §8.2) ; le titre clair (Codex simplifié §4)
+  const titres = new Map(r.etats.map((s) => [s.quete.id, titreClair(s.quete, { params: parametresDe(e, s), contenu })]));
   // une quête verrouillée dit ce qui lui manque et allume ses prérequis (V3 §10.1)
   const apres = apresExamenDe(e);
   const joursAvant = joursAvantExamen(e.jour, e.jourJ);
   const ligne = (s: EtatQuete): LigneQuete => {
-    const l = ligneDe(s, { ctx, params: parametresDe(e, s) });
+    const l = ligneDe(s, { ctx, params: parametresDe(e, s), contenu });
     const titre = s.quete.miroir ? titres.get(s.quete.miroir) : undefined;
     const avec = s.quete.miroir && titre ? { ...l, compteeAvec: { id: s.quete.miroir, titre } } : l;
     if (avec.etat !== "verrouillee" || avec.affichage === "cache" || avec.affichage === "indice") return avec;
@@ -422,7 +431,9 @@ export function construireVue(
     const n = a.closAvec ? Math.min(a.closAvec.n, quetes.filter((x) => !x.gelee).length) : null;
     const faites = n !== null ? Math.min(n, quetes.filter((x) => x.etat === "terminee").length) : comptees.filter((x) => x.etat === "terminee").length;
     const aRattraper = aRattraperDe(r.etats.filter((s) => s.quete.famille === "trame" && s.quete.acte === a.id).map((s) => s.quete), r, contenu);
-    return { acte: a, clos, courant: r.acteCourant?.id === a.id, faites, total: n ?? comptees.length, quetes, replique: clos ? a.cloture : a.ouverture, aFeter, aRattraper };
+    // l'acte se lit en clair (titre et but, Codex simplifié §4) : l'écran affiche ce qu'il reçoit
+    const acte = { ...a, titre: titreActe(a), but: butActe(a) };
+    return { acte, clos, courant: r.acteCourant?.id === a.id, faites, total: n ?? comptees.length, quetes, replique: clos ? a.cloture : a.ouverture, aFeter, aRattraper };
   });
 
   const contrats: VueContrat[] = r.contrats
@@ -473,7 +484,7 @@ export function construireVue(
   const longCours: VueChaine[] = CHAINES.map((c) => {
     const paliers = unique.filter((x) => x.s.quete.chaine === c.id).sort((p, q) => (p.s.quete.palier ?? 0) - (q.s.quete.palier ?? 0)).map((x) => x.l);
     const faits = paliers.filter((x) => x.etat === "terminee").length;
-    return { chaine: c, paliers, faits, courant: paliers.find((x) => x.etat !== "terminee") ?? null, suivant: paliers.filter((x) => x.etat !== "terminee")[1] ?? null };
+    return { chaine: { ...c, titre: TITRES_CHAINES[c.id] ?? c.titre }, paliers, faits, courant: paliers.find((x) => x.etat !== "terminee") ?? null, suivant: paliers.filter((x) => x.etat !== "terminee")[1] ?? null };
   }).filter((c) => c.paliers.length > 0);
 
   // le fil rouge : par chapitre, le premier palier pas encore fait (sans la capacité « fil », rien n'est écrit : « à venir »)
@@ -490,7 +501,7 @@ export function construireVue(
       const restants = paliers.filter((x) => x.etat !== "terminee");
       // tamponnés : ceux de la base, et ceux que ce calcul vient de remplir (écrits avec lui) ; « à venir » : la base seule
       const faits = Math.max(recompenses[c.id] ?? 0, ...(aVenir ? [] : paliers.filter((x) => x.etat === "terminee").map((x) => x.palier ?? 0)));
-      return { id: c.id, titre: c.titre, pourquoi: c.pourquoi, faits, courant: restants[0] ?? null, suivant: restants[1] ?? null, recents: paliers.filter((x) => x.aFeter) };
+      return { id: c.id, titre: TITRES_CHAPITRES_FIL[c.id] ?? c.titre, pourquoi: POURQUOI_FIL[c.id] ?? c.pourquoi, faits, courant: restants[0] ?? null, suivant: restants[1] ?? null, recents: paliers.filter((x) => x.aFeter) };
     }),
   };
 
@@ -521,7 +532,7 @@ export function construireVue(
   const ligneReco = reco ? lignes.find((x) => x.s.quete.id === reco.quete.id && x.s.periode === reco.periode)?.l : null;
 
   // « Récupérer » : ce qui attend le clic, et ce qui est fait aujourd'hui (un miroir compte avec sa quête payeuse)
-  const titresActes = new Map(actesDuJoueur(e).map((a) => [`acte:${a.id}`, a.titre]));
+  const titresActes = new Map(actesDuJoueur(e).map((a) => [`acte:${a.id}`, nomActe(a)]));
   const miroirs = new Set(r.etats.filter((s) => s.quete.miroir).map((s) => s.quete.id));
   const titreDe = (id: string) => titres.get(id) ?? titresActes.get(id) ?? titreHorsVue(id);
   const recompenseDe = (cle: string | null) => {
