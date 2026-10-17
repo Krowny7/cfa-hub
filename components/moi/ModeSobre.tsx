@@ -35,7 +35,7 @@ export function ModeSobre({ initial }: { initial: boolean }) {
       <button type="button" role="switch" aria-checked={sobre} onClick={basculer} disabled={pending} className="flex min-h-[44px] w-full items-center gap-4 py-3 text-left">
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold">Mode sobre</span>
-          <span className="t-micro mt-0.5 block">Moins de fêtes : sans « +XP », sans pièces ni passages de Léonard. La séance du jour, le panneau et tes contrats restent.</span>
+          <span className="t-micro mt-0.5 block">Dans le Codex : moins de fêtes, ni « +XP » ni pièces ; Léonard ne passe plus. La séance du jour, le panneau et tes contrats restent.</span>
         </span>
         <span aria-hidden className={"switch" + (sobre ? " is-on" : "")} />
       </button>
