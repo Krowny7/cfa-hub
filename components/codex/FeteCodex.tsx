@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { habitFete, tailleFete, type BilanCodex } from "@/lib/codex/bilan";
-import { codexPoint, codexRetroVue, codexSeanceBudget, codexSeanceFinir, codexVus } from "@/lib/codex/actions";
-import { EVENEMENT_CODEX_POINT } from "@/lib/codex/panneau";
+import type { BilanCodex } from "@/lib/codex/bilan";
+import { codexPoint, codexRetroVue, codexSeanceBudget, codexSeanceFinir } from "@/lib/codex/actions";
+import { EVENEMENT_CODEX_POINT, cheminDe } from "@/lib/codex/panneau";
+import { TEXTES_RECUPERER } from "@/lib/codex/recuperer";
 import { budgetSuivant } from "@/lib/codex/seance-etat";
 import { signalerLeonard } from "@/lib/leonard/signal";
 import { resteCeremonie } from "@/lib/ceremonie-en-cours";
 import { CODEX } from "@/lib/voice-codex";
 import { Sceau } from "@/components/codex/Sceau";
+import { Recuperer } from "@/components/codex/Recuperer";
 import { annoncerDevoile } from "@/components/codex/annoncer";
 import { FinDeSeance } from "@/components/codex/SeanceDuJour";
 import { marqueIci, noterSeanceIci, poserMarqueIci } from "@/components/codex/seance-ici";
@@ -19,21 +20,18 @@ import e from "./Encre.module.css";
 import s from "./Codex.module.css";
 
 // La petite cérémonie du Codex, posée là où le joueur est : en fin de séance
-// (CeremonieSceaux l'appelle), sur l'accueil et sur /codex. Elle fête les
-// quêtes tamponnées avec les quatre tailles de fête (components/fete, V3
-// §3.10 ; tailleFete) : une ligne pour un contrat ou une étape, une carte
-// pour un jalon (le tampon tombe sur la quête si la carte du Codex est à
-// l'écran), une page qui se tourne pour un acte clos (Léonard y dit la
-// réplique de l'acte qui s'ouvre), le plein cadre pour « Maître de… » ou le
-// chef-d'œuvre. Trois fêtes au plus, l'une après l'autre ; en mode sobre,
-// des lignes sans XP ni pièce. Puis « Léonard a feuilleté ton carnet » pour
-// les comptes existants, une seule fois. Chaque fanfare n'est jouée qu'une
-// fois (codexVus).
+// (CeremonieSceaux l'appelle), sur l'accueil et sur /codex. Plus aucune fête
+// automatique (Codex simplifié) : les quêtes faites attendent « Récupérer »,
+// et leurs grandes fêtes se jouent au clic (components/codex/Recuperer).
 //
-// En fin d'outil, si ce dernier bloc vient de tenir la séance du jour : « Ce
-// que ça a fait avancer » (V3 §6.5), une fois par jour, avec « C'est assez
-// pour aujourd'hui » ou « Encore un bloc ? ». Après chaque point, l'événement
-// rl:codex-point dit à la pastille de la barre du haut de relire la séance.
+// En fin d'outil : une ligne « 2 quêtes faites · Récupérer +60 XP » (bouton
+// contour, tampon compris), puis « La suite : … → », l'étape suivante de la
+// séance du jour. Si ce dernier bloc vient de tenir la séance : « Ce que ça
+// a fait avancer » (V3 §6.5), une fois par jour, avec « C'est assez pour
+// aujourd'hui » ou « Encore un bloc ? ». Après chaque point, l'événement
+// rl:codex-point dit à la barre du haut de relire le panneau.
+// Partout : « Léonard a feuilleté ton carnet » pour les comptes existants,
+// une seule fois (le rétroactif garde sa cérémonie), et le dévoilement.
 //
 // `initial` : le bilan déjà lu côté serveur (accueil, /codex). Sans lui
 // (fin de séance), le composant demande le point au serveur après `attenteMs`,
@@ -42,26 +40,6 @@ import s from "./Codex.module.css";
 // `demo` : aperçus, aucune action serveur.
 
 const ATTENTE_PAR_DEFAUT = 1800;
-/** Au plus trois fêtes jouées l'une après l'autre ; la dernière dit combien d'autres quêtes sont tamponnées. */
-export const MAX_FETES = 3;
-/** Le temps que l'écran se pose avant la première fête (ms). */
-const AVANT_FETE = 600;
-
-// la fête elle-même : chargée au moment de fêter (elle tire le catalogue des pièces), jamais rendue côté serveur
-const Fete = dynamic(() => import("@/components/fete/Fete").then((m) => m.Fete), { ssr: false });
-
-/** La position de la quête sur la carte du Codex (data-quete), si elle est à l'écran : le tampon y tombe. */
-function ancreDe(quete: string): { x: number; y: number } | null {
-  try {
-    const el = document.querySelector(`[data-quete="${CSS.escape(quete)}"]`);
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    if (!r.width || r.bottom < 0 || r.right < 0 || r.top > window.innerHeight || r.left > window.innerWidth) return null;
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  } catch {
-    return null;
-  }
-}
 
 export function FeteCodex({
   initial,
@@ -80,9 +58,6 @@ export function FeteCodex({
   const [retroVue, setRetroVue] = useState(false);
   const [finVue, setFinVue] = useState(false);
   const [occupe, setOccupe] = useState(false);
-  const joue = useRef(false);
-  // la fête jouée : -1 avant la première, puis son rang parmi celles qu'on joue
-  const [tour, setTour] = useState(-1);
 
   // le point au serveur : fin de séance (rien en main), ou écrire le dévoilement
   useEffect(() => {
@@ -122,36 +97,11 @@ export function FeteCodex({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetes = bilan?.fetes ?? [];
-  const acte = bilan?.acteNouveau ?? null;
-  const aFeter = fetes.length > 0;
   const sobre = !!bilan?.sobre;
-  const jouees = fetes.slice(0, MAX_FETES);
-
-  // la fanfare : les fêtes l'une après l'autre (après une cérémonie en cours), Léonard, puis « vu » côté serveur
-  useEffect(() => {
-    if (!bilan || !aFeter || joue.current) return;
-    joue.current = true;
-    const premier = fetes[0];
-    const depart = window.setTimeout(() => setTour(0), resteCeremonie() + AVANT_FETE);
-    // la réplique de l'acte qui s'ouvre est dite sur la page qui se tourne ; sinon, Léonard passe la dire
-    const surLaPage = !!acte && !!habitFete(premier, { sobre, acte, autres: 0 }).replique;
-    if (acte && !surLaPage) {
-      signalerLeonard({ evt: "acte-nouveau", replique: acte.replique, delai: 2200 }, `acte:${acte.id}`);
-    } else if (!acte) {
-      signalerLeonard({ evt: "quete-faite", delai: 2200 }, `quete:${premier.quete}:${premier.periode}`);
-    }
-    const vus = demo
-      ? null
-      : window.setTimeout(() => {
-          codexVus(fetes.map((f) => f.quete)).catch(() => undefined);
-        }, 1500);
-    return () => {
-      window.clearTimeout(depart);
-      if (vus !== null) window.clearTimeout(vus);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bilan]);
+  // en fin d'outil seulement (l'accueil et /codex ont leur place pour « Récupérer ») : ce qui attend le clic, et la
+  // suite, sauf si l'on y est déjà (sans `initial`, le bilan n'arrive qu'au navigateur : window est là)
+  const aRecuperer = !initial ? (bilan?.aRecuperer ?? []) : [];
+  const suite = !initial && bilan?.suite && cheminDe(bilan.suite.href) !== cheminDe(window.location.pathname) ? bilan.suite : null;
 
   const retro = bilan?.retro && !retroVue ? bilan.retro : null;
   useEffect(() => {
@@ -168,8 +118,8 @@ export function FeteCodex({
     if (!finSeance) return;
     setOccupe(true);
     if (!demo) poserMarqueIci("fetee", finSeance.jour);
-    const suite = encore ? budgetSuivant(finSeance.budget) : null;
-    const geste = demo ? Promise.resolve(null) : suite ? codexSeanceBudget(suite) : codexSeanceFinir();
+    const plus = encore ? budgetSuivant(finSeance.budget) : null;
+    const geste = demo ? Promise.resolve(null) : plus ? codexSeanceBudget(plus) : codexSeanceFinir();
     void geste
       .then((r) => {
         if (!demo && !encore && (!r?.ok || !("gardee" in r) || !r.gardee)) noterSeanceIci(finSeance.jour, "finie");
@@ -186,22 +136,20 @@ export function FeteCodex({
       });
   };
 
-  const enCours = tour >= 0 && tour < jouees.length ? jouees[tour] : null;
-  if (!enCours && !retro && !finSeance) return null;
-  // la fête se pose par-dessus la page (position fixe) : elle ne prend aucune place dans la colonne
-  const fete = enCours && (
-    <Fete
-      key={enCours.quete + enCours.periode}
-      {...habitFete(enCours, { sobre, acte, autres: tour === jouees.length - 1 ? fetes.length - jouees.length : 0 })}
-      ancre={tailleFete(enCours) === "carte" && !sobre ? ancreDe(enCours.quete) : null}
-      onFin={() => setTour((t) => t + 1)}
-    />
-  );
-  if (!retro && !finSeance) return fete;
+  if (!aRecuperer.length && !suite && !retro && !finSeance) return null;
 
   return (
     <div className={"flex flex-col gap-3 " + className}>
-      {fete}
+      {(aRecuperer.length > 0 || suite) && (
+        <section aria-label={CODEX.nom} className="card-quiet flex flex-col gap-1 px-4 py-2">
+          {aRecuperer.length > 0 && bilan && <Recuperer variante="ligne" items={aRecuperer} jour={bilan.jour ?? ""} fait={bilan.fait} sobre={sobre} demo={demo} />}
+          {suite && (
+            <Link href={suite.href} className="t-small rl-press inline-flex min-h-[44px] w-fit items-center gap-1">
+              {TEXTES_RECUPERER.suite(suite.titre)} <ArrowRight size={16} aria-hidden />
+            </Link>
+          )}
+        </section>
+      )}
       {finSeance && (
         <section aria-label="La séance du jour" className={`${s.fete} ${e.carnet}`}>
           <div className="min-w-0 flex-1">

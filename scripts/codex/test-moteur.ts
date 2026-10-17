@@ -855,7 +855,9 @@ console.log("\n# v3 §3.10 et §11.5 : les tailles de fête, le mode sobre (A9)"
   check("le mode sobre garde la séance, les quêtes du panneau, le cap et les contrats", J(panneauDe(vs).quetes) === J(panneauDe(vn).quetes) && J(panneauDe(vs).seance) === J(panneauDe(vn).seance) && J(vs.contrats) === J(vn.contrats) && J(vs.cap) === J(vn.cap) && J(vs.seance) === J(vn.seance));
   // les écrans : la fête branchée sur components/fete, l'XP rangée en mode sobre
   const fete = readFileSync("components/codex/FeteCodex.tsx", "utf8");
-  check("FeteCodex joue les quatre tailles (components/fete, chargée à la demande), trois au plus", fete.includes('import("@/components/fete/Fete")') && fete.includes("ssr: false") && fete.includes("habitFete(enCours") && fete.includes("MAX_FETES = 3"));
+  // Codex simplifié : plus de fête automatique, les grandes fêtes se jouent au clic « Récupérer » (scripts/codex/test-recuperer.ts)
+  const recuperer = readFileSync("components/codex/Recuperer.tsx", "utf8");
+  check("les fêtes jouées au clic « Récupérer » (components/fete, chargée à la demande), une par une", !fete.includes("habitFete(") && recuperer.includes('import("@/components/fete/Fete")') && recuperer.includes("ssr: false") && recuperer.includes("habitFete(fete"));
   const detail = readFileSync("components/codex/DetailQuete.tsx", "utf8");
   const carte = readFileSync("components/codex/CarteCodex.tsx", "utf8");
   check("mode sobre : le détail d'une quête sans récompense, le trio sans XP, le tampon ancré sur la carte (data-quete)", detail.includes("const recompense = sobre ? []") && carte.includes("vue.sobre ? CODEX.contrats.trioFaitSobre") && carte.includes("data-quete={nd.cle}"));

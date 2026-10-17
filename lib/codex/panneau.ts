@@ -204,7 +204,7 @@ export function seancePanneau(s: VueSeance | null): Panneau["seance"] {
 export const EVENEMENT_CODEX_POINT = "rl:codex-point";
 
 /** Le chemin d'un lien, sans la requête ni l'ancre (« /practice?topic=fsa » → « /practice »). */
-const cheminDe = (href: string) => href.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+export const cheminDe = (href: string) => href.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
 
 /**
  * La pastille « Séance 2/3 · Continuer → » de la barre du haut (V3 §6.4) :

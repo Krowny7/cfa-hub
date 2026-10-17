@@ -6,6 +6,7 @@ import { lireCodex } from "@/lib/codex/serveur";
 import { CODEX } from "@/lib/voice-codex";
 import { CodexEcran } from "@/components/codex/CodexEcran";
 import { FeteCodex } from "@/components/codex/FeteCodex";
+import { Recuperer } from "@/components/codex/Recuperer";
 
 // Le Codex : la carte de ce qu'il y a à faire (quêtes, contrats du jour,
 // branches de matière, long cours, exploits). Le calcul est fait côté serveur
@@ -41,6 +42,8 @@ export default async function CodexPage({ searchParams }: { searchParams?: Promi
     <>
       <div className="rl-wide">
         <FeteCodex initial={bilan} persister={!!vue.devoile?.change} className="mb-4" />
+        {/* « Récupérer » : les quêtes faites qui attendent le clic (le segment « Aujourd'hui » l'accueillera) */}
+        <Recuperer items={vue.aRecuperer} jour={vue.jour} fait={vue.faitAujourdhui} sobre={vue.sobre} className="mx-auto mb-4 max-w-[660px]" />
       </div>
       <CodexEcran vue={vue} segment={sp.vue} quete={sp.quete} />
     </>
