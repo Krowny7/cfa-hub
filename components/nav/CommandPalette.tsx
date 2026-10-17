@@ -193,7 +193,7 @@ export function CommandPalette() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Aller à une page, une fiche, un cours…"
+                placeholder="Aller à une page, une fiche, un cours, une quête…"
                 className="h-[56px] w-full bg-transparent text-[16px] outline-none placeholder:text-muted"
                 aria-label="Rechercher"
               />
