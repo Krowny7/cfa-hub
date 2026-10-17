@@ -6,6 +6,7 @@ import { COMMANDES, CIBLES_SEMAINE, type Commande, type ContenuMatiere, type Sem
 import { maitriseLue } from "@/lib/codex/cap";
 import { evaluerObjectifs, lundiDe, maitriseDe, objectifsPlan, repriseDuJour, semaineEntamee, type Entree, type ResultatCompteur } from "@/lib/codex/moteur";
 import { programmeActif } from "@/lib/codex/programmes";
+import { resumeSemaine } from "@/lib/codex/titres-clairs";
 import { commandesPossibles, jalonsDe, matiereBanquier, planDe, sessionDe, type Bande, type Plan, type Verdict } from "@/lib/codex/plan";
 import type { Moment } from "@/lib/codex/calendrier";
 import type { Capacites } from "@/lib/codex/types";
@@ -82,7 +83,7 @@ export function vueRythme(
   // (calculer() relit les lignes après l'écriture du lot : un contrat payé à ce calcul y est)
   const lundiVue: VueLundi | null =
     o.semaineDispo && !choisie && !calme && !semaineEntamee(e.progression, lundi) && (e.lecture.mesures.jours ?? []).some((j) => j.n > 0)
-      ? { lundi, ...relue(e, contenu, lundi), cibles: [...CIBLES_SEMAINE], commandes: COMMANDES.filter((c) => possibles.includes(c.id)).map(({ id, nom, resume }) => ({ id, nom, resume })) }
+      ? { lundi, ...relue(e, contenu, lundi), cibles: [...CIBLES_SEMAINE], commandes: COMMANDES.filter((c) => possibles.includes(c.id)).map(({ id, nom, resume }) => ({ id, nom, resume: resumeSemaine({ id, resume }) })) }
       : null;
   const session = e.jourJ ? sessionDe(e.jourJ) : null;
   // le verdict dès J+1 (V3 §7.1) : le lendemain (sous « Pose le pinceau »), puis après

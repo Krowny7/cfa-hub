@@ -5,6 +5,7 @@ import { codexChoisirSemaine } from "@/lib/codex/actions";
 import type { Commande } from "@/lib/codex/catalogue";
 import type { VueLundi } from "@/lib/codex/rythme";
 import type { VueCodex } from "@/lib/codex/vue";
+import { CODEX } from "@/lib/voice-codex";
 import k from "./Calendrier.module.css";
 import r from "./Rythme.module.css";
 
@@ -58,7 +59,7 @@ export function Lundi({ lundi, demo = false, onVue }: Props) {
       </div>
 
       <fieldset className={r.choix}>
-        <legend>Combien de jours d&apos;encre cette semaine ?</legend>
+        <legend>{CODEX.lundi.cible}</legend>
         <div className={r.cibles}>
           {lundi.cibles.map((n) => (
             <button key={n} type="button" className={`${r.pastille} rl-press`} aria-pressed={cible === n} onClick={() => setCible(n)}>
@@ -69,7 +70,7 @@ export function Lundi({ lundi, demo = false, onVue }: Props) {
       </fieldset>
 
       <fieldset className={r.choix}>
-        <legend>Ta commande de la semaine</legend>
+        <legend>{CODEX.lundi.titre}</legend>
         <div className={r.commandes}>
           {lundi.commandes.map((c) => (
             <button key={c.id} type="button" className={`${r.commande} rl-press`} aria-pressed={commande === c.id} onClick={() => setCommande(c.id)}>

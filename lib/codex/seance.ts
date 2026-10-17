@@ -13,15 +13,15 @@
 // Module neutre et pur : le serveur (lib/codex/serveur.ts) compose, garde et
 // évalue ; l'écran affiche (lot A5b).
 
-import { MODELES_CONTRATS, evenementsDe, type ContenuMatiere } from "@/lib/codex/catalogue";
+import { MODELES_CONTRATS, contenuDuProgramme, evenementsDe, type ContenuMatiere } from "@/lib/codex/catalogue";
 import { destinationBloc, type CibleBloc, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
-import { de } from "@/lib/codex/elision";
 import { budgetParDefaut as budgetParDefautReglage } from "@/lib/codex/reglage";
 import { scoreFaiblesse, type Maitrise } from "@/lib/codex/cap";
 import type { DefinitionProgramme } from "@/lib/codex/programmes";
 import { lireInstantane, type InstantaneSeance } from "@/lib/codex/seance-etat";
 import type { VueContrat } from "@/lib/codex/vue";
 import type { Budget, Objectif, Phase } from "@/lib/codex/types";
+import { SEANCE } from "@/lib/voice-codex";
 
 export type { Budget };
 // l'état de la séance pour l'écran, et ce qu'elle a fait avancer : un module léger, sans le catalogue (importé par les écrans)
@@ -126,17 +126,18 @@ const enMalle = (e: Pick<EntreeSeance, "phase" | "joursAvant">) => e.phase === "
 /** Ce qui coince et du neuf : il faut ce nombre de réponses dans la matière (ou une séance, ou une page de drill). */
 const QUESTIONS_BLOC = 12;
 
-const TITRES: Record<GenreBloc, string> = {
-  cinq: "Les 5 du jour",
-  trente: "Les 30 du jour",
-  retouches: "Retouches",
-  coince: "Ce qui coince",
-  nouveau: "Du neuf",
-  epreuve: "L'épreuve",
-};
+/**
+ * Les titres d'avant le Codex simplifié : une séance gardée en base avec l'un
+ * d'eux (composée avant la mise en ligne) se relit avec le titre clair.
+ */
+const TITRES_ANCIENS: ReadonlySet<string> = new Set(["Retouches", "Ce qui coince", "Du neuf", "L'épreuve"]);
 
-const virgule = (n: number) => String(n).replace(".", ",");
-const pluriel = (n: number, mot: string, mots = `${mot}s`) => `${n} ${n > 1 ? mots : mot}`;
+/** Le titre clair d'un bloc (« Corriger 14 ratures », « Renforcer FSA », lib/voice-codex SEANCE.bloc). */
+function titreBloc(genre: GenreBloc, p: { n?: number; matiere?: string; defi?: boolean }, contenu: ContenuMatiere[]): string {
+  const court = p.matiere ? contenu.find((m) => m.key === p.matiere)?.court : undefined;
+  return SEANCE.bloc(genre, { ...(p.n ? { n: p.n } : {}), ...(court ? { matiere: court } : {}), ...(p.defi !== undefined ? { defi: p.defi } : {}) });
+}
+
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
 // ── Les objectifs des blocs ────────────────────────────────────────────
@@ -197,29 +198,20 @@ export function contratsAvances(objectif: Objectif, matiere: string | undefined,
 
 // ── Les blocs ──────────────────────────────────────────────────────────
 
-/** La raison des retouches : « 15 à revoir : 8 ratures sèches, 7 rappels · demain 22 » (repli : les ratures en cours). */
-export function raisonRetouches(r: RevoirCodex): string {
-  if (!r.complet) return `${pluriel(r.aujourdhui, "rature")} à remettre au propre`;
-  const parts = [...(r.ratures ? [pluriel(r.ratures, "rature sèche", "ratures sèches")] : []), ...(r.rappels ? [pluriel(r.rappels, "rappel")] : [])];
-  return `${r.aujourdhui} à revoir${parts.length ? ` : ${parts.join(", ")}` : ""}${r.demain > 0 ? ` · demain ${r.demain}` : ""}`;
-}
+// Les raisons : une phrase-fait de 12 mots au plus, dans les mots du site
+// (lib/voice-codex SEANCE.raisons, Codex simplifié §2 et §4).
 
-/** « FSA pèse 12,5 % et tu es à 48 % (zone basse) » ; « … et elle n'est pas encore mesurée ». */
-export function raisonCoince(m: Pick<Maitrise["matieres"][number], "court" | "poids" | "pct" | "zone">): string {
-  const debut = `${m.court} pèse ${virgule(m.poids)} %`;
-  return m.pct === null ? `${debut} et elle n'est pas encore mesurée` : `${debut} et tu es à ${m.pct} %${m.zone ? ` (zone ${m.zone})` : ""}`;
-}
+/** La raison des retouches : « 15 à revoir : 8 ratures, 7 rappels · demain 22 » (repli : un fait). */
+export const raisonRetouches = (r: RevoirCodex): string => SEANCE.raisons.retouches(r);
+
+/** « FSA pèse 12,5 % de l'examen, tu es à 48 % » ; « …, pas encore mesurée ». */
+export const raisonCoince = (m: Pick<Maitrise["matieres"][number], "court" | "poids" | "pct">): string => SEANCE.raisons.coince(m);
 
 /** « 12 notions de FSA jamais vues sur 30 ». */
-export function raisonNouveau(court: string, n: number, total: number): string {
-  return `${n} ${n > 1 ? "notions" : "notion"} ${de(court)} jamais ${n > 1 ? "vues" : "vue"} sur ${total}`;
-}
+export const raisonNouveau = (court: string, n: number, total: number): string => SEANCE.raisons.nouveau(court, n, total);
 
-/** « J-10 : le rythme de l'examen, 30 questions mêlées aux poids officiels » (ou les 30 du jour, sous chrono). */
-export function raisonEpreuve(joursAvant: number | null, defi: boolean): string {
-  const suite = defi ? "les 30 du jour sous chrono" : "30 questions mêlées aux poids officiels";
-  return joursAvant !== null && joursAvant >= 0 ? `J-${joursAvant} : le rythme de l'examen, ${suite}` : `Le rythme de l'examen : ${suite}`;
-}
+/** « 30 questions mêlées, aux poids de l'examen » (ou les 30 du jour, sous chrono) ; pas de compte à rebours. */
+export const raisonEpreuve = (_joursAvant: number | null, defi: boolean): string => SEANCE.raisons.epreuve(defi);
 
 /**
  * La matière de « ce qui coince » : le point faible, plus fort poids ×
@@ -261,14 +253,15 @@ function blocDe(genre: GenreBloc, e: EntreeSeance, restant: number): Bloc | null
     const destination = destinationBloc(cible, e.dest);
     if (!destination) return null;
     const objectif = objectifBloc(genre, p);
-    return { genre, titre: TITRES[genre], duree, raison, destination: { ...destination, duree, raison }, objectif, contrats: contratsAvances(objectif, p.matiere, e.contrats), ...p };
+    const titre = titreBloc(genre, { ...p, ...(cible.k === "epreuve" ? { defi: cible.defi } : {}) }, e.dest.contenu);
+    return { genre, titre, duree, raison, destination: { ...destination, duree, raison }, objectif, contrats: contratsAvances(objectif, p.matiere, e.contrats), ...p };
   };
   switch (genre) {
     case "cinq":
-      return e.cinqFait || !outils.has("cinq") ? null : avec({ k: "cinq" }, 5, "5 questions pour garder le fil");
+      return e.cinqFait || !outils.has("cinq") ? null : avec({ k: "cinq" }, 5, SEANCE.raisons.cinq);
     case "trente":
       if (e.budget < TRENTE_SEANCE.budget || e.trenteFait || !e.trenteDispo || e.questionsTotal < TRENTE_SEANCE.questions || !outils.has("trente")) return null;
-      return avec({ k: "trente" }, 40, "Les 30 du jour : la même épreuve pour tous, chronométrée");
+      return avec({ k: "trente" }, 40, SEANCE.raisons.trente);
     case "retouches": {
       const r = e.revoir;
       if (!r || r.aujourdhui < RETOUCHES.min || !outils.has("revoir")) return null;
@@ -350,6 +343,15 @@ export function versStockage(blocs: Bloc[]): BlocStocke[] {
 const OUTILS_BLOC: ReadonlySet<string> = new Set(["ciblee", "fiche", "drill", "cours", "flashcards", "atelier", "calculs", "blancs", "trente", "cinq", "eclair", "duels", "revoir", "codex", "profil", "classement"]);
 const texte = (x: unknown, max: number): string | null => (typeof x === "string" && x.length > 0 && x.length <= max ? x : null);
 
+/** Le titre clair d'un bloc gardé sous un titre d'avant (la matière lue dans le CFA I ; inconnue : le titre gardé). */
+function titreAncien(genre: GenreBloc, lu: string, o: Record<string, unknown>): string {
+  const matiere = typeof o.matiere === "string" ? o.matiere : undefined;
+  const contenu = contenuDuProgramme();
+  if (matiere && !contenu.some((m) => m.key === matiere)) return lu;
+  const n = typeof o.n === "number" && o.n > 0 ? Math.round(o.n) : undefined;
+  return titreBloc(genre, { n, matiere, defi: o.outil === "trente" }, contenu);
+}
+
 /** Les blocs gardés en base, relus (un bloc mal formé est ignoré : la séance se recompose sans lui). */
 export function depuisStockage(x: unknown): Bloc[] {
   if (!Array.isArray(x)) return [];
@@ -357,7 +359,9 @@ export function depuisStockage(x: unknown): Bloc[] {
   for (const o of x.slice(0, 6) as Record<string, unknown>[]) {
     if (!o || typeof o !== "object") continue;
     const genre = o.genre;
-    const titre = texte(o.titre, 80);
+    const lu = texte(o.titre, 80);
+    // un titre d'avant le Codex simplifié se relit en clair (la matière : celle du CFA I, sinon le titre gardé)
+    const titre = lu && estGenreBloc(genre) && TITRES_ANCIENS.has(lu) ? titreAncien(genre, lu, o) : lu;
     const raison = texte(o.raison, 200) ?? "";
     const href = texte(o.href, 300);
     const duree = typeof o.duree === "number" && o.duree > 0 && o.duree <= 120 ? Math.round(o.duree) : null;

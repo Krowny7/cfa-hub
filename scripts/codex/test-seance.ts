@@ -99,7 +99,7 @@ console.log("\n# les règles des blocs");
   const v = composerSeance(entree({ phase: "veillee", joursAvant: 5, budget: 60, revoir: { ...revoir, aujourdhui: 25 } })).blocs.find((b) => b.genre === "retouches");
   check("veillée : retouches à 15 au plus", v?.n === 15, J(v?.n));
   const c = composerSeance(entree({ phase: "consolidation", budget: 60 })).blocs.find((b) => b.genre === "coince");
-  check("ce qui coince : la matière au plus fort poids × manque (FSA, 48 %), 25 min à 60 min", c?.matiere === "fsa" && c.duree === 25 && c.raison === "FSA pèse 12,5 % et tu es à 48 % (zone basse)" && /topic=fsa/.test(c.destination.href), J(c));
+  check("ce qui coince : la matière au plus fort poids × manque (FSA, 48 %), 25 min à 60 min, titre et raison en clair", c?.matiere === "fsa" && c.duree === 25 && c.titre === "Renforcer FSA" && c.raison === "FSA pèse 12,5 % de l'examen, tu es à 48 %" && /topic=fsa/.test(c.destination.href), J(c));
   const c15 = composerSeance(entree({ phase: "consolidation", budget: 15, revoir: null, cinqFait: true })).blocs.find((b) => b.genre === "coince");
   check("ce qui coince : 15 min à 15 ou 30 min", c15?.duree === 15, J(c15?.duree));
   const pf = { ...dest, pointsFaibles: [{ notion: notionsDeMatiere("fsa")[0].id, score: 72 }] };
@@ -116,7 +116,7 @@ console.log("\n# l'épreuve");
   const rep = composerSeance(entree({ phase: "repetition", joursAvant: 20, budget: 90, trenteFait: true }));
   const e = rep.blocs.find((b) => b.genre === "epreuve");
   check("répétition : l'épreuve est mêlée aux poids officiels (topic=all, n=30, poids=1), 45 min", !!e && e.duree === 45 && /topic=all/.test(e.destination.href) && /n=30/.test(e.destination.href) && /poids=1/.test(e.destination.href), J(e?.destination));
-  check("… et dit pourquoi : « J-20 : le rythme de l'examen, 30 questions mêlées aux poids officiels »", e?.raison === "J-20 : le rythme de l'examen, 30 questions mêlées aux poids officiels", e?.raison);
+  check("… et dit pourquoi, sans compte à rebours : « 30 questions mêlées, aux poids de l'examen »", e?.raison === "30 questions mêlées, aux poids de l'examen" && e.titre === "30 questions au rythme de l'examen", J([e?.titre, e?.raison]));
   const d = composerSeance(entree({ phase: "repetition", joursAvant: 20, budget: 90 })).blocs.find((b) => b.genre === "epreuve");
   check("les 30 du jour pas faits : l'épreuve, ce sont eux (/defi, 40 min)", d?.destination.href === "/defi" && d.duree === 40, J(d?.destination));
   const avant = composerSeance(entree({ phase: "repetition", joursAvant: 20, budget: 90, trenteFait: true, dest: { ...dest, practiceV3: false } })).blocs.find((b) => b.genre === "epreuve");
@@ -166,17 +166,17 @@ console.log("\n# le stockage (codex_seances.blocs)");
 }
 
 console.log("\n# les raisons");
-check("retouches : « 18 à revoir : 8 ratures sèches, 10 rappels · demain 22 »", raisonRetouches(revoir) === "18 à revoir : 8 ratures sèches, 10 rappels · demain 22", raisonRetouches(revoir));
-check("retouches : le singulier et rien pour demain", raisonRetouches({ aujourdhui: 6, demain: 0, ratures: 1, rappels: 5, complet: true }) === "6 à revoir : 1 rature sèche, 5 rappels");
-check("retouches sans la file (repli) : les ratures en cours", raisonRetouches({ aujourdhui: 12, demain: 0, ratures: 12, rappels: 0, complet: false }) === "12 ratures à remettre au propre");
+check("retouches : « 18 à revoir : 8 ratures, 10 rappels · demain 22 »", raisonRetouches(revoir) === "18 à revoir : 8 ratures, 10 rappels · demain 22", raisonRetouches(revoir));
+check("retouches : le singulier et rien pour demain", raisonRetouches({ aujourdhui: 6, demain: 0, ratures: 1, rappels: 5, complet: true }) === "6 à revoir : 1 rature, 5 rappels");
+check("retouches sans la file (repli) : un fait d'examen", raisonRetouches({ aujourdhui: 12, demain: 0, ratures: 12, rappels: 0, complet: false }) === "Une erreur refaite le lendemain revient rarement à l'examen");
 {
   const inconnue = maitriseDuCodex(contenu, { maitrise: { fsa: { pct: 48, questions: 60, debut: 40 } } });
   const c = composerSeance(entree({ phase: "consolidation", budget: 30, revoir: null, cinqFait: true, maitrise: inconnue })).blocs.find((b) => b.genre === "coince");
-  check("ce qui coince : une matière pas encore mesurée compte pour 20 % (la plus lourde passe devant FSA à 48 %)", !!c && c.matiere !== "fsa" && /n'est pas encore mesurée$/.test(c.raison), J(c?.raison));
+  check("ce qui coince : une matière pas encore mesurée compte pour 20 % (la plus lourde passe devant FSA à 48 %)", !!c && c.matiere !== "fsa" && /pas encore mesurée$/.test(c.raison), J(c?.raison));
 }
-check("ce qui coince, pas encore mesurée",raisonCoince({ court: "Ethics", poids: 15, pct: null, zone: null }) === "Ethics pèse 15 % et elle n'est pas encore mesurée");
+check("ce qui coince, pas encore mesurée", raisonCoince({ court: "Ethics", poids: 15, pct: null }) === "Ethics pèse 15 % de l'examen, pas encore mesurée");
 check("du neuf, l'élision : « 4 notions d'Ethics jamais vues sur 9 » ; « 1 notion de FSA jamais vue sur 30 »", raisonNouveau("Ethics", 4, 9) === "4 notions d'Ethics jamais vues sur 9" && raisonNouveau("FSA", 1, 30) === "1 notion de FSA jamais vue sur 30");
-check("l'épreuve sans jour J", raisonEpreuve(null, false) === "Le rythme de l'examen : 30 questions mêlées aux poids officiels");
+check("l'épreuve, sans compte à rebours", raisonEpreuve(null, false) === "30 questions mêlées, aux poids de l'examen" && raisonEpreuve(10, true) === "Les 30 du jour, sous chrono");
 
 console.log("\n# les objectifs, comptés depuis le lancement");
 {
