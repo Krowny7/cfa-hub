@@ -62,6 +62,8 @@ for (const sc of ["neuf", "milieu", "fin"] as const) {
 
   const imagees = toutes.filter((l) => l.famille !== "exploit" && !l.gelee && banni(l.titre));
   check("aucune ligne de quête n'a de mot banni dans son titre (hors exploits)", imagees.length === 0, J(imagees.slice(0, 5).map((l) => `${l.id} : ${l.titre}`)));
+  const consignes = toutes.filter((l) => l.famille !== "exploit" && banni(l.consigne));
+  check("aucune consigne de quête n'a de mot banni (hors exploits)", consignes.length === 0, J(consignes.slice(0, 5).map((l) => `${l.id} : ${l.consigne}`)));
   const longues = toutes.filter((l) => l.famille !== "exploit" && l.titre.length > TITRE_MAX);
   check(`aucun titre de quête au-delà de ${TITRE_MAX} caractères (hors exploits)`, longues.length === 0, J(longues.slice(0, 5).map((l) => `${l.id} : ${l.titre}`)));
 
