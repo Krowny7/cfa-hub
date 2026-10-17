@@ -254,7 +254,6 @@ export const PERSO = {
   enregistreSauf: (refus: string[]) => `Enregistré, sauf ${refus.join(", ")}.`,
   /** la base n'a pas encore les colonnes du style */
   basePasPrete: "La personnalisation s'enregistrera dès que la base sera prête. Tu peux déjà composer ton profil.",
-  pageAide: "Range tes blocs ici même : appui long sur le nom d'un bloc puis glisse-le, ou les flèches. Masque ceux que tu ne veux pas.",
   pageCrayon: "Chiffres clés et ambiance",
   posesNb: (n: number) => `${n}/3 posés`,
   posesSansBase: "Tes 3 sceaux les plus rares sont posés d'office. Le choix arrive avec la mise à jour de la base.",

@@ -7,8 +7,8 @@ import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 // sans le son, tant qu'elle est à l'écran (en pause sinon : ni batterie ni
 // données gaspillées) ; deux boutons posés dessus : le son, et pause /
 // lecture. Mouvement réduit : elle attend qu'on la lance. À sa proportion
-// (verticale le plus souvent), sur la largeur que lui donne sa taille
-// (MediaProfil).
+// (verticale le plus souvent), dans la place que lui donne le format de
+// son bloc (BlocProfil).
 
 export function VideoProfil({ url, ratio, label }: { url: string; ratio: number; label: string }) {
   const video = useRef<HTMLVideoElement | null>(null);
