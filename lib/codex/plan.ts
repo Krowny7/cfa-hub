@@ -133,11 +133,18 @@ export function lireSemaine(raw: unknown, lundi: string): Semaine | null {
   };
 }
 
-/** La matière du banquier : la plus faible des matières lourdes (10 % de l'examen ou plus) ; jamais mesurée = la plus faible. */
+/**
+ * La matière du banquier : la plus faible des matières lourdes (10 % de
+ * l'examen ou plus) MESURÉES. `maitrise` lit comme l'objectif du contrat
+ * (maitriseDe : null tant que la matière n'est pas mesurée) : une matière
+ * provisoire ou jamais mesurée est écartée, sinon la commande exigerait en fait
+ * d'atteindre « mesurée ». Aucune mesurée : pas de banquier (null).
+ */
 export function matiereBanquier(contenu: ContenuMatiere[], maitrise: (cle: string) => number | null): { matiere: string; depart: number } | null {
   const lourdes = contenu.filter((m) => m.poids >= 10);
   const m = (lourdes.length ? lourdes : contenu)
-    .map((x) => ({ x, pct: maitrise(x.key) ?? 0 }))
+    .map((x) => ({ x, pct: maitrise(x.key) }))
+    .filter((y): y is { x: ContenuMatiere; pct: number } => y.pct !== null)
     .sort((a, b) => a.pct - b.pct || b.x.poids - a.x.poids)[0];
   return m ? { matiere: m.x.key, depart: Math.round(m.pct) } : null;
 }

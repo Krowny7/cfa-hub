@@ -4,9 +4,9 @@
 // dans lib/codex/rythme-serveur.ts. Module pur : ni base ni réseau.
 import { COMMANDES, CIBLES_SEMAINE, type Commande, type ContenuMatiere, type Semaine } from "@/lib/codex/catalogue";
 import { maitriseLue } from "@/lib/codex/cap";
-import { evaluerObjectifs, lundiDe, objectifsPlan, repriseDuJour, semaineEntamee, type Entree, type ResultatCompteur } from "@/lib/codex/moteur";
+import { evaluerObjectifs, lundiDe, maitriseDe, objectifsPlan, repriseDuJour, semaineEntamee, type Entree, type ResultatCompteur } from "@/lib/codex/moteur";
 import { programmeActif } from "@/lib/codex/programmes";
-import { commandesPossibles, jalonsDe, planDe, sessionDe, type Bande, type Plan, type Verdict } from "@/lib/codex/plan";
+import { commandesPossibles, jalonsDe, matiereBanquier, planDe, sessionDe, type Bande, type Plan, type Verdict } from "@/lib/codex/plan";
 import type { Moment } from "@/lib/codex/calendrier";
 import type { Capacites } from "@/lib/codex/types";
 import { decaleJour, joursEntre } from "@/lib/objectif-calc";
@@ -75,7 +75,9 @@ export function vueRythme(
   const jalons = e.jourJ ? jalonsDe(def.cle) : [];
   const plan = e.jourJ && jalons.length && o.moment === "courant" ? planDe(jalons, evaluerObjectifs(e, compteurs, objectifsPlan(e)), e.jour, e.jourJ) : null;
   const choisie = e.semaine && e.semaine.lundi === lundi ? e.semaine : null;
-  const possibles = commandesPossibles((r) => (r === "journal3" ? o.capacites.journal === 3 : o.capacites[r]), def.outils);
+  // le banquier vise une matière lourde mesurée : sans elle, il n'est pas proposé
+  const banquier = !!matiereBanquier(contenu, (cle) => maitriseDe(e, cle));
+  const possibles = commandesPossibles((r) => (r === "journal3" ? o.capacites.journal === 3 : o.capacites[r]), def.outils).filter((c) => c !== "banquier" || banquier);
   // pas de carte du lundi une fois qu'un contrat que la commande remplace a payé cette semaine
   // (calculer() relit les lignes après l'écriture du lot : un contrat payé à ce calcul y est)
   const lundiVue: VueLundi | null =

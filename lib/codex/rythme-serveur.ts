@@ -5,8 +5,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { COMMANDES, CIBLES_SEMAINE, type Commande, type Semaine } from "@/lib/codex/catalogue";
-import { maitriseLue } from "@/lib/codex/cap";
-import { lundiDe, semaineEntamee, type Entree } from "@/lib/codex/moteur";
+import { lundiDe, maitriseDe, semaineEntamee, type Entree } from "@/lib/codex/moteur";
 import { programmeActif } from "@/lib/codex/programmes";
 import { lireSemaine, lireVerdict, matiereBanquier, type Bande, type StatutVerdict, type Verdict } from "@/lib/codex/plan";
 import type { RythmeLu } from "@/lib/codex/rythme";
@@ -61,7 +60,8 @@ export async function poserSemaine(
   if (choix.commande === "banquier") {
     if (!e) return { ok: false, raison: "indisponible" };
     const contenu = e.contenu ?? programmeActif(e.programmes).matieres();
-    const m = matiereBanquier(contenu, (cle) => maitriseLue(e.lecture.mesures, cle).pct);
+    // la même lecture que l'objectif du contrat (mesure « maitrise ») : les matières mesurées seulement
+    const m = matiereBanquier(contenu, (cle) => maitriseDe(e, cle));
     if (!m) return { ok: false, raison: "refus" };
     params = m;
   }

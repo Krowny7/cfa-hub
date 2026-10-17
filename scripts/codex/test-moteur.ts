@@ -921,6 +921,13 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("lireSemaine : autre semaine, cible 6 ou commande inconnue → rien", lireSemaine({ lundi, cible: 4, commande: "copiste" }, lundi)?.cible === 4 && !lireSemaine({ lundi: "2026-10-05", cible: 4, commande: "copiste" }, lundi) && !lireSemaine({ lundi, cible: 6, commande: "copiste" }, lundi) && !lireSemaine({ lundi, cible: 4, commande: "peintre" }, lundi));
   const mb = matiereBanquier(contenu, (c) => ({ ethics: 80, fsa: 45, equity: 62, fixed_income: 50 } as Record<string, number>)[c] ?? 90);
   check("la matière du banquier : la plus faible des lourdes", mb?.matiere === "fsa" && mb.depart === 45, JSON.stringify(mb));
+  // la même lecture que l'objectif (maitriseDe) : une matière provisoire (moins de 40 questions) n'est pas visée
+  const lourdesMesurees = (provisoire: string | null) => ({ xp_total: 0, maitrise: Object.fromEntries(contenu.map((m) => [m.key, m.key === provisoire ? { pct: 55, questions: 20, debut: null } : { pct: 70, questions: 80, debut: 50 }])) });
+  const eProv = base({ lecture: { compteurs: {}, mesures: lourdesMesurees("fsa"), speciaux: {} } });
+  const mbProv = matiereBanquier(contenu, (c) => maitriseDe(eProv, c));
+  check("le banquier ne vise pas une matière provisoire (FSA à 55 %, 20 questions) : une mesurée, départ juste", !!mbProv && mbProv.matiere !== "fsa" && mbProv.depart === 70, JSON.stringify(mbProv));
+  const eRien = base({ lecture: { compteurs: {}, mesures: { xp_total: 0, maitrise: Object.fromEntries(contenu.map((m) => [m.key, { pct: 55, questions: 20, debut: null }])) }, speciaux: {} } });
+  check("aucune matière lourde mesurée : pas de banquier (jamais « 5 % de maîtrise »)", matiereBanquier(contenu, (c) => maitriseDe(eRien, c)) === null);
   check("le copiste n'est proposé qu'avec ce que la base sait faire", commandesPossibles(() => false).join(",") === "banquier,ingenieur" && commandesPossibles(() => true).length === 3);
   check("une commande demande aussi ses outils au programme (sans blancs ni 30 du jour : pas d'ingénieur)", commandesPossibles(() => true, new Set(["revoir", "cinq"] as const)).join(",") === "banquier,copiste" && commandesPossibles(() => true, CFA_L1.outils).length === 3);
 
@@ -960,13 +967,15 @@ console.log("\n# le rythme long (V3 §10.2 à §10.5, lot A8)");
   check("séance : « ce qui coince » passe à la matière en bande basse (Quant ×1,3 devant FSA)", matiereCoince(mc, false)?.cle === "fsa" && matiereCoince(mc, false, rec!.facteur)?.cle === "quant");
 
   // ce que /codex en montre (lib/codex/rythme.ts)
-  const active = (o: Partial<Entree> = {}) => base({ jourJ: "2026-11-12", lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-06", n: 40 }, { jour: "2026-10-08", n: 9 }, { jour: "2026-10-14", n: 12 }] }, speciaux: {} }, ...o });
+  const active = (o: Partial<Entree> = {}) => base({ jourJ: "2026-11-12", lecture: { compteurs: {}, mesures: { ...lourdesMesurees(null), jours: [{ jour: "2026-10-06", n: 40 }, { jour: "2026-10-08", n: 9 }, { jour: "2026-10-14", n: 12 }] }, speciaux: {} }, ...o });
   const vr = (e: Entree, o: Partial<Parameters<typeof vueRythme>[2]> = {}) => vueRythme(e, {}, { semaineDispo: true, capacites: CAPACITES_VIDE, moment: "courant", verdicts: [], ...o });
   const v1 = vr(active());
   check("vue : le plan (six jalons) au cours ordinaire", v1.plan?.jalons.length === 6 && !vr(active(), { moment: "veillee" }).plan);
   check("vue : le lundi relit la semaine passée (49 questions, 1 jour d'encre)", v1.lundi?.questions === 49 && v1.lundi.joursEncre === 1 && v1.lundi.lundi === "2026-10-12", JSON.stringify(v1.lundi));
   check("vue : sans la base qui le garde, pas de carte du lundi", !vr(active(), { semaineDispo: false }).lundi);
   check("vue : sans les capacités, le copiste n'est pas proposé", v1.lundi?.commandes.map((c) => c.id).join(",") === "banquier,ingenieur");
+  const sansMesure = vr(active({ lecture: { compteurs: {}, mesures: { xp_total: 0, jours: [{ jour: "2026-10-06", n: 40 }] }, speciaux: {} } }));
+  check("vue : aucune matière lourde mesurée, le banquier n'est pas proposé", sansMesure.lundi?.commandes.map((c) => c.id).join(",") === "ingenieur", JSON.stringify(sansMesure.lundi?.commandes));
   const choisi = vr(active({ semaine: { lundi: "2026-10-12", cible: 4, commande: "ingenieur", params: {} } }));
   check("vue : la semaine choisie, plus de carte du lundi", !choisi.lundi && choisi.semaine?.commande === "ingenieur" && choisi.semaine.nom === "L'ingénieur");
   check("vue : la commande de la semaine déjà payée, plus de carte du lundi", !vr(active({ progression: [payeCetteSemaine("contrat:hebdo:commande")] })).lundi && !!vr(active({ progression: [payeCetteSemaine("contrat:hebdo:encre")] })).lundi);
