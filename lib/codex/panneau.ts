@@ -57,10 +57,12 @@ export type Panneau = {
   revoir: { aujourdhui: number; demain: number } | null;
   /** la séance du jour (V3 §6, lot A5) */
   seance: { lancee: boolean; faits: number; total: number; suivant: { titre: string; href: string } | null } | null;
+  /** le jour J (V3 §7.4) : le panneau se réduit à « Bonne chance », Léonard ne surgit pas (attribut data-jour-j) */
+  jourJ: boolean;
 };
 
 export const PANNEAU_VIDE: Panneau = {
-  disponible: false, jour: "", quetes: [], versees: null, arcs: { faits: 0, total: 0 }, rare: null, budget: null, semaine: { faits: 0, total: 0, quetes: [] }, revoir: null, seance: null,
+  disponible: false, jour: "", quetes: [], versees: null, arcs: { faits: 0, total: 0 }, rare: null, budget: null, semaine: { faits: 0, total: 0, quetes: [] }, revoir: null, seance: null, jourJ: false,
 };
 
 export const MAX_QUETES = 4;
@@ -112,6 +114,8 @@ function aAnnoncer(vue: VueCodex): { lignes: LigneQuete[]; actes: VueCodex["tram
 
 export function panneauDe(vue: VueCodex): Panneau {
   if (!vue.disponible) return PANNEAU_VIDE;
+  // le jour J : rien à faire, rien à annoncer, seulement « Bonne chance » (V3 §7.4)
+  if (vue.moment === "jourJ") return { ...PANNEAU_VIDE, disponible: true, jour: vue.jour, jourJ: true };
   const d = vue.devoile?.devoile ?? "tout";
   const contratsVus = devoileLite(d, "codex:contrats");
   const longCoursVu = devoileLite(d, "codex:longcours");
@@ -176,6 +180,7 @@ export function panneauDe(vue: VueCodex): Panneau {
     semaine: { faits: vue.hebdo.filter((l) => l.etat === "terminee").length, total: vue.hebdo.length, quetes: vue.hebdo.map((l) => ({ titre: l.titre, faite: l.etat === "terminee" })) },
     revoir: vue.revoir,
     seance: seancePanneau(vue.seance),
+    jourJ: false,
   };
 }
 
@@ -225,7 +230,7 @@ export const panneauAcquitte = (p: Panneau): Panneau => ({ ...p, versees: null, 
 // ── L'instantané (codex_vue_cache, migration_codex_v3.sql §6) ──────────
 
 /** La forme du panneau gardé : à changer dès que Panneau change, pour qu'un instantané d'avant ne soit jamais relu. */
-export const VERSION_PANNEAU = 1;
+export const VERSION_PANNEAU = 2;
 /** Un instantané plus vieux ne sert plus. */
 export const CACHE_PANNEAU_MS = 10 * 60_000;
 

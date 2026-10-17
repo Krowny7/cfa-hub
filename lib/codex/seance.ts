@@ -112,6 +112,14 @@ export const RETOUCHES = { min: 5, max: 25, veillee: 15 } as const;
 export const TRENTE_SEANCE = { budget: 60, questions: 100 } as const;
 /** L'épreuve en veillée : de J-7 à J-4 (ensuite, la malle et le repos). */
 export const EPREUVE_VEILLEE = { de: 7, a: 4 } as const;
+/**
+ * La dernière semaine (V3 §7.1) : la veillée plafonne la séance à 60 min ; la
+ * malle (J-3 à J-1) ne garde que les 5 du jour et 10 retouches au plus.
+ */
+export const VEILLEE = { budgetMax: 60, malle: 3, retouchesMalle: 10 } as const;
+const ORDRE_MALLE: readonly GenreBloc[] = ["cinq", "retouches"];
+/** J-3 à J-1 (et le jour J) : la malle. */
+const enMalle = (e: Pick<EntreeSeance, "phase" | "joursAvant">) => e.phase === "veillee" && e.joursAvant !== null && e.joursAvant <= VEILLEE.malle;
 /** Ce qui coince et du neuf : il faut ce nombre de réponses dans la matière (ou une séance, ou une page de drill). */
 const QUESTIONS_BLOC = 12;
 
@@ -260,7 +268,7 @@ function blocDe(genre: GenreBloc, e: EntreeSeance, restant: number): Bloc | null
     case "retouches": {
       const r = e.revoir;
       if (!r || r.aujourdhui < RETOUCHES.min || !outils.has("revoir")) return null;
-      const n = Math.min(clamp(Math.min(r.aujourdhui, restant), RETOUCHES.min, RETOUCHES.max), e.phase === "veillee" ? RETOUCHES.veillee : RETOUCHES.max);
+      const n = Math.min(clamp(Math.min(r.aujourdhui, restant), RETOUCHES.min, RETOUCHES.max), enMalle(e) ? VEILLEE.retouchesMalle : e.phase === "veillee" ? RETOUCHES.veillee : RETOUCHES.max);
       return avec({ k: "revoir", n }, n, raisonRetouches(r), { n });
     }
     case "coince": {
@@ -289,12 +297,14 @@ function blocDe(genre: GenreBloc, e: EntreeSeance, restant: number): Bloc | null
  * reste du budget couvre un bloc ; jamais plus de budget + 5 min, et 2, 3 ou
  * 4 blocs au plus selon le budget.
  */
-export function composerSeance(e: EntreeSeance): Seance {
+export function composerSeance(entree: EntreeSeance): Seance {
+  // en veillée, 60 min au plus, quel que soit le temps choisi (le budget choisi reste celui de la séance)
+  const e: EntreeSeance = entree.phase === "veillee" && entree.budget > VEILLEE.budgetMax ? { ...entree, budget: VEILLEE.budgetMax } : entree;
   const blocs: Bloc[] = [];
   for (const b of e.blocsFaits ?? []) if (!blocs.some((x) => x.genre === b.genre)) blocs.push(b);
   let total = blocs.reduce((s, b) => s + b.duree, 0);
   const max = Math.max(MAX_BLOCS[e.budget], blocs.length);
-  for (const genre of ORDRE_BLOCS[e.phase]) {
+  for (const genre of enMalle(e) ? ORDRE_MALLE : ORDRE_BLOCS[e.phase]) {
     if (blocs.length >= max || e.budget - total < DUREE_MIN) break;
     if (blocs.some((b) => b.genre === genre) || e.ecartes.includes(genre)) continue;
     const b = blocDe(genre, e, e.budget - total);
@@ -302,7 +312,7 @@ export function composerSeance(e: EntreeSeance): Seance {
     blocs.push(b);
     total += b.duree;
   }
-  return { jour: e.jour, budget: e.budget, phase: e.phase, blocs, duree: total };
+  return { jour: e.jour, budget: entree.budget, phase: e.phase, blocs, duree: total };
 }
 
 // ── L'état de la séance ────────────────────────────────────────────────

@@ -26,7 +26,7 @@ import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-faibles-data";
 import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
-  LECTURE_VIDE, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, lireActivite, lireMetaCodex, planifier, recommander, remplacantContrat, tirerContrats,
+  LECTURE_VIDE, actesClosDe, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, emplacementsDe, lireActivite, lireMetaCodex, phaseJoueur, planifier, recommander, remplacantContrat, tirerContrats,
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
 } from "@/lib/codex/moteur";
 import { VUE_INDISPONIBLE, construireVue, vueSansFetes, type VueCodex } from "@/lib/codex/vue";
@@ -35,6 +35,7 @@ import { CAPACITES_TOUTES, MESURES_V3_VIDES, avecMesuresV3, mesuresV3De, mesures
 import { COLONNES_JOUEUR, COLONNES_V3, ecarter, reglageDe, type ReglageJour } from "@/lib/codex/reglage";
 import { catalogueComplet, lireProgrammesJoueur, programmeActif, suiteDe, type DefinitionProgramme, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { maitriseDuCodex } from "@/lib/codex/cap";
+import { cochesValides, lireMalle, momentCalme, momentDe } from "@/lib/codex/calendrier";
 import { COLONNES_SEANCE, SONDES_SEANCE, aRecomposer, composerSeance, ecartesSeance, faitsDeSeance, instantaneSeance, lireSeanceGardee, revoirCodexDe, versStockage, type SeanceGardee, type VueSeance } from "@/lib/codex/seance";
 import type { Budget, Capacites, Emplacement } from "@/lib/codex/types";
 
@@ -152,7 +153,7 @@ async function lireReglage(a: SupabaseClient, user: Joueur, jour: string): Promi
 /** Les programmes du joueur (codex_programmes_joueur, V3 §1.6) ; table absente ou illisible : aucun (CFA I actif). */
 async function lireProgrammes(a: SupabaseClient, id: string): Promise<ProgrammeJoueur[]> {
   try {
-    const { data, error } = await a.from("codex_programmes_joueur").select("programme,statut,jour_j,mene_le").eq("user_id", id).limit(50);
+    const { data, error } = await a.from("codex_programmes_joueur").select("programme,statut,jour_j,mene_le,debut").eq("user_id", id).limit(50);
     return error ? [] : lireProgrammesJoueur(data);
   } catch {
     return [];
@@ -368,6 +369,8 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const joueur = joueurR.data as { premier_calcul: string; dernier_calcul: string } | null;
     // l'arbre du programme actif (CFA I : le catalogue par défaut du moteur)
     const contenu = actif.matieres();
+    // la malle de l'examen (V3 §7.3) : dans le compte, rien en base
+    const malle = lireMalle(user.user_metadata, actif.cle);
     const entree: Entree = {
       ...(actif.cle === PROGRAMME ? {} : { catalogue: catalogueComplet(actif.cle) }),
       contenu,
@@ -386,14 +389,15 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
       ecartees: reglage.ecartees,
       programmes,
       capacitesVues: reglage.capacitesVues,
+      malleCoches: malle.length,
     };
     // la séance du jour déjà proposée (en base ; sans la §6, celle de cette instance) : les objectifs de
     // ses blocs et les sondes du jour (5 et 30 rendus) partent avec les compteurs des quêtes
     const seancePrecedente = seanceLue.absente ? seanceEnMemoire(user.id, jour) : seanceLue.gardee;
     entree.seance = { objectifs: [...SONDES_SEANCE, ...(seancePrecedente?.blocs ?? []).map((b) => b.objectif)], lanceeLe: seancePrecedente?.lanceeLe ?? null };
 
-    // les contrats du jour : tirés une fois (la base garde le premier tirage)
-    if (entree.contrats.length < 3) {
+    // les contrats du jour : tirés une fois (la base garde le premier tirage) ; un seul en veillée
+    if (entree.contrats.length < emplacementsDe(phaseJoueur(entree, actesClosDe(entree.progression))).length) {
       const mesures = await lire(a, user.id, demandesActivite(contenu, jour), jour);
       if (!mesures) {
         await consigner(a, user.id, "", "codex_lire (tirage des contrats) a échoué");
@@ -478,11 +482,15 @@ async function calculer(supabase: SupabaseClient, user: Joueur): Promise<Retour>
     const meta = lireMetaCodex(user.user_metadata);
     const faites = new Set(resultat.etats.filter((s) => s.fait).map((s) => `${s.quete.id}|${s.periode}`));
     const questions = (lecture.mesures.jours ?? []).reduce((s, j) => s + j.n, 0);
-    const devoile = devoiler(meta, { inscritLe: lecture.mesures.inscrit_le ?? user.created_at ?? null, questions, faites, now, jour });
+    // les derniers jours (veillée, malle, jour J) : rien de neuf ne se dévoile, le dévoilement reprend après (V3 §7.1)
+    const calme = momentCalme(momentDe(actif.examen ? joursAvantExamen(jour, jourJ) : null, resultat.phase));
+    const devoile = calme
+      ? { devoile: meta.devoile, jours: meta.jours, nouveaux: [], change: false }
+      : devoiler(meta, { inscritLe: lecture.mesures.inscrit_le ?? user.created_at ?? null, questions, faites, now, jour });
 
     const reco = recommander(entree, resultat);
     const changementFait = entree.contrats.some((c) => c.change);
-    const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id });
+    const construite = construireVue(entree, resultat, reco, { devoile, nouvelles, retro, changementFait, joueur: user.id, malle });
     const seance = await seanceDuJour(a, user, { entree, resultat, vue: construite, lus: seanceLus, actif, lue: seanceLue, precedente: seancePrecedente });
     const vue: VueCodex = { ...construite, seance };
     MEMO.set(user.id, { at: Date.now(), vue });
@@ -666,6 +674,33 @@ export async function ouvrirProgramme(supabase: SupabaseClient, user: Joueur, pr
   MEMO.delete(user.id);
   const { vue } = await calculUnique(supabase, user, true);
   return vue.disponible ? { ok: true, vue } : { ok: false, raison: "indisponible" };
+}
+
+/**
+ * La malle de l'examen (V3 §7.3) : les cases cochées, gardées dans le compte
+ * (user_metadata.rl_malle = { programme, coches }, aucun SQL). La vue gardée
+ * est corrigée sur place ; le Codex n'est recalculé (la quête « La malle est
+ * prête » versée) qu'au passage du seuil de cinq cases.
+ */
+export async function ecrireMalle(supabase: SupabaseClient, user: Joueur, coches: unknown, pret: number): Promise<{ ok: true; coches: string[]; vue: VueCodex | null } | { ok: false; raison: "refus" }> {
+  const valides = cochesValides(coches);
+  const programme = programmeActif(await lireProgrammes(admin() ?? supabase, user.id)).cle;
+  const avant = lireMalle(user.user_metadata, programme).length;
+  let joueur: Joueur = user;
+  try {
+    const { data, error } = await supabase.auth.updateUser({ data: { rl_malle: { programme, coches: valides } } });
+    if (error) return { ok: false, raison: "refus" };
+    if (data.user) joueur = data.user;
+  } catch {
+    return { ok: false, raison: "refus" };
+  }
+  if ((avant >= pret) === (valides.length >= pret)) {
+    patcher(user.id, (v) => (v.malle ? { ...v, malle: { coches: valides } } : v));
+    return { ok: true, coches: valides, vue: null };
+  }
+  MEMO.delete(user.id);
+  const { vue } = await calculUnique(supabase, joueur, true);
+  return { ok: true, coches: valides, vue: vue.disponible ? vue : null };
 }
 
 /** Marque des fanfares comme jouées ; la vue gardée est corrigée sur place (pas de recalcul). */

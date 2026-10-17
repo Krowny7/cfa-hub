@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, ecrireMalle, lireCodex, lirePanneau, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, recompenseEcrite, reglerJour, type Joueur } from "@/lib/codex/serveur";
 import { BILAN_VIDE, bilanDe, type BilanCodex } from "@/lib/codex/bilan";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
 import { ECARTE_SEANCE, estGenreBloc, type VueSeance } from "@/lib/codex/seance";
+import { MALLE_PRETE } from "@/lib/codex/calendrier";
 import type { Emplacement } from "@/lib/codex/types";
 import type { VueCodex } from "@/lib/codex/vue";
 
@@ -188,6 +189,21 @@ export async function codexOuvrirProgramme(programme: string): Promise<Resultat<
   if (!r.ok) return r;
   revalidatePath("/codex");
   return { ok: true, vue: r.vue };
+}
+
+/**
+ * La malle de l'examen (J-3 à J-1, V3 §7.3) : les cases cochées, gardées dans
+ * le compte. `vue` : le Codex recalculé quand la malle vient d'être prête (ou
+ * ne l'est plus) ; null sinon.
+ */
+export async function codexMalle(coches: string[]): Promise<Resultat<{ coches: string[]; vue: VueCodex | null }>> {
+  const { supabase, user } = await joueur();
+  if (!user) return { ok: false, raison: "connexion" };
+  if (!Array.isArray(coches) || coches.length > 20) return { ok: false, raison: "refus" };
+  const r = await ecrireMalle(supabase, user, coches, MALLE_PRETE);
+  if (!r.ok) return r;
+  if (r.vue) revalidatePath("/codex");
+  return { ok: true, coches: r.coches, vue: r.vue };
 }
 
 /** Changer UN des contrats du jour (une seule fois par jour, pas un contrat déjà rempli). */

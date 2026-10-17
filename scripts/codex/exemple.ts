@@ -5,7 +5,9 @@
 //   milieu : quelques semaines de travail, plusieurs actes avancés
 //   fin    : proche du jour J, beaucoup de choses faites
 // `seance` : la séance du jour d'exemple, à l'étape voulue (proposée, en
-// cours, tenue avec ce qu'elle a fait avancer, close).
+// cours, tenue avec ce qu'elle a fait avancer, close). `jourJ` : un autre jour
+// J (le calendrier, V3 §7 : veillée, malle, jour J, lendemain) ; `malle` : les
+// cases cochées de la malle.
 import { contenuDuProgramme } from "@/lib/codex/catalogue";
 import { maitriseDuCodex } from "@/lib/codex/cap";
 import {
@@ -34,14 +36,14 @@ function hash(s: string) {
  * `budget`, `ecartees` : le réglage du jour (« J'ai 30 min », « Une autre idée ? ») ;
  * `unique` : la maîtrise unique et la file « À revoir » lues (codex_mesures_v3 et le SQL du couloir B collés).
  */
-export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[]; unique?: boolean; seance?: EtapeSeance } = {}): VueCodex {
+export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; budget?: Budget; ecartees?: string[]; unique?: boolean; seance?: EtapeSeance; jourJ?: string | null; malle?: string[] } = {}): VueCodex {
   const fin = sc === "fin";
   const neuf = sc === "neuf";
   const e: Entree = {
-    contenu, now: NOW, jour: JOUR, jourJ: neuf ? null : fin ? "2026-11-20" : "2027-02-20", objectif: neuf ? null : { total: 6000, depuis: "2026-09-01" }, visiteVue: !neuf,
+    contenu, now: NOW, jour: JOUR, jourJ: opts.jourJ !== undefined ? opts.jourJ : neuf ? null : fin ? "2026-11-20" : "2027-02-20", objectif: neuf ? null : { total: 6000, depuis: "2026-09-01" }, visiteVue: !neuf,
     progression: [], contrats: [], premier: false, dernierCalcul: new Date("2026-10-15T10:00:00Z"), lecture: LECTURE_VIDE,
     pointsFaibles: [{ notion: "Duration", score: 31 }, { notion: "Hypothesis testing", score: 40 }],
-    budget: opts.budget ?? null, ecartees: opts.ecartees ?? [],
+    budget: opts.budget ?? null, ecartees: opts.ecartees ?? [], malleCoches: opts.malle?.length ?? 0,
     // le fil rouge : « à venir » au milieu (la base ne sait pas encore l'écrire), tamponnable à la fin
     ...(fin ? { capacites: { ...CAPACITES_VIDE, fil: true } } : {}),
   };
@@ -95,7 +97,7 @@ export function exempleCodex(sc: Scenario, opts: { devoile?: string[] | "tout"; 
   }
   if (e.progression.length) r = evaluer(e, compteurs);
   const reco = recommander(e, r);
-  const vue = construireVue(e, r, reco, { devoile: { devoile: opts.devoile ?? (neuf ? [] : "tout"), jours: [JOUR], nouveaux: [], change: false } });
+  const vue = construireVue(e, r, reco, { devoile: { devoile: opts.devoile ?? (neuf ? [] : "tout"), jours: [JOUR], nouveaux: [], change: false }, malle: opts.malle });
   return opts.seance ? { ...vue, seance: seanceExemple(e, r, vue, opts.seance) } : vue;
 }
 

@@ -91,7 +91,7 @@ console.log("\n# les règles des blocs");
   check("moins de 5 à revoir : pas de retouches", !genres(peu).includes("retouches"), J(genres(peu)));
   const r = composerSeance(entree({ phase: "consolidation", budget: 60 })).blocs.find((b) => b.genre === "retouches");
   check("retouches : n = min(à revoir, budget restant), lien /revoir pris par son repli tant que la page manque", r?.n === 18 && r.duree === 18 && r.destination.href === "/moi?onglet=erreurs&reprise=1", J(r?.destination));
-  const v = composerSeance(entree({ phase: "veillee", joursAvant: 2, budget: 60, revoir: { ...revoir, aujourdhui: 25 } })).blocs.find((b) => b.genre === "retouches");
+  const v = composerSeance(entree({ phase: "veillee", joursAvant: 5, budget: 60, revoir: { ...revoir, aujourdhui: 25 } })).blocs.find((b) => b.genre === "retouches");
   check("veillée : retouches à 15 au plus", v?.n === 15, J(v?.n));
   const c = composerSeance(entree({ phase: "consolidation", budget: 60 })).blocs.find((b) => b.genre === "coince");
   check("ce qui coince : la matière au plus fort poids × manque (FSA, 48 %), 25 min à 60 min", c?.matiere === "fsa" && c.duree === 25 && c.raison === "FSA pèse 12,5 % et tu es à 48 % (zone basse)" && /topic=fsa/.test(c.destination.href), J(c));
@@ -100,7 +100,7 @@ console.log("\n# les règles des blocs");
   const pf = { ...dest, pointsFaibles: [{ notion: notionsDeMatiere("fsa")[0].id, score: 72 }] };
   const ca = composerSeance(entree({ phase: "consolidation", budget: 60, dest: pf })).blocs.find((b) => b.genre === "coince");
   check("ce qui coince : une notion de FSA en point faible net (≥ 60) et 20 min ou plus → l'Atelier", !!ca && ca.destination.href.startsWith("/atelier?notion="), J(ca?.destination.href));
-  const cv = composerSeance(entree({ phase: "veillee", joursAvant: 2, budget: 90 })).blocs.find((b) => b.genre === "coince");
+  const cv = composerSeance(entree({ phase: "veillee", joursAvant: 5, budget: 90, revoir: null, cinqFait: true })).blocs.find((b) => b.genre === "coince");
   check("veillée : ce qui coince vise une matière déjà en zone moyenne ou haute, 15 min", !!cv && cv.matiere !== "fsa" && ["moyenne", "haute"].includes(maitrise.matieres.find((m) => m.cle === cv.matiere)!.zone ?? "") && cv.duree === 15, J(cv));
   const n = composerSeance(entree({ phase: "fondations", budget: 60 })).blocs.find((b) => b.genre === "nouveau");
   check("du neuf : la matière au plus fort poids × part jamais vue, 20 min, sa fiche si elle a un drill", !!n && n.duree === 20 && !!n.matiere && n.matiere !== "quant" && /notions? .* jamais vues? sur \d+/.test(n.raison), J(n));
@@ -328,6 +328,18 @@ console.log("\n# la séance d'exemple (aperçus) et la fin de séance en fin d'o
   check("le bilan de fin d'outil porte la séance tenue (gains, lancement, budget) ; pas une séance proposée, en cours ou close",
     !!b.seance && b.seance.gains.length >= 1 && b.seance.lanceeLe === tenue.seance!.lanceeLe && b.seance.budget === tenue.seance!.budget && [vues[0], vues[1], vues[3]].every((v) => !bilanDe(v).seance));
   check("sans séance (le Codex d'avant) : le bilan n'en dit rien", !bilanDe(exempleCodex("milieu")).seance);
+}
+
+console.log("\n# la dernière semaine (V3 §7.1)");
+{
+  const v = composerSeance(entree({ phase: "veillee", joursAvant: 6, budget: 90 }));
+  check("veillée, 90 min choisies : la séance tient en 60 min (+ 5), le budget choisi reste le sien", v.duree <= 65 && v.budget === 90, J([v.duree, genres(v)]));
+  for (const j of [3, 1]) {
+    const m = composerSeance(entree({ phase: "veillee", joursAvant: j, budget: 90, revoir: { ...revoir, aujourdhui: 25 } }));
+    const r = m.blocs.find((b) => b.genre === "retouches");
+    check(`la malle J-${j} : les 5 du jour et 10 retouches au plus, rien d'autre`, genres(m).join() === "cinq,retouches" && r?.n === 10, J(m.blocs.map((b) => [b.genre, b.duree])));
+  }
+  check("la malle, les 5 du jour faits : les retouches seules", genres(composerSeance(entree({ phase: "veillee", joursAvant: 2, budget: 30, cinqFait: true }))).join() === "retouches");
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

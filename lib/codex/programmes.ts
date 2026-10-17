@@ -109,7 +109,7 @@ export const PROGRAMME_DEFAUT = CFA_L1;
 // ── Les programmes du joueur (codex_programmes_joueur, V3 §1.6) ─────────
 
 export type StatutProgramme = "actif" | "pause" | "mene" | "abandonne";
-export type ProgrammeJoueur = { programme: string; statut: StatutProgramme; jourJ: string | null; meneLe: string | null };
+export type ProgrammeJoueur = { programme: string; statut: StatutProgramme; jourJ: string | null; meneLe: string | null; /** l'inscription au programme (ISO) : le début du récap du lendemain (V3 §7.5) */ debut?: string | null };
 
 const STATUTS: readonly StatutProgramme[] = ["actif", "pause", "mene", "abandonne"];
 
@@ -117,9 +117,9 @@ const STATUTS: readonly StatutProgramme[] = ["actif", "pause", "mene", "abandonn
 export function lireProgrammesJoueur(lignes: unknown): ProgrammeJoueur[] {
   if (!Array.isArray(lignes)) return [];
   return lignes.flatMap((l) => {
-    const o = l as { programme?: unknown; statut?: unknown; jour_j?: unknown; mene_le?: unknown } | null;
+    const o = l as { programme?: unknown; statut?: unknown; jour_j?: unknown; mene_le?: unknown; debut?: unknown } | null;
     if (!o || typeof o.programme !== "string" || !STATUTS.includes(o.statut as StatutProgramme)) return [];
-    return [{ programme: o.programme, statut: o.statut as StatutProgramme, jourJ: typeof o.jour_j === "string" ? o.jour_j.slice(0, 10) : null, meneLe: typeof o.mene_le === "string" ? o.mene_le : null }];
+    return [{ programme: o.programme, statut: o.statut as StatutProgramme, jourJ: typeof o.jour_j === "string" ? o.jour_j.slice(0, 10) : null, meneLe: typeof o.mene_le === "string" ? o.mene_le : null, debut: typeof o.debut === "string" ? o.debut : null }];
   });
 }
 

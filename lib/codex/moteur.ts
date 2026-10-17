@@ -18,6 +18,7 @@ import { ACTES, CHAINES, DECOUVERTE, MODELES_CONTRATS, PHASES, PROGRAMME, RECOMM
 import { PRACTICE_V3, ROUTES, destinationDe, type ContexteDestination, type Destination } from "@/lib/codex/destinations";
 import { gabarit } from "@/lib/codex/elision";
 import { CAPACITES_VIDE, budgetParDefaut, questionsDes7Jours } from "@/lib/codex/reglage";
+import { MALLE_PRETE } from "@/lib/codex/calendrier";
 import { maitriseDuCodex, maitriseLue } from "@/lib/codex/cap";
 import { actesDe, programmeActif, type ProgrammeJoueur } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, compterPiecesCodex, palierAtteint, paliersRecompenses, quetesFilRouge, tropheesAuMoins, type TropheesLus } from "@/lib/codex/fil-rouge";
@@ -573,8 +574,8 @@ function mesureObjectif(o: Extract<Objectif, { k: "mesure" }>, c: Contexte): Ev 
   }
 }
 
-/** La malle est prête à 5 cases cochées sur 7 (V3 §7.3). */
-export const MALLE_PRETE = 5;
+/** La malle est prête à 5 cases cochées sur 7 (V3 §7.3) : la règle vit dans lib/codex/calendrier (léger, lu par l'écran). */
+export { MALLE_PRETE };
 
 /**
  * La valeur d'un spécial : dans speciaux (codex_lire), ou par matière dans
@@ -679,6 +680,11 @@ export function graine(s: string) {
 
 export const EMPLACEMENTS: Emplacement[] = ["faiblesse", "entretien", "variete"];
 export const BUDGET_TRIO = 45;
+/** En veillée, un seul contrat léger : l'entretien, 15 minutes au plus (V3 §7.2). */
+export const DUREE_VEILLEE = 15;
+
+/** Les emplacements tirés : les trois, sauf en veillée (l'entretien seul : un seul arc autour du sceau, pas de « 1/3 »). */
+export const emplacementsDe = (phase: Phase): Emplacement[] => (phase === "veillee" ? ["entretien"] : EMPLACEMENTS);
 
 const modeleParId = (id: string) => MODELES_CONTRATS.find((m) => m.id === id) ?? null;
 
@@ -729,8 +735,9 @@ export type Instance = { quete: Quete; periode: string; params: ContratTire["par
 
 /**
  * Tire les 3 contrats du jour : un par emplacement, pondérés par la phase,
- * sans répéter le modèle de la veille, dans le budget de 45 minutes. Pure et
- * déterministe (graine = joueur + jour) ; la base garde le premier tirage
+ * sans répéter le modèle de la veille, dans le budget de 45 minutes ; en
+ * veillée, un seul, l'entretien de 15 minutes au plus (emplacementsDe). Pure
+ * et déterministe (graine = joueur + jour) ; la base garde le premier tirage
  * (codex_contrats_poser).
  */
 export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Emplacement, string>> = {}): ContratTire[] {
@@ -768,12 +775,16 @@ export function tirerContrats(e: Entree, joueur: string, hier: Partial<Record<Em
   };
   const choisis: ContratTire[] = [];
   let duree = 0;
-  EMPLACEMENTS.forEach((emp, i) => {
+  const veillee = phase === "veillee";
+  const emplacements = emplacementsDe(phase);
+  emplacements.forEach((emp, i) => {
     let pool = MODELES_CONTRATS.filter((m) => m.emplacement === emp && eligible(m) && sources(m) && m.id !== hier[emp]);
     if (!pool.length) pool = MODELES_CONTRATS.filter((m) => m.emplacement === emp && eligible(m) && sources(m));
-    const restant = BUDGET_TRIO - duree - (EMPLACEMENTS.length - 1 - i) * 5;
+    const restant = veillee ? DUREE_VEILLEE : BUDGET_TRIO - duree - (emplacements.length - 1 - i) * 5;
     const tenables = pool.filter((m) => m.duree <= restant);
     if (tenables.length) pool = tenables;
+    // en veillée, rien de plus long que 15 minutes : plutôt aucun contrat
+    else if (veillee) pool = [];
     else if (pool.length) pool = [pool.reduce((a, b) => (b.duree < a.duree ? b : a))];
     const total = pool.reduce((s, m) => s + m.poids[phase], 0);
     if (!pool.length || total <= 0) return;
@@ -1258,6 +1269,8 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
   const dernier = (s: EtatQuete): Recommandation => ({ quete: s.quete, periode: s.periode, score: 1000, pourquoi: s.quete.pourquoi ?? actesDuJoueur(e).find((a) => a.id === s.quete.acte)?.but ?? s.quete.consigne, avancee: avanceeDe(s) });
   if (prologue.length) return dernier(prologue[0]);
   const joursAvant = joursAvantExamen(e.jour, e.jourJ);
+  // le jour J : aucune quête recommandée (V3 §7.4)
+  if (joursAvant === 0 && programmeActif(e.programmes).examen) return null;
   const aucuneAvance = (m: ContenuMatiere | undefined) => (m ? maitriseDe(e, m.key) : null);
   let meilleur: Recommandation | null = null;
   for (const s of ouvertes) {
@@ -1276,6 +1289,8 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
       if ((r.phase === "repetition" || r.phase === "veillee") && ["maitrise60", "maitrise75", "signature", "maitre"].includes(q.etape)) urgence = 1.2;
     }
     const av = avanceeDe(s);
+    // en veillée, on ne commence plus rien : pas de chaîne au long cours à entamer (V3 §7.1)
+    if (r.phase === "veillee" && q.chaine && av === 0 && (q.palier ?? 1) <= 1) continue;
     let continuite = av >= 0.5 ? R.continuiteMoitie : av > 0 ? R.continuite : 1;
     if (e.derniereMatiere && cle === e.derniereMatiere) continuite *= R.memeMatiere;
     const duree = (destinations.get(s)?.duree ?? 20) <= budget ? 1 : R.horsDuree;
@@ -1286,7 +1301,8 @@ export function recommander(e: Entree, r: Resultat): Recommandation | null {
       else if (m) pourquoi = `${m.court} pèse ${virgule(m.poids)} % de l'examen et tu n'y as pas encore de mesure.`;
       else if (chaine && q.chaine) pourquoi = CHAINES_POURQUOI.get(q.chaine) ?? q.pourquoi ?? q.consigne;
       else pourquoi = q.pourquoi ?? q.consigne;
-      if (joursAvant !== null && joursAvant >= 0 && joursAvant <= 30 && q.chaine) pourquoi += ` Plus que ${joursAvant} jours.`;
+      // pas de compte à rebours dans la dernière semaine (V3 §7.2)
+      if (joursAvant !== null && joursAvant > 7 && joursAvant <= 30 && q.chaine) pourquoi += ` Plus que ${joursAvant} jours.`;
       meilleur = { quete: q, periode: s.periode, score, pourquoi, avancee: av };
     }
   }

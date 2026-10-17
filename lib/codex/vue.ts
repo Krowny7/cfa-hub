@@ -11,6 +11,7 @@ import { nomEnTete, programmeActif, suiteDe } from "@/lib/codex/programmes";
 import { CHAPITRES_FIL, palierFilDe, paliersRecompenses } from "@/lib/codex/fil-rouge";
 import { actesDuJoueur, affichage, budgetDuJour, capacitesDe, contexteDestination, joursAvantExamen, parametresDe, revoirDe, type ContratTire, type EtatDevoilement, type EtatQuete, type Entree, type Recommandation, type Resultat } from "@/lib/codex/moteur";
 import type { VueSeance } from "@/lib/codex/seance";
+import { momentDe, recapDe, tamponsVeillee, type Moment, type Recap, type Tampon } from "@/lib/codex/calendrier";
 import type { Acte, Budget, Chaine, CosmetiqueCodex, Emplacement, EtapeBranche, Famille, Phase, Prerequis, Quete, RepliqueCodex } from "@/lib/codex/types";
 
 export type EtatLigne = "verrouillee" | "disponible" | "active" | "terminee";
@@ -165,12 +166,21 @@ export type VueCodex = {
   suite: { programme: string; court: string; annonce: string; ouvrable: boolean } | null;
   /** la séance du jour (lib/codex/seance.ts, V3 §6), composée par le serveur ; null : pas encore composée, ou Codex indisponible */
   seance: VueSeance | null;
+  /** le moment du calendrier (V3 §7.1) : ce que /codex montre, et dans quel ordre */
+  moment: Moment;
+  /** la veillée : sept tampons, de J-7 à J-1 (jours d'encre) ; null hors veillée */
+  tampons: Tampon[] | null;
+  /** la malle (J-3 à J-1) : les cases cochées ; null hors malle */
+  malle: { coches: string[] } | null;
+  /** le lendemain (J+1 à J+7) : le récap de la préparation ; null sinon */
+  recap: Recap | null;
 };
 
 export const VUE_INDISPONIBLE = (jour: string): VueCodex => ({
   disponible: false, jour, phase: "fondations", phaseNom: PHASES[0].nom, phaseReplique: PHASES[0].replique, joursAvant: null, niveau: 1, budget: null, revoir: null, cap: null, prochaine: null,
   trame: [], contrats: [], trio: { fait: false, xp: 0, faits: 0, total: 0, changementPossible: false }, hebdo: [], debrief: null, branches: [], longCours: [], filRouge: { chapitres: [], aVenir: true }, exploits: [],
   possessions: [], collection: null, stats: { faites: 0, total: 0, xpCodex: 0 }, devoile: null, devoileNouveaux: [], nouvelles: [], retro: null, suite: null, seance: null,
+  moment: "courant", tampons: null, malle: null, recap: null,
 });
 
 let NOMS_COSMETIQUES: Map<string, string> | null = null;
@@ -287,7 +297,7 @@ export function construireVue(
   e: Entree,
   r: Resultat,
   reco: Recommandation | null,
-  extra: { devoile: EtatDevoilement | null; nouvelles?: VueCodex["nouvelles"]; retro?: VueCodex["retro"]; changementFait?: boolean; joueur?: string },
+  extra: { devoile: EtatDevoilement | null; nouvelles?: VueCodex["nouvelles"]; retro?: VueCodex["retro"]; changementFait?: boolean; joueur?: string; malle?: string[] },
 ): VueCodex {
   const contenu = e.contenu ?? contenuDuProgramme();
   const ctx = contexteDestination(e, r);
@@ -330,11 +340,13 @@ export function construireVue(
   const debrief = lignes.find((x) => x.s.quete.id === QUETE_DEBRIEF.id && x.s.periode === e.jour && x.l.affichage !== "cache")?.l ?? null;
 
   // le cap : la maîtrise des matières, sans J-n pour un programme sans examen (V3 §4.6)
-  const cap = capDe(maitriseDuCodex(contenu, e.lecture.mesures), {
-    jour: e.jour,
-    joursAvant: programmeActif(e.programmes).examen ? joursAvantExamen(e.jour, e.jourJ) : null,
-    destination: (m) => destinationCoince(ctx, m),
-  });
+  const M = e.lecture.mesures;
+  const maitrise = maitriseDuCodex(contenu, M);
+  const joursAvantDate = programmeActif(e.programmes).examen ? joursAvantExamen(e.jour, e.jourJ) : null;
+  const cap = capDe(maitrise, { jour: e.jour, joursAvant: joursAvantDate, destination: (m) => destinationCoince(ctx, m) });
+  // le calendrier (V3 §7) : la veillée, la malle, le jour J, le lendemain ; jamais sans date
+  const moment = momentDe(joursAvantDate, r.phase);
+  const debut = (e.programmes ?? []).find((p) => p.statut === "actif")?.debut ?? null;
 
   const branches: VueBranche[] = contenu.map((m) => {
     const etapes = unique
@@ -425,6 +437,10 @@ export function construireVue(
     retro: extra.retro ?? null,
     suite: suiteVue(e),
     seance: null,
+    moment,
+    tampons: moment === "veillee" && joursAvantDate !== null ? tamponsVeillee(e.jour, joursAvantDate, M.jours) : null,
+    malle: moment === "malle" ? { coches: extra.malle ?? [] } : null,
+    recap: moment === "lendemain" ? recapDe({ programme: programmeActif(e.programmes).nom, debut, jourJ: e.jourJ, jours: M.jours ?? [], maitrise, raturesScellees: M.ratures_scellees, trophees: M.trophees }) : null,
   };
 }
 

@@ -6,7 +6,9 @@
 // ne reçoit jamais une quête cachée, le panneau « Tes quêtes » (quatre lignes
 // à faire, arcs, « ! » doré, récompenses annoncées une fois, « Une autre
 // idée ? », budget) et le réglage du jour avec et sans la §2 (V3 §9.2) ; le
-// cap en tête de /codex (préparation, fuites, mesure provisoire, V3 §4.6).
+// cap en tête de /codex (préparation, fuites, mesure provisoire, V3 §4.6) ;
+// le calendrier (V3 §7) : un cas par moment (J-8, J-7, J-3, J-0, J+1, J+10,
+// sans date), la veillée à un seul contrat, la malle, le récap du lendemain.
 import { DECOUVERTE, ACTES } from "@/lib/codex/catalogue";
 import { DEVOILE_DE_L_ESPACE, ID_DEVOILE, devoileLite } from "@/lib/codex/devoile-lite";
 import { estDevoile } from "@/lib/codex/moteur";
@@ -19,6 +21,10 @@ import { SPACES, activeSpace } from "@/lib/nav";
 import { paletteDeChemin } from "@/lib/palettes";
 import { exempleCodex } from "./exemple";
 import { vueSansFetes, type VueCodex } from "@/lib/codex/vue";
+import { CASES_MALLE, MALLE_PRETE, QUETE_VEILLE, cochesValides, dateLongue, lireMalle, momentDe, recapDe, tamponsVeillee, texteRecap } from "@/lib/codex/calendrier";
+import { DUREE_VEILLEE, LECTURE_VIDE, emplacementsDe, tirerContrats, type Entree } from "@/lib/codex/moteur";
+import { MODELES_CONTRATS } from "@/lib/codex/catalogue";
+import { decaleJour } from "@/lib/objectif-calc";
 import { TEXTES_CAP, aideMatiereCap, capDe, enTeteCap, fraicheurDe, fuites, gainPreparation, ligneFuites, ligneMatiereCap, maitriseDuCodex, pctCap, preparationDe, titreFuites, zoneDe, type MaitriseMatiere } from "@/lib/codex/cap";
 
 let ko = 0;
@@ -219,6 +225,77 @@ console.log("\n# la file « À revoir » et le débrief dans le panneau");
   const u = exempleCodex("milieu", { unique: true });
   check("avec revisions_dues : sa file (12, demain 9), portée par le panneau", JSON.stringify(panneauDe(u).revoir) === JSON.stringify({ aujourdhui: 12, demain: 9 }));
   check("avec la maîtrise unique : le cap n'est plus provisoire, les matières disent leur fraîcheur", !!u.cap && !u.cap.provisoire && u.cap.matieres.every((m) => !!m.fraicheur) && u.cap.matieres.some((m) => m.statut === "provisoire"));
+}
+
+console.log("\n# le calendrier (V3 §7) : un cas par moment");
+{
+  const J = "2026-10-16";
+  const v = (n: number | null) => exempleCodex("milieu", { jourJ: n === null ? null : decaleJour(J, n) });
+  const lignes = (x: VueCodex) => [...x.trame.flatMap((a) => a.quetes), ...x.contrats.map((c) => c.ligne)];
+
+  const j8 = v(8);
+  check("J-8 : le cours ordinaire (répétition), trois contrats, ni tampons, ni malle, ni récap", j8.moment === "courant" && j8.phase === "repetition" && j8.contrats.length === 3 && !j8.tampons && !j8.malle && !j8.recap, `${j8.moment} · ${j8.contrats.length}`);
+
+  const j7 = v(7);
+  const pn7 = panneauDe(j7);
+  check("J-7 : la veillée, sept tampons de J-7 à J-1, aujourd'hui le premier, les autres à venir", j7.moment === "veillee" && j7.tampons?.length === 7 && j7.tampons[0].aujourdhui && j7.tampons.slice(1).every((t) => t.aVenir && !t.encre) && j7.tampons[6].jour === decaleJour(J, 6), JSON.stringify(j7.tampons?.map((t) => t.jour)));
+  check("J-7 : un seul contrat, l'entretien, 15 min au plus ; un seul arc autour du sceau", j7.contrats.length <= 1 && j7.contrats.every((c) => c.emplacement === "entretien" && (c.ligne.duree ?? 0) <= DUREE_VEILLEE) && pn7.arcs.total <= 1, JSON.stringify(j7.contrats.map((c) => [c.emplacement, c.ligne.duree])));
+  check("J-7 : pas de compte à rebours dans la raison de la prochaine quête", !/Plus que/.test(j7.prochaine?.pourquoi ?? ""), j7.prochaine?.pourquoi);
+  check("J-7 : aucune chaîne au long cours à entamer n'est proposée", !(j7.prochaine?.quete.chaine && (j7.prochaine.quete.palier ?? 1) <= 1 && j7.prochaine.avancee === 0));
+
+  const j3 = v(3);
+  check("J-3 : la malle (vide), « La veille » ouverte", j3.moment === "malle" && JSON.stringify(j3.malle) === '{"coches":[]}' && lignes(j3).some((l) => l.id === QUETE_VEILLE && l.etat !== "verrouillee") && !j3.tampons, JSON.stringify(j3.malle));
+  const malle = lignes(exempleCodex("milieu", { jourJ: decaleJour(J, 3), malle: CASES_MALLE.slice(0, MALLE_PRETE).map((c) => c.id) })).find((l) => l.id === "trame:ep:malle");
+  check("J-3 : cinq cases cochées, « La malle est prête » est remplie", malle?.etat === "terminee", malle?.etat);
+  const malle4 = lignes(exempleCodex("milieu", { jourJ: decaleJour(J, 3), malle: CASES_MALLE.slice(0, 4).map((c) => c.id) })).find((l) => l.id === "trame:ep:malle");
+  check("… quatre ne suffisent pas", !!malle4 && malle4.etat !== "terminee", malle4?.etat);
+
+  const j0 = v(0);
+  const pn0 = panneauDe(j0);
+  check("J-0 : le jour J, aucune quête recommandée", j0.moment === "jourJ" && j0.prochaine === null);
+  check("J-0 : le panneau réduit à « Bonne chance » (rien à faire, rien d'annoncé, ni budget ni séance)", pn0.disponible && pn0.jourJ && pn0.quetes.length === 0 && pn0.versees === null && pn0.arcs.total === 0 && pn0.seance === null && pn0.budget === null);
+  check("hors du jour J, le panneau n'est jamais réduit", !panneauDe(j8).jourJ && !pn7.jourJ && !panneauDe(j3).jourJ);
+
+  const j1 = v(-1);
+  check("J+1 : le lendemain, le récap de la préparation (questions, jours d'encre, préparation)", j1.moment === "lendemain" && j1.phase === "apres" && !!j1.recap && j1.recap.questions > 0 && j1.recap.joursEncre > 0 && j1.recap.preparation === j1.cap?.preparation && j1.recap.programme === "CFA Niveau I", JSON.stringify(j1.recap));
+  check("J+1 : « Pose le pinceau » (trame:ep:lendemain) est ouverte", lignes(j1).some((l) => l.id === "trame:ep:lendemain" && l.etat !== "verrouillee"));
+
+  const j10 = v(-10);
+  check("J+10 : après l'épreuve, plus de récap", j10.moment === "apres" && j10.recap === null && j10.phase === "apres");
+  const sans = v(null);
+  check("sans date : jamais veillée, malle, jour J ni lendemain", sans.moment === "courant" && !sans.tampons && !sans.malle && !sans.recap && !panneauDe(sans).jourJ);
+  check("momentDe : les bornes (J-8, J-7, J-4, J-3, J-1, J-0, J+1, J+7, J+8 ; sans date)",
+    [8, 7, 4, 3, 1, 0, -1, -7, -8].map((n) => momentDe(n, "repetition")).join() === "courant,veillee,veillee,malle,malle,jourJ,lendemain,lendemain,apres"
+      && momentDe(null, "repetition") === "courant" && momentDe(null, "apres") === "apres");
+}
+
+console.log("\n# la veillée, la malle, le récap (V3 §7.2, §7.3, §7.5)");
+{
+  const t = tamponsVeillee("2026-11-07", 5, [{ jour: "2026-11-05", n: 12 }, { jour: "2026-11-06", n: 9 }, { jour: "2026-11-07", n: 30 }]);
+  const motif = t.map((x) => (x.encre ? "e" : x.aVenir ? "v" : "s")).join("");
+  check("tampons : de J-7 à J-1, remplis à 10 questions, un jour à venir n'est jamais rempli", t.length === 7 && t[0].jour === "2026-11-05" && t[6].jour === "2026-11-11" && motif === "esevvvv" && t[2].aujourdhui, motif);
+  check("cases de la malle : sept, une facultative, prête à cinq", CASES_MALLE.length === 7 && CASES_MALLE.filter((c) => c.facultative).length === 1 && MALLE_PRETE === 5);
+  check("cases cochées : connues, sans doublon, dans l'ordre de la malle", JSON.stringify(cochesValides(["pause", "x", "convocation", "pause", 3])) === '["convocation","pause"]' && cochesValides("non").length === 0);
+  check("la malle se lit dans le compte, pour son programme seulement", lireMalle({ rl_malle: { programme: "finance/cfa-l1", coches: ["trajet"] } }, "finance/cfa-l1").join() === "trajet" && lireMalle({ rl_malle: { programme: "histoire/essai", coches: ["trajet"] } }, "finance/cfa-l1").length === 0 && lireMalle(null, "finance/cfa-l1").length === 0);
+  const contenu = exempleCodex("milieu").branches.map((b) => b.contenu);
+  const e0: Entree = { contenu, now: new Date("2026-11-07T10:00:00Z"), jour: "2026-11-07", jourJ: "2026-11-12", objectif: null, visiteVue: true, progression: [], contrats: [], premier: false, dernierCalcul: null, lecture: { ...LECTURE_VIDE, mesures: { ratures_ouvertes: { total: 30, matieres: {} }, jours: [{ jour: "2026-10-01", n: 400 }] } } };
+  const tires = tirerContrats(e0, "joueur");
+  check("veillée : le tirage ne garde que l'entretien, 15 min au plus", emplacementsDe("veillee").join() === "entretien" && tires.length === 1 && tires.every((c) => c.emplacement === "entretien" && (MODELES_CONTRATS.find((m) => m.id === c.modele)?.duree ?? 99) <= DUREE_VEILLEE), JSON.stringify(tires));
+  check("hors veillée : les trois emplacements", emplacementsDe("repetition").length === 3 && tirerContrats({ ...e0, jourJ: "2026-12-20" }, "joueur").length === 3);
+  const mm = (cle: string, debut: number | null, pct: number | null) => ({ cle, nom: cle, court: cle.toUpperCase(), poids: 10, pct, n: 60, total: 200, statut: "mesuree" as const, derniere: null, debut, ancienne: null, zone: null });
+  const r = recapDe({
+    programme: "CFA Niveau I", debut: "2026-09-02T08:00:00Z", jourJ: "2026-11-12",
+    jours: [{ jour: "2026-09-01", n: 50 }, { jour: "2026-09-02", n: 40 }, { jour: "2026-10-10", n: 8 }, { jour: "2026-11-12", n: 2 }, { jour: "2026-11-13", n: 30 }],
+    maitrise: { matieres: [mm("quant", 37, 62), mm("fsa", 40, 52), mm("ethics", 55, 50), mm("equity", 30, 70), mm("pm", null, 66), mm("alt", 20, 31)], preparation: 61 },
+    trophees: [{ n: 2 }, { n: 3 }],
+  });
+  check("récap : de l'inscription au jour J compris (ni avant, ni après)", r.depuis === "2026-09-02" && r.questions === 50 && r.joursEncre === 1, JSON.stringify(r));
+  check("récap : heures = questions × 1,2 min, arrondies ; trophées additionnés ; ratures scellées inconnues → null", r.heures === 1 && r.trophees === 5 && r.raturesScellees === null && r.preparation === 61);
+  check("récap : les trois matières qui ont le plus monté (une qui baisse ou sans début n'y est pas)", r.matieres.map((m) => m.cle).join() === "equity,quant,fsa", r.matieres.map((m) => m.cle).join());
+  check("récap sans inscription connue : depuis la première réponse", recapDe({ programme: "x", debut: null, jourJ: null, jours: [{ jour: "2026-08-03", n: 4 }, { jour: "2026-08-01", n: 0 }], maitrise: { matieres: [], preparation: 0 } }).depuis === "2026-08-03");
+  const texte = texteRecap({ ...r, questions: 6240, heures: 125, joursEncre: 64 });
+  check("le texte partagé : les chiffres du travail, en français", texte === `Ma préparation · CFA Niveau I : ${(6240).toLocaleString("fr-FR")} questions, ≈ 125 h de travail, 64 jours d'encre. Le pinceau est posé.`, texte);
+  check("une date longue : « 1er novembre 2026 », « 12 août 2026 »", dateLongue("2026-11-01") === "1er novembre 2026" && dateLongue("2026-08-12T10:00:00Z") === "12 août 2026");
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
