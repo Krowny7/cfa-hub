@@ -12,7 +12,9 @@ import g from "./GrilleProfil.module.css";
 // et disparaît sur téléphone ; une rangée sans rien à montrer est sautée.
 // Personnaliser (`edition`) : aucune rangée sautée, data-case sur chaque
 // case (l'index de l'élément), data-place sur chaque fin de rangée (le
-// numéro de la rangée), pour viser au glisser. Sans état et sans base : la
+// numéro de la rangée), pour viser au glisser ; ses places libres ne
+// jouent que dès 1 024 px (une colonne n'en a pas : ni case, ni écart en
+// trop au téléphone). Sans état et sans base : la
 // page l'emploie par PageProfil (client), l'éditeur directement.
 
 const PORTEE = { tuile: g.p4, heros: g.p8, bande: g.p12 };
@@ -51,12 +53,15 @@ export function GrilleProfil({
       {lignes
         .filter((l) => edition || l.montre)
         .map(({ r, k, contenus, libres, fin, finRendue }) => (
-          <div key={k} className={g.rangee + (r.cases.every((c) => c.f === "bande") ? "" : " " + g.haute)}>
+          <div
+            key={k}
+            className={g.rangee + (r.cases.every((c) => c.f === "bande") ? "" : " " + g.haute) + (edition && r.cases.every((c) => estLibre(c.e)) ? " " + g.placeEdition : "")}
+          >
             {r.cases.map((c, n) => {
               const cle = cleDe(c.e, c.i);
               const contenu = estLibre(c.e) ? libres[n] : contenus[n];
               return rendu(contenu) ? (
-                <div key={cle} data-case={edition ? c.i : undefined} className={`@container ${g.case} ${PORTEE[c.f]}`}>
+                <div key={cle} data-case={edition ? c.i : undefined} className={`@container ${g.case} ${PORTEE[c.f]}` + (edition && estLibre(c.e) ? " " + g.placeEdition : "")}>
                   {contenu}
                 </div>
               ) : (
@@ -65,7 +70,7 @@ export function GrilleProfil({
             })}
             {/* la portée par classe (et non en style) : sous 1 024 px, un « span » ouvrirait des colonnes */}
             {fin && rendu(finRendue) && (
-              <div key={`fin-${k}`} data-place={edition ? k : undefined} className={`${g.case} ${r.libre === 4 ? g.p4 : g.p8}`}>
+              <div key={`fin-${k}`} data-place={edition ? k : undefined} className={`${g.case} ${r.libre === 4 ? g.p4 : g.p8}` + (edition ? " " + g.placeEdition : "")}>
                 {finRendue}
               </div>
             )}

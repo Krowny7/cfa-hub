@@ -25,6 +25,13 @@
 .vide {
   display: none;
 }
+/* Personnaliser : une place libre (et une rangée qui n'a qu'elles) n'existe
+   que dès 1 024 px ; en dessous, rien, pas même l'écart */
+@media (max-width: 1023.98px) {
+  .placeEdition {
+    display: none;
+  }
+}
 @media (min-width: 768px) {
   .grille,
   .rangee {

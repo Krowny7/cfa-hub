@@ -5,7 +5,7 @@
 // rangée de bandes, case sans contenu vide et cachée aux lecteurs d'écran,
 // rangée sans contenu sautée en vue publique et gardée en édition, places
 // libres avec leur portée et leur « apres », data-case seulement en
-// édition) ; BlocProfil pour chaque genre à chaque format permis, avec des
+// édition, places libres de l'édition cachées sous 1 024 px) ; BlocProfil pour chaque genre à chaque format permis, avec des
 // données riches et sobres (amis 6 / 9 / 12, sources 3 / 5, vidéo avec sa
 // couverture « #t= » sans toucher l'adresse enregistrée, GIF sans largeur
 // forcée quand sa taille est inconnue) ; aDuContenu des blocs sans
@@ -83,7 +83,17 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
     JSON.stringify(vues),
   );
   check("grille : en édition, data-case sur chaque case, data-place sur la fin de rangée", compte(ed, "data-case=") === 5 && ed.includes('data-place="2"'));
-  check("grille : la fin de rangée prend sa portée par classe (pas de « span » en style)", ed.includes('data-place="2" class="case p4"') && !ed.includes("grid-column"));
+  check("grille : la fin de rangée prend sa portée par classe (pas de « span » en style)", ed.includes('data-place="2" class="case p4 placeEdition"') && !ed.includes("grid-column"));
+  check("grille : en édition, les places libres (élément libre, fin de rangée) ne jouent que dès 1 024 px", ed.includes('data-case="4" class="@container case p4 placeEdition"') && compte(ed, "placeEdition") === 2);
+  const seulesLibres: Disposition = [
+    { k: "vitrine", f: "bande" },
+    { k: "libre", f: "heros" },
+    { k: "libre", f: "tuile" },
+  ];
+  const edLibres = rend(<GrilleProfil edition disposition={seulesLibres} rendre={nomme} libre={() => <i>place</i>} />);
+  check("grille : en édition, une rangée de places libres seules disparaît sous 1 024 px (sans écart en trop)", edLibres.includes('<div class="rangee haute placeEdition">') && edLibres.includes('<div class="rangee">'));
+  const publiqueLibre = rend(<GrilleProfil disposition={d} rendre={nomme} libre={() => <i>place</i>} />);
+  check("grille : vue publique, ce qu'on pose dans une place libre se voit partout (l'invitation du propriétaire)", publiqueLibre.includes("<i>place</i>") && !publiqueLibre.includes("placeEdition"));
   const deuxHeros: Disposition = [
     { k: "radar", f: "heros" },
     { k: "amis", f: "heros" },
