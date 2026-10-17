@@ -963,12 +963,31 @@ export function Chemin({ quetes, ici, onQuete, nom }: { quetes: LigneQuete[]; ic
 /* Le téléphone : cinq segments (V3 §10.1)                             */
 /* ================================================================== */
 
-/** La barre des cinq segments, en tête de /codex sur téléphone. */
+/** La barre des cinq segments, en tête de /codex sur téléphone (onglets : flèches, Début, Fin). */
 export function SegmentsTel({ segment, onChoisir }: { segment: SegmentTel; onChoisir: (s: SegmentTel) => void }) {
+  const clavier = (ev: React.KeyboardEvent) => {
+    const i = SEGMENTS_TEL.findIndex((s) => s.cle === segment);
+    const n = SEGMENTS_TEL.length;
+    const j = ev.key === "ArrowRight" ? (i + 1) % n : ev.key === "ArrowLeft" ? (i - 1 + n) % n : ev.key === "Home" ? 0 : ev.key === "End" ? n - 1 : -1;
+    if (j < 0) return;
+    ev.preventDefault();
+    onChoisir(SEGMENTS_TEL[j].cle);
+    document.getElementById("codex-seg-" + SEGMENTS_TEL[j].cle)?.focus();
+  };
   return (
-    <div className={c.segments} role="tablist" aria-label="Le Codex">
+    <div className={c.segments} role="tablist" aria-label="Le Codex" onKeyDown={clavier}>
       {SEGMENTS_TEL.map((s) => (
-        <button key={s.cle} type="button" role="tab" id={"codex-seg-" + s.cle} aria-selected={segment === s.cle} aria-controls="codex-segment" className={c.segment} onClick={() => onChoisir(s.cle)}>
+        <button
+          key={s.cle}
+          type="button"
+          role="tab"
+          id={"codex-seg-" + s.cle}
+          aria-selected={segment === s.cle}
+          aria-controls="codex-segment"
+          tabIndex={segment === s.cle ? 0 : -1}
+          className={c.segment}
+          onClick={() => onChoisir(s.cle)}
+        >
           {s.libelle}
         </button>
       ))}
