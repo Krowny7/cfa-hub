@@ -70,17 +70,29 @@ export type Noms = { titre: (id: string) => string | null; recompense: (cle: str
 const rapporte = (l: { xp: number | string | null; cosmetique: string | null; titre: string | null }) => (Number(l.xp) || 0) > 0 || !!l.cosmetique || !!l.titre;
 
 /** Ce qu'il faut d'une ligne de codex_progression pour savoir si elle attend « Récupérer » (la vue, et Moi qui lit la table). */
-export type LigneAttente = { quete_id: string; etat: string; vu: boolean | null; retro: boolean | null; xp: number | string | null; cosmetique: string | null; titre: string | null };
+export type LigneAttente = { quete_id: string; etat: string; vu: boolean | null; retro: boolean | null; xp: number | string | null; cosmetique: string | null; titre: string | null; recompensee_le: string | null };
+
+/**
+ * Le premier jour (de Paris) où une récompense déjà versée attend son accusé
+ * (le repli sans la §9). Avant, l'ancien Codex n'acquittait que les lignes de
+ * la vue du jour : le bonus des 3 quêtes du jour (« contrat:trio:… ») et les
+ * contrats des jours passés gardent vu faux sans fin. Sans cette borne, tout
+ * cet arriéré s'afficherait « Déjà versé » à la mise en ligne. Le lendemain
+ * de la mise en ligne du Codex simplifié ; la §9a de migration_codex_v3.sql
+ * acquitte en base l'arriéré d'avant la même date.
+ */
+export const DEBUT_RECUPERER = "2026-10-18";
 
 /**
  * La règle unique de « Récupérer » (la vue, le panneau, la tuile de Moi) :
  * une ligne « terminee » attend d'être versée ; hors mode sobre, une ligne
  * « recompensee » pas encore vue, non rétroactive, qui rapporte quelque
- * chose, attend son accusé (le repli sans la §9). Jamais un sceau du profil
- * (il a sa cérémonie).
+ * chose, versée depuis DEBUT_RECUPERER, attend son accusé (le repli sans la
+ * §9). Jamais un sceau du profil (il a sa cérémonie).
  */
 export const attendRecuperer = (l: LigneAttente, sobre: boolean): boolean =>
-  l.etat === "terminee" || (!sobre && l.etat === "recompensee" && !l.vu && !l.retro && rapporte(l) && !l.quete_id.startsWith("exploit:sceau:"));
+  l.etat === "terminee" ||
+  (!sobre && l.etat === "recompensee" && !l.vu && !l.retro && rapporte(l) && !l.quete_id.startsWith("exploit:sceau:") && (jourDe(l.recompensee_le) ?? "") >= DEBUT_RECUPERER);
 
 /**
  * Ce qui attend « Récupérer », les plus récentes d'abord : les lignes
@@ -148,11 +160,21 @@ export function titreHorsVue(id: string): string | null {
   return null;
 }
 
-/** Le « Fait aujourd'hui » une fois ces quêtes récupérées : elles passent en tête. */
-export function faitApres(fait: FaitAujourdhui, recues: ARecuperer[], xpVersee: number): FaitAujourdhui {
+/** Ce que le clic rend de chaque quête récupérée (assez pour « Fait aujourd'hui »). */
+export type Recue = Pick<ARecuperer, "quete" | "periode" | "titre" | "xp" | "aVerser" | "le">;
+
+/**
+ * Le « Fait aujourd'hui » une fois ces quêtes récupérées : elles passent en
+ * tête. `recues` : TOUT ce que le serveur a récupéré (pas seulement les
+ * lignes montrées). Une quête versée au clic compte ce jour ; une déjà
+ * versée (repli sans la §9) ne compte que si elle l'a été ce jour (`jour`),
+ * comme le « Fait aujourd'hui » du serveur.
+ */
+export function faitApres(fait: FaitAujourdhui, recues: Recue[], xpVersee: number, jour: string): FaitAujourdhui {
   const deja = new Set(fait.quetes.map(cleRecuperer));
-  const nouvelles = recues.filter((x) => !deja.has(cleRecuperer(x))).map((x) => ({ quete: x.quete, periode: x.periode, titre: x.titre, xp: x.xp }));
-  const xpAccuse = recues.filter((x) => !x.aVerser).reduce((s, x) => s + x.xp, 0);
+  const comptees = recues.filter((x) => x.aVerser || x.le === jour);
+  const nouvelles = comptees.filter((x) => !deja.has(cleRecuperer(x))).map((x) => ({ quete: x.quete, periode: x.periode, titre: x.titre, xp: x.xp }));
+  const xpAccuse = comptees.filter((x) => !x.aVerser && !deja.has(cleRecuperer(x))).reduce((s, x) => s + x.xp, 0);
   return { n: fait.n + nouvelles.length, xp: fait.xp + xpVersee + xpAccuse, quetes: [...nouvelles, ...fait.quetes] };
 }
 
@@ -212,9 +234,13 @@ export const TEXTES_RECUPERER = {
   /** déjà versé (repli sans la §9) */
   dejaVerse: "Déjà versé",
   voir: "Voir ce que tu as gagné",
+  /** le bouton court d'une ligne de liste, déjà versé */
+  voirCourt: "Voir",
   autres: (n: number) => `et ${n} autre${n > 1 ? "s" : ""}`,
   /** la ligne de fin d'outil : « 2 quêtes à récupérer » */
   ligne: (n: number) => `${n} quête${n > 1 ? "s" : ""} à récupérer`,
+  /** la même, quand tout est déjà versé (repli sans la §9) : « 2 quêtes faites · Déjà versé » */
+  faites: (n: number) => `${n} quête${n > 1 ? "s" : ""} faite${n > 1 ? "s" : ""}`,
   enCours: "Récupération…",
   /** le bouton d'une quête, une fois récupérée */
   recuperee: "Récupérée",

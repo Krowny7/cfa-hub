@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, lireXpTotal, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recompenseEcrite, recupererCodex, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
+import { changerContrat, choisirSemaine, ecrireMalle, lireCodex, lirePanneau, lireXpTotal, marquerRetroVue, marquerSeance, marquerVus, oublierCodex, oublierPanneau, ouvrirProgramme, panneauGarde, recupererCodex, reglerJour, saisirVerdict, type Joueur } from "@/lib/codex/serveur";
 import { CIBLES_SEMAINE, COMMANDES, type Commande } from "@/lib/codex/catalogue";
 import type { StatutVerdict } from "@/lib/codex/plan";
 import { BILAN_VIDE, bilanDe, type BilanCodex, type FeteCodex } from "@/lib/codex/bilan";
-import { MAX_RECUPERER, grandesFetes } from "@/lib/codex/recuperer";
+import { MAX_RECUPERER, grandesFetes, type Recue } from "@/lib/codex/recuperer";
 import { PANNEAU_VIDE, panneauDe, type Panneau } from "@/lib/codex/panneau";
 import { estBudget } from "@/lib/codex/reglage";
 import { ECARTE_SEANCE, estGenreBloc, type VueSeance } from "@/lib/codex/seance";
@@ -59,41 +59,6 @@ export async function codexPoint(opts: { recalcul?: boolean } = {}): Promise<Bil
   }
 }
 
-/**
- * « Réclamer » une récompense. Le Codex verse déjà tout seul les récompenses
- * à chaque synchronisation : ceci lit la ligne écrite (sans recalcul) ; ce
- * n'est que si elle n'est pas encore écrite (remplie depuis le dernier
- * calcul) qu'un calcul complet sert de filet. Idempotent : réclamer deux
- * fois ne verse qu'une fois.
- */
-export async function codexReclamer(queteId: string, periode = ""): Promise<Resultat<{ xp: number; deja: boolean }>> {
-  const { supabase, user } = await joueur();
-  if (!user) return { ok: false, raison: "connexion" };
-  return reclamerPour(supabase, user, queteId, periode);
-}
-
-async function reclamerPour(supabase: Awaited<ReturnType<typeof createClient>>, user: Joueur, queteId: string, periode: string): Promise<Resultat<{ xp: number; deja: boolean }>> {
-  if (typeof queteId !== "string" || queteId.length > 120 || typeof periode !== "string") return { ok: false, raison: "refus" };
-  const ecrite = await recompenseEcrite(user.id, queteId, periode);
-  if (ecrite === "indisponible") return { ok: false, raison: "indisponible" };
-  // faite, elle attend « Récupérer » : la réclamer la récupère
-  if (ecrite?.attend) {
-    const r = await recupererCodex(supabase, user, [{ quete: queteId, periode }]);
-    if (!r.ok) return r;
-    revalidatePath("/", "layout");
-    return { ok: true, xp: r.xp, deja: false };
-  }
-  if (ecrite) return { ok: true, xp: ecrite.xp, deja: ecrite.vu };
-  const vue = await lireCodex(supabase, user, { force: true, persister: true });
-  if (!vue.disponible) return { ok: false, raison: "indisponible" };
-  const recue = vue.nouvelles.find((n) => n.quete === queteId && n.periode === periode);
-  if (recue) return { ok: true, xp: recue.xp, deja: false };
-  const toutes = [...vue.trame.flatMap((a) => a.quetes), ...vue.hebdo, ...vue.branches.flatMap((b) => b.etapes), ...vue.longCours.flatMap((c) => c.paliers), ...vue.exploits, ...vue.contrats.map((c) => c.ligne)];
-  const ligne = toutes.find((l) => l.id === queteId && l.periode === periode);
-  if (ligne?.etat === "terminee") return { ok: true, xp: ligne.xpVersee ?? 0, deja: true };
-  return { ok: false, raison: "aucun" };
-}
-
 /** Les clés reçues du navigateur : une liste de {quete, periode} bien formés, MAX_RECUPERER au plus ; null : refusées. */
 function clesValides(x: unknown): { quete: string; periode: string }[] | null {
   if (!Array.isArray(x) || x.length > MAX_RECUPERER) return null;
@@ -115,7 +80,7 @@ function clesValides(x: unknown): { quete: string; periode: string }[] | null {
  * fêtes à jouer une par une (acte clos, « Maître de… », pièce gagnée). Le
  * niveau de la barre du haut se rafraîchit.
  */
-export async function codexRecuperer(cles?: { quete: string; periode: string }[]): Promise<Resultat<{ recues: { quete: string; periode: string }[]; xp: number; restant: number; fetes: FeteCodex[] }>> {
+export async function codexRecuperer(cles?: { quete: string; periode: string }[]): Promise<Resultat<{ recues: Recue[]; xp: number; restant: number; fetes: FeteCodex[] }>> {
   const { supabase, user } = await joueur();
   if (!user) return { ok: false, raison: "connexion" };
   const valides = cles === undefined ? null : clesValides(cles);
@@ -124,7 +89,7 @@ export async function codexRecuperer(cles?: { quete: string; periode: string }[]
     const r = await recupererCodex(supabase, user, valides);
     if (!r.ok) return r;
     revalidatePath("/", "layout");
-    return { ok: true, recues: r.recues.map((x) => ({ quete: x.quete, periode: x.periode })), xp: r.xp, restant: r.restant, fetes: grandesFetes(r.recues, r.sobre) };
+    return { ok: true, recues: r.recues.map(({ quete, periode, titre, xp, aVerser, le }) => ({ quete, periode, titre, xp, aVerser, le })), xp: r.xp, restant: r.restant, fetes: grandesFetes(r.recues, r.sobre) };
   } catch {
     return { ok: false, raison: "erreur" };
   }

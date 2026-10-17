@@ -157,7 +157,7 @@ export function Recuperer({
     setPhase("envoi");
     let r: Awaited<ReturnType<typeof codexRecuperer>> | null = null;
     if (demo) {
-      r = { ok: true, recues: pris.map(({ quete, periode }) => ({ quete, periode })), xp: xpAVerser(pris), restant: 0, fetes: grandesFetes(pris, sobre) };
+      r = { ok: true, recues: pris.map(({ quete, periode, titre, xp, aVerser, le }) => ({ quete, periode, titre, xp, aVerser, le })), xp: xpAVerser(pris), restant: 0, fetes: grandesFetes(pris, sobre) };
     } else {
       try {
         // tout ce qui attend (le serveur relit la liste entière) ; « bouton » : ses quêtes seules
@@ -166,15 +166,19 @@ export function Recuperer({
         r = null;
       }
     }
-    if (!r || !r.ok) {
+    // rien de récupéré alors que tout attend encore : un échec, rien ne bouge (« bouton » : un autre
+    // onglet a pu la récupérer avant, le reste attend toujours ; c'est un succès silencieux)
+    if (!r || !r.ok || (!r.recues.length && r.restant > 0 && !seul)) {
       setEchec(true);
       setPhase("pret");
       return;
     }
     const recuesCles = new Set(r.recues.map(cleRecuperer));
     const recues = pris.filter((x) => recuesCles.has(cleRecuperer(x)));
+    // rien de récupéré et plus rien n'attend : un autre onglet est passé avant, le geste se joue quand même
     setPrises(recues.length ? recues : pris);
-    setApres(faitApres(fait, recues, r.xp));
+    // tout ce que le serveur a récupéré, pas seulement les lignes montrées
+    setApres(faitApres(fait, r.recues, r.xp, jour));
     setFetes(r.fetes);
     if (!demo && !seul) rafraichir();
     const reduit = mouvementReduit();
@@ -213,7 +217,7 @@ export function Recuperer({
           </span>
         ) : (
           <button type="button" className={(contour ? "btn btn-secondary" : "btn btn-primary") + " rl-press min-h-[44px] w-full"} disabled={phase !== "pret"} aria-busy={phase === "envoi"} onClick={recuperer}>
-            {phase === "envoi" ? T.enCours : court ? T.un(0) : dejaVerse ? T.voir : T.un(xp)}
+            {phase === "envoi" ? T.enCours : dejaVerse ? (court ? T.voirCourt : T.voir) : court ? T.un(0) : T.un(xp)}
           </button>
         )}
         {echec && (
@@ -263,8 +267,7 @@ export function Recuperer({
       <div className={"flex flex-wrap items-center gap-x-3 gap-y-2 " + className}>
         <span className="shrink-0">{sceau(0)}</span>
         <p className="t-small m-0 min-w-0 flex-1">
-          {T.ligne(n)}
-          {dejaVerse ? ` · ${T.dejaVerse}` : ""}
+          {dejaVerse ? `${T.faites(n)} · ${T.dejaVerse}` : T.ligne(n)}
         </p>
         {comptee ?? (
           <button type="button" className="btn btn-secondary rl-press min-h-[44px]" disabled={occupe} aria-busy={phase === "envoi"} onClick={recuperer}>

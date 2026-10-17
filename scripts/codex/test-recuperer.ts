@@ -15,7 +15,7 @@ import { panneauDe } from "@/lib/codex/panneau";
 import { CAPACITES_VIDE, lireCapacites } from "@/lib/codex/reglage";
 import { levelInfoFromXp } from "@/lib/leveling";
 import {
-  LIGNES_MONTREES, TEXTES_RECUPERER as T, aRecupererDe, dateRecuperer, faitApres, faitAujourdhuiDe, familleDe, grandesFetes, jourDe, titreHorsVue, xpAVerser, type ARecuperer,
+  DEBUT_RECUPERER, LIGNES_MONTREES, TEXTES_RECUPERER as T, aRecupererDe, attendRecuperer, dateRecuperer, faitApres, faitAujourdhuiDe, familleDe, grandesFetes, jourDe, titreHorsVue, xpAVerser, type ARecuperer,
 } from "@/lib/codex/recuperer";
 
 let ko = 0;
@@ -43,6 +43,8 @@ const repondre = (e: Entree, f: (d: Demande) => number = (d) => (d.evenement ===
 const ligne = (id: string, o: Partial<LigneProgression> = {}): LigneProgression => ({
   quete_id: id, periode: "", etat: "recompensee", progression: 1, cible: 1, ouverte_le: "2026-10-01T10:00:00Z", terminee_le: "2026-10-17T09:00:00Z", recompensee_le: "2026-10-17T09:00:00Z", retro: false, xp: 20, cosmetique: null, titre: null, vu: true, ...o,
 });
+/** Versée depuis la mise en ligne du Codex simplifié : le repli peut en accuser réception. */
+const APRES = `${DEBUT_RECUPERER}T09:00:00Z`;
 const trait = (r: ReturnType<typeof evaluer>) => r.lot.find((i) => i.quete === "trame:prologue:premier-trait");
 
 console.log("# la capacité « recuperer »");
@@ -101,19 +103,23 @@ console.log("\n# la vue : « À récupérer » et « Fait aujourd'hui »");
   check("le panneau : combien attendent (la pastille), l'XP à verser, les trois premières, « Fait aujourd'hui »", p.recuperer.n === 4 && p.recuperer.xp === 160 && p.recuperer.items.length === 3 && p.fait.n === 1, J(p.recuperer.n));
   check("mode sobre : le panneau n'annonce pas d'XP", panneauDe({ ...v, sobre: true }).recuperer.xp === 0);
   // sans la §9 : déjà versée, pas vue ; l'ouverture du panneau ne doit pas l'acquitter avant le clic
-  const sansSql = repondre(base({ progression: [ligne("trame:prologue:premier-trait", { vu: false })] }), () => 0);
+  const sansSql = repondre(base({ progression: [ligne("trame:prologue:premier-trait", { vu: false, recompensee_le: APRES })] }), () => 0);
   const vr = construireVue(sansSql.e, sansSql.r, null, { devoile: null });
-  const avecActe = repondre(base({ progression: [ligne("acte:prologue", { vu: false, xp: 60 })] }), () => 0);
+  const avecActe = repondre(base({ progression: [ligne("acte:prologue", { vu: false, xp: 60, recompensee_le: APRES })] }), () => 0);
   const va = construireVue(avecActe.e, avecActe.r, null, { devoile: null });
   const xpActe = va.trame.find((a) => a.acte.id === "prologue")?.acte.recompense.xp ?? -1;
   check("un acte clos déjà versé attend aussi ; annoncé en pied (rien en attente), son XP entre dans le total", va.aRecuperer.some((x) => x.quete === "acte:prologue") && panneauDe({ ...va, aRecuperer: [] }).versees?.xp === xpActe && xpActe > 0, J(panneauDe({ ...va, aRecuperer: [] }).versees));
   check("repli : elle attend « Récupérer » (déjà versée) et le panneau ne l'annonce pas en pied", vr.aRecuperer.length === 1 && !vr.aRecuperer[0].aVerser && panneauDe(vr).versees === null && panneauDe(vr).recuperer.n === 1 && panneauDe(vr).recuperer.xp === 0, J(panneauDe(vr).versees));
 
   // le repli sans la §9 : déjà versé, pas encore vu
-  const repli = [ligne("trame:prologue:premier-trait", { vu: false }), ligne("trame:prologue:dix", { vu: false, xp: 0 }), ligne("exploit:sceau:fsa", { vu: false }), ligne("trame:prologue:jour-j", { vu: false, retro: true })];
+  const repli = [ligne("trame:prologue:premier-trait", { vu: false, recompensee_le: APRES }), ligne("trame:prologue:dix", { vu: false, xp: 0, recompensee_le: APRES }), ligne("exploit:sceau:fsa", { vu: false, recompensee_le: APRES }), ligne("trame:prologue:jour-j", { vu: false, retro: true, recompensee_le: APRES })];
   const noms = { titre: () => "t", recompense: () => null };
   const a = aRecupererDe(repli, { ...noms, sobre: false });
   check("repli : seules les quêtes versées, pas vues, non rétroactives, qui rapportent (ni les sceaux du profil)", J(a.map((x) => x.quete)) === J(["trame:prologue:premier-trait"]) && a[0].aVerser === false && a[0].xp === 20, J(a));
+  // l'arriéré de l'ancien Codex (le bonus des 3 quêtes du jour, les contrats passés) n'était jamais acquitté
+  const trio = (le: string | null) => ligne("contrat:trio:2026-10-14", { periode: "2026-10-14", vu: false, xp: 50, terminee_le: le, recompensee_le: le });
+  check("repli : l'arriéré d'avant la mise en ligne (vu faux) n'attend pas ; la même ligne après, si", !attendRecuperer(trio("2026-10-14T19:00:00Z"), false) && !attendRecuperer(trio(null), false) && attendRecuperer(trio(APRES), false) && aRecupererDe([trio("2026-10-14T19:00:00Z")], { ...noms, sobre: false }).length === 0);
+  check("une quête à verser (« terminee ») attend, quelle que soit sa date", attendRecuperer(ligne("contrat:trio:2026-10-14", { etat: "terminee", vu: false, recompensee_le: null, terminee_le: "2026-10-14T19:00:00Z" }), false));
   check("repli en mode sobre : rien n'attend", aRecupererDe(repli, { ...noms, sobre: true }).length === 0);
   check("mode sobre : ce qui reste à verser attend quand même (versé d'office par le serveur)", aRecupererDe([ligne("q", { etat: "terminee" })], { ...noms, sobre: true }).length === 1);
   check("un miroir ne s'annonce pas (compté avec sa quête payeuse)", aRecupererDe([ligne("m", { etat: "terminee" })], { ...noms, sobre: false, ignorer: (id) => id === "m" }).length === 0);
@@ -130,8 +136,12 @@ console.log("\n# le clic : les fêtes, le repli");
   check("mode sobre : aucune fête (sans animation)", grandesFetes(items, true).length === 0);
   check("familleDe : un acte d'un autre programme, une quête préfixée", familleDe("acte:cfa-l2/acte3") === "acte" && familleDe("cfa-l2/branche:fsa:maitre") === "branche" && familleDe("contrat:trio:2026-10-17") === "contrat");
   check("titreHorsVue : trio, contrat d'un autre jour ou d'une autre semaine", titreHorsVue("contrat:trio:2026-10-14") === "Les 3 quêtes du jour" && titreHorsVue("contrat:hebdo:encre") === "Quête de la semaine" && titreHorsVue("contrat:faiblesse:2026-10-14") === "Quête du jour" && titreHorsVue("trame:a1:fiche") === null);
-  const apres = faitApres({ n: 1, xp: 15, quetes: [{ quete: "j", periode: "", titre: "j", xp: 15 }] }, [x("a", { xp: 30 }), x("b", { xp: 40, aVerser: false })], 30);
+  const apres = faitApres({ n: 1, xp: 15, quetes: [{ quete: "j", periode: "", titre: "j", xp: 15 }] }, [x("a", { xp: 30 }), x("b", { xp: 40, aVerser: false })], 30, jour);
   check("après le clic : « Fait aujourd'hui » gagne les quêtes récupérées et leur XP (versée ou déjà versée)", apres.n === 3 && apres.xp === 15 + 30 + 40 && apres.quetes[0].quete === "a", J(apres));
+  const vieux = faitApres({ n: 0, xp: 0, quetes: [] }, [x("a", { xp: 30, le: "2026-10-14" }), x("b", { xp: 40, aVerser: false, le: "2026-10-16" })], 30, jour);
+  check("après le clic : une quête déjà versée un autre jour n'entre pas dans « Fait aujourd'hui » (comme au serveur) ; une versée au clic, si", vieux.n === 1 && vieux.xp === 30 && vieux.quetes[0].quete === "a", J(vieux));
+  const toutes = faitApres({ n: 0, xp: 0, quetes: [] }, ["a", "b", "c", "d", "e"].map((q) => x(q)), 100, jour);
+  check("après le clic : toutes les quêtes récupérées comptent, pas seulement les trois montrées", toutes.n === 5 && toutes.xp === 100, J(toutes));
   check("trois lignes au plus dans le bloc", LIGNES_MONTREES === 3);
 }
 
@@ -141,7 +151,7 @@ console.log("\n# les dates et les mots");
   check("jourDe : le jour de Paris d'un horodatage", jourDe("2026-10-16T22:30:00Z") === "2026-10-17" && jourDe(null) === null && jourDe("n'importe quoi") === null);
   check("les boutons", T.tout(190) === "Tout récupérer · +190 XP" && T.tout(0) === "Tout récupérer" && T.un(60) === "Récupérer +60 XP" && T.tout(1250) === "Tout récupérer · +1 250 XP");
   check("les lignes", T.titre(3) === "À récupérer · 3" && T.ligne(2) === "2 quêtes à récupérer" && T.ligne(1) === "1 quête à récupérer" && T.autres(4) === "et 4 autres" && T.fait({ n: 4, xp: 230 }) === "Fait aujourd'hui : 4 · +230 XP" && T.fait({ n: 4, xp: 230 }, true) === "Fait aujourd'hui : 4");
-  check("le repli et l'échec", T.dejaVerse === "Déjà versé" && T.voir === "Voir ce que tu as gagné" && T.echec === "Pas pu récupérer. Réessaie dans un instant.");
+  check("le repli et l'échec", T.dejaVerse === "Déjà versé" && T.voir === "Voir ce que tu as gagné" && T.voirCourt === "Voir" && T.faites(2) === "2 quêtes faites" && T.faites(1) === "1 quête faite" && T.echec === "Pas pu récupérer. Réessaie dans un instant.");
 }
 
 console.log("\n# les écrans");
@@ -150,12 +160,16 @@ console.log("\n# les écrans");
   check("FeteCodex : plus de fête automatique, la ligne « Récupérer » et « La suite » en fin d'outil", !fete.includes("codexVus(") && !fete.includes("components/fete/Fete") && fete.includes('<Recuperer variante="ligne"') && fete.includes("TEXTES_RECUPERER.suite("));
   const rec = readFileSync("components/codex/Recuperer.tsx", "utf8");
   check("Recuperer : le clic récupère tout ce qui attend (le serveur relit la liste) ; « bouton » : ses quêtes seules", rec.includes("r = await codexRecuperer(seul ? pris.map(({ quete, periode }) => ({ quete, periode })) : undefined);"));
+  check("Recuperer : déjà versé, le bouton court dit « Voir » (pas « Récupérer ») ; la ligne dit « n quêtes faites · Déjà versé »", rec.includes("dejaVerse ? (court ? T.voirCourt : T.voir) : court ? T.un(0) : T.un(xp)") && rec.includes("dejaVerse ? `${T.faites(n)} · ${T.dejaVerse}` : T.ligne(n)"));
+  check("Recuperer : rien de récupéré alors que tout attend encore, c'est un échec", rec.includes("(!r.recues.length && r.restant > 0 && !seul)") && rec.includes("faitApres(fait, r.recues, r.xp, jour)"));
   check("Recuperer : l'action, le tampon décalé, le compte, le mouvement réduit, les fêtes une par une, l'échec", rec.includes("codexRecuperer(") && rec.includes("DECALAGE_TAMPON_MS") && rec.includes("COMPTE_XP_MS") && rec.includes("mouvementReduit()") && rec.includes("onFin={() => setTour((t) => t + 1)}") && rec.includes("T.echec") && rec.includes("disabled={occupe}"));
   const actions = readFileSync("lib/codex/actions.ts", "utf8");
   const action = actions.slice(actions.indexOf("export async function codexRecuperer"));
   check("codexRecuperer : le joueur vérifié, les clés validées, le niveau rafraîchi, les grandes fêtes rendues", action.includes("if (!user)") && action.includes("clesValides(cles)") && action.includes('revalidatePath("/", "layout")') && action.includes("grandesFetes(r.recues, r.sobre)"));
   const serveur = readFileSync("lib/codex/serveur.ts", "utf8").replace(/\r\n/g, "\n");
   check("serveur : codex_recuperer, le repli codex_vus, la vue gardée et le panneau oubliés", serveur.includes('a.rpc("codex_recuperer"') && serveur.includes("await marquerVus(user.id") && serveur.includes("MEMO.delete(user.id);\n  await oublierPanneau(user.id);\n  return { ok: true, recues"));
+  check("serveur : codex_recuperer sans rien de récupéré mais avec des erreurs, c'est un refus", serveur.includes("if (!recuperees.length && Number(d.erreurs) > 0) {"));
+  check("actions : plus de « Réclamer » (code mort, versait en annonçant « versé »)", !actions.includes("codexReclamer") && !actions.includes("reclamerPour"));
   check("serveur : le mode sobre verse d'office ce qui attendait", serveur.includes("entree.sobre && entree.progression.some((l) => l.etat === \"terminee\")") && serveur.includes("sobre: lireSobre(user)"));
   // le segment « Aujourd'hui » de /codex porte le bloc (Codex simplifié, §3.3)
   const page = readFileSync("components/codex/Aujourdhui.tsx", "utf8");

@@ -663,20 +663,6 @@ export async function lireCodex(supabase: SupabaseClient, user: Joueur, opts: { 
   return vue;
 }
 
-/** La récompense d'une quête telle qu'elle est écrite (codex_progression), sans recalcul ; null : pas encore faite. `attend` : faite, elle attend « Récupérer ». */
-export async function recompenseEcrite(userId: string, queteId: string, periode: string): Promise<{ xp: number; vu: boolean; attend: boolean } | null | "indisponible"> {
-  const a = admin();
-  if (!a) return "indisponible";
-  try {
-    const { data, error } = await a.from("codex_progression").select("etat,xp,vu").eq("user_id", userId).eq("quete_id", queteId).eq("periode", periode).maybeSingle();
-    if (error) return "indisponible";
-    const l = data as { etat: string; xp: number | string; vu: boolean } | null;
-    return l && (l.etat === "recompensee" || l.etat === "terminee") ? { xp: Number(l.xp) || 0, vu: !!l.vu, attend: l.etat === "terminee" } : null;
-  } catch {
-    return "indisponible";
-  }
-}
-
 /** Les compteurs et la décision d'un changement de contrat (une seule fois par jour). */
 export async function changerContrat(supabase: SupabaseClient, user: Joueur, emplacement: Emplacement): Promise<{ ok: true; vue: VueCodex } | { ok: false; raison: "connexion" | "indisponible" | "refus" | "aucun" }> {
   const a = admin();
@@ -876,8 +862,15 @@ async function recupererEnBase(a: SupabaseClient, userId: string, cles: { quete:
       await consigner(a, userId, "", `codex_recuperer : ${error.message}`);
       return "refus";
     }
-    const d = (data ?? {}) as { recuperees?: LigneRecuperee[]; xp?: number; restant?: number };
-    return { recuperees: Array.isArray(d.recuperees) ? d.recuperees : [], xp: Number(d.xp) || 0, restant: Number(d.restant) || 0 };
+    const d = (data ?? {}) as { recuperees?: LigneRecuperee[]; xp?: number; restant?: number; erreurs?: number };
+    const recuperees = Array.isArray(d.recuperees) ? d.recuperees : [];
+    // rien de récupéré et des lignes en échec : un échec (« Pas pu récupérer »), pas un succès vide.
+    // Rien de récupéré sans échec (un autre onglet est passé avant) reste un succès silencieux.
+    if (!recuperees.length && Number(d.erreurs) > 0) {
+      await consigner(a, userId, "", `codex_recuperer : ${Number(d.erreurs)} ligne(s) en échec`);
+      return "refus";
+    }
+    return { recuperees, xp: Number(d.xp) || 0, restant: Number(d.restant) || 0 };
   } catch {
     return "refus";
   }
