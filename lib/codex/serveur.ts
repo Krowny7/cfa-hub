@@ -24,7 +24,7 @@ import { decaleJour, lireObjectifMeta } from "@/lib/objectif-calc";
 import { visiteVue } from "@/lib/presentation";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { lireNotionsJoueur, pointsFaiblesLegers } from "@/components/moi/points-faibles-data";
-import { PROGRAMME, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
+import { ACTES, PROGRAMME, catalogueCodex, contenuDuProgramme, filDesActes } from "@/lib/codex/catalogue";
 import {
   LECTURE_VIDE, actesClosDe, actesDuJoueur, budgetDuJour, contexteDestination, demandesActivite, devoiler, emplacementsDe, evaluer, evaluerObjectifs, indexerLecture, joursAvantExamen, lireActivite, lireMetaCodex, parametresDe, phaseJoueur, planifier, recommander, remplacantContrat, tirerContrats,
   type ContratTire, type Entree, type LectureSql, type LigneProgression, type Resultat,
@@ -877,13 +877,40 @@ async function recupererEnBase(a: SupabaseClient, userId: string, cles: { quete:
 }
 
 /**
+ * La vue gardée du jour (mémo de 45 s, sinon le dernier état réussi), sans
+ * calcul ; le mode sobre relu comme lireCodex. null : rien de gardé.
+ */
+function vueGardee(user: Joueur): VueCodex | null {
+  const v = MEMO.get(user.id)?.vue ?? DERNIER.get(user.id);
+  if (!v || !v.disponible || v.jour !== jourParis()) return null;
+  const sobre = lireSobre(user);
+  return v.sobre === sobre ? v : { ...v, sobre };
+}
+
+/** Le titre d'une quête récupérée que la vue ne connaît pas : un contrat d'un autre jour, un acte, une quête du catalogue. */
+function titreRecuperee(id: string): string {
+  const hors = titreHorsVue(id);
+  if (hors) return hors;
+  if (id.startsWith("acte:")) {
+    const acte = ACTES.find((x) => `acte:${x.id}` === id);
+    return acte ? nomActe(acte) : TEXTES_RECUPERER.sansTitre;
+  }
+  const q = catalogueCodex().find((x) => x.id === id);
+  return q ? titreClair(q) : TEXTES_RECUPERER.sansTitre;
+}
+
+/**
  * Le clic « Récupérer » (lib/codex/recuperer) : verse les quêtes faites qui
  * attendent (codex_recuperer) et accuse réception de celles déjà versées
  * (repli sans la §9 : codex_vus). `cles` : celles-là seulement ; null :
  * toutes. Rend ce qui a été récupéré (titres et pièces lus dans la vue d'avant
  * le clic), l'XP versée à ce clic (0 pour le déjà versé) et ce qui attend
- * encore. La vue gardée et l'instantané du panneau sont ensuite oubliés : le
- * prochain calcul relit tout. Un double clic ne verse qu'une fois (la base).
+ * encore. Pas de calcul complet avant le clic quand la base sait verser
+ * (« tout récupérer ») : la vue gardée nomme les lignes, sinon le catalogue ;
+ * la vue n'est lue (au besoin calculée) que pour des clés choisies ou pour le
+ * repli sans la §9, qui a besoin de ses accusés. La vue gardée et
+ * l'instantané du panneau sont ensuite oubliés : le prochain calcul relit
+ * tout. Un double clic ne verse qu'une fois (la base).
  */
 export async function recupererCodex(
   supabase: SupabaseClient,
@@ -892,33 +919,51 @@ export async function recupererCodex(
 ): Promise<{ ok: true; recues: ARecuperer[]; xp: number; restant: number; sobre: boolean } | { ok: false; raison: "indisponible" | "refus" }> {
   const a = admin();
   if (!a) return { ok: false, raison: "indisponible" };
-  const vue = await lireCodex(supabase, user);
-  if (!vue.disponible) return { ok: false, raison: "indisponible" };
+  let vue: VueCodex | null = vueGardee(user);
+  const lireVue = async (): Promise<VueCodex | null> => {
+    if (!vue) {
+      const v = await lireCodex(supabase, user);
+      vue = v.disponible ? v : null;
+    }
+    return vue;
+  };
+  // tout récupérer : la base d'abord (elle en sait plus que toute vue) ; des clés choisies : la vue dit lesquelles sont à verser
+  let enBase: Awaited<ReturnType<typeof recupererEnBase>> | undefined;
+  if (!cles) {
+    enBase = await recupererEnBase(a, user.id, null);
+    if (enBase === "refus") return { ok: false, raison: "refus" };
+    // sans la §9 : seuls les accusés de la vue (la lire, au besoin la calculer)
+    if (enBase === null && !(await lireVue())) return { ok: false, raison: "indisponible" };
+  } else if (!(await lireVue())) {
+    return { ok: false, raison: "indisponible" };
+  }
+  const v = vue as VueCodex | null;
+  const aRecuperer = v?.aRecuperer ?? [];
   const voulues = cles ? new Set(cles.map(cleRecuperer)) : null;
-  const choisies = vue.aRecuperer.filter((x) => !voulues || voulues.has(cleRecuperer(x)));
-  const parCle = new Map(vue.aRecuperer.map((x) => [cleRecuperer(x), x]));
+  const choisies = aRecuperer.filter((x) => !voulues || voulues.has(cleRecuperer(x)));
+  const parCle = new Map(aRecuperer.map((x) => [cleRecuperer(x), x]));
   const recues: ARecuperer[] = [];
   let xp = 0;
   let restantBase: number | null = null;
 
-  // à verser : toutes (la base peut en savoir plus que la vue gardée), ou celles demandées qui attendent
+  // à verser, des clés choisies : celles qui attendent d'être versées
   const aVerser = cles ? cles.filter((c) => parCle.get(cleRecuperer(c))?.aVerser !== false) : null;
-  if (!aVerser || aVerser.length) {
-    const r = await recupererEnBase(a, user.id, aVerser ? aVerser.slice(0, MAX_RECUPERER) : null);
-    if (r === "refus") return { ok: false, raison: "refus" };
-    if (r) {
-      xp = r.xp;
-      restantBase = r.restant;
-      for (const l of r.recuperees) {
-        const connue = parCle.get(cleRecuperer(l));
-        recues.push({
-          ...(connue ?? { titre: titreHorsVue(l.quete) ?? TEXTES_RECUPERER.sansTitre, famille: familleDe(l.quete), le: null, recompense: null, piece: l.cosmetique ?? l.titre ?? null }),
-          quete: l.quete,
-          periode: l.periode,
-          xp: Math.max(0, Number(l.xp) || 0),
-          aVerser: true,
-        });
-      }
+  if (aVerser && aVerser.length) {
+    enBase = await recupererEnBase(a, user.id, aVerser.slice(0, MAX_RECUPERER));
+    if (enBase === "refus") return { ok: false, raison: "refus" };
+  }
+  if (enBase && enBase !== "refus") {
+    xp = enBase.xp;
+    restantBase = enBase.restant;
+    for (const l of enBase.recuperees) {
+      const connue = parCle.get(cleRecuperer(l));
+      recues.push({
+        ...(connue ?? { titre: titreRecuperee(l.quete), famille: familleDe(l.quete), le: null, recompense: null, piece: l.cosmetique ?? l.titre ?? null }),
+        quete: l.quete,
+        periode: l.periode,
+        xp: Math.max(0, Number(l.xp) || 0),
+        aVerser: true,
+      });
     }
   }
 
@@ -931,12 +976,12 @@ export async function recupererCodex(
   }
 
   const prises = new Set(recues.map(cleRecuperer));
-  const restant = (restantBase ?? vue.aRecuperer.filter((x) => x.aVerser && !prises.has(cleRecuperer(x))).length) + vue.aRecuperer.filter((x) => !x.aVerser && !prises.has(cleRecuperer(x))).length;
+  const restant = (restantBase ?? aRecuperer.filter((x) => x.aVerser && !prises.has(cleRecuperer(x))).length) + aRecuperer.filter((x) => !x.aVerser && !prises.has(cleRecuperer(x))).length;
   // la vue de repli ne les propose plus ; le prochain calcul relit tout (XP, possessions, fait aujourd'hui)
-  patcher(user.id, (v) => ({ ...v, aRecuperer: v.aRecuperer.filter((x) => !prises.has(cleRecuperer(x))) }));
+  patcher(user.id, (x) => ({ ...x, aRecuperer: x.aRecuperer.filter((y) => !prises.has(cleRecuperer(y))) }));
   MEMO.delete(user.id);
   await oublierPanneau(user.id);
-  return { ok: true, recues, xp, restant, sobre: vue.sobre };
+  return { ok: true, recues, xp, restant, sobre: v?.sobre ?? lireSobre(user) };
 }
 
 /** Marque des fanfares comme jouées ; la vue gardée est corrigée sur place (pas de recalcul). */
