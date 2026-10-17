@@ -265,6 +265,19 @@ console.log("\n# le moteur tourne sur l'arbre d'essai (ses actes, ses contrats)"
   check("la vue montre les cinq actes de l'essai", v.trame.map((a) => a.acte.id).join(" ") === "essai/g0 essai/g1 essai/g2 essai/g3 essai/g4" && v.trame[0].clos);
   const tires = tirerContrats({ ...e, lecture: brut }, "joueur-essai");
   check("ses contrats du jour n'utilisent que ses outils", tires.length > 0 && tires.every((t) => !["drill-page", "duel", "matiere-faible", "atelier", "calculs", "cours", "flashcards", "defi"].includes(t.modele)), tires.map((t) => t.modele).join(","));
+
+  // l'étape « serie » : 15 justes sur les 20 dernières de SA matière, lues dans codex_mesures_v3 (speciaux_matiere)
+  const cle = PROGRAMME_ESSAI.matieres()[0].key;
+  const serieQ = e.catalogue!.find((x) => x.etape === "serie" && x.matiere === cle)!;
+  const avecJustes = (justes: Record<string, number> | null, capacites = { ...CAPACITES_VIDE, mesures: true }) => {
+    const lecture: LectureSql = { ...brut, mesures: { ...brut.mesures, ...(justes ? { speciaux_matiere: { serie_bonnes: {}, serie_calculs: {}, justes_sur_20: justes } } : { speciaux_matiere: { serie_bonnes: {}, serie_calculs: {} } }) } };
+    return evaluer({ ...e, capacites, lecture }, indexerLecture(demandes, lecture)).etats.find((s) => s.quete.id === serieQ.id);
+  };
+  check("« serie » : l'objectif vise la matière de la branche et attend codex_mesures_v3", serieQ.objectif.k === "special" && serieQ.objectif.matiere === cle && JSON.stringify(serieQ.requiert) === JSON.stringify(["mesures"]));
+  const s15 = avecJustes({ [cle]: 15 });
+  const s14 = avecJustes({ [cle]: 14, [PROGRAMME_ESSAI.matieres()[1].key]: 20 });
+  check("la mesure présente : « serie » en jeu, remplie à 15 sur 20, pas à 14 (une autre matière ne compte pas)", !!s15 && !s15.horsJeu && s15.fait && !!s14 && !s14.horsJeu && !s14.fait, JSON.stringify({ s15: s15 && [s15.horsJeu, s15.fait, s15.ev?.valeur], s14: s14 && [s14.horsJeu, s14.fait] }));
+  check("une codex_mesures_v3 sans « justes_sur_20 » : hors jeu ; sans la capacité « mesures » : pas suivie", avecJustes(null)?.horsJeu === true && avecJustes({ [cle]: 20 }, CAPACITES_VIDE) === undefined);
 }
 
 console.log("\n# un programme daté autre que CFA I (V3 §1.6 : jamais le jour J du profil)");

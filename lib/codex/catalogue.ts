@@ -110,8 +110,8 @@ export const SPECIAUX: Record<string, string> = {
   phenix: "les 30 du jour ratés (< 50 %) un jour, puis réussis à ≥ 80 % le lendemain",
   retour: "un jour à ≥ 20 questions après au moins 14 jours sans aucune réponse",
   aube: "10 questions répondues avant 7 h (Paris) le même jour",
-  justes_sur_20_matiere: "bonnes réponses parmi les 20 dernières de la matière de la quête (l'étape « serie » d'une branche sans séance ciblée)",
   // par matière (ObjectifSpecial.matiere ; codex_mesures_v3 : speciaux_matiere, V3 §8.7)
+  justes_sur_20_matiere: "bonnes réponses parmi les 20 dernières de la matière de la quête (l'étape « serie » d'une branche sans séance ciblée)",
   serie_bonnes_matiere: "plus longue suite de bonnes réponses d'affilée dans la matière, dans une même séance (une erreur ou 20 min de silence la rompt)",
   serie_calculs_matiere: "plus longue suite de calculs justes d'affilée dans la matière",
 };
@@ -1087,10 +1087,12 @@ export function genererBranches(contenu: ContenuMatiere[] = contenuDuProgramme()
             titre: "La série juste",
             consigne: `Réussis 15 des 20 dernières questions ${de(m.nom)}.`,
             pourquoi: "C'est l'épreuve de la branche : une matière qui tient sur vingt questions de suite.",
-            objectif: { k: "special", cle: "justes_sur_20_matiere", seuil: 15 },
+            objectif: { k: "special", cle: "justes_sur_20_matiere", seuil: 15, matiere: m.key },
             prerequis: [apres(drill ? id("drill") : id("entree"))],
             recompense: { xp: 120 },
             duree: 20,
+            // les justes parmi les 20 dernières, par matière, viennent de codex_mesures_v3 (speciaux_matiere)
+            requiert: ["mesures"],
           }),
       // retirée (V3 §8.1) : les notions tenues la remplacent (« La carte de … ») ; gardée pour les ids publiés du CFA I
       ...(programme === PROGRAMME

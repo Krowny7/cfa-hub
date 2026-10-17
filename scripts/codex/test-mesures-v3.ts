@@ -47,6 +47,8 @@ console.log("# le résultat de codex_mesures_v3");
   check("capacités lues (journal 3)", m.capacites.journal === 3 && m.capacites.debrief && !m.capacites.seances);
   check("mesures du fil rouge et du catalogue taillé : une ligne ou une entrée mal formée est ignorée",
     m.jours_encre_total === 12 && J(m.trophees) === J([{ source: "ciblee", palier: 3, n: 2 }]) && J(m.notions_tenues) === J({ "fsa:2": { n: 7, j5: 4 } }) && J(m.speciaux_matiere) === J({ serie_bonnes: { fsa: 10 }, serie_calculs: {} }));
+  const avecJustes = mesuresV3De({ ...brut, speciaux_matiere: { ...brut.speciaux_matiere, justes_sur_20: { fsa: 15, quant: "?" } } });
+  check("les justes parmi les 20 dernières, par matière, quand la base les rend (absents : inconnus, l'étape « serie » hors jeu)", J(avecJustes.speciaux_matiere?.justes_sur_20) === J({ fsa: 15 }) && m.speciaux_matiere?.justes_sur_20 === undefined);
   check("maîtrise unique : par matière, statut connu seulement (pct null sous 10 réponses)",
     J(Object.keys(m.maitrise_unique ?? {})) === J(["fsa", "quant"]) && m.maitrise_unique?.fsa.statut === "mesuree" && m.maitrise_unique.fsa.ancienne === 61 && m.maitrise_unique.quant.pct === null,
     J(m.maitrise_unique));

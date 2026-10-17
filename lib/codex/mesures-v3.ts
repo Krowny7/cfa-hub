@@ -51,12 +51,17 @@ function lireNotionsTenues(x: unknown): MesuresSql["notions_tenues"] {
   return out;
 }
 
-/** Les spéciaux par matière ({serie_bonnes: {m: n}, serie_calculs: {m: n}}) ; autre chose qu'un objet : inconnus. */
+/**
+ * Les spéciaux par matière ({serie_bonnes: {m: n}, serie_calculs: {m: n},
+ * justes_sur_20: {m: n}}) ; autre chose qu'un objet : inconnus. `justes_sur_20`
+ * absent (une codex_mesures_v3 plus ancienne) : il reste inconnu, l'étape
+ * « serie » qui le lit est hors jeu.
+ */
 function lireSpeciauxMatiere(x: unknown): MesuresSql["speciaux_matiere"] {
   const d = objet(x);
   if (!d) return undefined;
   const parMatiere = (y: unknown) => Object.fromEntries(Object.entries(objet(y) ?? {}).flatMap(([m, n]) => (nombre(n) !== undefined ? [[m, n as number]] : [])));
-  return { serie_bonnes: parMatiere(d.serie_bonnes), serie_calculs: parMatiere(d.serie_calculs) };
+  return { serie_bonnes: parMatiere(d.serie_bonnes), serie_calculs: parMatiere(d.serie_calculs), ...(objet(d.justes_sur_20) ? { justes_sur_20: parMatiere(d.justes_sur_20) } : {}) };
 }
 
 const STATUTS = ["non_mesuree", "provisoire", "mesuree"] as const;

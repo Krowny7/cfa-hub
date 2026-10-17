@@ -497,9 +497,12 @@ REVOKE ALL ON FUNCTION _codex_matiere(text, text) FROM PUBLIC, anon, authenticat
 -- lecture du journal. VOLATILE : le cache est une table temporaire.
 --   notions_tenues     : {"<notion>": {"n": réponses, "j5": justes parmi les 5 dernières}}
 --                        (une notion est tenue à n ≥ 5 et j5 ≥ 3 : lib/codex/moteur.ts)
---   speciaux_matiere   : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n}}
+--   speciaux_matiere   : {"serie_bonnes": {"<matière>": n}, "serie_calculs": {"<matière>": n},
+--                         "justes_sur_20": {"<matière>": n}}
 --                        bonnes réponses d'affilée dans la matière (une erreur ou 20 min de
---                        silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée
+--                        silence la rompt, comme serie_bonnes de codex_lire) ; calculs justes d'affilée ;
+--                        bonnes réponses parmi les 20 dernières de la matière (l'étape « serie »
+--                        d'une branche sans séance ciblée)
 --   maitrise           : {"<matière>": {"pct", "questions", "total", "debut", "statut", "derniere", "ancienne"}}
 --                        la maîtrise unique (maitrise_joueur, migration_v3_profil.sql §4) ;
 --                        questions = réponses de la fenêtre (60 au plus), pct null sous 10
@@ -521,6 +524,7 @@ DECLARE
   v_trophees jsonb := '[]'::jsonb;
   v_tenues jsonb;
   v_bonnes jsonb;
+  v_justes jsonb;
   v_calculs jsonb := '{}'::jsonb;
   v_tmp jsonb;
   v_copies text[] := '{}';
@@ -611,8 +615,15 @@ BEGIN
                              FROM rep c WHERE c.matiere IS NOT NULL) s) g
                  WHERE g.ok
                  GROUP BY g.matiere, g.grp) z
-           GROUP BY z.matiere) y)
-  INTO v_tenues, v_bonnes;
+           GROUP BY z.matiere) y),
+    -- les bonnes réponses parmi les 20 dernières de chaque matière
+    (SELECT coalesce(jsonb_object_agg(j.matiere, j.n), '{}'::jsonb)
+     FROM (SELECT x.matiere, (count(*) FILTER (WHERE x.ok))::int AS n
+           FROM (SELECT c.matiere, c.ok, row_number() OVER (PARTITION BY c.matiere ORDER BY c.at DESC, c.ord DESC) AS rang
+                 FROM rep c WHERE c.matiere IS NOT NULL) x
+           WHERE x.rang <= 20
+           GROUP BY x.matiere) j)
+  INTO v_tenues, v_bonnes, v_justes;
   -- … et de calculs justes (calc_attempts, la matière est le sujet du calcul)
   IF to_regclass('public.calc_attempts') IS NOT NULL THEN
     EXECUTE $q$
@@ -712,7 +723,7 @@ BEGIN
   RETURN jsonb_build_object('programme', p_programme, 'capacites', v_capacites, 'jours_encre_total', v_jours, 'programmes_menes', v_menes,
                             'maitres_total', v_maitres, 'trophees', coalesce(v_trophees, '[]'::jsonb),
                             'notions_tenues', v_tenues,
-                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb)))
+                            'speciaux_matiere', jsonb_build_object('serie_bonnes', v_bonnes, 'serie_calculs', coalesce(v_calculs, '{}'::jsonb), 'justes_sur_20', v_justes))
          || v_plus;
 END $$;
 

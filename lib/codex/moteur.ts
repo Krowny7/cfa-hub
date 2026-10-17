@@ -73,7 +73,7 @@ export type MesuresSql = {
   /** codex_mesures_v3 : par notion, les réponses (n) et les justes parmi les 5 dernières (j5), V3 §8.5 */
   notions_tenues?: Record<string, { n: number; j5: number }>;
   /** codex_mesures_v3 : les spéciaux par matière (plus longues suites d'affilée), V3 §8.7 */
-  speciaux_matiere?: { serie_bonnes?: Record<string, number>; serie_calculs?: Record<string, number> };
+  speciaux_matiere?: { serie_bonnes?: Record<string, number>; serie_calculs?: Record<string, number>; justes_sur_20?: Record<string, number> };
   /** codex_mesures_v3 (A4a) : examens blancs à débriefer, V3 §7.6 */
   blancs_a_debriefer?: number;
   /**
@@ -640,7 +640,7 @@ export { MALLE_PRETE };
  */
 function valeurSpeciale(o: Extract<Objectif, { k: "special" }>, e: Pick<Entree, "lecture">): number | undefined {
   if (!o.matiere) return e.lecture.speciaux[o.cle];
-  const parMatiere = e.lecture.mesures.speciaux_matiere?.[o.cle.replace(/_matiere$/, "") as "serie_bonnes" | "serie_calculs"];
+  const parMatiere = e.lecture.mesures.speciaux_matiere?.[o.cle.replace(/_matiere$/, "") as "serie_bonnes" | "serie_calculs" | "justes_sur_20"];
   return parMatiere ? (parMatiere[o.matiere] ?? 0) : undefined;
 }
 
