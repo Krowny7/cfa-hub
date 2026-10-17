@@ -1,133 +1,189 @@
-// La voix du Codex : les mots de l'écran (page /codex, accueil, cérémonies).
-// Léger et présent : un ton de carnet, quelques clins d'œil à Florence, jamais
-// lourd. Les titres d'actes, les répliques d'actes et les phases viennent du
-// catalogue (lib/codex/catalogue.ts) ; ici, ce que l'écran ajoute.
+// La voix du Codex : les mots de l'écran (page /codex, panneau du sceau,
+// Moi, fêtes). La règle d'écriture du Codex simplifié : l'action d'abord,
+// l'histoire dans les fêtes. Les mots du site (question, matière, notion,
+// maîtrise, séance, examen blanc, quête, étape), plus trois mots maison :
+// trait, rature et jour d'encre. Léonard ne parle qu'aux fêtes (retro, fete).
+// Les titres clairs des quêtes et des actes sont dans lib/codex/titres-clairs.ts.
 // Module neutre, sans dépendance au catalogue (utilisable côté navigateur).
 
-import type { EtapeBranche, Famille } from "@/lib/codex/types";
+import { de } from "@/lib/codex/elision";
+import type { EtapeBranche, Famille, Phase, Repetition } from "@/lib/codex/types";
 import type { EtatLigne } from "@/lib/codex/vue";
+import type { GenreBloc, RevoirCodex } from "@/lib/codex/seance";
+
+const nombre = (n: number) => n.toLocaleString("fr-FR");
+const pluriel = (n: number, mot: string, mots = `${mot}s`) => `${nombre(n)} ${n > 1 ? mots : mot}`;
+/** « 12,5 » : le poids d'une matière, à la française. */
+const virgule = (n: number) => String(n).replace(".", ",");
 
 export const CODEX = {
   nom: "Codex",
-  titre: "Le carnet de Léonard",
-  sousTitre: "Ce qu'il y a à faire, dans l'ordre où ça sert.",
+  titre: "Codex",
+  sousTitre: "Tes quêtes, du jour et au long cours.",
   kicker: (phase: string) => `Codex · ${phase}`,
-  quetesFaites: (f: number, t: number) => `${f} sur ${t} quêtes`,
-  xpGagnee: (xp: number) => `${xp.toLocaleString("fr-FR")} XP gagnés ici`,
-  /** null une fois le jour J passé (la phase « Après l'épreuve » le dit déjà) */
+  /** le bloc Codex de Moi : « 37 quêtes faites · 2 140 XP gagnés dans le Codex » */
+  quetesFaites: (n: number) => (n === 1 ? "1 quête faite" : `${nombre(n)} quêtes faites`),
+  xpGagnee: (xp: number) => `${nombre(xp)} XP gagnés dans le Codex`,
+  historique: "Historique",
+  /** null une fois le jour J passé (la phase « Après l'examen » le dit déjà) */
   jourJ: (n: number): string | null => (n === 0 ? "C'est le jour J" : n > 0 ? `J-${n}` : null),
   toutMontrer: "Tout montrer",
-  toutMontrerAide: "Le carnet se dévoile au fil de tes séances. Si tu préfères tout voir tout de suite, c'est permis.",
+  toutMontrerAide: "Le Codex se dévoile au fil de tes séances. Tu peux aussi tout voir tout de suite.",
   prochaine: {
-    eyebrow: "Ta prochaine quête",
-    aller: "J'y vais",
-    entamee: "Déjà entamée",
-    rien: "Plus rien d'urgent. Pose un trait quand même, la plume refroidit.",
-    minutes: (m: number) => `environ ${m} min`,
+    eyebrow: "La suite",
+    aller: "Y aller",
+    entamee: "En cours",
+    rien: "Rien d'urgent. Les 5 du jour, si tu as 5 minutes.",
+    minutes: (m: number) => `≈ ${m} min`,
   },
   trame: {
-    titre: "La trame",
+    titre: "Parcours",
     sous: "Du premier trait au jour J, acte par acte.",
-    clos: "Acte clos",
+    clos: "Fini",
     enCours: "En cours",
     aVenir: "À venir",
-    bonus: "facultatif",
+    bonus: "facultative",
   },
   contrats: {
-    titre: "Les contrats du jour",
-    sous: "Trois, taillés pour toi. Trois quarts d'heure, pas plus.",
-    emplacement: { faiblesse: "Ton point faible", entretien: "L'entretien", variete: "La variété" } as Record<string, string>,
+    titre: "Quêtes du jour",
+    sous: "Trois quêtes courtes, 45 minutes en tout.",
+    emplacement: { faiblesse: "Ton point faible", entretien: "Entretien", variete: "Variété" } as Record<string, string>,
     changer: "Changer",
-    changerAide: "Un changement par jour, pas sur un contrat déjà rempli.",
-    changeDeja: "Tu as déjà changé un contrat aujourd'hui.",
-    trio: (xp: number) => `Les trois remplis : +${xp} XP de bonus`,
-    trioFait: (xp: number) => `Trio tamponné, +${xp} XP`,
+    changerAide: "Un changement par jour, pas sur une quête déjà faite.",
+    changeDeja: "Tu as déjà changé une quête aujourd'hui.",
+    trio: (xp: number) => `Les trois faites : +${xp} XP de bonus`,
+    trioFait: (xp: number) => `Les trois faites, +${xp} XP`,
     /** en mode sobre (lib/codex/sobre) : le trio sans son XP */
-    trioSobre: "Les trois remplis : un bonus",
-    trioFaitSobre: "Trio tamponné",
+    trioSobre: "Les trois faites : un bonus",
+    trioFaitSobre: "Les trois faites",
+    /** « Quêtes du jour · 1 sur 3 · +50 XP à 3 sur 3 » (replié sous le fil ; sans bonus restant, la première partie) */
+    resume: (faites: number, total: number, bonus = 0) => `Quêtes du jour · ${faites} sur ${total}${bonus > 0 && faites < total ? ` · +${bonus} XP à ${total} sur ${total}` : ""}`,
     semaine: "Cette semaine",
   },
   branches: {
-    titre: "Les branches de matière",
-    sous: "Une par matière. Chacune pousse à son rythme, de la première fiche au titre de maître.",
+    titre: "Matières",
+    sous: "Une par matière, des 10 premières questions au titre de maître.",
     maitre: "Maître",
     etapes: {
       entree: "Premier pas",
       cours: "Cours",
       fiche: "Fiche",
       drill: "Drill",
-      flashcards: "Cartes",
+      flashcards: "Flashcards",
       ciblee: "Séance ciblée",
-      serie: "Série juste",
-      tour: "Tour complet",
-      carte: "Carte tenue",
+      serie: "15 justes sur 20",
+      tour: "Notions vues",
+      carte: "Notions tenues",
       maitrise60: "Maîtrise 60 %",
       maitrise75: "Maîtrise 75 %",
-      signature: "Épreuve signature",
+      signature: "Série sans faute",
       maitre: "Maître",
     } satisfies Record<EtapeBranche, string>,
   },
   longCours: {
-    titre: "Les quêtes au long cours",
-    sous: "Les grands chantiers, qui se comptent en semaines.",
-    palier: (i: number, n: number) => `Palier ${i} sur ${n}`,
+    titre: "Objectifs longs",
+    sous: "Ceux qui se comptent en semaines.",
+    palier: (i: number, n: number) => `Étape ${i} sur ${n}`,
     suivant: "Ensuite",
-    fini: "Chantier achevé",
+    fini: "Tout est fait",
   },
   exploits: {
-    titre: "Les exploits",
-    sous: "Certains sont cachés. Je ne dirai rien. Enfin, presque rien.",
+    titre: "Exploits",
+    sous: "Certains sont cachés : une énigme les annonce.",
     enigme: "Une énigme",
     gagnes: (n: number) => (n === 0 ? "Aucun pour l'instant" : n === 1 ? "1 exploit" : `${n} exploits`),
+    trouves: (n: number) => `Trouvés (${n})`,
     /** les sceaux du profil ont quitté les exploits (D5) : ils sont dans la Collection du profil */
     collection: "Voir la Collection",
   },
-  pageBlanche: "Cette page du carnet est encore blanche. Elle se remplira d'elle-même, ou d'un clic sur « Tout montrer ».",
-  /** une deuxième page blanche sur le même écran : la phrase entière n'est dite qu'une fois */
-  pageBlancheAussi: "Encore blanche, elle aussi.",
-  etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Tamponnée" } as Record<EtatLigne, string>,
+  pageBlanche: "Rien ici pour l'instant : tes séances le rempliront, ou « Tout montrer ».",
+  /** une deuxième page vide sur le même écran : la phrase entière n'est dite qu'une fois */
+  pageBlancheAussi: "Rien ici non plus pour l'instant.",
+  etat: { verrouillee: "Pas encore", disponible: "À faire", active: "En cours", terminee: "Faite" } as Record<EtatLigne, string>,
+  /** l'état d'une quête remplie dont la récompense attend le clic */
+  aRecuperer: "À récupérer",
   // satisfies : une famille nouvelle sans libellé ne compile pas
-  famille: { trame: "Trame", branche: "Branche", longcours: "Long cours", contrat: "Contrat", exploit: "Exploit", fil: "Fil rouge" } satisfies Record<Famille, string>,
+  famille: { trame: "Parcours", branche: "Matière", longcours: "Objectif long", contrat: "Quête du jour", exploit: "Exploit", fil: "Fil rouge" } satisfies Record<Famille, string>,
   detail: {
     objectif: "À faire",
     pourquoi: "Pourquoi",
+    plus: "Plus",
     recompense: "Récompense",
     xp: (n: number) => `+${n} XP`,
     /** l'XP réellement versée (plafonnée à ton niveau) : on ne montre que ce qu'on a reçu */
     xpPlafonnee: (v: number) => `+${v} XP`,
-    faiteLe: (d: string) => `Tamponnée le ${d}`,
-    faiteAvant: (d: string) => `Déjà acquise avant le ${d} : Léonard l'a trouvée en feuilletant ton carnet`,
-    reclamer: "Réclamer la récompense",
-    reclame: "Récompense versée",
+    manque: (reste: string) => `Il manque : ${reste}`,
+    faiteLe: (d: string) => `Faite le ${d}`,
+    faiteAvant: (d: string) => `Déjà faite avant le ${d}`,
+    reclamer: "Récupérer",
+    reclame: "Récupérée",
     aller: "Y aller",
     fermer: "Fermer",
-    optionnelle: "Facultative : elle ne bloque rien.",
+    optionnelle: "Facultative",
     /** un miroir (V3 §8.2) : la même quête, payée une seule fois */
     compteeAvec: (titre: string) => `Comptée avec « ${titre} » : une seule récompense pour les deux.`,
-    duree: (m: number) => `environ ${m} min`,
+    /** seulement si la quête peut se finir aujourd'hui ; sinon surPlusieursSemaines ou jusquaDimanche */
+    duree: (m: number) => `≈ ${m} min`,
+    surPlusieursSemaines: "sur plusieurs semaines",
+    jusquaDimanche: "jusqu'à dimanche",
     titreGagne: (t: string) => `Titre : ${t}`,
     cosmetique: (c: string) => `Pièce : ${c}`,
   },
+  /** « Récupérer » : la récompense d'une quête faite se verse au clic (Codex simplifié §5) */
+  recuperer: {
+    titre: (n: number) => `À récupérer · ${n}`,
+    bouton: "Récupérer",
+    boutonXp: (xp: number) => (xp > 0 ? `Récupérer +${xp} XP` : "Récupérer"),
+    tout: (xp: number) => (xp > 0 ? `Tout récupérer · +${xp} XP` : "Tout récupérer"),
+    autres: (n: number) => (n === 1 ? "et 1 autre" : `et ${n} autres`),
+    /** la pastille du sceau : « 9+ » au-delà */
+    pastille: (n: number) => (n > 9 ? "9+" : String(n)),
+    /** sans le SQL de Récupérer : l'XP est déjà dans le total */
+    dejaVerse: "Déjà versé · voir ce que tu as gagné",
+    echec: "Pas pu récupérer. Réessaie dans un instant.",
+    /** la ligne de fin d'outil (bilan) */
+    ligne: (n: number, xp: number) => `${n === 1 ? "1 quête faite" : `${n} quêtes faites`}${xp > 0 ? ` · Récupérer +${xp} XP` : " · Récupérer"}`,
+  },
+  /** le panneau du sceau et le segment « Aujourd'hui » de /codex */
+  aujourdhui: {
+    titre: "Aujourd'hui",
+    suite: "La suite",
+    fait: (n: number, xp: number) => `Fait aujourd'hui : ${n}${xp > 0 ? ` · +${xp} XP` : ""}`,
+    ouvrirCodex: "Ouvrir le Codex",
+    toutLeCodex: "Tout le Codex",
+    semaine: "Ta semaine",
+    carte: "Voir la carte",
+    preparation: (pct: number) => `Préparation ${pct} %`,
+    pasUnPronostic: "Ce n'est pas un pronostic : le CFA Institute ne publie pas la note de passage.",
+  },
+  /** le choix du lundi (le nom imagé de chaque choix reste ; son résumé clair : resumeSemaine, lib/codex/titres-clairs.ts) */
+  lundi: {
+    titre: "Ton choix de la semaine",
+    cible: "Combien de jours d'encre cette semaine ?",
+  },
+  /** le mode sobre, dans les réglages */
+  sobre: "Récompenses versées d'office, sans animation",
   indisponible: {
     titre: "Le Codex n'est pas encore ouvert",
-    ligne: "Le carnet est en cours de reliure : reviens dans quelques instants. Tout le reste du site marche normalement.",
+    ligne: "Le Codex se prépare : reviens dans quelques instants. Tout le reste du site marche normalement.",
     retour: "Retour à l'accueil",
   },
   accueil: {
     maQuete: "Ta quête",
-    contrats: "Contrats du jour",
+    contrats: "Quêtes du jour",
     ouvrir: "Ouvrir le Codex",
   },
+  // les fêtes : la seule place de l'histoire (et de Léonard)
   fete: {
     quete: "Quête accomplie",
     acte: "Un acte se referme",
     acteNouveau: (t: string) => `Le rideau se lève sur « ${t} ».`,
     suite: "Voir le Codex",
-    autres: (n: number) => (n === 1 ? "et une autre quête tamponnée" : `et ${n} autres quêtes tamponnées`),
-    devoile: "Une pièce de l'atelier vient de s'ouvrir",
+    autres: (n: number) => (n === 1 ? "et une autre quête faite" : `et ${n} autres quêtes faites`),
+    devoile: "Une nouvelle partie du site s'ouvre",
   },
   retro: {
-    titre: "Léonard a feuilleté ton carnet",
+    titre: "Léonard a relu ton parcours",
     ligne: (q: number, xp: number) => (q <= 1 ? `Une quête était déjà accomplie : +${xp} XP.` : `${q} quêtes étaient déjà accomplies : +${xp} XP, plafonnés à ton niveau.`),
     /** en mode sobre : sans l'XP */
     ligneSobre: (q: number) => (q <= 1 ? "Une quête était déjà accomplie." : `${q} quêtes étaient déjà accomplies.`),
@@ -136,9 +192,69 @@ export const CODEX = {
   },
 };
 
-/** Les mots de Léonard sur une quête, selon son état (déterministe : même quête, même phrase). */
+/** Le libellé de famille d'une quête : un contrat de la semaine n'est pas une quête du jour. */
+export const familleDe = (q: { famille: Famille; repetition?: Repetition }): string =>
+  q.famille === "contrat" && q.repetition === "hebdomadaire" ? "Quête de la semaine" : CODEX.famille[q.famille];
+
+// ── La séance du jour ──────────────────────────────────────────────────
+// Le titre-action de chaque bloc (lib/codex/seance.ts) et sa phrase-fait, 12
+// mots au plus, sans point final. Une étape faite tient sur une ligne ; celle en cours a seule
+// son bouton et « Une autre idée ? ».
+
+export const SEANCE = {
+  titre: "Aujourd'hui",
+  /** « Aujourd'hui · 25 min · 1 sur 3 fait » */
+  entete: (minutes: number, faits: number, total: number) => `Aujourd'hui · ${minutes} min · ${faits} sur ${total} ${faits > 1 ? "faits" : "fait"}`,
+  commencer: "Commencer",
+  autreIdee: "Une autre idée ?",
+  /** le compte neuf : une seule étape */
+  compteNeuf: { titre: "10 questions pour faire connaissance", duree: 5 },
+  /** « fait avancer : FSA à 60 % (51 → 60) » */
+  faitAvancer: (titre: string, de_: number, a: number) => `fait avancer : ${titre} (${de_} → ${a})`,
+  /** l'étape d'un bloc ; `matiere` : son nom court (« FSA ») */
+  bloc: (genre: GenreBloc, p: { n?: number; matiere?: string; defi?: boolean } = {}): string => {
+    switch (genre) {
+      case "cinq": return "Les 5 du jour";
+      case "trente": return "Les 30 du jour";
+      case "retouches": return `Corriger ${pluriel(p.n ?? 5, "rature")}`;
+      case "coince": return p.matiere ? `Renforcer ${p.matiere}` : "Renforcer ton point faible";
+      case "nouveau": return p.matiere ? `Découvrir du neuf en ${p.matiere}` : "Découvrir de nouvelles notions";
+      case "epreuve": return p.defi ? "Les 30 du jour, chronométrés" : "30 questions au rythme de l'examen";
+    }
+  },
+  raisons: {
+    cinq: "5 questions d'examen, chaque jour",
+    trente: "La même épreuve pour tous, chronométrée",
+    /** « 15 à revoir : 8 ratures, 7 rappels · demain 22 » ; sans le détail : un fait */
+    retouches: (r: RevoirCodex): string => {
+      if (!r.complet) return "Une erreur refaite le lendemain revient rarement à l'examen";
+      const parts = [...(r.ratures ? [pluriel(r.ratures, "rature")] : []), ...(r.rappels ? [pluriel(r.rappels, "rappel")] : [])];
+      return `${r.aujourdhui} à revoir${parts.length ? ` : ${parts.join(", ")}` : ""}${r.demain > 0 ? ` · demain ${r.demain}` : ""}`;
+    },
+    /** « FSA pèse 12,5 % de l'examen, tu es à 48 % » */
+    coince: (m: { court: string; poids: number; pct: number | null }) =>
+      `${m.court} pèse ${virgule(m.poids)} % de l'examen, ${m.pct === null ? "pas encore mesurée" : `tu es à ${m.pct} %`}`,
+    /** « 12 notions de FSA jamais vues sur 30 » */
+    nouveau: (court: string, n: number, total: number) => `${n} ${n > 1 ? "notions" : "notion"} ${de(court)} jamais ${n > 1 ? "vues" : "vue"} sur ${total}`,
+    epreuve: (defi: boolean) => (defi ? "Les 30 du jour, sous chrono" : "30 questions mêlées, aux poids de l'examen"),
+  },
+};
+
+// ── Le calendrier : les phases, dites en clair ─────────────────────────
+// Le nom de la phase et une phrase (les répliques de Léonard restent au
+// catalogue, pour les fêtes). Pas de compte à rebours.
+
+export const PHASES_CLAIRES: Record<Phase, { nom: string; phrase: string }> = {
+  fondations: { nom: "Les fondations", phrase: "Tout le programme, une première fois." },
+  consolidation: { nom: "La consolidation", phrase: "Reprendre ce qui s'efface et combler les trous." },
+  repetition: { nom: "La répétition générale", phrase: "Examens blancs, ratures et rythme de l'examen." },
+  veillee: { nom: "La dernière semaine", phrase: "On entretient, on ne commence plus rien." },
+  apres: { nom: "Après l'examen", phrase: "Garder la main, et préparer la suite." },
+};
+
+/** Les mots de Léonard sur une quête, selon son état (déterministe : même quête, même phrase). Plus affichés dans les fiches (Codex simplifié §4.6). */
 export const REPLIQUES_QUETE: Record<EtatLigne, string[]> = {
-  terminee: ["Tamponnée. Je ne reviens pas dessus.", "Celle-là, c'est dans le carnet pour de bon.", "Proprement faite. Je range mes vannes.", "Un tampon de plus, et pas du genre qu'on efface."],
+  terminee: ["Faite. Je ne reviens pas dessus.", "Celle-là, c'est acquis pour de bon.", "Proprement faite. Je range mes vannes.", "Une de plus, et pas du genre qu'on efface."],
   active: ["Elle a commencé à prendre forme. Continue, ne la laisse pas sécher.", "Tu y es presque, ou pas loin. À toi de voir lequel des deux.", "Le trait est posé, il reste à le repasser.", "En cours, c'est le meilleur état : la peinture est encore fraîche."],
   disponible: ["Elle t'attend depuis un moment, elle ne mord pas.", "Prends ton temps, mais pas toute la matinée.", "Rien de compliqué. Juste le premier trait.", "Celle-ci est ouverte pour toi."],
   verrouillee: ["Pas encore. Il faut d'abord finir ce qui la précède.", "Elle viendra, une fois les marches d'avant montées.", "Fermée encore. Chaque chose en son temps, disait mon maître.", "Je vois que tu regardes déjà plus loin. J'aime ça."],
