@@ -194,7 +194,7 @@ for (const [f, n] of [
   check("vidéo : l'adresse enregistrée n'a pas de #t=", !v.url.includes("#"));
   const sansCouv = rend(<BlocProfil bloc={{ ...v, couverture: undefined, duree: 24.3 }} f="tuile" d={RICHE} />);
   const avant = rend(<BlocProfil bloc={{ ...v, couverture: undefined, duree: undefined }} f="tuile" d={RICHE} />);
-  check("vidéo : sans couverture, le milieu ; sans durée, 1 s", sansCouv.includes("#t=12.15") && avant.includes("#t=1\""));
+  check("vidéo : sans couverture, le milieu au demi près (celui du curseur) ; sans durée, 1 s", sansCouv.includes("#t=12\"") && avant.includes("#t=1\""));
   const heros = rend(<BlocProfil bloc={{ ...v, f: "heros" }} f="heros" d={RICHE} />);
   check("vidéo en héros : la légende à côté", heros.includes("Vidéo · en boucle, sans le son") && heros.includes("videoCote"));
 }

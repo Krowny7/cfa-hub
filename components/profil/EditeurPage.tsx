@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Clapperboard, EyeOff, GripVertical, ImagePlay, ImagePlus, MoreHorizontal, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { GrilleProfil } from "@/components/profil/GrilleProfil";
-import { BlocProfil, ICONE_BLOC } from "@/components/profil/BlocsProfil";
+import { BlocProfil, ICONE_BLOC, couvertureDe } from "@/components/profil/BlocsProfil";
 import { BanqueGifs } from "@/components/profil/BanqueGifs";
 import { Feuille } from "@/components/ui/Feuille";
 import type { GifBanque } from "@/lib/profil/gifs";
@@ -16,6 +16,7 @@ import {
   FORMATS,
   FORMAT_DEFAUT,
   LEGENDE_MAX,
+  VIDEO_MAX_SECONDES,
   blocsDe,
   cleDe,
   estLibre,
@@ -540,13 +541,14 @@ export function EditeurPage({
                 )}
                 {media && genre === "video" && (
                   <label className="flex flex-col gap-1 px-1.5 pb-1">
-                    <span className="t-micro">{T.couverture(media.couverture ?? (media.duree ? Math.round(media.duree) / 2 : 1))}</span>
+                    <span className="t-micro">{T.couverture(couvertureDe(media))}</span>
+                    {/* sans durée (vidéo d'avant) : la borne de la validation, une minute */}
                     <input
                       type="range"
                       min={0}
-                      max={Math.floor((media.duree ?? 15) * 2) / 2}
+                      max={Math.floor((media.duree ?? VIDEO_MAX_SECONDES) * 2) / 2}
                       step={0.5}
-                      value={media.couverture ?? (media.duree ? Math.round(media.duree) / 2 : 1)}
+                      value={couvertureDe(media)}
                       onChange={(e) => majMedia({ couverture: Number(e.target.value) })}
                     />
                     <span className="t-micro">{T.couvertureAide}</span>

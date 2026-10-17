@@ -579,8 +579,11 @@ function Legende({ texte, icone }: { texte: string | null; icone: React.ReactNod
   );
 }
 
-/** La couverture d'une vidéo (s) : celle choisie, sinon le milieu, sinon 1 s (vidéos d'avant, sans durée). */
-export const couvertureDe = (m: BlocMedia) => m.couverture ?? (m.duree ? m.duree / 2 : 1);
+/**
+ * La couverture d'une vidéo (s) : celle choisie, sinon le milieu au demi
+ * près (comme le curseur de l'éditeur), sinon 1 s (vidéos d'avant, sans durée).
+ */
+export const couvertureDe = (m: BlocMedia) => m.couverture ?? (m.duree ? Math.round(m.duree) / 2 : 1);
 
 function MediaBloc({ m, f }: { m: BlocMedia; f: Format }) {
   const g = genreMedia(m);

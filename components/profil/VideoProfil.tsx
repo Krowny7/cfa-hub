@@ -8,12 +8,24 @@ import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 // données gaspillées) ; deux boutons posés dessus : le son, et pause /
 // lecture. Mouvement réduit : elle attend qu'on la lance. À sa proportion
 // (verticale le plus souvent), dans la place que lui donne le format de
-// son bloc (BlocProfil).
+// son bloc (BlocProfil). L'adresse porte sa couverture (« #t= ») : c'est
+// l'image qu'on voit avant la lecture, mais la première lecture repart de
+// 0, pour que l'edit se voie depuis son début.
 
 export function VideoProfil({ url, ratio, label }: { url: string; ratio: number; label: string }) {
   const video = useRef<HTMLVideoElement | null>(null);
   const [son, setSon] = useState(false);
   const [lecture, setLecture] = useState(false);
+  const dejaLue = useRef(false);
+
+  /** Lit la vidéo ; la première fois, depuis 0 (pas depuis la couverture). */
+  const lancer = (v: HTMLVideoElement) => {
+    if (!dejaLue.current) {
+      dejaLue.current = true;
+      v.currentTime = 0;
+    }
+    v.play().catch(() => {});
+  };
 
   useEffect(() => {
     const v = video.current;
@@ -21,7 +33,7 @@ export function VideoProfil({ url, ratio, label }: { url: string; ratio: number;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) v.play().catch(() => {});
+        if (e.isIntersecting) lancer(v);
         else v.pause();
       },
       { threshold: 0.3 },
@@ -60,7 +72,7 @@ export function VideoProfil({ url, ratio, label }: { url: string; ratio: number;
           onClick={() => {
             const v = video.current;
             if (!v) return;
-            if (v.paused) v.play().catch(() => {});
+            if (v.paused) lancer(v);
             else v.pause();
           }}
           aria-label={lecture ? "Mettre en pause" : "Lire la vidéo"}
