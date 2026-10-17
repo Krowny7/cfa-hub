@@ -13,7 +13,7 @@
 // dans les pages.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, REPLIQUES, TUTO, type Replique } from "@/lib/leonard/repliques";
+import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, REPLIQUES, RESUME_NOUVEAUTES, TUTO, type Replique } from "@/lib/leonard/repliques";
 import { VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
 import { ECART_MIN, MAX_JOUR, MUETS, PRIORITAIRES, decider, jourParis, type Compteur, type Contexte } from "@/lib/leonard/apparitions";
 import type { EvenementLeonard } from "@/lib/leonard/signal";
@@ -197,6 +197,10 @@ check(
 );
 check("la visite parle du mode sobre à l'étape des réglages", /mode sobre/.test(TUTO.find((x) => x.cible === "reglages")?.texte ?? ""));
 check("les nouveautés v4 : le sceau des quêtes, « Récupérer », le Codex dans Moi", etapes(NOUVEAUTES) === "/dashboard#sceau-quetes /dashboard#sceau-quetes /moi#moi-codex", etapes(NOUVEAUTES));
+check(
+  "les réglages résument les nouveautés de cette version (« Revoir »)",
+  RESUME_NOUVEAUTES.includes("« Récupérer »") && RESUME_NOUVEAUTES.includes("Moi") && readFileSync(join(RACINE, "components/moi/AppearanceSwitches.tsx"), "utf8").includes("{RESUME_NOUVEAUTES}"),
+);
 check("les nouveautés v4 nomment « Récupérer », et le mode sobre qui s'en passe", NOUVEAUTES.some((x) => x.texte.includes("« Récupérer »") && /mode sobre/.test(x.texte)));
 // le sceau n'est dans la barre qu'avec le Codex : ses étapes, et elles seules, sont facultatives
 check("seules les étapes du sceau sont facultatives", [...TUTO, ...NOUVEAUTES].every((x) => (x.cible === "sceau-quetes") === !!x.facultatif));

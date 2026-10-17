@@ -362,3 +362,6 @@ export const NOUVEAUTES: EtapeTuto[] = [
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Une quête faite ne paie plus en douce : un chiffre se pose sur le sceau, tu touches « Récupérer », et l’XP est à toi. En mode sobre, elle arrive seule.", pose: "base" },
   { page: "/moi", cible: "moi-codex", texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, avec l’historique de tes quêtes. Quand tu veux, sans obligation.", pose: "base" },
 ];
+
+/** Ce que montrent les nouveautés de cette version, en une ligne (Moi › Réglages, « Les nouveautés »). */
+export const RESUME_NOUVEAUTES = "Le sceau des quêtes, « Récupérer », le Codex dans Moi";
