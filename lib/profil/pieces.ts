@@ -85,8 +85,13 @@ const obtentionProfil = (c: ConditionProfil | null): string =>
 // ── Les quêtes du Codex qui donnent une pièce ──────────────────────────
 const CONTENU = contenuDuProgramme();
 const QUETES = catalogueCodex(CONTENU);
-/** cosmétique → quête (ou « acte:<id> ») qui le donne */
+/**
+ * cosmétique → quêtes (ou « acte:<id> ») qui le donnent : la quête retirée
+ * qui le donnait, et celle qui le donne aujourd'hui (V3 §8.1)
+ */
 const DONNEURS = donneurs(CONTENU, QUETES);
+/** La quête qui donne la pièce aujourd'hui (une non retirée d'abord) : elle dit l'obtention, la rareté, le programme. */
+const donneurPrincipal = (ids: string[] | undefined): string | undefined => ids?.find((id) => !QUETES.find((q) => q.id === id)?.retiree) ?? ids?.[0];
 
 /**
  * Les chapitres du fil rouge (§1.5) : titre, paliers listés puis pas
@@ -193,9 +198,13 @@ function couvre(c: Condition, quete: string): boolean {
   if (c.k === "fil") return idFil(c.chapitre, c.palier) === quete;
   return c.k === "unDe" && c.conditions.some((x) => couvre(x, quete));
 }
-/** La condition, ou elle OU la quête du Codex qui donne aussi la pièce. */
-const ouQuete = (c: Condition, quete: string | undefined): Condition =>
-  !quete || couvre(c, quete) ? c : unDe(...(c.k === "unDe" ? c.conditions : [c]), { k: "codex", quete });
+/** Une quête du Codex récompensée, l'une des quêtes qui donnent la pièce (une retirée garde ce qu'elle a donné). */
+const conditionCodex = (ids: string[]): Condition => (ids.length === 1 ? { k: "codex", quete: ids[0] } : unDe(...ids.map((quete): Condition => ({ k: "codex", quete }))));
+/** La condition, ou elle OU les quêtes du Codex qui donnent aussi la pièce. */
+const ouQuete = (c: Condition, quetes: string[] | undefined): Condition => {
+  const manquent = (quetes ?? []).filter((q) => !couvre(c, q));
+  return !manquent.length ? c : unDe(...(c.k === "unDe" ? c.conditions : [c]), ...manquent.map((quete): Condition => ({ k: "codex", quete })));
+};
 
 function assembler(): Piece[] {
   const out: Piece[] = [];
@@ -235,9 +244,10 @@ function assembler(): Piece[] {
     const type: unknown = c.type;
     if (!estTypePiece(type) || !c.cle.startsWith(`${type}:`)) continue; // type inconnu : ignoré
     codex.set(c.cle, { nom: c.nom, description: c.description });
-    const quete = DONNEURS.get(c.cle);
+    const ids = DONNEURS.get(c.cle);
+    const quete = donneurPrincipal(ids);
     // déclarée ici : traitée plus bas ; qu'aucune quête ne donne : rien ne l'ouvre, elle n'est pas montrée
-    if (declarees.has(c.cle) || !quete) continue;
+    if (declarees.has(c.cle) || !ids || !quete) continue;
     ajouter({
       cle: c.cle,
       nom: c.nom,
@@ -245,7 +255,7 @@ function assembler(): Piece[] {
       obtention: obtentionCodex(quete),
       rarete: rareteCodex(c.cle, quete),
       origine: "codex",
-      condition: { k: "codex", quete },
+      condition: conditionCodex(ids),
       ...(c.anime ? { anime: "css" as const } : {}),
       programme: programmeCodex(type, quete),
     });

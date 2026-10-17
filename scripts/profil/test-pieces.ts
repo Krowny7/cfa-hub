@@ -92,7 +92,15 @@ async function main() {
     const seulement = codex.filter((c) => pieceDe(c.cle)?.origine === "codex" && (c.type as string) !== "folio");
     check("une pièce du seul Codex : son nom, et la quête (ou l'acte) qui la donne", seulement.length >= 30 && seulement.every((c) => {
       const p = pieceDe(c.cle);
-      return p?.nom === c.nom && p.condition?.k === "codex" && (quetes.has(p.condition.quete) || p.condition.quete.startsWith("acte:"));
+      // une quête, ou plusieurs en « ou » : la retirée qui la donnait et celle d'aujourd'hui (V3 §8.1)
+      const ou = p?.condition?.k === "unDe" ? p.condition.conditions : p?.condition ? [p.condition] : [];
+      return p?.nom === c.nom && ou.length > 0 && ou.every((x) => x.k === "codex" && (quetes.has(x.quete) || x.quete.startsWith("acte:")));
+    }));
+    check("une pièce donnée par une quête retirée et par une autre : les deux en « ou », l'obtention nomme celle d'aujourd'hui", seulement.every((c) => {
+      const p = pieceDe(c.cle);
+      if (p?.condition?.k !== "unDe") return true;
+      const actuelle = p.condition.conditions.map((x) => (x.k === "codex" ? catalogueCodex().find((q) => q.id === x.quete) : undefined)).find((q) => q && !q.retiree);
+      return !actuelle || actuelle.visibilite === "cachee" || p.obtention.includes(actuelle.titre);
     }));
     check("les pièces animées du Codex sont « css »", seulement.filter((c) => c.anime).every((c) => pieceDe(c.cle)?.anime === "css"));
     check("un type inconnu du Codex est ignoré", !PIECES.some((p) => p.cle.startsWith("embleme:")));
@@ -144,7 +152,7 @@ async function main() {
     const ici = FOLIOS.map((x) => `folio:${x.nue}`).sort();
     check("les folios du Codex sont ceux d'ici (aucun avant la fusion F1)", FOLIOS_DU_CODEX.length === 0 || egal([...FOLIOS_DU_CODEX].sort(), ici), FOLIOS_DU_CODEX.join(", "));
     const par = donneurs(contenuDuProgramme(), catalogueCodex());
-    check("un folio donné par une quête du Codex l'est par la quête déclarée ici", FOLIOS.every((x) => !par.has(`folio:${x.nue}`) || par.get(`folio:${x.nue}`) === x.quete));
+    check("un folio donné par une quête du Codex l'est par la quête déclarée ici", FOLIOS.every((x) => !par.has(`folio:${x.nue}`) || !!par.get(`folio:${x.nue}`)?.includes(x.quete)));
   }
 
   console.log("\n# Conditions");
