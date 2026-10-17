@@ -26,7 +26,6 @@ export const EDITEUR_PAGE = {
   // ── la barre d'un bloc ──
   deplacer: (nom: string) => `Déplacer : ${nom}`,
   deplacerAide: "Appui long, puis glisse sur une autre place",
-  format: "Format",
   formatDe: (nom: string, format: string) => `Format de ${nom} : ${format}`,
   formatTitre: "Format sur ordinateur",
   /** l'infobulle d'un format permis : « Héros · 2/3 de la largeur » */
@@ -78,8 +77,6 @@ export const EDITEUR_PAGE = {
   videoPrise: "Une vidéo par page",
   /** la ligne sous « Ajouter à ta page » */
   medias: (n: number) => `${n}/${MEDIAS_MAX} médias · images de 8 Mo, GIF de la banque KLIPY, une vidéo de ${VIDEO_MAX_SECONDES} s. Un bloc masqué garde ses réglages.`,
-  // ── un bloc vide dans Personnaliser ──
-  rienAMontrer: (nom: string) => `${nom} : rien à montrer pour l'instant. Le bloc apparaîtra sur ta page dès qu'il aura du contenu.`,
   // ── les envois ──
   envoiImage: "Envoi de l'image…",
   envoiVideo: "Envoi de la vidéo… (quelques secondes à une minute)",
