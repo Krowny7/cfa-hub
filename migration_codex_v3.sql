@@ -3,6 +3,14 @@
 -- existante n'est modifiée ni supprimée. Le site marche sans ce fichier :
 -- il se replie en silence sur l'ancien comportement.
 --
+-- ATTENTION : ne recollez PAS migration_codex.sql ni migration_serie_encre.sql
+-- APRÈS ce fichier. Ils remettraient codex_ecrire, codex_journal, codex_lire
+-- et _serie_avancer dans leur version d'avant (les quêtes du fil rouge ne
+-- s'écriraient plus ; les jours de repos et de pause seraient ignorés par la
+-- série). Si c'est fait, recollez ce fichier ensuite. Les capacités « fil »
+-- et « journal » de codex_mesures_v3 se lisent sur le corps de codex_ecrire et
+-- de codex_journal : le Codex s'y adapte, mais _serie_avancer, non.
+--
 -- 1. La robustesse de l'écriture (V3 §6, point 14). Avant : une seule ligne
 --    en conflit (par exemple une XP déjà versée dont la ligne de progression
 --    a été effacée à la main, que l'index unique xp_events_codex_une_fois
@@ -511,14 +519,21 @@ BEGIN
     RAISE EXCEPTION 'programme invalide : %', p_programme;
   END IF;
   v_capacites := jsonb_build_object(
-    -- le CHECK de codex_progression.famille accepte « fil » (§3c)
+    -- le CHECK de codex_progression.famille accepte « fil » (§3c) ET codex_ecrire l'écrit
+    -- (§1d) : chaque capacité se lit sur la fonction elle-même, pas sur un marqueur. Un
+    -- migration_codex.sql recollé après ce fichier remet le codex_ecrire v2, qui saute en
+    -- silence toute famille « fil » (la quête serait fêtée à chaque calcul) : fil faux.
     'fil', EXISTS (SELECT 1 FROM pg_constraint c
                    WHERE c.conrelid = 'public.codex_progression'::regclass AND c.conname = 'codex_progression_famille_check'
-                     AND pg_get_constraintdef(c.oid) LIKE '%''fil''%'),
+                     AND pg_get_constraintdef(c.oid) LIKE '%''fil''%')
+           AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_ecrire(uuid,jsonb,integer)')) LIKE '%''fil''%', false),
     -- les mesures nouvelles de cette fonction (notions tenues, spéciaux par matière, trophées)
     'mesures', true,
-    -- le journal v3 (§5) pose son marqueur
-    'journal', CASE WHEN to_regprocedure('public._codex_journal_v3()') IS NOT NULL THEN 3 ELSE 2 END,
+    -- le journal v3 (§5) : son marqueur ET un codex_journal qui rend ses événements
+    -- (seance_juste) ; le journal v2 recollé par-dessus : 2
+    'journal', CASE WHEN to_regprocedure('public._codex_journal_v3()') IS NOT NULL
+                     AND coalesce(pg_get_functiondef(to_regprocedure('public.codex_journal(uuid)')) LIKE '%seance_juste%', false)
+                    THEN 3 ELSE 2 END,
     'seances', to_regclass('public.codex_seances') IS NOT NULL,
     'revoir', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'revisions_dues'),
     'maitrise', EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'maitrise_joueur'),
