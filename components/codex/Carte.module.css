@@ -18,17 +18,12 @@
   opacity: 0.55;
 }
 
-/* ---------- la zone : la carte, et la colonne à côté (≥ 1 180 px) ou dessous ---------- */
+/* ---------- la zone : la carte, sur toute la largeur (« Voir la carte ») ---------- */
 .zone {
   --h-carte: clamp(560px, calc(100vh - 250px), 820px);
   display: grid;
   gap: 14px;
   align-items: start;
-}
-@media (min-width: 1180px) {
-  .zone:is([data-col="auto"], [data-col="1"]) {
-    grid-template-columns: minmax(0, 1fr) 316px;
-  }
 }
 
 /* ---------- l'arbre ---------- */
@@ -186,15 +181,6 @@
   font-size: max(15px, calc(12px * var(--zinv, 1)));
   color: var(--c-sepia);
 }
-.blanche {
-  position: absolute;
-  max-width: 300px;
-  font-family: var(--font-plume), "Segoe Print", cursive;
-  font-size: 22px;
-  line-height: 1.15;
-  color: var(--c-crayon);
-  pointer-events: none;
-}
 
 /* « tu es ici » : un anneau d'or qui respire, le mot à la plume vermillon */
 .ici {
@@ -293,111 +279,13 @@
   opacity: 1;
   transform: translate(-50%, 0);
 }
-.colonne {
-  --c-reserve: var(--surface);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--line-2);
-}
-@media (min-width: 1180px) {
-  .zone:is([data-col="auto"], [data-col="1"]) .colonne {
-    height: var(--h-carte);
-  }
-}
-.colonneBascule {
-  align-self: flex-end;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  min-width: 44px;
-  min-height: 44px;
-  margin: 2px 2px 0 0;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--ink-2);
-  text-align: left;
-  cursor: pointer;
-}
-.colonneBascule:hover {
-  color: var(--ink);
-}
-.colonneBascule:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-.colonneMot {
-  display: none;
-  flex: 1;
-  min-width: 0;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-}
-.colonneMot .plume {
-  font-size: 22px;
-  line-height: 1.1;
-  color: var(--c-sepia);
-}
-.retourne {
-  transform: rotate(180deg);
-}
-.colonneCorps {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 14px 16px;
-  margin-top: -34px;
-}
-/* repliée : une barre « Aujourd'hui » sous la carte, que l'on déplie */
-.zone[data-col="0"] .colonneBascule {
-  align-self: stretch;
-  margin: 0;
-  padding: 6px 14px;
-}
-.zone[data-col="0"] .colonneMot {
-  display: flex;
-}
-.zone[data-col="0"] .colonneCorps {
-  display: none;
-}
-@media (max-width: 1179px) {
-  .zone[data-col="auto"] .colonneBascule {
-    align-self: stretch;
-    margin: 0;
-    padding: 6px 14px;
-  }
-  .zone[data-col="auto"] .colonneMot {
-    display: flex;
-  }
-  .zone[data-col="auto"] .colonneCorps {
-    display: none;
-  }
-  /* dépliée sous la carte : les deux sections côte à côte */
-  .zone[data-col="1"] .colonneCorps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 8px 28px;
-    overflow: visible;
-  }
-  .zone[data-col="1"] .colonneCorps > section {
-    margin-top: 0;
-  }
-}
+/* le titre d'une section (le fil rouge) : sans police manuscrite */
 .colTitre {
   margin: 0 0 8px;
-  font-family: var(--font-plume), "Segoe Print", cursive;
+  font-size: 17px;
   font-weight: 700;
-  font-size: 25px;
-  line-height: 1.05;
-  color: var(--c-sepia);
+  line-height: 1.2;
+  color: var(--ink);
 }
 .colListe {
   margin: 0;
@@ -405,11 +293,6 @@
   list-style: none;
   display: grid;
   gap: 4px;
-}
-.blancheCol {
-  margin: 0;
-  font-size: 13px;
-  color: var(--ink-3);
 }
 .compacte {
   display: flex;
@@ -559,14 +442,6 @@
   font-size: 32px;
   line-height: 1;
   color: var(--c-encre);
-}
-.repliqueChemin {
-  margin: 6px auto 0;
-  max-width: 34ch;
-  font-size: 13px;
-  line-height: 1.4;
-  font-style: italic;
-  color: var(--ink-2);
 }
 .chemin {
   position: relative;

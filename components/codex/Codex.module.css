@@ -77,33 +77,6 @@
 .fermer:focus-visible {
   outline: 2px solid var(--ink);
 }
-.detailBloc {
-  margin-top: 14px;
-}
-.detailBloc h3 {
-  margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
-.detailBloc p {
-  margin: 0;
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-.leonardLigne {
-  margin: 16px 0 0;
-  padding: 12px 14px;
-  border-left: 3px solid var(--sepia);
-  background: color-mix(in oklab, var(--sepia) 8%, transparent);
-  border-radius: 0 12px 12px 0;
-  font-family: var(--font-plume), var(--font-sans);
-  font-size: 19px;
-  line-height: 1.3;
-  color: var(--sepia);
-}
 
 /* ---------- la fanfare ---------- */
 .fete {

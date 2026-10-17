@@ -562,7 +562,7 @@ export function ArbreCodex({ vue, montre, onQuete, onActe, allume, cible }: { vu
   const exploitsGagnes = medaillon?.gagnes ?? 0;
 
   return (
-    <div className={c.zone} data-col="0">
+    <div className={c.zone}>
       <div className={`${c.arbreCadre} ${e.carnet}`}>
         <div
           ref={boite}
