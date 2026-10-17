@@ -945,11 +945,11 @@ function signatureDe(m: ContenuMatiere, programme: string, drill: boolean, calcu
   if (s?.k === "page" && drill)
     return { titre: s.titre, consigne: `Passe une page de drill de la fiche ${m.court} à 100 %.`, objectif: compte("drill_page_terminee", 1, { matiere: m.key, pct: { min: 100 } }) };
   if (s?.k === "serie_calculs_matiere" && calculs)
-    return { titre: s.titre, consigne: `Enchaîne ${s.seuil} calculs justes d'affilée ${de(m.nom)}.`, objectif: { k: "special", cle: s.k, seuil: s.seuil, matiere: m.key }, requiert: ["mesures"] };
+    return { titre: s.titre, consigne: `Enchaîne ${s.seuil} calculs justes d'affilée en ${m.nom}.`, objectif: { k: "special", cle: s.k, seuil: s.seuil, matiere: m.key }, requiert: ["mesures"] };
   const seuil = s?.k === "serie_bonnes_matiere" ? s.seuil : m.poids < 7 ? 10 : 12;
   return {
     titre: s?.titre ?? `L'épreuve ${de(m.court)}`,
-    consigne: `Enchaîne ${seuil} bonnes réponses d'affilée ${de(m.nom)}, dans une même séance.`,
+    consigne: `Enchaîne ${seuil} bonnes réponses d'affilée en ${m.nom}, dans une même séance.`,
     objectif: { k: "special", cle: "serie_bonnes_matiere", seuil, matiere: m.key },
     // les suites par matière viennent de codex_mesures_v3 (speciaux_matiere)
     requiert: ["mesures"],
