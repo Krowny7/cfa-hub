@@ -170,7 +170,6 @@ export const CODEX = {
     vide: "Des quêtes pour guider tes révisions, à ton rythme.",
     ouvrir: "Ouvrir le Codex",
     historiqueSous: "Tes quêtes faites, jour par jour.",
-    historiqueVide: "Aucune quête faite pour l'instant.",
     aujourdhui: "Aujourd'hui",
     hier: "Hier",
     arrivee: "Comptées à ton arrivée",
