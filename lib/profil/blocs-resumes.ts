@@ -7,7 +7,8 @@
 import { ANSWER_SOURCES, SOURCE_LABELS, tallyOf, type AnswerStats } from "@/lib/answer-stats";
 import type { LigneTrophee } from "@/lib/trophees";
 import type { Journal } from "@/lib/profil/journal";
-import type { ExtraitJournal, ResumeReponses, ResumeTrophees } from "@/lib/profil/blocs-donnees";
+import type { ExtraitCarnet, ExtraitJournal, ResumeReponses, ResumeTrophees } from "@/lib/profil/blocs-donnees";
+import { decaleJour } from "@/lib/objectif-calc";
 
 /** Les questions répondues : total, justes, précision et sources non vides avec la leur (de la plus jouée à la moins jouée) ; null si rien n'a pu être lu. */
 export function resumeReponses(s: AnswerStats): ResumeReponses | null {
@@ -33,6 +34,19 @@ export function extraitJournal(j: Journal): ExtraitJournal {
     depart: j.courbe.depart,
     points: j.courbe.points.map((p) => p.apres).slice(-90),
     matchs: j.courbe.matchs,
+    matchs90: j.courbe.points.length,
     evenements: j.evenements.slice(0, 4),
+    dates: j.courbe.points.map((p) => p.jour).slice(-90),
   };
+}
+
+/** Les jours d'un carnet, limités aux 52 semaines qui finissent aujourd'hui (n > 0), du plus ancien au plus récent. */
+export function joursDuCarnet(jours: Map<string, number> | [string, number][], aujourdhui: string): [string, number][] {
+  const debut = decaleJour(aujourdhui, -7 * 52);
+  return [...jours].filter(([j, n]) => n > 0 && j > debut && j <= aujourdhui).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+}
+
+/** Le carnet de jours d'un Journal : les 52 semaines, la série, le record, le seuil. */
+export function extraitCarnet(j: Pick<Journal, "jours" | "aujourdhui" | "serie" | "record" | "seuil">): ExtraitCarnet {
+  return { jours: joursDuCarnet(j.jours, j.aujourdhui), aujourdhui: j.aujourdhui, serie: j.serie, record: j.record, seuil: j.seuil };
 }

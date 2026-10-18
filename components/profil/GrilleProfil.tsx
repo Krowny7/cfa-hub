@@ -1,5 +1,5 @@
 import type { CaseGrille, Disposition, PlaceVide } from "@/lib/profil/disposition";
-import { cleDe, estLibre, hauteur, placesVides, portee, rangees } from "@/lib/profil/disposition";
+import { cleDe, estFixe, estLibre, hauteur, placesVides, pleineLargeur, portee, rangees } from "@/lib/profil/disposition";
 import g from "./GrilleProfil.module.css";
 
 // La grille de la page de profil, sous l'en-tête : les éléments de la liste
@@ -7,7 +7,8 @@ import g from "./GrilleProfil.module.css";
 // (tuile 4, héros 8, bande 12, colonne 4 sur deux lignes :
 // lib/profil/disposition.ts, rangees). Chaque case est posée à sa place
 // (colonne et ligne de départ, portée) dès 1 024 px ; une rangée double
-// (une colonne) a deux lignes. Toutes les cases d'une ligne ont la même
+// (une colonne) a deux lignes ; une demi-bande, seule sur sa rangée, fait
+// 121 px de haut (deux demi-bandes et leur écart : une rangée haute). Toutes les cases d'une ligne ont la même
 // hauteur (les bas s'alignent) ; hors bande, une ligne fait au moins
 // 260 px. Sous 1 024 px : une colonne, dans le même ordre. Une place libre
 // n'est jamais comblée par un élargissement.
@@ -72,7 +73,7 @@ export function GrilleProfil({
         .map(({ r, k, contenus, libres, fins, lignesVues }) => (
           <div
             key={k}
-            className={g.rangee + (r.cases.every((c) => c.f === "bande") ? "" : " " + g.haute) + (edition && r.cases.every((c) => estLibre(c.e)) ? " " + g.placeEdition : "")}
+            className={g.rangee + (r.cases.every((c) => pleineLargeur(c.f)) ? "" : " " + g.haute) + (edition && r.cases.every((c) => estLibre(c.e)) ? " " + g.placeEdition : "")}
           >
             {r.cases.map((c, n) => {
               const cle = cleDe(c.e, c.i);
@@ -83,7 +84,7 @@ export function GrilleProfil({
               const ligne = seule ? 1 : c.ligne;
               const place = placeDe(c.col, ligne, portee(c.f), seule ? 1 : hauteur(c.f));
               return rendu(contenu) ? (
-                <div key={cle} data-case={edition ? c.i : undefined} style={place} className={`@container ${g.case}` + (edition && estLibre(c.e) ? " " + g.placeEdition : "")}>
+                <div key={cle} id={!edition && estFixe(c.e) ? `bloc-${c.e.k}` : undefined} data-case={edition ? c.i : undefined} style={place} className={`@container ${g.case}` + (c.f === "demi" && !edition ? " " + g.demi : "") + (edition && estLibre(c.e) ? " " + g.placeEdition : "")}>
                   {contenu}
                 </div>
               ) : (

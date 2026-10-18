@@ -1,0 +1,192 @@
+/* Le bloc Amis (Amis.tsx). Chez soi : les mêmes grilles qu'avant (repris
+   de BlocsProfil.module.css). Chez un autre : son cercle par ELO, en
+   avatars (elle cernée d'encre, toi à ta couleur, un point sous les amis
+   communs), ou en échelle (colonne). En CSS simple. */
+
+/* ── chez soi (inchangé) : 2 colonnes, puis 3 (héros) ou 6 (bande) ── */
+.amis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 1024px) {
+  .amisHeros {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .amisBande {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* ── le chiffre : « 2e », puis « sur 19 » en petit ── */
+.ligneChiffre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.sur {
+  margin-left: 6px;
+  color: var(--ink-2);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* ── un avatar du cercle, et sa marque dessous (« toi » ou le point d'un ami commun) ── */
+.rangee {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rangeeLigne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 1024px) {
+  .rangeeLigne {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+}
+.grille3 {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 10px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.visage {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.anneau {
+  display: inline-flex;
+  border-radius: 999px;
+}
+.sous {
+  display: flex;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+}
+.legende {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+.point {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+.lien {
+  display: inline-flex;
+  border-radius: 999px;
+}
+.lien:hover .anneau,
+.lien:focus-visible .anneau {
+  outline: 1.5px solid var(--line-2);
+  outline-offset: 2px;
+}
+
+/* ── héros et bande : le chiffre à gauche, les avatars à droite ── */
+.cote {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 1024px) {
+  .cote {
+    flex: 1 1 auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+  }
+}
+
+/* ── l'échelle (colonne) : rang, avatar, pseudo, ELO ── */
+.echelle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: 30px 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.lui {
+  font-weight: 700;
+}
+.mono {
+  color: var(--ink-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pseudo {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+.pseudo > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saut {
+  padding: 0 8px;
+  color: var(--ink-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.avatarPetit {
+  position: relative;
+  display: inline-flex;
+  border-radius: 999px;
+}
+
+/* ── demi-bande : une rangée d'avatars ; au téléphone, la tranche courte ── */
+.demiRangee {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+@media (max-width: 639px) {
+  .horsTel {
+    display: none;
+  }
+}
+.repere {
+  color: var(--ink-2);
+}

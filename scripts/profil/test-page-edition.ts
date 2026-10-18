@@ -16,6 +16,7 @@ import {
   blocsDe,
   estLibre,
   estMedia,
+  formatsDe,
   nomFormat,
   placesVides,
   rangees,
@@ -88,7 +89,10 @@ const stable = (d: Disposition) => {
 // ── changerFormat ─────────────────────────────────────────────────────
 {
   const d: Disposition = [fixe("vitrine", "bande"), fixe("progression", "heros"), fixe("amis", "tuile")];
-  check("changerFormat : progression en tuile refusé (même liste)", changerFormat(d, 1, "tuile") === d);
+  check("changerFormat : progression en mini-tuile (la courbe se resserre)", court(changerFormat(d, 1, "tuile")) === "vitrine:bande progression:tuile amis:tuile");
+  const rd: Disposition = [fixe("radar", "heros"), fixe("amis", "tuile")];
+  check("changerFormat : radar en demi-bande refusé (même liste)", changerFormat(rd, 0, "demi") === rd);
+  check("changerFormat : en demi-bande", court(changerFormat(d, 0, "demi")) === "vitrine:demi progression:heros amis:tuile");
   check("changerFormat : même format (même liste)", changerFormat(d, 0, "bande") === d);
   check("changerFormat : hors liste (même liste)", changerFormat(d, 9, "tuile") === d);
   const x = changerFormat(d, 0, "tuile");
@@ -126,16 +130,36 @@ const stable = (d: Disposition) => {
   check("echanger : la même place (même liste)", echanger(d, 1, 1) === d);
   check("echanger : hors liste (même liste)", echanger(d, 0, 5) === d);
   const p: Disposition = [fixe("progression", "heros"), fixe("trophees", "tuile")];
-  check("echanger : la progression ne va pas en tuile (le plus proche : héros)", court(echanger(p, 0, 1)) === "trophees:heros progression:heros", court(echanger(p, 0, 1)));
+  check("echanger : la progression prend la mini-tuile", court(echanger(p, 0, 1)) === "trophees:heros progression:tuile", court(echanger(p, 0, 1)));
   const l: Disposition = [fixe("vitrine", "bande"), libre("tuile"), fixe("amis", "tuile")];
   check("echanger : une place libre ne prend pas une bande", echanger(l, 0, 1) === l);
+}
+
+// ── un média en haut et la demi-bande ─────────────────────────────────
+const hautDe = (e: ElementPage) => ("img" in e ? e.img?.id : undefined);
+{
+  const im = { id: "hautaa1", type: "image" as const, url: "/x/hautaa1.webp", ratio: 1.5 };
+  const vi = { id: "video01", type: "video" as const, url: "/v/video01.mp4", ratio: 0.5625 };
+  const d: Disposition = [{ k: "trophees", f: "tuile", img: im }, fixe("amis", "heros"), fixe("vitrine", "demi")];
+  const x = echanger(d, 0, 2);
+  check("echanger : une image en haut ne prend pas la demi-bande (le plus proche : la bande), l'image gardée", court(x) === "vitrine:tuile amis:heros trophees:bande" && hautDe(x[2]) === "hautaa1" && formatsDe(x[2] as Bloc).includes(x[2].f), court(x));
+  const v: Disposition = [{ k: "trophees", f: "tuile", img: vi }, fixe("amis", "heros"), fixe("vitrine", "demi")];
+  const y = echanger(v, 0, 2);
+  check("echanger : une vidéo en haut ne prend ni la demi-bande ni la bande (le héros)", court(y) === "vitrine:tuile amis:heros trophees:heros" && hautDe(y[2]) === "video01" && formatsDe(y[2] as Bloc).includes(y[2].f), court(y));
+  const m = mettreALaPlace(d, 2, "trophees");
+  check("mettreALaPlace : même règle (il échange)", court(m) === "vitrine:tuile amis:heros trophees:bande" && hautDe(m[2]) === "hautaa1", court(m));
+  // une demi-bande déplacée ne laisse pas de place libre « demi »
+  const dm: Disposition = [fixe("vitrine", "demi"), fixe("radar", "heros")];
+  const fin = placesVides(rangees(dm)[1], 1)[0];
+  const z = deplacerVers(dm, 0, fin);
+  check("deplacerVers : une demi-bande part d'abord (aucune place libre en demi-bande)", !z.some((e) => estLibre(e) && (e.f as string) === "demi") && stable(z) && court(z) === "radar:heros vitrine:tuile", court(z));
 }
 
 // ── mettreALaPlace ────────────────────────────────────────────────────
 {
   const d: Disposition = [fixe("radar", "heros"), fixe("amis", "tuile")];
   check("mettreALaPlace : absent, il remplace au format de la place", court(mettreALaPlace(d, 0, "progression")) === "progression:heros amis:tuile");
-  check("mettreALaPlace : place de tuile, la progression prend le héros", court(mettreALaPlace(d, 1, "progression")) === "radar:heros progression:heros");
+  check("mettreALaPlace : place de mini-tuile, la progression la prend", court(mettreALaPlace(d, 1, "progression")) === "radar:heros progression:tuile");
   check("mettreALaPlace : déjà posé ailleurs, échange", court(mettreALaPlace(d, 0, "amis")) === "amis:heros radar:tuile");
   check("mettreALaPlace : lui-même (même liste)", mettreALaPlace(d, 0, "radar") === d);
   check("mettreALaPlace : clé inconnue (même liste)", mettreALaPlace(d, 0, "inconnu" as CleBloc) === d);
@@ -145,13 +169,13 @@ const stable = (d: Disposition) => {
 }
 
 // ── pourPlace ─────────────────────────────────────────────────────────
-check("pourPlace : progression dans 4 → héros (son défaut)", pourPlace("progression", "tuile") === "heros");
+check("pourPlace : progression dans 4 → tuile", pourPlace("progression", "tuile") === "tuile");
 check("pourPlace : saisons dans 8 → tuile (son défaut)", pourPlace("saisons", "heros") === "tuile");
 check("pourPlace : image dans 8 → héros", pourPlace("image", "heros") === "heros");
 check("pourPlace : vidéo dans 4 → tuile", pourPlace("video", "tuile") === "tuile");
 check("pourPlace : radar dans 4 → tuile", pourPlace("radar", "tuile") === "tuile");
 check("pourPlace : folio dans une colonne → colonne", pourPlace("folio", "colonne") === "colonne");
-check("pourPlace : progression dans une colonne → héros (son défaut)", pourPlace("progression", "colonne") === "heros");
+check("pourPlace : progression dans une colonne → colonne", pourPlace("progression", "colonne") === "colonne");
 
 // ── la colonne ────────────────────────────────────────────────────────
 {
@@ -165,7 +189,7 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   const z = retirer(d, 1);
   check("retirer une colonne : sa place reste, libre, en colonne (le reste ne bouge pas)", court(z) === "radar:heros libre:colonne amis:tuile reponses:tuile", court(z));
   check("changerFormat : en colonne", court(changerFormat([fixe("amis", "tuile")], 0, "colonne")) === "amis:colonne");
-  check("changerFormat : la progression ne va pas en colonne", changerFormat([fixe("progression", "heros")], 0, "colonne").length === 1 && court(changerFormat([fixe("progression", "heros")], 0, "colonne")) === "progression:heros");
+  check("changerFormat : la progression en colonne", court(changerFormat([fixe("progression", "heros")], 0, "colonne")) === "progression:colonne");
 }
 
 // ── la vidéo en haut et la limite d'une vidéo par page ────────────────
@@ -201,7 +225,8 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   check("remplirPlace : la moitié DROITE d'un élément libre (la gauche reste libre)", court(xd) === "radar:colonne libre:tuile folio:tuile amis:tuile reponses:tuile", court(xd));
   const yd = remplirPlace(e, { ...fin, f: "tuile", portee: 4, moitie: true, cote: 1 }, fixe("amis", "heros"));
   check("remplirPlace : la moitié DROITE d'une fin de 2/3", court(yd) === "radar:heros vitrine:colonne libre:tuile amis:tuile" && rangees(yd)[0].cases.find((c) => c.e.k === "amis")?.col === 5, court(yd));
-  check("remplirPlace : la progression refusée dans une moitié", remplirPlace(d, { ...p, f: "tuile", portee: 4, moitie: true }, fixe("progression", "heros")) === d && remplirPlace(e, { ...fin, f: "tuile", portee: 4, moitie: true }, fixe("progression", "heros")) === e);
+  const pm = remplirPlace(e, { ...fin, f: "tuile", portee: 4, moitie: true }, fixe("progression", "heros"));
+  check("remplirPlace : la progression dans une moitié, en mini-tuile", court(pm) === "radar:heros vitrine:colonne progression:tuile", court(pm));
   const g: Disposition = [fixe("radar", "heros"), fixe("vitrine", "tuile"), libre("heros"), fixe("amis", "tuile")];
   const pl = placesVides(rangees(g)[1], 1).find((x) => x.i === 2)!;
   const dg = deplacerVers(g, 3, { ...pl, f: "tuile", portee: 4, moitie: true, cote: 1 });
@@ -239,7 +264,7 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   check("remplirPlace : fin de rangée, inséré après le dernier", court(y) === "vitrine:bande amis:heros radar:tuile", court(y));
   check("remplirPlace : bloc déjà posé (même liste)", remplirPlace(e, fin[0], fixe("amis", "tuile")) === e);
   const z = remplirPlace(e, fin[0], fixe("progression", "heros"));
-  check("remplirPlace : la progression déborde sur la rangée suivante (héros)", court(z) === "vitrine:bande amis:heros progression:heros" && rangees(z).length === 3, court(z));
+  check("remplirPlace : la progression en fin de rangée, en mini-tuile", court(z) === "vitrine:bande amis:heros progression:tuile" && rangees(z).length === 2, court(z));
   const g: Disposition = [fixe("vitrine", "bande"), fixe("radar", "tuile")];
   const vide8 = placesVides(rangees(g)[1], 1)[0];
   check("remplirPlace : une image dans 8 → héros", court(remplirPlace(g, vide8, image("bande"))) === "vitrine:bande radar:tuile image:heros");
@@ -291,10 +316,10 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   check("deplacerVers : le dernier de la 1re ligne descend en 2e ligne", rangees(z)[0].cases.find((c) => c.e.k === "amis")?.ligne === 2, court(z));
   const seule: Disposition = [fixe("folio", "colonne")];
   check("deplacerVers : une colonne seule sur la fin de sa propre ligne (même liste)", deplacerVers(seule, 0, placesVides(rangees(seule)[0], 0)[0]) === seule && deplacerVers(seule, 0, placesVides(rangees(seule)[0], 0)[1]) === seule);
-  // la progression ne remplit pas une place libre trop petite (elle irait casser la rangée)
+  // une place libre en colonne : la progression la prend aussi
   const h: Disposition = [fixe("radar", "heros"), libre("colonne"), fixe("amis", "tuile"), fixe("reponses", "tuile")];
   const pc = placesVides(rangees(h)[0], 0).find((p) => p.i === 1)!;
-  check("remplirPlace : la progression refusée dans une place colonne (même liste)", remplirPlace(h, pc, fixe("progression", "heros")) === h);
+  check("remplirPlace : la progression dans une place colonne, en colonne", court(remplirPlace(h, pc, fixe("progression", "heros"))) === "radar:heros progression:colonne amis:tuile reponses:tuile");
   check("remplirPlace : un module accepté dans une place colonne, en colonne", court(remplirPlace(h, pc, fixe("folio", "tuile"))) === "radar:heros folio:colonne amis:tuile reponses:tuile");
 }
 
@@ -309,7 +334,7 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   check("retirer : une place libre (même liste)", retirer(l, 1) === l);
   check("fermerPlace : la place libre part", court(fermerPlace(l, 1)) === "folio:tuile amis:tuile");
   check("fermerPlace : un bloc (même liste)", fermerPlace(l, 0) === l);
-  check("blocsMasques : les blocs absents, dans l'ordre", egal(blocsMasques(d).map((b) => b.k), ["radar", "reponses", "trophees", "progression", "folio", "journal", "saisons"]));
+  check("blocsMasques : les blocs absents, dans l'ordre", egal(blocsMasques(d).map((b) => b.k), ["radar", "reponses", "trophees", "progression", "folio", "journal", "saisons", "carnet"]));
   const t: Disposition = [fixe("vitrine", "bande"), image("heros"), fixe("amis", "tuile")];
   const r = retirer(t, 1);
   check("retirer : un média part de la liste (en héros, sa place reste libre)", court(r) === "vitrine:bande libre:heros amis:tuile" && !r.some(estMedia));
@@ -352,17 +377,15 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
 
 // ── 20 éléments ───────────────────────────────────────────────────────
 {
-  // 6 rangées « bloc, place libre, bloc », puis 2 blocs : 14 blocs et 6 places libres
+  // 6 rangées « bloc, place libre, bloc », puis 2 blocs : 14 blocs (les 10 fixes et 4 médias) et 6 places libres
   const blocs: Bloc[] = [...BLOCS.map((b) => fixe(b.k, "tuile")), image("tuile"), image("tuile"), gif("tuile"), video("tuile"), image("tuile")];
   const d: Disposition = [];
   for (let r = 0; r < 6; r++) d.push(blocs[2 * r], libre("tuile"), blocs[2 * r + 1]);
   d.push(blocs[12], blocs[13]);
-  // la progression ne va pas en tuile : elle est mise en héros dans une rangée à elle
-  const pleine = d.map((e) => (e.k === "progression" ? { ...e, f: "heros" as const } : e));
-  const valide = validerDisposition(pleine, "lecture").disposition;
+  const valide = validerDisposition(d, "lecture").disposition;
   check("20 éléments : la liste d'essai est propre", valide.length === ELEMENTS_MAX, String(valide.length));
   const x = ajouter(valide, image("tuile"));
-  check("20 éléments : ajouter retire d'abord la dernière place libre", x !== valide && x.length === ELEMENTS_MAX && x.filter(estLibre).length === valide.filter(estLibre).length - 1 && x.filter(estMedia).length === 6, court(x));
+  check("20 éléments : ajouter retire d'abord la dernière place libre", x !== valide && x.length === ELEMENTS_MAX && x.filter(estLibre).length === valide.filter(estLibre).length - 1 && x.filter(estMedia).length === 5, court(x));
   check("20 éléments : aucun bloc perdu", blocsDe(x).length === blocsDe(valide).length + 1 && stable(x));
 }
 

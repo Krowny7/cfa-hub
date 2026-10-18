@@ -1,0 +1,94 @@
+/* Le bloc Folio (Folio.tsx). Repris de BlocsProfil.module.css : deux
+   colonnes dès 1 024 px, la planche lisible la nuit. La demi-bande : une
+   vignette puis le nom et l'œuvre sur une ligne. En CSS simple. */
+
+.deux {
+  display: grid;
+  gap: 20px 28px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .deux {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* le badge chez un autre : « à toi aussi » (encre douce) ou « pas à toi » (rouge, posé à l'écriture) */
+.badge {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* la planche du folio, lisible la nuit */
+:global(html[data-theme="nuit"]) .folioNuit > span,
+:global(html:not([data-theme="nuit"]) .rl-inverse) .folioNuit > span {
+  background: var(--surface-2) !important;
+}
+:global(html[data-theme="nuit"]) .folioNuit :global(.font-brand),
+:global(html:not([data-theme="nuit"]) .rl-inverse) .folioNuit :global(.font-brand) {
+  color: var(--ink) !important;
+}
+
+/* la demi-bande : la ligne prend toute la largeur (pas de cellules ici) */
+.demiFolio > :first-child {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.demiLigne {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+}
+.vignette {
+  display: block;
+  flex: 0 0 66px;
+  width: 66px;
+}
+.demiTexte {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+}
+.nomOeuvre {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.nom {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+/* le nom en héros (22 px) */
+.nomHeros {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.oeuvre {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.uneLigne {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -175,9 +175,29 @@ export const VITRINE = [
   { key: "matiere", nom: "Meilleure matière" },
   { key: "defis", nom: "Défis du jour" },
   { key: "calculs", nom: "Calculs" },
+  { key: "examens", nom: "Examens blancs" },
 ] as const;
 export type VitrineKey = (typeof VITRINE)[number]["key"];
 export const VITRINE_MAX = 3;
+
+/** les pièces d'une vitrine vide : aucune ne répète un chiffre du bandeau « Rapport de force » */
+export const PIECES_DEFAUT: readonly VitrineKey[] = ["matiere", "duels", "defis"];
+/** les pièces que le bandeau « Rapport de force » montre déjà, juste au-dessus de la grille */
+const DANS_LE_RAPPORT: readonly VitrineKey[] = ["questions", "serie"];
+/** celles qui les remplacent alors, dans cet ordre */
+const RELEVE: readonly VitrineKey[] = ["matiere", "duels", "defis", "examens", "calculs"];
+/**
+ * Les pièces montrées par le bloc Chiffres clés : celles du joueur ; chez un
+ * autre (le bandeau est affiché), une pièce que le bandeau répète cède sa
+ * place à la suivante de la relève qu'il n'a pas choisie (pas deux fois
+ * « 3 412 » l'un sous l'autre). Le serveur lit les comptes du visiteur
+ * d'après elles (besoinsVisiteur).
+ */
+export function piecesVues(cles: readonly VitrineKey[], rapport: boolean): VitrineKey[] {
+  if (!rapport) return [...cles];
+  const libres = RELEVE.filter((k) => !cles.includes(k));
+  return cles.map((k) => (DANS_LE_RAPPORT.includes(k) ? (libres.shift() ?? k) : k));
+}
 
 /** Les pièces de vitrine d'une liste brute : connues, sans doublon, 3 au plus ; « rang » devient une autre pièce. */
 export function vitrineDepuis(liste: unknown): VitrineKey[] {
@@ -186,7 +206,7 @@ export function vitrineDepuis(liste: unknown): VitrineKey[] {
   const out: VitrineKey[] = [];
   for (const k of brute) {
     let cle = k;
-    if (k === "rang") cle = (["matiere", "duels", "defis", "calculs", "serie", "questions"] as const).find((x) => !brute.includes(x) && !out.includes(x)) ?? "";
+    if (k === "rang") cle = (["matiere", "duels", "defis", "calculs", "examens", "serie", "questions"] as const).find((x) => !brute.includes(x) && !out.includes(x)) ?? "";
     if (connues.has(cle) && !out.includes(cle as VitrineKey)) out.push(cle as VitrineKey);
   }
   return out.slice(0, VITRINE_MAX);
@@ -238,7 +258,8 @@ export const STYLE_DEFAUT: StyleProfil = {
   bannerPos: 50,
   accent: COULEUR_ENCRE,
   frame: "aucun",
-  showcase: ["questions", "serie", "matiere"],
+  // la meilleure matière, les duels, les défis : rien qui répète le Rapport de force (ELO, maîtrise, questions, série)
+  showcase: ["matiere", "duels", "defis"],
   radar: true,
   bio: null,
   disposition: DISPOSITION_DEFAUT,

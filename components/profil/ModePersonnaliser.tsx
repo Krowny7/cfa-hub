@@ -19,7 +19,8 @@ import { folioPorte } from "@/lib/profil/etagere";
 import { journalDe } from "@/lib/profil/journal";
 import { lireSaisons } from "@/lib/profil/saisons";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
-import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
+import { extraitCarnet, extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
+import { lireCercle, maitriseMesuree } from "@/lib/profil/visiteur";
 
 // Personnaliser, côté serveur (/people/<moi>?personnaliser=1, sur son
 // propre profil seulement) : tout ce que l'ancien éditeur /moi/profil
@@ -53,7 +54,10 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     lireStyle(supabase, id),
     lireLien(supabase, id),
     statsLues,
-    amisDe(id, supabase, 12),
+    // ses amis par ELO (le bloc Amis chez soi : les plus hauts ELO), sinon comme avant
+    lireCercle({ id, toi: null, sb: supabase, admin, moi: true })
+      .then((c) => c?.amis ?? amisDe(id, supabase, 12))
+      .catch(() => amisDe(id, supabase, 12)),
     lireNom(supabase, id),
     // les blocs de la page, comme sur le profil
     admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
@@ -99,6 +103,10 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     nom: carte.name,
     moi: true,
     viewerId: id,
+    avatarUrl: profil.avatar_url ?? null,
+    elo,
+    parties: rating?.games_played ?? 0,
+    maitrise: maitriseMesuree(masteries.get(id) ?? null),
     accent: style.accent,
     showcase: style.showcase,
     stats,
@@ -111,6 +119,8 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     journal: journal ? extraitJournal(journal) : null,
     saisons,
     visibiliteJournal,
+    // le carnet de jours : le sien, toujours ouvert pour lui
+    carnet: journal ? extraitCarnet(journal) : null,
   };
 
   return (

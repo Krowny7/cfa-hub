@@ -29,7 +29,7 @@ import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 import { FamilleSaisons, SaisonRang, SaisonsJournal } from "@/components/profil/Saisons";
 import { ChoixSceaux } from "@/components/profil/ChoixSceaux";
 import { ModePersonnaliser } from "@/components/profil/ModePersonnaliser";
-import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, type Relation } from "@/lib/profil/donnees";
+import { amisDe, datesDuPic, lireLien, lireNom, lireStyle, relationAvec, statsProfil, styleLuDe, type Relation } from "@/lib/profil/donnees";
 import { blocsDe, estDispositionDefaut, rangees } from "@/lib/profil/disposition";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
@@ -43,7 +43,9 @@ import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/pr
 import { aPortee, posesDe, sceauxGagnes, vusParUnAutre } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
-import { nomTitre } from "@/lib/profil/styles";
+import { lireStyles, nomTitre } from "@/lib/profil/styles";
+import { baseDuVisiteur, lireCarnet, lireCercle, lireVisiteur, maitriseMesuree } from "@/lib/profil/visiteur";
+import { RapportDeForce } from "@/components/profil/RapportDeForce";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
 import { JOUEURS } from "@/lib/voice-z2a";
@@ -92,10 +94,14 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const user = auth.user;
   if (!user) redirect("/login");
 
-  const [{ data: profileData }, { data: ratingData }] = await Promise.all([
-    supabase.from("profiles").select("id,username,avatar_url,xp_total").eq("id", id).maybeSingle(),
-    supabase.from("ratings").select("elo,games_played").eq("user_id", id).maybeSingle(),
+  // le joueur et, sur le profil d'un autre, celui qui regarde (son avatar, son ELO : le Rapport de force) : les mêmes deux lectures
+  const lus = user.id === id ? [id] : [id, user.id];
+  const [{ data: profilsLus }, { data: ratingsLus }] = await Promise.all([
+    supabase.from("profiles").select("id,username,avatar_url,xp_total").in("id", lus),
+    supabase.from("ratings").select("user_id,elo,games_played").in("user_id", lus),
   ]);
+  const profileData = ((profilsLus ?? []) as ProfileRow[]).find((p) => p.id === id) ?? null;
+  const ratingData = ((ratingsLus ?? []) as (RatingRow & { user_id: string })[]).find((r) => r.user_id === id) ?? null;
   if (!profileData) notFound();
 
   const isMe = user.id === id;
@@ -109,16 +115,20 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   const admin = tryAdmin();
 
   // l'onglet ouvert : ses lectures seulement (celles de Profil suivent les blocs de la page)
-  const styleLu = lireStyle(supabase, id);
+  // son style et, chez un autre (onglet Profil), le tien (ta couleur, ton folio) : une seule lecture
+  const lignesStyle = lireStyles(supabase, autreJoueur && onglet === "profil" ? [id, user.id] : [id], "*");
+  const styleLu = lignesStyle.then((l) => styleLuDe(l, id));
   // les blocs posés sur la page (onglet Profil seulement) : ils décident des lectures
   const blocsLus = styleLu.then(({ style: st }) => new Set<string>(onglet === "profil" ? blocsDe(st.disposition).map((b) => b.k) : []));
   const lecturesOnglet = (async () => {
     const blocs = await blocsLus;
     const radar = blocs.has("radar") || onglet === "face-a-face";
+    // mes matières et ma couleur : sur l'onglet Profil, elles viennent de l'essentiel du visiteur (lireVisiteur)
+    const faceOuvert = autreJoueur && onglet === "face-a-face";
     const [moyennes, mesStats, monStyle, answers, trophees, progressSessions, monRating] = await Promise.all([
       radar && admin ? getTopicAverages(admin) : Promise.resolve({} as Record<string, number | null>),
-      radar && autreJoueur ? statsProfil(user.id, supabase) : Promise.resolve(null),
-      radar && autreJoueur ? lireStyle(supabase, user.id) : Promise.resolve(null),
+      faceOuvert ? statsProfil(user.id, supabase) : Promise.resolve(null),
+      faceOuvert ? lireStyle(supabase, user.id) : Promise.resolve(null),
       // résumé seulement (matières et sources, sans passages) ; les réponses
       // d'un autre joueur ne se lisent qu'avec le client admin
       !blocs.has("reponses")
@@ -137,7 +147,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   })();
   // les exploits (le pic, les sceaux) et la maîtrise du rang : l'en-tête et le Journal
   const statsLues = statsProfil(id, supabase);
-  const maitrisesLues = masteryByUser(admin, [id]);
+  const maitrisesLues = masteryByUser(admin, autreJoueur && onglet === "profil" ? [id, user.id] : [id]);
   // les sceaux : gardés en base (et recalculés au plus toutes les 10 min), sinon dérivés ; l'avancée sur le mien seulement
   const sceauxLus = statsLues.then((stats) => sceauxDuJoueur(id, stats, { avancee: commeMoi }));
   const relationLue = relationAvec(supabase, user.id, id);
@@ -153,6 +163,32 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     const [stats, masteries, lu, rel, sceaux] = await Promise.all([statsLues, maitrisesLues, styleLu, relationLue, sceauxLus]);
     if (!journalOuvert(lu.journal, rel)) return null;
     return journalDe({ id, sb: supabase, admin, stats, mastery: masteries.get(id) ?? null, gardes: sceaux.gardes });
+  })();
+  // celui qui regarde (onglet Profil, chez un autre) : l'essentiel toujours (le Rapport de force), le reste si le bloc est posé ;
+  // ce que la page a déjà lu de lui (avatar, ELO, couleur, maîtrise) ne coûte rien
+  const toiLu =
+    autreJoueur && onglet === "profil"
+      ? Promise.all([blocsLus, lignesStyle, styleLu, relationLue, maitrisesLues])
+          .then(([blocs, lignes, lu, rel, m]) =>
+            lireVisiteur({
+              sb: supabase,
+              base: baseDuVisiteur(user.id, { profils: profilsLus, ratings: ratingsLus, style: lignes?.get(user.id), maitrises: m }),
+              blocs,
+              showcase: lu.style.showcase,
+              journalOuvert: journalOuvert(lu.journal, rel),
+              folioSien: lu.style.folio,
+            }),
+          )
+          .catch(() => null)
+      : Promise.resolve(null);
+  // ses amis : bloc Amis posé (onglet Profil), par ELO (son cercle, toi compris chez un autre) ; sinon comme avant (l'en-tête n'en prend que le total)
+  const cercleLu = blocsLus.then((b) => (b.has("amis") ? lireCercle({ id, toi: autreJoueur ? user.id : null, sb: supabase, admin, moi: commeMoi }).catch(() => null) : null));
+  const amisLus = cercleLu.then((c) => c?.amis ?? amisDe(id, supabase, 12));
+  // le carnet de jours (bloc Carnet), ouvert comme le Journal : ses jours sont déjà lus par statsProfil (0 requête)
+  const carnetLu = (async () => {
+    if (onglet !== "profil" || !(await blocsLus).has("carnet")) return null;
+    const [st, lu, rel] = await Promise.all([statsLues, styleLu, relationLue]);
+    return journalOuvert(lu.journal, rel) ? lireCarnet(id, st).catch(() => null) : null;
   })();
   // les tampons du profil et, sur le Journal, ceux de ses entrées (null sans la migration)
   const tamponsLus = (async () => {
@@ -179,7 +215,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     relationLue,
     // la base ne rend le LinkedIn que s'il est visible pour moi
     lireLien(supabase, id),
-    amisDe(id, supabase, 12),
+    amisLus,
     // prénom et nom : la base ne les rend que s'ils sont visibles pour moi
     lireNom(supabase, id),
     // nos duels, lus avec mon client (je ne lis que les miens)
@@ -387,15 +423,23 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   } else {
     // les données des blocs, lues une seule fois et passées une seule fois au client
     const blocs = await blocsLus;
+    const [toi, carnet, cercle] = await Promise.all([toiLu, carnetLu, cercleLu]);
     const donnees: DonneesBlocs = {
       id,
       nom: display,
       moi: commeMoi,
       viewerId: user.id,
+      // « voir comme les autres » : les écarts disent « toi ± »
+      apercu: !!vue,
+      // son avatar, son ELO, ses parties, sa maîtrise (l'en-tête) : les comparaisons
+      avatarUrl: profile.avatar_url ?? null,
+      elo,
+      parties: rating?.games_played ?? 0,
+      maitrise: maitriseMesuree(mastery),
       accent: style.accent,
       showcase: style.showcase,
       stats,
-      radar: { moyennes: o.moyennes, miennes: o.mesStats ? o.mesStats.matieres : null, monAccent: o.monStyle ? o.monStyle.style.accent : null },
+      radar: { moyennes: o.moyennes, miennes: toi ? toi.stats.matieres : null, monAccent: toi ? toi.accent : null },
       amis,
       reponses: o.answers ? resumeReponses(o.answers) : null,
       trophees: o.trophees ? resumeTrophees(o.trophees) : null,
@@ -405,12 +449,22 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       journal: journal ? extraitJournal(journal) : null,
       saisons,
       visibiliteJournal,
+      // le carnet de jours, s'il m'est ouvert (comme le Journal)
+      carnet,
+      // celui qui regarde, chez un autre : ses amis communs viennent du cercle
+      toi: toi ? { ...toi, amis: cercle?.communs ?? null } : null,
     };
     // la page jamais composée : sa place libre invite le propriétaire à poser une image (les autres ne voient rien) ;
     // sans place libre (rangées pleines, avec le radar), l'invitation vient en tuile sous la grille
     const invitation = estDispositionDefaut(style.disposition) && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : undefined;
     const pleine = rangees(style.disposition).every((r) => r.fins.length === 0);
-    panneau = <PageProfil disposition={style.disposition} donnees={donnees} libre={invitation} apres={pleine ? invitation : undefined} />;
+    panneau = (
+      <div className="flex flex-col gap-4 md:gap-[18px]">
+        {/* le Rapport de force : chez un autre et en aperçu, entre les onglets et la grille (rien chez soi) */}
+        <RapportDeForce d={donnees} blocs={blocsDe(style.disposition)} />
+        <PageProfil disposition={style.disposition} donnees={donnees} libre={invitation} apres={pleine ? invitation : undefined} />
+      </div>
+    );
   }
 
   return (

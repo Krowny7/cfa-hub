@@ -7,7 +7,8 @@ import { INK } from "@/components/ui/InkDefs";
 // Sans état (serveur comme client) : l'étagère « Mes pièces », sa feuille,
 // et le bloc « Folio » de la page de profil.
 
-export type DonneesFolio = { nom: string; oeuvre: string; image: string | null; anecdote: [string, string] };
+/** `obtention` : comment le folio s'obtient (« Quête du Codex : FSA à 60 % de maîtrise »), l'infobulle du badge chez un autre */
+export type DonneesFolio = { nom: string; oeuvre: string; image: string | null; anecdote: [string, string]; obtention?: string };
 
 /** La planche seule, au format 3 × 4 ; `silhouette` : pas encore gagnée (grisée). */
 export function CarteFolio({ f, silhouette = false, className = "" }: { f: Pick<DonneesFolio, "oeuvre" | "image">; silhouette?: boolean; className?: string }) {

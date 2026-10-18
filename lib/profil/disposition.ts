@@ -40,24 +40,30 @@ export const BLOCS = [
   // un extrait du Journal (courbe d'ELO, derniers événements) et les saisons
   { k: "journal", nom: "Journal", neuf: true },
   { k: "saisons", nom: "Saisons", neuf: true },
+  // la grille des 52 semaines du Journal (elle suit sa visibilité)
+  { k: "carnet", nom: "Carnet de jours", neuf: true },
 ] as const;
 export type CleBloc = (typeof BLOCS)[number]["k"];
 
 // ── Les 4 formats du site (Réviser) ────────────────────────────────────
-export type Format = "tuile" | "heros" | "bande" | "colonne";
+/** demi : la demi-bande, pleine largeur et moitié de hauteur (une ligne compacte) */
+export type Format = "tuile" | "heros" | "bande" | "colonne" | "demi";
 export type Portee = 4 | 8 | 12;
 export const FORMATS: { key: Format; nom: string; part: string; portee: Portee }[] = [
   { key: "tuile", nom: "Mini-tuile", part: "1/3", portee: 4 },
   { key: "colonne", nom: "Colonne", part: "1/3 · 2 lignes", portee: 4 },
   { key: "heros", nom: "Héros", part: "2/3", portee: 8 },
   { key: "bande", nom: "Bande", part: "1/1", portee: 12 },
+  { key: "demi", nom: "Demi-bande", part: "1/1 · ½ hauteur", portee: 12 },
 ];
 /** Le nombre de colonnes (sur 12) d'un format. */
 export const portee = (f: Format): Portee => (f === "tuile" || f === "colonne" ? 4 : f === "heros" ? 8 : 12);
 /** Le nombre de lignes d'un format : 2 pour la colonne, 1 sinon. */
 export const hauteur = (f: Format): 1 | 2 => (f === "colonne" ? 2 : 1);
 export const nomFormat = (f: Format) => FORMATS.find((x) => x.key === f)!.nom;
-const estFormat = (f: unknown): f is Format => f === "tuile" || f === "heros" || f === "bande" || f === "colonne";
+const estFormat = (f: unknown): f is Format => f === "tuile" || f === "heros" || f === "bande" || f === "colonne" || f === "demi";
+/** pleine largeur : la bande et la demi-bande (seules sur leur rangée, jamais une place libre) */
+export const pleineLargeur = (f: Format) => f === "bande" || f === "demi";
 
 export type GenreMedia = "image" | "gif" | "video";
 /** ce qui décide des formats permis : la clé d'un bloc fixe, le genre d'un média, ou la carte */
@@ -191,23 +197,24 @@ export const blocsDe = (d: Disposition): Bloc[] => d.filter(estBloc);
 // ── Formats permis, format par défaut, refus ───────────────────────────
 /** Les formats proposés pour chaque genre de bloc (ceux où il est beau). */
 export const FORMATS_PERMIS: Record<GenreBloc, Format[]> = {
-  vitrine: ["tuile", "colonne", "heros", "bande"],
+  vitrine: ["tuile", "colonne", "heros", "bande", "demi"],
   radar: ["tuile", "colonne", "heros", "bande"],
-  amis: ["tuile", "colonne", "heros", "bande"],
-  reponses: ["tuile", "colonne", "heros", "bande"],
-  trophees: ["tuile", "colonne", "heros", "bande"],
-  progression: ["heros", "bande"],
-  folio: ["tuile", "colonne", "heros"],
-  journal: ["tuile", "colonne", "heros"],
-  saisons: ["tuile", "colonne", "bande"],
-  image: ["tuile", "colonne", "heros", "bande"],
+  amis: ["tuile", "colonne", "heros", "bande", "demi"],
+  reponses: ["tuile", "colonne", "heros", "bande", "demi"],
+  trophees: ["tuile", "colonne", "heros", "bande", "demi"],
+  progression: ["tuile", "colonne", "heros", "bande", "demi"],
+  folio: ["tuile", "colonne", "heros", "demi"],
+  journal: ["tuile", "colonne", "heros", "demi"],
+  saisons: ["tuile", "colonne", "bande", "demi"],
+  carnet: ["tuile", "colonne", "heros", "bande", "demi"],
+  image: ["tuile", "colonne", "heros", "bande", "demi"],
   gif: ["tuile", "colonne", "heros"],
   video: ["tuile", "colonne", "heros"],
-  carte: ["tuile", "colonne", "heros"],
+  carte: ["tuile", "colonne", "heros", "demi"],
 };
 /** Le format d'un bloc qu'on ajoute : le plus naturel pour lui. */
 export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
-  vitrine: "bande",
+  vitrine: "demi",
   radar: "heros",
   amis: "tuile",
   reponses: "tuile",
@@ -216,34 +223,60 @@ export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
   folio: "tuile",
   journal: "tuile",
   saisons: "tuile",
+  carnet: "demi",
   image: "heros",
   gif: "tuile",
   video: "tuile",
   carte: "colonne",
 };
-/** Les formats permis d'un bloc : ceux de son genre ; avec une vidéo en haut, pas la bande (elle y serait recadrée trop bas). */
-export const formatsDe = (b: Bloc): Format[] => {
-  const permis = FORMATS_PERMIS[genreDe(b)];
-  return (estFixe(b) || estCarte(b)) && b.img?.type === "video" ? permis.filter((f) => f !== "bande") : permis;
+/**
+ * Le format permis par le média en haut d'un bloc : une vidéo ne va ni en
+ * bande ni en demi-bande ; une image non plus en demi-bande sur un module
+ * (une carte la montre alors en vignette).
+ */
+const permisParHaut = (b: Bloc, f: Format) => {
+  if (!(estFixe(b) || estCarte(b)) || !b.img) return true;
+  if (b.img.type === "video") return !pleineLargeur(f);
+  return f !== "demi" || estCarte(b);
 };
+/** Les formats permis d'un bloc : ceux de son genre, moins ceux que son média en haut refuse. */
+export const formatsDe = (b: Bloc): Format[] => FORMATS_PERMIS[genreDe(b)].filter((f) => permisParHaut(b, f));
 
-/** `voulu` s'il est permis ; sinon le format permis le plus proche en portée (à égalité, le plus large). */
+/**
+ * `voulu` s'il est permis ; sinon le format permis le plus proche en portée
+ * (à égalité, le plus large). La demi-bande n'est jamais un repli : un bloc
+ * qui refuse la demi-bande passe à la bande, sinon au héros ; un bloc qui
+ * refuse la bande ne passe pas en demi-bande tout seul.
+ */
 export function formatPermis(g: GenreBloc, voulu: Format): Format {
-  const permis = FORMATS_PERMIS[g];
+  return lePlusProche(FORMATS_PERMIS[g], voulu);
+}
+/** Le format d'un bloc posé : comme formatPermis, en tenant compte de son média en haut (formatsDe). */
+export function formatDuBloc(b: Bloc, voulu: Format): Format {
+  return lePlusProche(formatsDe(b), voulu);
+}
+function lePlusProche(permis: readonly Format[], voulu: Format): Format {
   if (permis.includes(voulu)) return voulu;
   const p = portee(voulu);
-  return [...permis].sort((a, b) => Math.abs(portee(a) - p) - Math.abs(portee(b) - p) || portee(b) - portee(a))[0];
+  return [...permis.filter((f) => f !== "demi")].sort((a, b) => Math.abs(portee(a) - p) - Math.abs(portee(b) - p) || portee(b) - portee(a))[0];
 }
 
 /** Pourquoi un format est refusé à un bloc (l'infobulle du format grisé). */
 export function raisonRefus(b: Bloc, f: Format): string {
   const g = genreDe(b);
-  if (f === "bande" && (estFixe(b) || estCarte(b)) && b.img?.type === "video") return "Avec sa vidéo en haut, ce bloc ne va pas en bande : elle serait recadrée trop bas.";
+  // les refus du genre d'abord (le radar refuse la demi-bande, image en haut ou pas)
+  if (f === "demi" && FORMATS_PERMIS[g].includes("demi") && (estFixe(b) || estCarte(b)) && b.img && !permisParHaut(b, f))
+    return b.img.type === "video" ? "En demi-bande, pas de place pour une vidéo en haut." : "En demi-bande, pas de place pour une image en haut.";
+  if (f === "bande" && FORMATS_PERMIS[g].includes("bande") && (estFixe(b) || estCarte(b)) && b.img?.type === "video") return "Avec sa vidéo en haut, ce bloc ne va pas en bande : elle serait recadrée trop bas.";
+  if (f === "demi") {
+    if (g === "video") return "La vidéo ne va pas en demi-bande : elle serait recadrée en un mince ruban.";
+    if (g === "gif") return "Le GIF ne va pas en demi-bande : il serait recadré en un mince ruban.";
+    if (g === "radar") return "Le radar ne va pas en demi-bande : il lui faut de la hauteur.";
+  }
   if (g === "video") return "La vidéo ne va pas en bande : elle serait recadrée trop bas.";
   if (g === "gif") return "Le GIF ne va pas en bande : il serait recadré trop bas.";
-  if (g === "progression") return "La courbe de progression a besoin d'au moins deux tiers de la largeur.";
   if (g === "folio" || g === "journal") return `${nomBloc(b)} ne va pas en bande : trop peu de contenu pour toute la largeur.`;
-  if (g === "saisons") return "Les saisons vont en mini-tuile, en colonne ou en bande (le palmarès en ligne).";
+  if (g === "saisons") return "Les saisons vont en mini-tuile, en colonne, en bande ou en demi-bande (le palmarès en ligne).";
   if (g === "carte") return "La carte ne va pas en bande : son image serait recadrée trop bas.";
   return `${nomFormat(f)} : pas pour ce bloc.`;
 }
@@ -721,8 +754,12 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     if (!id || vus.has("m:" + id) || BLOCS.some((b) => b.k === id) || cartes >= CARTES_MAX) return null;
     vus.add("m:" + id);
     cartes++;
-    const img = imageHaut(x.img);
-    return { k: "carte", id, titre: nettoyerTitre(x.titre), texte: nettoyerTexte(x.texte), ...(img ? { img } : {}), ...inverse(x), f: estFormat(x.f) ? formatPermis("carte", x.f) : FORMAT_DEFAUT.carte };
+    const f = estFormat(x.f) ? formatPermis("carte", x.f) : FORMAT_DEFAUT.carte;
+    // une vidéo en haut d'une carte en demi-bande : refusée (la carte garde son format, sans elle)
+    const videoEnDemi = f === "demi" && estObjet(x.img) && x.img.type === "video";
+    if (videoEnDemi) imageRefusee = true;
+    const img = videoEnDemi ? null : imageHaut(x.img);
+    return { k: "carte", id, titre: nettoyerTitre(x.titre), texte: nettoyerTexte(x.texte), ...(img ? { img } : {}), ...inverse(x), f };
   };
 
   const element = (x: unknown): ElementPage | null => {
@@ -735,9 +772,10 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     vus.add(info.k);
     const f = estFormat(x.f) ? formatPermis(info.k, x.f) : FORMAT_DEFAUT[info.k];
     // une vidéo en haut d'une bande : refusée (le bloc garde son format, sans elle)
-    const videoEnBande = f === "bande" && estObjet(x.img) && x.img.type === "video";
-    if (videoEnBande) imageRefusee = true;
-    const img = info.k !== "progression" && !videoEnBande ? imageHaut(x.img) : null;
+    // une vidéo en haut d'une bande, un média en haut d'une demi-bande : refusés (le bloc garde son format, sans eux)
+    const refuse = estObjet(x.img) && ((f === "bande" && x.img.type === "video") || f === "demi");
+    if (refuse) imageRefusee = true;
+    const img = info.k !== "progression" && !refuse ? imageHaut(x.img) : null;
     return { k: info.k, f, ...(img ? { img } : {}), ...inverse(x) };
   };
 

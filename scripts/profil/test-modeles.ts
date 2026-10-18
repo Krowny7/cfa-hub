@@ -94,12 +94,12 @@ console.log("# L'adaptation à trois joueurs");
     competiteur: {
       "bien rempli": ["journal:heros", "vitrine:tuile", "saisons:bande", "amis:tuile", "trophees:tuile", "reponses:tuile"],
       "peu de contenu": ["journal:heros", "vitrine:tuile", "saisons:bande", "amis:tuile", "trophees:tuile", "reponses:tuile"],
-      "tout neuf": ["radar:heros", "vitrine:tuile", "amis:bande", "reponses:tuile", "trophees:tuile", "journal:tuile"],
+      "tout neuf": ["radar:heros", "vitrine:tuile", "amis:bande", "trophees:tuile", "journal:tuile", "saisons:tuile"],
     },
     etudiant: {
       "bien rempli": ["vitrine:bande", "reponses:tuile", "radar:heros", "progression:heros", "trophees:tuile"],
       "peu de contenu": ["vitrine:bande", "reponses:tuile", "radar:heros", "journal:heros", "trophees:tuile"],
-      "tout neuf": ["vitrine:bande", "reponses:tuile", "radar:heros", "amis:heros", "trophees:tuile"],
+      "tout neuf": ["vitrine:bande", "trophees:tuile", "radar:heros", "amis:heros", "journal:tuile"],
     },
     collection: {
       "bien rempli": ["folio:heros", "amis:colonne", "vitrine:tuile", "trophees:tuile", "saisons:bande"],
@@ -120,7 +120,7 @@ console.log("# L'adaptation à trois joueurs");
       check(`${m.cle}, ${nom} : rangées pleines`, rangees(r.disposition).every((x) => x.fins.length === 0) || (m.cle === "collection" && nom === "tout neuf"));
     }
   const c = appliquerModele(modele("competiteur"), [], NEUF);
-  check("les remplacements sont dits (Radar au lieu de Journal…)", egal(c.remplaces[0], { voulu: "journal", mis: "radar" }) && c.remplaces.length === 4);
+  check("les remplacements sont dits (Radar au lieu de Journal…)", egal(c.remplaces[0], { voulu: "journal", mis: "radar" }) && c.remplaces.length === 5, JSON.stringify(c.remplaces));
   check("bien rempli : aucun remplacement (sauf les emplacements média du Collectionneur)", MODELES_PAGE.every((m) => appliquerModele(m, [], RICHE).remplaces.length === (m.cle === "collection" ? 2 : 0)));
   const col = appliquerModele(modele("collection"), [], RICHE);
   check("collection sans média : le folio au lieu de l'image, puis les amis au lieu du folio", egal(col.remplaces.slice(0, 2), [{ voulu: "media", mis: "folio" }, { voulu: "folio", mis: "amis" }]));

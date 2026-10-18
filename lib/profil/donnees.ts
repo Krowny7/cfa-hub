@@ -10,7 +10,7 @@ import { DEFAULT_ELO, TIERS, TOP_TIER, rankFor } from "@/lib/ranks";
 import { getLeaderboardRank } from "@/lib/rating";
 import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { LIEN_DEFAUT, STATS_VIDES, STYLE_DEFAUT, type LienProfil, type NomProfil, type ProfilStats, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
-import { lireStyles, styleDepuis } from "@/lib/profil/styles";
+import { lireStyles, styleDepuis, type LigneStyle } from "@/lib/profil/styles";
 
 // Le profil de joueur, côté serveur : ses exploits (de quoi débloquer les
 // pièces), son style, son LinkedIn (filtré par la base selon la visibilité),
@@ -175,7 +175,11 @@ export async function lireStyle(sb: SupabaseClient, userId: string): Promise<Sty
   // migration_profil_medias.sql ; les sceaux posés et la visibilité du
   // Journal avec migration_profil_sceaux.sql ; le titre et le folio avec
   // migration_v3_profil.sql ; sans elles, les défauts
-  const lignes = await lireStyles(sb, [userId], "*");
+  return styleLuDe(await lireStyles(sb, [userId], "*"), userId);
+}
+
+/** Le style lu d'un joueur parmi les lignes de lireStyles (null : table illisible) ; la page de profil lit le sien et celui du visiteur d'un coup. */
+export function styleLuDe(lignes: Map<string, LigneStyle> | null, userId: string): StyleLu {
   if (!lignes) return { style: STYLE_DEFAUT, disponible: false, pins: [], journal: "public" };
   const r = lignes.get(userId) ?? null;
   const pins = r && Array.isArray(r.pins) ? (r.pins as unknown[]).filter((x): x is string => typeof x === "string").slice(0, 3) : [];

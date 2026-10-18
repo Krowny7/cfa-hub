@@ -1,0 +1,79 @@
+/* Le bloc Questions répondues (Reponses.tsx). En CSS simple : aucune classe
+   arbitraire nouvelle pour Tailwind. */
+
+/* les lignes par matière : « ETH 420 −300 », avec ou sans double trait */
+.lignes {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.avecBarres {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+}
+.code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.volume {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 8px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.avecBarres .volume {
+  justify-content: flex-end;
+  min-width: 112px;
+}
+/* le jeton court, aligné à droite sur une largeur fixe */
+.court {
+  min-width: 52px;
+  text-align: right;
+}
+
+/* chez soi : la barre d'une source */
+.piste {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ink) 7%, transparent);
+}
+.remplie {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 999px;
+}
+
+/* héros : le chiffre à gauche, les matières à droite ; bande : le chiffre puis 2 colonnes de 5 */
+.deux,
+.bande {
+  display: grid;
+  gap: 16px 28px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .deux {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+  .bande {
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}

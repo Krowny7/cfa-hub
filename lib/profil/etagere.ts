@@ -90,7 +90,7 @@ export function stylePorte(style: StyleProfil, type: TypePiece, nue: string | nu
 }
 
 /** Le folio porté, pour le bloc « Folio » de la page de profil ; aucun, ou inconnu : null. */
-export function folioPorte(nue: string | null | undefined): { nom: string; oeuvre: string; image: string | null; anecdote: [string, string] } | null {
+export function folioPorte(nue: string | null | undefined): { nom: string; oeuvre: string; image: string | null; anecdote: [string, string]; obtention: string } | null {
   const p = nue ? PIECES.find((x) => x.type === "folio" && x.nue === nue) : null;
-  return p?.folio ? { nom: p.nom, oeuvre: p.folio.oeuvre, image: p.folio.image, anecdote: p.folio.anecdote } : null;
+  return p?.folio ? { nom: p.nom, oeuvre: p.folio.oeuvre, image: p.folio.image, anecdote: p.folio.anecdote, obtention: p.obtention } : null;
 }

@@ -1,0 +1,61 @@
+/* Le bloc Trophées (Trophees.tsx). En CSS simple : aucune classe arbitraire
+   nouvelle pour Tailwind. */
+
+/* une case à 0 (des deux côtés, chez un autre) : estompée */
+.tenue {
+  opacity: 0.5;
+}
+
+/* les 4 métaux : sur une ligne (mini-tuile), en 2 × 2, ou sur une ligne dès 1 024 px (héros, bande) */
+.ligne4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.quatre {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 1024px) {
+  .quatreLigne {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* une case : le dessin, puis son nombre et ton jeton court dessous */
+.case {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.carte {
+  gap: 12px;
+  padding: 12px 14px;
+}
+.nombres {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* héros et bande : le chiffre à gauche, les cases à droite */
+.cote {
+  display: grid;
+  gap: 20px 32px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .cote {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+/* demi-bande, chez soi : le petit dessin devant le nombre */
+.metalDemi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

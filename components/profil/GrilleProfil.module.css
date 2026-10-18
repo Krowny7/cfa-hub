@@ -16,6 +16,8 @@
 }
 .case {
   min-width: 0;
+  /* une case visée par le Rapport de force (#bloc-…) : sous la barre du haut et les onglets collants */
+  scroll-margin-top: 136px;
   display: flex;
   flex-direction: column;
 }
@@ -50,6 +52,11 @@
   }
   .vide {
     display: block;
+  }
+  /* la demi-bande : une ligne compacte, 121 px (deux et leur écart de 18 px : 260 px) ; en vue publique
+     seulement (dans Personnaliser, la case porte aussi sa barre d'outils) */
+  .demi {
+    height: 121px;
   }
   /* hors bande, une rangée fait au moins la hauteur d'un héros du site (une case vide aussi : sa ligne garde sa hauteur) */
   .haute > .case,

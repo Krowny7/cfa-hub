@@ -1,0 +1,110 @@
+/* Le bloc Radar (Radar.tsx, RadarCompact.tsx). Chez soi : les mêmes
+   formes qu'avant (repris de BlocsProfil.module.css : deux colonnes dès
+   1 024 px, barres sur deux colonnes en bande, libellés sans « moy » en
+   héros et en bande). Chez un autre : le radar seul, le bouton en haut à
+   droite, le score en haut à gauche. En CSS simple. */
+
+/* ── chez soi (inchangé) ── */
+.deux {
+  display: grid;
+  gap: 20px 28px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .deux {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .deuxLarge {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+  .deuxRadar {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    gap: 20px 20px;
+  }
+  .barres2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 28px;
+  }
+}
+.sansMoy tspan[fill-opacity="0.85"] {
+  display: none;
+}
+
+/* ── chez un autre ── */
+/* les étiquettes courtes : le code, puis la valeur (et le jeton court) ;
+   le radar compact n'est presque pas réduit au téléphone, pas de grossissement */
+.axeL {
+  font-size: 12.5px;
+  letter-spacing: -0.005em;
+}
+.axeV {
+  font-size: 11px;
+}
+/* une étiquette rouge : un lien vers l'entraînement */
+.lienAxe {
+  cursor: pointer;
+}
+.lienAxe:hover text,
+.lienAxe:focus-visible text {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* le haut : le score à gauche, le bouton à droite */
+.haut {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* le radar centré, à sa largeur maximale (--max) */
+.radar {
+  width: 100%;
+  max-width: var(--max, 330px);
+  margin: 0 auto;
+}
+/* la colonne : le radar centré verticalement dans la hauteur qui reste */
+.centre {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+}
+/* la bande : le score, le radar au centre, le bouton à droite (dès 1 024 px) ;
+   avant : le score et le bouton en haut, le radar dessous */
+.bande {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.bandeGauche {
+  grid-column: 1;
+  grid-row: 1;
+}
+.bandeDroite {
+  grid-column: 2;
+  grid-row: 1;
+}
+.bandeRadar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+@media (min-width: 1024px) {
+  .bande {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 520px) minmax(0, 1fr);
+    gap: 20px;
+  }
+  .bandeGauche {
+    align-self: start;
+  }
+  .bandeRadar {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .bandeDroite {
+    grid-column: 3;
+    justify-self: end;
+  }
+}

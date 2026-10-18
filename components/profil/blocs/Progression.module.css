@@ -1,0 +1,13 @@
+/* Le bloc Progression (Progression.tsx). En CSS simple : aucune classe
+   arbitraire nouvelle pour Tailwind. */
+
+/* héros et bande, chez un autre : la courbe en pleine largeur, posée en bas */
+.pleine {
+  min-width: 0;
+  margin-top: auto;
+}
+
+/* chez soi, en héros et en bande : la courbe du site (sa propre carte) remplit la case */
+.remplit > * {
+  flex: 1 1 auto;
+}

@@ -37,6 +37,10 @@ const check = (label: string, cond: boolean, extra = "") => {
   if (!cond) ko++;
 };
 const rend = (n: React.ReactNode) => renderToStaticMarkup(<>{n}</>);
+/** Paul D. sans aucune question répondue : le bloc Questions répondues n'a rien à montrer */
+const SOBRE0: DonneesBlocs = { ...SOBRE, stats: { ...SOBRE.stats, questions: 0 } };
+/** Sforzinda sur son propre profil : le détail (chez un autre, les blocs comparent) */
+const MOI: DonneesBlocs = { ...RICHE, moi: true };
 const compte = (html: string, motif: string) => html.split(motif).length - 1;
 
 // ── GrilleProfil ──
@@ -113,7 +117,7 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
 // ── PageProfil ──
 {
   const html = rend(<PageProfil disposition={DISPO_RICHE} donnees={RICHE} />);
-  check("page : la page riche se rend, chaque bloc à sa place", ["Chiffres clés", "Journal", "Saisons", "Folio", "Trophées", "Questions répondues"].every((t) => html.includes(t)));
+  check("page : la page riche se rend, chaque bloc à sa place", ["Chiffres clés", "Journal", "Saison 3", "Folio", "Trophées", "Questions répondues"].every((t) => html.includes(t)));
   const sobre = rend(<PageProfil disposition={DISPO_SOBRE} donnees={SOBRE} />);
   check("page : la page par défaut d'un autre, sans place libre visible", !sobre.includes("Ajoute une image") && sobre.includes("Amis"));
   const invite = rend(<PageProfil disposition={[{ k: "vitrine", f: "bande" }, { k: "amis", f: "heros" }]} donnees={SOBRE} libre={<a href="/perso">Ajoute une image</a>} />);
@@ -121,7 +125,7 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
   const pleine = rend(<PageProfil disposition={DISPOSITION_DEFAUT} donnees={RICHE} apres={<a href="/perso">Ajoute une image</a>} />);
   check("page : par défaut, rangées pleines, l'invitation en tuile dans une rangée de plus", compte(pleine, "Ajoute une image") === 1 && pleine.includes('--s:4;--h:1"><a href="/perso">') && pleine.lastIndexOf("rangee") < pleine.indexOf("Ajoute une image"));
   check("page : sans apres, rien de plus", !rend(<PageProfil disposition={DISPOSITION_DEFAUT} donnees={RICHE} />).includes("/perso"));
-  const vide = rend(<PageProfil disposition={[{ k: "reponses", f: "tuile" }, { k: "trophees", f: "tuile" }, { k: "journal", f: "tuile" }]} donnees={SOBRE} />);
+  const vide = rend(<PageProfil disposition={[{ k: "reponses", f: "tuile" }, { k: "trophees", f: "tuile" }, { k: "journal", f: "tuile" }]} donnees={SOBRE0} />);
   check("page : une rangée de blocs sans données ne se rend pas", !vide.includes("rangee"));
 }
 
@@ -145,7 +149,7 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
   const img = { id: "hautaa1", type: "image" as const, url: "https://x.supabase.co/storage/v1/object/public/profil-medias/u/hautaa1.webp", ratio: 1.5, y: 20 };
   const avec = rend(<BlocProfil bloc={{ k: "amis", f: "colonne", img }} f="colonne" d={RICHE} />);
   check("image en haut : l'image et son cadrage, puis le module", avec.includes(`src="${img.url}"`) && avec.includes("50% 20%") && avec.indexOf(img.url) < avec.indexOf("<h3"));
-  check("image en haut : rien sans contenu (vue publique)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", img }} f="tuile" d={SOBRE} />) === "");
+  check("image en haut : rien sans contenu (vue publique)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", img }} f="tuile" d={SOBRE0} />) === "");
   check("image en haut : pas sur la progression", !rend(<BlocProfil bloc={{ k: "progression", f: "heros", img }} f="heros" d={RICHE} />).includes(img.url));
   const carte = rend(<BlocProfil bloc={{ k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026\nTrois heures par jour", img, f: "colonne" }} f="colonne" d={RICHE} />);
   check("carte : l'image, le titre, le texte (retours gardés)", carte.includes(img.url) && carte.includes("Objectif Level I") && carte.includes("Novembre 2026\nTrois heures par jour"));
@@ -157,7 +161,7 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
   check("GIF en haut : net à sa taille (240 px), dans son passe-partout flouté", gif.includes("gifFond") && gif.includes("width:min(100cqw, 240px, calc(100cqh * 1))") && gif.includes("gifHaut") && !gif.includes('loading="lazy"'));
   const inv = rend(<BlocProfil bloc={{ k: "amis", f: "tuile", inv: true }} f="tuile" d={RICHE} />);
   check("couleurs inversées : le bloc dans .rl-inverse", inv.startsWith('<div class="rl-inverse ') && inv.includes("<h3"));
-  check("couleurs inversées : rien à montrer, rien du tout (pas d'enveloppe vide)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", inv: true }} f="tuile" d={SOBRE} />) === "");
+  check("couleurs inversées : rien à montrer, rien du tout (pas d'enveloppe vide)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", inv: true }} f="tuile" d={SOBRE0} />) === "");
   const vide = { k: "carte" as const, id: "carte02", titre: "", texte: null, f: "tuile" as const };
   check("carte vide : rien en vue publique, l'invitation en édition", rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} />) === "" && rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} edition />).includes("Ta carte est vide"));
 }
@@ -203,7 +207,7 @@ for (const g of Object.keys(FORMATS_PERMIS) as GenreBloc[]) {
   }
 }
 check("ICONE_BLOC : une icône par genre", (Object.keys(FORMATS_PERMIS) as GenreBloc[]).every((g) => !!ICONE_BLOC[g]));
-check("BLOCS : les 9 blocs fixes ont un format par défaut permis", BLOCS.every((x) => FORMATS_PERMIS[x.k].length > 0));
+check("BLOCS : les 10 blocs fixes ont un format par défaut permis", BLOCS.every((x) => FORMATS_PERMIS[x.k].length > 0));
 
 // amis : 6 / 9 / 12
 for (const [f, n] of [
@@ -213,12 +217,12 @@ for (const [f, n] of [
 ] as const) {
   const html = rend(<BlocProfil bloc={{ k: "amis", f }} f={f} d={RICHE} />);
   check(`amis en ${f} : ${n} amis`, compte(html, 'href="/people/ami-') === n);
-  check(`amis en ${f} : au téléphone, 6 au plus`, compte(html, 'class="min-w-0 max-lg:hidden"') === n - 6);
+  check(`amis en ${f} : chez un autre, son cercle par ELO (la liste passe à la ligne au téléphone)`, html.includes('aria-label="Le cercle de Sforzinda, par ELO"'));
 }
 {
   const peu = { ...RICHE, amis: { amis: amisExemple(2), total: 2 } };
   const html = rend(<BlocProfil bloc={{ k: "amis", f: "heros" }} f="heros" d={peu} />);
-  check("amis : peu d'amis, l'illustration remplit le reste", html.includes("joueurs-seigneurie"));
+  check("amis : moins de 3 amis, le chiffre est le total", html.includes('font-size:44px">2</span>'));
   const chezMoi = rend(<BlocProfil bloc={{ k: "amis", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: true }} />);
   check("amis : « Gérer mes amis » chez soi seulement", chezMoi.includes("Gérer mes amis") && !rend(<BlocProfil bloc={{ k: "amis", f: "tuile" }} f="tuile" d={RICHE} />).includes("Gérer mes amis"));
   const aucun = rend(<BlocProfil bloc={{ k: "amis", f: "tuile" }} f="tuile" d={{ ...RICHE, amis: { amis: [], total: 0 } }} />);
@@ -237,11 +241,11 @@ for (const [f, n] of [
 
 // trophées : les 4 paliers, « Par source »
 {
-  const html = rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={RICHE} />);
-  check("trophées : Diamant en tête, 4 paliers et « Par source »", html.indexOf("Diamant") < html.indexOf("Bronze") && compte(html, "card-soft") === 4 && html.includes("Par source"));
-  check("trophées : le total en repère", html.includes(`>${compter(RICHE.trophees!.lignes).total}<`));
-  const zero = rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={{ ...RICHE, trophees: { lignes: [], complet: true } }} />);
-  check("trophées : aucun, le texte de la Salle", zero.includes("Aucun trophée pour l&#x27;instant."));
+  const html = rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={MOI} />);
+  check("trophées chez soi : Diamant en tête, 4 paliers et « Par source »", html.indexOf("Diamant") < html.indexOf("Bronze") && compte(html, "card-soft") === 4 && html.includes("Par source"));
+  check("trophées chez soi : le total en repère", html.includes(`>${compter(RICHE.trophees!.lignes).total}<`));
+  const zero = rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={{ ...MOI, trophees: { lignes: [], complet: true } }} />);
+  check("trophées chez soi : aucun, comment gagner le premier", zero.includes("Aucun trophée pour l&#x27;instant : 5/5"));
 }
 
 // questions répondues : la précision de chaque source ; sur son profil, le détail par matière
@@ -271,7 +275,7 @@ for (const [f, n] of [
   const avant = rend(<BlocProfil bloc={{ ...v, couverture: undefined, duree: undefined }} f="tuile" d={RICHE} />);
   check("vidéo : sans couverture, le milieu au demi près (celui du curseur) ; sans durée, 1 s", sansCouv.includes("#t=12\"") && avant.includes("#t=1\""));
   const heros = rend(<BlocProfil bloc={{ ...v, f: "heros" }} f="heros" d={RICHE} />);
-  check("vidéo en héros : la légende à côté", heros.includes("Vidéo · en boucle, sans le son") && heros.includes("videoCote"));
+  check("vidéo en héros : la légende à côté, sans parler de boucle ni de son", heros.includes("videoCote") && heros.includes("Mon edit de la semaine") && !heros.includes("en boucle"));
 }
 
 // GIF : jamais agrandi, sans largeur forcée quand sa taille est inconnue
@@ -296,22 +300,24 @@ for (const [f, n] of [
 
 // journal et saisons
 {
-  const html = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={RICHE} />);
-  check("journal : repère +126 ELO, 3 événements en tuile", html.includes("+126 ELO · 90 j") && compte(html, "<li ") === 3);
+  const html = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={MOI} />);
+  check("journal chez soi : repère +126 ELO, 3 événements en tuile", html.includes("+126 ELO · 90 j") && compte(html, "<li ") === 3);
   check("journal : la victoire contre un ami, le lien vers l'onglet", html.includes("Victoire contre Hugo P.") && html.includes("onglet=journal"));
-  const heros = rend(<BlocProfil bloc={{ k: "journal", f: "heros" }} f="heros" d={RICHE} />);
-  check("journal : 4 événements en héros", compte(heros, "<li ") === 4);
-  const ed = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={{ ...RICHE, visibiliteJournal: "friends" }} edition />);
+  const heros = rend(<BlocProfil bloc={{ k: "journal", f: "heros" }} f="heros" d={MOI} />);
+  check("journal chez soi : 4 événements en héros", compte(heros, "<li ") === 4);
+  const ed = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={{ ...MOI, visibiliteJournal: "friends" }} edition />);
   check("journal : en édition, qui le voit", ed.includes("Visible par : tes amis"));
   const calme = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={{ ...RICHE, journal: { depart: 1200, points: [], matchs: 0, evenements: [] } }} />);
   check("journal : sans match ni événement, le calme", calme.includes("Aucun match classé sur 90 jours."));
-  const saisons = rend(<BlocProfil bloc={{ k: "saisons", f: "bande" }} f="bande" d={RICHE} />);
-  check("saisons : la saison en cours, 2 gravées, la place", saisons.includes("Saison 3 · Mai 2027") && saisons.includes("2 gravées") && saisons.includes("5e sur 212"));
+  const saisons = rend(<BlocProfil bloc={{ k: "saisons", f: "bande" }} f="bande" d={MOI} />);
+  check("saisons chez soi : la saison en cours, 2 gravées, la place", saisons.includes("Saison 3 · Mai 2027") && saisons.includes("2 gravées") && saisons.includes("5e sur 212"));
+  const saisonsAutre = rend(<BlocProfil bloc={{ k: "saisons", f: "bande" }} f="bande" d={RICHE} />);
+  check("saisons chez un autre : son pic en cours et ses sceaux gravés", saisonsAutre.includes("Platine II") && saisonsAutre.includes("Diamant III") && saisonsAutre.includes("S1"));
 }
 
 // aDuContenu : les blocs sans données
 {
-  const nul: DonneesBlocs = { ...SOBRE, amis: null, reponses: null, trophees: null, progression: null, folio: null, journal: null, saisons: null };
+  const nul: DonneesBlocs = { ...SOBRE0, amis: null, reponses: null, trophees: null, progression: null, folio: null, journal: null, saisons: null };
   const sans = ["amis", "reponses", "trophees", "progression", "folio", "journal", "saisons"] as const;
   check("aDuContenu : faux pour chaque bloc sans données", sans.every((k) => !aDuContenu({ k, f: "heros" } as Bloc, nul)));
   check("aDuContenu : vrai pour les chiffres, le radar et les médias", aDuContenu({ k: "vitrine", f: "bande" }, nul) && aDuContenu({ k: "radar", f: "heros" }, nul) && aDuContenu(MEDIAS.image, nul));
@@ -323,17 +329,18 @@ for (const [f, n] of [
   check("vue publique : un bloc sans données ne rend rien", rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={nul} />) === "");
 }
 
-// le radar en héros : les libellés « moy » existent encore (sansMoy les masque) ; « Me comparer » chez un autre seulement
+// le radar en héros chez soi : les libellés « moy » existent encore (sansMoy les masque) ; « Me comparer » chez un autre seulement
 {
-  const html = rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={RICHE} />);
+  const html = rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={MOI} />);
   check('radar en héros : des tspan à fill-opacity="0.85" (la règle sansMoy vise encore quelque chose)', html.includes('fill-opacity="0.85"') && html.includes("sansMoy"));
   check("radar en héros : le titre-réponse « FSA en tête »", html.includes("FSA en tête"));
-  check("radar : « Me comparer » chez un autre, pas chez soi", html.includes("Me comparer") && !rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: true }} />).includes("Me comparer"));
-  // ce que montrait RadarComparable : « ≈ » des maîtrises provisoires, le détail de chaque ligne, le bouton grisé et sa raison
-  const tuile = rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={RICHE} />);
+  const autre = rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={RICHE} />);
+  check("radar : « Me comparer » chez un autre, pas chez soi", autre.includes("Me comparer") && !rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={MOI} />).includes("Me comparer"));
+  // ce que montrait RadarComparable (chez soi) : « ≈ » des maîtrises provisoires, le détail de chaque ligne ; chez un autre, le bouton grisé et sa raison
+  const tuile = rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={MOI} />);
   check("radar : une maîtrise provisoire s'écrit « ≈47 » dans la liste", tuile.includes(">≈47<") && !tuile.includes(">≈71<"));
   check("radar : chaque ligne dit ses chiffres (aria-label)", tuile.includes('aria-label="Alternative Investments. ') && tuile.includes("≈ 47 % de bonnes réponses (provisoire"));
-  const fsaProv = { ...RICHE, stats: { ...RICHE.stats, matieres: RICHE.stats.matieres.map((m) => (m.key === "fixed_income" ? { ...m, statut: "provisoire" as const, answered: 20 } : m)) } };
+  const fsaProv = { ...MOI, stats: { ...RICHE.stats, matieres: RICHE.stats.matieres.map((m) => (m.key === "fixed_income" ? { ...m, statut: "provisoire" as const, answered: 20 } : m)) } };
   check("radar : « À reprendre » garde le « ≈ »", rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={fsaProv} />).includes("≈38 %"));
   const sansMiennes = rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={{ ...RICHE, radar: { ...RICHE.radar, miennes: null } }} />);
   check("radar : sans matière mesurée chez moi, « Me comparer » grisé avec sa raison", sansMiennes.includes("Me comparer") && sansMiennes.includes('disabled=""') && sansMiennes.includes("encore mesurée"));
@@ -375,7 +382,7 @@ CAS_SALLE.forEach((c, i) => {
 });
 
 // les genres de la disposition riche sont tous couverts
-check("la page riche couvre les 12 genres sauf aucun oubli des fixes", BLOCS.every((x) => DISPO_RICHE.some((e) => e.k === x.k)) && ["image", "gif", "video"].every((g) => DISPO_RICHE.some((e) => e.k !== "libre" && genreDe(e as Bloc) === g)));
+check("la page riche : les 10 blocs fixes et les 3 genres de média", BLOCS.every((x) => DISPO_RICHE.some((e) => e.k === x.k)) && ["image", "gif", "video"].every((g) => DISPO_RICHE.some((e) => e.k !== "libre" && genreDe(e as Bloc) === g)));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

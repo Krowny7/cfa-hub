@@ -26,6 +26,7 @@ import {
   estDispositionDefaut,
   estMedia,
   fichiersGardes,
+  formatDuBloc,
   formatPermis,
   formatsDe,
   genreDe,
@@ -133,7 +134,8 @@ console.log("# Les places vides");
 
 console.log("# Les formats permis");
 {
-  check("progression : tuile → héros", formatPermis("progression", "tuile") === "heros");
+  check("progression : tous les formats (la courbe se resserre)", (["tuile", "colonne", "heros", "bande", "demi"] as Format[]).every((f) => formatPermis("progression", f) === f));
+  check("demi-bande : radar → bande, GIF et vidéo → héros (le plus proche)", formatPermis("radar", "demi") === "bande" && formatPermis("gif", "demi") === "heros" && formatPermis("video", "demi") === "heros");
   check("folio, journal, GIF, vidéo : bande → héros", (["folio", "journal", "gif", "video"] as GenreBloc[]).every((g) => formatPermis(g, "bande") === "heros"));
   check("saisons : héros → bande (égalité, le plus large)", formatPermis("saisons", "heros") === "bande");
   const genres = Object.keys(FORMATS_PERMIS) as GenreBloc[];
@@ -144,9 +146,13 @@ console.log("# Les formats permis");
   const g = lire([gif("gifkl01", { f: "tuile" })]).disposition[0] as Bloc;
   check("raison : vidéo", raisonRefus(video, "bande") === "La vidéo ne va pas en bande : elle serait recadrée trop bas.");
   check("raison : GIF", raisonRefus(g, "bande") === "Le GIF ne va pas en bande : il serait recadré trop bas.");
-  check("raison : progression", raisonRefus({ k: "progression", f: "heros" }, "tuile") === "La courbe de progression a besoin d'au moins deux tiers de la largeur.");
+  check("raison : radar en demi-bande", raisonRefus({ k: "radar", f: "heros" }, "demi") === "Le radar ne va pas en demi-bande : il lui faut de la hauteur.");
+  const haut = { id: "hautaa1", type: "image" as const, url: "/x/hautaa1.webp", ratio: 1.5 };
+  check("raison : le refus du genre avant celui de l'image en haut", raisonRefus({ k: "radar", f: "heros", img: haut }, "demi") === "Le radar ne va pas en demi-bande : il lui faut de la hauteur." && raisonRefus({ k: "amis", f: "heros", img: haut }, "demi") === "En demi-bande, pas de place pour une image en haut.");
+  check("formatDuBloc : le média en haut compte (image : demi → bande ; vidéo : demi → héros)", formatDuBloc({ k: "amis", f: "tuile", img: haut }, "demi") === "bande" && formatDuBloc({ k: "amis", f: "tuile", img: { ...haut, type: "video" } }, "demi") === "heros" && formatDuBloc({ k: "amis", f: "tuile" }, "demi") === "demi");
+  check("raison : vidéo en demi-bande", raisonRefus(video, "demi") === "La vidéo ne va pas en demi-bande : elle serait recadrée en un mince ruban.");
   check("raison : folio, journal", raisonRefus({ k: "folio", f: "tuile" }, "bande") === "Folio ne va pas en bande : trop peu de contenu pour toute la largeur." && raisonRefus({ k: "journal", f: "tuile" }, "bande") === "Journal ne va pas en bande : trop peu de contenu pour toute la largeur.");
-  check("raison : saisons", raisonRefus({ k: "saisons", f: "tuile" }, "heros") === "Les saisons vont en mini-tuile, en colonne ou en bande (le palmarès en ligne).");
+  check("raison : saisons", raisonRefus({ k: "saisons", f: "tuile" }, "heros") === "Les saisons vont en mini-tuile, en colonne, en bande ou en demi-bande (le palmarès en ligne).");
   check("genres et noms des médias", genreDe(video) === "video" && genreDe(g) === "gif" && nomBloc(g) === "GIF" && nomBloc({ k: "radar", f: "heros" }) === "Radar des matières");
   check("clés React : id, clé, libre-<index>", cleDe(video, 0) === "video01" && cleDe({ k: "amis", f: "tuile" }, 3) === "amis" && cleDe({ k: "libre", f: "tuile" }, 4) === "libre-4");
 }
@@ -168,9 +174,9 @@ const EXEMPLES: { nom: string; avant: unknown[]; apres: string[] }[] = [
   { nom: "4. pile-grand : le grand passe en tête", avant: [{ m: "pile-grand", c: [k("reponses"), k("trophees"), vid("video01")] }], apres: ["media:video01:tuile", "reponses:tuile", "trophees:tuile"] },
   { nom: "5. grille de quatre avec une case vide", avant: [{ m: "quatre", c: [k("radar"), k("amis"), null, k("trophees")] }], apres: ["radar:heros", "amis:tuile", "libre:heros", "trophees:tuile"] },
   {
-    nom: "6. progression refusée en tuile : la rangée déborde",
+    nom: "6. progression en tuile : la rangée reste",
     avant: [{ m: "trois", c: [k("progression"), k("reponses"), k("trophees")] }, { m: "plein", c: [k("vitrine")] }],
-    apres: ["progression:heros", "reponses:tuile", "trophees:tuile", "vitrine:bande"],
+    apres: ["progression:tuile", "reponses:tuile", "trophees:tuile", "vitrine:bande"],
   },
   {
     nom: "7. vidéo grande en pleine largeur, puis trois colonnes",
@@ -284,7 +290,7 @@ console.log("# La validation");
 {
   check("pas un tableau : rien", egal(validerDisposition({ m: "plein" }, null), { disposition: [], refus: [] }) && egal(validerDisposition(null, "lecture"), { disposition: [], refus: [] }));
   check("format inconnu : celui par défaut", egal(abrege(lire([k("radar", { f: "geant" }), k("amis", { f: 3 })]).disposition), ["radar:heros", "amis:tuile"]));
-  check("format refusé : le plus proche", egal(abrege(lire([k("progression", { f: "tuile" }), k("saisons", { f: "heros" })]).disposition), ["progression:heros", "saisons:bande"]));
+  check("format refusé : le plus proche", egal(abrege(lire([k("folio", { f: "bande" }), k("saisons", { f: "heros" }), k("radar", { f: "demi" })]).disposition), ["folio:heros", "saisons:bande", "radar:bande"]));
   check("doublon retiré", egal(abrege(lire([k("amis", { f: "tuile" }), k("amis", { f: "heros" }), k("radar", { f: "heros" })]).disposition), ["amis:tuile", "radar:heros"]));
   check("journal et saisons gardés", egal(abrege(lire([k("journal", { f: "tuile" }), k("saisons", { f: "tuile" }), k("amis", { f: "tuile" })]).disposition), ["journal:tuile", "saisons:tuile", "amis:tuile"]));
   check("clé inconnue retirée", egal(abrege(lire([k("tresor", { f: "tuile" }), k("amis", { f: "tuile" })]).disposition), ["amis:tuile"]));
@@ -412,7 +418,7 @@ console.log("# La validation");
   check("un GIF KLIPY en .webp reste un GIF (bande refusée)", (avec(gif("gifkl03", { url: "https://static.klipy.com/ii/4e7/gifkl03.webp", source: undefined, f: "bande" })).disposition[0] as BlocMedia).f === "heros");
 
   // 20 éléments au plus, aucun bloc perdu
-  const blocs: Brut[] = [...BLOCS.map((b) => k(b.k, { f: "tuile" })), ...Array.from({ length: 5 }, (_, j) => img(`imagez${j}`, { f: "tuile" })), vid("videoz1", { f: "tuile" })];
+  const blocs: Brut[] = [...BLOCS.map((b) => k(b.k, { f: "tuile" })), ...Array.from({ length: 4 }, (_, j) => img(`imagez${j}`, { f: "tuile" })), vid("videoz1", { f: "tuile" })];
   const vingtCinq: Brut[] = [];
   blocs.forEach((b, j) => {
     vingtCinq.push(b);
@@ -449,13 +455,13 @@ console.log("# Le poids");
     ...BLOCS.map((b) => k(b.k, { f: FORMAT_DEFAUT[b.k] })),
     ...Array.from({ length: 5 }, (_, j) => ({ k: "media", id: `imageg${j}abcdefghijklmnopq`.slice(0, 24), type: "image", url: url("profil-medias", `imageg${j}abcdefghijklmnopq`.slice(0, 24), ".webp"), ratio: 1.777, legende, y: 88, f: "heros" })),
     { k: "media", id: "videogabcdefghijklmnopqr", type: "video", url: url("profil-videos", "videogabcdefghijklmnopqr", ".webm"), ratio: 0.5625, legende, duree: 59.9, couverture: 29.5, f: "tuile" },
-    ...Array.from({ length: 5 }, () => k("libre", { f: "tuile" })),
+    ...Array.from({ length: 4 }, () => k("libre", { f: "tuile" })),
   ];
   // la liste brute de 20 éléments (borne haute : places libres comprises) et la même, validée
   const v = validerDisposition(gros, "lecture");
   const brut = Buffer.byteLength(JSON.stringify(gros), "utf8");
   const octets = Buffer.byteLength(JSON.stringify(v.disposition), "utf8");
-  check("la plus grosse liste : 15 blocs, adresses de 500, légendes de 80", gros.length === 20 && blocsDe(v.disposition).length === 15 && blocsDe(v.disposition).filter(estMedia).every((m) => m.url.length === 500 && m.legende!.length === 80));
+  check("la plus grosse liste : 16 blocs, adresses de 500, légendes de 80", gros.length === 20 && blocsDe(v.disposition).length === 16 && blocsDe(v.disposition).filter(estMedia).every((m) => m.url.length === 500 && m.legende!.length === 80));
   check("moins de 16 000 octets", brut < 16000 && octets < 16000, `${brut} octets bruts (20 éléments), ${octets} validés`);
 }
 
@@ -617,7 +623,9 @@ console.log("# Les données des blocs");
     folio: { nom: "Mains", oeuvre: "Études de mains", image: null, anecdote: ["a", "b"] },
     journal: { depart: 1000, points: [], matchs: 0, evenements: [] },
   };
-  check("données lues (même vides) : le bloc se montre", ["amis", "reponses", "trophees", "folio", "journal"].every((c) => aDuContenu(b(c), pleines)));
+  check("données lues (même vides) : le bloc se montre", ["amis", "trophees", "folio", "journal"].every((c) => aDuContenu(b(c), pleines)));
+  check("réponses : il faut au moins une question", !aDuContenu(b("reponses"), pleines) && aDuContenu(b("reponses"), { ...pleines, stats: { ...pleines.stats, questions: 1 } }));
+  check("carnet : un carnet lu ou une série", !aDuContenu(b("carnet"), pleines) && aDuContenu(b("carnet"), { ...pleines, stats: { ...pleines.stats, meilleureSerie: 2 } }));
   // la courbe ne se trace qu'à partir de 2 séances : en deçà, pas de case vide sans carte
   check("progression : 2 séances au moins", !aDuContenu(b("progression"), pleines) && !aDuContenu(b("progression"), { ...pleines, progression: [{ id: "s0", topics: ["fsa"], format: 10, score: 6, total: 10, completed_at: "2026-10-01T18:00:00Z" }] }) && aDuContenu(b("progression"), { ...pleines, progression: [0, 1].map((i) => ({ id: `s${i}`, topics: ["fsa"], format: 10, score: 6, total: 10, completed_at: `2026-10-0${i + 1}T18:00:00Z` })) }));
 

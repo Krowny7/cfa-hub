@@ -1,0 +1,180 @@
+/* Le bloc Carnet de jours (Carnet.tsx) : la grille des 52 semaines (une
+   case par jour, une colonne par semaine, lundi en haut ; l'encre de
+   CarnetJours), le ruban des semaines aligné sur ses colonnes, les carnets
+   verticaux de la colonne. Au téléphone (sous 768 px, comme CarnetJours) :
+   les 18 dernières semaines, et le ruban à 18 cases. `--encre` : la couleur
+   du carnet (le sien à l'encre, le tien à ta couleur). En CSS simple :
+   aucune classe arbitraire nouvelle pour Tailwind. */
+
+/* la grille et son ruban : --g, l'écart des cases, le même pour le ruban (alignés) */
+.carnet {
+  --g: 2px;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.grille {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, auto);
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--g);
+}
+/* le ruban (RubanSemaines) : l'écart des colonnes de la grille */
+.ruban > div {
+  column-gap: var(--g) !important;
+}
+
+/* les formats : mini-tuile (cases d'environ 5 px), héros (10 px), bande (pleine largeur), demi-bande (9 px, 75 px de haut) */
+.tuile {
+  --g: 1px;
+}
+.heros {
+  max-width: 622px;
+}
+.bande {
+  --g: 3px;
+}
+.demi {
+  max-width: 570px;
+}
+
+/* une case : au trait ; data-n 1, 2, 3 : de plus en plus d'encre ; data-f : à venir */
+.grille > i,
+.vertical > i {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--encre, var(--ink)) 20%, transparent);
+}
+.grille > [data-n="1"],
+.vertical > [data-n="1"] {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--encre, var(--ink)) 30%, transparent);
+}
+.grille > [data-n="2"],
+.vertical > [data-n="2"] {
+  box-shadow: none;
+  background: color-mix(in oklab, var(--encre, var(--ink)) 62%, transparent);
+}
+.grille > [data-n="3"],
+.vertical > [data-n="3"] {
+  box-shadow: none;
+  background: var(--encre, var(--ink));
+}
+.grille > [data-f],
+.vertical > [data-f] {
+  box-shadow: none;
+}
+
+/* la colonne : deux carnets verticaux (7 colonnes, une ligne par semaine, la plus récente en haut), le ruban entre eux */
+.colonnes {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.tete {
+  max-width: 64px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vertical {
+  display: grid;
+  grid-template-columns: repeat(7, 7px);
+  grid-auto-rows: 7px;
+  gap: 1px;
+}
+.vertical > i {
+  aspect-ratio: auto;
+  border-radius: 1.5px;
+}
+.rubanV {
+  display: grid;
+  grid-auto-rows: 7px;
+  gap: 1px;
+  width: 6px;
+}
+.rubanV > span {
+  display: block;
+  border-radius: 1.5px;
+}
+
+/* une mesure courte : « Série 23 j −18 j » */
+.ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.ligneEtiquette {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.ligneValeur {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Journal fermé : la micro-mention, la série et le record côte à côte */
+.prive {
+  flex-shrink: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.deuxMesures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* le héros : la grille et son ruban à gauche, les chiffres à droite (dès 1 024 px) */
+.herosCorps {
+  display: grid;
+  gap: 16px 28px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .herosCorps {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+/* le téléphone : les 18 dernières semaines (les 34 premières colonnes masquées), le ruban à 18 cases */
+@media (max-width: 767.98px) {
+  .carnet {
+    --g: 3px;
+  }
+  .grille > :nth-child(-n + 238) {
+    display: none;
+  }
+  .ruban > div {
+    grid-template-columns: repeat(18, minmax(0, 1fr)) !important;
+  }
+  .ruban > div > :nth-child(-n + 34) {
+    display: none;
+  }
+  /* la colonne : les 18 semaines les plus récentes (en haut) */
+  .vertical > :nth-child(n + 127) {
+    display: none;
+  }
+  .rubanV > :nth-child(n + 19) {
+    display: none;
+  }
+}

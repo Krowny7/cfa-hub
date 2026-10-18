@@ -43,9 +43,9 @@ export const EDITEUR_PAGE = {
   revenir: "Revenir à ta page",
   pageDepart: "Revenir à la page de départ",
   // ── la carte du plan, sous « Ta page » ──
-  /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 4 formats : mini-tuile, colonne, héros ou bande. » */
+  /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 5 formats : mini-tuile, colonne, héros, bande ou demi-bande. » */
   compte: (blocs: number, rangees: number) =>
-    `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 4 formats : mini-tuile, colonne, héros ou bande.`,
+    `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 5 formats : mini-tuile, colonne, héros, bande ou demi-bande.`,
   aideOrdinateur:
     "L'ordre est libre ; les rangées se forment seules et leurs bas s'alignent. Une colonne tient deux lignes, à gauche en début de rangée, à droite après un héros. Une place libre reste libre : choisis-y un module, ou laisse-la vide.",
   aideTelephone: "Les formats s'appliquent sur ordinateur. Ici, tout est sur une colonne : tu règles l'ordre, le contenu et ce qui est masqué.",
@@ -153,5 +153,7 @@ export const EDITEUR_PAGE = {
   refusPlein: `Ta page est pleine : ${ELEMENTS_MAX} éléments au plus. Ferme une place libre ou masque un bloc.`,
   refusCartes: `${CARTES_MAX} cartes au plus sur ta page.`,
   refusVideoBande: "Pas de vidéo en haut d'un bloc en bande : elle serait recadrée trop bas. Mets-le en mini-tuile, en colonne ou en héros.",
+  refusVideoDemi: "En demi-bande, pas de place pour une vidéo en haut.",
+  refusImageDemi: "En demi-bande, pas de place pour une image en haut : mets le bloc dans un autre format.",
   refusImagesHaut: `${IMAGES_HAUT_MAX} médias en haut au plus sur ta page : retire-en un pour en mettre un autre.`,
 };

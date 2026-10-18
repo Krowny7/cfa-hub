@@ -28,11 +28,13 @@ import {
   estMedia,
   imagesHaut,
   videosDe,
+  formatDuBloc,
   formatPermis,
   formatsDe,
   genreDe,
   hauteur,
   normaliser,
+  pleineLargeur,
   portee,
   rangees,
   type Bloc,
@@ -47,8 +49,8 @@ import {
 
 const dans = (d: Disposition, i: number) => Number.isInteger(i) && i >= 0 && i < d.length;
 
-/** Le bloc à un format permis (le plus proche s'il ne l'est pas). */
-const auFormat = (b: Bloc, f: Format): Bloc => ({ ...b, f: formatPermis(genreDe(b), f) }) as Bloc;
+/** Le bloc à un format permis, média en haut compris (le plus proche s'il ne l'est pas). */
+const auFormat = (b: Bloc, f: Format): Bloc => ({ ...b, f: formatDuBloc(b, f) }) as Bloc;
 
 /**
  * Le bloc peut-il entrer sur la page ? Un bloc fixe une fois seulement ; un
@@ -107,7 +109,7 @@ export function echanger(d: Disposition, a: number, b: number): Disposition {
   if (!dans(d, a) || !dans(d, b) || a === b || (estLibre(d[a]) && estLibre(d[b]))) return d;
   const vers = (e: ElementPage, f: Format): ElementPage | null => {
     if (estBloc(e)) return auFormat(e, f);
-    return f === "bande" ? null : { k: "libre", f };
+    return pleineLargeur(f) ? null : { k: "libre", f };
   };
   const x = vers(d[a], d[b].f);
   const y = vers(d[b], d[a].f);
@@ -187,7 +189,8 @@ export function deplacerVers(d: Disposition, i: number, p: PlaceVide): Dispositi
   if (p.i === null && p.apres === i && (b.f === "colonne" || rangees(d)[p.rangee]?.cases.find((c) => c.i === i)?.ligne === p.ligne)) return d;
   let base: Disposition;
   let place: PlaceVide = p;
-  if (b.f !== "bande") base = d.map((x, j) => (j === i ? ({ k: "libre", f: b.f } as ElementPage) : x));
+  // une bande ou une demi-bande ne laisse pas de place libre (une place n'est jamais pleine largeur) : elle part d'abord
+  if (!pleineLargeur(b.f)) base = d.map((x, j) => (j === i ? ({ k: "libre", f: b.f } as ElementPage) : x));
   else {
     if (p.i === null && p.apres === i) return d;
     const apres = (x: number) => (x > i ? x - 1 : x);
@@ -229,7 +232,7 @@ export function retirer(d: Disposition, i: number): Disposition {
   const e = d[i];
   if (!dans(d, i) || !estBloc(e)) return d;
   const f = e.f;
-  if (f === "bande") return normaliser(d.filter((_, j) => j !== i));
+  if (pleineLargeur(f)) return normaliser(d.filter((_, j) => j !== i));
   const place: ElementPage = { k: "libre", f };
   return normaliser(d.map((x, j) => (j === i ? place : x)));
 }
@@ -274,6 +277,8 @@ export function peutAjouterImageHaut(d: Disposition, video = false, i: number | 
   if (!sien && imagesHaut(d).length >= IMAGES_HAUT_MAX) return { ok: false, raison: EDITEUR_PAGE.refusImagesHaut };
   // pas de vidéo en haut d'une bande : elle y serait recadrée trop bas
   if (video && e && e.f === "bande") return { ok: false, raison: EDITEUR_PAGE.refusVideoBande };
+  // en demi-bande : pas de vidéo en haut, ni d'image en haut d'un module (une carte la montre en vignette)
+  if (e && e.f === "demi" && (video || !estCarte(e))) return { ok: false, raison: video ? EDITEUR_PAGE.refusVideoDemi : EDITEUR_PAGE.refusImageDemi };
   if (video && sien?.type !== "video" && videosDe(d) >= VIDEOS_MAX) return { ok: false, raison: EDITEUR_PAGE.refusVideo };
   return { ok: true, raison: null };
 }

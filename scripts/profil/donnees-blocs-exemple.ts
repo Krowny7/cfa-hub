@@ -7,7 +7,7 @@
 import { STATS_VIDES, type ProfilStats } from "@/lib/profil/catalogue";
 import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 import { folioPorte } from "@/lib/profil/etagere";
-import type { DonneesBlocs, SeanceProgression } from "@/lib/profil/blocs-donnees";
+import type { DonneesBlocs, DonneesVisiteur, ExtraitCarnet, SeanceProgression } from "@/lib/profil/blocs-donnees";
 import type { Saisons } from "@/lib/profil/saisons";
 
 /** un « GIF » de la banque, petit (240 px) : une goutte d'encre qui tombe et s'étale, en boucle (SVG) */
@@ -58,7 +58,7 @@ const SAISONS_RICHE: Saisons = {
   ],
 };
 
-/** la page de Sforzinda : 10 blocs, les 3 formats, les 3 genres de média */
+/** la page de Sforzinda : les 10 blocs fixes, 4 formats, les 3 genres de média */
 export const DISPO_RICHE: Disposition = [
   { k: "vitrine", f: "bande" },
   { k: "radar", f: "heros" },
@@ -72,6 +72,7 @@ export const DISPO_RICHE: Disposition = [
   { k: "trophees", f: "tuile" },
   { k: "reponses", f: "tuile" },
   { k: "progression", f: "heros" },
+  { k: "carnet", f: "demi" },
 ];
 
 export const RICHE: DonneesBlocs = {
@@ -123,6 +124,55 @@ export const RICHE: DonneesBlocs = {
   },
   saisons: SAISONS_RICHE,
   visibiliteJournal: "public",
+};
+
+/** des jours d'exemple : 52 semaines jusqu'au 18 oct. 2026, plus denses vers la fin ; `graine` change la régularité */
+export function joursExemple(graine: number, densite: number): [string, number][] {
+  const out: [string, number][] = [];
+  const fin = Date.UTC(2026, 9, 18, 12);
+  for (let i = 363; i >= 0; i--) {
+    const jour = new Date(fin - i * 86400000).toISOString().slice(0, 10);
+    const h = Math.sin((i + 1) * 12.9898 * graine) * 43758.5453;
+    const r = h - Math.floor(h);
+    const recent = i < 90 ? 1.6 : 1;
+    if (r < densite * recent) out.push([jour, Math.round(8 + r * 60 * recent)]);
+  }
+  return out;
+}
+
+export const CARNET_RICHE: ExtraitCarnet = { jours: joursExemple(1, 0.55), aujourdhui: "2026-10-18", serie: 12, record: 31, seuil: 10 };
+
+/** celui qui regarde Sforzinda (« toi ») : un peu moins avancé, devant en Quant et en FI */
+export const TOI_EXEMPLE: DonneesVisiteur = {
+  id: "moi",
+  accent: "#3b6fd6",
+  elo: 1360,
+  parties: 19,
+  maitrise: 58,
+  stats: { ...STATS_VIDES, questions: 1720, meilleureSerie: 19, serie: 5, serieEncre: true, duJour: 36, duelsGagnes: 9, duelsJoues: 19, defisRendus: 30, calculsJustes: 320, examensBlancs: 2, matieres: MIENNES },
+  jours: joursExemple(2, 0.38),
+  aujourdhui: "2026-10-18",
+  trophees: { parPalier: { 1: 6, 2: 3, 3: 1, 4: 0 }, total: 10, complet: true },
+  saisons: { courante: { ...SAISONS_RICHE.courante!, moi: { pic: { palier: 2, division: "I" }, eloPic: 1371, matchs: 9 } }, palmares: [] },
+  seances: seances(9).map((x, i) => ({ ...x, id: `t${i}`, score: Math.max(3, x.score - 1) })),
+  courbeElo: { depart: 1338, points: [1345, 1352, 1341, 1355, 1349, 1360], dates: ["2026-08-02", "2026-08-20", "2026-09-04", "2026-09-21", "2026-10-03", "2026-10-14"] },
+  amis: ["ami-1", "ami-4", "ami-7"],
+};
+
+/** Sforzinda vue par « toi » : les écarts, le carnet, les ELO de son cercle */
+export const RICHE_TOI: DonneesBlocs = {
+  ...RICHE,
+  toi: TOI_EXEMPLE,
+  elo: 1478,
+  parties: 27,
+  maitrise: 64,
+  carnet: CARNET_RICHE,
+  journal: { ...RICHE.journal!, dates: ["2026-07-24", "2026-08-03", "2026-08-11", "2026-08-19", "2026-08-30", "2026-09-07", "2026-09-15", "2026-09-26", "2026-10-02", "2026-10-07", "2026-10-12", "2026-10-15"] },
+  amis: {
+    amis: amisExemple(12).map((a, i) => ({ ...a, elo: 1620 - i * 37, commun: i === 1 || i === 4 || i === 7 })),
+    total: 23,
+    cercle: { lui: 6, toi: 11, taille: 25 },
+  },
 };
 
 /** Paul D. : la page par défaut, presque rien de rempli */

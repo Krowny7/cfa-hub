@@ -1,0 +1,56 @@
+/* Le bloc Journal (Journal.tsx) : la courbe double et ses croisements, le
+   haut du héros, les deux colonnes de l'existant. En CSS simple : aucune
+   classe arbitraire nouvelle pour Tailwind. */
+
+/* la courbe (DoubleCourbe) et, posés dessus, les points de croisement */
+.courbe {
+  position: relative;
+  min-width: 0;
+}
+/* un croisement : un point de 4 px, dans une zone de 14 px pour l'infobulle */
+.croix {
+  position: absolute;
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  cursor: default;
+}
+.croix > i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+/* héros, chez un autre : le chiffre et son jeton à gauche, les événements à droite */
+.haut {
+  display: grid;
+  gap: 12px 28px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .haut {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+/* héros, chez soi : la courbe et les événements côte à côte dès 1 024 px (l'existant) */
+.deux {
+  display: grid;
+  gap: 20px 28px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .deux {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* demi-bande, dans Personnaliser : « Visible par », sous le lien */
+.visible {
+  max-width: 200px;
+}

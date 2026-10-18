@@ -1,0 +1,155 @@
+/* Ce que partagent les blocs du profil (commun.tsx) : le jeton d'écart, le
+   score d'une tuile, la demi-bande et ses cellules, le ruban des semaines.
+   En CSS simple : aucune classe arbitraire nouvelle pour Tailwind. */
+
+/* le jeton : « toi −1 692 », demi-gras, chiffres tabulaires */
+.jeton {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+/* le score d'une tuile : « toi 1 – 2 » */
+.score {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* la demi-bande : une ligne compacte ; au téléphone, deux colonnes de cellules puis le dessin */
+.demi {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  min-height: 96px;
+}
+.cellules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+/* au téléphone, quatre cellules au plus (deux rangées de deux) */
+.cellule:nth-child(n + 5) {
+  display: none;
+}
+.cellule {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.etiquette {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.chiffre {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.sous {
+  line-height: 1.2;
+}
+.petit {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dessin {
+  min-width: 0;
+}
+.droite {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+@media (min-width: 640px) {
+  .demi {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    padding: 16px 24px;
+  }
+  .cellules {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0;
+  }
+  .cellule:nth-child(n + 5) {
+    display: flex;
+  }
+  .cellule {
+    min-width: 132px;
+    padding: 0 20px;
+  }
+  .cellule:first-child {
+    padding-left: 0;
+  }
+  .cellule + .cellule {
+    border-left: 1px solid var(--line);
+  }
+  .chiffre {
+    font-size: 30px;
+  }
+  .dessin {
+    flex: 1 1 auto;
+    padding: 0 20px;
+    border-left: 1px solid var(--line);
+  }
+  /* à droite, même sans dessin entre les cellules et lui */
+  .droite {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    margin-left: auto;
+    padding-left: 20px;
+  }
+}
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  /* une ligne si tout tient ; sinon les cellules passent à la ligne, sans jamais sortir de la
+     carte (sans filets ni retrait : une ligne repliée commence au bord, comme la première) */
+  .cellules {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 12px 32px;
+  }
+  .cellule {
+    padding: 0;
+  }
+  .cellule + .cellule {
+    border-left: 0;
+  }
+}
+@media (min-width: 1024px) {
+  /* hauteur fixe : deux demi-bandes et leur écart font une rangée haute (260 px) */
+  .demi {
+    height: 100%;
+  }
+}
+
+/* le ruban des semaines : une case par semaine, sous un carnet */
+.ruban {
+  display: grid;
+  gap: 3px;
+}
+.semaine {
+  display: block;
+  height: 6px;
+  border-radius: 2px;
+}

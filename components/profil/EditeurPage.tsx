@@ -101,9 +101,15 @@ type Cible = ({ type: "case"; i: number } | { type: "place"; rangee: number; lig
 /** le menu ouvert : son genre et le bloc (sa clé) */
 type Menu = { type: "format" | "reglages" | "plus"; cle: string };
 
-/** La vignette d'un format : 12 colonnes, sa portée en plein (la colonne : à droite, sur deux lignes). */
+/** La vignette d'un format : 12 colonnes, sa portée en plein (la colonne : à droite, sur deux lignes ; la demi-bande : la moitié du haut). */
 function Vignette({ f }: { f: Format }) {
   const p = portee(f);
+  if (f === "demi")
+    return (
+      <span aria-hidden className={s.vignette} style={{ gridTemplateRows: "1fr 1fr" }}>
+        <span className={s.plein} style={{ gridColumn: "1 / span 12", gridRow: "1" }} />
+      </span>
+    );
   if (f === "colonne")
     return (
       <span aria-hidden className={s.vignette} style={{ gridTemplateRows: "1fr 1fr" }}>

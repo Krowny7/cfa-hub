@@ -1,0 +1,155 @@
+/* Le bloc Chiffres clés (Chiffres.tsx) et le double trait en barres, que
+   partagent Questions répondues et Trophées. En CSS simple : aucune classe
+   arbitraire nouvelle pour Tailwind. */
+
+/* chez soi : la petite ligne de contexte */
+.petit {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* mini-tuile : une ligne par pièce, séparées d'un filet */
+.lignes {
+  display: grid;
+}
+.lignes > * + * {
+  border-top: 1px solid var(--line);
+}
+.ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+}
+.ligne:first-child {
+  padding-top: 0;
+}
+.ligne:last-child {
+  padding-bottom: 0;
+}
+.nomPiece {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.valeur {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* colonne : des étages qui se partagent la hauteur, séparés d'un filet */
+.etages {
+  display: grid;
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(0, 1fr);
+}
+.etages > * + * {
+  border-top: 1px solid var(--line);
+}
+.etage {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 0;
+}
+.etage:first-child {
+  padding-top: 0;
+}
+.etage:last-child {
+  padding-bottom: 0;
+}
+
+/* héros et bande : une case par pièce, en lignes au téléphone, en colonnes dès 640 px */
+.haut {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -8px;
+}
+.cases {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: center;
+}
+.cases > * + * {
+  border-top: 1px solid var(--line);
+}
+.case {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 0;
+}
+.case:first-child {
+  padding-top: 0;
+}
+.ligneBase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.caseScore {
+  display: flex;
+  align-items: center;
+  padding-top: 14px;
+}
+@media (min-width: 640px) {
+  .cases {
+    grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+    align-items: center;
+  }
+  .avecScore {
+    grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)) auto;
+  }
+  .cases > * + * {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+  .case {
+    align-self: stretch;
+    padding: 4px 24px;
+  }
+  .case:first-child {
+    padding-left: 0;
+  }
+  .case:last-child {
+    padding-right: 0;
+  }
+  .caseScore {
+    align-self: stretch;
+    padding: 0 0 0 20px;
+  }
+}
+
+/* le double trait en barres : la sienne épaisse à l'encre, la tienne fine à ta couleur */
+.barres {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.barreLui {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+.barreToi {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+}

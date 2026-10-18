@@ -13,15 +13,31 @@ export const BLOCS_PROFIL = {
   carte: "Carte",
   carteVide: "Ta carte est vide : écris-y un titre, ou mets-lui une image, dans ses réglages.",
   rienAMontrer: " : rien à montrer pour l'instant. Le bloc apparaîtra sur ta page dès qu'il aura du contenu.",
+  rienAMontrerCourt: "rien pour l'instant",
+
+  // la grammaire des écarts (lib/profil/ecart.ts, components/profil/blocs/commun.tsx)
+  /** l'aperçu « voir comme les autres » : l'écart se montrera à la personne qui regarde */
+  apercuEcart: "Ici, l'écart avec la personne qui regarde",
+  /** « Tu mènes dans 1, Inès dans 2, égalité dans 1 » */
+  scoreBulle: (toi: number, lui: number, egal: number, nom: string) => `Tu mènes dans ${toi}, ${nom} dans ${lui}${egal ? `, égalité dans ${egal}` : ""}`,
+  /** « Questions · Inès 4 812 · toi 3 120 » */
+  bulle: (mesure: string, nom: string, lui: string, toi: string) => `${mesure} · ${nom} ${lui} · toi ${toi}`,
+  /** le rattrapage d'un écart rouge */
+  rattrapageElo: (n: number, nom: string) => `≈ ${n} victoire${n > 1 ? "s" : ""} contre ${nom} pour passer devant`,
+  rattrapageQuestions: (jours: number) => `À ton rythme : ${jours} jour${jours > 1 ? "s" : ""}`,
+  /** « Sem. du 6 oct. · Inès 214 · toi 260 » */
+  semaineBulle: (debut: string, nom: string, lui: number, toi: number) => `Sem. du ${debut} · ${nom} ${nombre(lui)} · toi ${nombre(toi)}`,
+  /** le double trait, sans légende */
+  doubleTrait: (nom: string) => `Épais : ${nom} · fin : toi`,
+  pasMesure: "toi : pas encore mesuré",
+  leDetail: "Le détail",
 
   // Chiffres clés
   chiffres: "Chiffres clés",
 
   // Radar
   tesMatieres: "Tes matières",
-  sesMatieres: "Ses matières",
   faceMoyenne: "face à la moyenne des joueurs",
-  enComparaison: (nom: string) => `${nom} (épais) · toi (fin)`,
   comparer: "Me comparer",
   comparerImpossible: "Aucune de tes matières n'est encore mesurée",
   arreter: "Arrêter",
@@ -31,7 +47,6 @@ export const BLOCS_PROFIL = {
   aReprendre: "À reprendre",
   aReprendreMin: "à reprendre",
   tesPlusSures: "Tes plus sûres",
-  sesPlusSures: "Ses plus sûres",
   dixMatieres: "Les 10 matières",
   ordreMatieres: "Matières, de la plus sûre à la moins sûre",
   radarDe: (nom: string, moi: boolean) => (moi ? "Tes 10 matières" : `Les 10 matières de ${nom}`),
@@ -77,5 +92,4 @@ export const BLOCS_PROFIL = {
   image: "Image du joueur",
   gif: "GIF",
   video: "Vidéo du joueur",
-  videoBoucle: "Vidéo · en boucle, sans le son",
 } as const;
