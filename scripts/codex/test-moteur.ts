@@ -70,7 +70,7 @@ const ouverte = (r: ReturnType<typeof evaluer>, id: string) => r.etats.find((s) 
 console.log("# le catalogue");
 check("verifierCatalogue() ne trouve rien", verifierCatalogue().length === 0, verifierCatalogue().join(" | "));
 const cat = catalogueCodex();
-check("269 quêtes (231 avant la v3, 38 ajoutées : V3 §8.8)", cat.length === 269, String(cat.length));
+check("271 quêtes (231 avant la v3, 38 ajoutées : V3 §8.8, 2 pour la fiche Corporate Issuers)", cat.length === 271, String(cat.length));
 
 console.log("\n# un compte neuf (aucun historique)");
 {
@@ -613,8 +613,8 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
   // le compte final (V3 §8.8)
   const c = compterCatalogue();
   check(`visibles du CFA I : ${c.total.visibles}, dans [170, 190] (≈ 184)`, c.total.visibles >= 170 && c.total.visibles <= 190, JSON.stringify(c.total));
-  check("par famille : trame 40, branches 80, long cours 43, exploits 17, contrats 4 ; 58 retirées, 27 hors compte",
-    c.trame.visibles === 40 && c.branche.visibles === 80 && c.longcours.visibles === 43 && c.exploit.visibles === 17 && c.contrat.visibles === 4 && c.total.retirees === 58 && c.total.horsCompte === 27,
+  check("par famille : trame 40, branches 82 (dont fiche et drill de Corporate), long cours 43, exploits 17, contrats 4 ; 58 retirées, 27 hors compte",
+    c.trame.visibles === 40 && c.branche.visibles === 82 && c.longcours.visibles === 43 && c.exploit.visibles === 17 && c.contrat.visibles === 4 && c.total.retirees === 58 && c.total.horsCompte === 27,
     (["trame", "branche", "longcours", "exploit", "contrat"] as const).map((f) => `${f} ${c[f].visibles}`).join(" "));
   check("les 21 satellites hors compte : cours, flashcards, fiche sans drill (facultatifs)", cat.filter((x) => x.famille === "branche" && x.optionnelle && !x.retiree).every((x) => ["cours", "flashcards", "fiche"].includes(x.etape ?? "")));
 

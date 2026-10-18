@@ -2262,3 +2262,14 @@ END $$;
 
 REVOKE ALL ON FUNCTION codex_mesures_v3(uuid, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION codex_mesures_v3(uuid, text) TO service_role;
+
+-- ============================================================================
+-- 10. Corporate Issuers a maintenant sa fiche et son drill (17 octobre 2026)
+-- La table codex_matieres (migration_codex.sql) disait « pas de drill, pas de
+-- fiche » pour Corporate : les étapes « fiche » et « drill » de sa branche ne
+-- pouvaient pas se valider. Idempotent.
+-- ============================================================================
+UPDATE codex_matieres
+   SET prefixe_drill = 'Corporate Issuers', fiche = 'corporate-issuers'
+ WHERE cle = 'corporate'
+   AND (prefixe_drill IS DISTINCT FROM 'Corporate Issuers' OR fiche IS DISTINCT FROM 'corporate-issuers');
