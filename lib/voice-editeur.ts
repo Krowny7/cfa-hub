@@ -12,6 +12,33 @@ const UN_FORMAT: Record<"tuile" | "heros", string> = { tuile: "une tuile", heros
 export const EDITEUR_PAGE = {
   /** sous « Ta page », en tête de la section */
   aide: "Choisis le format de chaque bloc, range-les dans l'ordre que tu veux, masque ceux que tu ne veux pas.",
+  // ── « Partir d'un modèle » (components/profil/ModelesPage.tsx, lib/profil/modeles-page.ts) ──
+  modeles: "Partir d'un modèle",
+  modelesCompte: "Partir d'un modèle · 3 modèles",
+  modelesAide: "Trois pages toutes faites, adaptées à ce que ta page a à montrer. Tu peux tout changer ensuite.",
+  modelesPied: "Tes médias restent ; un bloc retiré garde ses réglages. Rien n'est enregistré avant « Enregistrer ».",
+  MODELES: {
+    competiteur: { nom: "Compétiteur", phrase: "Ta courbe d'ELO et tes victoires en tête, tes saisons en bande : la page d'un joueur de duels." },
+    etudiant: { nom: "Étudiant", phrase: "Tes chiffres, puis tes matières, tes réponses et ta progression : la page de quelqu'un qui révise." },
+    collection: { nom: "Collectionneur", phrase: "Ton image en grand, ton folio, tes trophées et tes saisons : ce que tu as gagné et ce que tu aimes montrer." },
+  },
+  appliquer: "Appliquer",
+  appliquerModele: (nom: string) => `Appliquer le modèle ${nom}`,
+  pageActuelle: "Ta page actuelle",
+  /** « Plan du modèle Compétiteur, tel que ta page l'aura » */
+  planModele: (nom: string) => `Plan du modèle ${nom}, tel que ta page l'aura`,
+  chiffresModele: (noms: string[]) => `Chiffres clés : ${noms.join(" · ")}`,
+  /** le média voulu par une case du modèle */
+  tonImage: "ton image",
+  adapte: (mis: string, voulu: string, autres: boolean) => `Adapté : ${mis} au lieu de ${voulu}${autres ? "…" : ""}`,
+  dansLOrdre: (noms: string[]) => `Dans l'ordre : ${noms.join(", ")}`,
+  remplacerQuestion: "Remplacer ta page ? Tes médias restent, et tu peux revenir en arrière jusqu'à l'enregistrement.",
+  remplacer: "Remplacer",
+  garderPage: "Garder ma page",
+  applique: (nom: string) => `Modèle « ${nom} » appliqué. Rien n'est enregistré.`,
+  departApplique: "Page de départ rétablie. Rien n'est enregistré.",
+  revenir: "Revenir à ta page",
+  pageDepart: "Revenir à la page de départ",
   // ── la carte du plan, sous « Ta page » ──
   /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 3 formats : tuile, héros ou bande. » */
   compte: (blocs: number, rangees: number) => `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 3 formats : tuile, héros ou bande.`,
