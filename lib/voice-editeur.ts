@@ -27,7 +27,8 @@ export const EDITEUR_PAGE = {
   pageActuelle: "Ta page actuelle",
   /** « Plan du modèle Compétiteur, tel que ta page l'aura » */
   planModele: (nom: string) => `Plan du modèle ${nom}, tel que ta page l'aura`,
-  chiffresModele: (noms: string[]) => `Chiffres clés : ${noms.join(" · ")}`,
+  /** le point médian reste collé au chiffre d'avant : une ligne ne commence jamais par « · » */
+  chiffresModele: (noms: string[]) => `Chiffres clés : ${noms.join(" · ")}`,
   /** le média voulu par une case du modèle */
   tonImage: "ton image",
   adapte: (mis: string, voulu: string, autres: boolean) => `Adapté : ${mis} au lieu de ${voulu}${autres ? "…" : ""}`,
