@@ -116,6 +116,8 @@ export function ModelesPage({
     onAppliquer(clicheActif.disposition, clicheActif.showcase);
     setCliche(null);
     setApplique(null);
+    // la ligne d'état s'en va avec son bouton : le focus revient à l'entrée des modèles
+    requestAnimationFrame(() => visible("[data-modeles-entree]")?.focus());
   };
 
   const confirmation = (c: Choix, telephone: boolean) => (
@@ -219,7 +221,7 @@ export function ModelesPage({
 
       {/* ordinateur : la rangée de 3 cartes, dans un repli */}
       <details className={"group " + s.grandSeul} open={ouvert} onToggle={(e) => setOuvert(e.currentTarget.open)}>
-        <summary className="flex min-h-[44px] w-fit cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+        <summary data-modeles-entree className="flex min-h-[44px] w-fit cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
           <LayoutTemplate size={15} aria-hidden />
           <span className="t-eyebrow">{ouvert ? T.modeles : T.modelesCompte}</span>
           <ChevronDown size={15} aria-hidden className="text-muted transition-transform duration-200 group-open:rotate-180" />
@@ -236,6 +238,7 @@ export function ModelesPage({
       {/* téléphone : une ligne, puis la feuille */}
       <button
         type="button"
+        data-modeles-entree
         aria-haspopup="dialog"
         className={"flex min-h-[44px] w-full items-center gap-2 rounded-[14px] border border-line-2 bg-[var(--surface)] px-4 text-left text-[14px] font-semibold " + s.petitSeul}
         onClick={() => setFeuille(true)}
