@@ -719,8 +719,8 @@ export function BlocProfil({ bloc, f, d, edition = false }: { bloc: Bloc; f: For
     case "trophees":
       return d.trophees ? <Trophees {...ctx} /> : vide;
     case "progression":
-      // repris tel quel : sa propre carte, sa courbe, son filtre par matière
-      return d.progression ? (
+      // repris tel quel : sa propre carte, sa courbe, son filtre par matière (une courbe : 2 séances au moins)
+      return d.progression && d.progression.length >= 2 ? (
         <div className={"flex min-w-0 flex-col " + b.remplit}>
           <PracticeProgressChart pastSessions={d.progression} topicLabels={TOPIC_LABELS} />
         </div>

@@ -82,7 +82,8 @@ export function aDuContenu(b: Bloc, d: DonneesBlocs): boolean {
     case "trophees":
       return d.trophees !== null;
     case "progression":
-      return d.progression !== null;
+      // la courbe ne se trace qu'à partir de 2 séances (PracticeProgressChart)
+      return d.progression !== null && d.progression.length >= 2;
     case "folio":
       return d.folio !== null;
     case "journal":

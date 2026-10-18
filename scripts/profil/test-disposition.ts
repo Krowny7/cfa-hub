@@ -522,7 +522,9 @@ console.log("# Les données des blocs");
     folio: { nom: "Mains", oeuvre: "Études de mains", image: null, anecdote: ["a", "b"] },
     journal: { depart: 1000, points: [], matchs: 0, evenements: [] },
   };
-  check("données lues (même vides) : le bloc se montre", ["amis", "reponses", "trophees", "progression", "folio", "journal"].every((c) => aDuContenu(b(c), pleines)));
+  check("données lues (même vides) : le bloc se montre", ["amis", "reponses", "trophees", "folio", "journal"].every((c) => aDuContenu(b(c), pleines)));
+  // la courbe ne se trace qu'à partir de 2 séances : en deçà, pas de case vide sans carte
+  check("progression : 2 séances au moins", !aDuContenu(b("progression"), pleines) && !aDuContenu(b("progression"), { ...pleines, progression: [{ id: "s0", topics: ["fsa"], format: 10, score: 6, total: 10, completed_at: "2026-10-01T18:00:00Z" }] }) && aDuContenu(b("progression"), { ...pleines, progression: [0, 1].map((i) => ({ id: `s${i}`, topics: ["fsa"], format: 10, score: 6, total: 10, completed_at: `2026-10-0${i + 1}T18:00:00Z` })) }));
 
   const r = resumeReponses({ available: true, missing: ["duel"], by: { daily: [10, 7], qcm: [40, 30], duel: [0, 0] }, subjects: [] } as never);
   check(
