@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { EditeurPage } from "@/components/profil/EditeurPage";
+import { ModelesPage } from "@/components/profil/ModelesPage";
 import { AmbianceProfil } from "@/components/profil/Pieces";
 import { SceauxPoses } from "@/components/profil/SceauxPoses";
 import { Feuille } from "@/components/ui/Feuille";
@@ -42,7 +43,8 @@ import { JOUEURS } from "@/lib/voice-z2a";
 // ordinateur), et la vraie page change en direct dessous. Les sections sont
 // celles de l'ancien éditeur (SectionsPersonnaliser.tsx). La page se compose
 // sur place (EditeurPage : chaque bloc à l'un des 3 formats du site, rangé
-// par sa barre d'outils, au doigt comme à la souris). Une barre collée en
+// par sa barre d'outils, au doigt comme à la souris), ou part d'un des trois
+// modèles (ModelesPage), modifiable ensuite. Une barre collée en
 // bas enregistre ou annule ; le serveur revalide tout (cadres et bannières
 // gagnés, ou déjà portés ; la liste des blocs).
 
@@ -265,6 +267,18 @@ export function Personnaliser({
             <Crayon label={PERSO.modifier(PERSO.pageCrayon)} texte={PERSO.pageCrayon} onClick={() => ouvrir("page")} />
           </div>
           {!disponible && <p className="t-small m-0 rounded-[12px] border border-dashed border-line-2 p-3">{PERSO.basePasPrete}</p>}
+          {/* « Partir d'un modèle » : trois pages toutes faites, adaptées à ce que la page a à montrer */}
+          <ModelesPage
+            disposition={style.disposition}
+            showcase={style.showcase}
+            donnees={donnees}
+            enregistree={enregistre.style}
+            occupe={pending || envoiMedia}
+            onAppliquer={(d, v) => {
+              set("disposition", d);
+              set("showcase", v);
+            }}
+          />
           <EditeurPage
             disposition={style.disposition}
             onChange={(d) => set("disposition", d)}
