@@ -19,6 +19,7 @@
 import { aDuContenu, type DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { STYLE_DEFAUT, type VitrineKey } from "@/lib/profil/catalogue";
 import {
+  DEFAUT_SANS_RADAR,
   DISPOSITION_DEFAUT,
   FORMATS_PERMIS,
   blocsDe,
@@ -207,7 +208,15 @@ export function modeleActuel(actuelle: Disposition, d: DonneesBlocs, showcase: V
   return MODELES_PAGE.find((m) => memePage(appliquerModele(m, actuelle, d), { disposition: actuelle, showcase }))?.cle ?? null;
 }
 
+/**
+ * La page n'a jamais été composée : la page par défaut, avec ou sans radar.
+ * Comparée par contenu : passée d'un composant serveur à un composant
+ * client, la disposition n'est plus la même référence (estDispositionDefaut).
+ */
+export const estDefautParContenu = (d: Disposition) =>
+  estDispositionDefaut(d) || [DISPOSITION_DEFAUT, DEFAUT_SANS_RADAR].some((x) => JSON.stringify(x) === JSON.stringify(d));
+
 /** La page actuelle est-elle la page de départ (jamais composée, ou rétablie par pageDepart) ? */
 export function estPageDepart(actuelle: Disposition, d: DonneesBlocs, showcase: VitrineKey[]): boolean {
-  return estDispositionDefaut(actuelle) || memePage(pageDepart(actuelle, d), { disposition: actuelle, showcase });
+  return estDefautParContenu(actuelle) || memePage(pageDepart(actuelle, d), { disposition: actuelle, showcase });
 }

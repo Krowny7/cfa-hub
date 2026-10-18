@@ -279,7 +279,7 @@ export const DISPOSITION_DEFAUT: Disposition = [
   { k: "radar", f: "heros" },
   { k: "amis", f: "tuile" },
 ];
-const DEFAUT_SANS_RADAR: Disposition = [
+export const DEFAUT_SANS_RADAR: Disposition = [
   { k: "vitrine", f: "bande" },
   { k: "amis", f: "heros" },
 ];

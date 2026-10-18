@@ -15,7 +15,7 @@
 import { blocsDe, estLibre, estMedia, rangees, validerDisposition, DISPOSITION_DEFAUT, ELEMENTS_MAX, FORMATS_PERMIS, type BlocMedia, type Disposition, type Format } from "@/lib/profil/disposition";
 import { aDuContenu, type DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { STYLE_DEFAUT, vitrineDepuis } from "@/lib/profil/catalogue";
-import { MODELES_PAGE, appliquerModele, estPageDepart, modeleActuel, montre, pageDepart, riche, type CleModele, type ModelePage } from "@/lib/profil/modeles-page";
+import { MODELES_PAGE, appliquerModele, estDefautParContenu, estPageDepart, modeleActuel, montre, pageDepart, riche, type CleModele, type ModelePage } from "@/lib/profil/modeles-page";
 import { DISPO_RICHE, RICHE, SOBRE } from "./donnees-blocs-exemple";
 
 let ko = 0;
@@ -200,6 +200,7 @@ console.log("# La page de départ et le modèle actuel");
   check("sans média : la page par défaut elle-même, chiffres par défaut", p.disposition === DISPOSITION_DEFAUT && egal(p.showcase, STYLE_DEFAUT.showcase));
   const pm = pageDepart(avec([img("imagea1"), vid("video01")]), RICHE);
   check("avec médias : la page par défaut, puis les médias en rangée pleine", egal(abrege(pm.disposition), ["vitrine:bande", "radar:heros", "amis:tuile", "media:imagea1:heros", "media:video01:tuile"]));
+  check("jamais composée, même relue (autre référence) : reconnue", estDefautParContenu(JSON.parse(JSON.stringify(DISPOSITION_DEFAUT))) && estDefautParContenu(lu([{ k: "vitrine", f: "bande" }, { k: "amis", f: "heros" }])) && !estDefautParContenu(DISPO_RICHE));
   check("page de départ reconnue", estPageDepart(DISPOSITION_DEFAUT, RICHE, STYLE_DEFAUT.showcase) && estPageDepart(pm.disposition, RICHE, STYLE_DEFAUT.showcase) && !estPageDepart(DISPO_RICHE, RICHE, STYLE_DEFAUT.showcase));
   for (const m of MODELES_PAGE) {
     const r = appliquerModele(m, avec([img("imagea1")]), PEU);
