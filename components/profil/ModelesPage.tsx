@@ -18,8 +18,9 @@ import s from "./EditeurPage.module.css";
 // chiffres clés, ce qui a été adapté, « Appliquer »), dans un repli ouvert
 // d'office si la page n'a jamais été composée. Au téléphone, une ligne de
 // 44 px ouvre la Feuille du site, les cartes empilées (l'ordre des blocs au
-// lieu du plan : tout est sur une colonne). Une page composée à la main
-// demande confirmation, dans la carte (jamais de fenêtre). Après un modèle,
+// lieu du plan : tout est sur une colonne). Remplacer la page demande
+// toujours confirmation, dans la carte (jamais de fenêtre), même juste après
+// un autre modèle ; seule la page de départ intacte s'en passe. Après un modèle,
 // « Revenir à ta page » rétablit la page d'avant le premier modèle appliqué,
 // jusqu'à l'enregistrement (ou « Annuler »). Rien n'est écrit ici :
 // Personnaliser enregistre.
@@ -70,8 +71,8 @@ export function ModelesPage({
   // le cliché ne vaut plus après l'enregistrement, ni une fois revenu à la page enregistrée (« Annuler »)
   const surEnregistree = disposition === enregistree.disposition && memeChiffres(showcase, enregistree.showcase);
   const clicheActif = cliche && cliche.base === enregistree.disposition && !surEnregistree ? cliche : null;
-  // une page composée à la main se remplace après confirmation (la page de départ, un modèle, ou un modèle déjà essayé : sans)
-  const confirmer = !surDepart && actuel === null && !clicheActif;
+  // toute page se remplace après confirmation, même un modèle tout juste appliqué ; seule la page de départ intacte s'en passe
+  const confirmer = !surDepart;
 
   // la confirmation ouverte : le focus sur « Remplacer » ; un toucher ailleurs l'annule
   useEffect(() => {
@@ -132,7 +133,7 @@ export function ModelesPage({
         garder(c);
       }}
     >
-      <p className="m-0 text-[13px] font-semibold">{T.remplacerQuestion}</p>
+      <p className="m-0 text-[13px] font-semibold">{clicheActif ? T.remplacerApresModele : T.remplacerQuestion}</p>
       <div className="flex flex-wrap gap-2">
         <button type="button" data-remplacer={c} className={"btn btn-primary btn-sm" + (telephone ? " min-h-[44px]" : "")} onClick={() => appliquer(c, telephone)} disabled={occupe}>
           {T.remplacer}

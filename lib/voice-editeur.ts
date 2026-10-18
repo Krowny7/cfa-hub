@@ -34,6 +34,8 @@ export const EDITEUR_PAGE = {
   adapte: (mis: string, voulu: string, autres: boolean) => `Adapté : ${mis} au lieu de ${voulu}${autres ? "…" : ""}`,
   dansLOrdre: (noms: string[]) => `Dans l'ordre : ${noms.join(", ")}`,
   remplacerQuestion: "Remplacer ta page ? Tes médias restent, et tu peux revenir en arrière jusqu'à l'enregistrement.",
+  /** un modèle déjà appliqué : les retouches faites depuis se perdent, « Revenir à ta page » ramène la page d'avant le premier */
+  remplacerApresModele: "Remplacer cette page ? Tes retouches depuis le dernier modèle seront perdues ; « Revenir à ta page » ramène celle d'avant.",
   remplacer: "Remplacer",
   garderPage: "Garder ma page",
   applique: (nom: string) => `Modèle « ${nom} » appliqué. Rien n'est enregistré.`,
