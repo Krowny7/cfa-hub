@@ -52,11 +52,11 @@
 }
 
 /* le haut : le score à gauche, le bouton à droite */
-.haut {
+/* à droite du titre : le score (une fois comparé), puis le bouton */
+.droite {
   display: flex;
-  min-height: 32px;
+  flex-shrink: 0;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 /* le radar centré, à sa largeur maximale (--max) */
@@ -65,46 +65,9 @@
   max-width: var(--max, 330px);
   margin: 0 auto;
 }
-/* la colonne : le radar centré verticalement dans la hauteur qui reste */
+/* la colonne et la bande : le radar centré dans la hauteur qui reste */
 .centre {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-}
-/* la bande : le score, le radar au centre, le bouton à droite (dès 1 024 px) ;
-   avant : le score et le bouton en haut, le radar dessous */
-.bande {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-}
-.bandeGauche {
-  grid-column: 1;
-  grid-row: 1;
-}
-.bandeDroite {
-  grid-column: 2;
-  grid-row: 1;
-}
-.bandeRadar {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-@media (min-width: 1024px) {
-  .bande {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 520px) minmax(0, 1fr);
-    gap: 20px;
-  }
-  .bandeGauche {
-    align-self: start;
-  }
-  .bandeRadar {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .bandeDroite {
-    grid-column: 3;
-    justify-self: end;
-  }
 }

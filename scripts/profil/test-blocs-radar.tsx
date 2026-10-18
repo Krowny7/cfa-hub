@@ -80,7 +80,9 @@ check("Folio : pas de bande ; Saisons : pas de héros", !FORMATS_PERMIS.folio.in
     check(`radar chez un autre (${f}) : ${max} px au plus`, r(RadarBloc, AUTRE, f).includes(`--max:${max}px`));
   }
   check("radar chez un autre (colonne) : centré verticalement", r(RadarBloc, AUTRE, "colonne").includes('class="centre"'));
-  check("radar chez un autre (bande) : le bouton à droite", r(RadarBloc, AUTRE, "bande").includes('class="bandeDroite"><button'));
+  const titre = r(RadarBloc, AUTRE, "bande");
+  check("radar chez un autre (bande) : le titre « Statistiques », le bouton à droite, le radar centré", titre.includes(">Statistiques</h3>") && titre.includes('class="droite"><button') && titre.includes('class="centre"'));
+  check("radar chez un autre : le titre « Statistiques » à chaque format", (["tuile", "colonne", "heros"] as Format[]).every((f) => r(RadarBloc, AUTRE, f).includes(">Statistiques</h3>")));
 
   const o = lu(rend(<RadarAutre d={AUTRE} f="tuile" ouvert />));
   // Sforzinda / toi : ETH 71/63 (−8), QM 58/67 (+9), FSA 82/70 (−12), FI 38/57 (+19)
@@ -95,7 +97,7 @@ check("Folio : pas de bande ; Saisons : pas de héros", !FORMATS_PERMIS.folio.in
   check("radar comparé : la moyenne s'efface, ta forme fine à ta couleur", !o.includes('stroke-dasharray="3.5 4"') && o.includes('stroke-width="1.25"') && o.includes("color:#3b6fd6"));
   check("radar comparé : ni bilan ni surtitre « (épais) · toi (fin) »", !o.includes("(épais)") && !o.includes("matières mesurées en commun"));
   const ob = lu(rend(<RadarAutre d={AUTRE} f="bande" ouvert />));
-  check("radar comparé (bande) : le score à gauche", ob.includes('class="bandeGauche"><span') && ob.includes("toi 2 – 2"));
+  check("radar comparé (bande) : le score à droite du titre, avant le bouton", ob.includes("toi 2 – 2") && ob.indexOf("toi 2 – 2") < ob.indexOf("<button") && ob.indexOf(">Statistiques<") < ob.indexOf("toi 2 – 2"));
 
   const a = r(RadarBloc, APERCU, "tuile");
   check("radar en aperçu : bouton grisé, « Ici, la personne qui regarde peut se comparer »", a.includes('disabled=""') && a.includes('title="Ici, la personne qui regarde peut se comparer"') && !a.includes("Aucune de tes matières"));

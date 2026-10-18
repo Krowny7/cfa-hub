@@ -22,6 +22,8 @@ export const BLOCS_RADAR = {
   /** une étiquette rouge est un lien : « M'entraîner en FI · Inès mène de 14 » */
   entrainer: (code: string, nom: string, points: number) => `M'entraîner en ${code} · ${nom} mène de ${nombre(points)}`,
   matieres: "Matières",
+  /** le titre du radar chez un autre */
+  statistiques: "Statistiques",
 
   // Amis (chez un autre : son cercle)
   /** « sur 19 », à droite de la place */

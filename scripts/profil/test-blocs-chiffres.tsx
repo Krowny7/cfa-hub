@@ -179,7 +179,10 @@ for (const [nom, k, Bloc] of BLOCS) {
   for (const f of FORMATS_PERMIS.trophees) {
     const html = rend(<TropheesBloc d={AUTRE} f={f} edition={false} />);
     check(`trophées · ${f} : « 22 », « toi −12 », « toi 0 – 4 »`, html.includes(">22<") && html.includes(`toi ${M}12<`) && html.includes("toi 0 – 4"));
-    check(`trophées · ${f} : les métaux en infobulle (« Or · Sforzinda 2 · toi 1 »), sans leur nom visible`, html.includes('title="Or · Sforzinda 2 · toi 1"') && !html.includes(">Or<") && !html.includes(">Diamant<"));
+    // le nom du métal : en infobulle partout ; écrit sous le nombre en héros et en bande (cases hautes)
+    const nomVisible = f === "heros" || f === "bande";
+    check(`trophées · ${f} : les métaux en infobulle (« Or · Sforzinda 2 · toi 1 »), ${nomVisible ? "leur nom écrit dessous" : "sans leur nom visible"}`, html.includes('title="Or · Sforzinda 2 · toi 1"') && html.includes(">Or<") === nomVisible && html.includes(">Diamant<") === nomVisible);
+    check(`trophées · ${f} : un métal gagné en médaille, à ses couleurs`, html.includes("medaille") && html.includes("--m2:#E2B13B"));
     check(`trophées · ${f} : 4 jetons courts (−1, −1, −4, −6)`, [`${M}1<`, `${M}4<`, `${M}6<`].every((x) => html.includes(x)) && compte(html, `>${M}1<`) === 2);
     const parSource = f === "colonne" || f === "bande";
     check(`trophées · ${f} : « Par source » ${parSource ? "présent" : "absent"}`, html.includes("Par source") === parSource);

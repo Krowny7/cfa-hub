@@ -19,8 +19,8 @@ import r from "./radar.module.css";
 
 // Le bloc « Radar des matières » (spec § 2). Chez soi : inchangé (« Tes
 // matières », la moyenne, plus sûre / à reprendre, « X en tête » en héros,
-// les barres, le repli « Les 10 matières »). Chez un autre : le radar seul
-// et le bouton « Me comparer » ; une fois comparé, ta forme fine par-dessus
+// les barres, le repli « Les 10 matières »). Chez un autre : un petit titre
+// (« Statistiques »), le radar et le bouton « Me comparer » ; une fois comparé, ta forme fine par-dessus
 // la sienne, le jeton court de chaque matière (« 71 −6 », une étiquette
 // rouge mène à l'entraînement) et le score de la tuile (« toi 4 – 6 »). Le
 // choix de comparer est retenu par visiteur (localStorage). En aperçu, le
@@ -124,25 +124,18 @@ export function RadarAutre({ d, f, ouvert = false }: { d: DonneesBlocs; f: Forma
     </div>
   );
   const label = T.radarDe(d.nom, false);
-  if (f === "bande")
-    return (
-      <Coque f={f} label={label}>
-        <div className={r.bande}>
-          <div className={r.bandeGauche}>{scoreTuile}</div>
-          <div className={r.bandeRadar}>{radar}</div>
-          <div className={r.bandeDroite}>{bouton}</div>
-        </div>
-      </Coque>
-    );
+  // un petit titre, puis à droite le score (une fois comparé) et le bouton
+  const droite =
+    bouton || scoreTuile ? (
+      <span className={r.droite}>
+        {scoreTuile}
+        {bouton}
+      </span>
+    ) : undefined;
   return (
     <Coque f={f} label={label}>
-      {(bouton || scoreTuile) && (
-        <div className={r.haut}>
-          <span>{scoreTuile}</span>
-          {bouton}
-        </div>
-      )}
-      {f === "colonne" ? <div className={r.centre}>{radar}</div> : radar}
+      <Etiquette f={f} icone={<IconeRadar size={17} aria-hidden />} titre={R.statistiques} droite={droite} />
+      {f === "colonne" || f === "bande" ? <div className={r.centre}>{radar}</div> : radar}
     </Coque>
   );
 }
