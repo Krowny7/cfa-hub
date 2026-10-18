@@ -167,7 +167,8 @@
   border: 1px solid var(--line-2);
   background: var(--surface-2);
 }
-.planChoisi {
+.planChoisi,
+.planMedia {
   border-color: var(--pen);
   background: var(--pen);
 }

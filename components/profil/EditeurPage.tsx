@@ -83,6 +83,36 @@ function Vignette({ f }: { f: Format }) {
   );
 }
 
+/**
+ * Le plan d'une page : une ligne de 12 colonnes par rangée, une case par
+ * élément (infobulle « Amis · Tuile »), les places libres en pointillé. La
+ * carte du plan (le bloc choisi à l'encre rouge) et la vignette d'un modèle
+ * (ModelesPage : ses médias à l'encre rouge).
+ */
+export function PlanPage({ disposition, choisi = null, medias = false, label = T.plan, className = "" }: { disposition: Disposition; choisi?: string | null; medias?: boolean; label?: string; className?: string }) {
+  return (
+    <div className={"flex flex-col gap-[3px] " + className} role="img" aria-label={label}>
+      {rangees(disposition).map((r, k) => (
+        <div key={k} className={s.plan}>
+          {r.cases.map((c) =>
+            estLibre(c.e) ? (
+              <span key={cleDe(c.e, c.i)} className={s.planLibre} style={{ gridColumn: `span ${portee(c.f)}` }} title={T.planLibre} />
+            ) : (
+              <span
+                key={cleDe(c.e, c.i)}
+                className={s.planCase + (cleDe(c.e, c.i) === choisi ? " " + s.planChoisi : medias && estMedia(c.e) ? " " + s.planMedia : "")}
+                style={{ gridColumn: `span ${portee(c.f)}` }}
+                title={T.planCase(nomBloc(c.e as Bloc), nomFormat(c.f))}
+              />
+            ),
+          )}
+          {r.libre > 0 && <span className={s.planLibre} style={{ gridColumn: `span ${r.libre}` }} title={T.planLibre} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Ordinateur (dès 1 024 px) : les formats et les places libres jouent. */
 const grandEcran = () => window.matchMedia("(min-width: 1024px)").matches;
 
@@ -716,25 +746,7 @@ export function EditeurPage({
           <p className={"t-small m-0 " + s.grandSeul}>{T.aideOrdinateur}</p>
           <p className={"t-small m-0 " + s.petitSeul}>{T.aideTelephone}</p>
         </div>
-        <div className={"flex w-[180px] flex-col gap-[3px] " + s.grandSeul} role="img" aria-label={T.plan}>
-          {lignes.map((r, k) => (
-            <div key={k} className={s.plan}>
-              {r.cases.map((c) =>
-                estLibre(c.e) ? (
-                  <span key={cleDe(c.e, c.i)} className={s.planLibre} style={{ gridColumn: `span ${portee(c.f)}` }} title={T.planLibre} />
-                ) : (
-                  <span
-                    key={cleDe(c.e, c.i)}
-                    className={s.planCase + (cleDe(c.e, c.i) === choisi ? " " + s.planChoisi : "")}
-                    style={{ gridColumn: `span ${portee(c.f)}` }}
-                    title={T.planCase(nomBloc(c.e as Bloc), nomFormat(c.f))}
-                  />
-                ),
-              )}
-              {r.libre > 0 && <span className={s.planLibre} style={{ gridColumn: `span ${r.libre}` }} title={T.planLibre} />}
-            </div>
-          ))}
-        </div>
+        <PlanPage disposition={d} choisi={choisi} className={"w-[180px] " + s.grandSeul} />
       </div>
 
       {/* la page elle-même */}
