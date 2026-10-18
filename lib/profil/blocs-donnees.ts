@@ -90,5 +90,7 @@ export function aDuContenu(b: Bloc, d: DonneesBlocs): boolean {
       return d.journal !== null;
     case "saisons":
       return !!d.saisons && (!!d.saisons.courante || d.saisons.palmares.length > 0);
+    case "carte":
+      return !!(b.titre || b.texte || b.img);
   }
 }

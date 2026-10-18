@@ -25,7 +25,7 @@ import {
   SectionVitrine,
   type Brouillon,
 } from "@/components/profil/SectionsPersonnaliser";
-import { enregistrerProfil } from "@/app/moi/profil/actions";
+import { enregistrerProfil, rangerFichiersEnAttente } from "@/app/moi/profil/actions";
 import { poserSceaux } from "@/lib/profil/actions-sceaux";
 import { createClient } from "@/lib/supabase/browser";
 import { posesDe } from "@/lib/profil/sceaux";
@@ -287,6 +287,7 @@ export function Personnaliser({
             onShowcase={(v) => set("showcase", v)}
             supabase={supabase}
             onEnvoi={setEnvoiMedia}
+            ranger={(d) => rangerFichiersEnAttente(d)}
             banqueGifs={banqueGifs}
           />
         </section>

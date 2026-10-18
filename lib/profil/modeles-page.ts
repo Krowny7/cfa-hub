@@ -1,6 +1,7 @@
 // Les modèles de la page du profil (Personnaliser › Ta page › « Partir d'un
 // modèle ») : trois pages toutes faites, Compétiteur, Étudiant et
-// Collectionneur, chacune sur 3 rangées pleines, aux 3 formats, avec ses 3
+// Collectionneur, chacune en rangées pleines (Collectionneur : un héros, une
+// colonne à droite, deux tuiles sous le héros, comme Réviser), avec ses 3
 // chiffres clés. Un modèle s'adapte à ce que la page a à montrer au moment
 // où on l'applique : chaque case a ses remplaçants (« sinon »), puis un
 // filet ; une tuile peut dire « rien pour l'instant », mais un héros ou une
@@ -9,7 +10,10 @@
 // Les médias du joueur sont tous gardés, dans leur ordre, avec leurs champs
 // (légende, cadrage, couverture) : d'abord dans les emplacements média du
 // modèle (Collectionneur), puis à la fin, en rangées pleines ; seul leur
-// format change. Un bloc qui sort de la page est masqué et garde ses
+// format change. Les cartes du joueur restent aussi, après les médias, en
+// rangées pleines de la même façon ; un module resté sur la page garde son
+// image en haut (celle d'un module qui sort part : la confirmation le
+// couvre, et « Revenir à ta page » la rend). Un bloc qui sort de la page est masqué et garde ses
 // réglages. Appliqué, un modèle donne une Disposition ordinaire, enregistrée
 // comme les autres (rien de plus en base) : le joueur la change à son gré.
 // La page de départ (DISPOSITION_DEFAUT) n'est pas un modèle : on y revient
@@ -23,16 +27,20 @@ import {
   DISPOSITION_DEFAUT,
   FORMATS_PERMIS,
   blocsDe,
+  estCarte,
   estDispositionDefaut,
+  estFixe,
   estMedia,
   formatPermis,
-  genreMedia,
+  genreDe,
   normaliser,
+  type BlocCarte,
   type BlocMedia,
   type CleBloc,
   type Disposition,
   type ElementPage,
   type Format,
+  type ImageHaut,
 } from "@/lib/profil/disposition";
 import { compter } from "@/lib/trophees";
 
@@ -68,15 +76,14 @@ export const MODELES_PAGE: ModelePage[] = [
     ],
   },
   {
-    // Chiffres T · Média 1 H / Folio T · Trophées T · Média 2 T / Saisons B
+    // Média 1 H · Folio C (à droite) / Chiffres T · Trophées T (sous le héros) / Saisons B
     cle: "collection",
     chiffres: ["questions", "serie", "duels"],
     cases: [
-      { k: "vitrine", f: "tuile" },
       { k: "media", f: "heros", sinon: ["folio", "trophees", "radar"] },
-      { k: "folio", f: "tuile", sinon: ["amis", "reponses"] },
+      { k: "folio", f: "colonne", sinon: ["amis", "reponses"] },
+      { k: "vitrine", f: "tuile" },
       { k: "trophees", f: "tuile", sinon: ["reponses", "amis"] },
-      { k: "media", f: "tuile", sinon: ["amis", "reponses", "journal"] },
       { k: "saisons", f: "bande", sinon: ["trophees", "amis", "radar"] },
     ],
   },
@@ -121,40 +128,49 @@ export function riche(k: CleBloc, d: DonneesBlocs): boolean {
 /** Le bloc `k` peut-il aller dans une case de format `f` ? Pas encore posé, à un format permis, et assez fourni pour la case. */
 function accepte(k: CleBloc, f: Format, d: DonneesBlocs, poses: Set<CleBloc>): boolean {
   if (poses.has(k) || !FORMATS_PERMIS[k].includes(f)) return false;
-  return f === "tuile" || SURS.has(k) ? montre(k, d) : riche(k, d);
+  return f === "tuile" || f === "colonne" || SURS.has(k) ? montre(k, d) : riche(k, d);
+}
+
+/** L'image en haut de chaque module resté sur la page (un modèle la garde). */
+function garderImages(out: ElementPage[], actuelle: Disposition): ElementPage[] {
+  const images = new Map<CleBloc, ImageHaut>();
+  for (const e of actuelle) if (estFixe(e) && e.img) images.set(e.k, e.img);
+  return out.map((e) => (estFixe(e) && images.has(e.k) && e.k !== "progression" ? { ...e, img: images.get(e.k)! } : e));
 }
 
 /**
- * Les médias de fin, en rangées pleines : 1 image en bande ; 1 GIF ou 1
- * vidéo en héros, avec une tuile bouche-trou (le premier bloc masqué qui
- * montre, sinon la rangée reste incomplète) ; 2 : héros · tuile ; 3 : trois
- * tuiles ; 4 : deux fois héros · tuile ; 5 : trois tuiles puis héros ·
- * tuile ; 6 : deux fois trois tuiles.
+ * Les médias et les cartes de fin (les médias d'abord), en rangées pleines :
+ * 1 image en bande ; 1 GIF, 1 vidéo ou 1 carte en héros, avec une tuile
+ * bouche-trou (le premier bloc masqué qui montre, sinon la rangée reste
+ * incomplète) ; 2 : héros · tuile ; 3 : trois tuiles ; 4 : deux fois héros ·
+ * tuile ; 5 : trois tuiles puis héros · tuile ; 6 : deux fois trois tuiles ;
+ * 7 à 9 (6 médias et 3 cartes au plus) : trois tuiles, puis comme 4 à 6.
  */
-export function mediasFin(medias: BlocMedia[], d: DonneesBlocs, poses: Set<CleBloc>): ElementPage[] {
-  const tailles = ({ 0: [], 1: [1], 2: [2], 3: [3], 4: [2, 2], 5: [3, 2], 6: [3, 3] } as Record<number, number[]>)[medias.length] ?? [];
+export function mediasFin(siens: (BlocMedia | BlocCarte)[], d: DonneesBlocs, poses: Set<CleBloc>): ElementPage[] {
+  const TAILLES: Record<number, number[]> = { 0: [], 1: [1], 2: [2], 3: [3], 4: [2, 2], 5: [3, 2], 6: [3, 3], 7: [3, 2, 2], 8: [3, 3, 2], 9: [3, 3, 3] };
+  const tailles = TAILLES[siens.length] ?? [];
+  const au = (b: BlocMedia | BlocCarte, f: Format): BlocMedia | BlocCarte => ({ ...b, f: formatPermis(genreDe(b), f) });
   const out: ElementPage[] = [];
   let n = 0;
   for (const t of tailles) {
-    const rangee = medias.slice(n, n + t);
+    const rangee = siens.slice(n, n + t);
     n += t;
     if (t === 1) {
       const m = rangee[0];
-      const g = genreMedia(m);
-      if (FORMATS_PERMIS[g].includes("bande")) out.push({ ...m, f: "bande" });
+      if (FORMATS_PERMIS[genreDe(m)].includes("bande")) out.push({ ...m, f: "bande" });
       else {
-        out.push({ ...m, f: formatPermis(g, "heros") });
+        out.push(au(m, "heros"));
         const bouche = FILET_TUILE.find((k) => accepte(k, "tuile", d, poses));
         if (bouche) {
           poses.add(bouche);
           out.push({ k: bouche, f: "tuile" });
         }
       }
-    } else if (t === 2) out.push({ ...rangee[0], f: formatPermis(genreMedia(rangee[0]), "heros") }, { ...rangee[1], f: formatPermis(genreMedia(rangee[1]), "tuile") });
-    else out.push(...rangee.map((m) => ({ ...m, f: formatPermis(genreMedia(m), "tuile") })));
+    } else if (t === 2) out.push(au(rangee[0], "heros"), au(rangee[1], "tuile"));
+    else out.push(...rangee.map((m) => au(m, "tuile")));
   }
-  // au-delà de 6 (jamais : la validation borne) : en tuiles
-  out.push(...medias.slice(n).map((m) => ({ ...m, f: formatPermis(genreMedia(m), "tuile") })));
+  // au-delà de 9 (jamais : la validation borne) : en tuiles
+  out.push(...siens.slice(n).map((m) => au(m, "tuile")));
   return out;
 }
 
@@ -172,19 +188,19 @@ export function appliquerModele(m: ModelePage, actuelle: Disposition, d: Donnees
   for (const c of m.cases) {
     if (c.k === "media" && n < medias.length) {
       const x = medias[n++];
-      out.push({ ...x, f: formatPermis(genreMedia(x), c.f) });
+      out.push({ ...x, f: formatPermis(genreDe(x), c.f) });
       continue;
     }
     const candidats = c.k === "media" ? c.sinon : [c.k, ...(c.sinon ?? [])];
-    const k = candidats.find((x) => accepte(x, c.f, d, poses)) ?? (c.f === "tuile" ? FILET_TUILE : FILET_GRAND).find((x) => accepte(x, c.f, d, poses));
+    const k = candidats.find((x) => accepte(x, c.f, d, poses)) ?? (c.f === "tuile" || c.f === "colonne" ? FILET_TUILE : FILET_GRAND).find((x) => accepte(x, c.f, d, poses));
     // aucun candidat : la case tombe (une bande, sans trou ; une tuile ou un héros, cas extrême)
     if (!k) continue;
     poses.add(k);
     out.push({ k, f: c.f });
     if (k !== c.k) remplaces.push({ voulu: c.k, mis: k });
   }
-  out.push(...mediasFin(medias.slice(n), d, poses));
-  return { disposition: normaliser(out), showcase: [...m.chiffres], remplaces };
+  out.push(...mediasFin([...medias.slice(n), ...actuelle.filter(estCarte)], d, poses));
+  return { disposition: normaliser(garderImages(out, actuelle)), showcase: [...m.chiffres], remplaces };
 }
 
 /**
@@ -193,11 +209,12 @@ export function appliquerModele(m: ModelePage, actuelle: Disposition, d: Donnees
  * référence : son invitation revient), avec les chiffres clés par défaut.
  */
 export function pageDepart(actuelle: Disposition, d: DonneesBlocs): PageModele {
-  const medias = blocsDe(actuelle).filter(estMedia);
+  const siens = [...blocsDe(actuelle).filter(estMedia), ...actuelle.filter(estCarte)];
   const showcase = [...STYLE_DEFAUT.showcase];
-  if (!medias.length) return { disposition: DISPOSITION_DEFAUT, showcase, remplaces: [] };
-  const poses = new Set<CleBloc>(blocsDe(DISPOSITION_DEFAUT).flatMap((b) => (estMedia(b) ? [] : [b.k])));
-  return { disposition: normaliser([...DISPOSITION_DEFAUT, ...mediasFin(medias, d, poses)]), showcase, remplaces: [] };
+  const base = garderImages(DISPOSITION_DEFAUT, actuelle);
+  if (!siens.length && JSON.stringify(base) === JSON.stringify(DISPOSITION_DEFAUT)) return { disposition: DISPOSITION_DEFAUT, showcase, remplaces: [] };
+  const poses = new Set<CleBloc>(blocsDe(DISPOSITION_DEFAUT).flatMap((b) => (estFixe(b) ? [b.k] : [])));
+  return { disposition: normaliser([...base, ...mediasFin(siens, d, poses)]), showcase, remplaces: [] };
 }
 
 const memePage = (a: { disposition: Disposition; showcase: VitrineKey[] }, b: { disposition: Disposition; showcase: VitrineKey[] }) =>
@@ -218,5 +235,6 @@ export const estDefautParContenu = (d: Disposition) =>
 
 /** La page actuelle est-elle la page de départ (jamais composée, ou rétablie par pageDepart) ? */
 export function estPageDepart(actuelle: Disposition, d: DonneesBlocs, showcase: VitrineKey[]): boolean {
-  return estDefautParContenu(actuelle) || memePage(pageDepart(actuelle, d), { disposition: actuelle, showcase });
+  // la page par défaut avec d'autres chiffres clés n'est plus la page de départ : y revenir les change
+  return (estDefautParContenu(actuelle) && showcase.join("|") === STYLE_DEFAUT.showcase.join("|")) || memePage(pageDepart(actuelle, d), { disposition: actuelle, showcase });
 }

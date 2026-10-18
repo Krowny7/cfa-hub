@@ -1,9 +1,12 @@
 // La disposition d'un profil : la page sous l'en-tête, une LISTE ORDONNÉE
 // de blocs (chiffres clés, radar, amis…, et les médias du joueur : ses
 // images et sa vidéo, un edit court enregistré sur son téléphone, ou des GIF
-// choisis dans la banque KLIPY, affichés depuis son serveur). Chaque bloc a
-// l'un des 3 formats du site (Réviser) : tuile (1/3), héros (2/3) ou bande
-// (pleine largeur), sur la grille de 12 colonnes. Les rangées se forment
+// choisis dans la banque KLIPY, affichés depuis son serveur ; et ses cartes,
+// une image en haut puis un titre et quelques lignes à lui). Chaque bloc a
+// l'un des 4 formats du site (Réviser) : tuile (1/3), héros (2/3), bande
+// (pleine largeur) ou colonne (1/3 sur deux lignes, comme la Bibliothèque),
+// sur la grille de 12 colonnes. Un module ou une carte peut porter une image
+// en haut (img). Les rangées se forment
 // toutes seules, dans l'ordre (rangees) ; aucun bloc ne change de format
 // tout seul : une rangée incomplète garde sa place libre, et une case vide
 // choisie par le joueur reste une place libre (élément « libre »), vide en
@@ -40,24 +43,42 @@ export const BLOCS = [
 ] as const;
 export type CleBloc = (typeof BLOCS)[number]["k"];
 
-// ── Les 3 formats du site (Réviser) ────────────────────────────────────
-export type Format = "tuile" | "heros" | "bande";
+// ── Les 4 formats du site (Réviser) ────────────────────────────────────
+export type Format = "tuile" | "heros" | "bande" | "colonne";
 export type Portee = 4 | 8 | 12;
 export const FORMATS: { key: Format; nom: string; part: string; portee: Portee }[] = [
   { key: "tuile", nom: "Tuile", part: "1/3", portee: 4 },
+  { key: "colonne", nom: "Colonne", part: "1/3 · 2 lignes", portee: 4 },
   { key: "heros", nom: "Héros", part: "2/3", portee: 8 },
   { key: "bande", nom: "Bande", part: "1/1", portee: 12 },
 ];
 /** Le nombre de colonnes (sur 12) d'un format. */
-export const portee = (f: Format): Portee => (f === "tuile" ? 4 : f === "heros" ? 8 : 12);
+export const portee = (f: Format): Portee => (f === "tuile" || f === "colonne" ? 4 : f === "heros" ? 8 : 12);
+/** Le nombre de lignes d'un format : 2 pour la colonne, 1 sinon. */
+export const hauteur = (f: Format): 1 | 2 => (f === "colonne" ? 2 : 1);
 export const nomFormat = (f: Format) => FORMATS.find((x) => x.key === f)!.nom;
-const estFormat = (f: unknown): f is Format => f === "tuile" || f === "heros" || f === "bande";
+const estFormat = (f: unknown): f is Format => f === "tuile" || f === "heros" || f === "bande" || f === "colonne";
 
 export type GenreMedia = "image" | "gif" | "video";
-/** ce qui décide des formats permis : la clé d'un bloc fixe, ou le genre d'un média */
-export type GenreBloc = CleBloc | GenreMedia;
+/** ce qui décide des formats permis : la clé d'un bloc fixe, le genre d'un média, ou la carte */
+export type GenreBloc = CleBloc | GenreMedia | "carte";
 
-export type BlocFixe = { k: CleBloc; f: Format };
+/**
+ * Une image en haut d'un module ou d'une carte (la moitié haute, comme la
+ * Bibliothèque) : envoyée par le joueur dans son dossier d'images, sous le
+ * même nom exact qu'un média (`<id>.<ext>`).
+ */
+export type ImageHaut = {
+  id: string;
+  url: string;
+  /** largeur / hauteur */
+  ratio: number;
+  /** le point focal vertical, 0 (haut) à 100 (bas) ; absent : 50 */
+  y?: number;
+};
+export type BlocFixe = { k: CleBloc; f: Format; img?: ImageHaut };
+/** Une carte : une image en haut (facultative), un titre et quelques lignes écrits par le joueur. */
+export type BlocCarte = { k: "carte"; id: string; titre: string; texte: string | null; img?: ImageHaut; f: Format };
 export type BlocMedia = {
   k: "media";
   id: string;
@@ -79,9 +100,11 @@ export type BlocMedia = {
   couverture?: number;
   f: Format;
 };
-export type Bloc = BlocFixe | BlocMedia;
+export type Bloc = BlocFixe | BlocMedia | BlocCarte;
+/** les formats d'une place libre (une bande ne reste jamais vide) */
+export type FormePlace = "tuile" | "heros" | "colonne";
 /** Une place gardée libre (venue d'une case vide d'avant) : rien en vue publique, « + Choisir un module » en Personnaliser. */
-export type PlaceLibre = { k: "libre"; f: "tuile" | "heros" };
+export type PlaceLibre = { k: "libre"; f: FormePlace };
 export type ElementPage = Bloc | PlaceLibre;
 /** La page sous l'en-tête : une liste ordonnée ; les rangées se forment seules (rangees). */
 export type Disposition = ElementPage[];
@@ -100,6 +123,16 @@ export const VIDEO_MAX_SECONDES = 60;
 export const VIDEO_MAX_OCTETS = 30 * 1024 * 1024;
 export const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 export const LEGENDE_MAX = 80;
+/** les cartes : 3 par page, un titre d'une ligne, quelques lignes de texte */
+export const CARTES_MAX = 3;
+export const TITRE_CARTE_MAX = 60;
+export const TEXTE_CARTE_MAX = 280;
+/**
+ * les images en haut des modules et des cartes (le dossier d'images en tient
+ * 12 : 6 médias, 4 images en haut, et 2 envois en attente ; au-delà, l'éditeur
+ * fait ranger le dossier par le serveur, rangerFichiersEnAttente, puis renvoie)
+ */
+export const IMAGES_HAUT_MAX = 4;
 /** côté le plus long d'une image, après réduction dans le navigateur */
 export const IMAGE_MAX_PX = 2400;
 
@@ -116,6 +149,9 @@ const nomFichier = (id: string, video: boolean) => new RegExp(`^${id}[.](${video
 const adresseRelue = (bucket: string) => new RegExp(`^https:[/][/][A-Za-z0-9.:-]+[/]storage[/]v1[/]object[/]public[/]${bucket}[/][0-9a-f-]{36}[/]([^/]+)$`);
 
 export const estMedia = (e: ElementPage): e is BlocMedia => e.k === "media";
+export const estCarte = (e: ElementPage): e is BlocCarte => e.k === "carte";
+/** un module (bloc fixe) : ni média, ni carte, ni place libre */
+export const estFixe = (e: ElementPage): e is BlocFixe => e.k !== "media" && e.k !== "carte" && e.k !== "libre";
 export const estLibre = (e: ElementPage): e is PlaceLibre => e.k === "libre";
 export const estBloc = (e: ElementPage): e is Bloc => e.k !== "libre";
 export const estGif = (b: BlocMedia) => b.source === "klipy" || /[.]gif$/i.test(b.url);
@@ -123,27 +159,35 @@ export const estVideo = (b: ElementPage) => estMedia(b) && b.type === "video";
 export const infoBloc = (k: CleBloc) => BLOCS.find((b) => b.k === k)!;
 export const genreMedia = (b: BlocMedia): GenreMedia => (b.type === "video" ? "video" : estGif(b) ? "gif" : "image");
 export const genreDe = (b: Bloc): GenreBloc => (estMedia(b) ? genreMedia(b) : b.k);
-/** la clé React d'un élément : l'id d'un média, la clé d'un bloc, « libre-<index> » */
-export const cleDe = (e: ElementPage, i: number) => (estMedia(e) ? e.id : estLibre(e) ? `libre-${i}` : e.k);
-export const nomBloc = (b: Bloc) => (estMedia(b) ? { image: "Image", gif: "GIF", video: "Vidéo" }[genreMedia(b)] : infoBloc(b.k).nom);
+/** la clé React d'un élément : l'id d'un média ou d'une carte, la clé d'un bloc, « libre-<index> » */
+export const cleDe = (e: ElementPage, i: number) => (estMedia(e) || estCarte(e) ? e.id : estLibre(e) ? `libre-${i}` : e.k);
+export const nomBloc = (b: Bloc) => (estMedia(b) ? { image: "Image", gif: "GIF", video: "Vidéo" }[genreMedia(b)] : estCarte(b) ? b.titre || "Carte" : infoBloc(b.k).nom);
+/** Peut-il porter une image en haut ? Les modules (sauf la courbe de progression, qui a sa propre carte) et les cartes. */
+export const peutAvoirImage = (b: Bloc) => estCarte(b) || (estFixe(b) && b.k !== "progression");
+/** Les images en haut posées sur la page. */
+export const imagesHaut = (d: Disposition): ImageHaut[] => d.flatMap((e) => ((estFixe(e) || estCarte(e)) && e.img ? [e.img] : []));
+/** Les fichiers du joueur dont la page se sert (médias envoyés et images en haut) : le ménage garde ceux-là. */
+export const fichiersGardes = (d: Disposition): Set<string> =>
+  new Set([...blocsDe(d).filter(estMedia).map((b) => b.url), ...imagesHaut(d).map((x) => x.url)].map((u) => u.split("/").pop() ?? ""));
 /** Tous les blocs (sans les places libres), dans l'ordre de lecture. */
 export const blocsDe = (d: Disposition): Bloc[] => d.filter(estBloc);
 
 // ── Formats permis, format par défaut, refus ───────────────────────────
 /** Les formats proposés pour chaque genre de bloc (ceux où il est beau). */
 export const FORMATS_PERMIS: Record<GenreBloc, Format[]> = {
-  vitrine: ["tuile", "heros", "bande"],
-  radar: ["tuile", "heros", "bande"],
-  amis: ["tuile", "heros", "bande"],
-  reponses: ["tuile", "heros", "bande"],
-  trophees: ["tuile", "heros", "bande"],
+  vitrine: ["tuile", "colonne", "heros", "bande"],
+  radar: ["tuile", "colonne", "heros", "bande"],
+  amis: ["tuile", "colonne", "heros", "bande"],
+  reponses: ["tuile", "colonne", "heros", "bande"],
+  trophees: ["tuile", "colonne", "heros", "bande"],
   progression: ["heros", "bande"],
-  folio: ["tuile", "heros"],
-  journal: ["tuile", "heros"],
-  saisons: ["tuile", "bande"],
-  image: ["tuile", "heros", "bande"],
-  gif: ["tuile", "heros"],
-  video: ["tuile", "heros"],
+  folio: ["tuile", "colonne", "heros"],
+  journal: ["tuile", "colonne", "heros"],
+  saisons: ["tuile", "colonne", "bande"],
+  image: ["tuile", "colonne", "heros", "bande"],
+  gif: ["tuile", "colonne", "heros"],
+  video: ["tuile", "colonne", "heros"],
+  carte: ["tuile", "colonne", "heros"],
 };
 /** Le format d'un bloc qu'on ajoute : le plus naturel pour lui. */
 export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
@@ -159,6 +203,7 @@ export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
   image: "heros",
   gif: "tuile",
   video: "tuile",
+  carte: "colonne",
 };
 export const formatsDe = (b: Bloc): Format[] => FORMATS_PERMIS[genreDe(b)];
 
@@ -177,40 +222,106 @@ export function raisonRefus(b: Bloc, f: Format): string {
   if (g === "gif") return "Le GIF ne va pas en bande : il serait recadré trop bas.";
   if (g === "progression") return "La courbe de progression a besoin d'au moins deux tiers de la largeur.";
   if (g === "folio" || g === "journal") return `${nomBloc(b)} ne va pas en bande : trop peu de contenu pour toute la largeur.`;
-  if (g === "saisons") return "Les saisons vont en tuile ou en bande (le palmarès en ligne).";
+  if (g === "saisons") return "Les saisons vont en tuile, en colonne ou en bande (le palmarès en ligne).";
+  if (g === "carte") return "La carte ne va pas en bande : son image serait recadrée trop bas.";
   return `${nomFormat(f)} : pas pour ce bloc.`;
 }
 
 // ── Les rangées ─────────────────────────────────────────────────────────
-export type CaseGrille = { e: ElementPage; i: number; f: Format };
+/** Une case : son élément, son index, son format, et sa place dès 1 024 px (colonne de départ 1 à 12, ligne 1 ou 2 de sa rangée). */
+export type CaseGrille = { e: ElementPage; i: number; f: Format; col: number; ligne: 1 | 2 };
+/**
+ * La fin incomplète d'une ligne : la place qui suit son dernier élément.
+ * `combler` : la 2e ligne d'une rangée double dont la 1re n'est pas pleine ;
+ * on y pose en gardant d'abord le reste de la 1re libre (une place libre de
+ * ce format), sinon le bloc monterait dans la 1re ligne.
+ */
+export type FinLigne = { ligne: 1 | 2; col: number; portee: 4 | 8; apres: number; combler?: "tuile" | "heros" };
 export type RangeeGrille = {
   cases: CaseGrille[];
-  /** colonnes libres à droite : 0, 4 ou 8 */
-  libre: 0 | 4 | 8;
+  /** 2 : une rangée double, où une colonne tient deux lignes, à gauche ou à droite */
+  lignes: 1 | 2;
+  /** les fins de ligne incomplètes, au plus une par ligne */
+  fins: FinLigne[];
 };
 
 /**
  * Les rangées : les éléments dans l'ordre, sur 12 colonnes. Un élément qui
  * ne tient plus dans la rangée en ouvre une nouvelle. Avec 4 / 8 / 12, une
- * rangée est pleine (12) ou laisse 4 ou 8 colonnes libres : `libre` le dit.
- * Personne ne s'élargit.
+ * rangée est pleine (12) ou laisse 4 ou 8 colonnes libres. Personne ne
+ * s'élargit.
+ * La colonne (4 colonnes, deux lignes) fait une rangée double : en tête de
+ * rangée, elle se met à gauche et les éléments suivants remplissent les 8
+ * colonnes à sa droite, sur deux lignes ; après un héros ou deux tuiles (ou
+ * une tuile, sa place à côté restant libre), elle se met à droite et les
+ * éléments suivants font la 2e ligne. Une bande, une autre colonne, ou un
+ * élément qui ne tient plus ferme la rangée double.
  */
 export function rangees(d: Disposition): RangeeGrille[] {
   const out: RangeeGrille[] = [];
   let cases: CaseGrille[] = [];
-  let pris = 0;
+  // rangée double : la colonne (son index) et la première colonne des 8 à côté d'elle
+  let double: { i: number; zone: number } | null = null;
+  let ligne: 1 | 2 = 1;
+  // colonnes prises : sur 12 (rangée simple), ou sur 8 par ligne (rangée double)
+  const pris = [0, 0];
   const fermer = () => {
-    if (!cases.length) return;
-    out.push({ cases, libre: (12 - pris) as 0 | 4 | 8 });
+    if (cases.length) {
+      const fins: FinLigne[] = [];
+      const dernier = cases[cases.length - 1].i;
+      if (!double) {
+        if (pris[0] < 12) fins.push({ ligne: 1, col: 1 + pris[0], portee: (12 - pris[0]) as 4 | 8, apres: dernier });
+      } else {
+        const dbl = double;
+        const fin = (l: 1 | 2) => cases.filter((c) => c.ligne === l && c.i !== dbl.i).pop()?.i ?? null;
+        const un = fin(1);
+        const deux = fin(2);
+        if (pris[0] < 8) fins.push({ ligne: 1, col: dbl.zone + pris[0], portee: (8 - pris[0]) as 4 | 8, apres: un ?? dbl.i });
+        if (pris[1] < 8) {
+          // colonne à droite : la 2e ligne suit la colonne ; à gauche, elle suit la 1re ligne, qu'il faut d'abord combler
+          const combler = deux === null && dbl.zone === 5 && pris[0] < 8 ? (pris[0] === 0 ? "heros" : "tuile") : undefined;
+          fins.push({ ligne: 2, col: dbl.zone + pris[1], portee: (8 - pris[1]) as 4 | 8, apres: deux ?? dernier, ...(combler ? { combler } : {}) });
+        }
+      }
+      out.push({ cases, lignes: double ? 2 : 1, fins });
+    }
     cases = [];
-    pris = 0;
+    double = null;
+    ligne = 1;
+    pris[0] = pris[1] = 0;
   };
   d.forEach((e, i) => {
     const p = portee(e.f);
-    if (pris + p > 12) fermer();
-    cases.push({ e, i, f: e.f });
-    pris += p;
-    if (pris === 12) fermer();
+    if (e.f === "colonne") {
+      if (double) fermer();
+      // en tête de rangée : à gauche ; après ce qui est déjà posé : à droite, la suite fait la 2e ligne
+      double = pris[0] === 0 ? { i, zone: 5 } : { i, zone: 1 };
+      cases.push({ e, i, f: e.f, col: pris[0] === 0 ? 1 : 9, ligne: 1 });
+      if (pris[0] > 0) ligne = 2;
+      return;
+    }
+    if (double) {
+      if (p <= 8 && ligne === 1) {
+        if (pris[0] + p <= 8) {
+          cases.push({ e, i, f: e.f, col: double.zone + pris[0], ligne: 1 });
+          pris[0] += p;
+          if (pris[0] === 8) ligne = 2;
+          return;
+        }
+        ligne = 2;
+      }
+      if (p <= 8 && pris[1] + p <= 8) {
+        cases.push({ e, i, f: e.f, col: double.zone + pris[1], ligne: 2 });
+        pris[1] += p;
+        if (pris[1] === 8) fermer();
+        return;
+      }
+      fermer();
+    }
+    if (pris[0] + p > 12) fermer();
+    cases.push({ e, i, f: e.f, col: 1 + pris[0], ligne: 1 });
+    pris[0] += p;
+    if (pris[0] === 12) fermer();
   });
   fermer();
   return out;
@@ -219,17 +330,26 @@ export function rangees(d: Disposition): RangeeGrille[] {
 /** Une place à remplir dans Personnaliser. */
 export type PlaceVide = {
   rangee: number;
+  /** la ligne de la rangée (2 : la 2e ligne d'une rangée double) */
+  ligne: 1 | 2;
+  /** le format de la place : celui de l'élément « libre », ou tuile / héros pour une fin de ligne */
+  f: FormePlace;
   portee: 4 | 8;
-  /** l'index de l'élément « libre » ; null : la fin d'une rangée incomplète */
+  /** l'index de l'élément « libre » ; null : la fin d'une ligne incomplète */
   i: number | null;
-  /** l'index après lequel insérer (l'élément « libre » lui-même, ou le dernier de la rangée) */
+  /** l'index après lequel insérer (l'élément « libre » lui-même, ou le dernier de la ligne) */
   apres: number;
+  /** une fin de 2e ligne : la place libre qui garde d'abord le reste de la 1re (FinLigne) */
+  combler?: "tuile" | "heros";
 };
 
-/** Les places vides d'une rangée : ses éléments « libre », puis sa fin incomplète. */
+/** Les places vides d'une rangée : ses éléments « libre », puis ses fins de ligne incomplètes. */
 export function placesVides(r: RangeeGrille, rangee: number): PlaceVide[] {
-  const out: PlaceVide[] = r.cases.filter((c) => estLibre(c.e)).map((c) => ({ rangee, portee: portee(c.f) as 4 | 8, i: c.i, apres: c.i }));
-  if (r.libre > 0 && r.cases.length) out.push({ rangee, portee: r.libre as 4 | 8, i: null, apres: r.cases[r.cases.length - 1].i });
+  const out: PlaceVide[] = r.cases
+    .filter((c) => estLibre(c.e))
+    .map((c) => ({ rangee, ligne: c.ligne, f: c.f as FormePlace, portee: portee(c.f) as 4 | 8, i: c.i, apres: c.i }));
+  for (const fin of r.fins)
+    out.push({ rangee, ligne: fin.ligne, f: fin.portee === 8 ? "heros" : "tuile", portee: fin.portee, i: null, apres: fin.apres, ...(fin.combler ? { combler: fin.combler } : {}) });
   return out;
 }
 
@@ -297,10 +417,10 @@ export function avecBlocFolio(d: Disposition): Disposition {
   if (d.some((e) => e.k === "folio")) return d;
   const i = d.findIndex(estLibre);
   if (i >= 0) return normaliser(d.map((e, j) => (j === i ? { k: "folio" as const, f: e.f } : e)));
-  const r = rangees(d).find((x) => x.libre > 0);
-  if (r) {
-    const apres = r.cases[r.cases.length - 1].i;
-    return normaliser([...d.slice(0, apres + 1), { k: "folio", f: "tuile" }, ...d.slice(apres + 1)]);
+  const fin = rangees(d).flatMap((r) => r.fins)[0];
+  if (fin) {
+    const avant: ElementPage[] = fin.combler ? [{ k: "libre", f: fin.combler }] : [];
+    return normaliser([...d.slice(0, fin.apres + 1), ...avant, { k: "folio", f: "tuile" }, ...d.slice(fin.apres + 1)]);
   }
   return d.length < ELEMENTS_MAX ? normaliser([...d, { k: "folio", f: "tuile" }]) : d;
 }
@@ -319,11 +439,40 @@ export function nettoyerLegende(raw: unknown): string | null {
 
 const bornerRatio = (r: unknown) => {
   const n = Number(r);
-  return Number.isFinite(n) && n > 0 ? Math.max(0.25, Math.min(4, Math.round(n * 1000) / 1000)) : 16 / 9;
+  return Number.isFinite(n) && n > 0 ? Math.max(0.25, Math.min(4, Math.round(n * 1000) / 1000)) : 1.778;
 };
 
 /** Un nombre venu de la base ou du navigateur (jamais une chaîne, null ou NaN). */
 const nombre = (x: unknown): number | null => (typeof x === "number" && Number.isFinite(x) ? x : null);
+
+/**
+ * Le texte d'une carte : sans caractères de contrôle, 5 lignes au plus (la
+ * suite rejoint la 5e), une ligne vide au plus entre deux, 280 caractères.
+ * Idempotent : un texte nettoyé repasse à l'identique.
+ */
+export function nettoyerTexte(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const propre = (l: string) => l.replace(/\s+/g, " ").trim();
+  const lignes = raw
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, " ")
+    .split("\n")
+    .map(propre);
+  const cinq = lignes.slice(0, 5);
+  if (lignes.length > 5) cinq[4] = propre(lignes.slice(4).join(" "));
+  const s = cinq
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, TEXTE_CARTE_MAX)
+    .split("\n")
+    .map(propre)
+    .join("\n")
+    .trim();
+  return s || null;
+}
+/** Le titre d'une carte : une ligne, 60 caractères (vide permis). */
+export const nettoyerTitre = (raw: unknown): string => (nettoyerLegende(raw) ?? "").slice(0, TITRE_CARTE_MAX).trim();
 
 /** Les adresses publiques des dossiers du joueur (images, vidéos). */
 export type Prefixes = { images: string; videos: string };
@@ -442,7 +591,9 @@ export function depuisAncienne(raw: unknown[]): Record<string, unknown>[] {
  * aucun envoi accepté ; « lecture » : relu de la base, déjà vérifié à
  * l'écriture, le bucket et un dossier de joueur sont contrôlés)
  * ou GIF de la banque KLIPY (adresse en klipy.com) ; six médias au plus,
- * dont une vidéo. Puis la forme propre (normaliser). Les anciennes formes
+ * dont une vidéo ; trois cartes au plus ; quatre images en haut au plus,
+ * venues du dossier d'images du joueur (une image refusée part seule : le
+ * module ou la carte reste). Puis la forme propre (normaliser). Les anciennes formes
  * (rangées à modèles, liste de blocs) sont acceptées et converties.
  * Idempotente : une liste validée repasse à l'identique.
  */
@@ -452,17 +603,42 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
   const vus = new Set<string>();
   let medias = 0;
   let videos = 0;
+  let cartes = 0;
+  let images = 0;
   let mediaRefuse = false;
+  let imageRefusee = false;
+
+  /** l'adresse d'un fichier du joueur : son dossier (ou, relue, un dossier de joueur du bon bucket) et le nom exact `<id>.<ext>` */
+  const fichierDuJoueur = (id: string, url: string, video: boolean) => {
+    const bucket = video ? BUCKET_VIDEOS : BUCKET_MEDIAS;
+    const prefixe = prefixes && prefixes !== "lecture" ? (video ? prefixes.videos : prefixes.images) : null;
+    const fichier = prefixes === "lecture" ? (adresseRelue(bucket).exec(url)?.[1] ?? null) : prefixe && url.startsWith(prefixe) ? url.slice(prefixe.length) : null;
+    return fichier !== null && nomFichier(id, video).test(fichier);
+  };
+
+  /** une image en haut : du dossier d'images du joueur, quatre au plus ; refusée, elle part seule */
+  const imageHaut = (x: unknown): ImageHaut | null => {
+    if (x === undefined || x === null) return null;
+    const o = estObjet(x) ? x : {};
+    const id = typeof o.id === "string" && /^[a-z0-9]{6,24}$/.test(o.id) ? o.id : null;
+    const url = typeof o.url === "string" ? o.url.trim() : "";
+    const ok = id && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && EXT_IMAGE.test(url) && fichierDuJoueur(id, url, false) && !vus.has("m:" + id);
+    if (!ok || images >= IMAGES_HAUT_MAX) {
+      imageRefusee = true;
+      return null;
+    }
+    vus.add("m:" + id);
+    images++;
+    const y = nombre(o.y);
+    return { id, url, ratio: bornerRatio(o.ratio), ...(y !== null ? { y: Math.max(0, Math.min(100, Math.round(y))) } : {}) };
+  };
 
   const media = (b: Record<string, unknown>): BlocMedia | null => {
     const id = typeof b.id === "string" && /^[a-z0-9]{6,24}$/.test(b.id) ? b.id : null;
     const type = b.type === "image" ? "image" : b.type === "video" ? "video" : null;
     const url = typeof b.url === "string" ? b.url.trim() : "";
     const klipy = type === "image" && URL_KLIPY.test(url);
-    const bucket = type === "video" ? BUCKET_VIDEOS : BUCKET_MEDIAS;
-    const prefixe = prefixes && prefixes !== "lecture" ? (type === "video" ? prefixes.videos : prefixes.images) : null;
-    const fichier = prefixes === "lecture" ? (adresseRelue(bucket).exec(url)?.[1] ?? null) : prefixe && url.startsWith(prefixe) ? url.slice(prefixe.length) : null;
-    const dossierOk = klipy || (!!id && fichier !== null && nomFichier(id, type === "video").test(fichier));
+    const dossierOk = klipy || (!!id && fichierDuJoueur(id, url, type === "video"));
     const ok =
       id && type && dossierOk && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && (type === "video" ? EXT_VIDEO : EXT_IMAGE).test(url) && !vus.has("m:" + id);
     if (!ok || medias >= MEDIAS_MAX || (type === "video" && videos >= VIDEOS_MAX)) {
@@ -495,14 +671,26 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     return { ...sans, f: estFormat(b.f) ? formatPermis(genre, b.f) : FORMAT_DEFAUT[genre] };
   };
 
+  const carte = (x: Record<string, unknown>): BlocCarte | null => {
+    const id = typeof x.id === "string" && /^[a-z0-9]{6,24}$/.test(x.id) ? x.id : null;
+    // l'id d'une carte sert de clé : ni celui d'un média ou d'une image, ni la clé d'un module
+    if (!id || vus.has("m:" + id) || BLOCS.some((b) => b.k === id) || cartes >= CARTES_MAX) return null;
+    vus.add("m:" + id);
+    cartes++;
+    const img = imageHaut(x.img);
+    return { k: "carte", id, titre: nettoyerTitre(x.titre), texte: nettoyerTexte(x.texte), ...(img ? { img } : {}), f: estFormat(x.f) ? formatPermis("carte", x.f) : FORMAT_DEFAUT.carte };
+  };
+
   const element = (x: unknown): ElementPage | null => {
     if (!estObjet(x)) return null;
-    if (x.k === "libre") return x.f === "tuile" || x.f === "heros" ? { k: "libre", f: x.f } : null;
+    if (x.k === "libre") return x.f === "tuile" || x.f === "heros" || x.f === "colonne" ? { k: "libre", f: x.f } : null;
     if (x.k === "media") return media(x);
+    if (x.k === "carte") return carte(x);
     const info = BLOCS.find((i) => i.k === x.k);
     if (!info || vus.has(info.k)) return null;
     vus.add(info.k);
-    return { k: info.k, f: estFormat(x.f) ? formatPermis(info.k, x.f) : FORMAT_DEFAUT[info.k] };
+    const img = info.k !== "progression" ? imageHaut(x.img) : null;
+    return { k: info.k, f: estFormat(x.f) ? formatPermis(info.k, x.f) : FORMAT_DEFAUT[info.k], ...(img ? { img } : {}) };
   };
 
   let liste: unknown[] = raw.slice(0, 60);
@@ -516,6 +704,7 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     if (e) out.push(e);
   }
   if (mediaRefuse) refus.push("un ou plusieurs médias");
+  if (imageRefusee) refus.push("une ou plusieurs images en haut");
   return { disposition: normaliser(out), refus };
 }
 

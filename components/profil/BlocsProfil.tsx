@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, ChevronRight, CircleCheck, Clapperboard, Feather, Hash, Hexagon, ImageIcon, LineChart, Radar as IconeRadar, ScrollText, Stamp, Trophy, Users } from "lucide-react";
+import { ArrowRight, ChevronRight, CircleCheck, Clapperboard, Feather, Hash, Hexagon, ImageIcon, LayoutPanelTop, LineChart, Radar as IconeRadar, ScrollText, Stamp, Trophy, Users } from "lucide-react";
 import { Radar } from "@/components/ui/Radar";
 import { Illustration } from "@/components/ui/Illustration";
 import { Avatar } from "@/components/classement/Avatar";
@@ -24,7 +24,7 @@ import { defSceau } from "@/lib/profil/sceaux";
 import { hrefOnglet } from "@/lib/profil/onglets";
 import { TIERS } from "@/lib/ranks";
 import { PALIERS_TROPHEE, compter } from "@/lib/trophees";
-import { estMedia, genreMedia, nomBloc, type BlocMedia, type Bloc, type Format, type GenreBloc } from "@/lib/profil/disposition";
+import { estCarte, estMedia, genreMedia, nomBloc, type BlocCarte, type BlocMedia, type Bloc, type Format, type GenreBloc, type ImageHaut } from "@/lib/profil/disposition";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import type { EvenementJournal } from "@/lib/profil/journal";
 import { nombre, pct, signe } from "@/lib/voice";
@@ -34,8 +34,11 @@ import { SAISONS, inscriptionSaison } from "@/lib/voice-saisons";
 import b from "./BlocsProfil.module.css";
 
 // Les blocs de la page de profil (onglet Profil, et la même page dans
-// Personnaliser), chacun à l'un des 3 formats du site : tuile (4/12), héros
-// (8/12), bande (12/12). Tous suivent la même grammaire : une étiquette
+// Personnaliser), chacun à l'un des 4 formats du site : tuile (4/12), héros
+// (8/12), bande (12/12), colonne (4/12 sur deux lignes : le module y prend
+// sa forme de tuile, plus haute). Un module ou une carte peut porter une
+// image en haut, à fond perdu, qui absorbe la hauteur en trop (comme la
+// Bibliothèque de Réviser). Tous suivent la même grammaire : une étiquette
 // (pastille de 36 px, titre de 16 px gras, repère à droite), le résumé
 // visible, le détail à la demande (<details>), l'action en bas (mt-auto)
 // pour que les bas s'alignent dans la rangée. Surface : la tuile est une
@@ -47,7 +50,7 @@ import b from "./BlocsProfil.module.css";
 
 type Ctx = { d: DonneesBlocs; f: Format; edition: boolean };
 
-const PAD: Record<Format, string> = { tuile: "p-5 md:p-6", heros: "p-6 md:p-8", bande: "p-5 md:p-6" };
+const PAD: Record<Format, string> = { tuile: "p-5 md:p-6", colonne: "p-5 md:p-6", heros: "p-6 md:p-8", bande: "p-5 md:p-6" };
 /** deux lignes au plus */
 const DEUX_LIGNES: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 const nomCourt = (k: string) => SUBJECTS.find((x) => x.key === k)?.short ?? k;
@@ -327,7 +330,7 @@ function RadarBloc({ d, f }: Ctx) {
 // ── Amis ─────────────────────────────────────────────────────────────────
 function Amis({ d, f }: Ctx) {
   const amis = d.amis!;
-  const n = { tuile: 6, heros: 9, bande: 12 }[f];
+  const n = { tuile: 6, colonne: 6, heros: 9, bande: 12 }[f];
   const liste = amis.amis.slice(0, n);
   return (
     <Coque f={f} label={T.amis}>
@@ -599,7 +602,7 @@ function SaisonsBloc({ d, f }: Ctx) {
 }
 
 // ── Médias : l'image absorbe la hauteur ; le GIF reste net dans un passe-partout ; la vidéo remplit ──
-const RATIO: Record<Format, string> = { tuile: "4 / 3", heros: "2 / 1", bande: "3 / 1" };
+const RATIO: Record<Format, string> = { tuile: "4 / 3", colonne: "3 / 4", heros: "2 / 1", bande: "3 / 1" };
 const ratios = (tel: string, large: string) => ({ ["--r" as string]: tel, ["--rl" as string]: large }) as React.CSSProperties;
 
 function Legende({ texte, icone }: { texte: string | null; icone: React.ReactNode }) {
@@ -646,7 +649,7 @@ function MediaBloc({ m, f }: { m: BlocMedia; f: Format }) {
       </figure>
     );
   if (g === "video") {
-    const cote = f !== "tuile";
+    const cote = f === "heros" || f === "bande";
     // l'image de couverture : celle qu'on voit avant la lecture (l'adresse enregistrée n'a jamais de « #t= »)
     const src = `${m.url}#t=${couvertureDe(m)}`;
     return (
@@ -676,6 +679,45 @@ function MediaBloc({ m, f }: { m: BlocMedia; f: Format }) {
   );
 }
 
+// ── L'image en haut d'un module ou d'une carte ─────────────────────────────
+/** son rapport : au téléphone 16:9 ; sur ordinateur, selon le format (la colonne, comme la Bibliothèque : 4:3) */
+const RATIO_HAUT: Record<Format, string> = { tuile: "16 / 9", colonne: "4 / 3", heros: "21 / 9", bande: "4 / 1" };
+
+function ImageEnHaut({ img, f }: { img: ImageHaut; f: Format }) {
+  return (
+    <div className={b.imageHaut} style={ratios("16 / 9", RATIO_HAUT[f])}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi */}
+      <img src={img.url} alt="" loading="lazy" decoding="async" className={b.nuitDoux} style={{ objectPosition: `50% ${img.y ?? 50}%` }} />
+    </div>
+  );
+}
+
+/** Un module sous son image : une seule carte, l'image à fond perdu en haut, le module dessous (sa propre coque s'efface). */
+function AvecImage({ img, f, children }: { img: ImageHaut; f: Format; children: React.ReactNode }) {
+  return (
+    <div className="card flex min-w-0 flex-col overflow-hidden">
+      <ImageEnHaut img={img} f={f} />
+      <div className={"flex min-w-0 flex-col " + b.sousImage}>{children}</div>
+    </div>
+  );
+}
+
+// ── La carte : l'image en haut, un titre et quelques lignes du joueur ──────
+function CarteBloc({ c, f, edition }: { c: BlocCarte; f: Format; edition: boolean }) {
+  const vide = !c.titre && !c.texte && !c.img;
+  if (vide && !edition) return null;
+  return (
+    <section aria-label={c.titre || T.carte} className={(f === "tuile" && !c.img ? "card-quiet " : "card ") + "flex min-w-0 flex-col overflow-hidden"}>
+      {c.img && <ImageEnHaut img={c.img} f={f} />}
+      <div className={"flex min-w-0 flex-col gap-2 " + PAD[f]}>
+        {c.titre && <h3 className={"font-brand m-0 " + b.titreCarte}>{c.titre}</h3>}
+        {c.texte && <p className={"t-small m-0 " + b.texteCarte}>{c.texte}</p>}
+        {vide && <p className="t-small m-0">{T.carteVide}</p>}
+      </div>
+    </section>
+  );
+}
+
 /** L'icône de chaque genre de bloc (barre de l'éditeur, feuille « Choisir un module »), 15 px. */
 export const ICONE_BLOC: Record<GenreBloc, React.ReactNode> = {
   vitrine: <Hash size={15} aria-hidden />,
@@ -690,6 +732,7 @@ export const ICONE_BLOC: Record<GenreBloc, React.ReactNode> = {
   image: <ImageIcon size={15} aria-hidden />,
   gif: <ImageIcon size={15} aria-hidden />,
   video: <Clapperboard size={15} aria-hidden />,
+  carte: <LayoutPanelTop size={15} aria-hidden />,
 };
 
 /** L'icône de l'étiquette d'un bloc vide (17 px). */
@@ -702,9 +745,25 @@ const ICONE_VIDE: Partial<Record<GenreBloc, React.ReactNode>> = {
   saisons: <Hexagon size={17} aria-hidden />,
 };
 
-/** Un bloc de la page, au format donné. `edition` : dans Personnaliser (état vide ou invitation au lieu de rien). */
+/**
+ * Un bloc de la page, au format donné. `edition` : dans Personnaliser (état
+ * vide ou invitation au lieu de rien). En colonne, un module prend sa forme
+ * de tuile ; avec une image en haut, il passe sous elle.
+ */
 export function BlocProfil({ bloc, f, d, edition = false }: { bloc: Bloc; f: Format; d: DonneesBlocs; edition?: boolean }): React.ReactNode {
   if (estMedia(bloc)) return <MediaBloc m={bloc} f={f} />;
+  if (estCarte(bloc)) return <CarteBloc c={bloc} f={f} edition={edition} />;
+  const contenu = contenuModule(bloc, f === "colonne" ? "tuile" : f, d, edition);
+  if (!contenu || !bloc.img || bloc.k === "progression") return contenu;
+  return (
+    <AvecImage img={bloc.img} f={f}>
+      {contenu}
+    </AvecImage>
+  );
+}
+
+/** le contenu d'un module (null : rien à montrer) ; appelé comme une fonction, pour savoir s'il rend quelque chose */
+function contenuModule(bloc: Exclude<Bloc, BlocMedia | BlocCarte>, f: Format, d: DonneesBlocs, edition: boolean): React.ReactNode {
   const ctx: Ctx = { d, f, edition };
   const vide = edition ? <Vide bloc={bloc} f={f} icone={ICONE_VIDE[bloc.k]} /> : null;
   switch (bloc.k) {

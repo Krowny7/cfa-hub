@@ -409,7 +409,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     // la page jamais composée : sa place libre invite le propriétaire à poser une image (les autres ne voient rien) ;
     // sans place libre (rangées pleines, avec le radar), l'invitation vient en tuile sous la grille
     const invitation = estDispositionDefaut(style.disposition) && commeMoi ? <CaseImage href={hrefPersonnaliser(id)} /> : undefined;
-    const pleine = rangees(style.disposition).every((r) => r.libre === 0);
+    const pleine = rangees(style.disposition).every((r) => r.fins.length === 0);
     panneau = <PageProfil disposition={style.disposition} donnees={donnees} libre={invitation} apres={pleine ? invitation : undefined} />;
   }
 

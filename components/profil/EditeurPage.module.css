@@ -159,10 +159,10 @@
 .plan {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 12px;
   gap: 3px;
 }
 .planCase {
-  height: 12px;
   border-radius: 3px;
   border: 1px solid var(--line-2);
   background: var(--surface-2);
@@ -173,7 +173,6 @@
   background: var(--pen);
 }
 .planLibre {
-  height: 12px;
   border-radius: 3px;
   border: 1px dashed var(--line-2);
 }

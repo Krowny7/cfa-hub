@@ -30,6 +30,8 @@ export const Mo = (n: number) => `${Math.round(n / (1024 * 1024))} Mo`;
 
 /** Un refus à montrer tel quel au joueur (les autres erreurs : un message général). */
 export class Refus extends Error {}
+/** Le dossier du joueur est plein de fichiers en attente (la base refuse l'envoi) : l'éditeur fait ranger le dossier, puis renvoie une fois. */
+export class QuotaFichiers extends Refus {}
 
 /** Proportion et durée d'une vidéo, lues dans le navigateur. */
 export function lireVideo(file: File): Promise<{ duree: number; ratio: number }> {
@@ -103,7 +105,9 @@ export async function envoyerMedia(supabase: SupabaseClient, file: File, format:
     const m = up.error.message || "";
     if (/bucket not found/i.test(m)) throw new Refus(video ? "Les vidéos arrivent bientôt : la base n'est pas encore prête." : "Les images arrivent bientôt : la base n'est pas encore prête.");
     if (/row-level security|policy/i.test(m))
-      throw new Refus(video ? "Une vidéo est déjà en attente : enregistre ton profil (l'ancienne sera supprimée), puis réessaie." : "Trop de fichiers en attente : enregistre ton profil (les images retirées seront supprimées), puis réessaie.");
+      throw new QuotaFichiers(
+        video ? "Une vidéo est déjà en attente : enregistre ton profil (l'ancienne sera supprimée), puis réessaie." : "Trop de fichiers en attente : enregistre ton profil (les images retirées seront supprimées), puis réessaie.",
+      );
     if (/size|too large|exceed/i.test(m)) throw new Refus(`Fichier trop lourd : ${Mo(video ? VIDEO_MAX_OCTETS : MEDIA_MAX_OCTETS)} au plus.`);
     throw new Error(m);
   }

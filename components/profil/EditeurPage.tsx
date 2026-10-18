@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Clapperboard, EyeOff, GripVertical, ImagePlay, ImagePlus, MoreHorizontal, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Clapperboard, EyeOff, GripVertical, ImagePlay, ImagePlus, LayoutPanelTop, MoreHorizontal, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { GrilleProfil } from "@/components/profil/GrilleProfil";
 import { BlocProfil, ICONE_BLOC, couvertureDe } from "@/components/profil/BlocsProfil";
 import { BanqueGifs } from "@/components/profil/BanqueGifs";
@@ -16,21 +16,28 @@ import {
   FORMATS,
   FORMAT_DEFAUT,
   LEGENDE_MAX,
+  TEXTE_CARTE_MAX,
+  TITRE_CARTE_MAX,
   VIDEO_MAX_SECONDES,
   blocsDe,
   cleDe,
+  estCarte,
   estLibre,
   estMedia,
   formatsDe,
   genreDe,
+  hauteur,
+  imagesHaut,
   nomBloc,
   nomFormat,
   nouvelId,
+  peutAvoirImage,
   placesVides,
   portee,
   raisonRefus,
   rangees,
   type Bloc,
+  type BlocCarte,
   type BlocMedia,
   type CaseGrille,
   type CleBloc,
@@ -38,19 +45,35 @@ import {
   type Format,
   type PlaceVide,
 } from "@/lib/profil/disposition";
-import { ajouter, blocsMasques, changerFormat, deplacer, deplacerA, deplacerVers, echanger, fermerPlace, mettreALaPlace, peutAjouterMedia, remplirPlace, retirer } from "@/lib/profil/page-edition";
-import { Refus, envoyerMedia, estFichierVideo } from "@/lib/profil/envoi-media";
+import {
+  ajouter,
+  blocsMasques,
+  changerFormat,
+  deplacer,
+  deplacerA,
+  deplacerVers,
+  echanger,
+  fermerPlace,
+  mettreALaPlace,
+  peutAjouterCarte,
+  peutAjouterImageHaut,
+  peutAjouterMedia,
+  remplirPlace,
+  retirer,
+} from "@/lib/profil/page-edition";
+import { QuotaFichiers, Refus, envoyerMedia, estFichierVideo } from "@/lib/profil/envoi-media";
 import { EDITEUR_PAGE as T } from "@/lib/voice-editeur";
 import s from "./EditeurPage.module.css";
 
 // Personnaliser · Ta page : la vraie page, en direct, éditable sur place
 // (variante B, « grille modulaire »). La page est une liste ordonnée de
-// blocs, chacun à l'un des 3 formats du site (tuile, héros, bande) ; les
-// rangées se forment seules (GrilleProfil). Chaque bloc porte UNE barre
+// blocs, chacun à l'un des 4 formats du site (tuile, colonne, héros,
+// bande) ; les rangées se forment seules (GrilleProfil). Chaque bloc porte UNE barre
 // d'outils de hauteur fixe, la même dans tous les formats : la poignée et
 // le nom · « Format ▾ » (ordinateur ; un format refusé dit pourquoi) · les
 // réglages du bloc (chiffres clés, légende, cadrage, couverture, folio,
-// Journal) · « ⋯ » (avant / après, mettre un autre bloc à la place ou
+// Journal ; le titre et le texte d'une carte ; l'image en haut d'un module
+// ou d'une carte) · « ⋯ » (avant / après, mettre un autre bloc à la place ou
 // échanger, masquer ou retirer). Une place libre (ordinateur) propose
 // « + Choisir un module » ; dessous, « Ajouter à ta page ».
 // Déplacer marche au doigt comme à la souris (événements pointeur, pas le
@@ -67,14 +90,22 @@ const APPUI_LONG_MS = 380;
 /** près du bord de l'écran, la page défile pendant qu'on tire */
 const BORD_PX = 90;
 
-/** où l'on pose un bloc tenu : un élément de la liste (bloc ou place libre), ou la fin d'une rangée */
-type Cible = { type: "case"; i: number } | { type: "place"; rangee: number };
+/** où l'on pose un bloc tenu : un élément de la liste (bloc ou place libre), ou la fin d'une ligne */
+type Cible = { type: "case"; i: number } | { type: "place"; rangee: number; ligne: number };
 /** le menu ouvert : son genre et le bloc (sa clé) */
 type Menu = { type: "format" | "reglages" | "plus"; cle: string };
 
-/** La vignette d'un format : 12 colonnes, sa portée en plein. */
+/** La vignette d'un format : 12 colonnes, sa portée en plein (la colonne : à droite, sur deux lignes). */
 function Vignette({ f }: { f: Format }) {
   const p = portee(f);
+  if (f === "colonne")
+    return (
+      <span aria-hidden className={s.vignette} style={{ gridTemplateRows: "1fr 1fr" }}>
+        <span style={{ gridColumn: "1 / span 8", gridRow: "1" }} />
+        <span className={s.plein} style={{ gridColumn: "9 / span 4", gridRow: "1 / span 2" }} />
+        <span style={{ gridColumn: "1 / span 8", gridRow: "2" }} />
+      </span>
+    );
   return (
     <span aria-hidden className={s.vignette}>
       <span className={s.plein} style={{ gridColumn: `span ${p}` }} />
@@ -94,19 +125,22 @@ export function PlanPage({ disposition, choisi = null, medias = false, label = T
     <div className={"flex flex-col gap-[3px] " + className} role="img" aria-label={label}>
       {rangees(disposition).map((r, k) => (
         <div key={k} className={s.plan}>
-          {r.cases.map((c) =>
-            estLibre(c.e) ? (
-              <span key={cleDe(c.e, c.i)} className={s.planLibre} style={{ gridColumn: `span ${portee(c.f)}` }} title={T.planLibre} />
+          {r.cases.map((c) => {
+            const place = { gridColumn: `${c.col} / span ${portee(c.f)}`, gridRow: `${c.ligne} / span ${hauteur(c.f)}` };
+            return estLibre(c.e) ? (
+              <span key={cleDe(c.e, c.i)} className={s.planLibre} style={place} title={T.planLibre} />
             ) : (
               <span
                 key={cleDe(c.e, c.i)}
                 className={s.planCase + (cleDe(c.e, c.i) === choisi ? " " + s.planChoisi : medias && estMedia(c.e) ? " " + s.planMedia : "")}
-                style={{ gridColumn: `span ${portee(c.f)}` }}
+                style={place}
                 title={T.planCase(nomBloc(c.e as Bloc), nomFormat(c.f))}
               />
-            ),
-          )}
-          {r.libre > 0 && <span className={s.planLibre} style={{ gridColumn: `span ${r.libre}` }} title={T.planLibre} />}
+            );
+          })}
+          {r.fins.map((f) => (
+            <span key={`fin-${f.ligne}`} className={s.planLibre} style={{ gridColumn: `${f.col} / span ${f.portee}`, gridRow: `${f.ligne}` }} title={T.planLibre} />
+          ))}
         </div>
       ))}
     </div>
@@ -219,6 +253,7 @@ export function EditeurPage({
   supabase,
   banqueGifs = false,
   onEnvoi,
+  ranger,
 }: {
   disposition: Disposition;
   onChange: (d: Disposition) => void;
@@ -231,6 +266,8 @@ export function EditeurPage({
   banqueGifs?: boolean;
   /** un envoi est en cours (l'enregistrement attend) */
   onEnvoi?: (enCours: boolean) => void;
+  /** trop de fichiers en attente : le serveur range le dossier (ce que ni la page enregistrée ni celle-ci n'utilisent) ; vrai si un fichier est parti */
+  ranger?: (d: Disposition) => Promise<boolean>;
 }) {
   const d = disposition;
   const [choisi, setChoisi] = useState<string | null>(d.length ? cleDe(d[0], 0) : null);
@@ -255,6 +292,9 @@ export function EditeurPage({
   const medias = blocs.filter(estMedia).length;
   const permisImage = peutAjouterMedia(d, false);
   const permisVideo = peutAjouterMedia(d, true);
+  const permisCarte = peutAjouterCarte(d);
+  const permisHaut = peutAjouterImageHaut(d);
+  const nbImagesHaut = imagesHaut(d).length;
   const raisonVideo = permisVideo.raison === T.refusVideo ? T.videoPrise : permisVideo.raison;
   const occupe = !!envoi?.enCours;
 
@@ -264,10 +304,10 @@ export function EditeurPage({
   };
   const basculer = (m: Menu) => setMenu((v) => (v && v.type === m.type && v.cle === m.cle ? null : m));
 
-  /** La place vide d'un élément « libre », ou de la fin d'une rangée. */
+  /** La place vide d'un élément « libre », ou de la fin d'une ligne. */
   const placeDe = (c: Cible, l: Disposition): PlaceVide | null => {
     const rs = rangees(l);
-    if (c.type === "place") return rs[c.rangee] ? (placesVides(rs[c.rangee], c.rangee).find((p) => p.i === null) ?? null) : null;
+    if (c.type === "place") return rs[c.rangee] ? (placesVides(rs[c.rangee], c.rangee).find((p) => p.i === null && p.ligne === c.ligne) ?? null) : null;
     for (let k = 0; k < rs.length; k++) {
       const p = placesVides(rs[k], k).find((x) => x.i === c.i);
       if (p) return p;
@@ -310,7 +350,7 @@ export function EditeurPage({
       const k = el?.closest<HTMLElement>("[data-case]")?.dataset.case;
       const r = el?.closest<HTMLElement>("[data-place]")?.dataset.place;
       if (k !== undefined) c = { type: "case", i: Number(k) };
-      else if (r !== undefined) c = { type: "place", rangee: Number(r) };
+      else if (r !== undefined) c = { type: "place", rangee: Number(r.split(":")[0]), ligne: Number(r.split(":")[1] ?? 1) };
       cibleRef.current = c;
       setCible(c);
     };
@@ -408,6 +448,53 @@ export function EditeurPage({
     setFeuille(null);
     poser({ k, f: FORMAT_DEFAUT[k] }, ou);
   };
+  /** Une carte neuve : posée (dans la place visée, sinon à la fin), ses réglages s'ouvrent pour écrire son titre. */
+  const poserCarte = (ou: PlaceVide | null) => {
+    setFeuille(null);
+    const c: BlocCarte = { k: "carte", id: nouvelId(), titre: T.carteNeuve, texte: null, f: FORMAT_DEFAUT.carte };
+    if (poser(c, ou)) setMenu({ type: "reglages", cle: c.id });
+  };
+  /** L'image en haut du bloc `cle` : envoyée dans le dossier d'images du joueur, puis posée (le bloc a pu bouger pendant l'envoi). */
+  /** Envoie un fichier ; si la base refuse (trop de fichiers en attente), fait ranger le dossier par le serveur et renvoie une fois. */
+  const envoyerFichier = async (file: File) => {
+    try {
+      return await envoyerMedia(supabase, file);
+    } catch (e) {
+      if (!(e instanceof QuotaFichiers) || !ranger || !(await ranger(courante.current).catch(() => false))) throw e;
+      return envoyerMedia(supabase, file);
+    }
+  };
+  /** un envoi en cours (lu tout de suite, sans attendre le rendu) : un seul à la fois */
+  const envoiEnCours = useRef(false);
+  const aUneImage = (l: Disposition, cle: string) => {
+    const e = l.find((x, k) => cleDe(x, k) === cle);
+    return !!e && !estLibre(e) && !estMedia(e) && !!e.img;
+  };
+  async function envoyerImageHaut(input: HTMLInputElement, cle: string) {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file || envoiEnCours.current) return;
+    if (estFichierVideo(file)) return setEnvoi({ enCours: false, texte: T.refusImageHautVideo });
+    if (!aUneImage(courante.current, cle) && !peutAjouterImageHaut(courante.current).ok) return setEnvoi({ enCours: false, texte: T.refusImagesHaut });
+    envoiEnCours.current = true;
+    setEnvoi({ enCours: true, texte: T.envoiImage });
+    onEnvoi?.(true);
+    try {
+      const m = await envoyerFichier(file);
+      const l = courante.current;
+      const j = l.findIndex((e, k) => cleDe(e, k) === cle);
+      if (j < 0 || m.type !== "image") return setEnvoi({ enCours: false, texte: T.envoiRate });
+      // la page a pu changer pendant l'envoi : la limite se revérifie sur la plus récente
+      if (!aUneImage(l, cle) && !peutAjouterImageHaut(l).ok) return setEnvoi({ enCours: false, texte: T.refusImagesHaut });
+      onChange(l.map((e, k) => (k === j ? ({ ...e, img: { id: m.id, url: m.url, ratio: m.ratio, y: 50 } } as Bloc) : e)));
+      setEnvoi(null);
+    } catch (e) {
+      setEnvoi({ enCours: false, texte: e instanceof Refus ? e.message : T.envoiRate });
+    } finally {
+      envoiEnCours.current = false;
+      onEnvoi?.(false);
+    }
+  }
   const ouvrirBanque = (ou: PlaceVide | null) => {
     destination.current = ou;
     setFeuille(null);
@@ -439,7 +526,7 @@ export function EditeurPage({
     setEnvoi({ enCours: true, texte: video ? T.envoiVideo : T.envoiImage });
     onEnvoi?.(true);
     try {
-      const b = await envoyerMedia(supabase, file);
+      const b = await envoyerFichier(file);
       // la page a pu changer pendant l'envoi : poser repart de la liste la plus récente
       if (!poser(b, ou)) setEnvoi({ enCours: false, texte: peutAjouterMedia(courante.current, video).raison ?? T.envoiRate });
       else setEnvoi(null);
@@ -483,11 +570,29 @@ export function EditeurPage({
     const genre = genreDe(b);
     const nom = nomBloc(b);
     const media = estMedia(b) ? b : null;
+    const carte = estCarte(b) ? b : null;
+    const avecImage = peutAvoirImage(b);
+    const img = avecImage && !media ? (b as Exclude<Bloc, BlocMedia>).img : undefined;
     const permis = formatsDe(b);
-    const aReglages = b.k === "vitrine" || b.k === "folio" || b.k === "journal" || !!media;
+    const aReglages = b.k === "vitrine" || b.k === "folio" || b.k === "journal" || !!media || avecImage;
     const ouvert = (t: Menu["type"]) => menu?.type === t && menu.cle === cle;
     const vise = cible?.type === "case" && cible.i === i && tire !== i;
     const majMedia = (champs: Partial<BlocMedia>) => onChange(d.map((x, j) => (j === i ? ({ ...x, ...champs } as BlocMedia) : x)));
+    const majCarte = (champs: Partial<BlocCarte>) => onChange(d.map((x, j) => (j === i ? ({ ...x, ...champs } as BlocCarte) : x)));
+    /** l'image en haut : son cadrage, ou la retirer (son fichier part à l'enregistrement) */
+    const majImage = (y: number | null) =>
+      onChange(
+        d.map((x, j) => {
+          if (j !== i || estLibre(x) || estMedia(x) || !x.img) return x;
+          if (y !== null) return { ...x, img: { ...x.img, y } };
+          const sans = { ...x };
+          delete sans.img;
+          return sans;
+        }),
+      );
+    const grise = (ok: boolean) => (ok && !occupe ? "" : " pointer-events-none opacity-50");
+    /** l'envoi de l'image en haut est fermé : un envoi en cours, ou 4 images déjà (en changer une reste permis) */
+    const horsService = occupe || (!img && !permisHaut.ok);
     const fermer = () => setMenu(null);
     return (
       <div
@@ -570,6 +675,26 @@ export function EditeurPage({
           {ouvert("reglages") && (
             <MenuFlottant ancre={`reglages:${cle}`} largeur={300} label={T.reglages} onFermer={fermer}>
               <div className="flex flex-col gap-2 p-1">
+                {carte && (
+                  <>
+                    <label className="flex flex-col gap-1 px-1.5 pt-1">
+                      <span className="t-micro">{T.carteTitre}</span>
+                      <input className="input min-h-[36px] text-[13.5px]" maxLength={TITRE_CARTE_MAX} placeholder={T.carteTitreAide} value={carte.titre} onChange={(e) => majCarte({ titre: e.target.value })} />
+                    </label>
+                    <label className="flex flex-col gap-1 px-1.5">
+                      <span className="t-micro">{T.carteTexte}</span>
+                      <textarea
+                        className="input py-2 text-[13.5px]"
+                        style={{ minHeight: 96, resize: "vertical" }}
+                        rows={4}
+                        maxLength={TEXTE_CARTE_MAX}
+                        placeholder={T.carteTexteAide}
+                        value={carte.texte ?? ""}
+                        onChange={(e) => majCarte({ texte: e.target.value || null })}
+                      />
+                    </label>
+                  </>
+                )}
                 {b.k === "vitrine" && (
                   <>
                     <span className="t-micro px-1.5 pt-1">{T.vitrineAide}</span>
@@ -630,6 +755,74 @@ export function EditeurPage({
                     <span className="t-micro">{T.couvertureAide}</span>
                   </label>
                 )}
+                {avecImage && (
+                  <span className="flex flex-col gap-1.5 px-1.5 pb-1">
+                    <span className="t-micro">{T.imageHaut}</span>
+                    {img && (
+                      // eslint-disable-next-line @next/next/no-img-element -- l'aperçu de l'image envoyée
+                      <img src={img.url} alt="" className="block w-full rounded-[10px] border border-line object-cover" style={{ aspectRatio: "16 / 9", objectPosition: `50% ${img.y ?? 50}%` }} />
+                    )}
+                    <span className="flex flex-wrap gap-1.5">
+                      {/* au clavier, le bouton (role) ouvre le choix du fichier ; le champ lui-même reste hors de la tabulation */}
+                      <label
+                        htmlFor={`rl-haut-${cle}`}
+                        role="button"
+                        data-haut={cle}
+                        tabIndex={horsService ? -1 : 0}
+                        aria-disabled={horsService}
+                        title={!img ? (permisHaut.raison ?? undefined) : undefined}
+                        className={"btn btn-secondary btn-sm cursor-pointer" + grise(!horsService)}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter" && e.key !== " ") return;
+                          e.preventDefault();
+                          if (!horsService) document.getElementById(`rl-haut-${cle}`)?.click();
+                        }}
+                      >
+                        <ImagePlus size={14} aria-hidden /> {img ? T.imageHautChanger : T.imageHautAjouter}
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                        className="sr-only"
+                        id={`rl-haut-${cle}`}
+                        tabIndex={-1}
+                        disabled={horsService}
+                        onChange={(e) => envoyerImageHaut(e.currentTarget, cle)}
+                      />
+                      {img && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => {
+                            majImage(null);
+                            // le bouton s'en va : le focus revient à « Mettre une image »
+                            requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-haut="${cle}"]`)?.focus());
+                          }}
+                        >
+                          <Trash2 size={14} aria-hidden /> {T.imageHautRetirer}
+                        </button>
+                      )}
+                    </span>
+                    {img && (
+                      <span className="seg" role="radiogroup" aria-label={T.cadrage}>
+                        {T.CADRAGES.map((x) => {
+                          const sur = (img.y ?? 50) === x.y;
+                          return (
+                            <button key={x.nom} type="button" role="radio" aria-checked={sur} className={s.ligne + " justify-center" + (sur ? " " + s.ligneSur : "")} onClick={() => majImage(x.y)}>
+                              {x.nom}
+                            </button>
+                          );
+                        })}
+                      </span>
+                    )}
+                    <span className="t-micro">{!img && !permisHaut.ok ? permisHaut.raison : `${T.imageHautAide} ${T.imagesHautCompte(nbImagesHaut)}.`}</span>
+                    {envoi && (
+                      <span role="status" className={"t-micro font-medium " + (envoi.enCours ? "" : "text-pen")}>
+                        {envoi.texte}
+                      </span>
+                    )}
+                  </span>
+                )}
                 {/* des liens ordinaires (pas next/link) : quitter la page avec des modifications, le navigateur demande */}
                 {b.k === "folio" && (
                   <a href="/moi?onglet=pieces" className={s.ligne}>
@@ -675,6 +868,8 @@ export function EditeurPage({
               <span className="t-micro px-2.5 pb-1 pt-2">{T.mettreALaPlace}</span>
               {/* un média remplacé par un bloc neuf est retiré : son fichier part, comme avec « Retirer ce média » */}
               {media && <span className="t-micro px-2.5 pb-1 font-normal">{T.remplacerMediaAide}</span>}
+              {carte && <span className="t-micro px-2.5 pb-1 font-normal">{T.remplacerCarteAide}</span>}
+              {!carte && img && <span className="t-micro px-2.5 pb-1 font-normal">{T.remplacerImageAide}</span>}
               {BLOCS.filter((x) => x.k !== b.k).map((x) => (
                 <button
                   key={x.k}
@@ -701,8 +896,8 @@ export function EditeurPage({
                   fermer();
                 }}
               >
-                {media ? <Trash2 size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />} {media ? T.retirerMedia : T.masquer}
-                <span className="t-micro ml-auto font-normal">{media ? T.retirerMediaAide : T.masquerAide}</span>
+                {media || carte ? <Trash2 size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />} {media ? T.retirerMedia : carte ? T.retirerCarte : T.masquer}
+                <span className="t-micro ml-auto font-normal">{media ? T.retirerMediaAide : carte ? T.retirerCarteAide : img ? T.masquerImageAide : T.masquerAide}</span>
               </button>
             </MenuFlottant>
           )}
@@ -718,8 +913,8 @@ export function EditeurPage({
 
   // ── une place vide (élément « libre » ou fin de rangée), ordinateur seulement ──
   const placeEdition = (p: PlaceVide) => {
-    const f = p.portee === 8 ? "heros" : "tuile";
-    const vise = tire !== null && (p.i !== null ? cible?.type === "case" && cible.i === p.i : cible?.type === "place" && cible.rangee === p.rangee);
+    const f = p.f;
+    const vise = tire !== null && (p.i !== null ? cible?.type === "case" && cible.i === p.i : cible?.type === "place" && cible.rangee === p.rangee && cible.ligne === p.ligne);
     return (
       <div className={s.caseLibre + " " + s.grandSeul + (vise ? " " + s.libreVisee : "")}>
         <div className="flex flex-col items-center gap-2 p-5 text-center">
@@ -764,6 +959,9 @@ export function EditeurPage({
               {"neuf" in x && x.neuf && <span className="t-micro">· {T.nouveau}</span>}
             </button>
           ))}
+          <button type="button" className="btn btn-secondary btn-sm" disabled={!permisCarte.ok} title={permisCarte.raison ?? T.carteAide} onClick={() => poserCarte(null)}>
+            <LayoutPanelTop size={15} aria-hidden /> {T.carte}
+          </button>
           {choixMedias(null, "rl-page", false)}
         </div>
         {envoi && (
@@ -789,6 +987,13 @@ export function EditeurPage({
             ) : (
               <p className="t-small m-0">{T.aucunMasque}</p>
             )}
+          </section>
+          <section className="flex flex-col gap-1" aria-label={T.carte}>
+            <p className="t-eyebrow m-0 pb-1">{T.carte}</p>
+            <button type="button" className={s.ligne} disabled={!permisCarte.ok} onClick={() => poserCarte(feuille?.destination ?? null)}>
+              <LayoutPanelTop size={15} aria-hidden /> {T.carteAide}
+              {!permisCarte.ok && <span className="t-micro ml-auto font-normal">{permisCarte.raison}</span>}
+            </button>
           </section>
           <section className="flex flex-col gap-1" aria-label={T.unMedia}>
             <p className="t-eyebrow m-0 pb-1">{T.unMedia}</p>

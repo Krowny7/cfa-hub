@@ -140,3 +140,50 @@
 .remplit > * {
   flex: 1 1 auto;
 }
+
+/* l'image en haut d'un module ou d'une carte : à fond perdu, son rapport
+   donne la hauteur de départ ; sur ordinateur, elle absorbe la hauteur en
+   trop de la case (520 px au plus), comme la Bibliothèque de Réviser */
+.imageHaut {
+  position: relative;
+  flex: 1 0 auto;
+  max-height: 520px;
+  overflow: hidden;
+  aspect-ratio: var(--r, 16 / 9);
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 1024px) {
+  .imageHaut {
+    aspect-ratio: var(--rl, var(--r, 16 / 9));
+  }
+}
+.imageHaut > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* le module sous son image : sa coque s'efface (une seule carte) */
+.sousImage > section {
+  flex: 1 1 auto;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+/* la carte : le titre du joueur en grand, son texte avec ses retours à la ligne */
+.titreCarte {
+  font-size: 24px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 1024px) {
+  .titreCarte {
+    font-size: 30px;
+  }
+}
+.texteCarte {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

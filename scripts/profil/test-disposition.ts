@@ -25,8 +25,10 @@ import {
   dispositionDepuis,
   estDispositionDefaut,
   estMedia,
+  fichiersGardes,
   formatPermis,
   genreDe,
+  imagesHaut,
   nomBloc,
   normaliser,
   placesVides,
@@ -74,16 +76,43 @@ console.log("# Les rangées");
   const t = (cle: "amis" | "reponses" | "trophees" | "radar"): ElementPage => ({ k: cle, f: "tuile" });
   check("aucun élément : aucune rangée", rangees([]).length === 0);
   const b = rangees([{ k: "vitrine", f: "bande" }]);
-  check("une bande : une rangée pleine", b.length === 1 && b[0].libre === 0 && b[0].cases[0].f === "bande");
+  check("une bande : une rangée pleine", b.length === 1 && b[0].fins.length === 0 && b[0].cases[0].f === "bande");
   const quatre = rangees([t("amis"), t("reponses"), t("trophees"), t("radar")]);
-  check("4 tuiles : 3 puis 1, 8 colonnes libres", quatre.length === 2 && quatre[0].cases.length === 3 && quatre[0].libre === 0 && quatre[1].cases.length === 1 && quatre[1].libre === 8);
+  check("4 tuiles : 3 puis 1, 8 colonnes libres", quatre.length === 2 && quatre[0].cases.length === 3 && quatre[0].fins.length === 0 && quatre[1].cases.length === 1 && quatre[1].fins[0]?.portee === 8);
   const heros = rangees([{ k: "radar", f: "heros" }, { k: "journal", f: "heros" }]);
-  check("2 héros : 2 rangées, 4 colonnes libres chacune", heros.length === 2 && heros.every((r) => r.libre === 4 && r.cases.length === 1));
+  check("2 héros : 2 rangées, 4 colonnes libres chacune", heros.length === 2 && heros.every((r) => r.fins[0]?.portee === 4 && r.cases.length === 1));
   const thf = rangees([t("amis"), { k: "radar", f: "heros" }, t("reponses")]);
-  check("tuile, héros, tuile : (tuile + héros), (tuile, 8 libres)", thf.length === 2 && thf[0].cases.map((c) => c.i).join() === "0,1" && thf[1].cases[0].i === 2 && thf[1].libre === 8);
+  check("tuile, héros, tuile : (tuile + héros), (tuile, 8 libres)", thf.length === 2 && thf[0].cases.map((c) => c.i).join() === "0,1" && thf[1].cases[0].i === 2 && thf[1].fins[0]?.portee === 8);
   const libre = rangees([{ k: "libre", f: "heros" }, t("amis"), t("reponses")]);
-  check("une place libre occupe sa portée", libre.length === 2 && libre[0].cases.length === 2 && libre[0].libre === 0 && libre[1].libre === 8);
+  check("une place libre occupe sa portée", libre.length === 2 && libre[0].cases.length === 2 && libre[0].fins.length === 0 && libre[1].fins[0]?.portee === 8);
   check("les cases portent leur index et leur format", thf[0].cases[1].i === 1 && thf[0].cases[1].f === "heros");
+}
+
+console.log("# La colonne (rangée double)");
+{
+  const t = (cle: "amis" | "reponses" | "trophees"): ElementPage => ({ k: cle, f: "tuile" });
+  const places = (r: { cases: { col: number; ligne: number }[] }) => r.cases.map((c) => `${c.col}:${c.ligne}`);
+  const r = rangees([{ k: "radar", f: "heros" }, { k: "folio", f: "colonne" }, t("amis"), t("reponses")]);
+  check("héros, colonne, 2 tuiles : une rangée double pleine", r.length === 1 && r[0].lignes === 2 && r[0].fins.length === 0);
+  check("… la colonne à droite (col 9), les 2 tuiles sous le héros", egal(places(r[0]), ["1:1", "9:1", "1:2", "5:2"]), places(r[0]).join(" "));
+  const g = rangees([{ k: "folio", f: "colonne" }, t("amis"), t("reponses"), { k: "radar", f: "heros" }, { k: "vitrine", f: "bande" }]);
+  check("colonne en tête : à gauche, 2 tuiles puis un héros à sa droite, la bande après", g.length === 2 && egal(places(g[0]), ["1:1", "5:1", "9:1", "5:2"]) && g[0].fins.length === 0 && g[1].cases[0].f === "bande");
+  const seule = rangees([{ k: "folio", f: "colonne" }]);
+  check(
+    "colonne seule : deux fins de ligne, la 2e comble d'abord la 1re (un héros libre)",
+    egal(seule[0].fins, [
+      { ligne: 1, col: 5, portee: 8, apres: 0 },
+      { ligne: 2, col: 5, portee: 8, apres: 0, combler: "heros" },
+    ]),
+  );
+  const tc = rangees([t("amis"), { k: "folio", f: "colonne" }, { k: "radar", f: "heros" }]);
+  check("tuile, colonne, héros : colonne à droite, 4 libres à côté de la tuile, le héros en 2e ligne", tc.length === 1 && egal(tc[0].fins, [{ ligne: 1, col: 5, portee: 4, apres: 0 }]) && tc[0].cases[2].ligne === 2);
+  const bf = rangees([{ k: "radar", f: "heros" }, { k: "folio", f: "colonne" }, { k: "vitrine", f: "bande" }]);
+  check("une bande ferme la rangée double (sa 2e ligne reste libre)", bf.length === 2 && egal(bf[0].fins, [{ ligne: 2, col: 1, portee: 8, apres: 1 }]));
+  check("deux colonnes à la suite : deux rangées", rangees([{ k: "folio", f: "colonne" }, { k: "amis", f: "colonne" }]).length === 2);
+  check("une place libre en colonne tient sa rangée double", rangees([{ k: "radar", f: "heros" }, { k: "libre", f: "colonne" }, t("amis")])[0].lignes === 2);
+  const pv = placesVides(seule[0], 0);
+  check("placesVides : les deux fins, la 2e à combler", pv.length === 2 && pv[1].ligne === 2 && pv[1].combler === "heros" && pv[1].f === "heros");
 }
 
 console.log("# Les places vides");
@@ -94,10 +123,10 @@ console.log("# Les places vides");
   const p1 = placesVides(r[1], 1);
   const p2 = placesVides(r[2], 2);
   check("rangée pleine sans place libre : aucune place", p0.length === 0);
-  check("un élément libre : sa portée, son index, insérer après lui", egal(p1, [{ rangee: 1, portee: 8, i: 2, apres: 2 }]));
-  check("une fin de rangée : sa portée, i null, après le dernier", egal(p2, [{ rangee: 2, portee: 8, i: null, apres: 4 }]));
+  check("un élément libre : sa portée, son index, insérer après lui", egal(p1, [{ rangee: 1, ligne: 1, f: "heros", portee: 8, i: 2, apres: 2 }]));
+  check("une fin de rangée : sa portée, i null, après le dernier", egal(p2, [{ rangee: 2, ligne: 1, f: "heros", portee: 8, i: null, apres: 4 }]));
   const r2 = rangees([{ k: "libre", f: "tuile" }, { k: "amis", f: "tuile" }]);
-  check("un élément libre, puis la fin incomplète", egal(placesVides(r2[0], 0), [{ rangee: 0, portee: 4, i: 0, apres: 0 }, { rangee: 0, portee: 4, i: null, apres: 1 }]));
+  check("un élément libre, puis la fin incomplète", egal(placesVides(r2[0], 0), [{ rangee: 0, ligne: 1, f: "tuile", portee: 4, i: 0, apres: 0 }, { rangee: 0, ligne: 1, f: "tuile", portee: 4, i: null, apres: 1 }]));
 }
 
 console.log("# Les formats permis");
@@ -115,7 +144,7 @@ console.log("# Les formats permis");
   check("raison : GIF", raisonRefus(g, "bande") === "Le GIF ne va pas en bande : il serait recadré trop bas.");
   check("raison : progression", raisonRefus({ k: "progression", f: "heros" }, "tuile") === "La courbe de progression a besoin d'au moins deux tiers de la largeur.");
   check("raison : folio, journal", raisonRefus({ k: "folio", f: "tuile" }, "bande") === "Folio ne va pas en bande : trop peu de contenu pour toute la largeur." && raisonRefus({ k: "journal", f: "tuile" }, "bande") === "Journal ne va pas en bande : trop peu de contenu pour toute la largeur.");
-  check("raison : saisons", raisonRefus({ k: "saisons", f: "tuile" }, "heros") === "Les saisons vont en tuile ou en bande (le palmarès en ligne).");
+  check("raison : saisons", raisonRefus({ k: "saisons", f: "tuile" }, "heros") === "Les saisons vont en tuile, en colonne ou en bande (le palmarès en ligne).");
   check("genres et noms des médias", genreDe(video) === "video" && genreDe(g) === "gif" && nomBloc(g) === "GIF" && nomBloc({ k: "radar", f: "heros" }) === "Radar des matières");
   check("clés React : id, clé, libre-<index>", cleDe(video, 0) === "video01" && cleDe({ k: "amis", f: "tuile" }, 3) === "amis" && cleDe({ k: "libre", f: "tuile" }, 4) === "libre-4");
 }
@@ -267,6 +296,37 @@ console.log("# La validation");
 
   // les médias : exactement les règles d'avant
   const avec = (m: Brut, p: Prefixes | null | "lecture" = PREFIXES) => validerDisposition([{ ...m, f: m.f ?? "tuile" }], p);
+
+  // les cartes et les images en haut
+  const haut = (id: string, extra: Brut = {}): Brut => ({ id, url: `${PREFIXES.images}${id}.webp`, ratio: 1.5, y: 30, ...extra });
+  const carte = (id: string, extra: Brut = {}): Brut => ({ k: "carte", id, titre: "Objectif Level I", texte: "Novembre 2026", f: "colonne", ...extra });
+  const c1 = validerDisposition([carte("carte01", { img: haut("hautaa1") })], PREFIXES);
+  check("une carte avec son image : gardée telle quelle", egal(c1.disposition, [{ k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026", img: { id: "hautaa1", url: `${PREFIXES.images}hautaa1.webp`, ratio: 1.5, y: 30 }, f: "colonne" }]) && !c1.refus.length);
+  check("la carte validée repasse à l'identique (idempotente)", egal(validerDisposition(c1.disposition, "lecture").disposition, c1.disposition));
+  check("une carte ne va pas en bande : le format permis le plus proche", validerDisposition([carte("carte01", { f: "bande" })], PREFIXES).disposition[0].f === "heros");
+  const nettoyee = validerDisposition([carte("carte01", { titre: "  Un\u0007 titre   ", texte: "a\r\n\r\n\r\n\r\nb\n" + "x".repeat(400) })], PREFIXES).disposition[0] as { titre: string; texte: string };
+  check("titre et texte nettoyés : une ligne, retours gardés (2 vides au plus), 280 caractères", nettoyee.titre === "Un titre" && nettoyee.texte.startsWith("a\n\nb x") && nettoyee.texte.length <= 280);
+  check("4 cartes : 3 gardées", validerDisposition(["carte01", "carte02", "carte03", "carte04"].map((id) => carte(id, { f: "tuile" })), PREFIXES).disposition.length === 3);
+  const autre = validerDisposition([{ k: "amis", f: "tuile", img: haut("hautaa1", { url: `${BASE}/profil-medias/autre/hautaa1.webp` }) }], PREFIXES);
+  check("image en haut d'un autre dossier : refusée, le module reste", egal(autre.disposition, [{ k: "amis", f: "tuile" }]) && egal(autre.refus, ["une ou plusieurs images en haut"]));
+  const cinq = validerDisposition(
+    (["vitrine", "radar", "amis", "reponses", "trophees"] as const).map((k, n) => ({ k, f: "tuile", img: haut(`haut${n}aaa`) })),
+    PREFIXES,
+  );
+  check("5 images en haut : 4 gardées", imagesHaut(cinq.disposition).length === 4 && cinq.disposition.length === 5);
+  check("pas d'image en haut sur la progression", !("img" in validerDisposition([{ k: "progression", f: "heros", img: haut("hautaa1") }], PREFIXES).disposition[0]));
+  check("une image en haut et un média du même id : le second part", validerDisposition([{ k: "amis", f: "tuile", img: haut("imagea1") }, img("imagea1")], PREFIXES).disposition.length === 1);
+  check(
+    "le ménage garde les médias et les images en haut",
+    egal([...fichiersGardes([...c1.disposition, ...validerDisposition([img("imagea1")], PREFIXES).disposition])].sort(), ["hautaa1.webp", "imagea1.webp"]),
+  );
+  const longue = validerDisposition([carte("carte01", { texte: "a\n\n\n\n\nb\nc\n" + "y ".repeat(200) })], PREFIXES).disposition;
+  check("le texte d'une carte nettoyé repasse à l'identique (idempotent)", egal(validerDisposition(longue, "lecture").disposition, longue) && egal(validerDisposition(validerDisposition([carte("carte02", { texte: "  x  \n\n\n\n\n\n  y  " })], PREFIXES).disposition, "lecture").disposition, validerDisposition([carte("carte02", { texte: "  x  \n\n\n\n\n\n  y  " })], PREFIXES).disposition));
+  const sansRatio = validerDisposition([{ k: "amis", f: "tuile", img: haut("hautaa1", { ratio: "x" }) }], PREFIXES).disposition;
+  check("une image en haut sans ratio : 1,778, et la liste repasse à l'identique", (sansRatio[0] as { img: { ratio: number } }).img.ratio === 1.778 && egal(validerDisposition(sansRatio, "lecture").disposition, sansRatio));
+  check("une carte ne prend pas la clé d'un module", validerDisposition([{ k: "vitrine", f: "bande" }, carte("vitrine")], PREFIXES).disposition.length === 1);
+  check("une carte ne prend pas l'id d'un média (la seconde part)", validerDisposition([img("imagea1"), carte("imagea1")], PREFIXES).disposition.length === 1 && validerDisposition([carte("imagea1"), img("imagea1")], PREFIXES).disposition.length === 1);
+  check("une place libre en colonne est lue", egal(lire([{ k: "radar", f: "heros" }, { k: "libre", f: "colonne" }, { k: "amis", f: "tuile" }]).disposition.map((e) => e.f), ["heros", "colonne", "tuile"]));
   check("image de son dossier : gardée", avec(img("imagea1")).disposition.length === 1 && avec(img("imagea1")).refus.length === 0);
   check("image d'un autre dossier : refusée", avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` })).disposition.length === 0 && egal(avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` })).refus, ["un ou plusieurs médias"]));
   check("sans dossier connu (null) : refusée ; KLIPY : gardé", avec(img("imagea1"), null).disposition.length === 0 && avec(gif("gifkl01"), null).disposition.length === 1);
@@ -301,7 +361,7 @@ console.log("# La validation");
   const g = avec(gif("gifkl01", { px: 99999 })).disposition[0] as BlocMedia;
   check("KLIPY : source posée, px hors bornes retiré", g.source === "klipy" && !("px" in g) && (avec(gif("gifkl01")).disposition[0] as BlocMedia).px === 220);
   check("légende nettoyée", (avec(img("imagea1", { legende: "  Ligne\nsuivante  " + "é".repeat(100) })).disposition[0] as BlocMedia).legende!.length === 80);
-  check("ratio borné", (avec(img("imagea1", { ratio: 40 })).disposition[0] as BlocMedia).ratio === 4 && (avec(img("imagea1", { ratio: "x" })).disposition[0] as BlocMedia).ratio === 16 / 9);
+  check("ratio borné", (avec(img("imagea1", { ratio: 40 })).disposition[0] as BlocMedia).ratio === 4 && (avec(img("imagea1", { ratio: "x" })).disposition[0] as BlocMedia).ratio === 1.778);
 
   // les réglages des médias
   const y = (v: unknown) => (avec(img("imagea1", { y: v })).disposition[0] as BlocMedia).y;
@@ -444,7 +504,7 @@ console.log("# La page par défaut");
   check("sans disposition : celle par défaut", dispositionDepuis(null, true) === DISPOSITION_DEFAUT && estDispositionDefaut(dispositionDepuis(undefined, true)));
   const sans = dispositionDepuis(null, false);
   check("sans radar : chiffres clés en bande, amis en héros", estDispositionDefaut(sans) && egal(abrege(sans), ["vitrine:bande", "amis:heros"]));
-  check("la page par défaut : une bande, puis une rangée pleine", egal(abrege(DISPOSITION_DEFAUT), ["vitrine:bande", "radar:heros", "amis:tuile"]) && rangees(DISPOSITION_DEFAUT).every((r) => r.libre === 0));
+  check("la page par défaut : une bande, puis une rangée pleine", egal(abrege(DISPOSITION_DEFAUT), ["vitrine:bande", "radar:heros", "amis:tuile"]) && rangees(DISPOSITION_DEFAUT).every((r) => r.fins.length === 0));
   check("une disposition enregistrée n'est pas celle par défaut", !estDispositionDefaut(dispositionDepuis([...DISPOSITION_DEFAUT], true)));
   // l'ancien enregistrement écrivait la page par défaut même sans qu'on y touche : relue, c'est celle d'aujourd'hui
   const vieux = (c3: unknown[]) => [{ m: "plein", c: [k("vitrine")] }, { m: "plein", c: [k("radar")] }, { m: "grand-petit", c: c3 }];

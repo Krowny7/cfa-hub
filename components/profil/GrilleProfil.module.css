@@ -42,20 +42,18 @@
   .rangee {
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
-  .p4 {
-    grid-column: span 4;
-  }
-  .p8 {
-    grid-column: span 8;
-  }
-  .p12 {
-    grid-column: span 12;
+  /* chaque case à sa place (GrilleProfil, placeDe) : colonne et ligne de départ, portée, nombre de lignes */
+  .case,
+  .vide {
+    grid-column: var(--c) / span var(--s);
+    grid-row: var(--l) / span var(--h);
   }
   .vide {
     display: block;
   }
-  /* hors bande, une rangée fait au moins la hauteur d'un héros du site */
-  .haute > .case {
+  /* hors bande, une rangée fait au moins la hauteur d'un héros du site (une case vide aussi : sa ligne garde sa hauteur) */
+  .haute > .case,
+  .haute > .vide {
     min-height: 260px;
   }
 }

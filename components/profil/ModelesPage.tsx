@@ -6,7 +6,7 @@ import { Feuille } from "@/components/ui/Feuille";
 import { PlanPage } from "@/components/profil/EditeurPage";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { VITRINE, type VitrineKey } from "@/lib/profil/catalogue";
-import { blocsDe, infoBloc, nomBloc, type CleBloc, type Disposition } from "@/lib/profil/disposition";
+import { blocsDe, imagesHaut, infoBloc, nomBloc, type CleBloc, type Disposition } from "@/lib/profil/disposition";
 import { MODELES_PAGE, appliquerModele, estDefautParContenu, estPageDepart, modeleActuel, pageDepart, type CleModele, type ModelePage, type PageModele } from "@/lib/profil/modeles-page";
 import { EDITEUR_PAGE as T } from "@/lib/voice-editeur";
 import s from "./EditeurPage.module.css";
@@ -71,8 +71,9 @@ export function ModelesPage({
   // le cliché ne vaut plus après l'enregistrement, ni une fois revenu à la page enregistrée (« Annuler »)
   const surEnregistree = disposition === enregistree.disposition && memeChiffres(showcase, enregistree.showcase);
   const clicheActif = cliche && cliche.base === enregistree.disposition && !surEnregistree ? cliche : null;
-  // toute page se remplace après confirmation, même un modèle tout juste appliqué ; seule la page de départ intacte s'en passe
-  const confirmer = !surDepart;
+  // toute page se remplace après confirmation, même un modèle tout juste appliqué ; seule la page de départ intacte
+  // s'en passe (sans image en haut : un modèle qui ne pose pas son module la perdrait)
+  const confirmer = !surDepart || imagesHaut(disposition).length > 0;
 
   // la confirmation ouverte : le focus sur « Remplacer » ; un toucher ailleurs l'annule
   useEffect(() => {

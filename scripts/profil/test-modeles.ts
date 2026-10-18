@@ -12,7 +12,7 @@
 // l'idempotence), les chiffres clés, la page de départ, le modèle actuel, les
 // cas extrêmes (base pas prête, Journal privé) et la progression à moins de
 // deux séances.
-import { blocsDe, estLibre, estMedia, rangees, validerDisposition, DISPOSITION_DEFAUT, ELEMENTS_MAX, FORMATS_PERMIS, type BlocMedia, type Disposition, type Format } from "@/lib/profil/disposition";
+import { blocsDe, estFixe, estLibre, estMedia, rangees, validerDisposition, DISPOSITION_DEFAUT, ELEMENTS_MAX, FORMATS_PERMIS, type BlocMedia, type Disposition, type Format } from "@/lib/profil/disposition";
 import { aDuContenu, type DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { STYLE_DEFAUT, vitrineDepuis } from "@/lib/profil/catalogue";
 import { MODELES_PAGE, appliquerModele, estDefautParContenu, estPageDepart, modeleActuel, montre, pageDepart, riche, type CleModele, type ModelePage } from "@/lib/profil/modeles-page";
@@ -78,7 +78,7 @@ console.log("# La structure des modèles");
   for (const m of MODELES_PAGE) {
     const r = appliquerModele(m, [], RICHE);
     const rs = rangees(r.disposition);
-    check(`${m.cle} : 3 rangées pleines`, rs.length === 3 && rs.every((x) => x.libre === 0), silhouette(r.disposition));
+    check(`${m.cle} : rangées pleines`, rs.length >= 2 && rs.every((x) => x.fins.length === 0), silhouette(r.disposition));
     check(`${m.cle} : les 3 formats`, (["tuile", "heros", "bande"] as Format[]).every((f) => r.disposition.some((e) => e.f === f)));
     const permis = m.cases.every((c) => (c.k === "media" ? FORMATS_PERMIS.image.includes(c.f) && FORMATS_PERMIS.gif.includes(c.f) && FORMATS_PERMIS.video.includes(c.f) : FORMATS_PERMIS[c.k].includes(c.f)) && (c.sinon ?? []).every((k) => FORMATS_PERMIS[k].includes(c.f)));
     check(`${m.cle} : chaque bloc et chaque remplaçant permis au format de sa case`, permis);
@@ -102,26 +102,26 @@ console.log("# L'adaptation à trois joueurs");
       "tout neuf": ["vitrine:bande", "reponses:tuile", "radar:heros", "amis:heros", "trophees:tuile"],
     },
     collection: {
-      "bien rempli": ["vitrine:tuile", "folio:heros", "amis:tuile", "trophees:tuile", "reponses:tuile", "saisons:bande"],
-      "peu de contenu": ["vitrine:tuile", "radar:heros", "amis:tuile", "trophees:tuile", "reponses:tuile", "saisons:bande"],
-      "tout neuf": ["vitrine:tuile", "radar:heros", "amis:tuile", "trophees:tuile", "reponses:tuile"],
+      "bien rempli": ["folio:heros", "amis:colonne", "vitrine:tuile", "trophees:tuile", "saisons:bande"],
+      "peu de contenu": ["radar:heros", "amis:colonne", "vitrine:tuile", "trophees:tuile", "saisons:bande"],
+      "tout neuf": ["radar:heros", "amis:colonne", "vitrine:tuile", "trophees:tuile"],
     },
   };
   for (const m of MODELES_PAGE)
     for (const [nom, d] of JOUEURS) {
       const r = appliquerModele(m, [], d);
       check(`${m.cle}, ${nom} : la page attendue`, egal(abrege(r.disposition), attendu[m.cle][nom]), abrege(r.disposition).join(" "));
-      const blocs = blocsDe(r.disposition).filter((b) => !estMedia(b));
-      check(`${m.cle}, ${nom} : aucun bloc qui ne montre rien`, blocs.every((b) => !estMedia(b) && montre(b.k, d)));
+      const blocs = blocsDe(r.disposition).filter(estFixe);
+      check(`${m.cle}, ${nom} : aucun bloc qui ne montre rien`, blocs.every((b) => montre(b.k, d)));
       check(
         `${m.cle}, ${nom} : héros et bandes, du vrai contenu (ou un sûr)`,
-        blocs.every((b) => estMedia(b) || b.f === "tuile" || ["vitrine", "radar", "amis"].includes(b.k) || riche(b.k, d)),
+        blocs.every((b) => b.f === "tuile" || b.f === "colonne" || ["vitrine", "radar", "amis"].includes(b.k) || riche(b.k, d)),
       );
-      check(`${m.cle}, ${nom} : rangées pleines`, rangees(r.disposition).every((x) => x.libre === 0) || (m.cle === "collection" && nom === "tout neuf" && rangees(r.disposition).length === 2));
+      check(`${m.cle}, ${nom} : rangées pleines`, rangees(r.disposition).every((x) => x.fins.length === 0) || (m.cle === "collection" && nom === "tout neuf"));
     }
   const c = appliquerModele(modele("competiteur"), [], NEUF);
   check("les remplacements sont dits (Radar au lieu de Journal…)", egal(c.remplaces[0], { voulu: "journal", mis: "radar" }) && c.remplaces.length === 4);
-  check("bien rempli : aucun remplacement (sauf les emplacements média du Collectionneur)", MODELES_PAGE.every((m) => appliquerModele(m, [], RICHE).remplaces.length === (m.cle === "collection" ? 3 : 0)));
+  check("bien rempli : aucun remplacement (sauf les emplacements média du Collectionneur)", MODELES_PAGE.every((m) => appliquerModele(m, [], RICHE).remplaces.length === (m.cle === "collection" ? 2 : 0)));
   const col = appliquerModele(modele("collection"), [], RICHE);
   check("collection sans média : le folio au lieu de l'image, puis les amis au lieu du folio", egal(col.remplaces.slice(0, 2), [{ voulu: "media", mis: "folio" }, { voulu: "folio", mis: "amis" }]));
 }
@@ -151,14 +151,14 @@ console.log("# Les médias");
         return reste;
       };
       check(`${nom}, ${m.cle} : tous gardés, dans l'ordre, champs intacts`, egal(apres.map(sansF), avant.map(sansF)));
-      check(`${nom}, ${m.cle} : rangées pleines`, rangees(r.disposition).every((x) => x.libre === 0), silhouette(r.disposition));
+      check(`${nom}, ${m.cle} : rangées pleines`, rangees(r.disposition).every((x) => x.fins.length === 0), silhouette(r.disposition));
       check(`${nom}, ${m.cle} : chaque média à un format permis`, apres.every((x) => FORMATS_PERMIS[x.type === "video" ? "video" : x.source === "klipy" ? "gif" : "image"].includes(x.f)));
     }
   }
   const deux = appliquerModele(modele("collection"), avec([img("imagea1"), vid("video01"), img("imageb2")]), RICHE);
   check(
-    "collection : le 1er média en grand, le 2e en tuile, le 3e en bande à la fin",
-    egal(abrege(deux.disposition), ["vitrine:tuile", "media:imagea1:heros", "folio:tuile", "trophees:tuile", "media:video01:tuile", "saisons:bande", "media:imageb2:bande"]),
+    "collection : le 1er média en grand, le folio en colonne à droite, les 2 autres à la fin (héros · tuile)",
+    egal(abrege(deux.disposition), ["media:imagea1:heros", "folio:colonne", "vitrine:tuile", "trophees:tuile", "saisons:bande", "media:video01:heros", "media:imageb2:tuile"]),
     abrege(deux.disposition).join(" "),
   );
   const gifSeul = appliquerModele(modele("competiteur"), avec([gif("gifkl01")]), RICHE);
@@ -192,6 +192,28 @@ console.log("# Les cas extrêmes");
   check("Journal privé, tout neuf : les saisons prennent la dernière tuile", egal(abrege(c.disposition).slice(-1), ["saisons:tuile"]), abrege(c.disposition).join(" "));
   const nul = MODELES_PAGE.map((m) => appliquerModele(m, [], NUL).disposition);
   check("base pas prête : chiffres clés et radar seulement", nul.every((d) => d.every((e) => e.k === "vitrine" || e.k === "radar") && d.length >= 1), nul.map((d) => abrege(d).join(" ")).join(" | "));
+}
+
+console.log("# Les cartes et les images en haut");
+{
+  const carte = (id: string) => ({ k: "carte", id, titre: `Carte ${id}`, texte: null, f: "colonne" });
+  const hautAmis = { id: "hautaa1", url: `${BASE}/profil-medias/${UID}/hautaa1.webp`, ratio: 1.5 };
+  for (const n of [1, 2, 3]) {
+    const cartes = ["carte01", "carte02", "carte03"].slice(0, n).map(carte);
+    const page = lu([{ k: "radar", f: "heros" }, { k: "amis", f: "tuile", img: hautAmis }, ...cartes]);
+    for (const m of MODELES_PAGE) {
+      const r = appliquerModele(m, page, RICHE);
+      check(`${m.cle}, ${n} carte(s) : toutes gardées, rangées pleines`, r.disposition.filter((e) => e.k === "carte").length === n && rangees(r.disposition).every((x) => x.fins.length === 0), silhouette(r.disposition));
+      check(`${m.cle}, ${n} carte(s) : le modèle actuel est reconnu`, modeleActuel(r.disposition, RICHE, r.showcase) === m.cle);
+    }
+    const dep = pageDepart(page, RICHE);
+    check(`page de départ, ${n} carte(s) : gardées, rangées pleines, reconnue`, dep.disposition.filter((e) => e.k === "carte").length === n && rangees(dep.disposition).every((x) => x.fins.length === 0) && estPageDepart(dep.disposition, RICHE, dep.showcase), silhouette(dep.disposition));
+    check(`page de départ, ${n} carte(s) : les amis gardent leur image en haut`, dep.disposition.some((e) => e.k === "amis" && "img" in e && !!e.img));
+  }
+  const avecMedias = lu([{ k: "radar", f: "heros" }, img("imagea1"), vid("video01"), carte("carte01"), carte("carte02")]);
+  const r = appliquerModele(modele("competiteur"), avecMedias, RICHE);
+  check("médias puis cartes en fin, en rangées pleines", rangees(r.disposition).every((x) => x.fins.length === 0) && r.disposition.filter((e) => e.k === "carte" || e.k === "media").length === 4, silhouette(r.disposition));
+  check("la page par défaut avec d'autres chiffres clés n'est pas la page de départ", !estPageDepart(DISPOSITION_DEFAUT, RICHE, ["duels", "serie", "defis"]));
 }
 
 console.log("# La page de départ et le modèle actuel");

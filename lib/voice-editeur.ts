@@ -5,9 +5,9 @@
 // « use client » ni serveur).
 
 import { pluriel } from "@/lib/voice";
-import { ELEMENTS_MAX, MEDIAS_MAX, VIDEO_MAX_SECONDES } from "@/lib/profil/disposition";
+import { CARTES_MAX, ELEMENTS_MAX, IMAGES_HAUT_MAX, MEDIAS_MAX, VIDEO_MAX_SECONDES, type FormePlace } from "@/lib/profil/disposition";
 
-const UN_FORMAT: Record<"tuile" | "heros", string> = { tuile: "une tuile", heros: "un héros" };
+const UN_FORMAT: Record<FormePlace, string> = { tuile: "une tuile", heros: "un héros", colonne: "une colonne" };
 
 export const EDITEUR_PAGE = {
   /** sous « Ta page », en tête de la section */
@@ -43,9 +43,11 @@ export const EDITEUR_PAGE = {
   revenir: "Revenir à ta page",
   pageDepart: "Revenir à la page de départ",
   // ── la carte du plan, sous « Ta page » ──
-  /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 3 formats : tuile, héros ou bande. » */
-  compte: (blocs: number, rangees: number) => `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 3 formats : tuile, héros ou bande.`,
-  aideOrdinateur: "L'ordre est libre ; les rangées se forment seules et leurs bas s'alignent. Une place libre reste libre : choisis-y un module, ou laisse-la vide.",
+  /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 4 formats : tuile, colonne, héros ou bande. » */
+  compte: (blocs: number, rangees: number) =>
+    `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 4 formats : tuile, colonne, héros ou bande.`,
+  aideOrdinateur:
+    "L'ordre est libre ; les rangées se forment seules et leurs bas s'alignent. Une colonne tient deux lignes, à gauche en début de rangée, à droite après un héros. Une place libre reste libre : choisis-y un module, ou laisse-la vide.",
   aideTelephone: "Les formats s'appliquent sur ordinateur. Ici, tout est sur une colonne : tu règles l'ordre, le contenu et ce qui est masqué.",
   plan: "Plan de la page",
   /** l'infobulle d'une case du plan : « Amis · Tuile » */
@@ -58,7 +60,7 @@ export const EDITEUR_PAGE = {
   formatDe: (nom: string, format: string) => `Format de ${nom} : ${format}`,
   formatTitre: "Format sur ordinateur",
   /** l'infobulle d'un format permis : « Héros · 2/3 de la largeur » */
-  formatPart: (nom: string, part: string) => `${nom} · ${part} de la largeur`,
+  formatPart: (nom: string, part: string) => (part.includes("lignes") ? `${nom} · 1/3 de la largeur, sur deux lignes` : `${nom} · ${part} de la largeur`),
   reglages: "Réglages du bloc",
   plus: "Plus d'actions",
   plusAide: "Déplacer, changer, masquer",
@@ -70,8 +72,13 @@ export const EDITEUR_PAGE = {
   nouveau: "nouveau",
   masquer: "Masquer ce bloc",
   masquerAide: "garde ses réglages",
+  masquerImageAide: "garde ses réglages, sauf son image en haut (elle part à l'enregistrement)",
+  remplacerCarteAide: "un bloc mis à la place remplace cette carte : son titre, son texte et son image partent à l'enregistrement",
+  remplacerImageAide: "le bloc mis à la place ne reprend pas l'image en haut de celui-ci : elle part à l'enregistrement",
   retirerMedia: "Retirer ce média",
   retirerMediaAide: "le fichier part à l'enregistrement",
+  retirerCarte: "Retirer cette carte",
+  retirerCarteAide: "son image part à l'enregistrement",
   // ── les réglages ──
   vitrineAide: "3 chiffres au plus, dans l'ordre",
   legende: "Légende",
@@ -90,10 +97,27 @@ export const EDITEUR_PAGE = {
   journalAide: "Dans Moi › Réglages",
   /** qui voit le Journal (la visibilité enregistrée) */
   VISIBILITE: { public: "tous", friends: "tes amis", private: "toi seul" },
+  // ── l'image en haut (modules et cartes) ──
+  imageHaut: "Image en haut",
+  imageHautAide: "La moitié haute du bloc, comme la Bibliothèque. Image de 8 Mo au plus.",
+  imageHautAjouter: "Mettre une image",
+  imageHautChanger: "Changer d'image",
+  imageHautRetirer: "Retirer l'image",
+  imagesHautCompte: (n: number) => `${n}/${IMAGES_HAUT_MAX} images en haut sur ta page`,
+  // ── la carte ──
+  carte: "Une carte",
+  carteAide: "Ton image en haut, un titre et quelques lignes à toi.",
+  carteTitre: "Titre",
+  carteTitreAide: "Objectif Level I",
+  carteTexte: "Texte",
+  carteTexteAide: "Quelques lignes (facultatif)",
+  /** le titre d'une carte toute neuve */
+  carteNeuve: "Ma carte",
+  cartesCompte: (n: number) => `${n}/${CARTES_MAX} cartes`,
   // ── les places libres ──
   choisirModule: "Choisir un module",
   /** « Place libre · une tuile. Vue par les autres, elle reste vide. » */
-  placeLibre: (f: "tuile" | "heros") => `Place libre · ${UN_FORMAT[f]}. Vue par les autres, elle reste vide.`,
+  placeLibre: (f: FormePlace) => `Place libre · ${UN_FORMAT[f]}. Vue par les autres, elle reste vide.`,
   fermerPlace: "Fermer la place",
   // ── la feuille « Choisir un module » et « Ajouter à ta page » ──
   ajouter: "Ajouter à ta page",
@@ -115,4 +139,7 @@ export const EDITEUR_PAGE = {
   refusMedias: `${MEDIAS_MAX} médias au plus sur ta page.`,
   refusVideo: "Une vidéo par page : retire l'actuelle pour en mettre une autre.",
   refusPlein: `Ta page est pleine : ${ELEMENTS_MAX} éléments au plus. Ferme une place libre ou masque un bloc.`,
+  refusCartes: `${CARTES_MAX} cartes au plus sur ta page.`,
+  refusImagesHaut: `${IMAGES_HAUT_MAX} images en haut au plus sur ta page : retire-en une pour en mettre une autre.`,
+  refusImageHautVideo: "Une image seulement en haut d'un bloc (pas de vidéo).",
 };

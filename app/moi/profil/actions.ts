@@ -8,7 +8,7 @@ import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { nettoyerNom, normaliserLinkedin, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { lireAcquis } from "@/lib/profil/acquis";
 import { ecrireStyle, validerStyle } from "@/lib/profil/styles";
-import { BUCKET_MEDIAS, BUCKET_VIDEOS, blocsDe, estMedia } from "@/lib/profil/disposition";
+import { BUCKET_MEDIAS, BUCKET_VIDEOS, fichiersGardes, validerDisposition } from "@/lib/profil/disposition";
 import { TYPES_PIECE, pieceNue, type TypePiece } from "@/lib/profil/pieces";
 import { stylePorte } from "@/lib/profil/etagere";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -45,6 +45,43 @@ async function contexteStyle(supabase: SupabaseClient, admin: SupabaseClient, us
     prefixe: base ? dossier("avatars") : null,
     prefixesMedias: base ? { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) } : null,
   };
+}
+
+/**
+ * Ranger le dossier du joueur sans enregistrer : quand la base refuse un
+ * envoi (trop de fichiers en attente), l'éditeur appelle ceci avec la page
+ * en cours ; on supprime les fichiers que ni la page enregistrée ni celle en
+ * cours n'utilisent, puis l'éditeur renvoie une fois. Rien d'autre n'est
+ * écrit. Rend vrai si au moins un fichier est parti.
+ */
+export async function rangerFichiersEnAttente(brouillon: unknown): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+  if (!user) return false;
+  const admin = createAdminClient();
+  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/[/]+$/, "");
+  if (!base) return false;
+  const dossier = (bucket: string) => `${base}/storage/v1/object/public/${bucket}/${user.id}/`;
+  const lu = await lireStyle(admin, user.id);
+  // sans la page enregistrée, on ne sait pas ce qu'elle utilise : on ne range rien
+  if (!lu.disponible) return false;
+  const enCours = validerDisposition(brouillon, { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) }).disposition;
+  const gardes = new Set([...fichiersGardes(lu.style.disposition), ...fichiersGardes(enCours)]);
+  let parti = false;
+  for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
+    try {
+      const { data: objets } = await admin.storage.from(bucket).list(user.id, { limit: 100 });
+      const inutiles = (objets ?? []).filter((o) => o.name && !gardes.has(o.name)).map((o) => `${user.id}/${o.name}`);
+      if (inutiles.length) {
+        await admin.storage.from(bucket).remove(inutiles);
+        parti = true;
+      }
+    } catch {
+      // bucket pas encore créé : rien à ranger
+    }
+  }
+  return parti;
 }
 
 export async function enregistrerProfil(input: {
@@ -111,9 +148,9 @@ export async function enregistrerProfil(input: {
     : await admin.from("profile_names").delete().eq("user_id", user.id);
   if (n.error) return { ok: false, erreur: "Ton style est enregistré, mais pas ton prénom et nom. Réessaie dans un instant." };
 
-  // ménage : les fichiers de ses dossiers (images, vidéos) que la page n'utilise plus
+  // ménage : les fichiers de ses dossiers (images, vidéos, images en haut) que la page n'utilise plus
   if (dispositionOk) {
-    const gardes = new Set(blocsDe(style.disposition).filter(estMedia).map((b) => b.url.split("/").pop()));
+    const gardes = fichiersGardes(style.disposition);
     for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
       try {
         const { data: objets } = await admin.storage.from(bucket).list(user.id, { limit: 100 });

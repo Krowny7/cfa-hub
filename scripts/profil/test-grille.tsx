@@ -50,14 +50,17 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
     { k: "libre", f: "tuile" },
   ];
   const html = rend(<GrilleProfil disposition={d} rendre={nomme} />);
-  check("grille : une bande en p12, un héros en p8, une tuile en p4", html.includes('class="@container case p12"') && html.includes('class="@container case p8"') && html.includes('class="@container case p4"'));
+  check(
+    "grille : chaque case à sa place en variables (bande 12, héros 8, tuile 4)",
+    html.includes('--s:12;--h:1" class="@container case"') && html.includes('--s:8;--h:1" class="@container case"') && html.includes('--s:4;--h:1" class="@container case"'),
+  );
   const rangees = html.match(/<div class="rangee[^"]*">/g) ?? [];
   check("grille : 3 rangées ; « haute » absente de la rangée de bandes", rangees.length === 3 && rangees[0] === '<div class="rangee">' && rangees[1] === '<div class="rangee haute">');
   check("grille : vue publique, ni data-case ni data-place", !html.includes("data-case") && !html.includes("data-place"));
-  check("grille : la place libre, vide et cachée (sans libre())", html.includes('<div aria-hidden="true" class="vide p4"></div>'));
+  check("grille : la place libre, vide et cachée (sans libre())", html.includes('--s:4;--h:1" class="vide"></div>'));
 
   const vides = rend(<GrilleProfil disposition={d} rendre={(c) => (c.e.k === "amis" ? null : nomme(c))} />);
-  check("grille : un bloc sans contenu garde sa place, vide et caché", vides.includes('<div aria-hidden="true" class="vide p4"></div>') && !vides.includes('data-bloc="amis"'));
+  check("grille : un bloc sans contenu garde sa place, vide et caché", vides.includes('--s:4;--h:1" class="vide"></div>') && !vides.includes('data-bloc="amis"'));
 
   const rien: Disposition = [
     { k: "vitrine", f: "bande" },
@@ -86,9 +89,9 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
     vues.length === 2 && vues[0].i === 4 && vues[0].portee === 4 && vues[0].apres === 4 && vues[1].i === null && vues[1].portee === 4 && vues[1].apres === 4 && vues[1].rangee === 2,
     JSON.stringify(vues),
   );
-  check("grille : en édition, data-case sur chaque case, data-place sur la fin de rangée", compte(ed, "data-case=") === 5 && ed.includes('data-place="2"'));
-  check("grille : la fin de rangée prend sa portée par classe (pas de « span » en style)", ed.includes('data-place="2" class="case p4 placeEdition"') && !ed.includes("grid-column"));
-  check("grille : en édition, les places libres (élément libre, fin de rangée) ne jouent que dès 1 024 px", ed.includes('data-case="4" class="@container case p4 placeEdition"') && compte(ed, "placeEdition") === 2);
+  check("grille : en édition, data-case sur chaque case, data-place sur la fin de rangée", compte(ed, "data-case=") === 5 && ed.includes('data-place="2:1"'));
+  check("grille : la fin de rangée prend sa place en variables (aucun « span » lu sous 1 024 px)", /data-place="2:1" style="--c:\d+;--l:1;--s:\d+;--h:1" class="case placeEdition"/.test(ed) && !ed.includes("grid-column"));
+  check("grille : en édition, les places libres (élément libre, fin de rangée) ne jouent que dès 1 024 px", /data-case="4" style="[^"]*" class="@container case placeEdition"/.test(ed) && compte(ed, "placeEdition") === 2);
   const seulesLibres: Disposition = [
     { k: "vitrine", f: "bande" },
     { k: "libre", f: "heros" },
@@ -116,10 +119,51 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
   const invite = rend(<PageProfil disposition={[{ k: "vitrine", f: "bande" }, { k: "amis", f: "heros" }]} donnees={SOBRE} libre={<a href="/perso">Ajoute une image</a>} />);
   check("page : sans radar, la place de 4 à côté des amis reçoit l'invitation", invite.includes("Ajoute une image"));
   const pleine = rend(<PageProfil disposition={DISPOSITION_DEFAUT} donnees={RICHE} apres={<a href="/perso">Ajoute une image</a>} />);
-  check("page : par défaut, rangées pleines, l'invitation en tuile dans une rangée de plus", compte(pleine, "Ajoute une image") === 1 && pleine.includes('p4"><a href="/perso">') && pleine.lastIndexOf("rangee") < pleine.indexOf("Ajoute une image"));
+  check("page : par défaut, rangées pleines, l'invitation en tuile dans une rangée de plus", compte(pleine, "Ajoute une image") === 1 && pleine.includes('--s:4;--h:1"><a href="/perso">') && pleine.lastIndexOf("rangee") < pleine.indexOf("Ajoute une image"));
   check("page : sans apres, rien de plus", !rend(<PageProfil disposition={DISPOSITION_DEFAUT} donnees={RICHE} />).includes("/perso"));
   const vide = rend(<PageProfil disposition={[{ k: "reponses", f: "tuile" }, { k: "trophees", f: "tuile" }, { k: "journal", f: "tuile" }]} donnees={SOBRE} />);
   check("page : une rangée de blocs sans données ne se rend pas", !vide.includes("rangee"));
+}
+
+// ── la colonne, la carte, l'image en haut ──
+{
+  const dbl = rend(
+    <GrilleProfil
+      disposition={[
+        { k: "radar", f: "heros" },
+        { k: "vitrine", f: "colonne" },
+        { k: "amis", f: "tuile" },
+        { k: "reponses", f: "tuile" },
+      ]}
+      rendre={(c) => <BlocProfil bloc={c.e as Bloc} f={c.f} d={RICHE} />}
+    />,
+  );
+  check(
+    "colonne : à droite sur deux lignes (--c:9, --h:2), les deux tuiles en 2e ligne sous le héros",
+    dbl.includes('--c:1;--l:1;--s:8;--h:1"') && dbl.includes('--c:9;--l:1;--s:4;--h:2"') && dbl.includes('--c:1;--l:2;--s:4;--h:1"') && dbl.includes('--c:5;--l:2;--s:4;--h:1"'),
+  );
+  const img = { id: "hautaa1", url: "https://x.supabase.co/storage/v1/object/public/profil-medias/u/hautaa1.webp", ratio: 1.5, y: 20 };
+  const avec = rend(<BlocProfil bloc={{ k: "amis", f: "colonne", img }} f="colonne" d={RICHE} />);
+  check("image en haut : l'image et son cadrage, puis le module", avec.includes(`src="${img.url}"`) && avec.includes("50% 20%") && avec.indexOf(img.url) < avec.indexOf("<h3"));
+  check("image en haut : rien sans contenu (vue publique)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", img }} f="tuile" d={SOBRE} />) === "");
+  check("image en haut : pas sur la progression", !rend(<BlocProfil bloc={{ k: "progression", f: "heros", img }} f="heros" d={RICHE} />).includes(img.url));
+  const carte = rend(<BlocProfil bloc={{ k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026\nTrois heures par jour", img, f: "colonne" }} f="colonne" d={RICHE} />);
+  check("carte : l'image, le titre, le texte (retours gardés)", carte.includes(img.url) && carte.includes("Objectif Level I") && carte.includes("Novembre 2026\nTrois heures par jour"));
+  const vide = { k: "carte" as const, id: "carte02", titre: "", texte: null, f: "tuile" as const };
+  check("carte vide : rien en vue publique, l'invitation en édition", rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} />) === "" && rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} edition />).includes("Ta carte est vide"));
+}
+
+// ── vue publique : une ligne vide d'une rangée double tombe ──
+{
+  const pub = (d: Disposition) => rend(<GrilleProfil disposition={d} rendre={(c) => <BlocProfil bloc={c.e as Bloc} f={c.f} d={RICHE} />} />);
+  const a = pub([{ k: "radar", f: "heros" }, { k: "vitrine", f: "colonne" }, { k: "saisons", f: "bande" }]);
+  check("publique : colonne sans 2e ligne, posée sur une ligne (--h:1)", a.includes('--c:9;--l:1;--s:4;--h:1"') && !a.includes("--h:2"));
+  const b2 = pub([{ k: "vitrine", f: "colonne" }, { k: "libre", f: "heros" }, { k: "amis", f: "heros" }]);
+  check("publique : 1re ligne vide (place libre) : la colonne et les amis sur une ligne, sans case vide", b2.includes('--c:1;--l:1;--s:4;--h:1"') && b2.includes('--c:5;--l:1;--s:8;--h:1"') && !b2.includes('class="vide"'));
+  const c2 = pub([{ k: "radar", f: "heros" }, { k: "vitrine", f: "colonne" }, { k: "amis", f: "tuile" }, { k: "reponses", f: "tuile" }]);
+  check("publique : deux lignes pleines, la colonne garde ses deux lignes", c2.includes('--c:9;--l:1;--s:4;--h:2"'));
+  const ed = rend(<GrilleProfil edition disposition={[{ k: "radar", f: "heros" }, { k: "vitrine", f: "colonne" }]} rendre={(c) => <BlocProfil bloc={c.e as Bloc} f={c.f} d={RICHE} edition />} libre={() => <span>place</span>} />);
+  check("édition : la colonne garde ses deux lignes, la fin de 2e ligne est proposée", ed.includes('--c:9;--l:1;--s:4;--h:2"') && ed.includes('data-place="0:2"'));
 }
 
 // ── BlocProfil : chaque genre à chaque format permis ──
@@ -128,7 +172,8 @@ const MEDIAS: Record<"image" | "gif" | "video", BlocMedia> = {
   gif: DISPO_RICHE.find((e) => estMedia(e) && e.id === "gif1") as BlocMedia,
   video: DISPO_RICHE.find((e) => estMedia(e) && e.id === "video1") as BlocMedia,
 };
-const blocDe = (g: GenreBloc, f: Format): Bloc => (g === "image" || g === "gif" || g === "video" ? { ...MEDIAS[g], f } : { k: g, f });
+const blocDe = (g: GenreBloc, f: Format): Bloc =>
+  g === "image" || g === "gif" || g === "video" ? { ...MEDIAS[g], f } : g === "carte" ? { k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026", f } : { k: g, f };
 for (const g of Object.keys(FORMATS_PERMIS) as GenreBloc[]) {
   for (const f of FORMATS_PERMIS[g]) {
     for (const [nom, d] of [
@@ -307,7 +352,7 @@ for (const [f, n] of [
   const trous = editeur(aTrous, SOBRE);
   check(
     "éditeur : un élément libre et une fin de rangée proposent « Choisir un module », visés au glisser, cachés sous 1 024 px",
-    compte(trous, "Choisir un module") >= 2 && trous.includes('data-case="2" class="@container case p4 placeEdition"') && trous.includes('data-place="2" class="case p4 placeEdition"'),
+    compte(trous, "Choisir un module") >= 2 && /data-case="2" style="[^"]*" class="@container case placeEdition"/.test(trous) && /data-place="2:1" style="[^"]*" class="case placeEdition"/.test(trous),
   );
   const sobre = editeur(DISPO_SOBRE, { ...SOBRE, amis: null });
   check("éditeur : un bloc sans données garde son cadre et dit qu'il n'a rien à montrer", compte(sobre, "data-case=") === DISPO_SOBRE.length && sobre.includes("rien à montrer pour l&#x27;instant"));

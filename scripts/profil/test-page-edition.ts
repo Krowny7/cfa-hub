@@ -36,6 +36,7 @@ import {
   deplacerA,
   fermerPlace,
   mettreALaPlace,
+  peutAjouterCarte,
   peutAjouterMedia,
   pourPlace,
   remplirPlace,
@@ -100,7 +101,7 @@ const stable = (d: Disposition) => {
   const d: Disposition = [fixe("vitrine", "bande"), fixe("radar", "heros"), fixe("amis", "tuile")];
   const x = deplacer(d, 2, -1);
   check("deplacer : les amis avant le radar, chacun garde son format", court(x) === "vitrine:bande amis:tuile radar:heros", court(x));
-  check("deplacer : les rangées se recomposent (amis et radar sur une rangée pleine)", rangees(x).length === 2 && rangees(x)[1].libre === 0);
+  check("deplacer : les rangées se recomposent (amis et radar sur une rangée pleine)", rangees(x).length === 2 && rangees(x)[1].fins.length === 0);
   check("deplacer : le premier ne recule pas", deplacer(d, 0, -1) === d);
   check("deplacer : le dernier n'avance pas", deplacer(d, 2, 1) === d);
   // une place libre qui finirait la liste tombe
@@ -139,11 +140,41 @@ const stable = (d: Disposition) => {
 }
 
 // ── pourPlace ─────────────────────────────────────────────────────────
-check("pourPlace : progression dans 4 → héros (son défaut)", pourPlace("progression", 4) === "heros");
-check("pourPlace : saisons dans 8 → tuile (son défaut)", pourPlace("saisons", 8) === "tuile");
-check("pourPlace : image dans 8 → héros", pourPlace("image", 8) === "heros");
-check("pourPlace : vidéo dans 4 → tuile", pourPlace("video", 4) === "tuile");
-check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
+check("pourPlace : progression dans 4 → héros (son défaut)", pourPlace("progression", "tuile") === "heros");
+check("pourPlace : saisons dans 8 → tuile (son défaut)", pourPlace("saisons", "heros") === "tuile");
+check("pourPlace : image dans 8 → héros", pourPlace("image", "heros") === "heros");
+check("pourPlace : vidéo dans 4 → tuile", pourPlace("video", "tuile") === "tuile");
+check("pourPlace : radar dans 4 → tuile", pourPlace("radar", "tuile") === "tuile");
+check("pourPlace : folio dans une colonne → colonne", pourPlace("folio", "colonne") === "colonne");
+check("pourPlace : progression dans une colonne → héros (son défaut)", pourPlace("progression", "colonne") === "heros");
+
+// ── la colonne ────────────────────────────────────────────────────────
+{
+  const seule: Disposition = [fixe("folio", "colonne")];
+  const fins = placesVides(rangees(seule)[0], 0);
+  const x = remplirPlace(seule, fins[1], fixe("amis", "tuile"));
+  check("remplirPlace : 2e ligne d'une colonne seule, la 1re gardée libre (héros), le bloc dessous", court(x) === "folio:colonne libre:heros amis:heros" && rangees(x).length === 1, court(x));
+  const y = remplirPlace(seule, fins[0], fixe("amis", "tuile"));
+  check("remplirPlace : 1re ligne d'une colonne seule", court(y) === "folio:colonne amis:heros" && rangees(y)[0].cases[1].ligne === 1, court(y));
+  const d: Disposition = [fixe("radar", "heros"), fixe("folio", "colonne"), fixe("amis", "tuile"), fixe("reponses", "tuile")];
+  const z = retirer(d, 1);
+  check("retirer une colonne : sa place reste, libre, en colonne (le reste ne bouge pas)", court(z) === "radar:heros libre:colonne amis:tuile reponses:tuile", court(z));
+  check("changerFormat : en colonne", court(changerFormat([fixe("amis", "tuile")], 0, "colonne")) === "amis:colonne");
+  check("changerFormat : la progression ne va pas en colonne", changerFormat([fixe("progression", "heros")], 0, "colonne").length === 1 && court(changerFormat([fixe("progression", "heros")], 0, "colonne")) === "progression:heros");
+}
+
+// ── les cartes ────────────────────────────────────────────────────────
+{
+  const carte = (id: string): Bloc => ({ k: "carte", id, titre: "Ma carte", texte: null, f: "colonne" });
+  let d: Disposition = [fixe("vitrine", "bande")];
+  for (const id of ["carte01", "carte02", "carte03"]) d = ajouter(d, carte(id));
+  check("ajouter : 3 cartes", d.length === 4);
+  check("ajouter : une 4e carte refusée (même liste)", ajouter(d, carte("carte04")) === d && !peutAjouterCarte(d).ok);
+  check("ajouter : une carte déjà posée refusée", ajouter([carte("carte01")], carte("carte01")).length === 1);
+  const r = retirer(d, 1);
+  // sa place libre, seule dans sa rangée, part avec elle (normaliser)
+  check("retirer une carte : elle part", !r.some((e) => e.k === "carte" && e.id === "carte01") && r.length === 3, court(r));
+}
 
 // ── remplirPlace ──────────────────────────────────────────────────────
 {
@@ -164,7 +195,7 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
   const g: Disposition = [fixe("vitrine", "bande"), fixe("radar", "tuile")];
   const vide8 = placesVides(rangees(g)[1], 1)[0];
   check("remplirPlace : une image dans 8 → héros", court(remplirPlace(g, vide8, image("bande"))) === "vitrine:bande radar:tuile image:heros");
-  const perimee: PlaceVide = { rangee: 0, portee: 4, i: 0, apres: 0 };
+  const perimee: PlaceVide = { rangee: 0, ligne: 1, f: "tuile", portee: 4, i: 0, apres: 0 };
   check("remplirPlace : la place n'est plus libre (même liste)", remplirPlace(g, perimee, fixe("amis", "tuile")) === g);
 }
 
@@ -174,7 +205,7 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
   const fin = placesVides(rangees(d)[2], 2)[0];
   check("placesVides : fin de la 3e rangée (8)", fin.portee === 8 && fin.apres === 3);
   const x = deplacerVers(d, 1, fin);
-  check("deplacerVers : le radar va dans la fin de rangée, en héros", court(x) === "vitrine:bande amis:tuile trophees:tuile radar:heros", court(x));
+  check("deplacerVers : le radar va dans la fin de rangée visée, en héros ; sa place reste libre (rien ne remonte)", court(x) === "vitrine:bande libre:heros amis:tuile trophees:tuile radar:heros" && rangees(x)[2].cases.map((c) => c.e.k).join() === "trophees,radar", court(x));
   check("deplacerVers : le dernier bloc vers sa propre fin de rangée (même liste)", deplacerVers(d, 3, fin) === d);
   const l: Disposition = [fixe("folio", "tuile"), libre("tuile"), gif("tuile"), fixe("reponses", "tuile")];
   const place = placesVides(rangees(l)[0], 0)[0];
@@ -183,8 +214,40 @@ check("pourPlace : radar dans 4 → tuile", pourPlace("radar", 4) === "tuile");
   const avant: Disposition = [fixe("reponses", "heros"), fixe("folio", "tuile"), libre("heros"), gif("tuile")];
   const p2 = placesVides(rangees(avant)[1], 1)[0];
   const w = deplacerVers(avant, 0, p2);
-  check("deplacerVers : un bloc d'avant la place (index décalé)", court(w) === "folio:tuile reponses:heros gif:tuile", court(w));
+  check("deplacerVers : un bloc d'avant la place, posé là où on l'a lâché (sa place reste libre)", court(w) === "libre:heros folio:tuile reponses:heros gif:tuile", court(w));
   check("deplacerVers : une place libre ne se déplace pas", deplacerVers(l, 1, place) === l);
+}
+
+// ── deplacerVers et la colonne (relecture) ────────────────────────────
+{
+  const carte: Bloc = { k: "carte", id: "carte01", titre: "Ma carte", texte: null, f: "colonne" };
+  // la carte seule à gauche ; Amis glissé sur sa 2e ligne : la carte ne change pas de côté, Amis sous la 1re ligne gardée libre
+  const d: Disposition = [fixe("vitrine", "bande"), fixe("radar", "heros"), fixe("amis", "tuile"), carte];
+  const fins = placesVides(rangees(d)[2], 2);
+  const x = deplacerVers(d, 2, fins[1]);
+  const r = rangees(x).find((g) => g.cases.some((c) => c.e.k === "carte"))!;
+  check(
+    "deplacerVers : vers la 2e ligne d'une colonne seule, la colonne reste à gauche et le bloc va en 2e ligne",
+    r.cases.find((c) => c.e.k === "carte")!.col === 1 && r.cases.find((c) => c.e.k === "amis")?.ligne === 2,
+    court(x),
+  );
+  // colonne à gauche, 1re ligne pleine : Saisons glissée sur la 2e ligne y va bien
+  const e: Disposition = [fixe("folio", "colonne"), fixe("saisons", "tuile"), fixe("amis", "tuile")];
+  const f2 = placesVides(rangees(e)[0], 0).find((p) => p.ligne === 2)!;
+  const y = deplacerVers(e, 1, f2);
+  check("deplacerVers : le bloc de la 1re ligne va en 2e ligne (la 1re garde sa place libre)", rangees(y)[0].cases.find((c) => c.e.k === "saisons")?.ligne === 2, court(y));
+  // le dernier de la 1re ligne, sur la fin de la 2e ligne (combler) : il descend
+  const g: Disposition = [fixe("folio", "colonne"), fixe("amis", "tuile")];
+  const f3 = placesVides(rangees(g)[0], 0).find((p) => p.ligne === 2)!;
+  const z = deplacerVers(g, 1, f3);
+  check("deplacerVers : le dernier de la 1re ligne descend en 2e ligne", rangees(z)[0].cases.find((c) => c.e.k === "amis")?.ligne === 2, court(z));
+  const seule: Disposition = [fixe("folio", "colonne")];
+  check("deplacerVers : une colonne seule sur la fin de sa propre ligne (même liste)", deplacerVers(seule, 0, placesVides(rangees(seule)[0], 0)[0]) === seule && deplacerVers(seule, 0, placesVides(rangees(seule)[0], 0)[1]) === seule);
+  // la progression ne remplit pas une place libre trop petite (elle irait casser la rangée)
+  const h: Disposition = [fixe("radar", "heros"), libre("colonne"), fixe("amis", "tuile"), fixe("reponses", "tuile")];
+  const pc = placesVides(rangees(h)[0], 0).find((p) => p.i === 1)!;
+  check("remplirPlace : la progression refusée dans une place colonne (même liste)", remplirPlace(h, pc, fixe("progression", "heros")) === h);
+  check("remplirPlace : un module accepté dans une place colonne, en colonne", court(remplirPlace(h, pc, fixe("folio", "tuile"))) === "radar:heros folio:colonne amis:tuile reponses:tuile");
 }
 
 // ── ajouter, retirer, fermerPlace, blocsMasques ───────────────────────

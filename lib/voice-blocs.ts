@@ -10,6 +10,8 @@ import type { Visibilite } from "@/lib/profil/catalogue";
 
 export const BLOCS_PROFIL = {
   // l'état vide d'un bloc dans Personnaliser (texte de l'éditeur d'avant)
+  carte: "Carte",
+  carteVide: "Ta carte est vide : écris-y un titre, ou mets-lui une image, dans ses réglages.",
   rienAMontrer: " : rien à montrer pour l'instant. Le bloc apparaîtra sur ta page dès qu'il aura du contenu.",
 
   // Chiffres clés

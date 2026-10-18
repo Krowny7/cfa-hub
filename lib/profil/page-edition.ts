@@ -14,23 +14,31 @@
 import { EDITEUR_PAGE } from "@/lib/voice-editeur";
 import {
   BLOCS,
+  CARTES_MAX,
   ELEMENTS_MAX,
+  IMAGES_HAUT_MAX,
   FORMATS_PERMIS,
   FORMAT_DEFAUT,
   MEDIAS_MAX,
   VIDEOS_MAX,
   estBloc,
+  estCarte,
   estLibre,
   estMedia,
+  imagesHaut,
   formatPermis,
   formatsDe,
   genreDe,
+  hauteur,
   normaliser,
+  portee,
+  rangees,
   type Bloc,
   type CleBloc,
   type Disposition,
   type ElementPage,
   type Format,
+  type FormePlace,
   type GenreBloc,
   type PlaceVide,
 } from "@/lib/profil/disposition";
@@ -42,30 +50,32 @@ const auFormat = (b: Bloc, f: Format): Bloc => ({ ...b, f: formatPermis(genreDe(
 
 /**
  * Le bloc peut-il entrer sur la page ? Un bloc fixe une fois seulement ; un
- * média : id nouveau, 6 médias au plus, dont une vidéo.
+ * média : id nouveau, 6 médias au plus, dont une vidéo ; une carte : id
+ * nouveau, 3 cartes au plus.
  */
 function peutEntrer(d: Disposition, b: Bloc): boolean {
+  if (estCarte(b)) return !d.some((e) => estCarte(e) && e.id === b.id) && peutAjouterCarte(d).ok;
   if (!estMedia(b)) return !d.some((e) => e.k === b.k);
   if (d.some((e) => estMedia(e) && e.id === b.id)) return false;
   return peutAjouterMedia(d, b.type === "video").ok;
 }
 
 /**
- * Insère `e` à l'index `a` (0 à d.length). Au-delà de 20 éléments, la
- * dernière place libre part d'abord (l'index suit) ; sans place libre,
- * null : refusé.
+ * Insère `es` à l'index `a` (0 à d.length). Au-delà de 20 éléments, les
+ * dernières places libres partent d'abord (l'index suit) ; sans place
+ * libre, null : refusé.
  */
-function inserer(d: Disposition, a: number, e: ElementPage): Disposition | null {
+function inserer(d: Disposition, a: number, ...es: ElementPage[]): Disposition | null {
   let l = d;
   let ou = a;
-  if (l.length >= ELEMENTS_MAX) {
+  while (l.length + es.length > ELEMENTS_MAX) {
     let j = l.length - 1;
     while (j >= 0 && !estLibre(l[j])) j--;
     if (j < 0) return null;
     l = [...l.slice(0, j), ...l.slice(j + 1)];
     if (j < ou) ou--;
   }
-  return [...l.slice(0, ou), e, ...l.slice(ou)];
+  return [...l.slice(0, ou), ...es, ...l.slice(ou)];
 }
 
 /** Change le format du bloc `i` ; refusé si le format n'est pas permis (ou si `i` est une place libre). */
@@ -116,46 +126,60 @@ export function mettreALaPlace(d: Disposition, i: number, k: CleBloc): Dispositi
   return normaliser(d.map((e, j) => (j === i ? { k, f: formatPermis(k, e.f) } : e)));
 }
 
-/** Le format qui remplit une place de 8 (héros) ou de 4 (tuile), s'il va au bloc ; sinon son format par défaut. */
-export function pourPlace(g: GenreBloc, p: 4 | 8): Format {
-  const voulu: Format = p === 8 ? "heros" : "tuile";
-  return FORMATS_PERMIS[g].includes(voulu) ? voulu : FORMAT_DEFAUT[g];
+/** Le format qui remplit une place (tuile, héros ou colonne), s'il va au bloc ; sinon son format par défaut. */
+export function pourPlace(g: GenreBloc, f: FormePlace): Format {
+  return FORMATS_PERMIS[g].includes(f) ? f : FORMAT_DEFAUT[g];
 }
 
 /**
  * Pose le bloc `b` dans la place vide `p` : un élément « libre » est
- * remplacé ; la fin d'une rangée reçoit le bloc juste après `p.apres`. Le
- * format est celui de la place (pourPlace). Refusé si le bloc est déjà
- * posé, si les médias sont au complet, ou si la place n'existe plus.
+ * remplacé ; la fin d'une ligne reçoit le bloc juste après `p.apres` (une
+ * fin de 2e ligne à `combler` reçoit d'abord la place libre qui garde le
+ * reste de la 1re). Le format est celui de la place (pourPlace). Refusé si
+ * le bloc est déjà posé, si les médias ou les cartes sont au complet, ou si
+ * la place n'existe plus.
  */
 export function remplirPlace(d: Disposition, p: PlaceVide, b: Bloc): Disposition {
   if (!peutEntrer(d, b)) return d;
-  const nouveau = { ...b, f: pourPlace(genreDe(b), p.portee) } as Bloc;
+  const nouveau = { ...b, f: pourPlace(genreDe(b), p.f) } as Bloc;
   if (p.i !== null) {
-    if (!dans(d, p.i) || !estLibre(d[p.i])) return d;
+    // un élément « libre » ne s'élargit pas : un bloc qui ne tient pas dans sa place (la progression dans une tuile ou une colonne) est refusé
+    if (!dans(d, p.i) || !estLibre(d[p.i]) || portee(nouveau.f) > portee(p.f) || hauteur(nouveau.f) > hauteur(p.f)) return d;
     return normaliser(d.map((e, j) => (j === p.i ? nouveau : e)));
   }
   if (p.apres < -1 || p.apres >= d.length) return d;
-  const l = inserer(d, p.apres + 1, nouveau);
+  const l = p.combler ? inserer(d, p.apres + 1, { k: "libre", f: p.combler }, nouveau) : inserer(d, p.apres + 1, nouveau);
   return l ? normaliser(l) : d;
 }
 
 /**
  * Le bloc `i` quitte sa place et va dans la place vide `p` (un élément
- * « libre », ou la fin d'une rangée), au format de cette place. Refusé si
- * `i` n'est pas un bloc, ou s'il est déjà juste avant cette fin de rangée.
+ * « libre », ou la fin d'une ligne), au format de cette place. Hors bande,
+ * il laisse d'abord sa place libre (comme retirer) : rien ne remonte, la
+ * place visée (calculée sur la page affichée, avec son `combler` et le côté
+ * de sa colonne) reste exacte ; une place libre qui finit la page, ou une
+ * rangée faite seulement d'elles, part ensuite (normaliser). Une bande, qui
+ * ne laisse pas de place, est retirée et les index suivent. Refusé si `i`
+ * n'est pas un bloc, si c'est la place elle-même, ou si c'est la fin de sa
+ * propre ligne, juste après lui (une colonne : la fin de l'une de ses lignes).
  */
 export function deplacerVers(d: Disposition, i: number, p: PlaceVide): Disposition {
   if (!dans(d, i) || !estBloc(d[i])) return d;
   const b = d[i] as Bloc;
-  if (p.i === i || (p.i === null && p.apres === i)) return d;
-  // les index de la place, une fois le bloc retiré
-  const apres = (x: number) => (x > i ? x - 1 : x);
-  const sans = d.filter((_, j) => j !== i);
-  const place: PlaceVide = p.i !== null ? { ...p, i: apres(p.i), apres: apres(p.i) } : { ...p, apres: apres(p.apres) };
-  const l = remplirPlace(sans, place, b);
+  if (p.i === i) return d;
+  if (p.i === null && p.apres === i && (b.f === "colonne" || rangees(d)[p.rangee]?.cases.find((c) => c.i === i)?.ligne === p.ligne)) return d;
+  let base: Disposition;
+  let place: PlaceVide = p;
+  if (b.f !== "bande") base = d.map((x, j) => (j === i ? ({ k: "libre", f: b.f } as ElementPage) : x));
+  else {
+    if (p.i === null && p.apres === i) return d;
+    const apres = (x: number) => (x > i ? x - 1 : x);
+    base = d.filter((_, j) => j !== i);
+    place = p.i !== null ? { ...p, i: apres(p.i), apres: apres(p.i) } : { ...p, apres: apres(p.apres) };
+  }
+  const l = remplirPlace(base, place, b);
   // refusé, ou rien n'a bougé (un bloc qui ne va pas à la place retombe où il était) : même liste
-  return l === sans || JSON.stringify(l) === JSON.stringify(d) ? d : l;
+  return l === base || JSON.stringify(l) === JSON.stringify(d) ? d : l;
 }
 
 /** Ajoute le bloc `b` à la fin de la page, à son format (le plus proche s'il n'est pas permis). */
@@ -167,8 +191,8 @@ export function ajouter(d: Disposition, b: Bloc): Disposition {
 
 /**
  * Retire le bloc `i` : un bloc fixe est masqué (il garde ses réglages), un
- * média est retiré (son fichier part à l'enregistrement). En tuile ou en
- * héros, sa place reste, libre : le reste de la page ne bouge pas (une
+ * média ou une carte est retiré (son fichier part à l'enregistrement). En
+ * tuile, en colonne ou en héros, sa place reste, libre : le reste de la page ne bouge pas (une
  * place libre de fin de page ou une rangée toute libre part, normaliser).
  * Une bande part avec sa rangée.
  */
@@ -201,6 +225,18 @@ export function fermerPlace(d: Disposition, i: number): Disposition {
 
 /** Les blocs fixes absents de la page (masqués), dans l'ordre du catalogue. */
 export const blocsMasques = (d: Disposition) => BLOCS.filter((x) => !d.some((e) => e.k === x.k));
+
+/** Peut-on ajouter une carte ? 3 au plus, et 20 éléments. */
+export function peutAjouterCarte(d: Disposition): { ok: boolean; raison: string | null } {
+  if (d.filter(estCarte).length >= CARTES_MAX) return { ok: false, raison: EDITEUR_PAGE.refusCartes };
+  if (d.length >= ELEMENTS_MAX && !d.some(estLibre)) return { ok: false, raison: EDITEUR_PAGE.refusPlein };
+  return { ok: true, raison: null };
+}
+
+/** Peut-on poser une image en haut d'un bloc de plus ? 4 au plus sur la page (en changer une reste permis). */
+export function peutAjouterImageHaut(d: Disposition): { ok: boolean; raison: string | null } {
+  return imagesHaut(d).length >= IMAGES_HAUT_MAX ? { ok: false, raison: EDITEUR_PAGE.refusImagesHaut } : { ok: true, raison: null };
+}
 
 /** Peut-on ajouter un média (une vidéo si `video`) ? 6 médias au plus, dont une vidéo, et 20 éléments. */
 export function peutAjouterMedia(d: Disposition, video: boolean): { ok: boolean; raison: string | null } {
