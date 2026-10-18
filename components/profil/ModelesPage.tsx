@@ -72,8 +72,8 @@ export function ModelesPage({
   const surEnregistree = disposition === enregistree.disposition && memeChiffres(showcase, enregistree.showcase);
   const clicheActif = cliche && cliche.base === enregistree.disposition && !surEnregistree ? cliche : null;
   // toute page se remplace après confirmation, même un modèle tout juste appliqué ; seule la page de départ intacte
-  // s'en passe (sans image en haut : un modèle qui ne pose pas son module la perdrait)
-  const confirmer = !surDepart || imagesHaut(disposition).length > 0;
+  // s'en passe (sans média en haut ni couleurs inversées : un modèle qui ne pose pas leur module les perdrait)
+  const confirmer = !surDepart || imagesHaut(disposition).length > 0 || disposition.some((e) => "inv" in e && e.inv);
 
   // la confirmation ouverte : le focus sur « Remplacer » ; un toucher ailleurs l'annule
   useEffect(() => {

@@ -210,6 +210,11 @@ console.log("# Les cartes et les images en haut");
     check(`page de départ, ${n} carte(s) : gardées, rangées pleines, reconnue`, dep.disposition.filter((e) => e.k === "carte").length === n && rangees(dep.disposition).every((x) => x.fins.length === 0) && estPageDepart(dep.disposition, RICHE, dep.showcase), silhouette(dep.disposition));
     check(`page de départ, ${n} carte(s) : les amis gardent leur image en haut`, dep.disposition.some((e) => e.k === "amis" && "img" in e && !!e.img));
   }
+  const inversee = appliquerModele(modele("competiteur"), lu([{ k: "amis", f: "tuile", inv: true }]), RICHE);
+  check("un module garde ses couleurs inversées dans un modèle", inversee.disposition.some((e) => e.k === "amis" && "inv" in e && e.inv === true));
+  const reordonne = inversee.disposition.map((e) => (e.k === "amis" ? { inv: true as const, f: e.f, k: "amis" as const } : e));
+  check("le modèle actuel reconnu quel que soit l'ordre des champs", modeleActuel(reordonne, RICHE, inversee.showcase) === "competiteur");
+  check("le modèle actuel reste reconnu avec des couleurs inversées", modeleActuel(inversee.disposition, RICHE, inversee.showcase) === "competiteur");
   const avecMedias = lu([{ k: "radar", f: "heros" }, img("imagea1"), vid("video01"), carte("carte01"), carte("carte02")]);
   const r = appliquerModele(modele("competiteur"), avecMedias, RICHE);
   check("médias puis cartes en fin, en rangées pleines", rangees(r.disposition).every((x) => x.fins.length === 0) && r.disposition.filter((e) => e.k === "carte" || e.k === "media").length === 4, silhouette(r.disposition));

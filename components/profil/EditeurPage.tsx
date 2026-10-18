@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Clapperboard, EyeOff, GripVertical, ImagePlay, ImagePlus, LayoutPanelTop, MoreHorizontal, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Clapperboard, Contrast, EyeOff, GripVertical, ImagePlay, ImagePlus, LayoutPanelTop, MoreHorizontal, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { GrilleProfil } from "@/components/profil/GrilleProfil";
 import { BlocProfil, ICONE_BLOC, couvertureDe } from "@/components/profil/BlocsProfil";
 import { BanqueGifs } from "@/components/profil/BanqueGifs";
@@ -14,6 +14,7 @@ import { VITRINE, VITRINE_MAX, type VitrineKey } from "@/lib/profil/catalogue";
 import {
   BLOCS,
   FORMATS,
+  FORMATS_PERMIS,
   FORMAT_DEFAUT,
   LEGENDE_MAX,
   TEXTE_CARTE_MAX,
@@ -56,6 +57,7 @@ import {
   deplacerVers,
   echanger,
   fermerPlace,
+  inverser,
   mettreALaPlace,
   peutAjouterCarte,
   peutAjouterImageHaut,
@@ -94,7 +96,8 @@ const APPUI_LONG_MS = 380;
 const BORD_PX = 90;
 
 /** où l'on pose un bloc tenu : un élément de la liste (bloc ou place libre), ou la fin d'une ligne */
-type Cible = { type: "case"; i: number } | { type: "place"; rangee: number; ligne: number };
+/** `moitie` : la moitié visée d'une place coupée en deux mini-tuiles (0 à gauche, 1 à droite) */
+type Cible = ({ type: "case"; i: number } | { type: "place"; rangee: number; ligne: number }) & { moitie?: 0 | 1 };
 /** le menu ouvert : son genre et le bloc (sa clé) */
 type Menu = { type: "format" | "reglages" | "plus"; cle: string };
 
@@ -277,6 +280,8 @@ export function EditeurPage({
   const [menu, setMenu] = useState<Menu | null>(null);
   // la feuille « Choisir un module » : ouverte depuis une place vide (destination), ou pour la fin de la page (null)
   const [feuille, setFeuille] = useState<{ destination: PlaceVide | null } | null>(null);
+  // les places de 2/3 coupées en deux mini-tuiles (affichage seulement), pour la page où on les a coupées
+  const [coupees, setCoupees] = useState<{ d: Disposition; cles: string[] }>({ d: disposition, cles: [] });
   const [banque, setBanque] = useState(false);
   const [envoi, setEnvoi] = useState<{ enCours: boolean; texte: string } | null>(null);
   const [tire, setTire] = useState<number | null>(null);
@@ -320,12 +325,15 @@ export function EditeurPage({
   };
 
   // ── le glisser au pointeur : l'appui (long au doigt), le fantôme qui suit, la place visée sous le doigt ──
+  /** la place visée, ou sa moitié si elle est coupée en deux mini-tuiles */
+  const versMoitie = (p: PlaceVide | null, c: Cible): PlaceVide | null =>
+    p && p.f === "heros" && c.moitie !== undefined ? { ...p, f: "tuile", portee: 4, moitie: true, cote: c.moitie } : p;
   const deposer = (i: number, c: Cible) => {
     const l = courante.current;
     if (c.type === "case") {
       if (c.i === i || !l[c.i]) return;
       if (estLibre(l[c.i])) {
-        const p = placeDe(c, l);
+        const p = versMoitie(placeDe(c, l), c);
         if (p) appliquer(deplacerVers(l, i, p));
       }
       // sur un autre bloc : sur ordinateur, ils échangent place et format ; au téléphone (une colonne,
@@ -333,7 +341,7 @@ export function EditeurPage({
       else appliquer(grandEcran() ? echanger(l, i, c.i) : deplacerA(l, i, c.i));
       return;
     }
-    const p = placeDe(c, l);
+    const p = versMoitie(placeDe(c, l), c);
     if (p) appliquer(deplacerVers(l, i, p));
   };
   const appui = useRef<{ i: number; nom: string; x: number; y: number; souris: boolean; leve: boolean; minuteur: number } | null>(null);
@@ -353,8 +361,11 @@ export function EditeurPage({
       let c: Cible | null = null;
       const k = el?.closest<HTMLElement>("[data-case]")?.dataset.case;
       const r = el?.closest<HTMLElement>("[data-place]")?.dataset.place;
-      if (k !== undefined) c = { type: "case", i: Number(k) };
-      else if (r !== undefined) c = { type: "place", rangee: Number(r.split(":")[0]), ligne: Number(r.split(":")[1] ?? 1) };
+      // une place coupée en deux : la moitié survolée
+      const m = el?.closest<HTMLElement>("[data-moitie]")?.dataset.moitie;
+      const moitie = m === "0" || m === "1" ? { moitie: Number(m) as 0 | 1 } : {};
+      if (k !== undefined) c = { type: "case", i: Number(k), ...moitie };
+      else if (r !== undefined) c = { type: "place", rangee: Number(r.split(":")[0]), ligne: Number(r.split(":")[1] ?? 1), ...moitie };
       cibleRef.current = c;
       setCible(c);
     };
@@ -623,7 +634,8 @@ export function EditeurPage({
     const avecImage = peutAvoirImage(b);
     const img = avecImage && !media ? (b as Exclude<Bloc, BlocMedia>).img : undefined;
     const permis = formatsDe(b);
-    const aReglages = b.k === "vitrine" || b.k === "folio" || b.k === "journal" || !!media || avecImage;
+    // tout bloc a des réglages : au moins ses couleurs inversées
+    const aReglages = true;
     const ouvert = (t: Menu["type"]) => menu?.type === t && menu.cle === cle;
     const vise = cible?.type === "case" && cible.i === i && tire !== i;
     const majMedia = (champs: Partial<BlocMedia>) => onChange(d.map((x, j) => (j === i ? ({ ...x, ...champs } as BlocMedia) : x)));
@@ -761,6 +773,21 @@ export function EditeurPage({
           {ouvert("reglages") && (
             <MenuFlottant ancre={`reglages:${cle}`} largeur={300} label={T.reglages} onFermer={fermer}>
               <div className="flex flex-col gap-2 p-1">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!b.inv}
+                  className={s.ligne + " flex-wrap py-1.5" + (b.inv ? " " + s.ligneSur : "")}
+                  onClick={() => appliquer(inverser(d, i))}
+                >
+                  <Contrast size={14} aria-hidden /> {T.inverse}
+                  <span className="t-micro ml-auto" style={b.inv ? { color: "inherit" } : undefined}>
+                    {b.inv ? T.oui : T.non}
+                  </span>
+                  <span className="t-micro basis-full pl-6 font-normal" style={b.inv ? { color: "inherit" } : undefined}>
+                    {T.inverseAide}
+                  </span>
+                </button>
                 {carte && (
                   <>
                     <label className="flex flex-col gap-1 px-1.5 pt-1">
@@ -997,7 +1024,7 @@ export function EditeurPage({
                 }}
               >
                 {media || carte ? <Trash2 size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />} {media ? T.retirerMedia : carte ? T.retirerCarte : T.masquer}
-                <span className="t-micro ml-auto font-normal">{media ? T.retirerMediaAide : carte ? T.retirerCarteAide : img ? T.masquerImageAide : T.masquerAide}</span>
+                <span className="t-micro ml-auto font-normal">{media ? T.retirerMediaAide : carte ? T.retirerCarteAide : img || b.inv ? T.masquerImageAide : T.masquerAide}</span>
               </button>
             </MenuFlottant>
           )}
@@ -1012,21 +1039,57 @@ export function EditeurPage({
   };
 
   // ── une place vide (élément « libre » ou fin de rangée), ordinateur seulement ──
+  /** l'identité d'une place sur la page affichée : l'index de l'élément « libre », ou la fin d'une ligne */
+  const clePlace = (p: PlaceVide) => (p.i !== null ? `i${p.i}` : `f${p.rangee}:${p.ligne}`);
+  const estCoupee = (p: PlaceVide) => coupees.d === d && coupees.cles.includes(clePlace(p));
+  const couper = (p: PlaceVide, oui: boolean) => {
+    const cles = coupees.d === d ? coupees.cles : [];
+    setCoupees({ d, cles: oui ? [...cles, clePlace(p)] : cles.filter((c) => c !== clePlace(p)) });
+  };
   const placeEdition = (p: PlaceVide) => {
     const f = p.f;
     const vise = tire !== null && (p.i !== null ? cible?.type === "case" && cible.i === p.i : cible?.type === "place" && cible.rangee === p.rangee && cible.ligne === p.ligne);
+    const fermer =
+      p.i !== null ? (
+        <button type="button" className="t-micro inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 hover:text-white" onClick={() => appliquer(fermerPlace(d, p.i as number))}>
+          <X size={12} aria-hidden /> {T.fermerPlace}
+        </button>
+      ) : null;
+    // une place de 2/3 coupée : deux places de mini-tuile côte à côte (le bloc choisi y va en mini-tuile)
+    if (f === "heros" && estCoupee(p)) {
+      return (
+        <div className={s.moities + " " + s.grandSeul}>
+          {([0, 1] as const).map((n) => (
+            <div key={n} data-moitie={n} className={s.caseLibre + (vise && cible?.moitie === n ? " " + s.libreVisee : "")}>
+              <div className="flex flex-col items-center gap-2 p-4 text-center">
+                <button type="button" className="btn btn-secondary" onClick={() => setFeuille({ destination: { ...p, f: "tuile", portee: 4, moitie: true, cote: n } })}>
+                  <Plus size={16} aria-hidden /> {T.choisirModule}
+                </button>
+                <span className="t-micro">{T.placeLibre("tuile")}</span>
+                {n === 1 && (
+                  <button type="button" className="t-micro inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 hover:text-white" onClick={() => couper(p, false)}>
+                    {T.unePlace}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
     return (
       <div className={s.caseLibre + " " + s.grandSeul + (vise ? " " + s.libreVisee : "")}>
         <div className="flex flex-col items-center gap-2 p-5 text-center">
           <button type="button" className="btn btn-secondary" onClick={() => setFeuille({ destination: p })}>
             <Plus size={16} aria-hidden /> {T.choisirModule}
           </button>
-          <span className="t-micro">{T.placeLibre(f)}</span>
-          {p.i !== null && (
-            <button type="button" className="t-micro inline-flex min-h-[32px] items-center gap-1 rounded-full px-2 hover:text-white" onClick={() => appliquer(fermerPlace(d, p.i as number))}>
-              <X size={12} aria-hidden /> {T.fermerPlace}
+          {f === "heros" && (
+            <button type="button" className="btn btn-ghost btn-sm" title={T.deuxMiniAide} onClick={() => couper(p, true)}>
+              <Plus size={14} aria-hidden /> {T.deuxMini}
             </button>
           )}
+          <span className="t-micro">{T.placeLibre(f)}</span>
+          {fermer}
         </div>
       </div>
     );
@@ -1079,7 +1142,14 @@ export function EditeurPage({
             <p className="t-eyebrow m-0 pb-1">{T.masques}</p>
             {masques.length ? (
               masques.map((x) => (
-                <button key={x.k} type="button" className={s.ligne} onClick={() => choisirBloc(x.k)}>
+                <button
+                  key={x.k}
+                  type="button"
+                  className={s.ligne}
+                  // une moitié de place ne prend qu'une mini-tuile : la progression n'en a pas
+                  disabled={!!feuille?.destination?.moitie && !FORMATS_PERMIS[x.k].includes("tuile")}
+                  onClick={() => choisirBloc(x.k)}
+                >
                   {ICONE_BLOC[x.k]} {x.nom}
                   {"neuf" in x && x.neuf && <span className="t-micro ml-auto">{T.nouveau}</span>}
                 </button>

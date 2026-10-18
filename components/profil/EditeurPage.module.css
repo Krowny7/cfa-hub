@@ -193,3 +193,16 @@
     display: none !important;
   }
 }
+
+/* une place de 2/3 coupée en deux mini-tuiles : deux places côte à côte,
+   séparées comme deux cases de la grille */
+.moities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .moities {
+    gap: 18px;
+  }
+}

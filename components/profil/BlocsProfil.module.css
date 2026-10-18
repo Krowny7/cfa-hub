@@ -129,10 +129,12 @@
   filter: brightness(0.86);
 }
 /* la planche du folio, lisible la nuit */
-:global(html[data-theme="nuit"]) .folioNuit > span {
+:global(html[data-theme="nuit"]) .folioNuit > span,
+:global(html:not([data-theme="nuit"]) .rl-inverse) .folioNuit > span {
   background: var(--surface-2) !important;
 }
-:global(html[data-theme="nuit"]) .folioNuit :global(.font-brand) {
+:global(html[data-theme="nuit"]) .folioNuit :global(.font-brand),
+:global(html:not([data-theme="nuit"]) .rl-inverse) .folioNuit :global(.font-brand) {
   color: var(--ink) !important;
 }
 
@@ -216,4 +218,15 @@
 .texteCarte {
   white-space: pre-line;
   overflow-wrap: anywhere;
+}
+
+/* les couleurs inversées d'un bloc (.rl-inverse) : l'enveloppe passe la
+   hauteur de la case au bloc */
+.inverse {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.inverse > * {
+  flex: 1 1 auto;
 }

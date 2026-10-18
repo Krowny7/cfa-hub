@@ -16,6 +16,7 @@ import {
   blocsDe,
   estLibre,
   estMedia,
+  nomFormat,
   placesVides,
   rangees,
   validerDisposition,
@@ -36,6 +37,7 @@ import {
   echanger,
   deplacerA,
   fermerPlace,
+  inverser,
   mettreALaPlace,
   peutAjouterCarte,
   peutAjouterImageHaut,
@@ -179,6 +181,34 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   check("sansMediaHaut : le média en haut part, le reste ne bouge pas", !("img" in sans[0]) && sans[1] === d[1] && sansMediaHaut(sans, 0) === sans && sansMediaHaut(d, 1) === d);
   const avecBlocVideo: Disposition = [fixe("amis", "tuile"), video("tuile")];
   check("peutAjouterImageHaut : un bloc vidéo déjà là, pas de vidéo en haut", !peutAjouterImageHaut(avecBlocVideo, true, 0).ok && peutAjouterImageHaut(avecBlocVideo, false, 0).ok);
+}
+
+// ── mini-tuiles et couleurs inversées ─────────────────────────────────
+{
+  check("le format 1/3 s'appelle Mini-tuile", nomFormat("tuile") === "Mini-tuile");
+  // une place libre de 2/3 coupée : le bloc en mini-tuile, l'autre moitié libre, rien ne bouge autour
+  const d: Disposition = [fixe("radar", "colonne"), libre("heros"), fixe("amis", "tuile"), fixe("reponses", "tuile")];
+  const p = placesVides(rangees(d)[0], 0).find((x) => x.i === 1)!;
+  const x = remplirPlace(d, { ...p, f: "tuile", portee: 4, moitie: true }, fixe("folio", "heros"));
+  check("remplirPlace : la moitié d'un élément libre de 2/3", court(x) === "radar:colonne folio:tuile libre:tuile amis:tuile reponses:tuile", court(x));
+  check("… la 2e ligne ne bouge pas", rangees(x)[0].cases.filter((c) => c.ligne === 2).map((c) => c.e.k).join() === "amis,reponses");
+  // la fin d'une ligne de 2/3 coupée : le bloc en mini-tuile, une place de 4 reste
+  const e: Disposition = [fixe("radar", "heros"), fixe("vitrine", "colonne")];
+  const fin = placesVides(rangees(e)[0], 0).find((f) => f.ligne === 2)!;
+  const y = remplirPlace(e, { ...fin, f: "tuile", portee: 4, moitie: true }, fixe("amis", "heros"));
+  check("remplirPlace : la moitié d'une fin de 2/3", court(y) === "radar:heros vitrine:colonne amis:tuile" && rangees(y)[0].fins[0]?.portee === 4, court(y));
+  const xd = remplirPlace(d, { ...p, f: "tuile", portee: 4, moitie: true, cote: 1 }, fixe("folio", "heros"));
+  check("remplirPlace : la moitié DROITE d'un élément libre (la gauche reste libre)", court(xd) === "radar:colonne libre:tuile folio:tuile amis:tuile reponses:tuile", court(xd));
+  const yd = remplirPlace(e, { ...fin, f: "tuile", portee: 4, moitie: true, cote: 1 }, fixe("amis", "heros"));
+  check("remplirPlace : la moitié DROITE d'une fin de 2/3", court(yd) === "radar:heros vitrine:colonne libre:tuile amis:tuile" && rangees(yd)[0].cases.find((c) => c.e.k === "amis")?.col === 5, court(yd));
+  check("remplirPlace : la progression refusée dans une moitié", remplirPlace(d, { ...p, f: "tuile", portee: 4, moitie: true }, fixe("progression", "heros")) === d && remplirPlace(e, { ...fin, f: "tuile", portee: 4, moitie: true }, fixe("progression", "heros")) === e);
+  const g: Disposition = [fixe("radar", "heros"), fixe("vitrine", "tuile"), libre("heros"), fixe("amis", "tuile")];
+  const pl = placesVides(rangees(g)[1], 1).find((x) => x.i === 2)!;
+  const dg = deplacerVers(g, 3, { ...pl, f: "tuile", portee: 4, moitie: true, cote: 1 });
+  check("deplacerVers : vers la moitié droite d'une place coupée", court(dg) === "radar:heros vitrine:tuile libre:tuile amis:tuile" && rangees(dg)[1].cases.find((c) => c.e.k === "amis")?.col === 5, court(dg));
+  // couleurs inversées
+  const z = inverser(d, 0);
+  check("inverser : posé, puis retiré", (z[0] as { inv?: true }).inv === true && !("inv" in inverser(z, 0)[0]) && inverser(d, 1) === d);
 }
 
 // ── les cartes ────────────────────────────────────────────────────────

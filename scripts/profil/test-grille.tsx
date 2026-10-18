@@ -155,6 +155,9 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
   check("vidéo en haut : la vidéo, sa couverture (#t=4), puis le module", video.includes("<video") && video.includes("video01.mp4#t=4") && video.indexOf("<video") < video.indexOf("<h3"));
   const gif = rend(<BlocProfil bloc={{ k: "amis", f: "tuile", img: { id: "gifkl01", type: "image", url: GIF_EXEMPLE, ratio: 1, source: "klipy", px: 240 } }} f="tuile" d={RICHE} />);
   check("GIF en haut : net à sa taille (240 px), dans son passe-partout flouté", gif.includes("gifFond") && gif.includes("width:min(100cqw, 240px, calc(100cqh * 1))") && gif.includes("gifHaut") && !gif.includes('loading="lazy"'));
+  const inv = rend(<BlocProfil bloc={{ k: "amis", f: "tuile", inv: true }} f="tuile" d={RICHE} />);
+  check("couleurs inversées : le bloc dans .rl-inverse", inv.startsWith('<div class="rl-inverse ') && inv.includes("<h3"));
+  check("couleurs inversées : rien à montrer, rien du tout (pas d'enveloppe vide)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", inv: true }} f="tuile" d={SOBRE} />) === "");
   const vide = { k: "carte" as const, id: "carte02", titre: "", texte: null, f: "tuile" as const };
   check("carte vide : rien en vue publique, l'invitation en édition", rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} />) === "" && rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} edition />).includes("Ta carte est vide"));
 }

@@ -33,6 +33,7 @@ import {
   estMedia,
   formatPermis,
   genreDe,
+  jsonStable,
   normaliser,
   type BlocCarte,
   type BlocMedia,
@@ -131,11 +132,11 @@ function accepte(k: CleBloc, f: Format, d: DonneesBlocs, poses: Set<CleBloc>): b
   return f === "tuile" || f === "colonne" || SURS.has(k) ? montre(k, d) : riche(k, d);
 }
 
-/** L'image en haut de chaque module resté sur la page (un modèle la garde). */
+/** Ce que chaque module resté sur la page garde : son média en haut et ses couleurs inversées (un modèle les garde). */
 function garderImages(out: ElementPage[], actuelle: Disposition): ElementPage[] {
-  const images = new Map<CleBloc, ImageHaut>();
-  for (const e of actuelle) if (estFixe(e) && e.img) images.set(e.k, e.img);
-  return out.map((e) => (estFixe(e) && images.has(e.k) && e.k !== "progression" ? { ...e, img: images.get(e.k)! } : e));
+  const reglages = new Map<CleBloc, { img?: ImageHaut; inv?: true }>();
+  for (const e of actuelle) if (estFixe(e) && (e.img || e.inv)) reglages.set(e.k, { ...(e.img && e.k !== "progression" ? { img: e.img } : {}), ...(e.inv ? { inv: e.inv } : {}) });
+  return out.map((e) => (estFixe(e) && reglages.has(e.k) ? { ...e, ...reglages.get(e.k)! } : e));
 }
 
 /**
@@ -218,7 +219,7 @@ export function pageDepart(actuelle: Disposition, d: DonneesBlocs): PageModele {
 }
 
 const memePage = (a: { disposition: Disposition; showcase: VitrineKey[] }, b: { disposition: Disposition; showcase: VitrineKey[] }) =>
-  JSON.stringify(a.disposition) === JSON.stringify(b.disposition) && a.showcase.join("|") === b.showcase.join("|");
+  jsonStable(a.disposition) === jsonStable(b.disposition) && a.showcase.join("|") === b.showcase.join("|");
 
 /** Le modèle dont la page actuelle est exactement le résultat (la pastille « Ta page actuelle »), sinon null. */
 export function modeleActuel(actuelle: Disposition, d: DonneesBlocs, showcase: VitrineKey[]): CleModele | null {

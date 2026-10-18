@@ -7,7 +7,7 @@
 import { pluriel } from "@/lib/voice";
 import { CARTES_MAX, ELEMENTS_MAX, IMAGES_HAUT_MAX, MEDIAS_MAX, VIDEO_MAX_SECONDES, type FormePlace } from "@/lib/profil/disposition";
 
-const UN_FORMAT: Record<FormePlace, string> = { tuile: "une tuile", heros: "un héros", colonne: "une colonne" };
+const UN_FORMAT: Record<FormePlace, string> = { tuile: "une mini-tuile", heros: "un héros", colonne: "une colonne" };
 
 export const EDITEUR_PAGE = {
   /** sous « Ta page », en tête de la section */
@@ -43,9 +43,9 @@ export const EDITEUR_PAGE = {
   revenir: "Revenir à ta page",
   pageDepart: "Revenir à la page de départ",
   // ── la carte du plan, sous « Ta page » ──
-  /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 4 formats : tuile, colonne, héros ou bande. » */
+  /** « 5 blocs, 3 rangées. Chaque bloc a l'un des 4 formats : mini-tuile, colonne, héros ou bande. » */
   compte: (blocs: number, rangees: number) =>
-    `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 4 formats : tuile, colonne, héros ou bande.`,
+    `${pluriel(blocs, "bloc", "blocs")}, ${pluriel(rangees, "rangée", "rangées")}. Chaque bloc a l'un des 4 formats : mini-tuile, colonne, héros ou bande.`,
   aideOrdinateur:
     "L'ordre est libre ; les rangées se forment seules et leurs bas s'alignent. Une colonne tient deux lignes, à gauche en début de rangée, à droite après un héros. Une place libre reste libre : choisis-y un module, ou laisse-la vide.",
   aideTelephone: "Les formats s'appliquent sur ordinateur. Ici, tout est sur une colonne : tu règles l'ordre, le contenu et ce qui est masqué.",
@@ -72,7 +72,7 @@ export const EDITEUR_PAGE = {
   nouveau: "nouveau",
   masquer: "Masquer ce bloc",
   masquerAide: "garde ses réglages",
-  masquerImageAide: "garde ses réglages, sauf son média en haut (il part à l'enregistrement)",
+  masquerImageAide: "garde ses réglages, sauf son média en haut et ses couleurs inversées (partis à l'enregistrement)",
   remplacerCarteAide: "un bloc mis à la place remplace cette carte : son titre, son texte et son média en haut partent à l'enregistrement",
   remplacerImageAide: "le bloc mis à la place ne reprend pas le média en haut de celui-ci : il part à l'enregistrement",
   retirerMedia: "Retirer ce média",
@@ -117,8 +117,17 @@ export const EDITEUR_PAGE = {
   /** le titre d'une carte toute neuve */
   carteNeuve: "Ma carte",
   cartesCompte: (n: number) => `${n}/${CARTES_MAX} cartes`,
+  // ── les couleurs inversées ──
+  inverse: "Couleurs inversées",
+  inverseAide: "Fond sombre et texte clair (en mode nuit : fond clair et texte sombre).",
+  oui: "oui",
+  non: "non",
   // ── les places libres ──
   choisirModule: "Choisir un module",
+  /** une place de 2/3 : la couper en deux places de mini-tuile */
+  deuxMini: "2 mini-tuiles",
+  deuxMiniAide: "Coupe cette place en deux petites places",
+  unePlace: "Une seule place",
   /** « Place libre · une tuile. Vue par les autres, elle reste vide. » */
   placeLibre: (f: FormePlace) => `Place libre · ${UN_FORMAT[f]}. Vue par les autres, elle reste vide.`,
   fermerPlace: "Fermer la place",
@@ -143,6 +152,6 @@ export const EDITEUR_PAGE = {
   refusVideo: "Une vidéo par page : retire l'actuelle pour en mettre une autre.",
   refusPlein: `Ta page est pleine : ${ELEMENTS_MAX} éléments au plus. Ferme une place libre ou masque un bloc.`,
   refusCartes: `${CARTES_MAX} cartes au plus sur ta page.`,
-  refusVideoBande: "Pas de vidéo en haut d'un bloc en bande : elle serait recadrée trop bas. Mets-le en tuile, en colonne ou en héros.",
+  refusVideoBande: "Pas de vidéo en haut d'un bloc en bande : elle serait recadrée trop bas. Mets-le en mini-tuile, en colonne ou en héros.",
   refusImagesHaut: `${IMAGES_HAUT_MAX} médias en haut au plus sur ta page : retire-en un pour en mettre un autre.`,
 };

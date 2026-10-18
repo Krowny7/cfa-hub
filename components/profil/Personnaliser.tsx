@@ -26,6 +26,7 @@ import {
   type Brouillon,
 } from "@/components/profil/SectionsPersonnaliser";
 import { enregistrerProfil, rangerFichiersEnAttente } from "@/app/moi/profil/actions";
+import { jsonStable } from "@/lib/profil/disposition";
 import { poserSceaux } from "@/lib/profil/actions-sceaux";
 import { createClient } from "@/lib/supabase/browser";
 import { posesDe } from "@/lib/profil/sceaux";
@@ -128,7 +129,8 @@ export function Personnaliser({
   const avatarUrl = photoChangee ?? carte.avatarUrl;
 
   const courant: Enregistre = { style, linkedin, visibilite, nom, nomVisibilite, pins };
-  const modifie = JSON.stringify(courant) !== JSON.stringify(enregistre);
+  // l'ordre des champs ne compte pas (une page enregistrée revient dans l'ordre de la validation)
+  const modifie = jsonStable(courant) !== jsonStable(enregistre);
   const lienOk = !linkedin.trim() || !!normaliserLinkedin(linkedin);
   const bloque = pending || !lienOk || envoiImage || envoiMedia;
 

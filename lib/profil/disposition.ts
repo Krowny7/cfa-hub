@@ -47,7 +47,7 @@ export type CleBloc = (typeof BLOCS)[number]["k"];
 export type Format = "tuile" | "heros" | "bande" | "colonne";
 export type Portee = 4 | 8 | 12;
 export const FORMATS: { key: Format; nom: string; part: string; portee: Portee }[] = [
-  { key: "tuile", nom: "Tuile", part: "1/3", portee: 4 },
+  { key: "tuile", nom: "Mini-tuile", part: "1/3", portee: 4 },
   { key: "colonne", nom: "Colonne", part: "1/3 · 2 lignes", portee: 4 },
   { key: "heros", nom: "Héros", part: "2/3", portee: 8 },
   { key: "bande", nom: "Bande", part: "1/1", portee: 12 },
@@ -87,9 +87,10 @@ export type ImageHaut = {
   /** vidéo : l'image de couverture (s, au demi) */
   couverture?: number;
 };
-export type BlocFixe = { k: CleBloc; f: Format; img?: ImageHaut };
+/** `inv` : les couleurs inversées (fond sombre et texte clair le jour, l'inverse la nuit : .rl-inverse) */
+export type BlocFixe = { k: CleBloc; f: Format; img?: ImageHaut; inv?: true };
 /** Une carte : une image en haut (facultative), un titre et quelques lignes écrits par le joueur. */
-export type BlocCarte = { k: "carte"; id: string; titre: string; texte: string | null; img?: ImageHaut; f: Format };
+export type BlocCarte = { k: "carte"; id: string; titre: string; texte: string | null; img?: ImageHaut; inv?: true; f: Format };
 export type BlocMedia = {
   k: "media";
   id: string;
@@ -109,6 +110,8 @@ export type BlocMedia = {
   duree?: number;
   /** vidéo : l'image de couverture (s, au demi) ; absente : duree / 2, sinon 1 */
   couverture?: number;
+  /** les couleurs inversées (BlocFixe) */
+  inv?: true;
   f: Format;
 };
 export type Bloc = BlocFixe | BlocMedia | BlocCarte;
@@ -240,7 +243,7 @@ export function raisonRefus(b: Bloc, f: Format): string {
   if (g === "gif") return "Le GIF ne va pas en bande : il serait recadré trop bas.";
   if (g === "progression") return "La courbe de progression a besoin d'au moins deux tiers de la largeur.";
   if (g === "folio" || g === "journal") return `${nomBloc(b)} ne va pas en bande : trop peu de contenu pour toute la largeur.`;
-  if (g === "saisons") return "Les saisons vont en tuile, en colonne ou en bande (le palmarès en ligne).";
+  if (g === "saisons") return "Les saisons vont en mini-tuile, en colonne ou en bande (le palmarès en ligne).";
   if (g === "carte") return "La carte ne va pas en bande : son image serait recadrée trop bas.";
   return `${nomFormat(f)} : pas pour ce bloc.`;
 }
@@ -359,7 +362,16 @@ export type PlaceVide = {
   apres: number;
   /** une fin de 2e ligne : la place libre qui garde d'abord le reste de la 1re (FinLigne) */
   combler?: "tuile" | "heros";
+  /** la moitié d'une place de 2/3 coupée en deux mini-tuiles (Personnaliser) : le bloc y va en mini-tuile, l'autre moitié reste libre */
+  moitie?: true;
+  /** laquelle des deux moitiés : 0, la gauche (par défaut) ; 1, la droite */
+  cote?: 0 | 1;
 };
+
+/** Le JSON d'une valeur, ses clés triées : deux pages pareilles s'écrivent pareil, quel que soit l'ordre de leurs champs. */
+export function jsonStable(x: unknown): string {
+  return JSON.stringify(x, (_, v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, (v as Record<string, unknown>)[k]])) : v));
+}
 
 /** Les places vides d'une rangée : ses éléments « libre », puis ses fins de ligne incomplètes. */
 export function placesVides(r: RangeeGrille, rangee: number): PlaceVide[] {
@@ -671,6 +683,9 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     };
   };
 
+  /** les couleurs inversées : seulement `true` (rien d'autre n'est gardé) */
+  const inverse = (x: Record<string, unknown>): { inv?: true } => (x.inv === true ? { inv: true } : {});
+
   /** le média en haut d'un bloc (image, GIF ou vidéo) : quatre au plus, la vidéo comptée avec celles des blocs (une par page) ; refusé, il part seul */
   const imageHaut = (x: unknown): ImageHaut | null => {
     if (x === undefined || x === null) return null;
@@ -695,7 +710,7 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     vus.add("m:" + c.id);
     medias++;
     if (c.type === "video") videos++;
-    const sans: Omit<BlocMedia, "f"> = { k: "media", id: c.id, type: c.type, url: c.url, ratio: c.ratio, legende: nettoyerLegende(b.legende), ...c.suite };
+    const sans: Omit<BlocMedia, "f"> = { k: "media", id: c.id, type: c.type, url: c.url, ratio: c.ratio, legende: nettoyerLegende(b.legende), ...c.suite, ...inverse(b) };
     const genre = genreMedia(sans);
     return { ...sans, f: estFormat(b.f) ? formatPermis(genre, b.f) : FORMAT_DEFAUT[genre] };
   };
@@ -707,7 +722,7 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     vus.add("m:" + id);
     cartes++;
     const img = imageHaut(x.img);
-    return { k: "carte", id, titre: nettoyerTitre(x.titre), texte: nettoyerTexte(x.texte), ...(img ? { img } : {}), f: estFormat(x.f) ? formatPermis("carte", x.f) : FORMAT_DEFAUT.carte };
+    return { k: "carte", id, titre: nettoyerTitre(x.titre), texte: nettoyerTexte(x.texte), ...(img ? { img } : {}), ...inverse(x), f: estFormat(x.f) ? formatPermis("carte", x.f) : FORMAT_DEFAUT.carte };
   };
 
   const element = (x: unknown): ElementPage | null => {
@@ -723,7 +738,7 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     const videoEnBande = f === "bande" && estObjet(x.img) && x.img.type === "video";
     if (videoEnBande) imageRefusee = true;
     const img = info.k !== "progression" && !videoEnBande ? imageHaut(x.img) : null;
-    return { k: info.k, f, ...(img ? { img } : {}) };
+    return { k: info.k, f, ...(img ? { img } : {}), ...inverse(x) };
   };
 
   let liste: unknown[] = raw.slice(0, 60);

@@ -30,6 +30,7 @@ import {
   formatsDe,
   genreDe,
   imagesHaut,
+  jsonStable,
   nomBloc,
   normaliser,
   placesVides,
@@ -145,7 +146,7 @@ console.log("# Les formats permis");
   check("raison : GIF", raisonRefus(g, "bande") === "Le GIF ne va pas en bande : il serait recadré trop bas.");
   check("raison : progression", raisonRefus({ k: "progression", f: "heros" }, "tuile") === "La courbe de progression a besoin d'au moins deux tiers de la largeur.");
   check("raison : folio, journal", raisonRefus({ k: "folio", f: "tuile" }, "bande") === "Folio ne va pas en bande : trop peu de contenu pour toute la largeur." && raisonRefus({ k: "journal", f: "tuile" }, "bande") === "Journal ne va pas en bande : trop peu de contenu pour toute la largeur.");
-  check("raison : saisons", raisonRefus({ k: "saisons", f: "tuile" }, "heros") === "Les saisons vont en tuile, en colonne ou en bande (le palmarès en ligne).");
+  check("raison : saisons", raisonRefus({ k: "saisons", f: "tuile" }, "heros") === "Les saisons vont en mini-tuile, en colonne ou en bande (le palmarès en ligne).");
   check("genres et noms des médias", genreDe(video) === "video" && genreDe(g) === "gif" && nomBloc(g) === "GIF" && nomBloc({ k: "radar", f: "heros" }) === "Radar des matières");
   check("clés React : id, clé, libre-<index>", cleDe(video, 0) === "video01" && cleDe({ k: "amis", f: "tuile" }, 3) === "amis" && cleDe({ k: "libre", f: "tuile" }, 4) === "libre-4");
 }
@@ -352,6 +353,12 @@ console.log("# La validation");
   const avecVideo: Bloc = { k: "amis", f: "tuile", img: { id: "video01", type: "video", url: "/v.mp4", ratio: 0.5625 } };
   check("formats : un bloc avec une vidéo en haut ne va pas en bande", !formatsDe(avecVideo).includes("bande") && formatsDe({ k: "amis", f: "tuile" }).includes("bande"));
   check("raison : la vidéo en haut d'une bande", raisonRefus(avecVideo, "bande").startsWith("Avec sa vidéo en haut"));
+  // les couleurs inversées
+  const inv = validerDisposition([{ k: "amis", f: "tuile", inv: true }, carte("carte09", { inv: true }), img("imagea1", { inv: true }), { k: "radar", f: "tuile", inv: "oui" }], PREFIXES).disposition;
+  check("couleurs inversées : gardées sur un module, une carte, un média", inv.slice(0, 3).every((e) => "inv" in e && (e as { inv?: unknown }).inv === true), JSON.stringify(inv));
+  check("couleurs inversées : seulement true", !("inv" in inv[3]));
+  check("jsonStable : l'ordre des champs ne compte pas", jsonStable({ k: "amis", f: "tuile", inv: true }) === jsonStable({ inv: true, f: "tuile", k: "amis" }) && jsonStable([{ a: 1, b: { d: 2, c: 3 } }]) === jsonStable([{ b: { c: 3, d: 2 }, a: 1 }]));
+  check("couleurs inversées : la liste repasse à l'identique", egal(validerDisposition(inv, "lecture").disposition, inv));
   const ancienne = validerDisposition([{ k: "amis", f: "tuile", img: { id: "hautaa1", url: `${PREFIXES.images}hautaa1.webp`, ratio: 1.5 } }], PREFIXES).disposition;
   check("une image en haut d'avant (sans type) : lue comme une image", (ancienne[0] as { img: { type: string } }).img.type === "image");
   check("une place libre en colonne est lue", egal(lire([{ k: "radar", f: "heros" }, { k: "libre", f: "colonne" }, { k: "amis", f: "tuile" }]).disposition.map((e) => e.f), ["heros", "colonne", "tuile"]));

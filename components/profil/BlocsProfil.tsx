@@ -780,8 +780,16 @@ const ICONE_VIDE: Partial<Record<GenreBloc, React.ReactNode>> = {
  * de tuile ; avec une image en haut, il passe sous elle.
  */
 export function BlocProfil({ bloc, f, d, edition = false }: { bloc: Bloc; f: Format; d: DonneesBlocs; edition?: boolean }): React.ReactNode {
+  const rendu = rendreBloc(bloc, f, d, edition);
+  // les couleurs inversées : les jetons de l'autre thème, posés sur le bloc (.rl-inverse, app/globals.css)
+  if (!bloc.inv || !rendu) return rendu;
+  return <div className={"rl-inverse " + b.inverse}>{rendu}</div>;
+}
+
+/** le bloc lui-même (null : rien à montrer) ; appelé comme une fonction, pour savoir s'il rend quelque chose */
+function rendreBloc(bloc: Bloc, f: Format, d: DonneesBlocs, edition: boolean): React.ReactNode {
   if (estMedia(bloc)) return <MediaBloc m={bloc} f={f} />;
-  if (estCarte(bloc)) return <CarteBloc c={bloc} f={f} edition={edition} />;
+  if (estCarte(bloc)) return CarteBloc({ c: bloc, f, edition });
   const contenu = contenuModule(bloc, f === "colonne" ? "tuile" : f, d, edition);
   if (!contenu || !bloc.img || bloc.k === "progression") return contenu;
   return (

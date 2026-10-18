@@ -144,13 +144,28 @@ export function pourPlace(g: GenreBloc, f: FormePlace): Format {
 export function remplirPlace(d: Disposition, p: PlaceVide, b: Bloc): Disposition {
   if (!peutEntrer(d, b)) return d;
   const nouveau = { ...b, f: pourPlace(genreDe(b), p.f) } as Bloc;
+  // une moitié ne prend qu'une mini-tuile (la progression, qui n'en a pas, est refusée)
+  if (p.moitie && nouveau.f !== "tuile") return d;
+  const libreTuile: ElementPage = { k: "libre", f: "tuile" };
   if (p.i !== null) {
     // un élément « libre » ne s'élargit pas : un bloc qui ne tient pas dans sa place (la progression dans une tuile ou une colonne) est refusé
     if (!dans(d, p.i) || !estLibre(d[p.i]) || portee(nouveau.f) > portee(p.f) || hauteur(nouveau.f) > hauteur(p.f)) return d;
+    // la moitié d'un élément « libre » de 2/3 : le bloc dans la moitié choisie, l'autre moitié libre (rien ne bouge autour)
+    if (p.moitie) {
+      if (d[p.i].f !== "heros") return d;
+      const l = inserer(
+        d.map((e, j) => (j === p.i ? (p.cote === 1 ? libreTuile : nouveau) : e)),
+        p.i + 1,
+        p.cote === 1 ? nouveau : libreTuile,
+      );
+      return l ? normaliser(l) : d;
+    }
     return normaliser(d.map((e, j) => (j === p.i ? nouveau : e)));
   }
   if (p.apres < -1 || p.apres >= d.length) return d;
-  const l = p.combler ? inserer(d, p.apres + 1, { k: "libre", f: p.combler }, nouveau) : inserer(d, p.apres + 1, nouveau);
+  // la moitié droite d'une fin de ligne : la gauche reste libre d'abord
+  const avant: ElementPage[] = [...(p.combler ? [{ k: "libre" as const, f: p.combler }] : []), ...(p.moitie && p.cote === 1 ? [libreTuile] : [])];
+  const l = inserer(d, p.apres + 1, ...avant, nouveau);
   return l ? normaliser(l) : d;
 }
 
@@ -182,6 +197,18 @@ export function deplacerVers(d: Disposition, i: number, p: PlaceVide): Dispositi
   const l = remplirPlace(base, place, b);
   // refusé, ou rien n'a bougé (un bloc qui ne va pas à la place retombe où il était) : même liste
   return l === base || JSON.stringify(l) === JSON.stringify(d) ? d : l;
+}
+
+/** Inverse les couleurs du bloc `i` (ou les remet) : fond sombre et texte clair le jour, l'inverse la nuit. */
+export function inverser(d: Disposition, i: number): Disposition {
+  const e = d[i];
+  if (!dans(d, i) || !estBloc(e)) return d;
+  if (e.inv) {
+    const sans = { ...e };
+    delete sans.inv;
+    return d.map((x, j) => (j === i ? sans : x));
+  }
+  return d.map((x, j) => (j === i ? ({ ...e, inv: true } as Bloc) : x));
 }
 
 /** Ajoute le bloc `b` à la fin de la page, à son format (le plus proche s'il n'est pas permis). */
