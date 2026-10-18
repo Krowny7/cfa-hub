@@ -1,6 +1,6 @@
 import { largeurBrand } from "@/lib/largeur-brand";
 import Link from "next/link";
-import { ArrowRight, Bookmark, Eye, Palette, PenLine, Settings2 } from "lucide-react";
+import { ArrowRight, Bookmark, Eye, Palette, PenLine, Settings2, UserRound } from "lucide-react";
 import { SceauPerso } from "@/components/adn/SceauPerso";
 import { Icone } from "@/components/adn/icons";
 import { Avatar } from "@/components/classement/Avatar";
@@ -23,7 +23,7 @@ import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { BlocCodex, TuileCodex } from "@/components/moi/CodexMoi";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
-import { hrefPersonnaliser } from "@/lib/profil/onglets";
+import { hrefOnglet } from "@/lib/profil/onglets";
 import { jourJ, joursEncre } from "@/lib/voice";
 import { MOI, SOURCES_RATURE } from "@/lib/voice-z1";
 import { CAB } from "@/lib/voice-moi";
@@ -153,7 +153,7 @@ function CarteCabinet({ d, lu, className }: { d: MoiData; lu: Lu; className?: st
       tailleNom="text-[26px] lg:text-[40px]"
       sousTitre={CAB.cabinet}
       etat={reperes}
-      action={{ href: hrefPersonnaliser(d.userId), label: CAB.personnaliser, icon: <Palette size={17} aria-hidden /> }}
+      action={{ href: hrefOnglet(d.userId, "profil"), label: CAB.monProfil, icon: <UserRound size={17} aria-hidden /> }}
     />
   );
 }

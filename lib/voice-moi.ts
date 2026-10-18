@@ -34,7 +34,8 @@ export const CAB = {
   sansObjectifAction: "Régler mon objectif",
   // le cabinet (carte « lieu »)
   cabinet: "Ton cabinet",
-  personnaliser: "Personnaliser mon profil",
+  /** le bouton de la carte : ta page de profil publique */
+  monProfil: "Mon profil",
   legendeBandeau: (nom: string) => `Ton cabinet · ${nom}`,
   // les tuiles
   tuileObjectif: "Ton objectif",
