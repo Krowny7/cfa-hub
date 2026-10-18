@@ -24,6 +24,7 @@ import {
   type CleBloc,
   type Disposition,
   type ElementPage,
+  type FormePlace,
   type PlaceVide,
 } from "@/lib/profil/disposition";
 import {
@@ -72,7 +73,7 @@ const gif = (f: BlocMedia["f"] = "tuile"): BlocMedia => {
   return { k: "media", id, type: "image", url: `https://static.klipy.com/ii/abc/${id}.gif`, ratio: 1, legende: null, source: "klipy", px: 200, f };
 };
 const fixe = (k: CleBloc, f: Bloc["f"]): Bloc => ({ k, f });
-const libre = (f: "tuile" | "heros"): ElementPage => ({ k: "libre", f });
+const libre = (f: FormePlace): ElementPage => ({ k: "libre", f });
 
 /** La liste repasse la validation à l'identique. */
 const stable = (d: Disposition) => {
