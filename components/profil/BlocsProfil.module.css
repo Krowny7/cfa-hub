@@ -164,6 +164,36 @@
   height: 100%;
   object-fit: cover;
 }
+/* le média en haut : la vidéo (VideoProfil) et le passe-partout du GIF
+   remplissent la place, la vidéo à fond perdu */
+.imageHaut > div {
+  position: absolute;
+  inset: 0;
+}
+.imageHaut video {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+.imageHaut video {
+  object-position: 50% var(--y, 50%);
+}
+:global(html[data-theme="nuit"]) .imageHaut video {
+  filter: brightness(0.86);
+}
+/* le passe-partout du GIF : un conteneur de taille (le GIF se mesure à
+   lui, en cqw / cqh), des pistes bornées à la place, le GIF centré entier */
+.gifHaut {
+  container-type: size;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: 16px;
+  overflow: hidden;
+}
 /* le module sous son image : sa coque s'efface (une seule carte) */
 .sousImage > section {
   flex: 1 1 auto;

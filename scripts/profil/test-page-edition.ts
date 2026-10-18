@@ -38,7 +38,9 @@ import {
   fermerPlace,
   mettreALaPlace,
   peutAjouterCarte,
+  peutAjouterImageHaut,
   peutAjouterMedia,
+  sansMediaHaut,
   pourPlace,
   remplirPlace,
   retirer,
@@ -162,6 +164,21 @@ check("pourPlace : progression dans une colonne → héros (son défaut)", pourP
   check("retirer une colonne : sa place reste, libre, en colonne (le reste ne bouge pas)", court(z) === "radar:heros libre:colonne amis:tuile reponses:tuile", court(z));
   check("changerFormat : en colonne", court(changerFormat([fixe("amis", "tuile")], 0, "colonne")) === "amis:colonne");
   check("changerFormat : la progression ne va pas en colonne", changerFormat([fixe("progression", "heros")], 0, "colonne").length === 1 && court(changerFormat([fixe("progression", "heros")], 0, "colonne")) === "progression:heros");
+}
+
+// ── la vidéo en haut et la limite d'une vidéo par page ────────────────
+{
+  const vh = { id: "video01", type: "video" as const, url: "/v/video01.mp4", ratio: 0.5625 };
+  const d: Disposition = [{ k: "amis", f: "tuile", img: vh }, fixe("radar", "tuile")];
+  check("peutAjouterMedia : la vidéo en haut prend la vidéo de la page", !peutAjouterMedia(d, true).ok && peutAjouterMedia(d, false).ok);
+  check("peutAjouterImageHaut : une 2e vidéo en haut refusée ailleurs", !peutAjouterImageHaut(d, true, 1).ok);
+  check("peutAjouterImageHaut : changer sa propre vidéo reste permis", peutAjouterImageHaut(d, true, 0).ok && peutAjouterImageHaut(d, false, 0).ok);
+  check("peutAjouterImageHaut : pas de vidéo en haut d'une bande (une image, si)", !peutAjouterImageHaut([fixe("vitrine", "bande")], true, 0).ok && peutAjouterImageHaut([fixe("vitrine", "bande")], false, 0).ok);
+  check("changerFormat : un bloc avec une vidéo en haut ne passe pas en bande", changerFormat(d, 0, "bande") === d);
+  const sans = sansMediaHaut(d, 0);
+  check("sansMediaHaut : le média en haut part, le reste ne bouge pas", !("img" in sans[0]) && sans[1] === d[1] && sansMediaHaut(sans, 0) === sans && sansMediaHaut(d, 1) === d);
+  const avecBlocVideo: Disposition = [fixe("amis", "tuile"), video("tuile")];
+  check("peutAjouterImageHaut : un bloc vidéo déjà là, pas de vidéo en haut", !peutAjouterImageHaut(avecBlocVideo, true, 0).ok && peutAjouterImageHaut(avecBlocVideo, false, 0).ok);
 }
 
 // ── les cartes ────────────────────────────────────────────────────────

@@ -142,13 +142,19 @@ const nomme = (c: { e: { k: string }; f: Format }) => <span data-bloc={c.e.k}>{c
     "colonne : à droite sur deux lignes (--c:9, --h:2), les deux tuiles en 2e ligne sous le héros",
     dbl.includes('--c:1;--l:1;--s:8;--h:1"') && dbl.includes('--c:9;--l:1;--s:4;--h:2"') && dbl.includes('--c:1;--l:2;--s:4;--h:1"') && dbl.includes('--c:5;--l:2;--s:4;--h:1"'),
   );
-  const img = { id: "hautaa1", url: "https://x.supabase.co/storage/v1/object/public/profil-medias/u/hautaa1.webp", ratio: 1.5, y: 20 };
+  const img = { id: "hautaa1", type: "image" as const, url: "https://x.supabase.co/storage/v1/object/public/profil-medias/u/hautaa1.webp", ratio: 1.5, y: 20 };
   const avec = rend(<BlocProfil bloc={{ k: "amis", f: "colonne", img }} f="colonne" d={RICHE} />);
   check("image en haut : l'image et son cadrage, puis le module", avec.includes(`src="${img.url}"`) && avec.includes("50% 20%") && avec.indexOf(img.url) < avec.indexOf("<h3"));
   check("image en haut : rien sans contenu (vue publique)", rend(<BlocProfil bloc={{ k: "reponses", f: "tuile", img }} f="tuile" d={SOBRE} />) === "");
   check("image en haut : pas sur la progression", !rend(<BlocProfil bloc={{ k: "progression", f: "heros", img }} f="heros" d={RICHE} />).includes(img.url));
   const carte = rend(<BlocProfil bloc={{ k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026\nTrois heures par jour", img, f: "colonne" }} f="colonne" d={RICHE} />);
   check("carte : l'image, le titre, le texte (retours gardés)", carte.includes(img.url) && carte.includes("Objectif Level I") && carte.includes("Novembre 2026\nTrois heures par jour"));
+  const video = rend(
+    <BlocProfil bloc={{ k: "amis", f: "colonne", img: { id: "video01", type: "video", url: "https://x.supabase.co/storage/v1/object/public/profil-videos/u/video01.mp4", ratio: 0.5625, duree: 12, couverture: 4 } }} f="colonne" d={RICHE} />,
+  );
+  check("vidéo en haut : la vidéo, sa couverture (#t=4), puis le module", video.includes("<video") && video.includes("video01.mp4#t=4") && video.indexOf("<video") < video.indexOf("<h3"));
+  const gif = rend(<BlocProfil bloc={{ k: "amis", f: "tuile", img: { id: "gifkl01", type: "image", url: GIF_EXEMPLE, ratio: 1, source: "klipy", px: 240 } }} f="tuile" d={RICHE} />);
+  check("GIF en haut : net à sa taille (240 px), dans son passe-partout flouté", gif.includes("gifFond") && gif.includes("width:min(100cqw, 240px, calc(100cqh * 1))") && gif.includes("gifHaut") && !gif.includes('loading="lazy"'));
   const vide = { k: "carte" as const, id: "carte02", titre: "", texte: null, f: "tuile" as const };
   check("carte vide : rien en vue publique, l'invitation en édition", rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} />) === "" && rend(<BlocProfil bloc={vide} f="tuile" d={RICHE} edition />).includes("Ta carte est vide"));
 }

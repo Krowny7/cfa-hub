@@ -23,9 +23,11 @@ import {
   VIDEOS_MAX,
   estBloc,
   estCarte,
+  estFixe,
   estLibre,
   estMedia,
   imagesHaut,
+  videosDe,
   formatPermis,
   formatsDe,
   genreDe,
@@ -233,16 +235,37 @@ export function peutAjouterCarte(d: Disposition): { ok: boolean; raison: string 
   return { ok: true, raison: null };
 }
 
-/** Peut-on poser une image en haut d'un bloc de plus ? 4 au plus sur la page (en changer une reste permis). */
-export function peutAjouterImageHaut(d: Disposition): { ok: boolean; raison: string | null } {
-  return imagesHaut(d).length >= IMAGES_HAUT_MAX ? { ok: false, raison: EDITEUR_PAGE.refusImagesHaut } : { ok: true, raison: null };
+/**
+ * Peut-on poser un média en haut du bloc `i` (une vidéo si `video`) ? 4
+ * médias en haut au plus sur la page, et une vidéo par page, blocs média
+ * compris ; changer celui que le bloc porte déjà reste permis (sa vidéo
+ * contre une autre aussi). Sans `i` : un bloc qui n'en porte pas.
+ */
+export function peutAjouterImageHaut(d: Disposition, video = false, i: number | null = null): { ok: boolean; raison: string | null } {
+  const e = i !== null && dans(d, i) ? d[i] : null;
+  const sien = e && (estFixe(e) || estCarte(e)) ? e.img : undefined;
+  if (!sien && imagesHaut(d).length >= IMAGES_HAUT_MAX) return { ok: false, raison: EDITEUR_PAGE.refusImagesHaut };
+  // pas de vidéo en haut d'une bande : elle y serait recadrée trop bas
+  if (video && e && e.f === "bande") return { ok: false, raison: EDITEUR_PAGE.refusVideoBande };
+  if (video && sien?.type !== "video" && videosDe(d) >= VIDEOS_MAX) return { ok: false, raison: EDITEUR_PAGE.refusVideo };
+  return { ok: true, raison: null };
+}
+
+/** La page sans le média en haut du bloc `i` (même liste s'il n'en porte pas). Son fichier part à l'enregistrement. */
+export function sansMediaHaut(d: Disposition, i: number): Disposition {
+  const e = d[i];
+  if (!dans(d, i) || !(estFixe(e) || estCarte(e)) || !e.img) return d;
+  const sans = { ...e };
+  delete sans.img;
+  return d.map((x, j) => (j === i ? sans : x));
 }
 
 /** Peut-on ajouter un média (une vidéo si `video`) ? 6 médias au plus, dont une vidéo, et 20 éléments. */
 export function peutAjouterMedia(d: Disposition, video: boolean): { ok: boolean; raison: string | null } {
   const medias = d.filter(estMedia);
   if (medias.length >= MEDIAS_MAX) return { ok: false, raison: EDITEUR_PAGE.refusMedias };
-  if (video && medias.filter((m) => m.type === "video").length >= VIDEOS_MAX) return { ok: false, raison: EDITEUR_PAGE.refusVideo };
+  // une vidéo par page : celle d'un bloc média ou celle posée en haut d'un bloc
+  if (video && videosDe(d) >= VIDEOS_MAX) return { ok: false, raison: EDITEUR_PAGE.refusVideo };
   if (d.length >= ELEMENTS_MAX && !d.some(estLibre)) return { ok: false, raison: EDITEUR_PAGE.refusPlein };
   return { ok: true, raison: null };
 }

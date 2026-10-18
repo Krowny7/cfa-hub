@@ -26,6 +26,7 @@ import {
   estMedia,
   formatsDe,
   genreDe,
+  genreMedia,
   hauteur,
   imagesHaut,
   nomBloc,
@@ -38,6 +39,7 @@ import {
   rangees,
   type Bloc,
   type BlocCarte,
+  type ImageHaut,
   type BlocMedia,
   type CaseGrille,
   type CleBloc,
@@ -60,6 +62,7 @@ import {
   peutAjouterMedia,
   remplirPlace,
   retirer,
+  sansMediaHaut,
 } from "@/lib/profil/page-edition";
 import { QuotaFichiers, Refus, envoyerMedia, estFichierVideo } from "@/lib/profil/envoi-media";
 import { EDITEUR_PAGE as T } from "@/lib/voice-editeur";
@@ -151,7 +154,7 @@ export function PlanPage({ disposition, choisi = null, medias = false, label = T
 const grandEcran = () => window.matchMedia("(min-width: 1024px)").matches;
 
 /** ce qui prend le focus dans un menu de la barre */
-const FOCALISABLES = 'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+const FOCALISABLES = 'button:not([disabled]), input:not([disabled]):not([tabindex="-1"]), a[href], [tabindex]:not([tabindex="-1"])';
 
 /**
  * Un menu de la barre, posé par-dessus la page sous son bouton (au-dessus
@@ -281,6 +284,8 @@ export function EditeurPage({
   const [fantome, setFantome] = useState<{ x: number; y: number; nom: string } | null>(null);
   // où ira le prochain média (envoi ou GIF), et la liste la plus récente (l'envoi prend du temps)
   const destination = useRef<PlaceVide | null>(null);
+  // le GIF de la banque va en haut de ce bloc (sa clé), au lieu d'un bloc média
+  const hautPour = useRef<string | null>(null);
   const courante = useRef(d);
   useEffect(() => {
     courante.current = d;
@@ -293,7 +298,6 @@ export function EditeurPage({
   const permisImage = peutAjouterMedia(d, false);
   const permisVideo = peutAjouterMedia(d, true);
   const permisCarte = peutAjouterCarte(d);
-  const permisHaut = peutAjouterImageHaut(d);
   const nbImagesHaut = imagesHaut(d).length;
   const raisonVideo = permisVideo.raison === T.refusVideo ? T.videoPrise : permisVideo.raison;
   const occupe = !!envoi?.enCours;
@@ -456,39 +460,72 @@ export function EditeurPage({
   };
   /** L'image en haut du bloc `cle` : envoyée dans le dossier d'images du joueur, puis posée (le bloc a pu bouger pendant l'envoi). */
   /** Envoie un fichier ; si la base refuse (trop de fichiers en attente), fait ranger le dossier par le serveur et renvoie une fois. */
-  const envoyerFichier = async (file: File) => {
+  /**
+   * `menage` : la page dont le rangement garde les fichiers (sans le média
+   * qu'on remplace) ; `siRange` : appelé si le rangement a eu lieu avec elle
+   * (ce média a pu partir).
+   */
+  const envoyerFichier = async (file: File, menage?: Disposition, siRange?: () => void) => {
     try {
       return await envoyerMedia(supabase, file);
     } catch (e) {
-      if (!(e instanceof QuotaFichiers) || !ranger || !(await ranger(courante.current).catch(() => false))) throw e;
+      if (!(e instanceof QuotaFichiers) || !ranger || !(await ranger(menage ?? courante.current).catch(() => false))) throw e;
+      if (menage) siRange?.();
       return envoyerMedia(supabase, file);
     }
   };
   /** un envoi en cours (lu tout de suite, sans attendre le rendu) : un seul à la fois */
   const envoiEnCours = useRef(false);
-  const aUneImage = (l: Disposition, cle: string) => {
-    const e = l.find((x, k) => cleDe(x, k) === cle);
-    return !!e && !estLibre(e) && !estMedia(e) && !!e.img;
+  /** l'index du bloc de clé `cle` dans la page la plus récente (-1 : il n'y est plus) */
+  const indexDe = (l: Disposition, cle: string) => l.findIndex((x, k) => cleDe(x, k) === cle);
+  /** Pose `m` en haut du bloc `cle`, sur la page la plus récente ; la limite (4 médias en haut, une vidéo par page) s'y revérifie. */
+  const poserEnHaut = (cle: string, m: ImageHaut) => {
+    const l = courante.current;
+    const j = indexDe(l, cle);
+    if (j < 0) return setEnvoi({ enCours: false, texte: T.envoiRate });
+    const p = peutAjouterImageHaut(l, m.type === "video", j);
+    if (!p.ok) return setEnvoi({ enCours: false, texte: p.raison ?? "" });
+    onChange(l.map((e, k) => (k === j ? ({ ...e, img: m } as Bloc) : e)));
+    setEnvoi(null);
   };
+  /** Une image ou une vidéo envoyée, en haut du bloc `cle`. */
   async function envoyerImageHaut(input: HTMLInputElement, cle: string) {
     const file = input.files?.[0];
     input.value = "";
     if (!file || envoiEnCours.current) return;
-    if (estFichierVideo(file)) return setEnvoi({ enCours: false, texte: T.refusImageHautVideo });
-    if (!aUneImage(courante.current, cle) && !peutAjouterImageHaut(courante.current).ok) return setEnvoi({ enCours: false, texte: T.refusImagesHaut });
+    const video = estFichierVideo(file);
+    const j0 = indexDe(courante.current, cle);
+    const p = peutAjouterImageHaut(courante.current, video, j0);
+    if (!p.ok) return setEnvoi({ enCours: false, texte: p.raison ?? "" });
+    // une vidéo qui en remplace une autre : le rangement (trop de fichiers en attente) peut faire partir l'ancienne
+    const e0 = j0 >= 0 ? courante.current[j0] : null;
+    const ancienne = e0 && !estLibre(e0) && !estMedia(e0) && e0.img?.type === "video" ? e0.img : null;
+    let sansAncienne = false;
     envoiEnCours.current = true;
-    setEnvoi({ enCours: true, texte: T.envoiImage });
+    setEnvoi({ enCours: true, texte: video ? T.envoiVideo : T.envoiImage });
     onEnvoi?.(true);
     try {
-      const m = await envoyerFichier(file);
-      const l = courante.current;
-      const j = l.findIndex((e, k) => cleDe(e, k) === cle);
-      if (j < 0 || m.type !== "image") return setEnvoi({ enCours: false, texte: T.envoiRate });
-      // la page a pu changer pendant l'envoi : la limite se revérifie sur la plus récente
-      if (!aUneImage(l, cle) && !peutAjouterImageHaut(l).ok) return setEnvoi({ enCours: false, texte: T.refusImagesHaut });
-      onChange(l.map((e, k) => (k === j ? ({ ...e, img: { id: m.id, url: m.url, ratio: m.ratio, y: 50 } } as Bloc) : e)));
-      setEnvoi(null);
+      const m = await envoyerFichier(file, video && ancienne ? sansMediaHaut(courante.current, j0) : undefined, () => {
+        sansAncienne = true;
+      });
+      // la page a pu changer pendant l'envoi : poserEnHaut repart de la plus récente
+      poserEnHaut(cle, {
+        id: m.id,
+        type: m.type,
+        url: m.url,
+        ratio: m.ratio,
+        ...(m.type === "image" ? { y: 50 } : {}),
+        ...(m.duree !== undefined ? { duree: m.duree } : {}),
+        ...(m.couverture !== undefined ? { couverture: m.couverture } : {}),
+      });
     } catch (e) {
+      // l'ancienne vidéo est partie au rangement, et la nouvelle n'a pas pu venir : le bloc ne la montre plus
+      if (sansAncienne && ancienne) {
+        const l = courante.current;
+        const j = indexDe(l, cle);
+        const x = j >= 0 ? l[j] : null;
+        if (x && !estLibre(x) && !estMedia(x) && x.img?.id === ancienne.id) onChange(sansMediaHaut(l, j));
+      }
       setEnvoi({ enCours: false, texte: e instanceof Refus ? e.message : T.envoiRate });
     } finally {
       envoiEnCours.current = false;
@@ -497,18 +534,30 @@ export function EditeurPage({
   }
   const ouvrirBanque = (ou: PlaceVide | null) => {
     destination.current = ou;
+    hautPour.current = null;
     setFeuille(null);
+    setBanque(true);
+  };
+  /** La banque de GIF, pour le haut du bloc `cle` (ses réglages se ferment : la banque passe devant). */
+  const ouvrirBanqueHaut = (cle: string) => {
+    destination.current = null;
+    hautPour.current = cle;
+    setMenu(null);
     setBanque(true);
   };
   // un GIF de la banque : affiché depuis KLIPY, rien à envoyer
   const choisirGif = (g: GifBanque) => {
     setBanque(false);
+    const ratio = Math.round((g.plein.w / g.plein.h) * 1000) / 1000;
+    const haut = hautPour.current;
+    hautPour.current = null;
+    if (haut) return poserEnHaut(haut, { id: nouvelId(), type: "image", url: g.plein.url, ratio, source: "klipy", px: g.plein.w });
     const ou = destination.current;
     destination.current = null;
     const p = peutAjouterMedia(courante.current, false);
     if (!p.ok) return setEnvoi({ enCours: false, texte: p.raison ?? "" });
     setEnvoi(null);
-    poser({ k: "media", id: nouvelId(), type: "image", url: g.plein.url, ratio: Math.round((g.plein.w / g.plein.h) * 1000) / 1000, legende: null, source: "klipy", px: g.plein.w, f: FORMAT_DEFAUT.gif }, ou);
+    poser({ k: "media", id: nouvelId(), type: "image", url: g.plein.url, ratio, legende: null, source: "klipy", px: g.plein.w, f: FORMAT_DEFAUT.gif }, ou);
   };
   const pourDestination = (ou: PlaceVide | null) => () => {
     destination.current = ou;
@@ -579,20 +628,57 @@ export function EditeurPage({
     const vise = cible?.type === "case" && cible.i === i && tire !== i;
     const majMedia = (champs: Partial<BlocMedia>) => onChange(d.map((x, j) => (j === i ? ({ ...x, ...champs } as BlocMedia) : x)));
     const majCarte = (champs: Partial<BlocCarte>) => onChange(d.map((x, j) => (j === i ? ({ ...x, ...champs } as BlocCarte) : x)));
-    /** l'image en haut : son cadrage, ou la retirer (son fichier part à l'enregistrement) */
-    const majImage = (y: number | null) =>
+    /** le média en haut : son cadrage ou sa couverture, ou le retirer (null : son fichier part à l'enregistrement) */
+    const majImage = (champs: Partial<ImageHaut> | null) =>
       onChange(
         d.map((x, j) => {
           if (j !== i || estLibre(x) || estMedia(x) || !x.img) return x;
-          if (y !== null) return { ...x, img: { ...x.img, y } };
+          if (champs !== null) return { ...x, img: { ...x.img, ...champs } };
           const sans = { ...x };
           delete sans.img;
           return sans;
         }),
       );
     const grise = (ok: boolean) => (ok && !occupe ? "" : " pointer-events-none opacity-50");
-    /** l'envoi de l'image en haut est fermé : un envoi en cours, ou 4 images déjà (en changer une reste permis) */
-    const horsService = occupe || (!img && !permisHaut.ok);
+    /** le haut du bloc : image ou GIF (4 médias en haut au plus, en changer un reste permis), vidéo (une par page) */
+    const permisHautIci = peutAjouterImageHaut(d, false, i);
+    const permisVideoHaut = peutAjouterImageHaut(d, true, i);
+    const horsImage = occupe || !permisHautIci.ok;
+    const horsVideo = occupe || !permisVideoHaut.ok;
+    const genreHaut = img ? genreMedia(img) : null;
+    /** un bouton qui ouvre le choix d'un fichier (au clavier aussi : le champ reste hors de la tabulation) */
+    const boutonFichier = (quoi: "image" | "video", ferme: boolean, raison: string | null) => {
+      const id = `rl-haut-${quoi}-${cle}`;
+      return (
+        <>
+          <label
+            htmlFor={id}
+            role="button"
+            data-haut={quoi === "image" ? cle : undefined}
+            tabIndex={ferme ? -1 : 0}
+            aria-disabled={ferme}
+            title={raison ?? undefined}
+            className={"btn btn-secondary btn-sm cursor-pointer" + grise(!ferme)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              if (!ferme) document.getElementById(id)?.click();
+            }}
+          >
+            {quoi === "image" ? <ImagePlus size={14} aria-hidden /> : <Clapperboard size={14} aria-hidden />} {quoi === "image" ? T.hautImage : T.hautVideo}
+          </label>
+          <input
+            type="file"
+            accept={quoi === "image" ? "image/jpeg,image/png,image/webp,image/heic,image/heif" : "video/*"}
+            className="sr-only"
+            id={id}
+            tabIndex={-1}
+            disabled={ferme}
+            onChange={(e) => envoyerImageHaut(e.currentTarget, cle)}
+          />
+        </>
+      );
+    };
     const fermer = () => setMenu(null);
     return (
       <div
@@ -758,64 +844,78 @@ export function EditeurPage({
                 {avecImage && (
                   <span className="flex flex-col gap-1.5 px-1.5 pb-1">
                     <span className="t-micro">{T.imageHaut}</span>
-                    {img && (
-                      // eslint-disable-next-line @next/next/no-img-element -- l'aperçu de l'image envoyée
-                      <img src={img.url} alt="" className="block w-full rounded-[10px] border border-line object-cover" style={{ aspectRatio: "16 / 9", objectPosition: `50% ${img.y ?? 50}%` }} />
-                    )}
+                    {img &&
+                      (genreHaut === "video" ? (
+                        <video
+                          src={`${img.url}#t=${couvertureDe(img)}`}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          aria-hidden
+                          className="block w-full rounded-[10px] border border-line bg-black object-cover"
+                          style={{ aspectRatio: "16 / 9" }}
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- l'aperçu du média en haut
+                        <img
+                          src={img.url}
+                          alt=""
+                          className={"block w-full rounded-[10px] border border-line " + (genreHaut === "gif" ? "object-contain" : "object-cover")}
+                          style={{ aspectRatio: "16 / 9", objectPosition: `50% ${img.y ?? 50}%` }}
+                        />
+                      ))}
+                    <span className="t-micro font-normal">{img ? T.hautRemplacer : T.hautMettre}</span>
                     <span className="flex flex-wrap gap-1.5">
-                      {/* au clavier, le bouton (role) ouvre le choix du fichier ; le champ lui-même reste hors de la tabulation */}
-                      <label
-                        htmlFor={`rl-haut-${cle}`}
-                        role="button"
-                        data-haut={cle}
-                        tabIndex={horsService ? -1 : 0}
-                        aria-disabled={horsService}
-                        title={!img ? (permisHaut.raison ?? undefined) : undefined}
-                        className={"btn btn-secondary btn-sm cursor-pointer" + grise(!horsService)}
-                        onKeyDown={(e) => {
-                          if (e.key !== "Enter" && e.key !== " ") return;
-                          e.preventDefault();
-                          if (!horsService) document.getElementById(`rl-haut-${cle}`)?.click();
-                        }}
-                      >
-                        <ImagePlus size={14} aria-hidden /> {img ? T.imageHautChanger : T.imageHautAjouter}
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                        className="sr-only"
-                        id={`rl-haut-${cle}`}
-                        tabIndex={-1}
-                        disabled={horsService}
-                        onChange={(e) => envoyerImageHaut(e.currentTarget, cle)}
-                      />
+                      {boutonFichier("image", horsImage, permisHautIci.raison)}
+                      {banqueGifs && (
+                        <button type="button" className="btn btn-secondary btn-sm" disabled={horsImage} title={permisHautIci.raison ?? undefined} onClick={() => ouvrirBanqueHaut(cle)}>
+                          <ImagePlay size={14} aria-hidden /> {T.hautGif}
+                        </button>
+                      )}
+                      {boutonFichier("video", horsVideo, permisVideoHaut.raison)}
                       {img && (
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
                           onClick={() => {
+                            // ce bouton s'en va : le focus passe d'abord à « Image », qui reste
+                            document.querySelector<HTMLElement>(`[data-haut="${cle}"]`)?.focus();
                             majImage(null);
-                            // le bouton s'en va : le focus revient à « Mettre une image »
-                            requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-haut="${cle}"]`)?.focus());
                           }}
                         >
                           <Trash2 size={14} aria-hidden /> {T.imageHautRetirer}
                         </button>
                       )}
                     </span>
-                    {img && (
+                    {img && genreHaut !== "gif" && (
                       <span className="seg" role="radiogroup" aria-label={T.cadrage}>
                         {T.CADRAGES.map((x) => {
                           const sur = (img.y ?? 50) === x.y;
                           return (
-                            <button key={x.nom} type="button" role="radio" aria-checked={sur} className={s.ligne + " justify-center" + (sur ? " " + s.ligneSur : "")} onClick={() => majImage(x.y)}>
+                            <button key={x.nom} type="button" role="radio" aria-checked={sur} className={s.ligne + " justify-center" + (sur ? " " + s.ligneSur : "")} onClick={() => majImage({ y: x.y })}>
                               {x.nom}
                             </button>
                           );
                         })}
                       </span>
                     )}
-                    <span className="t-micro">{!img && !permisHaut.ok ? permisHaut.raison : `${T.imageHautAide} ${T.imagesHautCompte(nbImagesHaut)}.`}</span>
+                    {img && genreHaut === "video" && (
+                      <label className="flex flex-col gap-1">
+                        <span className="t-micro">{T.couverture(couvertureDe(img))}</span>
+                        {/* sans durée : la borne de la validation, une minute */}
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.floor((img.duree ?? VIDEO_MAX_SECONDES) * 2) / 2}
+                          step={0.5}
+                          value={couvertureDe(img)}
+                          onChange={(e) => majImage({ couverture: Number(e.target.value) })}
+                        />
+                      </label>
+                    )}
+                    <span className="t-micro">
+                      {!permisHautIci.ok ? permisHautIci.raison : `${T.imageHautAide} ${T.imagesHautCompte(nbImagesHaut)}.${!permisVideoHaut.ok ? " " + T.videoPrise + "." : ""}`}
+                    </span>
                     {envoi && (
                       <span role="status" className={"t-micro font-medium " + (envoi.enCours ? "" : "text-pen")}>
                         {envoi.texte}
@@ -1019,6 +1119,7 @@ export function EditeurPage({
           onFermer={() => {
             setBanque(false);
             destination.current = null;
+            hautPour.current = null;
           }}
           onChoisir={choisirGif}
         />

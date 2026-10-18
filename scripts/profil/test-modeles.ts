@@ -197,7 +197,7 @@ console.log("# Les cas extrêmes");
 console.log("# Les cartes et les images en haut");
 {
   const carte = (id: string) => ({ k: "carte", id, titre: `Carte ${id}`, texte: null, f: "colonne" });
-  const hautAmis = { id: "hautaa1", url: `${BASE}/profil-medias/${UID}/hautaa1.webp`, ratio: 1.5 };
+  const hautAmis = { id: "hautaa1", type: "image", url: `${BASE}/profil-medias/${UID}/hautaa1.webp`, ratio: 1.5 };
   for (const n of [1, 2, 3]) {
     const cartes = ["carte01", "carte02", "carte03"].slice(0, n).map(carte);
     const page = lu([{ k: "radar", f: "heros" }, { k: "amis", f: "tuile", img: hautAmis }, ...cartes]);

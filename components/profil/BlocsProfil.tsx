@@ -623,7 +623,7 @@ function Legende({ texte, icone }: { texte: string | null; icone: React.ReactNod
  * La couverture d'une vidéo (s) : celle choisie, sinon le milieu au demi
  * près (comme le curseur de l'éditeur), sinon 1 s (vidéos d'avant, sans durée).
  */
-export const couvertureDe = (m: BlocMedia) => m.couverture ?? (m.duree ? Math.round(m.duree) / 2 : 1);
+export const couvertureDe = (m: { couverture?: number; duree?: number }) => m.couverture ?? (m.duree ? Math.round(m.duree) / 2 : 1);
 
 function MediaBloc({ m, f }: { m: BlocMedia; f: Format }) {
   const g = genreMedia(m);
@@ -683,11 +683,40 @@ function MediaBloc({ m, f }: { m: BlocMedia; f: Format }) {
 /** son rapport : au téléphone 16:9 ; sur ordinateur, selon le format (la colonne, comme la Bibliothèque : 4:3) */
 const RATIO_HAUT: Record<Format, string> = { tuile: "16 / 9", colonne: "4 / 3", heros: "21 / 9", bande: "4 / 1" };
 
+/**
+ * Le média en haut : l'image à fond perdu (son cadrage) ; le GIF net à sa
+ * taille réelle, dans un passe-partout (le même GIF flouté dessous, comme un
+ * bloc GIF) ; la vidéo à fond perdu, en boucle et sans le son tant qu'elle
+ * est à l'écran (VideoProfil, sa couverture avant la lecture).
+ */
 function ImageEnHaut({ img, f }: { img: ImageHaut; f: Format }) {
+  const g = genreMedia(img);
+  // le cadrage vertical (image et vidéo) : la vidéo le lit dans --y (VideoProfil ne prend pas de style)
   return (
-    <div className={b.imageHaut} style={ratios("16 / 9", RATIO_HAUT[f])}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi */}
-      <img src={img.url} alt="" loading="lazy" decoding="async" className={b.nuitDoux} style={{ objectPosition: `50% ${img.y ?? 50}%` }} />
+    <div className={b.imageHaut} style={{ ...ratios("16 / 9", RATIO_HAUT[f]), ["--y" as string]: `${img.y ?? 50}%` }}>
+      {g === "video" ? (
+        <VideoProfil url={`${img.url}#t=${couvertureDe(img)}`} ratio={img.ratio} label={T.video} />
+      ) : g === "gif" ? (
+        <div className={b.gifHaut}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={img.url} alt="" aria-hidden decoding="async" className={b.gifFond} />
+          <span aria-hidden className={b.gifVoile} />
+          {/* net, entier : à sa taille réelle au plus, réduit (proportions gardées) s'il ne tient pas dans la place ;
+              pas de chargement différé : sans taille avant d'être chargé, il ne serait jamais demandé */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={img.url}
+            alt=""
+            decoding="async"
+            className={"relative block h-auto rounded-[10px] border border-line " + b.nuitDoux}
+            // la largeur qui tient dans la place (unités de conteneur : .gifHaut), sans dépasser la taille réelle
+            style={{ width: `min(100cqw, ${img.px ? `${img.px}px, ` : ""}calc(100cqh * ${img.ratio}))` }}
+          />
+        </div>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi
+        <img src={img.url} alt="" loading="lazy" decoding="async" className={b.nuitDoux} style={{ objectPosition: `50% ${img.y ?? 50}%` }} />
+      )}
     </div>
   );
 }

@@ -27,6 +27,7 @@ import {
   estMedia,
   fichiersGardes,
   formatPermis,
+  formatsDe,
   genreDe,
   imagesHaut,
   nomBloc,
@@ -301,14 +302,14 @@ console.log("# La validation");
   const haut = (id: string, extra: Brut = {}): Brut => ({ id, url: `${PREFIXES.images}${id}.webp`, ratio: 1.5, y: 30, ...extra });
   const carte = (id: string, extra: Brut = {}): Brut => ({ k: "carte", id, titre: "Objectif Level I", texte: "Novembre 2026", f: "colonne", ...extra });
   const c1 = validerDisposition([carte("carte01", { img: haut("hautaa1") })], PREFIXES);
-  check("une carte avec son image : gardée telle quelle", egal(c1.disposition, [{ k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026", img: { id: "hautaa1", url: `${PREFIXES.images}hautaa1.webp`, ratio: 1.5, y: 30 }, f: "colonne" }]) && !c1.refus.length);
+  check("une carte avec son image : gardée telle quelle", egal(c1.disposition, [{ k: "carte", id: "carte01", titre: "Objectif Level I", texte: "Novembre 2026", img: { id: "hautaa1", type: "image", url: `${PREFIXES.images}hautaa1.webp`, ratio: 1.5, y: 30 }, f: "colonne" }]) && !c1.refus.length);
   check("la carte validée repasse à l'identique (idempotente)", egal(validerDisposition(c1.disposition, "lecture").disposition, c1.disposition));
   check("une carte ne va pas en bande : le format permis le plus proche", validerDisposition([carte("carte01", { f: "bande" })], PREFIXES).disposition[0].f === "heros");
   const nettoyee = validerDisposition([carte("carte01", { titre: "  Un\u0007 titre   ", texte: "a\r\n\r\n\r\n\r\nb\n" + "x".repeat(400) })], PREFIXES).disposition[0] as { titre: string; texte: string };
   check("titre et texte nettoyés : une ligne, retours gardés (2 vides au plus), 280 caractères", nettoyee.titre === "Un titre" && nettoyee.texte.startsWith("a\n\nb x") && nettoyee.texte.length <= 280);
   check("4 cartes : 3 gardées", validerDisposition(["carte01", "carte02", "carte03", "carte04"].map((id) => carte(id, { f: "tuile" })), PREFIXES).disposition.length === 3);
   const autre = validerDisposition([{ k: "amis", f: "tuile", img: haut("hautaa1", { url: `${BASE}/profil-medias/autre/hautaa1.webp` }) }], PREFIXES);
-  check("image en haut d'un autre dossier : refusée, le module reste", egal(autre.disposition, [{ k: "amis", f: "tuile" }]) && egal(autre.refus, ["une ou plusieurs images en haut"]));
+  check("image en haut d'un autre dossier : refusée, le module reste", egal(autre.disposition, [{ k: "amis", f: "tuile" }]) && egal(autre.refus, ["un ou plusieurs médias en haut"]));
   const cinq = validerDisposition(
     (["vitrine", "radar", "amis", "reponses", "trophees"] as const).map((k, n) => ({ k, f: "tuile", img: haut(`haut${n}aaa`) })),
     PREFIXES,
@@ -326,6 +327,33 @@ console.log("# La validation");
   check("une image en haut sans ratio : 1,778, et la liste repasse à l'identique", (sansRatio[0] as { img: { ratio: number } }).img.ratio === 1.778 && egal(validerDisposition(sansRatio, "lecture").disposition, sansRatio));
   check("une carte ne prend pas la clé d'un module", validerDisposition([{ k: "vitrine", f: "bande" }, carte("vitrine")], PREFIXES).disposition.length === 1);
   check("une carte ne prend pas l'id d'un média (la seconde part)", validerDisposition([img("imagea1"), carte("imagea1")], PREFIXES).disposition.length === 1 && validerDisposition([carte("imagea1"), img("imagea1")], PREFIXES).disposition.length === 1);
+  // une vidéo ou un GIF en haut
+  const videoHaut = (id: string, extra: Brut = {}): Brut => ({ id, type: "video", url: `${PREFIXES.videos}${id}.mp4`, ratio: 0.5625, duree: 12.34, couverture: 4.3, ...extra });
+  const vh = validerDisposition([{ k: "amis", f: "colonne", img: videoHaut("video01") }], PREFIXES);
+  check(
+    "une vidéo en haut : gardée, durée au dixième, couverture au demi",
+    egal(vh.disposition, [{ k: "amis", f: "colonne", img: { id: "video01", type: "video", url: `${PREFIXES.videos}video01.mp4`, ratio: 0.563, duree: 12.3, couverture: 4.5 } }]) && !vh.refus.length,
+    JSON.stringify(vh.disposition),
+  );
+  check("la vidéo en haut repasse à l'identique", egal(validerDisposition(vh.disposition, "lecture").disposition, vh.disposition));
+  check("une vidéo en haut venue du dossier d'images : refusée", validerDisposition([{ k: "amis", f: "tuile", img: videoHaut("video01", { url: `${PREFIXES.images}video01.mp4` }) }], PREFIXES).refus.length === 1);
+  const deuxVideos = validerDisposition([{ k: "amis", f: "tuile", img: videoHaut("video01") }, vid("video02")], PREFIXES);
+  check("une vidéo par page : la vidéo en haut compte, le bloc vidéo suivant part", deuxVideos.disposition.length === 1 && egal(deuxVideos.refus, ["un ou plusieurs médias"]));
+  const deuxHaut = validerDisposition([{ k: "amis", f: "tuile", img: videoHaut("video01") }, { k: "radar", f: "tuile", img: videoHaut("video02") }], PREFIXES);
+  check("une vidéo par page : deux vidéos en haut, la seconde part seule", deuxHaut.disposition.length === 2 && !("img" in deuxHaut.disposition[1]));
+  const gifHaut = validerDisposition([{ k: "amis", f: "tuile", img: { id: "gifkl01", type: "image", url: "https://static.klipy.com/ii/4e7/gifkl01.gif", ratio: 1, source: "klipy", px: 240 } }], PREFIXES);
+  check("un GIF de la banque en haut : gardé (source, taille réelle)", egal((gifHaut.disposition[0] as { img: unknown }).img, { id: "gifkl01", type: "image", url: "https://static.klipy.com/ii/4e7/gifkl01.gif", ratio: 1, source: "klipy", px: 240 }), JSON.stringify(gifHaut.disposition));
+  const enBande = validerDisposition([{ k: "vitrine", f: "bande", img: videoHaut("video01") }], PREFIXES);
+  check("une vidéo en haut d'une bande : refusée, le bloc reste en bande", egal(enBande.disposition, [{ k: "vitrine", f: "bande" }]) && egal(enBande.refus, ["un ou plusieurs médias en haut"]));
+  check("une image en haut d'une bande : gardée", "img" in validerDisposition([{ k: "vitrine", f: "bande", img: haut("hautaa1") }], PREFIXES).disposition[0]);
+  const cadree = validerDisposition([{ k: "amis", f: "tuile", img: videoHaut("video01", { y: 20 }) }], PREFIXES).disposition[0] as { img: { y?: number } };
+  check("une vidéo en haut garde son cadrage (y)", cadree.img.y === 20);
+  check("un bloc vidéo ne prend pas de cadrage (y)", !("y" in (validerDisposition([vid("video01", { y: 20 })], PREFIXES).disposition[0] as object)));
+  const avecVideo: Bloc = { k: "amis", f: "tuile", img: { id: "video01", type: "video", url: "/v.mp4", ratio: 0.5625 } };
+  check("formats : un bloc avec une vidéo en haut ne va pas en bande", !formatsDe(avecVideo).includes("bande") && formatsDe({ k: "amis", f: "tuile" }).includes("bande"));
+  check("raison : la vidéo en haut d'une bande", raisonRefus(avecVideo, "bande").startsWith("Avec sa vidéo en haut"));
+  const ancienne = validerDisposition([{ k: "amis", f: "tuile", img: { id: "hautaa1", url: `${PREFIXES.images}hautaa1.webp`, ratio: 1.5 } }], PREFIXES).disposition;
+  check("une image en haut d'avant (sans type) : lue comme une image", (ancienne[0] as { img: { type: string } }).img.type === "image");
   check("une place libre en colonne est lue", egal(lire([{ k: "radar", f: "heros" }, { k: "libre", f: "colonne" }, { k: "amis", f: "tuile" }]).disposition.map((e) => e.f), ["heros", "colonne", "tuile"]));
   check("image de son dossier : gardée", avec(img("imagea1")).disposition.length === 1 && avec(img("imagea1")).refus.length === 0);
   check("image d'un autre dossier : refusée", avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` })).disposition.length === 0 && egal(avec(img("imagea1", { url: `${BASE}/profil-medias/autre/imagea1.webp` })).refus, ["un ou plusieurs médias"]));

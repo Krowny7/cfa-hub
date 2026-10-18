@@ -64,17 +64,28 @@ export type GenreMedia = "image" | "gif" | "video";
 export type GenreBloc = CleBloc | GenreMedia | "carte";
 
 /**
- * Une image en haut d'un module ou d'une carte (la moitié haute, comme la
- * Bibliothèque) : envoyée par le joueur dans son dossier d'images, sous le
- * même nom exact qu'un média (`<id>.<ext>`).
+ * Le média en haut d'un module ou d'une carte (la moitié haute, comme la
+ * Bibliothèque) : une image ou une vidéo envoyée par le joueur dans ses
+ * dossiers, sous le même nom exact qu'un média (`<id>.<ext>`), ou un GIF de
+ * la banque KLIPY. Mêmes champs qu'un bloc média, sans légende ni format.
+ * (Lue sans `type` : une image, comme les premières, posées sans.)
  */
 export type ImageHaut = {
   id: string;
+  type: "image" | "video";
   url: string;
   /** largeur / hauteur */
   ratio: number;
-  /** le point focal vertical, 0 (haut) à 100 (bas) ; absent : 50 */
+  /** « klipy » : un GIF de la banque, servi par KLIPY */
+  source?: "klipy";
+  /** GIF de la banque : sa largeur réelle en pixels (jamais agrandi) */
+  px?: number;
+  /** image : le point focal vertical, 0 (haut) à 100 (bas) ; absent : 50 */
   y?: number;
+  /** vidéo : sa durée lue à l'envoi (s, au dixième) */
+  duree?: number;
+  /** vidéo : l'image de couverture (s, au demi) */
+  couverture?: number;
 };
 export type BlocFixe = { k: CleBloc; f: Format; img?: ImageHaut };
 /** Une carte : une image en haut (facultative), un titre et quelques lignes écrits par le joueur. */
@@ -154,10 +165,10 @@ export const estCarte = (e: ElementPage): e is BlocCarte => e.k === "carte";
 export const estFixe = (e: ElementPage): e is BlocFixe => e.k !== "media" && e.k !== "carte" && e.k !== "libre";
 export const estLibre = (e: ElementPage): e is PlaceLibre => e.k === "libre";
 export const estBloc = (e: ElementPage): e is Bloc => e.k !== "libre";
-export const estGif = (b: BlocMedia) => b.source === "klipy" || /[.]gif$/i.test(b.url);
+export const estGif = (b: Pick<BlocMedia, "source" | "url">) => b.source === "klipy" || /[.]gif$/i.test(b.url);
 export const estVideo = (b: ElementPage) => estMedia(b) && b.type === "video";
 export const infoBloc = (k: CleBloc) => BLOCS.find((b) => b.k === k)!;
-export const genreMedia = (b: BlocMedia): GenreMedia => (b.type === "video" ? "video" : estGif(b) ? "gif" : "image");
+export const genreMedia = (b: Pick<BlocMedia, "type" | "source" | "url">): GenreMedia => (b.type === "video" ? "video" : estGif(b) ? "gif" : "image");
 export const genreDe = (b: Bloc): GenreBloc => (estMedia(b) ? genreMedia(b) : b.k);
 /** la clé React d'un élément : l'id d'un média ou d'une carte, la clé d'un bloc, « libre-<index> » */
 export const cleDe = (e: ElementPage, i: number) => (estMedia(e) || estCarte(e) ? e.id : estLibre(e) ? `libre-${i}` : e.k);
@@ -166,6 +177,8 @@ export const nomBloc = (b: Bloc) => (estMedia(b) ? { image: "Image", gif: "GIF",
 export const peutAvoirImage = (b: Bloc) => estCarte(b) || (estFixe(b) && b.k !== "progression");
 /** Les images en haut posées sur la page. */
 export const imagesHaut = (d: Disposition): ImageHaut[] => d.flatMap((e) => ((estFixe(e) || estCarte(e)) && e.img ? [e.img] : []));
+/** Les vidéos de la page : celles des blocs média et celles posées en haut d'un bloc (une par page). */
+export const videosDe = (d: Disposition) => d.filter((e) => estMedia(e) && e.type === "video").length + imagesHaut(d).filter((m) => m.type === "video").length;
 /** Les fichiers du joueur dont la page se sert (médias envoyés et images en haut) : le ménage garde ceux-là. */
 export const fichiersGardes = (d: Disposition): Set<string> =>
   new Set([...blocsDe(d).filter(estMedia).map((b) => b.url), ...imagesHaut(d).map((x) => x.url)].map((u) => u.split("/").pop() ?? ""));
@@ -205,7 +218,11 @@ export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
   video: "tuile",
   carte: "colonne",
 };
-export const formatsDe = (b: Bloc): Format[] => FORMATS_PERMIS[genreDe(b)];
+/** Les formats permis d'un bloc : ceux de son genre ; avec une vidéo en haut, pas la bande (elle y serait recadrée trop bas). */
+export const formatsDe = (b: Bloc): Format[] => {
+  const permis = FORMATS_PERMIS[genreDe(b)];
+  return (estFixe(b) || estCarte(b)) && b.img?.type === "video" ? permis.filter((f) => f !== "bande") : permis;
+};
 
 /** `voulu` s'il est permis ; sinon le format permis le plus proche en portée (à égalité, le plus large). */
 export function formatPermis(g: GenreBloc, voulu: Format): Format {
@@ -218,6 +235,7 @@ export function formatPermis(g: GenreBloc, voulu: Format): Format {
 /** Pourquoi un format est refusé à un bloc (l'infobulle du format grisé). */
 export function raisonRefus(b: Bloc, f: Format): string {
   const g = genreDe(b);
+  if (f === "bande" && (estFixe(b) || estCarte(b)) && b.img?.type === "video") return "Avec sa vidéo en haut, ce bloc ne va pas en bande : elle serait recadrée trop bas.";
   if (g === "video") return "La vidéo ne va pas en bande : elle serait recadrée trop bas.";
   if (g === "gif") return "Le GIF ne va pas en bande : il serait recadré trop bas.";
   if (g === "progression") return "La courbe de progression a besoin d'au moins deux tiers de la largeur.";
@@ -616,38 +634,22 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     return fichier !== null && nomFichier(id, video).test(fichier);
   };
 
-  /** une image en haut : du dossier d'images du joueur, quatre au plus ; refusée, elle part seule */
-  const imageHaut = (x: unknown): ImageHaut | null => {
-    if (x === undefined || x === null) return null;
-    const o = estObjet(x) ? x : {};
-    const id = typeof o.id === "string" && /^[a-z0-9]{6,24}$/.test(o.id) ? o.id : null;
-    const url = typeof o.url === "string" ? o.url.trim() : "";
-    const ok = id && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && EXT_IMAGE.test(url) && fichierDuJoueur(id, url, false) && !vus.has("m:" + id);
-    if (!ok || images >= IMAGES_HAUT_MAX) {
-      imageRefusee = true;
-      return null;
-    }
-    vus.add("m:" + id);
-    images++;
-    const y = nombre(o.y);
-    return { id, url, ratio: bornerRatio(o.ratio), ...(y !== null ? { y: Math.max(0, Math.min(100, Math.round(y))) } : {}) };
-  };
-
-  const media = (b: Record<string, unknown>): BlocMedia | null => {
+  /**
+   * Les champs d'un média, d'un bloc ou en haut d'un bloc (rien n'est compté
+   * ici) : id, type, adresse (un dossier du joueur sous son nom exact, ou un
+   * GIF de KLIPY), ratio, et selon le genre la taille du GIF, le cadrage, la
+   * durée et la couverture de la vidéo. null : refusé. `type` absent : celui
+   * par défaut (null : refusé).
+   */
+  const champsMedia = (b: Record<string, unknown>, typeDefaut: "image" | null, cadrageVideo = false) => {
     const id = typeof b.id === "string" && /^[a-z0-9]{6,24}$/.test(b.id) ? b.id : null;
-    const type = b.type === "image" ? "image" : b.type === "video" ? "video" : null;
+    const type = b.type === "image" ? "image" : b.type === "video" ? "video" : typeDefaut;
     const url = typeof b.url === "string" ? b.url.trim() : "";
     const klipy = type === "image" && URL_KLIPY.test(url);
     const dossierOk = klipy || (!!id && fichierDuJoueur(id, url, type === "video"));
     const ok =
       id && type && dossierOk && url.length <= 500 && /^[A-Za-z0-9:/._%-]+$/.test(url) && (type === "video" ? EXT_VIDEO : EXT_IMAGE).test(url) && !vus.has("m:" + id);
-    if (!ok || medias >= MEDIAS_MAX || (type === "video" && videos >= VIDEOS_MAX)) {
-      mediaRefuse = true;
-      return null;
-    }
-    vus.add("m:" + id);
-    medias++;
-    if (type === "video") videos++;
+    if (!ok || !id || !type) return null;
     const px = Math.round(Number(b.px));
     const y = nombre(b.y);
     const duree = nombre(b.duree) !== null ? Math.round(nombre(b.duree)! * 10) / 10 : null;
@@ -655,19 +657,46 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     const couv = nombre(b.couverture);
     const max = dureeOk ?? 60;
     const couverture = type === "video" && couv !== null && couv >= 0 ? Math.min(Math.round(couv * 2) / 2, Math.floor(max * 2) / 2) : null;
-    const sans: Omit<BlocMedia, "f"> = {
-      k: "media",
+    return {
       id,
-      type,
+      type: type as ImageHaut["type"],
       url,
       ratio: bornerRatio(b.ratio),
-      legende: nettoyerLegende(b.legende),
-      ...(klipy ? { source: "klipy" as const, ...(px >= 16 && px <= 4000 ? { px } : {}) } : {}),
-      ...(type === "image" && y !== null ? { y: Math.max(0, Math.min(100, Math.round(y))) } : {}),
-      ...(dureeOk !== null ? { duree: dureeOk } : {}),
-      ...(couverture !== null ? { couverture } : {}),
+      suite: {
+        ...(klipy ? { source: "klipy" as const, ...(px >= 16 && px <= 4000 ? { px } : {}) } : {}),
+        ...((type === "image" || cadrageVideo) && y !== null ? { y: Math.max(0, Math.min(100, Math.round(y))) } : {}),
+        ...(dureeOk !== null ? { duree: dureeOk } : {}),
+        ...(couverture !== null ? { couverture } : {}),
+      },
     };
-    const genre = genreMedia({ ...sans, f: "tuile" });
+  };
+
+  /** le média en haut d'un bloc (image, GIF ou vidéo) : quatre au plus, la vidéo comptée avec celles des blocs (une par page) ; refusé, il part seul */
+  const imageHaut = (x: unknown): ImageHaut | null => {
+    if (x === undefined || x === null) return null;
+    // en haut, la vidéo se cadre aussi (une vidéo verticale dans une place large)
+    const c = champsMedia(estObjet(x) ? x : {}, "image", true);
+    if (!c || images >= IMAGES_HAUT_MAX || (c.type === "video" && videos >= VIDEOS_MAX)) {
+      imageRefusee = true;
+      return null;
+    }
+    vus.add("m:" + c.id);
+    images++;
+    if (c.type === "video") videos++;
+    return { id: c.id, type: c.type, url: c.url, ratio: c.ratio, ...c.suite };
+  };
+
+  const media = (b: Record<string, unknown>): BlocMedia | null => {
+    const c = champsMedia(b, null);
+    if (!c || medias >= MEDIAS_MAX || (c.type === "video" && videos >= VIDEOS_MAX)) {
+      mediaRefuse = true;
+      return null;
+    }
+    vus.add("m:" + c.id);
+    medias++;
+    if (c.type === "video") videos++;
+    const sans: Omit<BlocMedia, "f"> = { k: "media", id: c.id, type: c.type, url: c.url, ratio: c.ratio, legende: nettoyerLegende(b.legende), ...c.suite };
+    const genre = genreMedia(sans);
     return { ...sans, f: estFormat(b.f) ? formatPermis(genre, b.f) : FORMAT_DEFAUT[genre] };
   };
 
@@ -689,8 +718,12 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     const info = BLOCS.find((i) => i.k === x.k);
     if (!info || vus.has(info.k)) return null;
     vus.add(info.k);
-    const img = info.k !== "progression" ? imageHaut(x.img) : null;
-    return { k: info.k, f: estFormat(x.f) ? formatPermis(info.k, x.f) : FORMAT_DEFAUT[info.k], ...(img ? { img } : {}) };
+    const f = estFormat(x.f) ? formatPermis(info.k, x.f) : FORMAT_DEFAUT[info.k];
+    // une vidéo en haut d'une bande : refusée (le bloc garde son format, sans elle)
+    const videoEnBande = f === "bande" && estObjet(x.img) && x.img.type === "video";
+    if (videoEnBande) imageRefusee = true;
+    const img = info.k !== "progression" && !videoEnBande ? imageHaut(x.img) : null;
+    return { k: info.k, f, ...(img ? { img } : {}) };
   };
 
   let liste: unknown[] = raw.slice(0, 60);
@@ -704,7 +737,7 @@ export function validerDisposition(raw: unknown, prefixes: Prefixes | null | "le
     if (e) out.push(e);
   }
   if (mediaRefuse) refus.push("un ou plusieurs médias");
-  if (imageRefusee) refus.push("une ou plusieurs images en haut");
+  if (imageRefusee) refus.push("un ou plusieurs médias en haut");
   return { disposition: normaliser(out), refus };
 }
 
