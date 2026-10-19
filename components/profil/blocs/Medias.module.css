@@ -79,14 +79,16 @@
     aspect-ratio: auto !important;
     min-height: 240px;
   }
+  /* le GIF remplit sa tuile, proportions gardées (agrandi s'il le faut), avec une marge fine */
   .gifPasse {
     container-type: size;
+    padding: 12px;
   }
   .gifPasse > .gifNet {
     width: auto !important;
-    height: auto;
-    max-width: min(calc(100cqw - 48px), var(--px, 100%));
-    max-height: calc(100cqh - 48px);
+    max-width: none;
+    aspect-ratio: var(--ar, 1);
+    height: min(calc(100cqh - 24px), calc((100cqw - 24px) / var(--ar, 1)));
   }
 }
 

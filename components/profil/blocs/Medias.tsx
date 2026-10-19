@@ -62,7 +62,7 @@ export function MediaBloc({ m: media, f }: { m: BlocMedia; f: Format }) {
             width={media.px}
             height={media.px ? Math.round(media.px / media.ratio) : undefined}
             className={"relative block h-auto max-w-full rounded-[10px] border border-line shadow-[var(--shadow-2)] " + m.nuitDoux + " " + m.gifNet}
-            style={media.px ? { width: media.px, ["--px" as string]: `${media.px}px` } : undefined}
+            style={{ ...(media.px ? { width: media.px } : {}), ["--ar" as string]: media.ratio || 1 }}
           />
         </div>
         <Legende texte={media.legende} icone={<ImageIcon size={15} />} />
