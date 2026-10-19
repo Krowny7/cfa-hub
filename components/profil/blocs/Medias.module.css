@@ -72,6 +72,24 @@
   filter: brightness(0.86);
 }
 
+/* dès 1 024 px, hors bande : l'image et le GIF suivent la hauteur de leur rangée (donnée par les
+   modules voisins, 260 px au moins) au lieu de la fixer : pas de tuile voisine étirée ni de grand vide */
+@media (min-width: 1024px) {
+  .suit {
+    aspect-ratio: auto !important;
+    min-height: 240px;
+  }
+  .gifPasse {
+    container-type: size;
+  }
+  .gifPasse > .gifNet {
+    width: auto !important;
+    height: auto;
+    max-width: min(calc(100cqw - 48px), var(--px, 100%));
+    max-height: calc(100cqh - 48px);
+  }
+}
+
 /* l'image en haut d'un module ou d'une carte : à fond perdu, son rapport
    donne la hauteur de départ ; sur ordinateur, elle absorbe la hauteur en
    trop de la case (520 px au plus), comme la Bibliothèque de Réviser */

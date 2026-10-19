@@ -44,7 +44,7 @@ function couleurToi(d: DonneesBlocs): string {
 }
 
 /** Les tailles du radar par format (330 / 340 / 440 / 520 px au plus). */
-const LARGEUR: Record<Format, number> = { tuile: 330, colonne: 340, heros: 440, bande: 520, demi: 330 };
+const LARGEUR: Record<Format, number> = { tuile: 330, colonne: 270, heros: 440, bande: 520, demi: 330 };
 
 const icone = <IconeRadar size={17} aria-hidden />;
 
@@ -117,7 +117,7 @@ function Mise({ d, f, radar, droite }: { d: DonneesBlocs; f: Format; radar: Reac
     fm === "tuile" ? (
       <div className={r.zone + " " + r.centre}>{leRadar}</div>
     ) : fm === "colonne" ? (
-      <div className={r.zone}>
+      <div className={r.zone + " " + r.compact}>
         <div className={r.centre}>{leRadar}</div>
         {podium}
       </div>

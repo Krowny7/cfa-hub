@@ -89,10 +89,10 @@
   animation: revele 0.9s cubic-bezier(0.3, 0.6, 0.2, 1) backwards;
 }
 .tuile {
-  margin-top: auto;
+  margin-block: auto;
 }
 .heros {
-  margin-top: auto;
+  margin-block: auto;
 }
 .bande {
   --g: 3px;

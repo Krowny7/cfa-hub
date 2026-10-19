@@ -69,6 +69,17 @@
   }
 }
 
+/* la colonne : le podium serré (le code et le %, le nom long en infobulle) */
+.compact .nomLong {
+  display: none;
+}
+.compact .puce {
+  padding-block: 6px;
+}
+.compact {
+  gap: 12px;
+}
+
 /* le podium : une étiquette, trois puces médaillées */
 .podium {
   display: flex;

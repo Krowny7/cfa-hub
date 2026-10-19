@@ -51,7 +51,7 @@ export function MediaBloc({ m: media, f }: { m: BlocMedia; f: Format }) {
     return (
       <figure className="card m-0 flex min-w-0 flex-col overflow-hidden">
         {/* passe-partout : le GIF net, à sa taille réelle (jamais agrandi) ; en fond, le même GIF flouté sous un voile qui suit le thème */}
-        <div className="relative grid flex-1 place-items-center overflow-hidden p-6" style={{ minHeight: 220 }}>
+        <div className={"relative grid flex-1 place-items-center overflow-hidden p-6 " + m.gifPasse} style={{ minHeight: 220 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={media.url} alt="" aria-hidden className={m.gifFond} />
           <span aria-hidden className={m.gifVoile} />
@@ -61,8 +61,8 @@ export function MediaBloc({ m: media, f }: { m: BlocMedia; f: Format }) {
             alt={media.legende ?? T.gif}
             width={media.px}
             height={media.px ? Math.round(media.px / media.ratio) : undefined}
-            className={"relative block h-auto max-w-full rounded-[10px] border border-line shadow-[var(--shadow-2)] " + m.nuitDoux}
-            style={media.px ? { width: media.px } : undefined}
+            className={"relative block h-auto max-w-full rounded-[10px] border border-line shadow-[var(--shadow-2)] " + m.nuitDoux + " " + m.gifNet}
+            style={media.px ? { width: media.px, ["--px" as string]: `${media.px}px` } : undefined}
           />
         </div>
         <Legende texte={media.legende} icone={<ImageIcon size={15} />} />
@@ -101,7 +101,7 @@ export function MediaBloc({ m: media, f }: { m: BlocMedia; f: Format }) {
     );
   return (
     <figure className="card m-0 flex min-w-0 flex-col overflow-hidden">
-      <div className={m.absorbe} style={ratios("4 / 3", RATIO[f])}>
+      <div className={m.absorbe + (f === "tuile" || f === "colonne" || f === "heros" ? " " + m.suit : "")} style={ratios("4 / 3", RATIO[f])}>
         {/* eslint-disable-next-line @next/next/no-img-element -- image du joueur, préparée à l'envoi */}
         <img src={media.url} alt={media.legende ?? T.image} loading="lazy" decoding="async" className={m.nuitDoux} style={{ objectPosition: `50% ${y}%` }} />
       </div>

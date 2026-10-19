@@ -91,7 +91,7 @@ check("le code de comparaison mort est parti (tranche, rangPic)", !("tranche" in
   check("radar chez un autre, fermé : la moyenne en pointillés, pas de score", t.includes('stroke-dasharray="3.5 4"') && !t.includes("toi 2 – 2"));
   check("radar chez un autre (tuile) : le radar centré dans la hauteur", t.includes('class="zone centre"'));
   for (const f of ["tuile", "colonne", "heros", "bande"] as Format[]) {
-    const max = { tuile: 330, colonne: 340, heros: 440, bande: 520, demi: 330 }[f];
+    const max = { tuile: 330, colonne: 270, heros: 440, bande: 520, demi: 330 }[f];
     check(`radar chez un autre (${f}) : ${max} px au plus`, r(RadarBloc, AUTRE, f).includes(`--max:${max}px`));
   }
   check("radar chez un autre : le titre « Statistiques » à chaque format", (["tuile", "colonne", "heros", "bande"] as Format[]).every((f) => r(RadarBloc, AUTRE, f).includes(">Statistiques</h3>")));
@@ -149,7 +149,7 @@ check("le code de comparaison mort est parti (tranche, rangPic)", !("tranche" in
   check("radar chez soi (héros) : le podium « Tes plus sûres » à côté du radar, plus de « en tête » ni « À reprendre »", sh.includes(">Tes plus sûres</p>") && sh.includes('class="ensemble"') && compte(sh, 'class="puce"') === 3 && !sh.includes("en tête") && !sh.includes("À reprendre"));
   check("radar chez soi : les 10 matières en barres dans le repli, avec leur moyenne", sh.includes("Les 10 matières</summary>") && sh.includes("moyenne des joueurs : 66 %") && !sh.includes("var(--gain)"));
   const sc = r(RadarBloc, SOI, "colonne");
-  check("radar chez soi (colonne) : le podium dessous, plus de forme de tuile imposée", sc.includes(">Tes plus sûres</p>") && sc.includes("--max:340px"));
+  check("radar chez soi (colonne) : le podium dessous, plus de forme de tuile imposée", sc.includes(">Tes plus sûres</p>") && sc.includes("--max:270px"));
   check("radar : chez un autre, pas de repli des 10 matières (propre au propriétaire)", !r(RadarBloc, AUTRE, "heros").includes("Les 10 matières</summary>"));
 }
 
