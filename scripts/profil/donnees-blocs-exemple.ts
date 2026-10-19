@@ -1,13 +1,13 @@
 // Des données de blocs d'exemple (aucun appel à la base), pour le test de la
 // grille (test-grille.tsx) et l'aperçu local de la page : « Sforzinda », qui
-// a tout rempli (sa page à 10 blocs, DISPO_RICHE), et « Paul D. », qui n'a
+// a tout rempli (sa page à 17 blocs, DISPO_RICHE), et « Paul D. », qui n'a
 // presque rien touché (la page par défaut). Reprises des données de la
 // maquette B. Les médias pointent sur des fichiers du site (public/).
 
 import { STATS_VIDES, type ProfilStats } from "@/lib/profil/catalogue";
 import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 import { folioPorte } from "@/lib/profil/etagere";
-import type { DonneesBlocs, DonneesVisiteur, ExtraitCarnet, SeanceProgression } from "@/lib/profil/blocs-donnees";
+import type { DonneesBlocs, DonneesVisiteur, ExtraitCarnet, ExtraitClassement, ExtraitCodex, ExtraitExamens, ExtraitJourJ, ExtraitRythme, IssueDuel, SeanceProgression } from "@/lib/profil/blocs-donnees";
 import type { Saisons } from "@/lib/profil/saisons";
 
 /** un « GIF » de la banque, petit (240 px) : une goutte d'encre qui tombe et s'étale, en boucle (SVG) */
@@ -58,7 +58,7 @@ const SAISONS_RICHE: Saisons = {
   ],
 };
 
-/** la page de Sforzinda : les 10 blocs fixes, 4 formats, les 3 genres de média */
+/** la page de Sforzinda : les 17 blocs fixes (20 éléments, la limite), 5 formats, les 3 genres de média */
 export const DISPO_RICHE: Disposition = [
   { k: "vitrine", f: "bande" },
   { k: "radar", f: "heros" },
@@ -73,7 +73,52 @@ export const DISPO_RICHE: Disposition = [
   { k: "reponses", f: "tuile" },
   { k: "progression", f: "heros" },
   { k: "carnet", f: "demi" },
+  // les sept tuiles de plus : trois rangées pleines, puis la matière phare seule
+  { k: "rythme", f: "heros" },
+  { k: "classement", f: "tuile" },
+  { k: "examens", f: "heros" },
+  { k: "jourj", f: "tuile" },
+  { k: "codex", f: "heros" },
+  { k: "duels", f: "tuile" },
+  { k: "phare", f: "tuile" },
 ];
+
+/** les heures d'exemple : 7 jours × 24 heures, plutôt le soir (pic à 21 h), un peu le matin et le midi ; pseudo-aléatoire fixe */
+export function grilleExemple(): number[][] {
+  return Array.from({ length: 7 }, (_, j) =>
+    Array.from({ length: 24 }, (_, h) => {
+      const base = h === 21 ? 1.25 : h >= 19 && h <= 22 ? 0.85 : h === 23 ? 0.4 : h >= 7 && h <= 9 ? 0.35 : h === 12 || h === 13 ? 0.25 : h >= 14 && h <= 18 ? 0.12 : h < 6 ? 0 : 0.04;
+      const hasard = Math.abs((Math.sin((j + 1) * 12.9898 + (h + 1) * 78.233) * 43758.5453) % 1);
+      return Math.round(base * (j >= 5 ? 1.3 : 1) * 22 * (0.7 + hasard * 0.6));
+    }),
+  );
+}
+const GRILLE_RICHE = grilleExemple();
+export const RYTHME_RICHE: ExtraitRythme = { grille: GRILLE_RICHE, pic: 21, moment: "soir", total: GRILLE_RICHE.flat().reduce((t, v) => t + v, 0) };
+export const FORME_DUELS_RICHE: IssueDuel[] = ["V", "V", "D", "V", "N"];
+export const JOUR_J_RICHE: ExtraitJourJ = { jours: 25, date: "2026-11-12", couverture: 68 };
+export const CLASSEMENT_RICHE: ExtraitClassement = { place: 7, joueurs: 412, elo: 1478, palier: 3, division: "II", progress: 52, suivant: "Diamant", points: 72, variation: 24 };
+export const EXAMENS_RICHE: ExtraitExamens = {
+  scores: [
+    { pct: 58, titre: "Examen blanc n° 1" },
+    { pct: 66, titre: "Examen blanc n° 2" },
+    { pct: 71, titre: "Examen blanc n° 3" },
+    { pct: 74, titre: "Examen blanc n° 4" },
+  ],
+  n: 4,
+};
+export const CODEX_RICHE: ExtraitCodex = {
+  fil: [
+    { marque: "P", titre: "Premiers pas", etat: "fait" },
+    { marque: "II", titre: "Les 10 matières", etat: "fait" },
+    { marque: "III", titre: "Couvrir et retenir", etat: "fait" },
+    { marque: "IV", titre: "Premier examen blanc", etat: "cours" },
+    { marque: "V", titre: "Programme à 60 %", etat: "avenir" },
+    { marque: "VI", titre: "Niveau examen", etat: "avenir" },
+  ],
+  acte: { numero: 4, total: 6 },
+  quete: { titre: "Rendre un premier examen blanc", recompense: "150 XP" },
+};
 
 export const RICHE: DonneesBlocs = {
   id: "sforzinda",
@@ -124,6 +169,13 @@ export const RICHE: DonneesBlocs = {
   },
   saisons: SAISONS_RICHE,
   visibiliteJournal: "public",
+  // les sept tuiles de plus
+  formeDuels: FORME_DUELS_RICHE,
+  jourJ: JOUR_J_RICHE,
+  classement: CLASSEMENT_RICHE,
+  examens: EXAMENS_RICHE,
+  codex: CODEX_RICHE,
+  rythme: RYTHME_RICHE,
 };
 
 /** des jours d'exemple : 52 semaines jusqu'au 18 oct. 2026, plus denses vers la fin ; `graine` change la régularité */

@@ -1,79 +1,252 @@
-/* Le bloc Questions répondues (Reponses.tsx). En CSS simple : aucune classe
-   arbitraire nouvelle pour Tailwind. */
+/* Le bloc Questions répondues (Reponses.tsx) : « Anneau de justesse ». Un
+   anneau (--d : son diamètre, tiré de la largeur de la case en cqw) à gauche,
+   le total en grand et « N justes » à côté, ses sources en petites lignes
+   dessous (colonne, héros, bande). En colonne : tout empilé et centré. Que
+   des jetons du site : le jour, la nuit et les couleurs inversées suivent.
+   En CSS simple : aucune classe arbitraire nouvelle pour Tailwind. */
 
-/* les lignes par matière : « ETH 420 −300 », avec ou sans double trait */
-.lignes {
+.lab {
+  letter-spacing: 0.09em;
+}
+
+/* par format : la taille maxi du total, le retrait des bords (--marge), le diamètre de l'anneau,
+   l'écart entre l'anneau et le texte et ce que l'anneau prend de la largeur (--cote) */
+.tuile {
+  --max: 56px;
+  --marge: 48px;
+  --gap: 20px;
+  --d: clamp(84px, 30cqw, 124px);
+  --cote: calc(var(--d) + var(--gap));
+}
+.colonne {
+  --max: 72px;
+  --marge: 48px;
+  --gap: 24px;
+  --d: clamp(120px, 50cqw, 172px);
+  --cote: 0px;
+}
+.heros {
+  --max: 84px;
+  --marge: 64px;
+  --gap: 28px;
+  --d: clamp(110px, 17cqw, 140px);
+  --cote: calc(var(--d) + var(--gap));
+}
+.bande {
+  --max: 84px;
+  --marge: 48px;
+  --gap: 28px;
+  --d: 132px;
+  --cote: calc(var(--d) + var(--gap));
+}
+
+/* la scène : prend la hauteur de la tuile ; l'anneau à gauche, le texte à droite */
+.scene {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: var(--gap, 20px);
+}
+/* sans l'anneau (pas de résumé des réponses) : le total seul, à toute la largeur */
+.seul {
+  --cote: 0px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.colonne .scene {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+.corps {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 6px;
-  margin: 0;
+  align-items: flex-start;
+}
+.colonne .corps {
+  width: 100%;
+  align-items: center;
+  text-align: center;
+}
+
+/* le total en grand : de la largeur qui reste à côté de l'anneau, borné (--w : le poids de son chiffre) */
+.grand {
+  display: block;
+  font-size: clamp(28px, calc((100cqw - var(--marge, 48px) - var(--cote, 0px)) / (var(--w, 3.5) * 1.02)), var(--max, 52px));
+  line-height: 0.95;
+  white-space: nowrap;
+}
+.legende {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.3;
+}
+.justes b {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.colonne .legende {
+  align-items: center;
+  font-size: 15px;
+}
+
+/* l'anneau : la piste au crayon, l'arc vert qui se remplit, le % au centre */
+.anneau {
+  position: relative;
+  display: block;
+  width: var(--d);
+  height: var(--d);
+  flex: none;
+}
+.anneau svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.piste,
+.rempli {
+  fill: none;
+  stroke-width: 9;
+}
+.piste {
+  stroke: var(--pencil-2);
+}
+.rempli {
+  stroke: var(--gain);
+  stroke-dasharray: var(--p) 100;
+  stroke-linecap: round;
+  animation: remplit 1s 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes remplit {
+  from {
+    opacity: 0;
+    stroke-dasharray: 0 100;
+  }
+  6% {
+    opacity: 1;
+  }
+}
+.centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: min(calc(var(--d) * 0.26), calc(var(--d) * 0.66 / (var(--wp, 2.8) * 1.02)));
+  white-space: nowrap;
+}
+
+/* la demi-bande : le lien « Le détail » à droite, un petit anneau devant la précision */
+.lienDemi {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.miniLigne {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.mini {
+  --d: 28px;
+}
+.mini .piste,
+.mini .rempli {
+  stroke-width: 12;
+}
+
+/* ses sources : le nom, un guide en pointillés, le nombre */
+.sources {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px 28px;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
 }
-.ligne {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  align-items: center;
+.colonne .sources {
   gap: 10px;
-  font-size: 13px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
-.avecBarres {
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-}
-.code {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.volume {
-  display: inline-flex;
+.sources li {
+  display: flex;
+  min-width: 0;
   align-items: baseline;
-  justify-content: flex-start;
   gap: 8px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  line-height: 1.35;
+  animation: monte 0.5s calc(0.35s + var(--i, 0) * 0.07s) ease both;
+}
+@keyframes monte {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.nom {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.avecBarres .volume {
-  justify-content: flex-end;
-  min-width: 112px;
+.guide {
+  min-width: 12px;
+  flex: 1 1 12px;
+  border-bottom: 1px dotted var(--line-2);
+  transform: translateY(-3px);
 }
-/* le jeton court, aligné à droite sur une largeur fixe */
-.court {
-  min-width: 52px;
-  text-align: right;
-}
-
-/* chez soi : la barre d'une source */
-.piste {
-  position: relative;
-  display: block;
-  height: 8px;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--ink) 7%, transparent);
-}
-.remplie {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  border-radius: 999px;
+.nb {
+  flex: none;
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-/* héros : le chiffre à gauche, les matières à droite ; bande : le chiffre puis 2 colonnes de 5 */
-.deux,
-.bande {
-  display: grid;
-  gap: 16px 28px;
-  align-items: center;
-}
-@media (min-width: 1024px) {
-  .deux {
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+/* héros et bande, dès que la case est large : « questions · N justes » sur une ligne, les sources sur 2 puis 3 colonnes */
+@container (min-width: 560px) {
+  .heros .legende,
+  .bande .legende {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0;
   }
-  .bande {
-    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
+  .heros .justes::before,
+  .bande .justes::before {
+    content: "·";
+    margin: 0 8px;
+    color: var(--ink-3);
+  }
+  .heros .sources,
+  .bande .sources {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (min-width: 900px) {
+  .bande .sources {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rempli,
+  .sources li {
+    animation: none;
   }
 }

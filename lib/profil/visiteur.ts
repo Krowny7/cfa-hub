@@ -9,7 +9,7 @@ import { lireTrophees } from "@/lib/trophees";
 import { lireSaisons } from "@/lib/profil/saisons";
 import { JOURS_JOURNAL } from "@/lib/profil/journal";
 import { FOLIOS } from "@/lib/profil/pieces";
-import { PIECES_DEFAUT, STATS_VIDES, piecesVues, type ProfilStats, type VitrineKey } from "@/lib/profil/catalogue";
+import { STATS_VIDES, type ProfilStats } from "@/lib/profil/catalogue";
 import { styleDepuis, type LigneStyle } from "@/lib/profil/styles";
 import { series, statsProfil, type AmiLite } from "@/lib/profil/donnees";
 import { extraitCarnet, joursDuCarnet } from "@/lib/profil/blocs-resumes";
@@ -168,28 +168,20 @@ export function baseDuVisiteur(
 
 // ── Le reste, si le bloc est posé ────────────────────────────────────────
 
-/** Les pièces de vitrine qui demandent les comptes complets (statsProfil). */
-const PIECES_COMPLETES: readonly string[] = ["duels", "defis", "calculs", "examens"];
-
 export type BesoinsVisiteur = { statsCompletes: boolean; trophees: boolean; saisons: boolean; seances: boolean; courbeElo: boolean; folio: boolean };
 
 /**
- * Ce que les blocs posés demandent de plus que l'essentiel. `showcase` :
- * les pièces de vitrine du joueur regardé (vide : celles par défaut), telles
- * que le bloc Chiffres clés les montre à un visiteur (la relève : piecesVues) ;
- * `journalOuvert` : son Journal t'est ouvert (la courbe ne se lit qu'alors) ;
- * `folio` : il porte un folio.
+ * Ce que les blocs posés demandent de plus que l'essentiel : plus rien
+ * depuis que seules les tuiles du bandeau et du radar comparent (la forme
+ * est gardée pour lireVisiteur et ses lectures, prêtes si une tuile
+ * comparée revient).
  */
 export function besoinsVisiteur(blocs: ReadonlySet<string>, o: { showcase: readonly string[]; journalOuvert: boolean; folio: boolean }): BesoinsVisiteur {
-  const pieces = piecesVues((o.showcase.length ? o.showcase : PIECES_DEFAUT) as readonly VitrineKey[], true);
-  return {
-    statsCompletes: blocs.has("vitrine") && pieces.some((p) => PIECES_COMPLETES.includes(p)),
-    trophees: blocs.has("trophees"),
-    saisons: blocs.has("saisons"),
-    seances: blocs.has("progression"),
-    courbeElo: blocs.has("journal") && o.journalOuvert,
-    folio: blocs.has("folio") && o.folio,
-  };
+  // depuis la refonte des tuiles (2026-10-19), seuls le bandeau « Rapport de force » et le radar
+  // comparent : ils se contentent de l'essentiel ; plus aucune lecture en plus pour les blocs
+  void blocs;
+  void o;
+  return { statsCompletes: false, trophees: false, saisons: false, seances: false, courbeElo: false, folio: false };
 }
 
 /** Les séances gardées pour comparer : celles des `jours` derniers jours, et au moins les `dernieres` (la moyenne des 5 dernières), de la plus ancienne à la plus récente. */

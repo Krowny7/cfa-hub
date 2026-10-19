@@ -27,7 +27,7 @@
 
 import { URL_KLIPY } from "@/lib/profil/gifs";
 
-// ── Les blocs fixes : les 7 d'avant, et deux nouveaux ──────────────────
+// ── Les blocs fixes : les 7 d'avant, trois nouveaux, puis sept tuiles de plus ──
 export const BLOCS = [
   { k: "vitrine", nom: "Chiffres clés" },
   { k: "radar", nom: "Radar des matières" },
@@ -42,6 +42,16 @@ export const BLOCS = [
   { k: "saisons", nom: "Saisons", neuf: true },
   // la grille des 52 semaines du Journal (elle suit sa visibilité)
   { k: "carnet", nom: "Carnet de jours", neuf: true },
+  // sept tuiles de plus : ses duels (anneau de victoires, 5 derniers), le compte à rebours de l'examen, sa matière
+  // phare, sa place au classement, ses examens blancs, où il en est au Codex, les heures où il révise
+  // (le jour J, les examens, le rythme et les 5 derniers duels suivent la visibilité du Journal, comme le carnet de jours)
+  { k: "duels", nom: "Duels", neuf: true },
+  { k: "jourj", nom: "Jour J", neuf: true },
+  { k: "phare", nom: "Matière phare", neuf: true },
+  { k: "classement", nom: "Classement", neuf: true },
+  { k: "examens", nom: "Examens blancs", neuf: true },
+  { k: "codex", nom: "Codex", neuf: true },
+  { k: "rythme", nom: "Rythme", neuf: true },
 ] as const;
 export type CleBloc = (typeof BLOCS)[number]["k"];
 
@@ -207,6 +217,14 @@ export const FORMATS_PERMIS: Record<GenreBloc, Format[]> = {
   journal: ["tuile", "colonne", "heros", "demi"],
   saisons: ["tuile", "colonne", "bande", "demi"],
   carnet: ["tuile", "colonne", "heros", "bande", "demi"],
+  duels: ["tuile", "colonne", "heros", "bande", "demi"],
+  jourj: ["tuile", "colonne", "heros", "bande", "demi"],
+  // une jauge n'a pas besoin de toute la largeur
+  phare: ["tuile", "colonne", "heros", "demi"],
+  classement: ["tuile", "colonne", "heros", "bande", "demi"],
+  examens: ["tuile", "colonne", "heros", "bande", "demi"],
+  codex: ["tuile", "colonne", "heros", "bande", "demi"],
+  rythme: ["tuile", "colonne", "heros", "bande", "demi"],
   image: ["tuile", "colonne", "heros", "bande", "demi"],
   gif: ["tuile", "colonne", "heros"],
   video: ["tuile", "colonne", "heros"],
@@ -224,6 +242,13 @@ export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
   journal: "tuile",
   saisons: "tuile",
   carnet: "demi",
+  duels: "tuile",
+  jourj: "tuile",
+  phare: "tuile",
+  classement: "tuile",
+  examens: "heros",
+  codex: "heros",
+  rythme: "heros",
   image: "heros",
   gif: "tuile",
   video: "tuile",
@@ -277,6 +302,7 @@ export function raisonRefus(b: Bloc, f: Format): string {
   if (g === "gif") return "Le GIF ne va pas en bande : il serait recadré trop bas.";
   if (g === "folio" || g === "journal") return `${nomBloc(b)} ne va pas en bande : trop peu de contenu pour toute la largeur.`;
   if (g === "saisons") return "Les saisons vont en mini-tuile, en colonne, en bande ou en demi-bande (le palmarès en ligne).";
+  if (g === "phare") return "La matière phare ne va pas en bande : une jauge n'a pas besoin de toute la largeur.";
   if (g === "carte") return "La carte ne va pas en bande : son image serait recadrée trop bas.";
   return `${nomFormat(f)} : pas pour ce bloc.`;
 }
@@ -419,8 +445,8 @@ export function placesVides(r: RangeeGrille, rangee: number): PlaceVide[] {
 /**
  * La forme propre d'une liste : sans place libre en fin de liste, sans
  * rangée faite seulement de places libres, 20 éléments au plus (les places
- * libres partent d'abord, en partant de la fin ; un bloc ne part jamais : il
- * y en a 15 au plus). Utilisée par la validation et par chaque opération
+ * libres partent d'abord, en partant de la fin ; l'éditeur refuse de poser au-delà
+ * de 20 une fois les places libres épuisées : la page est pleine). Utilisée par la validation et par chaque opération
  * de l'éditeur. Une liste déjà propre est rendue telle quelle (même
  * référence).
  */

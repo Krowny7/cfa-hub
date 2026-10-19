@@ -21,6 +21,7 @@ import { lireSaisons } from "@/lib/profil/saisons";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import { extraitCarnet, extraitJournal, resumeReponses, resumeTrophees } from "@/lib/profil/blocs-resumes";
 import { lireCercle, maitriseMesuree } from "@/lib/profil/visiteur";
+import { BESOINS_TOUS, classementDepuis, lireTuilesNeuves } from "@/lib/profil/tuiles-neuves";
 
 // Personnaliser, côté serveur (/people/<moi>?personnaliser=1, sur son
 // propre profil seulement) : tout ce que l'ancien éditeur /moi/profil
@@ -48,7 +49,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
   const statsLues = statsProfil(id, supabase);
   const maitrisesLues = masteryByUser(admin, [id]);
   const sceauxLus = statsLues.then((s) => sceauxDuJoueur(id, s));
-  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons] = await Promise.all([
+  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons, neuves] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     lireStyle(supabase, id),
@@ -74,6 +75,8 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
       .then(([s, m, sc]) => journalDe({ id, sb: supabase, admin, stats: s, mastery: m.get(id) ?? null, gardes: sc.gardes }))
       .catch(() => null),
     lireSaisons(supabase, id),
+    // les sept tuiles de plus : toutes, il peut poser n'importe laquelle ; le Journal lui est toujours ouvert
+    lireTuilesNeuves({ id, sb: supabase, admin, moi: true, besoins: BESOINS_TOUS, ouvert: true, elo: rating?.elo ?? DEFAULT_ELO }),
   ]);
   const titres = titresPortables({ ...acquisLu, sceaux: sceaux.etats, datesPic }, style.titre);
 
@@ -121,6 +124,12 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     visibiliteJournal,
     // le carnet de jours : le sien, toujours ouvert pour lui
     carnet: journal ? extraitCarnet(journal) : null,
+    formeDuels: neuves.formeDuels,
+    jourJ: neuves.jourJ,
+    classement: classementDepuis({ place, joueurs: neuves.joueurs, elo, maitrise: masteries.get(id) ?? null, variation: neuves.variation }),
+    examens: neuves.examens,
+    codex: neuves.codex,
+    rythme: neuves.rythme,
   };
 
   return (

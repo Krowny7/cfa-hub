@@ -418,7 +418,7 @@ console.log("# La validation");
   check("un GIF KLIPY en .webp reste un GIF (bande refusée)", (avec(gif("gifkl03", { url: "https://static.klipy.com/ii/4e7/gifkl03.webp", source: undefined, f: "bande" })).disposition[0] as BlocMedia).f === "heros");
 
   // 20 éléments au plus, aucun bloc perdu
-  const blocs: Brut[] = [...BLOCS.map((b) => k(b.k, { f: "tuile" })), ...Array.from({ length: 4 }, (_, j) => img(`imagez${j}`, { f: "tuile" })), vid("videoz1", { f: "tuile" })];
+  const blocs: Brut[] = [...BLOCS.slice(0, 10).map((b) => k(b.k, { f: "tuile" })), ...Array.from({ length: 4 }, (_, j) => img(`imagez${j}`, { f: "tuile" })), vid("videoz1", { f: "tuile" })];
   const vingtCinq: Brut[] = [];
   blocs.forEach((b, j) => {
     vingtCinq.push(b);
@@ -452,7 +452,7 @@ console.log("# Le poids");
   };
   const legende = "Été à Sceaux : révisions d'éthique, cafés serrés, fiches à l'encre, déjà mûr ?!".padEnd(80, "é");
   const gros: Brut[] = [
-    ...BLOCS.map((b) => k(b.k, { f: FORMAT_DEFAUT[b.k] })),
+    ...BLOCS.slice(0, 10).map((b) => k(b.k, { f: FORMAT_DEFAUT[b.k] })),
     ...Array.from({ length: 5 }, (_, j) => ({ k: "media", id: `imageg${j}abcdefghijklmnopq`.slice(0, 24), type: "image", url: url("profil-medias", `imageg${j}abcdefghijklmnopq`.slice(0, 24), ".webp"), ratio: 1.777, legende, y: 88, f: "heros" })),
     { k: "media", id: "videogabcdefghijklmnopqr", type: "video", url: url("profil-videos", "videogabcdefghijklmnopqr", ".webm"), ratio: 0.5625, legende, duree: 59.9, couverture: 29.5, f: "tuile" },
     ...Array.from({ length: 4 }, () => k("libre", { f: "tuile" })),

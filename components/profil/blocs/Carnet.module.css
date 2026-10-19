@@ -1,38 +1,98 @@
-/* Le bloc Carnet de jours (Carnet.tsx) : la grille des 52 semaines (une
-   case par jour, une colonne par semaine, lundi en haut ; l'encre de
-   CarnetJours), le ruban des semaines aligné sur ses colonnes, les carnets
-   verticaux de la colonne. Au téléphone (sous 768 px, comme CarnetJours) :
-   les 18 dernières semaines, et le ruban à 18 cases. `--encre` : la couleur
-   du carnet (le sien à l'encre, le tien à ta couleur). En CSS simple :
-   aucune classe arbitraire nouvelle pour Tailwind. */
+/* Le bloc Carnet de jours (Carnet.tsx) : « Calendrier d'encre ». La grille
+   (une case par jour, une colonne par semaine, lundi en haut) à cinq
+   niveaux d'encre (data-n 0 à 4 ; data-f : à venir ; data-auj : aujourd'hui,
+   cerclé), le chiffre fort des jours d'encre, la série et le record. Tout
+   aux jetons du site (jour, nuit, couleurs inversées). Au téléphone (sous
+   768 px, comme CarnetJours) : les 18 dernières semaines des grilles de 52.
+   Animation d'entrée courte, coupée sous prefers-reduced-motion. En CSS
+   simple : aucune classe arbitraire nouvelle pour Tailwind. */
 
-/* la grille et son ruban : --g, l'écart des cases, le même pour le ruban (alignés) */
-.carnet {
-  --g: 2px;
+/* le corps du bloc : il prend toute la hauteur de la case */
+.corps {
   display: flex;
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
-  gap: 3px;
-}
-.grille {
-  display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(7, auto);
-  grid-auto-columns: minmax(0, 1fr);
-  gap: var(--g);
-}
-/* le ruban (RubanSemaines) : l'écart des colonnes de la grille */
-.ruban > div {
-  column-gap: var(--g) !important;
+  gap: 12px;
 }
 
-/* les formats : mini-tuile (cases d'environ 5 px), héros (10 px), bande (pleine largeur), demi-bande (9 px, 75 px de haut) */
+/* l'étiquette discrète */
+.tete {
+  display: flex;
+  min-height: 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lab {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* le chiffre fort : les jours d'encre */
+.chiffre {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.empile {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.grand {
+  font-size: clamp(34px, 13cqw, 46px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.unite {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+/* « série 12 j · record 31 j » */
+.ligne {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.ligne b {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* la grille : --g, l'écart des cases */
+.grille {
+  --g: 2px;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, auto);
+  gap: var(--g);
+  animation: revele 0.9s cubic-bezier(0.3, 0.6, 0.2, 1) backwards;
+}
 .tuile {
-  --g: 1px;
+  margin-top: auto;
 }
 .heros {
-  max-width: 622px;
+  margin-top: auto;
 }
 .bande {
   --g: 3px;
@@ -41,96 +101,199 @@
   max-width: 570px;
 }
 
-/* une case : au trait ; data-n 1, 2, 3 : de plus en plus d'encre ; data-f : à venir */
+/* une case : le niveau 0 est vide ; 1 à 4 : de plus en plus d'encre */
 .grille > i,
-.vertical > i {
+.vertical > i,
+.echelle > i {
   display: block;
   aspect-ratio: 1;
   border-radius: 2px;
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--encre, var(--ink)) 20%, transparent);
+  background: var(--surface-2);
 }
 .grille > [data-n="1"],
-.vertical > [data-n="1"] {
-  box-shadow: none;
-  background: color-mix(in oklab, var(--encre, var(--ink)) 30%, transparent);
+.vertical > [data-n="1"],
+.echelle > [data-n="1"] {
+  background: color-mix(in oklab, var(--ink) 22%, var(--surface-2));
 }
 .grille > [data-n="2"],
-.vertical > [data-n="2"] {
-  box-shadow: none;
-  background: color-mix(in oklab, var(--encre, var(--ink)) 62%, transparent);
+.vertical > [data-n="2"],
+.echelle > [data-n="2"] {
+  background: color-mix(in oklab, var(--ink) 45%, var(--surface-2));
 }
 .grille > [data-n="3"],
-.vertical > [data-n="3"] {
-  box-shadow: none;
-  background: var(--encre, var(--ink));
+.vertical > [data-n="3"],
+.echelle > [data-n="3"] {
+  background: color-mix(in oklab, var(--ink) 70%, var(--surface-2));
 }
+.grille > [data-n="4"],
+.vertical > [data-n="4"],
+.echelle > [data-n="4"] {
+  background: var(--ink);
+}
+/* à venir : rien */
 .grille > [data-f],
 .vertical > [data-f] {
-  box-shadow: none;
+  background: transparent;
+}
+/* aujourd'hui : cerclé */
+.grille > [data-auj],
+.vertical > [data-auj] {
+  box-shadow:
+    0 0 0 1.5px var(--ink),
+    inset 0 0 0 1.5px var(--surface);
 }
 
-/* la colonne : deux carnets verticaux (7 colonnes, une ligne par semaine, la plus récente en haut), le ruban entre eux */
-.colonnes {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-.pile {
-  display: flex;
-  flex-direction: column;
+/* la légende des niveaux */
+.legende {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-}
-.tete {
-  max-width: 64px;
-  overflow: hidden;
-  color: var(--ink-2);
+  gap: 6px;
+  color: var(--ink-3);
   font-size: 11px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-overflow: ellipsis;
+  line-height: 1;
   white-space: nowrap;
 }
+.echelle {
+  display: inline-grid;
+  grid-auto-columns: 10px;
+  grid-auto-flow: column;
+  gap: 3px;
+}
+
+/* héros et bande : le résumé (chiffre, série, record), puis la grille */
+.large {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+.resume {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 28px;
+}
+.mesures {
+  display: flex;
+  margin: 0;
+  gap: 28px;
+}
+.mesures > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mesures dt,
+.liste dt {
+  order: 2;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.2;
+}
+.mesures dd,
+.liste dd {
+  order: 1;
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+/* la bande : le résumé à gauche, la grille à droite dès que la case est assez large */
+@container (min-width: 720px) {
+  .bandeV {
+    flex-direction: row;
+    align-items: center;
+    gap: 32px;
+  }
+  .bandeV .resume {
+    flex: 0 0 230px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 18px;
+  }
+  .bandeV .grille {
+    flex: 1 1 auto;
+  }
+}
+
+/* la colonne : le calendrier à la verticale (une ligne par semaine), les chiffres à côté */
+.colonneCorps {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: stretch;
+  gap: 18px;
+}
+.calendrier {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+}
+.initiales,
 .vertical {
   display: grid;
-  grid-template-columns: repeat(7, 7px);
-  grid-auto-rows: 7px;
-  gap: 1px;
+  grid-template-columns: repeat(7, 13px);
+  gap: 3px;
+}
+.initiales {
+  color: var(--ink-3);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+.vertical {
+  grid-auto-rows: 13px;
+  animation: revele-bas 0.9s cubic-bezier(0.3, 0.6, 0.2, 1) backwards;
 }
 .vertical > i {
   aspect-ratio: auto;
-  border-radius: 1.5px;
 }
-.rubanV {
-  display: grid;
-  grid-auto-rows: 7px;
-  gap: 1px;
-  width: 6px;
-}
-.rubanV > span {
-  display: block;
-  border-radius: 1.5px;
-}
-
-/* une mesure courte : « Série 23 j −18 j » */
-.ligne {
+.stats {
   display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+.liste {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+}
+.liste > div {
+  display: flex;
   align-items: baseline;
-  gap: 4px 8px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
 }
-.ligneEtiquette {
-  color: var(--ink-2);
-  font-size: 13px;
+.liste dt {
+  order: 0;
 }
-.ligneValeur {
-  font-size: 15px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.liste dd {
+  order: 0;
+  font-size: 16px;
+}
+.pied {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-/* Journal fermé : la micro-mention, la série et le record côte à côte */
+/* Journal fermé : la mention, la série et le record côte à côte */
 .prive {
   flex-shrink: 0;
   color: var(--ink-2);
@@ -140,41 +303,47 @@
 }
 .deuxMesures {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-/* le héros : la grille et son ruban à gauche, les chiffres à droite (dès 1 024 px) */
-.herosCorps {
-  display: grid;
-  gap: 16px 28px;
+  flex: 1 1 auto;
   align-items: center;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-@media (min-width: 1024px) {
-  .herosCorps {
-    grid-template-columns: minmax(0, 1fr) auto;
+.mesureGrande {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* le téléphone : les 18 dernières semaines des grilles de 52 (les 34 premières colonnes masquées) */
+@media (max-width: 767.98px) {
+  .annee > :nth-child(-n + 238) {
+    display: none;
+  }
+  .bande {
+    --g: 2px;
   }
 }
 
-/* le téléphone : les 18 dernières semaines (les 34 premières colonnes masquées), le ruban à 18 cases */
-@media (max-width: 767.98px) {
-  .carnet {
-    --g: 3px;
+@keyframes revele {
+  from {
+    clip-path: inset(-4px 100% -4px -4px);
   }
-  .grille > :nth-child(-n + 238) {
-    display: none;
+  to {
+    clip-path: inset(-4px -4px -4px -4px);
   }
-  .ruban > div {
-    grid-template-columns: repeat(18, minmax(0, 1fr)) !important;
+}
+@keyframes revele-bas {
+  from {
+    clip-path: inset(-4px -4px 100% -4px);
   }
-  .ruban > div > :nth-child(-n + 34) {
-    display: none;
+  to {
+    clip-path: inset(-4px -4px -4px -4px);
   }
-  /* la colonne : les 18 semaines les plus récentes (en haut) */
-  .vertical > :nth-child(n + 127) {
-    display: none;
-  }
-  .rubanV > :nth-child(n + 19) {
-    display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .grille,
+  .vertical {
+    animation: none;
   }
 }

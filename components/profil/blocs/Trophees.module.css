@@ -1,103 +1,214 @@
-/* Le bloc Trophées (Trophees.tsx). En CSS simple : aucune classe arbitraire
-   nouvelle pour Tailwind. */
+/* Le bloc Trophées (Trophees.tsx) : « Médailles ». Le titre et le total, puis
+   les 4 métaux en cartes qui remplissent la hauteur de la tuile : une
+   médaille ronde (--m : sa taille), son nombre (--n), le nom du métal. Un
+   métal gagné prend ses couleurs (--m1 clair, --m2 moyen, --m3 sombre : les
+   métaux des rangs, dessinés sur leur propre fond, lisibles de jour comme de
+   nuit) et un éclat lent passe sur sa médaille ; un métal à 0 est estompé.
+   Mini-tuile et colonne : le titre et le total en haut, les cartes dessous ;
+   héros et bande (dès que la case est large) : le titre en haut à gauche, le
+   total en grand en bas à gauche, les cartes à droite. En CSS simple :
+   aucune classe arbitraire nouvelle pour Tailwind. */
 
-/* une case à 0 (des deux côtés, chez un autre) : estompée */
-.tenue {
-  opacity: 0.5;
+.lab {
+  grid-area: lab;
+  letter-spacing: 0.09em;
 }
 
-/* les 4 métaux : sur une ligne (mini-tuile), en 2 × 2, ou sur une ligne dès 1 024 px (héros, bande) */
-.ligne4 {
+/* par format : la médaille (--m), le nombre (--n) */
+.tuile {
+  --m: clamp(34px, 13.5cqw, 52px);
+  --n: clamp(20px, 7.5cqw, 28px);
+}
+.colonne {
+  --m: clamp(44px, 20cqw, 64px);
+  --n: clamp(24px, 9cqw, 32px);
+}
+.heros,
+.bande {
+  --m: clamp(40px, 7cqw, 56px);
+  --n: 30px;
+}
+
+/* le corps : le titre et le total en haut, les cartes dessous (qui prennent le reste de la hauteur) */
+.corps {
   display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  grid-template-areas: "lab total" "cases cases";
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px 12px;
+}
+.total {
+  grid-area: total;
+  font-size: clamp(22px, 8cqw, 32px);
+  line-height: 1;
+}
+.cases {
+  display: grid;
+  min-width: 0;
+  align-self: stretch;
+  grid-area: cases;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  align-items: stretch;
   gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.quatre {
-  display: grid;
+.colonne .cases {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-@media (min-width: 1024px) {
-  .quatreLigne {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+.amorce {
+  grid-area: cases;
+  align-self: center;
+}
+/* chez soi, rien gagné : le titre, puis la phrase d'amorce (le « 0 » ne dit rien) */
+.corps.rien {
+  grid-template-areas: "lab" "cases";
+  grid-template-columns: minmax(0, 1fr);
+}
+.rien .total {
+  display: none;
 }
 
-/* une case : le dessin, puis son nombre et ton jeton court dessous */
+/* une carte : la médaille, son nombre, le nom du métal ; teintée si le métal est gagné */
 .case {
   display: flex;
   min-width: 0;
-  align-items: center;
-  gap: 8px;
-}
-.carte {
-  gap: 12px;
-  padding: 12px 14px;
-}
-.nombres {
-  display: flex;
-  min-width: 0;
   flex-direction: column;
-  gap: 4px;
-}
-
-/* héros et bande : le chiffre à gauche, les cases à droite */
-.cote {
-  display: grid;
-  gap: 20px 32px;
   align-items: center;
-}
-@media (min-width: 1024px) {
-  .cote {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-}
-
-/* un métal gagné (couleurs des rangs : --m1 clair, --m2 moyen, --m3 sombre) :
-   la case du trophée en médaille, lisible de jour comme de nuit ; sa carte teintée */
-.teinte {
-  display: contents;
-}
-.medaille {
-  background: linear-gradient(145deg, var(--m1) 0%, var(--m2) 100%);
-  color: var(--m3);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--m3) 28%, transparent);
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 4px;
+  text-align: center;
 }
 .carteMetal {
-  background: linear-gradient(160deg, color-mix(in oklab, var(--m2) 20%, var(--surface-2)) 0%, color-mix(in oklab, var(--m2) 7%, var(--surface-2)) 100%);
+  background: linear-gradient(160deg, color-mix(in oklab, var(--m2) 22%, var(--surface-2)) 0%, color-mix(in oklab, var(--m2) 7%, var(--surface-2)) 100%);
   border-color: color-mix(in oklab, var(--m2) 45%, var(--line));
 }
-/* le nom du métal, sous le nombre (héros, bande) */
+/* un métal à 0 : estompé */
+.tenue {
+  opacity: 0.5;
+}
+.nombre {
+  font-size: var(--n);
+  line-height: 1;
+}
 .metal {
+  max-width: 100%;
+  overflow: hidden;
   color: var(--ink-2);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* héros et bande, dès 1 024 px : les cases remplissent la hauteur de la tuile,
-   la médaille en haut, puis le nombre, le métal et ton jeton */
-@media (min-width: 1024px) {
-  .remplit {
-    flex: 1 1 auto;
-    align-items: stretch;
+/* la médaille : ronde ; la case du trophée (CaseTrophee) redessinée aux couleurs du métal */
+.teinte {
+  display: contents;
+}
+.medaille {
+  position: relative;
+  width: var(--m, 40px);
+  height: var(--m, 40px);
+  flex: none;
+  overflow: hidden;
+  border-radius: 50%;
+}
+.medaille svg {
+  width: 52%;
+  height: 52%;
+}
+.gagne {
+  background: linear-gradient(145deg, var(--m1) 0%, var(--m2) 100%);
+  color: var(--m3);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--m3) 30%, transparent),
+    0 3px 8px -3px color-mix(in oklab, var(--m3) 55%, transparent);
+}
+/* l'éclat : une bande claire qui traverse la médaille, lentement, décalée d'un métal à l'autre */
+.gagne::after {
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.75) 50%, transparent 60%);
+  content: "";
+  pointer-events: none;
+  transform: translateX(-60%);
+  animation: eclat 4.4s calc(var(--k, 0) * 0.45s) ease-in-out infinite;
+}
+@keyframes eclat {
+  0%,
+  55% {
+    transform: translateX(-60%);
   }
-  .remplit > :first-child {
-    align-self: center;
+  85%,
+  100% {
+    transform: translateX(60%);
   }
-  .hautes > li {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 16px 18px;
+}
+/* sans trophée de ce métal : un rond au trait, gris */
+.vide {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line-2);
+  color: var(--ink-3);
+}
+
+/* héros et bande, dès que la case est large : le titre en haut à gauche, le total en grand en bas à gauche, les cartes à droite */
+@container (min-width: 600px) {
+  .heros .corps,
+  .bande .corps {
+    grid-template-areas: "lab cases" "total cases";
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 1.5fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 8px 32px;
+  }
+  .heros .total,
+  .bande .total {
+    align-self: end;
+    font-size: clamp(48px, 9cqw, 76px);
+  }
+  .heros .cases,
+  .bande .cases {
+    gap: 10px;
+  }
+  .heros .case,
+  .bande .case {
+    gap: 12px;
+    padding: 16px 6px;
+  }
+  .heros .metal,
+  .bande .metal {
+    font-size: 12px;
   }
 }
 
-/* demi-bande, chez soi : le petit dessin devant le nombre */
+@container (min-width: 600px) {
+  .heros .corps.rien,
+  .bande .corps.rien {
+    grid-template-areas: "lab" "cases";
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* demi-bande : le petit dessin devant le nombre */
 .metalDemi {
+  --m: 28px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gagne::after {
+    animation: none;
+  }
 }

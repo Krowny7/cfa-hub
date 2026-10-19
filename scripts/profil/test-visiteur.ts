@@ -120,19 +120,8 @@ const AUJ = "2026-10-18";
 {
   const pose = (...k: string[]) => new Set(k);
   const sans = { showcase: [] as string[], journalOuvert: true, folio: true };
-  check("besoins : vitrine avec Questions, Série, Matière → stats complètes (chez un autre, Duels et Défis prennent leur place)", besoinsVisiteur(pose("vitrine"), { ...sans, showcase: ["questions", "serie", "matiere"] }).statsCompletes);
-  check("besoins : vitrine avec la seule Matière → pas de stats complètes", !besoinsVisiteur(pose("vitrine"), { ...sans, showcase: ["matiere"] }).statsCompletes);
-  check("besoins : vitrine avec Duels → stats complètes", besoinsVisiteur(pose("vitrine"), { ...sans, showcase: ["matiere", "duels"] }).statsCompletes);
-  check("besoins : vitrine avec Examens → stats complètes", besoinsVisiteur(pose("vitrine"), { ...sans, showcase: ["examens"] }).statsCompletes);
-  const parDefaut = STYLE_DEFAUT.showcase.some((p) => ["duels", "defis", "calculs", "examens"].includes(p));
-  check("besoins : vitrine aux pièces par défaut → suit STYLE_DEFAUT.showcase", besoinsVisiteur(pose("vitrine"), sans).statsCompletes === parDefaut);
-  check("besoins : Duels choisis mais vitrine non posée → rien", !besoinsVisiteur(pose("radar"), { ...sans, showcase: ["duels"] }).statsCompletes);
-  const tout = besoinsVisiteur(pose("trophees", "saisons", "progression", "journal", "folio"), sans);
-  check("besoins : trophées, saisons, séances, courbe (Journal ouvert), folio", tout.trophees && tout.saisons && tout.seances && tout.courbeElo && tout.folio);
-  const ferme = besoinsVisiteur(pose("journal", "folio"), { ...sans, journalOuvert: false, folio: false });
-  check("besoins : Journal fermé → pas de courbe ; aucun folio porté → pas de lecture", !ferme.courbeElo && !ferme.folio);
-  const rien = besoinsVisiteur(pose(), sans);
-  check("besoins : aucun bloc → l'essentiel seul", !rien.statsCompletes && !rien.trophees && !rien.saisons && !rien.seances && !rien.courbeElo && !rien.folio);
+  const tous = besoinsVisiteur(pose("vitrine", "trophees", "saisons", "progression", "journal", "folio", "amis"), { ...sans, showcase: ["duels", "examens"] });
+  check("besoins : plus aucune lecture en plus (seuls le bandeau et le radar comparent, avec l'essentiel)", Object.values(tous).every((x) => x === false));
 }
 
 // ── Les séances gardées ──

@@ -45,6 +45,7 @@ import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
 import { lireStyles, nomTitre } from "@/lib/profil/styles";
 import { baseDuVisiteur, lireCarnet, lireCercle, lireVisiteur, maitriseMesuree } from "@/lib/profil/visiteur";
+import { aDesBesoins, besoinsDe, classementDepuis, lireTuilesNeuves } from "@/lib/profil/tuiles-neuves";
 import { RapportDeForce } from "@/components/profil/RapportDeForce";
 import { stakesAgainst } from "@/lib/duels";
 import { nombre } from "@/lib/voice";
@@ -182,13 +183,22 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
           .catch(() => null)
       : Promise.resolve(null);
   // ses amis : bloc Amis posé (onglet Profil), par ELO (son cercle, toi compris chez un autre) ; sinon comme avant (l'en-tête n'en prend que le total)
-  const cercleLu = blocsLus.then((b) => (b.has("amis") ? lireCercle({ id, toi: autreJoueur ? user.id : null, sb: supabase, admin, moi: commeMoi }).catch(() => null) : null));
+  const cercleLu = blocsLus.then((b) => (b.has("amis") ? lireCercle({ id, toi: null, sb: supabase, admin, moi: commeMoi }).catch(() => null) : null));
   const amisLus = cercleLu.then((c) => c?.amis ?? amisDe(id, supabase, 12));
   // le carnet de jours (bloc Carnet), ouvert comme le Journal : ses jours sont déjà lus par statsProfil (0 requête)
   const carnetLu = (async () => {
     if (onglet !== "profil" || !(await blocsLus).has("carnet")) return null;
     const [st, lu, rel] = await Promise.all([statsLues, styleLu, relationLue]);
     return journalOuvert(lu.journal, rel) ? lireCarnet(id, st).catch(() => null) : null;
+  })();
+  // les sept tuiles de plus (Duels, Jour J, Classement, Examens blancs, Codex, Rythme ; la Matière phare ne lit rien) :
+  // seulement celles qui sont posées ; le jour J, les examens, le rythme et les 5 derniers duels suivent le Journal
+  const neuvesLues = (async () => {
+    if (onglet !== "profil") return null;
+    const besoins = besoinsDe(await blocsLus);
+    if (!aDesBesoins(besoins)) return null;
+    const [lu, rel] = await Promise.all([styleLu, relationLue]);
+    return lireTuilesNeuves({ id, sb: supabase, admin, moi: isMe, besoins, ouvert: journalOuvert(lu.journal, rel), elo: ratingData?.elo ?? DEFAULT_ELO });
   })();
   // les tampons du profil et, sur le Journal, ceux de ses entrées (null sans la migration)
   const tamponsLus = (async () => {
@@ -423,7 +433,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
   } else {
     // les données des blocs, lues une seule fois et passées une seule fois au client
     const blocs = await blocsLus;
-    const [toi, carnet, cercle] = await Promise.all([toiLu, carnetLu, cercleLu]);
+    const [toi, carnet, cercle, neuves] = await Promise.all([toiLu, carnetLu, cercleLu, neuvesLues]);
     const donnees: DonneesBlocs = {
       id,
       nom: display,
@@ -451,6 +461,13 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       visibiliteJournal,
       // le carnet de jours, s'il m'est ouvert (comme le Journal)
       carnet,
+      // les sept tuiles de plus : le classement s'assemble avec la place déjà lue et l'ELO, comme l'en-tête
+      formeDuels: neuves?.formeDuels ?? null,
+      jourJ: neuves?.jourJ ?? null,
+      classement: blocs.has("classement") ? classementDepuis({ place: leaderboardRank, joueurs: neuves?.joueurs, elo, maitrise: mastery, variation: neuves?.variation ?? 0 }) : null,
+      examens: neuves?.examens ?? null,
+      codex: neuves?.codex ?? null,
+      rythme: neuves?.rythme ?? null,
       // celui qui regarde, chez un autre : ses amis communs viennent du cercle
       toi: toi ? { ...toi, amis: cercle?.communs ?? null } : null,
     };

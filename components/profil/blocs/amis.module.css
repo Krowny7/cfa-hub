@@ -1,117 +1,136 @@
-/* Le bloc Amis (Amis.tsx). Chez soi : les mêmes grilles qu'avant (repris
-   de BlocsProfil.module.css). Chez un autre : son cercle par ELO, en
-   avatars (elle cernée d'encre, toi à ta couleur, un point sous les amis
-   communs), ou en échelle (colonne). En CSS simple. */
+/* Le bloc Amis (Amis.tsx) : « Le nombre et la pile ». Le total en grand,
+   sa place dans son cercle, puis une pile serrée d'avatars qui se
+   chevauchent et une pastille « +N ». Le même dessin chez soi et chez un
+   autre. En CSS simple. */
 
-/* ── chez soi (inchangé) : 2 colonnes, puis 3 (héros) ou 6 (bande) ── */
-.amis {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-@media (min-width: 1024px) {
-  .amisHeros {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .amisBande {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-
-/* ── le chiffre : « 2e », puis « sur 19 » en petit ── */
-.ligneChiffre {
+/* ── le nombre, et « amis · 6e de son cercle par ELO » dessous ── */
+.total {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 12px;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
 }
-.sur {
-  margin-left: 6px;
+.nombre {
+  font-size: 56px;
+  line-height: 0.95;
+}
+.ligne {
+  margin: 0;
   color: var(--ink-2);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+.rang {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
-/* ── un avatar du cercle, et sa marque dessous (« toi » ou le point d'un ami commun) ── */
-.rangee {
+/* ── la pile : les avatars se chevauchent (le premier au-dessus), un anneau de la couleur de la carte les détache ── */
+.pile {
+  --anneau: var(--surface);
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
+  align-items: center;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.rangeeLigne {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.pile > li {
+  position: relative;
+  z-index: var(--z, 1);
+  display: inline-flex;
+  flex: 0 0 auto;
+  animation: pose 0.5s calc(var(--k, 0) * 55ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-@media (min-width: 1024px) {
-  .rangeeLigne {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-  }
+.pile > li + li {
+  margin-left: calc(var(--t) * -0.24);
 }
-.grille3 {
-  display: grid;
-  grid-template-columns: repeat(3, max-content);
-  gap: 10px 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* survol : l'avatar passe devant et se soulève */
+.pile > li:hover,
+.pile > li:focus-within {
+  z-index: 60;
+  transform: translateY(-3px);
 }
 .visage {
   display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.anneau {
-  display: inline-flex;
   border-radius: 999px;
+  box-shadow: 0 0 0 2.5px var(--anneau);
 }
-.sous {
-  display: flex;
-  height: 12px;
-  align-items: center;
-  justify-content: center;
+.visage:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
-.legende {
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-}
-.point {
-  display: block;
-  width: 4px;
-  height: 4px;
+/* la pastille « +17 » : un avatar de la même taille, en nombre */
+.plus {
+  display: inline-grid;
+  width: var(--t);
+  height: var(--t);
+  place-items: center;
   border-radius: 999px;
-  background: var(--ink);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 2.5px var(--anneau);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: calc(var(--t) * 0.34);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
-.lien {
-  display: inline-flex;
-  border-radius: 999px;
-}
-.lien:hover .anneau,
-.lien:focus-visible .anneau {
-  outline: 1.5px solid var(--line-2);
-  outline-offset: 2px;
+/* la mini-tuile est « quiet » : son fond est entre le papier et la carte */
+.pileTuile {
+  --anneau: color-mix(in oklab, var(--surface) 62%, var(--paper));
 }
 
-/* ── héros et bande : le chiffre à gauche, les avatars à droite ── */
-.cote {
+/* ── mini-tuile : l'étiquette en haut, le nombre et la pile en bas ── */
+.bas {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: auto;
 }
-@media (min-width: 1024px) {
+
+/* ── colonne : le nombre et les deux rangées, au milieu de la hauteur ── */
+.milieu {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+.milieu .nombre {
+  font-size: 72px;
+}
+.piles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* la seconde rangée est décalée d'un demi-avatar */
+.decalee {
+  margin-left: calc(var(--t) * 0.5);
+}
+
+/* ── héros et bande : le nombre à gauche, la pile à droite ; l'un sur l'autre si la place manque ── */
+.zone {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  container-type: inline-size;
+}
+.cote {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cote .nombre {
+  font-size: 64px;
+}
+@container (min-width: 520px) {
   .cote {
-    flex: 1 1 auto;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -119,74 +138,32 @@
   }
 }
 
-/* ── l'échelle (colonne) : rang, avatar, pseudo, ELO ── */
-.echelle {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.ligne {
-  display: grid;
-  grid-template-columns: 30px 24px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  min-height: 34px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-.lui {
-  font-weight: 700;
-}
-.mono {
-  color: var(--ink-2);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-.pseudo {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-}
-.pseudo > :first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.saut {
-  padding: 0 8px;
-  color: var(--ink-2);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.avatarPetit {
-  position: relative;
-  display: inline-flex;
-  border-radius: 999px;
+/* la pile de héros et de bande : calée à droite quand le nombre est à sa gauche */
+.pileCote {
+  flex: 0 0 auto;
 }
 
-/* ── demi-bande : une rangée d'avatars ; au téléphone, la tranche courte ── */
-.demiRangee {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
+/* ── demi-bande : une pile courte dans l'espace du dessin ; au téléphone, six avatars ── */
+.pileDemi {
+  justify-content: flex-start;
   overflow: hidden;
-  list-style: none;
+  padding: 4px 4px 4px 0;
 }
 @media (max-width: 639px) {
   .horsTel {
-    display: none;
+    display: none !important;
   }
 }
-.repere {
-  color: var(--ink-2);
+
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pile > li {
+    animation: none;
+    transition: none;
+  }
 }

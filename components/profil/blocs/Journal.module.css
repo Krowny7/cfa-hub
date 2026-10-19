@@ -1,56 +1,255 @@
-/* Le bloc Journal (Journal.tsx) : la courbe double et ses croisements, le
-   haut du héros, les deux colonnes de l'existant. En CSS simple : aucune
-   classe arbitraire nouvelle pour Tailwind. */
+/* Le bloc Journal (Journal.tsx) : « Courbe annotée ». L'étiquette et le gain,
+   la courbe d'ELO des 90 jours (une boîte étirée : le tracé est dessiné en
+   pourcentages, les pastilles et le dernier point sont posés dessus en %),
+   la légende des pastilles. Tout aux jetons du site (jour, nuit, couleurs
+   inversées) ; `--acc` : la couleur du joueur. Animations d'entrée courtes,
+   toutes coupées sous prefers-reduced-motion. En CSS simple : aucune classe
+   arbitraire nouvelle pour Tailwind. */
 
-/* la courbe (DoubleCourbe) et, posés dessus, les points de croisement */
-.courbe {
-  position: relative;
+/* le corps de la tuile : il prend toute la hauteur de la case */
+.corps {
+  display: flex;
+  flex: 1 1 auto;
   min-width: 0;
+  flex-direction: column;
+  gap: 12px;
 }
-/* un croisement : un point de 4 px, dans une zone de 14 px pour l'infobulle */
-.croix {
+
+/* l'étiquette discrète et le gain */
+.tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lab {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.gain {
+  flex-shrink: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* la courbe : prend la hauteur qui reste (au moins --h) */
+.courbe {
+  --acc: var(--ink);
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--h, 84px);
+}
+.tuile {
+  --h: 84px;
+}
+.colonne {
+  --h: 170px;
+}
+.heros {
+  --h: 124px;
+}
+.demi {
+  --h: 80px;
+  height: 80px;
+}
+.calme {
+  margin: auto 0;
+}
+.svg {
   position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: revele 1.1s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+.aire {
+  fill: color-mix(in oklab, var(--acc) 14%, transparent);
+  stroke: none;
+}
+.trait {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* le dernier point, qui pulse doucement */
+.fin {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--acc);
+  box-shadow: 0 0 0 2px var(--surface);
+  animation: apparait 0.3s 0.9s backwards;
+}
+.fin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--acc);
+  animation: pouls 2.2s ease-out 1.2s infinite;
+}
+
+/* une pastille numérotée, posée sur la courbe au jour de l'événement */
+.pin {
+  position: absolute;
+  z-index: 1;
   display: grid;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   place-items: center;
   transform: translate(-50%, -50%);
-  cursor: default;
-}
-.croix > i {
-  display: block;
-  width: 4px;
-  height: 4px;
   border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 1.5px var(--surface);
+  background: var(--surface);
+  box-shadow: 0 0 0 1.5px var(--ink);
+  color: var(--ink);
+  cursor: default;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  animation: pop 0.4s 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-/* héros, chez un autre : le chiffre et son jeton à gauche, les événements à droite */
-.haut {
-  display: grid;
-  gap: 12px 28px;
-  align-items: start;
+/* la légende : une ligne par événement */
+.legende {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 7px;
+  list-style: none;
 }
-@media (min-width: 1024px) {
-  .haut {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-}
-
-/* héros, chez soi : la courbe et les événements côte à côte dès 1 024 px (l'existant) */
-.deux {
-  display: grid;
-  gap: 20px 28px;
+.legende > li {
+  display: flex;
+  min-width: 0;
   align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.3;
 }
-@media (min-width: 1024px) {
-  .deux {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+.num {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 1.5px var(--ink);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+}
+.puce {
+  display: block;
+  width: 6px;
+  height: 6px;
+  flex: none;
+  margin: 0 6px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.titre {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.delta {
+  flex: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* héros : la courbe à gauche, la légende et le lien à droite (dès que la case est assez large) */
+.milieu {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 12px 24px;
+}
+.cote {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+@container (min-width: 520px) {
+  .milieu {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   }
 }
 
 /* demi-bande, dans Personnaliser : « Visible par », sous le lien */
 .visible {
   max-width: 200px;
+}
+
+@keyframes revele {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes apparait {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+}
+@keyframes pouls {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svg,
+  .fin,
+  .fin::after,
+  .pin {
+    animation: none;
+  }
 }

@@ -1,49 +1,49 @@
 import Link from "next/link";
-import { ScrollText, Stamp } from "lucide-react";
-import { Icone, type IconeNom } from "@/components/adn/icons";
-import { JourRelatif } from "@/components/profil/JourRelatif";
+import { ScrollText } from "lucide-react";
 import { couleurCss } from "@/lib/profil/catalogue";
 import { defSceau } from "@/lib/profil/sceaux";
 import { hrefOnglet } from "@/lib/profil/onglets";
 import { TIERS } from "@/lib/ranks";
 import { decaleJour } from "@/lib/objectif-calc";
-import { ecart } from "@/lib/profil/ecart";
 import type { DonneesBlocs, ExtraitJournal } from "@/lib/profil/blocs-donnees";
 import type { EvenementJournal } from "@/lib/profil/journal";
-import type { Format } from "@/lib/profil/disposition";
 import { signe } from "@/lib/voice";
 import { BLOCS_PROFIL as T } from "@/lib/voice-blocs";
 import { BLOCS_JOURNAL as V } from "@/lib/voice-blocs-journal";
 import { JOURNAL, PALIERS, condition, jourCourt, nomSceau } from "@/lib/voice-profil";
-import { Cellule, Chiffre, Coque, DEUX_LIGNES, DemiBande, DoubleCourbe, Etiquette, Jeton, Lien, Repere, Vide, maCouleur, type Ctx, type Serie } from "./commun";
+import { Cellule, Coque, DemiBande, Lien, Vide, type Ctx } from "./commun";
 import s from "./Journal.module.css";
 
-// Le bloc Journal de la page de profil : un extrait de l'onglet (la courbe
-// d'ELO des 90 jours, les derniers événements, le lien). Chez un autre :
-// « monte-t-il en classé, et plus vite que moi ? » : le chiffre fort est son
-// ELO gagné en 90 jours (« +84 »), le jeton ton écart (« toi −72 »), la
-// courbe double l'ELO réel des deux sur un même axe de dates et une même
-// échelle (la sienne épaisse à l'encre, la tienne fine à ta couleur), un
-// point à chaque croisement ; les événements qui te concernent en tête.
-// Chez soi : l'existant (repère « +84 ELO · 90 j », courbe, événements,
-// lien). Formats : mini-tuile, colonne, héros, demi-bande (la bande est
-// refusée ; reçue quand même, elle se rend comme le héros).
-// Sans état : rendu au serveur comme au client.
+// Le bloc Journal de la page de profil : « Courbe annotée ». Une étiquette
+// (« Journal · ELO 90 j »), le gain d'ELO des 90 jours à droite (vert, rouge
+// s'il a perdu), la courbe d'ELO de ses 90 jours (aire teintée à sa couleur,
+// tracé qui se déroule, dernier point qui pulse) et, posés sur la courbe au
+// jour où ils sont arrivés, ses derniers événements : des pastilles
+// numérotées 1, 2, 3 de la plus ancienne à la plus récente, avec leur légende
+// dessous (une ligne chacune). Mini-tuile : la courbe et un événement.
+// Demi-bande : la cellule, la courbe et le lien. La bande est refusée ;
+// reçue quand même, elle se rend comme le héros.
+// Une seule rendue pour tous : chez soi et chez un autre, le même dessin
+// (aucune comparaison) ; seul « Visible par » reste au propriétaire, dans
+// Personnaliser. Journal fermé : rien en vue publique, l'état vide dans
+// Personnaliser. Sans état : rendu au serveur comme au client.
 
-const W = 600;
+export type Serie = { dates: string[]; valeurs: number[] };
 
-/** Le jour de référence (aujourd'hui, Paris) : celui du visiteur, sinon celui du carnet, sinon le dernier point. */
-function aujourdhuiDe(d: DonneesBlocs, ...listes: (string[] | undefined)[]): string | null {
-  const vu = d.toi?.aujourdhui ?? d.carnet?.aujourdhui ?? null;
-  if (vu) return vu;
-  const tous = listes.flatMap((l) => l ?? []).sort();
+const JOUR_MS = 86400000;
+const midi = (j: string) => Date.parse(j + "T12:00:00Z");
+
+/** Le jour de référence (aujourd'hui, Paris) : celui du carnet, sinon le dernier point. */
+function aujourdhuiDe(d: DonneesBlocs, dates: string[] | undefined): string | null {
+  if (d.carnet?.aujourdhui) return d.carnet.aujourdhui;
+  const tous = [...(dates ?? [])].sort();
   return tous.length ? tous[tous.length - 1] : null;
 }
 
 /**
- * Une courbe d'ELO des 90 jours sur l'axe des dates : le départ au premier
- * jour, chaque match à son jour, puis l'ELO tenu jusqu'à aujourd'hui (pour
- * que les deux courbes couvrent le même temps). null sans les jours.
+ * La courbe d'ELO des 90 jours sur l'axe des dates : le départ au premier
+ * jour, chaque match à son jour, puis l'ELO tenu jusqu'à aujourd'hui. null
+ * sans les jours (données d'avant).
  */
 export function serieElo(c: { depart: number; points: number[]; dates?: string[] }, aujourdhui: string | null): Serie | null {
   if (!c.dates || c.dates.length !== c.points.length) return null;
@@ -64,118 +64,74 @@ export function serieElo(c: { depart: number; points: number[]; dates?: string[]
 /** L'ELO gagné sur la courbe (le dernier point moins le départ ; 0 sans match). */
 const gain = (c: { depart: number; points: number[] }) => (c.points.length ? c.points[c.points.length - 1] : c.depart) - c.depart;
 
-export type Croisement = { x: number; y: number; jour: string; sens: "lui" | "toi" };
+// ── La courbe, en pourcentages d'une boîte (viewBox 0 0 100 100, étirée) ─────
 
-/**
- * Les croisements des deux courbes, aux coordonnées de DoubleCourbe (même
- * axe, même échelle, même calcul) : « lui » quand il passe devant, « toi »
- * quand tu passes devant ; le jour est celui du point qui achève le passage.
- */
-export function croisements(lui: Serie, toi: Serie, h: number): Croisement[] {
-  const toutes = [...lui.dates, ...toi.dates].sort();
-  if (!toutes.length || lui.valeurs.length < 2 || toi.valeurs.length < 2) return [];
-  const t0 = Date.parse(toutes[0] + "T12:00:00Z");
-  const t1 = Date.parse(toutes[toutes.length - 1] + "T12:00:00Z");
-  const vals = [...lui.valeurs, ...toi.valeurs];
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const pad = (max - min) * 0.12 || 10;
-  const y = (v: number) => 4 + (1 - (v - (min - pad)) / (max - min + 2 * pad)) * (h - 8);
-  // les abscisses : celles de DoubleCourbe (plusieurs points le même jour, répartis dans la journée)
-  const xs = (sr: Serie) =>
-    sr.dates.map((j, i) => {
-      const t = Date.parse(j + "T12:00:00Z");
-      const meme = sr.dates.filter((x) => x === j);
-      const rang = sr.dates.slice(0, i).filter((x) => x === j).length;
-      const dt = t1 > t0 ? ((t - t0 + (rang / Math.max(1, meme.length)) * 86400000) / (t1 - t0 + 86400000)) * W : (i / Math.max(1, sr.dates.length - 1)) * W;
-      return Math.max(0, Math.min(W, dt));
-    });
-  const xl = xs(lui);
-  const xt = xs(toi);
-  // la valeur d'une courbe en x (interpolée entre ses points)
-  const en = (x: number, px: number[], v: number[]) => {
-    if (x <= px[0]) return v[0];
-    for (let i = 1; i < px.length; i++) {
-      if (x <= px[i]) {
-        const dx = px[i] - px[i - 1];
-        return dx > 0 ? v[i - 1] + ((x - px[i - 1]) / dx) * (v[i] - v[i - 1]) : v[i];
+export type Point = { x: number; y: number };
+export type CourbeElo = {
+  /** le tracé, puis l'aire fermée jusqu'au bas */
+  chemin: string;
+  aire: string;
+  /** le dernier point */
+  fin: Point;
+  /** l'ordonnée de la courbe à l'abscisse x (en %) */
+  yEn: (x: number) => number;
+  /** l'abscisse d'un jour (en %), null sans l'axe des dates */
+  xDuJour: (jour: string) => number | null;
+};
+
+/** la plage verticale de la courbe : de quoi poser une pastille au-dessus du sommet */
+const Y_HAUT = 12;
+const Y_BAS = 88;
+
+function construire(xs: number[], valeurs: number[], xDuJour: (jour: string) => number | null): CourbeElo {
+  const min = Math.min(...valeurs);
+  const max = Math.max(...valeurs);
+  const pad = (max - min) * 0.1 || 10;
+  const lo = min - pad;
+  const hi = max + pad;
+  const ys = valeurs.map((v) => Y_BAS - ((v - lo) / (hi - lo)) * (Y_BAS - Y_HAUT));
+  const f = (n: number) => n.toFixed(2);
+  const chemin = xs.map((x, i) => `${i ? "L" : "M"}${f(x)},${f(ys[i])}`).join(" ");
+  const yEn = (x: number) => {
+    if (x <= xs[0]) return ys[0];
+    for (let i = 1; i < xs.length; i++) {
+      if (x <= xs[i]) {
+        const dx = xs[i] - xs[i - 1];
+        return dx > 0 ? ys[i - 1] + ((x - xs[i - 1]) / dx) * (ys[i] - ys[i - 1]) : ys[i];
       }
     }
-    return v[v.length - 1];
+    return ys[ys.length - 1];
   };
-  const debut = Math.max(xl[0], xt[0]);
-  const fin = Math.min(xl[xl.length - 1], xt[xt.length - 1]);
-  if (fin <= debut) return [];
-  const echantillons = [
-    ...xl.map((x, i) => ({ x, jour: lui.dates[i] })),
-    ...xt.map((x, i) => ({ x, jour: toi.dates[i] })),
-  ]
-    .filter((e) => e.x >= debut && e.x <= fin)
-    .sort((a, b) => a.x - b.x || (a.jour < b.jour ? -1 : 1));
-  const out: Croisement[] = [];
-  let avant: { x: number; diff: number } | null = null;
-  let signeAvant = 0;
-  for (const e of echantillons) {
-    const diff = en(e.x, xl, lui.valeurs) - en(e.x, xt, toi.valeurs);
-    const sg = Math.sign(diff);
-    if (sg !== 0 && signeAvant !== 0 && sg !== signeAvant && avant) {
-      const x = avant.diff === 0 || e.x === avant.x ? avant.x : avant.x + ((e.x - avant.x) * avant.diff) / (avant.diff - diff);
-      out.push({ x, y: y(en(x, xl, lui.valeurs)), jour: e.jour, sens: sg > 0 ? "lui" : "toi" });
-    }
-    if (sg !== 0) signeAvant = sg;
-    avant = { x: e.x, diff };
-  }
-  return out;
+  return { chemin, aire: `${chemin} L${f(xs[xs.length - 1])},100 L${f(xs[0])},100 Z`, fin: { x: xs[xs.length - 1], y: ys[ys.length - 1] }, yEn, xDuJour };
 }
 
-/** L'ancienne courbe du bloc (chez soi) : l'ELO à la couleur du joueur, un lavis dessous. */
-function CourbeAccent({ v, accent, h }: { v: number[]; accent: string; h: number }) {
-  const min = Math.min(...v) - 10;
-  const max = Math.max(...v) + 10;
-  const pts = v.map((y, i) => `${((i / Math.max(1, v.length - 1)) * 100).toFixed(2)},${(((max - y) / (max - min)) * h).toFixed(2)}`);
-  return (
-    <svg viewBox={`0 0 100 ${h}`} preserveAspectRatio="none" className="block w-full" style={{ height: h }} aria-hidden>
-      <polyline points={`0,${h} ${pts.join(" ")} 100,${h}`} fill={`color-mix(in oklab, ${accent} 14%, transparent)`} stroke="none" />
-      <polyline points={pts.join(" ")} fill="none" stroke={accent} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-    </svg>
-  );
+/** La courbe sur l'axe des dates : plusieurs matchs le même jour sont répartis dans la journée ; le dernier point est au bord droit. */
+export function courbeElo(serie: Serie): CourbeElo | null {
+  const n = serie.valeurs.length;
+  if (n < 2 || serie.dates.length !== n) return null;
+  const t0 = midi(serie.dates[0]);
+  const t1 = midi(serie.dates[n - 1]);
+  const etendue = t1 - t0 + JOUR_MS;
+  const brut = serie.dates.map((j, i) => {
+    const meme = serie.dates.filter((x) => x === j).length;
+    const rang = serie.dates.slice(0, i).filter((x) => x === j).length;
+    return (midi(j) - t0 + (rang / Math.max(1, meme)) * JOUR_MS) / etendue;
+  });
+  const k = 100 / (Math.max(...brut) || 1);
+  const xs = brut.map((b) => b * k);
+  const xDuJour = (jour: string) => Math.max(0, Math.min(100, ((midi(jour) - t0) / etendue) * k));
+  return construire(xs, serie.valeurs, xDuJour);
 }
 
-/**
- * La courbe chez un autre : son ELO réel épais, le tien fin, un point de
- * 4 px à chaque croisement (« Inès t'a dépassé le 12 sept. »). Sans les
- * jours (données d'avant) : sa courbe seule, à l'ancienne. Aucun match des
- * deux côtés : la phrase calme.
- */
-function CourbeDouble({ d, h, bornes = true }: { d: DonneesBlocs; h: number; bornes?: boolean }) {
-  const j = d.journal!;
-  const ce = d.toi?.courbeElo ?? null;
-  const jour = aujourdhuiDe(d, j.dates, ce?.dates);
-  const lui = serieElo(j, jour);
-  const toi = ce ? serieElo(ce, jour) : null;
-  const calmeLui = j.points.length === 0;
-  const calmeToi = !ce || ce.points.length === 0;
-  if (calmeLui && calmeToi) return <p className="t-small m-0">{JOURNAL.calme}</p>;
-  if (!lui) return calmeLui ? <p className="t-small m-0">{JOURNAL.calme}</p> : <CourbeAccent v={[j.depart, ...j.points]} accent="var(--ink)" h={h} />;
-  const deux = toi && toi.valeurs.length > 1 ? toi : null;
-  const label = deux ? T.doubleTrait(d.nom) : JOURNAL.courbeDit(j.depart, lui.valeurs[lui.valeurs.length - 1], j.matchs90 ?? j.points.length);
-  const croix = deux ? croisements(lui, deux, h) : [];
-  return (
-    <div className={s.courbe}>
-      <DoubleCourbe lui={lui} toi={deux} couleurToi={maCouleur(d)} h={h} label={label} bornes={bornes} />
-      {croix.map((c, i) => {
-        const bulle = c.sens === "lui" ? V.teDepasse(d.nom, jourCourt(c.jour)) : V.tuDepasses(d.nom, jourCourt(c.jour));
-        return (
-          <span key={i} role="img" className={s.croix} style={{ left: `${(c.x / W) * 100}%`, top: c.y, color: c.sens === "lui" ? "var(--perte)" : "var(--gain)" }} title={bulle} aria-label={bulle}>
-            <i />
-          </span>
-        );
-      })}
-    </div>
-  );
+/** Sans les jours (données d'avant) : les matchs à égale distance, aucun événement posé. */
+export function courbeParIndice(valeurs: number[]): CourbeElo | null {
+  if (valeurs.length < 2) return null;
+  return construire(valeurs.map((_, i) => (i / (valeurs.length - 1)) * 100), valeurs, () => null);
 }
 
-const ICONE_EVT: Record<Exclude<EvenementJournal["type"], "sceau">, IconeNom> = { victoire: "duel", palier: "classement", serie: "serie" };
+// ── Les événements posés sur la courbe ───────────────────────────────────
+
+const titreEvenement = (e: EvenementJournal, viewerId: string | null): string => ditEvenement(e, viewerId).titre;
 
 /** Le titre, le détail et l'écart d'une entrée (textes de l'onglet Journal). */
 function ditEvenement(e: EvenementJournal, viewerId: string | null): { titre: string; detail: string | null; delta: number | null } {
@@ -193,43 +149,104 @@ function ditEvenement(e: EvenementJournal, viewerId: string | null): { titre: st
   return { titre: JOURNAL.serieNotable(e.jours), detail: JOURNAL.serieTexte(e.jours), delta: null };
 }
 
-/** Chez un autre : les événements qui te concernent (« Victoire contre toi ») passent en tête, l'ordre gardé sinon. */
-export function evenementsPour(d: DonneesBlocs, n: number): EvenementJournal[] {
-  const evts = d.journal?.evenements ?? [];
-  if (d.moi || !d.viewerId) return evts.slice(0, n);
-  const toi = (e: EvenementJournal) => e.type === "victoire" && !!e.adversaire && e.adversaire.id === d.viewerId;
-  return [...evts.filter(toi), ...evts.filter((e) => !toi(e))].slice(0, n);
+/** Les `n` derniers événements, rangés du plus ancien au plus récent (la pastille 1 est la plus à gauche). */
+export function evenementsPosables(j: ExtraitJournal, n: number): EvenementJournal[] {
+  return j.evenements
+    .slice(0, n)
+    .reverse()
+    .sort((a, b) => (a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : 0));
 }
 
-function Evenements({ evts, d }: { evts: EvenementJournal[]; d: DonneesBlocs }) {
+/** l'écart minimal de deux pastilles, en % de la largeur de la courbe */
+export const ECART_PINS = 8;
+
+export type Epingle = { n: number; e: EvenementJournal; x: number; y: number };
+
+/**
+ * Les pastilles : chaque événement au jour où il est arrivé, sur la courbe ;
+ * deux pastilles ne se recouvrent pas (8 % d'écart au moins : 25 px dans la
+ * plus étroite des cases) et aucune ne sort de la boîte.
+ */
+export function epingles(c: CourbeElo, evts: EvenementJournal[]): Epingle[] {
+  const xs = evts.map((e) => Math.max(4, Math.min(96, c.xDuJour(e.jour) ?? 0)));
+  // vers la droite d'abord ; ce qui dépasse le bord revient vers la gauche
+  for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < ECART_PINS) xs[i] = xs[i - 1] + ECART_PINS;
+  if (xs.length) xs[xs.length - 1] = Math.min(xs[xs.length - 1], 96);
+  for (let i = xs.length - 2; i >= 0; i--) xs[i] = Math.min(xs[i], xs[i + 1] - ECART_PINS);
+  return evts.map((e, i) => ({ n: i + 1, e, x: xs[i], y: c.yEn(xs[i]) }));
+}
+
+// ── Le dessin ─────────────────────────────────────────────────────────────
+
+const pct = (n: number) => `${n.toFixed(2)}%`;
+
+/** Le gain d'ELO : vert s'il est positif, rouge s'il est négatif, encre douce sinon. */
+const couleurGain = (g: number) => (g > 0 ? "var(--gain)" : g < 0 ? "var(--perte)" : "var(--ink-2)");
+
+/**
+ * La courbe et ses pastilles. `evts` : les événements à poser (vide en
+ * demi-bande). Sans match sur les 90 jours : la phrase calme.
+ */
+function Courbe({ d, j, evts, classe }: { d: DonneesBlocs; j: ExtraitJournal; evts: EvenementJournal[]; classe: string }) {
+  if (j.points.length === 0) return <p className={"t-small m-0 " + s.calme}>{JOURNAL.calme}</p>;
+  const serie = serieElo(j, aujourdhuiDe(d, j.dates));
+  const c = serie ? courbeElo(serie) : courbeParIndice([j.depart, ...j.points]);
+  if (!c) return <p className={"t-small m-0 " + s.calme}>{JOURNAL.calme}</p>;
+  const label = JOURNAL.courbeDit(j.depart, j.points[j.points.length - 1], j.matchs90 ?? j.points.length);
+  const pins = epingles(c, evts);
+  return (
+    <div className={s.courbe + " " + classe} style={{ ["--acc" as string]: couleurCss(d.accent) }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={label} className={s.svg}>
+        <title>{label}</title>
+        <path d={c.aire} className={s.aire} />
+        <path d={c.chemin} className={s.trait} />
+      </svg>
+      <span className={s.fin} style={{ left: pct(c.fin.x), top: pct(c.fin.y) }} aria-hidden />
+      {pins.map((p) => (
+        <span key={p.e.cle} className={s.pin} style={{ left: pct(p.x), top: pct(p.y) }} title={V.ligneBulle(jourCourt(p.e.jour), titreEvenement(p.e, d.viewerId))} aria-hidden>
+          {p.n}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** La légende : une ligne par événement, sa pastille, son titre, son écart d'ELO. */
+function Legende({ evts, d, posees }: { evts: EvenementJournal[]; d: DonneesBlocs; posees: boolean }) {
   if (!evts.length) return null;
   return (
-    <ul className="m-0 list-none p-0">
-      {evts.map((e) => {
+    <ol className={s.legende}>
+      {evts.map((e, i) => {
         const x = ditEvenement(e, d.viewerId);
         return (
-          <li key={e.cle} className="flex items-start gap-3 border-b border-line py-2.5 last:border-b-0">
-            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line-2" aria-hidden>
-              {e.type === "sceau" ? <Stamp size={15} /> : <Icone nom={ICONE_EVT[e.type]} size={16} />}
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="flex items-baseline justify-between gap-3">
-                <span className="min-w-0 truncate text-[14px] font-semibold">{x.titre}</span>
-                {x.delta !== null && (
-                  <span className="font-mono text-[13px] font-semibold tabular-nums" style={{ color: x.delta >= 0 ? "var(--gain)" : "var(--perte)" }}>
-                    {signe(x.delta)}
-                  </span>
-                )}
+          <li key={e.cle} title={V.ligneBulle(jourCourt(e.jour), x.detail ? `${x.titre} · ${x.detail}` : x.titre)}>
+            <i className={posees ? s.num : s.puce} aria-hidden>
+              {posees ? i + 1 : ""}
+            </i>
+            <span className={s.titre}>{x.titre}</span>
+            {x.delta !== null && (
+              <span className={s.delta} style={{ color: x.delta >= 0 ? "var(--gain)" : "var(--perte)" }}>
+                {signe(x.delta)}
               </span>
-              <span className="t-small" style={DEUX_LIGNES}>
-                <JourRelatif jour={e.jour} />
-                {x.detail ? ` · ${x.detail}` : ""}
-              </span>
-            </span>
+            )}
           </li>
         );
       })}
-    </ul>
+    </ol>
+  );
+}
+
+/** L'étiquette et le gain à droite. */
+function Tete({ g, calme }: { g: number; calme: boolean }) {
+  return (
+    <div className={s.tete}>
+      <h3 className={s.lab}>{V.titreCourbe}</h3>
+      {!calme && (
+        <b className={s.gain} style={{ color: couleurGain(g) }}>
+          {signe(g)}
+        </b>
+      )}
+    </div>
   );
 }
 
@@ -245,107 +262,50 @@ function DroiteDemi({ d, edition }: { d: DonneesBlocs; edition: boolean }) {
   );
 }
 
-/** L'écart d'ELO gagné en 90 jours (chez un autre) : le jeton et son infobulle ; null si ta courbe n'est pas lue. */
-function ecartJournal(d: DonneesBlocs, j: ExtraitJournal) {
-  const lui = gain(j);
-  const ce = d.toi?.courbeElo ?? null;
-  const toi = ce ? gain(ce) : null;
-  const e = d.toi && toi !== null ? ecart(lui, toi, "elo") : null;
-  return {
-    lui,
-    e,
-    bulle: e && toi !== null ? T.bulle(V.eloGagne, d.nom, signe(lui), signe(toi)) : undefined,
-    // pas de jeton : le chiffre le dit en infobulle (visiteur connecté seulement)
-    titre: d.toi && !e ? T.pasMesure : undefined,
-  };
-}
-
-// ── Chez un autre ─────────────────────────────────────────────────────────
-function JournalAutre({ d, f }: { d: DonneesBlocs; f: Format }) {
+function JournalContenu({ d, f, edition }: Ctx) {
   const j = d.journal!;
-  const { lui, e, bulle, titre } = ecartJournal(d, j);
-  const chiffre = (
-    <span className="flex flex-col gap-1">
-      <Chiffre f={f} titre={titre}>
-        {signe(lui)}
-      </Chiffre>
-      <Jeton e={e} d={d} bulle={bulle} taille={f === "heros" ? 16 : undefined} />
-    </span>
-  );
-  if (f === "demi")
-    return (
-      <DemiBande label={T.journal} dessin={<CourbeDouble d={d} h={80} bornes={false} />} droite={<DroiteDemi d={d} edition={false} />}>
-        <Cellule etiquette={V.elo90} chiffre={signe(lui)} jeton={<Jeton e={e} d={d} bulle={bulle} />} titre={titre} />
-      </DemiBande>
-    );
-  const lien = <Lien href={hrefOnglet(d.id, "journal")}>{T.toutJournal}</Lien>;
-  const etiquette = <Etiquette f={f} icone={<ScrollText size={17} aria-hidden />} titre={T.journal} />;
-  if (f === "tuile")
-    return (
-      <Coque f={f} label={T.journal}>
-        {etiquette}
-        {chiffre}
-        <CourbeDouble d={d} h={48} />
-        <Evenements evts={evenementsPour(d, 1)} d={d} />
-        {lien}
-      </Coque>
-    );
-  if (f === "colonne")
-    return (
-      <Coque f={f} label={T.journal}>
-        {etiquette}
-        {chiffre}
-        <CourbeDouble d={d} h={140} />
-        <Evenements evts={evenementsPour(d, 4)} d={d} />
-        {lien}
-      </Coque>
-    );
-  // héros (et la bande, refusée, reçue quand même) : chiffre et jeton à gauche, 3 événements à droite, la courbe en pleine largeur
-  return (
-    <Coque f={f === "bande" ? "heros" : f} label={T.journal}>
-      {etiquette}
-      <div className={s.haut}>
-        {chiffre}
-        <Evenements evts={evenementsPour(d, 3)} d={d} />
-      </div>
-      <CourbeDouble d={d} h={120} />
-      {lien}
-    </Coque>
-  );
-}
-
-// ── Chez soi : l'existant ────────────────────────────────────────────────
-function JournalMoi({ d, f, edition }: Ctx) {
-  const j = d.journal!;
-  const accent = couleurCss(d.accent);
-  const v = [j.depart, ...j.points];
-  const ecartElo = v[v.length - 1] - j.depart;
+  const g = gain(j);
   const calme = j.points.length === 0;
+  const matchs = j.matchs90 ?? j.points.length;
+
   if (f === "demi")
     return (
-      <DemiBande
-        label={T.journal}
-        dessin={calme ? <p className="t-small m-0">{JOURNAL.calme}</p> : <CourbeAccent v={v} accent={accent} h={80} />}
-        droite={<DroiteDemi d={d} edition={edition} />}
-      >
-        <Cellule etiquette={V.elo90} chiffre={signe(ecartElo)} petit={V.matchs(j.matchs90 ?? j.points.length)} />
+      <DemiBande label={T.journal} dessin={<Courbe d={d} j={j} evts={[]} classe={s.demi} />} droite={<DroiteDemi d={d} edition={edition} />}>
+        <Cellule etiquette={V.elo90} chiffre={<span style={{ color: couleurGain(g) }}>{signe(g)}</span>} petit={V.matchs(matchs)} />
       </DemiBande>
     );
-  const compact = f === "tuile" || f === "colonne";
-  const evenements = j.evenements.slice(0, f === "tuile" ? 3 : 4);
+
+  const heros = f === "heros" || f === "bande";
+  const evts = evenementsPosables(j, f === "tuile" ? 1 : 3);
+  // les pastilles ne se posent que sur une courbe lue jour par jour
+  const posees = !calme && !!j.dates && j.dates.length === j.points.length;
+  const courbe = <Courbe d={d} j={j} evts={posees ? evts : []} classe={f === "tuile" ? s.tuile : f === "colonne" ? s.colonne : s.heros} />;
+  const legende = <Legende evts={evts} d={d} posees={posees} />;
+  const visible = edition ? <p className="t-micro m-0">{T.visiblePar(d.visibiliteJournal)}</p> : null;
+  const lien = <Lien href={hrefOnglet(d.id, "journal")}>{T.toutJournal}</Lien>;
+
   return (
-    <Coque f={f === "bande" ? "heros" : f} label={T.journal}>
-      <Etiquette f={f} icone={<ScrollText size={17} aria-hidden />} titre={T.journal} droite={calme ? undefined : <Repere>{T.repereJournal(signe(ecartElo))}</Repere>} />
-      {calme && evenements.length === 0 ? (
-        <p className="t-small m-0">{JOURNAL.calme}</p>
-      ) : (
-        <div className={compact ? "flex flex-col gap-3" : s.deux}>
-          {calme ? <p className="t-small m-0">{JOURNAL.calme}</p> : <CourbeAccent v={v} accent={accent} h={f === "tuile" ? 48 : f === "colonne" ? 140 : 96} />}
-          <Evenements evts={evenements} d={d} />
-        </div>
-      )}
-      {edition && <p className="t-micro m-0">{T.visiblePar(d.visibiliteJournal)}</p>}
-      <Lien href={hrefOnglet(d.id, "journal")}>{T.toutJournal}</Lien>
+    <Coque f={heros ? "heros" : f} label={T.journal}>
+      <div className={s.corps}>
+        <Tete g={g} calme={calme} />
+        {heros ? (
+          <div className={s.milieu}>
+            {courbe}
+            <div className={s.cote}>
+              {legende}
+              {visible}
+              {lien}
+            </div>
+          </div>
+        ) : (
+          <>
+            {courbe}
+            {legende}
+            {visible}
+            {lien}
+          </>
+        )}
+      </div>
     </Coque>
   );
 }
@@ -356,6 +316,5 @@ function JournalMoi({ d, f, edition }: Ctx) {
  */
 export function JournalBloc({ d, f, edition }: Ctx): React.ReactNode {
   if (!d.journal) return edition ? <Vide bloc={{ k: "journal", f }} f={f} icone={<ScrollText size={17} aria-hidden />} /> : null;
-  if (d.moi) return <JournalMoi d={d} f={f} edition={edition} />;
-  return <JournalAutre d={d} f={f} />;
+  return <JournalContenu d={d} f={f} edition={edition} />;
 }

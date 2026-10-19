@@ -1,38 +1,157 @@
-/* Le bloc Folio (Folio.tsx). Repris de BlocsProfil.module.css : deux
-   colonnes dès 1 024 px, la planche lisible la nuit. La demi-bande : une
-   vignette puis le nom et l'œuvre sur une ligne. En CSS simple. */
+/* Le bloc Folio (Folio.tsx) : « Au musée ». La planche dans un cadre
+   (filet doré, passe-partout clair, ombre douce) et son cartel à côté. Le
+   cadre est un objet à part : le papier de la planche reste clair de jour,
+   de nuit et en couleurs inversées. La demi-bande : une vignette encadrée
+   puis le nom et l'œuvre sur une ligne. En CSS simple. */
 
-.deux {
+/* ── le cadre : un filet doré (--m1 à --m3, le métal Or), le passe-partout, la planche ── */
+.cadre {
+  display: block;
+  padding: 2px;
+  border-radius: 5px;
+  background: linear-gradient(145deg, var(--m1), var(--m2) 55%, var(--m3));
+  box-shadow:
+    0 1px 2px rgba(30, 20, 8, 0.28),
+    0 14px 26px -14px rgba(30, 20, 8, 0.55);
+  animation: pose 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.passe {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 9px;
+  border-radius: 3px;
+  background: #f8f4ea;
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 90, 40, 0.22),
+    inset 0 2px 6px -2px rgba(60, 40, 10, 0.28);
+  /* la planche, en papier clair quel que soit le thème (les jetons du bloc ne passent pas) */
+  --surface: #fffdf7;
+  --ink: #211b13;
+  --line: rgba(110, 80, 30, 0.24);
+  --color-line: rgba(110, 80, 30, 0.24);
+}
+/* un reflet passe une fois sur le verre, à l'arrivée */
+.passe::after {
+  content: "";
+  position: absolute;
+  inset: -30% -60%;
+  background: linear-gradient(105deg, transparent 44%, rgba(255, 255, 255, 0.5) 50%, transparent 56%);
+  pointer-events: none;
+  transform: translateX(-100%);
+  animation: reflet 1s 0.2s ease-out both;
+}
+
+/* ── le cartel : le nom en gras, l'œuvre, l'auteur sous un filet ── */
+.cartel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+.nom {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.nomGrand {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.oeuvre {
+  color: var(--ink-2);
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.35;
+}
+.auteur {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── mini-tuile : le cadre à gauche (42 %), le cartel à droite ── */
+.tuile {
   display: grid;
-  gap: 20px 28px;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(84px, 42%) minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+}
+
+/* ── colonne : le cadre centré, le cartel dessous ── */
+.colonne {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin: 0;
+  text-align: center;
+}
+.cadreColonne {
+  width: 100%;
+  max-width: 176px;
+}
+.colonne .cartel {
   align-items: center;
 }
-@media (min-width: 1024px) {
-  .deux {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+.colonne .auteur {
+  align-self: stretch;
+}
+
+/* ── héros et bande : le cadre à gauche, le cartel et l'anecdote à droite ── */
+.zone {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  container-type: inline-size;
+}
+.heros {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px 28px;
+  margin: 0;
+}
+.cadreHeros {
+  flex: 0 0 auto;
+  width: min(100%, 168px);
+}
+.texte {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  align-self: stretch;
+}
+.histoire {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+@container (min-width: 440px) {
+  .heros {
+    flex-direction: row;
   }
 }
 
-/* le badge chez un autre : « à toi aussi » (encre douce) ou « pas à toi » (rouge, posé à l'écriture) */
-.badge {
-  align-self: flex-start;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-/* la planche du folio, lisible la nuit */
-:global(html[data-theme="nuit"]) .folioNuit > span,
-:global(html:not([data-theme="nuit"]) .rl-inverse) .folioNuit > span {
-  background: var(--surface-2) !important;
-}
-:global(html[data-theme="nuit"]) .folioNuit :global(.font-brand),
-:global(html:not([data-theme="nuit"]) .rl-inverse) .folioNuit :global(.font-brand) {
-  color: var(--ink) !important;
-}
-
-/* la demi-bande : la ligne prend toute la largeur (pas de cellules ici) */
+/* ── demi-bande : la ligne prend toute la largeur (pas de cellules ici) ── */
 .demiFolio > :first-child {
   display: block;
   flex: 1 1 auto;
@@ -43,11 +162,21 @@
   min-width: 0;
   align-items: center;
   gap: 16px;
+  margin: 0;
 }
 .vignette {
-  display: block;
-  flex: 0 0 66px;
-  width: 66px;
+  flex: 0 0 56px;
+  width: 56px;
+}
+.vignette .passe {
+  padding: 4px;
+}
+/* trop petite pour le titre de l'œuvre : une planche sans image reste un papier nu */
+.vignette .passe > span > span {
+  display: none;
+}
+.vignette .passe::after {
+  display: none;
 }
 .demiTexte {
   display: flex;
@@ -63,32 +192,28 @@
   align-items: baseline;
   gap: 2px 10px;
 }
-.nom {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-}
-/* le nom en héros (22 px) */
-.nomHeros {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-}
-.oeuvre {
-  overflow: hidden;
+.auteurLigne {
   color: var(--ink-2);
-  font-size: 14px;
-  font-style: italic;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-.uneLigne {
-  overflow: hidden;
-  color: var(--ink-2);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translateY(8px) rotate(-1.2deg);
+  }
+}
+@keyframes reflet {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cadre,
+  .passe::after {
+    animation: none;
+  }
 }

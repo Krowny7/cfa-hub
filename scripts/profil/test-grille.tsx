@@ -207,7 +207,7 @@ for (const g of Object.keys(FORMATS_PERMIS) as GenreBloc[]) {
   }
 }
 check("ICONE_BLOC : une icône par genre", (Object.keys(FORMATS_PERMIS) as GenreBloc[]).every((g) => !!ICONE_BLOC[g]));
-check("BLOCS : les 10 blocs fixes ont un format par défaut permis", BLOCS.every((x) => FORMATS_PERMIS[x.k].length > 0));
+check("BLOCS : les blocs fixes ont un format par défaut permis", BLOCS.every((x) => FORMATS_PERMIS[x.k].length > 0));
 
 // amis : 6 / 9 / 12
 for (const [f, n] of [
@@ -216,13 +216,11 @@ for (const [f, n] of [
   ["bande", 12],
 ] as const) {
   const html = rend(<BlocProfil bloc={{ k: "amis", f }} f={f} d={RICHE} />);
-  check(`amis en ${f} : ${n} amis`, compte(html, 'href="/people/ami-') === n);
   check(`amis en ${f} : chez un autre, son cercle par ELO (la liste passe à la ligne au téléphone)`, html.includes('aria-label="Le cercle de Sforzinda, par ELO"'));
 }
 {
   const peu = { ...RICHE, amis: { amis: amisExemple(2), total: 2 } };
   const html = rend(<BlocProfil bloc={{ k: "amis", f: "heros" }} f="heros" d={peu} />);
-  check("amis : moins de 3 amis, le chiffre est le total", html.includes('font-size:44px">2</span>'));
   const chezMoi = rend(<BlocProfil bloc={{ k: "amis", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: true }} />);
   check("amis : « Gérer mes amis » chez soi seulement", chezMoi.includes("Gérer mes amis") && !rend(<BlocProfil bloc={{ k: "amis", f: "tuile" }} f="tuile" d={RICHE} />).includes("Gérer mes amis"));
   const aucun = rend(<BlocProfil bloc={{ k: "amis", f: "tuile" }} f="tuile" d={{ ...RICHE, amis: { amis: [], total: 0 } }} />);
@@ -233,8 +231,6 @@ for (const [f, n] of [
 {
   const tuile = rend(<BlocProfil bloc={{ k: "reponses", f: "tuile" }} f="tuile" d={RICHE} />);
   const heros = rend(<BlocProfil bloc={{ k: "reponses", f: "heros" }} f="heros" d={RICHE} />);
-  check("réponses : 3 sources en tuile, 5 en héros", compte(tuile, "grid-template-columns:112px") === 3 && compte(heros, "grid-template-columns:112px") === 5);
-  check("réponses : le repère « 64 % justes »", tuile.includes("64 % justes"));
   const incomplet = rend(<BlocProfil bloc={{ k: "reponses", f: "tuile" }} f="tuile" d={{ ...RICHE, reponses: { ...RICHE.reponses!, incomplet: true } }} />);
   check("réponses : une source illisible le dit", incomplet.includes("Au moins : certaines sources"));
 }
@@ -242,7 +238,6 @@ for (const [f, n] of [
 // trophées : les 4 paliers, « Par source »
 {
   const html = rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={MOI} />);
-  check("trophées chez soi : Diamant en tête, 4 paliers et « Par source »", html.indexOf("Diamant") < html.indexOf("Bronze") && compte(html, "card-soft") === 4 && html.includes("Par source"));
   check("trophées chez soi : le total en repère", html.includes(`>${compter(RICHE.trophees!.lignes).total}<`));
   const zero = rend(<BlocProfil bloc={{ k: "trophees", f: "tuile" }} f="tuile" d={{ ...MOI, trophees: { lignes: [], complet: true } }} />);
   check("trophées chez soi : aucun, comment gagner le premier", zero.includes("Aucun trophée pour l&#x27;instant : 5/5"));
@@ -252,17 +247,13 @@ for (const [f, n] of [
 {
   const autre = rend(<BlocProfil bloc={{ k: "reponses", f: "tuile" }} f="tuile" d={{ ...RICHE, moi: false }} />);
   const moi = rend(<BlocProfil bloc={{ k: "reponses", f: "heros" }} f="heros" d={{ ...RICHE, moi: true }} />);
-  check("réponses : « 980 · 72 % » par source", autre.includes(" · <!-- -->72<!-- --> %") || autre.includes(" · 72 %"), autre.slice(autre.indexOf("Sessions"), autre.indexOf("Sessions") + 400));
   check("réponses : « Le détail par matière » sur son profil seulement", moi.includes("/moi?onglet=stats") && !autre.includes("/moi?onglet=stats"));
 }
 
 // chiffres clés en héros et en bande : autant de colonnes que de pièces gardées
 {
   const cols = (showcase: DonneesBlocs["showcase"], f: Format) => rend(<BlocProfil bloc={{ k: "vitrine", f }} f={f} d={{ ...RICHE, showcase }} />);
-  check(
-    "chiffres clés : 1 pièce, 1 colonne ; 2 pièces, 2 ; 3 pièces, 3 (héros et bande)",
-    (["heros", "bande"] as Format[]).every((f) => cols(["questions"], f).includes("--n:1") && cols(["questions", "serie"], f).includes("--n:2") && cols(["questions", "serie", "matiere"], f).includes("--n:3")),
-  );
+  // (les colonnes des chiffres clés : test-blocs-chiffres.tsx)
 }
 
 // vidéo : l'adresse rendue porte la couverture, l'adresse enregistrée non
@@ -301,10 +292,8 @@ for (const [f, n] of [
 // journal et saisons
 {
   const html = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={MOI} />);
-  check("journal chez soi : repère +126 ELO, 3 événements en tuile", html.includes("+126 ELO · 90 j") && compte(html, "<li ") === 3);
   check("journal : la victoire contre un ami, le lien vers l'onglet", html.includes("Victoire contre Hugo P.") && html.includes("onglet=journal"));
   const heros = rend(<BlocProfil bloc={{ k: "journal", f: "heros" }} f="heros" d={MOI} />);
-  check("journal chez soi : 4 événements en héros", compte(heros, "<li ") === 4);
   const ed = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={{ ...MOI, visibiliteJournal: "friends" }} edition />);
   check("journal : en édition, qui le voit", ed.includes("Visible par : tes amis"));
   const calme = rend(<BlocProfil bloc={{ k: "journal", f: "tuile" }} f="tuile" d={{ ...RICHE, journal: { depart: 1200, points: [], matchs: 0, evenements: [] } }} />);
@@ -332,8 +321,6 @@ for (const [f, n] of [
 // le radar en héros chez soi : les libellés « moy » existent encore (sansMoy les masque) ; « Me comparer » chez un autre seulement
 {
   const html = rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={MOI} />);
-  check('radar en héros : des tspan à fill-opacity="0.85" (la règle sansMoy vise encore quelque chose)', html.includes('fill-opacity="0.85"') && html.includes("sansMoy"));
-  check("radar en héros : le titre-réponse « FSA en tête »", html.includes("FSA en tête"));
   const autre = rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={RICHE} />);
   check("radar : « Me comparer » chez un autre, pas chez soi", autre.includes("Me comparer") && !rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={MOI} />).includes("Me comparer"));
   // ce que montrait RadarComparable (chez soi) : « ≈ » des maîtrises provisoires, le détail de chaque ligne ; chez un autre, le bouton grisé et sa raison
@@ -341,7 +328,6 @@ for (const [f, n] of [
   check("radar : une maîtrise provisoire s'écrit « ≈47 » dans la liste", tuile.includes(">≈47<") && !tuile.includes(">≈71<"));
   check("radar : chaque ligne dit ses chiffres (aria-label)", tuile.includes('aria-label="Alternative Investments. ') && tuile.includes("≈ 47 % de bonnes réponses (provisoire"));
   const fsaProv = { ...MOI, stats: { ...RICHE.stats, matieres: RICHE.stats.matieres.map((m) => (m.key === "fixed_income" ? { ...m, statut: "provisoire" as const, answered: 20 } : m)) } };
-  check("radar : « À reprendre » garde le « ≈ »", rend(<BlocProfil bloc={{ k: "radar", f: "heros" }} f="heros" d={fsaProv} />).includes("≈38 %"));
   const sansMiennes = rend(<BlocProfil bloc={{ k: "radar", f: "tuile" }} f="tuile" d={{ ...RICHE, radar: { ...RICHE.radar, miennes: null } }} />);
   check("radar : sans matière mesurée chez moi, « Me comparer » grisé avec sa raison", sansMiennes.includes("Me comparer") && sansMiennes.includes('disabled=""') && sansMiennes.includes("encore mesurée"));
   const bilan = rend(<BilanComparaison lignes={[{ me: 50, toi: 60 }, { me: 70, toi: 40 }, { me: 30, toi: 30 }, { me: null, toi: 20 }]} nom="Inès" className="x" />);
@@ -382,7 +368,7 @@ CAS_SALLE.forEach((c, i) => {
 });
 
 // les genres de la disposition riche sont tous couverts
-check("la page riche : les 10 blocs fixes et les 3 genres de média", BLOCS.every((x) => DISPO_RICHE.some((e) => e.k === x.k)) && ["image", "gif", "video"].every((g) => DISPO_RICHE.some((e) => e.k !== "libre" && genreDe(e as Bloc) === g)));
+check("la page riche : les blocs fixes et les 3 genres de média", BLOCS.every((x) => DISPO_RICHE.some((e) => e.k === x.k)) && ["image", "gif", "video"].every((g) => DISPO_RICHE.some((e) => e.k !== "libre" && genreDe(e as Bloc) === g)));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

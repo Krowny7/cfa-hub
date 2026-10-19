@@ -103,8 +103,12 @@ const FILET_GRAND: CleBloc[] = ["radar", "amis", "vitrine"];
 export function montre(k: CleBloc, d: DonneesBlocs): boolean {
   if (!aDuContenu({ k, f: "tuile" }, d)) return false;
   // le Journal et son carnet de jours suivent sa visibilité : un modèle ne les pose que s'ils sont publics
-  return (k !== "journal" && k !== "carnet") || d.visibiliteJournal === "public";
+  // (le jour J, les examens blancs et le rythme aussi : ils disent des dates et des heures)
+  return !SUIT_LE_JOURNAL.has(k) || d.visibiliteJournal === "public";
 }
+
+/** Les blocs qui suivent la visibilité du Journal. */
+const SUIT_LE_JOURNAL: ReadonlySet<CleBloc> = new Set<CleBloc>(["journal", "carnet", "jourj", "examens", "rythme"]);
 
 /** Le bloc a du vrai contenu (pas seulement « rien pour l'instant ») : ce qu'il faut à un héros ou à une bande. */
 export function riche(k: CleBloc, d: DonneesBlocs): boolean {

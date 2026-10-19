@@ -334,7 +334,7 @@ check("pourPlace : progression dans une colonne → colonne", pourPlace("progres
   check("retirer : une place libre (même liste)", retirer(l, 1) === l);
   check("fermerPlace : la place libre part", court(fermerPlace(l, 1)) === "folio:tuile amis:tuile");
   check("fermerPlace : un bloc (même liste)", fermerPlace(l, 0) === l);
-  check("blocsMasques : les blocs absents, dans l'ordre", egal(blocsMasques(d).map((b) => b.k), ["radar", "reponses", "trophees", "progression", "folio", "journal", "saisons", "carnet"]));
+  check("blocsMasques : les blocs absents, dans l'ordre", egal(blocsMasques(d).map((b) => b.k), ["radar", "reponses", "trophees", "progression", "folio", "journal", "saisons", "carnet", "duels", "jourj", "phare", "classement", "examens", "codex", "rythme"]));
   const t: Disposition = [fixe("vitrine", "bande"), image("heros"), fixe("amis", "tuile")];
   const r = retirer(t, 1);
   check("retirer : un média part de la liste (en héros, sa place reste libre)", court(r) === "vitrine:bande libre:heros amis:tuile" && !r.some(estMedia));
@@ -378,7 +378,7 @@ check("pourPlace : progression dans une colonne → colonne", pourPlace("progres
 // ── 20 éléments ───────────────────────────────────────────────────────
 {
   // 6 rangées « bloc, place libre, bloc », puis 2 blocs : 14 blocs (les 10 fixes et 4 médias) et 6 places libres
-  const blocs: Bloc[] = [...BLOCS.map((b) => fixe(b.k, "tuile")), image("tuile"), image("tuile"), gif("tuile"), video("tuile"), image("tuile")];
+  const blocs: Bloc[] = [...BLOCS.slice(0, 10).map((b) => fixe(b.k, "tuile")), image("tuile"), image("tuile"), gif("tuile"), video("tuile"), image("tuile")];
   const d: Disposition = [];
   for (let r = 0; r < 6; r++) d.push(blocs[2 * r], libre("tuile"), blocs[2 * r + 1]);
   d.push(blocs[12], blocs[13]);

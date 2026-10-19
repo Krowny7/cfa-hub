@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, CircleCheck, Clapperboard, Feather, Hash, Hexagon, ImageIcon, LayoutPanelTop, LineChart, Radar as IconeRadar, ScrollText, Trophy, Users } from "lucide-react";
+import { BookOpen, Calendar, CalendarClock, CircleCheck, Clapperboard, Clock, ClipboardCheck, Feather, Gauge, Hash, Hexagon, ImageIcon, LayoutPanelTop, LineChart, Medal, Radar as IconeRadar, ScrollText, Swords, Trophy, Users } from "lucide-react";
 import { estCarte, estMedia, type Bloc, type BlocCarte, type BlocMedia, type Format, type GenreBloc } from "@/lib/profil/disposition";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import type { Ctx } from "./blocs/commun";
@@ -14,6 +14,13 @@ import { FolioBloc } from "./blocs/Folio";
 import { JournalBloc } from "./blocs/Journal";
 import { SaisonsBloc } from "./blocs/Saisons";
 import { CarnetBloc } from "./blocs/Carnet";
+import { DuelsBloc } from "./blocs/Duels";
+import { JourJBloc } from "./blocs/JourJ";
+import { PhareBloc } from "./blocs/Phare";
+import { ClassementBloc } from "./blocs/Classement";
+import { ExamensBloc } from "./blocs/Examens";
+import { CodexBloc } from "./blocs/CodexTuile";
+import { RythmeBloc } from "./blocs/Rythme";
 import { AvecImage, CarteBloc, MediaBloc } from "./blocs/Medias";
 import b from "./BlocsProfil.module.css";
 
@@ -42,6 +49,13 @@ export const ICONE_BLOC: Record<GenreBloc, React.ReactNode> = {
   journal: <ScrollText size={15} aria-hidden />,
   saisons: <Hexagon size={15} aria-hidden />,
   carnet: <Calendar size={15} aria-hidden />,
+  duels: <Swords size={15} aria-hidden />,
+  jourj: <CalendarClock size={15} aria-hidden />,
+  phare: <Gauge size={15} aria-hidden />,
+  classement: <Medal size={15} aria-hidden />,
+  examens: <ClipboardCheck size={15} aria-hidden />,
+  codex: <BookOpen size={15} aria-hidden />,
+  rythme: <Clock size={15} aria-hidden />,
   image: <ImageIcon size={15} aria-hidden />,
   gif: <ImageIcon size={15} aria-hidden />,
   video: <Clapperboard size={15} aria-hidden />,
@@ -97,6 +111,20 @@ function contenuModule(bloc: Exclude<Bloc, BlocMedia | BlocCarte>, ctx: Ctx): Re
       return SaisonsBloc(ctx);
     case "carnet":
       return CarnetBloc(ctx);
+    case "duels":
+      return DuelsBloc(ctx);
+    case "jourj":
+      return JourJBloc(ctx);
+    case "phare":
+      return PhareBloc(ctx);
+    case "classement":
+      return ClassementBloc(ctx);
+    case "examens":
+      return ExamensBloc(ctx);
+    case "codex":
+      return CodexBloc(ctx);
+    case "rythme":
+      return RythmeBloc(ctx);
     default:
       return null;
   }

@@ -1,25 +1,27 @@
 // Tests des blocs Chiffres clés, Questions répondues et Trophées de la page
 // de profil (components/profil/blocs/Chiffres.tsx, Reponses.tsx,
 // Trophees.tsx), sans base ni réseau ni navigateur (rendu statique).
-//   npx tsx scripts/profil/test-blocs-chiffres.tsx
-// Chaque bloc à chaque format permis, dans les trois vues : chez un autre
-// avec « toi » (RICHE_TOI), l'aperçu « voir comme les autres » (« toi ± »,
-// « toi – – »), chez soi (ni jeton, ni score, ni couleur). Puis les textes
-// de la spécification : jetons, scores, infobulles, rattrapage, ce qui est
-// retiré, les cas particuliers (trop peu de duels, matière non mesurée,
-// lecture partielle des trophées, case à 0 des deux côtés, état vide).
+//   npx tsx --tsconfig tsconfig.json scripts/profil/test-blocs-chiffres.tsx
+// Ces trois blocs ne comparent plus : chaque bloc à chaque format permis,
+// dans les trois vues (chez un autre avec « toi », l'aperçu « voir comme les
+// autres », chez soi), se rend sans erreur, sans jeton ni score, avec le même
+// dessin partout (seuls les extras de celui dont c'est la page changent). Puis
+// le contenu des maquettes validées : « Une pièce en grand » (chiffres),
+// « Anneau de justesse » (questions), « Médailles » (trophées), et les cas
+// particuliers (trop peu de duels, matière non mesurée, lecture partielle,
+// métal à 0, état vide, résumé absent).
 import "./sans-css";
 import "./react-global";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ChiffresBloc, pieceDe, piecesVues } from "@/components/profil/blocs/Chiffres";
+import { ChiffresBloc, PIECES_DEFAUT, pieceDe, piecesVues, poidsChiffre } from "@/components/profil/blocs/Chiffres";
 import { ReponsesBloc } from "@/components/profil/blocs/Reponses";
 import { TropheesBloc } from "@/components/profil/blocs/Trophees";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import type { VitrineKey } from "@/lib/profil/catalogue";
 import { FORMATS_PERMIS, type Format } from "@/lib/profil/disposition";
 import { compter } from "@/lib/trophees";
-import { nombre } from "@/lib/voice";
+import { nombre, pct } from "@/lib/voice";
 import { RICHE, RICHE_TOI, SOBRE, TOI_EXEMPLE } from "./donnees-blocs-exemple";
 
 let ko = 0;
@@ -30,10 +32,12 @@ const check = (label: string, cond: boolean, extra = "") => {
 /** le rendu, lu comme du texte : sans les séparateurs de nœuds, apostrophes rendues */
 const rend = (n: React.ReactNode) => renderToStaticMarkup(<>{n}</>).replace(/<!-- -->/g, "").replace(/&#x27;/g, "'");
 const compte = (html: string, motif: string) => html.split(motif).length - 1;
-const M = "−"; // le vrai signe moins
+/** les espaces insécables en espaces simples (pour comparer des phrases) */
+const sp = (s: string) => s.replace(/[  ]/g, " ");
+/** le texte seul, les balises retirées, les espaces normalisés */
+const texte = (html: string) => sp(html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
 const N = (n: number) => nombre(n);
-/** un pourcentage du site (pct) : espace insécable avant « % » */
-const P = (n: number | string) => `${n} %`;
+const P = (n: number) => pct(n);
 
 type Bloc = (ctx: { d: DonneesBlocs; f: Format; edition: boolean }) => React.ReactNode;
 const BLOCS: [string, "vitrine" | "reponses" | "trophees", Bloc][] = [
@@ -49,7 +53,8 @@ const VUES: [string, DonneesBlocs][] = [
   ["aperçu", APERCU],
   ["chez soi", MOI],
 ];
-const ECARTS = ["toi " + M, "toi +", "toi =", "toi ±", "toi –"];
+/** plus de comparaison : ni jeton (« toi −… », « toi +… », « toi ± »), ni score (« toi 1 – 2 », « toi – – »), ni double trait */
+const COMPARAISON = /toi\s*[−+±=–]|toi \d+ – \d+|Ici, l'écart|Épais :|barreLui|barreToi|doubleTrait/;
 
 // ── Chaque bloc, chaque format permis, chaque vue ──
 for (const [nom, k, Bloc] of BLOCS) {
@@ -63,113 +68,117 @@ for (const [nom, k, Bloc] of BLOCS) {
         err = String(e);
       }
       check(`${nom} · ${f} · ${vue} : se rend`, !err && html.length > 0, err);
-      if (vue === "chez soi") check(`${nom} · ${f} · chez soi : ni jeton, ni score, ni vert, ni rouge`, ECARTS.every((x) => !html.includes(x)) && !html.includes("var(--gain)") && !html.includes("var(--perte)"));
-      if (vue === "aperçu") check(`${nom} · ${f} · aperçu : « toi ± » et « toi – – », sans chiffre d'écart`, html.includes("toi ±") && html.includes("toi – –") && !html.includes("toi " + M) && html.includes("Ici, l'écart avec la personne qui regarde"));
-      if (vue === "chez un autre") check(`${nom} · ${f} · chez un autre : un jeton et un score colorés`, html.includes("var(--perte)") && /toi \d+ – \d+/.test(html));
+      check(`${nom} · ${f} · ${vue} : aucune comparaison (ni jeton, ni score, ni double trait)`, !COMPARAISON.test(html) && !html.includes("var(--perte)") && !html.includes("var(--gain)"));
       if (f === "demi") check(`${nom} · demi · ${vue} : rendu en demi-bande (cellules)`, html.includes('class="card min-w-0 demi') && html.includes('class="cellule"'));
+      else check(`${nom} · ${f} · ${vue} : rendu en coque, avec son étiquette en tête`, html.startsWith("<section") && html.includes('<h3 class="t-eyebrow') && html.includes(`${f}"`));
     }
   }
 }
 
 // ── Chiffres clés ──
 {
-  const demi = rend(<ChiffresBloc d={AUTRE} f="demi" edition={false} />);
-  const texte = demi.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-  check("chiffres chez un autre : Questions et Série, déjà dans le bandeau, cèdent la place à Duels et Défis du jour", !demi.includes(`>${N(3412)}<`) && !demi.includes(">12 j<") && demi.includes(">Duels") && demi.includes(">Défis du jour<"), texte.slice(0, 300));
+  // les trois pièces de la maquette (« 3 412 questions posées · 12 j de série · 82 % en FSA »), chez soi
+  for (const f of ["tuile", "colonne", "heros", "bande"] as Format[]) {
+    const html = rend(<ChiffresBloc d={MOI} f={f} edition={false} />);
+    check(`chiffres · ${f} : la 1re pièce en grand (« 3 412 », « questions posées »), un trait de pinceau, les deux autres en ligne`, html.includes(`class="t-num tabular-nums grand" style="--w:${poidsChiffre(N(3412))}">${N(3412)}</b>`) && html.includes('class="legende">questions posées<') && html.includes('class="pinceau"') && html.includes('class="trait"'));
+    check(`chiffres · ${f} : « 12 j de série » et « 82 % en FSA » en chiffres gras`, html.includes('<li><b class="val">12 j</b> <span class="leg">de série</span></li>') && html.includes(`<li><b class="val">${P(82)}</b> <span class="leg">en FSA</span></li>`));
+    check(`chiffres · ${f} : le format est posé (classe) et le texte de la maquette y est`, html.includes(` ${f}"`) && texte(html).includes(sp(`${N(3412)} questions posées 12 j de série ${P(82)} en FSA`)));
+  }
+  const tuile = rend(<ChiffresBloc d={MOI} f="tuile" edition={false} />);
+  check("chiffres : le trait de pinceau a l'accent du joueur (#e0674b)", tuile.includes("stroke:#e0674b"));
+  const sobre = rend(<ChiffresBloc d={{ ...SOBRE, showcase: ["questions", "serie", "matiere"] }} f="tuile" edition={false} />);
+  check("chiffres : sans accent (l'encre), le trait est le vermillon du site (--pen)", sobre.includes("stroke:var(--pen)") && !sobre.includes("stroke:var(--ink)"));
+
+  // la relève chez un autre : Questions et Série, déjà dans le bandeau, cèdent la place
   const vues = (c: VitrineKey[], r: boolean) => piecesVues(c, r).join(",");
   check("piecesVues : chez soi, celles choisies ; chez un autre, la relève dans l'ordre du catalogue", vues(["questions", "serie", "matiere"], false) === "questions,serie,matiere" && vues(["questions", "serie", "matiere"], true) === "duels,defis,matiere" && vues(["serie", "duels"], true) === "matiere,duels");
-  check("chiffres : la meilleure matière en étiquette (« En FSA »), le % en chiffre, ton FSA en jeton", demi.includes(">En FSA<") && demi.includes(`>${P(82)}<`) && demi.includes(`toi ${M}12<`));
-  check("chiffres : le score « toi 0 – 3 » et son infobulle", demi.includes("toi 0 – 3") && demi.includes("Tu mènes dans 0, Sforzinda dans 3"));
-  check("pièce Questions : infobulle, puis le rattrapage", (pieceDe("questions", AUTRE).bulle ?? "").startsWith(`Questions · Sforzinda ${N(3412)} · toi ${N(1720)}\nÀ ton rythme : `));
-  check("pièce Série : infobulle avec les records", pieceDe("serie", AUTRE).bulle === "Série · Sforzinda 12 j (record 31 j) · toi 5 j (record 19 j)", pieceDe("serie", AUTRE).bulle);
-  check("chiffres : infobulle de la matière (nom complet)", demi.includes(`Sa meilleure matière : Financial Statement Analysis · Sforzinda ${P(82)} · toi ${P(70)}`));
-  check(
-    "chiffres : retiré chez un autre (« questions posées », « série en cours », « de maîtrise »)",
-    ["questions posées", "série en cours", "de maîtrise", "record 31 j<"].every((x) => !demi.includes(x)),
-  );
-
-  const autres = (showcase: string[], d: DonneesBlocs = AUTRE, f: Format = "demi") => rend(<ChiffresBloc d={{ ...d, showcase: showcase as VitrineKey[] }} f={f} edition={false} />);
-  const dcc = autres(["duels", "defis", "calculs"]);
-  check("chiffres : Duels en taux (67 %) et « toi −20 » ; infobulle « 18 sur 27 »", dcc.includes(`>${P(67)}<`) && dcc.includes(`toi ${M}20<`) && dcc.includes("Duels gagnés · Sforzinda 18 sur 27 · toi 9 sur 19"));
-  check("chiffres : Défis « toi −11 », Calculs « toi +84 », score « toi 1 – 2 »", dcc.includes(`toi ${M}11<`) && dcc.includes("toi +84<") && dcc.includes("toi 1 – 2") && dcc.includes("Calculs justes · Sforzinda 236 · toi 320"));
-  const peu = rend(<ChiffresBloc d={{ ...AUTRE, showcase: ["duels"], stats: { ...AUTRE.stats, duelsGagnes: 4, duelsJoues: 6 } }} f="tuile" edition={false} />);
-  check("chiffres : moins de 10 duels, « 4/6 » sans jeton, « Trop peu de duels pour comparer »", peu.includes(">4/6<") && peu.includes('title="Trop peu de duels pour comparer"') && !peu.includes("toi " + M) && !peu.includes("toi +"));
-  const peuToi = rend(<ChiffresBloc d={{ ...AUTRE, showcase: ["duels"], toi: { ...TOI_EXEMPLE, stats: { ...TOI_EXEMPLE.stats, duelsJoues: 5, duelsGagnes: 2 } } }} f="tuile" edition={false} />);
-  check("chiffres : toi sous 10 duels, son taux sans jeton", peuToi.includes(`>${P(67)}<`) && peuToi.includes("Trop peu de duels pour comparer") && !peuToi.includes("toi " + M));
-  const exam = autres(["examens"]);
-  check("chiffres : la pièce « Examens blancs » (0 face à 2 : « toi +2 »)", exam.includes(">Examens blancs<") && exam.includes("toi +2<") && exam.includes("Examens blancs · Sforzinda 0 · toi 2"));
-  check("chiffres : une seule pièce, pas de score", !exam.includes("toi 0 – ") && !/toi \d+ – \d+/.test(exam));
-  const defaut = autres([]);
-  check("chiffres : vitrine vide, les pièces par défaut (matière, duels, défis)", defaut.includes(">En FSA<") && defaut.includes(">Duels<") && defaut.includes(">Défis du jour<") && !defaut.includes(">Questions<"));
-  const sansFsa = rend(<ChiffresBloc d={{ ...AUTRE, showcase: ["matiere"], toi: { ...TOI_EXEMPLE, stats: { ...TOI_EXEMPLE.stats, matieres: [] } } }} f="tuile" edition={false} />);
-  check("chiffres : ta matière non mesurée, pas de jeton et « toi : pas encore mesuré »", sansFsa.includes('title="toi : pas encore mesuré"') && !sansFsa.includes("toi " + M));
-  const prov = rend(<ChiffresBloc d={{ ...AUTRE, showcase: ["matiere"], stats: { ...AUTRE.stats, matieres: [{ key: "fsa", pct: 81, answered: 30, statut: "provisoire" }] } }} f="tuile" edition={false} />);
-  check("chiffres : maîtrise provisoire, « ≈81 % »", prov.includes(`>≈${P(81)}<`));
-
-  const col = rend(<ChiffresBloc d={AUTRE} f="colonne" edition={false} />);
-  check("chiffres · colonne : 3 étages, double trait (barres), jeton de 16 px", compte(col, 'class="etage"') === 3 && compte(col, "barreLui") === 3 && compte(col, "barreToi") === 3 && col.includes("font-size:16px") && col.includes("Épais : Sforzinda · fin : toi"));
-  const colSans = rend(<ChiffresBloc d={{ ...AUTRE, toi: { ...TOI_EXEMPLE, stats: { ...TOI_EXEMPLE.stats, matieres: [] } } }} f="colonne" edition={false} />);
-  check("chiffres · colonne : pas de double trait pour la matière sans jeton", compte(colSans, "barreLui") === 2);
-  const tuile = rend(<ChiffresBloc d={AUTRE} f="tuile" edition={false} />);
-  check("chiffres · mini-tuile : « Chiffres clés », 3 lignes, score à droite", tuile.includes(">Chiffres clés<") && compte(tuile, 'class="ligne"') === 3 && tuile.includes("toi 0 – 3") && tuile.includes("font-size:26px"));
-  for (const f of ["heros", "bande"] as Format[]) {
-    const html = rend(<ChiffresBloc d={AUTRE} f={f} edition={false} />);
-    check(`chiffres · ${f} : 3 cases (--n:3), chiffre de ${f === "heros" ? 44 : 36} px, score`, html.includes("--n:3") && compte(html, 'class="case"') === 3 && html.includes(`font-size:${f === "heros" ? 44 : 36}px`) && html.includes("toi 0 – 3"));
-  }
-  const bande = rend(<ChiffresBloc d={AUTRE} f="bande" edition={false} />);
-  check("chiffres · bande : le score dans une 4e cellule", bande.includes("avecScore") && bande.includes('class="caseScore"'));
-  const un = rend(<ChiffresBloc d={{ ...RICHE, showcase: ["questions"] }} f="heros" edition={false} />);
-  check("chiffres · héros : 1 pièce, 1 colonne (--n:1)", un.includes("--n:1"));
-
-  const moi = rend(<ChiffresBloc d={{ ...MOI, stats: { ...MOI.stats, duJour: 36 } }} f="demi" edition={false} />);
-  check("chiffres · chez soi : « dont 36 aujourd'hui », « record 31 j », mêmes chiffres", moi.includes("dont 36 aujourd'hui") && moi.includes("record 31 j") && moi.includes(">En FSA<") && moi.includes(`>${N(3412)}<`));
-  const moiDuels = rend(<ChiffresBloc d={{ ...MOI, showcase: ["duels", "matiere"], stats: { ...MOI.stats, matieres: [{ key: "fsa", pct: 81, answered: 30, statut: "provisoire" }] } }} f="tuile" edition={false} />);
-  check("chiffres · chez soi : Duels « 67 % » et « 18 sur 27 » ; « provisoire »", moiDuels.includes(`>${P(67)}<`) && moiDuels.includes(">18 sur 27<") && moiDuels.includes(">provisoire<"));
+  check("PIECES_DEFAUT : matière, duels, défis", PIECES_DEFAUT.join(",") === "matiere,duels,defis");
+  const autre = rend(<ChiffresBloc d={AUTRE} f="heros" edition={false} />);
+  check("chiffres chez un autre : la relève (Duels en grand, puis Défis du jour et FSA), sans « 3 412 » ni série", autre.includes(`grand" style="--w:${poidsChiffre(P(67))}">${P(67)}</b>`) && autre.includes("de victoires en duel") && autre.includes(`<b class="val">${N(41)}</b> <span class="leg">défis rendus</span>`) && autre.includes(`<b class="val">${P(82)}</b> <span class="leg">en FSA</span>`) && !autre.includes(N(3412)) && !autre.includes("de série"));
+  const apercu = rend(<ChiffresBloc d={APERCU} f="heros" edition={false} />);
+  check("chiffres en aperçu : la même relève que chez un autre", apercu.includes(`grand" style="--w:${poidsChiffre(P(67))}">${P(67)}</b>`) && !apercu.includes("de série"));
   const pub = rend(<ChiffresBloc d={RICHE} f="demi" edition={false} />);
-  check("chiffres · visiteur non connecté : ni jeton ni score", ECARTS.every((x) => !pub.includes(x)) && pub.includes(`>${N(3412)}<`));
-  const apercu = rend(<ChiffresBloc d={APERCU} f="demi" edition={false} />);
-  check("chiffres · aperçu : 3 « toi ± » et l'infobulle de l'aperçu", compte(apercu, "toi ±") === 3 && apercu.includes('title="Ici, l\'écart avec la personne qui regarde"'));
+  check("chiffres · visiteur non connecté : ses pièces choisies, sans relève", pub.includes(`>${N(3412)}<`) && pub.includes(">12 j<") && pub.includes(">En FSA<") && !COMPARAISON.test(pub));
+  const demi = rend(<ChiffresBloc d={MOI} f="demi" edition={false} />);
+  check("chiffres · demi : 3 cellules (Questions, Série, En FSA)", compte(demi, 'class="cellule"') === 3 && demi.includes(">Questions<") && demi.includes(">Série<") && demi.includes(">En FSA<") && demi.includes(`>${P(82)}<`));
+
+  // les pièces une à une
+  check("pièce Questions : « 3 412 », « questions posées »", pieceDe("questions", MOI).chiffre === N(3412) && pieceDe("questions", MOI).legende === "questions posées");
+  check("pièce Série : « 12 j », « de série »", pieceDe("serie", MOI).chiffre === "12 j" && pieceDe("serie", MOI).legende === "de série");
+  const duels = pieceDe("duels", MOI);
+  check("pièce Duels : le taux (67 %), « de victoires en duel », « 18 duels gagnés sur 27 » en infobulle", duels.chiffre === P(67) && duels.legende === "de victoires en duel" && duels.titre === "18 duels gagnés sur 27");
+  const peu: DonneesBlocs = { ...MOI, stats: { ...MOI.stats, duelsGagnes: 4, duelsJoues: 6 } };
+  check("pièce Duels : moins de 10 duels, « 4/6 » et « duels gagnés »", pieceDe("duels", peu).chiffre === "4/6" && pieceDe("duels", peu).legende === "duels gagnés");
+  const aucun: DonneesBlocs = { ...MOI, stats: { ...MOI.stats, duelsGagnes: 0, duelsJoues: 0 } };
+  check("pièce Duels : aucun duel, « — »", pieceDe("duels", aucun).chiffre === "—" && pieceDe("duels", aucun).legende === "aucun duel joué");
+  check("pièce Défis, Calculs, Examens : leurs nombres et leurs légendes", pieceDe("defis", MOI).chiffre === "41" && pieceDe("defis", MOI).legende === "défis du jour rendus" && pieceDe("calculs", MOI).chiffre === "236" && pieceDe("calculs", MOI).legende === "calculs justes" && pieceDe("examens", MOI).chiffre === "0" && pieceDe("examens", MOI).legende === "examens blancs");
+  const fsa = pieceDe("matiere", MOI);
+  check("pièce Meilleure matière : « 82 % », « en FSA », étiquette « En FSA »", fsa.chiffre === P(82) && fsa.legende === "en FSA" && fsa.etiquette === "En FSA");
+  const prov: DonneesBlocs = { ...MOI, stats: { ...MOI.stats, matieres: [{ key: "fsa", pct: 81, answered: 30, statut: "provisoire" }] } };
+  check("pièce Meilleure matière : provisoire, « ≈81 % » et « en FSA · provisoire »", pieceDe("matiere", prov).chiffre === `≈${P(81)}` && pieceDe("matiere", prov).legende === "en FSA · provisoire");
+  const nulle: DonneesBlocs = { ...MOI, stats: { ...MOI.stats, matieres: [] } };
+  check("pièce Meilleure matière : non mesurée, « — »", pieceDe("matiere", nulle).chiffre === "—" && pieceDe("matiere", nulle).legende === "meilleure matière, pas encore mesurée");
+  check("pièces : la légende courte des deux pièces en ligne (« de victoires », « défis rendus », « en FSA »)", duels.court === "de victoires" && pieceDe("defis", MOI).court === "défis rendus" && fsa.court === "en FSA" && pieceDe("questions", MOI).court === "questions" && pieceDe("duels", peu).court === "duels gagnés");
+
+  const un = rend(<ChiffresBloc d={{ ...MOI, showcase: ["questions"] }} f="heros" edition={false} />);
+  check("chiffres : une seule pièce, rien à côté", un.includes(`${N(3412)}</b>`) && !un.includes('class="autres"') && !un.includes("<ul"));
+  const defaut = rend(<ChiffresBloc d={{ ...MOI, showcase: [] }} f="demi" edition={false} />);
+  check("chiffres : vitrine vide, les pièces par défaut (matière, duels, défis)", defaut.includes(">En FSA<") && defaut.includes(">Duels<") && defaut.includes(">Défis du jour<") && !defaut.includes(">Questions<"));
+  const dcc = rend(<ChiffresBloc d={{ ...MOI, showcase: ["duels", "defis", "calculs"] }} f="tuile" edition={false} />);
+  check("chiffres : Duels, Défis, Calculs (« 67 % de victoires en duel · 41 défis rendus · 236 calculs justes »)", texte(dcc).includes(sp(`${P(67)} de victoires en duel 41 défis rendus 236 calculs justes`)) && dcc.includes('title="18 duels gagnés sur 27"'));
+  check("chiffres : le poids d'un chiffre (la taille s'en tire en CSS)", poidsChiffre("3 412") === 3.75 && poidsChiffre("82 %") === 2.85 && poidsChiffre("12 j") === 2.28 && poidsChiffre("—") === 0.7);
 }
 
 // ── Questions répondues ──
 {
-  const LIGNES: Record<Format, number> = { tuile: 3, colonne: 10, heros: 5, bande: 10, demi: 4 };
   for (const f of FORMATS_PERMIS.reponses) {
-    const html = rend(<ReponsesBloc d={AUTRE} f={f} edition={false} />);
-    const n = f === "demi" ? compte(html, 'class="cellule"') - 1 : (html.match(/class="ligne[" ]/g) ?? []).length;
-    check(`réponses · ${f} : ${LIGNES[f]} matières`, n === LIGNES[f], String(n));
-    check(`réponses · ${f} : « toi −1 692 » et le score par matière « toi 0 – 10 »`, html.includes(`toi ${M}${N(1692)}`) && html.includes("toi 0 – 10") && html.includes("Tu mènes dans 0, Sforzinda dans 10"));
-    check(`réponses · ${f} : double trait ${f === "colonne" || f === "heros" || f === "bande" ? "présent" : "absent"}`, (compte(html, "barreLui") > 0) === (f === "colonne" || f === "heros" || f === "bande"));
-    check(`réponses · ${f} : « Le détail » ${f === "demi" ? "absent" : "fermé, avec la précision et les sources"}`, f === "demi" ? !html.includes("Le détail") : html.includes("<details") && !html.includes("<details open") && html.includes("64 % justes") && html.includes("Sessions ciblées"));
-    check(`réponses · ${f} : retiré (« réponses, toutes sources »)`, !html.includes("toutes sources"));
+    for (const [vue, d] of VUES) {
+      const html = rend(<ReponsesBloc d={d} f={f} edition={false} />);
+      if (f === "demi") {
+        check(`réponses · demi · ${vue} : Questions, Justes et Précision (un petit anneau)`, compte(html, 'class="cellule"') === 3 && html.includes(`>${N(3412)}<`) && html.includes(`>${N(2184)}<`) && html.includes(`${P(64)}</span>`) && html.includes('class="anneau mini"') && html.includes("--p:64"));
+        continue;
+      }
+      check(`réponses · ${f} · ${vue} : l'anneau jusqu'à 64 % (« 64 % » au centre), le total « 3 412 », « 2 184 justes »`, html.includes('aria-label="64 % de réponses justes"') && html.includes("--p:64") && html.includes(`centre" style="--wp:${poidsChiffre(P(64))}">${P(64)}</b>`) && html.includes(`grand" style="--w:${poidsChiffre(N(3412))}">${N(3412)}</b>`) && html.includes(`<b>${N(2184)}</b> justes`) && html.includes("<span>questions</span>"));
+      const sources = compte(html, 'class="nom"');
+      check(`réponses · ${f} · ${vue} : ${f === "tuile" ? "pas de sources" : "ses 5 sources (nom, nombre)"}`, f === "tuile" ? sources === 0 && !html.includes("<ul") : sources === 5 && html.includes(`<span class="nom">Défi du jour</span><span class="guide" aria-hidden="true"></span><span class="nb">${N(1240)}</span>`) && html.includes('<span class="nom">Examens blancs</span>'));
+      check(`réponses · ${f} · ${vue} : ni repli « Le détail », ni pourcentage par source`, !html.includes("<details") && !html.includes("toutes sources") && !html.includes(" · 72 %"));
+    }
   }
-  const tuile = rend(<ReponsesBloc d={AUTRE} f="tuile" edition={false} />);
-  check("réponses · tuile : les plus grands écarts (FSA −705, EQ −351, ETH −292)", tuile.includes(">FSA<") && tuile.includes(`${M}705<`) && tuile.includes(">EQ<") && tuile.includes(`${M}351<`) && tuile.includes(">ETH<") && !tuile.includes(">QM<"));
-  check("réponses · tuile : l'étiquette « Questions », le rattrapage en infobulle", tuile.includes(">Questions<") && tuile.includes("\nÀ ton rythme : "));
-  check("réponses : infobulle d'une matière", tuile.includes("Questions en FSA · Sforzinda 905 · toi 200"));
-  check("réponses · tuile : le repère « % justes » n'est plus visible (dans le repli seulement)", tuile.indexOf("64 % justes") > tuile.indexOf("<details"));
-  const col = rend(<ReponsesBloc d={AUTRE} f="colonne" edition={false} />);
-  check("réponses · colonne : triées par son volume (FSA, puis ETH)", col.indexOf(">FSA<") < col.indexOf(">ETH<") && col.indexOf(">ETH<") < col.indexOf(">QM<") && col.indexOf(">QM<") < col.indexOf(">ALT<"));
-  const demi = rend(<ReponsesBloc d={AUTRE} f="demi" edition={false} />);
-  check("réponses · demi : « Questions / 3 412 / toi −1 692 » puis « FSA / 905 / −705 »", demi.includes(">Questions<") && demi.includes(`>${N(905)}<`) && demi.includes(`${M}705<`));
-  const sansResume = rend(<ReponsesBloc d={{ ...AUTRE, reponses: null }} f="tuile" edition={false} />);
-  check("réponses : sans résumé (pas de client admin), le bloc reste, sans repli", sansResume.includes(`toi ${M}${N(1692)}`) && !sansResume.includes("<details"));
-  const pub = rend(<ReponsesBloc d={RICHE} f="tuile" edition={false} />);
-  check("réponses · visiteur non connecté : ses plus gros volumes, ni jeton ni score", pub.includes(">FSA<") && pub.includes(">ETH<") && pub.includes(">QM<") && ECARTS.every((x) => !pub.includes(x)));
-
-  const moiT = rend(<ReponsesBloc d={MOI} f="tuile" edition={false} />);
-  const moiH = rend(<ReponsesBloc d={MOI} f="heros" edition={false} />);
-  check("réponses · chez soi : 3 sources en mini-tuile, 5 en héros", compte(moiT, "grid-template-columns:112px") === 3 && compte(moiH, "grid-template-columns:112px") === 5);
-  check("réponses · chez soi : « 64 % justes » visible, « Le détail par matière »", moiT.includes(">64 % justes<") && moiT.includes("/moi?onglet=stats") && moiT.includes("Le détail par matière") && !moiT.includes("<details"));
-  check("réponses · chez soi : la précision de chaque source (« 72 % »)", moiH.includes(" · 72 %"));
+  // le même dessin chez un autre, en aperçu et chez un visiteur non connecté
+  for (const f of FORMATS_PERMIS.reponses) {
+    const a = rend(<ReponsesBloc d={AUTRE} f={f} edition={false} />);
+    check(`réponses · ${f} : le même rendu chez un autre, en aperçu et pour un visiteur non connecté`, a === rend(<ReponsesBloc d={APERCU} f={f} edition={false} />) && a === rend(<ReponsesBloc d={RICHE} f={f} edition={false} />));
+    check(`réponses · ${f} : chez un autre, pas de lien vers le détail par matière`, !a.includes("/moi?onglet=stats"));
+  }
+  // l'extra de celui dont c'est la page : le lien vers le détail par matière
+  for (const f of ["tuile", "colonne", "heros", "bande"] as Format[]) {
+    const autre = rend(<ReponsesBloc d={AUTRE} f={f} edition={false} />);
+    const moi = rend(<ReponsesBloc d={MOI} f={f} edition={false} />);
+    const sans = moi.replace(/<div class="mt-auto[^"]*"><a [^>]*>Le détail par matière.*?<\/a><\/div>/, "");
+    check(`réponses · ${f} · chez soi : « Le détail par matière » (vers Moi › Statistiques), le reste identique`, moi.includes("/moi?onglet=stats") && moi.includes("Le détail par matière") && sans === autre);
+  }
   const moiD = rend(<ReponsesBloc d={MOI} f="demi" edition={false} />);
-  check("réponses · chez soi, demi : Questions + 3 sources, puis « Le détail »", compte(moiD, 'class="cellule"') === 4 && moiD.includes(">Défi du jour<") && moiD.includes("/moi?onglet=stats") && moiD.includes("Le détail"));
+  check("réponses · chez soi, demi : le lien « Le détail » à droite", moiD.includes("/moi?onglet=stats") && moiD.includes("Le détail"));
+  check("réponses · demi chez un autre : pas de lien", !rend(<ReponsesBloc d={AUTRE} f="demi" edition={false} />).includes("/moi?onglet=stats"));
+
+  // sans résumé (pas de client admin) : le total seul, sans anneau ni sources
+  for (const f of FORMATS_PERMIS.reponses) {
+    const html = rend(<ReponsesBloc d={SOBRE} f={f} edition={false} />);
+    check(`réponses · ${f} : SOBRE (286 questions, sans résumé), le total seul`, html.includes(">286<") && !html.includes("anneau") && !html.includes('class="nom"') && !html.includes("justes"));
+  }
+  check("réponses : sans résumé, le bloc garde son étiquette et sa classe « seul »", rend(<ReponsesBloc d={SOBRE} f="tuile" edition={false} />).includes("scene seul"));
   const incomplet = rend(<ReponsesBloc d={{ ...MOI, reponses: { ...MOI.reponses!, incomplet: true } }} f="tuile" edition={false} />);
   check("réponses · une source illisible le dit", incomplet.includes("Au moins : certaines sources"));
+  check("réponses · rien de tel quand tout se lit", !rend(<ReponsesBloc d={MOI} f="tuile" edition={false} />).includes("Au moins"));
+  const zero: DonneesBlocs = { ...MOI, reponses: { ...MOI.reponses!, precision: 0, justes: 0 } };
+  check("réponses : 0 % de justesse, une piste vide (pas d'arc, donc pas de point)", !rend(<ReponsesBloc d={zero} f="tuile" edition={false} />).includes('class="rempli"') && rend(<ReponsesBloc d={zero} f="tuile" edition={false} />).includes("<b>0</b> juste<"));
+  const cent: DonneesBlocs = { ...MOI, reponses: { ...MOI.reponses!, precision: 100, justes: 3412 } };
+  check("réponses : 100 % de justesse, l'arc plein", rend(<ReponsesBloc d={cent} f="tuile" edition={false} />).includes("--p:100") && rend(<ReponsesBloc d={cent} f="tuile" edition={false} />).includes(`${P(100)}</b>`));
+  const un: DonneesBlocs = { ...MOI, reponses: { ...MOI.reponses!, precision: 100, justes: 1 } };
+  check("réponses : « 1 juste » au singulier", rend(<ReponsesBloc d={un} f="tuile" edition={false} />).includes("<b>1</b> juste<"));
   const vide: DonneesBlocs = { ...SOBRE, stats: { ...SOBRE.stats, questions: 0 } };
   check("réponses : aucune question, rien en vue publique", rend(<ReponsesBloc d={vide} f="tuile" edition={false} />) === "");
   check("réponses : aucune question, l'état vide dans Personnaliser", rend(<ReponsesBloc d={vide} f="tuile" edition />).includes("rien à montrer"));
-  check("réponses : SOBRE (286 questions, sans résumé) se rend", rend(<ReponsesBloc d={SOBRE} f="heros" edition={false} />).includes(">286<"));
 }
 
 // ── Trophées ──
@@ -177,34 +186,40 @@ for (const [nom, k, Bloc] of BLOCS) {
   const total = compter(RICHE.trophees!.lignes).total;
   check("trophées : l'exemple compte 22 trophées", total === 22);
   for (const f of FORMATS_PERMIS.trophees) {
-    const html = rend(<TropheesBloc d={AUTRE} f={f} edition={false} />);
-    check(`trophées · ${f} : « 22 », « toi −12 », « toi 0 – 4 »`, html.includes(">22<") && html.includes(`toi ${M}12<`) && html.includes("toi 0 – 4"));
-    // le nom du métal : en infobulle partout ; écrit sous le nombre en héros et en bande (cases hautes)
-    const nomVisible = f === "heros" || f === "bande";
-    check(`trophées · ${f} : les métaux en infobulle (« Or · Sforzinda 2 · toi 1 »), ${nomVisible ? "leur nom écrit dessous" : "sans leur nom visible"}`, html.includes('title="Or · Sforzinda 2 · toi 1"') && html.includes(">Or<") === nomVisible && html.includes(">Diamant<") === nomVisible);
-    check(`trophées · ${f} : un métal gagné en médaille, à ses couleurs`, html.includes("medaille") && html.includes("--m2:#E2B13B"));
-    check(`trophées · ${f} : 4 jetons courts (−1, −1, −4, −6)`, [`${M}1<`, `${M}4<`, `${M}6<`].every((x) => html.includes(x)) && compte(html, `>${M}1<`) === 2);
-    const parSource = f === "colonne" || f === "bande";
-    check(`trophées · ${f} : « Par source » ${parSource ? "présent" : "absent"}`, html.includes("Par source") === parSource);
+    for (const [vue, d] of VUES) {
+      const html = rend(<TropheesBloc d={d} f={f} edition={false} />);
+      if (f === "demi") {
+        check(`trophées · demi · ${vue} : 5 cellules (Trophées 22, puis les 4 métaux nommés, chacun avec sa médaille)`, compte(html, 'class="cellule"') === 5 && html.includes(`>${N(22)}<`) && ["Diamant", "Or", "Argent", "Bronze"].every((m) => html.includes(`>${m}<`)) && compte(html, "medaille gagne") === 4 && html.indexOf(">Diamant<") < html.indexOf(">Bronze<"));
+        continue;
+      }
+      check(`trophées · ${f} · ${vue} : le total « 22 », les 4 cartes dans l'ordre Diamant, Or, Argent, Bronze (1, 2, 7, 12)`, html.includes(`total">${N(22)}</b>`) && compte(html, 'class="card-soft case') === 4 && html.indexOf(">Diamant<") < html.indexOf(">Or<") && html.indexOf(">Or<") < html.indexOf(">Argent<") && html.indexOf(">Argent<") < html.indexOf(">Bronze<") && ["1", "2", "7", "12"].every((n) => html.includes(`nombre">${n}</span>`)));
+      check(`trophées · ${f} · ${vue} : les médailles gagnées aux couleurs du métal (Or --m2:#E2B13B), avec l'éclat, et les cartes teintées`, compte(html, "medaille gagne") === 4 && html.includes("--m2:#E2B13B") && html.includes("--m2:#AFC0F5") && compte(html, "carteMetal") === 4);
+      check(`trophées · ${f} · ${vue} : le nom du métal en infobulle (« Or · Sforzinda 2 »)`, html.includes('title="Or · Sforzinda 2"') && html.includes('title="Diamant · Sforzinda 1"'));
+      const parSource = f === "colonne" || f === "bande";
+      check(`trophées · ${f} · ${vue} : « Par source » ${parSource ? "présent" : "absent"}`, html.includes("Par source") === parSource);
+    }
+    // le même dessin chez un autre, en aperçu, chez un visiteur non connecté et chez soi
+    const a = rend(<TropheesBloc d={AUTRE} f={f} edition={false} />);
+    check(`trophées · ${f} : le même rendu chez un autre, en aperçu, chez un visiteur non connecté et chez soi`, a === rend(<TropheesBloc d={APERCU} f={f} edition={false} />) && a === rend(<TropheesBloc d={RICHE} f={f} edition={false} />) && a === rend(<TropheesBloc d={MOI} f={f} edition={false} />));
   }
   const incomplet = rend(<TropheesBloc d={{ ...AUTRE, toi: { ...TOI_EXEMPLE, trophees: { ...TOI_EXEMPLE.trophees!, complet: false } } }} f="tuile" edition={false} />);
-  check("trophées : lecture partielle, ni jeton ni score, « Comparaison incomplète »", incomplet.includes('title="Comparaison incomplète"') && ECARTS.every((x) => !incomplet.includes(x)) && !/>[−+]\d+</.test(incomplet));
+  check("trophées : plus de « Comparaison incomplète »", !incomplet.includes("Comparaison incomplète") && !COMPARAISON.test(incomplet));
   const sansDiamant: DonneesBlocs = { ...AUTRE, trophees: { lignes: RICHE.trophees!.lignes.filter((l) => l.palier !== 4), complet: true } };
   const zero = rend(<TropheesBloc d={sansDiamant} f="heros" edition={false} />);
-  check("trophées : une case à 0 des deux côtés, estompée et sans jeton (hors du score)", zero.includes("tenue") && zero.includes('title="Diamant · Sforzinda 0 · toi 0"') && zero.includes("toi 0 – 3") && !zero.includes("égalité"));
-  const demi = rend(<TropheesBloc d={AUTRE} f="demi" edition={false} />);
-  check("trophées · demi : 5 cellules (Trophées, puis 4 métaux en dessins de 32 px)", compte(demi, 'class="cellule"') === 5 && compte(demi, "h-8 w-8") === 4);
-  const pub = rend(<TropheesBloc d={RICHE} f="tuile" edition={false} />);
-  check("trophées · visiteur non connecté : « Or · Sforzinda 2 », ni jeton ni score", pub.includes('title="Or · Sforzinda 2"') && ECARTS.every((x) => !pub.includes(x)));
-  const apercuPartiel = rend(<TropheesBloc d={{ ...APERCU, trophees: { ...RICHE.trophees!, complet: false } }} f="tuile" edition={false} />);
-  check("trophées · aperçu, sa lecture partielle : ni « toi ± » ni score", !apercuPartiel.includes("toi ±") && !apercuPartiel.includes("toi – –"));
+  check("trophées : un métal à 0, estompé, médaille au trait et grise, sans teinte", zero.includes("case tenue") && zero.includes("medaille vide") && compte(zero, "medaille gagne") === 3 && compte(zero, "carteMetal") === 3 && zero.includes('title="Diamant · Sforzinda 0"'));
+  const demiZero = rend(<TropheesBloc d={sansDiamant} f="demi" edition={false} />);
+  check("trophées · demi : un métal à 0, estompé", demiZero.includes("metalDemi tenue") && compte(demiZero, "medaille gagne") === 3);
+  const partiel = rend(<TropheesBloc d={{ ...APERCU, trophees: { ...RICHE.trophees!, complet: false } }} f="tuile" edition={false} />);
+  check("trophées · lecture partielle (aperçu) : les cartes se montrent, sans comparaison", compte(partiel, 'class="card-soft case') === 4 && !COMPARAISON.test(partiel));
 
-  const moi = rend(<TropheesBloc d={MOI} f="tuile" edition={false} />);
-  check("trophées · chez soi : le total en repère, les 4 cases nommées, « Par source »", moi.includes(">22<") && moi.includes(">Diamant<") && moi.indexOf(">Diamant<") < moi.indexOf(">Bronze<") && compte(moi, "card-soft") === 4 && moi.includes("Par source"));
-  const moiZero = rend(<TropheesBloc d={{ ...MOI, trophees: { lignes: [], complet: true } }} f="tuile" edition={false} />);
-  check("trophées · chez soi, aucun : la phrase d'amorce", moiZero.includes("Aucun trophée pour l'instant : 5/5"));
-  const moiD = rend(<TropheesBloc d={MOI} f="demi" edition={false} />);
-  check("trophées · chez soi, demi : « Trophées / 22 » puis 4 cellules nommées", compte(moiD, 'class="cellule"') === 5 && moiD.includes(">Diamant<") && moiD.includes(">Bronze<"));
+  // chez soi, rien gagné : la phrase d'amorce ; chez un autre, les cartes à zéro
+  const rien = { lignes: [], complet: true };
+  const moiZero = rend(<TropheesBloc d={{ ...MOI, trophees: rien }} f="tuile" edition={false} />);
+  check("trophées · chez soi, aucun : la phrase d'amorce, sans cartes", moiZero.includes("Aucun trophée pour l'instant : 5/5") && !moiZero.includes("card-soft"));
+  const moiRepli = rend(<TropheesBloc d={{ ...MOI, trophees: { lignes: [], complet: false } }} f="tuile" edition={false} />);
+  check("trophées · chez soi, aucun, lecture partielle : la phrase de l'entraînement ciblé", moiRepli.includes("réussis une séance d'entraînement ciblé à 70 %"));
+  const autreZero = rend(<TropheesBloc d={{ ...AUTRE, trophees: rien }} f="tuile" edition={false} />);
+  check("trophées · chez un autre, aucun : 4 cartes estompées, pas de phrase", compte(autreZero, "case tenue") === 4 && !autreZero.includes("Aucun trophée"));
   const nul: DonneesBlocs = { ...SOBRE, trophees: null };
   check("trophées : sans lecture, rien en vue publique", rend(<TropheesBloc d={nul} f="tuile" edition={false} />) === "");
   check("trophées : sans lecture, l'état vide dans Personnaliser (demi aussi)", rend(<TropheesBloc d={nul} f="tuile" edition />).includes("rien à montrer") && rend(<TropheesBloc d={nul} f="demi" edition />).includes("rien pour l'instant"));

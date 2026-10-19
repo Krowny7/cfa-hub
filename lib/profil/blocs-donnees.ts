@@ -53,6 +53,63 @@ export type ExtraitCarnet = {
   seuil: number | null;
 };
 
+// ── Les sept tuiles de plus : Duels, Jour J, Matière phare, Classement, Examens blancs, Codex, Rythme ──
+// Lues par le serveur seulement si la tuile est posée (lib/profil/tuiles-neuves.ts) ; le jour J, les examens, le
+// rythme et la suite des 5 derniers duels suivent la visibilité du Journal (absents si le Journal est fermé).
+// Aucun horodatage n'arrive au client : le serveur calcule la matrice du rythme.
+
+/** L'issue d'un duel pour le joueur : victoire, défaite ou nul. */
+export type IssueDuel = "V" | "D" | "N";
+
+/** Le jour J : les jours qui restent (0 : c'est aujourd'hui), la date (AAAA-MM-JJ) et la part du programme couverte (%) ; null : non mesurée. */
+export type ExtraitJourJ = { jours: number; date: string; couverture: number | null };
+
+/**
+ * Sa place au classement, son ELO, son palier (index dans TIERS, division), où il en est dans ce palier (0–100),
+ * le palier suivant et les points d'ELO qui l'en séparent (null au sommet), et la variation de son ELO sur
+ * 7 jours (0 : rien à dire).
+ */
+export type ExtraitClassement = {
+  place: number;
+  joueurs: number | null;
+  elo: number;
+  palier: number;
+  division: string | null;
+  progress: number;
+  suivant: string | null;
+  points: number | null;
+  variation: number;
+};
+
+/** Ses examens blancs, du plus ancien au plus récent (10 au plus) ; `n` : combien il en a rendu (les 20 derniers lus). */
+export type ExtraitExamens = { scores: { pct: number; titre: string | null }[]; n: number };
+
+/** Une étape du fil principal du Codex : le prologue ou un acte, fait, en cours ou à venir. */
+export type EtapeCodex = { marque: string; titre: string; etat: "fait" | "cours" | "avenir" };
+/** Où il en est au Codex : le fil, l'acte en cours (null : le fil est achevé) et la quête en cours avec sa récompense. */
+export type ExtraitCodex = {
+  fil: EtapeCodex[];
+  acte: { numero: number; total: number } | null;
+  quete: { titre: string; recompense: string } | null;
+};
+
+export type MomentJournee = "matin" | "midi" | "apres-midi" | "soir" | "nuit";
+/** Ses heures de révision : 7 jours (lundi → dimanche) × 24 heures (Paris), le nombre de réponses, sur 60 jours ; l'heure forte et le moment. */
+export type ExtraitRythme = { grille: number[][]; pic: number; moment: MomentJournee; total: number };
+
+/**
+ * La matière phare : la plus haute maîtrise mesurée (la règle de la pièce « matière » des chiffres clés :
+ * un pourcentage et 10 réponses au moins) ; à égalité, la plus travaillée. null : aucune.
+ */
+export function matierePhare(matieres: ProfilStats["matieres"]): { key: string; pct: number } | null {
+  const mesurees = matieres.filter((m) => m.pct !== null && m.answered >= 10);
+  const mieux = [...mesurees].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0) || b.answered - a.answered)[0];
+  return mieux ? { key: mieux.key, pct: mieux.pct as number } : null;
+}
+
+/** Les réponses de chaque heure (0–23), tous jours confondus, d'après la grille du rythme. */
+export const parHeure = (grille: number[][]): number[] => Array.from({ length: 24 }, (_, h) => grille.reduce((t, ligne) => t + (ligne[h] ?? 0), 0));
+
 /** Un ami dans un bloc : son ELO (le cercle), et s'il est aussi ton ami. */
 export type AmiBloc = AmiLite & { elo?: number; commun?: boolean };
 
@@ -126,6 +183,18 @@ export type DonneesBlocs = {
   visibiliteJournal: Visibilite;
   /** le carnet de jours (suit la visibilité du Journal) ; null : non lu, ou Journal fermé */
   carnet?: ExtraitCarnet | null;
+  /** ses 5 derniers duels, du plus ancien au plus récent (suit le Journal) ; null ou absent : masqués (Journal fermé) ou non lus */
+  formeDuels?: IssueDuel[] | null;
+  /** le compte à rebours de l'examen (suit le Journal) ; null ou absent : pas de date, examen passé, Journal fermé ou non lu */
+  jourJ?: ExtraitJourJ | null;
+  /** sa place au classement (public) ; null ou absent : pas classé ou non lu */
+  classement?: ExtraitClassement | null;
+  /** ses examens blancs (suit le Journal) */
+  examens?: ExtraitExamens | null;
+  /** où il en est au Codex (public) */
+  codex?: ExtraitCodex | null;
+  /** ses heures de révision (suit le Journal) ; null ou absent : pas assez de réponses, Journal fermé ou non lu */
+  rythme?: ExtraitRythme | null;
   /** celui qui regarde, chez un autre et connecté ; null ou absent sinon (chez soi, aperçu) */
   toi?: DonneesVisiteur | null;
 };
@@ -160,6 +229,21 @@ export function aDuContenu(b: Bloc, d: DonneesBlocs): boolean {
     case "carnet":
       // Journal fermé : la série et le record, déjà publics, restent
       return !!d.carnet || d.stats.meilleureSerie > 0;
+    case "duels":
+      // les totaux sont publics ; la suite des 5 derniers vient en plus si le Journal s'ouvre
+      return d.stats.duelsJoues > 0;
+    case "jourj":
+      return !!d.jourJ;
+    case "phare":
+      return matierePhare(d.stats.matieres) !== null;
+    case "classement":
+      return !!d.classement;
+    case "examens":
+      return !!d.examens && d.examens.scores.length > 0;
+    case "codex":
+      return !!d.codex;
+    case "rythme":
+      return !!d.rythme;
     case "carte":
       return !!(b.titre || b.texte || b.img);
   }

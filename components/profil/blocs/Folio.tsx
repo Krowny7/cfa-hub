@@ -1,22 +1,24 @@
 import { Feather } from "lucide-react";
 import { CarteFolio, type DonneesFolio } from "@/components/profil/Folio";
-import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
+import { TIERS } from "@/lib/ranks";
 import type { Format } from "@/lib/profil/disposition";
 import { BLOCS_PROFIL as T } from "@/lib/voice-blocs";
 import { BLOCS_RADAR as R } from "@/lib/voice-blocs-radar";
 import { Cellule, Coque, DemiBande, Detail, Etiquette, type Ctx } from "./commun";
 import fl from "./folio.module.css";
 
-// Le bloc « Folio » (spec § 7) : la planche portée, son nom, son œuvre.
-// Chez un autre : sans le surtitre « Planche portée » ; l'anecdote passe
-// en infobulle de la planche (mini-tuile) ou dans le repli « L'histoire »
-// (colonne), et reste sur 2 lignes en héros. Le badge « à toi aussi / pas
-// à toi » (`toi.folio`, lu au serveur si le bloc est posé), avec pour
-// infobulle la manière de l'obtenir ; sans la donnée, pas de badge. Chez
-// soi : comme avant ; en demi-bande, la
-// vignette, le nom, l'œuvre et la 1re ligne de l'anecdote. Sans état.
+// Le bloc « Folio » (spec des tuiles : « Au musée »). Le même dessin chez
+// soi et chez un autre : la planche portée dans un cadre (un passe-partout
+// clair, un filet doré, une ombre douce), et à côté son cartel : le nom en
+// gras, l'œuvre, « Léonard de Vinci ». L'anecdote passe en infobulle de la
+// mini-tuile, dans le repli « L'histoire » de la colonne, sous le cartel en
+// héros. Plus de badge « à toi aussi ». Sans état.
 
 const icone = <Feather size={17} aria-hidden />;
+
+/** Le filet doré du cadre : les couleurs du métal du palier Or (lib/ranks). */
+const [OR1, OR2, OR3] = TIERS[2].metal;
+const styleOr = { ["--m1" as string]: OR1, ["--m2" as string]: OR2, ["--m3" as string]: OR3 } as React.CSSProperties;
 
 export function FolioBloc({ d, f, edition }: Ctx): React.ReactNode {
   const fo = d.folio;
@@ -39,68 +41,60 @@ export function FolioBloc({ d, f, edition }: Ctx): React.ReactNode {
       </Coque>
     );
   }
-  if (f === "demi") return folioDemi(fo, d);
-  return d.moi ? folioChezSoi(fo, f) : folioChezUnAutre(fo, f, d);
+  return folioDe(fo, f);
 }
 
-/** Le badge chez un autre : le folio qu'il porte est-il aussi à toi ? Sans la donnée (aperçu, lecture ratée) : rien. */
-function Badge({ fo, d }: { fo: DonneesFolio; d: DonneesBlocs }) {
-  const aussi = d.moi ? null : d.toi?.folio;
-  if (typeof aussi !== "boolean") return null;
+/** La planche encadrée : le filet doré, le passe-partout clair, la planche (toujours en papier clair, de jour comme de nuit). */
+function Cadre({ fo, className = "" }: { fo: DonneesFolio; className?: string }) {
   return (
-    <span className={fl.badge} style={{ color: aussi ? "var(--ink-2)" : "var(--perte)" }} title={fo.obtention}>
-      {aussi ? R.aToiAussi : R.pasAToi}
+    <span className={fl.cadre + " " + className} style={styleOr} aria-hidden>
+      <span className={fl.passe}>
+        <CarteFolio f={fo} />
+      </span>
     </span>
   );
 }
 
-/** La demi-bande : la vignette (66 × 88), le nom et l'œuvre sur une ligne ; chez soi, la 1re ligne de l'anecdote dessous. */
-function folioDemi(fo: DonneesFolio, d: DonneesBlocs): React.ReactNode {
-  const moi = d.moi;
+/** Le cartel : le nom en gras, l'œuvre en italique, puis l'auteur sous un filet. */
+function Cartel({ fo, grand = false }: { fo: DonneesFolio; grand?: boolean }) {
   return (
-    <DemiBande label={T.folio} className={fl.demiFolio}>
-      <div className={fl.demiLigne}>
-        <span className={fl.vignette + " " + fl.folioNuit} title={moi ? undefined : fo.anecdote.filter(Boolean).join(" ")}>
-          <CarteFolio f={fo} />
-        </span>
-        <span className={fl.demiTexte}>
-          <span className={fl.nomOeuvre}>
-            <span className={fl.nom}>{fo.nom}</span>
-            {fo.nom !== fo.oeuvre && <span className={fl.oeuvre}>{fo.oeuvre}</span>}
-          </span>
-          <Badge fo={fo} d={d} />
-          {moi && fo.anecdote[0] && (
-            <span className={fl.uneLigne} title={fo.anecdote.filter(Boolean).join(" ")}>
-              {fo.anecdote[0]}
-            </span>
-          )}
-        </span>
-      </div>
-    </DemiBande>
+    <figcaption className={fl.cartel}>
+      <span className={grand ? fl.nomGrand : fl.nom}>{fo.nom}</span>
+      {fo.nom !== fo.oeuvre && <span className={fl.oeuvre}>{fo.oeuvre}</span>}
+      <span className={fl.auteur}>{R.auteur}</span>
+    </figcaption>
   );
 }
 
-// ── Chez un autre ─────────────────────────────────────────────────────────
-
-function folioChezUnAutre(fo: DonneesFolio, f: Format, d: DonneesBlocs): React.ReactNode {
+function folioDe(fo: DonneesFolio, f: Format): React.ReactNode {
   const histoire = fo.anecdote.filter(Boolean);
-  const oeuvre = (
-    <>
-      {fo.nom !== fo.oeuvre && <span className="t-small m-0 italic">{fo.oeuvre}</span>}
-      <Badge fo={fo} d={d} />
-    </>
-  );
+
+  // demi-bande : la vignette encadrée, le nom, l'œuvre et l'auteur sur une ligne
+  if (f === "demi")
+    return (
+      <DemiBande label={T.folio} className={fl.demiFolio}>
+        <figure className={fl.demiLigne} title={histoire.join(" ") || undefined}>
+          <Cadre fo={fo} className={fl.vignette} />
+          <figcaption className={fl.demiTexte}>
+            <span className={fl.nomOeuvre}>
+              <span className={fl.nom}>{fo.nom}</span>
+              {fo.nom !== fo.oeuvre && <span className={fl.oeuvre}>{fo.oeuvre}</span>}
+            </span>
+            <span className={fl.auteurLigne}>{R.auteur}</span>
+          </figcaption>
+        </figure>
+      </DemiBande>
+    );
+
+  // colonne : le cadre centré, le cartel dessous, l'histoire en repli
   if (f === "colonne")
     return (
       <Coque f={f} label={T.folio}>
         <Etiquette f={f} icone={icone} titre={T.folio} />
-        <span className={"block " + fl.folioNuit}>
-          <CarteFolio f={fo} />
-        </span>
-        <p className="m-0 flex min-w-0 flex-col gap-1">
-          <span className="text-[18px] font-bold leading-snug tracking-[-0.01em]">{fo.nom}</span>
-          {oeuvre}
-        </p>
+        <figure className={fl.colonne}>
+          <Cadre fo={fo} className={fl.cadreColonne} />
+          <Cartel fo={fo} />
+        </figure>
         {histoire.length > 0 && (
           <div className="mt-auto">
             <Detail libelle={R.histoire}>
@@ -114,67 +108,40 @@ function folioChezUnAutre(fo: DonneesFolio, f: Format, d: DonneesBlocs): React.R
         )}
       </Coque>
     );
+
+  // héros : le cadre à gauche, le cartel et l'anecdote à droite ; l'un sur l'autre si la place manque
   if (f === "heros" || f === "bande")
     return (
       <Coque f={f} label={T.folio}>
         <Etiquette f={f} icone={icone} titre={T.folio} />
-        <figure className={"m-0 grid items-start gap-4 " + fl.deux}>
-          <span className={"block " + fl.folioNuit}>
-            <CarteFolio f={fo} className="mx-auto max-w-[220px]" />
-          </span>
-          <figcaption className="flex min-w-0 flex-col gap-1.5">
-            <span className={fl.nomHeros}>{fo.nom}</span>
-            {oeuvre}
-            {histoire.map((l) => (
-              <span key={l} className="t-small m-0 block">
-                {l}
-              </span>
-            ))}
-          </figcaption>
-        </figure>
+        <div className={fl.zone}>
+          <figure className={fl.heros}>
+            <Cadre fo={fo} className={fl.cadreHeros} />
+            <div className={fl.texte}>
+              <Cartel fo={fo} grand />
+              {histoire.length > 0 && (
+                <div className={fl.histoire}>
+                  {histoire.map((l) => (
+                    <p key={l} className="t-small m-0">
+                      {l}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </figure>
+        </div>
       </Coque>
     );
-  // mini-tuile : la planche (110 px) à gauche, le nom à droite ; l'anecdote en infobulle de la planche
+
+  // mini-tuile : le cadre à gauche, le cartel à droite ; l'anecdote en infobulle
   return (
     <Coque f={f} label={T.folio}>
       <Etiquette f={f} icone={icone} titre={T.folio} />
-      <figure className="m-0 grid items-start gap-4" style={{ gridTemplateColumns: "110px minmax(0,1fr)" }}>
-        <span className={"block " + fl.folioNuit} title={histoire.join(" ") || undefined}>
-          <CarteFolio f={fo} />
-        </span>
-        <figcaption className="flex min-w-0 flex-col gap-1.5">
-          <span className="m-0 text-[18px] font-bold leading-snug tracking-[-0.01em]">{fo.nom}</span>
-          {oeuvre}
-        </figcaption>
+      <figure className={fl.tuile} title={histoire.join(" ") || undefined}>
+        <Cadre fo={fo} />
+        <Cartel fo={fo} />
       </figure>
-    </Coque>
-  );
-}
-
-// ── Chez soi : comme avant (l'ancien FolioBloc de BlocsProfil.tsx) ──────────
-
-function folioChezSoi(fo: DonneesFolio, fmt: Format): React.ReactNode {
-  // la colonne prend la forme de la tuile, comme avant
-  const f: Format = fmt === "colonne" ? "tuile" : fmt;
-  const [premiere, seconde] = fo.anecdote;
-  return (
-    <Coque f={f} label={T.folio}>
-      <Etiquette f={f} icone={icone} titre={T.folio} sur={T.planche} />
-      <figure className={"m-0 grid items-start gap-4 " + (f === "tuile" ? "" : fl.deux)} style={f === "tuile" ? { gridTemplateColumns: "104px minmax(0,1fr)" } : undefined}>
-        <span className={"block " + fl.folioNuit}>
-          <CarteFolio f={fo} className={f === "tuile" ? "" : "mx-auto max-w-[220px]"} />
-        </span>
-        <figcaption className="flex min-w-0 flex-col gap-1.5">
-          <span className="m-0 text-[18px] font-bold leading-snug tracking-[-0.01em]">{fo.nom}</span>
-          {fo.nom !== fo.oeuvre && <span className="t-small m-0 italic">{fo.oeuvre}</span>}
-          {(f === "tuile" ? [premiere] : [premiere, seconde]).filter(Boolean).map((l) => (
-            <span key={l} className="t-small m-0 block">
-              {l}
-            </span>
-          ))}
-        </figcaption>
-      </figure>
-      {f === "tuile" && seconde && <p className="t-small m-0 mt-auto">{seconde}</p>}
     </Coque>
   );
 }

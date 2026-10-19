@@ -1,155 +1,248 @@
-/* Le bloc Chiffres clés (Chiffres.tsx) et le double trait en barres, que
-   partagent Questions répondues et Trophées. En CSS simple : aucune classe
-   arbitraire nouvelle pour Tailwind. */
+/* Le bloc Chiffres clés (Chiffres.tsx) : « Une pièce en grand ». La 1re pièce
+   remplit la largeur (sa taille se tire de la largeur de la case, en cqw, et
+   du poids de son chiffre : --w), un trait de pinceau se trace dessous, puis
+   les deux autres pièces en ligne. Mini-tuile et petites largeurs : tout
+   empilé, en bas ; colonne : centré, les deux autres en étages ; héros et
+   bande (dès que la case est large) : la pièce à gauche, les deux autres à
+   droite. Que des jetons du site : le jour, la nuit et les couleurs
+   inversées suivent. En CSS simple : aucune classe arbitraire nouvelle pour
+   Tailwind. */
 
-/* chez soi : la petite ligne de contexte */
-.petit {
-  color: var(--ink-2);
-  font-size: 13px;
-  line-height: 1.3;
-  white-space: nowrap;
+.lab {
+  letter-spacing: 0.09em;
 }
 
-/* mini-tuile : une ligne par pièce, séparées d'un filet */
-.lignes {
-  display: grid;
-}
-.lignes > * + * {
-  border-top: 1px solid var(--line);
-}
-.ligne {
+/* la scène : prend la hauteur de la tuile ; la pièce en grand en bas (mini-tuile) */
+.scene {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
-}
-.ligne:first-child {
-  padding-top: 0;
-}
-.ligne:last-child {
-  padding-bottom: 0;
-}
-.nomPiece {
   min-width: 0;
-  overflow: hidden;
-  color: var(--ink-2);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.valeur {
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-/* colonne : des étages qui se partagent la hauteur, séparés d'un filet */
-.etages {
-  display: grid;
   flex: 1 1 auto;
-  grid-auto-rows: minmax(0, 1fr);
-}
-.etages > * + * {
-  border-top: 1px solid var(--line);
-}
-.etage {
-  display: flex;
-  min-width: 0;
   flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 0;
-}
-.etage:first-child {
-  padding-top: 0;
-}
-.etage:last-child {
-  padding-bottom: 0;
-}
-
-/* héros et bande : une case par pièce, en lignes au téléphone, en colonnes dès 640 px */
-.haut {
-  display: flex;
   justify-content: flex-end;
-  margin-bottom: -8px;
+  gap: 16px;
 }
-.cases {
-  display: grid;
-  flex: 1 1 auto;
-  align-content: center;
+.pile {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
-.cases > * + * {
-  border-top: 1px solid var(--line);
+
+/* le chiffre en grand : de la largeur de la case, bornée (--part : la part de la case qu'il peut prendre, --marge : le retrait des bords) */
+.tuile {
+  --max: 76px;
+  --marge: 48px;
 }
-.case {
+.colonne {
+  --max: 88px;
+  --marge: 48px;
+}
+.heros {
+  --max: 108px;
+  --marge: 64px;
+}
+.bande {
+  --max: 80px;
+  --marge: 48px;
+}
+.grand {
+  display: block;
+  font-size: clamp(34px, calc((100cqw - var(--marge, 48px)) * var(--part, 1) / (var(--w, 3.5) * 1.02)), var(--max, 60px));
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+/* le trait de pinceau : un trait plein, puis un filet de poils secs ; ils se tracent */
+.pinceau {
+  display: block;
+  width: 78%;
+  height: auto;
+  overflow: visible;
+}
+.trait,
+.poils {
+  fill: none;
+  stroke-dasharray: 100 120;
+  stroke-linecap: round;
+}
+.trait {
+  stroke-width: 7;
+  animation: trace 0.9s 0.25s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+.poils {
+  opacity: 0.5;
+  stroke-width: 2.4;
+  animation: trace 0.65s 0.45s ease both;
+}
+@keyframes trace {
+  from {
+    stroke-dashoffset: 105;
+  }
+}
+
+.legende {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.3;
+  animation: monte 0.55s 0.45s ease both;
+}
+@keyframes monte {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+/* les deux autres pièces : « 12 j de série · 82 % en FSA » */
+.autres {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 0;
-}
-.case:first-child {
-  padding-top: 0;
-}
-.ligneBase {
-  display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px 12px;
+  gap: 4px 0;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.35;
+  list-style: none;
 }
-.caseScore {
+.autres li {
+  animation: monte 0.5s 0.55s ease both;
+}
+.autres li + li {
+  animation-delay: 0.68s;
+}
+.autres li:not(:last-child)::after {
+  content: "·";
+  margin: 0 8px;
+  color: var(--ink-3);
+}
+.val {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.leg {
+  color: inherit;
+}
+
+/* colonne : la pièce au centre, les deux autres en étages séparés d'un filet */
+.colonne .scene {
+  justify-content: center;
+  gap: 28px;
+}
+.colonne .autres {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.colonne .autres li {
   display: flex;
-  align-items: center;
-  padding-top: 14px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 0;
 }
-@media (min-width: 640px) {
-  .cases {
-    grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+.colonne .autres li + li {
+  border-top: 1px solid var(--line);
+}
+.colonne .autres li:not(:last-child)::after {
+  content: none;
+}
+.colonne .val {
+  font-size: 26px;
+  line-height: 1.1;
+}
+.colonne .legende {
+  font-size: 15px;
+}
+
+/* héros et bande, dès que la case est large : la pièce à gauche, les deux autres à droite */
+@container (min-width: 560px) {
+  .heros .scene {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
+    gap: 32px;
   }
-  .avecScore {
-    grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)) auto;
+  .heros .grand {
+    --part: 0.52;
   }
-  .cases > * + * {
-    border-top: 0;
+  .heros .autres {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+    padding-left: 32px;
     border-left: 1px solid var(--line);
   }
-  .case {
-    align-self: stretch;
-    padding: 4px 24px;
+  .heros .autres li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 0;
   }
-  .case:first-child {
-    padding-left: 0;
+  .heros .autres li + li {
+    border-top: 1px solid var(--line);
   }
-  .case:last-child {
-    padding-right: 0;
+  .heros .autres li:not(:last-child)::after {
+    content: none;
   }
-  .caseScore {
-    align-self: stretch;
-    padding: 0 0 0 20px;
+  .heros .val {
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .heros .legende {
+    font-size: 15px;
+  }
+}
+@container (min-width: 640px) {
+  .bande .scene {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    align-items: center;
+    gap: 40px;
+  }
+  .bande .grand {
+    --part: 0.4;
+  }
+  .bande .autres {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 0;
+  }
+  .bande .autres li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 0 6px 28px;
+    border-left: 1px solid var(--line);
+  }
+  .bande .autres li:not(:last-child)::after {
+    content: none;
+  }
+  .bande .val {
+    font-size: 30px;
+    line-height: 1.1;
+  }
+  .bande .legende {
+    font-size: 15px;
   }
 }
 
-/* le double trait en barres : la sienne épaisse à l'encre, la tienne fine à ta couleur */
-.barres {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-.barreLui {
-  display: block;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--ink);
-}
-.barreToi {
-  display: block;
-  height: 2px;
-  border-radius: 1px;
+@media (prefers-reduced-motion: reduce) {
+  .trait,
+  .poils,
+  .legende,
+  .autres li {
+    animation: none;
+  }
 }

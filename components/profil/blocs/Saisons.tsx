@@ -1,255 +1,178 @@
+import { useId } from "react";
 import { Hexagon } from "lucide-react";
-import { SceauDivision } from "@/components/adn/Sceau";
-import { ecartPalier, ecartRang, score, type Ecart } from "@/lib/profil/ecart";
 import { hrefOnglet } from "@/lib/profil/onglets";
-import { nomPalier, type PalierSaison, type ResultatSaison, type Saisons } from "@/lib/profil/saisons";
+import { nomPalier, type PalierSaison, type Saisons } from "@/lib/profil/saisons";
+import { TIERS } from "@/lib/ranks";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import type { Format } from "@/lib/profil/disposition";
 import { BLOCS_PROFIL as T } from "@/lib/voice-blocs";
-import { BLOCS_RADAR as R, rang } from "@/lib/voice-blocs-radar";
-import { SAISONS, inscriptionSaison } from "@/lib/voice-saisons";
-import { Cellule, Chiffre, Coque, DemiBande, Etiquette, Jeton, Lien, Repere, ScoreTuile, Vide, compare, type Ctx } from "./commun";
+import { BLOCS_RADAR as R } from "@/lib/voice-blocs-radar";
+import { SAISONS } from "@/lib/voice-saisons";
+import { Cellule, Coque, DemiBande, Etiquette, Lien, Repere, Vide, type Ctx } from "./commun";
 import sa from "./saisons.module.css";
 
-// Le bloc « Saisons » (spec § 9). Chez un autre : « Saison 3 » (son nom en
-// infobulle), son pic de la saison en cours (le sceau de division et le
-// palier), ton pic en jeton (« toi Argent I », vert s'il est plus haut) ;
-// les saisons gravées en sceaux sans texte, ta place dessous en jeton court
-// (« 41e », vert si elle est meilleure que la sienne) ; le score sur la
-// saison en cours et les gravées communes. Chez soi : comme avant ; en
-// demi-bande, « Saison 3 » / le palier / « pic 1 512 », puis les sceaux et
-// sa place. Sans état.
+// Le bloc « Saisons » (spec des tuiles : « Écussons »). Le même dessin chez
+// soi et chez un autre : un écusson hexagonal par saison (les gravées du
+// palmarès, puis la saison en cours), aux couleurs du métal de son palier
+// (TIERS[palier].metal), la division au centre ; dessous le numéro et le
+// palier (« S2 · Diamant III ») et la place (« 5e / 212 ») ; la saison en
+// cours respire doucement. Du plus ancien au plus récent. Mini-tuile : trois
+// écussons au plus. Pas de comparaison. Chez soi, en plus : le lien « Tes
+// saisons » en mini-tuile. Sans état.
 
 const icone = <Hexagon size={17} aria-hidden />;
 
-/** Un pic, pour comparer : le palier, puis la division (III < II < I ; Top 10 sans division, au sommet de son palier). */
-export const rangPic = (p: PalierSaison) => p.palier * 3 + (p.division === "III" ? 0 : p.division === "II" ? 1 : 2);
+/** Un écusson hexagonal : le métal du palier en dégradé, un filet intérieur, la division au centre. `null` : pas classée (pointillés). */
+function Ecusson({ pic, grand = true }: { pic: PalierSaison | null; grand?: boolean }) {
+  const id = "ecu" + useId().replace(/[^a-zA-Z0-9]/g, "");
+  const metal = pic ? (TIERS[pic.palier] ?? TIERS[0]).metal : null;
+  const division = pic ? (pic.division ?? "10") : "—";
+  return (
+    <svg viewBox="0 0 62 70" className={sa.hex} aria-hidden focusable="false" style={metal ? { ["--m1" as string]: metal[0], ["--m2" as string]: metal[1], ["--m3" as string]: metal[2] } : undefined}>
+      {metal ? (
+        <>
+          <defs>
+            <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="var(--m1)" />
+              <stop offset="1" stopColor="var(--m2)" />
+            </linearGradient>
+          </defs>
+          <polygon points="31,2 59,18 59,52 31,68 3,52 3,18" fill={`url(#${id})`} stroke="var(--m3)" strokeWidth={2.4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          {/* la facette du haut, plus claire */}
+          <polygon points="31,2 59,18 31,34 3,18" fill="#fff" fillOpacity={0.2} />
+          <polygon points="31,11 51,23 51,47 31,59 11,47 11,23" fill="none" stroke="var(--m3)" strokeOpacity={0.45} strokeWidth={1.2} vectorEffect="non-scaling-stroke" />
+        </>
+      ) : (
+        <polygon points="31,2 59,18 59,52 31,68 3,52 3,18" fill="none" stroke="var(--ink-3)" strokeWidth={1.6} strokeDasharray="4 4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      )}
+      {grand && (
+        <text x="31" y="41" textAnchor="middle" className={sa.division} fill={metal ? "var(--m3)" : "var(--ink-3)"} fontSize={division.length > 2 ? 15 : division.length === 2 ? 18 : 21}>
+          {division}
+        </text>
+      )}
+    </svg>
+  );
+}
 
-/** Un sceau de saison, sans pose ni son (le tampon est déjà sur la page). */
-function Sceau({ pic, numero, taille, angle = -4, titre }: { pic: PalierSaison; numero: number; taille: number; angle?: number; titre?: string }) {
-  const ins = inscriptionSaison(pic, numero);
-  return <SceauDivision palier={ins.palier} division={ins.division} sous={ins.sous} ton="pen" taille={taille} angle={angle} pose={false} son={false} title={titre} />;
+/** Une saison à montrer : une gravée du palmarès ou la saison en cours (du plus ancien au plus récent). */
+type Ecu = {
+  cle: string;
+  numero: number;
+  pic: PalierSaison | null;
+  /** « S2 · Diamant III » */
+  nom: string;
+  /** « 5e / 212 », « en cours » */
+  place: string;
+  enCours: boolean;
+  bulle: string;
+};
+
+function ecussons(s: Saisons): Ecu[] {
+  const { courante: c, palmares } = s;
+  const gravees: Ecu[] = [...palmares]
+    .sort((x, y) => x.numero - y.numero)
+    .map((r) => ({
+      cle: r.cle,
+      numero: r.numero,
+      pic: r.pic,
+      nom: `${SAISONS.court(r.numero)} · ${nomPalier(r.pic)}`,
+      place: R.placeSur(r.place, r.joueurs),
+      enCours: false,
+      bulle: R.bulleGravee(SAISONS.court(r.numero), nomPalier(r.pic), r.place, r.joueurs),
+    }));
+  if (!c) return gravees;
+  const pic = c.moi?.pic ?? null;
+  return [
+    ...gravees.filter((g) => g.cle !== c.cle),
+    {
+      cle: c.cle,
+      numero: c.numero,
+      pic,
+      nom: `${SAISONS.court(c.numero)} · ${pic ? nomPalier(pic) : R.pasClassee}`,
+      place: SAISONS.enCours,
+      enCours: true,
+      bulle: R.bulleCourante(SAISONS.saison(c.numero, c.nom), pic ? nomPalier(pic) : null),
+    },
+  ];
+}
+
+/** Les écussons d'un format : au plus `n`, les plus récents, du plus ancien au plus récent. */
+function Rangee({ liste, n, classe, taille, grand = true, court = false }: { liste: Ecu[]; n: number; classe: string; taille: number; grand?: boolean; court?: boolean }) {
+  const montres = liste.slice(-n);
+  return (
+    <ul className={classe} aria-label={SAISONS.palmares} style={{ ["--w" as string]: `${taille}px` }}>
+      {montres.map((e, i) => (
+        <li key={e.cle} className={sa.ecu + (e.enCours ? " " + sa.cours : "")} style={{ ["--k" as string]: i }} title={e.bulle}>
+          <Ecusson pic={e.pic} grand={grand} />
+          <b className={sa.nom}>{court ? SAISONS.court(e.numero) : e.nom}</b>
+          <span className={sa.place}>{e.place}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function SaisonsBloc({ d, f, edition }: Ctx): React.ReactNode {
   const s = d.saisons;
   if (!s || (!s.courante && s.palmares.length === 0)) return edition ? <Vide bloc={{ k: "saisons", f }} f={f} icone={icone} /> : null;
-  return d.moi ? saisonsChezSoi(d, s, f) : saisonsChezUnAutre(d, s, f);
+  return saisonsDe(d, s, f);
 }
 
-// ── Chez un autre ─────────────────────────────────────────────────────────
-
-type Gravee = { r: ResultatSaison; e: Ecart | null; bulle: string };
-
-function saisonsChezUnAutre(d: DonneesBlocs, s: Saisons, f: Format): React.ReactNode {
+function saisonsDe(d: DonneesBlocs, s: Saisons, f: Format): React.ReactNode {
   const { courante: c, palmares } = s;
-  const toi = compare(d) ? (d.toi ?? null) : null;
-  const ts = toi?.saisons ?? null;
-  const sonPic = c?.moi ?? null;
-  // ta saison en cours (lue avec ton identifiant : courante.moi, c'est toi)
-  const tonPic = ts?.courante && (!c || ts.courante.cle === c.cle) ? ts.courante.moi : null;
-  const ePic = sonPic && tonPic ? ecartPalier(rangPic(sonPic.pic), rangPic(tonPic.pic), nomPalier(tonPic.pic)) : null;
-  const bullePic = sonPic && tonPic ? R.bullePic(d.nom, nomPalier(sonPic.pic), sonPic.eloPic, nomPalier(tonPic.pic), tonPic.eloPic) : sonPic && toi ? T.pasMesure : undefined;
-  const miennes = new Map((ts?.palmares ?? []).map((p) => [p.cle, p]));
-  const gravees: Gravee[] = palmares.map((r) => {
-    const m = miennes.get(r.cle);
-    return { r, e: m ? ecartRang(r.place, m.place) : null, bulle: R.bulleGravee(SAISONS.court(r.numero), nomPalier(r.pic), r.place, r.joueurs, m?.place ?? null) };
-  });
-  const sc = score([ePic, ...gravees.map((g) => g.e)]);
-  // aperçu : « toi – – » si la tuile pourra comparer au moins deux saisons
-  const avecScore = d.apercu && !d.toi ? (sonPic ? 1 : 0) + palmares.length >= 2 : !!sc;
-  const scoreTuile = avecScore ? <ScoreTuile s={sc} d={d} /> : null;
-  const jeton = (taille?: number) => (sonPic && compare(d) ? <Jeton e={ePic} d={d} bulle={bullePic} taille={taille} /> : null);
-  const nomSaison = c ? SAISONS.saison(c.numero, c.nom) : undefined;
-  const titre = c ? R.saison(c.numero) : T.saisons;
+  const liste = ecussons(s);
+  const moi = d.moi;
+  const lien = hrefOnglet(d.id, "sceaux");
 
-  const grave = (g: Gravee, taille: number, i: number) => (
-    <li key={g.r.cle} className={sa.grave}>
-      <span className={sa.sceau}>
-        <Sceau pic={g.r.pic} numero={g.r.numero} taille={taille} angle={i % 2 ? 3 : -4} titre={g.bulle} />
-      </span>
-      <Jeton e={g.e} d={d} bulle={g.bulle} forme="court" />
-    </li>
-  );
-
-  if (f === "demi")
-    return (
-      <DemiBande
-        label={titre}
-        dessin={
-          gravees.length > 0 ? (
-            <ul className={sa.demiGraves} aria-label={SAISONS.palmares}>
-              {gravees.slice(0, 8).map((g, i) => grave(g, 28, i))}
-            </ul>
-          ) : undefined
-        }
-        droite={scoreTuile ?? undefined}
-      >
-        <Cellule
-          etiquette={<span title={nomSaison}>{titre}</span>}
-          chiffre={sonPic ? nomPalier(sonPic.pic) : <span className={sa.pasClassee}>{R.pasClassee}</span>}
-          jeton={jeton()}
-          titre={bullePic}
-        />
-      </DemiBande>
-    );
-
-  // le chiffre fort : son sceau (32 px) et son palier ; sinon « Pas classée »
-  const chiffre = c ? (
-    sonPic ? (
-      <span className={sa.pic}>
-        <span className={sa.sceauPic}>
-          <Sceau pic={sonPic.pic} numero={c.numero} taille={32} titre={SAISONS.dit(c.numero, sonPic.pic)} />
-        </span>
-        <Chiffre f={f} titre={bullePic}>
-          {nomPalier(sonPic.pic)}
-        </Chiffre>
-      </span>
-    ) : (
-      <span className={sa.pasClassee}>
-        <Chiffre f={f}>{R.pasClassee}</Chiffre>
-      </span>
-    )
-  ) : null;
-  const etiquette = (
-    <div title={nomSaison}>
-      <Etiquette f={f} icone={icone} titre={titre} droite={scoreTuile ?? undefined} />
-    </div>
-  );
-
-  if (f === "colonne")
-    return (
-      <Coque f={f} label={titre}>
-        {etiquette}
-        {chiffre && (
-          <div className={sa.colonneChiffre}>
-            {chiffre}
-            {jeton(16)}
-          </div>
-        )}
-        {gravees.length > 0 && (
-          <ul className={sa.lignes} aria-label={SAISONS.palmares}>
-            {gravees.slice(0, 6).map((g, i) => (
-              <li key={g.r.cle} className={sa.ligne} title={g.bulle}>
-                <Sceau pic={g.r.pic} numero={g.r.numero} taille={32} angle={i % 2 ? 3 : -4} titre={g.bulle} />
-                <span className={sa.mono}>{SAISONS.court(g.r.numero)}</span>
-                <span className={sa.mono + " " + sa.doux}>{rang(g.r.place)}</span>
-                <Jeton e={g.e} d={d} bulle={g.bulle} forme="court" />
-              </li>
-            ))}
-          </ul>
-        )}
-        <Lien href={hrefOnglet(d.id, "sceaux")}>{T.sesSaisons}</Lien>
-      </Coque>
-    );
-  if (f === "bande" || f === "heros")
-    return (
-      <Coque f={f} label={titre}>
-        {etiquette}
-        <div className={sa.cote}>
-          {chiffre && (
-            <div className={sa.colonneChiffre}>
-              {chiffre}
-              {jeton(16)}
-            </div>
-          )}
-          {gravees.length > 0 && (
-            <ul className={sa.gravesLigne} aria-label={SAISONS.palmares}>
-              {gravees.slice(0, 8).map((g, i) => grave(g, 52, i))}
-            </ul>
-          )}
-        </div>
-      </Coque>
-    );
-  // mini-tuile
-  return (
-    <Coque f={f} label={titre}>
-      {etiquette}
-      {chiffre && (
-        <div className={sa.ligneChiffre}>
-          {chiffre}
-          {jeton()}
-        </div>
-      )}
-      {gravees.length > 0 && (
-        <ul className={sa.graves} aria-label={SAISONS.palmares}>
-          {gravees.slice(0, 3).map((g, i) => grave(g, 44, i))}
-        </ul>
-      )}
-    </Coque>
-  );
-}
-
-// ── Chez soi : comme avant (l'ancien SaisonsBloc de BlocsProfil.tsx) ───────
-
-function saisonsChezSoi(d: DonneesBlocs, s: Saisons, fmt: Format): React.ReactNode {
-  const { courante: c, palmares } = s;
-  if (fmt === "demi") {
+  // demi-bande : « Saison 3 » / le palier / « pic 1 502 », puis les écussons en petit
+  if (f === "demi") {
     const titre = c ? R.saison(c.numero) : T.saisons;
     return (
-      <DemiBande
-        label={titre}
-        dessin={
-          palmares.length > 0 ? (
-            <ul className={sa.demiGraves} aria-label={SAISONS.palmares}>
-              {palmares.slice(0, 8).map((r, i) => {
-                const bulle = R.bulleGravee(SAISONS.court(r.numero), nomPalier(r.pic), r.place, r.joueurs, null);
-                return (
-                  <li key={r.cle} className={sa.grave}>
-                    <span className={sa.sceau}>
-                      <Sceau pic={r.pic} numero={r.numero} taille={28} angle={i % 2 ? 3 : -4} titre={bulle} />
-                    </span>
-                    <span className={sa.placeSoi}>{rang(r.place)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : undefined
-        }
-      >
+      <DemiBande label={titre} dessin={liste.length > 0 ? <Rangee liste={liste} n={8} classe={sa.demiRangee} taille={32} grand={false} court /> : undefined}>
         <Cellule
           etiquette={<span title={c ? SAISONS.saison(c.numero, c.nom) : undefined}>{titre}</span>}
           chiffre={c?.moi ? nomPalier(c.moi.pic) : <span className={sa.pasClassee}>{c ? R.pasClassee : "—"}</span>}
-          petit={c?.moi ? R.picElo(c.moi.eloPic) : undefined}
+          petit={c?.moi ? R.picElo(c.moi.eloPic) : c ? R.sansPic : undefined}
         />
       </DemiBande>
     );
   }
-  // la colonne prend la forme de la tuile, comme avant
-  const f: Format = fmt === "colonne" ? "tuile" : fmt;
-  const gravees = palmares.slice(0, f === "tuile" ? 3 : 8);
+
+  const etiquette = <Etiquette f={f} icone={icone} titre={T.saisons} droite={palmares.length > 0 ? <Repere>{T.gravees(palmares.length)}</Repere> : undefined} />;
+  const nomLien = moi ? T.tesSaisons : T.sesSaisons;
+
+  // colonne : deux écussons par rangée, six au plus, au milieu de la hauteur
+  if (f === "colonne")
+    return (
+      <Coque f={f} label={T.saisons}>
+        {etiquette}
+        <div className={sa.milieu}>
+          <Rangee liste={liste} n={6} classe={sa.grille} taille={70} />
+        </div>
+        <Lien href={lien}>{nomLien}</Lien>
+      </Coque>
+    );
+
+  // bande (et héros, si on le lui donne) : tous en ligne, huit au plus
+  if (f === "bande" || f === "heros")
+    return (
+      <Coque f={f} label={T.saisons}>
+        {etiquette}
+        <div className={sa.milieu}>
+          <Rangee liste={liste} n={8} classe={sa.ligne} taille={78} />
+        </div>
+        <Lien href={lien}>{nomLien}</Lien>
+      </Coque>
+    );
+
+  // mini-tuile : trois écussons au plus, en bas
   return (
     <Coque f={f} label={T.saisons}>
-      <Etiquette f={f} icone={icone} titre={T.saisons} droite={palmares.length > 0 ? <Repere>{T.gravees(palmares.length)}</Repere> : undefined} />
-      {c && (
-        <p className="m-0 flex flex-col gap-0.5">
-          <span className="text-[15px] font-semibold">{SAISONS.saison(c.numero, c.nom)}</span>
-          <span className="t-small">{c.moi ? SAISONS.picEnCours(c.moi.pic, c.moi.eloPic) : SAISONS.sansMatch}</span>
-        </p>
-      )}
-      {gravees.length > 0 && (
-        <ul className={"m-0 flex list-none flex-wrap gap-4 p-0 " + (f === "bande" ? "lg:gap-8" : "")}>
-          {gravees.map((r, i) => {
-            const ins = inscriptionSaison(r.pic, r.numero);
-            return (
-              <li key={r.cle} className="flex min-w-0 items-center gap-3">
-                <span className="block w-[64px] shrink-0">
-                  <SceauDivision palier={ins.palier} division={ins.division} sous={ins.sous} ton="pen" taille="remplir" angle={i ? 3 : -4} pose={false} son={false} />
-                </span>
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-[13.5px] font-semibold">
-                    {SAISONS.court(r.numero)} · {r.nom}
-                  </span>
-                  <span className="t-micro">
-                    {SAISONS.picCourt(r.pic)} · {T.place(r.place, r.joueurs)}
-                  </span>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <Lien href={hrefOnglet(d.id, "sceaux")}>{T.tesSaisons}</Lien>
+      {etiquette}
+      <div className={sa.bas}>
+        <Rangee liste={liste} n={3} classe={sa.trio} taille={60} />
+        {moi && <Lien href={lien}>{nomLien}</Lien>}
+      </div>
     </Coque>
   );
 }

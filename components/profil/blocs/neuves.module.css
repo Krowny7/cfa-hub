@@ -1,0 +1,1086 @@
+/* Les sept tuiles de plus de la page de profil : Duels, Jour J, Matière phare,
+   Classement, Examens blancs, Codex et Rythme (Duels.tsx, JourJ.tsx, Phare.tsx,
+   Classement.tsx, Examens.tsx, CodexTuile.tsx, Rythme.tsx ; neuves.tsx).
+   Que des jetons du site (--ink, --ink-2, --ink-3, --line, --pencil-2, --gain,
+   --perte, --pen, --surface, --surface-2) : le jour, la nuit et les couleurs
+   inversées (.rl-inverse) suivent. Les classes de format (.tuile, .colonne,
+   .heros, .bande) se combinent avec celle de la tuile (.duels.tuile…) ; chaque
+   case de la grille est un @container, les tailles se tirent de sa largeur
+   (cqw). Toutes les animations d'entrée sont courtes (1,2 s au plus) et
+   coupées en mouvement réduit ; rien ne reste invisible si elles ne jouent
+   pas. En CSS simple : aucune classe arbitraire nouvelle pour Tailwind. */
+
+/* ── Ce que toutes les tuiles partagent ─────────────────────────────────── */
+.coque {
+  overflow: hidden;
+}
+.tete {
+  display: flex;
+  min-height: 22px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+.lab {
+  letter-spacing: 0.09em;
+}
+.repere {
+  color: var(--ink-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.repere b {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+}
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.petit {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.petit b {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.mention {
+  margin-top: auto;
+}
+/* les classes de format : les tailles par tuile sont dans les règles composées plus bas */
+.tuile,
+.colonne,
+.heros,
+.bande {
+  min-width: 0;
+}
+
+/* ── Duels : un anneau de victoires, les 5 derniers duels en pastilles ───── */
+.duels.tuile {
+  --d: clamp(84px, 30cqw, 108px);
+}
+.duels.colonne {
+  --d: clamp(128px, 54cqw, 180px);
+}
+.duels.heros {
+  --d: 128px;
+}
+.duels.bande {
+  --d: 136px;
+}
+.duelsScene {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-content: center;
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "anneau corps"
+    "forme forme";
+  gap: 16px 20px;
+}
+.colonne .duelsScene {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "anneau"
+    "corps"
+    "forme";
+  justify-items: center;
+  text-align: center;
+  gap: 22px;
+}
+.anneau {
+  position: relative;
+  display: block;
+  width: var(--d);
+  height: var(--d);
+  flex: none;
+  grid-area: anneau;
+}
+.anneau svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.piste,
+.rempli {
+  fill: none;
+  stroke-width: 9;
+}
+.piste {
+  stroke: var(--pencil-2);
+}
+.rempli {
+  stroke: var(--k, var(--ink));
+  stroke-dasharray: var(--p) 100;
+  stroke-linecap: round;
+  animation: remplit 1.1s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes remplit {
+  from {
+    opacity: 0;
+    stroke-dasharray: 0 100;
+  }
+  6% {
+    opacity: 1;
+  }
+}
+.centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: min(calc(var(--d) * 0.26), calc(var(--d) * 0.62 / (var(--wp, 3.6) * 0.92)));
+  white-space: nowrap;
+}
+.duelsCorps {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  grid-area: corps;
+}
+.colonne .duelsCorps {
+  align-items: center;
+}
+.duelsN {
+  display: flex;
+  margin: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+.duelsN b {
+  font-size: clamp(28px, 10cqw, 42px);
+  line-height: 1;
+}
+.duelsN span {
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+.forme {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  gap: 6px;
+  grid-area: forme;
+  list-style: none;
+}
+.colonne .forme {
+  justify-content: center;
+}
+.pastille {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--gain);
+  color: var(--surface);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  animation: glisse 0.4s calc(0.35s + var(--i, 0) * 0.08s) both;
+}
+.pastille[data-i="D"] {
+  background: var(--perte);
+}
+.pastille[data-i="N"] {
+  background: var(--ink-3);
+}
+@keyframes glisse {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+@container (min-width: 560px) {
+  /* héros et bande : l'anneau, le texte, puis les pastilles à droite */
+  .heros .duelsScene,
+  .bande .duelsScene {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "anneau corps forme";
+    gap: 28px;
+  }
+  .heros .pastille,
+  .bande .pastille {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+}
+
+/* ── Jour J : « J-25 » en énorme, la date, le programme couvert ──────────── */
+.jj {
+  --marge: 48px;
+  --cote: 0px;
+}
+.jj.tuile {
+  --max: 100px;
+}
+.jj.colonne {
+  --max: 132px;
+}
+.jj.heros,
+.jj.bande {
+  --max: 120px;
+  --marge: 64px;
+}
+.jjCorps {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.colonne .jjCorps {
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+}
+.jjGrand {
+  display: block;
+  font-size: clamp(44px, calc((100cqw - var(--marge) - var(--cote)) / (var(--w, 3.6) * 0.92)), var(--max));
+  line-height: 0.88;
+  white-space: nowrap;
+}
+.jjInfos {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+.colonne .jjInfos {
+  align-items: center;
+  width: 100%;
+}
+.jjDate {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.jjProg {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+.colonne .jjProg {
+  width: 100%;
+}
+.jjBarre {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--pencil-2);
+}
+.jjBarre i {
+  display: block;
+  width: var(--w);
+  height: 100%;
+  border-radius: 5px;
+  background: var(--pen);
+  transform-origin: left;
+  animation: barre 1s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes barre {
+  from {
+    transform: scaleX(0);
+  }
+}
+@container (min-width: 560px) {
+  /* héros et bande : le compte à rebours à gauche, la date et le programme à droite */
+  .jj.heros {
+    --cote: 340px;
+  }
+  .jj.bande {
+    --cote: 520px;
+    --max: 140px;
+  }
+  .jj.heros .jjCorps,
+  .jj.bande .jjCorps {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 40px;
+  }
+  .jj.heros .jjInfos,
+  .jj.bande .jjInfos {
+    flex: 1 1 0;
+    padding-bottom: 6px;
+  }
+}
+
+/* ── Matière phare : la jauge, son aiguille, « FSA · 82 % » ──────────────── */
+.pBody {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.jauge {
+  display: block;
+  width: min(100%, 280px);
+}
+.phare.tuile .jauge {
+  width: min(100%, 210px);
+}
+.phare.colonne .jauge {
+  width: min(100%, 340px);
+}
+.jMini {
+  width: 132px;
+  margin: 0 auto;
+}
+.jauge svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.jPiste,
+.jValeur {
+  fill: none;
+  stroke-width: 16;
+  stroke-linecap: round;
+}
+.jPiste {
+  stroke: var(--pencil-2);
+}
+.jValeur {
+  stroke: var(--pen);
+  stroke-dasharray: var(--p) 100;
+  animation: trace 1.2s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes trace {
+  from {
+    stroke-dasharray: 0 100;
+  }
+}
+.jGrad {
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.jAiguille {
+  transform: rotate(var(--a));
+  transform-origin: 100px 100px;
+  animation: aiguille 1.2s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.jAiguille line {
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+@keyframes aiguille {
+  from {
+    transform: rotate(-90deg);
+  }
+}
+.jPivot {
+  fill: var(--ink);
+}
+.jBorne {
+  fill: var(--ink-3);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+}
+.pTexte {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.pNom {
+  font-size: clamp(22px, 8cqw, 32px);
+  line-height: 1;
+  white-space: nowrap;
+}
+@container (min-width: 560px) {
+  .phare.heros .pBody {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 40px;
+  }
+  .phare.heros .jauge {
+    width: 300px;
+    flex: none;
+  }
+  .phare.heros .pTexte {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* ── Classement : la place en énorme, le palier, la variation de la semaine ── */
+.classement {
+  --marge: 48px;
+  --cote: 0px;
+}
+.classement.tuile {
+  --max: 108px;
+}
+.classement.colonne {
+  --max: 132px;
+}
+.classement.heros,
+.classement.bande {
+  --max: 124px;
+  --marge: 64px;
+}
+.cCorps {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.colonne .cCorps {
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+}
+.cPlace {
+  display: flex;
+  align-items: flex-start;
+  font-size: clamp(52px, calc((100cqw - var(--marge) - var(--cote)) / (var(--w, 1.45) * 0.92)), var(--max));
+  line-height: 0.88;
+  white-space: nowrap;
+}
+.cPlace small {
+  margin: 0.12em 0 0 0.05em;
+  font-size: 0.34em;
+  line-height: 1;
+}
+.cInfos {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+.colonne .cInfos {
+  align-items: center;
+  width: 100%;
+}
+.cLigne {
+  display: flex;
+  margin: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.colonne .cLigne {
+  justify-content: center;
+}
+.cLigne b {
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cSep {
+  color: var(--ink-3);
+}
+.cPalier {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cPuce {
+  display: block;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--m0), var(--m1));
+  box-shadow: inset 0 0 0 1.5px var(--m2);
+}
+.cVar {
+  color: var(--gain);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cVar[data-s="b"] {
+  color: var(--perte);
+}
+/* dans la cellule d'une demi-bande : à la taille du chiffre */
+.cVar[data-court] {
+  font-size: inherit;
+  font-weight: 700;
+}
+.cProgres {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+.colonne .cProgres {
+  width: 100%;
+}
+@container (min-width: 560px) {
+  /* héros et bande : la place à gauche, le palier et la progression à droite */
+  .classement.heros {
+    --cote: 340px;
+  }
+  .classement.bande {
+    --cote: 520px;
+    --max: 140px;
+  }
+  .classement.heros .cCorps,
+  .classement.bande .cCorps {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 40px;
+  }
+  .classement.heros .cInfos,
+  .classement.bande .cInfos {
+    flex: 1 1 0;
+    padding-bottom: 6px;
+  }
+}
+
+/* ── Examens blancs : un bâton par examen, la ligne pointillée du seuil ──── */
+.examens.tuile {
+  --hh: 112px;
+}
+.examens.colonne {
+  --hh: 280px;
+}
+.examens.heros,
+.examens.bande {
+  --hh: 150px;
+}
+.eZone {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.colonne .eZone {
+  justify-content: center;
+  gap: 16px;
+}
+.eCorps {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+.eBarres {
+  position: relative;
+  display: flex;
+  height: var(--hh, 56px);
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: stretch;
+  justify-content: space-evenly;
+  gap: 8px;
+  margin-top: 18px;
+}
+.eMini {
+  margin-top: 0;
+  gap: 5px;
+  max-width: 420px;
+}
+.eCol {
+  position: relative;
+  min-width: 0;
+  max-width: 64px;
+  flex: 1 1 0;
+}
+.eBar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--h);
+  border-radius: 4px 4px 0 0;
+  background: var(--ink);
+  transform-origin: bottom;
+  animation: pousse 0.7s calc(var(--i, 0) * 50ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.eBar[data-s="ok"] {
+  background: var(--gain);
+}
+.eBar[data-s="ko"] {
+  background: var(--perte);
+}
+@keyframes pousse {
+  from {
+    transform: scaleY(0);
+  }
+}
+.eVal {
+  position: absolute;
+  right: 0;
+  bottom: var(--h);
+  left: 0;
+  margin-bottom: 3px;
+  color: var(--ink-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  text-shadow: 0 0 3px var(--surface), 0 0 3px var(--surface), 0 0 3px var(--surface);
+  animation: fondu 0.4s 0.5s both;
+}
+@keyframes fondu {
+  from {
+    opacity: 0;
+  }
+}
+.eSeuil {
+  position: absolute;
+  right: -4px;
+  bottom: var(--seuil);
+  left: -4px;
+  border-top: 2px dashed var(--pen);
+  pointer-events: none;
+}
+.eStats {
+  display: none;
+  min-width: 150px;
+  flex: none;
+  flex-direction: column;
+  gap: 14px;
+}
+.eMesure {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.eMesure b {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+@container (min-width: 560px) {
+  .examens.heros .eCorps,
+  .examens.bande .eCorps {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 40px;
+  }
+  .examens.heros .eCol,
+  .examens.bande .eCol {
+    max-width: 76px;
+  }
+  .examens.heros .eStats,
+  .examens.bande .eStats {
+    display: flex;
+  }
+}
+
+/* ── Codex : les actes du fil, l'acte en cours à moitié peint, la quête ──── */
+.xCorps {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 16px;
+}
+.colonne .xCorps {
+  justify-content: center;
+  gap: 24px;
+}
+.xFil {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr));
+  gap: 4px;
+  list-style: none;
+}
+.xEtape {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+.xMarque {
+  position: relative;
+  display: grid;
+  height: 32px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+.xEtape[data-e="fait"] .xMarque {
+  background: var(--ink);
+  color: var(--surface);
+}
+.xEtape[data-e="cours"] .xMarque {
+  --teinte: color-mix(in oklab, var(--pen) 30%, var(--surface-2));
+  background-image: linear-gradient(var(--teinte), var(--teinte));
+  background-repeat: no-repeat;
+  background-size: 55% 100%;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--pen);
+  animation: peint 1s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes peint {
+  from {
+    background-size: 0% 100%;
+  }
+}
+.xEtape {
+  animation: fondu 0.4s calc(0.1s + var(--i, 0) * 0.06s) both;
+}
+.xTitre {
+  display: none;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.xQuete {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 12px;
+  border-left: 3px solid var(--pen);
+}
+.xQLab {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.xQTitre {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.xDemi {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+.xDemi .xMarque {
+  height: 26px;
+}
+.xDemiQuete {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* colonne : les étapes en liste, chacune avec son titre */
+.colonne .xFil {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.colonne .xEtape {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.colonne .xMarque {
+  width: 40px;
+  flex: none;
+}
+.colonne .xTitre {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  text-align: left;
+}
+.colonne .xEtape[data-e="avenir"] .xTitre {
+  color: var(--ink-2);
+}
+@container (min-width: 560px) {
+  /* héros et bande : le titre sous chaque case */
+  .heros .xTitre,
+  .bande .xTitre {
+    display: block;
+  }
+  .heros .xMarque,
+  .bande .xMarque {
+    height: 40px;
+    font-size: 12px;
+  }
+}
+
+/* ── Rythme : la grille des heures (A), l'horloge (B) ────────────────────── */
+.rythme.heros {
+  --c: 24px;
+}
+.rythme.bande {
+  --c: 28px;
+}
+.rCorps {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 18px;
+}
+.rGrille {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: calc(20px + 24 * var(--c, 24px) + 23 * 2px);
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 5px 6px;
+}
+.rMini {
+  display: block;
+  max-width: 560px;
+}
+.rJours {
+  display: grid;
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  color: var(--ink-3);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+.rJours span {
+  display: grid;
+  place-items: center;
+}
+.rCases {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 2px;
+}
+.rMini .rCases {
+  grid-template-rows: repeat(7, 9px);
+}
+.rCases i,
+.rLegende i {
+  display: block;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.rCases i {
+  aspect-ratio: 1;
+}
+.rMini .rCases i {
+  aspect-ratio: auto;
+  border-radius: 2px;
+}
+.rCases i[data-n="1"],
+.rLegende i[data-n="1"] {
+  background: color-mix(in oklab, var(--ink) 22%, transparent);
+  box-shadow: none;
+}
+.rCases i[data-n="2"],
+.rLegende i[data-n="2"] {
+  background: color-mix(in oklab, var(--ink) 45%, transparent);
+  box-shadow: none;
+}
+.rCases i[data-n="3"],
+.rLegende i[data-n="3"] {
+  background: color-mix(in oklab, var(--ink) 70%, transparent);
+  box-shadow: none;
+}
+.rCases i[data-n="4"],
+.rLegende i[data-n="4"] {
+  background: var(--ink);
+  box-shadow: none;
+}
+.rHeures {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  color: var(--ink-3);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rAside {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+.rFait {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.rPic {
+  font-size: 34px;
+  line-height: 1;
+}
+.rJourFort {
+  font-size: 17px;
+  text-transform: capitalize;
+}
+.rLegende {
+  display: flex;
+  margin: 0;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.rLegende i {
+  width: 12px;
+  height: 12px;
+}
+.rLegende span:first-child {
+  margin-right: 4px;
+}
+.rLegende span:last-child {
+  margin-left: 4px;
+}
+@container (min-width: 640px) {
+  /* héros et bande : la grille à gauche, l'heure forte et le jour fort à droite */
+  .rythme.heros .rCorps,
+  .rythme.bande .rCorps {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 48px;
+  }
+  .rythme.heros .rAside,
+  .rythme.bande .rAside {
+    min-width: 170px;
+    flex: none;
+    padding-bottom: 4px;
+  }
+}
+/* l'horloge */
+.rHorlogeBox {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  place-items: center;
+}
+.rHorloge {
+  display: block;
+  width: clamp(150px, 50cqw, 176px);
+  height: auto;
+  overflow: visible;
+}
+.rythme.colonne .rHorloge {
+  width: clamp(200px, 80cqw, 300px);
+}
+.rCentre,
+.rBord {
+  fill: none;
+  stroke: var(--line-2);
+}
+.rBord {
+  stroke: var(--line);
+  stroke-dasharray: 2 5;
+}
+.rayon {
+  stroke: var(--ink);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  animation: rayon 0.8s calc(var(--i, 0) * 25ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rayon[data-pic="oui"] {
+  stroke: var(--pen);
+}
+@keyframes rayon {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+.rBorne {
+  fill: var(--ink-3);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.rFaits {
+  display: grid;
+  margin: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  text-align: center;
+}
+.rFaits div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.rFaits dt {
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.rFaits dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ── Mouvement réduit : tout est déjà à sa place, rien ne bouge ──────────── */
+@media (prefers-reduced-motion: reduce) {
+  .rempli,
+  .pastille,
+  .jjBarre i,
+  .jValeur,
+  .jAiguille,
+  .eBar,
+  .eVal,
+  .xEtape,
+  .xEtape[data-e="cours"] .xMarque,
+  .rayon {
+    animation: none;
+  }
+}
