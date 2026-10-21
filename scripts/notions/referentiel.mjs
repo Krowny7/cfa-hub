@@ -338,6 +338,7 @@ export const DOSSIERS = {
   "Fixed Income (Système)": "fixed_income",
   "Instruments Dérivés (Système)": "derivatives",
   "Investissements Alternatifs (Système)": "alternatives",
+  "Alternative Investments (Système)": "alternatives",
   "Gestion de Portefeuille (Système)": "portfolio",
   "Portfolio Management (Système)": "portfolio",
 };
@@ -350,4 +351,5 @@ export const DRILLS = {
   "Portfolio Management": { matiere: "portfolio", fiche: "portfolio-management", script: "pm" },
   Economics: { matiere: "economics", fiche: "economics", script: "economics" },
   "Corporate Issuers": { matiere: "corporate", fiche: "corporate-issuers", script: "corporate" },
+  "Alternative Investments": { matiere: "alternatives", fiche: "alternative-investments", script: "alternatives" },
 };

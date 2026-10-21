@@ -38,6 +38,10 @@ const FICHE_INFO: Record<string, { meta: string; desc: string }> = {
     meta: "4 synthèses · 10 pages",
     desc: "Formes juridiques, gouvernance, BFR et liquidité, investissements, structure du capital, business models.",
   },
+  "alternative-investments": {
+    meta: "4 synthèses · 10 pages",
+    desc: "Frais et structures, private capital, immobilier et infrastructures, ressources naturelles, hedge funds, actifs numériques.",
+  },
 };
 
 /** Contenu d'une fiche (nombre de synthèses et de pages, thèmes). */

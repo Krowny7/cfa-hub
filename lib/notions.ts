@@ -1147,7 +1147,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 78, schweser: 76 },
     cours: "/courses/alternative-investments?module=1",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -1159,7 +1159,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 79, schweser: 77 },
     cours: "/courses/alternative-investments?module=2",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -1171,7 +1171,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 80, schweser: 78 },
     cours: "/courses/alternative-investments?module=3",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -1183,7 +1183,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 81, schweser: 79 },
     cours: "/courses/alternative-investments?module=4",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -1195,7 +1195,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 82, schweser: 80 },
     cours: "/courses/alternative-investments?module=5",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -1207,7 +1207,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 83, schweser: 81 },
     cours: "/courses/alternative-investments?module=6",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -1219,7 +1219,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 84, schweser: 82 },
     cours: "/courses/alternative-investments?module=7",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/alternative-investments?page=4", page: 4 }],
     flashcards: [],
   },
   {

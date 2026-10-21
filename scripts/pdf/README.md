@@ -37,6 +37,10 @@ onto the existing PDF, matching its own style exactly.
   pages at 863.04 (`build_qcm_pages.py corporate <concept_pdf> <out_pdf>`, data
   in `qcm_data/corporate_raw.txt`, upload with `scripts/upload-fiche-corporate.mjs
   <pdf>`, which backs up the bucket's current file under a dated name first).
+  Same for Alternative Investments: 4 synthèse pages of 675.12 × 816.0 pt, QCM/Corrigé
+  pages at 863.04 (`build_qcm_pages.py alternatives <concept_pdf> <out_pdf>`, data
+  in `qcm_data/alternatives_raw.txt`, upload with `scripts/upload-fiche-alternatives.mjs
+  <pdf>`, same dated backup of the bucket's current file).
 - Fonts — same families as the four Windows system fonts, so pull the FULL
   files from `C:\Windows\Fonts\` rather than the PDF's own subsets:
   `DejaVuSansMono(-Bold)` for the small mono labels/footer, `LiberationSans`

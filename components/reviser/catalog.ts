@@ -36,7 +36,7 @@ const DEFS: Def[] = [
   { key: "equity", name: "Equity Investments", code: "EQ", short: "Equity", fiche: "equity", drillPrefix: "Equity", courseTitle: "Equity Investments", flashcardFolders: ["Equity (Système)", "Investissements en Actions (Système)"] },
   { key: "fixed_income", name: "Fixed Income", code: "FI", short: "Fixed Income", fiche: "fixed-income", drillPrefix: "Fixed Income", courseTitle: "Fixed Income", flashcardFolders: ["Fixed Income (Système)"] },
   { key: "derivatives", name: "Derivatives", code: "DER", short: "Derivatives", fiche: "derivatives", drillPrefix: null, courseTitle: "Derivatives", flashcardFolders: ["Instruments Dérivés (Système)", "Derivatives (Système)"] },
-  { key: "alternatives", name: "Alternative Investments", code: "ALT", short: "Alternatives", fiche: null, drillPrefix: null, courseTitle: "Alternative Investments", flashcardFolders: ["Investissements Alternatifs (Système)", "Alternative Investments (Système)"] },
+  { key: "alternatives", name: "Alternative Investments", code: "ALT", short: "Alternatives", fiche: "alternative-investments", drillPrefix: "Alternative Investments", courseTitle: "Alternative Investments", flashcardFolders: ["Investissements Alternatifs (Système)", "Alternative Investments (Système)"] },
   { key: "portfolio", name: "Portfolio Management", code: "PM", short: "Portfolio", fiche: "portfolio-management", drillPrefix: "Portfolio Management", courseTitle: "Portfolio Management", flashcardFolders: ["Portfolio Management (Système)", "Gestion de Portefeuille (Système)"] },
 ];
 

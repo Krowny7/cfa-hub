@@ -88,6 +88,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/entrainement",
   "/exam",
   "/fiches",
+  "/fiches/alternative-investments",
   "/fiches/corporate-issuers",
   "/fiches/derivatives",
   "/fiches/economics",

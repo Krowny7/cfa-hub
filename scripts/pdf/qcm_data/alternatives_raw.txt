@@ -1,0 +1,163 @@
+PAGE 1 — Features, Structures & Performance
+SRC: R78 Q16
+Q1: Compared to a traditional mutual fund, a hedge fund is more likely to feature:
+A) lower leverage.
+B) higher fees.
+C) higher liquidity.
+ANSWER: B
+EXPLANATION: Par rapport à un mutual fund traditionnel, un hedge fund utilise davantage de levier et de dérivés, offre moins de liquidité (lockup, préavis de rachat) et facture des frais plus élevés (management fee plus incentive fee, par exemple « 2-and-20 »). B est donc correct. A est faux : le levier est plus élevé, pas plus faible. C est faux : un mutual fund peut être racheté à tout moment, alors qu'un hedge fund impose des périodes de lockup et de préavis ; il est moins liquide.
+
+SRC: R78 Q18
+Q2: In the context of alternative investments, an investor has the most control over an asset through:
+A) direct investing.
+B) fund investing.
+C) co-investing.
+ANSWER: A
+EXPLANATION: En direct investing, l'investisseur achète et gère lui-même l'actif : il a le contrôle maximal, mais aussi la due diligence la plus lourde, le moins de diversification et le ticket d'entrée le plus élevé (en échange, il ne paie aucun frais à un gérant externe). B est faux : en fund investing, c'est le gérant du fonds qui décide des investissements. C est faux : en co-investing, le contrôle est partagé avec le gérant sur le deal concerné ; c'est une position intermédiaire, pas le maximum.
+
+SRC: R78 Q13
+Q3: Which private capital fund waterfall structure involves distributing profits as each investment is sold and subsequently shared according to the partnership agreement?
+A) Deal-by-deal waterfall.
+B) European waterfall.
+C) Whole-of-fund waterfall.
+ANSWER: A
+EXPLANATION: Dans une waterfall deal-by-deal (dite américaine), les profits sont distribués à mesure que chaque investissement est vendu, puis partagés entre les LPs et le GP selon le partnership agreement : le GP touche sa performance fee dès les premiers deals réussis (structure plus favorable au GP, d'où le clawback qui protège les LPs si des pertes suivent). B et C sont faux : la waterfall européenne et la whole-of-fund waterfall sont la même structure, où les LPs reçoivent d'abord 100 % de leur mise plus le hurdle sur l'ensemble du fonds avant que le GP ne touche sa part ; elle est plus favorable aux LPs.
+
+SRC: R79 Q3
+Q4: A hedge fund has a 2-and-20 fee structure with a soft hurdle rate of 5% and a high water mark. Incentive fees are calculated net of management fees. The fund's gross return is 15% in Year 1, −10% in Year 2, and 30% in Year 3. Incentive fees for Year 3 will be:
+A) less than 20% of the increase in value in Year 3 after management fees.
+B) equal to 20% of the increase in value in Year 3 after management fees.
+C) greater than 20% of the increase in value in Year 3 after management fees.
+ANSWER: A
+EXPLANATION: Le high-water mark interdit toute incentive fee sur des gains qui ne font que compenser des pertes antérieures. La perte de l'année 2 (-10 %) ramène la valeur du fonds sous son plus haut précédent (atteint à la fin de l'année 1) : en année 3, l'incentive fee ne porte que sur la partie de la hausse située au-dessus de ce plus haut, pas sur toute la hausse de l'année. Elle est donc inférieure à 20 % de la hausse de valeur de l'année 3 (nette des management fees). B ne serait vrai qu'en l'absence de high-water mark. C est faux : le high-water mark ne peut que réduire la base de calcul, jamais faire payer plus de 20 %.
+
+SRC: R79 Q1
+Q5: Jem Capital is a hedge fund with $150 million of initial investment capital. The fund charges a 2% management fee based on assets under management at the end of the year and a 20% incentive fee. Incentive fees and management fees are calculated independently. In the first year, Jem Capital has a 25% return. What is an investor's after-fee return for the year?
+A) 3.0%.
+B) 17.5%.
+C) 22.5%.
+ANSWER: B
+EXPLANATION: Valeur de fin d'année avant frais : 150 x 1,25 = 187,5 M$. Management fee sur l'AUM de fin d'année : 2 % x 187,5 = 3,75 M$. Incentive fee, calculée indépendamment (sans déduire le management fee) : 20 % x (187,5 - 150) = 7,5 M$. Frais totaux : 11,25 M$. Rendement net = (187,5 - 11,25) / 150 - 1 = 17,5 %. A est faux : 3,0 % vient de l'erreur qui soustrait directement les pourcentages de frais du rendement (25 % - 2 % - 20 %). C est faux : 22,5 % ne retire que le management fee (3,75 M$ soit 2,5 % du capital initial) et oublie l'incentive fee.
+
+PAGE 2 — Private Capital, Real Estate & Infrastructure
+SRC: R80 Q3
+Q1: The formative stage of venture capital investing when capital is furnished for market research and product development is best characterized as the:
+A) angel investing stage.
+B) seed stage.
+C) early stage.
+ANSWER: B
+EXPLANATION: Le seed stage est le stade formatif où le capital finance le développement du produit, le marketing et les études de marché ; c'est en général le premier stade auquel un fonds de venture capital investit dans une start-up. A est faux : l'angel investing (pré-seed) finance la naissance de l'entreprise (idée, business plan, évaluation du potentiel de marché) avec l'argent des fondateurs et des business angels. C est faux : l'early stage vient après et finance le début de la production commerciale et des ventes.
+
+SRC: R80 Q12
+Q2: To exit an investment in a portfolio company through a trade sale, a private equity firm sells:
+A) the portfolio company to one of the portfolio company's competitors.
+B) shares of a portfolio company to the public.
+C) the portfolio company to another private equity firm.
+ANSWER: A
+EXPLANATION: Une trade sale est la vente de la société en portefeuille à un acquéreur stratégique, typiquement un concurrent, qui paie souvent une prime de synergies ; c'est une sortie rapide. A est donc correct. B est faux : vendre tout ou partie des actions au public est une IPO (souvent le meilleur prix, mais coûteuse et avec des lock-ups). C est faux : vendre la société à un autre fonds de private equity ou à un groupe d'investisseurs est une secondary sale.
+
+SRC: R80 Q13
+Q3: Compared to traditional bonds, private debt provides:
+A) higher returns.
+B) higher liquidity.
+C) lower risk.
+ANSWER: A
+EXPLANATION: La dette privée est illiquide (pas de marché secondaire actif) et plus risquée que les obligations traditionnelles ; les investisseurs exigent une compensation sous forme de rendements potentiellement plus élevés, et certaines dettes privées ajoutent même un potentiel de hausse en equity (warrants). A est donc correct. B est faux : c'est l'inverse, la dette privée est moins liquide. C est faux : le risque est plus élevé, surtout pour la mezzanine, la venture debt et la dette distressed.
+
+SRC: R81 Q8
+Q4: An additional risk of direct investment in real estate, which is not typically a significant risk in a portfolio of traditional investments, is:
+A) liquidity risk.
+B) market risk.
+C) counterparty risk.
+ANSWER: A
+EXPLANATION: Un investissement immobilier direct est illiquide : de grosses sommes sont immobilisées longtemps avant qu'une vente du bien soit possible. A est donc correct. B est faux : le risque de marché existe aussi bien dans un portefeuille traditionnel que dans l'immobilier ; ce n'est pas un risque supplémentaire. C est faux : le risque de contrepartie concerne surtout les dérivés (swaps, forwards) qui exigent un paiement de la contrepartie, pas la détention directe d'un bien.
+
+SRC: R81 Q2
+Q5: Which of these is an example of a social infrastructure asset?
+A) Railway systems.
+B) Public hospitals.
+C) Data centers.
+ANSWER: B
+EXPLANATION: L'infrastructure sociale regroupe la santé, le logement social, les prisons et les bâtiments publics ou municipaux : un hôpital public en est un exemple. A et C sont faux : les réseaux ferroviaires (transport) et les data centers (information et communication) relèvent de l'infrastructure économique, comme les utilities et l'énergie, qui soutient l'activité économique.
+
+PAGE 3 — Natural Resources & Hedge Funds
+SRC: R82 Q2
+Q1: If a commodity futures market is in backwardation:
+A) the commodity has a high convenience yield.
+B) a long futures position will have a negative roll yield.
+C) the futures price of the commodity is higher than the spot price.
+ANSWER: A
+EXPLANATION: En backwardation, le prix du future est inférieur au prix spot (courbe décroissante). Une commodity ne verse aucun rendement monétaire : seul un convenience yield supérieur au coût de financement et de stockage peut faire passer le future sous le spot. A est donc correct. B est faux : en backwardation, le roll yield d'une position longue est positif, car le prix du future converge vers un spot plus élevé au fil du temps. C est faux : un future au-dessus du spot décrit la contango.
+
+SRC: R82 Q6
+Q2: Which of the following is least likely to be a benefit of investing in commodities?
+A) Current income.
+B) Diversification.
+C) Inflation hedge.
+ANSWER: A
+EXPLANATION: Les commodities ne versent ni coupon ni dividende : leur rendement vient de la vente de l'actif, pas d'un revenu courant. A est donc l'avantage le moins probable, celui qui est demandé. B est un vrai avantage : faible corrélation avec les actions et les obligations. C est un vrai avantage : les prix des commodities évoluent dans le sens de l'inflation (corrélation positive), ce qui couvre le risque d'inflation.
+
+SRC: R83 Q1
+Q3: The typical trade used by a merger arbitrage fund is:
+A) short position in acquirer, long position in firm being acquired.
+B) long position in acquirer, short position in firm being acquired.
+C) short positions in both the acquirer and the firm being acquired.
+ANSWER: A
+EXPLANATION: Un fonds de merger arbitrage parie sur la réalisation de l'opération : il achète (long) les actions de la société rachetée, dont le cours reste sous le prix d'offre, et vend à découvert (short) celles de l'acquéreur, ce qui couvre le risque lié à l'échange d'actions. A est correct. B inverse les deux positions. C est faux : être short sur les deux ne capture pas l'écart de prix, le gain venant de la convergence du cours de la cible vers le prix d'offre (le risque principal est l'échec de l'opération).
+
+SRC: R83 Q8
+Q4: The period of time within which a hedge fund must fulfill a redemption request is the:
+A) lockup period.
+B) notice period.
+C) withdrawal period.
+ANSWER: B
+EXPLANATION: La notice period (préavis, typiquement 30 à 90 jours) est le délai qui s'écoule entre la demande de rachat et son exécution par le fonds. B est donc correct. A est faux : le lockup est la durée minimale, après l'investissement, pendant laquelle l'investisseur ne peut pas du tout demander le rachat de ses parts. C est faux : « withdrawal period » ne fait pas partie des termes de liquidité d'un hedge fund (lockup, notice period, gate, redemption fee).
+
+SRC: R83 Q13
+Q5: Which statement about hedge funds is the most accurate? Hedge funds are:
+A) privately held and available to qualified or accredited investors.
+B) highly regulated and limited in strategies they may pursue.
+C) lower risk than private equity because they invest mostly in liquid assets.
+ANSWER: A
+EXPLANATION: Les hedge funds sont des véhicules d'investissement privés, réservés aux investisseurs qui remplissent des critères élevés (institutionnels ou accredited investors). A est donc correct. B est faux : ils sont peu régulés et peuvent suivre une grande variété de stratégies (long/short, levier, dérivés). C est faux : même s'ils détiennent surtout des actifs liquides, le levier et les dérivés modifient leur profil de risque ; on ne peut pas les dire moins risqués que le private equity.
+
+PAGE 4 — Introduction to Digital Assets
+SRC: R84 Q14
+Q1: A government decides it will privatize vehicle registrations if the province's auto insurance companies can record and maintain ownership titles using distributed ledger technology. This application of distributed ledger technology is best characterized as:
+A) blockchain.
+B) smart contracts.
+C) tokenization.
+ANSWER: C
+EXPLANATION: La tokenization consiste à tenir les droits de propriété d'actifs physiques (ici les titres de propriété de véhicules) sur un registre distribué : c'est exactement ce que font les assureurs dans ce scénario. C est donc correct. A est faux : la blockchain est un type de registre distribué (une sous-catégorie du DLT) ; elle peut servir de support, mais l'énoncé décrit l'application (l'enregistrement de la propriété), pas la technologie. B est faux : un smart contract est un programme qui exécute automatiquement des actions quand des conditions fixées à l'avance sont remplies ; il n'est pas question d'exécution conditionnelle ici.
+
+SRC: R84 Q3
+Q2: Which distributed ledger technology element may include proof of work and proof of stake?
+A) Participation network.
+B) Consensus protocols.
+C) Digital ledger.
+ANSWER: B
+EXPLANATION: Les protocoles de consensus déterminent comment de nouveaux blocs sont ajoutés à la chaîne ; Proof of Work (les miners résolvent un problème cryptographique, très énergivore) et Proof of Stake (les validators mettent en jeu leurs tokens, le staking, et sont rémunérés) en sont deux types. B est donc correct. A est faux : le réseau de participation (permissionless ou permissioned) détermine qui peut exercer les fonctions du réseau. C est faux : le registre numérique est la base de données partagée où les entrées sont enregistrées ; le consensus décrit comment elles s'y ajoutent.
+
+SRC: R84 Q2
+Q3: Which statement best describes how stablecoins maintain a stable value? Stablecoins:
+A) have legal and regulatory backing.
+B) can be exchanged for fiat currency.
+C) link their value to other assets.
+ANSWER: C
+EXPLANATION: Un stablecoin stabilise sa valeur en l'indexant sur un actif ou un panier d'actifs (monnaie fiduciaire, matières premières, autres cryptos) conservé en réserve. C est donc correct. A est faux : un stablecoin n'a pas de soutien légal ou réglementaire comparable à celui d'une monnaie de banque centrale (c'est ce qui le distingue d'un CBDC). B est faux : l'échange contre de la monnaie fiduciaire n'est pas le mécanisme qui crée la stabilité, et il n'est pas garanti.
+
+SRC: R84 Q9
+Q4: Which type of cryptocurrency-related vehicle invests directly in cryptocurrencies?
+A) Cryptocurrency futures contracts.
+B) Cryptocurrency exchange-traded funds.
+C) Cryptocurrency coin trusts.
+ANSWER: C
+EXPLANATION: Un coin trust détient directement un pool de cryptomonnaie : l'investisseur y accède sans avoir à gérer de wallet ni de clés privées. C est donc correct. A est faux : un future est un dérivé indexé sur le prix de la cryptomonnaie, réglé en cash, sans détention de coins. B est faux : un ETF crypto n'investit pas directement dans la cryptomonnaie ; il cherche à en répliquer les rendements avec du cash ou des dérivés.
+
+SRC: R84 Q5
+Q5: Compared to centralized exchanges, decentralized exchanges are more:
+A) vulnerable to attacks.
+B) difficult to regulate.
+C) popular with investors.
+ANSWER: B
+EXPLANATION: Un decentralized exchange n'a aucune source centrale de contrôle : le réseau fonctionne en pair à pair, ce qui le rend plus difficile à réguler. B est donc correct. A est faux : c'est l'inverse, les exchanges centralisés offrent un point central à pirater, alors que dans un réseau décentralisé les autres ordinateurs continuent de fonctionner si l'un d'eux est attaqué. C est faux : les exchanges centralisés restent les plus populaires auprès des investisseurs.
