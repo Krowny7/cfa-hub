@@ -177,6 +177,7 @@ const MARGIN: CalcType = {
   topic: "equity",
   name: "Achat sur marge (margin transaction)",
   tier: "essentiel",
+  top: true,
   source: "LM 1 · Market Organization and Structure",
   formulas: [
     "Levier (leverage ratio) = valeur de la position / fonds propres = 1 / marge initiale",
@@ -550,6 +551,7 @@ const INDEX_WEIGHTING: CalcType = {
   topic: "equity",
   name: "Méthodes de pondération d'indice (index weighting)",
   tier: "essentiel",
+  top: true,
   source: "LM 2 · Security Market Indexes",
   formulas: [
     "Price-weighted : indice = Σ prix / diviseur ; poids d'un titre = Pi / Σ P",
@@ -2061,6 +2063,7 @@ const PREFERRED: CalcType = {
   topic: "equity",
   name: "Actions de préférence (preferred stock)",
   tier: "essentiel",
+  top: true,
   source: "LM 8 · Equity Valuation: Concepts and Basic Tools",
   formulas: [
     "V0 = Dp / rp (action de préférence perpétuelle, non callable, non convertible)",
@@ -2214,6 +2217,7 @@ const GORDON: CalcType = {
   topic: "equity",
   name: "Modèle de Gordon (constant growth DDM)",
   tier: "essentiel",
+  top: true,
   source: "LM 8 · Equity Valuation: Concepts and Basic Tools",
   formulas: [
     "V0 = D1 / (r − g) avec D1 = D0 × (1 + g)",
@@ -2530,6 +2534,7 @@ const MULTISTAGE: CalcType = {
   topic: "equity",
   name: "DDM multi-étapes (multistage)",
   tier: "essentiel",
+  top: true,
   source: "LM 8 · Equity Valuation: Concepts and Basic Tools",
   formulas: [
     "Forte croissance : Dt = D0 × (1 + g*)^t",

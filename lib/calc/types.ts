@@ -41,6 +41,8 @@ export type CalcQuestion = {
   decimals: number;
   /** Tolérance absolue facultative ; par défaut le moteur accepte ± une demi-unité de la dernière décimale, plus 0,2 % relatif. */
   tolerance?: number;
+  /** Stricte : seule la tolérance absolue compte (pas les 0,2 % relatifs) — pour refuser un raccourci de calcul qui tombe tout près. */
+  strict?: boolean;
   /** Correction pas à pas, en français (une étape par ligne, chiffres à l'appui). */
   solution: string[];
 };
@@ -52,6 +54,8 @@ export type CalcType = {
   /** Nom affiché, en français, termes CFA en anglais si usage (ex. "Pondération d'indice"). */
   name: string;
   tier: "essentiel" | "annexe";
+  /** Un des 5 calculs les plus importants de la matière (le « Top 5 », en or) : exactement 5 par matière, tous essentiels. */
+  top?: boolean;
   /** Rappel de formule(s), court, affiché avant de lancer un round. Une ligne par formule. */
   formulas: string[];
   /** Pièges d'examen typiques (facultatif, 1 à 3 lignes). */

@@ -123,11 +123,13 @@ export function toleranceOf(q: Pick<CalcQuestion, "decimals" | "tolerance">): nu
 }
 
 /** Juste si l'écart tient dans la tolérance absolue, ou s'il fait au plus 0,2 % de la réponse. */
-export function isCorrectValue(value: number, q: Pick<CalcQuestion, "answer" | "decimals" | "tolerance">): boolean {
+export function isCorrectValue(value: number, q: Pick<CalcQuestion, "answer" | "decimals" | "tolerance" | "strict">): boolean {
   if (!Number.isFinite(value) || !Number.isFinite(q.answer)) return false;
   const diff = Math.abs(value - q.answer);
   // marge d'arrondi binaire (8.535 − 8.53 n'est pas tout à fait 0.005)
   const eps = 1e-9 * Math.max(1, Math.abs(q.answer));
+  // question stricte : la seule tolérance absolue (un raccourci qui tombe à 0,1 % n'est pas accepté)
+  if (q.strict) return diff <= toleranceOf(q) + eps;
   return diff <= toleranceOf(q) + eps || diff <= REL_TOLERANCE * Math.abs(q.answer) + eps;
 }
 
@@ -138,7 +140,7 @@ export type CalcStatus = "juste" | "faux" | "format";
  * 0,25 % au lieu de 25 bp). On le dit sans compter la réponse, sans donner
  * le résultat, et le joueur ressaisit.
  */
-export function checkCalc(q: Pick<CalcQuestion, "answer" | "decimals" | "tolerance" | "unit">, value: number): { status: CalcStatus; hint?: string } {
+export function checkCalc(q: Pick<CalcQuestion, "answer" | "decimals" | "tolerance" | "unit" | "strict">, value: number): { status: CalcStatus; hint?: string } {
   if (isCorrectValue(value, q)) return { status: "juste" };
   if (value !== 0 && q.answer !== 0) {
     if (q.unit === "%" && isCorrectValue(value * 100, q)) return { status: "format", hint: "Réponds en pourcentage : 8.5 pour 8,5 %." };

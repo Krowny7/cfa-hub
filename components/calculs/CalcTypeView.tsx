@@ -36,6 +36,7 @@ import { appendLocal, readLocal } from "./local";
 import { BackLink, DataSheet, PenMark } from "./parts";
 import { useCalcProgress, useLocalImport } from "./useCalc";
 import { CALC, NIVEAU, ligneNiveau, nbQuestions } from "./voice";
+import o from "./or.module.css";
 
 /** Une question du round, avant puis après la réponse. */
 export type RoundItem = {
@@ -176,7 +177,7 @@ export function CalcTypeView({ subject, meta, next, progress: server, db, owner,
     [items, meta.key, owner, subject.topic],
   );
 
-  const tier = meta.tier === "annexe" ? "Annexe" : "Essentiel";
+  const tier = meta.top ? "Top 5" : meta.tier === "annexe" ? "Annexe" : "Essentiel";
 
   if (phase === "round" || phase === "tirage") {
     return (
@@ -225,7 +226,7 @@ export function CalcTypeView({ subject, meta, next, progress: server, db, owner,
         <BackLink href={`/calculs/${subject.slug}`}>{subject.name}</BackLink>
         <div className="mt-4 flex flex-wrap items-center gap-x-3.5 gap-y-2">
           <h1 className="t-h1 min-w-0 [overflow-wrap:anywhere]">{meta.name}</h1>
-          <span className="rounded-[8px] border border-line-2 px-2 py-[3px] text-[12px] font-semibold text-muted">{tier}</span>
+          <span className={meta.top ? o.badgeOr : "rounded-[8px] border border-line-2 px-2 py-[3px] text-[12px] font-semibold text-muted"}>{tier}</span>
         </div>
         {meta.source && <p className="t-micro mt-3">{meta.source}</p>}
       </header>

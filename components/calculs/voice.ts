@@ -23,6 +23,8 @@ export const CALC = {
   reprendre: "Reprendre",
   prochain: "Ton prochain calcul",
   lancer: "Lancer · 5 questions",
+  top: "Top 5",
+  topSous: "les calculs qui tombent le plus",
   essentiels: "Essentiels",
   essentielsSous: "à savoir sans hésiter",
   annexes: "Annexes",

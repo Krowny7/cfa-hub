@@ -10,8 +10,15 @@
 
 import type { CalcCatalog, CalcLevel, CalcQuestion, CalcTopic, CalcType } from "./types";
 import { CALC_LEVELS } from "./types";
+import { ALTERNATIVES_CALC } from "./alternatives";
+import { CORPORATE_CALC } from "./corporate";
+import { DERIVATIVES_CALC } from "./derivatives";
+import { ECONOMICS_CALC } from "./economics";
 import { EQUITY_CALC } from "./equity";
+import { FIXED_INCOME_CALC } from "./fixed-income";
+import { FSA_CALC } from "./fsa";
 import { PORTFOLIO_CALC } from "./portfolio";
+import { QUANT_CALC } from "./quant";
 
 export type CalcSubject = {
   topic: CalcTopic;
@@ -37,7 +44,14 @@ export const CALC_SUBJECTS: CalcSubject[] = [
 
 // Les catalogues ouverts. Une matière sans catalogue s'affiche « bientôt ».
 const CATALOGS: Partial<Record<CalcTopic, CalcCatalog>> = {
+  quant: QUANT_CALC,
+  economics: ECONOMICS_CALC,
+  corporate: CORPORATE_CALC,
+  fsa: FSA_CALC,
   equity: EQUITY_CALC,
+  fixed_income: FIXED_INCOME_CALC,
+  derivatives: DERIVATIVES_CALC,
+  alternatives: ALTERNATIVES_CALC,
   portfolio: PORTFOLIO_CALC,
 };
 
@@ -83,6 +97,8 @@ export type CalcTypeMeta = {
   key: string;
   name: string;
   tier: CalcType["tier"];
+  /** un des 5 calculs les plus importants de la matière */
+  top: boolean;
   formulas: string[];
   traps: string[];
   source: string | null;
@@ -97,6 +113,7 @@ export function typeMeta(t: CalcType): CalcTypeMeta {
     key: t.key,
     name: t.name,
     tier: t.tier,
+    top: !!t.top,
     formulas: [...t.formulas],
     traps: [...(t.traps ?? [])],
     source: t.source ?? null,
@@ -107,7 +124,7 @@ export function typeMeta(t: CalcType): CalcTypeMeta {
 /** Une matière pour la page /calculs : ouverte (avec ses types) ou « bientôt ». */
 export type CalcSubjectCard = CalcSubject & {
   open: boolean;
-  types: { key: string; name: string; tier: CalcType["tier"] }[];
+  types: { key: string; name: string; tier: CalcType["tier"]; top: boolean }[];
   questions: number;
 };
 
@@ -117,7 +134,7 @@ export function calcSubjectCards(): CalcSubjectCard[] {
     return {
       ...s,
       open: !!c,
-      types: (c?.types ?? []).map((t) => ({ key: t.key, name: t.name, tier: t.tier })),
+      types: (c?.types ?? []).map((t) => ({ key: t.key, name: t.name, tier: t.tier, top: !!t.top })),
       questions: (c?.types ?? []).reduce((n, t) => n + t.questions.length, 0),
     };
   });

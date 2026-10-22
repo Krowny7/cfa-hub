@@ -6,7 +6,7 @@ import type { CalcLevel, CalcTopic } from "@/lib/calc/types";
 // premier essentiel non maîtrisé dans l'ordre du programme, puis le premier
 // annexe. Module neutre.
 
-export type TypeLite = { key: string; name: string; tier: "essentiel" | "annexe" };
+export type TypeLite = { key: string; name: string; tier: "essentiel" | "annexe"; top?: boolean };
 export type SubjectLite = { topic: CalcTopic; slug: string; name: string; types: TypeLite[] };
 
 export type Suggestion = {
@@ -30,6 +30,8 @@ function lastWorked(subjects: SubjectLite[], all: AllProgress) {
 }
 
 function firstOpen(s: SubjectLite, progress: TopicProgress | undefined) {
+  // le Top 5 d'abord, puis les essentiels, puis les annexes
+  for (const t of s.types) if (t.top && !isMastered(progress?.[t.key])) return t;
   for (const tier of ["essentiel", "annexe"] as const)
     for (const t of s.types) if (t.tier === tier && !isMastered(progress?.[t.key])) return t;
   return null;

@@ -33,7 +33,7 @@ export default async function CalculsMatierePage({ params }: { params: Promise<P
   }
 
   const progress = await loadCalcProgress(supabase, s.topic);
-  const types = catalog.types.map((t) => ({ key: t.key, name: t.name, tier: t.tier, source: t.source ?? null, questions: t.questions.length }));
+  const types = catalog.types.map((t) => ({ key: t.key, name: t.name, tier: t.tier, top: !!t.top, source: t.source ?? null, questions: t.questions.length }));
 
   return (
     <CalcTopicView subject={{ topic: s.topic, slug: s.slug, name: s.name, short: s.short }} types={types} progress={progress} db={progress !== null} owner={auth.user.id} />

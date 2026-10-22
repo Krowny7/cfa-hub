@@ -981,6 +981,7 @@ const T_TWO: CalcType = {
   topic: "portfolio",
   name: "Portefeuille à 2 actifs : rendement et écart-type",
   tier: "essentiel",
+  top: true,
   source: "LM Portfolio Risk and Return: Part I · LOS e (Schweser R83)",
   formulas: [
     "E(Rp) = w1 E(R1) + w2 E(R2), avec w2 = 1 − w1",
@@ -2291,6 +2292,7 @@ const T_BETA: CalcType = {
   topic: "portfolio",
   name: "Bêta (β = Cov / σM² = ρ σi / σM)",
   tier: "essentiel",
+  top: true,
   source: "LM Portfolio Risk and Return: Part II · LOS e (Schweser R84)",
   formulas: [
     "βi = Cov(i,M) / σM²",
@@ -2656,6 +2658,7 @@ const T_CAPM: CalcType = {
   topic: "portfolio",
   name: "CAPM : rendement exigé",
   tier: "essentiel",
+  top: true,
   source: "LM Portfolio Risk and Return: Part II · LOS f-g (Schweser R84)",
   formulas: [
     "E(Ri) = Rf + βi × [E(RM) − Rf]",
@@ -2838,6 +2841,7 @@ const T_SML: CalcType = {
   topic: "portfolio",
   name: "SML : titre sur- ou sous-évalué",
   tier: "essentiel",
+  top: true,
   source: "LM Portfolio Risk and Return: Part II · LOS h (Schweser R84)",
   formulas: [
     "Rendement prévu (forecast) = (P1 − P0 + D1) / P0",
@@ -3033,6 +3037,7 @@ const T_SHARPE: CalcType = {
   topic: "portfolio",
   name: "Ratio de Sharpe",
   tier: "essentiel",
+  top: true,
   source: "LM Portfolio Risk and Return: Part II · LOS i (Schweser R84)",
   formulas: [
     "Sharpe = (Rp − Rf) / σp : rendement excédentaire par unité de risque TOTAL",

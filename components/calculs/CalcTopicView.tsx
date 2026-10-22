@@ -13,8 +13,9 @@ import { etatType, lignesNiveaux, nomCourt, phraseSuggestion, type EtatType } fr
 import { roundHref, suggest } from "./suggest";
 import { useCalcProgress, useLocalImport } from "./useCalc";
 import { CALC, NIVEAU, nbQuestions } from "./voice";
+import s from "./or.module.css";
 
-export type CalcTopicType = { key: string; name: string; tier: "essentiel" | "annexe"; source: string | null; questions: number };
+export type CalcTopicType = { key: string; name: string; tier: "essentiel" | "annexe"; top?: boolean; source: string | null; questions: number };
 
 /**
  * /calculs/[matiere] : le gabarit de L'Abaque décliné à une matière. Le héros
@@ -49,7 +50,9 @@ export function CalcTopicView({
   const totalQ = types.reduce((n, t) => n + t.questions, 0);
 
   const etats = types.map((t) => ({ t, ...etatType(mine?.[t.key]) }));
-  const etatsEss = etats.filter((x) => x.t.tier === "essentiel");
+  // le Top 5 (en or) à part, en tête ; les autres essentiels ensuite
+  const etatsTop = etats.filter((x) => x.t.top);
+  const etatsEss = etats.filter((x) => x.t.tier === "essentiel" && !x.t.top);
   const etatsAnn = etats.filter((x) => x.t.tier === "annexe");
   const niv = CALC_LEVELS.length;
   const tenus = etats.reduce((n, x) => n + x.tenus, 0);
@@ -59,7 +62,7 @@ export function CalcTopicView({
     types.map((t) => t.key),
   );
   const typeProg = sug ? mine?.[sug.typeKey] : undefined;
-  const premier = essentiels.length ? "#reg-essentiels" : "#reg-annexes";
+  const premier = etatsTop.length ? "#reg-top" : essentiels.length ? "#reg-essentiels" : "#reg-annexes";
 
   return (
     <Page
@@ -106,6 +109,7 @@ export function CalcTopicView({
               unite={tenus > 1 ? "niveaux tenus" : "niveau tenu"}
               ligne={`sur ${total}${sum.precision !== null ? ` · ${Math.round(sum.precision)} % de justes récemment` : ""}`}
               details={[
+                ...(etatsTop.length ? [{ label: CALC.top, value: `${etatsTop.reduce((n, x) => n + x.tenus, 0)}/${etatsTop.length * niv} niveaux` }] : []),
                 { label: CALC.essentiels, value: `${etatsEss.reduce((n, x) => n + x.tenus, 0)}/${etatsEss.length * niv} niveaux` },
                 { label: CALC.annexes, value: `${etatsAnn.reduce((n, x) => n + x.tenus, 0)}/${etatsAnn.length * niv} niveaux` },
                 { label: MATIERE.jamais, value: String(etats.filter((x) => x.pct === null).length) },
@@ -115,6 +119,7 @@ export function CalcTopicView({
         />
       }
     >
+      {etatsTop.length > 0 && <Registre id="reg-top" titre={CALC.top} sous={CALC.topSous} liste={etatsTop} slug={subject.slug} or />}
       {etatsEss.length > 0 && <Registre id="reg-essentiels" titre={CALC.essentiels} sous={CALC.essentielsSous} liste={etatsEss} slug={subject.slug} />}
       {etatsAnn.length > 0 && <Registre id="reg-annexes" titre={CALC.annexes} sous={CALC.annexesSous} liste={etatsAnn} slug={subject.slug} />}
       <div className="mt-8">
@@ -133,16 +138,19 @@ export function CalcTopicView({
 type Etat = EtatType & { t: CalcTopicType };
 
 /** Un registre : nom, référence, trois pastilles F · M · D, précision récente. */
-function Registre({ id, titre, sous, liste, slug }: { id: string; titre: string; sous: string; liste: Etat[]; slug: string }) {
+function Registre({ id, titre, sous, liste, slug, or = false }: { id: string; titre: string; sous: string; liste: Etat[]; slug: string; or?: boolean }) {
   return (
     <Section id={id} titre={titre} meta={sous}>
-      <div className="card overflow-hidden px-1.5 py-1.5">
+      <div className={"card overflow-hidden px-1.5 py-1.5" + (or ? " " + s.or : "")}>
         <ul className="m-0 list-none divide-y divide-line p-0">
           {liste.map((x) => (
             <li key={x.t.key}>
               <Link href={`/calculs/${slug}/${x.t.key}`} className="rl-row flex min-h-[56px] items-center gap-3 rounded-[12px] px-3.5 py-2.5">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14.5px] font-semibold">{x.t.name}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    {or && <span aria-hidden className={s.medaille} />}
+                    <span className="block truncate text-[14.5px] font-semibold">{x.t.name}</span>
+                  </span>
                   <span className="t-micro block truncate">{x.t.source ?? nbQuestions(x.t.questions)}</span>
                 </span>
                 <span className="flex shrink-0 gap-1" role="img" aria-label={`${x.tenus} ${x.tenus > 1 ? "niveaux tenus" : "niveau tenu"} sur ${CALC_LEVELS.length}`}>
