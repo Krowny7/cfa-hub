@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FicheWorkspace, type DrillSet } from "@/components/FicheWorkspace";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
+import { onePagerOfFichePdf } from "@/components/reviser/catalog";
 
 export type FicheConfig = {
   title: string;
@@ -38,10 +39,19 @@ export async function FicheDrillPage({
   if (!auth.user) redirect("/login");
 
   const admin = createAdminClient();
+  // Le one-pager de la matière (une page A4, même bucket, même URL signée) :
+  // pas encore envoyé, le lien ne s'affiche pas.
+  const onePagerFile = onePagerOfFichePdf(config.pdfFile);
   // Les traits du jour (anneau du jour sous la copie corrigée) : même lecture
   // que le logo de la barre du haut, déjà faite pour cette requête (cache).
-  const [{ data: signed, error }, { data: setsData }, traits, sp] = await Promise.all([
+  const [{ data: signed, error }, onePagerUrl, { data: setsData }, traits, sp] = await Promise.all([
     supabase.storage.from("fiches").createSignedUrl(config.pdfFile, 3600),
+    onePagerFile
+      ? supabase.storage
+          .from("fiches")
+          .createSignedUrl(onePagerFile, 3600)
+          .then((r) => (r.error ? null : (r.data?.signedUrl ?? null)))
+      : Promise.resolve(null),
     admin.from("quiz_sets").select("id,title").like("title", `${config.drillTitlePrefix}%`),
     traitsDuJour(auth.user.id),
     searchParams ?? Promise.resolve(undefined),
@@ -90,6 +100,7 @@ export async function FicheDrillPage({
         pdfUrl={pdfUrl}
         pdfDownloadName={config.pdfDownloadName}
         pdfLabel={config.pdfLabel}
+        onePagerUrl={onePagerUrl}
         totalPages={config.totalPages}
         drillSets={drillSets}
         initialPage={initialPage}

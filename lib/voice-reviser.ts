@@ -63,6 +63,23 @@ export const RV = {
   ordreCartes: "Les cartes à revoir passent en premier.",
 } as const;
 
+/** Les one-pagers : la page /fiches/one-pagers, son accès depuis /fiches et le lien des pages de fiche. */
+export const OP = {
+  titre: "One-pagers",
+  desc: "Chaque matière tient sur une page A4 : l'essentiel, les formules et les pièges d'examen. À relire la veille, ou à imprimer.",
+  retour: "Fiches de révision",
+  grille: "Les 10 matières",
+  grilleAide: "le PDF s'ouvre dans un nouvel onglet",
+  ouvrir: (matiere: string) => `Ouvrir le one-pager ${matiere} (PDF, nouvel onglet)`,
+  indisponible: "PDF bientôt en ligne",
+  impression: "Imprime-les en A4, taille réelle : chaque page est pensée pour tenir sur une feuille.",
+  accesAide: "une page A4 par matière",
+  accesTitre: "Toute une matière sur une page",
+  accesLigne: "L'essentiel, les formules et les pièges d'examen des 10 matières, à relire la veille.",
+  lienFiche: "One-pager",
+  lienFicheAide: "La matière sur une page A4, dans un nouvel onglet",
+} as const;
+
 export type KindListe = "fiche" | "cours" | "cartes";
 
 /** Le « lieu » de chaque liste : nom, une ligne, l'illustration et son cadrage. */

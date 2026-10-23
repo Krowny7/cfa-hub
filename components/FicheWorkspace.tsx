@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   BarChart3,
   BookOpen,
   Check,
@@ -13,6 +14,7 @@ import {
   CloudOff,
   Download,
   ExternalLink,
+  FileText,
   ListChecks,
   Lock,
   Maximize2,
@@ -34,6 +36,7 @@ import { createSupabaseFicheApi, type FicheApi, type LogStorage } from "@/lib/fi
 import { clearRun, loadRun, restoreRun, saveRun, type RestoredRun } from "@/lib/ficheRunStore";
 import { anneau as voixAnneau, ligneAnneauSession, RATURE, VIDE } from "@/lib/voice";
 import { CARNET, FICHE, QUIZ, aReprendre, dateCourte, jourParis, lundiParis, memeJour, rateeFois, reprendreRatures } from "@/lib/voice-z4";
+import { OP } from "@/lib/voice-reviser";
 import {
   buildErrorPoolExport,
   computePageProgress,
@@ -112,6 +115,7 @@ export function FicheWorkspace({
   pdfUrl,
   pdfDownloadName,
   pdfLabel,
+  onePagerUrl = null,
   totalPages,
   drillSets,
   initialPage = null,
@@ -125,6 +129,8 @@ export function FicheWorkspace({
   pdfUrl: string | null;
   pdfDownloadName: string;
   pdfLabel: string;
+  /** URL signée du one-pager de la matière (une page A4), null : pas de lien */
+  onePagerUrl?: string | null;
   totalPages: number;
   drillSets: DrillSet[];
   /** page ouverte au départ (lien /fiches/<slug>?page=N) */
@@ -436,6 +442,17 @@ export function FicheWorkspace({
           </Link>
           <h1 className="t-h1 mt-3">{title}</h1>
           {description && <p className="t-small mt-2 max-w-[560px]">{description}</p>}
+          {onePagerUrl && (
+            <a
+              href={onePagerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={OP.lienFicheAide}
+              className="ink-link mt-3 inline-flex items-center gap-1 text-[14px] font-semibold"
+            >
+              <FileText size={14} aria-hidden /> {OP.lienFiche} <ArrowUpRight size={14} aria-hidden />
+            </a>
+          )}
         </div>
         <div className="w-full md:w-[300px]">
           {logLoading ? (

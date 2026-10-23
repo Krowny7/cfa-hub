@@ -58,6 +58,7 @@ const ENTRIES: Entry[] = [
   { label: "QCM", hint: "Toutes les séries", href: "/qcm", group: "Pages", Icon: ListChecks },
   { label: "Examens officiels", hint: "Questions officielles CFA", href: "/official-exams", group: "Pages", Icon: FileText },
   { label: "Fiches de révision", hint: "Cours + quiz côte à côte", href: "/fiches", group: "Pages", Icon: FileText },
+  { label: "One-pagers", hint: "Chaque matière sur une page A4 (PDF)", href: "/fiches/one-pagers", group: "Pages", Icon: FileText },
   { label: "Cours complets", hint: "Decks PDF et audio", href: "/courses", group: "Pages", Icon: Headphones },
   { label: "Flashcards", hint: "Paquets par matière", href: "/flashcards", group: "Pages", Icon: Layers },
   { label: "Joueurs", hint: "Chercher un joueur", href: "/people", group: "Pages", Icon: Users },

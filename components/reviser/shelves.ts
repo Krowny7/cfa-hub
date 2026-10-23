@@ -1,5 +1,6 @@
 import { COURSES } from "@/lib/courses";
-import { SUBJECTS } from "@/components/reviser/catalog";
+import { SUBJECTS, onePagerFile } from "@/components/reviser/catalog";
+import { weightLabel } from "@/components/reviser/rail";
 import type { ShelfItem } from "@/components/reviser/ShelfPage";
 
 // Contenu des pages d'index /fiches et /courses, dans l'ordre officiel du
@@ -90,4 +91,41 @@ export function courseShelf(): { items: ShelfItem[]; upcoming: string[] } {
     });
   }
   return { items, upcoming };
+}
+
+/** Un one-pager : la matière sur une page A4 (PDF du bucket privé « fiches », vignette dans public/one-pagers). */
+export type OnePagerItem = {
+  key: string;
+  /** rang dans le programme, 1 à 10 */
+  index: number;
+  code: string;
+  name: string;
+  /** chemin du PDF dans le bucket « fiches » */
+  file: string;
+  /** vignette ~600 px de large (grille) */
+  thumb: string;
+  /** vignette ~144 px de large (accès depuis /fiches) */
+  mini: string;
+  /** « 17,5 % de l'examen », null si inconnu */
+  weight: string | null;
+};
+
+/** Les one-pagers, dans l'ordre officiel du programme. */
+export function onePagerItems(): OnePagerItem[] {
+  return SUBJECTS.flatMap((s, i) =>
+    s.onePager
+      ? [
+          {
+            key: s.key,
+            index: i + 1,
+            code: s.code,
+            name: s.name,
+            file: onePagerFile(s.onePager),
+            thumb: `/one-pagers/${s.onePager}.webp`,
+            mini: `/one-pagers/${s.onePager}-mini.webp`,
+            weight: weightLabel(s.key),
+          },
+        ]
+      : [],
+  );
 }

@@ -1,0 +1,160 @@
+/* Les one-pagers : la grille de vignettes A4 de /fiches/one-pagers et la
+   carte d'accès de /fiches (une petite pile de feuilles). */
+
+/* ——— Grille : 2 colonnes sur téléphone, 3 puis 5 ——— */
+.grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .grille {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* la feuille A4 (600 × 850) vue en entier, posée sur le papier de la carte */
+.vignette {
+  display: block;
+  aspect-ratio: 600 / 850;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.vignette img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+a.carte:hover .vignette img {
+  transform: scale(1.025);
+}
+:global([data-theme="nuit"]) .vignette img {
+  filter: brightness(0.86);
+}
+/* PDF pas encore en ligne : la feuille en filigrane */
+.indispo .vignette img {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.legende {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 12px 14px 14px;
+}
+@media (min-width: 768px) {
+  .legende {
+    padding: 14px 14px 16px 16px;
+  }
+}
+.nom {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.indispo .nom {
+  color: var(--ink-2);
+}
+
+/* ——— Accès depuis /fiches : une pile de feuilles, un titre, une ligne ——— */
+.acces {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px 16px 16px;
+}
+@media (min-width: 768px) {
+  .acces {
+    gap: 28px;
+    padding: 18px 26px 18px 24px;
+  }
+}
+.pile {
+  display: flex;
+  flex-shrink: 0;
+  padding: 4px 6px 4px 2px;
+}
+.feuille {
+  display: block;
+  width: 44px;
+  aspect-ratio: 144 / 204;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 3px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.feuille + .feuille {
+  margin-left: -24px;
+}
+.feuille:nth-child(1) {
+  transform: rotate(-5deg);
+}
+.feuille:nth-child(2) {
+  transform: rotate(-1deg);
+}
+.feuille:nth-child(3) {
+  transform: rotate(3deg);
+}
+.feuille:nth-child(4) {
+  display: none;
+  transform: rotate(6deg);
+}
+a.acces:hover .feuille:nth-child(1) {
+  transform: rotate(-8deg) translateX(-3px);
+}
+a.acces:hover .feuille:nth-child(3) {
+  transform: rotate(5deg) translateX(2px);
+}
+a.acces:hover .feuille:nth-child(4) {
+  transform: rotate(9deg) translateX(5px);
+}
+@media (min-width: 768px) {
+  .feuille {
+    width: 60px;
+  }
+  .feuille + .feuille {
+    margin-left: -30px;
+  }
+  .feuille:nth-child(4) {
+    display: block;
+  }
+}
+:global([data-theme="nuit"]) .feuille {
+  filter: brightness(0.86);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vignette img,
+  .feuille {
+    transition: none;
+  }
+  a.carte:hover .vignette img {
+    transform: none;
+  }
+}
