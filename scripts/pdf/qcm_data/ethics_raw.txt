@@ -1,0 +1,204 @@
+PAGE 1 — Ethics & Trust · Code and Standards
+SRC: R89 Q15
+Q1: A code of ethics:
+A) provides the public with assurance of a minimum level of ethical behavior.
+B) should not be used for marketing purposes.
+C) may be rules-based or principles-based.
+ANSWER: C
+EXPLANATION: Un code of ethics énonce les principes et les valeurs d'un groupe ; il peut être rules-based (règles précises) ou principles-based (principes généraux, comme le Code de CFA Institute). C est donc correct. A est faux : un code dit au public comment les membres se comporteront et renforce la confiance, mais il ne garantit pas que tous le respecteront. B est faux : rien n'interdit de présenter l'adhésion à un code comme un atout auprès des clients.
+
+SRC: R89 Q9
+Q2: Unethical behavior by financial professionals:
+A) does not affect allocation of capital.
+B) increases risk and the cost of capital.
+C) increases incomes for the profession.
+ANSWER: B
+EXPLANATION: La finance vend un produit intangible dont la qualité est difficile à juger : tout repose sur la confiance. Un comportement non éthique la détruit ; les investisseurs perçoivent plus de risque, investissent moins et exigent un rendement plus élevé, ce qui fait monter le coût du capital. B est donc correct. A est faux : en trompant les clients, il détourne le capital de ses meilleurs usages ; il fausse donc son allocation et freine la croissance. C est faux : à long terme, la défiance éloigne les clients et fait baisser les revenus de la profession.
+
+SRC: R89 Q13
+Q3: Which of the following statements about legal and ethical standards is most accurate?
+A) Illegal acts are always unethical.
+B) Some illegal acts are considered ethical.
+C) Unethical acts are always illegal.
+ANSWER: B
+EXPLANATION: Loi et éthique se recoupent souvent, mais aucune n'est un sous-ensemble de l'autre. Certains actes illégaux sont jugés éthiques par beaucoup, comme la civil disobedience ou le whistle-blowing. B est donc correct. A est faux pour la même raison : un acte illégal n'est pas toujours non éthique. C est faux : un acte peut être légal mais non éthique, par exemple recommander la société d'un proche sans le dire ; l'éthique fixe un standard plus élevé que la loi.
+
+SRC: R89 Q19
+Q4: An ethical decision-making framework:
+A) considers alternative actions and unintended consequences.
+B) focuses on the near term impact on all stakeholders.
+C) primarily addresses compliance with regulatory issues.
+ANSWER: A
+EXPLANATION: Le framework (Identify, Consider, Decide and act, Reflect) fait identifier les faits, les stakeholders et les conflits d'intérêts, puis envisager les actions possibles et leurs conséquences, y compris imprévues, avant de décider. A est donc correct. B est faux : on examine les alternatives à court et à long terme, pas seulement l'impact immédiat. C est faux : le framework sert à prendre une décision éthique, pas seulement à vérifier la conformité ; une approche purement compliance pousse à se demander ce qu'on peut faire plutôt que ce qu'on devrait faire.
+
+SRC: R90 Q5
+Q5: With respect to CFA Institute enforcement of the Code and Standards, possible disciplinary sanctions least likely include:
+A) payment of a fine.
+B) public censure.
+C) suspension from participation in the CFA Program.
+ANSWER: A
+EXPLANATION: CFA Institute n'inflige pas d'amendes. Les sanctions possibles du Professional Conduct Program sont la censure privée ou publique, la suspension du membership, la révocation du droit d'utiliser la CFA designation et, pour un candidat, la suspension du CFA Program. A est donc la réponse demandée (la sanction la moins probable). B et C sont de vraies sanctions prévues par le programme.
+
+PAGE 2 — Standards I & II · Professionalism, Capital Markets
+SRC: R91.1 Q86
+Q1: Ernesto Vivaldo is a CFA candidate. He is working in the branch office of an American-based investment company in Belgium. Vivaldo is a citizen of Venezuela. In his country, a portfolio manager is not required to disclose referral fees. Belgian law does not allow referral fees for portfolio managers. Vivaldo has been offered a deal that involves a referral fee. Vivaldo should follow the requirements of:
+A) Belgium.
+B) CFA Institute.
+C) Venezuela.
+ANSWER: A
+EXPLANATION: Standard I(A) Knowledge of the Law : quand plusieurs règles s'appliquent (loi du pays de résidence, loi du pays d'activité, Code and Standards), il faut suivre la plus stricte. Ici, la loi belge interdit les referral fees : elle est plus stricte que le Code, qui exige seulement leur disclosure (Standard VI(C)). A est donc correct. B est faux : le Code ne prime que lorsque la loi locale est moins stricte que lui. C est faux : la loi vénézuélienne, qui n'exige même pas de disclosure, est la moins stricte des trois.
+
+SRC: R91.1 Q25
+Q2: A member or candidate who produces issuer-paid research should most appropriately negotiate:
+A) a flat fee prior to writing the report.
+B) a fee scale based on the subsequent performance of the issuer's securities.
+C) compensation in the form of equity or options, but not cash.
+ANSWER: A
+EXPLANATION: Standard I(B) Independence and Objectivity : l'issuer-paid research est acceptable si la rémunération ne dépend pas des conclusions du rapport. La bonne pratique est un flat fee négocié avant de rédiger le rapport, et disclosed. A est donc correct. B est faux : une rémunération liée à la performance future du titre pousse l'analyste à écrire une recommandation favorable. C est faux : être payé en actions ou en options crée la même incitation, puisque l'analyste profite de la hausse du titre.
+
+SRC: R91.2 Q8
+Q3: Marc Randall, CFA, is an investment analyst. During a meeting with a potential client, Randall's boss states that, "You can be sure our investments will always outperform Treasury Bonds because of our fine research staff members, like Marc." Randall knows that this statement is:
+A) a violation of fiduciary duties owed to clients under the Standards.
+B) a violation of the Standard concerning prohibition against misrepresentation.
+C) not in violation of the Code and Standards.
+ANSWER: B
+EXPLANATION: Standard I(C) Misrepresentation interdit de garantir un rendement sur des placements dont le résultat est incertain. Affirmer qu'un portefeuille battra toujours les Treasury bonds revient à garantir une performance : c'est une misrepresentation. B est donc correct. A est faux : le problème n'est pas le devoir de loyauté envers un client (le prospect n'est pas encore client) mais une déclaration trompeuse. C est faux : c'est une garantie de performance, donc une violation ; seul un produit réellement garanti (par un État ou une banque) peut être présenté comme tel.
+
+SRC: R91.3 Q24
+Q4: According to CFA Institute Standards of Professional Conduct, which of the following statements about material nonpublic information is NOT correct? Information is:
+A) material if reasonable investors would want to know the information before making an investment decision.
+B) nonpublic until it has been disseminated to a select group of investors.
+C) nonpublic until it has been disseminated to the marketplace in general.
+ANSWER: B
+EXPLANATION: Standard II(A) Material Nonpublic Information : une information reste nonpublic tant qu'elle n'a pas été diffusée au marché dans son ensemble. La communiquer à un groupe restreint (selective disclosure, conference call d'analystes) ne la rend pas publique. B est donc l'affirmation inexacte, celle qui est demandée. A est exact : une information est material si elle affecterait le prix ou si un investisseur raisonnable voudrait la connaître avant de décider. C est exact : c'est la définition de nonpublic donnée par le Standard.
+
+SRC: R91.3 Q30
+Q5: Which of the following is an example of information-based market manipulation?
+A) Influencing futures prices by obtaining a dominant position in the underlying commodity.
+B) Spreading false rumors about a stock on social media to influence its price.
+C) Entering large offsetting buy and sell orders to inflate trading volume.
+ANSWER: B
+EXPLANATION: Standard II(B) Market Manipulation distingue l'information-based manipulation (diffuser des informations fausses ou trompeuses : rumeurs, pump and dump) et la transaction-based manipulation (transactions qui faussent les prix ou gonflent artificiellement les volumes). Répandre de fausses rumeurs sur les réseaux sociaux pour faire bouger le cours relève de la première. B est donc correct. A est faux : prendre une position dominante sur le sous-jacent pour influencer le prix des futures (squeeze) est transaction-based. C est faux : des ordres d'achat et de vente qui se compensent pour gonfler le volume (wash trades) sont aussi transaction-based.
+
+PAGE 3 — Standards III & IV · Duties to Clients, Employers
+SRC: R91.4 Q5
+Q1: Ed Staples, CFA, manages a pension fund sponsored by Hill Corporation. The Code and Standards most likely require Staples to:
+A) act solely in the interest of the ultimate beneficiaries.
+B) support the sponsor's management during proxy fights.
+C) base investment decisions on each beneficiary's return requirements and risk tolerance.
+ANSWER: A
+EXPLANATION: Standard III(A) Loyalty, Prudence, and Care : pour un pension fund, le client est l'ensemble des bénéficiaires du plan, pas le management de l'entreprise qui le sponsorise ; le gérant doit agir uniquement dans leur intérêt. A est donc correct. B est faux : lors d'un proxy fight, il vote dans l'intérêt des bénéficiaires, contre le management si nécessaire. C est faux : les décisions doivent servir les bénéficiaires dans leur ensemble, pas être calées sur le profil de chacun d'eux.
+
+SRC: R91.1 Q45
+Q2: Scott Andrews, CFA, is a stockbroker selling an oversubscribed stock issue. Which of the following best describes Andrews' actions regarding this sale? Andrews:
+A) can offer this security on a prorated basis to all clients for which the security is appropriate.
+B) can only offer this security to clients for which it is appropriate on a first come first serve basis.
+C) cannot offer an oversubscribed issue of stock to any clients.
+ANSWER: A
+EXPLANATION: Standard III(B) Fair Dealing : traiter les clients fairly (pas forcément equally) impose, pour une émission sursouscrite, de l'offrir à tous les clients pour qui elle est adaptée et de répartir les titres au prorata des demandes, sans en garder pour soi ni favoriser les gros clients. A est donc correct. B est faux : la règle du premier arrivé, premier servi avantage les clients informés en premier. C est faux : le Standard n'interdit pas de proposer l'émission, il exige une allocation équitable.
+
+SRC: R91.5 Q4
+Q3: A money manager, who is a member of CFA Institute, states that, "Our aggressive growth fund produced a 12% annualized return last quarter. This illustrates the superior results our firm produces." The fund return stated by the manager is accurate. Is this a violation of Standard III(D) Performance Presentation?
+A) No, because a brief summary of results is acceptable as long as more complete information is made available.
+B) No, because the manager has stated a fact.
+C) Yes.
+ANSWER: C
+EXPLANATION: Standard III(D) Performance Presentation exige une présentation fair, accurate et complete, à l'oral comme à l'écrit. Présenter le rendement d'un seul fonds sur un seul trimestre comme représentatif des résultats de toute la firme est trompeur, même si le chiffre est exact. C est donc correct. A est faux : une présentation abrégée est permise si elle n'induit pas en erreur et si le détail est disponible sur demande ; ici, c'est la généralisation qui trompe. B est faux : un chiffre exact peut tout de même donner une image trompeuse de la performance.
+
+SRC: R91.6 Q53
+Q4: Jack Salyers, CFA, is considering starting his own firm to compete with his current employer. He takes several actions before turning in his resignation. Which of the following actions least likely violates the Standard concerning loyalty? Salyers:
+A) registers his new firm with the government's financial regulators.
+B) informs clients he has been serving that he is forming a new firm and offers them a discount on fees if they move their accounts to the new firm.
+C) copies computer models he has been using to form a reasonable basis for his investment recommendations.
+ANSWER: A
+EXPLANATION: Standard IV(A) Loyalty : préparer une activité concurrente avant son départ est permis, hors du temps et des ressources de l'employeur et sans lui nuire. Enregistrer sa future société auprès des régulateurs est une simple préparation. A est donc la réponse demandée (l'action qui viole le moins le Standard). B est faux : solliciter les clients de l'employeur avant que le départ soit effectif est une violation. C est faux : les modèles et les fichiers appartiennent à l'employeur ; les copier est une violation.
+
+SRC: R91.6 Q7
+Q5: Jennifer Stewart, CFA, a supervisor at an investment advisory firm, has tried unsuccessfully to convince top management of the firm's need for a formal, comprehensive compliance program. What is Stewart's most appropriate course of action?
+A) Decline in writing to accept supervisory responsibility.
+B) Rely on the Code and Standards to perform her duties as a supervisor.
+C) Resign from the firm if no compliance program is instituted.
+ANSWER: A
+EXPLANATION: Standard IV(C) Responsibilities of Supervisors : un superviseur doit faire des efforts raisonnables pour prévenir et détecter les violations, ce qui suppose un système de compliance adéquat. Faute de quoi, il alerte la direction puis refuse par écrit d'assumer la supervision jusqu'à l'adoption de procédures adéquates. A est donc correct. B est faux : le Code and Standards ne remplace pas un programme de compliance propre à la firme. C est faux : la démission n'est pas exigée ; le Standard demande de décliner la supervision par écrit.
+
+PAGE 4 — Standards V, VI & VII · Analysis, Conflicts, CFA
+SRC: R91.7 Q10
+Q1: Peggy Green, CFA, is a research analyst following Brown Co. All the information she has gathered suggests the stock should be rated a weak "hold." During a recent lunch, Green overheard another analyst say that the stock should be rated a "buy." Green returns to her office and issues a "buy" recommendation. Green has most likely violated the Code and Standards by:
+A) failing to distinguish between fact and opinion.
+B) recommending an investment action without a reasonable basis.
+C) acting or causing others to act on material nonpublic information.
+ANSWER: B
+EXPLANATION: Standard V(A) Diligence and Reasonable Basis exige une base raisonnable et adéquate, appuyée sur une recherche et une analyse sérieuses, pour toute recommandation. Green abandonne sa propre analyse (un « hold » faible) pour reprendre l'avis d'un analyste entendu au déjeuner : ce n'est pas une base raisonnable. B est donc correct. A est faux : il ne s'agit pas de présenter une opinion comme un fait (V(B)), mais d'une absence d'analyse. C est faux : l'opinion d'un autre analyste n'est pas une information material nonpublic sur la société.
+
+SRC: R91.7 Q24
+Q2: Lee Hurst, CFA, is an equity research analyst who has recently left a large firm to start independent practice. He is able to re-create several of his previous research reports, based on his clear recollection of supporting documentation he compiled at his previous employer. He publishes the reports and obtains several new clients. Hurst is most likely:
+A) not in violation of any Standard.
+B) in violation of the Standard concerning diligence and reasonable basis.
+C) in violation of the Standard concerning record retention.
+ANSWER: C
+EXPLANATION: Standard V(C) Record Retention : il faut conserver les documents qui justifient analyses et recommandations, et ceux-ci appartiennent à l'ancien employeur. Après un changement de firme, l'analyste peut s'aider de sa mémoire, mais il doit reconstituer la documentation à partir de sources publiques ou de la société avant de publier. Hurst publie sans ces records : C est donc correct. A est faux pour cette raison. B est faux : il a pu être diligent et avoir une base raisonnable lors de l'analyse initiale ; ce qui manque, c'est la documentation qui l'étaye.
+
+SRC: R91.8 Q32
+Q3: An analyst has been covering a particular firm for years. Recently, the analyst's uncle died and left the analyst a sizable position in the firm's stock. To comply with the Code and Standards, the analyst:
+A) is required to disclose the ownership of the stock to his employer.
+B) should divest the stock as soon as is practicable.
+C) is not required to act because the analyst did not purchase the stock.
+ANSWER: A
+EXPLANATION: Standard VI(A) Avoid or Disclose Conflicts : détenir des titres d'une société que l'on couvre peut nuire à l'objectivité ; il faut le déclarer à l'employeur et le mentionner clairement dans toute recherche ultérieure sur la société. A est donc correct. B est faux : le Standard n'exige ni ne recommande de vendre les titres ; il exige la disclosure. C est faux : peu importe que les titres aient été hérités et non achetés, le conflit d'intérêts existe.
+
+SRC: R91.8 Q20
+Q4: Samuel Goldstein, CFA, is an analyst for Tamarack Securities. Goldstein's father, Reuben, has a client account at Tamarack. In ordering trades, Goldstein should place orders in:
+A) all accounts simultaneously.
+B) his clients' accounts first, his father's account second, and his account last.
+C) his clients' and his father's accounts in the first group and his personal accounts in the second group.
+ANSWER: C
+EXPLANATION: Standard VI(B) Priority of Transactions : les transactions des clients et de l'employeur passent avant celles dont le membre est beneficial owner. Le compte du père est un compte client ordinaire de la firme : il est traité comme celui de n'importe quel autre client, ni favorisé ni pénalisé. C est donc correct. A est faux : passer son ordre personnel en même temps que ceux des clients ne leur laisse pas la priorité. B est faux : reléguer le compte du père derrière les autres clients le désavantage, alors que c'est un client comme les autres.
+
+SRC: R91.9 Q18
+Q5: Stephanie Orange, Level II CFA candidate, posts blogs for her exam study group three days after the exam to vent her frustrations over the exam. However, to avoid disclosing what was actually on the exam, she only discusses topic areas she thought would be on the exam that were not. She writes "...the topics selected were unnecessarily obscure. Important items like FCF, DDM, and Residual Income were ignored completely..." Orange is most likely:
+A) in violation of the Code and Standards for providing confidential information about the exam.
+B) not in violation because the information about the actual exam contents was posted only after the conclusion of the exam.
+C) not in violation because the information was only about what was not on the exam.
+ANSWER: A
+EXPLANATION: Standard VII(A) Conduct as Participants in CFA Institute Programs interdit de révéler des informations confidentielles sur l'examen, y compris les grands thèmes testés ou non testés, même après la session. A est donc correct. B est faux : l'interdiction ne s'arrête pas à la fin de l'examen. C est faux : dire ce qui n'était pas à l'examen renseigne aussi les autres candidats, c'est également interdit. Dire seulement que l'examen était difficile, ou critiquer CFA Institute, reste permis.
+
+PAGE 5 — Introduction to GIPS · Ethics Application
+SRC: R92 Q1
+Q1: Which of the following parties may adopt and claim compliance with Global Investment Performance Standards (GIPS)?
+A) A software firm that developed a software package that assists investment firms in achieving GIPS compliance.
+B) The chief compliance officer for a regional money manager.
+C) An investment management firm located in Indonesia.
+ANSWER: C
+EXPLANATION: Seules les firmes qui gèrent effectivement des actifs pour d'autres peuvent claim compliance avec les GIPS, de façon volontaire et pour toute la firme ; leur localisation importe peu, les GIPS étant des standards mondiaux. C est donc correct. A est faux : un éditeur de logiciel peut soutenir (endorse) les GIPS, mais il ne gère pas d'actifs et ne peut pas s'en déclarer conforme. B est faux : les GIPS s'appliquent à des firmes, pas à des individus.
+
+SRC: R92 Q13
+Q2: Which of the following is least likely one of the eight sections of the GIPS standards for firms?
+A) Pooled Fund Money-Weighted Return Report.
+B) Input Data and Calculation Methodology.
+C) Implementation and Verification.
+ANSWER: C
+EXPLANATION: Les 8 sections des GIPS pour les firmes sont : (1) Fundamentals of Compliance, (2) Input Data and Calculation Methodology, (3) Composite and Pooled Fund Maintenance, (4) à (7) les rapports time-weighted et money-weighted des composites puis des pooled funds, (8) GIPS Advertising Guidelines. « Implementation and Verification » n'en fait pas partie : la verification est recommandée, ce n'est pas une section. C est donc la réponse demandée. A est une vraie section (la 7e). B est une vraie section (la 2e).
+
+SRC: R92 Q9
+Q3: Lora Murphy has an account at Ferrell Investments, a GIPS-compliant firm. Murphy invests in small-cap value stocks and pays Ferrell a standard fee to execute her buy and sell orders, but does not permit her account manager to initiate trades on her behalf. According to GIPS, is Ferrell required to include Murphy's portfolio in their small-cap value stock composite?
+A) Yes, because the portfolio is consistent with the defined strategy for this composite.
+B) No, because constructing composites is voluntary.
+C) No, because the portfolio is non-discretionary.
+ANSWER: C
+EXPLANATION: Un composite regroupe des portefeuilles discretionary gérés selon une même stratégie. Ici, la cliente interdit au gérant de prendre l'initiative des transactions : la firme ne peut pas appliquer sa stratégie, le portefeuille est nondiscretionary et reste hors composite. C est donc correct. A est faux : la cohérence avec la stratégie ne suffit pas, il faut aussi que la firme ait la discretion de gestion. B est faux : pour une firme GIPS-compliant, les composites sont obligatoires ; tout portefeuille fee-paying discretionary doit figurer dans au moins un composite.
+
+SRC: R92 Q14
+Q4: Which of the following statements about a GIPS-compliant firm's verification of GIPS compliance is most accurate? Verification is:
+A) optional, but if chosen it must be performed by an independent third party.
+B) required, and may be performed by the firm's internal auditors.
+C) required, and must be performed by an independent third party.
+ANSWER: A
+EXPLANATION: La verification est recommandée mais pas obligatoire pour claim compliance. Si la firme la choisit, elle doit être réalisée par un tiers indépendant et porter sur l'ensemble de la firme. A est donc correct. B est faux deux fois : la verification n'est pas requise et ne peut pas être confiée aux auditeurs internes. C est faux : le tiers indépendant est exact, mais la verification n'est pas obligatoire.
+
+SRC: R93 Q1
+Q5: Deloris Johnson, CFA, observed that her supervisor has violated a federal securities regulation. Johnson discussed the matter with her company's compliance department but they have taken no action. According to the CFA Institute Code and Standards of Professional Conduct, Johnson is required to:
+A) confront the supervisor and attempt to stop the violation.
+B) dissociate from the supervisor's activity.
+C) report the violation to securities regulators.
+ANSWER: B
+EXPLANATION: Standard I(A) Knowledge of the Law : face à la violation d'un tiers, on la signale d'abord au supervisor ou à la compliance ; si rien ne change, on doit se dissocier de l'activité (par exemple en demandant une réaffectation) et le documenter. Johnson a déjà alerté la compliance sans résultat : B est donc correct. A est faux : le Code and Standards n'exige pas de confronter soi-même le supervisor. C est faux : signaler la violation aux autorités n'est pas requis, sauf si la loi applicable l'impose ; c'est seulement encouragé.

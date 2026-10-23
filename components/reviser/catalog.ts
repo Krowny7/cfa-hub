@@ -28,14 +28,14 @@ export type Subject = {
 type Def = Omit<Subject, "course"> & { courseTitle: string };
 
 const DEFS: Def[] = [
-  { key: "ethics", name: "Ethics", code: "ETH", short: "Ethics", fiche: null, drillPrefix: null, courseTitle: "Ethical and Professional Standards", flashcardFolders: ["Éthique et Standards Professionnels (Système)", "Ethics (Système)"] },
-  { key: "quant", name: "Quantitative Methods", code: "QM", short: "Quant", fiche: null, drillPrefix: null, courseTitle: "Quantitative Methods", flashcardFolders: ["Méthodes Quantitatives (Système)", "Quantitative Methods (Système)"] },
+  { key: "ethics", name: "Ethics", code: "ETH", short: "Ethics", fiche: "ethics", drillPrefix: "Ethical and Professional Standards", courseTitle: "Ethical and Professional Standards", flashcardFolders: ["Éthique et Standards Professionnels (Système)", "Ethics (Système)"] },
+  { key: "quant", name: "Quantitative Methods", code: "QM", short: "Quant", fiche: "quantitative-methods", drillPrefix: "Quantitative Methods", courseTitle: "Quantitative Methods", flashcardFolders: ["Méthodes Quantitatives (Système)", "Quantitative Methods (Système)"] },
   { key: "economics", name: "Economics", code: "ECO", short: "Economics", fiche: "economics", drillPrefix: "Economics", courseTitle: "Economics", flashcardFolders: ["Économie (Système)", "Economics (Système)"] },
   { key: "corporate", name: "Corporate Issuers", code: "CI", short: "Corporate", fiche: "corporate-issuers", drillPrefix: "Corporate Issuers", courseTitle: "Corporate Issuers", flashcardFolders: ["Finance d'Entreprise (Système)", "Corporate Issuers (Système)"] },
   { key: "fsa", name: "Financial Statement Analysis", code: "FSA", short: "FSA", fiche: "financial-statement-analysis", drillPrefix: "Financial Statement Analysis", courseTitle: "Financial Statement Analysis", flashcardFolders: ["Financial Statement Analysis (Système)", "Analyse des États Financiers (Système)"] },
   { key: "equity", name: "Equity Investments", code: "EQ", short: "Equity", fiche: "equity", drillPrefix: "Equity", courseTitle: "Equity Investments", flashcardFolders: ["Equity (Système)", "Investissements en Actions (Système)"] },
   { key: "fixed_income", name: "Fixed Income", code: "FI", short: "Fixed Income", fiche: "fixed-income", drillPrefix: "Fixed Income", courseTitle: "Fixed Income", flashcardFolders: ["Fixed Income (Système)"] },
-  { key: "derivatives", name: "Derivatives", code: "DER", short: "Derivatives", fiche: "derivatives", drillPrefix: null, courseTitle: "Derivatives", flashcardFolders: ["Instruments Dérivés (Système)", "Derivatives (Système)"] },
+  { key: "derivatives", name: "Derivatives", code: "DER", short: "Derivatives", fiche: "derivatives", drillPrefix: "Derivatives", courseTitle: "Derivatives", flashcardFolders: ["Instruments Dérivés (Système)", "Derivatives (Système)"] },
   { key: "alternatives", name: "Alternative Investments", code: "ALT", short: "Alternatives", fiche: "alternative-investments", drillPrefix: "Alternative Investments", courseTitle: "Alternative Investments", flashcardFolders: ["Investissements Alternatifs (Système)", "Alternative Investments (Système)"] },
   { key: "portfolio", name: "Portfolio Management", code: "PM", short: "Portfolio", fiche: "portfolio-management", drillPrefix: "Portfolio Management", courseTitle: "Portfolio Management", flashcardFolders: ["Portfolio Management (Système)", "Gestion de Portefeuille (Système)"] },
 ];

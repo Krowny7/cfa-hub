@@ -1,0 +1,245 @@
+PAGE 1 — Rates and Returns
+SRC: R1 Q4
+Q1: Vega research has been conducting investor polls for Third State Bank. They have found the most investors are not willing to tie up their money in a 1-year (2-year) CD unless they receive at least 1.0% (1.5%) more than they would on an ordinary savings account. If the savings account rate is 3%, and the bank wants to raise funds with 2-year CDs, the yield must be at least:
+A) 4.0%, and this represents a required rate of return.
+B) 4.5%, and this represents a discount rate.
+C) 4.5%, and this represents a required rate of return.
+ANSWER: C
+EXPLANATION: Pour un CD à 2 ans, les investisseurs exigent 1,5 % de plus que le livret à 3 % : le rendement doit être d'au moins 3,0 + 1,5 = 4,5 %. Comme c'est le minimum qu'il faut offrir pour convaincre les investisseurs de prêter leur argent, ce taux s'interprète comme un required rate of return. C est donc correct. A est faux : 4,0 % applique la prime du CD à 1 an (1,0 %), pas celle du CD à 2 ans. B est faux : le montant est bon, mais on parle de discount rate quand on actualise un flux futur pour en obtenir la valeur présente, ce qui n'est pas le cas ici.
+
+SRC: R1 Q21
+Q2: An asset manager's portfolio had the following annual rates of return: 20X7: +6%; 20X8: -37%; 20X9: +27%. The manager states that the return for the period is -5.34%. The manager has reported the:
+A) arithmetic mean return.
+B) geometric mean return.
+C) holding period return.
+ANSWER: B
+EXPLANATION: Moyenne géométrique = [(1,06)(0,63)(1,27)]^(1/3) - 1 = (0,8481)^(1/3) - 1 = -5,34 % : c'est le chiffre annoncé par le gérant. B est donc correct. A est faux : la moyenne arithmétique vaut (6 - 37 + 27) / 3 = -1,33 % ; elle est toujours supérieure à la moyenne géométrique dès que les rendements varient. C est faux : le holding period return sur les trois ans est le rendement cumulé, non annualisé : (1,06)(0,63)(1,27) - 1 = -15,2 %.
+
+SRC: R1 Q40
+Q3: An investor buys a share of stock for $200.00 at time t = 0. At time t = 1, the investor buys an additional share for $225.00. At time t = 2 the investor sells both shares for $235.00. During both years, the stock paid a per share dividend of $5.00. What are the approximate time-weighted and money-weighted returns respectively?
+A) 10.8%; 9.4%.
+B) 7.7%; 7.7%.
+C) 9.0%; 15.0%.
+ANSWER: A
+EXPLANATION: Time-weighted : on chaîne les HPR des sous-périodes. Année 1 : (225 + 5 - 200) / 200 = 15 % ; année 2 (deux actions) : (470 + 10 - 450) / 450 = 6,67 %. TWR = [(1,15)(1,0667)]^(1/2) - 1 = 10,8 %. Money-weighted : c'est l'IRR des flux de l'investisseur, CF0 = -200, CF1 = 5 - 225 = -220, CF2 = 2 x (235 + 5) = +480, d'où un IRR de 9,4 %. A est donc correct. Le MWR est inférieur au TWR parce que l'investisseur a doublé sa mise juste avant la moins bonne année (6,67 % contre 15 %). B est faux : les deux mesures sont égales en l'absence de flux intermédiaires (ou si toutes les sous-périodes ont le même rendement) ; ici, il y a un apport en t = 1 et les deux années diffèrent. C est faux : 15 % n'est que le rendement de la première année.
+
+SRC: R1 Q10
+Q4: The continuously compounded rate of return that will generate a one-year holding period return of -6.5% is closest to:
+A) -5.7%.
+B) -6.3%.
+C) -6.7%.
+ANSWER: C
+EXPLANATION: Le rendement continu se déduit du HPR par r = ln(1 + HPR) = ln(1 - 0,065) = ln(0,935) = -6,72 %. C est donc correct. Le rendement continu est toujours inférieur au HPR, car ln(1 + R) < R : pour une perte, il est donc plus négatif que -6,5 %. A et B sont faux : ils sont moins négatifs que -6,5 %, ce qui est impossible pour le rendement continu d'une perte de 6,5 %.
+
+SRC: R1 Q9
+Q5: An investor buys a non-dividend paying stock for $100 at the beginning of the year with 50% initial margin. At the end of the year, the stock price is $95. Deflation of 2% occurred during the year. Which of the following return measures for this investment will be greatest?
+A) Leveraged return.
+B) Real return.
+C) Nominal return.
+ANSWER: B
+EXPLANATION: Aucun calcul n'est nécessaire, mais on peut vérifier. Rendement nominal = 95 / 100 - 1 = -5 %. Rendement réel = (1 - 0,05) / (1 - 0,02) - 1 = -3,1 % : avec une inflation négative (déflation), le rendement réel est supérieur au rendement nominal. Rendement avec levier (marge initiale de 50 %, soit 50 $ de fonds propres) : -5 / 50 = -10 %, car le levier amplifie la perte. Le classement est donc réel > nominal > avec levier : B est correct. A est faux : le levier double la perte. C est faux : -5 % est inférieur au rendement réel de -3,1 %.
+
+PAGE 2 — The Time Value of Money in Finance
+SRC: R2 Q2
+Q1: A 15-year zero-coupon German government bond has an annualized yield of -1.5%. Assuming annual compounding, the price of the bond per €100 of principal is closest to:
+A) €125.
+B) €115.
+C) €105.
+ANSWER: A
+EXPLANATION: Prix d'un zéro-coupon = FV / (1 + r)^N = 100 / (1 - 0,015)^15 = 100 / 0,7972 = 125,45 €. Avec un rendement négatif, le prix dépasse la valeur de remboursement : l'investisseur paie aujourd'hui plus que ce qu'il récupérera à l'échéance. A est donc correct. B et C sont faux : ils sous-estiment l'effet de l'actualisation sur 15 ans ; 115 € et 105 € correspondraient à des rendements d'environ -0,9 % et -0,3 %.
+
+SRC: R2 Q21
+Q2: A stock is expected to pay a dividend next year of $2.40. An analyst expects the dividend to grow at a constant annual rate of 4% and believes investors' required rate of return on the stock is 7%. The analyst will estimate a value for this stock that is closest to:
+A) $85.60.
+B) $80.00.
+C) $83.20.
+ANSWER: B
+EXPLANATION: Gordon growth model : V0 = D1 / (r - g) = 2,40 / (0,07 - 0,04) = 80 $. Le dividende donné est déjà celui de l'an prochain (D1) : il ne faut pas le faire croître. B est donc correct. C est faux : 83,20 $ = 2,40 x 1,04 / 0,03, c'est l'erreur qui traite 2,40 $ comme le dividende déjà versé (D0) et le fait croître une fois de trop. A est faux : 85,60 $ (80 x 1,07) ne résulte d'aucune application correcte du modèle.
+
+SRC: R2 Q12
+Q3: An analyst is using the constant growth dividend discount model (DDM) to evaluate XYZ stock. The stock is currently trading at $20 per share and recently paid an annual dividend of $1.50. Assuming a constant growth rate of 4.5%, the implied required rate of return on the stock is closest to:
+A) 12.00%.
+B) 12.34%.
+C) 11.68%.
+ANSWER: B
+EXPLANATION: En isolant r dans le Gordon growth model : r = D1 / P0 + g. Le dividende de 1,50 $ vient d'être versé (D0), donc D1 = 1,50 x 1,045 = 1,5675 $. r = 1,5675 / 20 + 0,045 = 7,84 % + 4,5 % = 12,34 %. B est donc correct. A est faux : 12,00 % utilise D0 au lieu de D1 (1,50 / 20 + 4,5 %). C est faux : 11,68 % divise D0 par 1,045 au lieu de le multiplier.
+
+SRC: R2 Q3
+Q4: An investor purchases a stock on January 1. The annual dividend payments for a stock investment for the next four years, beginning on December 31, are $50, $75, $100, and $125. Based on the cash flow additivity principle, the present value of this series of cash flows will be equivalent to the present value of a $50 annuity and the present value of what series of cash flows?
+A) $0, $0, $125, and $125.
+B) $75, $50, $25, and $0.
+C) $0, $25, $50, and $75.
+ANSWER: C
+EXPLANATION: Selon le cash flow additivity principle, la PV d'une série de flux est la somme des PV de ses composantes, à condition de garder les mêmes dates. En retirant 50 $ chaque année, il reste 0, 25, 50 et 75 $ : PV(50, 75, 100, 125) = PV(annuité de 50) + PV(0, 25, 50, 75). C est donc correct. B est faux : les montants sont dans le mauvais ordre ; placer les plus gros flux plus tôt donnerait une PV plus élevée. A est faux : ajoutée à l'annuité, cette série donne 50, 50, 175 et 175 $, pas la série d'origine.
+
+SRC: R2 Q18
+Q5: An investor is deciding whether to buy a 1-year bond two years in a row or lock in the rate on a 2-year bond today. The 1-year spot interest rate is 5.25%, and the 2-year spot interest rate is 6.50%. Which of the following statements is most accurate regarding implied forward rates and the investor's options?
+A) The expected rate on a 1-year bond one year from today is equal to 7.76%.
+B) The forward rate will be between 5.25% and 6.50%.
+C) The investor is better off locking in the 2-year rate at 6.50%.
+ANSWER: A
+EXPLANATION: Par absence d'arbitrage, (1 + S2)² = (1 + S1)(1 + 1y1y). Donc 1y1y = 1,065² / 1,0525 - 1 = 1,134225 / 1,0525 - 1 = 7,76 %. A est donc correct : 7,76 % est le forward implicite (1y1y) ; le lire comme le taux attendu suppose la pure expectations theory, hypothèse implicite de l'énoncé. B est faux : le taux à 2 ans est une moyenne (géométrique) du spot à 1 an et du forward ; pour obtenir 6,50 % à partir de 5,25 %, le forward doit être au-dessus des deux spots. C est faux : par construction, placer à 5,25 % puis à 7,76 % rapporte autant que 6,50 % par an sur deux ans ; l'investisseur est indifférent.
+
+PAGE 3 — Statistical Measures of Asset Returns · Probability Trees
+SRC: R3 Q37
+Q1: What are the median and the third quintile of the following data points, respectively? 9.2%, 10.1%, 11.5%, 11.9%, 12.2%, 12.8%, 13.1%, 13.6%, 13.9%, 14.2%, 14.8%, 14.9%, 15.4%
+A) 12.8%; 13.6%.
+B) 13.1%; 13.6%.
+C) 13.1%; 13.7%.
+ANSWER: C
+EXPLANATION: Les 13 valeurs sont déjà classées. Médiane : 7e valeur, soit 13,1 %. Troisième quintile = 60e percentile : position Ly = (n + 1) x y / 100 = 14 x 0,60 = 8,4, soit entre la 8e valeur (13,6 %) et la 9e (13,9 %). Interpolation : 13,6 + 0,4 x (13,9 - 13,6) = 13,72 %, soit 13,7 %. C est donc correct. A est faux : 12,8 % est la 6e valeur, pas la médiane. B est faux : 13,6 % oublie l'interpolation sur la partie décimale (0,4) de la position.
+
+SRC: R3 Q54
+Q2: Returns for a portfolio over the last four years are 17.0% (Year 1), 12.2% (Year 2), 3.9% (Year 3) and -8.4% (Year 4). Treating these returns as a sample, what is their coefficient of variation (CV)?
+A) 1.80.
+B) 1.56.
+C) 0.55.
+ANSWER: A
+EXPLANATION: CV = écart-type / moyenne. Moyenne = (17,0 + 12,2 + 3,9 - 8,4) / 4 = 6,175 %. Somme des carrés des écarts à la moyenne : 117,18 + 36,30 + 5,18 + 212,43 = 371,09. Écart-type d'échantillon (diviseur n - 1 = 3) : (371,09 / 3)^0,5 = 11,12 %. CV = 11,12 / 6,175 = 1,80. A est donc correct. B est faux : 1,56 utilise l'écart-type de population (diviseur n = 4, soit 9,63 %), alors que l'énoncé demande de traiter les données comme un échantillon. C est faux : 0,55 est l'inverse du CV (moyenne / écart-type).
+
+SRC: R3 Q43
+Q3: Twenty Level I CFA candidates in a study group took a practice exam and want to determine the distribution of their scores. When they grade their exams they discover that one of them skipped an ethics question and subsequently filled in the rest of his answers in the wrong places, leaving him with a much lower score than the rest of the group. If they include this candidate's score, their distribution will most likely:
+A) have a mean that is less than its median.
+B) be positively skewed.
+C) have a mode that is less than its median.
+ANSWER: A
+EXPLANATION: Un score très bas isolé crée une longue queue à gauche : la distribution devient négativement asymétrique (negative skew). La moyenne, tirée vers le bas par la valeur extrême, passe sous la médiane : moyenne < médiane < mode. A est donc correct. B est faux : une asymétrie positive viendrait d'une valeur extrême haute. C est faux : en asymétrie négative, le mode est au contraire supérieur à la médiane.
+
+SRC: R4 Q1
+Q4: There is a 60% chance that the economy will be good next year and a 40% chance that it will be bad. If the economy is good, there is a 70% chance that XYZ Incorporated will have EPS of $5.00 and a 30% chance that their earnings will be $3.50. If the economy is bad, there is an 80% chance that XYZ Incorporated will have EPS of $1.50 and a 20% chance that their earnings will be $1.00. What is the firm's expected EPS?
+A) $3.29.
+B) $5.95.
+C) $2.75.
+ANSWER: A
+EXPLANATION: Dans un probability tree, on multiplie les probabilités le long de chaque branche (probabilités jointes), puis on pondère les EPS. Économie favorable : 0,60 x 0,70 = 42 % pour 5,00 $ et 0,60 x 0,30 = 18 % pour 3,50 $. Économie défavorable : 0,40 x 0,80 = 32 % pour 1,50 $ et 0,40 x 0,20 = 8 % pour 1,00 $. E(EPS) = 2,10 + 0,63 + 0,48 + 0,08 = 3,29 $, soit aussi 0,60 x 4,55 + 0,40 x 1,40 (espérances conditionnelles pondérées par la probabilité de chaque scénario). A est donc correct. B est faux : 5,95 $ additionne les deux espérances conditionnelles (4,55 + 1,40) sans les pondérer. C est faux : 2,75 $ est la moyenne simple des quatre EPS, sans tenir compte des probabilités.
+
+SRC: R4 Q8
+Q5: An analyst expects that 20% of all publicly traded companies will experience a decline in earnings next year. The analyst has developed a ratio to help forecast this decline. If the company has a decline in earnings, there is a 90% probability that this ratio will be negative. If the company does not have a decline in earnings, there is only a 10% probability that the ratio will be negative. The analyst randomly selects a company with a negative ratio. Based on Bayes' theorem, the updated probability that the company will experience a decline is:
+A) 18%.
+B) 26%.
+C) 69%.
+ANSWER: C
+EXPLANATION: Bayes : P(baisse | ratio négatif) = P(ratio négatif | baisse) x P(baisse) / P(ratio négatif). Probabilité non conditionnelle d'un ratio négatif : 0,90 x 0,20 + 0,10 x 0,80 = 0,18 + 0,08 = 0,26. D'où P(baisse | ratio négatif) = 0,18 / 0,26 = 69 %. C est donc correct : l'information « ratio négatif » fait passer la probabilité de baisse de 20 % (a priori) à 69 %. A est faux : 18 % est la probabilité jointe (baisse et ratio négatif), pas la probabilité conditionnelle. B est faux : 26 % est la probabilité non conditionnelle d'un ratio négatif.
+
+PAGE 4 — Portfolio Mathematics · Simulation · Estimation & Inference
+SRC: R5 Q28
+Q1: Compute the standard deviation of a two-stock portfolio if stock A (40% weight) has a variance of 0.0015, stock B (60% weight) has a variance of 0.0021, and the correlation coefficient for the two stocks is -0.35?
+A) 1.39%.
+B) 0.07%.
+C) 2.64%.
+ANSWER: C
+EXPLANATION: Var(Rp) = wA² x Var(A) + wB² x Var(B) + 2 x wA x wB x rho x sigma(A) x sigma(B), avec sigma(A) = 0,0015^0,5 = 3,87 % et sigma(B) = 0,0021^0,5 = 4,58 %. Var(Rp) = 0,16 x 0,0015 + 0,36 x 0,0021 + 2 x 0,40 x 0,60 x (-0,35) x 0,0387 x 0,0458 = 0,000240 + 0,000756 - 0,000298 = 0,000698. Écart-type = 0,000698^0,5 = 2,64 %. C est donc correct : la corrélation négative ramène le risque du portefeuille sous celui de chacune des deux actions. B est faux : 0,07 % est la variance (0,000698) lue à tort comme un écart-type. A est faux : 1,39 % sous-estime le risque ; il ne résulte pas d'une application correcte de la formule.
+
+SRC: R5 Q16
+Q2: For two random variables, P(X = 2, Y = 10) = 0.3, P(X = 6, Y = 2.5) = 0.4, and P(X = 10, Y = 0) = 0.3. Given that E(X) is 6 and E(Y) is 4, the covariance of X and Y is:
+A) -12.0.
+B) 24.0.
+C) 6.0.
+ANSWER: A
+EXPLANATION: Avec une distribution de probabilités jointes, Cov(X, Y) = somme des P(x, y) x [x - E(X)] x [y - E(Y)]. Ici : 0,3 x (2 - 6)(10 - 4) + 0,4 x (6 - 6)(2,5 - 4) + 0,3 x (10 - 6)(0 - 4) = 0,3 x (-24) + 0 + 0,3 x (-16) = -7,2 - 4,8 = -12. A est donc correct : un X élevé va avec un Y faible, la covariance est négative. B et C sont faux : la covariance ne peut pas être positive ici, puisque tous les produits d'écarts non nuls sont négatifs.
+
+SRC: R5 Q20
+Q3: Expected returns and standard deviations of returns for three portfolios are as follows: Portfolio 1: expected return 9%, standard deviation 5%; Portfolio 2: expected return 8%, standard deviation 4%; Portfolio 3: expected return 7%, standard deviation 3%. Assuming the risk-free rate is 3%, an investor who wants to minimize the probability of returns less than 5% should choose:
+A) Portfolio 2.
+B) Portfolio 3.
+C) Portfolio 1.
+ANSWER: C
+EXPLANATION: Pour minimiser la probabilité d'un rendement inférieur à un seuil, on choisit le portefeuille au SFRatio de Roy le plus élevé : [E(Rp) - RL] / sigma(p), avec RL = 5 % (le taux sans risque ne sert à rien ici). Portefeuille 1 : (9 - 5) / 5 = 0,80 ; portefeuille 2 : (8 - 5) / 4 = 0,75 ; portefeuille 3 : (7 - 5) / 3 = 0,67. C est donc correct. B est faux : le portefeuille 3 ne ressort en tête que si l'on prend à tort le taux sans risque (3 %) comme seuil, ce qui revient à calculer un ratio de Sharpe (4 / 3 = 1,33). A est faux : son ratio (0,75) est inférieur à celui du portefeuille 1.
+
+SRC: R6 Q5
+Q4: Which of the following statements regarding the distribution of returns used for asset pricing models is most accurate?
+A) Lognormal distribution returns are used because this will allow for negative returns on the assets.
+B) Normal distribution returns are used for asset pricing models because they will only allow the asset price to fall to zero.
+C) Lognormal distribution returns are used for asset pricing models because they will not result in an asset return of less than -100%.
+ANSWER: C
+EXPLANATION: Si le prix d'un actif suit une loi lognormale (ce qui revient à des rendements continus normaux), il ne peut pas descendre sous zéro : la loi lognormale est bornée par zéro à gauche et asymétrique à droite. Le pire rendement possible est donc -100 %. C est donc correct. B est faux : c'est la loi normale qui autorise des prix négatifs, donc des rendements inférieurs à -100 %, ce qui est impossible. A est faux : des rendements négatifs sont possibles avec les deux lois ; la lognormale est choisie parce qu'elle interdit un prix négatif, pas parce qu'elle autorise des rendements négatifs.
+
+SRC: R7 Q16
+Q5: Suppose the mean debt/equity ratio of the population of all banks in the United States is 20 and the population variance is 25. A banking industry analyst uses a computer program to select a random sample of 50 banks from this population and compute the sample mean. The program repeats this exercise 1000 times and computes the sample mean each time. According to the central limit theorem, the sampling distribution of the 1000 sample means will be approximately normal if the population of bank debt/equity ratios has:
+A) a normal distribution, because the sample is random.
+B) a Student's t-distribution, because the sample size is greater than 30.
+C) any probability distribution.
+ANSWER: C
+EXPLANATION: Le central limit theorem dit que, pour un échantillon assez grand (n >= 30 en pratique), la distribution des moyennes d'échantillon est approximativement normale quelle que soit la distribution de la population, avec pour moyenne celle de la population et pour variance la variance de la population divisée par n. Ici n = 50 : les moyennes suivent approximativement une loi normale de moyenne 20 et de variance 25 / 50 = 0,5 (erreur type 0,71). C est donc correct. A est faux : la normalité de la population n'est pas requise. B est faux : la population n'a pas à suivre une loi de Student ; c'est la taille de l'échantillon qui compte, pas la loi de la population.
+
+PAGE 5 — Hypothesis Testing · Tests of Independence
+SRC: R8 Q23
+Q1: Bo Rigley, CFA, is a financial analyst examining large-cap equity returns over a calendar year. His sample size is 252 trading days, and he observes a mean return of 0.07% and a standard deviation of 0.12%. With his null hypothesis that the daily portfolio return is equal to zero and a 10% level of significance, Rigley will:
+A) reject the null because the test statistic is greater than the critical value.
+B) not reject the null because the test statistic is less than the critical value.
+C) not reject the null because the test statistic is greater than the critical value.
+ANSWER: A
+EXPLANATION: Test bilatéral, H0 : rendement moyen = 0. Erreur type = s / n^0,5 = 0,12 % / 252^0,5 = 0,12 % / 15,87 = 0,00756 %. Statistique de test = (0,07 % - 0) / 0,00756 % = 9,26. Au seuil de 10 % en bilatéral, les valeurs critiques sont ±1,645 (grand échantillon). Comme 9,26 > 1,645, on rejette H0. A est donc correct. B est faux : la statistique de test est très supérieure à la valeur critique. C est faux : une statistique supérieure (en valeur absolue) à la valeur critique conduit au rejet de H0, pas au non-rejet.
+
+SRC: R8 Q28
+Q2: Ron Jacobi, manager with the Toulee Department of Natural Resources, is responsible for setting catch-and-release limits for Lake Norby, a large and popular fishing lake. He takes a sample to determine whether the mean length of Northern Pike in the lake exceeds 18 inches. If the sample t-statistic indicates that the mean length of the fish is significantly greater than 18 inches, when the population mean is actually 17.8 inches, the t-test resulted in:
+A) both a Type I and a Type II error.
+B) a Type II error only.
+C) a Type I error only.
+ANSWER: C
+EXPLANATION: Les hypothèses sont H0 : moyenne <= 18 pouces et Ha : moyenne > 18 pouces. La vraie moyenne (17,8 pouces) vérifie H0 : H0 est vraie. Le test conclut à une moyenne significativement supérieure à 18 pouces, donc rejette une H0 vraie : c'est une erreur de type I. C est donc correct. B est faux : une erreur de type II consiste à ne pas rejeter une H0 fausse. A est faux : les deux erreurs ne peuvent pas se produire en même temps, car l'erreur de type I suppose H0 vraie et l'erreur de type II suppose H0 fausse.
+
+SRC: R8 Q25
+Q3: For a hypothesis test regarding a population parameter, an analyst has determined that the probability of failing to reject a false null hypothesis is 18%, and the probability of rejecting a true null hypothesis is 5%. The power of the test is:
+A) 0.95.
+B) 0.18.
+C) 0.82.
+ANSWER: C
+EXPLANATION: Ne pas rejeter une H0 fausse est une erreur de type II, de probabilité 18 %. La puissance du test est la probabilité de rejeter une H0 fausse : 1 - P(erreur de type II) = 1 - 0,18 = 0,82. C est donc correct. A est faux : 0,95 = 1 - 5 % est le niveau de confiance, lié à l'erreur de type I (rejeter une H0 vraie). B est faux : 0,18 est la probabilité de l'erreur de type II elle-même, pas la puissance.
+
+SRC: R8 Q5
+Q4: If an analyst wants to perform hypothesis testing using a chi-square test, which of the following values is he most likely assessing?
+A) The value of a population mean.
+B) The value of a population variance.
+C) Whether two population variances are equal.
+ANSWER: B
+EXPLANATION: Le test du chi-deux sert à tester la valeur d'une variance de population : statistique (n - 1) x s² / variance sous H0, à n - 1 degrés de liberté. B est donc correct. A est faux : pour une moyenne, on utilise un test t (ou z si la variance de la population est connue). C est faux : l'égalité de deux variances se teste avec un test F (rapport des deux variances d'échantillon, la plus grande au numérateur).
+
+SRC: R9 Q3
+Q5: Critical values from Student's t-distribution for a two-tailed test at a 5% significance level are 2.048 for 28 degrees of freedom, 2.045 for 29 degrees of freedom and 2.042 for 30 degrees of freedom. A researcher wants to test a hypothesis that two variables have a population correlation coefficient equal to zero. For a sample size of 30, the appropriate critical value for this test is plus-or-minus:
+A) 2.048.
+B) 2.045.
+C) 2.042.
+ANSWER: A
+EXPLANATION: Le test de nullité d'un coefficient de corrélation utilise t = r x (n - 2)^0,5 / (1 - r²)^0,5, qui suit une loi de Student à n - 2 degrés de liberté. Avec n = 30 : 28 degrés de liberté, d'où une valeur critique de ±2,048. A est donc correct. B est faux : 2,045 correspond à n - 1 = 29 degrés de liberté, ceux d'un test sur une seule moyenne. C est faux : 2,042 correspond à 30 degrés de liberté, sans retirer les deux degrés de liberté perdus.
+
+PAGE 6 — Simple Linear Regression · Big Data Techniques
+SRC: R10 Q10
+Q1: Consider the following analysis of variance (ANOVA) table: Regression: sum of squares 550, degrees of freedom 1, mean sum of squares 550.000; Error: sum of squares 750, degrees of freedom 38, mean sum of squares 19.737; Total: sum of squares 1,300, degrees of freedom 39. The F-statistic for the test of the fit of the model is closest to:
+A) 0.42.
+B) 0.97.
+C) 27.87.
+ANSWER: C
+EXPLANATION: F = MSR / MSE = (SSR / k) / (SSE / (n - 2)) = 550 / 19,737 = 27,87, avec k = 1 variable indépendante. C est donc correct : une F aussi élevée indique que la régression explique une part significative de la variation de la variable dépendante. A est faux : 0,42 = 550 / 1 300 est le R² (part de la variation totale expliquée), pas la statistique F. B est faux : 0,97 (38 / 39) est un rapport de degrés de liberté, pas un rapport de carrés moyens.
+
+SRC: R10 Q8
+Q2: Which of the following is least likely an assumption of linear regression?
+A) The variance of the error terms each period remains the same.
+B) The error terms from a regression are positively correlated.
+C) Values of the independent variable are not correlated with the error term.
+ANSWER: B
+EXPLANATION: La régression linéaire simple suppose notamment des résidus de variance constante (homoskedasticity, A), indépendants les uns des autres et non corrélés à la variable indépendante (C). Des résidus positivement corrélés entre eux violent l'hypothèse d'indépendance : c'est un problème (fréquent en séries temporelles), pas une hypothèse du modèle. B est donc correct. A et C sont de vraies hypothèses : A est l'homoskedasticity de la fiche ; C (X exogène, non corrélé aux résidus) est une hypothèse classique que retient le corrigé officiel, en plus des 4 hypothèses de la fiche.
+
+SRC: R10 Q3
+Q3: When there is a linear relationship between an independent variable and the relative change in the dependent variable, the most appropriate model for a simple regression is:
+A) the log-log model.
+B) the log-lin model.
+C) the lin-log model.
+ANSWER: B
+EXPLANATION: Dans le modèle log-lin, ln Y = b0 + b1 X : une hausse d'une unité de X entraîne une variation relative (en pourcentage) de Y d'environ b1. C'est le cas décrit. B est donc correct. A est faux : dans le log-log (ln Y = b0 + b1 ln X), la variation relative de Y dépend de la variation relative de X ; b1 est une élasticité. C est faux : dans le lin-log (Y = b0 + b1 ln X), c'est la variation absolue de Y qui dépend de la variation relative de X.
+
+SRC: R11 Q2
+Q4: An executive describes her company's "low latency, multiple terabyte" requirements for managing Big Data. To which characteristics of Big Data is the executive referring?
+A) Velocity and variety.
+B) Volume and variety.
+C) Volume and velocity.
+ANSWER: C
+EXPLANATION: Le Big Data se caractérise par son volume (quantité de données disponibles), sa velocity (vitesse à laquelle les données sont communiquées) et sa variety (degré de structuration : données structurées, semi-structurées ou non structurées). « Multiple terabyte » renvoie au volume et « low latency » (faible délai de transmission) à la velocity. C est donc correct. A et B sont faux : rien dans la phrase ne porte sur la diversité des formats de données (variety).
+
+SRC: R11 Q1
+Q5: Under which of these conditions is a machine learning model said to be underfit?
+A) The model treats true parameters as noise.
+B) The input data are not labeled.
+C) The model identifies spurious relationships.
+ANSWER: A
+EXPLANATION: Un modèle underfit est trop simple pour les données qu'il doit décrire : il traite de vrais paramètres comme du bruit et ne capte pas les vraies relations. A est donc correct. C est faux : identifier des relations fallacieuses (prendre du bruit pour un signal) est le symptôme d'un modèle overfit, trop complexe, qui colle aux données d'entraînement mais se généralise mal. B est faux : des données d'entrée sans label renvoient à l'unsupervised learning, pas à l'underfitting.

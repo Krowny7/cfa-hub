@@ -24,6 +24,9 @@ export const FICHES: Record<string, string> = {
   Economics: "/fiches/economics",
   "Corporate Issuers": "/fiches/corporate-issuers",
   "Alternative Investments": "/fiches/alternative-investments",
+  "Ethical and Professional Standards": "/fiches/ethics",
+  "Quantitative Methods": "/fiches/quantitative-methods",
+  Derivatives: "/fiches/derivatives",
 };
 
 function ficheOf(title: string, setId: string) {

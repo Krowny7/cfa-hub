@@ -2085,7 +2085,7 @@ const APPROX: CalcType = {
   topic: "fixed_income",
   name: "Duration et convexité approchées, effective duration",
   tier: "essentiel",
-  source: "LM 11–13 · Yield-Based Duration and Convexity, Curve-Based and Empirical Fixed-Income Risk Measures",
+  source: "LM 11 · Yield-Based Bond Duration Measures and Properties",
   formulas: [
     "ApproxModDur = (V− − V+) / (2 × ΔYTM × V0)",
     "ApproxCon = (V− + V+ − 2V0) / (ΔYTM² × V0)",
@@ -2264,7 +2264,7 @@ const PRICE_CHANGE: CalcType = {
   name: "Variation de prix par la duration et la convexité",
   tier: "essentiel",
   top: true,
-  source: "LM 12–13 · Yield-Based Bond Convexity and Portfolio Properties, Curve-Based and Empirical Fixed-Income Risk Measures",
+  source: "LM 12 · Yield-Based Bond Convexity and Portfolio Properties",
   formulas: [
     "%ΔP ≈ −ModDur × ΔYTM + ½ × Convexité × (ΔYTM)²",
     "Avec option : %ΔP ≈ −EffDur × ΔCurve + ½ × EffCon × (ΔCurve)²",
@@ -2622,7 +2622,7 @@ const PORTFOLIO: CalcType = {
   topic: "fixed_income",
   name: "Duration de portefeuille et key rate durations",
   tier: "annexe",
-  source: "LM 12–13 · Yield-Based Bond Convexity and Portfolio Properties, Curve-Based and Empirical Fixed-Income Risk Measures",
+  source: "LM 12 · Yield-Based Bond Convexity and Portfolio Properties",
   formulas: [
     "Duration du portefeuille ≈ Σ w_i × D_i, avec w_i = valeur de marché_i / valeur totale",
     "Même moyenne pondérée pour la convexité du portefeuille",

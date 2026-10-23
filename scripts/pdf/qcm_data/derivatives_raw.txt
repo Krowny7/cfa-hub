@@ -1,0 +1,204 @@
+PAGE 1 — Derivative Features & Markets · Forwards, Futures & Swaps
+SRC: R68 Q7
+Q1: Which of the following statements regarding derivatives and/or cash market transactions is most accurate?
+A) Investors can easily gain exposure to risk through derivatives but at a relatively high cost.
+B) Initiating a derivatives position is most likely to have a greater impact on market prices of the underlying, relative to initiating an equivalent position in the underlying through a cash market transaction.
+C) Transaction costs for a derivatives position are often lower than for the equivalent cash market trade.
+ANSWER: C
+EXPLANATION: Par rapport au marché cash, un dérivé donne une exposition à faible coût (levier implicite : on ne verse qu'une marge ou une prime), avec des coûts de transaction souvent plus bas. C est donc correct. A est faux : l'exposition s'obtient facilement, mais à un coût relativement faible, pas élevé. B est faux : c'est l'inverse, prendre position via un dérivé a en général moins d'impact sur le prix de l'underlying qu'acheter ou vendre l'actif lui-même sur le marché cash.
+
+SRC: R68 Q6
+Q2: A forward contract specifying that only the gains and losses are exchanged at settlement is called a:
+A) deliverable contract.
+B) cash-settled contract.
+C) netted contract.
+ANSWER: B
+EXPLANATION: Dans un contrat cash-settled, seul le gain ou la perte net est payé à l'échéance, par la partie perdante à la partie gagnante ; c'est économiquement équivalent à la livraison. B est donc correct. A est faux : un deliverable contract impose la livraison effective de l'actif contre paiement du prix du contrat. C est faux : le montant est bien netté, mais « netted contract » n'est pas le nom de ce type de contrat.
+
+SRC: R68 Q9
+Q3: In futures markets, the primary role of the clearinghouse is to:
+A) reduce transaction costs by making contract prices public.
+B) act as guarantor to both sides of a futures trade.
+C) prevent arbitrage and enforce federal regulations.
+ANSWER: B
+EXPLANATION: La clearinghouse (CCH) s'interpose entre les deux parties : elle devient l'acheteur de chaque vendeur et le vendeur de chaque acheteur (novation) et garantit les paiements, grâce aux marges et au mark-to-market quotidien. B est donc correct. A est faux : la liquidité qu'elle apporte peut réduire indirectement les coûts, mais ce n'est pas son rôle premier. C est faux : elle n'empêche pas l'arbitrage et ne fait pas appliquer la réglementation fédérale, qui relève des régulateurs.
+
+SRC: R69 Q3
+Q4: If the margin balance in a futures account with a long position goes below the maintenance margin amount:
+A) a deposit is required to return the account margin to the initial margin level.
+B) a margin deposit equal to the maintenance margin is required within two business days.
+C) a deposit is required which will bring the account to the maintenance margin level.
+ANSWER: A
+EXPLANATION: Dès que le solde du compte de marge (calculé au settlement price du jour) passe sous la maintenance margin, l'investisseur reçoit un margin call et doit remonter le compte jusqu'à l'initial margin, quelle que soit l'évolution ultérieure du prix. A est donc correct. B est faux : le dépôt ne vaut pas la maintenance margin, il comble l'écart jusqu'à l'initial margin. C est faux : revenir seulement à la maintenance margin est la règle d'un compte actions sur marge, pas celle des futures (piège classique).
+
+SRC: R69 Q19
+Q5: Credit default swaps are least accurately characterized as:
+A) contingent claims.
+B) insurance.
+C) forward commitments.
+ANSWER: C
+EXPLANATION: Un CDS ne paie le protection buyer que si un credit event survient (défaut, faillite, restructuration involontaire) : son payoff dépend d'un événement, c'est donc un contingent claim, comme une option, et non un forward commitment. C est la caractérisation la moins exacte. A est exact : c'est bien un contingent claim. B est exact : le CDS fonctionne comme une assurance contre le risque de crédit, le protection buyer versant des primes périodiques au protection seller.
+
+PAGE 2 — Option Payoffs · Benefits, Risks & Uses
+SRC: R69 Q7
+Q1: Which of the following statements about options is most accurate?
+A) The holder of a put option has the right to sell to the writer of the option.
+B) The writer of a put option has the obligation to sell the asset to the holder of the put option.
+C) The holder of a call option has the obligation to sell to the option writer if the stock's price rises above the strike price.
+ANSWER: A
+EXPLANATION: Le détenteur (buyer) d'un put a le droit, mais pas l'obligation, de vendre l'underlying au writer au prix d'exercice. A est donc correct. B est faux : le writer d'un put a l'obligation d'acheter (pas de vendre) si le put est exercé. C est faux : le détenteur d'un call a le droit d'acheter, sans aucune obligation ; c'est le writer qui porte l'obligation.
+
+SRC: R69 Q10
+Q2: An investor buys a call option that has an option premium of $5 and an exercise price of $22.50. The current market price of the stock is $25.75. At expiration, the value of the stock is $23.00. The net profit/loss of the call position is closest to:
+A) -$4.50.
+B) $4.50.
+C) -$5.00.
+ANSWER: A
+EXPLANATION: À l'expiration, le payoff du call vaut max(0 ; 23,00 - 22,50) = 0,50 $. Profit = payoff - prime = 0,50 - 5,00 = -4,50 $. A est donc correct. Le cours actuel (25,75 $) ne sert à rien : seul compte le cours à l'expiration. B est faux : le signe est inversé, c'est une perte. C est faux : perdre toute la prime (-5,00 $) supposerait un call hors de la monnaie, alors qu'il est dans la monnaie de 0,50 $.
+
+SRC: R69 Q15
+Q3: Which of the following statements regarding call options is most accurate? The:
+A) call holder will exercise (at expiration) if the exercise price exceeds the stock price.
+B) breakeven point for the buyer is the exercise price plus the option premium.
+C) breakeven point for the seller is the exercise price minus the option premium.
+ANSWER: B
+EXPLANATION: Le buyer d'un call récupère sa prime quand le cours à l'expiration atteint X + prime : c'est son breakeven, et c'est aussi celui du writer, puisque le gain de l'un est la perte de l'autre (zero-sum game). B est donc correct. A est faux : le détenteur exerce si le cours dépasse le prix d'exercice, pas l'inverse. C est faux : X - prime est le breakeven d'un put ; celui du writer d'un call est X + prime.
+
+SRC: R70 Q2
+Q4: A corporation that employs hedge accounting and uses an interest rate swap to offset changes in the value of fixed rate bond liability is said to be employing a:
+A) net investment hedge.
+B) cash flow hedge.
+C) fair value hedge.
+ANSWER: C
+EXPLANATION: Une dette à taux fixe a des flux connus : c'est sa valeur qui varie avec les taux. Un swap (receveur fixe, payeur flottant) qui neutralise ces variations de valeur au bilan est un fair value hedge. C est donc correct. B est faux : le cash flow hedge couvre des flux futurs variables, par exemple une dette flottante swappée en fixe. A est faux : le net investment hedge couvre l'equity d'une filiale étrangère contre le risque de change.
+
+SRC: R70 Q6
+Q5: The most appropriate action an owner of common stock can take to hedge the stock's price risk while retaining its upside potential is to:
+A) sell calls.
+B) buy calls.
+C) buy puts.
+ANSWER: C
+EXPLANATION: Acheter un put (protective put) fixe un plancher au prix d'exercice : la baisse est coupée, la hausse est conservée (moins la prime payée). C est donc correct. A est faux : vendre des calls rapporte une prime mais plafonne la hausse au prix d'exercice, et ne protège la baisse qu'à hauteur de cette prime. B est faux : acheter des calls quand on détient déjà l'action double l'exposition à la hausse au lieu de couvrir la baisse.
+
+PAGE 3 — Arbitrage, Replication & Cost of Carry · Forward Valuation
+SRC: R71 Q1
+Q1: The calculation of derivatives values is based on an assumption that:
+A) investors are risk neutral.
+B) arbitrage opportunities are exploited rapidly.
+C) arbitrage opportunities do not arise in real markets.
+ANSWER: B
+EXPLANATION: La valorisation des dérivés suppose que les opportunités d'arbitrage sont exploitées rapidement : deux portefeuilles aux payoffs identiques sont ramenés au même prix (law of one price). B est donc correct. A est faux : on actualise au taux sans risque parce que le portefeuille dérivé + réplication est sans risque, pas parce que les investisseurs seraient risk-neutral. C est faux : des arbitrages apparaissent bien sur les marchés ; ils disparaissent vite (un écart plus petit que les coûts de transaction peut subsister).
+
+SRC: R71 Q8
+Q2: For an underlying asset that has no holding costs or benefits, the no-arbitrage forward price at initiation of a forward contract is:
+A) zero.
+B) the future value of the spot price.
+C) equal to the spot price.
+ANSWER: B
+EXPLANATION: Sans coûts ni bénéfices de détention, F0(T) = S0 x (1 + Rf)^T : c'est la valeur future du spot capitalisée au taux sans risque, soit le coût d'un achat de l'underlying financé par emprunt. B est donc correct. A est faux : c'est la valeur du forward qui est nulle à l'initiation, pas son prix. C est faux : le prix forward n'est égal au spot que si le coût de portage net est nul (bénéfices qui compensent exactement le taux sans risque et les coûts).
+
+SRC: R71 Q5
+Q3: Which of the following is most likely to increase the no-arbitrage forward price of an asset?
+A) Lower storage costs for a commodity.
+B) Higher dividends from a stock.
+C) Lower convenience yield for a commodity.
+ANSWER: C
+EXPLANATION: Le prix forward monte quand les coûts de détention augmentent ou quand les bénéfices de détention diminuent. Un convenience yield plus faible réduit le bénéfice (non monétaire) de détenir la commodity : F augmente. C est donc correct. A est faux : des coûts de stockage plus faibles réduisent F. B est faux : des dividendes plus élevés sont un bénéfice de détention plus grand, ce qui réduit F.
+
+SRC: R72 Q1
+Q4: For an underlying asset that has no holding costs or benefits, the value of a forward contract to the long during the life of the contract is the:
+A) spot price minus the present value of the forward price.
+B) difference between the spot price and the forward price.
+C) present value of the difference between the spot price and the forward price.
+ANSWER: A
+EXPLANATION: Pendant la vie du contrat, la valeur pour le long est Vt = St - F0(T) / (1 + Rf)^(T - t) : le spot actuel moins la valeur actuelle du prix forward, qui ne sera payé qu'en T. A est donc correct. B est faux : St - F0(T) n'est la valeur qu'à l'échéance (t = T). C est faux : on n'actualise que le prix forward, pas le spot, qui est déjà une valeur d'aujourd'hui.
+
+SRC: R72 Q3
+Q5: The value of a forward or futures contract is:
+A) specified in the contract.
+B) typically zero at initiation.
+C) equal to the spot price at expiration.
+ANSWER: B
+EXPLANATION: Le prix du contrat est fixé pour que sa valeur soit nulle à l'initiation : personne ne paie au départ. B est donc correct. A est faux : c'est le prix (forward price) qui est fixé dans le contrat ; la valeur, elle, varie ensuite avec l'underlying. C est faux : à l'échéance, la valeur est l'écart entre le spot et le prix du contrat, ST - F0(T), pas le spot lui-même.
+
+PAGE 4 — FRAs · Futures & Swap Pricing · Option Moneyness
+SRC: R72 Q2
+Q1: The most likely use of a forward rate agreement is to:
+A) lock in an interest rate for future borrowing or lending.
+B) exchange a floating-rate obligation for a fixed-rate obligation.
+C) obtain the right, but not the obligation, to borrow at a certain interest rate.
+ANSWER: A
+EXPLANATION: Un FRA sert à figer aujourd'hui le taux d'un emprunt ou d'un prêt futur : le long (payeur fixe) est payé si le MRR réalisé dépasse le taux du FRA, ce qui compense le surcoût de son emprunt. A est donc correct. B est faux : échanger une dette flottante contre une dette fixe sur plusieurs périodes, c'est un swap de taux (une série de FRAs). C est faux : un FRA est un forward commitment, obligatoire pour les deux parties ; un droit sans obligation serait une option sur taux.
+
+SRC: R73 Q3
+Q2: For a futures contract, the adjustment for the change in settlement price from one day to the next will result in:
+A) no change in contract price but a change in contract value.
+B) a change in contract price but no change in contract value.
+C) changes in both the contract price and contract value.
+ANSWER: B
+EXPLANATION: Le mark-to-market quotidien passe les gains et pertes du jour sur le compte de marge, puis remet le prix du contrat au nouveau settlement price : la valeur du futures revient à zéro chaque soir. B est donc correct. A est faux : c'est le cas d'un forward, dont le prix reste fixe et dont la valeur varie jusqu'à l'échéance. C est faux : après l'ajustement, la valeur du futures est de nouveau nulle ; seul son prix a changé.
+
+SRC: R73 Q1
+Q3: Long futures contracts may be preferred to equivalent forward contracts without central clearing when interest rates are:
+A) negatively correlated with the price of the underlying.
+B) positively correlated with the price of the underlying.
+C) uncorrelated with the price of the underlying.
+ANSWER: B
+EXPLANATION: Avec une corrélation positive entre les taux et le prix de l'underlying, le long futures encaisse ses gains de mark-to-market quand les taux sont hauts (il les replace cher) et finance ses appels de marge quand les taux sont bas : le futures est plus attractif que le forward, et son prix est plus élevé. B est donc correct. A est faux : une corrélation négative rend le futures moins attractif, donc le forward préférable. C est faux : sans corrélation (ou avec des taux constants), prix futures et prix forward sont égaux ; aucun n'est préféré.
+
+SRC: R74 Q4
+Q4: For a series of forward contracts to replicate a swap contract, the forward contracts must have:
+A) values at swap initiation that sum to zero.
+B) values at swap expiration that sum to zero.
+C) values at swap initiation that are equal to zero.
+ANSWER: A
+EXPLANATION: Un swap est une série de FRAs au même taux fixe (le swap rate). Comme les forward rates implicites diffèrent d'une date à l'autre, chaque FRA a une valeur non nulle à l'initiation ; seule leur somme est nulle, comme la valeur du swap. A est donc correct. C est faux : des FRAs de valeur nulle auraient chacun un taux différent, alors que le swap paie le même taux fixe à chaque date. B est faux : la condition porte sur l'initiation, pas sur l'échéance.
+
+SRC: R75 Q3
+Q5: The time value of an option is most accurately described as:
+A) the amount by which the intrinsic value exceeds the option premium.
+B) equal to the entire premium for an out-of-the-money option.
+C) increasing as the option approaches its expiration date.
+ANSWER: B
+EXPLANATION: Prime = valeur intrinsèque (exercise value) + time value. Une option hors de la monnaie a une valeur intrinsèque nulle : toute sa prime est de la time value. B est donc correct. A est faux : c'est l'inverse, la time value est l'excédent de la prime sur la valeur intrinsèque. C est faux : la time value diminue à l'approche de l'expiration et vaut zéro à l'échéance.
+
+PAGE 5 — Option Bounds & Factors · Put–Call Parity · Binomial Model
+SRC: R75 Q1
+Q1: The lower and upper bounds on European options will always:
+A) be nonnegative.
+B) include a present value calculation of the exercise price.
+C) be positive.
+ANSWER: A
+EXPLANATION: Une option est un droit sans obligation : sa valeur ne peut jamais être négative, mais elle peut être nulle. Les bornes inférieure et supérieure sont donc toujours positives ou nulles (nonnegative). A est donc correct. C est faux : la borne inférieure vaut zéro dès que l'option est hors de la monnaie, par exemple max(0 ; S - PV(X)) pour un call ; elle n'est donc pas toujours strictement positive. B est faux : la borne supérieure d'un call européen est simplement le cours de l'underlying, sans valeur actuelle du prix d'exercice (les autres bornes en contiennent une : PV(X) pour la borne supérieure du put, et dans les deux bornes inférieures).
+
+SRC: R75 Q14
+Q2: An investor has bought a European put option and written a European call option. Other things equal, a decrease in the risk-free rate will increase the value of:
+A) only one of these option positions.
+B) both of these option positions.
+C) neither of these option positions.
+ANSWER: B
+EXPLANATION: Une baisse du taux sans risque augmente la valeur actuelle du prix d'exercice : le call, qui paiera X, baisse ; le put, qui recevra X, monte. L'investisseur est long put (il gagne) et short call (il gagne aussi quand le call baisse) : ses deux positions s'apprécient. B est donc correct. A est faux : il oublie que la baisse du call profite au writer. C est faux : les deux positions gagnent.
+
+SRC: R76 Q8
+Q3: Which of the following portfolios has the same future cash flows as a protective put?
+A) Long call option, long risk-free bond, short the underlying asset.
+B) Long call option, long risk-free bond.
+C) Short call option, long risk-free bond.
+ANSWER: B
+EXPLANATION: Le protective put (action + put) et le fiduciary call (call + zéro-coupon qui paie X) ont le même payoff : X si le cours final est <= X, sinon le cours final. C'est la put-call parity : S + p = c + PV(X). B est donc correct. A est faux : call + obligation - action réplique un put seul (p = c - S + PV(X)), pas un protective put. C est faux : short call + obligation n'a pas ce payoff (il plafonne au lieu de protéger).
+
+SRC: R76 Q2
+Q4: An investor calculates that the premium of a European put option is less than its value based on put-call parity. In exploiting this arbitrage opportunity, the investor is most likely to:
+A) invest the present value of the exercise price at the risk-free rate.
+B) sell the call option.
+C) sell the underlying short.
+ANSWER: B
+EXPLANATION: Par la parité, p = c - S + PV(X). Le put est trop bon marché : on l'achète et on vend le put synthétique, c'est-à-dire qu'on vend le call, qu'on achète l'action et qu'on emprunte PV(X). B est donc correct. A est faux : il faut emprunter PV(X), pas le placer. C est faux : il faut acheter l'underlying, pas le vendre à découvert ; A et C correspondent à l'arbitrage inverse, quand le put est trop cher.
+
+SRC: R77 Q4
+Q5: Consider a stock that will have a value of either 22 or 14 one year from now. If the risk-free rate is 5%, what is the ratio of shares to short call options with an exercise price of 18 for a portfolio that will have the same value at expiration regardless of the stock price at the end of the year?
+A) 0.48.
+B) 0.53.
+C) 0.50.
+ANSWER: C
+EXPLANATION: Payoffs du call (X = 18) : 22 - 18 = 4 en hausse, 0 en baisse. Hedge ratio h = (4 - 0) / (22 - 14) = 0,50 action par call vendu. Vérification : 0,5 x 22 - 4 = 7 et 0,5 x 14 = 7, valeur certaine dans les deux cas. C est donc correct. Le taux sans risque ne sert pas à calculer h ; il sert ensuite à actualiser ces 7. A est faux : 0,48 = 0,50 / 1,05. B est faux : 0,53 = 0,50 x 1,05. Les deux font intervenir le taux à tort.

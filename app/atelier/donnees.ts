@@ -27,7 +27,7 @@ const niveau = (v: unknown): Niveau => (v === 2 || v === 3 ? v : 1);
 const NIVEAU_DE: Record<CalcLevel, Niveau> = { facile: 1, moyen: 2, difficile: 3 };
 
 /** Les fiches en PDF (bucket « fiches », <slug>.pdf), qui s'ouvrent dans le tiroir de l'Atelier. */
-const FICHES_PDF = new Set(["alternative-investments", "corporate-issuers", "economics", "equity", "financial-statement-analysis", "fixed-income", "portfolio-management"]);
+const FICHES_PDF = new Set(["alternative-investments", "corporate-issuers", "derivatives", "economics", "equity", "ethics", "financial-statement-analysis", "fixed-income", "portfolio-management", "quantitative-methods"]);
 
 function item(x: Brut): ItemSeance | null {
   const i = num(x.i, -1);

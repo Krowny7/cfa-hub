@@ -2273,3 +2273,20 @@ UPDATE codex_matieres
    SET prefixe_drill = 'Corporate Issuers', fiche = 'corporate-issuers'
  WHERE cle = 'corporate'
    AND (prefixe_drill IS DISTINCT FROM 'Corporate Issuers' OR fiche IS DISTINCT FROM 'corporate-issuers');
+
+-- ============================================================================
+-- 11. Alternative Investments, Ethics, Quantitative Methods et Derivatives ont
+-- leur fiche PDF et leur drill (octobre 2026). Comme Corporate (section 10) :
+-- sans ces lignes, les étapes « fiche » et « drill » de leurs branches ne
+-- peuvent pas se valider (Derivatives avait une fiche sans drill). Idempotent.
+-- ============================================================================
+UPDATE codex_matieres AS m
+   SET prefixe_drill = v.prefixe, fiche = v.fiche
+  FROM (VALUES
+         ('alternatives', 'Alternative Investments', 'alternative-investments'),
+         ('ethics', 'Ethical and Professional Standards', 'ethics'),
+         ('quant', 'Quantitative Methods', 'quantitative-methods'),
+         ('derivatives', 'Derivatives', 'derivatives')
+       ) AS v(cle, prefixe, fiche)
+ WHERE m.cle = v.cle
+   AND (m.prefixe_drill IS DISTINCT FROM v.prefixe OR m.fiche IS DISTINCT FROM v.fiche);

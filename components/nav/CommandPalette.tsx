@@ -39,6 +39,8 @@ const FICHES: [string, string][] = [
   ["economics", "Economics"],
   ["corporate-issuers", "Corporate Issuers"],
   ["alternative-investments", "Alternative Investments"],
+  ["ethics", "Ethical and Professional Standards"],
+  ["quantitative-methods", "Quantitative Methods"],
 ];
 
 const ENTRIES: Entry[] = [

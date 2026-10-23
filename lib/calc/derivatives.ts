@@ -1536,7 +1536,7 @@ const SWAP_RATE: CalcType = {
   topic: "derivatives",
   name: "Taux de swap (par swap rate)",
   tier: "essentiel",
-  source: "LM 7 · Pricing and Valuation of Interest Rates and Other Swaps",
+  source: "LM 7 · Pricing and Valuation of Interest Rate and Other Swaps",
   formulas: [
     "Facteur d'actualisation DF_i = 1 / (1 + z_i / m)^i (z_i spot annualisé, m périodes par an)",
     "Taux fixe par période = (1 − DF_N) / (DF_1 + … + DF_N)",
@@ -1731,7 +1731,7 @@ const SWAP_VALUE: CalcType = {
   topic: "derivatives",
   name: "Paiement net et valeur d'un swap de taux",
   tier: "essentiel",
-  source: "LM 7 · Pricing and Valuation of Interest Rates and Other Swaps",
+  source: "LM 7 · Pricing and Valuation of Interest Rate and Other Swaps",
   formulas: [
     "Paiement net reçu par le payeur fixe = notionnel × (MRR − taux fixe) × période",
     "Valeur pour le payeur fixe = PV(jambe flottante attendue) − PV(jambe fixe)",

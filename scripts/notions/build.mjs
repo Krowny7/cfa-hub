@@ -5,8 +5,9 @@
 //   - lib/calc : les types de calcul, rattachés par leur `source` (« LM 8 · … ») ;
 //   - les scripts de drill : les pages de fiche où chaque notion est travaillée
 //     (par l'officielle d'un concept ou par ses variantes, VARIANTES_AILLEURS),
-//     précédées des pages choisies à la main (FICHES_EN_TETE) ; la fiche
-//     Derivatives, d'un seul tenant, donne une ancre par reading ;
+//     précédées des pages choisies à la main (FICHES_EN_TETE) ; une fiche
+//     d'un seul tenant (champ ficheParReading d'une matière, aucune depuis
+//     que Derivatives est en PDF) donnerait une ancre par reading ;
 //   - les textes de la banque (extraire_banque.py) : contrôle des titres et
 //     reading de chaque question officielle des drills.
 // Le script s'arrête sur toute incohérence (un reading sur deux LM, un titre
@@ -54,7 +55,7 @@ const brutes = notionsBrutes(); // lève une erreur si un reading tombe sur deux
 // ── calculs : lib/calc/index.ts (catalogues ouverts) puis chaque catalogue ──
 const index = lire("lib", "calc", "index.ts");
 const slugDe = Object.fromEntries([...index.matchAll(/\{ topic: "([a-z_]+)", slug: "([a-z-]+)"/g)].map((x) => [x[1], x[2]]));
-const fichierDe = Object.fromEntries([...index.matchAll(/import \{ ([A-Z_]+) \} from "\.\/([a-z]+)";/g)].map((x) => [x[1], x[2]]));
+const fichierDe = Object.fromEntries([...index.matchAll(/import \{ ([A-Z_]+) \} from "\.\/([a-z-]+)";/g)].map((x) => [x[1], x[2]]));
 const ouverts = /const CATALOGS[^=]*= \{([^}]*)\}/.exec(index)?.[1] ?? "";
 const calculs = new Map(); // notion → [{ cle, nom, href }]
 for (const [, topic, constante] of ouverts.matchAll(/([a-z_]+): ([A-Z_]+)/g)) {

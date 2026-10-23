@@ -209,7 +209,7 @@ const ligne = (id: string, extra: Record<string, unknown> = {}) => {
   const q = catalogue.find((x) => x.id === id)!;
   return { id: q.id, titre: q.titre, famille: q.famille, matiere: q.matiere, etape: q.etape, ...extra };
 };
-check("une ligne sans objectif : le seuil du catalogue", titreClair(ligne("branche:fsa:maitrise60")) === "FSA à 60 % de maîtrise" && titreClair(ligne("branche:fsa:signature")) === "Une page de drill de FSA à 100 %" && titreClair(ligne("branche:derivatives:fiche")) === "Lire la fiche Derivatives" && titreClair(ligne("branche:economics:fiche")) === "Passer une page de drill en Economics");
+check("une ligne sans objectif : le seuil du catalogue", titreClair(ligne("branche:fsa:maitrise60")) === "FSA à 60 % de maîtrise" && titreClair(ligne("branche:fsa:signature")) === "Une page de drill de FSA à 100 %" && titreClair(ligne("branche:derivatives:fiche")) === "Passer une page de drill en Derivatives" && titreClair(ligne("branche:economics:fiche")) === "Passer une page de drill en Economics");
 check("une ligne de la semaine d'encre : sa cible", titreClair({ ...ligne("contrat:hebdo:encre"), cible: 4 }) === "4 jours d'encre cette semaine");
 const dix = catalogue.find((q) => q.id === "trame:a2:dix")!;
 check("la recherche lit les deux noms, sans accents ni majuscules", correspond(dix, "pigments") && correspond(dix, "CHAQUE MATIERE") && !correspond(dix, "examen blanc") && correspond(dix, "  "));

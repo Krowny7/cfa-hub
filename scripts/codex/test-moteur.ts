@@ -70,7 +70,7 @@ const ouverte = (r: ReturnType<typeof evaluer>, id: string) => r.etats.find((s) 
 console.log("# le catalogue");
 check("verifierCatalogue() ne trouve rien", verifierCatalogue().length === 0, verifierCatalogue().join(" | "));
 const cat = catalogueCodex();
-check("271 quêtes (231 avant la v3, 38 ajoutées : V3 §8.8, 2 pour la fiche Corporate Issuers)", cat.length === 271, String(cat.length));
+check("278 quêtes (231 avant la v3, 38 ajoutées : V3 §8.8, 2 par fiche à drill pour Corporate Issuers, Alternatives, Ethics et Quant, 1 pour le drill de Derivatives)", cat.length === 278, String(cat.length));
 
 console.log("\n# un compte neuf (aucun historique)");
 {
@@ -104,7 +104,7 @@ console.log("\n# la cascade (le même historique valide tout ce qui est déjà r
   const drill = r.etats.find((s) => s.quete.id === "branche:fsa:drill");
   check("branche fsa : premier pas et fiche en cascade ; le drill complet (pages inconnues) est hors jeu et masqué, il ne bloque pas la séance ciblée (V3 §8)", fait(r, "branche:fsa:entree") && fait(r, "branche:fsa:fiche") && !fait(r, "branche:fsa:drill") && !!drill?.horsJeu && drill.masquee && fait(r, "branche:fsa:ciblee"));
   check("nœud de convergence : l'acte V reste fermé (l'acte IV n'est pas clos)", !ouverte(r, "trame:a5:blanc") && !r.actesClos.includes("acte4"));
-  check("Ethics (sans drill) : sa séance ciblée est ouverte dès le premier pas, mais pas faite", ouverte(r, "branche:ethics:ciblee") && !fait(r, "branche:ethics:ciblee"));
+  check("Ethics : sa séance ciblée est ouverte dès le premier pas, mais pas faite", ouverte(r, "branche:ethics:ciblee") && !fait(r, "branche:ethics:ciblee"));
   const retro = r.lot.filter((i) => i.etat === "terminee");
   check("tout ce qui est validé au premier calcul est rétroactif (sauf les contrats)", retro.length > 10 && retro.filter((i) => i.famille !== "contrat").every((i) => i.retro === true), String(retro.length));
   check("les contrats de la semaine ne sont jamais rétroactifs", retro.filter((i) => i.famille === "contrat").every((i) => i.retro === false));
@@ -612,11 +612,11 @@ console.log("\n# v3 §8.5, §8.7, §8.8 : les ajouts (main juste, carte tenue, c
 
   // le compte final (V3 §8.8)
   const c = compterCatalogue();
-  check(`visibles du CFA I : ${c.total.visibles}, dans [170, 190] (≈ 184)`, c.total.visibles >= 170 && c.total.visibles <= 190, JSON.stringify(c.total));
-  check("par famille : trame 40, branches 82 (dont fiche et drill de Corporate), long cours 43, exploits 17, contrats 4 ; 58 retirées, 27 hors compte",
-    c.trame.visibles === 40 && c.branche.visibles === 82 && c.longcours.visibles === 43 && c.exploit.visibles === 17 && c.contrat.visibles === 4 && c.total.retirees === 58 && c.total.horsCompte === 27,
+  check(`visibles du CFA I : ${c.total.visibles}, dans [170, 200] (≈ 194 : fiche et drill dans les 10 matières)`, c.total.visibles >= 170 && c.total.visibles <= 200, JSON.stringify(c.total));
+  check("par famille : trame 40, branches 90 (fiche et drill dans les 10 matières), long cours 43, exploits 17, contrats 4 ; 58 retirées, 26 hors compte",
+    c.trame.visibles === 40 && c.branche.visibles === 90 && c.longcours.visibles === 43 && c.exploit.visibles === 17 && c.contrat.visibles === 4 && c.total.retirees === 58 && c.total.horsCompte === 26,
     (["trame", "branche", "longcours", "exploit", "contrat"] as const).map((f) => `${f} ${c[f].visibles}`).join(" "));
-  check("les 21 satellites hors compte : cours, flashcards, fiche sans drill (facultatifs)", cat.filter((x) => x.famille === "branche" && x.optionnelle && !x.retiree).every((x) => ["cours", "flashcards", "fiche"].includes(x.etape ?? "")));
+  check("les 20 satellites hors compte : cours, flashcards, fiche sans drill (facultatifs)", cat.filter((x) => x.famille === "branche" && x.optionnelle && !x.retiree).every((x) => ["cours", "flashcards", "fiche"].includes(x.etape ?? "")));
 
   // les branches : la carte (notions tenues) et l'épreuve signature, avant « Maître de… »
   const tenu = { n: 6, j5: 3 };

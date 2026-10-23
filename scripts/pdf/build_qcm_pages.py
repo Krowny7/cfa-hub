@@ -14,15 +14,22 @@ Usage:
     python build_qcm_pages.py economics <concept_pdf> <out_pdf>
     python build_qcm_pages.py corporate <concept_pdf> <out_pdf>
     python build_qcm_pages.py alternatives <concept_pdf> <out_pdf>
+    python build_qcm_pages.py ethics <concept_pdf> <out_pdf>
+    python build_qcm_pages.py quant <concept_pdf> <out_pdf>
+    python build_qcm_pages.py derivatives <concept_pdf> <out_pdf>
 
-For `economics`, `corporate` and `alternatives` the two PDF paths are passed
-as arguments (not coded in this file). Their concept pages are shorter than
-the other sheets' 863.04 pt (Economics 675.12 x 618.96, Corporate Issuers
-675.12 x 684.0, Alternative Investments 675.12 x 816.0), but the QCM/Corrigé
-pages keep the 675.12 x 863.04 layout measured above: the viewer fits pages
-to the width, so mixing heights is fine and 5 questions per page would not
-fit in 619-816 pt. Any argument given after the topic overrides the PDF paths
-of fsa/pm too.
+For `economics`, `corporate`, `alternatives`, `ethics`, `quant` and
+`derivatives` the two PDF paths are passed as arguments (not coded in this
+file). Their concept pages are shorter than the other sheets' 863.04 pt
+(Economics 675.12 x 618.96, Corporate Issuers 675.12 x 684.0, Alternative
+Investments 675.12 x 816.0, Ethics 675.12 x 790.5, Quantitative Methods
+675.12 x 773.25), and the synthèse pages laid out by build_synthese.py with
+"height": "auto" differ from page to page (Derivatives: 677.25 to 806.25):
+concept pages are copied as they are, whatever their height, while the
+QCM/Corrigé pages keep the 675.12 x 863.04 layout measured above: the viewer
+fits pages to the width, so mixing heights is fine and 5 questions per page
+would not fit in 619-816 pt. Any argument given after the topic overrides the
+PDF paths of fsa/pm too.
 """
 import io
 import re
@@ -442,6 +449,49 @@ TOPICS = {
             (2, "Private Capital, Real Estate & Infrastructure"),
             (3, "Natural Resources & Hedge Funds"),
             (4, "Introduction to Digital Assets"),
+        ],
+    ),
+    "ethics": dict(
+        concept_pdf=None,  # <concept_pdf> <out_pdf> are passed as arguments
+        out_pdf=None,
+        header_prefix="CFA LEVEL I — ETHICAL AND PROFESSIONAL STANDARDS",
+        topic_label="Ethical and Professional Standards",
+        raw_file="qcm_data/ethics_raw.txt",
+        order=[
+            (1, "Ethics & Trust · Code and Standards"),
+            (2, "Standards I & II · Professionalism, Capital Markets"),
+            (3, "Standards III & IV · Duties to Clients, Employers"),
+            (4, "Standards V, VI & VII · Analysis, Conflicts, CFA"),
+            (5, "Introduction to GIPS · Ethics Application"),
+        ],
+    ),
+    "quant": dict(
+        concept_pdf=None,  # <concept_pdf> <out_pdf> are passed as arguments
+        out_pdf=None,
+        header_prefix="CFA LEVEL I — QUANTITATIVE METHODS",
+        topic_label="Quantitative Methods",
+        raw_file="qcm_data/quant_raw.txt",
+        order=[
+            (1, "Rates and Returns"),
+            (2, "The Time Value of Money in Finance"),
+            (3, "Statistical Measures of Asset Returns · Probability Trees"),
+            (4, "Portfolio Mathematics · Simulation · Estimation & Inference"),
+            (5, "Hypothesis Testing · Tests of Independence"),
+            (6, "Simple Linear Regression · Big Data Techniques"),
+        ],
+    ),
+    "derivatives": dict(
+        concept_pdf=None,  # <concept_pdf> <out_pdf> are passed as arguments
+        out_pdf=None,
+        header_prefix="CFA LEVEL I — DERIVATIVES",
+        topic_label="Derivatives",
+        raw_file="qcm_data/derivatives_raw.txt",
+        order=[
+            (1, "Derivative Features & Markets · Forwards, Futures & Swaps"),
+            (2, "Option Payoffs · Benefits, Risks & Uses"),
+            (3, "Arbitrage, Replication & Cost of Carry · Forward Valuation"),
+            (4, "FRAs · Futures & Swap Pricing · Option Moneyness"),
+            (5, "Option Bounds & Factors · Put–Call Parity · Binomial Model"),
         ],
     ),
 }

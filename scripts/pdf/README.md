@@ -1,6 +1,6 @@
 # Editing a Vault Concept Sheet PDF
 
-The 8 revision fiches under `/fiches` (Fixed Income, Equity, ...) each serve
+The 10 revision fiches under `/fiches` (Fixed Income, Equity, ...) each serve
 a single PDF — the "Vault Concept Sheet" — from the private Supabase bucket
 `fiches`, generated once and uploaded (see `scripts/upload-fiche-equity.mjs`
 for the upload half). **No source template lives in this repo**: the
@@ -56,6 +56,17 @@ step (`build_qcm_pages.py`).
   pages at 863.04 (`build_qcm_pages.py alternatives <concept_pdf> <out_pdf>`, data
   in `qcm_data/alternatives_raw.txt`, upload with `scripts/upload-fiche-alternatives.mjs
   <pdf>`, same dated backup of the bucket's current file).
+  Same for the sheets whose synthèse pages come from `build_synthese.py`:
+  Ethical and Professional Standards (5 pages of 675.12 × 790.5 pt,
+  `build_qcm_pages.py ethics`, `qcm_data/ethics_raw.txt`,
+  `upload-fiche-ethics.mjs`, bucket file `ethics.pdf`), Quantitative Methods
+  (6 pages of 675.12 × 773.25 pt, `build_qcm_pages.py quant`,
+  `qcm_data/quant_raw.txt`, `upload-fiche-quant.mjs`, `quantitative-methods.pdf`)
+  and Derivatives (5 pages from 677.25 to 806.25 pt high, each as tall as its
+  content, `build_qcm_pages.py derivatives`, `qcm_data/derivatives_raw.txt`,
+  `upload-fiche-derivatives.mjs`, `derivatives.pdf`; it replaces the old JSX
+  page of `/fiches/derivatives`). Synthèse pages are copied as they are,
+  whatever their height; QCM/Corrigé pages stay at 863.04.
 - Fonts — same families as the four Windows system fonts, so pull the FULL
   files from `C:\Windows\Fonts\` rather than the PDF's own subsets:
   `DejaVuSansMono(-Bold)` for the small mono labels/footer, `LiberationSans`

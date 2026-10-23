@@ -10,6 +10,14 @@ export const FICHE_DESC = "Une synthèse par thème, puis son quiz corrigé. Tes
 export const COURSE_DESC = "Le cours intégral par matière, à lire ou à écouter : environ une heure, découpée par module.";
 
 const FICHE_INFO: Record<string, { meta: string; desc: string }> = {
+  ethics: {
+    meta: "5 synthèses · 12 pages",
+    desc: "Éthique et confiance, Code et Standards I à VII, GIPS, cas d'application.",
+  },
+  "quantitative-methods": {
+    meta: "6 synthèses · 14 pages",
+    desc: "Rendements, valeur temps, statistiques, probabilités, inférence, tests, régression, big data.",
+  },
   "financial-statement-analysis": {
     meta: "11 synthèses · 24 pages",
     desc: "Bilan, flux de trésorerie, stocks, actifs long terme, impôts.",
@@ -23,8 +31,8 @@ const FICHE_INFO: Record<string, { meta: string; desc: string }> = {
     desc: "Un grand thème par page, suivi de son QCM corrigé.",
   },
   derivatives: {
-    meta: "R66 – R75 · 10 lectures",
-    desc: "Forwards, futures, swaps, options, parité put-call, binomial.",
+    meta: "5 synthèses · 12 pages",
+    desc: "Marchés et instruments, payoffs, arbitrage et cost of carry, forwards, futures, swaps, options, parité put-call, binomial.",
   },
   "portfolio-management": {
     meta: "6 synthèses · 13 pages",

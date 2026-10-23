@@ -48,7 +48,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 89, schweser: 89 },
     cours: "/courses/ethics?module=1",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/ethics?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -60,7 +60,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 90, schweser: 90 },
     cours: "/courses/ethics?module=2",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/ethics?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -83,7 +83,11 @@ export const NOTIONS: Notion[] = [
     ],
     cours: "/courses/ethics?module=3",
     calculs: [],
-    fiches: [],
+    fiches: [
+      { href: "/fiches/ethics?page=2", page: 2 },
+      { href: "/fiches/ethics?page=3", page: 3 },
+      { href: "/fiches/ethics?page=4", page: 4 },
+    ],
     flashcards: [],
   },
   {
@@ -95,7 +99,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 92, schweser: 92 },
     cours: "/courses/ethics?module=4",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/ethics?page=5", page: 5 }],
     flashcards: [],
   },
   {
@@ -107,7 +111,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 93, schweser: 93 },
     cours: "/courses/ethics?module=5",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/ethics?page=5", page: 5 }],
     flashcards: [],
   },
   {
@@ -120,6 +124,21 @@ export const NOTIONS: Notion[] = [
     cours: "/courses/quantitative-methods?module=1",
     calculs: [
       {
+        cle: "hpr-means",
+        nom: "HPR et moyennes (arithmétique, géométrique, harmonique)",
+        href: "/calculs/quant/hpr-means",
+      },
+      {
+        cle: "mwr-twr",
+        nom: "Money-weighted vs time-weighted return",
+        href: "/calculs/quant/mwr-twr",
+      },
+      {
+        cle: "annualized-continuous",
+        nom: "Annualisation, rendement continu, réel et à levier",
+        href: "/calculs/quant/annualized-continuous",
+      },
+      {
         cle: "return-measures",
         nom: "Mesures de rendement (HPR, moyennes, annualisation, réel)",
         href: "/calculs/portfolio-management/return-measures",
@@ -130,7 +149,7 @@ export const NOTIONS: Notion[] = [
         href: "/calculs/portfolio-management/mwr-twr",
       },
     ],
-    fiches: [],
+    fiches: [{ href: "/fiches/quantitative-methods?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -141,8 +160,29 @@ export const NOTIONS: Notion[] = [
     court: "Valeur temps de l'argent",
     readings: { banque: 2, schweser: 2 },
     cours: "/courses/quantitative-methods?module=2",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "tvm-lump-sum",
+        nom: "TVM : flux unique et fréquence de composition (EAR)",
+        href: "/calculs/quant/tvm-lump-sum",
+      },
+      {
+        cle: "annuities-perpetuities",
+        nom: "Annuités et perpétuités (ordinary, due, différées)",
+        href: "/calculs/quant/annuities-perpetuities",
+      },
+      {
+        cle: "cash-flow-valuation",
+        nom: "Flux inégaux, obligations et rendements implicites",
+        href: "/calculs/quant/cash-flow-valuation",
+      },
+      {
+        cle: "no-arbitrage",
+        nom: "Absence d'arbitrage : taux forward, change à terme, arbre binomial",
+        href: "/calculs/quant/no-arbitrage",
+      },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -153,8 +193,14 @@ export const NOTIONS: Notion[] = [
     court: "Statistiques des rendements",
     readings: { banque: 3, schweser: 3 },
     cours: "/courses/quantitative-methods?module=3",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "dispersion",
+        nom: "Tendance centrale et dispersion (s, CV, MAD, target downside deviation)",
+        href: "/calculs/quant/dispersion",
+      },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -165,8 +211,15 @@ export const NOTIONS: Notion[] = [
     court: "Arbres de probabilités",
     readings: { banque: 4, schweser: 4 },
     cours: "/courses/quantitative-methods?module=4",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "expected-value-covariance",
+        nom: "Espérance, écart-type et covariance (modèle probabiliste)",
+        href: "/calculs/quant/expected-value-covariance",
+      },
+      { cle: "bayes", nom: "Bayes et règle des probabilités totales", href: "/calculs/quant/bayes" },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -177,8 +230,14 @@ export const NOTIONS: Notion[] = [
     court: "Mathématiques du portefeuille",
     readings: { banque: 5, schweser: 5 },
     cours: "/courses/quantitative-methods?module=5",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "safety-first",
+        nom: "Roy's safety-first ratio et shortfall risk",
+        href: "/calculs/quant/safety-first",
+      },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -190,7 +249,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 6, schweser: 6 },
     cours: "/courses/quantitative-methods?module=6",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/quantitative-methods?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -201,8 +260,14 @@ export const NOTIONS: Notion[] = [
     court: "Estimation et inférence",
     readings: { banque: 7, schweser: 7 },
     cours: "/courses/quantitative-methods?module=7",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "hypothesis-tests",
+        nom: "Tests d'hypothèse : statistiques t, z, χ², F et erreur standard",
+        href: "/calculs/quant/hypothesis-tests",
+      },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -214,7 +279,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 8, schweser: 8 },
     cours: "/courses/quantitative-methods?module=8",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/quantitative-methods?page=5", page: 5 }],
     flashcards: [],
   },
   {
@@ -225,8 +290,14 @@ export const NOTIONS: Notion[] = [
     court: "Tests d'indépendance",
     readings: { banque: 9, schweser: 9 },
     cours: "/courses/quantitative-methods?module=9",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "independence-tests",
+        nom: "Tests d'indépendance : corrélation, Spearman, tableau de contingence",
+        href: "/calculs/quant/independence-tests",
+      },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=5", page: 5 }],
     flashcards: [],
   },
   {
@@ -237,8 +308,19 @@ export const NOTIONS: Notion[] = [
     court: "Régression linéaire",
     readings: { banque: 10, schweser: 10 },
     cours: "/courses/quantitative-methods?module=10",
-    calculs: [],
-    fiches: [],
+    calculs: [
+      {
+        cle: "regression-coefficients",
+        nom: "Régression simple : pente, constante, prédiction",
+        href: "/calculs/quant/regression-coefficients",
+      },
+      {
+        cle: "regression-anova",
+        nom: "Régression : ANOVA, R², SEE et statistique F",
+        href: "/calculs/quant/regression-anova",
+      },
+    ],
+    fiches: [{ href: "/fiches/quantitative-methods?page=6", page: 6 }],
     flashcards: [],
   },
   {
@@ -250,7 +332,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 11, schweser: 11 },
     cours: "/courses/quantitative-methods?module=11",
     calculs: [],
-    fiches: [],
+    fiches: [{ href: "/fiches/quantitative-methods?page=6", page: 6 }],
     flashcards: [],
   },
   {
@@ -261,7 +343,23 @@ export const NOTIONS: Notion[] = [
     court: "Structures de marché",
     readings: { banque: 12, schweser: 12 },
     cours: "/courses/economics?module=1",
-    calculs: [],
+    calculs: [
+      {
+        cle: "breakeven-shutdown",
+        nom: "Seuils de rentabilité et de fermeture (breakeven / shutdown)",
+        href: "/calculs/economics/breakeven-shutdown",
+      },
+      {
+        cle: "profit-max-elasticity",
+        nom: "Prix optimal d'un price searcher (MR = MC) et élasticité",
+        href: "/calculs/economics/profit-max-elasticity",
+      },
+      {
+        cle: "concentration-hhi",
+        nom: "Concentration du marché : N-firm concentration ratio et HHI",
+        href: "/calculs/economics/concentration-hhi",
+      },
+    ],
     fiches: [{ href: "/fiches/economics?page=1", page: 1 }],
     flashcards: [],
   },
@@ -285,7 +383,13 @@ export const NOTIONS: Notion[] = [
     court: "Politique budgétaire",
     readings: { banque: 14, schweser: 14 },
     cours: "/courses/economics?module=3",
-    calculs: [],
+    calculs: [
+      {
+        cle: "fiscal-multiplier",
+        nom: "Multiplicateur budgétaire (fiscal multiplier)",
+        href: "/calculs/economics/fiscal-multiplier",
+      },
+    ],
     fiches: [{ href: "/fiches/economics?page=2", page: 2 }],
     flashcards: [],
   },
@@ -297,7 +401,13 @@ export const NOTIONS: Notion[] = [
     court: "Politique monétaire",
     readings: { banque: 15, schweser: 15 },
     cours: "/courses/economics?module=4",
-    calculs: [],
+    calculs: [
+      {
+        cle: "neutral-rate",
+        nom: "Taux neutre et orientation de la politique monétaire",
+        href: "/calculs/economics/neutral-rate",
+      },
+    ],
     fiches: [{ href: "/fiches/economics?page=3", page: 3 }],
     flashcards: [],
   },
@@ -333,7 +443,23 @@ export const NOTIONS: Notion[] = [
     court: "Flux de capitaux et change",
     readings: { banque: 18, schweser: 18 },
     cours: "/courses/economics?module=7",
-    calculs: [],
+    calculs: [
+      {
+        cle: "real-exchange-rate",
+        nom: "Taux de change réel (real exchange rate)",
+        href: "/calculs/economics/real-exchange-rate",
+      },
+      {
+        cle: "currency-change",
+        nom: "Appréciation et dépréciation d'une devise",
+        href: "/calculs/economics/currency-change",
+      },
+      {
+        cle: "trade-balance-identity",
+        nom: "Solde commercial, épargne et investissement",
+        href: "/calculs/economics/trade-balance-identity",
+      },
+    ],
     fiches: [{ href: "/fiches/economics?page=4", page: 4 }],
     flashcards: [],
   },
@@ -345,7 +471,33 @@ export const NOTIONS: Notion[] = [
     court: "Calculs de change",
     readings: { banque: 19, schweser: 19 },
     cours: "/courses/economics?module=8",
-    calculs: [],
+    calculs: [
+      {
+        cle: "cross-rates",
+        nom: "Taux croisés (cross rates)",
+        href: "/calculs/economics/cross-rates",
+      },
+      {
+        cle: "forward-points",
+        nom: "Taux à terme cotés en points ou en pourcentage",
+        href: "/calculs/economics/forward-points",
+      },
+      {
+        cle: "forward-premium",
+        nom: "Prime ou décote à terme (forward premium / discount)",
+        href: "/calculs/economics/forward-premium",
+      },
+      {
+        cle: "covered-interest-parity",
+        nom: "Forward d'arbitrage (parité des taux couverte)",
+        href: "/calculs/economics/covered-interest-parity",
+      },
+      {
+        cle: "covered-interest-arbitrage",
+        nom: "Arbitrage de taux couvert (covered interest arbitrage)",
+        href: "/calculs/economics/covered-interest-arbitrage",
+      },
+    ],
     fiches: [{ href: "/fiches/economics?page=5", page: 5 }],
     flashcards: [],
   },
@@ -357,7 +509,13 @@ export const NOTIONS: Notion[] = [
     court: "Formes d'entreprise",
     readings: { banque: 22, schweser: 20 },
     cours: "/courses/corporate-issuers?module=1",
-    calculs: [],
+    calculs: [
+      {
+        cle: "double-taxation",
+        nom: "Double imposition des dividendes (taux effectif)",
+        href: "/calculs/corporate-issuers/double-taxation",
+      },
+    ],
     fiches: [{ href: "/fiches/corporate-issuers?page=1", page: 1 }],
     flashcards: [],
   },
@@ -369,7 +527,13 @@ export const NOTIONS: Notion[] = [
     court: "Parties prenantes",
     readings: { banque: 23, schweser: 21 },
     cours: "/courses/corporate-issuers?module=2",
-    calculs: [],
+    calculs: [
+      {
+        cle: "leverage-roe",
+        nom: "Levier financier et ROE (prêteurs vs actionnaires)",
+        href: "/calculs/corporate-issuers/leverage-roe",
+      },
+    ],
     fiches: [{ href: "/fiches/corporate-issuers?page=1", page: 1 }],
     flashcards: [],
   },
@@ -393,7 +557,33 @@ export const NOTIONS: Notion[] = [
     court: "Fonds de roulement et liquidité",
     readings: { banque: 25, schweser: 23 },
     cours: "/courses/corporate-issuers?module=4",
-    calculs: [],
+    calculs: [
+      {
+        cle: "cash-conversion-cycle",
+        nom: "Cycle de conversion de trésorerie (cash conversion cycle)",
+        href: "/calculs/corporate-issuers/cash-conversion-cycle",
+      },
+      {
+        cle: "trade-credit-cost",
+        nom: "Coût du crédit fournisseur (escompte non pris)",
+        href: "/calculs/corporate-issuers/trade-credit-cost",
+      },
+      {
+        cle: "liquidity-ratios",
+        nom: "Ratios de liquidité (current, quick, cash)",
+        href: "/calculs/corporate-issuers/liquidity-ratios",
+      },
+      {
+        cle: "net-working-capital",
+        nom: "Fonds de roulement (total et net working capital)",
+        href: "/calculs/corporate-issuers/net-working-capital",
+      },
+      {
+        cle: "cost-of-liquidity",
+        nom: "Coût de la liquidité (ventes forcées)",
+        href: "/calculs/corporate-issuers/cost-of-liquidity",
+      },
+    ],
     fiches: [{ href: "/fiches/corporate-issuers?page=2", page: 2 }],
     flashcards: [],
   },
@@ -405,7 +595,19 @@ export const NOTIONS: Notion[] = [
     court: "Investissements et allocation du capital",
     readings: { banque: 26, schweser: 24 },
     cours: "/courses/corporate-issuers?module=5",
-    calculs: [],
+    calculs: [
+      {
+        cle: "npv",
+        nom: "Valeur actuelle nette d'un projet (NPV)",
+        href: "/calculs/corporate-issuers/npv",
+      },
+      { cle: "irr", nom: "Taux de rendement interne (IRR)", href: "/calculs/corporate-issuers/irr" },
+      {
+        cle: "roic",
+        nom: "Rentabilité du capital investi (ROIC)",
+        href: "/calculs/corporate-issuers/roic",
+      },
+    ],
     fiches: [{ href: "/fiches/corporate-issuers?page=3", page: 3 }],
     flashcards: [],
   },
@@ -417,7 +619,28 @@ export const NOTIONS: Notion[] = [
     court: "Structure du capital",
     readings: { banque: 27, schweser: 25 },
     cours: "/courses/corporate-issuers?module=6",
-    calculs: [],
+    calculs: [
+      {
+        cle: "wacc",
+        nom: "Coût moyen pondéré du capital (WACC)",
+        href: "/calculs/corporate-issuers/wacc",
+      },
+      {
+        cle: "mm-cost-of-equity",
+        nom: "Modigliani-Miller : coût des fonds propres (proposition II)",
+        href: "/calculs/corporate-issuers/mm-cost-of-equity",
+      },
+      {
+        cle: "mm-firm-value",
+        nom: "Modigliani-Miller : valeur de la firme et static trade-off",
+        href: "/calculs/corporate-issuers/mm-firm-value",
+      },
+      {
+        cle: "debt-capacity",
+        nom: "Capacité d'endettement (couverture, levier, covenants)",
+        href: "/calculs/corporate-issuers/debt-capacity",
+      },
+    ],
     fiches: [{ href: "/fiches/corporate-issuers?page=4", page: 4 }],
     flashcards: [],
   },
@@ -453,7 +676,23 @@ export const NOTIONS: Notion[] = [
     court: "Compte de résultat",
     readings: { banque: 30, schweser: 28 },
     cours: "/courses/financial-statement-analysis?module=2",
-    calculs: [],
+    calculs: [
+      {
+        cle: "basic-eps",
+        nom: "BPA de base (basic EPS) et nombre moyen pondéré d'actions",
+        href: "/calculs/fsa/basic-eps",
+      },
+      {
+        cle: "diluted-eps",
+        nom: "BPA dilué (diluted EPS) : convertibles et options",
+        href: "/calculs/fsa/diluted-eps",
+      },
+      {
+        cle: "capitalization",
+        nom: "Capitaliser ou passer en charges, intérêts capitalisés",
+        href: "/calculs/fsa/capitalization",
+      },
+    ],
     fiches: [],
     flashcards: ["Financial Statement Analysis — Flashcards 1/4 (Cadre d'analyse, résultat & bilan)"],
   },
@@ -477,7 +716,18 @@ export const NOTIONS: Notion[] = [
     court: "Tableau des flux I",
     readings: { banque: 32, schweser: 30 },
     cours: "/courses/financial-statement-analysis?module=4",
-    calculs: [],
+    calculs: [
+      {
+        cle: "cfo-indirect",
+        nom: "CFO par la méthode indirecte",
+        href: "/calculs/fsa/cfo-indirect",
+      },
+      {
+        cle: "cash-flow-direct",
+        nom: "CFO méthode directe, flux d'investissement et de financement",
+        href: "/calculs/fsa/cash-flow-direct",
+      },
+    ],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=3", page: 3 }],
     flashcards: ["Financial Statement Analysis — Flashcards 2/4 (Flux de trésorerie & stocks)"],
   },
@@ -489,7 +739,7 @@ export const NOTIONS: Notion[] = [
     court: "Tableau des flux II",
     readings: { banque: 33, schweser: 31 },
     cours: "/courses/financial-statement-analysis?module=5",
-    calculs: [],
+    calculs: [{ cle: "fcff-fcfe", nom: "Free cash flow : FCFF et FCFE", href: "/calculs/fsa/fcff-fcfe" }],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=4", page: 4 }],
     flashcards: ["Financial Statement Analysis — Flashcards 2/4 (Flux de trésorerie & stocks)"],
   },
@@ -501,7 +751,18 @@ export const NOTIONS: Notion[] = [
     court: "Stocks",
     readings: { banque: 34, schweser: 32 },
     cours: "/courses/financial-statement-analysis?module=6",
-    calculs: [],
+    calculs: [
+      {
+        cle: "inventory-cost-flow",
+        nom: "Stocks : FIFO, LIFO et coût moyen pondéré",
+        href: "/calculs/fsa/inventory-cost-flow",
+      },
+      {
+        cle: "inventory-nrv",
+        nom: "Stocks : dépréciation à la valeur nette de réalisation (NRV, LCM)",
+        href: "/calculs/fsa/inventory-nrv",
+      },
+    ],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=5", page: 5 }],
     flashcards: ["Financial Statement Analysis — Flashcards 2/4 (Flux de trésorerie & stocks)"],
   },
@@ -513,7 +774,18 @@ export const NOTIONS: Notion[] = [
     court: "Actifs long terme",
     readings: { banque: 35, schweser: 33 },
     cours: "/courses/financial-statement-analysis?module=7",
-    calculs: [],
+    calculs: [
+      {
+        cle: "impairment-derecognition",
+        nom: "Dépréciation d'actifs (impairment) et cession (derecognition)",
+        href: "/calculs/fsa/impairment-derecognition",
+      },
+      {
+        cle: "asset-age",
+        nom: "Âge moyen et durée de vie des immobilisations",
+        href: "/calculs/fsa/asset-age",
+      },
+    ],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=6", page: 6 }],
     flashcards: ["Financial Statement Analysis — Flashcards 3/4 (Actifs & passifs long terme, impôts)"],
   },
@@ -525,7 +797,13 @@ export const NOTIONS: Notion[] = [
     court: "Passifs long terme et capitaux propres",
     readings: { banque: 36, schweser: 34 },
     cours: "/courses/financial-statement-analysis?module=8",
-    calculs: [],
+    calculs: [
+      {
+        cle: "leases-lessee",
+        nom: "Contrats de location côté preneur (lessee) : IFRS 16 et US GAAP",
+        href: "/calculs/fsa/leases-lessee",
+      },
+    ],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=7", page: 7 }],
     flashcards: ["Financial Statement Analysis — Flashcards 3/4 (Actifs & passifs long terme, impôts)"],
   },
@@ -537,7 +815,13 @@ export const NOTIONS: Notion[] = [
     court: "Impôts sur le résultat",
     readings: { banque: 37, schweser: 35 },
     cours: "/courses/financial-statement-analysis?module=9",
-    calculs: [],
+    calculs: [
+      {
+        cle: "deferred-taxes",
+        nom: "Impôts différés (DTA/DTL) et taux d'imposition effectif",
+        href: "/calculs/fsa/deferred-taxes",
+      },
+    ],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=8", page: 8 }],
     flashcards: ["Financial Statement Analysis — Flashcards 3/4 (Actifs & passifs long terme, impôts)"],
   },
@@ -563,7 +847,23 @@ export const NOTIONS: Notion[] = [
     court: "Ratios financiers",
     readings: { banque: 39, schweser: 37 },
     cours: "/courses/financial-statement-analysis?module=11",
-    calculs: [],
+    calculs: [
+      {
+        cle: "activity-ratios",
+        nom: "Ratios d'activité et cycle de conversion du cash",
+        href: "/calculs/fsa/activity-ratios",
+      },
+      {
+        cle: "liquidity-solvency",
+        nom: "Ratios de liquidité et de solvabilité",
+        href: "/calculs/fsa/liquidity-solvency",
+      },
+      {
+        cle: "dupont",
+        nom: "ROE et décomposition DuPont (3 et 5 facteurs)",
+        href: "/calculs/fsa/dupont",
+      },
+    ],
     fiches: [{ href: "/fiches/financial-statement-analysis?page=10", page: 10 }],
     flashcards: [
       "Financial Statement Analysis — Flashcards 4/4 (Qualité de l'information, techniques & modélisation)",
@@ -816,7 +1116,13 @@ export const NOTIONS: Notion[] = [
     court: "Dette des entreprises",
     readings: { banque: 52, schweser: 50 },
     cours: "/courses/fixed-income?module=4",
-    calculs: [],
+    calculs: [
+      {
+        cle: "repo",
+        nom: "Mise en pension (repurchase agreement)",
+        href: "/calculs/fixed-income/repo",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=2", page: 2 }],
     flashcards: [],
   },
@@ -840,7 +1146,18 @@ export const NOTIONS: Notion[] = [
     court: "Prix et rendement",
     readings: { banque: 54, schweser: 52 },
     cours: "/courses/fixed-income?module=6",
-    calculs: [],
+    calculs: [
+      {
+        cle: "bond-price",
+        nom: "Prix d'une obligation (bond price)",
+        href: "/calculs/fixed-income/bond-price",
+      },
+      {
+        cle: "accrued-interest",
+        nom: "Coupon couru, full price et flat price (accrued interest)",
+        href: "/calculs/fixed-income/accrued-interest",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=1", page: 1 }],
     flashcards: [],
   },
@@ -852,7 +1169,23 @@ export const NOTIONS: Notion[] = [
     court: "Rendements et spreads (taux fixe)",
     readings: { banque: 55, schweser: 53 },
     cours: "/courses/fixed-income?module=7",
-    calculs: [],
+    calculs: [
+      {
+        cle: "ytm",
+        nom: "Yield to maturity, yield to call et yield to worst",
+        href: "/calculs/fixed-income/ytm",
+      },
+      {
+        cle: "yield-measures",
+        nom: "Current yield, simple yield et périodicité (EAY)",
+        href: "/calculs/fixed-income/yield-measures",
+      },
+      {
+        cle: "yield-spreads",
+        nom: "Spreads (G-spread, I-spread, Z-spread, OAS) et matrix pricing",
+        href: "/calculs/fixed-income/yield-spreads",
+      },
+    ],
     fiches: [
       { href: "/fiches/fixed-income?page=3", page: 3 },
       { href: "/fiches/fixed-income?page=1", page: 1 },
@@ -867,7 +1200,13 @@ export const NOTIONS: Notion[] = [
     court: "Taux variables et marché monétaire",
     readings: { banque: 56, schweser: 54 },
     cours: "/courses/fixed-income?module=8",
-    calculs: [],
+    calculs: [
+      {
+        cle: "money-market",
+        nom: "Rendements du marché monétaire (discount, add-on, BEY)",
+        href: "/calculs/fixed-income/money-market",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=3", page: 3 }],
     flashcards: [],
   },
@@ -879,7 +1218,18 @@ export const NOTIONS: Notion[] = [
     court: "Courbe des taux",
     readings: { banque: 57, schweser: 55 },
     cours: "/courses/fixed-income?module=9",
-    calculs: [],
+    calculs: [
+      {
+        cle: "spot-rates",
+        nom: "Taux spot : prix sans arbitrage et taux par",
+        href: "/calculs/fixed-income/spot-rates",
+      },
+      {
+        cle: "forward-rates",
+        nom: "Taux forward implicites (forward rates)",
+        href: "/calculs/fixed-income/forward-rates",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=3", page: 3 }],
     flashcards: [],
   },
@@ -891,7 +1241,13 @@ export const NOTIONS: Notion[] = [
     court: "Risque de taux",
     readings: { banque: 58, schweser: 56 },
     cours: "/courses/fixed-income?module=10",
-    calculs: [],
+    calculs: [
+      {
+        cle: "horizon-return",
+        nom: "Rendement à horizon, réinvestissement et carrying value",
+        href: "/calculs/fixed-income/horizon-return",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=4", page: 4 }],
     flashcards: [],
   },
@@ -903,7 +1259,23 @@ export const NOTIONS: Notion[] = [
     court: "Duration",
     readings: { banque: 59, schweser: 57 },
     cours: "/courses/fixed-income?module=11",
-    calculs: [],
+    calculs: [
+      {
+        cle: "macaulay-modified-duration",
+        nom: "Duration de Macaulay et duration modifiée",
+        href: "/calculs/fixed-income/macaulay-modified-duration",
+      },
+      {
+        cle: "money-duration-pvbp",
+        nom: "Money duration et price value of a basis point (PVBP)",
+        href: "/calculs/fixed-income/money-duration-pvbp",
+      },
+      {
+        cle: "approx-duration-convexity",
+        nom: "Duration et convexité approchées, effective duration",
+        href: "/calculs/fixed-income/approx-duration-convexity",
+      },
+    ],
     fiches: [
       { href: "/fiches/fixed-income?page=4", page: 4 },
       { href: "/fiches/fixed-income?page=5", page: 5 },
@@ -918,7 +1290,18 @@ export const NOTIONS: Notion[] = [
     court: "Convexité",
     readings: { banque: 60, schweser: 58 },
     cours: "/courses/fixed-income?module=12",
-    calculs: [],
+    calculs: [
+      {
+        cle: "duration-convexity-price-change",
+        nom: "Variation de prix par la duration et la convexité",
+        href: "/calculs/fixed-income/duration-convexity-price-change",
+      },
+      {
+        cle: "portfolio-duration",
+        nom: "Duration de portefeuille et key rate durations",
+        href: "/calculs/fixed-income/portfolio-duration",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=4", page: 4 }],
     flashcards: [],
   },
@@ -945,7 +1328,13 @@ export const NOTIONS: Notion[] = [
     court: "Risque de crédit",
     readings: { banque: 62, schweser: 60 },
     cours: "/courses/fixed-income?module=14",
-    calculs: [],
+    calculs: [
+      {
+        cle: "expected-loss",
+        nom: "Perte attendue et spread de crédit (expected loss)",
+        href: "/calculs/fixed-income/expected-loss",
+      },
+    ],
     fiches: [{ href: "/fiches/fixed-income?page=5", page: 5 }],
     flashcards: [],
   },
@@ -1027,7 +1416,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 68, schweser: 66 },
     cours: "/courses/derivatives?module=1",
     calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r66", page: null }],
+    fiches: [{ href: "/fiches/derivatives?page=1", page: 1 }],
     flashcards: [],
   },
   {
@@ -1038,8 +1427,22 @@ export const NOTIONS: Notion[] = [
     court: "Engagements fermes et droits conditionnels",
     readings: { banque: 69, schweser: 67 },
     cours: "/courses/derivatives?module=2",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r67", page: null }],
+    calculs: [
+      {
+        cle: "futures-margin",
+        nom: "Futures : mark-to-market et appels de marge",
+        href: "/calculs/derivatives/futures-margin",
+      },
+      {
+        cle: "option-payoff",
+        nom: "Payoff et profit d'options (long / short, call / put)",
+        href: "/calculs/derivatives/option-payoff",
+      },
+    ],
+    fiches: [
+      { href: "/fiches/derivatives?page=1", page: 1 },
+      { href: "/fiches/derivatives?page=2", page: 2 },
+    ],
     flashcards: [],
   },
   {
@@ -1051,7 +1454,7 @@ export const NOTIONS: Notion[] = [
     readings: { banque: 70, schweser: 68 },
     cours: "/courses/derivatives?module=3",
     calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r68", page: null }],
+    fiches: [{ href: "/fiches/derivatives?page=2", page: 2 }],
     flashcards: [],
   },
   {
@@ -1062,8 +1465,24 @@ export const NOTIONS: Notion[] = [
     court: "Arbitrage et coût de portage",
     readings: { banque: 71, schweser: 69 },
     cours: "/courses/derivatives?module=4",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r69", page: null }],
+    calculs: [
+      {
+        cle: "forward-price",
+        nom: "Prix forward sans arbitrage (cost of carry)",
+        href: "/calculs/derivatives/forward-price",
+      },
+      {
+        cle: "forward-arbitrage",
+        nom: "Arbitrage sur forward (cash-and-carry)",
+        href: "/calculs/derivatives/forward-arbitrage",
+      },
+      {
+        cle: "currency-forward",
+        nom: "Forward de change (parité couverte des taux)",
+        href: "/calculs/derivatives/currency-forward",
+      },
+    ],
+    fiches: [{ href: "/fiches/derivatives?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -1074,8 +1493,15 @@ export const NOTIONS: Notion[] = [
     court: "Forwards",
     readings: { banque: 72, schweser: 70 },
     cours: "/courses/derivatives?module=5",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r70", page: null }],
+    calculs: [
+      {
+        cle: "forward-value",
+        nom: "Valeur d'un forward en cours de vie",
+        href: "/calculs/derivatives/forward-value",
+      },
+      { cle: "fra", nom: "FRA et taux forward implicites", href: "/calculs/derivatives/fra" },
+    ],
+    fiches: [{ href: "/fiches/derivatives?page=3", page: 3 }],
     flashcards: [],
   },
   {
@@ -1086,8 +1512,14 @@ export const NOTIONS: Notion[] = [
     court: "Futures",
     readings: { banque: 73, schweser: 71 },
     cours: "/courses/derivatives?module=6",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r71", page: null }],
+    calculs: [
+      {
+        cle: "interest-rate-futures",
+        nom: "Futures de taux : cotation et BPV",
+        href: "/calculs/derivatives/interest-rate-futures",
+      },
+    ],
+    fiches: [{ href: "/fiches/derivatives?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -1098,8 +1530,19 @@ export const NOTIONS: Notion[] = [
     court: "Swaps",
     readings: { banque: 74, schweser: 72 },
     cours: "/courses/derivatives?module=7",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r72", page: null }],
+    calculs: [
+      {
+        cle: "swap-rate",
+        nom: "Taux de swap (par swap rate)",
+        href: "/calculs/derivatives/swap-rate",
+      },
+      {
+        cle: "swap-value",
+        nom: "Paiement net et valeur d'un swap de taux",
+        href: "/calculs/derivatives/swap-value",
+      },
+    ],
+    fiches: [{ href: "/fiches/derivatives?page=4", page: 4 }],
     flashcards: [],
   },
   {
@@ -1110,8 +1553,17 @@ export const NOTIONS: Notion[] = [
     court: "Options",
     readings: { banque: 75, schweser: 73 },
     cours: "/courses/derivatives?module=8",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r73", page: null }],
+    calculs: [
+      {
+        cle: "option-value-bounds",
+        nom: "Valeur intrinsèque, valeur temps et bornes d'options",
+        href: "/calculs/derivatives/option-value-bounds",
+      },
+    ],
+    fiches: [
+      { href: "/fiches/derivatives?page=5", page: 5 },
+      { href: "/fiches/derivatives?page=4", page: 4 },
+    ],
     flashcards: [],
   },
   {
@@ -1122,8 +1574,19 @@ export const NOTIONS: Notion[] = [
     court: "Parité put-call",
     readings: { banque: 76, schweser: 74 },
     cours: "/courses/derivatives?module=9",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r74", page: null }],
+    calculs: [
+      {
+        cle: "put-call-parity",
+        nom: "Parité put-call (put–call parity)",
+        href: "/calculs/derivatives/put-call-parity",
+      },
+      {
+        cle: "put-call-forward-parity",
+        nom: "Parité put-call-forward",
+        href: "/calculs/derivatives/put-call-forward-parity",
+      },
+    ],
+    fiches: [{ href: "/fiches/derivatives?page=5", page: 5 }],
     flashcards: [],
   },
   {
@@ -1134,8 +1597,19 @@ export const NOTIONS: Notion[] = [
     court: "Modèle binomial",
     readings: { banque: 77, schweser: 75 },
     cours: "/courses/derivatives?module=10",
-    calculs: [],
-    fiches: [{ href: "/fiches/derivatives#r75", page: null }],
+    calculs: [
+      {
+        cle: "binomial-risk-neutral",
+        nom: "Modèle binomial à une période (probabilité risque-neutre)",
+        href: "/calculs/derivatives/binomial-risk-neutral",
+      },
+      {
+        cle: "binomial-hedge-ratio",
+        nom: "Hedge ratio et réplication (binomial à une période)",
+        href: "/calculs/derivatives/binomial-hedge-ratio",
+      },
+    ],
+    fiches: [{ href: "/fiches/derivatives?page=5", page: 5 }],
     flashcards: [],
   },
   {
@@ -1146,7 +1620,28 @@ export const NOTIONS: Notion[] = [
     court: "Structures des alternatifs",
     readings: { banque: 78, schweser: 76 },
     cours: "/courses/alternative-investments?module=1",
-    calculs: [],
+    calculs: [
+      {
+        cle: "hurdle-rate",
+        nom: "Hurdle rate soft ou hard",
+        href: "/calculs/alternatives/hurdle-rate",
+      },
+      {
+        cle: "catch-up-clause",
+        nom: "Clause de rattrapage (catch-up)",
+        href: "/calculs/alternatives/catch-up-clause",
+      },
+      {
+        cle: "waterfall-clawback",
+        nom: "Waterfall (American / European) et clawback",
+        href: "/calculs/alternatives/waterfall-clawback",
+      },
+      {
+        cle: "committed-capital-fees",
+        nom: "Frais de gestion sur capital engagé (private equity)",
+        href: "/calculs/alternatives/committed-capital-fees",
+      },
+    ],
     fiches: [{ href: "/fiches/alternative-investments?page=1", page: 1 }],
     flashcards: [],
   },
@@ -1158,7 +1653,38 @@ export const NOTIONS: Notion[] = [
     court: "Rendements et frais des alternatifs",
     readings: { banque: 79, schweser: 77 },
     cours: "/courses/alternative-investments?module=2",
-    calculs: [],
+    calculs: [
+      {
+        cle: "hedge-fund-fees",
+        nom: "Frais « 2 and 20 » et rendement net (hedge fund)",
+        href: "/calculs/alternatives/hedge-fund-fees",
+      },
+      {
+        cle: "high-water-mark",
+        nom: "High-water mark",
+        href: "/calculs/alternatives/high-water-mark",
+      },
+      {
+        cle: "fund-of-funds-fees",
+        nom: "Frais en cascade d'un fund of funds",
+        href: "/calculs/alternatives/fund-of-funds-fees",
+      },
+      {
+        cle: "leveraged-return",
+        nom: "Rendement avec effet de levier (leveraged return)",
+        href: "/calculs/alternatives/leveraged-return",
+      },
+      {
+        cle: "moic",
+        nom: "Multiple of invested capital (MOIC)",
+        href: "/calculs/alternatives/moic",
+      },
+      {
+        cle: "fund-irr",
+        nom: "IRR d'un fonds (money-weighted return)",
+        href: "/calculs/alternatives/fund-irr",
+      },
+    ],
     fiches: [{ href: "/fiches/alternative-investments?page=1", page: 1 }],
     flashcards: [],
   },
@@ -1194,7 +1720,13 @@ export const NOTIONS: Notion[] = [
     court: "Ressources naturelles",
     readings: { banque: 82, schweser: 80 },
     cours: "/courses/alternative-investments?module=5",
-    calculs: [],
+    calculs: [
+      {
+        cle: "commodity-futures-price",
+        nom: "Prix d'un future sur matière première (cost of carry)",
+        href: "/calculs/alternatives/commodity-futures-price",
+      },
+    ],
     fiches: [{ href: "/fiches/alternative-investments?page=3", page: 3 }],
     flashcards: [],
   },

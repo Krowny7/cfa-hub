@@ -149,9 +149,6 @@ export const MATIERES = [
     cours: "derivatives",
     banque: [68, 69, 70, 71, 72, 73, 74, 75, 76, 77],
     schweser: [66, 67, 68, 69, 70, 71, 72, 73, 74, 75],
-    // fiche d'un seul tenant (app/fiches/derivatives) : une ancre #r<n> par
-    // reading, en numérotation Schweser
-    ficheParReading: "derivatives",
     courts: [
       "Marchés dérivés",
       "Engagements fermes et droits conditionnels",
@@ -326,7 +323,9 @@ export const FICHES_EN_TETE = {
 // Dossiers « (Système) » → matière (les QCM de la banque et les drills)
 export const DOSSIERS = {
   "Éthique et Standards Professionnels (Système)": "ethics",
+  "Ethical and Professional Standards (Système)": "ethics",
   "Méthodes Quantitatives (Système)": "quant",
+  "Quantitative Methods (Système)": "quant",
   "Économie (Système)": "economics",
   "Economics (Système)": "economics",
   "Finance d'Entreprise (Système)": "corporate",
@@ -337,6 +336,7 @@ export const DOSSIERS = {
   "Equity (Système)": "equity",
   "Fixed Income (Système)": "fixed_income",
   "Instruments Dérivés (Système)": "derivatives",
+  "Derivatives (Système)": "derivatives",
   "Investissements Alternatifs (Système)": "alternatives",
   "Alternative Investments (Système)": "alternatives",
   "Gestion de Portefeuille (Système)": "portfolio",
@@ -352,4 +352,7 @@ export const DRILLS = {
   Economics: { matiere: "economics", fiche: "economics", script: "economics" },
   "Corporate Issuers": { matiere: "corporate", fiche: "corporate-issuers", script: "corporate" },
   "Alternative Investments": { matiere: "alternatives", fiche: "alternative-investments", script: "alternatives" },
+  "Ethical and Professional Standards": { matiere: "ethics", fiche: "ethics", script: "ethics" },
+  "Quantitative Methods": { matiere: "quant", fiche: "quantitative-methods", script: "quant" },
+  Derivatives: { matiere: "derivatives", fiche: "derivatives", script: "derivatives" },
 };

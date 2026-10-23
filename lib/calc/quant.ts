@@ -254,7 +254,7 @@ const TVM: CalcType = {
   topic: "quant",
   name: "TVM : flux unique et fréquence de composition (EAR)",
   tier: "essentiel",
-  source: "LM 2 · The Time Value of Money in Finance",
+  source: "LM 2 · Time Value of Money in Finance",
   formulas: [
     "FV = PV × (1 + r/m)^(m × N) ; PV = FV / (1 + r/m)^(m × N)",
     "EAR = (1 + taux annuel déclaré / m)^m − 1",
@@ -429,7 +429,7 @@ const ANNUITIES: CalcType = {
   name: "Annuités et perpétuités (ordinary, due, différées)",
   tier: "essentiel",
   top: true,
-  source: "LM 2 · The Time Value of Money in Finance",
+  source: "LM 2 · Time Value of Money in Finance",
   formulas: [
     "PV annuité (ordinary) = PMT × [1 − (1 + r)^−N] / r",
     "FV annuité = PMT × [(1 + r)^N − 1] / r",
@@ -612,7 +612,7 @@ const CASH_FLOWS: CalcType = {
   topic: "quant",
   name: "Flux inégaux, obligations et rendements implicites",
   tier: "essentiel",
-  source: "LM 2 · The Time Value of Money in Finance",
+  source: "LM 2 · Time Value of Money in Finance",
   formulas: [
     "Obligation : P = Σ C / (1 + YTM)^t + nominal / (1 + YTM)^N",
     "Flux inégaux : PV = Σ CFt / (1 + r)^t (additivité des flux)",
@@ -803,7 +803,7 @@ const NO_ARBITRAGE: CalcType = {
   topic: "quant",
   name: "Absence d'arbitrage : taux forward, change à terme, arbre binomial",
   tier: "annexe",
-  source: "LM 2 · The Time Value of Money in Finance",
+  source: "LM 2 · Time Value of Money in Finance",
   formulas: [
     "(1 + S2)² = (1 + S1) × (1 + 1y1y)",
     "(1 + Sn)^n = (1 + Sm)^m × (1 + forward)^(n − m)",

@@ -77,15 +77,15 @@ ALTER TABLE codex_matieres ENABLE ROW LEVEL SECURITY;
 -- aucune politique : le serveur seulement
 
 INSERT INTO codex_matieres (cle, nom, dossiers, prefixe_drill, fiche) VALUES
-  ('ethics',       'Ethics',                        ARRAY['Éthique et Standards Professionnels (Système)', 'Ethics (Système)'], NULL, NULL),
-  ('quant',        'Quantitative Methods',          ARRAY['Méthodes Quantitatives (Système)', 'Quantitative Methods (Système)'], NULL, NULL),
+  ('ethics',       'Ethics',                        ARRAY['Éthique et Standards Professionnels (Système)', 'Ethics (Système)'], 'Ethical and Professional Standards', 'ethics'),
+  ('quant',        'Quantitative Methods',          ARRAY['Méthodes Quantitatives (Système)', 'Quantitative Methods (Système)'], 'Quantitative Methods', 'quantitative-methods'),
   ('economics',    'Economics',                     ARRAY['Économie (Système)', 'Economics (Système)'], 'Economics', 'economics'),
   ('corporate',    'Corporate Issuers',             ARRAY['Finance d''Entreprise (Système)', 'Corporate Issuers (Système)'], 'Corporate Issuers', 'corporate-issuers'),
   ('fsa',          'Financial Statement Analysis',  ARRAY['Financial Statement Analysis (Système)', 'Analyse des États Financiers (Système)'], 'Financial Statement Analysis', 'financial-statement-analysis'),
   ('equity',       'Equity Investments',            ARRAY['Equity (Système)', 'Investissements en Actions (Système)'], 'Equity', 'equity'),
   ('fixed_income', 'Fixed Income',                  ARRAY['Fixed Income (Système)'], 'Fixed Income', 'fixed-income'),
-  ('derivatives',  'Derivatives',                   ARRAY['Instruments Dérivés (Système)', 'Derivatives (Système)'], NULL, 'derivatives'),
-  ('alternatives', 'Alternative Investments',       ARRAY['Investissements Alternatifs (Système)', 'Alternative Investments (Système)'], NULL, NULL),
+  ('derivatives',  'Derivatives',                   ARRAY['Instruments Dérivés (Système)', 'Derivatives (Système)'], 'Derivatives', 'derivatives'),
+  ('alternatives', 'Alternative Investments',       ARRAY['Investissements Alternatifs (Système)', 'Alternative Investments (Système)'], 'Alternative Investments', 'alternative-investments'),
   ('portfolio',    'Portfolio Management',          ARRAY['Portfolio Management (Système)', 'Gestion de Portefeuille (Système)'], 'Portfolio Management', 'portfolio-management')
 ON CONFLICT (cle) DO UPDATE
   SET nom = EXCLUDED.nom, dossiers = EXCLUDED.dossiers, prefixe_drill = EXCLUDED.prefixe_drill, fiche = EXCLUDED.fiche;
