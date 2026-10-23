@@ -27,6 +27,21 @@ onto the existing PDF, matching its own style exactly.
   — merges a single-page overlay onto one page of the base PDF (`pypdf`),
   leaving every other page byte-for-byte in its text/structure.
 
+## New sheets: `build_synthese.py`
+
+For a sheet that has no PDF yet, `python -I scripts/pdf/build_synthese.py
+<contenu.json> <sortie.pdf>` lays out the synthèse pages from a JSON content
+file (format, block types and inline markup documented at the top of the
+script). It reproduces the recent sheets (Alternative Investments, Corporate
+Issuers): page 1 of Alternatives, transcribed to JSON, comes out with the
+same line breaks and every text run within 1 px of the original. Themes:
+`alternatives` (default), `corporate`, `classic` (Fixed Income colours:
+grey page, navy/copper, Liberation Sans) and `derivatives` (classic colours,
+Inter). Body text uses `fonts/Inter-*.ttf` (Inter 4.0 instances, OFL,
+rebuilt with `build_inter_fonts.py`); the other fonts come from the Windows
+font folder or `--fonts-dir`. The QCM / Corrigé pages remain a separate
+step (`build_qcm_pages.py`).
+
 ## The sheet's design system (as built so far)
 
 - Page size: 675.12 × 863.04 pt (every page, checked).
