@@ -41,11 +41,11 @@ export const SETS = [
       ],
       [
         "Quelles sont les 4 étapes de l'ethical decision-making framework du curriculum CFA ?",
-        "==Identify · Consider · Decide and act · Reflect==\nEn clair : identifier faits, stakeholders, devoirs, conflicts of interest ; peser situational influences, avis extérieurs, alternatives ; agir ; juger le résultat.\nPiège : l'ethical decision-making framework réduit les conséquences imprévues, sans les supprimer.",
+        "==Identify== · ==Consider== · ==Decide and act== · ==Reflect==\nEn clair : identifier faits, stakeholders, devoirs, conflicts of interest ; peser situational influences, avis extérieurs, alternatives ; agir ; juger le résultat.\nPiège : l'ethical decision-making framework réduit les conséquences imprévues, sans les supprimer.",
       ],
       [
         "Qu'est-ce qui peut déclencher une enquête du Professional Conduct Program (PCP) de CFA Institute ?",
-        "==Self-disclosure== · plainte écrite · médias · proctor · copies d'examen et réseaux sociaux\nEn clair : self-disclosure sur le PCS (Professional Conduct Statement) annuel. Le Board of Governors supervise le PCP ; son Disciplinary Review Committee applique le Code and Standards.",
+        "==Self-disclosure== · ==Plainte écrite== · ==Médias== · ==Proctor== · ==Copies d'examen et réseaux sociaux==\nEn clair : self-disclosure sur le PCS (Professional Conduct Statement) annuel. Le Board of Governors supervise le PCP ; son Disciplinary Review Committee applique le Code and Standards.",
       ],
       [
         "Quelles sont les issues possibles d'une enquête du Professional Conduct Program (PCP), et que se passe-t-il si le membre refuse la sanction ?",
@@ -220,7 +220,7 @@ export const SETS = [
       ],
       [
         "Standard V(B) Communication with Clients and Prospective Clients : que faut-il divulguer aux clients et prospects ?",
-        "Services et coûts · process et ses changements · ==limites et risques==\nEn clair : V(B) : risques comme liquidity et capacity, limites des modèles quantitatifs. Il faut aussi séparer fact et opinion : une projection n'est pas un fait.\nPiège : présenter des scénarios tous dans le sens de sa thèse viole V(B).",
+        "==Services et coûts== · ==Process et ses changements== · ==Limites et risques==\nEn clair : V(B) : risques comme liquidity et capacity, limites des modèles quantitatifs. Il faut aussi séparer fact et opinion : une projection n'est pas un fait.\nPiège : présenter des scénarios tous dans le sens de sa thèse viole V(B).",
       ],
       [
         "Standard V(C) Record Retention : à qui appartiennent les records, et combien de temps les garder sans règle locale ?",
@@ -256,7 +256,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 8 sections des GIPS (Global Investment Performance Standards) for Firms ?",
-        "Fundamentals · Input Data · Composites · ==4 rapports de return== · Advertising\nEn clair : 1 Fundamentals of Compliance ; 2 Input Data and Calculation Methodology ; 3 Composite and Pooled Fund Maintenance ; sections 4 à 7 : rapports time-weighted et money-weighted ; 8 Advertising.",
+        "==Fundamentals== · ==Input Data== · ==Composites== · ==4 rapports de return== · ==Advertising==\nEn clair : 1 Fundamentals of Compliance ; 2 Input Data and Calculation Methodology ; 3 Composite and Pooled Fund Maintenance ; sections 4 à 7 : rapports time-weighted et money-weighted ; 8 Advertising.",
       ],
       [
         "GIPS (Global Investment Performance Standards) : qu'est-ce qu'un composite, et quels portefeuilles doit-il contenir ?",

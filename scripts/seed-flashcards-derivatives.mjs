@@ -29,7 +29,7 @@ export const SETS = [
       ],
       [
         "Forward commitment vs contingent claim : quelle différence, et dans quelle catégorie range-t-on un CDS (credit default swap) ?",
-        "Forward commitment = ferme ; contingent claim = conditionnel, comme le ==CDS==\nEn clair : forwards, futures et la plupart des swaps obligent les deux parties. Options et CDS ne paient que si un événement survient.\nPiège : malgré son nom de swap, le CDS est un contingent claim : le seller ne paie qu'en cas de credit event.",
+        "Forward commitment = ferme ; contingent claim = ==conditionnel== (options, CDS)\nEn clair : forwards, futures et la plupart des swaps obligent les deux parties. Options et CDS ne paient que si un événement survient.\nPiège : malgré son nom de swap, le CDS est un contingent claim : le seller ne paie qu'en cas de credit event.",
       ],
       [
         "Hedging vs speculation avec un derivative : quelle différence ? Un boulanger qui devra acheter du blé doit-il acheter ou vendre des wheat futures ?",
@@ -45,7 +45,7 @@ export const SETS = [
       ],
       [
         "Quel est le rôle d'une CCH (central clearinghouse) sur un marché de derivatives, et que veut dire novation ?",
-        "La CCH ==devient la contrepartie de chaque côté== (novation)\nEn clair : elle garantit tous les paiements promis. Pour cela, elle exige une margin des deux parties au départ, puis des dépôts quand une position perd de la valeur.\nPiège : la CCH garantit les paiements ; elle ne stabilise pas le prix de l'underlying.",
+        "La CCH ==devient la contrepartie de chaque côté== (novation)\nEn clair : elle garantit tous les paiements promis : elle exige une margin des deux parties au départ, puis des dépôts quand une position perd.\nPiège : grâce à la CCH, les exchange-traded derivatives ont un counterparty credit risk faible, pas « significant ».",
       ],
       [
         "Qu'a changé le central clearing mandate d'après 2008 pour les swaps OTC (over-the-counter) ?",
@@ -61,7 +61,7 @@ export const SETS = [
       ],
       [
         "Futures : que sont l'initial margin et la maintenance margin, et jusqu'à quel niveau recharger après un margin call ?",
-        "Sous la maintenance margin, on recharge ==jusqu'à l'initial margin==\nEn clair : initial margin = dépôt exigé avant de trader ; maintenance margin = solde minimum. C'est un collateral des deux parties, pas un prêt : pas d'intérêts.\nPiège : compte d'actions sur marge : on recharge seulement jusqu'à la maintenance.",
+        "Sous la maintenance margin, on recharge ==jusqu'à l'initial margin==\nEn clair : initial margin = dépôt exigé avant de trader ; maintenance margin = solde minimum. C'est un collateral des deux parties, pas un prêt : aucun intérêt à payer.\nPiège : margin account d'actions : on recharge seulement jusqu'à la maintenance.",
       ],
       [
         "Futures sur 100 onces d'or acheté à 1 950 : initial margin 5 000, maintenance margin 4 700. Settlement price 1 947,50 au jour 1, puis 1 945 au jour 2. Quel dépôt pour le long ?",
@@ -77,7 +77,7 @@ export const SETS = [
       ],
       [
         "Une entreprise a une dette à taux flottant. Quelle position d'interest rate swap prendre pour la transformer en dette à taux fixe ?",
-        "Entrer dans le swap comme ==fixed-rate payer==\nEn clair : elle paie le swap rate et reçoit le flottant, qui sert sa dette : il ne reste que le fixe. Fixed-rate payer ≈ emprunter à taux fixe et acheter une FRN (floating-rate note).",
+        "Entrer dans le swap comme ==fixed-rate payer==\nEn clair : elle paie le swap rate et reçoit le flottant, qui sert sa dette : il ne reste que le fixe. Ex. dette à flottant + 1 %, swap rate 3 % : coût fixe 3 % + 1 % = 4 %.",
       ],
       [
         "CDS (credit default swap) : que paie le protection buyer, et quand paie le protection seller ?",
@@ -90,15 +90,15 @@ export const SETS = [
     cards: [
       [
         "Quels sont les 4 grands benefits des derivatives par rapport au cash market ?",
-        "Risk allocation · ==information discovery== · operational advantages · market efficiency\nEn clair : un put crée un plancher, un call l'upside sans downside. Short facile, transaction costs bas, leverage, liquidity : exploiter un mispricing coûte moins, les prix s'ajustent mieux.",
+        "==Risk allocation== · ==Information discovery== · ==Operational== advantages · ==Market efficiency==\nEn clair : risk allocation : transférer un risque (un put pose un plancher). Operational advantages : short facile, transaction costs bas, leverage, liquidity. Résultat : des prix plus efficients.",
       ],
       [
         "Information discovery : quelles informations les prix des derivatives révèlent-ils ? Quel input du prix d'une option n'est pas observable ?",
-        "Options : ==implied volatility== ; futures et forwards : prix et taux attendus\nEn clair : seul input non observable du prix d'une option : la volatility future de l'underlying. Exercise price, risk-free rate, prix de l'underlying et échéance s'observent.",
+        "Options : ==implied volatility== ; futures et forwards : prix et taux attendus\nEn clair : seul input non observable du prix d'une option : la volatility future de l'underlying. Exercise price, risk-free rate, spot price et échéance s'observent.\nPiège : le forward price est un prix de no-arbitrage, pas une prévision du spot futur.",
       ],
       [
         "Quels sont les 5 grands risques des derivatives ?",
-        "Implicit leverage · basis risk · ==liquidity risk== · counterparty credit risk · systemic risk\nEn clair : liquidity risk : la couverture appelle des margin calls avant que la position couverte ne rapporte. Systemic risk : spéculation excessive et contagion.\nPiège : la liquidity est à la fois un avantage et un risque.",
+        "==Implicit leverage== · ==Basis== risk · ==Liquidity== risk · ==Counterparty credit== risk · ==Systemic== risk\nEn clair : liquidity risk : la couverture appelle des margin calls avant que la position couverte ne rapporte. Systemic risk : spéculation excessive et contagion.\nPiège : la liquidity est à la fois un avantage et un risque.",
       ],
       [
         "Implicit leverage d'un futures : avec une margin égale à 4 % de la valeur du contrat, quel est l'effet d'une baisse de 1 % du futures price sur la margin ?",
@@ -114,11 +114,11 @@ export const SETS = [
       ],
       [
         "Hedge accounting : quelle différence entre cash flow hedge, fair value hedge et net investment hedge ?",
-        "Cash flow : ==flux futurs== · fair value : valeur au bilan · net investment : filiale étrangère\nEn clair : cash flow : recettes en devises vendues forward, dette flottante swappée en fixe. Fair value : inventory, dette fixe → flottant.\nPiège : dette fixe : sa valeur bouge (fair value) ; dette flottante : ses flux (cash flow).",
+        "Cash flow : ==flux futurs== · Fair value : ==valeur au bilan== · Net investment : ==filiale étrangère==\nEn clair : cash flow : recettes en devises vendues forward, dette flottante swappée en fixe. Fair value : inventory, dette fixe → flottant.\nPiège : dette fixe : sa valeur bouge (fair value) ; dette flottante : ses flux (cash flow).",
       ],
       [
-        "Comment un investisseur utilise-t-il les derivatives pour modifier son risque ? Donne 4 exemples.",
-        "Silver forwards · swap receive-fixed (==duration ↑==) · equity index futures · puts sur indice\nEn clair : dans l'ordre : exposition sans mise de fonds ; duration plus longue ; beta ↑ ou ↓ à faible coût ; downside coupé, upside gardé.\nPiège : couvrir son inventory ou une filiale étrangère est un usage d'issuer.",
+        "Comment un investisseur (et non un issuer) utilise-t-il les derivatives ? Donne 4 exemples.",
+        "Investisseur : ==modifier l'exposition au risque== de son portefeuille\nEn clair : silver forwards : exposition sans mise de fonds. Receive-fixed swap : duration ↑. Equity index futures : beta ↑ ou ↓. Puts sur indice : plancher, upside gardé.\nPiège : couvrir son inventory ou une filiale étrangère est un usage d'issuer.",
       ],
       [
         "Pourquoi price-t-on les derivatives par no-arbitrage, en actualisant au risk-free rate ?",
@@ -134,7 +134,7 @@ export const SETS = [
       ],
       [
         "Forward à 1 an sur une action sans dividende : spot price 30, risk-free rate 5 %, forward coté 32. Quel arbitrage, et quel gain ?",
-        "Forward trop cher : ==le vendre==, emprunter 30 et acheter ; gain 0,50\nEn clair : prix no-arbitrage = 30 × 1,05 = 31,50. En T : livrer l'action à 32, rembourser 31,50. Forward à 31 : l'inverse (acheter le forward, shorter l'action, placer 30).",
+        "Forward trop cher : ==le vendre==, emprunter 30, acheter l'action ; gain 0,50\nEn clair : prix no-arbitrage = 30 × 1,05 = 31,50. En T : livrer l'action à 32, rembourser 31,50. Forward à 31 : l'inverse (acheter le forward, shorter l'action, placer 30).",
       ],
       [
         "Comment les costs et les benefits de détention de l'underlying modifient-ils le no-arbitrage forward price ?",
@@ -154,11 +154,11 @@ export const SETS = [
     title: "Derivatives — Flashcards 3/4 (Valeur des forwards, FRA, futures & swaps)",
     cards: [
       [
-        "Forward contract : quelle différence entre forward price et forward value ? Combien vaut le contrat à l'initiation et à l'échéance ?",
-        "Price ==figé== à l'initiation ; value : 0 au départ, puis varie\nEn clair : à l'échéance, value du long = $S_T - F_0(T)$ (spot price final − forward price) ; short : l'opposé. Ex. forward price 50, spot final 56, 100 actions : long +600.",
+        "Forward contract : quelle différence entre forward price et forward value, et lequel des deux varie pendant la vie du contrat ?",
+        "Price ==figé== à l'initiation ; value : 0 au départ, puis varie\nEn clair : le forward price $F_0(T)$ est choisi pour que la value soit nulle en 0. Ensuite, si le spot price monte, la value du long devient positive ; le price, lui, ne bouge pas.\nPiège : QCM « equal to zero at initiation » : c'est la value, pas le price.",
       ],
       [
-        "Forward à 1 an conclu à 31,50 (risk-free rate 5 %). Six mois plus tard, le spot price vaut 33. Quelle value pour le long ?",
+        "Forward à 1 an sur une action sans dividende, conclu à 31,50 (risk-free rate 5 %). Six mois plus tard, le spot price vaut 33. Quelle value pour le long ?",
         "Value du long ≈ ==2,26==\n$$V_t = S_t - \\dfrac{F_0(T)}{(1 + R_f)^{T-t}}$$\nEn clair : 33 − 31,50 / 1,05^0,5 = 33 − 30,74. Où $S_t$ = spot price en t, $F_0(T)$ = forward price, $R_f$ = risk-free rate, T − t = durée restante.\nPiège : actualiser sur la durée restante (0,5 an), pas sur T. Value du short : −2,26.",
       ],
       [
@@ -195,18 +195,18 @@ export const SETS = [
       ],
       [
         "Convexity bias : pourquoi un FRA (forward rate agreement) et un interest rate futures équivalent n'ont-ils pas le même payoff pour ±1 bp ?",
-        "FRA actualisé au MRR réalisé : ==convexe== ; futures : linéaire\nEn clair : FRA 6m6m à 2,50 % sur 1 M : MRR (market reference rate) 2,51 % → reçoit 50 / 1,01255 = 49,38 ; 2,49 % → paie 49,39. L'écart croît avec la maturité.",
+        "FRA actualisé au MRR réalisé : ==convexe== ; futures : linéaire\nEn clair : FRA 6m6m à 2,50 % sur 1 M : MRR (market reference rate) 2,51 % → reçoit 50 / 1,01255 = 49,38 ; 2,49 % → paie 49,39. Le futures : 50 pile dans les deux cas. L'écart croît avec la maturité.",
       ],
       [
         "En quoi un interest rate swap ressemble-t-il à une série de FRAs (forward rate agreements), et en quoi diffère-t-il ?",
-        "1er paiement connu ; les suivants = ==FRAs au swap rate== (off-market)\nEn clair : tous ces FRAs ont le même taux fixe : chacun a une value non nulle à l'initiation, seule leur somme vaut 0.\nPiège : QCM : values « that sum to zero », pas « each equal to zero ».",
+        "Swap = série de FRAs au même taux fixe, donc ==off-market==\nEn clair : le 1er paiement flottant est connu dès le départ (MRR, market reference rate, du jour). Les FRAs ont en général des values non nulles, > 0 ou < 0 ; seule leur somme vaut 0.\nPiège : QCM : values « that sum to zero », pas « each equal to zero ».",
       ],
       [
         "Interest rate swap : quelle différence entre son price et sa value, et quand le fixed-rate payer gagne-t-il ?",
         "Price = ==taux fixe figé== ; value : 0 puis varie avec les taux\nEn clair : value du fixed-rate payer = PV (present value) des flottants attendus − PV des fixes : il gagne si les taux attendus montent. Elle sert aux paiements de mark-to-market.",
       ],
       [
-        "Par swap rate d'un interest rate swap annuel à 3 ans : spot rates 1 %, 2 % et 3 %. Quel taux fixe ?",
+        "Par swap rate d'un interest rate swap annuel à 3 ans : spot rates à 1, 2 et 3 ans de 1 %, 2 % et 3 %. Quel taux fixe ?",
         "Par swap rate ≈ ==2,96 %==\n$$\\text{par swap rate} = \\dfrac{1 - DF_N}{\\sum_{i=1}^{N} DF_i}$$\nEn clair : (1 − 0,9151) / (0,9901 + 0,9612 + 0,9151). $DF_i = 1/(1 + S_i)^i$ = discount factor du spot rate $S_i$. PV des fixes = PV des flottants attendus.",
       ],
       [
@@ -235,7 +235,7 @@ export const SETS = [
         "Acheteur : perte max = premium ; ==short call : perte illimitée==\nEn clair : long call : gain illimité. Long put : gain max = X − premium (X = exercise price). Short put : perte max = X − premium. Writer : gain max = premium.\nPiège : le short put est une exposition longue à l'underlying, comme le long call.",
       ],
       [
-        "Moneyness : quand un call et un put sont-ils in the money (ITM), at the money (ATM) ou out of the money (OTM) ? Application : X = 40, action à 37.",
+        "Moneyness : quand un call et un put sont-ils in the money (ITM), at the money (ATM) ou out of the money (OTM) ? Application : exercise price X = 40, action à 37.",
         "Call ITM si S > X ; put ITM si ==S < X==\nEn clair : S = prix de l'underlying, X = exercise price ; ATM si S = X. Ex. X = 40, S = 37 : le call est OTM de 3, le put ITM de 3.",
       ],
       [
@@ -247,8 +247,8 @@ export const SETS = [
         "Bornes : ==X actualisé==\n$$\\max(0, S - PV(X)) \\le c \\le S$$\n$$\\max(0, PV(X) - S) \\le p \\le PV(X)$$\nEn clair : $PV(X) = X / (1 + R_f)^{T-t}$, où X = exercise price, S = spot price, $R_f$ = risk-free rate, T − t = durée restante.\nPiège : borne haute du put européen = PV(X), pas X : X n'est reçu qu'à l'échéance.",
       ],
       [
-        "Options : quel est l'effet d'une hausse de la volatility et du time to expiration sur un call et sur un put ?",
-        "Volatility ↑ ou échéance ↑ : ==call et put ↑==\nEn clair : plus de volatility, plus de chances de finir loin in the money. Plus de temps restant : plus de time value.\nPiège : un put européen très in the money peut perdre de la valeur si l'échéance s'allonge.",
+        "Options : quel est l'effet d'une hausse du prix de l'underlying (S), de l'exercise price (X), de la volatility et du time to expiration sur un call et sur un put ?",
+        "S ↑ : call ↑, put ↓ ; X ↑ : l'inverse ; ==volatility ou échéance ↑ : les deux ↑==\nEn clair : le call paie S − X, le put X − S. Plus de volatility ou de temps restant : plus de chances de finir loin in the money, donc plus de time value.\nPiège : un put européen très in the money peut perdre de la valeur si l'échéance s'allonge.",
       ],
       [
         "Options : quel est l'effet d'une hausse du risk-free rate, des benefits (dividendes, coupons) et des storage costs sur un call et sur un put ?",
@@ -276,7 +276,7 @@ export const SETS = [
       ],
       [
         "Binomial model à une période : action à 50 qui ira à 60 ou à 42, call de strike 55, risk-free rate 3 % par période. Quelle risk-neutral probability, et quelle valeur du call ?",
-        "π ≈ 0,528 ; call ≈ ==2,56==\n$$c_0 = \\dfrac{\\pi_u c^+ + (1 - \\pi_u) c^-}{1 + R_f}$$\nEn clair : $\\pi_u = (1 + R_f - R_d) / (R_u - R_d)$ = (1,03 − 0,84) / (1,20 − 0,84). Call = 0,528 × 5 / 1,03 ($c^+$ = 5, $c^-$ = 0).\nPiège : π n'est pas la vraie probabilité : les vraies probabilités n'entrent pas.",
+        "π ≈ 0,528 ; call ≈ ==2,56==\n$$c_0 = \\dfrac{\\pi_u c^+ + (1 - \\pi_u) c^-}{1 + R_f}$$\nEn clair : $\\pi_u = (1 + R_f - D) / (U - D)$ = (1,03 − 0,84) / (1,20 − 0,84), où U = 60/50 (up-move factor) et D = 42/50 (down-move factor). Call = 0,528 × 5 / 1,03 ($c^+$ = 5, $c^-$ = 0).\nPiège : π n'est pas la vraie probabilité : les vraies probabilités n'entrent pas.",
       ],
     ],
   },

@@ -175,23 +175,34 @@
     font-size: calc(var(--taille-formule) * var(--echelle, 1));
   }
 }
-/* la liste « a · b · c » : dans le flux, les points au crayon */
+/* la liste « a · b · c » : un élément par ligne, un cran sous la taille
+   d'À RETENIR (une ligne de 6 mots tient sans couper), puce au crayon */
 .liste {
   margin: 0;
   padding: 0;
   list-style: none;
+  display: grid;
+  gap: 0.28em;
+  font-size: 0.82em;
+  line-height: 1.3;
 }
 .liste li {
-  display: inline;
+  position: relative;
+  padding-left: 0.95em;
 }
-.liste li:not(:last-child)::after {
-  content: "·";
-  /* lu comme une virgule : sans elle, les éléments se colleraient dans le
-     nom de la fiche (« QualifiedAdverse ») */
-  content: "·" / ", ";
-  margin: 0 0.3em;
-  font-weight: 800;
-  color: var(--ink-3);
+.liste li::before {
+  content: "";
+  position: absolute;
+  left: 0.1em;
+  top: 0.58em;
+  width: 0.32em;
+  height: 0.32em;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.compact .liste {
+  font-size: 1em;
+  gap: 0.1em;
 }
 
 /* ——— EN CLAIR ——— */

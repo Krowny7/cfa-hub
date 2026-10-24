@@ -24,16 +24,20 @@ export const SETS = [
         "==Purpose== → collect data → process → analyze → conclusions → follow-up\nEn clair : tout part de l'objectif (purpose), qui décide quelles données collecter. Process = ajuster les comptes, calculer les ratios, faire les common-size ; analyze = interpréter.\nPiège : calculer les ratios relève de « process », pas de « analyze ».",
       ],
       [
+        "Standard-setting bodies vs regulators : qui écrit les IFRS (International Financial Reporting Standards) et les US GAAP (US generally accepted accounting principles), et qui les fait appliquer ?",
+        "Normes : ==IASB et FASB== ; contrôle : regulatory authorities (SEC)\nEn clair : IASB (International Accounting Standards Board) écrit les IFRS, FASB (Financial Accounting Standards Board) les US GAAP ; la SEC (Securities and Exchange Commission) les fait appliquer.\nPiège : IOSCO (International Organization of Securities Commissions) coordonne les regulators sans en être un.",
+      ],
+      [
         "Footnotes vs MD&A (management discussion and analysis) d'un rapport annuel : lequel est audité, et que contient chacun ?",
-        "Footnotes ==auditées== ; MD&A (en tout ou en partie) non audité\nEn clair : footnotes = accounting methods, estimates, assumptions, contingencies, segments. MD&A = lecture du management : résultats, liquidity, capital resources, tendances connues.",
+        "Footnotes ==auditées== ; MD&A : en partie non audité\nEn clair : footnotes = accounting methods, estimates, assumptions, contingencies, segments. MD&A = lecture du management : résultats, liquidity, capital resources, tendances connues.",
       ],
       [
         "Quels sont les 4 types d'audit opinion, et que signifie chacun ?",
-        "Unqualified (clean) · Qualified · Adverse · Disclaimer of opinion\nEn clair : unqualified : comptes fidèles ; qualified : fidèles sauf une exception ; adverse : pas fidèles ; disclaimer : l'auditeur ne peut pas se prononcer.\nPiège : un audit donne une reasonable assurance, pas une garantie contre l'erreur ou la fraude.",
+        "==Unqualified== (clean) · ==Qualified== · ==Adverse== · ==Disclaimer== of opinion\nEn clair : unqualified : comptes fidèles ; qualified : fidèles sauf une exception ; adverse : pas fidèles ; disclaimer : l'auditeur ne peut pas se prononcer.\nPiège : un audit donne une reasonable assurance, pas une garantie contre l'erreur ou la fraude.",
       ],
       [
         "Quelles sont les 5 étapes du modèle de revenue recognition commun à IFRS (International Financial Reporting Standards) et US GAAP (US generally accepted accounting principles) ?",
-        "Contract · Performance obligations · Transaction price · Allocation · Recognize when satisfied\nEn clair : on identifie contrat et obligations, on fixe le prix, on le répartit, puis on reconnaît le revenue quand chaque obligation est remplie.\nPiège : un agent ne reconnaît que sa commission (net) ; un principal, le montant brut.",
+        "==Contract== · ==Performance obligations== · ==Transaction price== · ==Allocation== · Recognize ==when satisfied==\nEn clair : le revenue suit le transfert du control au client, pas l'encaissement ; le transaction price est réparti selon les standalone selling prices.\nPiège : un agent ne reconnaît que sa commission (net) ; un principal, le montant brut.",
       ],
       [
         "Revenue recognition over time : contrat de 10 millions, coûts engagés 2,5 millions sur 6,5 millions de coûts totaux estimés. Quel revenue reconnaître à ce jour ?",
@@ -53,7 +57,7 @@ export const SETS = [
       ],
       [
         "Quelle est la formule du diluted EPS (earnings per share) avec convertible preferred, convertible debt et stock options ?",
-        "Diluted EPS : ==titres dilutifs supposés convertis==\n$$\\text{Diluted EPS} = \\dfrac{\\text{NI} - \\text{PD} + \\text{PD}_{\\text{conv}} + \\text{Int}_{\\text{conv}}(1-t)}{\\text{WASO} + \\text{shares}_{\\text{conv}} + \\text{shares}_{\\text{TSM}}}$$\nEn clair : on ajoute ce que la conversion économise et les actions créées. NI = Net Income, PD = preferred dividends, t = tax rate, WASO = weighted average shares, TSM = treasury stock method.\nPiège : l'intérêt de la convertible debt se rajoute après impôt, pas en brut.",
+        "Diluted EPS : ==dilutive securities supposés convertis==\n$$\\text{Diluted EPS} = \\dfrac{\\text{NI} - \\text{PD} + \\text{PD}_{\\text{conv}} + \\text{Int}_{\\text{conv}}(1-t)}{\\text{WASO} + \\text{shares}_{\\text{conv}} + \\text{shares}_{\\text{TSM}}}$$\nEn clair : on ajoute ce que la conversion économise et les actions créées. NI = Net Income, PD = preferred dividends, t = tax rate, WASO = weighted average shares, TSM = treasury stock method.\nPiège : l'intérêt de la convertible debt se rajoute après impôt, pas en brut.",
       ],
       [
         "Treasury stock method : 10 000 options, exercise price 20, cours moyen de la période 25. Combien d'actions ajoute-t-on au dénominateur du diluted EPS (earnings per share) ?",
@@ -65,19 +69,15 @@ export const SETS = [
       ],
       [
         "Quels éléments passent en OCI (other comprehensive income) plutôt qu'en Net Income ?",
-        "Currency translation · FVOCI debt gains · Cash flow hedges · Pension remeasurements · Revaluation surplus\nEn clair : comprehensive income = Net Income + OCI. FVOCI = fair value through OCI (available-for-sale aux États-Unis) : les gains latents sur debt securities y passent.",
+        "==Currency translation== · ==FVOCI== debt gains · ==Cash flow== hedges · Pension ==remeasurements== · ==Revaluation surplus==\nEn clair : comprehensive income = Net Income + OCI. FVOCI = fair value through OCI (available-for-sale aux États-Unis) : les gains latents sur debt securities y passent.",
       ],
       [
         "Goodwill : une entreprise en achète une autre 500 millions ; la fair value des identifiable net assets acquis vaut 380 millions. Quel goodwill, et comment le traite-t-on ensuite ?",
-        "Goodwill = 500 − 380 = ==120 millions==, jamais amorti\nEn clair : goodwill = prix payé − fair value des identifiable net assets. Il n'est pas amorti mais testé pour impairment au moins une fois par an.\nPiège : un goodwill créé en interne n'est jamais inscrit au bilan.",
-      ],
-      [
-        "Intangible asset acheté (patent, brand, licence) : quand est-il amorti, et quand est-il seulement testé pour impairment ?",
-        "==Finite life : amorti== ; indefinite life : test d'impairment annuel\nEn clair : durée de vie limitée : amorti sur cette durée. Durée indéfinie (certaines brands, le goodwill) : pas d'amortissement.\nPiège : un intangible créé en interne est en général passé en charges, pas inscrit à l'actif.",
+        "Goodwill = 500 − 380 = ==120 millions==, jamais amorti\nEn clair : goodwill = prix payé − fair value des identifiable net assets. Comme un intangible à indefinite life : impairment test annuel ; intangible à finite life (patent) : amorti.\nPiège : un goodwill créé en interne n'est jamais au bilan ; un intangible interne, en général non plus.",
       ],
       [
         "Debt securities détenus : quelle mesure selon le business model sous IFRS (International Financial Reporting Standards) et US GAAP (US generally accepted accounting principles) ?",
-        "Hold to collect : amortized cost · Collect and sell : FVOCI · Trading : FVPL\nEn clair : FVOCI (fair value through OCI) : gains latents en OCI (other comprehensive income) ; FVPL (fair value through profit or loss) : en Net Income. US GAAP : held-to-maturity, available-for-sale, trading.\nPiège : actions et derivatives : FVPL par défaut.",
+        "Hold to collect : ==amortized cost== · Collect and sell : ==FVOCI== · Trading : ==FVPL==\nEn clair : FVOCI (fair value through OCI) : gains latents en OCI (other comprehensive income) ; FVPL (fair value through profit or loss) : en Net Income. US GAAP : held-to-maturity, available-for-sale, trading.\nPiège : actions et derivatives : FVPL par défaut.",
       ],
     ],
   },
@@ -86,22 +86,22 @@ export const SETS = [
     cards: [
       [
         "Cash flow statement : quelles opérations vont en CFO (cash flow from operations), en CFI (investing) et en CFF (financing) ?",
-        "CFO : exploitation · CFI : actifs long terme · CFF : dette et equity\nEn clair : CFO = activité courante (current assets et liabilities) ; CFI = actifs long terme et titres d'autres entreprises ; CFF = dette et equity de l'entreprise.\nPiège : bonds d'une autre entreprise = CFI (trading securities : CFO) ; émettre ses bonds = CFF.",
+        "CFO : ==exploitation== · CFI : ==actifs long terme== · CFF : ==dette et equity==\nEn clair : CFO = clients, fournisseurs, salariés, income taxes ; CFI = achat ou vente de machines et de titres ; CFF = emprunts, remboursements, émission ou rachat de shares, dividends paid.\nPiège : bonds d'une autre entreprise = CFI (trading securities : CFO) ; émettre ses bonds = CFF.",
       ],
       [
         "Interest paid, dividends paid, interest received, dividends received : où les classer sous US GAAP (US generally accepted accounting principles) et sous IFRS (International Financial Reporting Standards) ?",
         "US GAAP : tout en CFO sauf ==dividends paid en CFF==\nEn clair : IFRS laisse le choix : paid en CFO ou CFF, received en CFO ou CFI. CFO, CFI, CFF = cash flow from operating, investing, financing activities.\nPiège : taxes paid : toujours CFO en US GAAP ; en IFRS, CFI ou CFF si liées à ces activités.",
       ],
       [
-        "Méthode indirecte : Net Income 500, depreciation 120, gain sur cession d'un actif 30, accounts receivable +40, accounts payable +25. Quel CFO (cash flow from operations) ?",
+        "Indirect method : Net Income 500, depreciation 120, gain sur cession d'un actif 30, accounts receivable +40, accounts payable +25. Quel CFO (cash flow from operations) ?",
         "CFO = 500 + 120 − 30 − 40 + 25 = ==575==\nEn clair : Net Income + non-cash charges − gains − hausse des operating assets (receivables) + hausse des operating liabilities (payables).\nPiège : le gain est retiré : tout le produit de cession va en CFI (cash flow from investing).",
       ],
       [
-        "Méthode directe : Revenue 1 000, accounts receivable +50, unearned revenue +10. Combien de cash collected from customers ?",
+        "Direct method : Revenue 1 000, accounts receivable +50, unearned revenue +10. Combien de cash collected from customers ?",
         "Cash collected = 1 000 − 50 + 10 = ==960==\nEn clair : cash collected from customers = Revenue − ΔAR (accounts receivable) + Δunearned revenue. Receivables en hausse = ventes non encaissées ; unearned en hausse = cash reçu d'avance.",
       ],
       [
-        "Méthode directe : COGS (cost of goods sold) 600, inventory +40, accounts payable +30. Combien de cash paid to suppliers ?",
+        "Direct method : COGS (cost of goods sold) 600, inventory +40, accounts payable +30. Combien de cash paid to suppliers ?",
         "Cash paid to suppliers = 600 + 40 − 30 = ==610==\nEn clair : cash paid to suppliers = COGS + ΔInventory − ΔAP (accounts payable). Stocker plus coûte du cash ; payer plus tard en économise.",
       ],
       [
@@ -126,23 +126,23 @@ export const SETS = [
       ],
       [
         "Prix en hausse, stocks stables : LIFO (last in, first out) vs FIFO (first in, first out), quels effets sur COGS, Net Income, impôts et CFO ?",
-        "LIFO : ==COGS ↑==, Net Income ↓, impôts ↓, CFO ↑\nEn clair : les derniers achats, plus chers, vont en COGS (cost of goods sold) : moins d'impôt, plus de CFO (cash flow from operations). Inventory ↓ : current ratio ↓, inventory turnover ↑.\nPiège : LIFO liquidation (stocks en baisse) = vieux coûts bas dans le COGS, marge gonflée non durable.",
+        "LIFO : COGS ↑, Net Income ↓, income taxes ↓, ==CFO ↑==\nEn clair : les derniers achats, plus chers, vont en COGS (cost of goods sold) : moins d'impôt, plus de CFO (cash flow from operations). Inventory ↓ : current ratio ↓, inventory turnover ↑.\nPiège : LIFO liquidation (stocks en baisse) = vieux coûts bas dans le COGS, marge gonflée non durable.",
       ],
       [
         "Stock initial 100 unités à 10, achats 200 unités à 12 puis 150 unités à 14 ; 250 unités vendues. Quel COGS (cost of goods sold) sous FIFO et sous LIFO ?",
         "COGS : ==FIFO 2 800, LIFO 3 300==\nEn clair : FIFO (first in, first out) vend les vieux lots : 100 × 10 + 150 × 12. LIFO (last in, first out) vend les récents : 150 × 14 + 100 × 12. Ending inventory = 5 500 − COGS.\nPiège : LIFO est interdit sous IFRS (International Financial Reporting Standards).",
       ],
       [
-        "Inventory LIFO 400, LIFO reserve 60 (45 un an plus tôt), COGS LIFO 1 000. Quels inventory et COGS (cost of goods sold) sous FIFO (first in, first out) ?",
+        "Inventory LIFO (last in, first out) 400, LIFO reserve 60 (45 un an plus tôt), COGS LIFO 1 000. Quels inventory et COGS (cost of goods sold) sous FIFO (first in, first out) ?",
         "Inventory FIFO = 460 ; COGS FIFO = ==985==\nEn clair : inventory : on ajoute le solde de la LIFO reserve (400 + 60). COGS : on retire sa variation (1 000 − (60 − 45)).\nPiège : COGS FIFO = COGS LIFO − ΔLIFO reserve : la variation, pas le solde.",
       ],
       [
         "Inventories au bilan sous IFRS (International Financial Reporting Standards) et US GAAP (US generally accepted accounting principles) : quelle valeur, et une write-down est-elle réversible ?",
-        "Lower of cost or NRV ; reprise ==IFRS oui, US GAAP non==\nEn clair : NRV = net realizable value. Reprise IFRS plafonnée à la write-down. US GAAP : lower of cost or market si LIFO (last in, first out) ou retail method.\nPiège : une write-down augmente le COGS (cost of goods sold) et baisse l'equity : D/E (debt-to-equity) ↑.",
+        "Lower of cost or NRV ; reprise ==IFRS oui, US GAAP non==\nEn clair : NRV = net realizable value ; reprise IFRS plafonnée à la write-down. US GAAP sous LIFO (last in, first out) ou retail method : lower of cost or market.\nPiège : write-down : ROA (return on assets) ↓ l'année même, ↑ ensuite (assets et cost of goods sold plus bas).",
       ],
       [
-        "Inventory : cost 3 200, estimated selling price 3 500, completion costs 300, selling costs 50. Sous lower of cost or NRV (net realizable value), quelle valeur au bilan ?",
-        "NRV = 3 150 < cost : ==write-down de 50==\nEn clair : NRV = selling price − completion costs − selling costs = 3 500 − 300 − 50 = 3 150 ; l'inventory passe de 3 200 à 3 150.\nPiège : la write-down baisse le current ratio, pas le quick ratio (l'inventory n'y entre pas).",
+        "Inventory : cost 3 200, selling price 3 500, completion et selling costs 350, normal profit margin 200, replacement cost 2 900. Valeur au bilan en lower of cost or NRV, et en lower of cost or market ?",
+        "Cost or NRV : 3 150 ; cost or market : ==2 950==\nEn clair : NRV (net realizable value) = 3 500 − 350 = 3 150. Market = replacement cost (2 900), ramené entre NRV − normal profit margin (2 950) et NRV (3 150) : 2 950.\nPiège : la write-down baisse le current ratio, pas le quick ratio (l'inventory n'y entre pas).",
       ],
     ],
   },
@@ -154,12 +154,8 @@ export const SETS = [
         "Capitaliser : ==CFO ↑, CFI ↓== ; Net Income ↑ l'an 1, puis ↓\nEn clair : le coût est étalé par la depreciation sur les années qui en profitent (matching). Assets et equity ↑, donc D/E (debt-to-equity) ↓.\nPiège : capitalized interest : sortie en CFI ; l'ajouter à l'interest expense pour l'interest coverage.",
       ],
       [
-        "Machine : cost 1 000, useful life 5 ans, salvage value 0. Depreciation de l'année 1 en straight-line et en DDB (double-declining balance) ?",
-        "Année 1 : ==straight-line 200, DDB 400==\nEn clair : straight-line = 1 000 / 5. DDB = 2 / useful life × book value de début d'année = 2/5 × 1 000.\nPiège : la salvage value n'entre pas dans le taux DDB, mais la book value ne descend jamais sous elle.",
-      ],
-      [
         "Research and development (R&D) : capitalisé ou passé en charges, sous IFRS (International Financial Reporting Standards) et sous US GAAP (US generally accepted accounting principles) ?",
-        "IFRS : ==development capitalisé== ; US GAAP : tout en charges\nEn clair : IFRS : research toujours en charges ; development capitalisé si des critères sont remplis. US GAAP : software à vendre capitalisé après la technological feasibility.\nPiège : US GAAP, software à usage interne : capitalisé dès que l'achèvement du projet est probable.",
+        "IFRS : ==development capitalisé== ; US GAAP : en charges, sauf software\nEn clair : IFRS : research en charges ; development capitalisé si des critères sont remplis. US GAAP : software à vendre capitalisé après la technological feasibility.\nPiège : US GAAP, software à usage interne : capitalisé dès que l'achèvement du projet est probable.",
       ],
       [
         "Impairment d'un actif long terme held for use : quel test sous IFRS (International Financial Reporting Standards) et sous US GAAP (US generally accepted accounting principles) ?",
@@ -170,12 +166,12 @@ export const SETS = [
         "Revaluation : ==IFRS seulement== ; hausse en OCI (revaluation surplus)\nEn clair : une hausse va en OCI (other comprehensive income), sauf si elle reprend une baisse passée en Net Income ; une baisse va en Net Income, sauf si elle annule un surplus.",
       ],
       [
-        "Lessor, ou lessee sous US GAAP (US generally accepted accounting principles) : quels critères font d'un lease un finance lease plutôt qu'un operating lease ?",
-        "Propriété transférée · Purchase option quasi certaine · Majeure partie de la vie · PV des loyers ≈ fair value · Actif spécialisé\nEn clair : un seul critère suffit (PV = present value). Le lessee IFRS (International Financial Reporting Standards) traite tout lease comme un finance lease.",
+        "Pour le lessor, et pour le lessee sous US GAAP (US generally accepted accounting principles) : quels critères classent un lease en finance lease plutôt qu'en operating lease ?",
+        "==Ownership transfer== · ==Purchase option== · Major part of ==economic life== · ==PV ≥ fair value== · ==Specialized asset==\nEn clair : un seul critère suffit (purchase option : exercice quasi certain ; PV = present value des lease payments). Le lessee IFRS (International Financial Reporting Standards) : tout en finance lease.",
       ],
       [
         "Lessee, IFRS (International Financial Reporting Standards) ou US GAAP (US generally accepted accounting principles) : qu'inscrit-il au bilan au début d'un lease de plus de 12 mois ?",
-        "ROU asset et lease liability = ==PV des loyers==\nEn clair : ROU = right-of-use, PV = present value. Puis depreciation + interest (sous l'operating income) ; US GAAP operating lease : une lease expense linéaire. IFRS : low-value exemptés.\nPiège : principal en CFF (financing), sauf US GAAP operating lease : tout le loyer en CFO (operations).",
+        "ROU asset et lease liability = ==PV des lease payments==\nEn clair : ROU = right-of-use, PV = present value. Puis amortization du ROU asset (operating expense) et interest expense (hors operating income) ; US GAAP operating lease : une lease expense.\nPiège : principal en CFF (financing), sauf US GAAP operating lease : tout le paiement en CFO (operations).",
       ],
       [
         "Comment le lessor comptabilise-t-il un finance lease, par rapport à un operating lease ?",
@@ -184,6 +180,10 @@ export const SETS = [
       [
         "Defined benefit pension plan : PBO (projected benefit obligation) 500 millions, fair value des plan assets 420 millions. Qu'inscrit l'employeur au bilan ?",
         "Net pension liability = 500 − 420 = ==80 millions==\nEn clair : PBO − fair value des plan assets : underfunded = liability, overfunded = asset. Remeasurements (actuarial gains/losses) : en OCI (other comprehensive income).\nPiège : defined contribution plan : aucun passif, la pension expense = la cotisation versée.",
+      ],
+      [
+        "Defined benefit plan : quelle part du pension cost va en Net Income sous IFRS (International Financial Reporting Standards) et sous US GAAP (US generally accepted accounting principles) ?",
+        "IFRS : ==service cost + net interest== ; remeasurements en OCI\nEn clair : OCI = other comprehensive income. US GAAP : service cost + interest cost − expected return on plan assets ; past service cost et actuarial gains/losses : OCI puis amortis.\nPiège : past service cost : Net Income tout de suite en IFRS ; OCI puis amorti en US GAAP.",
       ],
       [
         "Comment comptabilise-t-on des employee stock options dans l'income statement ?",
@@ -215,8 +215,8 @@ export const SETS = [
     title: "Financial Statement Analysis — Flashcards 4/4 (Qualité de l'information, techniques & modélisation)",
     cards: [
       [
-        "Spectrum of financial reporting quality : quels sont le niveau le plus haut et le plus bas ?",
-        "Sommet : ==decision-useful==, earnings durables ; tout en bas : transactions fictives\nEn clair : au sommet, conforme aux GAAP (generally accepted accounting principles). Puis : earnings peu durables, biased choices, earnings management, departures from GAAP.\nPiège : reporting quality et earnings quality sont deux dimensions distinctes.",
+        "Spectrum of financial reporting quality : quel est le niveau le plus haut, et le plus bas ?",
+        "Sommet : ==decision-useful==, earnings durables ; tout en bas : fictitious transactions\nEn clair : au sommet, conforme aux GAAP (generally accepted accounting principles). Puis : earnings peu durables, biased choices, earnings management, departures from GAAP.\nPiège : reporting quality et earnings quality sont deux dimensions distinctes.",
       ],
       [
         "Conservative vs aggressive accounting : lequel est un biais, et comment l'earnings smoothing s'en sert-il ?",
@@ -224,11 +224,11 @@ export const SETS = [
       ],
       [
         "Quelles 3 conditions sont souvent réunies quand un management publie des financial reports de mauvaise qualité ?",
-        "Motivation · Opportunity · Rationalization\nEn clair : motivation : battre les objectifs, rémunération, covenants ; opportunity : contrôles internes faibles, board peu vigilant ; rationalization : se justifier à soi-même.",
+        "==Motivation== · ==Opportunity== · ==Rationalization==\nEn clair : motivation : battre les objectifs, rémunération, covenants ; opportunity : contrôles internes faibles, board peu vigilant ; rationalization : se justifier à soi-même.",
       ],
       [
         "Quels warning signs doivent pousser un analyste à creuser la qualité des earnings ?",
-        "==Net Income ↑, CFO stagnant== · Turnover ratios ↓ · Revenue hors norme · 4e trimestre atypique · « Nonrecurring » récurrents\nEn clair : un Net Income que le CFO (cash flow from operations) ne suit pas = alerte n° 1. Aussi : channel stuffing, bill-and-hold, non-GAAP measures (hors generally accepted accounting principles).",
+        "==Net Income ↑, CFO stagnant== · ==Turnover ratios ↓== · Revenue ==hors norme== · ==4e trimestre== atypique · « Nonrecurring » ==récurrents==\nEn clair : un Net Income que le CFO (cash flow from operations) ne suit pas = alerte n° 1. Aussi : channel stuffing, bill-and-hold, non-GAAP measures (hors generally accepted accounting principles).",
       ],
       [
         "Vertical vs horizontal common-size analysis : quelle base utilise chacune ?",
@@ -244,7 +244,7 @@ export const SETS = [
       ],
       [
         "Debt-to-assets, debt-to-equity, debt-to-capital et financial leverage ratio : quelles formules, dans cet ordre ?",
-        "Debt / total assets · Debt / total equity · Debt / (debt + equity) · ==Avg assets / avg equity==\nEn clair : debt = dettes portant intérêt (pas les payables). Plus ces ratios sont hauts, plus le solvency risk est élevé ; le financial leverage ratio entre dans le DuPont.\nPiège : financial leverage = assets / equity, pas debt / equity.",
+        "Debt / ==total assets== · Debt / ==total equity== · Debt / ==(debt + equity)== · ==Avg assets / avg equity==\nEn clair : debt = dettes portant intérêt (pas les payables). Plus ces ratios sont hauts, plus le solvency risk est élevé ; le financial leverage ratio entre dans le DuPont.\nPiège : financial leverage = assets / equity, pas debt / equity.",
       ],
       [
         "Interest coverage vs fixed charge coverage : quelle différence de formule ?",
@@ -260,7 +260,7 @@ export const SETS = [
       ],
       [
         "Comment le DuPont à 5 facteurs décompose-t-il le ROE (return on equity) ?",
-        "Tax burden · Interest burden · EBIT margin · Asset turnover · Leverage\nEn clair : NI/EBT × EBT/EBIT × EBIT/revenue × revenue/assets × assets/equity ; NI = Net Income, EBT = earnings before taxes, EBIT = earnings before interest and taxes.\nPiège : tax burden = NI / EBT = 1 − tax rate : plus il est haut, moins on paie d'impôt.",
+        "==Tax burden== · ==Interest burden== · ==EBIT margin== · ==Asset turnover== · ==Leverage==\nEn clair : NI/EBT × EBT/EBIT × EBIT/revenue × revenue/assets × assets/equity ; NI = Net Income, EBT = earnings before taxes, EBIT = earnings before interest and taxes.\nPiège : tax burden = NI / EBT = 1 − tax rate : plus il est haut, moins on paie d'impôt.",
       ],
       [
         "Par quoi commence un sales-based pro forma model, et comment modélise-t-on ensuite les coûts ?",
@@ -268,7 +268,7 @@ export const SETS = [
       ],
       [
         "Quels behavioral biases menacent les prévisions d'un analyste financier ?",
-        "Overconfidence · Illusion of control · Conservatism (anchoring) · Representativeness · Confirmation bias\nEn clair : conservatism : ajuster trop peu sa prévision aux nouvelles infos ; representativeness : oublier le base rate. Remède : croiser inside view et outside view (base rate du secteur).",
+        "==Overconfidence== · ==Illusion of control== · ==Conservatism== (anchoring) · ==Representativeness== · ==Confirmation bias==\nEn clair : conservatism : ajuster trop peu sa prévision aux nouvelles infos ; representativeness : oublier le base rate (remède : croiser inside view et outside view).",
       ],
       [
         "Porter's five forces : quelle force pèse sur les input costs, et lesquelles sur le pricing power ?",

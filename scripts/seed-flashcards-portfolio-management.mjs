@@ -24,7 +24,7 @@ export const SETS = [
       ],
       [
         "Que montrent les données historiques (US, 1926–2017) sur le risque et le rendement des major asset classes ?",
-        "Plus de rendement moyen = ==plus de standard deviation==\nEn clair : small caps : rendement et standard deviation les plus hauts ; T-bills (Treasury bills) : les plus bas. Emerging markets, low-quality corporate bonds : liquidity risk en plus.\nPiège : rendements non normaux (negative skew, kurtosis > 3) : mean et standard deviation ne suffisent pas.",
+        "Plus de rendement moyen = ==plus de standard deviation==\nEn clair : small caps : rendement et standard deviation les plus hauts ; T-bills (Treasury bills) : les plus bas. Liquidity : un souci en emerging markets, low-quality bonds.\nPiège : rendements non normaux (skew < 0, kurtosis > 3) : mean et variance ne suffisent pas.",
       ],
       [
         "Comment calcule-t-on la sample covariance de deux actifs à partir de T rendements historiques ?",
@@ -44,7 +44,7 @@ export const SETS = [
       ],
       [
         "Comment la correlation entre deux actifs change-t-elle la standard deviation (σ) d'un portefeuille ?",
-        "Correlation plus basse ⇒ ==standard deviation du portefeuille plus basse==\nEn clair : ρ (correlation) = +1 : σp = moyenne pondérée des σ, aucun gain. ρ = 0 : terme croisé nul. Seul ρ = −1 permet une variance nulle.\nPiège : ρ = 0 ne suffit pas pour un risque nul ; et en crise (2008), les correlations montent.",
+        "Correlation plus basse ⇒ ==standard deviation du portefeuille plus basse==\nEn clair : ρ (correlation) = +1 : σp = moyenne pondérée des σ (standard deviation), aucun gain. ρ = 0 : terme de covariance nul. Seul ρ = −1 permet une variance nulle.\nPiège : en crise (2008), les correlations montent : la diversification protège moins.",
       ],
       [
         "Qu'est-ce que le diversification ratio ? Calcule-le si un portefeuille équipondéré a σ = 18 % et un titre pris au hasard σ = 25 %.",
@@ -52,7 +52,7 @@ export const SETS = [
       ],
       [
         "Pile : 100 USD, face : 0 USD, ou bien 50 USD certains. Que choisissent un investisseur risk-averse, risk-neutral et risk-seeking ?",
-        "Risk-averse : ==50 USD certains== · risk-neutral : indifférent · risk-seeking : le pari\nEn clair : le pari a aussi une expected value de 50 USD. Les modèles financiers supposent des investisseurs risk-averse : ils prennent du risque seulement s'il est payé.",
+        "Risk-averse : ==50 USD certains== · Risk-neutral : ==indifférent== · Risk-seeking : ==le pari==\nEn clair : le pari a aussi une expected value de 50 USD. Les modèles financiers supposent des investisseurs risk-averse : ils prennent du risque seulement s'il est payé.",
       ],
       [
         "Quelle formule donne l'utility d'un investissement ? Calcule-la pour un risk aversion coefficient A = 4, un expected return de 10 % et une standard deviation de 20 %.",
@@ -60,11 +60,11 @@ export const SETS = [
       ],
       [
         "Que représente une indifference curve dans le plan risque–rendement, et que traduit une courbe plus pentue ?",
-        "Indifference curve = ==même utility== ; plus pentue = plus risk-averse\nEn clair : elle relie les couples (standard deviation, expected return) de même utility ; la plus haute est préférée. Moins risk-averse : courbes plus plates, donc plus de poids dans le risky portfolio sur la CAL (capital allocation line).",
+        "Indifference curve = ==même utility== ; plus pentue = plus risk-averse\nEn clair : couples (standard deviation, expected return) de même utility ; on préfère la plus haute. Moins risk-averse : courbe plus plate, plus d'actif risqué sur la CAL (capital allocation line).",
       ],
       [
         "Minimum-variance frontier, global minimum-variance portfolio et efficient frontier : comment les distinguer ?",
-        "Efficient frontier = ==branche haute de la minimum-variance frontier==, dès le GMV\nEn clair : minimum-variance frontier = pour chaque expected return, le portefeuille de risque minimal. Son point le plus à gauche = GMV (global minimum-variance portfolio). La branche sous le GMV est dominée.\nPiège : le GMV fait partie de l'efficient frontier (c'est son point de départ).",
+        "Efficient frontier = minimum-variance frontier ==au-dessus du global minimum-variance portfolio==\nEn clair : minimum-variance frontier = risque minimal pour chaque expected return ; son point le plus à gauche = GMV (global minimum-variance portfolio) ; dessous, tout est dominé.\nPiège : le GMV appartient à l'efficient frontier.",
       ],
       [
         "Portefeuilles (expected return, standard deviation) : A (6 %, 10 %), B (9 %, 16 %), C (8 %, 18 %), D (12 %, 25 %). Lequel ne peut pas être sur l'efficient frontier ?",
@@ -85,11 +85,11 @@ export const SETS = [
     cards: [
       [
         "Qu'est-ce que la CML (capital market line), et quelle est son équation ?",
-        "CML = CAL vers le ==market portfolio==\n$$E(R_p) = R_f + \\dfrac{E(R_M) - R_f}{\\sigma_M}\\,\\sigma_p$$\nEn clair : CAL (capital allocation line) dont le risky portfolio est M, le même pour tous (homogeneous expectations). E(R) = expected return, $R_f$ = risk-free rate, σ = standard deviation ; pente = Sharpe ratio de M.",
+        "CML = CAL vers le ==market portfolio==\n$$E(R_p) = R_f + \\dfrac{E(R_M) - R_f}{\\sigma_M}\\,\\sigma_p$$\nEn clair : CAL (capital allocation line) vers M, le même pour tous (homogeneous expectations). E(R) = expected return, $R_f$ = risk-free rate, σ = standard deviation ; pente = Sharpe ratio de M.",
       ],
       [
         "Sur la CML (capital market line), que sont les portefeuilles à gauche et à droite du market portfolio ?",
-        "Gauche : ==lending portfolios== · droite : borrowing portfolios\nEn clair : lending : une partie placée au risk-free rate. Borrowing : on emprunte au risk-free rate pour mettre plus de 100 % dans le market portfolio (buying on margin).",
+        "Gauche : ==lending portfolios== · Droite : ==borrowing portfolios==\nEn clair : lending : une partie placée au risk-free rate. Borrowing : on emprunte au risk-free rate pour mettre plus de 100 % dans le market portfolio (buying on margin).",
       ],
       [
         "Systematic risk vs unsystematic risk : lequel est rémunéré par un expected return plus élevé, et pourquoi ?",
@@ -97,7 +97,7 @@ export const SETS = [
       ],
       [
         "Combien de titres faut-il pour bien diversifier un portefeuille d'actions, et que devient chaque type de risque quand on en ajoute ?",
-        "Plus de titres : ==moins d'unsystematic risk== ; 90 % du gain dès 12–18 titres\nEn clair : l'unsystematic risk (firm-specific) baisse de moins en moins vite ; vers 30 titres, il ne reste que le systematic risk (market risk).\nPiège : le beta du portefeuille (son systematic risk) peut monter ou baisser selon les titres ajoutés.",
+        "==12–18 titres== = 90 % du gain de diversification\nEn clair : chaque titre ajouté baisse l'unsystematic risk (firm-specific) de moins en moins ; vers 30 titres, il ne reste que le systematic risk (market risk).\nPiège : le beta du portefeuille (son systematic risk) peut monter ou baisser selon les titres ajoutés.",
       ],
       [
         "Qu'est-ce qu'un multifactor model (un type de return generating model), et quels types de facteurs utilise-t-il ?",
@@ -117,11 +117,11 @@ export const SETS = [
       ],
       [
         "Quelles sont les hypothèses du CAPM (capital asset pricing model) ?",
-        "Risk-averse · frictionless markets · one-period horizon · ==homogeneous expectations== · price takers\nEn clair : aussi utility maximization, actifs divisibles. Homogeneous expectations : mêmes estimations pour tous, donc même market portfolio.\nPiège : risk-neutral ou horizons différents ne sont pas des hypothèses du CAPM.",
+        "==Risk-averse== · ==Frictionless== markets · ==One-period== horizon · ==Homogeneous expectations== · ==Price takers==\nEn clair : aussi utility maximization, actifs divisibles. Homogeneous expectations : mêmes estimations pour tous, donc même market portfolio.\nPiège : risk-neutral ou horizons différents ne sont pas des hypothèses du CAPM.",
       ],
       [
         "CML (capital market line) vs SML (security market line) : quel axe de risque, et quels actifs se placent dessus ?",
-        "CML : axe ==σ (total risk)== · SML : axe beta (systematic risk)\nEn clair : σ = standard deviation. Sur la CML, seuls les portefeuilles efficients ; sur la SML, tous les titres bien évalués. Un titre seul est sous la CML mais sur la SML.",
+        "CML : axe ==σ (total risk)== · SML : axe ==beta (systematic risk)==\nEn clair : σ = standard deviation. Sur la CML, seuls les portefeuilles efficients ; sur la SML, tous les titres bien évalués. Un titre seul est sous la CML mais sur la SML.",
       ],
       [
         "Action à 20, prix attendu 22 dans un an, dividende 1. Beta 1,5, risk-free rate 4 %, expected market return 10 %. Surévaluée ou sous-évaluée ?",
@@ -133,7 +133,7 @@ export const SETS = [
       ],
       [
         "Qu'est-ce que le M² (M-squared) ? Calcule M² et M² alpha : portefeuille 10 % (standard deviation 20 %), marché 11 % (standard deviation 30 %), risk-free rate 5 %.",
-        "M² = rendement ==au risque du marché==\n$$M^2 = (R_p - R_f)\\,\\dfrac{\\sigma_M}{\\sigma_p} + R_f$$\nEn clair : σ = standard deviation ; $R_p$, $R_M$, $R_f$ = portefeuille, marché, risk-free. Ici : Sharpe (10 % − 5 %)/20 % = 0,25 ; 0,25 × 30 % + 5 % = 12,5 % ; M² alpha = 12,5 % − 11 % = +1,5 %.\nPiège : M² classe les portefeuilles comme le Sharpe ratio, mais en %.",
+        "M² = rendement ==au σ du marché==\n$$M^2 = (R_p - R_f)\\,\\dfrac{\\sigma_M}{\\sigma_p} + R_f$$\nEn clair : le portefeuille (dé)levé au σ (standard deviation) du marché ; p, M, f = portefeuille, marché, risk-free. Sharpe = (10 − 5)/20 = 0,25 ; 0,25 × 30 % + 5 % = 12,5 % ; M² alpha = 12,5 − 11 = +1,5 %.\nPiège : M² classe les portefeuilles comme le Sharpe ratio, mais en %.",
       ],
       [
         "Quelle est la formule du Treynor measure, et quand le préférer au Sharpe ratio ?",
@@ -150,11 +150,11 @@ export const SETS = [
     cards: [
       [
         "Quelles sont les 3 étapes du portfolio management process ?",
-        "==Planning== · Execution · Feedback\nEn clair : planning : client, IPS (investment policy statement), benchmark. Execution : asset allocation (top-down) puis security selection (bottom-up). Feedback : monitoring, rebalancing, performance.",
+        "==Planning== · ==Execution== · ==Feedback==\nEn clair : planning : client, IPS (investment policy statement), benchmark. Execution : asset allocation (top-down) puis security selection (bottom-up). Feedback : monitoring, rebalancing, performance.",
       ],
       [
-        "Risk tolerance, horizon et liquidity needs typiques : banks, insurance companies, endowments, foundations, DB (defined benefit) pension plans, SWF (sovereign wealth funds) ?",
-        "Banks, insurance : ==risque faible, liquidité élevée== ; endowments, foundations, DB, SWF : l'inverse\nEn clair : l'inverse = risque élevé, horizon long, liquidité faible. Horizon court : banks, P&C (property and casualty) insurance ; long : life insurance. Mutual funds : liquidité élevée, le reste varie.",
+        "Risk tolerance, investment horizon et liquidity needs typiques : banks, insurance companies, endowments, foundations, DB (defined benefit) pension plans ?",
+        "Banks, insurance : ==risk tolerance faible, liquidity needs élevés== ; endowments, foundations, DB : l'inverse\nEn clair : l'inverse = risk tolerance élevée, horizon long, peu de liquidity needs. Horizon court : banks, P&C (property and casualty) ; long : life insurance. Mutual funds : liquidity needs élevés.",
       ],
       [
         "Defined benefit plan vs defined contribution plan : qui supporte l'investment risk ?",
@@ -162,27 +162,27 @@ export const SETS = [
       ],
       [
         "Active management vs passive management : quel objectif pour chacune, et comment la capital market theory les traduit-elle ?",
-        "Passive : ==répliquer un indice== · active : battre un benchmark\nEn clair : en capital market theory, passive = index fund + risk-free asset ; active = surpondérer les titres undervalued, sous-pondérer les overvalued.\nPiège : un fonds smart beta (indice construit sur un facteur) reste passive.",
+        "Passive : ==répliquer un indice== · Active : ==battre un benchmark==\nEn clair : en capital market theory, passive = index fund + risk-free asset ; active = surpondérer les undervalued. Passive ≈ 1/5 des AUM (assets under management), en hausse (frais bas).\nPiège : un fonds smart beta (indice construit sur un facteur) reste passive.",
       ],
       [
-        "Quelles 3 tendances transforment l'asset management industry (les firmes buy-side) ?",
-        "==Passive en hausse== · explosion des données · robo-advisors\nEn clair : passive ≈ 1/5 des AUM (assets under management), frais bas. Données : big data, IT coûteuse. Robo-advisors : conseil automatisé pour petits portefeuilles, barrières à l'entrée plus basses.",
+        "Asset management industry : qu'est-ce qu'un full-service, un specialist et un multi-boutique asset manager ?",
+        "Multi-boutique = ==holding de specialist asset managers==\nEn clair : full-service : tous styles et asset classes ; specialist : un seul. Tous buy-side (≠ sell-side : broker-dealers). Big data : IT coûteuse ; robo-advisors : moins de barrières à l'entrée.\nPiège : plusieurs filiales spécialisées = multi-boutique, pas full-service.",
       ],
       [
         "Open-end fund, closed-end fund, ETF (exchange-traded fund) : à quel prix s'échangent les parts par rapport au NAV (net asset value) ?",
-        "Open-end : au NAV · closed-end : ==cours ≠ NAV== · ETF : ≈ NAV\nEn clair : NAV = net asset value. Closed-end : parts en nombre fixe, premium ou discount. ETF : coté en continu, prix tenu par l'arbitrage creation/redemption ; short et marge possibles, moins d'impôt.",
+        "Open-end : ==au NAV== · Closed-end : ==cours ≠ NAV== · ETF : ==≈ NAV==\nEn clair : closed-end : parts en nombre fixe, premium ou discount. ETF : coté en continu, prix tenu par l'arbitrage creation/redemption ; short et marge possibles, moins d'impôt.\nPiège : ETF : brokerage costs ; open-end : aucun (achat et rachat auprès du fonds).",
       ],
       [
         "SMA (separately managed account), hedge fund, private equity / venture capital fund : en quoi diffèrent-ils d'un mutual fund ?",
-        "SMA : ==un seul investisseur== · hedge fund : qualified investors · PE/VC : rôle actif\nEn clair : SMA : sur mesure, sans parts. Hedge fund : peu réglementé, minimum 250 000 à 1 million USD. PE (private equity) buyout : beaucoup de leverage. VC (venture capital) : equity de start-ups, peu de leverage.",
+        "SMA : ==un seul investisseur== · Hedge fund : ==qualified investors== · PE/VC : ==co-gèrent les sociétés==\nEn clair : SMA : sur mesure, aucune part émise. Hedge fund : peu réglementé, minimum 250 000 à 1 million USD. PE (private equity), VC (venture capital) : aident à gérer les sociétés, puis les revendent.",
       ],
       [
         "Qu'est-ce que l'IPS (investment policy statement), et que contient-il ?",
-        "IPS = ==plan écrit== des objectives et constraints du client\nEn clair : contient aussi purpose, duties, procedures, guidelines (actifs permis, levier), evaluation and review (benchmark), appendices (SAA, strategic asset allocation).\nPiège : revu chaque année et à chaque grand changement, pas selon la performance récente.",
+        "IPS = ==plan écrit== des objectives et constraints du client\nEn clair : aussi purpose, duties, procedures, guidelines (actifs permis, levier), evaluation and review (benchmark), appendices (SAA = strategic asset allocation, rebalancing).\nPiège : revu chaque année et à chaque grand changement, pas selon la performance récente.",
       ],
       [
         "Risk et return objectives d'un IPS (investment policy statement) : objectif absolu vs relatif, quelle différence ? Donne un exemple de chaque.",
-        "Absolu : ==un chiffre fixe== · relatif : écart à un benchmark\nEn clair : absolu : « 6 % par an », « pas plus de 10 % de perte sur un an ». Relatif : « S&P 500 + 2 % », « au plus 5 % de chances de finir 4 % sous le MSCI World ».\nPiège : un peer group n'est pas investissable, donc mauvais benchmark.",
+        "Absolu : ==un chiffre fixe== · Relatif : ==écart à un benchmark==\nEn clair : absolu : « 6 % par an », « pas plus de 10 % de perte sur un an ». Relatif : « S&P 500 + 2 % », « au plus 5 % de chances de finir 4 % sous le MSCI World ».\nPiège : un peer group n'est pas investissable, donc mauvais benchmark.",
       ],
       [
         "Ability vs willingness to take risk : d'où vient chacune, et que retenir si elles divergent ?",
@@ -190,7 +190,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 5 investment constraints d'un IPS (investment policy statement) ?",
-        "Time horizon · tax · liquidity · legal and regulatory · unique circumstances\nEn clair : RRTTLLU : Risk et Return = objectives, puis Time horizon, Tax, Liquidity, Legal, Unique. Ex. unique : refus du tabac ; legal : dirigeant interdit de trader ses titres.\nPiège : la risk tolerance est un objective, pas une constraint.",
+        "==Time horizon== · ==Tax== · ==Liquidity== · ==Legal and regulatory== · ==Unique circumstances==\nEn clair : RRTTLLU : Risk et Return = objectives, puis Time horizon, Tax, Liquidity, Legal, Unique. Ex. unique : refus du tabac ; legal : dirigeant interdit de trader ses titres.\nPiège : la risk tolerance est un objective, pas une constraint.",
       ],
       [
         "Pour une asset allocation, comment définir les asset classes en termes de correlations ?",
@@ -198,7 +198,7 @@ export const SETS = [
       ],
       [
         "Strategic asset allocation (SAA) vs tactical asset allocation (TAA) vs security selection : quelle différence ?",
-        "SAA : ==cibles long terme== · TAA : écart court terme · security selection : dans une classe\nEn clair : SAA : poids par asset class tirés de l'IPS (investment policy statement). TAA : ex. actions de 40 % à 35 % car chères. TAA et security selection ajoutent de l'active risk.",
+        "SAA : ==cibles long terme== · TAA : ==écart court terme== · Security selection : ==choisir les titres==\nEn clair : SAA : poids par asset class tirés de l'IPS (investment policy statement). TAA : ex. actions de 40 % à 35 % car chères. TAA et security selection ajoutent de l'active risk.",
       ],
       [
         "Qu'est-ce que l'approche core-satellite, et quels problèmes de l'active management règle-t-elle ?",
@@ -206,7 +206,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les approches pour intégrer l'ESG (environmental, social, governance) dans un portefeuille ?",
-        "Negative screening · positive screening · thematic, impact · engagement · ESG integration\nEn clair : exclure des secteurs ; choisir les best-in-class ; viser un thème ou un impact positif ; voter (active ownership) ; intégrer l'ESG partout.\nPiège : negative screening : benchmark = indice qui exclut les mêmes entreprises.",
+        "==Negative== screening · ==Positive== screening · ==Thematic, impact== · ==Engagement== · ==ESG integration==\nEn clair : exclure des secteurs ; choisir les best-in-class ; viser un thème ou un impact positif ; voter (active ownership) ; intégrer l'ESG partout.\nPiège : negative screening : benchmark = indice qui exclut les mêmes entreprises.",
       ],
     ],
   },
@@ -219,15 +219,15 @@ export const SETS = [
       ],
       [
         "Quels sont les 5 belief perseverance biases (cognitive errors) ?",
-        "Conservatism · confirmation · representativeness · illusion of control · hindsight\nEn clair : conservatism : trop peu ajuster sa vue. Confirmation : chercher ce qui confirme. Representativeness : juger par ressemblance. Illusion of control : croire influencer. Hindsight : « je le savais ».\nPiège : base-rate neglect et sample-size neglect sont deux formes de representativeness.",
+        "==Conservatism== · ==Confirmation== · ==Representativeness== · ==Illusion of control== · ==Hindsight==\nEn clair : conservatism : trop peu réviser. Confirmation : chercher ce qui confirme. Representativeness : juger par ressemblance. Illusion of control : croire tout contrôler. Hindsight : « je le savais ».\nPiège : base-rate et sample-size neglect = representativeness.",
       ],
       [
         "Quels sont les 4 information-processing biases (cognitive errors) ?",
-        "Anchoring · mental accounting · framing · availability\nEn clair : anchoring : trop peu s'écarter du chiffre de départ. Mental accounting : l'argent rangé selon son origine. Framing : la présentation change le choix. Availability : ce qui vient vite à l'esprit.",
+        "==Anchoring== · ==Mental accounting== · ==Framing== · ==Availability==\nEn clair : anchoring : coller au chiffre de départ. Mental accounting : traiter l'argent selon sa source. Framing : la présentation change le choix. Availability : croire probable ce qui vient vite à l'esprit.",
       ],
       [
         "Quels sont les 6 emotional biases ?",
-        "Loss aversion · overconfidence · self-control · ==status quo, endowment, regret aversion==\nEn clair : overconfidence : surestimer son savoir. Self-control : préférer le présent. Les 3 derniers figent : ne rien changer, surévaluer ce qu'on a, ne pas agir par peur du regret.\nPiège : l'overconfidence, mi-cognitive, est classée emotional.",
+        "==Loss aversion== · ==Overconfidence== · ==Self-control== · ==Status quo, endowment, regret aversion==\nEn clair : overconfidence : surestimer son savoir. Self-control : préférer le présent. Les 3 derniers figent : rien changer, surévaluer ce qu'on a, fuir le regret.\nPiège : l'overconfidence, mi-cognitive, est classée emotional.",
       ],
       [
         "Loss aversion vs risk aversion : quelle différence, et que fait un investisseur loss-averse face à une perte ?",
@@ -235,31 +235,31 @@ export const SETS = [
       ],
       [
         "À quels biais la behavioral finance associe-t-elle les bubbles et les crashes ?",
-        "Overconfidence · confirmation · anchoring · regret aversion\nEn clair : overconfidence : overtrading, risque sous-estimé. Confirmation : ignorer les signaux de baisse. Anchoring : croire rationnels les sommets récents. Regret : rester investi pour ne pas rater la hausse.",
+        "==Overconfidence== · ==Confirmation== · ==Anchoring== · ==Regret aversion==\nEn clair : overconfidence (nourrie par self-attribution et hindsight) : overtrading. Confirmation : ignorer les signaux de baisse. Anchoring : croire rationnels les sommets récents. Regret : rester investi.",
       ],
       [
         "Comment explique-t-on la value vs growth anomaly et le home bias ?",
         "Value > growth : ==risk premium ou halo effect== ; home bias : familiarité\nEn clair : risk premium : facteurs size et book-to-market de Fama-French. Halo effect (representativeness) : growth stocks surpayés. Home bias : surpondérer son pays, par impression de mieux s'informer.",
       ],
       [
-        "Le but du risk management est-il de minimiser le risque ?",
-        "Non : viser le ==bon ensemble de risques==, pas zéro\nEn clair : l'optimal bundle of risks, compatible avec la risk tolerance. Étapes : fixer la tolerance, identifier et mesurer les risques, les modifier, les suivre.\nPiège : on contrôle le risque pris, pas les rendements.",
+        "Le but du risk management est-il de minimiser le risque, et que couvre un risk management framework ?",
+        "Non : viser le ==bon ensemble de risques==, pas zéro\nEn clair : l'optimal bundle of risks, selon la risk tolerance. Framework : governance, risk tolerance, identification et mesure, gestion, monitoring, communication, strategic risk analysis.\nPiège : fixer des position limits relève de l'exécution, pas du framework.",
       ],
       [
-        "À quel niveau se décide la risk governance, et que couvre un risk management framework ?",
-        "Risk governance : ==senior management, vue entreprise==\nEn clair : le framework couvre governance, risk tolerance, identification et mesure, gestion, monitoring, communication, strategic risk analysis.\nPiège : fixer des position limits relève de l'exécution, pas du framework.",
+        "Qui fixe la risk tolerance d'une organisation (risk governance), et de quels facteurs dépend-elle ?",
+        "Risk governance : le ==senior management== fixe la risk tolerance\nEn clair : risk governance = supervision du risk management, vue entreprise. Facteurs : expertise métier, capacité à encaisser les chocs, regulatory environment, financial strength.\nPiège : risk tolerance basse ≠ réduire chaque risque : on choisit lesquels garder.",
       ],
       [
         "Qu'est-ce que le risk budgeting ?",
-        "Risk budgeting = ==répartir le risque total== accepté\nEn clair : on alloue la risk tolerance entre actifs, stratégies ou facteurs (strategic, tactical asset allocation, security selection), là où le risque rapporte le plus. Mesures : beta, VaR (value at risk), duration.",
+        "Risk budgeting = ==répartir le risque total== accepté\nEn clair : on alloue le risque toléré entre asset classes, stratégies ou risk factors, là où il rapporte le plus. Mesure unique possible : beta, VaR (value at risk), duration.",
       ],
       [
         "Financial risks vs non-financial risks : lesquels sont lesquels, et comment interagissent-ils ?",
-        "Financial : ==market, credit, liquidity== ; non-financial : operational, solvency, model, legal…\nEn clair : ils interagissent : couvrir un market risk par options crée un credit risk de contrepartie, puis legal, liquidity, solvency risk. Individus : mortality risk (→ life insurance), longevity risk (→ annuity).\nPiège : solvency risk et settlement risk sont non-financial, pas financial.",
+        "Financial : ==market, credit, liquidity== ; non-financial : operational, solvency, model, legal…\nEn clair : ils interagissent : un hedge par options crée un credit risk, puis legal, liquidity, solvency risk. Individus : mortality risk → life insurance ; longevity risk → annuity.\nPiège : solvency et settlement risk sont non-financial.",
       ],
       [
         "Quelle mesure de risque pour un actif seul, une action en portefeuille diversifié, une obligation et un derivative ?",
-        "Actif seul : σ · action en portefeuille : beta · obligation : duration · derivative : Greeks\nEn clair : σ = standard deviation. Greeks : delta (prix du sous-jacent), gamma (variation du delta), vega (volatility), rho (risk-free rate). Tail risk : VaR (value at risk), CVaR (conditional VaR).",
+        "Actif seul : ==σ== · Action en portefeuille : ==beta== · Obligation : ==duration== · Derivative : ==Greeks==\nEn clair : σ = standard deviation. Greeks : delta (prix du sous-jacent), gamma (variation du delta), vega (volatility), rho (risk-free rate). Tail risk : VaR (value at risk), CVaR (conditional VaR).",
       ],
       [
         "VaR (value at risk) mensuelle de 1 million à 5 % : que signifie-t-elle, et que mesure la CVaR (conditional VaR) ?",
@@ -271,7 +271,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 4 façons de modifier une exposition au risque, et quelle différence entre risk transfer et risk shifting ?",
-        "Avoid · accept · transfer (insurance) · ==shift (derivatives)==\nEn clair : transfer : un tiers prend le risque (insurance, surety bond, fidelity bond). Shift : on change la distribution des résultats (un put fixe un prix plancher). Accept : self-insurance.\nPiège : insurance = transfer ; derivatives = shifting, pas l'inverse.",
+        "==Avoid== · ==Accept== · ==Transfer (insurance)== · ==Shift (derivatives)==\nEn clair : transfer : un tiers prend le risque (insurance, surety bond, fidelity bond). Shift : on change la distribution des résultats (un put fixe un prix plancher). Accept : self-insurance.\nPiège : insurance = transfer ; derivatives = shifting, pas l'inverse.",
       ],
     ],
   },

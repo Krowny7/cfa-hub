@@ -20,11 +20,11 @@ export const SETS = [
     cards: [
       [
         "Quelles sont les 3 fonctions principales d'un financial system ?",
-        "Atteindre ses objectifs · fixer le taux d'équilibre · allouer le capital\nEn clair : 1) épargner, emprunter, lever de l'equity, se couvrir, trader sur l'info ; 2) taux qui égalise savings et borrowing ; 3) capital vers ses usages les plus productifs.\nPiège : ni gérer la money supply (banque centrale), ni empêcher de trader sur l'info.",
+        "Atteindre ses ==objectifs== · Fixer le ==taux d'équilibre== · ==Allouer le capital==\nEn clair : 1) épargner, emprunter, lever de l'equity, se couvrir, trader sur l'info ; 2) taux qui égalise savings et borrowing ; 3) capital vers ses usages les plus productifs.\nPiège : ni gérer la money supply (banque centrale), ni empêcher de trader sur l'info.",
       ],
       [
         "Broker, dealer, arbitrageur : qui met en relation quels acheteurs et vendeurs d'un même titre ?",
-        "Broker : même moment · dealer : ==moments différents== · arbitrageur : marchés différents\nEn clair : le dealer achète pour son inventaire et revend plus tard (bid-ask spread) ; l'arbitrageur achète sur un marché et revend aussitôt sur un autre.\nPiège : acheter et revendre aussitôt ailleurs, c'est l'arbitrageur, pas le dealer.",
+        "Broker : ==même moment== · Dealer : ==moments différents== · Arbitrageur : ==marchés différents==\nEn clair : le dealer achète pour son inventaire et revend plus tard (bid-ask spread) ; l'arbitrageur achète sur un marché et revend aussitôt sur un autre.\nPiège : acheter et revendre aussitôt ailleurs, c'est l'arbitrageur, pas le dealer.",
       ],
       [
         "Primary market vs secondary market : quelle différence ?",
@@ -36,11 +36,11 @@ export const SETS = [
       ],
       [
         "Quote-driven, order-driven, brokered market : comment la transaction se forme-t-elle dans chacun ?",
-        "Quote-driven : avec des ==dealers== · order-driven : order matching rules · brokered : broker trouve la contrepartie\nEn clair : order-driven : prix › ordres affichés › heure ; crossing network : prix du marché principal. Brokered : blocs, immobilier, art.\nPiège : call market = séances fixes, un seul prix ; continuous = toute la séance.",
+        "Quote-driven : avec des ==dealers== · Order-driven : ==order matching rules== · Brokered : broker ==trouve la contrepartie==\nEn clair : order-driven : prix › ordres affichés › heure ; crossing network : prix du marché principal. Brokered : blocs, immobilier, art.\nPiège : call market = séances fixes, un seul prix ; continuous = toute la séance.",
       ],
       [
         "Operational, informational, allocational efficiency : que signifie chacune pour un financial system ?",
-        "Operational : ==coûts bas== · informational : prix à jour · allocational : capital au meilleur usage\nEn clair : informational = les prix reflètent vite l'info fondamentale. Un well-functioning financial system a aussi des complete markets.\nPiège : « low transaction costs » ⇒ operational, pas informational efficiency.",
+        "Operational : ==coûts bas== · Informational : ==prix à jour== · Allocational : ==capital au meilleur usage==\nEn clair : informational = les prix reflètent vite l'info fondamentale. Un well-functioning financial system a aussi des complete markets.\nPiège : « low transaction costs » ⇒ operational, pas informational efficiency.",
       ],
       [
         "Quels sont les objectifs de la market regulation (régulation des marchés financiers) ?",
@@ -72,7 +72,7 @@ export const SETS = [
       ],
       [
         "Pour une limit buy order, que signifient marketable, inside the market, makes the market et behind the market ?",
-        "Au-dessus du ask : ==marketable== · entre bid et ask : inside · au bid : makes the market · sous le bid : behind\nEn clair : plus la limite d'achat est haute, plus l'ordre a de chances de passer ; côté vente, c'est symétrique.\nPiège : une limit sell sous le best bid est marketable, pas behind the market.",
+        "==Au-dessus du ask== : marketable · ==Entre bid et ask== : inside · ==Au bid== : makes the market · ==Sous le bid== : behind\nEn clair : plus la limite d'achat est haute, plus l'ordre a de chances de passer ; côté vente, c'est symétrique.\nPiège : une limit sell sous le best bid est marketable, pas behind the market.",
       ],
       [
         "Stop-sell order et stop-buy order : où les place-t-on, et que se passe-t-il quand le stop est touché ?",
@@ -109,7 +109,7 @@ export const SETS = [
       ],
       [
         "À quoi sert un security market index ?",
-        "Sentiment · rendement du marché · ==benchmark== · estimation du beta · index funds\nEn clair : dans le CAPM (capital asset pricing model), l'indice sert de proxy du marché. Un bon benchmark a le même style que le gérant (ex. small-cap value).",
+        "==Sentiment== · ==Rendement du marché== · ==Benchmark== · Estimation du ==beta== · ==Index funds==\nEn clair : dans le CAPM (capital asset pricing model), l'indice sert de proxy du marché. Un bon benchmark a le même style que le gérant (ex. small-cap value).",
       ],
       [
         "Pourquoi un bond index est-il plus difficile et plus cher à répliquer qu'un equity index ?",
@@ -121,11 +121,11 @@ export const SETS = [
       ],
       [
         "Weak, semi-strong, strong form de l'EMH (efficient market hypothesis) : quelle information est déjà dans les prix ?",
-        "Weak : prix passés · semi-strong : ==info publique== · strong : publique et privée\nEn clair : weak = prix et volumes passés. Les marchés développés sont en général semi-strong efficient ; la strong form est rejetée.\nPiège : semi-strong implique weak, mais weak n'implique pas semi-strong.",
+        "Weak : ==prix passés== · Semi-strong : ==info publique== · Strong : ==publique et privée==\nEn clair : weak = prix et volumes passés. Les marchés développés sont en général semi-strong efficient ; la strong form est rejetée.\nPiège : semi-strong implique weak, mais weak n'implique pas semi-strong.",
       ],
       [
         "Quelle analyse ne rapporte plus d'abnormal returns dans un marché weak, semi-strong ou strong form efficient ?",
-        "Weak : ==technical analysis== · semi-strong : aussi fundamental · strong : même l'info privée\nEn clair : la fundamental analysis reste nécessaire : c'est elle qui rend les prix efficients. Le gérant reste utile : objectifs, diversification, allocation, fiscalité.",
+        "Weak : ==technical analysis== · Semi-strong : aussi ==fundamental== · Strong : même ==l'info privée==\nEn clair : la fundamental analysis reste nécessaire : c'est elle qui rend les prix efficients. Le gérant reste utile : objectifs, diversification, allocation, fiscalité.",
       ],
       [
         "Qu'est-ce qui rend un marché financier moins efficient ?",
@@ -133,7 +133,7 @@ export const SETS = [
       ],
       [
         "Momentum effect, overreaction effect, value effect : quelle forme de l'EMH (efficient market hypothesis) chaque anomalie contredit-elle ?",
-        "Momentum, overreaction : ==weak form== · value effect : semi-strong form\nEn clair : momentum et overreaction n'utilisent que les prix passés ; le value effect (P/E bas, P/E = price-to-earnings), des données publiques. Overreaction : les perdants sur 3 ou 5 ans rebondissent.",
+        "Momentum, overreaction : ==weak form== · Value effect : ==semi-strong form==\nEn clair : momentum et overreaction n'utilisent que les prix passés ; le value effect (P/E bas, P/E = price-to-earnings), des données publiques. Overreaction : les perdants sur 3 ou 5 ans rebondissent.",
       ],
       [
         "Les market anomalies (January effect, size effect, décote des closed-end funds…) prouvent-elles que les marchés sont inefficients ?",
@@ -141,7 +141,7 @@ export const SETS = [
       ],
       [
         "Loss aversion, overconfidence, herding, information cascade : que décrit chacun de ces biais de la behavioral finance ?",
-        "Loss aversion : ==perte > gain== · overconfidence : se surestimer · herding : imiter · cascade : suivre les mieux informés\nEn clair : loss aversion : une perte pèse plus qu'un gain égal. Autres : conservatism (réaction lente), mental accounting, narrow framing.\nPiège : biais ≠ inefficience, sauf abnormal returns durables.",
+        "Loss aversion : ==perte > gain== · Overconfidence : ==se surestimer== · Herding : ==imiter== · Cascade : ==suivre les mieux informés==\nEn clair : loss aversion : une perte pèse plus qu'un gain égal. Autres : conservatism (réaction lente), mental accounting, narrow framing.\nPiège : biais ≠ inefficience, sauf abnormal returns durables.",
       ],
     ],
   },
@@ -158,11 +158,11 @@ export const SETS = [
       ],
       [
         "Venture capital, LBO, PIPE : que finance chacun de ces types de private equity ?",
-        "Venture capital : ==firmes jeunes== · LBO : rachat par la dette · PIPE : firme cotée, fonds privés\nEn clair : LBO = leveraged buyout (MBO = management buyout) ; PIPE = private investment in public equity. Private equity : illiquide.\nPiège : le mezzanine financing (juste avant l'entrée en bourse) est du venture capital, pas un LBO.",
+        "Venture capital : ==firmes jeunes== · LBO : ==rachat par la dette== · PIPE : ==firme cotée, fonds privés==\nEn clair : LBO = leveraged buyout (MBO = management buyout) ; PIPE = private investment in public equity. Private equity : illiquide.\nPiège : le mezzanine financing (juste avant l'entrée en bourse) est du venture capital, pas un LBO.",
       ],
       [
         "Depository receipts (DR) : que sont un sponsored DR, un GDR, un ADR et un BLDR ?",
-        "Sponsored : ==l'investisseur vote== · GDR : hors US, en USD · ADR : coté aux US · BLDR : ETF de DR\nEn clair : GDR = global DR, émis hors US et hors du pays de l'émetteur (Londres). ADR = American DR. BLDR = basket of listed DRs ; ETF = exchange-traded fund.\nPiège : unsponsored DR : la banque dépositaire vote, pas l'investisseur.",
+        "Sponsored : ==l'investisseur vote== · GDR : ==hors US, en USD== · ADR : ==coté aux US== · BLDR : ==ETF de DR==\nEn clair : GDR = global DR, émis hors US et hors du pays de l'émetteur (Londres). ADR = American DR. BLDR = basket of listed DRs ; ETF = exchange-traded fund.\nPiège : unsponsored DR : la banque dépositaire vote, pas l'investisseur.",
       ],
       [
         "Quelle est la formule du ROE (return on equity) d'une firme ?",
@@ -178,7 +178,7 @@ export const SETS = [
       ],
       [
         "DOL vs DFL : que mesure chacun de ces degrés de levier ?",
-        "DOL : ==fixed costs== · DFL : intérêts\n$$\\text{DOL} = \\dfrac{\\%\\Delta\\,\\text{EBIT}}{\\%\\Delta\\,\\text{Sales}}$$\n$$\\text{DFL} = \\dfrac{\\%\\Delta\\,\\text{Net Income}}{\\%\\Delta\\,\\text{EBIT}}$$\nEn clair : DOL (degree of operating leverage) élevé ⇒ l'EBIT (earnings before interest and taxes) varie plus que les Sales ; DFL (degree of financial leverage) élevé ⇒ le Net Income varie plus que l'EBIT.\nPiège : ROA (return on assets) est unlevered ; le ROE (return on equity) dépend du levier.",
+        "DOL : ==fixed costs== · DFL : ==intérêts==\n$$\\text{DOL} = \\dfrac{\\%\\Delta\\,\\text{EBIT}}{\\%\\Delta\\,\\text{Sales}}$$\n$$\\text{DFL} = \\dfrac{\\%\\Delta\\,\\text{Net Income}}{\\%\\Delta\\,\\text{EBIT}}$$\nEn clair : DOL (degree of operating leverage) élevé ⇒ l'EBIT (earnings before interest and taxes) varie plus que les Sales ; DFL (degree of financial leverage) élevé ⇒ le Net Income varie plus que l'EBIT.\nPiège : ROA (return on assets) est unlevered ; le ROE (return on equity) dépend du levier.",
       ],
       [
         "Top-down vs bottom-up : comment prévoir le Revenue d'une entreprise ?",
@@ -186,11 +186,11 @@ export const SETS = [
       ],
       [
         "Dans une prévision, comment modélise-t-on COGS (cost of goods sold), SG&A, accounts receivable et maintenance capex ?",
-        "COGS : ==% du Revenue== · SG&A : surtout fixe · receivables : via le DSO · maintenance capex : depreciation + inflation\nEn clair : SG&A = selling, general and administrative. $\\text{Receivables} = \\text{DSO} \\times \\text{Revenue}/365$, où DSO = days of sales outstanding. Maintenance capex : le replacement cost suit l'inflation.\nPiège : inventory et payables se projettent sur le COGS, pas le Revenue.",
+        "COGS : ==% du Revenue== · SG&A : ==surtout fixe== · Receivables : ==via le DSO== · Maintenance capex : ==depreciation + inflation==\nEn clair : SG&A = selling, general and administrative. $\\text{Receivables} = \\text{DSO} \\times \\text{Revenue}/365$, où DSO = days of sales outstanding. Maintenance capex : le replacement cost suit l'inflation.\nPiège : inventory et payables se projettent sur le COGS, pas le Revenue.",
       ],
       [
         "Comment classer utilities, biotech et pétrole brut dans une style box (cyclical ou defensive × growth ou mature) ?",
-        "Utilities : defensive, mature · biotech : ==defensive, growth== · pétrole brut : cyclical, mature\nEn clair : defensive = demande stable. Le GICS (Global Industry Classification Standard) classe par activité principale : sector → industry group → industry → sub-industry.",
+        "Utilities : ==defensive, mature== · Biotech : ==defensive, growth== · Pétrole brut : ==cyclical, mature==\nEn clair : defensive = demande stable. Le GICS (Global Industry Classification Standard) classe par activité principale : sector → industry group → industry → sub-industry.",
       ],
       [
         "Un secteur compte 5 firmes avec 35 %, 25 %, 20 %, 10 % et 10 % de market share. Quel est le HHI (Herfindahl-Hirschman Index) et quelle concentration indique-t-il ?",
@@ -198,7 +198,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les Porter's five forces qui déterminent la rentabilité d'un secteur ?",
-        "Threat of new entrants · threat of substitutes · power of buyers · power of suppliers · ==rivalry==\nEn clair : forces fortes ⇒ economic profits proches de zéro. Rivalry forte : rivaux de taille égale, croissance lente, fixed costs élevés, surcapacité.\nPiège : « rivalry among suppliers » n'existe pas : c'est la power of suppliers.",
+        "Threat of ==new entrants== · Threat of ==substitutes== · Power of ==buyers== · Power of ==suppliers== · ==Rivalry==\nEn clair : forces fortes ⇒ economic profits proches de zéro. Rivalry forte : rivaux de taille égale, croissance lente, fixed costs élevés, surcapacité.\nPiège : « rivalry among suppliers » n'existe pas : c'est la power of suppliers.",
       ],
       [
         "Quelles sont les 3 competitive strategies de Porter ?",
