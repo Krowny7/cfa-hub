@@ -3,22 +3,41 @@
    fin) et l'Atelier (revoir ses erreurs). Cartes en papier et encre, jetons du
    site (jour et nuit) ; les mises en page suivent la largeur du bloc
    (requêtes de conteneur), pas celle de l'écran. Animations : transform et
-   opacity seulement, coupées par prefers-reduced-motion. */
+   opacity seulement, coupées par prefers-reduced-motion.
+   Couleurs : celles de l'onglet « Réviser » de la barre du haut, la palette
+   studiolo (lib/palettes.ts ; ReviserView pose --pal-1 noyer, --pal-2
+   vert-de-gris, --pal-3 miel, --pal-4 ivoire sur la racine). Aucune autre
+   couleur d'accent : le rouge du stylo (--pen) ne fait plus que barrer la
+   rature, comme partout sur le site. Les mélanges ci-dessous gardent le texte
+   AA, jour et nuit. */
 
 .racine {
   container-type: inline-size;
   display: grid;
   gap: 30px;
-  /* le texte de la carte du cours, la carte sombre du site (.card-ink : sombre
-     le jour, plus claire que les cartes la nuit) : l'encre claire et ses nuances */
-  --sur-nuit: #ffffff;
-  --sur-nuit-2: rgba(255, 255, 255, 0.62);
-  --ocre: #ecc98f;
-  --pen-doux: color-mix(in srgb, var(--pen) 10%, transparent);
+  /* texte d'accent : le vert-de-gris assombri au noyer (5:1 sur le papier) */
+  --acc: color-mix(in oklab, var(--pal-2) 65%, var(--pal-1));
+  /* aplats d'accent (cases, jauges, interrupteur, filets) : 3:1 et plus sur le papier et sur le rail */
+  --acc-plein: color-mix(in oklab, var(--pal-2) 80%, var(--pal-1));
+  --acc-doux: color-mix(in srgb, var(--pal-2) 11%, transparent);
+  /* le surligneur et le signet : le miel */
+  --surligne: color-mix(in srgb, var(--pal-3) 60%, transparent);
+  --signet: color-mix(in oklab, var(--pal-3) 75%, var(--pal-1));
+  --plume-trait: 0.5;
+  /* le noyer sombre : fond de repli de l'encre, le temps que l'image arrive */
+  --noyer-fonce: color-mix(in oklab, var(--pal-1) 62%, black);
+  /* le texte posé sur l'encre : blanc, et l'ivoire pour le second plan */
+  --sur-nuit: white;
+  --sur-nuit-2: var(--pal-4);
 }
+/* nuit : l'accent s'éclaircit vers l'ivoire (6:1 sur les cartes), les aplats prennent le vert-de-gris pur */
 :global(html[data-theme="nuit"]) .racine {
-  --ocre: #8a6224;
-  --pen-doux: color-mix(in srgb, var(--pen) 12%, transparent);
+  --acc: color-mix(in oklab, var(--pal-2) 75%, var(--pal-4));
+  --acc-plein: var(--pal-2);
+  --acc-doux: color-mix(in srgb, var(--pal-2) 16%, transparent);
+  --surligne: color-mix(in srgb, var(--pal-3) 45%, transparent);
+  --signet: var(--pal-3);
+  --plume-trait: 0.32;
 }
 .racine :where(h2, h3, h4, p) {
   margin: 0;
@@ -55,6 +74,7 @@
   gap: 6px;
   font-size: 13.5px;
   font-weight: 700;
+  color: var(--acc);
 }
 .lien::after {
   content: "→";
@@ -78,6 +98,48 @@
   transform: scale(0.98);
 }
 
+/* ——— l'encre de l'onglet « Réviser », reprise sur la page ———
+   .rl-encre (globals.css, avec data-palette) : la texture de la palette qui
+   dérive sous un voile sombre ; coupée en mode discret, figée en mouvement
+   réduit et avec data-rl-motion="off". La carte du cours y ajoute le liquide
+   vivant (EncreVive) ; ailleurs, la texture seule (un seul canvas sur la page
+   en plus de l'onglet). .encre : un bouton, une pastille d'étape ou un sceau
+   remplis de cette encre, texte blanc ; son fond propre (noyer sombre) sert de
+   repli le temps que l'image arrive (en mode discret : le bouton plein du
+   site, voir en bas). Voile plus dense que dans l'onglet : le texte blanc reste AA (4,5:1)
+   jusque sur les traînées ivoire. */
+.encre {
+  position: relative;
+  color: var(--sur-nuit);
+  background: var(--noyer-fonce);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --pal-voile-haut: 0.5;
+  --pal-voile-bas: 0.68;
+}
+.bouton.encre {
+  box-shadow: var(--shadow-btn);
+}
+/* dans une petite pastille, une tuile plus fine : on y voit le marbré, pas une seule tache */
+.racine .etape:global(.rl-encre)[data-palette],
+.racine .sceau:global(.rl-encre)[data-palette] {
+  --encre-pas: 112px;
+}
+/* nuit : le noyer sombre et l'encre voilée se confondent avec les cartes et
+   le papier (l'ombre noire n'y marque rien) ; un liseré ivoire dessine le
+   bouton et la pastille. À l'extérieur : un liseré intérieur passerait sous
+   la texture et le voile (z-index négatifs). La carte du cours a déjà le sien. */
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .papier .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
+    var(--shadow-btn);
+}
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .papier .etape.encre,
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .finTete .etape.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
 /* ——— le lieu peint (Bibliothèque, Atelier) ——— */
 .lieu {
   position: relative;
@@ -91,7 +153,7 @@
   isolation: isolate;
   box-shadow: var(--shadow-1);
   /* le fond le temps que la peinture arrive (sombre, comme son bas) */
-  background: #16130f;
+  background: color-mix(in oklab, var(--pal-1) 40%, black);
 }
 .fond {
   position: absolute;
@@ -110,7 +172,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, #0000 30%, #0e0b07c4 100%);
+  background: linear-gradient(180deg, transparent 30%, rgba(12, 9, 7, 0.77) 100%);
 }
 .legende {
   position: absolute;
@@ -120,7 +182,7 @@
   display: flex;
   align-items: flex-end;
   gap: 14px;
-  color: #f6f1e8;
+  color: var(--pal-4);
 }
 .illuAtelier {
   min-height: 200px;
@@ -128,6 +190,7 @@
 .illuAtelier .legende {
   bottom: 20px;
 }
+/* le sceau du lieu : une pastille d'encre (.encre), cerclée d'ivoire */
 .sceau {
   display: grid;
   place-items: center;
@@ -135,9 +198,11 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: #f6f1e8;
-  color: #1b140c;
-  box-shadow: 0 0 0 4px #f6f1e833;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-4) 75%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--pal-4) 20%, transparent);
+  --pal-voile-haut: 0.4;
+  --pal-voile-bas: 0.6;
 }
 .lieuNom {
   display: block;
@@ -145,14 +210,14 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.025em;
-  text-shadow: 0 2px 16px #0009;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
 .lieuSous {
   display: block;
   margin-top: 4px;
   font-size: 13.5px;
   opacity: 0.88;
-  text-shadow: 0 1px 10px #0009;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
 }
 @container (max-width: 520px) {
   .illu {
@@ -243,17 +308,18 @@
 }
 /* l'anneau de focus : celui du site (encre) sur le papier ; dans la carte sombre, l'encre claire */
 
-/* la pastille d'étape : chiffre en .t-num (typo du logo, retirée en mode discret) */
+/* la pastille d'étape : remplie de l'encre (.encre), chiffre blanc en .t-num
+   (typo du logo, retirée en mode discret) */
 .etape {
   display: inline-grid;
   place-items: center;
   flex-shrink: 0;
   width: 30px;
   height: 30px;
-  border: 2px solid currentColor;
   border-radius: 50%;
   font-size: 14px;
   line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 .haut {
   display: flex;
@@ -270,20 +336,52 @@
   font-size: 12px;
 }
 
-/* 1 · Cours complets : la carte sombre du site (.card-ink, fond, filet et
-   ombre, jour et nuit). --trait : la progression (onde, souligné des
-   matières), rouge ; en mode discret (--pen devient l'encre, noire le jour),
-   l'encre claire de la carte. */
+/* 1 · Cours complets : la carte remplie de l'encre vivante de l'onglet
+   (.rl-encre + EncreVive, motif plus large), sous un voile plus dense que
+   dans l'onglet : le texte blanc et ivoire reste AA partout. La <li> garde
+   aussi .card-ink : en mode discret (ni texture ni canvas), c'est la carte
+   sombre neutre du site, jour et nuit (voir « mode discret » en bas). Hors
+   mode discret, le temps que l'image arrive : un dégradé de noyer. --trait :
+   la progression (onde, souligné des matières), le miel. */
 .c1 {
   display: grid;
   align-content: start;
   gap: 14px;
   padding: 20px;
   color: var(--sur-nuit);
-  --trait: var(--pen);
+  --trait: var(--pal-3);
+  --pal-voile-haut: 0.6;
+  --pal-voile-bas: 0.78;
 }
-:global(html[data-discreet="1"]) .c1 {
-  --trait: var(--sur-nuit);
+:global(html:not([data-discreet="1"])) .c1 {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--pal-1) 70%, black), var(--noyer-fonce));
+}
+/* nuit : l'encre voilée se fond dans le papier ; un liseré ivoire, à l'extérieur (comme celui de .card-ink) */
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .c1 {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 14%, transparent),
+    var(--shadow-2);
+}
+/* la texture de repli, à l'échelle de la carte : tuile plus grande, même
+   vitesse que dans l'onglet (sélecteurs plus forts que .rl-encre de globals.css) */
+.racine .c1:global(.rl-encre)[data-palette] {
+  --encre-pas: 320px;
+}
+.racine .c1:global(.rl-encre)[data-palette]::before {
+  animation-duration: 36s;
+}
+/* encre sur encre : un filet ivoire détache la pastille et le bouton */
+.c1 .etape {
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--pal-4) 70%, transparent);
+}
+.c1 .bouton.encre {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-4) 55%, transparent),
+    0 8px 18px -8px rgba(0, 0, 0, 0.6);
+}
+.c1 .haut .eyebrow {
+  opacity: 1;
+  color: var(--sur-nuit-2);
 }
 .c1 :focus-visible {
   outline: 2px solid var(--sur-nuit);
@@ -304,9 +402,10 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--sur-nuit) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pal-4) 16%, transparent);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--sur-nuit) 6%, transparent);
+  /* un panneau de noyer translucide : le petit texte se lit mieux sur l'encre */
+  background: color-mix(in srgb, var(--pal-1) 55%, transparent);
   color: inherit;
 }
 .play {
@@ -315,8 +414,8 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--sur-nuit);
-  color: #111111;
+  background: var(--pal-3);
+  color: var(--pal-1);
   transition: transform var(--dur-2) var(--ease-out);
 }
 .play svg {
@@ -369,7 +468,7 @@
   flex: 1;
   min-width: 2px;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--sur-nuit) 27%, transparent);
+  background: color-mix(in srgb, var(--pal-4) 30%, transparent);
 }
 .onde i.lu {
   background: var(--trait);
@@ -383,17 +482,18 @@
   position: relative;
   overflow: hidden;
   padding: 4px 7px;
-  border: 1px solid color-mix(in srgb, var(--sur-nuit) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pal-4) 18%, transparent);
   border-radius: 7px;
+  background: color-mix(in srgb, var(--pal-1) 50%, transparent);
   font: 600 10.5px var(--font-mono);
   letter-spacing: 0.04em;
-  color: var(--sur-nuit-2);
+  color: color-mix(in srgb, var(--pal-4) 78%, transparent);
 }
 .matieres li.fait {
-  border-color: color-mix(in srgb, var(--sur-nuit) 23%, transparent);
+  border-color: color-mix(in srgb, var(--pal-4) 34%, transparent);
   color: var(--sur-nuit);
 }
-/* le souligné rouge : la part écoutée (transform, pour pouvoir glisser) */
+/* le souligné miel : la part écoutée (transform, pour pouvoir glisser) */
 .matieres li.fait::after {
   content: "";
   position: absolute;
@@ -496,7 +596,7 @@
   top: 6px;
   left: 8px;
   font: 700 9px var(--font-mono);
-  color: var(--pen);
+  color: var(--acc);
 }
 .feuillets i:nth-child(3)::after {
   content: "✓";
@@ -504,7 +604,7 @@
   right: 9px;
   bottom: 10px;
   font: 800 16px var(--font-sans);
-  color: var(--pen);
+  color: var(--acc);
   transform: rotate(-8deg);
 }
 @container (max-width: 520px) {
@@ -530,10 +630,10 @@
   background: var(--pencil-2);
 }
 .cases i.f {
-  background: var(--ink);
+  background: var(--acc-plein);
 }
 .cases i.e {
-  background: linear-gradient(90deg, var(--ink) 50%, var(--pencil-2) 50%);
+  background: linear-gradient(90deg, var(--acc-plein) 50%, var(--pencil-2) 50%);
 }
 .avancementTexte {
   display: flex;
@@ -542,9 +642,10 @@
   font-size: 12px;
   color: var(--ink-2);
 }
+/* le bouton en filet (le carnet, rien à revoir) */
 .boutonTrait {
-  border: 1.5px solid var(--ink);
-  color: var(--ink);
+  border: 1.5px solid var(--acc-plein);
+  color: var(--acc);
 }
 
 /* 3 · pour la fin : one-pagers et flashcards, à égalité */
@@ -578,18 +679,21 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
-  color: var(--pen);
+  color: var(--acc);
+  isolation: isolate;
 }
+/* le trait de surligneur, au miel, sous le texte */
 .plume::after {
   content: "";
   position: absolute;
+  z-index: -1;
   left: 0;
   right: 4px;
   bottom: -3px;
   height: 6px;
   border-radius: 6px;
-  background: var(--pen);
-  opacity: 0.22;
+  background: var(--pal-3);
+  opacity: var(--plume-trait);
   transform: rotate(-1deg);
 }
 .petite {
@@ -647,7 +751,7 @@
   background: var(--paper-2);
   object-fit: cover;
   object-position: top center;
-  box-shadow: 0 6px 14px -8px #0006;
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.4);
 }
 .eventail img:nth-child(1) {
   left: 6px;
@@ -670,7 +774,7 @@
   width: 112px;
   max-width: calc(100% - 14px);
   height: 60px;
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--acc-plein);
   border-radius: 9px;
   background: var(--surface);
   font-style: normal;
@@ -702,7 +806,7 @@
 }
 .surligne {
   padding: 0 2px;
-  background: linear-gradient(transparent 50%, var(--ocre) 50%, var(--ocre) 90%, transparent 90%);
+  background: linear-gradient(transparent 50%, var(--surligne) 50%, var(--surligne) 90%, transparent 90%);
 }
 .etat {
   position: absolute;
@@ -712,13 +816,13 @@
   max-width: 100%;
   overflow: hidden;
   padding: 2px 7px;
-  border: 1px solid var(--pen);
+  border: 1px solid var(--acc-plein);
   border-radius: 99px;
   background: var(--surface);
   font: 600 10.5px var(--font-mono);
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: var(--pen);
+  color: var(--acc);
 }
 /* téléphone : la demi-carte est étroite ; la pastille passe sur deux lignes
    plutôt que d'être coupée (c'est la seule donnée du joueur sur la carte) */
@@ -785,6 +889,7 @@
   text-overflow: ellipsis;
   color: var(--ink-2);
 }
+/* le seul rouge de la page : le trait du stylo qui barre la rature (le sens d'erreur du site) */
 .rature::after {
   content: "";
   position: absolute;
@@ -804,7 +909,7 @@
   padding: 9px 11px;
   border: 0;
   border-radius: 12px;
-  background: var(--paper-2);
+  background: color-mix(in srgb, var(--pal-2) 10%, var(--paper-2));
   font: inherit;
   font-size: 12.5px;
   text-align: left;
@@ -814,18 +919,18 @@
 .bascule b {
   font-weight: 700;
 }
-/* l'interrupteur : le .switch du site (le même que Moi › Erreurs) */
-.plein {
-  background: var(--ink);
-  color: var(--paper);
+/* l'interrupteur : le .switch du site (le même que Moi › Erreurs), allumé au vert-de-gris */
+.bascule :global(.switch.is-on) {
+  background: var(--acc-plein);
 }
+/* le signet des questions marquées : un ruban de miel */
 .signet {
   position: absolute;
   top: -2px;
   right: 20px;
   width: 22px;
   height: 44px;
-  background: var(--pen);
+  background: var(--signet);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
 }
 .extraits {
@@ -835,9 +940,9 @@
 .extrait {
   overflow: hidden;
   padding: 7px 10px;
-  border-left: 2px solid var(--pen);
+  border-left: 2px solid var(--acc-plein);
   border-radius: 0 8px 8px 0;
-  background: var(--pen-doux);
+  background: var(--acc-doux);
   font-size: 12.5px;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -862,7 +967,7 @@
 .pc {
   font-family: var(--font-mono);
   font-weight: 600;
-  color: var(--pen);
+  color: var(--acc);
 }
 .jauge {
   grid-column: 1 / -1;
@@ -876,12 +981,80 @@
   width: 100%;
   height: 100%;
   border-radius: 6px;
-  background: var(--ink);
+  background: var(--acc-plein);
   transform: scaleX(var(--p, 0));
   transform-origin: left center;
 }
 .err .lien {
   min-height: 24px;
+}
+
+/* ——— mode discret : sans signature, comme l'onglet « Réviser » qui redevient
+   neutre (globals.css coupe la texture et le canvas, pas les couleurs) ———
+   Les accents passent à l'encre du site (avant : le rouge du stylo, que le
+   mode discret change déjà en encre) ; les boutons et pastilles d'encre
+   reprennent le bouton plein du site (l'encre, jour et nuit : visible sur
+   les cartes de nuit) ; la carte du cours redevient la .card-ink neutre, son
+   contenu en blanc et ses nuances. Le surligné de la mini-carte reste (il
+   restait déjà). Les sceaux, sur la peinture, gardent leur disque sombre. */
+:global(html[data-discreet="1"]) .racine {
+  --acc: var(--ink);
+  --acc-plein: var(--ink);
+  --acc-doux: color-mix(in srgb, var(--ink) 10%, transparent);
+  --signet: var(--ink);
+}
+:global(html[data-discreet="1"]) .plume::after {
+  background: var(--ink);
+  opacity: 0.22;
+}
+:global(html[data-discreet="1"]) .bascule {
+  background: var(--paper-2);
+}
+:global(html[data-discreet="1"]) .papier .encre,
+:global(html[data-discreet="1"]) .finTete .encre {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .c1 {
+  --trait: var(--sur-nuit);
+  --sur-nuit-2: rgba(255, 255, 255, 0.62);
+}
+:global(html[data-discreet="1"]) .c1 .encre {
+  background: var(--sur-nuit);
+  color: #111111;
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .c1 .etape {
+  box-shadow: none;
+}
+:global(html[data-discreet="1"]) .c1 .bouton.encre {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 8px 18px -8px rgba(0, 0, 0, 0.6);
+}
+:global(html[data-discreet="1"]) .lecteur {
+  border-color: color-mix(in srgb, var(--sur-nuit) 8%, transparent);
+  background: color-mix(in srgb, var(--sur-nuit) 6%, transparent);
+}
+:global(html[data-discreet="1"]) .play {
+  background: var(--sur-nuit);
+  color: #111111;
+}
+:global(html[data-discreet="1"]) .onde i {
+  background: color-mix(in srgb, var(--sur-nuit) 27%, transparent);
+}
+:global(html[data-discreet="1"]) .onde i.lu {
+  background: var(--trait);
+}
+:global(html[data-discreet="1"]) .matieres li {
+  border-color: color-mix(in srgb, var(--sur-nuit) 13%, transparent);
+  background: none;
+  color: var(--sur-nuit-2);
+}
+:global(html[data-discreet="1"]) .matieres li.fait {
+  border-color: color-mix(in srgb, var(--sur-nuit) 23%, transparent);
+  color: var(--sur-nuit);
 }
 
 @media (prefers-reduced-motion: reduce) {

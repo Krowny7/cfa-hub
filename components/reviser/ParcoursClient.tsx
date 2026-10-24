@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { COURS_PROGRAMME, MINUTES_COURS, ONDE, carteCours, heuresMinutes, mmss } from "@/components/reviser/parcours";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { lireEcoute, type EcouteCours } from "@/lib/course-ecoute";
+import { PALETTES } from "@/lib/palettes";
 import { ecrireSansCalcul, lireSansCalcul } from "@/lib/sans-calcul";
 import { CARNET } from "@/lib/voice-z1";
 import { RV } from "@/lib/voice-reviser";
@@ -14,8 +16,17 @@ import s from "./Parcours.module.css";
 // l'interrupteur « Sans calcul » du carnet. Le serveur rend l'état sans
 // historique ; l'appareil n'est lu qu'après le montage (pas d'écart de rendu).
 // `apercu` : l'écoute d'exemple des aperçus, à la place de l'appareil.
+// La carte du cours est remplie de l'encre vivante de l'onglet « Réviser »
+// (EncreVive, palette studiolo, motif plus large ; texture de repli et voile :
+// .rl-encre de globals.css) ; son bouton et sa pastille d'étape, de la texture
+// qui dérive (pas d'autre canvas). Les variables --pal-* viennent de la racine
+// de la page (ReviserView). La carte garde .card-ink : en mode discret (ni
+// texture ni canvas), elle redevient la carte sombre neutre du site.
 
 const SLUGS = COURS_PROGRAMME.map((c) => c.slug);
+const PAL = PALETTES.studiolo;
+/** px CSS d'un carré du motif sur la grande carte (96 dans l'onglet) : des veines plus calmes */
+const ECHELLE_CARTE = 170;
 
 export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) {
   const [ecoute, setEcoute] = useState<EcouteCours | null>(apercu ?? null);
@@ -36,9 +47,10 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
   const action = c.mode === "reprise" ? RV.coursReprendre : RV.coursCommencer;
 
   return (
-    <li className={"card-ink " + s.carte + " " + s.c1} data-leonard="cours">
+    <li className={"card-ink rl-encre " + s.carte + " " + s.c1} data-palette={PAL.key} data-leonard="cours">
+      <EncreVive tons={PAL.liquide} echelle={ECHELLE_CARTE} />
       <div className={s.haut}>
-        <span className={s.etape + " t-num"} aria-hidden>
+        <span className={"rl-encre " + s.etape + " " + s.encre + " t-num"} data-palette={PAL.key} aria-hidden>
           1
         </span>
         <span className={s.eyebrow}>{RV.coursEtape}</span>
@@ -81,7 +93,7 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
           })}
         </ul>
         <div className={s.bas}>
-          <Link href="/courses" className={s.bouton + " btn-on-ink"} aria-label={`${RV.coursOuvrir} (${RV.coursTous(COURS_PROGRAMME.length)})`}>
+          <Link href="/courses" className={"rl-encre " + s.bouton + " " + s.encre} data-palette={PAL.key} aria-label={`${RV.coursOuvrir} (${RV.coursTous(COURS_PROGRAMME.length)})`}>
             {RV.coursOuvrir}
           </Link>
         </div>

@@ -6,6 +6,7 @@ import { SUBJECTS } from "@/components/reviser/catalog";
 import type { DonneesReviser, EtatFiche } from "@/components/reviser/parcours";
 import { Illustration } from "@/components/ui/Illustration";
 import type { EcouteCours } from "@/lib/course-ecoute";
+import { PALETTES, styleDePalette } from "@/lib/palettes";
 import { nombre } from "@/lib/voice";
 import { RV } from "@/lib/voice-reviser";
 import { ESPACES } from "@/lib/voice-z4";
@@ -22,6 +23,11 @@ import s from "./Parcours.module.css";
 // qui vient de l'appareil (dernier cours, « Sans calcul ») est lu après le
 // montage (ParcoursClient). Repères de Léonard (data-leonard) :
 // bibliotheque, cours, fiches, fin, atelier.
+// Couleurs : celles de l'onglet « Réviser » (palette studiolo, lib/palettes.ts :
+// styleDePalette sur la racine pose --pal-1 noyer … --pal-4 ivoire). L'encre
+// de l'onglet (.rl-encre, globals.css) revient sur la page : vivante dans la
+// carte du cours (EncreVive, ParcoursClient), en texture qui dérive dans les
+// boutons, les pastilles d'étape et les sceaux des lieux.
 
 /** Les trois one-pagers de l'éventail (vraies vignettes, public/one-pagers). */
 const EVENTAIL = ["ethics", "equity", "fixed-income"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
@@ -35,6 +41,10 @@ export type ApercuReviser = { ecoute?: EcouteCours | null; sansCalcul?: boolean 
 
 const levable = (...cls: string[]) => [s.carte, s.papier, s.levable, ...cls].join(" ");
 
+/** La palette de la page (celle de l'onglet « Réviser ») et l'encre de l'onglet (texture qui dérive). */
+const PAL = PALETTES.studiolo;
+const encre = (...cls: string[]) => ["rl-encre", s.encre, ...cls].join(" ");
+
 function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   const f = d.fiches;
   const fc = d.flashcards;
@@ -43,7 +53,7 @@ function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser
       <div className={s.illu} data-leonard="bibliotheque">
         <Illustration nom="reviser-bibliotheque" position="50% 30%" decorative eager className={s.fond} />
         <div className={s.legende}>
-          <span className={s.sceau} aria-hidden>
+          <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
             <Icone nom="reviser" size={22} />
           </span>
           <span>
@@ -67,7 +77,7 @@ function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser
             </span>
             <span className={s.texteC2}>
               <span className={s.haut}>
-                <span className={s.etape + " t-num"} aria-hidden>
+                <span className={encre(s.etape, "t-num")} data-palette={PAL.key} aria-hidden>
                   2
                 </span>
                 <span className={s.eyebrow}>{RV.fichesEtape}</span>
@@ -92,13 +102,15 @@ function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser
                 </span>
               </span>
             )}
-            <span className={s.bouton + " " + s.boutonTrait}>{RV.fichesAction}</span>
+            <span className={encre(s.bouton)} data-palette={PAL.key}>
+              {RV.fichesAction}
+            </span>
           </Link>
         </li>
 
         <li className={s.c3} data-leonard="fin">
           <h3 className={s.finTete}>
-            <span className={s.etape + " t-num"} aria-hidden>
+            <span className={encre(s.etape, "t-num")} data-palette={PAL.key} aria-hidden>
               3
             </span>
             <span className={s.plume}>{RV.fin}</span>
@@ -144,6 +156,7 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   const r = d.ratures;
   const m = d.marquees;
   const p = d.pointsFaibles;
+  const aRevoir = !!r && r.enCours > 0;
   return (
     <section className={s.lieu} aria-labelledby="reviser-atelier">
       <div className={s.illu + " " + s.illuAtelier} data-leonard="atelier">
@@ -162,7 +175,7 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
           style={{ objectPosition: "50% 62%" }}
         />
         <div className={s.legende}>
-          <span className={s.sceau} aria-hidden>
+          <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
             <Icone nom="erreurs" size={22} />
           </span>
           <span>
@@ -184,7 +197,7 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
             <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
               {r?.derniere ?? RV.carnetNeutre}
             </span>
-            {r && r.enCours > 0 ? (
+            {r && aRevoir ? (
               <p className={s.chiffre}>
                 <b className="t-num">{nombre(r.enCours)}</b>
                 <span>{RV.carnetEnCours(r.enCours)}</span>
@@ -193,7 +206,8 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
               <p className={s.ligne}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
             )}
             {r?.calcul && <BasculeSansCalcul masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
-            <Link href="/moi?onglet=erreurs" className={s.bouton + " " + (r && r.enCours > 0 ? s.plein : s.boutonTrait)}>
+            {/* rempli de l'encre quand il y a des ratures à revoir ; en filet sinon */}
+            <Link href="/moi?onglet=erreurs" className={aRevoir ? encre(s.bouton) : s.bouton + " " + s.boutonTrait} data-palette={aRevoir ? PAL.key : undefined}>
               {RV.carnetOuvrir}
             </Link>
           </div>
@@ -269,7 +283,7 @@ export function ReviserView({ d, apercu }: { d: DonneesReviser; apercu?: ApercuR
       icon={<Icone nom="reviser" size={18} />}
       title={ESPACES.reviserTitre}
       lead={
-        <div className={s.racine}>
+        <div className={s.racine} style={styleDePalette(PAL)}>
           <Bibliotheque d={d} apercu={apercu} />
           <Atelier d={d} apercu={apercu} />
         </div>

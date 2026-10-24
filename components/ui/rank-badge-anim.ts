@@ -13,7 +13,8 @@ import { INSIGNES, LIQUIDE_FRAG, LIQUIDE_VERT, formesDe, liquideFige, type Forme
 // réduit, ?mouvement=off ou onglet caché : rien ne bouge.
 // Le même liquide (même shader, même vitesse, même boucle) remplit aussi
 // l'onglet actif des barres de navigation (animerEncre) : aux couleurs de la
-// palette de la page, dans un canvas à la taille de l'onglet.
+// palette de la page, dans un canvas à la taille de l'onglet. Et la grande
+// carte « Cours complets » de Réviser (même appel, motif plus large).
 
 type Encre = {
   /** pixels du canvas par « carré de référence » du shader (le motif garde l'échelle des insignes) */
@@ -54,6 +55,8 @@ const immobile = () =>
 // ── le liquide : un contexte WebGL partagé, recopié dans chaque canvas ────
 type Moteur = { peindre: (cible: HTMLCanvasElement, couleurs: number[][], graine: number, t: number, ref?: number) => void };
 let moteur: Moteur | null | undefined;
+/** côté du canvas WebGL partagé : 256 px au plus pour un insigne, 512 pour l'encre (une grande carte) */
+const GL_COTE = 512;
 const rgb = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
@@ -62,7 +65,7 @@ const couleursInsignes = INSIGNES.map((d) => d.liquide.map(rgb));
 function creerMoteur(): Moteur | null {
   try {
     const cv = document.createElement("canvas");
-    cv.width = cv.height = 256;
+    cv.width = cv.height = GL_COTE;
     const gl = cv.getContext("webgl", { preserveDrawingBuffer: true, antialias: false });
     if (!gl) return null;
     const sh = (type: number, src: string) => {
@@ -88,9 +91,10 @@ function creerMoteur(): Moteur | null {
     return {
       // ref : sans lui, le motif remplit tout le canvas (insignes carrés) ; avec
       // lui, il garde son échelle et le canvas en découvre autant que sa forme
-      // (l'onglet, bien plus large que haut)
+      // (l'onglet, bien plus large que haut ; une carte)
       peindre(cible, couleurs, graine, t, ref) {
-        const w = Math.min(256, cible.width), h = Math.min(256, cible.height);
+        const max = ref ? GL_COTE : 256;
+        const w = Math.min(max, cible.width), h = Math.min(max, cible.height);
         gl.viewport(0, 0, w, h);
         gl.uniform2f(u.res, ref ?? w, ref ?? h);
         gl.uniform1f(u.t, t);
@@ -100,7 +104,7 @@ function creerMoteur(): Moteur | null {
         const ctx = cible.getContext("2d");
         if (!ctx) return;
         ctx.clearRect(0, 0, cible.width, cible.height);
-        ctx.drawImage(cv, 0, 256 - h, w, h, 0, 0, cible.width, cible.height);
+        ctx.drawImage(cv, 0, GL_COTE - h, w, h, 0, 0, cible.width, cible.height);
       },
     };
   } catch {
@@ -165,6 +169,7 @@ const ENCRE_T0 = 9;
 const ENCRE_V = 0.5; // la vitesse des insignes (0.45 à 0.55)
 const ENCRE_ECHELLE = 96; // px CSS d'un carré de référence (le liquide d'un insigne de 96 px)
 const ENCRE_DPR = 1.5;
+const ENCRE_MAX = GL_COTE; // px du canvas, au plus, par côté
 const ENCRE_FONDU = 450; // ms : changement de palette, calé sur la glissade de la pastille
 
 const lisse = (k: number) => k * k * (3 - 2 * k);
@@ -196,32 +201,38 @@ function peindreEncre(e: Entree, t: number) {
  * Fait couler le liquide des insignes dans le canvas d'un onglet (`racine` :
  * l'onglet, qui contient le canvas). `tons` : quatre couleurs #rrggbb
  * [fond, principal, bandes, traînées claires], comme `liquide` d'un insigne.
+ * `echelle` : px CSS d'un carré de référence du motif (96 par défaut, celle
+ * des insignes ; plus grand pour une grande carte : des veines plus calmes).
  */
-export function animerEncre(racine: HTMLElement, canvas: HTMLCanvasElement, tons: readonly string[]) {
+export function animerEncre(racine: HTMLElement, canvas: HTMLCanvasElement, tons: readonly string[], echelle = ENCRE_ECHELLE) {
   if (typeof window === "undefined") return { regler: (_: readonly string[]) => {}, arreter: () => {} };
   const en: Encre = { ref: 0, courant: tons.map(rgb), fondu: null, cle: tons.join(), peint: false };
   const e: Entree = { palier: -1, encre: en, racine, canvas, bruit: null, eclairs: null, arcs: false, visible: false, depart: performance.now(), v: ENCRE_V, prochain: 0, fin: 0, derniere: 0 };
   entrees.add(e);
   parElement.set(racine, e);
-  // canvas à la taille de l'onglet (devicePixelRatio plafonné, 256 px au plus par côté)
+  // canvas à la taille de l'onglet (devicePixelRatio plafonné, ENCRE_MAX px au
+  // plus par côté) : une seule échelle pour les deux côtés, le motif ne se
+  // déforme pas sur une carte large (le navigateur l'agrandit, il reste net :
+  // le liquide est flou par nature)
   const mesurer = (w: number, h: number) => {
     if (w < 2 || h < 2) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, ENCRE_DPR);
-    const cw = Math.max(1, Math.min(256, Math.round(w * dpr))), ch = Math.max(1, Math.min(256, Math.round(h * dpr)));
+    const k = Math.min(window.devicePixelRatio || 1, ENCRE_DPR, ENCRE_MAX / w, ENCRE_MAX / h);
+    const cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
     if (canvas.width !== cw || canvas.height !== ch) {
       canvas.width = cw;
       canvas.height = ch;
     }
-    en.ref = ENCRE_ECHELLE * (cw / w);
+    en.ref = echelle * k;
   };
+  // la boîte de padding (clientWidth/clientHeight) : celle que couvre le canvas
+  // (inset: 0) ; contentRect, sans le padding, étirerait le motif sur une carte
+  // à marges intérieures. Observée en border-box : un changement de padding
+  // seul relance aussi la mesure.
   let ro: ResizeObserver | null = null;
   if (typeof ResizeObserver !== "undefined") {
-    ro = new ResizeObserver((l) => {
-      const r = l[l.length - 1]?.contentRect;
-      if (r) mesurer(r.width, r.height);
-    });
-    ro.observe(racine);
-  } else mesurer(racine.offsetWidth, racine.offsetHeight);
+    ro = new ResizeObserver(() => mesurer(racine.clientWidth, racine.clientHeight));
+    ro.observe(racine, { box: "border-box" });
+  } else mesurer(racine.clientWidth, racine.clientHeight);
   if (typeof IntersectionObserver === "undefined") e.visible = true;
   else {
     observateur ??= new IntersectionObserver((list) => {
