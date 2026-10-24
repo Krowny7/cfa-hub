@@ -2,7 +2,9 @@
 // 4 paquets × 15 cartes (60), à réviser en une nuit en combo avec le one-pager
 // Economics (cfa-work/onepagers/economics.html) : chaque notion du one-pager a
 // au moins une carte. Chaque carte se comprend seule (cartes mélangées) ;
-// phrases en français, termes techniques en anglais, réponse directe en gras.
+// phrases en français, termes techniques en anglais. Verso au format « trois
+// cases » : l'idée à retenir (≤ 12 mots, ==surligné==, formule ou liste), puis
+// « En clair : », puis « Piège : » s'il y a un vrai piège d'examen.
 // Définitions, formules et chiffres vérifiés sur Schweser Book 1 (R12–19) ;
 // mini-calculs recalculés. Les 5 calculs « Top 5 » de lib/calc/economics.ts
 // (fiscal multiplier, variation d'une devise, cross rate, forward en points,
@@ -24,63 +26,63 @@ export const SETS = [
     cards: [
       [
         "Quelle règle de production maximise le profit d'une firme, quelle que soit la market structure ?",
-        "**Produire la quantité où marginal revenue = marginal cost (MR = MC).**\nEn perfect competition, la firme est price taker : P = MR, donc P = MR = MC.\nDans les 3 autres structures (demande décroissante), MR < P : à l'optimum, P > MR = MC.\nPiège : « P = MR » n'est vrai qu'en perfect competition.",
+        "Profit maximal quand ==marginal revenue égale marginal cost== (MR = MC)\nEn clair : c'est vrai dans les 4 market structures. En perfect competition, P = MR, donc P = MR = MC ; ailleurs, la demande décroît et P > MR = MC.\nPiège : « P = MR » n'est vrai qu'en perfect competition (firme price taker).",
       ],
       [
         "Breakeven, short-run shutdown, long-run exit : à quelles conditions sur le prix P, l'AVC (average variable cost) et l'ATC (average total cost) ?",
-        "**Breakeven : P = ATC (economic profit nul). Shutdown à court terme : P < AVC. Exit à long terme : P < ATC.**\nSi AVC ≤ P < ATC : on continue à court terme (on couvre une partie des fixed costs), on sort à long terme.\nShort run : au moins un facteur fixe (le capital) ; long run : tous les coûts sont variables, donc évitables.",
+        "Breakeven : P = ==ATC== · Short-run shutdown : P < ==AVC== · Long-run exit : P < ==ATC==\nEn clair : si AVC ≤ P < ATC, on produit à court terme (on couvre une partie des fixed costs) mais on sort à long terme, où tous les coûts sont évitables.\nPiège : fermer à court terme se juge sur l'AVC, pas sur l'ATC.",
       ],
       [
         "Une firme a un total revenue (TR) de 700 000, des total variable costs (TVC) de 800 000 et des fixed costs de 400 000. Doit-elle produire à court terme ?",
-        "**Non : shut down, car TR (700 000) < TVC (800 000).**\nEn produisant, perte = TR − TC = 700 000 − 1 200 000 = −500 000 ; à l'arrêt, perte = fixed costs = −400 000.\nEn imperfect competition (P ≠ MR), on raisonne en TR et TC : TR = TC breakeven ; TVC < TR < TC on reste à court terme mais on sort à long terme ; TR < TVC on ferme.",
+        "Non : ==shut down==, car TR < TVC\nEn clair : en produisant, perte = 700 000 − 1 200 000 = −500 000 ; à l'arrêt, perte = fixed costs = −400 000. On perd moins en fermant.\nPiège : en imperfect competition (P ≠ MR), on raisonne en TR, TVC et TC, pas sur le prix.",
       ],
       [
-        "Que montrent les segments décroissant, plat et croissant de la LRATC (long-run average total cost), et où est la minimum efficient scale ?",
-        "**Décroissant : economies of scale ; plat : constant returns to scale ; croissant : diseconomies of scale. La minimum efficient scale est le point bas de la LRATC.**\nEconomies : spécialisation, production de masse, meilleurs équipements, achats moins chers. Diseconomies : bureaucratie, motivation, moins d'innovation.\nEn perfect competition, à long terme P = min LRATC. Une firme en diseconomies doit réduire sa taille.",
+        "Sur la LRATC (long-run average total cost), où se trouve la minimum efficient scale, et que signifient ses segments décroissant, plat et croissant ?",
+        "Minimum efficient scale = ==point bas de la LRATC==\nEn clair : pente négative : economies of scale (spécialisation, achats moins chers) ; plat : constant returns to scale ; pente positive : diseconomies of scale (bureaucratie).\nPiège : en perfect competition, à long terme, P = minimum de la LRATC.",
       ],
       [
         "Quelles sont les caractéristiques de la perfect competition ?",
-        "**Très nombreuses firmes, produit homogène, barriers to entry très faibles, concurrence sur le prix seul, aucun pricing power.**\nChaque firme est price taker : demande horizontale (perfectly elastic), P = MR = MC.\nÀ long terme, les entrées ramènent l'economic profit à zéro : la firme ne gagne qu'un normal profit.",
+        "Très nombreuses firmes, ==produit homogène==, aucun pricing power\nEn clair : barriers to entry très faibles, concurrence sur le prix seul. Chaque firme est price taker (demande horizontale) ; à long terme, economic profit nul.",
       ],
       [
         "Quelles sont les caractéristiques de la monopolistic competition ?",
-        "**Beaucoup de firmes, produits différenciés (qualité, features, marketing), barriers to entry faibles, un peu de pricing power.**\nDemande décroissante mais élastique, car il existe beaucoup de proches substituts. Concurrence surtout hors prix (publicité, marque).\nTrop de firmes pour une collusion : chacune regarde le prix moyen du marché. Ex. : le dentifrice.",
+        "Beaucoup de firmes, ==produits différenciés==, un peu de pricing power\nEn clair : barriers to entry faibles ; demande décroissante mais élastique (beaucoup de proches substituts) ; concurrence par la publicité et la marque. Ex. : le dentifrice.",
       ],
       [
         "Monopolistic competition : quel est l'équilibre de long terme d'une firme, comparé à la perfect competition ?",
-        "**P = ATC (average total cost) : economic profit nul, mais P > MR = MC et la firme ne produit pas au minimum de l'ATC.**\nLes profits attirent des entrants (ou la publicité gonfle l'ATC) jusqu'à P = ATC.\nPar rapport à la perfect competition : prix plus haut, quantité plus faible, excess capacity.\nPiège : profit nul à long terme comme en perfect competition, mais P > MC.",
+        "==Economic profit nul==, mais P > MC et excess capacity\nEn clair : les entrées (ou la publicité) ramènent P à l'ATC (average total cost), sans atteindre son minimum : prix plus haut et quantité plus faible qu'en perfect competition.\nPiège : profit nul comme en perfect competition, mais P > MR = MC, pas P = MC.",
       ],
       [
         "Quelles sont les caractéristiques d'un oligopoly ?",
-        "**Peu de firmes, barriers to entry élevées (souvent des economies of scale), produits similaires ou différenciés, décisions interdépendantes.**\nChaque firme anticipe la réaction des rivales : pas de supply curve bien définie.\nLe prix se situe entre le prix de collusion (celui d'un monopoly) et le prix de perfect competition. Economic profit possible à long terme. Ex. : l'automobile.",
+        "Peu de firmes, ==décisions interdépendantes==, barriers to entry élevées\nEn clair : produits similaires ou différenciés ; chacun anticipe la réaction des rivales, donc pas de supply curve bien définie. Economic profit possible à long terme. Ex. : l'automobile.",
       ],
       [
         "Qu'est-ce qui caractérise un monopoly, et d'où vient son pouvoir ?",
-        "**Un seul vendeur, un produit sans bon substitut, des barriers to entry très élevées, un pricing power significatif.**\nSources : brevets et copyrights, contrôle d'une ressource clé, licence ou régulation publique (ex. : distribution locale d'électricité).\nLa firme fait face à la demande du marché (la plus raide) et produit où MR = MC, avec P > MR. Economic profit possible à long terme.",
+        "==Un seul vendeur==, sans substitut, barriers to entry très élevées\nEn clair : son pouvoir vient de brevets, d'une ressource clé, d'une licence ou d'une régulation. Il produit où MR = MC, avec P > MR : economic profit possible à long terme.",
       ],
       [
         "Que suppose le kinked demand curve model d'un oligopoly, et quelle en est la conséquence sur le prix ?",
-        "**Les rivales suivent une baisse de prix mais pas une hausse : la demande a un coude au prix actuel $P_K$.**\nAu-dessus de $P_K$, la demande est très élastique (on perd ses clients) ; en dessous, peu élastique (les rivales suivent).\nLa marginal revenue curve a un trou au niveau du coude : tant que la MC (marginal cost) passe dans ce trou, le prix reste figé à $P_K$.",
+        "Prix ==figé au coude== : baisses suivies, hausses non suivies\nEn clair : au-dessus du prix actuel $P_K$, demande élastique ; en dessous, peu élastique. La MR (marginal revenue) a un trou au coude : si la MC (marginal cost) y passe, le prix ne bouge pas.",
       ],
       [
         "Cournot model vs Stackelberg model d'un oligopoly : quelle hypothèse et quel résultat pour chacun ?",
-        "**Cournot : décisions simultanées, chacun suppose que l'autre ne changera pas ; à MC (marginal cost) identiques, market shares égales. Stackelberg : décisions séquentielles ; le leader garde la plus grande part.**\nCournot : prix entre celui d'un monopoly et celui de la perfect competition ; plus il y a de firmes, plus il se rapproche du prix concurrentiel.\nL'équilibre de Cournot est un Nash equilibrium.",
+        "Cournot ==simultané== (parts égales) ; Stackelberg séquentiel (leader avantagé)\nEn clair : Cournot : chacun suppose l'autre figé ; à MC (marginal cost) égaux, parts égales, prix entre monopoly et perfect competition. Stackelberg : le leader décide d'abord.",
       ],
       [
         "Que décrit le dominant firm model d'un oligopoly ?",
-        "**Une firme aux coûts nettement plus bas (plus grande échelle) détient une grosse part du marché et fixe le prix ; les petites firmes le prennent comme donné.**\nLes petites firmes produisent où leur MC (marginal cost) = ce prix.\nSi une petite firme baisse son prix, la dominant firm suit : à long terme, les petites produisent moins ou sortent, et la part de la dominant firm augmente.",
+        "La firme aux ==coûts les plus bas== fixe le prix\nEn clair : grâce à son échelle, elle a une grosse part du marché ; les petites firmes prennent ce prix et produisent où leur MC (marginal cost) l'égale. Si elles le baissent, elle suit.",
       ],
       [
         "Oligopoly : qu'est-ce qu'un Nash equilibrium, et pourquoi une collusion (cartel) peut faire mieux mais reste instable ?",
-        "**Nash equilibrium : aucune firme ne peut augmenter son profit en changeant seule de stratégie.**\nLa collusion (accord sur les prix ou les quantités, ex. : OPEC) peut donner plus de profit total, mais chaque membre a intérêt à tricher en produisant plus.\nElle tient mieux avec : peu de firmes, produits et coûts similaires, achats petits et fréquents, représailles sûres et sévères, peu de concurrence extérieure.",
+        "Nash equilibrium : ==nul ne gagne à dévier seul==\nEn clair : une collusion (ex. : OPEC) rapporte plus au total, mais chacun gagne à tricher en produisant plus. Elle tient mieux avec peu de firmes, des produits et des coûts proches.",
       ],
       [
         "Top 5 des market shares : 25 %, 15 %, 15 %, 10 %, 5 %. La n° 1 rachète une firme à 15 %. Que deviennent le CR (concentration ratio) et le HHI (Herfindahl-Hirschman Index) à 4 firmes ?",
-        "**CR à 4 firmes : 65 % → 70 % ; HHI à 4 firmes : 0,1175 → 0,1950.**\n$$\\text{CR}_N = \\sum_{i=1}^{N} s_i \\qquad \\text{HHI}_N = \\sum_{i=1}^{N} s_i^2$$\noù $s_i$ = market share de la firme i (en décimal), N = nombre de plus grandes firmes retenues.\nAprès fusion : 40 + 15 + 10 + 5 (la firme à 5 % entre dans le top 4) ; HHI = 0,40² + 0,15² + 0,10² + 0,05².\nLe HHI réagit bien plus aux fusions que le CR.",
+        "HHI à 4 firmes : 0,1175 → ==0,1950== ; CR : 65 → 70 %\nEn clair : $\\text{CR} = \\sum s_i$ et $\\text{HHI} = \\sum s_i^2$ ($s_i$ = market share en décimal). Après fusion : 40 + 15 + 10 + 5, la firme à 5 % entre dans le top 4.\nPiège : le HHI réagit bien plus aux fusions que le CR.",
       ],
       [
-        "Comment un analyste identifie-t-il la market structure d'une industrie, et que valent les concentration measures (CR, HHI) pour juger du market power ?",
-        "**Il compare : nombre et taille des firmes, différenciation des produits, pricing power, barriers to entry, concurrence hors prix.**\nCR (N-firm concentration ratio) et HHI (Herfindahl-Hirschman Index) ne sont que des proxies : ils ignorent les barriers to entry et la concurrence potentielle, et ne mesurent pas l'elasticity de la demande.\nUne firme à forte market share peut avoir peu de pricing power si l'entrée est facile.",
+        "Pourquoi le CR (concentration ratio) et le HHI (Herfindahl-Hirschman Index) jugent-ils mal le market power, et sur quels critères classer une industrie ?",
+        "Simples proxies : ==ils ignorent les barriers to entry==\nEn clair : une firme à forte market share a peu de pricing power si l'entrée est facile. Pour classer : nombre de firmes, différenciation, pricing power, barrières, concurrence hors prix.",
       ],
     ],
   },
@@ -88,64 +90,64 @@ export const SETS = [
     title: "Economics — Flashcards 2/4 (Cycles et politique budgétaire)",
     cards: [
       [
-        "Quelles sont les 4 phases du business cycle, et que se passe-t-il au peak et en contraction ?",
-        "**Expansion (le real GDP monte), peak (il cesse de monter), contraction ou recession (il baisse), trough (il cesse de baisser).**\nPeak : croissance qui ralentit, inflation ↑, embauches ralenties. Contraction : heures ↓, unemployment ↑, inflation ↓ avec retard.\nImports : suivent le GDP domestique ; exports : le GDP des partenaires.\nRepère : 2 trimestres de suite de real GDP en hausse (ou en baisse). Cycles récurrents mais irréguliers.",
+        "Quelles sont les 4 phases du business cycle, et que voit-on au peak et en contraction ?",
+        "Expansion : ==real GDP ↑== · Peak : ==sommet== · Contraction : ==real GDP ↓== · Trough : ==creux==\nEn clair : peak : la croissance ralentit, inflation ↑, embauches ralenties. Contraction : heures ↓, unemployment ↑, imports ↓, inflation ↓ avec retard. Repère : 2 trimestres de real GDP ↓.",
       ],
       [
         "Classical cycle, growth cycle, growth rate cycle : que mesure chacun, et lequel est préféré ?",
-        "**Classical cycle : le niveau du real GDP. Growth cycle : l'écart du real GDP à sa tendance (potential GDP). Growth rate cycle : le taux de croissance d'une période à l'autre.**\nLe growth rate cycle montre les peaks et les troughs plus tôt que les deux autres : c'est la mesure préférée des économistes et des praticiens.",
+        "==Growth rate cycle== préféré : il montre peaks et troughs plus tôt\nEn clair : classical cycle : niveau du real GDP. Growth cycle : écart du real GDP à sa tendance (potential GDP). Growth rate cycle : taux de croissance d'une période à l'autre.",
       ],
       [
         "Qu'est-ce qu'un credit cycle, et comment interagit-il avec le business cycle ?",
-        "**Les fluctuations des taux d'intérêt et de la disponibilité du crédit : crédit facile et bon marché en expansion, rare et cher quand l'économie ralentit.**\nIl amplifie le business cycle : un crédit trop facile peut créer des bulles (ex. : subprime avant 2008).\nExpansions plus fortes et récessions plus profondes quand les deux coïncident ; les credit cycles durent en moyenne plus longtemps. Secteur le plus lié : la construction.",
+        "Credit cycle : ==crédit facile en expansion==, rare et cher ensuite\nEn clair : il amplifie le business cycle (bulles si le crédit est trop facile) et dure en moyenne plus longtemps. Secteur le plus lié : la construction.",
       ],
       [
         "Comment évolue l'inventory-to-sales ratio au fil du business cycle ?",
-        "**Il monte en fin d'expansion, avant le peak (les ventes ralentissent, les inventories s'accumulent), et baisse près du trough (les ventes repartent, les inventories fondent).**\nLes firmes réagissent : production ↓ après la hausse, ce qui nourrit la contraction ; production ↑ après la baisse.\nPiège : une hausse non voulue des inventories compte dans le GDP et peut faire croire à de la vigueur. C'est un lagging indicator.",
+        "Inventory-to-sales ratio ==↑ en fin d'expansion==, ↓ près du trough\nEn clair : avant le peak, les ventes ralentissent et les inventories s'accumulent ; à la reprise, les ventes repartent et les inventories fondent. C'est un lagging indicator.\nPiège : une hausse non voulue des inventories gonfle le GDP : fausse vigueur.",
       ],
       [
         "Face à un retournement du business cycle, comment les firmes ajustent-elles d'abord leur travail et leur capital ?",
-        "**D'abord l'intensité d'usage : heures et overtime pour le travail, utilisation plus ou moins intensive des machines pour le capital.**\nElles n'embauchent ou ne licencient que si la tendance semble durer (coûts, moral des équipes).\nEn contraction, elles réduisent leur capacité en reportant l'entretien et en ne remplaçant pas les équipements, rarement en les vendant ; en expansion durable, elles investissent.",
+        "D'abord l'==intensité d'usage== : heures, overtime, machines\nEn clair : elles n'embauchent ou ne licencient que si la tendance dure. En contraction, elles reportent l'entretien et ne remplacent pas les équipements.\nPiège : le capital se réduit en reportant l'entretien, rarement en vendant des actifs.",
       ],
       [
         "Comment les dépenses des ménages (durable goods, services, nondurable goods, logement) réagissent-elles au business cycle ?",
-        "**Durable goods : très cycliques ; services : un peu ; nondurable goods : stables. Le housing sector connaît de fortes variations.**\nLes achats de durables (voitures, meubles) sont reportés en contraction, parfois jusqu'au début de la reprise.\nHousing : piloté par les mortgage rates, le prix des logements rapporté au revenu, la spéculation et la démographie (part des 25–40 ans).",
+        "Durable goods ==très cycliques== > services > nondurable goods\nEn clair : voitures et meubles se reportent en contraction. Housing : fortes variations, selon les mortgage rates, le prix des logements / revenu, la spéculation, la part des 25–40 ans.",
       ],
       [
         "Leading, coincident, lagging indicators : que signale chacun ? Donne des exemples.",
-        "**Leading : tourne avant le cycle ; coincident : avec lui ; lagging : après.**\nLeading : building permits, new orders, S&P 500, weekly hours (manufacturing), initial jobless claims, spread 10 ans − fed funds, consumer expectations.\nCoincident : nonfarm payrolls, real personal income, industrial production, manufacturing and trade sales.\nLagging : duration of unemployment, inventory-to-sales ratio, unit labor costs, prime rate, CPI des services.",
+        "Leading ==tourne avant== le cycle ; coincident pendant ; lagging après\nEn clair : leading : building permits, initial jobless claims, consumer expectations, S&P 500. Coincident : industrial production, payrolls. Lagging : duration of unemployment, inventory-to-sales ratio.",
       ],
       [
-        "Fiscal policy vs monetary policy : qui la mène, avec quels leviers, pour quels objectifs ?",
-        "**Fiscal policy : le gouvernement, via government spending et taxes. Monetary policy : la central bank, via la quantité de monnaie et de crédit.**\nToutes deux visent price stability et croissance ; seule la fiscal policy sert aussi à redistribuer revenus et richesse.\n3 rôles de la fiscal policy : influencer l'aggregate demand, redistribuer, allouer les ressources entre secteurs.",
+        "Quels sont les 3 rôles de la fiscal policy, et lequel la distingue de la monetary policy ?",
+        "==Stabiliser== l'aggregate demand · ==Redistribuer== revenus et richesse · ==Allouer== les ressources\nEn clair : fiscal policy : le gouvernement, via government spending et taxes ; monetary policy : la central bank, via monnaie et crédit. Seule la fiscal policy redistribue revenus et richesse.",
       ],
       [
-        "Quels sont les fiscal policy tools, et lesquels agissent vite ou lentement ?",
-        "**Spending tools : transfer payments, current spending, capital spending. Revenue tools : direct taxes (revenu, patrimoine, sociétés) et indirect taxes (VAT, sales taxes, excise taxes).**\nRapides : indirect taxes (politique sociale, recettes à faible coût). Lents : direct taxes, transfer payments, capital spending.\nLa dépense publique relance plus qu'une baisse d'impôt, en partie épargnée. Les transfer payments ne comptent pas dans le GDP.",
+        "Quels fiscal policy tools agissent vite, et lesquels lentement ?",
+        "Rapides : ==indirect taxes== ; lents : direct taxes, transfers, capital spending\nEn clair : les indirect taxes (VAT, sales, excise) servent vite la politique sociale et les recettes. Une hausse de dépense relance plus qu'une baisse d'impôt, en partie épargnée.\nPiège : les transfer payments ne comptent pas dans le GDP.",
       ],
       [
         "Quelles sont les 4 qualités d'une bonne tax policy ?",
-        "**Simplicity, efficiency, fairness, sufficiency.**\nSimplicity : facile à payer et à faire respecter. Efficiency : perturber le moins possible le marché, ne pas décourager le travail. Fairness : horizontal equality (même situation, même impôt) et vertical equality (les plus riches paient plus). Sufficiency : rapporter assez pour financer les dépenses publiques.",
+        "Simplicity : ==facile à payer== · Efficiency : ==peu de distorsion== · Fairness : ==équitable== · Sufficiency : ==recettes suffisantes==\nEn clair : fairness = horizontal equality (même situation, même impôt) et vertical equality (les plus riches paient plus) ; efficiency : ne pas décourager le travail.",
       ],
       [
         "Comment se calcule le fiscal multiplier ? Applique-le à une MPC (marginal propensity to consume) de 0,8, un tax rate de 25 % et une hausse du government spending de 100.",
-        "**Multiplier = 1 / (1 − 0,8 × 0,75) = 2,5 : l'aggregate demand monte de 250.**\n$$\\text{fiscal multiplier} = \\dfrac{1}{1 - \\text{MPC}\\,(1 - t)}$$\noù MPC = marginal propensity to consume, t = tax rate.\nMPC ↑ ⇒ multiplier ↑ ; t ↑ ⇒ multiplier ↓.\nPiège : ne pas mettre la MPS (marginal propensity to save = 1 − MPC) dans la formule.",
+        "Multiplier = ==2,5==, aggregate demand +250\n$$\\text{fiscal multiplier} = \\dfrac{1}{1 - \\text{MPC}\\,(1 - t)}$$\nEn clair : 1 / (1 − 0,8 × 0,75) = 1 / 0,4 = 2,5 ; 100 × 2,5 = 250. MPC = marginal propensity to consume, t = tax rate.\nPiège : ne pas y mettre la MPS (marginal propensity to save = 1 − MPC).",
       ],
       [
         "Balanced budget : avec une MPC (marginal propensity to consume) de 0,8 et un tax rate de 25 %, l'État augmente government spending et taxes de 100 chacun. Effet sur l'aggregate demand ?",
-        "**+50 : +250 grâce aux dépenses, −200 à cause des impôts. Le balanced budget multiplier est positif.**\nFiscal multiplier = 1 / [1 − 0,8 × (1 − 0,25)] = 2,5. Dépenses : 100 × 2,5 = +250.\nImpôts : seule la part qui aurait été consommée (0,8 × 100 = 80) disparaît, puis l'effet multiplicateur : 80 × 2,5 = 200.\nPiège : l'effet n'est pas nul. Il faudrait 100 / 0,8 = 125 d'impôts pour l'annuler.",
+        "Aggregate demand ==+50== : balanced budget multiplier positif\nEn clair : multiplier = 2,5. Dépenses : 100 × 2,5 = +250. Impôts : la consommation baisse de 0,8 × 100 = 80, puis 80 × 2,5 = −200. Net : +50.\nPiège : l'effet n'est pas nul ; il faudrait 100 / 0,8 = 125 d'impôts pour l'annuler.",
       ],
       [
         "Comment juger si une fiscal policy est expansionary ou contractionary ?",
-        "**Par la variation du budget deficit corrigée du cycle : deficit ↑ (ou surplus ↓) = expansionary, en regardant le structural (cyclically adjusted) deficit, celui qu'on aurait au full employment.**\nEn récession, les automatic stabilizers (tax revenues ↓, unemployment benefits ↑) creusent seuls le deficit, sans décision : ce n'est pas une relance discretionary.\nExamen : hausse d'un impôt = contractionary ; hausse d'une dépense = expansionary.",
+        "Juger sur le ==structural deficit== (corrigé du cycle)\nEn clair : structural deficit ↑ = expansionary. En récession, les automatic stabilizers (tax revenues ↓, unemployment benefits ↑) creusent seuls le deficit, sans décision.\nPiège : un deficit qui se creuse en récession n'est pas forcément une relance.",
       ],
       [
         "Pourquoi la discretionary fiscal policy est-elle difficile à bien doser ?",
-        "**À cause de 3 délais : recognition lag (voir le problème), action lag (voter la mesure), impact lag (la mesure produit son effet).**\nLa relance peut arriver quand l'économie repart déjà.\nAutres obstacles : statistiques mal lues (full employment mal mesuré), crowding-out, supply shortages (relance inutile, donc inflation), deficit déjà jugé trop gros, multiple targets (unemployment et inflation à la fois).",
+        "3 délais : ==recognition, action, impact lags==\nEn clair : voir le problème, voter la mesure, attendre l'effet : la relance arrive parfois trop tard. Aussi : crowding-out, supply shortages, multiple targets, full employment mal mesuré.",
       ],
       [
         "Faut-il s'inquiéter d'un fiscal deficit élevé ? Donne les arguments pour et contre.",
-        "**Pour : impôts futurs plus lourds, refinancement refusé (default ou planche à billets ⇒ inflation), crowding-out. Contre : dette due aux résidents, deficit qui finance du capital spending, tax reform, Ricardian equivalence, sous-emploi.**\nCrowding-out : emprunts publics ⇒ taux ↑ ⇒ private investment ↓. Ricardian equivalence : les ménages épargnent l'impôt futur.\nDebt ratio (dette/GDP) ↑ si real interest rate > real growth.",
+        "Inquiétant si ==impôts futurs, crowding-out ou refinancement refusé==\nEn clair : moins grave si la dette est due aux résidents, finance du capital spending, en sous-emploi, ou avec la Ricardian equivalence. Debt/GDP ↑ si real rate > real growth.",
       ],
     ],
   },
@@ -154,63 +156,63 @@ export const SETS = [
     cards: [
       [
         "Quels sont les rôles d'une central bank ?",
-        "**Seule émettrice de la monnaie, banker to the government and banks, régulateur du payments system, lender of last resort, gardienne des réserves (or, devises), responsable de la monetary policy.**\nLender of last resort : prêter aux banques à court de liquidité évite les bank runs.\nPiège : elle ne collecte pas les impôts et ne finance pas les agences publiques.",
+        "Émettre la monnaie, ==lender of last resort==, réserves, monetary policy\nEn clair : elle est aussi banker to the government and banks et régulateur du payments system. Prêter aux banques à court de liquidité évite les bank runs.\nPiège : elle ne collecte pas les impôts et ne finance pas les agences publiques.",
       ],
       [
         "Pourquoi les central banks visent-elles une inflation d'environ 2 % plutôt que 0 % ?",
-        "**Pour éviter la deflation : avec une cible à 0 %, les écarts autour de la cible feraient passer l'inflation sous zéro.**\nObjectif principal : price stability (cible courante 2 % ± 1 %, souvent à horizon de 2 ans). Autres objectifs possibles : emploi, croissance, change stable, long-term rates modérés.\nL'inflation coûte : menu costs, shoe leather costs.\nEx. : bande de ± 2 % ⇒ cible plutôt à 3 %.",
+        "Cible ≈ 2 % pour ==éviter la deflation==\nEn clair : price stability est l'objectif principal (cible courante 2 % ± 1 %, à horizon de 2 ans). Avec 0 %, les écarts autour de la cible feraient passer l'inflation sous zéro.",
       ],
       [
         "Quels sont les 3 outils de la monetary policy, et dans quel sens les utiliser pour une politique expansionary ?",
-        "**Policy rate, reserve requirements, open market operations. Expansionary : baisser le policy rate, baisser les reserve requirements, acheter des titres.**\nPolicy rate : discount rate (Fed), refinancing rate (BCE), two-week repo rate (Bank of England). La Fed vise le federal funds rate (prêts interbancaires overnight) via les open market operations.\nAchat de titres : excess reserves ↑, crédit ↑, short-term rates ↓.",
+        "Expansionary : ==baisser== policy rate et reserve requirements, acheter des titres\nEn clair : les 3 outils : policy rate (discount rate Fed, refinancing rate BCE, two-week repo Bank of England), reserve requirements, open market operations.",
       ],
       [
         "Que provoque une hausse du policy rate, via le monetary transmission mechanism ?",
-        "**Croissance ↓, inflation ↓, taux de marché ↑, devise ↑.**\n4 canaux : short-term bank lending rates (crédit ↓), prix des actifs (bonds et actions ↓, wealth effect), anticipations (dépenses ↓), exchange rate (devise ↑, exports ↓).\nUne baisse du policy rate a les effets inverses : devise ↓, exports ↑, inflation ↑.",
+        "Policy rate ↑ : croissance ↓, inflation ↓, ==devise ↑==\nEn clair : 4 canaux : taux bancaires (crédit ↓), prix des actifs (wealth effect ↓), anticipations (dépenses ↓), exchange rate (devise ↑, exports ↓).",
       ],
       [
         "Real trend rate of growth 3 %, inflation target 2 %, policy rate 6 % : la monetary policy est-elle expansionary ou contractionary ?",
-        "**Contractionary : neutral rate = 3 % + 2 % = 5 %, et le policy rate (6 %) est au-dessus.**\n$$\\text{neutral rate} = \\text{real trend rate of growth} + \\text{inflation target}$$\nPolicy rate > neutral rate : contractionary ; < neutral rate : expansionary ; égal : neutre.\nPiège : comparer au neutral rate, pas à la seule inflation target.",
+        "==Contractionary== : policy rate 6 % > neutral rate 5 %\nEn clair : neutral rate = real trend rate of growth + inflation target = 3 % + 2 % = 5 %. Policy rate au-dessus : contractionary ; en dessous : expansionary.\nPiège : comparer au neutral rate, pas à la seule inflation target.",
       ],
       [
         "Quelles sont les 3 qualités d'une central bank efficace ?",
-        "**Independence, credibility, transparency.**\nOperational independence : elle fixe seule le policy rate. Target independence : elle définit aussi la mesure de l'inflation, la cible et l'horizon (la BCE a les deux).\nCredibility : elle tient ses cibles, qui deviennent alors auto-réalisatrices.\nTransparency : inflation reports, indicateurs suivis rendus publics.",
+        "Independence : ==fixe seule ses taux== · Credibility : ==tient ses cibles== · Transparency : ==explique ses choix==\nEn clair : operational independence : elle fixe seule le policy rate ; target independence : aussi la cible, sa mesure, l'horizon (la BCE a les deux). Une central bank crédible voit ses cibles se réaliser.",
       ],
       [
         "Exchange rate targeting (ancrer sa devise sur une autre, souvent l'USD) : quelles conséquences pour la monetary policy du pays ?",
-        "**Le pays importe l'inflation de la devise d'ancrage et doit accepter les taux compatibles avec le change visé, quelle que soit sa conjoncture.**\nDevise trop faible : la central bank rachète sa monnaie avec ses réserves (money supply ↓, taux ↑) ; trop forte : elle la vend.\nRésultat : money supply plus volatile, et risque d'épuiser ses réserves.",
+        "Le pays ==importe l'inflation== de la devise d'ancrage\nEn clair : devise trop faible : la central bank rachète sa monnaie avec ses réserves (money supply ↓, taux ↑). Ses taux suivent le change visé, pas sa conjoncture.",
       ],
       [
         "Pourquoi la monetary policy peut-elle ne pas produire l'effet voulu ?",
-        "**Long-term rates qui bougent à l'inverse des short-term rates (anticipations d'inflation, bond market vigilantes), liquidity trap, banques qui ne prêtent pas, policy rate bloqué à zéro.**\nLiquidity trap : on garde le cash même si la money supply monte ; la deflation persiste.\nAu plancher zéro : QE (quantitative easing), achats massifs de titres pour faire baisser les long-term rates et gonfler les réserves.",
+        "Liquidity trap, long-term rates à rebours, ==taux bloqué à zéro==\nEn clair : liquidity trap : on garde le cash même si la money supply monte. Les banques peuvent aussi refuser de prêter. Au plancher zéro : QE (quantitative easing), achats massifs de titres.",
       ],
       [
         "Fiscal policy et monetary policy : quelle combinaison fait croître la part du secteur privé dans le GDP, et laquelle celle du secteur public ?",
-        "**Privé ↑ : fiscal policy contractionary + monetary policy expansionary (taux ↓). Public ↑ : fiscal expansionary + monetary contractionary (taux ↑).**\nToutes deux expansionary : demande très forte, taux ↓, privé et public croissent.\nToutes deux contractionary : demande ↓, taux ↑, les deux secteurs reculent.",
+        "Privé ↑ : ==fiscal contractionary + monetary expansionary==\nEn clair : public ↑ : fiscal expansionary + monetary contractionary (taux ↑). Toutes deux expansionary : demande forte, taux ↓ ; toutes deux contractionary : demande ↓, taux ↑.",
       ],
       [
         "En geopolitics, qui sont les state actors et les nonstate actors, et quand un pays coopère-t-il ?",
-        "**State actors : les gouvernements nationaux ; nonstate actors : entreprises, NGOs (organisations non gouvernementales), individus. Un pays coopère quand cela sert son national interest.**\nPriorité n° 1 : la survie ; la geophysical resource endowment oriente les priorités (ex. : échanger ses minerais contre de la nourriture).\nSoft power : influencer d'autres pays sans force ni menace (culture, institutions).",
+        "Un pays coopère si son ==national interest== y gagne\nEn clair : state actors : gouvernements nationaux ; nonstate actors : entreprises, NGOs (non-governmental organizations), individus. Soft power : influencer sans force (culture, institutions).",
       ],
       [
         "Quels sont les 4 archétypes de pays selon cooperation vs non-cooperation et globalization vs nationalism ?",
-        "**Multilateralism : cooperation + globalization. Bilateralism : cooperation + nationalism. Hegemony : non-cooperation + globalization. Autarky : non-cooperation + nationalism.**\nAutarky : autosuffisance, État qui contrôle industrie et médias. Hegemony : ouvert, mais assez grand pour peser sans coopérer. Bilateralism : accords à deux plutôt qu'à plusieurs.\nRegionalism : multilatéral avec ses seuls voisins.",
+        "Multilateralism : ==cooperation + globalization== · Bilateralism : ==cooperation + nationalism== · Hegemony : ==non-cooperation + globalization== · Autarky : ==non-cooperation + nationalism==\nEn clair : autarky : autosuffisance, peu de commerce extérieur. Hegemony : assez puissant pour peser sans coopérer.",
       ],
       [
         "IMF (International Monetary Fund), World Bank, WTO (World Trade Organization) : quel est le rôle de chacun ?",
-        "**IMF : coopération monétaire, stabilité des changes, aide aux pays en difficulté de balance of payments. World Bank : prêts et dons aux pays en développement pour réduire la pauvreté. WTO : règles du commerce mondial et règlement des différends.**\nPiège : la seule centrée sur la pauvreté est la World Bank ; celle qui tranche les litiges commerciaux est la WTO.",
+        "IMF : ==change, balance of payments== · World Bank : ==pauvreté== · WTO : ==règles du commerce==\nEn clair : l'IMF aide les pays en crise de balance of payments ; la World Bank finance le développement ; la WTO règle les différends commerciaux.\nPiège : seule la World Bank vise explicitement la pauvreté ; l'IMF prête aussi.",
       ],
       [
         "Event risk, exogenous risk, thematic risk : comment se distinguent ces 3 types de geopolitical risk ?",
-        "**Event risk : date connue, issue inconnue (élection). Exogenous risk : imprévu (guerre, rébellion). Thematic risk : connu, aux effets durables (migrations, cyber risk, climat).**\nBlack swan risk : exogenous risk peu probable mais aux gros effets à court terme ; un investisseur de long terme n'a en général pas à y réagir.",
+        "Event : ==date connue== · Exogenous : ==imprévu== · Thematic : ==effets durables connus==\nEn clair : event : une élection (issue inconnue) ; exogenous : guerre, rébellion ; thematic : migrations, cyber risk, climat.\nPiège : black swan = exogenous risk improbable, gros effet court terme ; à long horizon, ne pas réagir.",
       ],
       [
         "Comment un investisseur analyse-t-il un geopolitical risk et son effet sur un portefeuille ?",
-        "**Par sa likelihood (probabilité), son impact (ampleur sur les investissements) et sa velocity (vitesse à laquelle les prix le reflètent).**\nVelocity haute : chocs de court terme ; moyenne : coûts d'entreprises ou de secteurs ; basse : long terme, domaine ESG (environmental, social, governance).\nOutils : scenario analysis et signposts (signaux d'une probabilité qui monte). Impact plus fort en récession.",
+        "Par sa ==likelihood==, son impact et sa velocity\nEn clair : likelihood = probabilité ; impact = ampleur sur les placements ; velocity = vitesse à laquelle les prix le reflètent. Outils : scenario analysis, signposts. Effet plus fort en récession.\nPiège : velocity mesure la réaction des prix, pas la vitesse de l'événement.",
       ],
       [
         "Quels sont les 3 types de tools of geopolitics ? Donne des exemples coopératifs et non coopératifs.",
-        "**National security tools, economic tools, financial tools.**\nNational security : conflit armé, espionnage, alliances (tool active ou threatened).\nEconomic : coopératifs = FTA (free trade area), common market, unions ; non coopératifs = domestic content requirements, VER (voluntary export restraint), nationalization.\nFinancial : investissement étranger et libre change des devises (coopératifs s'ils sont permis) ; sanctions.",
+        "National security : ==armée, alliances== · Economic : ==commerce, nationalization== · Financial : ==capitaux, sanctions==\nEn clair : coopératifs : alliances, FTA (free trade area), capitaux libres. Non coopératifs : conflit armé, VER (voluntary export restraint), nationalization, sanctions.\nPiège : les sanctions sont un financial tool, pas un economic tool.",
       ],
     ],
   },
@@ -219,63 +221,63 @@ export const SETS = [
     cards: [
       [
         "Quels sont les gains et les coûts de l'international trade ?",
-        "**Gains : spécialisation selon le comparative advantage, economies of scale, variété, concurrence (moins de pricing power des monopoles), meilleure allocation. Coûts : emplois perdus dans les secteurs concurrencés par les imports, inégalités.**\nComparative advantage = opportunity cost relatif plus bas, pas « produire le plus ».\nLes gains dépassent les coûts : les gagnants pourraient compenser les perdants.",
+        "Gains : ==comparative advantage==, échelle, variété ; coût : secteurs concurrencés\nEn clair : aussi plus de concurrence et une meilleure allocation. Perdants : emplois des secteurs face aux imports ; les gagnants pourraient les compenser.\nPiège : comparative advantage = opportunity cost plus bas, pas « produire le plus ».",
       ],
       [
         "Tariff, import quota, VER (voluntary export restraint) : quels effets communs pour le pays importateur, et qui capte la rente ?",
-        "**Prix domestique ↑, imports ↓, production domestique ↑, consumer surplus ↓, producer surplus ↑, deadweight loss.**\nTariff : recette pour l'État. Quota : pour l'État s'il vend les licences, sinon quota rents aux exportateurs étrangers. VER : rente aux étrangers, donc perte nationale plus grande qu'avec un tariff équivalent.\nGrand pays : tariff ou quota peut faire baisser le world price et améliorer son welfare.",
+        "Prix ↑, imports ↓, ==deadweight loss== ; VER : rente aux étrangers\nEn clair : consumer surplus ↓, producer surplus ↑. Tariff : recette pour l'État ; quota : pour l'État s'il vend les licences, sinon quota rents aux exportateurs étrangers.\nPiège : un VER coûte plus au pays qu'un tariff équivalent (rente captée à l'étranger).",
       ],
       [
         "Quels sont les effets d'une export subsidy pour un petit pays exportateur et pour un grand ?",
-        "**Petit pays : le prix domestique monte jusqu'au world price + subvention. Grand pays : le world price baisse.**\nLes exportateurs gagnent ; les consommateurs domestiques perdent (consumer surplus ↓) et l'État paie la subvention.\nGrand pays : une partie du gain va aux consommateurs étrangers ; les producteurs étrangers y perdent.",
+        "Petit pays : prix domestique = ==world price + subvention==\nEn clair : exportateurs gagnants, consommateurs domestiques perdants, coût pour l'État. Grand pays : le world price baisse, une partie du gain part aux consommateurs étrangers.",
       ],
       [
         "Quels arguments en faveur des trade restrictions les économistes acceptent-ils, et lesquels rejettent-ils ?",
-        "**Acceptés : infant industry (laisser grandir une industrie naissante) et national security (défense). Rejetés : protéger les emplois ou les industries domestiques, se protéger des pays à bas salaires.**\nAutres motifs avancés : représailles, recettes de tariffs, contrer les subventions étrangères ou le dumping (vente sous le coût).\nAutre outil : minimum domestic content (part minimale produite localement).",
+        "Acceptés : ==infant industry et national security== seulement\nEn clair : rejetés : protéger emplois et industries domestiques, se protéger des pays à bas salaires. Autres motifs : représailles, recettes, dumping. Autre outil : minimum domestic content.",
       ],
       [
         "Classe les trading blocs (regional trading agreements) du moins au plus intégré.",
-        "**Free trade area < customs union < common market < economic union < monetary union.**\nFTA : libre-échange entre membres ; customs union : + tarif extérieur commun ; common market : + libre circulation du travail et du capital ; economic union : + institutions et politique économique communes ; monetary union : + monnaie unique.\nEx. : NAFTA (FTA), EU (economic union), Eurozone (monetary union).",
+        "FTA : ==libre-échange== · Customs union : ==+ tarif commun== · Common market : ==+ facteurs libres== · Economic union : ==+ institutions communes== · Monetary union : ==+ monnaie unique==\nEn clair : chaque bloc garde les acquis du bloc d'avant. FTA = free trade area ; facteurs = travail et capital. Ex. : NAFTA, EU, Eurozone.",
       ],
       [
         "USD/EUR passe de 1,44 à 1,42. De combien l'EUR s'est-il déprécié face à l'USD, et de combien l'USD s'est-il apprécié face à l'EUR ?",
-        "**EUR : 1,42 / 1,44 − 1 = −1,39 % ; USD : 1,44 / 1,42 − 1 = +1,41 %.**\nCotation price/base : 1,44 USD/EUR = 1 EUR (base currency) coûte 1,44 USD (price currency). Cours ↑ = base qui s'apprécie : variation = $S_1/S_0 - 1$.\nPour la price currency, inverser d'abord : variation = $S_0/S_1 - 1$.\nDirect quote = monnaie domestique par unité étrangère (USD/EUR pour un Américain).\nPiège : −1,39 % pour l'un ≠ +1,39 % pour l'autre.",
+        "EUR ==−1,39 %==, USD +1,41 %\n$$\\%\\Delta_{\\text{base}} = \\dfrac{S_1}{S_0} - 1$$\nEn clair : USD/EUR = prix en USD d'1 EUR (base). EUR : 1,42 / 1,44 − 1. USD (price currency) : on inverse, 1,44 / 1,42 − 1. S = spot.\nPiège : −1,39 % pour l'un ne fait pas +1,39 % pour l'autre.",
       ],
       [
         "Nominal exchange rate 1,60 USD/GBP ; CPI américain 110, CPI britannique 112 (base 100 dans les deux pays). Quel real exchange rate USD/GBP ?",
-        "**Real USD/GBP = 1,60 × 112 / 110 = 1,629.**\n$$\\text{real}_{P/B} = S_{P/B} \\times \\dfrac{\\text{CPI}_B}{\\text{CPI}_P}$$\noù S = nominal exchange rate, P = price currency (ici USD), B = base currency (ici GBP).\nReal exchange rate ↑ = la price currency perd du pouvoir d'achat en biens du pays de la base.\nPiège : l'inflation du pays de la price currency fait baisser le real exchange rate.",
+        "Real USD/GBP = ==1,629==\n$$\\text{real}_{P/B} = S_{P/B} \\times \\dfrac{\\text{CPI}_B}{\\text{CPI}_P}$$\nEn clair : 1,60 × 112 / 110 = 1,629. S = nominal exchange rate, P = price currency (USD), B = base currency (GBP), CPI = consumer price index.\nPiège : l'inflation du pays de la price currency fait baisser le real exchange rate.",
       ],
       [
         "Sell side vs buy side du FX (foreign exchange) market : qui sont les acteurs de chaque côté ?",
-        "**Sell side : les grandes banques multinationales (dealers). Buy side : corporations, real money accounts, leveraged accounts, États et central banks, retail.**\nReal money : mutual funds, pension funds, insurance companies, sans derivatives. Leveraged : hedge funds et traders qui utilisent des derivatives.\nHedging = réduire un risque de change existant ; speculating = l'augmenter.",
+        "Sell side : ==les grandes banques dealers== ; buy side : leurs clients\nEn clair : buy side : corporations, real money accounts (mutual funds, pension funds, insurers, sans derivatives), leveraged accounts (hedge funds), États, central banks, retail.",
       ],
       [
         "Classe les exchange rate regimes, du plus rigide au plus souple.",
-        "**Sans monnaie propre : formal dollarization, monetary union. Avec monnaie propre : currency board, conventional fixed peg (± 1 %), target zone (± 2 %), crawling peg, crawling bands, managed floating, independent floating.**\nCurrency board : conversion garantie à taux fixe, monnaie émise contre réserves en devise (ex. : Hong Kong).\nCrawling bands : transition d'un peg vers le float. Plus le régime est rigide, moins la monetary policy est libre.",
+        "Du plus rigide : ==dollarization==, currency board, peg, target zone, crawling, float\nEn clair : en détail : dollarization, monetary union, currency board, fixed peg (± 1 %), target zone (± 2 %), crawling peg, crawling bands, managed floating, independent floating.",
       ],
       [
         "Selon l'identité $X - M = (S - I) + (T - G)$, comment un trade deficit est-il financé, et qui pilote le change à court terme ?",
-        "**Un trade deficit (X < M) signifie que l'épargne domestique (privée S + publique T − G) ne couvre pas l'investissement I : la différence vient de capitaux étrangers (capital account surplus).**\nX = exports, M = imports, S = private saving, I = investment, T − G = government saving.\nLes capital flows s'ajustent vite : ils pilotent le change à court et moyen terme ; le commerce, à long terme.",
+        "Trade deficit = ==entrée de capitaux étrangers==\nEn clair : exports X < imports M : l'épargne privée S et publique T − G ne couvre pas l'investissement I. Les capital flows pilotent le change à court et moyen terme ; le commerce, à long terme.",
       ],
       [
         "Pourquoi un gouvernement impose-t-il des capital restrictions ?",
-        "**Pour réduire la volatilité des prix d'actifs domestiques, tenir un fixed exchange rate, garder des taux d'intérêt domestiques bas (monetary policy indépendante) et protéger des strategic industries.**\nFormes : interdire l'investissement étranger, taxer les revenus de l'étranger, bloquer le rapatriement des profits.\nGlobalement, elles réduisent l'economic welfare ; utiles surtout à court terme contre des flux brusques.",
+        "Objectifs : ==moins de volatilité==, peg tenable, taux bas, secteurs stratégiques\nEn clair : formes : interdire l'investissement étranger, taxer les revenus de l'étranger, bloquer le rapatriement des profits. Globalement, elles réduisent l'economic welfare.",
       ],
       [
         "MXN/USD = 10,70 et USD/AUD = 0,60. Quel cross rate MXN/AUD ?",
-        "**MXN/AUD = 10,70 × 0,60 = 6,42.**\n$$\\dfrac{\\text{MXN}}{\\text{AUD}} = \\dfrac{\\text{MXN}}{\\text{USD}} \\times \\dfrac{\\text{USD}}{\\text{AUD}}$$\nOn écrit les cotations pour que la devise commune (USD) s'annule ; sinon on inverse d'abord l'une d'elles.\nMême devise de base : on divise. Ex. : CHF/NZD = (CHF/USD) / (NZD/USD) = 1,7799 / 2,2529 = 0,7900.",
+        "MXN/AUD = ==6,42==\n$$\\dfrac{\\text{MXN}}{\\text{AUD}} = \\dfrac{\\text{MXN}}{\\text{USD}} \\times \\dfrac{\\text{USD}}{\\text{AUD}}$$\nEn clair : 10,70 × 0,60 = 6,42 : la devise commune (USD) s'annule. Même devise de base : on divise, (CHF/USD) / (NZD/USD) = CHF/NZD.\nPiège : si la devise commune ne s'annule pas, inverser d'abord une cotation.",
       ],
       [
         "Spot 1,3500 USD/EUR, forward points à 6 mois : −75. Quel forward rate, et quelle devise est en forward premium ?",
-        "**Forward = 1,3500 − 0,0075 = 1,3425 USD/EUR : l'EUR (base) est en forward discount, l'USD en forward premium.**\nUn point = la dernière décimale du spot (0,0001 pour un cours à 4 décimales). Forward coté en % : F = S × (1 + %).\nForward premium (+) ou discount (−) de la base currency = F / S − 1 (ici −0,56 %).",
+        "Forward = ==1,3425== USD/EUR\n$$F = S + \\text{points} \\times \\text{valeur d'un point}$$\nEn clair : 1,3500 − 75 × 0,0001 = 1,3425 ; un point = dernière décimale du spot. F < S : l'EUR (base) est en forward discount (−0,56 %), l'USD en premium.\nPiège : forward coté en % : F = S × (1 + %), pas S + %.",
       ],
       [
         "Spot 1,2500 USD/EUR ; taux sans risque à 1 an : 3 % sur l'USD, 4 % sur l'EUR. Quel forward rate à 1 an sans arbitrage (covered interest rate parity) ?",
-        "**F = 1,2500 × 1,03 / 1,04 = 1,2380 USD/EUR.**\n$$F_{P/B} = S_{P/B} \\times \\dfrac{1 + i_P \\times \\frac{\\text{days}}{360}}{1 + i_B \\times \\frac{\\text{days}}{360}}$$\noù $i_P$ = taux de la price currency (USD), $i_B$ = taux de la base currency (EUR).\nL'EUR, au taux le plus haut, cote en forward discount (−0,96 %).\nPiège : taux de la price currency au numérateur ; taux annuel × days/360, sans composer.",
+        "F = ==1,2380== USD/EUR\n$$F_{P/B} = S_{P/B} \\times \\dfrac{1 + i_P \\times \\frac{\\text{days}}{360}}{1 + i_B \\times \\frac{\\text{days}}{360}}$$\nEn clair : 1,2500 × 1,03 / 1,04 = 1,2380. $i_P$ = taux de la price currency (USD), $i_B$ = taux de la base (EUR). L'EUR, au taux le plus haut, est en forward discount.\nPiège : taux annuel × days/360, sans composer ; taux de la price currency au numérateur.",
       ],
       [
         "Covered interest arbitrage : quelles sont les étapes, et quand dégage-t-il un profit ?",
-        "**Emprunter la devise A, la convertir au spot en devise B, placer au taux de B, revendre à terme (forward) le montant final contre A, rembourser l'emprunt.**\nProfit sans risque si le montant reconverti dépasse le remboursement : le forward ne respecte pas la covered interest rate parity.\nPiège : le forward rate n'est pas une bonne prévision du futur spot rate ; c'est juste le prix sans arbitrage.",
+        "Emprunter, convertir au spot, placer, ==vendre à terme==, rembourser\nEn clair : emprunter la devise A, la changer en B, placer au taux de B, vendre forward le montant final contre A. Profit sans risque si le forward viole la covered interest rate parity.\nPiège : le forward rate n'est pas une prévision du futur spot rate.",
       ],
     ],
   },
