@@ -7,7 +7,7 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Explanation } from "@/components/session/parts";
 import { Rature } from "@/components/adn/Rature";
 import { rubriqueDe } from "@/components/moi/marquees-data";
-import { quandSeche } from "@/components/moi/ratures-data";
+import { quandSeche, rpcCalcul } from "@/components/moi/ratures-data";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 
 // « Mettre au propre » (Moi › Erreurs) : les ratures en cours repassées une
@@ -26,7 +26,10 @@ import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 // (« fraiche ») ; une ancienne réussie une semaine après son rayage est
 // scellée (« scellee »). Il ne reste que des fraîches : « vide », et le tour
 // s'arrête sur « Tout ce qui reste sèche demain ». Sans la section, tout se
-// passe comme avant.
+// passe comme avant. « Sans calcul » (migration_ratures_calcul.sql) : le tirage
+// écarte les ratures dont la question demande un calcul (rature_suivante et
+// rature_suivante_notion, p_sans_calcul) ; sans la migration, repli silencieux
+// sur le tirage d'avant (rpcCalcul).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -56,13 +59,14 @@ type Resultat = {
 
 type QuestionTiree = { question_id: string; prompt: string; choices: string[]; sources: string[]; set_title: string | null; folder_name: string | null };
 
-/** Aperçus locaux : des ratures d'exemple, corrigées sur place (sans réseau). */
-export type DemoPropre = { questions: (QuestionTiree & { bonne: number; explication: string })[] };
+/** Aperçus locaux : des ratures d'exemple, corrigées sur place (sans réseau) ; calcul : la question en demande un. */
+export type DemoPropre = { questions: (QuestionTiree & { bonne: number; explication: string; calcul?: boolean })[] };
 
 export function MiseAuPropre({
   source,
   theme,
   anciennes = false,
+  sansCalcul = false,
   onStatut,
   onFermer,
   demo,
@@ -73,6 +77,8 @@ export function MiseAuPropre({
   theme?: { notion: string | null; sets: string[]; libelle: string; /** le bouton de sortie (« Revenir au carnet ») ; par défaut, le retour aux points faibles */ retour?: string };
   /** rejouer les anciennes (rayées) plutôt que mettre au propre celles en cours */
   anciennes?: boolean;
+  /** « Sans calcul » : écarter les ratures dont la question demande un calcul (migration_ratures_calcul.sql) */
+  sansCalcul?: boolean;
   /** ce qui est arrivé à la rature (rayee, reste, ancienne, revenue) et ses sources, pour les compteurs du carnet */
   onStatut: (statut: string, sources: string[]) => void;
   onFermer: () => void;
@@ -85,6 +91,8 @@ export function MiseAuPropre({
   const [fini, setFini] = useState<"vide" | "tour" | "seche" | null>(null);
   // ratures du tri qui sèchent encore (pas proposées)
   const [sechent, setSechent] = useState(0);
+  // le filtre « Sans calcul » appliqué par la base, et les ratures à calcul qu'il écarte du tri
+  const [filtreCalcul, setFiltreCalcul] = useState<{ actif: boolean; masquees: number }>({ actif: false, masquees: 0 });
   const [choix, setChoix] = useState<number | null>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [envoi, setEnvoi] = useState(false);
@@ -97,29 +105,40 @@ export function MiseAuPropre({
   const [bilan, setBilan] = useState({ rayees: 0, restees: 0, seches: 0 });
   const vues = useRef<string[]>([]);
   const haut = useRef<HTMLDivElement>(null);
+  // le tirage en cours : une réponse dépassée par un tirage plus récent (« Sans calcul » basculé entre-temps) est ignorée
+  const tour = useRef(0);
 
   const tirer = useCallback(async () => {
+    const moi = ++tour.current;
     setEnvoi(true);
     setErreur(false);
     setChoix(null);
     setResultat(null);
-    const restantes = demo?.questions.filter((q) => !vues.current.includes(q.question_id));
+    const duTri = demo?.questions.filter((q) => !(sansCalcul && q.calcul));
+    const restantes = duTri?.filter((q) => !vues.current.includes(q.question_id));
     const { data, error } = demo
-      ? { data: { carnet: demo.questions.length, reste: restantes?.length ?? 0, question: restantes?.[0] ?? null }, error: null }
+      ? {
+          data: {
+            carnet: duTri?.length ?? 0,
+            reste: restantes?.length ?? 0,
+            question: restantes?.[0] ?? null,
+            sans_calcul: sansCalcul,
+            calcul_masquees: sansCalcul ? demo.questions.filter((q) => q.calcul).length : 0,
+          },
+          error: null,
+        }
       : notion !== null
-        ? await sb.rpc("rature_suivante_notion", { p_notion: notion, p_exclure: vues.current })
+        ? await rpcCalcul(sb, "rature_suivante_notion", { p_notion: notion, p_exclure: vues.current }, sansCalcul)
         : cleSets !== null
           ? await sb.rpc("rature_suivante_theme", { p_sets: cleSets ? cleSets.split(",") : [], p_exclure: vues.current })
-          : await sb.rpc("rature_suivante", {
-              p_source: source,
-              p_exclure: vues.current,
-              p_anciennes: anciennes,
-            });
+          : await rpcCalcul(sb, "rature_suivante", { p_source: source, p_exclure: vues.current, p_anciennes: anciennes }, sansCalcul);
+    if (moi !== tour.current) return;
     setEnvoi(false);
     if (error) return (notion !== null || cleSets !== null) && fonctionAbsente(error) ? setIndisponible(true) : setErreur(true);
-    const r = data as { carnet: number; reste: number; question: null | QuestionTiree; vide?: boolean; sechent?: number };
+    const r = data as { carnet: number; reste: number; question: null | QuestionTiree; vide?: boolean; sechent?: number; sans_calcul?: boolean; calcul_masquees?: number };
     setReste(Number(r.reste) || 0);
     setSechent(Number(r.sechent) || 0);
+    setFiltreCalcul({ actif: r.sans_calcul === true, masquees: Number(r.calcul_masquees) || 0 });
     if (!r.question) {
       setTiree(null);
       setFini(r.vide === true ? "seche" : Number(r.carnet) > 0 ? "tour" : "vide");
@@ -134,7 +153,7 @@ export function MiseAuPropre({
       rubrique: rubriqueDe(r.question.set_title, r.question.folder_name).rubrique,
     });
     haut.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [anciennes, cleSets, demo, notion, sb, source]);
+  }, [anciennes, cleSets, demo, notion, sansCalcul, sb, source]);
 
   useEffect(() => {
     void tirer();
@@ -210,7 +229,9 @@ export function MiseAuPropre({
     return () => window.removeEventListener("keydown", onKey);
   }, [resultat, tiree]);
 
-  const nomFiltre = theme ? theme.libelle : source ? (NOMS.get(source) ?? source) : null;
+  // « Sans calcul » appliqué : il rejoint le nom du tri (« Mise au propre · Fiches · sans calcul »)
+  const nomTri = theme ? theme.libelle : source ? (NOMS.get(source) ?? source) : null;
+  const nomFiltre = filtreCalcul.actif ? [nomTri, CARNET.sansCalculTri].filter(Boolean).join(" · ") : nomTri;
 
   return (
     // un thème s'ouvre dans une carte pleine largeur : la question garde une ligne lisible (720 px au plus)
@@ -242,7 +263,15 @@ export function MiseAuPropre({
       ) : fini ? (
         <div className="grid gap-3 py-4">
           <p className="t-h3 m-0">
-            {fini === "seche" ? CARNET.propreSeche : fini === "vide" ? (anciennes ? CARNET.rejouerFini : CARNET.propreFini) : CARNET.propreFiniVue}
+            {fini === "seche"
+              ? CARNET.propreSeche
+              : fini === "vide"
+                ? filtreCalcul.actif && filtreCalcul.masquees > 0
+                  ? CARNET.propreFiniSansCalcul(anciennes)
+                  : anciennes
+                    ? CARNET.rejouerFini
+                    : CARNET.propreFini
+                : CARNET.propreFiniVue}
           </p>
           {/* les fraîches attendent leur lendemain : on le dit, sans reproche */}
           {fini === "seche" ? (
@@ -250,6 +279,8 @@ export function MiseAuPropre({
           ) : (
             fini === "tour" && sechent > 0 && <p className="t-small m-0">{CARNET.propreSechent(sechent)}</p>
           )}
+          {/* le tri sans calcul : celles qui attendent un vrai bureau */}
+          {filtreCalcul.actif && filtreCalcul.masquees > 0 && <p className="t-small m-0">{CARNET.propreCalculMasquees(filtreCalcul.masquees)}</p>}
           <div className="flex flex-wrap gap-2">
             {fini === "tour" && (
               <button
@@ -357,7 +388,7 @@ export function MiseAuPropre({
           {resultat?.explication && <Explanation text={resultat.explication} />}
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <button type="button" className="py-1 text-[14px] font-semibold text-muted transition-colors hover:text-white" onClick={onFermer}>
+            <button type="button" className="min-h-[44px] py-1 pr-2 text-[14px] font-semibold text-muted transition-colors hover:text-white" onClick={onFermer}>
               {CARNET.propreArreter}
             </button>
             {resultat ? (

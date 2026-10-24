@@ -5,9 +5,10 @@ import { brush, ringPts, stroke, type Pt } from "@/components/ink/geometry";
  * ronde) et sa levée (pointe effilée), dans une grille de 24. Elles prennent
  * la couleur du texte (currentColor) et restent lisibles dès 16 px.
  *
- * Treize icônes aux endroits clés : l'accueil (l'anneau du logo), les cinq
+ * Quatorze icônes aux endroits clés : l'accueil (l'anneau du logo), les cinq
  * espaces (codex, réviser, s'entraîner, classement, moi), puis duel, examen, fiche,
- * cours, flashcards, erreurs (la rature) et série (les bâtons).
+ * cours, flashcards, erreurs (la rature), série (les bâtons) et sansCalcul (la
+ * calculatrice rayée, l'interrupteur « Sans calcul » du carnet).
  *
  * Props :
  * - `nom` : IconeNom
@@ -33,9 +34,10 @@ export type IconeNom =
   | "cours"
   | "flashcards"
   | "erreurs"
-  | "serie";
+  | "serie"
+  | "sansCalcul";
 
-export const ICONES: IconeNom[] = ["accueil", "reviser", "entrainer", "classement", "moi", "codex", "duel", "examen", "fiche", "cours", "flashcards", "erreurs", "serie"];
+export const ICONES: IconeNom[] = ["accueil", "reviser", "entrainer", "classement", "moi", "codex", "duel", "examen", "fiche", "cours", "flashcards", "erreurs", "serie", "sansCalcul"];
 
 /** Icône de chaque espace (lib/nav.ts) */
 export const ICONE_ESPACE = { codex: "codex", reviser: "reviser", entrainer: "entrainer", classement: "classement", moi: "moi" } as const satisfies Record<string, IconeNom>;
@@ -131,11 +133,25 @@ const GLYPHS: Record<Exclude<IconeNom, "accueil">, S[]> = {
     s([[17.6, 4.2], [17.8, 19.6]], 2.2, 0.45, 0.18),
     s([[2.6, 16.4], [12, 11.8], [21.4, 7]], 2.4, 0.35),
   ],
+  // la calculatrice rayée : le boîtier, l'écran, quatre touches (points), et
+  // le trait de la rature en travers, qui dépasse du boîtier et emporte deux
+  // touches (les deux autres restent nettes, loin du trait)
+  sansCalcul: [
+    s([[17.4, 3.4], [12, 3.2], [6.6, 3.4], [6.4, 12], [6.6, 20.6], [12, 20.8], [17.4, 20.6], [17.6, 12], [17.4, 4]], 2, 0.55),
+    s([[9.2, 7.3], [14.8, 7.2]], 2.3, 0.7, 0.2),
+    s([[3.2, 21.4], [12, 14], [20.8, 6.6]], 2.5, 0.3),
+  ],
 };
 
 /** Points d'encre ronds (cx, cy, r), en plus des traits. */
 const DOTS: Partial<Record<IconeNom, [number, number, number][]>> = {
   entrainer: [[12, 12, 2.1]],
+  sansCalcul: [
+    [9.6, 12, 1.15],
+    [14.4, 12, 1.15],
+    [9.6, 16, 1.15],
+    [14.4, 16, 1.15],
+  ],
 };
 const dot = ([cx, cy, r]: [number, number, number]) => `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
 

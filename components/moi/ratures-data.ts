@@ -10,7 +10,11 @@
 // (migration_v3_profil.sql §3a) : réussie moins de 24 h après l'erreur, une
 // rature reste en cours à l'encre fraîche (seche_le) ; rayée puis réussie
 // 7 jours plus tard, elle est scellée (scellee_le). Sans la section, ces
-// champs manquent et le carnet se lit comme avant.
+// champs manquent et le carnet se lit comme avant. « Sans calcul »
+// (migration_ratures_calcul.sql) : p_sans_calcul écarte les ratures dont la
+// question demande un calcul, de la page comme des comptes ; sans la
+// migration, l'appel avec ce paramètre échoue une fois, puis on n'envoie
+// plus le paramètre (repli silencieux) et le carnet se lit comme avant.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { rubriqueDe } from "@/components/moi/marquees-data";
 import { jourParis } from "@/lib/voice-z4";
@@ -58,8 +62,18 @@ export type RaturesPage = {
   scellees?: number;
   /** en cours, qui sèchent encore (moins de 24 h depuis l'erreur) : Mise au propre ne les propose pas ; absent sans la section §3a */
   sechent?: number;
+  /** le filtre « Sans calcul » ; absent tant que migration_ratures_calcul.sql manque */
+  calcul?: FiltreCalcul;
   items: RatureItem[];
 };
+
+/**
+ * « Sans calcul » (migration_ratures_calcul.sql) : actif, le filtre a été
+ * appliqué ; masquees, les ratures à calcul qu'il écarte de la vue (temps,
+ * source ou notion) ; connu, au moins une question de la banque est classée
+ * (sinon le bouton n'a rien à trier et reste caché).
+ */
+export type FiltreCalcul = { actif: boolean; masquees: number; connu: boolean };
 
 /** Une notion du carnet (« » : les questions sans notion) et ses ratures dans chaque temps. */
 export type NotionCarnet = { notion: string; enCours: number; anciennes: number };
@@ -99,6 +113,9 @@ type Brut = {
   retirees_semaine: number;
   scellees?: number;
   sechent?: number;
+  sans_calcul?: boolean;
+  calcul_masquees?: number;
+  calcul_connu?: boolean;
   filtre: number;
   sources: Record<string, number> | null;
   items: Ligne[] | null;
@@ -115,6 +132,8 @@ export function pageDe(r: Brut): RaturesPage {
     // absents tant que la section §3a manque : le carnet ne parle pas de séchage
     scellees: r.scellees === undefined ? undefined : Number(r.scellees) || 0,
     sechent: r.sechent === undefined ? undefined : Number(r.sechent) || 0,
+    // absent tant que migration_ratures_calcul.sql manque : pas de bouton « Sans calcul »
+    calcul: r.calcul_connu === undefined ? undefined : { actif: r.sans_calcul === true, masquees: Number(r.calcul_masquees) || 0, connu: r.calcul_connu === true },
     items: (r.items ?? []).map((l) => ({
       questionId: l.question_id,
       prompt: l.prompt,
@@ -173,18 +192,79 @@ export function bilanSeche(b: BilanAtelier, items: ItemSeance[], apresDuServeur?
   return { bilan: { ...b, notions }, fraiches };
 }
 
+/** La fonction appelée, ou ce paramètre, n'existe pas (encore) en base : migration pas collée. */
+const fonctionAbsente = (e: { code?: string; message?: string } | null | undefined) =>
+  !!e && (["PGRST202", "PGRST205", "42883", "42P01", "42703"].includes(e.code ?? "") || /could not find the function/i.test(e.message ?? ""));
+
+// les fonctions du carnet qui n'ont pas (encore) p_sans_calcul : on ne le leur renvoie plus
+const sansCalculAbsent = new Set<string>();
+
+/**
+ * Un appel du carnet, avec le filtre « Sans calcul » s'il est demandé
+ * (migration_ratures_calcul.sql). Sans la migration, l'appel avec
+ * p_sans_calcul échoue : on rejoue l'appel d'avant, une seule fois par
+ * fonction et par chargement de page, en silence. Sans le filtre, l'appel
+ * d'avant tel quel.
+ */
+export async function rpcCalcul(supabase: Pick<SupabaseClient, "rpc">, fn: string, args: Record<string, unknown>, sansCalcul: boolean) {
+  if (sansCalcul && !sansCalculAbsent.has(fn)) {
+    const r = await supabase.rpc(fn, { ...args, p_sans_calcul: true });
+    if (!r.error || !fonctionAbsente(r.error)) return r;
+    sansCalculAbsent.add(fn);
+  }
+  return supabase.rpc(fn, args);
+}
+
 /** Une page du carnet (navigateur comme serveur). */
-export async function lireRatures(supabase: SupabaseClient, { source = null, retirees = false, offset = 0 }: { source?: string | null; retirees?: boolean; offset?: number } = {}) {
-  const { data, error } = await supabase.rpc("get_ratures", { p_source: source, p_retirees: retirees, p_limit: PAGE_RATURES, p_offset: offset });
+export async function lireRatures(
+  supabase: SupabaseClient,
+  { source = null, retirees = false, offset = 0, sansCalcul = false }: { source?: string | null; retirees?: boolean; offset?: number; sansCalcul?: boolean } = {},
+) {
+  const { data, error } = await rpcCalcul(supabase, "get_ratures", { p_source: source, p_retirees: retirees, p_limit: PAGE_RATURES, p_offset: offset }, sansCalcul);
   if (error) return { error };
   return { page: pageDe(data as Brut) };
+}
+
+/**
+ * Aperçus locaux (sans réseau) : une page du carnet calculée sur place,
+ * comme get_ratures (temps, source, ordre, comptes, « Sans calcul »).
+ * `calcul` : les questions qui demandent un calcul.
+ */
+export function pageLocale(
+  items: RatureItem[],
+  calcul: string[],
+  { source = null, retirees = false, offset = 0, sansCalcul = false }: { source?: string | null; retirees?: boolean; offset?: number; sansCalcul?: boolean },
+  now: number = Date.now(),
+): RaturesPage {
+  const aCalcul = (it: RatureItem) => calcul.includes(it.questionId);
+  const mes = items.filter((it) => !(sansCalcul && aCalcul(it)));
+  const duTemps = (it: RatureItem) => (it.removedAt !== null) === retirees;
+  const deLaVue = (it: RatureItem) => duTemps(it) && (source === null || it.sources.includes(source));
+  const quand = (it: RatureItem) => new Date((retirees ? it.removedAt : it.lastMissedAt) ?? 0).getTime();
+  const vue = mes.filter(deLaVue).sort((a, b) => quand(b) - quand(a) || a.questionId.localeCompare(b.questionId));
+  const sources: Record<string, number> = {};
+  for (const it of mes.filter(duTemps)) for (const s of it.sources) sources[s] = (sources[s] ?? 0) + 1;
+  return {
+    total: mes.filter((it) => it.removedAt === null).length,
+    retirees: mes.filter((it) => it.removedAt !== null).length,
+    retireesSemaine: mes.filter((it) => it.removedAt !== null && now - new Date(it.removedAt).getTime() < 7 * 86_400_000).length,
+    filtre: vue.length,
+    sources,
+    scellees: mes.filter((it) => it.removedAt !== null && it.scelleeLe).length,
+    sechent: mes.filter((it) => it.removedAt === null && it.secheLe && new Date(it.secheLe).getTime() > now).length,
+    calcul: { actif: sansCalcul, masquees: sansCalcul ? items.filter((it) => aCalcul(it) && deLaVue(it)).length : 0, connu: true },
+    items: vue.slice(offset, offset + PAGE_RATURES),
+  };
 }
 
 const notionsDe = (r: BrutNotions): NotionCarnet[] => (r.notions ?? []).map((x) => ({ notion: x.notion ?? "", enCours: Number(x.en_cours) || 0, anciennes: Number(x.anciennes) || 0 }));
 
 /** Une page des ratures d'une notion (« » : sans notion), et les notions du carnet (navigateur comme serveur). */
-export async function lireRaturesNotion(supabase: SupabaseClient, { notion, retirees = false, offset = 0 }: { notion: string | null; retirees?: boolean; offset?: number }) {
-  const { data, error } = await supabase.rpc("ratures_par_notion", { p_notion: notion, p_retirees: retirees, p_limit: PAGE_RATURES, p_offset: offset });
+export async function lireRaturesNotion(
+  supabase: SupabaseClient,
+  { notion, retirees = false, offset = 0, sansCalcul = false }: { notion: string | null; retirees?: boolean; offset?: number; sansCalcul?: boolean },
+) {
+  const { data, error } = await rpcCalcul(supabase, "ratures_par_notion", { p_notion: notion, p_retirees: retirees, p_limit: PAGE_RATURES, p_offset: offset }, sansCalcul);
   if (error || !data) return { error: error ?? { message: "vide" } };
   const r = data as BrutNotions;
   return { page: pageDe(r), notions: notionsDe(r), remplie: r.remplie === true };

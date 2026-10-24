@@ -1,7 +1,7 @@
-import type { CSSProperties } from "react";
 import { RichText, RichTextLigne } from "@/components/RichText";
 import { aSurligne, decouperVerso, echelleFormule, type Retenir, type VersoStructure } from "@/lib/flashcards/verso";
 import { BOUCLE } from "@/lib/voice-z3c";
+import { FormuleAjustee } from "./FormuleAjustee";
 import v from "./Verso.module.css";
 
 // Le verso structuré d'une flashcard (lib/flashcards/verso.ts), en trois
@@ -37,10 +37,10 @@ function ContenuRetenir({ r }: { r: Retenir }) {
       {r.titre && <LigneAutour texte={r.titre} />}
       {r.forme === "formule" ? (
         <>
-          {/* --echelle : la réduction de la formule sur téléphone (Verso.module.css) */}
-          <div className={v.bloc} style={echelle < 1 ? ({ "--echelle": echelle } as CSSProperties) : undefined}>
+          {/* --ajuste : mesuré, pour que la formule tienne dans la case ; --echelle : estimation de repli sur téléphone (Verso.module.css) */}
+          <FormuleAjustee className={v.bloc} echelle={echelle}>
             <RichText text={r.formule} />
-          </div>
+          </FormuleAjustee>
           {r.suite && <LigneAutour texte={r.suite} className={v.suite} />}
         </>
       ) : (

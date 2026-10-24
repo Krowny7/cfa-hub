@@ -34,7 +34,7 @@
 
 DO $$
 BEGIN
-  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NULL OR to_regprocedure('public._reponses_atelier(uuid)') IS NULL THEN
+  IF (to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NULL AND to_regprocedure('public.rature_suivante_notion(text, uuid[], boolean)') IS NULL) OR to_regprocedure('public._reponses_atelier(uuid)') IS NULL THEN
     RAISE EXCEPTION 'Colle d''abord migration_notions.sql (sa dernière version)';
   END IF;
 END $$;

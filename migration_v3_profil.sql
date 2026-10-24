@@ -478,6 +478,9 @@ CREATE TRIGGER ratures_a_seche BEFORE UPDATE ON ratures FOR EACH ROW EXECUTE FUN
 -- les sèches seulement (réussies maintenant, elles seront rayées), la plus
 -- ancienne erreur d'abord, puis les plus manquées, au lieu du hasard. Il ne
 -- reste que des ratures fraîches : « vide », et combien sèchent.
+-- La version « sans calcul » (migration_ratures_calcul.sql) : recollé après
+-- elle, ce fichier la remplace, sans doublon (recollez-la ensuite).
+DROP FUNCTION IF EXISTS rature_suivante(text, uuid[], boolean, boolean);
 CREATE OR REPLACE FUNCTION rature_suivante(p_source text DEFAULT NULL, p_exclure uuid[] DEFAULT '{}', p_anciennes boolean DEFAULT false)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -602,7 +605,9 @@ $$;
 -- La lecture du carnet (migration_ratures_reprise.sql), plus : les ratures
 -- scellées, celles en cours qui sèchent encore (manquées il y a moins de
 -- 24 h, réussies trop tôt ou non : Mise au propre ne les propose pas), et,
--- par rature, seche_le et scellee_le.
+-- par rature, seche_le et scellee_le. La version « sans calcul »
+-- (migration_ratures_calcul.sql) est remplacée, comme pour rature_suivante.
+DROP FUNCTION IF EXISTS get_ratures(text, boolean, int, int, boolean);
 CREATE OR REPLACE FUNCTION get_ratures(p_source text DEFAULT NULL, p_retirees boolean DEFAULT false, p_limit int DEFAULT 20, p_offset int DEFAULT 0)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -667,7 +672,9 @@ $$;
 -- (migration_notions.sql), et le carnet par notion
 -- (migration_carnet_notions.sql) : redéfinis à l'identique, plus le même
 -- filtre « sèche », le même ordre et les mêmes champs, seulement s'ils sont
--- déjà en place.
+-- déjà en place. Leur version « sans calcul » (migration_ratures_calcul.sql) :
+-- recollé après elle, ce fichier la remplace, sans doublon, comme pour
+-- rature_suivante et get_ratures (recollez-la ensuite).
 DO $do$
 BEGIN
   IF to_regprocedure('public.rature_suivante_theme(uuid[], uuid[])') IS NOT NULL THEN
@@ -732,7 +739,8 @@ $fn$;
     RAISE WARNING '%', 'rature_suivante_theme (migration_points_faibles.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;
 
-  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NOT NULL THEN
+  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NOT NULL OR to_regprocedure('public.rature_suivante_notion(text, uuid[], boolean)') IS NOT NULL THEN
+    DROP FUNCTION IF EXISTS rature_suivante_notion(text, uuid[], boolean);
     EXECUTE $fn$
 CREATE OR REPLACE FUNCTION rature_suivante_notion(p_notion text, p_exclure uuid[] DEFAULT '{}')
 RETURNS json
@@ -790,11 +798,15 @@ BEGIN
 END;
 $$
 $fn$;
+    -- recréée si elle remplace la version « sans calcul » : les droits de migration_notions.sql
+    REVOKE ALL ON FUNCTION rature_suivante_notion(text, uuid[]) FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION rature_suivante_notion(text, uuid[]) TO authenticated;
   ELSE
     RAISE WARNING '%', 'rature_suivante_notion (migration_notions.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;
 
-  IF to_regprocedure('public.ratures_par_notion(text, boolean, integer, integer)') IS NOT NULL THEN
+  IF to_regprocedure('public.ratures_par_notion(text, boolean, integer, integer)') IS NOT NULL OR to_regprocedure('public.ratures_par_notion(text, boolean, integer, integer, boolean)') IS NOT NULL THEN
+    DROP FUNCTION IF EXISTS ratures_par_notion(text, boolean, int, int, boolean);
     EXECUTE $fn$
 CREATE OR REPLACE FUNCTION ratures_par_notion(p_notion text DEFAULT NULL, p_retirees boolean DEFAULT false, p_limit int DEFAULT 20, p_offset int DEFAULT 0)
 RETURNS json
@@ -869,6 +881,9 @@ BEGIN
 END;
 $$
 $fn$;
+    -- recréée si elle remplace la version « sans calcul » : les droits de migration_carnet_notions.sql
+    REVOKE ALL ON FUNCTION ratures_par_notion(text, boolean, int, int) FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION ratures_par_notion(text, boolean, int, int) TO authenticated;
   ELSE
     RAISE WARNING '%', 'ratures_par_notion (migration_carnet_notions.sql) absente : filtre « sèche » non posé ; collez-la, puis recollez ce fichier';
   END IF;

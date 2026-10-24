@@ -203,6 +203,17 @@ export const CARNET = {
   propreSecheTexte: (n: number) => `${pluriel(n, "rature est", "ratures sont")} encore à l'encre fraîche : moins de 24 h depuis l'erreur. Repasse demain pour ${n > 1 ? "les" : "la"} rayer.`,
   propreSechent: (n: number) => `${pluriel(n, "autre est", "autres sont")} encore à l'encre fraîche : à demain.`,
   rejouerScellee: "Scellée : elle tient depuis plus d'une semaine.",
+  /** « Sans calcul » (migration_ratures_calcul.sql) : le carnet sans les questions à calculer, pour le téléphone */
+  sansCalcul: "Sans calcul",
+  sansCalculSous: "Pour le téléphone : les questions à calculer attendent un bureau.",
+  /** sous l'interrupteur, quand il est actif : « 12 avec calcul masquées » */
+  calculMasquees: (n: number) => `${nombre(n)} avec calcul ${n > 1 ? "masquées" : "masquée"}`,
+  sansCalculAucune: "Aucune rature à calcul de ce côté-là.",
+  /** le nom du tri dans « Mise au propre · Fiches · sans calcul » */
+  sansCalculTri: "sans calcul",
+  /** la mise au propre « Sans calcul » qui n'a plus rien à tirer, alors que des ratures à calcul attendent */
+  propreFiniSansCalcul: (anciennes: boolean) => (anciennes ? "Aucune ancienne rature sans calcul ici." : "Plus aucune rature sans calcul ici."),
+  propreCalculMasquees: (n: number) => `${pluriel(n, "rature avec calcul t'attend", "ratures avec calcul t'attendent")} : coupe « Sans calcul » pour ${n > 1 ? "les" : "la"} reprendre.`,
 } as const;
 
 /** D'où vient une rature (sources de migration_ratures.sql), dans l'ordre des filtres. */

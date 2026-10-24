@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { exigerLangues } from "./langue.mjs";
 import { etiqueter } from "../notions/etiquettes.mjs";
 import { syncFlashcardSets } from "./flashcards-sync.mjs";
+import { calculDe, chargerClassement } from "../calculs/classement.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -79,9 +80,34 @@ async function poserNotions(setIds) {
   if (r.sansDonnee) console.log(`  ${r.sansDonnee} questions sans notion connue : relancer scripts/notions/rattacher.mjs puis synchroniser.mjs`);
 }
 
+// « Sans calcul » du carnet (quiz_questions.calcul, migration_ratures_calcul.sql) :
+// toute question insérée reçoit son classement, retrouvé par l'énoncé dans
+// scripts/calculs/classement.json (écrit par scripts/calculs/appliquer.mjs :
+// il survit ainsi à l'effacement-réinsertion de seedQuizSets, qui change les
+// id), sinon l'estimation automatique (calcul-heuristique.mjs) ; une question
+// gardée par syncQuizSets garde la sienne. Tant que la colonne n'existe pas,
+// le champ n'est pas envoyé. Vérifié une fois par lancement, AVANT toute
+// écriture (une sonde ou un classement.json en panne n'interrompt jamais un
+// seed à moitié : sets effacés sans réinsertion, positions décalées).
+let colonneCalcul;
+let classement = null;
+async function avecCalcul() {
+  if (colonneCalcul === undefined) {
+    const { error } = await supabase.from("quiz_questions").select("calcul").limit(1);
+    const absente = error && (error.code === "42703" || error.code === "PGRST204" || /calcul/i.test(error.message ?? ""));
+    if (error && !absente) throw error;
+    colonneCalcul = !error;
+    if (!colonneCalcul) console.log("  (calcul : migration_ratures_calcul.sql pas encore collée, rien posé)");
+  }
+  if (colonneCalcul && !classement) classement = chargerClassement();
+  return colonneCalcul;
+}
+const champCalcul = (avec, prompt, choices) => (avec ? { calcul: calculDe(prompt, choices, classement) } : {});
+
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) {
   exigerLangues(sets); // énoncé et choix en anglais, explication en français (scripts/lib/langue.mjs)
+  const calcul = await avecCalcul(); // avant l'effacement ci-dessous
   const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
   // is_official (pas owner_id) : le contenu Système remplacé peut avoir été
   // créé par un autre compte admin — voir la note sur ensureFolder.
@@ -118,6 +144,7 @@ export async function seedQuizSets({ ownerId, folderId, sets, oldTitles = [] }) 
       correct_index,
       explanation,
       position: i + 1,
+      ...champCalcul(calcul, prompt, choices),
     }));
     const { error: qErr } = await supabase.from("quiz_questions").insert(rows);
     if (qErr) throw qErr;
@@ -157,6 +184,7 @@ async function serieReserve({ ownerId, folderId, title, difficulty }) {
 // sets: [{ title, questions: [[prompt, choices, correct_index, explanation], ...] }]
 export async function syncQuizSets({ ownerId, folderId, sets }) {
   exigerLangues(sets); // énoncé et choix en anglais, explication en français (scripts/lib/langue.mjs)
+  const calcul = await avecCalcul(); // avant le décalage des positions ci-dessous
   let total = 0;
   for (const set of sets) {
     const { data: found, error: findErr } = await supabase
@@ -194,7 +222,7 @@ export async function syncQuizSets({ ownerId, folderId, sets }) {
         if (error) throw error;
         kept++;
       } else {
-        inserts.push({ set_id: setId, prompt, choices, correct_index, explanation, position: i + 1 });
+        inserts.push({ set_id: setId, prompt, choices, correct_index, explanation, position: i + 1, ...champCalcul(calcul, prompt, choices) });
       }
     }
     if (inserts.length) {

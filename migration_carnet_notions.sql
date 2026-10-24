@@ -16,11 +16,14 @@
 
 DO $$
 BEGIN
-  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NULL THEN
+  IF to_regprocedure('public.rature_suivante_notion(text, uuid[])') IS NULL AND to_regprocedure('public.rature_suivante_notion(text, uuid[], boolean)') IS NULL THEN
     RAISE EXCEPTION 'Colle d''abord migration_notions.sql';
   END IF;
 END $$;
 
+-- La version « sans calcul » (migration_ratures_calcul.sql) : recollé après
+-- elle, ce fichier la remplace, sans doublon (recollez-la ensuite).
+DROP FUNCTION IF EXISTS ratures_par_notion(text, boolean, int, int, boolean);
 CREATE OR REPLACE FUNCTION ratures_par_notion(p_notion text DEFAULT NULL, p_retirees boolean DEFAULT false, p_limit int DEFAULT 20, p_offset int DEFAULT 0)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public

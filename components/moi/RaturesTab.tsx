@@ -11,7 +11,7 @@ import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Explanation } from "@/components/session/parts";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
 import { fmtAgo } from "@/components/classement/format";
-import { lireRatures, lireRaturesNotion, PAGE_RATURES, quandSeche, type CarnetNotions, type NotionCarnet, type RatureItem, type RaturesPage } from "@/components/moi/ratures-data";
+import { lireRatures, lireRaturesNotion, pageLocale, PAGE_RATURES, quandSeche, type CarnetNotions, type FiltreCalcul, type NotionCarnet, type RatureItem, type RaturesPage } from "@/components/moi/ratures-data";
 import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 import { nombre } from "@/lib/voice";
@@ -33,7 +33,12 @@ import type { SourceMarque } from "@/lib/marques";
 // (migration_v3_profil.sql §3a) : une rature réussie trop tôt porte « encre
 // fraîche · sèche demain », une ancienne scellée « scellée », et le compte
 // des scellées rejoint celui des anciennes ; sans la section, rien de tout
-// cela ne s'affiche.
+// cela ne s'affiche. « Sans calcul » (migration_ratures_calcul.sql) : un
+// interrupteur sous les deux temps écarte les ratures dont la question
+// demande un calcul, de la liste, des comptes, de « Mettre au propre » et de
+// « Rejouer les anciennes » (au téléphone, dans le bus) ; mémorisé sur cet
+// appareil ; actif, il dit combien de ratures à calcul il masque. Il
+// n'apparaît que si la base sait trier (migration collée, banque classée).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const NOMS = new Map(SOURCES_RATURE);
@@ -67,6 +72,9 @@ type Liste = { vue: Vue; filtre: number; items: RatureItem[] };
 
 const VUE0: Vue = { source: null, retirees: false, notion: null };
 
+/** « Sans calcul », mémorisé sur cet appareil (« 1 » : actif). */
+const CLE_CALCUL = "rl:ratures:sans-calcul";
+
 /** Le séchage du carnet (migration_v3_profil.sql §3a) : anciennes scellées, ratures en cours qui sèchent encore ; null tant que la section manque. */
 const encreDe = (p: Pick<RaturesPage, "scellees" | "sechent">) =>
   p.scellees === undefined || p.sechent === undefined ? null : { scellees: p.scellees, sechent: p.sechent };
@@ -78,6 +86,7 @@ export function RaturesTab({
   now,
   demoPropre,
   demoNotions,
+  demoCarnet,
   sansResume = false,
 }: {
   initial: RaturesPage;
@@ -88,7 +97,9 @@ export function RaturesTab({
   demoPropre?: DemoPropre;
   /** aperçus locaux : les ratures de chaque notion, sans réseau */
   demoNotions?: Record<string, RatureItem[]>;
-  /** page de liste refaite (Registre) : le compteur, la règle et « Mettre au propre » passent au héros de la page ; il ne reste que les filtres et la liste */
+  /** aperçus locaux : tout le carnet, filtré sur place (temps, source, « Sans calcul » : les ids des questions à calcul) */
+  demoCarnet?: { items: RatureItem[]; calcul: string[] };
+  /** page de liste refaite (Registre) : le compteur, la règle et « Mettre au propre » passent au héros de la page ; il ne reste que les filtres et la liste (et, « Sans calcul » actif, « Mettre au propre » filtré sous l'interrupteur) */
   sansResume?: boolean;
 }) {
   const [vue, setVue] = useState<Vue>(VUE0);
@@ -106,6 +117,12 @@ export function RaturesTab({
   const [bascules, setBascules] = useState<Record<string, boolean>>({});
   // la mise au propre en cours (à la place de la liste)
   const [propre, setPropre] = useState(false);
+  // « Sans calcul » : le choix de cet appareil, et ce que la base en dit (absent : migration pas collée, pas de bouton)
+  const [sansCalcul, setSansCalcul] = useState(false);
+  const [calcul, setCalcul] = useState<FiltreCalcul | undefined>(initial.calcul);
+  // les mêmes, lus par les chargements en cours (pas d'état périmé) : le filtre ne part que si la base sait trier
+  const choixCalcul = useRef(false);
+  const sait = useRef(initial.calcul?.connu === true);
   const jeton = useRef(0);
 
   const sb = useMemo(() => createClient(), []);
@@ -113,24 +130,40 @@ export function RaturesTab({
   const sorties = liste.items.filter((it) => bascules[it.questionId]).length;
 
   /** Une page de la vue : par notion (ratures_par_notion, qui rend aussi les notions du carnet) ou par source. */
-  async function lirePage(v: Vue, offset: number): Promise<{ error: unknown } | { page: RaturesPage; notions?: NotionCarnet[] }> {
-    if (v.notion === null) return lireRatures(sb, { source: v.source, retirees: v.retirees, offset });
+  async function lirePage(v: Vue, offset: number, sansCalcul: boolean): Promise<{ error: unknown } | { page: RaturesPage; notions?: NotionCarnet[] }> {
+    if (v.notion === null && demoCarnet) return { page: pageLocale(demoCarnet.items, demoCarnet.calcul, { source: v.source, retirees: v.retirees, offset, sansCalcul }, now) };
+    if (v.notion === null) return lireRatures(sb, { source: v.source, retirees: v.retirees, offset, sansCalcul });
     if (demoNotions) {
       const items = (demoNotions[v.notion] ?? []).filter((it) => (it.removedAt !== null) === v.retirees);
       return { page: { ...initial, filtre: items.length, items: items.slice(offset, offset + PAGE_RATURES), total: compte.total, retirees: compte.retirees, retireesSemaine: compte.semaine, sources: compte.sources } };
     }
-    return lireRaturesNotion(sb, { notion: v.notion, retirees: v.retirees, offset });
+    return lireRaturesNotion(sb, { notion: v.notion, retirees: v.retirees, offset, sansCalcul });
+  }
+
+  /**
+   * Ce que la base dit du filtre « Sans calcul » (absent : migration pas
+   * collée, ou repli) ; vrai si la vue est à relire avec le filtre : demandée
+   * sans lui (la base ne savait pas trier, ou une autre fonction du carnet ne
+   * le sait pas), elle répond qu'elle sait, et le choix de l'appareil est actif.
+   */
+  function suivreCalcul(p: RaturesPage, avecFiltre: boolean) {
+    sait.current = p.calcul?.connu === true;
+    setCalcul(p.calcul);
+    return !avecFiltre && sait.current && choixCalcul.current;
   }
 
   async function charger(v: Vue, offset: number) {
     const moi = ++jeton.current;
     setCharge(true);
     setErreur(false);
-    const r = await lirePage(v, offset).catch(() => ({ error: true as const }));
+    const avecFiltre = choixCalcul.current && sait.current;
+    const r = await lirePage(v, offset, avecFiltre).catch(() => ({ error: true as const }));
     if (moi !== jeton.current) return; // une réponse dépassée par une autre demande
     setCharge(false);
     if ("error" in r) return setErreur(true);
     const p = r.page;
+    // la vue relue avec le filtre, depuis le début (pas de « Chargement… » sans fin)
+    if (suivreCalcul(p, avecFiltre)) return void charger(v, 0);
     if (r.notions) setNotionsListe(r.notions);
     setCompte({ total: p.total, retirees: p.retirees, semaine: p.retireesSemaine, sources: p.sources });
     setEncre(encreDe(p));
@@ -155,16 +188,53 @@ export function RaturesTab({
     setPropre(false);
     setOuverte(null);
     setVue({ source: null, retirees, notion: null });
+    return lireNotions(retirees);
+  }
+
+  /** Les notions du carnet et ses comptes, relus (dans le temps donné, avec ou sans calcul). */
+  async function lireNotions(retirees: boolean) {
     const moi = ++jeton.current;
     setCharge(false);
     setErreur(false);
     if (demoNotions) return;
-    const r = await lireRaturesNotion(sb, { notion: null, retirees }).catch(() => ({ error: true as const }));
+    const avecFiltre = choixCalcul.current && sait.current;
+    const r = await lireRaturesNotion(sb, { notion: null, retirees, sansCalcul: avecFiltre }).catch(() => ({ error: true as const }));
     if (moi !== jeton.current || "error" in r) return;
+    if (suivreCalcul(r.page, avecFiltre)) return void lireNotions(retirees);
     setNotionsListe(r.notions);
     setCompte({ total: r.page.total, retirees: r.page.retirees, semaine: r.page.retireesSemaine, sources: r.page.sources });
     setEncre(encreDe(r.page));
   }
+
+  /** « Sans calcul » : basculé, mémorisé sur cet appareil ; la vue affichée (liste ou notions) et ses comptes sont relus. Une mise au propre ouverte repart d'elle-même sur le nouveau tri. */
+  function basculerCalcul() {
+    const on = !choixCalcul.current;
+    choixCalcul.current = on;
+    setSansCalcul(on);
+    try {
+      localStorage.setItem(CLE_CALCUL, on ? "1" : "0");
+    } catch {
+      // stockage indisponible (navigation privée…) : le choix vaut pour cette visite
+    }
+    setOuverte(null);
+    if (groupe && vue.notion === null) void lireNotions(vue.retirees);
+    else void charger(vue, 0);
+  }
+
+  // le choix mémorisé sur cet appareil : la première page (servie sans le filtre) est relue avec lui, si la base sait trier
+  useEffect(() => {
+    let on = false;
+    try {
+      on = localStorage.getItem(CLE_CALCUL) === "1";
+    } catch {
+      // rien de mémorisé
+    }
+    if (!on) return;
+    choixCalcul.current = true;
+    setSansCalcul(true);
+    if (sait.current) void charger(VUE0, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function ranger(parNotion: boolean) {
     if (parNotion === groupe) return;
@@ -241,13 +311,21 @@ export function RaturesTab({
           : compte.total;
   // ratures de la vue encore à charger
   const reste = liste.filtre - liste.items.length;
-  const vide = compte.total === 0 && compte.retirees === 0 && !liste.vue.retirees;
+  // « Sans calcul » : le bouton (la base sait trier), son état, et ce qu'il masque (une fois la vue relue avec lui)
+  const boutonCalcul = calcul?.connu === true;
+  const actifCalcul = sansCalcul && boutonCalcul;
+  const masquees = actifCalcul && calcul?.actif ? calcul.masquees : null;
+  // carnet vide : pas quand le filtre cache tout (l'interrupteur doit rester là pour le couper)
+  const vide = !actifCalcul && compte.total === 0 && compte.retirees === 0 && !liste.vue.retirees;
+  // « Sans calcul » qui cache tout le tri : la mise au propre s'ouvre quand même et dit combien de ratures à calcul attendent
+  // (pas dans une notion où elle n'a rien à tirer : ses anciennes, ou « sans notion »)
+  const propreMasquee = actifCalcul && (notionOuverte === null || (!anciennes && notionOuverte !== ""));
 
   // les boutons du héros de la page (Registre) pilotent la liste : « rl:carnet » avec « propre » (la mise au propre) ou « anciennes » (les retirées)
   const surEvenement = useRef<(action: string) => void>(() => {});
   surEvenement.current = (action) => {
     if (action === "propre") {
-      if (aRepasser > 0) setPropre(true);
+      if (aRepasser > 0 || propreMasquee) setPropre(true);
     } else if (action === "anciennes") {
       setPropre(false);
       if (listeNotions) void versNotions(true);
@@ -313,14 +391,34 @@ export function RaturesTab({
               type="button"
               role="tab"
               aria-selected={vue.retirees === anc}
-              className={"rounded-[9px] px-3 py-2 text-[13.5px] font-semibold transition-colors " + (vue.retirees === anc ? "bg-surface text-white shadow-[var(--shadow-1)]" : "text-muted hover:text-white")}
+              className={"min-h-[44px] rounded-[9px] px-3 py-2 text-[13.5px] font-semibold transition-colors " + (vue.retirees === anc ? "bg-surface text-white shadow-[var(--shadow-1)]" : "text-muted hover:text-white")}
               onClick={() => (listeNotions ? void versNotions(anc) : choisir({ source: null, retirees: anc, notion: groupe ? vue.notion : null }))}
             >
               {anc ? CARNET.anciennes : CARNET.enCours} · {nombre(anc ? compte.retirees : compte.total)}
             </button>
           ))}
         </div>
-        {!sansResume && aRepasser > 0 && (
+        {/* « Sans calcul » : pour le téléphone, la liste, les comptes et les mises au propre sans les questions à calculer */}
+        {boutonCalcul && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={actifCalcul}
+            onClick={basculerCalcul}
+            className={"flex min-h-[52px] w-full items-center gap-3 rounded-[12px] border px-3 py-2 text-left transition-colors " + (actifCalcul ? "border-line-2 bg-surface-2" : "border-line hover:bg-surface-2")}
+          >
+            <Icone nom="sansCalcul" size={24} appui={actifCalcul ? 1.15 : 1} className={actifCalcul ? "text-white" : "text-muted"} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold">{CARNET.sansCalcul}</span>
+              <span className="t-micro block">
+                {actifCalcul ? (masquees === null ? CARNET.chargement : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune) : CARNET.sansCalculSous}
+              </span>
+            </span>
+            <span aria-hidden className={"switch" + (actifCalcul ? " is-on" : "")} />
+          </button>
+        )}
+        {/* sur la page refaite (Registre), le bouton du héros ne connaît pas le tri : « Sans calcul » actif, le bouton filtré revient ici, sous l'interrupteur */}
+        {(!sansResume || actifCalcul) && aRepasser > 0 && (
           <div className="grid gap-1.5">
             <button type="button" className={"btn w-fit " + (anciennes ? "btn-secondary" : "btn-primary")} onClick={() => setPropre(true)} disabled={propre} aria-pressed={propre}>
               {anciennes ? <RotateCcw size={16} aria-hidden /> : <PenLine size={16} aria-hidden />} {anciennes ? CARNET.rejouer : CARNET.propre} · {nombre(aRepasser)}
@@ -349,11 +447,11 @@ export function RaturesTab({
         )}
         {!groupe && (
           <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par source">
-            <button type="button" className={"chip " + (vue.source === null ? "chip-active" : "")} aria-pressed={vue.source === null} onClick={() => choisir({ source: null, retirees: vue.retirees, notion: null })}>
+            <button type="button" className={"chip max-md:min-h-[44px] " + (vue.source === null ? "chip-active" : "")} aria-pressed={vue.source === null} onClick={() => choisir({ source: null, retirees: vue.retirees, notion: null })}>
               {CARNET.toutes} · {nombre(vue.retirees ? compte.retirees : compte.total)}
             </button>
             {sources.map(([k, nom]) => (
-              <button key={k} type="button" className={"chip " + (vue.source === k ? "chip-active" : "")} aria-pressed={vue.source === k} onClick={() => choisir({ source: k, retirees: vue.retirees, notion: null })}>
+              <button key={k} type="button" className={"chip max-md:min-h-[44px] " + (vue.source === k ? "chip-active" : "")} aria-pressed={vue.source === k} onClick={() => choisir({ source: k, retirees: vue.retirees, notion: null })}>
                 {nom} · {nombre(compte.sources[k] ?? 0)}
               </button>
             ))}
@@ -374,6 +472,7 @@ export function RaturesTab({
           <MiseAuPropre
             source={listeNotions ? null : liste.vue.source}
             anciennes={anciennes}
+            sansCalcul={actifCalcul}
             theme={notionOuverte ? { notion: notionOuverte, sets: [], libelle: nomNotion(notionOuverte).libelle, retour: CARNET.propreRetour } : undefined}
             onStatut={apresReponse}
             demo={demoPropre}
@@ -581,7 +680,7 @@ function LigneRature({
           {blanc && <p className="t-small m-0 text-pen">{CARNET.blancTexte}</p>}
           {it.explanation && <Explanation text={it.explanation} />}
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={onBasculer}>
+            <button type="button" className="btn btn-secondary btn-sm max-md:min-h-[44px]" onClick={onBasculer}>
               {basculee ? (
                 <>
                   <RotateCcw size={14} aria-hidden /> {CARNET.annuler}

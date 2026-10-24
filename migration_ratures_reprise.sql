@@ -14,6 +14,8 @@
 -- les anciennes), filtre de source facultatif, hors celles déjà vues pendant
 -- ce tour.
 DROP FUNCTION IF EXISTS rature_suivante(text, uuid[]);
+-- la version « sans calcul » (migration_ratures_calcul.sql) : recollé après elle, ce fichier la remplace, sans doublon
+DROP FUNCTION IF EXISTS rature_suivante(text, uuid[], boolean, boolean);
 CREATE OR REPLACE FUNCTION rature_suivante(p_source text DEFAULT NULL, p_exclure uuid[] DEFAULT '{}', p_anciennes boolean DEFAULT false)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
@@ -123,6 +125,7 @@ $$;
 -- La lecture du carnet (migration_ratures.sql) : les comptes par source
 -- suivent désormais le temps affiché (en cours, ou anciennes).
 DROP FUNCTION IF EXISTS get_ratures(text, boolean, int, int);
+DROP FUNCTION IF EXISTS get_ratures(text, boolean, int, int, boolean);
 CREATE FUNCTION get_ratures(p_source text DEFAULT NULL, p_retirees boolean DEFAULT false, p_limit int DEFAULT 20, p_offset int DEFAULT 0)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public

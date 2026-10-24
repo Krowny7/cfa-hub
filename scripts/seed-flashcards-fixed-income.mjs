@@ -210,7 +210,7 @@ export const SETS = [
       ],
       [
         "Formule de la variation de prix d'une bond par duration effect et convexity adjustment ? Application : annual modified duration 5, annual convexity 50, YTM (yield to maturity) +100 bp.",
-        "Duration effect + convexity adjustment\n$$\\%\\Delta PV^{\\text{Full}} \\approx -\\text{AnnModDur} \\times \\Delta\\text{YTM} + \\tfrac{1}{2} \\times \\text{AnnConvexity} \\times (\\Delta\\text{YTM})^2$$\nEn clair : AnnModDur et AnnConvexity sont annuelles (convexity semestrielle ÷ 4). Avec 100 bp (basis points) = 0,01 : −5 × 0,01 + ½ × 50 × 0,01² = −5 % + 0,25 % = −4,75 %.\nPiège : le convexity adjustment reste positif : YTM −100 bp → +5 % + 0,25 % = +5,25 %.",
+        "%ΔPrix ≈ ==duration effect + convexity adjustment==\n$$\\%\\Delta PV \\approx -D \\times \\Delta y + \\tfrac{1}{2} \\times C \\times (\\Delta y)^2$$\nEn clair : $D$ = annual modified duration, $C$ = annual convexity, $\\Delta y$ = variation du YTM en décimal. Ici : −5 × 0,01 + ½ × 50 × 0,01² = −5 % + 0,25 % = −4,75 %.\nPiège : le convexity adjustment reste positif : YTM −100 bp → +5 % + 0,25 % = +5,25 %.",
       ],
       [
         "Callable bond vs putable bond : quelle convexity ont-elles quand les taux bougent ?",

@@ -491,6 +491,9 @@ $$;
 --    source, les plus récentes d'abord, par pages ; avec les comptes. Les
 --    réponses dont l'embargo est levé sont rejouées d'abord.
 DROP FUNCTION IF EXISTS get_ratures(text, boolean, int, int);
+-- la version « sans calcul » (migration_ratures_calcul.sql) : recollé après
+-- elle, ce fichier la remplace, sans doublon (recollez-la ensuite)
+DROP FUNCTION IF EXISTS get_ratures(text, boolean, int, int, boolean);
 CREATE FUNCTION get_ratures(p_source text DEFAULT NULL, p_retirees boolean DEFAULT false, p_limit int DEFAULT 20, p_offset int DEFAULT 0)
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public

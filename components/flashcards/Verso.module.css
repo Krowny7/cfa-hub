@@ -168,11 +168,15 @@
 .bloc :global(.katex-display > .katex) {
   text-align: left;
 }
-/* au téléphone, une formule trop large est réduite d'autant (--echelle,
-   calculé par echelleFormule, 0,7 au moins) avant de défiler */
+/* une formule trop large est réduite pour tenir dans la case (--ajuste,
+   mesuré par FormuleAjustee, 0,7 au moins) avant de défiler ; au téléphone,
+   l'estimation --echelle sert en attendant la mesure */
+.fiche .bloc {
+  font-size: calc(var(--taille-formule) * var(--ajuste, 1));
+}
 @media (max-width: 639px) {
   .fiche .bloc {
-    font-size: calc(var(--taille-formule) * var(--echelle, 1));
+    font-size: calc(var(--taille-formule) * var(--ajuste, var(--echelle, 1)));
   }
 }
 /* la liste « a · b · c » : un élément par ligne, un cran sous la taille

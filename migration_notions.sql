@@ -268,7 +268,10 @@ END;
 $$;
 
 -- La prochaine rature en cours d'une notion, au hasard, hors celles déjà vues
--- pendant ce tour (même réponse que rature_suivante_theme)
+-- pendant ce tour (même réponse que rature_suivante_theme). La version « sans
+-- calcul » (migration_ratures_calcul.sql) : recollé après elle, ce fichier la
+-- remplace, sans doublon (recollez-la ensuite).
+DROP FUNCTION IF EXISTS rature_suivante_notion(text, uuid[], boolean);
 CREATE OR REPLACE FUNCTION rature_suivante_notion(p_notion text, p_exclure uuid[] DEFAULT '{}')
 RETURNS json
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
