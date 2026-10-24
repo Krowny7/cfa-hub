@@ -5,6 +5,9 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { loadSRS } from "@/lib/srs";
 import type { FolderJoin } from "@/lib/content/grouping";
+import type { EtatListe } from "@/lib/flashcards/progression";
+import { EtatPaquet } from "@/components/flashcards/EtatPaquet";
+import { useEtatListe } from "@/components/flashcards/EtatPaquetListe";
 import {
   VisibilityBadge,
   groupByFolder,
@@ -65,6 +68,7 @@ function Row({
   href,
   unit,
   srs,
+  etat,
   showVisibility,
   progressLabel,
 }: {
@@ -72,9 +76,12 @@ function Row({
   href: string;
   unit: Unit;
   srs?: SrsInfo;
+  /** où en est la boucle « À revoir » du paquet (flashcards, sur le compte, puis l'appareil s'il est plus récent) */
+  etat?: EtatListe;
   showVisibility: boolean;
   progressLabel: string;
 }) {
+  const vu = useEtatListe(etat);
   const count = row.count;
   const done = srs ? Math.min(srs.seen, count ?? srs.seen) : row.done;
   const showProgress = count !== null && count > 0 && done !== null && done > 0;
@@ -82,7 +89,10 @@ function Row({
     row.lead,
     count !== null ? plural(count, unit[0], unit[1]) : null,
     showVisibility ? visibilityLabel(row.visibility) : null,
-    srs?.due ? `${srs.due} à revoir` : null,
+    // « Tour 2 · 4 à revoir » dit déjà ce qui reste à revoir : la répétition
+    // espacée se tait (deux « à revoir » se contrediraient) ; à côté de
+    // « Maîtrisé » ou du premier tour, elle invite à revenir
+    srs?.due && vu?.genre !== "tours" ? `${srs.due} à revoir` : null,
   ].filter(Boolean);
 
   return (
@@ -100,7 +110,10 @@ function Row({
             )}
           </span>
         )}
+        {/* téléphone : sous le titre, qui garde toute la largeur */}
+        {vu && <EtatPaquet etat={vu} className="mt-2 sm:hidden" />}
       </span>
+      {vu && <EtatPaquet etat={vu} className="hidden sm:inline-flex" />}
       {showProgress && <Progress done={done!} total={count!} className="hidden w-[140px] shrink-0 sm:flex" />}
       <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
     </Link>
@@ -116,6 +129,7 @@ function Pane({
   drillLabel,
   srsMap,
   srs,
+  etats,
   showVisibility,
   emptyLabel,
   note,
@@ -130,6 +144,7 @@ function Pane({
   drillLabel: string;
   srsMap: Record<string, SrsInfo>;
   srs: boolean;
+  etats?: Record<string, EtatListe>;
   showVisibility: boolean;
   emptyLabel: string;
   note?: string;
@@ -179,6 +194,7 @@ function Pane({
                   href={`${basePath}/${r.id}`}
                   unit={unit}
                   srs={srs ? srsMap[r.id] : undefined}
+                  etat={etats?.[r.id]}
                   showVisibility={showVisibility}
                   progressLabel={progressLabel}
                 />
@@ -207,6 +223,7 @@ export function ContentBrowser({
   initialKey = null,
   syncParam = null,
   srs = false,
+  etats,
   showVisibility = false,
   emptyLabel = "Ce contenu arrive bientôt.",
   note,
@@ -223,6 +240,8 @@ export function ContentBrowser({
   syncParam?: string | null;
   /** progression lue dans la répétition espacée du navigateur (flashcards) */
   srs?: boolean;
+  /** où en est la boucle de chaque paquet, par id (flashcards, lu par le serveur, relu sur l'appareil) */
+  etats?: Record<string, EtatListe>;
   showVisibility?: boolean;
   emptyLabel?: string;
   note?: string;
@@ -273,6 +292,7 @@ export function ContentBrowser({
       drillLabel={drillLabel}
       srsMap={srsMap}
       srs={srs}
+      etats={etats}
       showVisibility={showVisibility}
       emptyLabel={emptyLabel}
       note={note}

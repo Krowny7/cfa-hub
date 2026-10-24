@@ -10,6 +10,9 @@ import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracke
 import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfFolder, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
 import { onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { themePaquet } from "@/lib/flashcards/paquets";
+import { cleSet, etatAffiche } from "@/lib/flashcards/progression";
+import { lireProgressions } from "@/lib/flashcards/progression-serveur";
+import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
 import { getLocale } from "@/lib/i18n/server";
 import { t } from "@/lib/i18n/core";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
@@ -35,11 +38,14 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  const [{ data: setData, error: setErr }, { data: cardsData }, traitsJour] = await Promise.all([
+  const cle = cleSet(id);
+  const [{ data: setData, error: setErr }, { data: cardsData }, traitsJour, progressions] = await Promise.all([
     supabase.from("flashcard_sets").select("id,title,visibility,share_token,is_official,folder_id,library_folders(name)").eq("id", id).maybeSingle(),
     supabase.from("flashcards").select("id,front,back,position,topic_id").eq("set_id", id).order("position", { ascending: true }),
     // traits du jour (lecture de la barre du haut, en cache) : le sceau du jour en fin de passe
     traitsDuJour(auth.user.id),
+    // la boucle de ce paquet sur le compte (null : table pas encore créée, la boucle reste sur l'appareil)
+    lireProgressions(supabase, auth.user.id, [cle]),
   ]);
 
   if (setErr || !setData) {
@@ -56,7 +62,10 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   }
 
   const set = setData as unknown as SetRow;
+  const ligne = progressions?.get(cle) ?? null;
   const cards = (cardsData ?? []) as Pick<Flashcard, "id" | "front" | "back" | "position">[];
+  // réparée comme dans la révision : cartes retirées ôtées, cartes ajoutées depuis la fin : plus « Maîtrisé »
+  const ouJenSuis = etatAffiche(ligne, cards.map((c) => c.id));
 
   const parts = splitTitle(set.title);
   // La matière : par le dossier « (Système) » d'abord, sinon par le début du
@@ -100,6 +109,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         title={parts.main}
         eyebrow={eyebrow}
         meta={[plural(cards.length, "carte", "cartes"), visibilityLabel(set.visibility)]}
+        etat={progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
         rightSlot={set.share_token ? <ShareButton token={set.share_token} base="flashcards" /> : null}
       />
 
@@ -113,6 +123,8 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         theme={themePaquet(set.title)}
         onePager={onePager}
         autresHref={subject ? `/flashcards?subject=${subject.key}#paquets` : "/flashcards"}
+        compte={progressions ? { cle, ligne, lueA: Date.now() } : null}
+        joueur={auth.user.id}
       />
 
       {/* Le set : toutes les cartes, en lecture seule (paquets officiels), repliées */}

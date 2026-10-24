@@ -1,6 +1,7 @@
 import type { FolderJoin } from "@/lib/content/grouping";
 import { SubjectBrowser } from "@/components/ContentFolderBlocks";
 import { AppelMatiere } from "@/components/flashcards/Panneaux";
+import { cleMatiere, cleSet, type EtatListe } from "@/lib/flashcards/progression";
 import { groupBySubject, subjectFromParam, type BrowserGroup, type ItemMeta } from "@/components/ContentDetailHeader";
 
 type Item = FolderJoin & { id: string; title: string; visibility: string | null };
@@ -68,27 +69,38 @@ export function flashcardPaquets(items: Item[], counts: Record<string, number>, 
   return g ? { name: g.name, groups: [g] } : null;
 }
 
+/** Les paquets d'une matière qui entrent dans sa révision d'un bloc (/flashcards/matiere/<clé>). */
+export function paquetsDeMatiere(g: BrowserGroup | null | undefined): BrowserGroup["rows"] {
+  return g && !g.key.startsWith("x-") ? g.rows.filter((r) => r.kind === "set") : [];
+}
+
 /**
  * Les paquets d'une matière, avec en tête l'appel « Réviser toute la
  * matière » (/flashcards/matiere/<clé> : les paquets d'un bloc, en boucle).
+ * `etats` : où en est chaque boucle, par clé « set:<id> » ou
+ * « matiere:<clé> » (lu par le serveur, puis relu sur l'appareil ; absent :
+ * rien n'est affiché).
  */
-export function FlashcardPaquets({ groups, basePath }: { groups: BrowserGroup[]; basePath: string }) {
+export function FlashcardPaquets({ groups, basePath, etats = {} }: { groups: BrowserGroup[]; basePath: string; etats?: Record<string, EtatListe> }) {
   const g = groups.length === 1 ? groups[0] : null;
-  const paquets = g && !g.key.startsWith("x-") ? g.rows.filter((r) => r.kind === "set") : [];
+  const paquets = paquetsDeMatiere(g);
   const cartes = paquets.reduce((n, r) => n + (r.count ?? 0), 0);
+  const parPaquet: Record<string, EtatListe> = {};
+  for (const gr of groups) for (const r of gr.rows) if (etats[cleSet(r.id)]) parPaquet[r.id] = etats[cleSet(r.id)];
   return (
     <div className="grid gap-4 md:gap-5">
-      {g && paquets.length > 0 && <AppelMatiere cle={g.key} cartes={cartes} paquets={paquets.length} />}
-      <PaquetsListe groups={groups} basePath={basePath} />
+      {g && paquets.length > 0 && <AppelMatiere cle={g.key} cartes={cartes} paquets={paquets.length} etat={etats[cleMatiere(g.key)] ?? null} />}
+      <PaquetsListe groups={groups} basePath={basePath} etats={parPaquet} />
     </div>
   );
 }
 
-function PaquetsListe({ groups, basePath }: { groups: BrowserGroup[]; basePath: string }) {
+function PaquetsListe({ groups, basePath, etats }: { groups: BrowserGroup[]; basePath: string; etats: Record<string, EtatListe> }) {
   return (
     <SubjectBrowser
       groups={groups}
       basePath={basePath}
+      etats={etats}
       unit={["carte", "cartes"]}
       setUnit={["set", "sets"]}
       setLabel="Sets"

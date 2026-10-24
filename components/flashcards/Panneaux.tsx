@@ -3,6 +3,8 @@ import { ArrowRight, ArrowUpRight, ChevronRight, FileText, Layers } from "lucide
 import { InkBarCoches } from "@/components/adn/InkBarCoches";
 import { nombre } from "@/lib/voice";
 import { BOUCLE, MATIERE_CARTES, cartes as nCartes } from "@/lib/voice-z3c";
+import type { EtatListe } from "@/lib/flashcards/progression";
+import { EtatPaquetListe } from "./EtatPaquetListe";
 import s from "./Revision.module.css";
 
 // Les panneaux de la révision des flashcards, sans état (utilisables côté
@@ -207,8 +209,12 @@ export function LienOnePager({ href, className = "btn btn-secondary btn-lg" }: {
   );
 }
 
-/** « Réviser toute la matière · 60 cartes » : en tête des paquets d'une matière (cartes 0 : compte inconnu, pas de chiffre). */
-export function AppelMatiere({ cle, cartes, paquets }: { cle: string; cartes: number; paquets: number }) {
+/**
+ * « Réviser toute la matière · 60 cartes » : en tête des paquets d'une matière
+ * (cartes 0 : compte inconnu, pas de chiffre). `etat` : où en est la boucle
+ * de la matière (sur le compte, puis l'appareil), rien si elle n'est pas commencée.
+ */
+export function AppelMatiere({ cle, cartes, paquets, etat = null }: { cle: string; cartes: number; paquets: number; etat?: EtatListe | null }) {
   return (
     <Link href={`/flashcards/matiere/${cle}`} className="card-hero rl-lift group flex items-center gap-4 px-5 py-4 sm:gap-6 sm:px-7 sm:py-5">
       <PileMini n={cartes || paquets} ton="ink" />
@@ -218,6 +224,7 @@ export function AppelMatiere({ cle, cartes, paquets }: { cle: string; cartes: nu
           {cartes > 0 && <span className="whitespace-nowrap font-mono text-[14px] font-semibold text-muted"> · {MATIERE_CARTES.appelCompte(cartes)}</span>}
         </span>
         <span className="t-small mt-1.5 block max-w-[520px]">{MATIERE_CARTES.appelLigne(paquets)}</span>
+        <EtatPaquetListe etat={etat} className="mt-2.5" />
       </span>
       <span className="icon-btn h-11 w-11 shrink-0 rounded-[13px] transition-transform group-hover:translate-x-0.5" aria-hidden>
         <ArrowRight size={17} />
@@ -247,8 +254,8 @@ export function MatiereVide({ matiere, onePager }: { matiere: string; onePager: 
   );
 }
 
-/** Sous la révision d'une matière : ses paquets, un par ligne, pour en réviser un seul. */
-export function PaquetsDeLaMatiere({ paquets }: { paquets: { id: string; theme: string; cartes: number }[] }) {
+/** Sous la révision d'une matière : ses paquets, un par ligne (et où en est chacun), pour en réviser un seul. */
+export function PaquetsDeLaMatiere({ paquets }: { paquets: { id: string; theme: string; cartes: number; etat?: EtatListe | null }[] }) {
   if (paquets.length === 0) return null;
   return (
     <section className="rl-section mt-6 md:mt-10" aria-labelledby="paquets-matiere">
@@ -259,7 +266,12 @@ export function PaquetsDeLaMatiere({ paquets }: { paquets: { id: string; theme: 
         {paquets.map((p, i) => (
           <Link key={p.id} href={`/flashcards/${p.id}`} className="rl-row group flex min-h-[52px] items-center gap-4 px-5 py-3 md:px-6">
             <span className="w-5 shrink-0 font-mono text-[12px] font-semibold tabular-nums text-muted">{String(i + 1).padStart(2, "0")}</span>
-            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.01em]">{p.theme}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">{p.theme}</span>
+              {/* téléphone : sous le thème, qui garde toute la largeur */}
+              <EtatPaquetListe etat={p.etat} className="mt-1.5 sm:hidden" />
+            </span>
+            <EtatPaquetListe etat={p.etat} className="hidden sm:inline-flex" />
             <span className="t-micro shrink-0 tabular-nums">{nCartes(p.cartes)}</span>
             <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
           </Link>

@@ -9,18 +9,22 @@ import { FinDePasse } from "@/components/session/FinDePasse";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { FichePile, type CarteVue, type Envol } from "@/components/flashcards/Pile";
 import { BarreTour, Entracte, LegendeTour, LienOnePager, Reprise } from "@/components/flashcards/Panneaux";
+import { useSynchroBoucle } from "@/components/flashcards/useSynchroBoucle";
 import s from "@/components/flashcards/Revision.module.css";
 import {
   aRevoir,
   aller as allerDans,
   bilan,
+  boucleDuJoueur,
   carteCourante,
+  choisirBoucle,
   demarrer,
+  doitSynchroniser,
   ecrireBoucle,
   ecrireMelange,
-  effacerBoucle,
   enCours,
   etatFige,
+  horodatage,
   lireBoucle,
   lireMelange,
   marquer,
@@ -30,8 +34,10 @@ import {
   repere,
   tourSuivant,
   type EtatBoucle,
+  type Geste,
 } from "@/lib/flashcards/boucle";
 import { lieuCarte } from "@/lib/flashcards/paquets";
+import { annoncerBoucle, cleSet, lireLigne, type CompteBoucle, type LigneProgression } from "@/lib/flashcards/progression";
 import { BOUCLE, FLASHCARDS } from "@/lib/voice-z3c";
 
 // La révision d'un paquet de flashcards (ou de toute une matière) : une pile
@@ -39,7 +45,17 @@ import { BOUCLE, FLASHCARDS } from "@/lib/voice-z3c";
 // Tour 1 : toutes les cartes ; chaque fin de tour avec des « À revoir » passe
 // par un entracte, puis ces cartes seules reviennent, mélangées, jusqu'à
 // zéro : « Tout est maîtrisé ». La boucle est gardée dans le navigateur (par
-// paquet, ou par matière) : au retour, on la reprend ou on recommence.
+// paquet, ou par matière, au nom du joueur : celle d'un autre compte du même
+// navigateur est écartée) et, si la page passe `compte`, sur le compte du
+// joueur (flashcard_progress : téléphone et ordinateur) ; au retour, la plus
+// récente des deux est proposée (appareilPrime) : on la reprend ou on
+// recommence. Onglet resté ouvert pendant qu'on avançait ailleurs : le compte
+// est relu au retour au premier plan, et la base refuse un geste bâti sur une
+// version dépassée (useSynchroBoucle) ; la version du compte est alors
+// proposée en reprise. Une boucle finie reste gardée (« Maîtrisé » dans les
+// listes) ; « Recommencer » la remplace par une neuve. Seuls les gestes du
+// joueur sont envoyés : ouvrir un paquet, ou feuilleter une boucle neuve avec
+// ← →, n'efface rien (doitSynchroniser).
 //
 // La répétition espacée (lib/srs.ts) continue d'être écrite à chaque marque,
 // pour LA PROCHAINE fois : elle ne réordonne jamais la séance en cours (un
@@ -107,6 +123,8 @@ export function FlashcardReview({
   onePager = null,
   autresHref = "/flashcards",
   ordre = "srs",
+  compte = null,
+  joueur = null,
   demo,
 }: {
   cards: FlashcardCard[];
@@ -128,10 +146,17 @@ export function FlashcardReview({
   autresHref?: string;
   /** ordre du tour 1 sans mélange : répétition espacée du paquet, ou l'ordre reçu (programme) */
   ordre?: "srs" | "programme";
+  /** la boucle sur le compte (clé et ligne lue par la page) ; absent : sur l'appareil seulement */
+  compte?: CompteBoucle | null;
+  /** le joueur connecté : la boucle gardée sur l'appareil est à son nom */
+  joueur?: string | null;
   demo?: FlashcardDemo;
 }) {
   const jour = useTraitsDuJour(traitsJour);
   const cleStock = demo ? null : (cle ?? setId ?? null);
+  const { planifier, horodater, connaitre, relire } = useSynchroBoucle(demo ? null : (compte?.cle ?? null), prendreDuCompte);
+  // la clé de la boucle sur le compte, aussi pour la pastille de l'en-tête (EtatPaquetVivant)
+  const cleCompte = demo ? null : (compte?.cle ?? cle ?? (setId ? cleSet(setId) : null));
   const ids = useMemo(() => cards.map((c) => c.id), [cards]);
   const parId = useMemo(() => new Map(cards.map((c, i) => [c.id, { c, n: i + 1 }])), [cards]);
 
@@ -173,23 +198,80 @@ export function FlashcardReview({
   }
   const nouvelle = (m: boolean) => demarrer(m ? ids : ordreDeBase(), { melanger: m });
 
-  // Montage : la boucle gardée (à reprendre si elle est entamée), sinon une neuve.
+  /** La boucle gardée sur l'appareil, au nom du joueur. */
+  const aSonNom = (e: EtatBoucle): EtatBoucle => (joueur ? { ...e, u: joueur } : e);
+
+  /**
+   * Un geste du joueur change la boucle. S'il compte (doitSynchroniser), elle
+   * est horodatée au-delà de la version connue du compte (pour départager
+   * l'appareil et le compte), gardée, et envoyée sur le compte (tout de suite
+   * en fin de tour ou de boucle, sinon après 1,5 s sans geste) ; sinon (← →
+   * dans une boucle neuve), elle change à l'écran seulement.
+   */
+  function changer(suite: EtatBoucle, geste: Geste): EtatBoucle {
+    if (!doitSynchroniser(geste, suite)) {
+      setEtat(suite);
+      return suite;
+    }
+    const e = horodater(suite, Math.max(etat?.maj ?? 0, reprise?.maj ?? 0));
+    setEtat(e);
+    planifier(e, phase(e) !== "carte");
+    return e;
+  }
+
+  /**
+   * Le compte a une version écrite ailleurs (autre appareil, autre onglet),
+   * relue au retour au premier plan ou rendue par un refus : elle remplace la
+   * boucle à l'écran, est gardée aussi sur l'appareil, et se propose en
+   * reprise (finie : une boucle neuve, « Maîtrisé » en tête).
+   */
+  function prendreDuCompte(ligne: LigneProgression) {
+    if (demo) return;
+    const c = lireLigne(ligne, ids);
+    if (!c) return;
+    if (cleStock) ecrireBoucle(cleStock, aSonNom(c.etat));
+    setEnvols([]);
+    setFocusEntracte(false);
+    remettre();
+    if (enCours(c.etat)) {
+      setEtat(null);
+      setReprise(c.etat);
+    } else {
+      setReprise(null);
+      setEtat(nouvelle(melange));
+    }
+    if (cleCompte) annoncerBoucle(cleCompte, c.etat);
+  }
+
+  // Montage : la plus récente entre la boucle de l'appareil et celle du
+  // compte (à reprendre si elle est entamée), sinon une neuve.
   useEffect(() => {
     if (demo || !cards.length) return;
     const m = lireMelange();
     setMelange(m);
-    const gardee = cleStock ? lireBoucle(cleStock, ids) : null;
+    const locale = cleStock ? boucleDuJoueur(lireBoucle(cleStock, ids), joueur) : null;
+    connaitre(compte?.ligne);
+    const duCompte = lireLigne(compte?.ligne, ids);
+    const { etat: gardee, source } = choisirBoucle(locale, duCompte);
     if (gardee && enCours(gardee)) setReprise(gardee);
     else setEtat(nouvelle(m));
+    // l'en-tête suit la boucle retenue (l'appareil peut avoir plus récent que la page)
+    if (gardee && cleCompte) annoncerBoucle(cleCompte, gardee);
+    // l'appareil a plus récent que le compte (dernier envoi perdu, ou boucle d'avant la synchronisation) : il le renvoie
+    if (source === "appareil" && gardee && (!duCompte || horodatage(gardee) > (duCompte.etat.maj ?? duCompte.maj))) planifier(gardee);
+    // page resservie par le cache du routeur (retour arrière) : la ligne lue par la page date, on relit le compte
+    if (compte && Date.now() - compte.lueA > 30_000) relire();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // La boucle est gardée à chaque geste ; finie ou pas entamée, elle s'efface.
+  // La boucle est gardée sur l'appareil à chaque geste, finie comprise (elle
+  // départage le compte au retour) ; ouverte sans geste, rien n'est écrit.
   useEffect(() => {
     if (!cleStock || !etat) return;
-    if (enCours(etat)) ecrireBoucle(cleStock, etat);
-    else effacerBoucle(cleStock);
-  }, [etat, cleStock]);
+    if (enCours(etat) || etat.maj !== undefined) ecrireBoucle(cleStock, aSonNom(etat));
+    if (cleCompte && etat.maj !== undefined) annoncerBoucle(cleCompte, etat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etat, cleStock, cleCompte, joueur]);
 
   // Le clavier ne pilote la carte que si elle est à l'écran (ou en plein écran).
   const rootRef = useRef<HTMLDivElement>(null);
@@ -294,8 +376,7 @@ export function FlashcardReview({
     if (!etat || !courante) return;
     noterFocus();
     const v = vue(courante);
-    const suite = marquer(etat, su);
-    setEtat(suite);
+    const suite = changer(marquer(etat, su), "marquer");
     remettre();
     if (v) {
       const k = envolCle.current++;
@@ -318,14 +399,14 @@ export function FlashcardReview({
     const suite = allerDans(etat, delta);
     if (suite === etat) return;
     noterFocus();
-    setEtat(suite);
+    changer(suite, "aller");
     remettre();
   }
 
   function tourDApres() {
     if (!etat) return;
     noterFocus();
-    setEtat(tourSuivant(etat));
+    changer(tourSuivant(etat), "tour");
     setEnvols([]);
     remettre();
   }
@@ -333,7 +414,8 @@ export function FlashcardReview({
   function recommencer() {
     noterFocus();
     setReprise(null);
-    setEtat(nouvelle(melange));
+    // repart de zéro, aussi sur le compte (« Maîtrisé » s'efface)
+    changer(nouvelle(melange), "recommencer");
     setEnvols([]);
     setFocusEntracte(false);
     remettre();

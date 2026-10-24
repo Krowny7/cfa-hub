@@ -156,6 +156,24 @@ export const BOUCLE = {
   dejaMarquee: (su: boolean) => (su ? "Marquée maîtrisée" : "Marquée à revoir"),
 } as const;
 
+// Où en est la boucle d'un paquet (ou d'une matière), dans les listes : un
+// petit état discret, rien tant qu'elle n'est pas commencée.
+export const ETAT_PAQUET = {
+  /** tour 1 en cours : ce qui reste à passer (sans fraction : la barre du tour dit déjà « 8 / 15 ») */
+  tour1: (m: number, total: number) => `Tour 1 · ${nombre(total - m)} ${total - m > 1 ? "restantes" : "restante"}`,
+  tour1Aide: (m: number, total: number) =>
+    `Premier tour : ${nombre(m)} sur ${nombre(total)} ${m > 1 ? "cartes passées" : "carte passée"}, ${nombre(total - m)} ${total - m > 1 ? "restantes" : "restante"}`,
+  /** tour 2 et suivants : ce qui reste à maîtriser */
+  tours: (tour: number, n: number) => `Tour ${nombre(tour)} · ${nombre(n)} à revoir`,
+  toursAide: (tour: number, n: number) => `Boucle en cours, tour ${nombre(tour)} : ${cartes(n)} à revoir avant zéro`,
+  /** bouclée : la date courte reste visible (toucher, clavier), la longue pour l'aide */
+  fini: (jour: string) => `Maîtrisé · ${jour}`,
+  finiAide: (date: string) => `Tout maîtrisé le ${date}`,
+  /** bouclée, puis des cartes ajoutées au paquet : plus « Maîtrisé » */
+  nouvelles: (n: number) => `${nombre(n)} ${n > 1 ? "nouvelles" : "nouvelle"}`,
+  nouvellesAide: (n: number, date: string) => `Tout maîtrisé le ${date}, puis ${cartes(n)} ${n > 1 ? "ajoutées" : "ajoutée"} au paquet`,
+} as const;
+
 // La révision de toute une matière (/flashcards/matiere/<clé>).
 export const MATIERE_CARTES = {
   surTitre: "Flashcards · toute la matière",

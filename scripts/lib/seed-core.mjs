@@ -5,6 +5,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { exigerLangues } from "./langue.mjs";
 import { etiqueter } from "../notions/etiquettes.mjs";
+import { syncFlashcardSets } from "./flashcards-sync.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -267,45 +268,14 @@ export async function seedExerciseSets({ ownerId, folderId, sets, oldTitles = []
 }
 
 // sets: [{ title, cards: [[front, back], ...] }]
+// Mise à jour EN PLACE (scripts/lib/flashcards-sync.mjs) : les paquets et les
+// cartes gardent leurs ids, donc la progression des joueurs (boucle « À
+// revoir », répétition espacée, « Reprendre », partage) survit aux mises à
+// jour du contenu. oldTitles : paquets à renommer en priorité (même rang
+// « Flashcards 2/4 »), sinon supprimés. Les autres paquets officiels du
+// dossier absents de la liste ne sont plus supprimés. Rend le nombre de cartes.
 export async function seedFlashcardSets({ ownerId, folderId, sets, oldTitles = [] }) {
-  const titlesToDelete = [...new Set([...sets.map((s) => s.title), ...oldTitles])];
-  // is_official (pas owner_id) — voir la note sur seedQuizSets.
-  const { data: toDelete } = await supabase.from("flashcard_sets").select("id").eq("is_official", true).in("title", titlesToDelete);
-  if (toDelete?.length) {
-    await supabase.from("flashcards").delete().in("set_id", toDelete.map((s) => s.id));
-    await supabase.from("flashcard_sets").delete().in("id", toDelete.map((s) => s.id));
-  }
-
-  let total = 0;
-  for (const set of sets) {
-    const { data: newSet, error: setErr } = await supabase
-      .from("flashcard_sets")
-      .insert({
-        title: set.title,
-        visibility: "public",
-        subject: "cfa",
-        owner_id: ownerId,
-        folder_id: folderId,
-        is_official: true,
-        official_published: true,
-      })
-      .select("id")
-      .single();
-    if (setErr) throw setErr;
-
-    const rows = set.cards.map(([front, back], i) => ({
-      set_id: newSet.id,
-      front,
-      back,
-      position: i + 1,
-    }));
-    const { error: cErr } = await supabase.from("flashcards").insert(rows);
-    if (cErr) throw cErr;
-
-    console.log(`  ✓ Flashcards "${set.title}" — ${rows.length} cartes (set ${newSet.id})`);
-    total += rows.length;
-  }
-  return total;
+  return syncFlashcardSets(supabase, { ownerId, folderId, sets, oldTitles });
 }
 
 export function loadJson(scratchpadFile) {

@@ -34,11 +34,11 @@ export const SETS = [
       ],
       [
         "Une firme a un total revenue (TR) de 700 000, des total variable costs (TVC) de 800 000 et des fixed costs de 400 000. Doit-elle produire à court terme ?",
-        "Non : ==shut down==, car TR < TVC\nEn clair : en produisant, perte = 700 000 − 1 200 000 = −500 000 ; à l'arrêt, perte = fixed costs = −400 000. On perd moins en fermant.\nPiège : en imperfect competition (P ≠ MR), on raisonne en TR, TVC et TC, pas sur le prix.",
+        "Non : ==shut down==, car TR < TVC\nEn clair : en produisant, perte = 700 000 − 1 200 000 = −500 000 ; à l'arrêt, perte = fixed costs = −400 000. On perd moins en fermant.\nPiège : comparer TR aux TVC (800 000), pas aux total costs : les fixed costs se paient même à l'arrêt.",
       ],
       [
         "Sur la LRATC (long-run average total cost), où se trouve la minimum efficient scale, et que signifient ses segments décroissant, plat et croissant ?",
-        "Minimum efficient scale = ==point bas de la LRATC==\nEn clair : pente négative : economies of scale (spécialisation, achats moins chers) ; plat : constant returns to scale ; pente positive : diseconomies of scale (bureaucratie).\nPiège : en perfect competition, à long terme, P = minimum de la LRATC.",
+        "Minimum efficient scale = ==point bas de la LRATC==\nEn clair : pente négative : economies of scale (spécialisation, achats) ; plat : constant returns to scale ; pente positive : diseconomies of scale. En perfect competition, à long terme, P = min LRATC.",
       ],
       [
         "Quelles sont les caractéristiques de la perfect competition ?",
@@ -66,15 +66,15 @@ export const SETS = [
       ],
       [
         "Cournot model vs Stackelberg model d'un oligopoly : quelle hypothèse et quel résultat pour chacun ?",
-        "Cournot ==simultané== (parts égales) ; Stackelberg séquentiel (leader avantagé)\nEn clair : Cournot : chacun suppose l'autre figé ; à MC (marginal cost) égaux, parts égales, prix entre monopoly et perfect competition. Stackelberg : le leader décide d'abord.",
+        "Cournot ==simultané== (parts égales) ; Stackelberg séquentiel (leader avantagé)\nEn clair : Cournot : chacun fixe sa quantité, celle de l'autre étant donnée ; à MC (marginal cost) égaux, parts égales, prix entre monopoly et perfect competition. Stackelberg : le leader choisit d'abord.",
       ],
       [
         "Que décrit le dominant firm model d'un oligopoly ?",
-        "La firme aux ==coûts les plus bas== fixe le prix\nEn clair : grâce à son échelle, elle a une grosse part du marché ; les petites firmes prennent ce prix et produisent où leur MC (marginal cost) l'égale. Si elles le baissent, elle suit.",
+        "La firme aux ==coûts les plus bas== fixe le prix\nEn clair : grâce à son échelle, elle a une grosse part du marché ; les petites firmes prennent ce prix et produisent où leur MC (marginal cost) l'égale. Si une petite baisse son prix, la dominant firm suit.",
       ],
       [
         "Oligopoly : qu'est-ce qu'un Nash equilibrium, et pourquoi une collusion (cartel) peut faire mieux mais reste instable ?",
-        "Nash equilibrium : ==nul ne gagne à dévier seul==\nEn clair : une collusion (ex. : OPEC) rapporte plus au total, mais chacun gagne à tricher en produisant plus. Elle tient mieux avec peu de firmes, des produits et des coûts proches.",
+        "Nash equilibrium : ==nul ne gagne à dévier seul==\nEn clair : une collusion (cartel) rapporte plus au total, mais chacun gagne à tricher en produisant plus. Elle tient mieux avec peu de firmes, des produits et des coûts proches.",
       ],
       [
         "Top 5 des market shares : 25 %, 15 %, 15 %, 10 %, 5 %. La n° 1 rachète une firme à 15 %. Que deviennent le CR (concentration ratio) et le HHI (Herfindahl-Hirschman Index) à 4 firmes ?",
@@ -91,7 +91,7 @@ export const SETS = [
     cards: [
       [
         "Quelles sont les 4 phases du business cycle, et que voit-on au peak et en contraction ?",
-        "Expansion : ==real GDP ↑== · Peak : ==sommet== · Contraction : ==real GDP ↓== · Trough : ==creux==\nEn clair : peak : la croissance ralentit, inflation ↑, embauches ralenties. Contraction : heures ↓, unemployment ↑, imports ↓, inflation ↓ avec retard. Repère : 2 trimestres de real GDP ↓.",
+        "Expansion : ==real GDP ↑== · Peak : ==real GDP maximal== · Contraction : ==real GDP ↓== · Trough : ==real GDP minimal==\nEn clair : peak : la croissance ralentit, inflation ↑, embauches ralenties. Contraction : heures ↓, unemployment ↑, imports ↓, inflation ↓ avec retard. Repère : 2 trimestres de real GDP ↓.",
       ],
       [
         "Classical cycle, growth cycle, growth rate cycle : que mesure chacun, et lequel est préféré ?",
@@ -123,7 +123,7 @@ export const SETS = [
       ],
       [
         "Quels fiscal policy tools agissent vite, et lesquels lentement ?",
-        "Rapides : ==indirect taxes== ; lents : direct taxes, transfers, capital spending\nEn clair : les indirect taxes (VAT, sales, excise) servent vite la politique sociale et les recettes. Une hausse de dépense relance plus qu'une baisse d'impôt, en partie épargnée.\nPiège : les transfer payments ne comptent pas dans le GDP.",
+        "Rapides : ==indirect taxes== ; lents : direct taxes, transfers, capital spending\nEn clair : les indirect taxes (VAT = value-added tax, sales, excise) s'ajustent vite. Une hausse de government spending relance plus qu'une baisse d'impôt, dont une partie est épargnée.\nPiège : le capital spending agit si lentement que l'économie peut s'être déjà redressée.",
       ],
       [
         "Quelles sont les 4 qualités d'une bonne tax policy ?",
@@ -147,7 +147,7 @@ export const SETS = [
       ],
       [
         "Faut-il s'inquiéter d'un fiscal deficit élevé ? Donne les arguments pour et contre.",
-        "Inquiétant si ==impôts futurs, crowding-out ou refinancement refusé==\nEn clair : moins grave si la dette est due aux résidents, finance du capital spending, en sous-emploi, ou avec la Ricardian equivalence. Debt/GDP ↑ si real rate > real growth.",
+        "Inquiétant : ==impôts futurs ↑, crowding-out, refus de refinancer==\nEn clair : si refus : default ou inflation (création monétaire). Moins grave : dette due aux résidents, capital spending, unemployment élevé, Ricardian equivalence. Debt/GDP ↑ si real rate > real growth.",
       ],
     ],
   },
@@ -156,7 +156,7 @@ export const SETS = [
     cards: [
       [
         "Quels sont les rôles d'une central bank ?",
-        "Émettre la monnaie, ==lender of last resort==, réserves, monetary policy\nEn clair : elle est aussi banker to the government and banks et régulateur du payments system. Prêter aux banques à court de liquidité évite les bank runs.\nPiège : elle ne collecte pas les impôts et ne finance pas les agences publiques.",
+        "Émettre la monnaie, ==lender of last resort==, foreign exchange reserves, monetary policy\nEn clair : elle est aussi banker to the government and banks et régulateur du payments system. Prêter aux banques à court de liquidité évite les bank runs.\nPiège : elle ne collecte pas les impôts et ne finance pas les agences publiques.",
       ],
       [
         "Pourquoi les central banks visent-elles une inflation d'environ 2 % plutôt que 0 % ?",
@@ -164,7 +164,7 @@ export const SETS = [
       ],
       [
         "Quels sont les 3 outils de la monetary policy, et dans quel sens les utiliser pour une politique expansionary ?",
-        "Expansionary : ==baisser== policy rate et reserve requirements, acheter des titres\nEn clair : les 3 outils : policy rate (discount rate Fed, refinancing rate BCE, two-week repo Bank of England), reserve requirements, open market operations.",
+        "Expansionary : ==baisser== policy rate et reserve requirements, acheter des titres\nEn clair : les 3 outils : policy rate (discount rate de la Fed, refinancing rate de l'ECB, European Central Bank, two-week repo de la Bank of England), reserve requirements, open market operations.",
       ],
       [
         "Que provoque une hausse du policy rate, via le monetary transmission mechanism ?",
@@ -176,7 +176,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 3 qualités d'une central bank efficace ?",
-        "Independence : ==fixe seule ses taux== · Credibility : ==tient ses cibles== · Transparency : ==explique ses choix==\nEn clair : operational independence : elle fixe seule le policy rate ; target independence : aussi la cible, sa mesure, l'horizon (la BCE a les deux). Une central bank crédible voit ses cibles se réaliser.",
+        "Independence : ==sans ingérence politique== · Credibility : ==tient ses cibles== · Transparency : ==explique ses choix==\nEn clair : operational independence : elle fixe seule le policy rate ; target independence : aussi la cible, sa mesure, l'horizon (l'ECB, European Central Bank, a les deux).",
       ],
       [
         "Exchange rate targeting (ancrer sa devise sur une autre, souvent l'USD) : quelles conséquences pour la monetary policy du pays ?",
@@ -184,7 +184,7 @@ export const SETS = [
       ],
       [
         "Pourquoi la monetary policy peut-elle ne pas produire l'effet voulu ?",
-        "Liquidity trap, long-term rates à rebours, ==taux bloqué à zéro==\nEn clair : liquidity trap : on garde le cash même si la money supply monte. Les banques peuvent aussi refuser de prêter. Au plancher zéro : QE (quantitative easing), achats massifs de titres.",
+        "Liquidity trap, banques qui ne prêtent pas, ==taux bloqué à zéro==\nEn clair : liquidity trap : on garde le cash même si la money supply monte. Les long-term rates peuvent monter si la baisse du policy rate fait craindre l'inflation. Au plancher zéro : QE (quantitative easing).",
       ],
       [
         "Fiscal policy et monetary policy : quelle combinaison fait croître la part du secteur privé dans le GDP, et laquelle celle du secteur public ?",
@@ -200,7 +200,7 @@ export const SETS = [
       ],
       [
         "IMF (International Monetary Fund), World Bank, WTO (World Trade Organization) : quel est le rôle de chacun ?",
-        "IMF : ==change, balance of payments== · World Bank : ==pauvreté== · WTO : ==règles du commerce==\nEn clair : l'IMF aide les pays en crise de balance of payments ; la World Bank finance le développement ; la WTO règle les différends commerciaux.\nPiège : seule la World Bank vise explicitement la pauvreté ; l'IMF prête aussi.",
+        "IMF : ==change, balance of payments== · World Bank : ==pauvreté== · WTO : ==règles du commerce==\nEn clair : l'IMF aide les pays en crise de balance of payments ; la World Bank finance le développement ; la WTO règle les différends commerciaux.\nPiège : l'IMF prête aussi, mais seule la World Bank vise la pauvreté.",
       ],
       [
         "Event risk, exogenous risk, thematic risk : comment se distinguent ces 3 types de geopolitical risk ?",
@@ -212,7 +212,7 @@ export const SETS = [
       ],
       [
         "Quels sont les 3 types de tools of geopolitics ? Donne des exemples coopératifs et non coopératifs.",
-        "National security : ==armée, alliances== · Economic : ==commerce, nationalization== · Financial : ==capitaux, sanctions==\nEn clair : coopératifs : alliances, FTA (free trade area), capitaux libres. Non coopératifs : conflit armé, VER (voluntary export restraint), nationalization, sanctions.\nPiège : les sanctions sont un financial tool, pas un economic tool.",
+        "National security : ==armée, alliances== · Economic : ==commerce, unions== · Financial : ==capitaux, sanctions==\nEn clair : coopératifs : alliances, FTA (free trade area), capitaux libres. Non coopératifs : conflit armé, VER (voluntary export restraint), nationalization.\nPiège : sanctions = financial tool, pas economic tool.",
       ],
     ],
   },
@@ -225,7 +225,7 @@ export const SETS = [
       ],
       [
         "Tariff, import quota, VER (voluntary export restraint) : quels effets communs pour le pays importateur, et qui capte la rente ?",
-        "Prix ↑, imports ↓, ==deadweight loss== ; VER : rente aux étrangers\nEn clair : consumer surplus ↓, producer surplus ↑. Tariff : recette pour l'État ; quota : pour l'État s'il vend les licences, sinon quota rents aux exportateurs étrangers.\nPiège : un VER coûte plus au pays qu'un tariff équivalent (rente captée à l'étranger).",
+        "Prix ↑, imports ↓ ; rente : ==tariff → État==, VER → étrangers\nEn clair : consumer surplus ↓, producer surplus ↑, deadweight loss. Quota : rente à l'État s'il vend les licences, sinon quota rents aux étrangers. Grand pays (tariff, quota) : world price ↓, welfare peut ↑.\nPiège : un VER coûte plus au pays qu'un tariff équivalent (rente à l'étranger).",
       ],
       [
         "Quels sont les effets d'une export subsidy pour un petit pays exportateur et pour un grand ?",
@@ -237,11 +237,11 @@ export const SETS = [
       ],
       [
         "Classe les trading blocs (regional trading agreements) du moins au plus intégré.",
-        "FTA : ==libre-échange== · Customs union : ==+ tarif commun== · Common market : ==+ facteurs libres== · Economic union : ==+ institutions communes== · Monetary union : ==+ monnaie unique==\nEn clair : chaque bloc garde les acquis du bloc d'avant. FTA = free trade area ; facteurs = travail et capital. Ex. : NAFTA, EU, Eurozone.",
+        "FTA : ==libre-échange== · Customs union : ==+ tarif commun== · Common market : ==+ facteurs libres== · Economic union : ==+ institutions communes== · Monetary union : ==+ monnaie unique==\nEn clair : chaque bloc garde les acquis du bloc d'avant. FTA = free trade area ; facteurs = travail et capital. Ex. : EU (European Union) = economic union, Eurozone = monetary union.",
       ],
       [
         "USD/EUR passe de 1,44 à 1,42. De combien l'EUR s'est-il déprécié face à l'USD, et de combien l'USD s'est-il apprécié face à l'EUR ?",
-        "EUR ==−1,39 %==, USD +1,41 %\n$$\\%\\Delta_{\\text{base}} = \\dfrac{S_1}{S_0} - 1$$\nEn clair : USD/EUR = prix en USD d'1 EUR (base). EUR : 1,42 / 1,44 − 1. USD (price currency) : on inverse, 1,44 / 1,42 − 1. S = spot.\nPiège : −1,39 % pour l'un ne fait pas +1,39 % pour l'autre.",
+        "EUR ==−1,39 %==, USD +1,41 %\n$$\\%\\Delta_{\\text{base}} = \\dfrac{S_1}{S_0} - 1$$\nEn clair : USD/EUR = prix en USD d'1 EUR (base) : direct quote pour un investisseur en USD. EUR : 1,42 / 1,44 − 1. USD : on inverse, 1,44 / 1,42 − 1. S = spot.\nPiège : −1,39 % pour l'un ne fait pas +1,39 % pour l'autre.",
       ],
       [
         "Nominal exchange rate 1,60 USD/GBP ; CPI américain 110, CPI britannique 112 (base 100 dans les deux pays). Quel real exchange rate USD/GBP ?",
@@ -249,15 +249,19 @@ export const SETS = [
       ],
       [
         "Sell side vs buy side du FX (foreign exchange) market : qui sont les acteurs de chaque côté ?",
-        "Sell side : ==les grandes banques dealers== ; buy side : leurs clients\nEn clair : buy side : corporations, real money accounts (mutual funds, pension funds, insurers, sans derivatives), leveraged accounts (hedge funds), États, central banks, retail.",
+        "Sell side : ==les grandes banques dealers== ; buy side : leurs clients\nEn clair : buy side : corporations, real money accounts (mutual funds, pension funds, insurers, sans derivatives), leveraged accounts (hedge funds), États, central banks, retail.\nPiège : être sur le buy side ne dit pas le motif : hedging réduit un risque de change existant, speculating l'augmente.",
       ],
       [
         "Classe les exchange rate regimes, du plus rigide au plus souple.",
-        "Du plus rigide : ==dollarization==, currency board, peg, target zone, crawling, float\nEn clair : en détail : dollarization, monetary union, currency board, fixed peg (± 1 %), target zone (± 2 %), crawling peg, crawling bands, managed floating, independent floating.",
+        "==Dollarization==, monetary union, currency board, peg, target zone, crawling, float\nEn clair : dollarization, monetary union : ni devise ni monetary policy propres. Currency board : monnaie couverte à 100 % en devise étrangère. Peg ± 1 %, target zone ± 2 %.\nPiège : un currency board garde sa propre monnaie (≠ dollarization).",
+      ],
+      [
+        "Au fil du business cycle, qu'est-ce qui fait varier les imports et les exports d'un pays ?",
+        "Imports : ==domestic GDP== · Exports : ==GDP des trading partners== · Change : ==devise ↑, exports ↓==\nEn clair : en expansion, le pays importe plus ; ses exports suivent la croissance des pays clients. Une devise ↑ rend ses produits chers à l'étranger, les imports moins chers.\nPiège : une expansion domestique fait monter les imports, pas les exports.",
       ],
       [
         "Selon l'identité $X - M = (S - I) + (T - G)$, comment un trade deficit est-il financé, et qui pilote le change à court terme ?",
-        "Trade deficit = ==entrée de capitaux étrangers==\nEn clair : exports X < imports M : l'épargne privée S et publique T − G ne couvre pas l'investissement I. Les capital flows pilotent le change à court et moyen terme ; le commerce, à long terme.",
+        "Trade deficit = ==entrée de capitaux étrangers==\nEn clair : exports X < imports M : l'épargne privée S et publique T − G (taxes − dépenses) ne couvre pas l'investissement I. Le change suit les capital flows à court et moyen terme, le commerce à long terme.",
       ],
       [
         "Pourquoi un gouvernement impose-t-il des capital restrictions ?",
@@ -272,12 +276,8 @@ export const SETS = [
         "Forward = ==1,3425== USD/EUR\n$$F = S + \\text{points} \\times \\text{valeur d'un point}$$\nEn clair : 1,3500 − 75 × 0,0001 = 1,3425 ; un point = dernière décimale du spot. F < S : l'EUR (base) est en forward discount (−0,56 %), l'USD en premium.\nPiège : forward coté en % : F = S × (1 + %), pas S + %.",
       ],
       [
-        "Spot 1,2500 USD/EUR ; taux sans risque à 1 an : 3 % sur l'USD, 4 % sur l'EUR. Quel forward rate à 1 an sans arbitrage (covered interest rate parity) ?",
-        "F = ==1,2380== USD/EUR\n$$F_{P/B} = S_{P/B} \\times \\dfrac{1 + i_P \\times \\frac{\\text{days}}{360}}{1 + i_B \\times \\frac{\\text{days}}{360}}$$\nEn clair : 1,2500 × 1,03 / 1,04 = 1,2380. $i_P$ = taux de la price currency (USD), $i_B$ = taux de la base (EUR). L'EUR, au taux le plus haut, est en forward discount.\nPiège : taux annuel × days/360, sans composer ; taux de la price currency au numérateur.",
-      ],
-      [
-        "Covered interest arbitrage : quelles sont les étapes, et quand dégage-t-il un profit ?",
-        "Emprunter, convertir au spot, placer, ==vendre à terme==, rembourser\nEn clair : emprunter la devise A, la changer en B, placer au taux de B, vendre forward le montant final contre A. Profit sans risque si le forward viole la covered interest rate parity.\nPiège : le forward rate n'est pas une prévision du futur spot rate.",
+        "Spot 1,2500 USD/EUR ; risk-free rate à 1 an : 3 % sur l'USD, 4 % sur l'EUR. Quel forward rate à 1 an sans arbitrage (covered interest rate parity) ?",
+        "F = ==1,2380== USD/EUR\n$$F_{P/B} = S_{P/B} \\times \\dfrac{1 + i_P \\times \\frac{\\text{days}}{360}}{1 + i_B \\times \\frac{\\text{days}}{360}}$$\nEn clair : 1,2500 × 1,03 / 1,04 = 1,2380 ; i = taux, P = price currency (USD), B = base (EUR). L'EUR (taux plus haut) est en forward discount. Sinon, arbitrage : emprunter, convertir, placer, vendre forward.\nPiège : taux annuel × days/360, sans composer ; taux de la price currency au numérateur.",
       ],
     ],
   },

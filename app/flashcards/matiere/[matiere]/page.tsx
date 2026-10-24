@@ -7,6 +7,9 @@ import { FlashcardReview, type FlashcardCard } from "@/components/FlashcardRevie
 import { LienOnePager, MatiereVide, PaquetsDeLaMatiere } from "@/components/flashcards/Panneaux";
 import { onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { themePaquet } from "@/lib/flashcards/paquets";
+import { cleMatiere, cleSet, etatAffiche, etatListe } from "@/lib/flashcards/progression";
+import { lireProgressions } from "@/lib/flashcards/progression-serveur";
+import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
 import { MATIERE_CARTES } from "@/lib/voice-z3c";
 
 type PageProps = { params: Promise<{ matiere: string }> };
@@ -27,6 +30,10 @@ export async function generateMetadata({ params }: PageProps) {
 // (« matiere:fixed_income »). Chaque carte garde la répétition espacée de son
 // paquet. En tête, le one-pager de la matière : les deux font la révision
 // d'une nuit. Une matière sans cartes affiche un état vide propre.
+// La boucle de la matière et celles des paquets sont aussi sur le compte
+// (flashcard_progress, seulement ces clés-là) : l'en-tête dit où en est la
+// matière, la liste des paquets où en est chacun, réparés sur les cartes
+// actuelles (rien si la table n'est pas encore créée).
 export default async function FlashcardsMatierePage({ params }: PageProps) {
   const { matiere } = await params;
   const subject = CFA_SUBJECTS.find((s) => s.key === matiere);
@@ -56,6 +63,7 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
       : Promise.resolve(null),
     traitsDuJour(auth.user.id),
   ]);
+  const cle = cleMatiere(subject.key);
 
   // Les paquets de la matière, rangés comme dans la liste (Set 1/4, 2/4…).
   const sets = (setsRes.data ?? []) as unknown as SetRow[];
@@ -65,22 +73,33 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   const paquets = (groupe?.rows ?? []).filter((r) => r.kind === "set");
   const rang = new Map(paquets.map((p, i) => [p.id, i]));
 
+  const [lignes, progressions] = await Promise.all([
+    paquets.length
+      ? admin
+          .from("flashcards")
+          .select("id,front,back,position,set_id")
+          .in(
+            "set_id",
+            paquets.map((p) => p.id)
+          )
+          .order("position", { ascending: true })
+          .then((r) => (r.data ?? []) as CardRow[])
+      : Promise.resolve([] as CardRow[]),
+    // les boucles de la matière et de ses paquets seulement
+    lireProgressions(supabase, auth.user.id, [cle, ...paquets.map((p) => cleSet(p.id))]),
+  ]);
+
   let cards: FlashcardCard[] = [];
   if (paquets.length) {
-    const { data } = await admin
-      .from("flashcards")
-      .select("id,front,back,position,set_id")
-      .in(
-        "set_id",
-        paquets.map((p) => p.id)
-      )
-      .order("position", { ascending: true });
     const themes = new Map(paquets.map((p) => [p.id, themePaquet(p.title)]));
-    cards = ((data ?? []) as CardRow[])
+    cards = lignes
       .slice()
       .sort((x, y) => (rang.get(x.set_id) ?? 0) - (rang.get(y.set_id) ?? 0) || (x.position ?? 0) - (y.position ?? 0))
       .map((c) => ({ id: c.id, front: c.front, back: c.back, setId: c.set_id, theme: themes.get(c.set_id) ?? null }));
   }
+  const ligneMatiere = progressions?.get(cle) ?? null;
+  const ouJenSuis = etatAffiche(ligneMatiere, cards.map((c) => c.id));
+  const idsDe = (setId: string) => cards.filter((c) => c.setId === setId).map((c) => c.id);
 
   return (
     <div className="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
@@ -90,6 +109,7 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
         title={subject.name}
         eyebrow={MATIERE_CARTES.surTitre}
         meta={cards.length ? [plural(cards.length, "carte", "cartes"), MATIERE_CARTES.paquets(paquets.length)] : []}
+        etat={cards.length && progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} /> : null}
         rightSlot={onePager ? <LienOnePager href={onePager} className="btn btn-secondary btn-sm min-h-[44px]" /> : null}
       />
 
@@ -104,8 +124,17 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
             onePager={onePager}
             autresHref={`/flashcards?subject=${subject.key}#paquets`}
             ordre="programme"
+            compte={progressions ? { cle, ligne: ligneMatiere, lueA: Date.now() } : null}
+            joueur={auth.user.id}
           />
-          <PaquetsDeLaMatiere paquets={paquets.map((p) => ({ id: p.id, theme: themePaquet(p.title), cartes: cards.filter((c) => c.setId === p.id).length }))} />
+          <PaquetsDeLaMatiere
+            paquets={paquets.map((p) => ({
+              id: p.id,
+              theme: themePaquet(p.title),
+              cartes: idsDe(p.id).length,
+              etat: progressions ? etatListe(cleSet(p.id), progressions.get(cleSet(p.id)), idsDe(p.id), auth.user.id) : null,
+            }))}
+          />
         </>
       ) : (
         <MatiereVide matiere={subject.name} onePager={onePager} />

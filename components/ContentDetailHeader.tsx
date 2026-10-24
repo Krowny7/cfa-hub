@@ -223,6 +223,7 @@ export function ContentDetailHeader({
   visibility,
   folderName,
   rightSlot,
+  etat,
 }: {
   backHref: string;
   backLabel: string;
@@ -234,6 +235,8 @@ export function ContentDetailHeader({
   visibility?: Visibility | string | null;
   folderName?: string | null;
   rightSlot?: ReactNode;
+  /** petit état à la suite des métadonnées (où en est la boucle des flashcards) */
+  etat?: ReactNode;
 }) {
   const parts = (meta ?? [visibility !== undefined ? visibilityLabel(visibility) : null, cleanFolderName(folderName)]).filter(
     (p): p is string => typeof p === "string" && p.length > 0
@@ -254,7 +257,18 @@ export function ContentDetailHeader({
       <div className="min-w-0">
         {eyebrow && <p className="t-eyebrow mb-3">{eyebrow}</p>}
         <h1 className="t-h1 rl-in m-0 break-words">{title}</h1>
-        {parts.length > 0 && <p className="t-micro mt-3">{parts.join(" · ")}</p>}
+        {etat ? (
+          // La place de la pastille est réservée (hauteur d'une chip-sm) et la
+          // ligne ne passe jamais à la ligne : l'en-tête ne bouge pas quand la
+          // pastille apparaît, change ou disparaît en pleine révision ; sur un
+          // écran étroit, les métadonnées se tronquent plutôt.
+          <div className="mt-3 flex min-h-[26px] items-center gap-x-3">
+            {parts.length > 0 && <p className="t-micro m-0 min-w-0 truncate">{parts.join(" · ")}</p>}
+            <span className="flex shrink-0 items-center">{etat}</span>
+          </div>
+        ) : (
+          parts.length > 0 && <p className="t-micro mt-3">{parts.join(" · ")}</p>
+        )}
       </div>
     </header>
   );

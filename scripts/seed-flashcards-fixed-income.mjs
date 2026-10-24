@@ -28,63 +28,63 @@ export const SETS = [
     cards: [
       [
         "Comment classe-t-on une bond (obligation) selon sa maturity d'origine : money market, capital market ou perpetual ?",
-        "Money market : ==≤ 1 an== · Capital market : ==plus d'un an== · Perpetual : ==sans maturity==\nEn clair : un T-bill (Treasury bill) à 6 mois est un money market security ; une bond à 10 ans, un capital market security.\nPiège : on regarde la maturity d'origine, pas la durée restante (le tenor).",
+        "Money market : ==≤ 1 an== · Capital market : ==plus d'un an== · Perpetual : ==sans maturity==\nEn clair : Un T-bill (Treasury bill) à 6 mois est un money market security. Une bond à 10 ans est un capital market security.\nPiège : on classe sur la maturity d'origine, pas sur la durée restante (le tenor).",
       ],
       [
-        "Qu'est-ce que l'indenture (ou trust deed) d'une bond et que précise-t-elle ?",
-        "Indenture = ==contrat légal issuer ↔ bondholders==\nEn clair : elle fixe les features de la bond, la source of repayment, le collateral et les covenants ; un trustee la fait respecter.\nPiège : ni le credit rating ni le nom des bondholders n'y figurent.",
+        "Qu'est-ce que l'indenture (ou trust deed) d'une bond ?",
+        "Indenture = ==contrat légal issuer ↔ bondholders==\nEn clair : L'indenture fixe les features de la bond, la source of repayment, le collateral et les covenants. Un trustee veille à son respect.\nPiège : ni le credit rating ni le nom des bondholders n'y figurent.",
       ],
       [
         "Affirmative covenant vs negative covenant dans l'indenture d'une bond : quelle différence ?",
-        "Affirmative covenant = doit faire ; negative covenant = ==interdit de faire==\nEn clair : affirmative : payer les coupons, publier ses comptes. Negative : pas de nouvelle dette plus senior, pas de vente du collateral, dividendes limités.",
+        "Affirmative covenant : ==obligation de faire== · Negative covenant : ==interdiction de faire==\nEn clair : Un affirmative covenant impose une action : payer les coupons, publier ses comptes. Un negative covenant interdit par exemple une nouvelle dette plus senior ou la vente du collateral.",
       ],
       [
         "Bullet, amortizing, sinking fund : comment le principal d'une bond est-il remboursé dans chacune de ces structures ?",
-        "Bullet : ==tout à maturity== · Amortizing : ==au fil des paiements== · Sinking fund : ==rachats partiels prévus==\nEn clair : fully amortizing : plus rien à rembourser au dernier paiement ; partially : un balloon payment reste à maturity.\nPiège : le sinking fund réduit le credit risk mais crée un reinvestment risk si les taux baissent.",
+        "Bullet : ==tout à maturity== · Amortizing : ==au fil des paiements== · Sinking fund : ==rachats échelonnés==\nEn clair : Une fully amortizing bond est soldée au dernier paiement, une partially amortizing garde un balloon payment.\nPiège : le sinking fund réduit le credit risk mais crée un reinvestment risk si les taux baissent.",
       ],
       [
-        "Comment se calcule le coupon d'une FRN (floating-rate note) ?",
-        "Coupon = ==MRR + quoted margin==, révisé à chaque reset date\nEn clair : MRR = market reference rate. Le coupon suit les taux du marché : faible interest rate risk. Ex. trimestriel : (3 % + 1 %) / 4 = 1 % de la par value.",
+        "Formule du coupon d'une FRN (floating-rate note) ? Application : MRR 3 %, quoted margin 1 %, coupons trimestriels, par value 100.",
+        "$$\\text{Coupon} = \\dfrac{\\text{MRR} + \\text{Quoted margin}}{m} \\times \\text{Par value}$$\nEn clair : MRR = market reference rate, révisé à chaque reset date, et m = coupons par an. (3 % + 1 %) / 4 × 100 = 1 par trimestre. Le coupon suit les taux, d'où un faible interest rate risk.",
       ],
       [
         "Step-up, credit-linked, PIK (payment-in-kind) et deferred coupon bonds : comment le coupon évolue-t-il ou est-il payé dans chaque structure ?",
-        "Step-up : ==↑ par paliers== · Credit-linked : ==↑ si downgrade== · PIK : ==payé en bonds== · Deferred : ==0 au début==\nEn clair : PIK et deferred servent aux issuers à court de cash, d'où des yields plus élevés. Le step-up protège le bondholder d'une hausse des taux.",
+        "Step-up : ==↑ par paliers prévus== · Credit-linked : ==↑ si downgrade== · PIK : ==payé en nouvelles bonds== · Deferred : ==rien les premières années==\nEn clair : Les PIK et deferred coupon bonds servent aux issuers à court de cash, d'où des yields plus élevés. Le step-up protège le bondholder d'une hausse des taux.",
       ],
       [
-        "Capital-indexed bond (type TIPS, Treasury Inflation-Protected Securities) : par value 1 000, coupon rate annuel 4 %, inflation de l'année 2 %. Quel coupon reçoit-on en fin d'année ?",
-        "Coupon = 1 000 × 1,02 × 4 % = ==40,80==\nEn clair : le principal est indexé sur l'inflation (1 000 → 1 020) ; le coupon rate fixe (un real rate) s'applique au principal ajusté.\nPiège : pas 4 % × 1 000 = 40 : le coupon porte sur le principal indexé.",
+        "Formule du coupon d'une capital-indexed bond (type TIPS, Treasury Inflation-Protected Securities) ? Application : par value 1 000, coupon rate annuel 4 %, inflation de l'année 2 %.",
+        "$$\\text{Adjusted principal} = \\text{Par value} \\times (1 + \\text{Inflation})$$\n$$\\text{Coupon} = \\text{Adjusted principal} \\times \\dfrac{\\text{Coupon rate}}{m}$$\nEn clair : Inflation = inflation cumulée depuis l'émission, m = coupons par an. 1 000 × 1,02 = 1 020, puis 1 020 × 4 % = 40,80. Le coupon rate fixe est un real rate.\nPiège : pas 1 000 × 4 % = 40 : le coupon porte sur le principal indexé.",
       ],
       [
-        "Comment s'écrit la valeur d'une callable bond et d'une putable bond à partir de la straight bond (option-free) identique ?",
-        "$$V_{\\text{callable}} = V_{\\text{straight}} - V_{\\text{call}}$$\n$$V_{\\text{putable}} = V_{\\text{straight}} + V_{\\text{put}}$$\nEn clair : le call appartient à l'issuer : la callable bond vaut moins, son yield est plus haut. Le put appartient au bondholder : la putable bond vaut plus.",
+        "Formule de la valeur d'une callable bond et d'une putable bond à partir de la straight bond (option-free) identique ?",
+        "$$V_{\\text{callable}} = V_{\\text{straight}} - V_{\\text{call}}$$\n$$V_{\\text{putable}} = V_{\\text{straight}} + V_{\\text{put}}$$\nEn clair : Le call appartient à l'issuer, donc la callable bond vaut moins et offre un yield plus haut. Le put appartient au bondholder, donc la putable bond vaut plus.",
       ],
       [
-        "Une convertible bond de 1 000 de par value a un conversion price de 25 ; l'action cote 30. Quels sont le conversion ratio et la conversion value ?",
-        "Conversion ratio et value : ==40 actions et 1 200==\nEn clair : conversion ratio = par value / conversion price = 1 000 / 25 ; conversion value = ratio × cours de l'action = 40 × 30.\nPiège : multiplier par le cours actuel (30), pas par le conversion price (25).",
+        "Formules du conversion ratio et de la conversion value d'une convertible bond ? Application : par value 1 000, conversion price 25, action cotée 30.",
+        "$$\\text{Conversion ratio} = \\dfrac{\\text{Par value}}{\\text{Conversion price}}$$\n$$\\text{Conversion value} = \\text{Conversion ratio} \\times \\text{Share price}$$\nEn clair : Share price = cours actuel de l'action. 1 000 / 25 = 40 actions, puis 40 × 30 = 1 200.\nPiège : multiplier par le cours actuel (30), pas par le conversion price (25).",
       ],
       [
         "Domestic bond, foreign bond, Eurobond, global bond : comment les distinguer ?",
-        "Domestic : ==issuer local== · Foreign : ==issuer étranger, marché local== · Eurobond : ==hors juridiction nationale== · Global : ==Eurobond + domestique==\nEn clair : la foreign bond suit la monnaie du marché local ; l'Eurobond se vend hors du pays de sa monnaie (ex. USD à Londres).\nPiège : « Euro » ne veut pas dire libellé en euros.",
+        "Domestic : ==issuer et marché locaux== · Foreign : ==issuer étranger, marché local== · Eurobond : ==hors juridiction nationale== · Global : ==Eurobond et domestic ensemble==\nEn clair : Une Eurobond se vend hors du pays de sa monnaie, par exemple une bond en USD à Londres.\nPiège : « Euro » ne veut pas dire libellé en euros.",
       ],
       [
-        "Investment grade vs high yield : où passe la frontière de credit rating, et qu'est-ce qui distingue la dette high yield ?",
-        "Investment grade : ==BBB− / Baa3== et au-dessus\nEn clair : high yield = BB+ / Ba1 et en dessous : plus de covenants, maturities plus courtes, souvent callable. L'investisseur high yield craint surtout le default, l'investment grade un downgrade.",
+        "Investment grade vs high yield : où passe la frontière de credit rating (S&P et Moody's) ?",
+        "Investment grade : ==≥ BBB−/Baa3== · High yield : ==≤ BB+/Ba1==\nEn clair : La dette high yield a plus de covenants et des maturities plus courtes, et elle est souvent callable. Ses investisseurs craignent le default, ceux d'investment grade un downgrade.",
       ],
       [
         "Lines of credit d'une entreprise : classe uncommitted, committed et revolving de la moins fiable à la plus fiable.",
-        "==Uncommitted < committed < revolving== : plus fiable = plus cher\nEn clair : uncommitted : la banque peut refuser. Committed : engagement formel, avec commitment fee. Revolving : engagement sur plusieurs années, renouvelable.",
+        "Fiabilité et coût : ==uncommitted < committed < revolving==\nEn clair : Avec une uncommitted line, la banque peut refuser de prêter. La committed line l'engage contre une commitment fee ; la revolving line aussi, mais souvent sur plusieurs années.",
       ],
       [
-        "Repo (repurchase agreement) : collateral de 1 030 000, initial margin de 103 %, repo rate de 4 %, 90 jours (base 360). Que valent le purchase price et le repurchase price ?",
-        "Purchase et repurchase price : ==1 000 000 et 1 010 000==\nEn clair : purchase = 1 030 000 / 1,03 ; repurchase = 1 000 000 × (1 + 4 % × 90/360). Repo rate plus haut si repo long, collateral faible ou undercollateralized.\nPiège : haircut = 1 − 1 / 1,03 ≈ 2,9 %, pas 3 %.",
+        "Formules du purchase price et du repurchase price d'un repo (repurchase agreement) ? Application : collateral de 1 030 000, initial margin 103 %, repo rate 4 %, 90 jours (base 360).",
+        "$$\\text{Purchase price} = \\dfrac{\\text{Collateral value}}{\\text{Initial margin}}$$\n$$\\text{Repurchase price} = \\text{Purchase price} \\times \\left(1 + \\text{Repo rate} \\times \\dfrac{\\text{Days}}{360}\\right)$$\nEn clair : Purchase price = montant prêté. 1 030 000 / 1,03 = 1 000 000, puis 1 000 000 × (1 + 4 % × 90/360) = 1 010 000.\nPiège : haircut = 1 − 1 / 1,03 ≈ 2,9 %, pas 3 %.",
       ],
       [
         "Auction de sovereign bonds (obligations d'État) : dans quel ordre les titres sont-ils alloués, et quel prix paie-t-on en single-price auction ?",
-        "Noncompetitive bids d'abord ; single-price : tous paient au ==cut-off yield==\nEn clair : puis les competitive bids, du yield le plus bas au plus haut. Cut-off yield = yield du dernier bid servi. Multiple-price : chacun paie son propre prix.",
+        "Noncompetitive bids : ==servis en premier== · Competitive bids : ==par yield croissant== · Single-price : ==tous au cut-off yield==\nEn clair : Le cut-off yield est le yield du dernier competitive bid servi. En multiple-price auction, chacun paie le yield de son propre bid.",
       ],
       [
-        "GO (general obligation) bond vs revenue bond d'une collectivité locale : laquelle porte en général le plus de credit risk, et pourquoi ?",
-        "==Revenue bond== : plus risquée, seuls les revenus du projet paient\nEn clair : la GO bond s'appuie sur tout le taxing power de la collectivité ; la revenue bond (péage, aéroport) s'analyse comme une corporate bond.",
+        "GO (general obligation) bond vs revenue bond d'une collectivité locale : qu'est-ce qui rembourse chacune, et laquelle porte le plus de credit risk ?",
+        "GO : ==tout le taxing power== · Revenue : ==projet seul, plus risquée==\nEn clair : Une revenue bond (péage, aéroport) n'est payée que par les revenus de son projet. Elle s'analyse comme une corporate bond.",
       ],
     ],
   },
@@ -92,64 +92,64 @@ export const SETS = [
     title: "Fixed Income — Flashcards 2/4 (Prix, yields & courbes)",
     cards: [
       [
-        "Quelle est la formule du prix d'une bond à coupon fixe à partir de son YTM (yield to maturity) ?",
-        "Prix = cash flows actualisés au YTM\n$$P = \\sum_{t=1}^{N} \\dfrac{PMT}{(1+r)^t} + \\dfrac{FV}{(1+r)^N}$$\nEn clair : où $PMT$ = coupon par période, $FV$ = par value, $r$ = YTM par période, $N$ = nombre de périodes. Ex. 2 ans, coupon 6, YTM 4 % → 6 / 1,04 + 106 / 1,04² = 103,77.\nPiège : semestriel : coupon / 2, YTM / 2, nombre d'années × 2.",
+        "Formule du prix d'une bond à coupon fixe à partir de son YTM (yield to maturity) ? Application : 2 ans, coupon annuel 6, par value 100, YTM 4 %.",
+        "Prix = cash flows actualisés au YTM\n$$P = \\sum_{t=1}^{N} \\dfrac{PMT}{(1+r)^t} + \\dfrac{FV}{(1+r)^N}$$\nEn clair : $PMT$ = coupon par période, $FV$ = par value, $r$ = YTM par période, $N$ = nombre de périodes. 6 / 1,04 + 106 / 1,04² = 103,77.\nPiège : semestriel : coupon / 2, YTM / 2, nombre d'années × 2.",
       ],
       [
         "Si le coupon rate d'une bond est inférieur à son YTM (yield to maturity), cote-t-elle at par, en premium ou en discount ?",
-        "Coupon rate < YTM ⇒ ==discount== (prix < par value)\nEn clair : coupon rate > YTM : premium ; égal : at par. À YTM constant, le prix converge vers la par value avec le temps (pull to par).",
+        "Coupon rate < YTM ⇒ ==discount== (prix < par value)\nEn clair : Le coupon paie moins que le yield exigé, donc le prix passe sous la par value. Si le coupon rate dépasse le YTM, la bond cote en premium ; à égalité, at par.\nPiège : même à YTM constant, le prix bouge : il converge vers la par value (pull to par).",
       ],
       [
-        "Flat price, accrued interest et full price d'une bond : quelle relation, et quel prix est coté ?",
-        "Full = flat + accrued ; ==flat price coté==\n$$PV^{\\text{Full}} = PV \\times (1+r)^{t/T}$$\nEn clair : où PV = prix au dernier coupon, r = YTM (yield to maturity) par période ; accrued interest = $t/T$ × coupon (t = jours écoulés, T = jours de la période). On paie le full (dirty), on cote le flat (clean).\nPiège : day count actual/actual pour les government bonds, 30/360 pour les corporate bonds.",
+        "Full price d'une bond entre deux dates de coupon : quelle formule, et quel prix est coté, le full ou le flat price ?",
+        "$$PV^{\\text{Full}} = PV^{\\text{Flat}} + AI = PV \\times (1+r)^{t/T}$$\nPrix coté : ==le flat price (clean)==\nEn clair : AI = accrued interest = $t/T$ × coupon. PV = prix au dernier coupon, r = YTM (yield to maturity) par période, t = jours écoulés, T = jours de la période.\nPiège : day count actual/actual pour les government bonds, 30/360 pour les corporate bonds.",
       ],
       [
-        "À quoi sert la matrix pricing d'une bond et comment fonctionne-t-elle ?",
-        "Matrix pricing : prix d'une bond ==peu ou pas cotée==\nEn clair : on interpole le YTM (yield to maturity) de bonds cotées de même credit quality et de maturities voisines, puis on actualise à ce YTM. Ex. 3 ans 4 %, 5 ans 5 % → 4 ans ≈ 4,5 %.",
+        "Formule de la matrix pricing d'une bond peu ou pas cotée ? Application : bonds cotées de même credit quality à 3 ans (YTM 4 %) et à 5 ans (YTM 5 %) ; bond non cotée à 4 ans.",
+        "Matrix pricing : interpolation linéaire des YTM\n$$\\text{YTM}_T = \\text{YTM}_1 + (\\text{YTM}_2 - \\text{YTM}_1) \\times \\dfrac{T - T_1}{T_2 - T_1}$$\nEn clair : YTM = yield to maturity, $T_1$ et $T_2$ = maturities des bonds cotées autour de T. 4 % + 1 % × (4 − 3) / (5 − 3) = 4,5 %, puis on actualise les cash flows à 4,5 %.",
       ],
       [
-        "Current yield vs simple yield d'une bond : quelle différence de calcul ?",
-        "Simple yield = (coupon ± ==straight-line amortization==) / flat price\nEn clair : current yield = coupon / flat price, sans amortization. Amortization = discount (+) ou premium (−) / années restantes. Ex. coupon 6, prix 96, 4 ans : 6 / 96 = 6,25 % vs 7 / 96 = 7,29 %.\nPiège : discount bond : coupon rate < current yield < YTM (yield to maturity) ; premium : l'inverse.",
+        "Formules du current yield et du simple yield d'une bond ? Application : coupon annuel 6, flat price 96, par value 100, 4 ans restants.",
+        "$$\\text{Current yield} = \\dfrac{\\text{Annual coupon}}{\\text{Flat price}}$$\n$$\\text{Simple yield} = \\dfrac{\\text{Annual coupon} \\pm \\text{Straight-line amortization}}{\\text{Flat price}}$$\nEn clair : Current yield = 6 / 96 = 6,25 %. L'amortization étale le discount de 4 (100 − 96) sur 4 ans = 1 par an (+ si discount, − si premium), d'où simple yield = 7 / 96 = 7,29 %.\nPiège : discount bond : coupon rate < current yield < YTM (yield to maturity) ; premium : l'inverse.",
       ],
       [
-        "Une bond a un YTM (yield to maturity) de 6 % sur une semiannual bond basis. Quel est son EAY (effective annual yield) ?",
-        "EAY = 1,03² − 1 = ==6,09 %==\nEn clair : semiannual bond basis : 6 % = 2 × 3 % par semestre. $\\text{EAY} = (1 + \\text{YTM}/m)^m - 1$, où m = périodes par an. Changer de périodicité : $(1+\\text{APR}_m/m)^m = (1+\\text{APR}_n/n)^n$, où APR (annual percentage rate) = taux annuel coté.\nPiège : diviser par 2 avant de composer : 1,03², pas 1,06.",
+        "Formule de l'EAY (effective annual yield) d'une bond à partir de son YTM (yield to maturity) ? Application : YTM 6 % sur une semiannual bond basis.",
+        "$$\\text{EAY} = \\left(1 + \\dfrac{\\text{YTM}}{m}\\right)^m - 1$$\nEn clair : Avec m = périodes par an : 6 % / 2 = 3 % par semestre, et 1,03² − 1 = 6,09 %. Pour changer de périodicité : $(1+\\text{APR}_m/m)^m = (1+\\text{APR}_n/n)^n$ (APR = annual percentage rate).\nPiège : diviser par m avant de composer : 1,03², pas 1,06.",
       ],
       [
-        "Comment calcule-t-on le YTC (yield to call) et le YTW (yield to worst) d'une callable bond ?",
-        "YTW = ==le plus bas des YTC et du YTM==\nEn clair : un YTC par call date : même calcul que le YTM (yield to maturity), avec N = périodes jusqu'au call et FV (future value) = call price. Le YTW est l'hypothèse la plus prudente.\nPiège : semestriel : doubler le taux trouvé par la calculatrice.",
+        "Comment obtient-on le YTW (yield to worst) d'une callable bond ?",
+        "YTW = ==le plus bas des YTC et du YTM==\nEn clair : On calcule un YTC (yield to call) par call date, comme un YTM (yield to maturity) avec N = périodes jusqu'au call et FV = call price. Le YTW est l'hypothèse la plus prudente.\nPiège : semestriel : doubler le taux périodique trouvé à la calculatrice.",
       ],
       [
-        "Un T-bill (Treasury bill) à 90 jours, face value 100, est coté à un discount rate de 4 % (base 360). Quel est son prix ?",
-        "Prix = 100 × (1 − 90/360 × 4 %) = ==99==\nEn clair : le discount rate s'applique à la face value (T-bills, commercial paper) : prix = face value × (1 − jours/360 × discount rate).\nPiège : l'add-on rate (CD = certificate of deposit, repo) se calcule sur le prix : convertir avant de comparer.",
+        "Formule du prix d'un T-bill (Treasury bill) coté en discount rate ? Application : 90 jours, face value 100, discount rate 4 % (base 360).",
+        "$$PV = FV \\times \\left(1 - \\dfrac{\\text{Days}}{\\text{Year}} \\times DR\\right)$$\nEn clair : PV = prix, FV = face value, DR = discount rate, Year = 360 (même formule pour le commercial paper). 100 × (1 − 90/360 × 4 %) = 99.\nPiège : l'add-on rate (CD = certificate of deposit, repo) se calcule sur le prix : convertir avant de comparer.",
       ],
       [
         "FRN (floating-rate note) : si la discount margin dépasse la quoted margin, la FRN cote-t-elle au-dessus ou en dessous de la par value ?",
-        "Discount margin > quoted margin ⇒ ==sous la par value==\nEn clair : quoted margin = spread fixé à l'émission ; discount margin = spread exigé aujourd'hui. Le marché veut plus que le coupon ne paie : le prix baisse.",
+        "Discount margin > quoted margin ⇒ ==sous la par value==\nEn clair : La quoted margin est le spread fixé à l'émission, la discount margin celui que le marché exige aujourd'hui. Le coupon paie moins que le marché ne veut, donc le prix baisse.",
       ],
       [
-        "Qu'est-ce qu'un spot rate et comment donne-t-il le prix no-arbitrage d'une bond ?",
-        "Prix no-arbitrage : ==chaque cash flow actualisé à son spot rate==\nEn clair : spot rate = yield d'une zero-coupon bond de même maturity. Ex. 2 ans, coupon 4, spot 1 an 2 %, spot 2 ans 5 % → 4 / 1,02 + 104 / 1,05² = 98,25. Le YTM (yield to maturity) en est une moyenne.",
+        "Formule du prix no-arbitrage d'une bond à partir des spot rates ? Application : 2 ans, coupon annuel 4, par value 100, spot 1 an 2 %, spot 2 ans 5 %.",
+        "$$P = \\dfrac{CF_1}{(1+S_1)^1} + \\dfrac{CF_2}{(1+S_2)^2} + \\dots + \\dfrac{CF_N}{(1+S_N)^N}$$\nEn clair : $S_t$ = spot rate à t ans (yield d'une zero-coupon bond de maturity t). 4 / 1,02 + 104 / 1,05² = 98,25. Le YTM (yield to maturity) en est une moyenne.",
       ],
       [
-        "Spot rate à 1 an = 2 %, spot rate à 2 ans = 3 %. Quel est le forward rate 1y1y (taux à 1 an qui démarre dans 1 an) ?",
-        "1y1y = 1,03² / 1,02 − 1 ≈ ==4,01 %==\nEn clair : 2 ans au spot = 1 an au spot puis 1 an au forward : $(1+S_2)^2 = (1+S_1)(1+\\text{1y1y})$, où $S$ = spot rate. Approximation : 2 × 3 % − 2 % = 4 %. Cas général : $(1+S_{A+B})^{A+B} = (1+S_A)^A(1+\\text{AyBy})^B$, où AyBy = taux sur B ans qui démarre dans A ans.",
+        "Formule du forward rate AyBy à partir des spot rates ? Application : spot rate à 1 an 2 %, spot rate à 2 ans 3 % ; forward rate 1y1y (taux à 1 an qui démarre dans 1 an).",
+        "$$(1+S_{A+B})^{A+B} = (1+S_A)^A \\times (1+\\text{AyBy})^B$$\nEn clair : AyBy = taux sur B ans qui démarre dans A ans, S = spot rate. 1y1y = 1,03² / 1,02 − 1 ≈ 4,01 % (approximation : 2 × 3 % − 2 % = 4 %).",
       ],
       [
         "Yield curve croissante (upward sloping) : comment se classent forward rates, spot rates et par yields ?",
-        "Courbe croissante : ==forward > spot > par yield==\nEn clair : le par yield est une moyenne des spot rates, eux-mêmes moyennes des forward rates : chaque moyenne reste en retard sur la courbe.\nPiège : courbe inversée, ordre inverse (forward < spot < par yield).",
+        "Courbe croissante : ==forward > spot > par yield==\nEn clair : Le par yield est une moyenne des spot rates, eux-mêmes des moyennes des forward rates. Sur une courbe qui monte, chaque moyenne reste en retard.\nPiège : courbe inversée, ordre inverse (forward < spot < par yield).",
       ],
       [
         "G-spread, I-spread, Z-spread : par rapport à quel benchmark chaque spread est-il mesuré ?",
-        "G-spread : ==government bond== · I-spread : ==swap rate== · Z-spread : ==toute la spot curve==\nEn clair : G et I : YTM (yield to maturity) − benchmark de même maturity. Z-spread (zero-volatility) : spread constant ajouté à chaque spot rate pour retrouver le prix.",
+        "G-spread : ==government bond== · I-spread : ==swap rate== · Z-spread : ==toute la spot curve==\nEn clair : Le G-spread et l'I-spread valent YTM (yield to maturity) − benchmark de même maturity. Le Z-spread (zero-volatility) s'ajoute à chaque spot rate pour retrouver le prix.",
       ],
       [
-        "Qu'est-ce que l'OAS (option-adjusted spread) et comment se compare-t-il au Z-spread pour une callable bond ?",
-        "Callable bond : ==OAS < Z-spread== (OAS = Z-spread − valeur du call en basis points)\nEn clair : l'OAS retire la valeur de l'option du spread : c'est le spread à comparer entre bonds avec embedded options.\nPiège : putable bond : OAS > Z-spread, car le put a de la valeur pour l'investisseur.",
+        "Formule de l'OAS (option-adjusted spread) d'une bond, et comment se compare-t-il au Z-spread pour une callable bond ?",
+        "$$\\text{OAS} = \\text{Z-spread} - \\text{Option value}$$\nCallable bond : ==OAS < Z-spread==\nEn clair : L'OAS retire du Z-spread la valeur de l'embedded option, en basis points. C'est le spread à comparer entre bonds avec embedded options.\nPiège : putable bond : OAS > Z-spread, car le put a de la valeur pour l'investisseur.",
       ],
       [
         "Dans quelles conditions de marché les yield spreads des corporate bonds s'élargissent-ils ?",
-        "Spreads s'élargissent quand :\n==Récession== · Forte ==offre de bonds== · Dealers à ==court de capital==\nEn clair : en récession, les credit spread curves montent et s'aplatissent ; en expansion, elles baissent et se pentifient. Le high yield bouge le plus.",
+        "Spreads s'élargissent quand :\n==Récession== · Forte ==offre de bonds== · Dealers à ==court de capital==\nEn clair : En récession, les credit spread curves montent et s'aplatissent ; en expansion, elles baissent et se pentifient. Les spreads high yield bougent le plus.",
       ],
     ],
   },
@@ -158,63 +158,63 @@ export const SETS = [
     cards: [
       [
         "À quelles conditions le return réalisé d'une bond est-il égal à son YTM (yield to maturity) à l'achat ?",
-        "Return réalisé = YTM : à maturity, sans default, ==coupons réinvestis au YTM==\nEn clair : vente avant maturity : capital gain ou loss si le YTM a bougé. Reinvestment risk plus fort si coupon élevé ou maturity longue ; nul pour une zero-coupon bond.",
+        "Détenue ==jusqu'à maturity== · ==Aucun default== · Coupons ==réinvestis au YTM==\nEn clair : Une vente avant maturity crée un capital gain ou loss si le YTM a bougé. Le reinvestment risk croît avec le coupon et la maturity, et il est nul pour une zero-coupon bond.",
       ],
       [
-        "Qu'est-ce que le duration gap d'une bond et que signifie un duration gap positif ?",
-        "Duration gap = ==Macaulay duration − investment horizon== ; positif = price risk\nEn clair : gap > 0 : si les taux montent, la baisse du prix l'emporte sur le réinvestissement : return sous le YTM (yield to maturity) d'achat. Gap nul : effets compensés.\nPiège : gap < 0 : c'est une baisse des taux qui fait mal (reinvestment risk).",
+        "Formule du duration gap d'une bond, et que signifie un duration gap positif ?",
+        "$$\\text{Duration gap} = \\text{Macaulay duration} - \\text{Investment horizon}$$\nGap > 0 : ==le price risk domine==\nEn clair : Si les taux montent, la baisse du prix l'emporte sur le gain de réinvestissement : le return passe sous le YTM (yield to maturity) d'achat. Un gap nul neutralise les deux.\nPiège : gap < 0 : c'est une baisse des taux qui fait mal (reinvestment risk).",
       ],
       [
-        "Qu'est-ce que la Macaulay duration d'une bond et combien vaut-elle pour une zero-coupon bond ?",
-        "Macaulay duration = moyenne pondérée des dates ; zero-coupon : ==sa maturity==\nEn clair : chaque date de cash flow pèse PV (present value) du cash flow / prix. À maturity égale, une bond à coupons a une duration plus courte qu'une zero-coupon bond.",
+        "Formule de la Macaulay duration d'une bond, et combien vaut-elle pour une zero-coupon bond ?",
+        "$$\\text{Macaulay duration} = \\sum_{t=1}^{N} t \\times \\dfrac{PV(CF_t)}{P}$$\nZero-coupon : ==duration = maturity==\nEn clair : C'est la moyenne des dates t (en périodes) des cash flows $CF_t$, pondérées par leur PV (present value) rapportée au prix P. À maturity égale, une bond à coupons a une duration plus courte.",
       ],
       [
-        "Comment passe-t-on de la Macaulay duration à la modified duration, et que mesure la modified duration ?",
-        "$$\\text{Modified duration} = \\dfrac{\\text{Macaulay duration}}{1+r}$$\nEn clair : elle donne le % de baisse du prix pour 1 % de hausse du yield, où r = YTM (yield to maturity) par période. Ex. Macaulay duration 7, YTM annuel 5 % → 7 / 1,05 = 6,67.\nPiège : semestriel : diviser par (1 + YTM/2), pas par (1 + YTM).",
+        "Formule de la modified duration à partir de la Macaulay duration ? Application : Macaulay duration 7, YTM (yield to maturity) 5 %, coupons annuels.",
+        "$$\\text{Modified duration} = \\dfrac{\\text{Macaulay duration}}{1+r}$$\nEn clair : Avec r = YTM par période : 7 / 1,05 = 6,67. Le prix baisse donc d'environ 6,67 % si le yield monte de 1 %.\nPiège : semestriel : diviser par (1 + YTM/2), pas par (1 + YTM).",
       ],
       [
-        "Une bond cote 100. Son prix passe à 104 si son YTM (yield to maturity) baisse de 50 bp (basis points), et à 96,2 s'il monte de 50 bp. Quelle approximate modified duration ?",
-        "Modified duration ≈ (104 − 96,2) / (2 × 0,005 × 100) = ==7,8==\nEn clair : approximate modified duration = $(PV_- - PV_+) / (2 \\times \\Delta\\text{YTM} \\times PV_0)$, où $PV_-$, $PV_+$ = prix après baisse et hausse du YTM, $PV_0$ = prix actuel.\nPiège : ΔYTM en décimal : 50 bp = 0,005, pas 0,5 ni 0,05.",
+        "Formule de l'approximate modified duration d'une bond ? Application : prix 100 ; 104 si le YTM (yield to maturity) baisse de 50 bp (basis points), 96,2 s'il monte de 50 bp.",
+        "$$\\text{ApproxModDur} = \\dfrac{PV_- - PV_+}{2 \\times \\Delta\\text{YTM} \\times PV_0}$$\nEn clair : $PV_-$, $PV_+$ = prix après baisse et hausse du YTM, $PV_0$ = prix actuel. (104 − 96,2) / (2 × 0,005 × 100) = 7,8.\nPiège : ΔYTM en décimal : 50 bp = 0,005, pas 0,5 ni 0,05.",
       ],
       [
         "Pourquoi mesure-t-on le risque de taux d'une callable bond avec l'effective duration plutôt qu'avec la modified duration ?",
-        "Callable bond : ==pas de YTM unique==, cash flows liés au call\nEn clair : l'effective duration mesure la sensibilité du prix à un choc parallèle de la benchmark yield curve (ΔCurve), avec un modèle qui intègre le call.\nPiège : quand les taux baissent, l'effective duration d'une callable bond baisse (prix plafonné par le call).",
+        "Callable : ==cash flows incertains== (liés au call)\nEn clair : La modified duration suppose des cash flows fixes. L'effective duration mesure l'effet d'un choc de la benchmark yield curve (ΔCurve), via un modèle incluant le call.\nPiège : taux en baisse : l'effective duration d'une callable bond baisse (prix plafonné au call).",
       ],
       [
-        "Une position en bond a un full price de 2 000 000 et une annual modified duration de 6. Quels sont sa money duration et son PVBP (price value of a basis point) ?",
-        "Money duration et PVBP : ==12 000 000 et 1 200==\nEn clair : money duration = annual modified duration × full price = 6 × 2 000 000. PVBP = money duration × 0,0001 (1 bp, basis point).",
+        "Formules de la money duration et du PVBP (price value of a basis point) d'une position en bond ? Application : full price 2 000 000, annual modified duration 6.",
+        "$$\\text{Money duration} = \\text{AnnModDur} \\times PV^{\\text{Full}}$$\n$$\\text{PVBP} = \\dfrac{PV_- - PV_+}{2} \\approx \\text{Money duration} \\times 0{,}0001$$\nEn clair : AnnModDur = annual modified duration ; $PV_-$, $PV_+$ = prix si le YTM (yield to maturity) baisse ou monte de 1 bp (basis point). 6 × 2 000 000 = 12 000 000, puis 12 000 000 × 0,0001 = 1 200.",
       ],
       [
         "Toutes choses égales, quel effet ont la maturity, le coupon rate et le YTM (yield to maturity) sur la duration d'une bond option-free ?",
-        "Maturity ↑ ⇒ duration ↑ ; ==coupon ↑ ou YTM ↑ ⇒ duration ↓==\nEn clair : le prix le plus sensible aux taux : maturity longue, coupon bas, YTM bas. Avec le temps, la duration baisse.\nPiège : discount bond très longue : la duration peut baisser quand la maturity monte.",
+        "Maturity ↑ : ==duration ↑== · Coupon rate ↑ : ==duration ↓== · YTM ↑ : ==duration ↓==\nEn clair : La bond la plus sensible aux taux a une maturity longue, un coupon bas et un YTM bas. Avec le temps qui passe, la duration baisse.\nPiège : discount bond très longue : la duration peut baisser quand la maturity monte.",
       ],
       [
-        "La duration d'un portefeuille, calculée comme moyenne pondérée des durations, suppose quel mouvement de la yield curve, et quel outil mesure les autres mouvements ?",
-        "Moyenne pondérée des durations ⇒ ==parallel shift== supposé ; sinon, key rate durations\nEn clair : la key rate duration mesure l'effet d'un seul taux (une maturity), les autres fixes. Leur somme = effective duration ; elles captent le shaping risk.",
+        "Formule de la duration d'un portefeuille de bonds, et quel mouvement de la yield curve suppose-t-elle ?",
+        "$$D_P = \\sum_{i} w_i \\times D_i$$\nHypothèse : ==parallel shift== de la courbe\nEn clair : $w_i$ = poids de la bond i en market value, $D_i$ = sa duration. Pour les autres mouvements, les key rate durations mesurent l'effet d'un seul taux ; leur somme = effective duration.\nPiège : pondérer par la market value, pas par le nominal.",
       ],
       [
         "Empirical duration vs analytical duration : quelle différence, et laquelle est la plus faible pour une corporate bond en flight to quality ?",
-        "Flight to quality : ==empirical < analytical duration== (corporate bond)\nEn clair : empirical duration = estimée sur les prix passés ; analytical = calculée par formule. Taux d'État ↓ mais credit spreads ↑ : la corporate bond monte moins que prévu.",
+        "Empirical : ==estimée sur données passées== · Analytical : ==calculée par formule== · Flight-to-quality : ==empirical plus faible==\nEn clair : En flight to quality, les taux d'État baissent mais les credit spreads montent. La corporate bond monte donc moins que ne le prévoit l'analytical duration.",
       ],
       [
         "Que signifie la convexity positive d'une bond option-free ?",
-        "Même écart de yield : la hausse de prix ==dépasse== la baisse\nEn clair : convexity positive = courbe prix-yield bombée ; la duration (une droite tangente) sous-estime donc toujours le nouveau prix, que le yield monte ou baisse.",
+        "Même écart de yield : la hausse de prix ==dépasse== la baisse\nEn clair : La courbe prix-yield est bombée. La duration, une droite tangente, sous-estime donc toujours le nouveau prix, que le yield monte ou baisse.",
       ],
       [
-        "Une bond cote 100. Son prix passe à 105 si son YTM (yield to maturity) baisse de 100 bp (basis points), et à 95,2 s'il monte de 100 bp. Quelle approximate convexity ?",
-        "Convexity ≈ (105 + 95,2 − 200) / (0,01² × 100) = ==20==\nEn clair : approximate convexity = $(PV_- + PV_+ - 2PV_0) / ((\\Delta\\text{YTM})^2 \\times PV_0)$, où $PV_-$, $PV_+$ = prix après baisse et hausse du YTM, $PV_0$ = prix actuel.\nPiège : ΔYTM en décimal et au carré : 0,01² = 0,0001.",
+        "Formule de l'approximate convexity d'une bond ? Application : prix 100 ; 105 si le YTM (yield to maturity) baisse de 100 bp (basis points), 95,2 s'il monte de 100 bp.",
+        "$$\\text{ApproxCon} = \\dfrac{PV_- + PV_+ - 2 \\times PV_0}{(\\Delta\\text{YTM})^2 \\times PV_0}$$\nEn clair : $PV_-$, $PV_+$ = prix après baisse et hausse du YTM, $PV_0$ = prix actuel. (105 + 95,2 − 200) / (0,01² × 100) = 20.\nPiège : ΔYTM en décimal et au carré : 0,01² = 0,0001.",
       ],
       [
         "Quelle formule estime la variation en % du prix d'une bond avec la duration et la convexity ?",
-        "$$\\%\\Delta P \\approx -D \\times \\Delta y + \\tfrac{1}{2} \\times C \\times (\\Delta y)^2$$\nEn clair : où $D$ = annual modified duration, $C$ = annual convexity, $\\Delta y$ = variation du YTM (yield to maturity) en décimal. Le terme de convexity est positif pour une bond option-free.\nPiège : convexity par période → annuelle : diviser par m² (semestriel : ÷ 4).",
+        "$$\\%\\Delta P \\approx -D \\times \\Delta y + \\tfrac{1}{2} \\times C \\times (\\Delta y)^2$$\nEn clair : $D$ = annual modified duration, $C$ = annual convexity, $\\Delta y$ = variation du YTM (yield to maturity) en décimal. Le terme de convexity est positif pour une bond option-free.\nPiège : convexity par période → annuelle : diviser par m² (semestriel : ÷ 4).",
       ],
       [
-        "Une bond a une annual modified duration de 5 et une annual convexity de 50. Son YTM (yield to maturity) monte de 100 bp (basis points). Quelle variation de prix estimer ?",
-        "Prix ≈ −5 % + 0,25 % = ==−4,75 %==\nEn clair : −5 × 0,01 + ½ × 50 × 0,01². Le terme de convexity reste positif dans les deux sens : si le YTM baisse de 100 bp, +5,25 %.",
+        "Formule de la variation de prix d'une bond par duration effect et convexity adjustment ? Application : annual modified duration 5, annual convexity 50, YTM (yield to maturity) +100 bp.",
+        "Duration effect + convexity adjustment\n$$\\%\\Delta PV^{\\text{Full}} \\approx -\\text{AnnModDur} \\times \\Delta\\text{YTM} + \\tfrac{1}{2} \\times \\text{AnnConvexity} \\times (\\Delta\\text{YTM})^2$$\nEn clair : Avec 100 bp (basis points) = 0,01 : −5 × 0,01 + ½ × 50 × 0,01² = −5 % + 0,25 % = −4,75 %.\nPiège : le convexity adjustment reste positif : YTM −100 bp → +5 % + 0,25 % = +5,25 %.",
       ],
       [
         "Callable bond vs putable bond : quelle convexity ont-elles quand les taux bougent ?",
-        "Callable : ==negative convexity== à bas taux ; putable : toujours positive\nEn clair : à bas taux, le call price plafonne le prix de la callable bond. Le put crée un plancher pour la putable bond quand les taux montent.\nPiège : les MBS (mortgage-backed securities) ont aussi une negative convexity, à cause des prepayments.",
+        "Callable : ==negative convexity (bas taux)== · Putable : ==positive convexity==\nEn clair : À bas taux, le call price plafonne le prix de la callable bond. Quand les taux montent, le put crée un plancher pour la putable bond.\nPiège : les MBS (mortgage-backed securities) ont aussi une negative convexity, à cause des prepayments.",
       ],
     ],
   },
@@ -222,20 +222,20 @@ export const SETS = [
     title: "Fixed Income — Flashcards 4/4 (Risque de crédit & titrisation)",
     cards: [
       [
-        "Comment calcule-t-on l'expected loss d'une bond et quel credit spread en déduire ?",
-        "Expected loss = ==POD × LGD== ≈ credit spread exigé\nEn clair : POD = probability of default ; LGD = loss given default = exposure × (1 − recovery rate). Ex. POD 2 %, recovery 40 % → 2 % × 60 % = 1,2 %.",
+        "Formule de l'expected loss d'une bond ? Application : POD (probability of default) 2 %, recovery rate 40 %, exposure 100 % du montant dû.",
+        "$$\\text{Expected loss} = \\text{POD} \\times \\text{LGD}$$\n$$\\text{LGD} = \\text{Exposure} \\times (1 - \\text{Recovery rate})$$\nEn clair : LGD = loss given default, en % du montant dû. 2 % × 100 % × (1 − 40 %) = 1,2 %, à peu près le credit spread exigé (credit spread ≈ POD × LGD).",
       ],
       [
         "Quelles sont les 5 C de l'analyse crédit bottom-up d'un corporate issuer ?",
-        "==Capacity== · ==Capital== · ==Collateral== · ==Covenants== · ==Character==\nEn clair : capacity = capacité à payer (coverage ↑, leverage ↓) ; character = qualité du management. À ne pas confondre avec les C top-down : conditions, country, currency.",
+        "==Capacity== · ==Capital== · ==Collateral== · ==Covenants== · ==Character==\nEn clair : Capacity = capacité à payer ses dettes à temps, character = intégrité du management. Les C top-down sont autres : conditions, country, currency.",
       ],
       [
         "Dans quel ordre la dette d'un corporate issuer est-elle remboursée en cas de default ?",
-        "==Secured > unsecured > subordinated== ; senior avant junior à chaque rang\nEn clair : ordre complet : first lien > senior secured > junior secured > senior unsecured > senior subordinated > subordinated > junior subordinated.\nPiège : l'absolute priority of claims n'est pas toujours respectée (règlement négocié).",
+        "==Secured > unsecured > subordinated==\nEn clair : À chaque niveau, le senior passe avant le junior : first lien > senior secured > junior secured > senior unsecured > senior subordinated > subordinated > junior subordinated.\nPiège : l'absolute priority of claims n'est pas toujours respectée (règlement négocié).",
       ],
       [
         "Issuer credit rating vs issue credit rating : quelle différence, et qu'est-ce que le notching ?",
-        "Issue rating = ==issuer rating ± notching== (seniority, collateral)\nEn clair : l'issuer rating (CFR, corporate family rating) note la dette senior unsecured. Secured : notée plus haut ; subordinated : plus bas. Notching surtout si l'issuer est mal noté.\nPiège : structural subordination : sur les cash flows d'une filiale, la dette de la filiale passe avant celle de la holding.",
+        "Issuer : ==note la senior unsecured== · Issue : ==issuer rating ± notching==\nEn clair : Le notching monte la note d'une dette secured et baisse celle d'une subordinated, surtout si l'issuer est mal noté.\nPiège : structural subordination : chez une filiale, sa propre dette passe avant celle de la holding.",
       ],
       [
         "Dans une securitization, quels rôles jouent le seller, le SPE (special purpose entity) et le servicer ?",
@@ -243,43 +243,43 @@ export const SETS = [
       ],
       [
         "Quels sont les principaux benefits de la securitization pour la banque qui vend ses prêts (l'originator), pour les investisseurs et pour les marchés ?",
-        "Originator : ==prête plus== · Investisseurs : ==risk/return sur mesure== · Marchés : ==plus liquides==\nEn clair : l'originator libère du cash et du regulatory capital, et touche des fees. Les investisseurs accèdent à des prêts qu'ils ne savent pas originer.\nPiège : réduire le crédit bancaire n'est pas un benefit : la banque prête plus.",
+        "Originator : ==prête plus== · Investisseurs : ==risk/return sur mesure== · Marchés : ==plus liquides==\nEn clair : L'originator libère du cash et du regulatory capital. Les investisseurs accèdent à des prêts qu'ils ne savent pas originer eux-mêmes.\nPiège : réduire le crédit bancaire n'est pas un benefit : la banque prête plus.",
       ],
       [
         "Quelles sont les 3 formes d'internal credit enhancement d'un ABS (asset-backed security) ?",
-        "==Overcollateralization== · ==Excess spread== · ==Credit tranching== (subordination)\nEn clair : collateral > ABS émis ; intérêts reçus > coupons dus (l'excédent couvre les pertes) ; les tranches juniors perdent en premier.\nPiège : le tranching répartit le risque du pool, il ne le réduit pas.",
+        "==Overcollateralization== · ==Excess spread== · ==Credit tranching== (subordination)\nEn clair : Le collateral dépasse les ABS émis, les intérêts reçus dépassent les coupons dus, et les tranches juniors absorbent les pertes en premier.\nPiège : le tranching répartit le risque du pool, il ne le réduit pas.",
       ],
       [
         "Covered bond vs ABS (asset-backed security) : où restent les actifs, et pourquoi la covered bond est-elle moins risquée ?",
-        "Covered bond : actifs ==au bilan de l'issuer== + dual recourse\nEn clair : le bondholder a recours sur l'issuer et sur le cover pool, renouvelé si des actifs se dégradent (dynamic cover pool) : moins de risque, yield plus bas qu'un ABS.\nPiège : hard-bullet = default dès un paiement manqué ; soft-bullet = maturity repoussable jusqu'à 1 an.",
+        "Covered bond : ==reste au bilan== · ABS : ==sort du bilan==\nEn clair : Le bondholder a recours sur l'issuer et sur le cover pool (dual recourse), renouvelé si un actif se dégrade : moins de risque, yield plus bas qu'un ABS.\nPiège : hard-bullet = default dès un paiement manqué ; soft-bullet = maturity repoussable jusqu'à 1 an.",
       ],
       [
         "Credit card ABS (asset-backed security) : que reçoivent les investisseurs pendant la lockout (revolving) period, puis après ?",
-        "Lockout period : ==intérêts et fees seulement== ; ensuite, le principal aussi\nEn clair : pendant la lockout, le principal remboursé rachète de nouvelles receivables (non-amortizing). Une rapid amortization provision avance le remboursement si le pool se dégrade.",
+        "Lockout : ==intérêts et fees seulement== · Ensuite : ==le principal aussi==\nEn clair : Pendant la lockout, le principal remboursé par les porteurs de cartes rachète de nouvelles receivables. Une rapid amortization provision avance le remboursement si le pool se dégrade.",
       ],
       [
         "Quels sont les 3 types de CLO (collateralized loan obligation) et d'où viennent les paiements de chacun ?",
-        "Cash flow : ==flux du collateral== · Market value : ==trading du collateral== · Synthetic : ==credit derivatives==\nEn clair : un CLO est adossé à des leveraged loans et géré activement par un collateral manager. Tranche la plus risquée : l'equity tranche.",
+        "Cash flow : ==flux du collateral== · Market value : ==trading du collateral== · Synthetic : ==credit derivatives==\nEn clair : Le CLO est adossé à des leveraged loans et géré activement par un collateral manager. Sa tranche la plus risquée est l'equity tranche.",
       ],
       [
         "MBS (mortgage-backed security) : quand les taux baissent, quel risque de prepayment apparaît, contraction risk ou extension risk ?",
-        "Taux ↓ ⇒ ==contraction risk== : prepayments plus rapides\nEn clair : les emprunteurs refinancent : le principal revient plus tôt et se réinvestit à des taux plus bas. Une PO (principal-only) tranche y gagne, une IO (interest-only) tranche y perd.\nPiège : taux ↑ = extension risk (prepayments ralentis) : ne pas inverser les deux.",
+        "Taux ↓ ⇒ ==contraction risk== : prepayments plus rapides\nEn clair : Les emprunteurs refinancent, donc le principal revient plus tôt et se réinvestit à des taux plus bas. Une PO (principal-only) tranche y gagne, une IO (interest-only) y perd.\nPiège : taux ↑ = extension risk (prepayments ralentis) : ne pas inverser les deux.",
       ],
       [
         "Agency RMBS vs non-agency RMBS (residential mortgage-backed securities) : qui émet et qui garantit ?",
-        "Agency : ==garantie État ou GSE== ; non-agency : émetteurs privés, sans garantie\nEn clair : GSE = government-sponsored enterprise : sa garantie n'est pas celle de l'État. L'agency RMBS porte sur des conforming loans ; le non-agency a besoin d'un credit enhancement.\nPiège : pass-through rate < WAC (weighted average coupon) du pool : les servicing fees sont prélevées avant.",
+        "Agency : ==garantie État ou GSE== · Non-agency : ==privé, sans garantie==\nEn clair : GSE = government-sponsored enterprise, dont la garantie n'est pas celle de l'État. Le non-agency RMBS a besoin d'un credit enhancement.\nPiège : pass-through rate < WAC (weighted average coupon) du pool : les servicing fees sont prélevées avant.",
       ],
       [
         "CMO (collateralized mortgage obligation) sequential-pay : quelle tranche porte le plus de contraction risk, et laquelle le plus d'extension risk ?",
-        "Première tranche : ==contraction risk== ; dernière : extension risk\nEn clair : tout le principal, prepayments compris, va à la tranche 1 jusqu'à son remboursement complet, puis à la tranche 2, etc.\nPiège : le time tranching répartit le prepayment risk, il ne le supprime pas.",
+        "Première tranche : ==max contraction risk== · Dernière tranche : ==max extension risk==\nEn clair : Tout le principal, prepayments compris, va à la tranche 1 jusqu'à son remboursement complet, puis à la tranche 2, et ainsi de suite.\nPiège : le time tranching répartit le prepayment risk, il ne le supprime pas.",
       ],
       [
         "CMO (collateralized mortgage obligation) : PAC (planned amortization class) tranche vs support tranche, laquelle absorbe le prepayment risk ?",
-        "La ==support tranche== absorbe le prepayment risk\nEn clair : elle encaisse l'excès ou le manque de prepayments pour que la PAC tranche suive son calendrier, tant qu'ils restent dans une bande prévue.",
+        "PAC : ==suit son calendrier== · Support : ==absorbe le prepayment risk==\nEn clair : La support tranche encaisse l'excès ou le manque de prepayments, pour que la PAC tranche tienne son calendrier tant qu'ils restent dans une bande prévue.",
       ],
       [
         "Pourquoi l'analyse d'un CMBS (commercial mortgage-backed security) se concentre-t-elle sur le DSCR (debt service coverage ratio) et le LTV (loan-to-value) de chaque immeuble ?",
-        "Prêts ==nonrecourse== : seul l'immeuble rembourse le prêteur\nEn clair : DSCR = NOI (net operating income) / debt service : haut = mieux ; LTV : bas = mieux. Call protection : prepayment lockout, defeasance, prepayment penalty points.\nPiège : le balloon risk est une forme d'extension risk.",
+        "Prêts ==nonrecourse== : seul l'immeuble rembourse le prêteur\nEn clair : Un DSCR élevé (NOI / debt service, NOI = net operating income) et un LTV bas signalent un prêt sûr. La call protection passe par lockout, defeasance ou prepayment penalty points.\nPiège : le balloon risk est une forme d'extension risk.",
       ],
     ],
   },

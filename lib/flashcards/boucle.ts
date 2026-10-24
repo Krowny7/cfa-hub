@@ -7,7 +7,9 @@
 // de suite jusqu'à zéro : « Tout est maîtrisé ».
 //
 // L'état est un objet sérialisable (localStorage, une boucle par paquet ou
-// par matière) ; chaque fonction rend un nouvel état sans modifier l'ancien.
+// par matière, et sur le compte : table flashcard_progress, voir
+// lib/flashcards/progression.ts) ; chaque fonction rend un nouvel état sans
+// modifier l'ancien.
 // La répétition espacée (lib/srs.ts) reste à part : elle planifie la
 // prochaine fois, la boucle ne gère que la séance en cours.
 
@@ -37,6 +39,24 @@ export type EtatBoucle = {
   actif: number;
   /** fin de la boucle (ms), null tant qu'il reste des cartes à revoir */
   fin: number | null;
+  /**
+   * dernier changement venu du joueur (ms) : départage la boucle de
+   * l'appareil et celle du compte, et identifie la version écrite sur le
+   * compte. Toujours au-delà de la version du compte connue (voir
+   * SuiviCompte.horodater, lib/flashcards/progression.ts), même si l'horloge
+   * de l'appareil retarde. Absent des états gardés avant la synchronisation :
+   * `dernier` en tient lieu (voir horodatage).
+   */
+  maj?: number;
+  /**
+   * la version du compte (son `maj`) sur laquelle ce geste s'appuie : la base
+   * refuse l'écriture si le compte a changé ailleurs depuis
+   * (migration_flashcard_progress.sql), et l'appareil sait qu'il était en
+   * retard (choisirBoucle). Absent sans synchronisation.
+   */
+  base?: number;
+  /** le joueur qui a gardé cette boucle sur l'appareil (localStorage seulement, jamais écrit sur le compte) */
+  u?: string;
 };
 
 export type Phase = "carte" | "entracte" | "fin";
@@ -164,6 +184,20 @@ export function enCours(e: EtatBoucle): boolean {
   return phase(e) !== "fin" && (e.tour > 1 || Object.keys(e.marques).length > 0);
 }
 
+/** Les gestes qui changent la boucle. */
+export type Geste = "marquer" | "tour" | "recommencer" | "aller";
+
+/**
+ * Un geste doit-il être horodaté, gardé et envoyé sur le compte ? Oui pour
+ * marquer, passer au tour suivant et « Recommencer » (qui remplace exprès la
+ * boucle gardée, finie comprise). Se déplacer (← →) seulement dans une boucle
+ * entamée : feuilleter une boucle neuve, ouverte sur un paquet déjà
+ * maîtrisé, ne remplace pas la boucle finie (« Maîtrisé » reste).
+ */
+export function doitSynchroniser(geste: Geste, suite: EtatBoucle): boolean {
+  return geste !== "aller" || enCours(suite);
+}
+
 /** Où en est la boucle : « tour 2 · carte 4/7 », ou l'entracte. */
 export function repere(e: EtatBoucle): { tour: number; rang: number; total: number; entracte: boolean; aRevoir: number } {
   const p = phase(e);
@@ -190,7 +224,56 @@ export function valider(x: unknown): EtatBoucle | null {
   if (!Array.isArray(o.parcours) || !o.parcours.every(estNombre)) return null;
   if (!(o.derniere === null || typeof o.derniere === "string")) return null;
   if (!(o.fin === null || estNombre(o.fin))) return null;
+  if (!(o.maj === undefined || estNombre(o.maj))) return null;
+  if (!(o.base === undefined || estNombre(o.base))) return null;
+  if (!(o.u === undefined || typeof o.u === "string")) return null;
   return o as unknown as EtatBoucle;
+}
+
+/** Quand la boucle a changé pour la dernière fois (ms) : `maj`, sinon le dernier geste. */
+export function horodatage(e: EtatBoucle): number {
+  return e.maj ?? e.dernier;
+}
+
+/**
+ * La boucle de l'appareil l'emporte-t-elle sur la version du compte datée
+ * `tCompte` (null : pas de ligne) ? Même version : oui. L'appareil s'appuyait
+ * sur une version du compte plus ancienne que celle qui y est (`base`) : le
+ * compte a changé ailleurs depuis (envoi refusé, ou jamais parti), il prime,
+ * même si l'appareil a des gestes plus récents. Sinon, la plus récente.
+ */
+export function appareilPrime(local: EtatBoucle, tCompte: number | null): boolean {
+  if (tCompte === null) return true;
+  const t = horodatage(local);
+  if (t === tCompte) return true;
+  if (local.base !== undefined && tCompte > local.base) return false;
+  return t > tCompte;
+}
+
+/**
+ * La boucle à reprendre entre celle de l'appareil (localStorage) et celle du
+ * compte (flashcard_progress), selon appareilPrime ; à égalité, l'appareil.
+ * `compte.maj` : updated_at de la ligne, quand l'état n'a pas d'horodatage.
+ * Les deux sont déjà validées et réparées.
+ */
+export function choisirBoucle(
+  local: EtatBoucle | null,
+  compte: { etat: EtatBoucle; maj: number } | null
+): { etat: EtatBoucle | null; source: "appareil" | "compte" | null } {
+  if (!compte) return { etat: local, source: local ? "appareil" : null };
+  if (!local) return { etat: compte.etat, source: "compte" };
+  return appareilPrime(local, compte.etat.maj ?? compte.maj) ? { etat: local, source: "appareil" } : { etat: compte.etat, source: "compte" };
+}
+
+/**
+ * Une boucle relue sur l'appareil, si elle est bien à ce joueur : celle d'un
+ * autre compte du même navigateur (ordinateur partagé) est écartée, jamais
+ * reprise ni envoyée. Sans auteur (gardée avant la synchronisation) : reprise
+ * par le premier compte qui l'ouvre, comme avant.
+ */
+export function boucleDuJoueur(e: EtatBoucle | null, joueur: string | null | undefined): EtatBoucle | null {
+  if (!e) return null;
+  return e.u !== undefined && joueur && e.u !== joueur ? null : e;
 }
 
 /**
@@ -254,6 +337,18 @@ export function lireBoucle(cle: string, ids: readonly string[], s?: Stockage | n
     if (!raw) return null;
     const e = valider(JSON.parse(raw));
     return e ? reparer(e, ids) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** La boucle gardée telle quelle (validée, sans réparation : les listes n'ont pas les cartes). */
+export function lireBoucleBrute(cle: string, s?: Stockage | null): EtatBoucle | null {
+  const st = stockage(s);
+  if (!st) return null;
+  try {
+    const raw = st.getItem(cleBoucle(cle));
+    return raw ? valider(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
