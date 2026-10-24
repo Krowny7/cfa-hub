@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ChevronDown, FileText, Headphones } from "lucide-react";
 import { Feuille } from "@/components/ui/Feuille";
 import { RichText } from "@/components/RichText";
+import { VersoCompact } from "@/components/flashcards/Verso";
 import type { RappelNotion } from "@/lib/atelier-seance";
 import { ATELIER as V } from "@/lib/voice-atelier";
 
@@ -43,7 +44,7 @@ function Flashcard({ recto, verso }: { recto: string; verso: string }) {
     <li className="rounded-[12px] border border-line px-3.5 py-3">
       <RichText text={recto} className="text-[14px] font-semibold leading-snug break-words [overflow-wrap:anywhere]" />
       {ouverte ? (
-        <RichText text={verso} className="rl-in mt-2 border-t border-line pt-2 text-[13.5px] leading-[1.55] text-body break-words [overflow-wrap:anywhere]" />
+        <VersoCompact back={verso} className="rl-in mt-2 border-t border-line pt-2 text-[13.5px] leading-[1.55] text-body break-words [overflow-wrap:anywhere]" />
       ) : (
         <button type="button" className="t-micro -mb-2 inline-flex min-h-[44px] items-center gap-1 font-semibold hover:text-white" aria-expanded={false} onClick={() => setOuverte(true)}>
           {V.verso} <ChevronDown size={12} aria-hidden />

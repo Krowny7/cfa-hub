@@ -122,7 +122,14 @@ export function toleranceOf(q: Pick<CalcQuestion, "decimals" | "tolerance">): nu
   return 0.5 * Math.pow(10, -Math.max(0, Math.round(q.decimals)));
 }
 
-/** Juste si l'écart tient dans la tolérance absolue, ou s'il fait au plus 0,2 % de la réponse. */
+/** Écart relatif au-delà duquel la réponse arrondie à une décimale de moins n'est plus acceptée (1 %). */
+export const ARRONDI_MAX = 0.01;
+
+/**
+ * Juste si l'écart tient dans la tolérance absolue, ou s'il fait au plus 0,2 % de la réponse,
+ * ou si c'est la réponse arrondie à une décimale de moins (0,52 pour 0,523) et que cet arrondi
+ * coûte au plus 1 % (0,1 pour 0,05 reste faux).
+ */
 export function isCorrectValue(value: number, q: Pick<CalcQuestion, "answer" | "decimals" | "tolerance" | "strict">): boolean {
   if (!Number.isFinite(value) || !Number.isFinite(q.answer)) return false;
   const diff = Math.abs(value - q.answer);
@@ -130,7 +137,11 @@ export function isCorrectValue(value: number, q: Pick<CalcQuestion, "answer" | "
   const eps = 1e-9 * Math.max(1, Math.abs(q.answer));
   // question stricte : la seule tolérance absolue (un raccourci qui tombe à 0,1 % n'est pas accepté)
   if (q.strict) return diff <= toleranceOf(q) + eps;
-  return diff <= toleranceOf(q) + eps || diff <= REL_TOLERANCE * Math.abs(q.answer) + eps;
+  if (diff <= toleranceOf(q) + eps || diff <= REL_TOLERANCE * Math.abs(q.answer) + eps) return true;
+  const d = Math.round(q.decimals) - 1;
+  if (d < 1) return false;
+  const arrondi = Math.abs(value - Math.round(q.answer * 10 ** d) / 10 ** d) <= 1e-9 * Math.max(1, Math.abs(value));
+  return arrondi && diff <= ARRONDI_MAX * Math.abs(q.answer) + eps;
 }
 
 export type CalcStatus = "juste" | "faux" | "format";

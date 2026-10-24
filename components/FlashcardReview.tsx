@@ -1,142 +1,207 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { codexNoter } from "@/lib/codex/actions";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Maximize2, Minimize2, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Maximize2, Minimize2, RotateCcw, Shuffle } from "lucide-react";
+import { codexNoter } from "@/lib/codex/actions";
 import { loadSRS, saveSRS, applyReview, sortBySRS } from "@/lib/srs";
-import { RichText } from "@/components/RichText";
 import { FinDePasse } from "@/components/session/FinDePasse";
 import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
-import { FLASHCARDS } from "@/lib/voice-z3c";
+import { FichePile, type CarteVue, type Envol } from "@/components/flashcards/Pile";
+import { BarreTour, Entracte, LegendeTour, LienOnePager, Reprise } from "@/components/flashcards/Panneaux";
+import s from "@/components/flashcards/Revision.module.css";
+import {
+  aRevoir,
+  aller as allerDans,
+  bilan,
+  carteCourante,
+  demarrer,
+  ecrireBoucle,
+  ecrireMelange,
+  effacerBoucle,
+  enCours,
+  etatFige,
+  lireBoucle,
+  lireMelange,
+  marquer,
+  phase,
+  progression,
+  reprendre,
+  repere,
+  tourSuivant,
+  type EtatBoucle,
+} from "@/lib/flashcards/boucle";
+import { lieuCarte } from "@/lib/flashcards/paquets";
+import { BOUCLE, FLASHCARDS } from "@/lib/voice-z3c";
 
-type Card = { id: string; front: string; back: string };
+// La révision d'un paquet de flashcards (ou de toute une matière) : une pile
+// de fiches bristol, et la boucle « À revoir » (lib/flashcards/boucle.ts).
+// Tour 1 : toutes les cartes ; chaque fin de tour avec des « À revoir » passe
+// par un entracte, puis ces cartes seules reviennent, mélangées, jusqu'à
+// zéro : « Tout est maîtrisé ». La boucle est gardée dans le navigateur (par
+// paquet, ou par matière) : au retour, on la reprend ou on recommence.
+//
+// La répétition espacée (lib/srs.ts) continue d'être écrite à chaque marque,
+// pour LA PROCHAINE fois : elle ne réordonne jamais la séance en cours (un
+// ordre recalculé en pleine passe faisait sauter des cartes). L'ordre du
+// tour 1 est tiré une fois : répétition espacée pour un paquet, programme
+// pour une matière, ou mélangé si l'option « Mélanger » est gardée.
+//
+// Raccourcis : Espace/Entrée retourne, ← → naviguent, 1 = à revoir,
+// 2 = maîtrisée, Entrée passe l'entracte, Échap quitte le plein écran.
+
+export type FlashcardCard = {
+  id: string;
+  front: string;
+  back: string;
+  /** le paquet de la carte (révision d'une matière) : sa répétition espacée */
+  setId?: string | null;
+  /** le thème de son paquet, pour l'en-tête de la fiche */
+  theme?: string | null;
+};
 
 /** Aperçu uniquement : ouvre la révision dans un état donné. */
 export type FlashcardDemo = {
+  /** la carte à l'écran (index dans la file du tour) */
   index?: number;
   flipped?: boolean;
+  /** tour bouclé : les cartes sans marque sont comptées maîtrisées */
   done?: boolean;
   marks?: Record<string, boolean>;
   fullscreen?: boolean;
+  /** tour en cours (défaut 1) et sa file (défaut : toutes les cartes) */
+  tour?: number;
+  file?: string[];
+  /** tailles des tours, marques du tour 1, temps actif : le bilan final */
+  parcours?: number[];
+  premier?: Record<string, boolean>;
+  dureeMs?: number;
+  /** l'écran de reprise d'une boucle entamée (il y a `depuisMs`) */
+  reprise?: boolean;
+  depuisMs?: number;
+  /** la carte d'avant, arrêtée en plein envol avec son tampon */
+  envol?: "su" | "revoir";
 };
 
-// Carte à retournement 3D : les deux faces sont TOUJOURS dans le DOM, empilées
-// en absolute, et c'est le conteneur qui pivote (rotateY) — backface-visibility
-// cache la face qui n'est pas tournée vers l'utilisateur. Un simple swap de
-// texte (l'ancienne implémentation) n'a pas d'étape intermédiaire animable.
-function Face({ text, back, big }: { text: string; back: boolean; big: boolean }) {
-  const short = text.length <= 240 && !text.includes("\n") && !text.includes("$$") && !text.includes("![");
-  const size = back
-    ? big
-      ? "text-[19px] leading-relaxed sm:text-[23px]"
-      : "text-[16px] leading-relaxed sm:text-[17.5px]"
-    : big
-      ? "text-[24px] font-semibold leading-snug tracking-[-0.018em] sm:text-[34px]"
-      : "text-[20px] font-semibold leading-snug tracking-[-0.016em] sm:text-[25px]";
-  return (
-    <div
-      className={
-        "card-hero absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden p-6 [backface-visibility:hidden] sm:p-8 " +
-        (back ? "[transform:rotateY(180deg)]" : "")
-      }
-      aria-hidden={undefined}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span className="t-eyebrow">{back ? "Verso" : "Recto"}</span>
-        {!back && <span className="t-micro hidden sm:inline">Clique pour retourner</span>}
-      </div>
-      <div className={"flex min-w-0 flex-1 py-5 " + (short ? "items-center justify-center text-center" : "items-start")}>
-        <RichText
-          text={text}
-          className={"w-full break-words [overflow-wrap:anywhere] " + size + (short ? (back ? " mx-auto max-w-[48ch]" : " mx-auto max-w-[34ch]") : "")}
-        />
-      </div>
-    </div>
-  );
-}
+type Mode = "fantome" | "reprise" | "carte" | "entracte" | "fin";
 
-function FlipCard({ card, flipped, onFlip, big, className = "" }: { card: Card; flipped: boolean; onFlip: () => void; big: boolean; className?: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onFlip}
-      aria-label={flipped ? "Revenir au recto" : "Retourner la carte"}
-      className={"relative block w-full rounded-[22px] text-left [perspective:1600px] " + className}
-    >
-      <div
-        className={
-          "absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.4,0.2,0.2,1)] [transform-style:preserve-3d] motion-reduce:transition-none " +
-          (flipped ? "[transform:rotateY(180deg)]" : "")
-        }
-      >
-        <Face text={card.front} back={false} big={big} />
-        <Face text={card.back} back big={big} />
-      </div>
-    </button>
-  );
+const HAUTEUR = "h-[clamp(370px,60vh,540px)]";
+const a = (o: Record<string, boolean>, id: string) => Object.prototype.hasOwnProperty.call(o, id);
+
+function etatDemo(cards: FlashcardCard[], d: FlashcardDemo): EtatBoucle {
+  const ids = cards.map((c) => c.id);
+  const file = d.file ?? ids;
+  const marques = { ...(d.marks ?? {}) };
+  if (d.done) for (const id of file) if (!a(marques, id)) marques[id] = true;
+  return etatFige({ ids, tour: d.tour, file, marques, premier: d.premier, pos: d.done ? undefined : d.index, parcours: d.parcours, dureeMs: d.dureeMs });
 }
 
 export function FlashcardReview({
   cards,
   setId,
+  cle,
   traitsJour = null,
   matiere,
+  matiereNom,
+  theme,
+  onePager = null,
+  autresHref = "/flashcards",
+  ordre = "srs",
   demo,
 }: {
-  cards: Card[];
+  cards: FlashcardCard[];
+  /** le paquet : sa répétition espacée et, par défaut, la clé de sa boucle */
   setId?: string;
-  /** traits du jour lus par le serveur : le sceau du jour en fin de passe si la journée est tenue */
+  /** clé de la boucle gardée (sinon setId) : « matiere:fixed_income » pour une matière */
+  cle?: string;
+  /** traits du jour lus par le serveur : le sceau du jour en fin de boucle si la journée est tenue */
   traitsJour?: number | null;
-  /** la matière du paquet (clé du programme), si elle est connue : pour le Codex */
+  /** la matière (clé du programme), si elle est connue : pour le Codex */
   matiere?: string;
+  /** nom de la matière pour l'en-tête des fiches (« Fixed Income ») */
+  matiereNom?: string | null;
+  /** thème du paquet (sinon celui de chaque carte) */
+  theme?: string | null;
+  /** URL du one-pager de la matière (fin de boucle) */
+  onePager?: string | null;
+  /** « Autres paquets » en fin de boucle */
+  autresHref?: string;
+  /** ordre du tour 1 sans mélange : répétition espacée du paquet, ou l'ordre reçu (programme) */
+  ordre?: "srs" | "programme";
   demo?: FlashcardDemo;
 }) {
   const jour = useTraitsDuJour(traitsJour);
-  // La passe de révision est un instantané figé au montage — jamais recalculé
-  // pendant la passe. C'est le même principe que les vrais outils de
-  // répétition espacée (Anki, SuperMemo…) : l'ordre de la file du jour est
-  // tiré UNE fois ; les mises à jour de planification (dates d'échéance,
-  // ease factor) sont écrites pour LA PROCHAINE fois, jamais pour réordonner
-  // la file en cours. Auparavant, `orderedCards` était un useMemo dépendant de
-  // srsState : marquer une carte changeait son échéance → retriait tout le
-  // tableau → décalait l'index en plein milieu de la passe → symptôme
-  // observé : cartes sautées et d'autres revues plusieurs fois.
-  const [deck] = useState<Card[]>(() => {
-    if (!setId || demo) return cards;
-    try {
-      return sortBySRS(cards, loadSRS(setId));
-    } catch {
-      return cards;
-    }
+  const cleStock = demo ? null : (cle ?? setId ?? null);
+  const ids = useMemo(() => cards.map((c) => c.id), [cards]);
+  const parId = useMemo(() => new Map(cards.map((c, i) => [c.id, { c, n: i + 1 }])), [cards]);
+
+  function vue(id: string): CarteVue | null {
+    const x = parId.get(id);
+    if (!x) return null;
+    return { id, front: x.c.front, back: x.c.back, lieu: lieuCarte(matiereNom, x.c.theme ?? theme), numero: BOUCLE.numero(x.n, cards.length) };
+  }
+
+  // Avant la lecture du navigateur (boucle gardée, préférence de mélange,
+  // répétition espacée), rien n'est tiré : une fiche blanche à la bonne
+  // taille, puis l'état réel au montage. Le rendu serveur et le premier rendu
+  // du navigateur restent identiques.
+  const [etat, setEtat] = useState<EtatBoucle | null>(() => (demo && !demo.reprise ? etatDemo(cards, demo) : null));
+  const [reprise, setReprise] = useState<EtatBoucle | null>(() => (demo?.reprise ? etatDemo(cards, demo) : null));
+  const [verso, setVerso] = useState(demo?.flipped ?? false);
+  const [lever, setLever] = useState(0);
+  const [plein, setPlein] = useState(demo?.fullscreen ?? false);
+  const [melange, setMelange] = useState(false);
+  const [focusEntracte, setFocusEntracte] = useState(false);
+  const envolCle = useRef(1);
+  const [envols, setEnvols] = useState<Envol[]>(() => {
+    if (!demo?.envol || demo.reprise) return [];
+    const e0 = etatDemo(cards, demo);
+    const avant = e0.file[Math.max(0, Math.min(e0.pos, e0.file.length) - 1)];
+    const v = avant ? vue(avant) : null;
+    return v ? [{ cle: 0, carte: v, su: demo.envol === "su", dx: 0, fige: true }] : [];
   });
 
-  // Idem : snapshot figé au moment où l'utilisateur choisit "repasser sur les
-  // non maîtrisées", pas une liste dérivée en direct de sessionMarks (qui
-  // aurait le même bug de décalage d'index si on retire une carte en cours de
-  // repasse).
-  const [reviewMode, setReviewMode] = useState<"all" | "unmastered">("all");
-  const [unmasteredSnapshot, setUnmasteredSnapshot] = useState<Card[]>([]);
+  function ordreDeBase(): string[] {
+    if (ordre === "srs" && setId) {
+      try {
+        return sortBySRS(cards, loadSRS(setId)).map((c) => c.id);
+      } catch {
+        // pas de répétition espacée lisible : l'ordre du paquet
+      }
+    }
+    return ids;
+  }
+  const nouvelle = (m: boolean) => demarrer(m ? ids : ordreDeBase(), { melanger: m });
 
-  const [i, setI] = useState(demo?.index ?? 0);
-  const [flipped, setFlipped] = useState(demo?.flipped ?? false);
-  const [done, setDone] = useState(demo?.done ?? false);
-  const [fullscreen, setFullscreen] = useState(demo?.fullscreen ?? false);
+  // Montage : la boucle gardée (à reprendre si elle est entamée), sinon une neuve.
+  useEffect(() => {
+    if (demo || !cards.length) return;
+    const m = lireMelange();
+    setMelange(m);
+    const gardee = cleStock ? lireBoucle(cleStock, ids) : null;
+    if (gardee && enCours(gardee)) setReprise(gardee);
+    else setEtat(nouvelle(m));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Marques de cette passe (pas persistées) : sert uniquement à compter/lister
-  // les "non maîtrisées" pour proposer la repasse ciblée — ne remplace pas le
-  // SRS, qui reste la seule source de vérité pour la planification long terme.
-  const [sessionMarks, setSessionMarks] = useState<Record<string, boolean>>(demo?.marks ?? {});
-
-  const activeDeck = reviewMode === "all" ? deck : unmasteredSnapshot;
-  const current = activeDeck[i] ?? null;
-  const total = activeDeck.length;
-  const notMasteredCount = deck.filter((c) => sessionMarks[c.id] === false).length;
-  const passMastered = activeDeck.filter((c) => sessionMarks[c.id] === true).length;
-  const passToReview = activeDeck.filter((c) => sessionMarks[c.id] === false).length;
+  // La boucle est gardée à chaque geste ; finie ou pas entamée, elle s'efface.
+  useEffect(() => {
+    if (!cleStock || !etat) return;
+    if (enCours(etat)) ecrireBoucle(cleStock, etat);
+    else effacerBoucle(cleStock);
+  }, [etat, cleStock]);
 
   // Le clavier ne pilote la carte que si elle est à l'écran (ou en plein écran).
   const rootRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // les boutons qui reprennent le focus quand celui qui l'avait disparaît
+  const pleinRef = useRef<HTMLButtonElement>(null);
+  const quitterRef = useRef<HTMLButtonElement>(null);
+  const retournerRef = useRef<HTMLButtonElement>(null);
+  const maitriseRef = useRef<HTMLButtonElement>(null);
+  const recommencerRef = useRef<HTMLButtonElement>(null);
+  // heure du dernier retournement : un double-clic sur « Retourner » ne marque pas la carte
+  const retourneA = useRef(0);
   const [inView, setInView] = useState(true);
   useEffect(() => {
     const el = rootRef.current;
@@ -146,81 +211,194 @@ export function FlashcardReview({
     return () => io.disconnect();
   }, []);
 
-  function goPrev() {
-    setI((v) => Math.max(0, v - 1));
-    setFlipped(false);
-  }
-  function goNext() {
-    setI((v) => Math.min(total - 1, v + 1));
-    setFlipped(false);
-  }
-
-  // cartes révisées, notées pour le Codex par paquets de 10 et en fin de passe
+  // cartes révisées, notées pour le Codex par paquets de 10 et en fin de tour
   const aNoter = useRef(0);
   function noterCartes(force: boolean) {
     if (demo || (aNoter.current < 10 && !(force && aNoter.current > 0))) return;
-    const cartes = aNoter.current;
+    const n = aNoter.current;
     aNoter.current = 0;
-    codexNoter("flashcards_revues", matiere ? { matiere, cartes } : { cartes }).catch(() => undefined);
+    codexNoter("flashcards_revues", matiere ? { matiere, cartes: n } : { cartes: n }).catch(() => undefined);
   }
 
-  function mark(gotIt: boolean) {
-    if (!current) return;
-    aNoter.current += 1;
-    noterCartes(i >= total - 1);
-    setSessionMarks((prev) => ({ ...prev, [current.id]: gotIt }));
-    if (setId && !demo) {
-      // Écrit pour LA PROCHAINE session — n'affecte jamais l'ordre de celle-ci.
-      const next = applyReview(loadSRS(setId), current.id, gotIt);
-      saveSRS(setId, next);
+  const ph = etat ? phase(etat) : null;
+  const courante = etat ? carteCourante(etat) : null;
+  const prog = etat ? progression(etat) : null;
+  const mode: Mode = reprise ? "reprise" : !etat ? "fantome" : ph === "carte" || envols.length > 0 ? "carte" : ph === "entracte" ? "entracte" : "fin";
+
+  function remettre() {
+    setVerso(false);
+    setLever(0);
+  }
+
+  // Le focus clavier ne doit pas se perdre quand l'élément qui l'a disparaît
+  // (« Retourner » remplacé par la paire de marques, fiche marquée remplacée
+  // par la suivante, fin de boucle). Avant chaque geste, on note s'il était
+  // dans la scène, et où ; après le rendu, s'il est retombé sur <body>, on le
+  // rend au bouton équivalent (l'entracte prend le focus de lui-même).
+  const focusAvant = useRef<"fiche" | "bouton" | null>(null);
+  function noterFocus() {
+    if (typeof document === "undefined") return;
+    const act = document.activeElement;
+    const zone = plein ? dialogRef.current : rootRef.current;
+    focusAvant.current = act && zone?.contains(act) ? (act.closest("[data-fiche]") ? "fiche" : "bouton") : null;
+  }
+  useEffect(() => {
+    const avant = focusAvant.current;
+    if (!avant) return;
+    if (mode === "entracte" || mode === "reprise") {
+      focusAvant.current = null;
+      return;
     }
-    if (i >= total - 1) {
-      setDone(true);
-      setFlipped(false);
-    } else goNext();
+    const act = document.activeElement;
+    if (act && act !== document.body && act.isConnected) {
+      // resté en place (fiche retournée, flèche encore active)
+      focusAvant.current = null;
+      return;
+    }
+    const zone = plein ? dialogRef.current : rootRef.current;
+    const el: HTMLElement | null =
+      mode === "fin"
+        ? recommencerRef.current
+        : mode !== "carte"
+          ? null
+          : avant === "fiche"
+            ? (zone?.querySelector<HTMLElement>("[data-fiche]") ?? null)
+            : verso
+              ? maitriseRef.current
+              : retournerRef.current;
+    // pas encore là (la dernière fiche s'envole) : on réessaie au rendu suivant
+    if (!el || (el instanceof HTMLButtonElement && el.disabled)) return;
+    el.focus({ preventScroll: true });
+    focusAvant.current = null;
+  });
+
+  function retourner() {
+    if (!courante) return;
+    noterFocus();
+    retourneA.current = performance.now();
+    setVerso((v) => !v);
+    setLever((n) => n + 1);
   }
 
-  function startUnmasteredReview() {
-    setUnmasteredSnapshot(deck.filter((c) => sessionMarks[c.id] === false));
-    setReviewMode("unmastered");
-    setI(0);
-    setFlipped(false);
-    setDone(false);
+  /** Les boutons de marque : ignorés juste après un retournement (double-clic, réponse pas lue). */
+  function marquerBouton(su: boolean) {
+    if (performance.now() - retourneA.current < 400) return;
+    marquerCarte(su);
   }
 
-  function backToAll() {
-    setReviewMode("all");
-    setI(0);
-    setFlipped(false);
-    setDone(false);
+  function finEnvol(k: number) {
+    setEnvols((xs) => xs.filter((x) => x.cle !== k));
   }
 
-  function restart() {
-    setSessionMarks({});
-    backToAll();
+  function marquerCarte(su: boolean, dx = 0) {
+    if (!etat || !courante) return;
+    noterFocus();
+    const v = vue(courante);
+    const suite = marquer(etat, su);
+    setEtat(suite);
+    remettre();
+    if (v) {
+      const k = envolCle.current++;
+      setEnvols((xs) => [...xs.slice(-2), { cle: k, carte: v, su, dx }]);
+      // filet : l'envol se retire même si la fin d'animation n'arrive pas
+      window.setTimeout(() => finEnvol(k), 900);
+    }
+    if (!demo) {
+      // Écrit pour LA PROCHAINE fois — n'affecte jamais l'ordre de la boucle.
+      const sid = parId.get(courante)?.c.setId ?? setId;
+      if (sid) saveSRS(sid, applyReview(loadSRS(sid), courante, su));
+    }
+    aNoter.current += 1;
+    noterCartes(phase(suite) !== "carte");
+    if (phase(suite) === "entracte") setFocusEntracte(true);
   }
 
-  // Raccourcis : Espace/Entrée retourne, ← → naviguent, 1 = à revoir,
-  // 2 = maîtrisée, Échap ferme le plein écran.
+  function aller(delta: number) {
+    if (!etat) return;
+    const suite = allerDans(etat, delta);
+    if (suite === etat) return;
+    noterFocus();
+    setEtat(suite);
+    remettre();
+  }
+
+  function tourDApres() {
+    if (!etat) return;
+    noterFocus();
+    setEtat(tourSuivant(etat));
+    setEnvols([]);
+    remettre();
+  }
+
+  function recommencer() {
+    noterFocus();
+    setReprise(null);
+    setEtat(nouvelle(melange));
+    setEnvols([]);
+    setFocusEntracte(false);
+    remettre();
+  }
+
+  function reprendreBoucle() {
+    if (!reprise) return;
+    noterFocus();
+    setEtat(reprendre(reprise));
+    setReprise(null);
+    remettre();
+  }
+
+  const peutMelanger = !!etat && etat.tour === 1 && Object.keys(etat.marques).length === 0 && ph === "carte";
+  function basculerMelange() {
+    const m = !melange;
+    setMelange(m);
+    if (!demo) ecrireMelange(m);
+    if (peutMelanger) {
+      setEtat(nouvelle(m));
+      remettre();
+    }
+  }
+
+  // Raccourcis clavier.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!fullscreen && !inView) return;
+      if (!plein && !inView) return;
+      if (e.key === "Tab") {
+        if (plein) pieger(e);
+        return;
+      }
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === "Escape" && fullscreen) {
-        setFullscreen(false);
+      if (e.key === "Escape" && plein) {
+        setPlein(false);
         return;
       }
-      if (done || !current) return;
-      if (e.key === "ArrowLeft") goPrev();
-      else if (e.key === "ArrowRight") goNext();
-      else if ((e.key === " " || e.key === "Enter") && tag !== "BUTTON" && tag !== "A") {
+      const surBouton = tag === "BUTTON" || tag === "A";
+      const valider = e.key === "Enter" || e.key === " ";
+      if (e.repeat && (valider || e.key === "1" || e.key === "2")) return;
+      if (mode === "reprise") {
+        if (e.key === "Enter" && !surBouton) {
+          e.preventDefault();
+          reprendreBoucle();
+        }
+        return;
+      }
+      if (mode === "entracte") {
+        if (e.key === "Enter" && !surBouton) {
+          e.preventDefault();
+          tourDApres();
+        }
+        return;
+      }
+      if (mode !== "carte" || !courante) return;
+      if (e.key === "ArrowLeft") aller(-1);
+      else if (e.key === "ArrowRight") aller(1);
+      else if (valider && !surBouton) {
         e.preventDefault();
-        setFlipped((v) => !v);
-      } else if (flipped && e.key === "1") mark(false);
-      else if (flipped && e.key === "2") mark(true);
+        retourner();
+      } else if (verso && e.key === "1") marquerCarte(false);
+      else if (verso && e.key === "2") marquerCarte(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -228,13 +406,47 @@ export function FlashcardReview({
 
   // Plein écran : la page derrière ne défile plus.
   useEffect(() => {
-    if (!fullscreen) return;
+    if (!plein) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [fullscreen]);
+  }, [plein]);
+
+  // Plein écran : le focus entre dans le dialogue (le bouton cliqué a été
+  // démonté) et, à la sortie, revient au bouton « Plein écran » de la scène.
+  useEffect(() => {
+    if (!plein || demo) return;
+    quitterRef.current?.focus({ preventScroll: true });
+    return () => {
+      const act = document.activeElement;
+      if (act && act !== document.body && act.isConnected) return;
+      const cible = pleinRef.current ?? rootRef.current?.querySelector<HTMLElement>("button:not([disabled]), a[href]") ?? null;
+      cible?.focus({ preventScroll: true });
+    };
+  }, [plein, demo]);
+
+  /** Tab ne sort pas du dialogue plein écran (la page dessous est cachée par le calque). */
+  function pieger(e: KeyboardEvent) {
+    const d = dialogRef.current;
+    if (!d) return;
+    const f = Array.from(d.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(
+      (x) => !x.closest('[aria-hidden="true"]') && x.getClientRects().length > 0 && getComputedStyle(x).visibility !== "hidden"
+    );
+    if (!f.length) return;
+    const premier = f[0];
+    const dernier = f[f.length - 1];
+    const act = document.activeElement;
+    const dedans = !!act && d.contains(act);
+    if (e.shiftKey && (!dedans || act === premier)) {
+      e.preventDefault();
+      dernier.focus();
+    } else if (!e.shiftKey && (!dedans || act === dernier)) {
+      e.preventDefault();
+      premier.focus();
+    }
+  }
 
   if (!cards.length) {
     return (
@@ -245,139 +457,216 @@ export function FlashcardReview({
     );
   }
 
-  const pct = total ? Math.round(((done ? total : Math.min(i + 1, total)) / total) * 100) : 0;
+  const boutonPlein = (big: boolean) => (
+    <button
+      ref={big ? quitterRef : pleinRef}
+      type="button"
+      className="icon-btn h-11 w-11 rounded-[13px]"
+      onClick={() => setPlein((v) => !v)}
+      aria-label={big ? "Quitter le plein écran" : "Plein écran"}
+      title={big ? "Quitter le plein écran (Échap)" : "Plein écran"}
+    >
+      {big ? <Minimize2 size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}
+    </button>
+  );
 
-  const stage = (big: boolean) => (
-    <div className={"flex min-h-0 flex-col gap-4 sm:gap-5 " + (big ? "h-full" : "")}>
-      {/* Avancement */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        <span className="t-micro shrink-0 font-mono font-semibold tabular-nums text-white">
-          {done ? total : Math.min(i + 1, total)}
-          <span className="font-medium text-muted"> / {total}</span>
-        </span>
-        <div className="ink-bar flex-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Avancement dans le set">
-          <span style={{ width: `${pct}%` }} />
+  const scene = (big: boolean) => {
+    const marque = courante && etat && a(etat.marques, courante) ? etat.marques[courante] : null;
+    const reste = prog ? prog.restantes - (courante && marque === null ? 1 : 0) : 2;
+    const total = prog?.total ?? cards.length;
+    return (
+      <>
+        <div className="grid gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <BarreTour tour={etat?.tour ?? 1} maitrisees={prog?.maitrisees ?? 0} aRevoir={prog?.aRevoir ?? 0} total={total} rang={prog?.rang ?? 1} />
+            {peutMelanger && (
+              <button
+                type="button"
+                className={"icon-btn h-11 w-11 rounded-[13px] " + (melange ? "is-on" : "")}
+                onClick={basculerMelange}
+                aria-pressed={melange}
+                aria-label={BOUCLE.melanger}
+                title={BOUCLE.melangerAide}
+              >
+                <Shuffle size={16} aria-hidden />
+              </button>
+            )}
+            {boutonPlein(big)}
+          </div>
+          <LegendeTour maitrisees={prog?.maitrisees ?? 0} aRevoir={prog?.aRevoir ?? 0} total={total} />
         </div>
-        {reviewMode === "all" && notMasteredCount > 0 && !done ? (
-          <button type="button" onClick={startUnmasteredReview} className="t-micro shrink-0 font-semibold underline-offset-4 hover:text-white hover:underline">
-            {FLASHCARDS.aRevoir(notMasteredCount)}
-          </button>
-        ) : null}
-        <button
-          type="button"
-          className="icon-btn h-9 w-9 rounded-[11px]"
-          onClick={() => setFullscreen((v) => !v)}
-          aria-label={big ? "Quitter le plein écran" : "Plein écran"}
-          title={big ? "Quitter le plein écran (Échap)" : "Plein écran"}
-        >
-          {big ? <Minimize2 size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}
-        </button>
-      </div>
 
-      {reviewMode === "unmastered" && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-surface-2 px-4 py-2.5 text-[13px]">
-          <span className="font-semibold">{FLASHCARDS.repasse(unmasteredSnapshot.length)}</span>
-          <button type="button" className="font-semibold text-muted underline-offset-4 hover:text-white hover:underline" onClick={backToAll}>
-            {FLASHCARDS.toutes}
+        <FichePile
+          carte={courante ? vue(courante) : null}
+          verso={verso}
+          lever={lever}
+          marque={marque}
+          dessous={mode === "fantome" ? 2 : Math.max(0, reste)}
+          envols={envols}
+          big={big}
+          fantome={mode === "fantome"}
+          className={big ? "min-h-[320px] flex-1" : HAUTEUR}
+          onRetourner={retourner}
+          onMarquer={marquerCarte}
+          onEnvolFin={finEnvol}
+        />
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            className="icon-btn h-[50px] w-[50px] rounded-[14px] disabled:pointer-events-none disabled:opacity-35"
+            disabled={!courante || !etat || etat.pos === 0}
+            onClick={() => aller(-1)}
+            aria-label="Carte précédente"
+          >
+            <ArrowLeft size={18} aria-hidden />
+          </button>
+          <div className="min-w-0 flex-1">
+            {verso && courante ? (
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" className="btn btn-secondary btn-lg whitespace-nowrap px-3" onClick={() => marquerBouton(false)}>
+                  <RotateCcw size={16} aria-hidden className="hidden text-[var(--pen)] sm:block" /> {BOUCLE.aRevoir}
+                </button>
+                <button ref={maitriseRef} type="button" className="btn btn-primary btn-lg rl-press whitespace-nowrap px-3" onClick={() => marquerBouton(true)}>
+                  <Check size={16} aria-hidden className="hidden sm:block" /> {BOUCLE.maitrise}
+                </button>
+              </div>
+            ) : (
+              <button ref={retournerRef} type="button" className="btn btn-primary btn-lg rl-press w-full" onClick={retourner} disabled={!courante}>
+                {BOUCLE.retourner}
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            className="icon-btn h-[50px] w-[50px] rounded-[14px] disabled:pointer-events-none disabled:opacity-35"
+            disabled={!courante || !etat || etat.pos >= etat.file.length - 1}
+            onClick={() => aller(1)}
+            aria-label="Carte suivante"
+          >
+            <ArrowRight size={18} aria-hidden />
           </button>
         </div>
-      )}
 
-      {done ? (
+        <p className="t-micro hidden flex-wrap items-center justify-center gap-1.5 sm:flex">
+          <span className="kbd">Espace</span> retourner · <span className="kbd">1</span> à revoir · <span className="kbd">2</span> maîtrisée · <span className="kbd">←</span>
+          <span className="kbd">→</span> naviguer
+        </p>
+        <p className="sr-only" aria-live="polite">
+          {courante && etat && prog ? `${BOUCLE.tour(etat.tour)}, carte ${prog.rang} sur ${prog.total}` : ""}
+        </p>
+      </>
+    );
+  };
+
+  const panneau = (big: boolean) => {
+    if (mode === "reprise" && reprise) {
+      const r = repere(reprise);
+      const p = progression(reprise);
+      const cartesBoucle = reprise.parcours[0] ?? reprise.file.length;
+      return (
+        <Reprise
+          tour={r.tour}
+          rang={r.rang}
+          total={r.total}
+          entracte={r.entracte}
+          aRevoirTour={p.aRevoir}
+          maitriseesTour={p.maitrisees}
+          maitrisees={Math.max(0, cartesBoucle - reprise.file.length) + p.maitrisees}
+          cartes={cartesBoucle}
+          depuisMs={demo ? (demo.depuisMs ?? 3 * 3600_000) : Math.max(0, Date.now() - reprise.dernier)}
+          big={big}
+          onReprendre={reprendreBoucle}
+          onRecommencer={recommencer}
+        />
+      );
+    }
+    if (mode === "entracte" && etat) {
+      return (
+        <Entracte
+          tour={etat.tour}
+          marques={etat.file.map((id) => (a(etat.marques, id) ? etat.marques[id] : null))}
+          aRevoir={aRevoir(etat).length}
+          big={big}
+          focus={focusEntracte && !demo}
+          onSuivant={tourDApres}
+          onRecommencer={recommencer}
+        />
+      );
+    }
+    if (mode === "fin" && etat) {
+      const b = bilan(etat);
+      return (
         <FinDePasse
-          sues={passMastered}
-          total={total}
-          aRevoir={passToReview}
-          marques={activeDeck.map((c) => sessionMarks[c.id] ?? null)}
+          sues={b.cartes}
+          total={b.cartes}
+          aRevoir={0}
           jour={jour}
-          unite={FLASHCARDS.maitrisees(passMastered)}
+          unite={FLASHCARDS.maitrisees(b.cartes)}
+          surTitre={BOUCLE.finSur}
+          titre={BOUCLE.finTitre}
+          ligne={`${BOUCLE.finLigne(b.tours, b.cartes, b.dureeMs)} ${BOUCLE.finPremier(b.premierSues, b.cartes)}`}
+          detail={
+            b.tours > 1 ? (
+              <p className="t-micro m-0 flex flex-wrap items-baseline gap-x-2">
+                <span className="font-mono text-[13px] font-semibold tabular-nums text-[var(--ink)]">{BOUCLE.parcours(b.parcours)}</span>
+                <span>{BOUCLE.parcoursAide}</span>
+              </p>
+            ) : null
+          }
           className={big ? "flex-1" : ""}
           actions={
             <>
-              {notMasteredCount > 0 && (
-                <button type="button" className="btn btn-primary btn-lg rl-press" onClick={startUnmasteredReview}>
-                  {FLASHCARDS.reprendre(notMasteredCount)}
-                </button>
-              )}
-              <button type="button" className={"btn btn-lg " + (notMasteredCount > 0 ? "btn-secondary" : "btn-primary rl-press")} onClick={restart}>
-                <RotateCcw size={16} aria-hidden /> {FLASHCARDS.recommencer}
+              <button ref={recommencerRef} type="button" className="btn btn-primary btn-lg rl-press" onClick={recommencer}>
+                <RotateCcw size={16} aria-hidden /> {BOUCLE.recommencer}
               </button>
+              {onePager && <LienOnePager href={onePager} />}
             </>
           }
         >
           {!big && (
-            <Link href="/flashcards" className="ink-link">
-              {FLASHCARDS.autres}
+            <Link href={autresHref} className="ink-link">
+              {BOUCLE.autres}
             </Link>
           )}
         </FinDePasse>
-      ) : current ? (
-        <>
-          <FlipCard
-            card={current}
-            flipped={flipped}
-            onFlip={() => setFlipped((v) => !v)}
-            big={big}
-            className={big ? "min-h-[280px] flex-1" : "h-[clamp(300px,50vh,440px)]"}
-          />
+      );
+    }
+    return null;
+  };
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button type="button" className="icon-btn h-[50px] w-[50px] rounded-[14px] disabled:pointer-events-none disabled:opacity-35" disabled={i === 0} onClick={goPrev} aria-label="Carte précédente">
-              <ArrowLeft size={18} aria-hidden />
-            </button>
-            <div className="min-w-0 flex-1">
-              {flipped ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" className="btn btn-secondary btn-lg whitespace-nowrap px-3" onClick={() => mark(false)}>
-                    <RotateCcw size={16} aria-hidden className="hidden sm:block" /> À revoir
-                  </button>
-                  <button type="button" className="btn btn-primary btn-lg rl-press whitespace-nowrap px-3" onClick={() => mark(true)}>
-                    <Check size={16} aria-hidden className="hidden sm:block" /> Je maîtrise
-                  </button>
-                </div>
-              ) : (
-                <button type="button" className="btn btn-primary btn-lg rl-press w-full" onClick={() => setFlipped(true)}>
-                  Retourner
-                </button>
-              )}
-            </div>
-            <button type="button" className="icon-btn h-[50px] w-[50px] rounded-[14px] disabled:pointer-events-none disabled:opacity-35" disabled={i >= total - 1} onClick={goNext} aria-label="Carte suivante">
-              <ArrowRight size={18} aria-hidden />
-            </button>
-          </div>
-
-          <p className="t-micro hidden flex-wrap items-center justify-center gap-1.5 sm:flex">
-            <span className="kbd">Espace</span> retourner · <span className="kbd">←</span>
-            <span className="kbd">→</span> naviguer · <span className="kbd">1</span> à revoir · <span className="kbd">2</span> maîtrisée
-          </p>
-        </>
+  const stage = (big: boolean) => (
+    <div className={"flex min-h-0 flex-col gap-4 sm:gap-5 " + (big ? "h-full" : "")}>
+      {mode === "carte" || mode === "fantome" ? (
+        scene(big)
       ) : (
-        <div className="card-quiet grid place-items-center px-6 py-14 text-center">
-          <p className="t-h3 m-0">{FLASHCARDS.repasseFinie}</p>
-          <button type="button" className="btn btn-secondary mt-4" onClick={backToAll}>
-            {FLASHCARDS.toutes}
-          </button>
-        </div>
+        <>
+          {big && <div className="flex justify-end">{boutonPlein(true)}</div>}
+          {panneau(big)}
+        </>
       )}
     </div>
   );
 
   return (
     <>
-      <div ref={rootRef}>{stage(false)}</div>
+      <div ref={rootRef}>{plein ? <div className={HAUTEUR} aria-hidden /> : stage(false)}</div>
 
-      {fullscreen && (
+      {plein && (
         // z-[100] : au-dessus de la barre du bas mobile (z-50) pour qu'elle ne
         // recouvre pas les boutons. paddingBottom réserve la zone de l'indicateur
-        // d'accueil iOS (safe area).
+        // d'accueil iOS (safe area). Le papier du site, pas un fond noir.
+        // overflow-x-hidden : l'envol (translateX 120 %, rotation) sort de la
+        // colonne sans faire naître de barre de défilement horizontale.
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Révision en plein écran"
-          className="fixed inset-0 z-[100] bg-black px-4 pt-4 sm:px-8 sm:pt-7"
+          className={`fixed inset-0 z-[100] overflow-y-auto overflow-x-hidden px-4 pt-4 sm:px-8 sm:pt-7 ${s.plein}`}
           style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
         >
-          <div className="mx-auto flex h-full w-full max-w-5xl flex-col">{stage(true)}</div>
+          <div className="mx-auto flex h-full w-full max-w-3xl flex-col">{stage(true)}</div>
         </div>
       )}
     </>

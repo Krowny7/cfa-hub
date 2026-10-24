@@ -1,0 +1,264 @@
+/* Le verso structuré des flashcards (components/flashcards/Verso.tsx) : trois
+   cases séparées d'un trait de crayon. À RETENIR en grand, à l'encre, avec
+   son passage surligné ; EN CLAIR en texte courant ; PIÈGE au stylo rouge,
+   marqué d'un petit « ! » cerclé. Tout en jetons : encre, crayon, stylo. */
+
+/* ——— Fiche : la pile de la révision ——— */
+.fiche {
+  --taille-clair: 15px;
+  --taille-retenir: 21px;
+  --taille-formule: 17px;
+  --interligne: 1.45;
+  --ecart: 10px;
+  width: 100%;
+  max-width: 68ch;
+  margin: 0 0 auto;
+  text-align: left;
+  font-size: var(--taille-clair);
+  line-height: var(--interligne);
+  overflow-wrap: anywhere;
+}
+.fiche.big {
+  --taille-clair: 16px;
+  --taille-retenir: 22.5px;
+  --taille-formule: 18px;
+}
+@media (min-width: 640px) {
+  .fiche {
+    --taille-clair: 16.5px;
+    --taille-retenir: 23px;
+    --taille-formule: 20px;
+    --ecart: 12px;
+  }
+  .fiche.big {
+    --taille-clair: 18.5px;
+    --taille-retenir: 26px;
+    --taille-formule: 23px;
+    --ecart: 16px;
+  }
+}
+
+/* RichText pose « leading-relaxed » sur chaque ligne : ici, l'interligne de la case */
+.fiche p,
+.compact p {
+  margin: 0;
+  line-height: inherit;
+}
+
+.zone {
+  position: relative;
+  min-width: 0;
+  /* contient l'étiquette flottante */
+  display: flow-root;
+}
+.fiche .zone + .zone {
+  margin-top: var(--ecart);
+  padding-top: var(--ecart);
+}
+/* le trait de crayon entre deux cases, en pointillé irrégulier */
+.fiche .zone + .zone::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--pencil-2) 0 13px,
+    transparent 13px 17px,
+    var(--pencil-2) 17px 36px,
+    transparent 36px 40px
+  );
+}
+
+/* les étiquettes : la petite capitale du site (.t-eyebrow) */
+.etiquette {
+  display: block;
+  margin: 0 0 5px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+/* au téléphone, « En clair » et « Piège » ouvrent la ligne de leur texte :
+   l'étiquette flotte, haute d'une ligne exactement (sinon la deuxième ligne
+   se décalerait aussi) ; un léger décalage relatif cale sa ligne de base */
+.enLigne {
+  position: relative;
+  top: 0.1em;
+  float: left;
+  margin: 0 0.75em 0 0;
+  line-height: calc(var(--taille-clair) * var(--interligne));
+}
+.etiquettePiege {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--pen);
+}
+.enLigne.etiquettePiege {
+  display: flex;
+  height: calc(var(--taille-clair) * var(--interligne));
+}
+/* le petit « ! » cerclé, posé comme un coup de stylo */
+.marque {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0;
+  transform: rotate(-8deg);
+}
+
+/* ——— À RETENIR ——— */
+.retenir {
+  font-size: var(--taille-retenir);
+  line-height: 1.24;
+  font-weight: 650;
+  letter-spacing: -0.016em;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+/* la ligne courte qui nomme une formule ou une liste */
+.titre {
+  font-size: calc(var(--taille-clair) * 1.06);
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: -0.008em;
+}
+.formule .titre {
+  margin-bottom: 2px;
+}
+/* la ligne qui porte le surligné (« EBIT = ==7 000== », « Split ⇒ ==divisor
+   ajusté== ») : c'est elle, l'idée à retenir. Elle garde la taille et la
+   graisse de la case ; la formule, plus petite, lui sert d'appui. */
+.titreFort {
+  margin: 0 0 4px;
+}
+/* la ligne sous la formule */
+.suite {
+  margin: 4px 0 0;
+}
+.bloc {
+  font-size: var(--taille-formule);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+/* la formule en bloc, alignée sur le texte, sans les marges de KaTeX. Plus
+   large que la case, elle défile : son bout fondu le signale, et le blanc
+   laissé à sa droite fait voir son dernier signe en clair une fois au bout
+   (une formule qui tient s'arrête avant le fondu). */
+.bloc div:global(.katex-formula) {
+  margin: 0;
+  padding: 2px 0;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+}
+.bloc :global(.katex-display) {
+  display: inline-block;
+  vertical-align: top;
+  margin: 0;
+  padding-right: 20px;
+  text-align: left;
+}
+.bloc :global(.katex-display > .katex) {
+  text-align: left;
+}
+/* au téléphone, une formule trop large est réduite d'autant (--echelle,
+   calculé par echelleFormule, 0,7 au moins) avant de défiler */
+@media (max-width: 639px) {
+  .fiche .bloc {
+    font-size: calc(var(--taille-formule) * var(--echelle, 1));
+  }
+}
+/* la liste « a · b · c » : dans le flux, les points au crayon */
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.liste li {
+  display: inline;
+}
+.liste li:not(:last-child)::after {
+  content: "·";
+  /* lu comme une virgule : sans elle, les éléments se colleraient dans le
+     nom de la fiche (« QualifiedAdverse ») */
+  content: "·" / ", ";
+  margin: 0 0.3em;
+  font-weight: 800;
+  color: var(--ink-3);
+}
+
+/* ——— EN CLAIR ——— */
+.clair {
+  color: color-mix(in oklab, var(--ink) 86%, transparent);
+}
+
+/* ——— PIÈGE ——— */
+.piege {
+  color: var(--pen);
+}
+
+/* ——— Ordinateur : les étiquettes dans la marge de la fiche ——— */
+@media (min-width: 640px) {
+  .fiche .zone {
+    display: grid;
+    grid-template-columns: 5.75rem minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: baseline;
+  }
+  .fiche .etiquette,
+  .fiche .enLigne {
+    position: static;
+    float: none;
+    height: auto;
+    margin: 0;
+    line-height: 1.1;
+  }
+}
+
+/* ——— Compact : listes, partage, séance ———
+   Les tailles suivent le texte autour ; À RETENIR un cran au-dessus, en
+   gras, sans étiquette ; « En clair » et « Piège » en tête de ligne. */
+.compact {
+  --taille-clair: 1em;
+  text-align: left;
+  line-height: 1.5;
+}
+.compact .zone + .zone {
+  margin-top: 0.4em;
+}
+.compact .retenir {
+  font-size: 1.08em;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.compact .titre {
+  font-size: 1em;
+}
+.compact .bloc {
+  font-size: 1em;
+}
+/* 0,8 em : 10,8 px à côté d'un texte de 13,5 px, à peu près la taille de .t-eyebrow (11 px) */
+.compact .etiquette {
+  font-size: 0.8em;
+}
+.compact .enLigne {
+  margin-right: 0.7em;
+  /* la hauteur d'une ligne du texte (1,5 × sa taille) */
+  line-height: calc(1.5em / 0.8);
+}
+.compact .enLigne.etiquettePiege {
+  height: calc(1.5em / 0.8);
+}
+.compact .marque {
+  width: 1.3em;
+  height: 1.3em;
+  font-size: 0.85em;
+}

@@ -25,6 +25,8 @@ import PctScore from "@/components/adn/PctScore";
 //                          null passée), dans l'ordre ; sinon tirée des comptes
 //   jour                   traits du jour (useTraitsDuJour) ; null : inconnu, pas de ligne d'anneau
 //   unite                  sous le chiffre (« sues », « maîtrisées »)
+//   titre, ligne           remplacent la phrase de la passe (la boucle : « Tout est maîtrisé. »)
+//   detail                 sous le compte (la boucle : le chemin « 15 → 6 → 2 → 0 »)
 //   surTitre, actions, children (liens), className
 
 /** Au-delà, une coche par carte deviendrait illisible : la barre au pinceau. */
@@ -63,6 +65,9 @@ export function FinDePasse({
   jour,
   unite,
   surTitre = FLASHCARDS.surTitre,
+  titre,
+  ligne,
+  detail,
   actions,
   children,
   className = "",
@@ -74,6 +79,9 @@ export function FinDePasse({
   jour: number | null;
   unite?: string;
   surTitre?: string;
+  titre?: string;
+  ligne?: string;
+  detail?: React.ReactNode;
   actions?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
@@ -92,8 +100,8 @@ export function FinDePasse({
       )}
       <div className={"grid gap-2.5 " + (tenu ? "pr-16 sm:pr-20" : "")}>
         <p className="t-eyebrow m-0">{surTitre}</p>
-        <h2 className="t-h1 m-0">{r.titre}</h2>
-        <p className="t-small m-0 max-w-[460px]">{r.ligne}</p>
+        <h2 className="t-h1 m-0">{titre ?? r.titre}</h2>
+        <p className="t-small m-0 max-w-[460px]">{ligne ?? r.ligne}</p>
       </div>
 
       {total > 0 && (
@@ -113,6 +121,8 @@ export function FinDePasse({
           )}
         </div>
       )}
+
+      {detail}
 
       {jour !== null && (
         // l'anneau du jour tel qu'il est (les cartes ne le tracent pas) ; de la

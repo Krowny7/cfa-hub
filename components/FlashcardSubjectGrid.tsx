@@ -1,5 +1,6 @@
 import type { FolderJoin } from "@/lib/content/grouping";
 import { SubjectBrowser } from "@/components/ContentFolderBlocks";
+import { AppelMatiere } from "@/components/flashcards/Panneaux";
 import { groupBySubject, subjectFromParam, type BrowserGroup, type ItemMeta } from "@/components/ContentDetailHeader";
 
 type Item = FolderJoin & { id: string; title: string; visibility: string | null };
@@ -67,7 +68,23 @@ export function flashcardPaquets(items: Item[], counts: Record<string, number>, 
   return g ? { name: g.name, groups: [g] } : null;
 }
 
+/**
+ * Les paquets d'une matière, avec en tête l'appel « Réviser toute la
+ * matière » (/flashcards/matiere/<clé> : les paquets d'un bloc, en boucle).
+ */
 export function FlashcardPaquets({ groups, basePath }: { groups: BrowserGroup[]; basePath: string }) {
+  const g = groups.length === 1 ? groups[0] : null;
+  const paquets = g && !g.key.startsWith("x-") ? g.rows.filter((r) => r.kind === "set") : [];
+  const cartes = paquets.reduce((n, r) => n + (r.count ?? 0), 0);
+  return (
+    <div className="grid gap-4 md:gap-5">
+      {g && paquets.length > 0 && <AppelMatiere cle={g.key} cartes={cartes} paquets={paquets.length} />}
+      <PaquetsListe groups={groups} basePath={basePath} />
+    </div>
+  );
+}
+
+function PaquetsListe({ groups, basePath }: { groups: BrowserGroup[]; basePath: string }) {
   return (
     <SubjectBrowser
       groups={groups}

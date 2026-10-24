@@ -20,11 +20,12 @@ import {
   Users,
 } from "lucide-react";
 import { COURSES } from "@/lib/courses";
+import { CFA_SUBJECTS } from "@/components/ContentDetailHeader";
 import { signalNavStart } from "@/components/ui/motion/NavProgress";
 
 // Palette de commandes (⌘K / Ctrl+K), à la Raycast : on tape quelques
 // lettres et on saute n'importe où — espaces (et le Codex, qui n'est plus un
-// onglet), pages, fiches, cours, et les quêtes du Codex (8 au plus, V3 §10.1 : /codex?quete=… centre la carte sur
+// onglet), pages, fiches, cours, flashcards par matière, et les quêtes du Codex (8 au plus, V3 §10.1 : /codex?quete=… centre la carte sur
 // elle). Le catalogue du Codex n'est chargé qu'à la première recherche ;
 // jamais une quête cachée ni une énigme.
 
@@ -65,6 +66,8 @@ const ENTRIES: Entry[] = [
   { label: "Réglages", hint: "Profil, date d'examen", href: "/moi?onglet=reglages", group: "Pages", Icon: Settings },
   ...FICHES.map(([slug, title]) => ({ label: title, hint: "Fiche de révision", href: `/fiches/${slug}`, group: "Fiches", Icon: FileText })),
   ...COURSES.map((c) => ({ label: c.title, hint: `Cours complet · ${c.minutes} min d'audio`, href: `/courses/${c.slug}`, group: "Cours", Icon: Headphones })),
+  // toute une matière en flashcards, en boucle jusqu'à zéro à revoir
+  ...CFA_SUBJECTS.map((m) => ({ label: `Flashcards ${m.name}`, hint: "Toute la matière, en boucle", href: `/flashcards/matiere/${m.key}`, group: "Flashcards", Icon: Layers })),
 ];
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

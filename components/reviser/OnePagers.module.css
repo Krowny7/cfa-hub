@@ -29,6 +29,51 @@
   height: 100%;
   overflow: hidden;
 }
+/* la feuille et sa légende : le lien vers le PDF */
+.ouvrir {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+/* au pied : les flashcards de la matière */
+.cartes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px 0 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 620;
+  letter-spacing: -0.004em;
+  color: var(--ink-2);
+  transition:
+    background-color var(--dur-1) ease,
+    color var(--dur-1) ease;
+}
+.cartes:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.chevron {
+  margin-left: auto;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.cartes:hover .chevron {
+  transform: translateX(2px);
+}
+/* la carte est en overflow: hidden et ses deux liens sont bord à bord :
+   l'anneau passe à l'intérieur, sinon il serait rogné sur trois côtés */
+.ouvrir:focus-visible,
+.cartes:focus-visible {
+  outline-offset: -2px;
+  border-radius: inherit;
+}
+@media (min-width: 768px) {
+  .cartes {
+    padding: 0 14px 0 16px;
+  }
+}
 
 /* la feuille A4 (600 × 850) vue en entier, posée sur le papier de la carte */
 .vignette {
@@ -46,7 +91,7 @@
   object-position: top center;
   transition: transform var(--dur-3) var(--ease-out);
 }
-a.carte:hover .vignette img {
+a.ouvrir:hover .vignette img {
   transform: scale(1.025);
 }
 :global([data-theme="nuit"]) .vignette img {
@@ -154,7 +199,10 @@ a.acces:hover .feuille:nth-child(4) {
   .feuille {
     transition: none;
   }
-  a.carte:hover .vignette img {
+  a.ouvrir:hover .vignette img {
     transform: none;
+  }
+  .chevron {
+    transition: none;
   }
 }

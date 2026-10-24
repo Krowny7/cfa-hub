@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronRight, Layers } from "lucide-react";
 import { pad2 } from "@/components/reviser/rail";
 import type { OnePagerItem } from "@/components/reviser/shelves";
 import { OP } from "@/lib/voice-reviser";
+import { MATIERE_CARTES } from "@/lib/voice-z3c";
 import s from "./OnePagers.module.css";
 
 // Les one-pagers (une page A4 PDF par matière) : la page /fiches/one-pagers
@@ -23,7 +24,11 @@ export function OnePagersEntete() {
   );
 }
 
-/** La grille des one-pagers : vignette A4, rang et code, matière, poids à l'examen. `url` null : PDF indisponible (carte en filigrane, sans lien). */
+/**
+ * La grille des one-pagers : vignette A4, rang et code, matière, poids à
+ * l'examen ; au pied, les flashcards de la matière (le combo de la veille).
+ * `url` null : PDF indisponible (feuille en filigrane, sans lien).
+ */
 export function OnePagersGrille({ items }: { items: (OnePagerItem & { url: string | null })[] }) {
   return (
     <ul className={s.grille}>
@@ -48,15 +53,21 @@ export function OnePagersGrille({ items }: { items: (OnePagerItem & { url: strin
         );
         return (
           <li key={it.key} className="min-w-0">
-            {it.url ? (
-              <a href={it.url} target="_blank" rel="noopener noreferrer" aria-label={OP.ouvrir(it.name)} className={"card rl-lift " + s.carte}>
-                {inner}
-              </a>
-            ) : (
-              <div aria-disabled className={"card-quiet " + s.carte + " " + s.indispo}>
-                {inner}
-              </div>
-            )}
+            <div className={(it.url ? "card rl-lift " : "card-quiet " + s.indispo + " ") + s.carte}>
+              {it.url ? (
+                <a href={it.url} target="_blank" rel="noopener noreferrer" aria-label={OP.ouvrir(it.name)} className={s.ouvrir}>
+                  {inner}
+                </a>
+              ) : (
+                <div aria-disabled className={s.ouvrir}>
+                  {inner}
+                </div>
+              )}
+              <Link href={`/flashcards/matiere/${it.key}`} className={s.cartes} aria-label={MATIERE_CARTES.lienCarteAide(it.name)}>
+                <Layers size={14} aria-hidden /> {MATIERE_CARTES.lienCarte}
+                <ChevronRight size={14} aria-hidden className={s.chevron} />
+              </Link>
+            </div>
           </li>
         );
       })}

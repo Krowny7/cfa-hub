@@ -31,9 +31,8 @@ L'idée centrale : centraliser tous les outils d'étude (documents, flashcards, 
 - Prévisualisation Drive intégrée (quand disponible)
 
 ### 2. Flashcards (`/flashcards`)
-- Créer des sets de cartes (privé / groupes / public)
-- Ajout rapide de cartes (recto/verso)
-- Import/export compatible Quizlet (terme[TAB]définition)
+- Uniquement les paquets officiels (Système), rangés par matière, plus /flashcards/matiere/[matiere]
+- Pas de création, d'import ni de modification de cartes côté joueur ; liste des cartes en lecture seule
 - Mode révision plein écran avec navigation clavier
 
 ### 3. QCM — Questions à Choix Multiples (`/qcm`)
@@ -123,10 +122,8 @@ components/             # Composants React
   I18nProvider.tsx      # Contexte i18n (client)
   LanguageSwitcher.tsx  # Toggle FR/EN
   Providers.tsx         # Wrapper providers client-side
-  FlashcardSetCreator   # Créer un set
   FlashcardReview       # Mode révision
-  FlashcardImporterExporter  # Import/export Quizlet
-  FlashcardQuickAdd     # Ajout rapide carte
+  FlashcardCardEditor   # Liste des cartes d'un paquet (lecture seule)
   QuizSetCreator        # Créer un QCM
   QuizSetView           # Viewer + runner QCM
   PdfLinkAdder          # Ajouter un lien PDF

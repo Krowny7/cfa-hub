@@ -30,7 +30,7 @@ export type Subject = {
 type Def = Omit<Subject, "course"> & { courseTitle: string };
 
 const DEFS: Def[] = [
-  { key: "ethics", name: "Ethics", code: "ETH", short: "Ethics", fiche: "ethics", drillPrefix: "Ethical and Professional Standards", onePager: "ethics", courseTitle: "Ethical and Professional Standards", flashcardFolders: ["Éthique et Standards Professionnels (Système)", "Ethics (Système)"] },
+  { key: "ethics", name: "Ethics", code: "ETH", short: "Ethics", fiche: "ethics", drillPrefix: "Ethical and Professional Standards", onePager: "ethics", courseTitle: "Ethical and Professional Standards", flashcardFolders: ["Éthique et Standards Professionnels (Système)", "Ethics (Système)", "Ethical and Professional Standards (Système)"] },
   { key: "quant", name: "Quantitative Methods", code: "QM", short: "Quant", fiche: "quantitative-methods", drillPrefix: "Quantitative Methods", onePager: "quant", courseTitle: "Quantitative Methods", flashcardFolders: ["Méthodes Quantitatives (Système)", "Quantitative Methods (Système)"] },
   { key: "economics", name: "Economics", code: "ECO", short: "Economics", fiche: "economics", drillPrefix: "Economics", onePager: "economics", courseTitle: "Economics", flashcardFolders: ["Économie (Système)", "Economics (Système)"] },
   { key: "corporate", name: "Corporate Issuers", code: "CI", short: "Corporate", fiche: "corporate-issuers", drillPrefix: "Corporate Issuers", onePager: "corporate-issuers", courseTitle: "Corporate Issuers", flashcardFolders: ["Finance d'Entreprise (Système)", "Corporate Issuers (Système)"] },

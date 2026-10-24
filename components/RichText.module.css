@@ -1,0 +1,72 @@
+/* Le surligné ==…== de RichText : un trait de marqueur posé derrière le
+   texte, pas un fond plein. Un lavis d'ocre tiré du brun de l'Atelier
+   (--atelier-brun) délavé dans la surface : sable clair le jour, terre
+   sombre la nuit (et dans les blocs .rl-inverse, qui échangent les jetons).
+   Le trait couvre l'œil des lettres et déborde un peu sous la ligne de
+   base, ses bouts sont biseautés et fondus comme un coup de feutre ; il se
+   recoupe à chaque retour à la ligne (box-decoration-break). */
+.surligne {
+  /* la part d'ocre : 28 % sur fond clair (1,7:1 sur blanc) ; sur fond
+     sombre, plus (ci-dessous), sinon la bande se perd (1,5:1) */
+  --surligne-dose: 28%;
+  --surligneur: color-mix(in oklab, var(--atelier-brun) var(--surligne-dose), var(--surface));
+  color: inherit;
+  background-color: transparent;
+  padding: 0 0.2em;
+  margin: 0 -0.06em;
+  border-radius: 0.3em 0.12em 0.34em 0.16em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  background-repeat: no-repeat;
+  /* le trait principal, puis un second passage plus léger qui rend le bord
+     haut irrégulier, comme un feutre qu'on repasse */
+  background-image:
+    linear-gradient(
+      102deg,
+      transparent 0.04em,
+      var(--surligneur) 0.3em,
+      var(--surligneur) calc(100% - 0.34em),
+      transparent calc(100% - 0.02em)
+    ),
+    linear-gradient(
+      96deg,
+      transparent 0.3em,
+      color-mix(in oklab, var(--surligneur) 60%, transparent) 0.55em,
+      color-mix(in oklab, var(--surligneur) 60%, transparent) calc(100% - 0.6em),
+      transparent calc(100% - 0.3em)
+    );
+  background-size:
+    100% 0.66em,
+    100% 0.2em;
+  background-position:
+    0 86%,
+    0 30%;
+}
+
+/* un ocre plus franc là où le navigateur sait relever la saturation
+   (la teinte reste celle du jeton, un peu tirée vers l'ambre) */
+@supports (color: oklch(from red l c h)) {
+  .surligne {
+    --surligneur: oklch(from color-mix(in oklab, var(--atelier-brun) var(--surligne-dose), var(--surface)) l calc(c * 2.4) calc(h + 14));
+  }
+}
+
+/* fond sombre : la nuit, et les blocs .rl-inverse du jour (jetons de nuit) ;
+   42 % : 1,9:1 sur la surface (1,7:1 sur surface-2), le texte reste à 8:1.
+   Les blocs .rl-inverse de la nuit sont clairs : retour à 28 %. */
+:global(.rl-inverse) .surligne,
+:global(html[data-theme="nuit"]) .surligne {
+  --surligne-dose: 42%;
+}
+:global(html[data-theme="nuit"]) :global(.rl-inverse) .surligne {
+  --surligne-dose: 28%;
+}
+
+/* contraste élevé : le trait devient un vrai fond, bien délimité */
+@media (forced-colors: active) {
+  .surligne {
+    background: Mark;
+    color: MarkText;
+    forced-color-adjust: none;
+  }
+}

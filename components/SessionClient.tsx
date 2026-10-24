@@ -9,6 +9,7 @@ import { saveAnswerResult } from "@/lib/session-stats";
 import { type CardSRS, loadSRS, saveSRS, applyReview, sortBySRS, getSRSCounts } from "@/lib/srs";
 import type { QuizQuestion, Flashcard, AwardXpResult } from "@/lib/types";
 import { RichText } from "@/components/RichText";
+import { VersoCompact } from "@/components/flashcards/Verso";
 import { PageHead } from "@/components/session/ui";
 import {
   ChoiceButton,
@@ -467,9 +468,10 @@ export function SessionClient({
             </label>
             {activeSets.length === 0 ? (
               <p className="t-small m-0">
-                Aucun set disponible dans ce format.{" "}
+                {/* les flashcards sont les paquets officiels : rien à créer, on renvoie vers la liste */}
+                {mode === "qcm" ? "Aucun set disponible dans ce format." : "Aucun paquet disponible pour l'instant."}{" "}
                 <Link href={mode === "qcm" ? "/qcm" : "/flashcards"} className="ink-link">
-                  En créer un
+                  {mode === "qcm" ? "En créer un" : "Voir les flashcards"}
                 </Link>
               </p>
             ) : (
@@ -730,7 +732,11 @@ export function SessionClient({
           >
             <span key={flipped ? "verso" : "recto"} className="rl-in grid max-w-[560px] gap-4">
               <span className="t-eyebrow">{flipped ? "Verso" : "Recto"}</span>
-              <RichText text={flipped ? currentF.back : currentF.front} className="text-[17px] font-medium leading-relaxed md:text-[19px]" />
+              {flipped ? (
+                <VersoCompact back={currentF.back} fiche className="text-[17px] font-medium leading-relaxed md:text-[19px]" />
+              ) : (
+                <RichText text={currentF.front} className="text-[17px] font-medium leading-relaxed md:text-[19px]" />
+              )}
               {!flipped && <span className="t-micro">Touche la carte pour la retourner</span>}
             </span>
           </button>

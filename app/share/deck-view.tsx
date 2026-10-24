@@ -1,4 +1,5 @@
 import { RichText } from "@/components/RichText";
+import { VersoCompact } from "@/components/flashcards/Verso";
 import { plural } from "@/components/ContentDetailHeader";
 import { ShareFooter, ShareHeader } from "@/app/share/views";
 import { PARTAGE } from "@/lib/voice-z3c";
@@ -32,7 +33,7 @@ export function SharedDeckView({ title, cards }: { title: string; cards: SharedC
               >
                 <span className="t-micro pt-0.5 font-mono font-semibold tabular-nums">{idx + 1}</span>
                 <RichText text={c.front} className="break-words text-[15px] font-semibold leading-snug [overflow-wrap:anywhere]" />
-                <RichText text={c.back} className="text-body col-start-2 break-words text-[14.5px] leading-relaxed [overflow-wrap:anywhere] sm:col-start-3" />
+                <VersoCompact back={c.back} className="text-body col-start-2 break-words text-[14.5px] leading-relaxed [overflow-wrap:anywhere] sm:col-start-3" />
               </li>
             ))}
           </ol>

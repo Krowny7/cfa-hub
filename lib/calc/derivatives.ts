@@ -1113,7 +1113,7 @@ const FRA: CalcType = {
         [`Taux du FRA : 1 + F × 0,5 = ${F(1 + r9 * 0.75, 4)} / ${F(1 + r3 * 0.25, 2)} = ${F((1 + r9 * 0.75) / (1 + r3 * 0.25), 6)}, donc F = ${P(k, 4)}.`,
           `MRR réalisé (${P(m)}) < F : le long paie ${F(n)} × (${P(k, 4)} − ${P(m)}) × 0,5 = ${D(n * (k - m) * 0.5, 0)} en fin de période.`,
           `Règlement d'avance = / (1 + ${F(m)} × 0,5) = ${D(a, 0)}.`],
-        rel(a, 0.01));
+        rel(a, 0.012));
     })(),
     (() => {
       const z1 = 0.025, z2 = 0.032, z3 = 0.038;

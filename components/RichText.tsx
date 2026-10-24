@@ -1,13 +1,18 @@
 "use client";
 
+import { Fragment, type ReactNode } from "react";
 import katex from "katex";
+import { passagesInline, type Passage } from "@/lib/richtext";
+import st from "./RichText.module.css";
 
 /**
  * Rendu texte enrichi pour le contenu généré (flashcards, etc.) : formules
- * KaTeX ($inline$ / $$bloc$$ sur sa propre ligne) et images
- * (![alt](url) sur sa propre ligne), sinon texte brut avec retours à la
- * ligne préservés. Volontairement minimal (pas de markdown complet) — le
- * contenu vient de nos propres scripts de seed, pas d'un éditeur libre.
+ * KaTeX ($inline$ / $$bloc$$ sur sa propre ligne), gras inline (**…**, qui
+ * peut contenir une formule), surligné inline (==…==, un trait de marqueur
+ * derrière le texte) et images (![alt](url) sur sa propre ligne),
+ * sinon texte brut avec retours à la ligne préservés. Volontairement
+ * minimal (pas de markdown complet) — le contenu vient de nos propres
+ * scripts de seed, pas d'un éditeur libre. Découpe inline : lib/richtext.ts.
  */
 
 function renderKatex(tex: string, displayMode: boolean): string {
@@ -18,29 +23,63 @@ function renderKatex(tex: string, displayMode: boolean): string {
   }
 }
 
-const INLINE_MATH_RE = /\$([^$\n]+?)\$/g;
 const BLOCK_MATH_RE = /^\$\$([\s\S]+)\$\$$/;
 const IMAGE_RE = /^!\[([^\]]*)\]\(([^)]+)\)$/;
 
+function Morceaux({ morceaux }: { morceaux: Passage["morceaux"] }) {
+  return (
+    <>
+      {morceaux.map((m, k) =>
+        m.t === "math" ? <span key={k} className="katex-formula" dangerouslySetInnerHTML={{ __html: renderKatex(m.v, false) }} /> : (
+          <Fragment key={k}>{m.v}</Fragment>
+        )
+      )}
+    </>
+  );
+}
+
 function InlineSegments({ line }: { line: string }) {
-  const nodes: React.ReactNode[] = [];
-  let last = 0;
-  let key = 0;
-  let m: RegExpExecArray | null;
-  INLINE_MATH_RE.lastIndex = 0;
-  while ((m = INLINE_MATH_RE.exec(line))) {
-    if (m.index > last) nodes.push(line.slice(last, m.index));
-    nodes.push(
-      <span
-        key={key++}
-        className="katex-formula"
-        dangerouslySetInnerHTML={{ __html: renderKatex(m[1], false) }}
-      />
+  const passages = passagesInline(line);
+  const rendre = (p: Passage, i: number) =>
+    p.gras ? (
+      <strong key={i} className="font-bold text-[var(--ink)]">
+        <Morceaux morceaux={p.morceaux} />
+      </strong>
+    ) : (
+      <Morceaux key={i} morceaux={p.morceaux} />
     );
-    last = INLINE_MATH_RE.lastIndex;
+  // les passages surlignés qui se suivent (« ==le **call** price== » en donne
+  // trois) partagent un seul <mark> : un trait de marqueur continu, sans
+  // bouts fondus ni blancs autour du mot en gras
+  const out: ReactNode[] = [];
+  for (let i = 0; i < passages.length; ) {
+    if (!passages[i].surligne) {
+      out.push(rendre(passages[i], i));
+      i++;
+      continue;
+    }
+    const debut = i;
+    const trait: ReactNode[] = [];
+    while (i < passages.length && passages[i].surligne) {
+      trait.push(rendre(passages[i], i));
+      i++;
+    }
+    out.push(
+      <mark key={`m${debut}`} className={st.surligne}>
+        {trait}
+      </mark>
+    );
   }
-  if (last < line.length) nodes.push(line.slice(last));
-  return <>{nodes}</>;
+  return <>{out}</>;
+}
+
+/** Une seule ligne, dans le flux du texte (span) : formules $…$, gras, surligné. */
+export function RichTextLigne({ line, className }: { line: string; className?: string }) {
+  return (
+    <span className={className}>
+      <InlineSegments line={line} />
+    </span>
+  );
 }
 
 export function RichText({ text, className = "" }: { text: string; className?: string }) {

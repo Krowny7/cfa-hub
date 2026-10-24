@@ -18,7 +18,8 @@ export type ContentSetRow = {
 
 type Unit = [string, string];
 
-// Squelette partagé entre /qcm et /flashcards. En haut : l'espace, le grand
+// Squelette de /qcm (les flashcards n'ont plus de vue Communauté : leurs
+// paquets sont tous officiels, voir app/flashcards/page.tsx). En haut : l'espace, le grand
 // titre et un contrôle segmenté Système | Communauté ; juste dessous, le
 // point focal (« Reprendre », fourni par la page). Puis le contenu :
 // - Système : le contenu vérifié par l'équipe, rangé par matière ;

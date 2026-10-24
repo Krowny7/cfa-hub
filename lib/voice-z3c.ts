@@ -7,7 +7,7 @@
 // point d'exclamation, le bout qui reste toujours nommé ; les libellés
 // fonctionnels (boutons de carte, réglages, filtres) restent simples.
 
-import { CONNEXION, DEVISE, SIGNATURE, nombre, pluriel } from "@/lib/voice";
+import { CONNEXION, DEVISE, SIGNATURE, duree, nombre, pluriel } from "@/lib/voice";
 
 export const cartes = (n: number) => pluriel(n, "carte", "cartes");
 
@@ -82,6 +82,95 @@ export const FLASHCARDS = {
   toutes: "Revenir à toutes les cartes",
   repasseFinie: "Toutes les cartes de la repasse sont sues.",
   aRevoir: (n: number) => `${nombre(n)} à revoir`,
+} as const;
+
+/** « 12 min », « 1 h 05 », « moins d'une minute » : le temps actif d'une boucle. */
+export function dureeBoucle(ms: number): string {
+  return ms < 60_000 ? "moins d'une minute" : duree(Math.round(ms / 60_000) * 60);
+}
+
+/** « il y a 3 h », « hier » : quand la boucle a été laissée. */
+function depuis(ms: number): string {
+  const min = Math.max(0, Math.round(ms / 60_000));
+  if (min < 2) return "à l'instant";
+  if (min < 60) return `il y a ${nombre(min)} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${nombre(h)} h`;
+  const j = Math.round(h / 24);
+  return j === 1 ? "hier" : `il y a ${pluriel(j, "jour", "jours")}`;
+}
+
+// La boucle « À revoir » (FlashcardReview) : on repasse les cartes à revoir,
+// mélangées, tour après tour, jusqu'à zéro.
+export const BOUCLE = {
+  tour: (n: number) => `Tour ${nombre(n)}`,
+  /** sous la barre segmentée */
+  compte: (m: number, r: number, reste: number) => `${nombre(m)} maîtrisée${m > 1 ? "s" : ""} · ${nombre(r)} à revoir · ${nombre(reste)} restante${reste > 1 ? "s" : ""}`,
+  /** l'en-tête de la carte : « 07 / 60 » */
+  numero: (n: number, total: number) => `${String(n).padStart(total >= 10 ? 2 : 1, "0")} / ${nombre(total)}`,
+  recto: "Question",
+  verso: "Réponse",
+  /** les trois cases du verso structuré */
+  retenir: "À retenir",
+  enClair: "En clair",
+  piege: "Piège",
+  toucher: "Touche la carte pour la retourner",
+  cliquer: "Clique ou Espace pour retourner",
+  glisser: "Glisse à droite si tu sais, à gauche sinon",
+  retourner: "Retourner",
+  maitrise: "Je maîtrise",
+  aRevoir: "À revoir",
+  /** les tampons d'encre posés sur la carte qui part */
+  tamponSu: "Maîtrisée",
+  tamponRevoir: "À revoir",
+  melanger: "Mélanger",
+  melangerAide: "Mélanger le premier tour (gardé pour la prochaine fois)",
+  /** l'entracte entre deux tours */
+  entracteSur: (tour: number) => `Fin du tour ${nombre(tour)}`,
+  entracteTitre: (tour: number, n: number) => `Tour ${nombre(tour)} · ${cartes(n)} à revoir`,
+  entracteLigne: (m: number, total: number) =>
+    `${nombre(m)} sur ${nombre(total)} maîtrisée${m > 1 ? "s" : ""}. Les autres reviennent, mélangées, jusqu'à ce qu'il n'en reste plus.`,
+  entracteAction: (tour: number) => `Commencer le tour ${nombre(tour)}`,
+  arreter: "Arrêter là",
+  /** la fin : plus rien à revoir */
+  finSur: "Boucle bouclée",
+  finTitre: "Tout est maîtrisé.",
+  finLigne: (tours: number, n: number, ms: number) => `${pluriel(tours, "tour", "tours")} · ${cartes(n)} · ${dureeBoucle(ms)}.`,
+  finPremier: (sues: number, total: number) =>
+    sues === total ? `Tout su dès le premier tour.` : `Au premier tour : ${nombre(sues)} sur ${nombre(total)}. Elles reviendront, de plus en plus espacées.`,
+  /** le chemin parcouru : « 15 → 6 → 2 → 0 » */
+  parcours: (xs: number[]) => [...xs, 0].map((n) => nombre(n)).join(" → "),
+  parcoursAide: "cartes à chaque tour",
+  recommencer: "Recommencer",
+  autres: "Autres paquets",
+  onePager: "Le one-pager",
+  onePagerAide: "La matière sur une page A4, dans un nouvel onglet",
+  /** la reprise d'une boucle entamée */
+  repriseSur: "Boucle en cours",
+  repriseTitre: (tour: number, rang: number, total: number, entracte: boolean, aRevoir: number) =>
+    entracte ? `Fin du tour ${nombre(tour)} · ${nombre(aRevoir)} à revoir` : `Tour ${nombre(tour)} · carte ${nombre(rang)}/${nombre(total)}`,
+  repriseLigne: (ms: number, maitrisees: number, total: number) => `Laissée ${depuis(ms)}. ${nombre(maitrisees)} sur ${nombre(total)} maîtrisée${maitrisees > 1 ? "s" : ""} pour l'instant.`,
+  reprendre: (tour: number, rang: number, total: number, entracte: boolean) =>
+    entracte ? `Reprendre (fin du tour ${nombre(tour)})` : `Reprendre (tour ${nombre(tour)} · carte ${nombre(rang)}/${nombre(total)})`,
+  /** déjà marquée, revue avec ← */
+  dejaMarquee: (su: boolean) => (su ? "Marquée maîtrisée" : "Marquée à revoir"),
+} as const;
+
+// La révision de toute une matière (/flashcards/matiere/<clé>).
+export const MATIERE_CARTES = {
+  surTitre: "Flashcards · toute la matière",
+  appelTitre: "Réviser toute la matière",
+  appelCompte: (n: number) => cartes(n),
+  appelLigne: (paquets: number) =>
+    `${paquets > 1 ? `Les ${nombre(paquets)} paquets` : "Le paquet"} d'un bloc, en boucle jusqu'à zéro à revoir. Avec le one-pager, la matière en une nuit.`,
+  paquets: (n: number) => pluriel(n, "paquet", "paquets"),
+  lesPaquets: "Les paquets",
+  vide: "Papier blanc.",
+  videLigne: (matiere: string) => `Les cartes de ${matiere} sont en préparation. Le one-pager, lui, est déjà là.`,
+  videLigneSansOnePager: (matiere: string) => `Les cartes de ${matiere} sont en préparation.`,
+  autresMatieres: "Autres matières",
+  lienCarte: "Flashcards",
+  lienCarteAide: (matiere: string) => `Réviser les flashcards de ${matiere}`,
 } as const;
 
 // ---------------------------------------------------------------------------

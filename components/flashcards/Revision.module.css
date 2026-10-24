@@ -1,0 +1,612 @@
+/* La révision des flashcards (components/FlashcardReview.tsx) : une pile de
+   fiches bristol posées sur le papier du site. La fiche du dessus se
+   retourne (soulevée, son ombre s'élargit), part à droite quand on la sait,
+   à gauche quand elle est à revoir, avec un coup de tampon d'encre ; la
+   suivante monte. Tout en jetons : papier, encre, stylo rouge, crayon.
+   Mouvement réduit : ni rotation ni envol, un fondu. */
+
+/* ——— La scène : la pile ——— */
+.scene {
+  position: relative;
+  isolation: isolate;
+}
+/* la place des feuilles du dessous, sous la fiche */
+.fiche,
+.dessous,
+.envol {
+  position: absolute;
+  inset: 0 0 18px 0;
+}
+
+/* les feuilles du dessous : du papier nu, filet rouge en tête, un peu de travers */
+.dessous {
+  border-radius: 18px;
+  background-color: var(--surface);
+  background-image: var(--grain);
+  box-shadow: inset 0 0 0 1px var(--line), var(--shadow-1);
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    opacity var(--dur-2) var(--ease-out);
+}
+.dessous::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 44px;
+  height: 1.5px;
+  background: color-mix(in oklab, var(--pen) 40%, transparent);
+}
+.dessous[data-rang="1"] {
+  z-index: -1;
+  transform: translateY(9px) scale(0.965) rotate(-1.3deg);
+}
+.dessous[data-rang="2"] {
+  z-index: -2;
+  transform: translateY(17px) scale(0.93) rotate(1.7deg);
+  opacity: 0.92;
+}
+
+/* ——— La fiche du dessus ——— */
+.fiche {
+  z-index: 1;
+  border-radius: 18px;
+  cursor: pointer;
+  /* le défilement vertical d'un long verso et le zoom à deux doigts restent
+     au navigateur ; le geste horizontal (marquer) nous revient */
+  touch-action: pan-y pinch-zoom;
+  -webkit-tap-highlight-color: transparent;
+  animation: monter var(--dur-2) var(--ease-out) backwards;
+}
+/* la suivante monte de la pile */
+@keyframes monter {
+  from {
+    transform: translateY(9px) scale(0.965) rotate(-1.3deg);
+  }
+}
+.fiche[data-glisse] {
+  cursor: grabbing;
+  user-select: none;
+}
+/* l'anneau du site (outline : il reste visible en contraste élevé) */
+.fiche:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* l'ombre portée, qui s'élargit quand la fiche se soulève */
+.ombre {
+  --ombre-portee: rgba(17, 17, 17, 0.2);
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -10px;
+  height: 30px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--ombre-portee), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+:global(html[data-theme="nuit"]) .ombre {
+  --ombre-portee: rgba(0, 0, 0, 0.55);
+}
+
+/* le soulèvement du retournement : deux noms pour rejouer à chaque fois */
+.levier {
+  position: absolute;
+  inset: 0;
+  perspective: 1700px;
+}
+.leveA .levier {
+  animation: leveA var(--dur-3) var(--ease-ink);
+}
+.leveB .levier {
+  animation: leveB var(--dur-3) var(--ease-ink);
+}
+.leveA .ombre {
+  animation: ombreA var(--dur-3) var(--ease-ink);
+}
+.leveB .ombre {
+  animation: ombreB var(--dur-3) var(--ease-ink);
+}
+@keyframes leveA {
+  42% {
+    transform: translateY(-10px) scale(1.025);
+  }
+}
+@keyframes leveB {
+  42% {
+    transform: translateY(-10px) scale(1.025);
+  }
+}
+@keyframes ombreA {
+  42% {
+    opacity: 1;
+    transform: scaleX(1.08);
+  }
+}
+@keyframes ombreB {
+  42% {
+    opacity: 1;
+    transform: scaleX(1.08);
+  }
+}
+
+.rotor {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform var(--dur-3) var(--ease-ink);
+}
+.rotor[data-verso] {
+  transform: rotateY(180deg);
+}
+
+/* ——— Une face : la fiche bristol ——— */
+.face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 18px;
+  background-color: var(--surface);
+  background-image: var(--grain);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    var(--edge),
+    var(--shadow-2);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* visibility est discrète : la face qui apparaît est visible dès le début
+     du retournement (backface-visibility la cache tant qu'elle est de dos),
+     celle qui disparaît le reste jusqu'à la fin. Jamais de fiche blanche. */
+  transition: visibility var(--dur-3);
+}
+.verso {
+  transform: rotateY(180deg);
+}
+/* la face cachée, une fois la fiche retournée, est vraiment cachée :
+   backface-visibility ne s'hérite pas (son .corps qui défile pourrait
+   transparaître en miroir sur iOS), et elle ne doit être ni touchée ni
+   atteinte au Tab */
+.rotor[data-verso] .recto,
+.rotor:not([data-verso]) .verso {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 18px 9px 20px;
+  /* le filet rouge de la fiche bristol */
+  border-bottom: 1.5px solid color-mix(in oklab, var(--pen) 55%, transparent);
+}
+.lieu {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.num {
+  flex-shrink: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.corps {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px 22px 22px;
+  scrollbar-width: thin;
+}
+@media (min-width: 640px) {
+  .corps {
+    padding: 26px 34px 28px;
+  }
+}
+/* le geste horizontal reste à la fiche, même au-dessus d'une face qui défile ;
+   une formule trop large défile, elle, dans les deux sens. Le zoom à deux
+   doigts reste permis partout (un pincement annule le geste : pas de marque) */
+.face,
+.corps {
+  touch-action: pan-y pinch-zoom;
+}
+.corps div:global(.katex-formula) {
+  touch-action: pan-x pan-y pinch-zoom;
+}
+.court {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+/* une seule colonne lisible, même en plein écran */
+.texte {
+  width: 100%;
+  max-width: 62ch;
+  margin: auto 0;
+  overflow-wrap: anywhere;
+}
+.court .texte {
+  margin: auto;
+}
+/* au verso, la réponse suit la question rappelée, en haut */
+.corpsVerso .texte {
+  margin: 0 0 auto;
+}
+
+/* le verso en trois cases (Verso.tsx) : un peu moins de marge, pour qu'un
+   verso ordinaire tienne sans défiler, au téléphone comme sur un portable */
+.corpsCases {
+  padding: 14px 20px 12px;
+}
+@media (min-width: 640px) {
+  .corpsCases {
+    padding: 20px 32px 16px;
+  }
+}
+.corpsCases .rappel {
+  margin-bottom: 12px;
+}
+
+/* au verso, la question rappelée en petit (une carte se comprend seule) */
+.rappel {
+  margin: 0 0 14px;
+  padding-left: 11px;
+  border-left: 2px solid var(--pencil-2);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: left;
+}
+
+.pied {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px 14px;
+  min-height: 30px;
+}
+.siTactile {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .siTactile {
+    display: inline;
+  }
+  .siSouris {
+    display: none;
+  }
+}
+
+/* ——— Les tampons d'encre ——— */
+.tampon {
+  --rot: -11deg;
+  position: absolute;
+  top: 66px;
+  z-index: 3;
+  padding: 7px 12px 6px;
+  border: 2.5px solid currentColor;
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px var(--surface), inset 0 0 0 3.5px currentColor;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  filter: url(#rl-ink);
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(var(--rot));
+}
+@media (min-width: 640px) {
+  .tampon {
+    font-size: 23px;
+    top: 74px;
+  }
+}
+.tamponSu {
+  left: 18px;
+  color: var(--ink);
+}
+.tamponRevoir {
+  --rot: 10deg;
+  right: 18px;
+  color: var(--pen);
+}
+/* lâchée avant le seuil, le tampon s'efface pendant que la fiche revient */
+.fiche:not([data-glisse]) .tampon {
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+/* pendant le geste : le tampon apparaît avec la distance */
+.fiche[data-sens="su"] .tamponSu,
+.fiche[data-sens="revoir"] .tamponRevoir {
+  opacity: var(--force, 0);
+}
+/* une carte déjà marquée, revue avec ← : le tampon posé, en petit, au pied
+   de la fiche à la place de la ligne d'aide (il ne la recouvre plus) */
+.marque {
+  display: inline-block;
+  padding: 4px 8px 3px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  filter: url(#rl-ink);
+  opacity: 0.75;
+  transform: rotate(-6deg);
+  pointer-events: none;
+}
+
+/* ——— L'envol : la fiche marquée quitte la pile ——— */
+.envol {
+  z-index: 5;
+  pointer-events: none;
+  animation: envolSu var(--dur-3) var(--ease-ink) forwards;
+}
+.envol[data-sens="revoir"] {
+  animation-name: envolRevoir;
+}
+.envol .tampon {
+  opacity: 1;
+  animation: tamponner var(--dur-2) var(--ease-out) backwards;
+}
+@keyframes envolSu {
+  0% {
+    transform: translateX(calc(var(--dx, 0) * 1px)) rotate(calc(var(--dx, 0) * 0.05deg));
+  }
+  24% {
+    transform: translateX(calc(var(--dx, 0) * 1px + 8px)) rotate(calc(var(--dx, 0) * 0.05deg + 1deg));
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(var(--dx, 0) * 1px + 120%)) translateY(28px) rotate(17deg);
+    opacity: 0;
+  }
+}
+@keyframes envolRevoir {
+  0% {
+    transform: translateX(calc(var(--dx, 0) * 1px)) rotate(calc(var(--dx, 0) * 0.05deg));
+  }
+  24% {
+    transform: translateX(calc(var(--dx, 0) * 1px - 8px)) rotate(calc(var(--dx, 0) * 0.05deg - 1deg));
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(var(--dx, 0) * 1px - 120%)) translateY(28px) rotate(-17deg);
+    opacity: 0;
+  }
+}
+/* le coup de tampon : il descend un peu trop grand, s'écrase, se pose */
+@keyframes tamponner {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--rot)) scale(1.55);
+  }
+  55% {
+    opacity: 1;
+    transform: rotate(var(--rot)) scale(0.94);
+  }
+  80% {
+    transform: rotate(var(--rot)) scale(1.02);
+  }
+}
+/* après un geste, le tampon est déjà posé : il ne retombe pas */
+.envol[data-glisse] .tampon {
+  animation: none;
+}
+/* aperçu : l'envol arrêté en plein vol */
+.envol[data-fige] {
+  animation: none !important;
+  transform: translateX(34%) translateY(10px) rotate(8deg);
+}
+.envol[data-fige][data-sens="revoir"] {
+  transform: translateX(-34%) translateY(10px) rotate(-8deg);
+}
+.envol[data-fige] .tampon {
+  animation: none;
+}
+
+/* ——— La barre du tour : maîtrisées (encre), à revoir (stylo), restantes (crayon) ——— */
+.barre {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 10px;
+}
+.barre::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 0.5px);
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--pencil) 0 11px,
+    color-mix(in oklab, var(--pencil) 55%, transparent) 11px 13px,
+    var(--pencil) 13px 29px,
+    color-mix(in oklab, var(--pencil) 75%, transparent) 29px 31px
+  );
+}
+/* pleine largeur, mise à l'échelle (transform seul, pas de mise en page) :
+   le masque étiré à 100 % × 100 % suit l'échelle, même rendu qu'une largeur */
+.seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transform-origin: 0 0;
+  -webkit-mask: var(--bar) 0 0 / 100% 100% no-repeat;
+  mask: var(--bar) 0 0 / 100% 100% no-repeat;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.segSu {
+  background: var(--ink);
+}
+.segRevoir {
+  background: var(--pen);
+}
+
+/* le tour, comme une petite étiquette tamponnée */
+.tour {
+  flex-shrink: 0;
+  padding: 3px 7px 2px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  transform: rotate(-2deg);
+  white-space: nowrap;
+}
+.tourN {
+  color: var(--pen);
+}
+
+/* ——— L'entracte : la petite pile des cartes à revoir ——— */
+.mini {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  height: 84px;
+  margin: 4px 6px 0 0;
+}
+.mini > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background-color: var(--surface);
+  background-image: var(--grain);
+  box-shadow: inset 0 0 0 1px var(--line-2), var(--shadow-1);
+}
+.mini > span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 16px;
+  height: 1px;
+  background: color-mix(in oklab, var(--pen) 50%, transparent);
+}
+.mini > span:nth-child(1) {
+  transform: rotate(-7deg) translate(-4px, 3px);
+}
+.mini > span:nth-child(2) {
+  transform: rotate(5deg) translate(3px, 2px);
+}
+.mini > span:nth-child(3) {
+  display: grid;
+  place-items: center;
+  padding-top: 12px;
+  color: var(--pen);
+  transform: rotate(-1deg);
+}
+@media (min-width: 640px) {
+  .mini {
+    width: 78px;
+    height: 102px;
+  }
+}
+
+/* ——— Plein écran : le papier du site, pas un fond noir ——— */
+.plein {
+  background-color: var(--paper);
+  background-image: var(--grain);
+  /* l'envol sort de la colonne : pas de barre horizontale (overflow-x-hidden
+     sur le dialogue), et la gouttière verticale est réservée pour qu'une
+     barre passagère ne fasse pas sauter la mise en page */
+  scrollbar-gutter: stable;
+}
+/* en plein écran seulement : un long verso garde son défilement (en
+   intégré, le glissé vertical doit pouvoir faire défiler la page) */
+.plein .corps {
+  overscroll-behavior: contain;
+}
+
+/* ——— Mouvement réduit : ni rotation ni envol, un fondu ——— */
+@media (prefers-reduced-motion: reduce) {
+  .fiche {
+    animation: fondu var(--dur-2) ease both;
+  }
+  .leveA .levier,
+  .leveB .levier,
+  .leveA .ombre,
+  .leveB .ombre {
+    animation: none;
+  }
+  .rotor,
+  .rotor[data-verso] {
+    transform: none;
+    transition: none;
+  }
+  .face {
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+    transition:
+      opacity var(--dur-2) ease,
+      visibility var(--dur-2);
+  }
+  .verso {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .rotor[data-verso] .verso {
+    opacity: 1;
+    visibility: visible;
+  }
+  .rotor[data-verso] .recto {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .envol,
+  .envol[data-sens="revoir"] {
+    /* elle s'efface là où le doigt l'a laissée */
+    transform: translateX(calc(var(--dx, 0) * 1px));
+    animation: effacer var(--dur-2) ease forwards;
+  }
+  .envol .tampon {
+    animation: none;
+  }
+  .dessous,
+  .seg {
+    transition: none;
+  }
+}
+@keyframes fondu {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes effacer {
+  to {
+    opacity: 0;
+  }
+}
