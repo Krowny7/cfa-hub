@@ -56,7 +56,7 @@ export const SETS = [
       ],
       [
         "Formule exacte du real return ? Application : nominal return de 7 % et inflation de 2 %.",
-        "$$1 + r_{\\text{real}} = \\dfrac{1 + r_{\\text{nominal}}}{1 + \\pi}$$\nEn clair : 1,07 / 1,02 − 1 = 4,90 % de gain de pouvoir d'achat, où π = inflation. 7 % − 2 % = 5 % n'est qu'une approximation.\nPiège : Gross return = après commissions de trading, mais avant management fees. Net return = après ces fees.",
+        "$$1 + r_{\\text{real}} = \\dfrac{1 + r_{\\text{nominal}}}{1 + \\pi}$$\nEn clair : 1,07 / 1,02 − 1 = 4,90 % de gain de pouvoir d'achat, où $r_{\\text{nominal}}$ = nominal return, π = inflation.\nPiège : 7 % − 2 % = 5 % n'est qu'une approximation : le real return exact est plus bas.",
       ],
       [
         "Formule du leveraged return ? Application : un fonds investit sa mise de 100 plus 50 empruntés à 6 %, le tout rapportant 10 %.",
@@ -68,7 +68,7 @@ export const SETS = [
       ],
       [
         "Formule de la present value (PV) d'une perpetuity ? Application : 100 par an pour toujours, premier versement dans 4 ans, taux de 10 %.",
-        "$$PV = \\dfrac{PMT}{r}$$\nEn clair : 100 / 0,10 = 1 000 à t = 3, un an avant le 1er versement. Puis 1 000 / 1,10³ = 751,31 aujourd'hui. PMT = versement, r = taux.\nPiège : PMT / r donne la valeur une période AVANT le 1er versement : on actualise sur 3 ans, pas 4.",
+        "$$PV_{t-1} = \\dfrac{PMT}{r}$$\n$$PV_0 = \\dfrac{PV_{t-1}}{(1+r)^{t-1}}$$\nEn clair : 100 / 0,10 = 1 000 à t − 1 = 3, puis 1 000 / 1,10³ = 751,31 aujourd'hui, où PMT = versement, r = taux, t = date du 1er versement (ici 4).\nPiège : PMT / r donne la valeur une période AVANT le 1er versement : on actualise sur 3 ans, pas 4.",
       ],
       [
         "Formule du Gordon growth model ? Application : dernier dividende versé $D_0$ = 2, croissance g = 4 % pour toujours, required return on equity $k_e$ = 9 %.",
@@ -93,7 +93,7 @@ export const SETS = [
     cards: [
       [
         "Formule de l'harmonic mean ? Application : 1 000 investis chaque mois en actions, au prix de 10 puis de 15. Quel coût moyen par action ?",
-        "$$\\bar{X}_H = \\dfrac{N}{\\sum_{i=1}^{N} 1/X_i}$$\nEn clair : 2 / (1/10 + 1/15) = 12 par action, où N = nombre d'achats, $X_i$ = prix payés. À montant fixe, on achète plus d'actions quand le prix est bas (cost averaging).\nPiège : Harmonic ≤ geometric ≤ arithmetic mean : ici 12 < 12,25 < 12,5.",
+        "$$\\bar{X}_H = \\dfrac{N}{\\sum_{i=1}^{N} 1/X_i}$$\nEn clair : 2 / (1/10 + 1/15) = 12 par action, où N = nombre d'achats, $X_i$ = prix payés. À montant fixe, on achète plus d'actions quand le prix est bas (cost averaging).\nPiège : Harmonic ≤ geometric ≤ arithmetic : 12 < √(10 × 15) = 12,25 < (10 + 15) / 2 = 12,5.",
       ],
       [
         "Mean, median, trimmed mean, winsorized mean : lesquelles résistent aux outliers, et comment ?",

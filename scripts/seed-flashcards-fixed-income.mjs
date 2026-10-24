@@ -51,7 +51,7 @@ export const SETS = [
         "Step-up : ==↑ par paliers prévus== · Credit-linked : ==↑ si downgrade== · PIK : ==payé en nouvelles bonds== · Deferred : ==rien les premières années==\nEn clair : Les PIK et deferred coupon bonds servent aux issuers à court de cash, d'où des yields plus élevés. Le step-up protège le bondholder d'une hausse des taux.",
       ],
       [
-        "Formule du coupon d'une capital-indexed bond (type TIPS, Treasury Inflation-Protected Securities) ? Application : par value 1 000, coupon rate annuel 4 %, inflation de l'année 2 %.",
+        "Formule du coupon d'une capital-indexed bond (type TIPS, Treasury Inflation-Protected Securities) ? Application : par value 1 000, coupon rate 4 % payé une fois par an, inflation de l'année 2 %.",
         "$$\\text{Adjusted principal} = \\text{Par value} \\times (1 + \\text{Inflation})$$\n$$\\text{Coupon} = \\text{Adjusted principal} \\times \\dfrac{\\text{Coupon rate}}{m}$$\nEn clair : Inflation = inflation cumulée depuis l'émission, m = coupons par an. 1 000 × 1,02 = 1 020, puis 1 020 × 4 % = 40,80. Le coupon rate fixe est un real rate.\nPiège : pas 1 000 × 4 % = 40 : le coupon porte sur le principal indexé.",
       ],
       [
@@ -101,7 +101,7 @@ export const SETS = [
       ],
       [
         "Full price d'une bond entre deux dates de coupon : quelle formule, et quel prix est coté, le full ou le flat price ?",
-        "$$PV^{\\text{Full}} = PV^{\\text{Flat}} + AI = PV \\times (1+r)^{t/T}$$\nPrix coté : ==le flat price (clean)==\nEn clair : AI = accrued interest = $t/T$ × coupon. PV = prix au dernier coupon, r = YTM (yield to maturity) par période, t = jours écoulés, T = jours de la période.\nPiège : day count actual/actual pour les government bonds, 30/360 pour les corporate bonds.",
+        "$$PV^{\\text{Full}} = PV^{\\text{Flat}} + AI = PV \\times (1+r)^{t/T}$$\nPrix coté : ==le flat price (clean)==\nEn clair : AI = accrued interest = $t/T \\times PMT$, avec PMT = coupon de la période. PV = prix au dernier coupon, r = YTM (yield to maturity) par période, t = jours écoulés, T = jours de la période.\nPiège : day count actual/actual pour les government bonds, 30/360 pour les corporate bonds.",
       ],
       [
         "Formule de la matrix pricing d'une bond peu ou pas cotée ? Application : bonds cotées de même credit quality à 3 ans (YTM 4 %) et à 5 ans (YTM 5 %) ; bond non cotée à 4 ans.",
@@ -113,7 +113,7 @@ export const SETS = [
       ],
       [
         "Formule de l'EAY (effective annual yield) d'une bond à partir de son YTM (yield to maturity) ? Application : YTM 6 % sur une semiannual bond basis.",
-        "$$\\text{EAY} = \\left(1 + \\dfrac{\\text{YTM}}{m}\\right)^m - 1$$\nEn clair : Avec m = périodes par an : 6 % / 2 = 3 % par semestre, et 1,03² − 1 = 6,09 %. Pour changer de périodicité : $(1+\\text{APR}_m/m)^m = (1+\\text{APR}_n/n)^n$ (APR = annual percentage rate).\nPiège : diviser par m avant de composer : 1,03², pas 1,06.",
+        "$$\\text{EAY} = \\left(1 + \\dfrac{\\text{YTM}}{m}\\right)^m - 1$$\nEn clair : Avec m = périodes par an : 6 % / 2 = 3 % par semestre, et 1,03² − 1 = 6,09 %. Pour changer de périodicité : $(1+\\text{APR}_m/m)^m = (1+\\text{APR}_n/n)^n$ (APR = annual percentage rate).\nPiège : composer le taux par période : 1,03² − 1 = 6,09 %, pas 1,06² − 1.",
       ],
       [
         "Comment obtient-on le YTW (yield to worst) d'une callable bond ?",
@@ -145,7 +145,7 @@ export const SETS = [
       ],
       [
         "Formule de l'OAS (option-adjusted spread) d'une bond, et comment se compare-t-il au Z-spread pour une callable bond ?",
-        "$$\\text{OAS} = \\text{Z-spread} - \\text{Option value}$$\nCallable bond : ==OAS < Z-spread==\nEn clair : L'OAS retire du Z-spread la valeur de l'embedded option, en basis points. C'est le spread à comparer entre bonds avec embedded options.\nPiège : putable bond : OAS > Z-spread, car le put a de la valeur pour l'investisseur.",
+        "$$\\text{OAS} = \\text{Z-spread} - \\text{Option value}$$\nCallable bond : ==OAS < Z-spread==\nEn clair : Option value = yield en plus exigé pour l'embedded option, en bp (basis points). Ex. : Z-spread 180 bp − call 60 bp = OAS 120 bp. On compare les bonds à options sur leur OAS.\nPiège : putable bond : option value < 0 (le put profite à l'investisseur), donc OAS > Z-spread.",
       ],
       [
         "Dans quelles conditions de marché les yield spreads des corporate bonds s'élargissent-ils ?",
@@ -205,12 +205,12 @@ export const SETS = [
         "$$\\text{ApproxCon} = \\dfrac{PV_- + PV_+ - 2 \\times PV_0}{(\\Delta\\text{YTM})^2 \\times PV_0}$$\nEn clair : $PV_-$, $PV_+$ = prix après baisse et hausse du YTM, $PV_0$ = prix actuel. (105 + 95,2 − 200) / (0,01² × 100) = 20.\nPiège : ΔYTM en décimal et au carré : 0,01² = 0,0001.",
       ],
       [
-        "Quelle formule estime la variation en % du prix d'une bond avec la duration et la convexity ?",
-        "$$\\%\\Delta P \\approx -D \\times \\Delta y + \\tfrac{1}{2} \\times C \\times (\\Delta y)^2$$\nEn clair : $D$ = annual modified duration, $C$ = annual convexity, $\\Delta y$ = variation du YTM (yield to maturity) en décimal. Le terme de convexity est positif pour une bond option-free.\nPiège : convexity par période → annuelle : diviser par m² (semestriel : ÷ 4).",
+        "Formule de l'effective duration d'une callable bond ? Application : prix 100 ; 102 si la benchmark yield curve baisse de 50 bp (basis points), 97,5 si elle monte de 50 bp.",
+        "$$\\text{EffDur} = \\dfrac{PV_- - PV_+}{2 \\times \\Delta\\text{Curve} \\times PV_0}$$\nEn clair : $PV_-$, $PV_+$ = prix donnés par un modèle après baisse et hausse de la benchmark yield curve, $PV_0$ = prix actuel. (102 − 97,5) / (2 × 0,005 × 100) = 4,5.\nPiège : on choque la benchmark yield curve (ΔCurve), pas le YTM (yield to maturity) de la bond.",
       ],
       [
         "Formule de la variation de prix d'une bond par duration effect et convexity adjustment ? Application : annual modified duration 5, annual convexity 50, YTM (yield to maturity) +100 bp.",
-        "Duration effect + convexity adjustment\n$$\\%\\Delta PV^{\\text{Full}} \\approx -\\text{AnnModDur} \\times \\Delta\\text{YTM} + \\tfrac{1}{2} \\times \\text{AnnConvexity} \\times (\\Delta\\text{YTM})^2$$\nEn clair : Avec 100 bp (basis points) = 0,01 : −5 × 0,01 + ½ × 50 × 0,01² = −5 % + 0,25 % = −4,75 %.\nPiège : le convexity adjustment reste positif : YTM −100 bp → +5 % + 0,25 % = +5,25 %.",
+        "Duration effect + convexity adjustment\n$$\\%\\Delta PV^{\\text{Full}} \\approx -\\text{AnnModDur} \\times \\Delta\\text{YTM} + \\tfrac{1}{2} \\times \\text{AnnConvexity} \\times (\\Delta\\text{YTM})^2$$\nEn clair : AnnModDur et AnnConvexity sont annuelles (convexity semestrielle ÷ 4). Avec 100 bp (basis points) = 0,01 : −5 × 0,01 + ½ × 50 × 0,01² = −5 % + 0,25 % = −4,75 %.\nPiège : le convexity adjustment reste positif : YTM −100 bp → +5 % + 0,25 % = +5,25 %.",
       ],
       [
         "Callable bond vs putable bond : quelle convexity ont-elles quand les taux bougent ?",
@@ -235,7 +235,7 @@ export const SETS = [
       ],
       [
         "Issuer credit rating vs issue credit rating : quelle différence, et qu'est-ce que le notching ?",
-        "Issuer : ==note la senior unsecured== · Issue : ==issuer rating ± notching==\nEn clair : Le notching monte la note d'une dette secured et baisse celle d'une subordinated, surtout si l'issuer est mal noté.\nPiège : structural subordination : chez une filiale, sa propre dette passe avant celle de la holding.",
+        "Issuer rating : ==senior unsecured debt== · Issue rating : ==selon la seniority== · Notching : ==l'écart entre les deux==\nEn clair : Le notching monte la note d'une dette secured et baisse celle d'une subordinated.\nPiège : structural subordination : chez une filiale, sa propre dette passe avant celle de la holding.",
       ],
       [
         "Dans une securitization, quels rôles jouent le seller, le SPE (special purpose entity) et le servicer ?",
@@ -251,7 +251,7 @@ export const SETS = [
       ],
       [
         "Covered bond vs ABS (asset-backed security) : où restent les actifs, et pourquoi la covered bond est-elle moins risquée ?",
-        "Covered bond : ==reste au bilan== · ABS : ==sort du bilan==\nEn clair : Le bondholder a recours sur l'issuer et sur le cover pool (dual recourse), renouvelé si un actif se dégrade : moins de risque, yield plus bas qu'un ABS.\nPiège : hard-bullet = default dès un paiement manqué ; soft-bullet = maturity repoussable jusqu'à 1 an.",
+        "Covered bond : ==reste au bilan== · ABS : ==sort du bilan (SPE)== · Moins risquée : ==dual recourse==\nEn clair : Le bondholder a recours sur l'issuer et sur le cover pool, que l'issuer complète si un actif se dégrade. D'où un yield plus bas qu'un ABS.\nPiège : actifs au bilan, donc pas d'allègement de regulatory capital.",
       ],
       [
         "Credit card ABS (asset-backed security) : que reçoivent les investisseurs pendant la lockout (revolving) period, puis après ?",

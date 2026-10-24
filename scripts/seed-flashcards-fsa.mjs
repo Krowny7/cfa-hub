@@ -45,7 +45,7 @@ export const SETS = [
       ],
       [
         "Income statement : comment présente-t-on les discontinued operations et les unusual or infrequent items ?",
-        "Discontinued operations : ==net of tax== · Unusual or infrequent items : ==pretax==\nEn clair : Les discontinued operations ont leur ligne, sous l'income from continuing operations, qui inclut les unusual or infrequent items.\nPiège : un item « unusual » qui revient chaque année n'est pas à exclure des prévisions.",
+        "Discontinued operations : ==net of tax== · Unusual or infrequent items : ==pretax==\nEn clair : Les unusual or infrequent items restent dans l'income from continuing operations. Les discontinued operations ont leur propre ligne, en dessous.\nPiège : un item « unusual » qui revient chaque année n'est pas à exclure des prévisions.",
       ],
       [
         "Changement d'accounting principle vs changement d'accounting estimate : lequel oblige à retraiter les années passées ?",
@@ -53,7 +53,7 @@ export const SETS = [
       ],
       [
         "Formule du basic EPS (earnings per share) ? Application : Net Income 50 000, preferred dividends 6 000, 10 000 actions au 1er janvier, 2 000 émises le 1er juillet, stock split 2-for-1 le 1er octobre.",
-        "$$\\text{Basic EPS} = \\dfrac{\\text{Net Income} - \\text{Preferred dividends}}{\\text{WASO}}$$\nEn clair : WASO (weighted average shares outstanding) = (10 000 + 2 000 × 6/12) × 2 = 22 000 (split rétroactif) ; EPS = (50 000 − 6 000) / 22 000 = 2,00.\nPiège : on retire les preferred dividends, jamais les common dividends.",
+        "$$\\text{Basic EPS} = \\dfrac{\\text{Net Income} - \\text{Preferred dividends}}{\\text{WASO}}$$\n$$\\text{WASO} = \\sum \\text{Shares outstanding} \\times \\dfrac{\\text{Months outstanding}}{12}$$\nEn clair : WASO (weighted average shares outstanding) = (10 000 + 2 000 × 6/12) × 2 = 22 000, split appliqué rétroactivement. EPS = (50 000 − 6 000) / 22 000 = 2,00.\nPiège : on retire les preferred dividends, jamais les common dividends.",
       ],
       [
         "Formule du diluted EPS (earnings per share) avec convertible preferred, convertible debt et stock options ?",
@@ -94,7 +94,7 @@ export const SETS = [
       ],
       [
         "Formule du CFO (cash flow from operations) par l'indirect method ? Application : Net Income 500, depreciation 120, gain sur cession d'un actif 30, accounts receivable +40, accounts payable +25.",
-        "$$\\text{CFO} = \\text{NI} + \\text{Non-cash charges} - \\text{Gains} - \\Delta\\text{Operating assets} + \\Delta\\text{Operating liabilities}$$\nEn clair : 500 + 120 − 30 − 40 + 25 = 575. NI = Net Income ; receivables en hausse = ventes pas encore encaissées, payables en hausse = cash gardé.\nPiège : le gain est retiré : tout le produit de cession va en CFI (cash flow from investing).",
+        "$$\\text{CFO} = \\text{NI} + \\text{Non-cash charges} - \\text{Gains} + \\text{Losses} - \\Delta\\text{Operating assets} + \\Delta\\text{Operating liabilities}$$\nEn clair : 500 + 120 − 30 − 40 + 25 = 575. NI = Net Income ; receivables en hausse = ventes pas encore encaissées, payables en hausse = cash gardé.\nPiège : le gain est retiré : tout le produit de cession va en CFI (cash flow from investing).",
       ],
       [
         "Formule du cash collected from customers (direct method) ? Application : Revenue 1 000, accounts receivable +50, unearned revenue +10.",
@@ -183,7 +183,7 @@ export const SETS = [
       ],
       [
         "Defined benefit plan : quelle part du pension cost va en Net Income sous IFRS (International Financial Reporting Standards) et sous US GAAP (US generally accepted accounting principles) ?",
-        "Part qui va en Net Income\n$$\\text{Pension cost}_{\\text{IFRS}} = \\text{Service cost} + \\text{Net interest}$$\n$$\\text{Pension cost}_{\\text{US GAAP}} = \\text{Service cost} + \\text{Interest cost} - \\text{Expected return on plan assets}$$\nEn clair : En IFRS, les remeasurements vont en OCI (other comprehensive income). En US GAAP, past service cost et actuarial gains/losses vont en OCI, puis sont amortis.\nPiège : en IFRS, le past service cost entre dans le service cost, donc en Net Income.",
+        "Part qui va en Net Income\n$$\\text{Pension cost}_{\\text{IFRS}} = \\text{Service cost} + \\text{Net interest}$$\n$$\\text{Pension cost}_{\\text{US GAAP}} = \\text{Service cost} + \\text{Interest cost} - \\text{Expected return on plan assets}$$\nEn clair : En IFRS, les remeasurements vont en OCI (other comprehensive income). En US GAAP, past service cost et actuarial gains/losses vont en OCI, puis sont amortis en Net Income.\nPiège : en IFRS, le past service cost entre dans le service cost, donc en Net Income.",
       ],
       [
         "Comment comptabilise-t-on des employee stock options dans l'income statement ?",
@@ -207,7 +207,7 @@ export const SETS = [
       ],
       [
         "Un DTL (deferred tax liability) qui ne devrait jamais se renverser : dette ou equity pour l'analyste ?",
-        "DTL qui ne se renverse jamais = ==equity==\nEn clair : Un DTL qui ne se renverse jamais ne sera jamais payé,par exemple si les capital expenditures croissent sans fin. Un DTL qui doit se renverser reste une dette.\nPiège : le reclasser en equity baisse le D/E (debt-to-equity).",
+        "DTL qui ne se renverse jamais = ==equity==\nEn clair : Un DTL qui ne se renverse jamais ne sera jamais payé, par exemple si les capital expenditures croissent sans fin. Un DTL qui doit se renverser reste une dette.\nPiège : le reclasser en equity baisse le D/E (debt-to-equity).",
       ],
     ],
   },
@@ -220,7 +220,7 @@ export const SETS = [
       ],
       [
         "Conservative vs aggressive accounting : quel effet sur les earnings, et comment l'earnings smoothing s'en sert-il ?",
-        "Aggressive : ==earnings actuels gonflés== · Conservative : ==earnings actuels réduits== · Smoothing : ==alterne les deux==\nEn clair : Conservative ou aggressive, c'est un biais.L'earnings smoothing passe en conservative au-dessus de l'objectif, en aggressive en dessous.\nPiège : conservative n'est pas « bon » : il peut gonfler les earnings futurs.",
+        "Aggressive : ==earnings actuels gonflés== · Conservative : ==earnings actuels réduits== · Smoothing : ==alterne les deux==\nEn clair : Conservative ou aggressive, c'est un biais. L'earnings smoothing passe en conservative au-dessus de l'objectif, en aggressive en dessous.\nPiège : conservative n'est pas « bon » : il peut gonfler les earnings futurs.",
       ],
       [
         "Quelles 3 conditions sont souvent réunies quand un management publie des financial reports de mauvaise qualité ?",
@@ -272,7 +272,7 @@ export const SETS = [
       ],
       [
         "Porter's five forces : quelle force pèse sur les input costs, et lesquelles sur le pricing power ?",
-        "Suppliers : ==input costs== · 4 autres forces : ==pricing power==\nEn clair : Le bargaining power of suppliers pèse sur les coûts. Rivalry, substitutes, new entrants et bargaining power of customers pèsent sur les prix.\nPiège : coût répercuté dollar pour dollar : gross profit inchangé, mais gross margin en baisse.",
+        "Suppliers : ==input costs== · 4 autres forces : ==pricing power==\nEn clair : Le bargaining power of suppliers pèse sur les coûts. Rivalry, substitutes, new entrants et bargaining power of customers pèsent sur les prix.\nPiège : coût répercuté dollar pour dollar, volumes stables : gross profit inchangé, gross margin en baisse.",
       ],
     ],
   },
