@@ -17,9 +17,12 @@ import s from "./Parcours.module.css";
 // La Bibliothèque, pour apprendre, avec un parcours 1 → 2 → 3 dont les
 // cartes mordent sur l'illustration : 1 les cours complets (la seule carte
 // sombre, le seul gros bouton du haut), 2 les fiches, 3 « pour la fin des
-// révisions » les one-pagers et les flashcards, à égalité. L'Atelier, pour
-// revoir ses erreurs : carnet de ratures, questions marquées, points
-// faibles. Sans requête : app/reviser charge les données
+// révisions » les one-pagers et les flashcards, à égalité. Un trait d'encre
+// sur la moitié de la largeur les sépare. L'Atelier, pour revoir ses
+// erreurs, n'a pas la même mise en page (demande de l'utilisateur) : à
+// gauche sa carte « lieu » (la peinture, le nom, le bouton de la séance
+// /atelier), à droite le carnet de ratures en large, puis les questions
+// marquées et les points faibles côte à côte. Sans requête : app/reviser charge les données
 // (components/reviser/parcours-data.ts), l'aperçu en fournit d'exemple ; ce
 // qui vient de l'appareil (dernier cours, « Sans calcul ») est lu après le
 // montage (ParcoursClient). Repères de Léonard (data-leonard) :
@@ -160,59 +163,69 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   const p = d.pointsFaibles;
   const aRevoir = !!r && r.enCours > 0;
   return (
-    <section className={s.lieu} aria-labelledby="reviser-atelier">
-      <div className={s.illu + " " + s.illuAtelier} data-leonard="atelier">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/atelier/etabli-1024.webp"
-          srcSet="/atelier/etabli-640.webp 640w, /atelier/etabli-1024.webp 1024w"
-          sizes="(min-width: 1280px) 1240px, 100vw"
-          alt=""
-          width={1024}
-          height={572}
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          className={s.fond + " " + s.sombreNuit}
-          style={{ objectPosition: "50% 62%" }}
-        />
-        <div className={s.legende}>
-          <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
-            <Icone nom="erreurs" size={22} />
-          </span>
-          <span>
-            <h2 id="reviser-atelier" className={s.lieuNom}>
-              {RV.atelier}
-            </h2>
-            <span className={s.lieuSous}>{RV.atelierSous}</span>
-          </span>
+    <section className={s.lieu + " " + s.atelier} aria-labelledby="reviser-atelier">
+      {/* la carte « lieu » (comme la Grande Salle du Classement, ici à gauche) : la peinture, le nom, la séance */}
+      <div className={s.carte + " " + s.papier + " " + s.lieuCarte} data-leonard="atelier">
+        <div className={s.lieuImage}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/atelier/etabli-1024.webp"
+            srcSet="/atelier/etabli-640.webp 640w, /atelier/etabli-1024.webp 1024w"
+            sizes="(min-width: 1280px) 480px, (min-width: 640px) 50vw, 100vw"
+            alt=""
+            width={1024}
+            height={572}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className={s.fond + " " + s.sombreNuit}
+            style={{ objectPosition: "42% 62%" }}
+          />
+        </div>
+        <div className={s.lieuCorps}>
+          <h2 id="reviser-atelier" className={"font-brand " + s.lieuTitre}>
+            <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
+              <Icone nom="erreurs" size={20} />
+            </span>
+            {RV.atelier}
+          </h2>
+          <p className={s.lieuPhrase}>{RV.atelierSous}</p>
+          <p className={s.lieuEtat}>{RV.atelierEtat}</p>
+          <Link href="/atelier" className={encre(s.bouton, s.boutonLarge)} data-palette={PAL.key}>
+            <EncreVive tons={PAL.liquide} />
+            {RV.atelierAction}
+          </Link>
         </div>
       </div>
 
-      <ul className={s.grille}>
-        {/* le carnet : deux gestes (l'interrupteur, la mise au propre), la carte n'est pas un lien */}
-        <li className={s.case}>
-          <div className={s.carte + " " + s.papier + " " + s.err}>
-            <div className={s.haut}>
-              <h3 className={s.eyebrow}>{RV.carnetTitre}</h3>
+      <ul className={s.outils}>
+        {/* le carnet, en large : deux gestes (l'interrupteur, la mise au propre), la carte n'est pas un lien */}
+        <li className={s.case + " " + s.carnetCase}>
+          <div className={s.carte + " " + s.papier + " " + s.err + " " + s.carnet}>
+            <div className={s.carnetCol}>
+              <div className={s.haut}>
+                <h3 className={s.eyebrow}>{RV.carnetTitre}</h3>
+              </div>
+              <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
+                {r?.derniere ?? RV.carnetNeutre}
+              </span>
+              {r && aRevoir ? (
+                <p className={s.chiffre}>
+                  <b className="t-num">{nombre(r.enCours)}</b>
+                  <span>{RV.carnetEnCours(r.enCours)}</span>
+                </p>
+              ) : (
+                <p className={s.ligne}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
+              )}
             </div>
-            <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
-              {r?.derniere ?? RV.carnetNeutre}
-            </span>
-            {r && aRevoir ? (
-              <p className={s.chiffre}>
-                <b className="t-num">{nombre(r.enCours)}</b>
-                <span>{RV.carnetEnCours(r.enCours)}</span>
-              </p>
-            ) : (
-              <p className={s.ligne}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
-            )}
-            {r?.calcul && <BasculeSansCalcul masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
-            {/* rempli de l'encre quand il y a des ratures à revoir ; en filet sinon */}
-            <Link href="/moi?onglet=erreurs" className={aRevoir ? encre(s.bouton) : s.bouton + " " + s.boutonTrait} data-palette={aRevoir ? PAL.key : undefined}>
-              {aRevoir && <EncreVive tons={PAL.liquide} />}
-              {RV.carnetOuvrir}
-            </Link>
+            <div className={s.carnetCol + " " + s.carnetGestes}>
+              {r?.calcul && <BasculeSansCalcul masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
+              {/* rempli de l'encre quand il y a des ratures à revoir ; en filet sinon */}
+              <Link href="/moi?onglet=erreurs" className={aRevoir ? encre(s.bouton) : s.bouton + " " + s.boutonTrait} data-palette={aRevoir ? PAL.key : undefined}>
+                {aRevoir && <EncreVive tons={PAL.liquide} />}
+                {RV.carnetOuvrir}
+              </Link>
+            </div>
           </div>
         </li>
 
@@ -244,7 +257,7 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
         </li>
 
         <li className={s.case}>
-          <Link href="/atelier" className={levable(s.err)}>
+          <Link href="/moi?onglet=stats#points-faibles" className={levable(s.err)}>
             <span className={s.haut}>
               <h3 className={s.eyebrow}>{RV.faiblesTitre}</h3>
             </span>
@@ -279,6 +292,11 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   );
 }
 
+/** Entre les deux lieux : un trait d'encre noir sur la moitié de la largeur (le soulignement du site, étiré). */
+function Separation() {
+  return <hr className={s.separation} />;
+}
+
 export function ReviserView({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
   return (
     <DomainSpace
@@ -288,6 +306,7 @@ export function ReviserView({ d, apercu }: { d: DonneesReviser; apercu?: ApercuR
       lead={
         <div className={s.racine} style={styleDePalette(PAL)}>
           <Bibliotheque d={d} apercu={apercu} />
+          <Separation />
           <Atelier d={d} apercu={apercu} />
         </div>
       }

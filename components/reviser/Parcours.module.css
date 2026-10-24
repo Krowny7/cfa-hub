@@ -184,12 +184,6 @@
   gap: 14px;
   color: var(--pal-4);
 }
-.illuAtelier {
-  min-height: 200px;
-}
-.illuAtelier .legende {
-  bottom: 20px;
-}
 /* le sceau du lieu : une pastille d'encre (.encre), cerclée d'ivoire */
 .sceau {
   display: grid;
@@ -224,17 +218,11 @@
     min-height: 190px;
     border-radius: 16px;
   }
-  .illuAtelier {
-    min-height: 140px;
-  }
   .legende {
     left: 14px;
     right: 14px;
     bottom: 16px;
     gap: 10px;
-  }
-  .illuAtelier .legende {
-    bottom: 14px;
   }
   .lieuNom {
     font-size: 22px;
@@ -828,16 +816,159 @@
   }
 }
 
-/* ——— l'Atelier : revoir mes erreurs ——— */
-.grille {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 14px;
+/* ——— entre les deux lieux : un trait d'encre noir, la moitié de la largeur ———
+   le soulignement du site (--underline, globals.css : l'encre de jour, l'ivoire
+   de nuit), étiré ; la racine met 30 px de chaque côté */
+.separation {
+  justify-self: center;
+  width: 50%;
+  height: 7px;
+  margin: 0;
+  border: 0;
+  background: var(--underline) center / 100% 100% no-repeat;
 }
-@container (max-width: 760px) {
-  .grille {
+
+/* ——— l'Atelier : revoir mes erreurs ———
+   Pas la mise en page de la Bibliothèque (demande de l'utilisateur) : celle du
+   Classement, en miroir. À gauche la carte « lieu » (la peinture en tête, qui
+   absorbe la hauteur de la rangée, le nom, la séance, le bouton) ; à droite le
+   carnet en large, puis les marquées et les points faibles côte à côte. */
+.atelier {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+  gap: 14px;
+}
+.lieuCarte {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+}
+.lieuImage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 210px;
+  isolation: isolate;
+  border-bottom: 1px solid var(--pencil-2);
+  /* le fond le temps que la peinture arrive */
+  background: color-mix(in oklab, var(--pal-1) 40%, black);
+}
+.lieuCorps {
+  display: grid;
+  gap: 8px;
+  padding: 18px 22px 22px;
+}
+.lieuTitre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 36px;
+  line-height: 1;
+}
+/* le sceau, ici sur le papier : cerclé de noyer (d'ivoire la nuit) */
+.lieuTitre .sceau {
+  width: 44px;
+  height: 44px;
+  --anneau: var(--pal-1);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--anneau) 60%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--anneau) 14%, transparent);
+}
+:global(html[data-theme="nuit"]) .lieuTitre .sceau {
+  --anneau: var(--pal-4);
+}
+.lieuPhrase {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.lieuEtat {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.boutonLarge {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 6px;
+}
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .lieuCarte .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
+    var(--shadow-btn);
+}
+
+.outils {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* si la carte « lieu » est plus haute, c'est la rangée du bas qui s'allonge */
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+}
+.carnetCase {
+  grid-column: 1 / -1;
+  container-type: inline-size;
+}
+.carnetCol {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+/* le carnet en large : la rature et le chiffre à gauche, l'interrupteur et le bouton à droite, en bas */
+@container (min-width: 560px) {
+  .carnet {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: 26px;
+  }
+  .carnetGestes {
+    align-content: end;
+  }
+}
+/* moyen : la carte « lieu » couchée en tête (la peinture à gauche), les trois outils dessous */
+@container (max-width: 900px) {
+  .atelier {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .lieuCarte {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+  .lieuImage {
+    min-height: 230px;
+    border-bottom: 0;
+    border-right: 1px solid var(--pencil-2);
+  }
+  .lieuCorps {
+    align-content: center;
+  }
+}
+/* téléphone : une colonne ; la peinture en bandeau au-dessus du nom */
+@container (max-width: 620px) {
+  .lieuCarte {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lieuImage {
+    min-height: 150px;
+    border-right: 0;
+    border-bottom: 1px solid var(--pencil-2);
+  }
+  .lieuCorps {
+    padding: 16px 18px 18px;
+  }
+  .lieuTitre {
+    font-size: 28px;
+  }
+  .lieuTitre .sceau {
+    width: 38px;
+    height: 38px;
+  }
+  .outils {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .separation {
+    width: 60%;
   }
 }
 .err {

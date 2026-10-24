@@ -50,6 +50,8 @@ export const RV = {
   // l'Atelier : revoir mes erreurs
   atelier: "L'Atelier",
   atelierSous: "Revoir mes erreurs, jusqu'à ce qu'elles tiennent.",
+  atelierEtat: "Une séance de 30 minutes sur tes points faibles : rappel, ratures, questions neuves, puis le bilan avant/après.",
+  atelierAction: "Ouvrir l'Atelier",
   carnetTitre: "Carnet de ratures",
   carnetNeutre: "brouillon",
   carnetEnCours: (n: number) => (n > 1 ? "ratures en cours" : "rature en cours"),
@@ -70,7 +72,7 @@ export const RV = {
   faiblesRien: "Rien de fragile en ce moment : tes notions mesurées tiennent.",
   faiblesPeu: "Pas encore assez de réponses pour mesurer une notion. Quelques séries, et elles apparaîtront ici.",
   faiblesSansChiffre: "Les notions qui coincent, mesurées sur tes dernières réponses.",
-  faiblesAction: "Ouvrir l'Atelier",
+  faiblesAction: "Voir mes points faibles",
 
   // listes
   retour: "Réviser",
