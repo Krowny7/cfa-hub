@@ -16,17 +16,15 @@ import s from "./Parcours.module.css";
 // l'interrupteur « Sans calcul » du carnet. Le serveur rend l'état sans
 // historique ; l'appareil n'est lu qu'après le montage (pas d'écart de rendu).
 // `apercu` : l'écoute d'exemple des aperçus, à la place de l'appareil.
-// La carte du cours est remplie de l'encre vivante de l'onglet « Réviser »
-// (EncreVive, palette studiolo, motif plus large ; texture de repli et voile :
-// .rl-encre de globals.css) ; son bouton et sa pastille d'étape, de la texture
-// qui dérive (pas d'autre canvas). Les variables --pal-* viennent de la racine
-// de la page (ReviserView). La carte garde .card-ink : en mode discret (ni
-// texture ni canvas), elle redevient la carte sombre neutre du site.
+// La carte du cours est une carte sombre unie (noyer ; pas d'encre : demande
+// de l'utilisateur). Son bouton est rempli du vrai fluide de l'onglet
+// « Réviser » (EncreVive, palette studiolo ; texture de repli et voile :
+// .rl-encre de globals.css) ; sa pastille d'étape, de la texture qui dérive.
+// Les variables --pal-* viennent de la racine de la page (ReviserView). La
+// carte garde .card-ink : en mode discret, la carte sombre neutre du site.
 
 const SLUGS = COURS_PROGRAMME.map((c) => c.slug);
 const PAL = PALETTES.studiolo;
-/** px CSS d'un carré du motif sur la grande carte (96 dans l'onglet) : des veines plus calmes */
-const ECHELLE_CARTE = 170;
 
 export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) {
   const [ecoute, setEcoute] = useState<EcouteCours | null>(apercu ?? null);
@@ -47,8 +45,7 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
   const action = c.mode === "reprise" ? RV.coursReprendre : RV.coursCommencer;
 
   return (
-    <li className={"card-ink rl-encre " + s.carte + " " + s.c1} data-palette={PAL.key} data-leonard="cours">
-      <EncreVive tons={PAL.liquide} echelle={ECHELLE_CARTE} />
+    <li className={"card-ink " + s.carte + " " + s.c1} data-leonard="cours">
       <div className={s.haut}>
         <span className={"rl-encre " + s.etape + " " + s.encre + " t-num"} data-palette={PAL.key} aria-hidden>
           1
@@ -94,6 +91,7 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
         </ul>
         <div className={s.bas}>
           <Link href="/courses" className={"rl-encre " + s.bouton + " " + s.encre} data-palette={PAL.key} aria-label={`${RV.coursOuvrir} (${RV.coursTous(COURS_PROGRAMME.length)})`}>
+            <EncreVive tons={PAL.liquide} />
             {RV.coursOuvrir}
           </Link>
         </div>

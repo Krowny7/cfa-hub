@@ -350,27 +350,17 @@
   padding: 20px;
   color: var(--sur-nuit);
   --trait: var(--pal-3);
-  --pal-voile-haut: 0.6;
-  --pal-voile-bas: 0.78;
 }
 :global(html:not([data-discreet="1"])) .c1 {
   background: linear-gradient(180deg, color-mix(in oklab, var(--pal-1) 70%, black), var(--noyer-fonce));
 }
-/* nuit : l'encre voilée se fond dans le papier ; un liseré ivoire, à l'extérieur (comme celui de .card-ink) */
+/* nuit : le noyer sombre se fond dans le papier ; un liseré ivoire, à l'extérieur (comme celui de .card-ink) */
 :global(html[data-theme="nuit"]:not([data-discreet="1"])) .c1 {
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--pal-4) 14%, transparent),
     var(--shadow-2);
 }
-/* la texture de repli, à l'échelle de la carte : tuile plus grande, même
-   vitesse que dans l'onglet (sélecteurs plus forts que .rl-encre de globals.css) */
-.racine .c1:global(.rl-encre)[data-palette] {
-  --encre-pas: 320px;
-}
-.racine .c1:global(.rl-encre)[data-palette]::before {
-  animation-duration: 36s;
-}
-/* encre sur encre : un filet ivoire détache la pastille et le bouton */
+/* sur la carte sombre : un filet ivoire détache la pastille et le bouton encrés */
 .c1 .etape {
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--pal-4) 70%, transparent);
 }
