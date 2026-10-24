@@ -25,6 +25,7 @@ export const RV = {
   coursCommencer: "Commencer",
   coursLecteur: (titre: string, ou: string) => `${titre} : ${ou}`,
   coursTous: (n: number) => `Les ${n} cours`,
+  coursOuvrir: "Ouvrir les cours",
   coursMatieres: "Écoute par matière",
   coursMatiere: (nom: string, pct: number) => (pct >= 100 ? `${nom} : écouté en entier` : pct > 0 ? `${nom} : ${pct} % écouté` : `${nom} : pas encore écouté`),
   // 2 · Fiches de révision
@@ -56,7 +57,6 @@ export const RV = {
   carnetSansChiffre: "Toutes tes questions manquées, gardées jusqu'à ce que tu les réussisses.",
   carnetCalculCoupe: "coupé sur cet appareil",
   carnetCalculActif: "actif",
-  carnetAction: "Mettre au propre",
   carnetOuvrir: "Ouvrir le carnet",
   marqueesTitre: "Questions marquées",
   marqueesGardees: (n: number) => (n > 1 ? "gardées de côté" : "gardée de côté"),

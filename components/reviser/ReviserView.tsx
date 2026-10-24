@@ -193,15 +193,9 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
               <p className={s.ligne}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
             )}
             {r?.calcul && <BasculeSansCalcul masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
-            {r && r.enCours > 0 ? (
-              <Link href="/moi?onglet=erreurs#propre" className={s.bouton + " " + s.plein}>
-                {RV.carnetAction}
-              </Link>
-            ) : (
-              <Link href="/moi?onglet=erreurs" className={s.bouton + " " + s.boutonTrait}>
-                {RV.carnetOuvrir}
-              </Link>
-            )}
+            <Link href="/moi?onglet=erreurs" className={s.bouton + " " + (r && r.enCours > 0 ? s.plein : s.boutonTrait)}>
+              {RV.carnetOuvrir}
+            </Link>
           </div>
         </li>
 

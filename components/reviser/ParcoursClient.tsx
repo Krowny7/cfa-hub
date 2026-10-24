@@ -49,8 +49,8 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
         <p className={s.sous}>{RV.coursSous}</p>
       </div>
       <div key={c.slug + c.mode} className={s.c1Corps + (depuisAppareil ? " " + s.arrive : "")}>
-        {/* le lecteur : même destination que le bouton, hors du parcours au clavier (le bouton suffit) */}
-        <Link href={c.href} className={s.lecteur} tabIndex={-1} aria-hidden>
+        {/* le lecteur : ouvre le cours en cours (ou le premier) ; le bouton du bas mène à la page des cours */}
+        <Link href={c.href} className={s.lecteur} aria-label={RV.coursLecteur(action, `${c.titre}, ${ou}`)}>
           <span className={s.play}>
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M6 4l14 8-14 8z" />
@@ -81,11 +81,8 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
           })}
         </ul>
         <div className={s.bas}>
-          <Link href={c.href} className={s.bouton + " btn-on-ink"} aria-label={RV.coursLecteur(action, `${c.titre}, ${ou}`)}>
-            {action}
-          </Link>
-          <Link href="/courses" className={s.lien + " " + s.lienNuit}>
-            {RV.coursTous(COURS_PROGRAMME.length)}
+          <Link href="/courses" className={s.bouton + " btn-on-ink"} aria-label={`${RV.coursOuvrir} (${RV.coursTous(COURS_PROGRAMME.length)})`}>
+            {RV.coursOuvrir}
           </Link>
         </div>
       </div>
