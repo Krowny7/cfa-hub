@@ -116,7 +116,7 @@
   position: absolute;
   left: 22px;
   right: 22px;
-  bottom: 74px;
+  bottom: 22px;
   display: flex;
   align-items: flex-end;
   gap: 14px;
@@ -165,7 +165,7 @@
   .legende {
     left: 14px;
     right: 14px;
-    bottom: 50px;
+    bottom: 16px;
     gap: 10px;
   }
   .illuAtelier .legende {
@@ -180,7 +180,7 @@
   }
 }
 
-/* ——— le parcours 1 → 2 → 3, qui mord sur l'illustration ——— */
+/* ——— le parcours 1 → 2 → 3, sous l'illustration (sans chevauchement, demande de l'utilisateur) ——— */
 .parcours {
   position: relative;
   z-index: 2;
@@ -188,7 +188,7 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3.2fr);
   align-items: stretch;
   gap: 14px;
-  margin: -52px 14px 0;
+  margin-top: 16px;
 }
 /* moyen : le cours sur toute la largeur, puis les fiches et « pour la fin » côte à côte */
 @container (max-width: 980px) {
@@ -204,7 +204,7 @@
   .parcours {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
-    margin: -36px 8px 0;
+    margin-top: 12px;
   }
 }
 
@@ -570,19 +570,6 @@
   gap: 10px;
   padding: 4px 4px 0;
   font-weight: inherit;
-}
-/* trois colonnes : l'en-tête de la colonne 3 tombe sur le bas sombre de la
-   peinture (pas de carte sous lui) ; posé sur une étiquette de papier, le
-   « 3 » à l'encre et la plume rouge restent lisibles, jour et nuit */
-@container (min-width: 981px) {
-  .finTete {
-    width: fit-content;
-    padding: 6px 12px 6px 6px;
-    border: 1px solid var(--pencil-2);
-    border-radius: 12px;
-    background: var(--surface);
-    box-shadow: var(--shadow-1);
-  }
 }
 .plume {
   position: relative;
