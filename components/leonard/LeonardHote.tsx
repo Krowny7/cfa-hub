@@ -8,9 +8,9 @@ import { EVENEMENT_LEONARD, type EvenementLeonard, type SignalLeonard } from "@/
 import { CLE_NOUVEAUTES, CLE_TUTO, EVENEMENT_REGLAGES, lireReglages } from "@/lib/leonard/reglages";
 import { decider, jourParis, type Compteur } from "@/lib/leonard/apparitions";
 import type { LeonardRig } from "@/lib/leonard/rig";
-import { NOUVEAUTES, REPLIQUES, TUTO, type EtapeTuto, type Replique, type Visite } from "@/lib/leonard/repliques";
+import { REPLIQUES, TUTO, nouveautesPour, type EtapeTuto, type Replique, type Visite } from "@/lib/leonard/repliques";
 import { lireSobre as sobreDuCompte } from "@/lib/codex/sobre";
-import { CLE_NOUVEAUTES_COMPTE, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
+import { CLE_NOUVEAUTES_COMPTE, CLE_VISITE_COMPTE, VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, versionNouveautesVue, visiteVue } from "@/lib/presentation";
 import { ceremonieRecente, resteCeremonie } from "@/lib/ceremonie-en-cours";
 import s from "./Leonard.module.css";
 
@@ -177,13 +177,14 @@ function premierVisible(cible: string) {
  * null si on ne sait pas (réseau, session) : rien ne se lance sur une
  * supposition, on réessaie à la page suivante.
  */
-async function etatDuCompte(): Promise<{ visite: boolean; nouveautes: boolean; id: string } | null> {
+async function etatDuCompte(): Promise<{ visite: boolean; nouveautes: boolean; vueNouveautes: number; id: string } | null> {
   try {
     const { createClient } = await import("@/lib/supabase/browser");
     const { data, error } = await createClient().auth.getUser();
     if (error || !data.user) return null;
     const meta = data.user.user_metadata;
-    return { visite: visiteVue(meta), nouveautes: nouveautesVues(meta), id: data.user.id };
+    // vueNouveautes : la dernière version des nouveautés vue (avant la 4 : celles de la 4 passent d'abord)
+    return { visite: visiteVue(meta), nouveautes: nouveautesVues(meta), vueNouveautes: versionNouveautesVue(meta), id: data.user.id };
   } catch {
     return null;
   }
@@ -211,17 +212,19 @@ function retenirVisite(v: Visite) {
 }
 /** Les nouveautés de cette version déjà vues sur cet appareil ? */
 const nouveautesVuesIci = () => lire<number>(CLE_NOUVEAUTES, 0) >= VERSION_NOUVEAUTES;
+/** Une visite en cours : son étape, et pour les nouveautés la version vue avant (les mêmes étapes à la reprise). */
+type EnCours = { v: Visite; i: number; depuis?: number };
 /** La visite en cours dans cet onglet (pour la reprendre à son étape), ou null. */
-function enCours(): { v: Visite; i: number } | null {
+function enCours(): EnCours | null {
   try {
-    const e = JSON.parse(sessionStorage.getItem(CLE_EN_COURS) ?? "null") as { v?: unknown; i?: unknown } | null;
-    if (e && (e.v === "tuto" || e.v === "nouveautes") && typeof e.i === "number") return { v: e.v, i: e.i };
+    const e = JSON.parse(sessionStorage.getItem(CLE_EN_COURS) ?? "null") as { v?: unknown; i?: unknown; depuis?: unknown } | null;
+    if (e && (e.v === "tuto" || e.v === "nouveautes") && typeof e.i === "number") return { v: e.v, i: e.i, ...(typeof e.depuis === "number" ? { depuis: e.depuis } : {}) };
   } catch {
     // stockage bloqué ou illisible
   }
   return null;
 }
-function retenirEnCours(e: { v: Visite; i: number } | null) {
+function retenirEnCours(e: EnCours | null) {
   try {
     if (e) sessionStorage.setItem(CLE_EN_COURS, JSON.stringify(e));
     else sessionStorage.removeItem(CLE_EN_COURS);
@@ -256,7 +259,7 @@ function apresIntro(f: () => void, delai: number) {
 }
 
 /** `tuto` : une visite guidée (celle d'accueil ou les nouveautés : `visite`), qui attend le joueur à chaque étape. */
-type Scene = { repliques: Replique[]; tuto: boolean; visite: Visite | null };
+type Scene = { repliques: Replique[]; tuto: boolean; visite: Visite | null; depuis?: number };
 type Cote = "droite" | "gauche";
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -322,9 +325,11 @@ export function LeonardHote() {
     });
     if (!decision.ok) return;
     const visite: Visite | null = sig.evt === "tuto" || sig.evt === "nouveautes" ? sig.evt : null;
+    // les nouveautés : la version vue avant sur le compte (absente pour « Revoir » : cette version seule)
+    const depuis = sig.evt === "nouveautes" && typeof sig.vars?.depuis === "number" ? sig.vars.depuis : undefined;
     let repliques: Replique[];
     if (sig.evt === "tuto") repliques = TUTO;
-    else if (sig.evt === "nouveautes") repliques = NOUVEAUTES;
+    else if (sig.evt === "nouveautes") repliques = nouveautesPour(depuis);
     else if (sig.replique) repliques = [sig.replique];
     else {
       const r = choisir(sig.evt, sig.vars);
@@ -345,7 +350,7 @@ export function LeonardHote() {
       setSortie(false);
       visiteRef.current = visite;
       setArrive(!visite);
-      setScene({ repliques, tuto: !!visite, visite });
+      setScene({ repliques, tuto: !!visite, visite, depuis });
     };
     // une cérémonie plein écran (sans-faute) en cours : il attend qu'elle s'efface
     const quand = () => {
@@ -394,7 +399,7 @@ export function LeonardHote() {
     const reprise = plusTard ? null : enCours();
     if (reprise || ((!tutoFait || !nouvFaites) && !plusTard)) {
       const jeton = { annule: false, arret: () => {} };
-      const lancer = (v: Visite, depart: number) => {
+      const lancer = (v: Visite, depart: number, depuis?: number) => {
         const essai = () => {
           if (jeton.annule) return;
           // une apparition ordinaire à l'écran : la visite passe juste après
@@ -404,7 +409,7 @@ export function LeonardHote() {
             return;
           }
           attente.current = null;
-          if (pageCalme(window.location.pathname)) montrer({ evt: v }, depart);
+          if (pageCalme(window.location.pathname)) montrer(depuis === undefined ? { evt: v } : { evt: v, vars: { depuis } }, depart);
         };
         jeton.arret = apresIntro(essai, 1600);
       };
@@ -415,7 +420,7 @@ export function LeonardHote() {
         },
       };
       prechauffer();
-      if (reprise) lancer(reprise.v, reprise.i);
+      if (reprise) lancer(reprise.v, reprise.i, reprise.depuis);
       else
         void etatDuCompte().then((compte) => {
           if (jeton.annule) return;
@@ -437,7 +442,7 @@ export function LeonardHote() {
             attente.current = null;
             return;
           }
-          lancer("nouveautes", 0);
+          lancer("nouveautes", 0, compte.vueNouveautes);
         });
       // pas de nettoyage ici : l'attente survit au passage d'une page calme à l'autre
       return;
@@ -571,7 +576,7 @@ export function LeonardHote() {
     setLent(false);
     minuteurs.push(window.setTimeout(() => setLent(true), 1200));
     cible.current = null;
-    if (scene.visite) retenirEnCours({ v: scene.visite, i });
+    if (scene.visite) retenirEnCours({ v: scene.visite, i, ...(scene.depuis !== undefined ? { depuis: scene.depuis } : {}) });
     // une étape sans rien à montrer (facultative, sans adresse, page qui
     // n'arrive pas) : la suivante ; la visite n'est retenue que si elle a joué
     // (3 étapes montrées, ou toutes ses étapes obligatoires pour une visite

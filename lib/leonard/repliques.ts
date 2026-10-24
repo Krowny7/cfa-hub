@@ -351,17 +351,47 @@ export const TUTO: EtapeTuto[] = [
 /**
  * Les nouveautés d'une version (lib/presentation, VERSION_NOUVEAUTES) : une
  * visite courte, une fois par compte, pour ceux qui ont déjà fait la visite
- * d'accueil. Version 4 (Codex simplifié, 17 octobre 2026) : les quêtes logent
- * dans le sceau en haut à droite, une quête faite se récupère (« Récupérer »),
- * et le Codex a quitté la barre pour une tuile de Moi. Le sceau et la tuile
- * ne sont là qu'avec le Codex : leurs étapes sont facultatives. Une étape dont
- * l'élément peut manquer (pas de données) est facultative ou a un repli.
+ * d'accueil. Version 5 (24 octobre 2026) : la page Réviser refaite en
+ * parcours, ses cinq repères (components/reviser : data-leonard) — la
+ * Bibliothèque, 1 les cours complets, 2 les fiches, 3 « pour la fin »
+ * (one-pagers et flashcards), puis l'Atelier pour revoir ses erreurs. Ils
+ * sont toujours sur la page (sans données, les cartes restent, sans
+ * chiffre) : aucune étape facultative. Comme la visite d'accueil, elle est
+ * retenue dès 3 étapes montrées. Un compte qui n'a pas vu la version 4 la
+ * voit avant (NOUVEAUTES_V4, nouveautesPour).
  */
 export const NOUVEAUTES: EtapeTuto[] = [
+  { page: "/reviser", cible: "bibliotheque", texte: "Re. J’ai refait Réviser : un parcours, dans l’ordre où l’on apprend. En haut, la Bibliothèque.", pose: "fier" },
+  { page: "/reviser", cible: "cours", texte: "Un : le cours complet, à lire ou à écouter. Le lecteur reprend là où tu t’es arrêté. Moi, j’écrivais à l’envers ; toi, t’as qu’à appuyer.", pose: "base" },
+  { page: "/reviser", cible: "fiches", texte: "Deux : les fiches, le cours condensé puis ses questions. Tu vois d’un coup d’œil celles que tu as finies.", pose: "base" },
+  { page: "/reviser", cible: "fin", texte: "Trois, pour la fin des révisions : une page A4 par matière et les flashcards. La veille, pas le premier jour.", pose: "moqueur" },
+  { page: "/reviser", cible: "atelier", texte: "En bas, l’Atelier : tes ratures, tes questions marquées, tes points faibles. On y revient jusqu’à ce que ça tienne.", pose: "fier" },
+];
+
+/**
+ * Les nouveautés de la version 4 (Codex simplifié, 17 octobre 2026), gardées
+ * pour qui ne les a pas vues : les quêtes logent dans le sceau en haut à
+ * droite, une quête faite ne paie l'XP qu'après « Récupérer » (sauf
+ * « Récompenses versées d'office »), le Codex a quitté la barre pour une tuile
+ * de Moi. Le sceau et la tuile ne sont là qu'avec le Codex : facultatives.
+ */
+export const NOUVEAUTES_V4: EtapeTuto[] = [
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Re. J’ai rangé l’atelier. Les quêtes logent maintenant en haut à droite, dans ce sceau : celles du jour, et la suite si tu en veux.", pose: "fier" },
   { page: "/dashboard", cible: "sceau-quetes", facultatif: true, texte: "Une quête faite ne paie plus en douce : un chiffre se pose sur le sceau, tu touches « Récupérer », et l’XP est à toi. Avec les récompenses versées d’office, elle arrive seule.", pose: "base" },
   { page: "/moi", cible: "moi-codex", facultatif: true, texte: "Le Codex a quitté la barre du haut : il t’attend ici, dans Moi, avec l’historique de tes quêtes. Quand tu veux, sans obligation.", pose: "base" },
 ];
 
+/**
+ * Les étapes des nouveautés pour un compte, selon la dernière version vue
+ * (user_metadata.rl_nouveautes) : avant la 4, celles de la 4 d'abord, puis
+ * celles de cette version (sans un second « Re. ») ; sinon, ou inconnue
+ * (« Revoir » des réglages), celles de cette version seules.
+ */
+export function nouveautesPour(vue?: number): EtapeTuto[] {
+  if (typeof vue !== "number" || vue >= 4) return NOUVEAUTES;
+  const [premiere, ...suite] = NOUVEAUTES;
+  return [...NOUVEAUTES_V4, { ...premiere, texte: premiere.texte.replace(/^Re\. J’ai refait/, "J’ai aussi refait") }, ...suite];
+}
+
 /** Ce que montrent les nouveautés de cette version, en une ligne (Moi › Réglages, « Les nouveautés »). */
-export const RESUME_NOUVEAUTES = "Le sceau des quêtes, « Récupérer », le Codex dans Moi";
+export const RESUME_NOUVEAUTES = "La page Réviser refaite en parcours, de la Bibliothèque à l’Atelier";

@@ -8,13 +8,13 @@
 // écart de 4 minutes, hasard, minuit à Paris) ; l'hôte branché sur ce plafond
 // et son bouton d'action de 44 px (la bulle attend tant qu'on la survole) ;
 // Léonard muet sur une quête faite et un acte qui s'ouvre (Codex simplifié
-// §4.6) ; la visite en 5 étapes et les nouveautés v4 (Codex simplifié : le
-// sceau des quêtes, « Récupérer », le Codex dans Moi), leurs cibles posées
-// dans les pages.
+// §4.6) ; la visite en 5 étapes et les nouveautés v5 (la page Réviser en
+// parcours : la Bibliothèque, ses trois étapes, l'Atelier), précédées des v4
+// pour un compte qui ne les a pas vues, leurs cibles posées dans les pages.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, REPLIQUES, RESUME_NOUVEAUTES, TUTO, type Replique } from "@/lib/leonard/repliques";
-import { VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, visiteVue } from "@/lib/presentation";
+import { EVENEMENTS_DELICATS, EVENEMENTS_ECHEC, NOUVEAUTES, NOUVEAUTES_V4, REPLIQUES, RESUME_NOUVEAUTES, TUTO, nouveautesPour, type Replique } from "@/lib/leonard/repliques";
+import { VERSION_NOUVEAUTES, VERSION_PRESENTATION, nouveautesVues, versionNouveautesVue, visiteVue } from "@/lib/presentation";
 import { ECART_MIN, MAX_JOUR, MUETS, PRIORITAIRES, decider, jourParis, type Compteur, type Contexte } from "@/lib/leonard/apparitions";
 import type { EvenementLeonard } from "@/lib/leonard/signal";
 
@@ -188,7 +188,7 @@ check("L'hôte affiche l'action en bouton de 44 px", /replique\.action\.href/.te
 check("Une bulle survolée ou au clavier ne repart pas sous la main", /onPointerEnter=\{scene\.tuto \? undefined : retenir\}/.test(hote) && /onFocus=\{scene\.tuto \? undefined : retenir\}/.test(hote));
 
 // ── la visite et les nouveautés (V3 §11.4) ──────────────────────────────
-console.log("\n# la visite en 5 étapes, les nouveautés v4 (Codex simplifié)");
+console.log("\n# la visite en 5 étapes, les nouveautés v5 (Réviser en parcours)");
 const etapes = (l: { page: string; cible?: string }[]) => l.map((x) => `${x.page}#${x.cible ?? ""}`).join(" ");
 check(
   "la visite : les 30 et les 5, l'anneau des traits, le sceau des quêtes, le Codex dans Moi, les réglages",
@@ -196,20 +196,52 @@ check(
   etapes(TUTO),
 );
 check("la visite parle des récompenses versées d'office à l'étape des réglages (le nom du réglage à l'écran)", /Récompenses versées d’office/.test(TUTO.find((x) => x.cible === "reglages")?.texte ?? ""));
-check("les nouveautés v4 : le sceau des quêtes, « Récupérer », le Codex dans Moi", etapes(NOUVEAUTES) === "/dashboard#sceau-quetes /dashboard#sceau-quetes /moi#moi-codex", etapes(NOUVEAUTES));
+check(
+  "les nouveautés v5 : la Bibliothèque, le cours, les fiches, « pour la fin », l'Atelier (page Réviser)",
+  etapes(NOUVEAUTES) === "/reviser#bibliotheque /reviser#cours /reviser#fiches /reviser#fin /reviser#atelier",
+  etapes(NOUVEAUTES),
+);
 check(
   "les réglages résument les nouveautés de cette version (« Revoir »)",
-  RESUME_NOUVEAUTES.includes("« Récupérer »") && RESUME_NOUVEAUTES.includes("Moi") && readFileSync(join(RACINE, "components/moi/AppearanceSwitches.tsx"), "utf8").includes("{RESUME_NOUVEAUTES}"),
+  RESUME_NOUVEAUTES.includes("Réviser") && RESUME_NOUVEAUTES.includes("Atelier") && readFileSync(join(RACINE, "components/moi/AppearanceSwitches.tsx"), "utf8").includes("{RESUME_NOUVEAUTES}"),
 );
-check("les nouveautés v4 nomment « Récupérer », et les récompenses versées d'office qui s'en passent", NOUVEAUTES.some((x) => x.texte.includes("« Récupérer »") && /récompenses versées d’office/.test(x.texte)));
+check("les nouveautés v5 suivent le parcours dans l'ordre : un, deux, trois", ["cours", "fiches", "fin"].map((c) => NOUVEAUTES.find((x) => x.cible === c)?.texte.split(" ")[0]).join(" ") === "Un Deux Trois,");
 // le sceau n'est dans la barre qu'avec le Codex : ses étapes, et elles seules, sont facultatives
-check("seules les étapes du sceau et de la tuile Codex de Moi sont facultatives (absents sans le Codex)", [...TUTO, ...NOUVEAUTES].every((x) => (x.cible === "sceau-quetes" || x.cible === "moi-codex") === !!x.facultatif));
-check("Léonard ne parle plus de « mode sobre » : le réglage s'appelle « Récompenses versées d'office »", [...TUTO, ...NOUVEAUTES].every((x) => !/mode sobre/i.test(x.texte)));
-check("le Codex a quitté la barre : aucune étape ne mène à /codex", [...TUTO, ...NOUVEAUTES].every((x) => !x.page.startsWith("/codex")));
-check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v4", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 4 && !nouveautesVues({ rl_nouveautes: 3 }) && nouveautesVues({ rl_nouveautes: 4 }));
+check("seules les étapes du sceau et de la tuile Codex de Moi sont facultatives (absents sans le Codex)", [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].every((x) => (x.cible === "sceau-quetes" || x.cible === "moi-codex") === !!x.facultatif));
+check("Léonard ne parle plus de « mode sobre » : le réglage s'appelle « Récompenses versées d'office »", [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].every((x) => !/mode sobre/i.test(x.texte)));
+check("le Codex a quitté la barre : aucune étape ne mène à /codex", [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].every((x) => !x.page.startsWith("/codex")));
+check("qui a vu la visite ne la refait pas (version 2 gardée), il a les nouveautés v5", VERSION_PRESENTATION === 2 && visiteVue({ rl_visite: 2 }) && VERSION_NOUVEAUTES === 5 && !nouveautesVues({ rl_nouveautes: 4 }) && nouveautesVues({ rl_nouveautes: 5 }));
+// un compte resté avant la v4 (pas revenu depuis le 17 octobre) ne perd pas l'explication de « Récupérer »
+const avantV4 = nouveautesPour(versionNouveautesVue({ rl_nouveautes: 3 }));
+check(
+  "avant la v4 : les nouveautés v4 d'abord (le sceau, « Récupérer », le Codex dans Moi), puis les v5",
+  avantV4.length === NOUVEAUTES_V4.length + NOUVEAUTES.length &&
+    etapes(avantV4) === `${etapes(NOUVEAUTES_V4)} ${etapes(NOUVEAUTES)}` &&
+    etapes(NOUVEAUTES_V4) === "/dashboard#sceau-quetes /dashboard#sceau-quetes /moi#moi-codex" &&
+    etapes(nouveautesPour(versionNouveautesVue(null))) === etapes(avantV4),
+  etapes(avantV4),
+);
+check("les nouveautés v4 nomment « Récupérer », et les récompenses versées d'office qui s'en passent", NOUVEAUTES_V4.some((x) => x.texte.includes("« Récupérer »") && /récompenses versées d’office/.test(x.texte)));
+check("enchaînées après la v4, les v5 ne redisent pas « Re. »", avantV4.filter((x) => x.texte.startsWith("Re. ")).length === 1 && NOUVEAUTES[0].texte.startsWith("Re. "));
+check("v4 déjà vue, ou version inconnue (« Revoir ») : les v5 seules", nouveautesPour(4) === NOUVEAUTES && nouveautesPour(undefined) === NOUVEAUTES);
+check(
+  "l'hôte passe la version vue du compte, et la garde pour reprendre une visite interrompue",
+  hote.includes("nouveautesPour(depuis)") && hote.includes('lancer("nouveautes", 0, compte.vueNouveautes)') && hote.includes("lancer(reprise.v, reprise.i, reprise.depuis)"),
+);
 // les cibles de la visite sont posées dans les pages : l'attribut data-leonard,
 // ou dataLeonard passé à un composant qui le pose (TuileCalme) ; hors commentaires
-const CIBLES: Record<string, string> = { defi: "components/accueil/Rendezvous.tsx", anneau: "components/accueil/Rendezvous.tsx", "sceau-quetes": "components/codex/SceauQuetes.tsx", "moi-codex": "components/moi/CodexMoi.tsx", reglages: "components/moi/AppearanceSwitches.tsx" };
+const CIBLES: Record<string, string> = {
+  defi: "components/accueil/Rendezvous.tsx",
+  anneau: "components/accueil/Rendezvous.tsx",
+  "sceau-quetes": "components/codex/SceauQuetes.tsx",
+  "moi-codex": "components/moi/CodexMoi.tsx",
+  reglages: "components/moi/AppearanceSwitches.tsx",
+  bibliotheque: "components/reviser/ReviserView.tsx",
+  cours: "components/reviser/ParcoursClient.tsx",
+  fiches: "components/reviser/ReviserView.tsx",
+  fin: "components/reviser/ReviserView.tsx",
+  atelier: "components/reviser/ReviserView.tsx",
+};
 const sansCommentaires = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 const posee = (f: string, cible: string) => {
   const src = sansCommentaires(readFileSync(join(RACINE, f), "utf8"));
@@ -222,11 +254,12 @@ check(
 );
 // toutes les étapes, facultatives comprises : une cible facultative jamais posée
 // faisait sauter l'étape à chaque fois (la visite des nouveautés revenait sans fin)
-check("chaque étape de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES].every((x) => !x.cible || x.cible in CIBLES), [...TUTO, ...NOUVEAUTES].flatMap((x) => (x.cible && !(x.cible in CIBLES) ? [x.cible] : [])).join(" "));
-check("chaque repli de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES].every((x) => !x.repli || x.repli in CIBLES));
-// une visite courte est retenue quand ses étapes obligatoires ont joué (pas « 3 » fixe)
-check("une visite courte est retenue sur ses étapes obligatoires, sans ses facultatives", hote.includes("montrees.current >= Math.min(3, scene.repliques.filter((e) => !(e as EtapeTuto).facultatif).length)") && NOUVEAUTES.filter((x) => !x.facultatif).length <= 3);
-const fautesVisite = [...TUTO, ...NOUVEAUTES].flatMap((x) => (interditDans(x.texte) ? [x.texte] : []));
+check("chaque étape de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].every((x) => !x.cible || x.cible in CIBLES), [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].flatMap((x) => (x.cible && !(x.cible in CIBLES) ? [x.cible] : [])).join(" "));
+check("chaque repli de la visite vise une cible posée", [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].every((x) => !x.repli || x.repli in CIBLES));
+// une visite courte est retenue quand ses étapes obligatoires ont joué (pas « 3 » fixe) ; une plus longue
+// (la visite d'accueil, les nouveautés v5 : 5 étapes) dès 3 étapes montrées
+check("une visite courte est retenue sur ses étapes obligatoires, sans ses facultatives ; une longue dès 3", hote.includes("montrees.current >= Math.min(3, scene.repliques.filter((e) => !(e as EtapeTuto).facultatif).length)") && NOUVEAUTES.filter((x) => !x.facultatif).length <= 5);
+const fautesVisite = [...TUTO, ...NOUVEAUTES_V4, ...NOUVEAUTES].flatMap((x) => (interditDans(x.texte) ? [x.texte] : []));
 check("la visite ne moque personne", fautesVisite.length === 0, fautesVisite.join(" ; "));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

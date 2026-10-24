@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { InkProgressRing } from "@/components/ui/InkRings";
 import { Illustration } from "@/components/ui/Illustration";
-import { FormatRow } from "@/components/reviser/ReviserView";
+import { FormatRow } from "@/components/ui/FormatRow";
 import type { IllustrationNom } from "@/lib/illustrations";
 
 // Gabarit commun des pages-outils de S'entraîner (Calculs, Calculs d'une

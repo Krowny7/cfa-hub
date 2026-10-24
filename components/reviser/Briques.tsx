@@ -2,59 +2,18 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Illustration } from "@/components/ui/Illustration";
 import { MasteryLine, TwoColumnRows } from "@/components/reviser/SubjectRows";
-import { pad2, weightLabel } from "@/components/reviser/rail";
+import { pad2 } from "@/components/reviser/rail";
 import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
 import { ficheInfo } from "@/components/reviser/shelves";
 import { COURSES } from "@/lib/courses";
 import { LIEUX, RV, type KindListe } from "@/lib/voice-reviser";
 
-// Briques de mise en page de Réviser : outils de choix (la matière la plus
-// fragile…), liste classée du héros, et celles du gabarit des listes
-// (/fiches, /courses, /flashcards) : en-tête, carte horizontale du lieu,
-// index du programme. Sans état ni requête : tout vient des props.
+// Briques de mise en page des listes de Réviser (/fiches, /courses,
+// /flashcards) : en-tête, carte horizontale du lieu, index du programme.
+// Sans état ni requête : tout vient des props.
 
 export const subjectIndex = (key: string) => SUBJECTS.findIndex((s) => s.key === key) + 1;
-export const subjectCode = (key: string) => SUBJECTS.find((s) => s.key === key)?.code ?? "";
 export const courseOf = (s: SubjectAvailability) => (s.course ? (COURSES.find((c) => c.slug === s.course) ?? null) : null);
-export const totalMinutes = (subjects?: SubjectAvailability[]) =>
-  COURSES.filter((c) => !subjects || subjects.some((s) => s.course === c.slug)).reduce((a, c) => a + c.minutes, 0);
-
-/** « Matière 08 · DER · 7,5 % de l'examen » */
-export const repere = (s: SubjectAvailability) => [`Matière ${pad2(subjectIndex(s.key))}`, subjectCode(s.key), weightLabel(s.key)].filter(Boolean).join(" · ");
-
-/** Les matières mesurées les plus fragiles, parmi celles qui ont le format demandé. */
-export function weakest(subjects: SubjectAvailability[], has: (s: SubjectAvailability) => boolean, n = 3) {
-  return subjects
-    .filter((s) => has(s) && s.pct !== null)
-    .sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0))
-    .slice(0, n);
-}
-
-/** Courte liste classée (rang, nom, mini-barre) : le « Ensuite, à revoir » du héros. */
-export function ListeClassee({ title, rows }: { title: string; rows: { key: string; href: string; label: string; pct: number | null; note?: string }[] }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1 md:gap-2">
-      <p className="t-eyebrow px-2">{title}</p>
-      <ol className="m-0 flex list-none flex-col p-0">
-        {rows.map((r, i) => (
-          <li key={r.key} className={i > 0 ? "border-t border-line" : ""}>
-            <Link href={r.href} className={"rl-row group flex min-h-[48px] items-center gap-3 rounded-[12px] px-2.5 py-2.5 " + (i === 0 ? "bg-surface-2" : "")}>
-              <span className={"w-4 shrink-0 font-mono text-[13px] font-semibold " + (i === 0 ? "text-pen" : "text-muted")}>{i + 1}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-semibold leading-tight">{r.label}</span>
-                {r.note && <span className="t-micro mt-0.5 block truncate">{r.note}</span>}
-              </span>
-              <span className="w-12 shrink-0">
-                <MasteryLine pct={r.pct} label={r.label} />
-              </span>
-              <span className="t-micro min-w-[4ch] shrink-0 whitespace-nowrap text-right font-mono font-semibold">{r.pct === null ? "–" : `${r.pct} %`}</span>
-            </Link>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
 
 // ——— Les listes ———
 

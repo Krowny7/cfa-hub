@@ -3,13 +3,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ReviserView } from "@/components/reviser/ReviserView";
-import { loadSubjects } from "@/components/reviser/load";
-import { loadErrors } from "@/components/accueil/queries";
+import { subjectByKey } from "@/components/reviser/catalog";
+import { chargerReviser } from "@/components/reviser/parcours-data";
 
-// Espace « Réviser » : fiches, flashcards, cours complets, et
-// les 10 matières avec ce qui existe vraiment pour chacune (?matiere=fsa
-// ouvre directement une matière).
-export default async function ReviserPage({ searchParams }: { searchParams?: Promise<{ matiere?: string }> }) {
+// Espace « Réviser », le parcours : la Bibliothèque (cours complets, fiches,
+// one-pagers et flashcards) et l'Atelier (ratures, questions marquées,
+// points faibles). Les anciens liens « ?matiere=fsa » (la rangée des 10
+// matières, retirée) mènent à la fiche de la matière ; une clé inconnue est
+// ignorée.
+export default async function ReviserPage({ searchParams }: { searchParams?: Promise<{ matiere?: string | string[] }> }) {
+  const sp = await searchParams;
+  const demandee = Array.isArray(sp?.matiere) ? sp.matiere[0] : sp?.matiere;
+  const fiche = demandee ? subjectByKey(demandee)?.fiche : null;
+  if (fiche) redirect(`/fiches/${fiche}`);
+
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
@@ -21,32 +28,6 @@ export default async function ReviserPage({ searchParams }: { searchParams?: Pro
     admin = null;
   }
 
-  const [subjects, sp, flashcardSets, ratures] = await Promise.all([
-    loadSubjects(supabase, admin, auth.user.id),
-    searchParams,
-    // sets de flashcards officiels publiés (la carte « Flashcards »)
-    (async () => {
-      if (!admin) return null;
-      try {
-        const { count, error } = await admin
-          .from("flashcard_sets")
-          .select("id", { count: "exact", head: true })
-          .eq("is_official", true)
-          .eq("official_published", true);
-        return error ? null : count ?? null;
-      } catch {
-        return null;
-      }
-    })(),
-    // le carnet de ratures (la tuile « Tes questions manquées ») ; null si indisponible
-    (async () => {
-      try {
-        const e = await loadErrors(supabase, admin, auth.user.id);
-        return e.available ? e.total : null;
-      } catch {
-        return null;
-      }
-    })(),
-  ]);
-  return <ReviserView subjects={subjects} matiere={sp?.matiere ?? null} flashcardSets={flashcardSets} ratures={ratures} />;
+  const d = await chargerReviser(supabase, admin, auth.user.id);
+  return <ReviserView d={d} />;
 }

@@ -14,6 +14,7 @@ import { fmtAgo } from "@/components/classement/format";
 import { lireRatures, lireRaturesNotion, pageLocale, PAGE_RATURES, quandSeche, type CarnetNotions, type FiltreCalcul, type NotionCarnet, type RatureItem, type RaturesPage } from "@/components/moi/ratures-data";
 import { MiseAuPropre, type DemoPropre } from "@/components/moi/MiseAuPropre";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
+import { CLE_SANS_CALCUL } from "@/lib/sans-calcul";
 import { nombre } from "@/lib/voice";
 import type { SourceMarque } from "@/lib/marques";
 
@@ -72,8 +73,8 @@ type Liste = { vue: Vue; filtre: number; items: RatureItem[] };
 
 const VUE0: Vue = { source: null, retirees: false, notion: null };
 
-/** « Sans calcul », mémorisé sur cet appareil (« 1 » : actif). */
-const CLE_CALCUL = "rl:ratures:sans-calcul";
+/** « Sans calcul », mémorisé sur cet appareil (« 1 » : actif ; la même clé que la carte du carnet de Réviser). */
+const CLE_CALCUL = CLE_SANS_CALCUL;
 
 /** Le séchage du carnet (migration_v3_profil.sql §3a) : anciennes scellées, ratures en cours qui sèchent encore ; null tant que la section manque. */
 const encreDe = (p: Pick<RaturesPage, "scellees" | "sechent">) =>
@@ -336,6 +337,18 @@ export function RaturesTab({
     const f = (e: Event) => surEvenement.current(String((e as CustomEvent).detail));
     window.addEventListener("rl:carnet", f);
     return () => window.removeEventListener("rl:carnet", f);
+  }, []);
+  // arrivée par « Mettre au propre » d'une autre page (la carte du carnet de Réviser : /moi?onglet=erreurs#propre) :
+  // la mise au propre s'ouvre, comme avec le bouton du héros de la page ; l'adresse revient à #liste
+  useEffect(() => {
+    if (window.location.hash !== "#propre") return;
+    try {
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search + "#liste");
+    } catch {
+      // adresse laissée telle quelle
+    }
+    surEvenement.current("propre");
+    document.getElementById("liste")?.scrollIntoView({ block: "start" });
   }, []);
 
   if (vide && liste.items.length === 0) {

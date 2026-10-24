@@ -5,7 +5,7 @@ import { Icone } from "@/components/adn/icons";
 import { DefiTile } from "@/components/defi/DefiTile";
 import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { FormatRow } from "@/components/reviser/ReviserView";
+import { FormatRow } from "@/components/ui/FormatRow";
 import { TopicRail } from "@/components/ui/TopicRail";
 import { subjectRail, weightLabel } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";

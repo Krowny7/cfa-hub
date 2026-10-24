@@ -42,10 +42,19 @@ export function visiteVue(meta: Meta) {
 // Version 4 (Codex simplifié, 17 octobre 2026) : le sceau des quêtes en haut
 // à droite et « Récupérer », le Codex dans Moi. La visite d'accueil passe à
 // 5 étapes, toujours sans changer VERSION_PRESENTATION.
-export const VERSION_NOUVEAUTES = 4;
+// Version 5 (24 octobre 2026) : la page Réviser refaite en parcours (la
+// Bibliothèque, ses trois étapes, l'Atelier). La visite d'accueil ne change pas.
+// Un compte resté avant la version 4 voit d'abord celles de la 4 (le sceau,
+// « Récupérer », le Codex dans Moi) : lib/leonard/repliques, nouveautesPour.
+export const VERSION_NOUVEAUTES = 5;
 export const CLE_NOUVEAUTES_COMPTE = "rl_nouveautes";
 
 /** Les nouveautés de cette version sont-elles déjà vues sur ce compte ? */
 export function nouveautesVues(meta: Meta) {
   return version(meta?.[CLE_NOUVEAUTES_COMPTE]) >= VERSION_NOUVEAUTES;
+}
+
+/** La dernière version des nouveautés vue (ou passée) sur ce compte ; 0 : aucune. */
+export function versionNouveautesVue(meta: Meta) {
+  return version(meta?.[CLE_NOUVEAUTES_COMPTE]);
 }

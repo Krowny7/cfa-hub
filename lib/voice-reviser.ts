@@ -1,51 +1,80 @@
-// La voix de la refonte de Réviser : le hub (« La matière à revoir + la
-// Bibliothèque ») et les listes /fiches, /courses, /flashcards (« Index +
-// vignette du lieu »). Les phrases d'ensemble restent dans lib/voice-z4.ts.
+// La voix de Réviser : la page « le parcours » (la Bibliothèque pour
+// apprendre, l'Atelier pour revoir ses erreurs) et les listes /fiches,
+// /courses, /flashcards (« Index + vignette du lieu »). Les phrases
+// d'ensemble restent dans lib/voice-z4.ts.
 
 import type { IllustrationNom } from "@/lib/illustrations";
+import { nombre } from "@/lib/voice";
 
 const s = (n: number) => (n > 1 ? "s" : "");
 
 export const RV = {
-  // hub
-  enPriorite: "À revoir en priorité",
-  parOuCommencer: "Par où commencer",
-  ensuite: "Ensuite, à revoir",
-  heroMesure: (pct: number) => `${pct} % de maîtrise : ta matière la plus fragile parmi celles qui ont une fiche.`,
-  heroNonMesure: "Pas encore de mesure : relis la fiche, son quiz te donnera ta maîtrise.",
-  heroLigne: (meta: string, minutes: number | null) =>
-    minutes ? `Relis la fiche (${meta}), puis écoute le cours : ${minutes} min, module par module.` : `Relis la fiche (${meta}), puis fais son quiz.`,
-  ouvrirFiche: "Ouvrir la fiche",
-  ecouterCours: (minutes: number) => `Écouter le cours · ${minutes} min`,
+  // la page Réviser, « le parcours »
   biblio: "La Bibliothèque",
-  biblioSous: "Les fiches et les cartes, rangées par matière",
-  biblioEtat: (fiches: number, paquets: number) =>
-    `${fiches} matière${s(fiches)} en fiches · ${paquets} paquet${s(paquets)} de cartes. Les cours narrés sont juste en dessous.`,
-  biblioAction: "Ouvrir les fiches",
-  biblioLien: "Les flashcards",
-  flashTitre: "Flashcards",
-  flashPaquets: (n: number) => `${n} paquet${s(n)}`,
-  flashLigne: (noms: string[]) =>
-    noms.length === 0 ? "Les cartes sont en préparation." : noms.length <= 2 ? `${noms.join(" et ")} : les cartes à revoir passent en premier.` : `${noms.length} matières : les cartes à revoir passent en premier.`,
-  flashAction: "Revoir mes cartes",
+  biblioSous: "Apprendre, dans l'ordre où l'on révise.",
+  parcours: "Le parcours, dans l'ordre",
+  // 1 · Cours complets
+  coursEtape: "Commence ici",
+  coursAudio: (duree: string) => `${duree} d'audio`,
+  coursTitre: "Cours complets",
+  coursSous: "Ta source la plus complète : diapositives et audio.",
+  coursModule: (n: number, titre: string) => `Module ${n} · ${titre}`,
+  // sans reprise : la durée est déjà à droite du titre, la ligne du dessous ne dit que les modules
+  coursModules: (n: number) => `${n} modules`,
+  coursReprendre: "Reprendre l'écoute",
+  coursCommencer: "Commencer",
+  coursLecteur: (titre: string, ou: string) => `${titre} : ${ou}`,
+  coursTous: (n: number) => `Les ${n} cours`,
+  coursMatieres: "Écoute par matière",
+  coursMatiere: (nom: string, pct: number) => (pct >= 100 ? `${nom} : écouté en entier` : pct > 0 ? `${nom} : ${pct} % écouté` : `${nom} : pas encore écouté`),
+  // 2 · Fiches de révision
+  fichesEtape: "Puis fixe",
+  fichesTitre: "Fiches de révision",
+  fichesSous: "Le cours condensé, puis ses questions : QCM, corrigés, drills.",
+  fichesAvancement: (finies: number, entamees: number) =>
+    finies === 0 && entamees === 0
+      ? "Aucune fiche entamée"
+      : [finies > 0 ? `${finies} fiche${s(finies)} finie${s(finies)}` : null, entamees > 0 ? `${entamees} entamée${s(entamees)}` : null].filter(Boolean).join(" · "),
+  fichesSur: (n: number) => `sur ${n}`,
+  fichesAide: "Une fiche est finie quand chaque question de ses pages de drill a reçu une réponse ; entamée dès la première.",
+  fichesAction: "Ouvrir les fiches",
+  // 3 · pour la fin
+  fin: "pour la fin des révisions",
+  opTitre: "One-pagers",
+  opSous: "Une page A4 par matière",
+  fcTitre: "Flashcards",
+  fcSous: (parMatiere: number | null) => (parMatiere ? `${nombre(parMatiere)} cartes par matière` : "Termes, formules, pièges"),
+  fcCarteTete: "À RETENIR",
+
+  // l'Atelier : revoir mes erreurs
+  atelier: "L'Atelier",
+  atelierSous: "Revoir mes erreurs, jusqu'à ce qu'elles tiennent.",
   carnetTitre: "Carnet de ratures",
-  carnetFort: "Tes questions manquées",
-  carnetPropre: "Page propre.",
-  carnetLigne: "Toutes sources, rangées par matière, jusqu'à ce que tu les réussisses.",
-  carnetLignePropre: "Rien à reprendre pour l'instant : le carnet se remplit au fil de tes réponses.",
-  carnetAction: "Ouvrir le carnet",
-  coursTitre: "Écouter un cours",
-  coursLigne: (n: number, heures: number) => `Les ${n} cours complets, narrés : environ ${heures} h, découpés par module. Pour les trajets.`,
-  coursAction: "Choisir un cours",
-  fonds: "Les fonds de révision",
-  marquees: ["Questions marquées", "Celles que tu as gardées pour plus tard."],
-  apresLecture: ["S'entraîner après la lecture", "Des questions par matière, pour vérifier ce que tu viens de relire."],
-  eclair: ["Séries éclair", "5 questions à la suite, quand tu as deux minutes."],
-  dixMatieres: "Les 10 matières",
-  dixMatieresAide: "choisis une matière : sa fiche, son cours et ses cartes",
+  carnetNeutre: "brouillon",
+  carnetEnCours: (n: number) => (n > 1 ? "ratures en cours" : "rature en cours"),
+  carnetPropre: "Page propre : rien à reprendre pour l'instant.",
+  carnetSansChiffre: "Toutes tes questions manquées, gardées jusqu'à ce que tu les réussisses.",
+  carnetCalculCoupe: "coupé sur cet appareil",
+  carnetCalculActif: "actif",
+  carnetAction: "Mettre au propre",
+  carnetOuvrir: "Ouvrir le carnet",
+  marqueesTitre: "Questions marquées",
+  marqueesGardees: (n: number) => (n > 1 ? "gardées de côté" : "gardée de côté"),
+  marqueesVide: "Aucune pour l'instant : touche « Marquer » après une réponse pour la garder ici.",
+  marqueesSansChiffre: "Celles que tu as gardées de côté, pour revoir la notion plus tard.",
+  marqueesAction: "Les revoir",
+  marqueesOuvrir: "Ouvrir l'onglet",
+  faiblesTitre: "Points faibles",
+  faiblesRatures: (n: number) => `${nombre(n)} rature${s(n)}`,
+  faiblesPctAide: "de réussite récente",
+  faiblesRien: "Rien de fragile en ce moment : tes notions mesurées tiennent.",
+  faiblesPeu: "Pas encore assez de réponses pour mesurer une notion. Quelques séries, et elles apparaîtront ici.",
+  faiblesSansChiffre: "Les notions qui coincent, mesurées sur tes dernières réponses.",
+  faiblesAction: "Ouvrir l'Atelier",
 
   // listes
   retour: "Réviser",
+  ouvrirFiche: "Ouvrir la fiche",
   surDix: (n: number) => `${n} matière${s(n)} sur 10`,
   programme: "Le programme, matière par matière",
   programmeAide: "ta maîtrise · en filigrane, ce qui arrive",

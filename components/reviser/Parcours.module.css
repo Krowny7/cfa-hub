@@ -1,0 +1,917 @@
+/* La page Réviser « le parcours » (maquette validée « Réviser, le parcours ») :
+   deux lieux peints, la Bibliothèque (apprendre : 1 cours, 2 fiches, 3 pour la
+   fin) et l'Atelier (revoir ses erreurs). Cartes en papier et encre, jetons du
+   site (jour et nuit) ; les mises en page suivent la largeur du bloc
+   (requêtes de conteneur), pas celle de l'écran. Animations : transform et
+   opacity seulement, coupées par prefers-reduced-motion. */
+
+.racine {
+  container-type: inline-size;
+  display: grid;
+  gap: 30px;
+  /* le texte de la carte du cours, la carte sombre du site (.card-ink : sombre
+     le jour, plus claire que les cartes la nuit) : l'encre claire et ses nuances */
+  --sur-nuit: #ffffff;
+  --sur-nuit-2: rgba(255, 255, 255, 0.62);
+  --ocre: #ecc98f;
+  --pen-doux: color-mix(in srgb, var(--pen) 10%, transparent);
+}
+:global(html[data-theme="nuit"]) .racine {
+  --ocre: #8a6224;
+  --pen-doux: color-mix(in srgb, var(--pen) 12%, transparent);
+}
+.racine :where(h2, h3, h4, p) {
+  margin: 0;
+}
+.racine :where(h2, h3, h4) {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.racine :where(ol, ul) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sous {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.lien::after {
+  content: "→";
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.bouton:active {
+  transform: scale(0.98);
+}
+
+/* ——— le lieu peint (Bibliothèque, Atelier) ——— */
+.lieu {
+  position: relative;
+  min-width: 0;
+}
+.illu {
+  position: relative;
+  min-height: 230px;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--shadow-1);
+  /* le fond le temps que la peinture arrive (sombre, comme son bas) */
+  background: #16130f;
+}
+.fond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* l'établi de l'Atelier (image du dossier public, sans le composant Illustration qui s'en charge déjà) : un peu assombri la nuit */
+:global(html[data-theme="nuit"]) .sombreNuit {
+  filter: brightness(0.82);
+}
+.illu::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, #0000 30%, #0e0b07c4 100%);
+}
+.legende {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 74px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  color: #f6f1e8;
+}
+.illuAtelier {
+  min-height: 200px;
+}
+.illuAtelier .legende {
+  bottom: 20px;
+}
+.sceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #f6f1e8;
+  color: #1b140c;
+  box-shadow: 0 0 0 4px #f6f1e833;
+}
+.lieuNom {
+  display: block;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  text-shadow: 0 2px 16px #0009;
+}
+.lieuSous {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px;
+  opacity: 0.88;
+  text-shadow: 0 1px 10px #0009;
+}
+@container (max-width: 520px) {
+  .illu {
+    min-height: 190px;
+    border-radius: 16px;
+  }
+  .illuAtelier {
+    min-height: 140px;
+  }
+  .legende {
+    left: 14px;
+    right: 14px;
+    bottom: 50px;
+    gap: 10px;
+  }
+  .illuAtelier .legende {
+    bottom: 14px;
+  }
+  .lieuNom {
+    font-size: 22px;
+  }
+  .sceau {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* ——— le parcours 1 → 2 → 3, qui mord sur l'illustration ——— */
+.parcours {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3.2fr);
+  align-items: stretch;
+  gap: 14px;
+  margin: -52px 14px 0;
+}
+/* moyen : le cours sur toute la largeur, puis les fiches et « pour la fin » côte à côte */
+@container (max-width: 980px) {
+  .parcours {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .c1 {
+    grid-column: 1 / -1;
+  }
+}
+/* téléphone : une colonne, toujours dans l'ordre 1 → 2 → 3 */
+@container (max-width: 560px) {
+  .parcours {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin: -36px 8px 0;
+  }
+}
+
+.carte {
+  position: relative;
+  min-width: 0;
+  border-radius: 18px;
+}
+/* une case du parcours ou de l'Atelier : sa carte en occupe toute la hauteur */
+.case {
+  display: grid;
+  min-width: 0;
+}
+.papier {
+  background: var(--surface);
+  border: 1px solid var(--pencil-2);
+  box-shadow: var(--shadow-1);
+}
+/* une carte entière cliquable (un seul geste) : elle se lève au survol */
+.levable {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .levable:hover {
+    transform: translateY(-3px);
+  }
+  .levable:hover .lien::after {
+    transform: translateX(3px);
+  }
+}
+.levable:active {
+  transform: translateY(0) scale(0.992);
+}
+/* l'anneau de focus : celui du site (encre) sur le papier ; dans la carte sombre, l'encre claire */
+
+/* la pastille d'étape : chiffre en .t-num (typo du logo, retirée en mode discret) */
+.etape {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+}
+.haut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.haut .eyebrow {
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.droite {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* 1 · Cours complets : la carte sombre du site (.card-ink, fond, filet et
+   ombre, jour et nuit). --trait : la progression (onde, souligné des
+   matières), rouge ; en mode discret (--pen devient l'encre, noire le jour),
+   l'encre claire de la carte. */
+.c1 {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 20px;
+  color: var(--sur-nuit);
+  --trait: var(--pen);
+}
+:global(html[data-discreet="1"]) .c1 {
+  --trait: var(--sur-nuit);
+}
+.c1 :focus-visible {
+  outline: 2px solid var(--sur-nuit);
+  outline-offset: 3px;
+}
+.c1 .droite,
+.c1 .sous {
+  color: var(--sur-nuit-2);
+}
+.c1Titre {
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.02;
+}
+.lecteur {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--sur-nuit) 8%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--sur-nuit) 6%, transparent);
+  color: inherit;
+}
+.play {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--sur-nuit);
+  color: #111111;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.play svg {
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+}
+@media (hover: hover) {
+  .lecteur:hover .play {
+    transform: scale(1.06);
+  }
+}
+.piste {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.l1 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.l1 b {
+  overflow: hidden;
+  font-size: 14.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.temps {
+  margin-left: auto;
+  font-size: 11.5px;
+  white-space: nowrap;
+  color: var(--sur-nuit-2);
+}
+.chap {
+  overflow: hidden;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--sur-nuit-2);
+}
+.onde {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 26px;
+}
+.onde i {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--sur-nuit) 27%, transparent);
+}
+.onde i.lu {
+  background: var(--trait);
+}
+.matieres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.matieres li {
+  position: relative;
+  overflow: hidden;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--sur-nuit) 13%, transparent);
+  border-radius: 7px;
+  font: 600 10.5px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--sur-nuit-2);
+}
+.matieres li.fait {
+  border-color: color-mix(in srgb, var(--sur-nuit) 23%, transparent);
+  color: var(--sur-nuit);
+}
+/* le souligné rouge : la part écoutée (transform, pour pouvoir glisser) */
+.matieres li.fait::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--trait);
+  transform: scaleX(var(--p, 1));
+  transform-origin: left center;
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.bas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.lienNuit {
+  min-height: 44px;
+  color: var(--sur-nuit);
+  border-radius: 8px;
+}
+@media (hover: hover) {
+  .lienNuit:hover::after {
+    transform: translateX(3px);
+  }
+}
+/* ce qui suit l'écoute de l'appareil : relu après le montage, un court fondu s'il change */
+.c1Corps {
+  display: grid;
+  gap: 14px;
+}
+.arrive {
+  animation: arrive var(--dur-3) var(--ease-out);
+}
+@keyframes arrive {
+  from {
+    opacity: 0.3;
+  }
+}
+
+/* 2 · Fiches de révision : les feuillets */
+.c2 {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  height: 100%;
+  padding: 20px;
+  overflow: hidden;
+}
+.c2 .haut .eyebrow {
+  color: var(--ink-3);
+  opacity: 1;
+}
+.c2Titre {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.05;
+}
+.c2 .sous {
+  max-width: 30ch;
+  color: var(--ink-2);
+}
+.texteC2 {
+  display: grid;
+  gap: 10px;
+}
+.feuillets {
+  position: absolute;
+  right: -10px;
+  bottom: -22px;
+  width: 104px;
+  height: 108px;
+  pointer-events: none;
+}
+.feuillets i {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--pencil-2);
+  border-radius: 6px;
+  background: var(--surface);
+  background-image: repeating-linear-gradient(var(--surface) 0 13px, var(--pencil-2) 13px 14px);
+  background-position: 0 22px;
+  box-shadow: var(--shadow-1);
+}
+.feuillets i:nth-child(1) {
+  transform: rotate(-9deg) translate(-16px, 4px);
+}
+.feuillets i:nth-child(2) {
+  transform: rotate(-3deg) translate(-6px, 0);
+}
+.feuillets i:nth-child(3) {
+  transform: rotate(4deg);
+}
+.feuillets i:nth-child(3)::before {
+  content: "QCM";
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font: 700 9px var(--font-mono);
+  color: var(--pen);
+}
+.feuillets i:nth-child(3)::after {
+  content: "✓";
+  position: absolute;
+  right: 9px;
+  bottom: 10px;
+  font: 800 16px var(--font-sans);
+  color: var(--pen);
+  transform: rotate(-8deg);
+}
+@container (max-width: 520px) {
+  .feuillets {
+    width: 84px;
+    height: 88px;
+  }
+}
+.avancement {
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+  padding-right: 70px;
+}
+.cases {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+.cases i {
+  height: 8px;
+  border-radius: 3px;
+  background: var(--pencil-2);
+}
+.cases i.f {
+  background: var(--ink);
+}
+.cases i.e {
+  background: linear-gradient(90deg, var(--ink) 50%, var(--pencil-2) 50%);
+}
+.avancementTexte {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.boutonTrait {
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+}
+
+/* 3 · pour la fin : one-pagers et flashcards, à égalité */
+.c3 {
+  display: grid;
+  grid-template-rows: auto 1fr 1fr;
+  align-content: start;
+  gap: 10px;
+}
+/* téléphone : one-pagers et flashcards restent côte à côte, à égalité */
+@container (max-width: 560px) {
+  .c3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+  .finTete {
+    grid-column: 1 / -1;
+  }
+}
+.finTete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 0;
+  font-weight: inherit;
+}
+/* trois colonnes : l'en-tête de la colonne 3 tombe sur le bas sombre de la
+   peinture (pas de carte sous lui) ; posé sur une étiquette de papier, le
+   « 3 » à l'encre et la plume rouge restent lisibles, jour et nuit */
+@container (min-width: 981px) {
+  .finTete {
+    width: fit-content;
+    padding: 6px 12px 6px 6px;
+    border: 1px solid var(--pencil-2);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+}
+.plume {
+  position: relative;
+  font-family: var(--font-plume), "Caveat", cursive;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--pen);
+}
+.plume::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 4px;
+  bottom: -3px;
+  height: 6px;
+  border-radius: 6px;
+  background: var(--pen);
+  opacity: 0.22;
+  transform: rotate(-1deg);
+}
+.petite {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  height: 100%;
+  padding: 14px;
+  overflow: hidden;
+}
+.petiteTitre {
+  font-size: 16.5px;
+  font-weight: 800;
+}
+.petite .sous {
+  grid-column: 1;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+/* chiffre en .t-num (typo du logo, retirée en mode discret) */
+.nb {
+  grid-row: 1;
+  grid-column: 2;
+  font-size: 20px;
+  line-height: 1;
+}
+.visuel {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 66px;
+  margin-top: 6px;
+}
+@container (max-width: 520px) {
+  .petite {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nb {
+    grid-row: auto;
+    grid-column: 1;
+    font-size: 17px;
+  }
+  .petiteTitre {
+    font-size: 15px;
+  }
+}
+.eventail img {
+  position: absolute;
+  bottom: 0;
+  width: 46px;
+  height: 62px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 4px;
+  background: var(--paper-2);
+  object-fit: cover;
+  object-position: top center;
+  box-shadow: 0 6px 14px -8px #0006;
+}
+.eventail img:nth-child(1) {
+  left: 6px;
+  transform: rotate(-10deg);
+}
+.eventail img:nth-child(2) {
+  left: 40px;
+  z-index: 1;
+  transform: rotate(-1deg);
+}
+.eventail img:nth-child(3) {
+  left: 74px;
+  z-index: 2;
+  transform: rotate(8deg);
+}
+.pile i {
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  width: 112px;
+  max-width: calc(100% - 14px);
+  height: 60px;
+  border: 1.5px solid var(--ink);
+  border-radius: 9px;
+  background: var(--surface);
+  font-style: normal;
+}
+.pile i:nth-child(1) {
+  opacity: 0.5;
+  transform: rotate(-7deg) translate(-2px, -2px);
+}
+.pile i:nth-child(2) {
+  opacity: 0.8;
+  transform: rotate(-2deg);
+}
+.pile i:nth-child(3) {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 7px 9px;
+  transform: rotate(3deg) translate(6px, 0);
+}
+.pile small {
+  font: 700 7.5px var(--font-sans);
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+.pile i:nth-child(3) > span {
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.surligne {
+  padding: 0 2px;
+  background: linear-gradient(transparent 50%, var(--ocre) 50%, var(--ocre) 90%, transparent 90%);
+}
+.etat {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  z-index: 3;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 7px;
+  border: 1px solid var(--pen);
+  border-radius: 99px;
+  background: var(--surface);
+  font: 600 10.5px var(--font-mono);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pen);
+}
+/* téléphone : la demi-carte est étroite ; la pastille passe sur deux lignes
+   plutôt que d'être coupée (c'est la seule donnée du joueur sur la carte) */
+@container (max-width: 520px) {
+  .etat {
+    padding: 2px 6px;
+    border-radius: 9px;
+    font-size: 9.5px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    text-overflow: clip;
+  }
+}
+
+/* ——— l'Atelier : revoir mes erreurs ——— */
+.grille {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+@container (max-width: 760px) {
+  .grille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.err {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  height: 100%;
+  padding: 18px;
+  overflow: hidden;
+}
+.err .haut .eyebrow {
+  color: var(--ink-3);
+  opacity: 1;
+}
+.chiffre {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+/* chiffre en .t-num (typo du logo, retirée en mode discret) */
+.chiffre b {
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 0.95;
+}
+.chiffre span,
+.err .ligne {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.rature {
+  position: relative;
+  max-width: 100%;
+  width: fit-content;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+}
+.rature::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--pen);
+  transform: rotate(-1.5deg);
+}
+.bascule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--paper-2);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+}
+.bascule b {
+  font-weight: 700;
+}
+/* l'interrupteur : le .switch du site (le même que Moi › Erreurs) */
+.plein {
+  background: var(--ink);
+  color: var(--paper);
+}
+.signet {
+  position: absolute;
+  top: -2px;
+  right: 20px;
+  width: 22px;
+  height: 44px;
+  background: var(--pen);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
+.extraits {
+  display: grid;
+  gap: 6px;
+}
+.extrait {
+  overflow: hidden;
+  padding: 7px 10px;
+  border-left: 2px solid var(--pen);
+  border-radius: 0 8px 8px 0;
+  background: var(--pen-doux);
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+}
+.notions {
+  display: grid;
+  gap: 8px;
+}
+.notion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  font-size: 12.5px;
+}
+.notion b {
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pc {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--pen);
+}
+.jauge {
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--paper-2);
+}
+.jauge i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--ink);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+}
+.err .lien {
+  min-height: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levable,
+  .lien::after,
+  .bouton,
+  .play,
+  .matieres li.fait::after {
+    transition: none;
+  }
+  .levable:hover,
+  .levable:active,
+  .bouton:active,
+  .lecteur:hover .play {
+    transform: none;
+  }
+  .arrive {
+    animation: none;
+  }
+}

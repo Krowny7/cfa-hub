@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { FormatRow } from "@/components/reviser/ReviserView";
+import { FormatRow } from "@/components/ui/FormatRow";
 
 // Deux briques de mise en page partagées par les pages refaites (accueil,
 // S'entraîner…) : la bande d'encre pleine largeur et la rangée de liens.

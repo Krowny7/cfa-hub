@@ -1,213 +1,285 @@
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { SubjectExplorer } from "@/components/reviser/SubjectExplorer";
-import { SubjectPanel } from "@/components/reviser/SubjectPanel";
-import { ListeClassee, courseOf, repere, totalMinutes, weakest } from "@/components/reviser/Briques";
-import { subjectRail } from "@/components/reviser/rail";
-import { SUBJECTS, type SubjectAvailability } from "@/components/reviser/catalog";
-import { ficheInfo } from "@/components/reviser/shelves";
-import { BandeEncre, RangeeLiens } from "@/components/ui/BandeEncre";
-import { CarteLieu } from "@/components/ui/CarteLieu";
+import { BasculeSansCalcul, CarteCoursComplets } from "@/components/reviser/ParcoursClient";
+import { SUBJECTS } from "@/components/reviser/catalog";
+import type { DonneesReviser, EtatFiche } from "@/components/reviser/parcours";
 import { Illustration } from "@/components/ui/Illustration";
-import { Medaillon, Sceau, TuileCalme } from "@/components/ui/Tuiles";
+import type { EcouteCours } from "@/lib/course-ecoute";
 import { nombre } from "@/lib/voice";
 import { RV } from "@/lib/voice-reviser";
 import { ESPACES } from "@/lib/voice-z4";
+import s from "./Parcours.module.css";
 
-// Espace « Réviser », variante A « La matière à revoir + la Bibliothèque » :
-// un héros pour ta matière la plus fragile qui a une fiche (seul bouton
-// plein), La Bibliothèque (un « lieu » illustré, comme L'Atelier), deux
-// tuiles calmes (flashcards, carnet de ratures), la bande « Écouter un
-// cours », une rangée de liens, puis les 10 matières (choisir une matière
-// montre sa fiche, son cours et ses cartes). Sans requête : app/reviser
-// charge les données, l'aperçu en fournit d'exemple.
+// Espace « Réviser », le parcours (maquette validée) : deux lieux peints.
+// La Bibliothèque, pour apprendre, avec un parcours 1 → 2 → 3 dont les
+// cartes mordent sur l'illustration : 1 les cours complets (la seule carte
+// sombre, le seul gros bouton du haut), 2 les fiches, 3 « pour la fin des
+// révisions » les one-pagers et les flashcards, à égalité. L'Atelier, pour
+// revoir ses erreurs : carnet de ratures, questions marquées, points
+// faibles. Sans requête : app/reviser charge les données
+// (components/reviser/parcours-data.ts), l'aperçu en fournit d'exemple ; ce
+// qui vient de l'appareil (dernier cours, « Sans calcul ») est lu après le
+// montage (ParcoursClient). Repères de Léonard (data-leonard) :
+// bibliotheque, cours, fiches, fin, atelier.
 
-/** Ligne d'un format secondaire (aussi pour S'entraîner). entier : la description passe à la ligne au lieu d'être coupée (colonnes étroites), les titres restent alignés en haut. */
-export function FormatRow({ href, icon, title, desc, meta, entier = false }: { href: string; icon: React.ReactNode; title: string; desc: string; meta?: string | null; entier?: boolean }) {
+/** Les trois one-pagers de l'éventail (vraies vignettes, public/one-pagers). */
+const EVENTAIL = ["ethics", "equity", "fixed-income"].filter((slug) => SUBJECTS.some((x) => x.onePager === slug));
+const ONE_PAGERS = SUBJECTS.filter((x) => x.onePager).length;
+
+const CASE: Record<EtatFiche, string | undefined> = { finie: s.f, entamee: s.e, neuve: undefined };
+const ORDRE: Record<EtatFiche, number> = { finie: 0, entamee: 1, neuve: 2 };
+
+/** Les aperçus : l'écoute et « Sans calcul » d'exemple, à la place de l'appareil. */
+export type ApercuReviser = { ecoute?: EcouteCours | null; sansCalcul?: boolean };
+
+const levable = (...cls: string[]) => [s.carte, s.papier, s.levable, ...cls].join(" ");
+
+function Bibliotheque({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
+  const f = d.fiches;
+  const fc = d.flashcards;
   return (
-    <Link href={href} className={"rl-row group flex h-full gap-4 px-5 py-[18px] md:px-6 " + (entier ? "items-start" : "items-center")}>
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-surface-2">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[16px] font-bold leading-tight tracking-[-0.01em]">{title}</span>
-        <span className={"t-micro mt-1 block " + (entier ? "" : "sm:truncate")}>{desc}</span>
-      </span>
-      {meta && <span className="t-micro hidden shrink-0 font-semibold sm:inline">{meta}</span>}
-      <ChevronRight size={16} aria-hidden className="shrink-0 self-center text-muted transition-transform group-hover:translate-x-0.5" />
-    </Link>
-  );
-}
-
-/** Matière ouverte au départ dans la rangée des 10 matières : celle demandée (?matiere=), sinon la première du programme. */
-function initialSubject(subjects: SubjectAvailability[], requested?: string | null) {
-  if (requested && subjects.some((s) => s.key === requested)) return requested;
-  return subjects[0]?.key ?? "";
-}
-
-export function ReviserView({
-  subjects,
-  matiere,
-  flashcardSets = null,
-  ratures = null,
-}: {
-  subjects: SubjectAvailability[];
-  matiere?: string | null;
-  /** sets de flashcards officiels publiés (null : inconnu, on compte les matières) */
-  flashcardSets?: number | null;
-  /** questions du carnet de ratures à reprendre (null : inconnu) */
-  ratures?: number | null;
-}) {
-  const fiches = subjects.filter((s) => s.fiche).length;
-  const avecCartes = subjects.filter((s) => s.flashcards);
-  const paquets = flashcardSets ?? avecCartes.reduce((a, s) => a + s.flashcardSets, 0);
-  const nbCours = subjects.filter((s) => s.course).length;
-
-  // le héros : ta matière la plus fragile qui a une fiche (sinon la première qui en a une)
-  const s = weakest(subjects, (x) => !!x.fiche, 1)[0] ?? subjects.find((x) => x.fiche) ?? null;
-  const ensuite = s ? weakest(subjects, (x) => !!x.fiche || !!x.course, 4).filter((x) => x.key !== s.key).slice(0, 3) : [];
-  const c = s ? courseOf(s) : null;
-
-  const heros = s ? (
-    <section
-      className={"card-hero rl-in grid min-h-[260px] min-w-0 lg:h-full gap-x-8 gap-y-6 p-6 md:p-8 " + (ensuite.length > 0 ? "md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]" : "")}
-      aria-label={RV.enPriorite}
-      data-leonard="fiches"
-    >
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex min-w-0 flex-col gap-2">
-          <p className="t-eyebrow">{s.pct === null ? RV.parOuCommencer : RV.enPriorite}</p>
-          <h2 className="t-h1 m-0 [overflow-wrap:anywhere]">{s.name}</h2>
-          <p className="t-micro m-0">{repere(s)}</p>
-        </div>
-        <div className="grid gap-1.5">
-          <p className="t-body m-0 max-w-[480px] text-muted">{s.pct === null ? RV.heroNonMesure : RV.heroMesure(s.pct)}</p>
-          <p className="t-small m-0 max-w-[480px]">{RV.heroLigne(ficheInfo(s.fiche!).meta, c?.minutes ?? null)}</p>
-        </div>
-        <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
-          <Link href={`/fiches/${s.fiche}`} className="btn btn-primary rl-press w-fit max-md:min-h-[44px]">
-            <Icone nom="fiche" size={16} /> {RV.ouvrirFiche} <ArrowRight size={16} aria-hidden />
-          </Link>
-          {c && (
-            <Link href={`/courses/${c.slug}`} className="ink-link inline-flex min-h-[44px] items-center gap-1 text-[13px] font-semibold md:min-h-0">
-              {RV.ecouterCours(c.minutes)} <ArrowRight size={13} aria-hidden />
-            </Link>
-          )}
-        </div>
-      </div>
-      {ensuite.length > 0 && (
-        <ListeClassee
-          title={RV.ensuite}
-          rows={ensuite.map((x) => ({
-            key: x.key,
-            href: `/reviser?matiere=${x.key}`,
-            label: x.name,
-            pct: x.pct,
-            note: [x.fiche && "fiche", x.course && "cours", x.flashcards && "cartes"].filter(Boolean).join(" · "),
-          }))}
-        />
-      )}
-    </section>
-  ) : null;
-
-  const tuiles = (
-    <div className="grid min-w-0 gap-4 max-lg:order-last md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-2 xl:grid-cols-2">
-      <TuileCalme
-        icone={<Icone nom="flashcards" size={17} />}
-        titre={RV.flashTitre}
-        droite={
-          <span className="-my-1.5 flex items-center gap-3">
-            {paquets > 0 && <span className="t-micro font-mono">{RV.flashPaquets(paquets)}</span>}
-            <Medaillon nom="reviser-casier-medaillon" taille={60} />
+    <section className={s.lieu} aria-labelledby="reviser-biblio">
+      <div className={s.illu} data-leonard="bibliotheque">
+        <Illustration nom="reviser-bibliotheque" position="50% 30%" decorative eager className={s.fond} />
+        <div className={s.legende}>
+          <span className={s.sceau} aria-hidden>
+            <Icone nom="reviser" size={22} />
           </span>
-        }
-        ligne={RV.flashLigne(avecCartes.map((x) => x.name))}
-        actions={
-          <Link href="/flashcards" className="ink-link inline-flex items-center gap-1 text-[14px] font-semibold">
-            {RV.flashAction} <ArrowRight size={14} aria-hidden />
-          </Link>
-        }
-      />
-      <TuileCalme
-        icone={<Icone nom="erreurs" size={17} />}
-        titre={RV.carnetTitre}
-        droite={ratures !== null && ratures > 0 ? <span className="t-micro font-mono">{nombre(ratures)}</span> : undefined}
-        fort={ratures === 0 ? RV.carnetPropre : RV.carnetFort}
-        ligne={ratures === 0 ? RV.carnetLignePropre : RV.carnetLigne}
-        actions={
-          <Link href="/moi?onglet=erreurs" className="btn btn-secondary rl-press min-h-[38px] px-3.5 text-[13.5px]">
-            {RV.carnetAction} <ArrowRight size={15} aria-hidden />
-          </Link>
-        }
-      />
-    </div>
-  );
-
-  const lead = (
-    <div className="flex flex-col gap-4 md:gap-[18px]">
-      <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
-        {heros && <div className="min-w-0 lg:col-span-8 lg:col-start-1 lg:row-start-1">{heros}</div>}
-        {tuiles}
-        <CarteLieu
-          className="lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch"
-          dataLeonard="formats"
-          label={RV.biblio}
-          ratio="4 / 3"
-          visuel={<Illustration nom="reviser-bibliotheque" position="50% 45%" />}
-          vignette={<Illustration nom="reviser-bibliotheque" position="50% 45%" decorative />}
-          marque={
-            <Sceau>
-              <Icone nom="reviser" size={20} />
-            </Sceau>
-          }
-          nom={RV.biblio}
-          tailleNom="text-[21px] lg:text-[33px] xl:text-[38px]"
-          sousTitre={RV.biblioSous}
-          etat={RV.biblioEtat(fiches, paquets)}
-          action={{ href: "/fiches", label: RV.biblioAction }}
-          liens={[{ href: "/flashcards", label: RV.biblioLien }]}
-        />
-      </div>
-      <BandeEncre
-        icone={<Icone nom="cours" size={22} />}
-        titre={RV.coursTitre}
-        ligne={RV.coursLigne(nbCours, Math.round(totalMinutes(subjects) / 60))}
-        action={{ href: "/courses", label: RV.coursAction }}
-      />
-      <RangeeLiens
-        label={RV.fonds}
-        liens={[
-          { href: "/moi?onglet=marquees", icon: <Icone nom="serie" size={20} />, title: RV.marquees[0], desc: RV.marquees[1] },
-          { href: "/practice", icon: <Icone nom="entrainer" size={20} />, title: RV.apresLecture[0], desc: RV.apresLecture[1] },
-          { href: "/eclair", icon: <Icone nom="examen" size={20} />, title: RV.eclair[0], desc: RV.eclair[1] },
-        ]}
-      />
-    </div>
-  );
-
-  return (
-    <DomainSpace kicker="Réviser" icon={<Icone nom="reviser" size={18} />} title={ESPACES.reviserTitre} lead={lead}>
-      <section className="rl-section" aria-labelledby="reviser-matieres">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 id="reviser-matieres" className="t-h2 m-0">
-            {RV.dixMatieres}
-          </h2>
-          <span className="t-micro">{RV.dixMatieresAide}</span>
+          <span>
+            <h2 id="reviser-biblio" className={s.lieuNom}>
+              {RV.biblio}
+            </h2>
+            <span className={s.lieuSous}>{RV.biblioSous}</span>
+          </span>
         </div>
-        <SubjectExplorer
-          initial={initialSubject(subjects, matiere)}
-          items={subjectRail(subjects, (key) => {
-            const x = subjects.find((y) => y.key === key);
-            return { formats: { fiche: !!x?.fiche, course: !!x?.course, cards: !!x?.flashcards } };
-          })}
-          panels={Object.fromEntries(
-            subjects.map((x) => {
-              const i = SUBJECTS.findIndex((y) => y.key === x.key);
-              return [x.key, <SubjectPanel key={x.key} s={x} index={i + 1} code={SUBJECTS[i]?.code ?? ""} />];
-            }),
-          )}
+      </div>
+
+      <ol className={s.parcours} aria-label={RV.parcours}>
+        <CarteCoursComplets apercu={apercu?.ecoute} />
+
+        <li className={s.case} data-leonard="fiches">
+          <Link href="/fiches" className={levable(s.c2)}>
+            <span className={s.feuillets} aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className={s.texteC2}>
+              <span className={s.haut}>
+                <span className={s.etape + " t-num"} aria-hidden>
+                  2
+                </span>
+                <span className={s.eyebrow}>{RV.fichesEtape}</span>
+              </span>
+              <span>
+                <h3 className={s.c2Titre}>{RV.fichesTitre}</h3>
+                <span className={s.sous}>{RV.fichesSous}</span>
+              </span>
+            </span>
+            {f && (
+              <span className={s.avancement} title={RV.fichesAide}>
+                <span className={s.cases} aria-hidden>
+                  {[...f.etats]
+                    .sort((a, b) => ORDRE[a.etat] - ORDRE[b.etat])
+                    .map((e) => (
+                      <i key={e.key} className={CASE[e.etat]} />
+                    ))}
+                </span>
+                <span className={s.avancementTexte}>
+                  <span>{RV.fichesAvancement(f.finies, f.entamees)}</span>
+                  <span className={s.mono}>{RV.fichesSur(f.total)}</span>
+                </span>
+              </span>
+            )}
+            <span className={s.bouton + " " + s.boutonTrait}>{RV.fichesAction}</span>
+          </Link>
+        </li>
+
+        <li className={s.c3} data-leonard="fin">
+          <h3 className={s.finTete}>
+            <span className={s.etape + " t-num"} aria-hidden>
+              3
+            </span>
+            <span className={s.plume}>{RV.fin}</span>
+          </h3>
+          <Link href="/fiches/one-pagers" className={levable(s.petite)}>
+            <h4 className={s.petiteTitre}>{RV.opTitre}</h4>
+            <span className={s.nb + " t-num"}>{ONE_PAGERS}</span>
+            <span className={s.sous}>{RV.opSous}</span>
+            <span className={s.visuel + " " + s.eventail} aria-hidden>
+              {EVENTAIL.map((slug) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={slug} src={`/one-pagers/${slug}-mini.webp`} alt="" width={46} height={62} loading="lazy" decoding="async" />
+              ))}
+            </span>
+          </Link>
+          <Link href="/flashcards" className={levable(s.petite)}>
+            <h4 className={s.petiteTitre}>{RV.fcTitre}</h4>
+            {fc.cartes !== null && fc.cartes > 0 && <span className={s.nb + " t-num"}>{nombre(fc.cartes)}</span>}
+            <span className={s.sous}>{RV.fcSous(fc.parMatiere)}</span>
+            <span className={s.visuel + " " + s.pile}>
+              <i aria-hidden />
+              <i aria-hidden />
+              <i aria-hidden>
+                <small>{RV.fcCarteTete}</small>
+                <span>
+                  ModDur = <span className={s.surligne}>MacDur / (1 + r)</span>
+                </span>
+              </i>
+              {fc.boucle && (
+                <span className={s.etat} title={fc.boucle.aide}>
+                  {fc.boucle.texte}
+                </span>
+              )}
+            </span>
+          </Link>
+        </li>
+      </ol>
+    </section>
+  );
+}
+
+function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
+  const r = d.ratures;
+  const m = d.marquees;
+  const p = d.pointsFaibles;
+  return (
+    <section className={s.lieu} aria-labelledby="reviser-atelier">
+      <div className={s.illu + " " + s.illuAtelier} data-leonard="atelier">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/atelier/etabli-1024.webp"
+          srcSet="/atelier/etabli-640.webp 640w, /atelier/etabli-1024.webp 1024w"
+          sizes="(min-width: 1280px) 1240px, 100vw"
+          alt=""
+          width={1024}
+          height={572}
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          className={s.fond + " " + s.sombreNuit}
+          style={{ objectPosition: "50% 62%" }}
         />
-      </section>
-    </DomainSpace>
+        <div className={s.legende}>
+          <span className={s.sceau} aria-hidden>
+            <Icone nom="erreurs" size={22} />
+          </span>
+          <span>
+            <h2 id="reviser-atelier" className={s.lieuNom}>
+              {RV.atelier}
+            </h2>
+            <span className={s.lieuSous}>{RV.atelierSous}</span>
+          </span>
+        </div>
+      </div>
+
+      <ul className={s.grille}>
+        {/* le carnet : deux gestes (l'interrupteur, la mise au propre), la carte n'est pas un lien */}
+        <li className={s.case}>
+          <div className={s.carte + " " + s.papier + " " + s.err}>
+            <div className={s.haut}>
+              <h3 className={s.eyebrow}>{RV.carnetTitre}</h3>
+            </div>
+            <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
+              {r?.derniere ?? RV.carnetNeutre}
+            </span>
+            {r && r.enCours > 0 ? (
+              <p className={s.chiffre}>
+                <b className="t-num">{nombre(r.enCours)}</b>
+                <span>{RV.carnetEnCours(r.enCours)}</span>
+              </p>
+            ) : (
+              <p className={s.ligne}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
+            )}
+            {r?.calcul && <BasculeSansCalcul masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
+            {r && r.enCours > 0 ? (
+              <Link href="/moi?onglet=erreurs#propre" className={s.bouton + " " + s.plein}>
+                {RV.carnetAction}
+              </Link>
+            ) : (
+              <Link href="/moi?onglet=erreurs" className={s.bouton + " " + s.boutonTrait}>
+                {RV.carnetOuvrir}
+              </Link>
+            )}
+          </div>
+        </li>
+
+        <li className={s.case}>
+          <Link href="/moi?onglet=marquees" className={levable(s.err)}>
+            <span className={s.signet} aria-hidden />
+            <span className={s.haut}>
+              <h3 className={s.eyebrow}>{RV.marqueesTitre}</h3>
+            </span>
+            {m && m.total > 0 ? (
+              <>
+                <span className={s.chiffre}>
+                  <b className="t-num">{nombre(m.total)}</b>
+                  <span>{RV.marqueesGardees(m.total)}</span>
+                </span>
+                <span className={s.extraits}>
+                  {m.apercus.map((q, i) => (
+                    <span key={i} lang="en" className={s.extrait}>
+                      {q}
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : (
+              <span className={s.ligne}>{m ? RV.marqueesVide : RV.marqueesSansChiffre}</span>
+            )}
+            <span className={s.lien}>{m && m.total > 0 ? RV.marqueesAction : RV.marqueesOuvrir}</span>
+          </Link>
+        </li>
+
+        <li className={s.case}>
+          <Link href="/atelier" className={levable(s.err)}>
+            <span className={s.haut}>
+              <h3 className={s.eyebrow}>{RV.faiblesTitre}</h3>
+            </span>
+            {p && p.etat === "faibles" && p.notions.length > 0 ? (
+              <span className={s.notions}>
+                {p.notions.map((n) => (
+                  <span key={n.cle} className={s.notion} title={`${n.matiere} · ${n.libelle}`}>
+                    <b>{n.libelle}</b>
+                    {n.pct !== null ? (
+                      <>
+                        <span className={s.pc}>
+                          {n.pct} %<span className="sr-only"> {RV.faiblesPctAide}</span>
+                        </span>
+                        <span className={s.jauge} aria-hidden>
+                          <i style={{ "--p": n.pct / 100 } as React.CSSProperties} />
+                        </span>
+                      </>
+                    ) : (
+                      <span className={s.pc}>{RV.faiblesRatures(n.ratures)}</span>
+                    )}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className={s.ligne}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</span>
+            )}
+            <span className={s.lien}>{RV.faiblesAction}</span>
+          </Link>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+export function ReviserView({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
+  return (
+    <DomainSpace
+      kicker="Réviser"
+      icon={<Icone nom="reviser" size={18} />}
+      title={ESPACES.reviserTitre}
+      lead={
+        <div className={s.racine}>
+          <Bibliotheque d={d} apercu={apercu} />
+          <Atelier d={d} apercu={apercu} />
+        </div>
+      }
+    />
   );
 }

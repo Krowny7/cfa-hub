@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { codexNoter } from "@/lib/codex/actions";
 import { FastForward, Pause, Play, Rewind, SkipBack, SkipForward } from "lucide-react";
 import { COURS } from "@/lib/voice-z4";
+import { POS_PREFIX, noterCoursFini, noterDernierCours } from "@/lib/course-ecoute";
 
 export type Chapter = { title: string; start: number };
 
 const RATES = [1, 1.25, 1.5, 1.75, 2, 0.75];
 const RATE_KEY = "rl_audio_rate";
-const POS_PREFIX = "rl_course_pos:";
 
 function formatTime(sec: number) {
   if (!Number.isFinite(sec) || sec < 0) sec = 0;
@@ -74,8 +74,11 @@ export function CourseAudioPlayer({
     if (!posKey) return;
     try {
       // Fin du cours (ou presque) : la prochaine écoute repart du début.
-      if (total > 0 && t > total - 15) localStorage.removeItem(posKey);
-      else if (t > 5) localStorage.setItem(posKey, String(Math.round(t)));
+      if (total > 0 && t > total - 15) {
+        localStorage.removeItem(posKey);
+        // écouté jusqu'au bout : la carte de Réviser souligne la matière en entier
+        if (storageKey) noterCoursFini(storageKey);
+      } else if (t > 5) localStorage.setItem(posKey, String(Math.round(t)));
     } catch {}
   }
 
@@ -147,6 +150,9 @@ export function CourseAudioPlayer({
     const onPlay = () => {
       setPlaying(true);
       setModulePret(null);
+      // le dernier cours écouté : la carte « Cours complets » de Réviser le reprend. Pas à l'ouverture :
+      // la page sert aussi à lire les diapositives, sans faire oublier l'écoute en cours d'un autre cours
+      if (storageKey) noterDernierCours(storageKey);
     };
     const onPause = () => {
       ecoute.current.dernier = -1;

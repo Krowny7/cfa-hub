@@ -39,5 +39,8 @@ export function subjectRail(rows: Row[], extra?: (key: string, pct: number | nul
   });
 }
 
-/** Lien vers la matière dans Réviser (fiche, cours et cartes de la matière). */
-export const reviserHref = (key: string) => `/reviser?matiere=${encodeURIComponent(key)}`;
+/** Lien vers une matière depuis les rangées de matières (accueil, Moi) : sa fiche de révision ; sans fiche, Réviser. */
+export const reviserHref = (key: string) => {
+  const fiche = SUBJECTS.find((s) => s.key === key)?.fiche;
+  return fiche ? `/fiches/${fiche}` : "/reviser";
+};

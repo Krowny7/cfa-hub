@@ -86,10 +86,11 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/reviser-bibliotheque.webp",
     alt: "La Bibliothèque : grande salle de lecture voûtée, plafond peint et doré, galeries de livres",
     credit: "Image peinte pour Ranked Lobby (2026-10-13), fournie par l'utilisateur.",
-    emplacement: "Réviser : carte « lieu » La Bibliothèque, image carrée en tête de carte sur ordinateur (environ 365 px de large) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
+    emplacement:
+      "Réviser : le bandeau de La Bibliothèque en tête de page, pleine largeur (jusqu'à 1 240 px de large, 230 px de haut ; 190 px au téléphone), cadré à 50 % 30 % ; les cartes du parcours mordent sur son bas. Le fichier actuel (960×760) y est agrandi, flou sur grand écran : livrer une version large, 2400×900 px au moins (même nom, même format).",
     prompt:
       STYLE +
-      "Sujet : la bibliothèque-cabinet d'étude de l'atelier de Léonard vers 1500. Hautes étagères de bois sombre chargées de livres reliés de cuir et de rouleaux, un lutrin avec un grand livre ouvert, une table couverte de carnets, un compas et un globe, une fenêtre en plein cintre à gauche d'où entre une lumière dorée et rasante de fin de journée, poussière qui flotte dans le rayon. Palette chaude : ocre, terre de Sienne brûlée, brun, or, quelques bleus froids dans les ombres. Aucun personnage, aucun texte lisible, pas de cadre. Format carré 1:1, sujet principal centré, avec assez d'air en haut et en bas pour un recadrage en portrait 4:5.",
+      "Sujet : la bibliothèque-cabinet d'étude de l'atelier de Léonard vers 1500. Hautes étagères de bois sombre chargées de livres reliés de cuir et de rouleaux, un lutrin avec un grand livre ouvert, une table couverte de carnets, un compas et un globe, une fenêtre en plein cintre à gauche d'où entre une lumière dorée et rasante de fin de journée, poussière qui flotte dans le rayon. Palette chaude : ocre, terre de Sienne brûlée, brun, or, quelques bleus froids dans les ombres. Aucun personnage, aucun texte lisible, pas de cadre. Format panoramique 8:3, 2400×900 px au moins ; l'essentiel dans le tiers supérieur et au centre, le bas calme et sombre (des cartes le recouvrent, le titre s'y pose à gauche), rien d'important dans les 10 % de chaque bord. Pour garder la scène de l'image actuelle (salle de lecture voûtée, plafond peint et doré, galeries de livres), l'étendre sur les côtés plutôt que de la repeindre.",
   },
   "reviser-casier-medaillon": {
     src: "/illustrations/reviser-casier-medaillon.webp",
