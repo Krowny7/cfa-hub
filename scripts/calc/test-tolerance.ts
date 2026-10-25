@@ -19,6 +19,15 @@ vu("9 pour 8,5 (décimales = 1)", isCorrectValue(9, q(8.5, 1)), false);
 vu("0,52 pour 0,523 en question stricte", isCorrectValue(0.52, q(0.523, 3, true)), false);
 vu("saisie « 0,52 » pour 0,523", checkCalcInput({ ...q(0.523, 3), unit: "" }, "0,52")?.status === "juste", true);
 vu("−6,21 pour −6,214", isCorrectValue(-6.21, q(-6.214, 3)), true);
+// une décimale de moins, tronquée plutôt qu'arrondie (fi-fwd-f4 : 3y1y = 2,7283 %)
+vu("2,72 pour 2,7283 (tronqué)", isCorrectValue(2.72, q(2.7283, 3)), true);
+vu("2,73 pour 2,7283 (arrondi)", isCorrectValue(2.73, q(2.7283, 3)), true);
+vu("2,71 pour 2,7283 (deux crans)", isCorrectValue(2.71, q(2.7283, 3)), false);
+vu("2,8 pour 2,7283", isCorrectValue(2.8, q(2.7283, 3)), false);
+vu("152,3 pour 152,38 (tronqué)", isCorrectValue(152.3, q(152.38, 2)), true);
+vu("−6,22 pour −6,214 (tronqué vers le bas)", isCorrectValue(-6.22, q(-6.214, 3)), true);
+vu("2,72 pour 2,7283 en question stricte", isCorrectValue(2.72, q(2.7283, 3, true)), false);
+vu("saisie « 2,72 » pour 2,7283", checkCalcInput({ ...q(2.7283, 3), unit: "%" }, "2,72")?.status === "juste", true);
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

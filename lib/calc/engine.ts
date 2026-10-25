@@ -127,8 +127,9 @@ export const ARRONDI_MAX = 0.01;
 
 /**
  * Juste si l'écart tient dans la tolérance absolue, ou s'il fait au plus 0,2 % de la réponse,
- * ou si c'est la réponse arrondie à une décimale de moins (0,52 pour 0,523) et que cet arrondi
- * coûte au plus 1 % (0,1 pour 0,05 reste faux).
+ * ou si c'est la réponse à une décimale de moins, arrondie ou tronquée (0,52 pour 0,523 ;
+ * 2,72 comme 2,73 pour 2,7283 : à moins d'un cran de la réponse), et que cet écart coûte au
+ * plus 1 % (0,1 pour 0,05 et 0,53 pour 0,523 restent faux).
  */
 export function isCorrectValue(value: number, q: Pick<CalcQuestion, "answer" | "decimals" | "tolerance" | "strict">): boolean {
   if (!Number.isFinite(value) || !Number.isFinite(q.answer)) return false;
@@ -140,8 +141,10 @@ export function isCorrectValue(value: number, q: Pick<CalcQuestion, "answer" | "
   if (diff <= toleranceOf(q) + eps || diff <= REL_TOLERANCE * Math.abs(q.answer) + eps) return true;
   const d = Math.round(q.decimals) - 1;
   if (d < 1) return false;
-  const arrondi = Math.abs(value - Math.round(q.answer * 10 ** d) / 10 ** d) <= 1e-9 * Math.max(1, Math.abs(value));
-  return arrondi && diff <= ARRONDI_MAX * Math.abs(q.answer) + eps;
+  // la saisie a au plus d décimales, et tombe sur l'un des deux crans qui encadrent la réponse
+  const surLaGrille = Math.abs(value * 10 ** d - Math.round(value * 10 ** d)) <= 1e-6;
+  const unCran = diff < 10 ** -d - eps;
+  return surLaGrille && unCran && diff <= ARRONDI_MAX * Math.abs(q.answer) + eps;
 }
 
 export type CalcStatus = "juste" | "faux" | "format";
