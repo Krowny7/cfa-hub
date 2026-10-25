@@ -106,6 +106,10 @@ export const REG = {
     asideTitre: "Marquer",
     asideLigne: "Le bouton « Marquer » apparaît après chaque réponse, partout, et sur chaque flashcard pendant sa révision.",
     asideLien: "Voir la liste",
+    /** le sélecteur en haut de la page : les questions ou les flashcards */
+    selecteur: "Questions ou flashcards marquées",
+    selQuestions: "Questions",
+    selFlashcards: "Flashcards",
     /** sans héros (aucune question marquée), quand les flashcards marquées existent aussi */
     kickerTout: "Tes marquées",
     /** ni question ni flashcard marquée */

@@ -16,7 +16,22 @@ import { CAB, REG } from "@/lib/voice-moi";
 // Composant de présentation : les données arrivent en props ; `settings`
 // reçoit le panneau de réglages (composants clients qui chargent eux-mêmes),
 // `pieces` l'étagère « Mes pièces » (lue par la page sur cet onglet).
-export function MoiView({ d, settings, pieces = null, tab = "stats", now }: { d: MoiData; settings: React.ReactNode; pieces?: React.ReactNode; tab?: MoiTab; now?: number }) {
+export function MoiView({
+  d,
+  settings,
+  pieces = null,
+  tab = "stats",
+  vueMarquees,
+  now,
+}: {
+  d: MoiData;
+  settings: React.ReactNode;
+  pieces?: React.ReactNode;
+  tab?: MoiTab;
+  /** Moi › Marquées : les questions ou les flashcards (absent : les questions, ou les flashcards s'il n'y a qu'elles) */
+  vueMarquees?: "questions" | "flashcards";
+  now?: number;
+}) {
   return (
     <>
       <OngletParAncre />
@@ -25,7 +40,7 @@ export function MoiView({ d, settings, pieces = null, tab = "stats", now }: { d:
       ) : tab === "erreurs" ? (
         <Registre d={d} liste="ratures" now={now} />
       ) : tab === "marquees" ? (
-        <Registre d={d} liste="marquees" now={now} />
+        <Registre d={d} liste="marquees" vue={vueMarquees} now={now} />
       ) : tab === "pieces" ? (
         (pieces ?? (
           <div className="rl-wide flex flex-col gap-3">

@@ -41,13 +41,16 @@ type ProfileRow = {
 // Espace « Moi » : en-tête (profil, rang compact) puis des onglets liables
 // avec ?onglet=stats|erreurs|marquees|pieces|reglages. Chaque lecture dégrade
 // proprement. L'étagère « Mes pièces » n'est lue que sur son onglet.
-export default async function MoiPage({ searchParams }: { searchParams?: Promise<{ onglet?: string }> }) {
+export default async function MoiPage({ searchParams }: { searchParams?: Promise<{ onglet?: string; vue?: string }> }) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
   if (!user) redirect("/login");
 
   const tab = parseMoiTab((await searchParams)?.onglet) ?? "stats";
+  // Moi › Marquées : questions ou flashcards (?vue=questions|flashcards, sinon au choix de la page)
+  const vueParam = (await searchParams)?.vue;
+  const vueMarquees = vueParam === "flashcards" || vueParam === "questions" ? vueParam : undefined;
   const admin = tryAdmin();
   const now = Date.now();
 
@@ -193,6 +196,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     <MoiView
       d={d}
       tab={tab}
+      vueMarquees={vueMarquees}
       now={now}
       pieces={etagere}
       settings={

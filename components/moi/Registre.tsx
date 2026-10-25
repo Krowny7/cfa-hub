@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowRight, Bookmark, PenLine } from "lucide-react";
 import { BoutonPlein, FilMoi, HerosMoi, ListeClassee } from "@/components/moi/Briques";
 import { LienCarnet } from "@/components/moi/Clients";
@@ -9,6 +10,7 @@ import { RaturesTab } from "@/components/moi/RaturesTab";
 import { Illustration } from "@/components/ui/Illustration";
 import { SOURCES_RATURE } from "@/lib/voice-z1";
 import { REG } from "@/lib/voice-moi";
+import { nombre } from "@/lib/voice";
 import type { MoiData } from "@/components/moi/types";
 import s from "@/components/moi/Moi.module.css";
 
@@ -112,10 +114,56 @@ function resumeMarquees(d: MoiData): Resume | null {
   };
 }
 
-export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "marquees"; now?: number }) {
+/**
+ * Moi › Marquées : « Questions · 113 | Flashcards · 4 », en haut de la page (les flashcards
+ * se perdaient sous une longue liste de questions). Des liens (?vue=…) : la page est rendue
+ * côté serveur, l'adresse dit ce qu'on regarde. Un compte inconnu (lecture en repli) : sans chiffre.
+ */
+function SelecteurMarquees({ actif, questions, cartes }: { actif: "questions" | "flashcards"; questions: number | null; cartes: number | null }) {
+  const T = REG.marquees;
+  const choix = [
+    { cle: "questions", libelle: T.selQuestions, n: questions },
+    { cle: "flashcards", libelle: T.selFlashcards, n: cartes },
+  ] as const;
+  return (
+    <nav aria-label={T.selecteur} className="flex flex-wrap gap-2">
+      {choix.map((c) => (
+        <Link
+          key={c.cle}
+          href={`/moi?onglet=marquees&vue=${c.cle}`}
+          className={"chip min-h-[44px] px-4 text-[15px]" + (actif === c.cle ? " chip-active" : "")}
+          aria-current={actif === c.cle ? "page" : undefined}
+        >
+          {c.libelle}
+          {c.n !== null && <span className="font-mono text-[13px] tabular-nums opacity-80">· {nombre(c.n)}</span>}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export function Registre({ d, liste, vue, now }: { d: MoiData; liste: "ratures" | "marquees"; vue?: "questions" | "flashcards"; now?: number }) {
   const res = liste === "ratures" ? resumeRatures(d) : resumeMarquees(d);
-  // les flashcards marquées, à la suite des questions (lues par la page sur cet onglet)
+  // les flashcards marquées (lues par la page sur cet onglet) : une vue à part, choisie par le
+  // sélecteur ; sans choix, les questions, ou les flashcards s'il n'y a qu'elles
   const cartes = liste === "marquees" ? d.cartesMarquees : undefined;
+  const nQuestions = d.marquees.available ? d.marquees.items.length : null;
+  const nCartes = cartes?.available && !cartes.erreur ? cartes.items.length : null;
+  const voirCartes = !!cartes && (vue === "flashcards" || (vue === undefined && nQuestions === 0 && (nCartes ?? 0) > 0));
+  const selecteur = cartes ? <SelecteurMarquees actif={voirCartes ? "flashcards" : "questions"} questions={nQuestions} cartes={nCartes} /> : null;
+
+  if (voirCartes && cartes) {
+    return (
+      <div className="rl-wide flex flex-col gap-4">
+        <FilMoi label={REG.fil} />
+        <h1 className="t-h1 m-0">{REG.marquees.kickerTout}</h1>
+        {selecteur}
+        <CartesMarqueesTab cartes={cartes} className="mt-2 md:mt-4" />
+        {/* les flashcards gardées sur l'appareil qui rejoignent le compte : la page se relit une fois */}
+        <SynchroMarquesCartes />
+      </div>
+    );
+  }
 
   // la liste complète : le carnet de ratures sans son résumé (le héros le remplace), l'ancien carnet des fiches tant que la migration manque, ou les marquées
   const corps =
@@ -135,8 +183,8 @@ export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "ma
       <div className="rl-wide flex flex-col gap-4">
         <FilMoi label={REG.fil} />
         <h1 className="t-h1 m-0">{liste === "ratures" ? REG.ratures.kicker : cartes ? REG.marquees.kickerTout : REG.marquees.kicker}</h1>
+        {selecteur}
         {corps}
-        {cartes && <CartesMarqueesTab cartes={cartes} className="mt-4 md:mt-8" />}
         {cartes && <SynchroMarquesCartes />}
       </div>
     );
@@ -146,6 +194,7 @@ export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "ma
     <div className="rl-wide flex flex-col gap-8 md:gap-12">
       <div className="flex flex-col gap-4">
         <FilMoi label={REG.fil} />
+        {selecteur}
         <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
           <HerosMoi
             className="lg:col-span-8"
@@ -176,7 +225,6 @@ export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "ma
         </h2>
         {corps}
       </section>
-      {cartes && <CartesMarqueesTab cartes={cartes} />}
       {/* les flashcards gardées sur l'appareil qui rejoignent le compte : la page se relit une fois */}
       {cartes && <SynchroMarquesCartes />}
     </div>
