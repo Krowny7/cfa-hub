@@ -2,7 +2,7 @@ import { EncreVive } from "@/components/nav/EncreVive";
 import Link from "next/link";
 import { Icone } from "@/components/adn/icons";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { BasculeSansCalcul, CarteCoursComplets } from "@/components/reviser/ParcoursClient";
+import { CalculCarnet, CarteCoursComplets } from "@/components/reviser/ParcoursClient";
 import { SUBJECTS } from "@/components/reviser/catalog";
 import type { DonneesReviser, EtatFiche } from "@/components/reviser/parcours";
 import { Illustration } from "@/components/ui/Illustration";
@@ -19,10 +19,12 @@ import s from "./Parcours.module.css";
 // sombre, le seul gros bouton du haut), 2 les fiches, 3 « pour la fin des
 // révisions » les one-pagers et les flashcards, à égalité. Un trait d'encre
 // sur la moitié de la largeur les sépare. L'Atelier, pour revoir ses
-// erreurs, n'a pas la même mise en page (demande de l'utilisateur) : à
-// gauche sa carte « lieu » (la peinture, le nom, le bouton de la séance
-// /atelier), à droite le carnet de ratures en large, puis les questions
-// marquées et les points faibles côte à côte. Sans requête : app/reviser charge les données
+// erreurs, n'a pas la même mise en page (demande de l'utilisateur ;
+// disposition C « Le registre » choisie sur maquette) : à gauche sa carte
+// « lieu » (la peinture, le nom, le bouton de la séance /atelier), à droite
+// une seule carte « registre » où le carnet de ratures, les questions
+// marquées et les points faibles sont trois lignes à filets alignées sur
+// trois colonnes (signe · nom, chiffre et geste · aperçu). Sans requête : app/reviser charge les données
 // (components/reviser/parcours-data.ts), l'aperçu en fournit d'exemple ; ce
 // qui vient de l'appareil (dernier cours, « Sans calcul ») est lu après le
 // montage (ParcoursClient). Repères de Léonard (data-leonard) :
@@ -171,7 +173,7 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
           <img
             src="/atelier/etabli-1024.webp"
             srcSet="/atelier/etabli-640.webp 640w, /atelier/etabli-1024.webp 1024w"
-            sizes="(min-width: 1280px) 480px, (min-width: 640px) 50vw, 100vw"
+            sizes="(max-width: 652px) 88px, (max-width: 956px) 48vw, 410px"
             alt=""
             width={1024}
             height={572}
@@ -198,72 +200,89 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
         </div>
       </div>
 
-      <ul className={s.outils}>
-        {/* le carnet, en large : deux gestes (l'interrupteur, la mise au propre), la carte n'est pas un lien */}
-        <li className={s.case + " " + s.carnetCase}>
-          <div className={s.carte + " " + s.papier + " " + s.err + " " + s.carnet}>
-            <div className={s.carnetCol}>
-              <div className={s.haut}>
-                <h3 className={s.eyebrow}>{RV.carnetTitre}</h3>
-              </div>
-              <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
-                {r?.derniere ?? RV.carnetNeutre}
-              </span>
-              {r && aRevoir ? (
-                <p className={s.chiffre}>
-                  <b className="t-num">{nombre(r.enCours)}</b>
-                  <span>{RV.carnetEnCours(r.enCours)}</span>
-                </p>
-              ) : (
-                <p className={s.ligne}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
-              )}
-            </div>
-            <div className={s.carnetCol + " " + s.carnetGestes}>
-              {r?.calcul && <BasculeSansCalcul masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
-              {/* rempli de l'encre quand il y a des ratures à revoir ; en filet sinon */}
-              <Link href="/moi?onglet=erreurs" className={aRevoir ? encre(s.bouton) : s.bouton + " " + s.boutonTrait} data-palette={aRevoir ? PAL.key : undefined}>
-                {aRevoir && <EncreVive tons={PAL.liquide} />}
-                {RV.carnetOuvrir}
-              </Link>
-            </div>
-          </div>
-        </li>
-
-        <li className={s.case}>
-          <Link href="/moi?onglet=marquees" className={levable(s.err)}>
-            <span className={s.signet} aria-hidden />
-            <span className={s.haut}>
-              <h3 className={s.eyebrow}>{RV.marqueesTitre}</h3>
-            </span>
-            {m && m.total > 0 ? (
-              <>
-                <span className={s.chiffre}>
-                  <b className="t-num">{nombre(m.total)}</b>
-                  <span>{RV.marqueesGardees(m.total)}</span>
-                </span>
-                <span className={s.extraits}>
-                  {m.apercus.map((q, i) => (
-                    <span key={i} lang="en" className={s.extrait}>
-                      {q}
-                    </span>
-                  ))}
-                </span>
-              </>
+      {/* le registre : une seule carte, les trois outils en trois lignes à filets (signe · nom, chiffre et geste · aperçu) */}
+      <ul className={s.carte + " " + s.papier + " " + s.registre}>
+        {/* le carnet : deux gestes (l'interrupteur, la mise au propre), la ligne n'est pas un lien */}
+        {/* le bouton vient après l'interrupteur dans le DOM (ordre de tabulation = ordre affiché au
+            téléphone, où il passe en dernier) ; sur ordinateur, il est replacé en bas de la 2e colonne */}
+        <li className={s.ligne + " " + s.ligneCarnet}>
+          <span className={s.carre} aria-hidden>
+            <Icone nom="erreurs" size={20} />
+          </span>
+          <div className={s.lCol}>
+            <h3 className={s.lNom}>{RV.carnetTitre}</h3>
+            {r && aRevoir ? (
+              <p className={s.chiffre + " " + s.lSous}>
+                <b className="t-num">{nombre(r.enCours)}</b>
+                <span>{RV.carnetEnCours(r.enCours)}</span>
+              </p>
             ) : (
-              <span className={s.ligne}>{m ? RV.marqueesVide : RV.marqueesSansChiffre}</span>
+              <p className={s.texte + " " + s.lSous}>{r ? RV.carnetPropre : RV.carnetSansChiffre}</p>
             )}
-            <span className={s.lien}>{m && m.total > 0 ? RV.marqueesAction : RV.marqueesOuvrir}</span>
+          </div>
+          <div className={s.lCol + " " + s.lDroite}>
+            <span className={s.rature} aria-hidden lang={r?.derniere ? "en" : undefined}>
+              {r?.derniere ?? RV.carnetNeutre}
+            </span>
+            {r?.calcul && <CalculCarnet enCours={r.enCours} masquees={r.calcul.masquees} apercu={apercu?.sansCalcul} />}
+          </div>
+          {/* rempli de l'encre quand il y a des ratures à revoir ; en filet sinon */}
+          <Link
+            href="/moi?onglet=erreurs"
+            className={(aRevoir ? encre(s.bouton) : s.bouton + " " + s.boutonTrait) + " " + s.lGeste}
+            data-palette={aRevoir ? PAL.key : undefined}
+          >
+            {aRevoir && <EncreVive tons={PAL.liquide} />}
+            {RV.carnetOuvrir}
           </Link>
         </li>
 
-        <li className={s.case}>
-          <Link href="/moi?onglet=stats#points-faibles" className={levable(s.err)}>
-            <span className={s.haut}>
-              <h3 className={s.eyebrow}>{RV.faiblesTitre}</h3>
+        <li>
+          <Link href="/moi?onglet=marquees" className={s.ligne + " " + s.ligneLien}>
+            <span className={s.carre} aria-hidden>
+              <span className={s.signet} />
             </span>
-            {p && p.etat === "faibles" && p.notions.length > 0 ? (
-              <span className={s.notions}>
-                {p.notions.map((n) => (
+            <div className={s.lCol}>
+              <h3 className={s.lNom}>{RV.marqueesTitre}</h3>
+              {m && m.total > 0 && (
+                <span className={s.chiffre + " " + s.lSous}>
+                  <b className="t-num">{nombre(m.total)}</b>
+                  <span>{RV.marqueesGardees(m.total)}</span>
+                </span>
+              )}
+              <span className={s.lien + " " + s.lGeste}>{m && m.total > 0 ? RV.marqueesAction : RV.marqueesOuvrir}</span>
+            </div>
+            <div className={s.lCol + " " + s.lApercu}>
+              {m && m.total > 0 ? (
+                m.apercus.map((q, i) => (
+                  <span key={i} lang="en" className={s.extrait}>
+                    {q}
+                  </span>
+                ))
+              ) : (
+                <span className={s.texte}>{m ? RV.marqueesVide : RV.marqueesSansChiffre}</span>
+              )}
+            </div>
+          </Link>
+        </li>
+
+        <li>
+          <Link href="/moi?onglet=stats#points-faibles" className={s.ligne + " " + s.ligneLien}>
+            <span className={s.carre} aria-hidden>
+              <span className={s.barres}>
+                <i />
+                <i />
+                <i />
+              </span>
+            </span>
+            <div className={s.lCol}>
+              <h3 className={s.lNom}>{RV.faiblesTitre}</h3>
+              <span className={s.texte + " " + s.lSous}>{RV.faiblesSous}</span>
+              <span className={s.lien + " " + s.lGeste}>{RV.faiblesAction}</span>
+            </div>
+            <div className={s.lCol + " " + s.lApercu}>
+              {p && p.etat === "faibles" && p.notions.length > 0 ? (
+                p.notions.map((n) => (
                   <span key={n.cle} className={s.notion} title={`${n.matiere} · ${n.libelle}`}>
                     <b>{n.libelle}</b>
                     {n.pct !== null ? (
@@ -276,15 +295,17 @@ function Atelier({ d, apercu }: { d: DonneesReviser; apercu?: ApercuReviser }) {
                         </span>
                       </>
                     ) : (
-                      <span className={s.pc}>{RV.faiblesRatures(n.ratures)}</span>
+                      <>
+                        <span className={s.pc}>{RV.faiblesRatures(n.ratures)}</span>
+                        <span className={s.pointille} aria-hidden />
+                      </>
                     )}
                   </span>
-                ))}
-              </span>
-            ) : (
-              <span className={s.ligne}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</span>
-            )}
-            <span className={s.lien}>{RV.faiblesAction}</span>
+                ))
+              ) : (
+                <span className={s.texte}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</span>
+              )}
+            </div>
           </Link>
         </li>
       </ul>

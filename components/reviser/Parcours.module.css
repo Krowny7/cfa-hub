@@ -287,9 +287,6 @@
   .levable:hover {
     transform: translateY(-3px);
   }
-  .levable:hover .lien::after {
-    transform: translateX(3px);
-  }
 }
 .levable:active {
   transform: translateY(0) scale(0.992);
@@ -490,16 +487,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-}
-.lienNuit {
-  min-height: 44px;
-  color: var(--sur-nuit);
-  border-radius: 8px;
-}
-@media (hover: hover) {
-  .lienNuit:hover::after {
-    transform: translateX(3px);
-  }
 }
 /* ce qui suit l'écoute de l'appareil : relu après le montage, un court fondu s'il change */
 .c1Corps {
@@ -829,13 +816,17 @@
 }
 
 /* ——— l'Atelier : revoir mes erreurs ———
-   Pas la mise en page de la Bibliothèque (demande de l'utilisateur) : celle du
-   Classement, en miroir. À gauche la carte « lieu » (la peinture en tête, qui
-   absorbe la hauteur de la rangée, le nom, la séance, le bouton) ; à droite le
-   carnet en large, puis les marquées et les points faibles côte à côte. */
+   Pas la mise en page de la Bibliothèque (demande de l'utilisateur) ;
+   disposition C « Le registre », choisie sur maquette. À gauche la carte
+   « lieu » (la peinture en tête, qui absorbe la hauteur de la rangée, le nom,
+   la séance, le bouton) ; à droite une seule carte « registre » : le carnet,
+   les marquées et les points faibles en trois lignes à filets, alignées sur
+   trois colonnes (signe · nom, chiffre et geste · aperçu). Les deux cartes
+   ont la même hauteur ; si le registre est le plus court, ses lignes se
+   partagent l'écart (jamais un vide en bas d'une carte). */
 .atelier {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
   gap: 14px;
 }
 .lieuCarte {
@@ -847,7 +838,7 @@
 .lieuImage {
   position: relative;
   flex: 1 1 auto;
-  min-height: 210px;
+  min-height: 150px;
   isolation: isolate;
   border-bottom: 1px solid var(--pencil-2);
   /* le fond le temps que la peinture arrive */
@@ -892,96 +883,131 @@
   min-height: 48px;
   margin-top: 6px;
 }
-:global(html[data-theme="nuit"]:not([data-discreet="1"])) .lieuCarte .bouton.encre {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
-    var(--shadow-btn);
-}
 
-.outils {
+/* le registre : une carte, trois lignes ; un filet au crayon entre deux lignes */
+.registre {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  /* si la carte « lieu » est plus haute, c'est la rangée du bas qui s'allonge */
-  grid-template-rows: auto 1fr;
-  gap: 14px;
+  align-content: stretch;
+  min-width: 0;
+  padding: 4px;
 }
-.carnetCase {
-  grid-column: 1 / -1;
-  container-type: inline-size;
-}
-.carnetCol {
+.registre > li {
+  position: relative;
   display: grid;
-  align-content: start;
-  gap: 10px;
   min-width: 0;
 }
-/* le carnet en large : la rature et le chiffre à gauche, l'interrupteur et le bouton à droite, en bas */
-@container (min-width: 560px) {
-  .carnet {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    column-gap: 26px;
-  }
-  .carnetGestes {
-    align-content: end;
-  }
+.registre > li + li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 1px;
+  background: var(--pencil-2);
 }
-/* moyen : la carte « lieu » couchée en tête (la peinture à gauche), les trois outils dessous */
-@container (max-width: 900px) {
-  .atelier {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .lieuCarte {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  }
-  .lieuImage {
-    min-height: 230px;
-    border-bottom: 0;
-    border-right: 1px solid var(--pencil-2);
-  }
-  .lieuCorps {
-    align-content: center;
-  }
-}
-/* téléphone : une colonne ; la peinture en bandeau au-dessus du nom */
-@container (max-width: 620px) {
-  .lieuCarte {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .lieuImage {
-    min-height: 150px;
-    border-right: 0;
-    border-bottom: 1px solid var(--pencil-2);
-  }
-  .lieuCorps {
-    padding: 16px 18px 18px;
-  }
-  .lieuTitre {
-    font-size: 28px;
-  }
-  .lieuTitre .sceau {
-    width: 38px;
-    height: 38px;
-  }
-  .outils {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-  .separation {
-    width: 60%;
-  }
-}
-.err {
+/* une ligne : le signe (44 px), le nom, le chiffre et le geste, puis l'aperçu */
+.ligne {
   display: grid;
-  align-content: start;
-  gap: 10px;
-  height: 100%;
-  padding: 18px;
-  overflow: hidden;
+  grid-template-columns: 44px minmax(0, 0.9fr) minmax(0, 1.3fr);
+  column-gap: 24px;
+  row-gap: 10px;
+  min-width: 0;
+  padding: 20px 24px;
+  border-radius: 16px;
 }
-.err .haut .eyebrow {
-  color: var(--ink-3);
-  opacity: 1;
+/* les marquées et les points faibles : la ligne entière est le lien (un seul geste) */
+.ligneLien {
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .ligneLien:hover {
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+  }
+  .ligneLien:hover .lien::after {
+    transform: translateX(3px);
+  }
+}
+.ligneLien:active {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.carre {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+}
+/* le signe des marquées : un petit ruban de miel */
+.signet {
+  display: block;
+  width: 14px;
+  height: 24px;
+  background: var(--signet);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+}
+/* le signe des points faibles : trois barres de jauge */
+.barres {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+}
+.barres i {
+  display: block;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--acc-plein);
+}
+.barres i:nth-child(1) {
+  height: 8px;
+}
+.barres i:nth-child(2) {
+  height: 14px;
+}
+.barres i:nth-child(3) {
+  height: 20px;
+}
+/* le carnet sur ordinateur : la 3e colonne sur deux rangées, le bouton en bas de la 2e */
+.ligneCarnet > .lDroite {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+.ligneCarnet > .lGeste {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  justify-self: start;
+}
+.lCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+/* l'aperçu (extraits, notions) : centré dans la hauteur de la ligne */
+.lApercu {
+  justify-content: center;
+  gap: 10px;
+}
+.lNom {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+/* le geste (bouton, lien) et l'interrupteur : calés en bas, alignés d'une colonne à l'autre */
+.lCol > .lGeste,
+.lCol > .bascule {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.texte {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
 }
 .chiffre {
   display: flex;
@@ -994,8 +1020,7 @@
   font-weight: 400;
   line-height: 0.95;
 }
-.chiffre span,
-.err .ligne {
+.chiffre span {
   font-size: 12.5px;
   color: var(--ink-2);
 }
@@ -1022,12 +1047,62 @@
   background: var(--pen);
   transform: rotate(-1.5deg);
 }
+/* la jauge des ratures en cours : sans calcul (vert-de-gris) / à calcul (miel) ;
+   « Sans calcul » allumé, la part à calcul s'efface */
+.calcul {
+  display: grid;
+  gap: 6px;
+}
+.calculBarre {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--paper-2);
+}
+.calculBarre i {
+  display: block;
+  flex-basis: 0;
+  min-width: 4px;
+}
+.partSans {
+  background: var(--acc-plein);
+}
+.partAvec {
+  background: var(--signet);
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+.calcul[data-on] .partAvec {
+  opacity: 0.28;
+}
+.calculLegende {
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.calculSans::before,
+.calculAvec::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 2px;
+  background: var(--acc-plein);
+}
+.calculAvec::before {
+  background: var(--signet);
+}
+.calcul[data-on] .calculSans {
+  font-weight: 700;
+  color: var(--ink);
+}
 .bascule {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  padding: 9px 11px;
+  padding: 9px 12px;
   border: 0;
   border-radius: 12px;
   background: color-mix(in srgb, var(--pal-2) 10%, var(--paper-2));
@@ -1044,20 +1119,6 @@
 .bascule :global(.switch.is-on) {
   background: var(--acc-plein);
 }
-/* le signet des questions marquées : un ruban de miel */
-.signet {
-  position: absolute;
-  top: -2px;
-  right: 20px;
-  width: 22px;
-  height: 44px;
-  background: var(--signet);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
-}
-.extraits {
-  display: grid;
-  gap: 6px;
-}
 .extrait {
   overflow: hidden;
   padding: 7px 10px;
@@ -1069,15 +1130,11 @@
   text-overflow: ellipsis;
   color: var(--ink-2);
 }
-.notions {
-  display: grid;
-  gap: 8px;
-}
 .notion {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 10px;
-  font-size: 12.5px;
+  gap: 5px 10px;
+  font-size: 13.5px;
 }
 .notion b {
   overflow: hidden;
@@ -1087,6 +1144,7 @@
 }
 .pc {
   font-family: var(--font-mono);
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--acc);
 }
@@ -1106,8 +1164,140 @@
   transform: scaleX(var(--p, 0));
   transform-origin: left center;
 }
-.err .lien {
-  min-height: 24px;
+/* une notion mesurée en ratures (pas encore de pourcentage) : une piste en pointillé */
+.pointille {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(90deg, var(--pencil-2) 0 6px, transparent 6px 10px);
+}
+
+/* moyen : la carte « lieu » couchée en tête (la peinture à gauche), le registre dessous */
+@container (max-width: 900px) {
+  .atelier {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lieuCarte {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+  .lieuImage {
+    min-height: 230px;
+    border-bottom: 0;
+    border-right: 1px solid var(--pencil-2);
+  }
+  .lieuCorps {
+    align-content: center;
+  }
+}
+/* téléphone : une colonne. La carte « lieu » compacte (la vignette de l'établi
+   à gauche du nom, pas de bandeau : ce serait la Bibliothèque) ; dans le
+   registre, chaque ligne passe sur deux étages : [signe | nom et chiffre],
+   puis l'aperçu, l'interrupteur et le geste en pleine largeur (le bouton en
+   dernier, sous le pouce). */
+@container (max-width: 620px) {
+  .lieuCarte {
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 12px 14px;
+    padding: 16px;
+  }
+  .lieuImage {
+    grid-row: 1 / span 2;
+    width: 88px;
+    height: 110px;
+    min-height: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 14px;
+  }
+  .lieuCorps {
+    display: contents;
+  }
+  .lieuTitre {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    gap: 10px;
+    font-size: clamp(19px, 20cqi - 36px, 28px);
+  }
+  .lieuTitre .sceau {
+    width: 32px;
+    height: 32px;
+  }
+  .lieuPhrase {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    font-size: 14px;
+  }
+  .lieuEtat {
+    grid-column: 1 / -1;
+    font-size: 13px;
+  }
+  .boutonLarge {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+  .registre {
+    padding: 2px;
+  }
+  .registre > li + li::before {
+    left: 16px;
+    right: 16px;
+    height: 1.5px;
+  }
+  .ligne {
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 12px;
+    padding: 18px 16px;
+  }
+  .lCol {
+    display: contents;
+  }
+  .carre {
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .lNom {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+  }
+  .lSous {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+  }
+  .lCol > :not(.lNom):not(.lSous) {
+    grid-column: 1 / -1;
+  }
+  /* « Les revoir → » des lignes-liens en bas (sans effet sur le focus : la ligne entière est un seul lien) */
+  .ligneLien .lGeste {
+    order: 1;
+  }
+  .lCol > .lGeste {
+    margin-top: 0;
+  }
+  .ligneCarnet > .lGeste {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-self: stretch;
+    width: 100%;
+    min-height: 48px;
+  }
+  /* une ligne sans sous-titre (aucune marquée) : le nom centré face au signe */
+  .ligne:not(:has(.lSous)) .lNom {
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .lCol > .bascule {
+    align-self: stretch;
+    margin-top: 0;
+  }
+  .separation {
+    width: 60%;
+  }
 }
 
 /* ——— mode discret : sans signature, comme l'onglet « Réviser » qui redevient
@@ -1130,6 +1320,11 @@
 }
 :global(html[data-discreet="1"]) .bascule {
   background: var(--paper-2);
+}
+/* la jauge sans calcul / à calcul : l'encre et le crayon (le signet passe à l'encre) */
+:global(html[data-discreet="1"]) .partAvec,
+:global(html[data-discreet="1"]) .calculAvec::before {
+  background: var(--pencil);
 }
 :global(html[data-discreet="1"]) .papier .encre,
 :global(html[data-discreet="1"]) .finTete .encre {
@@ -1180,6 +1375,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .levable,
+  .ligneLien,
+  .partAvec,
   .lien::after,
   .bouton,
   .play,

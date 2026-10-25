@@ -12,8 +12,8 @@ import { RV } from "@/lib/voice-reviser";
 import s from "./Parcours.module.css";
 
 // Les deux morceaux de la page Réviser qui lisent l'appareil (localStorage) :
-// la carte « Cours complets » (le dernier cours ouvert et sa position) et
-// l'interrupteur « Sans calcul » du carnet. Le serveur rend l'état sans
+// la carte « Cours complets » (le dernier cours ouvert et sa position) et,
+// dans le registre de l'Atelier, la jauge et l'interrupteur « Sans calcul » du carnet. Le serveur rend l'état sans
 // historique ; l'appareil n'est lu qu'après le montage (pas d'écart de rendu).
 // `apercu` : l'écoute d'exemple des aperçus, à la place de l'appareil.
 // La carte du cours est une carte sombre unie (noyer ; pas d'encre : demande
@@ -101,33 +101,52 @@ export function CarteCoursComplets({ apercu }: { apercu?: EcouteCours | null }) 
 }
 
 /**
- * L'interrupteur « Sans calcul » du carnet, pour cet appareil (la même clé
- * que Moi › Erreurs) : coupé au rendu serveur, relu après le montage.
- * `masquees` : les ratures à calcul en cours (null : inconnu).
+ * La ligne du carnet, côté appareil : la jauge « sans calcul / à calcul » des
+ * ratures en cours et l'interrupteur « Sans calcul » de cet appareil (la même
+ * clé que Moi › Erreurs), qui partagent leur état : allumé, la part « à
+ * calcul » s'efface. Coupé au rendu serveur, relu après le montage.
+ * `masquees` : les ratures à calcul en cours (null : inconnu, pas de jauge).
  */
-export function BasculeSansCalcul({ masquees, apercu }: { masquees: number | null; apercu?: boolean }) {
+export function CalculCarnet({ enCours, masquees, apercu }: { enCours: number; masquees: number | null; apercu?: boolean }) {
   const [on, setOn] = useState(apercu ?? false);
   useEffect(() => {
     if (apercu === undefined) setOn(lireSansCalcul());
   }, [apercu]);
   const etat = !on ? RV.carnetCalculCoupe : masquees === null ? RV.carnetCalculActif : masquees > 0 ? CARNET.calculMasquees(masquees) : CARNET.sansCalculAucune;
+  const aCalcul = masquees === null ? 0 : Math.min(masquees, enCours);
+  const sansCalcul = enCours - aCalcul;
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      className={s.bascule}
-      title={CARNET.sansCalculSous}
-      onClick={() => {
-        const v = !on;
-        setOn(v);
-        if (apercu === undefined) ecrireSansCalcul(v);
-      }}
-    >
-      <span aria-hidden className={"switch" + (on ? " is-on" : "")} />
-      <span>
-        <b>{CARNET.sansCalcul}</b> · {etat}
-      </span>
-    </button>
+    <>
+      {masquees !== null && enCours > 0 && (
+        <span className={s.calcul} data-on={on ? "1" : undefined}>
+          <span className={s.calculBarre} aria-hidden>
+            {sansCalcul > 0 && <i className={s.partSans} style={{ flexGrow: sansCalcul }} />}
+            {aCalcul > 0 && <i className={s.partAvec} style={{ flexGrow: aCalcul }} />}
+          </span>
+          <span className={s.calculLegende}>
+            <span className={s.calculSans}>{RV.carnetSansCalcul(sansCalcul)}</span>
+            <span aria-hidden> · </span>
+            <span className={s.calculAvec}>{RV.carnetACalcul(aCalcul)}</span>
+          </span>
+        </span>
+      )}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        className={s.bascule}
+        title={CARNET.sansCalculSous}
+        onClick={() => {
+          const v = !on;
+          setOn(v);
+          if (apercu === undefined) ecrireSansCalcul(v);
+        }}
+      >
+        <span aria-hidden className={"switch" + (on ? " is-on" : "")} />
+        <span>
+          <b>{CARNET.sansCalcul}</b> · {etat}
+        </span>
+      </button>
+    </>
   );
 }

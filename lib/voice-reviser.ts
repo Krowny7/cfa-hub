@@ -60,6 +60,8 @@ export const RV = {
   carnetCalculCoupe: "coupé sur cet appareil",
   carnetCalculActif: "actif",
   carnetOuvrir: "Ouvrir le carnet",
+  carnetSansCalcul: (n: number) => `${nombre(n)} sans calcul`,
+  carnetACalcul: (n: number) => `${nombre(n)} à calcul`,
   marqueesTitre: "Questions marquées",
   marqueesGardees: (n: number) => (n > 1 ? "gardées de côté" : "gardée de côté"),
   marqueesVide: "Aucune pour l'instant : touche « Marquer » après une réponse pour la garder ici.",
@@ -71,7 +73,8 @@ export const RV = {
   faiblesPctAide: "de réussite récente",
   faiblesRien: "Rien de fragile en ce moment : tes notions mesurées tiennent.",
   faiblesPeu: "Pas encore assez de réponses pour mesurer une notion. Quelques séries, et elles apparaîtront ici.",
-  faiblesSansChiffre: "Les notions qui coincent, mesurées sur tes dernières réponses.",
+  faiblesSansChiffre: "Mesurées sur tes dernières réponses, pour savoir quoi reprendre.",
+  faiblesSous: "Les notions qui coincent",
   faiblesAction: "Voir mes points faibles",
 
   // listes
