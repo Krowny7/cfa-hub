@@ -45,7 +45,7 @@ export const SETS = [
       ],
       [
         "Par quelles 3 voies une private company devient-elle publique, et laquelle ne lève aucun capital neuf ?",
-        "IPO : ==capital neuf== · Direct listing : ==aucun capital neuf== · Rachat par SPAC : ==blank check==\nEn clair : L'IPO (initial public offering) passe par un underwriter. La SPAC (special purpose acquisition company) lève des fonds par IPO, puis rachète une private company.\nPiège : private placement : pas de cotation ; buyout = going private.",
+        "IPO : ==vend des actions nouvelles au public== · Direct listing : ==actions existantes cotées== → aucun capital neuf · SPAC : ==coquille cotée qui rachète une private company==\nEn clair : L'IPO (initial public offering) passe par un underwriter. La SPAC (special purpose acquisition company) lève son cash par IPO.\nPiège : private placement : pas de cotation ; buyout = going private.",
       ],
       [
         "Debtholders vs equity holders : quelle nature de claim, quelle priorité et quel upside pour chacun ?",
@@ -61,7 +61,7 @@ export const SETS = [
       ],
       [
         "Shareholder theory vs stakeholder theory : sur quoi se concentre la corporate governance dans chacune ?",
-        "Shareholder theory : ==valeur de l'equity== · Stakeholder theory : ==tous les stakeholders==\nEn clair : La shareholder theory maximise la market value de l'equity (conflit managers ↔ owners). La stakeholder theory équilibre créanciers, salariés, clients, État et communautés locales.",
+        "Shareholder theory : ==maximiser la market value de l'equity== · Stakeholder theory : ==concilier les intérêts de chaque stakeholder==\nEn clair : La shareholder theory se concentre sur le conflit managers ↔ owners. La stakeholder theory y ajoute créanciers, salariés, clients, fournisseurs, État et communautés locales.",
       ],
       [
         "Board of directors : quelle composition et quel mode d'élection protègent le mieux les shareholders minoritaires ?",
@@ -77,11 +77,11 @@ export const SETS = [
       ],
       [
         "Climate risk d'une entreprise : physical risk vs transition risk, et qu'est-ce qu'un stranded asset ?",
-        "Physical : ==météo extrême== · Transition : ==virage bas carbone== · Stranded asset : ==actif devenu inexploitable==\nEn clair : La météo frappe les actifs ; régulation et clients imposent le bas carbone, ce qui crée des stranded assets.\nPiège : la dette ne souffre qu'en cas de défaut (surtout la longue) ; l'equity porte l'essentiel du risque.",
+        "Physical risk : ==dégâts du climat sur les actifs== · Transition risk : ==coût du passage au bas carbone== · Stranded asset : ==actif devenu inexploitable==\nEn clair : Le transition risk (régulation, technologie, clients) crée des stranded assets, comme des réserves fossiles.\nPiège : la dette ne souffre qu'en cas de défaut (surtout la longue) ; l'equity porte l'essentiel du risque.",
       ],
       [
         "Principal-agent relationship dans une corporation : qui est le principal, qui est l'agent, et que sont les agency costs ?",
-        "Principals : ==shareholders== · Agents : ==managers, directors== · Agency costs : ==coûts du conflit==\nEn clair : Les agents sont mieux informés (information asymmetry). Coûts directs : surveiller l'agent ; indirects : affaires perdues.\nPiège : information asymmetry plus forte : grande firme diversifiée, produits complexes, faible free float.",
+        "Principals : ==shareholders== · Agents : ==managers, directors== · Agency costs : ==coûts des conflits d'intérêts==\nEn clair : Les agents sont mieux informés (information asymmetry). Coûts directs : surveiller l'agent ; indirects : affaires perdues.\nPiège : information asymmetry plus forte : grande firme diversifiée, produits complexes, faible free float.",
       ],
     ],
   },
@@ -90,11 +90,11 @@ export const SETS = [
     cards: [
       [
         "Quels conflits d'intérêts typiques opposent les managers aux shareholders d'une corporation ?",
-        "Risque ==trop faible== · ==Effort insuffisant== · ==Empire building== · ==Entrenchment== · ==Self-dealing==\nEn clair : Le manager fuit le risque (emploi non diversifiable), grossit car le pay suit la taille, se rend indispensable ou se sert sur la firme.\nPiège : pay en stock options ⇒ trop de risque ; pay en cash ⇒ trop peu.",
+        "Risk appetite : ==prise de risque mal dosée== · Insufficient effort : ==s'investir trop peu== · Empire building : ==grossir la firme pour son pay== · Entrenchment : ==s'accrocher à son poste== · Self-dealing : ==se servir sur la firme==\nEn clair : Payé en cash, le manager prend trop peu de risque (son emploi est en jeu) ; payé en stock options, trop.",
       ],
       [
         "Controlling shareholders vs minority shareholders : quel conflit peut naître, et que permet une dual-class structure ?",
-        "Controlling : ==impose ses choix== · Minority : ==risque d'être lésé== · Dual-class : ==contrôle sans majorité économique==\nEn clair : Un controlling shareholder peu diversifié peut diversifier la firme contre l'intérêt des minoritaires. Dual-class : actions à vote renforcé.\nPiège : CFA Institute s'oppose aux dual-class structures.",
+        "Controlling : ==assez de votes pour décider seul== · Minority : ==trop peu de votes pour peser== · Dual-class : ==vote renforcé → contrôle sans majorité du capital==\nEn clair : Un controlling shareholder peu diversifié peut vouloir diversifier la firme, contre l'intérêt des minority shareholders.\nPiège : CFA Institute s'oppose aux dual-class structures.",
       ],
       [
         "AGM (annual general meeting) vs EGM (extraordinary general meeting) : quelles décisions, quelle majorité, et comment voter sans venir ?",
@@ -102,11 +102,11 @@ export const SETS = [
       ],
       [
         "Activist shareholders et hostile takeover : quelles tactiques de l'attaquant, et quelles défenses le management peut-il adopter ?",
-        "Attaque : ==proxy contest, tender offer== · Défense : ==staggered board, poison pill==\nEn clair : Proxy contest : rallier les votes. Tender offer : racheter assez d'actions. Staggered board : une fraction du board élue par an. Poison pill : actions bon marché aux actionnaires en place.",
+        "Proxy contest : ==rallier les votes des shareholders== → attaque · Tender offer : ==offre d'achat directe aux shareholders== → attaque · Staggered board : ==board élu par fractions== → défense · Poison pill : ==dilue l'attaquant (actions bon marché)== → défense\nEn clair : Un hostile takeover se fait contre l'avis du board et du management.",
       ],
       [
         "Quels sont les principaux board committees d'une corporation, et le rôle de chacun ?",
-        "Audit : ==reporting, auditeur== · Nominating : ==candidats au board== · Compensation : ==pay des dirigeants==\nEn clair : L'audit committee suit le contrôle interne, le nominating committee le governance code. Finance : risk committee ; assurance : investment committee.\nPiège : compensation committee : independent directors seulement.",
+        "Audit : ==contrôle le reporting et l'audit== · Nominating : ==sélectionne les candidats au board== · Compensation : ==propose le pay des dirigeants==\nEn clair : L'audit committee suit le contrôle interne, le nominating committee le governance code. Finance : risk committee ; assurance : investment committee.\nPiège : compensation committee : independent directors seulement.",
       ],
       [
         "Creditors, employees, customers, suppliers, government : quels mécanismes de governance protègent chacun de ces stakeholders ?",
@@ -126,11 +126,11 @@ export const SETS = [
       ],
       [
         "Current ratio, quick ratio, cash ratio : que met-on au numérateur de chacun, et lequel est le plus strict ?",
-        "Current : ==tous les current assets== · Quick : ==sans les stocks== · Cash : ==ni stocks ni receivables==\nEn clair : Les trois divisent par les current liabilities. Le cash ratio (cash + marketable securities) est le plus strict ; le quick ratio y ajoute les receivables.",
+        "Current ratio : ==tous les current assets== · Quick ratio : ==cash + marketable securities + receivables== · Cash ratio : ==cash + marketable securities== → le plus strict\nEn clair : Les trois divisent par les current liabilities. Le quick ratio exclut les stocks (inventory) ; le cash ratio exclut aussi les receivables.",
       ],
       [
         "Sources de liquidité primary vs secondary : exemples, et pourquoi une entreprise évite-t-elle les secondaires ?",
-        "Primary : ==cash, lignes bancaires, activité== · Secondary : ==coûteuses, signal négatif==\nEn clair : Sources secondary : couper le dividende, reporter l'investissement, vendre des actifs, émettre des actions, restructurer la dette, bankruptcy.\nPiège : vente forcée = décote sur la fair value : le cost of liquidity.",
+        "Primary : ==ressources courantes (cash, lignes bancaires, trade credit)== · Secondary : ==mesures exceptionnelles (vendre des actifs…)== → coûteuses\nEn clair : Les sources secondary (couper le dividende, émettre des actions, bankruptcy…) envoient un signal négatif.\nPiège : vente forcée = décote sur la fair value : le cost of liquidity.",
       ],
       [
         "Drag on liquidity vs pull on liquidity : quelle différence, et quel effet sur le cash conversion cycle ?",
@@ -155,7 +155,7 @@ export const SETS = [
     cards: [
       [
         "Quels sont les 4 types de capital investments, et lesquels exigent l'analyse la plus détaillée ?",
-        "Going concern : ==analyse légère== · Regulatory : ==imposé, peu de revenus== · Expansion : ==analyse détaillée== · Other : ==analyse détaillée==\nEn clair : Going concern : maintenir ou baisser les coûts (budget ≈ depreciation annuelle). Other : hors des métiers actuels.\nPiège : remplacer une machine pour baisser les coûts = going concern.",
+        "Going concern : ==maintenir ou baisser les coûts== · Regulatory : ==imposé (État, assureur), peu de revenus== · Expansion : ==faire grandir l'activité== · Other : ==hors des métiers actuels==\nEn clair : Expansion et other projects exigent l'analyse la plus détaillée, les going concern projects très peu.\nPiège : remplacer une machine pour baisser les coûts = going concern.",
       ],
       [
         "Quelles sont les 4 étapes du capital allocation process, et laquelle est la plus importante ?",
@@ -183,15 +183,15 @@ export const SETS = [
       ],
       [
         "Analyse d'un projet : quels cash flows inclure, et que faire des sunk costs, de la cannibalization et des externalities ?",
-        "==Incremental cash flows après impôt== · Sunk costs : ==exclus== · Cannibalization : ==ventes perdues déduites== · Externalities : ==incluses==\nEn clair : On ajoute opportunity costs et économies d'impôt de la depreciation ; le timing compte, pas le résultat comptable.\nPiège : une étude de marché déjà payée est un sunk cost : on l'exclut.",
+        "==Incremental cash flows après impôt== · Sunk costs : ==déjà dépensés (étude de marché)== → exclus · Cannibalization : ==ventes prises à ses produits== → déduites · Externalities : ==effets sur d'autres cash flows== → incluses\nEn clair : On ajoute opportunity costs et économies d'impôt de la depreciation ; le timing compte, pas le résultat comptable.",
       ],
       [
         "Quelles erreurs et quels behavioral biases faussent souvent les décisions de capital allocation ?",
-        "Fonds internes ==jamais gratuits== · ==Inflation mal traitée== · ==Pet projects== · ==Budget figé== · Viser ==EPS ou ROE==\nEn clair : Les fonds internes coûtent le cost of equity. Pet project : chouchou d'un dirigeant. Viser l'EPS (earnings per share) ou le ROE (return on equity) pousse au court terme.\nPiège : cash flows réels → taux réel ; nominaux → nominal.",
+        "Fonds internes ==jamais gratuits== · ==Inflation mal traitée== · Pet projects : ==chouchous d'un dirigeant== · ==Budget recopié== sur l'an passé · Viser ==EPS ou ROE==\nEn clair : Les fonds internes coûtent le cost of equity. Viser l'EPS (earnings per share) ou le ROE (return on equity) pousse au court terme.\nPiège : cash flows réels → taux réel ; nominaux → nominal.",
       ],
       [
         "Quels sont les principaux types de real options d'un projet ?",
-        "==Timing== · ==Abandonment== · ==Expansion== · ==Flexibility== · ==Fundamental==\nEn clair : Timing : attendre d'en savoir plus. Flexibility : ajuster prix ou production. Fundamental : payoff lié au prix d'un sous-jacent (mine de cuivre).\nPiège : droits d'un roman à filmer = expansion ; convertir sa production = flexibility.",
+        "Timing : ==attendre avant d'investir== · Abandonment : ==arrêter si ça tourne mal== · Expansion : ==investir plus si ça marche== · Flexibility : ==ajuster prix ou production== · Fundamental : ==payoff lié au cours (mine de cuivre)==\nEn clair : Une real option est un droit, pas une obligation.\nPiège : droits d'un roman à filmer = expansion ; convertir sa production = flexibility.",
       ],
       [
         "Formule de la NPV (net present value) d'un projet qui contient une real option ?",
@@ -252,7 +252,7 @@ export const SETS = [
       ],
       [
         "Net agency costs of equity : quelles composantes, et pourquoi la free cash flow hypothesis dit-elle que la dette les réduit ?",
-        "==Monitoring costs== · ==Bonding costs== · ==Residual losses== · Dette : ==discipline les managers==\nEn clair : Monitoring : surveiller (board, reporting). Bonding : rassurer (assurance, non-concurrence). Residual losses : pertes malgré tout. La dette réduit le cash à gaspiller.\nPiège : non-concurrence = bonding, pas monitoring.",
+        "Monitoring costs : ==surveiller les managers (board, reporting)== · Bonding costs : ==le manager rassure les owners== · Residual losses : ==pertes restantes malgré tout== · Dette : ==réduit le cash libre à gaspiller==\nEn clair : Net agency costs of equity = monitoring + bonding + residual losses.\nPiège : non-concurrence = bonding, pas monitoring.",
       ],
       [
         "Quelles 5 questions un business model doit-il couvrir ?",
@@ -260,23 +260,23 @@ export const SETS = [
       ],
       [
         "Value proposition vs value chain d'une entreprise : quelle différence ?",
-        "Value proposition : ==promesse au client== · Value chain : ==exécution interne==\nEn clair : La value proposition dit pourquoi le client préfère ce produit à la concurrence. La value chain : actifs et organisation qui tiennent la promesse.\nPiège : value chain = interne ; supply chain = interne + externe, jusqu'au client final.",
+        "Value proposition : ==pourquoi le client choisit ce produit== · Value chain : ==activités internes qui créent la valeur==\nEn clair : La value proposition est la promesse faite au client ; la value chain, les actifs et l'organisation qui la tiennent.\nPiège : value chain = interne ; supply chain = interne + externe, jusqu'au client final.",
       ],
       [
         "Price discrimination : que sont le tiered pricing, le dynamic pricing, le value-based pricing et l'auction pricing ?",
-        "Tiered : ==volume== · Dynamic : ==moment== · Value-based : ==valeur perçue== · Auction : ==enchères==\nEn clair : Price discrimination : prix différents selon les clients. Tiered : remise sur gros volumes ; dynamic : heures pleines ou creuses.\nPiège : salon −50 % le lundi, +20 % le samedi = dynamic pricing, pas tiered.",
+        "Tiered : ==remise sur gros volumes== · Dynamic : ==prix selon le moment (heures pleines)== · Value-based : ==prix fixé sur la valeur perçue== · Auction : ==prix fixé par les enchères==\nEn clair : La price discrimination fait payer des prix différents selon les clients ou les moments.\nPiège : salon −50 % le lundi, +20 % le samedi = dynamic pricing, pas tiered.",
       ],
       [
         "Bundling, razors-and-blades, add-on pricing : comment fonctionnent ces pricing models multi-produits ?",
-        "Bundling : ==produits groupés== · Razors-and-blades : ==profit sur les consommables== · Add-on : ==options après l'achat==\nEn clair : Razors-and-blades : imprimante bon marché, encre chère. Add-on : options à forte marge, vendues après la décision d'achat.\nPiège : vélo + options premium à forte marge = add-on, pas bundling.",
+        "Bundling : ==plusieurs produits vendus ensemble== · Razors-and-blades : ==profit sur les consommables== · Add-on : ==options après l'achat==\nEn clair : Razors-and-blades : imprimante bon marché, encre chère. Add-on : options à forte marge, vendues après la décision d'achat.\nPiège : vélo + options premium à forte marge = add-on, pas bundling.",
       ],
       [
         "Penetration pricing, freemium, hidden revenue : quelle différence entre ces pricing models ?",
-        "Penetration : ==bas prix temporaire== · Freemium : ==base gratuite, options payantes== · Hidden revenue : ==pub ou données==\nEn clair : Le penetration pricing sacrifie la marge pour gagner du marché, surtout avec des network effects (valeur ↑ avec les utilisateurs).\nPiège : jeu gratuit payé par la pub = hidden revenue, pas freemium.",
+        "Penetration : ==bas prix temporaire== · Freemium : ==base gratuite, options payantes== · Hidden revenue : ==payé par des tiers (pub, données)==\nEn clair : Le penetration pricing sacrifie la marge pour gagner du marché, surtout avec des network effects (valeur ↑ avec les utilisateurs).\nPiège : jeu gratuit payé par la pub = hidden revenue, pas freemium.",
       ],
       [
         "Private label, licensing, VAR (value-added reseller) : que font ces business models ?",
-        "Private label : ==fabriquer pour autrui== · Licensing : ==marque louée contre redevance== · VAR : ==ajoute installation, service==\nEn clair : Private label : le produit est vendu sous la marque du distributeur (Kirkland de Costco). Autre modèle, le crowdsourcing : les utilisateurs contribuent (Wikipedia, Waze).",
+        "Private label : ==fabriquer pour autrui== · Licensing : ==marque louée contre redevance== · VAR : ==revend en ajoutant installation, service==\nEn clair : Private label : le produit est vendu sous la marque du distributeur (Kirkland de Costco). Autre modèle, le crowdsourcing : les utilisateurs contribuent (Wikipedia, Waze).",
       ],
     ],
   },

@@ -53,7 +53,7 @@ export const SETS = [
       ],
       [
         "Pile : 100 USD, face : 0 USD, ou bien 50 USD certains. Que choisissent un investisseur risk-averse, risk-neutral et risk-seeking ?",
-        "Risk-averse : ==50 USD certains== · Risk-neutral : ==indifférent== · Risk-seeking : ==le pari==\nEn clair : Le pari a la même expected value : 0,5 × 100 + 0,5 × 0 = 50 USD. Les modèles financiers supposent des investisseurs risk-averse : ils ne prennent du risque que s'il est payé.",
+        "Risk-averse : ==préfère le gain certain== → 50 USD · Risk-neutral : ==ne regarde que l'expected value== → indifférent · Risk-seeking : ==préfère le pari risqué==\nEn clair : Le pari a la même expected value : 0,5 × 100 + 0,5 × 0 = 50 USD. Les modèles financiers supposent des investisseurs risk-averse : ils ne prennent du risque que s'il est payé.",
       ],
       [
         "Formule de l'utility d'un investissement ? Application : risk aversion coefficient A = 4, expected return 10 %, standard deviation 20 %.",
@@ -61,11 +61,11 @@ export const SETS = [
       ],
       [
         "Que représente une indifference curve dans le plan risque–rendement, et que traduit une courbe plus pentue ?",
-        "Indifference curve : ==même utility== · Plus pentue : ==plus risk-averse==\nEn clair : Une indifference curve relie les couples (standard deviation, expected return) de même utility ; on préfère la plus haute. Moins risk-averse : courbe plus plate, plus d'actif risqué.",
+        "Indifference curve : ==couples risque–rendement de même utility== · Plus pentue : ==investisseur plus risk-averse==\nEn clair : Le risque est la standard deviation ; on préfère la plus haute courbe. Plus elle est pentue, plus il faut de rendement pour accepter un peu plus de risque.",
       ],
       [
         "Minimum-variance frontier, global minimum-variance portfolio et efficient frontier : comment les distinguer ?",
-        "Minimum-variance frontier : ==σ minimal== · GMV : ==extrémité gauche== · Efficient frontier : ==au-dessus du GMV==\nEn clair : La minimum-variance frontier donne le plus petit σ (standard deviation) par expected return. Sous le GMV (global minimum-variance portfolio), tout est dominé.\nPiège : Le GMV appartient à l'efficient frontier.",
+        "Minimum-variance frontier : ==σ minimal à chaque expected return== · GMV : ==le portefeuille de σ le plus bas== · Efficient frontier : ==meilleur expected return à chaque σ==\nEn clair : L'efficient frontier part du GMV (global minimum-variance portfolio) et monte. σ = standard deviation.\nPiège : Le GMV appartient à l'efficient frontier.",
       ],
       [
         "Portefeuilles (expected return, standard deviation) : A (6 %, 10 %), B (9 %, 16 %), C (8 %, 18 %), D (12 %, 25 %). Lequel ne peut pas être sur l'efficient frontier ?",
@@ -90,11 +90,11 @@ export const SETS = [
       ],
       [
         "Sur la CML (capital market line), que sont les portefeuilles à gauche et à droite du market portfolio ?",
-        "Gauche : ==lending portfolios== · Droite : ==borrowing portfolios==\nEn clair : À gauche, une partie est prêtée au risk-free rate. À droite, on emprunte au risk-free rate pour investir plus de 100 % dans le market portfolio (buying on margin).",
+        "Lending (gauche) : ==une part prêtée au risk-free rate== · Borrowing (droite) : ==emprunt pour investir plus de 100 %==\nEn clair : Les lending portfolios mêlent risk-free asset et market portfolio. Les borrowing portfolios empruntent au risk-free rate pour acheter plus de market portfolio (buying on margin).",
       ],
       [
         "Systematic risk vs unsystematic risk : lequel est rémunéré par un expected return plus élevé, et pourquoi ?",
-        "Systematic (market) : ==rémunéré== · Unsystematic : ==non rémunéré, diversifiable gratuitement==\nEn clair : L'unsystematic (firm-specific) risk s'élimine sans coût, donc personne ne le paie. Total risk = systematic + unsystematic.\nPiège : Une biotech à standard deviation énorme mais beta faible a un expected return faible.",
+        "Systematic : ==risque de marché, non diversifiable== → rémunéré · Unsystematic : ==risque propre au titre, diversifiable== → non rémunéré\nEn clair : L'unsystematic risk s'élimine sans coût, donc personne ne le paie. Total risk = systematic + unsystematic.\nPiège : Une biotech à standard deviation énorme mais beta faible a un expected return faible.",
       ],
       [
         "Combien de titres faut-il pour bien diversifier un portefeuille d'actions, et que devient chaque type de risque quand on en ajoute ?",
@@ -118,11 +118,11 @@ export const SETS = [
       ],
       [
         "Quelles sont les hypothèses du CAPM (capital asset pricing model) ?",
-        "==Risk-averse== · ==Frictionless== markets · ==One-period== horizon · ==Homogeneous expectations== · ==Price takers==\nEn clair : Le CAPM suppose aussi utility maximization et actifs divisibles. Homogeneous expectations : tous voient le même market portfolio.\nPiège : Risk-neutral ou horizons différents : pas des hypothèses du CAPM.",
+        "Investisseurs : ==risk-averse, maximisent leur utility== · Markets : ==frictionless, sans coûts ni impôts== · Horizon : ==one-period, le même pour tous== · Expectations : ==homogeneous, mêmes prévisions== · Price takers : ==nul ne fait les prix==\nEn clair : Le CAPM suppose aussi des actifs divisibles.\nPiège : Risk-neutral ou horizons différents : pas des hypothèses du CAPM.",
       ],
       [
         "CML (capital market line) vs SML (security market line) : quel axe de risque, et quels actifs se placent dessus ?",
-        "CML : ==axe σ, portefeuilles efficients== · SML : ==axe beta, chaque titre==\nEn clair : La CML mesure le total risk (σ = standard deviation), la SML le systematic risk. Un titre seul est donc sous la CML, mais sur la SML s'il est bien évalué.",
+        "CML : ==expected return des portefeuilles efficients selon σ== · SML : ==required return de chaque titre selon beta==\nEn clair : La CML mesure le total risk (σ = standard deviation), la SML le systematic risk. Un titre seul est donc sous la CML, mais sur la SML s'il est bien évalué.",
       ],
       [
         "Formules pour juger si une action est sous-évaluée (CAPM) ? Application : cours 20, prix attendu 22 dans un an, dividende 1, beta 1,5, risk-free rate 4 %, expected market return 10 %.",
@@ -151,7 +151,7 @@ export const SETS = [
     cards: [
       [
         "Quelles sont les 3 étapes du portfolio management process ?",
-        "==Planning== · ==Execution== · ==Feedback==\nEn clair : Planning : client, IPS (investment policy statement), benchmark. Execution : asset allocation (top-down) puis security selection (bottom-up). Feedback : monitoring, rebalancing, performance.",
+        "Planning : ==analyser le client, écrire l'IPS== · Execution : ==asset allocation, puis security selection== · Feedback : ==monitoring, rebalancing, mesure de performance==\nEn clair : L'IPS (investment policy statement) fixe objectives, constraints et benchmark. L'asset allocation se fait top-down, la security selection bottom-up.",
       ],
       [
         "Quels investisseurs ont une risk tolerance faible et des liquidity needs élevés : banks, insurance companies, endowments, foundations ou DB (defined benefit) pension plans ?",
@@ -159,7 +159,7 @@ export const SETS = [
       ],
       [
         "Defined benefit plan vs defined contribution plan : qui supporte l'investment risk ?",
-        "DC : ==l'employé== porte le risque · DB : ==l'employeur== porte le risque\nEn clair : Un DC (defined contribution) plan fixe seulement la cotisation. Un DB (defined benefit) plan promet une rente (2 % × 20 ans × salaire final 100 000 = 40 000 par an) que l'employeur doit financer.",
+        "DB : ==rente fixée d'avance== → risque pour l'employeur · DC : ==cotisation fixée, rente incertaine== → risque pour l'employé\nEn clair : Un DB (defined benefit) plan promet par ex. 2 % × 20 ans × salaire final 100 000 = 40 000 par an. Dans un DC (defined contribution) plan, la rente dépend des placements.",
       ],
       [
         "Active management vs passive management : quel objectif pour chacune ?",
@@ -167,15 +167,15 @@ export const SETS = [
       ],
       [
         "Asset management industry : qu'est-ce qu'un full-service, un specialist et un multi-boutique asset manager ?",
-        "Full-service : ==toutes asset classes== · Specialist : ==une seule spécialité== · Multi-boutique : ==holding de specialists==\nEn clair : Tous sont buy-side, à l'inverse des broker-dealers (sell-side). Le big data rend l'IT coûteuse ; les robo-advisors abaissent les barrières à l'entrée.\nPiège : Plusieurs filiales spécialisées = multi-boutique.",
+        "Full-service : ==nombreux styles et asset classes== · Specialist : ==un seul style ou une asset class== · Multi-boutique : ==holding de plusieurs specialists==\nEn clair : Tous sont buy-side, à l'inverse des broker-dealers (sell-side). Le big data rend l'IT coûteuse ; les robo-advisors abaissent les barrières à l'entrée.\nPiège : Plusieurs filiales spécialisées = multi-boutique.",
       ],
       [
         "Open-end fund, closed-end fund, ETF (exchange-traded fund) : à quel prix s'échangent les parts par rapport au NAV (net asset value) ?",
-        "Open-end : ==au NAV== · Closed-end : ==cours ≠ NAV== · ETF : ==≈ NAV==\nEn clair : Un closed-end fund a un nombre fixe de parts, d'où un premium ou un discount. Un ETF cote en continu ; l'arbitrage creation/redemption tient son prix, short et marge possibles.\nPiège : ETF : brokerage costs ; open-end fund : aucun, on traite avec le fonds.",
+        "Open-end : ==parts créées et rachetées au NAV== · Closed-end : ==parts en nombre fixe, cotées== → cours ≠ NAV · ETF : ==coté en continu, arbitrage creation/redemption== → ≈ NAV\nEn clair : Un closed-end fund cote avec un premium ou un discount. Un ETF peut aussi se vendre à découvert ou s'acheter sur marge.\nPiège : ETF : brokerage costs ; open-end fund : aucun, on traite avec le fonds.",
       ],
       [
         "SMA (separately managed account), hedge fund, private equity / venture capital fund : en quoi diffèrent-ils d'un mutual fund ?",
-        "SMA : ==un seul investisseur== · Hedge fund : ==qualified investors== · PE/VC : ==co-gèrent les sociétés==\nEn clair : Un SMA, sur mesure, n'émet aucune part. Un hedge fund est peu réglementé (minimum 250 000 à 1 million USD) ; PE (private equity) et VC (venture capital) aident à gérer, puis revendent les sociétés.",
+        "SMA : ==portefeuille géré pour un seul investisseur== · Hedge fund : ==peu régulé, réservé aux qualified investors== · PE/VC : ==achètent des sociétés, aident à les gérer==\nEn clair : Un SMA n'émet aucune part. Un hedge fund exige 250 000 à 1 million USD minimum. PE (private equity) et VC (venture capital) revendent ensuite les sociétés.",
       ],
       [
         "Qu'est-ce que l'IPS (investment policy statement), et que contient-il ?",
@@ -187,11 +187,11 @@ export const SETS = [
       ],
       [
         "Ability vs willingness to take risk : d'où vient chacune, et que retenir si elles divergent ?",
-        "Ability : ==capacité financière== · Willingness : ==psychologie== · Divergence : ==retenir la plus faible==\nEn clair : L'ability (capacity) dépend de l'horizon, de la richesse face aux besoins et de la stabilité du revenu. Si la willingness est trop basse, le conseiller peut éduquer le client.",
+        "Ability : ==ce que ses finances permettent de risquer== · Willingness : ==le risque accepté psychologiquement== · Divergence : ==retenir la plus faible==\nEn clair : L'ability (capacity) dépend de l'horizon, de la richesse face aux besoins et de la stabilité du revenu. Si la willingness est trop basse, le conseiller peut éduquer le client.",
       ],
       [
         "Quelles sont les 5 investment constraints d'un IPS (investment policy statement) ?",
-        "==Time horizon== · ==Tax== · ==Liquidity== · ==Legal and regulatory== · ==Unique circumstances==\nEn clair : Mnémo RRTTLLU : Risk et Return sont les objectives, les 5 autres les constraints. Unique : refus du tabac. Legal : dirigeant bridé sur les titres de sa firme.\nPiège : La risk tolerance est un objective, pas une constraint.",
+        "Time horizon : ==durée du placement== · Tax : ==impôts sur revenus et gains== · Liquidity : ==besoins de cash== · Legal and regulatory : ==règles imposées de l'extérieur== · Unique circumstances : ==préférences propres, ex. pas de tabac==\nEn clair : Mnémo RRTTLLU : Risk et Return sont les objectives, les 5 autres les constraints.\nPiège : La risk tolerance est un objective, pas une constraint.",
       ],
       [
         "Pour une asset allocation, comment définir les asset classes en termes de correlations ?",
@@ -199,15 +199,15 @@ export const SETS = [
       ],
       [
         "Strategic asset allocation (SAA) vs tactical asset allocation (TAA) vs security selection : quelle différence ?",
-        "SAA : ==cibles long terme== · TAA : ==écart court terme== · Security selection : ==choisir les titres==\nEn clair : La SAA fixe les poids par asset class à partir de l'IPS (investment policy statement). Exemple de TAA : actions de 40 % à 35 % car chères ; TAA et security selection ajoutent de l'active risk.",
+        "SAA : ==poids cibles de long terme== · TAA : ==écart de court terme à la SAA== · Security selection : ==choix des titres dans chaque classe==\nEn clair : La SAA découle de l'IPS (investment policy statement). Exemple de TAA : actions de 40 % à 35 % car chères ; TAA et security selection ajoutent de l'active risk.",
       ],
       [
         "Qu'est-ce que l'approche core-satellite, et quels problèmes de l'active management règle-t-elle ?",
-        "Core : ==indexé (passive)== · Satellites : ==stratégies actives== · Gain : ==moins de paris annulés==\nEn clair : La majorité du portefeuille (core) est indexée, une petite part (satellites) est gérée activement. Plusieurs gérants actifs ne s'annulent plus entre eux ; trading et impôts baissent.",
+        "Core : ==la majeure partie, indexée (passive)== · Satellites : ==petites poches en gestion active== · Gain : ==moins de paris actifs qui s'annulent==\nEn clair : Les paris de plusieurs gérants actifs ne s'annulent plus entre eux. Le trading et les impôts baissent aussi.",
       ],
       [
         "Quelles sont les approches pour intégrer l'ESG (environmental, social, governance) dans un portefeuille ?",
-        "==Negative== screening · ==Positive== screening · ==Thematic, impact== · ==Engagement== · ==ESG integration==\nEn clair : On exclut des secteurs, choisit les best-in-class, vise un thème ou un impact, vote (active ownership) ou intègre l'ESG partout.\nPiège : Negative screening : benchmark = indice qui exclut les mêmes entreprises.",
+        "Negative screening : ==exclure des secteurs== · Positive screening : ==choisir les meilleures pratiques ESG== · Thematic/impact : ==viser un objectif ESG précis== · Engagement : ==voter pour améliorer l'ESG== · ESG integration : ==ESG dans toute l'analyse==\nEn clair : L'engagement s'appelle aussi active ownership.\nPiège : Negative screening : benchmark = indice qui exclut les mêmes entreprises.",
       ],
     ],
   },
@@ -220,27 +220,27 @@ export const SETS = [
       ],
       [
         "Quels sont les 5 belief perseverance biases (cognitive errors) ?",
-        "==Conservatism== · ==Confirmation== · ==Representativeness== · ==Illusion of control== · ==Hindsight==\nEn clair : Conservatism : réviser trop peu. Confirmation : chercher ce qui confirme. Representativeness : juger par ressemblance. Hindsight : « je le savais ».\nPiège : Base-rate et sample-size neglect = representativeness.",
+        "Conservatism : ==sous-réagir aux infos nouvelles== · Confirmation : ==chercher ce qui confirme son avis== · Representativeness : ==juger par ressemblance== · Illusion of control : ==se croire maître du résultat== · Hindsight : ==« je le savais » après coup==\nEn clair : Ce sont des cognitive errors : on s'accroche à ses croyances.\nPiège : Base-rate et sample-size neglect = representativeness.",
       ],
       [
         "Quels sont les 4 information-processing biases (cognitive errors) ?",
-        "==Anchoring== · ==Mental accounting== · ==Framing== · ==Availability==\nEn clair : Anchoring : coller au chiffre de départ. Mental accounting : traiter l'argent selon sa source. Framing : la présentation change le choix. Availability : croire probable ce qui vient vite à l'esprit.",
+        "Anchoring : ==rester collé au chiffre de départ== · Mental accounting : ==traiter l'argent selon sa source== · Framing : ==la présentation change la décision== · Availability : ==juger probable ce qui vient à l'esprit==\nEn clair : Exemple de mental accounting : miser une prime surprise sur une biotech risquée.",
       ],
       [
         "Quels sont les 6 emotional biases ?",
-        "==Loss aversion== · ==Overconfidence== · ==Self-control== · ==Status quo, endowment== · ==Regret aversion==\nEn clair : Overconfidence : se surestimer. Self-control : préférer le présent. Status quo, endowment, regret aversion : ne rien changer, surévaluer ce qu'on a, fuir le regret.\nPiège : L'overconfidence, mi-cognitive, est classée emotional.",
+        "Loss aversion : ==pertes pèsent plus que gains== · Overconfidence : ==surestimer son jugement== · Self-control : ==le présent avant le long terme== · Status quo, endowment : ==garder, surévaluer ce qu'on a== · Regret aversion : ==inaction par peur de se tromper==\nEn clair : Venus des sentiments, ils se corrigent mal : on s'y adapte.\nPiège : L'overconfidence, mi-cognitive, est classée emotional.",
       ],
       [
         "Loss aversion vs risk aversion : quelle différence, et que fait un investisseur loss-averse face à une perte ?",
-        "Risk aversion : ==le moins risqué== · Loss aversion : ==pertes plus douloureuses== · Réflexe : ==garder ses perdants==\nEn clair : Le risk-averse choisit, à rendement égal, le moins risqué. Le loss-averse prend du risque pour ne pas réaliser sa perte : il garde ses perdants et vend ses gagnants trop tôt.",
+        "Risk-averse : ==préfère le moins risqué à rendement égal== · Loss-averse : ==une perte pèse plus qu'un gain== · Réflexe : ==garder ses perdants==\nEn clair : Le loss-averse prend du risque pour ne pas réaliser sa perte : il garde ses perdants et vend ses gagnants trop tôt.",
       ],
       [
         "À quels biais la behavioral finance associe-t-elle les bubbles et les crashes ?",
-        "==Overconfidence== · ==Confirmation== · ==Anchoring== · ==Regret aversion==\nEn clair : Overconfidence (aidée par self-attribution, hindsight) : overtrading. Confirmation : ignorer les signaux de baisse. Anchoring : croire rationnels les sommets récents. Regret aversion : rester investi.",
+        "Overconfidence : ==overtrading, risque sous-estimé== · Confirmation : ==ignorer les signaux de baisse== · Anchoring : ==croire rationnels les sommets récents== · Regret aversion : ==rester investi malgré ses doutes==\nEn clair : Self-attribution et hindsight bias nourrissent l'overconfidence. Ces biais accompagnent les bubbles sans les expliquer entièrement.",
       ],
       [
         "Comment explique-t-on la value vs growth anomaly et le home bias ?",
-        "Value/growth : ==risque ou halo effect== · Home bias : ==familiarité==\nEn clair : Risque : les facteurs size et book-to-market de Fama-French expliquent la value premium. Halo effect (representativeness) : on surpaie les growth stocks. Home bias : on surpondère son pays.",
+        "Value/growth : ==value > growth, par risque ou halo effect== · Home bias : ==surpondérer son pays, par familiarité==\nEn clair : Version risque : les facteurs size et book-to-market de Fama-French expliquent la value premium. Version halo effect (representativeness) : on surpaie les growth stocks.",
       ],
       [
         "Le but du risk management est-il de minimiser le risque, et que couvre un risk management framework ?",
@@ -256,7 +256,7 @@ export const SETS = [
       ],
       [
         "Financial risks vs non-financial risks : lesquels sont lesquels ?",
-        "Financial : ==market, credit, liquidity== · Non-financial : ==operational, solvency, model, legal…==\nEn clair : Les deux types interagissent : un hedge par options crée un credit risk, puis legal, liquidity et solvency risk. Individus : mortality risk → life insurance, longevity risk → annuity.\nPiège : Solvency et settlement risk sont non-financial.",
+        "Financial : ==issus des marchés== (market, credit, liquidity) · Non-financial : ==opérations et sources externes== (operational, model, legal…)\nEn clair : Les deux types interagissent : un hedge par options crée un credit risk. Individus : mortality risk → life insurance, longevity risk → annuity.\nPiège : Solvency et settlement risk sont non-financial.",
       ],
       [
         "Quelle mesure de risque pour un actif seul, une action en portefeuille diversifié, une obligation et un derivative ?",
@@ -264,15 +264,15 @@ export const SETS = [
       ],
       [
         "VaR (value at risk) mensuelle de 1 million à 5 % : que signifie-t-elle, et que mesure la CVaR (conditional VaR) ?",
-        "VaR : ==perte minimale==, pas maximale · CVaR : ==moyenne des pertes au-delà==\nEn clair : Une perte d'au moins 1 million arrive 5 % des mois. La CVaR (conditional VaR) est la perte moyenne quand la perte dépasse 1 million ; le résultat dépend beaucoup du modèle.",
+        "VaR : ==perte minimale des 5 % pires cas== · CVaR : ==perte moyenne au-delà de la VaR==\nEn clair : Ici, une perte d'au moins 1 million arrive 5 % des mois : ce n'est pas la perte maximale. La CVaR est la perte moyenne quand elle dépasse 1 million.",
       ],
       [
         "Stress testing vs scenario analysis : quelle différence ?",
-        "Stress testing : ==une variable extrême== · Scenario analysis : ==plusieurs variables ensemble==\nEn clair : Un stress test choque une variable clé (taux, change) ; une scenario analysis change plusieurs variables à la fois (taux + pétrole + change). Les deux complètent la VaR (value at risk).",
+        "Stress testing : ==choc extrême sur une variable clé== · Scenario analysis : ==what-if sur plusieurs variables ensemble==\nEn clair : Ex. : un stress test choque les taux ou le change ; une scenario analysis combine taux, pétrole et change. Les deux complètent la VaR (value at risk).",
       ],
       [
         "Quelles sont les 4 façons de modifier une exposition au risque, et quelle différence entre risk transfer et risk shifting ?",
-        "==Avoid== · ==Accept== · ==Transfer (insurance)== · ==Shift (derivatives)==\nEn clair : Le transfer confie le risque à un tiers (insurance, surety ou fidelity bond). Le shifting change la distribution des résultats (put = plancher). Accept = self-insurance.\nPiège : Insurance = transfer ; derivatives = shifting, pas l'inverse.",
+        "Avoid : ==ne pas faire l'activité risquée== · Accept : ==garder le risque (self-insurance)== · Transfer : ==un tiers prend le risque (insurance)== · Shift : ==changer la distribution des résultats (derivatives)==\nEn clair : Autres transfers : surety bond, fidelity bond. Un put (shift) met un plancher aux pertes.\nPiège : Insurance = transfer ; derivatives = shifting, pas l'inverse.",
       ],
     ],
   },

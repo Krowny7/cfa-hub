@@ -26,7 +26,7 @@ export const SETS = [
       ],
       [
         "Broker, dealer, arbitrageur : qui met en relation quels acheteurs et vendeurs d'un même titre ?",
-        "Broker : ==même moment== · Dealer : ==moments différents== · Arbitrageur : ==marchés différents==\nEn clair : Le dealer achète pour son inventaire et revend plus tard (bid-ask spread). L'arbitrageur achète sur un marché et revend aussitôt sur un autre.\nPiège : acheter et revendre aussitôt ailleurs, c'est l'arbitrageur.",
+        "Broker : ==trouve la contrepartie, sans stock== · Dealer : ==achète pour son stock, revend plus tard== · Arbitrageur : ==achète ici, revend aussitôt ailleurs==\nEn clair : Le broker relie acheteur et vendeur au même moment. Le dealer, à des moments différents (bid-ask spread). L'arbitrageur, sur deux marchés.\nPiège : revendre aussitôt ailleurs, c'est l'arbitrageur.",
       ],
       [
         "Primary market vs secondary market : quelle différence ?",
@@ -34,19 +34,19 @@ export const SETS = [
       ],
       [
         "Underwritten offering vs best efforts offering : qui supporte le risque d'invendus ?",
-        "Underwritten : risque pour ==l'investment bank== · Best efforts : risque pour ==l'émetteur==\nEn clair : En underwritten offering, la banque achète toute l'émission à un prix négocié. En best efforts, elle vend au mieux, sans garantie, comme un broker.\nPiège : la banque préfère un prix bas : IPO (initial public offering) souvent underpriced.",
+        "Underwritten : ==banque achète toute l'émission== → risque banque · Best efforts : ==banque vend au mieux== → risque émetteur\nEn clair : En underwritten offering, l'investment bank achète à un prix négocié et garde les invendus. En best efforts, elle agit comme un broker, sans garantie.\nPiège : la banque préfère un prix bas : IPO (initial public offering) souvent underpriced.",
       ],
       [
         "Quote-driven, order-driven, brokered market : comment la transaction se forme-t-elle dans chacun ?",
-        "Quote-driven : ==face à un dealer== · Order-driven : ==order matching rules== · Brokered : ==broker trouve la contrepartie==\nEn clair : En order-driven market, priorité au prix, puis aux ordres affichés, puis à l'ancienneté. Le brokered market sert aux blocs et à l'immobilier.\nPiège : call market = séances fixes à prix unique ; continuous = toute la séance.",
+        "Quote-driven : ==on trade contre un dealer== · Order-driven : ==des règles apparient achats et ventes== · Brokered : ==un broker trouve la contrepartie==\nEn clair : En order-driven market, priorité au prix, puis aux ordres affichés, puis à l'ancienneté. Le brokered market sert aux blocs et à l'immobilier.\nPiège : call market = séances fixes à prix unique ; continuous = toute la séance.",
       ],
       [
         "Operational, informational, allocational efficiency : que signifie chacune pour un financial system ?",
-        "Operational : ==coûts bas== · Informational : ==prix à jour== · Allocational : ==capital au meilleur usage==\nEn clair : En informational efficiency, les prix intègrent vite l'info. Un bon financial system a aussi des complete markets (les actifs utiles existent).\nPiège : « low transaction costs » ⇒ operational, pas informational efficiency.",
+        "Operational : ==coûts de transaction bas== · Informational : ==prix reflètent vite l'info== · Allocational : ==capital à son usage le plus productif==\nEn clair : L'informational efficiency entraîne l'allocational efficiency. Un bon financial system a aussi des complete markets (les actifs utiles existent).\nPiège : « low transaction costs » ⇒ operational, pas informational efficiency.",
       ],
       [
         "Quels sont les objectifs de la market regulation (régulation des marchés financiers) ?",
-        "Protéger les ==investisseurs peu avertis== · ==Competency standards== · Contrer les ==insiders== · ==Common financial reporting== · ==Minimum capital==\nEn clair : Le but de la market regulation est de préserver la confiance dans les marchés, donc leur liquidité.\nPiège : ni éduquer les investisseurs, ni limiter leur downside risk.",
+        "Protéger les ==investisseurs peu avertis== · Imposer des ==competency standards== · Empêcher les ==insiders== d'exploiter les autres · Imposer un ==common financial reporting== · Exiger un ==minimum capital==\nEn clair : Le but de la market regulation est de préserver la confiance dans les marchés, donc leur liquidité.\nPiège : ni éduquer les investisseurs, ni limiter leur downside risk.",
       ],
       [
         "Acheteur d'un put, writer (vendeur) d'un put : qui est long l'option, et quelle exposure chacun a-t-il au prix du sous-jacent ?",
@@ -54,7 +54,7 @@ export const SETS = [
       ],
       [
         "Short sale : comment se déroule-t-elle, et que doit verser le short seller au prêteur du titre ?",
-        "Déroulé : ==emprunter, vendre, racheter== · Au prêteur : ==les payments-in-lieu==\nEn clair : Les payments-in-lieu remplacent les dividendes ou coupons du titre emprunté. Le produit de la vente reste en collateral chez le broker, rémunéré au short rebate rate.\nPiège : titre dur à emprunter ⇒ short rebate rate bas, voire négatif.",
+        "Déroulé : ==emprunter, vendre, racheter== · Au prêteur : ==dividendes et coupons du titre (payments-in-lieu)==\nEn clair : Le produit de la vente reste en collateral chez le broker, rémunéré au short rebate rate. Le short seller gagne si le cours baisse.\nPiège : titre dur à emprunter ⇒ short rebate rate bas, voire négatif.",
       ],
       [
         "Formule du leverage ratio d'un margin purchase (achat sur marge) ? Application : initial margin 40 %, titre en hausse de 10 %.",
@@ -70,7 +70,7 @@ export const SETS = [
       ],
       [
         "Quels sont les 3 types d'instructions d'un ordre de bourse ?",
-        "Execution : ==comment trader== · Validity : ==quand l'ordre vaut== · Clearing : ==comment régler==\nEn clair : Execution : market (prix incertain), limit (exécution incertaine), iceberg. Validity : day, GTC (good-till-cancelled), IOC (immediate-or-cancel = fill-or-kill), on-close, stop.\nPiège : « GTC limit buy » : GTC = validity, limit = execution.",
+        "Execution : ==comment trader== · Validity : ==quand l'ordre peut s'exécuter== · Clearing : ==comment régler le trade==\nEn clair : Execution : market (prix incertain), limit (exécution incertaine), iceberg. Validity : day, GTC (good-till-cancelled), IOC (immediate-or-cancel = fill-or-kill), on-close, stop.\nPiège : « GTC limit buy » : GTC = validity, limit = execution.",
       ],
       [
         "Pour une limit buy order, que signifient marketable, inside the market, makes the market et behind the market ?",
@@ -78,7 +78,7 @@ export const SETS = [
       ],
       [
         "Stop-sell order et stop-buy order : où les place-t-on, et que se passe-t-il quand le stop est touché ?",
-        "Stop-sell : ==sous le cours== · Stop-buy : ==au-dessus du cours== · Stop touché : ==market order lancé==\nEn clair : Les stop orders vendent quand le cours baisse, achètent quand il monte : ils amplifient le momentum. Un stop-buy protège une short position.\nPiège : le prix d'exécution n'est pas garanti, il peut être bien pire.",
+        "Stop-sell : ==sous le cours, vend à la baisse== · Stop-buy : ==au-dessus du cours, achète à la hausse== · Stop touché : ==l'ordre devient un market order==\nEn clair : Les stop orders amplifient le momentum du marché. Un stop-sell protège une long position, un stop-buy une short position.\nPiège : le prix d'exécution n'est pas garanti, il peut être bien pire.",
       ],
     ],
   },
@@ -111,7 +111,7 @@ export const SETS = [
       ],
       [
         "À quoi sert un security market index ?",
-        "==Sentiment== · ==Rendement du marché== · ==Benchmark== · Estimation du ==beta== · ==Index funds==\nEn clair : Dans le CAPM (capital asset pricing model), l'indice sert de proxy du marché. Un bon benchmark a le même style que le gérant (ex. small-cap value).",
+        "Jauger le ==sentiment du marché== · Mesurer ==rendement et risque du marché== · Servir de ==benchmark== aux gérants · Estimer le ==beta== d'une action · Modèle des ==index funds==\nEn clair : Dans le CAPM (capital asset pricing model), l'indice sert de proxy du marché. Un bon benchmark a le même style que le gérant (ex. small-cap value).",
       ],
       [
         "Pourquoi un bond index est-il plus difficile et plus cher à répliquer qu'un equity index ?",
@@ -123,11 +123,11 @@ export const SETS = [
       ],
       [
         "Weak, semi-strong, strong form de l'EMH (efficient market hypothesis) : quelle information est déjà dans les prix ?",
-        "Weak : ==prix passés== · Semi-strong : ==info publique== · Strong : ==publique et privée==\nEn clair : La weak form couvre prix et volumes passés. Les marchés développés sont en général semi-strong efficient ; la strong form est rejetée.\nPiège : semi-strong implique weak, mais weak n'implique pas semi-strong.",
+        "Weak : ==prix intègrent prix et volumes passés== · Semi-strong : ==prix intègrent toute l'info publique== · Strong : ==prix intègrent info publique et privée==\nEn clair : Les marchés développés sont en général semi-strong efficient. La strong form est rejetée : l'info privée (insiders) rapporte encore.\nPiège : semi-strong implique weak, mais weak n'implique pas semi-strong.",
       ],
       [
         "Quelle analyse ne rapporte plus d'abnormal returns dans un marché weak, semi-strong ou strong form efficient ?",
-        "Weak : ==technical analysis== · Semi-strong : aussi ==fundamental== · Strong : même ==l'info privée==\nEn clair : La fundamental analysis reste nécessaire : c'est elle qui rend les prix efficients. Le gérant reste utile : objectifs, diversification, allocation, fiscalité.",
+        "Weak : ==technical analysis ne paie plus== · Semi-strong : ==fundamental analysis ne paie plus== · Strong : ==même l'info privée ne paie plus==\nEn clair : Chaque forme englobe les plus faibles. La fundamental analysis reste nécessaire : c'est elle qui rend les prix efficients. Le gérant reste utile (diversification, fiscalité).",
       ],
       [
         "Qu'est-ce qui rend un marché financier moins efficient ?",
@@ -135,7 +135,7 @@ export const SETS = [
       ],
       [
         "Momentum effect, overreaction effect, value effect : quelle forme de l'EMH (efficient market hypothesis) chaque anomalie contredit-elle ?",
-        "Momentum, overreaction : ==weak form== · Value effect : ==semi-strong form==\nEn clair : Momentum et overreaction n'utilisent que les prix passés. Le value effect (P/E bas, P/E = price-to-earnings) repose sur des données publiques. Overreaction : les perdants sur 3 à 5 ans rebondissent.",
+        "Momentum : ==gagnants récents restent gagnants== → weak form · Overreaction : ==perdants sur 3-5 ans rebondissent== → weak form · Value effect : ==titres à P/E bas surperforment== → semi-strong\nEn clair : Momentum et overreaction n'utilisent que les prix passés. Le value effect repose sur des données publiques (P/E = price-to-earnings).",
       ],
       [
         "Les market anomalies (January effect, size effect, décote des closed-end funds…) prouvent-elles que les marchés sont inefficients ?",
@@ -143,7 +143,7 @@ export const SETS = [
       ],
       [
         "Loss aversion, overconfidence, herding, information cascade : que décrit chacun de ces biais de la behavioral finance ?",
-        "Loss aversion : ==perte > gain== · Overconfidence : ==se surestimer== · Herding : ==imiter== · Information cascade : ==suivre les informés==\nEn clair : La loss aversion fait peser une perte plus qu'un gain égal. Autres biais : conservatism (réaction lente), mental accounting, narrow framing.\nPiège : biais ≠ inefficience, sauf abnormal returns durables.",
+        "Loss aversion : ==une perte pèse plus qu'un gain== · Overconfidence : ==surestimer sa capacité d'analyse== · Herding : ==imiter les autres, sans analyse propre== · Information cascade : ==copier les traders mieux informés==\nEn clair : Le conservatism (réaction lente), le mental accounting et le narrow framing sont d'autres biais.\nPiège : biais ≠ inefficience, sauf abnormal returns durables.",
       ],
     ],
   },
@@ -160,11 +160,11 @@ export const SETS = [
       ],
       [
         "Venture capital, LBO (leveraged buyout), PIPE (private investment in public equity) : que finance chacun de ces types de private equity ?",
-        "Venture capital : ==firmes jeunes== · LBO : ==rachat par la dette== · PIPE : ==fonds privés, firme cotée==\nEn clair : Un LBO rachète une firme surtout par la dette (MBO, management buyout, si ce sont ses managers). Le private equity est illiquide.\nPiège : le mezzanine financing, juste avant l'entrée en bourse, reste du venture capital.",
+        "Venture capital : ==finance des firmes jeunes, non cotées== · LBO : ==rachète une firme surtout par dette== · PIPE : ==firme cotée lève des fonds en privé==\nEn clair : Un LBO mené par les managers de la firme est un MBO (management buyout). Le private equity est illiquide.\nPiège : le mezzanine financing, juste avant l'entrée en bourse, reste du venture capital.",
       ],
       [
         "Depository receipts (DR) : que sont un sponsored DR, un GDR, un ADR et un BLDR ?",
-        "Sponsored : ==l'investisseur vote== · GDR : ==hors US, en USD== · ADR : ==coté aux US== · BLDR : ==ETF de DR==\nEn clair : Un GDR (global DR) est émis hors US et hors du pays de l'émetteur (Londres). ADR = American DR, BLDR = basket of listed DRs, ETF = exchange-traded fund.\nPiège : unsponsored DR : c'est la banque dépositaire qui vote.",
+        "Sponsored DR : ==émetteur impliqué, l'investisseur vote== · GDR : ==émis hors US et hors pays d'origine== · ADR : ==en USD, coté aux US== · BLDR : ==ETF d'un panier de DRs==\nEn clair : GDR = global DR, surtout coté à Londres, souvent en USD. ADR = American DR, BLDR = basket of listed DRs, ETF = exchange-traded fund.\nPiège : unsponsored DR : c'est la banque dépositaire qui vote.",
       ],
       [
         "Formule du ROE (return on equity) d'une firme ?",
@@ -184,7 +184,7 @@ export const SETS = [
       ],
       [
         "Top-down vs bottom-up : comment prévoir le Revenue d'une entreprise ?",
-        "Top-down : ==marché × market share== · Bottom-up : ==prix × volumes==\nEn clair : Le top-down part du macro : marché 500 × market share 6 % = Revenue 30. Le bottom-up part de la firme (segments, magasins). Autre approche : converger vers la base rate du secteur.\nPiège : partir du GDP (gross domestic product) growth, c'est du top-down.",
+        "Top-down : ==part du macro (marché × market share)== · Bottom-up : ==part de la firme (prix × volumes)==\nEn clair : Ex. top-down : marché 500 × market share 6 % = Revenue 30. Le bottom-up s'appuie sur les segments ou les magasins. Autre approche : converger vers la base rate du secteur.\nPiège : partir du GDP (gross domestic product) growth, c'est du top-down.",
       ],
       [
         "Dans une prévision, comment modélise-t-on COGS (cost of goods sold), SG&A, accounts receivable et maintenance capex (capital expenditures) ?",
@@ -204,7 +204,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 3 competitive strategies de Porter ?",
-        "Cost leadership : ==coûts minimaux== · Differentiation : ==produit distinctif== · Focus : ==une niche==\nEn clair : La cost leadership vise des prix bas et de gros volumes. Le focus vise une niche, par les coûts ou par la differentiation.\nPiège : la differentiation ne paie que si son coût reste inférieur à la price premium.",
+        "Cost leadership : ==coûts les plus bas du secteur== · Differentiation : ==produit distinctif (type, qualité, livraison)== · Focus : ==cibler une niche de marché==\nEn clair : La cost leadership vise des prix bas et de gros volumes. Le focus peut jouer sur les coûts ou sur la differentiation.\nPiège : la differentiation ne paie que si son coût reste inférieur à la price premium.",
       ],
       [
         "Que recouvre une analyse PESTLE d'un secteur ?",
@@ -217,7 +217,7 @@ export const SETS = [
     cards: [
       [
         "Quelles sont les 3 familles de equity valuation models ?",
-        "==Present value== models · ==Multiplier== models · ==Asset-based== models\nEn clair : Les present value models actualisent dividendes ou FCFE (free cash flow to equity). Les multiplier models rapportent le prix à earnings, book value ou sales (P/E, P/B, P/S).\nPiège : intrinsic value > cours ⇒ undervalued, mais n'agir que si l'écart est grand.",
+        "Present value models : ==actualisent les cash flows futurs== · Multiplier models : ==prix rapporté à earnings, book, sales== · Asset-based models : ==fair value des assets − liabilities==\nEn clair : Les present value models actualisent dividendes ou FCFE (free cash flow to equity) au required return.\nPiège : intrinsic value > cours ⇒ undervalued, mais n'agir que si l'écart est grand.",
       ],
       [
         "Qu'est-ce que l'ex-dividend date ?",

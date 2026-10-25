@@ -68,7 +68,7 @@ export const SETS = [
       ],
       [
         "Cournot model vs Stackelberg model d'un oligopoly : quelle hypothèse et quel résultat pour chacun ?",
-        "Cournot : ==choix simultanés==, parts égales · Stackelberg : ==choix séquentiels==, leader avantagé\nEn clair : Avec Cournot, chaque firme décide en supposant que l'autre ne change rien ; le prix est entre monopoly et perfect competition. Avec Stackelberg, le leader choisit d'abord, le follower s'adapte.",
+        "Cournot : ==décisions simultanées, rival supposé inchangé== → parts égales · Stackelberg : ==le leader décide, puis le follower s'adapte==\nEn clair : Avec Cournot, le prix d'équilibre est entre monopoly et perfect competition. Avec Stackelberg, le leader capte la plus grosse part des profits.",
       ],
       [
         "Que décrit le dominant firm model d'un oligopoly ?",
@@ -97,7 +97,7 @@ export const SETS = [
       ],
       [
         "Classical cycle, growth cycle, growth rate cycle : que mesure chacun ?",
-        "Classical : ==niveau du real GDP== · Growth : ==écart au potential GDP== · Growth rate : ==taux de croissance==\nEn clair : Le growth rate cycle (croissance d'une période à l'autre) est le préféré : il montre les peaks et troughs plus tôt. Le potential GDP (gross domestic product) est la tendance de long terme.",
+        "Classical : ==hausses et baisses du real GDP== · Growth : ==écart du real GDP au potential GDP== · Growth rate : ==accélération ou ralentissement du real GDP==\nEn clair : Le growth rate cycle est le préféré : il montre les peaks et troughs plus tôt. Le potential GDP (gross domestic product) est la tendance de long terme.",
       ],
       [
         "Qu'est-ce qu'un credit cycle, et quel effet a-t-il sur le business cycle ?",
@@ -113,11 +113,11 @@ export const SETS = [
       ],
       [
         "Comment les dépenses des ménages (durable goods, services, nondurable goods, logement) réagissent-elles au business cycle ?",
-        "Durable goods : ==très cycliques== · Services : ==assez cycliques== · Nondurable goods : ==stables== · Housing : ==fortes variations==\nEn clair : Voitures et meubles se reportent en contraction. Le housing dépend des mortgage rates, du prix des logements / revenu, de la spéculation et de la part des 25–40 ans.",
+        "Durable goods (voitures, meubles) : ==très cycliques, achats reportables== · Services : ==moins cycliques que durable goods== · Nondurable goods (alimentation) : ==stables, achats courants== · Housing : ==fortes variations==\nEn clair : En contraction, on reporte les achats coûteux. Le housing suit les mortgage rates, le prix des logements / revenu et la démographie.",
       ],
       [
         "Leading, coincident, lagging indicators : quand tourne chacun par rapport au business cycle ? Donne un exemple de chaque.",
-        "Leading : ==avant==, ex. building permits · Coincident : ==pendant==, ex. industrial production · Lagging : ==après==, ex. inventory-to-sales ratio\nEn clair : D'autres leading indicators : initial jobless claims, consumer expectations, S&P 500. Les payrolls sont coincident ; la duration of unemployment est lagging.",
+        "Leading : ==tourne avant le cycle==, ex. building permits · Coincident : ==tourne avec le cycle==, ex. industrial production · Lagging : ==tourne après le cycle==, ex. inventory-to-sales ratio\nEn clair : D'autres leading indicators : initial jobless claims, S&P 500. Les payrolls sont coincident ; la duration of unemployment est lagging.",
       ],
       [
         "Quels sont les 3 rôles de la fiscal policy ?",
@@ -129,7 +129,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 4 qualités d'une bonne tax policy ?",
-        "Simplicity : ==facile à payer== · Efficiency : ==peu de distorsion== · Fairness : ==équitable== · Sufficiency : ==recettes suffisantes==\nEn clair : La fairness combine horizontal equality (même situation, même impôt) et vertical equality (les plus riches paient plus). L'efficiency consiste à ne pas décourager le travail.",
+        "Simplicity : ==facile à payer et à contrôler== · Efficiency : ==perturbe peu les forces du marché== · Fairness : ==chacun paie selon sa situation== · Sufficiency : ==assez de recettes pour les dépenses==\nEn clair : La fairness combine horizontal equality (même situation, même impôt) et vertical equality (les plus riches paient plus).",
       ],
       [
         "Formule du fiscal multiplier ? Application : MPC (marginal propensity to consume) 0,8, tax rate 25 %, hausse du government spending de 100.",
@@ -145,7 +145,7 @@ export const SETS = [
       ],
       [
         "Pourquoi la discretionary fiscal policy est-elle difficile à bien doser ?",
-        "Recognition lag : ==voir le problème== · Action lag : ==voter la mesure== · Impact lag : ==attendre l'effet==\nEn clair : À cause de ces délais, la relance arrive parfois trop tard. S'y ajoutent le crowding-out, les supply shortages, les multiple targets et un full employment mal mesuré.",
+        "Recognition lag : ==délai pour voir le problème== · Action lag : ==délai pour adopter la mesure== · Impact lag : ==délai avant l'effet sur l'économie==\nEn clair : À cause de ces délais, la relance arrive parfois trop tard. S'y ajoutent le crowding-out, les supply shortages, les multiple targets et un full employment mal mesuré.",
       ],
       [
         "Faut-il s'inquiéter d'un fiscal deficit élevé ? Donne les arguments pour et contre.",
@@ -158,7 +158,7 @@ export const SETS = [
     cards: [
       [
         "Quels sont les rôles d'une central bank ?",
-        "==Émettre la monnaie== · ==Lender of last resort== · ==Monetary policy== · ==Réserves de change== · ==Banker to the government and banks==\nEn clair : Elle supervise aussi le payments system. Prêter aux banques à court de liquidité évite les bank runs.\nPiège : elle ne collecte pas les impôts et ne finance pas les agences publiques.",
+        "==Émet la monnaie== · Lender of last resort : ==prête aux banques illiquides== · ==Mène la monetary policy== · ==Gère les réserves de change== · ==Banker to the government and banks==\nEn clair : Elle supervise aussi le payments system. Le lender of last resort évite les bank runs.\nPiège : elle ne collecte pas les impôts et ne finance pas les agences publiques.",
       ],
       [
         "Pourquoi les central banks visent-elles une inflation d'environ 2 % plutôt que 0 % ?",
@@ -166,7 +166,7 @@ export const SETS = [
       ],
       [
         "Pour une monetary policy expansionary, que fait la central bank de ses 3 outils ?",
-        "Policy rate : ==baisse== · Reserve requirements : ==baisse== · Open market operations : ==achats==\nEn clair : Acheter des titres injecte des reserves dans les banques. Le policy rate s'appelle discount rate à la Fed, refinancing rate à l'ECB (European Central Bank), two-week repo rate à la Bank of England.",
+        "Policy rate ↓ : ==les banques empruntent moins cher== · Reserve requirements ↓ : ==moins de dépôts gardés en réserve== · Open market operations : ==acheter des government bonds==\nEn clair : Acheter des titres injecte des reserves dans les banques. Le policy rate s'appelle discount rate à la Fed, refinancing rate à l'ECB (European Central Bank).",
       ],
       [
         "Que provoque une hausse du policy rate, via le monetary transmission mechanism ?",
@@ -186,7 +186,7 @@ export const SETS = [
       ],
       [
         "Pourquoi la monetary policy peut-elle ne pas produire l'effet voulu ?",
-        "Liquidity trap : ==cash gardé== · Banques : ==refusent de prêter== · Long-term rates : ==montent quand même== · Policy rate : ==bloqué à zéro==\nEn clair : En liquidity trap, on garde le cash quand la money supply monte. Les long-term rates montent si la baisse fait craindre l'inflation. À zéro, reste le QE (quantitative easing).",
+        "Liquidity trap : ==la monnaie injectée reste en cash== · Banques : ==refusent de prêter== · Long-term rates : ==montent quand même== · Policy rate : ==bloqué à zéro==\nEn clair : Les long-term rates montent si la baisse des taux fait craindre l'inflation. À zéro, reste le QE (quantitative easing).",
       ],
       [
         "Fiscal policy et monetary policy : quelle combinaison fait croître la part du secteur privé dans le GDP (gross domestic product), et laquelle celle du secteur public ?",
@@ -198,23 +198,23 @@ export const SETS = [
       ],
       [
         "Quels sont les 4 archétypes de pays selon cooperation vs non-cooperation et globalization vs nationalism ?",
-        "Multilateralism : ==cooperation + globalization== · Bilateralism : ==cooperation + nationalism== · Hegemony : ==non-cooperation + globalization== · Autarky : ==non-cooperation + nationalism==\nEn clair : Un pays en autarky vise l'autosuffisance. Un hegemon est ouvert et assez puissant pour peser sans coopérer.",
+        "Multilateralism : ==coopère avec beaucoup de pays== (cooperation + globalization) · Bilateralism : ==coopère pays par pays== (cooperation + nationalism) · Hegemony : ==puissant, influence sans coopérer== (non-cooperation + globalization) · Autarky : ==vise l'autosuffisance== (non-cooperation + nationalism)\nEn clair : En autarky, l'État contrôle souvent l'industrie et les médias.",
       ],
       [
         "IMF (International Monetary Fund), World Bank, WTO (World Trade Organization) : quel est le rôle de chacun ?",
-        "IMF : ==change, balance of payments== · World Bank : ==pauvreté== · WTO : ==règles du commerce==\nEn clair : L'IMF aide les pays en crise de balance of payments. La World Bank finance le développement. La WTO règle les différends commerciaux.\nPiège : l'IMF prête aussi, mais seule la World Bank vise la pauvreté.",
+        "IMF : ==veille à la stabilité des changes== · World Bank : ==finance le développement contre la pauvreté== · WTO : ==fixe les règles du commerce mondial==\nEn clair : L'IMF prête aux pays en crise de balance of payments. La WTO règle les différends commerciaux.\nPiège : l'IMF prête aussi, mais seule la World Bank vise la pauvreté.",
       ],
       [
         "Event risk, exogenous risk, thematic risk : comment se distinguent ces 3 types de geopolitical risk ?",
-        "Event : ==date connue== · Exogenous : ==imprévu== · Thematic : ==effets durables connus==\nEn clair : Exemples : une élection (event risk), une guerre (exogenous risk), les migrations ou le cyber risk (thematic risk).\nPiège : black swan = exogenous risk improbable, gros effet court terme ; à long horizon, ne pas réagir.",
+        "Event risk : ==date connue, issue inconnue, ex. élection== · Exogenous risk : ==événement imprévu, ex. guerre== · Thematic risk : ==facteur connu aux effets durables==\nEn clair : Exemples de thematic risk : les migrations, le cyber risk.\nPiège : black swan = exogenous risk improbable, gros effet court terme ; à long horizon, ne pas réagir.",
       ],
       [
         "Sur quels 3 critères un investisseur juge-t-il un geopolitical risk pour son portefeuille ?",
-        "Likelihood : ==probabilité== · Impact : ==ampleur sur les placements== · Velocity : ==vitesse de réaction==\nEn clair : On s'aide de scenario analysis et de signposts (signaux à surveiller). L'impact est plus fort quand l'économie est en récession.\nPiège : la velocity mesure la réaction des prix, pas la vitesse de l'événement.",
+        "Likelihood : ==probabilité que l'événement arrive== · Impact : ==ampleur de l'effet sur les placements== · Velocity : ==vitesse à laquelle les prix réagissent==\nEn clair : On s'aide de scenario analysis et de signposts (signaux à surveiller). L'impact est plus fort quand l'économie est en récession.",
       ],
       [
         "Quels sont les 3 types de tools of geopolitics, avec des exemples pour chacun ?",
-        "National security : ==armée, alliances== · Economic : ==commerce, unions== · Financial : ==capitaux, sanctions==\nEn clair : Coopératifs : alliances, FTA (free trade area), capitaux libres. Non coopératifs : conflit armé, VER (voluntary export restraint), nationalization.\nPiège : sanctions = financial tool, pas economic tool.",
+        "National security : ==conflit armé, espionnage, alliances== · Economic : ==accords commerciaux, VER, nationalization== · Financial : ==investissement étranger, change, sanctions==\nEn clair : Coopératifs : alliances, FTA (free trade area). Non coopératifs : conflit armé, VER (voluntary export restraint).\nPiège : sanctions = financial tool, pas economic tool.",
       ],
     ],
   },
@@ -227,7 +227,7 @@ export const SETS = [
       ],
       [
         "Tariff, import quota, VER (voluntary export restraint) : quels effets communs pour le pays importateur, et qui capte la rente ?",
-        "Tous : ==prix ↑, imports ↓== · Tariff : ==rente à l'État== · Quota : ==État si licences vendues== · VER : ==rente aux étrangers==\nEn clair : Les consommateurs perdent plus que ce que gagnent producteurs et État : c'est la deadweight loss. Un grand pays peut gagner avec un tariff ou un quota (world price ↓).\nPiège : un VER coûte plus qu'un tariff : la rente part à l'étranger.",
+        "Tous : ==prix ↑, imports ↓== · Tariff : ==taxe sur les imports== → rente à l'État · Quota : ==plafond d'imports== → État si licences vendues · VER : ==l'exportateur limite ses exports== → rente à l'étranger\nEn clair : Les consommateurs perdent plus que ne gagnent producteurs et État (deadweight loss). Un grand pays peut gagner avec un tariff ou un quota (world price ↓).",
       ],
       [
         "Quels sont les effets d'une export subsidy pour un petit pays exportateur, et pour un grand ?",
@@ -239,7 +239,7 @@ export const SETS = [
       ],
       [
         "Classe les trading blocs (regional trading agreements) du moins au plus intégré.",
-        "FTA : ==libre-échange== · Customs union : ==+ tarif commun== · Common market : ==+ travail, capital== · Economic union : ==+ institutions communes== · Monetary union : ==+ monnaie unique==\nEn clair : Les niveaux se cumulent (FTA = free trade area). Ex. : EU (European Union) = economic union, Eurozone = monetary union.",
+        "FTA : ==commerce libre entre membres== · Customs union : ==FTA + tarif extérieur commun== · Common market : ==customs union + travail et capital libres== · Economic union : ==common market + institutions communes== · Monetary union : ==economic union + monnaie unique==\nEn clair : FTA = free trade area. Ex. : EU (European Union) = economic union, Eurozone = monetary union.",
       ],
       [
         "Formule de la variation d'une devise à partir d'une cotation P/B (price/base) ? Application : USD/EUR passe de 1,44 à 1,42. Variation de l'EUR, puis de l'USD ?",
@@ -251,7 +251,7 @@ export const SETS = [
       ],
       [
         "Sell side vs buy side du FX (foreign exchange) market : qui sont les acteurs de chaque côté ?",
-        "Sell side : ==grandes banques dealers== · Buy side : ==leurs clients==\nEn clair : Le buy side regroupe corporations, real money accounts (fonds sans derivatives), leveraged accounts (hedge funds), États, central banks et retail.\nPiège : le côté ne dit pas le motif : hedging réduit un risque de change, speculating l'augmente.",
+        "Sell side : ==grandes banques qui font le marché== · Buy side : ==clients des banques dealers==\nEn clair : Le buy side regroupe corporations, real money accounts (fonds sans derivatives), leveraged accounts (hedge funds), États, central banks et retail.\nPiège : le côté ne dit pas le motif : hedging réduit un risque de change, speculating l'augmente.",
       ],
       [
         "Classe les exchange rate regimes, du plus rigide au plus souple.",

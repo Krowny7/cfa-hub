@@ -28,7 +28,7 @@ export const SETS = [
     cards: [
       [
         "Comment classe-t-on une bond (obligation) selon sa maturity d'origine : money market, capital market ou perpetual ?",
-        "Money market : ==≤ 1 an== · Capital market : ==plus d'un an== · Perpetual : ==sans maturity==\nEn clair : Un T-bill (Treasury bill) à 6 mois est un money market security. Une bond à 10 ans est un capital market security.\nPiège : on classe sur la maturity d'origine, pas sur la durée restante (le tenor).",
+        "Money market : ==titres à maturity d'origine ≤ 1 an== · Capital market : ==titres à maturity d'origine > 1 an== · Perpetual : ==bond sans date de remboursement==\nEn clair : Un T-bill (Treasury bill) à 6 mois est un money market security. Une bond à 10 ans est un capital market security.\nPiège : on classe sur la maturity d'origine, pas sur la durée restante (le tenor).",
       ],
       [
         "Qu'est-ce que l'indenture (ou trust deed) d'une bond ?",
@@ -40,7 +40,7 @@ export const SETS = [
       ],
       [
         "Bullet, amortizing, sinking fund : comment le principal d'une bond est-il remboursé dans chacune de ces structures ?",
-        "Bullet : ==tout à maturity== · Amortizing : ==au fil des paiements== · Sinking fund : ==rachats échelonnés==\nEn clair : Une fully amortizing bond est soldée au dernier paiement, une partially amortizing garde un balloon payment.\nPiège : le sinking fund réduit le credit risk mais crée un reinvestment risk si les taux baissent.",
+        "Bullet : ==tout le principal à maturity== · Amortizing : ==principal remboursé à chaque paiement== · Sinking fund : ==part de l'émission rachetée périodiquement==\nEn clair : Une fully amortizing bond est soldée au dernier paiement, une partially amortizing garde un balloon payment.\nPiège : le sinking fund réduit le credit risk mais crée un reinvestment risk si les taux baissent.",
       ],
       [
         "Formule du coupon d'une FRN (floating-rate note) ? Application : MRR 3 %, quoted margin 1 %, coupons trimestriels, par value 100.",
@@ -48,7 +48,7 @@ export const SETS = [
       ],
       [
         "Step-up, credit-linked, PIK (payment-in-kind) et deferred coupon bonds : comment le coupon évolue-t-il ou est-il payé dans chaque structure ?",
-        "Step-up : ==↑ par paliers prévus== · Credit-linked : ==↑ si downgrade== · PIK : ==payé en nouvelles bonds== · Deferred : ==rien les premières années==\nEn clair : Les PIK et deferred coupon bonds servent aux issuers à court de cash, d'où des yields plus élevés. Le step-up protège le bondholder d'une hausse des taux.",
+        "Step-up : ==coupon qui monte par paliers prévus== · Credit-linked : ==coupon qui monte si downgrade== · PIK : ==coupon payé en nouvelles bonds== · Deferred : ==aucun coupon les premières années==\nEn clair : Les PIK et deferred coupon bonds servent aux issuers à court de cash, d'où des yields plus élevés. Le step-up protège le bondholder d'une hausse des taux.",
       ],
       [
         "Formule du coupon d'une capital-indexed bond (type TIPS, Treasury Inflation-Protected Securities) ? Application : par value 1 000, coupon rate 4 % payé une fois par an, inflation de l'année 2 %.",
@@ -64,7 +64,7 @@ export const SETS = [
       ],
       [
         "Domestic bond, foreign bond, Eurobond, global bond : comment les distinguer ?",
-        "Domestic : ==issuer et marché locaux== · Foreign : ==issuer étranger, marché local== · Eurobond : ==hors juridiction nationale== · Global : ==Eurobond et domestic ensemble==\nEn clair : Une Eurobond se vend hors du pays de sa monnaie, par exemple une bond en USD à Londres.\nPiège : « Euro » ne veut pas dire libellé en euros.",
+        "Domestic : ==issuer et marché locaux== · Foreign : ==issuer étranger, marché local== · Eurobond : ==émise hors de toute juridiction nationale== · Global : ==Eurobond aussi traitée sur un marché domestic==\nEn clair : Une Eurobond se vend hors du pays de sa monnaie, par exemple une bond en USD à Londres.\nPiège : « Euro » ne veut pas dire libellé en euros.",
       ],
       [
         "Investment grade vs high yield : où passe la frontière de credit rating (S&P et Moody's) ?",
@@ -72,7 +72,7 @@ export const SETS = [
       ],
       [
         "Lines of credit d'une entreprise : classe uncommitted, committed et revolving de la moins fiable à la plus fiable.",
-        "Fiabilité et coût : ==uncommitted < committed < revolving==\nEn clair : Avec une uncommitted line, la banque peut refuser de prêter. La committed line l'engage contre une commitment fee ; la revolving line aussi, mais souvent sur plusieurs années.",
+        "Uncommitted : ==la banque peut refuser de prêter== · Committed : ==banque engagée pour une durée fixée== · Revolving : ==committed plus long, parfois plusieurs années==\nEn clair : Fiabilité et coût croissent : uncommitted < committed < revolving. Committed et revolving lines ajoutent une commitment fee aux intérêts.",
       ],
       [
         "Formules du purchase price et du repurchase price d'un repo (repurchase agreement) ? Application : collateral de 1 030 000, initial margin 103 %, repo rate 4 %, 90 jours (base 360).",
@@ -84,7 +84,7 @@ export const SETS = [
       ],
       [
         "GO (general obligation) bond vs revenue bond d'une collectivité locale : qu'est-ce qui rembourse chacune, et laquelle porte le plus de credit risk ?",
-        "GO : ==tout le taxing power== · Revenue : ==projet seul, plus risquée==\nEn clair : Une revenue bond (péage, aéroport) n'est payée que par les revenus de son projet. Elle s'analyse comme une corporate bond.",
+        "GO : ==payée par tout le taxing power== · Revenue : ==payée par son seul projet== → plus risquée\nEn clair : Une GO bond s'appuie sur tous les impôts de la collectivité. Une revenue bond (péage, aéroport) s'analyse comme une corporate bond.",
       ],
     ],
   },
@@ -141,7 +141,7 @@ export const SETS = [
       ],
       [
         "G-spread, I-spread, Z-spread : par rapport à quel benchmark chaque spread est-il mesuré ?",
-        "G-spread : ==government bond== · I-spread : ==swap rate== · Z-spread : ==toute la spot curve==\nEn clair : Le G-spread et l'I-spread valent YTM (yield to maturity) − benchmark de même maturity. Le Z-spread (zero-volatility) s'ajoute à chaque spot rate pour retrouver le prix.",
+        "G-spread : ==YTM − government bond yield, même maturity== · I-spread : ==YTM − swap rate, même maturity== · Z-spread : ==spread constant ajouté à chaque spot rate==\nEn clair : YTM = yield to maturity. G-spread et I-spread comparent un seul yield. Le Z-spread (zero-volatility spread), ajouté à toute la government spot curve, redonne le prix de la bond.",
       ],
       [
         "Formule de l'OAS (option-adjusted spread) d'une bond, et comment se compare-t-il au Z-spread pour une callable bond ?",
@@ -214,7 +214,7 @@ export const SETS = [
       ],
       [
         "Callable bond vs putable bond : quelle convexity ont-elles quand les taux bougent ?",
-        "Callable : ==negative convexity (bas taux)== · Putable : ==positive convexity==\nEn clair : À bas taux, le call price plafonne le prix de la callable bond. Quand les taux montent, le put crée un plancher pour la putable bond.\nPiège : les MBS (mortgage-backed securities) ont aussi une negative convexity, à cause des prepayments.",
+        "Callable : ==negative convexity à bas taux, prix plafonné== · Putable : ==positive convexity, prix plancher si taux ↑==\nEn clair : Negative convexity : à écart de yield égal, le prix monte moins qu'il ne baisse. Le put, lui, freine la baisse.\nPiège : les MBS (mortgage-backed securities) ont aussi une negative convexity, à cause des prepayments.",
       ],
     ],
   },
@@ -227,7 +227,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 5 C de l'analyse crédit bottom-up d'un corporate issuer ?",
-        "==Capacity== · ==Capital== · ==Collateral== · ==Covenants== · ==Character==\nEn clair : Capacity = capacité à payer ses dettes à temps, character = intégrité du management. Les C top-down sont autres : conditions, country, currency.",
+        "Capacity : ==capacité à payer ses dettes à temps== · Capital : ==ressources qui réduisent le besoin de dette== · Collateral : ==actifs gagés au profit du prêteur== · Covenants : ==termes légaux du contrat de dette== · Character : ==intégrité et sérieux du management==\nEn clair : Ces cinq facteurs sont propres à l'issuer. Les C top-down sont autres : conditions, country, currency.",
       ],
       [
         "Dans quel ordre la dette d'un corporate issuer est-elle remboursée en cas de default ?",
@@ -235,11 +235,11 @@ export const SETS = [
       ],
       [
         "Issuer credit rating vs issue credit rating : quelle différence, et qu'est-ce que le notching ?",
-        "Issuer rating : ==senior unsecured debt== · Issue rating : ==selon la seniority== · Notching : ==l'écart entre les deux==\nEn clair : Le notching monte la note d'une dette secured et baisse celle d'une subordinated.\nPiège : structural subordination : chez une filiale, sa propre dette passe avant celle de la holding.",
+        "Issuer rating : ==note de l'issuer (senior unsecured debt)== · Issue rating : ==note d'une émission, selon sa seniority== · Notching : ==décaler l'issue rating de l'issuer rating==\nEn clair : Le notching monte la note d'une dette secured et baisse celle d'une subordinated.\nPiège : structural subordination : chez une filiale, sa propre dette passe avant celle de la holding.",
       ],
       [
         "Dans une securitization, quels rôles jouent le seller, le SPE (special purpose entity) et le servicer ?",
-        "Seller : ==vend les actifs== · SPE : ==émet les ABS== · Servicer : ==collecte les paiements==\nEn clair : ABS = asset-backed securities. Le SPE est bankruptcy remote : si le seller fait faillite, ses créanciers ne peuvent pas saisir les actifs du SPE.",
+        "Seller : ==vend ses actifs (prêts) au SPE== · SPE : ==achète ces actifs, émet les ABS== · Servicer : ==collecte les paiements des emprunteurs==\nEn clair : ABS = asset-backed securities. Le SPE est bankruptcy remote : si le seller fait faillite, ses créanciers ne peuvent pas saisir les actifs du SPE.",
       ],
       [
         "Quels sont les principaux benefits de la securitization pour la banque qui vend ses prêts (l'originator), pour les investisseurs et pour les marchés ?",
@@ -247,11 +247,11 @@ export const SETS = [
       ],
       [
         "Quelles sont les 3 formes d'internal credit enhancement d'un ABS (asset-backed security) ?",
-        "==Overcollateralization== · ==Excess spread== · ==Credit tranching== (subordination)\nEn clair : Le collateral dépasse les ABS émis, les intérêts reçus dépassent les coupons dus, et les tranches juniors absorbent les pertes en premier.\nPiège : le tranching répartit le risque du pool, il ne le réduit pas.",
+        "Overcollateralization : ==collateral supérieur aux ABS émis== · Excess spread : ==intérêts reçus supérieurs aux coupons dus== · Credit tranching : ==tranches juniors absorbent les pertes d'abord==\nEn clair : Aucun garant extérieur : tout vient de la structure. Le credit tranching s'appelle aussi subordination.\nPiège : le tranching répartit le risque du pool, il ne le réduit pas.",
       ],
       [
         "Covered bond vs ABS (asset-backed security) : où restent les actifs, et pourquoi la covered bond est-elle moins risquée ?",
-        "Covered bond : ==reste au bilan== · ABS : ==sort du bilan (SPE)== · Moins risquée : ==dual recourse==\nEn clair : Le bondholder a recours sur l'issuer et sur le cover pool, que l'issuer complète si un actif se dégrade. D'où un yield plus bas qu'un ABS.\nPiège : actifs au bilan, donc pas d'allègement de regulatory capital.",
+        "Covered bond : ==dette bancaire, actifs gardés au bilan== · ABS : ==émis par un SPE, actifs hors bilan== · Moins risquée : ==dual recourse, issuer et cover pool==\nEn clair : Le cover pool regroupe les actifs gagés, et l'issuer doit remplacer tout actif qui se dégrade. D'où un yield plus bas qu'un ABS.\nPiège : actifs au bilan, donc pas d'allègement de regulatory capital.",
       ],
       [
         "Credit card ABS (asset-backed security) : que reçoivent les investisseurs pendant la lockout (revolving) period, puis après ?",
@@ -259,7 +259,7 @@ export const SETS = [
       ],
       [
         "Quels sont les 3 types de CLO (collateralized loan obligation) et d'où viennent les paiements de chacun ?",
-        "Cash flow : ==flux du collateral== · Market value : ==trading du collateral== · Synthetic : ==credit derivatives==\nEn clair : Le CLO est adossé à des leveraged loans et géré activement par un collateral manager. Sa tranche la plus risquée est l'equity tranche.",
+        "Cash flow : ==payé par les flux du collateral== · Market value : ==payé en tradant le collateral== · Synthetic : ==credit derivatives, sans posséder les loans==\nEn clair : Le CLO est adossé à des leveraged loans et géré activement par un collateral manager. Sa tranche la plus risquée est l'equity tranche.",
       ],
       [
         "MBS (mortgage-backed security) : quand les taux baissent, quel risque de prepayment apparaît, contraction risk ou extension risk ?",
@@ -267,7 +267,7 @@ export const SETS = [
       ],
       [
         "Agency RMBS vs non-agency RMBS (residential mortgage-backed securities) : qui émet et qui garantit ?",
-        "Agency : ==garantie État ou GSE== · Non-agency : ==privé, sans garantie==\nEn clair : GSE = government-sponsored enterprise, dont la garantie n'est pas celle de l'État. Le non-agency RMBS a besoin d'un credit enhancement.\nPiège : pass-through rate < WAC (weighted average coupon) du pool : les servicing fees sont prélevées avant.",
+        "Agency : ==garanti par l'État ou une GSE== · Non-agency : ==émis par un privé, sans garantie État/GSE==\nEn clair : GSE = government-sponsored enterprise, dont la garantie n'est pas celle de l'État. Le non-agency RMBS a besoin d'un credit enhancement.\nPiège : pass-through rate < WAC (weighted average coupon) du pool : les servicing fees sont prélevées avant.",
       ],
       [
         "CMO (collateralized mortgage obligation) sequential-pay : quelle tranche porte le plus de contraction risk, et laquelle le plus d'extension risk ?",
@@ -275,7 +275,7 @@ export const SETS = [
       ],
       [
         "CMO (collateralized mortgage obligation) : PAC (planned amortization class) tranche vs support tranche, laquelle absorbe le prepayment risk ?",
-        "PAC : ==suit son calendrier== · Support : ==absorbe le prepayment risk==\nEn clair : La support tranche encaisse l'excès ou le manque de prepayments, pour que la PAC tranche tienne son calendrier tant qu'ils restent dans une bande prévue.",
+        "PAC : ==principal remboursé selon un calendrier fixé== · Support : ==absorbe l'excès ou le manque de prepayments==\nEn clair : La support tranche porte le prepayment risk. Elle permet à la PAC tranche de tenir son calendrier tant que les prepayments restent dans une bande prévue.",
       ],
       [
         "Pourquoi l'analyse d'un CMBS (commercial mortgage-backed security) se concentre-t-elle sur le DSCR (debt service coverage ratio) et le LTV (loan-to-value) de chaque immeuble ?",

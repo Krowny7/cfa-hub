@@ -25,11 +25,11 @@ export const SETS = [
       ],
       [
         "Standard-setting bodies vs regulators : qui écrit les IFRS (International Financial Reporting Standards) et les US GAAP (US generally accepted accounting principles), et qui les fait appliquer ?",
-        "IFRS : ==IASB== · US GAAP : ==FASB== · Contrôle : ==regulators (SEC)==\nEn clair : IASB = International Accounting Standards Board, FASB = Financial Accounting Standards Board, SEC = Securities and Exchange Commission.\nPiège : IOSCO (International Organization of Securities Commissions) n'est pas un regulator.",
+        "IASB : ==écrit les IFRS== · FASB : ==écrit les US GAAP== · Regulators (SEC) : ==font appliquer les normes==\nEn clair : IASB (International Accounting Standards Board) et FASB (Financial Accounting Standards Board) n'ont pas de pouvoir de sanction. SEC = Securities and Exchange Commission.\nPiège : IOSCO (International Organization of Securities Commissions) n'est pas un regulator.",
       ],
       [
         "Footnotes vs MD&A (management discussion and analysis) d'un rapport annuel : lequel est audité ?",
-        "Footnotes : ==auditées== · MD&A : ==en partie non auditée==\nEn clair : Les footnotes détaillent accounting methods, estimates, contingencies et segments. La MD&A donne la lecture du management : résultats, liquidity, tendances connues.",
+        "Footnotes : ==détail des méthodes et estimates== → auditées · MD&A : ==commentaire du management== → en partie non auditée\nEn clair : Les footnotes couvrent aussi contingencies et segments. La MD&A commente résultats, liquidity, capital resources et tendances connues.",
       ],
       [
         "Que signifie chacun des 4 types d'audit opinion ?",
@@ -45,11 +45,11 @@ export const SETS = [
       ],
       [
         "Income statement : comment présente-t-on les discontinued operations et les unusual or infrequent items ?",
-        "Discontinued operations : ==net of tax== · Unusual or infrequent items : ==pretax==\nEn clair : Les unusual or infrequent items restent dans l'income from continuing operations. Les discontinued operations ont leur propre ligne, en dessous.\nPiège : un item « unusual » qui revient chaque année n'est pas à exclure des prévisions.",
+        "Discontinued operations : ==activité cédée, net of tax== · Unusual or infrequent items : ==rares (restructuring…), pretax==\nEn clair : Une discontinued operation, vendue ou à vendre, a sa propre ligne. Les unusual or infrequent items restent dans l'income from continuing operations.\nPiège : un item « unusual » qui revient chaque année n'est pas à exclure des prévisions.",
       ],
       [
         "Changement d'accounting principle vs changement d'accounting estimate : lequel oblige à retraiter les années passées ?",
-        "Accounting principle : ==retrospective== · Accounting estimate : ==prospective==\nEn clair : Un changement de principle retraite les périodes passées présentées, comme la correction d'une erreur. Un changement d'estimate (useful life, salvage value) ne joue que sur le futur.",
+        "Accounting principle : ==nouvelle méthode comptable== → retrospective · Accounting estimate : ==hypothèse révisée (useful life…)== → prospective\nEn clair : Un changement de principle (ex. FIFO → weighted average cost) retraite les périodes passées présentées, comme la correction d'une erreur. Un changement d'estimate ne joue que sur le futur.",
       ],
       [
         "Formule du basic EPS (earnings per share) ? Application : Net Income 50 000, preferred dividends 6 000, 10 000 actions au 1er janvier, 2 000 émises le 1er juillet, stock split 2-for-1 le 1er octobre.",
@@ -86,7 +86,7 @@ export const SETS = [
     cards: [
       [
         "Cash flow statement : quelles opérations vont en CFO (cash flow from operations), en CFI (investing) et en CFF (financing) ?",
-        "CFO : ==exploitation== · CFI : ==actifs long terme== · CFF : ==dette et equity==\nEn clair : CFO : clients, fournisseurs, salariés, impôts. CFI : achat ou vente de machines et de titres. CFF : emprunts, émission ou rachat de shares, dividends paid.\nPiège : acheter les bonds d'une autre firme = CFI ; émettre les siens = CFF.",
+        "CFO : ==cash de l'activité courante== · CFI : ==achat et vente d'actifs long terme== · CFF : ==levée et remboursement de dette et equity==\nEn clair : Le CFO couvre clients, fournisseurs, salariés et impôts. Le CFI inclut les titres d'autres firmes ; le CFF, les dividends paid.\nPiège : acheter les bonds d'une autre firme = CFI ; émettre les siens = CFF.",
       ],
       [
         "Sous US GAAP (US generally accepted accounting principles), où classe-t-on interest paid, dividends paid, interest received et dividends received ?",
@@ -220,11 +220,11 @@ export const SETS = [
       ],
       [
         "Conservative vs aggressive accounting : quel effet sur les earnings, et comment l'earnings smoothing s'en sert-il ?",
-        "Aggressive : ==earnings actuels gonflés== · Conservative : ==earnings actuels réduits== · Smoothing : ==alterne les deux==\nEn clair : Conservative ou aggressive, c'est un biais. L'earnings smoothing passe en conservative au-dessus de l'objectif, en aggressive en dessous.\nPiège : conservative n'est pas « bon » : il peut gonfler les earnings futurs.",
+        "Aggressive : ==earnings actuels gonflés== · Conservative : ==earnings actuels réduits== · Smoothing : ==lisser les earnings en alternant les deux==\nEn clair : Conservative ou aggressive, c'est un biais. L'earnings smoothing passe en conservative au-dessus de l'objectif, en aggressive en dessous.\nPiège : conservative n'est pas « bon » : il peut gonfler les earnings futurs.",
       ],
       [
         "Quelles 3 conditions sont souvent réunies quand un management publie des financial reports de mauvaise qualité ?",
-        "==Motivation== · ==Opportunity== · ==Rationalization==\nEn clair : Motivation = battre les objectifs, bonus, covenants. Opportunity = contrôles internes faibles, board peu vigilant. Rationalization = se convaincre que c'est justifié.",
+        "Motivation : ==pression des objectifs, bonus, covenants== · Opportunity : ==contrôles internes faibles== · Rationalization : ==se convaincre que c'est justifié==\nEn clair : La motivation type est de battre un objectif d'EPS (earnings per share) : guidance, consensus ou année passée. Opportunity inclut aussi un board peu vigilant et des normes trop permissives.",
       ],
       [
         "Quels warning signs doivent pousser un analyste à creuser la qualité des earnings ?",
@@ -232,7 +232,7 @@ export const SETS = [
       ],
       [
         "Vertical vs horizontal common-size analysis : quelle base utilise chacune ?",
-        "Vertical : ==le total de l'année== · Horizontal : ==une année de base==\nEn clair : Vertical : total = revenue (income statement) ou total assets (balance sheet), ce qui gomme l'effet taille. Horizontal : chaque poste comparé à son niveau d'une année de base.",
+        "Vertical : ==poste ÷ total de la même année== · Horizontal : ==poste ÷ son niveau de l'année de base==\nEn clair : En vertical, le total est le revenue (income statement) ou les total assets (balance sheet), ce qui gomme l'effet taille. L'horizontal suit chaque poste dans le temps.",
       ],
       [
         "Formules du current ratio, du quick ratio et du cash ratio ?",
@@ -268,7 +268,7 @@ export const SETS = [
       ],
       [
         "Quels behavioral biases menacent les prévisions d'un analyste financier ?",
-        "==Overconfidence== · ==Illusion of control== · ==Conservatism== (anchoring) · ==Representativeness== · ==Confirmation bias==\nEn clair : Conservatism = ajuster trop peu sa prévision aux nouvelles infos. Representativeness = oublier le base rate ; remède : croiser inside view et outside view.",
+        "Overconfidence : ==se croire trop précis== · Illusion of control : ==se croire maître du résultat== · Conservatism : ==ajuster trop peu aux infos== · Representativeness : ==juger par ressemblance, sans base rate== · Confirmation bias : ==chercher ce qui confirme son avis==\nEn clair : Le conservatism ressemble à l'anchoring. L'outside view (base rate) corrige la representativeness.",
       ],
       [
         "Porter's five forces : quelle force pèse sur les input costs, et lesquelles sur le pricing power ?",

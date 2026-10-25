@@ -29,7 +29,7 @@ export const SETS = [
       ],
       [
         "Suitability standard vs fiduciary standard : lequel est le plus exigeant, et que demande chacun ?",
-        "Suitability : ==titres adaptés au profil== · Fiduciary : ==best interest==, plus exigeant\nEn clair : Le suitability standard vérifie que les titres recommandés collent aux return requirements et à la risk tolerance du client. Le fiduciary standard impose d'agir au best interest du client.",
+        "Suitability : ==titres adaptés au profil du client== · Fiduciary : ==agir au best interest du client== · Le plus exigeant : ==fiduciary standard==\nEn clair : Le suitability standard vérifie les return requirements et la risk tolerance du client. Le fiduciary standard ajoute la loyauté : l'intérêt du client passe avant celui du conseiller.",
       ],
       [
         "Selon le curriculum CFA, qu'est-ce qui pèse le plus sur un comportement non éthique : les traits personnels ou les situational influences ?",
@@ -41,7 +41,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 4 étapes de l'ethical decision-making framework du curriculum CFA ?",
-        "==Identify== · ==Consider== · ==Decide and act== · ==Reflect==\nEn clair : On identifie faits, stakeholders, devoirs et conflicts of interest. On pèse situational influences, avis extérieurs et alternatives, on agit, puis on juge le résultat.\nPiège : le framework réduit les conséquences imprévues, sans les supprimer.",
+        "Identify : ==faits, stakeholders, devoirs, conflicts of interest== · Consider : ==situational influences, avis extérieurs, alternatives== · Decide and act : ==choisir une option, agir== · Reflect : ==le résultat était-il attendu ?==\nEn clair : Les avis extérieurs viennent de la compliance ou de collègues.\nPiège : le framework réduit les conséquences imprévues, sans les supprimer.",
       ],
       [
         "Qu'est-ce qui peut déclencher une enquête du Professional Conduct Program (PCP) de CFA Institute ?",
@@ -256,7 +256,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 8 sections des GIPS (Global Investment Performance Standards) for Firms ?",
-        "==Fundamentals== · ==Input Data== · ==Composites== · ==4 rapports de return== · ==Advertising==\nEn clair : Dans l'ordre : 1 Fundamentals of Compliance, 2 Input Data and Calculation Methodology, 3 Composite and Pooled Fund Maintenance, 4 à 7 rapports time-weighted et money-weighted, 8 Advertising.",
+        "Fundamentals of Compliance : ==règles pour claim compliance== · Input Data : ==données et calcul des returns== · Composites : ==tenue des composites et pooled funds== · 4 à 7 : ==rapports de return== · Advertising : ==règles des publicités GIPS==\nEn clair : Les rapports 4 à 7 croisent composite ou pooled fund avec time-weighted ou money-weighted return.",
       ],
       [
         "GIPS (Global Investment Performance Standards) : qu'est-ce qu'un composite, et quels portefeuilles doit-il contenir ?",

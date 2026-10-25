@@ -25,7 +25,7 @@ export const SETS = [
     cards: [
       [
         "Quelles sont les 3 grandes catégories d'alternative investments ?",
-        "==Private capital== · ==Real assets== · ==Hedge funds==\nEn clair : Private capital = private equity et private debt. Real assets = real estate, infrastructure, natural resources et digital assets. Traditional investments = long-only en cash, actions et bonds cotés.\nPiège : un hedge fund ne couvre pas forcément son risque.",
+        "Private capital : ==private equity et private debt== · Real assets : ==real estate, infrastructure, natural resources== · Hedge funds : ==fonds privés avec leverage, short, dérivés==\nEn clair : Les digital assets entrent aussi dans les real assets. Traditional investments = long-only en cash, actions et bonds cotés.\nPiège : un hedge fund ne couvre pas forcément son risque.",
       ],
       [
         "Par rapport aux traditional investments, quelles sont les features typiques des alternative investments ?",
@@ -33,7 +33,7 @@ export const SETS = [
       ],
       [
         "Fund investing, co-investing, direct investing : comment se comparent-ils en contrôle et en fees ?",
-        "Fund : ==fees pleins, aucun contrôle== · Co-investing : ==fees réduits, contrôle partiel== · Direct : ==sans fees, contrôle total==\nEn clair : La due diligence faite par l'investisseur croît du fund au direct. Le co-investing ajoute des deals en direct aux côtés du GP (general partner). Le direct diversifie peu.\nPiège : pas d'expertise de due diligence ⇒ fund investing.",
+        "Fund investing : ==parts d'un fonds, gérant choisit tout== · Co-investing : ==fonds + certains deals en direct== · Direct : ==achète les actifs lui-même, sans gérant==\nEn clair : Du fund au direct, les fees baissent, le contrôle et la due diligence à faire augmentent. Le direct diversifie peu.\nPiège : pas d'expertise de due diligence ⇒ fund investing.",
       ],
       [
         "Dans une limited partnership, quels sont le rôle et la responsabilité du GP (general partner) et des LPs (limited partners) ?",
@@ -41,11 +41,11 @@ export const SETS = [
       ],
       [
         "Dans un private equity fund, que sont le committed capital, les capital calls et le dry powder ?",
-        "Committed capital : ==montant promis== · Capital call : ==appel de fonds== · Dry powder : ==non encore appelé==\nEn clair : Les LPs (limited partners) s'engagent sur un montant. Le GP (general partner) l'appelle au fil des deals (drawdown), en général sur 3 à 5 ans.",
+        "Committed capital : ==montant promis par les LPs== · Capital call : ==appel d'une part du capital promis== · Dry powder : ==capital promis pas encore appelé==\nEn clair : Le GP (general partner) appelle le capital au fil des deals (drawdown), en général sur 3 à 5 ans. LPs = limited partners.",
       ],
       [
         "LPA (limited partnership agreement) vs side letter : que contient chacun ?",
-        "LPA : ==règles communes aux LPs== · Side letter : ==termes sur mesure==\nEn clair : Une side letter, propre à un seul LP (limited partner), peut prévoir un excusal right (refuser un capital call) ou une MFN (most-favored-nation) clause (recevoir les termes spéciaux des autres LPs).",
+        "LPA : ==contrat du fonds, règles communes aux LPs== · Side letter : ==termes propres à un seul LP==\nEn clair : Une side letter complète le LPA. Elle peut prévoir un excusal right (refuser un capital call) ou une MFN (most-favored-nation) clause (obtenir les termes spéciaux des autres LPs, limited partners).",
       ],
       [
         "Sur quelle base calcule-t-on le management fee d'un hedge fund, et celui d'un private equity fund ?",
@@ -77,7 +77,7 @@ export const SETS = [
       ],
       [
         "Waterfall deal-by-deal (American) vs whole-of-fund (European) : lequel favorise le GP (general partner), lequel les LPs (limited partners) ?",
-        "American : ==favorise le GP== · European : ==favorise les LPs==\nEn clair : L'American paie le carried interest (incentive fee) à chaque sortie de deal. En European, les LPs récupèrent d'abord 100 % du capital + le hurdle, puis le GP touche sa part.\nPiège : avec un clawback, l'American revient au résultat de l'European.",
+        "American : ==carry à chaque sortie== → favorise le GP · European : ==carry après capital + hurdle== → favorise les LPs\nEn clair : Le carry (carried interest) est l'incentive fee du GP. En American, le GP le touche avant que les LPs aient récupéré 100 % du capital + le hurdle.\nPiège : avec un clawback, l'American revient au résultat de l'European.",
       ],
       [
         "Formules du carried interest en American vs European waterfall, et du clawback ? Application : carried interest 20 %, sans hurdle, deal A acheté 100 revendu 130, deal B acheté 100 revendu 80.",
@@ -90,15 +90,15 @@ export const SETS = [
     cards: [
       [
         "Par rapport aux traditional investments, quels risques en plus faut-il intégrer pour apprécier la performance d'un alternative investment ?",
-        "==Timing== des cash flows · ==Leverage== · ==Valuation== · ==Fees, taxes== et accounting\nEn clair : Le leverage expose aux margin calls, donc aux ventes forcées à mauvais prix. Sans prix de marché observable, la valuation repose sur des hypothèses.",
+        "==Timing== des cash flows · ==Leverage== utilisé par le gérant · ==Valuation== sans prix de marché · ==Fees, taxes== et accounting complexes\nEn clair : Le leverage expose aux margin calls, donc aux ventes forcées à mauvais prix. Sans prix de marché observable, la valuation repose sur des hypothèses.",
       ],
       [
         "J-curve d'un private equity fund : quel est le signe des rendements dans chaque phase de sa vie ?",
-        "Commitment : ==négatif== · Deployment : ==encore négatif== · Distribution : ==positif==\nEn clair : Au début, il y a les capital calls, les fees et des dépréciations, sans revenus. Puis les investissements mûrissent et les sorties font monter le rendement, jusqu'à un plateau.",
+        "Commitment : ==choix des deals, capital calls== → négatif · Deployment : ==fonds investis, gérés de près== → encore négatif · Distribution : ==revenus et sorties, cash distribué== → positif\nEn clair : Le rendement cumulé dessine un J : il plonge d'abord (capital calls, fees, aucun revenu), puis remonte avec les sorties jusqu'à un plateau.",
       ],
       [
         "IRR (internal rate of return) vs MOIC (multiple of invested capital) : comment mesurent-ils la performance d'un private equity fund ?",
-        "IRR : ==timing compris== · MOIC : ==timing ignoré==\n$$\\text{MOIC} = \\dfrac{\\text{realized} + \\text{unrealized value}}{\\text{total paid-in capital}}$$\nEn clair : L'IRR (money-weighted) convient car le GP (general partner) décide du timing des flux. Ex. : 40 reçus + 110 de NAV (net asset value), pour 100 versés, MOIC = 1,5×.\nPiège : l'IRR suppose un cost of capital et un reinvestment rate.",
+        "IRR : ==money-weighted return annualisé== → timing compris · MOIC : ==(realized + unrealized value) / paid-in capital== → timing ignoré\nEn clair : L'IRR convient car le GP (general partner) décide du timing des flux. Ex. : 40 reçus + 110 de NAV (net asset value), pour 100 versés, MOIC = 1,5×.\nPiège : l'IRR suppose un cost of capital et un reinvestment rate.",
       ],
       [
         "Formule du leveraged return d'un fonds ? Application : 100 investis sans leverage, plus 50 empruntés à 6 %, rendement des actifs 10 %.",
@@ -114,15 +114,15 @@ export const SETS = [
       ],
       [
         "Survivorship bias, backfill bias, selection bias : comment faussent-ils les indices de hedge funds et de private equity ?",
-        "Survivorship : ==fonds disparus absents== · Backfill : ==bons historiques ajoutés== · Selection : ==catégories incohérentes==\nEn clair : Les trois biais surestiment la performance des indices. Plus de 25 % des hedge funds disparaissent dans leurs 3 premières années.",
+        "Survivorship : ==fonds disparus absents de l'indice== · Backfill : ==bons historiques ajoutés à l'entrée== · Selection : ==fonds classés ou admis de façon incohérente==\nEn clair : Les trois biais surestiment la performance des indices, fondés sur des données volontaires. Plus de 25 % des hedge funds disparaissent dans leurs 3 premières années.",
       ],
       [
         "LBO (leveraged buyout) : de quoi s'agit-il, et quelle différence entre MBO (management buyout) et MBI (management buy-in) ?",
-        "LBO : ==rachat surtout par dette== · MBO : ==management en place== · MBI : ==nouvelle équipe de management==\nEn clair : La cible sort souvent de la cote et ses cash flows remboursent la dette. Les LBO funds sont la majorité des private equity funds.",
+        "LBO : ==rachat d'une firme surtout par dette== · MBO : ==LBO mené par le management en place== · MBI : ==le fonds remplace le management en place==\nEn clair : La cible sort souvent de la cote et ses cash flows remboursent la dette. Les LBO funds sont la majorité des private equity funds.",
       ],
       [
         "Quelles sont les étapes de financement d'une start-up en venture capital (VC), de l'idée à l'IPO (initial public offering) ?",
-        "Angel : ==idée== · Seed : ==entrée des VC funds== · Early : ==avant les ventes== · Later : ==expansion== · Mezzanine : ==prépare l'IPO==\nEn clair : Angel, seed et early forment le formative stage. En angel investing, l'argent vient de particuliers, pas encore de VC funds.\nPiège : mezzanine stage = un timing (avant l'IPO), pas du mezzanine financing.",
+        "Angel : ==particuliers financent l'idée== · Seed : ==entrée des VC funds, développe le produit== · Early : ==finance l'activité avant production et ventes== · Later : ==finance l'expansion== · Mezzanine : ==prépare l'entrée en bourse==\nEn clair : Angel, seed et early forment le formative stage.\nPiège : mezzanine stage = timing avant l'IPO, pas mezzanine financing.",
       ],
       [
         "Pourquoi un venture capital (VC) fund prend-il parfois des convertibles (convertible debt, convertible preferred stock) dans une start-up ?",
@@ -134,11 +134,11 @@ export const SETS = [
       ],
       [
         "Quelles sont les 5 exit strategies d'un private equity fund ?",
-        "==Trade sale== à un strategic buyer · ==Public listing== · ==Recapitalization== · ==Secondary sale== · ==Write-off==\nEn clair : Le public listing se fait par IPO (initial public offering), direct listing ou SPAC (special purpose acquisition company). La recapitalization paie un dividende par dette, sans céder le contrôle.\nPiège : un direct listing ne lève aucun capital nouveau.",
+        "Trade sale : ==vente à un strategic buyer== · Public listing : ==entrée en bourse== · Recapitalization : ==dividende financé par dette, contrôle gardé== · Secondary sale : ==vente à un autre fonds== · Write-off : ==échec passé en perte==\nEn clair : Le public listing passe par IPO (initial public offering), direct listing (sans levée de capital) ou SPAC (special purpose acquisition company).",
       ],
       [
         "Quels sont les 5 grands types de private debt, et comment reconnaître chacun ?",
-        "Direct lending : ==senior secured== · Venture debt : ==start-ups non rentables== · Mezzanine : ==subordonnée, warrants== · Distressed : ==sociétés en difficulté== · Unitranche : ==un prêt, taux mixte==\nEn clair : Le taux suit SOFR (Secured Overnight Financing Rate) + spread et dépasse celui des bonds (illiquidité, default risk). Dans un leveraged loan, le fonds emprunte pour prêter.",
+        "Direct lending : ==prêt sans intermédiaire, senior secured== · Venture debt : ==prêt à start-up non rentable== · Mezzanine : ==subordonnée + warrants== · Distressed : ==dette de firmes en difficulté== · Unitranche : ==secured + unsecured en un prêt==\nEn clair : Le taux, SOFR (Secured Overnight Financing Rate) + spread, dépasse celui des bonds. Dans un leveraged loan, le fonds emprunte pour prêter.",
       ],
       [
         "Classe ces private capital investments du plus risqué au moins risqué : senior direct lending, private equity, infrastructure debt, mezzanine debt, unitranche debt, senior real estate debt.",
@@ -171,15 +171,15 @@ export const SETS = [
       ],
       [
         "Infrastructure : quelle différence entre economic infrastructure et social infrastructure, avec des exemples ?",
-        "Economic : ==transport, utilities, télécoms== · Social : ==écoles, hôpitaux, prisons==\nEn clair : L'infrastructure regroupe des actifs à très longue durée de vie, souvent financés par l'État ou, de plus en plus, via une PPP (public-private partnership). L'actif peut revenir au secteur public.",
+        "Economic : ==sert l'activité économique== → transport, utilities, télécoms · Social : ==services aux personnes== → écoles, hôpitaux, prisons\nEn clair : L'infrastructure regroupe des actifs à très longue durée de vie, souvent financés par l'État ou, de plus en plus, via une PPP (public-private partnership). L'actif peut revenir au secteur public.",
       ],
       [
         "D'où viennent les cash flows d'un investissement en infrastructure ?",
-        "==Availability payments== · ==Usage-based== (péages) · ==Take-or-pay==\nEn clair : Availability payment : versé pour garder l'actif disponible. Usage-based : selon la fréquentation. Take-or-pay : l'acheteur paie un volume minimum, qu'il le prenne ou non.",
+        "Availability payments : ==versés pour que l'actif reste disponible== · Usage-based : ==selon l'usage réel (péages)== · Take-or-pay : ==volume minimum payé, pris ou non==\nEn clair : L'availability payment ne dépend pas de la fréquentation. Le take-or-pay garantit un minimum, quelle que soit la demande.",
       ],
       [
         "Greenfield, brownfield et secondary-stage : comment distinguer ces investissements en infrastructure ?",
-        "Greenfield : ==à construire== · Brownfield : ==existant, privatisé ou étendu== · Secondary-stage : ==déjà opérationnel==\nEn clair : Le greenfield suit un cycle BOT (build-operate-transfer). Un sale-leaseback (actif acheté à l'État, puis loué à l'État) est un brownfield.",
+        "Greenfield : ==actif encore à construire== · Brownfield : ==actif existant, privatisé ou étendu== · Secondary-stage : ==actif pleinement opérationnel, sans développement==\nEn clair : Le greenfield suit un cycle BOT (build-operate-transfer). Un sale-leaseback (actif acheté à l'État, puis loué à l'État) est un brownfield.",
       ],
       [
         "Infrastructure : quels investissements sont les moins et les plus risqués, et quels risques propres faut-il surveiller ?",
@@ -191,7 +191,7 @@ export const SETS = [
       ],
       [
         "Farmland, timberland, raw land : qui les détient, et qu'est-ce qui distingue la timberland ?",
-        "Farmland : ==particuliers== · Raw land, timberland : ==institutions== · Timberland : ==coupe différable==\nEn clair : Les trois se louent, sont illiquides et valent surtout par leur lieu. Farmland et timberland vendent aussi leur production. Sans expertise : une TIMO (timberland investment management organization).",
+        "Farmland : ==terres agricoles, détenues par des particuliers== · Raw land : ==terrain nu, détenu par des institutions== · Timberland : ==forêts des institutions, coupe différable==\nEn clair : Les trois se louent, sont illiquides et valent surtout par leur lieu. Sans expertise : une TIMO (timberland investment management organization).",
       ],
       [
         "Farmland et timberland : d'où vient le rendement, et comment se comparent rendement et volatility aux actions ?",
@@ -224,19 +224,19 @@ export const SETS = [
       ],
       [
         "Quelles sont les 4 familles de stratégies de hedge funds, avec un exemple pour chacune ?",
-        "Equity hedge : ==long/short actions== · Event-driven : ==merger arbitrage== · Relative value : ==convertible arbitrage== · Opportunistic : ==macro, managed futures==\nEn clair : Event-driven inclut aussi distressed/restructuring, activist et special situations. Le merger arbitrage achète la cible et vend short l'acquéreur.\nPiège : convertible arbitrage = relative value, pas event-driven.",
+        "Equity hedge : ==long/short sur actions== · Event-driven : ==joue un événement corporate== → merger arbitrage · Relative value : ==écarts entre titres liés== → convertible arbitrage · Opportunistic : ==macro events et commodity trading== → managed futures\nEn clair : Le merger arbitrage achète la cible et vend short l'acquéreur.\nPiège : convertible arbitrage = relative value, pas event-driven.",
       ],
       [
         "Equity hedge strategies d'un hedge fund : que font market neutral, short bias et fundamental long/short ?",
-        "Market neutral : ==pas d'exposition marché== · Short bias : ==surtout short, surévalués== · Fundamental long/short : ==net long==\nEn clair : Le market neutral achète les sous-évalués et vend short les surévalués, en montants égaux. Le fundamental growth est aussi net long, le short bias est contrarian.",
+        "Market neutral : ==long/short égaux, sans exposition marché== · Short bias : ==surtout short sur titres surévalués== · Fundamental long/short : ==long sous-évalués, short indice, net long==\nEn clair : Le market neutral achète les sous-évalués et vend short les surévalués : seul l'écart compte. Le short bias est contrarian. Le fundamental growth est aussi net long.",
       ],
       [
         "Lockup period, notice period, gate, redemption fee : que signifient ces termes de liquidité d'un hedge fund ?",
-        "Lockup : ==rachat interdit au début== · Notice : ==délai d'exécution du rachat== · Gate : ==rachats limités temporairement== · Redemption fee : ==payée au fonds==\nEn clair : Un soft lockup permet de sortir avec pénalité. La notice period (30 à 90 jours) laisse vendre sans hâte. Les founders class (premiers entrés) ont souvent de meilleurs termes.",
+        "Lockup : ==rachat interdit au début== · Notice : ==délai d'exécution du rachat== · Gate : ==rachats limités temporairement== · Redemption fee : ==frais de sortie, versés au fonds==\nEn clair : Un soft lockup permet de sortir avec pénalité. La notice period (30 à 90 jours) laisse vendre sans hâte. Les founders class (premiers entrés) ont souvent de meilleurs termes.",
       ],
       [
         "Master-feeder structure vs SMA (separately managed account) : comment se structure chacun de ces hedge fund vehicles ?",
-        "Master-feeder : ==feeders → master fund== · SMA : ==sur mesure, un investisseur==\nEn clair : Un feeder onshore et un offshore versent dans le master fund, qui investit : efficace fiscalement. La SMA a des fees plus bas mais ne reçoit que les trades les plus liquides.\nPiège : la SMA aligne moins le gérant : il n'y a pas d'argent à lui.",
+        "Master-feeder : ==feeders onshore/offshore investissent via un master fund== · SMA : ==compte sur mesure d'un seul investisseur==\nEn clair : Seul le master fund investit : structure efficace fiscalement. La SMA a des fees plus bas mais ne reçoit que les trades les plus liquides.\nPiège : la SMA aligne moins le gérant : il n'y a pas d'argent à lui.",
       ],
       [
         "Fund of funds plutôt qu'un hedge fund en direct : quel avantage, et quel inconvénient ?",
@@ -244,7 +244,7 @@ export const SETS = [
       ],
       [
         "D'où vient le rendement d'un hedge fund, et qu'amplifie son leverage ?",
-        "Market beta : ==marché large== · Strategy beta : ==secteurs ciblés== · Alpha : ==sélection du gérant== · Leverage : ==amplifie strategy beta, alpha==\nEn clair : Le market beta s'obtient aussi avec un index fund passif. Les fees élevés pèsent sur la performance.\nPiège : le leverage ne vise pas le market beta.",
+        "Market beta : ==rendement dû au marché large== · Strategy beta : ==rendement dû aux secteurs ciblés== · Alpha : ==rendement dû à la sélection du gérant== · Leverage : ==amplifie strategy beta et alpha==\nEn clair : Le market beta s'obtient aussi avec un index fund passif. Les fees élevés pèsent sur la performance.\nPiège : le leverage ne vise pas le market beta.",
       ],
       [
         "Qu'est-ce que la DLT (distributed ledger technology), et qu'est-ce qu'une blockchain ?",
@@ -252,7 +252,7 @@ export const SETS = [
       ],
       [
         "Proof of work (PoW) vs proof of stake (PoS) : comment chaque consensus protocol valide-t-il les blocs d'une blockchain ?",
-        "PoW : ==miners, problème cryptographique== · PoS : ==validators et collateral (staking)==\nEn clair : Le PoW dépense énormément d'énergie, et tricher demande 51 % du réseau. En PoS, les validators engagent du collateral et touchent un rendement dessus.",
+        "PoW : ==miners résolvent un problème cryptographique== · PoS : ==validators engagent du collateral (staking)==\nEn clair : Le PoW dépense énormément d'énergie, et tricher demande 51 % du réseau. En PoS, les validators touchent un rendement sur leur collateral.",
       ],
       [
         "Permissionless vs permissioned network en DLT (distributed ledger technology) : quelle différence ?",
@@ -260,11 +260,11 @@ export const SETS = [
       ],
       [
         "Cryptocurrency, altcoin, stablecoin, meme coin, CBDC (central bank digital currency) : quelle différence ?",
-        "Cryptocurrency : ==sans banque centrale== · Altcoin : ==alternative au Bitcoin== · Stablecoin : ==indexée sur un actif== · Meme coin : ==pour s'amuser== · CBDC : ==banque centrale==\nEn clair : Ether est un altcoin à smart contracts, Tether une stablecoin au dollar.\nPiège : une stablecoin ne s'échange pas contre du fiat et n'a aucun backing légal.",
+        "Cryptocurrency : ==monnaie digitale décentralisée== · Altcoin : ==crypto autre que le Bitcoin== · Stablecoin : ==valeur liée à un actif== · Meme coin : ==crypto lancée pour s'amuser== · CBDC : ==monnaie digitale d'une banque centrale==\nEn clair : Ether est un altcoin à smart contracts, Tether une stablecoin au dollar.\nPiège : une stablecoin n'offre ni conversion en fiat ni backing légal.",
       ],
       [
         "Quels sont les principaux types de tokens en digital assets, et que représente chacun ?",
-        "NFT : ==objet unique== · Security : ==titres cotés== · Utility : ==services du réseau== · Governance : ==droit de vote== · Asset-backed : ==actif non digital==\nEn clair : NFT = nonfungible token. ICO (initial coin offering) : security token non régulé, le plus souvent sans droit de vote. DeFi (decentralized finance) : marché de dApps (decentralized applications).",
+        "NFT : ==objet digital unique== · Security : ==titres cotés digitalisés== · Utility : ==paie les services du réseau== · Governance : ==vote sur le réseau== · Asset-backed : ==propriété d'un actif non digital==\nEn clair : NFT = nonfungible token. ICO (initial coin offering) : security token non régulé, souvent sans vote. DeFi (decentralized finance) : marché de dApps (decentralized applications).",
       ],
       [
         "Qu'est-ce qui détermine la valeur d'un digital asset comme le Bitcoin, et quel est son profil rendement/risque ?",
@@ -272,7 +272,7 @@ export const SETS = [
       ],
       [
         "Centralized vs decentralized exchanges pour les cryptocurrencies : lesquels dominent, et lesquels résistent mieux aux attaques ?",
-        "Centralized : ==les plus utilisés== · Decentralized : ==plus résistants aux attaques==\nEn clair : Les centralized tournent sur des serveurs privés, piratables (fuite des clés de wallet). Les decentralized, sans autorité, sont durs à réguler. Les deux sont peu régulés.",
+        "Centralized : ==plateformes privées, serveurs privés== → les plus utilisés · Decentralized : ==sans autorité, sur réseau distribué== → plus résistants\nEn clair : Un serveur privé piraté peut stopper le trading et laisser fuir les clés de wallet. Les decentralized sont durs à réguler. Les deux sont peu régulés.",
       ],
       [
         "Comment s'exposer aux cryptocurrencies sans les détenir en direct dans un wallet ?",

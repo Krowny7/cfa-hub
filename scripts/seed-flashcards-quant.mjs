@@ -28,7 +28,7 @@ export const SETS = [
     cards: [
       [
         "De quoi se compose l'interest rate exigé sur un titre risqué ?",
-        "Real risk-free rate : ==time preference== · Expected inflation : ==pouvoir d'achat== · Default risk premium : ==défaut== · Liquidity premium : ==revente difficile== · Maturity premium : ==échéance longue==\nEn clair : Le taux exigé est la somme des cinq. Les deux premiers forment le nominal risk-free rate, celui d'un T-bill (Treasury bill), sans default, liquidity ni maturity premium.",
+        "Real risk-free rate : ==rémunère l'attente (time preference)== · Expected inflation : ==perte de pouvoir d'achat== · Default risk premium : ==risque de non-paiement== · Liquidity premium : ==titre dur à revendre== · Maturity premium : ==risque des échéances longues==\nEn clair : Le taux exigé est leur somme. Les deux premiers forment le nominal risk-free rate, celui d'un Treasury bill.",
       ],
       [
         "Formule du holding period return (HPR) ? Application : action achetée 40, revendue 46 un an plus tard, avec 2 de dividendes reçus.",
@@ -40,7 +40,7 @@ export const SETS = [
       ],
       [
         "Money-weighted return (MWR) vs time-weighted return (TWR) : un client apporte beaucoup d'argent juste avant une très bonne année. Laquelle sera la plus élevée ?",
-        "MWR : ==pèse l'argent investi== · TWR : ==ignore apports et retraits== · Ici : ==MWR > TWR==\nEn clair : La MWR est l'IRR (internal rate of return) des flux du compte, $\\sum_t CF_t/(1+\\text{MWR})^t = 0$ : la très bonne année, la plus investie, pèse plus.\nPiège : Pour juger le gérant, on prend la TWR. La MWR seulement s'il contrôle les flux.",
+        "MWR : ==IRR des flux, pèse l'argent investi== · TWR : ==compose les sous-périodes, ignore les flux== · Ici : ==MWR > TWR==\nEn clair : La MWR est l'IRR (internal rate of return) du compte, $\\sum_t CF_t/(1+\\text{MWR})^t = 0$. La très bonne année, la plus investie, y pèse donc plus.\nPiège : Pour juger le gérant, on prend la TWR. La MWR seulement s'il contrôle les flux.",
       ],
       [
         "Formule de la time-weighted return (TWR) annualisée ? Application : un portefeuille fait +20 % la 1re année et −10 % la 2e, avec un gros apport entre les deux.",
@@ -97,7 +97,7 @@ export const SETS = [
       ],
       [
         "Mean, median, trimmed mean, winsorized mean : lesquelles résistent aux outliers, et comment ?",
-        "Mean : ==tirée par les outliers== · Median : ==valeur du milieu, résiste== · Trimmed mean : ==retire les extrêmes== · Winsorized mean : ==remplace les extrêmes==\nEn clair : Une 1 % trimmed mean retire 0,5 % des observations de chaque côté. Une 90 % winsorized mean remplace les 5 % de chaque bout par les 5e et 95e percentiles.",
+        "Mean : ==somme / n== → tirée par les outliers · Median : ==valeur du milieu== → résiste · Trimmed mean : ==mean sans les extrêmes== → résiste · Winsorized mean : ==extrêmes remplacés par un percentile== → résiste\nEn clair : Une 1 % trimmed mean retire 0,5 % des observations de chaque côté. Une 90 % winsorized mean ramène les 5 % de chaque bout aux 5e et 95e percentiles.",
       ],
       [
         "Formule de la position d'un percentile dans un échantillon trié ? Application : 3e quartile (Q3, 75e percentile) d'un échantillon de 19 observations.",
@@ -178,7 +178,7 @@ export const SETS = [
       ],
       [
         "Bootstrap vs jackknife : comment chacun ré-échantillonne-t-il, et à quoi ça sert ?",
-        "Bootstrap : ==tirages avec remise== · Jackknife : ==une observation retirée== · But : ==estimer la standard error==\nEn clair : Bootstrap : beaucoup d'échantillons de taille n. Jackknife : n échantillons de taille n − 1. La standard deviation de leurs means = standard error.\nPiège : Le bootstrap demande le plus de calcul ; le jackknife peut réduire le biais.",
+        "Bootstrap : ==n tirages avec remise, répétés souvent== · Jackknife : ==retire une observation à tour de rôle== · But : ==estimer la standard error==\nEn clair : Le jackknife donne donc n échantillons de taille n − 1. La dispersion de leurs means estime la standard error.\nPiège : Le bootstrap demande le plus de calcul ; le jackknife peut réduire le biais.",
       ],
       [
         "Stratified random sampling vs cluster sampling : quelle différence, et lequel sert à répliquer un bond index ?",
@@ -186,7 +186,7 @@ export const SETS = [
       ],
       [
         "Qu'est-ce que la sampling error, et pourquoi le convenience sampling et le judgmental sampling peuvent-ils l'augmenter ?",
-        "Sampling error : ==statistic − parameter== · Convenience, judgmental : ==moins de hasard==\nEn clair : Par exemple, x̄ − μ est une sampling error. Convenience (données faciles d'accès) et judgmental (choix du chercheur) sont moins aléatoires, donc souvent moins représentatifs.\nPiège : Mélanger deux régimes (avant et après 2008) fausse l'échantillon, même tiré au hasard.",
+        "Sampling error : ==écart statistic − parameter== · Convenience : ==observations faciles d'accès== · Judgmental : ==choix selon le jugement de l'analyste==\nEn clair : Convenience et judgmental sampling sont moins aléatoires, donc souvent moins représentatifs : la sampling error grandit.\nPiège : Mélanger deux régimes (avant et après 2008) fausse l'échantillon, même tiré au hasard.",
       ],
       [
         "Que dit le central limit theorem (CLT) ?",
@@ -198,7 +198,7 @@ export const SETS = [
       ],
       [
         "Hypothesis testing : que met-on dans la null hypothesis (H₀) et dans l'alternative hypothesis (Hₐ) ?",
-        "H₀ : ==l'égalité== (=, ≤, ≥) · Hₐ : ==ce qu'on veut démontrer==\nEn clair : On teste H₀ en espérant la rejeter. Two-tailed : Hₐ : μ ≠ μ₀. One-tailed : Hₐ : μ > μ₀ (ou <), avec tout α (significance level) dans une seule queue.\nPiège : On ne dit jamais « accept H₀ », mais « fail to reject H₀ ».",
+        "H₀ : ==ce qu'on espère rejeter, avec l'égalité== (=, ≤, ≥) · Hₐ : ==ce qu'on veut démontrer==\nEn clair : H₀ = null hypothesis, Hₐ = alternative hypothesis. Two-tailed : Hₐ : μ ≠ μ₀. One-tailed : Hₐ : μ > μ₀ (ou <), avec tout α (significance level) dans une seule queue.\nPiège : On ne dit jamais « accept H₀ », mais « fail to reject H₀ ».",
       ],
       [
         "Formule du test statistic d'un test sur une moyenne ? Application : n = 100, x̄ = 7 %, s = 10 % ; H₀ : μ = 5 % contre Hₐ : μ ≠ 5 %, α = 5 % (t critique 1,98). Décision ?",
@@ -206,11 +206,11 @@ export const SETS = [
       ],
       [
         "Type I error vs Type II error : que sont-elles, et quelle probabilité mesure chacune ?",
-        "Type I : rejeter H₀ ==vraie== · Type II : garder H₀ ==fausse== · Probabilités : ==α et β==\nEn clair : H₀ = null hypothesis, α = significance level = P(Type I error), β = P(Type II error). Conclure qu'un gérant sans talent bat « significativement » le marché = Type I error.",
+        "Type I : ==rejeter H₀ vraie== · Type II : ==ne pas rejeter H₀ fausse== · Probabilités : ==α et β==\nEn clair : H₀ = null hypothesis, α = significance level = P(Type I error), β = P(Type II error). Conclure qu'un gérant sans talent bat « significativement » le marché = Type I error.",
       ],
       [
         "Power of a test : qu'est-ce que c'est, et comment l'augmenter sans augmenter le risque de Type I error ?",
-        "Power = ==1 − β== · Sans toucher α : ==augmenter n==\nEn clair : La power est la probabilité de rejeter H₀ (null hypothesis) quand elle est fausse. β = P(Type II error), α = significance level, n = taille de l'échantillon.\nPiège : À n donné, baisser α augmente β, donc baisse la power. Seul n ↑ réduit les deux.",
+        "Power : ==P(rejeter H₀ fausse), soit 1 − β== · Sans toucher α : ==augmenter n==\nEn clair : La power est la chance de détecter un effet réel. H₀ = null hypothesis, β = P(Type II error), α = significance level, n = taille de l'échantillon.\nPiège : À n donné, baisser α augmente β, donc baisse la power. Seul n ↑ réduit les deux.",
       ],
       [
         "Qu'est-ce que la p-value d'un test, et quelle règle de décision donne-t-elle ?",
@@ -223,7 +223,7 @@ export const SETS = [
     cards: [
       [
         "Comparer les rendements moyens de deux actions sur les mêmes mois : difference in means test ou paired comparisons test ?",
-        "Paired comparisons : ==échantillons dépendants== · Difference in means : ==échantillons indépendants== · Ici : ==paired comparisons test==\nEn clair : Mêmes mois = observations liées : t-test sur la mean des différences, à n − 1 degrees of freedom. Difference in means : pooled variance, $n_1 + n_2 - 2$ degrees of freedom.",
+        "Paired comparisons : ==mean des écarts, échantillons dépendants== · Difference in means : ==écart des means, échantillons indépendants== · Ici : ==paired comparisons test==\nEn clair : Mêmes mois = observations liées : t-test sur la mean des différences, à n − 1 degrees of freedom. Difference in means : pooled variance, $n_1 + n_2 - 2$ degrees of freedom.",
       ],
       [
         "Quel test pour comparer une variance à une valeur, et quel test pour comparer les variances de deux populations ?",
@@ -247,7 +247,7 @@ export const SETS = [
       ],
       [
         "Quelles sont les 4 hypothèses de la simple linear regression ?",
-        "==Linearity== · ==Homoskedasticity== · Résidus ==independent== · Résidus ==normally distributed==\nEn clair : Homoskedasticity = variance des résidus constante (sinon heteroskedasticity). Un residual plot révèle les violations.\nPiège : Une grosse erreur chaque décembre (saisonnalité) : résidus non independent.",
+        "Linearity : ==relation linéaire entre X et Y== · Homoskedasticity : ==variance des résidus constante== · Independence : ==résidus non corrélés== · Normality : ==résidus normally distributed==\nEn clair : Un residual plot révèle les violations, comme l'heteroskedasticity (variance qui change).\nPiège : Une grosse erreur chaque décembre (saisonnalité) : résidus non independent.",
       ],
       [
         "Formule du R² (coefficient of determination) à partir de la table ANOVA (analysis of variance) d'une régression ? Application : SSR = 60, SSE = 40.",
@@ -271,15 +271,15 @@ export const SETS = [
       ],
       [
         "Quelles sont les trois caractéristiques du Big Data, les « trois V » ?",
-        "==Volume== : quantité · ==Velocity== : vitesse, low latency · ==Variety== : de structured à unstructured\nEn clair : Le Big Data mêle sources classiques et alternative data : corporate exhaust, IoT (Internet of Things). On s'en sert en text analytics, NLP (natural language processing), algorithmic trading.",
+        "Volume : ==quantité énorme de données== · Velocity : ==données transmises vite (low latency)== · Variety : ==formats variés, de structured à unstructured==\nEn clair : Le Big Data mêle sources classiques et alternative data : corporate exhaust, IoT (Internet of Things). On s'en sert en text analytics, NLP (natural language processing), algorithmic trading.",
       ],
       [
         "Data science : quelles sont les cinq étapes du data processing ?",
-        "Capture : ==collecter== · Curation : ==contrôle qualité== · Storage : ==archiver== · Search : ==trouver== · Transfer : ==déplacer==\nEn clair : La curation corrige les données fausses ou manquantes. Ensuite vient la visualization (word cloud, mind map).\nPiège : Ajuster deux indices pour leurs jours fériés différents = curation, pas capture.",
+        "Capture : ==collecter en format utile== · Curation : ==corriger données fausses, manquantes== · Storage : ==archiver les données== · Search : ==interroger les données== · Transfer : ==envoyer à l'outil d'analyse==\nEn clair : La visualization (word cloud, mind map) vient après le data processing.\nPiège : Ajuster deux indices pour leurs jours fériés différents = curation, pas capture.",
       ],
       [
         "Machine learning : quelle différence entre supervised learning et unsupervised learning ?",
-        "Supervised : données ==labeled==, output connu · Unsupervised : ==non labeled==, structure cachée\nEn clair : Supervised : prédire l'output à partir des inputs. Unsupervised : trouver une structure. Le deep learning (neural networks en couches) sert aux deux.\nPiège : Overfitting = trop complexe, apprend le bruit. Underfitting = trop simple.",
+        "Supervised : ==données labeled, apprend à prédire l'output== · Unsupervised : ==données non labeled, cherche une structure==\nEn clair : Labeled veut dire que l'output de chaque exemple est connu. Le deep learning (neural networks en couches) sert aux deux.\nPiège : Overfitting = trop complexe, apprend le bruit. Underfitting = trop simple.",
       ],
     ],
   },

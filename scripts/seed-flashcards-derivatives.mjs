@@ -29,7 +29,7 @@ export const SETS = [
       ],
       [
         "Forward commitment vs contingent claim : quelle différence, et dans quelle catégorie range-t-on un CDS (credit default swap) ?",
-        "Forward commitment : ==obligation ferme== · Contingent claim : ==paiement conditionnel== · CDS : ==contingent claim==\nEn clair : Forwards, futures et la plupart des swaps obligent les deux parties. Une option ou un CDS ne paie que si un événement survient.\nPiège : malgré son nom de swap, le CDS est un contingent claim.",
+        "Forward commitment : ==obligation ferme d'échanger plus tard== · Contingent claim : ==paie seulement si un événement survient== · CDS : ==contingent claim==\nEn clair : Forwards, futures et la plupart des swaps obligent les deux parties. Une option donne un droit, et un CDS ne paie qu'après un credit event.\nPiège : malgré son nom de swap, le CDS est un contingent claim.",
       ],
       [
         "Hedging vs speculation avec un derivative : quelle différence ? Un boulanger qui devra acheter du blé doit-il acheter ou vendre des wheat futures ?",
@@ -41,7 +41,7 @@ export const SETS = [
       ],
       [
         "Exchange-traded derivatives vs OTC (over-the-counter) derivatives : quelles sont les différences clés ?",
-        "Exchange-traded : ==standardisé, garanti par CCH== · OTC : ==sur mesure, counterparty risk==\nEn clair : CCH = central clearinghouse. Exchange (futures) : plus liquide, moins cher, transparent, régulé. OTC (forwards, swaps) : contrat privé avec un dealer.",
+        "Exchange-traded : ==contrat standardisé, garanti par une CCH== · OTC : ==contrat privé sur mesure, avec counterparty risk==\nEn clair : CCH = central clearinghouse. Exchange (futures) : plus liquide, moins cher, transparent, régulé. OTC (forwards, swaps) : négocié avec un dealer.",
       ],
       [
         "Quel est le rôle d'une CCH (central clearinghouse) sur un marché de derivatives, et que veut dire novation ?",
@@ -61,7 +61,7 @@ export const SETS = [
       ],
       [
         "Futures : que sont l'initial margin et la maintenance margin, et jusqu'à quel niveau recharger après un margin call ?",
-        "Initial : ==dépôt avant de trader== · Maintenance : ==solde minimum== · Margin call : ==recharger jusqu'à l'initial==\nEn clair : La margin est un collateral déposé par les deux parties, pas un prêt : aucun intérêt à payer.\nPiège : en margin account d'actions, on recharge seulement jusqu'à la maintenance margin.",
+        "Initial margin : ==dépôt exigé avant de trader== · Maintenance margin : ==solde minimum, sinon margin call== · Margin call : ==recharger jusqu'à l'initial margin==\nEn clair : La margin est un collateral déposé par les deux parties, pas un prêt : aucun intérêt à payer.\nPiège : en margin account d'actions, on recharge seulement jusqu'à la maintenance margin.",
       ],
       [
         "Formule du margin call d'un futures ? Application : long 100 onces d'or à 1 950, initial margin 5 000, maintenance margin 4 700, settlement price 1 947,50 au jour 1 puis 1 945 au jour 2.",
@@ -90,7 +90,7 @@ export const SETS = [
     cards: [
       [
         "Quels sont les 4 grands benefits des derivatives par rapport au cash market ?",
-        "==Risk allocation== · ==Information discovery== · ==Operational== advantages · ==Market efficiency==\nEn clair : Risk allocation : transférer un risque (un put pose un plancher). Operational advantages : short facile, transaction costs bas, leverage, liquidity. D'où des prix plus efficients.",
+        "Risk allocation : ==transférer ou ajuster un risque== · Information discovery : ==prix révélateurs des attentes du marché== · Operational advantages : ==coûts bas, short facile, leverage, liquidity== · Market efficiency : ==mispricings corrigés à moindre coût==\nEn clair : Par exemple, un put pose un plancher (risk allocation), et le prix d'une option révèle l'implied volatility.",
       ],
       [
         "Information discovery : quel input du prix d'une option n'est pas observable, et que révèle donc le prix d'une option ?",
@@ -98,7 +98,7 @@ export const SETS = [
       ],
       [
         "Quels sont les 5 grands risques des derivatives ?",
-        "==Implicit leverage== · ==Basis== risk · ==Liquidity== risk · ==Counterparty credit== risk · ==Systemic== risk\nEn clair : Liquidity risk : une couverture peut appeler des margin calls avant de rapporter. Systemic risk : spéculation excessive et contagion.\nPiège : la liquidity est à la fois un benefit et un risque.",
+        "Implicit leverage : ==petite mise, grosse exposition== · Basis risk : ==underlying du hedge ≠ position couverte== · Liquidity risk : ==margin calls avant tout gain== · Counterparty credit risk : ==default de la contrepartie== · Systemic risk : ==contagion à tout le système==\nEn clair : Une spéculation excessive nourrit le systemic risk.\nPiège : la liquidity est aussi un benefit.",
       ],
       [
         "Formule de l'implicit leverage d'un futures ? Application : margin égale à 4 % de la valeur du contrat, futures price en baisse de 1 %.",
@@ -114,7 +114,7 @@ export const SETS = [
       ],
       [
         "Hedge accounting : quelle différence entre cash flow hedge, fair value hedge et net investment hedge ?",
-        "Cash flow : ==flux futurs== · Fair value : ==valeur au bilan== · Net investment : ==filiale étrangère==\nEn clair : Ex. cash flow : recettes en devises vendues forward. Fair value : inventory. Net investment : equity de la filiale.\nPiège : dette swappée flottant → fixe : cash flow hedge ; fixe → flottant : fair value hedge.",
+        "Cash flow : ==couvre la variabilité de flux futurs== · Fair value : ==couvre la valeur d'actifs ou passifs== · Net investment : ==couvre l'equity d'une filiale étrangère==\nEn clair : Exemples : recettes en devises vendues forward (cash flow), inventory couvert (fair value).\nPiège : dette swappée flottant → fixe : cash flow hedge ; fixe → flottant : fair value hedge.",
       ],
       [
         "Comment un investisseur (et non un issuer) utilise-t-il les derivatives ? Donne 4 exemples.",
@@ -155,7 +155,7 @@ export const SETS = [
     cards: [
       [
         "Forward contract : quelle différence entre forward price et forward value, et lequel des deux varie pendant la vie du contrat ?",
-        "Forward price : ==figé à l'initiation== · Forward value : ==0, puis varie==\nEn clair : Le forward price $F_0(T)$ est choisi pour que la value soit nulle en 0. Si le spot price monte ensuite, la value du long devient positive.\nPiège : QCM « equal to zero at initiation » : c'est la value, pas le price.",
+        "Forward price : ==prix d'échange futur, fixé à l'initiation== · Forward value : ==valeur du contrat, 0 puis variable==\nEn clair : Le forward price $F_0(T)$ est choisi pour que la value soit nulle en 0. Si le spot price monte ensuite, la value du long devient positive.\nPiège : QCM « equal to zero at initiation » : c'est la value, pas le price.",
       ],
       [
         "Formule de la value du long d'un forward en cours de vie, sans costs ni benefits ? Application : forward à 1 an conclu à 31,50, risk-free rate 5 %, spot price 33 six mois plus tard.",
@@ -195,7 +195,7 @@ export const SETS = [
       ],
       [
         "Convexity bias : pourquoi un FRA (forward rate agreement) et un interest rate futures équivalent n'ont-ils pas le même payoff pour ±1 bp (basis point) ?",
-        "FRA : ==actualisé, donc convexe== · Interest rate futures : ==linéaire==\nEn clair : Payoff du long FRA = $NP \\times (MRR - FRA) \\times t / (1 + MRR \\times t)$ (MRR = market reference rate). Ex. 6m6m à 2,50 %, 1 million, t = 0,5 : à 2,51 %, le long reçoit 50 / 1,01255 = 49,38, à 2,49 %, il paie 50 / 1,01245 = 49,39. Futures : 50 pile.",
+        "FRA : ==payoff actualisé, donc convexe== · Interest rate futures : ==payoff linéaire, non actualisé==\nEn clair : Payoff du long FRA = $NP \\times (MRR - FRA) \\times t / (1 + MRR \\times t)$ (MRR = market reference rate). Ex. 6m6m à 2,50 %, 1 million, t = 0,5 : à 2,51 %, le long reçoit 50 / 1,01255 = 49,38, à 2,49 %, il paie 50 / 1,01245 = 49,39. Futures : 50 pile.",
       ],
       [
         "En quoi un interest rate swap ressemble-t-il à une série de FRAs (forward rate agreements), et en quoi diffère-t-il ?",
@@ -203,7 +203,7 @@ export const SETS = [
       ],
       [
         "Interest rate swap : quelle différence entre son price et sa value, et quand le fixed-rate payer gagne-t-il ?",
-        "Price : ==taux fixe, figé== · Value : ==0, puis varie== · Taux ↑ : ==fixed-rate payer gagne==\nEn clair : Value du fixed-rate payer = PV (present value) des flottants attendus − PV des fixes. Elle monte si les taux attendus montent, et sert aux paiements de mark-to-market.",
+        "Price : ==le swap rate fixe, figé au départ== · Value : ==valeur du swap, 0 puis variable== · Taux ↑ : ==fixed-rate payer gagne==\nEn clair : Value du fixed-rate payer = PV (present value) des flottants attendus − PV des fixes. Elle monte si les taux attendus montent, et sert aux paiements de mark-to-market.",
       ],
       [
         "Formule du par swap rate d'un interest rate swap ? Application : swap annuel à 3 ans, spot rates à 1, 2 et 3 ans de 1 %, 2 % et 3 %.",
