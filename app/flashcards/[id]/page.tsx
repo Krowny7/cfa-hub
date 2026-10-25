@@ -8,8 +8,10 @@ import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
 import { ShareButton } from "@/components/ShareButton";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
 import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfFolder, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
-import { onePagerFile, subjectByKey } from "@/components/reviser/catalog";
-import { themePaquet } from "@/lib/flashcards/paquets";
+import { fichePaquetFile, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
+import { LienFiche } from "@/components/flashcards/Panneaux";
+import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
+import { BOUCLE } from "@/lib/voice-z3c";
 import { cleSet, etatAffiche } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
@@ -91,13 +93,18 @@ export default async function FlashcardSetPage({ params }: PageProps) {
   // Le one-pager de la matière (une page A4, bucket privé « fiches », URL
   // signée d'une heure) : proposé en fin de boucle, absent s'il n'est pas en ligne.
   const onePagerSlug = subject ? subjectByKey(subject.key)?.onePager : null;
-  const onePager = onePagerSlug
-    ? await supabase.storage
-        .from("fiches")
-        .createSignedUrl(onePagerFile(onePagerSlug), 3600)
-        .then((r) => (r.error ? null : (r.data?.signedUrl ?? null)))
-        .catch(() => null)
-    : null;
+  // La mini-fiche du paquet (une page A5, les notions de ses cartes seulement), même bucket : dans l'en-tête.
+  const numero = set.is_official ? numeroPaquet(set.title) : null;
+  const signer = (fichier: string) =>
+    supabase.storage
+      .from("fiches")
+      .createSignedUrl(fichier, 3600)
+      .then((r) => (r.error ? null : (r.data?.signedUrl ?? null)))
+      .catch(() => null);
+  const [onePager, fiche] = await Promise.all([
+    onePagerSlug ? signer(onePagerFile(onePagerSlug)) : Promise.resolve(null),
+    onePagerSlug && numero ? signer(fichePaquetFile(onePagerSlug, numero)) : Promise.resolve(null),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
@@ -110,7 +117,14 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         eyebrow={eyebrow}
         meta={[plural(cards.length, "carte", "cartes"), visibilityLabel(set.visibility)]}
         etat={progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
-        rightSlot={set.share_token ? <ShareButton token={set.share_token} base="flashcards" /> : null}
+        rightSlot={
+          fiche || set.share_token ? (
+            <>
+              {fiche && <LienFiche href={fiche} libelle={BOUCLE.fichePaquet} aide={BOUCLE.fichePaquetAide} />}
+              {set.share_token && <ShareButton token={set.share_token} base="flashcards" />}
+            </>
+          ) : null
+        }
       />
 
       {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}

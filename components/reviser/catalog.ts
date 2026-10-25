@@ -49,6 +49,11 @@ export const SUBJECTS: Subject[] = DEFS.map(({ courseTitle, ...d }) => ({
 
 /** Nom du PDF d'un one-pager dans le bucket privé « fiches » (envoyé par scripts/upload-one-pagers.mjs). */
 export const onePagerFile = (slug: string) => `one-pager-${slug}.pdf`;
+/** Les fiches des flashcards d'une matière (bucket privé « fiches », envoyées par
+ * scripts/upload-fiches-flashcards.mjs) : la mini-fiche A5 du paquet n (1 à 4) et le
+ * one-pager A4 de toutes ses cartes. Une fiche absente du bucket n'affiche pas de lien. */
+export const fichePaquetFile = (slug: string, n: number) => `flashcards-${slug}-${n}.pdf`;
+export const ficheCartesFile = (slug: string) => `flashcards-${slug}.pdf`;
 
 /** Le PDF du one-pager de la matière d'une fiche, d'après le PDF de la fiche (« fixed-income.pdf »). */
 export function onePagerOfFichePdf(fichePdf: string): string | null {

@@ -145,6 +145,11 @@ export const BOUCLE = {
   autres: "Autres paquets",
   onePager: "Le one-pager",
   onePagerAide: "La matière sur une page A4, dans un nouvel onglet",
+  /** les fiches tirées des flashcards : la mini-fiche d'un paquet, le one-pager de toutes les cartes */
+  ficheCartes: (n: number) => `Fiche des ${nombre(n)} cartes`,
+  ficheCartesAide: "Toutes les notions des flashcards de la matière sur une page A4, dans un nouvel onglet",
+  fichePaquet: "Mini-fiche",
+  fichePaquetAide: "Les notions de ce paquet sur une page A5, dans un nouvel onglet",
   /** la reprise d'une boucle entamée */
   repriseSur: "Boucle en cours",
   repriseTitre: (tour: number, rang: number, total: number, entracte: boolean, aRevoir: number) =>

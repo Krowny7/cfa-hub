@@ -4,9 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { CFA_SUBJECTS, ContentDetailHeader, groupBySubject, plural } from "@/components/ContentDetailHeader";
 import { FlashcardReview, type FlashcardCard } from "@/components/FlashcardReview";
-import { LienOnePager, MatiereVide, PaquetsDeLaMatiere } from "@/components/flashcards/Panneaux";
-import { onePagerFile, subjectByKey } from "@/components/reviser/catalog";
-import { themePaquet } from "@/lib/flashcards/paquets";
+import { LienFiche, LienOnePager, MatiereVide, PaquetsDeLaMatiere } from "@/components/flashcards/Panneaux";
+import { ficheCartesFile, fichePaquetFile, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
+import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
+import { BOUCLE } from "@/lib/voice-z3c";
 import { cleMatiere, cleSet, etatAffiche, etatListe } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
@@ -73,7 +74,18 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   const paquets = (groupe?.rows ?? []).filter((r) => r.kind === "set");
   const rang = new Map(paquets.map((p, i) => [p.id, i]));
 
-  const [lignes, progressions] = await Promise.all([
+  // les fiches tirées des flashcards (bucket privé « fiches », URL signées d'une heure, une seule requête) :
+  // le one-pager de toutes les cartes et la mini-fiche de chaque paquet ; une fiche absente n'a pas de lien
+  const fichiers = onePagerSlug
+    ? [
+        ficheCartesFile(onePagerSlug),
+        ...paquets.flatMap((p) => {
+          const n = numeroPaquet(p.title);
+          return n ? [fichePaquetFile(onePagerSlug, n)] : [];
+        }),
+      ]
+    : [];
+  const [lignes, progressions, fiches] = await Promise.all([
     paquets.length
       ? admin
           .from("flashcards")
@@ -87,7 +99,19 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
       : Promise.resolve([] as CardRow[]),
     // les boucles de la matière et de ses paquets seulement
     lireProgressions(supabase, auth.user.id, [cle, ...paquets.map((p) => cleSet(p.id))]),
+    fichiers.length
+      ? supabase.storage
+          .from("fiches")
+          .createSignedUrls(fichiers, 3600)
+          .then((r) => new Map((r.data ?? []).filter((x) => !x.error && x.path && x.signedUrl).map((x) => [x.path as string, x.signedUrl] as [string, string])))
+          .catch(() => new Map<string, string>())
+      : Promise.resolve(new Map<string, string>()),
   ]);
+  const ficheCartes = onePagerSlug ? (fiches.get(ficheCartesFile(onePagerSlug)) ?? null) : null;
+  const ficheDe = (title: string) => {
+    const n = numeroPaquet(title);
+    return onePagerSlug && n ? (fiches.get(fichePaquetFile(onePagerSlug, n)) ?? null) : null;
+  };
 
   let cards: FlashcardCard[] = [];
   if (paquets.length) {
@@ -110,7 +134,14 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
         eyebrow={MATIERE_CARTES.surTitre}
         meta={cards.length ? [plural(cards.length, "carte", "cartes"), MATIERE_CARTES.paquets(paquets.length)] : []}
         etat={cards.length && progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} /> : null}
-        rightSlot={onePager ? <LienOnePager href={onePager} className="btn btn-secondary btn-sm min-h-[44px]" /> : null}
+        rightSlot={
+          onePager || ficheCartes ? (
+            <>
+              {onePager && <LienOnePager href={onePager} className="btn btn-secondary btn-sm min-h-[44px]" />}
+              {ficheCartes && <LienFiche href={ficheCartes} libelle={BOUCLE.ficheCartes(cards.length || 60)} aide={BOUCLE.ficheCartesAide} />}
+            </>
+          ) : null
+        }
       />
 
       {cards.length ? (
@@ -133,6 +164,7 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
               theme: themePaquet(p.title),
               cartes: idsDe(p.id).length,
               etat: progressions ? etatListe(cleSet(p.id), progressions.get(cleSet(p.id)), idsDe(p.id), auth.user.id) : null,
+              fiche: ficheDe(p.title),
             }))}
           />
         </>

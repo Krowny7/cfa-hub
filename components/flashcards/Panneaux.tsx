@@ -201,6 +201,15 @@ export function Reprise({
 }
 
 /** Le lien vers le one-pager de la matière (PDF, nouvel onglet). */
+/** Une fiche tirée des flashcards (mini-fiche d'un paquet, fiche de toutes les cartes) : PDF dans un nouvel onglet. */
+export function LienFiche({ href, libelle, aide, className = "btn btn-secondary btn-sm min-h-[44px]" }: { href: string; libelle: string; aide: string; className?: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className} title={aide}>
+      <FileText size={16} aria-hidden /> {libelle} <ArrowUpRight size={14} aria-hidden className="text-muted" />
+    </a>
+  );
+}
+
 export function LienOnePager({ href, className = "btn btn-secondary btn-lg" }: { href: string; className?: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={className} title={BOUCLE.onePagerAide}>
@@ -255,7 +264,7 @@ export function MatiereVide({ matiere, onePager }: { matiere: string; onePager: 
 }
 
 /** Sous la révision d'une matière : ses paquets, un par ligne (et où en est chacun), pour en réviser un seul. */
-export function PaquetsDeLaMatiere({ paquets }: { paquets: { id: string; theme: string; cartes: number; etat?: EtatListe | null }[] }) {
+export function PaquetsDeLaMatiere({ paquets }: { paquets: { id: string; theme: string; cartes: number; etat?: EtatListe | null; fiche?: string | null }[] }) {
   if (paquets.length === 0) return null;
   return (
     <section className="rl-section mt-6 md:mt-10" aria-labelledby="paquets-matiere">
@@ -264,17 +273,33 @@ export function PaquetsDeLaMatiere({ paquets }: { paquets: { id: string; theme: 
       </h2>
       <div className="card divide-y divide-line overflow-hidden">
         {paquets.map((p, i) => (
-          <Link key={p.id} href={`/flashcards/${p.id}`} className="rl-row group flex min-h-[52px] items-center gap-4 px-5 py-3 md:px-6">
-            <span className="w-5 shrink-0 font-mono text-[12px] font-semibold tabular-nums text-muted">{String(i + 1).padStart(2, "0")}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">{p.theme}</span>
-              {/* téléphone : sous le thème, qui garde toute la largeur */}
-              <EtatPaquetListe etat={p.etat} className="mt-1.5 sm:hidden" />
-            </span>
-            <EtatPaquetListe etat={p.etat} className="hidden sm:inline-flex" />
-            <span className="t-micro shrink-0 tabular-nums">{nCartes(p.cartes)}</span>
-            <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          // la ligne mène au paquet ; sa mini-fiche (PDF, si elle est en ligne) est un second lien à droite
+          <div key={p.id} className="flex items-center">
+            <Link href={`/flashcards/${p.id}`} className="rl-row group flex min-h-[52px] min-w-0 flex-1 items-center gap-4 px-5 py-3 md:px-6">
+              <span className="w-5 shrink-0 font-mono text-[12px] font-semibold tabular-nums text-muted">{String(i + 1).padStart(2, "0")}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">{p.theme}</span>
+                {/* téléphone : sous le thème, qui garde toute la largeur */}
+                <EtatPaquetListe etat={p.etat} className="mt-1.5 sm:hidden" />
+              </span>
+              <EtatPaquetListe etat={p.etat} className="hidden sm:inline-flex" />
+              <span className="t-micro shrink-0 tabular-nums">{nCartes(p.cartes)}</span>
+              <ChevronRight size={16} aria-hidden className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            {p.fiche && (
+              <a
+                href={p.fiche}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rl-row mr-2 inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1.5 rounded-[12px] px-2.5 text-[13px] font-semibold md:mr-3"
+                title={BOUCLE.fichePaquetAide}
+                aria-label={`${BOUCLE.fichePaquet} · ${p.theme}`}
+              >
+                <FileText size={16} aria-hidden />
+                <span className="max-sm:hidden">{BOUCLE.fichePaquet}</span>
+              </a>
+            )}
+          </div>
         ))}
       </div>
     </section>

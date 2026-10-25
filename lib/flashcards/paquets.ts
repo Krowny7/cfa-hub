@@ -16,6 +16,12 @@ export function themePaquet(title: string | null | undefined): string {
   return (m?.[1] ?? t).trim();
 }
 
+/** Le numéro d'un paquet officiel : « Fixed Income — Flashcards 2/4 (…) » → 2 ; null pour un titre libre. */
+export function numeroPaquet(title: string | null | undefined): number | null {
+  const m = /Flashcards\s+(\d+)\s*\/\s*\d+/i.exec(title ?? "");
+  return m ? Number(m[1]) : null;
+}
+
 /** L'en-tête d'une carte : « Fixed Income · Duration & convexity » (ce qui existe des deux). */
 export function lieuCarte(matiere: string | null | undefined, theme: string | null | undefined): string {
   return [matiere, theme].filter((x): x is string => !!x && x.trim().length > 0).join(" · ") || "Flashcards";
