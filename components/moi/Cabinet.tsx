@@ -79,7 +79,9 @@ function lire(d: MoiData, now?: number) {
     : null;
   // ratures au carnet, d'où qu'elles viennent (repli : l'ancien carnet des fiches)
   const nRatures = d.ratures.available ? d.ratures.total : d.errors.available ? d.errors.total : 0;
-  return { jj, examen, rank, placement, palier, faibles, r, source: source ? { nom: SOURCES[source[0]] ?? source[0], n: source[1] } : null, obj, marquees: d.marquees.items.length, nRatures };
+  // les marquées : les questions, et les flashcards quand leur table répond
+  const nCartesMarquees = d.nCartesMarquees ?? 0;
+  return { jj, examen, rank, placement, palier, faibles, r, source: source ? { nom: SOURCES[source[0]] ?? source[0], n: source[1] } : null, obj, marquees: d.marquees.items.length, nCartesMarquees, nRatures };
 }
 type Lu = ReturnType<typeof lire>;
 
@@ -224,8 +226,10 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
             <TuileCalme
               icone={<Bookmark size={18} aria-hidden />}
               titre={CAB.tuileMarquees}
-              droite={<span className="t-micro font-mono font-semibold">{lu.marquees}</span>}
-              ligne={lu.marquees > 0 ? CAB.marqueesLigne : CAB.marqueesVide}
+              droite={<span className="t-micro font-mono font-semibold">{lu.marquees + lu.nCartesMarquees}</span>}
+              ligne={
+                lu.nCartesMarquees > 0 ? CAB.marqueesDetail(lu.marquees, lu.nCartesMarquees) : lu.marquees > 0 ? CAB.marqueesLigne : CAB.marqueesVide
+              }
               actions={
                 <Link href={ONGLET("marquees")} className={lienTuile}>
                   {CAB.marqueesLien} <ArrowRight size={14} aria-hidden />

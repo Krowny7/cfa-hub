@@ -1,12 +1,15 @@
 import { TopicBadge } from "@/components/TopicSelector";
 import { RichText } from "@/components/RichText";
 import { VersoCompact } from "@/components/flashcards/Verso";
+import { MarqueCarte } from "@/components/flashcards/MarqueCarte";
+import { MARQUE_CARTE } from "@/lib/voice-z3c";
 
 type Card = { id: string; front: string; back: string; position: number; topic_id?: number | null };
 
 // Toutes les cartes d'un paquet, en lecture seule : le recto et le verso
 // compact (les trois cases) côte à côte. Les paquets sont officiels : on ne
-// crée, ne modifie ni ne supprime de carte depuis le site.
+// crée, ne modifie ni ne supprime de carte depuis le site. Chaque carte peut
+// être marquée (Moi › Marquées), comme dans la révision.
 export function FlashcardCardEditor({ cards }: { cards: Card[] }) {
   if (cards.length === 0) return <p className="t-small">Aucune carte pour l&apos;instant.</p>;
 
@@ -27,6 +30,8 @@ export function FlashcardCardEditor({ cards }: { cards: Card[] }) {
                 ) : null}
               </div>
             </div>
+            {/* le signet, dans le coin : 44 px de cible sans agrandir la ligne */}
+            <MarqueCarte cardId={c.id} source="liste" variante="ligne" nom={MARQUE_CARTE.nomCarte(c.position)} className="-my-2.5 -mr-2.5" />
           </div>
         </li>
       ))}

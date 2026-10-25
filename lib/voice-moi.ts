@@ -47,7 +47,10 @@ export const CAB = {
   carnetOuvrir: "Ouvrir le carnet",
   tuileMarquees: "Marquées",
   marqueesLigne: "Les questions que tu as gardées pour plus tard.",
-  marqueesVide: "Aucune pour l'instant : touche « Marquer » après une réponse.",
+  /** des flashcards marquées aussi : le détail des deux */
+  marqueesDetail: (questions: number, cartes: number) =>
+    `${fmtInt(questions)} question${s(questions)} · ${fmtInt(cartes)} flashcard${s(cartes)}, gardée${s(questions + cartes)} pour plus tard.`,
+  marqueesVide: "Aucune pour l'instant : touche « Marquer » après une réponse ou sur une flashcard.",
   marqueesLien: "Les revoir",
   // le rang
   rangPlace: (ordinalPlace: string | null, total: number | null) => (ordinalPlace !== null && total !== null ? `${ordinalPlace} sur ${total}` : "pas encore classé"),
@@ -98,11 +101,33 @@ export const REG = {
     phrase: "Ce que tu as gardé pour plus tard : l'énoncé, la bonne réponse et l'explication.",
     action: "Les revoir",
     liste: "Par rubrique",
-    listeTitre: "Toutes tes marquées",
+    listeTitre: "Toutes tes questions marquées",
     asideKicker: "Comment ça marche",
     asideTitre: "Marquer",
-    asideLigne: "Le bouton « Marquer » apparaît après chaque réponse, partout.",
+    asideLigne: "Le bouton « Marquer » apparaît après chaque réponse, partout, et sur chaque flashcard pendant sa révision.",
     asideLien: "Voir la liste",
+    /** sans héros (aucune question marquée), quand les flashcards marquées existent aussi */
+    kickerTout: "Tes marquées",
+    /** ni question ni flashcard marquée */
+    videTitre: "Aucune question ni flashcard marquée",
+    videLigne:
+      "Après avoir répondu à une question (fiche, session, défi du jour, duel), ou pendant la révision d'une flashcard, touche « Marquer » : tu la retrouves ici pour revoir la notion.",
+    /** des flashcards marquées, mais aucune question */
+    sansQuestion: "Aucune question marquée pour l'instant : touche « Marquer » après une réponse pour la garder ici.",
+  },
+  /** Moi › Marquées : la partie des flashcards marquées */
+  cartes: {
+    titre: "Flashcards marquées",
+    reviser: "Réviser mes flashcards marquées",
+    filtre: "Filtrer par matière",
+    toutes: (n: number) => `Toutes · ${fmtInt(n)}`,
+    marqueeLe: (jour: string) => `marquée le ${jour}`,
+    retiree: "marque retirée",
+    paquet: (theme: string) => `Ouvrir le paquet${theme ? ` « ${theme} »` : ""}`,
+    /** la lecture a échoué, ou la page date d'avant que les marques de l'appareil rejoignent le compte */
+    indisponible: "Les flashcards marquées n'ont pas pu être chargées. Recharge la page dans un instant.",
+    surAppareil: (n: number) =>
+      `${fmtInt(n)} flashcard${s(n)} marquée${s(n)}, gardée${s(n)} sur cet appareil le temps d'une mise à jour du site : ${n > 1 ? "elles s'afficheront" : "elle s'affichera"} ici ensuite.`,
   },
   rubriquesEgales: (rubriques: string[], n: number) => `${rubriques.length} rubrique${s(rubriques.length)}, ${n} question${s(n)} chacune : ${rubriques.join(", ")}.`,
   reglagesKicker: "Moi · Réglages",

@@ -115,7 +115,9 @@ export function marquer(e: EtatBoucle, su: boolean, maintenant: number = Date.no
   const id = e.file[e.pos];
   if (id === undefined) return e;
   const marques = { ...e.marques, [id]: su };
-  const premier = e.tour === 1 ? { ...e.premier, [id]: su } : e.premier;
+  // la première marque de chaque carte : toutes au tour 1, sauf une carte
+  // arrivée après (accueillir), notée à sa première marque
+  const premier = e.tour === 1 || !a(e.premier, id) ? { ...e.premier, [id]: su } : e.premier;
   const pos = prochaine(e.file, marques, e.pos);
   const pause = Math.max(0, Math.min(PAUSE_MAX, maintenant - e.dernier));
   const fini = pos >= e.file.length && !e.file.some((x) => marques[x] === false);
@@ -308,6 +310,31 @@ export function reparer(e: EtatBoucle, ids: readonly string[]): EtatBoucle | nul
     if (pos >= file.length || (!garde && a(marques, file[pos]))) pos = prochaine(file, marques, Math.min(pos, file.length) - 1);
   } else pos = file.length;
   return { ...out, pos };
+}
+
+/**
+ * Accueille dans une boucle relue (déjà réparée) les cartes arrivées depuis :
+ * la révision des flashcards marquées, quand une carte a été marquée
+ * entre-temps. Celles qui ne sont ni dans la file ni dans le tour 1 (premier)
+ * rejoignent la fin du tour en cours, sans marque, dans l'ordre reçu ; le
+ * tour 1 (parcours[0], le bilan) les compte, et un tour bouclé (entracte)
+ * reprend sur la première d'entre elles. Sans carte nouvelle, ou boucle finie
+ * (une neuve la remplace) : l'état tel quel. Une carte arrivée en cours de
+ * route a sa première marque notée dans premier (marquer) : maîtrisée au
+ * tour 2, elle ne revient pas au passage suivant.
+ */
+export function accueillir(e: EtatBoucle, ids: readonly string[]): EtatBoucle {
+  if (phase(e) === "fin") return e;
+  const dans = new Set(e.file);
+  const nouvelles = [...new Set(ids)].filter((id) => !dans.has(id) && !a(e.premier, id));
+  if (nouvelles.length === 0) return e;
+  const avant = e.file.length;
+  const file = [...e.file, ...nouvelles];
+  // mêmes règles que reparer : le tour en cours est la file, les tours d'entre-deux restent décroissants
+  const parcours = e.tour === 1 ? [file.length] : [(e.parcours[0] ?? avant) + nouvelles.length, ...e.parcours.slice(1, -1), file.length];
+  for (let i = 1; i < parcours.length; i++) parcours[i] = Math.max(file.length, Math.min(parcours[i], parcours[i - 1]));
+  // tour bouclé (pos = file.length) : la première nouvelle carte ; sinon la carte à l'écran
+  return { ...e, file, parcours, pos: Math.min(Math.max(0, Math.floor(e.pos)), avant), fin: null };
 }
 
 // ---------------------------------------------------------------------------

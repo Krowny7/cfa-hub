@@ -7,6 +7,7 @@
 import {
   PAUSE_MAX,
   aRevoir,
+  accueillir,
   aller,
   bilan,
   carteCourante,
@@ -307,6 +308,51 @@ console.log("— Réparation (le paquet a changé entre-temps)");
   ecrireBoucle("s", e, st);
   const r6 = lireBoucle("s", ["a", "c", "d", "e"], st)!;
   check("lireBoucle répare", eq(r6.file, ["a", "c", "d", "e"]));
+}
+
+// ---------------------------------------------------------------------------
+console.log("— Cartes arrivées depuis (révision des flashcards marquées)");
+{
+  // tour 1 entamé
+  let e = demarrer(["a", "b", "c"], { maintenant: T0 });
+  e = marquer(e, true); // a, b à l'écran
+  check("sans carte nouvelle : l'état tel quel", accueillir(e, ["a", "b", "c"]) === e);
+  const t1 = accueillir(e, ["a", "x", "b", "c", "y"]);
+  check("tour 1 : les nouvelles en fin de file, dans l'ordre reçu", eq(t1.file, ["a", "b", "c", "x", "y"]));
+  check("tour 1 : parcours [5], la carte à l'écran reste b", eq(t1.parcours, [5]) && carteCourante(t1) === "b");
+  check("tour 1 : marques gardées, nouvelles sans marque", eq(t1.marques, { a: true }));
+  check("l'état d'avant n'est pas modifié", eq(e.file, ["a", "b", "c"]));
+  // entracte du tour 1
+  let f = demarrer(["a", "b", "c"], { maintenant: T0 });
+  f = marquer(marquer(marquer(f, true), false), true);
+  check("entracte avant l'arrivée", phase(f) === "entracte");
+  const t2 = accueillir(f, ["a", "b", "c", "x"]);
+  check("entracte : le tour reprend sur la nouvelle", phase(t2) === "carte" && carteCourante(t2) === "x" && t2.pos === 3);
+  check("entracte : parcours [4], en cours", eq(t2.parcours, [4]) && enCours(t2));
+  const t2b = marquer(t2, true);
+  check("la nouvelle marquée : entracte, le bilan la compte", phase(t2b) === "entracte" && bilan(t2b).cartes === 4 && bilan(t2b).premierSues === 3);
+  // tour 2
+  let g = demarrer(["a", "b", "c", "d"], { maintenant: T0 });
+  g = marquer(marquer(marquer(marquer(g, true), false), false), true); // b, c à revoir
+  g = tourSuivant(g, { rng: () => 0 });
+  check("tour 2 sur 2", g.tour === 2 && eq(g.parcours, [4, 2]));
+  const t3 = accueillir(g, ["a", "b", "c", "d", "x"]);
+  check("tour 2 : la nouvelle en fin de file", t3.file.length === 3 && t3.file[2] === "x");
+  check("tour 2 : parcours [5, 3]", eq(t3.parcours, [5, 3]), String(t3.parcours));
+  check("tour 2 : les maîtrisées du tour 1 ne reviennent pas", !t3.file.includes("a") && !t3.file.includes("d"));
+  // la nouvelle, maîtrisée au tour 2, ne revient pas au passage suivant
+  let h = t3;
+  while (phase(h) === "carte") h = marquer(h, carteCourante(h) === "x" || carteCourante(h) === "b");
+  check("tour 2 bouclé : entracte avec c", phase(h) === "entracte" && eq(aRevoir(h), ["c"]));
+  check("la nouvelle a sa première marque", h.premier.x === true);
+  h = tourSuivant(h, { rng: () => 0 });
+  check("tour 3 : la nouvelle maîtrisée n'est pas réaccueillie", accueillir(h, ["a", "b", "c", "d", "x"]) === h);
+  // boucle finie : une neuve la remplace, rien n'est accueilli
+  let k = demarrer(["a", "b"], { maintenant: T0 });
+  k = marquer(marquer(k, true), true);
+  check("boucle finie : l'état tel quel", phase(k) === "fin" && accueillir(k, ["a", "b", "x"]) === k);
+  // la première marque d'une boucle ordinaire ne change pas au tour 2
+  check("tour 2 ordinaire : premier inchangé", eq(marquer(g, true).premier, g.premier));
 }
 
 // ---------------------------------------------------------------------------

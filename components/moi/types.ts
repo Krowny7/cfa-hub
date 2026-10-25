@@ -5,6 +5,7 @@ import type { EtatObjectif } from "@/lib/objectif";
 import type { EtatJour } from "@/lib/voice";
 import type { StatutMaitrise } from "@/lib/maitrise";
 import type { Marquees } from "@/components/moi/marquees-data";
+import type { CartesMarquees } from "@/lib/flashcards/marquees";
 import type { Ratures } from "@/components/moi/ratures-data";
 import type { PointsFaiblesData } from "@/lib/points-faibles";
 import type { HistoriqueAteliers } from "@/lib/atelier-seance";
@@ -108,6 +109,10 @@ export type MoiData = {
   objectif: EtatObjectif;
   /** les questions marquées (Moi › Marquées) */
   marquees: Marquees;
+  /** les flashcards marquées (Moi › Marquées, lues sur cet onglet seulement ; absent : pas de partie flashcards) */
+  cartesMarquees?: CartesMarquees;
+  /** le nombre de flashcards marquées (la tuile « Marquées » de Stats ; absent ou null : table absente, pas compté) */
+  nCartesMarquees?: number | null;
   /** « Tes points faibles » (en tête de Stats ; absent : pas de carte) */
   pointsFaibles?: PointsFaiblesData;
   /** l'historique des Ateliers clos (absent ou vide : pas de carte) */

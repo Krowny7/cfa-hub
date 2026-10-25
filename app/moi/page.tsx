@@ -12,6 +12,7 @@ import { getRatures } from "@/components/moi/ratures-data";
 import { construirePointsFaibles, libellesNotions, lireBanqueQcm, lireBasePointsFaibles } from "@/components/moi/points-faibles-data";
 import { avecAtelier, lireEtatAtelier, lireHistoriqueAteliers } from "@/app/atelier/donnees";
 import { getMarquees } from "@/components/moi/marquees-data";
+import { compterCartesMarquees, lireCartesMarquees } from "@/lib/flashcards/marquees";
 import { getSessionHistory } from "@/components/moi/history-data";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { countPlayers, tryAdmin } from "@/components/classement/data";
@@ -71,7 +72,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos, codex] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos, codex, cartesMarquees, nCartesMarquees] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -113,6 +114,10 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     tab === "reglages" ? lirePauses(supabase, new Date(now)) : Promise.resolve(null),
     // le Codex vu de Moi (la tuile d'entrée et l'historique) : une lecture légère, sur Stats seulement
     tab === "stats" ? lireCodexMoi(supabase, user.id, { sobre: lireSobre(user) }) : Promise.resolve(null),
+    // les flashcards marquées (Moi › Marquées), sur leur onglet seulement
+    tab === "marquees" ? lireCartesMarquees(supabase) : Promise.resolve(null),
+    // leur nombre, pour la tuile « Marquées » de Stats (un comptage léger ; null sans la table)
+    tab === "stats" ? compterCartesMarquees(supabase) : Promise.resolve(null),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -148,6 +153,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     errors: carnet.errors,
     ratures: carnet.ratures,
     marquees,
+    ...(cartesMarquees ? { cartesMarquees } : {}),
+    ...(nCartesMarquees !== null ? { nCartesMarquees } : {}),
     sessions,
     answers,
     objectif,

@@ -6,8 +6,9 @@ import { ArrowRight, Bookmark, Check } from "lucide-react";
 import { QuestionPrompt } from "@/components/QuestionPrompt";
 import { Explanation } from "@/components/session/parts";
 import { MarqueQuestion } from "@/components/MarqueQuestion";
-import { useMarques, type SourceMarque } from "@/lib/marques";
+import { useMarques, useMarquesCartes, type SourceMarque } from "@/lib/marques";
 import type { Marquees, QuestionMarquee } from "@/components/moi/marquees-data";
+import { REG } from "@/lib/voice-moi";
 
 // Moi › Marquées : les questions marquées en les croisant (fiches, sessions,
 // défi, duels, QCM, examens blancs), par fiche ou par matière, la plus
@@ -15,6 +16,9 @@ import type { Marquees, QuestionMarquee } from "@/components/moi/marquees-data";
 // l'explication (seulement pour une question déjà répondue). Retirer la
 // marque laisse la carte à sa place, grisée, jusqu'au prochain passage :
 // un clic de trop se rattrape.
+// `cartes` : les flashcards marquées listées à la suite (CartesMarqueesTab) ;
+// sans question marquée, l'état vide parle des deux, ou se réduit à une ligne
+// s'il y a des flashcards (celles de l'appareil comptées après le montage).
 
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 const ORIGINE: Record<SourceMarque, string> = {
@@ -29,8 +33,12 @@ const ORIGINE: Record<SourceMarque, string> = {
 };
 const jour = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 
-export function MarqueesTab({ marquees }: { marquees: Marquees }) {
+export function MarqueesTab({ marquees, cartes }: { marquees: Marquees; cartes?: { available: boolean; n: number; erreur?: boolean } }) {
   const etat = useMarques();
+  // le magasin des flashcards, relu par la partie qui les liste (CartesMarqueesTab)
+  const etatCartes = useMarquesCartes();
+  // les flashcards marquées : listées par le serveur, sinon (table absente) gardées sur l'appareil
+  const nCartes = cartes ? (cartes.available ? cartes.n : etatCartes.ids.size) : 0;
   const rubriques = useMemo(() => {
     const n = new Map<string, number>();
     for (const it of marquees.items) n.set(it.rubrique, (n.get(it.rubrique) ?? 0) + 1);
@@ -48,6 +56,18 @@ export function MarqueesTab({ marquees }: { marquees: Marquees }) {
             ? `${n} question${n > 1 ? "s" : ""} marquée${n > 1 ? "s" : ""}, gardée${n > 1 ? "s" : ""} sur cet appareil le temps d'une mise à jour du site : elles s'afficheront ici ensuite.`
             : "Les questions marquées s'afficheront ici après une mise à jour du site. Tu peux déjà en marquer : elles sont gardées sur cet appareil."}
         </p>
+      </div>
+    );
+  }
+
+  if (marquees.items.length === 0 && cartes) {
+    // des flashcards marquées suivent (ou n'ont pas pu être lues) : une ligne suffit ; sinon l'état vide parle des deux
+    if (nCartes > 0 || cartes.erreur) return <p className="card-quiet t-small m-0 px-5 py-4">{REG.marquees.sansQuestion}</p>;
+    return (
+      <div className="card-quiet grid justify-items-center gap-2 px-6 py-12 text-center">
+        <Bookmark size={26} className="text-muted" aria-hidden />
+        <p className="t-h3 m-0">{REG.marquees.videTitre}</p>
+        <p className="t-small m-0 max-w-[460px]">{REG.marquees.videLigne}</p>
       </div>
     );
   }

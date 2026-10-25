@@ -3,6 +3,8 @@ import { BoutonPlein, FilMoi, HerosMoi, ListeClassee } from "@/components/moi/Br
 import { LienCarnet } from "@/components/moi/Clients";
 import { ErrorsTab } from "@/components/moi/ErrorsSection";
 import { MarqueesTab } from "@/components/moi/MarqueesTab";
+import { CartesMarqueesTab } from "@/components/moi/CartesMarqueesTab";
+import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { RaturesTab } from "@/components/moi/RaturesTab";
 import { Illustration } from "@/components/ui/Illustration";
 import { SOURCES_RATURE } from "@/lib/voice-z1";
@@ -15,7 +17,8 @@ import s from "@/components/moi/Moi.module.css";
 // (?onglet=marquees). Un fil « ← Moi », un héros (titre énorme, une phrase,
 // un bouton plein, la liste des trois sources ou rubriques, ou une phrase s'il
 // n'y a rien à classer), une carte illustrée à côté, puis la liste complète,
-// réduite à ses filtres et à ses lignes. Composant de présentation.
+// réduite à ses filtres et à ses lignes ; les marquées sont suivies des
+// flashcards marquées (CartesMarqueesTab). Composant de présentation.
 
 const SOURCES: Record<string, string> = Object.fromEntries(SOURCES_RATURE);
 
@@ -111,6 +114,8 @@ function resumeMarquees(d: MoiData): Resume | null {
 
 export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "marquees"; now?: number }) {
   const res = liste === "ratures" ? resumeRatures(d) : resumeMarquees(d);
+  // les flashcards marquées, à la suite des questions (lues par la page sur cet onglet)
+  const cartes = liste === "marquees" ? d.cartesMarquees : undefined;
 
   // la liste complète : le carnet de ratures sans son résumé (le héros le remplace), l'ancien carnet des fiches tant que la migration manque, ou les marquées
   const corps =
@@ -121,16 +126,18 @@ export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "ma
         <ErrorsTab errors={d.errors} now={now} />
       )
     ) : (
-      <MarqueesTab marquees={d.marquees} />
+      <MarqueesTab marquees={d.marquees} cartes={cartes ? { available: cartes.available, n: cartes.items.length, erreur: cartes.erreur } : undefined} />
     );
 
-  // sans carnet activé, ou sans marquée : la liste seule (elle explique l'état)
+  // sans carnet activé, ou sans question marquée : la liste seule (elle explique l'état), puis les flashcards marquées
   if (!res) {
     return (
       <div className="rl-wide flex flex-col gap-4">
         <FilMoi label={REG.fil} />
-        <h1 className="t-h1 m-0">{liste === "ratures" ? REG.ratures.kicker : REG.marquees.kicker}</h1>
+        <h1 className="t-h1 m-0">{liste === "ratures" ? REG.ratures.kicker : cartes ? REG.marquees.kickerTout : REG.marquees.kicker}</h1>
         {corps}
+        {cartes && <CartesMarqueesTab cartes={cartes} className="mt-4 md:mt-8" />}
+        {cartes && <SynchroMarquesCartes />}
       </div>
     );
   }
@@ -169,6 +176,9 @@ export function Registre({ d, liste, now }: { d: MoiData; liste: "ratures" | "ma
         </h2>
         {corps}
       </section>
+      {cartes && <CartesMarqueesTab cartes={cartes} />}
+      {/* les flashcards gardées sur l'appareil qui rejoignent le compte : la page se relit une fois */}
+      {cartes && <SynchroMarquesCartes />}
     </div>
   );
 }

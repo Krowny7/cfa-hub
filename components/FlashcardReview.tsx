@@ -10,9 +10,12 @@ import { useTraitsDuJour } from "@/components/session/useTraitsDuJour";
 import { FichePile, type CarteVue, type Envol } from "@/components/flashcards/Pile";
 import { BarreTour, Entracte, LegendeTour, LienOnePager, Reprise } from "@/components/flashcards/Panneaux";
 import { useSynchroBoucle } from "@/components/flashcards/useSynchroBoucle";
+import { MarqueCarte } from "@/components/flashcards/MarqueCarte";
+import type { SourceMarqueCarte } from "@/lib/marques";
 import s from "@/components/flashcards/Revision.module.css";
 import {
   aRevoir,
+  accueillir,
   aller as allerDans,
   bilan,
   boucleDuJoueur,
@@ -65,6 +68,10 @@ import { BOUCLE, FLASHCARDS } from "@/lib/voice-z3c";
 //
 // Raccourcis : Espace/Entrée retourne, ← → naviguent, 1 = à revoir,
 // 2 = maîtrisée, Entrée passe l'entracte, Échap quitte le plein écran.
+//
+// « Marquer » (MarqueCarte, en haut à côté du plein écran) garde la carte à
+// l'écran pour Moi › Marquées et la révision des marquées : un signet, hors
+// de la boucle (il ne retourne ni ne marque la carte « à revoir »).
 
 export type FlashcardCard = {
   id: string;
@@ -125,6 +132,8 @@ export function FlashcardReview({
   ordre = "srs",
   compte = null,
   joueur = null,
+  sourceMarque,
+  accueillirNouvelles = false,
   demo,
 }: {
   cards: FlashcardCard[];
@@ -150,6 +159,14 @@ export function FlashcardReview({
   compte?: CompteBoucle | null;
   /** le joueur connecté : la boucle gardée sur l'appareil est à son nom */
   joueur?: string | null;
+  /** d'où vient une carte marquée « Marquer » (défaut : la matière pour une clé « matiere:… », sinon le paquet) */
+  sourceMarque?: SourceMarqueCarte;
+  /**
+   * la boucle reprise accueille les cartes arrivées depuis (accueillir) : la
+   * révision des flashcards marquées, dont la liste grandit d'un passage à
+   * l'autre ; un paquet ou une matière gardent leur boucle telle quelle
+   */
+  accueillirNouvelles?: boolean;
   demo?: FlashcardDemo;
 }) {
   const jour = useTraitsDuJour(traitsJour);
@@ -159,6 +176,7 @@ export function FlashcardReview({
   const cleCompte = demo ? null : (compte?.cle ?? cle ?? (setId ? cleSet(setId) : null));
   const ids = useMemo(() => cards.map((c) => c.id), [cards]);
   const parId = useMemo(() => new Map(cards.map((c, i) => [c.id, { c, n: i + 1 }])), [cards]);
+  const origineMarque: SourceMarqueCarte = sourceMarque ?? (cle?.startsWith("matiere:") ? "matiere" : "paquet");
 
   function vue(id: string): CarteVue | null {
     const x = parId.get(id);
@@ -249,7 +267,9 @@ export function FlashcardReview({
     if (demo || !cards.length) return;
     const m = lireMelange();
     setMelange(m);
-    const locale = cleStock ? boucleDuJoueur(lireBoucle(cleStock, ids), joueur) : null;
+    const lue = cleStock ? boucleDuJoueur(lireBoucle(cleStock, ids), joueur) : null;
+    // les flashcards marquées depuis le dernier passage rejoignent la boucle reprise
+    const locale = lue && accueillirNouvelles ? accueillir(lue, ids) : lue;
     connaitre(compte?.ligne);
     const duCompte = lireLigne(compte?.ligne, ids);
     const { etat: gardee, source } = choisirBoucle(locale, duCompte);
@@ -559,7 +579,7 @@ export function FlashcardReview({
     return (
       <>
         <div className="grid gap-2">
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <BarreTour tour={etat?.tour ?? 1} maitrisees={prog?.maitrisees ?? 0} aRevoir={prog?.aRevoir ?? 0} total={total} rang={prog?.rang ?? 1} />
             {peutMelanger && (
               <button
@@ -573,6 +593,9 @@ export function FlashcardReview({
                 <Shuffle size={16} aria-hidden />
               </button>
             )}
+            {/* le signet de la carte à l'écran ; sa place reste gardée tant qu'il n'y en a pas (fiche blanche, dernière fiche qui s'envole) ;
+                relu à l'ouverture et au retour sur l'onglet dans la révision des marquées (marquées ailleurs entre-temps) */}
+            {!demo && <MarqueCarte cardId={courante ?? ""} source={origineMarque} masque={!courante || mode !== "carte"} frais={origineMarque === "marquees"} />}
             {boutonPlein(big)}
           </div>
           <LegendeTour maitrisees={prog?.maitrisees ?? 0} aRevoir={prog?.aRevoir ?? 0} total={total} />

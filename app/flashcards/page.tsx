@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowRight, Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardPaquets, flashcardGroups, flashcardPaquets, paquetsDeMatiere } from "@/components/FlashcardSubjectGrid";
@@ -9,6 +11,9 @@ import { loadSubjectsSafe } from "@/components/reviser/load";
 import { RV } from "@/lib/voice-reviser";
 import { cleMatiere, cleSet, etatListe, type EtatListe } from "@/lib/flashcards/progression";
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
+import { compterCartesMarquees } from "@/lib/flashcards/marquees";
+import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
+import { MARQUE_CARTE } from "@/lib/voice-z3c";
 
 type FlashcardRow = ContentSetRow & {
   is_official?: boolean | null;
@@ -23,7 +28,11 @@ type PageProps = { searchParams?: Promise<SearchParams> };
 // lieu « Le casier », bande « Reprendre », index du programme, puis les paquets
 // de la matière choisie, chacun avec où en est sa boucle sur le compte :
 // flashcard_progress, seulement les clés affichées, puis relue sur l'appareil
-// s'il a plus récent ; rien si la table n'est pas encore créée).
+// s'il a plus récent ; rien si la table n'est pas encore créée). Sous la
+// bande, une entrée discrète « Flashcards marquées · N » vers leur révision
+// (/flashcards/marquees), seulement s'il y en a (rien sans la table) ; des
+// marques gardées sur l'appareil qui rejoignent le compte font relire la
+// page une fois (SynchroMarquesCartes), pour que l'entrée apparaisse.
 export default async function FlashcardsPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
 
@@ -75,7 +84,12 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
   // la matière affichée : seules ses boucles (paquets et matière) sont lues
   const paquets = flashcardPaquets(system, counts, sp.subject);
   const cles = (paquets?.groups ?? []).flatMap((g) => [...g.rows.map((r) => cleSet(r.id)), cleMatiere(g.key)]);
-  const [subjectsAvail, progressions] = await Promise.all([loadSubjectsSafe(supabase, user.id), lireProgressions(supabase, user.id, cles)]);
+  const [subjectsAvail, progressions, nMarquees] = await Promise.all([
+    loadSubjectsSafe(supabase, user.id),
+    lireProgressions(supabase, user.id, cles),
+    // les flashcards marquées (null : table pas encore créée)
+    compterCartesMarquees(supabase),
+  ]);
   // où en est chaque boucle, par clé « set:<id> » / « matiere:<clé> » ; le
   // nombre de cartes compte celles ajoutées depuis une boucle bouclée
   const etats: Record<string, EtatListe> = {};
@@ -90,11 +104,29 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
     }
   }
 
+  const bande = (
+    <>
+      <BandeReprise fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null} counts={counts} subjects={subjects} />
+      <SynchroMarquesCartes joueur={user.id} />
+    </>
+  );
+
   return (
     <ListeReviser
       kind="cartes"
       subjects={subjectsAvail}
-      bande={<BandeReprise fallback={first && firstGroup ? { id: first.id, title: first.title, subject: firstGroup.name } : null} counts={counts} subjects={subjects} />}
+      bande={
+        nMarquees ? (
+          <div className="flex flex-col gap-2">
+            {bande}
+            <Link href="/flashcards/marquees" className="ink-link inline-flex min-h-[44px] w-fit items-center gap-1.5 text-[14px] font-semibold" title={MARQUE_CARTE.entreeAide}>
+              <Bookmark size={15} fill="currentColor" aria-hidden /> {MARQUE_CARTE.entree(nMarquees)} <ArrowRight size={14} aria-hidden />
+            </Link>
+          </div>
+        ) : (
+          bande
+        )
+      }
       suite={
         paquets && (
           <section id="paquets" className="rl-section scroll-mt-24" aria-label={RV.lesPaquets(paquets.name)}>

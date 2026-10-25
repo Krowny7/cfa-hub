@@ -22,7 +22,7 @@ export function BarreTour({ tour, maitrisees, aRevoir, total, rang }: { tour: nu
   const pR = total ? (100 * aRevoir) / total : 0;
   const reste = Math.max(0, total - maitrisees - aRevoir);
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
       <span className={`${s.tour} ${tour > 1 ? s.tourN : ""}`}>{BOUCLE.tour(tour)}</span>
       <div
         className={s.barre}

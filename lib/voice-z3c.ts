@@ -161,6 +161,32 @@ export const BOUCLE = {
   dejaMarquee: (su: boolean) => (su ? "Marquée maîtrisée" : "Marquée à revoir"),
 } as const;
 
+// « Marquer » une flashcard (components/flashcards/MarqueCarte.tsx), comme une
+// question : la retrouver dans Moi › Marquées et la réviser à part, avec les
+// autres marquées (/flashcards/marquees).
+export const MARQUE_CARTE = {
+  marquer: "Marquer",
+  marquee: "Marquée",
+  titreMarquer: "Marquer cette carte pour la retrouver dans Moi › Marquées et la réviser à part",
+  titreMarquee: "Carte marquée : tu la retrouves dans Moi › Marquées. Cliquer pour retirer la marque.",
+  /** liste « Le set » : le numéro de la carte, pour un nom de bouton sans ambiguïté */
+  nomCarte: (n: number) => `carte ${nombre(n)}`,
+  /** l'entrée discrète de /flashcards */
+  entree: (n: number) => `Flashcards marquées · ${nombre(n)}`,
+  entreeAide: "Réviser les cartes que tu as marquées, en boucle jusqu'à zéro à revoir",
+  // la révision des marquées (/flashcards/marquees)
+  surTitre: "Flashcards · tes marquées",
+  titre: "Flashcards marquées",
+  matieres: (n: number) => pluriel(n, "matière", "matières"),
+  vide: "Aucune flashcard marquée.",
+  videLigne: "Pendant la révision d'un paquet ou d'une matière, touche « Marquer » : la carte se révise ensuite ici, avec les autres marquées.",
+  sansTable: "Les flashcards marquées se révisent ici après une mise à jour du site. Tes marques sont déjà gardées sur cet appareil.",
+  /** la lecture a échoué (la table existe) : ni état vide ni appareil */
+  indisponibleTitre: "Flashcards marquées indisponibles",
+  indisponible: "Tes flashcards marquées n'ont pas pu être chargées. Recharge la page dans un instant.",
+  retour: "Retour aux flashcards",
+} as const;
+
 // Où en est la boucle d'un paquet (ou d'une matière), dans les listes : un
 // petit état discret, rien tant qu'elle n'est pas commencée.
 export const ETAT_PAQUET = {
