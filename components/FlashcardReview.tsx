@@ -11,6 +11,7 @@ import { FichePile, type CarteVue, type Envol } from "@/components/flashcards/Pi
 import { BarreTour, Entracte, LegendeTour, LienOnePager, Reprise } from "@/components/flashcards/Panneaux";
 import { useSynchroBoucle } from "@/components/flashcards/useSynchroBoucle";
 import { MarqueCarte } from "@/components/flashcards/MarqueCarte";
+import { EVENEMENT_CARTE } from "@/components/flashcards/Memo";
 import type { SourceMarqueCarte } from "@/lib/marques";
 import s from "@/components/flashcards/Revision.module.css";
 import {
@@ -326,6 +327,11 @@ export function FlashcardReview({
   const courante = etat ? carteCourante(etat) : null;
   const prog = etat ? progression(etat) : null;
   const mode: Mode = reprise ? "reprise" : !etat ? "fantome" : ph === "carte" || envols.length > 0 ? "carte" : ph === "entracte" ? "entracte" : "fin";
+  // le mémo du paquet (sous la révision) surligne la carte à l'écran
+  const idCourante = mode === "carte" && typeof courante === "string" ? courante : null;
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(EVENEMENT_CARTE, { detail: { id: idCourante } }));
+  }, [idCourante]);
 
   function remettre() {
     setVerso(false);

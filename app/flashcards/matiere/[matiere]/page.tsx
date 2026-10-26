@@ -5,7 +5,9 @@ import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
 import { CFA_SUBJECTS, ContentDetailHeader, groupBySubject, plural } from "@/components/ContentDetailHeader";
 import { FlashcardReview, type FlashcardCard } from "@/components/FlashcardReview";
 import { LienFiche, LienOnePager, MatiereVide, PaquetsDeLaMatiere } from "@/components/flashcards/Panneaux";
-import { ficheCartesFile, fichePaquetFile, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
+import { ficheCartesFile, fichePaquetFile, memoCartesImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
+import { Memo } from "@/components/flashcards/Memo";
+import { RATIO_CARTES } from "@/lib/flashcards/memos";
 import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
 import { BOUCLE } from "@/lib/voice-z3c";
 import { cleMatiere, cleSet, etatAffiche, etatListe } from "@/lib/flashcards/progression";
@@ -79,6 +81,7 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
   const fichiers = onePagerSlug
     ? [
         ficheCartesFile(onePagerSlug),
+        memoCartesImage(onePagerSlug),
         ...paquets.flatMap((p) => {
           const n = numeroPaquet(p.title);
           return n ? [fichePaquetFile(onePagerSlug, n)] : [];
@@ -108,6 +111,7 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
       : Promise.resolve(new Map<string, string>()),
   ]);
   const ficheCartes = onePagerSlug ? (fiches.get(ficheCartesFile(onePagerSlug)) ?? null) : null;
+  const memoCartes = onePagerSlug ? (fiches.get(memoCartesImage(onePagerSlug)) ?? null) : null;
   const ficheDe = (title: string) => {
     const n = numeroPaquet(title);
     return onePagerSlug && n ? (fiches.get(fichePaquetFile(onePagerSlug, n)) ?? null) : null;
@@ -167,6 +171,14 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
               fiche: ficheDe(p.title),
             }))}
           />
+          {memoCartes && (
+            <section className="rl-section mt-6 md:mt-10" aria-labelledby="memo-cartes">
+              <h2 id="memo-cartes" className="t-h3 m-0">
+                {BOUCLE.memoCartesTitre(cards.length || 60)}
+              </h2>
+              <Memo src={memoCartes} pdf={ficheCartes} titre={BOUCLE.memoCartesTitre(cards.length || 60)} ratio={RATIO_CARTES} />
+            </section>
+          )}
         </>
       ) : (
         <MatiereVide matiere={subject.name} onePager={onePager} />

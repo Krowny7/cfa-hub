@@ -54,6 +54,9 @@ export const onePagerFile = (slug: string) => `one-pager-${slug}.pdf`;
  * one-pager A4 de toutes ses cartes. Une fiche absente du bucket n'affiche pas de lien. */
 export const fichePaquetFile = (slug: string, n: number) => `flashcards-${slug}-${n}.pdf`;
 export const ficheCartesFile = (slug: string) => `flashcards-${slug}.pdf`;
+/** Les mêmes, en image (les mémos affichés sur les pages des flashcards). */
+export const memoPaquetImage = (slug: string, n: number) => `flashcards-${slug}-${n}.webp`;
+export const memoCartesImage = (slug: string) => `flashcards-${slug}.webp`;
 
 /** Le PDF du one-pager de la matière d'une fiche, d'après le PDF de la fiche (« fixed-income.pdf »). */
 export function onePagerOfFichePdf(fichePdf: string): string | null {

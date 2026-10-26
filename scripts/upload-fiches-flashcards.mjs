@@ -7,7 +7,7 @@
 // bucket est d'abord copiée sous un nom daté (….sauvegarde-AAAA-MM-JJ-HHMM.pdf),
 // puis chaque envoi est vérifié par une URL signée.
 // Le dossier source est passé en argument (jamais codé en dur dans le dépôt) :
-// il contient <slug>-1.pdf … <slug>-4.pdf et <slug>-60.pdf (un PDF manquant est
+// il contient <slug>-1.pdf … <slug>-4.pdf et <slug>-60.pdf, et les mêmes en .webp (un fichier manquant est
 // signalé et sauté).
 // Usage: node scripts/upload-fiches-flashcards.mjs <dossier/des/pdf> <slug>   (ex. fixed-income)
 import { createClient } from "@supabase/supabase-js";
@@ -48,7 +48,11 @@ const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE
 const FICHES = [
   ...[1, 2, 3, 4].map((n) => [`${slug}-${n}.pdf`, `flashcards-${slug}-${n}.pdf`]),
   [`${slug}-60.pdf`, `flashcards-${slug}.pdf`],
+  // les mêmes en image (WebP) : les mémos affichés sous la révision (memoPaquetImage / memoCartesImage)
+  ...[1, 2, 3, 4].map((n) => [`${slug}-${n}.webp`, `flashcards-${slug}-${n}.webp`]),
+  [`${slug}-60.webp`, `flashcards-${slug}.webp`],
 ];
+const typeDe = (nom) => (nom.endsWith(".webp") ? "image/webp" : "application/pdf");
 
 /** AAAA-MM-JJ-HHMM, heure locale. */
 function horodatage(d = new Date()) {
@@ -69,8 +73,10 @@ async function envoyer(nomLocal, cible, deja, stamp) {
     return false;
   }
   const file = readFileSync(local);
-  if (file.subarray(0, 5).toString("latin1") !== "%PDF-") {
-    throw new Error(`${local} n'est pas un PDF`);
+  const type = typeDe(cible);
+  const signature = type === "image/webp" ? file.subarray(8, 12).toString("latin1") === "WEBP" : file.subarray(0, 5).toString("latin1") === "%PDF-";
+  if (!signature) {
+    throw new Error(`${local} n'est pas un ${type === "image/webp" ? "WebP" : "PDF"}`);
   }
   if (deja.has(cible)) {
     const copie = cible.replace(/[.]pdf$/, `.sauvegarde-${stamp}.pdf`);
@@ -79,14 +85,14 @@ async function envoyer(nomLocal, cible, deja, stamp) {
     console.log(`  ancienne version sauvegardée : ${copie}`);
   }
   const { error } = await supabase.storage.from(BUCKET).upload(cible, file, {
-    contentType: "application/pdf",
+    contentType: type,
     upsert: true,
   });
   if (error) throw error;
   const { data: signed, error: e2 } = await supabase.storage.from(BUCKET).createSignedUrl(cible, 60);
   if (e2) throw e2;
   const res = await fetch(signed.signedUrl, { method: "HEAD" });
-  const ok = res.ok && (res.headers.get("content-type") ?? "").includes("pdf");
+  const ok = res.ok && (res.headers.get("content-type") ?? "") === type;
   console.log(`${ok ? "✓" : "✗"} ${cible} (${(file.length / 1024).toFixed(0)} Ko) — vérification URL signée :`, res.status, res.headers.get("content-type"));
   return ok;
 }

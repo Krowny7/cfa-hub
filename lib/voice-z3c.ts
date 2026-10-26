@@ -146,10 +146,16 @@ export const BOUCLE = {
   onePager: "Le one-pager",
   onePagerAide: "La matière sur une page A4, dans un nouvel onglet",
   /** les fiches tirées des flashcards : la mini-fiche d'un paquet, le one-pager de toutes les cartes */
-  ficheCartes: (n: number) => `Fiche des ${nombre(n)} cartes`,
+  ficheCartes: (n: number) => `Mémo des ${nombre(n)} cartes`,
   ficheCartesAide: "Toutes les notions des flashcards de la matière sur une page A4, dans un nouvel onglet",
-  fichePaquet: "Mini-fiche",
+  fichePaquet: "Mémo",
   fichePaquetAide: "Les notions de ce paquet sur une page A5, dans un nouvel onglet",
+  /** les mémos affichés sous la révision (« Mémo » : la fiche tirée des flashcards ; le « one-pager » reste la grande fiche) */
+  memoPaquetTitre: "Le mémo du paquet",
+  memoCartesTitre: (n: number) => `Le mémo des ${nombre(n)} cartes`,
+  memoAide: "Les notions des cartes, sur une page.",
+  memoSurligne: "En jaune : la carte à l'écran.",
+  memoPdf: "Ouvrir en PDF",
   /** la reprise d'une boucle entamée */
   repriseSur: "Boucle en cours",
   repriseTitre: (tour: number, rang: number, total: number, entracte: boolean, aRevoir: number) =>

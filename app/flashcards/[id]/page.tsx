@@ -8,7 +8,9 @@ import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
 import { ShareButton } from "@/components/ShareButton";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
 import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfFolder, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
-import { fichePaquetFile, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
+import { fichePaquetFile, memoPaquetImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
+import { Memo } from "@/components/flashcards/Memo";
+import { RATIO_PAQUET, boitesMemo } from "@/lib/flashcards/memos";
 import { LienFiche } from "@/components/flashcards/Panneaux";
 import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
 import { BOUCLE } from "@/lib/voice-z3c";
@@ -101,9 +103,11 @@ export default async function FlashcardSetPage({ params }: PageProps) {
       .createSignedUrl(fichier, 3600)
       .then((r) => (r.error ? null : (r.data?.signedUrl ?? null)))
       .catch(() => null);
-  const [onePager, fiche] = await Promise.all([
+  const [onePager, fiche, memo] = await Promise.all([
     onePagerSlug ? signer(onePagerFile(onePagerSlug)) : Promise.resolve(null),
     onePagerSlug && numero ? signer(fichePaquetFile(onePagerSlug, numero)) : Promise.resolve(null),
+    // le mémo en image, affiché sous la révision à la place de « Le set »
+    onePagerSlug && numero ? signer(memoPaquetImage(onePagerSlug, numero)) : Promise.resolve(null),
   ]);
 
   return (
@@ -141,21 +145,38 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         joueur={auth.user.id}
       />
 
-      {/* Le set : toutes les cartes, en lecture seule (paquets officiels), repliées */}
-      <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">
-        <h2 id="set-cartes" className="t-h3 m-0">
-          Le set
-        </h2>
-        <div className="card divide-y divide-line overflow-hidden">
-          <DisclosureRow
-            icon={<Layers size={18} aria-hidden />}
-            title={t(locale, "flashcards.allCards")}
-            sub={`${plural(cards.length, "carte", "cartes")} · recto et verso`}
-          >
-            <FlashcardCardEditor cards={cards} />
-          </DisclosureRow>
-        </div>
-      </section>
+      {memo && onePagerSlug && numero ? (
+        // le mémo du paquet : la zone de la carte à l'écran surlignée en jaune (demande de l'utilisateur)
+        <section className="rl-section mt-6 md:mt-10" aria-labelledby="memo-paquet">
+          <h2 id="memo-paquet" className="t-h3 m-0">
+            {BOUCLE.memoPaquetTitre}
+          </h2>
+          <Memo
+            src={memo}
+            pdf={fiche}
+            titre={`${BOUCLE.memoPaquetTitre} · ${themePaquet(set.title)}`}
+            ratio={RATIO_PAQUET}
+            boites={boitesMemo(onePagerSlug, numero)}
+            positions={Object.fromEntries(cards.map((c, i) => [c.id, i + 1]))}
+          />
+        </section>
+      ) : (
+        // Le set : toutes les cartes, en lecture seule (paquets sans mémo), repliées
+        <section className="rl-section mt-6 md:mt-10" aria-labelledby="set-cartes">
+          <h2 id="set-cartes" className="t-h3 m-0">
+            Le set
+          </h2>
+          <div className="card divide-y divide-line overflow-hidden">
+            <DisclosureRow
+              icon={<Layers size={18} aria-hidden />}
+              title={t(locale, "flashcards.allCards")}
+              sub={`${plural(cards.length, "carte", "cartes")} · recto et verso`}
+            >
+              <FlashcardCardEditor cards={cards} />
+            </DisclosureRow>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
