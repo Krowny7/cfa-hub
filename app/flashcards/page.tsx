@@ -2,6 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, Bookmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ficheCartesFile, memoCartesImage, subjectByKey } from "@/components/reviser/catalog";
+import { Memo } from "@/components/flashcards/Memo";
+import { RATIO_CARTES } from "@/lib/flashcards/memos";
+import { BOUCLE } from "@/lib/voice-z3c";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardPaquets, flashcardGroups, flashcardPaquets, paquetsDeMatiere } from "@/components/FlashcardSubjectGrid";
 import type { ContentSetRow } from "@/components/ContentListPage";
@@ -84,6 +88,19 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
   // la matière affichée : seules ses boucles (paquets et matière) sont lues
   const paquets = flashcardPaquets(system, counts, sp.subject);
   const cles = (paquets?.groups ?? []).flatMap((g) => [...g.rows.map((r) => cleSet(r.id)), cleMatiere(g.key)]);
+  // le mémo de toutes les cartes de la matière affichée (Fixed Income d'abord), sous ses paquets
+  const slugMemo = paquets?.groups.length === 1 ? (subjectByKey(paquets.groups[0].key)?.onePager ?? null) : null;
+  const memo = slugMemo
+    ? await supabase.storage
+        .from("fiches")
+        .createSignedUrls([memoCartesImage(slugMemo), ficheCartesFile(slugMemo)], 3600)
+        .then((r) => {
+          const u = new Map((r.data ?? []).filter((x) => !x.error && x.path && x.signedUrl).map((x) => [x.path as string, x.signedUrl] as [string, string]));
+          const img = u.get(memoCartesImage(slugMemo));
+          return img ? { img, pdf: u.get(ficheCartesFile(slugMemo)) ?? null } : null;
+        })
+        .catch(() => null)
+    : null;
   const [subjectsAvail, progressions, nMarquees] = await Promise.all([
     loadSubjectsSafe(supabase, user.id),
     lireProgressions(supabase, user.id, cles),
@@ -132,6 +149,12 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
           <section id="paquets" className="rl-section scroll-mt-24" aria-label={RV.lesPaquets(paquets.name)}>
             <h2 className="t-h2 m-0">{RV.lesPaquets(paquets.name)}</h2>
             <FlashcardPaquets groups={paquets.groups} basePath="/flashcards" etats={etats} />
+            {memo && (
+              <div className="mt-6 grid gap-3 md:mt-10">
+                <h2 className="t-h2 m-0">{BOUCLE.memoCartesTitre(60)}</h2>
+                <Memo src={memo.img} pdf={memo.pdf} titre={BOUCLE.memoCartesTitre(60)} ratio={RATIO_CARTES} />
+              </div>
+            )}
           </section>
         )
       }

@@ -81,7 +81,8 @@ async function envoyer(nomLocal, cible, deja, stamp) {
   if (deja.has(cible)) {
     const copie = cible.replace(/[.]pdf$/, `.sauvegarde-${stamp}.pdf`);
     const { error: e } = await supabase.storage.from(BUCKET).copy(cible, copie);
-    if (e) throw e;
+    // deux envois dans la même minute : la sauvegarde existe déjà, elle suffit
+    if (e && !/already exists/i.test(e.message)) throw e;
     console.log(`  ancienne version sauvegardée : ${copie}`);
   }
   const { error } = await supabase.storage.from(BUCKET).upload(cible, file, {

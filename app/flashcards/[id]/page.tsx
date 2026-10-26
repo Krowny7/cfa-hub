@@ -5,13 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FlashcardReview } from "@/components/FlashcardReview";
 import { FlashcardCardEditor } from "@/components/FlashcardCardEditor";
-import { ShareButton } from "@/components/ShareButton";
 import { RecentFlashcardSetTracker } from "@/components/RecentFlashcardSetTracker";
 import { ContentDetailHeader, DisclosureRow, plural, splitTitle, subjectOfFolder, subjectOfTitle, visibilityLabel } from "@/components/ContentDetailHeader";
 import { fichePaquetFile, memoPaquetImage, onePagerFile, subjectByKey } from "@/components/reviser/catalog";
 import { Memo } from "@/components/flashcards/Memo";
 import { RATIO_PAQUET, boitesMemo } from "@/lib/flashcards/memos";
-import { LienFiche } from "@/components/flashcards/Panneaux";
 import { numeroPaquet, themePaquet } from "@/lib/flashcards/paquets";
 import { BOUCLE } from "@/lib/voice-z3c";
 import { cleSet, etatAffiche } from "@/lib/flashcards/progression";
@@ -121,14 +119,7 @@ export default async function FlashcardSetPage({ params }: PageProps) {
         eyebrow={eyebrow}
         meta={[plural(cards.length, "carte", "cartes"), visibilityLabel(set.visibility)]}
         etat={progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} seulementFini /> : null}
-        rightSlot={
-          fiche || set.share_token ? (
-            <>
-              {fiche && <LienFiche href={fiche} libelle={BOUCLE.fichePaquet} aide={BOUCLE.fichePaquetAide} />}
-              {set.share_token && <ShareButton token={set.share_token} base="flashcards" />}
-            </>
-          ) : null
-        }
+        // ni « Mémo » ni « Partager » en tête (demande de l'utilisateur) : le mémo est sous la révision
       />
 
       {/* La révision est l'usage quotidien : premier contenu visible, sans défilement */}
