@@ -5,6 +5,7 @@ import { codexNoter } from "@/lib/codex/actions";
 import { FastForward, Pause, Play, Rewind, SkipBack, SkipForward } from "lucide-react";
 import { COURS } from "@/lib/voice-z4";
 import { POS_PREFIX, noterCoursFini, noterDernierCours } from "@/lib/course-ecoute";
+import { createClient } from "@/lib/supabase/browser";
 
 export type Chapter = { title: string; start: number };
 
@@ -81,6 +82,52 @@ export function CourseAudioPlayer({
       } else if (t > 5) localStorage.setItem(posKey, String(Math.round(t)));
     } catch {}
   }
+
+  // Le lien signé de l'audio expire, et le réseau peut couper : à l'erreur, le
+  // lecteur redemande un lien neuf (bucket « courses », chemin lu dans l'ancien
+  // lien) et reprend au même endroit, au lieu de retomber à zéro (signalé sur
+  // Equity vers 29 min : le lien d'une heure avait expiré en cours d'écoute).
+  // Trois reprises au plus par tranche de 5 min, pour ne jamais boucler.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    let vu = 0;
+    let jouait = false;
+    let essais = 0;
+    const suivre = () => {
+      if (audio.currentTime > 0) vu = audio.currentTime;
+      jouait = !audio.paused;
+    };
+    const reprendre = async () => {
+      const chemin = /\/object\/sign\/courses\/([^?]+)/.exec(audio.currentSrc || audio.src)?.[1];
+      if (!chemin || essais >= 3) return;
+      essais++;
+      const t = vu;
+      const rejouer = jouait;
+      const { data } = await createClient().storage.from("courses").createSignedUrl(decodeURIComponent(chemin), 21600);
+      if (!data?.signedUrl) return;
+      audio.addEventListener(
+        "loadedmetadata",
+        () => {
+          audio.currentTime = t;
+          if (rejouer) audio.play().catch(() => {});
+        },
+        { once: true }
+      );
+      audio.src = data.signedUrl;
+      audio.load();
+    };
+    const remise = window.setInterval(() => (essais = 0), 300_000);
+    audio.addEventListener("timeupdate", suivre);
+    audio.addEventListener("play", suivre);
+    audio.addEventListener("error", reprendre);
+    return () => {
+      window.clearInterval(remise);
+      audio.removeEventListener("timeupdate", suivre);
+      audio.removeEventListener("play", suivre);
+      audio.removeEventListener("error", reprendre);
+    };
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;

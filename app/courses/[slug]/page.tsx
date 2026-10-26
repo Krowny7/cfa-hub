@@ -30,7 +30,8 @@ export default async function CoursePage({
       .createSignedUrl(`${course.file}.pdf`, 3600),
     supabase.storage
       .from("courses")
-      .createSignedUrl(`${course.file}.mp3`, 3600),
+      // six heures : une écoute d'une heure, reprise ou mise en pause, ne doit pas tomber sur un lien expiré
+      .createSignedUrl(`${course.file}.mp3`, 21600),
   ]);
 
   const pdfUrl = pdfRes.error ? null : (pdfRes.data?.signedUrl ?? null);
