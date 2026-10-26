@@ -15,6 +15,8 @@
 // - Rythme : quiz_answer_log et practice_session_results des 60 derniers
 //   jours, la matrice 7 × 24 en heure de Paris ; aucun horodatage ne part
 //   au client.
+// - Temps sur le site (la tuile d'après) : les totaux de temps_site_resume
+//   (lib/temps-site.ts), jamais le détail par jour.
 // Le jour J, les examens, le rythme et la suite des 5 derniers duels suivent
 // la visibilité du Journal (`ouvert`). Toute lecture se dégrade en null.
 // Module serveur ; les fonctions pures (formeDesDuels, jourJDepuis,
@@ -35,6 +37,7 @@ import { rankFor } from "@/lib/ranks";
 import { parHeure, type EtapeCodex, type ExtraitClassement, type ExtraitCodex, type ExtraitExamens, type ExtraitJourJ, type ExtraitRythme, type IssueDuel, type MomentJournee } from "@/lib/profil/blocs-donnees";
 import { BLOCS_NEUVES as V } from "@/lib/voice-blocs-neuves";
 import { romain } from "@/lib/voice-codex";
+import { lireTempsSite, type ResumeTemps } from "@/lib/temps-site";
 
 const JOUR_MS = 86_400_000;
 
@@ -245,7 +248,7 @@ export function rythmeDepuis(instants: { t: string | number; w?: number }[]): Ex
 // ── Les lectures ──────────────────────────────────────────────────────────
 
 /** Quelles tuiles sont posées (donc à lire). */
-export type BesoinsNeuves = { duels: boolean; jourj: boolean; classement: boolean; examens: boolean; codex: boolean; rythme: boolean };
+export type BesoinsNeuves = { duels: boolean; jourj: boolean; classement: boolean; examens: boolean; codex: boolean; rythme: boolean; temps: boolean };
 export const besoinsDe = (blocs: ReadonlySet<string>): BesoinsNeuves => ({
   duels: blocs.has("duels"),
   jourj: blocs.has("jourj"),
@@ -253,9 +256,10 @@ export const besoinsDe = (blocs: ReadonlySet<string>): BesoinsNeuves => ({
   examens: blocs.has("examens"),
   codex: blocs.has("codex"),
   rythme: blocs.has("rythme"),
+  temps: blocs.has("temps"),
 });
 /** Personnaliser : le propriétaire peut poser n'importe laquelle, tout se lit. */
-export const BESOINS_TOUS: BesoinsNeuves = { duels: true, jourj: true, classement: true, examens: true, codex: true, rythme: true };
+export const BESOINS_TOUS: BesoinsNeuves = { duels: true, jourj: true, classement: true, examens: true, codex: true, rythme: true, temps: true };
 export const aDesBesoins = (b: BesoinsNeuves) => Object.values(b).some(Boolean);
 
 /** Ce que les lectures rendent ; le classement s'assemble avec la place que la page a déjà lue (classementDepuis). */
@@ -265,11 +269,13 @@ export type LuNeuves = {
   examens: ExtraitExamens | null;
   codex: ExtraitCodex | null;
   rythme: ExtraitRythme | null;
+  /** le temps sur le site (les totaux de temps_site_resume) */
+  temps: ResumeTemps | null;
   joueurs: number | null;
   variation: number;
 };
 
-const SANS_RIEN: LuNeuves = { formeDuels: null, jourJ: null, examens: null, codex: null, rythme: null, joueurs: null, variation: 0 };
+const SANS_RIEN: LuNeuves = { formeDuels: null, jourJ: null, examens: null, codex: null, rythme: null, temps: null, joueurs: null, variation: 0 };
 
 async function lireFormeDuels(sb: SupabaseClient, id: string): Promise<IssueDuel[] | null> {
   try {
@@ -395,16 +401,18 @@ export async function lireTuilesNeuves(o: {
   const aujourdhui = o.aujourdhui ?? jourParis();
   const maintenant = o.maintenant ?? Date.now();
   try {
-    const [formeDuels, jourJ, examens, codex, rythme, joueurs, variation] = await Promise.all([
+    const [formeDuels, jourJ, examens, codex, rythme, temps, joueurs, variation] = await Promise.all([
       besoins.duels && ouvert && lecteur ? lireFormeDuels(lecteur, id) : Promise.resolve(null),
       besoins.jourj && ouvert ? lireJourJ(sb, id, aujourdhui) : Promise.resolve(null),
       besoins.examens && ouvert && lecteur ? lireExamens(lecteur, id) : Promise.resolve(null),
       besoins.codex && lecteur ? lireCodex(lecteur, id) : Promise.resolve(null),
       besoins.rythme && ouvert && lecteur ? lireRythme(lecteur, id, maintenant) : Promise.resolve(null),
+      // avec le client de celui qui regarde : la base ne rend les totaux d'un autre que si la tuile est sur sa page
+      besoins.temps ? lireTempsSite(sb, id) : Promise.resolve(null),
       besoins.classement ? countPlayers(sb).catch(() => null) : Promise.resolve(null),
       besoins.classement ? lireVariation(sb, id, o.elo, maintenant) : Promise.resolve(0),
     ]);
-    return { formeDuels, jourJ, examens, codex, rythme, joueurs, variation };
+    return { formeDuels, jourJ, examens, codex, rythme, temps, joueurs, variation };
   } catch {
     return SANS_RIEN;
   }

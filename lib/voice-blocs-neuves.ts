@@ -1,7 +1,8 @@
 // Les textes des sept tuiles de plus de la page de profil : Duels, Jour J,
 // Matière phare, Classement, Examens blancs, Codex et Rythme
 // (components/profil/blocs/Duels.tsx, JourJ.tsx, Phare.tsx, Classement.tsx,
-// Examens.tsx, CodexTuile.tsx, Rythme.tsx). Ceux qui existent déjà ne sont pas
+// Examens.tsx, CodexTuile.tsx, Rythme.tsx), puis celle du temps sur le site
+// (Temps.tsx). Ceux qui existent déjà ne sont pas
 // recopiés : BLOCS_PROFIL (voice-blocs : « Visible par », l'état vide).
 // Jamais « il » ni « elle » pour le joueur. Module neutre.
 
@@ -11,10 +12,18 @@ import type { Visibilite } from "@/lib/profil/catalogue";
 import type { IssueDuel, MomentJournee } from "@/lib/profil/blocs-donnees";
 
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-/** « le 12 novembre », « le 1er décembre » (la date : AAAA-MM-JJ) */
-export function leJour(date: string): string {
-  const [, m, j] = date.split("-").map(Number);
-  return `le ${j === 1 ? "1er" : j} ${MOIS[(m || 1) - 1] ?? ""}`.trim();
+const MOIS_COURTS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+/** « le 12 novembre », « le 1er décembre » (la date : AAAA-MM-JJ) ; d'une autre année que `aujourdhui` : « le 16 juin 2025 » */
+export function leJour(date: string, aujourdhui?: string): string {
+  const [a, m, j] = date.split("-").map(Number);
+  const annee = aujourdhui && aujourdhui.slice(0, 4) !== date.slice(0, 4) ? ` ${a}` : "";
+  return `le ${j === 1 ? "1er" : j} ${MOIS[(m || 1) - 1] ?? ""}${annee}`.trim();
+}
+/** « le 26 oct. », « le 1er déc. » ; d'une autre année que `aujourdhui` : « le 26 oct. 2025 » */
+export function leJourCourt(date: string, aujourdhui?: string): string {
+  const [a, m, j] = date.split("-").map(Number);
+  const annee = aujourdhui && aujourdhui.slice(0, 4) !== date.slice(0, 4) ? ` ${a}` : "";
+  return `le ${j === 1 ? "1er" : j} ${MOIS_COURTS[(m || 1) - 1] ?? ""}${annee}`.trim();
 }
 
 const qui = (v: Visibilite) => (v === "public" ? "tous" : v === "friends" ? "tes amis" : "toi seul");
@@ -127,4 +136,21 @@ export const BLOCS_NEUVES = {
   horlogeDit: (pic: number, moment: string) => `Ses heures de révision sur 24 heures : ${moment}, pic à ${pic} h`,
   momentMot: "Moment",
   lectureHorloge: "Un rayon par heure, sur les 60 derniers jours : plus il est long, plus il y a de réponses.",
+
+  // ── Temps sur le site (Temps.tsx) ──
+  temps: "Temps sur le site",
+  /** « depuis le 16 juin » */
+  tempsDepuis: (jour: string) => `depuis ${jour}`,
+  tempsEstime: "en partie estimé",
+  /** l'infobulle de « en partie estimé » : `avant` est le premier jour mesuré (« le 26 oct. »), null s'il n'y en a pas encore */
+  tempsEstimeBulle: (avant: string | null) =>
+    `${avant ? `Avant ${avant}, le` : "Le"} temps est estimé d'après les réponses, séances et examens horodatés : c'est un minimum. ${avant ? "Depuis, il est mesuré" : "Ensuite, il est mesuré"} : le temps actif seulement.`,
+  tempsSemaine: "7 derniers jours",
+  /** lu à voix haute : « 34 h 20 sur le site depuis le 16 juin » */
+  tempsDit: (texte: string, depuis: string | null) => `${texte} sur le site${depuis ? ` ${depuis}` : ""}`,
+  /** Personnaliser : qui voit la tuile */
+  tempsVisible: "Visible par : tous les joueurs (le total seulement, jamais le détail par jour)",
+  /** Personnaliser, rien de compté encore */
+  tempsInvite: "Ton temps actif sur le site s'affichera ici dès les premières minutes comptées.",
+  tempsRien: "pas encore compté",
 } as const;

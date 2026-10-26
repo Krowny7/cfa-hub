@@ -17,6 +17,7 @@ import { getTopicMastery, programMastery } from "@/lib/mastery";
 import { getSessionUserWithProfile } from "@/lib/supabase/user";
 import { createClient } from "@/lib/supabase/server";
 import { PresenceHeartbeat } from "@/components/presence/PresenceHeartbeat";
+import { CompteurTemps } from "@/components/temps/CompteurTemps";
 import { SceauQuetesServeur } from "@/components/codex/SceauQuetesServeur";
 
 // Barre du haut : logo vivant (→ accueil), domaine · programme, les quatre
@@ -96,6 +97,8 @@ export async function TopBar() {
               </Suspense>
               <UserMenu tier={tier} />
               <PresenceHeartbeat />
+              {/* le temps actif sur le site (migration_temps_site.sql), à côté du signal de présence */}
+              <CompteurTemps />
             </>
           ) : (
             <>

@@ -21,6 +21,8 @@ import { RankBadge } from "@/components/ui/RankBadge";
 import { TuileCalme } from "@/components/ui/Tuiles";
 import { SalleDesTrophees } from "@/components/trophees/SalleDesTrophees";
 import { BlocCodex, TuileCodex } from "@/components/moi/CodexMoi";
+import { TuileTemps } from "@/components/moi/TuileTemps";
+import { jourParisDe } from "@/lib/temps-site";
 import { CURRENT_DOMAIN, CURRENT_PROGRAM } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import { hrefOnglet } from "@/lib/profil/onglets";
@@ -35,7 +37,8 @@ import s from "@/components/moi/Moi.module.css";
 // travail. Le héros est ton carnet de ratures (repli : ton objectif d'ici
 // l'examen quand le carnet est vide) ; le lieu illustré, « Ton cabinet »,
 // porte ton pseudo ; les tuiles calmes : le Codex d'abord (son entrée, depuis
-// qu'il a quitté la barre), puis l'objectif ou le carnet, et les marquées ; le
+// qu'il a quitté la barre), puis l'objectif ou le carnet, les marquées et le
+// temps passé sur le site (TuileTemps, si sa migration est collée) ; le
 // rang a la bande d'encre ; une rangée de liens ; la Salle des trophées et le
 // bloc « Codex » (historique replié) ; « Tes points faibles » ;
 // « Tes matières » sous le bandeau du cabinet de curiosités ; « Le détail »
@@ -182,8 +185,9 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
           <Heros d={d} lu={lu} className="lg:col-span-8 lg:row-start-1" />
           {/* téléphone et tablette : la carte du cabinet après les tuiles, pour que la tuile Codex reste haut (l'image est déjà en bandeau) */}
           <CarteCabinet d={d} lu={lu} className="order-last lg:order-none lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1 lg:self-stretch" />
-          {/* téléphone : les tuiles rejoignent la grille (display: contents), pour que la tuile Codex passe avant le héros, au premier écran */}
-          <div className={"contents md:grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 xl:grid-cols-3 " + GAP}>
+          {/* téléphone : les tuiles rejoignent la grille (display: contents), pour que la tuile Codex passe avant le héros, au premier écran ;
+              avec la tuile du temps sur le site (quatre tuiles), deux par rangée dès 1 280 px au lieu de trois */}
+          <div className={"contents md:grid md:grid-cols-2 lg:col-span-8 lg:row-start-2 " + (d.temps ? "xl:grid-cols-2 " : "xl:grid-cols-3 ") + GAP}>
             {/* le Codex : en tête des tuiles, sur toute la largeur tant qu'elles ne tiennent pas à trois ;
                 seulement s'il est lisible (sans la table ou après une erreur, pas de lien vers un Codex fermé) */}
             {d.codex?.disponible && <TuileCodex c={d.codex} className="order-first md:order-none md:col-span-2 xl:col-span-1" />}
@@ -236,6 +240,8 @@ export function Cabinet({ d, now }: { d: MoiData; now?: number }) {
                 </Link>
               }
             />
+            {/* le temps sur le site (sans la migration : pas de tuile) ; sur toute la largeur quand il n'a pas de voisine */}
+            {d.temps && <TuileTemps t={d.temps} aujourdhui={jourParisDe(now)} className={d.codex?.disponible ? "md:col-span-2 xl:col-span-1" : "md:col-span-2"} />}
           </div>
         </div>
         <BandeEncre

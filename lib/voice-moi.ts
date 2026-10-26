@@ -52,6 +52,21 @@ export const CAB = {
     `${fmtInt(questions)} question${s(questions)} · ${fmtInt(cartes)} flashcard${s(cartes)}, gardée${s(questions + cartes)} pour plus tard.`,
   marqueesVide: "Aucune pour l'instant : touche « Marquer » après une réponse ou sur une flashcard.",
   marqueesLien: "Les revoir",
+  // le temps sur le site (tuile ; `jour` : « le 16 juin »)
+  tuileTemps: "Temps sur le site",
+  tempsDepuisInscription: (jour: string) => `depuis ton inscription ${jour}`,
+  tempsDepuis: (jour: string) => `depuis ${jour}`,
+  tempsEnPartieEstime: "en partie estimé",
+  /** rien de compté encore : le compteur vient de démarrer */
+  tempsVide: "Le compteur vient de démarrer : ton temps actif sur le site s'inscrira ici, minute par minute.",
+  tempsDetail: "Le détail",
+  /** `avant` : le premier jour mesuré (« le 26 oct. »), null s'il n'y en a pas encore */
+  tempsEstimeAvant: (avant: string | null) => (avant ? `Estimé, avant ${avant}` : "Estimé, d'après tes traces"),
+  tempsMesureDepuis: (jour: string) => `Mesuré, depuis ${jour}`,
+  tempsSemaine: "Ces 7 derniers jours",
+  tempsEstimeComment:
+    "L'estimation part de tes réponses, séances, examens blancs et défis horodatés : c'est un minimum, car la lecture des fiches, l'écoute des cours et les flashcards n'ont presque pas laissé de trace.",
+  tempsMesureComment: "Le compteur ne compte que le temps actif : l'onglet visible, avec une action de ta part dans les 2 dernières minutes, ou un cours qui joue.",
   // le rang
   rangPlace: (ordinalPlace: string | null, total: number | null) => (ordinalPlace !== null && total !== null ? `${ordinalPlace} sur ${total}` : "pas encore classé"),
   rangLigne: (place: string, mastery: number) => `${place} · maîtrise du programme ${mastery} %`,

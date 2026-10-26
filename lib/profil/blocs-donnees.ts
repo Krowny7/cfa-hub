@@ -13,6 +13,7 @@ import type { Saisons } from "@/lib/profil/saisons";
 import type { EvenementJournal } from "@/lib/profil/journal";
 import type { DonneesFolio } from "@/components/profil/Folio";
 import type { Bloc } from "@/lib/profil/disposition";
+import type { ResumeTemps } from "@/lib/temps-site";
 
 export type SeanceProgression = { id: string; topics: string[]; format: number; score: number; total: number; completed_at: string };
 
@@ -195,6 +196,8 @@ export type DonneesBlocs = {
   codex?: ExtraitCodex | null;
   /** ses heures de révision (suit le Journal) ; null ou absent : pas assez de réponses, Journal fermé ou non lu */
   rythme?: ExtraitRythme | null;
+  /** son temps sur le site, les totaux seulement (public dès que la tuile est posée) ; null ou absent : migration absente ou non lu */
+  temps?: ResumeTemps | null;
   /** celui qui regarde, chez un autre et connecté ; null ou absent sinon (chez soi, aperçu) */
   toi?: DonneesVisiteur | null;
 };
@@ -244,6 +247,9 @@ export function aDuContenu(b: Bloc, d: DonneesBlocs): boolean {
       return !!d.codex;
     case "rythme":
       return !!d.rythme;
+    case "temps":
+      // au moins une minute comptée
+      return !!d.temps && d.temps.total >= 60;
     case "carte":
       return !!(b.titre || b.texte || b.img);
   }

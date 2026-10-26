@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Calendar, CalendarClock, CircleCheck, Clapperboard, Clock, ClipboardCheck, Feather, Gauge, Hash, Hexagon, ImageIcon, LayoutPanelTop, LineChart, Medal, Radar as IconeRadar, ScrollText, Swords, Trophy, Users } from "lucide-react";
+import { BookOpen, Calendar, CalendarClock, CircleCheck, Clapperboard, Clock, ClipboardCheck, Feather, Gauge, Hash, Hexagon, Hourglass, ImageIcon, LayoutPanelTop, LineChart, Medal, Radar as IconeRadar, ScrollText, Swords, Trophy, Users } from "lucide-react";
 import { estCarte, estMedia, type Bloc, type BlocCarte, type BlocMedia, type Format, type GenreBloc } from "@/lib/profil/disposition";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
 import type { Ctx } from "./blocs/commun";
@@ -21,6 +21,7 @@ import { ClassementBloc } from "./blocs/Classement";
 import { ExamensBloc } from "./blocs/Examens";
 import { CodexBloc } from "./blocs/CodexTuile";
 import { RythmeBloc } from "./blocs/Rythme";
+import { TempsBloc } from "./blocs/Temps";
 import { AvecImage, CarteBloc, MediaBloc } from "./blocs/Medias";
 import b from "./BlocsProfil.module.css";
 
@@ -56,6 +57,7 @@ export const ICONE_BLOC: Record<GenreBloc, React.ReactNode> = {
   examens: <ClipboardCheck size={15} aria-hidden />,
   codex: <BookOpen size={15} aria-hidden />,
   rythme: <Clock size={15} aria-hidden />,
+  temps: <Hourglass size={15} aria-hidden />,
   image: <ImageIcon size={15} aria-hidden />,
   gif: <ImageIcon size={15} aria-hidden />,
   video: <Clapperboard size={15} aria-hidden />,
@@ -125,6 +127,8 @@ function contenuModule(bloc: Exclude<Bloc, BlocMedia | BlocCarte>, ctx: Ctx): Re
       return CodexBloc(ctx);
     case "rythme":
       return RythmeBloc(ctx);
+    case "temps":
+      return TempsBloc(ctx);
     default:
       return null;
   }

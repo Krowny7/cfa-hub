@@ -9,6 +9,7 @@ import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
 import { folioPorte } from "@/lib/profil/etagere";
 import type { DonneesBlocs, DonneesVisiteur, ExtraitCarnet, ExtraitClassement, ExtraitCodex, ExtraitExamens, ExtraitJourJ, ExtraitRythme, IssueDuel, SeanceProgression } from "@/lib/profil/blocs-donnees";
 import type { Saisons } from "@/lib/profil/saisons";
+import type { ResumeTemps } from "@/lib/temps-site";
 
 /** un « GIF » de la banque, petit (240 px) : une goutte d'encre qui tombe et s'étale, en boucle (SVG) */
 export const GIF_EXEMPLE =
@@ -120,6 +121,8 @@ export const CODEX_RICHE: ExtraitCodex = {
   quete: { titre: "Rendre un premier examen blanc", recompense: "150 XP" },
 };
 
+export const TEMPS_RICHE: ResumeTemps = { mesurees: 11_700, estimees: 111_900, total: 123_600, premierJour: "2026-06-16", premierMesure: "2026-10-26", semaine: 15_000, inscription: "2026-06-16" };
+
 export const RICHE: DonneesBlocs = {
   id: "sforzinda",
   nom: "Sforzinda",
@@ -176,6 +179,8 @@ export const RICHE: DonneesBlocs = {
   examens: EXAMENS_RICHE,
   codex: CODEX_RICHE,
   rythme: RYTHME_RICHE,
+  // le temps sur le site : ≈ 34 h 20, estimé jusqu'au 25 oct., mesuré depuis le 26
+  temps: TEMPS_RICHE,
 };
 
 /** des jours d'exemple : 52 semaines jusqu'au 18 oct. 2026, plus denses vers la fin ; `graine` change la régularité */

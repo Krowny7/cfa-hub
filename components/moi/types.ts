@@ -11,6 +11,7 @@ import type { PointsFaiblesData } from "@/lib/points-faibles";
 import type { HistoriqueAteliers } from "@/lib/atelier-seance";
 import type { LigneTrophee } from "@/lib/trophees";
 import type { CodexMoi } from "@/lib/profil/codex-moi";
+import type { ResumeTemps } from "@/lib/temps-site";
 
 export type FicheErrorItem = {
   questionId: string;
@@ -121,4 +122,6 @@ export type MoiData = {
   trophees?: { lignes: LigneTrophee[]; complet: boolean };
   /** le Codex vu de Moi : la tuile d'entrée et le bloc avec l'historique (lib/profil/codex-moi.ts) ; absent : pas de tuile */
   codex?: CodexMoi;
+  /** le temps sur le site, ses totaux (lib/temps-site.ts) ; absent : pas de tuile (migration absente, ou hors de Stats) */
+  temps?: ResumeTemps;
 };

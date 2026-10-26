@@ -117,6 +117,20 @@ export function duree(secondes: number): string {
   return `${h} h ${String(m % 60).padStart(2, "0")}`;
 }
 
+/** Un temps passé, en heures : « 34 h 20 », « 34 h », « 1 234 h 05 » ; moins d'une heure : « 45 min » (le temps sur le site). */
+export function heuresMinutes(secondes: number): string {
+  const m = Math.floor(Math.max(0, secondes) / 60);
+  if (m < 60) return `${m}${NBSP}min`;
+  const r = m % 60;
+  return `${nombre(Math.floor(m / 60))}${NBSP}h${r ? ` ${String(r).padStart(2, "0")}` : ""}`;
+}
+
+/** Le même, aux heures pleines : « 34 h » ; moins d'une heure : « 45 min » (le grand chiffre d'une tuile). */
+export function heuresRondes(secondes: number): string {
+  const s = Math.max(0, secondes);
+  return s < 3600 ? heuresMinutes(s) : `${nombre(Math.floor(s / 3600))}${NBSP}h`;
+}
+
 export const traits = (n: number) => pluriel(n, "trait", "traits");
 export const ratures = (n: number) => pluriel(n, "rature", "ratures");
 export const questions = (n: number) => pluriel(n, "question", "questions");

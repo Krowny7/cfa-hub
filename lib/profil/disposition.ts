@@ -27,7 +27,7 @@
 
 import { URL_KLIPY } from "@/lib/profil/gifs";
 
-// ── Les blocs fixes : les 7 d'avant, trois nouveaux, puis sept tuiles de plus ──
+// ── Les blocs fixes : les 7 d'avant, trois nouveaux, sept tuiles de plus, puis le temps sur le site ──
 export const BLOCS = [
   { k: "vitrine", nom: "Chiffres clés" },
   { k: "radar", nom: "Radar des matières" },
@@ -52,6 +52,9 @@ export const BLOCS = [
   { k: "examens", nom: "Examens blancs", neuf: true },
   { k: "codex", nom: "Codex", neuf: true },
   { k: "rythme", nom: "Rythme", neuf: true },
+  // le temps passé sur le site (totaux de temps_site_resume : lisibles par les autres seulement si la tuile est posée) ;
+  // jamais posée d'office : l'éditeur la propose, marquée « Nouveau »
+  { k: "temps", nom: "Temps sur le site", neuf: true },
 ] as const;
 export type CleBloc = (typeof BLOCS)[number]["k"];
 
@@ -225,6 +228,7 @@ export const FORMATS_PERMIS: Record<GenreBloc, Format[]> = {
   examens: ["tuile", "colonne", "heros", "bande", "demi"],
   codex: ["tuile", "colonne", "heros", "bande", "demi"],
   rythme: ["tuile", "colonne", "heros", "bande", "demi"],
+  temps: ["tuile", "colonne", "heros", "bande", "demi"],
   image: ["tuile", "colonne", "heros", "bande", "demi"],
   gif: ["tuile", "colonne", "heros"],
   video: ["tuile", "colonne", "heros"],
@@ -249,6 +253,7 @@ export const FORMAT_DEFAUT: Record<GenreBloc, Format> = {
   examens: "heros",
   codex: "heros",
   rythme: "heros",
+  temps: "tuile",
   image: "heros",
   gif: "tuile",
   video: "tuile",

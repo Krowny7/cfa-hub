@@ -367,8 +367,8 @@ CAS_SALLE.forEach((c, i) => {
   check(`Salle des trophées, cas ${i + 1} : balisage inchangé`, empreinte === REFERENCE_SALLE[i], empreinte);
 });
 
-// les genres de la disposition riche sont tous couverts
-check("la page riche : les blocs fixes et les 3 genres de média", BLOCS.every((x) => DISPO_RICHE.some((e) => e.k === x.k)) && ["image", "gif", "video"].every((g) => DISPO_RICHE.some((e) => e.k !== "libre" && genreDe(e as Bloc) === g)));
+// les genres de la disposition riche sont tous couverts (sauf le temps sur le site : la page est pleine à 20 éléments, la limite de la base)
+check("la page riche : les blocs fixes et les 3 genres de média", BLOCS.filter((x) => x.k !== "temps").every((x) => DISPO_RICHE.some((e) => e.k === x.k)) && ["image", "gif", "video"].every((g) => DISPO_RICHE.some((e) => e.k !== "libre" && genreDe(e as Bloc) === g)));
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
 process.exit(ko ? 1 : 0);

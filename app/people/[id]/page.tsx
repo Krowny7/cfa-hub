@@ -468,6 +468,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
       examens: neuves?.examens ?? null,
       codex: neuves?.codex ?? null,
       rythme: neuves?.rythme ?? null,
+      // le temps sur le site : les totaux seulement
+      temps: neuves?.temps ?? null,
       // celui qui regarde, chez un autre : ses amis communs viennent du cercle
       toi: toi ? { ...toi, amis: cercle?.communs ?? null } : null,
     };

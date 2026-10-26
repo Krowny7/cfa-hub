@@ -130,6 +130,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     examens: neuves.examens,
     codex: neuves.codex,
     rythme: neuves.rythme,
+    temps: neuves.temps,
   };
 
   return (

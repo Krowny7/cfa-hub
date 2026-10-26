@@ -27,6 +27,7 @@ import { MesPieces } from "@/components/moi/MesPieces";
 import { lirePauses } from "@/components/moi/repos-data";
 import { lireCodexMoi } from "@/lib/profil/codex-moi";
 import { lireSobre } from "@/lib/codex/sobre";
+import { lireTempsSite } from "@/lib/temps-site";
 
 export const metadata = { title: "Moi · Ranked Lobby" };
 
@@ -75,7 +76,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     }
   })();
 
-  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos, codex, cartesMarquees, nCartesMarquees] = await Promise.all([
+  const [profile, rating, topics, averages, myRank, totalPlayers, xpDays, carnet, groupsRes, sessions, answers, activity, marquees, basePointsFaibles, banqueQcm, atelier, ateliers, serieBase, trophees, pieces, repos, codex, cartesMarquees, nCartesMarquees, temps] = await Promise.all([
     profileCall,
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
@@ -121,6 +122,8 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     tab === "marquees" ? lireCartesMarquees(supabase) : Promise.resolve(null),
     // leur nombre, pour la tuile « Marquées » de Stats (un comptage léger ; null sans la table)
     tab === "stats" ? compterCartesMarquees(supabase) : Promise.resolve(null),
+    // le temps sur le site, ses totaux (tuile de Stats ; null sans migration_temps_site.sql)
+    tab === "stats" ? lireTempsSite(supabase, user.id) : Promise.resolve(null),
   ]);
 
   // l'objectif de questions d'ici l'examen : la courbe (Stats) et le réglage
@@ -165,6 +168,7 @@ export default async function MoiPage({ searchParams }: { searchParams?: Promise
     ateliers,
     ...(trophees ? { trophees: { lignes: trophees.lignes, complet: trophees.complet } } : {}),
     ...(codex ? { codex } : {}),
+    ...(temps ? { temps } : {}),
   };
 
   const etagere = pieces ? (

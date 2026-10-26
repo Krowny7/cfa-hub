@@ -196,14 +196,16 @@ const SANS_RIEN: DonneesBlocs = { ...SOBRE, stats: { ...SOBRE.stats, duelsJoues:
 console.log("# Branchements");
 {
   const nouveaux: CleBloc[] = ["duels", "jourj", "phare", "classement", "examens", "codex", "rythme"];
-  check("BLOCS : les 7 nouvelles tuiles, marquées « neuf »", nouveaux.every((k) => BLOCS.some((b) => b.k === k && "neuf" in b && b.neuf)) && BLOCS.length === 17);
+  // 18 : les 17 d'avant, puis le temps sur le site (« Temps sur le site », hors des sept)
+  check("BLOCS : les 7 nouvelles tuiles, marquées « neuf »", nouveaux.every((k) => BLOCS.some((b) => b.k === k && "neuf" in b && b.neuf)) && BLOCS.length === 18);
   check("formats permis : tous sauf la matière phare (pas de bande)", CLES.every((k) => (k === "phare" ? egal(FORMATS_PERMIS[k], ["tuile", "colonne", "heros", "demi"]) : egal(FORMATS_PERMIS[k], ["tuile", "colonne", "heros", "bande", "demi"]))));
   check("formats par défaut : tuiles, sauf examens, codex et rythme en héros", FORMAT_DEFAUT.duels === "tuile" && FORMAT_DEFAUT.jourj === "tuile" && FORMAT_DEFAUT.phare === "tuile" && FORMAT_DEFAUT.classement === "tuile" && FORMAT_DEFAUT.examens === "heros" && FORMAT_DEFAUT.codex === "heros" && FORMAT_DEFAUT.rythme === "heros");
   check("la matière phare refuse la bande, avec sa raison", formatPermis("phare", "bande") === "heros" && raisonRefus({ k: "phare", f: "tuile" }, "bande").includes("jauge"));
   check("une icône par tuile", CLES.every((k) => !!ICONE_BLOC[k]));
   const v = validerDisposition(nouveaux.map((k) => ({ k, f: "bande" })), "lecture");
   check("la validation les connaît (une fois chacune, format permis)", v.disposition.length === 7 && v.disposition.every((e) => e.k !== "libre" && e.k !== "media" && e.k !== "carte" && FORMATS_PERMIS[e.k].includes(e.f)) && v.disposition.find((e) => e.k === "phare")!.f === "heros");
-  check("la page d'exemple pose les 17 blocs", BLOCS.every((b) => DISPO_RICHE.some((e) => e.k === b.k)) && DISPO_RICHE.length === 20);
+  // (la page d'exemple est pleine à 20 éléments : le temps sur le site n'y tient plus)
+  check("la page d'exemple pose les 17 blocs", BLOCS.filter((b) => b.k !== "temps").every((b) => DISPO_RICHE.some((e) => e.k === b.k)) && DISPO_RICHE.length === 20);
   check("les modèles ne posent le jour J, les examens et le rythme que si le Journal est public", !montre("jourj", { ...RICHE, visibiliteJournal: "friends" }) && !montre("rythme", { ...RICHE, visibiliteJournal: "private" }) && montre("jourj", RICHE) && montre("examens", RICHE) && !montre("examens", { ...RICHE, visibiliteJournal: "friends" }) && montre("duels", { ...RICHE, visibiliteJournal: "friends" }));
 }
 
