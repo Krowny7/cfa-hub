@@ -6,7 +6,7 @@ import { CAB } from "@/lib/voice-moi";
 import { depuisQuand, enPartieEstime, type ResumeTemps } from "@/lib/temps-site";
 
 // La tuile « Temps sur le site » du cabinet (Moi) : le total en heures, en
-// grand (« ≈ 34 h 20 » : le « ≈ » dit qu'une part est estimée), puis
+// grand (« 34 h 20 », sans « ≈ » : demande de l'utilisateur), puis
 // « depuis ton inscription le 16 juin · en partie estimé ». Le détail à la
 // demande, replié : la part estimée (avant le premier jour mesuré), la part
 // mesurée, les 7 derniers jours, et comment chacune se compte. Rien encore :
@@ -37,10 +37,7 @@ export function TuileTemps({ t, aujourdhui, className }: { t: ResumeTemps; aujou
       titre={CAB.tuileTemps}
       fort={
         vide ? undefined : (
-          <span className="t-num text-[30px] leading-none tabular-nums">
-            {estime ? "≈ " : ""}
-            {heuresMinutes(t.total)}
-          </span>
+          <span className="t-num text-[30px] leading-none tabular-nums">{heuresMinutes(t.total)}</span>
         )
       }
       ligne={vide ? CAB.tempsVide : [ligneDepuis, estime ? CAB.tempsEnPartieEstime : null].filter(Boolean).join(" · ")}
@@ -52,7 +49,7 @@ export function TuileTemps({ t, aujourdhui, className }: { t: ResumeTemps; aujou
             </summary>
             <div className="rl-in mt-3 flex flex-col gap-3">
               <dl className="m-0 flex flex-col gap-2">
-                {estime && <Ligne nom={CAB.tempsEstimeAvant(mesureDepuis)} valeur={`≈ ${heuresMinutes(t.estimees)}`} />}
+                {estime && <Ligne nom={CAB.tempsEstimeAvant(mesureDepuis)} valeur={heuresMinutes(t.estimees)} />}
                 {mesureDepuis && <Ligne nom={CAB.tempsMesureDepuis(mesureDepuis)} valeur={heuresMinutes(t.mesurees)} />}
                 <Ligne nom={CAB.tempsSemaine} valeur={heuresMinutes(t.semaine)} />
               </dl>
