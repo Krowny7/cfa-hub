@@ -8,6 +8,7 @@ import { getLeaderboardRank, getMyRating } from "@/lib/rating";
 import { DEFAULT_ELO } from "@/lib/ranks";
 import { getTopicAverages } from "@/lib/mastery";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
+import { totalTempsSite } from "@/lib/temps-site";
 import { displayName } from "@/components/classement/format";
 import { getAnswerStats } from "@/lib/answer-stats";
 import { Icone } from "@/components/adn/icons";
@@ -276,6 +277,8 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     mastery,
     place: leaderboardRank,
     gamesPlayed: rating?.games_played ?? 0,
+    // le temps sur le site, dans la carte de rang (à la place de la maîtrise)
+    temps: admin ? await totalTempsSite(admin, id) : null,
     linkedin: lien,
     amis: amis ? amis.total : null,
     pic: stats.palierMax,

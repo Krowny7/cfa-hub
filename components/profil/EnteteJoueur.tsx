@@ -52,6 +52,8 @@ export type EnteteData = {
   mastery: number | null;
   place: number | null;
   gamesPlayed: number;
+  /** le temps sur le site en secondes, dans la carte de rang (null : inconnu) ; absent : la maîtrise */
+  temps?: number | null;
   /** le LinkedIn, s'il est visible par celui qui regarde */
   linkedin: string | null;
   /** nombre d'amis (null : amis pas encore disponibles) */
@@ -237,7 +239,7 @@ export function EnteteJoueur({
 
         {!apercu && (
           <div className="z-[2] hidden lg:col-span-5 lg:-mt-[84px] lg:flex lg:flex-col lg:gap-4 lg:self-start">
-            <RangProfil elo={d.elo} mastery={d.mastery} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
+            <RangProfil elo={d.elo} mastery={d.mastery} temps={d.temps} place={d.place} gamesPlayed={d.gamesPlayed} surTitre={rangDe ?? "Ton rang"} pic={d.pic ?? null} saison={saison} pied={piedRang} />
             {sousRang}
           </div>
         )}

@@ -52,6 +52,22 @@ const entier = (x: unknown) => {
 };
 
 /**
+ * Le total d'un joueur en secondes, pour la carte de rang de son profil (vue
+ * par tous, comme l'ELO : demande de l'utilisateur), lu avec le client admin
+ * (la RLS ne montre ses lignes qu'au joueur). null : migration absente ou
+ * lecture en échec. Côté serveur. Ne lève jamais.
+ */
+export async function totalTempsSite(admin: SupabaseClient, id: string): Promise<number | null> {
+  try {
+    const { data, error } = await admin.from("temps_site").select("secondes_mesurees,secondes_estimees").eq("user_id", id);
+    if (error) return null;
+    return (data ?? []).reduce((s: number, r: { secondes_mesurees: number | null; secondes_estimees: number | null }) => s + entier(r.secondes_mesurees) + entier(r.secondes_estimees), 0);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Les totaux d'un joueur (temps_site_resume). null : la migration manque, la
  * lecture a échoué, ou c'est un autre joueur qui n'a pas posé la tuile.
  * Ne lève jamais.

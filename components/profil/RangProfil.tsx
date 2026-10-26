@@ -5,6 +5,7 @@ import { fmtInt, ordinal } from "@/components/classement/format";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import { ENTETE } from "@/lib/voice-profil";
+import { heuresRondes } from "@/lib/voice";
 
 // Le rang en grand, à droite de l'en-tête du profil : la même carte sombre
 // que dans Moi, mais l'insigne y prend la place d'un trophée (grand, animé,
@@ -24,10 +25,13 @@ export function RangProfil({
   pic = null,
   saison = null,
   pied = null,
+  temps,
   className = "",
 }: {
   elo: number;
   mastery: number | null;
+  /** le temps sur le site en secondes (null : inconnu) ; absent : la maîtrise à sa place */
+  temps?: number | null;
   place: number | null;
   gamesPlayed: number;
   /** « Ton rang », « Son rang » (suivi du domaine) */
@@ -108,12 +112,12 @@ export function RangProfil({
         </span>
       </span>
 
-      {/* ELO, place, maîtrise */}
+      {/* ELO, place, temps sur le site (la maîtrise sans lui) */}
       <span className="grid grid-cols-3 border-t border-[rgba(255,255,255,.1)] pt-3">
         {[
           ["ELO", fmtInt(elo)],
           ["Place", place !== null ? ordinal(place) : "—"],
-          ["Maîtrise", mastery !== null ? `${mastery} %` : "—"],
+          temps !== undefined ? ["Temps", temps ? heuresRondes(temps) : "—"] : ["Maîtrise", mastery !== null ? `${mastery} %` : "—"],
         ].map(([l, v], i) => (
           <span key={l} className={"flex min-w-0 flex-col gap-0.5 " + (i ? "border-l border-[rgba(255,255,255,.1)] pl-3.5" : "")}>
             <span className="text-[11px] font-semibold uppercase tracking-[.08em] text-[rgba(255,255,255,.5)]">{l}</span>

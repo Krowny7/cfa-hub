@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Personnaliser } from "@/components/profil/Personnaliser";
 import type { EnteteData } from "@/components/profil/EnteteJoueur";
 import { masteryByUser, tryAdmin } from "@/components/classement/data";
+import { totalTempsSite } from "@/lib/temps-site";
 import { displayName } from "@/components/classement/format";
 import { levelInfoFromXp } from "@/lib/leveling";
 import { getLeaderboardRank } from "@/lib/rating";
@@ -96,6 +97,8 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     mastery: masteries.get(id) ?? null,
     place,
     gamesPlayed: rating?.games_played ?? 0,
+    // le temps sur le site, dans la carte de rang (à la place de la maîtrise)
+    temps: admin ? await totalTempsSite(admin, id) : null,
     linkedin: lien?.linkedin ?? null,
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
