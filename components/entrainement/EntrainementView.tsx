@@ -5,10 +5,10 @@ import { Icone } from "@/components/adn/icons";
 import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { subjectByKey } from "@/components/reviser/catalog";
-import { agoLabel } from "@/components/accueil/format";
 import { Illustration } from "@/components/ui/Illustration";
 import type { IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, styleDePalette } from "@/lib/palettes";
+import { TOPICS } from "@/lib/practiceTopics";
 import { MIN_REPONSES, type PointsFaiblesData } from "@/lib/points-faibles";
 import { ECLAIR_HREF } from "@/lib/eclair";
 import { ECLAIR } from "@/lib/voice-z2c";
@@ -20,8 +20,9 @@ import s from "./Entrainer.module.css";
 // Espace « S'entraîner » (maquette validée), même langage que Réviser : des
 // cartes en papier et en encre, la palette de l'onglet (« atelier »). Dans
 // l'ordre : le diptyque, un grand bandeau coupé en deux moitiés peintes à
-// égalité, « Calculs » et « Entraînement ciblé » (le titre, un gros chiffre
-// surligné, une ligne d'état, le bouton d'encre) ; puis la rangée « Séries
+// égalité, « Calculs » (le titre, trois pastilles de niveau, le bouton d'encre)
+// et « Entraînement ciblé » (le titre, une échelle du poids de chaque matière à
+// l'examen, le bouton d'encre) ; puis la rangée « Séries
 // éclair » (la peinture à gauche) et « Tes points faibles » (une barre par
 // notion, le repère pointillé à 70 %, des bâtons quand la notion n'est
 // mesurée qu'en ratures) ; puis, à droite et empilés, « QCM par thème » et
@@ -29,20 +30,19 @@ import s from "./Entrainer.module.css";
 // usage futur (la peinture seule, sans titre ni lien). Téléphone : une
 // colonne, les deux entrées principales d'abord.
 // Sans requête : app/entrainement charge les données, l'aperçu en fournit.
-// Les chiffres sont ceux de la base ou des catalogues ; sans eux, la ligne
-// d'état disparaît (jamais de valeur inventée).
+// Les chiffres sont ceux de la base ; sans eux, la ligne disparaît (jamais de
+// valeur inventée). Le diptyque n'en lit aucun : les poids de l'échelle sont
+// ceux du programme (lib/practiceTopics).
 // Repères de Léonard (data-leonard) : session (le diptyque), eclair,
 // points-faibles, autres (les entrées secondaires).
 // Couleurs : celles de l'onglet « S'entraîner » (palette atelier, lib/palettes.ts :
 // styleDePalette pose --pal-1 brun chaud … --pal-4 flamme de bougie sur la
 // racine). L'encre de l'onglet (.rl-encre, globals.css) revient sur la page : le
 // vrai fluide (EncreVive) dans les trois boutons, la texture qui dérive dans
-// les sceaux. Mode discret et nuit : voir Entrainer.module.css.
+// le sceau des séries éclair ; les deux sceaux du diptyque sont de simples
+// disques noirs. Mode discret et nuit : voir Entrainer.module.css.
 
 export type EntrainementData = {
-  practice: { sessions: number; last: { score: number; total: number; at: string; topics?: string[] } | null };
-  /** les calculs ouverts (lib/calc, calcSubjectCards) : leurs questions et leurs matières ; absent : la moitié reste sans chiffre */
-  calculs?: { questions: number; matieres: number } | null;
   /** séries éclair rendues aujourd'hui ; null : table absente */
   eclair?: number | null;
   /** réussite récente aux séries éclair (%) ; null : pas encore de série */
@@ -58,12 +58,6 @@ const papier = (...cls: string[]) => [s.carte, s.papier, ...cls].join(" ");
 /** Combien de notions la carte en montre (la page « Points faibles » les a toutes). */
 const MAX_LIGNES = 4;
 
-function topicsLabel(keys: string[] | undefined) {
-  if (!keys || keys.length === 0) return null;
-  const first = subjectByKey(keys[0])?.name ?? keys[0];
-  return keys.length > 1 ? `${first} + ${keys.length - 1}` : first;
-}
-
 /** Une notion de la carte : sa réussite récente (citée dès MIN_REPONSES réponses, comme sur la page Réviser) ou, en deçà, ses ratures en cours. */
 export type LigneFaible = { cle: string; libelle: string; matiere: string; pct: number | null; ratures: number };
 
@@ -78,50 +72,37 @@ export function lignesFaibles(p: PointsFaiblesData | undefined, max = MAX_LIGNES
   }));
 }
 
-/** Une moitié du diptyque : la peinture, un voile sombre, le texte clair posé en bas. */
+/** Une moitié du diptyque : la peinture, un voile sombre, le texte clair posé en bas (titre, ce que dit la moitié, bouton d'encre). */
 function Entree({
   id,
   illu,
   position,
   sceau,
   titre,
-  phrase,
-  chiffre,
-  unite,
-  etat,
   href,
   action,
+  children,
 }: {
   id: string;
   illu: IllustrationNom;
   position: string;
   sceau: React.ReactNode;
   titre: string;
-  phrase: string;
-  chiffre?: string | null;
-  unite?: string;
-  etat?: React.ReactNode;
   href: string;
   action: string;
+  children: React.ReactNode;
 }) {
   return (
     <article className={s.moitie} aria-labelledby={id}>
       <Illustration nom={illu} position={position} decorative eager className={s.fond} />
       <div className={s.corps}>
         <h2 id={id} className={"font-brand " + s.titre}>
-          <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
+          <span className={s.sceau + " " + s.sceauNoir} aria-hidden>
             {sceau}
           </span>
           {titre}
         </h2>
-        <p className={s.phrase}>{phrase}</p>
-        {chiffre ? (
-          <p className={s.chiffre}>
-            <span className={"t-num " + s.pech}>{chiffre}</span>
-            {unite && <span>{unite}</span>}
-          </p>
-        ) : null}
-        {etat ? <p className={s.etat}>{etat}</p> : null}
+        {children}
         <Link href={href} className={encre(s.bouton)} data-palette={PAL.key}>
           <EncreVive tons={PAL.liquide} />
           {action}
@@ -131,12 +112,65 @@ function Entree({
   );
 }
 
-function Diptyque({ d, now }: { d: EntrainementData; now?: number }) {
-  const c = d.calculs;
-  const n = d.practice.sessions;
-  const last = d.practice.last;
-  const nom = last ? topicsLabel(last.topics) : null;
-  const score = last && last.total > 0 ? `${nombre(last.score)}/${nombre(last.total)}` : null;
+/** Une matière sur l'échelle de l'examen : sa largeur (le milieu de la fourchette de son poids), sa teinte (1 la plus lourde, 3 les autres) et son libellé. */
+export type SegmentExamen = { cle: string; nom: string; poids: number; ton: 1 | 2 | 3; libelle: string };
+
+/** Les dix matières dans l'ordre du programme, avec le poids de lib/practiceTopics. */
+export function segmentsExamen(): SegmentExamen[] {
+  return TOPICS.map((t) => {
+    const nom = subjectByKey(t.key)?.short ?? t.key;
+    return {
+      cle: t.key,
+      nom,
+      poids: t.weight,
+      ton: t.weight >= 15 ? 1 : t.weight >= 11 ? 2 : 3,
+      libelle: ENTRAINER.echelleSegment(nom, ENTRAINER.echelleFourchettes[t.key] ?? String(t.weight)),
+    };
+  });
+}
+
+/** La légende de l'échelle : une entrée par teinte (les matières les plus lourdes nommées avec leur fourchette, les autres en bloc). */
+function legendeExamen(segments: SegmentExamen[]) {
+  const nommees = ([1, 2] as const).flatMap((ton) => {
+    const du = segments.filter((x) => x.ton === ton);
+    if (du.length === 0) return [];
+    const noms = du.map((x) => x.nom).join(", ");
+    const fourchette = ENTRAINER.echelleFourchettes[du[0].cle];
+    return [{ ton, texte: fourchette ? ENTRAINER.echelleSegment(noms, fourchette) : noms }];
+  });
+  return segments.some((x) => x.ton === 3) ? [...nommees, { ton: 3 as const, texte: ENTRAINER.echelleAutres }] : nommees;
+}
+
+const TONS_ECHELLE = { 1: s.ton1, 2: s.ton2, 3: s.ton3 } as const;
+
+/** L'échelle de l'examen : une barre en dix segments, un par matière, de largeur proportionnelle à son poids. */
+function EchelleExamen() {
+  const segments = segmentsExamen();
+  return (
+    <div className={s.echelle}>
+      <p className={s.echelleTitre}>{ENTRAINER.echelleTitre}</p>
+      <ul className={s.barre} aria-label={ENTRAINER.echelleLibelle}>
+        {segments.map((x) => (
+          <li key={x.cle} className={TONS_ECHELLE[x.ton]} style={{ flexGrow: x.poids }} title={x.libelle}>
+            <span className="sr-only">{x.libelle}</span>
+          </li>
+        ))}
+      </ul>
+      <ul className={s.legendeEchelle} aria-hidden>
+        {legendeExamen(segments).map((l) => (
+          <li key={l.ton}>
+            <i className={TONS_ECHELLE[l.ton]} />
+            {l.texte}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const NIVEAUX = [s.niveau1, s.niveau2, s.niveau3] as const;
+
+function Diptyque() {
   return (
     <section className={s.diptyque} aria-label={ENTRAINER.entrees} data-leonard="session">
       <Entree
@@ -145,38 +179,33 @@ function Diptyque({ d, now }: { d: EntrainementData; now?: number }) {
         position="50% 40%"
         sceau={<Glyphe nom="calculs" size={22} />}
         titre={ENTRAINER.calculsTitre}
-        phrase={ENTRAINER.calculsPhrase}
-        chiffre={c && c.questions > 0 ? nombre(c.questions) : null}
-        unite={c && c.questions > 0 ? ENTRAINER.calculsUnite(c.matieres) : undefined}
-        etat={c && c.questions > 0 ? ENTRAINER.calculsNiveaux : null}
         href="/calculs"
         action={ENTRAINER.calculsAction}
-      />
+      >
+        <ul className={s.niveaux} aria-label={ENTRAINER.calculsNiveauxLibelle}>
+          {ENTRAINER.calculsNiveaux.map((nom, i) => (
+            <li key={nom} className={s.pastille + " " + NIVEAUX[i]}>
+              <span className={s.points} aria-hidden>
+                {[0, 1, 2].map((k) => (
+                  <i key={k} className={k <= i ? s.allume : undefined} />
+                ))}
+              </span>
+              {nom}
+            </li>
+          ))}
+        </ul>
+      </Entree>
       <Entree
         id="ent-cible"
         illu="practice-studiolo"
         position="50% 40%"
         sceau={<Icone nom="entrainer" size={22} />}
         titre={ENTRAINER.cibleTitre}
-        phrase={ENTRAINER.ciblePhrase}
-        chiffre={n > 0 ? nombre(n) : null}
-        unite={n > 0 ? ENTRAINER.cibleUnite(n) : undefined}
-        etat={
-          n === 0 ? (
-            ENTRAINER.cibleAucune
-          ) : last ? (
-            <>
-              {ENTRAINER.cibleDerniere} {nom && <b>{nom}</b>}
-              {nom ? " · " : ""}
-              {score && <span className={s.mono}>{score}</span>}
-              {score ? " · " : ""}
-              {agoLabel(last.at, now)}
-            </>
-          ) : null
-        }
         href="/practice"
         action={ENTRAINER.cibleAction}
-      />
+      >
+        <EchelleExamen />
+      </Entree>
     </section>
   );
 }
@@ -323,7 +352,7 @@ function Autres() {
   );
 }
 
-export function EntrainementView({ d, now }: { d: EntrainementData; now?: number }) {
+export function EntrainementView({ d }: { d: EntrainementData }) {
   return (
     <DomainSpace
       kicker="S'entraîner"
@@ -331,7 +360,7 @@ export function EntrainementView({ d, now }: { d: EntrainementData; now?: number
       title="Pratiquer, comme le jour J"
       lead={
         <div className={s.racine} style={styleDePalette(PAL)}>
-          <Diptyque d={d} now={now} />
+          <Diptyque />
           <div className={s.rangee}>
             <Eclair d={d} />
             <Faibles d={d} />

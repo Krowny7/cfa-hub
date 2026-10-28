@@ -20,12 +20,9 @@
   --ambre: color-mix(in oklab, var(--pal-3) 78%, var(--pal-1));
   /* le surligneur : la flamme de bougie */
   --surligne: color-mix(in srgb, var(--pal-4) 60%, transparent);
-  /* le gros chiffre du diptyque : une pastille claire, le brun très sombre dessus (sur la peinture, jour comme nuit) */
-  --pech: color-mix(in srgb, var(--pal-4) 70%, white);
-  --pech-texte: color-mix(in oklab, var(--pal-1) 70%, black);
   /* le brun sombre : fond de repli de l'encre et des peintures, le temps que l'image arrive */
   --noyer-fonce: color-mix(in oklab, var(--pal-1) 62%, black);
-  /* le texte posé sur l'encre et sur la peinture */
+  /* le texte posé sur l'encre et sur la peinture (le second : légendes du diptyque) */
   --sur-nuit: white;
   --sur-nuit-2: color-mix(in srgb, var(--pal-4) 35%, white);
 }
@@ -48,10 +45,6 @@
   list-style: none;
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
 .sous {
   display: block;
   font-size: 13.5px;
@@ -111,7 +104,8 @@
    .rl-encre (globals.css, avec data-palette) : la texture de la palette qui
    dérive sous un voile sombre ; coupée en mode discret, figée en mouvement
    réduit et avec data-rl-motion="off". Les boutons y ajoutent le liquide vivant
-   (EncreVive) ; les sceaux, la texture seule. .encre : un bouton ou un sceau
+   (EncreVive) ; le sceau des séries éclair, la texture seule (ceux du diptyque
+   sont de simples disques noirs, .sceauNoir). .encre : un bouton ou un sceau
    remplis de cette encre, texte blanc ; son fond propre (brun sombre) sert de
    repli le temps que l'image arrive (en mode discret : voir en bas). Voile
    plus dense que dans l'onglet : le texte blanc reste AA (4,5:1) jusque sur les
@@ -159,6 +153,11 @@
     0 0 0 5px color-mix(in srgb, var(--pal-4) 20%, transparent);
   --pal-voile-haut: 0.4;
   --pal-voile-bas: 0.6;
+}
+/* les sceaux du diptyque : un simple disque noir, l'icône en blanc, l'anneau fin gardé */
+.sceauNoir {
+  background: #000;
+  color: #fff;
 }
 /* le sceau sur le papier : cerclé de brun (de flamme la nuit) */
 .sceauMoyen {
@@ -234,34 +233,110 @@
   line-height: 1.1;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
-.phrase {
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--sur-nuit-2);
-}
-.chiffre {
+/* Calculs : trois pastilles de niveau, du plus clair au plus sombre (teintes fixes : elles se lisent sur la peinture, jour, nuit et mode discret) */
+.niveaux {
   display: flex;
-  align-items: baseline;
   flex-wrap: wrap;
-  gap: 6px 14px;
-  font-size: 15px;
-  color: var(--sur-nuit-2);
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 6px;
 }
-/* le gros chiffre : une pastille claire (typo du logo, retirée en mode discret) */
-.pech {
-  display: inline-block;
-  padding: 3px 10px 0;
-  border-radius: 8px;
-  background: var(--pech);
-  color: var(--pech-texte);
-  font-size: 56px;
-  line-height: 1.05;
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 16px 0 13px;
+  border: 1px solid transparent;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
   text-shadow: none;
 }
-.etat {
-  font-size: 14px;
-  line-height: 1.45;
+.points {
+  display: flex;
+  gap: 3px;
+}
+.points i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.28;
+}
+.points i.allume {
+  opacity: 1;
+}
+.niveau1 {
+  background: #ffe29a;
+  border-color: #fbe29a;
+  color: #3b2314;
+}
+.niveau2 {
+  background: #ee9a30;
+  border-color: #f7b45a;
+  color: #2a1608;
+}
+.niveau3 {
+  background: #6b3a1e;
+  border-color: #ffc95e;
+  color: #fff8ea;
+}
+/* Entraînement ciblé : l'échelle du poids de chaque matière à l'examen (une barre de dix segments, largeur au poids, et sa légende) */
+.echelle {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  max-width: 460px;
+  margin-bottom: 6px;
+}
+.echelleTitre {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--sur-nuit-2);
+}
+.barre {
+  display: flex;
+  gap: 2px;
+  height: 18px;
+}
+.barre > li {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  border-radius: 3px;
+}
+.ton1 {
+  background: #ffe29a;
+}
+.ton2 {
+  background: #f0a938;
+}
+.ton3 {
+  background: #a8602b;
+}
+.legendeEchelle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  font-size: 12.5px;
+  line-height: 1.3;
   color: var(--sur-nuit);
+}
+.legendeEchelle > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legendeEchelle i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
 }
 /* sur la peinture : un liseré clair détache le bouton encré, un anneau clair le focus */
 .moitie .bouton.encre {
@@ -536,9 +611,6 @@
     gap: 12px;
     font-size: 30px;
   }
-  .pech {
-    font-size: 46px;
-  }
 }
 /* téléphone : une colonne partout ; la peinture de la rangée éclair passe en bandeau, une notion tient sur deux étages */
 @container (max-width: 560px) {
@@ -572,8 +644,22 @@
     width: 34px;
     height: 34px;
   }
-  .pech {
-    font-size: 40px;
+  .niveaux {
+    gap: 6px 8px;
+  }
+  .pastille {
+    height: 34px;
+    gap: 6px;
+    padding: 0 10px 0 9px;
+    font-size: 13px;
+  }
+  .points i {
+    width: 6px;
+    height: 6px;
+  }
+  .echelleTitre,
+  .legendeEchelle {
+    font-size: 12px;
   }
   .eclair {
     grid-template-columns: minmax(0, 1fr);
@@ -616,8 +702,7 @@
 /* ——— mode discret (réviser en public) ———
    Les accents passent à l'encre du site ; la barre « à reprendre » au gris
    d'encre (le rouge du stylo est déjà l'encre) ; les boutons et sceaux d'encre
-   reprennent le bouton plein du site, et sur la peinture un bouton clair. Le
-   gros chiffre garde sa pastille. */
+   reprennent le bouton plein du site, et sur la peinture un bouton clair. */
 :global(html[data-discreet="1"]) .racine {
   --acc: var(--ink);
   --ambre: var(--ink-2);
