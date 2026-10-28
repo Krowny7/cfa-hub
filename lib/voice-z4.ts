@@ -105,23 +105,54 @@ export const ESPACES = {
   /** titre de Réviser (au lieu de « Apprendre, à ton rythme », slogan de MOOC) */
   reviserTitre: "Révise trait par trait.",
   fichesTexte: "Une synthèse par thème, les formules clés, puis son quiz corrigé.",
-  /** S'entraîner : la session conseillée */
-  plusFragile: "Ta matière la plus fragile : une session ciblée, pondérée comme l'examen.",
-  enchaine: "Enchaîne avec une nouvelle session, pondérée comme l'examen.",
-  /** premier usage (sur-titre d'A1) */
-  premiereGoutte: "Première goutte",
-  premiereSession: "Ta première session",
-  premiereTexte: "Choisis tes matières : le nombre de questions suit le poids réel de l'examen.",
   calculsTexte: CALCULS_TEXTE,
-  /** la bande d'encre de S'entraîner, vers /calculs */
-  calculsTitre: "Calculs",
-  calculsBande: `${CALCULS_TEXTE} Rien d'autre.`,
-  calculsAction: "Ouvrir les calculs",
-  duelTexte: (q: number, min: number) => `Même épreuve, ${q} questions, ${min} min. Le meilleur score gagne.`,
-  /** « 1 défi · à toi le trait » */
-  defisEnAttente: (n: number) => `${pluriel(n, "défi", "défis")} · à toi le trait`,
   /** maîtrise pas encore mesurée (VIDE.radar, à l'échelle d'une matière) */
   maitriseAVenir: "Ta maîtrise se dessine dès 5 questions",
+} as const;
+
+// ---------------------------------------------------------------------------
+// S'entraîner : le diptyque (Calculs | Entraînement ciblé), la rangée éclair
+// et points faibles, puis les deux autres entrées. Les chiffres viennent de
+// la base ou des catalogues ; sans eux, une ligne neutre.
+
+export const ENTRAINER = {
+  /** étiquettes des régions (lecteurs d'écran) */
+  entrees: "Les deux entrées principales",
+  autres: "Les autres façons de s'entraîner",
+  /** les deux entrées principales, à égalité */
+  calculsTitre: "Calculs",
+  calculsPhrase: "Des calculs chiffrés, matière par matière : tu tapes ta réponse au clavier.",
+  /** « 2 040 » + « calculs, 9 matières » */
+  calculsUnite: (matieres: number) => `calculs, ${pluriel(matieres, "matière", "matières")}`,
+  /** sans chiffre (catalogues illisibles) */
+  calculsNiveaux: "Trois niveaux par calcul : facile, moyen, difficile.",
+  calculsAction: "Ouvrir les calculs",
+  cibleTitre: "Entraînement ciblé",
+  ciblePhrase: "Des sessions de questions sur tes matières, au poids réel de l'examen.",
+  /** « 27 » + « sessions » */
+  cibleUnite: (n: number) => (n > 1 ? "sessions" : "session"),
+  cibleAucune: "Aucune session pour l'instant. Choisis tes matières : le nombre de questions suit le poids réel de l'examen.",
+  /** « dernière : » + « Fixed Income + 2 » + « 23/32 · il y a 2 j » */
+  cibleDerniere: "dernière :",
+  cibleAction: "Lancer une session",
+  /** séries éclair */
+  eclairPhrase: "Des séries de 5 questions de cours, sans calcul, à volonté.",
+  eclairUnite: (n: number) => (n > 1 ? "séries aujourd'hui" : "série aujourd'hui"),
+  eclairAucune: "Pas encore de série aujourd'hui.",
+  eclairReussite: (pct: number) => `Réussite récente : ${pct} %`,
+  eclairAction: "Lancer une série",
+  /** points faibles */
+  faiblesTitre: "Tes points faibles",
+  faiblesSous: "Les notions les plus fragiles, mesurées sur tes dernières réponses.",
+  faiblesSeuil: "seuil 70 %",
+  /** lecteurs d'écran : la piste d'une notion mesurée */
+  faiblesPiste: (libelle: string, pct: number) => `${libelle} : ${pct} %, seuil à 70 %`,
+  faiblesPisteRatures: (libelle: string, n: number) => `${libelle} : ${ratures(n)}`,
+  /** les deux autres entrées */
+  qcmTitre: "QCM par thème",
+  qcmTexte: "Toutes les banques, classées par matière.",
+  examsTitre: "Examens officiels",
+  examsTexte: "Les sessions officielles, rejouées question par question.",
 } as const;
 
 // ---------------------------------------------------------------------------

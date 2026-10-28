@@ -34,7 +34,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/accueil-trente-du-jour.webp",
     alt: "La salle des épreuves : un cabinet de marqueterie",
     credit: "Studiolo du palais ducal de Gubbio (marqueterie, vers 1478-1482), Metropolitan Museum of Art, CC0 (commons.wikimedia.org, Studiolo_from_the_Ducal_Palace_in_Gubbio_MET_DT2954).",
-    emplacement: "Accueil : carte « lieu » Les 30 du jour, image 16:10 en tête de carte sur ordinateur (environ 400×250 px) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre.",
+    emplacement: "Accueil : carte « lieu » Les 30 du jour, image 16:10 en tête de carte sur ordinateur (environ 400×250 px) ; sur téléphone, la même image en vignette portrait 88×110 px à droite du titre. /entrainement : le grand lieu peint sans titre ni action (réservé à un usage futur), en bas à gauche, cadré 50% 34%.",
     prompt:
       STYLE +
       "Sujet : la salle des épreuves de l'atelier, vers 1500, en cadrage serré : un pupitre de bois sombre ; dessus, une pile de trente feuillets de papier vergé noués d'un ruban et scellés d'un cachet de cire rouge, un encrier, une plume d'oie et un sablier dont le sable s'écoule. Fond : un mur de boiseries sombres et une étagère, sans fenêtre ni vue de ville. Lumière dorée de fin de journée venant de la gauche, poussière dans le rayon, ombres brunes profondes. Palette chaude : ocre, terre de Sienne brûlée, brun, rouge brique, touches d'or. Aucun personnage, aucun texte lisible, aucune lettre, aucun logo. Format 16:10 ; feuillets scellés et sablier au centre, un peu à droite, pour qu'un recadrage portrait 4:5 les garde ; haut de l'image plus calme.",
@@ -195,7 +195,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/eclair-depart.webp",
     alt: "La vallée de l'Arno avant l'orage",
     credit: "Léonard de Vinci, L'Annonciation (vers 1472-1476), Offices, paysage du fond recadré (resserré au centre). Domaine public (commons.wikimedia.org, Annunciation_(Leonardo)_(cropped)).",
-    emplacement: "/eclair : bandeau en tête de la carte de départ, 4:1 (environ 600×150 px sur ordinateur, 340×96 px sur téléphone), 1600×400 px conseillés.",
+    emplacement: "/eclair : bandeau en tête de la carte de départ, 4:1 (environ 600×150 px sur ordinateur, 340×96 px sur téléphone), 1600×400 px conseillés. /entrainement : vignette verticale de la carte « Séries éclair » (150 px de large, pleine hauteur ; bandeau de 96 px sur téléphone).",
     prompt: "Image de référence jointe : l'illustration de l'Atelier de Ranked Lobby ; reprends exactement sa technique, sa lumière et sa palette. Peinture au couteau, empâtements épais et touches visibles, dans l'univers de Léonard de Vinci à Florence vers 1500. Panorama de la vallée de l'Arno vue depuis la fenêtre de l'atelier, au moment où un orage éclate : un éclair net et lumineux fend un ciel brun-violet, la dernière lumière dorée de fin de journée éclaire encore les collines et les toits de Florence au loin. Palette chaude : ocre, terre de Sienne brûlée, ambre, brun, avec l'éclair blanc doré. Aucun personnage, aucun texte. Format panoramique très allongé 4:1, 1600×400, l'éclair un peu à droite du centre.",
   },
   "cinq-depart": {
@@ -209,7 +209,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/calculs-abaque.webp",
     alt: "La table de calcul d'une école d'abaque florentine",
     credit: "Jacopo de' Barbari (attribué), Portrait de Luca Pacioli avec un élève, 1495, Capodimonte, domaine public, https://commons.wikimedia.org/wiki/File:Jacopo_de%27_Barbari_(attributed_to)_Portrait_of_Luca_Pacioli_(1445_1517)_with_a_student_(Guidobaldo_da_Montefeltro)_(2).jpg recadré sur la table. Domaine public.",
-    emplacement: "/calculs : carte « lieu » L'Abaque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone ; /calculs/[matiere] la reprend en médaillon de bande.",
+    emplacement: "/calculs : carte « lieu » L'Abaque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone ; /calculs/[matiere] la reprend en médaillon de bande. /entrainement : moitié gauche du diptyque (Calculs), plein cadre.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la table de travail d'une école d'abaque florentine vers 1500, dans l'univers de Léonard de Vinci. Un abaque à jetons de laiton, des tablettes de cire, un compas, des feuillets couverts de colonnes de chiffres, et à côté un mécanisme de calcul en bois à roues dentées inspiré du Codex Madrid. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, reflets de laiton, touches de vert sauge). Vue en légère plongée, sujet au centre, haut de l'image plus calme. Sans personnage, sans texte ni chiffres lisibles, sans cadre. Format paysage 16:10, 1600×1000.",
   },
   "calculs-poulies": {
@@ -230,7 +230,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/practice-studiolo.webp",
     alt: "Saint Jérôme dans son cabinet : un studiolo peint",
     credit: "Antonello da Messina, Saint Jérôme dans son cabinet, v. 1475, National Gallery, domaine public, https://commons.wikimedia.org/wiki/File:Antonello_da_Messina_-_St_Jerome_in_his_study_-_National_Gallery_London.jpg.",
-    emplacement: "/practice : carte « lieu » Le Studiolo, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
+    emplacement: "/practice : carte « lieu » Le Studiolo, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone. /entrainement : moitié droite du diptyque (Entraînement ciblé), plein cadre.",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : le studiolo d'un savant florentin vers 1500, dans l'univers de Léonard de Vinci. Un pupitre incliné porte une copie vierge et une plume dans son encrier, un sablier en verre et bois tourné est posé à côté, des traités reliés sont empilés, un mécanisme à engrenages trône sur une étagère. Une fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, terre de Sienne, brun, ivoire, touches de vert sauge). Vue de trois quarts, le pupitre et le sablier au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
   },
   "practice-corrige": {
@@ -244,7 +244,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/qcm-bibliotheque.webp",
     alt: "La Bibliothèque : grande salle de lecture voûtée, plafond peint et doré, galeries de livres",
     credit: "Image peinte pour Ranked Lobby (2026-10-13), fournie par l'utilisateur.",
-    emplacement: "/qcm : carte « lieu » La Bibliothèque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone.",
+    emplacement: "/qcm : carte « lieu » La Bibliothèque, 16:10 sur ordinateur (1600×1000 px), vignette portrait 88×110 px sur téléphone. /entrainement : bande de 88 px en tête de la carte « QCM par thème ».",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : la bibliothèque d'un palais florentin vers 1500, dans l'univers de Léonard de Vinci. De hauts rayonnages de bois classés par matière, des codex reliés de cuir, une échelle de bibliothèque, une table de lecture où sont ouverts un codex et des feuillets de questions. Une haute fenêtre à gauche laisse entrer la lumière dorée de fin de journée, palette chaude (ocre, cuir fauve, brun, ivoire, touches de vert sauge). Vue de trois quarts, la table de lecture au centre, le haut de l'image calme. Sans personnage, sans texte lisible, sans cadre. Format paysage 16:10, 1600×1000.",
   },
   "qcm-machines": {
@@ -258,7 +258,7 @@ export const ILLUSTRATIONS = {
     src: "/illustrations/exams-sceau.webp",
     alt: "Une page de la Summa de arithmetica, en médaillon",
     credit: "Pacioli - Summa de arithmetica geometria, 1523, domaine public (recadrage carré provisoire, à remplacer par un objet).",
-    emplacement: "/official-exams et /practice : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré.",
+    emplacement: "/official-exams et /practice : médaillon rond dans la bande d'encre (68 px sur ordinateur, 56 px sur téléphone), 1024×1024 px conseillés, sujet centré. /entrainement : bande de 88 px en tête de la carte « Examens officiels ».",
     prompt: "Utilise l'image jointe (l'Atelier de Ranked Lobby) comme référence de style. Peinture à l'huile au couteau, empâtements visibles : un sceau de cire rouge brun posé sur une copie d'examen pliée, avec un ruban, sur une table de bois de l'atelier de Léonard de Vinci à Florence. Lumière dorée de fin de journée, palette ivoire, ocre, rouge sanguine, brun. Sujet centré dans un cadrage carré pour un recadrage en cercle. Sans personnage, sans texte lisible, sans cadre. Format 1:1, 1024×1024.",
   },
 } as const satisfies Record<string, Illustration>;

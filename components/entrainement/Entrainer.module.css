@@ -1,0 +1,651 @@
+/* La page S'entraîner (maquette validée) : le diptyque Calculs | Entraînement
+   ciblé, la rangée Séries éclair + Tes points faibles, puis un lieu peint à
+   gauche et, empilés à droite, QCM par thème et Examens officiels. Cartes en
+   papier et en encre, jetons du site (jour et nuit) ; les mises en page
+   suivent la largeur du bloc (requêtes de conteneur), pas celle de l'écran.
+   Animations : transform seulement, coupées par prefers-reduced-motion.
+   Couleurs : celles de l'onglet « S'entraîner » de la barre du haut, la
+   palette atelier (lib/palettes.ts ; EntrainementView pose --pal-1 brun chaud,
+   --pal-2 bleu crépuscule, --pal-3 ambre, --pal-4 flamme de bougie sur la
+   racine). Le rouge du stylo (--pen) ne marque que ce qui est sous 50 % et les
+   ratures. Les mélanges ci-dessous gardent le texte AA, jour et nuit. */
+
+.racine {
+  container-type: inline-size;
+  display: grid;
+  gap: 20px;
+  /* texte d'accent (le lien) : le bleu crépuscule assombri au brun (plus de 9:1 sur le papier) */
+  --acc: color-mix(in oklab, var(--pal-2) 80%, var(--pal-1));
+  /* la barre « à reprendre » : l'ambre assombri (3:1 et plus sur le rail) ; le rouge du stylo sous 50 % */
+  --ambre: color-mix(in oklab, var(--pal-3) 78%, var(--pal-1));
+  /* le surligneur : la flamme de bougie */
+  --surligne: color-mix(in srgb, var(--pal-4) 60%, transparent);
+  /* le gros chiffre du diptyque : une pastille claire, le brun très sombre dessus (sur la peinture, jour comme nuit) */
+  --pech: color-mix(in srgb, var(--pal-4) 70%, white);
+  --pech-texte: color-mix(in oklab, var(--pal-1) 70%, black);
+  /* le brun sombre : fond de repli de l'encre et des peintures, le temps que l'image arrive */
+  --noyer-fonce: color-mix(in oklab, var(--pal-1) 62%, black);
+  /* le texte posé sur l'encre et sur la peinture */
+  --sur-nuit: white;
+  --sur-nuit-2: color-mix(in srgb, var(--pal-4) 35%, white);
+}
+/* nuit : l'accent passe à la flamme éclaircie (plus de 10:1 sur les cartes), l'ambre reprend sa pleine couleur */
+:global(html[data-theme="nuit"]) .racine {
+  --acc: color-mix(in oklab, var(--pal-4) 80%, white);
+  --ambre: var(--pal-3);
+  --surligne: color-mix(in srgb, var(--pal-4) 45%, transparent);
+}
+.racine :where(h2, h3, p) {
+  margin: 0;
+}
+.racine :where(h2, h3) {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.racine :where(ul) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.sous {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--acc);
+}
+.lien::after {
+  content: "→";
+  transition: transform var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .lien:hover::after {
+    transform: translateX(3px);
+  }
+}
+
+/* ——— les cartes en papier ——— */
+.carte {
+  position: relative;
+  min-width: 0;
+  border-radius: 20px;
+}
+.papier {
+  background: var(--surface);
+  border: 1px solid var(--pencil-2);
+  box-shadow: var(--shadow-1);
+}
+/* une carte entière cliquable (un seul geste) : elle se lève au survol */
+.levable {
+  display: flex;
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .levable:hover {
+    transform: translateY(-3px);
+  }
+  .levable:hover .fleche {
+    transform: translateX(3px);
+  }
+}
+.levable:active {
+  transform: translateY(0) scale(0.992);
+}
+
+/* ——— l'encre de l'onglet « S'entraîner », reprise sur la page ———
+   .rl-encre (globals.css, avec data-palette) : la texture de la palette qui
+   dérive sous un voile sombre ; coupée en mode discret, figée en mouvement
+   réduit et avec data-rl-motion="off". Les boutons y ajoutent le liquide vivant
+   (EncreVive) ; les sceaux, la texture seule. .encre : un bouton ou un sceau
+   remplis de cette encre, texte blanc ; son fond propre (brun sombre) sert de
+   repli le temps que l'image arrive (en mode discret : voir en bas). Voile
+   plus dense que dans l'onglet : le texte blanc reste AA (4,5:1) jusque sur les
+   traînées claires. */
+.encre {
+  position: relative;
+  color: var(--sur-nuit);
+  background: var(--noyer-fonce);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --pal-voile-haut: 0.5;
+  --pal-voile-bas: 0.68;
+}
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.bouton:active {
+  transform: scale(0.98);
+}
+/* dans un sceau, une tuile plus fine : on y voit le marbré, pas une seule tache */
+.racine .sceau:global(.rl-encre)[data-palette] {
+  --encre-pas: 112px;
+}
+/* le sceau : une pastille d'encre, cerclée de flamme sur la peinture */
+.sceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-4) 75%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--pal-4) 20%, transparent);
+  --pal-voile-haut: 0.4;
+  --pal-voile-bas: 0.6;
+}
+/* le sceau sur le papier : cerclé de brun (de flamme la nuit) */
+.sceauMoyen {
+  width: 36px;
+  height: 36px;
+  --anneau: var(--pal-1);
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--anneau) 60%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--anneau) 14%, transparent);
+}
+:global(html[data-theme="nuit"]) .sceauMoyen {
+  --anneau: var(--pal-4);
+}
+/* nuit : le brun sombre et l'encre voilée se confondent avec les cartes (l'ombre noire n'y marque rien) ; un liseré de flamme dessine le bouton du papier */
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .papier .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-4) 40%, transparent),
+    var(--shadow-btn);
+}
+
+/* ——— le diptyque : un bandeau, deux moitiés peintes à égalité ——— */
+.diptyque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+  overflow: hidden;
+  border: 1px solid var(--pencil-2);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: var(--shadow-1);
+}
+.moitie {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 440px;
+  isolation: isolate;
+  /* le fond le temps que la peinture arrive */
+  background: var(--noyer-fonce);
+  color: var(--sur-nuit);
+}
+.fond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* le voile sombre : le texte clair reste lisible sur toute la peinture */
+.moitie::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(26, 16, 9, 0.08) 0%, rgba(26, 16, 9, 0.42) 34%, rgba(26, 16, 9, 0.9) 72%);
+}
+.corps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 34px 32px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.titre {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 36px;
+  line-height: 1.1;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+}
+.phrase {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--sur-nuit-2);
+}
+.chiffre {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 15px;
+  color: var(--sur-nuit-2);
+}
+/* le gros chiffre : une pastille claire (typo du logo, retirée en mode discret) */
+.pech {
+  display: inline-block;
+  padding: 3px 10px 0;
+  border-radius: 8px;
+  background: var(--pech);
+  color: var(--pech-texte);
+  font-size: 56px;
+  line-height: 1.05;
+  text-shadow: none;
+}
+.etat {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--sur-nuit);
+}
+/* sur la peinture : un liseré clair détache le bouton encré, un anneau clair le focus */
+.moitie .bouton.encre {
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.4),
+    0 10px 20px -10px rgba(0, 0, 0, 0.6);
+}
+.moitie :focus-visible {
+  outline: 2px solid var(--sur-nuit);
+  outline-offset: 3px;
+}
+
+/* ——— la rangée : Séries éclair (5/12) et Tes points faibles (7/12) ——— */
+.rangee {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 20px;
+}
+.eclair {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  overflow: hidden;
+}
+.vignette {
+  position: relative;
+  isolation: isolate;
+  border-right: 1px solid var(--pencil-2);
+  background: var(--noyer-fonce);
+}
+.eclairCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 22px;
+}
+.titreMoyen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  line-height: 1.1;
+}
+.compte {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+.compteVide {
+  color: var(--ink-2);
+}
+.compte .surligne {
+  font-size: 28px;
+  line-height: 1;
+}
+.surligne {
+  padding: 0 5px;
+  margin: 0 -5px;
+  background: linear-gradient(transparent 50%, var(--surligne) 50%, var(--surligne) 90%, transparent 90%);
+}
+.boutonBas {
+  margin-top: auto;
+}
+
+.faibles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 28px;
+}
+.faiblesTete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.faiblesTitre {
+  margin-bottom: 4px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.legende {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.legendeTrait {
+  display: block;
+  height: 14px;
+  border-left: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+.lignes {
+  display: grid;
+}
+.ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) 5rem;
+  align-items: center;
+  gap: 16px;
+  min-height: 44px;
+}
+.nom {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.nom b {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nom span {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.piste {
+  position: relative;
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--paper-2);
+}
+.piste i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+}
+.rouge {
+  background: var(--pen);
+}
+.ambre {
+  background: var(--ambre);
+}
+/* le repère à 70 % : un trait pointillé qui dépasse la piste */
+.seuil {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: 70%;
+  width: 0;
+  border-left: 2px dashed var(--ink);
+  opacity: 0.6;
+}
+.pisteBatons {
+  display: block;
+  min-width: 0;
+}
+.batons {
+  display: block;
+  max-width: 100%;
+  stroke: var(--pen);
+}
+.valeur {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.valeurRature {
+  font-size: 13px;
+  color: var(--pen);
+}
+.vide {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.pied {
+  margin-top: auto;
+}
+
+/* ——— le dernier étage : le lieu peint (2/3) et, empilées, deux entrées (1/3) ——— */
+.bas {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 20px;
+}
+/* la peinture seule : ni titre, ni lien (la place d'un usage futur) */
+.lieu {
+  position: relative;
+  min-height: 300px;
+  min-width: 0;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 20px;
+  background: var(--noyer-fonce);
+  box-shadow: var(--shadow-1);
+}
+.aside {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 20px;
+  min-width: 0;
+}
+.petite {
+  flex-direction: column;
+  overflow: hidden;
+}
+.petiteImg {
+  position: relative;
+  display: block;
+  flex: 1 0 88px;
+  min-height: 88px;
+  isolation: isolate;
+  border-bottom: 1px solid var(--pencil-2);
+  background: var(--noyer-fonce);
+}
+.petiteTexte {
+  display: grid;
+  gap: 5px;
+  padding: 14px 18px 16px;
+}
+.petiteTitre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.fleche {
+  font-size: 15px;
+  color: var(--acc);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+/* moyen : la rangée et le dernier étage passent sur une colonne ; les deux entrées côte à côte, le lieu peint dessous */
+@container (max-width: 900px) {
+  .rangee {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .aside {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-auto-rows: auto;
+  }
+  .petiteImg {
+    flex: 0 0 96px;
+  }
+  .lieu {
+    order: 2;
+    min-height: 220px;
+  }
+}
+/* le diptyque se range en deux étages quand chaque moitié devient trop étroite */
+@container (max-width: 700px) {
+  .diptyque {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .moitie {
+    min-height: 0;
+    padding-top: 150px;
+  }
+  .corps {
+    padding: 0 24px 26px;
+  }
+  .titre {
+    gap: 12px;
+    font-size: 30px;
+  }
+  .pech {
+    font-size: 46px;
+  }
+}
+/* téléphone : une colonne partout ; la peinture de la rangée éclair passe en bandeau, une notion tient sur deux étages */
+@container (max-width: 560px) {
+  .racine {
+    gap: 16px;
+  }
+  .diptyque,
+  .papier,
+  .lieu,
+  .carte {
+    border-radius: 16px;
+  }
+  .moitie {
+    padding-top: 120px;
+  }
+  .corps {
+    padding: 0 18px 22px;
+  }
+  .corps .bouton {
+    width: 100%;
+  }
+  .titre {
+    gap: 10px;
+    font-size: clamp(22px, 7cqi, 28px);
+  }
+  .sceau {
+    width: 38px;
+    height: 38px;
+  }
+  .sceauMoyen {
+    width: 34px;
+    height: 34px;
+  }
+  .pech {
+    font-size: 40px;
+  }
+  .eclair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vignette {
+    height: 96px;
+    border-right: 0;
+    border-bottom: 1px solid var(--pencil-2);
+  }
+  .eclairCorps {
+    padding: 18px;
+  }
+  .eclairCorps .bouton {
+    width: 100%;
+  }
+  .faibles {
+    padding: 20px 18px;
+  }
+  .ligne {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 8px 0;
+  }
+  .ligne > .piste,
+  .ligne > .pisteBatons {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .legende {
+    display: none;
+  }
+  .aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lieu {
+    min-height: 150px;
+  }
+}
+
+/* ——— mode discret (réviser en public) ———
+   Les accents passent à l'encre du site ; la barre « à reprendre » au gris
+   d'encre (le rouge du stylo est déjà l'encre) ; les boutons et sceaux d'encre
+   reprennent le bouton plein du site, et sur la peinture un bouton clair. Le
+   gros chiffre garde sa pastille. */
+:global(html[data-discreet="1"]) .racine {
+  --acc: var(--ink);
+  --ambre: var(--ink-2);
+}
+:global(html[data-discreet="1"]) .papier .encre {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .moitie .bouton.encre {
+  background: #fff;
+  color: #111;
+  text-shadow: none;
+}
+
+/* ——— mouvement réduit ——— */
+@media (prefers-reduced-motion: reduce) {
+  .levable,
+  .bouton,
+  .lien::after,
+  .fleche {
+    transition: none;
+  }
+  .levable:hover,
+  .levable:active,
+  .bouton:active,
+  .levable:hover .fleche,
+  .lien:hover::after {
+    transform: none;
+  }
+}

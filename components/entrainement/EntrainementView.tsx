@@ -1,58 +1,62 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
-import { InkProgressRing } from "@/components/ui/InkRings";
+import { Zap } from "lucide-react";
+import { EncreVive } from "@/components/nav/EncreVive";
 import { Icone } from "@/components/adn/icons";
-import { DefiTile } from "@/components/defi/DefiTile";
 import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
-import { FormatRow } from "@/components/ui/FormatRow";
-import { TopicRail } from "@/components/ui/TopicRail";
-import { subjectRail, weightLabel } from "@/components/reviser/rail";
 import { subjectByKey } from "@/components/reviser/catalog";
-import { agoLabel, countdown, durationLabel, hourLabel, longDay } from "@/components/accueil/format";
-import type { MockExamCard } from "@/components/accueil/types";
-import { PLACEMENT_GAMES } from "@/lib/ranks";
-import { DUEL_MINUTES, DUEL_QUESTIONS } from "@/lib/duels";
-import type { TodayDaily } from "@/lib/daily";
-import { ACCUEIL, DUEL } from "@/lib/voice";
-import { ESPACES } from "@/lib/voice-z4";
-import { EclairCarte } from "@/components/eclair/EclairCarte";
-import { PointsFaiblesHeros } from "@/components/moi/PointsFaibles";
-import { CarteAtelier } from "@/components/atelier/CarteAtelier";
-import type { VarianteLogo } from "@/components/atelier/LogoAtelier";
-import type { PointsFaiblesData } from "@/lib/points-faibles";
+import { agoLabel } from "@/components/accueil/format";
+import { Illustration } from "@/components/ui/Illustration";
+import type { IllustrationNom } from "@/lib/illustrations";
+import { PALETTES, styleDePalette } from "@/lib/palettes";
+import { MIN_REPONSES, type PointsFaiblesData } from "@/lib/points-faibles";
+import { ECLAIR_HREF } from "@/lib/eclair";
+import { ECLAIR } from "@/lib/voice-z2c";
+import { nombre } from "@/lib/voice";
+import { RV } from "@/lib/voice-reviser";
+import { ENTRAINER } from "@/lib/voice-z4";
+import s from "./Entrainer.module.css";
 
-// Espace « S'entraîner », même langage que Réviser. Un seul choix mis en
-// avant (ton point faible n° 1 quand il y en a un, sinon la matière la plus
-// faible, sinon reprendre l'entraînement ciblé) ;
-// à côté, le défi du jour (le rituel quotidien, sans bouton plein : le point
-// focal reste la session). Quand l'Atelier est ouvert, il prend la colonne de
-// droite (sa carte d'abord sur téléphone) et le défi descend sous le point
-// faible, à côté des séries éclair. Dessous, la bande d'encre des calculs,
-// puis les autres façons de s'entraîner seul ; ensuite une session par matière, en rangée horizontale
-// (choisir une matière lance sa session ciblée) et, plus calme, ce qui fait
-// bouger le rang (examen blanc, duel).
+// Espace « S'entraîner » (maquette validée), même langage que Réviser : des
+// cartes en papier et en encre, la palette de l'onglet (« atelier »). Dans
+// l'ordre : le diptyque, un grand bandeau coupé en deux moitiés peintes à
+// égalité, « Calculs » et « Entraînement ciblé » (le titre, un gros chiffre
+// surligné, une ligne d'état, le bouton d'encre) ; puis la rangée « Séries
+// éclair » (la peinture à gauche) et « Tes points faibles » (une barre par
+// notion, le repère pointillé à 70 %, des bâtons quand la notion n'est
+// mesurée qu'en ratures) ; puis, à droite et empilés, « QCM par thème » et
+// « Examens officiels », à gauche un lieu peint sans action, réservé à un
+// usage futur (la peinture seule, sans titre ni lien). Téléphone : une
+// colonne, les deux entrées principales d'abord.
 // Sans requête : app/entrainement charge les données, l'aperçu en fournit.
+// Les chiffres sont ceux de la base ou des catalogues ; sans eux, la ligne
+// d'état disparaît (jamais de valeur inventée).
+// Repères de Léonard (data-leonard) : session (le diptyque), eclair,
+// points-faibles, autres (les entrées secondaires).
+// Couleurs : celles de l'onglet « S'entraîner » (palette atelier, lib/palettes.ts :
+// styleDePalette pose --pal-1 brun chaud … --pal-4 flamme de bougie sur la
+// racine). L'encre de l'onglet (.rl-encre, globals.css) revient sur la page : le
+// vrai fluide (EncreVive) dans les trois boutons, la texture qui dérive dans
+// les sceaux. Mode discret et nuit : voir Entrainer.module.css.
 
 export type EntrainementData = {
   practice: { sessions: number; last: { score: number; total: number; at: string; topics?: string[] } | null };
-  mockExam: MockExamCard | null;
-  rating: { elo: number; gamesPlayed: number };
-  incomingDuels: number;
-  subjects: { key: string; name: string; pct: number | null }[];
-  /** défi du jour (getTodayDaily) ; null : on n'affiche pas la tuile */
-  daily: TodayDaily | null;
+  /** les calculs ouverts (lib/calc, calcSubjectCards) : leurs questions et leurs matières ; absent : la moitié reste sans chiffre */
+  calculs?: { questions: number; matieres: number } | null;
   /** séries éclair rendues aujourd'hui ; null : table absente */
   eclair?: number | null;
-  /** aperçu seulement : la marque de l'Atelier à essayer (défaut : le sceau) */
-  logoAtelier?: VarianteLogo;
-  /** instant de rendu (ISO), pour les échéances du défi */
-  nowIso: string;
-  /** « Tes points faibles » : le n° 1 prend la carte héros ; absent ou sans point faible, la matière la plus faible comme avant */
+  /** réussite récente aux séries éclair (%) ; null : pas encore de série */
+  eclairPct?: number | null;
+  /** « Tes points faibles » : absent, la carte garde sa phrase neutre */
   pointsFaibles?: PointsFaiblesData;
 };
 
-const pctOf = (score: number, total: number) => (total > 0 ? Math.round((score / total) * 100) : null);
+const PAL = PALETTES.atelier;
+const encre = (...cls: string[]) => ["rl-encre", s.encre, ...cls].join(" ");
+const papier = (...cls: string[]) => [s.carte, s.papier, ...cls].join(" ");
+
+/** Combien de notions la carte en montre (la page « Points faibles » les a toutes). */
+const MAX_LIGNES = 4;
 
 function topicsLabel(keys: string[] | undefined) {
   if (!keys || keys.length === 0) return null;
@@ -60,264 +64,281 @@ function topicsLabel(keys: string[] | undefined) {
   return keys.length > 1 ? `${first} + ${keys.length - 1}` : first;
 }
 
-/** Le point focal : la session à lancer maintenant. */
-function FocusSession({ d, now, className = "" }: { d: EntrainementData; now?: number; className?: string }) {
-  const measured = d.subjects.filter((s) => s.pct !== null) as { key: string; name: string; pct: number }[];
-  const weakest = measured.length ? measured.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
-  const last = d.practice.last;
-  const lastPct = last ? pctOf(last.score, last.total) : null;
-  const lastLine = last
-    ? `Dernière session${topicsLabel(last.topics) ? ` · ${topicsLabel(last.topics)}` : ""}${lastPct !== null ? ` · ${lastPct} %` : ""} · ${agoLabel(last.at, now)}`
-    : null;
+/** Une notion de la carte : sa réussite récente (citée dès MIN_REPONSES réponses, comme sur la page Réviser) ou, en deçà, ses ratures en cours. */
+export type LigneFaible = { cle: string; libelle: string; matiere: string; pct: number | null; ratures: number };
 
-  const focus = weakest
-    ? {
-        kicker: "Ta prochaine session",
-        title: weakest.name,
-        text: ESPACES.plusFragile,
-        href: `/practice?topic=${weakest.key}`,
-        cta: "Lancer la session",
-        ring: { pct: weakest.pct, label: "maîtrise" },
-      }
-    : last
-      ? {
-          kicker: ACCUEIL.repriseSurTitre(agoLabel(last.at, now)),
-          title: topicsLabel(last.topics) ?? "Entraînement ciblé",
-          text: ESPACES.enchaine,
-          href: last.topics?.length === 1 ? `/practice?topic=${last.topics[0]}` : "/practice",
-          cta: "Nouvelle session",
-          ring: lastPct !== null ? { pct: lastPct, label: "dernière" } : null,
-        }
-      : {
-          kicker: ESPACES.premiereGoutte,
-          title: ESPACES.premiereSession,
-          text: ESPACES.premiereTexte,
-          href: "/practice",
-          cta: "Commencer",
-          ring: null,
-        };
-
-  return (
-    <section className={"card-hero rl-in flex min-h-[260px] flex-col gap-4 p-6 md:p-8 " + className} aria-label="Session conseillée">
-      {focus.ring && (
-        <div className="absolute right-4 top-4 md:right-8 md:top-8" title={`${focus.ring.pct} % · ${focus.ring.label}`}>
-          <span className="block sm:hidden">
-            <InkProgressRing pct={focus.ring.pct} size={80}>
-              <span className="t-num text-[13px]">{focus.ring.pct}%</span>
-            </InkProgressRing>
-          </span>
-          <span className="hidden sm:block">
-            <InkProgressRing pct={focus.ring.pct} size={124}>
-              <span className="flex flex-col items-center gap-0.5">
-                <span className="t-num text-[20px]">{focus.ring.pct}%</span>
-                <span className="t-micro">{focus.ring.label}</span>
-              </span>
-            </InkProgressRing>
-          </span>
-        </div>
-      )}
-      <div className={"flex min-w-0 flex-col gap-2 " + (focus.ring ? "pr-24 sm:pr-36" : "")}>
-        <p className="t-eyebrow">{focus.kicker}</p>
-        <h2 className="t-h1 m-0 [overflow-wrap:anywhere]">{focus.title}</h2>
-      </div>
-      <p className="t-body max-w-[440px] text-muted">{focus.text}</p>
-      <div className="mt-auto flex flex-col gap-3 pt-2">
-        <Link href={focus.href} className="btn btn-primary rl-press w-fit">
-          {focus.cta} <ArrowRight size={16} aria-hidden />
-        </Link>
-        {weakest && lastLine && <p className="t-micro">{lastLine}</p>}
-      </div>
-    </section>
-  );
+export function lignesFaibles(p: PointsFaiblesData | undefined, max = MAX_LIGNES): LigneFaible[] {
+  if (!p || p.etat !== "faibles") return [];
+  return p.liste.slice(0, max).map((n) => ({
+    cle: n.cle,
+    libelle: n.libelle,
+    matiere: n.matiereNom,
+    pct: n.mesures.n >= MIN_REPONSES ? Math.round((100 * n.mesures.ok) / n.mesures.n) : null,
+    ratures: n.mesures.enCours,
+  }));
 }
 
-function TileHead({ icon, title, right }: { icon: React.ReactNode; title: string; right?: React.ReactNode }) {
+/** Une moitié du diptyque : la peinture, un voile sombre, le texte clair posé en bas. */
+function Entree({
+  id,
+  illu,
+  position,
+  sceau,
+  titre,
+  phrase,
+  chiffre,
+  unite,
+  etat,
+  href,
+  action,
+}: {
+  id: string;
+  illu: IllustrationNom;
+  position: string;
+  sceau: React.ReactNode;
+  titre: string;
+  phrase: string;
+  chiffre?: string | null;
+  unite?: string;
+  etat?: React.ReactNode;
+  href: string;
+  action: string;
+}) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-surface">{icon}</span>
-      <h3 className="m-0 flex-1 text-[16px] font-bold tracking-[-0.01em]">{title}</h3>
-      {right}
-    </div>
-  );
-}
-
-function MockExamTile({ exam }: { exam: MockExamCard | null }) {
-  const when = exam ? new Date(exam.scheduledAt) : null;
-  return (
-    <section className="card-quiet flex flex-col gap-3 p-6" aria-label="Examen blanc">
-      <TileHead
-        icon={<Icone nom="examen" size={19} />}
-        title="Examen blanc"
-        right={exam && <span className="t-micro rounded-lg bg-surface px-2 py-1 font-mono font-semibold">{countdown(exam.daysLeft)}</span>}
-      />
-      {exam && when ? (
-        <>
-          <p className="t-small">
-            {longDay(when)} · {hourLabel(when)} · {exam.questionCount} questions · {durationLabel(exam.durationMinutes)}
+    <article className={s.moitie} aria-labelledby={id}>
+      <Illustration nom={illu} position={position} decorative eager className={s.fond} />
+      <div className={s.corps}>
+        <h2 id={id} className={"font-brand " + s.titre}>
+          <span className={encre(s.sceau)} data-palette={PAL.key} aria-hidden>
+            {sceau}
+          </span>
+          {titre}
+        </h2>
+        <p className={s.phrase}>{phrase}</p>
+        {chiffre ? (
+          <p className={s.chiffre}>
+            <span className={"t-num " + s.pech}>{chiffre}</span>
+            {unite && <span>{unite}</span>}
           </p>
-          <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
-            <Link href={`/mock-exams/${exam.id}`} className="btn btn-secondary rl-press min-h-[38px] px-3.5 text-[13.5px]">
-              {exam.registered ? "Voir l'examen" : "Je m'inscris"} <ArrowRight size={15} aria-hidden />
-            </Link>
-            {exam.registered ? (
-              <span className="t-micro inline-flex items-center gap-1 font-semibold">
-                <Check size={13} aria-hidden /> Inscrit{exam.registrantCount > 1 ? ` · ${exam.registrantCount} participants` : ""}
-              </span>
-            ) : (
-              exam.registrantCount > 0 && <span className="t-micro">{exam.registrantCount} inscrit{exam.registrantCount > 1 ? "s" : ""}</span>
-            )}
-            <Link href="/mock-exams" className="ink-link ml-auto">
-              Tous les examens
-            </Link>
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="t-small">Aucun examen blanc programmé pour l&apos;instant.</p>
-          <Link href="/mock-exams" className="ink-link mt-auto w-fit">
-            Tous les examens
-          </Link>
-        </>
-      )}
-    </section>
+        ) : null}
+        {etat ? <p className={s.etat}>{etat}</p> : null}
+        <Link href={href} className={encre(s.bouton)} data-palette={PAL.key}>
+          <EncreVive tons={PAL.liquide} />
+          {action}
+        </Link>
+      </div>
+    </article>
   );
 }
 
-function DuelTile({ rating, incoming }: { rating: EntrainementData["rating"]; incoming: number }) {
-  const placement = rating.gamesPlayed < PLACEMENT_GAMES;
+function Diptyque({ d, now }: { d: EntrainementData; now?: number }) {
+  const c = d.calculs;
+  const n = d.practice.sessions;
+  const last = d.practice.last;
+  const nom = last ? topicsLabel(last.topics) : null;
+  const score = last && last.total > 0 ? `${nombre(last.score)}/${nombre(last.total)}` : null;
   return (
-    <section className="card-quiet flex flex-col gap-3 p-6" aria-label="Duel">
-      <TileHead
-        icon={<Icone nom="duel" size={19} />}
-        title="Duel"
-        right={<span className="t-micro font-mono">{placement ? `placement ${rating.gamesPlayed}/${PLACEMENT_GAMES}` : `${rating.elo} ELO`}</span>}
+    <section className={s.diptyque} aria-label={ENTRAINER.entrees} data-leonard="session">
+      <Entree
+        id="ent-calculs"
+        illu="calculs-abaque"
+        position="50% 40%"
+        sceau={<Glyphe nom="calculs" size={22} />}
+        titre={ENTRAINER.calculsTitre}
+        phrase={ENTRAINER.calculsPhrase}
+        chiffre={c && c.questions > 0 ? nombre(c.questions) : null}
+        unite={c && c.questions > 0 ? ENTRAINER.calculsUnite(c.matieres) : undefined}
+        etat={c && c.questions > 0 ? ENTRAINER.calculsNiveaux : null}
+        href="/calculs"
+        action={ENTRAINER.calculsAction}
       />
-      <p className="t-small">{ESPACES.duelTexte(DUEL_QUESTIONS, DUEL_MINUTES)}</p>
-      <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
-        <Link href="/duel" className="btn btn-secondary rl-press min-h-[38px] px-3.5 text-[13.5px]">
-          {DUEL.trouver}
-        </Link>
-        <Link href="/duel" className="ink-link">
-          {incoming > 0 ? ESPACES.defisEnAttente(incoming) : "Défier quelqu'un"}
+      <Entree
+        id="ent-cible"
+        illu="practice-studiolo"
+        position="50% 40%"
+        sceau={<Icone nom="entrainer" size={22} />}
+        titre={ENTRAINER.cibleTitre}
+        phrase={ENTRAINER.ciblePhrase}
+        chiffre={n > 0 ? nombre(n) : null}
+        unite={n > 0 ? ENTRAINER.cibleUnite(n) : undefined}
+        etat={
+          n === 0 ? (
+            ENTRAINER.cibleAucune
+          ) : last ? (
+            <>
+              {ENTRAINER.cibleDerniere} {nom && <b>{nom}</b>}
+              {nom ? " · " : ""}
+              {score && <span className={s.mono}>{score}</span>}
+              {score ? " · " : ""}
+              {agoLabel(last.at, now)}
+            </>
+          ) : null
+        }
+        href="/practice"
+        action={ENTRAINER.cibleAction}
+      />
+    </section>
+  );
+}
+
+/** Des bâtons de comptage (quatre traits et la barre oblique pour cinq) : une notion mesurée seulement en ratures. */
+function Batons({ n }: { n: number }) {
+  const k = Math.min(Math.max(n, 1), 15);
+  const paquets = Math.floor(k / 5);
+  const reste = k % 5;
+  const PAS = 51;
+  const traits: string[] = [];
+  for (let g = 0; g < paquets; g++) {
+    for (let i = 0; i < 4; i++) traits.push(`M${g * PAS + 6 + 11 * i} 3v22`);
+    traits.push(`M${g * PAS} 20L${g * PAS + 45} 8`);
+  }
+  for (let r = 0; r < reste; r++) traits.push(`M${paquets * PAS + 6 + 11 * r} 3v22`);
+  const largeur = reste ? paquets * PAS + 6 + 11 * (reste - 1) + 4 : paquets * PAS - 6;
+  return (
+    <svg className={s.batons} width={largeur} height={28} viewBox={`0 0 ${largeur} 28`} aria-hidden fill="none" strokeWidth={2.6} strokeLinecap="round">
+      <path d={traits.join("")} />
+    </svg>
+  );
+}
+
+function Eclair({ d }: { d: EntrainementData }) {
+  const n = typeof d.eclair === "number" ? d.eclair : null;
+  return (
+    <section className={papier(s.eclair)} aria-labelledby="ent-eclair" data-leonard="eclair">
+      <div className={s.vignette}>
+        <Illustration nom="eclair-depart" position="50% 50%" decorative className={s.fond} />
+      </div>
+      <div className={s.eclairCorps}>
+        <h2 id="ent-eclair" className={"font-brand " + s.titreMoyen}>
+          <span className={encre(s.sceau, s.sceauMoyen)} data-palette={PAL.key} aria-hidden>
+            <Zap size={16} />
+          </span>
+          {ECLAIR.nom}
+        </h2>
+        <p className={s.sous}>{ENTRAINER.eclairPhrase}</p>
+        {n !== null &&
+          (n > 0 ? (
+            <p className={s.compte}>
+              <span className={"t-num " + s.surligne}>{nombre(n)}</span>
+              <span>{ENTRAINER.eclairUnite(n)}</span>
+            </p>
+          ) : (
+            <p className={s.compte + " " + s.compteVide}>{ENTRAINER.eclairAucune}</p>
+          ))}
+        {typeof d.eclairPct === "number" && <p className={s.sous}>{ENTRAINER.eclairReussite(d.eclairPct)}</p>}
+        <Link href={ECLAIR_HREF} className={encre(s.bouton, s.boutonBas)} data-palette={PAL.key}>
+          <EncreVive tons={PAL.liquide} />
+          {n !== null && n > 0 ? ECLAIR.carte.encore : ENTRAINER.eclairAction}
         </Link>
       </div>
     </section>
   );
 }
 
-/** Les calculs, en bande d'encre pleine largeur : la carte sombre (.card-ink, noire en clair, ardoise en nuit) et son bouton clair, comme la maquette A. */
-function BandeCalculs() {
+function Faibles({ d }: { d: EntrainementData }) {
+  const p = d.pointsFaibles;
+  const lignes = lignesFaibles(p);
   return (
-    <section
-      aria-label={ESPACES.calculsTitre}
-      className="card-ink rl-in flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-7 sm:py-6"
-      style={{ animationDelay: ".1s" }}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <span aria-hidden className="bande-encre-icone grid h-12 w-12 shrink-0 place-items-center rounded-[14px]">
-          <Glyphe nom="calculs" size={22} />
-        </span>
-        <div className="min-w-0">
-          <h2 className="m-0 text-[19px] font-bold leading-tight tracking-[-0.015em] md:text-[21px]">{ESPACES.calculsTitre}</h2>
-          <p className="m-0 mt-1 text-[13.5px] leading-snug opacity-75 md:text-[14.5px]">{ESPACES.calculsBande}</p>
+    <section className={papier(s.faibles)} aria-labelledby="ent-faibles" data-leonard="points-faibles">
+      <div className={s.faiblesTete}>
+        <div>
+          <h2 id="ent-faibles" className={s.faiblesTitre}>
+            {ENTRAINER.faiblesTitre}
+          </h2>
+          <p className={s.sous}>{ENTRAINER.faiblesSous}</p>
         </div>
+        {lignes.length > 0 && (
+          <span className={s.legende} aria-hidden>
+            <span className={s.legendeTrait} />
+            {ENTRAINER.faiblesSeuil}
+          </span>
+        )}
       </div>
-      <Link href="/calculs" className="btn btn-lg btn-on-ink rl-press w-full shrink-0 sm:w-auto">
-        {ESPACES.calculsAction} <ArrowRight size={17} aria-hidden />
-      </Link>
+      {lignes.length > 0 ? (
+        <ul className={s.lignes}>
+          {lignes.map((l) => (
+            <li key={l.cle} className={s.ligne} title={`${l.matiere} · ${l.libelle}`}>
+              <span className={s.nom}>
+                <b>{l.libelle}</b>
+                <span>{l.matiere}</span>
+              </span>
+              {l.pct !== null ? (
+                <span className={s.piste} role="img" aria-label={ENTRAINER.faiblesPiste(l.libelle, l.pct)}>
+                  <i className={l.pct < 50 ? s.rouge : s.ambre} style={{ width: `${l.pct}%` }} />
+                  <span className={s.seuil} />
+                </span>
+              ) : (
+                <span className={s.pisteBatons} role="img" aria-label={ENTRAINER.faiblesPisteRatures(l.libelle, l.ratures)}>
+                  <Batons n={l.ratures} />
+                </span>
+              )}
+              <span className={s.valeur + (l.pct === null ? " " + s.valeurRature : "")}>{l.pct !== null ? `${l.pct} %` : RV.faiblesRatures(l.ratures)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={s.vide}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</p>
+      )}
+      <div className={s.pied}>
+        <Link href="/moi?onglet=stats#points-faibles" className={s.lien}>
+          {RV.faiblesAction}
+        </Link>
+      </div>
     </section>
+  );
+}
+
+/** Une entrée secondaire : une vignette peinte, le titre, une phrase ; toute la carte est le lien. */
+function Petite({ href, illu, position, titre, texte }: { href: string; illu: IllustrationNom; position: string; titre: string; texte: string }) {
+  return (
+    <Link href={href} className={papier(s.levable, s.petite)}>
+      <span className={s.petiteImg}>
+        <Illustration nom={illu} position={position} decorative className={s.fond} />
+      </span>
+      <span className={s.petiteTexte}>
+        <h2 className={s.petiteTitre}>
+          {titre}
+          <span className={s.fleche} aria-hidden>
+            →
+          </span>
+        </h2>
+        <span className={s.sous}>{texte}</span>
+      </span>
+    </Link>
+  );
+}
+
+/** Le dernier étage : à gauche un lieu peint, sans titre ni action (la place d'un usage futur) ; à droite, empilés, le QCM et les examens officiels. */
+function Autres() {
+  return (
+    <div className={s.bas}>
+      <div className={s.lieu} aria-hidden>
+        <Illustration nom="accueil-trente-du-jour" position="50% 34%" decorative className={s.fond} />
+      </div>
+      <nav className={s.aside} aria-label={ENTRAINER.autres} data-leonard="autres">
+        <Petite href="/qcm" illu="qcm-bibliotheque" position="50% 50%" titre={ENTRAINER.qcmTitre} texte={ENTRAINER.qcmTexte} />
+        <Petite href="/official-exams" illu="exams-sceau" position="50% 50%" titre={ENTRAINER.examsTitre} texte={ENTRAINER.examsTexte} />
+      </nav>
+    </div>
   );
 }
 
 export function EntrainementView({ d, now }: { d: EntrainementData; now?: number }) {
-  const practiceMeta = d.practice.sessions > 0 ? `${d.practice.sessions} session${d.practice.sessions > 1 ? "s" : ""}` : null;
-
-  const formats = [
-    { href: "/practice", icon: <Icone nom="entrainer" size={20} />, title: "Entraînement ciblé", desc: "Tes matières, au poids réel de l'examen.", meta: practiceMeta },
-    { href: "/qcm", icon: <Glyphe nom="qcm" size={20} />, title: "QCM par thème", desc: "Toutes les banques, classées par matière." },
-    { href: "/official-exams", icon: <Icone nom="examen" size={20} />, title: "Examens officiels", desc: "Les sessions officielles, rejouées question par question." },
-  ];
-  // l'Atelier ouvert (migration en place, assez de points faibles) : sa carte prend la colonne de droite
-  const pf = d.pointsFaibles?.etat === "faibles" && d.pointsFaibles.atelier ? d.pointsFaibles : null;
-  const eclair = typeof d.eclair === "number" ? d.eclair : null;
-
-  const lead = (
-    <div className="flex flex-col gap-4 md:gap-[18px]">
-      {pf ? (
-        <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
-          {/* l'Atelier d'abord dans le DOM (téléphone, lecteur d'écran, clavier : son bouton dans le premier écran) ; à droite sur ordinateur.
-              Entre 1024 et 1279, la colonne voisine est plus haute (Défi et Éclair empilés) : la carte garde sa hauteur, le bouton suit le texte */}
-          <CarteAtelier d={pf} logo={d.logoAtelier} className="lg:col-span-4 lg:col-start-9 lg:row-start-1" />
-          <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8 lg:col-start-1 lg:row-start-1">
-            {/* le héros n'en montre que trois : on n'envoie pas les autres au navigateur */}
-            <PointsFaiblesHeros d={{ ...pf, liste: pf.liste.slice(0, 3) }} sansAtelier className="lg:flex-1" />
-            {/* côte à côte dès qu'il y a la place (en dessous de 1280, la colonne est trop étroite pour les deux) */}
-            {(d.daily || eclair !== null) && (
-              <div className={"rl-in grid gap-4 md:gap-[18px] " + (d.daily && eclair !== null ? "xl:grid-cols-2" : "")} style={{ animationDelay: ".06s" }}>
-                {d.daily && <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />}
-                {eclair !== null && <EclairCarte today={eclair} />}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12" data-leonard="session">
-          {d.pointsFaibles?.etat === "faibles" ? (
-            // le héros n'en montre que trois : on n'envoie pas les autres au navigateur
-            <PointsFaiblesHeros d={{ ...d.pointsFaibles, liste: d.pointsFaibles.liste.slice(0, 3) }} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
-          ) : (
-            <FocusSession d={d} now={now} className={d.daily ? "lg:col-span-8" : "lg:col-span-12"} />
-          )}
-          {/* le rituel du jour : parmi les choix principaux, sans bouton plein */}
-          {d.daily && (
-            <div className="rl-in flex min-w-0 flex-col gap-4 lg:col-span-4 [&>*:first-child]:flex-1" style={{ animationDelay: ".06s" }}>
-              <DefiTile daily={d.daily} nowIso={d.nowIso} actionEnBas />
-              {typeof d.eclair === "number" && <EclairCarte today={d.eclair} />}
-            </div>
-          )}
-        </div>
-      )}
-      <BandeCalculs />
-      <nav aria-label="S'entraîner seul" className="card rl-in overflow-hidden px-1 py-1" style={{ animationDelay: ".14s" }}>
-        <ul className="m-0 grid list-none grid-cols-1 divide-y divide-line p-0 xl:grid-cols-3 xl:divide-x xl:divide-y-0">
-          {formats.map((f) => (
-            <li key={f.href} className="min-w-0">
-              <FormatRow href={f.href} icon={f.icon} title={f.title} desc={f.desc} meta={f.meta} entier />
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
-  );
-
   return (
-    <DomainSpace kicker="S'entraîner" icon={<Icone nom="entrainer" size={18} />} title="Pratiquer, comme le jour J" lead={lead}>
-      <section className="rl-section" aria-labelledby="ent-matieres">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 id="ent-matieres" className="t-h2 m-0">
-            Une session par matière
-          </h2>
-          <span className="t-micro">ta maîtrise · le poids de chaque matière à l&apos;examen</span>
+    <DomainSpace
+      kicker="S'entraîner"
+      icon={<Icone nom="entrainer" size={18} />}
+      title="Pratiquer, comme le jour J"
+      lead={
+        <div className={s.racine} style={styleDePalette(PAL)}>
+          <Diptyque d={d} now={now} />
+          <div className={s.rangee}>
+            <Eclair d={d} />
+            <Faibles d={d} />
+          </div>
+          <Autres />
         </div>
-        <TopicRail
-          label="Une session par matière"
-          actionLabel="Session ciblée"
-          items={subjectRail(d.subjects, (key) => ({ href: `/practice?topic=${key}`, note: weightLabel(key) }))}
-        />
-      </section>
-      <section className="rl-section" aria-labelledby="ent-contre" data-leonard="contre">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 id="ent-contre" className="t-h2 m-0">
-            Contre les autres
-          </h2>
-          <span className="t-micro">ce qui fait bouger ton rang</span>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 md:gap-[18px]">
-          <MockExamTile exam={d.mockExam} />
-          <DuelTile rating={d.rating} incoming={d.incomingDuels} />
-        </div>
-      </section>
-
-    </DomainSpace>
+      }
+    />
   );
 }
