@@ -203,48 +203,61 @@
   background: var(--paper);
   box-shadow: var(--shadow-1);
 }
-/* « Ton rang », à droite, en plus petit : une colonne, « Autour de toi » sous les actions */
-.rang {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: 18px;
+/* la carte du duel, à droite : ton ELO en haut, la peinture des duels et le bouton en bas */
+.carteDuel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding: 30px 32px;
+  overflow: hidden;
   border-radius: 0 19px 19px 0;
   background: var(--surface);
 }
-.rangGauche {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-.rangEntete {
+.carteDuelHaut {
   display: grid;
-  gap: 10px;
-  min-width: 0;
+  gap: 8px;
+  padding: 28px 30px 24px;
 }
-.nomRang {
+.eloRang {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
-  line-height: 0.95;
+  font-size: 40px;
+  line-height: 1;
 }
-.palier {
-  display: grid;
-  gap: 8px;
-  max-width: 460px;
+.eloRang small {
+  font-size: 0.55em;
 }
-.palier p {
-  font-size: 15px;
-  line-height: 1.4;
+.rangLigne {
+  font-size: 14px;
+  color: var(--ink-2);
 }
-.rivalite {
-  max-width: 460px;
-  font-size: 15px;
-  line-height: 1.4;
+.carteDuelBas {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  min-height: 280px;
+  padding: 24px 30px 30px;
+  isolation: isolate;
+  border-top: 1px solid var(--pencil-2);
+  background: var(--noyer-fonce);
+}
+.fondDuel {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.carteDuelBas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(26, 16, 9, 0) 45%, rgba(26, 16, 9, 0.6) 100%);
+}
+.carteDuelBas :focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 .actions {
   display: flex;
@@ -253,53 +266,6 @@
   gap: 12px 22px;
   margin-top: auto;
   padding-top: 4px;
-}
-/* la piste du palier : un trait d'encre sur un rail */
-.piste {
-  position: relative;
-  display: block;
-  height: 10px;
-  overflow: hidden;
-  border-radius: 5px;
-  background: var(--paper-2);
-}
-.piste i {
-  display: block;
-  height: 100%;
-  border-radius: 5px;
-  --pal-voile-haut: 0.45;
-  --pal-voile-bas: 0.62;
-  --encre-pas: 120px;
-}
-.bornes {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--ink-2);
-}
-/* le panneau « Autour de toi » */
-.autour {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  padding: 14px 16px;
-  border: 1px solid var(--pencil-2);
-  border-radius: 16px;
-  background: var(--paper);
-}
-.bilan {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  padding: 0 8px;
-  font-size: 13.5px;
-  color: var(--ink-2);
-}
-.bilan b {
-  color: var(--ink);
 }
 
 /* La Grande Salle : la peinture animée, un voile sombre, le texte clair posé en bas */
@@ -434,17 +400,10 @@ button.bouton {
   font-family: inherit;
 }
 
-/* ——— « Duels », toute la largeur : la peinture à gauche, puis « En cours » et « À revoir » côte à côte ——— */
+/* ——— « Duels », toute la largeur : « En cours » et « À revoir » côte à côte ——— */
 .duels {
   display: grid;
-  grid-template-columns: minmax(220px, 32%) minmax(0, 1fr);
   overflow: hidden;
-}
-.duelsImg {
-  position: relative;
-  min-height: 260px;
-  border-right: 1px solid var(--pencil-2);
-  background: var(--noyer-fonce);
 }
 .duelsCorps {
   display: flex;
@@ -1017,8 +976,11 @@ button.bouton {
 
 /* ——— moyen : le diptyque se range en deux étages, la rangée aussi ——— */
 @container (max-width: 1080px) {
-  .rang {
-    padding: 26px 24px;
+  .carteDuelHaut {
+    padding: 24px 24px 20px;
+  }
+  .carteDuelBas {
+    padding: 20px 24px 24px;
   }
   .salle {
     padding: 0 30px 32px;
@@ -1056,20 +1018,12 @@ button.bouton {
     min-height: 400px;
     border-radius: 19px 19px 0 0;
   }
-  .rang {
+  .carteDuel {
     border-radius: 0 0 19px 19px;
   }
   .rival,
   .maitres {
     grid-column: span 12;
-  }
-  .duels {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .duelsImg {
-    min-height: 150px;
-    border-right: 0;
-    border-bottom: 1px solid var(--pencil-2);
   }
 }
 /* la liste d'amis se serre : le rang et le bouton passent sous le nom */
@@ -1119,10 +1073,21 @@ button.bouton {
   .papier {
     border-radius: 16px;
   }
-  .rang {
-    gap: 16px;
-    padding: 22px 18px;
+  .carteDuel {
     border-radius: 0 0 15px 15px;
+  }
+  .carteDuelHaut {
+    padding: 20px 18px 18px;
+  }
+  .carteDuelBas {
+    min-height: 220px;
+    padding: 18px;
+  }
+  .carteDuelBas .bouton {
+    width: 100%;
+  }
+  .eloRang {
+    font-size: 34px;
   }
   .salle {
     min-height: 380px;
@@ -1140,9 +1105,6 @@ button.bouton {
   }
   .duelsCorps {
     padding: 18px;
-  }
-  .duelsImg {
-    min-height: 120px;
   }
   .bandeTrouver {
     padding: 14px;

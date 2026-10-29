@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, Search, TrendingUp } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { Illustration } from "@/components/ui/Illustration";
 import { PeintureAnimee } from "@/components/ui/PeintureAnimee";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { AutourDeToi } from "@/components/classement/AutourDeToi";
 import { Amis } from "@/components/classement/Amis";
 import { Avatar } from "@/components/classement/Avatar";
 import { CarteMaitres } from "@/components/classement/CarteMaitres";
@@ -17,14 +16,14 @@ import { EloChart } from "@/components/classement/EloChart";
 import { Leaderboard } from "@/components/classement/Leaderboard";
 import { TierTrack } from "@/components/classement/TierTrack";
 import { daysUntil, fmtAgo, fmtDay, fmtDuration, fmtHour, fmtInt, fmtLongDate, fmtShortDate, signed } from "@/components/classement/format";
-import type { BoardRow, ClassementData } from "@/components/classement/types";
+import type { ClassementData } from "@/components/classement/types";
 import type { DuelSummary } from "@/lib/rating";
 import { CURRENT_DOMAIN } from "@/lib/domains";
 import { styleDePalette } from "@/lib/palettes";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { DUEL_REVIEW_DAYS, reviewLeftLabel } from "@/lib/duels";
-import { placement as lignePlacement, pointsAvant, scorePct, SOMMET, VERROU } from "@/lib/voice";
-import { CLASSEMENT, RIVALITE, coteProchain, joueursDomaine, ligneRang, partiesClassees } from "@/lib/voice-z2a";
+import { placement as lignePlacement, scorePct } from "@/lib/voice";
+import { CLASSEMENT, coteProchain, joueursDomaine, ligneRang, partiesClassees } from "@/lib/voice-z2a";
 import { CL, ONGLETS_CLASSEMENT } from "@/lib/voice-classement";
 import s from "./Affronter.module.css";
 
@@ -39,23 +38,8 @@ function nom(d: DuelSummary) {
   return d.opponentName?.trim() || (d.opponentId ? "Un joueur" : "Un adversaire");
 }
 
-/** Les voisins de classement : le joueur juste devant, toi, celui qui te suit (seulement s'il a joué et ne te dépasse pas). */
-function voisins(board: BoardRow[], meRow: BoardRow | null) {
-  const ix = board.findIndex((r) => r.isMe);
-  const moi = ix >= 0 ? board[ix] : meRow;
-  if (!moi) return { moi: null, devant: null, derriere: null };
-  const last = board[board.length - 1];
-  const avant = ix > 0 ? board[ix - 1] : ix < 0 && last && last.rank === moi.rank - 1 ? last : null;
-  const apres = ix >= 0 && ix < board.length - 1 ? board[ix + 1] : null;
-  return {
-    moi,
-    devant: avant && avant.elo >= moi.elo ? avant : null,
-    derriere: apres && apres.gamesPlayed > 0 && apres.elo <= moi.elo ? apres : null,
-  };
-}
-
 /**
- * La carte « Duels », toute la largeur : la peinture à gauche, puis « En cours »
+ * La carte « Duels », toute la largeur (la peinture des duels est dans le diptyque) : « En cours »
  * (la partie à reprendre, avec « Reprendre », le défi envoyé qui attend) et
  * « À revoir » (les duels finis dont la revue est encore ouverte) côte à côte,
  * et le lien « Tous tes duels ».
@@ -67,9 +51,6 @@ function CarteDuels({ open, recent }: { open: DuelSummary[]; recent: DuelSummary
   const n = recent.filter((d) => d.status === "finished" && d.finishedAt && reviewLeftLabel(d.finishedAt, now) !== null).length;
   return (
     <section className={[s.carte, s.papier, s.duels].join(" ")} aria-labelledby="cl-duels">
-      <div className={s.duelsImg} aria-hidden>
-        <Illustration nom="classement-duels" position="50% 30%" decorative />
-      </div>
       <div className={s.duelsCorps}>
         <header className={s.duelsTete}>
           <h2 id="cl-duels" className={"font-brand " + s.titreCarte}>
@@ -200,17 +181,17 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // en papier, diptyque peint, boutons et onglets d'encre, palette san-romano).
 // Dans l'ordre : l'en-tête simple (espace · domaine, titre) ; la bande « Trouver
 // un adversaire » (un champ de recherche vers /people?q=) ; le diptyque « La Grande
-// Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | « Ton rang »
-// (en plus petit : insigne, rang — en placement, l'ELO actuel —, place, palier,
-// rival, le duel à lancer, ceux qui t'entourent, le bilan ; l'arc électrique court
-// autour quand il y a de l'enjeu) ; « Duels » en grand (la peinture, puis la partie
-// à reprendre ou le défi envoyé, et les duels à relire) ; la rangée « Ton plus grand rival |
+// Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
+// duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
+// duels et le bouton « Lancer un duel », ou « Relever le défi » quand un défi
+// attend ; l'arc électrique court autour quand il y a de l'enjeu) ; « Duels » (la
+// partie à reprendre ou le défi envoyé, et les duels à relire) ; la rangée « Ton plus grand rival |
 // Les maîtres de chaque matière » (CarteRival, CarteMaitres : chacune seulement
 // si elle a des données) ; enfin le Classement général en
 // onglets : Classement (podium, liste), Amis, Ta courbe, Les 8 rangs, Comment
 // ça marche. Téléphone : une colonne, dans le même ordre.
 // Composant de présentation : toutes les données arrivent en props.
-// Repères de Léonard (data-leonard) : rang (la moitié « Ton rang »), joueurs
+// Repères de Léonard (data-leonard) : rang (la carte du duel, ton ELO), joueurs
 // (dans le Classement du général).
 export function ClassementView({ data, tab = "classement" }: { data: ClassementData; /** l'onglet du classement général ouvert à l'arrivée (?onglet=) */ tab?: TabKey }) {
   const { me, history, board, meRow, openDuels, recentDuels } = data;
@@ -218,57 +199,11 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
   const rank = rankFor(me.elo, me.mastery, me.leaderboardRank);
   const enPlacement = me.gamesPlayed < PLACEMENT_GAMES;
   const rangNom = enPlacement ? "Placement" : `${rank.tier.name}${rank.division ? " " + rank.division : ""}`;
-  // le titre de « Ton rang » : en placement, l'ELO actuel ; sinon le rang
-  const titreRang = enPlacement ? `${fmtInt(me.elo)} ELO` : rangNom;
-  const { moi, devant, derriere } = voisins(board, meRow);
   const defi = openDuels.find((d) => d.incoming && d.status === "pending") ?? null;
-  const aJoue = me.gamesPlayed > 0;
   // de l'enjeu : un défi reçu qui attend, ou le palier suivant à 30 points d'ELO ou moins
   // (pas en placement, ni quand la maîtrise bloque le palier) : l'arc électrique court sur la carte
   const palierProche = !enPlacement && !rank.lockedBy && rank.next !== null && rank.pointsToNext !== null && rank.pointsToNext <= 30;
   const enjeu = defi !== null || palierProche;
-
-  // la phrase sous le rang : le palier à gagner, le verrou de maîtrise ou le sommet
-  const diagnostic = enPlacement
-    ? lignePlacement(me.gamesPlayed, PLACEMENT_GAMES)
-    : rank.lockedBy
-      ? VERROU
-      : rank.next && rank.pointsToNext !== null
-        ? CL.plusQue(pointsAvant(rank.pointsToNext, rank.next.name))
-        : SOMMET;
-  // la piste vers le palier suivant (seulement quand la maîtrise ne bloque pas)
-  const piste = !enPlacement && !rank.lockedBy && rank.next !== null && rank.pointsToNext !== null ? { pct: Math.max(4, Math.min(100, rank.progress)), de: rank.tier, vers: rank.next } : null;
-  // la seconde phrase : le défi reçu, sinon le rival juste devant (l'écart sur le surligneur)
-  const ecart = devant && moi ? Math.max(0, devant.elo - moi.elo) : 0;
-  const rivalite: React.ReactNode = !aJoue ? (
-    CLASSEMENT.videTexte
-  ) : defi ? (
-    CL.tAdefie(nom(defi), fmtAgo(defi.createdAt))
-  ) : devant ? (
-    ecart > 0 ? (
-      <>
-        <b>{devant.name}</b> {CL.devantMilieu}{" "}
-        <span className={s.surligne}>
-          <b>{fmtInt(ecart)} ELO</b>
-        </span>{" "}
-        {CL.devantFin}
-      </>
-    ) : (
-      RIVALITE.egalite(devant.name) + "."
-    )
-  ) : moi && moi.rank === 1 ? (
-    RIVALITE.enTete
-  ) : null;
-  const lienDefi = defi
-    ? { href: `/duel/${defi.id}`, label: CL.releverDefi(nom(defi)) }
-    : devant
-      ? { href: `/duel?adversaire=${encodeURIComponent(devant.userId)}`, label: CL.defier(devant.name) }
-      : { href: "/duel#defier", label: CLASSEMENT.defier };
-
-  const autour = [devant, moi, derriere].filter((r): r is BoardRow => r !== null);
-  const elos = [...board, ...(meRow ? [meRow] : [])].map((r) => r.elo);
-  const bornes: [number, number] = [Math.min(...elos, me.elo), Math.max(...elos, me.elo)];
-  const montrerAutour = aJoue && moi !== null && autour.length > 1;
 
   const events = history.slice(-SHOWN);
   const total = events.length ? events[events.length - 1].eloAfter - events[0].eloBefore : 0;
@@ -302,62 +237,34 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
             </BoutonEnvoi>
           </form>
 
-          {/* ——— le diptyque : « La Grande Salle » (7/12, la pièce maîtresse) | « Ton rang » (5/12) ——— */}
+          {/* ——— le diptyque : « La Grande Salle » (7/12, la pièce maîtresse) | la carte du duel (5/12) ——— */}
           <section className={s.diptyque + " rl-in"} aria-label={CL.diptyque}>
             <GrandeSalle data={data} />
-            <article data-leonard="rang" className={s.rang} aria-label={CL.rangDomaine}>
-              <div className={s.rangGauche}>
-                <div className={s.rangEntete}>
-                  <p className={s.eyebrow}>{CL.tonRang(dom)}</p>
-                  {/* le titre, en plus petit (la Grande Salle est la pièce maîtresse) : le rang ; en
-                      placement, l'ELO actuel (le rang n'est pas encore dessiné). La taille suit la colonne (cqi). */}
-                  <div className="@container min-w-0">
-                    <h2 className={"font-brand " + s.nomRang} style={{ fontSize: `clamp(24px, calc((100cqi - 80px) / ${(0.76 * Math.max(titreRang.length, 4)).toFixed(2)}), 40px)` }}>
-                      <RankBadge tier={rank.tierIndex} division={enPlacement ? null : rank.division} mastery={me.mastery} size={56} gray={enPlacement} />
-                      <span className="min-w-0">{titreRang}</span>
-                    </h2>
-                  </div>
-                  <p className="m-0 text-[14px] text-[color:var(--ink-2)]">
-                    {enPlacement ? "" : `${fmtInt(me.elo)} ELO · `}
-                    {ligneRang({ place: me.leaderboardRank, joueurs: me.totalPlayers, maitrise: me.mastery })}
-                  </p>
+            <article data-leonard="rang" className={s.carteDuel} aria-label={CL.rangDomaine}>
+              <div className={s.carteDuelHaut}>
+                <p className={s.eyebrow}>{CL.tonRang(dom)}</p>
+                <h2 className={"font-brand " + s.eloRang}>
+                  <RankBadge tier={rank.tierIndex} division={enPlacement ? null : rank.division} mastery={me.mastery} size={52} gray={enPlacement} title={rangNom} />
+                  <span>
+                    {fmtInt(me.elo)} <small>ELO</small>
+                  </span>
+                </h2>
+                <p className={s.rangLigne}>{enPlacement ? lignePlacement(me.gamesPlayed, PLACEMENT_GAMES) : `${rangNom} · ${ligneRang({ place: me.leaderboardRank, joueurs: me.totalPlayers, maitrise: me.mastery })}`}</p>
+              </div>
+              <div className={s.carteDuelBas}>
+                <div className={s.fondDuel} aria-hidden>
+                  <Illustration nom="classement-duels" position="50% 30%" decorative eager />
                 </div>
-                <div className={s.palier}>
-                  <p>{diagnostic}</p>
-                  {piste && (
-                    <>
-                      <span className={s.piste} role="img" aria-label={CL.barrePalier(fmtInt(me.elo), piste.vers.name, fmtInt(piste.vers.min))}>
-                        <i className={"rl-encre " + s.encre} data-palette={PAL.key} style={{ width: `${piste.pct}%` }} />
-                      </span>
-                      <span className={s.bornes} aria-hidden>
-                        <span>{piste.de.min > 0 ? `${piste.de.name} · ${fmtInt(piste.de.min)}` : piste.de.name}</span>
-                        <span>
-                          {piste.vers.name} · {fmtInt(piste.vers.min)}
-                        </span>
-                      </span>
-                    </>
-                  )}
-                </div>
-                {rivalite && <p className={s.rivalite}>{rivalite}</p>}
-                <div className={s.actions}>
-                  <Bouton href="/duel">
+                {defi ? (
+                  <Bouton href={`/duel/${defi.id}`} surPeinture>
+                    <Icone nom="duel" size={17} /> {CL.releverDefi(nom(defi))}
+                  </Bouton>
+                ) : (
+                  <Bouton href="/duel" surPeinture>
                     <Icone nom="duel" size={17} /> {CLASSEMENT.lancer}
                   </Bouton>
-                  <Link href={lienDefi.href} className={s.lien}>
-                    {lienDefi.label}
-                  </Link>
-                </div>
+                )}
               </div>
-              {montrerAutour && (
-                <div className={s.autour}>
-                  <AutourDeToi rows={autour} titre={CL.autour} bornes={bornes} palier={rank.tierIndex} />
-                  {events.length > 0 && (
-                    <p className={s.bilan} title="Courbe complète dans « Ta courbe », plus bas">
-                      <TrendingUp size={15} aria-hidden /> <span>{CL.bilan(signed(total), events.length)}</span>
-                    </p>
-                  )}
-                </div>
-              )}
             </article>
             {enjeu && <ArcElectrique palier={rank.tierIndex} rayon={20} />}
           </section>
