@@ -97,7 +97,7 @@ export const RIVALITE = {
 
 export const JOUEURS = {
   titre: "Joueurs",
-  kicker: "Classement",
+  kicker: "S'affronter",
   filtre: "Quels joueurs",
   tous: "Tous",
   groupes: "Mes groupes",

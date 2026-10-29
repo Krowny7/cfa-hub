@@ -11,7 +11,7 @@ import { PastilleRevoir } from "@/components/nav/PastilleRevoir";
 
 // Barre du bas (mobile) : flottante et translucide, l'accueil puis les espaces
 // (quatre, moins ceux pas encore découverts : DevoileContext) : Accueil ·
-// Réviser · S'entraîner · Classement · Moi. Le Codex n'est plus un onglet
+// Réviser · S'entraîner · S'affronter · Moi. Le Codex n'est plus un onglet
 // (Codex simplifié, 17 octobre 2026) : l'accueil retrouve le sien, et le
 // Codex s'ouvre depuis Moi, qui s'allume sur /codex. Cinq onglets laissent
 // leur nom entier même à 360 px. Réviser porte la pastille « à revoir »

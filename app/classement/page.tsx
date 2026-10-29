@@ -8,7 +8,7 @@ import { displayName } from "@/components/classement/format";
 import type { ClassementData } from "@/components/classement/types";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
 
-export const metadata = { title: "Classement · Ranked Lobby" };
+export const metadata = { title: "S'affronter · Ranked Lobby" };
 
 // Espace « Classement » : charge le rang, l'historique d'ELO, le classement,
 // le prochain examen blanc classé et les duels, puis délègue l'affichage à

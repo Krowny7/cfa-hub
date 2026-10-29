@@ -411,7 +411,7 @@ export function DuelLobby({ me, suggestions, target, open, recent, reviewable = 
             label={LICE.liensLabel}
             liens={[
               { href: "/people", icon: <Icone nom="moi" size={20} />, title: LICE.joueurs, desc: LICE.joueursDesc },
-              { href: "/classement", icon: <Icone nom="classement" size={20} />, title: "Classement", desc: LICE.classementDesc },
+              { href: "/classement", icon: <Icone nom="classement" size={20} />, title: "S'affronter", desc: LICE.classementDesc },
               { href: "#duel-revoir", icon: <Icone nom="duel" size={20} />, title: LICE.revoirDuels, desc: LICE.revoirDesc(DUEL_REVIEW_DAYS), meta: toReview.length > 0 ? String(toReview.length) : null },
             ]}
           />

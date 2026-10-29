@@ -2,7 +2,7 @@
 // (« L'annuaire »). Les autres phrases restent dans lib/voice-z2a.ts.
 
 export const CL = {
-  kicker: (domaine: string) => `Classement · ${domaine}`,
+  kicker: (domaine: string) => `S'affronter · ${domaine}`,
   titre: "Se mesurer aux autres",
   tonRang: (domaine: string) => `Ton rang · ${domaine}`,
   autour: "Autour de toi",
@@ -45,7 +45,7 @@ export const CL = {
 } as const;
 
 export const PJ = {
-  kicker: "Classement · Joueurs",
+  kicker: "S'affronter · Joueurs",
   titre: "Trouver qui défier",
   annuaire: (domaine: string) => `L'annuaire · ${domaine}`,
   joueurs: (n: number) => `${n} ${n > 1 ? "joueurs" : "joueur"}`,

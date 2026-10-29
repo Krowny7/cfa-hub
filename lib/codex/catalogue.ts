@@ -961,7 +961,7 @@ export const DECOUVERTE: Devoilement[] = [
   { id: "branches", quoi: "codex:branches", libelle: "Les matières", vague: 1, quand: VAGUES_DECOUVERTE[1], replique: "Dix matières, chacune ses étapes. Chacune avance à son rythme." },
   { id: "entrainer", quoi: "menu:entrainer", libelle: "S'entraîner", vague: 2, quand: VAGUES_DECOUVERTE[2], replique: "La salle d'entraînement est ouverte, et trois quêtes du jour t'attendent. Trois quarts d'heure, pas plus." },
   { id: "contrats", quoi: "codex:contrats", libelle: "Les quêtes du jour", vague: 2, quand: VAGUES_DECOUVERTE[2], replique: "Trois quêtes par jour, taillées pour toi. Trois quarts d'heure, pas plus." },
-  { id: "classement", quoi: "menu:classement", libelle: "Classement", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Le classement, les objectifs longs et les exploits : tout le Codex est à toi. Certains exploits sont cachés. Je ne dirai rien." },
+  { id: "classement", quoi: "menu:classement", libelle: "S'affronter", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Le classement, les objectifs longs et les exploits : tout le Codex est à toi. Certains exploits sont cachés. Je ne dirai rien." },
   { id: "longcours", quoi: "codex:longcours", libelle: "Les objectifs longs", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Les objectifs longs. Ceux qui se comptent en semaines." },
   { id: "exploits", quoi: "codex:exploits", libelle: "Les exploits", vague: 3, quand: VAGUES_DECOUVERTE[3], replique: "Certains exploits sont cachés. Je ne dirai rien. Enfin, presque rien." },
 ];

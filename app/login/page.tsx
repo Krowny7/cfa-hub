@@ -65,7 +65,7 @@ export default function LoginPage() {
   const spaces: { icone: IconeNom; title: string; desc: string }[] = [
     { icone: "reviser", title: "Réviser", desc: CONNEXION_Z1.reviser },
     { icone: "entrainer", title: "S'entraîner", desc: CONNEXION_Z1.entrainer },
-    { icone: "classement", title: "Classement", desc: CONNEXION_Z1.classement },
+    { icone: "classement", title: "S'affronter", desc: CONNEXION_Z1.classement },
     { icone: "moi", title: "Moi", desc: CONNEXION.moi },
   ];
 

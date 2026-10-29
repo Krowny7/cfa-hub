@@ -48,7 +48,7 @@ const ENTRIES: Entry[] = [
   { label: "Accueil", hint: "Ta journée, ton rang, tes stats", href: "/dashboard", group: "Espaces", Icon: Home },
   { label: "Réviser", hint: "Fiches, cours, flashcards", href: "/reviser", group: "Espaces", Icon: BookOpen },
   { label: "S'entraîner", hint: "QCM, sessions, examens", href: "/entrainement", group: "Espaces", Icon: Target },
-  { label: "Classement", hint: "Rang, ELO, duels", href: "/classement", group: "Espaces", Icon: Trophy },
+  { label: "S'affronter", hint: "Rang, ELO, duels, classement", href: "/classement", group: "Espaces", Icon: Trophy },
   { label: "Moi", hint: "Profil, erreurs, réglages", href: "/moi", group: "Espaces", Icon: User },
   // le Codex n'est plus un onglet (il s'ouvre depuis Moi) : la recherche le garde
   { label: "Codex", hint: "Tes quêtes, le parcours, les exploits", href: "/codex", group: "Espaces", Icon: ScrollText },
