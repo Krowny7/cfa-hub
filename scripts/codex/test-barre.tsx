@@ -80,7 +80,7 @@ console.log("\n# les onglets");
   check("sur /codex, « Moi » s'allume aux couleurs du carnet", allume(haut) === "/moi" && haut.includes('data-palette="carnet"'), allume(haut));
   const bas = rendre(<MobileBottomNav chemin="/dashboard" />);
   const noms = [...bas.matchAll(/<span class="whitespace-nowrap[^"]*">([^<]+)</g)].map((m) => m[1]);
-  check("en bas : Accueil · Réviser · S'entraîner · Classement · Moi", noms.join(" · ") === "Accueil · Réviser · S'entraîner · Classement · Moi", noms.join(" · "));
+  check("en bas : Accueil · Réviser · S'entraîner · S'affronter · Moi", noms.join(" · ") === "Accueil · Réviser · S'entraîner · S'affronter · Moi", noms.join(" · "));
   check("sur l'accueil, l'onglet Accueil est allumé", allume(bas) === "/dashboard", allume(bas));
   check("sur /codex, en bas aussi, « Moi »", allume(rendre(<MobileBottomNav chemin="/codex" />)) === "/moi");
 }
