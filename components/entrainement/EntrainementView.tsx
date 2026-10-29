@@ -6,14 +6,14 @@ import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { subjectByKey } from "@/components/reviser/catalog";
 import { Illustration } from "@/components/ui/Illustration";
-import { CaseTrophee } from "@/components/trophees/SalleDesTrophees";
+import { CartesMetaux } from "@/components/profil/blocs/Trophees";
 import type { IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, styleDePalette } from "@/lib/palettes";
 import { TOPICS } from "@/lib/practiceTopics";
 import { MIN_REPONSES, type PointsFaiblesData } from "@/lib/points-faibles";
 import type { CalculsFaibles } from "@/lib/calc/faibles";
 import { ECLAIR_HREF } from "@/lib/eclair";
-import { compter, nomTrophee, PALIERS_TROPHEE, type LigneTrophee } from "@/lib/trophees";
+import { compter, nomTrophee, type LigneTrophee } from "@/lib/trophees";
 import { ECLAIR } from "@/lib/voice-z2c";
 import { nombre } from "@/lib/voice";
 import { RV } from "@/lib/voice-reviser";
@@ -295,7 +295,7 @@ function Eclair({ d }: { d: EntrainementData }) {
   );
 }
 
-/** La petite carte des trophées, sous les séries éclair : les quatre paliers et leur nombre, le dernier gagné ; le détail est dans Moi (la Salle des trophées). */
+/** La petite carte des trophées, sous les séries éclair : les quatre métaux en cartes (celles du bloc Trophées du profil), le dernier gagné ; le détail est dans Moi (la Salle des trophées). */
 function Trophees({ t }: { t: NonNullable<EntrainementData["trophees"]> }) {
   const { total, parPalier, lignes } = compter(t.lignes);
   const dernier = lignes.reduce<LigneTrophee | null>((m, l) => (l.dernier && (!m?.dernier || l.dernier > m.dernier) ? l : m), null);
@@ -310,15 +310,9 @@ function Trophees({ t }: { t: NonNullable<EntrainementData["trophees"]> }) {
       {total === 0 ? (
         <p className={s.sous}>{ENTRAINER.tropheesVide}</p>
       ) : (
-        <ul className={s.paliers}>
-          {PALIERS_TROPHEE.map(({ palier, nom }) => (
-            <li key={palier} className={parPalier[palier] === 0 ? s.palierVide : undefined}>
-              <CaseTrophee palier={palier} gagne={parPalier[palier] > 0} className={s.casePalier} />
-              <span className={"t-num " + s.palierN}>{nombre(parPalier[palier])}</span>
-              <span className={s.palierNom}>{nom}</span>
-            </li>
-          ))}
-        </ul>
+        <div className={s.metaux}>
+          <CartesMetaux parPalier={parPalier} />
+        </div>
       )}
       {dernier && <p className={s.sous}>{ENTRAINER.tropheesDernier(nomTrophee(dernier))}</p>}
       <Link href="/moi#trophees" className={"ink-link " + s.tropheesLien}>

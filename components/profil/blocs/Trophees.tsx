@@ -45,6 +45,35 @@ export function TropheesBloc({ d, f, edition }: Ctx): React.ReactNode {
   return <Medailles d={d} f={f} res={res} />;
 }
 
+/**
+ * Les 4 métaux en cartes, du plus haut au plus bas : la médaille, son nombre, le
+ * nom du métal ; un métal gagné prend ses couleurs (et l'éclat), un métal à 0
+ * est estompé. Leur taille vient du parent (--m la médaille, --n le nombre) :
+ * ici le format du bloc ; ailleurs (la carte « Tes trophées » de S'entraîner),
+ * la classe qui l'enveloppe.
+ */
+export function CartesMetaux({ parPalier, titre }: { parPalier: Record<PalierTrophee, number>; titre?: (nom: string, n: number) => string }) {
+  return (
+    <ul className={t.cases} aria-label={V.parPalier}>
+      {METAUX.map(({ palier, nom }, i) => {
+        const n = parPalier[palier];
+        return (
+          <li
+            key={palier}
+            className={"card-soft " + t.case + (n > 0 ? " " + t.carteMetal : " " + t.tenue)}
+            style={{ ...(n > 0 ? teinte(palier) : {}), ["--k" as string]: i } as React.CSSProperties}
+            title={titre ? titre(nom, n) : `${nom} : ${nombre(n)}`}
+          >
+            <Medaille palier={palier} gagne={n > 0} />
+            <span className={"t-num tabular-nums " + t.nombre}>{nombre(n)}</span>
+            <span className={t.metal}>{nom}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function Medailles({ d, f, res }: { d: DonneesBlocs; f: Format; res: ResumeTrophees }) {
   const { total, parPalier } = compter(res.lignes);
 
@@ -79,23 +108,7 @@ function Medailles({ d, f, res }: { d: DonneesBlocs; f: Format; res: ResumeTroph
         {amorce ? (
           <p className={"t-small m-0 " + t.amorce}>{amorce}</p>
         ) : (
-          <ul className={t.cases} aria-label={V.parPalier}>
-            {METAUX.map(({ palier, nom }, i) => {
-              const n = parPalier[palier];
-              return (
-                <li
-                  key={palier}
-                  className={"card-soft " + t.case + (n > 0 ? " " + t.carteMetal : " " + t.tenue)}
-                  style={{ ...(n > 0 ? teinte(palier) : {}), ["--k" as string]: i } as React.CSSProperties}
-                  title={V.metalSeul(nom, d.nom, n)}
-                >
-                  <Medaille palier={palier} gagne={n > 0} />
-                  <span className={"t-num tabular-nums " + t.nombre}>{nombre(n)}</span>
-                  <span className={t.metal}>{nom}</span>
-                </li>
-              );
-            })}
-          </ul>
+          <CartesMetaux parPalier={parPalier} titre={(nom, n) => V.metalSeul(nom, d.nom, n)} />
         )}
       </div>
       {f === "colonne" || f === "bande" ? <ParSource lignes={res.lignes} complet={res.complet} className="mt-auto" /> : null}
