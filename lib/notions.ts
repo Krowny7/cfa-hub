@@ -82,7 +82,13 @@ export const NOTIONS: Notion[] = [
       { reading: "91.9", libelle: "Standard VII" },
     ],
     cours: "/courses/ethics?module=3",
-    calculs: [],
+    calculs: [
+      {
+        cle: "ipo-allocation",
+        nom: "Allocation d'une IPO au prorata (Fair Dealing)",
+        href: "/calculs/ethics/ipo-allocation",
+      },
+    ],
     fiches: [
       { href: "/fiches/ethics?page=2", page: 2 },
       { href: "/fiches/ethics?page=3", page: 3 },
@@ -98,7 +104,13 @@ export const NOTIONS: Notion[] = [
     court: "GIPS",
     readings: { banque: 92, schweser: 92 },
     cours: "/courses/ethics?module=4",
-    calculs: [],
+    calculs: [
+      {
+        cle: "gips-composite-return",
+        nom: "Rendement d'un composite GIPS (asset-weighted)",
+        href: "/calculs/ethics/gips-composite-return",
+      },
+    ],
     fiches: [{ href: "/fiches/ethics?page=5", page: 5 }],
     flashcards: [],
   },

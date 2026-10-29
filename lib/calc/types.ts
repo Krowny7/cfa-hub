@@ -54,7 +54,7 @@ export type CalcType = {
   /** Nom affiché, en français, termes CFA en anglais si usage (ex. "Pondération d'indice"). */
   name: string;
   tier: "essentiel" | "annexe";
-  /** Un des 5 calculs les plus importants de la matière (le « Top 5 », en or) : exactement 5 par matière, tous essentiels. */
+  /** Un des 5 calculs les plus importants de la matière (le « Top 5 », en or) : exactement 5 par matière, tous essentiels (sauf une matière de moins de 5 types, comme Ethics : aucun top). */
   top?: boolean;
   /** Rappel de formule(s), court, affiché avant de lancer un round. Une ligne par formule. */
   formulas: string[];

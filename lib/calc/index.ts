@@ -14,6 +14,7 @@ import { ALTERNATIVES_CALC } from "./alternatives";
 import { CORPORATE_CALC } from "./corporate";
 import { DERIVATIVES_CALC } from "./derivatives";
 import { ECONOMICS_CALC } from "./economics";
+import { ETHICS_CALC } from "./ethics";
 import { EQUITY_CALC } from "./equity";
 import { FIXED_INCOME_CALC } from "./fixed-income";
 import { FSA_CALC } from "./fsa";
@@ -44,6 +45,7 @@ export const CALC_SUBJECTS: CalcSubject[] = [
 
 // Les catalogues ouverts. Une matière sans catalogue s'affiche « bientôt ».
 const CATALOGS: Partial<Record<CalcTopic, CalcCatalog>> = {
+  ethics: ETHICS_CALC,
   quant: QUANT_CALC,
   economics: ECONOMICS_CALC,
   corporate: CORPORATE_CALC,

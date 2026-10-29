@@ -120,7 +120,7 @@ ok("phrase de répartition d'un niveau seul", phraseRepartition(P(0, 0, 10)) ===
 
 {
   let fautesTirage = 0;
-  const topics = ["quant", "fsa", "equity", "portfolio", "alternatives"];
+  const topics = ["ethics", "quant", "fsa", "equity", "portfolio", "alternatives"];
   for (let k = 0; k < 60; k++) {
     const rand = seeded(1000 + k);
     const choisies = topics.filter((_, i) => (k >> i) % 2 === 1 || i === k % topics.length);
@@ -150,7 +150,7 @@ ok("phrase de répartition d'un niveau seul", phraseRepartition(P(0, 0, 10)) ===
   const d3 = drawSession({ topics: ["quant"], count: 10, mix: P(50, 30, 20) }, seeded(1))!;
   const d4 = drawSession({ topics: ["quant"], count: 10, mix: P(50, 30, 20) }, seeded(2))!;
   ok("deux tirages différents ne donnent pas la même liste", d3.items.map((i) => i.q.id).join() !== d4.items.map((i) => i.q.id).join());
-  ok("aucune matière ouverte → null", drawSession({ topics: [], count: 10, mix: P(50, 30, 20) }) === null && drawSession({ topics: ["ethics", "nimporte"], count: 10, mix: P(50, 30, 20) }) === null);
+  ok("aucune matière ouverte → null", drawSession({ topics: [], count: 10, mix: P(50, 30, 20) }) === null && drawSession({ topics: ["nimporte"], count: 10, mix: P(50, 30, 20) }) === null);
   const d5 = drawSession({ topics: ["quant", "quant"], count: 999, mix: {} })!;
   ok("entrées bancales : nombre borné à 50, mélange par défaut, matière dédoublonnée", d5.items.length === 50 && eq(d5.plan.retenu, splitCount(50, P(50, 30, 20))));
   const d6 = drawSession({ topics: ["quant"], count: "abc", mix: null })!;
@@ -160,7 +160,7 @@ ok("phrase de répartition d'un niveau seul", phraseRepartition(P(0, 0, 10)) ===
 // ---------------------------------------------------------------------------
 // Réglages : adresse et mémoire
 {
-  const slugs = ["quant", "economics", "corporate-issuers", "fsa", "equity", "fixed-income", "derivatives", "alternatives", "portfolio-management"];
+  const slugs = ["ethics", "quant", "economics", "corporate-issuers", "fsa", "equity", "fixed-income", "derivatives", "alternatives", "portfolio-management"];
   const get = (o: Record<string, string>) => (k: string) => o[k];
   ok("adresse sans réglage → null", configFromParams(get({}), slugs) === null);
   const c = configFromParams(get({ matieres: "fsa,quant", n: "20", diff: "30-30-40" }), slugs)!;

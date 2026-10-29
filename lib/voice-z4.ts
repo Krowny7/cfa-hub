@@ -155,11 +155,38 @@ export const ENTRAINER = {
   eclairAction: "Lancer une série",
   /** points faibles */
   faiblesTitre: "Tes points faibles",
-  faiblesSous: "Les notions les plus fragiles, mesurées sur tes dernières réponses.",
+  faiblesSous: "Les notions et les calculs les plus fragiles, mesurés sur tes réponses.",
+  /** légende commune des deux échelles (les zones teintées et le trait pointillé) */
+  faiblesZoneRouge: "sous 50 %",
+  faiblesZoneAmbre: "50 à 70 %",
   faiblesSeuil: "seuil 70 %",
-  /** lecteurs d'écran : la piste d'une notion mesurée */
-  faiblesPiste: (libelle: string, pct: number) => `${libelle} : ${pct} %, seuil à 70 %`,
-  faiblesPisteRatures: (libelle: string, n: number) => `${libelle} : ${ratures(n)}`,
+  /** les deux volets */
+  faiblesVoletQuestions: "Questions",
+  faiblesVoletCalculs: "Calculs",
+  /** le petit compteur en tête de chaque volet (le nombre, puis son unité ; zéro : une phrase) */
+  faiblesCompteNotions: (n: number) => (n > 1 ? "notions sous 70 %" : "notion sous 70 %"),
+  faiblesCompteCalculs: (n: number) => (n > 1 ? "calculs sous 70 %" : "calcul sous 70 %"),
+  faiblesAucuneNotion: "Aucune notion sous 70 %",
+  faiblesAucunCalcul: "Aucun calcul sous 70 %",
+  /** l'échelle : libellé de la liste et des repères (lecteurs d'écran) */
+  faiblesEchelleQuestions: "Notions les plus fragiles, de la réussite la plus basse à la plus haute",
+  faiblesEchelleCalculs: "Types de calcul les moins réussis, de la réussite la plus basse à la plus haute",
+  /** sous le nom d'une ligne : la matière et le nombre de réponses */
+  faiblesReponses: (n: number) => (n > 1 ? `${n} réponses` : `${n} réponse`),
+  faiblesCalculsFaits: (n: number) => (n > 1 ? `${n} calculs` : `${n} calcul`),
+  /** lecteurs d'écran et infobulle : une ligne de l'échelle */
+  faiblesLigneNotion: (libelle: string, matiere: string, pct: number, n: number) =>
+    `${libelle}, ${matiere} : ${pct} % de réussite sur ${n} ${n > 1 ? "réponses" : "réponse"}, seuil à 70 %`,
+  faiblesLigneCalcul: (nom: string, matiere: string, pct: number, n: number) =>
+    `${nom}, ${matiere} : ${pct} % de réussite sur ${n} ${n > 1 ? "calculs" : "calcul"}, seuil à 70 %`,
+  /** les notions mesurées seulement en ratures : une ligne à part, sous l'échelle */
+  faiblesRaturesSeules: (notions: number, n: number) => `+ ${notions} ${notions > 1 ? "notions" : "notion"} à revoir · ${ratures(n)}`,
+  faiblesRaturesTitre: (noms: string[]) => `Mesurées seulement en ratures : ${noms.join(", ")}`,
+  /** volet Questions : des notions à revoir, mais aucune mesurée en pourcentage */
+  faiblesSansPourcentage: "Pas encore de pourcentage : ces notions ne sont mesurées qu'en ratures.",
+  /** volet Calculs : pas assez de réponses (moins de 5 sur chaque type) ou lecture impossible */
+  faiblesCalculsVide: "Pas encore assez de calculs pour juger",
+  faiblesCalculsVideDetail: "Un type se mesure dès 5 réponses.",
   /** les deux autres entrées */
   qcmTitre: "QCM par thème",
   qcmTexte: "Toutes les banques, classées par matière.",

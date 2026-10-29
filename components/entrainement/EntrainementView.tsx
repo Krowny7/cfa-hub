@@ -10,6 +10,7 @@ import type { IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, styleDePalette } from "@/lib/palettes";
 import { TOPICS } from "@/lib/practiceTopics";
 import { MIN_REPONSES, type PointsFaiblesData } from "@/lib/points-faibles";
+import type { CalculsFaibles } from "@/lib/calc/faibles";
 import { ECLAIR_HREF } from "@/lib/eclair";
 import { ECLAIR } from "@/lib/voice-z2c";
 import { nombre } from "@/lib/voice";
@@ -23,9 +24,11 @@ import s from "./Entrainer.module.css";
 // égalité, « Calculs » (le titre, trois pastilles de niveau, le bouton d'encre)
 // et « Entraînement ciblé » (le titre, une échelle du poids de chaque matière à
 // l'examen, le bouton d'encre) ; puis la rangée « Séries
-// éclair » (la peinture à gauche) et « Tes points faibles » (une barre par
-// notion, le repère pointillé à 70 %, des bâtons quand la notion n'est
-// mesurée qu'en ratures) ; puis, à droite et empilés, « QCM par thème » et
+// éclair » (la peinture à gauche) et « Tes points faibles » (deux volets côte
+// à côte, « Questions » et « Calculs » : un compteur, puis des barres épaisses
+// sur une échelle de 0 à 100 % dont les zones sont teintées, rouge sous 50 %,
+// ambre de 50 à 70 %, avec le trait pointillé du seuil à 70 % ; les notions
+// mesurées seulement en ratures tiennent une ligne à part, sous l'échelle) ; puis, à droite et empilés, « QCM par thème » et
 // « Examens officiels », à gauche un lieu peint sans action, réservé à un
 // usage futur (la peinture seule, sans titre ni lien). Téléphone : une
 // colonne, les deux entrées principales d'abord.
@@ -49,27 +52,46 @@ export type EntrainementData = {
   eclairPct?: number | null;
   /** « Tes points faibles » : absent, la carte garde sa phrase neutre */
   pointsFaibles?: PointsFaiblesData;
+  /** « Tes points faibles », volet Calculs (lib/calc/faibles) : absent ou sans ligne, le volet dit qu'il n'y a pas encore assez de calculs */
+  calculs?: CalculsFaibles | null;
 };
 
 const PAL = PALETTES.atelier;
 const encre = (...cls: string[]) => ["rl-encre", s.encre, ...cls].join(" ");
 const papier = (...cls: string[]) => [s.carte, s.papier, ...cls].join(" ");
 
-/** Combien de notions la carte en montre (la page « Points faibles » les a toutes). */
+/** Combien de notions mesurées la carte en montre (la page « Points faibles » les a toutes). */
 const MAX_LIGNES = 4;
+/** L'échelle : sous ROUGE %, la zone rouge ; jusqu'à SEUIL %, la zone ambre ; au-delà, neutre. */
+const ROUGE = 50;
+const SEUIL = 70;
+const HREF_FAIBLES = "/moi?onglet=stats#points-faibles";
 
 /** Une notion de la carte : sa réussite récente (citée dès MIN_REPONSES réponses, comme sur la page Réviser) ou, en deçà, ses ratures en cours. */
-export type LigneFaible = { cle: string; libelle: string; matiere: string; pct: number | null; ratures: number };
+export type LigneFaible = { cle: string; libelle: string; matiere: string; pct: number | null; n: number; ratures: number; href: string };
 
-export function lignesFaibles(p: PointsFaiblesData | undefined, max = MAX_LIGNES): LigneFaible[] {
-  if (!p || p.etat !== "faibles") return [];
-  return p.liste.slice(0, max).map((n) => ({
+/** Le volet Questions : les notions mesurées en % (les plus basses d'abord), combien sont sous le seuil, et celles qui ne le sont qu'en ratures. */
+export type FaiblesQuestions = { mesurees: LigneFaible[]; sousSeuil: number; enRatures: LigneFaible[] };
+
+export function faiblesQuestions(p: PointsFaiblesData | undefined, max = MAX_LIGNES): FaiblesQuestions | null {
+  if (!p || p.etat !== "faibles") return null;
+  const lignes: LigneFaible[] = p.liste.map((n) => ({
     cle: n.cle,
     libelle: n.libelle,
     matiere: n.matiereNom,
     pct: n.mesures.n >= MIN_REPONSES ? Math.round((100 * n.mesures.ok) / n.mesures.n) : null,
+    n: n.mesures.n,
     ratures: n.mesures.enCours,
+    // l'Atelier, quand il est ouvert et que la notion est un Learning Module ; sinon la carte des points faibles
+    href: p.atelier && n.lm ? `/atelier?notion=${encodeURIComponent(n.lm)}` : HREF_FAIBLES,
   }));
+  const mesurees = lignes.filter((l) => l.pct !== null);
+  return {
+    // les plus fragiles d'abord (l'ordre des points faibles), puis rangées de la réussite la plus basse à la plus haute
+    mesurees: mesurees.slice(0, max).sort((a, b) => (a.pct as number) - (b.pct as number)),
+    sousSeuil: mesurees.filter((l) => (l.pct as number) < SEUIL).length,
+    enRatures: lignes.filter((l) => l.pct === null),
+  };
 }
 
 /** Une moitié du diptyque : la peinture, un voile sombre, le texte clair posé en bas (titre, ce que dit la moitié, bouton d'encre). */
@@ -268,9 +290,137 @@ function Eclair({ d }: { d: EntrainementData }) {
   );
 }
 
+/** Une barre de l'échelle : un nom, sa matière et son effectif, sa réussite en %, la page où la reprendre. */
+type Barre = { cle: string; nom: string; sous: string; pct: number; href: string; libelle: string };
+
+const tonDe = (pct: number) => (pct < ROUGE ? s.rouge : pct < SEUIL ? s.ambre : s.neutre);
+
+/**
+ * L'échelle de 0 à 100 % : une barre épaisse par ligne, posée sur une piste dont
+ * les zones sont teintées (rouge sous 50 %, ambre de 50 à 70 %, neutre au-delà)
+ * et traversée par le trait pointillé du seuil à 70 %. Ce qui reste de la piste
+ * après la barre est la distance qui manque. Chaque ligne est un lien dont le
+ * libellé complet (valeur exacte, effectif, seuil) sert d'infobulle et de texte
+ * pour les lecteurs d'écran : la liste est l'alternative texte du graphique.
+ */
+function Echelle({ barres, libelle }: { barres: Barre[]; libelle: string }) {
+  return (
+    <div className={s.echelleFaibles}>
+      <ul className={s.barres} aria-label={libelle}>
+        {barres.map((b, i) => (
+          <li key={b.cle}>
+            <Link href={b.href} className={s.ligneFaible} title={b.libelle} aria-label={b.libelle}>
+              <span className={s.ligneFaibleTete}>
+                <span className={s.nom}>
+                  <b>{b.nom}</b>
+                  <span>{b.sous}</span>
+                </span>
+                <span className={s.valeur}>{b.pct} %</span>
+              </span>
+              <span className={s.piste} aria-hidden>
+                <i className={tonDe(b.pct)} style={{ width: `max(${b.pct}%, 6px)`, animationDelay: `${i * 80}ms` }} />
+                <span className={s.seuil} />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className={s.axe} aria-hidden>
+        {[0, ROUGE, SEUIL, 100].map((v) => (
+          <span key={v} className={s.repere + (v === SEUIL ? " " + s.repereSeuil : "")} style={{ left: `${v}%` }} data-bord={v === 0 ? "g" : v === 100 ? "d" : undefined}>
+            {v === 100 ? "100 %" : v}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Un volet de la carte : son titre, son compteur (« 3 notions sous 70 % ») et son contenu. */
+function Volet({ id, titre, compteur, children }: { id: string; titre: string; compteur?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className={s.volet} aria-labelledby={id}>
+      <div className={s.voletTete}>
+        <h3 id={id} className={s.voletTitre}>
+          {titre}
+        </h3>
+        {compteur}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Le compteur : le nombre sur le surligneur et son unité ; à zéro, une phrase tranquille. */
+function Compteur({ n, unite, aucun }: { n: number; unite: string; aucun: string }) {
+  return n > 0 ? (
+    <p className={s.compteur}>
+      <span className={"t-num " + s.surligne + " " + s.compteurNb}>{n}</span>
+      <span>{unite}</span>
+    </p>
+  ) : (
+    <p className={s.compteur + " " + s.compteurBon}>{aucun}</p>
+  );
+}
+
+function VoletQuestions({ p }: { p: PointsFaiblesData | undefined }) {
+  const q = faiblesQuestions(p);
+  if (!q) {
+    return (
+      <Volet id="ent-faibles-q" titre={ENTRAINER.faiblesVoletQuestions}>
+        <p className={s.vide}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</p>
+      </Volet>
+    );
+  }
+  const barres: Barre[] = q.mesurees.map((l) => ({
+    cle: l.cle,
+    nom: l.libelle,
+    sous: `${l.matiere} · ${ENTRAINER.faiblesReponses(l.n)}`,
+    pct: l.pct as number,
+    href: l.href,
+    libelle: ENTRAINER.faiblesLigneNotion(l.libelle, l.matiere, l.pct as number, l.n),
+  }));
+  const raturesTotal = q.enRatures.reduce((t, l) => t + l.ratures, 0);
+  return (
+    <Volet id="ent-faibles-q" titre={ENTRAINER.faiblesVoletQuestions} compteur={barres.length > 0 ? <Compteur n={q.sousSeuil} unite={ENTRAINER.faiblesCompteNotions(q.sousSeuil)} aucun={ENTRAINER.faiblesAucuneNotion} /> : undefined}>
+      {barres.length > 0 ? <Echelle barres={barres} libelle={ENTRAINER.faiblesEchelleQuestions} /> : <p className={s.vide}>{ENTRAINER.faiblesSansPourcentage}</p>}
+      {q.enRatures.length > 0 && (
+        <Link href={HREF_FAIBLES} className={s.ratures} title={ENTRAINER.faiblesRaturesTitre(q.enRatures.map((l) => `${l.libelle} (${l.ratures})`))}>
+          <Batons n={raturesTotal} />
+          {ENTRAINER.faiblesRaturesSeules(q.enRatures.length, raturesTotal)}
+        </Link>
+      )}
+    </Volet>
+  );
+}
+
+function VoletCalculs({ c }: { c: CalculsFaibles | null | undefined }) {
+  if (!c || c.lignes.length === 0) {
+    return (
+      <Volet id="ent-faibles-c" titre={ENTRAINER.faiblesVoletCalculs}>
+        <p className={s.vide}>{ENTRAINER.faiblesCalculsVide}</p>
+        <p className={s.videDetail}>{ENTRAINER.faiblesCalculsVideDetail}</p>
+      </Volet>
+    );
+  }
+  const barres: Barre[] = c.lignes.map((l) => ({
+    cle: l.cle,
+    nom: l.nom,
+    sous: `${l.matiere} · ${ENTRAINER.faiblesCalculsFaits(l.n)}`,
+    pct: l.pct,
+    href: l.href,
+    libelle: ENTRAINER.faiblesLigneCalcul(l.nom, l.matiere, l.pct, l.n),
+  }));
+  return (
+    <Volet id="ent-faibles-c" titre={ENTRAINER.faiblesVoletCalculs} compteur={<Compteur n={c.sousSeuil} unite={ENTRAINER.faiblesCompteCalculs(c.sousSeuil)} aucun={ENTRAINER.faiblesAucunCalcul} />}>
+      <Echelle barres={barres} libelle={ENTRAINER.faiblesEchelleCalculs} />
+    </Volet>
+  );
+}
+
 function Faibles({ d }: { d: EntrainementData }) {
-  const p = d.pointsFaibles;
-  const lignes = lignesFaibles(p);
+  const q = faiblesQuestions(d.pointsFaibles);
+  const avecEchelle = (q?.mesurees.length ?? 0) > 0 || (d.calculs?.lignes.length ?? 0) > 0;
   return (
     <section className={papier(s.faibles)} aria-labelledby="ent-faibles" data-leonard="points-faibles">
       <div className={s.faiblesTete}>
@@ -280,40 +430,31 @@ function Faibles({ d }: { d: EntrainementData }) {
           </h2>
           <p className={s.sous}>{ENTRAINER.faiblesSous}</p>
         </div>
-        {lignes.length > 0 && (
-          <span className={s.legende} aria-hidden>
-            <span className={s.legendeTrait} />
-            {ENTRAINER.faiblesSeuil}
-          </span>
+        {avecEchelle && (
+          <ul className={s.legende} aria-hidden>
+            <li>
+              <i className={s.pastilleRouge} />
+              {ENTRAINER.faiblesZoneRouge}
+            </li>
+            <li>
+              <i className={s.pastilleAmbre} />
+              {ENTRAINER.faiblesZoneAmbre}
+            </li>
+            <li>
+              <span className={s.legendeTrait} />
+              {ENTRAINER.faiblesSeuil}
+            </li>
+          </ul>
         )}
       </div>
-      {lignes.length > 0 ? (
-        <ul className={s.lignes}>
-          {lignes.map((l) => (
-            <li key={l.cle} className={s.ligne} title={`${l.matiere} · ${l.libelle}`}>
-              <span className={s.nom}>
-                <b>{l.libelle}</b>
-                <span>{l.matiere}</span>
-              </span>
-              {l.pct !== null ? (
-                <span className={s.piste} role="img" aria-label={ENTRAINER.faiblesPiste(l.libelle, l.pct)}>
-                  <i className={l.pct < 50 ? s.rouge : s.ambre} style={{ width: `${l.pct}%` }} />
-                  <span className={s.seuil} />
-                </span>
-              ) : (
-                <span className={s.pisteBatons} role="img" aria-label={ENTRAINER.faiblesPisteRatures(l.libelle, l.ratures)}>
-                  <Batons n={l.ratures} />
-                </span>
-              )}
-              <span className={s.valeur + (l.pct === null ? " " + s.valeurRature : "")}>{l.pct !== null ? `${l.pct} %` : RV.faiblesRatures(l.ratures)}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className={s.vide}>{!p ? RV.faiblesSansChiffre : p.etat === "peu" ? RV.faiblesPeu : RV.faiblesRien}</p>
-      )}
+      <div className={s.voletsCadre}>
+        <div className={s.volets}>
+          <VoletQuestions p={d.pointsFaibles} />
+          <VoletCalculs c={d.calculs} />
+        </div>
+      </div>
       <div className={s.pied}>
-        <Link href="/moi?onglet=stats#points-faibles" className={s.lien}>
+        <Link href={HREF_FAIBLES} className={s.lien}>
           {RV.faiblesAction}
         </Link>
       </div>

@@ -49,7 +49,9 @@ export function suggest(subjects: SubjectLite[], all: AllProgress): Suggestion |
   });
   const last = lastWorked(subjects, all);
   if (last && !isMastered(all[last.s.topic]?.[last.t.key])) return make(last.s, last.t, true);
-  for (const s of subjects) {
+  // sans historique : une matière à vrais calculs d'abord (Ethics, deux types seulement, passe en dernier)
+  const ordre = [...subjects.filter((s) => s.types.length >= 3), ...subjects.filter((s) => s.types.length < 3)];
+  for (const s of ordre) {
     const t = firstOpen(s, all[s.topic]);
     if (t) return make(s, t, false);
   }

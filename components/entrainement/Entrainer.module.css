@@ -18,6 +18,9 @@
   --acc: color-mix(in oklab, var(--pal-2) 80%, var(--pal-1));
   /* la barre « à reprendre » : l'ambre assombri (3:1 et plus sur le rail) ; le rouge du stylo sous 50 % */
   --ambre: color-mix(in oklab, var(--pal-3) 78%, var(--pal-1));
+  /* les zones teintées de l'échelle des points faibles : rouge du stylo sous 50 %, ambre de 50 à 70 % (le neutre au-delà : --paper-2) */
+  --zone-rouge: color-mix(in srgb, var(--pen) 22%, var(--paper-2));
+  --zone-ambre: color-mix(in srgb, var(--ambre) 28%, var(--paper-2));
   /* le surligneur : la flamme de bougie */
   --surligne: color-mix(in srgb, var(--pal-4) 60%, transparent);
   /* le brun sombre : fond de repli de l'encre et des peintures, le temps que l'image arrive */
@@ -417,30 +420,58 @@
   margin-top: auto;
 }
 
+/* ——— Tes points faibles : deux volets (Questions | Calculs), chacun un compteur
+   puis une échelle de 0 à 100 % ———
+   Chaque ligne est une barre épaisse posée sur une piste dont les zones sont
+   teintées (rouge sous 50 %, ambre de 50 à 70 %, neutre au-delà), avec le trait
+   pointillé du seuil à 70 % ; ce qui reste de la piste après la barre est la
+   distance qui manque. Les volets se rangent d'après la largeur de leur cadre
+   (.voletsCadre), pas celle de l'écran. */
 .faibles {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
   padding: 24px 28px;
 }
 .faiblesTete {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
 }
 .faiblesTitre {
   margin-bottom: 4px;
   font-size: 20px;
   font-weight: 700;
 }
+/* la légende des zones, une seule pour les deux volets */
 .legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.legende > li {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 6px;
   white-space: nowrap;
-  color: var(--ink-2);
+}
+.pastilleRouge,
+.pastilleAmbre {
+  display: block;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+}
+.pastilleRouge {
+  background: var(--zone-rouge);
+}
+.pastilleAmbre {
+  background: var(--zone-ambre);
 }
 .legendeTrait {
   display: block;
@@ -448,15 +479,89 @@
   border-left: 2px dashed var(--ink);
   opacity: 0.6;
 }
-.lignes {
+
+.voletsCadre {
+  min-width: 0;
+  container-type: inline-size;
+}
+.volets {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.volet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.volet:first-child {
+  padding-right: 28px;
+}
+.volet + .volet {
+  padding-left: 28px;
+  border-left: 1px solid var(--pencil-2);
+}
+.voletTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.voletTitre {
+  font-size: 17px;
+  font-weight: 700;
+}
+/* le compteur : le nombre sur le surligneur et son unité ; à zéro, une phrase tranquille */
+.compteur {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.compteurNb {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink);
+}
+.compteurBon {
+  color: var(--ink-2);
+}
+
+.echelleFaibles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.barres {
   display: grid;
 }
-.ligne {
+.ligneFaible {
   display: grid;
-  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) 5rem;
-  align-items: center;
-  gap: 16px;
+  gap: 8px;
   min-height: 44px;
+  padding: 7px 0 8px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.ligneFaible:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .ligneFaible:hover .nom b {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ligneFaibleTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
 .nom {
   display: grid;
@@ -477,23 +582,41 @@
   white-space: nowrap;
   color: var(--ink-2);
 }
+.valeur {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* la piste : les trois zones teintées, la barre par-dessus, le trait du seuil qui dépasse */
 .piste {
   position: relative;
   display: block;
-  height: 12px;
-  border-radius: 6px;
-  background: var(--paper-2);
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(to right, var(--zone-rouge) 0 50%, var(--zone-ambre) 50% 70%, var(--paper-2) 70% 100%);
 }
 .piste i {
   display: block;
   height: 100%;
-  border-radius: 6px;
+  border-radius: 7px;
+  transform-origin: left center;
+  animation: poussee 700ms var(--ease-out) both;
+}
+@keyframes poussee {
+  from {
+    transform: scaleX(0);
+  }
 }
 .rouge {
   background: var(--pen);
 }
 .ambre {
   background: var(--ambre);
+}
+.neutre {
+  background: var(--ink-2);
 }
 /* le repère à 70 % : un trait pointillé qui dépasse la piste */
 .seuil {
@@ -505,33 +628,89 @@
   border-left: 2px dashed var(--ink);
   opacity: 0.6;
 }
-.pisteBatons {
-  display: block;
-  min-width: 0;
+/* l'axe : 0, 50, 70 et 100 % sous la dernière piste */
+.axe {
+  position: relative;
+  height: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-2);
+}
+.repere {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.repere[data-bord="g"] {
+  transform: none;
+}
+.repere[data-bord="d"] {
+  transform: translateX(-100%);
+}
+.repereSeuil {
+  font-weight: 700;
+  color: var(--ink);
+}
+/* les notions mesurées seulement en ratures : une ligne à part, sous l'échelle */
+.ratures {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px 10px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pen);
+  text-decoration: none;
+}
+.ratures .batons {
+  width: auto;
+  height: 16px;
+  max-width: 76px;
+}
+@media (hover: hover) {
+  .ratures:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 .batons {
   display: block;
-  max-width: 100%;
   stroke: var(--pen);
-}
-.valeur {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.valeurRature {
-  font-size: 13px;
-  color: var(--pen);
 }
 .vide {
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink-2);
 }
+.videDetail {
+  margin-top: -6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
 .pied {
   margin-top: auto;
+}
+
+/* un cadre étroit (téléphone, ou carte serrée) : les volets s'empilent */
+@container (max-width: 460px) {
+  .volets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .volet:first-child {
+    padding-right: 0;
+  }
+  .volet + .volet {
+    margin-top: 18px;
+    padding-top: 18px;
+    padding-left: 0;
+    border-top: 1px solid var(--pencil-2);
+    border-left: 0;
+  }
 }
 
 /* ——— le dernier étage : le lieu peint (2/3) et, empilées, deux entrées (1/3) ——— */
@@ -626,7 +805,7 @@
     font-size: 30px;
   }
 }
-/* téléphone : une colonne partout ; la peinture de la rangée éclair passe en bandeau, une notion tient sur deux étages */
+/* téléphone : une colonne partout ; la peinture de la rangée éclair passe en bandeau (les volets des points faibles s'empilent d'après leur propre cadre) */
 @container (max-width: 560px) {
   .racine {
     gap: 16px;
@@ -692,19 +871,6 @@
   .faibles {
     padding: 20px 18px;
   }
-  .ligne {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px 12px;
-    padding: 8px 0;
-  }
-  .ligne > .piste,
-  .ligne > .pisteBatons {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  .legende {
-    display: none;
-  }
   .aside {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -739,6 +905,10 @@
   .lien::after,
   .fleche {
     transition: none;
+  }
+  /* les barres des points faibles sont déjà à leur longueur */
+  .piste i {
+    animation: none;
   }
   .levable:hover,
   .levable:active,
