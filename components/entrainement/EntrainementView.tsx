@@ -6,12 +6,14 @@ import { Glyphe } from "@/components/entrainement/Glyphes";
 import { DomainSpace } from "@/components/reviser/DomainSpace";
 import { subjectByKey } from "@/components/reviser/catalog";
 import { Illustration } from "@/components/ui/Illustration";
+import { CaseTrophee } from "@/components/trophees/SalleDesTrophees";
 import type { IllustrationNom } from "@/lib/illustrations";
 import { PALETTES, styleDePalette } from "@/lib/palettes";
 import { TOPICS } from "@/lib/practiceTopics";
 import { MIN_REPONSES, type PointsFaiblesData } from "@/lib/points-faibles";
 import type { CalculsFaibles } from "@/lib/calc/faibles";
 import { ECLAIR_HREF } from "@/lib/eclair";
+import { compter, nomTrophee, PALIERS_TROPHEE, type LigneTrophee } from "@/lib/trophees";
 import { ECLAIR } from "@/lib/voice-z2c";
 import { nombre } from "@/lib/voice";
 import { RV } from "@/lib/voice-reviser";
@@ -24,7 +26,8 @@ import s from "./Entrainer.module.css";
 // égalité, « Calculs » (le titre, trois pastilles de niveau, le bouton d'encre)
 // et « Entraînement ciblé » (le titre, une échelle du poids de chaque matière à
 // l'examen, le bouton d'encre) ; puis la rangée « Séries
-// éclair » (la peinture à gauche) et « Tes points faibles » (deux volets côte
+// éclair » (la peinture à gauche ; dessous, la petite carte « Tes trophées »,
+// les quatre paliers) et « Tes points faibles » (deux volets côte
 // à côte, « Questions » et « Calculs » : un compteur, puis des barres épaisses
 // sur une échelle de 0 à 100 % dont les zones sont teintées, rouge sous 50 %,
 // ambre de 50 à 70 %, avec le trait pointillé du seuil à 70 % ; les notions
@@ -54,6 +57,8 @@ export type EntrainementData = {
   pointsFaibles?: PointsFaiblesData;
   /** « Tes points faibles », volet Calculs (lib/calc/faibles) : absent ou sans ligne, le volet dit qu'il n'y a pas encore assez de calculs */
   calculs?: CalculsFaibles | null;
+  /** « Tes trophées », sous les séries éclair (lib/trophees : lireTrophees) ; absent, la carte n'est pas montrée */
+  trophees?: { lignes: LigneTrophee[]; complet: boolean } | null;
 };
 
 const PAL = PALETTES.atelier;
@@ -290,6 +295,39 @@ function Eclair({ d }: { d: EntrainementData }) {
   );
 }
 
+/** La petite carte des trophées, sous les séries éclair : les quatre paliers et leur nombre, le dernier gagné ; le détail est dans Moi (la Salle des trophées). */
+function Trophees({ t }: { t: NonNullable<EntrainementData["trophees"]> }) {
+  const { total, parPalier, lignes } = compter(t.lignes);
+  const dernier = lignes.reduce<LigneTrophee | null>((m, l) => (l.dernier && (!m?.dernier || l.dernier > m.dernier) ? l : m), null);
+  return (
+    <section className={papier(s.trophees)} aria-labelledby="ent-trophees">
+      <div className={s.tropheesTete}>
+        <h2 id="ent-trophees" className={s.petiteTitre}>
+          {ENTRAINER.tropheesTitre}
+        </h2>
+        {total > 0 && <span className="t-micro tabular-nums">{ENTRAINER.tropheesTotal(total)}</span>}
+      </div>
+      {total === 0 ? (
+        <p className={s.sous}>{ENTRAINER.tropheesVide}</p>
+      ) : (
+        <ul className={s.paliers}>
+          {PALIERS_TROPHEE.map(({ palier, nom }) => (
+            <li key={palier} className={parPalier[palier] === 0 ? s.palierVide : undefined}>
+              <CaseTrophee palier={palier} gagne={parPalier[palier] > 0} className={s.casePalier} />
+              <span className={"t-num " + s.palierN}>{nombre(parPalier[palier])}</span>
+              <span className={s.palierNom}>{nom}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {dernier && <p className={s.sous}>{ENTRAINER.tropheesDernier(nomTrophee(dernier))}</p>}
+      <Link href="/moi#trophees" className={"ink-link " + s.tropheesLien}>
+        {ENTRAINER.tropheesLien} <ArrowRight size={13} aria-hidden />
+      </Link>
+    </section>
+  );
+}
+
 /** Une barre de l'échelle : un nom, sa matière et son effectif, sa réussite en %, la page où la reprendre. */
 type Barre = { cle: string; nom: string; sous: string; pct: number; href: string; libelle: string };
 
@@ -507,7 +545,10 @@ export function EntrainementView({ d }: { d: EntrainementData }) {
         <div className={s.racine} style={styleDePalette(PAL)}>
           <Diptyque />
           <div className={s.rangee}>
-            <Eclair d={d} />
+            <div className={s.colonneEclair}>
+              <Eclair d={d} />
+              {d.trophees && <Trophees t={d.trophees} />}
+            </div>
             <Faibles d={d} />
           </div>
           <Autres />

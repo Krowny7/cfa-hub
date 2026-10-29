@@ -419,6 +419,74 @@
 .boutonBas {
   margin-top: auto;
 }
+/* la colonne de gauche de la rangée : les séries éclair prennent la hauteur qui reste, « Tes trophées » dessous */
+.colonneEclair {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.colonneEclair > .eclair {
+  flex: 1 1 auto;
+}
+.trophees {
+  display: grid;
+  gap: 12px;
+  padding: 20px 22px;
+}
+.tropheesTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+/* les quatre paliers sur une rangée : la case, et dessous-à-côté le nombre puis le nom */
+.paliers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.paliers > li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  min-width: 0;
+}
+.paliers > li > :first-child {
+  grid-row: span 2;
+}
+.palierVide {
+  opacity: 0.5;
+}
+.casePalier {
+  width: 32px;
+  height: 32px;
+}
+.palierN {
+  font-size: 18px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.palierNom {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tropheesLien {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 /* ——— Tes points faibles : deux volets (Questions | Calculs), chacun un compteur
    puis une échelle de 0 à 100 % ———
@@ -867,6 +935,9 @@
   }
   .eclairCorps .bouton {
     width: 100%;
+  }
+  .paliers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .faibles {
     padding: 20px 18px;

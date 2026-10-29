@@ -153,6 +153,12 @@ export const ENTRAINER = {
   eclairAucune: "Pas encore de série aujourd'hui.",
   eclairReussite: (pct: number) => `Réussite récente : ${pct} %`,
   eclairAction: "Lancer une série",
+  /** la petite carte des trophées, sous les séries éclair */
+  tropheesTitre: "Tes trophées",
+  tropheesTotal: (n: number) => `${nombre(n)} ${n > 1 ? "trophées" : "trophée"}`,
+  tropheesVide: "Aucun trophée pour l'instant : 5/5 aux 5 du jour, ou une séance ciblée réussie à 70 %, et le premier est à toi.",
+  tropheesDernier: (nom: string) => `Le dernier : ${nom}`,
+  tropheesLien: "Voir la salle des trophées",
   /** points faibles */
   faiblesTitre: "Tes points faibles",
   faiblesSous: "Les notions et les calculs les plus fragiles, mesurés sur tes réponses.",

@@ -1,3 +1,4 @@
+import { lireTrophees } from "@/lib/trophees";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -34,7 +35,7 @@ export default async function EntrainementPage() {
   }
 
   const now = Date.now();
-  const [eclair, answers, basePointsFaibles, banqueQcm, atelier, progressCalcul] = await Promise.all([
+  const [eclair, answers, basePointsFaibles, banqueQcm, atelier, progressCalcul, trophees] = await Promise.all([
     getEclairStats(supabase, userId),
     // « Tes points faibles » : les réponses (client admin, toujours filtrées sur ce joueur), les notions (sinon les ratures par thème) et les QCM de la banque
     getAnswerStats(admin ?? supabase, userId, { privileged: !!admin, now }),
@@ -44,6 +45,8 @@ export default async function EntrainementPage() {
     lireEtatAtelier(supabase, userId),
     // la progression des calculs, une ligne par matière × type × niveau (null : la base ne répond pas, le volet dit qu'il manque de calculs)
     loadCalcProgress(supabase, null),
+    // « Tes trophées », sous les séries éclair (jamais d'exception : un compte vide au moindre souci)
+    lireTrophees(supabase, userId),
   ]);
 
   const d: EntrainementData = {
@@ -57,6 +60,7 @@ export default async function EntrainementPage() {
       const type = calcType(topic, typeKey);
       return matiere && type ? { nom: type.name, matiere: matiere.short, href: `/calculs/${matiere.slug}/${type.key}` } : null;
     }),
+    trophees: { lignes: trophees.lignes, complet: trophees.complet },
   };
 
   return <EntrainementView d={d} />;
