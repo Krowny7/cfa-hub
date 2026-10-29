@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { EncreVive } from "@/components/nav/EncreVive";
 import { Icone } from "@/components/adn/icons";
 import { Glyphe } from "@/components/entrainement/Glyphes";
@@ -194,6 +194,10 @@ function Diptyque() {
             </li>
           ))}
         </ul>
+        <Link href="/calculs/session" className={s.lienSession}>
+          {ENTRAINER.calculsSession}
+          <ArrowRight size={15} aria-hidden />
+        </Link>
       </Entree>
       <Entree
         id="ent-cible"

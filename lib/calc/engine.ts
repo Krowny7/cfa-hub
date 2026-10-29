@@ -286,7 +286,7 @@ export function mergeHistory(a: HistoryMap, b: HistoryMap): HistoryMap {
   return out;
 }
 
-function shuffle<T>(arr: T[], rand: () => number): T[] {
+export function shuffle<T>(arr: T[], rand: () => number = Math.random): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));

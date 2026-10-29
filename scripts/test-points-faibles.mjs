@@ -290,7 +290,7 @@ check("duration : même score que l'exemple du cahier des charges (63 sur 25 ré
 check("duration : « Mettre au propre » par la notion (toutes ses ratures en cours)", dN.lm === "fixed_income:11" && dN.sets.length === 0 && dN.mesures.aRepasser === 12);
 check("duration : ce qui coince, filtré (Duration modifiée n'a qu'une erreur)", dN.concepts.map((c) => c.concept).join() === "Duration gap", JSON.stringify(dN.concepts));
 const naturesD = dN.liens.map((l) => l.nature).join();
-check("duration : liens page de fiche, chapitre audio, QCM (pas de calcul rattaché)", naturesD === "fiche,cours,qcm", naturesD);
+check("duration : liens page de fiche, chapitre audio, QCM et le calcul rattaché (Macaulay / modified duration)", naturesD === "fiche,cours,qcm,calcul", naturesD);
 check("duration : page 4 de la fiche, chapitre audio au module 11, QCM de la banque", dN.liens[0].href === DUR.fiches[0].href && dN.liens[1].href === "/courses/fixed-income?module=11" && dN.liens[2].href === "/qcm/qcm-r59", JSON.stringify(dN.liens));
 check("duration : réponses par source, les plus nombreuses d'abord", JSON.stringify(dN.sources) === JSON.stringify([{ libelle: "Fiches", n: 31 }, { libelle: "Duels", n: 12 }]), JSON.stringify(dN.sources));
 check("convexité : 2 réponses, pas éligible", !parNotion.liste.some((p) => p.cle === "fixed_income:12") && !!CONV);

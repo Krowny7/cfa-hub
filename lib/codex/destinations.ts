@@ -72,6 +72,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/atelier",
   "/calculs",
   "/calculs/[matiere]",
+  "/calculs/session",
   "/calculs/[matiere]/[type]",
   "/classement",
   "/codex",
@@ -167,7 +168,7 @@ const CINQ: Cible = { href: "/defi/cinq", duree: 5, outil: "cinq" };
 const TRENTE: Cible = { href: "/defi", duree: 40, outil: "trente" };
 const DUEL: Cible = { href: "/duel", duree: 10, outil: "duels" };
 const BLANCS: Cible = { href: "/mock-exams", duree: 90, outil: "blancs" };
-const ATELIER: Cible = { href: "/atelier", duree: 30, outil: "atelier" };
+const ATELIER: Cible = { href: "/atelier", duree: 15, outil: "atelier" };
 const CALCULS: Cible = { href: "/calculs", duree: 10, outil: "calculs" };
 const revoir = (duree: number): Cible => ({ href: "/revoir", duree, outil: "revoir" });
 

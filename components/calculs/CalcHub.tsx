@@ -1,6 +1,7 @@
 "use client";
 
-import { Calculator } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Calculator, SlidersHorizontal } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { Glyphe } from "@/components/entrainement/Glyphes";
 import { Illustration } from "@/components/ui/Illustration";
@@ -9,12 +10,14 @@ import { Sceau } from "@/components/ui/Tuiles";
 import { SubjectGlyph } from "@/components/ui/SubjectGlyph";
 import { Bande, EnTete, Heros, Page, Rangee, Section, Tuile, Vignette } from "@/components/outils/Gabarit";
 import { topicSummary, type AllProgress } from "@/lib/calc/engine";
+import { calcCounts } from "@/lib/calc/counts";
 import { CALC_LEVELS } from "@/lib/calc/types";
 import { ABAQUE } from "@/lib/voice-outils";
 import { etatType, lignesNiveaux, nomCourt, phraseSuggestion } from "./outils";
 import { roundHref, suggest, type SubjectLite } from "./suggest";
+import { TesCalculs } from "./TesCalculs";
 import { useCalcProgress, useLocalImport } from "./useCalc";
-import { CALC, NIVEAU, ligneTypes, nbQuestions, niveauxTenus } from "./voice";
+import { CALC, NIVEAU, SESSION, ligneTypes, nbQuestions, niveauxTenus } from "./voice";
 
 export type CalcHubSubject = SubjectLite & { short: string; open: boolean; questions: number };
 
@@ -22,7 +25,8 @@ export type CalcHubSubject = SubjectLite & { short: string; open: boolean; quest
  * /calculs, « L'Abaque » : le lieu du calcul pur. Le héros garde le geste (le
  * calcul qui coince, « Le reprendre » ; à défaut le prochain calcul), la
  * carte du lieu sert d'entrée vers une matière, une vignette dit comment
- * se tient un niveau, la bande d'encre mène à l'entraînement ciblé. Les
+ * se tient un niveau, la bande d'encre mène à l'entraînement ciblé. « Tes calculs »
+ * (TesCalculs) donne le compte des calculs réalisés, par niveau et par matière. Les
  * matières pas encore ouvertes sont en bas, sur une ligne.
  *
  * Props : `subjects` (lib/calc/index → calcSubjectCards), `progress` (base,
@@ -31,10 +35,13 @@ export type CalcHubSubject = SubjectLite & { short: string; open: boolean; quest
  */
 export function CalcHub({ subjects, progress: server, db, owner }: { subjects: CalcHubSubject[]; progress: AllProgress | null; db: boolean; owner: string }) {
   useLocalImport(db, owner);
-  const { progress } = useCalcProgress(server, owner);
+  const { progress, ready } = useCalcProgress(server, owner);
   const open = subjects.filter((s) => s.open);
   const soon = subjects.filter((s) => !s.open);
   const sug = suggest(open, progress);
+  // « Tes calculs » : la base (somme de calc_progress) ou, à défaut, le navigateur ; sans calcul lisible hors base, la section ne s'affiche pas
+  const compte = calcCounts(progress, open.map((s) => s.topic));
+  const compteVisible = open.length > 0 && (server !== null || (ready && compte.total.n > 0));
 
   // chiffres par matière ouverte, et ses calculs les plus fragiles (entamés, pas encore tenus aux trois niveaux)
   const stats = open.map((s) => {
@@ -148,6 +155,7 @@ export function CalcHub({ subjects, progress: server, db, owner }: { subjects: C
               />
             }
           />
+          {open.length > 0 && <CarteSession />}
           <Bande
             icone={<Icone nom="entrainer" size={22} />}
             titre={ABAQUE.suiteTitre}
@@ -158,6 +166,7 @@ export function CalcHub({ subjects, progress: server, db, owner }: { subjects: C
         </div>
       }
     >
+      {compteVisible && <TesCalculs counts={compte} noms={Object.fromEntries(open.map((s) => [s.topic, s.short]))} local={server === null} />}
       {soon.length > 0 && (
         <Section id="calc-bientot" titre={CALC.bientot} meta={ABAQUE.bientotMeta(soon.length)}>
           <div className="card-quiet p-5 md:p-6">
@@ -173,5 +182,38 @@ export function CalcHub({ subjects, progress: server, db, owner }: { subjects: C
         </Section>
       )}
     </Page>
+  );
+}
+
+/**
+ * La session ciblée : choisir ses matières, le nombre de questions et la
+ * difficulté (un niveau ou un mélange), puis tirer des calculs sur mesure.
+ * Une carte de la même facture que le héros, avec une seule action en encre.
+ */
+function CarteSession() {
+  return (
+    <section className="card-hero rl-in flex flex-col gap-5 p-6 md:flex-row md:items-center md:gap-7 md:p-7" aria-labelledby="calc-session-t" style={{ animationDelay: ".08s" }}>
+      <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-surface">
+        <SlidersHorizontal size={22} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="t-eyebrow">{SESSION.hubKicker}</p>
+        <h2 id="calc-session-t" className="t-h2 m-0 mt-1.5">
+          {SESSION.nom}
+        </h2>
+        <p className="t-small m-0 mt-2 max-w-[560px]">{SESSION.hubLigne}</p>
+        <ul className="m-0 mt-3.5 flex list-none flex-wrap gap-2 p-0">
+          {SESSION.hubPoints.map((p) => (
+            <li key={p} className="chip chip-quiet chip-sm">
+              {p}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <Link href="/calculs/session" className="btn btn-primary btn-lg rl-press w-full shrink-0 justify-center md:w-auto">
+        {SESSION.hubAction}
+        <ArrowRight size={17} aria-hidden />
+      </Link>
+    </section>
   );
 }

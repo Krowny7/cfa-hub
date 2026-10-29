@@ -11,7 +11,7 @@ import { Feuille } from "@/components/ui/Feuille";
 import { poserTrait } from "@/components/adn/AnneauDuJourEvents";
 import { AtelierCalcul, type CorrigeCalc } from "@/components/atelier/AtelierCalcul";
 import { BlocRappel, CarteRappel } from "@/components/atelier/AtelierRappel";
-import { DUREE_S, avancement, compteNotion, planifier, prochaineEtape, type EtatAtelier, type Etape, type RappelVu, type Reponse } from "@/lib/atelier";
+import { avancement, compteNotion, formatDe, planifier, prochaineEtape, type EtatAtelier, type Etape, type RappelVu, type Reponse } from "@/lib/atelier";
 import { itemsPool, type ApiAtelier, type ItemCalc, type ItemQcm, type ItemSeance, type RappelNotion, type SeanceAtelier } from "@/lib/atelier-seance";
 import { ATELIER as V, BLOC_NOM, NIVEAU_CALCUL, NIVEAU_QUESTION } from "@/lib/voice-atelier";
 import PctScore from "@/components/adn/PctScore";
@@ -64,7 +64,8 @@ export function AtelierSeance({
   const haut = useRef<HTMLDivElement | null>(null);
 
   const pool = useMemo(() => itemsPool(seance), [seance]);
-  const plan = useMemo(() => planifier(pool), [pool]);
+  const format = formatDe(seance.notions.length);
+  const plan = useMemo(() => planifier(pool, seance.notions.length), [pool, seance.notions.length]);
   const parI = useMemo(() => new Map(seance.items.map((x) => [x.i, x])), [seance.items]);
   const reussiteAvant = useMemo(
     () => Object.fromEntries(seance.notions.map((n) => [n, seance.avant[n] && seance.avant[n].n > 0 ? seance.avant[n].ok / seance.avant[n].n : null])),
@@ -217,9 +218,9 @@ export function AtelierSeance({
     <div ref={haut} className="grid scroll-mt-24 gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
       {/* En-tête : le chrono (l'anneau se remplit avec le temps), le bloc, le rappel, l'arrêt */}
       <header className="sticky top-[72px] z-30 flex items-center gap-3 rounded-[18px] border border-line bg-surface/90 px-3 py-2 shadow-[var(--shadow-1)] backdrop-blur-md md:px-4 lg:col-span-2">
-        <span role="timer" aria-label={V.chronoLabel(secondes)} className="flex items-center gap-2">
-          <InkProgressRing pct={Math.min(100, (secondes / DUREE_S) * 100)} size={34} delay={0} />
-          <span className="font-mono text-[14px] font-semibold tabular-nums">{V.chrono(secondes)}</span>
+        <span role="timer" aria-label={V.chronoLabel(secondes, format.duree)} className="flex items-center gap-2">
+          <InkProgressRing pct={Math.min(100, (secondes / format.duree) * 100)} size={34} delay={0} />
+          <span className="font-mono text-[14px] font-semibold tabular-nums">{V.chrono(secondes, format.duree)}</span>
         </span>
         {/* téléphone : le nom court du bloc (« 3/5 · Neuves »), pour qu'il tienne en entier */}
         <span className="t-micro min-w-0 flex-1 truncate font-semibold">

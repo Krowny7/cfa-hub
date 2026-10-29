@@ -350,7 +350,7 @@ export const QUETES_TRAME: Quete[] = [
     ["fiche", "La première fiche", "Lis une page de fiche et passe son drill de 15 questions.", compte("drill_page_terminee", 1), 40, "/fiches", 20],
     ["cinq", "Les 5 du jour", "Rends les 5 du jour.", compte("cinq_rendu", 1), 30, "/defi/cinq", 5],
     ["rature", "Gratter le vélin", "Reprends une question ratée et réussis-la : ta première rature rayée.", compte("rature_rayee", 1), 40, undefined, 5],
-    ["atelier", "Une demi-heure à l'Atelier", "Fais une séance d'Atelier sur tes points faibles.", compte("seance_atelier", 1), 50, "/atelier", 30],
+    ["atelier", "Un quart d'heure à l'Atelier", "Fais une séance d'Atelier sur ta notion la plus faible.", compte("seance_atelier", 1), 50, "/atelier", 15],
     ["duel", "Croiser le fer", "Joue ton premier duel.", compte("duel_termine", 1), 40, "/duel", 10],
     ["calcul", "La règle et le compas", "Réponds juste à 5 calculs.", compte("calcul_repondu", 5, { juste: true }), 30, "/calculs", 10],
   ] as const).map(([cle, titre, consigne, objectif, xp, lien, duree], i) =>
@@ -426,7 +426,7 @@ export const CHAINES: Chaine[] = [
   { id: "remontee", titre: "La remontée", axe: "maitrise", pourquoi: "Transformer un point faible en point fort, matière par matière." },
   { id: "calculs", titre: "Le calcul juste", axe: "methode", pourquoi: "Les formules à la calculatrice, sans hésiter : du temps gagné pour le reste.", requiert: ["calculs"] },
   { id: "sources", titre: "Les sources", axe: "couverture", pourquoi: "Les fiches et leurs drills, page après page : la base du cours.", requiert: ["drill"] },
-  { id: "atelier", titre: "L'Atelier", axe: "methode", pourquoi: "Trente minutes sur ce qui coince, et des ratures qui tombent.", requiert: ["atelier"] },
+  { id: "atelier", titre: "L'Atelier", axe: "methode", pourquoi: "Un quart d'heure sur ce qui coince, et des ratures qui tombent.", requiert: ["atelier"] },
   { id: "trentaine", titre: "La trentaine", axe: "examens", pourquoi: "Les 30 du jour, chronométrés : le rythme de l'examen en petit.", requiert: ["trente"] },
   { id: "rythme", titre: "Le rythme", axe: "regularite", pourquoi: "Tenir la cadence prévue jusqu'à ta date, semaine après semaine." },
   { id: "joute", titre: "La joute", axe: "competition", pourquoi: "La compétition qui fait réviser : les paliers du haut demandent de la maîtrise.", requiert: ["duels"] },

@@ -4,7 +4,7 @@
 //   "lanterne" / "plume" / "propre" / "sablier"  le tampon rond à l'encre rouge
 //             (filet intérieur), un motif neutre en réserve couleur papier :
 //             la lanterne à huile du bureau de Léonard, une pointe de plume,
-//             la ligne raturée remise au propre, le sablier des 30 minutes
+//             la ligne raturée remise au propre, le sablier des 15 minutes
 //   "sceau"   l'ancien tampon, marteau et plume croisés (gardé pour comparer)
 //   "outil"   la plume-marteau à l'encre noire : la plume dont le bout est un marteau
 //   "barre"   le A de l'Atelier, sa barre posée au stylo rouge (le trait qui

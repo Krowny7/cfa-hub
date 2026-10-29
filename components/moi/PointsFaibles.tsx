@@ -20,8 +20,8 @@ import { ATELIER } from "@/lib/voice-atelier";
 // ligne s'ouvre sur ce qui coince (les concepts les plus chargés), ce que la
 // phrase ne dit pas, les liens (page de fiche, chapitre audio, QCM, type de
 // calcul), « Mettre au propre » limité à la notion et, dès que l'Atelier est
-// ouvert, « Atelier sur cette seule notion » ; la carte mène à l'Atelier
-// (30 minutes sur les trois premiers). Les données arrivent
+// ouvert, « Atelier sur cette notion » ; la carte mène à l'Atelier
+// (15 minutes sur la première). Les données arrivent
 // toutes prêtes (components/moi/points-faibles-data.ts,
 // côté serveur) ; seul « Dernier passage il y a N semaines » se calcule ici,
 // après le montage.
@@ -88,7 +88,7 @@ const peutPropre = (p: PointFaible, propre: boolean) => propre && p.mesures.aRep
 const repriseDe = (p: PointFaible) => ({ notion: p.lm, sets: p.sets, libelle: p.libelle });
 const ATELIER_HREF = "/atelier";
 
-/** « Atelier · 30 min », ou « Reprendre l'Atelier » quand un Atelier est en cours. */
+/** « Atelier · 15 min », ou « Reprendre l'Atelier » quand un Atelier est en cours. */
 function LienAtelier({ d, className }: { d: PointsFaiblesData; className: string }) {
   if (!d.atelier) return null;
   return (
@@ -114,7 +114,7 @@ function LignePointFaible({
   onOuvrir: () => void;
   propre: boolean;
   onPropre: () => void;
-  /** l'Atelier est ouvert : « Atelier sur cette seule notion » */
+  /** l'Atelier est ouvert : « Atelier sur cette notion » */
   atelier: boolean;
   now: number | null;
 }) {

@@ -269,6 +269,20 @@
 .points i.allume {
   opacity: 1;
 }
+/* le petit lien vers la session ciblée de calculs (zone de toucher de 44 px sans alourdir la carte) */
+.lienSession {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-block: -8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sur-nuit);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
 .niveau1 {
   background: #ffe29a;
   border-color: #fbe29a;

@@ -8,6 +8,7 @@ import { Explanation } from "@/components/session/parts";
 import { Rature } from "@/components/adn/Rature";
 import { rubriqueDe } from "@/components/moi/marquees-data";
 import { quandSeche, rpcCalcul } from "@/components/moi/ratures-data";
+import { texteGain } from "@/lib/serie-encre";
 import { CARNET, SOURCES_RATURE } from "@/lib/voice-z1";
 
 // « Mettre au propre » (Moi › Erreurs) : les ratures en cours repassées une
@@ -55,6 +56,10 @@ type Resultat = {
   statut: string;
   /** fraîche : quand elle sèche */
   secheLe: string | null;
+  /** XP gagnée (bonus de la série compris), 0 si rien ; migration_ratures_xp.sql */
+  xp: number;
+  /** palier de la série d'encre appliqué à cette XP (1 : aucun) */
+  mult: number;
 };
 
 type QuestionTiree = { question_id: string; prompt: string; choices: string[]; sources: string[]; set_title: string | null; folder_name: string | null };
@@ -188,6 +193,9 @@ export function MiseAuPropre({
       selected_index: number;
       statut: string;
       seche_le?: string | null;
+      /** absents tant que migration_ratures_xp.sql n'est pas collée : rien ne s'affiche */
+      xp?: number | null;
+      multiplicateur?: number | null;
     };
     vues.current = [...vues.current, tiree.questionId];
     setResultat({
@@ -197,6 +205,8 @@ export function MiseAuPropre({
       choisi: r.selected_index,
       statut: r.statut,
       secheLe: r.seche_le ?? null,
+      xp: r.is_correct ? Math.max(0, Number(r.xp) || 0) : 0,
+      mult: Number(r.multiplicateur) || 1,
     });
     setReste((n) => (n === null ? n : Math.max(0, n - 1)));
     setBilan((b) =>
@@ -383,6 +393,7 @@ export function MiseAuPropre({
                 : ({ rayee: CARNET.propreRayee, reste: CARNET.propreReste, ancienne: CARNET.rejouerAcquise, scellee: CARNET.rejouerScellee, revenue: CARNET.rejouerRevenue }[
                     resultat.statut
                   ] ?? (resultat.juste ? CARNET.propreRayee : CARNET.propreReste))}
+              {resultat.xp > 0 && <span className="chip chip-quiet chip-sm ml-2 align-middle text-white">{texteGain(resultat.xp, resultat.mult)}</span>}
             </p>
           )}
           {resultat?.explication && <Explanation text={resultat.explication} />}

@@ -1,7 +1,11 @@
 // Tests de l'Atelier : lib/atelier.ts (poids, plan, blocs absents remplacés
 // par des questions neuves, alternance des notions selon leur poids, carte
 // Rappel après deux fautes, question plus facile puis plus dure, notion
-// tenue, chrono qui commande, plafond, re-test, bilan avant / pendant),
+// tenue, chrono qui commande, plafond, re-test, bilan avant / pendant).
+// Deux formats : une seule notion (15 minutes : 4 ratures, 4 neuves,
+// 2 calculs, 2 re-tests), et l'ancien format de 30 minutes que gardent les
+// Ateliers à plusieurs notions déjà en cours (8 / 8 / 4 / 4) : leurs tests
+// jouent à 3 notions. Puis,
 // le prochain Atelier conseillé, ce que Léonard dit du bilan, le pool
 // jouable (question retirée de la banque, calcul disparu), et une
 // séance entière jouée au hasard (toujours une fin, jamais de question
@@ -69,15 +73,20 @@ function jouer(e, plan, ok = true) {
   return et;
 }
 
-console.log("# Poids et plan");
+console.log("# Formats, poids et plan (ancien format, 3 notions)");
 check("poids : 100 ; 70/30 ; 60/25/15", A.poidsDe(1).join() === "100" && A.poidsDe(2).join() === "70,30" && A.poidsDe(3).join() === "60,25,15");
-let plan = A.planifier(PLEIN);
+check("formatDe : une notion = 15 min (bascule 10, plafond 16) ; plusieurs = 30 min (20, 32)", (() => {
+  const c = A.formatDe(1);
+  const l = A.formatDe(2);
+  return c === A.FORMAT_COURT && c.duree === 900 && c.basculeRetest === 600 && c.plafond === 960 && l === A.FORMAT_LONG && A.formatDe(3) === A.FORMAT_LONG && l.duree === 1800 && l.basculeRetest === 1200 && l.plafond === 1920;
+})());
+let plan = A.planifier(PLEIN, 3);
 check("pool plein : 8 ratures, 8 neuves, 4 calculs, 4 re-tests", plan.ratures === 8 && plan.neuves === 8 && plan.calcul === 4 && plan.retest === 4, JSON.stringify(plan));
-const peuDeRatures = A.planifier(pool([["rature", N1, 3], ["neuve", N1, 30], ["calc", N1, 6]]));
+const peuDeRatures = A.planifier(pool([["rature", N1, 3], ["neuve", N1, 30], ["calc", N1, 6]]), 3);
 check("3 ratures seulement : 5 neuves de plus (13)", peuDeRatures.ratures === 3 && peuDeRatures.neuves === 13);
-const sansCalcul = A.planifier(pool([["rature", N1, 8], ["neuve", N1, 30]]));
+const sansCalcul = A.planifier(pool([["rature", N1, 8], ["neuve", N1, 30]]), 3);
 check("sans calcul : 4 neuves de plus (12), bloc calcul vide", sansCalcul.neuves === 12 && sansCalcul.calcul === 0);
-const rien = A.planifier(pool([["neuve", N1, 5]]));
+const rien = A.planifier(pool([["neuve", N1, 5]]), 3);
 check("peu de neuves : la cible suit ce qu'il y a (5)", rien.neuves === 5 && rien.ratures === 0);
 
 console.log("\n# Ouverture et ratures");
@@ -142,7 +151,7 @@ console.log("\n# Notion tenue");
 e = etat(pool([["neuve", N1, 20], ["neuve", N2, 20]]), { notions: [N1, N2], poids: [70, 30] });
 for (const x of e.items.filter((y) => y.notion === N1).slice(0, 6)) e.reponses.push({ i: x.i, ok: true, retest: false });
 check("6 sur 6 : tenue, son poids passe à l'autre", A.estTenue(A.compteNotion(e, N1)) && A.poidsEffectifs(e).join() === "0,30");
-check("les questions suivantes vont à l'autre notion", [0, 1, 2].every(() => itemDe(e, jouer(e, A.planifier(e.items)).i).notion === N2));
+check("les questions suivantes vont à l'autre notion", [0, 1, 2].every(() => itemDe(e, jouer(e, A.planifier(e.items, 2)).i).notion === N2));
 check("5 sur 6 (83 %) : tenue ; 4 sur 6 : non", A.estTenue({ n: 6, ok: 5 }) && !A.estTenue({ n: 6, ok: 4 }) && !A.estTenue({ n: 5, ok: 5 }));
 e = etat(pool([["neuve", N1, 20], ["neuve", N2, 1]]), { notions: [N1, N2], poids: [70, 30] });
 for (const x of e.items.filter((y) => y.notion === N1).slice(0, 6)) e.reponses.push({ i: x.i, ok: true, retest: false });
@@ -154,7 +163,7 @@ check("toutes tenues : les poids d'origine", (() => {
   return A.poidsEffectifs(x).join() === "100";
 })());
 
-console.log("\n# Le chrono commande");
+console.log("\n# Le chrono commande (ancien format : 20 et 32 minutes)");
 e = etat(PLEIN);
 for (let k = 0; k < 8; k++) jouer(e, plan, false);
 for (let k = 0; k < 3; k++) jouer(e, plan, true);
@@ -189,15 +198,15 @@ check("le rappel d'une faute passe avant le plafond (la carte n'est jamais coup�
 
 console.log("\n# Jamais de bloc vide");
 e = etat(pool([["neuve", N1, 20]]), { notions: [N1], poids: [100] });
-const p1 = A.planifier(e.items);
+const p1 = A.planifier(e.items, 1);
 et = A.prochaineEtape(e, p1);
 check("sans rature : droit aux questions neuves", et.type === "question" && et.bloc === "neuves");
-check("20 neuves (8, plus 8 à la place des ratures, plus 4 sans calcul), puis le bilan (tout juste)", (() => {
+check("10 neuves (4, plus 4 à la place des ratures, plus 2 sans calcul), puis le bilan (tout juste)", (() => {
   let k = 0;
   while (A.prochaineEtape(e, p1).type === "question" && k < 50) { jouer(e, p1, true); k++; }
-  return k === 20 && A.prochaineEtape(e, p1).type === "fin";
+  return k === 10 && A.prochaineEtape(e, p1).type === "fin";
 })(), String(e.reponses.length));
-check("pool vide : le bilan d'emblée", A.prochaineEtape(etat([], { notions: [N1], poids: [100] }), A.planifier([])).type === "fin");
+check("pool vide : le bilan d'emblée", A.prochaineEtape(etat([], { notions: [N1], poids: [100] }), A.planifier([], 1)).type === "fin");
 const blocs = A.avancement(etat(pool([["neuve", N1, 20]]), { notions: [N1], poids: [100] }), p1, { type: "question", i: 0, bloc: "neuves", retest: false });
 check("le plan affiché n'a ni bloc ratures ni bloc calcul vides", blocs.map((b) => b.bloc).join() === "rappel,neuves,retest", blocs.map((b) => b.bloc).join());
 
@@ -257,7 +266,7 @@ for (let s = 0; s < 200; s++) {
     ["calc", N3, Math.floor(hasard() * 5), 2],
   ];
   const x = etat(pool(spec), { rappels: [] });
-  const p = A.planifier(x.items);
+  const p = A.planifier(x.items, 3);
   let pas = 0;
   let t;
   do {
@@ -275,6 +284,108 @@ check("toujours une fin", toujoursFin);
 check("jamais une question hors du pool", jamaisIntrouvable);
 check("jamais deux fois le même rappel d'affilée", rappelsOk);
 check("au plus 24 réponses (20 au premier passage, calculs compris, et 4 re-tests)", pire <= 24, String(pire));
+
+console.log("\n# Une seule notion : 15 minutes");
+const etat1 = (items, extra = {}) => etat(items, { notions: [N1], poids: [100], reussiteAvant: { [N1]: 0.4 }, ...extra });
+const PLEIN1 = pool([["rature", N1, 16], ["neuve", N1, 24], ["calc", N1, 4, 2], ["calc", N1, 2, 1]]);
+const plan1 = A.planifier(PLEIN1, 1);
+check("pool plein (celui du serveur : 16 ratures, 24 neuves) : 4 ratures, 4 neuves, 2 calculs, 2 re-tests", plan1.ratures === 4 && plan1.neuves === 4 && plan1.calcul === 2 && plan1.retest === 2, JSON.stringify(plan1));
+const peu1 = A.planifier(pool([["rature", N1, 3], ["neuve", N1, 30], ["calc", N1, 6]]), 1);
+check("3 ratures seulement : 1 neuve de plus (5)", peu1.ratures === 3 && peu1.neuves === 5);
+const sans1 = A.planifier(pool([["rature", N1, 8], ["neuve", N1, 30]]), 1);
+check("sans calcul : 2 neuves de plus (6), bloc calcul vide", sans1.neuves === 6 && sans1.calcul === 0);
+// la séance jouée tout juste : rappel, 4 ratures, 4 neuves, 2 calculs, puis le bilan (rien à reposer)
+e = etat1(PLEIN1, { rappels: [] });
+et = A.prochaineEtape(e, plan1);
+check("d'abord la carte Rappel de la notion", et.type === "rappel" && et.raison === "ouverture" && et.notions.join() === N1);
+e.rappels.push({ notion: null, apres: 0 });
+const blocsJoues = [];
+for (let k = 0; k < 20 && A.prochaineEtape(e, plan1).type === "question"; k++) blocsJoues.push(jouer(e, plan1, true).bloc);
+check("puis 4 ratures, 4 neuves, 2 calculs, dans cet ordre", blocsJoues.join() === "ratures,ratures,ratures,ratures,neuves,neuves,neuves,neuves,calcul,calcul", blocsJoues.join());
+check("… et le bilan (10 réponses, rien de manqué)", A.prochaineEtape(e, plan1).type === "fin" && A.prochaineEtape(e, plan1).raison === "fini" && e.reponses.length === 10);
+// tout manqué : 10 réponses, 2 re-tests au plus
+e = etat1(PLEIN1);
+// (une carte Rappel s'intercale après deux fautes de suite : on joue jusqu'à 10 réponses)
+for (let k = 0; k < 40 && e.reponses.length < 10; k++) jouer(e, plan1, false);
+const retests1 = [];
+for (let k = 0; k < 5; k++) {
+  const t = jouer(e, plan1, false);
+  if (t.type === "question") retests1.push(t.i);
+}
+check("tout manqué : 2 re-tests au plus, puis le bilan", retests1.length === 2 && new Set(retests1).size === 2 && A.prochaineEtape(e, plan1).type === "fin" && e.reponses.length === 12, String(e.reponses.length));
+// le chrono : 10 minutes (bascule), 16 minutes (plafond)
+e = etat1(PLEIN1);
+for (let k = 0; k < 40 && e.reponses.length < 4; k++) jouer(e, plan1, false);
+for (let k = 0; k < 2; k++) jouer(e, plan1, true);
+e.secondes = 9 * 60 + 59;
+check("9 min 59 : toujours les questions neuves", (() => { const t = A.prochaineEtape(e, plan1); return t.type === "question" && t.bloc === "neuves"; })());
+e.secondes = 10 * 60;
+et = A.prochaineEtape(e, plan1);
+check("10 minutes, neuves pas finies : le re-test (le calcul saute)", et.type === "question" && et.bloc === "retest" && et.retest);
+e.secondes = 11 * 60;
+for (let k = 0; k < 2; k++) jouer(e, plan1, true);
+check("… 2 re-tests, puis le bilan", A.prochaineEtape(e, plan1).type === "fin" && A.prochaineEtape(e, plan1).raison === "fini");
+e = etat1(PLEIN1);
+for (let k = 0; k < 8; k++) jouer(e, plan1, true);
+e.secondes = 12 * 60;
+et = A.prochaineEtape(e, plan1);
+check("neuves finies avant 10 minutes : le calcul continue après", et.type === "question" && et.bloc === "calcul");
+e.secondes = 15 * 60 + 59;
+check("15 min 59 : la séance continue (calcul)", A.prochaineEtape(e, plan1).type === "question");
+e.secondes = 16 * 60;
+check("16 minutes (plafond doux) : le bilan", A.prochaineEtape(e, plan1).type === "fin" && A.prochaineEtape(e, plan1).raison === "plafond");
+const av1 = A.avancement(etat1(PLEIN1), plan1, { type: "question", i: 0, bloc: "ratures", retest: false });
+check("le plan affiché : rappel fait, ratures 0/4, neuves 0/4, calcul 0/2, re-test 0/2", av1.map((b) => `${b.bloc}:${b.fait}/${b.cible}`).join() === "rappel:1/1,ratures:0/4,neuves:0/4,calcul:0/2,retest:0/2", av1.map((b) => `${b.bloc}:${b.fait}/${b.cible}`).join());
+// la notion seule garde son poids même « tenue » (rien à laisser aux autres)
+e = etat1(PLEIN1);
+for (const x of e.items.filter((y) => y.k === "neuve").slice(0, 6)) e.reponses.push({ i: x.i, ok: true, retest: false });
+check("seule et tenue : elle garde son poids, la question suivante existe", A.estTenue(A.compteNotion(e, N1)) && A.poidsEffectifs(e).join() === "100" && A.choisir(e, "neuves") !== null);
+
+console.log("\n# Un ancien Atelier à plusieurs notions se reprend et se termine dans son format de 30 minutes");
+const ancien = etat(PLEIN, { notions: [N1, N2], poids: [70, 30] });
+ancien.secondes = 17 * 60;
+check("2 notions à 17 minutes : les questions continuent (le plafond court ne s'applique pas)", A.prochaineEtape(ancien, A.planifier(PLEIN, 2)).type === "question");
+const memePool1 = etat1(PLEIN);
+memePool1.secondes = 17 * 60;
+check("… la même séance à une seule notion est au-delà du plafond (16 minutes) : le bilan", A.prochaineEtape(memePool1, A.planifier(PLEIN, 1)).type === "fin");
+check("2 notions : la cible reste celle de l'ancien format (8 ratures, 8 neuves, 4 calculs, 4 re-tests)", (() => {
+  const p = A.planifier(PLEIN, 2);
+  return p.ratures === 8 && p.neuves === 8 && p.calcul === 4 && p.retest === 4;
+})());
+check("le bilan d'un ancien Atelier se calcule (3 notions, réponses mêlées)", (() => {
+  const x = etat(PLEIN);
+  const p = A.planifier(x.items, 3);
+  for (let k = 0; k < 30 && A.prochaineEtape(x, p).type !== "fin"; k++) {
+    jouer(x, p, k % 3 !== 0);
+    x.secondes += 50;
+  }
+  const bi = A.bilan(x, { [N1]: { n: 20, ok: 8, enCours: 12, vives: 8, calc: null } });
+  return bi.notions.length === 3 && bi.total === x.reponses.filter((r) => !r.retest).length;
+})());
+
+console.log("\n# Une seule notion, au hasard (200 tirages, pool du serveur plus ou moins fourni)");
+let pire1 = 0;
+let fin1 = true;
+let introuvable1 = false;
+for (let s = 0; s < 200; s++) {
+  let graine = s + 7;
+  const hasard = () => ((graine = (graine * 16807) % 2147483647) / 2147483647);
+  const x = etat1(pool([["rature", N1, Math.floor(hasard() * 17)], ["neuve", N1, Math.floor(hasard() * 25)], ["calc", N1, Math.floor(hasard() * 5), 2], ["calc", N1, Math.floor(hasard() * 3), 1]]), { rappels: [] });
+  const p = A.planifier(x.items, 1);
+  let pas = 0;
+  let t;
+  do {
+    t = A.prochaineEtape(x, p);
+    if (t.type === "question" && !itemDe(x, t.i)) introuvable1 = true;
+    if (t.type !== "fin") jouer(x, p, () => hasard() < 0.5);
+    x.secondes += 40 + Math.floor(hasard() * 50);
+    pas++;
+  } while (t.type !== "fin" && pas < 100);
+  if (t.type !== "fin") fin1 = false;
+  pire1 = Math.max(pire1, x.reponses.length);
+}
+check("toujours une fin, jamais une question hors du pool", fin1 && !introuvable1);
+check("au plus 12 réponses (10 au premier passage, calculs compris, et 2 re-tests)", pire1 <= 12, String(pire1));
 
 console.log("\n# Le prochain Atelier conseillé");
 check("conseil : demain sous 60 %, après-demain sous 80 %, sinon une semaine", A.conseilDe(11, 20) === "demain" && A.conseilDe(12, 20) === "apres-demain" && A.conseilDe(15, 20) === "apres-demain" && A.conseilDe(16, 20) === "semaine" && A.conseilDe(0, 0) === "demain");

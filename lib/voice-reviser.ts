@@ -50,7 +50,7 @@ export const RV = {
   // l'Atelier : revoir mes erreurs
   atelier: "L'Atelier",
   atelierSous: "Revoir mes erreurs, jusqu'à ce qu'elles tiennent.",
-  atelierEtat: "Une séance de 30 minutes sur tes points faibles : rappel, ratures, questions neuves, puis le bilan avant/après.",
+  atelierEtat: "Une séance de 15 minutes sur ta notion la plus faible : rappel, ratures, questions neuves, puis le bilan avant/après.",
   atelierAction: "Ouvrir l'Atelier",
   carnetTitre: "Carnet de ratures",
   carnetNeutre: "brouillon",

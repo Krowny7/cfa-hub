@@ -14,6 +14,8 @@ import {
   type CalcAttempt,
   type CalcQuestionPublic,
 } from "@/lib/calc/engine";
+import { drawSession } from "@/lib/calc/session-draw";
+import type { ParNiveau, SessionItem, SessionPlan, SessionTypeInfo } from "@/lib/calc/session";
 import { CALC_LEVELS, type CalcLevel, type CalcTopic } from "@/lib/calc/types";
 import { loadCalcHistory } from "./data";
 
@@ -27,6 +29,10 @@ import { loadCalcHistory } from "./data";
 export type LocalSeen = { q: string; c: boolean; a: number };
 
 export type DrawResult = { ok: true; questions: CalcQuestionPublic[] } | { ok: false; error: string };
+
+export type SessionDrawResult =
+  | { ok: true; items: SessionItem[]; types: Record<string, SessionTypeInfo>; plan: SessionPlan }
+  | { ok: false; error: string };
 
 export type SubmitResult =
   | { ok: true; status: "format"; hint: string }
@@ -68,6 +74,18 @@ export async function drawCalcRound(input: { topic: CalcTopic; typeKey: string; 
     return q ? [publicQuestion(q)] : [];
   });
   return { ok: true, questions };
+}
+
+/**
+ * Tire une session ciblée : N questions réparties entre les niveaux selon le
+ * mélange, sans doublon, mêlées (lib/calc/session-draw.ts). Comme pour un
+ * round, seuls les énoncés partent vers le navigateur ; chaque réponse est
+ * ensuite corrigée et inscrite par submitCalcAnswer.
+ */
+export async function drawCalcSession(input: { topics: CalcTopic[]; count: number; mix: ParNiveau }): Promise<SessionDrawResult> {
+  const d = drawSession({ topics: input?.topics, count: input?.count, mix: input?.mix });
+  if (!d || !d.items.length) return { ok: false, error: "Pas de questions pour ces réglages. Change de matière ou de niveau." };
+  return { ok: true, items: d.items, types: d.types, plan: d.plan };
 }
 
 /** Corrige une réponse et l'inscrit au journal (si la migration est là). */

@@ -25,9 +25,9 @@ function admin() {
   }
 }
 
-/** Lance un Atelier sur 1 à 3 notions (ou rend celui en cours). */
+/** Lance un Atelier sur UNE notion, la première donnée (ou rend celui en cours). */
 export async function lancerAtelier(notions: string[]): Promise<ResultatLancer> {
-  const liste = Array.isArray(notions) ? notions.filter((x) => typeof x === "string").slice(0, 3) : [];
+  const liste = Array.isArray(notions) ? notions.filter((x) => typeof x === "string").slice(0, 1) : [];
   if (!liste.length) return { kind: "vide" };
   const sb = await createClient();
   const { data: auth } = await sb.auth.getUser();

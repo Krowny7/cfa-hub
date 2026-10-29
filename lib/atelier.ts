@@ -1,24 +1,31 @@
-// L'Atelier : la séance de remise à niveau (environ 30 minutes) sur 1 à 3
-// notions faibles, pondérées 60/25/15 (70/30 à deux, 100 seule). Module pur
-// (ni serveur ni client), testé par scripts/test-atelier.mjs.
+// L'Atelier : la séance de remise à niveau (environ 15 minutes) sur UNE
+// notion, la plus faible. Module pur (ni serveur ni client), testé par
+// scripts/test-atelier.mjs.
 //
-// Le serveur (migration_atelier.sql) prépare un pool d'environ deux fois les
-// questions nécessaires et corrige ; ici, l'enchaînement :
-// - planifier(items) : la cible de chaque bloc. Rappel (une carte par
-//   notion), 8 ratures, 8 questions neuves, 4 calculs, 4 re-tests au plus.
-//   Un bloc absent ou court est remplacé par des questions neuves (moins de
-//   ratures : autant de neuves en plus ; pas de calcul : 4 neuves de plus).
+// Le serveur (migration_atelier.sql) prépare un pool plus large que la
+// séance (jusqu'à 16 ratures et 24 questions neuves) et corrige ; ici,
+// l'enchaînement :
+// - planifier(items, nbNotions) : la cible de chaque bloc. Rappel (une carte),
+//   4 ratures, 4 questions neuves, 2 calculs, 2 re-tests au plus. Un bloc
+//   absent ou court est remplacé par des questions neuves (moins de ratures :
+//   autant de neuves en plus ; pas de calcul : 2 neuves de plus).
 // - prochaineEtape(etat, plan) : la carte ou la question suivante.
 //   · Deux fautes de suite sur une notion : une carte Rappel s'intercale, et
 //     la question suivante de la notion est plus facile (l'officielle, un
 //     calcul d'un niveau en dessous).
 //   · Trois justes de suite : la suivante est plus dure. Une notion tenue
-//     (80 % sur 6 réponses ou plus) laisse son poids aux autres.
-//   · Le chrono commande : à 20 minutes, si les questions neuves ne sont pas
-//     finies, on passe au re-test (le calcul saute) ; à 32 minutes (plafond
+//     (80 % sur 6 réponses ou plus) laisse son poids aux autres (utile aux
+//     anciens Ateliers à plusieurs notions ; seule, la notion garde son poids).
+//   · Le chrono commande : à 10 minutes, si les questions neuves ne sont pas
+//     finies, on passe au re-test (le calcul saute) ; à 16 minutes (plafond
 //     doux), plus de nouvelle question : le bilan. Le bilan n'est jamais coupé.
-// - bilan(…) : avant / pendant par notion, ratures avant et après, calcul,
-//   re-test, le prochain Atelier conseillé.
+// - bilan(…) : avant / pendant, ratures avant et après, calcul, re-test, le
+//   prochain Atelier conseillé.
+//
+// Les Ateliers lancés avant le passage à une seule notion (1 à 3 notions
+// pondérées 60/25/15, 70/30, 100 ; 30 minutes : 8 ratures, 8 neuves, 4 calculs,
+// 4 re-tests) se reprennent et se terminent dans leur format d'origine :
+// formatDe() le reconnaît à leur nombre de notions (plus d'une).
 
 export type Bloc = "rappel" | "ratures" | "neuves" | "calcul" | "retest";
 export const BLOCS: Bloc[] = ["rappel", "ratures", "neuves", "calcul", "retest"];
@@ -26,10 +33,33 @@ export type Nature = "rature" | "neuve" | "calc";
 /** 1 : l'officielle (ou un calcul facile) ; 2 : angle différent (moyen) ; 3 : plus dure (difficile) */
 export type Niveau = 1 | 2 | 3;
 
-export const DUREE_S = 30 * 60;
-export const BASCULE_RETEST_S = 20 * 60;
-export const PLAFOND_S = 32 * 60;
-export const CIBLE = { ratures: 8, neuves: 8, neuvesSansCalcul: 4, calcul: 4, retest: 4 } as const;
+/** La durée, les bascules du chrono et la cible de chaque bloc d'une séance. */
+export type Format = {
+  /** la durée visée (secondes) : le tour complet de l'anneau du chrono */
+  duree: number;
+  /** passé ce temps, les questions neuves pas finies : le re-test (le calcul saute) */
+  basculeRetest: number;
+  /** le plafond doux : plus de nouvelle question, le bilan */
+  plafond: number;
+  cible: { ratures: number; neuves: number; neuvesSansCalcul: number; calcul: number; retest: number };
+};
+
+/** Une séance d'une seule notion : 15 minutes, 4 ratures, 4 neuves, 2 calculs, 2 re-tests. */
+export const FORMAT_COURT: Format = {
+  duree: 15 * 60,
+  basculeRetest: 10 * 60,
+  plafond: 16 * 60,
+  cible: { ratures: 4, neuves: 4, neuvesSansCalcul: 2, calcul: 2, retest: 2 },
+};
+/** L'ancien format, pour les Ateliers à plusieurs notions déjà en cours : 30 minutes, 8 ratures, 8 neuves, 4 calculs, 4 re-tests. */
+export const FORMAT_LONG: Format = {
+  duree: 30 * 60,
+  basculeRetest: 20 * 60,
+  plafond: 32 * 60,
+  cible: { ratures: 8, neuves: 8, neuvesSansCalcul: 4, calcul: 4, retest: 4 },
+};
+/** Le format d'une séance d'après son nombre de notions : une seule, le court ; plusieurs (un ancien Atelier encore en cours), le long. */
+export const formatDe = (nbNotions: number): Format => (nbNotions > 1 ? FORMAT_LONG : FORMAT_COURT);
 export const SERIE_FAUTES = 2;
 export const SERIE_JUSTES = 3;
 /** une notion « tenue » : au moins 6 réponses et 80 % de justes pendant l'Atelier */
@@ -39,7 +69,7 @@ export const SEUIL_PLUS_DURE = 0.6;
 
 const NATURE_DU_BLOC: Partial<Record<Bloc, Nature>> = { ratures: "rature", neuves: "neuve", calcul: "calc" };
 
-/** Les poids des notions, dans l'ordre (les mêmes qu'atelier_lancer). */
+/** Les poids des notions, dans l'ordre (les mêmes qu'atelier_lancer) : le site n'en lance plus qu'une (100), les autres sont ceux des anciens Ateliers. */
 export function poidsDe(n: number): number[] {
   return n <= 1 ? [100] : n === 2 ? [70, 30] : [60, 25, 15];
 }
@@ -69,13 +99,14 @@ export type Etape =
   | { type: "question"; i: number; bloc: Exclude<Bloc, "rappel">; retest: boolean }
   | { type: "fin"; raison: "fini" | "plafond" };
 
-/** La cible de chaque bloc, d'après le pool. */
-export function planifier(items: ItemPool[]): Plan {
+/** La cible de chaque bloc, d'après le pool et le format de la séance (nbNotions : 1 pour une séance actuelle, plus pour un ancien Atelier). */
+export function planifier(items: ItemPool[], nbNotions: number): Plan {
+  const cible = formatDe(nbNotions).cible;
   const nb = (k: Nature) => items.filter((x) => x.k === k).length;
-  const ratures = Math.min(CIBLE.ratures, nb("rature"));
-  const calcul = Math.min(CIBLE.calcul, nb("calc"));
-  const neuves = Math.min(nb("neuve"), CIBLE.neuves + (CIBLE.ratures - ratures) + (calcul === 0 ? CIBLE.neuvesSansCalcul : 0));
-  return { ratures, neuves, calcul, retest: CIBLE.retest };
+  const ratures = Math.min(cible.ratures, nb("rature"));
+  const calcul = Math.min(cible.calcul, nb("calc"));
+  const neuves = Math.min(nb("neuve"), cible.neuves + (cible.ratures - ratures) + (calcul === 0 ? cible.neuvesSansCalcul : 0));
+  return { ratures, neuves, calcul, retest: cible.retest };
 }
 
 const itemDe = (etat: EtatAtelier, i: number) => etat.items.find((x) => x.i === i) ?? null;
@@ -166,8 +197,8 @@ export function blocCourant(etat: EtatAtelier, plan: Plan): Exclude<Bloc, "rappe
     const ratures = enCours(etat, "rature", plan.ratures);
     const neuves = enCours(etat, "neuve", plan.neuves);
     if (ratures || neuves) {
-      // le chrono commande : à 20 minutes, le re-test (le calcul saute)
-      if (etat.secondes >= BASCULE_RETEST_S) return retestPossible() ? "retest" : null;
+      // le chrono commande : à 10 minutes (20 pour un ancien Atelier), le re-test (le calcul saute)
+      if (etat.secondes >= formatDe(etat.notions.length).basculeRetest) return retestPossible() ? "retest" : null;
       return ratures ? "ratures" : "neuves";
     }
     if (enCours(etat, "calc", plan.calcul)) return "calcul";
@@ -218,7 +249,7 @@ export function prochaineEtape(etat: EtatAtelier, plan: Plan): Etape {
       if (s.fautes >= SERIE_FAUTES && !etat.rappels.some((r) => r.notion === notion && r.apres > s.debut)) return { type: "rappel", notions: [notion], raison: "fautes" };
     }
   }
-  if (etat.secondes >= PLAFOND_S) return { type: "fin", raison: "plafond" };
+  if (etat.secondes >= formatDe(etat.notions.length).plafond) return { type: "fin", raison: "plafond" };
   const bloc = blocCourant(etat, plan);
   if (bloc === null) return { type: "fin", raison: "fini" };
   if (bloc === "retest") return { type: "question", i: aReposer(etat)[0], bloc, retest: true };

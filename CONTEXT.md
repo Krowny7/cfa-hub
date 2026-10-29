@@ -209,9 +209,10 @@ que `points_faibles()` répond et que les colonnes sont remplies
 l'étape 1 (`ratures_par_theme`). Une question sans notion reste comptée
 dans sa matière.
 
-L'Atelier (`/atelier`, `migration_atelier.sql`) : 30 minutes sur 1 à 3
-notions faibles (poids 60/25/15), en cinq blocs (rappel, ratures, questions
-neuves, calcul, re-test). Le serveur prépare le pool et corrige ; l'ordre
+L'Atelier (`/atelier`, `migration_atelier.sql`) : 15 minutes sur UNE notion,
+la plus faible (ou `?notion=`), en cinq blocs (rappel, 4 ratures, 4 questions
+neuves, 2 calculs, 2 re-tests). Un ancien Atelier à plusieurs notions encore
+en cours garde son format de 30 minutes (`formatDe` dans `lib/atelier.ts`). Le serveur prépare le pool et corrige ; l'ordre
 des questions, l'adaptation et le chrono sont dans `lib/atelier.ts` (pur,
 `node scripts/test-atelier.mjs`). Les calculs sont tirés et corrigés par les
 actions serveur (`app/atelier/actions.ts`) et notés avec la clé service

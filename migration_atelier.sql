@@ -1,8 +1,10 @@
--- L'Atelier (points faibles, étape 3) : une séance d'environ 30 minutes sur
--- ses 1 à 3 notions les plus faibles (poids 60/25/15, 70/30 ou 100), en cinq
--- blocs : rappel, ratures, questions neuves, calcul, re-test. L'ordre des
--- questions se décide dans le navigateur (lib/atelier.ts) ; ici, la sécurité
--- et la correction, comme les séries éclair :
+-- L'Atelier (points faibles, étape 3) : une séance d'environ 15 minutes sur
+-- UNE notion, la plus faible, en cinq blocs : rappel, ratures, questions
+-- neuves, calcul, re-test. (Le site ne lance plus qu'une notion ; atelier_lancer
+-- accepte toujours 1 à 3 notions, poids 60/25/15, 70/30 ou 100 : les anciens
+-- Ateliers à plusieurs notions se terminent dans leur format de 30 minutes.)
+-- L'ordre des questions se décide dans le navigateur (lib/atelier.ts) ; ici,
+-- la sécurité et la correction, comme les séries éclair :
 -- - atelier_lancer(p_notions) prépare un pool d'environ deux fois les
 --   questions nécessaires (ses ratures en cours, vives et anciennes d'abord ;
 --   des questions de la notion jamais vues, sinon les moins récentes, avec

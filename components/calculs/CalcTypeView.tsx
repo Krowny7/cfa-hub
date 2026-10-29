@@ -48,13 +48,15 @@ export type RoundItem = {
   /** la bonne réponse et la correction, reçues après la réponse */
   answer: number | null;
   solution: string[];
+  /** session ciblée : le type de calcul dont vient la question (un round, lui, n'en a qu'un) */
+  ref?: { topic: CalcTopic; typeKey: string };
 };
 
 type Phase = "choix" | "tirage" | "round" | "fin";
 
 type Api = {
   draw: (level: CalcLevel, local: LocalSeen[]) => Promise<DrawResult>;
-  submit: (q: CalcQuestionPublic, raw: string) => Promise<SubmitResult>;
+  submit: (q: CalcQuestionPublic, raw: string, it: RoundItem) => Promise<SubmitResult>;
 };
 
 type Props = {
@@ -182,9 +184,9 @@ export function CalcTypeView({ subject, meta, next, progress: server, db, owner,
   if (phase === "round" || phase === "tirage") {
     return (
       <RoundScreen
-        subject={subject}
+        title={meta.name}
+        sub={`${subject.name} · ${NIVEAU[level].label}`}
         meta={meta}
-        level={level}
         items={items}
         idx={idx}
         loading={phase === "tirage"}
@@ -318,7 +320,7 @@ function StateDot({ state }: { state: ReturnType<typeof levelState> }) {
   return <span aria-hidden className="block h-px w-4 bg-[repeating-linear-gradient(90deg,var(--pencil)_0_3px,transparent_3px_6px)]" />;
 }
 
-function Formulas({ meta }: { meta: CalcTypeMeta }) {
+function Formulas({ meta }: { meta: Pick<CalcTypeMeta, "formulas" | "traps"> }) {
   return (
     <>
       <p className="t-eyebrow">{CALC.rappel}</p>
@@ -350,32 +352,43 @@ function Formulas({ meta }: { meta: CalcTypeMeta }) {
 // ---------------------------------------------------------------------------
 // Le round : une question à la fois
 
-function RoundScreen({
-  subject,
+/**
+ * La question en cours d'un round ou d'une session : l'énoncé, la saisie, la
+ * correction immédiate. `title` / `sub` : l'en-tête mince (le type de calcul,
+ * puis matière et niveau) ; `meta` : le rappel de formules replié (null : pas
+ * de rappel) ; `total` : le nombre de questions attendues pendant le tirage ;
+ * `mots` remplace les libellés du round (tirage, avancement, arrêt).
+ */
+export function RoundScreen({
+  title,
+  sub,
   meta,
-  level,
   items,
   idx,
   loading,
+  total = ROUND_SIZE,
+  mots,
   api,
   onAnswered,
   onNext,
   onStop,
 }: {
-  subject: Props["subject"];
-  meta: CalcTypeMeta;
-  level: CalcLevel;
+  title: string;
+  sub: string;
+  meta: Pick<CalcTypeMeta, "formulas" | "traps"> | null;
   items: RoundItem[];
   idx: number;
   loading: boolean;
-  api: Api;
+  total?: number;
+  mots?: { tirage?: string; progression?: (fait: number, n: number) => string; arreter?: string };
+  api: Pick<Api, "submit">;
   onAnswered: (i: number, raw: string, r: Extract<SubmitResult, { ok: true; status: "juste" | "faux" }>) => void;
   onNext: () => void;
   onStop: () => void;
 }) {
   const cur = items[idx];
   const answered = !!cur?.status;
-  const n = loading ? ROUND_SIZE : items.length;
+  const n = loading ? total : items.length;
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -445,7 +458,7 @@ function RoundScreen({
     setError(null);
     setHint(null);
     try {
-      const r = await api.submit(cur.q, raw);
+      const r = await api.submit(cur.q, raw, cur);
       if (!r.ok) setError(r.error);
       else if (r.status === "format") {
         setHint(r.hint);
@@ -477,12 +490,10 @@ function RoundScreen({
       {/* en-tête mince : le calcul, le niveau, les coches */}
       <div className="flex items-center gap-3 px-1">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-semibold tracking-[-0.01em]">{meta.name}</div>
-          <div className="t-micro truncate">
-            {subject.name} · {NIVEAU[level].label}
-          </div>
+          <div className="truncate text-[14px] font-semibold tracking-[-0.01em]">{title}</div>
+          <div className="t-micro truncate">{sub}</div>
         </div>
-        <InkBarCoches items={coches} courante={answered || loading ? undefined : idx} height={26} label={`Avancement du round : ${coches.filter((c) => c !== null).length} sur ${n}`} />
+        <InkBarCoches items={coches} courante={answered || loading ? undefined : idx} height={26} label={(mots?.progression ?? ((fait, tot) => `Avancement du round : ${fait} sur ${tot}`))(coches.filter((c) => c !== null).length, n)} />
         <span className="shrink-0 font-mono text-[13px] tabular-nums text-muted">
           <span className="font-semibold text-white">{Math.min(idx + 1, n)}</span>/{n}
         </span>
@@ -490,7 +501,7 @@ function RoundScreen({
 
       {loading || !cur ? (
         <section className="card-hero grid gap-4 p-6 sm:p-8 md:p-10" aria-busy>
-          <p className="t-eyebrow">Tirage du round…</p>
+          <p className="t-eyebrow">{mots?.tirage ?? "Tirage du round…"}</p>
           <span className="rl-skel block h-8 w-4/5 rounded-[10px]" />
           <span className="rl-skel block h-8 w-1/2 rounded-[10px]" />
           <div className="mt-4 grid gap-3">
@@ -618,26 +629,28 @@ function RoundScreen({
         </section>
       )}
 
-      <details className="card-quiet group px-5 py-4 md:px-6">
-        <summary className="flex cursor-pointer list-none items-center gap-2 text-[14px] font-semibold text-muted transition-colors hover:text-white">
-          {CALC.rappel}
-          <ChevronDown size={16} aria-hidden className="ml-auto transition-transform duration-200 group-open:rotate-180" />
-        </summary>
-        <div className="mt-4">
-          <Formulas meta={meta} />
-        </div>
-      </details>
+      {meta && (
+        <details className="card-quiet group px-5 py-4 md:px-6">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-[14px] font-semibold text-muted transition-colors hover:text-white">
+            {CALC.rappel}
+            <ChevronDown size={16} aria-hidden className="ml-auto transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="mt-4">
+            <Formulas meta={meta} />
+          </div>
+        </details>
+      )}
 
       <div className="flex justify-center">
         <button type="button" className="btn btn-ghost btn-sm text-muted" onClick={onStop}>
-          {CALC.arreter}
+          {mots?.arreter ?? CALC.arreter}
         </button>
       </div>
     </div>
   );
 }
 
-function Steps({ steps, className = "" }: { steps: string[]; className?: string }) {
+export function Steps({ steps, className = "" }: { steps: string[]; className?: string }) {
   return (
     <ol className={"grid gap-2.5 " + className}>
       {steps.map((s, i) => (
@@ -757,7 +770,7 @@ function EndScreen({
   );
 }
 
-function CorrectionCard({ n, it }: { n: number; it: RoundItem }) {
+export function CorrectionCard({ n, it, tag }: { n: number; it: RoundItem; tag?: string }) {
   const ok = it.status === "juste";
   return (
     <details className="card group" open={!ok}>
@@ -768,6 +781,7 @@ function CorrectionCard({ n, it }: { n: number; it: RoundItem }) {
         <ChevronDown size={16} aria-hidden className="shrink-0 text-muted transition-transform duration-200 group-open:rotate-180" />
       </summary>
       <div className="grid gap-5 border-t border-line px-4 pb-5 pt-4 md:px-5">
+        {tag && <p className="t-micro m-0">{tag}</p>}
         <DataSheet data={it.q.data} className="max-w-[520px] [&_dd]:text-[15px] [&_dt]:text-[14px]" />
         <div className="grid grid-cols-2 gap-4">
           <div className="min-w-0">

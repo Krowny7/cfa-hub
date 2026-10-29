@@ -191,7 +191,7 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
     { texte: "De peu ou de beaucoup, le remède est le même : la notion qui a coincé, à l’Atelier.", pose: "base", action: ATELIER },
   ],
 
-  // le bilan de l'Atelier (la séance de 30 minutes sur ses points faibles)
+  // le bilan de l'Atelier (la séance de 15 minutes sur sa notion la plus faible)
   "atelier-progres": [
     { texte: "{notion}, c’est rentré. L’atelier a tourné à plein régime.", pose: "fier" },
     { texte: "{notion} : de l’esquisse au tableau. Je signe en bas à droite.", pose: "fier" },
@@ -221,7 +221,7 @@ export const REPLIQUES: Record<Exclude<Evenement, Visite>, Replique[]> = {
     { texte: "{score}. Atelier rangé, pinceaux lavés.", pose: "base" },
     { texte: "Une séance de plus dans les jambes. C’est comme ça qu’on bâtit une cathédrale.", pose: "fier" },
     { texte: "{score}. Pas de chef-d’œuvre, mais du travail propre.", pose: "base" },
-    { texte: "Trente minutes d’atelier. Plus efficace que trois heures de scroll.", pose: "moqueur" },
+    { texte: "Quinze minutes d’atelier. Plus efficace que trois heures de scroll.", pose: "moqueur" },
     { texte: "{score}. Je note le progrès dans mes carnets. À l’endroit, cette fois.", pose: "moqueur" },
     { texte: "Séance close. Ta courbe d’apprentissage vient de prendre un pli.", pose: "base" },
   ],

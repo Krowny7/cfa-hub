@@ -1,5 +1,5 @@
-// Voix « Le Trait » de l'Atelier (la séance de 30 minutes sur ses points
-// faibles) : un mot par chose, toujours le chiffre, pas d'emphase. Les blocs
+// Voix « Le Trait » de l'Atelier (la séance de 15 minutes sur sa notion la
+// plus faible) : un mot par chose, toujours le chiffre, pas d'emphase. Les blocs
 // gardent leur nom du début à la fin : Rappel, Tes ratures, Questions neuves,
 // Calcul, Re-test (trait d'union insécable : jamais coupé en fin de ligne).
 // Module neutre (ni « use client » ni serveur).
@@ -46,40 +46,39 @@ const taux = (ok: number, n: number) => (n > 0 ? pct((ok / n) * 100) : "—");
 export const ATELIER = {
   nom: "L'Atelier",
   /** points d'entrée (Tes points faibles) */
-  action: "Atelier · 30 min",
-  actionSeule: "Atelier sur cette seule notion",
+  action: "Atelier · 15 min",
+  actionSeule: "Atelier sur cette notion",
   reprendre: "Reprendre l'Atelier",
   /** la carte de S'entraîner (components/atelier/CarteAtelier.tsx) */
   lancer: "Lancer l'Atelier",
-  carteTitre: (n: number) => (n > 1 ? `Tes ${nombre(n)} points faibles, en une séance` : "Ton point faible, en une séance"),
   /** sous le nom en grand */
-  carteSousTitre: (n: number) => `${n > 1 ? `Tes ${nombre(n)} points faibles, en une séance` : "Ton point faible, en une séance"} · 30 min`,
+  carteSousTitre: "Ta notion la plus faible, en 15 minutes",
   /** les blocs réellement prévus, comme deroule, puis le bilan */
   carteDeroule: (ratures: boolean, calcul: boolean) =>
     `${["Rappel", ratures ? "tes ratures" : null, "questions neuves", calcul ? "calcul" : null, "re‑test"].filter(Boolean).join(", ")}, puis le bilan avant/après.`,
   enCoursLigne: (faites: number) => `Un Atelier est en cours : ${pluriel(faites, "réponse donnée", "réponses données")}.`,
   /** avant la migration, ou tant que les notions ne sont pas en place */
   bientotTitre: "L'Atelier arrive bientôt",
-  bientotTexte: "La séance de 30 minutes sur tes points faibles ouvre très bientôt. En attendant, tes ratures t'attendent dans Moi › Erreurs.",
+  bientotTexte: "La séance de 15 minutes sur ta notion la plus faible ouvre très bientôt. En attendant, tes ratures t'attendent dans Moi › Erreurs.",
   bientotAction: "Voir mes points faibles",
   peuTitre: "Pas encore assez de matière",
   peuTexte: "Il faut au moins un point faible pour lancer un Atelier : quelques réponses de plus sur une même notion, ou des ratures en cours.",
   retour: "Revenir à S'entraîner",
 
   /** écran d'ouverture */
-  kicker: "L'Atelier · 30 min",
-  aujourdhui: "Aujourd'hui",
+  kicker: "L'Atelier · 15 min",
+  /** le titre de l'ouverture : la notion la plus faible, ou celle qu'on a choisie (?notion=, « Remplacer ») */
+  titreOuverture: (plusFaible: boolean) => (plusFaible ? "Ta notion la plus faible, en 15 minutes" : "Cette notion, en 15 minutes"),
   /** la ligne d'une notion : « 12 ratures en cours », « calcul », « questions neuves » */
   detailNotion: (enCours: number, calcul: boolean) => (enCours > 0 ? pluriel(enCours, "rature en cours", "ratures en cours") : calcul ? "calcul" : "questions neuves"),
   remplacer: "Remplacer",
   remplacerPar: (libelle: string) => `Remplacer par ${libelle}`,
-  ajouterAutres: "Ajouter mes autres points faibles",
   /** les blocs réellement prévus : sans ratures en cours ni calcul, ils ne sont pas annoncés */
   deroule: (ratures: boolean, calcul: boolean) =>
     `${["Rappel", ratures ? "tes ratures" : null, "questions neuves", calcul ? "calcul" : null, "re‑test"].filter(Boolean).join(", ")}. Tu t'arrêtes quand tu veux et tu reprends dans les 24 heures.`,
   commencer: "Commencer",
   preparation: "L'Atelier se prépare…",
-  vide: "Pas assez de questions sur ces notions pour un Atelier. Remplace-en une.",
+  vide: "Pas assez de questions sur cette notion pour un Atelier. Remplace-la par une autre.",
   erreur: "L'Atelier ne s'est pas lancé. Réessaie.",
   enCoursTitre: "Un Atelier est en cours",
   enCoursTexte: (notions: string, faites: number) => `${notions} · ${pluriel(faites, "réponse donnée", "réponses données")}. Tu peux le reprendre, ou le clore pour voir son bilan.`,
@@ -87,8 +86,9 @@ export const ATELIER = {
 
   /** pendant la séance */
   etape: (k: number, total: number, bloc: Bloc, court = false) => `${nombre(k)}/${nombre(total)} · ${(court ? BLOC_COURT : BLOC_NOM)[bloc]}`,
-  chrono: (secondes: number) => `${horloge(secondes)} / 30`,
-  chronoLabel: (secondes: number) => `Temps de la séance : ${horloge(secondes)} sur 30 minutes`,
+  /** duree : la durée visée de la séance, en secondes (15 minutes ; 30 pour un ancien Atelier à plusieurs notions) */
+  chrono: (secondes: number, duree: number) => `${horloge(secondes)} / ${nombre(Math.round(duree / 60))}`,
+  chronoLabel: (secondes: number, duree: number) => `Temps de la séance : ${horloge(secondes)} sur ${nombre(Math.round(duree / 60))} minutes`,
   plan: "Le plan",
   notions: "Notions",
   rappel: "Rappel",

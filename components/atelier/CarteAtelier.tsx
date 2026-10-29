@@ -18,9 +18,10 @@ import { ATELIER } from "@/lib/voice-atelier";
 
 export function CarteAtelier({ d, logo = "plume", className = "" }: { d: PointsFaiblesData; logo?: VarianteLogo; className?: string }) {
   if (!d.atelier) return null;
-  const trois = d.liste.slice(0, 3);
+  // l'Atelier prend la notion la plus faible : la première de la liste
+  const premiere = d.liste.find((p) => p.lm);
   const enCours = d.atelier.enCours;
-  const ratures = trois.some((p) => p.mesures.enCours > 0);
+  const ratures = (premiere?.mesures.enCours ?? 0) > 0;
   return (
     <section
       data-leonard="atelier"
@@ -38,7 +39,7 @@ export function CarteAtelier({ d, logo = "plume", className = "" }: { d: PointsF
           <LogoAtelier variante={logo} className="size-[26px] lg:size-[44px]" />
           {ATELIER.nom}
         </h2>
-        <p className="m-0 text-[14px] font-semibold leading-snug lg:text-[15px]">{ATELIER.carteSousTitre(trois.length)}</p>
+        <p className="m-0 text-[14px] font-semibold leading-snug lg:text-[15px]">{ATELIER.carteSousTitre}</p>
       </div>
       <p className="t-small col-start-1 row-start-2 m-0 lg:row-start-3 lg:px-6">
         {enCours ? ATELIER.enCoursLigne(enCours.faites) : ATELIER.carteDeroule(ratures, d.atelier.calcul)}
