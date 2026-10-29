@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/browser";
 import { rpcAbsente } from "@/components/presence/store";
 
 // Réglage « Montrer quand je suis en ligne » (set_presence_visible). Coupé :
-// les autres joueurs ne voient plus ni « En ligne » ni « vu il y a… ».
+// les autres joueurs ne voient plus ni « En ligne » ni « en ligne il y a… ».
 // Sans la migration : interrupteur grisé, « bientôt ». Erreur passagère
 // (réseau) : un message, et un clic relance la lecture.
 export function PresenceSettings() {

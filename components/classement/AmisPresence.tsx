@@ -9,12 +9,12 @@ import s from "./Affronter.module.css";
 
 // Les marques de présence de l'onglet « Amis » (lues par lots, voir
 // components/presence/store) : sous le nom d'un ami, un point plein et « en
-// ligne » ou un anneau gris et « vu il y a 3 h » ; en tête de la liste, le
+// ligne » ou un anneau gris et « en ligne il y a 3 h » ; en tête de la liste, le
 // nombre d'amis en ligne. Rien tant que la présence n'est pas lue (pas
 // d'écart à l'hydratation) ; ami masqué : rien ; ami sans signal, ou présence
 // indisponible : « hors ligne ».
 
-/** Sous le pseudo d'un ami : « en ligne » (point vert) ou « vu il y a 3 h » (anneau gris). */
+/** Sous le pseudo d'un ami : « en ligne » (point vert) ou « en ligne il y a 3 h » (anneau gris). */
 export function PresenceLigne({ userId }: { userId: string }) {
   const p = usePresence(userId);
   if (p === undefined) return <span className={s.presence} aria-hidden />;

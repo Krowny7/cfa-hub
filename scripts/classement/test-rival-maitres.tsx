@@ -139,7 +139,7 @@ console.log("# la carte « Ton plus grand rival »");
   check("quatre lignes d'épreuve, dans l'ordre", ["Duels", "Défi du jour (les 30)", "Les 5 du jour", "Examens blancs"].every((x) => html.includes(`<b>${x}</b>`)) && compte(html, /class="epreuve"/g) === 4);
   check("le détail : 4–2 pour toi, égalité, un nul", html.includes("4–2 pour toi") && html.includes("2–2, égalité") && html.includes("1–0 pour toi · 1 nul"));
   check("compacte : la carte joueur sans bannière, les épreuves sans piste", !html.includes("width:67%") && !html.includes("pisteFine"));
-  check("« Défier Léa » vers /duel?adversaire=u2 et « Voir son profil » vers /people/u2", html.includes('href="/duel?adversaire=u2"') && html.includes("Défier Léa") && html.includes('href="/people/u2"') && html.includes("Voir son profil"));
+  check("un bouton « Profil » vers /people/u2 à côté du pseudo, plus de bouton Défier ni de lien en bas", html.includes('href="/people/u2"') && html.includes(">Profil</a>") && !html.includes('href="/duel?adversaire=u2"') && !html.includes("Voir son profil"));
   const lui = rendre(<CarteRival rival={{ ...rival, moi: 9, lui: 14 }} />);
   check("il mène : « Léa mène 14–9 »", lui.includes("Léa mène 14–9"));
   const egal = rendre(<CarteRival rival={{ ...rival, moi: 9, lui: 9 }} />);

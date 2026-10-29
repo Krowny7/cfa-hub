@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { Illustration } from "@/components/ui/Illustration";
@@ -9,7 +9,8 @@ import { Amis } from "@/components/classement/Amis";
 import { Avatar } from "@/components/classement/Avatar";
 import { CarteMaitres } from "@/components/classement/CarteMaitres";
 import { CarteRival } from "@/components/classement/CarteRival";
-import { Bouton, BoutonEnvoi, PAL, Sceau } from "@/components/classement/Encre";
+import { Bouton, PAL, Sceau } from "@/components/classement/Encre";
+import { RechercheJoueurs } from "@/components/classement/RechercheJoueurs";
 import { ClassementTabs, type TabKey } from "@/components/classement/ClassementTabs";
 import { HowItWorks } from "@/components/classement/Domains";
 import { EloChart } from "@/components/classement/EloChart";
@@ -179,12 +180,12 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // Espace « S'affronter » (ex-Classement), disposition A « L'arène » (maquette
 // validée), dans le même langage que S'entraîner (Affronter.module.css : cartes
 // en papier, diptyque peint, boutons et onglets d'encre, palette san-romano).
-// Dans l'ordre : l'en-tête simple (espace · domaine, titre) ; la bande « Trouver
-// un adversaire » (un champ de recherche vers /people?q=) ; le diptyque « La Grande
+// Dans l'ordre : l'en-tête simple (espace · domaine, titre) ; le diptyque « La Grande
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
 // duels et le bouton « Lancer un duel », ou « Relever le défi » quand un défi
-// attend ; l'arc électrique court autour quand il y a de l'enjeu) ; « Duels » (la
+// attend ; l'arc électrique court autour quand il y a de l'enjeu) ; la bande noire
+// « Trouver un adversaire » (RechercheJoueurs : des suggestions dès 2 lettres) ; « Duels » (la
 // partie à reprendre ou le défi envoyé, et les duels à relire) ; la rangée « Ton plus grand rival |
 // Les maîtres de chaque matière » (CarteRival, CarteMaitres : chacune seulement
 // si elle a des données) ; enfin le Classement général en
@@ -222,21 +223,6 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
         </header>
 
         <div className={s.racine} style={styleDePalette(PAL)}>
-          {/* ——— la bande « Trouver un adversaire » : juste chercher un joueur (/people?q=) ——— */}
-          <form action="/people" method="get" role="search" className={[s.carte, s.papier, s.bandeTrouver].join(" ")} aria-label={CL.trouver}>
-            <Sceau>
-              <Search size={18} />
-            </Sceau>
-            <label htmlFor="cl-trouver" className={s.bandeTexte}>
-              <b>{CL.trouver}</b>
-              <span>{CL.trouverLigne}</span>
-            </label>
-            <input id="cl-trouver" name="q" type="search" autoComplete="off" placeholder={CL.trouverChamp} className={s.champ} />
-            <BoutonEnvoi>
-              <Search size={16} aria-hidden /> {CL.trouverEnvoi}
-            </BoutonEnvoi>
-          </form>
-
           {/* ——— le diptyque : « La Grande Salle » (7/12, la pièce maîtresse) | la carte du duel (5/12) ——— */}
           <section className={s.diptyque + " rl-in"} aria-label={CL.diptyque}>
             <GrandeSalle data={data} />
@@ -269,7 +255,10 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
             {enjeu && <ArcElectrique palier={rank.tierIndex} rayon={20} />}
           </section>
 
-          {/* ——— « Duels » en grand, toute la largeur, la peinture à gauche ——— */}
+          {/* ——— la bande « Trouver un adversaire », à l'encre noire : un pseudo, des suggestions, son profil ——— */}
+          <RechercheJoueurs demo={data.joueursExemple} />
+
+          {/* ——— « Duels », toute la largeur ——— */}
           <CarteDuels open={openDuels} recent={recentDuels} />
 
           {/* ——— la rangée « Ton plus grand rival » (5/12) + « Les maîtres de chaque matière » (7/12) ———

@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { Swords } from "lucide-react";
-import { Icone } from "@/components/adn/icons";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { CadreSceau } from "@/components/profil/Pieces";
 import { PresenceLigne } from "@/components/classement/AmisPresence";
-import { Bouton, Sceau } from "@/components/classement/Encre";
+import { Sceau } from "@/components/classement/Encre";
 import { fmtInt, ordinal } from "@/components/classement/format";
 import type { BilanEpreuve, RivalData } from "@/components/classement/types";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
-import { CL, RIVAL } from "@/lib/voice-classement";
+import { RIVAL } from "@/lib/voice-classement";
 import s from "./Affronter.module.css";
 
 /** « 4–2 pour toi », avec « · 1 nul » quand il y a eu des égalités. */
@@ -22,8 +21,8 @@ function ligneEpreuve(e: BilanEpreuve, nom: string) {
  * dans son cadre, sa présence, son insigne,
  * son rang, son ELO, sa place et son niveau, sur une ligne), « Croisé N fois »
  * avec le verdict (« Tu mènes 14–9 »), le détail par épreuve en grille de deux
- * (duels, les 30 du jour, les 5 du jour, examens blancs : le bilan de chacune), puis
- * « Défier » et « Voir son profil ». Présentation : les données arrivent en
+ * (duels, les 30 du jour, les 5 du jour, examens blancs : le bilan de chacune), et un
+ * bouton « Profil » à droite de son pseudo. Présentation : les données arrivent en
  * props ; la présence se lit côté navigateur.
  */
 export function CarteRival({ rival, seul = false }: { rival: RivalData; /** la seule carte de la rangée : elle prend toute la largeur */ seul?: boolean }) {
@@ -50,7 +49,12 @@ export function CarteRival({ rival, seul = false }: { rival: RivalData; /** la s
           <CadreSceau frame={rival.style.frame} name={name} avatarUrl={rival.avatarUrl} size={48} calme />
         </span>
         <div className={s.joueurNom}>
-          <b>{name}</b>
+          <span className={s.nomLigne}>
+            <b>{name}</b>
+            <Link href={`/people/${rival.userId}`} className={s.boutonProfil}>
+              {RIVAL.profil}
+            </Link>
+          </span>
           <PresenceLigne userId={rival.userId} />
         </div>
         <div className={s.joueurRang}>
@@ -80,15 +84,6 @@ export function CarteRival({ rival, seul = false }: { rival: RivalData; /** la s
           </li>
         ))}
       </ul>
-
-      <div className={s.actions}>
-        <Bouton href={`/duel?adversaire=${encodeURIComponent(rival.userId)}`}>
-          <Icone nom="duel" size={17} /> {CL.defier(name)}
-        </Bouton>
-        <Link href={`/people/${rival.userId}`} className={s.lien}>
-          {RIVAL.profil}
-        </Link>
-      </div>
     </section>
   );
 }

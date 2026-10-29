@@ -102,7 +102,7 @@ export function EnteteJoueur({
   /** sur-titre de la carte du rang : « Ton rang » (défaut), « Son rang » */
   rangDe?: string;
   apercu?: boolean;
-  /** « En ligne » / « Vu il y a 3 h » sous le nom (le profil d'un autre joueur) */
+  /** « En ligne » / « En ligne il y a 3 h » sous le nom (le profil d'un autre joueur) */
   presence?: boolean;
   /** les 3 sceaux posés (SceauxPoses) */
   poses?: React.ReactNode;

@@ -5,7 +5,7 @@ import { enLigne, libellePresence, type Presence } from "@/lib/presence";
 import { ecouter, presenceDe, suivre } from "@/components/presence/store";
 
 // Les marques de présence : le point vert sur l'avatar (en ligne seulement)
-// et le libellé « En ligne » / « Vu il y a 3 h ». Rien au premier rendu
+// et le libellé « En ligne » / « En ligne il y a 3 h ». Rien au premier rendu
 // (pas d'écart à l'hydratation) : la présence arrive juste après, lue par
 // lots (components/presence/store). Seul le point est vert : le texte garde
 // la couleur de sa ligne (lisible en clair comme en nuit).
@@ -52,7 +52,7 @@ export function PresenceDot({ userId, avatar = 36 }: { userId: string; avatar?: 
 }
 
 /**
- * « En ligne » (avec son point) ou « Vu il y a 3 h ». Joueur masqué : rien.
+ * « En ligne » (avec son point) ou « En ligne il y a 3 h ». Joueur masqué : rien.
  * Joueur sans signal (pas revenu depuis l'arrivée de la présence, ou
  * présence indisponible) : `repli`, s'il est donné (« Hors ligne »).
  */
@@ -69,7 +69,7 @@ export function PresenceText({
   userId: string;
   /** listes : « en ligne », « il y a 3 h » */
   court?: boolean;
-  /** au fil d'une ligne : « en ligne », « vu il y a 3 h » */
+  /** au fil d'une ligne : « en ligne », « en ligne il y a 3 h » */
   minuscule?: boolean;
   /** le point vert devant « en ligne » (false quand l'avatar le porte déjà) */
   point?: boolean;

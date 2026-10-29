@@ -21,9 +21,9 @@ export function Bouton({ href, children, surPeinture = false }: { href: string; 
 }
 
 /** Le même bouton d'encre, pour envoyer un formulaire (la bande « Trouver un adversaire »). */
-export function BoutonEnvoi({ children }: { children: React.ReactNode }) {
+export function BoutonEnvoi({ children, surPeinture = false }: { children: React.ReactNode; surPeinture?: boolean }) {
   return (
-    <button type="submit" className={["rl-encre", s.encre, s.bouton].join(" ")} data-palette={PAL.key}>
+    <button type="submit" className={["rl-encre", s.encre, s.bouton, surPeinture ? s.surPeinture : ""].filter(Boolean).join(" ")} data-palette={PAL.key}>
       <EncreVive tons={PAL.liquide} />
       {children}
     </button>

@@ -46,14 +46,14 @@ function joursEntre(avant: number, apres: number) {
 export type FormeLibelle = {
   /** listes : sans « vu » (« il y a 3 h ») */
   court?: boolean;
-  /** au fil d'une phrase : « en ligne », « vu il y a 3 h » */
+  /** au fil d'une phrase : « en ligne », « en ligne il y a 3 h » */
   minuscule?: boolean;
   now?: number;
 };
 
 /**
- * « En ligne », « Vu il y a 5 min », « Vu il y a 3 h », « Vu hier »,
- * « Vu il y a 4 jours », « Vu le 12 sept. ». Version courte (listes) :
+ * « En ligne », « En ligne il y a 5 min », « En ligne il y a 3 h », « En ligne
+ * hier », « En ligne il y a 4 jours », « En ligne le 12 sept. ». Version courte (listes) :
  * « en ligne », « il y a 3 h »… null si masqué ou inconnu. Au-delà de
  * 24 h, les jours sont ceux du calendrier (Paris) : « hier » est bien hier.
  */
@@ -62,7 +62,7 @@ export function libellePresence(p: Presence | null | undefined, { court = false,
   if (s === null) return null;
   const maj = !court && !minuscule;
   if (s <= EN_LIGNE_SECONDES) return maj ? "En ligne" : "en ligne";
-  const vu = court ? "" : maj ? "Vu " : "vu ";
+  const vu = court ? "" : maj ? "En ligne " : "en ligne ";
   const min = Math.max(1, Math.floor(s / 60));
   if (min < 60) return `${vu}il y a ${min} min`;
   const h = Math.floor(min / 60);

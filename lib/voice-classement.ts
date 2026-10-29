@@ -41,6 +41,8 @@ export const CL = {
   /** la bande de recherche : le champ et son bouton */
   trouverChamp: "Pseudo d'un joueur",
   trouverEnvoi: "Chercher",
+  suggestions: "Joueurs trouvés",
+  aucunJoueur: "Aucun joueur à ce pseudo.",
   general: "Classement général",
   courbe: "Ta courbe",
   courbeDepuis: (signe: string, date: string) => `${signe} ELO depuis le ${date}`,
@@ -128,7 +130,7 @@ export const RIVAL = {
   /** « 4–2 pour toi », « 2–4 pour Léa », « 3–3, égalité » ; les égalités s'ajoutent : « · 1 nul » */
   ligne: (moi: number, lui: number, nom: string) => (moi > lui ? `${moi}–${lui} pour toi` : lui > moi ? `${moi}–${lui} pour ${nom}` : `${moi}–${lui}, égalité`),
   nuls: (n: number) => `${n} ${n > 1 ? "nuls" : "nul"}`,
-  profil: "Voir son profil",
+  profil: "Profil",
   niveau: (n: number) => `Niveau ${n}`,
   placement: "Placement",
   carte: (nom: string) => `Ton plus grand rival : ${nom}`,
