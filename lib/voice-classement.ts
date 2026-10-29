@@ -38,6 +38,9 @@ export const CL = {
   dernierExamen: (score: string, delta: string | null) => `Dernier examen : ${score}${delta ? ` · ${delta} ELO` : ""}.`,
   trouver: "Trouver un adversaire",
   trouverLigne: "Cherche un pseudo, ajoute des amis, défie qui tu veux.",
+  /** la bande de recherche : le champ et son bouton */
+  trouverChamp: "Pseudo d'un joueur",
+  trouverEnvoi: "Chercher",
   general: "Classement général",
   courbe: "Ta courbe",
   courbeDepuis: (signe: string, date: string) => `${signe} ELO depuis le ${date}`,
@@ -125,8 +128,6 @@ export const RIVAL = {
   /** « 4–2 pour toi », « 2–4 pour Léa », « 3–3, égalité » ; les égalités s'ajoutent : « · 1 nul » */
   ligne: (moi: number, lui: number, nom: string) => (moi > lui ? `${moi}–${lui} pour toi` : lui > moi ? `${moi}–${lui} pour ${nom}` : `${moi}–${lui}, égalité`),
   nuls: (n: number) => `${n} ${n > 1 ? "nuls" : "nul"}`,
-  /** la piste : « Duels : toi 4, Léa 2 » */
-  piste: (epreuve: string, moi: number, nom: string, lui: number) => `${epreuve} : toi ${moi}, ${nom} ${lui}`,
   profil: "Voir son profil",
   niveau: (n: number) => `Niveau ${n}`,
   placement: "Placement",
@@ -153,15 +154,13 @@ export const SEUIL_MAITRE = 20;
 /** La carte « Les maîtres de chaque matière ». */
 export const MAITRES = {
   titre: "Les maîtres de chaque matière",
-  sous: (seuil: number) => `Le meilleur en maîtrise dans chacune des 10 matières, classé dès ${seuil} réponses. Le repère noir, c'est toi.`,
+  sous: (seuil: number) => `Le meilleur en maîtrise dans chacune des 10 matières, classé dès ${seuil} réponses.`,
   cestToi: "C'est toi",
   /** « toi 3e · 68 % » */
   toi: (place: string, pct: string) => `toi ${place} · ${pct}`,
-  toiSansPlace: "toi · pas encore classé",
+  toiSansPlace: "toi · non classé",
   pasDeMaitre: "Pas encore de maître",
   /** l'infobulle quand tu n'es pas classé : « Il faut 20 réponses dans la matière pour être classé (tu en as 12). » */
   pasClasse: (seuil: number, n: number) => `Il faut ${seuil} réponses dans la matière pour être classé (tu en as ${n}).`,
-  /** la piste : « Ethics : maître 92 %, toi 68 % » */
-  piste: (maitre: string, toi: string | null) => (toi ? `Maître ${maitre}, toi ${toi}` : `Maître ${maitre}`),
   liste: "Un maître par matière",
 } as const;

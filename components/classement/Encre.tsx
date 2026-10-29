@@ -20,6 +20,16 @@ export function Bouton({ href, children, surPeinture = false }: { href: string; 
   );
 }
 
+/** Le même bouton d'encre, pour envoyer un formulaire (la bande « Trouver un adversaire »). */
+export function BoutonEnvoi({ children }: { children: React.ReactNode }) {
+  return (
+    <button type="submit" className={["rl-encre", s.encre, s.bouton].join(" ")} data-palette={PAL.key}>
+      <EncreVive tons={PAL.liquide} />
+      {children}
+    </button>
+  );
+}
+
 /** Le sceau d'une carte en papier : une pastille d'encre, l'icône au centre. */
 export function Sceau({ children }: { children: React.ReactNode }) {
   return (

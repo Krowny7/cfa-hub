@@ -98,9 +98,11 @@ console.log("# la page");
 {
   const html = rendre(<ClassementView data={data} />);
   check("en-tête : « S'affronter · Finance », le titre, plus de pastilles de rang par domaine", html.includes("S'affronter · Finance") && html.includes("Se mesurer aux autres") && !html.includes("Tes rangs par domaine"));
-  const ordre = ["Ton rang et La Grande Salle", 'id="cl-duels"', 'id="cl-trouver"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
-  check("l'ordre : diptyque, Duels, Trouver un adversaire, Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
-  check("le diptyque : « Ton rang » (repère Léonard), puis « La Grande Salle »", html.includes('data-leonard="rang"') && html.indexOf('data-leonard="rang"') < html.indexOf('aria-label="La Grande Salle"'));
+  const ordre = ['id="cl-trouver"', "Ton rang et La Grande Salle", 'id="cl-duels"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
+  check("l'ordre : la bande Trouver un adversaire, le diptyque, Duels, Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
+  check("le diptyque : « La Grande Salle » d'abord (la pièce maîtresse), puis « Ton rang » (repère Léonard)", html.includes('data-leonard="rang"') && html.indexOf('aria-label="La Grande Salle"') < html.indexOf('data-leonard="rang"'));
+  check("la bande de recherche : un formulaire vers /people, le champ q", html.includes('action="/people"') && html.includes('name="q"') && html.includes('role="search"'));
+  check("Duels : la peinture des duels", html.includes("classement-duels"));
   check("Ton rang : Autour de toi, Lancer un duel, le lien vers le rival", html.includes("Autour de toi") && html.includes("Lancer un duel") && html.includes("/duel?adversaire=u2") && html.includes("Défier Léa"));
   check("le rival devant : l'écart est surligné", /surligne[^>]*><b>12 ELO<\/b>/.test(html));
   check("la piste du palier (Platine vers Diamant)", html.includes("1 512 ELO sur 1 550 pour Diamant"));

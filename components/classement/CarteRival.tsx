@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Swords } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { RankBadge } from "@/components/ui/RankBadge";
-import { Banniere, CadreSceau } from "@/components/profil/Pieces";
+import { CadreSceau } from "@/components/profil/Pieces";
 import { PresenceLigne } from "@/components/classement/AmisPresence";
 import { Bouton, Sceau } from "@/components/classement/Encre";
 import { fmtInt, ordinal } from "@/components/classement/format";
@@ -18,11 +18,11 @@ function ligneEpreuve(e: BilanEpreuve, nom: string) {
 
 /**
  * « Ton plus grand rival » : le joueur que tu as le plus croisé, toutes
- * épreuves confondues (components/classement/rival.ts). Sa carte joueur (la
- * bannière de son profil, son sceau dans son cadre, sa présence, son insigne,
- * son rang, son ELO, sa place et son niveau), « Croisé N fois » avec le
- * verdict (« Tu mènes 14–9 »), le détail par épreuve (duels, les 30 du jour,
- * les 5 du jour, examens blancs) avec une piste de ta part de victoires, puis
+ * épreuves confondues (components/classement/rival.ts). Sa carte joueur (son sceau
+ * dans son cadre, sa présence, son insigne,
+ * son rang, son ELO, sa place et son niveau, sur une ligne), « Croisé N fois »
+ * avec le verdict (« Tu mènes 14–9 »), le détail par épreuve en grille de deux
+ * (duels, les 30 du jour, les 5 du jour, examens blancs : le bilan de chacune), puis
  * « Défier » et « Voir son profil ». Présentation : les données arrivent en
  * props ; la présence se lit côté navigateur.
  */
@@ -46,18 +46,15 @@ export function CarteRival({ rival, seul = false }: { rival: RivalData; /** la s
       </header>
 
       <div className={s.joueur} aria-label={RIVAL.carte(name)} role="group">
-        <Banniere banner={rival.style.banner} bannerUrl={rival.style.bannerUrl} bannerPos={rival.style.bannerPos} accent={rival.style.accent} className={s.joueurBanniere} calme />
-        <div className={s.joueurTete}>
-          <span className={s.joueurSceau}>
-            <CadreSceau frame={rival.style.frame} name={name} avatarUrl={rival.avatarUrl} size={72} calme />
-          </span>
-          <div className={s.joueurNom}>
-            <b>{name}</b>
-            <PresenceLigne userId={rival.userId} />
-          </div>
+        <span className={s.joueurSceau}>
+          <CadreSceau frame={rival.style.frame} name={name} avatarUrl={rival.avatarUrl} size={48} calme />
+        </span>
+        <div className={s.joueurNom}>
+          <b>{name}</b>
+          <PresenceLigne userId={rival.userId} />
         </div>
         <div className={s.joueurRang}>
-          <RankBadge tier={rk.tierIndex} size={56} mastery={rival.mastery ?? 0} division={placement ? null : rk.division} gray={placement} title={rangNom} />
+          <RankBadge tier={rk.tierIndex} size={40} mastery={rival.mastery ?? 0} division={placement ? null : rk.division} gray={placement} title={rangNom} />
           <div className={s.joueurRangTexte}>
             <b>{rangNom}</b>
             <span>{ligne}</span>
@@ -73,22 +70,15 @@ export function CarteRival({ rival, seul = false }: { rival: RivalData; /** la s
       </div>
 
       <ul className={s.epreuves} aria-label={RIVAL.epreuves}>
-        {rival.epreuves.map((e) => {
-          const parts = e.moi + e.lui;
-          const pct = parts > 0 ? Math.round((e.moi / parts) * 100) : 50;
-          return (
-            <li key={e.epreuve} className={s.epreuve}>
-              <span className={s.epreuveNom}>
-                <b>{RIVAL[e.epreuve]}</b>
-                <span className={s.epreuveN}>{e.rencontres}</span>
-              </span>
-              <span className={s.piste + " " + s.pisteFine} role="img" aria-label={RIVAL.piste(RIVAL[e.epreuve], e.moi, name, e.lui)}>
-                <i style={{ width: `${pct}%` }} />
-              </span>
-              <span className={s.epreuveLigne}>{ligneEpreuve(e, name)}</span>
-            </li>
-          );
-        })}
+        {rival.epreuves.map((e) => (
+          <li key={e.epreuve} className={s.epreuve}>
+            <span className={s.epreuveNom}>
+              <b>{RIVAL[e.epreuve]}</b>
+              <span className={s.epreuveN}>{e.rencontres}</span>
+            </span>
+            <span className={s.epreuveLigne}>{ligneEpreuve(e, name)}</span>
+          </li>
+        ))}
       </ul>
 
       <div className={s.actions}>

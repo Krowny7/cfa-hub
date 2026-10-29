@@ -138,7 +138,7 @@ console.log("# la carte « Ton plus grand rival »");
   check("le verdict : « Tu mènes 14–9 »", html.includes("Tu mènes 14–9"));
   check("quatre lignes d'épreuve, dans l'ordre", ["Duels", "Défi du jour (les 30)", "Les 5 du jour", "Examens blancs"].every((x) => html.includes(`<b>${x}</b>`)) && compte(html, /class="epreuve"/g) === 4);
   check("le détail : 4–2 pour toi, égalité, un nul", html.includes("4–2 pour toi") && html.includes("2–2, égalité") && html.includes("1–0 pour toi · 1 nul"));
-  check("la piste : 67 % pour 4–2, 50 % pour 2–2, accessible", html.includes("width:67%") && html.includes("width:50%") && html.includes('aria-label="Duels : toi 4, Léa 2"'));
+  check("compacte : la carte joueur sans bannière, les épreuves sans piste", !html.includes("width:67%") && !html.includes("pisteFine"));
   check("« Défier Léa » vers /duel?adversaire=u2 et « Voir son profil » vers /people/u2", html.includes('href="/duel?adversaire=u2"') && html.includes("Défier Léa") && html.includes('href="/people/u2"') && html.includes("Voir son profil"));
   const lui = rendre(<CarteRival rival={{ ...rival, moi: 9, lui: 14 }} />);
   check("il mène : « Léa mène 14–9 »", lui.includes("Léa mène 14–9"));
@@ -161,15 +161,14 @@ const maitres: MaitreMatiere[] = TOPICS.map((t, i) => {
 console.log("# la carte « Les maîtres de chaque matière »");
 {
   const html = rendre(<CarteMaitres maitres={maitres} />);
-  check("le titre, la règle (classé dès 20 réponses) et le repère noir", html.includes("Les maîtres de chaque matière") && html.includes("classé dès 20 réponses") && html.includes("Le repère noir, c'est toi"));
-  check("dix matières, en libellés courts de la maquette", compte(html, /class="maitre( cestToi)?"/g) === 10 && ["Ethics", "Quant", "FSA", "Corporate Issuers", "Fixed Income", "Portfolio Management"].every((x) => html.includes(`<b>${x}</b>`)));
+  check("le titre et la règle (classé dès 20 réponses)", html.includes("Les maîtres de chaque matière") && html.includes("classé dès 20 réponses"));
+  check("dix matières, une ligne chacune, en libellés courts de la maquette", compte(html, /class="maitre( cestToi)?"/g) === 10 && ["Ethics", "Quant", "FSA", "Corporate Issuers", "Fixed Income", "Portfolio Management"].every((x) => html.includes(`>${x}</b>`)));
   check("« C'est toi » sur FSA seulement, et la ligne est mise en valeur", compte(html, />C'est toi</g) === 1 && compte(html, /class="maitre cestToi"/g) === 1);
   check("ta place et ton %, ailleurs : « toi 3e · 60 % »", html.includes("toi 3e · 60 %"));
-  check("pas classé : « toi · pas encore classé », avec l'infobulle des 20 réponses", html.includes("toi · pas encore classé") && html.includes("Il faut 20 réponses dans la matière pour être classé (tu en as 12)."));
+  check("pas classé : « toi · non classé », avec l'infobulle des 20 réponses", html.includes("toi · non classé") && html.includes("Il faut 20 réponses dans la matière pour être classé (tu en as 12)."));
   check("sans maître : « Pas encore de maître »", html.includes("Pas encore de maître"));
-  check("le repère noir sur chaque piste où tu n'es pas le maître et où tu as un %", compte(html, /class="repere"/g) === 8);
+  check("compacte : plus de piste ni de repère", !html.includes('class="repere"') && !html.includes("pisteMaitre"));
   check("le % du maître avec espace insécable", html.includes("88 %") || html.includes("88 %"));
-  check("la piste accessible : « Maître 90 %, toi 60 % »", html.includes("Maître 90 %, toi 60 %") || html.includes("Maître 90 %, toi 60 %"));
   check("les noms des maîtres s'affichent", html.includes("Maître0") && html.includes("Inès"));
 }
 
@@ -193,8 +192,8 @@ console.log("# dans la page");
   const sans = rendre(<ClassementView data={data} />);
   check("sans rival ni maîtres : aucune des deux cartes (ni rangée vide)", !sans.includes("Ton plus grand rival") && !sans.includes("Les maîtres de chaque matière"));
   const html = rendre(<ClassementView data={{ ...data, rival, maitres }} />);
-  const ordre = ['id="cl-duels"', 'id="cl-trouver"', 'id="cl-rival"', 'id="cl-maitres"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
-  check("l'ordre : Duels, Trouver, rival, maîtres (téléphone : rival puis maîtres), Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
+  const ordre = ['id="cl-trouver"', 'id="cl-duels"', 'id="cl-rival"', 'id="cl-maitres"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
+  check("l'ordre : Trouver, Duels, rival, maîtres (téléphone : rival puis maîtres), Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
   check("deux cartes dans la rangée : aucune ne prend toute la largeur", !/class="[^"]*\bseule\b/.test(html));
   const rienQueLeRival = rendre(<ClassementView data={{ ...data, rival }} />);
   check("le rival seul : sa carte, pas celle des maîtres, et elle prend toute la largeur", rienQueLeRival.includes("Ton plus grand rival") && !rienQueLeRival.includes("Les maîtres de chaque matière") && /id="cl-rival"/.test(rienQueLeRival) && /class="[^"]*\bseule\b[^"]*"[^>]*aria-labelledby="cl-rival"|aria-labelledby="cl-rival"/.test(rienQueLeRival) && rienQueLeRival.includes("seule"));
