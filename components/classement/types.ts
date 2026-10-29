@@ -1,6 +1,7 @@
 // Données reçues par les composants de l'espace Classement (props
 // sérialisables : la page serveur les charge, la page d'aperçu les invente).
 import type { DuelSummary, RatingEvent } from "@/lib/rating";
+import type { StyleProfil } from "@/lib/profil/catalogue";
 
 export type BoardRow = {
   userId: string;
@@ -59,6 +60,20 @@ export type MyRank = {
   totalPlayers: number | null;
 };
 
+/** Une ligne de l'onglet « Amis » (un ami, ou toi : `isMe`). */
+export type AmiRow = {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  elo: number;
+  gamesPlayed: number;
+  /** place générale (1 = premier), null si inconnue */
+  rank: number | null;
+  /** maîtrise du programme 0–100, null si inconnue (pas de verrou sur l'insigne) */
+  mastery: number | null;
+  isMe: boolean;
+};
+
 export type ClassementData = {
   me: MyRank;
   history: RatingEvent[];
@@ -70,4 +85,85 @@ export type ClassementData = {
   pastExams: PastExam[];
   openDuels: DuelSummary[];
   recentDuels: DuelSummary[];
+  /** l'onglet « Amis » : tes amis et toi, classés par place générale ; null ou absent : lecture indisponible (état vide) */
+  amis?: AmiRow[] | null;
+  /** « Ton plus grand rival » : null ou absent, la carte ne s'affiche pas */
+  rival?: RivalData | null;
+  /** « Les maîtres de chaque matière » : null ou absent, la carte ne s'affiche pas */
+  maitres?: MaitreMatiere[] | null;
+};
+
+/** Les épreuves où deux joueurs se croisent : duels, les 30 du jour, les 5 du jour, examens blancs classés. */
+export type EpreuveRival = "duel" | "trente" | "cinq" | "examen";
+
+/** Le bilan face à un joueur dans une épreuve : rencontres, qui a fait mieux, égalités. */
+export type BilanEpreuve = {
+  epreuve: EpreuveRival;
+  /** nombre de rencontres dans cette épreuve (moi + lui + nuls) */
+  rencontres: number;
+  /** fois où j'ai fait mieux */
+  moi: number;
+  /** fois où il a fait mieux */
+  lui: number;
+  nuls: number;
+};
+
+/**
+ * « Ton plus grand rival » : le joueur le plus croisé, toutes épreuves
+ * confondues (components/classement/rival.ts), avec ce qu'il faut pour sa
+ * carte (bannière, sceau, insigne, rang). `null` côté données : pas de clé
+ * admin, rien de joué ensemble → la carte ne s'affiche pas.
+ */
+export type RivalData = {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  elo: number;
+  gamesPlayed: number;
+  /** place générale, null si inconnue */
+  rank: number | null;
+  /** maîtrise du programme 0–100, null si inconnue (pas de verrou sur l'insigne) */
+  mastery: number | null;
+  niveau: number;
+  style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame">;
+  /** rencontres, toutes épreuves confondues */
+  rencontres: number;
+  /** bilan cumulé : fois où j'ai fait mieux / où il a fait mieux (les égalités ne comptent ni pour l'un ni pour l'autre) */
+  moi: number;
+  lui: number;
+  /** le détail par épreuve, seulement celles où ils se sont croisés (ordre fixe : duels, 30, 5, examens) */
+  epreuves: BilanEpreuve[];
+};
+
+/** Un joueur classé dans une matière (le maître, ou toi). */
+export type MaitreJoueur = {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  /** sa maîtrise de la matière, 0–100 */
+  pct: number;
+  elo: number;
+  gamesPlayed: number;
+  /** maîtrise du programme 0–100, null si inconnue */
+  mastery: number | null;
+  /** place générale (pour le Top 10), null si inconnue */
+  rank: number | null;
+};
+
+/** Une matière du programme : son maître et ta position. */
+export type MaitreMatiere = {
+  /** clé de lib/practiceTopics.ts (« fixed_income ») */
+  cle: string;
+  /** libellé court (« Fixed Income ») */
+  court: string;
+  /** le meilleur joueur de la matière ; null : personne d'assez qualifié */
+  maitre: MaitreJoueur | null;
+  /** c'est toi le maître */
+  cestToi: boolean;
+  /** ta maîtrise dans la matière (null : moins de 5 questions, pas mesurée) */
+  moiPct: number | null;
+  /** ta place parmi les joueurs classés de la matière ; null : pas classé (pas assez de réponses) */
+  moiPlace: number | null;
+  /** tes réponses dans la matière (séances ciblées) */
+  moiReponses: number;
 };

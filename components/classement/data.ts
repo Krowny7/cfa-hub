@@ -10,7 +10,9 @@ import { TOPICS } from "@/lib/practiceTopics";
 import type { LeaderboardRow } from "@/lib/rating";
 import { displayName } from "@/components/classement/format";
 import { lireStyles, nomTitre } from "@/lib/profil/styles";
-import type { BoardRow, NextExam, PastExam } from "@/components/classement/types";
+import { amisDe } from "@/lib/profil/donnees";
+import { DEFAULT_ELO } from "@/lib/ranks";
+import type { AmiRow, BoardRow, NextExam, PastExam } from "@/components/classement/types";
 
 /** Client admin, ou null si la clé de service n'est pas configurée. */
 export function tryAdmin(): SupabaseClient | null {
@@ -256,5 +258,83 @@ export async function getPastRankedExams(supabase: SupabaseClient, userId: strin
     });
   } catch {
     return [];
+  }
+}
+
+/** Combien d'amis l'onglet « Amis » charge au plus (comme la fiche d'un joueur). */
+const MAX_AMIS = 60;
+/** Combien de places hors du tableau sont comptées une à une (une requête chacune). */
+const MAX_PLACES_COMPTEES = 40;
+
+/**
+ * L'onglet « Amis » : tes amis (lus par lib/profil/donnees : amisDe, table
+ * friendships, demandes acceptées) et toi, avec pour chacun l'ELO, le nombre
+ * de parties, la maîtrise et la place générale. La place vient du tableau déjà
+ * chargé quand l'ami y figure, sinon d'un comptage des ELO supérieurs au sien.
+ * La maîtrise vient de `masteries` (déjà lue pour le tableau), sinon d'une
+ * lecture admin. Tout dégrade proprement : table des amitiés absente → null
+ * (l'onglet montre son état vide) ; pas d'ami → [] ; ELO illisibles → ELO de
+ * départ, sans place ; clé admin absente → pas de maîtrise (insigne sans verrou).
+ * Le résultat est trié par la vue ; ta ligne (`moi`) y est ajoutée s'il y a des amis.
+ */
+export async function amisClassement(
+  supabase: SupabaseClient,
+  admin: SupabaseClient | null,
+  userId: string,
+  moi: AmiRow,
+  board: BoardRow[],
+  masteries: Map<string, number>,
+): Promise<AmiRow[] | null> {
+  try {
+    const lus = await amisDe(userId, supabase, MAX_AMIS);
+    if (!lus) return null;
+    if (lus.amis.length === 0) return [];
+    const ids = lus.amis.map((a) => a.id);
+    const [ratingsRes, plusMaitrise] = await Promise.all([
+      (async () => {
+        try {
+          const r = await supabase.from("ratings").select("user_id,elo,games_played").in("user_id", ids);
+          return r.error || !r.data ? [] : (r.data as Array<{ user_id: string; elo: number; games_played: number }>);
+        } catch {
+          return [];
+        }
+      })(),
+      masteryByUser(
+        admin,
+        ids.filter((id) => !masteries.has(id)),
+      ),
+    ]);
+    const notes = new Map(ratingsRes.map((r) => [r.user_id, r]));
+    const places = new Map(board.map((r) => [r.userId, r.rank]));
+    const rows: AmiRow[] = lus.amis.map((a) => {
+      const note = notes.get(a.id);
+      return {
+        userId: a.id,
+        name: a.name,
+        avatarUrl: a.avatarUrl,
+        elo: note?.elo ?? DEFAULT_ELO,
+        gamesPlayed: note?.games_played ?? 0,
+        rank: places.get(a.id) ?? null,
+        mastery: masteries.get(a.id) ?? plusMaitrise.get(a.id) ?? null,
+        isMe: false,
+      };
+    });
+    // les amis hors du tableau : leur place = 1 + le nombre de joueurs au-dessus d'eux
+    await Promise.all(
+      rows
+        .filter((r) => r.rank === null && notes.has(r.userId))
+        .slice(0, MAX_PLACES_COMPTEES)
+        .map(async (r) => {
+          try {
+            const { count, error } = await supabase.from("ratings").select("user_id", { count: "exact", head: true }).gt("elo", r.elo);
+            if (!error) r.rank = (count ?? 0) + 1;
+          } catch {
+            // place inconnue : « — »
+          }
+        }),
+    );
+    return [moi, ...rows];
+  } catch {
+    return null;
   }
 }

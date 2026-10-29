@@ -1,0 +1,1223 @@
+/* La page S'affronter (maquette validée, disposition A « L'arène »), dans le
+   même langage que S'entraîner (components/entrainement/Entrainer.module.css) :
+   cartes en papier, diptyque peint, boutons et onglets remplis de l'encre de
+   l'onglet (palette « san-romano », lib/palettes.ts : ClassementView pose
+   --pal-1 noir … --pal-6 blanc d'os sur la racine). Dans l'ordre : le diptyque
+   « Ton rang » | « La Grande Salle », la rangée « Duels » + « Trouver un
+   adversaire », la place de la rangée « Ton plus grand rival | Les maîtres de
+   chaque matière » (lot suivant), puis le Classement général en onglets. Les
+   mises en page suivent la largeur du bloc (requêtes de conteneur), pas celle
+   de l'écran. Jetons du site, jour et nuit ; animations coupées en mouvement
+   réduit et en mode discret. */
+
+.racine {
+  container-type: inline-size;
+  display: grid;
+  gap: 20px;
+  /* texte d'accent (liens) : le brun Van Dyck assombri (plus de 9:1 sur le papier) */
+  --acc: color-mix(in oklab, var(--pal-2) 85%, var(--pal-1));
+  /* le brun sombre : fond de repli de l'encre et des peintures, le temps que l'image arrive */
+  --noyer-fonce: color-mix(in oklab, var(--pal-2) 70%, black);
+  /* le surligneur : l'ocre pâle */
+  --surligne: color-mix(in srgb, var(--pal-5) 60%, transparent);
+  /* le texte posé sur l'encre et sur la peinture */
+  --sur-nuit: white;
+  --sur-nuit-2: color-mix(in srgb, var(--pal-6) 80%, white);
+}
+/* nuit : l'accent passe à l'ocre éclairci (plus de 10:1 sur les cartes) */
+:global(html[data-theme="nuit"]) .racine {
+  --acc: color-mix(in oklab, var(--pal-5) 80%, white);
+  --surligne: color-mix(in srgb, var(--pal-5) 40%, transparent);
+}
+.racine :where(h2, h3, p) {
+  margin: 0;
+}
+.racine :where(h2, h3) {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.racine :where(ul, ol) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sous {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--acc);
+}
+.lien::after {
+  content: "→";
+  transition: transform var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+  .lien:hover::after {
+    transform: translateX(3px);
+  }
+}
+.surligne {
+  background: linear-gradient(180deg, transparent 50%, var(--surligne) 50%, var(--surligne) 94%, transparent 94%);
+  padding: 0 5px;
+  margin: 0 -5px;
+}
+
+/* ——— les cartes en papier ——— */
+.carte {
+  position: relative;
+  min-width: 0;
+  border-radius: 20px;
+}
+.papier {
+  background: var(--surface);
+  border: 1px solid var(--pencil-2);
+  box-shadow: var(--shadow-1);
+}
+
+/* ——— l'encre de l'onglet « S'affronter » (comme sur S'entraîner) ———
+   .rl-encre (globals.css, avec data-palette) : la texture de la palette qui
+   dérive sous un voile sombre. .encre : un bouton, un sceau ou un onglet
+   remplis de cette encre, texte blanc ; son fond propre (brun sombre) sert de
+   repli le temps que l'image arrive. */
+.encre {
+  position: relative;
+  color: var(--sur-nuit);
+  background: var(--noyer-fonce);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --pal-voile-haut: 0.5;
+  --pal-voile-bas: 0.68;
+}
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.bouton:active {
+  transform: scale(0.98);
+}
+/* sur la peinture : un liseré clair autour du bouton */
+.bouton.surPeinture {
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.65),
+    0 10px 20px -10px rgba(0, 0, 0, 0.6);
+}
+/* nuit : le brun sombre et l'encre voilée se confondent avec les cartes ; un liseré d'ocre dessine le bouton du papier */
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .papier .bouton.encre,
+:global(html[data-theme="nuit"]:not([data-discreet="1"])) .rang .bouton.encre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pal-5) 40%, transparent),
+    var(--shadow-btn);
+}
+.bouton :focus-visible,
+.bouton:focus-visible {
+  outline-offset: 3px;
+}
+
+/* le sceau : une pastille, l'icône en blanc, cerclée d'ocre */
+.sceau {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-2) 60%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--pal-2) 14%, transparent);
+  --pal-voile-haut: 0.4;
+  --pal-voile-bas: 0.6;
+  --encre-pas: 112px;
+}
+:global(html[data-theme="nuit"]) .sceau {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--pal-5) 60%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--pal-5) 14%, transparent);
+}
+/* le sceau sur la peinture : un disque noir, cerclé de blanc */
+.sceauNoir {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  text-shadow: none;
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.5),
+    0 0 0 5px rgba(255, 255, 255, 0.14);
+}
+.titreCarte {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  line-height: 1;
+}
+.titreMoyen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+/* ——— le diptyque : « Ton rang » (8/12) | « La Grande Salle » (4/12) ——— */
+.diptyque {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 4px;
+  min-height: 500px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: var(--shadow-1);
+}
+.rang {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 36px;
+  min-width: 0;
+  padding: 36px 40px;
+  border-radius: 19px 0 0 19px;
+  background: var(--surface);
+}
+/* pas de voisins à montrer : la carte n'a qu'une colonne */
+.rangSeul {
+  grid-template-columns: minmax(0, 1fr);
+}
+.rangGauche {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.rangEntete {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.nomRang {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  line-height: 0.95;
+}
+.palier {
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+}
+.palier p {
+  font-size: 16px;
+  line-height: 1.4;
+}
+.rivalite {
+  max-width: 460px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+/* la piste du palier : un trait d'encre sur un rail */
+.piste {
+  position: relative;
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--paper-2);
+}
+.piste i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  --pal-voile-haut: 0.45;
+  --pal-voile-bas: 0.62;
+  --encre-pas: 120px;
+}
+.bornes {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+/* le panneau « Autour de toi » */
+.autour {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 16px;
+  background: var(--paper);
+}
+.bilan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 0 8px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.bilan b {
+  color: var(--ink);
+}
+
+/* La Grande Salle : la peinture animée, un voile sombre, le texte clair posé en bas */
+.salle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 32px 32px;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 0 19px 19px 0;
+  background: var(--noyer-fonce);
+  color: var(--sur-nuit);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.fondSalle {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.salle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(26, 16, 9, 0.06) 0%, rgba(26, 16, 9, 0.6) 36%, rgba(26, 16, 9, 0.88) 60%, rgba(26, 16, 9, 0.92) 100%);
+}
+.salleTitre {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  font-size: 28px;
+  line-height: 1.05;
+}
+.salleSous {
+  font-size: 14px;
+  font-weight: 600;
+}
+.salleQuand {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.puce {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: none;
+}
+.salleNote {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.salle .bouton {
+  margin-top: 6px;
+}
+.salle :focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* ——— la rangée « Duels » (7/12) + « Trouver un adversaire » (5/12) ——— */
+.rangee {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+}
+.duels {
+  grid-column: span 7;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+}
+.duelsTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.lignes {
+  display: grid;
+  gap: 14px;
+}
+.lignes > li + li {
+  padding-top: 14px;
+  border-top: 1px solid var(--pencil-2);
+}
+.ligneDuel {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 14px;
+}
+.ligneDuel b {
+  display: block;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.ligneTexte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.pastilleN {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--pencil-2);
+  font-size: 24px;
+}
+.pastilleAttente {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 99px;
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.revoir {
+  margin-top: 8px;
+}
+.trouver {
+  grid-column: span 5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.trouverImg {
+  position: relative;
+  flex: none;
+  height: 170px;
+  border-bottom: 1px solid var(--pencil-2);
+  background: var(--noyer-fonce);
+}
+.trouverCorps {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  gap: 12px;
+  padding: 24px 28px 28px;
+}
+.trouverCorps p {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.trouverCorps .bouton {
+  margin-top: auto;
+}
+
+/* ——— le Classement général : un bandeau peint, des onglets, un panneau ——— */
+.general {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bandeau {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 16px;
+  height: 130px;
+  padding: 0 32px;
+  isolation: isolate;
+  background: var(--noyer-fonce);
+  color: var(--sur-nuit);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.bandeau::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(26, 16, 9, 0.9) 0%, rgba(26, 16, 9, 0.72) 48%, rgba(26, 16, 9, 0.2) 100%);
+}
+.bandeauFond {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.bandeauTitre {
+  font-size: 32px;
+  line-height: 1.05;
+}
+.bandeauTexte {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.bandeauTexte p {
+  font-size: 14px;
+  font-weight: 600;
+}
+.corpsGeneral {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+}
+.onglets {
+  display: flex;
+  gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 2px;
+  margin: -2px;
+  scrollbar-width: none;
+}
+.onglets::-webkit-scrollbar {
+  display: none;
+}
+.onglet {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid var(--pencil-2);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+@media (hover: hover) {
+  .onglet:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+}
+/* l'onglet choisi se remplit d'encre */
+.onglet[aria-selected="true"] {
+  border-color: transparent;
+  background: var(--noyer-fonce);
+  color: var(--sur-nuit);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --pal-voile-haut: 0.5;
+  --pal-voile-bas: 0.68;
+  --encre-pas: 120px;
+}
+.onglet:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.panneau {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.panneau[hidden] {
+  display: none;
+}
+.panneau:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+.introOnglet {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.introOnglet b {
+  color: var(--ink);
+}
+
+/* ——— l'onglet « Amis » ——— */
+.amisTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.amisTete p {
+  font-size: 14px;
+}
+.amisGrille {
+  display: grid;
+  grid-template-columns: 64px 44px minmax(0, 1fr) 200px 100px 140px;
+  align-items: center;
+  gap: 14px;
+}
+.amisCols {
+  padding: 0 14px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.amisCols > :nth-child(5) {
+  text-align: right;
+}
+.amisListe {
+  display: grid;
+  gap: 2px;
+}
+.ami {
+  min-height: 64px;
+  padding: 0 14px;
+  border-radius: 12px;
+}
+.ami.moi {
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.amiPlace {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.amiNom {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.25;
+}
+.amiNom b {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amiNom b span {
+  font-weight: 500;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.amiRang {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13.5px;
+}
+.amiRang span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amiElo {
+  text-align: right;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.defier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.defier:active {
+  transform: scale(0.98);
+}
+.presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.presenceDot {
+  display: block;
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--ink-3);
+}
+.presenceDot.vif {
+  background: var(--gain);
+  box-shadow: none;
+}
+.presence.vif {
+  color: var(--gain);
+}
+.amisVide {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 520px;
+  padding: 8px 0 4px;
+}
+.amisVide h3 {
+  font-size: 22px;
+}
+
+/* ——— la rangée « Ton plus grand rival » (5/12) + « Les maîtres de chaque matière » (7/12) ——— */
+.rival,
+.maitres {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+}
+.rival {
+  grid-column: span 5;
+}
+.maitres {
+  grid-column: span 7;
+}
+/* une seule des deux cartes (l'autre n'a pas de données) : toute la largeur */
+.rangee > .seule {
+  grid-column: span 12;
+}
+.carteTete {
+  display: grid;
+  gap: 6px;
+}
+.sousCarte {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+/* des pistes fines : un aplat d'encre sur un rail (pas de liquide animé sous chaque barre) */
+.pisteFine {
+  flex: none;
+  height: 8px;
+  width: 84px;
+}
+.pisteFine i {
+  background: var(--noyer-fonce);
+}
+:global(html[data-theme="nuit"]) .pisteFine i {
+  background: color-mix(in srgb, var(--pal-5) 85%, white);
+}
+
+/* sa carte joueur : bannière, sceau, nom et présence, insigne et rang */
+.joueur {
+  overflow: hidden;
+  border: 1px solid var(--pencil-2);
+  border-radius: 16px;
+  background: var(--paper);
+}
+.joueurBanniere {
+  height: 64px;
+}
+.joueurTete {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: -32px;
+  padding: 0 16px;
+}
+.joueurSceau {
+  flex: none;
+}
+.joueurNom {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-bottom: 4px;
+}
+.joueurNom b {
+  overflow: hidden;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.joueurRang {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px 14px;
+}
+.joueurRangTexte {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.joueurRangTexte b {
+  font-size: 16px;
+}
+.joueurRangTexte span {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* « Croisé 23 fois » et le verdict */
+.croise {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.croiseTitre {
+  font-size: 30px;
+  line-height: 1.1;
+}
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--pencil-2);
+  border-radius: 99px;
+  background: var(--paper);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* tu mènes : le verdict se remplit de l'ocre pâle du surligneur */
+.verdict.enTete {
+  border-color: transparent;
+  background: var(--surligne);
+}
+
+/* le détail par épreuve */
+.epreuves {
+  display: grid;
+  gap: 2px;
+}
+.epreuve {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px minmax(104px, auto);
+  align-items: center;
+  gap: 14px;
+  min-height: 40px;
+  border-top: 1px solid var(--pencil-2);
+}
+.epreuveNom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  font-size: 14px;
+}
+.epreuveN {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.epreuveLigne {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+
+/* ——— les maîtres : deux colonnes de cinq matières ——— */
+.maitresListe {
+  display: grid;
+  flex: 1 1 0;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(5, 1fr);
+  gap: 2px 20px;
+}
+.maitre {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+/* c'est toi : l'ocre pâle, cerclé */
+.maitre.cestToi {
+  background: color-mix(in srgb, var(--pal-5) 24%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pal-5) 90%, transparent);
+}
+.maitreHaut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.maitreHaut b {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.maitreToi {
+  overflow: hidden;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pastilleToi {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 99px;
+  background: var(--surligne);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.maitreBas {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.maitreNom {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.maitrePct {
+  margin-left: auto;
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.maitreVide {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+/* la piste du maître, avec le repère noir : où tu en es */
+.pisteMaitre {
+  display: block;
+  position: relative;
+  flex: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--paper-2);
+}
+.pisteMaitre i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--noyer-fonce);
+}
+:global(html[data-theme="nuit"]) .pisteMaitre i {
+  background: color-mix(in srgb, var(--pal-5) 85%, white);
+}
+.repere {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 12px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+/* ——— moyen : le diptyque se range en deux étages, la rangée aussi ——— */
+@container (max-width: 1080px) {
+  .rang {
+    padding: 30px 28px;
+    gap: 24px;
+  }
+  .salle {
+    padding: 0 24px 26px;
+  }
+  .amisGrille {
+    grid-template-columns: 52px 44px minmax(0, 1fr) 160px 80px 120px;
+    gap: 12px;
+  }
+  .rival,
+  .maitres {
+    padding: 22px;
+  }
+  .epreuve {
+    grid-template-columns: minmax(0, 1fr) 64px minmax(92px, auto);
+    gap: 10px;
+  }
+  .pisteFine {
+    width: 64px;
+  }
+  .croiseTitre {
+    font-size: 26px;
+  }
+}
+@container (max-width: 900px) {
+  .diptyque {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  .rang {
+    border-radius: 19px 19px 0 0;
+  }
+  .salle {
+    min-height: 380px;
+    border-radius: 0 0 19px 19px;
+  }
+  .duels,
+  .trouver,
+  .rival,
+  .maitres {
+    grid-column: span 12;
+  }
+  .trouverImg {
+    height: 150px;
+  }
+}
+/* la liste d'amis se serre : le rang et le bouton passent sous le nom */
+@container (max-width: 760px) {
+  .amisCols {
+    display: none;
+  }
+  .amisGrille {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "avatar nom elo"
+      "avatar rang defier";
+    row-gap: 6px;
+    padding-block: 10px;
+  }
+  .ami .amiPlace {
+    display: none;
+  }
+  .ami .avatar {
+    grid-area: avatar;
+  }
+  .ami .amiNom {
+    grid-area: nom;
+  }
+  .ami .amiRang {
+    grid-area: rang;
+  }
+  .ami .amiElo {
+    grid-area: elo;
+  }
+  .ami .defier {
+    grid-area: defier;
+  }
+  .amiNom b::before {
+    content: attr(data-place) " · ";
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+}
+/* téléphone : une colonne partout */
+@container (max-width: 560px) {
+  .racine {
+    gap: 16px;
+  }
+  .diptyque,
+  .carte,
+  .papier {
+    border-radius: 16px;
+  }
+  .rang {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 22px 18px;
+    border-radius: 15px 15px 0 0;
+  }
+  .salle {
+    min-height: 400px;
+    padding: 0 18px 20px;
+    border-radius: 0 0 15px 15px;
+  }
+  .salleTitre {
+    font-size: 26px;
+  }
+  .actions .bouton {
+    width: 100%;
+  }
+  .duels {
+    padding: 18px;
+  }
+  .ligneDuel {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .ligneDuel > :nth-child(3) {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .pastilleN {
+    width: 48px;
+    height: 48px;
+  }
+  .titreCarte {
+    font-size: 24px;
+  }
+  .trouverCorps {
+    padding: 18px;
+  }
+  .trouverCorps .bouton {
+    width: 100%;
+  }
+  .rival,
+  .maitres {
+    padding: 18px;
+  }
+  .maitresListe {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .epreuve {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "nom ligne"
+      "piste piste";
+    row-gap: 6px;
+    padding-block: 8px;
+  }
+  .epreuve .epreuveNom {
+    grid-area: nom;
+  }
+  .epreuve .epreuveLigne {
+    grid-area: ligne;
+    text-align: right;
+  }
+  .epreuve .pisteFine {
+    grid-area: piste;
+    width: 100%;
+  }
+  .croiseTitre {
+    font-size: 24px;
+  }
+  .bandeau {
+    height: 104px;
+    padding: 0 18px;
+    gap: 12px;
+  }
+  .bandeauTitre {
+    font-size: 24px;
+  }
+  .corpsGeneral {
+    padding: 18px 16px;
+  }
+  .onglets {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+}
+
+/* ——— mode discret (réviser en public) ———
+   Les accents passent à l'encre du site ; les boutons, sceaux et onglets
+   d'encre reprennent le bouton plein du site, et sur la peinture un bouton clair. */
+:global(html[data-discreet="1"]) .racine {
+  --acc: var(--ink);
+}
+:global(html[data-discreet="1"]) .papier .encre,
+:global(html[data-discreet="1"]) .rang .encre,
+:global(html[data-discreet="1"]) .onglet[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--paper);
+  text-shadow: none;
+}
+:global(html[data-discreet="1"]) .salle .bouton.encre {
+  background: #fff;
+  color: #111;
+  text-shadow: none;
+}
+
+/* ——— mouvement réduit ——— */
+@media (prefers-reduced-motion: reduce) {
+  .bouton,
+  .defier,
+  .onglet,
+  .lien::after {
+    transition: none;
+  }
+  .bouton:active,
+  .defier:active,
+  .lien:hover::after {
+    transform: none;
+  }
+}

@@ -1,25 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { segThumbStyle } from "@/components/classement/Seg";
+import { useEffect, useState } from "react";
+import { PALETTES } from "@/lib/palettes";
+import s from "./Affronter.module.css";
 
-export type TabKey = "classement" | "duels" | "examens";
+export type TabKey = "classement" | "amis" | "courbe" | "rangs" | "regles";
 
 export type TabDef = {
   key: TabKey;
   label: string;
-  /** libellé court sous 640 px (sinon `label`) */
-  short?: string;
-  /** pastille à droite du libellé (défi reçu, J-7…) */
-  badge?: string | null;
   panel: React.ReactNode;
 };
 
-// Onglets de l'espace Classement (Classement | Duels | Examens classés).
-// Les trois panneaux sont rendus côté serveur ; seul le panneau actif est
-// visible. L'onglet suit l'adresse (?onglet=duels) pour être partageable,
-// sans recharger la page.
-export function ClassementTabs({ tabs, initial }: { tabs: TabDef[]; initial: TabKey }) {
+const PAL = PALETTES["san-romano"];
+
+// Les onglets du Classement général (Classement | Amis | Ta courbe | Les 8
+// rangs | Comment ça marche). Les panneaux sont rendus côté serveur ; seul le
+// panneau actif est visible. L'onglet suit l'adresse (?onglet=amis) pour être
+// partageable, sans recharger la page ; flèches, Début et Fin déplacent le
+// choix. L'onglet choisi se remplit de l'encre de la palette de l'espace.
+export function ClassementTabs({ tabs, initial, label }: { tabs: TabDef[]; initial: TabKey; label: string }) {
   const [active, setActive] = useState<TabKey>(tabs.some((t) => t.key === initial) ? initial : tabs[0].key);
   const ix = tabs.findIndex((t) => t.key === active);
 
@@ -35,56 +35,63 @@ export function ClassementTabs({ tabs, initial }: { tabs: TabDef[]; initial: Tab
     }
   }
 
+  // « Toi » (Autour de toi) mène à la liste : si un autre onglet est ouvert, on revient d'abord au Classement
+  useEffect(() => {
+    const first = tabs[0].key;
+    const suit = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href="#joueurs"]');
+      if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      pick(first);
+      const calme = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      requestAnimationFrame(() => document.getElementById("joueurs")?.scrollIntoView({ behavior: calme ? "auto" : "smooth", block: "start" }));
+    };
+    // en capture : avant le <Link> de Next, qui laisse la main si le clic est déjà traité
+    document.addEventListener("click", suit, true);
+    return () => document.removeEventListener("click", suit, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function onKey(e: React.KeyboardEvent) {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    let next: number | null = null;
+    if (e.key === "ArrowRight") next = (ix + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") next = (ix + tabs.length - 1) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
+    if (next === null) return;
     e.preventDefault();
-    const next = tabs[(ix + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
-    pick(next.key);
-    document.getElementById(`rl-tab-${next.key}`)?.focus();
+    pick(tabs[next].key);
+    document.getElementById(`cl-tab-${tabs[next].key}`)?.focus();
   }
 
   return (
-    <section className="flex min-w-0 flex-col gap-7 md:gap-9" aria-label="Classement, duels et examens">
-      <div className="max-w-full overflow-x-auto [scrollbar-width:none]">
-        <div role="tablist" aria-label="Vues" className="seg" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} onKeyDown={onKey}>
-          <span aria-hidden className="seg-thumb" style={segThumbStyle(ix, tabs.length)} />
-          {tabs.map((t) => {
-            const on = t.key === active;
-            return (
-              <button
-                key={t.key}
-                id={`rl-tab-${t.key}`}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                aria-controls={`rl-panel-${t.key}`}
-                aria-label={t.badge ? `${t.label} (${t.badge})` : t.label}
-                tabIndex={on ? 0 : -1}
-                onClick={() => pick(t.key)}
-                className="seg-item px-3 sm:px-5"
-              >
-                {t.short ? (
-                  <>
-                    <span className="sm:hidden">{t.short}</span>
-                    <span className="hidden sm:inline">{t.label}</span>
-                  </>
-                ) : (
-                  t.label
-                )}
-                {t.badge && (
-                  <span className="rounded-[6px] bg-white px-1.5 py-px font-mono text-[10.5px] font-semibold leading-[1.5] text-black">{t.badge}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+    <>
+      <div role="tablist" aria-label={label} className={s.onglets} onKeyDown={onKey}>
+        {tabs.map((t) => {
+          const on = t.key === active;
+          return (
+            <button
+              key={t.key}
+              id={`cl-tab-${t.key}`}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              aria-controls={`cl-panel-${t.key}`}
+              tabIndex={on ? 0 : -1}
+              onClick={() => pick(t.key)}
+              className={s.onglet + (on ? " rl-encre " + s.encre : "")}
+              data-palette={on ? PAL.key : undefined}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
-
       {tabs.map((t) => (
-        <div key={t.key} id={`rl-panel-${t.key}`} role="tabpanel" aria-labelledby={`rl-tab-${t.key}`} hidden={t.key !== active} className="min-w-0">
+        <div key={t.key} id={`cl-panel-${t.key}`} role="tabpanel" aria-labelledby={`cl-tab-${t.key}`} tabIndex={0} hidden={t.key !== active} className={s.panneau}>
           {t.panel}
         </div>
       ))}
-    </section>
+    </>
   );
 }

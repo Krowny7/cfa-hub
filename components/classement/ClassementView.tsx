@@ -2,29 +2,34 @@ import Link from "next/link";
 import { ArrowRight, Search, TrendingUp } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { ArcElectrique } from "@/components/ui/ArcElectrique";
-import { RankBadge } from "@/components/ui/RankBadge";
-import { BandeEncre } from "@/components/ui/BandeEncre";
-import { CarteLieu } from "@/components/ui/CarteLieu";
+import { Illustration } from "@/components/ui/Illustration";
 import { PeintureAnimee } from "@/components/ui/PeintureAnimee";
-import { BandeauPeint, Medaillon, Sceau, TuileCalme } from "@/components/ui/Tuiles";
+import { RankBadge } from "@/components/ui/RankBadge";
+import { AutourDeToi } from "@/components/classement/AutourDeToi";
+import { Amis } from "@/components/classement/Amis";
+import { Avatar } from "@/components/classement/Avatar";
+import { CarteMaitres } from "@/components/classement/CarteMaitres";
+import { CarteRival } from "@/components/classement/CarteRival";
+import { Bouton, PAL, Sceau } from "@/components/classement/Encre";
+import { ClassementTabs, type TabKey } from "@/components/classement/ClassementTabs";
+import { HowItWorks } from "@/components/classement/Domains";
+import { EloChart } from "@/components/classement/EloChart";
 import { Leaderboard } from "@/components/classement/Leaderboard";
 import { TierTrack } from "@/components/classement/TierTrack";
-import { AutourDeToi } from "@/components/classement/AutourDeToi";
-import { EloChart } from "@/components/classement/EloChart";
-import { Disclosure } from "@/components/classement/Disclosure";
-import { DomainPills, HowItWorks } from "@/components/classement/Domains";
-import type { TabKey } from "@/components/classement/ClassementTabs";
 import { daysUntil, fmtAgo, fmtDay, fmtDuration, fmtHour, fmtInt, fmtLongDate, fmtShortDate, signed } from "@/components/classement/format";
 import type { BoardRow, ClassementData } from "@/components/classement/types";
 import type { DuelSummary } from "@/lib/rating";
 import { CURRENT_DOMAIN } from "@/lib/domains";
+import { styleDePalette } from "@/lib/palettes";
 import { PLACEMENT_GAMES, rankFor } from "@/lib/ranks";
 import { DUEL_REVIEW_DAYS, reviewLeftLabel } from "@/lib/duels";
 import { placement as lignePlacement, pointsAvant, scorePct, SOMMET, VERROU } from "@/lib/voice";
-import { CLASSEMENT, RIVALITE, coteProchain, ligneRang, partiesClassees } from "@/lib/voice-z2a";
-import { CL } from "@/lib/voice-classement";
+import { CLASSEMENT, RIVALITE, coteProchain, joueursDomaine, ligneRang, partiesClassees } from "@/lib/voice-z2a";
+import { CL, ONGLETS_CLASSEMENT } from "@/lib/voice-classement";
+import s from "./Affronter.module.css";
 
-export const CLASSEMENT_TABS: TabKey[] = ["classement", "duels", "examens"];
+/** Les onglets du classement général (?onglet=) : le premier est celui d'arrivée. */
+export const CLASSEMENT_TABS: TabKey[] = ONGLETS_CLASSEMENT.map((t) => t.key);
 
 const SHOWN = 10;
 
@@ -49,70 +54,90 @@ function voisins(board: BoardRow[], meRow: BoardRow | null) {
   };
 }
 
-/** Tuile « Duels en cours » : la partie à reprendre, sinon le défi envoyé qui attend. */
-function TuileEnCours({ open }: { open: DuelSummary[] }) {
+/**
+ * La carte « Duels » : la partie à reprendre (avec « Reprendre »), le défi
+ * envoyé qui attend, puis « À revoir » (les duels finis dont la revue est
+ * encore ouverte) et le lien « Tous tes duels ».
+ */
+function CarteDuels({ open, recent }: { open: DuelSummary[]; recent: DuelSummary[] }) {
   const actif = open.find((d) => d.status === "active");
   const envoye = open.find((d) => !d.incoming && d.status === "pending" && d.opponentId);
-  return (
-    <TuileCalme
-      label="Duels en cours"
-      icone={<Icone nom="duel" size={19} />}
-      titre={CL.enCours}
-      droite={open.length > 0 ? <span className="t-micro font-mono">{open.length}</span> : null}
-      fort={
-        <span className="flex items-center gap-3">
-          <Medaillon nom="classement-duels" position="50% 28%" />
-          {actif ? CL.contre(nom(actif)) : envoye ? CL.pasEncoreJoue(nom(envoye)) : CL.aucunEnCours}
-        </span>
-      }
-      ligne={actif ? CL.partieOuverte : envoye ? CL.defiEnvoye(fmtAgo(envoye.createdAt)) : CL.enCoursVideLigne}
-      actions={
-        <>
-          {actif && (
-            <Link href={`/duel/${actif.id}`} className="btn btn-secondary rl-press min-h-[38px] px-3.5 text-[13.5px]">
-              {CL.reprendre} <ArrowRight size={15} aria-hidden />
-            </Link>
-          )}
-          <Link href="/duel" className="ink-link">
-            {CLASSEMENT.tousDuels}
-          </Link>
-        </>
-      }
-    />
-  );
-}
-
-/** Tuile « À revoir » : les duels finis dont la revue est encore ouverte. */
-function TuileRevoir({ recent }: { recent: DuelSummary[] }) {
   const now = new Date().toISOString();
   const n = recent.filter((d) => d.status === "finished" && d.finishedAt && reviewLeftLabel(d.finishedAt, now) !== null).length;
   return (
-    <TuileCalme
-      label="À revoir"
-      icone={<Icone nom="erreurs" size={19} />}
-      titre={CL.aRevoir}
-      droite={<span className="t-micro font-mono">{DUEL_REVIEW_DAYS} j</span>}
-      fort={n > 0 ? CL.aRelire(n) : CL.rienARevoir}
-      ligne={n > 0 ? CL.aRevoirLigne(DUEL_REVIEW_DAYS) : CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)}
-      actions={
-        <Link href="/duel" className="ink-link">
-          {CL.revoirDuels}
+    <section className={[s.carte, s.papier, s.duels].join(" ")} aria-labelledby="cl-duels">
+      <header className={s.duelsTete}>
+        <h2 id="cl-duels" className={"font-brand " + s.titreCarte}>
+          <Sceau>
+            <Icone nom="duel" size={18} />
+          </Sceau>
+          {CL.duels}
+        </h2>
+        <Link href="/duel" className={s.lien}>
+          {CLASSEMENT.tousDuels}
         </Link>
-      }
-    />
+      </header>
+
+      <p className={s.eyebrow}>{CL.enCours}</p>
+      {actif || envoye ? (
+        <ul className={s.lignes}>
+          {actif && (
+            <li className={s.ligneDuel}>
+              <Avatar src={actif.opponentAvatar} name={nom(actif)} size={56} />
+              <div className={s.ligneTexte}>
+                <b>{CL.contre(nom(actif))}</b>
+                <span className={s.sous}>{CL.partieOuverte}</span>
+              </div>
+              <Bouton href={`/duel/${actif.id}`}>
+                {CL.reprendre} <ArrowRight size={15} aria-hidden />
+              </Bouton>
+            </li>
+          )}
+          {envoye && (
+            <li className={s.ligneDuel}>
+              <Avatar src={envoye.opponentAvatar} name={nom(envoye)} size={56} />
+              <div className={s.ligneTexte}>
+                <b>{CL.pasEncoreJoue(nom(envoye))}</b>
+                <span className={s.sous}>{CL.defiEnvoye(fmtAgo(envoye.createdAt))}</span>
+              </div>
+              <span className={s.pastilleAttente}>{CL.enAttente}</span>
+            </li>
+          )}
+        </ul>
+      ) : (
+        <div className={s.ligneTexte}>
+          <b>{CL.aucunEnCours}</b>
+          <span className={s.sous}>{CL.enCoursVideLigne}</span>
+        </div>
+      )}
+
+      <p className={s.eyebrow + " " + s.revoir}>{CL.aRevoir}</p>
+      <div className={s.ligneDuel}>
+        <span className={"font-brand " + s.pastilleN} aria-hidden>
+          {n}
+        </span>
+        <div className={s.ligneTexte}>
+          <b>{n > 0 ? CL.aRelire(n) : CL.rienARevoir}</b>
+          <span className={s.sous}>{n > 0 ? CL.aRevoirLigne(DUEL_REVIEW_DAYS) : CLASSEMENT.aRevoirVide(DUEL_REVIEW_DAYS)}</span>
+        </div>
+        {n > 0 && (
+          <Link href="/duel" className={s.lien}>
+            {CL.revoirDuels}
+          </Link>
+        )}
+      </div>
+    </section>
   );
 }
 
-/** La Grande Salle : la carte « lieu » de l'examen classé (le prochain, ou rien de prévu). */
+/** La Grande Salle : la moitié peinte du diptyque, l'examen classé (le prochain, ou rien de prévu). */
 function GrandeSalle({ data }: { data: ClassementData }) {
   const { exam, pastExams } = data;
   const dernier = pastExams.find((e) => e.score !== null);
   let sousTitre: string = CL.salleVideSous;
-  let etat: React.ReactNode = (
-    <>
-      {CLASSEMENT.examenVide}. {CLASSEMENT.examenVideTexte}
-    </>
-  );
+  let quand: string = CLASSEMENT.examenVide;
+  let puces: string[] = [];
+  let note: string = CLASSEMENT.examenVideTexte;
   let action: { href: string; label: string } = { href: "/mock-exams", label: CL.voirExamens };
   if (exam) {
     const jours = daysUntil(exam.scheduledAt);
@@ -121,45 +146,61 @@ function GrandeSalle({ data }: { data: ClassementData }) {
       exam.registrants === null ? (draft ? "inscriptions bientôt ouvertes" : null) : exam.registrants === 0 ? "aucun inscrit" : `${exam.registrants} inscrit${exam.registrants > 1 ? "s" : ""}`;
     const repere = exam.windowOpen ? `ouvert jusqu'au ${fmtShortDate(exam.windowEnd)}` : jours > 0 ? `J-${jours}` : null;
     sousTitre = CL.salleSous(exam.questionCount, fmtDuration(exam.durationMinutes));
-    etat = (
-      <>
-        {majuscule(fmtDay(exam.scheduledAt))} à {fmtHour(exam.scheduledAt)}
-        {[repere, inscrits].filter(Boolean).map((x) => ` · ${x}`)}. {CL.ilFaitBouger}
-        {dernier && ` ${CL.dernierExamen(scorePct(dernier.score as number, dernier.total ?? dernier.questionCount), dernier.delta !== null ? signed(dernier.delta) : null)}`}
-      </>
-    );
+    quand = `${majuscule(fmtDay(exam.scheduledAt))} à ${fmtHour(exam.scheduledAt)}`;
+    puces = [repere, inscrits].filter((x): x is string => Boolean(x));
+    note = CL.ilFaitBouger + (dernier ? ` ${CL.dernierExamen(scorePct(dernier.score as number, dernier.total ?? dernier.questionCount), dernier.delta !== null ? signed(dernier.delta) : null)}` : "");
     action = {
       href: `/mock-exams/${exam.id}`,
       label: exam.registered ? (exam.windowOpen ? CL.passer : CL.inscritVoir) : draft ? CL.voirExamen : CL.jeMinscris,
     };
   }
   return (
-    <CarteLieu
-      className="lg:col-span-4 lg:col-start-9 lg:row-start-1"
-      label={CL.salle}
-      visuel={<PeintureAnimee nom="classement-grande-salle" position="50% 60%" />}
-      vignette={<PeintureAnimee nom="classement-grande-salle" position="50% 60%" decorative />}
-      marque={
-        <Sceau>
+    <section className={s.salle} aria-label={CL.salle}>
+      <div className={s.fondSalle} aria-hidden>
+        <PeintureAnimee nom="classement-grande-salle" position="50% 60%" decorative eager />
+      </div>
+      <div className={s.salleTitre}>
+        <span className={s.sceauNoir} aria-hidden>
           <Icone nom="examen" size={20} />
-        </Sceau>
-      }
-      nom={CL.salle}
-      sousTitre={sousTitre}
-      etat={etat}
-      action={action}
-    />
+        </span>
+        <h2 className="font-brand">{CL.salle}</h2>
+      </div>
+      <p className={s.salleSous}>{sousTitre}</p>
+      <p className={s.salleQuand}>{quand}</p>
+      {puces.length > 0 && (
+        <ul className={s.puces}>
+          {puces.map((p) => (
+            <li key={p} className={s.puce}>
+              {p}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className={s.salleNote}>{note}</p>
+      <Bouton href={action.href} surPeinture>
+        {action.label}
+      </Bouton>
+    </section>
   );
 }
 
-// Espace « Classement » (refonte, variante « Ton rang ») : le rang est le
-// héros — l'insigne en grand, la place, le prochain palier, le duel à
-// lancer et ceux qui t'entourent ; à droite la carte « lieu » La Grande
-// Salle (l'examen classé). Dessous : duels en cours et à revoir, la bande
-// « Trouver un adversaire », le classement général sous un bandeau peint, la
-// courbe d'ELO repliée et, repliés en bas, les 8 rangs et les règles.
+// Espace « S'affronter » (ex-Classement), disposition A « L'arène » (maquette
+// validée), dans le même langage que S'entraîner (Affronter.module.css : cartes
+// en papier, diptyque peint, boutons et onglets d'encre, palette san-romano).
+// Dans l'ordre : l'en-tête simple (espace · domaine, titre) ; le diptyque
+// « Ton rang » (le rang est le héros : insigne, ELO, place, palier, rival, le
+// duel à lancer, ceux qui t'entourent, le bilan ; l'arc électrique court autour
+// quand il y a de l'enjeu) | « La Grande Salle » (l'examen classé, carte peinte) ;
+// la rangée « Duels » (partie à reprendre, défi envoyé, duels à relire) +
+// « Trouver un adversaire » ; la rangée « Ton plus grand rival |
+// Les maîtres de chaque matière » (CarteRival, CarteMaitres : chacune seulement
+// si elle a des données) ; enfin le Classement général en
+// onglets : Classement (podium, liste), Amis, Ta courbe, Les 8 rangs, Comment
+// ça marche. Téléphone : une colonne, dans le même ordre.
 // Composant de présentation : toutes les données arrivent en props.
-export function ClassementView({ data }: { data: ClassementData; /** ancien paramètre des onglets, sans effet */ tab?: TabKey }) {
+// Repères de Léonard (data-leonard) : rang (la moitié « Ton rang »), joueurs
+// (dans le Classement du général).
+export function ClassementView({ data, tab = "classement" }: { data: ClassementData; /** l'onglet du classement général ouvert à l'arrivée (?onglet=) */ tab?: TabKey }) {
   const { me, history, board, meRow, openDuels, recentDuels } = data;
   const dom = CURRENT_DOMAIN.name;
   const rank = rankFor(me.elo, me.mastery, me.leaderboardRank);
@@ -181,19 +222,29 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
       : rank.next && rank.pointsToNext !== null
         ? CL.plusQue(pointsAvant(rank.pointsToNext, rank.next.name))
         : SOMMET;
-  // la seconde phrase : le défi reçu, sinon le rival juste devant
+  // la piste vers le palier suivant (seulement quand la maîtrise ne bloque pas)
+  const piste = !enPlacement && !rank.lockedBy && rank.next !== null && rank.pointsToNext !== null ? { pct: Math.max(4, Math.min(100, rank.progress)), de: rank.tier, vers: rank.next } : null;
+  // la seconde phrase : le défi reçu, sinon le rival juste devant (l'écart sur le surligneur)
   const ecart = devant && moi ? Math.max(0, devant.elo - moi.elo) : 0;
-  const rivalite = !aJoue
-    ? CLASSEMENT.videTexte
-    : defi
-      ? CL.tAdefie(nom(defi), fmtAgo(defi.createdAt))
-      : devant
-        ? ecart > 0
-          ? CL.devant(devant.name, ecart)
-          : RIVALITE.egalite(devant.name) + "."
-        : moi && moi.rank === 1
-          ? RIVALITE.enTete
-          : null;
+  const rivalite: React.ReactNode = !aJoue ? (
+    CLASSEMENT.videTexte
+  ) : defi ? (
+    CL.tAdefie(nom(defi), fmtAgo(defi.createdAt))
+  ) : devant ? (
+    ecart > 0 ? (
+      <>
+        <b>{devant.name}</b> {CL.devantMilieu}{" "}
+        <span className={s.surligne}>
+          <b>{fmtInt(ecart)} ELO</b>
+        </span>{" "}
+        {CL.devantFin}
+      </>
+    ) : (
+      RIVALITE.egalite(devant.name) + "."
+    )
+  ) : moi && moi.rank === 1 ? (
+    RIVALITE.enTete
+  ) : null;
   const lienDefi = defi
     ? { href: `/duel/${defi.id}`, label: CL.releverDefi(nom(defi)) }
     : devant
@@ -208,6 +259,7 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
   const events = history.slice(-SHOWN);
   const total = events.length ? events[events.length - 1].eloAfter - events[0].eloBefore : 0;
   const cap = !enPlacement && rank.next && rank.pointsToNext !== null && !rank.lockedBy ? { elo: rank.next.min, label: coteProchain(rank.next.name, rank.pointsToNext) } : null;
+  const nbJoueurs = me.totalPlayers ?? board.length;
 
   return (
     <div className="rl-wide rl-page">
@@ -218,97 +270,158 @@ export function ClassementView({ data }: { data: ClassementData; /** ancien para
             <span>{CL.kicker(dom)}</span>
           </p>
           <h1 className="t-hero rl-in m-0">{CL.titre}</h1>
-          <DomainPills me={me} />
         </header>
 
-        <div className="flex flex-col gap-4 md:gap-[18px]">
-          <div className="grid gap-4 md:gap-[18px] lg:grid-cols-12">
-            <div className="flex min-w-0 flex-col gap-4 md:gap-[18px] lg:col-span-8">
-              <section
-                data-leonard="rang"
-                className={"card-hero rl-in grid min-h-[260px] min-w-0 gap-x-8 gap-y-5 p-6 md:p-8 " + (montrerAutour ? "md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]" : "")}
-                aria-label="Ton rang"
-              >
-                <div className="flex min-w-0 flex-col gap-4">
-                  <div className="@container flex min-w-0 flex-col gap-2">
-                    <p className="t-eyebrow">{CL.tonRang(dom)}</p>
-                    {/* la taille suit la place de la colonne (unités cqi) et la longueur du nom :
-                        « Placement » ou « Platine II » tiennent sur une ligne sans déborder sur « Autour de toi » */}
-                    <h2
-                      className="font-brand m-0 flex min-w-0 items-center gap-3 leading-[0.95]"
-                      style={{ fontSize: `clamp(26px, calc((100cqi - 100px) / ${(0.76 * Math.max(rangNom.length, 4)).toFixed(2)}), 68px)` }}
-                    >
+        <div className={s.racine} style={styleDePalette(PAL)}>
+          {/* ——— le diptyque : « Ton rang » (8/12) | « La Grande Salle » (4/12) ——— */}
+          <section className={s.diptyque + " rl-in"} aria-label={CL.diptyque}>
+            <article data-leonard="rang" className={s.rang + (montrerAutour ? "" : " " + s.rangSeul)} aria-label={CL.rangDomaine}>
+              <div className={s.rangGauche}>
+                <div className={s.rangEntete}>
+                  <p className={s.eyebrow}>{CL.tonRang(dom)}</p>
+                  {/* la taille suit la place de la colonne (unités cqi) et la longueur du nom :
+                      « Placement » ou « Platine II » tiennent sur une ligne sans déborder sur « Autour de toi » */}
+                  <div className="@container min-w-0">
+                    <h2 className={"font-brand " + s.nomRang} style={{ fontSize: `clamp(26px, calc((100cqi - 100px) / ${(0.76 * Math.max(rangNom.length, 4)).toFixed(2)}), 68px)` }}>
                       <RankBadge tier={rank.tierIndex} division={enPlacement ? null : rank.division} mastery={me.mastery} size={84} gray={enPlacement} />
                       <span className="min-w-0">{rangNom}</span>
                     </h2>
-                    <p className="t-micro m-0">
-                      {fmtInt(me.elo)} ELO · {ligneRang({ place: me.leaderboardRank, joueurs: me.totalPlayers, maitrise: me.mastery })}
-                    </p>
                   </div>
-                  <div className="grid gap-1.5">
-                    <p className="t-body m-0 max-w-[460px] text-muted">{diagnostic}</p>
-                    {rivalite && <p className="t-small m-0 max-w-[460px]">{rivalite}</p>}
-                  </div>
-                  <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
-                    <Link href="/duel" className="btn btn-primary rl-press w-fit max-md:min-h-[44px]">
-                      <Icone nom="duel" size={17} /> {CLASSEMENT.lancer}
-                    </Link>
-                    <Link href={lienDefi.href} className="ink-link inline-flex items-center gap-1 text-[13px] font-semibold">
-                      {lienDefi.label} <ArrowRight size={13} aria-hidden />
-                    </Link>
-                  </div>
+                  <p className="m-0 text-[14px] text-[color:var(--ink-2)]">
+                    {fmtInt(me.elo)} ELO · {ligneRang({ place: me.leaderboardRank, joueurs: me.totalPlayers, maitrise: me.mastery })}
+                  </p>
                 </div>
-                {montrerAutour && (
-                  <div className="flex min-w-0 flex-col gap-3">
-                    <AutourDeToi rows={autour} titre={CL.autour} bornes={bornes} palier={rank.tierIndex} />
-                    {events.length > 0 && (
-                      <p className="t-micro m-0 mt-auto flex items-center gap-1.5 px-2" title="Courbe complète dans « Ta courbe », plus bas">
-                        <TrendingUp size={13} aria-hidden /> {CL.bilan(signed(total), events.length)}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {enjeu && <ArcElectrique palier={rank.tierIndex} />}
-              </section>
-              <div className="rl-in grid gap-4 md:gap-[18px] lg:grow xl:grid-cols-2" style={{ animationDelay: ".06s" }}>
-                <TuileEnCours open={openDuels} />
-                <TuileRevoir recent={recentDuels} />
+                <div className={s.palier}>
+                  <p>{diagnostic}</p>
+                  {piste && (
+                    <>
+                      <span className={s.piste} role="img" aria-label={CL.barrePalier(fmtInt(me.elo), piste.vers.name, fmtInt(piste.vers.min))}>
+                        <i className={"rl-encre " + s.encre} data-palette={PAL.key} style={{ width: `${piste.pct}%` }} />
+                      </span>
+                      <span className={s.bornes} aria-hidden>
+                        <span>{piste.de.min > 0 ? `${piste.de.name} · ${fmtInt(piste.de.min)}` : piste.de.name}</span>
+                        <span>
+                          {piste.vers.name} · {fmtInt(piste.vers.min)}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                </div>
+                {rivalite && <p className={s.rivalite}>{rivalite}</p>}
+                <div className={s.actions}>
+                  <Bouton href="/duel">
+                    <Icone nom="duel" size={17} /> {CLASSEMENT.lancer}
+                  </Bouton>
+                  <Link href={lienDefi.href} className={s.lien}>
+                    {lienDefi.label}
+                  </Link>
+                </div>
+              </div>
+              {montrerAutour && (
+                <div className={s.autour}>
+                  <AutourDeToi rows={autour} titre={CL.autour} bornes={bornes} palier={rank.tierIndex} />
+                  {events.length > 0 && (
+                    <p className={s.bilan} title="Courbe complète dans « Ta courbe », plus bas">
+                      <TrendingUp size={15} aria-hidden /> <span>{CL.bilan(signed(total), events.length)}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </article>
+            <GrandeSalle data={data} />
+            {enjeu && <ArcElectrique palier={rank.tierIndex} rayon={20} />}
+          </section>
+
+          {/* ——— la rangée « Duels » (7/12) + « Trouver un adversaire » (5/12) ——— */}
+          <div className={s.rangee}>
+            <CarteDuels open={openDuels} recent={recentDuels} />
+            <section className={[s.carte, s.papier, s.trouver].join(" ")} aria-labelledby="cl-trouver">
+              <div className={s.trouverImg} aria-hidden>
+                <Illustration nom="joueurs-seigneurie" position="50% 40%" decorative />
+              </div>
+              <div className={s.trouverCorps}>
+                <h2 id="cl-trouver" className={"font-brand " + s.titreMoyen}>
+                  <Sceau>
+                    <Search size={18} />
+                  </Sceau>
+                  {CL.trouver}
+                </h2>
+                <p>{CL.trouverLigne}</p>
+                <Bouton href="/people">
+                  <Search size={17} aria-hidden /> {CLASSEMENT.chercher}
+                </Bouton>
+              </div>
+            </section>
+          </div>
+
+          {/* ——— la rangée « Ton plus grand rival » (5/12) + « Les maîtres de chaque matière » (7/12) ———
+              Chacune des deux cartes n'apparaît que si elle a des données (pas de clé admin, rien
+              joué ensemble, personne de classé) ; seule, elle prend toute la largeur. Téléphone :
+              le rival, puis les maîtres. */}
+          {(data.rival || data.maitres) && (
+            <div className={s.rangee}>
+              {data.rival && <CarteRival rival={data.rival} seul={!data.maitres} />}
+              {data.maitres && <CarteMaitres maitres={data.maitres} seul={!data.rival} />}
+            </div>
+          )}
+
+          {/* ——— le Classement général, en onglets ——— */}
+          <section className={[s.carte, s.papier, s.general].join(" ")} aria-labelledby="cl-tableau">
+            <div className={s.bandeau}>
+              <div className={s.bandeauFond} aria-hidden>
+                <PeintureAnimee nom="classement-lice" position="50% 38%" decorative />
+              </div>
+              <span className={s.sceauNoir} aria-hidden>
+                <Icone nom="classement" size={20} />
+              </span>
+              <div className={s.bandeauTexte}>
+                <h2 id="cl-tableau" className={"font-brand " + s.bandeauTitre}>
+                  {CL.general}
+                </h2>
+                <p>{joueursDomaine(nbJoueurs, dom)}</p>
               </div>
             </div>
-            <GrandeSalle data={data} />
-          </div>
-          <BandeEncre icone={<Search size={22} />} titre={CL.trouver} ligne={CL.trouverLigne} action={{ href: "/people", label: CLASSEMENT.chercher }} />
+            <div className={s.corpsGeneral}>
+              <ClassementTabs
+                label={CL.generalLabel}
+                initial={tab}
+                tabs={[
+                  {
+                    key: "classement",
+                    label: ONGLETS_CLASSEMENT[0].label,
+                    panel: <Leaderboard board={board} meRow={meRow} totalPlayers={me.totalPlayers} sobre />,
+                  },
+                  { key: "amis", label: ONGLETS_CLASSEMENT[1].label, panel: <Amis rows={data.amis} /> },
+                  {
+                    key: "courbe",
+                    label: ONGLETS_CLASSEMENT[2].label,
+                    panel: events.length ? (
+                      <>
+                        <p className={s.introOnglet}>
+                          <b>{CL.courbeDepuis(signed(total), fmtLongDate(events[0].createdAt))}</b> · {CL.courbeHint(partiesClassees(events.length))}
+                        </p>
+                        <EloChart events={events} cap={cap} />
+                      </>
+                    ) : (
+                      <p className={s.introOnglet}>{CLASSEMENT.courbeVide}</p>
+                    ),
+                  },
+                  {
+                    key: "rangs",
+                    label: ONGLETS_CLASSEMENT[3].label,
+                    panel: (
+                      <>
+                        <p className={s.introOnglet}>{enPlacement ? CL.rangsPlacementHint : `${CLASSEMENT.rangsSous} Tu es ${rangNom}.`}</p>
+                        <TierTrack current={rank.tierIndex} mastery={me.mastery} placement={enPlacement} />
+                      </>
+                    ),
+                  },
+                  { key: "regles", label: ONGLETS_CLASSEMENT[4].label, panel: <HowItWorks /> },
+                ]}
+              />
+            </div>
+          </section>
         </div>
-      </div>
-
-      <section className="rl-section" aria-labelledby="cl-tableau">
-        <BandeauPeint nom="classement-lice" position="50% 38%" />
-        <h2 id="cl-tableau" className="t-h2 m-0">
-          {CL.general}
-        </h2>
-        <Leaderboard board={board} meRow={meRow} totalPlayers={me.totalPlayers} sobre />
-      </section>
-
-      <section className="rl-section" aria-labelledby="cl-courbe">
-        <h2 id="cl-courbe" className="t-h2 m-0">
-          {CL.courbe}
-        </h2>
-        {events.length ? (
-          <Disclosure title={CL.courbeDepuis(signed(total), fmtLongDate(events[0].createdAt))} hint={CL.courbeHint(partiesClassees(events.length))}>
-            <EloChart events={events} cap={cap} />
-          </Disclosure>
-        ) : (
-          <p className="t-small m-0">{CLASSEMENT.courbeVide}</p>
-        )}
-      </section>
-
-      <div>
-        <Disclosure title={CLASSEMENT.rangs} hint={enPlacement ? CLASSEMENT.rangsPlacement : `${CLASSEMENT.rangsSous} Tu es ${rangNom}.`}>
-          <TierTrack current={rank.tierIndex} mastery={me.mastery} placement={enPlacement} />
-        </Disclosure>
-        <Disclosure title={CLASSEMENT.regles} hint={CLASSEMENT.reglesSous}>
-          <HowItWorks />
-        </Disclosure>
       </div>
     </div>
   );
