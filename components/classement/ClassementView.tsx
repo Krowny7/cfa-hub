@@ -9,6 +9,7 @@ import { CarteMaitres } from "@/components/classement/CarteMaitres";
 import { CarteRival } from "@/components/classement/CarteRival";
 import { Bouton, PAL, Sceau } from "@/components/classement/Encre";
 import { RechercheJoueurs } from "@/components/classement/RechercheJoueurs";
+import { CarteSalles } from "@/components/salles/CarteSalles";
 import { ClassementTabs, type TabKey } from "@/components/classement/ClassementTabs";
 import { HowItWorks } from "@/components/classement/Domains";
 import { EloChart } from "@/components/classement/EloChart";
@@ -99,6 +100,8 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
 // attend ; l'arc électrique court autour quand il y a de l'enjeu) ; la bande noire
 // « Trouver un adversaire » (RechercheJoueurs : des suggestions dès 2 lettres) ; la
+// carte « Les Salles » (components/salles/CarteSalles : créer une salle, rejoindre avec
+// un code, les salles publiques ; sans la migration, une ligne dit qu'elles arrivent) ; la
 // rangée « Ton plus grand rival |
 // Les maîtres de chaque matière » (CarteRival, CarteMaitres : chacune seulement
 // si elle a des données) ; enfin le Classement général en
@@ -177,6 +180,9 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
 
           {/* ——— la bande « Trouver un adversaire », à l'encre noire : un pseudo, des suggestions, son profil ——— */}
           <RechercheJoueurs demo={data.joueursExemple} />
+
+          {/* ——— « Les Salles » : créer une salle, rejoindre avec un code, les salles publiques ouvertes (fond sombre, DA des Salles) ——— */}
+          <CarteSalles salles={data.salles} demo={data.joueursExemple !== undefined} />
 
           {/* ——— la rangée « Ton plus grand rival » (5/12) + « Les maîtres de chaque matière » (7/12) ———
               Chacune des deux cartes n'apparaît que si elle a des données (pas de clé admin, rien

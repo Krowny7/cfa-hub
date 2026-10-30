@@ -81,7 +81,7 @@ export const PALETTES: Record<PaletteCle, Palette> = Object.fromEntries(
 
 /** Routes de chaque palette (le premier préfixe qui correspond l'emporte). */
 const ROUTES: { palette: PaletteCle; prefixes: string[] }[] = [
-  { palette: "san-romano", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair"] },
+  { palette: "san-romano", prefixes: ["/classement", "/people", "/duel", "/defi", "/mock-exams", "/eclair", "/salles"] },
   { palette: "atelier", prefixes: ["/entrainement", "/calculs", "/practice", "/qcm", "/official-exams", "/atelier"] },
   { palette: "studiolo", prefixes: ["/reviser", "/fiches", "/courses", "/flashcards"] },
   { palette: "carnet", prefixes: ["/codex"] },

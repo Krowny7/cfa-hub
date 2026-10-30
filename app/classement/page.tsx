@@ -10,13 +10,14 @@ import type { TabKey } from "@/components/classement/ClassementTabs";
 import { displayName } from "@/components/classement/format";
 import type { ClassementData } from "@/components/classement/types";
 import { CarteJoueurHote } from "@/components/profil/CarteJoueur";
+import { lireEntreeSalles } from "@/lib/salles/entree";
 
 export const metadata = { title: "S'affronter · Ranked Lobby" };
 
 // Espace « S'affronter » (adresse /classement) : charge le rang, l'historique
 // d'ELO, le classement, le prochain examen blanc classé, les duels et les amis
 // (onglet « Amis » du classement général), ton plus grand rival et les maîtres
-// de chaque matière (lus en parallèle des autres), puis délègue l'affichage à
+// de chaque matière et les salles (lus en parallèle des autres), puis délègue l'affichage à
 // ClassementView. ?onglet= choisit l'onglet du classement général. Chaque
 // lecture dégrade proprement (tables des duels ou des amitiés pas encore
 // créées, clé admin absente).
@@ -30,7 +31,7 @@ export default async function ClassementPage({ searchParams }: { searchParams?: 
 
   const admin = tryAdmin();
 
-  const [rating, topics, history, leaderboard, myRank, totalPlayers, exam, pastExams, openDuels, recentDuels, profileRes, rival, maitres] = await Promise.all([
+  const [rating, topics, history, leaderboard, myRank, totalPlayers, exam, pastExams, openDuels, recentDuels, profileRes, rival, maitres, salles] = await Promise.all([
     getMyRating(supabase, user.id),
     getTopicMastery(supabase, user.id),
     getRatingHistory(supabase, user.id, 30),
@@ -45,6 +46,8 @@ export default async function ClassementPage({ searchParams }: { searchParams?: 
     // sans clé admin ou sans données : null, la carte ne s'affiche pas
     lireRival(supabase, admin, user.id),
     lireMaitres(supabase, admin, user.id),
+    // la carte « Les Salles » : sans la migration des salles, elle dit qu'elles arrivent
+    lireEntreeSalles(supabase),
   ]);
 
   const mastery = programMastery(topics);
@@ -100,6 +103,7 @@ export default async function ClassementPage({ searchParams }: { searchParams?: 
     rival,
     // la place générale des maîtres connus du tableau (le palier du Top 10 de leur insigne)
     maitres: avecPlaces(maitres, new Map(leaderboard.map((r) => [r.userId, r.rank]))),
+    salles,
   };
 
   return (

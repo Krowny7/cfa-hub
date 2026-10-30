@@ -16,7 +16,7 @@ const ONBOARDING_EXEMPT = ["/onboarding", "/login", "/auth", "/api"];
 const PRIVATE = [
   "/calculs", "/classement", "/courses", "/dashboard", "/defi", "/duel", "/eclair", "/entrainement", "/exam",
   "/flashcards", "/mock-exams", "/moi", "/official-exams", "/onboarding", "/people",
-  "/practice", "/qcm", "/reviser", "/scratch", "/session",
+  "/practice", "/qcm", "/reviser", "/salles", "/scratch", "/session",
 ];
 const isPrivate = (pathname: string) => pathname === "/fiches" || PRIVATE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 

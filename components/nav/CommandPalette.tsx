@@ -54,6 +54,7 @@ const ENTRIES: Entry[] = [
   { label: "Codex", hint: "Tes quêtes, le parcours, les exploits", href: "/codex", group: "Espaces", Icon: ScrollText },
   { label: "Défi du jour", hint: "Les mêmes 30 questions pour tous, classement du jour", href: "/defi", group: "Actions", Icon: Target },
   { label: "Lancer un duel", hint: "30 questions, ELO en jeu", href: "/duel", group: "Actions", Icon: Swords },
+  { label: "Salles", hint: "Créer une salle, rejoindre avec un code", href: "/salles", group: "Actions", Icon: Users },
   { label: "Examens blancs", hint: "Examens classés et inscriptions", href: "/mock-exams", group: "Actions", Icon: ListChecks },
   { label: "Session d'entraînement", hint: "Questions ciblées par matière", href: "/practice", group: "Actions", Icon: Target },
   { label: "QCM", hint: "Toutes les séries", href: "/qcm", group: "Pages", Icon: ListChecks },

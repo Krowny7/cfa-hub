@@ -1,0 +1,1146 @@
+/* Les Salles : la DA « jeu vidéo » (consigne du 2026-10-30) — fond anthracite,
+   un métal sobre (or pâle), UN accent vermillon, formes angulaires et
+   biseautées, HUD net, chiffres en police condensée (--font-hud, layout.tsx),
+   léger glow. Pas de parchemin ni de papier ici : le salon et l'écran de
+   partie sont des consoles sombres posées sur la page, de jour comme de nuit.
+   Les mouvements (apparition des joueurs, balayage du bouton, pouls de
+   l'attente) sont coupés en mouvement réduit et en mode discret. */
+
+.jetons {
+  --sl-fond: #0f1114;
+  --sl-panneau: #1a1d22;
+  --sl-panneau-2: #23272e;
+  --sl-ligne: #323841;
+  --sl-metal: #d3b676;
+  --sl-metal-2: #8f7d54;
+  --sl-vermillon: #ff5a3c;
+  --sl-vermillon-2: #c9381d;
+  --sl-texte: #ece9e2;
+  --sl-texte-2: #a9adb5;
+  --sl-encre: #14110f;
+  --sl-hud: var(--font-hud), "Bahnschrift", "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --sl-glow: 0 0 22px -6px color-mix(in srgb, var(--sl-metal) 55%, transparent);
+  color: var(--sl-texte);
+}
+
+/* ——— la console : le fond de tout le salon ——— */
+.racine {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding: clamp(16px, 3vw, 28px);
+  background:
+    linear-gradient(135deg, transparent 0 calc(100% - 120px), color-mix(in srgb, var(--sl-metal) 9%, transparent) calc(100% - 120px) calc(100% - 118px), transparent calc(100% - 118px)),
+    radial-gradient(900px 340px at 12% -10%, color-mix(in srgb, var(--sl-metal) 10%, transparent), transparent 70%),
+    var(--sl-fond);
+  --bev: 22px;
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.racine :where(h1, h2, h3, p, ul) {
+  margin: 0;
+  padding: 0;
+}
+.racine :where(ul) {
+  list-style: none;
+}
+
+/* ——— l'en-tête de la salle ——— */
+.entete {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 24px;
+  align-items: end;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--sl-ligne);
+  position: relative;
+}
+.entete::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 120px;
+  height: 2px;
+  background: var(--sl-vermillon);
+  box-shadow: 0 0 14px 1px color-mix(in srgb, var(--sl-vermillon) 70%, transparent);
+}
+.surtitre {
+  font-family: var(--sl-hud);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sl-metal);
+}
+.nomSalle {
+  margin-top: 2px !important;
+  font-family: var(--sl-hud);
+  font-size: clamp(32px, 5.5vw, 52px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.metas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 12px !important;
+}
+.etiquette {
+  --bev: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 11px;
+  background: var(--sl-panneau-2);
+  font-family: var(--sl-hud);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sl-texte-2);
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.etiquette b {
+  font-weight: 700;
+  color: var(--sl-texte);
+}
+.etiquetteMetal {
+  background: color-mix(in srgb, var(--sl-metal) 22%, var(--sl-panneau));
+  color: var(--sl-metal);
+}
+.etiquetteVive {
+  background: color-mix(in srgb, var(--sl-vermillon) 24%, var(--sl-panneau));
+  color: var(--sl-vermillon);
+}
+.point {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.pointVif {
+  animation: pouls 1.6s ease-in-out infinite;
+}
+
+/* ——— le code à partager ——— */
+.codeBloc {
+  --bev: 14px;
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px 12px;
+  background: var(--sl-ligne);
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.codeBloc::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background: var(--sl-fond);
+  clip-path: polygon(calc(var(--bev) - 1px) 0, 100% 0, 100% calc(100% - var(--bev) + 1px), calc(100% - var(--bev) + 1px) 100%, 0 100%, 0 calc(var(--bev) - 1px));
+}
+.codeBloc > * {
+  position: relative;
+  z-index: 1;
+}
+.codeLabel {
+  font-family: var(--sl-hud);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sl-texte-2);
+}
+.codeValeur {
+  font-family: var(--sl-hud);
+  font-size: clamp(34px, 5vw, 46px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--sl-metal);
+  text-shadow: var(--sl-glow);
+  user-select: all;
+}
+.codeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.codeBloc[data-copie="1"] .codeValeur {
+  animation: eclat 0.9s ease-out;
+}
+
+/* ——— les panneaux ——— */
+.grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .grille {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+  .grilleLarge {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.colonne {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.panneau {
+  --bev: 16px;
+  position: relative;
+  min-width: 0;
+  background: var(--sl-ligne);
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.panneau::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  background: linear-gradient(180deg, var(--sl-panneau-2), var(--sl-panneau) 70px);
+  clip-path: polygon(calc(var(--bev) - 1px) 0, 100% 0, 100% calc(100% - var(--bev) + 1px), calc(100% - var(--bev) + 1px) 100%, 0 100%, 0 calc(var(--bev) - 1px));
+}
+.panneau > * {
+  position: relative;
+  z-index: 1;
+}
+.panneauCorps {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px 22px;
+}
+.panneauTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px 0;
+}
+.titrePanneau {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sl-hud);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sl-texte);
+}
+.titrePanneau::before {
+  content: "";
+  width: 5px;
+  height: 20px;
+  background: var(--sl-vermillon);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--sl-vermillon) 60%, transparent);
+}
+.compte {
+  font-family: var(--sl-hud);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--sl-metal);
+}
+.sous {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sl-texte-2);
+}
+
+/* ——— les joueurs ——— */
+.membres {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px 16px;
+}
+.membre {
+  --bev: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--sl-fond) 55%, transparent);
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+  animation: entrer 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(min(var(--i, 0), 14) * 38ms);
+}
+.membreMoi {
+  background: color-mix(in srgb, var(--sl-metal) 14%, var(--sl-fond));
+  box-shadow: inset 3px 0 0 var(--sl-metal);
+}
+.membreNom {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.pseudo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--sl-hud);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+}
+.pseudo > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.presence {
+  font-size: 12.5px;
+  color: var(--sl-texte-2);
+}
+.membreDroite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.elo {
+  font-family: var(--sl-hud);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--sl-texte-2);
+}
+.couronne {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  background: var(--sl-metal);
+  color: var(--sl-encre);
+  font-family: var(--sl-hud);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+.toi {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sl-metal);
+}
+.videJoueurs {
+  padding: 4px 20px 22px;
+  font-size: 14px;
+  color: var(--sl-texte-2);
+}
+
+/* ——— les boutons : biseautés, le primaire en vermillon ——— */
+.btn {
+  --bev: 10px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  background: var(--sl-panneau-2);
+  color: var(--sl-texte);
+  font-family: var(--sl-hud);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  overflow: hidden;
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+  box-shadow: inset 0 0 0 1px var(--sl-ligne);
+  transition:
+    background var(--dur-1, 0.15s) ease-out,
+    color var(--dur-1, 0.15s) ease-out,
+    transform var(--dur-1, 0.15s) ease-out;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--sl-metal);
+  outline-offset: -4px;
+}
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+@media (hover: hover) {
+  .btn:not([disabled]):hover {
+    background: color-mix(in srgb, var(--sl-metal) 24%, var(--sl-panneau-2));
+    color: #fff;
+  }
+}
+.btnPrimaire {
+  min-height: 52px;
+  padding: 0 28px;
+  background: var(--sl-vermillon);
+  color: var(--sl-encre);
+  font-size: 20px;
+  box-shadow: 0 0 0 0 transparent;
+}
+.btnPrimaire::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.5) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: balayage 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.btnPrimaire:focus-visible {
+  outline-color: var(--sl-encre);
+}
+@media (hover: hover) {
+  .btnPrimaire:not([disabled]):hover {
+    background: #ff735a;
+    color: var(--sl-encre);
+  }
+}
+.btnDiscret {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 15px;
+  background: transparent;
+  color: var(--sl-texte-2);
+}
+.btnDanger {
+  color: var(--sl-vermillon);
+}
+.btnPlein {
+  width: 100%;
+}
+
+/* ——— les champs ——— */
+.champ {
+  --bev: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 2px solid var(--sl-metal-2);
+  background: var(--sl-fond);
+  color: var(--sl-texte);
+  font: inherit;
+  font-size: 16px;
+  clip-path: polygon(0 0, calc(100% - var(--bev)) 0, 100% var(--bev), 100% 100%, 0 100%);
+}
+.champ::placeholder {
+  color: color-mix(in srgb, var(--sl-texte-2) 75%, transparent);
+}
+.champ:focus-visible {
+  outline: 0;
+  border-bottom-color: var(--sl-metal);
+  background: color-mix(in srgb, var(--sl-metal) 8%, var(--sl-fond));
+}
+.champCode {
+  font-family: var(--sl-hud);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.champCode::placeholder {
+  letter-spacing: 0.22em;
+}
+.etiquetteChamp {
+  display: grid;
+  gap: 6px;
+}
+.libelle {
+  font-family: var(--sl-hud);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sl-metal);
+}
+.aide {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--sl-texte-2);
+}
+.erreur {
+  padding: 10px 14px;
+  border-left: 3px solid var(--sl-vermillon);
+  background: color-mix(in srgb, var(--sl-vermillon) 12%, var(--sl-fond));
+  font-size: 14px;
+  line-height: 1.45;
+  color: #ffd9d1;
+}
+.info {
+  padding: 10px 14px;
+  border-left: 3px solid var(--sl-metal);
+  background: color-mix(in srgb, var(--sl-metal) 10%, var(--sl-fond));
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--sl-texte);
+}
+
+/* ——— les réglages ——— */
+.reglages {
+  display: grid;
+  gap: 20px;
+  padding: 18px 20px 22px;
+}
+.bloc {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.blocTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+}
+.valeur {
+  font-family: var(--sl-hud);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--sl-texte);
+}
+.valeur small {
+  margin-left: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sl-texte-2);
+}
+.choix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.choixPetits {
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+}
+.puce {
+  --bev: 9px;
+  display: grid;
+  gap: 1px;
+  align-content: center;
+  min-height: 52px;
+  padding: 6px 14px;
+  border: 0;
+  background: var(--sl-fond);
+  box-shadow: inset 0 0 0 1px var(--sl-ligne);
+  color: var(--sl-texte);
+  text-align: left;
+  cursor: pointer;
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+  transition: background var(--dur-1, 0.15s) ease-out;
+}
+.puce b {
+  font-family: var(--sl-hud);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.puce span {
+  font-size: 12.5px;
+  color: var(--sl-texte-2);
+}
+.puce:focus-visible {
+  outline: 2px solid var(--sl-metal);
+  outline-offset: -4px;
+}
+.puce[aria-pressed="true"],
+.puce[aria-checked="true"] {
+  background: var(--sl-metal);
+  box-shadow: none;
+  color: var(--sl-encre);
+}
+.puce[aria-pressed="true"] span,
+.puce[aria-checked="true"] span {
+  color: color-mix(in srgb, var(--sl-encre) 80%, transparent);
+}
+@media (hover: hover) {
+  .puce[aria-pressed="false"]:hover,
+  .puce[aria-checked="false"]:hover {
+    background: color-mix(in srgb, var(--sl-metal) 16%, var(--sl-fond));
+  }
+}
+.puceCourte {
+  min-height: 44px;
+  justify-items: center;
+  text-align: center;
+}
+.curseur {
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--sl-metal);
+  cursor: pointer;
+}
+.curseur:focus-visible {
+  outline: 2px solid var(--sl-metal);
+  outline-offset: 2px;
+}
+.graduation {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--sl-hud);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--sl-texte-2);
+}
+.topics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+}
+.topic {
+  --bev: 7px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--sl-fond);
+  box-shadow: inset 0 0 0 1px var(--sl-ligne);
+  cursor: pointer;
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.topic[data-on="1"] {
+  background: color-mix(in srgb, var(--sl-metal) 20%, var(--sl-fond));
+  box-shadow: inset 3px 0 0 var(--sl-metal);
+}
+.topic:has(:focus-visible) {
+  outline: 2px solid var(--sl-metal);
+  outline-offset: -3px;
+}
+.coche {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--sl-metal);
+  cursor: pointer;
+}
+.topicNom {
+  min-width: 0;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.topicDispo {
+  font-family: var(--sl-hud);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--sl-texte-2);
+}
+.raccourcis {
+  display: flex;
+  gap: 6px;
+}
+.recap {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
+  border-left: 3px solid var(--sl-metal);
+}
+.recapLigne {
+  font-family: var(--sl-hud);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.lancement {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+/* ——— lecture seule (les membres) ——— */
+.lecture {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.lectureLigne {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 2fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--sl-ligne);
+}
+.lectureLigne:first-child {
+  border-top: 0;
+}
+.lectureLigne dt {
+  font-family: var(--sl-hud);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sl-metal);
+}
+.lectureLigne dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* ——— l'attente : trois barres qui montent et descendent ——— */
+.attente {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
+  border-left: 3px solid var(--sl-vermillon);
+}
+.attenteTexte {
+  display: grid;
+  gap: 2px;
+}
+.attenteTitre {
+  font-family: var(--sl-hud);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.barres {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 26px;
+  flex: none;
+}
+.barres i {
+  display: block;
+  width: 5px;
+  height: 100%;
+  background: var(--sl-vermillon);
+  transform-origin: bottom;
+  animation: barre 1.1s ease-in-out infinite;
+}
+.barres i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.barres i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+/* ——— la partie (emplacement) et l'historique ——— */
+.partie {
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px 26px;
+  justify-items: start;
+}
+.grosChiffre {
+  font-family: var(--sl-hud);
+  font-size: clamp(56px, 12vw, 104px);
+  font-weight: 700;
+  line-height: 0.9;
+  color: var(--sl-metal);
+  text-shadow: var(--sl-glow);
+  font-variant-numeric: tabular-nums;
+}
+.historique {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px 16px;
+}
+.historiqueLigne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 14px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--sl-fond) 55%, transparent);
+}
+.historiqueNum {
+  font-family: var(--sl-hud);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.historiqueTexte {
+  font-size: 13.5px;
+  color: var(--sl-texte-2);
+}
+.pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sl-ligne);
+}
+.piedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hors {
+  font-size: 13px;
+  color: var(--sl-vermillon);
+}
+
+/* ——— pendant une partie, l'en-tête se fait discret : le jeu prend la place ——— */
+.racine[data-salon="partie"] .entete {
+  padding-bottom: 10px;
+}
+.racine[data-salon="partie"] .nomSalle {
+  font-size: clamp(24px, 3.6vw, 32px);
+}
+.racine[data-salon="partie"] .metas {
+  margin-top: 6px !important;
+}
+.racine[data-salon="partie"] .entete .sous {
+  display: none;
+}
+.racine[data-salon="partie"] .codeBloc {
+  --bev: 10px;
+  padding: 6px 12px 8px;
+}
+.racine[data-salon="partie"] .codeValeur {
+  font-size: clamp(22px, 3.4vw, 28px);
+}
+
+/* ——— la page « créer / rejoindre » : un formulaire dans une console ——— */
+.formulaire {
+  display: grid;
+  gap: 18px;
+  max-width: 720px;
+}
+.deux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+}
+.listeSalles {
+  display: grid;
+  gap: 6px;
+}
+.ligneSalle {
+  --bev: 9px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 14px;
+  min-height: 56px;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--sl-fond) 60%, transparent);
+  box-shadow: inset 3px 0 0 var(--sl-ligne);
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.ligneSalleVive {
+  box-shadow: inset 3px 0 0 var(--sl-vermillon);
+}
+.ligneNom {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ligneNom b {
+  overflow: hidden;
+  font-family: var(--sl-hud);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ligneNom span {
+  font-size: 13px;
+  color: var(--sl-texte-2);
+}
+.etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--sl-hud);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sl-texte-2);
+}
+.etatVif {
+  color: var(--sl-vermillon);
+}
+
+/* ——— la carte d'entrée sur S'affronter : même forme que les cartes de la page, fond sombre ——— */
+.entree {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(18px, 2.4vw, 26px);
+  border: 1px solid #000;
+  border-radius: 20px;
+  background:
+    radial-gradient(700px 240px at 0% 0%, color-mix(in srgb, var(--sl-metal) 11%, transparent), transparent 70%),
+    var(--sl-fond);
+  box-shadow: var(--shadow-1);
+}
+.entree::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 26px;
+  width: 96px;
+  height: 3px;
+  background: var(--sl-vermillon);
+  box-shadow: 0 0 14px 1px color-mix(in srgb, var(--sl-vermillon) 70%, transparent);
+}
+.entree :where(h2, h3, p, ul) {
+  margin: 0;
+  padding: 0;
+}
+.entree :where(ul) {
+  list-style: none;
+}
+.entreeTete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+  margin-bottom: 18px;
+}
+.entreeTitre {
+  flex: 1 1 280px;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.entreeTitre h2 {
+  font-family: var(--sl-hud);
+  font-size: clamp(30px, 4vw, 40px);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.entreeCorps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+@media (min-width: 860px) {
+  .entreeCorps {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 28px;
+  }
+}
+.entreeActions {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.formCode {
+  display: grid;
+  gap: 10px;
+}
+.formCodeRangee {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.entreeListe {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+}
+.entreeListeTete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.entreeSous {
+  font-family: var(--sl-hud);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sl-metal);
+}
+.entreeBientot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--sl-texte-2);
+}
+.mes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mes a {
+  --bev: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  background: var(--sl-panneau-2);
+  color: var(--sl-texte);
+  font-family: var(--sl-hud);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+}
+.mes a:focus-visible {
+  outline: 2px solid var(--sl-metal);
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  .mes a:hover {
+    background: color-mix(in srgb, var(--sl-metal) 24%, var(--sl-panneau-2));
+  }
+}
+
+/* ——— mouvements ——— */
+@keyframes entrer {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes balayage {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  85%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+@keyframes pouls {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.7);
+  }
+}
+@keyframes barre {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes eclat {
+  0% {
+    color: #fff;
+    text-shadow: 0 0 30px var(--sl-metal);
+  }
+  100% {
+    color: var(--sl-metal);
+    text-shadow: var(--sl-glow);
+  }
+}
+
+@media (max-width: 600px) {
+  .entete {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .membre {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .membreDroite {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    padding-left: 48px;
+  }
+  .lectureLigne {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .btnPrimaire {
+    width: 100%;
+  }
+  .formCodeRangee {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formCodeRangee .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .membre,
+  .btnPrimaire::after,
+  .barres i,
+  .pointVif,
+  .codeBloc[data-copie="1"] .codeValeur {
+    animation: none;
+  }
+  .btn {
+    transition: none;
+  }
+  .btn:active {
+    transform: none;
+  }
+}
+:global(html[data-discreet="1"]) .membre,
+:global(html[data-discreet="1"]) .btnPrimaire::after,
+:global(html[data-discreet="1"]) .barres i,
+:global(html[data-discreet="1"]) .pointVif {
+  animation: none;
+}

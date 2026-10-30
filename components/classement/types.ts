@@ -1,4 +1,5 @@
 import type { DuelPlayerCard } from "@/lib/duels";
+import type { EntreeSalles } from "@/lib/salles/types";
 // Données reçues par les composants de l'espace Classement (props
 // sérialisables : la page serveur les charge, la page d'aperçu les invente).
 import type { DuelSummary, RatingEvent } from "@/lib/rating";
@@ -103,6 +104,8 @@ export type ClassementData = {
   rival?: RivalData | null;
   /** « Les maîtres de chaque matière » : null ou absent, la carte ne s'affiche pas */
   maitres?: MaitreMatiere[] | null;
+  /** la carte « Les Salles » : absent ou `pret` faux, elle dit que les salles arrivent */
+  salles?: EntreeSalles | null;
 };
 
 /** Les épreuves où deux joueurs se croisent : duels, les 30 du jour, les 5 du jour, examens blancs classés. */

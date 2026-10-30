@@ -7,11 +7,11 @@
  * tables, so the data reads as data.
  */
 
-type Block =
+export type Block =
   | { kind: "text"; lines: string[] }
   | { kind: "table"; rows: string[][] };
 
-function parsePrompt(text: string): Block[] {
+export function parsePrompt(text: string): Block[] {
   const blocks: Block[] = [];
   let paragraph: string[] = [];
   let rows: string[][] = [];
@@ -43,7 +43,7 @@ function parsePrompt(text: string): Block[] {
 
 /** Right-align anything that reads as a figure, so columns line up. */
 // (classes [0-9] plutôt que l'échappement court : voir le piège Tailwind)
-function isNumeric(cell: string) {
+export function isNumeric(cell: string) {
   return /^[(–—−-]?\s*[$€£¥]?\s*[0-9][0-9\s.,]*\s*[%x×]?\s*\)?$/.test(cell.trim());
 }
 
