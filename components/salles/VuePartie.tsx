@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Square } from "lucide-react";
+import { Hourglass, Square } from "lucide-react";
 import { CarteQuestion, etiquettesDe, type Repondre } from "@/components/salles/CarteQuestion";
 import { ClassementDirect } from "@/components/salles/ClassementDirect";
 import { FinPartie } from "@/components/salles/FinPartie";
+import { TetePanneau } from "@/components/salles/Stage";
 import { clockDe, horlogeSession, libelleParams, pointsAu } from "@/lib/salles/logique";
 import {
   chiffreDecompte,
@@ -80,10 +81,9 @@ function Decompte({ session, avantMs, onArreter }: { session: SalleSession; avan
   const fin = chiffreDecompte(avantMs) !== null;
   return (
     <section className={s.panneau} aria-label={PARTIE.decompteTitre}>
-      <div className={s.panneauTete}>
-        <h2 className={s.titrePanneau}>{SALLES.partieTitre(session.numero)}</h2>
-        <span className={s.compte}>{session.nb} questions</span>
-      </div>
+      <TetePanneau icone={<Hourglass size={16} />} droite={<span className={s.compte}>{session.nb} questions</span>}>
+        {SALLES.partieTitre(session.numero)}
+      </TetePanneau>
       <div className={p.decompte}>
         <p className={p.decompteTitre}>{PARTIE.decompteTitre}</p>
         {/* la clé relance l'animation à chaque seconde */}

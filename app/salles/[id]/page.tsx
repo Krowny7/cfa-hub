@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { BoutonRejoindre } from "@/components/salles/BoutonRejoindre";
 import { FormCode } from "@/components/salles/FormCode";
 import { SalleVue } from "@/components/salles/SalleVue";
+import { Stage } from "@/components/salles/Stage";
 import { getEtatSalle, getSallesPubliques } from "@/lib/salles/api";
 import { createClient } from "@/lib/supabase/server";
 import { SALLES } from "@/lib/voice-salles";
@@ -40,7 +41,7 @@ export default async function SallePage({ params }: PageProps) {
   if (lu.migrationAbsente) {
     return (
       <div className="rl-wide rl-page">
-        <div className={[s.jetons, s.racine].join(" ")}>
+        <Stage>
           <p className={s.surtitre}>{SALLES.titre}</p>
           <p className={s.entreeBientot}>
             <i className={[s.point, s.pointVif].join(" ")} aria-hidden style={{ color: "var(--sl-vermillon)" }} />
@@ -51,7 +52,7 @@ export default async function SallePage({ params }: PageProps) {
               {SALLES.retourSalles}
             </Link>
           </div>
-        </div>
+        </Stage>
       </div>
     );
   }
@@ -61,7 +62,7 @@ export default async function SallePage({ params }: PageProps) {
   const publique = publiques.ok ? publiques.data.find((p) => p.id === id) : undefined;
   return (
     <div className="rl-wide rl-page">
-      <div className={[s.jetons, s.racine].join(" ")}>
+      <Stage>
         <p className={s.surtitre}>{SALLES.salonKicker}</p>
         <h1 className={s.nomSalle}>{publique ? publique.nom : SALLES.introuvable}</h1>
         {publique ? (
@@ -84,7 +85,7 @@ export default async function SallePage({ params }: PageProps) {
             {SALLES.retourSalles}
           </Link>
         </div>
-      </div>
+      </Stage>
     </div>
   );
 }

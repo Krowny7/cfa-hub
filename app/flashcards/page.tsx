@@ -18,6 +18,8 @@ import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { compterCartesMarquees } from "@/lib/flashcards/marquees";
 import { SynchroMarquesCartes } from "@/components/flashcards/SynchroMarquesCartes";
 import { MARQUE_CARTE } from "@/lib/voice-z3c";
+import { AppelPartie } from "@/components/flashcards/AppelPartie";
+import { subjectFromParam } from "@/components/ContentDetailHeader";
 
 type FlashcardRow = ContentSetRow & {
   is_official?: boolean | null;
@@ -127,22 +129,24 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
       <SynchroMarquesCartes joueur={user.id} />
     </>
   );
+  // « La partie de cartes » (Léonard, croupier) : bien en vue, sous la bande ; la matière choisie dans l'index est cochée d'avance
+  const matierePartie = subjectFromParam(sp.subject);
+  const partie = <AppelPartie matiere={matierePartie?.key} matiereNom={matierePartie?.name} />;
 
   return (
     <ListeReviser
       kind="cartes"
       subjects={subjectsAvail}
       bande={
-        nMarquees ? (
-          <div className="flex flex-col gap-2">
-            {bande}
+        <div className="flex flex-col gap-4">
+          {bande}
+          {partie}
+          {nMarquees ? (
             <Link href="/flashcards/marquees" className="ink-link inline-flex min-h-[44px] w-fit items-center gap-1.5 text-[14px] font-semibold" title={MARQUE_CARTE.entreeAide}>
               <Bookmark size={15} fill="currentColor" aria-hidden /> {MARQUE_CARTE.entree(nMarquees)} <ArrowRight size={14} aria-hidden />
             </Link>
-          </div>
-        ) : (
-          bande
-        )
+          ) : null}
+        </div>
       }
       suite={
         paquets && (

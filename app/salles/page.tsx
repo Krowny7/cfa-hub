@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DoorOpen, Globe, Plus, Users } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { LigneSallePublique } from "@/components/salles/CarteSalles";
 import { FormCode } from "@/components/salles/FormCode";
 import { FormCreer } from "@/components/salles/FormCreer";
+import { Stage, TetePanneau } from "@/components/salles/Stage";
 import { getMesSalles, getSallesPubliques } from "@/lib/salles/api";
 import { formaterCode } from "@/lib/salles/logique";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +39,7 @@ export default async function SallesPage() {
         </header>
 
         {bientot ? (
-          <div className={[s.jetons, s.racine].join(" ")}>
+          <Stage>
             <p className={s.surtitre}>{SALLES.titre}</p>
             <p className={s.entreeBientot}>
               <i className={[s.point, s.pointVif].join(" ")} aria-hidden style={{ color: "var(--sl-vermillon)" }} />
@@ -48,27 +50,23 @@ export default async function SallesPage() {
                 {SALLES.retourSalles}
               </Link>
             </div>
-          </div>
+          </Stage>
         ) : (
-          <div className={[s.jetons, s.racine].join(" ")}>
+          <Stage>
             <div className={s.grille}>
               <div className={s.colonne}>
                 <section className={s.panneau} aria-labelledby="salles-creer">
-                  <div className={s.panneauTete}>
-                    <h2 id="salles-creer" className={s.titrePanneau}>
-                      {SALLES.creer}
-                    </h2>
-                  </div>
+                  <TetePanneau id="salles-creer" icone={<Plus size={16} />}>
+                    {SALLES.creer}
+                  </TetePanneau>
                   <div className={s.panneauCorps}>
                     <FormCreer />
                   </div>
                 </section>
                 <section className={s.panneau} aria-labelledby="salles-code">
-                  <div className={s.panneauTete}>
-                    <h2 id="salles-code" className={s.titrePanneau}>
-                      {SALLES.codeTitre}
-                    </h2>
-                  </div>
+                  <TetePanneau id="salles-code" icone={<DoorOpen size={16} />}>
+                    {SALLES.codeTitre}
+                  </TetePanneau>
                   <div className={s.panneauCorps}>
                     <FormCode id="salles-code-champ" />
                   </div>
@@ -77,12 +75,9 @@ export default async function SallesPage() {
 
               <div className={s.colonne}>
                 <section className={s.panneau} aria-labelledby="salles-mes">
-                  <div className={s.panneauTete}>
-                    <h2 id="salles-mes" className={s.titrePanneau}>
-                      {SALLES.tesSalles}
-                    </h2>
-                    {mes.ok && mes.data.length > 0 && <span className={s.compte}>{mes.data.length}</span>}
-                  </div>
+                  <TetePanneau id="salles-mes" icone={<Users size={16} />} droite={mes.ok && mes.data.length > 0 && <span className={s.compte}>{mes.data.length}</span>}>
+                    {SALLES.tesSalles}
+                  </TetePanneau>
                   <div className={s.panneauCorps}>
                     {!mes.ok ? (
                       <p className={s.sous}>{SALLES.lectureImpossible}</p>
@@ -103,7 +98,7 @@ export default async function SallesPage() {
                                 {m.enCours ? SALLES.partieEnCours : SALLES.salonOuvert}
                               </span>
                             </div>
-                            <Link href={`/salles/${m.id}`} className={s.btn} aria-label={SALLES.ouvrirNom(m.nom)}>
+                            <Link href={`/salles/${m.id}`} className={[s.btn, s.petit].join(" ")} aria-label={SALLES.ouvrirNom(m.nom)}>
                               {SALLES.ouvrir}
                             </Link>
                           </li>
@@ -114,12 +109,9 @@ export default async function SallesPage() {
                 </section>
 
                 <section className={s.panneau} aria-labelledby="salles-publiques">
-                  <div className={s.panneauTete}>
-                    <h2 id="salles-publiques" className={s.titrePanneau}>
-                      {SALLES.publiquesTitre}
-                    </h2>
-                    {publiques.ok && publiques.data.length > 0 && <span className={s.compte}>{publiques.data.length}</span>}
-                  </div>
+                  <TetePanneau id="salles-publiques" icone={<Globe size={16} />} droite={publiques.ok && publiques.data.length > 0 && <span className={s.compte}>{publiques.data.length}</span>}>
+                    {SALLES.publiquesTitre}
+                  </TetePanneau>
                   <div className={s.panneauCorps}>
                     {!publiques.ok ? (
                       <p className={s.sous}>{SALLES.lectureImpossible}</p>
@@ -136,7 +128,7 @@ export default async function SallesPage() {
                 </section>
               </div>
             </div>
-          </div>
+          </Stage>
         )}
       </div>
     </div>

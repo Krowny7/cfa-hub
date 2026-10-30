@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Clock, X } from "lucide-react";
+import { BoutonEnvoi } from "@/components/classement/Encre";
 import { Enonce } from "@/components/salles/Enonce";
 import { decimalsOf, formatCalc, parseCalcCandidates, UNIT_FIELD } from "@/lib/calc/engine";
 import type { CalcUnit } from "@/lib/calc/types";
@@ -211,9 +212,9 @@ export function CarteQuestion({
                 </span>
               )}
             </span>
-            <button type="submit" className={[s.btn, s.btnPrimaire].join(" ")} disabled={envoi !== null || !saisie.trim()}>
+            <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi !== null || !saisie.trim()}>
               {envoi ? PARTIE.calculEnvoi : PARTIE.calculValider}
-            </button>
+            </BoutonEnvoi>
           </div>
           <p className={s.aide}>{PARTIE.calculAide}</p>
         </form>

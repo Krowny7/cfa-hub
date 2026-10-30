@@ -8,9 +8,12 @@
 // type / nombre / source / matières / difficulté / temps, part des calculs), le
 // champ de code et la route /salles dans la navigation.
 import "../codex/sans-css";
+import fs from "node:fs";
+import path from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { CarteSalles } from "@/components/salles/CarteSalles";
 import { FormCode, saisieCode } from "@/components/salles/FormCode";
 import { FormCreer } from "@/components/salles/FormCreer";
 import { Reglages, ReglagesLecture, disponibles, reglagesDeDepart } from "@/components/salles/Reglages";
@@ -128,7 +131,7 @@ console.log("# les réglages de l'admin");
   check("le curseur du nombre va de 5 à 50 par 5", /type="range"[^>]*min="5"[^>]*max="50"[^>]*step="5"/.test(html));
   check("pas de part de calculs avec des questions seules", !html.includes("Part des calculs"));
   check("le résumé et la durée estimée (10 × 50 s − 5 s + 8 s = 8 min 23 s)", html.includes("10 questions · banque complète · toutes les matières · difficulté mélangée · 45 s") && html.includes("Durée estimée : 8 min 23 s"));
-  check("le bouton « Lancer la partie » (désactivé seulement sans matière ou en partie)", html.includes("Lancer la partie") && !/<button[^>]*disabled[^>]*>[^<]*<svg[^>]*>[^]*?Lancer/.test(html));
+  check("le bouton « Lancer la partie », un bouton d'encre (désactivé seulement sans matière ou en partie)", html.includes("Lancer la partie") && !/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[^])*Lancer la partie/.test(html) && /<button type="submit" class="rl-encre encre bouton[^"]*"[^>]*>(?:(?!<\/button>)[^])*Lancer la partie/.test(html));
 
   const mixte = rendre(<Reglages initial={PRECEDENTS} onLancer={noop} />);
   check("reprise de la dernière partie : mixte, 20, examens blancs, 2 matières, difficile, 30 s", /aria-checked="true"[^>]*><b>Les deux</.test(mixte) && />20 <small>au total/.test(mixte) && /aria-checked="true"[^>]*><b>Questions d'examen</.test(mixte) && compte(mixte, /checked=""/g) === 2 && /aria-checked="true"[^>]*><b>Difficile</.test(mixte) && /aria-checked="true"[^>]*><b>30 s</.test(mixte));
@@ -152,7 +155,7 @@ console.log("# les réglages de l'admin");
   const sans = rendre(<Reglages initial={{ topics: [] }} onLancer={noop} />);
   check("une dernière partie sans matière retombe sur toutes les matières (jamais zéro case)", compte(sans, /checked=""/g) === 10);
   const desactive = rendre(<Reglages onLancer={noop} desactive />);
-  check("partie en cours : le bouton est désactivé", /<button type="submit" class="btn btnPrimaire" disabled=""/.test(desactive));
+  check("partie en cours : le bouton est désactivé", /<button type="submit" disabled="" class="rl-encre encre bouton[^"]*"[^>]*>(?:(?!<\/button>)[^])*Lancer la partie/.test(desactive));
 }
 
 console.log("# entrer dans une salle");
@@ -167,4 +170,15 @@ console.log("# entrer dans une salle");
 }
 
 console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
+console.log("# la peau du site");
+{
+  const lire = (f: string) => fs.readFileSync(path.join(process.cwd(), f), "utf8");
+  const css = lire("components/salles/Salles.module.css") + lire("components/salles/Partie.module.css");
+  check("plus de police Barlow Condensed (ni dans le CSS, ni dans le layout), plus de biseaux", !/font-hud|Barlow|polygon\(/.test(css) && !/Barlow|font-hud/.test(lire("app/layout.tsx")));
+  check("les titres et gros chiffres en Dela Gothic One (--font-brand), le code et les petits chiffres en Geist Mono (--font-mono)", css.includes("var(--font-brand)") && css.includes("var(--font-mono"));
+  check("la police du logo cède la place à Geist en mode discret", css.includes('html[data-discreet="1"]) .jetons'));
+  const entree = rendre(<CarteSalles salles={{ pret: true, publiques: [{ id: "p1", nom: "Quant", description: null, adminUsername: "Léa", nbMembres: 3, enCours: false, derniereActivite: "", dejaMembre: false }], mes: [] }} demo />);
+  check("la carte d'entrée : le sceau et les boutons d'encre de S'affronter (Créer, Rejoindre), plus de bouton orange plat", compte(entree, /class="rl-encre encre sceau/g) === 1 && compte(entree, /class="rl-encre encre bouton/g) >= 3 && !entree.includes("btnPrimaire"));
+}
+
 process.exit(ko ? 1 : 0);

@@ -1,10 +1,11 @@
-/* L'écran de partie des Salles : la même console sombre que le salon (jetons
-   --sl-* posés par Salles.module.css sur .jetons, hérités ici), en HUD de jeu
-   compétitif — chiffres en police condensée, formes biseautées, un métal sobre
-   et UN accent vermillon. Pas de vert ni de rouge « feu tricolore » : une
-   bonne réponse s'allume en métal (coche), une mauvaise en vermillon (croix) ;
-   le mot JUSTE / FAUX et l'icône disent la même chose, la couleur n'est
-   jamais seule.
+/* L'écran de partie des Salles : la même carte d'encre que le salon (jetons
+   --sl-* posés par Salles.module.css sur .jetons, hérités ici), dans la DA du
+   site : titres et gros chiffres en Dela Gothic One (le chrono, le décompte, les
+   points, le podium), petits chiffres en Geist Mono, texte en Geist, liserés
+   fins, coins arrondis, UN accent vermillon sobre. Pas de vert ni de rouge
+   « feu tricolore » : une bonne réponse s'éclaire en os (coche), une mauvaise
+   en vermillon (croix) ; le mot Juste / Faux et l'icône disent la même chose,
+   la couleur n'est jamais seule.
 
    Mouvements (tous coupés en mouvement réduit et en mode discret ; l'état
    final est le style de base, rien n'est caché derrière une animation) :
@@ -45,81 +46,76 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 16px;
-  padding: 14px 20px 12px;
+  padding: 16px 20px 12px;
 }
 .numero {
-  font-family: var(--sl-hud);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sl-texte);
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--sl-texte-2);
 }
 .numero b {
-  color: var(--sl-metal);
-  font-size: 30px;
-  letter-spacing: 0.04em;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 26px;
+  letter-spacing: var(--sl-brand-ls);
+  color: var(--sl-texte);
 }
 .etiquettes {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 8px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .chrono {
   display: grid;
   justify-items: end;
-  line-height: 0.9;
+  line-height: 0.95;
   font-variant-numeric: tabular-nums;
 }
 .chronoNombre {
-  font-family: var(--sl-hud);
-  font-size: clamp(44px, 9vw, 64px);
-  font-weight: 700;
-  color: var(--sl-metal);
-  text-shadow: var(--sl-glow);
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: clamp(36px, 7vw, 52px);
+  color: var(--sl-texte);
 }
 .chronoLegende {
-  font-family: var(--sl-hud);
+  margin-top: 4px;
   font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
   color: var(--sl-texte-2);
 }
 .chronoUrgence .chronoNombre {
   color: var(--sl-vermillon);
-  text-shadow: 0 0 22px color-mix(in srgb, var(--sl-vermillon) 60%, transparent);
   animation: urgence 0.9s ease-in-out infinite;
 }
 .chronoPause .chronoNombre {
   color: var(--sl-texte-2);
-  text-shadow: none;
 }
 
 /* ——— la barre de temps : elle se vide de droite à gauche ——— */
 .piste {
-  height: 8px;
-  background: color-mix(in srgb, var(--sl-fond) 80%, transparent);
-  box-shadow: inset 0 0 0 1px var(--sl-ligne);
+  height: 6px;
+  margin: 0 20px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
 }
 .piste i {
   display: block;
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, var(--sl-metal-2), var(--sl-metal));
+  border-radius: 99px;
+  background: var(--sl-metal);
   transform-origin: left center;
   transition: transform 0.25s linear;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--sl-metal) 55%, transparent);
 }
 .pisteUrgence i {
-  background: linear-gradient(90deg, var(--sl-vermillon-2), var(--sl-vermillon));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--sl-vermillon) 60%, transparent);
+  background: var(--sl-vermillon);
 }
 .pistePause i {
-  background: var(--sl-ligne);
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* ——— la question ——— */
@@ -130,7 +126,7 @@
   animation: arriver 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .enonce {
-  font-size: clamp(17px, 2.4vw, 20px);
+  font-size: clamp(16.5px, 2.2vw, 19px);
   line-height: 1.55;
   color: var(--sl-texte);
   overflow-wrap: anywhere;
@@ -141,8 +137,9 @@
 .tableauCadre {
   overflow-x: auto;
   margin: 12px 0 2px;
-  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
-  box-shadow: inset 0 0 0 1px var(--sl-ligne);
+  border: 1px solid var(--sl-ligne);
+  border-radius: 12px;
+  background: var(--sl-puits);
 }
 .tableau {
   width: 100%;
@@ -161,15 +158,13 @@
   border-bottom: 0;
 }
 .tableau th {
-  font-family: var(--sl-hud);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 650;
   color: var(--sl-texte-2);
 }
 .tableau .num {
   text-align: right;
+  font-family: var(--sl-mono);
   font-variant-numeric: tabular-nums;
 }
 .donnees {
@@ -177,8 +172,9 @@
   gap: 2px;
   margin: 0;
   padding: 10px 14px;
-  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
-  border-left: 3px solid var(--sl-metal-2);
+  border: 1px solid var(--sl-ligne);
+  border-radius: 12px;
+  background: var(--sl-puits);
 }
 .donnees div {
   display: grid;
@@ -193,10 +189,9 @@
 }
 .donnees dd {
   margin: 0;
-  font-family: var(--sl-hud);
-  font-size: 20px;
+  font-family: var(--sl-mono);
+  font-size: 15.5px;
   font-weight: 600;
-  letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -209,7 +204,6 @@
   padding: 0;
 }
 .choixBtn {
-  --bev: 10px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -217,32 +211,31 @@
   width: 100%;
   min-height: 56px;
   padding: 8px 16px 8px 10px;
-  border: 0;
-  background: var(--sl-panneau-2);
-  box-shadow: inset 0 0 0 1px var(--sl-ligne);
+  border: 1px solid var(--sl-trait);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--sl-texte);
   font: inherit;
   font-size: 16px;
   line-height: 1.4;
   text-align: left;
   cursor: pointer;
-  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
   transition:
     background 0.15s ease-out,
-    box-shadow 0.15s ease-out,
+    border-color 0.15s ease-out,
     opacity 0.2s ease-out;
 }
 .choixBtn:focus-visible {
-  outline: 2px solid var(--sl-metal);
-  outline-offset: -4px;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 .choixBtn[disabled] {
   cursor: default;
 }
 @media (hover: hover) {
   .choixBtn:not([disabled]):hover {
-    background: color-mix(in srgb, var(--sl-metal) 18%, var(--sl-panneau-2));
-    box-shadow: inset 0 0 0 1px var(--sl-metal-2);
+    border-color: rgba(246, 239, 228, 0.75);
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 .lettre {
@@ -250,12 +243,14 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  background: var(--sl-fond);
-  color: var(--sl-metal);
-  font-family: var(--sl-hud);
-  font-size: 22px;
-  font-weight: 700;
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  border: 1px solid var(--sl-trait);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--sl-texte);
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 15px;
 }
 .choixTexte {
   overflow-wrap: anywhere;
@@ -266,36 +261,38 @@
 }
 /* ma réponse, en attente du verdict du serveur */
 .choixBtn[data-etat="envoi"] {
-  background: color-mix(in srgb, var(--sl-metal) 14%, var(--sl-panneau-2));
-  box-shadow: inset 0 0 0 2px var(--sl-metal-2);
+  border-color: var(--sl-metal);
+  background: rgba(255, 255, 255, 0.1);
 }
 /* ma réponse, jugée */
 .choixBtn[data-etat="juste"] {
-  background: color-mix(in srgb, var(--sl-metal) 24%, var(--sl-panneau-2));
-  box-shadow:
-    inset 0 0 0 2px var(--sl-metal),
-    0 0 24px -8px var(--sl-metal);
+  border-color: var(--sl-metal);
+  background: rgba(246, 239, 228, 0.16);
+  box-shadow: inset 0 0 0 1px var(--sl-metal);
 }
 .choixBtn[data-etat="juste"] .lettre {
+  border-color: var(--sl-metal);
   background: var(--sl-metal);
   color: var(--sl-encre);
 }
 .choixBtn[data-etat="faux"] {
-  background: color-mix(in srgb, var(--sl-vermillon) 20%, var(--sl-panneau-2));
-  box-shadow: inset 0 0 0 2px var(--sl-vermillon);
+  border-color: var(--sl-vermillon);
+  background: color-mix(in srgb, var(--sl-vermillon) 16%, var(--sl-fond));
+  box-shadow: inset 0 0 0 1px var(--sl-vermillon);
 }
 .choixBtn[data-etat="faux"] .lettre {
+  border-color: var(--sl-vermillon);
   background: var(--sl-vermillon);
   color: var(--sl-encre);
 }
 /* la bonne réponse, révélée quand le temps est écoulé (si ce n'est pas la mienne) */
 .choixBtn[data-etat="bonne"] {
-  background: color-mix(in srgb, var(--sl-metal) 14%, var(--sl-panneau-2));
-  box-shadow: inset 0 0 0 2px var(--sl-metal-2);
+  border-color: rgba(246, 239, 228, 0.7);
+  background: rgba(246, 239, 228, 0.08);
 }
 .choixBtn[data-etat="bonne"] .lettre {
-  background: var(--sl-metal-2);
-  color: var(--sl-encre);
+  border-color: var(--sl-metal);
+  color: var(--sl-metal);
 }
 .choixBtn[data-etat="estompe"] {
   opacity: 0.45;
@@ -324,12 +321,12 @@
   display: block;
 }
 .calculChamp input {
-  min-height: 60px !important;
+  min-height: 56px !important;
   padding-right: 64px !important;
-  font-family: var(--sl-hud) !important;
-  font-size: 30px !important;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: var(--sl-mono) !important;
+  font-size: 24px !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 }
 .unite {
@@ -337,25 +334,24 @@
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-family: var(--sl-hud);
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-family: var(--sl-mono);
+  font-size: 17px;
+  font-weight: 500;
   color: var(--sl-texte-2);
   pointer-events: none;
 }
 .calculValeur {
   display: inline-flex;
   align-items: center;
-  min-height: 52px;
+  min-height: 48px;
   padding: 0 18px;
-  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
-  font-family: var(--sl-hud);
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  border: 1px solid var(--sl-ligne);
+  border-radius: 12px;
+  background: var(--sl-puits);
+  font-family: var(--sl-mono);
+  font-size: 22px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
 }
 
 /* ——— le verdict : juste / faux / temps écoulé ——— */
@@ -365,32 +361,32 @@
   align-items: center;
   gap: 10px 18px;
   padding: 12px 16px;
-  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
-  border-left: 3px solid var(--sl-ligne);
+  border: 1px solid var(--sl-ligne);
+  border-radius: 12px;
+  background: var(--sl-puits);
 }
 .retour[data-verdict="juste"] {
-  border-left-color: var(--sl-metal);
-  background: color-mix(in srgb, var(--sl-metal) 10%, var(--sl-fond));
+  border-color: rgba(246, 239, 228, 0.55);
+  background: rgba(246, 239, 228, 0.08);
 }
 .retour[data-verdict="faux"],
 .retour[data-verdict="sans"] {
-  border-left-color: var(--sl-vermillon);
+  border-color: color-mix(in srgb, var(--sl-vermillon) 65%, transparent);
   background: color-mix(in srgb, var(--sl-vermillon) 10%, var(--sl-fond));
 }
 .verdict {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--sl-hud);
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 24px;
+  letter-spacing: var(--sl-brand-ls);
   line-height: 1;
 }
 .verdict[data-verdict="juste"] {
   color: var(--sl-metal);
-  text-shadow: var(--sl-glow);
   animation: rebond 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) both;
 }
 .verdict[data-verdict="faux"],
@@ -401,10 +397,10 @@
 .verdictIcone {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   background: currentColor;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
 .verdictIcone svg {
   color: var(--sl-encre);
@@ -414,20 +410,19 @@
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
-  font-family: var(--sl-hud);
   font-variant-numeric: tabular-nums;
 }
 .pointsGagnes {
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 26px;
+  letter-spacing: var(--sl-brand-ls);
   color: var(--sl-texte);
 }
 .pointsMot {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--sl-texte-2);
 }
 /* le « +850 » qui monte au-dessus du bloc, une fois */
@@ -435,11 +430,11 @@
   position: absolute;
   left: 0;
   bottom: 100%;
-  font-family: var(--sl-hud);
-  font-size: 30px;
-  font-weight: 700;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 24px;
   color: var(--sl-metal);
-  text-shadow: var(--sl-glow);
   pointer-events: none;
   animation: monterPoints 1.1s ease-out both;
 }
@@ -460,8 +455,9 @@
   display: grid;
   gap: 12px;
   padding: 14px 16px;
-  background: color-mix(in srgb, var(--sl-fond) 78%, transparent);
-  border-left: 3px solid var(--sl-metal);
+  border: 1px solid var(--sl-ligne);
+  border-radius: 12px;
+  background: var(--sl-puits);
   animation: entrer 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .correctionLigne {
@@ -471,11 +467,10 @@
   gap: 4px 14px;
 }
 .correctionValeur {
-  font-family: var(--sl-hud);
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--sl-metal);
+  font-family: var(--sl-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--sl-texte);
   font-variant-numeric: tabular-nums;
 }
 .explication {
@@ -503,16 +498,15 @@
   border-top: 1px solid var(--sl-ligne);
 }
 .suivante {
-  font-family: var(--sl-hud);
-  font-size: 17px;
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--sl-texte-2);
 }
 .suivante b {
-  color: var(--sl-metal);
-  font-size: 22px;
+  font-family: var(--sl-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sl-texte);
   font-variant-numeric: tabular-nums;
 }
 .erreurLigne {
@@ -532,31 +526,31 @@
   display: grid;
   justify-items: center;
   gap: 14px;
-  padding: 34px 20px 38px;
+  padding: 30px 20px 36px;
   text-align: center;
 }
 .decompteTitre {
-  font-family: var(--sl-hud);
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 20px;
+  letter-spacing: var(--sl-brand-ls);
   color: var(--sl-texte);
 }
 .decompteChiffre {
   min-width: 1.2em;
-  font-family: var(--sl-hud);
-  font-size: clamp(110px, 26vw, 220px);
-  font-weight: 700;
-  line-height: 0.85;
-  color: var(--sl-metal);
-  text-shadow: var(--sl-glow);
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: clamp(100px, 22vw, 180px);
+  line-height: 0.9;
+  letter-spacing: var(--sl-brand-ls);
+  color: var(--sl-texte);
   font-variant-numeric: tabular-nums;
   animation: battre 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 .decompteChiffre[data-fin="1"] {
   color: var(--sl-vermillon);
-  text-shadow: 0 0 40px color-mix(in srgb, var(--sl-vermillon) 65%, transparent);
 }
 .decompteRegle {
   max-width: 46ch;
@@ -565,11 +559,9 @@
   color: var(--sl-texte-2);
 }
 .decompteParams {
-  font-family: var(--sl-hud);
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--sl-metal);
+  font-family: var(--sl-mono);
+  font-size: 13.5px;
+  color: var(--sl-texte-2);
 }
 
 /* ——— les points et le classement en direct ——— */
@@ -578,22 +570,22 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 20px 4px;
+  padding: 14px 20px 4px;
 }
 .mesPointsNombre {
   position: relative;
-  font-family: var(--sl-hud);
-  font-size: 46px;
-  font-weight: 700;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 34px;
   line-height: 1;
-  color: var(--sl-metal);
-  text-shadow: var(--sl-glow);
+  letter-spacing: var(--sl-brand-ls);
+  color: var(--sl-texte);
   font-variant-numeric: tabular-nums;
 }
 .classementApres {
-  padding: 0 20px 8px;
+  padding: 0 20px 10px;
   font-size: 12.5px;
-  letter-spacing: 0.04em;
   color: var(--sl-texte-2);
 }
 .rangs {
@@ -604,7 +596,6 @@
   list-style: none;
 }
 .rang {
-  --bev: 8px;
   position: absolute;
   inset: 0 0 auto 0;
   height: 48px;
@@ -613,50 +604,46 @@
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  background: color-mix(in srgb, var(--sl-fond) 55%, transparent);
-  clip-path: polygon(var(--bev) 0, 100% 0, 100% calc(100% - var(--bev)), calc(100% - var(--bev)) 100%, 0 100%, 0 var(--bev));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
   transform: translateY(calc(var(--e, 0) * 52px));
   transition:
     transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
     background 0.3s ease-out;
 }
 .rang[data-moi="1"] {
-  background: color-mix(in srgb, var(--sl-metal) 16%, var(--sl-fond));
-  box-shadow: inset 3px 0 0 var(--sl-metal);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(246, 239, 228, 0.4);
 }
 .rangNum {
-  font-family: var(--sl-hud);
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--sl-mono);
+  font-size: 14px;
+  font-weight: 600;
   text-align: center;
   color: var(--sl-texte-2);
   font-variant-numeric: tabular-nums;
 }
 .rang[data-top="1"] .rangNum {
-  color: var(--sl-metal);
+  color: var(--sl-texte);
 }
 .rangNom {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--sl-hud);
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: 14.5px;
+  font-weight: 650;
 }
 .rangBonnes {
-  font-family: var(--sl-hud);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-family: var(--sl-mono);
+  font-size: 12px;
   color: var(--sl-texte-2);
   font-variant-numeric: tabular-nums;
 }
 .rangPoints {
   min-width: 3.4ch;
-  font-family: var(--sl-hud);
-  font-size: 21px;
-  font-weight: 700;
+  font-family: var(--sl-mono);
+  font-size: 14.5px;
+  font-weight: 600;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -694,6 +681,7 @@
   gap: 4px;
   min-width: 0;
   max-width: 100%;
+  padding-bottom: 6px;
   animation: entrer 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   animation-delay: var(--delai, 0s);
 }
@@ -702,38 +690,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--sl-hud);
-  font-size: 22px;
+  font-size: 15.5px;
   font-weight: 700;
-  letter-spacing: 0.04em;
 }
 .marchePoints {
-  font-family: var(--sl-hud);
-  font-size: 20px;
+  font-family: var(--sl-mono);
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--sl-metal);
+  color: var(--sl-texte-2);
   font-variant-numeric: tabular-nums;
 }
 .socle {
-  --bev: 14px;
   display: grid;
   place-items: start center;
   width: 100%;
-  padding-top: 8px;
-  background: linear-gradient(180deg, var(--sl-panneau-2), var(--sl-panneau));
-  box-shadow: inset 0 2px 0 var(--sl-metal-2);
-  clip-path: polygon(var(--bev) 0, calc(100% - var(--bev)) 0, 100% var(--bev), 100% 100%, 0 100%, 0 var(--bev));
+  padding-top: 10px;
+  border: 1px solid var(--sl-ligne);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  background: rgba(255, 255, 255, 0.05);
   transform-origin: bottom;
   animation: dresser 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   animation-delay: var(--delai, 0s);
 }
 .socle[data-place="1"] {
   height: 150px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--sl-metal) 34%, var(--sl-panneau-2)), var(--sl-panneau));
-  box-shadow:
-    inset 0 3px 0 var(--sl-vermillon),
-    0 -18px 40px -22px var(--sl-metal);
+  border-color: rgba(246, 239, 228, 0.5);
+  border-top: 3px solid var(--sl-vermillon);
+  background: rgba(246, 239, 228, 0.12);
 }
 .socle[data-place="2"] {
   height: 108px;
@@ -742,18 +726,17 @@
   height: 80px;
 }
 .socleNum {
-  font-family: var(--sl-hud);
-  font-size: 54px;
-  font-weight: 700;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: 44px;
   line-height: 1;
-  color: var(--sl-metal);
-  text-shadow: var(--sl-glow);
+  color: var(--sl-texte);
 }
 .socle[data-place="2"] .socleNum,
 .socle[data-place="3"] .socleNum {
-  font-size: 42px;
+  font-size: 32px;
   color: var(--sl-texte-2);
-  text-shadow: none;
 }
 .bilan {
   display: grid;
@@ -763,35 +746,37 @@
 }
 .stat {
   display: grid;
-  gap: 2px;
-  padding: 10px 12px;
-  background: color-mix(in srgb, var(--sl-fond) 70%, transparent);
-  border-top: 2px solid var(--sl-metal-2);
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--sl-ligne);
+  border-radius: 12px;
+  background: var(--sl-puits);
   min-width: 0;
 }
 .statNombre {
-  font-family: var(--sl-hud);
-  font-size: clamp(26px, 5vw, 40px);
-  font-weight: 700;
+  font-family: var(--sl-brand);
+  font-weight: var(--sl-brand-w);
+  font-synthesis: none;
+  font-size: clamp(22px, 4vw, 30px);
   line-height: 1;
+  letter-spacing: var(--sl-brand-ls);
   color: var(--sl-texte);
   font-variant-numeric: tabular-nums;
 }
 .statNombre small {
-  font-size: 0.55em;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.5em;
   font-weight: 600;
+  letter-spacing: 0;
   color: var(--sl-texte-2);
 }
 .statLibelle {
-  font-family: var(--sl-hud);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--sl-texte-2);
 }
 .stat[data-vif="1"] {
-  border-top-color: var(--sl-vermillon);
+  border-color: color-mix(in srgb, var(--sl-vermillon) 65%, transparent);
 }
 .serie {
   display: flex;
@@ -803,8 +788,8 @@
   display: block;
   width: 14px;
   height: 14px;
-  background: var(--sl-ligne);
-  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
 }
 .serie i[data-v="juste"] {
   background: var(--sl-metal);
@@ -829,12 +814,9 @@
 }
 .revue summary {
   cursor: pointer;
-  font-family: var(--sl-hud);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--sl-metal);
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--sl-texte);
 }
 .revueListe {
   display: grid;
@@ -848,23 +830,24 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 4px 12px;
   padding: 10px 12px;
-  background: color-mix(in srgb, var(--sl-fond) 60%, transparent);
-  border-left: 3px solid var(--sl-ligne);
+  border: 1px solid var(--sl-ligne);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
   font-size: 14px;
   line-height: 1.45;
 }
 .revueLigne[data-v="juste"] {
-  border-left-color: var(--sl-metal);
+  border-color: rgba(246, 239, 228, 0.45);
 }
 .revueLigne[data-v="faux"],
 .revueLigne[data-v="sans"] {
-  border-left-color: var(--sl-vermillon);
+  border-color: color-mix(in srgb, var(--sl-vermillon) 55%, transparent);
 }
 .revueNum {
-  font-family: var(--sl-hud);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--sl-metal);
+  font-family: var(--sl-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sl-texte-2);
 }
 .revueEnonce {
   overflow-wrap: anywhere;
@@ -991,7 +974,10 @@
 
 @media (max-width: 600px) {
   .tete {
-    padding: 12px 14px 10px;
+    padding: 14px 14px 10px;
+  }
+  .piste {
+    margin: 0 14px;
   }
   .corps {
     padding: 16px 14px 18px;
@@ -1001,9 +987,6 @@
   }
   .calculRangee {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .calculRangee :global(button) {
-    width: 100%;
   }
   .bilan {
     grid-template-columns: minmax(0, 1fr);

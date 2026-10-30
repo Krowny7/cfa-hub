@@ -124,6 +124,27 @@ export function marquer(e: EtatBoucle, su: boolean, maintenant: number = Date.no
   return { ...e, marques, premier, pos, derniere: id, vues: e.vues + 1, dernier: maintenant, actif: e.actif + pause, fin: fini ? maintenant : null };
 }
 
+/**
+ * Marque une carte donnée (et non celle à l'écran) : « Maîtrisée » / « Pas
+ * encore » de la partie de cartes (lib/flashcards/partie.ts), qui tire ses
+ * cartes dans plusieurs paquets. Même effet que `marquer` sur la boucle :
+ * marque du tour, première marque (tour 1), compteurs, fin de boucle ; la
+ * carte à l'écran ne bouge que si c'était elle. Sans effet (l'état tel quel)
+ * si la boucle est finie (« Maîtrisé » reste), si la carte n'est pas dans le
+ * tour en cours (déjà maîtrisée à un tour d'avant, ou arrivée depuis) ou si
+ * elle porte déjà cette marque.
+ */
+export function marquerId(e: EtatBoucle, id: string, su: boolean, maintenant: number = Date.now()): EtatBoucle {
+  if (phase(e) === "fin" || !e.file.includes(id) || e.marques[id] === su) return e;
+  const marques = { ...e.marques, [id]: su };
+  const premier = e.tour === 1 || !a(e.premier, id) ? { ...e.premier, [id]: su } : e.premier;
+  const toutMarque = e.file.every((x) => a(marques, x));
+  const pos = toutMarque ? e.file.length : e.file[e.pos] === id ? prochaine(e.file, marques, e.pos) : e.pos;
+  const pause = Math.max(0, Math.min(PAUSE_MAX, maintenant - e.dernier));
+  const fini = toutMarque && !e.file.some((x) => marques[x] === false);
+  return { ...e, marques, premier, pos, derniere: id, vues: e.vues + 1, dernier: maintenant, actif: e.actif + pause, fin: fini ? maintenant : null };
+}
+
 /** ← / → : se déplacer dans le tour (les marques restent). */
 export function aller(e: EtatBoucle, delta: number): EtatBoucle {
   if (phase(e) !== "carte" || e.file.length === 0) return e;

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Spade } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { traitsDuJour } from "@/components/adn/AnneauDuJourData";
@@ -14,6 +16,7 @@ import { cleMatiere, cleSet, etatAffiche, etatListe } from "@/lib/flashcards/pro
 import { lireProgressions } from "@/lib/flashcards/progression-serveur";
 import { EtatPaquetVivant } from "@/components/flashcards/EtatPaquetVivant";
 import { MATIERE_CARTES } from "@/lib/voice-z3c";
+import { PARTIE_ENTREE } from "@/lib/voice-partie";
 
 type PageProps = { params: Promise<{ matiere: string }> };
 type Dossier = { name: string | null } | null;
@@ -139,8 +142,13 @@ export default async function FlashcardsMatierePage({ params }: PageProps) {
         meta={cards.length ? [plural(cards.length, "carte", "cartes"), MATIERE_CARTES.paquets(paquets.length)] : []}
         etat={cards.length && progressions ? <EtatPaquetVivant cle={cle} initial={ouJenSuis} total={cards.length} /> : null}
         rightSlot={
-          onePager || ficheCartes ? (
+          cards.length || onePager || ficheCartes ? (
             <>
+              {cards.length > 0 && (
+                <Link href={`/flashcards/partie?matiere=${subject.key}`} className="btn btn-primary btn-sm min-h-[44px]" title={PARTIE_ENTREE.ligneMatiere(subject.name)}>
+                  <Spade size={16} aria-hidden /> {PARTIE_ENTREE.actionMatiere}
+                </Link>
+              )}
               {onePager && <LienOnePager href={onePager} className="btn btn-secondary btn-sm min-h-[44px]" />}
               {ficheCartes && <LienFiche href={ficheCartes} libelle={BOUCLE.ficheCartes(cards.length || 60)} aide={BOUCLE.ficheCartesAide} />}
             </>

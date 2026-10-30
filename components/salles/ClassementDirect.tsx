@@ -1,9 +1,11 @@
 "use client";
 
 import { memo } from "react";
+import { Trophy } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { fmtInt } from "@/components/classement/format";
 import { useCompteur } from "@/components/salles/anim";
+import { TetePanneau } from "@/components/salles/Stage";
 import { lignesDirectes, type MoiPourClassement } from "@/lib/salles/partie";
 import type { SalleClassementLigne } from "@/lib/salles/types";
 import { PARTIE, SALLES } from "@/lib/voice-salles";
@@ -45,12 +47,9 @@ function ClassementDirectBase({
   const commence = nbFermees > 0;
   return (
     <section className={s.panneau} aria-labelledby="partie-classement">
-      <div className={s.panneauTete}>
-        <h2 id="partie-classement" className={s.titrePanneau}>
-          {PARTIE.classementTitre}
-        </h2>
-        <span className={s.compte}>{fmtInt(classement.length || lignes.length)}</span>
-      </div>
+      <TetePanneau id="partie-classement" icone={<Trophy size={16} />} droite={<span className={s.compte}>{fmtInt(classement.length || lignes.length)}</span>}>
+        {PARTIE.classementTitre}
+      </TetePanneau>
       <div className={p.mesPoints}>
         <span className={s.libelle}>{PARTIE.mesPoints}</span>
         <span className={p.mesPointsNombre} aria-label={`${fmtInt(mesPoints)} ${PARTIE.points}`}>

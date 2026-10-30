@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, Lock, LogOut, Trash2 } from "lucide-react";
+import { Clock, Globe, History, Lock, LogOut, SlidersHorizontal, Trash2 } from "lucide-react";
 import { fmtInt } from "@/components/classement/format";
 import { CodePartage } from "@/components/salles/CodePartage";
 import { Membres } from "@/components/salles/Membres";
 import { ReglagesLecture } from "@/components/salles/Reglages";
+import { Stage, TetePanneau } from "@/components/salles/Stage";
 import type { EtatSalle, SalleParams } from "@/lib/salles/types";
 import { REGLAGES, SALLES } from "@/lib/voice-salles";
 import s from "./Salles.module.css";
 
-// Le salon d'une salle (la salle d'attente), sur la console sombre de la DA
-// des Salles : nom, publique ou privée, code à partager (copier), joueurs
+// Le salon d'une salle (la salle d'attente), sur la carte d'encre noire du
+// site (components/salles/Stage) : nom, publique ou privée, code à partager (copier), joueurs
 // (l'admin marqué), puis à droite — pour l'admin, le formulaire de réglages
 // (`reglages`, qui lance la partie) ; pour un membre, « En attente du
 // lancement » et les réglages de la dernière partie en lecture seule — et en
@@ -63,7 +64,7 @@ export function SalonView({
   const quitterMsg = nbMembres <= 1 ? SALLES.quitterDernier : moi.estAdmin ? SALLES.quitterAdminConfirme : SALLES.quitterConfirme;
 
   return (
-    <div className={[s.jetons, s.racine].join(" ")} data-salon={partie ? "partie" : "attente"}>
+    <Stage salon={partie ? "partie" : "attente"}>
       <header className={s.entete}>
         <div>
           <p className={s.surtitre}>{SALLES.salonKicker}</p>
@@ -100,20 +101,16 @@ export function SalonView({
           <div className={s.colonne}>
             {moi.estAdmin ? (
               <section className={s.panneau} aria-labelledby="salle-reglages">
-                <div className={s.panneauTete}>
-                  <h2 id="salle-reglages" className={s.titrePanneau}>
-                    {REGLAGES.titre}
-                  </h2>
-                </div>
+                <TetePanneau id="salle-reglages" icone={<SlidersHorizontal size={16} />}>
+                  {REGLAGES.titre}
+                </TetePanneau>
                 {reglages}
               </section>
             ) : (
               <section className={s.panneau} aria-labelledby="salle-attente">
-                <div className={s.panneauTete}>
-                  <h2 id="salle-attente" className={s.titrePanneau}>
-                    {dernieresParams ? SALLES.derniereParty : REGLAGES.titre}
-                  </h2>
-                </div>
+                <TetePanneau id="salle-attente" icone={<Clock size={16} />}>
+                  {dernieresParams ? SALLES.derniereParty : REGLAGES.titre}
+                </TetePanneau>
                 <div className={s.panneauCorps}>
                   <div className={s.attente} role="status">
                     <span className={s.barres} aria-hidden>
@@ -133,11 +130,9 @@ export function SalonView({
 
             {historique.length > 0 && (
               <section className={s.panneau} aria-labelledby="salle-historique">
-                <div className={s.panneauTete}>
-                  <h2 id="salle-historique" className={s.titrePanneau}>
-                    {SALLES.historiqueTitre}
-                  </h2>
-                </div>
+                <TetePanneau id="salle-historique" icone={<History size={16} />}>
+                  {SALLES.historiqueTitre}
+                </TetePanneau>
                 <ul className={s.historique}>
                   {historique.map((h) => (
                     <li key={h.sessionId} className={s.historiqueLigne}>
@@ -186,6 +181,6 @@ export function SalonView({
           )}
         </div>
       </footer>
-    </div>
+    </Stage>
   );
 }

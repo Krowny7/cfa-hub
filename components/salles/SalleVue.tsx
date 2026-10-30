@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { PartieSalle } from "@/components/salles/PartieSalle";
 import { Reglages, type RetourLancement } from "@/components/salles/Reglages";
 import { SalonView, type ActionsSalon } from "@/components/salles/SalonView";
+import { Stage } from "@/components/salles/Stage";
 import { useEtatSalle } from "@/components/salles/useEtatSalle";
 import { lancerPartie } from "@/app/salles/actions";
 import { arreterSession, getQuestionsDisponibles, messageErreurSalle, modifierSalle, quitterSalle, supprimerSalle } from "@/lib/salles/api";
@@ -112,7 +113,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
 
   if (suivi.introuvable) {
     return (
-      <div className={[s.jetons, s.racine].join(" ")}>
+      <Stage>
         <p className={s.surtitre}>{SALLES.salonKicker}</p>
         <h1 className={s.nomSalle}>{SALLES.introuvable}</h1>
         <p className={s.sous}>{SALLES.introuvableTexte}</p>
@@ -121,7 +122,7 @@ export function SalleVue({ salleId, initial }: { salleId: string; initial: EtatS
             {SALLES.retourSalles}
           </Link>
         </div>
-      </div>
+      </Stage>
     );
   }
 

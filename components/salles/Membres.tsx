@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Crown } from "lucide-react";
+import { Crown, Users } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
 import { fmtInt } from "@/components/classement/format";
 import { PresenceText } from "@/components/presence/Presence";
+import { TetePanneau } from "@/components/salles/Stage";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { DEFAULT_ELO, rankFor } from "@/lib/ranks";
 import type { SalleMembre } from "@/lib/salles/types";
@@ -26,12 +27,9 @@ export function Membres({ membres, moiId, total }: { membres: SalleMembre[]; moi
   const reste = membres.length - VISIBLES;
   return (
     <section className={s.panneau} aria-labelledby="salle-membres">
-      <div className={s.panneauTete}>
-        <h2 id="salle-membres" className={s.titrePanneau}>
-          {SALLES.membresTitre}
-        </h2>
-        <span className={s.compte}>{total}</span>
-      </div>
+      <TetePanneau id="salle-membres" icone={<Users size={16} />} droite={<span className={s.compte}>{total}</span>}>
+        {SALLES.membresTitre}
+      </TetePanneau>
       <ul className={s.membres}>
         {montres.map((m, i) => {
           const moi = m.userId === moiId;

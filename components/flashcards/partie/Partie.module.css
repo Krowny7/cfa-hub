@@ -1,0 +1,727 @@
+/* La partie de cartes (/flashcards/partie) : le panneau du croupier (Léonard
+   sur un tapis vert à la texture d'encre) et l'écran « Prépare ta partie ».
+   Papier clair du site, encre, tapis vert, or pour les jetons ; peu de
+   couleurs. Les jetons de thème (--surface, --ink, --line-2…) suivent le
+   mode nuit ; le tapis, lui, reste vert dans les deux modes.
+   Mouvement réduit : plus de fondu entre les poses. */
+
+/* ——— Le panneau du croupier ——— */
+.croupier {
+  --or: #c9a24a;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 20px;
+  color: #f4f4f1;
+  background:
+    linear-gradient(rgba(5, 20, 12, 0.5), rgba(5, 20, 12, 0.5)),
+    linear-gradient(#256044, #256044),
+    url("/encres/atelier.webp") 30% 40% / 900px auto,
+    #14301f;
+  background-blend-mode: normal, color, normal, normal;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.03),
+    0 14px 30px -18px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.leoBox {
+  position: relative;
+  height: 272px;
+  flex: none;
+}
+/* de la lumière sur Léonard : un halo chaud derrière lui */
+.leoBox::before {
+  content: "";
+  position: absolute;
+  inset: -10% -20% 0;
+  background: radial-gradient(ellipse at 50% 38%, rgba(255, 233, 186, 0.42), rgba(255, 233, 186, 0.1) 46%, transparent 70%);
+  pointer-events: none;
+}
+.leo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: block;
+  filter: brightness(1.07) saturate(1.06) drop-shadow(0 10px 16px rgba(0, 0, 0, 0.4));
+}
+.leoOn {
+  opacity: 1;
+}
+.nomLeo {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.bulle {
+  position: relative;
+  z-index: 2;
+  margin: -34px 14px 0;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #e2e2dc;
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.bulle p {
+  margin: 0;
+}
+.corps {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* la table vue en perspective : une main face cachée */
+.vignette {
+  position: relative;
+  flex: 1 1 200px;
+  min-height: 200px;
+  margin-top: 4px;
+  perspective: 700px;
+  perspective-origin: 50% 10%;
+}
+.plan {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 50%;
+  height: 168px;
+  margin-top: -84px;
+  border-radius: 24px;
+  transform: rotateX(56deg);
+  background:
+    linear-gradient(rgba(5, 20, 12, 0.4), rgba(5, 20, 12, 0.4)),
+    linear-gradient(#256044, #256044),
+    url("/encres/atelier.webp") 30% 40% / 640px auto,
+    #14301f;
+  background-blend-mode: normal, color, normal, normal;
+  box-shadow:
+    0 0 0 6px #0d0906,
+    0 0 0 7px rgba(201, 162, 74, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px 26px;
+}
+.plan::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 2px solid var(--or);
+  border-radius: 18px;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.sigle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38px;
+  text-align: center;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-size: 26px;
+  color: var(--or);
+}
+.carte {
+  position: relative;
+  flex: 0 1 50px;
+  min-width: 0;
+  aspect-ratio: 0.72;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e2dc;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+}
+.carte::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14%;
+  height: 1px;
+  background: #e58f87;
+}
+
+/* les jetons à gagner */
+.jetons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: auto 16px 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(244, 244, 241, 0.1);
+  border: 1px solid rgba(244, 244, 241, 0.3);
+}
+.jetons b {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1;
+  color: #f4f4f1;
+}
+.jetons span {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(244, 244, 241, 0.85);
+}
+
+/* ——— La feuille « Prépare ta partie » ——— */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .page {
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
+  }
+}
+/* sur téléphone, Léonard prend moins de place : il garde la tête et la bulle, la table se replie */
+@media (max-width: 899px) {
+  .leoBox {
+    height: 210px;
+  }
+  .leo {
+    object-position: 50% 8%;
+  }
+  .vignette {
+    display: none;
+  }
+  .jetons {
+    margin-top: 12px;
+  }
+}
+
+.feuille {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-1);
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .feuille {
+    padding: 18px 16px;
+  }
+}
+.titre h1 {
+  margin: 4px 0 0;
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-size: clamp(26px, 4vw, 32px);
+  line-height: 1.05;
+  color: var(--ink);
+}
+.titre p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.lab {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+.lab i {
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+/* les matières */
+.grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+  gap: 8px;
+}
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 5px 10px;
+  text-align: left;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.chip:hover:not(:disabled) {
+  background: var(--paper);
+}
+.chip[aria-pressed="true"] {
+  background: var(--paper);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.chip:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.chip small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.case {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--ink-3);
+  background: var(--surface);
+  color: var(--paper);
+}
+.case svg {
+  opacity: 0;
+}
+[aria-pressed="true"] > .case {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+[aria-pressed="true"] > .case svg {
+  opacity: 1;
+}
+
+/* les paquets */
+.listeP {
+  max-height: 150px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 34px;
+  gap: 4px 10px;
+  align-content: start;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: var(--paper);
+}
+@media (min-width: 640px) {
+  .listeP {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ligne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 8px;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ligne:hover {
+  background: var(--surface);
+}
+.ligne[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--line-2);
+}
+.nom {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nom b {
+  margin-right: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #8a6d24;
+}
+.nb {
+  flex: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.vide {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 8px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* mains, cartes par main */
+.deux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px 24px;
+}
+.seg {
+  display: inline-flex;
+  border-radius: 12px;
+  border: 1px solid var(--ink);
+  overflow: hidden;
+}
+.seg button {
+  min-width: 68px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.seg button + button {
+  border-left: 1px solid var(--ink);
+}
+.seg button[aria-pressed="true"],
+.encre {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  background:
+    linear-gradient(180deg, rgba(24, 14, 8, 0.31), rgba(24, 14, 8, 0.58)),
+    url("/encres/atelier.webp") 30% 40% / 260px auto,
+    #2a1d13;
+}
+.pas {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--ink);
+  overflow: hidden;
+}
+.pas button {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  min-height: 44px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.pas button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.pas output {
+  display: block;
+  min-width: 54px;
+  text-align: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* interrupteurs */
+.interrupteurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 4px 24px;
+}
+.sw {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.piste {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--pencil-2);
+}
+.piste::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: left 0.2s ease;
+}
+[aria-pressed="true"] > .piste {
+  background: var(--ink);
+}
+[aria-pressed="true"] > .piste::after {
+  left: 21px;
+  background: var(--paper);
+}
+
+/* le pied : le résumé et « Distribuer » */
+.pied {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+.resume {
+  margin: 0;
+  flex: 1 1 260px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.erreur {
+  margin: 0;
+  width: 100%;
+  font-size: 13.5px;
+  color: var(--pen);
+}
+.encre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 10px 20px -10px rgba(40, 25, 10, 0.6);
+}
+.encre:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.encre:disabled {
+  cursor: default;
+}
+.encre[data-off] {
+  background: var(--pencil-2);
+  color: var(--ink-2);
+  text-shadow: none;
+  box-shadow: none;
+}
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.retour:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.chip:focus-visible,
+.ligne:focus-visible,
+.seg button:focus-visible,
+.pas button:focus-visible,
+.sw:focus-visible,
+.encre:focus-visible,
+.retour:focus-visible {
+  outline: 3px solid #c9a24a;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leo,
+  .piste::after {
+    transition: none;
+  }
+}
+
+/* ——— L'entrée : la carte « La partie de cartes » des pages Flashcards ——— */
+.appel {
+  --or: #c9a24a;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 112px;
+  padding: 0 20px 0 0;
+  border-radius: 20px;
+  color: #f4f4f1;
+  text-decoration: none;
+  background:
+    linear-gradient(rgba(5, 20, 12, 0.5), rgba(5, 20, 12, 0.5)),
+    linear-gradient(#256044, #256044),
+    url("/encres/atelier.webp") 30% 40% / 900px auto,
+    #14301f;
+  background-blend-mode: normal, color, normal, normal;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.03),
+    0 14px 30px -18px rgba(0, 0, 0, 0.4);
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.appel:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.03),
+    0 18px 34px -16px rgba(0, 0, 0, 0.5);
+}
+.appel:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 3px;
+}
+.appelLeo {
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: 112px;
+}
+.appelLeo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255, 233, 186, 0.4), transparent 68%);
+}
+.appelLeo img {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 100%;
+  height: calc(100% - 8px);
+  object-fit: cover;
+  object-position: 50% 0;
+  filter: brightness(1.07) saturate(1.06) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
+}
+.appelTexte {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 0;
+  display: grid;
+  gap: 3px;
+}
+.appelTexte small {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.appelTexte b {
+  font-family: var(--font-brand), "Arial Black", sans-serif;
+  font-weight: 400;
+  font-size: clamp(19px, 2.6vw, 24px);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: #f4f4f1;
+}
+.appelTexte span {
+  max-width: 520px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: rgba(244, 244, 241, 0.86);
+}
+.appelAction {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  background:
+    linear-gradient(180deg, rgba(24, 14, 8, 0.31), rgba(24, 14, 8, 0.58)),
+    url("/encres/atelier.webp") 30% 40% / 260px auto,
+    #2a1d13;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 10px 20px -10px rgba(40, 25, 10, 0.6);
+}
+@media (max-width: 560px) {
+  .appel {
+    gap: 12px;
+    padding-right: 14px;
+  }
+  .appelLeo {
+    width: 84px;
+  }
+  .appelAction span {
+    display: none;
+  }
+  .appelAction {
+    padding: 0 14px;
+  }
+  .appelTexte span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .appel {
+    transition: none;
+  }
+  .appel:hover {
+    transform: none;
+  }
+}

@@ -487,6 +487,10 @@ button.bouton {
   cursor: pointer;
   font-family: inherit;
 }
+button.bouton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ——— le Classement général : un bandeau peint, des onglets, un panneau ——— */
 .general {

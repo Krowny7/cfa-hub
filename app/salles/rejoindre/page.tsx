@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DoorOpen } from "lucide-react";
 import { Icone } from "@/components/adn/icons";
 import { FormCode } from "@/components/salles/FormCode";
+import { Stage, TetePanneau } from "@/components/salles/Stage";
 import { sallesReady } from "@/lib/salles/api";
 import { analyserCode } from "@/lib/salles/logique";
 import { createClient } from "@/lib/supabase/server";
@@ -38,7 +40,7 @@ export default async function RejoindrePage({ searchParams }: PageProps) {
           <p className="t-small m-0 max-w-[60ch]">{SALLES.rejoindreSous}</p>
         </header>
 
-        <div className={[s.jetons, s.racine].join(" ")}>
+        <Stage>
           {!pret ? (
             <p className={s.entreeBientot}>
               <i className={[s.point, s.pointVif].join(" ")} aria-hidden style={{ color: "var(--sl-vermillon)" }} />
@@ -46,11 +48,9 @@ export default async function RejoindrePage({ searchParams }: PageProps) {
             </p>
           ) : (
             <section className={s.panneau} aria-labelledby="rejoindre-code" style={{ maxWidth: 640 }}>
-              <div className={s.panneauTete}>
-                <h2 id="rejoindre-code" className={s.titrePanneau}>
-                  {SALLES.codeTitre}
-                </h2>
-              </div>
+              <TetePanneau id="rejoindre-code" icone={<DoorOpen size={16} />}>
+                {SALLES.codeTitre}
+              </TetePanneau>
               <div className={s.panneauCorps}>
                 {lu?.ok && <p className={s.info}>{SALLES.codeInvite}</p>}
                 {lu && !lu.ok && <p className={s.erreur}>{lu.erreur}</p>}
@@ -63,7 +63,7 @@ export default async function RejoindrePage({ searchParams }: PageProps) {
               {SALLES.retourSalles}
             </Link>
           </div>
-        </div>
+        </Stage>
       </div>
     </div>
   );

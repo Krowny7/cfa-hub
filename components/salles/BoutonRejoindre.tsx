@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { BoutonEnvoi } from "@/components/classement/Encre";
 import { messageErreurSalle, rejoindreSallePublique } from "@/lib/salles/api";
 import { createClient } from "@/lib/supabase/browser";
 import { SALLES } from "@/lib/voice-salles";
@@ -35,9 +36,9 @@ export function BoutonRejoindre({ salleId, nom, demo = false }: { salleId: strin
 
   return (
     <div style={{ display: "grid", gap: 4, justifyItems: "end" }}>
-      <button type="button" className={s.btn} onClick={rejoindre} disabled={envoi} aria-label={SALLES.rejoindreNom(nom)}>
+      <BoutonEnvoi type="button" surPeinture className={s.petit} onClick={rejoindre} disabled={envoi} label={SALLES.rejoindreNom(nom)}>
         {SALLES.rejoindre}
-      </button>
+      </BoutonEnvoi>
       {erreur && (
         <p role="alert" className={s.hors} style={{ margin: 0, maxWidth: 220, textAlign: "right" }}>
           {erreur}

@@ -1,10 +1,12 @@
 "use client";
 
 import { memo, useState } from "react";
-import { ArrowLeft, Crown, RotateCcw } from "lucide-react";
+import { ArrowLeft, ChartNoAxesColumn, Crown, RotateCcw, Trophy } from "lucide-react";
 import { Avatar } from "@/components/classement/Avatar";
+import { BoutonEnvoi } from "@/components/classement/Encre";
 import { fmtInt } from "@/components/classement/format";
 import { useCompteur } from "@/components/salles/anim";
+import { TetePanneau } from "@/components/salles/Stage";
 import { formatCalc } from "@/lib/calc/engine";
 import type { CalcUnit } from "@/lib/calc/types";
 import { bilanJoueur, libelleDelai, placeOrdinale, podium, type Verdict } from "@/lib/salles/partie";
@@ -73,12 +75,9 @@ function FinPartieBase({
   return (
     <div className={p.fin}>
       <section className={s.panneau} aria-labelledby="partie-fin">
-        <div className={s.panneauTete}>
-          <h2 id="partie-fin" className={s.titrePanneau}>
-            {PARTIE.finTitre(session.numero)}
-          </h2>
-          <span className={s.compte}>{PARTIE.finKicker}</span>
-        </div>
+        <TetePanneau id="partie-fin" icone={<Trophy size={16} />} droite={<span className={s.compte}>{PARTIE.finKicker}</span>}>
+          {PARTIE.finTitre(session.numero)}
+        </TetePanneau>
         <p className={s.sous} style={{ padding: "6px 20px 0" }}>
           {libelleParams(session.params)}
         </p>
@@ -95,7 +94,7 @@ function FinPartieBase({
                 {marches.map(({ ligne, place }) => (
                   <li key={ligne.userId} className={p.marche} data-place={place} style={{ "--delai": DELAI_MARCHE[place] } as React.CSSProperties}>
                     <div className={p.marcheJoueur}>
-                      {place === 1 && <Crown size={22} aria-hidden style={{ color: "var(--sl-metal)" }} />}
+                      {place === 1 && <Crown size={22} aria-hidden style={{ color: "var(--sl-texte)" }} />}
                       <Avatar src={ligne.avatarUrl} name={nomDe(ligne)} size={TAILLE_AVATAR[place] ?? 44} />
                       <span className={p.marcheNom} title={nomDe(ligne)}>
                         {nomDe(ligne)}
@@ -119,11 +118,9 @@ function FinPartieBase({
       </section>
 
       <section className={s.panneau} aria-labelledby="partie-bilan">
-        <div className={s.panneauTete}>
-          <h2 id="partie-bilan" className={s.titrePanneau}>
-            {PARTIE.bilanTitre}
-          </h2>
-        </div>
+        <TetePanneau id="partie-bilan" icone={<ChartNoAxesColumn size={16} />}>
+          {PARTIE.bilanTitre}
+        </TetePanneau>
         <div className={p.bilan}>
           <div className={p.stat}>
             <span className={p.statNombre}>
@@ -187,9 +184,9 @@ function FinPartieBase({
 
         <div className={p.finActions}>
           {estAdmin && onRejouer && (
-            <button type="button" className={[s.btn, s.btnPrimaire].join(" ")} disabled={occupe} onClick={() => void rejouer()}>
-              <RotateCcw size={18} aria-hidden /> {occupe ? PARTIE.rejouerEnCours : PARTIE.rejouer}
-            </button>
+            <BoutonEnvoi type="button" surPeinture disabled={occupe} onClick={() => void rejouer()}>
+              <RotateCcw size={17} aria-hidden /> {occupe ? PARTIE.rejouerEnCours : PARTIE.rejouer}
+            </BoutonEnvoi>
           )}
           <button type="button" className={s.btn} onClick={onRetour}>
             <ArrowLeft size={16} aria-hidden /> {PARTIE.retourSalon}

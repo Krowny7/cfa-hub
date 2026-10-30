@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import { Play } from "lucide-react";
+import { BoutonEnvoi } from "@/components/classement/Encre";
 import { MIX_DEFAUT } from "@/lib/calc/session";
 import {
   SALLE_DIFFICULTES,
@@ -307,9 +308,9 @@ export function Reglages({
       </div>
 
       <div className={s.lancement}>
-        <button type="submit" className={[s.btn, s.btnPrimaire].join(" ")} disabled={envoi || desactive || reel.topics.length === 0}>
-          <Play size={20} aria-hidden /> {envoi ? REGLAGES.lancerEnCours : REGLAGES.lancer}
-        </button>
+        <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi || desactive || reel.topics.length === 0}>
+          <Play size={18} aria-hidden /> {envoi ? REGLAGES.lancerEnCours : REGLAGES.lancer}
+        </BoutonEnvoi>
         <p className={s.aide}>{REGLAGES.lancerAide}</p>
         {retour && !retour.ok && (
           <p role="alert" className={s.erreur}>

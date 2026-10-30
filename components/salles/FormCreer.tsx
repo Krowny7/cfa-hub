@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Globe, Lock, Plus } from "lucide-react";
+import { BoutonEnvoi } from "@/components/classement/Encre";
 import { SALLE_DESCRIPTION_MAX, SALLE_NOM_MAX, SALLE_NOM_MIN } from "@/lib/salles/logique";
 import { flechesRadios } from "@/components/salles/radios";
 import { creerSalle, messageErreurSalle } from "@/lib/salles/api";
@@ -119,9 +120,9 @@ export function FormCreer({ demo = false }: { demo?: boolean }) {
         </p>
       )}
       <div>
-        <button type="submit" className={[s.btn, s.btnPrimaire].join(" ")} disabled={envoi}>
-          <Plus size={20} aria-hidden /> {envoi ? SALLES.creerEnCours : SALLES.creerEnvoi}
-        </button>
+        <BoutonEnvoi surPeinture className={s.pleinMobile} disabled={envoi}>
+          <Plus size={18} aria-hidden /> {envoi ? SALLES.creerEnCours : SALLES.creerEnvoi}
+        </BoutonEnvoi>
       </div>
     </form>
   );

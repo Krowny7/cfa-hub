@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DoorOpen, Plus } from "lucide-react";
+import { DoorOpen, Plus, Users } from "lucide-react";
+import { Bouton, Sceau } from "@/components/classement/Encre";
 import { BoutonRejoindre } from "@/components/salles/BoutonRejoindre";
 import { FormCode } from "@/components/salles/FormCode";
 import type { EntreeSalles, SallePublique } from "@/lib/salles/types";
@@ -8,10 +9,12 @@ import a from "@/components/classement/Affronter.module.css";
 import s from "./Salles.module.css";
 
 // La carte « Les Salles » de S'affronter, après la bande « Trouver un
-// adversaire » : la forme des cartes de la page (angles arrondis, ombre), mais
-// sur le fond sombre de la DA des Salles. À gauche, « Créer une salle » (vers
-// /salles) et « Rejoindre avec un code » ; à droite, les salles publiques
-// ouvertes (nom, joueurs, partie en cours ou salon ouvert, « Rejoindre »).
+// adversaire », dont elle reprend la peau : le même fond d'encre noire, les
+// mêmes coins, le sceau d'encre, le titre en Dela Gothic One, un champ de code
+// comme le champ de recherche et des boutons d'encre. En tête, « Créer une
+// salle » (vers /salles) ; dessous, « Rejoindre avec un code » à gauche et,
+// à droite, les salles publiques ouvertes (nom, joueurs, partie en cours ou
+// salon ouvert, « Rejoindre » ou « Ouvrir »).
 // Sans la migration (migration_salles.sql), une ligne dit que les salles
 // arrivent et rien d'autre ne s'affiche. Composant sans état : la page serveur
 // lui passe les listes ; `demo` (aperçus) coupe les appels de ses boutons.
@@ -34,7 +37,7 @@ export function LigneSallePublique({ salle, demo = false }: { salle: SallePubliq
         </span>
       </div>
       {salle.dejaMembre ? (
-        <Link href={`/salles/${salle.id}`} className={s.btn} aria-label={SALLES.ouvrirNom(salle.nom)}>
+        <Link href={`/salles/${salle.id}`} className={[s.btn, s.petit].join(" ")} aria-label={SALLES.ouvrirNom(salle.nom)}>
           {SALLES.ouvrir}
         </Link>
       ) : (
@@ -51,14 +54,17 @@ export function CarteSalles({ salles, demo = false }: { salles?: EntreeSalles | 
   return (
     <section className={[a.carte, s.jetons, s.entree].join(" ")} aria-labelledby="cl-salles" data-salles={pret ? "pret" : "bientot"}>
       <div className={s.entreeTete}>
+        <Sceau>
+          <Users size={18} />
+        </Sceau>
         <div className={s.entreeTitre}>
-          <p className={s.surtitre}>{SALLES.entreeKicker}</p>
           <h2 id="cl-salles">{SALLES.titre}</h2>
+          <p className={s.sous}>{SALLES.sous}</p>
         </div>
         {pret && (
-          <Link href="/salles" className={[s.btn, s.btnPrimaire].join(" ")}>
-            <Plus size={20} aria-hidden /> {SALLES.creer}
-          </Link>
+          <Bouton href="/salles" surPeinture className={s.pleinMobile}>
+            <Plus size={18} aria-hidden /> {SALLES.creer}
+          </Bouton>
         )}
       </div>
 
@@ -70,7 +76,6 @@ export function CarteSalles({ salles, demo = false }: { salles?: EntreeSalles | 
       ) : (
         <div className={s.entreeCorps}>
           <div className={s.entreeActions}>
-            <p className={s.sous}>{SALLES.sous}</p>
             <FormCode id="cl-salles-code" demo={demo} />
             {mes.length > 0 && (
               <div className={s.entreeListe}>
@@ -82,7 +87,7 @@ export function CarteSalles({ salles, demo = false }: { salles?: EntreeSalles | 
                   {mes.slice(0, MAX_MES).map((m) => (
                     <li key={m.id}>
                       <Link href={`/salles/${m.id}`} aria-label={SALLES.ouvrirNom(m.nom)}>
-                        <i className={[s.point, m.enCours ? s.pointVif : ""].filter(Boolean).join(" ")} aria-hidden style={{ color: m.enCours ? "var(--sl-vermillon)" : "var(--sl-metal)" }} />
+                        <i className={[s.point, m.enCours ? s.pointVif : ""].filter(Boolean).join(" ")} aria-hidden style={{ color: m.enCours ? "var(--sl-vermillon)" : "var(--sl-texte-2)" }} />
                         {m.nom}
                       </Link>
                     </li>

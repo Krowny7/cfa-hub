@@ -103,6 +103,7 @@ export const ROUTES: ReadonlySet<string> = new Set([
   "/flashcards",
   "/flashcards/[id]",
   "/flashcards/marquees",
+  "/flashcards/partie",
   "/flashcards/matiere/[matiere]",
   "/login",
   "/mock-exams",

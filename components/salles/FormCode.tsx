@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DoorOpen } from "lucide-react";
+import { BoutonEnvoi } from "@/components/classement/Encre";
 import { analyserCode, normaliserCode, SALLE_CODE_LONGUEUR } from "@/lib/salles/logique";
 import { messageErreurSalle, rejoindreSalleParCode } from "@/lib/salles/api";
 import { createClient } from "@/lib/supabase/browser";
@@ -80,9 +81,9 @@ export function FormCode({ initial = "", id = "salle-code", demo = false }: { in
             setErreur(null);
           }}
         />
-        <button type="submit" className={s.btn} disabled={envoi}>
-          <DoorOpen size={18} aria-hidden /> {envoi ? SALLES.codeEnCours : SALLES.codeEnvoi}
-        </button>
+        <BoutonEnvoi surPeinture className={s.compact} disabled={envoi}>
+          <DoorOpen size={17} aria-hidden /> {envoi ? SALLES.codeEnCours : SALLES.codeEnvoi}
+        </BoutonEnvoi>
       </div>
       {erreur && (
         <p id={erreurId} role="alert" className={s.erreur}>
