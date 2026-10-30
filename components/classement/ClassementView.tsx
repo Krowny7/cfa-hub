@@ -96,7 +96,7 @@ function GrandeSalle({ data }: { data: ClassementData }) {
 // Dans l'ordre : l'en-tête simple (espace · domaine, titre) ; le diptyque « La Grande
 // Salle » (l'examen classé, la pièce maîtresse, peinte, à gauche) | la carte du
 // duel (en haut ton ELO et ton insigne, une ligne de rang ; en bas la peinture des
-// duels et le bouton « Lancer un duel », ou « Relever le défi » quand un défi
+// duels, le titre « Duels » et sa phrase, le bouton « Lancer un duel », ou « Relever le défi » quand un défi
 // attend ; l'arc électrique court autour quand il y a de l'enjeu) ; la bande noire
 // « Trouver un adversaire » (RechercheJoueurs : des suggestions dès 2 lettres) ; la
 // rangée « Ton plus grand rival |
@@ -154,6 +154,13 @@ export function ClassementView({ data, tab = "classement" }: { data: ClassementD
                 <div className={s.fondDuel} aria-hidden>
                   <Illustration nom="classement-duels" position="50% 30%" decorative eager />
                 </div>
+                <div className={s.duelTitre}>
+                  <span className={s.sceauNoir} aria-hidden>
+                    <Icone nom="duel" size={20} />
+                  </span>
+                  <h3 className="font-brand">{CL.duels}</h3>
+                </div>
+                <p className={s.duelSous}>{CL.duelsSous}</p>
                 {defi ? (
                   <Bouton href={`/duel/${defi.id}`} surPeinture>
                     <Icone nom="duel" size={17} /> {CL.releverDefi(nom(defi))}

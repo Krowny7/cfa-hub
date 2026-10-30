@@ -49,6 +49,8 @@ export const CL = {
   courbeHint: (parties: string) => `${parties} · duels et examens`,
   /** la carte « Duels » (partie à reprendre, défi envoyé, duels à relire) */
   duels: "Duels",
+  /** la carte du duel du diptyque : sous le titre « Duels » */
+  duelsSous: "Mesure-toi à un autre joueur et fais bouger ton ELO.",
   enAttente: "En attente",
   /** l'état d'une barre de progression vers le palier suivant */
   barrePalier: (elo: string, palier: string, cible: string) => `${elo} ELO sur ${cible} pour ${palier}`,
