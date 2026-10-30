@@ -20,7 +20,7 @@ import { ReglagesPartie } from "@/components/flashcards/partie/ReglagesPartie";
 import { BilanPartie } from "@/components/flashcards/partie/BilanPartie";
 import { TableDeJeu } from "@/components/flashcards/partie/TableDeJeu";
 import type { ApercuTable } from "@/components/flashcards/partie/types";
-import { partieExemple } from "@/app/preview-da/partie-cartes/data";
+import { partieExemple } from "./partie-exemple";
 import { reglagesInitiaux, type MatierePartie } from "@/lib/flashcards/partie";
 
 (globalThis as { React?: typeof React }).React = React;
