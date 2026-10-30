@@ -14,7 +14,9 @@ import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { posesDe } from "@/lib/profil/sceaux";
 import { LIEN_DEFAUT, NOM_DEFAUT, acquisDe } from "@/lib/profil/catalogue";
 import { lireAcquis } from "@/lib/profil/acquis";
-import { ornementsPortables, persoDisponible, titresPortables } from "@/lib/profil/styles";
+import { banniereDisponible, ornementsPortables, persoDisponible, titresPortables } from "@/lib/profil/styles";
+import { badgesGagnes, type BadgeChoix } from "@/lib/profil/banniere-badges";
+import { donneesPanneau } from "@/lib/profil/panneau-vue";
 import { lireTrophees } from "@/lib/trophees";
 import { folioPorte } from "@/lib/profil/etagere";
 import { journalDe } from "@/lib/profil/journal";
@@ -50,7 +52,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
   const statsLues = statsProfil(id, supabase);
   const maitrisesLues = masteryByUser(admin, [id]);
   const sceauxLus = statsLues.then((s) => sceauxDuJoueur(id, s));
-  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons, neuves, persoDispo] = await Promise.all([
+  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons, neuves, persoDispo, banniereDispo] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     lireStyle(supabase, id),
@@ -80,6 +82,8 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     lireTuilesNeuves({ id, sb: supabase, admin, moi: true, besoins: BESOINS_TOUS, ouvert: true, elo: rating?.elo ?? DEFAULT_ELO }),
     // le personnage et l'ornement de la bannière : la base a-t-elle leurs colonnes (migration_bannieres_perso.sql) ?
     persoDisponible(supabase),
+    // la bannière composée : la base a-t-elle sa colonne (migration_bannieres_composees.sql) ?
+    banniereDisponible(supabase),
   ]);
   const acquisComplet = { ...acquisLu, sceaux: sceaux.etats, datesPic };
   const titres = titresPortables(acquisComplet, style.titre);
@@ -107,6 +111,26 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     amis: amis ? amis.total : null,
     pic: stats.palierMax,
   };
+  // le panneau de la carte : ce qu'il peut y mettre (gagné, ou déjà porté) et de quoi recomposer l'aperçu à chaque choix, sans relire la base
+  const proposes = badgesGagnes(acquisComplet);
+  const portes = style.banniere?.panneau.badges ?? [];
+  const panneau = donneesPanneau({
+    nom: carte.name,
+    elo,
+    mastery: carte.mastery,
+    place,
+    gamesPlayed: rating?.games_played ?? 0,
+    stats,
+    extras: { secondes: carte.temps ?? null, trophees: trophees?.total },
+    etats: sceaux.etats,
+    pins: sceaux.base ? pins : null,
+    ids: [...new Set([...proposes.map((b) => b.id), ...portes])],
+  });
+  // un badge déjà porté reste proposé même si l'acquis ne le confirme plus (rien de gagné n'est repris)
+  const badges: BadgeChoix[] = [
+    ...proposes,
+    ...portes.filter((id) => panneau.badges[id] && !proposes.some((b) => b.id === id)).map((id): BadgeChoix => ({ id, genre: panneau.badges[id].genre, nom: panneau.badges[id].nom, detail: panneau.badges[id].detail })),
+  ];
   // les blocs de la page (la couleur et les chiffres clés suivent ensuite le brouillon)
   const donnees: DonneesBlocs = {
     id,
@@ -157,6 +181,9 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
         titres={titres}
         ornements={ornements}
         persoDispo={persoDispo}
+        banniereDispo={banniereDispo}
+        panneau={panneau}
+        badges={badges}
       />
     </div>
   );

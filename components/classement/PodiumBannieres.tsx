@@ -7,9 +7,11 @@ import { useHorsEcran } from "@/components/ui/useHorsEcran";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { TitrePorte } from "@/components/profil/TitrePorte";
 import { OrnementBanniere, PersoBanniere } from "@/components/profil/BanniereHeros";
+import { BanniereComposee } from "@/components/profil/BanniereComposee";
 import { signed } from "@/components/classement/format";
 import type { BoardRow } from "@/components/classement/types";
-import { PLACEMENT_GAMES, rankFor, teinteDeRang } from "@/lib/ranks";
+import type { Composition } from "@/lib/profil/banniere";
+import { PLACEMENT_GAMES, TIERS, rankFor, teinteDeRang } from "@/lib/ranks";
 import { nombre, pct } from "@/lib/voice";
 import { PODIUM } from "@/lib/voice-z2a";
 import s from "./Podium.module.css";
@@ -31,6 +33,12 @@ import s from "./Podium.module.css";
 //   l'insigne passe dans le coin du haut pour lui laisser la place, et le
 //   podium réserve au-dessus la place du débordement (data-perso) : rien ne
 //   se chevauche. Sans personnage, la carte est celle d'avant.
+// - la bannière COMPOSÉE du joueur (profile_style.banniere : son fond, son
+//   cadre, son personnage et ses deux pièces, qui débordent dans la marge
+//   transparente) remplace le fanion : BanniereComposee, à la largeur de la
+//   place, sa zone de débordement comprise ; dessous, une petite plaque dit la
+//   place, l'insigne (l'arc électrique du n° 1 le suit), le pseudo, le titre
+//   et le rang. Pas de panneau ici : la carte complète est sur le profil.
 // Léger : une seule boucle pour les trois cartes, qui ne tourne que lorsque le
 // podium est à l'écran ; rien ne bouge en mouvement réduit, avec
 // ?mouvement=off et en mode discret.
@@ -130,7 +138,61 @@ function useInclinaison(racine: RefObject<HTMLElement | null>) {
   }, [racine]);
 }
 
+/** Le fond d'une bannière composée qui n'a pas le sien : l'image de bannière du profil du joueur, sinon sa peinture du Classement. */
+function FondPodium({ r }: { r: BoardRow }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={r.bannerUrl || fondParDefaut(r.userId)} alt="" loading="lazy" decoding="async" draggable={false} />;
+}
+
+/** La place d'un joueur qui a composé sa bannière : la bannière entière (marge de débordement comprise), puis la plaque de son identité. */
+function BanniereCompose({ r, place, composition }: { r: BoardRow; place: 1 | 2 | 3; composition: Composition }) {
+  const first = place === 1;
+  const rk = rankFor(r.elo, r.mastery, r.rank);
+  const tier = rk.tierIndex;
+  const placement = r.gamesPlayed < PLACEMENT_GAMES;
+  const nomRang = placement ? PODIUM.placement(r.gamesPlayed, PLACEMENT_GAMES) : `${rk.tier.name}${rk.division ? ` ${rk.division}` : ""}`;
+  const style = { "--teinte": teinteDeRang(tier) } as CSSProperties;
+  return (
+    <LienJoueur
+      id={r.userId}
+      nom={r.name}
+      className={s.composee + (first ? " " + s.premier : "")}
+      style={style}
+      data-holo=""
+      data-composee=""
+      aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
+    >
+      <BanniereComposee composition={composition} fond={<FondPodium r={r} />} metal={TIERS[tier].metal[1]} />
+      <span className={s.plaqueId}>
+        <span className={s.plaqueTete}>
+          <span aria-hidden className={s.placeC + " font-brand"}>
+            {place}
+          </span>
+          <span className={s.insigneC}>
+            {first && (
+              <span aria-hidden className={s.arcPlaque}>
+                <ArcElectrique palier={tier} rayon={999} />
+              </span>
+            )}
+            {/* sur le podium, l'insigne reste en couleur même en placement (palier de l'ELO actuel) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/ranks/v2/petit-${tier}-128.png`} width={128} height={128} alt="" draggable={false} />
+          </span>
+        </span>
+        <span className={s.pseudo + " font-brand"}>{r.isMe ? PODIUM.toi : r.name}</span>
+        <TitrePorte titre={r.titre} className="-mt-[1cqw] text-[length:max(10px,5.4cqw)] [color:rgba(255,255,255,0.86)] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]" />
+        <span className={s.rang}>
+          <span>{nomRang}</span>
+          <b>{nombre(r.elo)}</b>
+        </span>
+      </span>
+    </LienJoueur>
+  );
+}
+
 function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
+  // la bannière composée du joueur, si elle est enregistrée : elle remplace le fanion
+  if (r.banniere) return <BanniereCompose r={r} place={place} composition={r.banniere} />;
   const first = place === 1;
   const rk = rankFor(r.elo, r.mastery, r.rank);
   const tier = rk.tierIndex;
@@ -229,8 +291,8 @@ export function PodiumBannieres({ rows, label }: { rows: [BoardRow | null, Board
   const racine = useRef<HTMLDivElement | null>(null);
   useHorsEcran(racine);
   useInclinaison(racine);
-  // un personnage quelque part : le podium garde au-dessus la place de sa tête
-  const avecPerso = rows.some((r) => !!r?.perso);
+  // un personnage de fanion quelque part : le podium garde au-dessus la place de sa tête (une bannière composée a sa propre marge)
+  const avecPerso = rows.some((r) => !!r?.perso && !r.banniere);
   return (
     <div ref={racine} className={s.podium} role="group" aria-label={label} data-perso={avecPerso ? "1" : "0"}>
       {rows[0] ? <Banniere r={rows[0]!} place={1} /> : <BanniereLibre place={1} />}

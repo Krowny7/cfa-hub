@@ -12,6 +12,7 @@ import { PresenceText } from "@/components/presence/Presence";
 import { ordinal } from "@/components/classement/format";
 import { carteJoueur } from "@/app/people/carte";
 import type { CarteData } from "@/lib/profil/carte";
+import { adresseImage } from "@/lib/profil/banniere";
 import { PLACEMENT_GAMES, TIERS, rankFor } from "@/lib/ranks";
 import { nombre } from "@/lib/voice";
 import { CARTE } from "@/lib/voice-social";
@@ -62,7 +63,8 @@ function Contenu({ c }: { c: CarteData }) {
   const placement = c.gamesPlayed < PLACEMENT_GAMES;
   const nomRang = `${rang.tier.name}${rang.division ? ` ${rang.division}` : ""}`;
   const pic = c.pic > rang.tierIndex ? TIERS[c.pic]?.name : null;
-  const ligne = [`${nombre(c.elo)} ELO`, c.place !== null ? ordinal(c.place) : null, CARTE.niveau(c.niveau)].filter(Boolean).join(" · ");
+  const persoComposee = adresseImage("perso", c.style.banniere?.perso.image);
+  const ligne =[`${nombre(c.elo)} ELO`, c.place !== null ? ordinal(c.place) : null, CARTE.niveau(c.niveau)].filter(Boolean).join(" · ");
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
@@ -70,6 +72,8 @@ function Contenu({ c }: { c: CarteData }) {
           <Banniere banner={c.style.banner} bannerUrl={c.style.bannerUrl} bannerPos={c.style.bannerPos} accent={c.style.accent} className="h-[104px]" />
           {/* son personnage, debout à droite du bandeau (le sceau est à gauche) */}
           {c.style.perso && <PersoSurBandeau perso={c.style.perso} taille={c.style.persoTaille} pos={c.style.persoPos} className="[--x:78%]" />}
+          {/* le joueur qui a composé sa bannière : l'image de son personnage (envoyée par lui), s'il n'a plus l'ancien */}
+          {!c.style.perso && persoComposee && <PersoSurBandeau perso={persoComposee} className="[--x:78%]" />}
         </div>
         <div className="-mt-7 flex items-end gap-3 px-3">
           <span className="relative z-[1] shrink-0">

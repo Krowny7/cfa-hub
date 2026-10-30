@@ -267,22 +267,8 @@ export const PERSO = {
   deplacerRangee: "Déplacer la rangée",
 } as const;
 
-/** Le personnage et l'ornement de la bannière verticale (Personnaliser › Bannière). */
+/** L'ornement de la bannière verticale (Personnaliser › Bannière) ; le personnage et les pièces se règlent dans « Ta bannière » (lib/voice-banniere.ts). */
 export const PERSONNAGE = {
-  titre: "Ton personnage",
-  conseil: "Un PNG détouré (fond transparent) donne l'effet du personnage qui sort du cadre.",
-  formats: "PNG ou WebP, JPG accepté · 4 Mo au plus. Ton image reste dans ton dossier, visible de tous sur ta bannière.",
-  choisir: "Choisir une image",
-  changer: "Changer d'image",
-  retirer: "Retirer",
-  envoi: "Envoi de l'image…",
-  erreurEnvoi: "L'image n'a pas pu être envoyée. Réessaie, ou choisis-en une autre.",
-  taille: "Taille",
-  position: "Position verticale",
-  recentrer: "Recentrer",
-  apercu: "Aperçu de ta bannière verticale, avec ton ornement et ton personnage",
-  /** la base n'a pas encore les colonnes (migration_bannieres_perso.sql) */
-  bientot: "Ton personnage et ton ornement arrivent bientôt : la base n'est pas encore prête.",
   ornement: "Ornement",
   ornementAide: "Le cadre ornemental de ta bannière. Le filet d'encre est à tous ; les autres se gagnent aux sceaux et aux quêtes du Codex.",
 } as const;

@@ -5,8 +5,8 @@
 // Vérifie : avec / sans personnage ; chaque ornement ; l'alt vide et l'aria-hidden
 // du décor ; le pseudo en vrai texte ; le cadrage ; la place du débordement
 // au-dessus ; le podium (place, insigne, pseudo, chiffres lisibles ; l'insigne
-// qui se pousse dans le coin avec un personnage) ; Personnaliser (l'aperçu,
-// les vignettes) ; le mouvement réduit ; aucun chemin local.
+// qui se pousse dans le coin avec un personnage) ; Personnaliser (les
+// vignettes d'ornement) ; le mouvement réduit ; aucun chemin local.
 import "./sans-css";
 import "./react-global";
 import fs from "node:fs";
@@ -150,14 +150,9 @@ async function main() {
 
   console.log("\n# Personnaliser");
   {
-    const { SectionOrnement, SectionPersonnage } = await import("@/components/profil/SectionsPersonnaliser");
+    const { SectionOrnement } = await import("@/components/profil/SectionsPersonnaliser");
     const sceau = (cle: string, palier: 0 | 1 | 2 | 3) => ({ def: { cle, famille: "regularite" as const, unite: "jours" as const, seuils: [7, 30, 100] as [number, number, number], difficulte: 1 as const }, palier, valeur: 3, questions: null, prochain: 7, avance: 0.4 });
     const brouillon = (style: typeof STYLE_DEFAUT) => ({ style, set: () => {}, setStyle: () => {} });
-    const avec = renderToStaticMarkup(<SectionPersonnage b={brouillon({ ...STYLE_DEFAUT, perso: PERSO, persoTaille: 120, persoPos: 30, ornement: "laurier" })} dispo onEnvoi={() => {}} nom="Sforzinda" />);
-    check("l'aperçu : la bannière verticale du joueur, avec son ornement, son personnage et son pseudo", avec.includes('role="img"') && avec.includes('data-ornement="laurier"') && avec.includes(`src="${PERSO}"`) && avec.includes('<span class="pseudo font-brand">Sforzinda</span>') && avec.includes('data-perso="1"'));
-    check("l'aperçu respire (anime) et applique le cadrage", avec.includes('class="heros anime"') && avec.includes("translateY(-10%) scale(1.2)"));
-    const sans = renderToStaticMarkup(<SectionPersonnage b={brouillon(STYLE_DEFAUT)} dispo onEnvoi={() => {}} nom="Sforzinda" />);
-    check("sans personnage : l'aperçu montre quand même la bannière et son ornement (le filet), sans image", sans.includes('data-ornement="filet"') && sans.includes('data-perso="0"') && !sans.includes('src="https://'));
     const acquis = { ...acquisDe(STATS_VIDES), sceaux: [sceau("a", 1), sceau("b", 2)] };
     const liste = renderToStaticMarkup(<SectionOrnement b={brouillon({ ...STYLE_DEFAUT, ornement: "cartouche" })} ornements={ornementsPortables(acquis, "cartouche")} dispo />);
     const vignettes = [...liste.matchAll(/<svg\b[^>]*data-ornement="([a-z]+)"/g)].map((m) => m[1]);

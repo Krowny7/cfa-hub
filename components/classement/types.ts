@@ -4,6 +4,7 @@ import type { EntreeSalles } from "@/lib/salles/types";
 // sérialisables : la page serveur les charge, la page d'aperçu les invente).
 import type { DuelSummary, RatingEvent } from "@/lib/rating";
 import type { StyleBanniere, StyleProfil } from "@/lib/profil/catalogue";
+import type { Composition } from "@/lib/profil/banniere";
 
 export type BoardRow = {
   userId: string;
@@ -30,6 +31,11 @@ export type BoardRow = {
   persoTaille?: number;
   persoPos?: number;
   ornement?: string;
+  /**
+   * la bannière composée du joueur (lib/profil/banniere.ts : fond, personnage, pièces, ordre ; les trois premiers
+   * seulement) : le podium la dessine à la place du fanion (BanniereComposee) ; absente : le fanion d'avant
+   */
+  banniere?: Composition | null;
 };
 
 export type NextExam = {

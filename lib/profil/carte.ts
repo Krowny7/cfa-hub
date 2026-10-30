@@ -19,7 +19,7 @@ export type CarteData = {
   id: string;
   nom: string;
   avatarUrl: string | null;
-  /** la bannière et le sceau ; le personnage, son cadrage et l'ornement (StyleBanniere) quand la carte les dessine */
+  /** la bannière et le sceau ; le personnage, son cadrage, l'ornement et la bannière composée (StyleBanniere) quand la carte les dessine */
   style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame"> & Partial<StyleBanniere>;
   /** le titre porté, lisible (« Copiste ») ; null : aucun */
   titre: string | null;
@@ -53,7 +53,7 @@ export async function lireCarte(sb: SupabaseClient, id: string, moi: string | nu
       id,
       nom: displayName(p.username, id),
       avatarUrl: p.avatar_url,
-      style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame, perso: style.perso, persoTaille: style.persoTaille, persoPos: style.persoPos, ornement: style.ornement },
+      style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame, perso: style.perso, persoTaille: style.persoTaille, persoPos: style.persoPos, ornement: style.ornement, banniere: style.banniere },
       titre: nomTitre(style.titre),
       niveau: levelInfoFromXp(Number(p.xp_total ?? 0) || 0).level,
       elo: r?.elo ?? DEFAULT_ELO,

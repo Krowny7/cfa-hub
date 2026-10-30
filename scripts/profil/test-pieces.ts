@@ -666,7 +666,7 @@ async function main() {
     );
     appels.length = 0;
     const podiumAncien = await podiumDe(client((cols) => (/perso_|ornement/.test(cols) ? { data: null, error: { code: "42703", message: "column profile_style.perso_url does not exist" } } : { data: [{ user_id: "p2", banner_url: "https://x/b.webp", titre: "copiste" }], error: null })), ["p2"]);
-    check("podiumDe sans la migration du personnage : relit sans lui, la bannière et le titre restent, le filet d'encre", podiumAncien.get("p2")?.bannerUrl === "https://x/b.webp" && podiumAncien.get("p2")?.titre === "Copiste" && podiumAncien.get("p2")?.perso === null && podiumAncien.get("p2")?.ornement === "filet" && appels.length === 2, appels.join(" ; "));
+    check("podiumDe sans la migration du personnage : relit sans la bannière composée, puis sans lui ; la bannière et le titre restent, le filet d'encre", podiumAncien.get("p2")?.bannerUrl === "https://x/b.webp" && podiumAncien.get("p2")?.titre === "Copiste" && podiumAncien.get("p2")?.perso === null && podiumAncien.get("p2")?.ornement === "filet" && podiumAncien.get("p2")?.banniere === null && appels.length === 3, appels.join(" ; "));
   }
 
   console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");

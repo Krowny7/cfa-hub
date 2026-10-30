@@ -1,0 +1,30 @@
+/* La carte complète : 860 × 1300 de référence. La scène de la bannière
+   (540 × 1300) à droite, à 320 du bord gauche ; la plaque du panneau
+   (470 × 1000) derrière, à la hauteur de la bannière : elle passe sous la
+   bannière et sous sa marge de débordement, sa partie utile reste à gauche. */
+
+.carte {
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 860 / 1300;
+}
+
+/* la plaque : de 0 à 470 de large, de 200 à 1200 de haut */
+.cartePlaque {
+  position: absolute;
+  left: 0;
+  top: 15.3846%;
+  width: 54.6512%;
+  height: 76.9231%;
+}
+
+/* la scène de la bannière : de 320 à 860 de large, toute la hauteur */
+.carteBanniere {
+  position: absolute;
+  left: 37.2093%;
+  top: 0;
+  width: 62.7907%;
+  height: 100%;
+}

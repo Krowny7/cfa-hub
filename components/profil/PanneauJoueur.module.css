@@ -1,0 +1,261 @@
+/* Le panneau de gauche de la bannière : une plaque sombre à texture d'encre,
+   un filet de métal (la teinte du rang), un liseré vermillon ; le coin du haut
+   gauche est coupé. Les mesures sont en unités de la carte (--u : un pixel
+   d'une carte de 860 de large, lu sur le conteneur de la carte), chaque texte
+   avec un minimum lisible. Le contenu reste à gauche : la bannière passe
+   devant la droite de la plaque (84 unités de marge : la bannière commence à 410 sur 470). */
+
+.panneau {
+  --u: calc(100cqw / 860);
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+}
+
+/* la plaque : trois couches emboîtées, chacune au coin coupé (le coin d'une couche rentrée de d recule de 0,414 d) */
+.plaque,
+.metal,
+.fondPlaque {
+  position: absolute;
+  display: block;
+}
+.plaque {
+  inset: 0;
+  background: #1a1410;
+  clip-path: polygon(calc(var(--u) * 46) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 46));
+  filter: drop-shadow(0 calc(var(--u) * 6) calc(var(--u) * 9) rgba(0, 0, 0, 0.4));
+}
+.metal {
+  inset: calc(var(--u) * 4);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--metal) 78%, #fff) 0%, var(--metal) 40%, color-mix(in srgb, var(--metal) 62%, #000) 100%);
+  clip-path: polygon(calc(var(--u) * 45) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 45));
+}
+.fondPlaque {
+  inset: calc(var(--u) * 5);
+  background:
+    linear-gradient(180deg, rgba(12, 7, 4, 0.74), rgba(12, 7, 4, 0.9)),
+    url("/encres/ebene.webp") 30% 40% / calc(var(--u) * 520) auto,
+    #241b13;
+  clip-path: polygon(calc(var(--u) * 43) 0, 100% 0, 100% 100%, 0 100%, 0 calc(var(--u) * 43));
+}
+
+.contenu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: calc(var(--u) * 16);
+  min-height: 0;
+  padding: calc(var(--u) * 34) calc(var(--u) * 84) calc(var(--u) * 34) calc(var(--u) * 38);
+}
+
+/* le pseudo, son filet de métal, le titre porté, le rang */
+.identite {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 12);
+  min-width: 0;
+}
+.nom {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(15px, calc(var(--u) * 40));
+  line-height: 1.08;
+  color: #fff;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.filet {
+  position: relative;
+  display: block;
+  height: max(2px, calc(var(--u) * 5));
+  border-radius: 99px;
+  background: var(--metal);
+  box-shadow: 0 0 0 max(1px, calc(var(--u) * 2)) #1a1410;
+}
+.filet::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: calc(var(--u) * 64);
+  height: max(3px, calc(var(--u) * 7));
+  translate: 0 -50%;
+  background: var(--acc);
+  border-radius: 99px;
+}
+.titre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: max(8.5px, calc(var(--u) * 13));
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d9d4ca;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rang {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  min-width: 0;
+}
+.insigne {
+  flex: none;
+  width: max(36px, calc(var(--u) * 78));
+  height: max(36px, calc(var(--u) * 78));
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 calc(var(--u) * 3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55));
+}
+.rangTexte {
+  display: grid;
+  gap: calc(var(--u) * 4);
+  min-width: 0;
+  margin: 0;
+}
+.rangTexte small {
+  font-family: var(--font-mono);
+  font-size: max(8px, calc(var(--u) * 13));
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #d9d4ca;
+}
+.rangTexte b {
+  font-size: max(13px, calc(var(--u) * 28));
+  font-weight: 400;
+  line-height: 1.1;
+  color: #fff;
+}
+.rangTexte .provisoire {
+  letter-spacing: 0.06em;
+  color: var(--metal);
+}
+
+/* les trois badges, sur un rail vertical : un losange à reflets, son numéro, son nom */
+.badges {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: calc(var(--u) * 10);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.badges::before {
+  content: "";
+  position: absolute;
+  left: calc(max(36px, calc(var(--u) * 92)) / 2 - max(2px, calc(var(--u) * 6)) / 2);
+  top: 12%;
+  bottom: 12%;
+  width: max(2px, calc(var(--u) * 6));
+  background: var(--metal);
+  box-shadow: 0 0 0 max(1px, calc(var(--u) * 2)) #1a1410;
+  opacity: 0.8;
+}
+.badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 16);
+  min-width: 0;
+}
+.losange {
+  flex: none;
+  display: block;
+  width: max(36px, calc(var(--u) * 92));
+  height: max(44px, calc(var(--u) * 112));
+  overflow: visible;
+}
+.badgeTexte {
+  display: grid;
+  gap: calc(var(--u) * 3);
+  min-width: 0;
+}
+.badgeTexte small {
+  font-family: var(--font-mono);
+  font-size: max(8px, calc(var(--u) * 13));
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: #d9d4ca;
+}
+.badgeTexte b {
+  font-family: var(--font-sans);
+  font-size: max(11px, calc(var(--u) * 19));
+  font-weight: 600;
+  line-height: 1.15;
+  color: #fff;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.badgeTexte em {
+  font-family: var(--font-mono);
+  font-size: max(8.5px, calc(var(--u) * 13));
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--metal);
+}
+
+/* les trois chiffres : une plaque au coin du haut droit coupé, un liseré vermillon à gauche, le chiffre en Dela Gothic One */
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 12);
+  max-width: calc(var(--u) * 300);
+  margin: 0;
+}
+.stat {
+  position: relative;
+  display: grid;
+  gap: calc(var(--u) * 2);
+  min-width: 0;
+  padding: calc(var(--u) * 12) calc(var(--u) * 18) calc(var(--u) * 12) calc(var(--u) * 26);
+  background: rgba(8, 5, 3, 0.55);
+  border: max(1px, calc(var(--u) * 3)) solid color-mix(in srgb, var(--metal) 70%, #1a1410);
+  clip-path: polygon(0 0, calc(100% - var(--u) * 22) 0, 100% calc(var(--u) * 22), 100% 100%, 0 100%);
+}
+.stat::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--u) * 8);
+  top: calc(var(--u) * 14);
+  bottom: calc(var(--u) * 14);
+  width: max(2px, calc(var(--u) * 5));
+  background: var(--acc);
+}
+.stat dt {
+  font-family: var(--font-mono);
+  font-size: max(8px, calc(var(--u) * 13));
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #d9d4ca;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stat dd {
+  margin: 0;
+  font-size: max(17px, calc(var(--u) * 46));
+  line-height: 1.05;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

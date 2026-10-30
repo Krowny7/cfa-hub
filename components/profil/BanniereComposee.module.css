@@ -1,0 +1,73 @@
+/* La bannière composée par le joueur : la scène (la bannière 360 × 1000 et sa
+   zone de débordement transparente : 540 × 1300), le fond coupé aux coins du
+   cadre, le cadre fin dessiné par le site, les trois calques en % de la scène.
+   Tout se met à l'échelle de la largeur de la scène (cqw) : de la vignette du
+   podium au grand aperçu de l'éditeur. Le décor ne capte jamais un clic. */
+
+.scene {
+  /* 1 unité de référence (1 px d'une bannière de 360 de large) en cqw : les descendants la lisent */
+  --s: calc(100cqw / 540);
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 540 / 1300;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* la bannière : 25 / 150 du bord gauche, 20 / 130 du haut, 100 / 150 de large, 100 / 130 de haut */
+.banniere,
+.cadre {
+  position: absolute;
+  left: 16.6667%;
+  top: 15.3846%;
+  width: 66.6667%;
+  height: 76.9231%;
+}
+.banniere {
+  display: block;
+}
+
+/* le fond : coupé aux coins du haut (26 / 360 de large, 26 / 1000 de haut : à 45°) */
+.fond {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  background: #0d0d0f;
+  clip-path: polygon(7.5% 0, 92.5% 0, 100% 2.7%, 100% 100%, 0 100%, 0 2.7%);
+}
+.fond > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.fondImg,
+.fond > img {
+  object-fit: cover;
+  user-select: none;
+}
+/* pas de fond choisi ni de fond du profil donné : un dégradé d'encre */
+.fondNeutre {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: radial-gradient(120% 70% at 50% 18%, #55524c 0%, #2c2a28 55%, #151517 100%);
+}
+
+.cadre {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 calc(var(--s) * 5) calc(var(--s) * 7) rgba(0, 0, 0, 0.35));
+}
+
+/* un calque : sa boîte (gauche, haut, largeur, hauteur) est posée en ligne ; l'image la remplit (hauteur proportionnelle : la boîte a déjà la proportion de l'image) */
+.calque {
+  position: absolute;
+  display: block;
+  max-width: none;
+  object-fit: fill;
+  user-select: none;
+}

@@ -1,0 +1,412 @@
+/* Personnaliser · Ta bannière (EditeurBanniere.tsx, ScenePosable.tsx,
+   ChoixPanneau.tsx) : la scène posable (l'aperçu et ses pointillés de
+   débordement), le cadre du calque choisi et ses poignées, les onglets des
+   éléments, la pile d'ordre et les choix du panneau. En CSS simple : les
+   tailles propres à l'éditeur ne passent pas par des classes Tailwind
+   arbitraires. */
+
+/* ── la scène : 540 × 1300 de référence, comme BanniereComposee ───────── */
+.scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 540 / 1300;
+  border-radius: 12px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+/* la marge de débordement : un contour en pointillés et un damier léger (le transparent) */
+.debord {
+  position: absolute;
+  inset: 0;
+  border: 1.5px dashed color-mix(in oklab, var(--ink) 42%, transparent);
+  border-radius: 12px;
+  background: repeating-conic-gradient(color-mix(in oklab, var(--ink) 6%, transparent) 0 25%, transparent 0 50%) 0 0 / 18px 18px;
+  pointer-events: none;
+}
+.legende {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* où se tient la bannière : 25 / 150 du bord gauche, 20 / 130 du haut */
+.repere {
+  position: absolute;
+  left: 16.6667%;
+  top: 15.3846%;
+  width: 66.6667%;
+  height: 76.9231%;
+  outline: 1px dotted color-mix(in oklab, var(--ink) 30%, transparent);
+  pointer-events: none;
+}
+/* le fond est l'élément choisi : la bannière entière est cernée */
+.repere[data-actif="true"] {
+  outline: 2px solid var(--pen);
+  outline-offset: -1px;
+}
+/* la couche des gestes, par-dessus le rendu : le rendu ne capte rien, seuls ses enfants le font */
+.calques {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.zoneFond {
+  position: absolute;
+  left: 16.6667%;
+  top: 15.3846%;
+  width: 66.6667%;
+  height: 76.9231%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.zoneCalque {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.zoneCalque:hover {
+  outline: 1.5px dashed color-mix(in oklab, var(--pen) 70%, transparent);
+}
+
+/* le calque choisi : son cadre se glisse ; le défilement de la page ne le prend pas */
+.selection {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--pen);
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--pen) 7%, transparent);
+  cursor: move;
+  pointer-events: auto;
+  touch-action: none;
+  outline: none;
+}
+.selection:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--pen) 35%, transparent);
+}
+/* une poignée : un rond de 14 px, une zone de toucher de 42 px autour */
+.poignee {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid var(--pen);
+  background: var(--surface);
+  touch-action: none;
+}
+.poignee::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+.poignee[data-poignee="nw"] {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.poignee[data-poignee="n"] {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+.poignee[data-poignee="ne"] {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.poignee[data-poignee="e"] {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+.poignee[data-poignee="se"] {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.poignee[data-poignee="s"] {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+.poignee[data-poignee="sw"] {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.poignee[data-poignee="w"] {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+
+/* la scène tient dans l'écran : sa largeur suit la hauteur disponible (540 × 1300) */
+.stage {
+  width: min(100%, calc(76svh * 540 / 1300));
+  margin-inline: auto;
+}
+
+/* ── les onglets des éléments ─────────────────────────────────────────── */
+.onglets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.onglet {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--ink);
+  cursor: pointer;
+}
+.onglet:hover {
+  border-color: var(--ink);
+}
+.onglet[aria-selected="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.miniature {
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: repeating-conic-gradient(color-mix(in oklab, var(--ink) 8%, transparent) 0 25%, transparent 0 50%) 0 0 / 10px 10px;
+  object-fit: contain;
+  overflow: hidden;
+}
+.miniatureVide {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+/* ── les réglages : un curseur et sa case numérique ───────────────────── */
+.reglage {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 4.6rem;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.reglage input[type="range"] {
+  min-width: 0;
+  height: 44px;
+  accent-color: var(--ink);
+}
+.nombre {
+  width: 100%;
+  min-height: 36px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.nombre:disabled {
+  opacity: 0.55;
+}
+
+/* ── les pièces du site ───────────────────────────────────────────────── */
+.pieces {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.piece {
+  display: flex;
+  min-width: 0;
+  min-height: 56px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 3px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+  cursor: pointer;
+}
+.piece:hover {
+  border-color: var(--ink);
+}
+.piece[aria-checked="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.piece img {
+  display: block;
+  width: 100%;
+  height: 26px;
+  object-fit: contain;
+}
+
+/* ── la pile d'ordre ──────────────────────────────────────────────────── */
+.pile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rang {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.rang[data-choisi="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.rang[data-fixe="true"] {
+  border-style: dashed;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.rangNom {
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+/* ── le panneau : les trois emplacements de badges ────────────────────── */
+.emplacements {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.emplacement {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.emplacement[data-vide="true"] {
+  border-style: dashed;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.emplacement[data-vise="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.emplacement[draggable="true"] {
+  cursor: grab;
+}
+.numero {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.puce {
+  display: inline-flex;
+  min-height: 36px;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.puce:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.puce[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+.puce:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.select {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (hover: none) {
+  .poignee {
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+  }
+}
+
+/* le nom d'un élément dans la pile : un bouton sans apparence de bouton */
+.rangNom {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+}

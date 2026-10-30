@@ -1,6 +1,6 @@
-// Le personnage de la bannière verticale : l'image que le joueur envoie (un
-// PNG détouré donne l'effet du personnage qui sort du cadre : voir
-// PERSONNAGE.conseil, lib/voice-profil.ts), dans son dossier
+// L'ancien personnage de la bannière verticale (que la bannière composée
+// remplace : lib/profil/banniere.ts, compositionDepuisAncien) : l'image que le
+// joueur envoyait (un PNG détouré), dans son dossier
 // du bucket public « profil-medias » (même dossier, mêmes règles que les
 // médias de sa page : migration_profil_medias.sql). Son nom est exact :
 // `perso-<instant>.<ext>`, ni « .. » ni « %2e » (le navigateur le ramènerait
@@ -11,6 +11,7 @@
 // migration_bannieres_perso.sql).
 // Module neutre (client et serveur) : pas d'accès à la base ici.
 
+import { fichiersComposition, type Composition } from "@/lib/profil/banniere";
 import { BUCKET_MEDIAS, fichiersGardes, type Disposition } from "@/lib/profil/disposition";
 
 /** poids du personnage envoyé (après réduction éventuelle dans le navigateur) */
@@ -74,12 +75,15 @@ export const bornerPersoPos = (v: unknown): number => {
 
 /**
  * Les fichiers du joueur dont son style se sert dans profil-medias : les médias
- * et les images en haut de sa page, plus son personnage. Le ménage de
- * l'enregistrement supprime tout le reste.
+ * et les images en haut de sa page, son personnage (l'ancien) et les images de
+ * sa bannière composée (fond, personnage, pièces : lib/profil/banniere.ts). Le
+ * ménage de l'enregistrement supprime tout le reste : un fichier remplacé part
+ * à l'enregistrement qui ne le garde plus.
  */
-export function fichiersGardesStyle(s: { disposition: Disposition; perso: string | null }): Set<string> {
+export function fichiersGardesStyle(s: { disposition: Disposition; perso: string | null; banniere?: Composition | null }): Set<string> {
   const gardes = fichiersGardes(s.disposition);
   const nom = fichierPerso(s.perso);
   if (nom) gardes.add(nom);
+  for (const f of fichiersComposition(s.banniere)) gardes.add(f);
   return gardes;
 }

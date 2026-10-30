@@ -7,16 +7,19 @@ import { lireStyle, statsProfil } from "@/lib/profil/donnees";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { nettoyerNom, normaliserLinkedin, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { lireAcquis } from "@/lib/profil/acquis";
-import { ecrireStyle, validerStyle } from "@/lib/profil/styles";
+import { banniereDisponible, ecrireStyle, validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, fichiersGardes, validerDisposition } from "@/lib/profil/disposition";
 import { fichierPerso, fichiersGardesStyle, persoValide } from "@/lib/profil/perso";
+import { fichiersComposition, memeComposition, validerComposition } from "@/lib/profil/banniere";
 import { TYPES_PIECE, pieceNue, type TypePiece } from "@/lib/profil/pieces";
 import { stylePorte } from "@/lib/profil/etagere";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Enregistrer son profil : le style (revalidé : cadres, bannières, titre,
 // folio et ornement gagnés, ou déjà portés, seulement ; image de bannière,
-// personnage et médias venus de son dossier ; la disposition des blocs), le LinkedIn (adresse
+// personnage, bannière composée (fond, personnage, pièces du haut et du bas,
+// badges du panneau gagnés) et médias venus de son dossier ; la disposition
+// des blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
@@ -54,9 +57,10 @@ async function contexteStyle(supabase: SupabaseClient, admin: SupabaseClient, us
  * en cours ; on supprime les fichiers que ni la page enregistrée ni celle en
  * cours n'utilisent, puis l'éditeur renvoie une fois. Rien d'autre n'est
  * écrit. Rend vrai si au moins un fichier est parti. `persoEnCours` : le
- * personnage du brouillon (Personnaliser › Bannière), gardé lui aussi.
+ * personnage du brouillon (Personnaliser › Bannière), gardé lui aussi ;
+ * `banniereEnCours` : la bannière composée du brouillon (ses quatre images).
  */
-export async function rangerFichiersEnAttente(brouillon: unknown, persoEnCours: unknown = null): Promise<boolean> {
+export async function rangerFichiersEnAttente(brouillon: unknown, persoEnCours: unknown = null, banniereEnCours: unknown = null): Promise<boolean> {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
@@ -74,6 +78,9 @@ export async function rangerFichiersEnAttente(brouillon: unknown, persoEnCours: 
     const nom = fichierPerso(perso);
     if (nom) gardes.add(nom);
   }
+  // la bannière composée enregistrée et celle du brouillon (images du dossier du joueur, sous le nom exact de chaque élément)
+  const composeeEnCours = validerComposition(banniereEnCours, { prefixe: dossier(BUCKET_MEDIAS), gagnes: null }).composition;
+  for (const f of [...fichiersComposition(lu.style.banniere), ...fichiersComposition(composeeEnCours)]) gardes.add(f);
   let parti = false;
   for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
     try {
@@ -123,6 +130,13 @@ export async function enregistrerProfil(input: {
   const valide = validerStyle(input.style ?? {}, acquis, prefixe, prefixesMedias, porte);
   const refus = valide.refus;
   let style = valide.style;
+
+  // la bannière composée (migration_bannieres_composees.sql) : tant que la base manque, ce qu'il porte ne change pas
+  // (ni la composition, ni l'ancien personnage, que l'éditeur retire en l'enregistrant)
+  if (!memeComposition(style.banniere, porte.banniere) && !(await banniereDisponible(admin))) {
+    refus.push("la bannière composée (la base n'est pas encore prête)");
+    style = { ...style, banniere: porte.banniere ?? null, perso: porte.perso, persoTaille: porte.persoTaille, persoPos: porte.persoPos };
+  }
 
   const now = new Date().toISOString();
   // les colonnes les plus récentes se replient si la base ne les a pas encore (lib/profil/styles.ts)

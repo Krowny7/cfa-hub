@@ -15,7 +15,8 @@ import { Icone } from "@/components/adn/icons";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { CaseImage } from "@/components/profil/Blocs";
 import { PageProfil } from "@/components/profil/PageProfil";
-import { AmbianceProfil } from "@/components/profil/Pieces";
+import { AmbianceProfil, Banniere } from "@/components/profil/Pieces";
+import { CarteBanniere } from "@/components/profil/CarteBanniere";
 import { AmiBouton } from "@/components/profil/AmiBouton";
 import { OngletsProfil } from "@/components/profil/OngletsProfil";
 import { SceauxPoses } from "@/components/profil/SceauxPoses";
@@ -43,6 +44,7 @@ import { CIBLE_PROFIL, cibleEntree } from "@/lib/profil/tampons";
 import { hrefOnglet, hrefPersonnaliser, ongletDepuis, ongletsDe } from "@/lib/profil/onglets";
 import { aPortee, posesDe, sceauxGagnes, vusParUnAutre } from "@/lib/profil/sceaux";
 import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
+import { panneauVue } from "@/lib/profil/panneau-vue";
 import { acquisDe, cadreDe, type Visibilite } from "@/lib/profil/catalogue";
 import { lireStyles, nomTitre } from "@/lib/profil/styles";
 import { baseDuVisiteur, lireCarnet, lireCercle, lireVisiteur, maitriseMesuree } from "@/lib/profil/visiteur";
@@ -287,6 +289,29 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
     provenance: provenances(style, acquisDe(stats, etats, datesPic)),
   };
 
+  // la carte du joueur qui a composé sa bannière (lib/profil/banniere.ts) : son panneau (pseudo, rang, trois badges, trois chiffres
+  // qu'il a choisis, avec leurs vraies valeurs) et sa bannière, dans la colonne de droite de l'en-tête ; sans composition, rien de plus
+  const composition = style.banniere;
+  let carte: React.ReactNode = null;
+  if (composition) {
+    // les trophées ne se lisent que si le joueur les a mis dans son panneau (ou si le bloc Trophées les a déjà lus)
+    const trophees = composition.panneau.stats.includes("trophees") ? (o.trophees ?? (await lireTrophees(supabase, id).catch(() => null))) : null;
+    const panneauCarte = panneauVue({
+      panneau: composition.panneau,
+      nom: display,
+      titre: entete.titre ?? null,
+      elo,
+      mastery,
+      place: leaderboardRank,
+      gamesPlayed: rating?.games_played ?? 0,
+      stats,
+      extras: { secondes: entete.temps ?? null, trophees: trophees?.total },
+      etats,
+      pins: sceaux.base ? pins : null,
+    });
+    carte = <CarteBanniere composition={composition} panneau={panneauCarte} charge="eager" fond={<Banniere banner={style.banner} bannerUrl={style.bannerUrl} bannerPos={style.bannerPos} accent={style.accent} fige className="h-full w-full" />} />;
+  }
+
   const lienFace = `${hrefOnglet(id, "face-a-face")}#profil-onglets`;
   const dernier = face?.duels[0] ?? null;
   const defierLibelle = (
@@ -511,6 +536,7 @@ export default async function PersonProfilePage({ params, searchParams }: PagePr
             saison={saisons?.courante ? <SaisonRang c={saisons.courante} /> : null}
             tampons={tamponsProfil}
             sousRang={retourVu()}
+            carte={carte}
           />
           {/* les onglets restent collés sous la barre du haut tant que leur panneau défile */}
           <div className="flex flex-col gap-6 md:gap-10">

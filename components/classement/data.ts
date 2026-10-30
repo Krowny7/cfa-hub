@@ -92,21 +92,21 @@ export async function lastDeltaByUser(admin: SupabaseClient | null, userIds: str
  * profile_style, lisible par tous les joueurs connectés) : l'image de
  * bannière, fond de sa carte, le nom du titre porté, sous le pseudo, et pour
  * la bannière verticale son personnage (adresse, taille, position) et son
- * ornement (StyleBanniere : perso, persoTaille, persoPos, ornement).
+ * ornement, plus sa bannière composée (StyleBanniere : perso, persoTaille, persoPos, ornement, banniere ; à dessiner avec compositionDe).
  * Joueur sans rien de tout cela, table absente : pas d'entrée (le podium
  * prend alors son image par défaut et le filet d'encre) ; titre absent tant
  * que migration_v3_profil.sql n'est pas collée, personnage et ornement tant
- * que migration_bannieres_perso.sql ne l'est pas.
+ * que migration_bannieres_perso.sql ne l'est pas, bannière composée tant que migration_bannieres_composees.sql ne l'est pas.
  */
 export type PodiumJoueur = { bannerUrl: string | null; titre: string | null } & StyleBanniere;
 export async function podiumDe(sb: SupabaseClient, userIds: string[]): Promise<Map<string, PodiumJoueur>> {
   const out = new Map<string, PodiumJoueur>();
-  const lignes = await lireStyles(sb, userIds, ["banner_url", "titre", "perso_url", "perso_taille", "perso_pos", "ornement"]);
+  const lignes = await lireStyles(sb, userIds, ["banner_url", "titre", "perso_url", "perso_taille", "perso_pos", "ornement", "banniere"]);
   for (const [id, r] of lignes ?? []) {
     const bannerUrl = typeof r.banner_url === "string" && r.banner_url ? r.banner_url : null;
     const titre = nomTitre(typeof r.titre === "string" ? r.titre : null);
     const banniere = banniereDepuis(r);
-    if (bannerUrl || titre || banniere.perso || banniere.ornement !== ORNEMENT_DEFAUT) out.set(id, { bannerUrl, titre, ...banniere });
+    if (bannerUrl || titre || banniere.perso || banniere.banniere || banniere.ornement !== ORNEMENT_DEFAUT) out.set(id, { bannerUrl, titre, ...banniere });
   }
   return out;
 }

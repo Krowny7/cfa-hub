@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { EnteteJoueur, type EnteteData } from "@/components/profil/EnteteJoueur";
 import { EditeurPage } from "@/components/profil/EditeurPage";
+import { EditeurBanniere } from "@/components/profil/EditeurBanniere";
 import { ModelesPage } from "@/components/profil/ModelesPage";
-import { AmbianceProfil } from "@/components/profil/Pieces";
+import { AmbianceProfil, Banniere } from "@/components/profil/Pieces";
 import { SceauxPoses } from "@/components/profil/SceauxPoses";
 import { Feuille } from "@/components/ui/Feuille";
 import {
@@ -20,7 +21,6 @@ import {
   SectionLinkedin,
   SectionNom,
   SectionOrnement,
-  SectionPersonnage,
   SectionPhoto,
   SectionPoses,
   SectionTitre,
@@ -33,10 +33,13 @@ import { poserSceaux } from "@/lib/profil/actions-sceaux";
 import { createClient } from "@/lib/supabase/browser";
 import { posesDe } from "@/lib/profil/sceaux";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
+import type { BadgeChoix } from "@/lib/profil/banniere-badges";
+import type { DonneesPanneau } from "@/lib/profil/panneau-editeur";
 import type { OrnementChoix, TitrePortable } from "@/lib/profil/styles";
 import { couleurCss, linkedinLisible, nettoyerNom, normaliserLinkedin, type Acquis, type NomProfil, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { ENTETE, PERSO, provenances } from "@/lib/voice-profil";
 import { EDITEUR_PAGE } from "@/lib/voice-editeur";
+import { BANNIERE_ED } from "@/lib/voice-banniere";
 import { JOUEURS } from "@/lib/voice-z2a";
 
 // Personnaliser son profil sur la page elle-même (/people/<moi>?personnaliser=1) :
@@ -49,7 +52,12 @@ import { JOUEURS } from "@/lib/voice-z2a";
 // par sa barre d'outils, au doigt comme à la souris), ou part d'un des trois
 // modèles (ModelesPage), modifiable ensuite. Une barre collée en
 // bas enregistre ou annule ; le serveur revalide tout (cadres et bannières
-// gagnés, ou déjà portés ; la liste des blocs).
+// gagnés, ou déjà portés ; la liste des blocs ; la bannière composée : images de
+// son dossier, badges gagnés).
+// « Ta bannière » (EditeurBanniere) est une section de la page, sous l'en-tête :
+// le fond, le personnage et les deux pièces se posent à la main sur un aperçu en
+// grand, avec leur ordre, et le panneau de la carte se choisit dessous ; une
+// pastille de l'en-tête et la feuille Bannière y renvoient.
 
 type Zone = keyof typeof PERSO.zones;
 type Enregistre = { style: StyleProfil; linkedin: string; visibilite: Visibilite; nom: string; nomVisibilite: "public" | "friends"; pins: string[] };
@@ -88,6 +96,9 @@ export function Personnaliser({
   titres = [],
   ornements = [],
   persoDispo = false,
+  banniereDispo = false,
+  panneau,
+  badges = [],
 }: {
   carte: EnteteData;
   /** ce qui ouvre les pièces gagnées (questions, pic, sceaux, dates) */
@@ -111,6 +122,12 @@ export function Personnaliser({
   ornements?: OrnementChoix[];
   /** la base a les colonnes du personnage et de l'ornement (migration_bannieres_perso.sql) ; sinon une ligne dit que la fonction arrive */
   persoDispo?: boolean;
+  /** la base a la colonne de la bannière composée (migration_bannieres_composees.sql) ; sinon « Ta bannière » dit que la fonction arrive */
+  banniereDispo?: boolean;
+  /** le rang, la valeur de chaque chiffre et chaque badge décrit, pour l'aperçu de la carte (lu par le serveur) */
+  panneau: DonneesPanneau;
+  /** ce qu'il a gagné et peut mettre dans le panneau de sa carte (lu par le serveur) */
+  badges?: BadgeChoix[];
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -185,6 +202,13 @@ export function Personnaliser({
     else window.scrollTo({ top: 0, behavior: doux ? "smooth" : "auto" });
   };
 
+  /** Va à « Ta bannière » (l'éditeur de la bannière composée), sous l'en-tête ; ferme la feuille ouverte. */
+  const versBanniere = () => {
+    setZone(null);
+    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("rl-perso-banniere")?.scrollIntoView({ block: "start", behavior: doux ? "smooth" : "auto" });
+  };
+
   const annuler = () => {
     setStyle(enregistre.style);
     setLinkedin(enregistre.linkedin);
@@ -254,6 +278,7 @@ export function Personnaliser({
           actions={
             <>
               <Crayon label={PERSO.modifier(PERSO.zones.identite)} texte={PERSO.zones.identite} onClick={() => ouvrir("identite")} />
+              <Crayon label={BANNIERE_ED.composer} texte={BANNIERE_ED.titre} onClick={versBanniere} />
               <Crayon label={PERSO.modifier(PERSO.zones.encre)} texte={PERSO.zones.encre} onClick={() => ouvrir("encre")}>
                 <span aria-hidden className="block h-4 w-4 rounded-full border border-line-2" style={{ background: couleurCss(style.accent) }} />
               </Crayon>
@@ -265,6 +290,19 @@ export function Personnaliser({
               <Crayon label={PERSO.modifier(PERSO.zones.poses)} texte={PERSO.zones.poses} onClick={() => ouvrir("poses")} />
             </div>
           }
+        />
+
+        {/* la bannière composée : fond, personnage, pièces du haut et du bas, ordre, et le panneau de la carte */}
+        <EditeurBanniere
+            b={b}
+            enregistree={enregistre.style.banniere}
+            dispo={banniereDispo}
+            fond={<Banniere banner={style.banner} bannerUrl={style.bannerUrl} bannerPos={style.bannerPos} accent={style.accent} fige className="h-full w-full" />}
+            donnees={panneau}
+            badges={badges}
+            titre={apercu.titre ?? null}
+            onEnvoi={setEnvoiImage}
+            ranger={(brouillonBanniere) => rangerFichiersEnAttente(style.disposition, null, brouillonBanniere)}
         />
 
         {/* la page elle-même, rangée sur place */}
@@ -347,7 +385,12 @@ export function Personnaliser({
             {zone === "banniere" && (
               <>
                 <SectionBanniere b={b} gains={gains} onEnvoi={setEnvoiImage} />
-                <SectionPersonnage b={b} dispo={persoDispo} onEnvoi={setEnvoiImage} nom={carte.name} />
+                <section className="flex flex-col gap-3 border-t border-line pt-5">
+                  <p className="t-small m-0">{BANNIERE_ED.versEditeur}</p>
+                  <button type="button" className="btn btn-secondary btn-sm w-fit max-sm:min-h-[44px]" onClick={versBanniere}>
+                    {BANNIERE_ED.composer}
+                  </button>
+                </section>
                 <SectionOrnement b={b} ornements={ornements} dispo={persoDispo} />
               </>
             )}

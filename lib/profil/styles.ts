@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { baseAbsente } from "@/lib/profil/sceaux-base";
 import { AMBIANCES, HAUTEURS, ORNEMENT_DEFAUT, STYLE_DEFAUT, estCouleur, nettoyerBio, vitrineDepuis, type Ambiance, type HauteurBanniere, type StyleBanniere, type StyleProfil } from "@/lib/profil/catalogue";
 import { bornerPersoPos, bornerPersoTaille, persoDepuis, persoValide } from "@/lib/profil/perso";
+import { compositionDepuis, serialiserComposition, validerComposition, type Composition } from "@/lib/profil/banniere";
+import { badgesGagnes } from "@/lib/profil/banniere-badges";
 import { blocsDe, dispositionDepuis, validerDisposition, type Prefixes } from "@/lib/profil/disposition";
 import { pieceNue, piecesDuType, possede, programmeCourt, type Acquis, type Rarete, type TypePiece } from "@/lib/profil/pieces";
 import { avanceePiece } from "@/lib/voice-profil";
@@ -15,6 +17,9 @@ import { avanceePiece } from "@/lib/voice-profil";
 // demande et, tant qu'elles manquent, relit sans elles (titre et folio à
 // null, pas de personnage, le filet d'encre), sans jamais perdre le reste de
 // la ligne ; ecrireStyle, de même, réécrit sans elles.
+// La bannière composée (fond, personnage, pièces, ordre, panneau : une colonne
+// jsonb, profile_style.banniere) arrive avec migration_bannieres_composees.sql,
+// qui reprend aussi les colonnes ci-dessus : même repli, sans composition (null).
 // Un cadre, une bannière, un titre, un folio ou un ornement se porte s'il est gagné
 // (lib/profil/pieces.ts) ou s'il est déjà porté : rien de gagné n'est repris.
 // Module serveur en pratique : il connaît toutes les pièces (le Codex
@@ -26,6 +31,9 @@ const estV3 = (c: string) => (COLONNES_V3 as readonly string[]).includes(c);
 /** Les colonnes de migration_bannieres_perso.sql : le personnage de la bannière (adresse, taille, position) et l'ornement porté. */
 export const COLONNES_PERSO = ["perso_url", "perso_taille", "perso_pos", "ornement"] as const;
 const estPerso = (c: string) => (COLONNES_PERSO as readonly string[]).includes(c);
+/** La colonne de migration_bannieres_composees.sql : la bannière composée (null tant qu'elle n'est pas collée). */
+export const COLONNES_BANNIERE = ["banniere"] as const;
+const estBanniere = (c: string) => (COLONNES_BANNIERE as readonly string[]).includes(c);
 
 /** Une ligne de profile_style telle que la base la rend (titre et folio toujours présents, null au besoin). */
 export type LigneStyle = Record<string, unknown> & { user_id: string; titre: unknown; folio: unknown };
@@ -45,8 +53,8 @@ export async function lireStyles(sb: SupabaseClient, ids: string[], colonnes: "*
   try {
     let cols = colonnes;
     let { data, error } = await lire(cols);
-    // les colonnes les plus récentes d'abord : sans le personnage, puis sans le titre ni le folio
-    for (const recente of [estPerso, estV3]) {
+    // les colonnes les plus récentes d'abord : sans la bannière composée, puis sans le personnage, puis sans le titre ni le folio
+    for (const recente of [estBanniere, estPerso, estV3]) {
       if (!error || cols === "*" || !cols.some(recente) || !baseAbsente(error)) continue;
       cols = cols.filter((c) => !recente(c));
       ({ data, error } = await lire(cols));
@@ -77,13 +85,29 @@ export async function persoDisponible(sb: SupabaseClient): Promise<boolean> {
   }
 }
 
+/**
+ * La colonne de la bannière composée existe-t-elle (migration_bannieres_composees.sql
+ * collée) ? Même règle que persoDisponible : faux seulement quand la base dit
+ * qu'elle manque.
+ */
+export async function banniereDisponible(sb: SupabaseClient): Promise<boolean> {
+  try {
+    const { error } = await sb.from("profile_style").select(COLONNES_BANNIERE.join(",")).limit(1);
+    return !(error && baseAbsente(error));
+  } catch {
+    return true;
+  }
+}
+
 /** Ce que l'écriture du style a pu enregistrer. */
 export type EcritureStyle = {
   /** l'erreur qui reste après les replis (null : enregistré) */
   error: { message: string; code?: string } | null;
   /** le titre et le folio sont enregistrés (migration_v3_profil.sql collée) */
   titreFolio: boolean;
-  /** le personnage et l'ornement sont enregistrés (migration_bannieres_perso.sql collée) */
+  /** la bannière composée est enregistrée (migration_bannieres_composees.sql collée) */
+  banniere: boolean;
+  /** le personnage et l'ornement sont enregistrés (migration_bannieres_perso.sql, ou migration_bannieres_composees.sql qui la reprend) */
   perso: boolean;
   /** la disposition, l'ambiance et la hauteur de bannière sont enregistrées (migration_profil_medias.sql collée) */
   disposition: boolean;
@@ -92,8 +116,9 @@ export type EcritureStyle = {
 /**
  * Écrit le style d'un joueur, déjà validé (client service role : les joueurs
  * n'écrivent pas profile_style). Les colonnes venues après
- * migration_profil.sql se replient l'une après l'autre : sans le personnage
- * ni l'ornement (migration_bannieres_perso.sql), puis sans titre ni folio
+ * migration_profil.sql se replient l'une après l'autre : sans la bannière
+ * composée (migration_bannieres_composees.sql), sans le personnage ni
+ * l'ornement (migration_bannieres_perso.sql), puis sans titre ni folio
  * (migration_v3_profil.sql), puis sans disposition, ambiance ni hauteur de
  * bannière (migration_profil_medias.sql) ; le reste s'enregistre.
  */
@@ -113,14 +138,18 @@ export async function ecrireStyle(admin: SupabaseClient, userId: string, style: 
   const complet = { ...ligne, layout: style.disposition, ambiance: style.ambiance, banner_h: style.bannerH };
   const ecrire = (l: Record<string, unknown>) => admin.from("profile_style").upsert(l, { onConflict: "user_id" });
   const v3 = { ...complet, titre: style.titre, folio: style.folio };
-  let s = await ecrire({ ...v3, perso_url: style.perso, perso_taille: style.persoTaille, perso_pos: style.persoPos, ornement: style.ornement === ORNEMENT_DEFAUT ? null : style.ornement });
+  const avecPerso = { ...v3, perso_url: style.perso, perso_taille: style.persoTaille, perso_pos: style.persoPos, ornement: style.ornement === ORNEMENT_DEFAUT ? null : style.ornement };
+  let s = await ecrire({ ...avecPerso, banniere: style.banniere ? serialiserComposition(style.banniere) : null });
+  const banniere = !s.error;
+  // la base dit que « banniere » manque (et seulement elle) : on réécrit avec le personnage, sans la bannière composée
+  if (s.error && baseAbsente(s.error) && /banniere/i.test(s.error.message)) s = await ecrire(avecPerso);
   const perso = !s.error;
   if (s.error && baseAbsente(s.error)) s = await ecrire(v3);
   const titreFolio = !s.error;
   if (s.error && baseAbsente(s.error)) s = await ecrire(complet);
   const disposition = !s.error;
   if (s.error && /layout|ambiance|banner_h|column|schema cache/i.test(s.error.message)) s = await ecrire(ligne);
-  return { error: s.error ? { message: s.error.message, code: s.error.code } : null, titreFolio, perso, disposition };
+  return { error: s.error ? { message: s.error.message, code: s.error.code } : null, titreFolio, banniere, perso, disposition };
 }
 
 /** La clé nue d'une pièce connue de ce type, sinon null. */
@@ -161,10 +190,13 @@ export function ornementsPortables(a: Acquis, porte: string | null = null): Orne
 }
 
 /**
- * Le personnage, son cadrage et l'ornement lus d'une ligne de profile_style
- * (ce que dessine la bannière verticale : profil, carte joueur, podium) ;
- * colonnes absentes (migration_bannieres_perso.sql pas collée) ou valeurs
- * étrangères : aucun personnage, taille 100, position 50, le filet d'encre.
+ * Le personnage, son cadrage, l'ornement et la bannière composée lus d'une
+ * ligne de profile_style (ce que dessine la bannière verticale : profil, carte
+ * joueur, podium ; pour dessiner, compositionDe de lib/profil/banniere.ts
+ * choisit la composition enregistrée, sinon l'ancien personnage) ; colonnes
+ * absentes (migration_bannieres_perso.sql, migration_bannieres_composees.sql
+ * pas collées) ou valeurs étrangères : aucun personnage, taille 100, position
+ * 50, le filet d'encre, pas de composition.
  */
 export function banniereDepuis(row: Record<string, unknown> | null | undefined): StyleBanniere {
   return {
@@ -172,6 +204,7 @@ export function banniereDepuis(row: Record<string, unknown> | null | undefined):
     persoTaille: bornerPersoTaille(row?.perso_taille),
     persoPos: bornerPersoPos(row?.perso_pos),
     ornement: nueConnue("ornement", row?.ornement) ?? STYLE_DEFAUT.ornement,
+    banniere: compositionDepuis(row?.banniere),
   };
 }
 
@@ -197,7 +230,7 @@ export function styleDepuis(row: Record<string, unknown> | null | undefined): St
 }
 
 /** Ce qu'il porte : le cadre, la bannière, le titre et le folio ; l'ornement et le personnage s'y ajoutent quand on les connaît. */
-export type Porte = Pick<StyleProfil, "frame" | "banner" | "titre" | "folio"> & Partial<Pick<StyleProfil, "ornement" | "perso" | "persoTaille" | "persoPos">>;
+export type Porte = Pick<StyleProfil, "frame" | "banner" | "titre" | "folio"> & Partial<Pick<StyleProfil, "ornement" | "perso" | "persoTaille" | "persoPos" | "banniere">>;
 
 /**
  * Ne garde que des valeurs connues et des pièces gagnées ou déjà portées (le
@@ -210,6 +243,11 @@ export type Porte = Pick<StyleProfil, "frame" | "banner" | "titre" | "folio"> & 
  * folio, ornement et personnage absents de `input` : ceux qu'il porte,
  * inchangés. Le personnage vient du dossier du joueur dans profil-medias
  * (`prefixesMedias.images`), sous son nom exact ; une autre adresse est refusée.
+ * La bannière composée : absente de `input`, celle qu'il porte (déjà validée à
+ * son enregistrement) ; null, aucune ; un objet, validée strictement
+ * (validerComposition : images de son dossier sous le nom exact de chaque
+ * élément ou préréglages du site, badges gagnés ou déjà portés, statistiques
+ * connues, nombres ramenés dans la scène).
  */
 export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImage: string | null, prefixesMedias: Prefixes | null = null, porte: Porte | null = null): { style: StyleProfil; refus: string[] } {
   const refus: string[] = [];
@@ -233,6 +271,15 @@ export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImag
   const persoVoulu = input.perso === undefined ? (porte?.perso ?? null) : input.perso;
   const perso = persoValide(persoVoulu, prefixesMedias?.images ?? null) ?? (persoVoulu && persoVoulu === porte?.perso ? persoDepuis(persoVoulu) : null);
   if (persoVoulu && !perso) refus.push("l'image du personnage");
+  // la bannière composée : celle qu'il porte, ou celle qu'il veut, validée dans son dossier avec ce qu'il a gagné
+  let banniere: Composition | null = null;
+  if (input.banniere === undefined) banniere = porte?.banniere ?? null;
+  else if (input.banniere !== null) {
+    const gagnes = new Set(badgesGagnes(a).map((b) => b.id));
+    const v = validerComposition(input.banniere, { prefixe: prefixesMedias?.images ?? null, gagnes, porte: porte?.banniere ?? null });
+    banniere = v.composition;
+    refus.push(...v.refus);
+  }
   const url = typeof input.bannerUrl === "string" ? input.bannerUrl.trim() : "";
   // après le dossier du joueur, un nom de fichier seul (« banniere-<ms>.<ext> ») : ni « .. » ni « %2e »
   const nomBanniere = url && prefixeImage && url.startsWith(prefixeImage) ? url.slice(prefixeImage.length) : "";
@@ -257,6 +304,7 @@ export function validerStyle(input: Partial<StyleProfil>, a: Acquis, prefixeImag
       titre,
       folio,
       perso,
+      banniere,
       persoTaille: bornerPersoTaille(input.persoTaille ?? porte?.persoTaille ?? STYLE_DEFAUT.persoTaille),
       persoPos: bornerPersoPos(input.persoPos ?? porte?.persoPos ?? STYLE_DEFAUT.persoPos),
       ornement,

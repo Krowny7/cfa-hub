@@ -1,4 +1,5 @@
 -- Bannières verticales : le personnage du joueur et l'ornement de sa bannière.
+-- (Reprise et dépassée par migration_bannieres_composees.sql, autonome : collez plutôt celle-là, et ne rejouez pas ce fichier après elle.)
 -- À coller dans le SQL Editor de Supabase, après migration_profil.sql,
 -- migration_profil_medias.sql et migration_v3_profil.sql. Idempotente
 -- (rejouable). Le site marche sans ce fichier : tant qu'il n'est pas collé,
