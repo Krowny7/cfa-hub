@@ -4,12 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ImagePlus, Lock, Trash2 } from "lucide-react";
 import { MarqueLinkedin } from "@/components/profil/EnteteJoueur";
 import { Banniere, CadreSceau, classesProfil as sp } from "@/components/profil/Pieces";
+import { BanniereHeros, PseudoBanniere, VignetteOrnement } from "@/components/profil/BanniereHeros";
 import { SceauDe } from "@/components/profil/FicheSceau";
 import { PhotoProfil } from "@/components/profil/PhotoProfil";
 import { createClient } from "@/lib/supabase/browser";
 import { ImageIllisible, preparerImage } from "@/lib/profil/image";
+import { QuotaFichiers, Refus } from "@/lib/profil/envoi-media";
+import { envoyerPerso } from "@/lib/profil/envoi-perso";
+import { PERSO_POS_DEFAUT, PERSO_TAILLE_DEFAUT, PERSO_TAILLE_MAX, PERSO_TAILLE_MIN } from "@/lib/profil/perso";
+import { rangerFichiersEnAttente } from "@/app/moi/profil/actions";
 import type { EtatSceau } from "@/lib/profil/sceaux";
-import type { TitrePortable } from "@/lib/profil/styles";
+import type { OrnementChoix, TitrePortable } from "@/lib/profil/styles";
 import {
   AMBIANCES,
   BIO_MAX,
@@ -31,7 +36,7 @@ import {
   type Visibilite,
   type VitrineKey,
 } from "@/lib/profil/catalogue";
-import { PERSO, SCEAUX_TXT, VISIBILITE, avanceePiece, conditionPiece, dateCourte, nomSceau } from "@/lib/voice-profil";
+import { PERSO, PERSONNAGE, SCEAUX_TXT, VISIBILITE, avanceePiece, conditionPiece, dateCourte, nomSceau } from "@/lib/voice-profil";
 
 // Les réglages du profil, une section par chose, déplacés de l'ancien
 // éditeur (/moi/profil) sans les réécrire : ils remplissent les feuilles de
@@ -39,6 +44,11 @@ import { PERSO, SCEAUX_TXT, VISIBILITE, avanceePiece, conditionPiece, dateCourte
 // change en direct dessous. La bannière : une image du joueur (envoyée telle
 // quelle si elle est raisonnable, sinon réduite à 3 200 px sans perte
 // visible ; puis cadrée verticalement) ou un motif. La couleur : libre.
+// Sous la bannière : « Ton personnage » (une image envoyée dans profil-medias,
+// cadrée en taille et en hauteur) et l'ornement porté (le cadre ornemental,
+// gagné aux sceaux et aux quêtes du Codex ; les autres grisés avec leur
+// consigne). Les deux attendent migration_bannieres_perso.sql : sans elle, une
+// ligne dit qu'ils arrivent.
 // Les pièces qui bougent ou qui brillent se gagnent : « Gagnés » d'un côté,
 // « À gagner » de l'autre, avec ce qu'il faut et l'avancée ; une pièce déjà
 // portée reste gagnée (on ne reprend rien). Le serveur revalide tout à
@@ -90,6 +100,8 @@ export type Brouillon = {
 
 /** Ce qui ouvre les pièces gagnées, et ce que le joueur porte déjà (gardé même si la condition ne tient plus). */
 type Gains = { acquis: Acquis; porte: Pick<StyleProfil, "frame" | "banner"> };
+
+const CURSEUR = { accentColor: "var(--ink)" } as const;
 
 /** La légende d'une pièce : gagnée (sa date, si elle bouge), ou à gagner (la condition, l'avancée). */
 function LegendePiece({ condition, gagnee, anime, gains }: { condition: Condition | null; gagnee: boolean; anime: boolean; gains: Gains }) {
@@ -224,6 +236,168 @@ export function SectionBanniere({ b, gains, onEnvoi }: { b: Brouillon; gains: Ga
             <div className="grid grid-cols-2 gap-2">{aGagnerM.map(vignette)}</div>
           </div>
         )}
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Ton personnage : l'image que le joueur envoie (un PNG détouré sort du
+ * cadre), son aperçu (la vraie bannière verticale : sa bannière, son ornement,
+ * son personnage qui dépasse du haut, son pseudo : BanniereHeros.tsx, la même
+ * que le podium), sa taille et sa position verticale (lib/profil/perso.ts :
+ * cadragePerso, la même règle pour qui dessine la bannière), « Retirer ».
+ * `dispo` : la base a les colonnes ; sinon une ligne dit que la fonction
+ * arrive. `nom` : le pseudo de l'aperçu (absent : l'aperçu n'en montre pas).
+ */
+export function SectionPersonnage({ b, dispo, onEnvoi, nom }: { b: Brouillon; dispo: boolean; onEnvoi: (enCours: boolean) => void; nom?: string }) {
+  const { style, set, setStyle } = b;
+  const supabase = useMemo(() => createClient(), []);
+  const fichier = useRef<HTMLInputElement | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function choisir(file: File | undefined) {
+    if (!file) return;
+    setMsg(PERSONNAGE.envoi);
+    onEnvoi(true);
+    try {
+      let url: string;
+      try {
+        url = await envoyerPerso(supabase, file);
+      } catch (e) {
+        if (!(e instanceof QuotaFichiers)) throw e;
+        // le dossier est plein de fichiers en attente : le serveur le range (sans toucher à la page enregistrée ni à celle-ci), puis une seule nouvelle tentative
+        await rangerFichiersEnAttente(style.disposition, style.perso);
+        url = await envoyerPerso(supabase, file);
+      }
+      setStyle((s) => ({ ...s, perso: url, persoTaille: PERSO_TAILLE_DEFAUT, persoPos: PERSO_POS_DEFAUT }));
+      setMsg(null);
+    } catch (e) {
+      setMsg(e instanceof Refus ? e.message : PERSONNAGE.erreurEnvoi);
+    } finally {
+      onEnvoi(false);
+      if (fichier.current) fichier.current.value = "";
+    }
+  }
+
+  if (!dispo)
+    return (
+      <Section titre={PERSONNAGE.titre}>
+        <p className="t-small m-0">{PERSONNAGE.bientot}</p>
+      </Section>
+    );
+  const recentre = style.persoTaille === PERSO_TAILLE_DEFAUT && style.persoPos === PERSO_POS_DEFAUT;
+  return (
+    <Section titre={PERSONNAGE.titre} aide={PERSONNAGE.conseil}>
+      <div className="flex flex-wrap items-center gap-2">
+        <input ref={fichier} type="file" accept="image/png,image/webp,image/jpeg" className="sr-only" id="rl-perso" onChange={(e) => choisir(e.target.files?.[0])} />
+        <label htmlFor="rl-perso" className="btn btn-secondary btn-sm cursor-pointer">
+          <ImagePlus size={15} aria-hidden /> {style.perso ? PERSONNAGE.changer : PERSONNAGE.choisir}
+        </label>
+        {style.perso && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => set("perso", null)}>
+            <Trash2 size={14} aria-hidden /> {PERSONNAGE.retirer}
+          </button>
+        )}
+        {msg && (
+          <span role="status" className="text-[12.5px] font-medium">
+            {msg}
+          </span>
+        )}
+      </div>
+      <p className="t-micro m-0">{PERSONNAGE.formats}</p>
+      {/* l'aperçu : la vraie bannière verticale, le personnage passe par-dessus son bord haut (la boîte garde la place au-dessus) */}
+      <div className="mx-auto mt-1 w-[184px] max-w-full shrink-0" role="img" aria-label={PERSONNAGE.apercu}>
+        <BanniereHeros
+          fond={<Banniere banner={style.banner} bannerUrl={style.bannerUrl} bannerPos={style.bannerPos} accent={style.accent} fige className="h-full w-full" />}
+          perso={style.perso}
+          persoTaille={style.persoTaille}
+          persoPos={style.persoPos}
+          ornement={style.ornement}
+          anime
+        >
+          {nom ? <PseudoBanniere>{nom}</PseudoBanniere> : null}
+        </BanniereHeros>
+      </div>
+      {style.perso && (
+        <>
+          <label className="flex items-center gap-3 text-[13px] font-semibold">
+            <span className="w-[8.5rem] shrink-0">{PERSONNAGE.taille}</span>
+            <input type="range" min={PERSO_TAILLE_MIN} max={PERSO_TAILLE_MAX} step={5} value={style.persoTaille} onChange={(e) => set("persoTaille", Number(e.target.value))} className="h-11 min-w-0 flex-1" style={CURSEUR} aria-label={PERSONNAGE.taille} />
+          </label>
+          <label className="flex items-center gap-3 text-[13px] font-semibold">
+            <span className="w-[8.5rem] shrink-0">{PERSONNAGE.position}</span>
+            <input type="range" min={0} max={100} step={1} value={style.persoPos} onChange={(e) => set("persoPos", Number(e.target.value))} className="h-11 min-w-0 flex-1" style={CURSEUR} aria-label={PERSONNAGE.position} />
+          </label>
+          {!recentre && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm w-fit"
+              onClick={() => setStyle((s) => ({ ...s, persoTaille: PERSO_TAILLE_DEFAUT, persoPos: PERSO_POS_DEFAUT }))}
+            >
+              {PERSONNAGE.recentrer}
+            </button>
+          )}
+        </>
+      )}
+    </Section>
+  );
+}
+
+/**
+ * L'ornement porté : le cadre ornemental de la bannière. Le filet d'encre est
+ * à tous ; les autres se gagnent aux sceaux et aux quêtes du Codex, grisés
+ * avec leur consigne (et l'avancée) tant qu'ils ne sont pas à lui. Une pièce
+ * déjà portée reste à lui (le serveur ne reprend rien). Chacun montre son
+ * dessin sur un petit fanion (BanniereHeros.tsx, basique pour l'instant), son
+ * nom et ce qu'il faut pour l'avoir ; l'aperçu complet est dans « Ton
+ * personnage », juste au-dessus.
+ */
+export function SectionOrnement({ b, ornements, dispo }: { b: Brouillon; ornements: OrnementChoix[]; dispo: boolean }) {
+  const { style, set } = b;
+  // sans la base, la ligne de « Ton personnage » dit déjà que la fonction arrive
+  if (!dispo || ornements.length === 0) return null;
+  return (
+    <Section titre={PERSONNAGE.ornement} aide={PERSONNAGE.ornementAide}>
+      <div className="flex flex-col gap-2" role="radiogroup" aria-label={PERSONNAGE.ornement}>
+        {ornements.map((o) => {
+          const on = style.ornement === o.nue;
+          return (
+            <button
+              key={o.nue}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              disabled={!o.possede}
+              onClick={() => set("ornement", o.nue)}
+              className={
+                "flex min-h-[44px] items-center gap-3 rounded-[12px] border px-3 py-2 text-left " +
+                (on ? "border-white" : o.possede ? "border-line-2 hover:border-white" : "cursor-not-allowed border-dashed border-line-2")
+              }
+            >
+              <span aria-hidden className={"grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border " + (on ? "border-white bg-white text-black" : "border-line-2")}>
+                {on && <Check size={12} strokeWidth={3} />}
+              </span>
+              {/* le dessin de l'ornement, sur un petit fanion (grisé tant qu'il n'est pas à lui) */}
+              <span aria-hidden className={"block w-[40px] shrink-0 " + (o.possede ? "" : "opacity-50 grayscale")}>
+                <VignetteOrnement cle={o.nue} />
+              </span>
+              <span className={"min-w-0 flex-1 " + (o.possede ? "" : "opacity-70")}>
+                <span className="flex items-center gap-1.5 text-[14px] font-semibold">
+                  {!o.possede && <Lock size={12} aria-hidden className="shrink-0" />}
+                  <span className="min-w-0 truncate">{o.nom}</span>
+                </span>
+                <span className="t-micro block">{o.description}</span>
+                {!o.possede && (
+                  <span className="t-micro mt-0.5 flex flex-wrap items-center gap-x-2 font-semibold">
+                    <span>{o.obtention}</span>
+                    {o.avancee && <span className="font-mono tabular-nums">{o.avancee}</span>}
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </Section>
   );

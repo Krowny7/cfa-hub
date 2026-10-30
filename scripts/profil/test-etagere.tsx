@@ -92,7 +92,7 @@ console.log("# L'étagère");
 {
   const e = etagere(vide, porteDe());
   const types = e.rayons.map((r) => r.type).join(",");
-  check("quatre rayons : cadres, bannières, titres, folios", types === "cadre,banniere,titre,folio" && e.rayons.map((r) => r.titre).join(",") === "Cadres,Bannières,Titres,Folios");
+  check("cinq rayons : cadres, bannières, titres, folios, ornements", types === "cadre,banniere,titre,folio,ornement" && e.rayons.map((r) => r.titre).join(",") === "Cadres,Bannières,Titres,Folios,Ornements");
   const toutes = e.rayons.flatMap((r) => r.pieces);
   check("« Sans cadre » n'est pas sur l'étagère", !toutes.some((p) => p.cle === "cadre:aucun"));
   check("toutes les autres pièces y sont", toutes.length === PIECES.length - 1);
@@ -198,7 +198,7 @@ console.log("# L'écran « Mes pièces »");
     </AppRouterContext.Provider>,
   );
   check("le titre, le résumé et le filtre", html.includes("Mes pièces") && html.includes(resumeEtagere(e)) && html.includes("Ce que j&#x27;ai") && html.includes(">Tout<"));
-  check("les quatre rayons, avec leur compte", ["Cadres", "Bannières", "Titres", "Folios"].every((t) => html.includes(t)) && html.includes(`${e.rayons[3].possedees}/${e.rayons[3].total}`));
+  check("les cinq rayons, avec leur compte", ["Cadres", "Bannières", "Titres", "Folios", "Ornements"].every((t) => html.includes(t)) && html.includes(`${e.rayons[3].possedees}/${e.rayons[3].total}`));
   check("la pièce portée est dite « Portée »", html.includes("Portée"));
   check("les silhouettes sont grisées et disent leur consigne en clair", html.includes("opacity-35 grayscale") && html.includes("Finir l&#x27;acte II : Les 10 matières"));
   check("aucun lien vers le Codex sur l'étagère : ni « Y aller » ni « Voir la quête »", !html.includes("Y aller") && !html.includes("Voir la quête") && !html.includes("/codex?quete="));

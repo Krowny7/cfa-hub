@@ -14,6 +14,7 @@ import type { EtatSceau } from "@/lib/profil/sceaux";
 import type { StatutMaitrise } from "@/lib/maitrise";
 import { champsBaseVides, remplie, type Acquis, type ConditionProfil } from "@/lib/profil/acquis";
 import { DISPOSITION_DEFAUT, type Disposition } from "@/lib/profil/disposition";
+import { PERSO_POS_DEFAUT, PERSO_TAILLE_DEFAUT } from "@/lib/profil/perso";
 
 /** Ce que le joueur a accompli (vitrine, cadres). */
 export type ProfilStats = {
@@ -69,7 +70,7 @@ export const STATS_VIDES: ProfilStats = {
 // lib/profil/acquis.ts (toutes les pièces de collection, lib/profil/pieces.ts) ;
 // ils restent importables d'ici. Les cadres et les motifs n'emploient que les
 // conditions du profil (questions, pic, sceaux).
-export { dateGagnee, dorures, remplie, type Acquis } from "@/lib/profil/acquis";
+export { dateGagnee, dorures, remplie, sceauxGagnes, type Acquis } from "@/lib/profil/acquis";
 /** La condition d'un cadre ou d'un motif (toutes les conditions : lib/profil/pieces.ts). */
 export type Condition = ConditionProfil;
 
@@ -250,7 +251,29 @@ export type StyleProfil = {
   titre: string | null;
   /** le folio posé sur la page (clé nue d'une pièce « folio », « mains ») ; null : aucun */
   folio: string | null;
+  /**
+   * Le personnage de la bannière verticale : l'image que le joueur envoie (un PNG détouré de préférence : il sort
+   * du cadre), adresse d'un fichier de son dossier du bucket profil-medias (lib/profil/perso.ts) ; null : aucun.
+   * Colonne profile_style.perso_url (migration_bannieres_perso.sql) ; null tant qu'elle manque.
+   */
+  perso: string | null;
+  /** sa taille, en % de la taille de base : 50 à 160, 100 par défaut (profile_style.perso_taille) */
+  persoTaille: number;
+  /** sa position verticale : 0 remonté, 50 posé à sa place, 100 descendu (profile_style.perso_pos) */
+  persoPos: number;
+  /**
+   * L'ornement porté, le cadre ornemental de la bannière verticale : la clé nue d'une pièce « ornement »
+   * (« filet », « cartouche », « laurier », « fronton » ; lib/profil/pieces.ts). Le filet d'encre est le défaut,
+   * libre pour tous (profile_style.ornement : null ou absent veut dire le filet).
+   */
+  ornement: string;
 };
+
+/** Ce que la bannière verticale lit du style, en plus de sa bannière : le personnage, son cadrage et l'ornement (podium, carte joueur, profil). */
+export type StyleBanniere = Pick<StyleProfil, "perso" | "persoTaille" | "persoPos" | "ornement">;
+
+/** L'ornement de départ, libre pour tous : le filet d'encre. */
+export const ORNEMENT_DEFAUT = "filet";
 
 export const STYLE_DEFAUT: StyleProfil = {
   banner: "lavis",
@@ -267,6 +290,10 @@ export const STYLE_DEFAUT: StyleProfil = {
   bannerH: "normale",
   titre: null,
   folio: null,
+  perso: null,
+  persoTaille: PERSO_TAILLE_DEFAUT,
+  persoPos: PERSO_POS_DEFAUT,
+  ornement: ORNEMENT_DEFAUT,
 };
 export const BIO_MAX = 160;
 export const NOM_MAX = 60;

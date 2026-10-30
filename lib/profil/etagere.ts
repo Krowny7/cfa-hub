@@ -1,6 +1,6 @@
 // L'étagère « Mes pièces » (Moi › Mes pièces, V3 §3.8) : toutes les pièces
-// de collection rangées en quatre rayons (cadres, bannières, titres,
-// folios), celles qu'on possède d'abord, puis les silhouettes avec leur
+// de collection rangées en cinq rayons (cadres, bannières, titres,
+// folios, ornements de bannière), celles qu'on possède d'abord, puis les silhouettes avec leur
 // consigne en clair et, si une quête du Codex les donne, le lien vers elle
 // (dans la fiche de la pièce). Ce module
 // prépare des données simples pour l'écran (leur forme : etagere-vue.ts ;
@@ -22,7 +22,7 @@ const HORS_ETAGERE = new Set(["cadre:aucun"]);
 
 /** La valeur portée d'un type (clé nue), d'après ce qu'enregistre profile_style. */
 const porteeDu = (type: TypePiece, porte: Porte): string | null =>
-  type === "cadre" ? porte.frame : type === "banniere" ? porte.banner : type === "titre" ? porte.titre : porte.folio;
+  type === "cadre" ? porte.frame : type === "banniere" ? porte.banner : type === "titre" ? porte.titre : type === "folio" ? porte.folio : (porte.ornement ?? STYLE_DEFAUT.ornement);
 
 /** Le lien « Voir la quête » vers la quête du Codex qui donne la pièce. */
 export const hrefQuete = (id: string) => `/codex?quete=${encodeURIComponent(id)}`;
@@ -74,7 +74,8 @@ export function etagere(a: Acquis, porte: Porte, bannerUrl: string | null = null
  * cadre revient à « Sans cadre », la bannière au motif par défaut ; porter
  * une bannière retire l'image du joueur (le motif prend sa place) ; porter
  * un folio pose son bloc sur la page s'il n'y est pas (avecBlocFolio : à la
- * première place libre, sinon en tuile).
+ * première place libre, sinon en tuile) ; retirer un ornement remet le filet
+ * d'encre.
  */
 export function stylePorte(style: StyleProfil, type: TypePiece, nue: string | null): StyleProfil {
   switch (type) {
@@ -86,6 +87,8 @@ export function stylePorte(style: StyleProfil, type: TypePiece, nue: string | nu
       return { ...style, titre: nue };
     case "folio":
       return nue ? { ...style, folio: nue, disposition: avecBlocFolio(style.disposition) } : { ...style, folio: null };
+    case "ornement":
+      return { ...style, ornement: nue ?? STYLE_DEFAUT.ornement };
   }
 }
 

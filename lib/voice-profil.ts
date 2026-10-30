@@ -6,7 +6,7 @@
 import { NBSP, nombre, pct, pluriel, signe } from "@/lib/voice";
 import { subjectByKey } from "@/components/reviser/catalog";
 import { MAITRISE_MIN_QUESTIONS, defSceau, type DatePalier, type DefSceau, type EtatSceau, type Famille, type Unite } from "@/lib/profil/sceaux";
-import { cadreDe, dateGagnee, dorures, motifDe, type Acquis, type Condition, type StyleProfil } from "@/lib/profil/catalogue";
+import { cadreDe, dateGagnee, dorures, motifDe, sceauxGagnes, type Acquis, type Condition, type StyleProfil } from "@/lib/profil/catalogue";
 import { TIERS } from "@/lib/ranks";
 
 // ---------------------------------------------------------------------------
@@ -267,6 +267,26 @@ export const PERSO = {
   deplacerRangee: "Déplacer la rangée",
 } as const;
 
+/** Le personnage et l'ornement de la bannière verticale (Personnaliser › Bannière). */
+export const PERSONNAGE = {
+  titre: "Ton personnage",
+  conseil: "Un PNG détouré (fond transparent) donne l'effet du personnage qui sort du cadre.",
+  formats: "PNG ou WebP, JPG accepté · 4 Mo au plus. Ton image reste dans ton dossier, visible de tous sur ta bannière.",
+  choisir: "Choisir une image",
+  changer: "Changer d'image",
+  retirer: "Retirer",
+  envoi: "Envoi de l'image…",
+  erreurEnvoi: "L'image n'a pas pu être envoyée. Réessaie, ou choisis-en une autre.",
+  taille: "Taille",
+  position: "Position verticale",
+  recentrer: "Recentrer",
+  apercu: "Aperçu de ta bannière verticale, avec ton ornement et ton personnage",
+  /** la base n'a pas encore les colonnes (migration_bannieres_perso.sql) */
+  bientot: "Ton personnage et ton ornement arrivent bientôt : la base n'est pas encore prête.",
+  ornement: "Ornement",
+  ornementAide: "Le cadre ornemental de ta bannière. Le filet d'encre est à tous ; les autres se gagnent aux sceaux et aux quêtes du Codex.",
+} as const;
+
 /** Ce qu'il faut pour gagner une pièce : « 1 000 questions posées », « atteins Diamant une fois », « 3 sceaux à la dorure ». */
 export function conditionPiece(c: Condition): string {
   switch (c.k) {
@@ -276,6 +296,8 @@ export function conditionPiece(c: Condition): string {
       return `atteins ${TIERS[c.palier].name} une fois`;
     case "dorures":
       return `${pluriel(c.n, "sceau", "sceaux")} à la dorure`;
+    case "sceaux":
+      return pluriel(c.n, "sceau gagné", "sceaux gagnés");
     case "sceau": {
       const d = defSceau(c.cle);
       return `sceau ${d ? nomSceau(d) : c.cle} · ${PALIERS[c.palier]}`;
@@ -297,6 +319,8 @@ export function avanceePiece(c: Condition, a: Acquis): string | null {
       return ENTETE.pic(TIERS[Math.max(0, Math.min(TIERS.length - 1, a.pic))].name);
     case "dorures":
       return `${nombre(dorures(a))}/${nombre(c.n)}`;
+    case "sceaux":
+      return `${nombre(sceauxGagnes(a))}/${nombre(c.n)}`;
     case "sceau": {
       const e = a.sceaux.find((x) => x.def.cle === c.cle);
       if (!e || e.inconnu) return null;

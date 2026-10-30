@@ -2,7 +2,7 @@ import type { DuelPlayerCard } from "@/lib/duels";
 // Données reçues par les composants de l'espace Classement (props
 // sérialisables : la page serveur les charge, la page d'aperçu les invente).
 import type { DuelSummary, RatingEvent } from "@/lib/rating";
-import type { StyleProfil } from "@/lib/profil/catalogue";
+import type { StyleBanniere, StyleProfil } from "@/lib/profil/catalogue";
 
 export type BoardRow = {
   userId: string;
@@ -20,6 +20,15 @@ export type BoardRow = {
   bannerUrl?: string | null;
   /** le titre porté, lisible (« Copiste ») : le podium seulement */
   titre?: string | null;
+  /**
+   * la bannière verticale du podium (les trois premiers seulement ; absents : pas de personnage, le filet d'encre) :
+   * l'adresse du personnage, sa taille (50 à 160, 100 : sa taille de base), sa position verticale (0 à 100, 50 : à sa place)
+   * et la clé nue de l'ornement porté — à dessiner avec cadragePerso (lib/profil/perso.ts)
+   */
+  perso?: string | null;
+  persoTaille?: number;
+  persoPos?: number;
+  ornement?: string;
 };
 
 export type NextExam = {
@@ -128,7 +137,8 @@ export type RivalData = {
   /** maîtrise du programme 0–100, null si inconnue (pas de verrou sur l'insigne) */
   mastery: number | null;
   niveau: number;
-  style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame">;
+  /** la bannière et le sceau ; le personnage, son cadrage et l'ornement (StyleBanniere) quand la carte les dessine */
+  style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame"> & Partial<StyleBanniere>;
   /** rencontres, toutes épreuves confondues */
   rencontres: number;
   /** bilan cumulé : fois où j'ai fait mieux / où il a fait mieux (les égalités ne comptent ni pour l'un ni pour l'autre) */

@@ -6,6 +6,7 @@ import { ArcElectrique } from "@/components/ui/ArcElectrique";
 import { useHorsEcran } from "@/components/ui/useHorsEcran";
 import { LienJoueur } from "@/components/profil/CarteJoueur";
 import { TitrePorte } from "@/components/profil/TitrePorte";
+import { OrnementBanniere, PersoBanniere } from "@/components/profil/BanniereHeros";
 import { signed } from "@/components/classement/format";
 import type { BoardRow } from "@/components/classement/types";
 import { PLACEMENT_GAMES, rankFor, teinteDeRang } from "@/lib/ranks";
@@ -22,7 +23,14 @@ import s from "./Podium.module.css";
 //   holographique ; au repos, elle se balance doucement, chacune à son
 //   rythme ; le n° 1 a un arc électrique autour de son insigne ;
 // - toute la carte mène au profil du joueur (sa carte d'abord, comme partout
-//   dans le Classement).
+//   dans le Classement) ;
+// - la bannière « façon jeu » du joueur : son ornement (le cadre qu'il a
+//   gagné : filet, cartouche, laurier, fronton) habille la carte, et son
+//   personnage, posé en bas, dépasse du haut du fanion (BanniereHeros.tsx :
+//   la même règle que l'aperçu de Personnaliser). Avec un personnage,
+//   l'insigne passe dans le coin du haut pour lui laisser la place, et le
+//   podium réserve au-dessus la place du débordement (data-perso) : rien ne
+//   se chevauche. Sans personnage, la carte est celle d'avant.
 // Léger : une seule boucle pour les trois cartes, qui ne tourne que lorsque le
 // podium est à l'écran ; rien ne bouge en mouvement réduit, avec
 // ?mouvement=off et en mode discret.
@@ -132,6 +140,7 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
   const stats: Array<[string, string]> = [[nombre(r.gamesPlayed), PODIUM.parties]];
   if (r.mastery !== null) stats.push([pct(r.mastery), PODIUM.maitrise]);
   if (r.lastDelta !== null && r.lastDelta !== 0) stats.push([signed(r.lastDelta), PODIUM.dernier]);
+  const perso = r.perso || null;
   const style = {
     "--liq": `url(/ranks/v2/liquide-${tier}.webp)`,
     "--teinte": teinteDeRang(tier),
@@ -141,9 +150,10 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
     <LienJoueur
       id={r.userId}
       nom={r.name}
-      className={s.banniere + (first ? " " + s.premier : "")}
+      className={s.banniere + (first ? " " + s.premier : "") + (perso ? " " + s.avecPerso : "")}
       style={style}
       data-holo=""
+      data-ornement={r.ornement || "filet"}
       aria-label={`${PODIUM.place(place)} : ${r.isMe ? "toi" : r.name}, ${nomRang}, ${r.elo} ELO`}
     >
       <span aria-hidden className={s.cadre} />
@@ -152,6 +162,8 @@ function Banniere({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
         <img className={s.fond} src={r.bannerUrl || fondParDefaut(r.userId)} alt="" loading="lazy" decoding="async" draggable={false} />
         <span className={s.ombre} />
       </span>
+      <OrnementBanniere cle={r.ornement} />
+      {perso && <PersoBanniere perso={perso} taille={r.persoTaille} pos={r.persoPos} />}
       <span aria-hidden className={s.place + " font-brand"}>
         {place}
       </span>
@@ -217,8 +229,10 @@ export function PodiumBannieres({ rows, label }: { rows: [BoardRow | null, Board
   const racine = useRef<HTMLDivElement | null>(null);
   useHorsEcran(racine);
   useInclinaison(racine);
+  // un personnage quelque part : le podium garde au-dessus la place de sa tête
+  const avecPerso = rows.some((r) => !!r?.perso);
   return (
-    <div ref={racine} className={s.podium} role="group" aria-label={label}>
+    <div ref={racine} className={s.podium} role="group" aria-label={label} data-perso={avecPerso ? "1" : "0"}>
       {rows[0] ? <Banniere r={rows[0]!} place={1} /> : <BanniereLibre place={1} />}
       {rows[1] ? <Banniere r={rows[1]!} place={2} /> : <BanniereLibre place={2} />}
       {rows[2] ? <Banniere r={rows[2]!} place={3} /> : <BanniereLibre place={3} />}

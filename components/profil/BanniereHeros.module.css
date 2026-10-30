@@ -1,0 +1,237 @@
+/* La bannière verticale « façon jeu » : un fanion (haut 9 : 15, bas en pointe)
+   avec sa bannière en fond, un cadre d'ornement dessiné en SVG (filet d'encre,
+   cartouche, laurier, fronton doré : l'ornement se gagne aux sceaux et aux
+   quêtes) et le personnage du joueur, posé en bas du cadre, dont la tête et
+   les épaules passent par-dessus le haut (un peu sur les côtés aussi).
+   Tout se dimensionne avec la largeur de la boîte (unités cqw) : le fanion
+   tient d'une vignette de 36 px à l'aperçu de Personnaliser, au podium.
+   La dorure reste sobre : trois tons de laiton, pas d'éclat ni de néon.
+   Le personnage ne capte jamais un clic. Il respire à peine (aperçu de
+   Personnaliser, `anime`) ; rien ne bouge avec prefers-reduced-motion, avec
+   ?mouvement=off ni en mode discret. */
+
+/* La boîte : ce qui prend la largeur donnée par la page ; avec un personnage, la place du débordement au-dessus
+   (20 % de la hauteur du fanion, soit 33 % de sa largeur : la tête ne chevauche rien d'autre). */
+.boite {
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.boite[data-perso="1"] {
+  padding-top: 33%;
+}
+
+.heros {
+  /* l'épaisseur du cadre : 1,9 % de la largeur, trois pixels au moins */
+  --bord: max(3px, 1.9cqw);
+  position: relative;
+  display: block;
+  aspect-ratio: 9 / 15;
+  color: #f4f2ea;
+  /* l'ombre portée de la bannière entière (le personnage compris) */
+  filter: drop-shadow(0 3cqw 4cqw rgba(0, 0, 0, 0.28));
+}
+
+/* le cadre : l'encre sombre, vue par la bordure du fanion */
+.cadre {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #2b2a2c 0%, #0d0d0f 70%);
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 50% 100%, 0 88%);
+  pointer-events: none;
+}
+/* la carte, rentrée de l'épaisseur du cadre (la pointe aussi) : la bannière du joueur */
+.forme {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0d0d0f;
+  clip-path: polygon(
+    var(--bord) var(--bord),
+    calc(100% - var(--bord)) var(--bord),
+    calc(100% - var(--bord)) calc(88% - var(--bord) * 0.68),
+    50% calc(100% - var(--bord) * 1.08),
+    var(--bord) calc(88% - var(--bord) * 0.68)
+  );
+  pointer-events: none;
+}
+.fondNeutre {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 70% at 50% 18%, #55524c 0%, #2c2a28 55%, #151517 100%);
+}
+/* le voile qui garde le pseudo lisible, même sur un papier clair */
+.ombre {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0.34) 0%, rgba(10, 10, 12, 0.16) 26%, rgba(10, 10, 12, 0.3) 42%, rgba(10, 10, 12, 0.9) 78%);
+}
+
+/* ——— l'ornement : un SVG sur tout le fanion (viewBox 90 × 150), au-dessus de la bannière ——— */
+.orn {
+  --or: #c9a45a;
+  --or-clair: #ecd9a4;
+  --or-sombre: #8d6a2b;
+  --trait: #f4f2ea;
+  --encre: rgba(8, 8, 10, 0.86);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+/* les traits sont en unités du viewBox : ils grandissent avec le fanion, comme le cadre (--bord) */
+.orn .encre {
+  stroke: var(--encre);
+  fill: none;
+}
+.orn .papier {
+  stroke: var(--trait);
+  fill: none;
+}
+.orn .dore {
+  stroke: var(--or);
+  fill: none;
+}
+.orn .doreClair {
+  stroke: var(--or-clair);
+  fill: none;
+}
+.orn .pleinOr {
+  fill: var(--or);
+}
+.orn .pleinClair {
+  fill: var(--or-clair);
+}
+.orn .pleinSombre {
+  fill: var(--or-sombre);
+}
+.orn .pleinEncre {
+  fill: var(--encre);
+}
+
+/* ——— le personnage ———
+   La boîte a la taille du fanion et le découpe : jusqu'à 20 % au-dessus (--dy) et un peu sur les côtés (--dx) dans le haut seulement (--haut-cotes), le bas suit la
+   pointe (rien ne sort par le bas). L'image est ancrée en bas, centrée ; le cadrage (taille, position) est un transform posé en
+   ligne par PersoBanniere (lib/profil/perso.ts : cadragePerso). */
+.persoBoite {
+  --dx: 3cqw;
+  --dy: 20%;
+  /* les côtés ne débordent que dans le haut (tête, épaules) : plus bas, le personnage reste dans le cadre (pas de bras fantôme dans le voile) */
+  --haut-cotes: 34%;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  clip-path: polygon(
+    calc(var(--dx) * -1) calc(var(--dy) * -1),
+    calc(100% + var(--dx)) calc(var(--dy) * -1),
+    calc(100% + var(--dx)) var(--haut-cotes),
+    calc(100% - var(--bord, 3px)) var(--haut-cotes),
+    calc(100% - var(--bord, 3px)) calc(88% - var(--bord, 3px) * 0.68),
+    50% calc(100% - var(--bord, 3px) * 1.08),
+    var(--bord, 3px) calc(88% - var(--bord, 3px) * 0.68),
+    var(--bord, 3px) var(--haut-cotes),
+    calc(var(--dx) * -1) var(--haut-cotes)
+  );
+}
+/* le voile du bas : une boîte qui couvre le fanion et sa marge du haut (--dy) et des côtés (--dx), et dont le masque fait
+   s'effacer le bas du personnage dans le voile de la carte : le pseudo et les chiffres restent lisibles, quel que soit le cadrage.
+   Le masque est attaché à la carte, pas à l'image : l'agrandir ou la remonter ne le déplace pas. */
+.persoMasque {
+  position: absolute;
+  top: calc(var(--dy) * -1);
+  left: calc(var(--dx) * -1);
+  right: calc(var(--dx) * -1);
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 51%, rgba(0, 0, 0, 0.5) 66%, rgba(0, 0, 0, 0.2) 79%, rgba(0, 0, 0, 0.06) 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 51%, rgba(0, 0, 0, 0.5) 66%, rgba(0, 0, 0, 0.2) 79%, rgba(0, 0, 0, 0.06) 100%);
+}
+.perso {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  /* 12 % de plus que le fanion (la boîte du masque en fait 120 %) : un personnage debout dépasse de 12 % par le haut */
+  height: 93.333%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  transform-origin: 50% 100%;
+  user-select: none;
+  /* l'ombre portée douce */
+  filter: drop-shadow(0 1.2cqw 2.2cqw rgba(0, 0, 0, 0.5));
+}
+
+/* ce que la bannière porte (le pseudo, un titre, des chiffres) : au-dessus de tout, le décor ne capte rien */
+.contenu {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 7cqw 14cqw;
+  text-align: center;
+  pointer-events: none;
+}
+.pseudo {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(13px, 10.5cqw);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.65);
+}
+
+/* l'aperçu de Personnaliser respire à peine */
+.anime .persoBoite {
+  animation: souffle 7s ease-in-out infinite;
+}
+@keyframes souffle {
+  50% {
+    transform: translateY(-0.7%);
+  }
+}
+
+/* la vignette d'un ornement (la liste des ornements de Personnaliser) : le fanion nu, sans personnage ni texte */
+.vignette {
+  display: block;
+  width: 100%;
+}
+
+/* ——— le personnage sur un bandeau horizontal (l'en-tête du profil, la carte joueur) ———
+   Contenu dans le bandeau : posé en bas, découpé par ses bords ; `--x` est son centre, en % de la largeur. */
+.bandeau {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bandeauImg {
+  position: absolute;
+  bottom: 0;
+  left: var(--x, 50%);
+  translate: -50% 0;
+  width: auto;
+  max-width: 62%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  transform-origin: 50% 100%;
+  user-select: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+/* mouvement réduit, ?mouvement=off, mode discret : tout est posé */
+@media (prefers-reduced-motion: reduce) {
+  .anime .persoBoite {
+    animation: none;
+  }
+}
+:global(html[data-rl-motion="off"]) .anime .persoBoite {
+  animation: none;
+}
+:global(html[data-discreet="1"]) .anime .persoBoite {
+  animation: none;
+}

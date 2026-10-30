@@ -6,6 +6,7 @@ import { Icone } from "@/components/adn/icons";
 import { Feuille } from "@/components/ui/Feuille";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { Banniere, CadreSceau } from "@/components/profil/Pieces";
+import { PersoSurBandeau } from "@/components/profil/BanniereHeros";
 import { SceauDe, ditSceau } from "@/components/profil/FicheSceau";
 import { PresenceText } from "@/components/presence/Presence";
 import { ordinal } from "@/components/classement/format";
@@ -65,8 +66,10 @@ function Contenu({ c }: { c: CarteData }) {
   return (
     <div className="flex flex-col gap-5 pt-1">
       <div>
-        <div className="overflow-hidden rounded-[16px]">
+        <div className="relative overflow-hidden rounded-[16px]">
           <Banniere banner={c.style.banner} bannerUrl={c.style.bannerUrl} bannerPos={c.style.bannerPos} accent={c.style.accent} className="h-[104px]" />
+          {/* son personnage, debout à droite du bandeau (le sceau est à gauche) */}
+          {c.style.perso && <PersoSurBandeau perso={c.style.perso} taille={c.style.persoTaille} pos={c.style.persoPos} className="[--x:78%]" />}
         </div>
         <div className="-mt-7 flex items-end gap-3 px-3">
           <span className="relative z-[1] shrink-0">

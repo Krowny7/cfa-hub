@@ -234,7 +234,7 @@ export async function lireRival(sb: SupabaseClient, admin: SupabaseClient | null
       rank: place,
       mastery: maitrises.get(id) ?? null,
       niveau: levelInfoFromXp(Number(p?.xp_total ?? 0) || 0).level,
-      style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame },
+      style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame, perso: style.perso, persoTaille: style.persoTaille, persoPos: style.persoPos, ornement: style.ornement },
       rencontres: bilan.rencontres,
       moi: bilan.moi,
       lui: bilan.lui,

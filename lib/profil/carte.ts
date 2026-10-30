@@ -6,7 +6,7 @@ import { getLeaderboardRank } from "@/lib/rating";
 import { DEFAULT_ELO } from "@/lib/ranks";
 import { lireStyle, statsProfil } from "@/lib/profil/donnees";
 import { posesDe, sceauxDe, type EtatSceau } from "@/lib/profil/sceaux";
-import type { StyleProfil } from "@/lib/profil/catalogue";
+import type { StyleBanniere, StyleProfil } from "@/lib/profil/catalogue";
 import { nomTitre } from "@/lib/profil/styles";
 
 // La carte joueur (components/profil/CarteJoueur.tsx), côté serveur : ce
@@ -19,7 +19,8 @@ export type CarteData = {
   id: string;
   nom: string;
   avatarUrl: string | null;
-  style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame">;
+  /** la bannière et le sceau ; le personnage, son cadrage et l'ornement (StyleBanniere) quand la carte les dessine */
+  style: Pick<StyleProfil, "banner" | "bannerUrl" | "bannerPos" | "accent" | "frame"> & Partial<StyleBanniere>;
   /** le titre porté, lisible (« Copiste ») ; null : aucun */
   titre: string | null;
   niveau: number;
@@ -52,7 +53,7 @@ export async function lireCarte(sb: SupabaseClient, id: string, moi: string | nu
       id,
       nom: displayName(p.username, id),
       avatarUrl: p.avatar_url,
-      style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame },
+      style: { banner: style.banner, bannerUrl: style.bannerUrl, bannerPos: style.bannerPos, accent: style.accent, frame: style.frame, perso: style.perso, persoTaille: style.persoTaille, persoPos: style.persoPos, ornement: style.ornement },
       titre: nomTitre(style.titre),
       niveau: levelInfoFromXp(Number(p.xp_total ?? 0) || 0).level,
       elo: r?.elo ?? DEFAULT_ELO,

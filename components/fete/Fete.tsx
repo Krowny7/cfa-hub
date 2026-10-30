@@ -49,7 +49,7 @@ export const touchePasse = (key: string) => key === "Escape" || key === "Esc";
 /** « +50 XP » (le format unique du site) */
 export const texteXp = (xp: number | undefined) => (xp && xp > 0 ? `+${Math.round(xp)} XP` : null);
 
-const NOM_TYPE: Record<TypePiece, string> = { cadre: "Cadre", banniere: "Bannière", titre: "Titre", folio: "Folio" };
+const NOM_TYPE: Record<TypePiece, string> = { cadre: "Cadre", banniere: "Bannière", titre: "Titre", folio: "Folio", ornement: "Ornement" };
 const NOM_RARETE: Record<Rarete, string> = { commune: "commune", rare: "rare", precieuse: "précieuse", legendaire: "légendaire" };
 /** « Cadre · pièce légendaire » */
 export const legendePiece = (p: Piece) => `${NOM_TYPE[p.type]} · pièce ${NOM_RARETE[p.rarete]}`;

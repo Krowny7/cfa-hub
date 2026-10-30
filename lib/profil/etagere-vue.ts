@@ -43,7 +43,7 @@ export type Etagere = {
   folios: number;
 };
 
-export const RAYONS: Record<TypePiece, string> = { cadre: "Cadres", banniere: "Bannières", titre: "Titres", folio: "Folios" };
+export const RAYONS: Record<TypePiece, string> = { cadre: "Cadres", banniere: "Bannières", titre: "Titres", folio: "Folios", ornement: "Ornements" };
 
 /** Sur téléphone, au plus deux pièces animées à l'écran (V3 §3.8). */
 export const ANIMEES_TELEPHONE = 2;
@@ -70,5 +70,5 @@ export function piecesAnimees(pieces: PieceEtagere[], o: { telephone: boolean; f
   return ok;
 }
 
-/** On peut retirer ce qui est porté, sauf ce qui est déjà le défaut (le motif par défaut). */
-export const retirable = (p: Pick<PieceEtagere, "type" | "nue" | "portee">): boolean => p.portee && !(p.type === "banniere" && p.nue === STYLE_DEFAUT.banner) && !(p.type === "cadre" && p.nue === STYLE_DEFAUT.frame);
+/** On peut retirer ce qui est porté, sauf ce qui est déjà le défaut (le motif par défaut, le cadre « Sans cadre », le filet d'encre). */
+export const retirable = (p: Pick<PieceEtagere, "type" | "nue" | "portee">): boolean => p.portee && !(p.type === "banniere" && p.nue === STYLE_DEFAUT.banner) && !(p.type === "cadre" && p.nue === STYLE_DEFAUT.frame) && !(p.type === "ornement" && p.nue === STYLE_DEFAUT.ornement);

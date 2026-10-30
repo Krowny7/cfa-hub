@@ -16,7 +16,8 @@ import { piecesAnimees, resumeEtagere, retirable, type Etagere, type PieceEtager
 import type { Rarete, TypePiece } from "@/lib/profil/pieces";
 
 // Moi › Mes pièces (V3 §3.8) : l'étagère de tout ce qui se porte sur le
-// profil, en quatre rayons (cadres, bannières, titres, folios). Les pièces
+// profil, en cinq rayons (cadres, bannières, titres, folios, ornements de
+// bannière : leur dessin viendra, d'ici là un cadre simple). Les pièces
 // possédées d'abord, qui bougent si elles bougent ; puis les silhouettes
 // (grisées, immobiles), avec leur consigne en clair. Pas de lien sur
 // l'étagère : une pièce se touche, sa fiche dit le reste. Un résumé
@@ -77,6 +78,7 @@ function useTelephone(): boolean {
 function avecPiece(style: StyleProfil, p: PieceEtagere): StyleProfil {
   if (p.type === "cadre") return { ...style, frame: p.nue };
   if (p.type === "banniere") return { ...style, banner: p.nue, bannerUrl: null };
+  if (p.type === "ornement") return { ...style, ornement: p.nue };
   return style;
 }
 
@@ -89,7 +91,7 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
   const [pending, startTransition] = useTransition();
   // ce qui est porté, mis à jour dès qu'un « Porter » réussit (le serveur relit ensuite)
   const [portees, setPortees] = useState<Record<TypePiece, string | null>>(() => {
-    const out = { cadre: null, banniere: null, titre: null, folio: null } as Record<TypePiece, string | null>;
+    const out = { cadre: null, banniere: null, titre: null, folio: null, ornement: null } as Record<TypePiece, string | null>;
     for (const r of etagere.rayons) out[r.type] = r.pieces.find((p) => p.portee)?.nue ?? null;
     return out;
   });
@@ -119,9 +121,10 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
         setMsg({ ok: false, texte: r.erreur });
         return;
       }
-      setPortees((x) => ({ ...x, [p.type]: nue ?? (p.type === "cadre" ? STYLE_DEFAUT.frame : p.type === "banniere" ? STYLE_DEFAUT.banner : null) }));
+      setPortees((x) => ({ ...x, [p.type]: nue ?? (p.type === "cadre" ? STYLE_DEFAUT.frame : p.type === "banniere" ? STYLE_DEFAUT.banner : p.type === "ornement" ? STYLE_DEFAUT.ornement : null) }));
       if (p.type === "cadre") setStyle((st) => ({ ...st, frame: nue ?? STYLE_DEFAUT.frame }));
       if (p.type === "banniere") setStyle((st) => (nue ? { ...st, banner: nue, bannerUrl: null } : { ...st, banner: STYLE_DEFAUT.banner }));
+      if (p.type === "ornement") setStyle((st) => ({ ...st, ornement: nue ?? STYLE_DEFAUT.ornement }));
       if (p.type === "titre") setTitre(nue ? p.nom : null);
       setOuverte((o) => (o ? { ...o, portee: !!nue } : o));
       setMsg({ ok: true, texte: nue ? T.porteeOk : T.retireeOk });
@@ -160,7 +163,7 @@ export function MesPieces({ etagere, carte, disponible }: { etagere: Etagere; ca
             </span>
           </h2>
           {r.pieces.length ? (
-            <ul className={`m-0 grid list-none gap-3 p-0 ${r.type === "folio" ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"}`}>
+            <ul className={`m-0 grid list-none gap-3 p-0 ${r.type === "folio" ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6" : r.type === "ornement" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"}`}>
               {r.pieces.map((p) => (
                 <li key={p.cle} className="min-w-0">
                   <CartePiece p={p} carte={carte} style={style} anime={animees.has(p.cle)} onOuvrir={() => ouvrir(p)} />
@@ -198,6 +201,13 @@ function CartePiece({ p, carte, style, anime, onOuvrir }: { p: PieceEtagere; car
     ) : p.type === "titre" ? (
       <span className="flex h-[76px] items-center justify-center rounded-[10px] border border-line px-2 text-center">
         <TitrePorte titre={p.nom} className="text-[13px] text-white" />
+      </span>
+    ) : p.type === "ornement" ? (
+      // en attendant son dessin : un petit cadre vertical, filet double
+      <span className="flex h-[76px] items-center justify-center">
+        <span className="block h-[70px] w-[46px] rounded-[3px] border border-[var(--ink)] p-[3px]">
+          <span className="block h-full w-full rounded-[1px] border border-line-2" />
+        </span>
       </span>
     ) : p.folio ? (
       <CarteFolio f={p.folio} />

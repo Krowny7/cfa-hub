@@ -4,6 +4,7 @@ import { PageHero } from "@/components/ui/Titles";
 import { RankBadge } from "@/components/ui/RankBadge";
 import { RangProfil } from "@/components/profil/RangProfil";
 import { Banniere, CadreSceau, classesProfil as s, styleAccent } from "@/components/profil/Pieces";
+import { PersoSurBandeau } from "@/components/profil/BanniereHeros";
 import { Provenance } from "@/components/profil/Provenance";
 import { TitrePorte } from "@/components/profil/TitrePorte";
 import { type StyleProfil } from "@/lib/profil/catalogue";
@@ -34,6 +35,10 @@ import { ENTETE } from "@/lib/voice-profil";
 // deux éléments animés : l'insigne et le cadre ; si le cadre bouge, la
 // bannière et les reflets des sceaux posés se figent. Personnaliser pose
 // ses crayons sur la bannière et le sceau (`crayons`).
+// Le personnage du joueur (profile_style.perso) se tient sur le bandeau,
+// posé en bas, entre le sceau et la carte du rang (PersoSurBandeau) : il reste
+// dans le bandeau ; son débordement par le haut est celui de la bannière
+// verticale (podium, Personnaliser), pas celui-ci.
 
 export type EnteteData = {
   id: string;
@@ -147,6 +152,17 @@ export function EnteteJoueur({
               : { fine: "h-[104px] sm:h-[170px]", normale: "h-[136px] sm:h-[250px]", haute: "h-[176px] sm:h-[340px]" }[d.style.bannerH]
           }
         />
+        {/* son personnage, debout sur le bandeau : entre le sceau (à gauche) et la carte du rang (à droite, sur ordinateur) */}
+        {d.style.perso &&
+          (apercu ? (
+            <PersoSurBandeau perso={d.style.perso} taille={d.style.persoTaille} pos={d.style.persoPos} className="z-[1] [--x:74%]" />
+          ) : (
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-[1]">
+              <div className="relative mx-auto h-full w-[min(1240px,calc(100vw_-_2rem))] md:w-[min(1240px,calc(100vw_-_3.5rem))]">
+                <PersoSurBandeau perso={d.style.perso} taille={d.style.persoTaille} pos={d.style.persoPos} className="[--x:68%] sm:[--x:60%] lg:[--x:42%]" />
+              </div>
+            </div>
+          ))}
         {/* la bannière gagnée qui bouge : toute sa surface dit d'où elle vient, au survol ou au toucher */}
         {!apercu && banniereAnimee && d.provenance?.banniere && <Provenance texte={d.provenance.banniere} plein className="z-[2]" />}
         {haut && (

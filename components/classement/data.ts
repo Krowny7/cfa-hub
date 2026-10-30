@@ -9,7 +9,8 @@ import { MIN_QUESTIONS_FOR_SIGNAL, programMastery, type TopicMastery } from "@/l
 import { TOPICS } from "@/lib/practiceTopics";
 import type { LeaderboardRow } from "@/lib/rating";
 import { displayName } from "@/components/classement/format";
-import { lireStyles, nomTitre } from "@/lib/profil/styles";
+import { banniereDepuis, lireStyles, nomTitre } from "@/lib/profil/styles";
+import { ORNEMENT_DEFAUT, type StyleBanniere } from "@/lib/profil/catalogue";
 import { amisDe } from "@/lib/profil/donnees";
 import { DEFAULT_ELO } from "@/lib/ranks";
 import type { AmiRow, BoardRow, NextExam, PastExam } from "@/components/classement/types";
@@ -89,18 +90,23 @@ export async function lastDeltaByUser(admin: SupabaseClient | null, userIds: str
 /**
  * Ce que le podium montre du profil de chaque joueur demandé (table
  * profile_style, lisible par tous les joueurs connectés) : l'image de
- * bannière, fond de sa carte, et le nom du titre porté, sous le pseudo.
- * Joueur sans l'un ni l'autre, table absente : pas d'entrée (le podium prend
- * alors son image par défaut) ; titre absent tant que migration_v3_profil.sql
- * n'est pas collée.
+ * bannière, fond de sa carte, le nom du titre porté, sous le pseudo, et pour
+ * la bannière verticale son personnage (adresse, taille, position) et son
+ * ornement (StyleBanniere : perso, persoTaille, persoPos, ornement).
+ * Joueur sans rien de tout cela, table absente : pas d'entrée (le podium
+ * prend alors son image par défaut et le filet d'encre) ; titre absent tant
+ * que migration_v3_profil.sql n'est pas collée, personnage et ornement tant
+ * que migration_bannieres_perso.sql ne l'est pas.
  */
-export async function podiumDe(sb: SupabaseClient, userIds: string[]): Promise<Map<string, { bannerUrl: string | null; titre: string | null }>> {
-  const out = new Map<string, { bannerUrl: string | null; titre: string | null }>();
-  const lignes = await lireStyles(sb, userIds, ["banner_url", "titre"]);
+export type PodiumJoueur = { bannerUrl: string | null; titre: string | null } & StyleBanniere;
+export async function podiumDe(sb: SupabaseClient, userIds: string[]): Promise<Map<string, PodiumJoueur>> {
+  const out = new Map<string, PodiumJoueur>();
+  const lignes = await lireStyles(sb, userIds, ["banner_url", "titre", "perso_url", "perso_taille", "perso_pos", "ornement"]);
   for (const [id, r] of lignes ?? []) {
     const bannerUrl = typeof r.banner_url === "string" && r.banner_url ? r.banner_url : null;
     const titre = nomTitre(typeof r.titre === "string" ? r.titre : null);
-    if (bannerUrl || titre) out.set(id, { bannerUrl, titre });
+    const banniere = banniereDepuis(r);
+    if (bannerUrl || titre || banniere.perso || banniere.ornement !== ORNEMENT_DEFAUT) out.set(id, { bannerUrl, titre, ...banniere });
   }
   return out;
 }

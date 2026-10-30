@@ -14,7 +14,7 @@ import { sceauxDuJoueur } from "@/lib/profil/sceaux-base";
 import { posesDe } from "@/lib/profil/sceaux";
 import { LIEN_DEFAUT, NOM_DEFAUT, acquisDe } from "@/lib/profil/catalogue";
 import { lireAcquis } from "@/lib/profil/acquis";
-import { titresPortables } from "@/lib/profil/styles";
+import { ornementsPortables, persoDisponible, titresPortables } from "@/lib/profil/styles";
 import { lireTrophees } from "@/lib/trophees";
 import { folioPorte } from "@/lib/profil/etagere";
 import { journalDe } from "@/lib/profil/journal";
@@ -50,7 +50,7 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
   const statsLues = statsProfil(id, supabase);
   const maitrisesLues = masteryByUser(admin, [id]);
   const sceauxLus = statsLues.then((s) => sceauxDuJoueur(id, s));
-  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons, neuves] = await Promise.all([
+  const [place, masteries, { style, disponible, pins, journal: visibiliteJournal }, lien, stats, amis, nom, moyennes, answers, trophees, progress, sceaux, datesPic, acquisLu, journal, saisons, neuves, persoDispo] = await Promise.all([
     getLeaderboardRank(supabase, id),
     maitrisesLues,
     lireStyle(supabase, id),
@@ -78,8 +78,12 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
     lireSaisons(supabase, id),
     // les sept tuiles de plus : toutes, il peut poser n'importe laquelle ; le Journal lui est toujours ouvert
     lireTuilesNeuves({ id, sb: supabase, admin, moi: true, besoins: BESOINS_TOUS, ouvert: true, elo: rating?.elo ?? DEFAULT_ELO }),
+    // le personnage et l'ornement de la bannière : la base a-t-elle leurs colonnes (migration_bannieres_perso.sql) ?
+    persoDisponible(supabase),
   ]);
-  const titres = titresPortables({ ...acquisLu, sceaux: sceaux.etats, datesPic }, style.titre);
+  const acquisComplet = { ...acquisLu, sceaux: sceaux.etats, datesPic };
+  const titres = titresPortables(acquisComplet, style.titre);
+  const ornements = ornementsPortables(acquisComplet, style.ornement);
 
   const xpTotal = Number(profil.xp_total ?? 0) || 0;
   const lvl = levelInfoFromXp(xpTotal);
@@ -151,6 +155,8 @@ export async function ModePersonnaliser({ id, supabase, profil, rating }: { id: 
         donnees={donnees}
         banqueGifs={!!process.env.KLIPY_API_KEY}
         titres={titres}
+        ornements={ornements}
+        persoDispo={persoDispo}
       />
     </div>
   );

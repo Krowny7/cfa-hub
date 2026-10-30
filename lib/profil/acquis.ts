@@ -21,6 +21,8 @@ export type ConditionProfil =
   | { k: "pic"; palier: number }
   /** n sceaux à la dorure */
   | { k: "dorures"; n: number }
+  /** n sceaux gagnés, à n'importe quel palier (l'encre suffit) : « ton premier sceau », « cinq sceaux » */
+  | { k: "sceaux"; n: number }
   /** un sceau à ce palier au moins (1 encre, 2 vermillon, 3 dorure) */
   | { k: "sceau"; cle: string; palier: number };
 
@@ -69,6 +71,8 @@ export const champsBaseVides = (): Pick<Acquis, "codex" | "trophees" | "fil" | "
 const palierSceau = (a: Acquis, cle: string): number => a.sceaux.find((e) => e.def.cle === cle)?.palier ?? 0;
 /** Les sceaux à la dorure. */
 export const dorures = (a: Acquis) => a.sceaux.filter((e) => e.palier === 3).length;
+/** Les sceaux gagnés, à n'importe quel palier. */
+export const sceauxGagnes = (a: Acquis) => a.sceaux.filter((e) => e.palier >= 1).length;
 
 /** Un id de palier du fil rouge : « fil:trophees:4 ». */
 export const idFil = (chapitre: string, palier: number) => `fil:${chapitre}:${palier}`;
@@ -84,6 +88,8 @@ export function remplie(c: Condition | null, a: Acquis): boolean {
       return a.pic >= c.palier;
     case "dorures":
       return dorures(a) >= c.n;
+    case "sceaux":
+      return sceauxGagnes(a) >= c.n;
     case "sceau":
       return palierSceau(a, c.cle) >= c.palier;
     case "codex":
@@ -115,6 +121,12 @@ export function dateGagnee(c: Condition | null, a: Acquis): DatePalier | null {
     case "dorures": {
       // la n-ième dorure, si toutes sont datées
       const dates = a.sceaux.filter((e) => e.palier === 3).map((e) => e.dates?.[2] ?? null);
+      if (dates.some((d) => !d)) return null;
+      return (dates as DatePalier[]).sort((x, y) => x.iso.localeCompare(y.iso))[c.n - 1] ?? null;
+    }
+    case "sceaux": {
+      // le n-ième sceau gagné, si tous sont datés (la date de leur premier palier)
+      const dates = a.sceaux.filter((e) => e.palier >= 1).map((e) => e.dates?.[0] ?? null);
       if (dates.some((d) => !d)) return null;
       return (dates as DatePalier[]).sort((x, y) => x.iso.localeCompare(y.iso))[c.n - 1] ?? null;
     }

@@ -19,6 +19,8 @@ import {
   SectionCouleur,
   SectionLinkedin,
   SectionNom,
+  SectionOrnement,
+  SectionPersonnage,
   SectionPhoto,
   SectionPoses,
   SectionTitre,
@@ -31,7 +33,7 @@ import { poserSceaux } from "@/lib/profil/actions-sceaux";
 import { createClient } from "@/lib/supabase/browser";
 import { posesDe } from "@/lib/profil/sceaux";
 import type { DonneesBlocs } from "@/lib/profil/blocs-donnees";
-import type { TitrePortable } from "@/lib/profil/styles";
+import type { OrnementChoix, TitrePortable } from "@/lib/profil/styles";
 import { couleurCss, linkedinLisible, nettoyerNom, normaliserLinkedin, type Acquis, type NomProfil, type StyleProfil, type Visibilite } from "@/lib/profil/catalogue";
 import { ENTETE, PERSO, provenances } from "@/lib/voice-profil";
 import { EDITEUR_PAGE } from "@/lib/voice-editeur";
@@ -84,6 +86,8 @@ export function Personnaliser({
   donnees,
   banqueGifs = false,
   titres = [],
+  ornements = [],
+  persoDispo = false,
 }: {
   carte: EnteteData;
   /** ce qui ouvre les pièces gagnées (questions, pic, sceaux, dates) */
@@ -103,6 +107,10 @@ export function Personnaliser({
   banqueGifs?: boolean;
   /** les titres qu'il peut porter (gagnés, ou déjà porté), lus par le serveur */
   titres?: TitrePortable[];
+  /** les ornements de bannière : ceux qu'il possède ouverts, les autres grisés avec leur condition (lus par le serveur) */
+  ornements?: OrnementChoix[];
+  /** la base a les colonnes du personnage et de l'ornement (migration_bannieres_perso.sql) ; sinon une ligne dit que la fonction arrive */
+  persoDispo?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -336,7 +344,13 @@ export function Personnaliser({
         <div className="pt-2">
           {(zone === "banniere" || zone === "sceau") && <Regle />}
           <div className="flex flex-col gap-6">
-            {zone === "banniere" && <SectionBanniere b={b} gains={gains} onEnvoi={setEnvoiImage} />}
+            {zone === "banniere" && (
+              <>
+                <SectionBanniere b={b} gains={gains} onEnvoi={setEnvoiImage} />
+                <SectionPersonnage b={b} dispo={persoDispo} onEnvoi={setEnvoiImage} nom={carte.name} />
+                <SectionOrnement b={b} ornements={ornements} dispo={persoDispo} />
+              </>
+            )}
             {zone === "sceau" && (
               <>
                 <SectionPhoto

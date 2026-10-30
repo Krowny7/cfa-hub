@@ -162,7 +162,8 @@ export const TITRE_CARTE_MAX = 60;
 export const TEXTE_CARTE_MAX = 280;
 /**
  * les images en haut des modules et des cartes (le dossier d'images en tient
- * 12 : 6 médias, 4 images en haut, et 2 envois en attente ; au-delà, l'éditeur
+ * 12 : 6 médias, 4 images en haut, et 2 envois en attente ; 14 avec le
+ * personnage de la bannière, migration_bannieres_perso.sql ; au-delà, l'éditeur
  * fait ranger le dossier par le serveur, rangerFichiersEnAttente, puis renvoie)
  */
 export const IMAGES_HAUT_MAX = 4;

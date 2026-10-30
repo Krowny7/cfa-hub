@@ -22,7 +22,7 @@ const check = (label: string, cond: boolean, extra = "") => {
 };
 const compte = (html: string, re: RegExp) => (html.match(re) ?? []).length;
 /** Le diptyque « Ton rang | La Grande Salle » seul (le podium porte lui aussi un arc électrique). */
-const diptyqueDe = (html: string) => html.slice(html.indexOf('aria-label="Ton rang et La Grande Salle"'), html.indexOf('id="cl-duels"'));
+const diptyqueDe = (html: string) => html.slice(html.indexOf('aria-label="Ton rang et La Grande Salle"'), html.indexOf('id="cl-trouver"'));
 /** Le panneau d'un onglet du classement général. */
 const panneauDe = (html: string, cle: string) => html.slice(html.indexOf(`id="cl-panel-${cle}"`)).split('role="tabpanel"')[1] ?? "";
 const routeur = { back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {} };
@@ -98,14 +98,13 @@ console.log("# la page");
 {
   const html = rendre(<ClassementView data={data} />);
   check("en-tête : « S'affronter · Finance », le titre, plus de pastilles de rang par domaine", html.includes("S'affronter · Finance") && html.includes("Se mesurer aux autres") && !html.includes("Tes rangs par domaine"));
-  const ordre = ["Ton rang et La Grande Salle", 'id="cl-trouver"', 'id="cl-duels"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
-  check("l'ordre : le diptyque, la bande Trouver un adversaire, Duels, Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
+  const ordre = ["Ton rang et La Grande Salle", 'id="cl-trouver"', 'id="cl-tableau"'].map((x) => html.indexOf(x));
+  check("l'ordre : le diptyque, la bande Trouver un adversaire, Classement général", ordre.every((x) => x > 0) && ordre.every((x, i) => i === 0 || x > ordre[i - 1]), ordre.join(" < "));
   check("le diptyque : « La Grande Salle » d'abord (la pièce maîtresse), puis la carte du duel (repère Léonard)", html.includes('data-leonard="rang"') && html.indexOf('aria-label="La Grande Salle"') < html.indexOf('data-leonard="rang"'));
   check("la bande de recherche : un formulaire vers /people, le champ q, une liste de suggestions", html.includes('action="/people"') && html.includes('name="q"') && html.includes('role="search"') && html.includes('role="combobox"') && html.includes('aria-controls="cl-trouver-liste"'));
   check("la carte du duel : ton ELO en haut, la peinture des duels, « Lancer un duel » vers /duel", html.includes("classement-duels") && /1\s?512 <small>ELO<\/small>/.test(html) && html.includes("Lancer un duel") && html.includes('href="/duel"'));
   check("la carte du duel : plus d'Autour de toi ni de phrase du rival", !html.includes("Autour de toi") && !html.includes("devant toi"));
-  const carteDuels = html.slice(html.lastIndexOf("<section", html.indexOf('id="cl-duels"')), html.indexOf("</section>", html.indexOf('id="cl-duels"')));
-  check("la carte Duels du bas n'a plus la peinture (elle est dans le diptyque)", carteDuels.length > 0 && !carteDuels.includes("classement-duels"));
+  check("plus de carte « Duels » (en cours, à revoir) : retirée à la demande de l'utilisateur", !html.includes('id="cl-duels"') && !html.includes("Tous tes duels"));
   check("La Grande Salle : l'examen, ses inscrits, le bouton d'inscription", html.includes("Je m'inscris") && html.includes("14 inscrits") && html.includes("L'examen classé"));
   check("l'arc électrique n'est là que s'il y a de l'enjeu (palier à 38 points, pas de défi reçu : non)", compte(diptyqueDe(html), /data-arc="contour"/g) === 0);
   const enjeu = rendre(<ClassementView data={{ ...data, openDuels: [duel("d9", { status: "pending", incoming: true, opponentName: "Hugo", ...attente })] }} />);
@@ -113,16 +112,6 @@ console.log("# la page");
   check("l'emplacement du lot 2 est vide (ni rival, ni maîtres)", !html.includes("Ton plus grand rival") && !html.includes("Les maîtres de chaque matière"));
 }
 
-console.log("# la carte Duels (fusion de « en cours » et « à revoir »)");
-{
-  const html = rendre(<ClassementView data={data} />);
-  check("une seule carte « Duels », avec « Tous tes duels »", compte(html, /id="cl-duels"/g) === 1 && html.includes("Tous tes duels") && !html.includes(">Duels en cours</h3>"));
-  check("la partie à reprendre : « Contre Hugo » et « Reprendre » vers la partie", html.includes("Contre Hugo") && /href="\/duel\/d1"[^>]*>[^]*Reprendre/.test(html));
-  check("le défi envoyé qui attend : « Karim n'a pas encore joué » et « En attente »", html.includes("Karim n'a pas encore joué") && html.includes("En attente"));
-  check("« À revoir » : 2 duels à relire (le 3e a plus de 14 jours), la fenêtre de revue", html.includes("2 duels à relire") && html.includes("restent ouvertes 14 jours"));
-  const vide = rendre(<ClassementView data={{ ...data, openDuels: [], recentDuels: [] }} />);
-  check("sans duel : « Aucun duel en cours » et « Rien à revoir »", vide.includes("Aucun duel en cours") && vide.includes("Rien à revoir") && !vide.includes("Reprendre"));
-}
 
 console.log("# les onglets du classement général");
 {

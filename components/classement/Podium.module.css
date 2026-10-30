@@ -8,7 +8,11 @@
    Léger : textures et CSS, un seul arc SVG ; l'encre dérive par transform
    (rien à repeindre) ; tout se met en pause hors écran (data-hors, posé par
    useHorsEcran) ; figé avec prefers-reduced-motion et data-rl-motion="off" ;
-   coupé en mode discret. Le décor ne capte jamais un clic. */
+   coupé en mode discret. Le décor ne capte jamais un clic.
+   La bannière « façon jeu » : l'ornement du joueur (SVG, BanniereHeros.tsx) et
+   son personnage, qui dépasse du haut de la carte (jusqu'à 20 % de sa hauteur)
+   et d'un rien sur les côtés (3 % : moins que l'écart entre deux cartes) ;
+   le podium réserve la place de ces têtes au-dessus de lui. */
 
 .podium {
   display: flex;
@@ -17,6 +21,10 @@
   gap: 2%;
   width: 100%;
   perspective: 1000px;
+}
+/* un personnage dépasse du haut d'une carte : la place de sa tête (20 % de la hauteur d'une carte de 36 % de large : 12 % du podium, 84 px au plus) */
+.podium[data-perso="1"] {
+  padding-top: min(12%, 84px);
 }
 
 .banniere {
@@ -81,6 +89,16 @@
   to {
     transform: translate3d(var(--pas), calc(var(--pas) * -1), 0);
   }
+}
+
+/* avec un personnage : l'insigne, plus petit, passe dans le coin du haut (à droite de la place) et laisse le milieu à la tête */
+.avecPerso {
+  --ins: max(36px, 26cqw);
+}
+.avecPerso .insigne,
+.avecPerso .arcWrap {
+  top: calc(4.5cqw + var(--ins) / 2);
+  left: calc(100% - 6.5cqw - var(--ins) / 2);
 }
 
 /* la carte elle-même, rentrée de l'épaisseur du cadre (la pointe aussi) */

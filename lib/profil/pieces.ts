@@ -1,8 +1,8 @@
 // Les pièces de collection : un modèle unique pour tout ce qui se porte sur
-// le profil (cadres, bannières, titres, folios), d'où que cela vienne : les
+// le profil (cadres, bannières, titres, folios, ornements de bannière), d'où que cela vienne : les
 // cadres et motifs du profil, les cosmétiques et les titres du Codex, les
 // trophées, le fil rouge, les programmes menés. Une pièce a une clé unique
-// « <type>:<nue> » ; profile_style stocke la clé nue. Pas d'inventaire : une
+// « <type>:<nue> » ; profile_style stocke la clé nue (frame, banner, titre, folio, ornement). Pas d'inventaire : une
 // pièce se possède parce que sa condition est remplie (lib/profil/acquis.ts).
 // Rien ne s'achète, rien ne se tire au sort, une pièce portée ne se reprend pas.
 // Module neutre (client et serveur).
@@ -19,7 +19,7 @@ import { conditionPiece } from "@/lib/voice-profil";
 
 export { dateGagnee, remplie, type Acquis, type Condition } from "@/lib/profil/acquis";
 
-export type TypePiece = "cadre" | "banniere" | "titre" | "folio";
+export type TypePiece = "cadre" | "banniere" | "titre" | "folio" | "ornement";
 export type Rarete = "commune" | "rare" | "precieuse" | "legendaire";
 export type OriginePiece = "libre" | "questions" | "rang" | "sceau" | "codex" | "trophee" | "fil" | "programme";
 
@@ -27,7 +27,7 @@ export type Piece = {
   /** clé unique « <type>:<nue> » : « cadre:liquide-diamant », « titre:maitre:fsa », « folio:mains » */
   cle: string;
   type: TypePiece;
-  /** ce que stocke profile_style (frame, banner, titre, folio) : la clé sans le type */
+  /** ce que stocke profile_style (frame, banner, titre, folio, ornement) : la clé sans le type */
   nue: string;
   nom: string;
   /** une ligne : ce que c'est */
@@ -46,7 +46,7 @@ export type Piece = {
   ordre: number;
 };
 
-export const TYPES_PIECE: TypePiece[] = ["cadre", "banniere", "titre", "folio"];
+export const TYPES_PIECE: TypePiece[] = ["cadre", "banniere", "titre", "folio", "ornement"];
 /** Le programme des pièces qui n'en viennent d'aucun (même valeur que PROGRAMME_GLOBAL du Codex, lib/codex/programmes.ts). */
 const PROGRAMME_GLOBAL = "global";
 
@@ -75,6 +75,8 @@ function rareteProfil(c: ConditionProfil | null): Rarete {
       return c.palier >= 3 ? "legendaire" : c.palier === 2 ? "precieuse" : "rare";
     case "dorures":
       return "legendaire";
+    case "sceaux":
+      return c.n <= 1 ? "commune" : c.n <= 5 ? "rare" : c.n <= 10 ? "precieuse" : "legendaire";
   }
 }
 
@@ -157,6 +159,7 @@ function programmeCodex(type: TypePiece, quete: string): string {
 type Declaree = Omit<Piece, "type" | "nue" | "ordre" | "programme">;
 const trophees = (palier: 1 | 2 | 3 | 4, n: number, sources?: number): Condition => ({ k: "trophees", palier, n, ...(sources ? { sources } : {}) });
 const fil = (chapitre: string, palier: number): Condition => ({ k: "fil", chapitre, palier });
+const sceaux = (n: number): Condition => ({ k: "sceaux", n });
 const unDe = (...conditions: Condition[]): Condition => ({ k: "unDe", conditions });
 
 const DECLAREES: Declaree[] = [
@@ -169,6 +172,16 @@ const DECLAREES: Declaree[] = [
   { cle: "titre:encre-vie", nom: "Encre de toute une vie", description: "Trois cents jours d'encre au compteur.", obtention: obtentionFil("encre", 6), rarete: "legendaire", origine: "fil", condition: fil("encre", 6) },
   { cle: "titre:entretien", nom: "La main gardée", description: "A gardé la main douze semaines après l'examen.", obtention: obtentionFil("entretien", 2), rarete: "precieuse", origine: "fil", condition: fil("entretien", 2) },
   { cle: "banniere:route-milan", nom: "La route de Milan", description: "Une route au trait qui se dessine jusqu'à Milan.", obtention: "Mener le CFA Niveau I à son terme", rarete: "legendaire", origine: "programme", condition: { k: "programme", programme: PROGRAMME }, anime: "css" },
+
+  // Les ornements de la bannière verticale (le cadre ornemental qui l'entoure, avec son fronton et son socle ;
+  // le personnage envoyé par le joueur le déborde). Quatre paliers, sobres : un filet d'encre pour tous, puis
+  // l'apprenti (un premier sceau), le compagnon (cinq sceaux) et le maître (le premier « Maître de… » du fil
+  // rouge). Le dessin de chacun est à faire (la clé nue est ce que profile_style.ornement garde) ; d'ici là
+  // l'étagère et Personnaliser les montrent par leur nom. On développera plus tard : d'autres paliers viendront.
+  { cle: "ornement:filet", nom: "Filet d'encre", description: "Un simple filet d'encre, tiré à la règle, autour de ta bannière.", obtention: "Libre", rarete: "commune", origine: "libre", condition: null },
+  { cle: "ornement:cartouche", nom: "Cartouche de l'apprenti", description: "Un cartouche aux coins retaillés, comme au pied des planches de la bottega.", obtention: "Gagner ton premier sceau", rarete: "commune", origine: "sceau", condition: sceaux(1) },
+  { cle: "ornement:laurier", nom: "Laurier du compagnon", description: "Deux branches de laurier qui se rejoignent au-dessus de ton personnage.", obtention: "Gagner cinq sceaux", rarete: "rare", origine: "sceau", condition: sceaux(5) },
+  { cle: "ornement:fronton", nom: "Fronton du maître", description: "Un fronton à la dorure sobre, comme au-dessus du portail d'une bottega.", obtention: obtentionFil("maitres", 1), rarete: "precieuse", origine: "fil", condition: fil("maitres", 1) },
 ];
 
 // ── Folios : un dessin de Léonard par acte clos et par « Maître de… » ──
@@ -219,7 +232,7 @@ const ouQuete = (c: Condition, quetes: string[] | undefined): Condition => {
 
 function assembler(): Piece[] {
   const out: Piece[] = [];
-  const ordre: Record<TypePiece, number> = { cadre: 0, banniere: 0, titre: 0, folio: 0 };
+  const ordre: Record<TypePiece, number> = { cadre: 0, banniere: 0, titre: 0, folio: 0, ornement: 0 };
   const ajouter = (p: Omit<Piece, "type" | "nue" | "ordre">) => {
     const type = p.cle.slice(0, p.cle.indexOf(":")) as TypePiece;
     out.push({ ...p, type, nue: cleNue(p.cle), ordre: ordre[type]++ });

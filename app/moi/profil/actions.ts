@@ -9,13 +9,14 @@ import { nettoyerNom, normaliserLinkedin, type StyleProfil, type Visibilite } fr
 import { lireAcquis } from "@/lib/profil/acquis";
 import { ecrireStyle, validerStyle } from "@/lib/profil/styles";
 import { BUCKET_MEDIAS, BUCKET_VIDEOS, fichiersGardes, validerDisposition } from "@/lib/profil/disposition";
+import { fichierPerso, fichiersGardesStyle, persoValide } from "@/lib/profil/perso";
 import { TYPES_PIECE, pieceNue, type TypePiece } from "@/lib/profil/pieces";
 import { stylePorte } from "@/lib/profil/etagere";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Enregistrer son profil : le style (revalidé : cadres, bannières, titre et
-// folio gagnés, ou déjà portés, seulement ; image de bannière et médias
-// venus de son dossier ; la disposition des blocs), le LinkedIn (adresse
+// Enregistrer son profil : le style (revalidé : cadres, bannières, titre,
+// folio et ornement gagnés, ou déjà portés, seulement ; image de bannière,
+// personnage et médias venus de son dossier ; la disposition des blocs), le LinkedIn (adresse
 // linkedin.com/in normalisée, visibilité) et le prénom et nom (visibilité).
 // Écriture par le client service role : les joueurs n'ont pas le droit
 // d'écrire ces tables eux-mêmes (migration_profil.sql).
@@ -52,9 +53,10 @@ async function contexteStyle(supabase: SupabaseClient, admin: SupabaseClient, us
  * envoi (trop de fichiers en attente), l'éditeur appelle ceci avec la page
  * en cours ; on supprime les fichiers que ni la page enregistrée ni celle en
  * cours n'utilisent, puis l'éditeur renvoie une fois. Rien d'autre n'est
- * écrit. Rend vrai si au moins un fichier est parti.
+ * écrit. Rend vrai si au moins un fichier est parti. `persoEnCours` : le
+ * personnage du brouillon (Personnaliser › Bannière), gardé lui aussi.
  */
-export async function rangerFichiersEnAttente(brouillon: unknown): Promise<boolean> {
+export async function rangerFichiersEnAttente(brouillon: unknown, persoEnCours: unknown = null): Promise<boolean> {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
@@ -68,6 +70,10 @@ export async function rangerFichiersEnAttente(brouillon: unknown): Promise<boole
   if (!lu.disponible) return false;
   const enCours = validerDisposition(brouillon, { images: dossier(BUCKET_MEDIAS), videos: dossier(BUCKET_VIDEOS) }).disposition;
   const gardes = new Set([...fichiersGardes(lu.style.disposition), ...fichiersGardes(enCours)]);
+  for (const perso of [lu.style.perso, persoValide(persoEnCours, dossier(BUCKET_MEDIAS))]) {
+    const nom = fichierPerso(perso);
+    if (nom) gardes.add(nom);
+  }
   let parti = false;
   for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
     try {
@@ -129,6 +135,12 @@ export async function enregistrerProfil(input: {
       if (style.folio !== porte.folio) refus.push("le folio (la base n'est pas encore prête)");
       style = { ...style, titre: porte.titre, folio: porte.folio };
     }
+    // le personnage et l'ornement de la bannière (migration_bannieres_perso.sql) : ce qu'il porte ne change pas tant que la base manque
+    if (!s.perso) {
+      if (style.perso !== porte.perso) refus.push("le personnage (la base n'est pas encore prête)");
+      if (style.ornement !== porte.ornement) refus.push("l'ornement (la base n'est pas encore prête)");
+      style = { ...style, perso: porte.perso, persoTaille: porte.persoTaille, persoPos: porte.persoPos, ornement: porte.ornement };
+    }
     // disposition, ambiance et hauteur de bannière (migration_profil_medias.sql)
     if (!s.disposition) refus.push("la disposition et l'ambiance (la base n'est pas encore prête)");
   }
@@ -150,7 +162,7 @@ export async function enregistrerProfil(input: {
 
   // ménage : les fichiers de ses dossiers (images, vidéos, images en haut) que la page n'utilise plus
   if (dispositionOk) {
-    const gardes = fichiersGardes(style.disposition);
+    const gardes = fichiersGardesStyle(style);
     for (const bucket of [BUCKET_MEDIAS, BUCKET_VIDEOS]) {
       try {
         const { data: objets } = await admin.storage.from(bucket).list(user.id, { limit: 100 });
@@ -169,15 +181,15 @@ export async function enregistrerProfil(input: {
 export type PorterResultat = { ok: true } | { ok: false; erreur: string };
 
 /** Le champ de profile_style que porte un type de pièce. */
-const CHAMP: Record<TypePiece, "frame" | "banner" | "titre" | "folio"> = { cadre: "frame", banniere: "banner", titre: "titre", folio: "folio" };
+const CHAMP: Record<TypePiece, "frame" | "banner" | "titre" | "folio" | "ornement"> = { cadre: "frame", banniere: "banner", titre: "titre", folio: "folio", ornement: "ornement" };
 
 /**
  * Porter une pièce (sa clé nue) ou retirer celle du type (null), depuis
  * l'étagère « Mes pièces » : seul ce champ change (porter un folio pose son
  * bloc sur la page, porter une bannière retire l'image), le reste du style
  * est réécrit tel quel. Une pièce pas encore gagnée est refusée. Le titre
- * et le folio attendent migration_v3_profil.sql §1 : sans elle, rien ne
- * change et l'étagère le dit.
+ * et le folio attendent migration_v3_profil.sql §1, l'ornement
+ * migration_bannieres_perso.sql : sans elles, rien ne change et l'étagère le dit.
  */
 export async function porterPiece(type: TypePiece, nue: string | null): Promise<PorterResultat> {
   if (!TYPES_PIECE.includes(type) || (nue !== null && (typeof nue !== "string" || !pieceNue(type, nue)))) return { ok: false, erreur: "Cette pièce n'existe pas." };
@@ -208,6 +220,7 @@ export async function porterPiece(type: TypePiece, nue: string | null): Promise<
     if (type === "folio" && style.disposition !== porte.disposition) await ecrireStyle(admin, user.id, { ...style, disposition: porte.disposition }, quand);
     return { ok: false, erreur: "Les titres et les folios arrivent bientôt : la base n'est pas encore prête." };
   }
+  if (type === "ornement" && !s.perso) return { ok: false, erreur: "Les ornements arrivent bientôt : la base n'est pas encore prête." };
   revalidatePath(`/people/${user.id}`);
   revalidatePath("/moi");
   return { ok: true };

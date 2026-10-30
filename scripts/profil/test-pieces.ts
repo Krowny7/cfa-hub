@@ -23,6 +23,7 @@ import { CADRES, MOTIFS, acquisDe, dateGagnee as dateGagneeCatalogue, remplie as
 import { codexDepuis, lireAcquis, type Acquis, type Condition } from "@/lib/profil/acquis";
 import { ORDRE_SOURCES_TROPHEE, SOURCES_TROPHEE, compter, lignesCiblees, lireTrophees, mesTropheesDepuis, mesureTrophees, palierCiblee, palierTrophee, type LigneTrophee, type SourceTrophee } from "@/lib/trophees";
 import type { CosmetiqueCodex } from "@/lib/codex/types";
+import type { EtatSceau } from "@/lib/profil/sceaux";
 
 let ko = 0;
 const check = (label: string, cond: boolean, extra = "") => {
@@ -73,7 +74,8 @@ async function main() {
     // les expressions des colonnes de profile_style : titre et folio, celles des
     // CHECK de migration_v3_profil.sql §1 ; frame et banner n'ont pas de CHECK
     // en base (la validation est côté site) : on leur impose celle du folio
-    const COLONNES: Record<string, RegExp> = { cadre: /^[a-z0-9_-]{2,60}$/, banniere: /^[a-z0-9_-]{2,60}$/, titre: /^[a-z0-9:_-]{2,80}$/, folio: /^[a-z0-9_-]{2,60}$/ };
+    // (l'ornement : celle de migration_bannieres_perso.sql)
+    const COLONNES: Record<string, RegExp> = { cadre: /^[a-z0-9_-]{2,60}$/, banniere: /^[a-z0-9_-]{2,60}$/, titre: /^[a-z0-9:_-]{2,80}$/, folio: /^[a-z0-9_-]{2,60}$/, ornement: /^[a-z0-9_-]{2,60}$/ };
     const hors = PIECES.filter((p) => !COLONNES[p.type].test(p.nue));
     check("toute clé nue respecte l'expression de sa colonne", hors.length === 0, hors.map((p) => p.cle).join(", "));
     check("« maitre:fixed_income » (trait bas) est une clé nue de titre", !!pieceNue("titre", "maitre:fixed_income"));
@@ -456,11 +458,11 @@ async function main() {
     const ecritSansV3 = await ecrireStyle(admin(["titre", "folio"]), "u1", aEcrire, "2026-10-17T00:00:00Z");
     check(
       "ecrireStyle sans §1 : réécrit sans titre ni folio, cadre et disposition enregistrés comme aujourd'hui",
-      !ecritSansV3.error && !ecritSansV3.titreFolio && ecritSansV3.disposition && ecrits.length === 2 && !ecrits[1].includes("titre") && !ecrits[1].includes("folio") && ecrits[1].includes("frame") && ecrits[1].includes("layout"),
+      !ecritSansV3.error && !ecritSansV3.titreFolio && ecritSansV3.disposition && ecrits.length === 3 && !ecrits[2].includes("titre") && !ecrits[2].includes("folio") && ecrits[2].includes("frame") && ecrits[2].includes("layout"),
     );
     ecrits.length = 0;
     const sansMedias = await ecrireStyle(admin(["titre", "folio", "layout"]), "u1", aEcrire, "2026-10-17T00:00:00Z");
-    check("ecrireStyle sans §1 ni médias : le reste (cadre, bannière…) s'enregistre", !sansMedias.error && !sansMedias.titreFolio && !sansMedias.disposition && ecrits.length === 3 && ecrits[2].includes("frame") && !ecrits[2].includes("layout"));
+    check("ecrireStyle sans §1 ni médias : le reste (cadre, bannière…) s'enregistre", !sansMedias.error && !sansMedias.titreFolio && !sansMedias.disposition && ecrits.length === 4 && ecrits[3].includes("frame") && !ecrits[3].includes("layout"));
     const sansTable = await ecrireStyle(admin("table"), "u1", aEcrire, "2026-10-17T00:00:00Z");
     check("ecrireStyle sans la table : l'erreur remonte (« la base n'est pas encore prête »)", !!sansTable.error && /does not exist/.test(sansTable.error.message));
 
@@ -531,6 +533,140 @@ async function main() {
     check("nomTitre : le nom lisible ; aucun ou inconnu → null", nomTitre("copiste") === "Copiste" && nomTitre(null) === null && nomTitre("roi") === null);
     const long = "Maître de la très longue matière imaginaire";
     check(`titreCourt : ${TITRE_MAX} caractères au plus, avec une ellipse`, titreCourt("Copiste") === "Copiste" && titreCourt(long).length <= TITRE_MAX && titreCourt(long).endsWith("…"));
+
+    // ── Les ornements de bannière et le personnage (migration_bannieres_perso.sql) ──
+    console.log("\n# Ornements, personnage (lib/profil/styles.ts, perso.ts)");
+    const { ORNEMENT_DEFAUT } = await import("@/lib/profil/catalogue");
+    const { ornementsPortables } = await import("@/lib/profil/styles");
+    const P = await import("@/lib/profil/perso");
+    const sceau = (cle: string, palier: 0 | 1 | 2 | 3, dates?: { iso: string; avant: boolean }[]): EtatSceau => ({ def: { cle, famille: "regularite", unite: "jours", seuils: [7, 30, 100], difficulte: 1 }, palier, valeur: 0, questions: null, prochain: null, avance: 0, ...(dates ? { dates } : {}) });
+    const orn = piecesDuType("ornement");
+    check("quatre ornements : filet, cartouche, laurier, fronton, dans cet ordre", egal(orn.map((p) => p.nue), ["filet", "cartouche", "laurier", "fronton"]) && TYPES_PIECE.includes("ornement") && ORNEMENT_DEFAUT === "filet" && STYLE_DEFAUT.ornement === "filet");
+    check("le filet d'encre est libre (à tous), les trois autres se gagnent", pieceNue("ornement", "filet")?.condition === null && orn.slice(1).every((p) => p.condition !== null) && pieceNue("ornement", "filet")?.origine === "libre");
+    check(
+      "conditions : cartouche = 1 sceau, laurier = 5 sceaux, fronton = fil rouge « maîtres » palier 1",
+      egal(pieceNue("ornement", "cartouche")?.condition, { k: "sceaux", n: 1 }) && egal(pieceNue("ornement", "laurier")?.condition, { k: "sceaux", n: 5 }) && egal(pieceNue("ornement", "fronton")?.condition, { k: "fil", chapitre: "maitres", palier: 1 }),
+    );
+    check("chaque ornement a un nom, une description courte et une consigne en clair", orn.every((p) => p.nom.trim() && p.description.length <= 100 && p.obtention.trim()) && !!pieceNue("ornement", "fronton")?.obtention.startsWith("Fil rouge : "), pieceNue("ornement", "fronton")?.obtention);
+    check("raretés : filet et cartouche communs, laurier rare, fronton précieux", egal(orn.map((p) => p.rarete), ["commune", "commune", "rare", "precieuse"]));
+    const cinq = [1, 2, 3, 4, 5].map((i) => sceau(`s${i}`, 1, [{ iso: `2026-10-0${i}`, avant: false }]));
+    check(
+      "condition « sceaux » : 0 sceau → rien ; un sceau à palier 0 ne compte pas ; 1 → le cartouche ; 5 → le laurier",
+      !remplie({ k: "sceaux", n: 1 }, a()) && !remplie({ k: "sceaux", n: 1 }, a({ sceaux: [sceau("x", 0)] })) && remplie({ k: "sceaux", n: 1 }, a({ sceaux: [sceau("x", 1)] })) && !remplie({ k: "sceaux", n: 5 }, a({ sceaux: cinq.slice(0, 4) })) && remplie({ k: "sceaux", n: 5 }, a({ sceaux: cinq })),
+    );
+    check(
+      "sceaux : la date est celle du n-ième sceau gagné (si tous sont datés), sinon inconnue",
+      egal(dateGagnee({ k: "sceaux", n: 1 }, a({ sceaux: [...cinq].reverse() })), { iso: "2026-10-01", avant: false }) && egal(dateGagnee({ k: "sceaux", n: 5 }, a({ sceaux: cinq })), { iso: "2026-10-05", avant: false }) && dateGagnee({ k: "sceaux", n: 1 }, a({ sceaux: [sceau("x", 1)] })) === null,
+    );
+    const choix = ornementsPortables(a({ sceaux: cinq.slice(0, 2) }), null);
+    check("ornementsPortables : filet et cartouche ouverts, laurier (2/5) et fronton grisés avec leur consigne", egal(choix.map((c) => c.possede), [true, true, false, false]) && choix[2].avancee === "2/5" && choix[3].avancee === null && choix.every((c) => c.obtention && c.nom), JSON.stringify(choix.map((c) => c.avancee)));
+    check("ornementsPortables : celui qu'il porte déjà reste à lui (rien de gagné repris)", ornementsPortables(a(), "laurier")[2].possede === true);
+
+    // validation de l'ornement
+    const sansOrn = validerStyle({ ...STYLE_DEFAUT, ornement: "laurier" }, a({ sceaux: cinq.slice(0, 2) }), null, null, porte);
+    check("ornement non gagné (forgé) → refusé, retour au filet", sansOrn.style.ornement === "filet" && egal(sansOrn.refus, ["l'ornement Laurier du compagnon"]), sansOrn.refus.join(", "));
+    check("ornement gagné (5 sceaux) → porté", validerStyle({ ...STYLE_DEFAUT, ornement: "laurier" }, a({ sceaux: cinq }), null, null, porte).style.ornement === "laurier");
+    check("ornement gagné au fil rouge (maîtres, palier 1) → porté", validerStyle({ ...STYLE_DEFAUT, ornement: "fronton" }, a({ fil: { maitres: 1 } }), null, null, porte).style.ornement === "fronton");
+    check("ornement déjà porté, condition plus remplie → conservé", validerStyle({ ...STYLE_DEFAUT, ornement: "laurier" }, a(), null, null, { ...porte, ornement: "laurier" }).refus.length === 0);
+    check("ornement inconnu → le filet, sans refus ; absent de l'envoi → celui qu'il porte", (() => {
+      const x = validerStyle({ ...STYLE_DEFAUT, ornement: "baroque" }, a(), null, null, porte);
+      const sans: Partial<typeof STYLE_DEFAUT> = { ...STYLE_DEFAUT };
+      delete sans.ornement;
+      const y = validerStyle(sans, a(), null, null, { ...porte, ornement: "cartouche" });
+      return x.style.ornement === "filet" && x.refus.length === 0 && y.style.ornement === "cartouche" && y.refus.length === 0;
+    })());
+
+    // validation du personnage : un fichier « perso-<ms>.<ext> » du dossier du joueur dans profil-medias
+    const dossierM = "https://abcdefgh.supabase.co/storage/v1/object/public/profil-medias/1b2c3d4e-0000-4000-8000-000000000001/";
+    const pref = { images: dossierM, videos: dossierM.replace("profil-medias", "profil-videos") };
+    const persoV = (u: unknown, deja: string | null = null) => validerStyle({ ...STYLE_DEFAUT, perso: u as string | null }, a(), null, pref, { ...porte, perso: deja });
+    check("personnage : « perso-<ms>.png », .webp et .jpg gardés", ["png", "webp", "jpg", "jpeg"].every((e) => persoV(`${dossierM}perso-1760000000000.${e}`).style.perso === `${dossierM}perso-1760000000000.${e}`));
+    check(
+      "personnage : « ../ », « %2e%2e », un autre nom, un GIF, un autre bucket → refusés",
+      [
+        `${dossierM}../2b2c3d4e-0000-4000-8000-000000000002/perso-1760000000000.png`,
+        `${dossierM}%2e%2e/perso-1760000000000.png`,
+        `${dossierM}banniere-1760000000000.png`,
+        `${dossierM}perso-1760000000000.gif`,
+        `${dossierM}sous/perso-1760000000000.png`,
+        dossierM.replace("profil-medias", "avatars") + "perso-1760000000000.png",
+        "https://x/perso-1760000000000.png",
+      ].every((u) => {
+        const v = persoV(u);
+        return v.style.perso === null && egal(v.refus, ["l'image du personnage"]);
+      }),
+    );
+    check("personnage : null → aucun, sans refus ; absent de l'envoi → celui qu'il porte", (() => {
+      const sans: Partial<typeof STYLE_DEFAUT> = { ...STYLE_DEFAUT };
+      delete sans.perso;
+      const garde = validerStyle(sans, a(), null, pref, { ...porte, perso: `${dossierM}perso-1760000000000.png` });
+      return persoV(null).style.perso === null && persoV(null).refus.length === 0 && garde.style.perso === `${dossierM}perso-1760000000000.png`;
+    })());
+    // un personnage déjà enregistré se garde tel quel même si le dossier n'est pas connu (les réglages de l'environnement manquent)
+    const gardeTel = validerStyle({ ...STYLE_DEFAUT, perso: `${dossierM}perso-1760000000000.png` }, a(), null, null, { ...porte, perso: `${dossierM}perso-1760000000000.png` });
+    check("personnage : celui que la base garde déjà n'est pas perdu à l'enregistrement d'autre chose", gardeTel.style.perso === `${dossierM}perso-1760000000000.png` && gardeTel.refus.length === 0);
+    check("taille et position : bornées (50-160, 0-100), défaut 100 et 50", (() => {
+      const v = validerStyle({ ...STYLE_DEFAUT, persoTaille: 999, persoPos: -5 }, a(), null, null, porte).style;
+      const w = validerStyle({ ...STYLE_DEFAUT, persoTaille: 10, persoPos: 140 }, a(), null, null, porte).style;
+      const d = validerStyle({ ...STYLE_DEFAUT }, a(), null, null, porte).style;
+      return v.persoTaille === 160 && v.persoPos === 0 && w.persoTaille === 50 && w.persoPos === 100 && d.persoTaille === 100 && d.persoPos === 50 && STYLE_DEFAUT.perso === null;
+    })());
+
+    // lecture
+    const lire = styleDepuis({ perso_url: `${dossierM}perso-1760000000000.webp`, perso_taille: 120, perso_pos: 30, ornement: "cartouche" });
+    check("styleDepuis : personnage, taille, position et ornement lus", lire.perso === `${dossierM}perso-1760000000000.webp` && lire.persoTaille === 120 && lire.persoPos === 30 && lire.ornement === "cartouche");
+    const avantP = styleDepuis({ frame: "or" });
+    check("styleDepuis : ligne d'avant la migration → pas de personnage, taille 100, position 50, filet", avantP.perso === null && avantP.persoTaille === 100 && avantP.persoPos === 50 && avantP.ornement === "filet");
+    const faux = styleDepuis({ perso_url: "https://evil.example/x.png", perso_taille: "grand", perso_pos: 900, ornement: "roi" });
+    check("styleDepuis : adresse étrangère, nombres absurdes, ornement inconnu → défauts", faux.perso === null && faux.persoTaille === 100 && faux.persoPos === 100 && faux.ornement === "filet");
+    check(
+      "persoDepuis / fichierPerso / fichiersGardesStyle : le nom exact, et le ménage garde le personnage",
+      P.persoDepuis(`${dossierM}perso-1.png`) === null && P.persoDepuis(`${dossierM}perso-1760000000000.png`) !== null && P.fichierPerso(`${dossierM}perso-1760000000000.png`) === "perso-1760000000000.png" && P.fichiersGardesStyle({ disposition: [], perso: `${dossierM}perso-1760000000000.png` }).has("perso-1760000000000.png") && P.fichiersGardesStyle({ disposition: [], perso: null }).size === 0,
+    );
+
+    // lireStyles : le repli sur les colonnes du personnage, puis sur celles de la v3
+    const sansPerso = (cols: string) => (/perso_|ornement/.test(cols) ? { data: null, error: { code: "42703", message: "column profile_style.perso_url does not exist" } } : { data: [{ user_id: "u1", titre: "copiste" }], error: null });
+    appels.length = 0;
+    const rePerso = await lireStyles(client(sansPerso), ["u1"], ["banner_url", "titre", "perso_url", "ornement"]);
+    check("lireStyles sans la migration du personnage : relit sans lui, garde le titre", appels.length === 2 && appels[1] === "profile_style:user_id,banner_url,titre:user_id=u1" && rePerso?.get("u1")?.titre === "copiste", appels.join(" ; "));
+    const sansRien = (cols: string) => (/perso_|ornement|titre|folio/.test(cols) ? { data: null, error: { code: "42703", message: "column does not exist" } } : { data: [{ user_id: "u1", banner_url: "https://x/b.webp" }], error: null });
+    appels.length = 0;
+    const reTout = await lireStyles(client(sansRien), ["u1"], ["banner_url", "titre", "perso_url"]);
+    check("lireStyles sans v3 ni personnage : trois lectures au plus, la bannière reste", appels.length === 3 && reTout?.get("u1")?.banner_url === "https://x/b.webp", appels.join(" ; "));
+
+    // écriture : le personnage et l'ornement se replient sans rien perdre d'autre
+    const aPerso = { ...STYLE_DEFAUT, frame: "or", titre: "copiste", perso: `${dossierM}perso-1760000000000.png`, persoTaille: 130, persoPos: 40, ornement: "cartouche" };
+    ecrits.length = 0;
+    const toutPerso = await ecrireStyle(admin([]), "u1", aPerso, "2026-10-17T00:00:00Z");
+    check("ecrireStyle avec la migration : une écriture, personnage, taille, position et ornement compris", !toutPerso.error && toutPerso.perso && toutPerso.titreFolio && toutPerso.disposition && ecrits.length === 1 && ["perso_url", "perso_taille", "perso_pos", "ornement", "titre", "layout"].every((c) => ecrits[0].includes(c)));
+    ecrits.length = 0;
+    const sansP = await ecrireStyle(admin(["perso_url", "perso_taille", "perso_pos", "ornement"]), "u1", aPerso, "2026-10-17T00:00:00Z");
+    check("ecrireStyle sans la migration du personnage : réécrit sans lui, titre, folio et disposition enregistrés", !sansP.error && !sansP.perso && sansP.titreFolio && sansP.disposition && ecrits.length === 2 && !ecrits[1].includes("perso_url") && !ecrits[1].includes("ornement") && ecrits[1].includes("titre") && ecrits[1].includes("layout"));
+    ecrits.length = 0;
+    const sansPV3 = await ecrireStyle(admin(["perso_url", "ornement", "titre", "folio"]), "u1", aPerso, "2026-10-17T00:00:00Z");
+    check("ecrireStyle sans le personnage ni la v3 : trois écritures, le cadre s'enregistre", !sansPV3.error && !sansPV3.perso && !sansPV3.titreFolio && ecrits.length === 3 && ecrits[2].includes("frame"));
+
+    // le podium (components/classement/data.ts) : bannière, titre, personnage et ornement des trois premiers
+    const { podiumDe } = await import("@/components/classement/data");
+    const urlPerso = `${dossierM}perso-1760000000000.png`;
+    const lignesPodium = (cols: string) => {
+      const toutes: Record<string, unknown>[] = [
+        { user_id: "p1", banner_url: null, titre: null, perso_url: urlPerso, perso_taille: 140, perso_pos: 20, ornement: "laurier" },
+        { user_id: "p2", banner_url: "https://x/b.webp", titre: "copiste", perso_url: null, perso_taille: 100, perso_pos: 50, ornement: null },
+        { user_id: "p3", banner_url: null, titre: null, perso_url: null, perso_taille: 100, perso_pos: 50, ornement: null },
+      ];
+      const voulues = cols.split(",");
+      return { data: toutes.map((l) => Object.fromEntries(Object.entries(l).filter(([c]) => voulues.includes(c)))), error: null };
+    };
+    appels.length = 0;
+    const podium = await podiumDe(client(lignesPodium), ["p1", "p2", "p3"]);
+    check(
+      "podiumDe : le personnage, son cadrage et l'ornement des joueurs qui en ont ; un joueur sans rien n'a pas d'entrée",
+      podium.get("p1")?.perso === urlPerso && podium.get("p1")?.persoTaille === 140 && podium.get("p1")?.persoPos === 20 && podium.get("p1")?.ornement === "laurier" && podium.get("p2")?.titre === "Copiste" && podium.get("p2")?.perso === null && podium.get("p2")?.ornement === "filet" && podium.get("p2")?.bannerUrl === "https://x/b.webp" && !podium.has("p3") && appels.length === 1,
+    );
+    appels.length = 0;
+    const podiumAncien = await podiumDe(client((cols) => (/perso_|ornement/.test(cols) ? { data: null, error: { code: "42703", message: "column profile_style.perso_url does not exist" } } : { data: [{ user_id: "p2", banner_url: "https://x/b.webp", titre: "copiste" }], error: null })), ["p2"]);
+    check("podiumDe sans la migration du personnage : relit sans lui, la bannière et le titre restent, le filet d'encre", podiumAncien.get("p2")?.bannerUrl === "https://x/b.webp" && podiumAncien.get("p2")?.titre === "Copiste" && podiumAncien.get("p2")?.perso === null && podiumAncien.get("p2")?.ornement === "filet" && appels.length === 2, appels.join(" ; "));
   }
 
   console.log(ko ? `\n${ko} échec(s)` : "\ntout est bon");
