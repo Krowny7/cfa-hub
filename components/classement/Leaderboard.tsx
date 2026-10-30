@@ -108,14 +108,16 @@ function Rivalite({ board, meRow }: { board: BoardRow[]; meRow: BoardRow | null 
 }
 
 // Classement général du domaine : le podium en trois bannières de champions
-// (dès qu'un joueur a joué : PodiumBannieres, le n° 1 au centre, places vides « à prendre »),
+// (les trois meilleurs parmi ceux qui ont fait au moins un duel : PodiumBannieres, le n° 1 au centre, places vides « à prendre »),
 // puis la liste, la ligne « Toi » surlignée. Chaque joueur a son
 // sceau (ou sa photo). La rivalité tient en une ligne au-dessus de la liste.
 // Le bouton « Défier » d'une ligne apparaît au survol (toujours visible sur
 // téléphone). Au-delà des 10 premiers, la suite se déplie.
 export function Leaderboard({ board, meRow, totalPlayers, sobre = false }: { board: BoardRow[]; meRow: BoardRow | null; totalPlayers: number | null; /** sans l'en-tête (nombre de joueurs, lien « Chercher ») ni la rivalité : le héros de la page les dit déjà */ sobre?: boolean }) {
-  // les trois premières places ; tenue par un joueur qui n'a pas encore joué, une place reste « à prendre »
-  const podiumRows = [0, 1, 2].map((i) => (board[i] && board[i].gamesPlayed > 0 ? board[i] : null)) as [BoardRow | null, BoardRow | null, BoardRow | null];
+  // le podium : les trois meilleurs (ordre du classement) parmi ceux qui ont fait au moins un duel, placement
+  // en cours compris ; un joueur qui n'a jamais joué n'y monte pas ; s'il en manque, la place reste « à prendre »
+  const joueurs = board.filter((r) => r.gamesPlayed > 0);
+  const podiumRows = [0, 1, 2].map((i) => joueurs[i] ?? null) as [BoardRow | null, BoardRow | null, BoardRow | null];
   const surPodium = podiumRows.filter((r): r is BoardRow => r !== null);
   const podium = surPodium.length > 0;
   const list = podium ? board.filter((r) => !surPodium.includes(r)) : board;
