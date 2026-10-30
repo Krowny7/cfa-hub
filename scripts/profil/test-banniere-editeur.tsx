@@ -69,7 +69,7 @@ import { panneauVue } from "@/lib/profil/panneau-vue";
 import { ScenePosable } from "@/components/profil/ScenePosable";
 import { EditeurBanniere } from "@/components/profil/EditeurBanniere";
 import { ChoixPanneau, deplacerDans } from "@/components/profil/ChoixPanneau";
-import { EditeurApercu } from "@/app/preview-da/bannieres/EditeurApercu";
+import { EditeurApercu } from "./EditeurApercu";
 import { FOND_EXEMPLE, LEONARD, RATIO_LEONARD, STATS_EXEMPLE, compositionExemple, panneauExemple } from "./composition-exemple";
 
 let ko = 0;
@@ -436,7 +436,7 @@ async function main() {
       "components/profil/ModePersonnaliser.tsx",
       "scripts/profil/composition-exemple.ts",
       "app/preview-da/bannieres/page.tsx",
-      "app/preview-da/bannieres/EditeurApercu.tsx",
+      "scripts/profil/EditeurApercu.tsx",
     ]
       .map(lire)
       .join("\n");
